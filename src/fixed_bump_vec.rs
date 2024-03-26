@@ -1,4 +1,5 @@
 use core::{
+    alloc::Layout,
     borrow::{Borrow, BorrowMut},
     fmt::Debug,
     hash::Hash,
@@ -94,6 +95,13 @@ impl<'a, T> FixedBumpVec<'a, T> {
     #[inline(always)]
     pub const fn is_full(&self) -> bool {
         self.len() >= self.capacity
+    }
+
+    /// Returns the layout of the vector.
+    #[must_use]
+    pub const fn layout(&self) -> Layout {
+        // We have an allocated slice. So the layout is valid.
+        unsafe { Layout::from_size_align_unchecked(T::SIZE * self.len(), T::ALIGN) }
     }
 
     /// Turns this `FixedBumpVec<T>` into a `BumpBox<[T]>`.

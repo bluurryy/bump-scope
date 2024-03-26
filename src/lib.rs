@@ -278,6 +278,7 @@ mod polyfill;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
 mod stats;
+mod vec;
 #[cfg(test)]
 mod with_drop;
 mod without_dealloc;
@@ -1426,7 +1427,6 @@ define_alloc_methods! {
         Ok(string.into_boxed_str())
     }
 
-    #[cfg(feature = "alloc")]
     /// Allocate elements of an iterator into a slice.
     do examples
     /// ```
@@ -1449,30 +1449,14 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = allocator_api2::vec::Vec::new_in(self);
-
-        if B::IS_FALLIBLE {
-            vec.try_reserve(capacity).map_err(|_| B::capacity_overflow())?;
-        } else {
-            vec.reserve(capacity);
-        }
+        let mut vec = crate::vec::Vec::generic_with_capacity_in::<B>(capacity, self)?;
 
         for value in iter {
-            if B::IS_FALLIBLE {
-                vec.try_reserve(1).map_err(|_| B::capacity_overflow())?;
-            }
-
-            vec.push(value);
+            vec.generic_push(value)?;
         }
 
-        vec.shrink_to_fit();
-        let (ptr, len, _) = vec.into_raw_parts();
-
-        unsafe {
-            let ptr = NonNull::new_unchecked(ptr);
-            let slice = nonnull::slice_from_raw_parts(ptr, len);
-            Ok(BumpBox::from_raw(slice))
-        }
+        // TODO: consider shrink-to-fitting
+        Ok(vec.into_slice())
     }
 
     /// Allocate elements of an `ExactSizeIterator` into a slice.

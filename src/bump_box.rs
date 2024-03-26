@@ -669,7 +669,8 @@ impl<'a, T> BumpBox<'a, [T]> {
         self.set_len(self.len() - amount);
     }
 
-    pub(crate) fn set_ptr(&mut self, ptr: NonNull<T>) {
+    #[inline]
+    pub(crate) unsafe fn set_ptr(&mut self, ptr: NonNull<T>) {
         let len = self.ptr.len();
         self.ptr = nonnull::slice_from_raw_parts(ptr, len);
     }
