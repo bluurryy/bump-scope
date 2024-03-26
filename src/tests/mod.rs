@@ -625,3 +625,9 @@ fn bump_format_macro() {
         bump_format!(try in bump, "{one} + {two} = {}", one + two)
     }
 }
+
+#[test]
+fn zero_capacity() {
+    let bump: Bump<_, 1, false> = Bump::with_capacity(Layout::new::<[u8; 0]>());
+    dbg!(bump);
+}

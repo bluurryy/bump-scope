@@ -96,11 +96,11 @@ impl<const UP: bool, A> ChunkSize<UP, A> {
     #[inline]
     pub(crate) fn for_capacity_bytes<E: ErrorBehavior>(size: usize) -> Result<Self, E> {
         if UP {
-            let size = match Self::OVERHEAD.checked_add(size) {
+            let size = match size.checked_add(Self::OVERHEAD.get()) {
                 Some(size) => size,
                 None => return Err(E::capacity_overflow()),
             };
-            Self::new(size.get())
+            Self::new(size)
         } else {
             let size = match up_align_usize(size, Self::HEADER_ALIGN) {
                 Some(size) => size,
@@ -114,7 +114,7 @@ impl<const UP: bool, A> ChunkSize<UP, A> {
                 Some(size) => size,
                 None => return Err(E::capacity_overflow()),
             };
-            Self::new(size.get())
+            Self::new(size)
         }
     }
 

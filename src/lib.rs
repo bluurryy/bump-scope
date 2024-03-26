@@ -363,13 +363,12 @@ macro_rules! supported_alignments {
 
 supported_alignments!(1 2 4 8 16);
 
-// TODO: this returns `None` when addr is 0; that's very unintuitive; why did i do this?; is this a way to guard overflows?
 #[inline(always)]
-fn up_align_usize(addr: usize, align: NonZeroUsize) -> Option<NonZeroUsize> {
+fn up_align_usize(addr: usize, align: NonZeroUsize) -> Option<usize> {
     debug_assert!(align.get().is_power_of_two());
     let mask = align.get() - 1;
     let aligned = addr.checked_add(mask)? & !mask;
-    NonZeroUsize::new(aligned)
+    Some(aligned)
 }
 
 /// Does not check for overflow.
