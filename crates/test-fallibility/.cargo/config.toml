@@ -1,0 +1,3 @@
+[build]
+# broken for now :(
+# rustflags = "--cfg no_global_oom_handling"

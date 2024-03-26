@@ -1,0 +1,30 @@
+[package]
+name = "bump-scope"
+version = "0.0.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "A bump allocator with support for scopes."
+categories = ["memory-management", "rust-patterns", "no-std"]
+keywords = ["allocator", "arena", "no-std", "bump", "allocation"]
+documentation = "https://docs.rs/bump-scope"
+repository = "https://github.com/bluurryy/bump-scope"
+rust-version = "1.64.0"
+readme = "README.md"
+exclude = ["*.nu", "tests"]
+
+[dependencies]
+allocator-api2 = { version = "0.2.16", default-features = false }
+sptr = "0.3.2"
+
+[features]
+default = ["std"]
+std = ["alloc", "allocator-api2/std"]
+alloc = ["allocator-api2/alloc"]
+nightly-allocator-api = ["allocator-api2/nightly"]
+nightly-coerce-unsized = []
+nightly-exact-size-is-empty = []
+nightly-trusted-len = []
+
+[dev-dependencies]
+trybuild = "1.0.90"
+expect-test = "1.4.1"

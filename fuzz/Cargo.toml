@@ -1,0 +1,26 @@
+[package]
+name = "bump-scope-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+fuzzing-support = { path = "../crates/fuzzing-support" }
+
+[[bin]]
+name = "bumping"
+path = "fuzz_targets/bumping.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "allocator"
+path = "fuzz_targets/allocator.rs"
+test = false
+doc = false
+bench = false

@@ -1,0 +1,5 @@
+set shell := ["nu", "-c"]
+
+default *args:
+    cargo fmt --all
+    cargo clippy --all

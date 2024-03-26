@@ -1,0 +1,8 @@
+[package]
+name = "inspect-asm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bump-scope = { path = "../.." }
+bumpalo = { version = "3.15.3", features = ["allocator-api2"] }

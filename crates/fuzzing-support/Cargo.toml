@@ -1,0 +1,9 @@
+[package]
+name = "fuzzing-support"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+bump-scope = { path = "../.." }
+arbitrary = { version = "1.3.2", features = ["derive"] }
+rangemap = "1.5.1"

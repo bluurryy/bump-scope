@@ -1,0 +1,45 @@
+Missing api for `BumpVec`, `BumpVecRev`, `BumpString`, `FixedBumpVec` and `BumpBox<[T]>` that exists in `Vec`, `String` or `slice`.
+  - [ ] [`retain(_mut)`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.retain)
+    - [x] `BumpBox<[T]>`
+    - [ ] `BumpBox<str>`
+    - [x] `FixedBumpVec`
+    - [x] `BumpVec`
+    - [ ] `BumpVecRev`
+    - [ ] `BumpString`
+  - [ ] [`drain`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.drain)
+    - [x] `BumpBox<[T]>`
+    - [ ] `BumpBox<str>`
+    - [x] `FixedBumpVec`
+    - [x] `BumpVec`
+    - [ ] `BumpVecRev`
+    - [ ] `BumpString`
+  - [ ] [`extract_if`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.extract_if)
+    - [x] `BumpBox<[T]>`
+    - [ ] `BumpBox<str>`
+    - [x] `FixedBumpVec`
+    - [x] `BumpVec`
+    - [ ] `BumpVecRev`
+    - [ ] `BumpString`
+  - [x] [`extend_from_within`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.extend_from_within)
+    - [x] `BumpVec`
+    - [x] `BumpVecRev`
+    - [x] `BumpString`
+  - [ ] [`into_flattened`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.into_flattened)
+    - [x] `BumpBox<[T]>`
+    - [x] `BumpVec`
+    - [ ] `BumpVecRev`
+  - [ ] [`splice`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.splice)
+    - [ ] `BumpBox<[T]>`
+    - [ ] `FixedBumpVec`
+    - [ ] `BumpVec`
+    - [ ] `BumpVecRev`
+  - [ ] [`dedup`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.dedup), `dedup_by`, `dedup_by_key`
+    - [x] `BumpBox<[T]>`
+    - [x] `FixedBumpVec`
+    - [x] `BumpVec`
+    - [ ] `BumpVecRev`
+  - [ ] [`partition_dedup`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.dedup), `partition_dedup_by`, `partition_dedup_by_key`
+    - [ ] `BumpBox<[T]>`
+    - [ ] `FixedBumpVec`
+    - [ ] `BumpVec`
+    - [ ] `BumpVecRev`

@@ -1,0 +1,11 @@
+set shell := ["nu", "-c"]
+
+default:
+  cargo fmt --all
+  cargo clippy --all
+
+save-asm:
+  @ cargo asm --everything --simplify | lines | filter { $in != "" } | str join "\n" | save -f out/everything.asm
+
+test: save-asm
+  @ let panics = (open --raw out/everything.asm | find panic); print -e (if ($panics | length) == 0 { "OK" } else { $panics | wrap panics }); exit ($panics | length)
