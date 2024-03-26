@@ -10,7 +10,10 @@ use core::{
     ptr::NonNull,
 };
 
-use allocator_api2::alloc::{Allocator, Global};
+use allocator_api2::alloc::Allocator;
+
+#[cfg(feature = "alloc")]
+use allocator_api2::alloc::Global;
 
 use crate::{
     bump_align_guard::BumpAlignGuard,
@@ -33,28 +36,34 @@ use crate::WithDrop;
 /// [`as_scope`]: crate::Bump::as_scope
 /// [`as_mut_scope`]: crate::Bump::as_mut_scope
 #[repr(transparent)]
-pub struct BumpScope<'a, const MIN_ALIGN: usize = 1, const UP: bool = true, A = Global> {
+pub struct BumpScope<
+    'a,
+    #[cfg(feature = "alloc")] A = Global,
+    #[cfg(not(feature = "alloc"))] A,
+    const MIN_ALIGN: usize = 1,
+    const UP: bool = true,
+> {
     pub(crate) chunk: Cell<RawChunk<UP, A>>,
 
     /// Marks the lifetime of the mutably borrowed `BumpScopeGuard(Root)`.
     marker: PhantomData<&'a ()>,
 }
 
-impl<const MIN_ALIGN: usize, const UP: bool, A> UnwindSafe for BumpScope<'_, MIN_ALIGN, UP, A>
+impl<const MIN_ALIGN: usize, const UP: bool, A> UnwindSafe for BumpScope<'_, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone + UnwindSafe,
 {
 }
 
-impl<const MIN_ALIGN: usize, const UP: bool, A> RefUnwindSafe for BumpScope<'_, MIN_ALIGN, UP, A>
+impl<const MIN_ALIGN: usize, const UP: bool, A> RefUnwindSafe for BumpScope<'_, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone + UnwindSafe,
 {
 }
 
-impl<const MIN_ALIGN: usize, const UP: bool, A: Allocator + Clone> Debug for BumpScope<'_, MIN_ALIGN, UP, A>
+impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Debug for BumpScope<'_, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -63,7 +72,7 @@ where
     }
 }
 
-impl<'a, const MIN_ALIGN: usize, const UP: bool, A: Allocator + Clone> BumpScope<'a, MIN_ALIGN, UP, A>
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -351,7 +360,7 @@ where
     ///
     #[doc = doc_align_cant_decrease!()]
     #[inline(always)]
-    pub fn into_aligned<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, NEW_MIN_ALIGN, UP, A>
+    pub fn into_aligned<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, A, NEW_MIN_ALIGN, UP>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -363,7 +372,7 @@ where
     ///
     #[doc = doc_align_cant_decrease!()]
     #[inline(always)]
-    pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(&mut self) -> &mut BumpScope<'a, NEW_MIN_ALIGN, UP, A>
+    pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(&mut self) -> &mut BumpScope<'a, A, NEW_MIN_ALIGN, UP>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -372,7 +381,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn cast_align<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, NEW_MIN_ALIGN, UP, A>
+    pub(crate) unsafe fn cast_align<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, A, NEW_MIN_ALIGN, UP>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -383,18 +392,18 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn cast_align_mut<const NEW_MIN_ALIGN: usize>(&mut self) -> &mut BumpScope<'a, NEW_MIN_ALIGN, UP, A>
+    pub(crate) unsafe fn cast_align_mut<const NEW_MIN_ALIGN: usize>(&mut self) -> &mut BumpScope<'a, A, NEW_MIN_ALIGN, UP>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        unsafe { &mut *pointer::from_mut(self).cast::<BumpScope<'a, NEW_MIN_ALIGN, UP, A>>() }
+        unsafe { &mut *pointer::from_mut(self).cast::<BumpScope<'a, A, NEW_MIN_ALIGN, UP>>() }
     }
 
     /// # Safety
     ///
     /// - `self` must not be used until this clone is gone
     #[inline(always)]
-    pub(crate) unsafe fn clone_unchecked(&self) -> BumpScope<'a, MIN_ALIGN, UP, A> {
+    pub(crate) unsafe fn clone_unchecked(&self) -> BumpScope<'a, A, MIN_ALIGN, UP> {
         BumpScope::new_unchecked(self.chunk.get())
     }
 

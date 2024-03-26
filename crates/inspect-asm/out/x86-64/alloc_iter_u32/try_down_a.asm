@@ -230,7 +230,7 @@ inspect_asm::alloc_iter_u32::try_down_a:
 	mov rdx, r9
 	mov qword ptr [rsp + 24], r9
 	mov r13, r8
-	call bump_scope::bump_scope::BumpScope<_,_,A>::alloc_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_in_another_chunk
 	mov r8, r13
 	mov r13, rax
 	test rax, rax
@@ -241,7 +241,7 @@ inspect_asm::alloc_iter_u32::try_down_a:
 	mov esi, 4
 	mov rdi, qword ptr [rsp]
 	mov rbp, rcx
-	call bump_scope::bump_scope::BumpScope<_,_,A>::alloc_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_in_another_chunk
 	mov esi, dword ptr [rsp + 8]
 	mov rcx, rbp
 	mov rbp, rax
@@ -254,7 +254,7 @@ inspect_asm::alloc_iter_u32::try_down_a:
 	mov rdi, qword ptr [rsp]
 	mov rdx, r9
 	mov qword ptr [rsp + 24], r9
-	call bump_scope::bump_scope::BumpScope<_,_,A>::alloc_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_in_another_chunk
 	test rax, rax
 	je .LBB_75
 	mov r13, rax
@@ -266,7 +266,7 @@ inspect_asm::alloc_iter_u32::try_down_a:
 	mov ebp, esi
 	mov esi, 4
 	mov rdi, qword ptr [rsp]
-	call bump_scope::bump_scope::BumpScope<_,_,A>::alloc_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_in_another_chunk
 	mov esi, ebp
 	mov r8, qword ptr [rsp + 16]
 	mov rbp, rax
@@ -280,7 +280,7 @@ inspect_asm::alloc_iter_u32::try_down_a:
 	mov rdx, r9
 	mov qword ptr [rsp + 24], r9
 	mov r13, r8
-	call bump_scope::bump_scope::BumpScope<_,_,A>::alloc_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_in_another_chunk
 	test rax, rax
 	je .LBB_75
 	mov rdx, r13
@@ -293,7 +293,7 @@ inspect_asm::alloc_iter_u32::try_down_a:
 	mov esi, 4
 	mov rdi, qword ptr [rsp]
 	mov rbp, rcx
-	call bump_scope::bump_scope::BumpScope<_,_,A>::alloc_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_in_another_chunk
 	test rax, rax
 	je .LBB_79
 	mov rdx, rbp
@@ -353,7 +353,7 @@ inspect_asm::alloc_iter_u32::try_down_a:
 	mov esi, 4
 	mov rbx, rdi
 	mov r14, r8
-	call bump_scope::bump_scope::BumpScope<_,_,A>::alloc_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_in_another_chunk
 	mov r8, r14
 	mov rdi, rbx
 	mov r13, rax

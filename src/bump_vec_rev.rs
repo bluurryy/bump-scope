@@ -11,7 +11,10 @@ use core::{
     slice::{self, SliceIndex},
 };
 
-use allocator_api2::alloc::{AllocError, Allocator, Global};
+use allocator_api2::alloc::{AllocError, Allocator};
+
+#[cfg(feature = "alloc")]
+use allocator_api2::alloc::Global;
 
 use crate::{
     error_behavior_generic_methods,
@@ -130,33 +133,41 @@ macro_rules! bump_vec_rev {
 ///
 /// assert_eq!(vec, [1, 2, 3, 4, 5, 6]);
 /// ```
-pub struct BumpVecRev<'b, 'a: 'b, T, const MIN_ALIGN: usize = 1, const UP: bool = true, A = Global> {
+pub struct BumpVecRev<
+    'b,
+    'a: 'b,
+    T,
+    #[cfg(feature = "alloc")] A = Global,
+    #[cfg(not(feature = "alloc"))] A,
+    const MIN_ALIGN: usize = 1,
+    const UP: bool = true,
+> {
     end: NonNull<T>,
     len: usize,
     cap: usize,
 
-    pub(crate) bump: &'b mut BumpScope<'a, MIN_ALIGN, UP, A>,
+    pub(crate) bump: &'b mut BumpScope<'a, A, MIN_ALIGN, UP>,
 
     /// First field marks the lifetime.
     /// Second field marks ownership over T. (<https://doc.rust-lang.org/nomicon/phantom-data.html#generic-parameters-and-drop-checking>)
     marker: PhantomData<(&'a (), T)>,
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> UnwindSafe for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A>
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> UnwindSafe for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     T: UnwindSafe,
     A: UnwindSafe,
 {
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> RefUnwindSafe for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A>
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> RefUnwindSafe for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     T: RefUnwindSafe,
     A: RefUnwindSafe,
 {
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[must_use]
     #[inline(always)]
     fn as_nonnull_slice(&self) -> NonNull<[T]> {
@@ -451,7 +462,7 @@ impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> BumpVecRev<'b, 'a
     }
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A>
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -834,7 +845,7 @@ where
     /// let mut vec = BumpVecRev::<i32>::new_in(&mut bump);
     /// ```
     #[inline]
-    pub fn new_in(bump: impl Into<&'b mut BumpScope<'a, MIN_ALIGN, UP, A>>) -> Self {
+    pub fn new_in(bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
         Self {
             end: NonNull::dangling(),
             len: 0,
@@ -868,7 +879,7 @@ where
         impl
         for fn with_capacity_in
         for fn try_with_capacity_in
-        fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, MIN_ALIGN, UP, A>>) -> Self {
+        fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
             let bump = bump.into();
 
             if T::IS_ZST {
@@ -906,7 +917,7 @@ where
         impl
         for fn from_elem_in
         for fn try_from_elem_in
-        fn generic_from_elem_in(value: T, count: usize, bump: impl Into<&'b mut BumpScope<'a, MIN_ALIGN, UP, A>>) -> Self
+        fn generic_from_elem_in(value: T, count: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self
         where {
             T: Clone
         } in {
@@ -929,7 +940,7 @@ where
         impl
         for fn from_array_in
         for fn try_from_array_in
-        fn generic_from_array_in<{const N: usize}>(array: [T; N], bump: impl Into<&'b mut BumpScope<'a, MIN_ALIGN, UP, A>>) -> Self {
+        fn generic_from_array_in<{const N: usize}>(array: [T; N], bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
             #![allow(clippy::needless_pass_by_value)]
             #![allow(clippy::needless_pass_by_ref_mut)]
 
@@ -1226,7 +1237,7 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A>
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone + 'a,
@@ -1290,13 +1301,13 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T: Debug, const MIN_ALIGN: usize, const UP: bool, A> Debug for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A> {
+impl<'b, 'a: 'b, T: Debug, const MIN_ALIGN: usize, const UP: bool, A> Debug for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Debug::fmt(self.as_slice(), f)
     }
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> Deref for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> Deref for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     type Target = [T];
 
     #[inline(always)]
@@ -1305,15 +1316,15 @@ impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> Deref for BumpVec
     }
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> DerefMut for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> DerefMut for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut_slice()
     }
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A, I: SliceIndex<[T]>> Index<I>
-    for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A>
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, I: SliceIndex<[T]>> Index<I>
+    for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 {
     type Output = I::Output;
 
@@ -1323,8 +1334,8 @@ impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A, I: SliceIndex<[T]
     }
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A, I: SliceIndex<[T]>> IndexMut<I>
-    for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A>
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, I: SliceIndex<[T]>> IndexMut<I>
+    for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 {
     #[inline(always)]
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
@@ -1333,7 +1344,7 @@ impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A, I: SliceIndex<[T]
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'b, 'a: 'b, U, const MIN_ALIGN: usize, const UP: bool, A> Extend<U> for BumpVecRev<'b, 'a, U, MIN_ALIGN, UP, A>
+impl<'b, 'a: 'b, U, const MIN_ALIGN: usize, const UP: bool, A> Extend<U> for BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone + 'a,
@@ -1350,7 +1361,7 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> Drop for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn drop(&mut self) {
         // BumpVecRev never actually moves a bump pointer.
@@ -1368,7 +1379,7 @@ impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> Drop for BumpVecR
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'b, 'a: 'b, 't, T, const MIN_ALIGN: usize, const UP: bool, A> Extend<&'t T> for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A>
+impl<'b, 'a: 'b, 't, T, A, const MIN_ALIGN: usize, const UP: bool> Extend<&'t T> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone + 'a,
@@ -1387,23 +1398,23 @@ where
 }
 
 impl<'b0, 'a0: 'b0, 'b1, 'a1: 'b1, T, U, const MIN_ALIGN: usize, const UP: bool, A>
-    PartialEq<BumpVecRev<'b1, 'a1, U, MIN_ALIGN, UP, A>> for BumpVecRev<'b0, 'a0, T, MIN_ALIGN, UP, A>
+    PartialEq<BumpVecRev<'b1, 'a1, U, A, MIN_ALIGN, UP>> for BumpVecRev<'b0, 'a0, T, A, MIN_ALIGN, UP>
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &BumpVecRev<'b1, 'a1, U, MIN_ALIGN, UP, A>) -> bool {
+    fn eq(&self, other: &BumpVecRev<'b1, 'a1, U, A, MIN_ALIGN, UP>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &BumpVecRev<'b1, 'a1, U, MIN_ALIGN, UP, A>) -> bool {
+    fn ne(&self, other: &BumpVecRev<'b1, 'a1, U, A, MIN_ALIGN, UP>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
 impl<'b, 'a: 'b, T, U, const N: usize, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<[U; N]>
-    for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A>
+    for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     T: PartialEq<U>,
 {
@@ -1419,7 +1430,7 @@ where
 }
 
 impl<'b, 'a: 'b, T, U, const N: usize, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<&[U; N]>
-    for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A>
+    for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     T: PartialEq<U>,
 {
@@ -1435,7 +1446,7 @@ where
 }
 
 impl<'b, 'a: 'b, T, U, const N: usize, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<&mut [U; N]>
-    for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A>
+    for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     T: PartialEq<U>,
 {
@@ -1450,7 +1461,7 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<[U]> for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A>
+impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<[U]> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     T: PartialEq<U>,
 {
@@ -1465,7 +1476,7 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<&[U]> for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A>
+impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<&[U]> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     T: PartialEq<U>,
 {
@@ -1481,7 +1492,7 @@ where
 }
 
 impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<&mut [U]>
-    for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A>
+    for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     T: PartialEq<U>,
 {
@@ -1496,55 +1507,55 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<BumpVecRev<'b, 'a, U, MIN_ALIGN, UP, A>>
+impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>>
     for [T]
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &BumpVecRev<'b, 'a, U, MIN_ALIGN, UP, A>) -> bool {
+    fn eq(&self, other: &BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &BumpVecRev<'b, 'a, U, MIN_ALIGN, UP, A>) -> bool {
+    fn ne(&self, other: &BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<BumpVecRev<'b, 'a, U, MIN_ALIGN, UP, A>>
+impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>>
     for &[T]
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &BumpVecRev<'b, 'a, U, MIN_ALIGN, UP, A>) -> bool {
+    fn eq(&self, other: &BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &BumpVecRev<'b, 'a, U, MIN_ALIGN, UP, A>) -> bool {
+    fn ne(&self, other: &BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<BumpVecRev<'b, 'a, U, MIN_ALIGN, UP, A>>
+impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>>
     for &mut [T]
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &BumpVecRev<'b, 'a, U, MIN_ALIGN, UP, A>) -> bool {
+    fn eq(&self, other: &BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &BumpVecRev<'b, 'a, U, MIN_ALIGN, UP, A>) -> bool {
+    fn ne(&self, other: &BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> IntoIterator for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A>
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> IntoIterator for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -1564,8 +1575,8 @@ where
     }
 }
 
-impl<'c, 'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> IntoIterator
-    for &'c BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A>
+impl<'c, 'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> IntoIterator
+    for &'c BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 {
     type Item = &'c T;
     type IntoIter = slice::Iter<'c, T>;
@@ -1576,8 +1587,8 @@ impl<'c, 'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> IntoIterator
     }
 }
 
-impl<'c, 'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> IntoIterator
-    for &'c mut BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A>
+impl<'c, 'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> IntoIterator
+    for &'c mut BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 {
     type Item = &'c mut T;
     type IntoIter = slice::IterMut<'c, T>;
@@ -1588,49 +1599,49 @@ impl<'c, 'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> IntoIterator
     }
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> AsRef<Self> for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> AsRef<Self> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn as_ref(&self) -> &Self {
         self
     }
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> AsMut<Self> for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> AsMut<Self> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn as_mut(&mut self) -> &mut Self {
         self
     }
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> AsRef<[T]> for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> AsRef<[T]> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn as_ref(&self) -> &[T] {
         self
     }
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> AsMut<[T]> for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> AsMut<[T]> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn as_mut(&mut self) -> &mut [T] {
         self
     }
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> Borrow<[T]> for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> Borrow<[T]> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn borrow(&self) -> &[T] {
         self
     }
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> BorrowMut<[T]> for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BorrowMut<[T]> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn borrow_mut(&mut self) -> &mut [T] {
         self
     }
 }
 
-impl<'b, 'a: 'b, T: Hash, const MIN_ALIGN: usize, const UP: bool, A> Hash for BumpVecRev<'b, 'a, T, MIN_ALIGN, UP, A> {
+impl<'b, 'a: 'b, T: Hash, const MIN_ALIGN: usize, const UP: bool, A> Hash for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.as_slice().hash(state);

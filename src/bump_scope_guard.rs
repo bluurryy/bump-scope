@@ -1,6 +1,6 @@
 use core::{fmt::Debug, marker::PhantomData, num::NonZeroUsize, ptr::NonNull};
 
-use allocator_api2::alloc::{Allocator, Global};
+use allocator_api2::alloc::Allocator;
 
 use crate::{
     chunk_header::ChunkHeader, polyfill::nonnull, Bump, BumpScope, Chunk, MinimumAlignment, RawChunk, Stats,
@@ -30,7 +30,7 @@ impl Checkpoint {
 }
 
 /// Returned from [`BumpScope::scope_guard`].
-pub struct BumpScopeGuard<'a, const MIN_ALIGN: usize = 1, const UP: bool = true, A: Allocator + Clone = Global>
+pub struct BumpScopeGuard<'a, A: Allocator + Clone, const MIN_ALIGN: usize = 1, const UP: bool = true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -39,7 +39,7 @@ where
     marker: PhantomData<&'a mut ()>,
 }
 
-impl<'a, const MIN_ALIGN: usize, const UP: bool, A: Allocator + Clone> Debug for BumpScopeGuard<'a, MIN_ALIGN, UP, A>
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Debug for BumpScopeGuard<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -48,7 +48,7 @@ where
     }
 }
 
-impl<'a, const MIN_ALIGN: usize, const UP: bool, A: Allocator + Clone> Drop for BumpScopeGuard<'a, MIN_ALIGN, UP, A>
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Drop for BumpScopeGuard<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -58,13 +58,13 @@ where
     }
 }
 
-impl<'a, const MIN_ALIGN: usize, const UP: bool, A: Allocator + Clone> BumpScopeGuard<'a, MIN_ALIGN, UP, A>
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpScopeGuard<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     #[inline(always)]
     #[allow(clippy::needless_pass_by_ref_mut)]
-    pub(crate) fn new<'parent>(bump: &'a mut BumpScope<'parent, MIN_ALIGN, UP, A>) -> Self {
+    pub(crate) fn new<'parent>(bump: &'a mut BumpScope<'parent, A, MIN_ALIGN, UP>) -> Self {
         unsafe { Self::new_unchecked(bump.chunk.get()) }
     }
 
@@ -79,7 +79,7 @@ where
 
     #[doc = crate::doc_fn_scope!()]
     #[inline(always)]
-    pub fn scope(&mut self) -> BumpScope<MIN_ALIGN, UP, A> {
+    pub fn scope(&mut self) -> BumpScope<A, MIN_ALIGN, UP> {
         unsafe { BumpScope::new_unchecked(self.chunk) }
     }
 
@@ -112,7 +112,7 @@ where
 ///
 /// This fulfills the same purpose as [`BumpScopeGuard`], but it does not need to store
 /// the address which the bump pointer needs to be reset to. It simply resets the bump pointer to the very start.
-pub struct BumpScopeGuardRoot<'b, const MIN_ALIGN: usize = 1, const UP: bool = true, A: Allocator + Clone = Global>
+pub struct BumpScopeGuardRoot<'b, A: Allocator + Clone, const MIN_ALIGN: usize = 1, const UP: bool = true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -120,7 +120,7 @@ where
     marker: PhantomData<&'b mut ()>,
 }
 
-impl<'b, const MIN_ALIGN: usize, const UP: bool, A: Allocator + Clone> Debug for BumpScopeGuardRoot<'b, MIN_ALIGN, UP, A>
+impl<'b, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Debug for BumpScopeGuardRoot<'b, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -129,7 +129,7 @@ where
     }
 }
 
-impl<'a, const MIN_ALIGN: usize, const UP: bool, A: Allocator + Clone> Drop for BumpScopeGuardRoot<'a, MIN_ALIGN, UP, A>
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Drop for BumpScopeGuardRoot<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -139,13 +139,13 @@ where
     }
 }
 
-impl<'a, const MIN_ALIGN: usize, const UP: bool, A: Allocator + Clone> BumpScopeGuardRoot<'a, MIN_ALIGN, UP, A>
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpScopeGuardRoot<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     #[inline(always)]
     #[allow(clippy::needless_pass_by_ref_mut)]
-    pub(crate) fn new(bump: &'a mut Bump<MIN_ALIGN, UP, A>) -> Self {
+    pub(crate) fn new(bump: &'a mut Bump<A, MIN_ALIGN, UP>) -> Self {
         unsafe { Self::new_unchecked(bump.chunk.get()) }
     }
 
@@ -159,7 +159,7 @@ where
 
     #[doc = crate::doc_fn_scope!()]
     #[inline(always)]
-    pub fn scope(&mut self) -> BumpScope<MIN_ALIGN, UP, A> {
+    pub fn scope(&mut self) -> BumpScope<A, MIN_ALIGN, UP> {
         unsafe { BumpScope::new_unchecked(self.chunk) }
     }
 

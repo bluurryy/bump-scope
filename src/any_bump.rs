@@ -1,4 +1,7 @@
-use core::{alloc::Layout, fmt, mem::MaybeUninit, ptr::NonNull};
+use core::{alloc::Layout, mem::MaybeUninit, ptr::NonNull};
+
+#[cfg(feature = "alloc")]
+use core::fmt;
 
 use allocator_api2::alloc::Allocator;
 
@@ -12,6 +15,7 @@ pub(crate) trait Sealed {
     fn alloc_slice_fill<B: ErrorBehavior, T: Clone>(&self, len: usize, value: T) -> Result<BumpBox<[T]>, B>;
     fn alloc_slice_fill_with<B: ErrorBehavior, T>(&self, len: usize, f: impl FnMut() -> T) -> Result<BumpBox<[T]>, B>;
     fn alloc_str<B: ErrorBehavior>(&self, src: &str) -> Result<BumpBox<str>, B>;
+    #[cfg(feature = "alloc")]
     fn alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<BumpBox<str>, B>;
     fn reserve_bytes<B: ErrorBehavior>(&self, additional: usize) -> Result<(), B>;
 
@@ -59,6 +63,7 @@ impl<U: Sealed> Sealed for &U {
     }
 
     #[inline(always)]
+    #[cfg(feature = "alloc")]
     fn alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<BumpBox<str>, B> {
         U::alloc_fmt(self, args)
     }
@@ -119,6 +124,7 @@ impl<U: Sealed> Sealed for &mut U {
     }
 
     #[inline(always)]
+    #[cfg(feature = "alloc")]
     fn alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<BumpBox<str>, B> {
         U::alloc_fmt(self, args)
     }
@@ -142,7 +148,7 @@ impl<U: Sealed> Sealed for &mut U {
     }
 }
 
-impl<'a, const MIN_ALIGN: usize, const UP: bool, A: Allocator + Clone> Sealed for BumpScope<'a, MIN_ALIGN, UP, A>
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Sealed for BumpScope<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -182,6 +188,7 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "alloc")]
     fn alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<BumpBox<str>, B> {
         BumpScope::generic_alloc_fmt(self, args)
     }
@@ -205,7 +212,7 @@ where
     }
 }
 
-impl<const MIN_ALIGN: usize, const UP: bool, A: Allocator + Clone> Sealed for Bump<MIN_ALIGN, UP, A>
+impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Sealed for Bump<A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -245,6 +252,7 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "alloc")]
     fn alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<BumpBox<str>, B> {
         BumpScope::generic_alloc_fmt(self.as_scope(), args)
     }
@@ -259,7 +267,7 @@ where
         &self,
         layout: Layout,
     ) -> Option<NonNull<u8>> {
-        <BumpScope<MIN_ALIGN, UP, A> as Sealed>::alloc_in_current_chunk::<IS_CONST_SIZE, IS_CONST_ALIGN>(
+        <BumpScope<A, MIN_ALIGN, UP> as Sealed>::alloc_in_current_chunk::<IS_CONST_SIZE, IS_CONST_ALIGN>(
             self.as_scope(),
             layout,
         )
@@ -280,12 +288,12 @@ pub trait AnyBump: Sealed {}
 impl<U: AnyBump> AnyBump for &U {}
 impl<U: AnyBump> AnyBump for &mut U {}
 
-impl<'a, const MIN_ALIGN: usize, const UP: bool, A: Allocator + Clone> AnyBump for BumpScope<'a, MIN_ALIGN, UP, A> where
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> AnyBump for BumpScope<'a, A, MIN_ALIGN, UP> where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment
 {
 }
 
-impl<const MIN_ALIGN: usize, const UP: bool, A: Allocator + Clone> AnyBump for Bump<MIN_ALIGN, UP, A> where
+impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> AnyBump for Bump<A, MIN_ALIGN, UP> where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment
 {
 }

@@ -4,11 +4,7 @@
 
 use std::{alloc::Layout, ptr::NonNull};
 
-use bump_scope::{
-    allocator_api2::alloc::{AllocError, Allocator},
-    Bump, BumpVec, BumpVecRev,
-    allocator_api2::alloc::Global,
-};
+use bump_scope::allocator_api2::alloc::{AllocError, Allocator, Global};
 
 #[derive(Clone, Copy)]
 #[repr(align(512))]
@@ -25,6 +21,11 @@ trait BumpaloExt {
     fn try_alloc_slice_copy<T: Copy>(&self, value: &[T]) -> Result<&mut [T], bumpalo::AllocErr>;
     fn try_alloc_slice_clone<T: Clone>(&self, value: &[T]) -> Result<&mut [T], bumpalo::AllocErr>;
 }
+
+type Bump<const MIN_ALIGN: usize, const UP: bool> = bump_scope::Bump<Global, MIN_ALIGN, UP>;
+type BumpVec<'b, 'a, T, const MIN_ALIGN: usize, const UP: bool> = bump_scope::BumpVec<'b, 'a, T, Global, MIN_ALIGN, UP>;
+type BumpVecRev<'b, 'a, T, const MIN_ALIGN: usize, const UP: bool> =
+    bump_scope::BumpVecRev<'b, 'a, T, Global, MIN_ALIGN, UP>;
 
 impl BumpaloExt for bumpalo::Bump {
     fn try_alloc_str(&self, value: &str) -> Result<&mut str, bumpalo::AllocErr> {
@@ -177,13 +178,14 @@ impl Drop for foo {
 pub mod alloc_with_drop {
     use super::*;
 
-    type WithDrop<const MIN_ALIGN: usize, const UP: bool> = bump_scope::WithDrop<MIN_ALIGN, UP, Global, Bump<MIN_ALIGN, UP, Global>>;
+    type WithDrop<const MIN_ALIGN: usize, const UP: bool> =
+        bump_scope::WithDrop<Global, MIN_ALIGN, UP, Bump<Global, MIN_ALIGN, UP>>;
 
-    pub fn up(bump: &WithDrop<1,  true>, value: foo) -> &mut foo {
+    pub fn up(bump: &WithDrop<1, true>, value: foo) -> &mut foo {
         bump.alloc(value)
     }
 
-    pub fn down(bump: &WithDrop<1,  false>, value: foo) -> &mut foo {
+    pub fn down(bump: &WithDrop<1, false>, value: foo) -> &mut foo {
         bump.alloc(value)
     }
 
@@ -576,34 +578,50 @@ pub mod alloc_fmt {
     }
 
     pub fn try_up<'a>(bump: &'a Bump<1, true>, display: &str) -> Option<&'a str> {
-        bump.try_alloc_fmt(format_args!("begin{display}end")).ok().map(BumpBox::into_ref)
+        bump.try_alloc_fmt(format_args!("begin{display}end"))
+            .ok()
+            .map(BumpBox::into_ref)
     }
 
     pub fn try_up_a<'a>(bump: &'a Bump<4, true>, display: &str) -> Option<&'a str> {
-        bump.try_alloc_fmt(format_args!("begin{display}end")).ok().map(BumpBox::into_ref)
+        bump.try_alloc_fmt(format_args!("begin{display}end"))
+            .ok()
+            .map(BumpBox::into_ref)
     }
 
     pub fn try_down<'a>(bump: &'a Bump<1, false>, display: &str) -> Option<&'a str> {
-        bump.try_alloc_fmt(format_args!("begin{display}end")).ok().map(BumpBox::into_ref)
+        bump.try_alloc_fmt(format_args!("begin{display}end"))
+            .ok()
+            .map(BumpBox::into_ref)
     }
 
     pub fn try_down_a<'a>(bump: &'a Bump<4, false>, display: &str) -> Option<&'a str> {
-        bump.try_alloc_fmt(format_args!("begin{display}end")).ok().map(BumpBox::into_ref)
+        bump.try_alloc_fmt(format_args!("begin{display}end"))
+            .ok()
+            .map(BumpBox::into_ref)
     }
 
     pub fn try_mut_up<'a>(bump: &'a mut Bump<1, true>, display: &str) -> Option<&'a str> {
-        bump.try_alloc_fmt_mut(format_args!("begin{display}end")).ok().map(BumpBox::into_ref)
+        bump.try_alloc_fmt_mut(format_args!("begin{display}end"))
+            .ok()
+            .map(BumpBox::into_ref)
     }
 
     pub fn try_mut_up_a<'a>(bump: &'a mut Bump<4, true>, display: &str) -> Option<&'a str> {
-        bump.try_alloc_fmt_mut(format_args!("begin{display}end")).ok().map(BumpBox::into_ref)
+        bump.try_alloc_fmt_mut(format_args!("begin{display}end"))
+            .ok()
+            .map(BumpBox::into_ref)
     }
 
     pub fn try_mut_down<'a>(bump: &'a mut Bump<1, false>, display: &str) -> Option<&'a str> {
-        bump.try_alloc_fmt_mut(format_args!("begin{display}end")).ok().map(BumpBox::into_ref)
+        bump.try_alloc_fmt_mut(format_args!("begin{display}end"))
+            .ok()
+            .map(BumpBox::into_ref)
     }
 
     pub fn try_mut_down_a<'a>(bump: &'a mut Bump<4, false>, display: &str) -> Option<&'a str> {
-        bump.try_alloc_fmt_mut(format_args!("begin{display}end")).ok().map(BumpBox::into_ref)
+        bump.try_alloc_fmt_mut(format_args!("begin{display}end"))
+            .ok()
+            .map(BumpBox::into_ref)
     }
 }

@@ -63,7 +63,7 @@ inspect_asm::grow::down:
 	mov rsi, r8
 	mov rdx, rbx
 	mov r15, rcx
-	call bump_scope::bump_scope::BumpScope<_,_,A>::alloc_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_in_another_chunk
 	mov rsi, r14
 	mov rcx, r15
 	mov r14, rax
@@ -75,7 +75,7 @@ inspect_asm::grow::down:
 	mov r15, rcx
 	mov rsi, r8
 	mov rdx, rbx
-	call bump_scope::bump_scope::BumpScope<_,_,A>::alloc_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_in_another_chunk
 	test rax, rax
 	je .LBB_11
 	mov r14, rax

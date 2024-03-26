@@ -1,6 +1,5 @@
+use allocator_api2::alloc::{Allocator, Global};
 use core::{alloc::Layout, ptr::NonNull};
-
-use allocator_api2::alloc::Allocator;
 
 use crate::{nonnull, Bump};
 
@@ -23,7 +22,7 @@ fn assert_aligned_to(ptr: NonNull<[u8]>) {
 }
 
 fn grow<const UP: bool>() {
-    let bump: Bump<1, UP> = Bump::new();
+    let bump: Bump<Global, 1, UP> = Bump::new();
 
     let ptr = bump.allocate(layout(1)).unwrap();
     assert_aligned_to(ptr);
@@ -37,7 +36,7 @@ fn grow<const UP: bool>() {
 }
 
 fn grow_last_in_place<const UP: bool>() {
-    let bump: Bump<1, UP> = Bump::new();
+    let bump: Bump<Global, 1, UP> = Bump::new();
 
     unsafe {
         let ptr = bump.allocate(layout(1)).unwrap();
@@ -53,7 +52,7 @@ fn grow_last_in_place<const UP: bool>() {
 }
 
 fn grow_last_out_of_place<const UP: bool>() {
-    let bump: Bump<1, UP> = Bump::new();
+    let bump: Bump<Global, 1, UP> = Bump::new();
 
     unsafe {
         let ptr = bump.allocate(layout(1)).unwrap();

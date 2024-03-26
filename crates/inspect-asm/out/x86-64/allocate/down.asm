@@ -14,7 +14,7 @@ inspect_asm::allocate::down:
 .LBB_2:
 	push rbx
 	mov rbx, rdx
-	call bump_scope::bump_scope::BumpScope<_,_,A>::alloc_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_in_another_chunk
 	mov rdx, rbx
 	pop rbx
 	ret

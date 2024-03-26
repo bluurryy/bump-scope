@@ -32,11 +32,13 @@
 use core::{
     alloc::Layout,
     cell::Cell,
-    fmt,
     mem::{ManuallyDrop, MaybeUninit},
     ptr::NonNull,
     slice,
 };
+
+#[cfg(feature = "alloc")]
+use core::fmt;
 
 use allocator_api2::alloc::Allocator;
 
@@ -199,6 +201,7 @@ impl<Bump: AnyBump> WithDrop<Bump> {
     }
 
     #[inline(always)]
+    #[cfg(feature = "alloc")]
     pub(crate) fn generic_alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<&mut str, B> {
         let boxed = self.inner.alloc_fmt(args)?;
         Ok(BumpBox::leak(boxed))

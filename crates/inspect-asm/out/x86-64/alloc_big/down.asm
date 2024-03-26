@@ -16,7 +16,7 @@ inspect_asm::alloc_big::down:
 .LBB_2:
 	mov rdi, rax
 	mov rbx, rsi
-	call bump_scope::bump_scope::BumpScope<_,_,A>::do_alloc_sized_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::do_alloc_sized_in_another_chunk
 	mov rsi, rbx
 	mov rdi, rax
 	mov edx, 512

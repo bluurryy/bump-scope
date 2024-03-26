@@ -1,3 +1,5 @@
+use allocator_api2::alloc::Global;
+
 /// doc tests but for up and down
 use crate::{bump_vec, Bump, BumpVec};
 
@@ -28,13 +30,13 @@ either_way! {
 }
 
 fn new<const UP: bool>() {
-    let mut bump: Bump<1, UP> = Bump::new();
-    let vec: BumpVec<i32, 1, UP, _> = bump_vec![in bump];
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    let vec: BumpVec<i32, Global, 1, UP> = bump_vec![in bump];
     assert!(vec.is_empty());
 }
 
 fn from_array<const UP: bool>() {
-    let mut bump: Bump<1, UP> = Bump::new();
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
     let vec = bump_vec![in bump; 1, 2, 3];
     assert_eq!(vec[0], 1);
     assert_eq!(vec[1], 2);
@@ -42,13 +44,13 @@ fn from_array<const UP: bool>() {
 }
 
 fn from_elem<const UP: bool>() {
-    let mut bump: Bump<1, UP> = Bump::new();
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
     let vec = bump_vec![in bump; 1; 3];
     assert_eq!(vec, [1, 1, 1]);
 }
 
 fn extend_from_within_copy<const UP: bool>() {
-    let mut bump: Bump<1, UP> = Bump::new();
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
 
     let mut vec = bump_vec![in bump; 0, 1, 2, 3, 4];
 
@@ -63,7 +65,7 @@ fn extend_from_within_copy<const UP: bool>() {
 }
 
 fn resize<const UP: bool>() {
-    let mut bump: Bump<1, UP> = Bump::new();
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
 
     let mut vec = bump_vec![in bump; "hello"];
     vec.resize(3, "world");
@@ -76,7 +78,7 @@ fn resize<const UP: bool>() {
 }
 
 fn resize_with<const UP: bool>() {
-    let mut bump: Bump<1, UP> = Bump::new();
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
 
     let mut vec = bump_vec![in bump; 1, 2, 3];
     vec.resize_with(5, Default::default);
@@ -93,14 +95,14 @@ fn resize_with<const UP: bool>() {
 }
 
 fn capacity<const UP: bool>() {
-    let mut bump: Bump<1, UP> = Bump::new();
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
 
-    let vec: BumpVec<i32, 1, UP, _> = BumpVec::with_capacity_in(2048, &mut bump);
+    let vec: BumpVec<i32, Global, 1, UP> = BumpVec::with_capacity_in(2048, &mut bump);
     assert!(vec.capacity() >= 2048);
 }
 
 fn insert<const UP: bool>() {
-    let mut bump: Bump<1, UP> = Bump::new();
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
 
     let mut vec = bump_vec![in bump; 1, 2, 3];
     vec.insert(1, 4);
@@ -110,7 +112,7 @@ fn insert<const UP: bool>() {
 }
 
 fn remove<const UP: bool>() {
-    let mut bump: Bump<1, UP> = Bump::new();
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
 
     let mut v = bump_vec![in bump; 1, 2, 3];
     assert_eq!(v.remove(1), 2);
@@ -118,7 +120,7 @@ fn remove<const UP: bool>() {
 }
 
 fn swap_remove<const UP: bool>() {
-    let mut bump: Bump<1, UP> = Bump::new();
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
 
     let mut v = bump_vec![in bump; "foo", "bar", "baz", "qux"];
 
@@ -130,7 +132,7 @@ fn swap_remove<const UP: bool>() {
 }
 
 fn truncate<const UP: bool>() {
-    let mut bump: Bump<1, UP> = Bump::new();
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
 
     {
         let mut vec = bump_vec![in bump; 1, 2, 3, 4, 5];

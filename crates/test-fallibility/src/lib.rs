@@ -15,13 +15,13 @@ type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 
 macro_rules! type_definitions {
     ($up:literal) => {
-        type Bump<const MIN_ALIGN: usize = 1> = bump_scope::Bump<MIN_ALIGN, $up>;
-        type BumpScope<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScope<'a, MIN_ALIGN, $up>;
-        type BumpScopeGuard<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuard<'a, MIN_ALIGN, $up>;
-        type BumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuardRoot<'a, MIN_ALIGN, $up>;
-        type BumpVec<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<'b, 'a, T, MIN_ALIGN, $up>;
-        type BumpVecRev<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVecRev<'b, 'a, T, MIN_ALIGN, $up>;
-        type BumpString<'b, 'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<'b, 'a, MIN_ALIGN, $up>;
+        type Bump<const MIN_ALIGN: usize = 1> = bump_scope::Bump<Global, MIN_ALIGN, $up>;
+        type BumpScope<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScope<'a, Global, MIN_ALIGN, $up>;
+        type BumpScopeGuard<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuard<'a, Global, MIN_ALIGN, $up>;
+        type BumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuardRoot<'a, Global, MIN_ALIGN, $up>;
+        type BumpVec<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<'b, 'a, T, Global, MIN_ALIGN, $up>;
+        type BumpVecRev<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVecRev<'b, 'a, T, Global, MIN_ALIGN, $up>;
+        type BumpString<'b, 'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<'b, 'a, Global, MIN_ALIGN, $up>;
     };
 }
 

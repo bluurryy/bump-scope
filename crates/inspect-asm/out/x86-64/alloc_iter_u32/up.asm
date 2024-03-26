@@ -136,7 +136,7 @@ inspect_asm::alloc_iter_u32::up:
 	mov qword ptr [rsp + 24], r10
 	mov rdx, r10
 	mov rbp, r8
-	call bump_scope::bump_scope::BumpScope<_,_,A>::alloc_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_in_another_chunk
 	movabs rdi, 2305843009213693951
 	mov rsi, qword ptr [rsp + 8]
 	mov r9, qword ptr [rsp + 32]
@@ -152,7 +152,7 @@ inspect_asm::alloc_iter_u32::up:
 	mov rdx, r10
 	mov rbp, r8
 	mov qword ptr [rsp + 16], r11
-	call bump_scope::bump_scope::BumpScope<_,_,A>::alloc_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_in_another_chunk
 	mov r11, qword ptr [rsp + 16]
 	mov r8, rbp
 	mov rbp, rax
@@ -165,7 +165,7 @@ inspect_asm::alloc_iter_u32::up:
 	mov rdx, r10
 	mov qword ptr [rsp + 16], r8
 	mov rbp, r11
-	call bump_scope::bump_scope::BumpScope<_,_,A>::alloc_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_in_another_chunk
 	test rax, rax
 	je .LBB_42
 	mov rdx, rbp
@@ -213,7 +213,7 @@ inspect_asm::alloc_iter_u32::up:
 	mov rdx, rbx
 	mov r14, r8
 	mov r15, r9
-	call bump_scope::bump_scope::BumpScope<_,_,A>::alloc_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_in_another_chunk
 	mov rsi, qword ptr [rsp + 8]
 	mov r9, r15
 	mov r8, r14

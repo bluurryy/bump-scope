@@ -149,7 +149,7 @@ macro_rules! assert_chunk_sizes {
 #[allow(dead_code)]
 fn assert_send<const UP: bool>() {
     fn must_be_send<T: Send>(_: &T) {}
-    let bump = Bump::<1, UP>::default();
+    let bump = Bump::<Global, 1, UP>::default();
     must_be_send(&bump);
 }
 
@@ -157,7 +157,7 @@ fn bump_vec<const UP: bool>() {
     const TIMES: usize = 5;
 
     for (size, count) in [(0, 2), (512, 1)] {
-        let mut bump = Bump::<1, UP>::with_size(size);
+        let mut bump = Bump::<Global, 1, UP>::with_size(size);
         let mut vec = BumpVec::new_in(&mut bump);
         assert_eq!(vec.stats().count(), 1);
         vec.extend(core::iter::repeat(3).take(TIMES));
@@ -171,7 +171,7 @@ fn bump_vec<const UP: bool>() {
 }
 
 fn bump_vec_push_pop<const UP: bool>() {
-    let mut bump = Bump::<1, UP>::new();
+    let mut bump = Bump::<Global, 1, UP>::new();
     let mut vec = bump_vec![in bump; 1, 2];
 
     vec.push(3);
@@ -187,7 +187,7 @@ fn bump_vec_push_pop<const UP: bool>() {
 }
 
 fn bump_vec_insert<const UP: bool>() {
-    let mut bump = Bump::<1, UP>::new();
+    let mut bump = Bump::<Global, 1, UP>::new();
     let mut vec = bump_vec![in bump; 1, 2, 3];
 
     vec.insert(1, 4);
@@ -201,7 +201,7 @@ fn bump_vec_insert<const UP: bool>() {
 }
 
 fn bump_vec_remove<const UP: bool>() {
-    let mut bump = Bump::<1, UP>::new();
+    let mut bump = Bump::<Global, 1, UP>::new();
     let mut vec = bump_vec![in bump; 1, 2, 3, 4, 5];
 
     assert_eq!(vec.remove(1), 2);
@@ -215,7 +215,7 @@ fn bump_vec_remove<const UP: bool>() {
 }
 
 fn bump_vec_swap_remove<const UP: bool>() {
-    let mut bump = Bump::<1, UP>::new();
+    let mut bump = Bump::<Global, 1, UP>::new();
     let mut vec = bump_vec![in bump; 1, 2, 3, 4, 5];
 
     assert_eq!(vec.swap_remove(1), 2);
@@ -229,7 +229,7 @@ fn bump_vec_swap_remove<const UP: bool>() {
 }
 
 fn bump_vec_extend<const UP: bool>() {
-    let mut bump = Bump::<1, UP>::new();
+    let mut bump = Bump::<Global, 1, UP>::new();
     let mut vec = bump_vec![in bump];
 
     vec.extend([1, 2, 3]);
@@ -252,12 +252,12 @@ fn bump_vec_drop<const UP: bool>() {
     const SIZE: usize = 32;
     assert_eq!(mem::size_of::<ChunkHeader<Global>>(), SIZE);
 
-    let mut bump = Bump::<1, UP>::with_size(64);
+    let mut bump = Bump::<Global, 1, UP>::with_size(64);
     assert_eq!(bump.stats().current.size(), 64 - MALLOC_OVERHEAD);
     assert_eq!(bump.stats().capacity(), 64 - OVERHEAD);
     assert_eq!(bump.stats().remaining(), 64 - OVERHEAD);
 
-    let mut vec: BumpVec<u8, 1, UP, _> = bump_vec![in bump];
+    let mut vec: BumpVec<u8, Global, 1, UP> = bump_vec![in bump];
     vec.reserve(33);
 
     assert_eq!(vec.stats().current.size(), 128 - MALLOC_OVERHEAD);
@@ -275,8 +275,8 @@ fn bump_vec_drop<const UP: bool>() {
 fn bump_vec_write<const UP: bool>() {
     use std::io::Write;
 
-    let mut bump = Bump::<1, UP>::new();
-    let mut vec: BumpVec<u8, 1, UP, _> = bump_vec![in bump];
+    let mut bump = Bump::<Global, 1, UP>::new();
+    let mut vec: BumpVec<u8, Global, 1, UP> = bump_vec![in bump];
 
     let _ = vec.write(&[0]).unwrap();
 
@@ -292,7 +292,7 @@ fn bump_vec_write<const UP: bool>() {
 fn alloc_iter<const UP: bool>() {
     dbg!(UP);
 
-    let bump = Bump::<1, UP>::with_size(64);
+    let bump = Bump::<Global, 1, UP>::with_size(64);
     // dbg!(&bump);
     let slice_0 = bump.alloc_iter([1, 2, 3]);
 
@@ -305,7 +305,7 @@ fn alloc_iter<const UP: bool>() {
 }
 
 fn reset_single_chunk<const UP: bool>() {
-    let mut bump = Bump::<1, UP>::with_size(64);
+    let mut bump = Bump::<Global, 1, UP>::with_size(64);
     assert_chunk_sizes!(bump, [], 64, []);
     bump.reset();
     assert_chunk_sizes!(bump, [], 64, []);
@@ -313,12 +313,12 @@ fn reset_single_chunk<const UP: bool>() {
 
 fn macro_syntax<const UP: bool>() {
     #[allow(clippy::needless_pass_by_value)]
-    fn check<T: Debug + PartialEq, const UP: bool>(v: BumpVec<T, 1, UP>, expected: &[T]) {
+    fn check<T: Debug + PartialEq, const UP: bool>(v: BumpVec<T, Global, 1, UP>, expected: &[T]) {
         dbg!(&v);
         assert_eq!(v, expected);
     }
 
-    let mut bump = Bump::<1, UP>::new();
+    let mut bump = Bump::<Global, 1, UP>::new();
 
     check::<i32, UP>(bump_vec![in bump], &[]);
     check(bump_vec![in bump; 1, 2, 3], &[1, 2, 3]);
@@ -329,21 +329,21 @@ fn macro_syntax<const UP: bool>() {
     check(bump_vec![in &mut bump; 5; 3], &[5, 5, 5]);
 }
 
-fn debug_sizes<const UP: bool>(bump: &Bump<1, UP>) {
+fn debug_sizes<const UP: bool>(bump: &Bump<Global, 1, UP>) {
     let iter = bump.stats().small_to_big();
     let vec = iter.map(Chunk::size).collect::<Vec<_>>();
     let sizes = FmtFn(|f| write!(f, "{vec:?}"));
     dbg!(sizes);
 }
 
-fn force_alloc_new_chunk<const UP: bool>(bump: &BumpScope<1, UP>) {
+fn force_alloc_new_chunk<const UP: bool>(bump: &BumpScope<Global, 1, UP>) {
     let size = bump.stats().current.remaining() + 1;
     let layout = Layout::from_size_align(size, 1).unwrap();
     bump.alloc_layout(layout);
 }
 
 fn reset_first_chunk<const UP: bool>() {
-    let mut bump = Bump::<1, UP>::with_size(64);
+    let mut bump = Bump::<Global, 1, UP>::with_size(64);
 
     bump.scoped(|scope| {
         force_alloc_new_chunk(&scope);
@@ -356,7 +356,7 @@ fn reset_first_chunk<const UP: bool>() {
 }
 
 fn reset_middle_chunk<const UP: bool>() {
-    let mut bump = Bump::<1, UP>::with_size(64);
+    let mut bump = Bump::<Global, 1, UP>::with_size(64);
     force_alloc_new_chunk(bump.as_scope());
 
     bump.scoped(|scope| {
@@ -369,7 +369,7 @@ fn reset_middle_chunk<const UP: bool>() {
 }
 
 fn reset_last_chunk<const UP: bool>() {
-    let mut bump = Bump::<1, UP>::with_size(64);
+    let mut bump = Bump::<Global, 1, UP>::with_size(64);
     force_alloc_new_chunk(bump.as_scope());
     force_alloc_new_chunk(bump.as_scope());
     assert_chunk_sizes!(bump, [128, 64], 256, []);
@@ -384,7 +384,7 @@ macro_rules! assert_eq_ident {
 }
 
 fn scope_by_guards<const UP: bool>() {
-    let mut bump = Bump::<1, UP>::new();
+    let mut bump = Bump::<Global, 1, UP>::new();
 
     {
         let mut child_guard = bump.scope_guard();
@@ -419,7 +419,7 @@ fn scope_by_guards<const UP: bool>() {
 }
 
 fn scope_by_closures<const UP: bool>() {
-    let mut bump = Bump::<1, UP>::new();
+    let mut bump = Bump::<Global, 1, UP>::new();
 
     bump.scoped(|mut child| {
         let child_0 = child.alloc_str("child_0");
@@ -448,14 +448,14 @@ fn scope_by_closures<const UP: bool>() {
 }
 
 fn reserve<const UP: bool>() {
-    let bump = Bump::<1, UP>::default();
+    let bump = Bump::<Global, 1, UP>::default();
     dbg!(&bump);
     bump.reserve_bytes(256);
     assert!(bump.stats().remaining() > 256);
 }
 
 fn aligned<const UP: bool>() {
-    let mut bump: Bump<8> = Bump::new();
+    let mut bump: Bump<Global, 8> = Bump::new();
 
     bump.scoped(|mut bump| {
         bump.alloc(0xDEAD_BEEF_u64);

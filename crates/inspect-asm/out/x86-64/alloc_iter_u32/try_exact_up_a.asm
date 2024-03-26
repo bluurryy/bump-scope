@@ -72,7 +72,7 @@ inspect_asm::alloc_iter_u32::try_exact_up_a:
 	mov rbx, rsi
 	mov rsi, rdx
 	mov r14, rdx
-	call bump_scope::bump_scope::BumpScope<_,_,A>::do_alloc_slice_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::do_alloc_slice_in_another_chunk
 	mov rsi, rbx
 	mov rdx, r14
 	test rax, rax

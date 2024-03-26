@@ -12,7 +12,7 @@ inspect_asm::alloc_u8::down_a:
 	ret
 .LBB_2:
 	mov ebx, esi
-	call bump_scope::bump_scope::BumpScope<_,_,A>::do_alloc_sized_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::do_alloc_sized_in_another_chunk
 	mov esi, ebx
 	mov byte ptr [rax], sil
 	pop rbx

@@ -1,8 +1,12 @@
 #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+#![cfg(feature = "alloc")]
 
 use std::{alloc::Layout, cell::Cell, ptr::NonNull};
 
-use allocator_api2::alloc::{AllocError, Allocator, Global};
+use allocator_api2::alloc::{AllocError, Allocator};
+
+use allocator_api2::alloc::Global;
+
 use bump_scope::Bump;
 
 struct Limited<A> {
@@ -78,7 +82,7 @@ unsafe impl<A: Allocator> Allocator for Limited<A> {
 fn main() {
     let allocator = Limited::new_in(1024, Global);
 
-    let bump = Bump::<1, true, _>::with_size_in(1024, &allocator);
+    let bump = Bump::<_, 1, true>::with_size_in(1024, &allocator);
 
     // limit is reached, trying to allocate any new chunk will fail
     // note that a bump `with_size` of 1024 results in a capacity of (1024 - SOME_HEADER_DATA_SIZE)

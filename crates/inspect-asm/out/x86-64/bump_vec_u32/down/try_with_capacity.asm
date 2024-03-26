@@ -50,7 +50,7 @@ inspect_asm::bump_vec_u32::down::try_with_capacity:
 	mov rbx, rdx
 	mov rdx, r9
 	mov r14, rax
-	call bump_scope::bump_scope::BumpScope<_,_,A>::alloc_greedy_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_greedy_in_another_chunk
 	mov rsi, rax
 	mov rax, r14
 	test rsi, rsi

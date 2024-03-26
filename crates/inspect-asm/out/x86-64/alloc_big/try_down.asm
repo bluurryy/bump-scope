@@ -18,7 +18,7 @@ inspect_asm::alloc_big::try_down:
 	ret
 .LBB_3:
 	mov rbx, rsi
-	call bump_scope::bump_scope::BumpScope<_,_,A>::do_alloc_sized_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::do_alloc_sized_in_another_chunk
 	mov rsi, rbx
 	mov rbx, rax
 	test rax, rax

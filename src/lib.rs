@@ -498,12 +498,12 @@ pub unsafe trait BumpAllocator: Allocator {}
 
 unsafe impl<A: BumpAllocator> BumpAllocator for &A {}
 
-unsafe impl<const MIN_ALIGN: usize, const UP: bool, A: Allocator + Clone> BumpAllocator for BumpScope<'_, MIN_ALIGN, UP, A> where
+unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpAllocator for BumpScope<'_, A, MIN_ALIGN, UP> where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment
 {
 }
 
-unsafe impl<const MIN_ALIGN: usize, const UP: bool, A: Allocator + Clone> BumpAllocator for Bump<MIN_ALIGN, UP, A> where
+unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpAllocator for Bump<A, MIN_ALIGN, UP> where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment
 {
 }
@@ -683,14 +683,14 @@ macro_rules! bump_common_methods {
         /// assert_eq!(bump.stats().allocated(), 0);
         /// ```
         #[inline(always)]
-        pub fn scoped(&mut self, f: impl FnOnce(BumpScope<MIN_ALIGN, UP, A>)) {
+        pub fn scoped(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP>)) {
             let mut guard = self.scope_guard();
             f(guard.scope());
         }
 
         /// Calls `f` with a new child scope of a new minimum alignment.
         #[inline(always)]
-        pub fn scoped_aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<MIN_ALIGN, UP, A>))
+        pub fn scoped_aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP>))
         where
             MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
         {
@@ -720,13 +720,13 @@ macro_rules! bump_common_methods {
         /// ```
         #[must_use]
         #[inline(always)]
-        pub fn scope_guard(&mut self) -> $scope_guard<MIN_ALIGN, UP, A> {
+        pub fn scope_guard(&mut self) -> $scope_guard<A, MIN_ALIGN, UP> {
             $scope_guard::new(self)
         }
 
         /// Calls `f` with this scope but with a new minimum alignment.
         #[inline(always)]
-        pub fn aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<NEW_MIN_ALIGN, UP, A>))
+        pub fn aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP>))
         where
             MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
         {
@@ -1324,6 +1324,7 @@ define_alloc_methods! {
         Ok(unsafe { slice.into_boxed_str_unchecked() })
     }
 
+    #[cfg(feature = "alloc")]
     /// Allocate a `str` from format arguments.
     impl
     /// For better performance prefer [`alloc_fmt_mut`](Bump::alloc_fmt_mut).
@@ -1546,7 +1547,7 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = BumpVec::<T, MIN_ALIGN, UP, A>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = BumpVec::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
@@ -1579,7 +1580,7 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = BumpVecRev::<T, MIN_ALIGN, UP, A>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = BumpVecRev::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
@@ -1770,7 +1771,7 @@ define_alloc_methods! {
 }
 
 #[doc = doc_alloc_methods!()]
-impl<'a, const MIN_ALIGN: usize, const UP: bool, A: Allocator + Clone> BumpScope<'a, MIN_ALIGN, UP, A>
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -1778,7 +1779,7 @@ where
 }
 
 #[doc = doc_alloc_methods!()]
-impl<const MIN_ALIGN: usize, const UP: bool, A: Allocator + Clone> Bump<MIN_ALIGN, UP, A>
+impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {

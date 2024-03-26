@@ -50,7 +50,7 @@ inspect_asm::alloc_iter_u32::mut_down:
 	jne .LBB_5
 	mov esi, 1
 	mov rdi, r12
-	call bump_scope::bump_vec::BumpVec<T,_,_,A>::generic_grow_cold
+	call bump_scope::bump_vec::BumpVec<T,A,_,_>::generic_grow_cold
 	mov rax, qword ptr [rsp + 8]
 	mov rcx, qword ptr [rsp + 16]
 	jmp .LBB_5
@@ -95,7 +95,7 @@ inspect_asm::alloc_iter_u32::mut_down:
 	mov esi, 4
 	mov r12, rdi
 	mov rdx, r14
-	call bump_scope::bump_scope::BumpScope<_,_,A>::alloc_greedy_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_greedy_in_another_chunk
 	mov rdi, r12
 	jmp .LBB_4
 .LBB_17:

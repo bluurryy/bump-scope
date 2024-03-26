@@ -1,4 +1,4 @@
-use allocator_api2::vec::Vec;
+use allocator_api2::{alloc::Global, vec::Vec};
 
 use crate::Bump;
 
@@ -13,7 +13,7 @@ either_way! {
 }
 
 fn grow<const UP: bool>() {
-    let mut bump: Bump<1, UP> = Bump::new();
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
 
     let mut vec = Vec::<i32, _>::new_in(&bump);
     assert_eq!(bump.stats().allocated(), 0);
@@ -38,7 +38,7 @@ fn grow<const UP: bool>() {
 }
 
 fn shrink<const UP: bool>() {
-    let bump: Bump<1, UP> = Bump::new();
+    let bump: Bump<Global, 1, UP> = Bump::new();
 
     let mut vec = Vec::<i32, _>::new_in(&bump);
     assert_eq!(bump.stats().allocated(), 0);
@@ -60,7 +60,7 @@ fn shrink<const UP: bool>() {
 }
 
 fn shrinknt<const UP: bool>() {
-    let bump: Bump<1, UP> = Bump::new();
+    let bump: Bump<Global, 1, UP> = Bump::new();
 
     let mut vec = Vec::<i32, _>::new_in(&bump);
     assert_eq!(bump.stats().allocated(), 0);
