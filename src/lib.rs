@@ -146,7 +146,6 @@
 //!
 //! assert_eq!(bump.stats().allocated(), 0);
 //! ```
-
 //! You can also use the unsafe [`checkpoint`](Bump::checkpoint) api to reset the bump pointer to a previous location.
 //! ```
 //! # use bump_scope::Bump;
@@ -176,6 +175,7 @@
 //! After all, memory will be reclaimed when exiting a scope or calling `reset`.
 //! You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using [`without_dealloc`](Bump::without_dealloc) and [`without_shrink`](Bump::without_shrink).
 //! ```
+//! # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
 //! use bump_scope::Bump;
 //! use allocator_api2::boxed::Box;
 //! let bump: Bump = Bump::new();

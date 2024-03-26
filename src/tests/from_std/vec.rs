@@ -21,7 +21,13 @@ use std::{
     vec::{Drain, IntoIter},
 };
 
-use allocator_api2::alloc::{AllocError, Allocator, Layout, System};
+use allocator_api2::alloc::{AllocError, Allocator, Layout};
+
+#[cfg(feature = "std")]
+use std::alloc::System;
+
+#[cfg(not(feature = "std"))]
+use std::alloc::System;
 
 use crate::{bump_vec, Bump, BumpVec};
 
