@@ -7,7 +7,7 @@
 
 [//]: # (START_OF_CRATE_DOCS)
 
-A fast bump allocator that supports allocation scopes. Aka an arena for values of arbitrary types.
+A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
 
 ## What is bump allocation?
 A bump allocator owns a big chunk of memory. It has a pointer that starts at one end of that chunk.
@@ -15,7 +15,7 @@ When an allocation is made that pointer gets aligned and bumped towards the othe
 When its chunk is full, it allocates another chunk with twice the size.
 
 This makes allocations very fast. The drawback is that you can't reclaim memory like you do with a more general allocator.
-Memory for the most recent allocation *can* be reclaimed. You can also use scopes and `reset` to reclaim memory.
+Memory for the most recent allocation *can* be reclaimed. You can also use [scopes, checkpoints](#scopes-and-checkpoints) and `reset` to reclaim memory.
 
 A bump allocator is great for *phase-oriented allocations* where you allocate objects in a loop and free them at the end of every iteration.
 ```rust
@@ -28,7 +28,7 @@ loop {
 }
 ```
 The fact that the bump allocator allocates ever larger chunks and `reset` only keeps around the largest one means that after a few iterations, every bump allocation
-will be done on the same chunk.
+will be done on the same chunk and no more chunks need to be allocated.
 
 The introduction of scopes makes this bump allocator also great for temporary allocations and stack-like usage.
 
@@ -37,7 +37,7 @@ The introduction of scopes makes this bump allocator also great for temporary al
 Bumpalo is a popular crate for bump allocation. This crate was inspired by bumpalo and [Always Bump Downwards](https://fitzgeraldnick.com/2019/11/01/always-bump-downwards.html).
 
 Unlike `bumpalo`, this crate...
-- Supports [scopes and checkpoints](#scopes).
+- Supports [scopes and checkpoints](#scopes-and-checkpoints).
 - Drop is always called for allocated values unless explicitly leaked or forgotten.
   - `alloc*` methods return a `BumpBox<T>` which owns and drops `T`. Types that don't need dropping can be turned into references with `into_ref` and `into_mut`.
 - You can efficiently allocate items from *any* `Iterator` with `alloc_iter_mut`(`_rev`).
@@ -51,7 +51,7 @@ Unlike `bumpalo`, this crate...
 - [You can choose the bump direction.](#bumping-upwards-or-downwards) Bumps upwards by default.
 - [You can choose the minimum alignment.](#minimum-alignment)
 
-## Scopes
+## Scopes and Checkpoints
 You can create scopes to make allocations that live only for a part of its parent scope.
 Creating and exiting scopes is virtually free. Allocating within a scope has no overhead.
 
