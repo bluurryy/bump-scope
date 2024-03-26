@@ -1,1 +1,1 @@
-Inspect generated assembly. Requires 
+Inspect generated assembly. Requires nushell version 0.89.0 and cargo-show-asm version 0.2.18.
