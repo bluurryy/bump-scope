@@ -103,10 +103,6 @@ assert_eq!(bump.stats().allocated(), 0);
 
 assert_eq!(bump.stats().allocated(), 0);
 ```
-In this example we are intentionally using the name `bump` for every scope.
-The parent `bump` is not usable anyway because it is mutably borrowed. By shadowing the `bump` name you can't accidentally access it
-or move it into the closure, which would cause a compile error.
-
 You can also use the unsafe `checkpoint` api to reset the bump pointer to a previous location.
 ```rust
 let checkpoint = bump.checkpoint();
