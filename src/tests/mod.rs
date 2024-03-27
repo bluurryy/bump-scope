@@ -290,18 +290,13 @@ fn bump_vec_write<const UP: bool>() {
 }
 
 fn alloc_iter<const UP: bool>() {
-    dbg!(UP);
-
     let bump = Bump::<Global, 1, UP>::with_size(64);
-    // dbg!(&bump);
+
     let slice_0 = bump.alloc_iter([1, 2, 3]);
+    let slice_1 = bump.alloc_iter([4, 5, 6]);
 
-    // dbg!(&bump);
-    // let slice_1 = bump.alloc_iter([4, 5, 6]);
-
-    // dbg!(&bump);
     assert_eq!(slice_0.as_ref(), [1, 2, 3]);
-    // assert_eq!(slice_1.as_ref(), [4, 5, 6]);
+    assert_eq!(slice_1.as_ref(), [4, 5, 6]);
 }
 
 fn reset_single_chunk<const UP: bool>() {
@@ -630,4 +625,14 @@ fn bump_format_macro() {
 fn zero_capacity() {
     let bump: Bump<_, 1, false> = Bump::with_capacity(Layout::new::<[u8; 0]>());
     dbg!(bump);
+}
+
+#[test]
+fn alloc_iter2() {
+    let bump: Bump = Bump::new();
+    let one = 1;
+    let two = 2;
+    let string = bump.alloc_fmt(format_args!("{one} + {two} = {}", one + two));
+
+    assert_eq!(string, "1 + 2 = 3");
 }

@@ -1321,7 +1321,6 @@ define_alloc_methods! {
         Ok(unsafe { slice.into_boxed_str_unchecked() })
     }
 
-    #[cfg(feature = "alloc")]
     /// Allocate a `str` from format arguments.
     impl
     /// For better performance prefer [`alloc_fmt_mut`](Bump::alloc_fmt_mut).
@@ -1344,30 +1343,32 @@ define_alloc_methods! {
     /// Errors if a formatting trait implementation returned an error.
     for fn try_alloc_fmt
     fn generic_alloc_fmt(&self, args: fmt::Arguments) -> BumpBox<str> | BumpBox<'a, str> {
-        use allocator_api2::vec::Vec;
-
-        struct StringBuilder<A: Allocator, B: ErrorBehavior> {
-            vec: Vec<u8, A>,
-            marker: PhantomData<*const B>,
+        struct StringBuilder<'b, 'a: 'b, A: Allocator, B, const MIN_ALIGN: usize, const UP: bool> {
+            vec: crate::vec::Vec<'b, 'a, u8, A, MIN_ALIGN, UP>,
+            marker: PhantomData<B>,
         }
 
-        impl<A: Allocator, B: ErrorBehavior> StringBuilder<A, B> {
-            fn new_in(allocator: A) -> Self {
+        impl<'b, 'a: 'b, A, B, const MIN_ALIGN: usize, const UP: bool> StringBuilder<'b, 'a, A, B, MIN_ALIGN, UP>
+        where
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+            A: Allocator + Clone,
+        {
+            fn new_in(bump: &'b BumpScope<'a, A, MIN_ALIGN, UP>) -> Self {
                 Self {
-                    vec: Vec::new_in(allocator),
+                    vec: crate::vec::Vec::new_in(bump),
                     marker: PhantomData,
                 }
             }
         }
 
-        impl<A: Allocator, B: ErrorBehavior> fmt::Write for StringBuilder<A, B> {
+        impl<'b, 'a: 'b, A, B, const MIN_ALIGN: usize, const UP: bool> fmt::Write for StringBuilder<'b, 'a, A, B, MIN_ALIGN, UP>
+        where
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+            A: Allocator + Clone,
+            B: ErrorBehavior,
+        {
             fn write_str(&mut self, s: &str) -> fmt::Result {
-                if B::IS_FALLIBLE {
-                    self.vec.try_reserve(s.len()).map_err(|_| fmt::Error)?;
-                }
-
-                self.vec.extend_from_slice(s.as_bytes());
-                Ok(())
+                self.vec.generic_extend_from_slice_copy::<B>(s.as_bytes()).map_err(|_| fmt::Error)
             }
         }
 
@@ -1375,20 +1376,17 @@ define_alloc_methods! {
             return self.generic_alloc_str(string);
         }
 
-        let mut string = StringBuilder::<_, B>::new_in(self);
+        let mut string = StringBuilder::<A, B, MIN_ALIGN, UP>::new_in(self);
 
         if fmt::Write::write_fmt(&mut string, args).is_err() {
             return Err(B::capacity_overflow());
         }
 
-        let (ptr, len, _) = string.vec.into_raw_parts();
+        // TODO: consider shrink-to-fitting
+        let slice = string.vec.into_slice();
 
         unsafe {
-            let ptr = NonNull::new_unchecked(ptr);
-            let slice = nonnull::slice_from_raw_parts(ptr, len);
-            let boxed = BumpBox::from_raw(slice);
-            let boxed = boxed.into_boxed_str_unchecked();
-            Ok(boxed)
+            Ok(slice.into_boxed_str_unchecked())
         }
     }
 
