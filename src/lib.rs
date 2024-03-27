@@ -202,7 +202,7 @@
 //!
 //! - `alloc` *(default)*:
 //!
-//!   Adds implementations interacting with `String` and `Cow<str>`. Is required for `alloc_iter` and `alloc_fmt`.
+//!   Adds implementations interacting with `String` and `Cow<str>`.
 //!
 //! <p></p>
 //!
