@@ -1,4 +1,4 @@
-# This was written for nushell version 0.89.0 and cargo-show-asm version 0.2.18
+# This was written for nushell version 0.91.0 and cargo-show-asm version 0.2.18
 
 def group-by-maybe-empty [] {
   let list = $in
@@ -173,7 +173,7 @@ def --wrapped main [
   }
 
   if $filter != null {
-    $names = ($names | find $filter)
+    $names = ($names | filter { str contains $filter })
   }
 
   for $name in $names {
