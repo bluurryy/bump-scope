@@ -40,10 +40,10 @@ inspect_asm::alloc_iter_u32::up:
 	je .LBB_11
 .LBB_8:
 	mov ebp, dword ptr [rbx + r12]
-	cmp rdx, qword ptr [rsp + 16]
-	jb .LBB_10
+	cmp qword ptr [rsp + 16], rdx
+	jne .LBB_10
 	mov rdi, r14
-	call bump_scope::vec::Vec<T,A,_,_>::generic_grow_cold
+	call bump_scope::bump_vec::BumpVec<T,A,_,_>::generic_grow_cold
 	mov rax, qword ptr [rsp]
 	mov rdx, qword ptr [rsp + 8]
 	jmp .LBB_10

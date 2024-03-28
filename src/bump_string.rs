@@ -12,8 +12,8 @@ use allocator_api2::alloc::{AllocError, Allocator};
 use allocator_api2::alloc::Global;
 
 use crate::{
-    error_behavior_generic_methods, polyfill, BumpBox, BumpScope, ErrorBehavior, FromUtf8Error, MinimumAlignment,
-    BumpVec, Stats, SupportedMinimumAlignment,
+    error_behavior_generic_methods, polyfill, BumpBox, BumpScope, BumpVec, ErrorBehavior, FromUtf8Error, MinimumAlignment,
+    Stats, SupportedMinimumAlignment,
 };
 
 #[cfg(not(no_global_oom_handling))]
@@ -564,8 +564,7 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, A> DerefMut for BumpString<
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, A> core::ops::AddAssign<&str>
-    for BumpString<'b, 'a, A, MIN_ALIGN, UP>
+impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, A> core::ops::AddAssign<&str> for BumpString<'b, 'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,

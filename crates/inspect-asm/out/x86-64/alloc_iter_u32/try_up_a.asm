@@ -10,7 +10,7 @@ inspect_asm::alloc_iter_u32::try_up_a:
 	mov rax, rdx
 	shr rax, 61
 	je .LBB_3
-.LBB_12:
+.LBB_5:
 	xor eax, eax
 	jmp .LBB_13
 .LBB_1:
@@ -25,10 +25,10 @@ inspect_asm::alloc_iter_u32::try_up_a:
 	mov rsi, qword ptr [rcx + 8]
 	sub rsi, rax
 	cmp r15, rsi
-	ja .LBB_5
+	ja .LBB_4
 	lea rsi, [r15 + rax]
 	mov qword ptr [rcx], rsi
-.LBB_6:
+.LBB_7:
 	mov qword ptr [rsp], rax
 	mov qword ptr [rsp + 8], 0
 	mov qword ptr [rsp + 16], rdx
@@ -36,26 +36,26 @@ inspect_asm::alloc_iter_u32::try_up_a:
 	xor r12d, r12d
 	mov r14, rsp
 	xor edx, edx
-	jmp .LBB_7
-.LBB_10:
+	jmp .LBB_8
+.LBB_11:
 	mov dword ptr [rax + 4*rdx], ebp
 	inc rdx
 	mov qword ptr [rsp + 8], rdx
 	add r12, 4
 	cmp r15, r12
-	je .LBB_11
-.LBB_7:
+	je .LBB_12
+.LBB_8:
 	mov ebp, dword ptr [rbx + r12]
-	cmp rdx, qword ptr [rsp + 16]
-	jb .LBB_10
+	cmp qword ptr [rsp + 16], rdx
+	jne .LBB_11
 	mov rdi, r14
-	call bump_scope::vec::Vec<T,A,_,_>::generic_grow_cold
+	call bump_scope::bump_vec::BumpVec<T,A,_,_>::generic_grow_cold
 	test al, al
-	jne .LBB_12
+	jne .LBB_5
 	mov rax, qword ptr [rsp]
 	mov rdx, qword ptr [rsp + 8]
-	jmp .LBB_10
-.LBB_11:
+	jmp .LBB_11
+.LBB_12:
 	mov rax, qword ptr [rsp]
 .LBB_13:
 	add rsp, 32
@@ -65,7 +65,7 @@ inspect_asm::alloc_iter_u32::try_up_a:
 	pop r15
 	pop rbp
 	ret
-.LBB_5:
+.LBB_4:
 	mov r14, rdi
 	mov rsi, rdx
 	mov r12, rdx
@@ -73,5 +73,5 @@ inspect_asm::alloc_iter_u32::try_up_a:
 	mov rdi, r14
 	mov rdx, r12
 	test rax, rax
-	jne .LBB_6
-	jmp .LBB_12
+	jne .LBB_7
+	jmp .LBB_5
