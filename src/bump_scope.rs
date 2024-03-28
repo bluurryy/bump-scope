@@ -85,7 +85,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn consolidate_greed<T>(&self, mut start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+    pub(crate) unsafe fn consolidate_greed<T>(&mut self, mut start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         let end = nonnull::add(start, len);
 
         if UP {
@@ -146,7 +146,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn alloc_greedy<B: ErrorBehavior, T>(&self, cap: usize) -> Result<(NonNull<T>, usize), B> {
+    pub(crate) fn alloc_greedy<B: ErrorBehavior, T>(&mut self, cap: usize) -> Result<(NonNull<T>, usize), B> {
         let Range { start, end } = self.alloc_greedy_range::<B, T>(cap)?;
 
         // NB: We can't use `sub_ptr`, because the size is not a multiple of `T`'s.
@@ -156,7 +156,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn alloc_greedy_rev<B: ErrorBehavior, T>(&self, cap: usize) -> Result<(NonNull<T>, usize), B> {
+    pub(crate) fn alloc_greedy_rev<B: ErrorBehavior, T>(&mut self, cap: usize) -> Result<(NonNull<T>, usize), B> {
         let Range { start, end } = self.alloc_greedy_range::<B, T>(cap)?;
 
         // NB: We can't use `sub_ptr`, because the size is not a multiple of `T`'s.
@@ -170,7 +170,7 @@ where
     /// But `end - start` is *not* a multiple of `size_of::<T>()`.
     /// So `end.sub_ptr(start)` may not be used!
     #[inline(always)]
-    fn alloc_greedy_range<B: ErrorBehavior, T>(&self, cap: usize) -> Result<Range<NonNull<T>>, B> {
+    fn alloc_greedy_range<B: ErrorBehavior, T>(&mut self, cap: usize) -> Result<Range<NonNull<T>>, B> {
         let layout = match ArrayLayout::array::<T>(cap) {
             Ok(ok) => ok,
             Err(_) => return Err(B::capacity_overflow()),
@@ -229,6 +229,7 @@ where
         self.alloc_in_another_chunk(layout)
     }
 
+    // TODO: don't return a slice
     #[inline(always)]
     pub(crate) fn do_alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
         let layout = match ArrayLayout::array::<T>(len) {
@@ -268,6 +269,7 @@ where
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     {
+        // TODO: use Layout::array
         let layout = Layout::from_size_align_unchecked(len * T::SIZE, T::ALIGN);
         self.alloc_in_another_chunk(layout)
     }

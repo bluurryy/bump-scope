@@ -261,6 +261,9 @@ mod bump_scope;
 mod bump_scope_guard;
 mod mut_bump_string;
 
+/// Contains [`BumpVec`] and associated types.
+mod bump_vec;
+
 /// Contains [`MutBumpVec`] and associated types.
 mod mut_bump_vec;
 
@@ -300,6 +303,7 @@ pub use extract_if::ExtractIf;
 pub use fixed_bump_vec::FixedBumpVec;
 pub use from_utf8_error::FromUtf8Error;
 pub use into_iter::IntoIter;
+pub use bump_vec::BumpVec;
 pub use mut_bump_string::BumpString;
 pub use mut_bump_vec::MutBumpVec;
 pub use mut_bump_vec_rev::MutBumpVecRev;
@@ -405,6 +409,12 @@ fn down_align_usize(addr: usize, align: usize) -> usize {
     debug_assert!(align.is_power_of_two());
     let mask = align - 1;
     addr & !mask
+}
+
+#[inline(always)]
+fn bump_down(addr: NonZeroUsize, size: usize, align: usize) -> usize {
+    let subtracted = addr.get().saturating_sub(size);
+    down_align_usize(subtracted, align)
 }
 
 #[inline(always)]
