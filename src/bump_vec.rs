@@ -1000,7 +1000,7 @@ where
 
         unsafe {
             if UP {
-                let is_last = nonnull::add(old_ptr, self.capacity()).cast() == self.bump.chunk.get().pos();
+                let is_last = nonnull::byte_add(old_ptr, old_size).cast() == self.bump.chunk.get().pos();
 
                 if is_last {
                     let chunk_end = self.bump.chunk.get().content_end();
