@@ -19,9 +19,9 @@ macro_rules! type_definitions {
         type BumpScope<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScope<'a, Global, MIN_ALIGN, $up>;
         type BumpScopeGuard<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuard<'a, Global, MIN_ALIGN, $up>;
         type BumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuardRoot<'a, Global, MIN_ALIGN, $up>;
-        type BumpVec<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<'b, 'a, T, Global, MIN_ALIGN, $up>;
-        type BumpVecRev<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVecRev<'b, 'a, T, Global, MIN_ALIGN, $up>;
-        type BumpString<'b, 'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<'b, 'a, Global, MIN_ALIGN, $up>;
+        type MutBumpVec<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<'b, 'a, T, Global, MIN_ALIGN, $up>;
+        type MutBumpVecRev<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVecRev<'b, 'a, T, Global, MIN_ALIGN, $up>;
+        type MutBumpString<'b, 'a, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpString<'b, 'a, Global, MIN_ALIGN, $up>;
     };
 }
 
@@ -184,103 +184,103 @@ up_and_down! {
         bump.scope_guard()
     }
 
-    pub fn BumpVec_try_extend_from_array(vec: &mut BumpVec<u32>, array: [u32; 24]) -> Result {
+    pub fn BumpVec_try_extend_from_array(vec: &mut MutBumpVec<u32>, array: [u32; 24]) -> Result {
         vec.try_extend_from_array(array)
     }
 
-    pub fn BumpVec_try_extend_from_slice_clone(vec: &mut BumpVec<u32>, slice: &[u32]) -> Result {
+    pub fn BumpVec_try_extend_from_slice_clone(vec: &mut MutBumpVec<u32>, slice: &[u32]) -> Result {
         vec.try_extend_from_slice_clone(slice)
     }
 
-    pub fn BumpVec_try_extend_from_slice_copy(vec: &mut BumpVec<u32>, slice: &[u32]) -> Result {
+    pub fn BumpVec_try_extend_from_slice_copy(vec: &mut MutBumpVec<u32>, slice: &[u32]) -> Result {
         vec.try_extend_from_slice_copy(slice)
     }
 
-    pub fn BumpVec__try_from_array_in(array: [u32; 24], bump: &mut Bump) -> Result<BumpVec<u32>> {
-        BumpVec::try_from_array_in(array, bump)
+    pub fn BumpVec__try_from_array_in(array: [u32; 24], bump: &mut Bump) -> Result<MutBumpVec<u32>> {
+        MutBumpVec::try_from_array_in(array, bump)
     }
 
-    pub fn BumpVec__try_from_elem_in(value: u32, count: usize, bump: &mut Bump) -> Result<BumpVec<u32>> {
-        BumpVec::try_from_elem_in(value, count, bump)
+    pub fn BumpVec__try_from_elem_in(value: u32, count: usize, bump: &mut Bump) -> Result<MutBumpVec<u32>> {
+        MutBumpVec::try_from_elem_in(value, count, bump)
     }
 
-    pub fn BumpVec_try_insert(bump: &mut BumpVec<u32>, index: usize, value: u32) -> Result {
+    pub fn BumpVec_try_insert(bump: &mut MutBumpVec<u32>, index: usize, value: u32) -> Result {
         bump.try_insert(index, value)
     }
 
-    pub fn BumpVec_try_push(bump: &mut BumpVec<u32>, value: u32) -> Result {
+    pub fn BumpVec_try_push(bump: &mut MutBumpVec<u32>, value: u32) -> Result {
         bump.try_push(value)
     }
 
-    pub fn BumpVec_try_reserve(vec: &mut BumpVec<u32>, amount: usize) -> Result {
+    pub fn BumpVec_try_reserve(vec: &mut MutBumpVec<u32>, amount: usize) -> Result {
         vec.try_reserve(amount)
     }
 
-    pub fn BumpVec_try_resize(bump: &mut BumpVec<u32>, new_len: usize, value: u32) -> Result {
+    pub fn BumpVec_try_resize(bump: &mut MutBumpVec<u32>, new_len: usize, value: u32) -> Result {
         bump.try_resize(new_len, value)
     }
 
-    pub fn BumpVec__try_with_capacity_in(capacity: usize, bump: &mut Bump) -> Result<BumpVec<u32>> {
-        BumpVec::try_with_capacity_in(capacity, bump)
+    pub fn BumpVec__try_with_capacity_in(capacity: usize, bump: &mut Bump) -> Result<MutBumpVec<u32>> {
+        MutBumpVec::try_with_capacity_in(capacity, bump)
     }
 
-    pub fn BumpVecRev_try_extend_from_array(vec: &mut BumpVecRev<u32>, array: [u32; 24]) -> Result {
+    pub fn BumpVecRev_try_extend_from_array(vec: &mut MutBumpVecRev<u32>, array: [u32; 24]) -> Result {
         vec.try_extend_from_array(array)
     }
 
-    pub fn BumpVecRev_try_extend_from_slice_clone(vec: &mut BumpVecRev<u32>, slice: &[u32]) -> Result {
+    pub fn BumpVecRev_try_extend_from_slice_clone(vec: &mut MutBumpVecRev<u32>, slice: &[u32]) -> Result {
         vec.try_extend_from_slice_clone(slice)
     }
 
-    pub fn BumpVecRev_try_extend_from_slice_copy(vec: &mut BumpVecRev<u32>, slice: &[u32]) -> Result {
+    pub fn BumpVecRev_try_extend_from_slice_copy(vec: &mut MutBumpVecRev<u32>, slice: &[u32]) -> Result {
         vec.try_extend_from_slice_copy(slice)
     }
 
-    pub fn BumpVecRev__try_from_array_in(array: [u32; 24], bump: &mut Bump) -> Result<BumpVecRev<u32>> {
-        BumpVecRev::try_from_array_in(array, bump)
+    pub fn BumpVecRev__try_from_array_in(array: [u32; 24], bump: &mut Bump) -> Result<MutBumpVecRev<u32>> {
+        MutBumpVecRev::try_from_array_in(array, bump)
     }
 
-    pub fn BumpVecRev__try_from_elem_in(value: u32, count: usize, bump: &mut Bump) -> Result<BumpVecRev<u32>> {
-        BumpVecRev::try_from_elem_in(value, count, bump)
+    pub fn BumpVecRev__try_from_elem_in(value: u32, count: usize, bump: &mut Bump) -> Result<MutBumpVecRev<u32>> {
+        MutBumpVecRev::try_from_elem_in(value, count, bump)
     }
 
-    pub fn BumpVecRev_try_insert(bump: &mut BumpVecRev<u32>, index: usize, value: u32) -> Result {
+    pub fn BumpVecRev_try_insert(bump: &mut MutBumpVecRev<u32>, index: usize, value: u32) -> Result {
         bump.try_insert(index, value)
     }
 
-    pub fn BumpVecRev_try_push(bump: &mut BumpVecRev<u32>, value: u32) -> Result {
+    pub fn BumpVecRev_try_push(bump: &mut MutBumpVecRev<u32>, value: u32) -> Result {
         bump.try_push(value)
     }
 
-    pub fn BumpVecRev_try_reserve(vec: &mut BumpVecRev<u32>, amount: usize) -> Result {
+    pub fn BumpVecRev_try_reserve(vec: &mut MutBumpVecRev<u32>, amount: usize) -> Result {
         vec.try_reserve(amount)
     }
 
-    pub fn BumpVecRev_try_resize(bump: &mut BumpVecRev<u32>, new_len: usize, value: u32) -> Result {
+    pub fn BumpVecRev_try_resize(bump: &mut MutBumpVecRev<u32>, new_len: usize, value: u32) -> Result {
         bump.try_resize(new_len, value)
     }
 
-    pub fn BumpVecRev__try_with_capacity_in(capacity: usize, bump: &mut Bump) -> Result<BumpVecRev<u32>> {
-        BumpVecRev::try_with_capacity_in(capacity, bump)
+    pub fn BumpVecRev__try_with_capacity_in(capacity: usize, bump: &mut Bump) -> Result<MutBumpVecRev<u32>> {
+        MutBumpVecRev::try_with_capacity_in(capacity, bump)
     }
 
-    pub fn BumpString__try_from_str_in<'b>(string: &str, bump: &'b mut Bump) -> Result<BumpString<'b, 'b>> {
-        BumpString::try_from_str_in(string, bump)
+    pub fn BumpString__try_from_str_in<'b>(string: &str, bump: &'b mut Bump) -> Result<MutBumpString<'b, 'b>> {
+        MutBumpString::try_from_str_in(string, bump)
     }
 
-    pub fn BumpString_try_push(bump: &mut BumpString, value: char) -> Result {
+    pub fn BumpString_try_push(bump: &mut MutBumpString, value: char) -> Result {
         bump.try_push(value)
     }
 
-    pub fn BumpString_try_push_str(bump: &mut BumpString, value: &str) -> Result {
+    pub fn BumpString_try_push_str(bump: &mut MutBumpString, value: &str) -> Result {
         bump.try_push_str(value)
     }
 
-    pub fn BumpString_try_reserve(vec: &mut BumpString, amount: usize) -> Result {
+    pub fn BumpString_try_reserve(vec: &mut MutBumpString, amount: usize) -> Result {
         vec.try_reserve(amount)
     }
 
-    pub fn BumpString__try_with_capacity_in(capacity: usize, bump: &mut Bump) -> Result<BumpString> {
-        BumpString::try_with_capacity_in(capacity, bump)
+    pub fn BumpString__try_with_capacity_in(capacity: usize, bump: &mut Bump) -> Result<MutBumpString> {
+        MutBumpString::try_with_capacity_in(capacity, bump)
     }
 }

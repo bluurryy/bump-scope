@@ -11,7 +11,7 @@ use crate::{
     BumpBox, IntoIter, SizedTypeProperties,
 };
 
-/// A draining iterator for `BumpBox<[T]>` and `BumpVec<T>`.
+/// A draining iterator for `BumpBox<[T]>` and `MutBumpVec<T>`.
 ///
 /// This `struct` is created by [`BumpBox<[T]>::drain`](BumpBox::drain).
 /// See its documentation for more.

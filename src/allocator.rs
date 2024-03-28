@@ -5,8 +5,7 @@ use allocator_api2::alloc::{AllocError, Allocator};
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    down_align_usize, polyfill::nonnull, up_align_usize_unchecked, Bump, BumpScope, MinimumAlignment,
-    SupportedMinimumAlignment,
+    bump_down, polyfill::nonnull, up_align_usize_unchecked, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment,
 };
 
 unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Allocator for BumpScope<'_, A, MIN_ALIGN, UP>
@@ -362,10 +361,4 @@ where
 #[inline(always)]
 fn align_fits(old_ptr: NonNull<u8>, _old_layout: Layout, new_layout: Layout) -> bool {
     nonnull::is_aligned_to(old_ptr, new_layout.align())
-}
-
-#[inline(always)]
-fn bump_down(addr: NonZeroUsize, size: usize, align: usize) -> usize {
-    let subtracted = addr.get().saturating_sub(size);
-    down_align_usize(subtracted, align)
 }

@@ -509,7 +509,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec };
+    /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let bump: Bump = Bump::new();
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3]);
     /// slice.clear();
@@ -547,7 +547,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// Truncating a five element vector to two elements:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec };
+    /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5]);
@@ -559,7 +559,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// length:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec };
+    /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3]);
@@ -571,7 +571,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// method.
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec };
+    /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3]);
@@ -653,7 +653,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// - `new_len` must be less than or equal to the [`capacity`] (capacity is not tracked by this type).
     /// - The elements at `old_len..new_len` must be initialized.
     ///
-    /// [`capacity`]: crate::BumpVec::capacity
+    /// [`capacity`]: crate::MutBumpVec::capacity
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: usize) {
         nonnull::set_len(&mut self.ptr, new_len);
@@ -691,7 +691,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec };
+    /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
     /// let mut v = bump.alloc_slice_copy(&[1, 2, 3]);
     /// assert_eq!(v.remove(1), 2);
@@ -745,7 +745,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec };
+    /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut v = bump.alloc_slice_copy(&["foo", "bar", "baz", "qux"]);

@@ -1,8 +1,8 @@
 // NB: We avoid using closures to map `Result` and `Option`s in various places because they result in less readable assembly output.
-// When using closures, functions like `capacity_overflow` can get the name of some closure that invokes it instead, like `bump_scope::bump_vec::BumpVec<T,_,_,A>::generic_grow_cold::{{closure}}`.
+// When using closures, functions like `capacity_overflow` can get the name of some closure that invokes it instead, like `bump_scope::mut_bump_vec::MutBumpVec<T,_,_,A>::generic_grow_cold::{{closure}}`.
 
 // This crate uses modified code from the rust standard library. <https://github.com/rust-lang/rust/tree/master/library>.
-// Especially `BumpVec(Rev)`, `BumpString`, `polyfill` and `tests/from_std` are based on code from the standard library.
+// Especially `MutBumpVec(Rev)`, `MutBumpString`, `polyfill` and `tests/from_std` are based on code from the standard library.
 
 #![cfg_attr(not(any(test, feature = "std")), no_std)]
 #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api, vec_into_raw_parts))]
@@ -196,7 +196,7 @@
 //!
 //! - `std` *(default)*:
 //!
-//!   Adds implementations of `std::io` traits for `BumpBox` and `(Fixed)BumpVec`. Activates `alloc` feature.
+//!   Adds implementations of `std::io` traits for `BumpBox` and `{Fixed, Mut}BumpVec`. Activates `alloc` feature.
 //!
 //! <p></p>
 //!
@@ -259,14 +259,18 @@ mod bump_align_guard;
 mod bump_box;
 mod bump_scope;
 mod bump_scope_guard;
-mod bump_string;
+mod mut_bump_string;
 
 /// Contains [`BumpVec`] and associated types.
 mod bump_vec;
 
+/// Contains [`MutBumpVec`] and associated types.
+mod mut_bump_vec;
+
+/// Contains [`BumpString`] and associated types.
+mod bump_string;
+
 mod array_layout;
-/// Contains [`BumpVecRev`] and associated types.
-mod bump_vec_rev;
 mod chunk_raw;
 mod chunk_size;
 mod drain;
@@ -274,11 +278,12 @@ mod extract_if;
 mod fixed_bump_vec;
 mod from_utf8_error;
 mod into_iter;
+/// Contains [`MutBumpVecRev`] and associated types.
+mod mut_bump_vec_rev;
 mod polyfill;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
 mod stats;
-mod vec;
 #[cfg(test)]
 mod with_drop;
 mod without_dealloc;
@@ -297,12 +302,14 @@ pub use bump_scope::BumpScope;
 pub use bump_scope_guard::{BumpScopeGuard, BumpScopeGuardRoot, Checkpoint};
 pub use bump_string::BumpString;
 pub use bump_vec::BumpVec;
-pub use bump_vec_rev::BumpVecRev;
 pub use drain::Drain;
 pub use extract_if::ExtractIf;
 pub use fixed_bump_vec::FixedBumpVec;
 pub use from_utf8_error::FromUtf8Error;
 pub use into_iter::IntoIter;
+pub use mut_bump_string::MutBumpString;
+pub use mut_bump_vec::MutBumpVec;
+pub use mut_bump_vec_rev::MutBumpVecRev;
 pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
 #[cfg(test)]
 pub use with_drop::WithDrop;
@@ -405,6 +412,12 @@ fn down_align_usize(addr: usize, align: usize) -> usize {
     debug_assert!(align.is_power_of_two());
     let mask = align - 1;
     addr & !mask
+}
+
+#[inline(always)]
+fn bump_down(addr: NonZeroUsize, size: usize, align: usize) -> usize {
+    let subtracted = addr.get().saturating_sub(size);
+    down_align_usize(subtracted, align)
 }
 
 #[inline(always)]
@@ -1343,51 +1356,17 @@ define_alloc_methods! {
     /// Errors if a formatting trait implementation returned an error.
     for fn try_alloc_fmt
     fn generic_alloc_fmt(&self, args: fmt::Arguments) -> BumpBox<str> | BumpBox<'a, str> {
-        struct StringBuilder<'b, 'a: 'b, A: Allocator, B, const MIN_ALIGN: usize, const UP: bool> {
-            vec: crate::vec::Vec<'b, 'a, u8, A, MIN_ALIGN, UP>,
-            marker: PhantomData<B>,
-        }
-
-        impl<'b, 'a: 'b, A, B, const MIN_ALIGN: usize, const UP: bool> StringBuilder<'b, 'a, A, B, MIN_ALIGN, UP>
-        where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-            A: Allocator + Clone,
-        {
-            fn new_in(bump: &'b BumpScope<'a, A, MIN_ALIGN, UP>) -> Self {
-                Self {
-                    vec: crate::vec::Vec::new_in(bump),
-                    marker: PhantomData,
-                }
-            }
-        }
-
-        impl<'b, 'a: 'b, A, B, const MIN_ALIGN: usize, const UP: bool> fmt::Write for StringBuilder<'b, 'a, A, B, MIN_ALIGN, UP>
-        where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-            A: Allocator + Clone,
-            B: ErrorBehavior,
-        {
-            fn write_str(&mut self, s: &str) -> fmt::Result {
-                self.vec.generic_extend_from_slice_copy::<B>(s.as_bytes()).map_err(|_| fmt::Error)
-            }
-        }
-
         if let Some(string) = args.as_str() {
             return self.generic_alloc_str(string);
         }
 
-        let mut string = StringBuilder::<A, B, MIN_ALIGN, UP>::new_in(self);
+        let mut string = BumpString::generic_with_capacity_in(0, self)?;
 
         if fmt::Write::write_fmt(&mut string, args).is_err() {
             return Err(B::capacity_overflow());
         }
 
-        // TODO: consider shrink-to-fitting
-        let slice = string.vec.into_slice();
-
-        unsafe {
-            Ok(slice.into_boxed_str_unchecked())
-        }
+        Ok(string.into_boxed_str())
     }
 
     /// Allocate a `str` from format arguments.
@@ -1416,7 +1395,7 @@ define_alloc_methods! {
             return self.generic_alloc_str(string);
         }
 
-        let mut string = BumpString::generic_with_capacity_in(0, self)?;
+        let mut string = MutBumpString::generic_with_capacity_in(0, self)?;
 
         if fmt::Write::write_fmt(&mut string, args).is_err() {
             return Err(B::capacity_overflow());
@@ -1447,14 +1426,13 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = crate::vec::Vec::generic_with_capacity_in::<B>(capacity, self)?;
+        let mut vec = BumpVec::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
         }
 
-        // TODO: consider shrink-to-fitting
-        Ok(vec.into_slice())
+        Ok(vec.into_boxed_slice())
     }
 
     /// Allocate elements of an `ExactSizeIterator` into a slice.
@@ -1525,7 +1503,7 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = BumpVec::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = MutBumpVec::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
@@ -1558,7 +1536,7 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = BumpVecRev::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = MutBumpVecRev::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;

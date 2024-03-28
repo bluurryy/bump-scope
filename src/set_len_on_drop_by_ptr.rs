@@ -5,7 +5,7 @@ use crate::polyfill::nonnull;
 // Set the length of the vec when the `SetLenOnDropByPtr` value goes out of scope.
 //
 // The idea is: The length field in SetLenOnDropByPtr is a local variable
-// that the optimizer will see does not alias with any stores through the BumpVec's data
+// that the optimizer will see does not alias with any stores through the MutBumpVec's data
 // pointer. This is a workaround for alias analysis issue #32155
 pub(super) struct SetLenOnDropByPtr<'a, T> {
     slice: &'a mut NonNull<[T]>,

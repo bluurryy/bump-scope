@@ -54,7 +54,7 @@ inspect_asm::alloc_iter_u32_bump_vec::down:
 	mov rdi, r14
 	mov r15, rsi
 	mov rsi, rdx
-	call bump_scope::bump_vec::BumpVec<T,A,_,_>::generic_grow_cold
+	call bump_scope::mut_bump_vec::MutBumpVec<T,A,_,_>::generic_grow_cold
 	mov rax, r15
 	mov rdx, qword ptr [rsp + 8]
 	shl rbx, 2
@@ -74,7 +74,7 @@ inspect_asm::alloc_iter_u32_bump_vec::down:
 	jne .LBB_5
 	mov esi, 1
 	mov rdi, r14
-	call bump_scope::bump_vec::BumpVec<T,A,_,_>::generic_grow_cold
+	call bump_scope::mut_bump_vec::MutBumpVec<T,A,_,_>::generic_grow_cold
 	mov rax, r15
 	mov rdx, qword ptr [rsp + 8]
 	jmp .LBB_5

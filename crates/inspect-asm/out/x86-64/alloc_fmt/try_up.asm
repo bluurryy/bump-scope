@@ -22,11 +22,11 @@ inspect_asm::alloc_fmt::try_up:
 	lea rdx, [rsp + 72]
 	call qword ptr [rip + core::fmt::write@GOTPCREL]
 	test al, al
-	je .LBB_2
+	je .LBB_1
 	xor eax, eax
 	add rsp, 120
 	ret
-.LBB_2:
+.LBB_1:
 	mov rax, qword ptr [rsp + 40]
 	mov rdx, qword ptr [rsp + 48]
 	add rsp, 120

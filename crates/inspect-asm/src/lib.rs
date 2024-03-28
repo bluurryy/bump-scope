@@ -23,9 +23,9 @@ trait BumpaloExt {
 }
 
 type Bump<const MIN_ALIGN: usize, const UP: bool> = bump_scope::Bump<Global, MIN_ALIGN, UP>;
-type BumpVec<'b, 'a, T, const MIN_ALIGN: usize, const UP: bool> = bump_scope::BumpVec<'b, 'a, T, Global, MIN_ALIGN, UP>;
-type BumpVecRev<'b, 'a, T, const MIN_ALIGN: usize, const UP: bool> =
-    bump_scope::BumpVecRev<'b, 'a, T, Global, MIN_ALIGN, UP>;
+type MutBumpVec<'b, 'a, T, const MIN_ALIGN: usize, const UP: bool> = bump_scope::MutBumpVec<'b, 'a, T, Global, MIN_ALIGN, UP>;
+type MutBumpVecRev<'b, 'a, T, const MIN_ALIGN: usize, const UP: bool> =
+    bump_scope::MutBumpVecRev<'b, 'a, T, Global, MIN_ALIGN, UP>;
 
 impl BumpaloExt for bumpalo::Bump {
     fn try_alloc_str(&self, value: &str) -> Result<&mut str, bumpalo::AllocErr> {
@@ -346,8 +346,8 @@ macro_rules! cases_bump_vec {
 }
 
 cases_bump_vec! {
-    mod bump_vec_u32 for BumpVec u32
-    mod bump_vec_u32_rev for BumpVec u32
+    mod bump_vec_u32 for MutBumpVec u32
+    mod bump_vec_u32_rev for MutBumpVec u32
 }
 
 pub mod alloc_iter_u32 {
@@ -492,49 +492,49 @@ pub mod alloc_iter_u32_bump_vec {
     use super::*;
 
     pub fn up<'a>(bump: &'a mut Bump<1, true>, slice: &[u32]) -> &'a [u32] {
-        let mut vec = BumpVec::new_in(bump);
+        let mut vec = MutBumpVec::new_in(bump);
         vec.extend(slice.iter().copied());
         vec.into_boxed_slice().into_ref()
     }
 
     pub fn up_a<'a>(bump: &'a mut Bump<4, true>, slice: &[u32]) -> &'a [u32] {
-        let mut vec = BumpVec::new_in(bump);
+        let mut vec = MutBumpVec::new_in(bump);
         vec.extend(slice.iter().copied());
         vec.into_boxed_slice().into_ref()
     }
 
     pub fn down<'a>(bump: &'a mut Bump<1, false>, slice: &[u32]) -> &'a [u32] {
-        let mut vec = BumpVec::new_in(bump);
+        let mut vec = MutBumpVec::new_in(bump);
         vec.extend(slice.iter().copied());
         vec.into_boxed_slice().into_ref()
     }
 
     pub fn down_a<'a>(bump: &'a mut Bump<4, false>, slice: &[u32]) -> &'a [u32] {
-        let mut vec = BumpVec::new_in(bump);
+        let mut vec = MutBumpVec::new_in(bump);
         vec.extend(slice.iter().copied());
         vec.into_boxed_slice().into_ref()
     }
 
     pub fn rev_up<'a>(bump: &'a mut Bump<1, true>, slice: &[u32]) -> &'a [u32] {
-        let mut vec = BumpVecRev::new_in(bump);
+        let mut vec = MutBumpVecRev::new_in(bump);
         vec.extend(slice.iter().copied());
         vec.into_boxed_slice().into_ref()
     }
 
     pub fn rev_up_a<'a>(bump: &'a mut Bump<4, true>, slice: &[u32]) -> &'a [u32] {
-        let mut vec = BumpVecRev::new_in(bump);
+        let mut vec = MutBumpVecRev::new_in(bump);
         vec.extend(slice.iter().copied());
         vec.into_boxed_slice().into_ref()
     }
 
     pub fn rev_down<'a>(bump: &'a mut Bump<1, false>, slice: &[u32]) -> &'a [u32] {
-        let mut vec = BumpVecRev::new_in(bump);
+        let mut vec = MutBumpVecRev::new_in(bump);
         vec.extend(slice.iter().copied());
         vec.into_boxed_slice().into_ref()
     }
 
     pub fn rev_down_a<'a>(bump: &'a mut Bump<4, false>, slice: &[u32]) -> &'a [u32] {
-        let mut vec = BumpVecRev::new_in(bump);
+        let mut vec = MutBumpVecRev::new_in(bump);
         vec.extend(slice.iter().copied());
         vec.into_boxed_slice().into_ref()
     }

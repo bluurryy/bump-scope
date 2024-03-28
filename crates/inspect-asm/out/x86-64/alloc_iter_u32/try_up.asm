@@ -9,57 +9,70 @@ inspect_asm::alloc_iter_u32::try_up:
 	je .LBB_1
 	mov rax, rdx
 	shr rax, 61
-	je .LBB_3
-.LBB_12:
-	xor eax, eax
-	jmp .LBB_13
-.LBB_1:
-	mov eax, 4
-	xor edx, edx
-	jmp .LBB_13
-.LBB_3:
-	mov rbx, rsi
-	lea r15, [4*rdx]
+	jne .LBB_13
+	lea r14, [4*rdx]
 	mov rcx, qword ptr [rdi]
 	mov rax, qword ptr [rcx]
-	mov rsi, qword ptr [rcx + 8]
+	mov r8, qword ptr [rcx + 8]
 	add rax, 3
 	and rax, -4
-	sub rsi, rax
-	cmp r15, rsi
-	ja .LBB_5
-	lea rsi, [rax + r15]
-	mov qword ptr [rcx], rsi
-.LBB_6:
+	sub r8, rax
+	cmp r14, r8
+	ja .LBB_4
+	lea r8, [rax + r14]
+	mov qword ptr [rcx], r8
+	test rax, rax
+	je .LBB_13
+.LBB_7:
 	mov qword ptr [rsp], rax
 	mov qword ptr [rsp + 8], 0
 	mov qword ptr [rsp + 16], rdx
 	mov qword ptr [rsp + 24], rdi
-	xor r12d, r12d
-	mov r14, rsp
+	xor r15d, r15d
+	mov rbx, rsp
 	xor edx, edx
-	jmp .LBB_7
-.LBB_10:
+	jmp .LBB_8
+.LBB_11:
 	mov dword ptr [rax + 4*rdx], ebp
 	inc rdx
 	mov qword ptr [rsp + 8], rdx
-	add r12, 4
-	cmp r15, r12
-	je .LBB_11
-.LBB_7:
-	mov ebp, dword ptr [rbx + r12]
-	cmp rdx, qword ptr [rsp + 16]
-	jb .LBB_10
-	mov rdi, r14
-	call bump_scope::vec::Vec<T,A,_,_>::generic_grow_cold
+	add r15, 4
+	cmp r14, r15
+	je .LBB_12
+.LBB_8:
+	mov ebp, dword ptr [rsi + r15]
+	cmp qword ptr [rsp + 16], rdx
+	jne .LBB_11
+	mov rdi, rbx
+	mov r12, rsi
+	call bump_scope::bump_vec::BumpVec<T,A,_,_>::generic_grow_cold
 	test al, al
-	jne .LBB_12
+	jne .LBB_13
+	mov rsi, r12
 	mov rax, qword ptr [rsp]
 	mov rdx, qword ptr [rsp + 8]
-	jmp .LBB_10
-.LBB_11:
+	jmp .LBB_11
+.LBB_1:
+	mov eax, 4
+	xor edx, edx
+	jmp .LBB_14
+.LBB_12:
 	mov rax, qword ptr [rsp]
+	jmp .LBB_14
+.LBB_4:
+	mov rbx, rdi
+	mov r15, rsi
+	mov rsi, rdx
+	mov r12, rdx
+	call bump_scope::bump_scope::BumpScope<A,_,_>::do_alloc_slice_in_another_chunk
+	mov rdi, rbx
+	mov rdx, r12
+	mov rsi, r15
+	test rax, rax
+	jne .LBB_7
 .LBB_13:
+	xor eax, eax
+.LBB_14:
 	add rsp, 32
 	pop rbx
 	pop r12
@@ -67,13 +80,3 @@ inspect_asm::alloc_iter_u32::try_up:
 	pop r15
 	pop rbp
 	ret
-.LBB_5:
-	mov r14, rdi
-	mov rsi, rdx
-	mov r12, rdx
-	call bump_scope::bump_scope::BumpScope<A,_,_>::do_alloc_slice_in_another_chunk
-	mov rdi, r14
-	mov rdx, r12
-	test rax, rax
-	jne .LBB_6
-	jmp .LBB_12

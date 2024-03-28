@@ -150,7 +150,7 @@ This crate supports `no_std`, unless the `std` feature is enabled.
 
 - `std` *(default)*:
 
-  Adds implementations of `std::io` traits for `BumpBox` and `(Fixed)BumpVec`. Activates `alloc` feature.
+  Adds implementations of `std::io` traits for `BumpBox` and `{Fixed, Mut}BumpVec`. Activates `alloc` feature.
 
 <p></p>
 

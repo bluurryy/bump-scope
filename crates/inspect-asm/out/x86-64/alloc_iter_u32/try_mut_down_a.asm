@@ -47,7 +47,7 @@ inspect_asm::alloc_iter_u32::try_mut_down_a:
 	jne .LBB_10
 	mov rdi, r15
 	mov r14, rsi
-	call bump_scope::bump_vec::BumpVec<T,A,_,_>::generic_grow_cold
+	call bump_scope::mut_bump_vec::MutBumpVec<T,A,_,_>::generic_grow_cold
 	test al, al
 	jne .LBB_15
 	mov rsi, r14
