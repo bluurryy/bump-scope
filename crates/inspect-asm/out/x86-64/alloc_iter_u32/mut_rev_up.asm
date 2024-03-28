@@ -52,7 +52,7 @@ inspect_asm::alloc_iter_u32::mut_rev_up:
 	jne .LBB_5
 	mov esi, 1
 	mov rdi, r12
-	call bump_scope::bump_vec_rev::BumpVecRev<T,A,_,_>::generic_grow_cold
+	call bump_scope::mut_bump_vec_rev::MutBumpVecRev<T,A,_,_>::generic_grow_cold
 	mov rcx, qword ptr [rsp + 8]
 	mov rdx, qword ptr [rsp + 24]
 	jmp .LBB_5

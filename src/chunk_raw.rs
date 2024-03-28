@@ -353,7 +353,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// Returns the rest of the capacity of the chunk.
     /// This does not change the position within the chunk.
     ///
-    /// This is used in [`BumpVec`] where we mutably burrow bump access.
+    /// This is used in [`MutBumpVec`] where we mutably burrow bump access.
     /// In this case we do not want to update the bump pointer. This way
     /// neither reallocations (a new chunk) nor dropping needs to move the bump pointer.
     /// The bump pointer is only updated when we call [`into_slice`].
@@ -361,8 +361,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// - `range.start` and `range.end` are aligned.
     /// - `layout.size` must not be zero
     ///
-    /// [`BumpVec`]: crate::BumpVec
-    /// [`into_slice`]: crate::BumpVec::into_slice
+    /// [`MutBumpVec`]: crate::MutBumpVec
+    /// [`into_slice`]: crate::MutBumpVec::into_slice
     #[inline(always)]
     pub fn alloc_greedy<const MIN_ALIGN: usize, const IS_CONST_ALIGN: bool>(
         self,

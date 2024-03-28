@@ -53,7 +53,7 @@ inspect_asm::alloc_iter_u32::try_mut_rev_down:
 	cmp qword ptr [rsp + 24], rcx
 	jne .LBB_10
 	mov rdi, r15
-	call bump_scope::bump_vec_rev::BumpVecRev<T,A,_,_>::generic_grow_cold
+	call bump_scope::mut_bump_vec_rev::MutBumpVecRev<T,A,_,_>::generic_grow_cold
 	test al, al
 	jne .LBB_13
 	mov rdx, qword ptr [rsp]

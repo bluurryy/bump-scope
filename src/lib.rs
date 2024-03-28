@@ -1,8 +1,8 @@
 // NB: We avoid using closures to map `Result` and `Option`s in various places because they result in less readable assembly output.
-// When using closures, functions like `capacity_overflow` can get the name of some closure that invokes it instead, like `bump_scope::bump_vec::BumpVec<T,_,_,A>::generic_grow_cold::{{closure}}`.
+// When using closures, functions like `capacity_overflow` can get the name of some closure that invokes it instead, like `bump_scope::mut_bump_vec::MutBumpVec<T,_,_,A>::generic_grow_cold::{{closure}}`.
 
 // This crate uses modified code from the rust standard library. <https://github.com/rust-lang/rust/tree/master/library>.
-// Especially `BumpVec(Rev)`, `BumpString`, `polyfill` and `tests/from_std` are based on code from the standard library.
+// Especially `MutBumpVec(Rev)`, `BumpString`, `polyfill` and `tests/from_std` are based on code from the standard library.
 
 #![cfg_attr(not(any(test, feature = "std")), no_std)]
 #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api, vec_into_raw_parts))]
@@ -196,7 +196,7 @@
 //!
 //! - `std` *(default)*:
 //!
-//!   Adds implementations of `std::io` traits for `BumpBox` and `(Fixed)BumpVec`. Activates `alloc` feature.
+//!   Adds implementations of `std::io` traits for `BumpBox` and `{Fixed, Mut}BumpVec`. Activates `alloc` feature.
 //!
 //! <p></p>
 //!
@@ -259,14 +259,12 @@ mod bump_align_guard;
 mod bump_box;
 mod bump_scope;
 mod bump_scope_guard;
-mod bump_string;
+mod mut_bump_string;
 
-/// Contains [`BumpVec`] and associated types.
-mod bump_vec;
+/// Contains [`MutBumpVec`] and associated types.
+mod mut_bump_vec;
 
 mod array_layout;
-/// Contains [`BumpVecRev`] and associated types.
-mod bump_vec_rev;
 mod chunk_raw;
 mod chunk_size;
 mod drain;
@@ -274,6 +272,8 @@ mod extract_if;
 mod fixed_bump_vec;
 mod from_utf8_error;
 mod into_iter;
+/// Contains [`MutBumpVecRev`] and associated types.
+mod mut_bump_vec_rev;
 mod polyfill;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
@@ -295,14 +295,14 @@ pub use bump::Bump;
 pub use bump_box::BumpBox;
 pub use bump_scope::BumpScope;
 pub use bump_scope_guard::{BumpScopeGuard, BumpScopeGuardRoot, Checkpoint};
-pub use bump_string::BumpString;
-pub use bump_vec::BumpVec;
-pub use bump_vec_rev::BumpVecRev;
 pub use drain::Drain;
 pub use extract_if::ExtractIf;
 pub use fixed_bump_vec::FixedBumpVec;
 pub use from_utf8_error::FromUtf8Error;
 pub use into_iter::IntoIter;
+pub use mut_bump_string::BumpString;
+pub use mut_bump_vec::MutBumpVec;
+pub use mut_bump_vec_rev::MutBumpVecRev;
 pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
 #[cfg(test)]
 pub use with_drop::WithDrop;
@@ -1525,7 +1525,7 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = BumpVec::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = MutBumpVec::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
@@ -1558,7 +1558,7 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = BumpVecRev::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = MutBumpVecRev::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;

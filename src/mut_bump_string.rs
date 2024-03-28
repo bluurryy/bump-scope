@@ -12,8 +12,8 @@ use allocator_api2::alloc::{AllocError, Allocator};
 use allocator_api2::alloc::Global;
 
 use crate::{
-    error_behavior_generic_methods, polyfill, BumpBox, BumpScope, BumpVec, ErrorBehavior, FromUtf8Error, MinimumAlignment,
-    Stats, SupportedMinimumAlignment,
+    error_behavior_generic_methods, polyfill, BumpBox, BumpScope, ErrorBehavior, FromUtf8Error, MinimumAlignment,
+    MutBumpVec, Stats, SupportedMinimumAlignment,
 };
 
 #[cfg(not(no_global_oom_handling))]
@@ -32,17 +32,17 @@ use crate::infallible;
 /// # Examples
 ///
 /// ```
-/// # use bump_scope::{ Bump, bump_format };
+/// # use bump_scope::{ Bump, mut_bump_format };
 /// # let mut bump: Bump = Bump::new();
 /// #
 /// let greeting = "Hello";
-/// let mut string = bump_format!(in bump, "{greeting} world!");
+/// let mut string = mut_bump_format!(in bump, "{greeting} world!");
 /// string.push_str(" How are you?");
 ///
 /// assert_eq!(string, "Hello world! How are you?");
 /// ```
 #[macro_export]
-macro_rules! bump_format {
+macro_rules! mut_bump_format {
     (in $bump:expr) => {{
         $crate::BumpString::new_in($bump.as_mut_scope())
     }};
@@ -102,10 +102,10 @@ macro_rules! bump_format {
 /// the [`from_utf8`] method:
 ///
 /// ```
-/// # use bump_scope::{ Bump, BumpString, bump_vec };
+/// # use bump_scope::{ Bump, BumpString, mut_bump_vec };
 /// # let mut bump: Bump = Bump::new();
 /// // some bytes, in a vector
-/// let sparkle_heart = bump_vec![in bump; 240, 159, 146, 150];
+/// let sparkle_heart = mut_bump_vec![in bump; 240, 159, 146, 150];
 ///
 /// // We know these bytes are valid, so we'll use `unwrap()`.
 /// let sparkle_heart = BumpString::from_utf8(sparkle_heart).unwrap();
@@ -123,7 +123,7 @@ pub struct BumpString<
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
 > {
-    vec: BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP>,
+    vec: MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP>,
 }
 
 impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, A> BumpString<'b, 'a, A, MIN_ALIGN, UP> {
@@ -177,7 +177,7 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, A> BumpString<'b, 'a, A
     /// Converts a bump allocated vector of bytes to a `BumpString`.
     ///
     /// A string ([`BumpString`]) is made of bytes ([`u8`]), and a vector of bytes
-    /// ([`BumpVec<u8>`]) is made of bytes, so this function converts between the
+    /// ([`MutBumpVec<u8>`]) is made of bytes, so this function converts between the
     /// two. Not all byte slices are valid `BumpString`s, however: `BumpString`
     /// requires that it is valid UTF-8. `from_utf8()` checks to ensure that
     /// the bytes are valid UTF-8, and then does the conversion.
@@ -201,19 +201,19 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, A> BumpString<'b, 'a, A
     /// provided bytes are not UTF-8. The vector you moved in is also included.
     ///
     /// [`from_utf8_unchecked`]: String::from_utf8_unchecked
-    /// [`BumpVec<u8>`]: BumpVec
+    /// [`MutBumpVec<u8>`]: MutBumpVec
     /// [`&str`]: prim@str "&str"
     /// [`into_bytes`]: BumpString::into_bytes
     pub fn from_utf8(
-        vec: BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP>,
-    ) -> Result<Self, FromUtf8Error<BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP>>> {
+        vec: MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP>,
+    ) -> Result<Self, FromUtf8Error<MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP>>> {
         match str::from_utf8(vec.as_slice()) {
             Ok(_) => Ok(Self { vec }),
             Err(error) => Err(FromUtf8Error { error, bytes: vec }),
         }
     }
 
-    /// Converts a `BumpString` into a `BumpVec<u8>`.
+    /// Converts a `BumpString` into a `MutBumpVec<u8>`.
     ///
     /// This consumes the `BumpString`, so we do not need to copy its contents.
     ///
@@ -230,7 +230,7 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, A> BumpString<'b, 'a, A
     /// ```
     #[inline(always)]
     #[must_use = "`self` will be dropped if the result is not used"]
-    pub fn into_bytes(self) -> BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP> {
+    pub fn into_bytes(self) -> MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP> {
         self.vec
     }
 
@@ -265,7 +265,7 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, A> BumpString<'b, 'a, A
     /// safety, as `BumpString`s must be valid UTF-8.
     #[must_use]
     #[inline(always)]
-    pub unsafe fn as_mut_vec(&mut self) -> &mut BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP> {
+    pub unsafe fn as_mut_vec(&mut self) -> &mut MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP> {
         &mut self.vec
     }
 
@@ -318,7 +318,7 @@ where
     /// The vector will not allocate until elements are pushed onto it.
     pub fn new_in(bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
         Self {
-            vec: BumpVec::new_in(bump),
+            vec: MutBumpVec::new_in(bump),
         }
     }
 
@@ -333,7 +333,7 @@ where
         for fn with_capacity_in
         for fn try_with_capacity_in
         fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
-            Ok(Self { vec: BumpVec::generic_with_capacity_in(capacity, bump.into())? } )
+            Ok(Self { vec: MutBumpVec::generic_with_capacity_in(capacity, bump.into())? } )
         }
 
         /// Constructs a new `BumpString` from a `&str`.

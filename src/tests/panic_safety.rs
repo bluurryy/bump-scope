@@ -8,7 +8,7 @@ use std::{
     sync::{Mutex, PoisonError},
 };
 
-use crate::{bump_vec, Bump, BumpVec};
+use crate::{mut_bump_vec, Bump, MutBumpVec};
 
 fn check_t<T: Clone + Default + UnwindSafe + RefUnwindSafe>() {
     thread_local! {
@@ -112,16 +112,16 @@ fn check_t<T: Clone + Default + UnwindSafe + RefUnwindSafe>() {
         let _init = uninit.init_fill_with(|| (*original).clone());
     });
 
-    // Check `BumpVec::from_elem_in`
+    // Check `MutBumpVec::from_elem_in`
     cfg().max_clones(3).expected_drops(4).run(|| {
         let mut bump: Bump = Bump::new();
-        let _vec = BumpVec::from_elem_in(Foo(T::default()), 5, &mut bump);
+        let _vec = MutBumpVec::from_elem_in(Foo(T::default()), 5, &mut bump);
     });
 
     // Check `IntoIter`
     cfg().expected_drops(5).expected_msg("whoops").run(|| {
         let mut bump: Bump = Bump::new();
-        let vec = bump_vec![in bump; Foo(T::default()); 5];
+        let vec = mut_bump_vec![in bump; Foo(T::default()); 5];
 
         #[allow(clippy::manual_assert)]
         for (i, _) in vec.into_iter().enumerate() {

@@ -26,9 +26,9 @@ use crate::{
 #[cfg(not(no_global_oom_handling))]
 use crate::infallible;
 
-/// Creates a [`BumpVecRev`] containing the arguments.
+/// Creates a [`MutBumpVecRev`] containing the arguments.
 ///
-/// `bump_vec_rev!` allows `BumpVecRev`s to be defined with the same syntax as array expressions. `try` makes the allocations fallible.
+/// `mut_bump_vec_rev!` allows `MutBumpVecRev`s to be defined with the same syntax as array expressions. `try` makes the allocations fallible.
 ///
 /// `$bump` can be a mutable [`Bump`](crate::Bump) or [`BumpScope`] (anything where `$bump.as_mut_scope()` returns a `&mut BumpScope`).
 ///
@@ -42,31 +42,31 @@ use crate::infallible;
 ///
 /// There are three forms of this macro:
 ///
-/// - Create an empty [`BumpVecRev`]:
+/// - Create an empty [`MutBumpVecRev`]:
 /// ```
-/// # use bump_scope::{ bump_vec_rev, Bump, BumpVecRev };
+/// # use bump_scope::{ mut_bump_vec_rev, Bump, MutBumpVecRev };
 /// # let mut bump: Bump = Bump::new();
-/// let vec: BumpVecRev<i32> = bump_vec_rev![in bump];
+/// let vec: MutBumpVecRev<i32> = mut_bump_vec_rev![in bump];
 /// assert!(vec.is_empty());
 /// ```
 ///
-/// - Create a [`BumpVecRev`] containing a given list of elements:
+/// - Create a [`MutBumpVecRev`] containing a given list of elements:
 ///
 /// ```
-/// # use bump_scope::{ bump_vec_rev, Bump };
+/// # use bump_scope::{ mut_bump_vec_rev, Bump };
 /// # let mut bump: Bump = Bump::new();
-/// let vec = bump_vec_rev![in bump; 1, 2, 3];
+/// let vec = mut_bump_vec_rev![in bump; 1, 2, 3];
 /// assert_eq!(vec[0], 1);
 /// assert_eq!(vec[1], 2);
 /// assert_eq!(vec[2], 3);
 /// ```
 ///
-/// - Create a [`BumpVecRev`] from a given element and size:
+/// - Create a [`MutBumpVecRev`] from a given element and size:
 ///
 /// ```
-/// # use bump_scope::{ bump_vec_rev, Bump };
+/// # use bump_scope::{ mut_bump_vec_rev, Bump };
 /// # let mut bump: Bump = Bump::new();
-/// let vec = bump_vec_rev![in bump; 1; 3];
+/// let vec = mut_bump_vec_rev![in bump; 1; 3];
 /// assert_eq!(vec, [1, 1, 1]);
 /// ```
 ///
@@ -76,42 +76,42 @@ use crate::infallible;
 ///
 /// This will use `clone` to duplicate an expression, so one should be careful
 /// using this with types having a nonstandard `Clone` implementation. For
-/// example, `bump_vec_rev![in bump; Rc::new(1); 5]` will create a vector of five references
+/// example, `mut_bump_vec_rev![in bump; Rc::new(1); 5]` will create a vector of five references
 /// to the same boxed integer value, not five references pointing to independently
 /// boxed integers.
 ///
-/// Also, note that `bump_vec_rev![in bump; expr; 0]` is allowed, and produces an empty vector.
+/// Also, note that `mut_bump_vec_rev![in bump; expr; 0]` is allowed, and produces an empty vector.
 /// This will still evaluate `expr`, however, and immediately drop the resulting value, so
 /// be mindful of side effects.
 #[macro_export]
-macro_rules! bump_vec_rev {
+macro_rules! mut_bump_vec_rev {
     [in $bump:expr] => {
-        $crate::BumpVecRev::new_in($bump.as_mut_scope())
+        $crate::MutBumpVecRev::new_in($bump.as_mut_scope())
     };
     [in $bump:expr; $($values:expr),* $(,)?] => {
-        $crate::BumpVecRev::from_array_in([$($values),*], $bump.as_mut_scope())
+        $crate::MutBumpVecRev::from_array_in([$($values),*], $bump.as_mut_scope())
     };
     [in $bump:expr; $value:expr; $count:expr] => {
-        $crate::BumpVecRev::from_elem_in($value, $count, $bump.as_mut_scope())
+        $crate::MutBumpVecRev::from_elem_in($value, $count, $bump.as_mut_scope())
     };
     [try in $bump:expr] => {
-        Ok::<_, $crate::allocator_api2::alloc::AllocError>($crate::BumpVecRev::new_in($bump.as_mut_scope()))
+        Ok::<_, $crate::allocator_api2::alloc::AllocError>($crate::MutBumpVecRev::new_in($bump.as_mut_scope()))
     };
     [try in $bump:expr; $($values:expr),* $(,)?] => {
-        $crate::BumpVecRev::try_from_array_in([$($values),*], $bump.as_mut_scope())
+        $crate::MutBumpVecRev::try_from_array_in([$($values),*], $bump.as_mut_scope())
     };
     [try in $bump:expr; $value:expr; $count:expr] => {
-        $crate::BumpVecRev::try_from_elem_in($value, $count, $bump.as_mut_scope())
+        $crate::MutBumpVecRev::try_from_elem_in($value, $count, $bump.as_mut_scope())
     };
 }
 
-/// This is like a [`BumpVec`](crate::BumpVec), but new elements are pushed to the front.
+/// This is like a [`MutBumpVec`](crate::MutBumpVec), but new elements are pushed to the front.
 ///
 /// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
 /// ```
-/// use bump_scope::{ Bump, BumpVecRev, BumpBox, bump_vec_rev };
+/// use bump_scope::{ Bump, MutBumpVecRev, BumpBox, mut_bump_vec_rev };
 /// let mut bump: Bump = Bump::new();
-/// let mut vec = bump_vec_rev![in bump];
+/// let mut vec = mut_bump_vec_rev![in bump];
 ///
 /// vec.push(1);
 /// vec.push(2);
@@ -122,18 +122,18 @@ macro_rules! bump_vec_rev {
 /// assert_eq!(slice, [3, 2, 1]);
 /// ```
 ///
-/// When extending a `BumpVecRev` by a slice, the elements have the same order as in the source slice.
+/// When extending a `MutBumpVecRev` by a slice, the elements have the same order as in the source slice.
 ///
 /// ```
-/// use bump_scope::{ Bump, bump_vec_rev };
+/// use bump_scope::{ Bump, mut_bump_vec_rev };
 /// let mut bump: Bump = Bump::new();
-/// let mut vec = bump_vec_rev![in bump; 4, 5, 6];
+/// let mut vec = mut_bump_vec_rev![in bump; 4, 5, 6];
 ///
 /// vec.extend_from_slice_copy(&[1, 2, 3]);
 ///
 /// assert_eq!(vec, [1, 2, 3, 4, 5, 6]);
 /// ```
-pub struct BumpVecRev<
+pub struct MutBumpVecRev<
     'b,
     'a: 'b,
     T,
@@ -153,21 +153,21 @@ pub struct BumpVecRev<
     marker: PhantomData<(&'a (), T)>,
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> UnwindSafe for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> UnwindSafe for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     T: UnwindSafe,
     A: UnwindSafe,
 {
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> RefUnwindSafe for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> RefUnwindSafe for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     T: RefUnwindSafe,
     A: RefUnwindSafe,
 {
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[must_use]
     #[inline(always)]
     fn as_nonnull_slice(&self) -> NonNull<[T]> {
@@ -180,9 +180,9 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVecRev<'b, 'a
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpVecRev };
+    /// # use bump_scope::{ Bump, MutBumpVecRev };
     /// # let mut bump: Bump = Bump::new();
-    /// let vec = BumpVecRev::<i32>::with_capacity_in(2048, &mut bump);
+    /// let vec = MutBumpVecRev::<i32>::with_capacity_in(2048, &mut bump);
     /// assert!(vec.capacity() >= 2048);
     /// ```
     #[must_use]
@@ -240,9 +240,9 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVecRev<'b, 'a
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec_rev };
+    /// # use bump_scope::{ Bump, mut_bump_vec_rev };
     /// # let mut bump: Bump = Bump::new();
-    /// let mut v = bump_vec_rev![in bump; 1, 2, 3];
+    /// let mut v = mut_bump_vec_rev![in bump; 1, 2, 3];
     ///
     /// v.clear();
     ///
@@ -297,10 +297,10 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVecRev<'b, 'a
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec_rev };
+    /// # use bump_scope::{ Bump, mut_bump_vec_rev };
     /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let x = bump_vec_rev![in bump; 1, 2, 4];
+    /// let x = mut_bump_vec_rev![in bump; 1, 2, 4];
     /// let x_ptr = x.as_ptr();
     ///
     /// unsafe {
@@ -310,7 +310,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVecRev<'b, 'a
     /// }
     /// ```
     ///
-    /// [`as_mut_ptr`]: BumpVecRev::as_mut_ptr
+    /// [`as_mut_ptr`]: MutBumpVecRev::as_mut_ptr
     #[inline]
     #[must_use]
     pub fn as_ptr(&self) -> *const T {
@@ -330,12 +330,12 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVecRev<'b, 'a
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpVecRev };
+    /// # use bump_scope::{ Bump, MutBumpVecRev };
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// // Allocate vector big enough for 4 elements.
     /// let size = 4;
-    /// let mut x = BumpVecRev::<i32>::with_capacity_in(size, &mut bump);
+    /// let mut x = MutBumpVecRev::<i32>::with_capacity_in(size, &mut bump);
     /// let x_ptr = unsafe { x.as_mut_ptr().sub(size) };
     ///
     /// // Initialize elements via raw pointer writes, then set length.
@@ -377,10 +377,10 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVecRev<'b, 'a
     /// Truncating a five element vector to two elements:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec_rev };
+    /// # use bump_scope::{ Bump, mut_bump_vec_rev };
     /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let mut vec = bump_vec_rev![in bump; 1, 2, 3, 4, 5];
+    /// let mut vec = mut_bump_vec_rev![in bump; 1, 2, 3, 4, 5];
     /// vec.truncate(2);
     /// assert_eq!(vec, [4, 5]);
     /// ```
@@ -389,10 +389,10 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVecRev<'b, 'a
     /// length:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec_rev };
+    /// # use bump_scope::{ Bump, mut_bump_vec_rev };
     /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let mut vec = bump_vec_rev![in bump; 1, 2, 3];
+    /// let mut vec = mut_bump_vec_rev![in bump; 1, 2, 3];
     /// vec.truncate(8);
     /// assert_eq!(vec, [1, 2, 3]);
     /// ```
@@ -401,16 +401,16 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVecRev<'b, 'a
     /// method.
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec_rev };
+    /// # use bump_scope::{ Bump, mut_bump_vec_rev };
     /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let mut vec = bump_vec_rev![in bump; 1, 2, 3];
+    /// let mut vec = mut_bump_vec_rev![in bump; 1, 2, 3];
     /// vec.truncate(0);
     /// assert_eq!(vec, []);
     /// ```
     ///
-    /// [`clear`]: BumpVecRev::clear
-    /// [`drain`]: BumpVecRev::drain
+    /// [`clear`]: MutBumpVecRev::clear
+    /// [`drain`]: MutBumpVecRev::drain
     pub fn truncate(&mut self, len: usize) {
         // This is safe because:
         //
@@ -444,17 +444,17 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVecRev<'b, 'a
     /// is done using one of the safe operations instead, such as
     /// [`truncate`], [`resize`], [`extend`], or [`clear`].
     ///
-    /// [`truncate`]: BumpVecRev::truncate
-    /// [`resize`]: BumpVecRev::resize
-    /// [`extend`]: BumpVecRev::extend
-    /// [`clear`]: BumpVecRev::clear
+    /// [`truncate`]: MutBumpVecRev::truncate
+    /// [`resize`]: MutBumpVecRev::resize
+    /// [`extend`]: MutBumpVecRev::extend
+    /// [`clear`]: MutBumpVecRev::clear
     ///
     /// # Safety
     ///
     /// - `new_len` must be less than or equal to [`capacity()`].
     /// - The elements at `old_len..new_len` must be initialized.
     ///
-    /// [`capacity()`]: BumpVecRev::capacity
+    /// [`capacity()`]: MutBumpVecRev::capacity
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: usize) {
         debug_assert!(new_len <= self.cap);
@@ -462,7 +462,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVecRev<'b, 'a
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -474,9 +474,9 @@ where
         /// # Examples
         ///
         /// ```
-        /// # use bump_scope::{ bump_vec_rev, Bump };
+        /// # use bump_scope::{ mut_bump_vec_rev, Bump };
         /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = bump_vec_rev![in bump; 2, 1];
+        /// let mut vec = mut_bump_vec_rev![in bump; 2, 1];
         /// vec.push(3);
         /// assert_eq!(vec, [3, 2, 1]);
         /// ```
@@ -503,9 +503,9 @@ where
         /// Panics if `index > len`.
         do examples
         /// ```
-        /// # use bump_scope::{ bump_vec_rev, Bump, BumpVecRev };
+        /// # use bump_scope::{ mut_bump_vec_rev, Bump, MutBumpVecRev };
         /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = bump_vec_rev![in bump; 1, 2, 3];
+        /// let mut vec = mut_bump_vec_rev![in bump; 1, 2, 3];
         /// vec.insert(1, 4);
         /// assert_eq!(vec, [1, 4, 2, 3]);
         /// vec.insert(4, 5);
@@ -543,10 +543,10 @@ where
             Ok(())
         }
 
-        /// Copies and appends all elements in a slice to the `BumpVecRev`.
+        /// Copies and appends all elements in a slice to the `MutBumpVecRev`.
         ///
         /// Iterates over the `slice`, copies each element, and then appends
-        /// it to this `BumpVecRev`. The `slice` is traversed in-order.
+        /// it to this `MutBumpVecRev`. The `slice` is traversed in-order.
         impl
         for fn extend_from_slice_copy
         for fn try_extend_from_slice_copy
@@ -557,10 +557,10 @@ where
             unsafe { self.extend_by_copy_nonoverlapping(slice) }
         }
 
-        /// Clones and appends all elements in a slice to the `BumpVecRev`.
+        /// Clones and appends all elements in a slice to the `MutBumpVecRev`.
         ///
         /// Iterates over the `slice`, clones each element, and then appends
-        /// it to this `BumpVecRev`. The `slice` is traversed in-order.
+        /// it to this `MutBumpVecRev`. The `slice` is traversed in-order.
         impl
         for fn extend_from_slice_clone
         for fn try_extend_from_slice_clone
@@ -584,10 +584,10 @@ where
             Ok(())
         }
 
-        /// Appends all elements in an array to the `BumpVecRev`.
+        /// Appends all elements in an array to the `MutBumpVecRev`.
         ///
         /// Iterates over the `array`, copies each element, and then appends
-        /// it to this `BumpVecRev`. The `array` is traversed in-order.
+        /// it to this `MutBumpVecRev`. The `array` is traversed in-order.
         #[allow(clippy::needless_pass_by_value)]
         impl
         for fn extend_from_array
@@ -602,10 +602,10 @@ where
         /// the end point is greater than the length of the vector.
         do examples
         /// ```
-        /// # use bump_scope::{ Bump, bump_vec_rev };
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
         /// # let mut bump: Bump = Bump::new();
         /// #
-        /// let mut vec = bump_vec_rev![in bump; 0, 1, 2, 3, 4];
+        /// let mut vec = mut_bump_vec_rev![in bump; 0, 1, 2, 3, 4];
         ///
         /// vec.extend_from_within_copy(2..);
         /// assert_eq!(vec, [2, 3, 4, 0, 1, 2, 3, 4]);
@@ -644,7 +644,7 @@ where
         }
 
         /// Reserves capacity for at least `additional` more elements to be inserted
-        /// in the given `BumpVecRev<T>`. The collection may reserve more space to
+        /// in the given `MutBumpVecRev<T>`. The collection may reserve more space to
         /// speculatively avoid frequent reallocations. After calling `reserve`,
         /// capacity will be greater than or equal to `self.len() + additional`.
         /// Does nothing if capacity is already sufficient.
@@ -659,30 +659,30 @@ where
             Ok(())
         }
 
-        /// Resizes the `BumpVecRev` in-place so that `len` is equal to `new_len`.
+        /// Resizes the `MutBumpVecRev` in-place so that `len` is equal to `new_len`.
         ///
-        /// If `new_len` is greater than `len`, the `BumpVecRev` is extended by the
+        /// If `new_len` is greater than `len`, the `MutBumpVecRev` is extended by the
         /// difference, with each additional slot filled with `value`.
-        /// If `new_len` is less than `len`, the `BumpVecRev` is simply truncated.
+        /// If `new_len` is less than `len`, the `MutBumpVecRev` is simply truncated.
         ///
         /// This method requires `T` to implement [`Clone`],
         /// in order to be able to clone the passed value.
         /// If you need more flexibility (or want to rely on [`Default`] instead of
-        /// [`Clone`]), use [`BumpVecRev::resize_with`].
-        /// If you only need to resize to a smaller size, use [`BumpVecRev::truncate`].
+        /// [`Clone`]), use [`MutBumpVecRev::resize_with`].
+        /// If you only need to resize to a smaller size, use [`MutBumpVecRev::truncate`].
         ///
         /// # Examples
         ///
         /// ```
-        /// # use bump_scope::{ Bump, bump_vec_rev };
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
         /// # let mut bump: Bump = Bump::new();
         /// #
-        /// let mut vec = bump_vec_rev![in bump; "hello"];
+        /// let mut vec = mut_bump_vec_rev![in bump; "hello"];
         /// vec.resize(3, "world");
         /// assert_eq!(vec, ["world", "world", "hello"]);
         /// drop(vec);
         ///
-        /// let mut vec = bump_vec_rev![in bump; 1, 2, 3, 4];
+        /// let mut vec = mut_bump_vec_rev![in bump; 1, 2, 3, 4];
         /// vec.resize(2, 0);
         /// assert_eq!(vec, [3, 4]);
         /// ```
@@ -702,31 +702,31 @@ where
             }
         }
 
-        /// Resizes the `BumpVecRev` in-place so that `len` is equal to `new_len`.
+        /// Resizes the `MutBumpVecRev` in-place so that `len` is equal to `new_len`.
         ///
-        /// If `new_len` is greater than `len`, the `BumpVecRev` is extended by the
+        /// If `new_len` is greater than `len`, the `MutBumpVecRev` is extended by the
         /// difference, with each additional slot filled with the result of
         /// calling the closure `f`. The return values from `f` will end up
-        /// in the `BumpVecRev` in the order they have been generated.
+        /// in the `MutBumpVecRev` in the order they have been generated.
         ///
-        /// If `new_len` is less than `len`, the `BumpVecRev` is simply truncated.
+        /// If `new_len` is less than `len`, the `MutBumpVecRev` is simply truncated.
         ///
         /// This method uses a closure to create new values on every push. If
-        /// you'd rather [`Clone`] a given value, use [`BumpVecRev::resize`]. If you
+        /// you'd rather [`Clone`] a given value, use [`MutBumpVecRev::resize`]. If you
         /// want to use the [`Default`] trait to generate values, you can
         /// pass [`Default::default`] as the second argument.
         ///
         do examples
         /// ```
-        /// # use bump_scope::{ Bump, bump_vec_rev };
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
         /// # let mut bump: Bump = Bump::new();
         /// #
-        /// let mut vec = bump_vec_rev![in bump; 1, 2, 3];
+        /// let mut vec = mut_bump_vec_rev![in bump; 1, 2, 3];
         /// vec.resize_with(5, Default::default);
         /// assert_eq!(vec, [0, 0, 1, 2, 3]);
         /// drop(vec);
         ///
-        /// let mut vec = bump_vec_rev![in bump];
+        /// let mut vec = mut_bump_vec_rev![in bump];
         /// let mut p = 1;
         /// vec.resize_with(4, || { p *= 2; p });
         /// assert_eq!(vec, [16, 8, 4, 2]);
@@ -832,17 +832,17 @@ where
         Ok(())
     }
 
-    /// Constructs a new, empty `BumpVecRev<T>`.
+    /// Constructs a new, empty `MutBumpVecRev<T>`.
     ///
     /// The vector will not allocate until elements are pushed onto it.
     ///
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpVecRev };
+    /// # use bump_scope::{ Bump, MutBumpVecRev };
     /// # let mut bump: Bump = Bump::new();
     /// # #[allow(unused_mut)]
-    /// let mut vec = BumpVecRev::<i32>::new_in(&mut bump);
+    /// let mut vec = MutBumpVecRev::<i32>::new_in(&mut bump);
     /// ```
     #[inline]
     pub fn new_in(bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
@@ -856,7 +856,7 @@ where
     }
 
     error_behavior_generic_methods! {
-        /// Constructs a new, empty `BumpVecRev<T>` with at least the specified capacity
+        /// Constructs a new, empty `MutBumpVecRev<T>` with at least the specified capacity
         /// with the provided `BumpScope`.
         ///
         /// The vector will be able to hold at least `capacity` elements without
@@ -868,14 +868,14 @@ where
         /// an explanation of the difference between length and capacity, see
         /// *[Capacity and reallocation]*.
         ///
-        /// If it is important to know the exact allocated capacity of a `BumpVecRev`,
+        /// If it is important to know the exact allocated capacity of a `MutBumpVecRev`,
         /// always use the [`capacity`] method after construction.
         ///
-        /// For `BumpVecRev<T>` where `T` is a zero-sized type, there will be no allocation
+        /// For `MutBumpVecRev<T>` where `T` is a zero-sized type, there will be no allocation
         /// and the capacity will always be `usize::MAX`.
         ///
         /// [Capacity and reallocation]: alloc::vec::Vec#capacity-and-reallocation
-        /// [`capacity`]: BumpVecRev::capacity
+        /// [`capacity`]: MutBumpVecRev::capacity
         impl
         for fn with_capacity_in
         for fn try_with_capacity_in
@@ -913,7 +913,7 @@ where
             })
         }
 
-        /// Constructs a new `BumpVecRev<T>` and pushes `value` `count` times.
+        /// Constructs a new `MutBumpVecRev<T>` and pushes `value` `count` times.
         impl
         for fn from_elem_in
         for fn try_from_elem_in
@@ -936,7 +936,7 @@ where
             Ok(vec)
         }
 
-        /// Constructs a new `BumpVecRev<T>` from a `[T; N]`.
+        /// Constructs a new `MutBumpVecRev<T>` from a `[T; N]`.
         impl
         for fn from_array_in
         for fn try_from_array_in
@@ -992,7 +992,7 @@ where
     /// worst-case performance of *O*(*n*). If you don't need the order of elements
     /// to be preserved, use [`swap_remove`] instead.
     ///
-    /// [`swap_remove`]: BumpVecRev::swap_remove
+    /// [`swap_remove`]: MutBumpVecRev::swap_remove
     ///
     /// # Panics
     ///
@@ -1001,9 +1001,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec_rev };
+    /// # use bump_scope::{ Bump, mut_bump_vec_rev };
     /// # let mut bump: Bump = Bump::new();
-    /// let mut v = bump_vec_rev![in bump; 1, 2, 3];
+    /// let mut v = mut_bump_vec_rev![in bump; 1, 2, 3];
     /// assert_eq!(v.remove(1), 2);
     /// assert_eq!(v, [1, 3]);
     /// ```
@@ -1044,7 +1044,7 @@ where
     /// This does not preserve ordering, but is *O*(1).
     /// If you need to preserve the element order, use [`remove`] instead.
     ///
-    /// [`remove`]: BumpVecRev::remove
+    /// [`remove`]: MutBumpVecRev::remove
     ///
     /// # Panics
     ///
@@ -1053,10 +1053,10 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec_rev };
+    /// # use bump_scope::{ Bump, mut_bump_vec_rev };
     /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let mut v = bump_vec_rev![in bump; "foo", "bar", "baz", "qux"];
+    /// let mut v = mut_bump_vec_rev![in bump; "foo", "bar", "baz", "qux"];
     ///
     /// assert_eq!(v.swap_remove(1), "bar");
     /// assert_eq!(v, ["foo", "baz", "qux"]);
@@ -1106,7 +1106,7 @@ where
         unsafe { this.bump.consolidate_greed_rev(this.end, this.len, this.cap) }
     }
 
-    /// Turns this `BumpVecRev<T>` into a `BumpBox<[T]>`.
+    /// Turns this `MutBumpVecRev<T>` into a `BumpBox<[T]>`.
     ///
     /// Unused capacity does not take up space.
     #[must_use]
@@ -1115,7 +1115,7 @@ where
         unsafe { BumpBox::from_raw(self.into_slice_ptr()) }
     }
 
-    /// Turns this `BumpVecRev<T>` into a `&[T]` that is live for the entire bump scope.
+    /// Turns this `MutBumpVecRev<T>` into a `&[T]` that is live for the entire bump scope.
     ///
     /// Unused capacity does not take up space.
     ///
@@ -1181,20 +1181,20 @@ where
     /// (e.g. by reading from a file) before marking the data as initialized using
     /// the [`set_len`] method.
     ///
-    /// [`set_len`]: BumpVecRev::set_len
+    /// [`set_len`]: MutBumpVecRev::set_len
     ///
     /// Note that this is a low-level API, which should be used with care for
-    /// optimization purposes. If you need to append data to a `BumpVecRev`
-    /// you can use [`push`], [`extend`], `extend_from_slice`[`_copy`](BumpVecRev::extend_from_slice_copy)`/`[`_clone`](BumpVecRev::extend_from_within_clone),
-    /// `extend_from_within`[`_copy`](BumpVecRev::extend_from_within_copy)`/`[`_clone`](BumpVecRev::extend_from_within_clone), [`insert`], [`resize`] or
+    /// optimization purposes. If you need to append data to a `MutBumpVecRev`
+    /// you can use [`push`], [`extend`], `extend_from_slice`[`_copy`](MutBumpVecRev::extend_from_slice_copy)`/`[`_clone`](MutBumpVecRev::extend_from_within_clone),
+    /// `extend_from_within`[`_copy`](MutBumpVecRev::extend_from_within_copy)`/`[`_clone`](MutBumpVecRev::extend_from_within_clone), [`insert`], [`resize`] or
     /// [`resize_with`], depending on your exact needs.
     ///
-    /// [`push`]: BumpVecRev::push
-    /// [`extend`]: BumpVecRev::extend
-    /// [`insert`]: BumpVecRev::insert
-    /// [`append`]: BumpVecRev::append
-    /// [`resize`]: BumpVecRev::resize
-    /// [`resize_with`]: BumpVecRev::resize_with
+    /// [`push`]: MutBumpVecRev::push
+    /// [`extend`]: MutBumpVecRev::extend
+    /// [`insert`]: MutBumpVecRev::insert
+    /// [`append`]: MutBumpVecRev::append
+    /// [`resize`]: MutBumpVecRev::resize
+    /// [`resize_with`]: MutBumpVecRev::resize_with
     #[inline]
     pub fn split_at_spare_mut(&mut self) -> (&mut [T], &mut [MaybeUninit<T>]) {
         // SAFETY:
@@ -1237,7 +1237,7 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone + 'a,
@@ -1249,10 +1249,10 @@ where
         /// the end point is greater than the length of the vector.
         do examples
         /// ```
-        /// # use bump_scope::{ Bump, bump_vec_rev };
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
         /// # let mut bump: Bump = Bump::new();
         /// #
-        /// let mut vec = bump_vec_rev![in bump; 0, 1, 2, 3, 4];
+        /// let mut vec = mut_bump_vec_rev![in bump; 0, 1, 2, 3, 4];
         ///
         /// vec.extend_from_within_clone(2..);
         /// assert_eq!(vec, [2, 3, 4, 0, 1, 2, 3, 4]);
@@ -1301,13 +1301,13 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T: Debug, const MIN_ALIGN: usize, const UP: bool, A> Debug for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
+impl<'b, 'a: 'b, T: Debug, const MIN_ALIGN: usize, const UP: bool, A> Debug for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Debug::fmt(self.as_slice(), f)
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> Deref for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> Deref for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     type Target = [T];
 
     #[inline(always)]
@@ -1316,7 +1316,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> Deref for BumpVec
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> DerefMut for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> DerefMut for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut_slice()
@@ -1324,7 +1324,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> DerefMut for Bump
 }
 
 impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, I: SliceIndex<[T]>> Index<I>
-    for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+    for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 {
     type Output = I::Output;
 
@@ -1335,7 +1335,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, I: SliceIndex<[T]
 }
 
 impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, I: SliceIndex<[T]>> IndexMut<I>
-    for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+    for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 {
     #[inline(always)]
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
@@ -1344,7 +1344,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, I: SliceIndex<[T]
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'b, 'a: 'b, U, const MIN_ALIGN: usize, const UP: bool, A> Extend<U> for BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>
+impl<'b, 'a: 'b, U, const MIN_ALIGN: usize, const UP: bool, A> Extend<U> for MutBumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone + 'a,
@@ -1361,10 +1361,10 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> Drop for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn drop(&mut self) {
-        // BumpVecRev never actually moves a bump pointer.
+        // MutBumpVecRev never actually moves a bump pointer.
         // It may force allocation of a new chunk, but it does not move the pointer within.
         // So we don't need to move the bump pointer when dropping.
 
@@ -1379,7 +1379,8 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpVecR
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'b, 'a: 'b, 't, T, A, const MIN_ALIGN: usize, const UP: bool> Extend<&'t T> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+impl<'b, 'a: 'b, 't, T, A, const MIN_ALIGN: usize, const UP: bool> Extend<&'t T>
+    for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone + 'a,
@@ -1398,23 +1399,23 @@ where
 }
 
 impl<'b0, 'a0: 'b0, 'b1, 'a1: 'b1, T, U, const MIN_ALIGN: usize, const UP: bool, A>
-    PartialEq<BumpVecRev<'b1, 'a1, U, A, MIN_ALIGN, UP>> for BumpVecRev<'b0, 'a0, T, A, MIN_ALIGN, UP>
+    PartialEq<MutBumpVecRev<'b1, 'a1, U, A, MIN_ALIGN, UP>> for MutBumpVecRev<'b0, 'a0, T, A, MIN_ALIGN, UP>
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &BumpVecRev<'b1, 'a1, U, A, MIN_ALIGN, UP>) -> bool {
+    fn eq(&self, other: &MutBumpVecRev<'b1, 'a1, U, A, MIN_ALIGN, UP>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &BumpVecRev<'b1, 'a1, U, A, MIN_ALIGN, UP>) -> bool {
+    fn ne(&self, other: &MutBumpVecRev<'b1, 'a1, U, A, MIN_ALIGN, UP>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
 impl<'b, 'a: 'b, T, U, const N: usize, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<[U; N]>
-    for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+    for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     T: PartialEq<U>,
 {
@@ -1430,7 +1431,7 @@ where
 }
 
 impl<'b, 'a: 'b, T, U, const N: usize, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<&[U; N]>
-    for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+    for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     T: PartialEq<U>,
 {
@@ -1446,7 +1447,7 @@ where
 }
 
 impl<'b, 'a: 'b, T, U, const N: usize, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<&mut [U; N]>
-    for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+    for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     T: PartialEq<U>,
 {
@@ -1461,7 +1462,8 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<[U]> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<[U]>
+    for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     T: PartialEq<U>,
 {
@@ -1476,7 +1478,8 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<&[U]> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<&[U]>
+    for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     T: PartialEq<U>,
 {
@@ -1492,7 +1495,7 @@ where
 }
 
 impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<&mut [U]>
-    for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+    for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     T: PartialEq<U>,
 {
@@ -1507,55 +1510,55 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>>
+impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<MutBumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>>
     for [T]
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
+    fn eq(&self, other: &MutBumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
+    fn ne(&self, other: &MutBumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>>
+impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<MutBumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>>
     for &[T]
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
+    fn eq(&self, other: &MutBumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
+    fn ne(&self, other: &MutBumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>>
+impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<MutBumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>>
     for &mut [T]
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
+    fn eq(&self, other: &MutBumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &BumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
+    fn ne(&self, other: &MutBumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> IntoIterator for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> IntoIterator for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -1565,7 +1568,7 @@ where
     /// Returns an iterator that borrows the `BumpScope` mutably. So you can't use the `BumpScope` while iterating.
     /// The advantage is that the space the items took up is freed.
     ///
-    /// If you need to use the `BumpScope` while iterating you can first turn it to a slice with [`BumpVecRev::into_boxed_slice`].
+    /// If you need to use the `BumpScope` while iterating you can first turn it to a slice with [`MutBumpVecRev::into_boxed_slice`].
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
         let this = ManuallyDrop::new(self);
@@ -1576,7 +1579,7 @@ where
 }
 
 impl<'c, 'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> IntoIterator
-    for &'c BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+    for &'c MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 {
     type Item = &'c T;
     type IntoIter = slice::Iter<'c, T>;
@@ -1588,7 +1591,7 @@ impl<'c, 'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> IntoIterator
 }
 
 impl<'c, 'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> IntoIterator
-    for &'c mut BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+    for &'c mut MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 {
     type Item = &'c mut T;
     type IntoIter = slice::IterMut<'c, T>;
@@ -1599,49 +1602,51 @@ impl<'c, 'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> IntoIterator
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> AsRef<Self> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> AsRef<Self> for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn as_ref(&self) -> &Self {
         self
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> AsMut<Self> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> AsMut<Self> for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn as_mut(&mut self) -> &mut Self {
         self
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> AsRef<[T]> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> AsRef<[T]> for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn as_ref(&self) -> &[T] {
         self
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> AsMut<[T]> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> AsMut<[T]> for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn as_mut(&mut self) -> &mut [T] {
         self
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> Borrow<[T]> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> Borrow<[T]> for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn borrow(&self) -> &[T] {
         self
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BorrowMut<[T]> for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BorrowMut<[T]>
+    for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+{
     #[inline(always)]
     fn borrow_mut(&mut self) -> &mut [T] {
         self
     }
 }
 
-impl<'b, 'a: 'b, T: Hash, const MIN_ALIGN: usize, const UP: bool, A> Hash for BumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
+impl<'b, 'a: 'b, T: Hash, const MIN_ALIGN: usize, const UP: bool, A> Hash for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[inline(always)]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.as_slice().hash(state);

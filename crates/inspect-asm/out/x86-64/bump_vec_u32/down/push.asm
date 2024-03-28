@@ -18,7 +18,7 @@ inspect_asm::bump_vec_u32::down::push:
 	mov ebp, esi
 	mov esi, 1
 	mov rbx, rdi
-	call bump_scope::bump_vec::BumpVec<T,A,_,_>::generic_grow_cold
+	call bump_scope::mut_bump_vec::MutBumpVec<T,A,_,_>::generic_grow_cold
 	mov esi, ebp
 	mov rdi, rbx
 	mov rax, qword ptr [rbx + 8]

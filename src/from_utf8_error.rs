@@ -1,6 +1,6 @@
 use core::{ops::Deref, str::Utf8Error};
 
-/// A possible error value when converting a `BumpString` from a `BumpVec<u8>` or a `BumpBox<str>` from a `BumpBox<[u8]>` where the bytes are UTF-8.
+/// A possible error value when converting a `BumpString` from a `MutBumpVec<u8>` or a `BumpBox<str>` from a `BumpBox<[u8]>` where the bytes are UTF-8.
 ///
 /// This type is the error type for the [`BumpString::from_utf8`](crate::BumpString::from_utf8) and [`BumpBox<[u8]>::into_boxed_str`](crate::BumpBox::into_boxed_str). It
 /// is designed in such a way to carefully avoid reallocations: the
