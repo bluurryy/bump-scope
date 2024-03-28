@@ -31,7 +31,7 @@ use crate::infallible;
 ///
 /// `bump_vec!` allows `BumpVec`s to be defined with the same syntax as array expressions. `try` makes the allocations fallible.
 ///
-/// `$bump` can be a mutable [`Bump`](crate::Bump) or [`BumpScope`] (anything where `$bump.as_mut_scope()` returns a `&BumpScope`).
+/// `$bump` can be a mutable [`Bump`](crate::Bump) or [`BumpScope`] (anything where `$bump.as_scope()` returns a `&BumpScope`).
 ///
 /// # Panics
 /// If used without `try`, panics on allocation failure.
@@ -46,7 +46,7 @@ use crate::infallible;
 /// - Create an empty [`BumpVec`]:
 /// ```
 /// # use bump_scope::{ bump_vec, Bump, BumpVec };
-/// # let mut bump: Bump = Bump::new();
+/// # let bump: Bump = Bump::new();
 /// let vec: BumpVec<i32> = bump_vec![in bump];
 /// assert!(vec.is_empty());
 /// ```
@@ -55,7 +55,7 @@ use crate::infallible;
 ///
 /// ```
 /// # use bump_scope::{ bump_vec, Bump };
-/// # let mut bump: Bump = Bump::new();
+/// # let bump: Bump = Bump::new();
 /// let vec = bump_vec![in bump; 1, 2, 3];
 /// assert_eq!(vec[0], 1);
 /// assert_eq!(vec[1], 2);
@@ -66,7 +66,7 @@ use crate::infallible;
 ///
 /// ```
 /// # use bump_scope::{ bump_vec, Bump };
-/// # let mut bump: Bump = Bump::new();
+/// # let bump: Bump = Bump::new();
 /// let vec = bump_vec![in bump; 1; 3];
 /// assert_eq!(vec, [1, 1, 1]);
 /// ```
@@ -106,13 +106,13 @@ macro_rules! bump_vec {
     };
 }
 
-/// This is like a `Vec` but optimized for being allocated in a `&mut Bump(Scope)`.
+/// A bump allocated `Vec`.
 ///
 /// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
 /// ```
 /// use bump_scope::{ Bump, BumpVec };
-/// let mut bump: Bump = Bump::new();
-/// let mut vec = BumpVec::new_in(&mut bump);
+/// let bump: Bump = Bump::new();
+/// let mut vec = BumpVec::new_in(&bump);
 ///
 /// vec.push(1);
 /// vec.push(2);
@@ -179,8 +179,8 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVec<'b, 'a, T
     ///
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
-    /// # let mut bump: Bump = Bump::new();
-    /// let vec = BumpVec::<i32>::with_capacity_in(2048, &mut bump);
+    /// # let bump: Bump = Bump::new();
+    /// let vec = BumpVec::<i32>::with_capacity_in(2048, &bump);
     /// assert!(vec.capacity() >= 2048);
     /// ```
     #[must_use]
@@ -216,7 +216,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVec<'b, 'a, T
     /// # Examples
     /// ```
     /// # use bump_scope::{ Bump, bump_vec };
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = bump_vec![in bump; 1, 2, 3];
     /// vec.clear();
     /// assert!(vec.is_empty());
@@ -244,7 +244,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVec<'b, 'a, T
     ///
     /// ```
     /// # use bump_scope::{ Bump, bump_vec };
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// #
     /// let mut vec = bump_vec![in bump; 1, 2, 3, 4, 5];
     /// vec.truncate(2);
@@ -256,7 +256,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVec<'b, 'a, T
     ///
     /// ```
     /// # use bump_scope::{ Bump, bump_vec };
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// #
     /// let mut vec = bump_vec![in bump; 1, 2, 3];
     /// vec.truncate(8);
@@ -268,7 +268,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVec<'b, 'a, T
     ///
     /// ```
     /// # use bump_scope::{ Bump, bump_vec };
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// #
     /// let mut vec = bump_vec![in bump; 1, 2, 3];
     /// vec.truncate(0);
@@ -294,7 +294,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVec<'b, 'a, T
     /// # Examples
     /// ```
     /// # use bump_scope::{ Bump, bump_vec };
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let mut v = bump_vec![in bump; 1, 2, 3];
     /// assert_eq!(v.remove(1), 2);
     /// assert_eq!(v, [1, 3]);
@@ -319,7 +319,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVec<'b, 'a, T
     /// # Examples
     /// ```
     /// # use bump_scope::{ Bump, bump_vec };
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// #
     /// let mut v = bump_vec![in bump; "foo", "bar", "baz", "qux"];
     ///
@@ -441,9 +441,9 @@ where
     ///
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// # #[allow(unused_mut)]
-    /// let mut vec = BumpVec::<i32>::new_in(&mut bump);
+    /// let mut vec = BumpVec::<i32>::new_in(&bump);
     /// ```
     #[inline]
     pub fn new_in(bump: impl Into<&'b BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
@@ -567,7 +567,7 @@ where
         ///
         /// ```
         /// # use bump_scope::{ bump_vec, Bump };
-        /// # let mut bump: Bump = Bump::new();
+        /// # let bump: Bump = Bump::new();
         /// let mut vec = bump_vec![in bump; 1, 2];
         /// vec.push(3);
         /// assert_eq!(vec, [1, 2, 3]);
@@ -596,7 +596,7 @@ where
         do examples
         /// ```
         /// # use bump_scope::{ bump_vec, Bump, BumpVec };
-        /// # let mut bump: Bump = Bump::new();
+        /// # let bump: Bump = Bump::new();
         /// let mut vec = bump_vec![in bump; 1, 2, 3];
         /// vec.insert(1, 4);
         /// assert_eq!(vec, [1, 4, 2, 3]);
@@ -708,7 +708,7 @@ where
         do examples
         /// ```
         /// # use bump_scope::{ Bump, bump_vec };
-        /// # let mut bump: Bump = Bump::new();
+        /// # let bump: Bump = Bump::new();
         /// #
         /// let mut vec = bump_vec![in bump; 0, 1, 2, 3, 4];
         ///
@@ -759,7 +759,7 @@ where
         ///
         /// ```
         /// # use bump_scope::{ Bump, bump_vec };
-        /// # let mut bump: Bump = Bump::new();
+        /// # let bump: Bump = Bump::new();
         /// #
         /// let mut vec = bump_vec![in bump; 0, 1, 2, 3, 4];
         ///
@@ -853,7 +853,7 @@ where
         ///
         /// ```
         /// # use bump_scope::{ Bump, bump_vec };
-        /// # let mut bump: Bump = Bump::new();
+        /// # let bump: Bump = Bump::new();
         /// #
         /// let mut vec = bump_vec![in bump; "hello"];
         /// vec.resize(3, "world");
@@ -900,7 +900,7 @@ where
         do examples
         /// ```
         /// # use bump_scope::{ Bump, bump_vec };
-        /// # let mut bump: Bump = Bump::new();
+        /// # let bump: Bump = Bump::new();
         /// #
         /// let mut vec = bump_vec![in bump; 1, 2, 3];
         /// vec.resize_with(5, Default::default);
@@ -933,9 +933,9 @@ where
         do examples
         /// ```
         /// # use bump_scope::{ Bump, bump_vec };
-        /// # let mut bump: Bump = Bump::new();
+        /// # let bump: Bump = Bump::new();
         /// // needs a scope because of lifetime shenanigans
-        /// let bump = bump.as_mut_scope();
+        /// let bump = bump.as_scope();
         /// let mut slice = bump.alloc_slice_copy(&[4, 5, 6]);
         /// let mut vec = bump_vec![in bump; 1, 2, 3];
         /// vec.append(&mut slice);
@@ -1237,7 +1237,7 @@ where
     /// ```
     /// # use bump_scope::{ Bump, bump_vec };
     /// # let some_predicate = |x: &mut i32| { *x == 2 || *x == 3 || *x == 6 };
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// # let mut vec = bump_vec![in bump; 1, 2, 3, 4, 5, 6];
     /// let mut i = 0;
     /// while i < vec.len() {
@@ -1264,7 +1264,7 @@ where
     ///
     /// ```
     /// # use bump_scope::{ Bump, bump_vec };
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let mut numbers = bump_vec![in bump; 1, 2, 3, 4, 5, 6, 8, 9, 11, 13, 14, 15];
     ///
     /// let evens = numbers.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
@@ -1291,7 +1291,7 @@ where
     ///
     /// ```
     /// # use bump_scope::{ Bump, bump_vec };
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = bump_vec![in bump; 1, 2, 2, 3, 2];
     ///
     /// vec.dedup();
@@ -1315,7 +1315,7 @@ where
     ///
     /// ```
     /// # use bump_scope::{ Bump, bump_vec };
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = bump_vec![in bump; 10, 20, 21, 30, 20];
     ///
     /// vec.dedup_by_key(|i| *i / 10);
@@ -1344,7 +1344,7 @@ where
     ///
     /// ```
     /// # use bump_scope::{ Bump, bump_vec };
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = bump_vec![in bump; "foo", "bar", "Bar", "baz", "bar"];
     ///
     /// vec.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
@@ -1437,7 +1437,7 @@ where
     ///
     /// ```
     /// # use bump_scope::{ Bump, bump_vec };
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// #
     /// let mut vec = bump_vec![in bump; [1, 2, 3], [4, 5, 6], [7, 8, 9]];
     /// assert_eq!(vec.pop(), Some([7, 8, 9]));
