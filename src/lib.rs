@@ -267,6 +267,9 @@ mod bump_vec;
 /// Contains [`MutBumpVec`] and associated types.
 mod mut_bump_vec;
 
+/// Contains [`BumpString`] and associated types.
+mod bump_string;
+
 mod array_layout;
 mod chunk_raw;
 mod chunk_size;
@@ -311,6 +314,7 @@ pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
 #[cfg(test)]
 pub use with_drop::WithDrop;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
+pub use bump_string::BumpString;
 
 use array_layout::{ArrayLayout, LayoutTrait};
 use chunk_header::ChunkHeader;
