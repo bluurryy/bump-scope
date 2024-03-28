@@ -33,7 +33,7 @@ const MALLOC_OVERHEAD: usize = ASSUMED_MALLOC_OVERHEAD_SIZE.get();
 
 use crate::{
     chunk_size::ASSUMED_MALLOC_OVERHEAD_SIZE, infallible, mut_bump_format, mut_bump_vec, mut_bump_vec_rev, Bump, BumpBox,
-    BumpScope, BumpString, Chunk, ChunkHeader, ChunkSize, FmtFn, IntoIter, MinimumAlignment, MutBumpVec, MutBumpVecRev,
+    BumpScope, Chunk, ChunkHeader, ChunkSize, FmtFn, IntoIter, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev,
     SupportedMinimumAlignment,
 };
 
@@ -51,7 +51,7 @@ fn assert_covariant() {
     //     x
     // }
 
-    // fn mut_bump_string<'b, 'a>(x: BumpString<'b, 'static>) -> BumpString<'b, 'a> {
+    // fn mut_bump_string<'b, 'a>(x: MutBumpString<'b, 'static>) -> MutBumpString<'b, 'a> {
     //     x
     // }
 }
@@ -527,12 +527,12 @@ fn api_that_accepts_bump_or_bump_scope() {
         MutBumpVec::new_in(bump)
     }
 
-    fn string_from_mut_bump(bump: &mut Bump) -> BumpString {
-        BumpString::new_in(bump)
+    fn string_from_mut_bump(bump: &mut Bump) -> MutBumpString {
+        MutBumpString::new_in(bump)
     }
 
-    fn string_from_mut_bump_scope<'b, 'a>(bump: &'b mut BumpScope<'a>) -> BumpString<'b, 'a> {
-        BumpString::new_in(bump)
+    fn string_from_mut_bump_scope<'b, 'a>(bump: &'b mut BumpScope<'a>) -> MutBumpString<'b, 'a> {
+        MutBumpString::new_in(bump)
     }
 }
 
@@ -592,29 +592,29 @@ fn bump_vec_rev_macro() {
 
 #[allow(dead_code)]
 fn bump_format_macro() {
-    fn infallible_new(bump: &mut Bump) -> BumpString {
+    fn infallible_new(bump: &mut Bump) -> MutBumpString {
         mut_bump_format!(in bump)
     }
 
-    fn fallible_new(bump: &mut Bump) -> Result<BumpString> {
+    fn fallible_new(bump: &mut Bump) -> Result<MutBumpString> {
         mut_bump_format!(try in bump)
     }
 
-    fn infallible_raw(bump: &mut Bump) -> BumpString {
+    fn infallible_raw(bump: &mut Bump) -> MutBumpString {
         mut_bump_format!(in bump, r"hey")
     }
 
-    fn fallible_raw(bump: &mut Bump) -> Result<BumpString> {
+    fn fallible_raw(bump: &mut Bump) -> Result<MutBumpString> {
         mut_bump_format!(try in bump, r"hey")
     }
 
-    fn infallible_fmt(bump: &mut Bump) -> BumpString {
+    fn infallible_fmt(bump: &mut Bump) -> MutBumpString {
         let one = 1;
         let two = 2;
         mut_bump_format!(in bump, "{one} + {two} = {}", one + two)
     }
 
-    fn fallible_fmt(bump: &mut Bump) -> Result<BumpString> {
+    fn fallible_fmt(bump: &mut Bump) -> Result<MutBumpString> {
         let one = 1;
         let two = 2;
         mut_bump_format!(try in bump, "{one} + {two} = {}", one + two)

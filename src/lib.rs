@@ -2,7 +2,7 @@
 // When using closures, functions like `capacity_overflow` can get the name of some closure that invokes it instead, like `bump_scope::mut_bump_vec::MutBumpVec<T,_,_,A>::generic_grow_cold::{{closure}}`.
 
 // This crate uses modified code from the rust standard library. <https://github.com/rust-lang/rust/tree/master/library>.
-// Especially `MutBumpVec(Rev)`, `BumpString`, `polyfill` and `tests/from_std` are based on code from the standard library.
+// Especially `MutBumpVec(Rev)`, `MutBumpString`, `polyfill` and `tests/from_std` are based on code from the standard library.
 
 #![cfg_attr(not(any(test, feature = "std")), no_std)]
 #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api, vec_into_raw_parts))]
@@ -298,13 +298,13 @@ pub use bump::Bump;
 pub use bump_box::BumpBox;
 pub use bump_scope::BumpScope;
 pub use bump_scope_guard::{BumpScopeGuard, BumpScopeGuardRoot, Checkpoint};
+pub use bump_vec::BumpVec;
 pub use drain::Drain;
 pub use extract_if::ExtractIf;
 pub use fixed_bump_vec::FixedBumpVec;
 pub use from_utf8_error::FromUtf8Error;
 pub use into_iter::IntoIter;
-pub use bump_vec::BumpVec;
-pub use mut_bump_string::BumpString;
+pub use mut_bump_string::MutBumpString;
 pub use mut_bump_vec::MutBumpVec;
 pub use mut_bump_vec_rev::MutBumpVecRev;
 pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
@@ -1426,7 +1426,7 @@ define_alloc_methods! {
             return self.generic_alloc_str(string);
         }
 
-        let mut string = BumpString::generic_with_capacity_in(0, self)?;
+        let mut string = MutBumpString::generic_with_capacity_in(0, self)?;
 
         if fmt::Write::write_fmt(&mut string, args).is_err() {
             return Err(B::capacity_overflow());

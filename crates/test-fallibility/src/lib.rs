@@ -21,7 +21,7 @@ macro_rules! type_definitions {
         type BumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuardRoot<'a, Global, MIN_ALIGN, $up>;
         type MutBumpVec<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<'b, 'a, T, Global, MIN_ALIGN, $up>;
         type MutBumpVecRev<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVecRev<'b, 'a, T, Global, MIN_ALIGN, $up>;
-        type BumpString<'b, 'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<'b, 'a, Global, MIN_ALIGN, $up>;
+        type MutBumpString<'b, 'a, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpString<'b, 'a, Global, MIN_ALIGN, $up>;
     };
 }
 
@@ -264,23 +264,23 @@ up_and_down! {
         MutBumpVecRev::try_with_capacity_in(capacity, bump)
     }
 
-    pub fn BumpString__try_from_str_in<'b>(string: &str, bump: &'b mut Bump) -> Result<BumpString<'b, 'b>> {
-        BumpString::try_from_str_in(string, bump)
+    pub fn BumpString__try_from_str_in<'b>(string: &str, bump: &'b mut Bump) -> Result<MutBumpString<'b, 'b>> {
+        MutBumpString::try_from_str_in(string, bump)
     }
 
-    pub fn BumpString_try_push(bump: &mut BumpString, value: char) -> Result {
+    pub fn BumpString_try_push(bump: &mut MutBumpString, value: char) -> Result {
         bump.try_push(value)
     }
 
-    pub fn BumpString_try_push_str(bump: &mut BumpString, value: &str) -> Result {
+    pub fn BumpString_try_push_str(bump: &mut MutBumpString, value: &str) -> Result {
         bump.try_push_str(value)
     }
 
-    pub fn BumpString_try_reserve(vec: &mut BumpString, amount: usize) -> Result {
+    pub fn BumpString_try_reserve(vec: &mut MutBumpString, amount: usize) -> Result {
         vec.try_reserve(amount)
     }
 
-    pub fn BumpString__try_with_capacity_in(capacity: usize, bump: &mut Bump) -> Result<BumpString> {
-        BumpString::try_with_capacity_in(capacity, bump)
+    pub fn BumpString__try_with_capacity_in(capacity: usize, bump: &mut Bump) -> Result<MutBumpString> {
+        MutBumpString::try_with_capacity_in(capacity, bump)
     }
 }

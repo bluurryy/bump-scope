@@ -1,5 +1,15 @@
 use core::{
-    alloc::Layout, borrow::{Borrow, BorrowMut}, fmt::Debug, hash::Hash, iter, mem::{ManuallyDrop, MaybeUninit}, num::NonZeroUsize, ops::{Deref, DerefMut, Index, IndexMut, RangeBounds}, panic::{RefUnwindSafe, UnwindSafe}, ptr::{self, NonNull}, slice::SliceIndex
+    alloc::Layout,
+    borrow::{Borrow, BorrowMut},
+    fmt::Debug,
+    hash::Hash,
+    iter,
+    mem::{ManuallyDrop, MaybeUninit},
+    num::NonZeroUsize,
+    ops::{Deref, DerefMut, Index, IndexMut, RangeBounds},
+    panic::{RefUnwindSafe, UnwindSafe},
+    ptr::{self, NonNull},
+    slice::SliceIndex,
 };
 
 use allocator_api2::alloc::{AllocError, Allocator};
@@ -8,7 +18,10 @@ use allocator_api2::alloc::{AllocError, Allocator};
 use allocator_api2::alloc::Global;
 
 use crate::{
-    bump_down, error_behavior_generic_methods, polyfill::{nonnull, pointer, slice}, up_align_usize_unchecked, BumpBox, BumpScope, Drain, ErrorBehavior, ExtractIf, FixedBumpVec, IntoIter, MinimumAlignment, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment
+    bump_down, error_behavior_generic_methods,
+    polyfill::{nonnull, pointer, slice},
+    up_align_usize_unchecked, BumpBox, BumpScope, Drain, ErrorBehavior, ExtractIf, FixedBumpVec, IntoIter, MinimumAlignment,
+    NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment,
 };
 
 #[cfg(not(no_global_oom_handling))]
@@ -1000,16 +1013,16 @@ where
                 if is_last {
                     let chunk_end = self.bump.chunk.get().content_end();
                     let remaining = nonnull::addr(chunk_end).get() - nonnull::addr(old_ptr).get();
-                
+
                     if new_size <= remaining {
                         // There is enough space! We will grow in place. Just need to update the bump pointer.
-        
+
                         let old_addr = nonnull::addr(old_ptr);
                         let new_end = old_addr.get() + new_size;
-        
+
                         // Up-aligning a pointer inside a chunks content by `MIN_ALIGN` never overflows.
                         let new_pos = up_align_usize_unchecked(new_end, MIN_ALIGN);
-        
+
                         self.bump.chunk.get().set_pos_addr(new_pos);
                     } else {
                         // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
@@ -1613,8 +1626,7 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<BumpVec<'b, 'a, U, A, MIN_ALIGN, UP>>
-    for [T]
+impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<BumpVec<'b, 'a, U, A, MIN_ALIGN, UP>> for [T]
 where
     T: PartialEq<U>,
 {
@@ -1629,8 +1641,7 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<BumpVec<'b, 'a, U, A, MIN_ALIGN, UP>>
-    for &[T]
+impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, A> PartialEq<BumpVec<'b, 'a, U, A, MIN_ALIGN, UP>> for &[T]
 where
     T: PartialEq<U>,
 {

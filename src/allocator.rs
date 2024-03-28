@@ -5,7 +5,7 @@ use allocator_api2::alloc::{AllocError, Allocator};
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    bump_down, polyfill::nonnull, up_align_usize_unchecked, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment
+    bump_down, polyfill::nonnull, up_align_usize_unchecked, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment,
 };
 
 unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Allocator for BumpScope<'_, A, MIN_ALIGN, UP>
