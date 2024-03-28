@@ -1,5 +1,4 @@
 use core::{
-    alloc::Layout,
     borrow::{Borrow, BorrowMut},
     fmt::Debug,
     hash::Hash,
@@ -992,7 +991,11 @@ where
             return Ok(());
         }
 
-        let old_layout = unsafe { Layout::from_size_align_unchecked(T::SIZE * self.capacity(), T::ALIGN) };
+        if self.capacity() == 0 {
+            self.fixed = self.bump.generic_alloc_fixed_vec(required_cap)?;
+            return Ok(());
+        }
+
         let old_ptr = self.as_non_null_ptr();
         let new_cap = self.capacity().checked_mul(2).unwrap_or(required_cap).max(required_cap);
         let old_size = self.fixed.capacity * T::SIZE; // we already allocated that amount, it can't overflow
@@ -1019,12 +1022,12 @@ where
                     } else {
                         // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
                         let new_ptr = self.bump.do_alloc_slice_in_another_chunk::<E, T>(new_cap)?.cast();
-                        nonnull::copy_nonoverlapping(old_ptr, new_ptr, old_layout.size());
+                        nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
                         self.fixed.initialized.set_ptr(new_ptr);
                     }
                 } else {
                     let new_ptr = self.bump.do_alloc_slice::<E, T>(new_cap)?.cast();
-                    nonnull::copy_nonoverlapping(old_ptr, new_ptr, old_layout.size());
+                    nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
                     self.fixed.initialized.set_ptr(new_ptr);
                 }
             } else {
@@ -1049,9 +1052,9 @@ where
 
                         // Check if the regions don't overlap so we may use the faster `copy_nonoverlapping`.
                         if new_addr_end < old_addr.get() {
-                            nonnull::copy_nonoverlapping(old_ptr, new_ptr, old_layout.size());
+                            nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
                         } else {
-                            nonnull::copy(old_ptr, new_ptr, old_layout.size());
+                            nonnull::copy::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
                         }
 
                         self.bump.chunk.get().set_pos_addr(new_addr.get());
@@ -1059,12 +1062,12 @@ where
                     } else {
                         // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
                         let new_ptr = self.bump.do_alloc_slice_in_another_chunk::<E, T>(new_cap)?.cast();
-                        nonnull::copy_nonoverlapping(old_ptr, new_ptr, old_layout.size());
+                        nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
                         self.fixed.initialized.set_ptr(new_ptr);
                     }
                 } else {
                     let new_ptr = self.bump.do_alloc_slice::<E, T>(new_cap)?.cast();
-                    nonnull::copy_nonoverlapping(old_ptr, new_ptr, old_layout.size());
+                    nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
                     self.fixed.initialized.set_ptr(new_ptr);
                 }
             }

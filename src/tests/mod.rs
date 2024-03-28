@@ -33,8 +33,8 @@ const MALLOC_OVERHEAD: usize = ASSUMED_MALLOC_OVERHEAD_SIZE.get();
 
 use crate::{
     chunk_size::ASSUMED_MALLOC_OVERHEAD_SIZE, infallible, mut_bump_format, mut_bump_vec, mut_bump_vec_rev, Bump, BumpBox,
-    BumpScope, Chunk, ChunkHeader, ChunkSize, FmtFn, IntoIter, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev,
-    SupportedMinimumAlignment,
+    BumpScope, BumpVec, Chunk, ChunkHeader, ChunkSize, FmtFn, IntoIter, MinimumAlignment, MutBumpString, MutBumpVec,
+    MutBumpVecRev, SupportedMinimumAlignment,
 };
 
 #[allow(dead_code)]
@@ -635,4 +635,19 @@ fn alloc_iter2() {
     let string = bump.alloc_fmt(format_args!("{one} + {two} = {}", one + two));
 
     assert_eq!(string, "1 + 2 = 3");
+}
+
+#[test]
+fn vec_of_strings() {
+    let bump: Bump = Bump::new();
+    let mut vec = BumpVec::new_in(&bump);
+
+    for i in 0..10 {
+        let string = bump.alloc_fmt(format_args!("hello {i}")).into_ref();
+        vec.push(string);
+    }
+
+    let slice: &[&str] = vec.into_slice();
+
+    dbg!(&slice);
 }
