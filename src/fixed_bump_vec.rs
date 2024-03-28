@@ -46,7 +46,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Empty fixed vector.
     pub const EMPTY: Self = Self {
         initialized: BumpBox::EMPTY,
-        capacity: 0,
+        capacity: if T::IS_ZST { usize::MAX } else { 0 },
     };
 
     pub(crate) fn new(uninitialized: BumpBox<'a, [MaybeUninit<T>]>) -> Self {

@@ -13,9 +13,9 @@ inspect_asm::alloc_fmt::try_mut_up:
 	lea rax, [rsp + 56]
 	mov qword ptr [rsp + 88], rax
 	mov qword ptr [rsp + 96], 1
+	mov qword ptr [rsp + 8], 1
 	xorps xmm0, xmm0
 	movups xmmword ptr [rsp + 16], xmm0
-	mov qword ptr [rsp + 8], 1
 	mov qword ptr [rsp + 32], rdi
 	lea rsi, [rip + .L__unnamed_1]
 	lea rdi, [rsp + 8]

@@ -424,11 +424,6 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVec<'b, 'a, T
     pub(crate) unsafe fn inc_len(&mut self, amount: usize) {
         self.fixed.inc_len(amount);
     }
-
-    #[inline]
-    pub(crate) unsafe fn dec_len(&mut self, amount: usize) {
-        self.fixed.dec_len(amount);
-    }
 }
 
 impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> BumpVec<'b, 'a, T, A, MIN_ALIGN, UP>
@@ -451,10 +446,7 @@ where
     #[inline]
     pub fn new_in(bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
         Self {
-            fixed: FixedBumpVec {
-                initialized: BumpBox::EMPTY,
-                capacity: if T::IS_ZST { usize::MAX } else { 0 },
-            },
+            fixed: FixedBumpVec::EMPTY,
             bump: bump.into(),
         }
     }
@@ -488,20 +480,14 @@ where
 
             if T::IS_ZST {
                 return Ok(Self {
-                    fixed: FixedBumpVec {
-                        initialized: BumpBox::EMPTY,
-                        capacity: usize::MAX,
-                    },
+                    fixed: FixedBumpVec::EMPTY,
                     bump,
                 });
             }
 
             if capacity == 0 {
                 return Ok(Self {
-                    fixed: FixedBumpVec {
-                        initialized: BumpBox::EMPTY,
-                        capacity: 0,
-                    },
+                    fixed: FixedBumpVec::EMPTY,
                     bump,
                 });
             }
@@ -560,7 +546,7 @@ where
 
             if N == 0 {
                 return Ok(Self {
-                    fixed: FixedBumpVec { initialized: BumpBox::EMPTY, capacity: 0 },
+                    fixed: FixedBumpVec::EMPTY,
                     bump,
                 });
             }
