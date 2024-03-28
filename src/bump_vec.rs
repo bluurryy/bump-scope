@@ -31,7 +31,7 @@ use crate::infallible;
 ///
 /// `bump_vec!` allows `BumpVec`s to be defined with the same syntax as array expressions. `try` makes the allocations fallible.
 ///
-/// `$bump` can be a mutable [`Bump`](crate::Bump) or [`BumpScope`] (anything where `$bump.as_scope()` returns a `&BumpScope`).
+/// `$bump` can be a [`Bump`](crate::Bump) or [`BumpScope`] (anything where `$bump.as_scope()` returns a `&BumpScope`).
 ///
 /// # Panics
 /// If used without `try`, panics on allocation failure.
@@ -122,14 +122,6 @@ macro_rules! bump_vec {
 ///
 /// assert_eq!(slice, [1, 2, 3]);
 /// ```
-//
-// BumpVec never actually moves a bump pointer.
-// It may force allocation of a new chunk, but it does not move the pointer within.
-// So we don't need to move the bump pointer when dropping.
-//
-// If we want to reset the bump pointer to a previous chunk, we use a bump scope.
-// We could do it here, by resetting to the last non-empty chunk but that would require a loop.
-// Chunk allocations are supposed to be very rare, so this wouldn't be worth it.
 pub struct BumpVec<
     'b,
     'a: 'b,

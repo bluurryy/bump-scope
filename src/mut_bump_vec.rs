@@ -104,7 +104,7 @@ macro_rules! mut_bump_vec {
     };
 }
 
-/// This is like a `Vec` but optimized for being allocated in a `&mut Bump(Scope)`.
+/// A type like [`BumpVec`](crate::BumpVec), optimized for a `&mut Bump(Scope)`.
 ///
 /// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
 /// ```
