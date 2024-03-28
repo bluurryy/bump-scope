@@ -44,6 +44,9 @@ def simplify [output: string] {
     let old = $entry.item
     let new = $entry.index
 
+    print $"old: ($old)"
+    print $"new: ($new)"
+
     $output = ($output | str replace -a $'.L__unnamed_($old)' $".L__unnamed_($new)")
   }
 
