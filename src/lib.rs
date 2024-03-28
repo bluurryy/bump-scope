@@ -284,7 +284,6 @@ mod polyfill;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
 mod stats;
-mod vec;
 #[cfg(test)]
 mod with_drop;
 mod without_dealloc;
