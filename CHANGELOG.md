@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.1 (2024-03-28)
+- **fix:** `BumpVec` and `BumpString` growing
+
 ## 0.1.0 (2024-03-28)
 - **breaking:** `BumpVec` and `BumpString` now take an `&Bump(Scope)`, `MutBumpVec` and `MutBumpString` take a `&mut Bump(Scope)`
 
