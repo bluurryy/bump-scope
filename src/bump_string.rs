@@ -19,7 +19,7 @@ use crate::{
 #[cfg(not(no_global_oom_handling))]
 use crate::infallible;
 
-/// This is like [`format!`] but allocates inside a *mutable* bump allocator, returning a [`BumpString`].
+/// This is like [`format!`] but allocates inside a `Bump` or `BumpScope`, returning a [`BumpString`].
 ///
 /// If you don't need a `BumpString` you can use [`alloc_fmt`](crate::Bump::alloc_fmt) instead, which does not require a mutable `$bump`.
 ///
@@ -65,7 +65,7 @@ macro_rules! bump_format {
     }};
 }
 
-/// A type like [`String`], optimized for exclusive bump allocation.
+/// A bump allocated [`String`].
 ///
 /// When you are done building the string, you can turn it into a `&str` with [`into_str`].
 ///
