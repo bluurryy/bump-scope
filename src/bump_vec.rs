@@ -1486,7 +1486,6 @@ where
     }
 
     #[doc = crate::doc_fn_stats!()]
-    #[doc = crate::doc_fn_stats_greedy!(BumpVec)]
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, UP> {
