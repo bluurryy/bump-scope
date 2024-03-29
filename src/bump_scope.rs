@@ -268,8 +268,11 @@ where
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        // TODO: use Layout::array
-        let layout = Layout::from_size_align_unchecked(len * T::SIZE, T::ALIGN);
+        let layout = match Layout::array::<T>(len) {
+            Ok(layout) => layout,
+            Err(_) => return Err(E::capacity_overflow()),
+        };
+
         self.alloc_in_another_chunk(layout)
     }
 
