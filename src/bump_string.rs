@@ -21,7 +21,7 @@ use crate::infallible;
 
 /// This is like [`format!`] but allocates inside a `Bump` or `BumpScope`, returning a [`BumpString`].
 ///
-/// If you don't need a `BumpString` you can use [`alloc_fmt`](crate::Bump::alloc_fmt) instead, which does not require a mutable `$bump`.
+/// If you don't need to push to the string after creation you can also use [`Bump::alloc_fmt`](crate::Bump::alloc_fmt).
 ///
 /// # Panics
 /// If used without `try`, panics on allocation failure or if a formatting trait implementation returns an error.
