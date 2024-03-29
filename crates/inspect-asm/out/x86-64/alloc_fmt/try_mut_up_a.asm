@@ -6,7 +6,7 @@ inspect_asm::alloc_fmt::try_mut_up_a:
 	mov qword ptr [rsp + 56], rax
 	lea rax, [rip + <&T as core::fmt::Display>::fmt]
 	mov qword ptr [rsp + 64], rax
-	lea rax, [rip + .L__unnamed_0]
+	lea rax, [rip + .L__unnamed__0]
 	mov qword ptr [rsp + 72], rax
 	mov qword ptr [rsp + 80], 2
 	mov qword ptr [rsp + 104], 0
@@ -17,7 +17,7 @@ inspect_asm::alloc_fmt::try_mut_up_a:
 	xorps xmm0, xmm0
 	movups xmmword ptr [rsp + 16], xmm0
 	mov qword ptr [rsp + 32], rdi
-	lea rsi, [rip + .L__unnamed_1]
+	lea rsi, [rip + .L__unnamed__1]
 	lea rdi, [rsp + 8]
 	lea rdx, [rsp + 72]
 	call qword ptr [rip + core::fmt::write@GOTPCREL]

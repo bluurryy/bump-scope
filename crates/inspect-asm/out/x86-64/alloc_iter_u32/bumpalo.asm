@@ -78,7 +78,7 @@ inspect_asm::alloc_iter_u32::bumpalo:
 .LBB_14:
 	call qword ptr [rip + bumpalo::oom@GOTPCREL]
 .LBB_11:
-	lea rdi, [rip + .L__unnamed_0]
-	lea rdx, [rip + .L__unnamed_1]
+	lea rdi, [rip + .L__unnamed__0]
+	lea rdx, [rip + .L__unnamed__1]
 	mov esi, 34
 	call qword ptr [rip + core::option::expect_failed@GOTPCREL]
