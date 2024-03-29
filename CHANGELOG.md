@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2 (2024-03-29)
+- **added:** `BumpVec::shrink_to_fit`
+- **fix:** unsoundness when allocating large slices
+
 ## 0.1.1 (2024-03-28)
 - **fix:** `BumpVec` and `BumpString` growing
 
