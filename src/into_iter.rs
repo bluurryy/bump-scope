@@ -10,9 +10,14 @@ use core::{
 
 use crate::{polyfill::nonnull, BumpBox, SizedTypeProperties};
 
-/// An iterator that moves out of a [`MutBumpVec<T>`](crate::MutBumpVec), [`MutBumpVecRev<T>`](crate::MutBumpVec) or [`BumpBox<[T]>`](BumpBox).
-///
-/// This `struct` is created by the `into_iter` method (provided by the [`IntoIterator`] trait).
+/// An iterator that moves out of an owned slice.
+/// 
+/// This `struct` is created by the `into_iter` method on 
+/// [`BumpBox`](BumpBox::into_iter), 
+/// [`FixedBumpVec`](crate::FixedBumpVec::into_iter),
+/// [`BumpVec`](crate::BumpVec::into_iter) and
+/// [`MutBumpVec`](crate::MutBumpVec::into_iter)
+/// (provided by the [`IntoIterator`] trait).
 pub struct IntoIter<'a, T> {
     ptr: NonNull<T>,
     end: NonNull<T>, // if T is a ZST this is ptr + len

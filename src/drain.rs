@@ -11,10 +11,15 @@ use crate::{
     BumpBox, IntoIter, SizedTypeProperties,
 };
 
-/// A draining iterator for `BumpBox<[T]>` and `MutBumpVec<T>`.
+/// A draining iterator owned slices.
 ///
-/// This `struct` is created by [`BumpBox<[T]>::drain`](BumpBox::drain).
-/// See its documentation for more.
+/// This struct is created by the `drain` method on 
+/// [`BumpBox`](BumpBox::drain), 
+/// [`FixedBumpVec`](crate::FixedBumpVec::drain),
+/// [`BumpVec`](crate::BumpVec::drain) and
+/// [`MutBumpVec`](crate::MutBumpVec::drain).
+/// 
+/// See their documentation for more.
 ///
 /// # Example
 ///
