@@ -22,6 +22,7 @@ mod from_std;
 mod mut_bump_vec_doc;
 mod vec;
 
+mod mut_bump_vec_rev_doc;
 mod panic_safety;
 
 extern crate std;
