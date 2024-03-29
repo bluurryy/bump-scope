@@ -1,3 +1,5 @@
+# This was written for nushell version 0.91.0
+
 def each-even [closure] {
   enumerate | each { |e| 
     if $e.index mod 2 == 0 { 
