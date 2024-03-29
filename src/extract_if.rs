@@ -3,12 +3,12 @@ use core::ptr::NonNull;
 
 /// An iterator which uses a closure to determine if an element should be removed.
 ///
-/// This struct is created by the `extract_if` method on 
-/// [`BumpBox`](BumpBox::extract_if), 
+/// This struct is created by the `extract_if` method on
+/// [`BumpBox`](BumpBox::extract_if),
 /// [`FixedBumpVec`](crate::FixedBumpVec::extract_if),
 /// [`BumpVec`](crate::BumpVec::extract_if) and
 /// [`MutBumpVec`](crate::MutBumpVec::extract_if).
-/// 
+///
 /// See their documentation for more.
 ///
 /// # Example

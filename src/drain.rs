@@ -13,12 +13,12 @@ use crate::{
 
 /// A draining iterator owned slices.
 ///
-/// This struct is created by the `drain` method on 
-/// [`BumpBox`](BumpBox::drain), 
+/// This struct is created by the `drain` method on
+/// [`BumpBox`](BumpBox::drain),
 /// [`FixedBumpVec`](crate::FixedBumpVec::drain),
 /// [`BumpVec`](crate::BumpVec::drain) and
 /// [`MutBumpVec`](crate::MutBumpVec::drain).
-/// 
+///
 /// See their documentation for more.
 ///
 /// # Example

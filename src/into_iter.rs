@@ -11,9 +11,9 @@ use core::{
 use crate::{polyfill::nonnull, BumpBox, SizedTypeProperties};
 
 /// An iterator that moves out of an owned slice.
-/// 
-/// This `struct` is created by the `into_iter` method on 
-/// [`BumpBox`](BumpBox::into_iter), 
+///
+/// This `struct` is created by the `into_iter` method on
+/// [`BumpBox`](BumpBox::into_iter),
 /// [`FixedBumpVec`](crate::FixedBumpVec::into_iter),
 /// [`BumpVec`](crate::BumpVec::into_iter) and
 /// [`MutBumpVec`](crate::MutBumpVec::into_iter)
