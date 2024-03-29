@@ -1025,7 +1025,7 @@ where
 
         let old_ptr = self.as_non_null_ptr();
         let new_cap = self.capacity().checked_mul(2).unwrap_or(required_cap).max(required_cap);
-        let old_size = self.fixed.capacity * T::SIZE; // we already allocated that amount, it can't overflow
+        let old_size = self.fixed.capacity * T::SIZE; // we already allocated that amount so this can't overflow
         let new_size = new_cap.checked_mul(T::SIZE).ok_or_else(|| E::capacity_overflow())?;
 
         unsafe {
@@ -1104,9 +1104,70 @@ where
         Ok(())
     }
 
+    /// Shrinks the capacity of the vector as much as possible.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = BumpVec::with_capacity_in(10, &bump);
+    /// vec.extend([1, 2, 3]);
+    /// assert!(vec.capacity() >= 10);
+    /// vec.shrink_to_fit();
+    /// assert!(vec.capacity() >= 3);
+    /// ```
+    pub fn shrink_to_fit(&mut self) {
+        let old_ptr = self.as_non_null_ptr();
+        let old_size = self.fixed.capacity * T::SIZE; // we already allocated that amount so this can't overflow
+        let new_size = self.len() * T::SIZE; // its less than the capacity so this can't overflow
+
+        unsafe {
+            let is_last = if UP {
+                nonnull::byte_add(old_ptr, old_size).cast() == self.bump.chunk.get().pos()
+            } else {
+                old_ptr.cast() == self.bump.chunk.get().pos()
+            };
+
+            if is_last {
+                // we can only do something if this is the last allocation
+
+                if UP {
+                    let end = nonnull::addr(old_ptr).get() + new_size;
+
+                    // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
+                    let new_pos = up_align_usize_unchecked(end, MIN_ALIGN);
+
+                    self.bump.chunk.get().set_pos_addr(new_pos);
+                } else {
+                    let old_addr = nonnull::addr(old_ptr);
+                    let old_addr_old_end = NonZeroUsize::new_unchecked(old_addr.get() + old_size);
+
+                    let new_addr = bump_down(old_addr_old_end, new_size, T::ALIGN.max(MIN_ALIGN));
+                    let new_addr = NonZeroUsize::new_unchecked(new_addr);
+                    let old_addr_new_end = NonZeroUsize::new_unchecked(old_addr.get() + new_size);
+
+                    let new_ptr = nonnull::with_addr(old_ptr, new_addr);
+
+                    let overlaps = old_addr_new_end > new_addr;
+
+                    if overlaps {
+                        nonnull::copy::<u8>(old_ptr.cast(), new_ptr.cast(), new_size);
+                    } else {
+                        nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), new_size);
+                    }
+
+                    self.bump.chunk.get().set_pos(new_ptr.cast());
+                    self.fixed.initialized.set_ptr(new_ptr);
+                }
+
+                self.fixed.capacity = self.len();
+            }
+        }
+    }
+
     /// Turns this `BumpVec<T>` into a `BumpBox<[T]>`.
     ///
-    /// Unused capacity does not take up space.
+    /// You may want to call `shrink_to_fit` before this, so the unused capacity does not take up space.
     #[must_use]
     #[inline(always)]
     pub fn into_boxed_slice(self) -> BumpBox<'a, [T]> {
@@ -1116,7 +1177,7 @@ where
 
     /// Turns this `BumpVec<T>` into a `&[T]` that is live for the entire bump scope.
     ///
-    /// Unused capacity does not take up space.
+    /// You may want to call `shrink_to_fit` before this, so the unused capacity does not take up space.
     ///
     /// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
     ///

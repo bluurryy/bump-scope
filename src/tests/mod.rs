@@ -104,6 +104,10 @@ either_way! {
 
     bump_vec_write
 
+    bump_vec_shrink_can
+
+    bump_vec_shrink_cant
+
     alloc_iter
 
     macro_syntax
@@ -650,4 +654,41 @@ fn vec_of_strings() {
     let slice: &[&str] = vec.into_slice();
 
     dbg!(&slice);
+}
+
+fn bump_vec_shrink_can<const UP: bool>() {
+    let bump = Bump::<Global, 1, UP>::with_size(64);
+
+    let mut vec = BumpVec::<i32, Global, 1, UP>::from_array_in([1, 2, 3], &bump);
+    let addr = vec.as_ptr().addr();
+    assert_eq!(vec.capacity(), 3);
+    vec.shrink_to_fit();
+    assert_eq!(addr, vec.as_ptr().addr());
+    assert_eq!(vec.capacity(), 3);
+    vec.clear();
+    assert_eq!(addr, vec.as_ptr().addr());
+    vec.shrink_to_fit();
+
+    if UP {
+        assert_eq!(addr, vec.as_ptr().addr());
+    } else {
+        assert_ne!(addr, vec.as_ptr().addr());
+    }
+
+    assert_eq!(vec.capacity(), 0);
+}
+
+fn bump_vec_shrink_cant<const UP: bool>() {
+    let bump = Bump::<Global, 1, UP>::with_size(64);
+
+    let mut vec = BumpVec::<i32, Global, 1, UP>::from_array_in([1, 2, 3], &bump);
+    let addr = vec.as_ptr().addr();
+    assert_eq!(vec.capacity(), 3);
+    bump.alloc_str("now you can't shrink haha");
+
+    vec.clear();
+    vec.shrink_to_fit();
+
+    assert_eq!(addr, vec.as_ptr().addr());
+    assert_eq!(vec.capacity(), 3);
 }
