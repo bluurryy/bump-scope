@@ -18,8 +18,8 @@ mod alloc_iter;
 mod alloc_slice;
 
 mod allocator_api;
-mod bump_vec_doc;
 mod from_std;
+mod mut_bump_vec_doc;
 mod vec;
 
 mod panic_safety;
@@ -90,19 +90,19 @@ either_way! {
 
     mut_bump_vec
 
-    bump_vec_push_pop
+    mut_bump_vec_push_pop
 
-    bump_vec_insert
+    mut_bump_vec_insert
 
-    bump_vec_remove
+    mut_bump_vec_remove
 
-    bump_vec_swap_remove
+    mut_bump_vec_swap_remove
 
-    bump_vec_extend
+    mut_bump_vec_extend
 
-    bump_vec_drop
+    mut_bump_vec_drop
 
-    bump_vec_write
+    mut_bump_vec_write
 
     bump_vec_shrink_can
 
@@ -174,7 +174,7 @@ fn mut_bump_vec<const UP: bool>() {
     }
 }
 
-fn bump_vec_push_pop<const UP: bool>() {
+fn mut_bump_vec_push_pop<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
     let mut vec = mut_bump_vec![in bump; 1, 2];
 
@@ -190,7 +190,7 @@ fn bump_vec_push_pop<const UP: bool>() {
     assert_eq!(vec, [4]);
 }
 
-fn bump_vec_insert<const UP: bool>() {
+fn mut_bump_vec_insert<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
     let mut vec = mut_bump_vec![in bump; 1, 2, 3];
 
@@ -204,7 +204,7 @@ fn bump_vec_insert<const UP: bool>() {
     assert_eq!(vec, [6, 1, 4, 2, 3, 5]);
 }
 
-fn bump_vec_remove<const UP: bool>() {
+fn mut_bump_vec_remove<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
     let mut vec = mut_bump_vec![in bump; 1, 2, 3, 4, 5];
 
@@ -218,7 +218,7 @@ fn bump_vec_remove<const UP: bool>() {
     assert_eq!(vec, [3, 4]);
 }
 
-fn bump_vec_swap_remove<const UP: bool>() {
+fn mut_bump_vec_swap_remove<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
     let mut vec = mut_bump_vec![in bump; 1, 2, 3, 4, 5];
 
@@ -232,7 +232,7 @@ fn bump_vec_swap_remove<const UP: bool>() {
     assert_eq!(vec, [3, 5]);
 }
 
-fn bump_vec_extend<const UP: bool>() {
+fn mut_bump_vec_extend<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
     let mut vec = mut_bump_vec![in bump];
 
@@ -252,7 +252,7 @@ fn bump_vec_extend<const UP: bool>() {
     assert_eq!(vec, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
 }
 
-fn bump_vec_drop<const UP: bool>() {
+fn mut_bump_vec_drop<const UP: bool>() {
     const SIZE: usize = 32;
     assert_eq!(mem::size_of::<ChunkHeader<Global>>(), SIZE);
 
@@ -276,7 +276,7 @@ fn bump_vec_drop<const UP: bool>() {
     assert_eq!(bump.stats().count(), 2);
 }
 
-fn bump_vec_write<const UP: bool>() {
+fn mut_bump_vec_write<const UP: bool>() {
     use std::io::Write;
 
     let mut bump = Bump::<Global, 1, UP>::new();
