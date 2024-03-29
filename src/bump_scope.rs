@@ -229,9 +229,8 @@ where
         self.alloc_in_another_chunk(layout)
     }
 
-    // TODO: don't return a slice
     #[inline(always)]
-    pub(crate) fn do_alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
+    pub(crate) fn do_alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
         let layout = match ArrayLayout::array::<T>(len) {
             Ok(layout) => layout,
             Err(_) => return Err(E::capacity_overflow()),
@@ -243,7 +242,7 @@ where
         };
 
         match result {
-            Ok(ptr) => Ok(nonnull::slice_from_raw_parts(ptr.cast(), len)),
+            Ok(ptr) => Ok(ptr.cast()),
             Err(error) => Err(error),
         }
     }

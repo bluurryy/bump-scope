@@ -121,9 +121,9 @@ macro_rules! bump_vec {
 ///
 /// assert_eq!(slice, [1, 2, 3]);
 /// ```
-/// 
+///
 /// ## Why not just use a [`Vec`]?
-/// 
+///
 /// You can use a `Vec` (from the standard library or from allocator-api2) in mostly the same way.
 /// The main difference is that a `BumpVec` can be turned into a slice that is live for `'a` of `BumpScope<'a>` instead of just `'b` of `&'b BumpScope`.
 /// This enables such a slice to be live while entering new scopes. This would not be possible with `Vec`:
@@ -131,21 +131,21 @@ macro_rules! bump_vec {
 /// # use bump_scope::{ Bump, BumpVec };
 /// # let mut bump: Bump = Bump::new();
 /// let bump = bump.as_mut_scope();
-/// 
+///
 /// let slice = {
 ///     let mut vec = BumpVec::new_in(&*bump);
-/// 
+///
 ///     vec.push(1);
 ///     vec.push(2);
 ///     vec.push(3);
-/// 
+///
 ///     vec.into_slice()
 /// };
-/// 
+///
 /// bump.scoped(|bump| {
 ///     // allocate more things
 /// });
-/// 
+///
 /// assert_eq!(slice, [1, 2, 3]);
 /// ```
 pub struct BumpVec<
