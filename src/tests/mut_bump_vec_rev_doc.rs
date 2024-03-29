@@ -55,22 +55,13 @@ fn extend_from_within_copy<const UP: bool>() {
     let mut vec = mut_bump_vec_rev![in bump; 0, 1, 2, 3, 4];
 
     vec.extend_from_within_copy(2..);
-    assert_eq!(
-        vec,
-        [2, 3, 4, 0, 1, 2, 3, 4]
-    );
+    assert_eq!(vec, [2, 3, 4, 0, 1, 2, 3, 4]);
 
     vec.extend_from_within_copy(..2);
-    assert_eq!(
-        vec,
-        [2, 3, 2, 3, 4, 0, 1, 2, 3, 4]
-    );
+    assert_eq!(vec, [2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
 
     vec.extend_from_within_copy(4..8);
-    assert_eq!(
-        vec,
-        [4, 0, 1, 2, 2, 3, 2, 3, 4, 0, 1, 2, 3, 4]
-    );
+    assert_eq!(vec, [4, 0, 1, 2, 2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
 }
 
 fn resize<const UP: bool>() {
@@ -78,10 +69,7 @@ fn resize<const UP: bool>() {
 
     let mut vec = mut_bump_vec_rev![in bump; "hello"];
     vec.resize(3, "world");
-    assert_eq!(
-        vec,
-        ["world", "world", "hello"]
-    );
+    assert_eq!(vec, ["world", "world", "hello"]);
     drop(vec);
 
     let mut vec = mut_bump_vec_rev![in bump; 1, 2, 3, 4];
