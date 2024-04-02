@@ -363,8 +363,29 @@ where
 
     /// Converts this `BumpScope` into a `BumpScope` with a new minimum alignment.
     ///
-    // TODO: may this decrease align? we
     #[doc = doc_align_cant_decrease!()]
+    /// 
+    /// <details>
+    /// <summary>This can't decrease alignment because otherwise you could do this:</summary>
+    /// 
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::{ Bump, allocator_api2::alloc::Global };
+    /// let mut bump: Bump<Global, 8, true> = Bump::new();
+    /// let mut guard = bump.scope_guard();
+    /// 
+    /// {
+    ///     let scope = guard.scope().into_aligned::<1>();
+    ///     scope.alloc(0u8);      
+    /// }
+    ///
+    /// {
+    ///     let scope = guard.scope();
+    ///     // scope is not aligned to `MIN_ALIGN`!!
+    /// }
+    ///
+    /// ```
+    /// </details>
     #[inline(always)]
     pub fn into_aligned<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, A, NEW_MIN_ALIGN, UP>
     where
