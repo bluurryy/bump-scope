@@ -38,9 +38,9 @@ mod other {
     #[inline(always)]
     pub fn unlikely(condition: bool) -> bool {
         if condition {
-            // ...
-        } else {
             cold();
+        } else {
+            // ...
         }
 
         condition
