@@ -141,12 +141,11 @@ where
     }
 
     error_behavior_generic_methods! {
-        /// Constructs a new, empty `BumpString` with at least the specified capacity
-        /// with the provided `BumpScope`.
+        /// Constructs a new, empty `BumpString` with the specified capacity
+        /// in the provided `BumpScope`.
         ///
-        /// The string will be able to hold at least `capacity` bytes without
-        /// reallocating. This method allocates for as much elements as the< current chunk can hold.
-        /// If `capacity` is 0, the string will not allocate.
+        /// The string will be able to hold `capacity` bytes without
+        /// reallocating. If `capacity` is 0, the string will not allocate.
         impl
         for fn with_capacity_in
         for fn try_with_capacity_in

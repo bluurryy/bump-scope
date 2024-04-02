@@ -218,17 +218,13 @@ where
         /// Constructs a new, empty `BumpVec<T>` with at least the specified capacity
         /// with the provided `BumpScope`.
         ///
-        /// The vector will be able to hold at least `capacity` elements without
-        /// reallocating. This method allocates for as much elements as the current chunk can hold.
-        /// If `capacity` is 0, the vector will not allocate.
+        /// The vector will be able to hold `capacity` elements without
+        /// reallocating. If `capacity` is 0, the vector will not allocate.
         ///
         /// It is important to note that although the returned vector has the
         /// minimum *capacity* specified, the vector will have a zero *length*. For
         /// an explanation of the difference between length and capacity, see
         /// *[Capacity and reallocation]*.
-        ///
-        /// If it is important to know the exact allocated capacity of a `BumpVec`,
-        /// always use the [`capacity`] method after construction.
         ///
         /// For `BumpVec<T>` where `T` is a zero-sized type, there will be no allocation
         /// and the capacity will always be `usize::MAX`.
