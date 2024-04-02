@@ -489,7 +489,25 @@ where
         Ok(())
     }
 
+    /// Shrinks the capacity of the string as much as possible.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, BumpString };
+    /// # let bump: Bump = Bump::new();
+    /// let mut string = BumpString::with_capacity_in(10, &bump);
+    /// string.push_str("123");
+    /// assert!(string.capacity() >= 10);
+    /// string.shrink_to_fit();
+    /// assert!(string.capacity() == 3);
+    /// ```
+    pub fn shrink_to_fit(&mut self) {
+        self.vec.shrink_to_fit()
+    }
+
     /// Converts a `BumpString` into a `BumpBox<str>`.
+    ///
+    /// You may want to call `shrink_to_fit` before this, so the unused capacity does not take up space.
     #[must_use]
     #[inline(always)]
     pub fn into_boxed_str(self) -> BumpBox<'a, str> {
@@ -497,6 +515,8 @@ where
     }
 
     /// Converts this `BumpBox<str>` into `&str` that is live for the entire bump scope.
+    ///
+    /// You may want to call `shrink_to_fit` before this, so the unused capacity does not take up space.
     #[must_use]
     #[inline(always)]
     pub fn into_str(self) -> &'a mut str {

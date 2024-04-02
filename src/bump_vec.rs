@@ -1114,7 +1114,7 @@ where
     /// vec.extend([1, 2, 3]);
     /// assert!(vec.capacity() >= 10);
     /// vec.shrink_to_fit();
-    /// assert!(vec.capacity() >= 3);
+    /// assert!(vec.capacity() == 3);
     /// ```
     pub fn shrink_to_fit(&mut self) {
         let old_ptr = self.as_non_null_ptr();
@@ -1171,7 +1171,6 @@ where
     #[must_use]
     #[inline(always)]
     pub fn into_boxed_slice(self) -> BumpBox<'a, [T]> {
-        // TODO: shrink-to-fit
         self.fixed.into_boxed_slice()
     }
 
