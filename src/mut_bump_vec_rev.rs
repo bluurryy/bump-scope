@@ -167,6 +167,165 @@ where
 {
 }
 
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
+{
+    /// Constructs a new, empty `MutBumpVecRev<T>`.
+    ///
+    /// The vector will not allocate until elements are pushed onto it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpVecRev };
+    /// # let mut bump: Bump = Bump::new();
+    /// # #[allow(unused_mut)]
+    /// let mut vec = MutBumpVecRev::<i32>::new_in(&mut bump);
+    /// ```
+    #[inline]
+    pub fn new_in(bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
+        Self {
+            end: NonNull::dangling(),
+            len: 0,
+            cap: if T::IS_ZST { usize::MAX } else { 0 },
+            bump: bump.into(),
+            marker: PhantomData,
+        }
+    }
+
+    error_behavior_generic_methods! {
+        /// Constructs a new, empty `MutBumpVecRev<T>` with at least the specified capacity
+        /// with the provided `BumpScope`.
+        ///
+        /// The vector will be able to hold at least `capacity` elements without
+        /// reallocating. This method allocates for as much elements as the current chunk can hold.
+        /// If `capacity` is 0, the vector will not allocate.
+        ///
+        /// It is important to note that although the returned vector has the
+        /// minimum *capacity* specified, the vector will have a zero *length*. For
+        /// an explanation of the difference between length and capacity, see
+        /// *[Capacity and reallocation]*.
+        ///
+        /// If it is important to know the exact allocated capacity of a `MutBumpVecRev`,
+        /// always use the [`capacity`] method after construction.
+        ///
+        /// For `MutBumpVecRev<T>` where `T` is a zero-sized type, there will be no allocation
+        /// and the capacity will always be `usize::MAX`.
+        ///
+        /// [Capacity and reallocation]: alloc::vec::Vec#capacity-and-reallocation
+        /// [`capacity`]: MutBumpVecRev::capacity
+        impl
+        for fn with_capacity_in
+        for fn try_with_capacity_in
+        fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
+            let bump = bump.into();
+
+            if T::IS_ZST {
+                return Ok(Self {
+                    end: NonNull::dangling(),
+                    len: 0,
+                    cap: usize::MAX,
+                    bump,
+                    marker: PhantomData,
+                });
+            }
+
+            if capacity == 0 {
+                return Ok(Self {
+                    end: NonNull::dangling(),
+                    len: 0,
+                    cap: 0,
+                    bump,
+                    marker: PhantomData,
+                });
+            }
+
+            let (end, cap) = bump.alloc_greedy_rev(capacity)?;
+
+            Ok(Self {
+                end,
+                len: 0,
+                cap,
+                bump,
+                marker: PhantomData,
+            })
+        }
+
+        /// Constructs a new `MutBumpVecRev<T>` and pushes `value` `count` times.
+        impl
+        for fn from_elem_in
+        for fn try_from_elem_in
+        fn generic_from_elem_in(value: T, count: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self
+        where {
+            T: Clone
+        } in {
+            let mut vec = Self::generic_with_capacity_in(count, bump)?;
+
+            unsafe {
+                if count != 0 {
+                    for _ in 0..(count - 1) {
+                        vec.unchecked_push_with(|| value.clone());
+                    }
+
+                    vec.unchecked_push_with(|| value);
+                }
+            }
+
+            Ok(vec)
+        }
+
+        /// Constructs a new `MutBumpVecRev<T>` from a `[T; N]`.
+        impl
+        for fn from_array_in
+        for fn try_from_array_in
+        fn generic_from_array_in<{const N: usize}>(array: [T; N], bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
+            #![allow(clippy::needless_pass_by_value)]
+            #![allow(clippy::needless_pass_by_ref_mut)]
+
+            let array = ManuallyDrop::new(array);
+            let bump = bump.into();
+
+            if T::IS_ZST {
+                return Ok(Self {
+                    end: NonNull::dangling(),
+                    len: N,
+                    cap: usize::MAX,
+                    bump,
+                    marker: PhantomData,
+                });
+            }
+
+            if N == 0 {
+                return Ok(Self {
+                    end: NonNull::dangling(),
+                    len: 0,
+                    cap: 0,
+                    bump,
+                    marker: PhantomData,
+                });
+            }
+
+            let (end, cap) = bump.alloc_greedy_rev::<B, T>(N)?;
+            let src = array.as_ptr();
+
+            unsafe {
+                let dst = end.as_ptr().sub(N);
+                ptr::copy_nonoverlapping(src, dst, N);
+            };
+
+            Ok(Self {
+                end,
+                len: N,
+                cap,
+                bump,
+                marker: PhantomData,
+            })
+        }
+    }
+}
+
 impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP> {
     #[must_use]
     #[inline(always)]
@@ -830,159 +989,6 @@ where
         }
 
         Ok(())
-    }
-
-    /// Constructs a new, empty `MutBumpVecRev<T>`.
-    ///
-    /// The vector will not allocate until elements are pushed onto it.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use bump_scope::{ Bump, MutBumpVecRev };
-    /// # let mut bump: Bump = Bump::new();
-    /// # #[allow(unused_mut)]
-    /// let mut vec = MutBumpVecRev::<i32>::new_in(&mut bump);
-    /// ```
-    #[inline]
-    pub fn new_in(bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
-        Self {
-            end: NonNull::dangling(),
-            len: 0,
-            cap: if T::IS_ZST { usize::MAX } else { 0 },
-            bump: bump.into(),
-            marker: PhantomData,
-        }
-    }
-
-    error_behavior_generic_methods! {
-        /// Constructs a new, empty `MutBumpVecRev<T>` with at least the specified capacity
-        /// with the provided `BumpScope`.
-        ///
-        /// The vector will be able to hold at least `capacity` elements without
-        /// reallocating. This method allocates for as much elements as the current chunk can hold.
-        /// If `capacity` is 0, the vector will not allocate.
-        ///
-        /// It is important to note that although the returned vector has the
-        /// minimum *capacity* specified, the vector will have a zero *length*. For
-        /// an explanation of the difference between length and capacity, see
-        /// *[Capacity and reallocation]*.
-        ///
-        /// If it is important to know the exact allocated capacity of a `MutBumpVecRev`,
-        /// always use the [`capacity`] method after construction.
-        ///
-        /// For `MutBumpVecRev<T>` where `T` is a zero-sized type, there will be no allocation
-        /// and the capacity will always be `usize::MAX`.
-        ///
-        /// [Capacity and reallocation]: alloc::vec::Vec#capacity-and-reallocation
-        /// [`capacity`]: MutBumpVecRev::capacity
-        impl
-        for fn with_capacity_in
-        for fn try_with_capacity_in
-        fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
-            let bump = bump.into();
-
-            if T::IS_ZST {
-                return Ok(Self {
-                    end: NonNull::dangling(),
-                    len: 0,
-                    cap: usize::MAX,
-                    bump,
-                    marker: PhantomData,
-                });
-            }
-
-            if capacity == 0 {
-                return Ok(Self {
-                    end: NonNull::dangling(),
-                    len: 0,
-                    cap: 0,
-                    bump,
-                    marker: PhantomData,
-                });
-            }
-
-            let (end, cap) = bump.alloc_greedy_rev(capacity)?;
-
-            Ok(Self {
-                end,
-                len: 0,
-                cap,
-                bump,
-                marker: PhantomData,
-            })
-        }
-
-        /// Constructs a new `MutBumpVecRev<T>` and pushes `value` `count` times.
-        impl
-        for fn from_elem_in
-        for fn try_from_elem_in
-        fn generic_from_elem_in(value: T, count: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self
-        where {
-            T: Clone
-        } in {
-            let mut vec = Self::generic_with_capacity_in(count, bump)?;
-
-            unsafe {
-                if count != 0 {
-                    for _ in 0..(count - 1) {
-                        vec.unchecked_push_with(|| value.clone());
-                    }
-
-                    vec.unchecked_push_with(|| value);
-                }
-            }
-
-            Ok(vec)
-        }
-
-        /// Constructs a new `MutBumpVecRev<T>` from a `[T; N]`.
-        impl
-        for fn from_array_in
-        for fn try_from_array_in
-        fn generic_from_array_in<{const N: usize}>(array: [T; N], bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
-            #![allow(clippy::needless_pass_by_value)]
-            #![allow(clippy::needless_pass_by_ref_mut)]
-
-            let array = ManuallyDrop::new(array);
-            let bump = bump.into();
-
-            if T::IS_ZST {
-                return Ok(Self {
-                    end: NonNull::dangling(),
-                    len: N,
-                    cap: usize::MAX,
-                    bump,
-                    marker: PhantomData,
-                });
-            }
-
-            if N == 0 {
-                return Ok(Self {
-                    end: NonNull::dangling(),
-                    len: 0,
-                    cap: 0,
-                    bump,
-                    marker: PhantomData,
-                });
-            }
-
-            let (end, cap) = bump.alloc_greedy_rev::<B, T>(N)?;
-            let src = array.as_ptr();
-
-            unsafe {
-                let dst = end.as_ptr().sub(N);
-                ptr::copy_nonoverlapping(src, dst, N);
-            };
-
-            Ok(Self {
-                end,
-                len: N,
-                cap,
-                bump,
-                marker: PhantomData,
-            })
-        }
     }
 
     /// Removes and returns the element at position `index` within the vector,

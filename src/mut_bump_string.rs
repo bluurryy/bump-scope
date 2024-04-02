@@ -126,6 +126,46 @@ pub struct MutBumpString<
     vec: MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP>,
 }
 
+impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, A> MutBumpString<'b, 'a, A, MIN_ALIGN, UP>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
+{
+    /// Constructs a new, empty `MutBumpString`.
+    ///
+    /// The vector will not allocate until elements are pushed onto it.
+    pub fn new_in(bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
+        Self {
+            vec: MutBumpVec::new_in(bump),
+        }
+    }
+
+    error_behavior_generic_methods! {
+        /// Constructs a new, empty `MutBumpString` with at least the specified capacity
+        /// with the provided `BumpScope`.
+        ///
+        /// The string will be able to hold at least `capacity` bytes without
+        /// reallocating. This method allocates for as much elements as the< current chunk can hold.
+        /// If `capacity` is 0, the string will not allocate.
+        impl
+        for fn with_capacity_in
+        for fn try_with_capacity_in
+        fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
+            Ok(Self { vec: MutBumpVec::generic_with_capacity_in(capacity, bump.into())? } )
+        }
+
+        /// Constructs a new `MutBumpString` from a `&str`.
+        impl
+        for fn from_str_in
+        for fn try_from_str_in
+        fn generic_from_str_in(string: &str, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
+            let mut this = Self::new_in(bump);
+            this.generic_push_str(string)?;
+            Ok(this)
+        }
+    }
+}
+
 impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, A> MutBumpString<'b, 'a, A, MIN_ALIGN, UP> {
     /// Returns this `MutBumpString`'s capacity, in bytes.
     #[must_use]
@@ -313,39 +353,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
 {
-    /// Constructs a new, empty `MutBumpString`.
-    ///
-    /// The vector will not allocate until elements are pushed onto it.
-    pub fn new_in(bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
-        Self {
-            vec: MutBumpVec::new_in(bump),
-        }
-    }
-
     error_behavior_generic_methods! {
-        /// Constructs a new, empty `MutBumpString` with at least the specified capacity
-        /// with the provided `BumpScope`.
-        ///
-        /// The string will be able to hold at least `capacity` bytes without
-        /// reallocating. This method allocates for as much elements as the< current chunk can hold.
-        /// If `capacity` is 0, the string will not allocate.
-        impl
-        for fn with_capacity_in
-        for fn try_with_capacity_in
-        fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
-            Ok(Self { vec: MutBumpVec::generic_with_capacity_in(capacity, bump.into())? } )
-        }
-
-        /// Constructs a new `MutBumpString` from a `&str`.
-        impl
-        for fn from_str_in
-        for fn try_from_str_in
-        fn generic_from_str_in(string: &str, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
-            let mut this = Self::new_in(bump);
-            this.generic_push_str(string)?;
-            Ok(this)
-        }
-
         /// Appends the given [`char`] to the end of this `MutBumpString`.
         impl
         for fn push

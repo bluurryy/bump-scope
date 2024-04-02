@@ -169,6 +169,145 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> DerefMut for MutB
     }
 }
 
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
+{
+    /// Constructs a new, empty `MutBumpVec<T>`.
+    ///
+    /// The vector will not allocate until elements are pushed onto it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # let mut bump: Bump = Bump::new();
+    /// # #[allow(unused_mut)]
+    /// let mut vec = MutBumpVec::<i32>::new_in(&mut bump);
+    /// ```
+    #[inline]
+    pub fn new_in(bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
+        Self {
+            fixed: FixedBumpVec::EMPTY,
+            bump: bump.into(),
+        }
+    }
+
+    error_behavior_generic_methods! {
+        /// Constructs a new, empty `MutBumpVec<T>` with at least the specified capacity
+        /// with the provided `BumpScope`.
+        ///
+        /// The vector will be able to hold at least `capacity` elements without
+        /// reallocating. This method allocates for as much elements as the current chunk can hold.
+        /// If `capacity` is 0, the vector will not allocate.
+        ///
+        /// It is important to note that although the returned vector has the
+        /// minimum *capacity* specified, the vector will have a zero *length*. For
+        /// an explanation of the difference between length and capacity, see
+        /// *[Capacity and reallocation]*.
+        ///
+        /// If it is important to know the exact allocated capacity of a `MutBumpVec`,
+        /// always use the [`capacity`] method after construction.
+        ///
+        /// For `MutBumpVec<T>` where `T` is a zero-sized type, there will be no allocation
+        /// and the capacity will always be `usize::MAX`.
+        ///
+        /// [Capacity and reallocation]: alloc::vec::Vec#capacity-and-reallocation
+        /// [`capacity`]: MutBumpVec::capacity
+        impl
+        for fn with_capacity_in
+        for fn try_with_capacity_in
+        fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
+            let bump = bump.into();
+
+            if T::IS_ZST {
+                return Ok(Self {
+                    fixed: FixedBumpVec::EMPTY,
+                    bump,
+                });
+            }
+
+            if capacity == 0 {
+                return Ok(Self {
+                    fixed: FixedBumpVec::EMPTY,
+                    bump,
+                });
+            }
+
+            let (ptr, capacity) = bump.alloc_greedy(capacity)?;
+
+            Ok(Self {
+                fixed: FixedBumpVec {
+                    initialized: unsafe{ BumpBox::from_raw(nonnull::slice_from_raw_parts(ptr, 0)) },
+                    capacity,
+                },
+                bump,
+            })
+        }
+
+        /// Constructs a new `MutBumpVec<T>` and pushes `value` `count` times.
+        impl
+        for fn from_elem_in
+        for fn try_from_elem_in
+        fn generic_from_elem_in(value: T, count: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self
+        where {
+            T: Clone
+        } in {
+            let mut vec = Self::generic_with_capacity_in(count, bump)?;
+
+            unsafe {
+                if count != 0 {
+                    for _ in 0..(count - 1) {
+                        vec.unchecked_push_with(|| value.clone());
+                    }
+
+                    vec.unchecked_push_with(|| value);
+                }
+            }
+
+            Ok(vec)
+        }
+
+        /// Constructs a new `MutBumpVec<T>` from a `[T; N]`.
+        impl
+        for fn from_array_in
+        for fn try_from_array_in
+        fn generic_from_array_in<{const N: usize}>(array: [T; N], bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
+            #![allow(clippy::needless_pass_by_value)]
+            #![allow(clippy::needless_pass_by_ref_mut)]
+
+            let array = ManuallyDrop::new(array);
+            let bump = bump.into();
+
+            if T::IS_ZST {
+                return Ok(Self {
+                    fixed: FixedBumpVec { initialized: unsafe { BumpBox::from_raw(nonnull::slice_from_raw_parts(NonNull::dangling(), N)) }, capacity: usize::MAX },
+                    bump,
+                });
+            }
+
+            if N == 0 {
+                return Ok(Self {
+                    fixed: FixedBumpVec::EMPTY,
+                    bump,
+                });
+            }
+
+            let (ptr, capacity) = bump.alloc_greedy(N)?;
+
+            let src = array.as_ptr();
+            let dst = ptr.as_ptr();
+            unsafe { ptr::copy_nonoverlapping(src, dst, N) };
+
+            Ok(Self {
+                fixed: FixedBumpVec { initialized: unsafe { BumpBox::from_raw(nonnull::slice_from_raw_parts(ptr, N)) }, capacity },
+                bump,
+            })
+        }
+    }
+}
+
 impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP> {
     /// Returns the total number of elements the vector can hold without
     /// reallocating.
@@ -431,138 +570,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
 {
-    /// Constructs a new, empty `MutBumpVec<T>`.
-    ///
-    /// The vector will not allocate until elements are pushed onto it.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use bump_scope::{ Bump, MutBumpVec };
-    /// # let mut bump: Bump = Bump::new();
-    /// # #[allow(unused_mut)]
-    /// let mut vec = MutBumpVec::<i32>::new_in(&mut bump);
-    /// ```
-    #[inline]
-    pub fn new_in(bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
-        Self {
-            fixed: FixedBumpVec::EMPTY,
-            bump: bump.into(),
-        }
-    }
-
     error_behavior_generic_methods! {
-        /// Constructs a new, empty `MutBumpVec<T>` with at least the specified capacity
-        /// with the provided `BumpScope`.
-        ///
-        /// The vector will be able to hold at least `capacity` elements without
-        /// reallocating. This method allocates for as much elements as the current chunk can hold.
-        /// If `capacity` is 0, the vector will not allocate.
-        ///
-        /// It is important to note that although the returned vector has the
-        /// minimum *capacity* specified, the vector will have a zero *length*. For
-        /// an explanation of the difference between length and capacity, see
-        /// *[Capacity and reallocation]*.
-        ///
-        /// If it is important to know the exact allocated capacity of a `MutBumpVec`,
-        /// always use the [`capacity`] method after construction.
-        ///
-        /// For `MutBumpVec<T>` where `T` is a zero-sized type, there will be no allocation
-        /// and the capacity will always be `usize::MAX`.
-        ///
-        /// [Capacity and reallocation]: alloc::vec::Vec#capacity-and-reallocation
-        /// [`capacity`]: MutBumpVec::capacity
-        impl
-        for fn with_capacity_in
-        for fn try_with_capacity_in
-        fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
-            let bump = bump.into();
-
-            if T::IS_ZST {
-                return Ok(Self {
-                    fixed: FixedBumpVec::EMPTY,
-                    bump,
-                });
-            }
-
-            if capacity == 0 {
-                return Ok(Self {
-                    fixed: FixedBumpVec::EMPTY,
-                    bump,
-                });
-            }
-
-            let (ptr, capacity) = bump.alloc_greedy(capacity)?;
-
-            Ok(Self {
-                fixed: FixedBumpVec {
-                    initialized: unsafe{ BumpBox::from_raw(nonnull::slice_from_raw_parts(ptr, 0)) },
-                    capacity,
-                },
-                bump,
-            })
-        }
-
-        /// Constructs a new `MutBumpVec<T>` and pushes `value` `count` times.
-        impl
-        for fn from_elem_in
-        for fn try_from_elem_in
-        fn generic_from_elem_in(value: T, count: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self
-        where {
-            T: Clone
-        } in {
-            let mut vec = Self::generic_with_capacity_in(count, bump)?;
-
-            unsafe {
-                if count != 0 {
-                    for _ in 0..(count - 1) {
-                        vec.unchecked_push_with(|| value.clone());
-                    }
-
-                    vec.unchecked_push_with(|| value);
-                }
-            }
-
-            Ok(vec)
-        }
-
-        /// Constructs a new `MutBumpVec<T>` from a `[T; N]`.
-        impl
-        for fn from_array_in
-        for fn try_from_array_in
-        fn generic_from_array_in<{const N: usize}>(array: [T; N], bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
-            #![allow(clippy::needless_pass_by_value)]
-            #![allow(clippy::needless_pass_by_ref_mut)]
-
-            let array = ManuallyDrop::new(array);
-            let bump = bump.into();
-
-            if T::IS_ZST {
-                return Ok(Self {
-                    fixed: FixedBumpVec { initialized: unsafe { BumpBox::from_raw(nonnull::slice_from_raw_parts(NonNull::dangling(), N)) }, capacity: usize::MAX },
-                    bump,
-                });
-            }
-
-            if N == 0 {
-                return Ok(Self {
-                    fixed: FixedBumpVec::EMPTY,
-                    bump,
-                });
-            }
-
-            let (ptr, capacity) = bump.alloc_greedy(N)?;
-
-            let src = array.as_ptr();
-            let dst = ptr.as_ptr();
-            unsafe { ptr::copy_nonoverlapping(src, dst, N) };
-
-            Ok(Self {
-                fixed: FixedBumpVec { initialized: unsafe { BumpBox::from_raw(nonnull::slice_from_raw_parts(ptr, N)) }, capacity },
-                bump,
-            })
-        }
-
         /// Appends an element to the back of a collection.
         impl
         /// # Examples
