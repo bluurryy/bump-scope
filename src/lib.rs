@@ -499,10 +499,11 @@ pub(crate) use doc_fn_scope;
 pub(crate) use doc_fn_stats;
 pub(crate) use doc_fn_stats_greedy;
 
-/// Allocators that don't need to have `deallocate` or `shrink` being called, because they have another way of reclamation.
-///
+/// An allocator that allows `grow(_zeroed)`, `shrink` and `deallocate` calls with pointers that were not allocated by this allocator.
+/// This trait is used for [`BumpBox::into_box`](BumpBox::into_box) to allow safely converting a `BumpBox` into a `Box`.
+/// 
 /// # Safety
-/// The `deallocate` and `shrink` implementation must be ok to be called with a pointer that was not allocated by this Allocator and with a size that is smaller than what was allocated.
+/// - `grow(_zeroed)`, `shrink` and `deallocate` must be ok to be called with a pointer that was not allocated by this Allocator
 pub unsafe trait BumpAllocator: Allocator {}
 
 unsafe impl<A: BumpAllocator> BumpAllocator for &A {}
