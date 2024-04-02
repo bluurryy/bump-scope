@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.3 (2024-04-02)
+- **fix:** `aligned` and `scoped_aligned` not aligning
+
 ## 0.1.2 (2024-03-29)
 - **added:** `BumpVec::shrink_to_fit`
 - **fix:** unsoundness when allocating large slices
