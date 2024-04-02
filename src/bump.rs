@@ -244,10 +244,7 @@ where
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        if NEW_MIN_ALIGN > MIN_ALIGN {
-            self.as_scope().force_align::<NEW_MIN_ALIGN>();
-        }
-
+        self.as_scope().align::<NEW_MIN_ALIGN>();
         unsafe { self.cast_align() }
     }
 
@@ -259,7 +256,7 @@ where
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        self.as_scope().force_align_more::<NEW_MIN_ALIGN>();
+        self.as_scope().must_align_more::<NEW_MIN_ALIGN>();
         unsafe { self.cast_align_mut() }
     }
 

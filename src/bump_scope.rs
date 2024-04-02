@@ -286,26 +286,17 @@ where
         }
     }
 
+    /// Will error at compile time if `NEW_MIN_ALIGN < MIN_ALIGN`.
     #[inline(always)]
-    pub(crate) fn force_align<const ALIGN: usize>(&self)
-    where
-        MinimumAlignment<ALIGN>: SupportedMinimumAlignment,
-    {
-        self.chunk.get().align_pos_to::<ALIGN>();
-    }
-
-    #[inline(always)]
-    pub(crate) fn force_align_more<const NEW_MIN_ALIGN: usize>(&self)
+    pub(crate) fn must_align_more<const NEW_MIN_ALIGN: usize>(&self)
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
         const_param_assert! {
-            (const MIN_ALIGN: usize, const NEW_MIN_ALIGN: usize) => MIN_ALIGN <= NEW_MIN_ALIGN, "`into_aligned` or `as_aligned_mut` can't decrease the minimum alignment"
+            (const MIN_ALIGN: usize, const NEW_MIN_ALIGN: usize) => NEW_MIN_ALIGN >= MIN_ALIGN, "`into_aligned` or `as_aligned_mut` can't decrease the minimum alignment"
         }
 
-        if NEW_MIN_ALIGN > MIN_ALIGN {
-            self.force_align::<NEW_MIN_ALIGN>();
-        }
+        self.align::<NEW_MIN_ALIGN>();
     }
 
     pub(crate) fn do_alloc_no_bump_for<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
@@ -379,7 +370,7 @@ where
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        self.force_align_more::<NEW_MIN_ALIGN>();
+        self.must_align_more::<NEW_MIN_ALIGN>();
         unsafe { self.cast_align() }
     }
 
@@ -391,7 +382,7 @@ where
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        self.force_align_more::<NEW_MIN_ALIGN>();
+        self.must_align_more::<NEW_MIN_ALIGN>();
         unsafe { self.cast_align_mut() }
     }
 
