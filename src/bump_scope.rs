@@ -364,16 +364,18 @@ where
     /// Converts this `BumpScope` into a `BumpScope` with a new minimum alignment.
     ///
     #[doc = doc_align_cant_decrease!()]
-    /// 
+    ///
     /// <details>
-    /// <summary>This can't decrease alignment because otherwise you could do this:</summary>
-    /// 
-    /// ```
+    /// <summary>This mustn't decrease alignment because otherwise you could do this:</summary>
+    ///
+    /// ```ignore
+    /// # // We can't `compile_fail,E0080` this doc test because it does not do the compile step
+    /// # // that triggers the error.
     /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::{ Bump, allocator_api2::alloc::Global };
     /// let mut bump: Bump<Global, 8, true> = Bump::new();
     /// let mut guard = bump.scope_guard();
-    /// 
+    ///
     /// {
     ///     let scope = guard.scope().into_aligned::<1>();
     ///     scope.alloc(0u8);      
