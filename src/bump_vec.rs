@@ -157,7 +157,7 @@ pub struct BumpVec<
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
 > {
-    fixed: FixedBumpVec<'a, T>,
+    pub(crate) fixed: FixedBumpVec<'a, T>,
     pub(crate) bump: &'b BumpScope<'a, A, MIN_ALIGN, UP>,
 }
 
@@ -1167,6 +1167,13 @@ where
                 self.fixed.capacity = self.len();
             }
         }
+    }
+
+    /// Turns this `BumpVec<T>` into a `FixedBumpVec<T>`.
+    #[must_use]
+    #[inline(always)]
+    pub fn into_fixed_vec(self) -> FixedBumpVec<'a, T> {
+        self.fixed
     }
 
     /// Turns this `BumpVec<T>` into a `BumpBox<[T]>`.

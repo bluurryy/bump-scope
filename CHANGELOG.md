@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **added:** `BumpVec::into_fixed_vec` and `FixedBumpVec::into_vec`
+
 ## 0.1.4 (2024-04-02)
 - **added:** `String::shrink_to_fit`
 

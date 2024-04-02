@@ -13,7 +13,7 @@ use core::{
 use crate::{
     polyfill::{self, nonnull, pointer, slice},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BumpBox, Drain, ExtractIf, IntoIter, NoDrop, SizedTypeProperties,
+    BumpBox, BumpScope, BumpVec, Drain, ExtractIf, IntoIter, NoDrop, SizedTypeProperties,
 };
 
 /// This is like a `Vec` but with a fixed capacity.
@@ -102,6 +102,14 @@ impl<'a, T> FixedBumpVec<'a, T> {
     pub const fn layout(&self) -> Layout {
         // We have an allocated slice. So the layout is valid.
         unsafe { Layout::from_size_align_unchecked(T::SIZE * self.len(), T::ALIGN) }
+    }
+
+    /// Turns this `FixedBumpVec<T>` into a `BumpVec<T>`.
+    pub fn into_vec<'b, A, const MIN_ALIGN: usize, const UP: bool>(
+        self,
+        bump: &'b BumpScope<'a, A, MIN_ALIGN, UP>,
+    ) -> BumpVec<'b, 'a, T, A, MIN_ALIGN, UP> {
+        BumpVec { fixed: self, bump }
     }
 
     /// Turns this `FixedBumpVec<T>` into a `BumpBox<[T]>`.
