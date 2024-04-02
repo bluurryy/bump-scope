@@ -129,6 +129,8 @@ either_way! {
     aligned
 
     as_aligned
+
+    realign
 }
 
 macro_rules! assert_chunk_sizes {
@@ -693,4 +695,47 @@ fn bump_vec_shrink_cant<const UP: bool>() {
 
     assert_eq!(addr, vec.as_ptr().addr());
     assert_eq!(vec.capacity(), 3);
+}
+
+fn realign<const UP: bool>() {
+    type AlignT = u64;
+    const ALIGN: usize = 8;
+
+    // into_aligned
+    {
+        let bump = Bump::<Global, 1, UP>::with_size(64);
+        bump.alloc(0u8);
+        assert!(!bump.stats().current.bump_position().cast::<AlignT>().is_aligned());
+        let bump = bump.into_aligned::<ALIGN>();
+        assert!(bump.stats().current.bump_position().cast::<AlignT>().is_aligned());
+    }
+
+    // as_aligned_mut
+    {
+        let mut bump = Bump::<Global, 1, UP>::with_size(64);
+        bump.alloc(0u8);
+        assert!(!bump.stats().current.bump_position().cast::<AlignT>().is_aligned());
+        let bump = bump.as_aligned_mut::<ALIGN>();
+        assert!(bump.stats().current.bump_position().cast::<AlignT>().is_aligned());
+    }
+
+    // aligned
+    {
+        let mut bump = Bump::<Global, 1, UP>::with_size(64);
+        bump.alloc(0u8);
+        assert!(!bump.stats().current.bump_position().cast::<AlignT>().is_aligned());
+        bump.aligned::<ALIGN>(|bump| {
+            assert!(bump.stats().current.bump_position().cast::<AlignT>().is_aligned());
+        });
+    }
+
+    // scoped_aligned
+    {
+        let mut bump = Bump::<Global, 1, UP>::with_size(64);
+        bump.alloc(0u8);
+        assert!(!bump.stats().current.bump_position().cast::<AlignT>().is_aligned());
+        bump.scoped_aligned::<ALIGN>(|bump| {
+            assert!(bump.stats().current.bump_position().cast::<AlignT>().is_aligned());
+        });
+    }
 }

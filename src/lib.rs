@@ -704,10 +704,17 @@ macro_rules! bump_common_methods {
         where
             MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
         {
-            let mut guard = self.scope_guard();
-
-            // SAFETY: We can cast the alignment to anything here, because once `guard` drops we return to our original alignment.
-            f(unsafe { guard.scope().cast_align() });
+            $crate::condition! {
+                if $is_scope {
+                    // This guard will reset the bump pointer to the current position, which is aligned to `MIN_ALIGN`.
+                    let mut guard = self.scope_guard();
+                    let scope = guard.scope();
+                    scope.align::<NEW_MIN_ALIGN>();
+                    f(unsafe { scope.cast_align() });
+                } else {
+                    self.as_mut_scope().scoped_aligned::<NEW_MIN_ALIGN>(f)
+                }
+            }
         }
 
         #[doc = concat!("Creates a new [`", stringify!($scope_guard), "`].")]
@@ -743,14 +750,12 @@ macro_rules! bump_common_methods {
             $crate::condition! {
                 if $is_scope {
                     if NEW_MIN_ALIGN < MIN_ALIGN {
+                        // This guard will align whatever the future bump position is to `MIN_ALIGN`.
                         let guard = BumpAlignGuard::new(self);
-
-                        // SAFETY: We can cast the alignment to anything here, because once `guard` drops we return to our original alignment.
                         f(unsafe { guard.scope.clone_unchecked().cast_align() });
                     } else {
-                        f(unsafe {
-                            self.clone_unchecked().cast_align()
-                        })
+                        self.align::<NEW_MIN_ALIGN>();
+                        f(unsafe { self.clone_unchecked().cast_align() });
                     }
                 } else {
                     self.as_mut_scope().aligned(f)

@@ -277,6 +277,16 @@ where
     }
 
     #[inline(always)]
+    pub(crate) fn align<const ALIGN: usize>(&self)
+    where
+        MinimumAlignment<ALIGN>: SupportedMinimumAlignment,
+    {
+        if ALIGN > MIN_ALIGN {
+            self.chunk.get().align_pos_to::<ALIGN>();
+        }
+    }
+
+    #[inline(always)]
     pub(crate) fn force_align<const ALIGN: usize>(&self)
     where
         MinimumAlignment<ALIGN>: SupportedMinimumAlignment,
@@ -362,6 +372,7 @@ where
 
     /// Converts this `BumpScope` into a `BumpScope` with a new minimum alignment.
     ///
+    // TODO: may this decrease align? we
     #[doc = doc_align_cant_decrease!()]
     #[inline(always)]
     pub fn into_aligned<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, A, NEW_MIN_ALIGN, UP>
