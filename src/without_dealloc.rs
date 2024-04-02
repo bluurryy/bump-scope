@@ -11,7 +11,7 @@ use crate::{polyfill::nonnull, BumpAllocator};
 pub struct WithoutDealloc<A>(pub A);
 
 impl<A> WithoutDealloc<A> {
-    /// Wraps `&self` in [`WithoutShrink`] so that [`shrink`] becomes a no-op.
+    /// Wraps `self` in [`WithoutShrink`] so that [`shrink`] becomes a no-op.
     ///
     /// [`shrink`]: Allocator::shrink
     pub fn without_shrink(self) -> WithoutShrink<Self> {
@@ -65,7 +65,7 @@ unsafe impl<A: BumpAllocator> BumpAllocator for WithoutDealloc<A> {}
 pub struct WithoutShrink<A>(pub A);
 
 impl<A> WithoutShrink<A> {
-    /// Wraps `&self` in [`WithoutDealloc`] so that [`deallocate`] becomes a no-op.
+    /// Wraps `self` in [`WithoutDealloc`] so that [`deallocate`] becomes a no-op.
     ///
     /// [`deallocate`]: Allocator::deallocate
     pub fn without_dealloc(self) -> WithoutDealloc<Self> {
