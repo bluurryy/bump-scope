@@ -1,8 +1,8 @@
 # bump-scope
 
 [![Crates.io](https://img.shields.io/crates/v/bump-scope.svg)](https://crates.io/crates/bump-scope)
-[![Documentation](https://docs.rs/bump-scope/badge.svg)](https://docs.rs/bump-scope)
-![Rust](https://img.shields.io/badge/rust-1.64.0%2B-blue.svg)
+[![Documentation](https://img.shields.io/docsrs/bump-scope)](https://docs.rs/bump-scope)
+[![Rust](https://img.shields.io/crates/msrv/bump-scope)](#)
 [![License](https://img.shields.io/crates/l/bump_scope)](#license)
 
 [//]: # (START_OF_CRATE_DOCS)
