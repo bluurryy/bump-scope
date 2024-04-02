@@ -950,7 +950,8 @@ where
         let src = other.cast::<T>();
         self.len += len;
         let dst = self.as_mut_ptr();
-        unsafe { ptr::copy_nonoverlapping(src, dst, len) };
+
+        ptr::copy_nonoverlapping(src, dst, len);
 
         Ok(())
     }
@@ -1154,20 +1155,18 @@ where
 
             self.generic_reserve(additional)?;
 
-            unsafe {
-                let ptr = self.end.as_ptr();
-                let mut local_len = SetLenOnDrop::new(&mut self.len);
+            let ptr = self.end.as_ptr();
+            let mut local_len = SetLenOnDrop::new(&mut self.len);
 
-                iterator.for_each(move |element| {
-                    let dst = ptr.sub(local_len.current_len() + 1);
+            iterator.for_each(move |element| {
+                let dst = ptr.sub(local_len.current_len() + 1);
 
-                    ptr::write(dst, element);
-                    // Since the loop executes user code which can panic we have to update
-                    // the length every step to correctly drop what we've written.
-                    // NB can't overflow since we would have had to alloc the address space
-                    local_len.increment_len(1);
-                });
-            }
+                ptr::write(dst, element);
+                // Since the loop executes user code which can panic we have to update
+                // the length every step to correctly drop what we've written.
+                // NB can't overflow since we would have had to alloc the address space
+                local_len.increment_len(1);
+            });
 
             Ok(())
         } else {
@@ -1215,16 +1214,14 @@ where
     unsafe fn split_at_spare_mut_with_len(&mut self) -> (&mut [T], &mut [MaybeUninit<T>], &mut usize) {
         let end = self.end.as_ptr();
 
-        let spare_ptr = unsafe { end.sub(self.cap) };
+        let spare_ptr = end.sub(self.cap);
         let spare_ptr = spare_ptr.cast::<MaybeUninit<T>>();
         let spare_len = self.cap - self.len;
 
-        unsafe {
-            let initialized = slice::from_raw_parts_mut(self.as_mut_ptr(), self.len);
-            let spare = slice::from_raw_parts_mut(spare_ptr, spare_len);
+        let initialized = slice::from_raw_parts_mut(self.as_mut_ptr(), self.len);
+        let spare = slice::from_raw_parts_mut(spare_ptr, spare_len);
 
-            (initialized, spare, &mut self.len)
-        }
+        (initialized, spare, &mut self.len)
     }
 
     #[doc = crate::doc_fn_stats!()]

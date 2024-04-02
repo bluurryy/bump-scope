@@ -45,8 +45,7 @@
     clippy::partialeq_ne_impl,
     clippy::collapsible_else_if,
     clippy::items_after_statements,
-    unknown_lints,
-    unused_unsafe
+    unknown_lints
 )]
 //! A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
 //!
@@ -1468,18 +1467,16 @@ define_alloc_methods! {
         let uninit = self.generic_alloc_uninit_slice(len)?;
         let mut initializer = uninit.initializer();
 
-        unsafe {
-            while !initializer.is_full() {
-                let value = match iter.next() {
-                    Some(value) => value,
-                    None => exact_size_iterator_bad_len(),
-                };
+        while !initializer.is_full() {
+            let value = match iter.next() {
+                Some(value) => value,
+                None => exact_size_iterator_bad_len(),
+            };
 
-                initializer.push(value);
-            }
-
-            Ok(initializer.into_init())
+            initializer.push(value);
         }
+
+        Ok(initializer.into_init())
     }
 
     /// Allocate elements of an iterator into a slice.

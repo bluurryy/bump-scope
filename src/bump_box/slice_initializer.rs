@@ -107,7 +107,7 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
         pointer::write_with(self.pos.as_ptr(), f);
 
         if T::IS_ZST {
-            self.pos = unsafe { nonnull::wrapping_byte_add(self.pos, 1) };
+            self.pos = nonnull::wrapping_byte_add(self.pos, 1);
         } else {
             self.pos = nonnull::add(self.pos, 1);
         }

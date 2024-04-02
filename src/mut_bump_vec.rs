@@ -983,9 +983,9 @@ where
 
         let src = other.cast::<T>();
         let dst = self.as_mut_ptr().add(self.len());
-        unsafe { ptr::copy_nonoverlapping(src, dst, len) };
-        self.inc_len(len);
+        ptr::copy_nonoverlapping(src, dst, len);
 
+        self.inc_len(len);
         Ok(())
     }
 
@@ -1081,20 +1081,18 @@ where
 
             self.generic_reserve(additional)?;
 
-            unsafe {
-                let ptr = self.as_mut_ptr();
-                let mut local_len = SetLenOnDropByPtr::new(&mut self.fixed.initialized.ptr);
+            let ptr = self.as_mut_ptr();
+            let mut local_len = SetLenOnDropByPtr::new(&mut self.fixed.initialized.ptr);
 
-                iterator.for_each(move |element| {
-                    let dst = ptr.add(local_len.current_len());
+            iterator.for_each(move |element| {
+                let dst = ptr.add(local_len.current_len());
 
-                    ptr::write(dst, element);
-                    // Since the loop executes user code which can panic we have to update
-                    // the length every step to correctly drop what we've written.
-                    // NB can't overflow since we would have had to alloc the address space
-                    local_len.increment_len(1);
-                });
-            }
+                ptr::write(dst, element);
+                // Since the loop executes user code which can panic we have to update
+                // the length every step to correctly drop what we've written.
+                // NB can't overflow since we would have had to alloc the address space
+                local_len.increment_len(1);
+            });
 
             Ok(())
         } else {
@@ -1744,7 +1742,7 @@ where
             let mut dst = self.as_mut_ptr().add(self.len());
 
             for buf in bufs {
-                unsafe { buf.as_ptr().copy_to_nonoverlapping(dst, buf.len()) };
+                buf.as_ptr().copy_to_nonoverlapping(dst, buf.len());
                 dst = dst.add(buf.len());
             }
 

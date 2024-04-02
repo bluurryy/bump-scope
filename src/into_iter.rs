@@ -56,7 +56,7 @@ impl<'a, T> IntoIter<'a, T> {
             Self::new_zst(slice.len())
         } else {
             let start = slice.cast::<T>();
-            let end = unsafe { nonnull::add(start, slice.len()) };
+            let end = nonnull::add(start, slice.len());
             Self::new_range(start..end)
         }
     }

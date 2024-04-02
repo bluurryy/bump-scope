@@ -488,11 +488,9 @@ where
         let amt = bytes.len();
         self.vec.generic_reserve(amt)?;
 
-        unsafe {
-            ptr::copy(self.vec.as_ptr().add(idx), self.vec.as_mut_ptr().add(idx + amt), len - idx);
-            ptr::copy_nonoverlapping(bytes.as_ptr(), self.vec.as_mut_ptr().add(idx), amt);
-            self.vec.set_len(len + amt);
-        }
+        ptr::copy(self.vec.as_ptr().add(idx), self.vec.as_mut_ptr().add(idx + amt), len - idx);
+        ptr::copy_nonoverlapping(bytes.as_ptr(), self.vec.as_mut_ptr().add(idx), amt);
+        self.vec.set_len(len + amt);
 
         Ok(())
     }

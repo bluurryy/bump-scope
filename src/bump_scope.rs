@@ -343,7 +343,7 @@ where
             Ok(ptr)
         } else {
             // SAFETY: We just appended a chunk for that specific layout, it must have enough space.
-            unsafe { core::hint::unreachable_unchecked() }
+            core::hint::unreachable_unchecked()
         }
     }
 
@@ -425,7 +425,7 @@ where
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        unsafe { &mut *pointer::from_mut(self).cast::<BumpScope<'a, A, NEW_MIN_ALIGN, UP>>() }
+        &mut *pointer::from_mut(self).cast::<BumpScope<'a, A, NEW_MIN_ALIGN, UP>>()
     }
 
     /// # Safety

@@ -806,31 +806,29 @@ impl<'a, T> FixedBumpVec<'a, T> {
     where
         T: Clone,
     {
-        unsafe {
-            let mut ptr = self.as_mut_ptr().add(self.len());
+        let mut ptr = self.as_mut_ptr().add(self.len());
 
-            // Use SetLenOnDrop to work around bug where compiler
-            // might not realize the store through `ptr` through self.set_len()
-            // don't alias.
-            let mut local_len = SetLenOnDropByPtr::new(&mut self.initialized.ptr);
+        // Use SetLenOnDrop to work around bug where compiler
+        // might not realize the store through `ptr` through self.set_len()
+        // don't alias.
+        let mut local_len = SetLenOnDropByPtr::new(&mut self.initialized.ptr);
 
-            // Write all elements except the last one
-            for _ in 1..n {
-                pointer::write_with(ptr, || value.clone());
-                ptr = ptr.add(1);
+        // Write all elements except the last one
+        for _ in 1..n {
+            pointer::write_with(ptr, || value.clone());
+            ptr = ptr.add(1);
 
-                // Increment the length in every step in case clone() panics
-                local_len.increment_len(1);
-            }
-
-            if n > 0 {
-                // We can write the last element directly without cloning needlessly
-                ptr.write(value);
-                local_len.increment_len(1);
-            }
-
-            // len set by scope guard
+            // Increment the length in every step in case clone() panics
+            local_len.increment_len(1);
         }
+
+        if n > 0 {
+            // We can write the last element directly without cloning needlessly
+            ptr.write(value);
+            local_len.increment_len(1);
+        }
+
+        // len set by scope guard
     }
 
     /// Retains only the elements specified by the predicate, passing a mutable reference to it.
@@ -1078,7 +1076,8 @@ impl<'a, T> FixedBumpVec<'a, T> {
 
         let src = other.cast::<T>();
         let dst = self.as_mut_ptr().add(self.len());
-        unsafe { ptr::copy_nonoverlapping(src, dst, len) };
+        ptr::copy_nonoverlapping(src, dst, len);
+
         self.inc_len(len);
     }
 
@@ -1097,20 +1096,18 @@ impl<'a, T> FixedBumpVec<'a, T> {
 
             self.assert_remaining(additional);
 
-            unsafe {
-                let ptr = self.as_mut_ptr();
-                let mut local_len = SetLenOnDropByPtr::new(&mut self.initialized.ptr);
+            let ptr = self.as_mut_ptr();
+            let mut local_len = SetLenOnDropByPtr::new(&mut self.initialized.ptr);
 
-                iterator.for_each(move |element| {
-                    let dst = ptr.add(local_len.current_len());
+            iterator.for_each(move |element| {
+                let dst = ptr.add(local_len.current_len());
 
-                    ptr::write(dst, element);
-                    // Since the loop executes user code which can panic we have to update
-                    // the length every step to correctly drop what we've written.
-                    // NB can't overflow since we would have had to alloc the address space
-                    local_len.increment_len(1);
-                });
-            }
+                ptr::write(dst, element);
+                // Since the loop executes user code which can panic we have to update
+                // the length every step to correctly drop what we've written.
+                // NB can't overflow since we would have had to alloc the address space
+                local_len.increment_len(1);
+            });
         } else {
             // Per TrustedLen contract a `None` upper bound means that the iterator length
             // truly exceeds usize::MAX, which would eventually lead to a capacity overflow anyway.
@@ -1536,7 +1533,7 @@ impl std::io::Write for FixedBumpVec<'_, u8> {
             let mut dst = self.as_mut_ptr().add(self.len());
 
             for buf in bufs {
-                unsafe { buf.as_ptr().copy_to_nonoverlapping(dst, buf.len()) };
+                buf.as_ptr().copy_to_nonoverlapping(dst, buf.len());
                 dst = dst.add(buf.len());
             }
 

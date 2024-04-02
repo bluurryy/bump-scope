@@ -889,17 +889,15 @@ impl<'a, T> BumpBox<'a, [T]> {
         let len = this.len();
         let ptr = this.ptr.cast::<T>();
 
-        // SAFETY: Caller has to check that `0 <= mid <= self.len()`
-        unsafe {
-            debug_assert!(
-                mid <= len,
-                "slice::split_at_unchecked requires the index to be within the slice"
-            );
-            (
-                Self::from_raw(nonnull::slice_from_raw_parts(ptr, mid)),
-                Self::from_raw(nonnull::slice_from_raw_parts(nonnull::add(ptr, mid), len - mid)),
-            )
-        }
+        debug_assert!(
+            mid <= len,
+            "slice::split_at_unchecked requires the index to be within the slice"
+        );
+
+        (
+            Self::from_raw(nonnull::slice_from_raw_parts(ptr, mid)),
+            Self::from_raw(nonnull::slice_from_raw_parts(nonnull::add(ptr, mid), len - mid)),
+        )
     }
 
     /// Returns the first and all the rest of the elements of the slice, or `None` if it is empty.
