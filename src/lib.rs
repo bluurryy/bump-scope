@@ -501,7 +501,7 @@ pub(crate) use doc_fn_stats_greedy;
 
 /// An allocator that allows `grow(_zeroed)`, `shrink` and `deallocate` calls with pointers that were not allocated by this allocator.
 /// This trait is used for [`BumpBox::into_box`](BumpBox::into_box) to allow safely converting a `BumpBox` into a `Box`.
-/// 
+///
 /// # Safety
 /// - `grow(_zeroed)`, `shrink` and `deallocate` must be ok to be called with a pointer that was not allocated by this Allocator
 pub unsafe trait BumpAllocator: Allocator {}

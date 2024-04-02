@@ -1,6 +1,6 @@
 [package]
 name = "bump-scope"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "A bump allocator with support for scopes."
@@ -10,7 +10,7 @@ documentation = "https://docs.rs/bump-scope"
 repository = "https://github.com/bluurryy/bump-scope"
 rust-version = "1.64.0"
 readme = "README.md"
-exclude = ["*.nu", "justfile", "tests"]
+exclude = ["*.nu", "justfile", "tests", ".vscode"]
 
 [dependencies]
 allocator-api2 = { version = "0.2.16", default-features = false }
