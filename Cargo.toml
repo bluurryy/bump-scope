@@ -28,3 +28,9 @@ nightly-trusted-len = []
 [dev-dependencies]
 trybuild = "1.0.90"
 expect-test = "1.4.1"
+criterion = { version = "0.5.1", features = ["html_reports"] }
+bumpalo = "3.15.4"
+
+[[bench]]
+name = "benches"
+harness = false

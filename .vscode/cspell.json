@@ -32,6 +32,7 @@
     "Hasher",
     "inplace",
     "insertable",
+    "justfile",
     "libfuzzer",
     "maybeuninits",
     "memmove",
@@ -52,6 +53,7 @@
     "rangemap",
     "repr",
     "rustdoc",
+    "rustfmt",
     "shrinknt",
     "sinkptr",
     "slicemut",
@@ -66,7 +68,6 @@
     "usize",
     "valgrind",
     "Vec's",
-    "vtable",
-    "justfile"
+    "vtable"
   ]
 }
