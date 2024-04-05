@@ -9,19 +9,32 @@ default *args:
   cargo clippy --all --tests
 
 all:
+  just fmt
+  just clippy
   just doc
-  cargo fmt --all
-  cargo clippy --all --tests
-  cargo clippy --all --tests --no-default-features
-  cargo clippy --all --tests --no-default-features --features alloc
-  cd crates/fuzzing-support; cargo fmt; cargo clippy
   just check-msrv
   just check-nooom
   cargo test --all-features
   cargo miri test --all-features
   just test-fallibility
   just inspect-asm
-  
+
+fmt:
+  cargo fmt --all
+  cd crates/fuzzing-support; cargo fmt --all
+  cd crates/inspect-asm; cargo fmt --all
+  cd crates/test-fallibility; cargo fmt --all
+  cd fuzz; cargo fmt --all
+
+clippy:
+  cargo clippy --all --tests
+  cargo clippy --all --tests --no-default-features
+  cargo clippy --all --tests --no-default-features --features alloc
+  cd crates/fuzzing-support; cargo clippy --all --tests
+  cd crates/inspect-asm; cargo clippy --all --tests
+  cd crates/test-fallibility; cargo clippy --all --tests
+  cd fuzz; cargo clippy --all --tests
+
 spellcheck:
   # https://www.npmjs.com/package/cspell
   cspell lint --gitignore "**/*.{rs,md,toml}"

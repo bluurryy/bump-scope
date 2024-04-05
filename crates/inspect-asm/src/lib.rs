@@ -23,7 +23,8 @@ trait BumpaloExt {
 }
 
 type Bump<const MIN_ALIGN: usize, const UP: bool> = bump_scope::Bump<Global, MIN_ALIGN, UP>;
-type MutBumpVec<'b, 'a, T, const MIN_ALIGN: usize, const UP: bool> = bump_scope::MutBumpVec<'b, 'a, T, Global, MIN_ALIGN, UP>;
+type MutBumpVec<'b, 'a, T, const MIN_ALIGN: usize, const UP: bool> =
+    bump_scope::MutBumpVec<'b, 'a, T, Global, MIN_ALIGN, UP>;
 type MutBumpVecRev<'b, 'a, T, const MIN_ALIGN: usize, const UP: bool> =
     bump_scope::MutBumpVecRev<'b, 'a, T, Global, MIN_ALIGN, UP>;
 

@@ -19,7 +19,7 @@ dependencies = [
 
 [[package]]
 name = "bump-scope"
-version = "0.0.0"
+version = "0.1.5"
 dependencies = [
  "allocator-api2",
  "sptr",
