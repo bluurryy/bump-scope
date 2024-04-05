@@ -37,6 +37,7 @@
     "maybeuninits",
     "memmove",
     "miri",
+    "MIRIFLAGS",
     "msrv",
     "mustnt",
     "nonnull",
@@ -49,16 +50,19 @@
     "pointee",
     "pointees",
     "println",
+    "proto",
     "rande",
     "rangemap",
     "repr",
     "rustdoc",
     "rustfmt",
+    "rustup",
     "shrinknt",
     "sinkptr",
     "slicemut",
     "sptr",
     "srcptr",
+    "tlsv",
     "trybuild",
     "Uninit",
     "unitialized",
@@ -68,6 +72,7 @@
     "usize",
     "valgrind",
     "Vec's",
-    "vtable"
+    "vtable",
+    "Zmiri"
   ]
 }
