@@ -660,6 +660,7 @@ impl ErrorBehavior for AllocError {
 
 // this is just `Result::into_ok` but with a name to match our use case
 #[inline(always)]
+#[cfg(not(no_global_oom_handling))]
 fn infallible<T>(result: Result<T, Infallible>) -> T {
     match result {
         Ok(value) => value,
@@ -1708,7 +1709,7 @@ define_alloc_methods! {
     for pub fn alloc_fixed_vec
     for pub fn try_alloc_fixed_vec
     fn generic_alloc_fixed_vec<{T}>(&self, len: usize) -> FixedBumpVec<T> | FixedBumpVec<'a, T> {
-        Ok(self.generic_alloc_uninit_slice(len)?.into_fixed_vec())
+        Ok(FixedBumpVec::from_uninit(self.generic_alloc_uninit_slice(len)?))
     }
 
     /// Allocate a [`FixedBumpString`] with the given `capacity`.
@@ -1726,7 +1727,7 @@ define_alloc_methods! {
     for pub fn alloc_fixed_string
     for pub fn try_alloc_fixed_string
     fn generic_alloc_fixed_string(&self, len: usize) -> FixedBumpString | FixedBumpString<'a> {
-        Ok(self.generic_alloc_uninit_slice(len)?.into_fixed_string())
+        Ok(FixedBumpString::from_uninit(self.generic_alloc_uninit_slice(len)?))
     }
 
     /// Allocates memory as described by the given `Layout`.

@@ -449,6 +449,7 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
         BumpBox::from_raw(ptr)
     }
 
+    #[deprecated = "use `FixedBumpVec::from_uninit` instead"]
     /// Turns this `BumpBox<[MaybeUninit<T>]>` into a `FixedBumpVec<T>` with a length of `0`.
     #[inline]
     #[must_use]
@@ -458,6 +459,7 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
 }
 
 impl<'a> BumpBox<'a, [MaybeUninit<u8>]> {
+    #[deprecated = "use `FixedBumpString::from_uninit` instead"]
     /// Turns this `BumpBox<[MaybeUninit<u8>]>` into a `FixedBumpString` with a length of `0`.
     #[inline]
     #[must_use]
