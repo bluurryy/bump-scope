@@ -22,7 +22,7 @@ use crate::{
 #[cfg(not(no_global_oom_handling))]
 use crate::infallible;
 
-/// This is like a `Vec` but with a fixed capacity.
+/// A [`BumpVec`] but with a fixed capacity.
 ///
 /// It can be constructed with [`alloc_fixed_vec`] or from a `BumpBox<[MaybeUninit<T>]>` via [`into_fixed_vec`].
 ///
@@ -55,7 +55,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
         capacity: if T::IS_ZST { usize::MAX } else { 0 },
     };
 
-    pub(crate) fn new(uninitialized: BumpBox<'a, [MaybeUninit<T>]>) -> Self {
+    /// Turns a `BumpBox<[MaybeUninit<T>]>` into a `FixedBumpVec<T>` with a length of `0`.
+    #[must_use]
+    pub fn from_uninit(uninitialized: BumpBox<'a, [MaybeUninit<T>]>) -> Self {
         let uninitialized = uninitialized.into_raw();
         let capacity = uninitialized.len();
 

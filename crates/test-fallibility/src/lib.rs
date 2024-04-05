@@ -8,7 +8,7 @@ use core::{alloc::Layout, fmt, mem::MaybeUninit, ptr::NonNull};
 use alloc::boxed::Box;
 use bump_scope::{
     allocator_api2::alloc::{AllocError, Allocator, Global},
-    BumpBox, FixedBumpVec,
+    BumpBox, FixedBumpString, FixedBumpVec,
 };
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
@@ -22,7 +22,8 @@ macro_rules! type_definitions {
         type BumpVec<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<'b, 'a, T, Global, MIN_ALIGN, $up>;
         type BumpString<'b, 'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<'b, 'a, Global, MIN_ALIGN, $up>;
         type MutBumpVec<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<'b, 'a, T, Global, MIN_ALIGN, $up>;
-        type MutBumpVecRev<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVecRev<'b, 'a, T, Global, MIN_ALIGN, $up>;
+        type MutBumpVecRev<'b, 'a, T, const MIN_ALIGN: usize = 1> =
+            bump_scope::MutBumpVecRev<'b, 'a, T, Global, MIN_ALIGN, $up>;
         type MutBumpString<'b, 'a, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpString<'b, 'a, Global, MIN_ALIGN, $up>;
     };
 }
@@ -370,11 +371,19 @@ up_and_down! {
         bump.try_push(value)
     }
 
-    pub fn FixedBumpVec_try_reserve(vec: &mut FixedBumpVec<u32>, amount: usize) -> Result {
-        vec.try_reserve(amount)
-    }
-
     pub fn FixedBumpVec_try_resize(bump: &mut FixedBumpVec<u32>, new_len: usize, value: u32) -> Result {
         bump.try_resize(new_len, value)
+    }
+
+    pub fn FixedBumpString__new(capacity: usize, bump: &Bump) -> Result<FixedBumpString> {
+        bump.try_alloc_fixed_string(capacity)
+    }
+
+    pub fn FixedBumpString_try_push(bump: &mut FixedBumpString, value: char) -> Result {
+        bump.try_push(value)
+    }
+
+    pub fn FixedBumpString_try_push_str(bump: &mut FixedBumpString, value: &str) -> Result {
+        bump.try_push_str(value)
     }
 }

@@ -274,6 +274,7 @@ mod chunk_raw;
 mod chunk_size;
 mod drain;
 mod extract_if;
+mod fixed_bump_string;
 mod fixed_bump_vec;
 mod from_utf8_error;
 mod into_iter;
@@ -303,6 +304,7 @@ pub use bump_string::BumpString;
 pub use bump_vec::BumpVec;
 pub use drain::Drain;
 pub use extract_if::ExtractIf;
+pub use fixed_bump_string::FixedBumpString;
 pub use fixed_bump_vec::FixedBumpVec;
 pub use from_utf8_error::FromUtf8Error;
 pub use into_iter::IntoIter;
@@ -1707,6 +1709,24 @@ define_alloc_methods! {
     for pub fn try_alloc_fixed_vec
     fn generic_alloc_fixed_vec<{T}>(&self, len: usize) -> FixedBumpVec<T> | FixedBumpVec<'a, T> {
         Ok(self.generic_alloc_uninit_slice(len)?.into_fixed_vec())
+    }
+
+    /// Allocate a [`FixedBumpString`] with the given `capacity`.
+    do examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut values = bump.alloc_fixed_vec(3);
+    /// values.push(1);
+    /// values.push(2);
+    /// values.push(3);
+    /// assert_eq!(values, [1, 2, 3])
+    /// ```
+    impl
+    for pub fn alloc_fixed_string
+    for pub fn try_alloc_fixed_string
+    fn generic_alloc_fixed_string(&self, len: usize) -> FixedBumpString | FixedBumpString<'a> {
+        Ok(self.generic_alloc_uninit_slice(len)?.into_fixed_string())
     }
 
     /// Allocates memory as described by the given `Layout`.
