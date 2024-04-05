@@ -11,6 +11,20 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: format bump-scope
+        run: cargo fmt --all -- --check
+      - name: format fuzzing-support
+        run: cd crates/fuzzing-support && cargo fmt --all -- --check
+      - name: format inspect-asm
+        run: cd crates/inspect-asm && cargo fmt --all -- --check
+      - name: format test-fallibility
+        run: cd crates/test-fallibility && cargo fmt --all -- --check
+      - name: format fuzz
+        run: cd fuzz && cargo fmt --all -- --check
   check:
     runs-on: ubuntu-latest
     strategy:
@@ -26,10 +40,10 @@ jobs:
     - name: install rust
       run: rustup install ${{matrix.rust_channel}} && rustup default ${{matrix.rust_channel}}
     - uses: actions/checkout@v4
-    - name: cargo check (without feature_set)
-      run: cargo check --verbose
-    - name: cargo check (with feature_set)
-      run: cargo check --verbose ${{matrix.feature_set}}
+    - name: cargo clippy (without feature_set)
+      run: cargo clippy --all --tests --verbose
+    - name: cargo clippy (with feature_set)
+      run: cargo clippy --all --tests --verbose ${{matrix.feature_set}}
   check-benches:
     runs-on: ubuntu-latest
     steps:

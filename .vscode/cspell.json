@@ -11,6 +11,7 @@
     "backshifted",
     "bufs",
     "bumpalo",
+    "clippy",
     "codegen",
     "constness",
     "curr",
