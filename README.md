@@ -48,7 +48,7 @@ Unlike `bumpalo`, this crate...
 - `Bump` and `BumpScope` have the same repr as `NonNull<u8>`. (vs 3x pointer sized)
 - Won't try to allocate a smaller chunk if allocation failed.
 - No built-in allocation limit. You can provide an allocator that enforces an allocation limit (see `tests/limit_memory_usage.rs`).
-- Allocations are a bit more optimized. (see `crates/inspect-asm/out/x86-64`)
+- Allocations are a bit more optimized. (see `crates/inspect-asm/out/x86-64` and [benchmarks](https://bluurryy.github.io/bump-scope/criterion/report/))
 - [You can choose the bump direction.](#bumping-upwards-or-downwards) Bumps upwards by default.
 - [You can choose the minimum alignment.](#minimum-alignment)
 
