@@ -10,17 +10,12 @@ use core::{
     slice::SliceIndex,
 };
 
-use allocator_api2::alloc::AllocError;
-
 use crate::{
     error_behavior_generic_methods,
     polyfill::{self, nonnull, pointer, slice},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
     BumpBox, BumpScope, BumpVec, Drain, ErrorBehavior, ExtractIf, IntoIter, NoDrop, SizedTypeProperties,
 };
-
-#[cfg(not(no_global_oom_handling))]
-use crate::infallible;
 
 /// A [`BumpVec`] but with a fixed capacity.
 ///

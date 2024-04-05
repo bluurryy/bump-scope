@@ -6,7 +6,7 @@ use core::{
     ptr, str,
 };
 
-use allocator_api2::alloc::{AllocError, Allocator};
+use allocator_api2::alloc::Allocator;
 
 #[cfg(feature = "alloc")]
 use allocator_api2::alloc::Global;
@@ -15,9 +15,6 @@ use crate::{
     error_behavior_generic_methods, polyfill, BumpBox, BumpScope, BumpVec, ErrorBehavior, FromUtf8Error, MinimumAlignment,
     Stats, SupportedMinimumAlignment,
 };
-
-#[cfg(not(no_global_oom_handling))]
-use crate::infallible;
 
 /// This is like [`format!`] but allocates inside a `Bump` or `BumpScope`, returning a [`BumpString`].
 ///

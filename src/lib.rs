@@ -961,7 +961,7 @@ macro_rules! error_behavior_generic_methods {
             ($(&mut $self_mut,)?  $($arg_pat: $arg_ty),*) $(-> $return_ty)?
             $(where $($where)*)?
             {
-                infallible(Self::$generic($($self_mut,)? $($arg_pat),*))
+                $crate::infallible(Self::$generic($($self_mut,)? $($arg_pat),*))
             }
         )*
 
@@ -986,7 +986,7 @@ macro_rules! error_behavior_generic_methods {
             $fallible_vis fn $fallible
             $(<$($generic_params)*>)?
             ($(&mut $self_mut,)? $($arg_pat: $arg_ty),*)
-            -> $crate::wrap_result!($($return_ty)?, AllocError)
+            -> $crate::wrap_result!($($return_ty)?, allocator_api2::alloc::AllocError)
             $(where $($where)*)?
             {
                 Self::$generic($($self_mut,)? $($arg_pat),*)
@@ -1128,7 +1128,7 @@ macro_rules! define_alloc_methods {
                     pub fn $fallible
                     $(<$($generic_params)*>)?
                     (&$($self)+ $(, $arg_pat: $arg_ty)*)
-                    -> $crate::wrap_result!($($return_ty_scope)?, AllocError)
+                    -> $crate::wrap_result!($($return_ty_scope)?, allocator_api2::alloc::AllocError)
                     $(where $($where)*)?
                     {
                         last!($($self)+).$generic($($arg_pat),*)
@@ -1199,7 +1199,7 @@ macro_rules! define_alloc_methods {
                     pub fn $fallible
                     $(<$($generic_params)*>)?
                     (&$($self)+ $(, $arg_pat: $arg_ty)*)
-                    -> $crate::wrap_result!($($return_ty)?, AllocError)
+                    -> $crate::wrap_result!($($return_ty)?, allocator_api2::alloc::AllocError)
                     $(where $($where)*)?
                     {
                         as_scope!($($self)+).$fallible($($arg_pat),*)

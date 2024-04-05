@@ -10,7 +10,7 @@ use core::{
     slice::SliceIndex,
 };
 
-use allocator_api2::alloc::{AllocError, Allocator};
+use allocator_api2::alloc::Allocator;
 
 #[cfg(feature = "alloc")]
 use allocator_api2::alloc::Global;
@@ -21,9 +21,6 @@ use crate::{
     BumpBox, BumpScope, Drain, ErrorBehavior, ExtractIf, FixedBumpVec, IntoIter, MinimumAlignment, NoDrop,
     SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment,
 };
-
-#[cfg(not(no_global_oom_handling))]
-use crate::infallible;
 
 /// Creates a [`MutBumpVec`] containing the arguments.
 ///

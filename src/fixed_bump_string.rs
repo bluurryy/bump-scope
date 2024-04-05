@@ -7,12 +7,7 @@ use core::{
     ptr, str,
 };
 
-use allocator_api2::alloc::AllocError;
-
 use crate::{error_behavior_generic_methods, polyfill, BumpBox, ErrorBehavior, FixedBumpVec, FromUtf8Error};
-
-#[cfg(not(no_global_oom_handling))]
-use crate::infallible;
 
 /// A [`BumpString`](crate::BumpString) but with a fixed capacity.
 ///

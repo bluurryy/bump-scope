@@ -7,7 +7,7 @@ use core::{
     ptr::NonNull,
 };
 
-use allocator_api2::alloc::{AllocError, Allocator};
+use allocator_api2::alloc::Allocator;
 
 #[cfg(feature = "alloc")]
 use allocator_api2::alloc::Global;
@@ -17,9 +17,6 @@ use crate::{
     BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment,
     WithoutDealloc, WithoutShrink,
 };
-
-#[cfg(not(no_global_oom_handling))]
-use crate::infallible;
 
 #[cfg(test)]
 use crate::WithDrop;
