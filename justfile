@@ -1,6 +1,9 @@
 # This was written for nushell version 0.91.0
 set shell := ["nu", "-c"]
 
+export RUST_BACKTRACE := "1"
+export MIRIFLAGS := "-Zmiri-strict-provenance"
+
 default *args:
   cargo fmt --all
   cargo clippy --all --tests
@@ -14,8 +17,8 @@ all:
   cd crates/fuzzing-support; cargo fmt; cargo clippy
   just check-msrv
   just check-nooom
-  cargo test
-  cargo miri test
+  cargo test --all-features
+  cargo miri test --all-features
   just test-fallibility
   just inspect-asm
   

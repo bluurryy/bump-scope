@@ -10,11 +10,17 @@ use core::{
     slice::SliceIndex,
 };
 
+use allocator_api2::alloc::AllocError;
+
 use crate::{
+    error_behavior_generic_methods,
     polyfill::{self, nonnull, pointer, slice},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BumpBox, BumpScope, BumpVec, Drain, ExtractIf, IntoIter, NoDrop, SizedTypeProperties,
+    BumpBox, BumpScope, BumpVec, Drain, ErrorBehavior, ExtractIf, IntoIter, NoDrop, SizedTypeProperties,
 };
+
+#[cfg(not(no_global_oom_handling))]
+use crate::infallible;
 
 /// This is like a `Vec` but with a fixed capacity.
 ///
@@ -266,6 +272,18 @@ impl<'a, T> FixedBumpVec<'a, T> {
         }
     }
 
+    /// Extracts a boxed slice containing the entire vector.
+    #[must_use]
+    pub const fn as_boxed_slice(&self) -> &BumpBox<[T]> {
+        &self.initialized
+    }
+
+    /// Extracts a mutable boxed slice containing the entire vector.
+    #[must_use]
+    pub fn as_mut_boxed_slice(&mut self) -> &mut BumpBox<'a, [T]> {
+        &mut self.initialized
+    }
+
     /// Extracts a slice containing the entire vector.
     ///
     /// Equivalent to `&s[..]`.
@@ -397,30 +415,405 @@ impl<'a, T> FixedBumpVec<'a, T> {
         }
     }
 
-    /// Appends an element to the back of the collection.
-    ///
-    /// # Panics
-    /// Panics if the vector is full.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::{ mut_bump_vec, Bump };
-    /// # let mut bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec(3);
-    /// vec.extend_from_slice_copy(&[1, 2]);
-    /// vec.push(3);
-    /// assert_eq!(vec, [1, 2, 3]);
-    /// ```
-    pub fn push(&mut self, value: T) {
-        self.push_with(|| value);
-    }
+    error_behavior_generic_methods! {
+        /// Appends an element to the back of a collection.
+        impl
+        /// # Examples
+        ///
+        /// ```
+        /// # use bump_scope::{ mut_bump_vec, Bump };
+        /// # let mut bump: Bump = Bump::new();
+        /// let mut vec = bump.alloc_fixed_vec(3);
+        /// vec.extend_from_slice_copy(&[1, 2]);
+        /// vec.push(3);
+        /// assert_eq!(vec, [1, 2, 3]);
+        /// ```
+        for fn push
+        for fn try_push
+        fn generic_push(&mut self, value: T) {
+            self.generic_push_with(|| value)
+        }
 
-    /// Appends an element to the back of a collection.
-    pub fn push_with(&mut self, f: impl FnOnce() -> T) {
-        self.assert_not_full();
+        /// Appends an element to the back of a collection.
+        impl
+        for fn push_with
+        for fn try_push_with
+        fn generic_push_with(&mut self, f: impl FnOnce() -> T) {
+            self.generic_reserve_one()?;
+            unsafe {
+                self.unchecked_push_with(f);
+            }
+            Ok(())
+        }
 
-        unsafe {
-            self.unchecked_push_with(f);
+        /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.
+        do panics
+        /// Panics if `index > len`.
+        do examples
+        /// ```
+        /// # use bump_scope::{ mut_bump_vec, Bump, FixedBumpVec };
+        /// # let mut bump: Bump = Bump::new();
+        /// let mut vec = bump.alloc_fixed_vec(5);
+        /// vec.extend_from_slice_copy(&[1, 2, 3]);
+        /// vec.insert(1, 4);
+        /// assert_eq!(vec, [1, 4, 2, 3]);
+        /// vec.insert(4, 5);
+        /// assert_eq!(vec, [1, 4, 2, 3, 5]);
+        /// ```
+        impl
+        for fn insert
+        for fn try_insert
+        fn generic_insert(&mut self, index: usize, element: T) {
+            #[cold]
+            #[inline(never)]
+            fn assert_failed(index: usize, len: usize) -> ! {
+                panic!("insertion index (is {index}) should be <= len (is {len})");
+            }
+
+            if index > self.len() {
+                assert_failed(index, self.len());
+            }
+
+            self.generic_reserve_one()?;
+
+            unsafe {
+                let pos = self.as_mut_ptr().add(index);
+
+                if index != self.len() {
+                    let len = self.len() - index;
+                    ptr::copy(pos, pos.add(1), len);
+                }
+
+                pos.write(element);
+                self.inc_len(1);
+            }
+
+            Ok(())
+        }
+
+        /// Copies and appends all elements in a slice to the `FixedBumpVec`.
+        ///
+        /// Iterates over the `slice`, copies each element, and then appends
+        /// it to this `FixedBumpVec`. The `slice` is traversed in-order.
+        ///
+        /// Note that this function is same as [`extend`] except that it is
+        /// specialized to work with copyable slices instead.
+        ///
+        /// [`extend`]: FixedBumpVec::extend
+        impl
+        for fn extend_from_slice_copy
+        for fn try_extend_from_slice_copy
+        fn generic_extend_from_slice_copy(&mut self, slice: &[T])
+        where {
+            T: Copy
+        } in {
+            unsafe { self.extend_by_copy_nonoverlapping(slice) }
+        }
+
+        /// Clones and appends all elements in a slice to the `FixedBumpVec`.
+        ///
+        /// Iterates over the `slice`, clones each element, and then appends
+        /// it to this `FixedBumpVec`. The `slice` is traversed in-order.
+        ///
+        /// Note that this function is same as [`extend`] except that it is
+        /// specialized to work with slices instead.
+        ///
+        /// [`extend`]: FixedBumpVec::extend
+        impl
+        for fn extend_from_slice_clone
+        for fn try_extend_from_slice_clone
+        fn generic_extend_from_slice_clone(&mut self, slice: &[T])
+        where {
+            T: Clone
+        } in {
+            self.generic_reserve(slice.len())?;
+
+            unsafe {
+                let mut ptr = self.as_mut_ptr().add(self.len());
+
+                for value in slice {
+                    pointer::write_with(ptr, || value.clone());
+                    ptr = ptr.add(1);
+                    self.inc_len(1);
+                }
+            }
+
+            Ok(())
+        }
+
+        /// Appends all elements in an array to the `FixedBumpVec`.
+        ///
+        /// Iterates over the `array`, copies each element, and then appends
+        /// it to this `FixedBumpVec`. The `array` is traversed in-order.
+        ///
+        /// Note that this function is same as [`extend`] except that it is
+        /// specialized to work with arrays instead.
+        ///
+        /// [`extend`]: FixedBumpVec::extend
+        #[allow(clippy::needless_pass_by_value)]
+        impl
+        for fn extend_from_array
+        for fn try_extend_from_array
+        fn generic_extend_from_array<{const N: usize}>(&mut self, array: [T; N]) {
+            unsafe { self.extend_by_copy_nonoverlapping(&array) }
+        }
+
+        /// Copies elements from `src` range to the end of the vector.
+        do panics
+        /// Panics if the starting point is greater than the end point or if
+        /// the end point is greater than the length of the vector.
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, mut_bump_vec };
+        /// # let mut bump: Bump = Bump::new();
+        /// #
+        /// let mut vec = bump.alloc_fixed_vec(100);
+        /// vec.extend_from_slice_copy(&[0, 1, 2, 3, 4]);
+        ///
+        /// vec.extend_from_within_copy(2..);
+        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
+        ///
+        /// vec.extend_from_within_copy(..2);
+        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1]);
+        ///
+        /// vec.extend_from_within_copy(4..8);
+        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
+        /// ```
+        impl
+        for fn extend_from_within_copy
+        for fn try_extend_from_within_copy
+        fn generic_extend_from_within_copy<{R}>(&mut self, src: R)
+        where {
+            T: Copy,
+            R: RangeBounds<usize>,
+        } in {
+            let range = slice::range(src, ..self.len());
+            let count = range.len();
+
+            self.generic_reserve(count)?;
+
+            // SAFETY:
+            // - `slice::range` guarantees that the given range is valid for indexing self
+            unsafe {
+                let ptr = self.as_mut_ptr();
+
+                let src = ptr.add(range.start);
+                let dst = ptr.add(self.len());
+                ptr::copy_nonoverlapping(src, dst, count);
+
+                self.inc_len(count);
+                Ok(())
+            }
+        }
+
+        /// Clones elements from `src` range to the end of the vector.
+        ///
+        /// # Panics
+        ///
+        /// Panics if the starting point is greater than the end point or if
+        /// the end point is greater than the length of the vector.
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// # use bump_scope::Bump;
+        /// # let bump: Bump = Bump::new();
+        /// #
+        /// let mut vec = bump.alloc_fixed_vec(14);
+        /// vec.extend_from_slice_copy(&[0, 1, 2, 3, 4]);
+        ///
+        /// vec.extend_from_within_clone(2..);
+        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
+        ///
+        /// vec.extend_from_within_clone(..2);
+        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1]);
+        ///
+        /// vec.extend_from_within_clone(4..8);
+        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
+        /// ```
+        impl
+        for fn extend_from_within_clone
+        for fn try_extend_from_within_clone
+        fn generic_extend_from_within_clone<{R}>(&mut self, src: R)
+        where {
+            T: Clone,
+            R: RangeBounds<usize>,
+        } in {
+            let range = slice::range(src, ..self.len());
+            let count = range.len();
+
+            self.generic_reserve(count)?;
+
+            if T::IS_ZST {
+                unsafe {
+                    // We can materialize ZST's from nothing.
+                    #[allow(clippy::uninit_assumed_init)]
+                    let fake = ManuallyDrop::new(MaybeUninit::<T>::uninit().assume_init());
+
+                    for _ in 0..count {
+                        self.unchecked_push((*fake).clone());
+                    }
+
+                    return Ok(());
+                }
+            }
+
+            // SAFETY:
+            // - `slice::range` guarantees that the given range is valid for indexing self
+            unsafe {
+                let ptr = self.as_mut_ptr();
+
+                let mut src = ptr.add(range.start);
+                let mut dst = ptr.add(self.len());
+
+                let src_end = src.add(count);
+
+                while src != src_end {
+                    dst.write((*src).clone());
+
+                    src = src.add(1);
+                    dst = dst.add(1);
+                    self.inc_len(1);
+                }
+            }
+
+            Ok(())
+        }
+
+        /// Reserves capacity for at least `additional` more elements to be inserted
+        /// in the given `FixedBumpVec<T>`. The collection may reserve more space to
+        /// speculatively avoid frequent reallocations. After calling `reserve`,
+        /// capacity will be greater than or equal to `self.len() + additional`.
+        /// Does nothing if capacity is already sufficient.
+        impl
+        for fn reserve
+        for fn try_reserve
+        fn generic_reserve(&mut self, additional: usize) {
+            if additional > (self.capacity() - self.len()) {
+                Err(B::fixed_size_vector_no_space(additional))
+            } else {
+                Ok(())
+            }
+        }
+
+        /// Resizes the `FixedBumpVec` in-place so that `len` is equal to `new_len`.
+        ///
+        /// If `new_len` is greater than `len`, the `FixedBumpVec` is extended by the
+        /// difference, with each additional slot filled with `value`.
+        /// If `new_len` is less than `len`, the `FixedBumpVec` is simply truncated.
+        ///
+        /// This method requires `T` to implement [`Clone`],
+        /// in order to be able to clone the passed value.
+        /// If you need more flexibility (or want to rely on [`Default`] instead of
+        /// [`Clone`]), use [`resize_with`].
+        /// If you only need to resize to a smaller size, use [`truncate`].
+        ///
+        /// # Examples
+        /// ```
+        /// # use bump_scope::{ Bump, mut_bump_vec };
+        /// # let mut bump: Bump = Bump::new();
+        /// #
+        /// let mut vec = bump.alloc_fixed_vec(10);
+        /// vec.extend_from_slice_copy(&[1, 2, 3]);
+        /// vec.resize_with(5, Default::default);
+        /// assert_eq!(vec, [1, 2, 3, 0, 0]);
+        /// drop(vec);
+        ///
+        /// let mut vec = bump.alloc_fixed_vec(10);
+        /// let mut p = 1;
+        /// vec.resize_with(4, || { p *= 2; p });
+        /// assert_eq!(vec, [2, 4, 8, 16]);
+        /// ```
+        ///
+        /// [`resize_with`]: FixedBumpVec::resize_with
+        /// [`truncate`]: BumpBox::truncate
+        impl
+        for fn resize
+        for fn try_resize
+        fn generic_resize(&mut self, new_len: usize, value: T)
+        where { T: Clone } in
+        {
+            let len = self.len();
+
+            if new_len > len {
+                self.extend_with(new_len - len, value)
+            } else {
+                self.truncate(new_len);
+                Ok(())
+            }
+        }
+
+        /// Resizes the `FixedBumpVec` in-place so that `len` is equal to `new_len`.
+        ///
+        /// If `new_len` is greater than `len`, the `FixedBumpVec` is extended by the
+        /// difference, with each additional slot filled with the result of
+        /// calling the closure `f`. The return values from `f` will end up
+        /// in the `FixedBumpVec` in the order they have been generated.
+        ///
+        /// If `new_len` is less than `len`, the `FixedBumpVec` is simply truncated.
+        ///
+        /// This method uses a closure to create new values on every push. If
+        /// you'd rather [`Clone`] a given value, use [`FixedBumpVec::resize`]. If you
+        /// want to use the [`Default`] trait to generate values, you can
+        /// pass [`Default::default`] as the second argument.
+        ///
+        do examples
+        /// ```
+        /// # use bump_scope::Bump;
+        /// # let bump: Bump = Bump::new();
+        /// #
+        /// let mut vec = bump.alloc_fixed_vec(5);
+        /// vec.extend_from_slice_copy(&[1, 2, 3]);
+        /// vec.resize_with(5, Default::default);
+        /// assert_eq!(vec, [1, 2, 3, 0, 0]);
+        /// drop(vec);
+        ///
+        /// let mut vec = bump.alloc_fixed_vec(4);
+        /// let mut p = 1;
+        /// vec.resize_with(4, || { p *= 2; p });
+        /// assert_eq!(vec, [2, 4, 8, 16]);
+        /// ```
+        impl
+        for fn resize_with
+        for fn try_resize_with
+        fn generic_resize_with<{F}>(&mut self, new_len: usize, f: F)
+        where {
+            F: FnMut() -> T,
+        } in {
+            let len = self.len();
+            if new_len > len {
+                unsafe { self.extend_trusted(iter::repeat_with(f).take(new_len - len)) }
+            } else {
+                self.truncate(new_len);
+                Ok(())
+            }
+        }
+
+
+        /// Moves all the elements of `other` into `self`, leaving `other` empty.
+        do examples
+        /// ```
+        /// # use bump_scope::Bump;
+        /// # let mut bump: Bump = Bump::new();
+        /// // needs a scope because of lifetime shenanigans
+        /// let bump = bump.as_mut_scope();
+        /// let mut a = bump.alloc_fixed_vec(6);
+        /// let mut b = bump.alloc_fixed_vec(3);
+        /// a.extend_from_slice_copy(&[1, 2, 3]);
+        /// b.extend_from_slice_copy(&[4, 5, 6]);
+        /// a.append(b.as_mut_boxed_slice());
+        /// assert_eq!(a, [1, 2, 3, 4, 5, 6]);
+        /// assert_eq!(b, []);
+        /// ```
+        impl
+        for fn append
+        for fn try_append
+        fn generic_append(&mut self, other: &mut BumpBox<[T]>) {
+            unsafe {
+                self.extend_by_copy_nonoverlapping(other.as_slice())?;
+                other.set_len(0);
+                Ok(())
+            }
         }
     }
 
@@ -447,363 +840,16 @@ impl<'a, T> FixedBumpVec<'a, T> {
         self.inc_len(1);
     }
 
-    /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.
-    ///
-    /// # Panics
-    /// Panics if `index > len`.
-    ///
-    /// Panics if the vector is full.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::{ mut_bump_vec, Bump, FixedBumpVec };
-    /// # let mut bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec(5);
-    /// vec.extend_from_slice_copy(&[1, 2, 3]);
-    /// vec.insert(1, 4);
-    /// assert_eq!(vec, [1, 4, 2, 3]);
-    /// vec.insert(4, 5);
-    /// assert_eq!(vec, [1, 4, 2, 3, 5]);
-    /// ```
-    pub fn insert(&mut self, index: usize, element: T) {
-        #[cold]
-        #[inline(never)]
-        fn assert_failed(index: usize, len: usize) -> ! {
-            panic!("insertion index (is {index}) should be <= len (is {len})");
-        }
-
-        if index > self.len() {
-            assert_failed(index, self.len());
-        }
-
-        self.assert_not_full();
-
-        unsafe {
-            let pos = self.as_mut_ptr().add(index);
-
-            if index != self.len() {
-                let len = self.len() - index;
-                ptr::copy(pos, pos.add(1), len);
-            }
-
-            pos.write(element);
-            self.inc_len(1);
-        }
-    }
-
-    /// Copies and appends all elements in a slice to the `FixedBumpVec`.
-    ///
-    /// Iterates over the `slice`, copies each element, and then appends
-    /// it to this `FixedBumpVec`. The `slice` is traversed in-order.
-    ///
-    /// Note that this function is same as [`extend`] except that it is
-    /// specialized to work with copyable slices instead.
-    ///
-    /// # Panics
-    /// Panics if the capacity is not sufficient.
-    ///
-    /// [`extend`]: FixedBumpVec::extend
-    pub fn extend_from_slice_copy(&mut self, slice: &[T])
-    where
-        T: Copy,
-    {
-        unsafe { self.extend_by_copy_nonoverlapping(slice) }
-    }
-
-    /// Clones and appends all elements in a slice to the `FixedBumpVec`.
-    ///
-    /// Iterates over the `slice`, clones each element, and then appends
-    /// it to this `FixedBumpVec`. The `slice` is traversed in-order.
-    ///
-    /// Note that this function is same as [`extend`] except that it is
-    /// specialized to work with slices instead.
-    ///
-    /// # Panics
-    /// Panics if the capacity is not sufficient.
-    ///
-    /// [`extend`]: FixedBumpVec::extend
-    pub fn extend_from_slice_clone(&mut self, slice: &[T])
-    where
-        T: Clone,
-    {
-        self.assert_remaining(slice.len());
-
-        unsafe {
-            let mut ptr = self.as_mut_ptr().add(self.len());
-
-            for value in slice {
-                pointer::write_with(ptr, || value.clone());
-                ptr = ptr.add(1);
-                self.inc_len(1);
-            }
-        }
-    }
-
-    /// Appends all elements in an array to the `FixedBumpVec`.
-    ///
-    /// Iterates over the `array`, copies each element, and then appends
-    /// it to this `FixedBumpVec`. The `array` is traversed in-order.
-    ///
-    /// Note that this function is same as [`extend`] except that it is
-    /// specialized to work with arrays instead.
-    ///
-    /// # Panics
-    /// Panics if the capacity is not sufficient.
-    ///
-    /// [`extend`]: FixedBumpVec::extend
-    #[allow(clippy::needless_pass_by_value)]
-    pub fn extend_from_array<const N: usize>(&mut self, array: [T; N]) {
-        unsafe { self.extend_by_copy_nonoverlapping(&array) }
-    }
-
-    /// Copies elements from `src` range to the end of the vector.
-    ///
-    /// # Panics
-    /// Panics if the starting point is greater than the end point or if
-    /// the end point is greater than the length of the vector.
-    ///
-    /// Panics if the capacity is not sufficient.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
-    /// # let mut bump: Bump = Bump::new();
-    /// #
-    /// let mut vec = bump.alloc_fixed_vec(100);
-    /// vec.extend_from_slice_copy(&[0, 1, 2, 3, 4]);
-    ///
-    /// vec.extend_from_within_copy(2..);
-    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
-    ///
-    /// vec.extend_from_within_copy(..2);
-    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1]);
-    ///
-    /// vec.extend_from_within_copy(4..8);
-    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
-    /// ```
-    pub fn extend_from_within_copy<R>(&mut self, src: R)
-    where
-        T: Copy,
-        R: RangeBounds<usize>,
-    {
-        let range = slice::range(src, ..self.len());
-        let count = range.len();
-
-        self.assert_remaining(count);
-
-        // SAFETY:
-        // - `slice::range` guarantees that the given range is valid for indexing self
-        unsafe {
-            let ptr = self.as_mut_ptr();
-
-            let src = ptr.add(range.start);
-            let dst = ptr.add(self.len());
-            ptr::copy_nonoverlapping(src, dst, count);
-
-            self.inc_len(count);
-        }
-    }
-
-    /// Clones elements from `src` range to the end of the vector.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the starting point is greater than the end point or if
-    /// the end point is greater than the length of the vector.
-    ///
-    /// Panics if the capacity is not sufficient.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
-    /// # let mut bump: Bump = Bump::new();
-    /// #
-    /// let mut vec = mut_bump_vec![in bump; 0, 1, 2, 3, 4];
-    ///
-    /// vec.extend_from_within_clone(2..);
-    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
-    ///
-    /// vec.extend_from_within_clone(..2);
-    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1]);
-    ///
-    /// vec.extend_from_within_clone(4..8);
-    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
-    /// ```
-    pub fn extend_from_within_clone<R>(&mut self, src: R)
-    where
-        T: Clone,
-        R: RangeBounds<usize>,
-    {
-        let range = slice::range(src, ..self.len());
-        let count = range.len();
-
-        self.assert_remaining(count);
-
-        if T::IS_ZST {
-            unsafe {
-                // We can materialize ZST's from nothing.
-                #[allow(clippy::uninit_assumed_init)]
-                let fake = ManuallyDrop::new(MaybeUninit::<T>::uninit().assume_init());
-
-                for _ in 0..count {
-                    self.unchecked_push((*fake).clone());
-                }
-
-                return;
-            }
-        }
-
-        // SAFETY:
-        // - `slice::range` guarantees that the given range is valid for indexing self
-        unsafe {
-            let ptr = self.as_mut_ptr();
-
-            let mut src = ptr.add(range.start);
-            let mut dst = ptr.add(self.len());
-
-            let src_end = src.add(count);
-
-            while src != src_end {
-                dst.write((*src).clone());
-
-                src = src.add(1);
-                dst = dst.add(1);
-                self.inc_len(1);
-            }
-        }
-    }
-
-    /// Resizes the `FixedBumpVec` in-place so that `len` is equal to `new_len`.
-    ///
-    /// If `new_len` is greater than `len`, the `FixedBumpVec` is extended by the
-    /// difference, with each additional slot filled with `value`.
-    /// If `new_len` is less than `len`, the `FixedBumpVec` is simply truncated.
-    ///
-    /// This method requires `T` to implement [`Clone`],
-    /// in order to be able to clone the passed value.
-    /// If you need more flexibility (or want to rely on [`Default`] instead of
-    /// [`Clone`]), use [`resize_with`].
-    /// If you only need to resize to a smaller size, use [`truncate`].
-    ///
-    /// # Panics
-    /// Panics if the capacity is not sufficient.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
-    /// # let mut bump: Bump = Bump::new();
-    /// #
-    /// let mut vec = bump.alloc_fixed_vec(10);
-    /// vec.push("hello");
-    /// vec.resize(3, "world");
-    /// assert_eq!(vec, ["hello", "world", "world"]);
-    /// drop(vec);
-    ///
-    /// let mut vec = bump.alloc_fixed_vec(10);
-    /// vec.extend_from_slice_copy(&[1, 2, 3, 4]);
-    /// vec.resize(2, 0);
-    /// assert_eq!(vec, [1, 2]);
-    /// ```
-    ///
-    /// [`resize_with`]: FixedBumpVec::resize_with
-    /// [`truncate`]: FixedBumpVec::truncate
-    pub fn resize(&mut self, new_len: usize, value: T)
-    where
-        T: Clone,
-    {
-        let len = self.len();
-
-        if new_len > len {
-            self.extend_with(new_len - len, value);
-        } else {
-            self.truncate(new_len);
-        }
-    }
-
-    /// Resizes the `FixedBumpVec` in-place so that `len` is equal to `new_len`.
-    ///
-    /// If `new_len` is greater than `len`, the `FixedBumpVec` is extended by the
-    /// difference, with each additional slot filled with the result of
-    /// calling the closure `f`. The return values from `f` will end up
-    /// in the `FixedBumpVec` in the order they have been generated.
-    ///
-    /// If `new_len` is less than `len`, the `FixedBumpVec` is simply truncated.
-    ///
-    /// This method uses a closure to create new values on every push. If
-    /// you'd rather [`Clone`] a given value, use [`resize`]. If you
-    /// want to use the [`Default`] trait to generate values, you can
-    /// pass [`Default::default`] as the second argument.
-    ///
-    /// # Panics
-    /// Panics if the capacity is not sufficient.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
-    /// # let mut bump: Bump = Bump::new();
-    /// #
-    /// let mut vec = bump.alloc_fixed_vec(10);
-    /// vec.extend_from_slice_copy(&[1, 2, 3]);
-    /// vec.resize_with(5, Default::default);
-    /// assert_eq!(vec, [1, 2, 3, 0, 0]);
-    /// drop(vec);
-    ///
-    /// let mut vec = bump.alloc_fixed_vec(10);
-    /// let mut p = 1;
-    /// vec.resize_with(4, || { p *= 2; p });
-    /// assert_eq!(vec, [2, 4, 8, 16]);
-    /// ```
-    ///
-    /// [`resize`]: FixedBumpVec::resize
-    pub fn resize_with<F>(&mut self, new_len: usize, f: F)
-    where
-        F: FnMut() -> T,
-    {
-        let len = self.len();
-        if new_len > len {
-            unsafe { self.extend_trusted(iter::repeat_with(f).take(new_len - len)) }
-        } else {
-            self.truncate(new_len);
-        }
-    }
-
-    /// Moves all the elements of `other` into `self`, leaving `other` empty.
-    ///
-    /// # Panics
-    /// Panics if the capacity is not sufficient.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
-    /// # let mut bump: Bump = Bump::new();
-    /// // needs a scope because of lifetime shenanigans
-    /// let bump = bump.as_mut_scope();
-    /// let mut a = bump.alloc_fixed_vec(6);
-    /// let mut b = bump.alloc_fixed_vec(3);
-    /// a.extend_from_slice_copy(&[1, 2, 3]);
-    /// b.extend_from_slice_copy(&[4, 5, 6]);
-    /// a.append(&mut b);
-    /// assert_eq!(a, [1, 2, 3, 4, 5, 6]);
-    /// assert_eq!(b, []);
-    /// ```
-    pub fn append(&mut self, other: &mut FixedBumpVec<T>) {
-        unsafe {
-            self.extend_by_copy_nonoverlapping(other.as_slice());
-            other.initialized.set_len(0);
-        }
-    }
-
     /// Extend the vector by `n` clones of value.
-    ///
-    /// # Panics
-    /// Panics if the capacity is not sufficient.
-    fn extend_with(&mut self, n: usize, value: T)
+    fn extend_with<B: ErrorBehavior>(&mut self, n: usize, value: T) -> Result<(), B>
     where
         T: Clone,
     {
-        self.assert_remaining(n);
-        unsafe { self.extend_with_unchecked(n, value) }
+        self.generic_reserve(n)?;
+        unsafe {
+            self.extend_with_unchecked(n, value);
+        }
+        Ok(())
     }
 
     /// Extend the vector by `n` clones of value.
@@ -1078,21 +1124,22 @@ impl<'a, T> FixedBumpVec<'a, T> {
     }
 
     #[inline(always)]
-    unsafe fn extend_by_copy_nonoverlapping(&mut self, other: *const [T]) {
+    unsafe fn extend_by_copy_nonoverlapping<B: ErrorBehavior>(&mut self, other: *const [T]) -> Result<(), B> {
         let len = pointer::len(other);
-        self.assert_remaining(len);
+        self.generic_reserve(len)?;
 
         let src = other.cast::<T>();
         let dst = self.as_mut_ptr().add(self.len());
         ptr::copy_nonoverlapping(src, dst, len);
 
         self.inc_len(len);
+        Ok(())
     }
 
     /// # Safety
     ///
     /// `iterator` must satisfy the invariants of nightly's `TrustedLen`.
-    unsafe fn extend_trusted(&mut self, iterator: impl Iterator<Item = T>) {
+    unsafe fn extend_trusted<B: ErrorBehavior>(&mut self, iterator: impl Iterator<Item = T>) -> Result<(), B> {
         let (low, high) = iterator.size_hint();
         if let Some(additional) = high {
             debug_assert_eq!(
@@ -1102,7 +1149,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
                 (low, high)
             );
 
-            self.assert_remaining(additional);
+            self.generic_reserve(additional)?;
 
             let ptr = self.as_mut_ptr();
             let mut local_len = SetLenOnDropByPtr::new(&mut self.initialized.ptr);
@@ -1116,39 +1163,24 @@ impl<'a, T> FixedBumpVec<'a, T> {
                 // NB can't overflow since we would have had to alloc the address space
                 local_len.increment_len(1);
             });
+
+            Ok(())
         } else {
             // Per TrustedLen contract a `None` upper bound means that the iterator length
             // truly exceeds usize::MAX, which would eventually lead to a capacity overflow anyway.
             // Since the other branch already panics eagerly (via `reserve()`) we do the same here.
             // This avoids additional codegen for a fallback code path which would eventually
             // panic anyway.
-            self.assert_remaining(usize::MAX);
+            Err(B::fixed_size_vector_is_full())
         }
     }
 
     #[inline(always)]
-    fn assert_not_full(&self) {
-        #[cold]
-        #[inline(never)]
-        fn assert_failed() -> ! {
-            panic!("fixed size vector is full");
-        }
-
+    fn generic_reserve_one<B: ErrorBehavior>(&self) -> Result<(), B> {
         if self.is_full() {
-            assert_failed();
-        }
-    }
-
-    #[inline(always)]
-    fn assert_remaining(&self, amount: usize) {
-        #[cold]
-        #[inline(never)]
-        fn assert_failed(amount: usize) -> ! {
-            panic!("fixed size vector does not have space for {amount} more elements");
-        }
-
-        if (self.capacity() - self.len()) < amount {
-            assert_failed(amount);
+            Err(B::fixed_size_vector_is_full())
+        } else {
+            Ok(())
         }
     }
 }
@@ -1258,7 +1290,7 @@ impl<'a, T> Extend<T> for FixedBumpVec<'a, T> {
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         let iter = iter.into_iter();
 
-        self.assert_remaining(iter.size_hint().0);
+        self.reserve(iter.size_hint().0);
 
         for value in iter {
             self.push(value);
@@ -1275,7 +1307,7 @@ where
     fn extend<I: IntoIterator<Item = &'t T>>(&mut self, iter: I) {
         let iter = iter.into_iter();
 
-        self.assert_remaining(iter.size_hint().0);
+        self.reserve(iter.size_hint().0);
 
         for value in iter {
             self.push(value.clone());

@@ -8,7 +8,7 @@ use core::{alloc::Layout, fmt, mem::MaybeUninit, ptr::NonNull};
 use alloc::boxed::Box;
 use bump_scope::{
     allocator_api2::alloc::{AllocError, Allocator, Global},
-    BumpBox,
+    BumpBox, FixedBumpVec,
 };
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
@@ -344,5 +344,37 @@ up_and_down! {
 
     pub fn BumpString__try_with_capacity_in(capacity: usize, bump: &Bump) -> Result<BumpString> {
         BumpString::try_with_capacity_in(capacity, bump)
+    }
+
+    pub fn FixedBumpVec__new(capacity: usize, bump: &Bump) -> Result<FixedBumpVec<u32>> {
+        bump.try_alloc_fixed_vec(capacity)
+    }
+
+    pub fn FixedBumpVec_try_extend_from_array(vec: &mut FixedBumpVec<u32>, array: [u32; 24]) -> Result {
+        vec.try_extend_from_array(array)
+    }
+
+    pub fn FixedBumpVec_try_extend_from_slice_clone(vec: &mut FixedBumpVec<u32>, slice: &[u32]) -> Result {
+        vec.try_extend_from_slice_clone(slice)
+    }
+
+    pub fn FixedBumpVec_try_extend_from_slice_copy(vec: &mut FixedBumpVec<u32>, slice: &[u32]) -> Result {
+        vec.try_extend_from_slice_copy(slice)
+    }
+
+    pub fn FixedBumpVec_try_insert(bump: &mut FixedBumpVec<u32>, index: usize, value: u32) -> Result {
+        bump.try_insert(index, value)
+    }
+
+    pub fn FixedBumpVec_try_push(bump: &mut FixedBumpVec<u32>, value: u32) -> Result {
+        bump.try_push(value)
+    }
+
+    pub fn FixedBumpVec_try_reserve(vec: &mut FixedBumpVec<u32>, amount: usize) -> Result {
+        vec.try_reserve(amount)
+    }
+
+    pub fn FixedBumpVec_try_resize(bump: &mut FixedBumpVec<u32>, new_len: usize, value: u32) -> Result {
+        bump.try_resize(new_len, value)
     }
 }

@@ -584,6 +584,8 @@ trait ErrorBehavior: Sized {
     const IS_FALLIBLE: bool;
     fn allocation(layout: Layout) -> Self;
     fn capacity_overflow() -> Self;
+    fn fixed_size_vector_is_full() -> Self;
+    fn fixed_size_vector_no_space(amount: usize) -> Self;
 }
 
 impl ErrorBehavior for Infallible {
@@ -598,6 +600,28 @@ impl ErrorBehavior for Infallible {
     fn capacity_overflow() -> Self {
         capacity_overflow()
     }
+
+    #[inline(always)]
+    fn fixed_size_vector_is_full() -> Self {
+        fixed_size_vector_is_full()
+    }
+
+    #[inline(always)]
+    fn fixed_size_vector_no_space(amount: usize) -> Self {
+        fixed_size_vector_no_space(amount)
+    }
+}
+
+#[cold]
+#[inline(never)]
+fn fixed_size_vector_is_full() -> ! {
+    panic!("fixed size vector is full");
+}
+
+#[cold]
+#[inline(never)]
+fn fixed_size_vector_no_space(amount: usize) -> ! {
+    panic!("fixed size vector does not have space for {amount} more elements");
 }
 
 #[cold]
@@ -619,11 +643,21 @@ impl ErrorBehavior for AllocError {
     fn capacity_overflow() -> Self {
         Self
     }
+
+    #[inline(always)]
+    fn fixed_size_vector_is_full() -> Self {
+        Self
+    }
+
+    #[inline(always)]
+    fn fixed_size_vector_no_space(amount: usize) -> Self {
+        let _ = amount;
+        Self
+    }
 }
 
 // this is just `Result::into_ok` but with a name to match our use case
 #[inline(always)]
-#[cfg(not(no_global_oom_handling))]
 fn infallible<T>(result: Result<T, Infallible>) -> T {
     match result {
         Ok(value) => value,
