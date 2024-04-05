@@ -55,6 +55,13 @@ impl<'a, T> FixedBumpVec<'a, T> {
         capacity: if T::IS_ZST { usize::MAX } else { 0 },
     };
 
+    /// Turns a `BumpBox<[T]>` into a full `FixedBumpVec<T>`.
+    #[must_use]
+    pub fn from_init(initialized: BumpBox<'a, [T]>) -> Self {
+        let capacity = initialized.len();
+        Self { initialized, capacity }
+    }
+
     /// Turns a `BumpBox<[MaybeUninit<T>]>` into a `FixedBumpVec<T>` with a length of `0`.
     #[must_use]
     pub fn from_uninit(uninitialized: BumpBox<'a, [MaybeUninit<T>]>) -> Self {

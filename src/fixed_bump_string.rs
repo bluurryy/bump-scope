@@ -45,6 +45,14 @@ impl<'a> FixedBumpString<'a> {
         vec: FixedBumpVec::EMPTY,
     };
 
+    /// Turns a `BumpBox<str>` into a full `FixedBumpString`.
+    #[must_use]
+    pub fn from_init(initialized: BumpBox<'a, str>) -> Self {
+        Self {
+            vec: FixedBumpVec::from_init(initialized.into_boxed_bytes()),
+        }
+    }
+
     /// Turns a `BumpBox<[MaybeUninit<u8>]>` into a `FixedBumpString` with a length of `0`.
     #[must_use]
     pub fn from_uninit(uninitialized: BumpBox<'a, [MaybeUninit<u8>]>) -> Self {
