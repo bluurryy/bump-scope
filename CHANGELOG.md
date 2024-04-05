@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.5 (2024-04-05)
 - **added:** `BumpVec::into_fixed_vec` and `FixedBumpVec::into_vec`
 - **added:** fallible `FixedBumpVec` api
 - **added:** `FixedBumpString`
