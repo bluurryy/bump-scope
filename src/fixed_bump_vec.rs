@@ -686,8 +686,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// capacity will be greater than or equal to `self.len() + additional`.
         /// Does nothing if capacity is already sufficient.
         impl
-        for pub fn reserve
-        for pub fn try_reserve
+        for fn reserve
+        #[allow(dead_code)]
+        for fn try_reserve
         fn generic_reserve(&mut self, additional: usize) {
             if additional > (self.capacity() - self.len()) {
                 Err(B::fixed_size_vector_no_space(additional))
