@@ -130,9 +130,9 @@ where
         impl
         /// This is equivalent to `Bump::with_capacity(512)`.
         #[must_use]
-        for fn new
+        for pub fn new
         /// This is equivalent to `Bump::try_with_capacity(512)`.
-        for fn try_new
+        for pub fn try_new
         fn generic_new() -> Self {
             Self::generic_new_in(Global)
         }
@@ -140,8 +140,8 @@ where
         /// Constructs a new, `Bump` with a chunk of at least `size` bytes.
         impl
         #[must_use]
-        for fn with_size
-        for fn try_with_size
+        for pub fn with_size
+        for pub fn try_with_size
         fn generic_with_size(size: usize) -> Self {
             Self::generic_with_size_in(size, Global)
         }
@@ -149,8 +149,8 @@ where
         /// Constructs a new, `Bump` with at least enough space for `layout`.
         impl
         #[must_use]
-        for fn with_capacity
-        for fn try_with_capacity
+        for pub fn with_capacity
+        for pub fn try_with_capacity
         fn generic_with_capacity(layout: Layout) -> Self {
             Self::generic_with_capacity_in(layout, Global)
         }
@@ -164,17 +164,17 @@ where
     error_behavior_generic_methods! {
         impl
         /// This is equivalent to `Bump::with_capacity_in(512, allocator)`.
-        for fn new_in
+        for pub fn new_in
         /// This is equivalent to `Bump::try_with_capacity_in(512, allocator)`.
-        for fn try_new_in
+        for pub fn try_new_in
         fn generic_new_in(allocator: A) -> Self {
             Self::generic_with_size_in(512, allocator)
         }
 
         /// Constructs a new, `Bump` with a chunk of at least `size` bytes.
         impl
-        for fn with_size_in
-        for fn try_with_size_in
+        for pub fn with_size_in
+        for pub fn try_with_size_in
         fn generic_with_size_in(size: usize, allocator: A) -> Self {
             Ok(Self {
                 chunk: Cell::new(RawChunk::new_in(
@@ -187,8 +187,8 @@ where
 
         /// Constructs a new, `Bump` with at least enough space for `layout`.
         impl
-        for fn with_capacity_in
-        for fn try_with_capacity_in
+        for pub fn with_capacity_in
+        for pub fn try_with_capacity_in
         fn generic_with_capacity_in(layout: Layout, allocator: A) -> Self {
             Ok(Self {
                 chunk: Cell::new(RawChunk::new_in(

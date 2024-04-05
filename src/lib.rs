@@ -914,13 +914,13 @@ macro_rules! error_behavior_generic_methods {
             $(do panics $(#[doc = $infallible_panics:literal])*)?
             $(do errors $(#[doc = $infallible_errors:literal])*)?
             $(do examples $(#[doc = $infallible_examples:literal])*)?
-            for fn $infallible:ident
+            for $infallible_vis:vis fn $infallible:ident
 
             $(#[$attr_fallible:meta])*
             $(do panics $(#[doc = $fallible_panics:literal])*)?
             $(do errors $(#[doc = $fallible_errors:literal])*)?
             $(do examples $(#[doc = $fallible_examples:literal])*)?
-            for fn $fallible:ident
+            for $fallible_vis:vis fn $fallible:ident
 
             fn $generic:ident
             $(<{$($generic_params:tt)*}>)?
@@ -954,7 +954,7 @@ macro_rules! error_behavior_generic_methods {
 
             #[inline(always)]
             #[cfg(not(no_global_oom_handling))]
-            pub fn $infallible
+            $infallible_vis fn $infallible
             $(<$($generic_params)*>)?
             ($(&mut $self_mut,)?  $($arg_pat: $arg_ty),*) $(-> $return_ty)?
             $(where $($where)*)?
@@ -981,7 +981,7 @@ macro_rules! error_behavior_generic_methods {
             $(#[doc = "\n"] $(#[doc = $fallible_examples])*)?
 
             #[inline(always)]
-            pub fn $fallible
+            $fallible_vis fn $fallible
             $(<$($generic_params)*>)?
             ($(&mut $self_mut,)? $($arg_pat: $arg_ty),*)
             -> $crate::wrap_result!($($return_ty)?, AllocError)
@@ -1056,13 +1056,13 @@ macro_rules! define_alloc_methods {
             $(do panics $(#[doc = $infallible_panics:literal])*)?
             $(do errors $(#[doc = $infallible_errors:literal])*)?
             $(do examples $(#[doc = $infallible_examples:literal])*)?
-            for fn $infallible:ident
+            for pub fn $infallible:ident
 
             $(#[$attr_fallible:meta])*
             $(do panics $(#[doc = $fallible_panics:literal])*)?
             $(do errors $(#[doc = $fallible_errors:literal])*)?
             $(do examples $(#[doc = $fallible_examples:literal])*)?
-            for fn $fallible:ident
+            for pub fn $fallible:ident
 
             fn $generic:ident
             $(<{$($generic_params:tt)*}>)?
@@ -1215,8 +1215,8 @@ define_alloc_methods! {
 
     /// Allocate an object.
     impl
-    for fn alloc
-    for fn try_alloc
+    for pub fn alloc
+    for pub fn try_alloc
     fn generic_alloc<{T}>(&self, value: T) -> BumpBox<T> | BumpBox<'a, T> {
         if T::IS_ZST {
             return Ok(BumpBox::zst());
@@ -1228,8 +1228,8 @@ define_alloc_methods! {
     /// Pre-allocate space for an object. Once space is allocated `f` will be called to create the value to be put at that place.
     /// In some situations this can help the compiler realize that `T` can be constructed at the allocated space instead of having to copy it over.
     impl
-    for fn alloc_with
-    for fn try_alloc_with
+    for pub fn alloc_with
+    for pub fn try_alloc_with
     fn generic_alloc_with<{T}>(&self, f: impl FnOnce() -> T) -> BumpBox<T> | BumpBox<'a, T> {
         if T::IS_ZST {
             return Ok(BumpBox::zst());
@@ -1246,17 +1246,17 @@ define_alloc_methods! {
     /// Allocate an object with its default value.
     impl
     /// This is equivalent to `alloc_with(T::default())`.
-    for fn alloc_default
+    for pub fn alloc_default
     /// This is equivalent to `try_alloc_with(T::default())`.
-    for fn try_alloc_default
+    for pub fn try_alloc_default
     fn generic_alloc_default<{T: Default}>(&self) -> BumpBox<T> | BumpBox<'a, T> {
         self.generic_alloc_with(Default::default)
     }
 
     #[doc(hidden)]
     impl
-    for fn alloc_try_with
-    for fn try_alloc_try_with
+    for pub fn alloc_try_with
+    for pub fn try_alloc_try_with
     fn generic_alloc_try_with<{T, E}>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> | Result<BumpBox<'a, T>, E> {
         if T::IS_ZST {
             return match f() {
@@ -1298,8 +1298,8 @@ define_alloc_methods! {
 
     /// Allocate a slice and `Copy` elements from an existing slice.
     impl
-    for fn alloc_slice_copy
-    for fn try_alloc_slice_copy
+    for pub fn alloc_slice_copy
+    for pub fn try_alloc_slice_copy
     fn generic_alloc_slice_copy<{T: Copy}>(
         &self,
         slice: &[T],
@@ -1320,8 +1320,8 @@ define_alloc_methods! {
 
     /// Allocate a slice and `Clone` elements from an existing slice.
     impl
-    for fn alloc_slice_clone
-    for fn try_alloc_slice_clone
+    for pub fn alloc_slice_clone
+    for pub fn try_alloc_slice_clone
     fn generic_alloc_slice_clone<{T: Clone}>(
         &self,
         slice: &[T],
@@ -1335,8 +1335,8 @@ define_alloc_methods! {
 
     /// Allocate a slice and fill it with elements by cloning `value`.
     impl
-    for fn alloc_slice_fill
-    for fn try_alloc_slice_fill
+    for pub fn alloc_slice_fill
+    for pub fn try_alloc_slice_fill
     fn generic_alloc_slice_fill<{T: Clone}>(&self, len: usize, value: T) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         if T::IS_ZST {
             return Ok(BumpBox::zst_slice(len));
@@ -1352,8 +1352,8 @@ define_alloc_methods! {
     /// trait to generate values, you can pass [`Default::default`] as the
     /// argument.
     impl
-    for fn alloc_slice_fill_with
-    for fn try_alloc_slice_fill_with
+    for pub fn alloc_slice_fill_with
+    for pub fn try_alloc_slice_fill_with
     fn generic_alloc_slice_fill_with<{T}>(&self, len: usize, f: impl FnMut() -> T) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         if T::IS_ZST {
             return Ok(BumpBox::zst_slice(len));
@@ -1364,8 +1364,8 @@ define_alloc_methods! {
 
     /// Allocate a `str`.
     impl
-    for fn alloc_str
-    for fn try_alloc_str
+    for pub fn alloc_str
+    for pub fn try_alloc_str
     fn generic_alloc_str(&self, src: &str) -> BumpBox<str> | BumpBox<'a, str> {
         let slice = self.generic_alloc_slice_copy(src.as_bytes())?;
 
@@ -1389,11 +1389,11 @@ define_alloc_methods! {
     ///
     /// assert_eq!(string, "1 + 2 = 3");
     /// ```
-    for fn alloc_fmt
+    for pub fn alloc_fmt
     /// For better performance prefer [`try_alloc_fmt_mut`](Bump::try_alloc_fmt_mut).
     do errors
     /// Errors if a formatting trait implementation returned an error.
-    for fn try_alloc_fmt
+    for pub fn try_alloc_fmt
     fn generic_alloc_fmt(&self, args: fmt::Arguments) -> BumpBox<str> | BumpBox<'a, str> {
         if let Some(string) = args.as_str() {
             return self.generic_alloc_str(string);
@@ -1424,11 +1424,11 @@ define_alloc_methods! {
     ///
     /// assert_eq!(string, "1 + 2 = 3");
     /// ```
-    for fn alloc_fmt_mut
+    for pub fn alloc_fmt_mut
     /// Unlike [`try_alloc_fmt`](Bump::try_alloc_fmt), this function requires a mutable `Bump(Scope)`.
     do errors
     /// Errors if a formatting trait implementation returned an error.
-    for fn try_alloc_fmt_mut
+    for pub fn try_alloc_fmt_mut
     fn generic_alloc_fmt_mut(&mut self, args: fmt::Arguments) -> BumpBox<str> | BumpBox<'a, str> {
         if let Some(string) = args.as_str() {
             return self.generic_alloc_str(string);
@@ -1454,9 +1454,9 @@ define_alloc_methods! {
     /// ```
     impl
     /// For better performance prefer [`alloc_iter_exact`](Bump::try_alloc_iter_exact) or [`alloc_iter_mut(_rev)`](Bump::alloc_iter_mut).
-    for fn alloc_iter
+    for pub fn alloc_iter
     /// For better performance prefer [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) or [`try_alloc_iter_mut(_rev)`](Bump::try_alloc_iter_mut).
-    for fn try_alloc_iter
+    for pub fn try_alloc_iter
     fn generic_alloc_iter<{T}>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         if T::IS_ZST {
             return Ok(BumpBox::zst_slice(iter.into_iter().count()));
@@ -1486,8 +1486,8 @@ define_alloc_methods! {
     /// let slice = bump.alloc_iter_exact([1, 2, 3]);
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
-    for fn alloc_iter_exact
-    for fn try_alloc_iter_exact
+    for pub fn alloc_iter_exact
+    for pub fn try_alloc_iter_exact
     fn generic_alloc_iter_exact<{T, I}>(&self, iter: impl IntoIterator<Item = T, IntoIter = I>) -> BumpBox<[T]> | BumpBox<'a, [T]>
     where {
         I: ExactSizeIterator<Item = T>
@@ -1527,11 +1527,11 @@ define_alloc_methods! {
     /// Unlike [`alloc_iter`](Bump::alloc_iter), this function requires a mutable `Bump(Scope)`.
     ///
     /// When bumping downwards, prefer [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) or [`alloc_iter_exact`](Bump::alloc_iter_exact) as in this case this function incurs an additional copy of the slice internally.
-    for fn alloc_iter_mut
+    for pub fn alloc_iter_mut
     /// Unlike [`try_alloc_iter`](Bump::try_alloc_iter), this function requires a mutable `Bump(Scope)`.
     ///
     /// When bumping downwards, prefer [`try_alloc_iter_mut_rev`](Bump::try_alloc_iter_mut_rev) or [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) as in this case this function incurs an additional copy of the slice internally.
-    for fn try_alloc_iter_mut
+    for pub fn try_alloc_iter_mut
     fn generic_alloc_iter_mut<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         if T::IS_ZST {
             return Ok(BumpBox::zst_slice(iter.into_iter().count()));
@@ -1561,10 +1561,10 @@ define_alloc_methods! {
     /// let slice = bump.alloc_iter_mut_rev([1, 2, 3]);
     /// assert_eq!(slice, [3, 2, 1]);
     /// ```
-    for fn alloc_iter_mut_rev
+    for pub fn alloc_iter_mut_rev
     ///
     /// When bumping upwards, prefer [`try_alloc_iter_mut`](Bump::try_alloc_iter) or [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) as in this case this function incurs an additional copy of the slice internally.
-    for fn try_alloc_iter_mut_rev
+    for pub fn try_alloc_iter_mut_rev
     fn generic_alloc_iter_mut_rev<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         if T::IS_ZST {
             return Ok(BumpBox::zst_slice(iter.into_iter().count()));
@@ -1611,8 +1611,8 @@ define_alloc_methods! {
     /// assert_eq!(*five, 5)
     /// ```
     impl
-    for fn alloc_uninit
-    for fn try_alloc_uninit
+    for pub fn alloc_uninit
+    for pub fn try_alloc_uninit
     fn generic_alloc_uninit<{T}>(&self) -> BumpBox<MaybeUninit<T>> | BumpBox<'a, MaybeUninit<T>> {
         if T::IS_ZST {
             return Ok(BumpBox::zst());
@@ -1654,8 +1654,8 @@ define_alloc_methods! {
     /// assert_eq!(*values, [1, 2, 3])
     /// ```
     impl
-    for fn alloc_uninit_slice
-    for fn try_alloc_uninit_slice
+    for pub fn alloc_uninit_slice
+    for pub fn try_alloc_uninit_slice
     fn generic_alloc_uninit_slice<{T}>(&self, len: usize) -> BumpBox<[MaybeUninit<T>]> | BumpBox<'a, [MaybeUninit<T>]> {
         if T::IS_ZST {
             return Ok(BumpBox::zst_slice(len));
@@ -1676,8 +1676,8 @@ define_alloc_methods! {
     /// This is just like `(try_)alloc_uninit_slice` but uses a `slice` to provide the `len`.
     /// This avoids a check for a valid layout. The elements of `slice` are irrelevant.
     impl
-    for fn alloc_uninit_slice_for
-    for fn try_alloc_uninit_slice_for
+    for pub fn alloc_uninit_slice_for
+    for pub fn try_alloc_uninit_slice_for
     fn generic_alloc_uninit_slice_for<{T}>(&self, slice: &[T]) -> BumpBox<[MaybeUninit<T>]> | BumpBox<'a, [MaybeUninit<T>]> {
         if T::IS_ZST {
             return Ok(BumpBox::zst_slice(slice.len()));
@@ -1703,16 +1703,16 @@ define_alloc_methods! {
     /// assert_eq!(values, [1, 2, 3])
     /// ```
     impl
-    for fn alloc_fixed_vec
-    for fn try_alloc_fixed_vec
+    for pub fn alloc_fixed_vec
+    for pub fn try_alloc_fixed_vec
     fn generic_alloc_fixed_vec<{T}>(&self, len: usize) -> FixedBumpVec<T> | FixedBumpVec<'a, T> {
         Ok(self.generic_alloc_uninit_slice(len)?.into_fixed_vec())
     }
 
     /// Allocates memory as described by the given `Layout`.
     impl
-    for fn alloc_layout
-    for fn try_alloc_layout
+    for pub fn alloc_layout
+    for pub fn try_alloc_layout
     fn generic_alloc_layout(&self, layout: Layout) -> NonNull<u8> | NonNull<u8> {
         match self.chunk.get().alloc::<MIN_ALIGN, false, false, _>(layout) {
             Some(ptr) => Ok(ptr),
@@ -1735,8 +1735,8 @@ define_alloc_methods! {
     /// assert!(bump.stats().capacity() > 4096);
     /// ```
     impl
-    for fn reserve_bytes
-    for fn try_reserve_bytes
+    for pub fn reserve_bytes
+    for pub fn try_reserve_bytes
     fn generic_reserve_bytes(&self, additional: usize) {
         let mut additional = additional;
         let mut chunk = self.chunk.get();
