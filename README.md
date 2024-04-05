@@ -4,6 +4,7 @@
 [![Documentation](https://img.shields.io/docsrs/bump-scope)](https://docs.rs/bump-scope)
 [![Rust](https://img.shields.io/crates/msrv/bump-scope)](#)
 [![License](https://img.shields.io/crates/l/bump_scope)](#license)
+[![Build Status](https://github.com/bluurryy/bump-scope/workflows/Rust/badge.svg)](https://github.com/bluurryy/bump-scope/actions/workflows/rust.yml)
 
 [//]: # (START_OF_CRATE_DOCS)
 
