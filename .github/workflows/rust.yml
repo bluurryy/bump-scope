@@ -30,20 +30,25 @@ jobs:
     strategy:
       matrix:
         rust_channel: ["1.64.0", "stable", "nightly"]
-        feature_set: ["--no-default-features"]
+        features: ["--no-default-features"]
+        tests: [""]
         include:
           - rust_channel: "nightly"
-            feature_set: "--all-features"
+            features: "--all-features"
+            tests: "--tests"
+        exclude:
+          - rust_channel: "nightly"
+            tests: ""
     steps:
     - name: install rustup
       run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile=minimal
     - name: install rust
       run: rustup toolchain install ${{matrix.rust_channel}} --component clippy && rustup default ${{matrix.rust_channel}}
     - uses: actions/checkout@v4
-    - name: cargo clippy (without feature_set)
-      run: cargo clippy --all --tests --verbose
-    - name: cargo clippy (with feature_set)
-      run: cargo clippy --all --tests --verbose ${{matrix.feature_set}}
+    - name: cargo clippy (without features)
+      run: cargo clippy --all ${{matrix.tests}}
+    - name: cargo clippy (with features)
+      run: cargo clippy --all ${{matrix.tests}} ${{matrix.features}}
   clippy-benches:
     runs-on: ubuntu-latest
     steps:
