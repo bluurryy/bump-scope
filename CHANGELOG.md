@@ -2,6 +2,10 @@
 
 ## Unreleased
 - **added:** `BumpVec::into_fixed_vec` and `FixedBumpVec::into_vec`
+- **added:** fallible `FixedBumpVec` api
+- **added:** `FixedBumpString`
+- **added:** `from_init` and `from_uninit` for `FixedBumpVec` and `FixedBumpString`
+- **deprecated:** `BumpBox::into_fixed_vec` and `BumpBox::into_fixed_string`
 
 ## 0.1.4 (2024-04-02)
 - **added:** `String::shrink_to_fit`
