@@ -160,9 +160,9 @@ where
 {
     error_behavior_generic_methods! {
         impl
-        /// This is equivalent to `Bump::with_capacity_in(512, allocator)`.
+        /// This is equivalent to `Bump::with_size_in(512, allocator)`.
         for pub fn new_in
-        /// This is equivalent to `Bump::try_with_capacity_in(512, allocator)`.
+        /// This is equivalent to `Bump::try_with_size_in(512, allocator)`.
         for pub fn try_new_in
         fn generic_new_in(allocator: A) -> Self {
             Self::generic_with_size_in(512, allocator)
