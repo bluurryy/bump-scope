@@ -288,6 +288,9 @@ mod stats;
 mod with_drop;
 mod without_dealloc;
 
+#[cfg(feature = "std")]
+mod bump_pool;
+
 use allocator_api2::alloc::{AllocError, Allocator};
 
 #[cfg(feature = "alloc")]
@@ -298,6 +301,8 @@ pub use allocator_api2;
 pub use any_bump::AnyBump;
 pub use bump::Bump;
 pub use bump_box::BumpBox;
+#[cfg(feature = "std")]
+pub use bump_pool::{BumpPool, BumpPoolGuard};
 pub use bump_scope::BumpScope;
 pub use bump_scope_guard::{BumpScopeGuard, BumpScopeGuardRoot, Checkpoint};
 pub use bump_string::BumpString;
