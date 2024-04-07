@@ -1101,6 +1101,10 @@ where
     fn into_slice_ptr(self) -> NonNull<[T]> {
         let this = ManuallyDrop::new(self);
 
+        if T::IS_ZST {
+            return nonnull::slice_from_raw_parts(NonNull::dangling(), this.len());
+        }
+
         if this.cap == 0 {
             // We didn't touch the bump, so no need to do anything.
             debug_assert_eq!(this.end, NonNull::<T>::dangling());

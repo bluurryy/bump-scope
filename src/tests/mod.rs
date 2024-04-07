@@ -131,6 +131,10 @@ either_way! {
     as_aligned
 
     realign
+
+    alloc_zst
+
+    call_zst_creation_closures
 }
 
 macro_rules! assert_chunk_sizes {
@@ -737,5 +741,175 @@ fn realign<const UP: bool>() {
         bump.scoped_aligned::<ALIGN>(|bump| {
             assert!(bump.stats().current.bump_position().cast::<AlignT>().is_aligned());
         });
+    }
+}
+
+// https://github.com/bluurryy/bump-scope/issues/6
+#[allow(clippy::too_many_lines)]
+fn alloc_zst<const UP: bool>() {
+    thread_local! {
+        static DROPS: Cell<usize> = const { Cell::new(0) };
+        static CLONES: Cell<usize> = const { Cell::new(0) };
+        static DEFAULTS: Cell<usize> = const { Cell::new(0) };
+    }
+
+    struct DropEmit;
+
+    impl Default for DropEmit {
+        fn default() -> Self {
+            DEFAULTS.set(DEFAULTS.get() + 1);
+            Self
+        }
+    }
+
+    impl Clone for DropEmit {
+        fn clone(&self) -> Self {
+            CLONES.set(CLONES.get() + 1);
+            Self
+        }
+    }
+
+    impl Drop for DropEmit {
+        fn drop(&mut self) {
+            DROPS.set(DROPS.get() + 1);
+        }
+    }
+
+    let mut bump = Bump::<Global, 1, UP>::new();
+
+    fn reset() {
+        DROPS.set(0);
+        CLONES.set(0);
+        DEFAULTS.set(0);
+    }
+
+    {
+        reset();
+        let drop_emit = bump.alloc(DropEmit);
+        assert_eq!(DROPS.get(), 0);
+        drop(drop_emit);
+        assert_eq!(DROPS.get(), 1);
+    }
+
+    {
+        reset();
+        let drop_emit = bump.alloc_with(|| DropEmit);
+        assert_eq!(DROPS.get(), 0);
+        drop(drop_emit);
+        assert_eq!(DROPS.get(), 1);
+    }
+
+    {
+        reset();
+        let drop_emit = bump.alloc_default::<DropEmit>();
+        assert_eq!(DEFAULTS.get(), 1);
+        assert_eq!(DROPS.get(), 0);
+        drop(drop_emit);
+        assert_eq!(DROPS.get(), 1);
+    }
+
+    {
+        reset();
+        let drop_emit = bump.alloc_try_with::<_, ()>(|| Ok(DropEmit));
+        assert_eq!(DROPS.get(), 0);
+        drop(drop_emit);
+        assert_eq!(DROPS.get(), 1);
+    }
+
+    {
+        reset();
+        let drop_emit = [DropEmit, DropEmit, DropEmit];
+        let drop_emit_clone = bump.alloc_slice_clone(&drop_emit);
+        assert_eq!(CLONES.get(), 3);
+        assert_eq!(DROPS.get(), 0);
+        drop(drop_emit);
+        assert_eq!(DROPS.get(), 3);
+        drop(drop_emit_clone);
+        assert_eq!(DROPS.get(), 6);
+    }
+
+    {
+        reset();
+        let drop_emit = bump.alloc_slice_fill(3, DropEmit);
+        assert_eq!(CLONES.get(), 2);
+        assert_eq!(DROPS.get(), 0);
+        drop(drop_emit);
+        assert_eq!(DROPS.get(), 3);
+    }
+
+    {
+        reset();
+        let drop_emit = bump.alloc_slice_fill(0, DropEmit);
+        assert_eq!(DROPS.get(), 1);
+        drop(drop_emit);
+        assert_eq!(DROPS.get(), 1);
+    }
+
+    {
+        reset();
+        let drop_emit = bump.alloc_slice_fill_with(3, || DropEmit);
+        assert_eq!(DROPS.get(), 0);
+        drop(drop_emit);
+        assert_eq!(DROPS.get(), 3);
+    }
+
+    {
+        reset();
+        let drop_emit = bump.alloc_slice_fill_with(0, || DropEmit);
+        assert_eq!(DROPS.get(), 0);
+        drop(drop_emit);
+        assert_eq!(DROPS.get(), 0);
+    }
+
+    {
+        reset();
+        let drop_emit = bump.alloc_iter([DropEmit, DropEmit, DropEmit]);
+        assert_eq!(DROPS.get(), 0);
+        drop(drop_emit);
+        assert_eq!(DROPS.get(), 3);
+    }
+
+    {
+        reset();
+        let drop_emit = bump.alloc_iter_exact([DropEmit, DropEmit, DropEmit]);
+        assert_eq!(DROPS.get(), 0);
+        drop(drop_emit);
+        assert_eq!(DROPS.get(), 3);
+    }
+
+    {
+        reset();
+        let drop_emit = bump.alloc_iter_mut([DropEmit, DropEmit, DropEmit]);
+        assert_eq!(DROPS.get(), 0);
+        drop(drop_emit);
+        assert_eq!(DROPS.get(), 3);
+    }
+
+    {
+        reset();
+        let drop_emit = bump.alloc_iter_mut_rev([DropEmit, DropEmit, DropEmit]);
+        assert_eq!(DROPS.get(), 0);
+        drop(drop_emit);
+        assert_eq!(DROPS.get(), 3);
+    }
+}
+
+fn call_zst_creation_closures<const UP: bool>() {
+    let bump = Bump::<Global, 1, true>::new();
+
+    {
+        let mut calls = 0;
+        bump.alloc_with(|| {
+            calls += 1;
+        });
+        assert_eq!(calls, 1);
+    }
+
+    {
+        let mut calls = 0;
+        bump.alloc_slice_fill_with(3, || {
+            calls += 1;
+        });
+        assert_eq!(calls, 3);
     }
 }

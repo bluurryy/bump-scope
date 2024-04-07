@@ -139,8 +139,9 @@ pub struct BumpBox<'a, T: ?Sized> {
 impl<'a, T> BumpBox<'a, T> {
     #[must_use]
     #[inline(always)]
-    pub(crate) fn zst() -> Self {
+    pub(crate) fn zst(value: T) -> Self {
         assert!(T::IS_ZST);
+        mem::forget(value);
         Self {
             ptr: NonNull::dangling(),
             marker: PhantomData,
@@ -323,6 +324,16 @@ impl<'a, T: Sized> BumpBox<'a, MaybeUninit<T>> {
 }
 
 impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
+    #[must_use]
+    #[inline(always)]
+    pub(crate) fn uninit_zst_slice(len: usize) -> Self {
+        assert!(T::IS_ZST);
+        Self {
+            ptr: nonnull::slice_from_raw_parts(NonNull::dangling(), len),
+            marker: PhantomData,
+        }
+    }
+
     /// Initializes `self` by filling it with elements by cloning `value`.
     ///
     /// # Examples
@@ -477,7 +488,48 @@ impl<'a, T> BumpBox<'a, [T]> {
 
     #[must_use]
     #[inline(always)]
-    pub(crate) fn zst_slice(len: usize) -> Self {
+    pub(crate) fn zst_slice_clone(slice: &[T]) -> Self
+    where
+        T: Clone,
+    {
+        assert!(T::IS_ZST);
+        BumpBox::uninit_zst_slice(slice.len()).init_clone(slice)
+    }
+
+    #[must_use]
+    #[inline(always)]
+    pub(crate) fn zst_slice_fill(len: usize, value: T) -> Self
+    where
+        T: Clone,
+    {
+        assert!(T::IS_ZST);
+        if len == 0 {
+            drop(value);
+            BumpBox::EMPTY
+        } else {
+            for _ in 1..len {
+                mem::forget(value.clone());
+            }
+
+            mem::forget(value);
+            unsafe { BumpBox::zst_slice_from_len(len) }
+        }
+    }
+
+    #[must_use]
+    #[inline(always)]
+    pub(crate) fn zst_slice_fill_with(len: usize, mut f: impl FnMut() -> T) -> Self {
+        assert!(T::IS_ZST);
+        for _ in 0..len {
+            mem::forget(f());
+        }
+        unsafe { BumpBox::zst_slice_from_len(len) }
+    }
+
+    /// Creates `T` values from nothing!
+    #[must_use]
+    #[inline(always)]
+    unsafe fn zst_slice_from_len(len: usize) -> Self {
         assert!(T::IS_ZST);
         Self {
             ptr: nonnull::slice_from_raw_parts(NonNull::dangling(), len),
@@ -1036,7 +1088,7 @@ impl<'a, T> BumpBox<'a, [T]> {
             let _ = self.into_raw();
             let _ = other.into_raw();
 
-            Self::zst_slice(len)
+            unsafe { Self::zst_slice_from_len(len) }
         } else {
             if self.as_ptr_range().end != other.as_ptr() {
                 assert_failed();

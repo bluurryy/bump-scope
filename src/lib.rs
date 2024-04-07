@@ -1222,7 +1222,7 @@ define_alloc_methods! {
     for pub fn try_alloc
     fn generic_alloc<{T}>(&self, value: T) -> BumpBox<T> | BumpBox<'a, T> {
         if T::IS_ZST {
-            return Ok(BumpBox::zst());
+            return Ok(BumpBox::zst(value));
         }
 
         self.generic_alloc_with(|| value)
@@ -1235,7 +1235,8 @@ define_alloc_methods! {
     for pub fn try_alloc_with
     fn generic_alloc_with<{T}>(&self, f: impl FnOnce() -> T) -> BumpBox<T> | BumpBox<'a, T> {
         if T::IS_ZST {
-            return Ok(BumpBox::zst());
+            let value = f();
+            return Ok(BumpBox::zst(value));
         }
 
         let ptr = self.do_alloc_sized::<B, T>()?;
@@ -1263,7 +1264,7 @@ define_alloc_methods! {
     fn generic_alloc_try_with<{T, E}>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> | Result<BumpBox<'a, T>, E> {
         if T::IS_ZST {
             return match f() {
-                Ok(_) => Ok(Ok(BumpBox::zst())),
+                Ok(value) => Ok(Ok(BumpBox::zst(value))),
                 Err(error) => Ok(Err(error)),
             }
         }
@@ -1308,7 +1309,7 @@ define_alloc_methods! {
         slice: &[T],
     ) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         if T::IS_ZST {
-            return Ok(BumpBox::zst_slice(slice.len()));
+            return Ok(BumpBox::zst_slice_clone(slice));
         }
 
         let len = slice.len();
@@ -1330,7 +1331,7 @@ define_alloc_methods! {
         slice: &[T],
     ) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         if T::IS_ZST {
-            return Ok(BumpBox::zst_slice(slice.len()));
+            return Ok(BumpBox::zst_slice_clone(slice));
         }
 
         Ok(self.generic_alloc_uninit_slice_for(slice)?.init_clone(slice))
@@ -1342,7 +1343,7 @@ define_alloc_methods! {
     for pub fn try_alloc_slice_fill
     fn generic_alloc_slice_fill<{T: Clone}>(&self, len: usize, value: T) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         if T::IS_ZST {
-            return Ok(BumpBox::zst_slice(len));
+            return Ok(BumpBox::zst_slice_fill(len, value));
         }
 
         Ok(self.generic_alloc_uninit_slice(len)?.init_fill(value))
@@ -1359,7 +1360,7 @@ define_alloc_methods! {
     for pub fn try_alloc_slice_fill_with
     fn generic_alloc_slice_fill_with<{T}>(&self, len: usize, f: impl FnMut() -> T) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         if T::IS_ZST {
-            return Ok(BumpBox::zst_slice(len));
+            return Ok(BumpBox::zst_slice_fill_with(len, f));
         }
 
         Ok(self.generic_alloc_uninit_slice(len)?.init_fill_with(f))
@@ -1461,10 +1462,6 @@ define_alloc_methods! {
     /// For better performance prefer [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) or [`try_alloc_iter_mut(_rev)`](Bump::try_alloc_iter_mut).
     for pub fn try_alloc_iter
     fn generic_alloc_iter<{T}>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
-        if T::IS_ZST {
-            return Ok(BumpBox::zst_slice(iter.into_iter().count()));
-        }
-
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
@@ -1495,10 +1492,6 @@ define_alloc_methods! {
     where {
         I: ExactSizeIterator<Item = T>
     } in {
-        if T::IS_ZST {
-            return Ok(BumpBox::zst_slice(iter.into_iter().count()));
-        }
-
         let mut iter = iter.into_iter();
         let len = iter.len();
 
@@ -1536,10 +1529,6 @@ define_alloc_methods! {
     /// When bumping downwards, prefer [`try_alloc_iter_mut_rev`](Bump::try_alloc_iter_mut_rev) or [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) as in this case this function incurs an additional copy of the slice internally.
     for pub fn try_alloc_iter_mut
     fn generic_alloc_iter_mut<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
-        if T::IS_ZST {
-            return Ok(BumpBox::zst_slice(iter.into_iter().count()));
-        }
-
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
@@ -1569,10 +1558,6 @@ define_alloc_methods! {
     /// When bumping upwards, prefer [`try_alloc_iter_mut`](Bump::try_alloc_iter) or [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) as in this case this function incurs an additional copy of the slice internally.
     for pub fn try_alloc_iter_mut_rev
     fn generic_alloc_iter_mut_rev<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
-        if T::IS_ZST {
-            return Ok(BumpBox::zst_slice(iter.into_iter().count()));
-        }
-
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
@@ -1618,7 +1603,7 @@ define_alloc_methods! {
     for pub fn try_alloc_uninit
     fn generic_alloc_uninit<{T}>(&self) -> BumpBox<MaybeUninit<T>> | BumpBox<'a, MaybeUninit<T>> {
         if T::IS_ZST {
-            return Ok(BumpBox::zst());
+            return Ok(BumpBox::zst(MaybeUninit::uninit()));
         }
 
         let ptr = self.do_alloc_sized::<B, T>()?.cast::<MaybeUninit<T>>();
@@ -1661,7 +1646,7 @@ define_alloc_methods! {
     for pub fn try_alloc_uninit_slice
     fn generic_alloc_uninit_slice<{T}>(&self, len: usize) -> BumpBox<[MaybeUninit<T>]> | BumpBox<'a, [MaybeUninit<T>]> {
         if T::IS_ZST {
-            return Ok(BumpBox::zst_slice(len));
+            return Ok(BumpBox::uninit_zst_slice(len));
         }
 
         let ptr = self.do_alloc_slice::<B, T>(len)?.cast::<MaybeUninit<T>>();
@@ -1683,7 +1668,7 @@ define_alloc_methods! {
     for pub fn try_alloc_uninit_slice_for
     fn generic_alloc_uninit_slice_for<{T}>(&self, slice: &[T]) -> BumpBox<[MaybeUninit<T>]> | BumpBox<'a, [MaybeUninit<T>]> {
         if T::IS_ZST {
-            return Ok(BumpBox::zst_slice(slice.len()));
+            return Ok(BumpBox::uninit_zst_slice(slice.len()));
         }
 
         let ptr = self.do_alloc_slice_for::<B, T>(slice)?.cast::<MaybeUninit<T>>();
