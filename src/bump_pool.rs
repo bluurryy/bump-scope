@@ -52,7 +52,7 @@ use crate::{Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
 /// std::thread::scope(|s| {
 ///     s.spawn(|| {
 ///         let bump = pool.get();
-///         let string = bump.alloc_str("Hello").into_ref();
+///         let string = bump.alloc_str("Hello");
 ///         sender.send(string).unwrap();
 ///         drop(sender);
 ///     });

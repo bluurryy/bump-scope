@@ -136,6 +136,9 @@ pub struct BumpBox<'a, T: ?Sized> {
     marker: PhantomData<(&'a (), T)>,
 }
 
+unsafe impl<'a, T: ?Sized + Send> Send for BumpBox<'a, T> {}
+unsafe impl<'a, T: ?Sized + Sync> Sync for BumpBox<'a, T> {}
+
 impl<'a, T> BumpBox<'a, T> {
     #[must_use]
     #[inline(always)]
