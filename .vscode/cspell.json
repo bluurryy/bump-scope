@@ -21,6 +21,7 @@
     "deallocation",
     "dedup",
     "deinitialize",
+    "derefs",
     "dlmalloc",
     "docsrs",
     "doesnt",

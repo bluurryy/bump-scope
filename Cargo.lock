@@ -43,6 +43,7 @@ dependencies = [
  "bumpalo",
  "criterion",
  "expect-test",
+ "rayon",
  "sptr",
  "trybuild",
 ]
