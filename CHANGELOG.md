@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.7 (2024-04-07)
+- **added:** `BumpPool` along with `BumpPoolGuard`
+- **added:** implement `Send` and `Sync` for `BumpBox`, `FixedBumpVec` and `FixedBumpString`
+
 ## 0.1.6 (2024-04-07)
 - **fixed:** ZST allocation with respect to `drop`, `clone` and `default` calls
 - **fixed:** `alloc_with` and `alloc_slice_fill_with` not calling `f` for ZSTs
