@@ -349,7 +349,7 @@ where
 
     bump_common_methods!(BumpScopeGuard, true);
 
-    /// Returns `&self` as is. This is used in for macros that support both `Bump` and `BumpScope`, like [`mut_bump_vec!`](crate::mut_bump_vec!).
+    /// Returns `&self` as is. This is used in for macros that support both `Bump` and `BumpScope`, like [`bump_vec!`](crate::bump_vec!).
     #[inline(always)]
     pub fn as_scope(&self) -> &Self {
         self

@@ -134,7 +134,7 @@ where
             Self::generic_new_in(Global)
         }
 
-        /// Constructs a new, `Bump` with a chunk of at least `size` bytes.
+        /// Constructs a new `Bump` with a chunk of at least `size` bytes.
         impl
         #[must_use]
         for pub fn with_size
@@ -143,7 +143,7 @@ where
             Self::generic_with_size_in(size, Global)
         }
 
-        /// Constructs a new, `Bump` with at least enough space for `layout`.
+        /// Constructs a new `Bump` with at least enough space for `layout`.
         impl
         #[must_use]
         for pub fn with_capacity
@@ -168,7 +168,7 @@ where
             Self::generic_with_size_in(512, allocator)
         }
 
-        /// Constructs a new, `Bump` with a chunk of at least `size` bytes.
+        /// Constructs a new `Bump` with a chunk of at least `size` bytes with the provided allocator.
         impl
         for pub fn with_size_in
         for pub fn try_with_size_in
@@ -182,7 +182,7 @@ where
             })
         }
 
-        /// Constructs a new, `Bump` with at least enough space for `layout`.
+        /// Constructs a new `Bump` with at least enough space for `layout` with the provided allocator.
         impl
         for pub fn with_capacity_in
         for pub fn try_with_capacity_in

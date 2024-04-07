@@ -169,7 +169,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
 {
-    /// Constructs a new, empty `MutBumpVecRev<T>`.
+    /// Constructs a new empty `MutBumpVecRev<T>`.
     ///
     /// The vector will not allocate until elements are pushed onto it.
     ///
@@ -193,7 +193,7 @@ where
     }
 
     error_behavior_generic_methods! {
-        /// Constructs a new, empty `MutBumpVecRev<T>` with at least the specified capacity
+        /// Constructs a new empty `MutBumpVecRev<T>` with at least the specified capacity
         /// with the provided `BumpScope`.
         ///
         /// The vector will be able to hold at least `capacity` elements without

@@ -128,7 +128,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
 {
-    /// Constructs a new, empty `BumpString`.
+    /// Constructs a new empty `BumpString`.
     ///
     /// The vector will not allocate until elements are pushed onto it.
     pub fn new_in(bump: impl Into<&'b BumpScope<'a, A, MIN_ALIGN, UP>>) -> Self {
@@ -138,7 +138,7 @@ where
     }
 
     error_behavior_generic_methods! {
-        /// Constructs a new, empty `BumpString` with the specified capacity
+        /// Constructs a new empty `BumpString` with the specified capacity
         /// in the provided `BumpScope`.
         ///
         /// The string will be able to hold `capacity` bytes without
