@@ -43,6 +43,9 @@ pub struct FixedBumpVec<'a, T> {
     pub(crate) capacity: usize,
 }
 
+unsafe impl<'a, T: Send> Send for FixedBumpVec<'a, T> {}
+unsafe impl<'a, T: Sync> Sync for FixedBumpVec<'a, T> {}
+
 impl<'a, T> FixedBumpVec<'a, T> {
     /// Empty fixed vector.
     pub const EMPTY: Self = Self {

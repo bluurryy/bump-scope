@@ -34,6 +34,9 @@ pub struct FixedBumpString<'a> {
     vec: FixedBumpVec<'a, u8>,
 }
 
+unsafe impl<'a> Send for FixedBumpString<'a> {}
+unsafe impl<'a> Sync for FixedBumpString<'a> {}
+
 impl<'a> FixedBumpString<'a> {
     /// Empty fixed vector.
     pub const EMPTY: Self = Self {
