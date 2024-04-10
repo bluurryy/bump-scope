@@ -29,48 +29,41 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        rust_channel: ["1.64.0", "stable", "nightly"]
+        toolchain: ["1.64.0", "stable", "nightly"]
         features: ["--no-default-features"]
         tests: [""]
         include:
-          - rust_channel: "nightly"
+          - toolchain: "nightly"
             features: "--all-features"
             tests: "--tests"
         exclude:
-          - rust_channel: "nightly"
+          - toolchain: "nightly"
             tests: ""
     steps:
-    - name: install rustup
-      run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile=minimal
-    - name: install rust
-      run: rustup toolchain install ${{matrix.rust_channel}} --component clippy && rustup default ${{matrix.rust_channel}}
     - uses: actions/checkout@v4
-    - name: cargo clippy (without features)
-      run: cargo clippy --all ${{matrix.tests}}
-    - name: cargo clippy (with features)
-      run: cargo clippy --all ${{matrix.tests}} ${{matrix.features}}
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{matrix.toolchain}}
+        components: clippy
+    - run: cargo clippy --all ${{matrix.tests}}      
+    - run: cargo clippy --all ${{matrix.tests}} ${{matrix.features}}
   clippy-benches:
     runs-on: ubuntu-latest
     steps:
-    - name: install rustup
-      run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile=minimal
-    - name: install rust nightly
-      run: rustup toolchain install nightly --component clippy && rustup default nightly
     - uses: actions/checkout@v4
-    - name: cargo clippy
-      run: cargo clippy --benches --all-features
+    - uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: clippy
+    - run: cargo clippy --benches --all-features
   test:
     runs-on: ubuntu-latest
     env:
       MIRIFLAGS: "-Zmiri-strict-provenance" 
     steps:
-    - name: install rustup
-      run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain nightly -y
-    - name: install miri
-      run: rustup toolchain install nightly --allow-downgrade --profile minimal --component miri
     - uses: actions/checkout@v4
-    - name: test
-      run: cargo test --all-features
-    - name: miri test
-      run: cargo miri test --all-features
+    - uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: miri
+    - run: cargo test --all-features
+    - run: cargo miri test --all-features
     

@@ -25,6 +25,7 @@
     "dlmalloc",
     "docsrs",
     "doesnt",
+    "dtolnay",
     "dvec",
     "elems",
     "emscripten",
