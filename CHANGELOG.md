@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **added:** `serde` serialization support for `BumpBox` and vectors
+
 ## 0.1.7 (2024-04-07)
 - **added:** `BumpPool` along with `BumpPoolGuard`
 - **added:** implement `Send` and `Sync` for `BumpBox`, `FixedBumpVec` and `FixedBumpString`

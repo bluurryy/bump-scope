@@ -161,6 +161,12 @@ This crate supports `no_std`, unless the `std` feature is enabled.
 
 <p></p>
 
+- `serde`:
+
+  Adds serialization support for `BumpBox` and vectors.
+
+<p></p>
+
 - `nightly-allocator-api` *(requires nightly)*:
 
   Enables `allocator-api2`'s `nightly` feature which makes it reexport the nightly allocator api instead of its own implementation.
