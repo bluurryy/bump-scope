@@ -149,6 +149,6 @@ fn truncate<const UP: bool>() {
     {
         let mut vec = mut_bump_vec_rev![in bump; 1, 2, 3];
         vec.truncate(0);
-        assert_eq!(vec, []);
+        assert!(vec.is_empty());
     }
 }

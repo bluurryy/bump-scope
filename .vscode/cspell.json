@@ -61,6 +61,7 @@
     "rustdoc",
     "rustfmt",
     "rustup",
+    "serde",
     "shrinknt",
     "sinkptr",
     "slicemut",

@@ -44,6 +44,8 @@ dependencies = [
  "criterion",
  "expect-test",
  "rayon",
+ "serde",
+ "serde_json",
  "sptr",
  "trybuild",
 ]

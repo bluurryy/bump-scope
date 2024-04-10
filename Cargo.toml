@@ -15,6 +15,7 @@ exclude = ["*.nu", "justfile", "tests", ".vscode", ".github"]
 [dependencies]
 allocator-api2 = { version = "0.2.16", default-features = false }
 sptr = "0.3.2"
+serde = { version = "1.0.197", optional = true }
 
 [features]
 default = ["std"]
@@ -24,6 +25,7 @@ nightly-allocator-api = ["allocator-api2/nightly"]
 nightly-coerce-unsized = []
 nightly-exact-size-is-empty = []
 nightly-trusted-len = []
+serde = ["dep:serde"]
 
 [dev-dependencies]
 trybuild = "1.0.90"
@@ -31,6 +33,7 @@ expect-test = "1.4.1"
 criterion = { version = "0.5.1", features = ["html_reports"] }
 bumpalo = "3.15.4"
 rayon = "1.10.0"
+serde_json = "1.0.115"
 
 [[bench]]
 name = "benches"

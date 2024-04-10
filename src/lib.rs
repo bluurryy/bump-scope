@@ -274,6 +274,7 @@ mod chunk_raw;
 mod chunk_size;
 mod drain;
 mod extract_if;
+mod features;
 mod fixed_bump_string;
 mod fixed_bump_vec;
 mod from_utf8_error;

@@ -177,7 +177,7 @@ fn test_extend() {
     let mut w = MutBumpVec::<i32>::new_in(&mut bump_w);
 
     v.extend(&w);
-    assert_eq!(v, &[]);
+    assert!(v.is_empty());
 
     v.extend(0..3);
     for i in 0..3 {
@@ -794,7 +794,7 @@ fn test_drain_items() {
     for i in vec.drain(..) {
         vec2.push(i);
     }
-    assert_eq!(vec, []);
+    assert!(vec.is_empty());
     assert_eq!(vec2, [1, 2, 3]);
 }
 
@@ -808,7 +808,7 @@ fn test_drain_items_reverse() {
     for i in vec.drain(..).rev() {
         vec2.push(i);
     }
-    assert_eq!(vec, []);
+    assert!(vec.is_empty());
     assert_eq!(vec2, [3, 2, 1]);
 }
 
@@ -1350,7 +1350,9 @@ fn extract_if_empty() {
         assert_eq!(iter.size_hint(), (0, Some(0)));
     }
     assert_eq!(vec.len(), 0);
-    assert_eq!(vec, mut_bump_vec![in bump1; ]);
+
+    let empty: MutBumpVec<i32> = mut_bump_vec![in bump1; ];
+    assert_eq!(vec, empty);
 }
 
 #[test]
@@ -1423,7 +1425,9 @@ fn extract_if_true() {
 
     assert_eq!(count, initial_len);
     assert_eq!(vec.len(), 0);
-    assert_eq!(vec, mut_bump_vec![in bump1; ]);
+
+    let empty: MutBumpVec<i32> = mut_bump_vec![in bump1; ];
+    assert_eq!(vec, empty);
 }
 
 #[test]

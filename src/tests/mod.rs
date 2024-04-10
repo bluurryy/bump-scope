@@ -27,6 +27,9 @@ mod mut_bump_vec_rev_doc;
 mod panic_safety;
 mod pool;
 
+#[cfg(feature = "serde")]
+mod serde;
+
 extern crate std;
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
