@@ -207,8 +207,9 @@
 //!
 //! - `serde`:
 //!
-//!   Adds serialization support for `BumpBox` and vectors.
-//! 
+//!   Adds `Serialize` implementations for `BumpBox`, strings and vectors.
+//!   Adds `DeserializeSeed` implementations for strings and vectors.
+//!
 //! <p></p>
 //!
 //! - `nightly-allocator-api` *(requires nightly)*:

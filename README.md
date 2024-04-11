@@ -163,7 +163,8 @@ This crate supports `no_std`, unless the `std` feature is enabled.
 
 - `serde`:
 
-  Adds serialization support for `BumpBox` and vectors.
+  Adds `Serialize` implementations for `BumpBox`, strings and vectors.
+  Adds `DeserializeSeed` implementations for strings and vectors.
 
 <p></p>
 

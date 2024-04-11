@@ -1,7 +1,8 @@
 # Changelog
 
 ## Unreleased
-- **added:** `serde` serialization support for `BumpBox` and vectors
+- **added:** `serde::Serialize` implementations for `BumpBox`, strings and vectors
+- **added:** `serde::DeserializeSeed` implementations for strings and vectors
 
 ## 0.1.7 (2024-04-07)
 - **added:** `BumpPool` along with `BumpPoolGuard`
