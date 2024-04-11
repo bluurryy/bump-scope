@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.8 (2024-04-11)
 - **added:** `serde::Serialize` implementations for `BumpBox`, strings and vectors
 - **added:** `serde::DeserializeSeed` implementations for strings and vectors
 
