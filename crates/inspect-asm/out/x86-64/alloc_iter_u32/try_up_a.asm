@@ -49,7 +49,7 @@ inspect_asm::alloc_iter_u32::try_up_a:
 	cmp qword ptr [rsp + 16], rdx
 	jne .LBB_11
 	mov rdi, r14
-	call bump_scope::bump_vec::BumpVec<T,A,_,_>::generic_grow_cold
+	call bump_scope::bump_vec::BumpVec<T,A,_,_,_>::generic_grow_cold
 	test al, al
 	jne .LBB_5
 	mov rax, qword ptr [rsp]
@@ -69,7 +69,7 @@ inspect_asm::alloc_iter_u32::try_up_a:
 	mov r14, rdi
 	mov rsi, rdx
 	mov r12, rdx
-	call bump_scope::bump_scope::BumpScope<A,_,_>::do_alloc_slice_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_,_>::do_alloc_slice_in_another_chunk
 	mov rdi, r14
 	mov rdx, r12
 	test rax, rax

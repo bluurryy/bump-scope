@@ -8,6 +8,6 @@ inspect_asm::alloc_layout::try_down:
 	neg rax
 	and rax, r8
 	cmp rax, qword ptr [rcx + 8]
-	jb bump_scope::bump_scope::BumpScope<A,_,_>::alloc_in_another_chunk
+	jb bump_scope::bump_scope::BumpScope<A,_,_,_>::alloc_in_another_chunk
 	mov qword ptr [rcx], rax
 	ret

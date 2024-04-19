@@ -14,6 +14,7 @@
     feature(
         exclusive_wrapper,
         pointer_is_aligned,
+        pointer_is_aligned_to,
         assert_matches,
         inplace_iteration,
         drain_keep_rest,
@@ -26,6 +27,7 @@
         strict_provenance,
     )
 )]
+#![cfg_attr(test, allow(stable_features))]
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg_hide), doc(cfg_hide(no_global_oom_handling)))]
 #![warn(
     clippy::pedantic,
@@ -523,13 +525,17 @@ pub unsafe trait BumpAllocator: Allocator {}
 
 unsafe impl<A: BumpAllocator> BumpAllocator for &A {}
 
-unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpAllocator for BumpScope<'_, A, MIN_ALIGN, UP> where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment
+unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> BumpAllocator
+    for BumpScope<'_, A, MIN_ALIGN, UP, CONST_NEW>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
 }
 
-unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpAllocator for Bump<A, MIN_ALIGN, UP> where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment
+unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> BumpAllocator
+    for Bump<A, MIN_ALIGN, UP, CONST_NEW>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
 }
 
@@ -743,14 +749,14 @@ macro_rules! bump_common_methods {
         /// assert_eq!(bump.stats().allocated(), 0);
         /// ```
         #[inline(always)]
-        pub fn scoped(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP>)) {
+        pub fn scoped(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, CONST_NEW>)) {
             let mut guard = self.scope_guard();
             f(guard.scope());
         }
 
         /// Calls `f` with a new child scope of a new minimum alignment.
         #[inline(always)]
-        pub fn scoped_aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP>))
+        pub fn scoped_aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, CONST_NEW>))
         where
             MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
         {
@@ -787,13 +793,13 @@ macro_rules! bump_common_methods {
         /// ```
         #[must_use]
         #[inline(always)]
-        pub fn scope_guard(&mut self) -> $scope_guard<A, MIN_ALIGN, UP> {
+        pub fn scope_guard(&mut self) -> $scope_guard<A, MIN_ALIGN, UP, CONST_NEW> {
             $scope_guard::new(self)
         }
 
         /// Calls `f` with this scope but with a new minimum alignment.
         #[inline(always)]
-        pub fn aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP>))
+        pub fn aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP, CONST_NEW>))
         where
             MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
         {
@@ -1478,7 +1484,7 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = BumpVec::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = BumpVec::<T, A, MIN_ALIGN, UP, CONST_NEW>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
@@ -1545,7 +1551,7 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = MutBumpVec::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = MutBumpVec::<T, A, MIN_ALIGN, UP, CONST_NEW>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
@@ -1574,7 +1580,7 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = MutBumpVecRev::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = MutBumpVecRev::<T, A, MIN_ALIGN, UP, CONST_NEW>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
@@ -1783,7 +1789,8 @@ define_alloc_methods! {
 }
 
 #[doc = doc_alloc_methods!()]
-impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool>
+    BumpScope<'a, A, MIN_ALIGN, UP, CONST_NEW>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -1791,7 +1798,7 @@ where
 }
 
 #[doc = doc_alloc_methods!()]
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP>
+impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Bump<A, MIN_ALIGN, UP, CONST_NEW>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {

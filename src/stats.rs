@@ -178,7 +178,9 @@ impl<const UP: bool> Debug for Chunk<'_, UP> {
 
 impl<'a, const UP: bool> Chunk<'a, UP> {
     #[inline(always)]
-    pub(crate) fn new<'b, const MIN_ALIGN: usize, A>(bump: &'b BumpScope<'a, A, MIN_ALIGN, UP>) -> Self
+    pub(crate) fn new<'b, const MIN_ALIGN: usize, const CONST_NEW: bool, A>(
+        bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, CONST_NEW>,
+    ) -> Self
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
         'a: 'b,

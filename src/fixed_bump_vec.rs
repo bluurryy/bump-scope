@@ -118,10 +118,10 @@ impl<'a, T> FixedBumpVec<'a, T> {
     }
 
     /// Turns this `FixedBumpVec<T>` into a `BumpVec<T>`.
-    pub fn into_vec<'b, A, const MIN_ALIGN: usize, const UP: bool>(
+    pub fn into_vec<'b, A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool>(
         self,
-        bump: &'b BumpScope<'a, A, MIN_ALIGN, UP>,
-    ) -> BumpVec<'b, 'a, T, A, MIN_ALIGN, UP> {
+        bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, CONST_NEW>,
+    ) -> BumpVec<'b, 'a, T, A, MIN_ALIGN, UP, CONST_NEW> {
         BumpVec { fixed: self, bump }
     }
 

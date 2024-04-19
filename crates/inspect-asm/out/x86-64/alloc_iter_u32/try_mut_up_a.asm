@@ -50,7 +50,7 @@ inspect_asm::alloc_iter_u32::try_mut_up_a:
 	cmp qword ptr [rsp + 24], rdx
 	jne .LBB_7
 	mov rdi, r12
-	call bump_scope::mut_bump_vec::MutBumpVec<T,A,_,_>::generic_grow_cold
+	call bump_scope::mut_bump_vec::MutBumpVec<T,A,_,_,_>::generic_grow_cold
 	test al, al
 	jne .LBB_2
 	mov rax, qword ptr [rsp + 8]
@@ -81,7 +81,7 @@ inspect_asm::alloc_iter_u32::try_mut_up_a:
 	mov esi, 4
 	mov r12, rdi
 	mov rdx, r14
-	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_greedy_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_,_>::alloc_greedy_in_another_chunk
 	test rax, rax
 	je .LBB_2
 	mov rdi, r12

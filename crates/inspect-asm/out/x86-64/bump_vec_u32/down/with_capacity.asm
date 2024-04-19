@@ -42,7 +42,7 @@ inspect_asm::bump_vec_u32::down::with_capacity:
 	mov rdi, rdx
 	mov rbx, rdx
 	mov rdx, rax
-	call bump_scope::bump_scope::BumpScope<A,_,_>::alloc_greedy_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_,_>::alloc_greedy_in_another_chunk
 	mov rdi, r14
 	mov rcx, rdx
 	mov rdx, rbx

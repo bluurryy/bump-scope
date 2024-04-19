@@ -57,6 +57,7 @@ pub struct Bump<
     #[cfg(not(feature = "alloc"))] A: Allocator + Clone,
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
+    const CONST_NEW: bool = false,
 > where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -65,26 +66,29 @@ pub struct Bump<
 
 // Sending Bumps when nothing is allocated is fine.
 // When something is allocated Bump is borrowed and sending is not possible.
-unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Send for Bump<A, MIN_ALIGN, UP> where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment
+unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Send
+    for Bump<A, MIN_ALIGN, UP, CONST_NEW>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
 }
 
-impl<const MIN_ALIGN: usize, const UP: bool, A> UnwindSafe for Bump<A, MIN_ALIGN, UP>
+impl<const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> UnwindSafe for Bump<A, MIN_ALIGN, UP, CONST_NEW>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone + UnwindSafe,
 {
 }
 
-impl<const MIN_ALIGN: usize, const UP: bool, A> RefUnwindSafe for Bump<A, MIN_ALIGN, UP>
+impl<const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> RefUnwindSafe for Bump<A, MIN_ALIGN, UP, CONST_NEW>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone + UnwindSafe,
 {
 }
 
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Drop for Bump<A, MIN_ALIGN, UP>
+impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Drop
+    for Bump<A, MIN_ALIGN, UP, CONST_NEW>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -98,7 +102,8 @@ where
     }
 }
 
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Debug for Bump<A, MIN_ALIGN, UP>
+impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Debug
+    for Bump<A, MIN_ALIGN, UP, CONST_NEW>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -108,7 +113,8 @@ where
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<A: Allocator + Clone + Default, const MIN_ALIGN: usize, const UP: bool> Default for Bump<A, MIN_ALIGN, UP>
+impl<A: Allocator + Clone + Default, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Default
+    for Bump<A, MIN_ALIGN, UP, CONST_NEW>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -119,7 +125,7 @@ where
 }
 
 #[cfg(feature = "alloc")]
-impl<const MIN_ALIGN: usize, const UP: bool> Bump<Global, MIN_ALIGN, UP>
+impl<const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Bump<Global, MIN_ALIGN, UP, CONST_NEW>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -154,7 +160,7 @@ where
     }
 }
 
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP>
+impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Bump<A, MIN_ALIGN, UP, CONST_NEW>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -221,7 +227,7 @@ where
 
     /// Returns this `&Bump` as a `&BumpScope`.
     #[inline(always)]
-    pub fn as_scope(&self) -> &BumpScope<A, MIN_ALIGN, UP> {
+    pub fn as_scope(&self) -> &BumpScope<A, MIN_ALIGN, UP, CONST_NEW> {
         // SAFETY: `Bump` and `BumpScope` both have the layout of `Cell<RawChunk>`
         //         `BumpScope`'s api is a subset of `Bump`'s
         unsafe { &*pointer::from_ref(self).cast() }
@@ -229,7 +235,7 @@ where
 
     /// Returns this `&mut Bump` as a `&mut BumpScope`.
     #[inline(always)]
-    pub fn as_mut_scope(&mut self) -> &mut BumpScope<A, MIN_ALIGN, UP> {
+    pub fn as_mut_scope(&mut self) -> &mut BumpScope<A, MIN_ALIGN, UP, CONST_NEW> {
         // SAFETY: `Bump` and `BumpScope` both have the layout of `Cell<RawChunk>`
         //         `BumpScope`'s api is a subset of `Bump`'s
         unsafe { &mut *pointer::from_mut(self).cast() }
@@ -237,7 +243,7 @@ where
 
     /// Converts this `Bump` into a `Bump` with a new minimum alignment.
     #[inline(always)]
-    pub fn into_aligned<const NEW_MIN_ALIGN: usize>(self) -> Bump<A, NEW_MIN_ALIGN, UP>
+    pub fn into_aligned<const NEW_MIN_ALIGN: usize>(self) -> Bump<A, NEW_MIN_ALIGN, UP, CONST_NEW>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -249,7 +255,7 @@ where
     ///
     #[doc = doc_align_cant_decrease!()]
     #[inline(always)]
-    pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(&mut self) -> &mut Bump<A, NEW_MIN_ALIGN, UP>
+    pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(&mut self) -> &mut Bump<A, NEW_MIN_ALIGN, UP, CONST_NEW>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -258,7 +264,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn cast_align<const NEW_MIN_ALIGN: usize>(self) -> Bump<A, NEW_MIN_ALIGN, UP>
+    pub(crate) unsafe fn cast_align<const NEW_MIN_ALIGN: usize>(self) -> Bump<A, NEW_MIN_ALIGN, UP, CONST_NEW>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -269,11 +275,11 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn cast_align_mut<const NEW_MIN_ALIGN: usize>(&mut self) -> &mut Bump<A, NEW_MIN_ALIGN, UP>
+    pub(crate) unsafe fn cast_align_mut<const NEW_MIN_ALIGN: usize>(&mut self) -> &mut Bump<A, NEW_MIN_ALIGN, UP, CONST_NEW>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        &mut *pointer::from_mut(self).cast::<Bump<A, NEW_MIN_ALIGN, UP>>()
+        &mut *pointer::from_mut(self).cast::<Bump<A, NEW_MIN_ALIGN, UP, CONST_NEW>>()
     }
 
     /// Converts this `Bump` into a raw pointer.
@@ -307,24 +313,24 @@ where
     }
 }
 
-impl<'b, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> From<&'b Bump<A, MIN_ALIGN, UP>>
-    for &'b BumpScope<'b, A, MIN_ALIGN, UP>
+impl<'b, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool>
+    From<&'b Bump<A, MIN_ALIGN, UP, CONST_NEW>> for &'b BumpScope<'b, A, MIN_ALIGN, UP, CONST_NEW>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     #[inline(always)]
-    fn from(value: &'b Bump<A, MIN_ALIGN, UP>) -> Self {
+    fn from(value: &'b Bump<A, MIN_ALIGN, UP, CONST_NEW>) -> Self {
         value.as_scope()
     }
 }
 
-impl<'b, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> From<&'b mut Bump<A, MIN_ALIGN, UP>>
-    for &'b mut BumpScope<'b, A, MIN_ALIGN, UP>
+impl<'b, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool>
+    From<&'b mut Bump<A, MIN_ALIGN, UP, CONST_NEW>> for &'b mut BumpScope<'b, A, MIN_ALIGN, UP, CONST_NEW>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     #[inline(always)]
-    fn from(value: &'b mut Bump<A, MIN_ALIGN, UP>) -> Self {
+    fn from(value: &'b mut Bump<A, MIN_ALIGN, UP, CONST_NEW>) -> Self {
         value.as_mut_scope()
     }
 }

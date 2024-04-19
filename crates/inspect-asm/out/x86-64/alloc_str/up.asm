@@ -24,7 +24,7 @@ inspect_asm::alloc_str::up:
 .LBB_2:
 	mov rbx, rsi
 	mov rsi, r14
-	call bump_scope::bump_scope::BumpScope<A,_,_>::do_alloc_slice_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_,_>::do_alloc_slice_in_another_chunk
 	mov rsi, rbx
 	mov rbx, rax
 	jmp .LBB_3

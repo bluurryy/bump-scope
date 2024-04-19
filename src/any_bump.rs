@@ -148,7 +148,8 @@ impl<U: Sealed> Sealed for &mut U {
     }
 }
 
-impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Sealed for BumpScope<'a, A, MIN_ALIGN, UP>
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Sealed
+    for BumpScope<'a, A, MIN_ALIGN, UP, CONST_NEW>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -212,7 +213,8 @@ where
     }
 }
 
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Sealed for Bump<A, MIN_ALIGN, UP>
+impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Sealed
+    for Bump<A, MIN_ALIGN, UP, CONST_NEW>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -267,7 +269,7 @@ where
         &self,
         layout: Layout,
     ) -> Option<NonNull<u8>> {
-        <BumpScope<A, MIN_ALIGN, UP> as Sealed>::alloc_in_current_chunk::<IS_CONST_SIZE, IS_CONST_ALIGN>(
+        <BumpScope<A, MIN_ALIGN, UP, CONST_NEW> as Sealed>::alloc_in_current_chunk::<IS_CONST_SIZE, IS_CONST_ALIGN>(
             self.as_scope(),
             layout,
         )
@@ -288,12 +290,16 @@ pub trait AnyBump: Sealed {}
 impl<U: AnyBump> AnyBump for &U {}
 impl<U: AnyBump> AnyBump for &mut U {}
 
-impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> AnyBump for BumpScope<'a, A, MIN_ALIGN, UP> where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> AnyBump
+    for BumpScope<'a, A, MIN_ALIGN, UP, CONST_NEW>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
 }
 
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> AnyBump for Bump<A, MIN_ALIGN, UP> where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment
+impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> AnyBump
+    for Bump<A, MIN_ALIGN, UP, CONST_NEW>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
 }
