@@ -279,3 +279,8 @@ macro_rules! addr_of {
 
 #[allow(unused_imports)]
 pub(crate) use addr_of;
+
+/// like `<NonNull<T> as From<&T>>::from` but `const`
+pub const fn from_ref<T>(r: &T) -> NonNull<T> {
+    unsafe { NonNull::new_unchecked(r as *const T as *mut T) }
+}

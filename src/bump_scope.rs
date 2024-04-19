@@ -16,11 +16,7 @@ use allocator_api2::alloc::Allocator;
 use allocator_api2::alloc::Global;
 
 use crate::{
-    bump_align_guard::BumpAlignGuard,
-    bump_common_methods, const_param_assert, doc_align_cant_decrease,
-    polyfill::{nonnull, pointer},
-    ArrayLayout, BumpScopeGuard, Checkpoint, ErrorBehavior, LayoutTrait, MinimumAlignment, RawChunk, SizedTypeProperties,
-    Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    bump_align_guard::BumpAlignGuard, bump_common_methods, chunk_header::empty_chunk_header, chunk_size::ChunkSize, const_param_assert, doc_align_cant_decrease, polyfill::{nonnull, pointer}, ArrayLayout, BumpScopeGuard, Checkpoint, ErrorBehavior, LayoutTrait, MinimumAlignment, RawChunk, SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink
 };
 
 #[cfg(test)]
@@ -87,6 +83,30 @@ where
             chunk: Cell::new(chunk),
             marker: PhantomData,
         }
+    }
+
+    #[inline(always)]
+    pub(crate) fn ensure_non_empty(&mut self) {
+        if !CONST_NEW {
+            // we can only point to the empty chunk if we did a `const_new`
+            return;
+        }
+
+        if self.chunk.get().is_empty() {
+            self.allocate_first_chunk();
+        }
+    }
+
+    #[cold]
+    #[inline(never)]
+    fn allocate_first_chunk(&mut self) {
+        debug_assert!(self.chunk.get().is_empty());
+        
+        RawChunk::new_in(
+            ChunkSize::new(512)?,
+            None,
+            allocator,
+        )?
     }
 
     #[inline(always)]

@@ -9,6 +9,7 @@
 #![cfg_attr(feature = "nightly-coerce-unsized", feature(coerce_unsized, unsize))]
 #![cfg_attr(feature = "nightly-exact-size-is-empty", feature(exact_size_is_empty))]
 #![cfg_attr(feature = "nightly-trusted-len", feature(trusted_len))]
+#![cfg_attr(feature = "nightly-const-refs-to-static", feature(const_refs_to_static))]
 #![cfg_attr(
     test,
     feature(
@@ -332,7 +333,7 @@ pub use with_drop::WithDrop;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
 use array_layout::{ArrayLayout, LayoutTrait};
-use chunk_header::ChunkHeader;
+use chunk_header::{empty_chunk_header, ChunkHeader};
 use chunk_raw::RawChunk;
 use chunk_size::ChunkSize;
 use core::alloc::Layout;
