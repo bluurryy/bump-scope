@@ -417,7 +417,8 @@ where
             Ok(ptr)
         } else {
             // SAFETY: We just appended a chunk for that specific layout, it must have enough space.
-            // TODO: panic here, this is a slow path; no need for this unsafety
+            // We don't panic here so we don't produce any panic code when using `try_` apis.
+            // We check for that in `test-fallibility`.
             core::hint::unreachable_unchecked()
         }
     }
