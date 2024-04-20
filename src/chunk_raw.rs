@@ -105,7 +105,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         Self { header }
     }
 
-    pub fn is_empty(self) -> bool {
+    pub fn is_the_empty_chunk(self) -> bool {
         self.header.cast() == empty_chunk_header()
     }
 

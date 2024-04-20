@@ -3,7 +3,7 @@ use core::{
     cell::Cell,
     fmt::{self, Debug},
     marker::PhantomData,
-    mem::ManuallyDrop,
+    mem::{ManuallyDrop, MaybeUninit},
     num::NonZeroUsize,
     ops::Range,
     panic::{RefUnwindSafe, UnwindSafe},
@@ -18,7 +18,6 @@ use allocator_api2::alloc::Global;
 use crate::{
     bump_align_guard::BumpAlignGuard,
     bump_common_methods,
-    chunk_header::empty_chunk_header,
     chunk_size::ChunkSize,
     const_param_assert, doc_align_cant_decrease,
     polyfill::{nonnull, pointer},
@@ -93,22 +92,43 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn ensure_non_empty(&mut self) {
+    pub(crate) fn ensure_non_empty<E: ErrorBehavior>(&mut self) -> Result<(), E> {
         if !CONST_NEW {
             // we can only point to the empty chunk if we did a `const_new`
-            return;
+            return Ok(());
         }
 
-        if self.chunk.get().is_empty() {
-            self.allocate_first_chunk();
+        if self.chunk.get().is_the_empty_chunk() {
+            self.allocate_first_chunk()?;
         }
+
+        Ok(())
     }
 
     #[cold]
     #[inline(never)]
-    fn allocate_first_chunk(&mut self) {
-        debug_assert!(self.chunk.get().is_empty());
-        todo!()
+    fn allocate_first_chunk<E: ErrorBehavior>(&mut self) -> Result<(), E> {
+        // must only be called when we point to the empty chunk
+        debug_assert!(self.chunk.get().is_the_empty_chunk());
+
+        // we only point to an empty chunk if we were created by `const_new` which is only available with `CONST_NEW`
+        assert!(CONST_NEW);
+
+        // SAFETY:
+        // We are pointing to the empty chunk. This can only happen when `Bump::const_new` was called.
+        // This is only available for `A = Global`.
+        // Global is a ZST without a drop implementation, so its sound to create it like this.
+        let allocator: A = unsafe { MaybeUninit::uninit().assume_init() };
+
+        let chunk = RawChunk::new_in(
+            ChunkSize::new(512)?, // TODO: create a const DEFAULT_SIZE = 512
+            None,
+            allocator,
+        )?;
+
+        self.chunk.set(chunk);
+
+        Ok(())
     }
 
     #[inline(always)]

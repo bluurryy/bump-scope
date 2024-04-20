@@ -1804,15 +1804,3 @@ where
 {
     alloc_methods!(Bump);
 }
-
-pub trait ConstDefault {
-    const CONST_DEFAULT: Self;
-}
-
-#[cfg(feature = "alloc")]
-use allocator_api2::alloc::Global;
-
-#[cfg(feature = "alloc")]
-impl ConstDefault for Global {
-    const CONST_DEFAULT: Self = Global;
-}

@@ -13,7 +13,12 @@ use allocator_api2::alloc::Allocator;
 use allocator_api2::alloc::Global;
 
 use crate::{
-    bump_common_methods, chunk_size::ChunkSize, doc_align_cant_decrease, empty_chunk_header, error_behavior_generic_methods, polyfill::{cfg_const, pointer}, BumpScope, BumpScopeGuardRoot, Checkpoint, ConstDefault, ErrorBehavior, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink
+    bump_common_methods,
+    chunk_size::ChunkSize,
+    doc_align_cant_decrease, empty_chunk_header, error_behavior_generic_methods,
+    polyfill::{cfg_const, pointer},
+    BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment,
+    WithoutDealloc, WithoutShrink,
 };
 
 #[cfg(test)]
@@ -122,9 +127,8 @@ where
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP, true>
+impl<const MIN_ALIGN: usize, const UP: bool> Bump<Global, MIN_ALIGN, UP, true>
 where
-    A: Allocator + Clone + ConstDefault,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     cfg_const! {
