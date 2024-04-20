@@ -25,6 +25,7 @@ nightly-allocator-api = ["allocator-api2/nightly"]
 nightly-coerce-unsized = []
 nightly-exact-size-is-empty = []
 nightly-trusted-len = []
+nightly-const-refs-to-static = []
 serde = ["dep:serde"]
 
 [dev-dependencies]

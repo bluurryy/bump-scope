@@ -42,7 +42,7 @@ inspect_asm::alloc_iter_u32::try_down_a:
 	jne .LBB_11
 	mov rdi, rbx
 	mov r12, rsi
-	call bump_scope::bump_vec::BumpVec<T,A,_,_>::generic_grow_cold
+	call bump_scope::bump_vec::BumpVec<T,A,_,_,_>::generic_grow_cold
 	test al, al
 	jne .LBB_5
 	mov rsi, r12
@@ -61,7 +61,7 @@ inspect_asm::alloc_iter_u32::try_down_a:
 	mov r15, rsi
 	mov rsi, rdx
 	mov r12, rdx
-	call bump_scope::bump_scope::BumpScope<A,_,_>::do_alloc_slice_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_,_>::do_alloc_slice_in_another_chunk
 	mov rdi, rbx
 	mov rdx, r12
 	mov rsi, r15

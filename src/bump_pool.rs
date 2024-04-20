@@ -72,15 +72,16 @@ pub struct BumpPool<
     #[cfg(not(feature = "alloc"))] A,
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
+    const INIT: bool = true,
 > where
     A: Allocator + Clone,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
-    bumps: Mutex<Vec<Bump<A, MIN_ALIGN, UP>>>,
+    bumps: Mutex<Vec<Bump<A, MIN_ALIGN, UP, INIT>>>,
     allocator: A,
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool> Default for BumpPool<A, MIN_ALIGN, UP>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Default for BumpPool<A, MIN_ALIGN, UP, INIT>
 where
     A: Allocator + Clone + Default,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -94,7 +95,7 @@ where
 }
 
 #[cfg(feature = "alloc")]
-impl<const MIN_ALIGN: usize, const UP: bool> BumpPool<Global, MIN_ALIGN, UP>
+impl<const MIN_ALIGN: usize, const UP: bool, const INIT: bool> BumpPool<Global, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -106,7 +107,7 @@ where
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool> BumpPool<A, MIN_ALIGN, UP>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> BumpPool<A, MIN_ALIGN, UP, INIT>
 where
     A: Allocator + Clone,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -129,7 +130,7 @@ where
     }
 
     /// Returns the vector of `Bump`s.
-    pub fn bumps(&mut self) -> &mut Vec<Bump<A, MIN_ALIGN, UP>> {
+    pub fn bumps(&mut self) -> &mut Vec<Bump<A, MIN_ALIGN, UP, INIT>> {
         self.bumps.get_mut().unwrap_or_else(PoisonError::into_inner)
     }
 
@@ -140,7 +141,7 @@ where
     /// Panics if the allocation fails.
     #[must_use]
     #[cfg(not(no_global_oom_handling))]
-    pub fn get(&self) -> BumpPoolGuard<A, MIN_ALIGN, UP> {
+    pub fn get(&self) -> BumpPoolGuard<A, MIN_ALIGN, UP, INIT> {
         let bump = self.bumps.lock().unwrap_or_else(PoisonError::into_inner).pop();
         let bump = bump.unwrap_or_else(|| Bump::new_in(self.allocator.clone()));
 
@@ -155,7 +156,7 @@ where
     ///
     /// # Errors
     /// Errors if the allocation fails.
-    pub fn try_get(&self) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP>, AllocError> {
+    pub fn try_get(&self) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP, INIT>, AllocError> {
         let bump = self.bumps.lock().unwrap_or_else(PoisonError::into_inner).pop();
 
         let bump = match bump {
@@ -172,21 +173,21 @@ where
 
 /// This is a wrapper around [`Bump`] that mutably derefs to a [`BumpScope`] and returns its [`Bump`] back to the [`BumpPool`] on drop.
 #[derive(Debug)]
-pub struct BumpPoolGuard<'a, A, const MIN_ALIGN: usize, const UP: bool>
+pub struct BumpPoolGuard<'a, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool>
 where
     A: Allocator + Clone,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
-    bump: ManuallyDrop<Bump<A, MIN_ALIGN, UP>>,
-    pool: &'a BumpPool<A, MIN_ALIGN, UP>,
+    bump: ManuallyDrop<Bump<A, MIN_ALIGN, UP, INIT>>,
+    pool: &'a BumpPool<A, MIN_ALIGN, UP, INIT>,
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Deref for BumpPoolGuard<'a, A, MIN_ALIGN, UP>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Deref for BumpPoolGuard<'a, A, MIN_ALIGN, UP, INIT>
 where
     A: Allocator + Clone,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
-    type Target = BumpScope<'a, A, MIN_ALIGN, UP>;
+    type Target = BumpScope<'a, A, MIN_ALIGN, UP, INIT>;
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
@@ -194,7 +195,7 @@ where
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> DerefMut for BumpPoolGuard<'a, A, MIN_ALIGN, UP>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> DerefMut for BumpPoolGuard<'a, A, MIN_ALIGN, UP, INIT>
 where
     A: Allocator + Clone,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -205,7 +206,7 @@ where
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpPoolGuard<'a, A, MIN_ALIGN, UP>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Drop for BumpPoolGuard<'a, A, MIN_ALIGN, UP, INIT>
 where
     A: Allocator + Clone,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -219,16 +220,16 @@ where
 
 // This exists as a "safer" transmute that only transmutes the `'a` lifetime parameter.
 #[allow(clippy::needless_lifetimes)]
-unsafe fn transmute_lifetime<'from, 'to, 'b, A, const MIN_ALIGN: usize, const UP: bool>(
-    scope: &'b BumpScope<'from, A, MIN_ALIGN, UP>,
-) -> &'b BumpScope<'to, A, MIN_ALIGN, UP> {
+unsafe fn transmute_lifetime<'from, 'to, 'b, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool>(
+    scope: &'b BumpScope<'from, A, MIN_ALIGN, UP, INIT>,
+) -> &'b BumpScope<'to, A, MIN_ALIGN, UP, INIT> {
     mem::transmute(scope)
 }
 
 // This exists as a "safer" transmute that only transmutes the `'a` lifetime parameter.
 #[allow(clippy::needless_lifetimes)]
-unsafe fn transmute_lifetime_mut<'from, 'to, 'b, A, const MIN_ALIGN: usize, const UP: bool>(
-    scope: &'b mut BumpScope<'from, A, MIN_ALIGN, UP>,
-) -> &'b mut BumpScope<'to, A, MIN_ALIGN, UP> {
+unsafe fn transmute_lifetime_mut<'from, 'to, 'b, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool>(
+    scope: &'b mut BumpScope<'from, A, MIN_ALIGN, UP, INIT>,
+) -> &'b mut BumpScope<'to, A, MIN_ALIGN, UP, INIT> {
     mem::transmute(scope)
 }

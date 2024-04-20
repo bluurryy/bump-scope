@@ -37,7 +37,7 @@ where
 
     // We use rc to also check that allocator cloning works.
     let allocator = RcAllocator::new(Rc::new(MaybeFailingAllocator::new(Global)));
-    let bump: Bump<_, MIN_ALIGN, UP> = Bump::with_capacity_in(Layout::new::<[u8; 32]>(), allocator);
+    let bump: Bump<_, MIN_ALIGN, UP, false> = Bump::with_capacity_in(Layout::new::<[u8; 32]>(), allocator);
 
     let mut allocations = vec![];
     let mut used_ranges = UsedRanges::default();

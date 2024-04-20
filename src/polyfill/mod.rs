@@ -48,3 +48,21 @@ mod other {
 }
 
 pub use other::*;
+
+macro_rules! cfg_const {
+    (
+        #[cfg_const($($tt:tt)*)]
+        $(#[$attr:meta])*
+        $vis:vis fn $ident:ident($($params:tt)*) $(-> $result:ty)? $body:block
+    ) => {
+        #[cfg($($tt)*)]
+        $(#[$attr])*
+        $vis const fn $ident($($params)*) $(-> $result)? $body
+
+        #[cfg(not($($tt)*))]
+        $(#[$attr])*
+        $vis fn $ident($($params)*) $(-> $result)? $body
+    };
+}
+
+pub(crate) use cfg_const;

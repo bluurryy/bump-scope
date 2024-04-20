@@ -17,7 +17,7 @@ inspect_asm::alloc_vec3::try_up_a:
 	ret
 .LBB_3:
 	mov rbx, rsi
-	call bump_scope::bump_scope::BumpScope<A,_,_>::do_alloc_sized_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_,_>::do_alloc_sized_in_another_chunk
 	mov rsi, rbx
 	test rax, rax
 	jne .LBB_2

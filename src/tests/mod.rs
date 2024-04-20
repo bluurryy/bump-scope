@@ -27,6 +27,7 @@ mod mut_bump_vec_rev_doc;
 mod panic_safety;
 mod pool;
 
+mod not_init;
 #[cfg(feature = "serde")]
 mod serde;
 

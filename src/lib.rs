@@ -9,6 +9,7 @@
 #![cfg_attr(feature = "nightly-coerce-unsized", feature(coerce_unsized, unsize))]
 #![cfg_attr(feature = "nightly-exact-size-is-empty", feature(exact_size_is_empty))]
 #![cfg_attr(feature = "nightly-trusted-len", feature(trusted_len))]
+#![cfg_attr(feature = "nightly-const-refs-to-static", feature(const_refs_to_static))]
 #![cfg_attr(
     test,
     feature(
@@ -26,7 +27,12 @@
         strict_provenance,
     )
 )]
-#![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg_hide), doc(cfg_hide(no_global_oom_handling)))]
+#![cfg_attr(test, allow(stable_features))]
+#![cfg_attr(
+    docsrs,
+    feature(doc_auto_cfg, doc_cfg_hide),
+    doc(cfg_hide(no_global_oom_handling, feature = "nightly-const-refs-to-static"))
+)]
 #![warn(
     clippy::pedantic,
     clippy::cargo,
@@ -224,6 +230,12 @@
 //!   Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
 //!   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
 //!
+//! <p></p>
+//!
+//! - `nightly-const-refs-to-static` *(requires nightly)*:
+//!   
+//!   Makes `Bump::uninit` a `const fn`.
+//!
 //! # Bumping upwards or downwards?
 //! Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
 //!
@@ -241,6 +253,19 @@
 //! This will penalize allocations of a smaller alignment as their size now needs to be rounded up the next multiple of `4`.
 //!
 //! This amounts to about 1 or 2 instructions per allocation.
+//!
+//! # `INIT` parameter?
+//! When `INIT` is true, the bump allocator is in an initialized state.
+//! That means that it has already allocated a chunk from its backing allocator.
+//!
+//! When `INIT` is false, the bump allocator may or may not have allocated chunks.
+//! You can only get an `INIT = false` bump from [`Bump::uninit`].
+//!
+//! You need an initialized bump to create scopes via `scoped` and `scope_guard`.
+//! You can convert an uninitialized `Bump(Scope)` into an initialized one with `into_init` or `as_init(_mut)`.
+//!
+//! The point of uninitialized bump allocators is that they don't need to allocate memory and are
+//! const constructible when the feature `nightly-const-refs-to-static` is enabled. This makes a thread local bump constructible with the [`const {}` syntax](std::thread_local), making it more performant.
 
 #[doc(hidden)]
 #[cfg(feature = "alloc")]
@@ -324,13 +349,13 @@ pub use into_iter::IntoIter;
 pub use mut_bump_string::MutBumpString;
 pub use mut_bump_vec::MutBumpVec;
 pub use mut_bump_vec_rev::MutBumpVecRev;
-pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
+pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, Stats, UninitStats};
 #[cfg(test)]
 pub use with_drop::WithDrop;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
 use array_layout::{ArrayLayout, LayoutTrait};
-use chunk_header::ChunkHeader;
+use chunk_header::{empty_chunk_header, ChunkHeader};
 use chunk_raw::RawChunk;
 use chunk_size::ChunkSize;
 use core::alloc::Layout;
@@ -479,8 +504,12 @@ fn exact_size_iterator_bad_len() -> ! {
 }
 
 macro_rules! doc_fn_stats {
-    () => {
-        "Returns `Stats`, which provides statistics about the memory usage of the bump allocator."
+    ($name:ident) => {
+        concat!(
+            "Returns `",
+            stringify!($name),
+            "`, which provides statistics about the memory usage of the bump allocator."
+        )
     };
 }
 
@@ -523,13 +552,17 @@ pub unsafe trait BumpAllocator: Allocator {}
 
 unsafe impl<A: BumpAllocator> BumpAllocator for &A {}
 
-unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpAllocator for BumpScope<'_, A, MIN_ALIGN, UP> where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment
+unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> BumpAllocator
+    for BumpScope<'_, A, MIN_ALIGN, UP, INIT>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
 }
 
-unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpAllocator for Bump<A, MIN_ALIGN, UP> where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment
+unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> BumpAllocator
+    for Bump<A, MIN_ALIGN, UP, INIT>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
 }
 
@@ -725,7 +758,7 @@ macro_rules! condition {
 
 pub(crate) use condition;
 
-macro_rules! bump_common_methods {
+macro_rules! bump_scope_methods {
     ($scope_guard:ident, $is_scope:ident) => {
         /// Calls `f` with a new child scope.
         ///
@@ -743,14 +776,14 @@ macro_rules! bump_common_methods {
         /// assert_eq!(bump.stats().allocated(), 0);
         /// ```
         #[inline(always)]
-        pub fn scoped(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP>)) {
+        pub fn scoped(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, true>)) {
             let mut guard = self.scope_guard();
             f(guard.scope());
         }
 
         /// Calls `f` with a new child scope of a new minimum alignment.
         #[inline(always)]
-        pub fn scoped_aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP>))
+        pub fn scoped_aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, true>))
         where
             MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
         {
@@ -793,7 +826,7 @@ macro_rules! bump_common_methods {
 
         /// Calls `f` with this scope but with a new minimum alignment.
         #[inline(always)]
-        pub fn aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP>))
+        pub fn aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP, true>))
         where
             MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
         {
@@ -810,15 +843,6 @@ macro_rules! bump_common_methods {
                 } else {
                     self.as_mut_scope().aligned(f)
                 }
-            }
-        }
-
-        #[doc = $crate::doc_fn_stats!()]
-        #[must_use]
-        #[inline(always)]
-        pub fn stats(&self) -> $crate::condition! { if $is_scope { Stats<'a, UP> } else { Stats<UP> } } {
-            Stats {
-                current: $crate::Chunk::new(self.into()),
             }
         }
 
@@ -866,7 +890,13 @@ macro_rules! bump_common_methods {
                 }
             }
         }
+    };
+}
 
+pub(crate) use bump_scope_methods;
+
+macro_rules! bump_common_methods {
+    () => {
         #[doc = crate::doc_fn_allocator!()]
         #[must_use]
         #[inline(always)]
@@ -1478,7 +1508,7 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = BumpVec::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = BumpVec::<T, A, MIN_ALIGN, UP, INIT>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
@@ -1545,7 +1575,7 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = MutBumpVec::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = MutBumpVec::<T, A, MIN_ALIGN, UP, INIT>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
@@ -1574,7 +1604,7 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = MutBumpVecRev::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = MutBumpVecRev::<T, A, MIN_ALIGN, UP, INIT>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
@@ -1783,7 +1813,8 @@ define_alloc_methods! {
 }
 
 #[doc = doc_alloc_methods!()]
-impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool>
+    BumpScope<'a, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -1791,7 +1822,7 @@ where
 }
 
 #[doc = doc_alloc_methods!()]
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP>
+impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Bump<A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {

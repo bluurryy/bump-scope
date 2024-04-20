@@ -1,7 +1,7 @@
 use core::{alloc::Layout, cell::Cell, num::NonZeroUsize, ops::Range, ptr::NonNull};
 
 use crate::{
-    down_align_usize,
+    down_align_usize, empty_chunk_header,
     polyfill::{const_unwrap, nonnull, pointer},
     up_align_nonzero, up_align_nonzero_unchecked, up_align_usize_unchecked, ArrayLayout, ChunkHeader, ChunkSize,
     ErrorBehavior, LayoutTrait, MinimumAlignment, SizedTypeProperties, SupportedMinimumAlignment, CHUNK_ALIGN_MIN,
@@ -101,8 +101,12 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         self.header
     }
 
-    pub unsafe fn from_header(header: NonNull<ChunkHeader<A>>) -> Self {
+    pub const unsafe fn from_header(header: NonNull<ChunkHeader<A>>) -> Self {
         Self { header }
+    }
+
+    pub fn is_the_empty_chunk(self) -> bool {
+        self.header.cast() == empty_chunk_header()
     }
 
     /// Attempts to allocate a block of memory.

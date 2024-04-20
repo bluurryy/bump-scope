@@ -25,7 +25,7 @@ inspect_asm::alloc_u32_slice::up_a:
 	mov r14, rsi
 	mov rsi, rbx
 	mov r15, rdx
-	call bump_scope::bump_scope::BumpScope<A,_,_>::do_alloc_slice_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_,_>::do_alloc_slice_in_another_chunk
 	mov rdx, r15
 	mov rsi, r14
 	mov r14, rax

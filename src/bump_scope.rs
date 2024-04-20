@@ -3,25 +3,31 @@ use core::{
     cell::Cell,
     fmt::{self, Debug},
     marker::PhantomData,
-    mem::ManuallyDrop,
+    mem::{ManuallyDrop, MaybeUninit},
     num::NonZeroUsize,
     ops::Range,
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::NonNull,
 };
 
-use allocator_api2::alloc::Allocator;
+use allocator_api2::alloc::{AllocError, Allocator};
 
 #[cfg(feature = "alloc")]
 use allocator_api2::alloc::Global;
 
 use crate::{
     bump_align_guard::BumpAlignGuard,
-    bump_common_methods, const_param_assert, doc_align_cant_decrease,
+    bump_common_methods, bump_scope_methods,
+    chunk_size::ChunkSize,
+    const_param_assert, doc_align_cant_decrease,
     polyfill::{nonnull, pointer},
-    ArrayLayout, BumpScopeGuard, Checkpoint, ErrorBehavior, LayoutTrait, MinimumAlignment, RawChunk, SizedTypeProperties,
-    Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    stats::UninitStats,
+    ArrayLayout, BumpScopeGuard, Checkpoint, Chunk, ErrorBehavior, LayoutTrait, MinimumAlignment, RawChunk,
+    SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
+
+#[cfg(not(no_global_oom_handling))]
+use crate::infallible;
 
 #[cfg(test)]
 use crate::WithDrop;
@@ -42,6 +48,7 @@ pub struct BumpScope<
     #[cfg(not(feature = "alloc"))] A,
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
+    const INIT: bool = true,
 > {
     pub(crate) chunk: Cell<RawChunk<UP, A>>,
 
@@ -49,30 +56,40 @@ pub struct BumpScope<
     marker: PhantomData<&'a ()>,
 }
 
-impl<const MIN_ALIGN: usize, const UP: bool, A> UnwindSafe for BumpScope<'_, A, MIN_ALIGN, UP>
+impl<const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> UnwindSafe for BumpScope<'_, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone + UnwindSafe,
 {
 }
 
-impl<const MIN_ALIGN: usize, const UP: bool, A> RefUnwindSafe for BumpScope<'_, A, MIN_ALIGN, UP>
+impl<const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> RefUnwindSafe for BumpScope<'_, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone + UnwindSafe,
 {
 }
 
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Debug for BumpScope<'_, A, MIN_ALIGN, UP>
+impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Debug
+    for BumpScope<'_, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.stats().debug_format("BumpScope", f)
+        self.uninit_stats().debug_format("BumpScope", f)
     }
 }
 
-impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
+/// These functions are only available if the `BumpScope` is [initialized](crate#init-parameter).
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP, true>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+{
+    bump_scope_methods!(BumpScopeGuard, true);
+}
+
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool>
+    BumpScope<'a, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -82,6 +99,55 @@ where
             chunk: Cell::new(chunk),
             marker: PhantomData,
         }
+    }
+
+    #[must_use]
+    #[inline(always)]
+    pub(crate) fn uninit_stats(&self) -> UninitStats<'a, UP> {
+        UninitStats {
+            current: Chunk::new(self),
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn ensure_init<E: ErrorBehavior>(&self) -> Result<(), E> {
+        if INIT {
+            // we can only point to the empty chunk if we did a `const_new`
+            return Ok(());
+        }
+
+        if self.chunk.get().is_the_empty_chunk() {
+            self.allocate_first_chunk()?;
+        }
+
+        Ok(())
+    }
+
+    #[cold]
+    #[inline(never)]
+    fn allocate_first_chunk<E: ErrorBehavior>(&self) -> Result<(), E> {
+        // must only be called when we point to the empty chunk
+        debug_assert!(self.chunk.get().is_the_empty_chunk());
+
+        // we only point to an empty chunk if we were created by `uninit` which is only available with `!INIT`
+        assert!(INIT);
+
+        // SAFETY:
+        // We are pointing to the empty chunk. This can only happen when `Bump::uninit` was called.
+        // This is only available for `A = Global`.
+        // Global is a ZST without a drop implementation, so its sound to create it like this.
+        #[allow(clippy::uninit_assumed_init)]
+        let allocator: A = unsafe { MaybeUninit::uninit().assume_init() };
+
+        let chunk = RawChunk::new_in(
+            ChunkSize::new(512)?, // TODO: create a const DEFAULT_SIZE = 512
+            None,
+            allocator,
+        )?;
+
+        self.chunk.set(chunk);
+
+        Ok(())
     }
 
     #[inline(always)]
@@ -324,30 +390,43 @@ where
         layout: L,
         mut allocate: impl FnMut(RawChunk<UP, A>, L) -> Option<R>,
     ) -> Result<R, E> {
-        while let Some(chunk) = self.chunk.get().next() {
-            // We don't reset the chunk position when we leave a scope, so we need to do it here.
-            chunk.reset();
+        let new_chunk = if !INIT && self.chunk.get().is_the_empty_chunk() {
+            // SAFETY:
+            // We are pointing to the empty chunk. This can only happen when `Bump::uninit` was called.
+            // This is only available for `A = Global`.
+            // Global is a ZST without a drop implementation, so its sound to create it like this.
+            #[allow(clippy::uninit_assumed_init)]
+            let allocator: A = MaybeUninit::uninit().assume_init();
 
-            self.chunk.set(chunk);
+            RawChunk::new_in(ChunkSize::for_capacity(layout.layout())?, None, allocator)
+        } else {
+            while let Some(chunk) = self.chunk.get().next() {
+                // We don't reset the chunk position when we leave a scope, so we need to do it here.
+                chunk.reset();
 
-            if let Some(ptr) = allocate(chunk, layout) {
-                return Ok(ptr);
+                self.chunk.set(chunk);
+
+                if let Some(ptr) = allocate(chunk, layout) {
+                    return Ok(ptr);
+                }
             }
-        }
 
-        // there is no chunk that fits, we need a new chunk
-        let new_chunk = self.chunk.get().append_for(layout.layout())?;
+            // there is no chunk that fits, we need a new chunk
+            self.chunk.get().append_for(layout.layout())
+        }?;
+
         self.chunk.set(new_chunk);
 
         if let Some(ptr) = allocate(new_chunk, layout) {
             Ok(ptr)
         } else {
             // SAFETY: We just appended a chunk for that specific layout, it must have enough space.
+            // TODO: panic here, this is a slow path; no need for this unsafety
             core::hint::unreachable_unchecked()
         }
     }
 
-    bump_common_methods!(BumpScopeGuard, true);
+    bump_common_methods!();
 
     /// Returns `&self` as is. This is used in for macros that support both `Bump` and `BumpScope`, like [`bump_vec!`](crate::bump_vec!).
     #[inline(always)]
@@ -389,7 +468,7 @@ where
     /// ```
     /// </details>
     #[inline(always)]
-    pub fn into_aligned<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, A, NEW_MIN_ALIGN, UP>
+    pub fn into_aligned<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, A, NEW_MIN_ALIGN, UP, INIT>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -401,7 +480,7 @@ where
     ///
     #[doc = doc_align_cant_decrease!()]
     #[inline(always)]
-    pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(&mut self) -> &mut BumpScope<'a, A, NEW_MIN_ALIGN, UP>
+    pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(&mut self) -> &mut BumpScope<'a, A, NEW_MIN_ALIGN, UP, INIT>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -410,7 +489,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn cast_align<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, A, NEW_MIN_ALIGN, UP>
+    pub(crate) unsafe fn cast_align<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, A, NEW_MIN_ALIGN, UP, INIT>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -421,18 +500,104 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn cast_align_mut<const NEW_MIN_ALIGN: usize>(&mut self) -> &mut BumpScope<'a, A, NEW_MIN_ALIGN, UP>
+    pub(crate) unsafe fn cast_align_mut<const NEW_MIN_ALIGN: usize>(
+        &mut self,
+    ) -> &mut BumpScope<'a, A, NEW_MIN_ALIGN, UP, INIT>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        &mut *pointer::from_mut(self).cast::<BumpScope<'a, A, NEW_MIN_ALIGN, UP>>()
+        &mut *pointer::from_mut(self).cast::<BumpScope<'a, A, NEW_MIN_ALIGN, UP, INIT>>()
+    }
+
+    /// Converts this `BumpScope` into an [initialized](crate#init-parameter) `BumpScope`.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    #[cfg(not(no_global_oom_handling))]
+    pub fn into_init(self) -> BumpScope<'a, A, MIN_ALIGN, UP, true> {
+        infallible(self.generic_into_init())
+    }
+
+    /// Converts this `BumpScope` into an [initialized](crate#init-parameter) `BumpScope`.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    pub fn try_into_init(self) -> Result<BumpScope<'a, A, MIN_ALIGN, UP, true>, AllocError> {
+        self.generic_into_init()
+    }
+
+    fn generic_into_init<E: ErrorBehavior>(self) -> Result<BumpScope<'a, A, MIN_ALIGN, UP, true>, E> {
+        self.as_scope().ensure_init()?;
+        Ok(unsafe { self.cast_init() })
+    }
+
+    /// Borrows `BumpScope` in an [initialized](crate#init-parameter) state.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    #[cfg(not(no_global_oom_handling))]
+    pub fn as_init(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP, true> {
+        infallible(self.generic_as_init())
+    }
+
+    /// Borrows `BumpScope` in an [initialized](crate#init-parameter) state.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    pub fn try_as_init(&self) -> Result<&BumpScope<'a, A, MIN_ALIGN, UP, true>, AllocError> {
+        self.generic_as_init()
+    }
+
+    fn generic_as_init<E: ErrorBehavior>(&self) -> Result<&BumpScope<'a, A, MIN_ALIGN, UP, true>, E> {
+        self.as_scope().ensure_init()?;
+        Ok(unsafe { self.cast_init_ref() })
+    }
+
+    /// Mutably borrows `BumpScope` in an [initialized](crate#init-parameter) state.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    #[cfg(not(no_global_oom_handling))]
+    pub fn as_init_mut(&mut self) -> &mut BumpScope<'a, A, MIN_ALIGN, UP, true> {
+        infallible(self.generic_as_init_mut())
+    }
+
+    /// Mutably borrows `BumpScope` in an [initialized](crate#init-parameter) state.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    pub fn try_as_init_mut(&mut self) -> Result<&mut BumpScope<'a, A, MIN_ALIGN, UP, true>, AllocError> {
+        self.generic_as_init_mut()
+    }
+
+    fn generic_as_init_mut<E: ErrorBehavior>(&mut self) -> Result<&mut BumpScope<'a, A, MIN_ALIGN, UP, true>, E> {
+        self.as_scope().ensure_init()?;
+        Ok(unsafe { self.cast_init_mut() })
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn cast_init(self) -> BumpScope<'a, A, MIN_ALIGN, UP, true> {
+        BumpScope {
+            chunk: self.chunk,
+            marker: PhantomData,
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn cast_init_ref(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP, true> {
+        &*pointer::from_ref(self).cast::<BumpScope<'a, A, MIN_ALIGN, UP, true>>()
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn cast_init_mut(&mut self) -> &mut BumpScope<'a, A, MIN_ALIGN, UP, true> {
+        &mut *pointer::from_mut(self).cast::<BumpScope<'a, A, MIN_ALIGN, UP, true>>()
     }
 
     /// # Safety
     ///
     /// - `self` must not be used until this clone is gone
     #[inline(always)]
-    pub(crate) unsafe fn clone_unchecked(&self) -> BumpScope<'a, A, MIN_ALIGN, UP> {
+    pub(crate) unsafe fn clone_unchecked(&self) -> BumpScope<'a, A, MIN_ALIGN, UP, INIT> {
         BumpScope::new_unchecked(self.chunk.get())
     }
 
@@ -459,6 +624,36 @@ where
         Self {
             chunk,
             marker: PhantomData,
+        }
+    }
+}
+
+impl<'a, const MIN_ALIGN: usize, const UP: bool, A> BumpScope<'a, A, MIN_ALIGN, UP, true>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
+{
+    #[doc = crate::doc_fn_stats!(Stats)]
+    #[must_use]
+    #[inline(always)]
+    pub fn stats(&self) -> Stats<'a, UP> {
+        Stats {
+            current: Chunk::new_init(self),
+        }
+    }
+}
+
+impl<'a, const MIN_ALIGN: usize, const UP: bool, A> BumpScope<'a, A, MIN_ALIGN, UP, false>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
+{
+    #[doc = crate::doc_fn_stats!(UninitStats)]
+    #[must_use]
+    #[inline(always)]
+    pub fn stats(&self) -> UninitStats<'a, UP> {
+        UninitStats {
+            current: Chunk::new(self),
         }
     }
 }
