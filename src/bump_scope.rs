@@ -10,7 +10,7 @@ use core::{
     ptr::NonNull,
 };
 
-use allocator_api2::alloc::Allocator;
+use allocator_api2::alloc::{AllocError, Allocator};
 
 #[cfg(feature = "alloc")]
 use allocator_api2::alloc::Global;
@@ -19,7 +19,7 @@ use crate::{
     bump_align_guard::BumpAlignGuard,
     bump_common_methods, bump_scope_methods,
     chunk_size::ChunkSize,
-    const_param_assert, doc_align_cant_decrease,
+    const_param_assert, doc_align_cant_decrease, infallible,
     polyfill::{nonnull, pointer},
     stats::UninitStats,
     ArrayLayout, BumpScopeGuard, Checkpoint, Chunk, ErrorBehavior, LayoutTrait, MinimumAlignment, RawChunk,
@@ -77,6 +77,7 @@ where
     }
 }
 
+/// These functions are only available if the `BumpScope` is initialized.
 impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP, true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -106,7 +107,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn ensure_non_empty<E: ErrorBehavior>(&mut self) -> Result<(), E> {
+    pub(crate) fn ensure_init<E: ErrorBehavior>(&self) -> Result<(), E> {
         if INIT {
             // we can only point to the empty chunk if we did a `const_new`
             return Ok(());
@@ -121,7 +122,7 @@ where
 
     #[cold]
     #[inline(never)]
-    fn allocate_first_chunk<E: ErrorBehavior>(&mut self) -> Result<(), E> {
+    fn allocate_first_chunk<E: ErrorBehavior>(&self) -> Result<(), E> {
         // must only be called when we point to the empty chunk
         debug_assert!(self.chunk.get().is_the_empty_chunk());
 
@@ -490,6 +491,87 @@ where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
         &mut *pointer::from_mut(self).cast::<BumpScope<'a, A, NEW_MIN_ALIGN, UP, INIT>>()
+    }
+
+    /// Converts this `BumpScope` into an initialized `BumpScope`.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    pub fn into_init(self) -> BumpScope<'a, A, MIN_ALIGN, UP, true> {
+        infallible(self.generic_into_init())
+    }
+
+    /// Converts this `BumpScope` into an initialized `BumpScope`.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    pub fn try_into_init(self) -> Result<BumpScope<'a, A, MIN_ALIGN, UP, true>, AllocError> {
+        self.generic_into_init()
+    }
+
+    fn generic_into_init<E: ErrorBehavior>(self) -> Result<BumpScope<'a, A, MIN_ALIGN, UP, true>, E> {
+        self.as_scope().ensure_init()?;
+        Ok(unsafe { self.cast_init() })
+    }
+
+    /// Borrows `BumpScope` in an initialized state.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    pub fn as_init(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP, true> {
+        infallible(self.generic_as_init())
+    }
+
+    /// Borrows `BumpScope` in an initialized state.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    pub fn try_as_init(&self) -> Result<&BumpScope<'a, A, MIN_ALIGN, UP, true>, AllocError> {
+        self.generic_as_init()
+    }
+
+    fn generic_as_init<E: ErrorBehavior>(&self) -> Result<&BumpScope<'a, A, MIN_ALIGN, UP, true>, E> {
+        self.as_scope().ensure_init()?;
+        Ok(unsafe { self.cast_init_ref() })
+    }
+
+    /// Mutably borrows `BumpScope` in an initialized state.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    pub fn as_init_mut(&mut self) -> &mut BumpScope<'a, A, MIN_ALIGN, UP, true> {
+        infallible(self.generic_as_init_mut())
+    }
+
+    /// Mutably borrows `BumpScope` in an initialized state.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    pub fn try_as_init_mut(&mut self) -> Result<&mut BumpScope<'a, A, MIN_ALIGN, UP, true>, AllocError> {
+        self.generic_as_init_mut()
+    }
+
+    fn generic_as_init_mut<E: ErrorBehavior>(&mut self) -> Result<&mut BumpScope<'a, A, MIN_ALIGN, UP, true>, E> {
+        self.as_scope().ensure_init()?;
+        Ok(unsafe { self.cast_init_mut() })
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn cast_init(self) -> BumpScope<'a, A, MIN_ALIGN, UP, true> {
+        BumpScope {
+            chunk: self.chunk,
+            marker: PhantomData,
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn cast_init_ref(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP, true> {
+        &*pointer::from_ref(self).cast::<BumpScope<'a, A, MIN_ALIGN, UP, true>>()
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn cast_init_mut(&mut self) -> &mut BumpScope<'a, A, MIN_ALIGN, UP, true> {
+        &mut *pointer::from_mut(self).cast::<BumpScope<'a, A, MIN_ALIGN, UP, true>>()
     }
 
     /// # Safety

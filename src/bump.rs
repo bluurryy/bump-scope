@@ -7,7 +7,7 @@ use core::{
     ptr::NonNull,
 };
 
-use allocator_api2::alloc::Allocator;
+use allocator_api2::alloc::{AllocError, Allocator};
 
 #[cfg(feature = "alloc")]
 use allocator_api2::alloc::Global;
@@ -15,7 +15,7 @@ use allocator_api2::alloc::Global;
 use crate::{
     bump_common_methods, bump_scope_methods,
     chunk_size::ChunkSize,
-    doc_align_cant_decrease, empty_chunk_header, error_behavior_generic_methods,
+    doc_align_cant_decrease, empty_chunk_header, error_behavior_generic_methods, infallible,
     polyfill::{cfg_const, pointer},
     BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment,
     UninitStats, WithoutDealloc, WithoutShrink,
@@ -177,6 +177,7 @@ where
     }
 }
 
+/// These functions are only available if the `Bump` is initialized.
 impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP, true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -304,6 +305,61 @@ where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
         &mut *pointer::from_mut(self).cast::<Bump<A, NEW_MIN_ALIGN, UP, INIT>>()
+    }
+
+    /// Converts this `Bump` into an initialized `Bump`.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    pub fn into_init(self) -> Bump<A, MIN_ALIGN, UP, true> {
+        infallible(self.generic_into_init())
+    }
+
+    /// Converts this `Bump` into an initialized `Bump`.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    pub fn try_into_init(self) -> Result<Bump<A, MIN_ALIGN, UP, true>, AllocError> {
+        self.generic_into_init()
+    }
+
+    fn generic_into_init<E: ErrorBehavior>(self) -> Result<Bump<A, MIN_ALIGN, UP, true>, E> {
+        self.as_scope().ensure_init()?;
+        Ok(unsafe { self.cast_init() })
+    }
+
+    /// Mutably borrows `Bump` in an initialized state.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    pub fn as_init_mut(&mut self) -> &mut Bump<A, MIN_ALIGN, UP, true> {
+        infallible(self.generic_as_init_mut())
+    }
+
+    /// Mutably borrows `Bump` in an initialized state.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    pub fn try_as_init_mut(&mut self) -> Result<&mut Bump<A, MIN_ALIGN, UP, true>, AllocError> {
+        self.generic_as_init_mut()
+    }
+
+    fn generic_as_init_mut<E: ErrorBehavior>(&mut self) -> Result<&mut Bump<A, MIN_ALIGN, UP, true>, E> {
+        self.as_scope().ensure_init()?;
+        Ok(unsafe { self.cast_init_mut() })
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn cast_init(self) -> Bump<A, MIN_ALIGN, UP, true> {
+        let chunk = self.chunk.get();
+        mem::forget(self);
+
+        Bump { chunk: Cell::new(chunk) }
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn cast_init_mut(&mut self) -> &mut Bump<A, MIN_ALIGN, UP, true> {
+        &mut *pointer::from_mut(self).cast::<Bump<A, MIN_ALIGN, UP, true>>()
     }
 
     /// Converts this `Bump` into a raw pointer.
