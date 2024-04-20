@@ -119,13 +119,12 @@ pub struct MutBumpString<
     #[cfg(not(feature = "alloc"))] A,
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
-    const CONST_NEW: bool = false,
+    const INIT: bool = true,
 > {
-    vec: MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, CONST_NEW>,
+    vec: MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, INIT>,
 }
 
-impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A>
-    MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -133,7 +132,7 @@ where
     /// Constructs a new empty `MutBumpString`.
     ///
     /// The vector will not allocate until elements are pushed onto it.
-    pub fn new_in(bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, CONST_NEW>>) -> Self {
+    pub fn new_in(bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, INIT>>) -> Self {
         Self {
             vec: MutBumpVec::new_in(bump),
         }
@@ -149,7 +148,7 @@ where
         impl
         for pub fn with_capacity_in
         for pub fn try_with_capacity_in
-        fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, CONST_NEW>>) -> Self {
+        fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, INIT>>) -> Self {
             Ok(Self { vec: MutBumpVec::generic_with_capacity_in(capacity, bump.into())? } )
         }
 
@@ -157,7 +156,7 @@ where
         impl
         for pub fn from_str_in
         for pub fn try_from_str_in
-        fn generic_from_str_in(string: &str, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, CONST_NEW>>) -> Self {
+        fn generic_from_str_in(string: &str, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, INIT>>) -> Self {
             let mut this = Self::new_in(bump);
             this.generic_push_str(string)?;
             Ok(this)
@@ -165,9 +164,7 @@ where
     }
 }
 
-impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A>
-    MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
-{
+impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT> {
     /// Returns this `MutBumpString`'s capacity, in bytes.
     #[must_use]
     #[inline(always)]
@@ -246,8 +243,8 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, 
     /// [`&str`]: prim@str "&str"
     /// [`into_bytes`]: MutBumpString::into_bytes
     pub fn from_utf8(
-        vec: MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, CONST_NEW>,
-    ) -> Result<Self, FromUtf8Error<MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, CONST_NEW>>> {
+        vec: MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, INIT>,
+    ) -> Result<Self, FromUtf8Error<MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, INIT>>> {
         match str::from_utf8(vec.as_slice()) {
             Ok(_) => Ok(Self { vec }),
             Err(error) => Err(FromUtf8Error { error, bytes: vec }),
@@ -271,7 +268,7 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, 
     /// ```
     #[inline(always)]
     #[must_use = "`self` will be dropped if the result is not used"]
-    pub fn into_bytes(self) -> MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, CONST_NEW> {
+    pub fn into_bytes(self) -> MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, INIT> {
         self.vec
     }
 
@@ -306,7 +303,7 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, 
     /// safety, as `MutBumpString`s must be valid UTF-8.
     #[must_use]
     #[inline(always)]
-    pub unsafe fn as_mut_vec(&mut self) -> &mut MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, CONST_NEW> {
+    pub unsafe fn as_mut_vec(&mut self) -> &mut MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, INIT> {
         &mut self.vec
     }
 
@@ -349,8 +346,7 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, 
     }
 }
 
-impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A>
-    MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -527,8 +523,8 @@ where
     }
 }
 
-impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> fmt::Write
-    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> fmt::Write
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -544,24 +540,24 @@ where
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> Debug
-    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> Debug
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Debug::fmt(self.as_str(), f)
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> Display
-    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> Display
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Display::fmt(self.as_str(), f)
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> Deref
-    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> Deref
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 {
     type Target = str;
 
@@ -571,8 +567,8 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> D
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> DerefMut
-    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> DerefMut
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
@@ -581,8 +577,8 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> D
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> core::ops::AddAssign<&str>
-    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> core::ops::AddAssign<&str>
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -593,8 +589,8 @@ where
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> AsRef<str>
-    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> AsRef<str>
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 {
     #[inline]
     fn as_ref(&self) -> &str {
@@ -602,8 +598,8 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> A
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> AsMut<str>
-    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> AsMut<str>
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 {
     #[inline]
     fn as_mut(&mut self) -> &mut str {
@@ -611,8 +607,8 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> A
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> Borrow<str>
-    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> Borrow<str>
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 {
     #[inline]
     fn borrow(&self) -> &str {
@@ -620,8 +616,8 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> B
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> BorrowMut<str>
-    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> BorrowMut<str>
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 {
     #[inline]
     fn borrow_mut(&mut self) -> &mut str {
@@ -629,8 +625,8 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> B
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> PartialEq
-    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> PartialEq
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
@@ -652,7 +648,7 @@ macro_rules! impl_partial_eq {
     ) => {
         $(
             $(#[$attr])*
-            impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> PartialEq<$string_like> for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW> {
+            impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> PartialEq<$string_like> for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT> {
                 #[inline]
                 fn eq(&self, other: &$string_like) -> bool {
                     <str as PartialEq>::eq(self, other)
@@ -665,14 +661,14 @@ macro_rules! impl_partial_eq {
             }
 
             $(#[$attr])*
-            impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> PartialEq<MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>> for $string_like {
+            impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> PartialEq<MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>> for $string_like {
                 #[inline]
-                fn eq(&self, other: &MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>) -> bool {
+                fn eq(&self, other: &MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>) -> bool {
                     <str as PartialEq>::eq(self, other)
                 }
 
                 #[inline]
-                fn ne(&self, other: &MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>) -> bool {
+                fn ne(&self, other: &MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>) -> bool {
                     <str as PartialEq>::ne(self, other)
                 }
             }
@@ -692,13 +688,13 @@ impl_partial_eq! {
     alloc::borrow::Cow<'_, str>,
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> Eq
-    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> Eq
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 {
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> PartialOrd
-    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> PartialOrd
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
@@ -726,16 +722,16 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> P
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> Ord
-    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> Ord
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         <str as Ord>::cmp(self, other)
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> Hash
-    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> Hash
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 {
     #[inline]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
@@ -744,8 +740,8 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> H
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'s, 'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> Extend<&'s str>
-    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'s, 'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> Extend<&'s str>
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -759,11 +755,11 @@ where
 }
 
 #[cfg(feature = "alloc")]
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A>
-    From<MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>> for alloc::string::String
+impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> From<MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>>
+    for alloc::string::String
 {
     #[inline]
-    fn from(value: MutBumpString<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>) -> Self {
+    fn from(value: MutBumpString<'b, 'a, A, MIN_ALIGN, UP, INIT>) -> Self {
         value.as_str().into()
     }
 }

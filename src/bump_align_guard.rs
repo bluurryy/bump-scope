@@ -7,15 +7,15 @@ use crate::{BumpScope, MinimumAlignment, SupportedMinimumAlignment};
 /// This is useful in unsafe contexts where the alignment is changed and we have to change it back.
 /// The `BumpScope` is in an invalid state when the bump pointer alignment does not match `MIN_ALIGN`.
 /// So `drop` ***must*** be called to return the bump scope to a valid state.
-pub(crate) struct BumpAlignGuard<'b, 'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool>
+pub(crate) struct BumpAlignGuard<'b, 'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
-    pub(crate) scope: &'b mut BumpScope<'a, A, MIN_ALIGN, UP, CONST_NEW>,
+    pub(crate) scope: &'b mut BumpScope<'a, A, MIN_ALIGN, UP, INIT>,
 }
 
-impl<'b, 'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Drop
-    for BumpAlignGuard<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Drop
+    for BumpAlignGuard<'b, 'a, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -25,13 +25,13 @@ where
     }
 }
 
-impl<'b, 'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool>
-    BumpAlignGuard<'b, 'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'b, 'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool>
+    BumpAlignGuard<'b, 'a, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     #[inline(always)]
-    pub fn new(scope: &'b mut BumpScope<'a, A, MIN_ALIGN, UP, CONST_NEW>) -> Self {
+    pub fn new(scope: &'b mut BumpScope<'a, A, MIN_ALIGN, UP, INIT>) -> Self {
         Self { scope }
     }
 }

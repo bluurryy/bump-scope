@@ -36,8 +36,7 @@ where
     }
 }
 
-impl<T, A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Serialize
-    for BumpVec<'_, '_, T, A, MIN_ALIGN, UP, CONST_NEW>
+impl<T, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Serialize for BumpVec<'_, '_, T, A, MIN_ALIGN, UP, INIT>
 where
     T: Serialize,
 {
@@ -49,8 +48,8 @@ where
     }
 }
 
-impl<T, A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Serialize
-    for MutBumpVec<'_, '_, T, A, MIN_ALIGN, UP, CONST_NEW>
+impl<T, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Serialize
+    for MutBumpVec<'_, '_, T, A, MIN_ALIGN, UP, INIT>
 where
     T: Serialize,
 {
@@ -62,8 +61,8 @@ where
     }
 }
 
-impl<T, A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Serialize
-    for MutBumpVecRev<'_, '_, T, A, MIN_ALIGN, UP, CONST_NEW>
+impl<T, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Serialize
+    for MutBumpVecRev<'_, '_, T, A, MIN_ALIGN, UP, INIT>
 where
     T: Serialize,
 {
@@ -84,9 +83,7 @@ impl Serialize for FixedBumpString<'_> {
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Serialize
-    for BumpString<'_, '_, A, MIN_ALIGN, UP, CONST_NEW>
-{
+impl<A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Serialize for BumpString<'_, '_, A, MIN_ALIGN, UP, INIT> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -95,8 +92,8 @@ impl<A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Serialize
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Serialize
-    for MutBumpString<'_, '_, A, MIN_ALIGN, UP, CONST_NEW>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Serialize
+    for MutBumpString<'_, '_, A, MIN_ALIGN, UP, INIT>
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -182,8 +179,8 @@ where
     }
 }
 
-impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> DeserializeSeed<'de>
-    for &'_ mut BumpVec<'_, '_, T, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> DeserializeSeed<'de>
+    for &'_ mut BumpVec<'_, '_, T, A, MIN_ALIGN, UP, INIT>
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -199,8 +196,8 @@ where
     }
 }
 
-impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Visitor<'de>
-    for &'_ mut BumpVec<'_, '_, T, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Visitor<'de>
+    for &'_ mut BumpVec<'_, '_, T, A, MIN_ALIGN, UP, INIT>
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -228,8 +225,8 @@ where
     }
 }
 
-impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> DeserializeSeed<'de>
-    for &'_ mut MutBumpVec<'_, '_, T, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> DeserializeSeed<'de>
+    for &'_ mut MutBumpVec<'_, '_, T, A, MIN_ALIGN, UP, INIT>
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -245,8 +242,8 @@ where
     }
 }
 
-impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Visitor<'de>
-    for &'_ mut MutBumpVec<'_, '_, T, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Visitor<'de>
+    for &'_ mut MutBumpVec<'_, '_, T, A, MIN_ALIGN, UP, INIT>
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -274,8 +271,8 @@ where
     }
 }
 
-impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> DeserializeSeed<'de>
-    for &'_ mut MutBumpVecRev<'_, '_, T, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> DeserializeSeed<'de>
+    for &'_ mut MutBumpVecRev<'_, '_, T, A, MIN_ALIGN, UP, INIT>
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -291,8 +288,8 @@ where
     }
 }
 
-impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Visitor<'de>
-    for &'_ mut MutBumpVecRev<'_, '_, T, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Visitor<'de>
+    for &'_ mut MutBumpVecRev<'_, '_, T, A, MIN_ALIGN, UP, INIT>
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -346,8 +343,8 @@ impl<'de> Visitor<'de> for &'_ mut FixedBumpString<'_> {
     }
 }
 
-impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> DeserializeSeed<'de>
-    for &'_ mut BumpString<'_, '_, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> DeserializeSeed<'de>
+    for &'_ mut BumpString<'_, '_, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -362,8 +359,8 @@ where
     }
 }
 
-impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Visitor<'de>
-    for &'_ mut BumpString<'_, '_, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Visitor<'de>
+    for &'_ mut BumpString<'_, '_, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -382,8 +379,8 @@ where
     }
 }
 
-impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> DeserializeSeed<'de>
-    for &'_ mut MutBumpString<'_, '_, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> DeserializeSeed<'de>
+    for &'_ mut MutBumpString<'_, '_, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -398,8 +395,8 @@ where
     }
 }
 
-impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Visitor<'de>
-    for &'_ mut MutBumpString<'_, '_, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Visitor<'de>
+    for &'_ mut MutBumpString<'_, '_, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,

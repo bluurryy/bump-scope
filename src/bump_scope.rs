@@ -44,7 +44,7 @@ pub struct BumpScope<
     #[cfg(not(feature = "alloc"))] A,
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
-    const CONST_NEW: bool = false,
+    const INIT: bool = true,
 > {
     pub(crate) chunk: Cell<RawChunk<UP, A>>,
 
@@ -52,24 +52,22 @@ pub struct BumpScope<
     marker: PhantomData<&'a ()>,
 }
 
-impl<const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> UnwindSafe
-    for BumpScope<'_, A, MIN_ALIGN, UP, CONST_NEW>
+impl<const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> UnwindSafe for BumpScope<'_, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone + UnwindSafe,
 {
 }
 
-impl<const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A> RefUnwindSafe
-    for BumpScope<'_, A, MIN_ALIGN, UP, CONST_NEW>
+impl<const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A> RefUnwindSafe for BumpScope<'_, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone + UnwindSafe,
 {
 }
 
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Debug
-    for BumpScope<'_, A, MIN_ALIGN, UP, CONST_NEW>
+impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Debug
+    for BumpScope<'_, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -78,8 +76,8 @@ where
     }
 }
 
-impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool>
-    BumpScope<'a, A, MIN_ALIGN, UP, CONST_NEW>
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool>
+    BumpScope<'a, A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -93,7 +91,7 @@ where
 
     #[inline(always)]
     pub(crate) fn ensure_non_empty<E: ErrorBehavior>(&mut self) -> Result<(), E> {
-        if !CONST_NEW {
+        if INIT {
             // we can only point to the empty chunk if we did a `const_new`
             return Ok(());
         }
@@ -111,8 +109,8 @@ where
         // must only be called when we point to the empty chunk
         debug_assert!(self.chunk.get().is_the_empty_chunk());
 
-        // we only point to an empty chunk if we were created by `const_new` which is only available with `CONST_NEW`
-        assert!(CONST_NEW);
+        // we only point to an empty chunk if we were created by `const_new` which is only available with `!INIT`
+        assert!(INIT);
 
         // SAFETY:
         // We are pointing to the empty chunk. This can only happen when `Bump::const_new` was called.
@@ -436,7 +434,7 @@ where
     /// ```
     /// </details>
     #[inline(always)]
-    pub fn into_aligned<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, A, NEW_MIN_ALIGN, UP, CONST_NEW>
+    pub fn into_aligned<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, A, NEW_MIN_ALIGN, UP, INIT>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -448,7 +446,7 @@ where
     ///
     #[doc = doc_align_cant_decrease!()]
     #[inline(always)]
-    pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(&mut self) -> &mut BumpScope<'a, A, NEW_MIN_ALIGN, UP, CONST_NEW>
+    pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(&mut self) -> &mut BumpScope<'a, A, NEW_MIN_ALIGN, UP, INIT>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -457,7 +455,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn cast_align<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, A, NEW_MIN_ALIGN, UP, CONST_NEW>
+    pub(crate) unsafe fn cast_align<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, A, NEW_MIN_ALIGN, UP, INIT>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -470,18 +468,18 @@ where
     #[inline(always)]
     pub(crate) unsafe fn cast_align_mut<const NEW_MIN_ALIGN: usize>(
         &mut self,
-    ) -> &mut BumpScope<'a, A, NEW_MIN_ALIGN, UP, CONST_NEW>
+    ) -> &mut BumpScope<'a, A, NEW_MIN_ALIGN, UP, INIT>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        &mut *pointer::from_mut(self).cast::<BumpScope<'a, A, NEW_MIN_ALIGN, UP, CONST_NEW>>()
+        &mut *pointer::from_mut(self).cast::<BumpScope<'a, A, NEW_MIN_ALIGN, UP, INIT>>()
     }
 
     /// # Safety
     ///
     /// - `self` must not be used until this clone is gone
     #[inline(always)]
-    pub(crate) unsafe fn clone_unchecked(&self) -> BumpScope<'a, A, MIN_ALIGN, UP, CONST_NEW> {
+    pub(crate) unsafe fn clone_unchecked(&self) -> BumpScope<'a, A, MIN_ALIGN, UP, INIT> {
         BumpScope::new_unchecked(self.chunk.get())
     }
 
