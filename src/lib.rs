@@ -1416,7 +1416,7 @@ define_alloc_methods! {
             return self.generic_alloc_str(string);
         }
 
-        let mut string = BumpString::generic_with_capacity_in(0, self)?;
+        let mut string = BumpString::new_in(self);
 
         if fmt::Write::write_fmt(&mut string, args).is_err() {
             return Err(B::capacity_overflow());
