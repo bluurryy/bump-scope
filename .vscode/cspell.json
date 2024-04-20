@@ -58,6 +58,7 @@
     "rande",
     "rangemap",
     "repr",
+    "rustc",
     "rustdoc",
     "rustfmt",
     "rustup",

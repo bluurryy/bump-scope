@@ -39,9 +39,9 @@ inspect_asm::alloc_iter_u32::mut_rev_up:
 	jmp .LBB_6
 .LBB_5:
 	mov rax, rdx
-	inc rdx
 	not rax
 	mov dword ptr [rcx + 4*rax], ebp
+	inc rdx
 	mov qword ptr [rsp + 24], rdx
 	add r13, 4
 	cmp r14, r13

@@ -37,9 +37,9 @@ inspect_asm::grow::bumpalo:
 .LBB_2:
 	cmp r9, rbx
 	jb .LBB_6
+	lea r14, [r8 - 1]
 	sub r9, rbx
-	mov r14, r8
-	neg r14
+	not r14
 	and r14, r9
 	cmp r14, qword ptr [rax]
 	jb .LBB_6
