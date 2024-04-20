@@ -29,7 +29,10 @@ use crate::WithDrop;
 
 /// A bump allocator.
 ///
-/// Every constructor of `Bump` needs to allocate memory.
+/// Most of `Bump`'s constructors need to allocate memory.
+/// The exception is [`Bump::uninit`] which creates an [uninitialized](crate#init-parameter) `Bump`.
+/// An unitialized `Bump` is unable to create a scope with `scoped` or `scope_guard`.
+/// It can be initialized with [`into_init`](Bump::into_init) or [`as_init_mut`](Bump::as_init_mut).
 ///
 /// # Gotchas
 ///
