@@ -19,8 +19,8 @@ struct EmptyChunkHeader(ChunkHeader<()>);
 unsafe impl Sync for EmptyChunkHeader {}
 
 static EMPTY_CHUNK_HEADER: EmptyChunkHeader = EmptyChunkHeader(ChunkHeader {
-    pos: Cell::new(NonNull::dangling()),
-    end: NonNull::dangling(),
+    pos: Cell::new(NonNull::<EmptyChunkHeader>::dangling().cast()),
+    end: NonNull::<EmptyChunkHeader>::dangling().cast(),
     prev: None,
     next: Cell::new(None),
     allocator: (),

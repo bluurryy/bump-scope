@@ -129,11 +129,11 @@ where
         // must only be called when we point to the empty chunk
         debug_assert!(self.chunk.get().is_the_empty_chunk());
 
-        // we only point to an empty chunk if we were created by `const_new` which is only available with `!INIT`
+        // we only point to an empty chunk if we were created by `uninit` which is only available with `!INIT`
         assert!(INIT);
 
         // SAFETY:
-        // We are pointing to the empty chunk. This can only happen when `Bump::const_new` was called.
+        // We are pointing to the empty chunk. This can only happen when `Bump::uninit` was called.
         // This is only available for `A = Global`.
         // Global is a ZST without a drop implementation, so its sound to create it like this.
         #[allow(clippy::uninit_assumed_init)]
@@ -390,25 +390,38 @@ where
         layout: L,
         mut allocate: impl FnMut(RawChunk<UP, A>, L) -> Option<R>,
     ) -> Result<R, E> {
-        while let Some(chunk) = self.chunk.get().next() {
-            // We don't reset the chunk position when we leave a scope, so we need to do it here.
-            chunk.reset();
+        let new_chunk = if !INIT && self.chunk.get().is_the_empty_chunk() {
+            // SAFETY:
+            // We are pointing to the empty chunk. This can only happen when `Bump::uninit` was called.
+            // This is only available for `A = Global`.
+            // Global is a ZST without a drop implementation, so its sound to create it like this.
+            #[allow(clippy::uninit_assumed_init)]
+            let allocator: A = MaybeUninit::uninit().assume_init();
 
-            self.chunk.set(chunk);
+            RawChunk::new_in(ChunkSize::for_capacity(layout.layout())?, None, allocator)
+        } else {
+            while let Some(chunk) = self.chunk.get().next() {
+                // We don't reset the chunk position when we leave a scope, so we need to do it here.
+                chunk.reset();
 
-            if let Some(ptr) = allocate(chunk, layout) {
-                return Ok(ptr);
+                self.chunk.set(chunk);
+
+                if let Some(ptr) = allocate(chunk, layout) {
+                    return Ok(ptr);
+                }
             }
-        }
 
-        // there is no chunk that fits, we need a new chunk
-        let new_chunk = self.chunk.get().append_for(layout.layout())?;
+            // there is no chunk that fits, we need a new chunk
+            self.chunk.get().append_for(layout.layout())
+        }?;
+
         self.chunk.set(new_chunk);
 
         if let Some(ptr) = allocate(new_chunk, layout) {
             Ok(ptr)
         } else {
             // SAFETY: We just appended a chunk for that specific layout, it must have enough space.
+            // TODO: panic here, this is a slow path; no need for this unsafety
             core::hint::unreachable_unchecked()
         }
     }

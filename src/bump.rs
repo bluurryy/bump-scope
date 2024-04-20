@@ -98,6 +98,10 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     fn drop(&mut self) {
+        if !INIT && self.chunk.get().is_the_empty_chunk() {
+            return;
+        }
+
         unsafe {
             let chunk = self.chunk.get();
             chunk.for_each_prev(|chunk| chunk.deallocate());
