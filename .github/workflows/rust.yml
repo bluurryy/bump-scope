@@ -12,6 +12,7 @@ env:
 
 jobs:
   format:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,6 +27,7 @@ jobs:
       - name: format fuzz
         run: cd fuzz && cargo fmt --all -- --check
   clippy:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -48,6 +50,7 @@ jobs:
     - run: cargo clippy --all ${{matrix.tests}}      
     - run: cargo clippy --all ${{matrix.tests}} ${{matrix.features}}
   clippy-benches:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -56,6 +59,7 @@ jobs:
         components: clippy
     - run: cargo clippy --benches --all-features
   test:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     env:
       MIRIFLAGS: "-Zmiri-strict-provenance" 

@@ -121,7 +121,7 @@ pub struct BumpString<
     const UP: bool = true,
     const CONST_NEW: bool = false,
 > {
-    vec: BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, CONST_NEW>,
+    pub(crate) vec: BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, CONST_NEW>,
 }
 
 impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool, A>
@@ -133,6 +133,7 @@ where
     /// Constructs a new empty `BumpString`.
     ///
     /// The vector will not allocate until elements are pushed onto it.
+    #[inline]
     pub fn new_in(bump: impl Into<&'b BumpScope<'a, A, MIN_ALIGN, UP, CONST_NEW>>) -> Self {
         Self {
             vec: BumpVec::new_in(bump),
