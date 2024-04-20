@@ -1800,15 +1800,8 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     type Item = T;
-    type IntoIter = IntoIter<'b, T>;
+    type IntoIter = IntoIter<'a, T>;
 
-    /// Returns an iterator that borrows the `BumpScope` mutably. So you can't use the `BumpScope` while iterating.
-    /// The advantage is that the space the items took up is freed.
-    ///
-    /// If you need to use the `Bump(Scope)` while iterating you can first turn it to a slice with [`into_slice`] or [`into_boxed_slice`].
-    ///
-    /// [`into_slice`]: BumpVec::into_slice
-    /// [`into_boxed_slice`]: BumpVec::into_boxed_slice
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
         self.fixed.into_iter()
