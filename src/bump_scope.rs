@@ -19,12 +19,15 @@ use crate::{
     bump_align_guard::BumpAlignGuard,
     bump_common_methods, bump_scope_methods,
     chunk_size::ChunkSize,
-    const_param_assert, doc_align_cant_decrease, infallible,
+    const_param_assert, doc_align_cant_decrease,
     polyfill::{nonnull, pointer},
     stats::UninitStats,
     ArrayLayout, BumpScopeGuard, Checkpoint, Chunk, ErrorBehavior, LayoutTrait, MinimumAlignment, RawChunk,
     SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
+
+#[cfg(not(no_global_oom_handling))]
+use crate::infallible;
 
 #[cfg(test)]
 use crate::WithDrop;
@@ -497,6 +500,7 @@ where
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    #[cfg(not(no_global_oom_handling))]
     pub fn into_init(self) -> BumpScope<'a, A, MIN_ALIGN, UP, true> {
         infallible(self.generic_into_init())
     }
@@ -518,6 +522,7 @@ where
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    #[cfg(not(no_global_oom_handling))]
     pub fn as_init(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP, true> {
         infallible(self.generic_as_init())
     }
@@ -539,6 +544,7 @@ where
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    #[cfg(not(no_global_oom_handling))]
     pub fn as_init_mut(&mut self) -> &mut BumpScope<'a, A, MIN_ALIGN, UP, true> {
         infallible(self.generic_as_init_mut())
     }

@@ -13,13 +13,16 @@ use allocator_api2::alloc::{AllocError, Allocator};
 use allocator_api2::alloc::Global;
 
 use crate::{
-    bump_common_methods, bump_scope_methods,
-    chunk_size::ChunkSize,
-    doc_align_cant_decrease, empty_chunk_header, error_behavior_generic_methods, infallible,
-    polyfill::{cfg_const, pointer},
-    BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment,
-    UninitStats, WithoutDealloc, WithoutShrink,
+    bump_common_methods, bump_scope_methods, chunk_size::ChunkSize, doc_align_cant_decrease, error_behavior_generic_methods,
+    polyfill::pointer, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment, RawChunk, Stats,
+    SupportedMinimumAlignment, UninitStats, WithoutDealloc, WithoutShrink,
 };
+
+#[cfg(not(no_global_oom_handling))]
+use crate::infallible;
+
+#[cfg(feature = "alloc")]
+use crate::{empty_chunk_header, polyfill::cfg_const};
 
 #[cfg(test)]
 use crate::WithDrop;
@@ -125,6 +128,7 @@ where
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<const MIN_ALIGN: usize, const UP: bool> Bump<Global, MIN_ALIGN, UP, false>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -311,6 +315,7 @@ where
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    #[cfg(not(no_global_oom_handling))]
     pub fn into_init(self) -> Bump<A, MIN_ALIGN, UP, true> {
         infallible(self.generic_into_init())
     }
@@ -332,6 +337,7 @@ where
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    #[cfg(not(no_global_oom_handling))]
     pub fn as_init_mut(&mut self) -> &mut Bump<A, MIN_ALIGN, UP, true> {
         infallible(self.generic_as_init_mut())
     }
