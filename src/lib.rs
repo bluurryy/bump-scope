@@ -264,8 +264,9 @@
 //! You need an initialized bump to create scopes via `scoped` and `scope_guard`.
 //! You can convert an uninitialized `Bump(Scope)` into an initialized one with `into_init` or `as_init(_mut)`.
 //!
-//! The point of uninitialized bump allocators is that they don't need to allocate memory and are
-//! const constructible when the feature `nightly-const-refs-to-static` is enabled. This makes a thread local bump constructible with the [`const {}` syntax](std::thread_local), making it more performant.
+//! The point of uninitialized bump allocators is that they don't need to allocate memory.
+//! They are const constructible when the feature `nightly-const-refs-to-static` is enabled. 
+//! This makes a thread local bump constructible with the [`const {}` syntax](std::thread_local), making it more performant.
 
 #[doc(hidden)]
 #[cfg(feature = "alloc")]
