@@ -180,6 +180,12 @@ This crate supports `no_std`, unless the `std` feature is enabled.
   Makes `BumpBox<T>` implement `CoerceUnsized`.
   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
 
+<p></p>
+
+- `nightly-const-refs-to-static` *(requires nightly)*:
+  
+  Makes `Bump::uninit` a `const fn`.
+
 ## Bumping upwards or downwards?
 Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
 
@@ -197,6 +203,19 @@ Changing the minimum alignment to e.g. `4` makes it so allocations with the alig
 This will penalize allocations of a smaller alignment as their size now needs to be rounded up the next multiple of `4`.
 
 This amounts to about 1 or 2 instructions per allocation.
+
+## `INIT` parameter?
+When `INIT` is true, the bump allocator is in an initialized state.
+That means that it has already allocated a chunk from its backing allocator.
+
+When `INIT` is false, the bump allocator may or may not have allocated chunks.
+You can only get an `INIT = false` bump from `Bump::uninit`.
+
+You need an initialized bump to create scopes via `scoped` and `scope_guard`.
+You can convert an uninitialized `Bump(Scope)` into an initialized one with `into_init` or `as_init(_mut)`.
+
+The point of uninitialized bump allocators is that they don't need to allocate memory and are
+const constructible when the feature `nightly-const-refs-to-static` is enabled. This makes a thread local bump constructible with the `const {}` syntax, making it more performant.
 
 [//]: # (END_OF_CRATE_DOCS)
 

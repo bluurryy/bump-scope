@@ -77,7 +77,7 @@ where
     }
 }
 
-/// These functions are only available if the `BumpScope` is initialized.
+/// These functions are only available if the `BumpScope` is [initialized](crate#init-parameter).
 impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP, true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -493,7 +493,7 @@ where
         &mut *pointer::from_mut(self).cast::<BumpScope<'a, A, NEW_MIN_ALIGN, UP, INIT>>()
     }
 
-    /// Converts this `BumpScope` into an initialized `BumpScope`.
+    /// Converts this `BumpScope` into an [initialized](crate#init-parameter) `BumpScope`.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -501,7 +501,7 @@ where
         infallible(self.generic_into_init())
     }
 
-    /// Converts this `BumpScope` into an initialized `BumpScope`.
+    /// Converts this `BumpScope` into an [initialized](crate#init-parameter) `BumpScope`.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -514,7 +514,7 @@ where
         Ok(unsafe { self.cast_init() })
     }
 
-    /// Borrows `BumpScope` in an initialized state.
+    /// Borrows `BumpScope` in an [initialized](crate#init-parameter) state.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -522,7 +522,7 @@ where
         infallible(self.generic_as_init())
     }
 
-    /// Borrows `BumpScope` in an initialized state.
+    /// Borrows `BumpScope` in an [initialized](crate#init-parameter) state.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -535,7 +535,7 @@ where
         Ok(unsafe { self.cast_init_ref() })
     }
 
-    /// Mutably borrows `BumpScope` in an initialized state.
+    /// Mutably borrows `BumpScope` in an [initialized](crate#init-parameter) state.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -543,7 +543,7 @@ where
         infallible(self.generic_as_init_mut())
     }
 
-    /// Mutably borrows `BumpScope` in an initialized state.
+    /// Mutably borrows `BumpScope` in an [initialized](crate#init-parameter) state.
     ///
     /// # Errors
     /// Errors if the allocation fails.

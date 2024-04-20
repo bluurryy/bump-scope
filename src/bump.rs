@@ -177,7 +177,7 @@ where
     }
 }
 
-/// These functions are only available if the `Bump` is initialized.
+/// These functions are only available if the `Bump` is [initialized](crate#init-parameter).
 impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP, true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -307,7 +307,7 @@ where
         &mut *pointer::from_mut(self).cast::<Bump<A, NEW_MIN_ALIGN, UP, INIT>>()
     }
 
-    /// Converts this `Bump` into an initialized `Bump`.
+    /// Converts this `Bump` into an [initialized](crate#init-parameter) `Bump`.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -315,7 +315,7 @@ where
         infallible(self.generic_into_init())
     }
 
-    /// Converts this `Bump` into an initialized `Bump`.
+    /// Converts this `Bump` into an [initialized](crate#init-parameter) `Bump`.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -328,7 +328,7 @@ where
         Ok(unsafe { self.cast_init() })
     }
 
-    /// Mutably borrows `Bump` in an initialized state.
+    /// Mutably borrows `Bump` in an [initialized](crate#init-parameter) state.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -336,7 +336,7 @@ where
         infallible(self.generic_as_init_mut())
     }
 
-    /// Mutably borrows `Bump` in an initialized state.
+    /// Mutably borrows `Bump` in an [initialized](crate#init-parameter) state.
     ///
     /// # Errors
     /// Errors if the allocation fails.

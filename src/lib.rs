@@ -28,7 +28,11 @@
     )
 )]
 #![cfg_attr(test, allow(stable_features))]
-#![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg_hide), doc(cfg_hide(no_global_oom_handling)))]
+#![cfg_attr(
+    docsrs,
+    feature(doc_auto_cfg, doc_cfg_hide),
+    doc(cfg_hide(no_global_oom_handling, feature = "nightly-const-refs-to-static"))
+)]
 #![warn(
     clippy::pedantic,
     clippy::cargo,
@@ -226,6 +230,12 @@
 //!   Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
 //!   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
 //!
+//! <p></p>
+//!
+//! - `nightly-const-refs-to-static` *(requires nightly)*:
+//!   
+//!   Makes `Bump::uninit` a `const fn`.
+//!
 //! # Bumping upwards or downwards?
 //! Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
 //!
@@ -243,6 +253,19 @@
 //! This will penalize allocations of a smaller alignment as their size now needs to be rounded up the next multiple of `4`.
 //!
 //! This amounts to about 1 or 2 instructions per allocation.
+//!
+//! # `INIT` parameter?
+//! When `INIT` is true, the bump allocator is in an initialized state.
+//! That means that it has already allocated a chunk from its backing allocator.
+//!
+//! When `INIT` is false, the bump allocator may or may not have allocated chunks.
+//! You can only get an `INIT = false` bump from [`Bump::uninit`].
+//!
+//! You need an initialized bump to create scopes via `scoped` and `scope_guard`.
+//! You can convert an uninitialized `Bump(Scope)` into an initialized one with `into_init` or `as_init(_mut)`.
+//!
+//! The point of uninitialized bump allocators is that they don't need to allocate memory and are
+//! const constructible when the feature `nightly-const-refs-to-static` is enabled. This makes a thread local bump constructible with the [`const {}` syntax](std::thread_local), making it more performant.
 
 #[doc(hidden)]
 #[cfg(feature = "alloc")]
