@@ -145,6 +145,172 @@ impl<'a, const UP: bool> Stats<'a, UP> {
     }
 }
 
+/// Provides statistics about the memory usage of the bump allocator.
+///
+/// This is returned from the `stats` method of `Bump`, `BumpScope`, `BumpScopeGuard`, `BumpVec`, ...
+pub struct UninitStats<'a, const UP: bool> {
+    /// This is the chunk we are currently allocating on.
+    pub current: Option<Chunk<'a, UP>>,
+}
+
+impl<const UP: bool> Copy for UninitStats<'_, UP> {}
+
+#[allow(clippy::expl_impl_clone_on_copy)]
+impl<const UP: bool> Clone for UninitStats<'_, UP> {
+    #[inline(always)]
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<const UP: bool> PartialEq for UninitStats<'_, UP> {
+    #[inline(always)]
+    fn eq(&self, other: &Self) -> bool {
+        self.current == other.current
+    }
+
+    #[inline(always)]
+    fn ne(&self, other: &Self) -> bool {
+        self.current != other.current
+    }
+}
+
+impl<const UP: bool> Eq for UninitStats<'_, UP> {}
+
+impl<'a, const UP: bool> Debug for UninitStats<'a, UP> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.debug_format("Stats", f)
+    }
+}
+
+impl<'a, const UP: bool> UninitStats<'a, UP> {
+    /// Returns the amount of chunks.
+    #[must_use]
+    pub fn count(self) -> usize {
+        let current = match self.current {
+            Some(current) => current,
+            None => return 0,
+        };
+
+        let mut sum = 1;
+        current.iter_prev().for_each(|_| sum += 1);
+        current.iter_next().for_each(|_| sum += 1);
+        sum
+    }
+
+    /// Returns the total size of all chunks.
+    #[must_use]
+    pub fn size(self) -> usize {
+        let current = match self.current {
+            Some(current) => current,
+            None => return 0,
+        };
+
+        let mut sum = current.size();
+        current.iter_prev().for_each(|chunk| sum += chunk.size());
+        current.iter_next().for_each(|chunk| sum += chunk.size());
+        sum
+    }
+
+    /// Returns the total capacity of all chunks.
+    #[must_use]
+    pub fn capacity(self) -> usize {
+        let current = match self.current {
+            Some(current) => current,
+            None => return 0,
+        };
+
+        let mut sum = current.capacity();
+        current.iter_prev().for_each(|chunk| sum += chunk.capacity());
+        current.iter_next().for_each(|chunk| sum += chunk.capacity());
+        sum
+    }
+
+    /// Returns the amount of allocated bytes. This includes padding and wasted space due to reallocations.
+    #[must_use]
+    pub fn allocated(self) -> usize {
+        let current = match self.current {
+            Some(current) => current,
+            None => return 0,
+        };
+
+        let mut sum = current.allocated();
+        current.iter_prev().for_each(|chunk| sum += chunk.capacity());
+        sum
+    }
+
+    /// Returns the total remaining capacity of all chunks.
+    #[must_use]
+    pub fn remaining(self) -> usize {
+        let current = match self.current {
+            Some(current) => current,
+            None => return 0,
+        };
+
+        let mut sum = current.remaining();
+        current.iter_next().for_each(|chunk| sum += chunk.capacity());
+        sum
+    }
+
+    /// Returns an iterator from smallest to biggest chunk.
+    #[must_use]
+    pub fn small_to_big(self) -> ChunkNextIter<'a, UP> {
+        let mut start = match self.current {
+            Some(start) => start,
+            None => return ChunkNextIter { chunk: None },
+        };
+
+        while let Some(chunk) = start.prev() {
+            start = chunk;
+        }
+
+        ChunkNextIter { chunk: Some(start) }
+    }
+
+    /// Returns an iterator from biggest to smallest chunk.
+    #[must_use]
+    pub fn big_to_small(self) -> ChunkPrevIter<'a, UP> {
+        let mut start = match self.current {
+            Some(start) => start,
+            None => return ChunkPrevIter { chunk: None },
+        };
+
+        while let Some(chunk) = start.next() {
+            start = chunk;
+        }
+
+        ChunkPrevIter { chunk: Some(start) }
+    }
+
+    /// Converts this `UninitStats` into `Some(Stats)` or `None` if the current chunk is `None`.
+    #[inline]
+    #[must_use]
+    pub fn to_stats(self) -> Option<Stats<'a, UP>> {
+        self.current.map(|current| Stats { current })
+    }
+
+    pub(crate) fn debug_format(self, name: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(stats) = self.to_stats() {
+            stats.debug_format(name, f)
+        } else {
+            let alternate = f.alternate();
+            let mut debug = f.debug_struct(name);
+
+            const NONE: Option<()> = None::<()>;
+            const EMPTY: &[()] = &[];
+
+            if alternate {
+                debug.field("current", &NONE);
+                debug.field("chunks", &EMPTY);
+            } else {
+                debug.field("curr", &NONE);
+            }
+
+            debug.finish()
+        }
+    }
+}
+
 /// Refers to a chunk of memory that was allocated by the bump allocator.
 ///
 /// See [`Stats`].
@@ -180,7 +346,23 @@ impl<'a, const UP: bool> Chunk<'a, UP> {
     #[inline(always)]
     pub(crate) fn new<'b, const MIN_ALIGN: usize, const INIT: bool, A>(
         bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, INIT>,
-    ) -> Self
+    ) -> Option<Self>
+    where
+        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        'a: 'b,
+    {
+        if !INIT && bump.chunk.get().is_the_empty_chunk() {
+            return None;
+        }
+
+        Some(Self {
+            chunk: bump.chunk.get().without_allocator(),
+            marker: PhantomData,
+        })
+    }
+
+    #[inline(always)]
+    pub(crate) fn new_init<'b, const MIN_ALIGN: usize, A>(bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, true>) -> Self
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
         'a: 'b,

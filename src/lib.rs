@@ -326,7 +326,7 @@ pub use into_iter::IntoIter;
 pub use mut_bump_string::MutBumpString;
 pub use mut_bump_vec::MutBumpVec;
 pub use mut_bump_vec_rev::MutBumpVecRev;
-pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
+pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, Stats, UninitStats};
 #[cfg(test)]
 pub use with_drop::WithDrop;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
@@ -481,8 +481,12 @@ fn exact_size_iterator_bad_len() -> ! {
 }
 
 macro_rules! doc_fn_stats {
-    () => {
-        "Returns `Stats`, which provides statistics about the memory usage of the bump allocator."
+    ($name:ident) => {
+        concat!(
+            "Returns `",
+            stringify!($name),
+            "`, which provides statistics about the memory usage of the bump allocator."
+        )
     };
 }
 
@@ -731,7 +735,7 @@ macro_rules! condition {
 
 pub(crate) use condition;
 
-macro_rules! bump_common_methods {
+macro_rules! bump_scope_methods {
     ($scope_guard:ident, $is_scope:ident) => {
         /// Calls `f` with a new child scope.
         ///
@@ -749,14 +753,14 @@ macro_rules! bump_common_methods {
         /// assert_eq!(bump.stats().allocated(), 0);
         /// ```
         #[inline(always)]
-        pub fn scoped(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, INIT>)) {
+        pub fn scoped(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, true>)) {
             let mut guard = self.scope_guard();
             f(guard.scope());
         }
 
         /// Calls `f` with a new child scope of a new minimum alignment.
         #[inline(always)]
-        pub fn scoped_aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, INIT>))
+        pub fn scoped_aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, true>))
         where
             MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
         {
@@ -793,13 +797,13 @@ macro_rules! bump_common_methods {
         /// ```
         #[must_use]
         #[inline(always)]
-        pub fn scope_guard(&mut self) -> $scope_guard<A, MIN_ALIGN, UP, INIT> {
+        pub fn scope_guard(&mut self) -> $scope_guard<A, MIN_ALIGN, UP> {
             $scope_guard::new(self)
         }
 
         /// Calls `f` with this scope but with a new minimum alignment.
         #[inline(always)]
-        pub fn aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP, INIT>))
+        pub fn aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP, true>))
         where
             MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
         {
@@ -816,15 +820,6 @@ macro_rules! bump_common_methods {
                 } else {
                     self.as_mut_scope().aligned(f)
                 }
-            }
-        }
-
-        #[doc = $crate::doc_fn_stats!()]
-        #[must_use]
-        #[inline(always)]
-        pub fn stats(&self) -> $crate::condition! { if $is_scope { Stats<'a, UP> } else { Stats<UP> } } {
-            Stats {
-                current: $crate::Chunk::new(self.into()),
             }
         }
 
@@ -872,7 +867,13 @@ macro_rules! bump_common_methods {
                 }
             }
         }
+    };
+}
 
+pub(crate) use bump_scope_methods;
+
+macro_rules! bump_common_methods {
+    () => {
         #[doc = crate::doc_fn_allocator!()]
         #[must_use]
         #[inline(always)]

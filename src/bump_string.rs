@@ -13,7 +13,7 @@ use allocator_api2::alloc::Global;
 
 use crate::{
     error_behavior_generic_methods, polyfill, BumpBox, BumpScope, BumpVec, ErrorBehavior, FromUtf8Error, MinimumAlignment,
-    Stats, SupportedMinimumAlignment,
+    Stats, SupportedMinimumAlignment, UninitStats,
 };
 
 /// This is like [`format!`] but allocates inside a `Bump` or `BumpScope`, returning a [`BumpString`].
@@ -527,18 +527,37 @@ where
         self.into_boxed_str().into_mut()
     }
 
-    #[doc = crate::doc_fn_stats!()]
-    #[must_use]
-    #[inline(always)]
-    pub fn stats(&self) -> Stats<'a, UP> {
-        self.vec.stats()
-    }
-
     #[doc = crate::doc_fn_allocator!()]
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
         self.vec.allocator()
+    }
+}
+
+impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, A> BumpString<'b, 'a, A, MIN_ALIGN, UP, true>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
+{
+    #[doc = crate::doc_fn_stats!(Stats)]
+    #[must_use]
+    #[inline(always)]
+    pub fn stats(&self) -> Stats<'a, UP> {
+        self.vec.stats()
+    }
+}
+
+impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, A> BumpString<'b, 'a, A, MIN_ALIGN, UP, false>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
+{
+    #[doc = crate::doc_fn_stats!(UninitStats)]
+    #[must_use]
+    #[inline(always)]
+    pub fn stats(&self) -> UninitStats<'a, UP> {
+        self.vec.stats()
     }
 }
 

@@ -17,12 +17,13 @@ use allocator_api2::alloc::Global;
 
 use crate::{
     bump_align_guard::BumpAlignGuard,
-    bump_common_methods,
+    bump_common_methods, bump_scope_methods,
     chunk_size::ChunkSize,
     const_param_assert, doc_align_cant_decrease,
     polyfill::{nonnull, pointer},
-    ArrayLayout, BumpScopeGuard, Checkpoint, ErrorBehavior, LayoutTrait, MinimumAlignment, RawChunk, SizedTypeProperties,
-    Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    stats::UninitStats,
+    ArrayLayout, BumpScopeGuard, Checkpoint, Chunk, ErrorBehavior, LayoutTrait, MinimumAlignment, RawChunk,
+    SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 
 #[cfg(test)]
@@ -72,8 +73,15 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.stats().debug_format("BumpScope", f)
+        self.uninit_stats().debug_format("BumpScope", f)
     }
+}
+
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP, true>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+{
+    bump_scope_methods!(BumpScopeGuard, true);
 }
 
 impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool>
@@ -86,6 +94,14 @@ where
         Self {
             chunk: Cell::new(chunk),
             marker: PhantomData,
+        }
+    }
+
+    #[must_use]
+    #[inline(always)]
+    pub(crate) fn uninit_stats(&self) -> UninitStats<'a, UP> {
+        UninitStats {
+            current: Chunk::new(self),
         }
     }
 
@@ -116,6 +132,7 @@ where
         // We are pointing to the empty chunk. This can only happen when `Bump::const_new` was called.
         // This is only available for `A = Global`.
         // Global is a ZST without a drop implementation, so its sound to create it like this.
+        #[allow(clippy::uninit_assumed_init)]
         let allocator: A = unsafe { MaybeUninit::uninit().assume_init() };
 
         let chunk = RawChunk::new_in(
@@ -392,7 +409,7 @@ where
         }
     }
 
-    bump_common_methods!(BumpScopeGuard, true);
+    bump_common_methods!();
 
     /// Returns `&self` as is. This is used in for macros that support both `Bump` and `BumpScope`, like [`bump_vec!`](crate::bump_vec!).
     #[inline(always)]
@@ -506,6 +523,36 @@ where
         Self {
             chunk,
             marker: PhantomData,
+        }
+    }
+}
+
+impl<'a, const MIN_ALIGN: usize, const UP: bool, A> BumpScope<'a, A, MIN_ALIGN, UP, true>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
+{
+    #[doc = crate::doc_fn_stats!(Stats)]
+    #[must_use]
+    #[inline(always)]
+    pub fn stats(&self) -> Stats<'a, UP> {
+        Stats {
+            current: Chunk::new_init(self),
+        }
+    }
+}
+
+impl<'a, const MIN_ALIGN: usize, const UP: bool, A> BumpScope<'a, A, MIN_ALIGN, UP, false>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
+{
+    #[doc = crate::doc_fn_stats!(UninitStats)]
+    #[must_use]
+    #[inline(always)]
+    pub fn stats(&self) -> UninitStats<'a, UP> {
+        UninitStats {
+            current: Chunk::new(self),
         }
     }
 }

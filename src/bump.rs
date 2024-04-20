@@ -13,12 +13,12 @@ use allocator_api2::alloc::Allocator;
 use allocator_api2::alloc::Global;
 
 use crate::{
-    bump_common_methods,
+    bump_common_methods, bump_scope_methods,
     chunk_size::ChunkSize,
     doc_align_cant_decrease, empty_chunk_header, error_behavior_generic_methods,
     polyfill::{cfg_const, pointer},
     BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment,
-    WithoutDealloc, WithoutShrink,
+    UninitStats, WithoutDealloc, WithoutShrink,
 };
 
 #[cfg(test)]
@@ -109,7 +109,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.stats().debug_format("Bump", f)
+        self.as_scope().uninit_stats().debug_format("Bump", f)
     }
 }
 
@@ -177,6 +177,13 @@ where
     }
 }
 
+impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP, true>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+{
+    bump_scope_methods!(BumpScopeGuardRoot, false);
+}
+
 impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Bump<A, MIN_ALIGN, UP, INIT>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -240,7 +247,7 @@ where
         self.chunk.set(chunk);
     }
 
-    bump_common_methods!(BumpScopeGuardRoot, false);
+    bump_common_methods!();
 
     /// Returns this `&Bump` as a `&BumpScope`.
     #[inline(always)]
@@ -327,6 +334,32 @@ where
     pub unsafe fn from_raw(ptr: NonNull<()>) -> Self {
         let chunk = Cell::new(RawChunk::from_header(ptr.cast()));
         Self { chunk }
+    }
+}
+
+impl<const MIN_ALIGN: usize, const UP: bool, A> Bump<A, MIN_ALIGN, UP, true>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
+{
+    #[doc = crate::doc_fn_stats!(Stats)]
+    #[must_use]
+    #[inline(always)]
+    pub fn stats(&self) -> Stats<UP> {
+        self.as_scope().stats()
+    }
+}
+
+impl<const MIN_ALIGN: usize, const UP: bool, A> Bump<A, MIN_ALIGN, UP, false>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
+{
+    #[doc = crate::doc_fn_stats!(UninitStats)]
+    #[must_use]
+    #[inline(always)]
+    pub fn stats(&self) -> UninitStats<UP> {
+        self.as_scope().stats()
     }
 }
 

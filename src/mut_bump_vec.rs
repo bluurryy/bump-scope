@@ -19,7 +19,7 @@ use crate::{
     error_behavior_generic_methods,
     polyfill::{nonnull, pointer, slice},
     BumpBox, BumpScope, Drain, ErrorBehavior, ExtractIf, FixedBumpVec, IntoIter, MinimumAlignment, NoDrop,
-    SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment,
+    SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment, UninitStats,
 };
 
 /// Creates a [`MutBumpVec`] containing the arguments.
@@ -1370,19 +1370,39 @@ where
         }
     }
 
-    #[doc = crate::doc_fn_stats!()]
+    #[doc = crate::doc_fn_allocator!()]
+    #[must_use]
+    #[inline(always)]
+    pub fn allocator(&self) -> &A {
+        self.bump.allocator()
+    }
+}
+
+impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, true>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
+{
+    #[doc = crate::doc_fn_stats!(Stats)]
     #[doc = crate::doc_fn_stats_greedy!(MutBumpVec)]
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, UP> {
         self.bump.stats()
     }
+}
 
-    #[doc = crate::doc_fn_allocator!()]
+impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, false>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
+{
+    #[doc = crate::doc_fn_stats!(UninitStats)]
+    #[doc = crate::doc_fn_stats_greedy!(MutBumpVec)]
     #[must_use]
     #[inline(always)]
-    pub fn allocator(&self) -> &A {
-        self.bump.allocator()
+    pub fn stats(&self) -> UninitStats<'a, UP> {
+        self.bump.stats()
     }
 }
 
