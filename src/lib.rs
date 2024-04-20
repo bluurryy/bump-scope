@@ -14,7 +14,6 @@
     test,
     feature(
         exclusive_wrapper,
-        pointer_is_aligned,
         pointer_is_aligned_to,
         assert_matches,
         inplace_iteration,

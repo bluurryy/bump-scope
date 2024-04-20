@@ -149,6 +149,7 @@ where
                 dbg!(&new_ptr);
 
                 if let Ok(new_ptr) = new_ptr {
+                    #[allow(ambiguous_wide_pointer_comparisons)]
                     if new_ptr == old_ptr {
                         assert_eq!(new_ptr.len(), old_layout.size());
                         new_layout = Layout::from_size_align(old_layout.size(), new_layout.align()).unwrap();
