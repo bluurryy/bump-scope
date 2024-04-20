@@ -36,7 +36,7 @@ where
     }
 }
 
-impl<T, B> Serialize for BumpVec<'_, '_, T, B>
+impl<T, B> Serialize for BumpVec<'_, T, B>
 where
     T: Serialize,
 {
@@ -81,7 +81,7 @@ impl Serialize for FixedBumpString<'_> {
     }
 }
 
-impl<B> Serialize for BumpString<'_, '_, B> {
+impl<B> Serialize for BumpString<'_, B> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -175,7 +175,7 @@ where
     }
 }
 
-impl<'de, 'a, T, B> DeserializeSeed<'de> for &'_ mut BumpVec<'_, 'a, T, B>
+impl<'de, 'a, T, B> DeserializeSeed<'de> for &'_ mut BumpVec<'a, T, B>
 where
     T: Deserialize<'de>,
     B: BumpScopeRef<'a>,
@@ -190,7 +190,7 @@ where
     }
 }
 
-impl<'de, 'a, T, B> Visitor<'de> for &'_ mut BumpVec<'_, 'a, T, B>
+impl<'de, 'a, T, B> Visitor<'de> for &'_ mut BumpVec<'a, T, B>
 where
     T: Deserialize<'de>,
     B: BumpScopeRef<'a>,
@@ -333,7 +333,7 @@ impl<'de> Visitor<'de> for &'_ mut FixedBumpString<'_> {
     }
 }
 
-impl<'de, 'a, B> DeserializeSeed<'de> for &'_ mut BumpString<'_, '_, B>
+impl<'de, 'a, B> DeserializeSeed<'de> for &'_ mut BumpString<'a, B>
 where
     B: BumpScopeRef<'a>,
 {
@@ -347,7 +347,7 @@ where
     }
 }
 
-impl<'de, 'a, B> Visitor<'de> for &'_ mut BumpString<'_, '_, B>
+impl<'de, 'a, B> Visitor<'de> for &'_ mut BumpString<'a, B>
 where
     B: BumpScopeRef<'a>,
 {

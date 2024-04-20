@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use super::usize::max;
 use core::alloc::{Layout, LayoutError};
 

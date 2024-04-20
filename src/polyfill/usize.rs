@@ -3,6 +3,7 @@ pub unsafe fn unchecked_mul(lhs: usize, rhs: usize) -> usize {
     lhs * rhs
 }
 
+#[allow(dead_code)]
 #[cfg(test)]
 #[inline(always)]
 pub const fn max(lhs: usize, rhs: usize) -> usize {

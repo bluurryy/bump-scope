@@ -118,7 +118,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     }
 
     /// Turns this `FixedBumpVec<T>` into a `BumpVec<T>`.
-    pub fn into_vec<'b, B>(self, bump: &'b B) -> BumpVec<'b, 'a, T, B> {
+    pub fn into_vec<B>(self, bump: B) -> BumpVec<'a, T, B> {
         BumpVec { fixed: self, bump }
     }
 

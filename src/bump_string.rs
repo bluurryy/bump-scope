@@ -104,18 +104,18 @@ macro_rules! bump_format {
 ///
 /// [`&str`]: prim@str "&str"
 /// [`from_utf8`]: BumpString::from_utf8
-pub struct BumpString<'b, 'a: 'b, BS> {
-    vec: BumpVec<'b, 'a, u8, BS>,
+pub struct BumpString<'a, BS> {
+    vec: BumpVec<'a, u8, BS>,
 }
 
-impl<'b, 'a: 'b, BS> BumpString<'b, 'a, BS>
+impl<'a, BS> BumpString<'a, BS>
 where
     BS: BumpScopeRef<'a>,
 {
     /// Constructs a new empty `BumpString`.
     ///
     /// The vector will not allocate until elements are pushed onto it.
-    pub fn new_in(bump: &'b BS) -> Self {
+    pub fn new_in(bump: BS) -> Self {
         Self {
             vec: BumpVec::new_in(bump),
         }
@@ -130,15 +130,15 @@ where
         impl
         for pub fn with_capacity_in
         for pub fn try_with_capacity_in
-        fn generic_with_capacity_in(capacity: usize, bump: &'b BS) -> Self {
-            Ok(Self { vec: BumpVec::generic_with_capacity_in(capacity, bump.into())? } )
+        fn generic_with_capacity_in(capacity: usize, bump: BS) -> Self {
+            Ok(Self { vec: BumpVec::generic_with_capacity_in(capacity, bump)? } )
         }
 
         /// Constructs a new `BumpString` from a `&str`.
         impl
         for pub fn from_str_in
         for pub fn try_from_str_in
-        fn generic_from_str_in(string: &str, bump: &'b BS) -> Self {
+        fn generic_from_str_in(string: &str, bump: BS) -> Self {
             let mut this = Self::new_in(bump);
             this.generic_push_str(string)?;
             Ok(this)
@@ -146,7 +146,7 @@ where
     }
 }
 
-impl<'b, 'a: 'b, BS> BumpString<'b, 'a, BS> {
+impl<'a, BS> BumpString<'a, BS> {
     /// Returns this `BumpString`'s capacity, in bytes.
     #[must_use]
     #[inline(always)]
@@ -224,7 +224,7 @@ impl<'b, 'a: 'b, BS> BumpString<'b, 'a, BS> {
     /// [`BumpVec<u8>`]: BumpVec
     /// [`&str`]: prim@str "&str"
     /// [`into_bytes`]: BumpString::into_bytes
-    pub fn from_utf8(vec: BumpVec<'b, 'a, u8, BS>) -> Result<Self, FromUtf8Error<BumpVec<'b, 'a, u8, BS>>> {
+    pub fn from_utf8(vec: BumpVec<'a, u8, BS>) -> Result<Self, FromUtf8Error<BumpVec<'a, u8, BS>>> {
         match str::from_utf8(vec.as_slice()) {
             Ok(_) => Ok(Self { vec }),
             Err(error) => Err(FromUtf8Error { error, bytes: vec }),
@@ -248,7 +248,7 @@ impl<'b, 'a: 'b, BS> BumpString<'b, 'a, BS> {
     /// ```
     #[inline(always)]
     #[must_use = "`self` will be dropped if the result is not used"]
-    pub fn into_bytes(self) -> BumpVec<'b, 'a, u8, BS> {
+    pub fn into_bytes(self) -> BumpVec<'a, u8, BS> {
         self.vec
     }
 
@@ -283,7 +283,7 @@ impl<'b, 'a: 'b, BS> BumpString<'b, 'a, BS> {
     /// safety, as `BumpString`s must be valid UTF-8.
     #[must_use]
     #[inline(always)]
-    pub unsafe fn as_mut_vec(&mut self) -> &BumpVec<'b, 'a, u8, BS> {
+    pub unsafe fn as_mut_vec(&mut self) -> &BumpVec<'a, u8, BS> {
         &mut self.vec
     }
 
@@ -326,7 +326,7 @@ impl<'b, 'a: 'b, BS> BumpString<'b, 'a, BS> {
     }
 }
 
-impl<'b, 'a: 'b, BS> BumpString<'b, 'a, BS>
+impl<'a, BS> BumpString<'a, BS>
 where
     BS: BumpScopeRef<'a>,
 {
@@ -521,7 +521,7 @@ where
     }
 }
 
-impl<'b, 'a: 'b, BS> fmt::Write for BumpString<'b, 'a, BS>
+impl<'a, BS> fmt::Write for BumpString<'a, BS>
 where
     BS: BumpScopeRef<'a>,
 {
@@ -536,19 +536,19 @@ where
     }
 }
 
-impl<'b, 'a, BS> Debug for BumpString<'b, 'a, BS> {
+impl<'a, BS> Debug for BumpString<'a, BS> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Debug::fmt(self.as_str(), f)
     }
 }
 
-impl<'b, 'a, BS> Display for BumpString<'b, 'a, BS> {
+impl<'a, BS> Display for BumpString<'a, BS> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Display::fmt(self.as_str(), f)
     }
 }
 
-impl<'b, 'a, BS> Deref for BumpString<'b, 'a, BS> {
+impl<'a, BS> Deref for BumpString<'a, BS> {
     type Target = str;
 
     #[inline]
@@ -557,7 +557,7 @@ impl<'b, 'a, BS> Deref for BumpString<'b, 'a, BS> {
     }
 }
 
-impl<'b, 'a, BS> DerefMut for BumpString<'b, 'a, BS> {
+impl<'a, BS> DerefMut for BumpString<'a, BS> {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut_str()
@@ -565,7 +565,7 @@ impl<'b, 'a, BS> DerefMut for BumpString<'b, 'a, BS> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'b, 'a, BS> core::ops::AddAssign<&str> for BumpString<'b, 'a, BS>
+impl<'a, BS> core::ops::AddAssign<&str> for BumpString<'a, BS>
 where
     BS: BumpScopeRef<'a>,
 {
@@ -575,35 +575,35 @@ where
     }
 }
 
-impl<'b, 'a, BS> AsRef<str> for BumpString<'b, 'a, BS> {
+impl<'a, BS> AsRef<str> for BumpString<'a, BS> {
     #[inline]
     fn as_ref(&self) -> &str {
         self.as_str()
     }
 }
 
-impl<'b, 'a, BS> AsMut<str> for BumpString<'b, 'a, BS> {
+impl<'a, BS> AsMut<str> for BumpString<'a, BS> {
     #[inline]
     fn as_mut(&mut self) -> &mut str {
         self.as_mut_str()
     }
 }
 
-impl<'b, 'a, BS> Borrow<str> for BumpString<'b, 'a, BS> {
+impl<'a, BS> Borrow<str> for BumpString<'a, BS> {
     #[inline]
     fn borrow(&self) -> &str {
         self.as_str()
     }
 }
 
-impl<'b, 'a, BS> BorrowMut<str> for BumpString<'b, 'a, BS> {
+impl<'a, BS> BorrowMut<str> for BumpString<'a, BS> {
     #[inline]
     fn borrow_mut(&mut self) -> &mut str {
         self.as_mut_str()
     }
 }
 
-impl<'b, 'a, BS> PartialEq for BumpString<'b, 'a, BS> {
+impl<'a, BS> PartialEq for BumpString<'a, BS> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         <str as PartialEq>::eq(self, other)
@@ -624,7 +624,7 @@ macro_rules! impl_partial_eq {
     ) => {
         $(
             $(#[$attr])*
-            impl<'b, 'a, BS> PartialEq<$string_like> for BumpString<'b, 'a, BS> {
+            impl<'a, BS> PartialEq<$string_like> for BumpString<'a, BS> {
                 #[inline]
                 fn eq(&self, other: &$string_like) -> bool {
                     <str as PartialEq>::eq(self, other)
@@ -637,14 +637,14 @@ macro_rules! impl_partial_eq {
             }
 
             $(#[$attr])*
-            impl<'b, 'a, BS> PartialEq<BumpString<'b, 'a, BS>> for $string_like {
+            impl<'a, BS> PartialEq<BumpString<'a, BS>> for $string_like {
                 #[inline]
-                fn eq(&self, other: &BumpString<'b, 'a, BS>) -> bool {
+                fn eq(&self, other: &BumpString<'a, BS>) -> bool {
                     <str as PartialEq>::eq(self, other)
                 }
 
                 #[inline]
-                fn ne(&self, other: &BumpString<'b, 'a, BS>) -> bool {
+                fn ne(&self, other: &BumpString<'a, BS>) -> bool {
                     <str as PartialEq>::ne(self, other)
                 }
             }
@@ -664,9 +664,9 @@ impl_partial_eq! {
     alloc::borrow::Cow<'_, str>,
 }
 
-impl<'b, 'a, BS> Eq for BumpString<'b, 'a, BS> {}
+impl<'a, BS> Eq for BumpString<'a, BS> {}
 
-impl<'b, 'a, BS> PartialOrd for BumpString<'b, 'a, BS> {
+impl<'a, BS> PartialOrd for BumpString<'a, BS> {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(self.cmp(other))
@@ -693,13 +693,13 @@ impl<'b, 'a, BS> PartialOrd for BumpString<'b, 'a, BS> {
     }
 }
 
-impl<'b, 'a, BS> Ord for BumpString<'b, 'a, BS> {
+impl<'a, BS> Ord for BumpString<'a, BS> {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         <str as Ord>::cmp(self, other)
     }
 }
 
-impl<'b, 'a, BS> Hash for BumpString<'b, 'a, BS> {
+impl<'a, BS> Hash for BumpString<'a, BS> {
     #[inline]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.vec.hash(state);
@@ -707,7 +707,7 @@ impl<'b, 'a, BS> Hash for BumpString<'b, 'a, BS> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'s, 'b, 'a, BS> Extend<&'s str> for BumpString<'b, 'a, BS>
+impl<'s, 'a, BS> Extend<&'s str> for BumpString<'a, BS>
 where
     BS: BumpScopeRef<'a>,
 {
@@ -720,9 +720,9 @@ where
 }
 
 #[cfg(feature = "alloc")]
-impl<'b, 'a, BS> From<BumpString<'b, 'a, BS>> for alloc::string::String {
+impl<'a, BS> From<BumpString<'a, BS>> for alloc::string::String {
     #[inline]
-    fn from(value: BumpString<'b, 'a, BS>) -> Self {
+    fn from(value: BumpString<'a, BS>) -> Self {
         value.as_str().into()
     }
 }
