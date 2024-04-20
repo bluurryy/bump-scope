@@ -15,7 +15,7 @@ use allocator_api2::alloc::Global;
 use crate::{
     bump_common_methods, bump_scope_methods, chunk_size::ChunkSize, doc_align_cant_decrease, error_behavior_generic_methods,
     polyfill::pointer, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment, RawChunk, Stats,
-    SupportedMinimumAlignment, UninitStats, WithoutDealloc, WithoutShrink,
+    SupportedMinimumAlignment, UninitStats, WithoutDealloc, WithoutShrink, DEFAULT_START_CHUNK_SIZE,
 };
 
 #[cfg(not(no_global_oom_handling))]
@@ -207,7 +207,7 @@ where
         /// This is equivalent to `Bump::try_with_size_in(512, allocator)`.
         for pub fn try_new_in
         fn generic_new_in(allocator: A) -> Self {
-            Self::generic_with_size_in(512, allocator)
+            Self::generic_with_size_in(DEFAULT_START_CHUNK_SIZE, allocator)
         }
 
         /// Constructs a new `Bump` with a chunk of at least `size` bytes with the provided allocator.

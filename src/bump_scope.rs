@@ -23,7 +23,7 @@ use crate::{
     polyfill::{nonnull, pointer},
     stats::UninitStats,
     ArrayLayout, BumpScopeGuard, Checkpoint, Chunk, ErrorBehavior, LayoutTrait, MinimumAlignment, RawChunk,
-    SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink, DEFAULT_START_CHUNK_SIZE,
 };
 
 #[cfg(not(no_global_oom_handling))]
@@ -139,11 +139,7 @@ where
         #[allow(clippy::uninit_assumed_init)]
         let allocator: A = unsafe { MaybeUninit::uninit().assume_init() };
 
-        let chunk = RawChunk::new_in(
-            ChunkSize::new(512)?, // TODO: create a const DEFAULT_SIZE = 512
-            None,
-            allocator,
-        )?;
+        let chunk = RawChunk::new_in(ChunkSize::new(DEFAULT_START_CHUNK_SIZE)?, None, allocator)?;
 
         self.chunk.set(chunk);
 

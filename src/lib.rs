@@ -366,6 +366,8 @@ use set_len_on_drop_by_ptr::SetLenOnDropByPtr;
 // This must be kept in sync with ChunkHeaders `repr(align(16))`.
 const CHUNK_ALIGN_MIN: usize = 16;
 
+const DEFAULT_START_CHUNK_SIZE: usize = 512;
+
 /// This trait marks types that don't need dropping.
 ///
 /// It is used as a bound for [`BumpBox`]'s [`into_ref`](BumpBox::into_ref) and [`into_mut`](BumpBox::into_mut) so you don't accidentally omit a drop that does matter.
