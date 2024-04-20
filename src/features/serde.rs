@@ -8,8 +8,8 @@ use serde::{
 };
 
 use crate::{
-    BumpBox, BumpString, BumpVec, FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev,
-    SupportedMinimumAlignment,
+    BumpBox, BumpScopeRef, BumpString, BumpVec, FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec,
+    MutBumpVecRev, SupportedMinimumAlignment,
 };
 
 impl<T> Serialize for BumpBox<'_, T>
@@ -36,7 +36,7 @@ where
     }
 }
 
-impl<T, A, const MIN_ALIGN: usize, const UP: bool> Serialize for BumpVec<'_, '_, T, A, MIN_ALIGN, UP>
+impl<T, B> Serialize for BumpVec<'_, '_, T, B>
 where
     T: Serialize,
 {
@@ -81,7 +81,7 @@ impl Serialize for FixedBumpString<'_> {
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool> Serialize for BumpString<'_, '_, A, MIN_ALIGN, UP> {
+impl<B> Serialize for BumpString<'_, '_, B> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -175,11 +175,10 @@ where
     }
 }
 
-impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool> DeserializeSeed<'de> for &'_ mut BumpVec<'_, '_, T, A, MIN_ALIGN, UP>
+impl<'de, 'a, T, B> DeserializeSeed<'de> for &'_ mut BumpVec<'_, 'a, T, B>
 where
     T: Deserialize<'de>,
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    B: BumpScopeRef<'a>,
 {
     type Value = ();
 
@@ -191,11 +190,10 @@ where
     }
 }
 
-impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool> Visitor<'de> for &'_ mut BumpVec<'_, '_, T, A, MIN_ALIGN, UP>
+impl<'de, 'a, T, B> Visitor<'de> for &'_ mut BumpVec<'_, 'a, T, B>
 where
     T: Deserialize<'de>,
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    B: BumpScopeRef<'a>,
 {
     type Value = ();
 
@@ -335,10 +333,9 @@ impl<'de> Visitor<'de> for &'_ mut FixedBumpString<'_> {
     }
 }
 
-impl<'de, A, const MIN_ALIGN: usize, const UP: bool> DeserializeSeed<'de> for &'_ mut BumpString<'_, '_, A, MIN_ALIGN, UP>
+impl<'de, 'a, B> DeserializeSeed<'de> for &'_ mut BumpString<'_, '_, B>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    B: BumpScopeRef<'a>,
 {
     type Value = ();
 
@@ -350,10 +347,9 @@ where
     }
 }
 
-impl<'de, A, const MIN_ALIGN: usize, const UP: bool> Visitor<'de> for &'_ mut BumpString<'_, '_, A, MIN_ALIGN, UP>
+impl<'de, 'a, B> Visitor<'de> for &'_ mut BumpString<'_, '_, B>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    B: BumpScopeRef<'a>,
 {
     type Value = ();
 

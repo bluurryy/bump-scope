@@ -256,7 +256,7 @@ use core::{
 };
 
 mod allocator;
-#[cfg(test)]
+#[cfg(any())]
 pub(crate) mod any_bump;
 mod bump;
 mod bump_align_guard;
@@ -292,12 +292,13 @@ mod polyfill;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
 mod stats;
-#[cfg(test)]
+#[cfg(any())]
 mod with_drop;
 mod without_dealloc;
 
 #[cfg(feature = "std")]
 mod bump_pool;
+mod bump_scope_ref;
 
 use allocator_api2::alloc::{AllocError, Allocator};
 
@@ -305,7 +306,7 @@ use allocator_api2::alloc::{AllocError, Allocator};
 use allocator_api2::alloc::handle_alloc_error;
 
 pub use allocator_api2;
-#[cfg(test)]
+#[cfg(any())]
 pub use any_bump::AnyBump;
 pub use bump::Bump;
 pub use bump_box::BumpBox;
@@ -313,6 +314,7 @@ pub use bump_box::BumpBox;
 pub use bump_pool::{BumpPool, BumpPoolGuard};
 pub use bump_scope::BumpScope;
 pub use bump_scope_guard::{BumpScopeGuard, BumpScopeGuardRoot, Checkpoint};
+pub use bump_scope_ref::BumpScopeRef;
 pub use bump_string::BumpString;
 pub use bump_vec::BumpVec;
 pub use drain::Drain;
@@ -325,7 +327,7 @@ pub use mut_bump_string::MutBumpString;
 pub use mut_bump_vec::MutBumpVec;
 pub use mut_bump_vec_rev::MutBumpVecRev;
 pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
-#[cfg(test)]
+#[cfg(any())]
 pub use with_drop::WithDrop;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
@@ -874,24 +876,6 @@ macro_rules! bump_common_methods {
             unsafe { self.chunk.get().allocator().as_ref() }
         }
 
-        #[cfg(test)]
-        /// Wraps `self` in [`WithDrop`] so that allocations return `&mut T`.
-        pub fn with_drop(self) -> WithDrop<Self> {
-            WithDrop::new(self)
-        }
-
-        #[cfg(test)]
-        /// Wraps `&self` in [`WithDrop`] so that allocations return `&mut T`.
-        pub fn with_drop_ref(&self) -> WithDrop<&Self> {
-            WithDrop::new(self)
-        }
-
-        #[cfg(test)]
-        /// Wraps `&mut self` in [`WithDrop`] so that allocations return `&mut T`.
-        pub fn with_drop_mut(&mut self) -> WithDrop<&mut Self> {
-            WithDrop::new(self)
-        }
-
         /// Wraps `&self` in [`WithoutDealloc`] so that [`deallocate`] becomes a no-op.
         ///
         /// [`deallocate`]: Allocator::deallocate
@@ -1392,41 +1376,6 @@ define_alloc_methods! {
 
     /// Allocate a `str` from format arguments.
     impl
-    /// For better performance prefer [`alloc_fmt_mut`](Bump::alloc_fmt_mut).
-    do panics
-    /// Panics if a formatting trait implementation returned an error.
-    do examples
-    /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// #
-    /// let one = 1;
-    /// let two = 2;
-    /// let string = bump.alloc_fmt(format_args!("{one} + {two} = {}", one + two));
-    ///
-    /// assert_eq!(string, "1 + 2 = 3");
-    /// ```
-    for pub fn alloc_fmt
-    /// For better performance prefer [`try_alloc_fmt_mut`](Bump::try_alloc_fmt_mut).
-    do errors
-    /// Errors if a formatting trait implementation returned an error.
-    for pub fn try_alloc_fmt
-    fn generic_alloc_fmt(&self, args: fmt::Arguments) -> BumpBox<str> | BumpBox<'a, str> {
-        if let Some(string) = args.as_str() {
-            return self.generic_alloc_str(string);
-        }
-
-        let mut string = BumpString::generic_with_capacity_in(0, self)?;
-
-        if fmt::Write::write_fmt(&mut string, args).is_err() {
-            return Err(B::capacity_overflow());
-        }
-
-        Ok(string.into_boxed_str())
-    }
-
-    /// Allocate a `str` from format arguments.
-    impl
     /// Unlike [`alloc_fmt`](Bump::alloc_fmt), this function requires a mutable `Bump(Scope)`.
     do panics
     /// Panics if a formatting trait implementation returned an error.
@@ -1458,33 +1407,6 @@ define_alloc_methods! {
         }
 
         Ok(string.into_boxed_str())
-    }
-
-    /// Allocate elements of an iterator into a slice.
-    do examples
-    /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// #
-    /// let slice = bump.alloc_iter([1, 2, 3]);
-    /// assert_eq!(slice, [1, 2, 3]);
-    /// ```
-    impl
-    /// For better performance prefer [`alloc_iter_exact`](Bump::try_alloc_iter_exact) or [`alloc_iter_mut(_rev)`](Bump::alloc_iter_mut).
-    for pub fn alloc_iter
-    /// For better performance prefer [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) or [`try_alloc_iter_mut(_rev)`](Bump::try_alloc_iter_mut).
-    for pub fn try_alloc_iter
-    fn generic_alloc_iter<{T}>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
-        let iter = iter.into_iter();
-        let capacity = iter.size_hint().0;
-
-        let mut vec = BumpVec::<T, A, MIN_ALIGN, UP>::generic_with_capacity_in(capacity, self)?;
-
-        for value in iter {
-            vec.generic_push(value)?;
-        }
-
-        Ok(vec.into_boxed_slice())
     }
 
     /// Allocate elements of an `ExactSizeIterator` into a slice.
@@ -1782,6 +1704,176 @@ define_alloc_methods! {
     }
 }
 
+macro_rules! define_alloc_methods2 {
+    (
+        macro $macro_name:ident
+
+        $(
+            $(#[$attr:meta])*
+            $(do panics $(#[doc = $panics:literal])*)?
+            $(do errors $(#[doc = $errors:literal])*)?
+            $(do examples $(#[doc = $examples:literal])*)?
+            impl
+
+            $(#[$attr_infallible:meta])*
+            $(do panics $(#[doc = $infallible_panics:literal])*)?
+            $(do errors $(#[doc = $infallible_errors:literal])*)?
+            $(do examples $(#[doc = $infallible_examples:literal])*)?
+            for $infallible:item $infallible_scope:item
+
+            $(#[$attr_fallible:meta])*
+            $(do panics $(#[doc = $fallible_panics:literal])*)?
+            $(do errors $(#[doc = $fallible_errors:literal])*)?
+            $(do examples $(#[doc = $fallible_examples:literal])*)?
+            for $fallible:item $fallible_scope:item
+        )*
+
+    ) => {
+        macro_rules! $macro_name {
+            (Bump) => {
+                $(
+                    $(#[$attr])*
+                    $(#[$attr_infallible])*
+
+                    /// # Panics
+                    /// Panics if the allocation fails.
+                    $(#[doc = "\n"] $(#[doc = $panics])*)?
+                    $(#[doc = "\n"] $(#[doc = $infallible_panics])*)?
+
+                    #[doc = $crate::map!({ $($($errors)*)? $($($infallible_errors)*)? } become { "# Errors" } else { "" })]
+                    $(#[doc = "\n"] $(#[doc = $errors])*)?
+                    $(#[doc = "\n"] $(#[doc = $infallible_errors])*)?
+
+                    #[doc = $crate::map!({ $($($examples)*)? $($($infallible_examples)*)? } become { "# Examples" } else { "" })]
+                    $(#[doc = "\n"] $(#[doc = $examples])*)?
+                    $(#[doc = "\n"] $(#[doc = $infallible_examples])*)?
+
+                    #[inline(always)]
+                    #[cfg(not(no_global_oom_handling))]
+                    $infallible
+                )*
+
+                $(
+                    $(#[$attr])*
+                    $(#[$attr_fallible])*
+
+                    #[doc = $crate::map!({ $($($panics)*)? $($($fallible_panics)*)? } become { "# Panics" } else { "" })]
+                    $(#[doc = "\n"] $(#[doc = $panics])*)?
+                    $(#[doc = "\n"] $(#[doc = $fallible_panics])*)?
+
+                    /// # Errors
+                    /// Errors if the allocation fails.
+                    $(#[doc = "\n"] $(#[doc = $errors])*)?
+                    $(#[doc = "\n"] $(#[doc = $fallible_errors])*)?
+
+                    #[doc = $crate::map!({ $($($examples)*)? $($($fallible_examples)*)? } become { "# Examples" } else { "" })]
+                    $(#[doc = "\n"] $(#[doc = $examples])*)?
+                    $(#[doc = "\n"] $(#[doc = $fallible_examples])*)?
+
+                    #[inline(always)]
+                    $fallible
+                )*
+            };
+            (BumpScope) => {
+                $(
+                    $(#[$attr])*
+                    $(#[$attr_infallible])*
+
+                    /// # Panics
+                    /// Panics if the allocation fails.
+                    $(#[doc = "\n"] $(#[doc = $panics])*)?
+                    $(#[doc = "\n"] $(#[doc = $infallible_panics])*)?
+
+                    #[doc = $crate::map!({ $($($errors)*)? $($($infallible_errors)*)? } become { "# Errors" } else { "" })]
+                    $(#[doc = "\n"] $(#[doc = $errors])*)?
+                    $(#[doc = "\n"] $(#[doc = $infallible_errors])*)?
+
+                    #[doc = $crate::map!({ $($($examples)*)? $($($infallible_examples)*)? } become { "# Examples" } else { "" })]
+                    $(#[doc = "\n"] $(#[doc = $examples])*)?
+                    $(#[doc = "\n"] $(#[doc = $infallible_examples])*)?
+
+                    #[inline(always)]
+                    #[cfg(not(no_global_oom_handling))]
+                    $infallible_scope
+                )*
+
+                $(
+                    $(#[$attr])*
+                    $(#[$attr_fallible])*
+
+                    #[doc = $crate::map!({ $($($panics)*)? $($($fallible_panics)*)? } become { "# Panics" } else { "" })]
+                    $(#[doc = "\n"] $(#[doc = $panics])*)?
+                    $(#[doc = "\n"] $(#[doc = $fallible_panics])*)?
+
+                    /// # Errors
+                    /// Errors if the allocation fails.
+                    $(#[doc = "\n"] $(#[doc = $errors])*)?
+                    $(#[doc = "\n"] $(#[doc = $fallible_errors])*)?
+
+                    #[doc = $crate::map!({ $($($examples)*)? $($($fallible_examples)*)? } become { "# Examples" } else { "" })]
+                    $(#[doc = "\n"] $(#[doc = $examples])*)?
+                    $(#[doc = "\n"] $(#[doc = $fallible_examples])*)?
+
+                    #[inline(always)]
+                    $fallible_scope
+                )*
+            };
+        }
+
+        pub(crate) use $macro_name;
+    };
+}
+
+define_alloc_methods2! {
+    macro alloc_methods2
+
+    /// Allocate elements of an iterator into a slice.
+    do examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// #
+    /// let slice = bump.alloc_iter([1, 2, 3]);
+    /// assert_eq!(slice, [1, 2, 3]);
+    /// ```
+    impl
+    /// For better performance prefer [`alloc_iter_exact`](Bump::try_alloc_iter_exact) or [`alloc_iter_mut(_rev)`](Bump::alloc_iter_mut).
+    for
+    pub fn alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> { infallible(self.as_scope().generic_alloc_iter(iter)) }
+    pub fn alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<'a, [T]> { infallible(self.as_scope().generic_alloc_iter(iter)) }
+    /// For better performance prefer [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) or [`try_alloc_iter_mut(_rev)`](Bump::try_alloc_iter_mut).
+    for
+    pub fn try_alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<[T]>, AllocError> { self.as_scope().generic_alloc_iter(iter) }
+    pub fn try_alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<'a, [T]>, AllocError> { self.as_scope().generic_alloc_iter(iter) }
+
+
+    /// Allocate a `str` from format arguments.
+    impl
+    /// For better performance prefer [`alloc_fmt_mut`](Bump::alloc_fmt_mut).
+    do panics
+    /// Panics if a formatting trait implementation returned an error.
+    do examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// #
+    /// let one = 1;
+    /// let two = 2;
+    /// let string = bump.alloc_fmt(format_args!("{one} + {two} = {}", one + two));
+    ///
+    /// assert_eq!(string, "1 + 2 = 3");
+    /// ```
+    for
+    pub fn alloc_fmt(&self, args: fmt::Arguments) -> BumpBox<str> { infallible(self.as_scope().generic_alloc_fmt(args)) }
+    pub fn alloc_fmt(&self, args: fmt::Arguments) -> BumpBox<'a, str> { infallible(self.as_scope().generic_alloc_fmt(args)) }
+    /// For better performance prefer [`try_alloc_fmt_mut`](Bump::try_alloc_fmt_mut).
+    do errors
+    /// Errors if a formatting trait implementation returned an error.
+    for
+    pub fn try_alloc_fmt(&self, args: fmt::Arguments) -> Result<BumpBox<str>, AllocError> { self.as_scope().generic_alloc_fmt(args) }
+    pub fn try_alloc_fmt(&self, args: fmt::Arguments) -> Result<BumpBox<'a, str>, AllocError> { self.as_scope().generic_alloc_fmt(args) }
+}
+
 #[doc = doc_alloc_methods!()]
 impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
 where
@@ -1790,10 +1882,56 @@ where
     alloc_methods!(BumpScope);
 }
 
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    Self: BumpScopeRef<'a>,
+{
+    alloc_methods2!(BumpScope);
+
+    pub(crate) fn generic_alloc_iter<T, E: ErrorBehavior>(
+        &self,
+        iter: impl IntoIterator<Item = T>,
+    ) -> Result<crate::BumpBox<'a, [T]>, E> {
+        let iter = iter.into_iter();
+        let capacity = iter.size_hint().0;
+
+        let mut vec = crate::BumpVec::<T, Self>::generic_with_capacity_in(capacity, self)?;
+
+        for value in iter {
+            vec.generic_push(value)?;
+        }
+
+        Ok(vec.into_boxed_slice())
+    }
+
+    pub(crate) fn generic_alloc_fmt<E: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<BumpBox<'a, str>, E> {
+        if let Some(string) = args.as_str() {
+            return self.generic_alloc_str(string);
+        }
+
+        let mut string = BumpString::generic_with_capacity_in(0, self)?;
+
+        if fmt::Write::write_fmt(&mut string, args).is_err() {
+            return Err(E::capacity_overflow());
+        }
+
+        Ok(string.into_boxed_str())
+    }
+}
+
 #[doc = doc_alloc_methods!()]
 impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     alloc_methods!(Bump);
+}
+
+impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    for<'a> BumpScope<'a, A, MIN_ALIGN, UP>: BumpScopeRef<'a>,
+{
+    alloc_methods2!(Bump);
 }

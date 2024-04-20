@@ -5,7 +5,7 @@ use core::fmt;
 
 use allocator_api2::alloc::Allocator;
 
-use crate::{Bump, BumpBox, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment};
+use crate::{Bump, BumpBox, BumpScope, BumpScopeRef, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment};
 
 pub(crate) trait Sealed {
     fn alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<BumpBox<MaybeUninit<T>>, B>;
@@ -151,6 +151,7 @@ impl<U: Sealed> Sealed for &mut U {
 impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Sealed for BumpScope<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    Self: BumpScopeRef<'a>,
 {
     #[inline(always)]
     fn alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<BumpBox<MaybeUninit<T>>, B> {
@@ -215,6 +216,7 @@ where
 impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Sealed for Bump<A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    Self: BumpScopeRef<'a>,
 {
     #[inline(always)]
     fn alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<BumpBox<MaybeUninit<T>>, B> {

@@ -23,9 +23,6 @@ use crate::{
     Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 
-#[cfg(test)]
-use crate::WithDrop;
-
 /// A bump allocation scope whose allocations are valid for the lifetime of its associated [`BumpScopeGuard`] or closure.
 ///
 /// Alternatively a [`Bump`] can be turned into a `BumpScope` with [`as_scope`], [`as_mut_scope`] and `into`.

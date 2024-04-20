@@ -18,9 +18,6 @@ use crate::{
     WithoutDealloc, WithoutShrink,
 };
 
-#[cfg(test)]
-use crate::WithDrop;
-
 /// A bump allocator.
 ///
 /// Every constructor of `Bump` needs to allocate memory.
