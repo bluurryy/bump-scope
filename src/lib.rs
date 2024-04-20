@@ -1885,6 +1885,7 @@ where
 impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    Self: BumpScopeRef<'a>,
 {
     alloc_methods2!(BumpScope);
 
@@ -2090,7 +2091,13 @@ where
             return self.generic_alloc_str(string);
         }
 
-        todo!()
+        let mut string = BumpString::generic_with_capacity_in(0, self)?;
+
+        if fmt::Write::write_fmt(&mut string, args).is_err() {
+            return Err(E::capacity_overflow());
+        }
+
+        Ok(string.into_boxed_str())
     }
 }
 
@@ -2105,6 +2112,7 @@ where
 impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    for<'a> &'a Self: BumpScopeRef<'a>,
 {
     alloc_methods2!(Bump);
 }

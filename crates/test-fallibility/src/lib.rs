@@ -19,8 +19,8 @@ macro_rules! type_definitions {
         type BumpScope<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScope<'a, Global, MIN_ALIGN, $up>;
         type BumpScopeGuard<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuard<'a, Global, MIN_ALIGN, $up>;
         type BumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuardRoot<'a, Global, MIN_ALIGN, $up>;
-        type BumpVec<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<'b, 'a, T, Global, MIN_ALIGN, $up>;
-        type BumpString<'b, 'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<'b, 'a, Global, MIN_ALIGN, $up>;
+        type BumpVec<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<'a, T, &'b Bump<MIN_ALIGN>>;
+        type BumpString<'b, 'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<'a, &'b Bump<MIN_ALIGN>>;
         type MutBumpVec<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<'b, 'a, T, Global, MIN_ALIGN, $up>;
         type MutBumpVecRev<'b, 'a, T, const MIN_ALIGN: usize = 1> =
             bump_scope::MutBumpVecRev<'b, 'a, T, Global, MIN_ALIGN, $up>;
@@ -287,15 +287,15 @@ up_and_down! {
         MutBumpString::try_with_capacity_in(capacity, bump)
     }
 
-    pub fn BumpVec_try_extend_from_array(vec: &mut BumpVec<u32>, array: [u32; 24]) -> Result {
+    pub fn BumpVec_try_extend_from_array<'b, 'a: 'b>(vec: &mut BumpVec<'b, 'a, u32>, array: [u32; 24]) -> Result {
         vec.try_extend_from_array(array)
     }
 
-    pub fn BumpVec_try_extend_from_slice_clone(vec: &mut BumpVec<u32>, slice: &[u32]) -> Result {
+    pub fn BumpVec_try_extend_from_slice_clone<'b, 'a: 'b>(vec: &mut BumpVec<'b, 'a, u32>, slice: &[u32]) -> Result {
         vec.try_extend_from_slice_clone(slice)
     }
 
-    pub fn BumpVec_try_extend_from_slice_copy(vec: &mut BumpVec<u32>, slice: &[u32]) -> Result {
+    pub fn BumpVec_try_extend_from_slice_copy<'b, 'a: 'b>(vec: &mut BumpVec<'b, 'a, u32>, slice: &[u32]) -> Result {
         vec.try_extend_from_slice_copy(slice)
     }
 
