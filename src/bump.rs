@@ -13,12 +13,7 @@ use allocator_api2::alloc::Allocator;
 use allocator_api2::alloc::Global;
 
 use crate::{
-    bump_common_methods,
-    chunk_size::ChunkSize,
-    doc_align_cant_decrease, empty_chunk_header, error_behavior_generic_methods,
-    polyfill::{cfg_const, pointer},
-    BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment,
-    WithoutDealloc, WithoutShrink,
+    bump_common_methods, chunk_size::ChunkSize, doc_align_cant_decrease, empty_chunk_header, error_behavior_generic_methods, polyfill::{cfg_const, pointer}, BumpScope, BumpScopeGuardRoot, Checkpoint, ConstDefault, ErrorBehavior, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink
 };
 
 #[cfg(test)]
@@ -127,6 +122,23 @@ where
     }
 }
 
+impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP, true>
+where
+    A: Allocator + Clone + ConstDefault,
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+{
+    cfg_const! {
+        #[cfg_const(feature = "nightly-const-refs-to-static")]
+        /// Constructs a new `Bump` without doing any allocations.
+        ///
+        /// **This is `const` when the `nightly-const-refs-to-static` is enabled.**
+        #[must_use]
+        pub fn const_new() -> Self {
+            Self { chunk: Cell::new(unsafe { RawChunk::from_header(empty_chunk_header().cast()) }) }
+        }
+    }
+}
+
 #[cfg(feature = "alloc")]
 impl<const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Bump<Global, MIN_ALIGN, UP, CONST_NEW>
 where
@@ -159,22 +171,6 @@ where
         for pub fn try_with_capacity
         fn generic_with_capacity(layout: Layout) -> Self {
             Self::generic_with_capacity_in(layout, Global)
-        }
-    }
-}
-
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const CONST_NEW: bool> Bump<A, MIN_ALIGN, UP, CONST_NEW>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-{
-    cfg_const! {
-        #[cfg_const(feature = "nightly-const-refs-to-static")]
-        /// Constructs a new `Bump` without doing any allocations.
-        ///
-        /// **This is `const` when the `nightly-const-refs-to-static` is enabled.**
-        #[must_use]
-        pub fn const_new() -> Self {
-            Self { chunk: Cell::new(unsafe { RawChunk::from_header(empty_chunk_header().cast()) }) }
         }
     }
 }
