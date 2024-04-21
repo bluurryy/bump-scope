@@ -130,7 +130,7 @@ where
         debug_assert!(self.chunk.get().is_the_empty_chunk());
 
         // we only point to an empty chunk if we were created by `uninit` which is only available with `!INIT`
-        assert!(INIT);
+        assert!(!INIT);
 
         // SAFETY:
         // We are pointing to the empty chunk. This can only happen when `Bump::uninit` was called.
