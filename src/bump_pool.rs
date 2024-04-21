@@ -102,7 +102,7 @@ where
     /// Constructs a new `BumpPool`.
     #[inline]
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self::new_in(Global)
     }
 }
@@ -115,9 +115,9 @@ where
     /// Constructs a new `BumpPool` with the provided allocator.
     #[inline]
     #[must_use]
-    pub fn new_in(allocator: A) -> Self {
+    pub const fn new_in(allocator: A) -> Self {
         Self {
-            bumps: Mutex::default(),
+            bumps: Mutex::new(Vec::new()),
             allocator,
         }
     }
