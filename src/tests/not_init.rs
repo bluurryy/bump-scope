@@ -28,3 +28,19 @@ fn into_init() {
     assert!(bump.stats().size() > 0);
     drop(bump);
 }
+
+#[test]
+fn init_reserve_bytes() {
+    let bump: Bump = Bump::new();
+    bump.reserve_bytes(1024);
+    assert!(bump.stats().capacity() >= 1024);
+    drop(bump);
+}
+
+#[test]
+fn uninit_reserve_bytes() {
+    let bump: Bump = Bump::uninit();
+    bump.reserve_bytes(1024);
+    assert!(bump.stats().capacity() >= 1024);
+    drop(bump);
+}

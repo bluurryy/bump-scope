@@ -1790,6 +1790,24 @@ define_alloc_methods! {
     for pub fn reserve_bytes
     for pub fn try_reserve_bytes
     fn generic_reserve_bytes(&self, additional: usize) {
+        let layout = match Layout::from_size_align(additional, 1) {
+            Ok(ok) => ok,
+            Err(_) => return Err(B::capacity_overflow()),
+        };
+
+        if !INIT && self.chunk.get().is_the_empty_chunk() {
+            // SAFETY:
+            // We are pointing to the empty chunk. This can only happen when `Bump::uninit` was called.
+            // This is only available for `A = Global`.
+            // Global is a ZST without a drop implementation, so its sound to create it like this.
+            #[allow(clippy::uninit_assumed_init)]
+            let allocator: A = unsafe { MaybeUninit::uninit().assume_init() };
+
+            let new_chunk = RawChunk::new_in(ChunkSize::for_capacity(layout)?, None, allocator)?;
+            self.chunk.set(new_chunk);
+            return Ok(());
+        }
+
         let mut additional = additional;
         let mut chunk = self.chunk.get();
 
@@ -1807,10 +1825,6 @@ define_alloc_methods! {
             }
         }
 
-        let layout = match Layout::from_size_align(additional, 1) {
-            Ok(ok) => ok,
-            Err(_) => return Err(B::capacity_overflow()),
-         };
         chunk.append_for(layout).map(drop)
     }
 }
