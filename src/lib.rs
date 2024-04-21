@@ -259,7 +259,7 @@
 //! That means that it has already allocated a chunk from its backing allocator.
 //!
 //! When `INIT` is false, the bump allocator may or may not have allocated chunks.
-//! You can only get an `INIT = false` bump from [`Bump::uninit`].
+//! You can create a bump allocator with no allocated chunks with [`Bump::uninit`].
 //!
 //! You need an initialized bump to create scopes via `scoped` and `scope_guard`.
 //! You can convert an uninitialized `Bump(Scope)` into an initialized one with `into_init` or `as_init(_mut)`.
