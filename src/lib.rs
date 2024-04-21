@@ -255,17 +255,17 @@
 //!
 //! # `INIT` parameter?
 //! When `INIT` is true, the bump allocator is in an initialized state.
-//! That means that it has already allocated a chunk from its backing allocator.
+//! That means that it must have already allocated a chunk from its backing allocator.
 //!
 //! When `INIT` is false, the bump allocator may or may not have allocated chunks.
 //! You can create a bump allocator with no allocated chunks with [`Bump::uninit`].
 //!
-//! You need an initialized bump to create scopes via `scoped` and `scope_guard`.
+//! You need an initialized `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
 //! You can convert an uninitialized `Bump(Scope)` into an initialized one with `into_init` or `as_init(_mut)`.
 //!
 //! The point of uninitialized bump allocators is that they don't need to allocate memory.
 //! They are const constructible when the feature `nightly-const-refs-to-static` is enabled.
-//! This makes a thread local bump constructible with the [`const {}` syntax](std::thread_local), making it more performant.
+//! This makes a thread local `Bump` constructible with the [`const {}` syntax](std::thread_local), making it more performant.
 
 #[doc(hidden)]
 #[cfg(feature = "alloc")]
