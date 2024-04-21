@@ -1303,7 +1303,10 @@ define_alloc_methods! {
         self.generic_alloc_with(Default::default)
     }
 
-    #[doc(hidden)]
+    #[allow(clippy::missing_errors_doc)]
+    /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
+    ///
+    /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
     impl
     for pub fn alloc_try_with
     for pub fn try_alloc_try_with
