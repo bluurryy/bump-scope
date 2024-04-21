@@ -1,6 +1,9 @@
 # Changelog
 
-## 0.1.9 (2024-04-21)
+## 0.2.1 (2024-04-21)
+- **fixed:** docs and changelog
+
+## 0.2.0 (2024-04-21)
 - **breaking:** adds the `INIT` const param to signify whether the bump has an allocated chunk
 - **added:** `Bump::uninit` to create a `Bump` without allocation (and `const` with feature `nightly-const-refs-to-static`)
 - **breaking:** `BumpVec::into_iter` returns `IntoIter<'a, T>` instead of `IntoIter<'b, T>`
