@@ -44,7 +44,6 @@ Unlike `bumpalo`, this crate...
 - You can efficiently allocate items from *any* `Iterator` with `alloc_iter_mut`(`_rev`).
 - Every method that panics on allocation failure has a fallible `try_*` counterpart.
 - `Bump`'s base allocator is generic.
-- `Bump` needs to allocate on construction.
 - `Bump` and `BumpScope` have the same repr as `NonNull<u8>`. (vs 3x pointer sized)
 - Won't try to allocate a smaller chunk if allocation failed.
 - No built-in allocation limit. You can provide an allocator that enforces an allocation limit (see `tests/limit_memory_usage.rs`).
