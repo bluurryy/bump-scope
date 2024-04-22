@@ -106,12 +106,7 @@ where
 
     #[inline(always)]
     pub(crate) fn ensure_allocated<E: ErrorBehavior>(&self) -> Result<(), E> {
-        if GUARANTEED_ALLOCATED {
-            // we can only point to the empty chunk if we did a `unallocated`
-            return Ok(());
-        }
-
-        if self.chunk.get().is_the_empty_chunk() {
+        if self.is_unallocated() {
             self.allocate_first_chunk()?;
         }
 
