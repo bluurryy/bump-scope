@@ -8,9 +8,11 @@ use bump_scope::{
 
 trait Bumper {
     fn with_capacity(layout: Layout) -> Self;
+    #[allow(dead_code)]
     fn alloc<T>(&self, value: T) -> &mut T;
     fn alloc_with<T>(&self, f: impl FnOnce() -> T) -> &mut T;
     fn alloc_try_with<T, E>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<&mut T, E>;
+    #[allow(dead_code)]
     fn try_alloc<T>(&self, value: T) -> Result<&mut T, AllocError>;
     fn try_alloc_with<T>(&self, f: impl FnOnce() -> T) -> Result<&mut T, AllocError>;
     fn try_alloc_try_with<T, E>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<Result<&mut T, E>, AllocError>;
@@ -91,6 +93,7 @@ use criterion::*;
 type Small = u8;
 type Big = [usize; 32];
 
+#[allow(dead_code)]
 fn alloc<B: Bumper, T: Default>(n: usize) {
     let bump = B::with_capacity(Layout::array::<T>(n).unwrap());
 
@@ -131,6 +134,7 @@ fn alloc_try_with_err<B: Bumper, T, E: Default>(n: usize) {
     }
 }
 
+#[allow(dead_code)]
 fn try_alloc<B: Bumper, T: Default>(n: usize) {
     let bump = B::with_capacity(Layout::array::<T>(n).unwrap());
 
@@ -151,6 +155,7 @@ fn try_alloc_with<B: Bumper, T: Default>(n: usize) {
     }
 }
 
+#[allow(dead_code)]
 fn try_alloc_try_with_ok<B: Bumper, T: Default, E>(n: usize) {
     let bump = B::with_capacity(Layout::array::<Result<T, E>>(n).unwrap());
 
@@ -161,6 +166,7 @@ fn try_alloc_try_with_ok<B: Bumper, T: Default, E>(n: usize) {
     }
 }
 
+#[allow(dead_code)]
 fn try_alloc_try_with_err<B: Bumper, T, E: Default>(n: usize) {
     // Only enough capacity for one, since the allocation is undone.
     let bump = B::with_capacity(Layout::array::<Result<T, E>>(n).unwrap());
@@ -179,151 +185,124 @@ fn func(f: impl Fn(usize)) -> impl Fn(&mut Bencher) {
 }
 
 #[rustfmt::skip]
-fn bench_alloc(c: &mut Criterion) {
-    let mut group = c.benchmark_group("alloc");
+fn bench_alloc_u8(c: &mut Criterion) {
+    let mut group = c.benchmark_group("alloc_u8");
     group.throughput(Throughput::Elements(ALLOCATIONS as u64));
-    group.bench_function("u8_bumpalo", func(alloc::<bumpalo::Bump, u8>));
-    group.bench_function("u32_bumpalo", func(alloc::<bumpalo::Bump, u32>));
-    group.bench_function("u8_up", func(alloc::<Bump<Global, 1, true>, u8>));
-    group.bench_function("u8_down", func(alloc::<Bump<Global, 1, false>, u8>));
-    group.bench_function("u32_up", func(alloc::<Bump<Global, 1, true>, u32>));
-    group.bench_function("u32_down", func(alloc::<Bump<Global, 1, false>, u32>));
-    group.bench_function("u32_aligned_up", func(alloc::<Bump<Global, 4, true>, u32>));
-    group.bench_function("u32_aligned_down", func(alloc::<Bump<Global, 4, false>, u32>));
-    group.bench_function("u32_overaligned_up", func(alloc::<Bump<Global, 16, true>, u32>));
-    group.bench_function("u32_overaligned_down", func(alloc::<Bump<Global, 16, false>, u32>));
+    group.bench_function("bumpalo", func(alloc_with::<bumpalo::Bump, u8>));
+    group.bench_function("up", func(alloc_with::<Bump<Global, 1, true>, u8>));
+    group.bench_function("down", func(alloc_with::<Bump<Global, 1, false>, u8>));
 }
 
 #[rustfmt::skip]
-fn bench_alloc_with(c: &mut Criterion) {
-    let mut group = c.benchmark_group("alloc-with");
+fn bench_alloc_u32(c: &mut Criterion) {
+    let mut group = c.benchmark_group("alloc_u32");
     group.throughput(Throughput::Elements(ALLOCATIONS as u64));
-    group.bench_function("u8_bumpalo", func(alloc_with::<bumpalo::Bump, u8>));
-    group.bench_function("u32_bumpalo", func(alloc_with::<bumpalo::Bump, u32>));
-    group.bench_function("u8_up", func(alloc_with::<Bump<Global, 1, true>, u8>));
-    group.bench_function("u8_down", func(alloc_with::<Bump<Global, 1, false>, u8>));
-    group.bench_function("u32_up", func(alloc_with::<Bump<Global, 1, true>, u32>));
-    group.bench_function("u32_down", func(alloc_with::<Bump<Global, 1, false>, u32>));
-    group.bench_function("u32_aligned_up", func(alloc_with::<Bump<Global, 4, true>, u32>));
-    group.bench_function("u32_aligned_down", func(alloc_with::<Bump<Global, 4, false>, u32>));
-    group.bench_function("u32_overaligned_up", func(alloc_with::<Bump<Global, 16, true>, u32>));
-    group.bench_function("u32_overaligned_down", func(alloc_with::<Bump<Global, 16, false>, u32>));
+    group.bench_function("bumpalo", func(alloc_with::<bumpalo::Bump, u32>));
+    group.bench_function("up", func(alloc_with::<Bump<Global, 1, true>, u32>));
+    group.bench_function("up_aligned", func(alloc_with::<Bump<Global, 4, true>, u32>));
+    group.bench_function("up_overaligned", func(alloc_with::<Bump<Global, 16, true>, u32>));
+    group.bench_function("down", func(alloc_with::<Bump<Global, 1, false>, u32>));
+    group.bench_function("down_aligned", func(alloc_with::<Bump<Global, 4, false>, u32>));
+    group.bench_function("down_overaligned", func(alloc_with::<Bump<Global, 16, false>, u32>));
 }
 
 #[rustfmt::skip]
-fn bench_alloc_try_with_ok(c: &mut Criterion) {
-    let mut group = c.benchmark_group("alloc-try-with-ok");
+fn bench_alloc_u32_try(c: &mut Criterion) {
+    let mut group = c.benchmark_group("alloc_u32_try");
     group.throughput(Throughput::Elements(ALLOCATIONS as u64));
-    group.bench_function("small_small__up", func(alloc_try_with_ok::<Bump<Global, 1, true>, Small, Small>));
-    group.bench_function("small_small__down", func(alloc_try_with_ok::<Bump<Global, 1, false>, Small, Small>));
-    group.bench_function("small_small__bumpalo", func(alloc_try_with_ok::<bumpalo::Bump, Small, Small>));
-    group.bench_function("small_big__up", func(alloc_try_with_ok::<Bump<Global, 1, true>, Small, Big>));
-    group.bench_function("small_big__down", func(alloc_try_with_ok::<Bump<Global, 1, false>, Small, Big>));
-    group.bench_function("small_big__bumpalo", func(alloc_try_with_ok::<bumpalo::Bump, Small, Big>));
-    group.bench_function("big_small__up", func(alloc_try_with_ok::<Bump<Global, 1, true>, Big, Small>));
-    group.bench_function("big_small__down", func(alloc_try_with_ok::<Bump<Global, 1, false>, Big, Small>));
-    group.bench_function("big_small__bumpalo", func(alloc_try_with_ok::<bumpalo::Bump, Big, Small>));
-    group.bench_function("big_big__up", func(alloc_try_with_ok::<Bump<Global, 1, true>, Big, Big>));
-    group.bench_function("big_big__down", func(alloc_try_with_ok::<Bump<Global, 1, false>, Big, Big>));
-    group.bench_function("big_big__bumpalo", func(alloc_try_with_ok::<bumpalo::Bump, Big, Big>));
+    group.bench_function("bumpalo", func(try_alloc_with::<bumpalo::Bump, u32>));
+    group.bench_function("up", func(try_alloc_with::<Bump<Global, 1, true>, u32>));
+    group.bench_function("up_aligned", func(try_alloc_with::<Bump<Global, 4, true>, u32>));
+    group.bench_function("up_overaligned", func(try_alloc_with::<Bump<Global, 16, true>, u32>));
+    group.bench_function("down", func(try_alloc_with::<Bump<Global, 1, false>, u32>));
+    group.bench_function("down_aligned", func(try_alloc_with::<Bump<Global, 4, false>, u32>));
+    group.bench_function("down_overaligned", func(try_alloc_with::<Bump<Global, 16, false>, u32>));
 }
 
 #[rustfmt::skip]
-fn bench_alloc_try_with_err(c: &mut Criterion) {
-    let mut group = c.benchmark_group("alloc-try-with-err");
+fn bench_alloc_try_with_ok_small_small(c: &mut Criterion) {
+    let mut group = c.benchmark_group("alloc_try_with_ok_small_small");
     group.throughput(Throughput::Elements(ALLOCATIONS as u64));
-    group.bench_function("small_small__up", func(alloc_try_with_err::<Bump<Global, 1, true>, Small, Small>));
-    group.bench_function("small_small__down", func(alloc_try_with_err::<Bump<Global, 1, false>, Small, Small>));
-    group.bench_function("small_small__bumpalo", func(alloc_try_with_err::<bumpalo::Bump, Small, Small>));
-    group.bench_function("small_big__up", func(alloc_try_with_err::<Bump<Global, 1, true>, Small, Big>));
-    group.bench_function("small_big__down", func(alloc_try_with_err::<Bump<Global, 1, false>, Small, Big>));
-    group.bench_function("small_big__bumpalo", func(alloc_try_with_err::<bumpalo::Bump, Small, Big>));
-    group.bench_function("big_small__up", func(alloc_try_with_err::<Bump<Global, 1, true>, Big, Small>));
-    group.bench_function("big_small__down", func(alloc_try_with_err::<Bump<Global, 1, false>, Big, Small>));
-    group.bench_function("big_small__bumpalo", func(alloc_try_with_err::<bumpalo::Bump, Big, Small>));
-    group.bench_function("big_big__up", func(alloc_try_with_err::<Bump<Global, 1, true>, Big, Big>));
-    group.bench_function("big_big__down", func(alloc_try_with_err::<Bump<Global, 1, false>, Big, Big>));
-    group.bench_function("big_big__bumpalo", func(alloc_try_with_err::<bumpalo::Bump, Big, Big>));
+    group.bench_function("up", func(alloc_try_with_ok::<Bump<Global, 1, true>, Small, Small>));
+    group.bench_function("down", func(alloc_try_with_ok::<Bump<Global, 1, false>, Small, Small>));
+    group.bench_function("bumpalo", func(alloc_try_with_ok::<bumpalo::Bump, Small, Small>));
 }
 
 #[rustfmt::skip]
-fn bench_try_alloc(c: &mut Criterion) {
-    let mut group = c.benchmark_group("try-alloc");
+fn bench_alloc_try_with_ok_small_big(c: &mut Criterion) {
+    let mut group = c.benchmark_group("alloc_try_with_ok_small_big");
     group.throughput(Throughput::Elements(ALLOCATIONS as u64));
-    group.bench_function("u8_bumpalo", func(try_alloc::<bumpalo::Bump, u8>));
-    group.bench_function("u32_bumpalo", func(try_alloc::<bumpalo::Bump, u32>));
-    group.bench_function("u8_up", func(try_alloc::<Bump<Global, 1, true>, u8>));
-    group.bench_function("u8_down", func(try_alloc::<Bump<Global, 1, false>, u8>));
-    group.bench_function("u32_up", func(try_alloc::<Bump<Global, 1, true>, u32>));
-    group.bench_function("u32_down", func(try_alloc::<Bump<Global, 1, false>, u32>));
-    group.bench_function("u32_aligned_up", func(try_alloc::<Bump<Global, 4, true>, u32>));
-    group.bench_function("u32_aligned_down", func(try_alloc::<Bump<Global, 4, false>, u32>));
-    group.bench_function("u32_overaligned_up", func(try_alloc::<Bump<Global, 16, true>, u32>));
-    group.bench_function("u32_overaligned_down", func(try_alloc::<Bump<Global, 16, false>, u32>));
+    group.bench_function("up", func(alloc_try_with_ok::<Bump<Global, 1, true>, Small, Big>));
+    group.bench_function("down", func(alloc_try_with_ok::<Bump<Global, 1, false>, Small, Big>));
+    group.bench_function("bumpalo", func(alloc_try_with_ok::<bumpalo::Bump, Small, Big>));
 }
 
 #[rustfmt::skip]
-fn bench_try_alloc_with(c: &mut Criterion) {
-    let mut group = c.benchmark_group("try-alloc-with");
+fn bench_alloc_try_with_ok_big_small(c: &mut Criterion) {
+    let mut group = c.benchmark_group("alloc_try_with_ok_big_small");
     group.throughput(Throughput::Elements(ALLOCATIONS as u64));
-    group.bench_function("u8_bumpalo", func(try_alloc_with::<bumpalo::Bump, u8>));
-    group.bench_function("u32_bumpalo", func(try_alloc_with::<bumpalo::Bump, u32>));
-    group.bench_function("u8_up", func(try_alloc_with::<Bump<Global, 1, true>, u8>));
-    group.bench_function("u8_down", func(try_alloc_with::<Bump<Global, 1, false>, u8>));
-    group.bench_function("u32_up", func(try_alloc_with::<Bump<Global, 1, true>, u32>));
-    group.bench_function("u32_down", func(try_alloc_with::<Bump<Global, 1, false>, u32>));
-    group.bench_function("u32_aligned_up", func(try_alloc_with::<Bump<Global, 4, true>, u32>));
-    group.bench_function("u32_aligned_down", func(try_alloc_with::<Bump<Global, 4, false>, u32>));
-    group.bench_function("u32_overaligned_up", func(try_alloc_with::<Bump<Global, 16, true>, u32>));
-    group.bench_function("u32_overaligned_down", func(try_alloc_with::<Bump<Global, 16, false>, u32>));
+    group.bench_function("up", func(alloc_try_with_ok::<Bump<Global, 1, true>, Big, Small>));
+    group.bench_function("down", func(alloc_try_with_ok::<Bump<Global, 1, false>, Big, Small>));
+    group.bench_function("bumpalo", func(alloc_try_with_ok::<bumpalo::Bump, Big, Small>));
 }
 
 #[rustfmt::skip]
-fn bench_try_alloc_try_with_ok(c: &mut Criterion) {
-    let mut group = c.benchmark_group("alloc-try-with-ok");
+fn bench_alloc_try_with_ok_big_big(c: &mut Criterion) {
+    let mut group = c.benchmark_group("alloc_try_with_ok_big_big");
     group.throughput(Throughput::Elements(ALLOCATIONS as u64));
-    group.bench_function("small_small__up", func(try_alloc_try_with_ok::<Bump<Global, 1, true>, Small, Small>));
-    group.bench_function("small_small__down", func(try_alloc_try_with_ok::<Bump<Global, 1, false>, Small, Small>));
-    group.bench_function("small_small__bumpalo", func(try_alloc_try_with_ok::<bumpalo::Bump, Small, Small>));
-    group.bench_function("small_big__up", func(try_alloc_try_with_ok::<Bump<Global, 1, true>, Small, Big>));
-    group.bench_function("small_big__down", func(try_alloc_try_with_ok::<Bump<Global, 1, false>, Small, Big>));
-    group.bench_function("small_big__bumpalo", func(try_alloc_try_with_ok::<bumpalo::Bump, Small, Big>));
-    group.bench_function("big_small__up", func(try_alloc_try_with_ok::<Bump<Global, 1, true>, Big, Small>));
-    group.bench_function("big_small__down", func(try_alloc_try_with_ok::<Bump<Global, 1, false>, Big, Small>));
-    group.bench_function("big_small__bumpalo", func(try_alloc_try_with_ok::<bumpalo::Bump, Big, Small>));
-    group.bench_function("big_big__up", func(try_alloc_try_with_ok::<Bump<Global, 1, true>, Big, Big>));
-    group.bench_function("big_big__down", func(try_alloc_try_with_ok::<Bump<Global, 1, false>, Big, Big>));
-    group.bench_function("big_big__bumpalo", func(try_alloc_try_with_ok::<bumpalo::Bump, Big, Big>));
+    group.bench_function("up", func(alloc_try_with_ok::<Bump<Global, 1, true>, Big, Big>));
+    group.bench_function("down", func(alloc_try_with_ok::<Bump<Global, 1, false>, Big, Big>));
+    group.bench_function("bumpalo", func(alloc_try_with_ok::<bumpalo::Bump, Big, Big>));
 }
 
 #[rustfmt::skip]
-fn bench_try_alloc_try_with_err(c: &mut Criterion) {
-    let mut group = c.benchmark_group("alloc-try-with-err");
+fn bench_alloc_try_with_err_small_small(c: &mut Criterion) {
+    let mut group = c.benchmark_group("alloc_try_with_err_small_small");
     group.throughput(Throughput::Elements(ALLOCATIONS as u64));
-    group.bench_function("small_small__up", func(try_alloc_try_with_err::<Bump<Global, 1, true>, Small, Small>));
-    group.bench_function("small_small__down", func(try_alloc_try_with_err::<Bump<Global, 1, false>, Small, Small>));
-    group.bench_function("small_small__bumpalo", func(try_alloc_try_with_err::<bumpalo::Bump, Small, Small>));
-    group.bench_function("small_big__up", func(try_alloc_try_with_err::<Bump<Global, 1, true>, Small, Big>));
-    group.bench_function("small_big__down", func(try_alloc_try_with_err::<Bump<Global, 1, false>, Small, Big>));
-    group.bench_function("small_big__bumpalo", func(try_alloc_try_with_err::<bumpalo::Bump, Small, Big>));
-    group.bench_function("big_small__up", func(try_alloc_try_with_err::<Bump<Global, 1, true>, Big, Small>));
-    group.bench_function("big_small__down", func(try_alloc_try_with_err::<Bump<Global, 1, false>, Big, Small>));
-    group.bench_function("big_small__bumpalo", func(try_alloc_try_with_err::<bumpalo::Bump, Big, Small>));
-    group.bench_function("big_big__up", func(try_alloc_try_with_err::<Bump<Global, 1, true>, Big, Big>));
-    group.bench_function("big_big__down", func(try_alloc_try_with_err::<Bump<Global, 1, false>, Big, Big>));
-    group.bench_function("big_big__bumpalo", func(try_alloc_try_with_err::<bumpalo::Bump, Big, Big>));
+    group.bench_function("up", func(alloc_try_with_err::<Bump<Global, 1, true>, Small, Small>));
+    group.bench_function("down", func(alloc_try_with_err::<Bump<Global, 1, false>, Small, Small>));
+    group.bench_function("bumpalo", func(alloc_try_with_err::<bumpalo::Bump, Small, Small>));
+}
+#[rustfmt::skip]
+fn bench_alloc_try_with_err_small_big(c: &mut Criterion) {
+    let mut group = c.benchmark_group("alloc_try_with_err_small_big");
+    group.throughput(Throughput::Elements(ALLOCATIONS as u64));
+    group.bench_function("up", func(alloc_try_with_err::<Bump<Global, 1, true>, Small, Big>));
+    group.bench_function("down", func(alloc_try_with_err::<Bump<Global, 1, false>, Small, Big>));
+    group.bench_function("bumpalo", func(alloc_try_with_err::<bumpalo::Bump, Small, Big>));
+}
+
+#[rustfmt::skip]
+fn bench_alloc_try_with_err_big_small(c: &mut Criterion) {
+    let mut group = c.benchmark_group("alloc_try_with_err_big_small");
+    group.throughput(Throughput::Elements(ALLOCATIONS as u64));
+    group.bench_function("up", func(alloc_try_with_err::<Bump<Global, 1, true>, Big, Small>));
+    group.bench_function("down", func(alloc_try_with_err::<Bump<Global, 1, false>, Big, Small>));
+    group.bench_function("bumpalo", func(alloc_try_with_err::<bumpalo::Bump, Big, Small>));
+}
+
+#[rustfmt::skip]
+fn bench_alloc_try_with_err_big_big(c: &mut Criterion) {
+    let mut group = c.benchmark_group("alloc_try_with_err_big_big");
+    group.throughput(Throughput::Elements(ALLOCATIONS as u64));
+    group.bench_function("up", func(alloc_try_with_err::<Bump<Global, 1, true>, Big, Big>));
+    group.bench_function("down", func(alloc_try_with_err::<Bump<Global, 1, false>, Big, Big>));
+    group.bench_function("bumpalo", func(alloc_try_with_err::<bumpalo::Bump, Big, Big>));
 }
 
 criterion_group!(
     benches,
-    bench_alloc,
-    bench_alloc_with,
-    bench_alloc_try_with_ok,
-    bench_alloc_try_with_err,
-    bench_try_alloc,
-    bench_try_alloc_with,
-    bench_try_alloc_try_with_ok,
-    bench_try_alloc_try_with_err,
+    bench_alloc_u8,
+    bench_alloc_u32,
+    bench_alloc_u32_try,
+    bench_alloc_try_with_ok_small_small,
+    bench_alloc_try_with_ok_small_big,
+    bench_alloc_try_with_ok_big_small,
+    bench_alloc_try_with_ok_big_big,
+    bench_alloc_try_with_err_small_small,
+    bench_alloc_try_with_err_small_big,
+    bench_alloc_try_with_err_big_small,
+    bench_alloc_try_with_err_big_big,
 );
 
 criterion_main!(benches);
