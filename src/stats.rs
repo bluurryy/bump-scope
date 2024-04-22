@@ -351,7 +351,7 @@ impl<'a, const UP: bool> Chunk<'a, UP> {
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
         'a: 'b,
     {
-        if GUARANTEED_ALLOCATED && bump.chunk.get().is_the_empty_chunk() {
+        if !GUARANTEED_ALLOCATED && bump.chunk.get().is_the_empty_chunk() {
             return None;
         }
 
