@@ -21,7 +21,7 @@ use crate::{
     chunk_size::ChunkSize,
     const_param_assert, doc_align_cant_decrease,
     polyfill::{nonnull, pointer},
-    ArrayLayout, BumpScopeGuard, Checkpoint, Chunk, ErrorBehavior, GuaranteedAllocatedStats, LayoutTrait, MinimumAlignment,
+    ArrayLayout, BumpScopeGuard, Checkpoint, ErrorBehavior, GuaranteedAllocatedStats, LayoutTrait, MinimumAlignment,
     RawChunk, SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
     DEFAULT_START_CHUNK_SIZE,
 };
@@ -78,7 +78,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.maybe_unallocated_stats().debug_format("BumpScope", f)
+        self.stats().debug_format("BumpScope", f)
     }
 }
 
@@ -100,14 +100,6 @@ where
         Self {
             chunk: Cell::new(chunk),
             marker: PhantomData,
-        }
-    }
-
-    #[must_use]
-    #[inline(always)]
-    pub(crate) fn maybe_unallocated_stats(&self) -> Stats<'a, UP> {
-        Stats {
-            current: Chunk::new(self),
         }
     }
 

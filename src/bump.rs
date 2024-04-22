@@ -123,7 +123,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.as_scope().maybe_unallocated_stats().debug_format("Bump", f)
+        self.stats().debug_format("Bump", f)
     }
 }
 
