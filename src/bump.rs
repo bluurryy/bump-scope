@@ -29,7 +29,7 @@ use crate::WithDrop;
 
 /// A bump allocator.
 ///
-/// Most of `Bump`'s constructors need allocate memory.
+/// Most of `Bump`'s constructors allocate memory.
 /// The exception is [`Bump::unallocated`]. A bump allocator created by this function has its [`GUARANTEED_ALLOCATED` parameter set to `false`](crate#guaranteed_allocated-parameter).
 /// Such a `Bump` is unable to create a scope with `scoped` or `scope_guard`.
 /// It can be converted into a guaranteed allocated `Bump` with [`into_guaranteed_allocated`](Bump::into_guaranteed_allocated) or [`as_guaranteed_allocated_mut`](Bump::as_guaranteed_allocated_mut).
