@@ -42,7 +42,7 @@ impl<const UP: bool> Eq for GuaranteedAllocatedStats<'_, UP> {}
 
 impl<'a, const UP: bool> Debug for GuaranteedAllocatedStats<'a, UP> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.debug_format("Stats", f)
+        self.debug_format("GuaranteedAllocatedStats", f)
     }
 }
 
@@ -179,7 +179,7 @@ impl<const UP: bool> Eq for MaybeUnallocatedStats<'_, UP> {}
 
 impl<'a, const UP: bool> Debug for MaybeUnallocatedStats<'a, UP> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.debug_format("Stats", f)
+        self.debug_format("MaybeUnallocatedStats", f)
     }
 }
 
@@ -282,7 +282,7 @@ impl<'a, const UP: bool> MaybeUnallocatedStats<'a, UP> {
         ChunkPrevIter { chunk: Some(start) }
     }
 
-    /// Converts this `MaybeUnallocatedStats` into `Some(Stats)` or `None` if the current chunk is `None`.
+    /// Converts this `MaybeUnallocatedStats` into `Some(GuaranteedAllocatedStats)` or `None` if the current chunk is `None`.
     #[inline]
     #[must_use]
     pub fn to_stats(self) -> Option<GuaranteedAllocatedStats<'a, UP>> {
@@ -313,7 +313,7 @@ impl<'a, const UP: bool> MaybeUnallocatedStats<'a, UP> {
 
 /// Refers to a chunk of memory that was allocated by the bump allocator.
 ///
-/// See [`Stats`].
+/// See [`MaybeUnallocatedStats`] / [`GuaranteedAllocatedStats`].
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Chunk<'a, const UP: bool> {

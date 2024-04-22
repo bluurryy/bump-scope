@@ -425,7 +425,7 @@ where
         }
     }
 
-    bump_common_methods!();
+    bump_common_methods!(true);
 
     /// Returns `&self` as is. This is used in for macros that support both `Bump` and `BumpScope`, like [`bump_vec!`](crate::bump_vec!).
     #[inline(always)]
@@ -627,36 +627,6 @@ where
         Self {
             chunk,
             marker: PhantomData,
-        }
-    }
-}
-
-impl<'a, const MIN_ALIGN: usize, const UP: bool, A> BumpScope<'a, A, MIN_ALIGN, UP>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
-{
-    #[doc = crate::doc_fn_stats!(Stats)]
-    #[must_use]
-    #[inline(always)]
-    pub fn stats(&self) -> GuaranteedAllocatedStats<'a, UP> {
-        GuaranteedAllocatedStats {
-            current: Chunk::new_allocated(self),
-        }
-    }
-}
-
-impl<'a, const MIN_ALIGN: usize, const UP: bool, A> BumpScope<'a, A, MIN_ALIGN, UP, false>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
-{
-    #[doc = crate::doc_fn_stats!(MaybeUnallocatedStats)]
-    #[must_use]
-    #[inline(always)]
-    pub fn stats(&self) -> MaybeUnallocatedStats<'a, UP> {
-        MaybeUnallocatedStats {
-            current: Chunk::new(self),
         }
     }
 }

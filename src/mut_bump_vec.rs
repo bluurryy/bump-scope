@@ -1378,21 +1378,8 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
-{
-    #[doc = crate::doc_fn_stats!(Stats)]
-    #[doc = crate::doc_fn_stats_greedy!(MutBumpVec)]
-    #[must_use]
-    #[inline(always)]
-    pub fn stats(&self) -> GuaranteedAllocatedStats<'a, UP> {
-        self.bump.stats()
-    }
-}
-
-impl<'b, 'a: 'b, T, const MIN_ALIGN: usize, const UP: bool, A> MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, false>
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+    MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -1406,7 +1393,21 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, const N: usize, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, true>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
+{
+    #[doc = crate::doc_fn_stats!(GuaranteedAllocatedStats)]
+    #[doc = crate::doc_fn_stats_greedy!(MutBumpVec)]
+    #[must_use]
+    #[inline(always)]
+    pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats<'a, UP> {
+        self.bump.guaranteed_allocated_stats()
+    }
+}
+
+impl<'b, 'a: 'b, T, A, const N: usize, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
     MutBumpVec<'b, 'a, [T; N], A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,

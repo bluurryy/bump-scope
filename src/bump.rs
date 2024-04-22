@@ -266,7 +266,7 @@ where
         self.chunk.set(chunk);
     }
 
-    bump_common_methods!();
+    bump_common_methods!(false);
 
     /// Returns this `&Bump` as a `&BumpScope`.
     #[inline(always)]
@@ -412,32 +412,6 @@ where
     pub unsafe fn from_raw(ptr: NonNull<()>) -> Self {
         let chunk = Cell::new(RawChunk::from_header(ptr.cast()));
         Self { chunk }
-    }
-}
-
-impl<const MIN_ALIGN: usize, const UP: bool, A> Bump<A, MIN_ALIGN, UP>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
-{
-    #[doc = crate::doc_fn_stats!(Stats)]
-    #[must_use]
-    #[inline(always)]
-    pub fn stats(&self) -> GuaranteedAllocatedStats<UP> {
-        self.as_scope().stats()
-    }
-}
-
-impl<const MIN_ALIGN: usize, const UP: bool, A> Bump<A, MIN_ALIGN, UP, false>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
-{
-    #[doc = crate::doc_fn_stats!(MaybeUnallocatedStats)]
-    #[must_use]
-    #[inline(always)]
-    pub fn stats(&self) -> MaybeUnallocatedStats<UP> {
-        self.as_scope().stats()
     }
 }
 

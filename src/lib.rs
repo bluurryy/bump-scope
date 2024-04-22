@@ -891,13 +891,44 @@ macro_rules! bump_scope_methods {
                 }
             }
         }
+
+        #[doc = crate::doc_fn_stats!(GuaranteedAllocatedStats)]
+        #[must_use]
+        #[inline(always)]
+        pub fn guaranteed_allocated_stats(
+            &self,
+        ) -> $crate::condition! { if $is_scope { GuaranteedAllocatedStats<'a, UP> } else { GuaranteedAllocatedStats<UP> } } {
+            GuaranteedAllocatedStats {
+                current: crate::Chunk::new_allocated(self.as_scope()),
+            }
+        }
     };
 }
 
 pub(crate) use bump_scope_methods;
 
 macro_rules! bump_common_methods {
-    () => {
+    ($is_scope:ident) => {
+        $crate::condition! {
+            if $is_scope {
+                #[doc = crate::doc_fn_stats!(MaybeUnallocatedStats)]
+                #[must_use]
+                #[inline(always)]
+                pub fn stats(&self) -> MaybeUnallocatedStats<'a, UP> {
+                    MaybeUnallocatedStats {
+                        current: crate::Chunk::new(self.as_scope()),
+                    }
+                }
+            } else {
+                #[doc = crate::doc_fn_stats!(MaybeUnallocatedStats)]
+                #[must_use]
+                #[inline(always)]
+                pub fn stats(&self) -> MaybeUnallocatedStats<UP> {
+                    self.as_scope().stats()
+                }
+            }
+        }
+
         #[doc = crate::doc_fn_allocator!()]
         #[must_use]
         #[inline(always)]

@@ -519,21 +519,8 @@ where
     }
 }
 
-impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, A> MutBumpString<'b, 'a, A, MIN_ALIGN, UP>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
-{
-    #[doc = crate::doc_fn_stats!(Stats)]
-    #[doc = crate::doc_fn_stats_greedy!(MutBumpString)]
-    #[must_use]
-    #[inline(always)]
-    pub fn stats(&self) -> GuaranteedAllocatedStats<'a, UP> {
-        self.vec.stats()
-    }
-}
-
-impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, A> MutBumpString<'b, 'a, A, MIN_ALIGN, UP, false>
+impl<'b, 'a: 'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+    MutBumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -544,6 +531,20 @@ where
     #[inline(always)]
     pub fn stats(&self) -> MaybeUnallocatedStats<'a, UP> {
         self.vec.stats()
+    }
+}
+
+impl<'b, 'a: 'b, A, const MIN_ALIGN: usize, const UP: bool> MutBumpString<'b, 'a, A, MIN_ALIGN, UP, true>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
+{
+    #[doc = crate::doc_fn_stats!(GuaranteedAllocatedStats)]
+    #[doc = crate::doc_fn_stats_greedy!(MutBumpString)]
+    #[must_use]
+    #[inline(always)]
+    pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats<'a, UP> {
+        self.vec.guaranteed_allocated_stats()
     }
 }
 
