@@ -14,8 +14,9 @@ use allocator_api2::alloc::Global;
 
 use crate::{
     bump_common_methods, bump_scope_methods, chunk_size::ChunkSize, doc_align_cant_decrease, error_behavior_generic_methods,
-    polyfill::pointer, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MaybeUnallocatedStats, MinimumAlignment,
-    RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink, DEFAULT_START_CHUNK_SIZE,
+    polyfill::pointer, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, GuaranteedAllocatedStats,
+    MaybeUnallocatedStats, MinimumAlignment, RawChunk, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    DEFAULT_START_CHUNK_SIZE,
 };
 
 #[cfg(not(no_global_oom_handling))]
@@ -422,7 +423,7 @@ where
     #[doc = crate::doc_fn_stats!(Stats)]
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<UP> {
+    pub fn stats(&self) -> GuaranteedAllocatedStats<UP> {
         self.as_scope().stats()
     }
 }

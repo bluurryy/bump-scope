@@ -21,9 +21,9 @@ use crate::{
     chunk_size::ChunkSize,
     const_param_assert, doc_align_cant_decrease,
     polyfill::{nonnull, pointer},
-    ArrayLayout, BumpScopeGuard, Checkpoint, Chunk, ErrorBehavior, LayoutTrait, MaybeUnallocatedStats, MinimumAlignment,
-    RawChunk, SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
-    DEFAULT_START_CHUNK_SIZE,
+    ArrayLayout, BumpScopeGuard, Checkpoint, Chunk, ErrorBehavior, GuaranteedAllocatedStats, LayoutTrait,
+    MaybeUnallocatedStats, MinimumAlignment, RawChunk, SizedTypeProperties, SupportedMinimumAlignment, WithoutDealloc,
+    WithoutShrink, DEFAULT_START_CHUNK_SIZE,
 };
 
 #[cfg(not(no_global_oom_handling))]
@@ -639,8 +639,8 @@ where
     #[doc = crate::doc_fn_stats!(Stats)]
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'a, UP> {
-        Stats {
+    pub fn stats(&self) -> GuaranteedAllocatedStats<'a, UP> {
+        GuaranteedAllocatedStats {
             current: Chunk::new_allocated(self),
         }
     }

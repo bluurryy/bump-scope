@@ -3,8 +3,8 @@ use core::{fmt::Debug, marker::PhantomData, num::NonZeroUsize, ptr::NonNull};
 use allocator_api2::alloc::Allocator;
 
 use crate::{
-    chunk_header::ChunkHeader, polyfill::nonnull, Bump, BumpScope, Chunk, MinimumAlignment, RawChunk, Stats,
-    SupportedMinimumAlignment,
+    chunk_header::ChunkHeader, polyfill::nonnull, Bump, BumpScope, Chunk, GuaranteedAllocatedStats, MinimumAlignment,
+    RawChunk, SupportedMinimumAlignment,
 };
 
 /// This is returned from [`checkpoint`](Bump::checkpoint) and used for [`reset_to`](Bump::reset_to).
@@ -92,8 +92,8 @@ where
     #[doc = crate::doc_fn_stats!(Stats)]
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<UP> {
-        Stats {
+    pub fn stats(&self) -> GuaranteedAllocatedStats<UP> {
+        GuaranteedAllocatedStats {
             current: unsafe { Chunk::from_raw(self.chunk) },
         }
     }
@@ -170,8 +170,8 @@ where
     #[doc = crate::doc_fn_stats!(Stats)]
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<UP> {
-        Stats {
+    pub fn stats(&self) -> GuaranteedAllocatedStats<UP> {
+        GuaranteedAllocatedStats {
             current: unsafe { Chunk::from_raw(self.chunk) },
         }
     }

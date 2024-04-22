@@ -13,7 +13,7 @@ use allocator_api2::alloc::Global;
 
 use crate::{
     error_behavior_generic_methods, polyfill, BumpBox, BumpScope, BumpVec, ErrorBehavior, FromUtf8Error,
-    MaybeUnallocatedStats, MinimumAlignment, Stats, SupportedMinimumAlignment,
+    GuaranteedAllocatedStats, MaybeUnallocatedStats, MinimumAlignment, SupportedMinimumAlignment,
 };
 
 /// This is like [`format!`] but allocates inside a `Bump` or `BumpScope`, returning a [`BumpString`].
@@ -547,7 +547,7 @@ where
     #[doc = crate::doc_fn_stats!(Stats)]
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'a, UP> {
+    pub fn stats(&self) -> GuaranteedAllocatedStats<'a, UP> {
         self.vec.stats()
     }
 }
