@@ -8,10 +8,11 @@ use crate::{
     bump_down, polyfill::nonnull, up_align_usize_unchecked, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment,
 };
 
-unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
     for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -44,10 +45,11 @@ where
     }
 }
 
-unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -81,12 +83,13 @@ where
 }
 
 #[inline(always)]
-fn allocate<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
+fn allocate<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
     bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     Ok(nonnull::slice_from_raw_parts(bump.try_alloc_layout(layout)?, layout.size()))
 }
@@ -144,7 +147,7 @@ where
 }
 
 #[inline(always)]
-unsafe fn grow<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
+unsafe fn grow<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
     bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
@@ -152,6 +155,7 @@ unsafe fn grow<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, con
 ) -> Result<NonNull<[u8]>, AllocError>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     debug_assert!(
         new_layout.size() >= old_layout.size(),
@@ -231,7 +235,7 @@ where
 }
 
 #[inline(always)]
-unsafe fn grow_zeroed<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
+unsafe fn grow_zeroed<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
     bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
@@ -239,6 +243,7 @@ unsafe fn grow_zeroed<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bo
 ) -> Result<NonNull<[u8]>, AllocError>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     let new_ptr = grow(bump, old_ptr, old_layout, new_layout)?;
 
@@ -249,7 +254,7 @@ where
 }
 
 #[inline(always)]
-unsafe fn shrink<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
+unsafe fn shrink<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
     bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
@@ -257,13 +262,14 @@ unsafe fn shrink<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, c
 ) -> Result<NonNull<[u8]>, AllocError>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     /// Called when `new_layout` doesn't fit alignment.
     /// Does ANY consumer cause this?
     /// Bumpalo just errors in this case..
     #[cold]
     #[inline(never)]
-    unsafe fn shrink_unfit<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
+    unsafe fn shrink_unfit<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
         bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
         old_ptr: NonNull<u8>,
         old_layout: Layout,
@@ -271,6 +277,7 @@ where
     ) -> Result<NonNull<[u8]>, AllocError>
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        A: Allocator + Clone,
     {
         if is_last(bump, old_ptr, old_layout) {
             let old_pos = bump.chunk.get().pos();

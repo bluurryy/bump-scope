@@ -553,17 +553,19 @@ pub unsafe trait BumpAllocator: Allocator {}
 
 unsafe impl<A: BumpAllocator> BumpAllocator for &A {}
 
-unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
     for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
 }
 
-unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
 }
 
@@ -1867,19 +1869,21 @@ define_alloc_methods! {
 }
 
 #[doc = doc_alloc_methods!()]
-impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
     BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     alloc_methods!(BumpScope);
 }
 
 #[doc = doc_alloc_methods!()]
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
     Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     alloc_methods!(Bump);
 }

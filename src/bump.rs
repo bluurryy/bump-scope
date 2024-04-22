@@ -75,10 +75,11 @@ pub struct Bump<
 
 // Sending Bumps when nothing is allocated is fine.
 // When something is allocated Bump is borrowed and sending is not possible.
-unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Send
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Send
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
 }
 
@@ -98,10 +99,11 @@ where
 {
 }
 
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Drop
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Drop
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     fn drop(&mut self) {
         if self.is_unallocated() {
@@ -117,10 +119,11 @@ where
     }
 }
 
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Debug
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Debug
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.stats().debug_format("Bump", f)
@@ -128,10 +131,11 @@ where
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<A: Allocator + Clone + Default, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Default
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Default
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone + Default,
 {
     #[inline(always)]
     fn default() -> Self {
@@ -194,17 +198,19 @@ where
 }
 
 /// These functions are only available if the `Bump` is [guaranteed allocated](crate#guaranteed_allocated-parameter).
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP>
+impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     bump_scope_methods!(BumpScopeGuardRoot, false);
 }
 
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
     Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     error_behavior_generic_methods! {
         impl

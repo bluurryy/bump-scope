@@ -213,10 +213,11 @@ where
     }
 }
 
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Sealed
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Sealed
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     #[inline(always)]
     fn alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<BumpBox<MaybeUninit<T>>, B> {
@@ -290,16 +291,18 @@ pub trait AnyBump: Sealed {}
 impl<U: AnyBump> AnyBump for &U {}
 impl<U: AnyBump> AnyBump for &mut U {}
 
-impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> AnyBump
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> AnyBump
     for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
 }
 
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> AnyBump
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> AnyBump
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
 }
