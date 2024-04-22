@@ -362,7 +362,7 @@ impl<'a, const UP: bool> Chunk<'a, UP> {
     }
 
     #[inline(always)]
-    pub(crate) fn new_allocated<'b, const MIN_ALIGN: usize, A>(bump: &'b BumpScope<'a, A, MIN_ALIGN, UP>) -> Self
+    pub(crate) fn new_guaranteed_allocated<'b, const MIN_ALIGN: usize, A>(bump: &'b BumpScope<'a, A, MIN_ALIGN, UP>) -> Self
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
         'a: 'b,

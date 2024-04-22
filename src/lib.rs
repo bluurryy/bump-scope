@@ -899,7 +899,7 @@ macro_rules! bump_scope_methods {
             &self,
         ) -> $crate::condition! { if $is_scope { GuaranteedAllocatedStats<'a, UP> } else { GuaranteedAllocatedStats<UP> } } {
             GuaranteedAllocatedStats {
-                current: crate::Chunk::new_allocated(self.as_scope()),
+                current: crate::Chunk::new_guaranteed_allocated(self.as_scope()),
             }
         }
     };
