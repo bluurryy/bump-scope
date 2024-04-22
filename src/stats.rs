@@ -148,22 +148,22 @@ impl<'a, const UP: bool> GuaranteedAllocatedStats<'a, UP> {
 /// Provides statistics about the memory usage of the bump allocator.
 ///
 /// This is returned from the `stats` method of `Bump`, `BumpScope`, `BumpScopeGuard`, `BumpVec`, ...
-pub struct MaybeUnallocatedStats<'a, const UP: bool> {
+pub struct Stats<'a, const UP: bool> {
     /// This is the chunk we are currently allocating on.
     pub current: Option<Chunk<'a, UP>>,
 }
 
-impl<const UP: bool> Copy for MaybeUnallocatedStats<'_, UP> {}
+impl<const UP: bool> Copy for Stats<'_, UP> {}
 
 #[allow(clippy::expl_impl_clone_on_copy)]
-impl<const UP: bool> Clone for MaybeUnallocatedStats<'_, UP> {
+impl<const UP: bool> Clone for Stats<'_, UP> {
     #[inline(always)]
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<const UP: bool> PartialEq for MaybeUnallocatedStats<'_, UP> {
+impl<const UP: bool> PartialEq for Stats<'_, UP> {
     #[inline(always)]
     fn eq(&self, other: &Self) -> bool {
         self.current == other.current
@@ -175,15 +175,15 @@ impl<const UP: bool> PartialEq for MaybeUnallocatedStats<'_, UP> {
     }
 }
 
-impl<const UP: bool> Eq for MaybeUnallocatedStats<'_, UP> {}
+impl<const UP: bool> Eq for Stats<'_, UP> {}
 
-impl<'a, const UP: bool> Debug for MaybeUnallocatedStats<'a, UP> {
+impl<'a, const UP: bool> Debug for Stats<'a, UP> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.debug_format("MaybeUnallocatedStats", f)
+        self.debug_format("Stats", f)
     }
 }
 
-impl<'a, const UP: bool> MaybeUnallocatedStats<'a, UP> {
+impl<'a, const UP: bool> Stats<'a, UP> {
     /// Returns the amount of chunks.
     #[must_use]
     pub fn count(self) -> usize {
@@ -282,7 +282,7 @@ impl<'a, const UP: bool> MaybeUnallocatedStats<'a, UP> {
         ChunkPrevIter { chunk: Some(start) }
     }
 
-    /// Converts this `MaybeUnallocatedStats` into `Some(GuaranteedAllocatedStats)` or `None` if the current chunk is `None`.
+    /// Converts this `Stats` into `Some(GuaranteedAllocatedStats)` or `None` if the current chunk is `None`.
     #[inline]
     #[must_use]
     pub fn to_stats(self) -> Option<GuaranteedAllocatedStats<'a, UP>> {
@@ -313,7 +313,7 @@ impl<'a, const UP: bool> MaybeUnallocatedStats<'a, UP> {
 
 /// Refers to a chunk of memory that was allocated by the bump allocator.
 ///
-/// See [`MaybeUnallocatedStats`] / [`GuaranteedAllocatedStats`].
+/// See [`Stats`] / [`GuaranteedAllocatedStats`].
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Chunk<'a, const UP: bool> {

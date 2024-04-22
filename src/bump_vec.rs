@@ -20,8 +20,7 @@ use crate::{
     bump_down, error_behavior_generic_methods,
     polyfill::{nonnull, pointer, slice},
     up_align_usize_unchecked, BumpBox, BumpScope, Drain, ErrorBehavior, ExtractIf, FixedBumpVec, GuaranteedAllocatedStats,
-    IntoIter, MaybeUnallocatedStats, MinimumAlignment, NoDrop, SetLenOnDropByPtr, SizedTypeProperties,
-    SupportedMinimumAlignment,
+    IntoIter, MinimumAlignment, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment,
 };
 
 /// Creates a [`BumpVec`] containing the arguments.
@@ -1516,10 +1515,10 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
 {
-    #[doc = crate::doc_fn_stats!(MaybeUnallocatedStats)]
+    #[doc = crate::doc_fn_stats!(Stats)]
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> MaybeUnallocatedStats<'a, UP> {
+    pub fn stats(&self) -> Stats<'a, UP> {
         self.bump.stats()
     }
 }

@@ -19,8 +19,8 @@ use allocator_api2::alloc::Global;
 use crate::{
     error_behavior_generic_methods,
     polyfill::{self, nonnull, pointer},
-    BumpBox, BumpScope, ErrorBehavior, GuaranteedAllocatedStats, IntoIter, MaybeUnallocatedStats, MinimumAlignment, NoDrop,
-    SetLenOnDrop, SizedTypeProperties, SupportedMinimumAlignment,
+    BumpBox, BumpScope, ErrorBehavior, GuaranteedAllocatedStats, IntoIter, MinimumAlignment, NoDrop, SetLenOnDrop,
+    SizedTypeProperties, Stats, SupportedMinimumAlignment,
 };
 
 /// Creates a [`MutBumpVecRev`] containing the arguments.
@@ -1246,11 +1246,11 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
 {
-    #[doc = crate::doc_fn_stats!(MaybeUnallocatedStats)]
+    #[doc = crate::doc_fn_stats!(Stats)]
     #[doc = crate::doc_fn_stats_greedy!(MutBumpVecRev)]
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> MaybeUnallocatedStats<'a, UP> {
+    pub fn stats(&self) -> Stats<'a, UP> {
         self.bump.stats()
     }
 }

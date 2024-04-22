@@ -348,7 +348,7 @@ pub use into_iter::IntoIter;
 pub use mut_bump_string::MutBumpString;
 pub use mut_bump_vec::MutBumpVec;
 pub use mut_bump_vec_rev::MutBumpVecRev;
-pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, GuaranteedAllocatedStats, MaybeUnallocatedStats};
+pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, GuaranteedAllocatedStats, Stats};
 #[cfg(test)]
 pub use with_drop::WithDrop;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
@@ -911,19 +911,19 @@ macro_rules! bump_common_methods {
     ($is_scope:ident) => {
         $crate::condition! {
             if $is_scope {
-                #[doc = crate::doc_fn_stats!(MaybeUnallocatedStats)]
+                #[doc = crate::doc_fn_stats!(Stats)]
                 #[must_use]
                 #[inline(always)]
-                pub fn stats(&self) -> MaybeUnallocatedStats<'a, UP> {
-                    MaybeUnallocatedStats {
+                pub fn stats(&self) -> Stats<'a, UP> {
+                    Stats {
                         current: crate::Chunk::new(self.as_scope()),
                     }
                 }
             } else {
-                #[doc = crate::doc_fn_stats!(MaybeUnallocatedStats)]
+                #[doc = crate::doc_fn_stats!(Stats)]
                 #[must_use]
                 #[inline(always)]
-                pub fn stats(&self) -> MaybeUnallocatedStats<UP> {
+                pub fn stats(&self) -> Stats<UP> {
                     self.as_scope().stats()
                 }
             }

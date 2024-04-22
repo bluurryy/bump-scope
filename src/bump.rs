@@ -14,9 +14,8 @@ use allocator_api2::alloc::Global;
 
 use crate::{
     bump_common_methods, bump_scope_methods, chunk_size::ChunkSize, doc_align_cant_decrease, error_behavior_generic_methods,
-    polyfill::pointer, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, GuaranteedAllocatedStats,
-    MaybeUnallocatedStats, MinimumAlignment, RawChunk, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
-    DEFAULT_START_CHUNK_SIZE,
+    polyfill::pointer, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, GuaranteedAllocatedStats, MinimumAlignment,
+    RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink, DEFAULT_START_CHUNK_SIZE,
 };
 
 #[cfg(not(no_global_oom_handling))]
