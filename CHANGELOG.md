@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+- **breaking:** renamed `Stats` to `GuaranteedAllocatedStats`
+- **breaking:** renamed `MaybeUnallocatedStats` to `Stats`
+- **breaking:** `stats` now always returns `Stats` and is always available
+- **breaking:** renamed `into_init` and `as_init(_mut)` to `into_guaranteed_allocated` and `as_guaranteed_allocated(_mut)`
+- **added:** `guaranteed_allocated_stats` which returns `GuaranteedAllocatedStats`
+
 ## 0.2.1 (2024-04-21)
 - **fixed:** docs and changelog
 
