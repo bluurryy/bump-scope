@@ -380,7 +380,7 @@ where
         layout: L,
         mut allocate: impl FnMut(RawChunk<UP, A>, L) -> Option<R>,
     ) -> Result<R, E> {
-        let new_chunk = if !GUARANTEED_ALLOCATED && self.chunk.get().is_the_empty_chunk() {
+        let new_chunk = if self.is_unallocated() {
             // SAFETY:
             // We are pointing to the empty chunk. This can only happen when `Bump::unallocated` was called.
             // This is only available for `A = Global`.

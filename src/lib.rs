@@ -909,6 +909,11 @@ pub(crate) use bump_scope_methods;
 
 macro_rules! bump_common_methods {
     ($is_scope:ident) => {
+        #[inline(always)]
+        pub(crate) fn is_unallocated(&self) -> bool {
+            !GUARANTEED_ALLOCATED && self.chunk.get().is_the_empty_chunk()
+        }
+
         $crate::condition! {
             if $is_scope {
                 #[doc = crate::doc_fn_stats!(Stats)]
@@ -1827,7 +1832,7 @@ define_alloc_methods! {
             Err(_) => return Err(B::capacity_overflow()),
         };
 
-        if !GUARANTEED_ALLOCATED && self.chunk.get().is_the_empty_chunk() {
+        if self.is_unallocated() {
             // SAFETY:
             // We are pointing to the empty chunk. This can only happen when `Bump::uninit` was called.
             // This is only available for `A = Global`.

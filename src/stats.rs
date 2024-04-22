@@ -5,6 +5,8 @@ use core::{
     ptr::NonNull,
 };
 
+use allocator_api2::alloc::Allocator;
+
 use crate::{BumpScope, FmtFn, MinimumAlignment, RawChunk, SupportedMinimumAlignment};
 
 /// Provides statistics about the memory usage of the bump allocator.
@@ -349,9 +351,10 @@ impl<'a, const UP: bool> Chunk<'a, UP> {
     ) -> Option<Self>
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        A: Allocator + Clone,
         'a: 'b,
     {
-        if !GUARANTEED_ALLOCATED && bump.chunk.get().is_the_empty_chunk() {
+        if bump.is_unallocated() {
             return None;
         }
 

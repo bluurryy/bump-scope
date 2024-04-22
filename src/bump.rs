@@ -104,7 +104,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     fn drop(&mut self) {
-        if !GUARANTEED_ALLOCATED && self.chunk.get().is_the_empty_chunk() {
+        if self.is_unallocated() {
             return;
         }
 
