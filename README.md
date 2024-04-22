@@ -183,7 +183,7 @@ This crate supports `no_std`, unless the `std` feature is enabled.
 
 - `nightly-const-refs-to-static` *(requires nightly)*:
   
-  Makes `Bump::uninit` a `const fn`.
+  Makes `Bump::unallocated` a `const fn`.
 
 ## Bumping upwards or downwards?
 Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
@@ -203,19 +203,18 @@ This will penalize allocations of a smaller alignment as their size now needs to
 
 This amounts to about 1 or 2 instructions per allocation.
 
-## `INIT` parameter?
-When `INIT` is true, the bump allocator is in an initialized state.
+## `GUARANTEED_ALLOCATED` parameter?
+When `GUARANTEED_ALLOCATED` is true, the bump allocator is in a guaranteed allocated state.
 That means that it must have already allocated a chunk from its backing allocator.
 
-When `INIT` is false, the bump allocator may or may not have allocated chunks.
-You can create a bump allocator with no allocated chunks with `Bump::uninit`.
+When `GUARANTEED_ALLOCATED` is false, the bump allocator may or may not have allocated chunks.
+You can create a bump allocator with no allocated chunks with `Bump::unallocated`.
 
-You need an initialized `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
-You can convert an uninitialized `Bump(Scope)` into an initialized one with `into_init` or `as_init(_mut)`.
+You need a guaranteed allocated `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
+You can convert a maybe unallocated `Bump(Scope)` into a guaranteed allocated one with `into_guaranteed_allocated` or `as_guaranteed_allocated(_mut)`.
 
-The point of uninitialized bump allocators is that they don't need to allocate memory.
-They are const constructible when the feature `nightly-const-refs-to-static` is enabled.
-This makes a thread local `Bump` constructible with the `const {}` syntax, making it more performant.
+The point of this is so `Bump`s can be created without allocating memory and even `const` constructed when the feature `nightly-const-refs-to-static` is enabled.
+At the same time `Bump`'s that have already allocated a chunk don't suffer runtime checks for entering scopes and creating checkpoints.
 
 [//]: # (END_OF_CRATE_DOCS)
 

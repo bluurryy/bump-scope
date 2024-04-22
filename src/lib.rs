@@ -233,7 +233,7 @@
 //!
 //! - `nightly-const-refs-to-static` *(requires nightly)*:
 //!   
-//!   Makes `Bump::uninit` a `const fn`.
+//!   Makes `Bump::unallocated` a `const fn`.
 //!
 //! # Bumping upwards or downwards?
 //! Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
@@ -253,19 +253,18 @@
 //!
 //! This amounts to about 1 or 2 instructions per allocation.
 //!
-//! # `INIT` parameter?
-//! When `INIT` is true, the bump allocator is in an initialized state.
+//! # `GUARANTEED_ALLOCATED` parameter?
+//! When `GUARANTEED_ALLOCATED` is true, the bump allocator is in a guaranteed allocated state.
 //! That means that it must have already allocated a chunk from its backing allocator.
 //!
-//! When `INIT` is false, the bump allocator may or may not have allocated chunks.
-//! You can create a bump allocator with no allocated chunks with [`Bump::uninit`].
+//! When `GUARANTEED_ALLOCATED` is false, the bump allocator may or may not have allocated chunks.
+//! You can create a bump allocator with no allocated chunks with [`Bump::unallocated`].
 //!
-//! You need an initialized `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
-//! You can convert an uninitialized `Bump(Scope)` into an initialized one with `into_init` or `as_init(_mut)`.
+//! You need a guaranteed allocated `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
+//! You can convert a maybe unallocated `Bump(Scope)` into a guaranteed allocated one with `into_guaranteed_allocated` or `as_guaranteed_allocated(_mut)`.
 //!
-//! The point of uninitialized bump allocators is that they don't need to allocate memory.
-//! They are const constructible when the feature `nightly-const-refs-to-static` is enabled.
-//! This makes a thread local `Bump` constructible with the [`const {}` syntax](std::thread_local), making it more performant.
+//! The point of this is so `Bump`s can be created without allocating memory and even `const` constructed when the feature `nightly-const-refs-to-static` is enabled.
+//! At the same time `Bump`'s that have already allocated a chunk don't suffer runtime checks for entering scopes and creating checkpoints.
 
 #[doc(hidden)]
 #[cfg(feature = "alloc")]
@@ -349,7 +348,7 @@ pub use into_iter::IntoIter;
 pub use mut_bump_string::MutBumpString;
 pub use mut_bump_vec::MutBumpVec;
 pub use mut_bump_vec_rev::MutBumpVecRev;
-pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, Stats, UninitStats};
+pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, MaybeUnallocatedStats, Stats};
 #[cfg(test)]
 pub use with_drop::WithDrop;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
@@ -554,15 +553,15 @@ pub unsafe trait BumpAllocator: Allocator {}
 
 unsafe impl<A: BumpAllocator> BumpAllocator for &A {}
 
-unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> BumpAllocator
-    for BumpScope<'_, A, MIN_ALIGN, UP, INIT>
+unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
+    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
 }
 
-unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> BumpAllocator
-    for Bump<A, MIN_ALIGN, UP, INIT>
+unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
+    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -778,14 +777,14 @@ macro_rules! bump_scope_methods {
         /// assert_eq!(bump.stats().allocated(), 0);
         /// ```
         #[inline(always)]
-        pub fn scoped(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, true>)) {
+        pub fn scoped(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP>)) {
             let mut guard = self.scope_guard();
             f(guard.scope());
         }
 
         /// Calls `f` with a new child scope of a new minimum alignment.
         #[inline(always)]
-        pub fn scoped_aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, true>))
+        pub fn scoped_aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP>))
         where
             MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
         {
@@ -828,7 +827,7 @@ macro_rules! bump_scope_methods {
 
         /// Calls `f` with this scope but with a new minimum alignment.
         #[inline(always)]
-        pub fn aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP, true>))
+        pub fn aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP>))
         where
             MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
         {
@@ -1513,7 +1512,7 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = BumpVec::<T, A, MIN_ALIGN, UP, INIT>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = BumpVec::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
@@ -1580,7 +1579,7 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = MutBumpVec::<T, A, MIN_ALIGN, UP, INIT>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = MutBumpVec::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
@@ -1609,7 +1608,7 @@ define_alloc_methods! {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = MutBumpVecRev::<T, A, MIN_ALIGN, UP, INIT>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = MutBumpVecRev::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
@@ -1797,7 +1796,7 @@ define_alloc_methods! {
             Err(_) => return Err(B::capacity_overflow()),
         };
 
-        if !INIT && self.chunk.get().is_the_empty_chunk() {
+        if !GUARANTEED_ALLOCATED && self.chunk.get().is_the_empty_chunk() {
             // SAFETY:
             // We are pointing to the empty chunk. This can only happen when `Bump::uninit` was called.
             // This is only available for `A = Global`.
@@ -1832,8 +1831,8 @@ define_alloc_methods! {
 }
 
 #[doc = doc_alloc_methods!()]
-impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool>
-    BumpScope<'a, A, MIN_ALIGN, UP, INIT>
+impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+    BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -1841,7 +1840,8 @@ where
 }
 
 #[doc = doc_alloc_methods!()]
-impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Bump<A, MIN_ALIGN, UP, INIT>
+impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+    Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {

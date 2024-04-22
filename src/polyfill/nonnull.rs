@@ -109,7 +109,7 @@ pub fn addr<T>(ptr: NonNull<T>) -> NonZeroUsize {
 #[must_use]
 #[inline(always)]
 pub fn with_addr<T>(ptr: NonNull<T>, addr: NonZeroUsize) -> NonNull<T> {
-    // SAFETY: The result of `ptr::from::with_addr` is non-null because `addr` is guaranteed to be non-zero.
+    // SAFETY: The result of `ptr::from::with_addr` is non-null because `addr` is [guaranteed allocated]o be non-zero.
     unsafe { NonNull::new_unchecked(sptr::Strict::with_addr(ptr.as_ptr(), addr.get())) }
 }
 
@@ -119,7 +119,7 @@ pub fn with_addr<T>(ptr: NonNull<T>, addr: NonZeroUsize) -> NonNull<T> {
 ///
 /// This computes the same value that [`offset_from`](#method.offset_from)
 /// would compute, but with the added precondition that the offset is
-/// guaranteed to be non-negative.  This method is equivalent to
+/// [guaranteed allocated]o be non-negative.  This method is equivalent to
 /// `usize::try_from(self.offset_from(origin)).unwrap_unchecked()`,
 /// but it provides slightly more information to the optimizer, which can
 /// sometimes allow it to optimize slightly better with some backends.

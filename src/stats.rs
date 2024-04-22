@@ -148,22 +148,22 @@ impl<'a, const UP: bool> Stats<'a, UP> {
 /// Provides statistics about the memory usage of the bump allocator.
 ///
 /// This is returned from the `stats` method of `Bump`, `BumpScope`, `BumpScopeGuard`, `BumpVec`, ...
-pub struct UninitStats<'a, const UP: bool> {
+pub struct MaybeUnallocatedStats<'a, const UP: bool> {
     /// This is the chunk we are currently allocating on.
     pub current: Option<Chunk<'a, UP>>,
 }
 
-impl<const UP: bool> Copy for UninitStats<'_, UP> {}
+impl<const UP: bool> Copy for MaybeUnallocatedStats<'_, UP> {}
 
 #[allow(clippy::expl_impl_clone_on_copy)]
-impl<const UP: bool> Clone for UninitStats<'_, UP> {
+impl<const UP: bool> Clone for MaybeUnallocatedStats<'_, UP> {
     #[inline(always)]
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<const UP: bool> PartialEq for UninitStats<'_, UP> {
+impl<const UP: bool> PartialEq for MaybeUnallocatedStats<'_, UP> {
     #[inline(always)]
     fn eq(&self, other: &Self) -> bool {
         self.current == other.current
@@ -175,15 +175,15 @@ impl<const UP: bool> PartialEq for UninitStats<'_, UP> {
     }
 }
 
-impl<const UP: bool> Eq for UninitStats<'_, UP> {}
+impl<const UP: bool> Eq for MaybeUnallocatedStats<'_, UP> {}
 
-impl<'a, const UP: bool> Debug for UninitStats<'a, UP> {
+impl<'a, const UP: bool> Debug for MaybeUnallocatedStats<'a, UP> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.debug_format("Stats", f)
     }
 }
 
-impl<'a, const UP: bool> UninitStats<'a, UP> {
+impl<'a, const UP: bool> MaybeUnallocatedStats<'a, UP> {
     /// Returns the amount of chunks.
     #[must_use]
     pub fn count(self) -> usize {
@@ -282,7 +282,7 @@ impl<'a, const UP: bool> UninitStats<'a, UP> {
         ChunkPrevIter { chunk: Some(start) }
     }
 
-    /// Converts this `UninitStats` into `Some(Stats)` or `None` if the current chunk is `None`.
+    /// Converts this `MaybeUnallocatedStats` into `Some(Stats)` or `None` if the current chunk is `None`.
     #[inline]
     #[must_use]
     pub fn to_stats(self) -> Option<Stats<'a, UP>> {
@@ -344,14 +344,14 @@ impl<const UP: bool> Debug for Chunk<'_, UP> {
 
 impl<'a, const UP: bool> Chunk<'a, UP> {
     #[inline(always)]
-    pub(crate) fn new<'b, const MIN_ALIGN: usize, const INIT: bool, A>(
-        bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, INIT>,
+    pub(crate) fn new<'b, const MIN_ALIGN: usize, const GUARANTEED_ALLOCATED: bool, A>(
+        bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     ) -> Option<Self>
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
         'a: 'b,
     {
-        if !INIT && bump.chunk.get().is_the_empty_chunk() {
+        if GUARANTEED_ALLOCATED && bump.chunk.get().is_the_empty_chunk() {
             return None;
         }
 
@@ -362,7 +362,7 @@ impl<'a, const UP: bool> Chunk<'a, UP> {
     }
 
     #[inline(always)]
-    pub(crate) fn new_init<'b, const MIN_ALIGN: usize, A>(bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, true>) -> Self
+    pub(crate) fn new_allocated<'b, const MIN_ALIGN: usize, A>(bump: &'b BumpScope<'a, A, MIN_ALIGN, UP>) -> Self
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
         'a: 'b,

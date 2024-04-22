@@ -28,7 +28,7 @@ fn do_fuzz_dir_align<const UP: bool, const MIN_ALIGN: usize>(fuzz: &Fuzz)
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
-    let bump: Bump<Global, MIN_ALIGN, UP, false> = Bump::with_capacity(Layout::new::<[u8; 32]>());
+    let bump: Bump<Global, MIN_ALIGN, UP> = Bump::with_capacity(Layout::new::<[u8; 32]>());
 
     let mut prev = Range::new_slice(bump.alloc_uninit_slice::<u8>(fuzz.offset.0).into_ref());
 
@@ -175,7 +175,7 @@ trait AnyBump {
     fn alloc_static_slice<T: Default>(&self, len: usize, drop: bool) -> Range;
 }
 
-impl<const UP: bool, const MIN_ALIGN: usize> AnyBump for &Bump<Global, MIN_ALIGN, UP, false>
+impl<const UP: bool, const MIN_ALIGN: usize> AnyBump for &Bump<Global, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {

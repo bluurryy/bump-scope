@@ -1493,7 +1493,7 @@ impl<'a, T> BumpBox<'a, [T]> {
             }
 
             /* Technically we could let `gap` clean up with its Drop, but
-             * when `same_bucket` is guaranteed to not panic, this bloats a little
+             * when `same_bucket` is [guaranteed allocated]o not panic, this bloats a little
              * the codegen, so we just do it manually */
             gap.boxed.set_len(gap.write);
             mem::forget(gap);

@@ -6,7 +6,7 @@ use bump_scope::allocator_api2::alloc::Global;
 type Bump = bump_scope::Bump<Global, 1, true, false>;
 
 thread_local! {
-    static BUMP: Bump = const { Bump::uninit() };
+    static BUMP: Bump = const { Bump::unallocated() };
 }
 
 #[test]

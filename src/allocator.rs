@@ -8,8 +8,8 @@ use crate::{
     bump_down, polyfill::nonnull, up_align_usize_unchecked, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment,
 };
 
-unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Allocator
-    for BumpScope<'_, A, MIN_ALIGN, UP, INIT>
+unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
+    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -44,8 +44,8 @@ where
     }
 }
 
-unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool> Allocator
-    for Bump<A, MIN_ALIGN, UP, INIT>
+unsafe impl<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
+    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -81,8 +81,8 @@ where
 }
 
 #[inline(always)]
-fn allocate<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool>(
-    bump: &BumpScope<A, MIN_ALIGN, UP, INIT>,
+fn allocate<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
+    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
@@ -92,8 +92,8 @@ where
 }
 
 #[inline(always)]
-unsafe fn deallocate<const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A>(
-    bump: &BumpScope<A, MIN_ALIGN, UP, INIT>,
+unsafe fn deallocate<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>(
+    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     ptr: NonNull<u8>,
     layout: Layout,
 ) where
@@ -106,8 +106,8 @@ unsafe fn deallocate<const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A
 }
 
 #[inline(always)]
-unsafe fn deallocate_assume_last<const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A>(
-    bump: &BumpScope<A, MIN_ALIGN, UP, INIT>,
+unsafe fn deallocate_assume_last<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>(
+    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     ptr: NonNull<u8>,
     layout: Layout,
 ) where
@@ -128,8 +128,8 @@ unsafe fn deallocate_assume_last<const MIN_ALIGN: usize, const UP: bool, const I
 }
 
 #[inline(always)]
-unsafe fn is_last<const MIN_ALIGN: usize, const UP: bool, const INIT: bool, A>(
-    bump: &BumpScope<A, MIN_ALIGN, UP, INIT>,
+unsafe fn is_last<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>(
+    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     ptr: NonNull<u8>,
     layout: Layout,
 ) -> bool
@@ -144,8 +144,8 @@ where
 }
 
 #[inline(always)]
-unsafe fn grow<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool>(
-    bump: &BumpScope<A, MIN_ALIGN, UP, INIT>,
+unsafe fn grow<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
+    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -231,8 +231,8 @@ where
 }
 
 #[inline(always)]
-unsafe fn grow_zeroed<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool>(
-    bump: &BumpScope<A, MIN_ALIGN, UP, INIT>,
+unsafe fn grow_zeroed<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
+    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -249,8 +249,8 @@ where
 }
 
 #[inline(always)]
-unsafe fn shrink<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool>(
-    bump: &BumpScope<A, MIN_ALIGN, UP, INIT>,
+unsafe fn shrink<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
+    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -263,8 +263,8 @@ where
     /// Bumpalo just errors in this case..
     #[cold]
     #[inline(never)]
-    unsafe fn shrink_unfit<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const INIT: bool>(
-        bump: &BumpScope<A, MIN_ALIGN, UP, INIT>,
+    unsafe fn shrink_unfit<A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
+        bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
         old_ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
