@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 (2024-04-22)
 - **breaking:** renamed `Stats` to `GuaranteedAllocatedStats`
 - **breaking:** renamed `MaybeUnallocatedStats` to `Stats`
 - **breaking:** `stats` now always returns `Stats` and is always available
