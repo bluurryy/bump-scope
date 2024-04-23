@@ -28,27 +28,30 @@ impl Checkpoint {
 }
 
 /// Returned from [`BumpScope::scope_guard`].
-pub struct BumpScopeGuard<'a, A: Allocator + Clone, const MIN_ALIGN: usize = 1, const UP: bool = true>
+pub struct BumpScopeGuard<'a, A, const MIN_ALIGN: usize = 1, const UP: bool = true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     pub(crate) chunk: RawChunk<UP, A>,
     address: usize,
     marker: PhantomData<&'a mut ()>,
 }
 
-impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Debug for BumpScopeGuard<'a, A, MIN_ALIGN, UP>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Debug for BumpScopeGuard<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.stats().debug_format("BumpScopeGuard", f)
     }
 }
 
-impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Drop for BumpScopeGuard<'a, A, MIN_ALIGN, UP>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpScopeGuard<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     #[inline(always)]
     fn drop(&mut self) {
@@ -56,9 +59,10 @@ where
     }
 }
 
-impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpScopeGuard<'a, A, MIN_ALIGN, UP>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScopeGuard<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     #[inline(always)]
     #[allow(clippy::needless_pass_by_ref_mut)]
@@ -119,26 +123,29 @@ where
 ///
 /// This fulfills the same purpose as [`BumpScopeGuard`], but it does not need to store
 /// the address which the bump pointer needs to be reset to. It simply resets the bump pointer to the very start.
-pub struct BumpScopeGuardRoot<'b, A: Allocator + Clone, const MIN_ALIGN: usize = 1, const UP: bool = true>
+pub struct BumpScopeGuardRoot<'b, A, const MIN_ALIGN: usize = 1, const UP: bool = true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     pub(crate) chunk: RawChunk<UP, A>,
     marker: PhantomData<&'b mut ()>,
 }
 
-impl<'b, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Debug for BumpScopeGuardRoot<'b, A, MIN_ALIGN, UP>
+impl<'b, A, const MIN_ALIGN: usize, const UP: bool> Debug for BumpScopeGuardRoot<'b, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.guaranteed_allocated_stats().debug_format("BumpScopeGuardRoot", f)
     }
 }
 
-impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> Drop for BumpScopeGuardRoot<'a, A, MIN_ALIGN, UP>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpScopeGuardRoot<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     #[inline(always)]
     fn drop(&mut self) {
@@ -146,9 +153,10 @@ where
     }
 }
 
-impl<'a, A: Allocator + Clone, const MIN_ALIGN: usize, const UP: bool> BumpScopeGuardRoot<'a, A, MIN_ALIGN, UP>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScopeGuardRoot<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
 {
     #[inline(always)]
     #[allow(clippy::needless_pass_by_ref_mut)]
