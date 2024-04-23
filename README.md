@@ -41,7 +41,7 @@ Unlike `bumpalo`, this crate...
 - Supports [scopes and checkpoints](#scopes-and-checkpoints).
 - Drop is always called for allocated values unless explicitly leaked or forgotten.
   - `alloc*` methods return a `BumpBox<T>` which owns and drops `T`. Types that don't need dropping can be turned into references with `into_ref` and `into_mut`.
-- You can efficiently allocate items from *any* `Iterator` with `alloc_iter_mut`(`_rev`).
+- You can allocate a slice from *any* `Iterator` with `alloc_iter`.
 - Every method that panics on allocation failure has a fallible `try_*` counterpart.
 - `Bump`'s base allocator is generic.
 - `Bump` and `BumpScope` have the same repr as `NonNull<u8>`. (vs 3x pointer sized)
