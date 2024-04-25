@@ -159,6 +159,18 @@ cases! {
     mod alloc_u32_slice_clone fn(bump, value: &[u32]) -> &'a mut [u32] { bump.alloc_slice_clone(value) } in { bump.try_alloc_slice_clone(value) }
 }
 
+pub mod alloc_overaligned_but_size_matches {
+    use super::*;
+
+    pub fn up(bump: &Bump<4, true>, value: [u8;4]) -> &[u8;4] {
+        bump.alloc(value).into_ref()
+    }
+
+    pub fn down(bump: &Bump<4, false>, value: [u8; 4]) -> &[u8;4] {
+        bump.alloc(value).into_ref()
+    }
+}
+
 #[derive(Clone)]
 #[allow(dead_code)]
 pub struct foo(u64);
