@@ -120,7 +120,7 @@ def --wrapped main [
     }
   }
 
-  for dir in [up, down] {
+  for dir in [up, down, down_big] {
     $names ++= $"alloc_overaligned_but_size_matches::($dir)"
   }
 

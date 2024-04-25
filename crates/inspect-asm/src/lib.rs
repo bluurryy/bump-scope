@@ -169,6 +169,10 @@ pub mod alloc_overaligned_but_size_matches {
     pub fn down(bump: &Bump<4, false>, value: [u8; 4]) -> &[u8; 4] {
         bump.alloc(value).into_ref()
     }
+
+    pub fn down_big(bump: &Bump<4, false>, value: [u8; 40]) -> &[u8; 40] {
+        bump.alloc(value).into_ref()
+    }
 }
 
 #[derive(Clone)]
