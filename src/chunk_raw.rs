@@ -192,7 +192,9 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                 start = aligned_down + layout.align();
             };
 
-            if IS_CONST_ALIGN && L::IS_ARRAY_LAYOUT && layout.align() >= MIN_ALIGN {
+            if (IS_CONST_ALIGN && L::IS_ARRAY_LAYOUT && layout.align() >= MIN_ALIGN)
+                || (IS_CONST_SIZE && (layout.size() % MIN_ALIGN == 0))
+            {
                 // we are already aligned to `MIN_ALIGN`
             } else {
                 // up aligning an address `<= range.end` with an alignment `<= CHUNK_ALIGN_MIN` (which `MIN_ALIGN` is)

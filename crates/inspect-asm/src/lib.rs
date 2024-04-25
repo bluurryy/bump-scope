@@ -162,11 +162,11 @@ cases! {
 pub mod alloc_overaligned_but_size_matches {
     use super::*;
 
-    pub fn up(bump: &Bump<4, true>, value: [u8;4]) -> &[u8;4] {
+    pub fn up(bump: &Bump<4, true>, value: [u8; 4]) -> &[u8; 4] {
         bump.alloc(value).into_ref()
     }
 
-    pub fn down(bump: &Bump<4, false>, value: [u8; 4]) -> &[u8;4] {
+    pub fn down(bump: &Bump<4, false>, value: [u8; 4]) -> &[u8; 4] {
         bump.alloc(value).into_ref()
     }
 }
