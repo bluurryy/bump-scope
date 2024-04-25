@@ -245,9 +245,11 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                 // doesn't overflow because of the check above
                 end -= layout.size();
 
-                if IS_CONST_ALIGN && L::IS_ARRAY_LAYOUT && layout.align() == MIN_ALIGN {
-                    // we are already aligned to `MIN_ALIGN`
-                } else {
+                let needs_align_for_min_align = (!IS_CONST_ALIGN || !L::IS_ARRAY_LAYOUT || layout.align() < MIN_ALIGN)
+                    && (!IS_CONST_SIZE || (layout.size() % MIN_ALIGN != 0));
+                let needs_align_for_layout = !IS_CONST_ALIGN || !L::IS_ARRAY_LAYOUT || layout.align() > MIN_ALIGN;
+
+                if needs_align_for_min_align || needs_align_for_layout {
                     // down aligning an address `>= range.start` with an alignment `<= CHUNK_ALIGN_MIN` (which `layout.align()` is)
                     // can not exceed `range.start`, and thus also can't overflow
                     end = down_align_usize(end, layout.align().max(MIN_ALIGN));
