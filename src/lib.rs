@@ -354,7 +354,7 @@ pub use with_drop::WithDrop;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
 use array_layout::{ArrayLayout, LayoutTrait};
-use chunk_header::{empty_chunk_header, ChunkHeader};
+use chunk_header::{unallocated_chunk_header, ChunkHeader};
 use chunk_raw::RawChunk;
 use chunk_size::ChunkSize;
 use core::alloc::Layout;
@@ -913,7 +913,7 @@ macro_rules! bump_common_methods {
     ($is_scope:ident) => {
         #[inline(always)]
         pub(crate) fn is_unallocated(&self) -> bool {
-            !GUARANTEED_ALLOCATED && self.chunk.get().is_the_empty_chunk()
+            !GUARANTEED_ALLOCATED && self.chunk.get().is_unallocated()
         }
 
         $crate::condition! {

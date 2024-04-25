@@ -1,10 +1,11 @@
 use core::{alloc::Layout, cell::Cell, num::NonZeroUsize, ops::Range, ptr::NonNull};
 
 use crate::{
-    down_align_usize, empty_chunk_header,
+    down_align_usize,
     polyfill::{const_unwrap, nonnull, pointer},
-    up_align_nonzero, up_align_nonzero_unchecked, up_align_usize_unchecked, ArrayLayout, ChunkHeader, ChunkSize,
-    ErrorBehavior, LayoutTrait, MinimumAlignment, SizedTypeProperties, SupportedMinimumAlignment, CHUNK_ALIGN_MIN,
+    unallocated_chunk_header, up_align_nonzero, up_align_nonzero_unchecked, up_align_usize_unchecked, ArrayLayout,
+    ChunkHeader, ChunkSize, ErrorBehavior, LayoutTrait, MinimumAlignment, SizedTypeProperties, SupportedMinimumAlignment,
+    CHUNK_ALIGN_MIN,
 };
 
 use allocator_api2::alloc::Allocator;
@@ -105,8 +106,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         Self { header }
     }
 
-    pub fn is_the_empty_chunk(self) -> bool {
-        self.header.cast() == empty_chunk_header()
+    pub fn is_unallocated(self) -> bool {
+        self.header.cast() == unallocated_chunk_header()
     }
 
     /// Attempts to allocate a block of memory.

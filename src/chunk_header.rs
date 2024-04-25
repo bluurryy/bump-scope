@@ -14,13 +14,13 @@ pub(crate) struct ChunkHeader<A> {
 
 /// Wraps a [`ChunkHeader`], making it Sync so it can be used as a static.
 /// The empty chunk is never mutated, so this is fine.
-struct EmptyChunkHeader(ChunkHeader<()>);
+struct UnallocatedChunkHeader(ChunkHeader<()>);
 
-unsafe impl Sync for EmptyChunkHeader {}
+unsafe impl Sync for UnallocatedChunkHeader {}
 
-static EMPTY_CHUNK_HEADER: EmptyChunkHeader = EmptyChunkHeader(ChunkHeader {
-    pos: Cell::new(NonNull::<EmptyChunkHeader>::dangling().cast()),
-    end: NonNull::<EmptyChunkHeader>::dangling().cast(),
+static UNALLOCATED_CHUNK_HEADER: UnallocatedChunkHeader = UnallocatedChunkHeader(ChunkHeader {
+    pos: Cell::new(NonNull::<UnallocatedChunkHeader>::dangling().cast()),
+    end: NonNull::<UnallocatedChunkHeader>::dangling().cast(),
     prev: None,
     next: Cell::new(None),
     allocator: (),
@@ -28,7 +28,7 @@ static EMPTY_CHUNK_HEADER: EmptyChunkHeader = EmptyChunkHeader(ChunkHeader {
 
 cfg_const! {
     #[cfg_const(feature = "nightly-const-refs-to-static")]
-    pub(crate) fn empty_chunk_header() -> NonNull<ChunkHeader<()>> {
-        nonnull::from_ref(&EMPTY_CHUNK_HEADER.0)
+    pub(crate) fn unallocated_chunk_header() -> NonNull<ChunkHeader<()>> {
+        nonnull::from_ref(&UNALLOCATED_CHUNK_HEADER.0)
     }
 }

@@ -22,7 +22,7 @@ use crate::{
 use crate::infallible;
 
 #[cfg(feature = "alloc")]
-use crate::{empty_chunk_header, polyfill::cfg_const};
+use crate::{polyfill::cfg_const, unallocated_chunk_header};
 
 #[cfg(test)]
 use crate::WithDrop;
@@ -155,7 +155,7 @@ where
         /// **This is `const` when the `nightly-const-refs-to-static` is enabled.**
         #[must_use]
         pub fn unallocated() -> Self {
-            Self { chunk: Cell::new(unsafe { RawChunk::from_header(empty_chunk_header().cast()) }) }
+            Self { chunk: Cell::new(unsafe { RawChunk::from_header(unallocated_chunk_header().cast()) }) }
         }
     }
 }

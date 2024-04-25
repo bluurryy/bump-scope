@@ -119,7 +119,7 @@ where
     #[inline(never)]
     fn allocate_first_chunk<E: ErrorBehavior>(&self) -> Result<(), E> {
         // must only be called when we point to the empty chunk
-        debug_assert!(self.chunk.get().is_the_empty_chunk());
+        debug_assert!(self.chunk.get().is_unallocated());
 
         // we only point to an empty chunk if we were created by `unallocated` which is only available with `!GUARANTEED_ALLOCATED`
         assert!(!GUARANTEED_ALLOCATED);
