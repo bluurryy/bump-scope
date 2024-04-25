@@ -221,9 +221,13 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                 // thus its address can't be smaller than it.
                 end -= layout.size();
 
-                if IS_CONST_ALIGN && L::IS_ARRAY_LAYOUT && layout.align() == MIN_ALIGN {
-                    // we are already aligned to `MIN_ALIGN`
-                } else {
+                let needs_align_for_min_align = (!IS_CONST_ALIGN || !L::IS_ARRAY_LAYOUT || layout.align() < MIN_ALIGN)
+                    && (!IS_CONST_SIZE || (layout.size() % MIN_ALIGN != 0));
+                let needs_align_for_layout = !IS_CONST_ALIGN || !L::IS_ARRAY_LAYOUT || layout.align() > MIN_ALIGN;
+
+                if needs_align_for_min_align || needs_align_for_layout {
+                    // At this point layout's align is const, because we assume `IS_CONST_SIZE` implies `IS_CONST_ALIGN`.
+                    // That means `max` is evaluated at compile time, so we don't bother having different cases for either alignment.
                     end = down_align_usize(end, layout.align().max(MIN_ALIGN));
                 }
 
