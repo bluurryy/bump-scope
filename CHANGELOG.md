@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1 (2024-05-01)
+- **fixed:** crash in debug mode when using `alloc_iter_mut(_rev)` or calling `into_(boxed_)slice` on a `MutBumpVec(Rev)` ([#16](https://github.com/bluurryy/bump-scope/issues/16))
+- **added:** optimization to not align the bump pointer when the size happens to be a multiple of `MIN_ALIGN` ([#12](https://github.com/bluurryy/bump-scope/issues/12))
+
 ## 0.3.0 (2024-04-22)
 - **breaking:** renamed `Stats` to `GuaranteedAllocatedStats`
 - **breaking:** renamed `MaybeUnallocatedStats` to `Stats`
@@ -13,8 +17,8 @@
 
 ## 0.2.0 (2024-04-21)
 - **breaking:** adds the `INIT` const param to signify whether the bump has an allocated chunk
-- **added:** `Bump::uninit` to create a `Bump` without allocation (and `const` with feature `nightly-const-refs-to-static`)
-- **breaking:** `BumpVec::into_iter` returns `IntoIter<'a, T>` instead of `IntoIter<'b, T>`
+- **added:** `Bump::uninit` to create a `Bump` without allocation (and `const` with feature `nightly-const-refs-to-static`) ([#7](https://github.com/bluurryy/bump-scope/issues/7))
+- **breaking:** `BumpVec::into_iter` returns `IntoIter<'a, T>` instead of `IntoIter<'b, T>` ([#8](https://github.com/bluurryy/bump-scope/issues/8))
 
 ## 0.1.8 (2024-04-11)
 - **added:** `serde::Serialize` implementations for `BumpBox`, strings and vectors
@@ -49,7 +53,7 @@
 - **fix:** `BumpVec` and `BumpString` growing
 
 ## 0.1.0 (2024-03-28)
-- **breaking:** `BumpVec` and `BumpString` now take an `&Bump(Scope)`, `MutBumpVec` and `MutBumpString` take a `&mut Bump(Scope)`
+- **breaking:** `BumpVec` and `BumpString` now take an `&Bump(Scope)`, `MutBumpVec` and `MutBumpString` take a `&mut Bump(Scope)` ([#3](https://github.com/bluurryy/bump-scope/issues/3))
 
 ## 0.0.1 (2024-03-27)
 - **fixed:** allocating a downwards `Bump` with layout of `[u8; 0]` no longer panics
