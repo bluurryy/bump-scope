@@ -26,6 +26,7 @@ mod bump_vec_doc;
 mod mut_bump_vec_rev_doc;
 mod panic_safety;
 mod pool;
+mod unaligned_collection;
 
 #[cfg(feature = "serde")]
 mod serde;

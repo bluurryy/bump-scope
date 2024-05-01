@@ -190,7 +190,7 @@ where
     #[inline(always)]
     fn set_pos(&self, pos: NonZeroUsize, current_align: usize) {
         let chunk = self.chunk.get();
-        debug_assert_eq!(nonnull::addr(chunk.pos()).get() % current_align, 0);
+        debug_assert_eq!(pos.get() % current_align, 0);
 
         unsafe { chunk.set_pos_addr(pos.get()) }
 
