@@ -185,6 +185,14 @@ impl<'a, const UP: bool> Debug for Stats<'a, UP> {
     }
 }
 
+impl<'a, const UP: bool> From<GuaranteedAllocatedStats<'a, UP>> for Stats<'a, UP> {
+    fn from(value: GuaranteedAllocatedStats<'a, UP>) -> Self {
+        Stats {
+            current: Some(value.current),
+        }
+    }
+}
+
 impl<'a, const UP: bool> Stats<'a, UP> {
     /// Returns the amount of chunks.
     #[must_use]
