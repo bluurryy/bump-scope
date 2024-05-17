@@ -1,7 +1,5 @@
 use ::serde::{de::DeserializeSeed, Serialize};
 
-use crate::{bump_format, bump_vec};
-
 use super::*;
 
 fn assert_same<A: Serialize, B: Serialize>(a: &A, b: &B) {
@@ -28,31 +26,31 @@ fn ser() {
     }
 
     {
-        let a = bump_vec![in bump; 1, 2, 3];
+        let a = crate::vec![in bump; 1, 2, 3];
         let b = vec![1, 2, 3];
         assert_same(&a, &b);
     }
 
     {
-        let a = mut_bump_vec![in bump; 1, 2, 3];
+        let a = crate::mut_vec![in bump; 1, 2, 3];
         let b = vec![1, 2, 3];
         assert_same(&a, &b);
     }
 
     {
-        let a = mut_bump_vec_rev![in bump; 1, 2, 3];
+        let a = crate::mut_vec_rev![in bump; 1, 2, 3];
         let b = vec![1, 2, 3];
         assert_same(&a, &b);
     }
 
     {
-        let a = bump_format!(in bump, "Hello world!");
+        let a = crate::format!(in bump, "Hello world!");
         let b = "Hello world!";
         assert_same(&a, &b);
     }
 
     {
-        let a = mut_bump_format!(in bump, "Hello world!");
+        let a = crate::mut_format!(in bump, "Hello world!");
         let b = "Hello world!";
         assert_same(&a, &b);
     }
@@ -83,20 +81,20 @@ fn de() {
     }
 
     {
-        let src = bump_vec![in bump_src; 1, 2, 3];
-        let mut dst = bump_vec![in bump_dst];
+        let src = crate::vec![in bump_src; 1, 2, 3];
+        let mut dst = crate::vec![in bump_dst];
         roundtrip(&src, &mut dst);
     }
 
     {
-        let src = mut_bump_vec![in bump_src; 1, 2, 3];
-        let mut dst = mut_bump_vec![in bump_dst];
+        let src = crate::mut_vec![in bump_src; 1, 2, 3];
+        let mut dst = mut_vec![in bump_dst];
         roundtrip(&src, &mut dst);
     }
 
     {
-        let src = mut_bump_vec_rev![in bump_src; 1, 2, 3];
-        let mut dst: MutBumpVecRev<i32> = mut_bump_vec_rev![in bump_dst];
+        let src = crate::mut_vec_rev![in bump_src; 1, 2, 3];
+        let mut dst: MutVecRev<i32> = mut_vec_rev![in bump_dst];
 
         let json = serde_json::to_string(&src).unwrap();
         let mut deserializer = serde_json::Deserializer::from_str(&json);
@@ -114,14 +112,14 @@ fn de() {
     }
 
     {
-        let src = bump_format!(in bump_src, "Hello World!");
-        let mut dst = bump_format!(in bump_dst);
+        let src = crate::format!(in bump_src, "Hello World!");
+        let mut dst = crate::format!(in bump_dst);
         roundtrip(&src, &mut dst);
     }
 
     {
-        let src = mut_bump_format!(in bump_src, "Hello World!");
-        let mut dst = mut_bump_format!(in bump_dst);
+        let src = mut_format!(in bump_src, "Hello World!");
+        let mut dst = mut_format!(in bump_dst);
         roundtrip(&src, &mut dst);
     }
 }

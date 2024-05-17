@@ -3,7 +3,7 @@
 
 use bump_scope::{
     allocator_api2::alloc::{AllocError, Global, Layout},
-    Bump, BumpBox, MinimumAlignment, SupportedMinimumAlignment,
+    Box, Bump, MinimumAlignment, SupportedMinimumAlignment,
 };
 
 trait Bumper {
@@ -28,27 +28,27 @@ where
     }
 
     fn alloc<T>(&self, value: T) -> &mut T {
-        BumpBox::leak(Bump::alloc(self, value))
+        Box::leak(Bump::alloc(self, value))
     }
 
     fn alloc_with<T>(&self, f: impl FnOnce() -> T) -> &mut T {
-        BumpBox::leak(Bump::alloc_with(self, f))
+        Box::leak(Bump::alloc_with(self, f))
     }
 
     fn alloc_try_with<T, E>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<&mut T, E> {
-        Bump::alloc_try_with(self, f).map(BumpBox::leak)
+        Bump::alloc_try_with(self, f).map(Box::leak)
     }
 
     fn try_alloc<T>(&self, value: T) -> Result<&mut T, AllocError> {
-        Bump::try_alloc(self, value).map(BumpBox::leak)
+        Bump::try_alloc(self, value).map(Box::leak)
     }
 
     fn try_alloc_with<T>(&self, f: impl FnOnce() -> T) -> Result<&mut T, AllocError> {
-        Bump::try_alloc_with(self, f).map(BumpBox::leak)
+        Bump::try_alloc_with(self, f).map(Box::leak)
     }
 
     fn try_alloc_try_with<T, E>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<Result<&mut T, E>, AllocError> {
-        Bump::try_alloc_try_with(self, f).map(|r| r.map(BumpBox::leak))
+        Bump::try_alloc_try_with(self, f).map(|r| r.map(Box::leak))
     }
 }
 

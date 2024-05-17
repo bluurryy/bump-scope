@@ -9,6 +9,9 @@ use core::{
     ops::Index,
     sync::atomic::{AtomicUsize, Ordering},
 };
+
+use std::vec::Vec as StdVec;
+
 use std::io::IoSlice;
 
 #[cfg(feature = "nightly-coerce-unsized")]
@@ -40,14 +43,13 @@ const OVERHEAD: usize = ChunkSize::<true, Global>::OVERHEAD.get();
 const MALLOC_OVERHEAD: usize = ASSUMED_MALLOC_OVERHEAD_SIZE.get();
 
 use crate::{
-    chunk_size::ASSUMED_MALLOC_OVERHEAD_SIZE, infallible, mut_bump_format, mut_bump_vec, mut_bump_vec_rev, Bump, BumpBox,
-    BumpScope, BumpVec, Chunk, ChunkHeader, ChunkSize, FmtFn, IntoIter, MinimumAlignment, MutBumpString, MutBumpVec,
-    MutBumpVecRev, SupportedMinimumAlignment,
+    chunk_size::ASSUMED_MALLOC_OVERHEAD_SIZE, infallible, mut_format, mut_vec, mut_vec_rev, Box, Bump, BumpScope, Chunk,
+    ChunkHeader, ChunkSize, FmtFn, IntoIter, MinimumAlignment, MutString, MutVec, MutVecRev, SupportedMinimumAlignment, Vec,
 };
 
 #[allow(dead_code)]
 fn assert_covariant() {
-    fn bump_box<'a, 'other>(x: BumpBox<'static, &'static str>) -> BumpBox<'a, &'other str> {
+    fn bump_box<'a, 'other>(x: Box<'static, &'static str>) -> Box<'a, &'other str> {
         x
     }
 
@@ -55,11 +57,11 @@ fn assert_covariant() {
         x
     }
 
-    // fn mut_bump_vec<'b, 'a, 'other>(x: MutBumpVec<'b, 'static, &'static str>) -> MutBumpVec<'b, 'a, &'other str> {
+    // fn mut_vec<'b, 'a, 'other>(x: MutVec<'b, 'static, &'static str>) -> MutVec<'b, 'a, &'other str> {
     //     x
     // }
 
-    // fn mut_bump_string<'b, 'a>(x: MutBumpString<'b, 'static>) -> MutBumpString<'b, 'a> {
+    // fn mut_bump_string<'b, 'a>(x: MutString<'b, 'static>) -> MutString<'b, 'a> {
     //     x
     // }
 }
@@ -96,25 +98,25 @@ either_way! {
 
     reset_single_chunk
 
-    mut_bump_vec
+    mut_vec
 
-    mut_bump_vec_push_pop
+    mut_vec_push_pop
 
-    mut_bump_vec_insert
+    mut_vec_insert
 
-    mut_bump_vec_remove
+    mut_vec_remove
 
-    mut_bump_vec_swap_remove
+    mut_vec_swap_remove
 
-    mut_bump_vec_extend
+    mut_vec_extend
 
-    mut_bump_vec_drop
+    mut_vec_drop
 
-    mut_bump_vec_write
+    mut_vec_write
 
-    bump_vec_shrink_can
+    vec_shrink_can
 
-    bump_vec_shrink_cant
+    vec_shrink_cant
 
     alloc_iter
 
@@ -171,12 +173,12 @@ fn assert_send<const UP: bool>() {
     must_be_send(&bump);
 }
 
-fn mut_bump_vec<const UP: bool>() {
+fn mut_vec<const UP: bool>() {
     const TIMES: usize = 5;
 
     for (size, count) in [(0, 2), (512, 1)] {
         let mut bump = Bump::<Global, 1, UP>::with_size(size);
-        let mut vec = MutBumpVec::new_in(&mut bump);
+        let mut vec = MutVec::new_in(&mut bump);
         assert_eq!(vec.guaranteed_allocated_stats().count(), 1);
         vec.extend(core::iter::repeat(3).take(TIMES));
         assert_eq!(vec.guaranteed_allocated_stats().count(), count);
@@ -191,9 +193,9 @@ fn mut_bump_vec<const UP: bool>() {
     }
 }
 
-fn mut_bump_vec_push_pop<const UP: bool>() {
+fn mut_vec_push_pop<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
-    let mut vec = mut_bump_vec![in bump; 1, 2];
+    let mut vec = mut_vec![in bump; 1, 2];
 
     vec.push(3);
 
@@ -207,9 +209,9 @@ fn mut_bump_vec_push_pop<const UP: bool>() {
     assert_eq!(vec, [4]);
 }
 
-fn mut_bump_vec_insert<const UP: bool>() {
+fn mut_vec_insert<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
-    let mut vec = mut_bump_vec![in bump; 1, 2, 3];
+    let mut vec = mut_vec![in bump; 1, 2, 3];
 
     vec.insert(1, 4);
     assert_eq!(vec, [1, 4, 2, 3]);
@@ -221,9 +223,9 @@ fn mut_bump_vec_insert<const UP: bool>() {
     assert_eq!(vec, [6, 1, 4, 2, 3, 5]);
 }
 
-fn mut_bump_vec_remove<const UP: bool>() {
+fn mut_vec_remove<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
-    let mut vec = mut_bump_vec![in bump; 1, 2, 3, 4, 5];
+    let mut vec = mut_vec![in bump; 1, 2, 3, 4, 5];
 
     assert_eq!(vec.remove(1), 2);
     assert_eq!(vec, [1, 3, 4, 5]);
@@ -235,9 +237,9 @@ fn mut_bump_vec_remove<const UP: bool>() {
     assert_eq!(vec, [3, 4]);
 }
 
-fn mut_bump_vec_swap_remove<const UP: bool>() {
+fn mut_vec_swap_remove<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
-    let mut vec = mut_bump_vec![in bump; 1, 2, 3, 4, 5];
+    let mut vec = mut_vec![in bump; 1, 2, 3, 4, 5];
 
     assert_eq!(vec.swap_remove(1), 2);
     assert_eq!(vec, [1, 5, 3, 4]);
@@ -249,9 +251,9 @@ fn mut_bump_vec_swap_remove<const UP: bool>() {
     assert_eq!(vec, [3, 5]);
 }
 
-fn mut_bump_vec_extend<const UP: bool>() {
+fn mut_vec_extend<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
-    let mut vec = mut_bump_vec![in bump];
+    let mut vec = mut_vec![in bump];
 
     vec.extend([1, 2, 3]);
     assert_eq!(vec, [1, 2, 3]);
@@ -269,7 +271,7 @@ fn mut_bump_vec_extend<const UP: bool>() {
     assert_eq!(vec, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
 }
 
-fn mut_bump_vec_drop<const UP: bool>() {
+fn mut_vec_drop<const UP: bool>() {
     const SIZE: usize = 32;
     assert_eq!(mem::size_of::<ChunkHeader<Global>>(), SIZE);
 
@@ -278,7 +280,7 @@ fn mut_bump_vec_drop<const UP: bool>() {
     assert_eq!(bump.guaranteed_allocated_stats().capacity(), 64 - OVERHEAD);
     assert_eq!(bump.guaranteed_allocated_stats().remaining(), 64 - OVERHEAD);
 
-    let mut vec: MutBumpVec<u8, Global, 1, UP> = mut_bump_vec![in bump];
+    let mut vec: MutVec<u8, Global, 1, UP> = mut_vec![in bump];
     vec.reserve(33);
 
     assert_eq!(vec.guaranteed_allocated_stats().current.size(), 128 - MALLOC_OVERHEAD);
@@ -296,11 +298,11 @@ fn mut_bump_vec_drop<const UP: bool>() {
     assert_eq!(bump.guaranteed_allocated_stats().count(), 2);
 }
 
-fn mut_bump_vec_write<const UP: bool>() {
+fn mut_vec_write<const UP: bool>() {
     use std::io::Write;
 
     let mut bump = Bump::<Global, 1, UP>::new();
-    let mut vec: MutBumpVec<u8, Global, 1, UP> = mut_bump_vec![in bump];
+    let mut vec: MutVec<u8, Global, 1, UP> = mut_vec![in bump];
 
     let _ = vec.write(&[0]).unwrap();
 
@@ -332,25 +334,25 @@ fn reset_single_chunk<const UP: bool>() {
 
 fn macro_syntax<const UP: bool>() {
     #[allow(clippy::needless_pass_by_value)]
-    fn check<T: Debug + PartialEq, const UP: bool>(v: MutBumpVec<T, Global, 1, UP>, expected: &[T]) {
+    fn check<T: Debug + PartialEq, const UP: bool>(v: MutVec<T, Global, 1, UP>, expected: &[T]) {
         dbg!(&v);
         assert_eq!(v, expected);
     }
 
     let mut bump = Bump::<Global, 1, UP>::new();
 
-    check::<i32, UP>(mut_bump_vec![in bump], &[]);
-    check(mut_bump_vec![in bump; 1, 2, 3], &[1, 2, 3]);
-    check(mut_bump_vec![in bump; 5; 3], &[5, 5, 5]);
+    check::<i32, UP>(mut_vec![in bump], &[]);
+    check(mut_vec![in bump; 1, 2, 3], &[1, 2, 3]);
+    check(mut_vec![in bump; 5; 3], &[5, 5, 5]);
 
-    check::<i32, UP>(mut_bump_vec![in &mut bump], &[]);
-    check(mut_bump_vec![in &mut bump; 1, 2, 3], &[1, 2, 3]);
-    check(mut_bump_vec![in &mut bump; 5; 3], &[5, 5, 5]);
+    check::<i32, UP>(mut_vec![in &mut bump], &[]);
+    check(mut_vec![in &mut bump; 1, 2, 3], &[1, 2, 3]);
+    check(mut_vec![in &mut bump; 5; 3], &[5, 5, 5]);
 }
 
 fn debug_sizes<const UP: bool>(bump: &Bump<Global, 1, UP>) {
     let iter = bump.guaranteed_allocated_stats().small_to_big();
-    let vec = iter.map(Chunk::size).collect::<Vec<_>>();
+    let vec = iter.map(Chunk::size).collect::<StdVec<_>>();
     let sizes = FmtFn(|f| write!(f, "{vec:?}"));
     dbg!(sizes);
 }
@@ -543,105 +545,105 @@ fn with_drop() {
 
 #[allow(dead_code)]
 fn api_that_accepts_bump_or_bump_scope() {
-    fn vec_from_mut_bump(bump: &mut Bump) -> MutBumpVec<i32> {
-        MutBumpVec::new_in(bump)
+    fn vec_from_mut_bump(bump: &mut Bump) -> MutVec<i32> {
+        MutVec::new_in(bump)
     }
 
-    fn vec_from_mut_bump_scope<'b, 'a>(bump: &'b mut BumpScope<'a>) -> MutBumpVec<'b, 'a, i32> {
-        MutBumpVec::new_in(bump)
+    fn vec_from_mut_bump_scope<'b, 'a>(bump: &'b mut BumpScope<'a>) -> MutVec<'b, 'a, i32> {
+        MutVec::new_in(bump)
     }
 
-    fn string_from_mut_bump(bump: &mut Bump) -> MutBumpString {
-        MutBumpString::new_in(bump)
+    fn string_from_mut_bump(bump: &mut Bump) -> MutString {
+        MutString::new_in(bump)
     }
 
-    fn string_from_mut_bump_scope<'b, 'a>(bump: &'b mut BumpScope<'a>) -> MutBumpString<'b, 'a> {
-        MutBumpString::new_in(bump)
-    }
-}
-
-#[allow(dead_code)]
-fn bump_vec_macro() {
-    fn new_in(bump: &mut Bump) -> MutBumpVec<u32> {
-        mut_bump_vec![in bump]
-    }
-
-    fn from_array_in(bump: &mut Bump) -> MutBumpVec<u32> {
-        mut_bump_vec![in bump; 1, 2, 3]
-    }
-
-    fn from_elem_in(bump: &mut Bump) -> MutBumpVec<u32> {
-        mut_bump_vec![in bump; 3; 5]
-    }
-
-    fn try_new_in(bump: &mut Bump) -> Result<MutBumpVec<u32>> {
-        mut_bump_vec![try in bump]
-    }
-
-    fn try_from_array_in(bump: &mut Bump) -> Result<MutBumpVec<u32>> {
-        mut_bump_vec![try in bump; 1, 2, 3]
-    }
-
-    fn try_from_elem_in(bump: &mut Bump) -> Result<MutBumpVec<u32>> {
-        mut_bump_vec![try in bump; 3; 5]
+    fn string_from_mut_bump_scope<'b, 'a>(bump: &'b mut BumpScope<'a>) -> MutString<'b, 'a> {
+        MutString::new_in(bump)
     }
 }
 
 #[allow(dead_code)]
-fn bump_vec_rev_macro() {
-    fn new_in(bump: &mut Bump) -> MutBumpVecRev<u32> {
-        mut_bump_vec_rev![in bump]
+fn vec_macro() {
+    fn new_in(bump: &mut Bump) -> MutVec<u32> {
+        mut_vec![in bump]
     }
 
-    fn from_array_in(bump: &mut Bump) -> MutBumpVecRev<u32> {
-        mut_bump_vec_rev![in bump; 1, 2, 3]
+    fn from_array_in(bump: &mut Bump) -> MutVec<u32> {
+        mut_vec![in bump; 1, 2, 3]
     }
 
-    fn from_elem_in(bump: &mut Bump) -> MutBumpVecRev<u32> {
-        mut_bump_vec_rev![in bump; 3; 5]
+    fn from_elem_in(bump: &mut Bump) -> MutVec<u32> {
+        mut_vec![in bump; 3; 5]
     }
 
-    fn try_new_in(bump: &mut Bump) -> Result<MutBumpVecRev<u32>> {
-        mut_bump_vec_rev![try in bump]
+    fn try_new_in(bump: &mut Bump) -> Result<MutVec<u32>> {
+        mut_vec![try in bump]
     }
 
-    fn try_from_array_in(bump: &mut Bump) -> Result<MutBumpVecRev<u32>> {
-        mut_bump_vec_rev![try in bump; 1, 2, 3]
+    fn try_from_array_in(bump: &mut Bump) -> Result<MutVec<u32>> {
+        mut_vec![try in bump; 1, 2, 3]
     }
 
-    fn try_from_elem_in(bump: &mut Bump) -> Result<MutBumpVecRev<u32>> {
-        mut_bump_vec_rev![try in bump; 3; 5]
+    fn try_from_elem_in(bump: &mut Bump) -> Result<MutVec<u32>> {
+        mut_vec![try in bump; 3; 5]
     }
 }
 
 #[allow(dead_code)]
-fn bump_format_macro() {
-    fn infallible_new(bump: &mut Bump) -> MutBumpString {
-        mut_bump_format!(in bump)
+fn vec_rev_macro() {
+    fn new_in(bump: &mut Bump) -> MutVecRev<u32> {
+        mut_vec_rev![in bump]
     }
 
-    fn fallible_new(bump: &mut Bump) -> Result<MutBumpString> {
-        mut_bump_format!(try in bump)
+    fn from_array_in(bump: &mut Bump) -> MutVecRev<u32> {
+        mut_vec_rev![in bump; 1, 2, 3]
     }
 
-    fn infallible_raw(bump: &mut Bump) -> MutBumpString {
-        mut_bump_format!(in bump, r"hey")
+    fn from_elem_in(bump: &mut Bump) -> MutVecRev<u32> {
+        mut_vec_rev![in bump; 3; 5]
     }
 
-    fn fallible_raw(bump: &mut Bump) -> Result<MutBumpString> {
-        mut_bump_format!(try in bump, r"hey")
+    fn try_new_in(bump: &mut Bump) -> Result<MutVecRev<u32>> {
+        mut_vec_rev![try in bump]
     }
 
-    fn infallible_fmt(bump: &mut Bump) -> MutBumpString {
+    fn try_from_array_in(bump: &mut Bump) -> Result<MutVecRev<u32>> {
+        mut_vec_rev![try in bump; 1, 2, 3]
+    }
+
+    fn try_from_elem_in(bump: &mut Bump) -> Result<MutVecRev<u32>> {
+        mut_vec_rev![try in bump; 3; 5]
+    }
+}
+
+#[allow(dead_code)]
+fn format_macro() {
+    fn infallible_new(bump: &mut Bump) -> MutString {
+        mut_format!(in bump)
+    }
+
+    fn fallible_new(bump: &mut Bump) -> Result<MutString> {
+        mut_format!(try in bump)
+    }
+
+    fn infallible_raw(bump: &mut Bump) -> MutString {
+        mut_format!(in bump, r"hey")
+    }
+
+    fn fallible_raw(bump: &mut Bump) -> Result<MutString> {
+        mut_format!(try in bump, r"hey")
+    }
+
+    fn infallible_fmt(bump: &mut Bump) -> MutString {
         let one = 1;
         let two = 2;
-        mut_bump_format!(in bump, "{one} + {two} = {}", one + two)
+        mut_format!(in bump, "{one} + {two} = {}", one + two)
     }
 
-    fn fallible_fmt(bump: &mut Bump) -> Result<MutBumpString> {
+    fn fallible_fmt(bump: &mut Bump) -> Result<MutString> {
         let one = 1;
         let two = 2;
-        mut_bump_format!(try in bump, "{one} + {two} = {}", one + two)
+        mut_format!(try in bump, "{one} + {two} = {}", one + two)
     }
 }
 
@@ -664,7 +666,7 @@ fn alloc_iter2() {
 #[test]
 fn vec_of_strings() {
     let bump: Bump = Bump::new();
-    let mut vec = BumpVec::new_in(&bump);
+    let mut vec = Vec::new_in(&bump);
 
     for i in 0..10 {
         let string = bump.alloc_fmt(format_args!("hello {i}")).into_ref();
@@ -676,10 +678,10 @@ fn vec_of_strings() {
     dbg!(&slice);
 }
 
-fn bump_vec_shrink_can<const UP: bool>() {
+fn vec_shrink_can<const UP: bool>() {
     let bump = Bump::<Global, 1, UP>::with_size(64);
 
-    let mut vec = BumpVec::<i32, Global, 1, UP>::from_array_in([1, 2, 3], &bump);
+    let mut vec = Vec::<i32, Global, 1, UP>::from_array_in([1, 2, 3], &bump);
     let addr = vec.as_ptr().addr();
     assert_eq!(vec.capacity(), 3);
     vec.shrink_to_fit();
@@ -698,10 +700,10 @@ fn bump_vec_shrink_can<const UP: bool>() {
     assert_eq!(vec.capacity(), 0);
 }
 
-fn bump_vec_shrink_cant<const UP: bool>() {
+fn vec_shrink_cant<const UP: bool>() {
     let bump = Bump::<Global, 1, UP>::with_size(64);
 
-    let mut vec = BumpVec::<i32, Global, 1, UP>::from_array_in([1, 2, 3], &bump);
+    let mut vec = Vec::<i32, Global, 1, UP>::from_array_in([1, 2, 3], &bump);
     let addr = vec.as_ptr().addr();
     assert_eq!(vec.capacity(), 3);
     bump.alloc_str("now you can't shrink haha");

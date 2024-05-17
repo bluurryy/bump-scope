@@ -8,11 +8,10 @@ use serde::{
 };
 
 use crate::{
-    BumpBox, BumpString, BumpVec, FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev,
-    SupportedMinimumAlignment,
+    Box, FixedString, FixedVec, MinimumAlignment, MutString, MutVec, MutVecRev, String, SupportedMinimumAlignment, Vec,
 };
 
-impl<T> Serialize for BumpBox<'_, T>
+impl<T> Serialize for Box<'_, T>
 where
     T: Serialize + ?Sized,
 {
@@ -24,7 +23,7 @@ where
     }
 }
 
-impl<T> Serialize for FixedBumpVec<'_, T>
+impl<T> Serialize for FixedVec<'_, T>
 where
     T: Serialize,
 {
@@ -37,7 +36,7 @@ where
 }
 
 impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Serialize
-    for BumpVec<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    for Vec<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     T: Serialize,
 {
@@ -50,7 +49,7 @@ where
 }
 
 impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Serialize
-    for MutBumpVec<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    for MutVec<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     T: Serialize,
 {
@@ -63,7 +62,7 @@ where
 }
 
 impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Serialize
-    for MutBumpVecRev<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    for MutVecRev<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     T: Serialize,
 {
@@ -75,7 +74,7 @@ where
     }
 }
 
-impl Serialize for FixedBumpString<'_> {
+impl Serialize for FixedString<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -85,7 +84,7 @@ impl Serialize for FixedBumpString<'_> {
 }
 
 impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Serialize
-    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    for String<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -96,7 +95,7 @@ impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool
 }
 
 impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Serialize
-    for MutBumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    for MutString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -136,7 +135,7 @@ impl Expected for AtMost {
     }
 }
 
-impl<'de, T> DeserializeSeed<'de> for &'_ mut FixedBumpVec<'_, T>
+impl<'de, T> DeserializeSeed<'de> for &'_ mut FixedVec<'_, T>
 where
     T: Deserialize<'de>,
 {
@@ -150,7 +149,7 @@ where
     }
 }
 
-impl<'de, T> Visitor<'de> for &'_ mut FixedBumpVec<'_, T>
+impl<'de, T> Visitor<'de> for &'_ mut FixedVec<'_, T>
 where
     T: Deserialize<'de>,
 {
@@ -183,7 +182,7 @@ where
 }
 
 impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> DeserializeSeed<'de>
-    for &'_ mut BumpVec<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    for &'_ mut Vec<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -200,7 +199,7 @@ where
 }
 
 impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Visitor<'de>
-    for &'_ mut BumpVec<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    for &'_ mut Vec<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -229,7 +228,7 @@ where
 }
 
 impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> DeserializeSeed<'de>
-    for &'_ mut MutBumpVec<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    for &'_ mut MutVec<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -246,7 +245,7 @@ where
 }
 
 impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Visitor<'de>
-    for &'_ mut MutBumpVec<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    for &'_ mut MutVec<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -275,7 +274,7 @@ where
 }
 
 impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> DeserializeSeed<'de>
-    for &'_ mut MutBumpVecRev<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    for &'_ mut MutVecRev<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -292,7 +291,7 @@ where
 }
 
 impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Visitor<'de>
-    for &'_ mut MutBumpVecRev<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    for &'_ mut MutVecRev<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -320,7 +319,7 @@ where
     }
 }
 
-impl<'de> DeserializeSeed<'de> for &'_ mut FixedBumpString<'_> {
+impl<'de> DeserializeSeed<'de> for &'_ mut FixedString<'_> {
     type Value = ();
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -331,7 +330,7 @@ impl<'de> DeserializeSeed<'de> for &'_ mut FixedBumpString<'_> {
     }
 }
 
-impl<'de> Visitor<'de> for &'_ mut FixedBumpString<'_> {
+impl<'de> Visitor<'de> for &'_ mut FixedString<'_> {
     type Value = ();
 
     fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
@@ -347,7 +346,7 @@ impl<'de> Visitor<'de> for &'_ mut FixedBumpString<'_> {
 }
 
 impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> DeserializeSeed<'de>
-    for &'_ mut BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    for &'_ mut String<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -363,7 +362,7 @@ where
 }
 
 impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Visitor<'de>
-    for &'_ mut BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    for &'_ mut String<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -383,7 +382,7 @@ where
 }
 
 impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> DeserializeSeed<'de>
-    for &'_ mut MutBumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    for &'_ mut MutString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -399,7 +398,7 @@ where
 }
 
 impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Visitor<'de>
-    for &'_ mut MutBumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    for &'_ mut MutString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,

@@ -1,8 +1,8 @@
 // NB: We avoid using closures to map `Result` and `Option`s in various places because they result in less readable assembly output.
-// When using closures, functions like `capacity_overflow` can get the name of some closure that invokes it instead, like `bump_scope::mut_bump_vec::MutBumpVec<T,_,_,A>::generic_grow_cold::{{closure}}`.
+// When using closures, functions like `capacity_overflow` can get the name of some closure that invokes it instead, like `bump_scope::mut_bump_vec::MutVec<T,_,_,A>::generic_grow_cold::{{closure}}`.
 
 // This crate uses modified code from the rust standard library. <https://github.com/rust-lang/rust/tree/master/library>.
-// Especially `MutBumpVec(Rev)`, `MutBumpString`, `polyfill` and `tests/from_std` are based on code from the standard library.
+// Especially `MutVec(Rev)`, `MutString`, `polyfill` and `tests/from_std` are based on code from the standard library.
 
 #![cfg_attr(not(any(test, feature = "std")), no_std)]
 #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api, vec_into_raw_parts))]
@@ -86,8 +86,8 @@
 //!
 //! Unlike `bumpalo`, this crate...
 //! - Supports [scopes and checkpoints](#scopes-and-checkpoints).
-//! - Drop is always called for allocated values unless explicitly [leaked](BumpBox::leak) or [forgotten](core::mem::forget).
-//!   - `alloc*` methods return a [`BumpBox<T>`](BumpBox) which owns and drops `T`. Types that don't need dropping can be turned into references with [`into_ref`](BumpBox::into_ref) and [`into_mut`](BumpBox::into_mut).
+//! - Drop is always called for allocated values unless explicitly [leaked](Box::leak) or [forgotten](core::mem::forget).
+//!   - `alloc*` methods return a [`bump_scope::Box<T>`](Box) which owns and drops `T`. Types that don't need dropping can be turned into references with [`into_ref`](Box::into_ref) and [`into_mut`](Box::into_mut).
 //! - You can allocate a slice from *any* `Iterator` with [`alloc_iter`](Bump::alloc_iter).
 //! - Every method that panics on allocation failure has a fallible `try_*` counterpart.
 //! - `Bump`'s base allocator is generic.
@@ -200,7 +200,7 @@
 //!
 //! - `std` *(default)*:
 //!
-//!   Adds implementations of `std::io` traits for `BumpBox` and `{Fixed, Mut}BumpVec`. Activates `alloc` feature.
+//!   Adds implementations of `std::io` traits for `Box` and `{Fixed, Mut}Vec`. Activates `alloc` feature.
 //!
 //! <p></p>
 //!
@@ -212,7 +212,7 @@
 //!
 //! - `serde`:
 //!
-//!   Adds `Serialize` implementations for `BumpBox`, strings and vectors.
+//!   Adds `Serialize` implementations for `Box`, strings and vectors.
 //!   Adds `DeserializeSeed` implementations for strings and vectors.
 //!
 //! <p></p>
@@ -226,8 +226,8 @@
 //!
 //! - `nightly-coerce-unsized` *(requires nightly)*:
 //!   
-//!   Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
-//!   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
+//!   Makes `Box<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
+//!   With this `Box<[i32;3]>` coerces to `Box<[i32]>`, `Box<dyn Debug>` and so on.
 //!
 //! <p></p>
 //!
@@ -260,8 +260,8 @@
 //! When `GUARANTEED_ALLOCATED` is false, the bump allocator may or may not have allocated chunks.
 //! You can create a bump allocator with no allocated chunks with [`Bump::unallocated`].
 //!
-//! You need a guaranteed allocated `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
-//! You can convert a maybe unallocated `Bump(Scope)` into a guaranteed allocated one with `into_guaranteed_allocated` or `as_guaranteed_allocated(_mut)`.
+//! You need a guaranteed allocated `Bump(BumpScope)` to create scopes via `scoped` and `scope_guard`.
+//! You can convert a maybe unallocated `Bump(BumpScope)` into a guaranteed allocated one with `into_guaranteed_allocated` or `as_guaranteed_allocated(_mut)`.
 //!
 //! The point of this is so `Bump`s can be created without allocating memory and even `const` constructed when the feature `nightly-const-refs-to-static` is enabled.
 //! At the same time `Bump`'s that have already allocated a chunk don't suffer runtime checks for entering scopes and creating checkpoints.
@@ -285,19 +285,19 @@ pub(crate) mod any_bump;
 mod bump;
 mod bump_align_guard;
 
-/// Contains [`BumpBox`] and associated types.
+/// Contains [`Box`] and associated types.
 mod bump_box;
 mod bump_scope;
 mod bump_scope_guard;
 mod mut_bump_string;
 
-/// Contains [`BumpVec`] and associated types.
+/// Contains [`Vec`] and associated types.
 mod bump_vec;
 
-/// Contains [`MutBumpVec`] and associated types.
+/// Contains [`MutVec`] and associated types.
 mod mut_bump_vec;
 
-/// Contains [`BumpString`] and associated types.
+/// Contains [`String`] and associated types.
 mod bump_string;
 
 mod array_layout;
@@ -310,7 +310,7 @@ mod fixed_bump_string;
 mod fixed_bump_vec;
 mod from_utf8_error;
 mod into_iter;
-/// Contains [`MutBumpVecRev`] and associated types.
+/// Contains [`MutVecRev`] and associated types.
 mod mut_bump_vec_rev;
 mod polyfill;
 mod set_len_on_drop;
@@ -332,22 +332,22 @@ pub use allocator_api2;
 #[cfg(test)]
 pub use any_bump::AnyBump;
 pub use bump::Bump;
-pub use bump_box::BumpBox;
+pub use bump_box::Box;
 #[cfg(feature = "std")]
 pub use bump_pool::{BumpPool, BumpPoolGuard};
 pub use bump_scope::BumpScope;
-pub use bump_scope_guard::{BumpScopeGuard, BumpScopeGuardRoot, Checkpoint};
-pub use bump_string::BumpString;
-pub use bump_vec::BumpVec;
+pub use bump_scope_guard::{Checkpoint, ScopeGuard, ScopeGuardRoot};
+pub use bump_string::String;
+pub use bump_vec::Vec;
 pub use drain::Drain;
 pub use extract_if::ExtractIf;
-pub use fixed_bump_string::FixedBumpString;
-pub use fixed_bump_vec::FixedBumpVec;
+pub use fixed_bump_string::FixedString;
+pub use fixed_bump_vec::FixedVec;
 pub use from_utf8_error::FromUtf8Error;
 pub use into_iter::IntoIter;
-pub use mut_bump_string::MutBumpString;
-pub use mut_bump_vec::MutBumpVec;
-pub use mut_bump_vec_rev::MutBumpVecRev;
+pub use mut_bump_string::MutString;
+pub use mut_bump_vec::MutVec;
+pub use mut_bump_vec_rev::MutVecRev;
 pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, GuaranteedAllocatedStats, Stats};
 #[cfg(test)]
 pub use with_drop::WithDrop;
@@ -369,7 +369,7 @@ const DEFAULT_START_CHUNK_SIZE: usize = 512;
 
 /// This trait marks types that don't need dropping.
 ///
-/// It is used as a bound for [`BumpBox`]'s [`into_ref`](BumpBox::into_ref) and [`into_mut`](BumpBox::into_mut) so you don't accidentally omit a drop that does matter.
+/// It is used as a bound for [`Box`]'s [`into_ref`](Box::into_ref) and [`into_mut`](Box::into_mut) so you don't accidentally omit a drop that does matter.
 pub trait NoDrop {}
 
 impl NoDrop for str {}
@@ -545,7 +545,7 @@ pub(crate) use doc_fn_stats;
 pub(crate) use doc_fn_stats_greedy;
 
 /// An allocator that allows `grow(_zeroed)`, `shrink` and `deallocate` calls with pointers that were not allocated by this allocator.
-/// This trait is used for [`BumpBox::into_box`](BumpBox::into_box) to allow safely converting a `BumpBox` into a `Box`.
+/// This trait is used for [`Box::into_box`](Box::into_box) to allow safely converting a `Box` into a `Box`.
 ///
 /// # Safety
 /// - `grow(_zeroed)`, `shrink` and `deallocate` must be ok to be called with a pointer that was not allocated by this Allocator
@@ -571,7 +571,7 @@ where
 
 /// Associates a lifetime to a wrapped type.
 ///
-/// This is used for [`BumpBox::into_box`] to attach a lifetime to the `Box`.
+/// This is used for [`Box::into_box`] to attach a lifetime to the `Box`.
 #[derive(Debug, Clone)]
 pub struct WithLifetime<'a, A> {
     inner: A,
@@ -1302,9 +1302,9 @@ define_alloc_methods! {
     impl
     for pub fn alloc
     for pub fn try_alloc
-    fn generic_alloc<{T}>(&self, value: T) -> BumpBox<T> | BumpBox<'a, T> {
+    fn generic_alloc<{T}>(&self, value: T) -> Box<T> | Box<'a, T> {
         if T::IS_ZST {
-            return Ok(BumpBox::zst(value));
+            return Ok(Box::zst(value));
         }
 
         self.generic_alloc_with(|| value)
@@ -1315,17 +1315,17 @@ define_alloc_methods! {
     impl
     for pub fn alloc_with
     for pub fn try_alloc_with
-    fn generic_alloc_with<{T}>(&self, f: impl FnOnce() -> T) -> BumpBox<T> | BumpBox<'a, T> {
+    fn generic_alloc_with<{T}>(&self, f: impl FnOnce() -> T) -> Box<T> | Box<'a, T> {
         if T::IS_ZST {
             let value = f();
-            return Ok(BumpBox::zst(value));
+            return Ok(Box::zst(value));
         }
 
         let ptr = self.do_alloc_sized::<B, T>()?;
 
         unsafe {
             pointer::write_with(ptr.as_ptr(), f);
-            Ok(BumpBox::from_raw(ptr))
+            Ok(Box::from_raw(ptr))
         }
     }
 
@@ -1335,7 +1335,7 @@ define_alloc_methods! {
     for pub fn alloc_default
     /// This is equivalent to `try_alloc_with(T::default())`.
     for pub fn try_alloc_default
-    fn generic_alloc_default<{T: Default}>(&self) -> BumpBox<T> | BumpBox<'a, T> {
+    fn generic_alloc_default<{T: Default}>(&self) -> Box<T> | Box<'a, T> {
         self.generic_alloc_with(Default::default)
     }
 
@@ -1346,10 +1346,10 @@ define_alloc_methods! {
     impl
     for pub fn alloc_try_with
     for pub fn try_alloc_try_with
-    fn generic_alloc_try_with<{T, E}>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> | Result<BumpBox<'a, T>, E> {
+    fn generic_alloc_try_with<{T, E}>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<Box<T>, E> | Result<Box<'a, T>, E> {
         if T::IS_ZST {
             return match f() {
-                Ok(value) => Ok(Ok(BumpBox::zst(value))),
+                Ok(value) => Ok(Ok(Box::zst(value))),
                 Err(error) => Ok(Err(error)),
             }
         }
@@ -1373,7 +1373,7 @@ define_alloc_methods! {
                     };
 
                     self.chunk.get().set_pos_addr(new_pos);
-                    BumpBox::from_raw(value)
+                    Box::from_raw(value)
                 }),
                 Err(error) => Err({
                     let error = error.as_ptr().read();
@@ -1392,9 +1392,9 @@ define_alloc_methods! {
     fn generic_alloc_slice_copy<{T: Copy}>(
         &self,
         slice: &[T],
-    ) -> BumpBox<[T]> | BumpBox<'a, [T]> {
+    ) -> Box<[T]> | Box<'a, [T]> {
         if T::IS_ZST {
-            return Ok(BumpBox::zst_slice_clone(slice));
+            return Ok(Box::zst_slice_clone(slice));
         }
 
         let len = slice.len();
@@ -1403,7 +1403,7 @@ define_alloc_methods! {
 
         unsafe {
             core::ptr::copy_nonoverlapping(src, dst.cast::<T>().as_ptr(), len);
-            Ok(BumpBox::from_raw(dst))
+            Ok(Box::from_raw(dst))
         }
     }
 
@@ -1414,9 +1414,9 @@ define_alloc_methods! {
     fn generic_alloc_slice_clone<{T: Clone}>(
         &self,
         slice: &[T],
-    ) -> BumpBox<[T]> | BumpBox<'a, [T]> {
+    ) -> Box<[T]> | Box<'a, [T]> {
         if T::IS_ZST {
-            return Ok(BumpBox::zst_slice_clone(slice));
+            return Ok(Box::zst_slice_clone(slice));
         }
 
         Ok(self.generic_alloc_uninit_slice_for(slice)?.init_clone(slice))
@@ -1426,9 +1426,9 @@ define_alloc_methods! {
     impl
     for pub fn alloc_slice_fill
     for pub fn try_alloc_slice_fill
-    fn generic_alloc_slice_fill<{T: Clone}>(&self, len: usize, value: T) -> BumpBox<[T]> | BumpBox<'a, [T]> {
+    fn generic_alloc_slice_fill<{T: Clone}>(&self, len: usize, value: T) -> Box<[T]> | Box<'a, [T]> {
         if T::IS_ZST {
-            return Ok(BumpBox::zst_slice_fill(len, value));
+            return Ok(Box::zst_slice_fill(len, value));
         }
 
         Ok(self.generic_alloc_uninit_slice(len)?.init_fill(value))
@@ -1443,9 +1443,9 @@ define_alloc_methods! {
     impl
     for pub fn alloc_slice_fill_with
     for pub fn try_alloc_slice_fill_with
-    fn generic_alloc_slice_fill_with<{T}>(&self, len: usize, f: impl FnMut() -> T) -> BumpBox<[T]> | BumpBox<'a, [T]> {
+    fn generic_alloc_slice_fill_with<{T}>(&self, len: usize, f: impl FnMut() -> T) -> Box<[T]> | Box<'a, [T]> {
         if T::IS_ZST {
-            return Ok(BumpBox::zst_slice_fill_with(len, f));
+            return Ok(Box::zst_slice_fill_with(len, f));
         }
 
         Ok(self.generic_alloc_uninit_slice(len)?.init_fill_with(f))
@@ -1455,7 +1455,7 @@ define_alloc_methods! {
     impl
     for pub fn alloc_str
     for pub fn try_alloc_str
-    fn generic_alloc_str(&self, src: &str) -> BumpBox<str> | BumpBox<'a, str> {
+    fn generic_alloc_str(&self, src: &str) -> Box<str> | Box<'a, str> {
         let slice = self.generic_alloc_slice_copy(src.as_bytes())?;
 
         // SAFETY: input is `str` so this is too
@@ -1483,12 +1483,12 @@ define_alloc_methods! {
     do errors
     /// Errors if a formatting trait implementation returned an error.
     for pub fn try_alloc_fmt
-    fn generic_alloc_fmt(&self, args: fmt::Arguments) -> BumpBox<str> | BumpBox<'a, str> {
+    fn generic_alloc_fmt(&self, args: fmt::Arguments) -> Box<str> | Box<'a, str> {
         if let Some(string) = args.as_str() {
             return self.generic_alloc_str(string);
         }
 
-        let mut string = BumpString::new_in(self);
+        let mut string = String::new_in(self);
 
         if fmt::Write::write_fmt(&mut string, args).is_err() {
             return Err(B::capacity_overflow());
@@ -1499,7 +1499,7 @@ define_alloc_methods! {
 
     /// Allocate a `str` from format arguments.
     impl
-    /// Unlike [`alloc_fmt`](Bump::alloc_fmt), this function requires a mutable `Bump(Scope)`.
+    /// Unlike [`alloc_fmt`](Bump::alloc_fmt), this function requires a mutable `Bump(BumpScope)`.
     do panics
     /// Panics if a formatting trait implementation returned an error.
     do examples
@@ -1514,16 +1514,16 @@ define_alloc_methods! {
     /// assert_eq!(string, "1 + 2 = 3");
     /// ```
     for pub fn alloc_fmt_mut
-    /// Unlike [`try_alloc_fmt`](Bump::try_alloc_fmt), this function requires a mutable `Bump(Scope)`.
+    /// Unlike [`try_alloc_fmt`](Bump::try_alloc_fmt), this function requires a mutable `Bump(BumpScope)`.
     do errors
     /// Errors if a formatting trait implementation returned an error.
     for pub fn try_alloc_fmt_mut
-    fn generic_alloc_fmt_mut(&mut self, args: fmt::Arguments) -> BumpBox<str> | BumpBox<'a, str> {
+    fn generic_alloc_fmt_mut(&mut self, args: fmt::Arguments) -> Box<str> | Box<'a, str> {
         if let Some(string) = args.as_str() {
             return self.generic_alloc_str(string);
         }
 
-        let mut string = MutBumpString::generic_with_capacity_in(0, self)?;
+        let mut string = MutString::generic_with_capacity_in(0, self)?;
 
         if fmt::Write::write_fmt(&mut string, args).is_err() {
             return Err(B::capacity_overflow());
@@ -1546,11 +1546,11 @@ define_alloc_methods! {
     for pub fn alloc_iter
     /// For better performance prefer [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) or [`try_alloc_iter_mut(_rev)`](Bump::try_alloc_iter_mut).
     for pub fn try_alloc_iter
-    fn generic_alloc_iter<{T}>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
+    fn generic_alloc_iter<{T}>(&self, iter: impl IntoIterator<Item = T>) -> Box<[T]> | Box<'a, [T]> {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = BumpVec::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = Vec::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
@@ -1573,7 +1573,7 @@ define_alloc_methods! {
     /// ```
     for pub fn alloc_iter_exact
     for pub fn try_alloc_iter_exact
-    fn generic_alloc_iter_exact<{T, I}>(&self, iter: impl IntoIterator<Item = T, IntoIter = I>) -> BumpBox<[T]> | BumpBox<'a, [T]>
+    fn generic_alloc_iter_exact<{T, I}>(&self, iter: impl IntoIterator<Item = T, IntoIter = I>) -> Box<[T]> | Box<'a, [T]>
     where {
         I: ExactSizeIterator<Item = T>
     } in {
@@ -1605,19 +1605,19 @@ define_alloc_methods! {
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
     impl
-    /// Unlike [`alloc_iter`](Bump::alloc_iter), this function requires a mutable `Bump(Scope)`.
+    /// Unlike [`alloc_iter`](Bump::alloc_iter), this function requires a mutable `Bump(BumpScope)`.
     ///
     /// When bumping downwards, prefer [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) or [`alloc_iter_exact`](Bump::alloc_iter_exact) as in this case this function incurs an additional copy of the slice internally.
     for pub fn alloc_iter_mut
-    /// Unlike [`try_alloc_iter`](Bump::try_alloc_iter), this function requires a mutable `Bump(Scope)`.
+    /// Unlike [`try_alloc_iter`](Bump::try_alloc_iter), this function requires a mutable `Bump(BumpScope)`.
     ///
     /// When bumping downwards, prefer [`try_alloc_iter_mut_rev`](Bump::try_alloc_iter_mut_rev) or [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) as in this case this function incurs an additional copy of the slice internally.
     for pub fn try_alloc_iter_mut
-    fn generic_alloc_iter_mut<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
+    fn generic_alloc_iter_mut<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> Box<[T]> | Box<'a, [T]> {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = MutBumpVec::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = MutVec::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
@@ -1642,11 +1642,11 @@ define_alloc_methods! {
     ///
     /// When bumping upwards, prefer [`try_alloc_iter_mut`](Bump::try_alloc_iter) or [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) as in this case this function incurs an additional copy of the slice internally.
     for pub fn try_alloc_iter_mut_rev
-    fn generic_alloc_iter_mut_rev<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
+    fn generic_alloc_iter_mut_rev<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> Box<[T]> | Box<'a, [T]> {
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = MutBumpVecRev::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = MutVecRev::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
@@ -1657,7 +1657,7 @@ define_alloc_methods! {
 
     /// Allocate an unitialized object.
     ///
-    /// You can safely initialize the object with [`init`](BumpBox::init) or unsafely with [`assume_init`](BumpBox::assume_init).
+    /// You can safely initialize the object with [`init`](Box::init) or unsafely with [`assume_init`](Box::assume_init).
     do examples
     /// Safely:
     /// ```
@@ -1686,18 +1686,18 @@ define_alloc_methods! {
     impl
     for pub fn alloc_uninit
     for pub fn try_alloc_uninit
-    fn generic_alloc_uninit<{T}>(&self) -> BumpBox<MaybeUninit<T>> | BumpBox<'a, MaybeUninit<T>> {
+    fn generic_alloc_uninit<{T}>(&self) -> Box<MaybeUninit<T>> | Box<'a, MaybeUninit<T>> {
         if T::IS_ZST {
-            return Ok(BumpBox::zst(MaybeUninit::uninit()));
+            return Ok(Box::zst(MaybeUninit::uninit()));
         }
 
         let ptr = self.do_alloc_sized::<B, T>()?.cast::<MaybeUninit<T>>();
-        unsafe { Ok(BumpBox::from_raw(ptr)) }
+        unsafe { Ok(Box::from_raw(ptr)) }
     }
 
     /// Allocate an unitialized object slice.
     ///
-    /// You can safely initialize the object with [`init_fill`](BumpBox::init_fill), [`init_fill_with`](BumpBox::init_fill_with), [`init_copy`](BumpBox::init_copy), [`init_clone`](BumpBox::init_clone) or unsafely with [`assume_init`](BumpBox::assume_init).
+    /// You can safely initialize the object with [`init_fill`](Box::init_fill), [`init_fill_with`](Box::init_fill_with), [`init_copy`](Box::init_copy), [`init_clone`](Box::init_clone) or unsafely with [`assume_init`](Box::assume_init).
     do examples
     /// Safely:
     /// ```
@@ -1729,42 +1729,42 @@ define_alloc_methods! {
     impl
     for pub fn alloc_uninit_slice
     for pub fn try_alloc_uninit_slice
-    fn generic_alloc_uninit_slice<{T}>(&self, len: usize) -> BumpBox<[MaybeUninit<T>]> | BumpBox<'a, [MaybeUninit<T>]> {
+    fn generic_alloc_uninit_slice<{T}>(&self, len: usize) -> Box<[MaybeUninit<T>]> | Box<'a, [MaybeUninit<T>]> {
         if T::IS_ZST {
-            return Ok(BumpBox::uninit_zst_slice(len));
+            return Ok(Box::uninit_zst_slice(len));
         }
 
         let ptr = self.do_alloc_slice::<B, T>(len)?.cast::<MaybeUninit<T>>();
 
         unsafe {
             let ptr = nonnull::slice_from_raw_parts(ptr, len);
-            Ok(BumpBox::from_raw(ptr))
+            Ok(Box::from_raw(ptr))
         }
     }
 
     /// Allocate an unitialized object slice.
     ///
-    /// You can safely initialize the object with [`init_fill`](BumpBox::init_fill), [`init_fill_with`](BumpBox::init_fill_with), [`init_copy`](BumpBox::init_copy), [`init_clone`](BumpBox::init_clone) or unsafely with [`assume_init`](BumpBox::assume_init).
+    /// You can safely initialize the object with [`init_fill`](Box::init_fill), [`init_fill_with`](Box::init_fill_with), [`init_copy`](Box::init_copy), [`init_clone`](Box::init_clone) or unsafely with [`assume_init`](Box::assume_init).
     ///
     /// This is just like `(try_)alloc_uninit_slice` but uses a `slice` to provide the `len`.
     /// This avoids a check for a valid layout. The elements of `slice` are irrelevant.
     impl
     for pub fn alloc_uninit_slice_for
     for pub fn try_alloc_uninit_slice_for
-    fn generic_alloc_uninit_slice_for<{T}>(&self, slice: &[T]) -> BumpBox<[MaybeUninit<T>]> | BumpBox<'a, [MaybeUninit<T>]> {
+    fn generic_alloc_uninit_slice_for<{T}>(&self, slice: &[T]) -> Box<[MaybeUninit<T>]> | Box<'a, [MaybeUninit<T>]> {
         if T::IS_ZST {
-            return Ok(BumpBox::uninit_zst_slice(slice.len()));
+            return Ok(Box::uninit_zst_slice(slice.len()));
         }
 
         let ptr = self.do_alloc_slice_for::<B, T>(slice)?.cast::<MaybeUninit<T>>();
 
         unsafe {
             let ptr = nonnull::slice_from_raw_parts(ptr, slice.len());
-            Ok(BumpBox::from_raw(ptr))
+            Ok(Box::from_raw(ptr))
         }
     }
 
-    /// Allocate a [`FixedBumpVec`] with the given `capacity`.
+    /// Allocate a [`FixedVec`] with the given `capacity`.
     do examples
     /// ```
     /// # use bump_scope::Bump;
@@ -1778,11 +1778,11 @@ define_alloc_methods! {
     impl
     for pub fn alloc_fixed_vec
     for pub fn try_alloc_fixed_vec
-    fn generic_alloc_fixed_vec<{T}>(&self, len: usize) -> FixedBumpVec<T> | FixedBumpVec<'a, T> {
-        Ok(FixedBumpVec::from_uninit(self.generic_alloc_uninit_slice(len)?))
+    fn generic_alloc_fixed_vec<{T}>(&self, len: usize) -> FixedVec<T> | FixedVec<'a, T> {
+        Ok(FixedVec::from_uninit(self.generic_alloc_uninit_slice(len)?))
     }
 
-    /// Allocate a [`FixedBumpString`] with the given `capacity`.
+    /// Allocate a [`FixedString`] with the given `capacity`.
     do examples
     /// ```
     /// # use bump_scope::Bump;
@@ -1796,8 +1796,8 @@ define_alloc_methods! {
     impl
     for pub fn alloc_fixed_string
     for pub fn try_alloc_fixed_string
-    fn generic_alloc_fixed_string(&self, len: usize) -> FixedBumpString | FixedBumpString<'a> {
-        Ok(FixedBumpString::from_uninit(self.generic_alloc_uninit_slice(len)?))
+    fn generic_alloc_fixed_string(&self, len: usize) -> FixedString | FixedString<'a> {
+        Ok(FixedString::from_uninit(self.generic_alloc_uninit_slice(len)?))
     }
 
     /// Allocates memory as described by the given `Layout`.

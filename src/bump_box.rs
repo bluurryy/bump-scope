@@ -13,14 +13,14 @@ use core::{
 
 #[cfg(feature = "alloc")]
 #[allow(unused_imports)]
-use allocator_api2::boxed::Box;
+use allocator_api2::boxed::Box as StdBox;
 
 mod slice_initializer;
-pub(crate) use slice_initializer::BumpBoxSliceInitializer;
+pub(crate) use slice_initializer::BoxSliceInitializer;
 
 use crate::{
     polyfill::{self, nonnull},
-    Drain, ExtractIf, FixedBumpString, FixedBumpVec, FromUtf8Error, IntoIter, NoDrop, SizedTypeProperties,
+    Drain, ExtractIf, FixedString, FixedVec, FromUtf8Error, IntoIter, NoDrop, SizedTypeProperties,
 };
 
 #[cfg(feature = "alloc")]
@@ -28,18 +28,18 @@ use crate::{BumpAllocator, WithLifetime};
 
 /// A pointer type that uniquely owns a bump allocation of type `T`. This type is returned whenever a bump allocation is made.
 ///
-/// You can turn a `BumpBox` into a reference with [`into_ref`] and [`into_mut`] and into a [`Box`] with [`into_box`].
+/// You can turn a `Box` into a reference with [`into_ref`] and [`into_mut`] and into a [`Box`] with [`into_box`].
 ///
-/// Unlike `Box`, `BumpBox` can not implement `Clone` or free the allocated space as it does not store its allocator.
+/// Unlike `alloc::boxed::Box`, `Box` can not implement `Clone` or free the allocated space as it does not store its allocator.
 ///
-/// ## Certain `BumpBox` types have additional methods
-/// - `BumpBox<MaybeUninit<T>>` and `BumpBox<[MaybeUninit<T>]>` provide methods to initialize the value(s).
-/// - `BumpBox<[T]>` provides some methods from `Vec<T>` and `[T]` like `pop`, `remove`, `split_at`, ...
-/// - `BumpBox<str>` and `BumpBox<[u8]>` provide methods to convert between the two.
+/// ## Certain `Box` types have additional methods
+/// - `Box<MaybeUninit<T>>` and `Box<[MaybeUninit<T>]>` provide methods to initialize the value(s).
+/// - `Box<[T]>` provides some methods from `Vec<T>` and `[T]` like `pop`, `remove`, `split_at`, ...
+/// - `Box<str>` and `Box<[u8]>` provide methods to convert between the two.
 ///
 /// ## No pinning
 ///
-/// There is no way to safely pin a `BumpBox` in the general case.
+/// There is no way to safely pin a `Box` in the general case.
 /// The [*drop guarantee*] of `Pin` requires the value to be dropped before its memory is reused.
 /// Preventing reuse of memory is not an option as that's what this crate is all about.
 /// So we need to drop the pinned value.
@@ -47,11 +47,11 @@ use crate::{BumpAllocator, WithLifetime};
 /// <details>
 /// <summary>Example of an unsound pin macro implementation.</summary>
 ///
-/// We define a `bump_box_pin` macro that turns a `BumpBox<T>` into a `Pin<&mut T>`. This is only sound in synchronous code.
+/// We define a `bump_box_pin` macro that turns a `Box<T>` into a `Pin<&mut T>`. This is only sound in synchronous code.
 /// Here the memory `Foo(1)` is allocated at is reused by `Foo(2)` without dropping `Foo(1)` first which violates the drop guarantee.
 ///
 /// ```
-/// # use bump_scope::{ Bump, BumpBox };
+/// # use bump_scope::{ Bump, Box };
 /// # use std::{ mem, task::{ Context, Poll }, pin::Pin, future::Future };
 /// #
 /// # #[must_use = "futures do nothing unless you `.await` or poll them"]
@@ -77,7 +77,7 @@ use crate::{BumpAllocator, WithLifetime};
 /// #
 /// macro_rules! bump_box_pin {
 ///     ($name:ident) => {
-///         let mut boxed: BumpBox<_> = $name;
+///         let mut boxed: Box<_> = $name;
 ///         let $name = unsafe { Pin::new_unchecked(&mut *boxed) };
 ///     };
 /// }
@@ -121,14 +121,14 @@ use crate::{BumpAllocator, WithLifetime};
 /// ```
 /// </details>
 ///
-/// [`into_ref`]: BumpBox::into_ref
-/// [`into_mut`]: BumpBox::into_mut
-/// [`into_box`]: BumpBox::into_box
-/// [`leak`]: BumpBox::leak
+/// [`into_ref`]: Box::into_ref
+/// [`into_mut`]: Box::into_mut
+/// [`into_box`]: Box::into_box
+/// [`leak`]: Box::leak
 /// [`Box`]: allocator_api2::boxed::Box
 /// [*drop guarantee*]: https://doc.rust-lang.org/std/pin/index.html#subtle-details-and-the-drop-guarantee
 #[repr(transparent)]
-pub struct BumpBox<'a, T: ?Sized> {
+pub struct Box<'a, T: ?Sized> {
     pub(crate) ptr: NonNull<T>,
 
     /// First field marks the lifetime.
@@ -136,10 +136,10 @@ pub struct BumpBox<'a, T: ?Sized> {
     marker: PhantomData<(&'a (), T)>,
 }
 
-unsafe impl<'a, T: ?Sized + Send> Send for BumpBox<'a, T> {}
-unsafe impl<'a, T: ?Sized + Sync> Sync for BumpBox<'a, T> {}
+unsafe impl<'a, T: ?Sized + Send> Send for Box<'a, T> {}
+unsafe impl<'a, T: ?Sized + Sync> Sync for Box<'a, T> {}
 
-impl<'a, T> BumpBox<'a, T> {
+impl<'a, T> Box<'a, T> {
     #[must_use]
     #[inline(always)]
     pub(crate) fn zst(value: T) -> Self {
@@ -152,21 +152,21 @@ impl<'a, T> BumpBox<'a, T> {
     }
 }
 
-impl<'a, T: ?Sized + NoDrop> BumpBox<'a, T> {
-    /// Turns this `BumpBox<T>` into `&T` that is live for the entire bump scope.
+impl<'a, T: ?Sized + NoDrop> Box<'a, T> {
+    /// Turns this `Box<T>` into `&T` that is live for the entire bump scope.
     /// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
     ///
-    /// `!NoDrop` types can still be turned into references via [`leak`](BumpBox::leak).
+    /// `!NoDrop` types can still be turned into references via [`leak`](Box::leak).
     #[must_use]
     #[inline(always)]
     pub fn into_ref(self) -> &'a T {
         self.into_mut()
     }
 
-    /// Turns this `BumpBox<T>` into `&mut T` that is live for the entire bump scope.
+    /// Turns this `Box<T>` into `&mut T` that is live for the entire bump scope.
     /// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
     ///
-    /// `!NoDrop` types can still be turned into references via [`leak`](BumpBox::leak).
+    /// `!NoDrop` types can still be turned into references via [`leak`](Box::leak).
     #[must_use]
     #[inline(always)]
     pub fn into_mut(self) -> &'a mut T {
@@ -174,11 +174,11 @@ impl<'a, T: ?Sized + NoDrop> BumpBox<'a, T> {
     }
 }
 
-impl<'a, T: ?Sized> BumpBox<'a, T> {
-    /// Turns this `BumpBox<T>` into `Box<T>`. The `bump` allocator is not required to be
+impl<'a, T: ?Sized> Box<'a, T> {
+    /// Turns this `Box<T>` into `Box<T>`. The `bump` allocator is not required to be
     /// the allocator this box was allocated in.
     ///
-    /// Unlike `BumpBox`, `Box` implements `Clone` and frees space iff it is the last allocation:
+    /// Unlike `Box`, `Box` implements `Clone` and frees space iff it is the last allocation:
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
@@ -192,28 +192,28 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "alloc")]
-    pub fn into_box<A: BumpAllocator>(self, bump: A) -> Box<T, WithLifetime<'a, A>> {
-        let ptr = BumpBox::into_raw(self).as_ptr();
+    pub fn into_box<A: BumpAllocator>(self, bump: A) -> StdBox<T, WithLifetime<'a, A>> {
+        let ptr = Box::into_raw(self).as_ptr();
 
         // SAFETY: bump might not be the allocator self was allocated with;
         // that's fine though because a `BumpAllocator` allows deallocate calls
         // from allocations that don't belong to it
-        unsafe { Box::from_raw_in(ptr, WithLifetime::new(bump)) }
+        unsafe { StdBox::from_raw_in(ptr, WithLifetime::new(bump)) }
     }
 
-    /// Turns this `BumpBox<T>` into `&mut T` that is live for the entire bump scope.
+    /// Turns this `Box<T>` into `&mut T` that is live for the entire bump scope.
     /// `T` won't be dropped which may leak resources.
     ///
-    /// If `T` is [`NoDrop`], prefer to call [`into_mut`](BumpBox::into_mut) to signify that nothing gets leaked.
+    /// If `T` is [`NoDrop`], prefer to call [`into_mut`](Box::into_mut) to signify that nothing gets leaked.
     #[inline(always)]
     #[allow(clippy::must_use_candidate)]
     pub fn leak(boxed: Self) -> &'a mut T {
-        unsafe { BumpBox::into_raw(boxed).as_mut() }
+        unsafe { Box::into_raw(boxed).as_mut() }
     }
 }
 
-impl<'a, T> BumpBox<'a, T> {
-    /// Consumes the `BumpBox`, returning the wrapped value.
+impl<'a, T> Box<'a, T> {
+    /// Consumes the `Box`, returning the wrapped value.
     ///
     /// # Examples
     ///
@@ -229,21 +229,21 @@ impl<'a, T> BumpBox<'a, T> {
         unsafe { self.into_raw().as_ptr().read() }
     }
 
-    /// Converts a `BumpBox<T>` into a `BumpBox<[T]>`
+    /// Converts a `Box<T>` into a `Box<[T]>`
     ///
     /// This conversion happens in place.
     #[must_use]
     #[inline(always)]
-    pub fn into_boxed_slice(self) -> BumpBox<'a, [T]> {
+    pub fn into_boxed_slice(self) -> Box<'a, [T]> {
         unsafe {
             let ptr = self.into_raw();
             let ptr = nonnull::slice_from_raw_parts(ptr, 1);
-            BumpBox::from_raw(ptr)
+            Box::from_raw(ptr)
         }
     }
 }
 
-impl<'a> BumpBox<'a, [u8]> {
+impl<'a> Box<'a, [u8]> {
     /// Converts a slice of bytes to a string slice.
     ///
     /// # Errors
@@ -251,7 +251,7 @@ impl<'a> BumpBox<'a, [u8]> {
     /// Returns [`Err`] if the slice is not UTF-8 with a description as to why the
     /// provided bytes are not UTF-8. The vector you moved in is also included.
     #[inline]
-    pub const fn into_boxed_str(self) -> Result<BumpBox<'a, str>, FromUtf8Error<Self>> {
+    pub const fn into_boxed_str(self) -> Result<Box<'a, str>, FromUtf8Error<Self>> {
         match core::str::from_utf8(self.as_slice()) {
             Ok(_) => Ok(unsafe { self.into_boxed_str_unchecked() }),
             Err(error) => Err(FromUtf8Error { error, bytes: self }),
@@ -268,33 +268,33 @@ impl<'a> BumpBox<'a, [u8]> {
     /// The bytes passed in must be valid UTF-8.
     #[inline]
     #[must_use]
-    pub const unsafe fn into_boxed_str_unchecked(self) -> BumpBox<'a, str> {
+    pub const unsafe fn into_boxed_str_unchecked(self) -> Box<'a, str> {
         let ptr = self.ptr.as_ptr();
         let _ = ManuallyDrop::new(self);
 
-        BumpBox {
+        Box {
             ptr: NonNull::new_unchecked(ptr as *mut str),
             marker: PhantomData,
         }
     }
 }
 
-impl<'a> BumpBox<'a, str> {
+impl<'a> Box<'a, str> {
     /// Empty str.
-    pub const EMPTY_STR: Self = unsafe { BumpBox::<[u8]>::EMPTY.into_boxed_str_unchecked() };
+    pub const EMPTY_STR: Self = unsafe { Box::<[u8]>::EMPTY.into_boxed_str_unchecked() };
 
-    /// Converts a `BumpBox<str>` into a `BumpBox<[u8]>`.
+    /// Converts a `Box<str>` into a `Box<[u8]>`.
     #[inline]
     #[must_use]
-    pub fn into_boxed_bytes(self) -> BumpBox<'a, [u8]> {
-        BumpBox {
+    pub fn into_boxed_bytes(self) -> Box<'a, [u8]> {
+        Box {
             ptr: unsafe { NonNull::new_unchecked(self.ptr.as_ptr() as *mut [u8]) },
             marker: PhantomData,
         }
     }
 }
 
-impl<'a, T: Sized> BumpBox<'a, MaybeUninit<T>> {
+impl<'a, T: Sized> Box<'a, MaybeUninit<T>> {
     /// Initializes `self` with `value`.
     ///
     /// # Examples
@@ -308,7 +308,7 @@ impl<'a, T: Sized> BumpBox<'a, MaybeUninit<T>> {
     /// ```
     #[must_use]
     #[inline(always)]
-    pub fn init(mut self, value: T) -> BumpBox<'a, T> {
+    pub fn init(mut self, value: T) -> Box<'a, T> {
         self.as_mut().write(value);
         unsafe { self.assume_init() }
     }
@@ -320,13 +320,13 @@ impl<'a, T: Sized> BumpBox<'a, MaybeUninit<T>> {
     /// See [`MaybeUninit::assume_init`].
     #[must_use]
     #[inline(always)]
-    pub unsafe fn assume_init(self) -> BumpBox<'a, T> {
-        let ptr = BumpBox::into_raw(self);
-        BumpBox::from_raw(ptr.cast())
+    pub unsafe fn assume_init(self) -> Box<'a, T> {
+        let ptr = Box::into_raw(self);
+        Box::from_raw(ptr.cast())
     }
 }
 
-impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
+impl<'a, T: Sized> Box<'a, [MaybeUninit<T>]> {
     #[must_use]
     #[inline(always)]
     pub(crate) fn uninit_zst_slice(len: usize) -> Self {
@@ -350,7 +350,7 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     /// ```
     #[must_use]
     #[inline(always)]
-    pub fn init_fill(self, value: T) -> BumpBox<'a, [T]>
+    pub fn init_fill(self, value: T) -> Box<'a, [T]>
     where
         T: Clone,
     {
@@ -367,7 +367,7 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
                 initializer.push_unchecked(value);
                 initializer.into_init_unchecked()
             } else {
-                BumpBox::default()
+                Box::default()
             }
         }
     }
@@ -390,7 +390,7 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     /// ```
     #[must_use]
     #[inline]
-    pub fn init_fill_with(self, mut f: impl FnMut() -> T) -> BumpBox<'a, [T]> {
+    pub fn init_fill_with(self, mut f: impl FnMut() -> T) -> Box<'a, [T]> {
         let mut initializer = self.initializer();
 
         while !initializer.is_full() {
@@ -409,7 +409,7 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     /// This function will panic if the two slices have different lengths.
     #[must_use]
     #[inline]
-    pub fn init_copy(mut self, slice: &[T]) -> BumpBox<'a, [T]>
+    pub fn init_copy(mut self, slice: &[T]) -> Box<'a, [T]>
     where
         T: Copy,
     {
@@ -426,7 +426,7 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     /// This function will panic if the two slices have different lengths.
     #[must_use]
     #[inline]
-    pub fn init_clone(self, slice: &[T]) -> BumpBox<'a, [T]>
+    pub fn init_clone(self, slice: &[T]) -> Box<'a, [T]>
     where
         T: Clone,
     {
@@ -446,8 +446,8 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
 
     #[must_use]
     #[inline]
-    pub(crate) fn initializer(self) -> BumpBoxSliceInitializer<'a, T> {
-        BumpBoxSliceInitializer::new(self)
+    pub(crate) fn initializer(self) -> BoxSliceInitializer<'a, T> {
+        BoxSliceInitializer::new(self)
     }
 
     /// # Safety
@@ -457,32 +457,32 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     /// See [`MaybeUninit::assume_init`].
     #[must_use]
     #[inline(always)]
-    pub unsafe fn assume_init(self) -> BumpBox<'a, [T]> {
-        let ptr = BumpBox::into_raw(self);
+    pub unsafe fn assume_init(self) -> Box<'a, [T]> {
+        let ptr = Box::into_raw(self);
         let ptr = NonNull::new_unchecked(ptr.as_ptr() as _);
-        BumpBox::from_raw(ptr)
+        Box::from_raw(ptr)
     }
 
-    #[deprecated = "use `FixedBumpVec::from_uninit` instead"]
-    /// Turns this `BumpBox<[MaybeUninit<T>]>` into a `FixedBumpVec<T>` with a length of `0`.
+    #[deprecated = "use `FixedVec::from_uninit` instead"]
+    /// Turns this `Box<[MaybeUninit<T>]>` into a `FixedVec<T>` with a length of `0`.
     #[inline]
     #[must_use]
-    pub fn into_fixed_vec(self) -> FixedBumpVec<'a, T> {
-        FixedBumpVec::from_uninit(self)
+    pub fn into_fixed_vec(self) -> FixedVec<'a, T> {
+        FixedVec::from_uninit(self)
     }
 }
 
-impl<'a> BumpBox<'a, [MaybeUninit<u8>]> {
-    #[deprecated = "use `FixedBumpString::from_uninit` instead"]
-    /// Turns this `BumpBox<[MaybeUninit<u8>]>` into a `FixedBumpString` with a length of `0`.
+impl<'a> Box<'a, [MaybeUninit<u8>]> {
+    #[deprecated = "use `FixedString::from_uninit` instead"]
+    /// Turns this `Box<[MaybeUninit<u8>]>` into a `FixedString` with a length of `0`.
     #[inline]
     #[must_use]
-    pub fn into_fixed_string(self) -> FixedBumpString<'a> {
-        FixedBumpString::from_uninit(self)
+    pub fn into_fixed_string(self) -> FixedString<'a> {
+        FixedString::from_uninit(self)
     }
 }
 
-impl<'a, T> BumpBox<'a, [T]> {
+impl<'a, T> Box<'a, [T]> {
     /// Empty slice.
     pub const EMPTY: Self = Self {
         ptr: nonnull::slice_from_raw_parts(NonNull::dangling(), 0),
@@ -496,7 +496,7 @@ impl<'a, T> BumpBox<'a, [T]> {
         T: Clone,
     {
         assert!(T::IS_ZST);
-        BumpBox::uninit_zst_slice(slice.len()).init_clone(slice)
+        Box::uninit_zst_slice(slice.len()).init_clone(slice)
     }
 
     #[must_use]
@@ -508,14 +508,14 @@ impl<'a, T> BumpBox<'a, [T]> {
         assert!(T::IS_ZST);
         if len == 0 {
             drop(value);
-            BumpBox::EMPTY
+            Box::EMPTY
         } else {
             for _ in 1..len {
                 mem::forget(value.clone());
             }
 
             mem::forget(value);
-            unsafe { BumpBox::zst_slice_from_len(len) }
+            unsafe { Box::zst_slice_from_len(len) }
         }
     }
 
@@ -526,7 +526,7 @@ impl<'a, T> BumpBox<'a, [T]> {
         for _ in 0..len {
             mem::forget(f());
         }
-        unsafe { BumpBox::zst_slice_from_len(len) }
+        unsafe { Box::zst_slice_from_len(len) }
     }
 
     /// Creates `T` values from nothing!
@@ -575,7 +575,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{ Bump, mut_vec };
     /// # let bump: Bump = Bump::new();
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3]);
     /// slice.clear();
@@ -613,7 +613,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// Truncating a five element vector to two elements:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{ Bump, mut_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5]);
@@ -625,7 +625,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// length:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{ Bump, mut_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3]);
@@ -637,7 +637,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// method.
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{ Bump, mut_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3]);
@@ -645,8 +645,8 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// assert_eq!(slice, []);
     /// ```
     ///
-    /// [`clear`]: BumpBox::clear
-    /// [`drain`]: BumpBox::drain
+    /// [`clear`]: Box::clear
+    /// [`drain`]: Box::drain
     pub fn truncate(&mut self, len: usize) {
         unsafe { nonnull::truncate(&mut self.ptr, len) }
     }
@@ -711,15 +711,15 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// is done using one of the safe operations instead, such as
     /// [`truncate`] or [`clear`].
     ///
-    /// [`truncate`]: BumpBox::truncate
-    /// [`clear`]: BumpBox::clear
+    /// [`truncate`]: Box::truncate
+    /// [`clear`]: Box::clear
     ///
     /// # Safety
     ///
     /// - `new_len` must be less than or equal to the [`capacity`] (capacity is not tracked by this type).
     /// - The elements at `old_len..new_len` must be initialized.
     ///
-    /// [`capacity`]: crate::MutBumpVec::capacity
+    /// [`capacity`]: crate::MutVec::capacity
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: usize) {
         nonnull::set_len(&mut self.ptr, new_len);
@@ -748,7 +748,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// worst-case performance of *O*(*n*). If you don't need the order of elements
     /// to be preserved, use [`swap_remove`] instead.
     ///
-    /// [`swap_remove`]: BumpBox::swap_remove
+    /// [`swap_remove`]: Box::swap_remove
     ///
     /// # Panics
     ///
@@ -757,7 +757,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{ Bump, mut_vec };
     /// # let mut bump: Bump = Bump::new();
     /// let mut v = bump.alloc_slice_copy(&[1, 2, 3]);
     /// assert_eq!(v.remove(1), 2);
@@ -802,7 +802,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// This does not preserve ordering, but is *O*(1).
     /// If you need to preserve the element order, use [`remove`] instead.
     ///
-    /// [`remove`]: BumpBox::remove
+    /// [`remove`]: Box::remove
     ///
     /// # Panics
     ///
@@ -811,7 +811,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{ Bump, mut_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut v = bump.alloc_slice_copy(&["foo", "bar", "baz", "qux"]);
@@ -968,7 +968,7 @@ impl<'a, T> BumpBox<'a, [T]> {
 
     /// Returns the first and all the rest of the elements of the slice, or `None` if it is empty.
     ///
-    /// This does consume the `BumpBox`. You can create a new empty one with [`BumpBox::default`](BumpBox::default).
+    /// This does consume the `Box`. You can create a new empty one with [`Box::default`](Box::default).
     ///
     /// # Examples
     ///
@@ -986,7 +986,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn split_first(self) -> Option<(BumpBox<'a, T>, BumpBox<'a, [T]>)> {
+    pub fn split_first(self) -> Option<(Box<'a, T>, Box<'a, [T]>)> {
         let this = ManuallyDrop::new(self);
 
         if this.is_empty() {
@@ -998,15 +998,15 @@ impl<'a, T> BumpBox<'a, [T]> {
             let len = this.len();
 
             Some((
-                BumpBox::from_raw(ptr),
-                BumpBox::from_raw(nonnull::slice_from_raw_parts(nonnull::add(ptr, 1), len - 1)),
+                Box::from_raw(ptr),
+                Box::from_raw(nonnull::slice_from_raw_parts(nonnull::add(ptr, 1), len - 1)),
             ))
         }
     }
 
     /// Returns the last and all the rest of the elements of the slice, or `None` if it is empty.
     ///
-    /// This does consume the `BumpBox`. You can create a new empty one with [`BumpBox::default`](BumpBox::default).
+    /// This does consume the `Box`. You can create a new empty one with [`Box::default`](Box::default).
     ///
     /// # Examples
     ///
@@ -1024,7 +1024,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn split_last(self) -> Option<(BumpBox<'a, T>, BumpBox<'a, [T]>)> {
+    pub fn split_last(self) -> Option<(Box<'a, T>, Box<'a, [T]>)> {
         let this = ManuallyDrop::new(self);
 
         if this.is_empty() {
@@ -1036,8 +1036,8 @@ impl<'a, T> BumpBox<'a, [T]> {
             let len_minus_one = this.len() - 1;
 
             Some((
-                BumpBox::from_raw(nonnull::add(ptr, len_minus_one)),
-                BumpBox::from_raw(nonnull::slice_from_raw_parts(ptr, len_minus_one)),
+                Box::from_raw(nonnull::add(ptr, len_minus_one)),
+                Box::from_raw(nonnull::slice_from_raw_parts(ptr, len_minus_one)),
             ))
         }
     }
@@ -1158,7 +1158,7 @@ impl<'a, T> BumpBox<'a, [T]> {
         // It shifts unchecked elements to cover holes and `set_len` to the correct length.
         // In cases when predicate and `drop` never panic, it will be optimized out.
         struct BackshiftOnDrop<'b, 'a, T> {
-            v: &'b mut BumpBox<'a, [T]>,
+            v: &'b mut Box<'a, [T]>,
             processed_len: usize,
             deleted_cnt: usize,
             original_len: usize,
@@ -1420,7 +1420,7 @@ impl<'a, T> BumpBox<'a, [T]> {
             write: usize,
 
             /* The Vec that would need correction if `same_bucket` panicked */
-            boxed: &'b mut BumpBox<'a, [T]>,
+            boxed: &'b mut Box<'a, [T]>,
         }
 
         impl<'b, 'a, T> Drop for FillGapOnDrop<'b, 'a, T> {
@@ -1526,7 +1526,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// assert_eq!(odd, vec![1, 3]);
     /// ```
     #[cfg(test)]
-    pub fn partition<F>(mut self, f: F) -> (BumpBox<'a, [T]>, BumpBox<'a, [T]>)
+    pub fn partition<F>(mut self, f: F) -> (Box<'a, [T]>, Box<'a, [T]>)
     where
         F: FnMut(&T) -> bool,
     {
@@ -1535,8 +1535,8 @@ impl<'a, T> BumpBox<'a, [T]> {
     }
 }
 
-impl<'a, T, const N: usize> BumpBox<'a, [[T; N]]> {
-    /// Takes a `BumpBox<[[T; N]]>` and flattens it into a `BumpBox<[T]>`.
+impl<'a, T, const N: usize> Box<'a, [[T; N]]> {
+    /// Takes a `Box<[[T; N]]>` and flattens it into a `Box<[T]>`.
     ///
     /// # Panics
     ///
@@ -1559,7 +1559,7 @@ impl<'a, T, const N: usize> BumpBox<'a, [[T; N]]> {
     /// assert_eq!(flattened.pop(), Some(6));
     /// ```
     #[must_use]
-    pub fn into_flattened(self) -> BumpBox<'a, [T]> {
+    pub fn into_flattened(self) -> Box<'a, [T]> {
         let ptr = self.as_non_null_ptr();
         let len = self.len();
 
@@ -1574,27 +1574,27 @@ impl<'a, T, const N: usize> BumpBox<'a, [[T; N]]> {
             unsafe { polyfill::usize::unchecked_mul(len, N) }
         };
 
-        unsafe { BumpBox::from_raw(nonnull::slice_from_raw_parts(ptr.cast(), new_len)) }
+        unsafe { Box::from_raw(nonnull::slice_from_raw_parts(ptr.cast(), new_len)) }
     }
 }
 
-impl<'a, T: ?Sized> BumpBox<'a, T> {
-    /// Consumes the `BumpBox`, returning a wrapped raw pointer.
+impl<'a, T: ?Sized> Box<'a, T> {
+    /// Consumes the `Box`, returning a wrapped raw pointer.
     ///
     /// The pointer will be properly aligned and non-null. It is only valid for the lifetime `'a`.
     ///
     /// After calling this function, the caller is responsible for dropping the
-    /// value previously managed by the `BumpBox`. The easiest way to do this is to `p.drop_in_place()`.
+    /// value previously managed by the `Box`. The easiest way to do this is to `p.drop_in_place()`.
     ///
-    /// You can turn this pointer back into a `BumpBox` with [`BumpBox::from_raw`].
+    /// You can turn this pointer back into a `Box` with [`Box::from_raw`].
     ///
     /// # Examples
     /// Manually dropping `T`:
     /// ```
-    /// use bump_scope::{ Bump, BumpBox };
+    /// use bump_scope::{ Bump, Box };
     /// let bump: Bump = Bump::new();
     /// let x = bump.alloc(String::from("Hello"));
-    /// let p = BumpBox::into_raw(x);
+    /// let p = Box::into_raw(x);
     /// unsafe { p.as_ptr().drop_in_place() }
     /// ```
     #[inline(always)]
@@ -1604,10 +1604,10 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
         ManuallyDrop::new(self).ptr
     }
 
-    /// Constructs a `BumpBox` from a raw pointer.
+    /// Constructs a `Box` from a raw pointer.
     ///
-    /// After calling this function, the pointed to value is owned by the resulting `BumpBox`.
-    /// Specifically, the `BumpBox` destructor will call the destructor of `T`.
+    /// After calling this function, the pointed to value is owned by the resulting `Box`.
+    /// Specifically, the `Box` destructor will call the destructor of `T`.
     /// For this to be safe, the pointer must point to a valid `T` for the lifetime of `'a`.
     ///
     /// # Safety
@@ -1615,31 +1615,31 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     ///
     /// # Examples
     ///
-    /// Recreate a `BumpBox` which was previously converted to a raw pointer
-    /// using [`BumpBox::into_raw`]:
+    /// Recreate a `Box` which was previously converted to a raw pointer
+    /// using [`Box::into_raw`]:
     /// ```
-    /// use bump_scope::{ Bump, BumpBox };
+    /// use bump_scope::{ Bump, Box };
     /// use core::ptr::NonNull;
     ///
-    /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, bump: &'a Bump) -> BumpBox<'a, T> {
-    ///     BumpBox::from_raw(ptr)
+    /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, bump: &'a Bump) -> Box<'a, T> {
+    ///     Box::from_raw(ptr)
     /// }
     ///
     /// let bump: Bump = Bump::new();
     /// let x = bump.alloc(String::from("Hello"));
-    /// let ptr = BumpBox::into_raw(x);
+    /// let ptr = Box::into_raw(x);
     /// let x = unsafe { from_raw_in(ptr, &bump) };
     /// assert_eq!(x.as_str(), "Hello");
     /// drop(x);
     /// ```
-    /// Manually create a `BumpBox` from scratch by using the bump allocator:
+    /// Manually create a `Box` from scratch by using the bump allocator:
     /// ```
-    /// use bump_scope::{ Bump, BumpBox };
+    /// use bump_scope::{ Bump, Box };
     /// use core::alloc::Layout;
     /// use core::ptr::NonNull;
     ///
-    /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, bump: &'a Bump) -> BumpBox<'a, T> {
-    ///     BumpBox::from_raw(ptr)
+    /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, bump: &'a Bump) -> Box<'a, T> {
+    ///     Box::from_raw(ptr)
     /// }
     ///
     /// let bump: Bump = Bump::new();
@@ -1665,11 +1665,11 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     }
 }
 
-impl<'a> BumpBox<'a, dyn Any> {
+impl<'a> Box<'a, dyn Any> {
     /// Attempt to downcast the box to a concrete type.
     #[inline(always)]
     #[allow(clippy::missing_errors_doc)]
-    pub fn downcast<T: Any>(self) -> Result<BumpBox<'a, T>, Self> {
+    pub fn downcast<T: Any>(self) -> Result<Box<'a, T>, Self> {
         if self.is::<T>() {
             Ok(unsafe { self.downcast_unchecked() })
         } else {
@@ -1689,16 +1689,16 @@ impl<'a> BumpBox<'a, dyn Any> {
     /// [`downcast`]: Self::downcast
     #[must_use]
     #[inline(always)]
-    pub unsafe fn downcast_unchecked<T: Any>(self) -> BumpBox<'a, T> {
-        BumpBox::from_raw(BumpBox::into_raw(self).cast())
+    pub unsafe fn downcast_unchecked<T: Any>(self) -> Box<'a, T> {
+        Box::from_raw(Box::into_raw(self).cast())
     }
 }
 
-impl<'a> BumpBox<'a, dyn Any + Send> {
+impl<'a> Box<'a, dyn Any + Send> {
     /// Attempt to downcast the box to a concrete type.
     #[allow(clippy::missing_errors_doc)]
     #[inline(always)]
-    pub fn downcast<T: Any>(self) -> Result<BumpBox<'a, T>, Self> {
+    pub fn downcast<T: Any>(self) -> Result<Box<'a, T>, Self> {
         if self.is::<T>() {
             Ok(unsafe { self.downcast_unchecked() })
         } else {
@@ -1718,16 +1718,16 @@ impl<'a> BumpBox<'a, dyn Any + Send> {
     /// [`downcast`]: Self::downcast
     #[must_use]
     #[inline(always)]
-    pub unsafe fn downcast_unchecked<T: Any>(self) -> BumpBox<'a, T> {
-        BumpBox::from_raw(BumpBox::into_raw(self).cast())
+    pub unsafe fn downcast_unchecked<T: Any>(self) -> Box<'a, T> {
+        Box::from_raw(Box::into_raw(self).cast())
     }
 }
 
-impl<'a> BumpBox<'a, dyn Any + Send + Sync> {
+impl<'a> Box<'a, dyn Any + Send + Sync> {
     /// Attempt to downcast the box to a concrete type.
     #[allow(clippy::missing_errors_doc)]
     #[inline(always)]
-    pub fn downcast<T: Any>(self) -> Result<BumpBox<'a, T>, Self> {
+    pub fn downcast<T: Any>(self) -> Result<Box<'a, T>, Self> {
         if self.is::<T>() {
             Ok(unsafe { self.downcast_unchecked() })
         } else {
@@ -1747,32 +1747,32 @@ impl<'a> BumpBox<'a, dyn Any + Send + Sync> {
     /// [`downcast`]: Self::downcast
     #[must_use]
     #[inline(always)]
-    pub unsafe fn downcast_unchecked<T: Any>(self) -> BumpBox<'a, T> {
-        BumpBox::from_raw(BumpBox::into_raw(self).cast())
+    pub unsafe fn downcast_unchecked<T: Any>(self) -> Box<'a, T> {
+        Box::from_raw(Box::into_raw(self).cast())
     }
 }
 
 // just like std's Rc and Arc this implements Unpin,
 // at time of writing Box does not implement Unpin unconditionally, but that is probably an oversight
 // see https://github.com/rust-lang/rust/pull/118634
-impl<'a, T: ?Sized> Unpin for BumpBox<'a, T> {}
+impl<'a, T: ?Sized> Unpin for Box<'a, T> {}
 
 #[cfg(feature = "nightly-coerce-unsized")]
-impl<'a, T, U> core::ops::CoerceUnsized<BumpBox<'a, U>> for BumpBox<'a, T>
+impl<'a, T, U> core::ops::CoerceUnsized<Box<'a, U>> for Box<'a, T>
 where
     T: ?Sized + core::marker::Unsize<U>,
     U: ?Sized,
 {
 }
 
-impl<'a, T: ?Sized> Drop for BumpBox<'a, T> {
+impl<'a, T: ?Sized> Drop for Box<'a, T> {
     #[inline(always)]
     fn drop(&mut self) {
         unsafe { self.ptr.as_ptr().drop_in_place() }
     }
 }
 
-impl<'a, T: ?Sized> Deref for BumpBox<'a, T> {
+impl<'a, T: ?Sized> Deref for Box<'a, T> {
     type Target = T;
 
     #[inline(always)]
@@ -1781,82 +1781,82 @@ impl<'a, T: ?Sized> Deref for BumpBox<'a, T> {
     }
 }
 
-impl<'a, T: ?Sized> DerefMut for BumpBox<'a, T> {
+impl<'a, T: ?Sized> DerefMut for Box<'a, T> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { self.ptr.as_mut() }
     }
 }
 
-impl<T: ?Sized> AsRef<T> for BumpBox<'_, T> {
+impl<T: ?Sized> AsRef<T> for Box<'_, T> {
     #[inline(always)]
     fn as_ref(&self) -> &T {
         self
     }
 }
 
-impl<T: ?Sized> AsMut<T> for BumpBox<'_, T> {
+impl<T: ?Sized> AsMut<T> for Box<'_, T> {
     #[inline(always)]
     fn as_mut(&mut self) -> &mut T {
         self
     }
 }
 
-impl<T: ?Sized> Borrow<T> for BumpBox<'_, T> {
+impl<T: ?Sized> Borrow<T> for Box<'_, T> {
     #[inline(always)]
     fn borrow(&self) -> &T {
         self
     }
 }
 
-impl<T: ?Sized> BorrowMut<T> for BumpBox<'_, T> {
+impl<T: ?Sized> BorrowMut<T> for Box<'_, T> {
     #[inline(always)]
     fn borrow_mut(&mut self) -> &mut T {
         self
     }
 }
 
-impl<'a, T: ?Sized + Debug> Debug for BumpBox<'a, T> {
+impl<'a, T: ?Sized + Debug> Debug for Box<'a, T> {
     #[inline(always)]
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         T::fmt(self, f)
     }
 }
 
-impl<'a, T: ?Sized + Display> Display for BumpBox<'a, T> {
+impl<'a, T: ?Sized + Display> Display for Box<'a, T> {
     #[inline(always)]
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         T::fmt(self, f)
     }
 }
 
-impl<'a, T> Default for BumpBox<'a, [T]> {
+impl<'a, T> Default for Box<'a, [T]> {
     #[inline(always)]
     fn default() -> Self {
         unsafe { Self::from_raw(NonNull::from(&mut [])) }
     }
 }
 
-impl<'a> Default for BumpBox<'a, str> {
+impl<'a> Default for Box<'a, str> {
     #[inline(always)]
     fn default() -> Self {
         unsafe { Self::from_raw(NonNull::from(core::str::from_utf8_unchecked_mut(&mut []))) }
     }
 }
 
-impl<'b, 'a, T: ?Sized + PartialEq> PartialEq<BumpBox<'b, T>> for BumpBox<'a, T> {
+impl<'b, 'a, T: ?Sized + PartialEq> PartialEq<Box<'b, T>> for Box<'a, T> {
     #[inline(always)]
-    fn eq(&self, other: &BumpBox<'b, T>) -> bool {
+    fn eq(&self, other: &Box<'b, T>) -> bool {
         T::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &BumpBox<'b, T>) -> bool {
+    fn ne(&self, other: &Box<'b, T>) -> bool {
         T::ne(self, other)
     }
 }
 
-impl<T: ?Sized + PartialEq> PartialEq<T> for BumpBox<'_, T> {
+impl<T: ?Sized + PartialEq> PartialEq<T> for Box<'_, T> {
     #[inline(always)]
     fn eq(&self, other: &T) -> bool {
         T::eq(self, other)
@@ -1868,7 +1868,7 @@ impl<T: ?Sized + PartialEq> PartialEq<T> for BumpBox<'_, T> {
     }
 }
 
-impl<T: ?Sized + PartialEq> PartialEq<&T> for BumpBox<'_, T> {
+impl<T: ?Sized + PartialEq> PartialEq<&T> for Box<'_, T> {
     #[inline(always)]
     fn eq(&self, other: &&T) -> bool {
         T::eq(self, other)
@@ -1880,7 +1880,7 @@ impl<T: ?Sized + PartialEq> PartialEq<&T> for BumpBox<'_, T> {
     }
 }
 
-impl<T: ?Sized + PartialEq> PartialEq<&mut T> for BumpBox<'_, T> {
+impl<T: ?Sized + PartialEq> PartialEq<&mut T> for Box<'_, T> {
     #[inline(always)]
     fn eq(&self, other: &&mut T) -> bool {
         T::eq(self, other)
@@ -1892,52 +1892,52 @@ impl<T: ?Sized + PartialEq> PartialEq<&mut T> for BumpBox<'_, T> {
     }
 }
 
-impl<'a, T, U> PartialEq<BumpBox<'a, [U]>> for [T]
+impl<'a, T, U> PartialEq<Box<'a, [U]>> for [T]
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &BumpBox<'a, [U]>) -> bool {
+    fn eq(&self, other: &Box<'a, [U]>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &BumpBox<'a, [U]>) -> bool {
+    fn ne(&self, other: &Box<'a, [U]>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'a, T, U> PartialEq<BumpBox<'a, [U]>> for &[T]
+impl<'a, T, U> PartialEq<Box<'a, [U]>> for &[T]
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &BumpBox<'a, [U]>) -> bool {
+    fn eq(&self, other: &Box<'a, [U]>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &BumpBox<'a, [U]>) -> bool {
+    fn ne(&self, other: &Box<'a, [U]>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'a, T, U> PartialEq<BumpBox<'a, [U]>> for &mut [T]
+impl<'a, T, U> PartialEq<Box<'a, [U]>> for &mut [T]
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &BumpBox<'a, [U]>) -> bool {
+    fn eq(&self, other: &Box<'a, [U]>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &BumpBox<'a, [U]>) -> bool {
+    fn ne(&self, other: &Box<'a, [U]>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<T: PartialEq, const N: usize> PartialEq<[T; N]> for BumpBox<'_, [T]> {
+impl<T: PartialEq, const N: usize> PartialEq<[T; N]> for Box<'_, [T]> {
     #[inline(always)]
     fn eq(&self, other: &[T; N]) -> bool {
         <[T]>::eq(self, other)
@@ -1949,46 +1949,46 @@ impl<T: PartialEq, const N: usize> PartialEq<[T; N]> for BumpBox<'_, [T]> {
     }
 }
 
-impl<'b, 'a, T: ?Sized + PartialOrd> PartialOrd<BumpBox<'b, T>> for BumpBox<'a, T> {
+impl<'b, 'a, T: ?Sized + PartialOrd> PartialOrd<Box<'b, T>> for Box<'a, T> {
     #[inline(always)]
-    fn partial_cmp(&self, other: &BumpBox<'b, T>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Box<'b, T>) -> Option<Ordering> {
         T::partial_cmp(self, other)
     }
     #[inline(always)]
-    fn lt(&self, other: &BumpBox<'b, T>) -> bool {
+    fn lt(&self, other: &Box<'b, T>) -> bool {
         T::lt(self, other)
     }
     #[inline(always)]
-    fn le(&self, other: &BumpBox<'b, T>) -> bool {
+    fn le(&self, other: &Box<'b, T>) -> bool {
         T::le(self, other)
     }
     #[inline(always)]
-    fn ge(&self, other: &BumpBox<'b, T>) -> bool {
+    fn ge(&self, other: &Box<'b, T>) -> bool {
         T::ge(self, other)
     }
     #[inline(always)]
-    fn gt(&self, other: &BumpBox<'b, T>) -> bool {
+    fn gt(&self, other: &Box<'b, T>) -> bool {
         T::gt(self, other)
     }
 }
 
-impl<'a, T: ?Sized + Ord> Ord for BumpBox<'a, T> {
+impl<'a, T: ?Sized + Ord> Ord for Box<'a, T> {
     #[inline(always)]
-    fn cmp(&self, other: &BumpBox<'a, T>) -> Ordering {
+    fn cmp(&self, other: &Box<'a, T>) -> Ordering {
         T::cmp(self, other)
     }
 }
 
-impl<'a, T: ?Sized + Eq> Eq for BumpBox<'a, T> {}
+impl<'a, T: ?Sized + Eq> Eq for Box<'a, T> {}
 
-impl<'a, T: ?Sized + Hash> Hash for BumpBox<'a, T> {
+impl<'a, T: ?Sized + Hash> Hash for Box<'a, T> {
     #[inline(always)]
     fn hash<H: Hasher>(&self, state: &mut H) {
         T::hash(self, state);
     }
 }
 
-impl<'a, T: ?Sized + Hasher> Hasher for BumpBox<'a, T> {
+impl<'a, T: ?Sized + Hasher> Hasher for Box<'a, T> {
     #[inline(always)]
     fn finish(&self) -> u64 {
         T::finish(self)
@@ -2048,14 +2048,14 @@ impl<'a, T: ?Sized + Hasher> Hasher for BumpBox<'a, T> {
 }
 
 #[cfg(feature = "alloc")]
-impl<'a> Extend<BumpBox<'a, str>> for alloc::string::String {
+impl<'a> Extend<Box<'a, str>> for alloc::string::String {
     #[inline(always)]
-    fn extend<T: IntoIterator<Item = BumpBox<'a, str>>>(&mut self, iter: T) {
+    fn extend<T: IntoIterator<Item = Box<'a, str>>>(&mut self, iter: T) {
         iter.into_iter().for_each(move |s| self.push_str(&s));
     }
 }
 
-impl<'a, T> IntoIterator for BumpBox<'a, [T]> {
+impl<'a, T> IntoIterator for Box<'a, [T]> {
     type Item = T;
     type IntoIter = IntoIter<'a, T>;
 
@@ -2066,7 +2066,7 @@ impl<'a, T> IntoIterator for BumpBox<'a, [T]> {
     }
 }
 
-impl<'b, 'a, T> IntoIterator for &'b BumpBox<'a, [T]> {
+impl<'b, 'a, T> IntoIterator for &'b Box<'a, [T]> {
     type Item = &'b T;
     type IntoIter = slice::Iter<'b, T>;
 
@@ -2076,7 +2076,7 @@ impl<'b, 'a, T> IntoIterator for &'b BumpBox<'a, [T]> {
     }
 }
 
-impl<'b, 'a, T> IntoIterator for &'b mut BumpBox<'a, [T]> {
+impl<'b, 'a, T> IntoIterator for &'b mut Box<'a, [T]> {
     type Item = &'b mut T;
     type IntoIter = slice::IterMut<'b, T>;
 
@@ -2086,7 +2086,7 @@ impl<'b, 'a, T> IntoIterator for &'b mut BumpBox<'a, [T]> {
     }
 }
 
-impl<T, I: SliceIndex<[T]>> Index<I> for BumpBox<'_, [T]> {
+impl<T, I: SliceIndex<[T]>> Index<I> for Box<'_, [T]> {
     type Output = I::Output;
 
     #[inline]
@@ -2095,7 +2095,7 @@ impl<T, I: SliceIndex<[T]>> Index<I> for BumpBox<'_, [T]> {
     }
 }
 
-impl<T, I: SliceIndex<[T]>> IndexMut<I> for BumpBox<'_, [T]> {
+impl<T, I: SliceIndex<[T]>> IndexMut<I> for Box<'_, [T]> {
     #[inline]
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
         <[T]>::index_mut(self, index)
@@ -2103,7 +2103,7 @@ impl<T, I: SliceIndex<[T]>> IndexMut<I> for BumpBox<'_, [T]> {
 }
 
 #[cfg(feature = "std")]
-impl<T: ?Sized + std::io::Read> std::io::Read for BumpBox<'_, T> {
+impl<T: ?Sized + std::io::Read> std::io::Read for Box<'_, T> {
     #[inline(always)]
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         T::read(self, buf)
@@ -2131,7 +2131,7 @@ impl<T: ?Sized + std::io::Read> std::io::Read for BumpBox<'_, T> {
 }
 
 #[cfg(feature = "std")]
-impl<T: ?Sized + std::io::Write> std::io::Write for BumpBox<'_, T> {
+impl<T: ?Sized + std::io::Write> std::io::Write for Box<'_, T> {
     #[inline(always)]
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         T::write(self, buf)
@@ -2159,7 +2159,7 @@ impl<T: ?Sized + std::io::Write> std::io::Write for BumpBox<'_, T> {
 }
 
 #[cfg(feature = "std")]
-impl<T: ?Sized + std::io::Seek> std::io::Seek for BumpBox<'_, T> {
+impl<T: ?Sized + std::io::Seek> std::io::Seek for Box<'_, T> {
     #[inline(always)]
     fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
         T::seek(self, pos)
@@ -2172,7 +2172,7 @@ impl<T: ?Sized + std::io::Seek> std::io::Seek for BumpBox<'_, T> {
 }
 
 #[cfg(feature = "std")]
-impl<T: ?Sized + std::io::BufRead> std::io::BufRead for BumpBox<'_, T> {
+impl<T: ?Sized + std::io::BufRead> std::io::BufRead for Box<'_, T> {
     #[inline(always)]
     fn fill_buf(&mut self) -> std::io::Result<&[u8]> {
         T::fill_buf(self)

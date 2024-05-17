@@ -28,7 +28,7 @@ impl Checkpoint {
 }
 
 /// Returned from [`BumpScope::scope_guard`].
-pub struct BumpScopeGuard<'a, A, const MIN_ALIGN: usize = 1, const UP: bool = true>
+pub struct ScopeGuard<'a, A, const MIN_ALIGN: usize = 1, const UP: bool = true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -38,17 +38,17 @@ where
     marker: PhantomData<&'a mut ()>,
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Debug for BumpScopeGuard<'a, A, MIN_ALIGN, UP>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Debug for ScopeGuard<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.stats().debug_format("BumpScopeGuard", f)
+        self.stats().debug_format("ScopeGuard", f)
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpScopeGuard<'a, A, MIN_ALIGN, UP>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Drop for ScopeGuard<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -59,7 +59,7 @@ where
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScopeGuard<'a, A, MIN_ALIGN, UP>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> ScopeGuard<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -121,9 +121,9 @@ where
 
 /// Returned from [`Bump::scope_guard`].
 ///
-/// This fulfills the same purpose as [`BumpScopeGuard`], but it does not need to store
+/// This fulfills the same purpose as [`ScopeGuard`], but it does not need to store
 /// the address which the bump pointer needs to be reset to. It simply resets the bump pointer to the very start.
-pub struct BumpScopeGuardRoot<'b, A, const MIN_ALIGN: usize = 1, const UP: bool = true>
+pub struct ScopeGuardRoot<'b, A, const MIN_ALIGN: usize = 1, const UP: bool = true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -132,17 +132,17 @@ where
     marker: PhantomData<&'b mut ()>,
 }
 
-impl<'b, A, const MIN_ALIGN: usize, const UP: bool> Debug for BumpScopeGuardRoot<'b, A, MIN_ALIGN, UP>
+impl<'b, A, const MIN_ALIGN: usize, const UP: bool> Debug for ScopeGuardRoot<'b, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.guaranteed_allocated_stats().debug_format("BumpScopeGuardRoot", f)
+        self.guaranteed_allocated_stats().debug_format("ScopeGuardRoot", f)
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpScopeGuardRoot<'a, A, MIN_ALIGN, UP>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Drop for ScopeGuardRoot<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
@@ -153,7 +153,7 @@ where
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScopeGuardRoot<'a, A, MIN_ALIGN, UP>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> ScopeGuardRoot<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,

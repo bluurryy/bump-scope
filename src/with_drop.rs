@@ -44,12 +44,12 @@ use allocator_api2::alloc::Allocator;
 
 use crate::{
     polyfill::{layout, nonnull},
-    AllocError, AnyBump, BumpAllocator, BumpBox, ErrorBehavior, SizedTypeProperties,
+    AllocError, AnyBump, Box, BumpAllocator, ErrorBehavior, SizedTypeProperties,
 };
 
 /// Wraps a bump allocator, makes all of the `alloc*` functions return `&mut T` and drops those `T` when it drops itself.
 ///
-/// This type is returned from [`Bump(Scope)::with_drop`](crate::Bump::with_drop)([`_ref`](crate::Bump::with_drop_ref)/[`_mut`](crate::Bump::with_drop_mut)).
+/// This type is returned from [`Bump(BumpScope)::with_drop`](crate::Bump::with_drop)([`_ref`](crate::Bump::with_drop_ref)/[`_mut`](crate::Bump::with_drop_mut)).
 pub struct WithDrop<Bump> {
     inner: ManuallyDrop<Bump>,
     drop_list: DropList,
@@ -105,7 +105,7 @@ impl<Bump: AnyBump> WithDrop<Bump> {
                 Ok(zst())
             } else {
                 let boxed = self.inner.alloc_with(f)?;
-                Ok(BumpBox::leak(boxed))
+                Ok(Box::leak(boxed))
             };
         }
 
@@ -126,7 +126,7 @@ impl<Bump: AnyBump> WithDrop<Bump> {
                 Ok(zst_slice(slice.len()))
             } else {
                 let boxed = self.inner.alloc_slice_copy(slice)?;
-                Ok(BumpBox::leak(boxed))
+                Ok(Box::leak(boxed))
             };
         }
 
@@ -145,7 +145,7 @@ impl<Bump: AnyBump> WithDrop<Bump> {
                 Ok(zst_slice(slice.len()))
             } else {
                 let boxed = self.inner.alloc_slice_clone(slice)?;
-                Ok(BumpBox::leak(boxed))
+                Ok(Box::leak(boxed))
             };
         }
 
@@ -165,7 +165,7 @@ impl<Bump: AnyBump> WithDrop<Bump> {
                 Ok(zst_slice(len))
             } else {
                 let boxed = self.inner.alloc_slice_fill(len, value)?;
-                Ok(BumpBox::leak(boxed))
+                Ok(Box::leak(boxed))
             };
         }
 
@@ -185,7 +185,7 @@ impl<Bump: AnyBump> WithDrop<Bump> {
                 Ok(zst_slice(len))
             } else {
                 let boxed = self.inner.alloc_slice_fill_with(len, f)?;
-                Ok(BumpBox::leak(boxed))
+                Ok(Box::leak(boxed))
             };
         }
 
@@ -204,7 +204,7 @@ impl<Bump: AnyBump> WithDrop<Bump> {
     #[cfg(feature = "alloc")]
     pub(crate) fn generic_alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<&mut str, B> {
         let boxed = self.inner.alloc_fmt(args)?;
-        Ok(BumpBox::leak(boxed))
+        Ok(Box::leak(boxed))
     }
 
     #[inline(always)]
@@ -228,7 +228,7 @@ impl<Bump: AnyBump> WithDrop<Bump> {
 
             Ok(Allocation {
                 header: header_ptr,
-                uninit: BumpBox::from_raw(value_ptr),
+                uninit: Box::from_raw(value_ptr),
             })
         }
     }
@@ -292,7 +292,7 @@ impl<Bump: AnyBump> WithDrop<Bump> {
 
             Ok(Allocation {
                 header: header_ptr.cast(),
-                uninit: BumpBox::from_raw(slice_ptr),
+                uninit: Box::from_raw(slice_ptr),
             })
         }
     }
@@ -312,7 +312,7 @@ fn zst_slice<'a, T>(len: usize) -> &'a mut [T] {
 
 struct Allocation<'a, T: ?Sized + 'static> {
     header: NonNull<Header>,
-    uninit: BumpBox<'a, T>,
+    uninit: Box<'a, T>,
 }
 
 struct DropList {
@@ -343,16 +343,16 @@ impl DropList {
 
     #[inline(always)]
     #[allow(clippy::mut_from_ref)]
-    fn append<'a, T: ?Sized + 'static>(&self, header: NonNull<Header>, init: BumpBox<'a, T>) -> &'a mut T {
+    fn append<'a, T: ?Sized + 'static>(&self, header: NonNull<Header>, init: Box<'a, T>) -> &'a mut T {
         self.last.set(Some(header));
-        BumpBox::leak(init)
+        Box::leak(init)
     }
 
     /// Drops all values in the list.
     ///
     /// # Safety
     ///
-    /// All `BumpBox`es that have been appended to the list must still be live.
+    /// All `Box`es that have been appended to the list must still be live.
     unsafe fn drop(&self) {
         let mut iter = self.last.get();
 

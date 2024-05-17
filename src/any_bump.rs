@@ -5,18 +5,18 @@ use core::fmt;
 
 use allocator_api2::alloc::Allocator;
 
-use crate::{Bump, BumpBox, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment};
+use crate::{Box, Bump, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment};
 
 pub(crate) trait Sealed {
-    fn alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<BumpBox<MaybeUninit<T>>, B>;
-    fn alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<BumpBox<T>, B>;
-    fn alloc_slice_copy<B: ErrorBehavior, T: Copy>(&self, slice: &[T]) -> Result<BumpBox<[T]>, B>;
-    fn alloc_slice_clone<B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<BumpBox<[T]>, B>;
-    fn alloc_slice_fill<B: ErrorBehavior, T: Clone>(&self, len: usize, value: T) -> Result<BumpBox<[T]>, B>;
-    fn alloc_slice_fill_with<B: ErrorBehavior, T>(&self, len: usize, f: impl FnMut() -> T) -> Result<BumpBox<[T]>, B>;
-    fn alloc_str<B: ErrorBehavior>(&self, src: &str) -> Result<BumpBox<str>, B>;
+    fn alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<Box<MaybeUninit<T>>, B>;
+    fn alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<Box<T>, B>;
+    fn alloc_slice_copy<B: ErrorBehavior, T: Copy>(&self, slice: &[T]) -> Result<Box<[T]>, B>;
+    fn alloc_slice_clone<B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<Box<[T]>, B>;
+    fn alloc_slice_fill<B: ErrorBehavior, T: Clone>(&self, len: usize, value: T) -> Result<Box<[T]>, B>;
+    fn alloc_slice_fill_with<B: ErrorBehavior, T>(&self, len: usize, f: impl FnMut() -> T) -> Result<Box<[T]>, B>;
+    fn alloc_str<B: ErrorBehavior>(&self, src: &str) -> Result<Box<str>, B>;
     #[cfg(feature = "alloc")]
-    fn alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<BumpBox<str>, B>;
+    fn alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<Box<str>, B>;
     fn reserve_bytes<B: ErrorBehavior>(&self, additional: usize) -> Result<(), B>;
 
     fn alloc_in_current_chunk<const IS_CONST_SIZE: bool, const IS_CONST_ALIGN: bool>(
@@ -28,43 +28,43 @@ pub(crate) trait Sealed {
 
 impl<U: Sealed> Sealed for &U {
     #[inline(always)]
-    fn alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<BumpBox<MaybeUninit<T>>, B> {
+    fn alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<Box<MaybeUninit<T>>, B> {
         U::alloc_uninit(self)
     }
 
     #[inline(always)]
-    fn alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<BumpBox<T>, B> {
+    fn alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<Box<T>, B> {
         U::alloc_with(self, f)
     }
 
     #[inline(always)]
-    fn alloc_slice_copy<B: ErrorBehavior, T: Copy>(&self, slice: &[T]) -> Result<BumpBox<[T]>, B> {
+    fn alloc_slice_copy<B: ErrorBehavior, T: Copy>(&self, slice: &[T]) -> Result<Box<[T]>, B> {
         U::alloc_slice_copy(self, slice)
     }
 
     #[inline(always)]
-    fn alloc_slice_clone<B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<BumpBox<[T]>, B> {
+    fn alloc_slice_clone<B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<Box<[T]>, B> {
         U::alloc_slice_clone(self, slice)
     }
 
     #[inline(always)]
-    fn alloc_slice_fill<B: ErrorBehavior, T: Clone>(&self, len: usize, value: T) -> Result<BumpBox<[T]>, B> {
+    fn alloc_slice_fill<B: ErrorBehavior, T: Clone>(&self, len: usize, value: T) -> Result<Box<[T]>, B> {
         U::alloc_slice_fill(self, len, value)
     }
 
     #[inline(always)]
-    fn alloc_slice_fill_with<B: ErrorBehavior, T>(&self, len: usize, f: impl FnMut() -> T) -> Result<BumpBox<[T]>, B> {
+    fn alloc_slice_fill_with<B: ErrorBehavior, T>(&self, len: usize, f: impl FnMut() -> T) -> Result<Box<[T]>, B> {
         U::alloc_slice_fill_with(self, len, f)
     }
 
     #[inline(always)]
-    fn alloc_str<B: ErrorBehavior>(&self, src: &str) -> Result<BumpBox<str>, B> {
+    fn alloc_str<B: ErrorBehavior>(&self, src: &str) -> Result<Box<str>, B> {
         U::alloc_str(self, src)
     }
 
     #[inline(always)]
     #[cfg(feature = "alloc")]
-    fn alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<BumpBox<str>, B> {
+    fn alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<Box<str>, B> {
         U::alloc_fmt(self, args)
     }
 
@@ -89,43 +89,43 @@ impl<U: Sealed> Sealed for &U {
 
 impl<U: Sealed> Sealed for &mut U {
     #[inline(always)]
-    fn alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<BumpBox<MaybeUninit<T>>, B> {
+    fn alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<Box<MaybeUninit<T>>, B> {
         U::alloc_uninit(self)
     }
 
     #[inline(always)]
-    fn alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<BumpBox<T>, B> {
+    fn alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<Box<T>, B> {
         U::alloc_with(self, f)
     }
 
     #[inline(always)]
-    fn alloc_slice_copy<B: ErrorBehavior, T: Copy>(&self, slice: &[T]) -> Result<BumpBox<[T]>, B> {
+    fn alloc_slice_copy<B: ErrorBehavior, T: Copy>(&self, slice: &[T]) -> Result<Box<[T]>, B> {
         U::alloc_slice_copy(self, slice)
     }
 
     #[inline(always)]
-    fn alloc_slice_clone<B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<BumpBox<[T]>, B> {
+    fn alloc_slice_clone<B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<Box<[T]>, B> {
         U::alloc_slice_clone(self, slice)
     }
 
     #[inline(always)]
-    fn alloc_slice_fill<B: ErrorBehavior, T: Clone>(&self, len: usize, value: T) -> Result<BumpBox<[T]>, B> {
+    fn alloc_slice_fill<B: ErrorBehavior, T: Clone>(&self, len: usize, value: T) -> Result<Box<[T]>, B> {
         U::alloc_slice_fill(self, len, value)
     }
 
     #[inline(always)]
-    fn alloc_slice_fill_with<B: ErrorBehavior, T>(&self, len: usize, f: impl FnMut() -> T) -> Result<BumpBox<[T]>, B> {
+    fn alloc_slice_fill_with<B: ErrorBehavior, T>(&self, len: usize, f: impl FnMut() -> T) -> Result<Box<[T]>, B> {
         U::alloc_slice_fill_with(self, len, f)
     }
 
     #[inline(always)]
-    fn alloc_str<B: ErrorBehavior>(&self, src: &str) -> Result<BumpBox<str>, B> {
+    fn alloc_str<B: ErrorBehavior>(&self, src: &str) -> Result<Box<str>, B> {
         U::alloc_str(self, src)
     }
 
     #[inline(always)]
     #[cfg(feature = "alloc")]
-    fn alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<BumpBox<str>, B> {
+    fn alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<Box<str>, B> {
         U::alloc_fmt(self, args)
     }
 
@@ -155,43 +155,43 @@ where
     A: Allocator + Clone,
 {
     #[inline(always)]
-    fn alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<BumpBox<MaybeUninit<T>>, B> {
+    fn alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<Box<MaybeUninit<T>>, B> {
         BumpScope::generic_alloc_uninit(self)
     }
 
     #[inline(always)]
-    fn alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<BumpBox<T>, B> {
+    fn alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<Box<T>, B> {
         BumpScope::generic_alloc_with(self, f)
     }
 
     #[inline(always)]
-    fn alloc_slice_copy<B: ErrorBehavior, T: Copy>(&self, slice: &[T]) -> Result<BumpBox<[T]>, B> {
+    fn alloc_slice_copy<B: ErrorBehavior, T: Copy>(&self, slice: &[T]) -> Result<Box<[T]>, B> {
         BumpScope::generic_alloc_slice_copy(self, slice)
     }
 
     #[inline(always)]
-    fn alloc_slice_clone<B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<BumpBox<[T]>, B> {
+    fn alloc_slice_clone<B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<Box<[T]>, B> {
         BumpScope::generic_alloc_slice_clone(self, slice)
     }
 
     #[inline(always)]
-    fn alloc_slice_fill<B: ErrorBehavior, T: Clone>(&self, len: usize, value: T) -> Result<BumpBox<[T]>, B> {
+    fn alloc_slice_fill<B: ErrorBehavior, T: Clone>(&self, len: usize, value: T) -> Result<Box<[T]>, B> {
         BumpScope::generic_alloc_slice_fill(self, len, value)
     }
 
     #[inline(always)]
-    fn alloc_slice_fill_with<B: ErrorBehavior, T>(&self, len: usize, f: impl FnMut() -> T) -> Result<BumpBox<[T]>, B> {
+    fn alloc_slice_fill_with<B: ErrorBehavior, T>(&self, len: usize, f: impl FnMut() -> T) -> Result<Box<[T]>, B> {
         BumpScope::generic_alloc_slice_fill_with(self, len, f)
     }
 
     #[inline(always)]
-    fn alloc_str<B: ErrorBehavior>(&self, src: &str) -> Result<BumpBox<str>, B> {
+    fn alloc_str<B: ErrorBehavior>(&self, src: &str) -> Result<Box<str>, B> {
         BumpScope::generic_alloc_str(self, src)
     }
 
     #[inline(always)]
     #[cfg(feature = "alloc")]
-    fn alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<BumpBox<str>, B> {
+    fn alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<Box<str>, B> {
         BumpScope::generic_alloc_fmt(self, args)
     }
 
@@ -221,43 +221,43 @@ where
     A: Allocator + Clone,
 {
     #[inline(always)]
-    fn alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<BumpBox<MaybeUninit<T>>, B> {
+    fn alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<Box<MaybeUninit<T>>, B> {
         BumpScope::generic_alloc_uninit(self.as_scope())
     }
 
     #[inline(always)]
-    fn alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<BumpBox<T>, B> {
+    fn alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<Box<T>, B> {
         BumpScope::generic_alloc_with(self.as_scope(), f)
     }
 
     #[inline(always)]
-    fn alloc_slice_copy<B: ErrorBehavior, T: Copy>(&self, slice: &[T]) -> Result<BumpBox<[T]>, B> {
+    fn alloc_slice_copy<B: ErrorBehavior, T: Copy>(&self, slice: &[T]) -> Result<Box<[T]>, B> {
         BumpScope::generic_alloc_slice_copy(self.as_scope(), slice)
     }
 
     #[inline(always)]
-    fn alloc_slice_clone<B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<BumpBox<[T]>, B> {
+    fn alloc_slice_clone<B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<Box<[T]>, B> {
         BumpScope::generic_alloc_slice_clone(self.as_scope(), slice)
     }
 
     #[inline(always)]
-    fn alloc_slice_fill<B: ErrorBehavior, T: Clone>(&self, len: usize, value: T) -> Result<BumpBox<[T]>, B> {
+    fn alloc_slice_fill<B: ErrorBehavior, T: Clone>(&self, len: usize, value: T) -> Result<Box<[T]>, B> {
         BumpScope::generic_alloc_slice_fill(self.as_scope(), len, value)
     }
 
     #[inline(always)]
-    fn alloc_slice_fill_with<B: ErrorBehavior, T>(&self, len: usize, f: impl FnMut() -> T) -> Result<BumpBox<[T]>, B> {
+    fn alloc_slice_fill_with<B: ErrorBehavior, T>(&self, len: usize, f: impl FnMut() -> T) -> Result<Box<[T]>, B> {
         BumpScope::generic_alloc_slice_fill_with(self.as_scope(), len, f)
     }
 
     #[inline(always)]
-    fn alloc_str<B: ErrorBehavior>(&self, src: &str) -> Result<BumpBox<str>, B> {
+    fn alloc_str<B: ErrorBehavior>(&self, src: &str) -> Result<Box<str>, B> {
         BumpScope::generic_alloc_str(self.as_scope(), src)
     }
 
     #[inline(always)]
     #[cfg(feature = "alloc")]
-    fn alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<BumpBox<str>, B> {
+    fn alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<Box<str>, B> {
         BumpScope::generic_alloc_fmt(self.as_scope(), args)
     }
 
@@ -283,7 +283,7 @@ where
     }
 }
 
-/// Implemented for any `Bump(Scope)` or reference thereof.
+/// Implemented for any `Bump(BumpScope)` or reference thereof.
 ///
 /// This is used as a bound for [`WithDrop`](crate::WithDrop).
 #[allow(private_bounds)]

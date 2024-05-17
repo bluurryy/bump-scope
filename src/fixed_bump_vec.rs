@@ -14,16 +14,16 @@ use crate::{
     error_behavior_generic_methods,
     polyfill::{self, nonnull, pointer, slice},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BumpBox, BumpScope, BumpVec, Drain, ErrorBehavior, ExtractIf, IntoIter, NoDrop, SizedTypeProperties,
+    Box, BumpScope, Drain, ErrorBehavior, ExtractIf, IntoIter, NoDrop, SizedTypeProperties, Vec,
 };
 
-/// A [`BumpVec`] but with a fixed capacity.
+/// A [`Vec`] but with a fixed capacity.
 ///
-/// It can be constructed with [`alloc_fixed_vec`] or from a `BumpBox<[MaybeUninit<T>]>` via [`into_fixed_vec`].
+/// It can be constructed with [`alloc_fixed_vec`] or from a `Box<[MaybeUninit<T>]>` via [`into_fixed_vec`].
 ///
 /// # Examples
 /// ```
-/// use bump_scope::{ Bump, mut_bump_vec };
+/// use bump_scope::{ Bump, mut_vec };
 /// let mut bump: Bump = Bump::new();
 /// let mut vec = bump.alloc_fixed_vec(3);
 ///
@@ -37,37 +37,37 @@ use crate::{
 /// ```
 ///
 /// [`alloc_fixed_vec`]: crate::Bump::alloc_fixed_vec
-/// [`into_fixed_vec`]: BumpBox::into_fixed_vec
-pub struct FixedBumpVec<'a, T> {
-    pub(crate) initialized: BumpBox<'a, [T]>,
+/// [`into_fixed_vec`]: Box::into_fixed_vec
+pub struct FixedVec<'a, T> {
+    pub(crate) initialized: Box<'a, [T]>,
     pub(crate) capacity: usize,
 }
 
-unsafe impl<'a, T: Send> Send for FixedBumpVec<'a, T> {}
-unsafe impl<'a, T: Sync> Sync for FixedBumpVec<'a, T> {}
+unsafe impl<'a, T: Send> Send for FixedVec<'a, T> {}
+unsafe impl<'a, T: Sync> Sync for FixedVec<'a, T> {}
 
-impl<'a, T> FixedBumpVec<'a, T> {
+impl<'a, T> FixedVec<'a, T> {
     /// Empty fixed vector.
     pub const EMPTY: Self = Self {
-        initialized: BumpBox::EMPTY,
+        initialized: Box::EMPTY,
         capacity: if T::IS_ZST { usize::MAX } else { 0 },
     };
 
-    /// Turns a `BumpBox<[T]>` into a full `FixedBumpVec<T>`.
+    /// Turns a `Box<[T]>` into a full `FixedVec<T>`.
     #[must_use]
-    pub fn from_init(initialized: BumpBox<'a, [T]>) -> Self {
+    pub fn from_init(initialized: Box<'a, [T]>) -> Self {
         let capacity = initialized.len();
         Self { initialized, capacity }
     }
 
-    /// Turns a `BumpBox<[MaybeUninit<T>]>` into a `FixedBumpVec<T>` with a length of `0`.
+    /// Turns a `Box<[MaybeUninit<T>]>` into a `FixedVec<T>` with a length of `0`.
     #[must_use]
-    pub fn from_uninit(uninitialized: BumpBox<'a, [MaybeUninit<T>]>) -> Self {
+    pub fn from_uninit(uninitialized: Box<'a, [MaybeUninit<T>]>) -> Self {
         let uninitialized = uninitialized.into_raw();
         let capacity = uninitialized.len();
 
         let ptr = nonnull::as_non_null_ptr(uninitialized).cast::<T>();
-        let initialized = unsafe { BumpBox::from_raw(nonnull::slice_from_raw_parts(ptr, 0)) };
+        let initialized = unsafe { Box::from_raw(nonnull::slice_from_raw_parts(ptr, 0)) };
 
         Self { initialized, capacity }
     }
@@ -77,7 +77,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, FixedBumpVec };
+    /// # use bump_scope::{ Bump, FixedVec };
     /// # let mut bump: Bump = Bump::new();
     /// let vec = bump.alloc_fixed_vec::<i32>(2048);
     /// assert_eq!(vec.capacity(), 2048);
@@ -117,26 +117,26 @@ impl<'a, T> FixedBumpVec<'a, T> {
         unsafe { Layout::from_size_align_unchecked(T::SIZE * self.len(), T::ALIGN) }
     }
 
-    /// Turns this `FixedBumpVec<T>` into a `BumpVec<T>`.
+    /// Turns this `FixedVec<T>` into a `Vec<T>`.
     pub fn into_vec<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
         self,
         bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
-    ) -> BumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
-        BumpVec { fixed: self, bump }
+    ) -> Vec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
+        Vec { fixed: self, bump }
     }
 
-    /// Turns this `FixedBumpVec<T>` into a `BumpBox<[T]>`.
+    /// Turns this `FixedVec<T>` into a `Box<[T]>`.
     #[must_use]
     #[inline(always)]
-    pub fn into_boxed_slice(self) -> BumpBox<'a, [T]> {
+    pub fn into_boxed_slice(self) -> Box<'a, [T]> {
         self.initialized
     }
 
-    /// Turns this `FixedBumpVec<T>` into a `&[T]` that is live for the entire bump scope.
+    /// Turns this `FixedVec<T>` into a `&[T]` that is live for the entire bump scope.
     ///
     /// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
     ///
-    /// `!NoDrop` types can still be turned into slices via `BumpBox::leak(vec.into_boxed_slice())`.
+    /// `!NoDrop` types can still be turned into slices via `Box::leak(vec.into_boxed_slice())`.
     #[must_use]
     #[inline(always)]
     pub fn into_slice(self) -> &'a mut [T]
@@ -157,7 +157,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{ Bump, mut_vec };
     /// # let bump: Bump = Bump::new();
     /// let mut vec = bump.alloc_fixed_vec(10);
     /// vec.extend_from_slice_copy(&[1, 2, 3]);
@@ -186,7 +186,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Truncating a five element vector to two elements:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{ Bump, mut_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut vec = bump.alloc_fixed_vec(10);
@@ -199,7 +199,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// length:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{ Bump, mut_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut vec = bump.alloc_fixed_vec(10);
@@ -212,7 +212,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// method.
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{ Bump, mut_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut vec = bump.alloc_fixed_vec(10);
@@ -221,8 +221,8 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// assert_eq!(vec, []);
     /// ```
     ///
-    /// [`clear`]: FixedBumpVec::clear
-    /// [`drain`]: FixedBumpVec::drain
+    /// [`clear`]: FixedVec::clear
+    /// [`drain`]: FixedVec::drain
     pub fn truncate(&mut self, len: usize) {
         self.initialized.truncate(len);
     }
@@ -234,14 +234,14 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// worst-case performance of *O*(*n*). If you don't need the order of elements
     /// to be preserved, use [`swap_remove`] instead.
     ///
-    /// [`swap_remove`]: FixedBumpVec::swap_remove
+    /// [`swap_remove`]: FixedVec::swap_remove
     ///
     /// # Panics
     /// Panics if `index` is out of bounds.
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{ Bump, mut_vec };
     /// # let mut bump: Bump = Bump::new();
     /// let mut v = bump.alloc_slice_copy(&[1, 2, 3]);
     /// assert_eq!(v.remove(1), 2);
@@ -281,13 +281,13 @@ impl<'a, T> FixedBumpVec<'a, T> {
 
     /// Extracts a boxed slice containing the entire vector.
     #[must_use]
-    pub const fn as_boxed_slice(&self) -> &BumpBox<[T]> {
+    pub const fn as_boxed_slice(&self) -> &Box<[T]> {
         &self.initialized
     }
 
     /// Extracts a mutable boxed slice containing the entire vector.
     #[must_use]
-    pub fn as_mut_boxed_slice(&mut self) -> &mut BumpBox<'a, [T]> {
+    pub fn as_mut_boxed_slice(&mut self) -> &mut Box<'a, [T]> {
         &mut self.initialized
     }
 
@@ -351,9 +351,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// - `new_len` must be less than or equal to the [`capacity`] (capacity is not tracked by this type).
     /// - The elements at `old_len..new_len` must be initialized.
     ///
-    /// [`truncate`]: FixedBumpVec::truncate
-    /// [`clear`]: FixedBumpVec::clear
-    /// [`capacity`]: FixedBumpVec::capacity
+    /// [`truncate`]: FixedVec::truncate
+    /// [`clear`]: FixedVec::clear
+    /// [`capacity`]: FixedVec::capacity
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: usize) {
         self.initialized.set_len(new_len);
@@ -381,7 +381,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{ Bump, mut_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut v = bump.alloc_slice_copy(&["foo", "bar", "baz", "qux"]);
@@ -393,7 +393,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// assert_eq!(v, ["baz", "qux"]);
     /// ```
     ///
-    /// [`remove`]: FixedBumpVec::remove
+    /// [`remove`]: FixedVec::remove
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> T {
         #[cold]
@@ -428,7 +428,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// # Examples
         ///
         /// ```
-        /// # use bump_scope::{ mut_bump_vec, Bump };
+        /// # use bump_scope::{ mut_vec, Bump };
         /// # let mut bump: Bump = Bump::new();
         /// let mut vec = bump.alloc_fixed_vec(3);
         /// vec.extend_from_slice_copy(&[1, 2]);
@@ -458,7 +458,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// Panics if `index > len`.
         do examples
         /// ```
-        /// # use bump_scope::{ mut_bump_vec, Bump, FixedBumpVec };
+        /// # use bump_scope::{ mut_vec, Bump, FixedVec };
         /// # let mut bump: Bump = Bump::new();
         /// let mut vec = bump.alloc_fixed_vec(5);
         /// vec.extend_from_slice_copy(&[1, 2, 3]);
@@ -498,15 +498,15 @@ impl<'a, T> FixedBumpVec<'a, T> {
             Ok(())
         }
 
-        /// Copies and appends all elements in a slice to the `FixedBumpVec`.
+        /// Copies and appends all elements in a slice to the `FixedVec`.
         ///
         /// Iterates over the `slice`, copies each element, and then appends
-        /// it to this `FixedBumpVec`. The `slice` is traversed in-order.
+        /// it to this `FixedVec`. The `slice` is traversed in-order.
         ///
         /// Note that this function is same as [`extend`] except that it is
         /// specialized to work with copyable slices instead.
         ///
-        /// [`extend`]: FixedBumpVec::extend
+        /// [`extend`]: FixedVec::extend
         impl
         for pub fn extend_from_slice_copy
         for pub fn try_extend_from_slice_copy
@@ -517,15 +517,15 @@ impl<'a, T> FixedBumpVec<'a, T> {
             unsafe { self.extend_by_copy_nonoverlapping(slice) }
         }
 
-        /// Clones and appends all elements in a slice to the `FixedBumpVec`.
+        /// Clones and appends all elements in a slice to the `FixedVec`.
         ///
         /// Iterates over the `slice`, clones each element, and then appends
-        /// it to this `FixedBumpVec`. The `slice` is traversed in-order.
+        /// it to this `FixedVec`. The `slice` is traversed in-order.
         ///
         /// Note that this function is same as [`extend`] except that it is
         /// specialized to work with slices instead.
         ///
-        /// [`extend`]: FixedBumpVec::extend
+        /// [`extend`]: FixedVec::extend
         impl
         for pub fn extend_from_slice_clone
         for pub fn try_extend_from_slice_clone
@@ -548,15 +548,15 @@ impl<'a, T> FixedBumpVec<'a, T> {
             Ok(())
         }
 
-        /// Appends all elements in an array to the `FixedBumpVec`.
+        /// Appends all elements in an array to the `FixedVec`.
         ///
         /// Iterates over the `array`, copies each element, and then appends
-        /// it to this `FixedBumpVec`. The `array` is traversed in-order.
+        /// it to this `FixedVec`. The `array` is traversed in-order.
         ///
         /// Note that this function is same as [`extend`] except that it is
         /// specialized to work with arrays instead.
         ///
-        /// [`extend`]: FixedBumpVec::extend
+        /// [`extend`]: FixedVec::extend
         #[allow(clippy::needless_pass_by_value)]
         impl
         for pub fn extend_from_array
@@ -571,7 +571,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// the end point is greater than the length of the vector.
         do examples
         /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
+        /// # use bump_scope::{ Bump, mut_vec };
         /// # let mut bump: Bump = Bump::new();
         /// #
         /// let mut vec = bump.alloc_fixed_vec(100);
@@ -688,7 +688,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         }
 
         /// Reserves capacity for at least `additional` more elements to be inserted
-        /// in the given `FixedBumpVec<T>`. The collection may reserve more space to
+        /// in the given `FixedVec<T>`. The collection may reserve more space to
         /// speculatively avoid frequent reallocations. After calling `reserve`,
         /// capacity will be greater than or equal to `self.len() + additional`.
         /// Does nothing if capacity is already sufficient.
@@ -704,11 +704,11 @@ impl<'a, T> FixedBumpVec<'a, T> {
             }
         }
 
-        /// Resizes the `FixedBumpVec` in-place so that `len` is equal to `new_len`.
+        /// Resizes the `FixedVec` in-place so that `len` is equal to `new_len`.
         ///
-        /// If `new_len` is greater than `len`, the `FixedBumpVec` is extended by the
+        /// If `new_len` is greater than `len`, the `FixedVec` is extended by the
         /// difference, with each additional slot filled with `value`.
-        /// If `new_len` is less than `len`, the `FixedBumpVec` is simply truncated.
+        /// If `new_len` is less than `len`, the `FixedVec` is simply truncated.
         ///
         /// This method requires `T` to implement [`Clone`],
         /// in order to be able to clone the passed value.
@@ -718,7 +718,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         ///
         /// # Examples
         /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
+        /// # use bump_scope::{ Bump, mut_vec };
         /// # let mut bump: Bump = Bump::new();
         /// #
         /// let mut vec = bump.alloc_fixed_vec(10);
@@ -733,8 +733,8 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// assert_eq!(vec, [2, 4, 8, 16]);
         /// ```
         ///
-        /// [`resize_with`]: FixedBumpVec::resize_with
-        /// [`truncate`]: BumpBox::truncate
+        /// [`resize_with`]: FixedVec::resize_with
+        /// [`truncate`]: Box::truncate
         impl
         for pub fn resize
         for pub fn try_resize
@@ -751,17 +751,17 @@ impl<'a, T> FixedBumpVec<'a, T> {
             }
         }
 
-        /// Resizes the `FixedBumpVec` in-place so that `len` is equal to `new_len`.
+        /// Resizes the `FixedVec` in-place so that `len` is equal to `new_len`.
         ///
-        /// If `new_len` is greater than `len`, the `FixedBumpVec` is extended by the
+        /// If `new_len` is greater than `len`, the `FixedVec` is extended by the
         /// difference, with each additional slot filled with the result of
         /// calling the closure `f`. The return values from `f` will end up
-        /// in the `FixedBumpVec` in the order they have been generated.
+        /// in the `FixedVec` in the order they have been generated.
         ///
-        /// If `new_len` is less than `len`, the `FixedBumpVec` is simply truncated.
+        /// If `new_len` is less than `len`, the `FixedVec` is simply truncated.
         ///
         /// This method uses a closure to create new values on every push. If
-        /// you'd rather [`Clone`] a given value, use [`FixedBumpVec::resize`]. If you
+        /// you'd rather [`Clone`] a given value, use [`FixedVec::resize`]. If you
         /// want to use the [`Default`] trait to generate values, you can
         /// pass [`Default::default`] as the second argument.
         ///
@@ -816,7 +816,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         impl
         for pub fn append
         for pub fn try_append
-        fn generic_append(&mut self, other: &mut BumpBox<[T]>) {
+        fn generic_append(&mut self, other: &mut Box<[T]>) {
             unsafe {
                 self.extend_by_copy_nonoverlapping(other.as_slice())?;
                 other.set_len(0);
@@ -1020,7 +1020,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// assert_eq!(odds, [1, 3, 5, 9, 11, 13, 15]);
     /// ```
     ///
-    /// [`retain`]: FixedBumpVec::retain
+    /// [`retain`]: FixedVec::retain
     pub fn extract_if<F>(&mut self, filter: F) -> ExtractIf<T, F>
     where
         F: FnMut(&mut T) -> bool,
@@ -1111,23 +1111,23 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// capacity of the vector as a boxed slice of `MaybeUninit<T>`.
     #[inline]
     #[must_use]
-    pub fn split_at_spare(self) -> (BumpBox<'a, [T]>, BumpBox<'a, [MaybeUninit<T>]>) {
+    pub fn split_at_spare(self) -> (Box<'a, [T]>, Box<'a, [MaybeUninit<T>]>) {
         unsafe {
             let uninitialized_ptr =
                 nonnull::add(self.initialized.as_non_null_ptr(), self.initialized.len()).cast::<MaybeUninit<T>>();
             let uninitialized_len = self.capacity - self.len();
-            let uninitialized = BumpBox::from_raw(nonnull::slice_from_raw_parts(uninitialized_ptr, uninitialized_len));
+            let uninitialized = Box::from_raw(nonnull::slice_from_raw_parts(uninitialized_ptr, uninitialized_len));
             (self.initialized, uninitialized)
         }
     }
 
     #[inline(always)]
-    fn into_raw_parts(self) -> (BumpBox<'a, [T]>, usize) {
+    fn into_raw_parts(self) -> (Box<'a, [T]>, usize) {
         (self.initialized, self.capacity)
     }
 
     #[inline(always)]
-    fn from_raw_parts(initialized: BumpBox<'a, [T]>, capacity: usize) -> Self {
+    fn from_raw_parts(initialized: Box<'a, [T]>, capacity: usize) -> Self {
         Self { initialized, capacity }
     }
 
@@ -1193,8 +1193,8 @@ impl<'a, T> FixedBumpVec<'a, T> {
     }
 }
 
-impl<'a, T, const N: usize> FixedBumpVec<'a, [T; N]> {
-    /// Takes a `FixedBumpVec<[T; N]>` and flattens it into a `FixedBumpVec<T>`.
+impl<'a, T, const N: usize> FixedVec<'a, [T; N]> {
+    /// Takes a `FixedVec<[T; N]>` and flattens it into a `FixedVec<T>`.
     ///
     /// # Panics
     ///
@@ -1207,17 +1207,17 @@ impl<'a, T, const N: usize> FixedBumpVec<'a, [T; N]> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{ Bump, mut_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let mut vec = mut_bump_vec![in bump; [1, 2, 3], [4, 5, 6], [7, 8, 9]];
+    /// let mut vec = mut_vec![in bump; [1, 2, 3], [4, 5, 6], [7, 8, 9]];
     /// assert_eq!(vec.pop(), Some([7, 8, 9]));
     ///
     /// let mut flattened = vec.into_flattened();
     /// assert_eq!(flattened.pop(), Some(6));
     /// ```
     #[must_use]
-    pub fn into_flattened(self) -> FixedBumpVec<'a, T> {
+    pub fn into_flattened(self) -> FixedVec<'a, T> {
         let (initialized, cap) = self.into_raw_parts();
         let ptr = initialized.as_non_null_ptr();
         let len = initialized.len();
@@ -1241,13 +1241,13 @@ impl<'a, T, const N: usize> FixedBumpVec<'a, [T; N]> {
         // - `len` <= `cap`, so `len * N` <= `cap * N`.
         unsafe {
             let slice = nonnull::slice_from_raw_parts(ptr.cast(), new_len);
-            let initialized = BumpBox::from_raw(slice);
-            FixedBumpVec::from_raw_parts(initialized, new_cap)
+            let initialized = Box::from_raw(slice);
+            FixedVec::from_raw_parts(initialized, new_cap)
         }
     }
 }
 
-impl<'a, T> Debug for FixedBumpVec<'a, T>
+impl<'a, T> Debug for FixedVec<'a, T>
 where
     T: Debug,
 {
@@ -1256,13 +1256,13 @@ where
     }
 }
 
-impl<'a, T> Default for FixedBumpVec<'a, T> {
+impl<'a, T> Default for FixedVec<'a, T> {
     fn default() -> Self {
         Self::EMPTY
     }
 }
 
-impl<'a, T> Deref for FixedBumpVec<'a, T> {
+impl<'a, T> Deref for FixedVec<'a, T> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -1270,13 +1270,13 @@ impl<'a, T> Deref for FixedBumpVec<'a, T> {
     }
 }
 
-impl<'a, T> DerefMut for FixedBumpVec<'a, T> {
+impl<'a, T> DerefMut for FixedVec<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.initialized
     }
 }
 
-impl<'a, T, I: SliceIndex<[T]>> Index<I> for FixedBumpVec<'a, T> {
+impl<'a, T, I: SliceIndex<[T]>> Index<I> for FixedVec<'a, T> {
     type Output = I::Output;
 
     #[inline(always)]
@@ -1285,7 +1285,7 @@ impl<'a, T, I: SliceIndex<[T]>> Index<I> for FixedBumpVec<'a, T> {
     }
 }
 
-impl<'a, T, I: SliceIndex<[T]>> IndexMut<I> for FixedBumpVec<'a, T> {
+impl<'a, T, I: SliceIndex<[T]>> IndexMut<I> for FixedVec<'a, T> {
     #[inline(always)]
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
         IndexMut::index_mut(self.as_mut_slice(), index)
@@ -1293,7 +1293,7 @@ impl<'a, T, I: SliceIndex<[T]>> IndexMut<I> for FixedBumpVec<'a, T> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'a, T> Extend<T> for FixedBumpVec<'a, T> {
+impl<'a, T> Extend<T> for FixedVec<'a, T> {
     #[inline]
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         let iter = iter.into_iter();
@@ -1307,7 +1307,7 @@ impl<'a, T> Extend<T> for FixedBumpVec<'a, T> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'a, 't, T> Extend<&'t T> for FixedBumpVec<'a, T>
+impl<'a, 't, T> Extend<&'t T> for FixedVec<'a, T>
 where
     T: Clone + 't,
 {
@@ -1323,22 +1323,22 @@ where
     }
 }
 
-impl<'a0, 'a1, T, U> PartialEq<FixedBumpVec<'a1, U>> for FixedBumpVec<'a0, T>
+impl<'a0, 'a1, T, U> PartialEq<FixedVec<'a1, U>> for FixedVec<'a0, T>
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &FixedBumpVec<'a1, U>) -> bool {
+    fn eq(&self, other: &FixedVec<'a1, U>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &FixedBumpVec<'a1, U>) -> bool {
+    fn ne(&self, other: &FixedVec<'a1, U>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'a, T, U, const N: usize> PartialEq<[U; N]> for FixedBumpVec<'a, T>
+impl<'a, T, U, const N: usize> PartialEq<[U; N]> for FixedVec<'a, T>
 where
     T: PartialEq<U>,
 {
@@ -1353,7 +1353,7 @@ where
     }
 }
 
-impl<'a, T, U, const N: usize> PartialEq<&[U; N]> for FixedBumpVec<'a, T>
+impl<'a, T, U, const N: usize> PartialEq<&[U; N]> for FixedVec<'a, T>
 where
     T: PartialEq<U>,
 {
@@ -1368,7 +1368,7 @@ where
     }
 }
 
-impl<'a, T, U, const N: usize> PartialEq<&mut [U; N]> for FixedBumpVec<'a, T>
+impl<'a, T, U, const N: usize> PartialEq<&mut [U; N]> for FixedVec<'a, T>
 where
     T: PartialEq<U>,
 {
@@ -1383,7 +1383,7 @@ where
     }
 }
 
-impl<'a, T, U> PartialEq<[U]> for FixedBumpVec<'a, T>
+impl<'a, T, U> PartialEq<[U]> for FixedVec<'a, T>
 where
     T: PartialEq<U>,
 {
@@ -1398,7 +1398,7 @@ where
     }
 }
 
-impl<'a, T, U> PartialEq<&[U]> for FixedBumpVec<'a, T>
+impl<'a, T, U> PartialEq<&[U]> for FixedVec<'a, T>
 where
     T: PartialEq<U>,
 {
@@ -1413,7 +1413,7 @@ where
     }
 }
 
-impl<'a, T, U> PartialEq<&mut [U]> for FixedBumpVec<'a, T>
+impl<'a, T, U> PartialEq<&mut [U]> for FixedVec<'a, T>
 where
     T: PartialEq<U>,
 {
@@ -1428,52 +1428,52 @@ where
     }
 }
 
-impl<'a, T, U> PartialEq<FixedBumpVec<'a, U>> for [T]
+impl<'a, T, U> PartialEq<FixedVec<'a, U>> for [T]
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &FixedBumpVec<'a, U>) -> bool {
+    fn eq(&self, other: &FixedVec<'a, U>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &FixedBumpVec<'a, U>) -> bool {
+    fn ne(&self, other: &FixedVec<'a, U>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'a, T, U> PartialEq<FixedBumpVec<'a, U>> for &[T]
+impl<'a, T, U> PartialEq<FixedVec<'a, U>> for &[T]
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &FixedBumpVec<'a, U>) -> bool {
+    fn eq(&self, other: &FixedVec<'a, U>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &FixedBumpVec<'a, U>) -> bool {
+    fn ne(&self, other: &FixedVec<'a, U>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'a, T, U> PartialEq<FixedBumpVec<'a, U>> for &mut [T]
+impl<'a, T, U> PartialEq<FixedVec<'a, U>> for &mut [T]
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &FixedBumpVec<'a, U>) -> bool {
+    fn eq(&self, other: &FixedVec<'a, U>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &FixedBumpVec<'a, U>) -> bool {
+    fn ne(&self, other: &FixedVec<'a, U>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'a, T> IntoIterator for FixedBumpVec<'a, T> {
+impl<'a, T> IntoIterator for FixedVec<'a, T> {
     type Item = T;
     type IntoIter = IntoIter<'a, T>;
 
@@ -1483,7 +1483,7 @@ impl<'a, T> IntoIterator for FixedBumpVec<'a, T> {
     }
 }
 
-impl<'c, 'a, T> IntoIterator for &'c FixedBumpVec<'a, T> {
+impl<'c, 'a, T> IntoIterator for &'c FixedVec<'a, T> {
     type Item = &'c T;
     type IntoIter = slice::Iter<'c, T>;
 
@@ -1493,7 +1493,7 @@ impl<'c, 'a, T> IntoIterator for &'c FixedBumpVec<'a, T> {
     }
 }
 
-impl<'c, 'a, T> IntoIterator for &'c mut FixedBumpVec<'a, T> {
+impl<'c, 'a, T> IntoIterator for &'c mut FixedVec<'a, T> {
     type Item = &'c mut T;
     type IntoIter = slice::IterMut<'c, T>;
 
@@ -1503,49 +1503,49 @@ impl<'c, 'a, T> IntoIterator for &'c mut FixedBumpVec<'a, T> {
     }
 }
 
-impl<'a, T> AsRef<Self> for FixedBumpVec<'a, T> {
+impl<'a, T> AsRef<Self> for FixedVec<'a, T> {
     #[inline(always)]
     fn as_ref(&self) -> &Self {
         self
     }
 }
 
-impl<'a, T> AsMut<Self> for FixedBumpVec<'a, T> {
+impl<'a, T> AsMut<Self> for FixedVec<'a, T> {
     #[inline(always)]
     fn as_mut(&mut self) -> &mut Self {
         self
     }
 }
 
-impl<'a, T> AsRef<[T]> for FixedBumpVec<'a, T> {
+impl<'a, T> AsRef<[T]> for FixedVec<'a, T> {
     #[inline(always)]
     fn as_ref(&self) -> &[T] {
         self
     }
 }
 
-impl<'a, T> AsMut<[T]> for FixedBumpVec<'a, T> {
+impl<'a, T> AsMut<[T]> for FixedVec<'a, T> {
     #[inline(always)]
     fn as_mut(&mut self) -> &mut [T] {
         self
     }
 }
 
-impl<'a, T> Borrow<[T]> for FixedBumpVec<'a, T> {
+impl<'a, T> Borrow<[T]> for FixedVec<'a, T> {
     #[inline(always)]
     fn borrow(&self) -> &[T] {
         self
     }
 }
 
-impl<'a, T> BorrowMut<[T]> for FixedBumpVec<'a, T> {
+impl<'a, T> BorrowMut<[T]> for FixedVec<'a, T> {
     #[inline(always)]
     fn borrow_mut(&mut self) -> &mut [T] {
         self
     }
 }
 
-impl<'a, T: Hash> Hash for FixedBumpVec<'a, T> {
+impl<'a, T: Hash> Hash for FixedVec<'a, T> {
     #[inline(always)]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.as_slice().hash(state);
@@ -1554,7 +1554,7 @@ impl<'a, T: Hash> Hash for FixedBumpVec<'a, T> {
 
 /// Returns [`ErrorKind::OutOfMemory`](std::io::ErrorKind::OutOfMemory) when extending fails.
 #[cfg(feature = "std")]
-impl std::io::Write for FixedBumpVec<'_, u8> {
+impl std::io::Write for FixedVec<'_, u8> {
     #[inline(always)]
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         if (self.capacity - self.len()) < buf.len() {

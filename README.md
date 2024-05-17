@@ -40,7 +40,7 @@ Bumpalo is a popular crate for bump allocation. This crate was inspired by bumpa
 Unlike `bumpalo`, this crate...
 - Supports [scopes and checkpoints](#scopes-and-checkpoints).
 - Drop is always called for allocated values unless explicitly leaked or forgotten.
-  - `alloc*` methods return a `BumpBox<T>` which owns and drops `T`. Types that don't need dropping can be turned into references with `into_ref` and `into_mut`.
+  - `alloc*` methods return a `bump_scope::Box<T>` which owns and drops `T`. Types that don't need dropping can be turned into references with `into_ref` and `into_mut`.
 - You can allocate a slice from *any* `Iterator` with `alloc_iter`.
 - Every method that panics on allocation failure has a fallible `try_*` counterpart.
 - `Bump`'s base allocator is generic.
@@ -150,7 +150,7 @@ This crate supports `no_std`, unless the `std` feature is enabled.
 
 - `std` *(default)*:
 
-  Adds implementations of `std::io` traits for `BumpBox` and `{Fixed, Mut}BumpVec`. Activates `alloc` feature.
+  Adds implementations of `std::io` traits for `Box` and `{Fixed, Mut}Vec`. Activates `alloc` feature.
 
 <p></p>
 
@@ -162,7 +162,7 @@ This crate supports `no_std`, unless the `std` feature is enabled.
 
 - `serde`:
 
-  Adds `Serialize` implementations for `BumpBox`, strings and vectors.
+  Adds `Serialize` implementations for `Box`, strings and vectors.
   Adds `DeserializeSeed` implementations for strings and vectors.
 
 <p></p>
@@ -176,8 +176,8 @@ This crate supports `no_std`, unless the `std` feature is enabled.
 
 - `nightly-coerce-unsized` *(requires nightly)*:
   
-  Makes `BumpBox<T>` implement `CoerceUnsized`.
-  With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
+  Makes `Box<T>` implement `CoerceUnsized`.
+  With this `Box<[i32;3]>` coerces to `Box<[i32]>`, `Box<dyn Debug>` and so on.
 
 <p></p>
 
@@ -210,8 +210,8 @@ That means that it must have already allocated a chunk from its backing allocato
 When `GUARANTEED_ALLOCATED` is false, the bump allocator may or may not have allocated chunks.
 You can create a bump allocator with no allocated chunks with `Bump::unallocated`.
 
-You need a guaranteed allocated `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
-You can convert a maybe unallocated `Bump(Scope)` into a guaranteed allocated one with `into_guaranteed_allocated` or `as_guaranteed_allocated(_mut)`.
+You need a guaranteed allocated `Bump(BumpScope)` to create scopes via `scoped` and `scope_guard`.
+You can convert a maybe unallocated `Bump(BumpScope)` into a guaranteed allocated one with `into_guaranteed_allocated` or `as_guaranteed_allocated(_mut)`.
 
 The point of this is so `Bump`s can be created without allocating memory and even `const` constructed when the feature `nightly-const-refs-to-static` is enabled.
 At the same time `Bump`'s that have already allocated a chunk don't suffer runtime checks for entering scopes and creating checkpoints.

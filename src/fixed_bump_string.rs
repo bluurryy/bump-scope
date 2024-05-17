@@ -7,15 +7,15 @@ use core::{
     ptr, str,
 };
 
-use crate::{error_behavior_generic_methods, polyfill, BumpBox, ErrorBehavior, FixedBumpVec, FromUtf8Error};
+use crate::{error_behavior_generic_methods, polyfill, Box, ErrorBehavior, FixedVec, FromUtf8Error};
 
-/// A [`BumpString`](crate::BumpString) but with a fixed capacity.
+/// A [`String`](crate::String) but with a fixed capacity.
 ///
-/// It can be constructed with [`alloc_fixed_string`] or from a `BumpBox<[MaybeUninit<u8>]>` via [`into_fixed_string`].
+/// It can be constructed with [`alloc_fixed_string`] or from a `Box<[MaybeUninit<u8>]>` via [`into_fixed_string`].
 ///
 /// # Examples
 /// ```
-/// use bump_scope::{ Bump, mut_bump_vec };
+/// use bump_scope::{ Bump, mut_vec };
 /// let mut bump: Bump = Bump::new();
 /// let mut string = bump.alloc_fixed_string(9);
 ///
@@ -29,44 +29,42 @@ use crate::{error_behavior_generic_methods, polyfill, BumpBox, ErrorBehavior, Fi
 /// ```
 ///
 /// [`alloc_fixed_string`]: crate::Bump::alloc_fixed_string
-/// [`into_fixed_string`]: BumpBox::into_fixed_string
-pub struct FixedBumpString<'a> {
-    vec: FixedBumpVec<'a, u8>,
+/// [`into_fixed_string`]: Box::into_fixed_string
+pub struct FixedString<'a> {
+    vec: FixedVec<'a, u8>,
 }
 
-unsafe impl<'a> Send for FixedBumpString<'a> {}
-unsafe impl<'a> Sync for FixedBumpString<'a> {}
+unsafe impl<'a> Send for FixedString<'a> {}
+unsafe impl<'a> Sync for FixedString<'a> {}
 
-impl<'a> FixedBumpString<'a> {
+impl<'a> FixedString<'a> {
     /// Empty fixed vector.
-    pub const EMPTY: Self = Self {
-        vec: FixedBumpVec::EMPTY,
-    };
+    pub const EMPTY: Self = Self { vec: FixedVec::EMPTY };
 
-    /// Turns a `BumpBox<str>` into a full `FixedBumpString`.
+    /// Turns a `Box<str>` into a full `FixedString`.
     #[must_use]
-    pub fn from_init(initialized: BumpBox<'a, str>) -> Self {
+    pub fn from_init(initialized: Box<'a, str>) -> Self {
         Self {
-            vec: FixedBumpVec::from_init(initialized.into_boxed_bytes()),
+            vec: FixedVec::from_init(initialized.into_boxed_bytes()),
         }
     }
 
-    /// Turns a `BumpBox<[MaybeUninit<u8>]>` into a `FixedBumpString` with a length of `0`.
+    /// Turns a `Box<[MaybeUninit<u8>]>` into a `FixedString` with a length of `0`.
     #[must_use]
-    pub fn from_uninit(uninitialized: BumpBox<'a, [MaybeUninit<u8>]>) -> Self {
+    pub fn from_uninit(uninitialized: Box<'a, [MaybeUninit<u8>]>) -> Self {
         Self {
-            vec: FixedBumpVec::from_uninit(uninitialized),
+            vec: FixedVec::from_uninit(uninitialized),
         }
     }
 
-    /// Returns this `FixedBumpString`'s capacity, in bytes.
+    /// Returns this `FixedString`'s capacity, in bytes.
     #[must_use]
     #[inline(always)]
     pub const fn capacity(&self) -> usize {
         self.vec.capacity()
     }
 
-    /// Returns the length of this `FixedBumpString`, in bytes, not [`char`]s or
+    /// Returns the length of this `FixedString`, in bytes, not [`char`]s or
     /// graphemes. In other words, it might not be what a human considers the
     /// length of the string.
     #[must_use]
@@ -75,22 +73,22 @@ impl<'a> FixedBumpString<'a> {
         self.vec.len()
     }
 
-    /// Returns `true` if this `FixedBumpString` has a length of zero, and `false` otherwise.
+    /// Returns `true` if this `FixedString` has a length of zero, and `false` otherwise.
     #[must_use]
     #[inline(always)]
     pub fn is_empty(&self) -> bool {
         self.vec.is_empty()
     }
 
-    /// Truncates this `FixedBumpString`, removing all contents.
+    /// Truncates this `FixedString`, removing all contents.
     ///
-    /// While this means the `FixedBumpString` will have a length of zero, it does not
+    /// While this means the `FixedString` will have a length of zero, it does not
     /// touch its capacity.
     ///
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # use bump_scope::{ Bump, FixedString };
     /// # let bump: Bump = Bump::new();
     /// #
     /// let mut s = bump.alloc_fixed_string(3);
@@ -107,11 +105,11 @@ impl<'a> FixedBumpString<'a> {
         self.vec.clear();
     }
 
-    /// Converts a bump allocated vector of bytes to a `FixedBumpString`.
+    /// Converts a bump allocated vector of bytes to a `FixedString`.
     ///
-    /// A string ([`FixedBumpString`]) is made of bytes ([`u8`]), and a vector of bytes
-    /// ([`FixedBumpVec<u8>`]) is made of bytes, so this function converts between the
-    /// two. Not all byte slices are valid `FixedBumpString`s, however: `FixedBumpString`
+    /// A string ([`FixedString`]) is made of bytes ([`u8`]), and a vector of bytes
+    /// ([`FixedVec<u8>`]) is made of bytes, so this function converts between the
+    /// two. Not all byte slices are valid `FixedString`s, however: `FixedString`
     /// requires that it is valid UTF-8. `from_utf8()` checks to ensure that
     /// the bytes are valid UTF-8, and then does the conversion.
     ///
@@ -123,7 +121,7 @@ impl<'a> FixedBumpString<'a> {
     /// This method will take care to not copy the vector, for efficiency's
     /// sake.
     ///
-    /// If you need a [`&str`] instead of a `FixedBumpString`, consider
+    /// If you need a [`&str`] instead of a `FixedString`, consider
     /// [`str::from_utf8`].
     ///
     /// The inverse of this method is [`into_bytes`].
@@ -134,24 +132,24 @@ impl<'a> FixedBumpString<'a> {
     /// provided bytes are not UTF-8. The vector you moved in is also included.
     ///
     /// [`from_utf8_unchecked`]: String::from_utf8_unchecked
-    /// [`FixedBumpVec<u8>`]: FixedBumpVec
+    /// [`FixedVec<u8>`]: FixedVec
     /// [`&str`]: prim@str "&str"
-    /// [`into_bytes`]: FixedBumpString::into_bytes
-    pub fn from_utf8(vec: FixedBumpVec<'a, u8>) -> Result<Self, FromUtf8Error<FixedBumpVec<'a, u8>>> {
+    /// [`into_bytes`]: FixedString::into_bytes
+    pub fn from_utf8(vec: FixedVec<'a, u8>) -> Result<Self, FromUtf8Error<FixedVec<'a, u8>>> {
         match str::from_utf8(vec.as_slice()) {
             Ok(_) => Ok(Self { vec }),
             Err(error) => Err(FromUtf8Error { error, bytes: vec }),
         }
     }
 
-    /// Converts a `FixedBumpString` into a `FixedBumpVec<u8>`.
+    /// Converts a `FixedString` into a `FixedVec<u8>`.
     ///
-    /// This consumes the `FixedBumpString`, so we do not need to copy its contents.
+    /// This consumes the `FixedString`, so we do not need to copy its contents.
     ///
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # use bump_scope::{ Bump, FixedString };
     /// # let bump: Bump = Bump::new();
     /// let mut s = bump.alloc_fixed_string(5);
     /// s.push_str("hello");
@@ -161,42 +159,42 @@ impl<'a> FixedBumpString<'a> {
     /// ```
     #[inline(always)]
     #[must_use = "`self` will be dropped if the result is not used"]
-    pub fn into_bytes(self) -> FixedBumpVec<'a, u8> {
+    pub fn into_bytes(self) -> FixedVec<'a, u8> {
         self.vec
     }
 
-    /// Returns a byte slice of this `FixedBumpString`'s contents.
+    /// Returns a byte slice of this `FixedString`'s contents.
     #[must_use]
     #[inline(always)]
     pub fn as_bytes(&self) -> &[u8] {
         self.vec.as_slice()
     }
 
-    /// Extracts a string slice containing the entire `FixedBumpString`.
+    /// Extracts a string slice containing the entire `FixedString`.
     #[must_use]
     #[inline(always)]
     pub fn as_str(&self) -> &str {
         unsafe { str::from_utf8_unchecked(self.vec.as_slice()) }
     }
 
-    /// Converts a `FixedBumpString` into a mutable string slice.
+    /// Converts a `FixedString` into a mutable string slice.
     #[must_use]
     #[inline(always)]
     pub fn as_mut_str(&mut self) -> &mut str {
         unsafe { str::from_utf8_unchecked_mut(self.vec.as_mut_slice()) }
     }
 
-    /// Returns a mutable reference to the contents of this `FixedBumpString`.
+    /// Returns a mutable reference to the contents of this `FixedString`.
     ///
     /// # Safety
     ///
     /// This function is unsafe because the returned `&mut Vec` allows writing
     /// bytes which are not valid UTF-8. If this constraint is violated, using
-    /// the original `FixedBumpString` after dropping the `&mut Vec` may violate memory
-    /// safety, as `FixedBumpString`s must be valid UTF-8.
+    /// the original `FixedString` after dropping the `&mut Vec` may violate memory
+    /// safety, as `FixedString`s must be valid UTF-8.
     #[must_use]
     #[inline(always)]
-    pub unsafe fn as_mut_vec(&mut self) -> &FixedBumpVec<'a, u8> {
+    pub unsafe fn as_mut_vec(&mut self) -> &FixedVec<'a, u8> {
         &mut self.vec
     }
 
@@ -213,7 +211,7 @@ impl<'a> FixedBumpString<'a> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # use bump_scope::{ Bump, FixedString };
     /// # let bump: Bump = Bump::new();
     /// #
     /// let mut s = bump.alloc_fixed_string(4);
@@ -240,9 +238,9 @@ impl<'a> FixedBumpString<'a> {
     }
 }
 
-impl<'a> FixedBumpString<'a> {
+impl<'a> FixedString<'a> {
     error_behavior_generic_methods! {
-        /// Appends the given [`char`] to the end of this `FixedBumpString`.
+        /// Appends the given [`char`] to the end of this `FixedString`.
         impl
         for pub fn push
         for pub fn try_push
@@ -253,7 +251,7 @@ impl<'a> FixedBumpString<'a> {
             }
         }
 
-        /// Appends a given string slice onto the end of this `FixedBumpString`.
+        /// Appends a given string slice onto the end of this `FixedString`.
         impl
         for pub fn push_str
         for pub fn try_push_str
@@ -261,7 +259,7 @@ impl<'a> FixedBumpString<'a> {
             self.vec.generic_extend_from_slice_copy(string.as_bytes())
         }
 
-        /// Inserts a character into this `FixedBumpString` at a byte position.
+        /// Inserts a character into this `FixedString` at a byte position.
         ///
         /// This is an *O*(*n*) operation as it requires copying every element in the
         /// buffer.
@@ -270,7 +268,7 @@ impl<'a> FixedBumpString<'a> {
         /// lie on a [`char`] boundary.
         do examples
         /// ```
-        /// # use bump_scope::{ Bump, FixedBumpString };
+        /// # use bump_scope::{ Bump, FixedString };
         /// # let bump: Bump = Bump::new();
         /// #
         /// let mut s = bump.alloc_fixed_string(3);
@@ -294,16 +292,16 @@ impl<'a> FixedBumpString<'a> {
             }
         }
 
-        /// Inserts a string slice into this `FixedBumpString` at a byte position.
+        /// Inserts a string slice into this `FixedString` at a byte position.
         ///
         /// This is an *O*(*n*) operation as it requires copying every element in the
         /// buffer.
         do panics
-        /// Panics if `idx` is larger than the `FixedBumpString`'s length, or if it does not
+        /// Panics if `idx` is larger than the `FixedString`'s length, or if it does not
         /// lie on a [`char`] boundary.
         do examples
         /// ```
-        /// # use bump_scope::{ Bump, FixedBumpString };
+        /// # use bump_scope::{ Bump, FixedString };
         /// # let bump: Bump = Bump::new();
         /// #
         /// let mut s = bump.alloc_fixed_string(6);
@@ -330,7 +328,7 @@ impl<'a> FixedBumpString<'a> {
         /// boundary, or if they're out of bounds.
         do examples
         /// ```
-        /// # use bump_scope::{ Bump, FixedBumpString };
+        /// # use bump_scope::{ Bump, FixedString };
         /// # let bump: Bump = Bump::new();
         /// #
         /// let mut string = bump.alloc_fixed_string(14);
@@ -373,16 +371,16 @@ impl<'a> FixedBumpString<'a> {
         Ok(())
     }
 
-    /// Converts a `FixedBumpString` into a `BumpBox<str>`.
+    /// Converts a `FixedString` into a `Box<str>`.
     ///
     /// You may want to call `shrink_to_fit` before this, so the unused capacity does not take up space.
     #[must_use]
     #[inline(always)]
-    pub fn into_boxed_str(self) -> BumpBox<'a, str> {
+    pub fn into_boxed_str(self) -> Box<'a, str> {
         unsafe { self.vec.into_boxed_slice().into_boxed_str_unchecked() }
     }
 
-    /// Converts this `BumpBox<str>` into `&str` that is live for the entire bump scope.
+    /// Converts this `Box<str>` into `&str` that is live for the entire bump scope.
     ///
     /// You may want to call `shrink_to_fit` before this, so the unused capacity does not take up space.
     #[must_use]
@@ -392,7 +390,7 @@ impl<'a> FixedBumpString<'a> {
     }
 }
 
-impl<'a> fmt::Write for FixedBumpString<'a> {
+impl<'a> fmt::Write for FixedString<'a> {
     #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.try_push_str(s).map_err(|_| fmt::Error)
@@ -404,19 +402,19 @@ impl<'a> fmt::Write for FixedBumpString<'a> {
     }
 }
 
-impl<'a> Debug for FixedBumpString<'a> {
+impl<'a> Debug for FixedString<'a> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Debug::fmt(self.as_str(), f)
     }
 }
 
-impl<'a> Display for FixedBumpString<'a> {
+impl<'a> Display for FixedString<'a> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Display::fmt(self.as_str(), f)
     }
 }
 
-impl<'a> Deref for FixedBumpString<'a> {
+impl<'a> Deref for FixedString<'a> {
     type Target = str;
 
     #[inline]
@@ -425,7 +423,7 @@ impl<'a> Deref for FixedBumpString<'a> {
     }
 }
 
-impl<'a> DerefMut for FixedBumpString<'a> {
+impl<'a> DerefMut for FixedString<'a> {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut_str()
@@ -433,42 +431,42 @@ impl<'a> DerefMut for FixedBumpString<'a> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'a> core::ops::AddAssign<&str> for FixedBumpString<'a> {
+impl<'a> core::ops::AddAssign<&str> for FixedString<'a> {
     #[inline]
     fn add_assign(&mut self, rhs: &str) {
         self.push_str(rhs);
     }
 }
 
-impl<'a> AsRef<str> for FixedBumpString<'a> {
+impl<'a> AsRef<str> for FixedString<'a> {
     #[inline]
     fn as_ref(&self) -> &str {
         self.as_str()
     }
 }
 
-impl<'a> AsMut<str> for FixedBumpString<'a> {
+impl<'a> AsMut<str> for FixedString<'a> {
     #[inline]
     fn as_mut(&mut self) -> &mut str {
         self.as_mut_str()
     }
 }
 
-impl<'a> Borrow<str> for FixedBumpString<'a> {
+impl<'a> Borrow<str> for FixedString<'a> {
     #[inline]
     fn borrow(&self) -> &str {
         self.as_str()
     }
 }
 
-impl<'a> BorrowMut<str> for FixedBumpString<'a> {
+impl<'a> BorrowMut<str> for FixedString<'a> {
     #[inline]
     fn borrow_mut(&mut self) -> &mut str {
         self.as_mut_str()
     }
 }
 
-impl<'a> PartialEq for FixedBumpString<'a> {
+impl<'a> PartialEq for FixedString<'a> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         <str as PartialEq>::eq(self, other)
@@ -489,7 +487,7 @@ macro_rules! impl_partial_eq {
     ) => {
         $(
             $(#[$attr])*
-            impl<'a> PartialEq<$string_like> for FixedBumpString<'a> {
+            impl<'a> PartialEq<$string_like> for FixedString<'a> {
                 #[inline]
                 fn eq(&self, other: &$string_like) -> bool {
                     <str as PartialEq>::eq(self, other)
@@ -502,14 +500,14 @@ macro_rules! impl_partial_eq {
             }
 
             $(#[$attr])*
-            impl<'a> PartialEq<FixedBumpString<'a>> for $string_like {
+            impl<'a> PartialEq<FixedString<'a>> for $string_like {
                 #[inline]
-                fn eq(&self, other: &FixedBumpString<'a>) -> bool {
+                fn eq(&self, other: &FixedString<'a>) -> bool {
                     <str as PartialEq>::eq(self, other)
                 }
 
                 #[inline]
-                fn ne(&self, other: &FixedBumpString<'a>) -> bool {
+                fn ne(&self, other: &FixedString<'a>) -> bool {
                     <str as PartialEq>::ne(self, other)
                 }
             }
@@ -529,9 +527,9 @@ impl_partial_eq! {
     alloc::borrow::Cow<'_, str>,
 }
 
-impl<'a> Eq for FixedBumpString<'a> {}
+impl<'a> Eq for FixedString<'a> {}
 
-impl<'a> PartialOrd for FixedBumpString<'a> {
+impl<'a> PartialOrd for FixedString<'a> {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(self.cmp(other))
@@ -558,13 +556,13 @@ impl<'a> PartialOrd for FixedBumpString<'a> {
     }
 }
 
-impl<'a> Ord for FixedBumpString<'a> {
+impl<'a> Ord for FixedString<'a> {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         <str as Ord>::cmp(self, other)
     }
 }
 
-impl<'a> Hash for FixedBumpString<'a> {
+impl<'a> Hash for FixedString<'a> {
     #[inline]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.vec.hash(state);
@@ -572,7 +570,7 @@ impl<'a> Hash for FixedBumpString<'a> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'s, 'a> Extend<&'s str> for FixedBumpString<'a> {
+impl<'s, 'a> Extend<&'s str> for FixedString<'a> {
     #[inline]
     fn extend<T: IntoIterator<Item = &'s str>>(&mut self, iter: T) {
         for str in iter {
@@ -582,9 +580,9 @@ impl<'s, 'a> Extend<&'s str> for FixedBumpString<'a> {
 }
 
 #[cfg(feature = "alloc")]
-impl<'a> From<FixedBumpString<'a>> for alloc::string::String {
+impl<'a> From<FixedString<'a>> for alloc::string::String {
     #[inline]
-    fn from(value: FixedBumpString<'a>) -> Self {
+    fn from(value: FixedString<'a>) -> Self {
         value.as_str().into()
     }
 }

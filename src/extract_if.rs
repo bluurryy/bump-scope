@@ -1,13 +1,13 @@
-use crate::{polyfill::nonnull, BumpBox};
+use crate::{polyfill::nonnull, Box};
 use core::ptr::NonNull;
 
 /// An iterator which uses a closure to determine if an element should be removed.
 ///
 /// This struct is created by the `extract_if` method on
-/// [`BumpBox`](BumpBox::extract_if),
-/// [`FixedBumpVec`](crate::FixedBumpVec::extract_if),
-/// [`BumpVec`](crate::BumpVec::extract_if) and
-/// [`MutBumpVec`](crate::MutBumpVec::extract_if).
+/// [`Box`](Box::extract_if),
+/// [`FixedVec`](crate::FixedVec::extract_if),
+/// [`Vec`](crate::Vec::extract_if) and
+/// [`MutVec`](crate::MutVec::extract_if).
 ///
 /// See their documentation for more.
 ///
@@ -37,12 +37,12 @@ impl<'a, T, F> ExtractIf<'a, T, F>
 where
     F: FnMut(&mut T) -> bool,
 {
-    pub(crate) fn new<'a2>(boxed: &'a mut BumpBox<'a2, [T]>, filter: F) -> Self {
+    pub(crate) fn new<'a2>(boxed: &'a mut Box<'a2, [T]>, filter: F) -> Self {
         // When the ExtractIf is first created, it shortens the length of
         // the source boxed slice to make sure no uninitialized or moved-from elements
         // are accessible at all if the ExtractIf's destructor never gets to run.
         //
-        // The 'a2 lifetime is shortened to 'a even though &'b mut BumpBox<'a2> is invariant
+        // The 'a2 lifetime is shortened to 'a even though &'b mut Box<'a2> is invariant
         // over 'a2. We are careful not to expose any api where that could cause issues.
 
         let ptr = &mut boxed.ptr;

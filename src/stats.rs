@@ -11,7 +11,7 @@ use crate::{BumpScope, FmtFn, MinimumAlignment, RawChunk, SupportedMinimumAlignm
 
 /// Provides statistics about the memory usage of the bump allocator.
 ///
-/// This is returned from the `guaranteed_allocated_stats` method of `Bump`, `BumpScope`, `BumpScopeGuard`, `BumpVec`, ...
+/// This is returned from the `guaranteed_allocated_stats` method of `Bump`, `BumpScope`, `ScopeGuard`, `Vec`, ...
 #[repr(transparent)]
 pub struct GuaranteedAllocatedStats<'a, const UP: bool> {
     /// This is the chunk we are currently allocating on.
@@ -149,7 +149,7 @@ impl<'a, const UP: bool> GuaranteedAllocatedStats<'a, UP> {
 
 /// Provides statistics about the memory usage of the bump allocator.
 ///
-/// This is returned from the `stats` method of `Bump`, `BumpScope`, `BumpScopeGuard`, `BumpVec`, ...
+/// This is returned from the `stats` method of `Bump`, `BumpScope`, `ScopeGuard`, `Vec`, ...
 pub struct Stats<'a, const UP: bool> {
     /// This is the chunk we are currently allocating on.
     pub current: Option<Chunk<'a, UP>>,

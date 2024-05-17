@@ -6,12 +6,12 @@ use core::{
 
 use crate::{
     polyfill::{nonnull, pointer},
-    BumpBox, SizedTypeProperties,
+    Box, SizedTypeProperties,
 };
 
-/// Allows for initializing a `BumpBox<[MaybeUninit<T>]>` by pushing values.
+/// Allows for initializing a `Box<[MaybeUninit<T>]>` by pushing values.
 /// On drop, this will drop the values that have been pushed so far.
-pub(crate) struct BumpBoxSliceInitializer<'a, T> {
+pub(crate) struct BoxSliceInitializer<'a, T> {
     pos: NonNull<T>,
 
     start: NonNull<T>,
@@ -22,7 +22,7 @@ pub(crate) struct BumpBoxSliceInitializer<'a, T> {
     marker: PhantomData<(&'a (), T)>,
 }
 
-impl<T> Drop for BumpBoxSliceInitializer<'_, T> {
+impl<T> Drop for BoxSliceInitializer<'_, T> {
     fn drop(&mut self) {
         unsafe {
             let to_drop_len = self.init_len();
@@ -32,9 +32,9 @@ impl<T> Drop for BumpBoxSliceInitializer<'_, T> {
     }
 }
 
-impl<'a, T> BumpBoxSliceInitializer<'a, T> {
+impl<'a, T> BoxSliceInitializer<'a, T> {
     #[inline(always)]
-    pub fn new(slice: BumpBox<'a, [MaybeUninit<T>]>) -> Self {
+    pub fn new(slice: Box<'a, [MaybeUninit<T>]>) -> Self {
         if T::IS_ZST {
             return Self {
                 pos: NonNull::dangling(),
@@ -114,17 +114,17 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
     }
 
     #[inline(always)]
-    pub fn into_init(self) -> BumpBox<'a, [T]> {
+    pub fn into_init(self) -> Box<'a, [T]> {
         assert!(self.is_full());
         unsafe { self.into_init_unchecked() }
     }
 
     #[inline(always)]
-    pub unsafe fn into_init_unchecked(self) -> BumpBox<'a, [T]> {
+    pub unsafe fn into_init_unchecked(self) -> Box<'a, [T]> {
         let this = ManuallyDrop::new(self);
         debug_assert!(this.is_full());
         let len = this.len();
         let slice = nonnull::slice_from_raw_parts(this.start, len);
-        BumpBox::from_raw(slice)
+        Box::from_raw(slice)
     }
 }

@@ -1,41 +1,41 @@
 use super::*;
 
 either_way! {
-    bump_vec
-    mut_bump_vec
-    mut_bump_vec_rev
+    vec
+    mut_vec
+    mut_vec_rev
 }
 
-fn bump_vec<const UP: bool>() {
+fn vec<const UP: bool>() {
     let bump = Bump::<Global, 1, UP>::new();
 
     bump.alloc(8u8);
 
-    let mut vec = BumpVec::new_in(&bump);
+    let mut vec = Vec::new_in(&bump);
     vec.push(32u32);
 
     let slice = vec.into_slice();
     dbg!(slice);
 }
 
-fn mut_bump_vec<const UP: bool>() {
+fn mut_vec<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
 
     bump.alloc(8u8);
 
-    let mut vec = MutBumpVec::new_in(&mut bump);
+    let mut vec = MutVec::new_in(&mut bump);
     vec.push(32u32);
 
     let slice = vec.into_slice();
     dbg!(slice);
 }
 
-fn mut_bump_vec_rev<const UP: bool>() {
+fn mut_vec_rev<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
 
     bump.alloc(8u8);
 
-    let mut vec = MutBumpVecRev::new_in(&mut bump);
+    let mut vec = MutVecRev::new_in(&mut bump);
     vec.push(32u32);
 
     let slice = vec.into_slice();

@@ -21,9 +21,8 @@ use crate::{
     chunk_size::ChunkSize,
     const_param_assert, doc_align_cant_decrease,
     polyfill::{nonnull, pointer},
-    ArrayLayout, BumpScopeGuard, Checkpoint, ErrorBehavior, GuaranteedAllocatedStats, LayoutTrait, MinimumAlignment,
-    RawChunk, SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
-    DEFAULT_START_CHUNK_SIZE,
+    ArrayLayout, Checkpoint, ErrorBehavior, GuaranteedAllocatedStats, LayoutTrait, MinimumAlignment, RawChunk, ScopeGuard,
+    SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink, DEFAULT_START_CHUNK_SIZE,
 };
 
 #[cfg(not(no_global_oom_handling))]
@@ -32,7 +31,7 @@ use crate::infallible;
 #[cfg(test)]
 use crate::WithDrop;
 
-/// A bump allocation scope whose allocations are valid for the lifetime of its associated [`BumpScopeGuard`] or closure.
+/// A bump allocation scope whose allocations are valid for the lifetime of its associated [`ScopeGuard`] or closure.
 ///
 /// Alternatively a [`Bump`] can be turned into a `BumpScope` with [`as_scope`], [`as_mut_scope`] and `into`.
 ///
@@ -52,7 +51,7 @@ pub struct BumpScope<
 > {
     pub(crate) chunk: Cell<RawChunk<UP, A>>,
 
-    /// Marks the lifetime of the mutably borrowed `BumpScopeGuard(Root)`.
+    /// Marks the lifetime of the mutably borrowed `ScopeGuard(Root)`.
     marker: PhantomData<&'a ()>,
 }
 
@@ -89,7 +88,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
 {
-    bump_scope_methods!(BumpScopeGuard, true);
+    bump_scope_methods!(ScopeGuard, true);
 }
 
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
@@ -417,13 +416,13 @@ where
 
     bump_common_methods!(true);
 
-    /// Returns `&self` as is. This is used in for macros that support both `Bump` and `BumpScope`, like [`bump_vec!`](crate::bump_vec!).
+    /// Returns `&self` as is. This is used in for macros that support both `Bump` and `BumpScope`, like [`vec!`](crate::vec!).
     #[inline(always)]
     pub fn as_scope(&self) -> &Self {
         self
     }
 
-    /// Returns `&mut self` as is. This is useful for macros that support both `Bump` and `BumpScope`, like [`mut_bump_vec!`](crate::mut_bump_vec!).
+    /// Returns `&mut self` as is. This is useful for macros that support both `Bump` and `BumpScope`, like [`mut_vec!`](crate::mut_vec!).
     #[inline(always)]
     pub fn as_mut_scope(&mut self) -> &mut Self {
         self

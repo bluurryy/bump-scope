@@ -8,15 +8,15 @@ use core::{
     slice,
 };
 
-use crate::{polyfill::nonnull, BumpBox, SizedTypeProperties};
+use crate::{polyfill::nonnull, Box, SizedTypeProperties};
 
 /// An iterator that moves out of an owned slice.
 ///
 /// This `struct` is created by the `into_iter` method on
-/// [`BumpBox`](BumpBox::into_iter),
-/// [`FixedBumpVec`](crate::FixedBumpVec::into_iter),
-/// [`BumpVec`](crate::BumpVec::into_iter) and
-/// [`MutBumpVec`](crate::MutBumpVec::into_iter)
+/// [`Box`](Box::into_iter),
+/// [`FixedVec`](crate::FixedVec::into_iter),
+/// [`Vec`](crate::Vec::into_iter) and
+/// [`MutVec`](crate::MutVec::into_iter)
 /// (provided by the [`IntoIterator`] trait).
 pub struct IntoIter<'a, T> {
     ptr: NonNull<T>,
@@ -129,19 +129,19 @@ impl<'a, T> IntoIter<'a, T> {
         unsafe { slice::from_raw_parts_mut(self.ptr.as_ptr(), self.len()) }
     }
 
-    /// Converts this iterator into a `BumpBox<[T]>`.
-    // NB: `BumpSliceIter<T>` might come from a `BumpBox<[T]>` or `MutBumpVec<T>`.
-    // For `BumpBox` of course we can turn it back to a `BumpBox`.
-    // For `MutBumpVec`, `'a` is a mutable borrow of the bump allocator, so we can act as if we have a
-    // BumpBox allocated, for we can only mess with the bump allocator once this `BumpBox` is gone.
+    /// Converts this iterator into a `Box<[T]>`.
+    // NB: `BumpSliceIter<T>` might come from a `Box<[T]>` or `MutVec<T>`.
+    // For `Box` of course we can turn it back to a `Box`.
+    // For `MutVec`, `'a` is a mutable borrow of the bump allocator, so we can act as if we have a
+    // Box allocated, for we can only mess with the bump allocator once this `Box` is gone.
     #[must_use]
     #[inline(always)]
-    pub fn into_boxed_slice(self) -> BumpBox<'a, [T]> {
+    pub fn into_boxed_slice(self) -> Box<'a, [T]> {
         let this = ManuallyDrop::new(self);
 
         unsafe {
             let slice = nonnull::slice_from_raw_parts(this.ptr, this.len());
-            BumpBox::from_raw(slice)
+            Box::from_raw(slice)
         }
     }
 }

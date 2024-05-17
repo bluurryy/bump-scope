@@ -8,16 +8,16 @@ use core::{
 
 use crate::{
     polyfill::{nonnull, slice},
-    BumpBox, IntoIter, SizedTypeProperties,
+    Box, IntoIter, SizedTypeProperties,
 };
 
 /// A draining iterator owned slices.
 ///
 /// This struct is created by the `drain` method on
-/// [`BumpBox`](BumpBox::drain),
-/// [`FixedBumpVec`](crate::FixedBumpVec::drain),
-/// [`BumpVec`](crate::BumpVec::drain) and
-/// [`MutBumpVec`](crate::MutBumpVec::drain).
+/// [`Box`](Box::drain),
+/// [`FixedVec`](crate::FixedVec::drain),
+/// [`Vec`](crate::Vec::drain) and
+/// [`MutVec`](crate::MutVec::drain).
 ///
 /// See their documentation for more.
 ///
@@ -47,7 +47,7 @@ impl<T: fmt::Debug> fmt::Debug for Drain<'_, T> {
 }
 
 impl<'a, T> Drain<'a, T> {
-    pub(crate) fn new(boxed: &'a mut BumpBox<[T]>, range: impl RangeBounds<usize>) -> Drain<'a, T> {
+    pub(crate) fn new(boxed: &'a mut Box<[T]>, range: impl RangeBounds<usize>) -> Drain<'a, T> {
         // Memory safety
         //
         // When the Drain is first created, it shortens the length of
