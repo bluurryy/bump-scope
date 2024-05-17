@@ -295,12 +295,12 @@ impl<'a, const UP: bool> Stats<'a, UP> {
     /// Converts this `Stats` into `Some(GuaranteedAllocatedStats)` or `None` if the current chunk is `None`.
     #[inline]
     #[must_use]
-    pub fn to_stats(self) -> Option<GuaranteedAllocatedStats<'a, UP>> {
+    pub fn to_guaranteed_allocated_stats(self) -> Option<GuaranteedAllocatedStats<'a, UP>> {
         self.current.map(|current| GuaranteedAllocatedStats { current })
     }
 
     pub(crate) fn debug_format(self, name: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(stats) = self.to_stats() {
+        if let Some(stats) = self.to_guaranteed_allocated_stats() {
             stats.debug_format(name, f)
         } else {
             let alternate = f.alternate();
