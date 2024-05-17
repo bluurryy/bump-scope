@@ -6,7 +6,10 @@ export MIRIFLAGS := "-Zmiri-strict-provenance"
 
 default *args:
   cargo fmt --all
-  cargo clippy --all --tests
+  cargo clippy --all --tests --all-features
+
+test *args:
+  cargo test --all-features {{args}}
 
 all:
   just fmt

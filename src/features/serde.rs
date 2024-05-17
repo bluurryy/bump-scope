@@ -123,7 +123,7 @@ fn too_many_elements<E: de::Error>(len: usize, at_most: usize) -> E {
 fn map_alloc_error<E: de::Error>(result: Result<(), AllocError>) -> Result<(), E> {
     match result {
         Ok(()) => Ok(()),
-        Err(AllocError) => return Err(E::custom(&AllocationFailed)),
+        Err(AllocError) => Err(E::custom(&AllocationFailed)),
     }
 }
 

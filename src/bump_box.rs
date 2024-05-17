@@ -95,7 +95,7 @@ use crate::{BumpAllocator, WithLifetime};
 /// fn violate_drop_guarantee(cx: &mut Context) {
 ///     let mut bump: Bump = Bump::new();
 ///
-///     let mut future = Box::pin(async {
+///     let mut future = std::boxed::Box::pin(async {
 ///         let foo = bump.alloc(Foo(1));
 ///         println!("created Foo({}) at {:?}", foo.0, &*foo as *const Foo);
 ///         bump_box_pin!(foo);
