@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 (2024-05-19)
 - **breaking:** renamed `Stats::to_stats` to `to_guaranteed_stats`
 - **breaking:** removed deprecated `BumpBox::into_fixed_vec` and `into_fixed_string`.
 - **added:** `impl From<GuaranteedAllocatedStats> for Stats`
