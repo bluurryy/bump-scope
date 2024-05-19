@@ -10,6 +10,8 @@ inspect_asm::alloc_u32::up:
 	jb .LBB_2
 	lea rdx, [rax + 4]
 	mov qword ptr [rcx], rdx
+	test rax, rax
+	je .LBB_2
 	mov dword ptr [rax], esi
 	pop rbx
 	ret

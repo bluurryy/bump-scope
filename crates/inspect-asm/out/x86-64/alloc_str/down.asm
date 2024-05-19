@@ -11,6 +11,7 @@ inspect_asm::alloc_str::down:
 	jb .LBB_2
 	sub rbx, r14
 	mov qword ptr [rax], rbx
+	je .LBB_2
 .LBB_3:
 	mov rdi, rbx
 	mov rdx, r14

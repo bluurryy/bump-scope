@@ -10,6 +10,8 @@ inspect_asm::alloc_big::down_a:
 	cmp rdi, qword ptr [rcx + 8]
 	jb .LBB_2
 	mov qword ptr [rcx], rdi
+	test rdi, rdi
+	je .LBB_2
 	mov edx, 512
 	pop rbx
 	jmp qword ptr [rip + memcpy@GOTPCREL]

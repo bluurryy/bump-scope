@@ -26,6 +26,7 @@ inspect_asm::alloc_iter_u32::try_mut_rev_down_a:
 	jb .LBB_4
 	add rax, 3
 	and rax, -4
+	je .LBB_4
 .LBB_6:
 	mov rcx, rdx
 	sub rcx, rax

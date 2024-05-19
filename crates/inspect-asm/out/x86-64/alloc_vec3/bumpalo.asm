@@ -9,6 +9,8 @@ inspect_asm::alloc_vec3::bumpalo:
 	cmp rax, qword ptr [rcx]
 	jb .LBB_3
 	mov qword ptr [rcx + 32], rax
+	test rax, rax
+	je .LBB_3
 .LBB_4:
 	mov ecx, dword ptr [rsi + 8]
 	mov dword ptr [rax + 8], ecx

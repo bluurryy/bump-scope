@@ -18,6 +18,8 @@ inspect_asm::grow::down:
 	cmp r14, qword ptr [rax + 8]
 	jb .LBB_10
 	mov qword ptr [rax], r14
+	test r14, r14
+	je .LBB_10
 .LBB_3:
 	mov rdi, r14
 	mov rdx, rcx

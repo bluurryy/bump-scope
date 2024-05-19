@@ -9,7 +9,7 @@ inspect_asm::alloc_iter_u32::down_a:
 	je .LBB_1
 	mov rax, rdx
 	shr rax, 61
-	jne .LBB_5
+	jne .LBB_12
 	mov rbx, rsi
 	lea r15, [4*rdx]
 	mov rcx, qword ptr [rdi]
@@ -17,10 +17,11 @@ inspect_asm::alloc_iter_u32::down_a:
 	mov rsi, rax
 	sub rsi, qword ptr [rcx + 8]
 	cmp r15, rsi
-	ja .LBB_6
+	ja .LBB_5
 	sub rax, r15
 	mov qword ptr [rcx], rax
-.LBB_7:
+	je .LBB_5
+.LBB_6:
 	mov qword ptr [rsp], rax
 	mov qword ptr [rsp + 8], 0
 	mov qword ptr [rsp + 16], rdx
@@ -28,30 +29,30 @@ inspect_asm::alloc_iter_u32::down_a:
 	xor r12d, r12d
 	mov r14, rsp
 	xor edx, edx
-	jmp .LBB_8
-.LBB_10:
+	jmp .LBB_7
+.LBB_9:
 	mov dword ptr [rax + 4*rdx], ebp
 	inc rdx
 	mov qword ptr [rsp + 8], rdx
 	add r12, 4
 	cmp r15, r12
-	je .LBB_11
-.LBB_8:
+	je .LBB_10
+.LBB_7:
 	mov ebp, dword ptr [rbx + r12]
 	cmp qword ptr [rsp + 16], rdx
-	jne .LBB_10
+	jne .LBB_9
 	mov rdi, r14
 	call bump_scope::bump_vec::BumpVec<T,A,_,_,_>::generic_grow_cold
 	mov rax, qword ptr [rsp]
 	mov rdx, qword ptr [rsp + 8]
-	jmp .LBB_10
-.LBB_11:
+	jmp .LBB_9
+.LBB_10:
 	mov rax, qword ptr [rsp]
-	jmp .LBB_12
+	jmp .LBB_11
 .LBB_1:
 	mov eax, 4
 	xor edx, edx
-.LBB_12:
+.LBB_11:
 	add rsp, 32
 	pop rbx
 	pop r12
@@ -59,13 +60,13 @@ inspect_asm::alloc_iter_u32::down_a:
 	pop r15
 	pop rbp
 	ret
-.LBB_6:
+.LBB_5:
 	mov r14, rdi
 	mov rsi, rdx
 	mov r12, rdx
 	call bump_scope::bump_scope::BumpScope<A,_,_,_>::do_alloc_slice_in_another_chunk
 	mov rdi, r14
 	mov rdx, r12
-	jmp .LBB_7
-.LBB_5:
+	jmp .LBB_6
+.LBB_12:
 	call qword ptr [rip + bump_scope::private::capacity_overflow@GOTPCREL]

@@ -7,19 +7,21 @@ inspect_asm::alloc_u32::try_up:
 	and rax, -4
 	sub rdx, rax
 	cmp rdx, 4
-	jb .LBB_3
+	jb .LBB_2
 	lea rdx, [rax + 4]
 	mov qword ptr [rcx], rdx
-.LBB_2:
+	test rax, rax
+	je .LBB_2
+.LBB_4:
 	mov dword ptr [rax], esi
 	pop rbx
 	ret
-.LBB_3:
+.LBB_2:
 	mov ebx, esi
 	call bump_scope::bump_scope::BumpScope<A,_,_,_>::do_alloc_sized_in_another_chunk
 	mov esi, ebx
 	test rax, rax
-	jne .LBB_2
+	jne .LBB_4
 	xor eax, eax
 	pop rbx
 	ret

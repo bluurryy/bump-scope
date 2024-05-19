@@ -8,7 +8,7 @@ inspect_asm::bump_vec_u32::up::try_with_capacity:
 	mov rcx, rsi
 	shr rcx, 61
 	je .LBB_4
-.LBB_9:
+.LBB_10:
 	mov qword ptr [rax], 0
 	add rsp, 8
 	pop rbx
@@ -30,10 +30,13 @@ inspect_asm::bump_vec_u32::up::try_with_capacity:
 	and rcx, -4
 	mov rdi, rsi
 	sub rdi, rcx
+	mov r8, r9
 	cmp rdi, r9
-	jb .LBB_6
+	jb .LBB_7
+	test rcx, rcx
+	je .LBB_7
 	and rsi, -4
-.LBB_8:
+.LBB_9:
 	sub rsi, rcx
 	shr rsi, 2
 	mov qword ptr [rax], rcx
@@ -44,17 +47,17 @@ inspect_asm::bump_vec_u32::up::try_with_capacity:
 	pop rbx
 	pop r14
 	ret
-.LBB_6:
+.LBB_7:
 	mov esi, 4
 	mov rdi, rdx
 	mov rbx, rdx
-	mov rdx, r9
+	mov rdx, r8
 	mov r14, rax
 	call bump_scope::bump_scope::BumpScope<A,_,_,_>::alloc_greedy_in_another_chunk
 	mov rcx, rax
 	mov rax, r14
 	test rcx, rcx
-	je .LBB_9
+	je .LBB_10
 	mov rsi, rdx
 	mov rdx, rbx
-	jmp .LBB_8
+	jmp .LBB_9

@@ -10,10 +10,12 @@ inspect_asm::alloc_u32_slice_clone::try_up:
 	and rbx, -4
 	sub rcx, rbx
 	cmp r14, rcx
-	ja .LBB_4
+	ja .LBB_2
 	lea rcx, [rbx + r14]
 	mov qword ptr [rax], rcx
-.LBB_2:
+	test rbx, rbx
+	je .LBB_2
+.LBB_4:
 	test rdx, rdx
 	je .LBB_6
 	mov rdi, rbx
@@ -27,7 +29,7 @@ inspect_asm::alloc_u32_slice_clone::try_up:
 	pop r14
 	pop r15
 	ret
-.LBB_4:
+.LBB_2:
 	mov rbx, rsi
 	mov rsi, rdx
 	mov r15, rdx
@@ -36,6 +38,6 @@ inspect_asm::alloc_u32_slice_clone::try_up:
 	mov rdx, r15
 	mov rbx, rax
 	test rax, rax
-	jne .LBB_2
+	jne .LBB_4
 	xor ebx, ebx
 	jmp .LBB_6

@@ -9,6 +9,8 @@ inspect_asm::allocate::bumpalo:
 	cmp rax, qword ptr [rcx]
 	jb .LBB_3
 	mov qword ptr [rcx + 32], rax
+	test rax, rax
+	je .LBB_3
 	ret
 .LBB_3:
 	push rbx

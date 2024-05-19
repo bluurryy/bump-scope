@@ -12,6 +12,8 @@ inspect_asm::alloc_u32_slice_clone::bumpalo:
 	cmp rax, qword ptr [r8]
 	jb .LBB_3
 	mov qword ptr [r8 + 32], rax
+	test rax, rax
+	je .LBB_3
 .LBB_4:
 	test rdx, rdx
 	je .LBB_13
@@ -42,6 +44,17 @@ inspect_asm::alloc_u32_slice_clone::bumpalo:
 	cmp r8, rdi
 	jne .LBB_11
 	jmp .LBB_13
+.LBB_3:
+	mov rbx, rsi
+	mov esi, 4
+	mov r14, rdx
+	mov rdx, rcx
+	call qword ptr [rip + bumpalo::Bump::alloc_layout_slow@GOTPCREL]
+	mov rsi, rbx
+	mov rdx, r14
+	test rax, rax
+	jne .LBB_4
+	call qword ptr [rip + bumpalo::oom@GOTPCREL]
 .LBB_6:
 	mov rcx, rsi
 .LBB_11:
@@ -59,14 +72,3 @@ inspect_asm::alloc_u32_slice_clone::bumpalo:
 	pop rbx
 	pop r14
 	ret
-.LBB_3:
-	mov rbx, rsi
-	mov esi, 4
-	mov r14, rdx
-	mov rdx, rcx
-	call qword ptr [rip + bumpalo::Bump::alloc_layout_slow@GOTPCREL]
-	mov rsi, rbx
-	mov rdx, r14
-	test rax, rax
-	jne .LBB_4
-	call qword ptr [rip + bumpalo::oom@GOTPCREL]

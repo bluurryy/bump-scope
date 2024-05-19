@@ -15,9 +15,10 @@ inspect_asm::bump_vec_u32::down::with_capacity:
 	mov r8, rcx
 	sub r8, rax
 	cmp r8, rsi
-	jb .LBB_4
+	jb .LBB_5
 	add rax, 3
 	and rax, -4
+	je .LBB_5
 .LBB_6:
 	sub rcx, rax
 	shr rcx, 2
@@ -35,7 +36,7 @@ inspect_asm::bump_vec_u32::down::with_capacity:
 	pop rbx
 	pop r14
 	ret
-.LBB_4:
+.LBB_5:
 	mov rax, rsi
 	mov esi, 4
 	mov r14, rdi

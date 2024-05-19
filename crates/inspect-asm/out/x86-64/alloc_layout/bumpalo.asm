@@ -10,13 +10,13 @@ inspect_asm::alloc_layout::bumpalo:
 	cmp rax, qword ptr [rcx]
 	jb .LBB_3
 	mov qword ptr [rcx + 32], rax
+	test rax, rax
+	je .LBB_3
+.LBB_4:
 	pop rcx
 	ret
 .LBB_3:
 	call qword ptr [rip + bumpalo::Bump::alloc_layout_slow@GOTPCREL]
 	test rax, rax
-	je .LBB_5
-	pop rcx
-	ret
-.LBB_5:
+	jne .LBB_4
 	call qword ptr [rip + bumpalo::oom@GOTPCREL]

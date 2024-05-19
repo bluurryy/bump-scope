@@ -9,6 +9,8 @@ inspect_asm::alloc_str::bumpalo:
 	cmp rbx, qword ptr [rax]
 	jb .LBB_3
 	mov qword ptr [rax + 32], rbx
+	test rbx, rbx
+	je .LBB_3
 .LBB_4:
 	mov rdi, rbx
 	mov r14, rdx

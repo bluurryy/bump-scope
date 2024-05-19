@@ -6,6 +6,8 @@ inspect_asm::alloc_u32::down_a:
 	cmp rax, qword ptr [rcx + 8]
 	jb .LBB_2
 	mov qword ptr [rcx], rax
+	test rax, rax
+	je .LBB_2
 	mov dword ptr [rax], esi
 	pop rbx
 	ret

@@ -10,4 +10,6 @@ inspect_asm::alloc_layout::try_down:
 	cmp rax, qword ptr [rcx + 8]
 	jb bump_scope::bump_scope::BumpScope<A,_,_,_>::alloc_in_another_chunk
 	mov qword ptr [rcx], rax
+	test rax, rax
+	je bump_scope::bump_scope::BumpScope<A,_,_,_>::alloc_in_another_chunk
 	ret

@@ -10,6 +10,8 @@ inspect_asm::alloc_vec3::up:
 	jb .LBB_2
 	lea rdx, [rax + 12]
 	mov qword ptr [rcx], rdx
+	test rax, rax
+	je .LBB_2
 .LBB_3:
 	mov ecx, dword ptr [rsi + 8]
 	mov dword ptr [rax + 8], ecx

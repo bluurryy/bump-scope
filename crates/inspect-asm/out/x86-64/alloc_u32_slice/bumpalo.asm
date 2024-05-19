@@ -13,6 +13,8 @@ inspect_asm::alloc_u32_slice::bumpalo:
 	cmp r14, qword ptr [rax]
 	jb .LBB_3
 	mov qword ptr [rax + 32], r14
+	test r14, r14
+	je .LBB_3
 .LBB_4:
 	mov rdi, r14
 	call qword ptr [rip + memcpy@GOTPCREL]

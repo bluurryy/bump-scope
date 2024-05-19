@@ -9,8 +9,8 @@ inspect_asm::shrink::down:
 	mov rax, qword ptr [rdi]
 	cmp qword ptr [rax], rsi
 	je .LBB_4
-	mov rax, rsi
 	mov rbx, rcx
+	mov rax, rsi
 	jmp .LBB_8
 .LBB_4:
 	mov r14, rdi
@@ -21,12 +21,12 @@ inspect_asm::shrink::down:
 	sbb rdx, r8
 	sub rcx, rbx
 	cmovb rcx, rax
-	mov rdi, rcx
-	and rdi, rdx
+	and rcx, rdx
 	lea rax, [rsi + rbx]
-	mov r15, rdi
+	mov r15, rcx
+	mov rdi, rcx
 	mov rdx, rbx
-	cmp rax, rdi
+	cmp rax, rcx
 	jbe .LBB_5
 	call qword ptr [rip + memmove@GOTPCREL]
 	jmp .LBB_7

@@ -15,6 +15,8 @@ inspect_asm::alloc_iter_u32::bumpalo:
 	cmp rax, qword ptr [r8]
 	jb .LBB_4
 	mov qword ptr [r8 + 32], rax
+	test rax, rax
+	je .LBB_4
 .LBB_5:
 	test rdx, rdx
 	je .LBB_16
@@ -47,6 +49,18 @@ inspect_asm::alloc_iter_u32::bumpalo:
 	cmp rcx, r8
 	jne .LBB_13
 	jmp .LBB_9
+.LBB_4:
+	mov rbx, rsi
+	mov esi, 4
+	mov r14, rdx
+	mov rdx, rcx
+	call qword ptr [rip + bumpalo::Bump::alloc_layout_slow@GOTPCREL]
+	mov rsi, rbx
+	mov rdx, r14
+	test rax, rax
+	jne .LBB_5
+.LBB_14:
+	call qword ptr [rip + bumpalo::oom@GOTPCREL]
 .LBB_7:
 	mov rdi, rsi
 .LBB_9:
@@ -65,18 +79,6 @@ inspect_asm::alloc_iter_u32::bumpalo:
 	pop rbx
 	pop r14
 	ret
-.LBB_4:
-	mov rbx, rsi
-	mov esi, 4
-	mov r14, rdx
-	mov rdx, rcx
-	call qword ptr [rip + bumpalo::Bump::alloc_layout_slow@GOTPCREL]
-	mov rsi, rbx
-	mov rdx, r14
-	test rax, rax
-	jne .LBB_5
-.LBB_14:
-	call qword ptr [rip + bumpalo::oom@GOTPCREL]
 .LBB_11:
 	lea rdi, [rip + .L__unnamed__0]
 	lea rdx, [rip + .L__unnamed__1]

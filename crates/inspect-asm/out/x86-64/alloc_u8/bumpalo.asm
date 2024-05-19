@@ -6,6 +6,8 @@ inspect_asm::alloc_u8::bumpalo:
 	cmp rax, qword ptr [rcx]
 	jb .LBB_2
 	mov qword ptr [rcx + 32], rax
+	test rax, rax
+	je .LBB_2
 .LBB_3:
 	mov byte ptr [rax], sil
 	pop rbx

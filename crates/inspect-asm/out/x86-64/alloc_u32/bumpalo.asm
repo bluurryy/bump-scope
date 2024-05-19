@@ -9,6 +9,8 @@ inspect_asm::alloc_u32::bumpalo:
 	cmp rax, qword ptr [rcx]
 	jb .LBB_3
 	mov qword ptr [rcx + 32], rax
+	test rax, rax
+	je .LBB_3
 .LBB_4:
 	mov dword ptr [rax], esi
 	pop rbx

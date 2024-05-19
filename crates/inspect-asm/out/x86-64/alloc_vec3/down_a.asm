@@ -6,6 +6,8 @@ inspect_asm::alloc_vec3::down_a:
 	cmp rax, qword ptr [rcx + 8]
 	jb .LBB_2
 	mov qword ptr [rcx], rax
+	test rax, rax
+	je .LBB_2
 .LBB_3:
 	mov ecx, dword ptr [rsi + 8]
 	mov dword ptr [rax + 8], ecx

@@ -13,6 +13,8 @@ inspect_asm::alloc_u32_slice_clone::up:
 	ja .LBB_2
 	lea rcx, [r14 + rbx]
 	mov qword ptr [rax], rcx
+	test r14, r14
+	je .LBB_2
 	test rdx, rdx
 	je .LBB_5
 .LBB_4:
