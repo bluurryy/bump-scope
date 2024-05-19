@@ -1,4 +1,5 @@
 use core::{
+    alloc::Layout,
     any::Any,
     borrow::{Borrow, BorrowMut},
     cmp::Ordering,
@@ -20,11 +21,11 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 
 use crate::{
     polyfill::{self, nonnull},
-    Drain, ExtractIf, FixedBumpString, FixedBumpVec, FromUtf8Error, IntoIter, NoDrop, SizedTypeProperties,
+    BumpAllocator, Drain, ExtractIf, FixedBumpString, FixedBumpVec, FromUtf8Error, IntoIter, NoDrop, SizedTypeProperties,
 };
 
 #[cfg(feature = "alloc")]
-use crate::{BumpAllocator, WithLifetime};
+use crate::WithLifetime;
 
 /// A pointer type that uniquely owns a bump allocation of type `T`. This type is returned whenever a bump allocation is made.
 ///
@@ -199,6 +200,25 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
         // that's fine though because a `BumpAllocator` allows deallocate calls
         // from allocations that don't belong to it
         unsafe { Box::from_raw_in(ptr, WithLifetime::new(bump)) }
+    }
+
+    /// Drops this box and frees its memory iff it is the last allocation:
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let boxed = bump.alloc(3i32);
+    /// assert_eq!(bump.stats().allocated(), 4);
+    /// boxed.deallocate_in(&bump);
+    /// assert_eq!(bump.stats().allocated(), 0);
+    /// ```
+    pub fn deallocate_in<A: BumpAllocator>(self, bump: A) {
+        let layout = Layout::for_value::<T>(&self);
+        let ptr = self.into_raw();
+
+        unsafe {
+            nonnull::drop_in_place(ptr);
+            bump.deallocate(ptr.cast(), layout);
+        }
     }
 
     /// Turns this `BumpBox<T>` into `&mut T` that is live for the entire bump scope.
