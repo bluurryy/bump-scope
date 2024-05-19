@@ -41,6 +41,7 @@ spellcheck:
   cspell lint --gitignore "**/*.{rs,md,toml}"
 
 doc *args:
+  cargo fmt
   cargo rustdoc {{args}} --features nightly-coerce-unsized,nightly-exact-size-is-empty,nightly-trusted-len -- --cfg docsrs
   nu insert-docs-into-readme.nu
 
