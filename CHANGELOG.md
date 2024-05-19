@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+- **breaking:** renamed `Stats::to_stats` to `to_guaranteed_stats`
+- **added:** `impl From<GuaranteedAllocatedStats> for Stats`
+- **added:** `BumpBox::<[MaybeUninit<T>]>::init_fill_iter`
+- **added:** `BumpBox::deallocate_in`
+
 ## 0.3.1 (2024-05-01)
 - **fixed:** crash in debug mode when using `alloc_iter_mut(_rev)` or calling `into_(boxed_)slice` on a `MutBumpVec(Rev)` ([#16](https://github.com/bluurryy/bump-scope/issues/16))
 - **added:** optimization to not align the bump pointer when the size happens to be a multiple of `MIN_ALIGN` ([#12](https://github.com/bluurryy/bump-scope/issues/12))
