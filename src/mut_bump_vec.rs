@@ -1126,11 +1126,10 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let mut vec = bump.alloc_uninit_slice(4).into_fixed_vec();
-    /// vec.extend_from_slice_copy(&[1, 2, 3, 4]);
+    /// let mut vec = mut_bump_vec![in bump; 1, 2, 3, 4];
     ///
     /// vec.retain(|x| if *x <= 3 {
     ///     *x += 1;
@@ -1170,12 +1169,12 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump1: Bump = Bump::new();
+    /// # let bump2: Bump = Bump::new();
     /// #
-    /// let mut v = bump.alloc_uninit_slice(3).into_fixed_vec();
-    /// v.extend_from_slice_copy(&[1, 2, 3]);
-    /// let u = bump.alloc_iter(v.drain(1..));
+    /// let mut v = mut_bump_vec![in bump1; 1, 2, 3];
+    /// let u = bump2.alloc_iter(v.drain(1..));
     /// assert_eq!(v, [1]);
     /// assert_eq!(u, [2, 3]);
     ///

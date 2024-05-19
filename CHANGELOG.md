@@ -2,6 +2,7 @@
 
 ## Unreleased
 - **breaking:** renamed `Stats::to_stats` to `to_guaranteed_stats`
+- **breaking:** removed deprecated `BumpBox::into_fixed_vec` and `into_fixed_string`.
 - **added:** `impl From<GuaranteedAllocatedStats> for Stats`
 - **added:** `BumpBox::<[MaybeUninit<T>]>::init_fill_iter`
 - **added:** `BumpBox::deallocate_in`

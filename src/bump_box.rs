@@ -21,7 +21,7 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 
 use crate::{
     polyfill::{self, nonnull},
-    BumpAllocator, Drain, ExtractIf, FixedBumpString, FixedBumpVec, FromUtf8Error, IntoIter, NoDrop, SizedTypeProperties,
+    BumpAllocator, Drain, ExtractIf, FromUtf8Error, IntoIter, NoDrop, SizedTypeProperties,
 };
 
 #[cfg(feature = "alloc")]
@@ -520,24 +520,6 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
         let ptr = BumpBox::into_raw(self);
         let ptr = NonNull::new_unchecked(ptr.as_ptr() as _);
         BumpBox::from_raw(ptr)
-    }
-
-    #[deprecated = "use `FixedBumpVec::from_uninit` instead"]
-    /// Turns this `BumpBox<[MaybeUninit<T>]>` into a `FixedBumpVec<T>` with a length of `0`.
-    #[inline]
-    #[must_use]
-    pub fn into_fixed_vec(self) -> FixedBumpVec<'a, T> {
-        FixedBumpVec::from_uninit(self)
-    }
-}
-
-impl<'a> BumpBox<'a, [MaybeUninit<u8>]> {
-    #[deprecated = "use `FixedBumpString::from_uninit` instead"]
-    /// Turns this `BumpBox<[MaybeUninit<u8>]>` into a `FixedBumpString` with a length of `0`.
-    #[inline]
-    #[must_use]
-    pub fn into_fixed_string(self) -> FixedBumpString<'a> {
-        FixedBumpString::from_uninit(self)
     }
 }
 

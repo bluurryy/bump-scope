@@ -19,7 +19,7 @@ use crate::{
 
 /// A [`BumpVec`] but with a fixed capacity.
 ///
-/// It can be constructed with [`alloc_fixed_vec`] or from a `BumpBox<[MaybeUninit<T>]>` via [`into_fixed_vec`].
+/// It can be constructed with [`alloc_fixed_vec`] or from a `BumpBox<[MaybeUninit<T>]>` via [`from_uninit`].
 ///
 /// # Examples
 /// ```
@@ -37,7 +37,7 @@ use crate::{
 /// ```
 ///
 /// [`alloc_fixed_vec`]: crate::Bump::alloc_fixed_vec
-/// [`into_fixed_vec`]: BumpBox::into_fixed_vec
+/// [`from_uninit`]: FixedBumpVec::from_uninit
 pub struct FixedBumpVec<'a, T> {
     pub(crate) initialized: BumpBox<'a, [T]>,
     pub(crate) capacity: usize,

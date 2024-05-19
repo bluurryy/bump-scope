@@ -11,7 +11,7 @@ use crate::{error_behavior_generic_methods, polyfill, BumpBox, ErrorBehavior, Fi
 
 /// A [`BumpString`](crate::BumpString) but with a fixed capacity.
 ///
-/// It can be constructed with [`alloc_fixed_string`] or from a `BumpBox<[MaybeUninit<u8>]>` via [`into_fixed_string`].
+/// It can be constructed with [`alloc_fixed_string`] or from a `BumpBox<[MaybeUninit<u8>]>` via [`from_uninit`].
 ///
 /// # Examples
 /// ```
@@ -29,7 +29,7 @@ use crate::{error_behavior_generic_methods, polyfill, BumpBox, ErrorBehavior, Fi
 /// ```
 ///
 /// [`alloc_fixed_string`]: crate::Bump::alloc_fixed_string
-/// [`into_fixed_string`]: BumpBox::into_fixed_string
+/// [`from_uninit`]: FixedBumpString::from_uninit
 pub struct FixedBumpString<'a> {
     vec: FixedBumpVec<'a, u8>,
 }
