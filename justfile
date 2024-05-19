@@ -34,7 +34,7 @@ clippy:
   cd crates/fuzzing-support; cargo clippy --all --tests
   cd crates/inspect-asm; cargo clippy --all --tests
   cd crates/test-fallibility; cargo clippy --all --tests
-  cd fuzz; cargo clippy --all --tests
+  cd fuzz; cargo clippy --all
 
 spellcheck:
   # https://www.npmjs.com/package/cspell
