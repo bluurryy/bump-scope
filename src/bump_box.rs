@@ -400,6 +400,45 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
         initializer.into_init()
     }
 
+    /// Initializes `self` by filling it with elements returned from an iterator.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the iterator runs out of items before the slice is filled.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let mut bump: Bump = Bump::new();
+    /// let buf = bump.alloc_uninit_slice(5);
+    /// let buf = buf.init_fill_iter(['a', 'b'].iter().copied().cycle());
+    /// assert_eq!(buf, ['a', 'b', 'a', 'b', 'a']);
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn init_fill_iter(self, mut iter: impl Iterator<Item = T>) -> BumpBox<'a, [T]> {
+        #[cold]
+        #[inline(never)]
+        #[track_caller]
+        fn iter_ran_out() -> ! {
+            panic!("iterator ran out of items to fill the slice with");
+        }
+
+        let mut initializer = self.initializer();
+
+        while !initializer.is_full() {
+            match iter.next() {
+                Some(item) => {
+                    initializer.push(item);
+                }
+                None => iter_ran_out(),
+            }
+        }
+
+        initializer.into_init()
+    }
+
     /// Initializes `self` by copying the elements from `slice` into `self`.
     ///
     /// The length of `slice` must be the same as `self`.
