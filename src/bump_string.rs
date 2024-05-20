@@ -532,6 +532,13 @@ where
     pub fn allocator(&self) -> &A {
         self.vec.allocator()
     }
+
+    #[doc = crate::doc_fn_bump!()]
+    #[must_use]
+    #[inline(always)]
+    pub fn bump(&self) -> &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
+        self.vec.bump()
+    }
 }
 
 impl<'b, 'a: 'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>

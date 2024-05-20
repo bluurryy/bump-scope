@@ -533,6 +533,12 @@ macro_rules! doc_fn_allocator {
     };
 }
 
+macro_rules! doc_fn_bump {
+    () => {
+        "Returns a reference to the bump allocator."
+    };
+}
+
 macro_rules! doc_fn_reset {
     () => {
         "This will only keep around the newest chunk, which is also the biggest."
@@ -546,6 +552,7 @@ macro_rules! doc_fn_scope {
 }
 
 pub(crate) use doc_fn_allocator;
+pub(crate) use doc_fn_bump;
 pub(crate) use doc_fn_reset;
 pub(crate) use doc_fn_scope;
 pub(crate) use doc_fn_stats;
@@ -1921,7 +1928,7 @@ mod supported_base_allocator {
 }
 
 /// Trait that any allocator used as a base allocator of a bump allocator needs to implement.
-/// 
+///
 /// This trait is *sealed*: the list of implementors below is total.
 pub trait BaseAllocator<const GUARANTEED_ALLOCATED: bool = true>:
     Allocator + Clone + supported_base_allocator::Sealed<GUARANTEED_ALLOCATED>
