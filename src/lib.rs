@@ -993,8 +993,10 @@ macro_rules! wrap_result {
 
 pub(crate) use wrap_result;
 
-macro_rules! error_behavior_generic_methods {
+macro_rules! error_behavior_generic_methods_if {
     (
+        if $fail_if:literal
+
         $(
             $(#[$attr:meta])*
             $(do panics $(#[doc = $panics:literal])*)?
@@ -1032,7 +1034,7 @@ macro_rules! error_behavior_generic_methods {
             $(#[$attr_infallible])*
 
             /// # Panics
-            /// Panics if the allocation fails.
+            #[doc = concat!("Panics if ", $fail_if, ".")]
             $(#[doc = "\n"] $(#[doc = $panics])*)?
             $(#[doc = "\n"] $(#[doc = $infallible_panics])*)?
 
@@ -1064,7 +1066,7 @@ macro_rules! error_behavior_generic_methods {
             $(#[doc = "\n"] $(#[doc = $fallible_panics])*)?
 
             /// # Errors
-            /// Errors if the allocation fails.
+            #[doc = concat!("Errors if ", $fail_if, ".")]
             $(#[doc = "\n"] $(#[doc = $errors])*)?
             $(#[doc = "\n"] $(#[doc = $fallible_errors])*)?
 
@@ -1098,7 +1100,15 @@ macro_rules! error_behavior_generic_methods {
     };
 }
 
-pub(crate) use error_behavior_generic_methods;
+pub(crate) use error_behavior_generic_methods_if;
+
+macro_rules! error_behavior_generic_methods_allocation_failure {
+    ($($tt:tt)*) => {
+        $crate::error_behavior_generic_methods_if!(if "the allocation fails" $($tt)*);
+    };
+}
+
+pub(crate) use error_behavior_generic_methods_allocation_failure;
 
 macro_rules! map {
     ({ } become { $($then:tt)* }) => { };

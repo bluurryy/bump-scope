@@ -12,8 +12,8 @@ use allocator_api2::alloc::Allocator;
 use allocator_api2::alloc::Global;
 
 use crate::{
-    error_behavior_generic_methods, polyfill, BumpBox, BumpScope, ErrorBehavior, FromUtf8Error, GuaranteedAllocatedStats,
-    MinimumAlignment, MutBumpVec, Stats, SupportedMinimumAlignment,
+    error_behavior_generic_methods_allocation_failure, polyfill, BumpBox, BumpScope, ErrorBehavior, FromUtf8Error,
+    GuaranteedAllocatedStats, MinimumAlignment, MutBumpVec, Stats, SupportedMinimumAlignment,
 };
 
 /// This is like [`format!`] but allocates inside a *mutable* `Bump` or `BumpScope`, returning a [`MutBumpString`].
@@ -139,7 +139,7 @@ where
         }
     }
 
-    error_behavior_generic_methods! {
+    error_behavior_generic_methods_allocation_failure! {
         /// Constructs a new empty `MutBumpString` with at least the specified capacity
         /// with the provided `BumpScope`.
         ///
@@ -355,7 +355,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
 {
-    error_behavior_generic_methods! {
+    error_behavior_generic_methods_allocation_failure! {
         /// Appends the given [`char`] to the end of this `MutBumpString`.
         impl
         for pub fn push

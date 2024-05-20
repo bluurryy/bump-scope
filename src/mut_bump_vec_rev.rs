@@ -17,7 +17,7 @@ use allocator_api2::alloc::Allocator;
 use allocator_api2::alloc::Global;
 
 use crate::{
-    error_behavior_generic_methods,
+    error_behavior_generic_methods_allocation_failure,
     polyfill::{self, nonnull, pointer},
     BumpBox, BumpScope, ErrorBehavior, GuaranteedAllocatedStats, IntoIter, MinimumAlignment, NoDrop, SetLenOnDrop,
     SizedTypeProperties, Stats, SupportedMinimumAlignment,
@@ -196,7 +196,7 @@ where
         }
     }
 
-    error_behavior_generic_methods! {
+    error_behavior_generic_methods_allocation_failure! {
         /// Constructs a new empty `MutBumpVecRev<T>` with at least the specified capacity
         /// with the provided `BumpScope`.
         ///
@@ -630,7 +630,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
 {
-    error_behavior_generic_methods! {
+    error_behavior_generic_methods_allocation_failure! {
 
         /// Appends an element to the front of a collection.
         impl
@@ -1275,7 +1275,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone + 'a,
 {
-    error_behavior_generic_methods! {
+    error_behavior_generic_methods_allocation_failure! {
         /// Clones elements from `src` range to the end of the vector.
         do panics
         /// Panics if the starting point is greater than the end point or if

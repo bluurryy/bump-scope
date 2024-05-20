@@ -17,7 +17,7 @@ use allocator_api2::alloc::Allocator;
 use allocator_api2::alloc::Global;
 
 use crate::{
-    bump_down, error_behavior_generic_methods,
+    bump_down, error_behavior_generic_methods_allocation_failure,
     polyfill::{nonnull, pointer, slice},
     up_align_usize_unchecked, BumpBox, BumpScope, Drain, ErrorBehavior, ExtractIf, FixedBumpVec, GuaranteedAllocatedStats,
     IntoIter, MinimumAlignment, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment,
@@ -219,7 +219,7 @@ where
         }
     }
 
-    error_behavior_generic_methods! {
+    error_behavior_generic_methods_allocation_failure! {
         /// Constructs a new empty `BumpVec<T>` with at least the specified capacity
         /// with the provided `BumpScope`.
         ///
@@ -590,7 +590,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
 {
-    error_behavior_generic_methods! {
+    error_behavior_generic_methods_allocation_failure! {
         /// Appends an element to the back of a collection.
         impl
         /// # Examples

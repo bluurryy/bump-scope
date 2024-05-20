@@ -12,7 +12,7 @@ use allocator_api2::alloc::Allocator;
 use allocator_api2::alloc::Global;
 
 use crate::{
-    error_behavior_generic_methods, polyfill, BumpBox, BumpScope, BumpVec, ErrorBehavior, FromUtf8Error,
+    error_behavior_generic_methods_allocation_failure, polyfill, BumpBox, BumpScope, BumpVec, ErrorBehavior, FromUtf8Error,
     GuaranteedAllocatedStats, MinimumAlignment, Stats, SupportedMinimumAlignment,
 };
 
@@ -140,7 +140,7 @@ where
         }
     }
 
-    error_behavior_generic_methods! {
+    error_behavior_generic_methods_allocation_failure! {
         /// Constructs a new empty `BumpString` with the specified capacity
         /// in the provided `BumpScope`.
         ///
@@ -355,7 +355,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
 {
-    error_behavior_generic_methods! {
+    error_behavior_generic_methods_allocation_failure! {
         /// Appends the given [`char`] to the end of this `BumpString`.
         impl
         for pub fn push

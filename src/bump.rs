@@ -13,9 +13,10 @@ use allocator_api2::alloc::{AllocError, Allocator};
 use allocator_api2::alloc::Global;
 
 use crate::{
-    bump_common_methods, bump_scope_methods, chunk_size::ChunkSize, doc_align_cant_decrease, error_behavior_generic_methods,
-    polyfill::pointer, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, GuaranteedAllocatedStats, MinimumAlignment,
-    RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink, DEFAULT_START_CHUNK_SIZE,
+    bump_common_methods, bump_scope_methods, chunk_size::ChunkSize, doc_align_cant_decrease,
+    error_behavior_generic_methods_allocation_failure, polyfill::pointer, BumpScope, BumpScopeGuardRoot, Checkpoint,
+    ErrorBehavior, GuaranteedAllocatedStats, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc,
+    WithoutShrink, DEFAULT_START_CHUNK_SIZE,
 };
 
 #[cfg(not(no_global_oom_handling))]
@@ -166,7 +167,7 @@ impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
-    error_behavior_generic_methods! {
+    error_behavior_generic_methods_allocation_failure! {
         impl
         /// This is equivalent to `Bump::with_capacity(512)`.
         #[must_use]
@@ -212,7 +213,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
 {
-    error_behavior_generic_methods! {
+    error_behavior_generic_methods_allocation_failure! {
         impl
         /// This is equivalent to `Bump::with_size_in(512, allocator)`.
         for pub fn new_in

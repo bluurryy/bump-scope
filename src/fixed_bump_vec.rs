@@ -11,7 +11,7 @@ use core::{
 };
 
 use crate::{
-    error_behavior_generic_methods,
+    error_behavior_generic_methods_if,
     polyfill::{self, nonnull, pointer, slice},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
     BumpBox, BumpScope, BumpVec, Drain, ErrorBehavior, ExtractIf, IntoIter, NoDrop, SizedTypeProperties,
@@ -422,7 +422,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
         }
     }
 
-    error_behavior_generic_methods! {
+    error_behavior_generic_methods_if! {
+        if "the vector is full"
+
         /// Appends an element to the back of a collection.
         impl
         /// # Examples

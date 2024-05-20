@@ -7,7 +7,7 @@ use core::{
     ptr, str,
 };
 
-use crate::{error_behavior_generic_methods, polyfill, BumpBox, ErrorBehavior, FixedBumpVec, FromUtf8Error};
+use crate::{error_behavior_generic_methods_if, polyfill, BumpBox, ErrorBehavior, FixedBumpVec, FromUtf8Error};
 
 /// A [`BumpString`](crate::BumpString) but with a fixed capacity.
 ///
@@ -241,7 +241,9 @@ impl<'a> FixedBumpString<'a> {
 }
 
 impl<'a> FixedBumpString<'a> {
-    error_behavior_generic_methods! {
+    error_behavior_generic_methods_if! {
+        if "the string is full"
+
         /// Appends the given [`char`] to the end of this `FixedBumpString`.
         impl
         for pub fn push
