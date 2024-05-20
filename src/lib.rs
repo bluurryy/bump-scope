@@ -529,7 +529,7 @@ macro_rules! doc_fn_stats_greedy {
 
 macro_rules! doc_fn_allocator {
     () => {
-        "Returns a reference to the underlying allocator."
+        "Returns a reference to the base allocator."
     };
 }
 
