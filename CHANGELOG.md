@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- **breaking:** `BumpPool::new` is now no longer const, you can the same const constructor with `BumpPool::new_in(Global)`.
+- **added:** any allocator that implements `Default` can now be used as a base allocator (before it was just `Global`)
+
 ## 0.4.0 (2024-05-19)
 - **breaking:** renamed `Stats::to_stats` to `to_guaranteed_stats`
 - **breaking:** removed deprecated `BumpBox::into_fixed_vec` and `into_fixed_string`.

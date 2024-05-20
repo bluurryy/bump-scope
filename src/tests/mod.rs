@@ -647,7 +647,7 @@ fn bump_format_macro() {
 
 #[test]
 fn zero_capacity() {
-    let bump: Bump<_, 1, false> = Bump::with_capacity(Layout::new::<[u8; 0]>());
+    let bump: Bump<Global, 1, false> = Bump::with_capacity(Layout::new::<[u8; 0]>());
     dbg!(bump);
 }
 

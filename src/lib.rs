@@ -564,7 +564,7 @@ unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATE
     for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
 }
 
@@ -572,7 +572,7 @@ unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATE
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
 }
 
@@ -970,14 +970,14 @@ macro_rules! bump_common_methods {
 
         /// Wraps `&self` in [`WithoutDealloc`] so that [`deallocate`] becomes a no-op.
         ///
-        /// [`deallocate`]: Allocator::deallocate
+        /// [`deallocate`]: allocator_api2::alloc::Allocator::deallocate
         pub fn without_dealloc(&self) -> WithoutDealloc<&Self> {
             WithoutDealloc(self)
         }
 
         /// Wraps `&self` in [`WithoutShrink`] so that [`shrink`] becomes a no-op.
         ///
-        /// [`shrink`]: Allocator::shrink
+        /// [`shrink`]: allocator_api2::alloc::Allocator::shrink
         pub fn without_shrink(&self) -> WithoutShrink<&Self> {
             WithoutShrink(self)
         }
@@ -1852,13 +1852,7 @@ define_alloc_methods! {
         };
 
         if self.is_unallocated() {
-            // SAFETY:
-            // We are pointing to the empty chunk. This can only happen when `Bump::uninit` was called.
-            // This is only available for `A = Global`.
-            // Global is a ZST without a drop implementation, so its sound to create it like this.
-            #[allow(clippy::uninit_assumed_init)]
-            let allocator: A = unsafe { MaybeUninit::uninit().assume_init() };
-
+            let allocator = A::default_or_panic();
             let new_chunk = RawChunk::new_in(ChunkSize::for_capacity(layout)?, None, allocator)?;
             self.chunk.set(new_chunk);
             return Ok(());
@@ -1890,7 +1884,7 @@ impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: 
     BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     alloc_methods!(BumpScope);
 }
@@ -1900,7 +1894,38 @@ impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool
     Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     alloc_methods!(Bump);
 }
+
+mod supported_base_allocator {
+    pub trait Sealed<const GUARANTEED_ALLOCATED: bool> {
+        fn default_or_panic() -> Self;
+    }
+
+    impl<A> Sealed<false> for A
+    where
+        A: Default,
+    {
+        fn default_or_panic() -> Self {
+            A::default()
+        }
+    }
+
+    impl<A> Sealed<true> for A {
+        fn default_or_panic() -> Self {
+            unreachable!("default should not be required for `GUARANTEED_ALLOCATED` bump allocators");
+        }
+    }
+}
+
+/// Trait that any allocator used as a base allocator of a bump allocator needs to implement.
+pub trait BaseAllocator<const GUARANTEED_ALLOCATED: bool = true>:
+    Allocator + Clone + supported_base_allocator::Sealed<GUARANTEED_ALLOCATED>
+{
+}
+
+impl<A> BaseAllocator<false> for A where A: Allocator + Clone + Default {}
+
+impl<A> BaseAllocator<true> for A where A: Allocator + Clone {}

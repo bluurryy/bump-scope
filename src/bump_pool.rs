@@ -4,12 +4,9 @@ use core::{
 };
 use std::sync::{Mutex, PoisonError};
 
-use allocator_api2::alloc::{AllocError, Allocator};
+use allocator_api2::alloc::AllocError;
 
-#[cfg(feature = "alloc")]
-use allocator_api2::alloc::Global;
-
-use crate::{Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
+use crate::{BaseAllocator, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
 
 /// A pool of bump allocators.
 ///
@@ -20,7 +17,7 @@ use crate::{Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
 /// Using `BumpPool` with parallel iterators from [`rayon`](https://docs.rs/rayon):
 /// ```
 /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
-/// # use bump_scope::{ BumpPool, allocator_api2::alloc::Global };
+/// # use bump_scope::BumpPool;
 /// # use rayon::prelude::{ ParallelIterator, IntoParallelIterator };
 /// # if cfg!(miri) { return } // rayon violates strict-provenance :(
 /// #
@@ -45,7 +42,7 @@ use crate::{Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
 /// Using `BumpPool` with [`std::thread::scope`]:
 /// ```
 /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
-/// # use bump_scope::{ BumpPool, allocator_api2::alloc::Global };
+/// # use bump_scope::BumpPool;
 /// let pool: BumpPool = BumpPool::new();
 /// let (sender, receiver) = std::sync::mpsc::sync_channel(10);
 ///
@@ -68,13 +65,13 @@ use crate::{Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
 #[doc(alias = "Herd")]
 #[derive(Debug)]
 pub struct BumpPool<
-    #[cfg(feature = "alloc")] A = Global,
+    #[cfg(feature = "alloc")] A = allocator_api2::alloc::Global,
     #[cfg(not(feature = "alloc"))] A,
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
     const GUARANTEED_ALLOCATED: bool = true,
 > where
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     bumps: Mutex<Vec<Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>>,
@@ -84,7 +81,7 @@ pub struct BumpPool<
 impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Default
     for BumpPool<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
-    A: Allocator + Clone + Default,
+    A: BaseAllocator<GUARANTEED_ALLOCATED> + Default,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     fn default() -> Self {
@@ -95,24 +92,24 @@ where
     }
 }
 
-#[cfg(feature = "alloc")]
-impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    BumpPool<Global, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+    BumpPool<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED> + Default,
 {
     /// Constructs a new `BumpPool`.
     #[inline]
     #[must_use]
-    pub const fn new() -> Self {
-        Self::new_in(Global)
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
 impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
     BumpPool<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     /// Constructs a new `BumpPool` with the provided allocator.
@@ -178,7 +175,7 @@ where
 #[derive(Debug)]
 pub struct BumpPoolGuard<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
 where
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     bump: ManuallyDrop<Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>,
@@ -188,7 +185,7 @@ where
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Deref
     for BumpPoolGuard<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     type Target = BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>;
@@ -202,7 +199,7 @@ where
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> DerefMut
     for BumpPoolGuard<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     #[inline(always)]
@@ -214,7 +211,7 @@ where
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Drop
     for BumpPoolGuard<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     fn drop(&mut self) {

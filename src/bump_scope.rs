@@ -3,17 +3,14 @@ use core::{
     cell::Cell,
     fmt::{self, Debug},
     marker::PhantomData,
-    mem::{ManuallyDrop, MaybeUninit},
+    mem::ManuallyDrop,
     num::NonZeroUsize,
     ops::Range,
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::NonNull,
 };
 
-use allocator_api2::alloc::{AllocError, Allocator};
-
-#[cfg(feature = "alloc")]
-use allocator_api2::alloc::Global;
+use allocator_api2::alloc::AllocError;
 
 use crate::{
     bump_align_guard::BumpAlignGuard,
@@ -21,8 +18,8 @@ use crate::{
     chunk_size::ChunkSize,
     const_param_assert, doc_align_cant_decrease,
     polyfill::{nonnull, pointer},
-    ArrayLayout, BumpScopeGuard, Checkpoint, ErrorBehavior, GuaranteedAllocatedStats, LayoutTrait, MinimumAlignment,
-    RawChunk, SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    ArrayLayout, BaseAllocator, BumpScopeGuard, Checkpoint, ErrorBehavior, GuaranteedAllocatedStats, LayoutTrait,
+    MinimumAlignment, RawChunk, SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
     DEFAULT_START_CHUNK_SIZE,
 };
 
@@ -44,7 +41,7 @@ use crate::WithDrop;
 #[repr(transparent)]
 pub struct BumpScope<
     'a,
-    #[cfg(feature = "alloc")] A = Global,
+    #[cfg(feature = "alloc")] A = allocator_api2::alloc::Global,
     #[cfg(not(feature = "alloc"))] A,
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
@@ -60,7 +57,7 @@ impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A
     for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone + UnwindSafe,
+    A: BaseAllocator<GUARANTEED_ALLOCATED> + UnwindSafe,
 {
 }
 
@@ -68,7 +65,7 @@ impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A
     for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone + UnwindSafe,
+    A: BaseAllocator<GUARANTEED_ALLOCATED> + UnwindSafe,
 {
 }
 
@@ -76,7 +73,7 @@ impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool
     for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.stats().debug_format("BumpScope", f)
@@ -87,7 +84,7 @@ where
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<true>,
 {
     bump_scope_methods!(BumpScopeGuard, true);
 }
@@ -96,7 +93,7 @@ impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: 
     BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
     pub(crate) unsafe fn new_unchecked(chunk: RawChunk<UP, A>) -> Self {
@@ -121,16 +118,7 @@ where
         // must only be called when we point to the empty chunk
         debug_assert!(self.chunk.get().is_unallocated());
 
-        // we only point to an empty chunk if we were created by `unallocated` which is only available with `!GUARANTEED_ALLOCATED`
-        assert!(!GUARANTEED_ALLOCATED);
-
-        // SAFETY:
-        // We are pointing to the empty chunk. This can only happen when `Bump::unallocated` was called.
-        // This is only available for `A = Global`.
-        // Global is a ZST without a drop implementation, so its sound to create it like this.
-        #[allow(clippy::uninit_assumed_init)]
-        let allocator: A = unsafe { MaybeUninit::uninit().assume_init() };
-
+        let allocator = A::default_or_panic();
         let chunk = RawChunk::new_in(ChunkSize::new(DEFAULT_START_CHUNK_SIZE)?, None, allocator)?;
 
         self.chunk.set(chunk);
@@ -379,13 +367,7 @@ where
         mut allocate: impl FnMut(RawChunk<UP, A>, L) -> Option<R>,
     ) -> Result<R, E> {
         let new_chunk = if self.is_unallocated() {
-            // SAFETY:
-            // We are pointing to the empty chunk. This can only happen when `Bump::unallocated` was called.
-            // This is only available for `A = Global`.
-            // Global is a ZST without a drop implementation, so its sound to create it like this.
-            #[allow(clippy::uninit_assumed_init)]
-            let allocator: A = MaybeUninit::uninit().assume_init();
-
+            let allocator = A::default_or_panic();
             RawChunk::new_in(ChunkSize::for_capacity(layout.layout())?, None, allocator)
         } else {
             while let Some(chunk) = self.chunk.get().next() {

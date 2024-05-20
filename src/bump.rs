@@ -7,23 +7,20 @@ use core::{
     ptr::NonNull,
 };
 
-use allocator_api2::alloc::{AllocError, Allocator};
-
-#[cfg(feature = "alloc")]
-use allocator_api2::alloc::Global;
+use allocator_api2::alloc::AllocError;
 
 use crate::{
-    bump_common_methods, bump_scope_methods, chunk_size::ChunkSize, doc_align_cant_decrease,
-    error_behavior_generic_methods_allocation_failure, polyfill::pointer, BumpScope, BumpScopeGuardRoot, Checkpoint,
-    ErrorBehavior, GuaranteedAllocatedStats, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc,
-    WithoutShrink, DEFAULT_START_CHUNK_SIZE,
+    bump_common_methods, bump_scope_methods,
+    chunk_size::ChunkSize,
+    doc_align_cant_decrease, error_behavior_generic_methods_allocation_failure,
+    polyfill::{cfg_const, pointer},
+    unallocated_chunk_header, BaseAllocator, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior,
+    GuaranteedAllocatedStats, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    DEFAULT_START_CHUNK_SIZE,
 };
 
 #[cfg(not(no_global_oom_handling))]
 use crate::infallible;
-
-#[cfg(feature = "alloc")]
-use crate::{polyfill::cfg_const, unallocated_chunk_header};
 
 #[cfg(test)]
 use crate::WithDrop;
@@ -63,13 +60,14 @@ use crate::WithDrop;
 /// ```
 #[repr(transparent)]
 pub struct Bump<
-    #[cfg(feature = "alloc")] A: Allocator + Clone = Global,
-    #[cfg(not(feature = "alloc"))] A: Allocator + Clone,
+    #[cfg(feature = "alloc")] A = allocator_api2::alloc::Global,
+    #[cfg(not(feature = "alloc"))] A,
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
     const GUARANTEED_ALLOCATED: bool = true,
 > where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     pub(crate) chunk: Cell<RawChunk<UP, A>>,
 }
@@ -80,7 +78,7 @@ unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATE
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
 }
 
@@ -88,7 +86,7 @@ impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone + UnwindSafe,
+    A: BaseAllocator<GUARANTEED_ALLOCATED> + UnwindSafe,
 {
 }
 
@@ -96,7 +94,7 @@ impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone + UnwindSafe,
+    A: BaseAllocator<GUARANTEED_ALLOCATED> + UnwindSafe,
 {
 }
 
@@ -104,7 +102,7 @@ impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     fn drop(&mut self) {
         if self.is_unallocated() {
@@ -124,7 +122,7 @@ impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.stats().debug_format("Bump", f)
@@ -136,7 +134,7 @@ impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone + Default,
+    A: BaseAllocator<GUARANTEED_ALLOCATED> + Default,
 {
     #[inline(always)]
     fn default() -> Self {
@@ -144,10 +142,10 @@ where
     }
 }
 
-#[cfg(feature = "alloc")]
-impl<const MIN_ALIGN: usize, const UP: bool> Bump<Global, MIN_ALIGN, UP, false>
+impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP, false>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<false>,
 {
     cfg_const! {
         #[cfg_const(feature = "nightly-const-refs-to-static")]
@@ -161,11 +159,11 @@ where
     }
 }
 
-#[cfg(feature = "alloc")]
-impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    Bump<Global, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+    Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED> + Default,
 {
     error_behavior_generic_methods_allocation_failure! {
         impl
@@ -175,7 +173,7 @@ where
         /// This is equivalent to `Bump::try_with_capacity(512)`.
         for pub fn try_new
         fn generic_new() -> Self {
-            Self::generic_new_in(Global)
+            Self::generic_new_in(Default::default())
         }
 
         /// Constructs a new `Bump` with a chunk of at least `size` bytes.
@@ -184,7 +182,7 @@ where
         for pub fn with_size
         for pub fn try_with_size
         fn generic_with_size(size: usize) -> Self {
-            Self::generic_with_size_in(size, Global)
+            Self::generic_with_size_in(size, Default::default())
         }
 
         /// Constructs a new `Bump` with at least enough space for `layout`.
@@ -193,7 +191,7 @@ where
         for pub fn with_capacity
         for pub fn try_with_capacity
         fn generic_with_capacity(layout: Layout) -> Self {
-            Self::generic_with_capacity_in(layout, Global)
+            Self::generic_with_capacity_in(layout, Default::default())
         }
     }
 }
@@ -202,7 +200,7 @@ where
 impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator,
 {
     bump_scope_methods!(BumpScopeGuardRoot, false);
 }
@@ -211,7 +209,7 @@ impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool
     Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     error_behavior_generic_methods_allocation_failure! {
         impl
@@ -425,7 +423,7 @@ impl<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: 
     From<&'b Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>> for &'b BumpScope<'b, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
     fn from(value: &'b Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> Self {
@@ -438,7 +436,7 @@ impl<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: 
     for &'b mut BumpScope<'b, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
     fn from(value: &'b mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> Self {

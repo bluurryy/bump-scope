@@ -11,16 +11,11 @@ use core::{
     slice::{self, SliceIndex},
 };
 
-use allocator_api2::alloc::Allocator;
-
-#[cfg(feature = "alloc")]
-use allocator_api2::alloc::Global;
-
 use crate::{
     error_behavior_generic_methods_allocation_failure,
     polyfill::{self, nonnull, pointer},
-    BumpBox, BumpScope, ErrorBehavior, GuaranteedAllocatedStats, IntoIter, MinimumAlignment, NoDrop, SetLenOnDrop,
-    SizedTypeProperties, Stats, SupportedMinimumAlignment,
+    BaseAllocator, BumpBox, BumpScope, ErrorBehavior, GuaranteedAllocatedStats, IntoIter, MinimumAlignment, NoDrop,
+    SetLenOnDrop, SizedTypeProperties, Stats, SupportedMinimumAlignment,
 };
 
 /// Creates a [`MutBumpVecRev`] containing the arguments.
@@ -134,7 +129,7 @@ pub struct MutBumpVecRev<
     'b,
     'a: 'b,
     T,
-    #[cfg(feature = "alloc")] A = Global,
+    #[cfg(feature = "alloc")] A = allocator_api2::alloc::Global,
     #[cfg(not(feature = "alloc"))] A,
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
@@ -171,7 +166,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     /// Constructs a new empty `MutBumpVecRev<T>`.
     ///
@@ -628,7 +623,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     error_behavior_generic_methods_allocation_failure! {
 
@@ -1244,7 +1239,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[doc = crate::doc_fn_stats!(Stats)]
     #[doc = crate::doc_fn_stats_greedy!(MutBumpVecRev)]
@@ -1255,10 +1250,10 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP, true>
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator,
 {
     #[doc = crate::doc_fn_stats!(GuaranteedAllocatedStats)]
     #[doc = crate::doc_fn_stats_greedy!(MutBumpVecRev)]
@@ -1273,7 +1268,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone + 'a,
+    A: BaseAllocator<GUARANTEED_ALLOCATED> + 'a,
 {
     error_behavior_generic_methods_allocation_failure! {
         /// Clones elements from `src` range to the end of the vector.
@@ -1387,7 +1382,7 @@ impl<'b, 'a: 'b, U, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALL
     for MutBumpVecRev<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone + 'a,
+    A: BaseAllocator<GUARANTEED_ALLOCATED> + 'a,
 {
     #[inline]
     fn extend<T: IntoIterator<Item = U>>(&mut self, iter: T) {
@@ -1425,7 +1420,7 @@ impl<'b, 'a: 'b, 't, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANT
     for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone + 'a,
+    A: BaseAllocator<GUARANTEED_ALLOCATED> + 'a,
     T: Clone + 't,
 {
     #[inline]

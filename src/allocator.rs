@@ -5,14 +5,15 @@ use allocator_api2::alloc::{AllocError, Allocator};
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    bump_down, polyfill::nonnull, up_align_usize_unchecked, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment,
+    bump_down, polyfill::nonnull, up_align_usize_unchecked, BaseAllocator, Bump, BumpScope, MinimumAlignment,
+    SupportedMinimumAlignment,
 };
 
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
     for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -49,7 +50,7 @@ unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATE
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -89,7 +90,7 @@ fn allocate<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATE
 ) -> Result<NonNull<[u8]>, AllocError>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     Ok(nonnull::slice_from_raw_parts(bump.try_alloc_layout(layout)?, layout.size()))
 }
@@ -155,7 +156,7 @@ unsafe fn grow<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOC
 ) -> Result<NonNull<[u8]>, AllocError>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     debug_assert!(
         new_layout.size() >= old_layout.size(),
@@ -243,7 +244,7 @@ unsafe fn grow_zeroed<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEE
 ) -> Result<NonNull<[u8]>, AllocError>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     let new_ptr = grow(bump, old_ptr, old_layout, new_layout)?;
 
@@ -262,7 +263,7 @@ unsafe fn shrink<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALL
 ) -> Result<NonNull<[u8]>, AllocError>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     /// Called when `new_layout` doesn't fit alignment.
     /// Does ANY consumer cause this?
@@ -277,7 +278,7 @@ where
     ) -> Result<NonNull<[u8]>, AllocError>
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        A: Allocator + Clone,
+        A: BaseAllocator<GUARANTEED_ALLOCATED>,
     {
         if is_last(bump, old_ptr, old_layout) {
             let old_pos = bump.chunk.get().pos();

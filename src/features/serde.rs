@@ -1,15 +1,15 @@
 use core::fmt::Display;
 
 use ::serde::Serialize;
-use allocator_api2::alloc::{AllocError, Allocator};
+use allocator_api2::alloc::AllocError;
 use serde::{
     de::{self, DeserializeSeed, Expected, Visitor},
     Deserialize,
 };
 
 use crate::{
-    BumpBox, BumpString, BumpVec, FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev,
-    SupportedMinimumAlignment,
+    BaseAllocator, BumpBox, BumpString, BumpVec, FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec,
+    MutBumpVecRev, SupportedMinimumAlignment,
 };
 
 impl<T> Serialize for BumpBox<'_, T>
@@ -187,7 +187,7 @@ impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCAT
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     type Value = ();
 
@@ -204,7 +204,7 @@ impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCAT
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     type Value = ();
 
@@ -233,7 +233,7 @@ impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCAT
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     type Value = ();
 
@@ -250,7 +250,7 @@ impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCAT
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     type Value = ();
 
@@ -279,7 +279,7 @@ impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCAT
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     type Value = ();
 
@@ -296,7 +296,7 @@ impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCAT
 where
     T: Deserialize<'de>,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     type Value = ();
 
@@ -350,7 +350,7 @@ impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED:
     for &'_ mut BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     type Value = ();
 
@@ -366,7 +366,7 @@ impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED:
     for &'_ mut BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     type Value = ();
 
@@ -386,7 +386,7 @@ impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED:
     for &'_ mut MutBumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     type Value = ();
 
@@ -402,7 +402,7 @@ impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED:
     for &'_ mut MutBumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     type Value = ();
 

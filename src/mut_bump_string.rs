@@ -6,14 +6,9 @@ use core::{
     ptr, str,
 };
 
-use allocator_api2::alloc::Allocator;
-
-#[cfg(feature = "alloc")]
-use allocator_api2::alloc::Global;
-
 use crate::{
-    error_behavior_generic_methods_allocation_failure, polyfill, BumpBox, BumpScope, ErrorBehavior, FromUtf8Error,
-    GuaranteedAllocatedStats, MinimumAlignment, MutBumpVec, Stats, SupportedMinimumAlignment,
+    error_behavior_generic_methods_allocation_failure, polyfill, BaseAllocator, BumpBox, BumpScope, ErrorBehavior,
+    FromUtf8Error, GuaranteedAllocatedStats, MinimumAlignment, MutBumpVec, Stats, SupportedMinimumAlignment,
 };
 
 /// This is like [`format!`] but allocates inside a *mutable* `Bump` or `BumpScope`, returning a [`MutBumpString`].
@@ -115,7 +110,7 @@ macro_rules! mut_bump_format {
 pub struct MutBumpString<
     'b,
     'a: 'b,
-    #[cfg(feature = "alloc")] A = Global,
+    #[cfg(feature = "alloc")] A = allocator_api2::alloc::Global,
     #[cfg(not(feature = "alloc"))] A,
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
@@ -128,7 +123,7 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     MutBumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     /// Constructs a new empty `MutBumpString`.
     ///
@@ -353,7 +348,7 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     MutBumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     error_behavior_generic_methods_allocation_failure! {
         /// Appends the given [`char`] to the end of this `MutBumpString`.
@@ -523,7 +518,7 @@ impl<'b, 'a: 'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALL
     MutBumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[doc = crate::doc_fn_stats!(Stats)]
     #[doc = crate::doc_fn_stats_greedy!(MutBumpString)]
@@ -534,10 +529,10 @@ where
     }
 }
 
-impl<'b, 'a: 'b, A, const MIN_ALIGN: usize, const UP: bool> MutBumpString<'b, 'a, A, MIN_ALIGN, UP, true>
+impl<'b, 'a: 'b, A, const MIN_ALIGN: usize, const UP: bool> MutBumpString<'b, 'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator,
 {
     #[doc = crate::doc_fn_stats!(GuaranteedAllocatedStats)]
     #[doc = crate::doc_fn_stats_greedy!(MutBumpString)]
@@ -552,7 +547,7 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
@@ -606,7 +601,7 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED:
     for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline]
     fn add_assign(&mut self, rhs: &str) {
@@ -769,7 +764,7 @@ impl<'s, 'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: Allocator + Clone,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline]
     fn extend<T: IntoIterator<Item = &'s str>>(&mut self, iter: T) {

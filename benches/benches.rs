@@ -18,8 +18,7 @@ trait Bumper {
     fn try_alloc_try_with<T, E>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<Result<&mut T, E>, AllocError>;
 }
 
-impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Bumper
-    for Bump<Global, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<const MIN_ALIGN: usize, const UP: bool> Bumper for Bump<Global, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {

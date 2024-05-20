@@ -12,7 +12,6 @@ all:
   just fmt
   just clippy
   just doc
-  cargo semver-checks
   just check-msrv
   just check-nooom
   cargo test --all-features
@@ -60,3 +59,7 @@ test-fallibility:
 
 inspect-asm *args:
   just crates/inspect-asm/inspect {{args}}
+
+publish:
+  cargo semver-checks
+  cargo publish
