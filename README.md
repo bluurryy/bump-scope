@@ -116,6 +116,11 @@ unsafe { bump.reset_to(checkpoint); }
 assert_eq!(bump.stats().allocated(), 0);
 ```
 
+## Collections
+`bump-scope` provides bump allocated variants of `Vec` and `String` called `BumpVec` and `BumpString`. They also come in a different variants:
+- `Fixed*` for fixed capacity collections
+- `Mut*` for collections optimized for a mutable bump allocator
+
 ## Allocator API
 `Bump` and `BumpScope` implement `allocator_api2::alloc::Allocator`.
 With this you can bump allocate `allocator_api2::boxed::Box`, `allocator_api2::vec::Vec` and collections
