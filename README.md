@@ -124,6 +124,8 @@ assert_eq!(bump.stats().allocated(), 0);
 ## Parallel Allocation
 `Bump` is `!Sync` which means it can't be shared between threads.
 
+To bump allocate in parallel you can use a `BumpPool`.
+
 ## Allocator API
 `Bump` and `BumpScope` implement `allocator_api2::alloc::Allocator`.
 With this you can bump allocate `allocator_api2::boxed::Box`, `allocator_api2::vec::Vec` and collections
@@ -152,8 +154,6 @@ assert_eq!(bump.stats().allocated(), 4);
 drop(boxed);
 assert_eq!(bump.stats().allocated(), 4);
 ```
-
-To bump allocate in parallel you can use a `BumpPool`.
 
 ## Feature Flags
 This crate supports `no_std`, unless the `std` feature is enabled.
