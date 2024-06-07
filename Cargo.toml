@@ -64,6 +64,9 @@ document-features = "0.2.8"
 [package.metadata.docs.rs]
 all-features = true
 
+[package.metadata.release]
+allow-branch = ["main"]
+
 [[bench]]
 name = "benches"
 harness = false
