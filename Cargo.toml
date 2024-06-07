@@ -1,6 +1,6 @@
 [package]
 name = "bump-scope"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "A bump allocator with support for scopes."
@@ -66,6 +66,8 @@ all-features = true
 
 [package.metadata.release]
 allow-branch = ["main"]
+pre-release-hook = ["just", "all"]
+pre-release-commit-message = "release: version {{version}}"
 
 [[bench]]
 name = "benches"
