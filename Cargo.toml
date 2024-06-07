@@ -68,6 +68,9 @@ all-features = true
 allow-branch = ["main"]
 pre-release-hook = ["just", "all"]
 pre-release-commit-message = "release: version {{version}}"
+pre-release-replacements = [
+  { file = "CHANGELOG.md", search = "Unreleased", replace = "{{version}} ({{date}})" },
+]
 
 [[bench]]
 name = "benches"
