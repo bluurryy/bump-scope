@@ -32,7 +32,7 @@ let before = $content | str substring ..$start_index
 let after = $content | str substring ($end_index + ($end_marker | str length))..
 
 let docs = open src/lib.rs
-| parse --regex '//!(?<doc>.*)' 
+| parse --regex '(?m)^//!(?<doc>.*)' 
 | get doc 
 | each { str replace --regex '^ ' '' } 
 | str join "\n"

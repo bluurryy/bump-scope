@@ -206,45 +206,19 @@
 //! ```
 //!
 //! # Feature Flags
-//! This crate supports `no_std`, unless the `std` feature is enabled.
+//! * **`std`** *(enabled by default)* —  Adds implementations of `std::io` traits for `BumpBox` and `{Fixed, Mut}BumpVec`. Activates `alloc` feature.
+//! * **`alloc`** —  Adds implementations interacting with `String` and `Cow<str>`.
+//! * **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors.
 //!
-//! - `std` *(default)*:
-//!
-//!   Adds implementations of `std::io` traits for `BumpBox` and `{Fixed, Mut}BumpVec`. Activates `alloc` feature.
-//!
-//! <p></p>
-//!
-//! - `alloc` *(default)*:
-//!
-//!   Adds implementations interacting with `String` and `Cow<str>`.
-//!
-//! <p></p>
-//!
-//! - `serde`:
-//!
-//!   Adds `Serialize` implementations for `BumpBox`, strings and vectors.
-//!   Adds `DeserializeSeed` implementations for strings and vectors.
-//!
-//! <p></p>
-//!
-//! - `nightly-allocator-api` *(requires nightly)*:
-//!
-//!   Enables `allocator-api2`'s `nightly` feature which makes it reexport the nightly allocator api instead of its own implementation.
+//!  ### Nightly features
+//! * **`nightly-allocator-api`** —  Enables `allocator-api2`'s `nightly` feature which makes it reexport the nightly allocator api instead of its own implementation.
 //!   With this you can bump allocate collections from the standard library.
-//!
-//! <p></p>
-//!
-//! - `nightly-coerce-unsized` *(requires nightly)*:
-//!   
-//!   Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
+//! * **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
 //!   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
-//!
-//! <p></p>
-//!
-//! - `nightly-const-refs-to-static` *(requires nightly)*:
-//!   
-//!   Makes `Bump::unallocated` a `const fn`.
-//!
+//! * **`nightly-const-refs-to-static`** —  Makes `Bump::unallocated` a `const fn`.
+//! * **`nightly-exact-size-is-empty`** —  Implements `is_empty` manually for `Drain`.
+//! * **`nightly-trusted-len`** —  Implements `TrustedLen` for `Drain`.
+
 //! # Bumping upwards or downwards?
 //! Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
 //!
@@ -1943,3 +1917,30 @@ pub trait BaseAllocator<const GUARANTEED_ALLOCATED: bool = true>:
 impl<A> BaseAllocator<false> for A where A: Allocator + Clone + Default {}
 
 impl<A> BaseAllocator<true> for A where A: Allocator + Clone {}
+
+// We don't use `document-features` the usual way because then we can't have our features
+// be copied into the `README.md` via `insert-docs-into-readme.nu`.
+#[test]
+#[ignore = "this is not a real test, its just to insert documentation"]
+fn insert_feature_docs() {
+    let lib_rs = std::fs::read_to_string("src/lib.rs").unwrap();
+
+    let start_marker = "//! # Feature Flags";
+    let end_marker = "//! # ";
+
+    let start_index = lib_rs.find(start_marker).unwrap();
+    let end_index = lib_rs[start_index + start_marker.len()..].find(end_marker).unwrap() + start_index + start_marker.len();
+
+    let before = &lib_rs[..start_index + start_marker.len()];
+    let after = &lib_rs[end_index..];
+
+    let features = document_features::document_features!();
+    let features = features
+        .lines()
+        .map(|line| format!("//! {line}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    let new_lib_rs = format!("{before}\n{features}\n\n{after}");
+    std::fs::write("src/lib.rs", new_lib_rs).unwrap();
+}

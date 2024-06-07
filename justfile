@@ -40,8 +40,9 @@ spellcheck:
   cspell lint --gitignore "**/*.{rs,md,toml}"
 
 doc *args:
+  cargo test --package bump-scope --lib --all-features -- insert_feature_docs --exact --ignored
   cargo fmt
-  cargo rustdoc {{args}} --features nightly-coerce-unsized,nightly-exact-size-is-empty,nightly-trusted-len -- --cfg docsrs
+  cargo rustdoc {{args}} --all-features -- --cfg docsrs
   nu insert-docs-into-readme.nu
 
 doc-priv *args:

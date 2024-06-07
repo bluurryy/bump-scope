@@ -19,14 +19,34 @@ serde = { version = "1.0.197", optional = true }
 
 [features]
 default = ["std"]
+
+## Adds implementations of `std::io` traits for `BumpBox` and `{Fixed, Mut}BumpVec`. Activates `alloc` feature.
 std = ["allocator-api2/std", "alloc"]
+
+## Adds implementations interacting with `String` and `Cow<str>`.
 alloc = ["allocator-api2/alloc"]
-nightly-allocator-api = ["allocator-api2/nightly"]
-nightly-coerce-unsized = []
-nightly-exact-size-is-empty = []
-nightly-trusted-len = []
-nightly-const-refs-to-static = []
+
+## Adds `Serialize` implementations for `BumpBox`, strings and vectors.
 serde = ["dep:serde"]
+
+#! ### Nightly features
+
+## Enables `allocator-api2`'s `nightly` feature which makes it reexport the nightly allocator api instead of its own implementation.
+## With this you can bump allocate collections from the standard library.
+nightly-allocator-api = ["allocator-api2/nightly"]
+
+## Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
+## With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
+nightly-coerce-unsized = []
+
+## Makes `Bump::unallocated` a `const fn`.
+nightly-const-refs-to-static = []
+
+## Implements `is_empty` manually for `Drain`.
+nightly-exact-size-is-empty = []
+
+## Implements `TrustedLen` for `Drain`.
+nightly-trusted-len = []
 
 [dev-dependencies]
 trybuild = "1.0.90"
@@ -35,6 +55,10 @@ criterion = { version = "0.5.1", features = ["html_reports"] }
 bumpalo = "3.15.4"
 rayon = "1.10.0"
 serde_json = "1.0.115"
+document-features = "0.2.8"
+
+[package.metadata.docs.rs]
+all-features = true
 
 [[bench]]
 name = "benches"

@@ -156,45 +156,18 @@ assert_eq!(bump.stats().allocated(), 4);
 ```
 
 ## Feature Flags
-This crate supports `no_std`, unless the `std` feature is enabled.
+* **`std`** *(enabled by default)* —  Adds implementations of `std::io` traits for `BumpBox` and `{Fixed, Mut}BumpVec`. Activates `alloc` feature.
+* **`alloc`** —  Adds implementations interacting with `String` and `Cow<str>`.
+* **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors.
 
-- `std` *(default)*:
-
-  Adds implementations of `std::io` traits for `BumpBox` and `{Fixed, Mut}BumpVec`. Activates `alloc` feature.
-
-<p></p>
-
-- `alloc` *(default)*:
-
-  Adds implementations interacting with `String` and `Cow<str>`.
-
-<p></p>
-
-- `serde`:
-
-  Adds `Serialize` implementations for `BumpBox`, strings and vectors.
-  Adds `DeserializeSeed` implementations for strings and vectors.
-
-<p></p>
-
-- `nightly-allocator-api` *(requires nightly)*:
-
-  Enables `allocator-api2`'s `nightly` feature which makes it reexport the nightly allocator api instead of its own implementation.
+ ### Nightly features
+* **`nightly-allocator-api`** —  Enables `allocator-api2`'s `nightly` feature which makes it reexport the nightly allocator api instead of its own implementation.
   With this you can bump allocate collections from the standard library.
-
-<p></p>
-
-- `nightly-coerce-unsized` *(requires nightly)*:
-  
-  Makes `BumpBox<T>` implement `CoerceUnsized`.
+* **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement `CoerceUnsized`.
   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
-
-<p></p>
-
-- `nightly-const-refs-to-static` *(requires nightly)*:
-  
-  Makes `Bump::unallocated` a `const fn`.
-
+* **`nightly-const-refs-to-static`** —  Makes `Bump::unallocated` a `const fn`.
+* **`nightly-exact-size-is-empty`** —  Implements `is_empty` manually for `Drain`.
+* **`nightly-trusted-len`** —  Implements `TrustedLen` for `Drain`.
 ## Bumping upwards or downwards?
 Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
 
