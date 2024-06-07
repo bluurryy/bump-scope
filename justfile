@@ -19,6 +19,14 @@ all:
   just test-fallibility
   just inspect-asm
 
+all-fast:
+  just fmt
+  just clippy
+  just doc
+  just check-msrv
+  just check-nooom
+  just test-fallibility
+
 fmt:
   cargo fmt --all
   cd crates/fuzzing-support; cargo fmt --all
