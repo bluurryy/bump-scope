@@ -111,6 +111,10 @@ up_and_down! {
         bump.try_alloc_default()
     }
 
+    pub fn Bump_try_alloc_zeroed(bump: &Bump) -> Result<BumpBox<u32>> {
+        bump.try_alloc_zeroed()
+    }
+
     pub fn Bump_try_alloc_fmt<'a>(bump: &'a Bump, args: fmt::Arguments) -> Result<BumpBox<'a, str>> {
         bump.try_alloc_fmt(args)
     }
@@ -149,6 +153,10 @@ up_and_down! {
 
     pub fn Bump_try_alloc_slice_fill_with<'a>(bump: &'a Bump, len: usize, f: &mut dyn FnMut() -> u32) -> Result<BumpBox<'a, [u32]>> {
         bump.try_alloc_slice_fill_with(len, f)
+    }
+
+    pub fn Bump_try_alloc_slice_zeroed(bump: &Bump, len: usize) -> Result<BumpBox<[u32]>> {
+        bump.try_alloc_slice_zeroed(len)
     }
 
     pub fn Bump_try_alloc_str<'a>(bump: &'a Bump, value: &str) -> Result<BumpBox<'a, str>> {

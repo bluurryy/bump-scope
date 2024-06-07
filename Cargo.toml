@@ -16,6 +16,7 @@ exclude = ["*.nu", "justfile", "tests", ".vscode", ".github"]
 allocator-api2 = { version = "0.2.16", default-features = false }
 sptr = "0.3.2"
 serde = { version = "1.0.197", optional = true }
+zerocopy = { version = "0.7.34", default-features = false, optional = true }
 
 [features]
 default = ["std"]
@@ -28,6 +29,9 @@ alloc = ["allocator-api2/alloc"]
 
 ## Adds `Serialize` implementations for `BumpBox`, strings and vectors.
 serde = ["dep:serde"]
+
+## Adds `alloc_zeroed` and `alloc_slice_zeroed` and `BumpBox::init_zeroed`.
+zerocopy = ["dep:zerocopy"]
 
 #! ### Nightly features
 

@@ -209,6 +209,7 @@
 //! * **`std`** *(enabled by default)* —  Adds implementations of `std::io` traits for `BumpBox` and `{Fixed, Mut}BumpVec`. Activates `alloc` feature.
 //! * **`alloc`** —  Adds implementations interacting with `String` and `Cow<str>`.
 //! * **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors.
+//! * **`zerocopy`** —  Adds `alloc_zeroed` and `alloc_slice_zeroed` and `BumpBox::init_zeroed`.
 //!
 //!  ### Nightly features
 //! * **`nightly-allocator-api`** —  Enables `allocator-api2`'s `nightly` feature which makes it reexport the nightly allocator api instead of its own implementation.
@@ -1120,6 +1121,8 @@ macro_rules! last {
     };
 }
 
+pub(crate) use last;
+
 macro_rules! as_scope {
     ($self:ident) => {
         $self.as_scope()
@@ -1128,6 +1131,8 @@ macro_rules! as_scope {
         $self.as_mut_scope()
     };
 }
+
+pub(crate) use as_scope;
 
 macro_rules! define_alloc_methods {
     (
@@ -1189,7 +1194,7 @@ macro_rules! define_alloc_methods {
                     $(-> $return_ty_scope)?
                     $(where $($where)*)?
                     {
-                        infallible(last!($($self)+).$generic($($arg_pat),*))
+                        $crate::infallible($crate::last!($($self)+).$generic($($arg_pat),*))
                     }
                 )*
 
@@ -1217,7 +1222,7 @@ macro_rules! define_alloc_methods {
                     -> $crate::wrap_result!($($return_ty_scope)?, allocator_api2::alloc::AllocError)
                     $(where $($where)*)?
                     {
-                        last!($($self)+).$generic($($arg_pat),*)
+                        $crate::last!($($self)+).$generic($($arg_pat),*)
                     }
                 )*
 
@@ -1225,7 +1230,7 @@ macro_rules! define_alloc_methods {
                     $(#[$attr])*
                     #[inline(always)]
                     fn $generic
-                    <B: ErrorBehavior $(, $($generic_params)*)?>
+                    <B: $crate::ErrorBehavior $(, $($generic_params)*)?>
                     (&$($self)+ $(, $arg_pat: $arg_ty)*)
                     -> $crate::wrap_result!($($return_ty_scope)?, B)
                     $(where $($where)*)?
@@ -1260,7 +1265,7 @@ macro_rules! define_alloc_methods {
                     $(-> $return_ty)?
                     $(where $($where)*)?
                     {
-                        as_scope!($($self)+).$infallible($($arg_pat),*)
+                        $crate::as_scope!($($self)+).$infallible($($arg_pat),*)
                     }
                 )*
 
@@ -1288,7 +1293,7 @@ macro_rules! define_alloc_methods {
                     -> $crate::wrap_result!($($return_ty)?, allocator_api2::alloc::AllocError)
                     $(where $($where)*)?
                     {
-                        as_scope!($($self)+).$fallible($($arg_pat),*)
+                        $crate::as_scope!($($self)+).$fallible($($arg_pat),*)
                     }
                 )*
             };
@@ -1297,6 +1302,8 @@ macro_rules! define_alloc_methods {
         pub(crate) use $macro_name;
     };
 }
+
+pub(crate) use define_alloc_methods;
 
 define_alloc_methods! {
     macro alloc_methods

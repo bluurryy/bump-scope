@@ -4,4 +4,4 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-bump-scope = { path = "../..", default-features = false, features = ["alloc"] }
+bump-scope = { path = "../..", default-features = false, features = ["alloc", "zerocopy"] }

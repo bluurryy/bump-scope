@@ -79,6 +79,7 @@
     "valgrind",
     "Vec's",
     "vtable",
+    "zerocopy",
     "Zmiri"
   ]
 }

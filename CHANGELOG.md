@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **added:** `zerocopy` feature that adds `alloc_zeroed`, `alloc_slice_zeroed` and `BumpBox::init_zeroed`
+
 ## 0.5.0 (2024-05-21)
 - **breaking:** `BumpPool::new` is now no longer const, you can the same const constructor with `BumpPool::new_in(Global)`.
 - **breaking:** you can no longer be generic over `GUARANTEED_ALLOCATED` in some ways due to the `BaseAllocator` bound
