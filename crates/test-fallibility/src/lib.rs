@@ -155,8 +155,8 @@ up_and_down! {
         bump.try_alloc_slice_fill_with(len, f)
     }
 
-    pub fn Bump_try_alloc_slice_zeroed(bump: &Bump, len: usize) -> Result<BumpBox<[u32]>> {
-        bump.try_alloc_slice_zeroed(len)
+    pub fn Bump_try_alloc_zeroed_slice(bump: &Bump, len: usize) -> Result<BumpBox<[u32]>> {
+        bump.try_alloc_zeroed_slice(len)
     }
 
     pub fn Bump_try_alloc_str<'a>(bump: &'a Bump, value: &str) -> Result<BumpBox<'a, str>> {

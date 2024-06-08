@@ -75,6 +75,7 @@ define_alloc_methods! {
 
     /// Allocate an zeroed object slice.
     impl
+    #[deprecated = "use `alloc_zeroed_slice` instead"]
     do examples
     /// ```
     /// # use bump_scope::Bump;
@@ -83,8 +84,27 @@ define_alloc_methods! {
     /// assert_eq!(*zeroes, [0; 3])
     /// ```
     for pub fn alloc_slice_zeroed
+    #[deprecated = "use `try_alloc_zeroed_slice` instead"]
     for pub fn try_alloc_slice_zeroed
     fn generic_alloc_slice_zeroed<{T}>(&self, len: usize) -> BumpBox<[T]> | BumpBox<'a, [T]>
+    where {
+        T: FromZeroes
+    } in {
+        Ok(self.generic_alloc_uninit_slice::<B, T>(len)?.init_zeroed())
+    }
+
+    /// Allocate an zeroed object slice.
+    impl
+    do examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// let mut bump: Bump = Bump::new();
+    /// let zeroes = bump.alloc_slice_zeroed::<i32>(3);
+    /// assert_eq!(*zeroes, [0; 3])
+    /// ```
+    for pub fn alloc_zeroed_slice
+    for pub fn try_alloc_zeroed_slice
+    fn generic_alloc_zeroed_slice<{T}>(&self, len: usize) -> BumpBox<[T]> | BumpBox<'a, [T]>
     where {
         T: FromZeroes
     } in {
