@@ -51,7 +51,6 @@ doc *args:
   cargo test --package bump-scope --lib --all-features -- insert_feature_docs --exact --ignored
   cargo fmt
   cargo rustdoc {{args}} --all-features -- --cfg docsrs
-  nu insert-docs-into-readme.nu
 
 doc-priv *args:
   cargo rustdoc {{args}} --all-features -- --cfg docsrs --cfg test --document-private-items

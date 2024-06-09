@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/crates/l/bump_scope)](#license)
 [![Build Status](https://github.com/bluurryy/bump-scope/workflows/Rust/badge.svg)](https://github.com/bluurryy/bump-scope/actions/workflows/rust.yml)
 
-[//]: # (START_OF_CRATE_DOCS)
+<!-- cargo-rdme start -->
 
 A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
 
@@ -127,8 +127,8 @@ assert_eq!(bump.stats().allocated(), 0);
 To bump allocate in parallel you can use a `BumpPool`.
 
 ## Allocator API
-`Bump` and `BumpScope` implement `allocator_api2::alloc::Allocator`.
-With this you can bump allocate `allocator_api2::boxed::Box`, `allocator_api2::vec::Vec` and collections
+`Bump` and `BumpScope` implement [`allocator_api2::alloc::Allocator`](https://docs.rs/allocator-api2/0.2.16/allocator_api2/alloc/trait.Allocator.html).
+With this you can bump allocate [`allocator_api2::boxed::Box`](https://docs.rs/allocator-api2/0.2.16/allocator_api2/boxed/struct.Box.html), [`allocator_api2::vec::Vec`](https://docs.rs/allocator-api2/0.2.16/allocator_api2/vec/struct.Vec.html) and collections
 from other crates that support it like [`hashbrown::HashMap`](https://docs.rs/hashbrown/latest/hashbrown/struct.HashMap.html).
 
 A bump allocator can grow, shrink and deallocate the most recent allocation.
@@ -161,7 +161,7 @@ assert_eq!(bump.stats().allocated(), 4);
 * **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors.
 * **`zerocopy`** —  Adds `alloc_zeroed` and `alloc_slice_zeroed` and `BumpBox::init_zeroed`.
 
- ### Nightly features
+ #### Nightly features
 * **`nightly-allocator-api`** —  Enables `allocator-api2`'s `nightly` feature which makes it reexport the nightly allocator api instead of its own implementation.
   With this you can bump allocate collections from the standard library.
 * **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement `CoerceUnsized`.
@@ -200,7 +200,7 @@ You can convert a maybe unallocated `Bump(Scope)` into a guaranteed allocated on
 The point of this is so `Bump`s can be created without allocating memory and even `const` constructed when the feature `nightly-const-refs-to-static` is enabled.
 At the same time `Bump`'s that have already allocated a chunk don't suffer runtime checks for entering scopes and creating checkpoints.
 
-[//]: # (END_OF_CRATE_DOCS)
+<!-- cargo-rdme end -->
 
 ## License
 
