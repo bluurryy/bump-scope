@@ -51,6 +51,8 @@ doc *args:
   cargo test --package bump-scope --lib --all-features -- insert_feature_docs --exact --ignored
   cargo fmt
   cargo rustdoc {{args}} --all-features -- --cfg docsrs
+  # TODO(blocked): stop stripping links when <https://github.com/orium/cargo-rdme/pull/236> is merged
+  cargo rdme --force --intralinks-strip-links
 
 doc-priv *args:
   cargo rustdoc {{args}} --all-features -- --cfg docsrs --cfg test --document-private-items

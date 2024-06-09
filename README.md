@@ -164,11 +164,12 @@ assert_eq!(bump.stats().allocated(), 4);
  #### Nightly features
 * **`nightly-allocator-api`** —  Enables `allocator-api2`'s `nightly` feature which makes it reexport the nightly allocator api instead of its own implementation.
   With this you can bump allocate collections from the standard library.
-* **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement `CoerceUnsized`.
+* **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
 * **`nightly-const-refs-to-static`** —  Makes `Bump::unallocated` a `const fn`.
 * **`nightly-exact-size-is-empty`** —  Implements `is_empty` manually for `Drain`.
 * **`nightly-trusted-len`** —  Implements `TrustedLen` for `Drain`.
+
 ## Bumping upwards or downwards?
 Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
 
