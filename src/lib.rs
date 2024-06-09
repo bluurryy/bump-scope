@@ -220,7 +220,7 @@
 //! * **`nightly-const-refs-to-static`** —  Makes `Bump::unallocated` a `const fn`.
 //! * **`nightly-exact-size-is-empty`** —  Implements `is_empty` manually for `Drain`.
 //! * **`nightly-trusted-len`** —  Implements `TrustedLen` for `Drain`.
-
+//!
 //! # Bumping upwards or downwards?
 //! Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
 //!
@@ -1951,6 +1951,6 @@ fn insert_feature_docs() {
         .collect::<Vec<_>>()
         .join("\n");
 
-    let new_lib_rs = format!("{before}\n{features}\n\n{after}");
+    let new_lib_rs = format!("{before}\n{features}\n//!\n{after}");
     std::fs::write("src/lib.rs", new_lib_rs).unwrap();
 }
