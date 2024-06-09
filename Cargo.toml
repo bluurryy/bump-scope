@@ -27,7 +27,7 @@ std = ["allocator-api2/std", "alloc"]
 ## Adds implementations interacting with `String` and `Cow<str>`.
 alloc = ["allocator-api2/alloc"]
 
-## Adds `Serialize` implementations for `BumpBox`, strings and vectors.
+## Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors. 
 serde = ["dep:serde"]
 
 ## Adds `alloc_zeroed` and `alloc_slice_zeroed` and `BumpBox::init_zeroed`.
