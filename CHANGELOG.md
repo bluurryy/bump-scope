@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **deprecated**: `alloc_slice_zeroed` in favor of `alloc_zeroed_slice`
 
 ## 0.5.1 (2024-06-08)
 - **added:** `zerocopy` feature that adds `alloc_zeroed`, `alloc_slice_zeroed` and `BumpBox::init_zeroed`
