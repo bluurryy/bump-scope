@@ -208,7 +208,7 @@
 //!
 //! # Feature Flags
 //! * **`std`** *(enabled by default)* —  Adds implementations of `std::io` traits for `BumpBox` and `{Fixed, Mut}BumpVec`. Activates `alloc` feature.
-//! * **`alloc`** —  Adds implementations interacting with `String` and `Cow<str>`.
+//! * **`alloc`** —  Adds `Global` as the default allocator, `BumpBox::into_box` and some interactions with `alloc` collections.
 //! * **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 //! * **`zerocopy`** —  Adds `alloc_zeroed` and `alloc_slice_zeroed` and `BumpBox::init_zeroed`.
 //!
