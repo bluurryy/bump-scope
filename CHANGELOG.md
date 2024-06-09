@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.2 (2024-06-09)
 - **deprecated**: `alloc_slice_zeroed` in favor of `alloc_zeroed_slice`
 
 ## 0.5.1 (2024-06-08)
