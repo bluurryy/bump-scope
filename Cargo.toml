@@ -21,7 +21,7 @@ zerocopy = { version = "0.7.34", default-features = false, optional = true }
 [features]
 default = ["std"]
 
-## Adds implementations of `std::io` traits for `BumpBox` and `{Fixed, Mut}BumpVec`. Activates `alloc` feature.
+## Adds `BumpPool` and implementations of `std::io` traits for `BumpBox` and `{Fixed, Mut}BumpVec`.
 std = ["allocator-api2/std", "alloc"]
 
 ## Adds `Global` as the default allocator, `BumpBox::into_box` and some interactions with `alloc` collections.
@@ -30,7 +30,7 @@ alloc = ["allocator-api2/alloc"]
 ## Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors. 
 serde = ["dep:serde"]
 
-## Adds `alloc_zeroed` and `alloc_slice_zeroed` and `BumpBox::init_zeroed`.
+## Adds `alloc_zeroed` and `alloc_zeroed_slice` and `BumpBox::init_zeroed`.
 zerocopy = ["dep:zerocopy"]
 
 #! ### Nightly features
