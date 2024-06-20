@@ -133,8 +133,8 @@ from other crates that support it like [`hashbrown::HashMap`](https://docs.rs/ha
 
 A bump allocator can grow, shrink and deallocate the most recent allocation.
 When bumping upwards it can even do so in place.
-Growing other allocations will require a new allocation and the old memory block becomes wasted space.
-Shrinking or deallocating other allocations does nothing which means wasted space.
+Growing allocations other than the most recent one will require a new allocation and the old memory block becomes wasted space.
+Shrinking or deallocating allocations other than the most recent one does nothing, which means wasted space.
 
 A bump allocator does not *require* `deallocate` or `shrink` to free memory.
 After all, memory will be reclaimed when exiting a scope or calling `reset`.
