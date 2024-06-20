@@ -190,11 +190,8 @@ This will penalize allocations of a smaller alignment as their size now needs to
 This amounts to about 1 or 2 non-branch assembly instructions per allocation.
 
 ## `GUARANTEED_ALLOCATED` parameter?
-When `GUARANTEED_ALLOCATED` is true, the bump allocator is in a guaranteed allocated state.
-That means that it must have already allocated a chunk from its backing allocator.
-
-When `GUARANTEED_ALLOCATED` is false, the bump allocator may or may not have allocated chunks.
-You can create a bump allocator with no allocated chunks with `Bump::unallocated`.
+When `GUARANTEED_ALLOCATED` is `true`, the bump allocator is guaranteed to have at least one allocated chunk.
+This is usually the case unless you create it with `Bump::unallocated`.
 
 You need a guaranteed allocated `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
 You can convert a maybe unallocated `Bump(Scope)` into a guaranteed allocated one with `into_guaranteed_allocated` or `as_guaranteed_allocated(_mut)`.
