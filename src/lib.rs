@@ -238,7 +238,7 @@
 //! Changing the minimum alignment to e.g. `4` makes it so allocations with the alignment of `4` don't need to align the bump pointer anymore.
 //! This will penalize allocations of a smaller alignment as their size now needs to be rounded up the next multiple of `4`.
 //!
-//! This amounts to about 1 or 2 instructions per allocation.
+//! This amounts to about 1 or 2 non-branch assembly instructions per allocation.
 //!
 //! # `GUARANTEED_ALLOCATED` parameter?
 //! When `GUARANTEED_ALLOCATED` is true, the bump allocator is in a guaranteed allocated state.
