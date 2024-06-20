@@ -117,7 +117,7 @@ assert_eq!(bump.stats().allocated(), 0);
 ```
 
 ## Collections
-`bump-scope` provides bump allocated variants of `Vec` and `String` called `BumpVec` and `BumpString`. They also come in a different variants:
+`bump-scope` provides bump allocated variants of `Vec` and `String` called `BumpVec` and `BumpString`. They also come in a different flavors:
 - `Fixed*` for fixed capacity collections
 - `Mut*` for collections optimized for a mutable bump allocator
 

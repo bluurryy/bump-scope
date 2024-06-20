@@ -167,7 +167,7 @@
 //! ```
 //!
 //! # Collections
-//! `bump-scope` provides bump allocated variants of `Vec` and `String` called [`BumpVec`](crate::BumpVec) and [`BumpString`](crate::BumpString). They also come in a different variants:
+//! `bump-scope` provides bump allocated variants of `Vec` and `String` called [`BumpVec`](crate::BumpVec) and [`BumpString`](crate::BumpString). They also come in a different flavors:
 //! - [`Fixed*`](crate::FixedBumpVec) for fixed capacity collections
 //! - [`Mut*`](crate::MutBumpVec) for collections optimized for a mutable bump allocator
 //!
