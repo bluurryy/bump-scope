@@ -168,8 +168,8 @@ assert_eq!(bump.stats().allocated(), 4);
 * **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
 * **`nightly-const-refs-to-static`** —  Makes `Bump::unallocated` a `const fn`.
-* **`nightly-exact-size-is-empty`** —  Implements `is_empty` manually for `Drain`.
-* **`nightly-trusted-len`** —  Implements `TrustedLen` for `Drain`.
+* **`nightly-exact-size-is-empty`** —  Implements `is_empty` manually for some iterators.
+* **`nightly-trusted-len`** —  Implements `TrustedLen` for some iterators.
 
 ## Bumping upwards or downwards?
 Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.

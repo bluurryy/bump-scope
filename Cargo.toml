@@ -46,10 +46,10 @@ nightly-coerce-unsized = []
 ## Makes `Bump::unallocated` a `const fn`.
 nightly-const-refs-to-static = []
 
-## Implements `is_empty` manually for `Drain`.
+## Implements `is_empty` manually for some iterators.
 nightly-exact-size-is-empty = []
 
-## Implements `TrustedLen` for `Drain`.
+## Implements `TrustedLen` for some iterators.
 nightly-trusted-len = []
 
 [dev-dependencies]
