@@ -54,6 +54,7 @@
     unknown_lints,
     rustdoc::redundant_explicit_links, // for cargo-rdme
 )]
+#![doc(test(attr(warn(dead_code))))]
 //! A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
 //!
 //! # What is bump allocation?
@@ -1673,8 +1674,8 @@ define_alloc_methods! {
     /// Safely:
     /// ```
     /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::new();
-    /// let mut five = bump.alloc_uninit();
+    /// let bump: Bump = Bump::new();
+    /// let five = bump.alloc_uninit();
     ///
     /// let five = five.init(5);
     ///
@@ -1714,7 +1715,7 @@ define_alloc_methods! {
     /// ```
     /// # use bump_scope::Bump;
     /// let bump: Bump = Bump::new();
-    /// let mut values = bump.alloc_uninit_slice(3);
+    /// let values = bump.alloc_uninit_slice(3);
     ///
     /// let values = values.init_copy(&[1, 2, 3]);
     ///

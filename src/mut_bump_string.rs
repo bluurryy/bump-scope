@@ -71,6 +71,7 @@ macro_rules! mut_bump_format {
 /// # use bump_scope::{ Bump, MutBumpString };
 /// # let mut bump: Bump = Bump::new();
 /// let hello = MutBumpString::from_str_in("Hello, world!", &mut bump);
+/// # let _ = hello;
 /// ```
 ///
 /// You can append a [`char`] to a `String` with the [`push`] method, and

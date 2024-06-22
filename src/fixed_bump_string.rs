@@ -11,11 +11,11 @@ use crate::{error_behavior_generic_methods_if, polyfill, BumpBox, ErrorBehavior,
 
 /// A [`BumpString`](crate::BumpString) but with a fixed capacity.
 ///
-/// It can be constructed with [`alloc_fixed_string`] or from a `BumpBox<[MaybeUninit<u8>]>` via [`from_uninit`].
+/// It can be constructed with [`alloc_fixed_string`] or from a `BumpBox` via [`from_init`] or [`from_uninit`].
 ///
 /// # Examples
 /// ```
-/// use bump_scope::{ Bump, mut_bump_vec };
+/// use bump_scope::Bump;
 /// let mut bump: Bump = Bump::new();
 /// let mut string = bump.alloc_fixed_string(9);
 ///
@@ -30,6 +30,7 @@ use crate::{error_behavior_generic_methods_if, polyfill, BumpBox, ErrorBehavior,
 ///
 /// [`alloc_fixed_string`]: crate::Bump::alloc_fixed_string
 /// [`from_uninit`]: FixedBumpString::from_uninit
+/// [`from_init`]: FixedBumpString::from_init
 pub struct FixedBumpString<'a> {
     vec: FixedBumpVec<'a, u8>,
 }
@@ -38,7 +39,7 @@ unsafe impl<'a> Send for FixedBumpString<'a> {}
 unsafe impl<'a> Sync for FixedBumpString<'a> {}
 
 impl<'a> FixedBumpString<'a> {
-    /// Empty fixed vector.
+    /// Empty fixed string.
     pub const EMPTY: Self = Self {
         vec: FixedBumpVec::EMPTY,
     };

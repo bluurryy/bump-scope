@@ -101,7 +101,7 @@ macro_rules! mut_bump_vec_rev {
 ///
 /// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
 /// ```
-/// use bump_scope::{ Bump, MutBumpVecRev, BumpBox, mut_bump_vec_rev };
+/// use bump_scope::{ Bump, mut_bump_vec_rev };
 /// let mut bump: Bump = Bump::new();
 /// let mut vec = mut_bump_vec_rev![in bump];
 ///
@@ -179,6 +179,7 @@ where
     /// # let mut bump: Bump = Bump::new();
     /// # #[allow(unused_mut)]
     /// let mut vec = MutBumpVecRev::<i32>::new_in(&mut bump);
+    /// # let _ = vec;
     /// ```
     #[inline]
     pub fn new_in(bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
@@ -637,6 +638,7 @@ where
         /// let mut vec = mut_bump_vec_rev![in bump; 2, 1];
         /// vec.push(3);
         /// assert_eq!(vec, [3, 2, 1]);
+        /// # let _ = vec;
         /// ```
         for pub fn push
         for pub fn try_push
@@ -661,7 +663,7 @@ where
         /// Panics if `index > len`.
         do examples
         /// ```
-        /// # use bump_scope::{ mut_bump_vec_rev, Bump, MutBumpVecRev };
+        /// # use bump_scope::{ mut_bump_vec_rev, Bump };
         /// # let mut bump: Bump = Bump::new();
         /// let mut vec = mut_bump_vec_rev![in bump; 1, 2, 3];
         /// vec.insert(1, 4);
