@@ -626,7 +626,6 @@ unsafe impl<'a, A: Allocator> Allocator for WithLifetime<'a, A> {
 }
 
 trait ErrorBehavior: Sized {
-    const IS_FALLIBLE: bool;
     fn allocation(layout: Layout) -> Self;
     fn capacity_overflow() -> Self;
     fn fixed_size_vector_is_full() -> Self;
@@ -634,8 +633,6 @@ trait ErrorBehavior: Sized {
 }
 
 impl ErrorBehavior for Infallible {
-    const IS_FALLIBLE: bool = false;
-
     #[inline(always)]
     fn allocation(layout: Layout) -> Self {
         handle_alloc_error(layout)
@@ -677,8 +674,6 @@ fn handle_alloc_error(_layout: Layout) -> ! {
 }
 
 impl ErrorBehavior for AllocError {
-    const IS_FALLIBLE: bool = true;
-
     #[inline(always)]
     fn allocation(_: Layout) -> Self {
         Self
@@ -716,6 +711,8 @@ trait SizedTypeProperties: Sized {
     const ALIGN: usize = mem::align_of::<Self>();
 
     const IS_ZST: bool = mem::size_of::<Self>() == 0;
+
+    #[allow(dead_code)] // it's *not* dead code; this is a false positive
     const NEEDS_DROP: bool = mem::needs_drop::<Self>();
 }
 
