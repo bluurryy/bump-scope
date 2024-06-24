@@ -81,43 +81,43 @@ def simplify [] {
 }
 
 def report [file_name: string, symbol:string] {
-  print -e $"($symbol) ($file_name)"
+    print -e $"($symbol) ($file_name)"
 }
 
 def asm-save [name: string, target: string, extra_args: list<string>] {
-  let file_stem = ($name | str replace -a "::" "/")
-  let file_name = $"($file_stem).asm"
-  let file_path = ([out $target $file_name] | path join)
-  let out_dir = ($file_path | path dirname)
+    let file_stem = ($name | str replace -a "::" "/")
+    let file_name = $"($file_stem).asm"
+    let file_path = ([out $target $file_name] | path join)
+    let out_dir = ($file_path | path dirname)
 
-  let result = do {
-    ^cargo asm --simplify $name 0 ...$extra_args
-  } | complete
+    let result = do {
+        ^cargo asm --simplify $name 0 ...$extra_args
+    } | complete
 
-  if $result.exit_code != 0 {
-    if "You asked to display item #0 (zero based), but there's only 0 matching items" in $result.stdout {
-      report $file_stem "?"
-      mkdir $out_dir
-      "" | save -f $file_path
-      return
+    if $result.exit_code != 0 {
+        if "You asked to display item #0 (zero based), but there's only 0 matching items" in $result.stdout {
+        report $file_stem "?"
+        mkdir $out_dir
+        "" | save -f $file_path
+        return
+        }
+
+        print -e $result.stderr
+        print $result.stdout
+        error make { msg: "cargo erred" }
     }
+    
+    let old_content = try { $file_path | open --raw } catch { "" }
+    let new_content = ($result.stdout | simplify)
 
-    print -e $result.stderr
-    print $result.stdout
-    error make { msg: "cargo erred" }
-  }
-  
-  let old_content = try { $file_path | open --raw } catch { "" }
-  let new_content = ($result.stdout | simplify)
-
-  if $new_content == $old_content {
-    report $file_stem "="
-    return
-  }
-  
-  report $file_stem "!"
-  mkdir $out_dir
-  $new_content | save -f $file_path
+    if $new_content == $old_content {
+        report $file_stem "="
+        return
+    }
+    
+    report $file_stem "!"
+    mkdir $out_dir
+    $new_content | save -f $file_path
 }
 
 def update-diffable [] {
@@ -144,100 +144,100 @@ def --wrapped main [
   --update-diffable # Update the existing asm output with more diffable labels
   ...args # Arguments for `cargo asm` (cargo-show-asm)
 ]: nothing -> nothing {
-  if $update_diffable {
-    if $target != "x86-64" {
-        error make { msg: "target not supported for `--update_diffable`" }
+    if $update_diffable {
+        if $target != "x86-64" {
+            error make { msg: "target not supported for `--update_diffable`" }
+        }
+
+        update-diffable
+        return
     }
 
-    update-diffable
-    return
-  }
+    mut names = []
 
-  mut names = []
-
-  for name in [allocate, deallocate, grow, shrink] {
-    $names ++= $"($name)::up"
-    $names ++= $"($name)::down"
-    $names ++= $"($name)::bumpalo"
-  }
-
-  for try in ["", try_] {
-    $names ++= $"alloc_layout::($try)up"
-    $names ++= $"alloc_layout::($try)down"
-    $names ++= $"alloc_layout::($try)bumpalo"
-  }
-
-  for ty in [zst u8, u32, vec3, big, str, u32_slice, u32_slice_clone] {
-    for prefix in ["", try_] {
-      $names ++= $"alloc_($ty)::($prefix)up"
-      $names ++= $"alloc_($ty)::($prefix)up_a"
-      $names ++= $"alloc_($ty)::($prefix)down"
-      $names ++= $"alloc_($ty)::($prefix)down_a"
-      $names ++= $"alloc_($ty)::($prefix)bumpalo"
-    }
-  }
-
-  for dir in [up, down, down_big] {
-    $names ++= $"alloc_overaligned_but_size_matches::($dir)"
-  }
-
-  # for prefix in ["", try_] {
-  #   $names ++= $"alloc_with_drop::($prefix)up"
-  #   $names ++= $"alloc_with_drop::($prefix)up_a"
-  #   $names ++= $"alloc_with_drop::($prefix)down"
-  #   $names ++= $"alloc_with_drop::($prefix)down_a"
-  # }
-
-  for ty in [u32] {
-    for dir in [up, down] {
-      for try in ["", try_] {
-        $names ++= $"bump_vec_($ty)::($dir)::($try)with_capacity"
-        $names ++= $"bump_vec_($ty)::($dir)::($try)push"  
-      }
-    }
-  }
-  
-  for ty in [u32, u32_bump_vec] {
-    let prefixes = if $ty == "u32" { 
-      ["", exact_, mut_, mut_rev_] 
-    } else { 
-      ["", rev_] 
+    for name in [allocate, deallocate, grow, shrink] {
+        $names ++= $"($name)::up"
+        $names ++= $"($name)::down"
+        $names ++= $"($name)::bumpalo"
     }
 
-    let tries = if $ty == "u32" {
-      ["", try_]
-    } else {
-      [""]
+    for try in ["", try_] {
+        $names ++= $"alloc_layout::($try)up"
+        $names ++= $"alloc_layout::($try)down"
+        $names ++= $"alloc_layout::($try)bumpalo"
     }
 
-    for try in $tries {
-      for prefix in $prefixes {
-        $names ++= $"alloc_iter_($ty)::($try)($prefix)up"
-        $names ++= $"alloc_iter_($ty)::($try)($prefix)up_a"
-        $names ++= $"alloc_iter_($ty)::($try)($prefix)down"
-        $names ++= $"alloc_iter_($ty)::($try)($prefix)down_a"
-      }
+    for ty in [zst u8, u32, vec3, big, str, u32_slice, u32_slice_clone] {
+        for prefix in ["", try_] {
+        $names ++= $"alloc_($ty)::($prefix)up"
+        $names ++= $"alloc_($ty)::($prefix)up_a"
+        $names ++= $"alloc_($ty)::($prefix)down"
+        $names ++= $"alloc_($ty)::($prefix)down_a"
+        $names ++= $"alloc_($ty)::($prefix)bumpalo"
+        }
     }
 
-    if $ty == "u32" {
-      $names ++= $"alloc_iter_($ty)::bumpalo"
+    for dir in [up, down, down_big] {
+        $names ++= $"alloc_overaligned_but_size_matches::($dir)"
     }
-  }
 
-  for try in ["", try_] {  
-    for $mut in ["", mut_] {
-      $names ++= $"alloc_fmt::($try)($mut)up"
-      $names ++= $"alloc_fmt::($try)($mut)up_a"
-      $names ++= $"alloc_fmt::($try)($mut)down"
-      $names ++= $"alloc_fmt::($try)($mut)down_a"
+    # for prefix in ["", try_] {
+    #     $names ++= $"alloc_with_drop::($prefix)up"
+    #     $names ++= $"alloc_with_drop::($prefix)up_a"
+    #     $names ++= $"alloc_with_drop::($prefix)down"
+    #     $names ++= $"alloc_with_drop::($prefix)down_a"
+    # }
+
+    for ty in [u32] {
+        for dir in [up, down] {
+            for try in ["", try_] {
+                $names ++= $"bump_vec_($ty)::($dir)::($try)with_capacity"
+                $names ++= $"bump_vec_($ty)::($dir)::($try)push"  
+            }
+        }
     }
-  }
+    
+    for ty in [u32, u32_bump_vec] {
+        let prefixes = if $ty == "u32" { 
+            ["", exact_, mut_, mut_rev_] 
+        } else { 
+            ["", rev_] 
+        }
 
-  if $filter != null {
-    $names = ($names | filter { str contains $filter })
-  }
+        let tries = if $ty == "u32" {
+            ["", try_]
+        } else {
+            [""]
+        }
 
-  for $name in $names {
-    asm-save $name $target $args
-  }
+        for try in $tries {
+            for prefix in $prefixes {
+                $names ++= $"alloc_iter_($ty)::($try)($prefix)up"
+                $names ++= $"alloc_iter_($ty)::($try)($prefix)up_a"
+                $names ++= $"alloc_iter_($ty)::($try)($prefix)down"
+                $names ++= $"alloc_iter_($ty)::($try)($prefix)down_a"
+            }
+        }
+
+        if $ty == "u32" {
+            $names ++= $"alloc_iter_($ty)::bumpalo"
+        }
+    }
+
+    for try in ["", try_] {  
+        for $mut in ["", mut_] {
+            $names ++= $"alloc_fmt::($try)($mut)up"
+            $names ++= $"alloc_fmt::($try)($mut)up_a"
+            $names ++= $"alloc_fmt::($try)($mut)down"
+            $names ++= $"alloc_fmt::($try)($mut)down_a"
+        }
+    }
+
+    if $filter != null {
+        $names = ($names | filter { str contains $filter })
+    }
+
+    for $name in $names {
+        asm-save $name $target $args
+    }
 }
