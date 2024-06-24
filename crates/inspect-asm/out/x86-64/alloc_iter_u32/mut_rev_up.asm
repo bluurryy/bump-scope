@@ -62,8 +62,8 @@ inspect_asm::alloc_iter_u32::mut_rev_up:
 	mov rdi, qword ptr [rsp + 32]
 	test rdi, rdi
 	je .LBB0_4
-	mov r14, qword ptr [rsp + 16]
 	mov rcx, qword ptr [rsp + 8]
+	mov r14, qword ptr [rsp + 16]
 	lea rsi, [rcx + 4*rax]
 	shl rdi, 2
 	mov rbx, rcx

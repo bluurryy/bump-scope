@@ -33,27 +33,25 @@ inspect_asm::grow::bumpalo:
 	pop r15
 	ret
 .LBB0_3:
-	mov r9, rbx
-	sub r9, rcx
-	lea r10, [rdx - 1]
-	mov r11, rdx
-	xor r11, r10
-	movabs r15, -9223372036854775808
-	sub r15, rdx
+	lea r9, [rdx - 1]
+	mov r10, rdx
+	xor r10, r9
 	xor r14d, r14d
-	cmp r15, r9
-	cmovb rdx, r14
-	cmp r11, r10
+	cmp r10, r9
 	jbe .LBB0_2
-	test rdx, rdx
-	je .LBB0_2
-	cmp r9, rsi
+	mov r10, rbx
+	sub r10, rcx
+	movabs r11, -9223372036854775808
+	sub r11, rdx
+	cmp r10, r11
+	ja .LBB0_2
+	cmp r10, rsi
 	ja .LBB0_0
-	mov r10, rsi
-	sub r10, r9
-	neg rdx
-	mov r14, rdx
-	and r14, r10
+	mov rdx, rsi
+	sub rdx, r10
+	not r9
+	mov r14, r9
+	and r14, rdx
 	cmp r14, qword ptr [rax]
 	jb .LBB0_0
 	mov qword ptr [rax + 32], r14
