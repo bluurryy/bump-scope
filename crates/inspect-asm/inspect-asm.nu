@@ -1,53 +1,83 @@
 # This was written for nushell version 0.91.0 and cargo-show-asm version 0.2.30
 
-def group-by-maybe-empty [] {
-  let list = $in
+let MARKER_UNDERSCORE = "XXXXX"
 
-  if ($list | length) == 0 {
-    []
-  } else {
-    $list | group-by
-  }  
+def map-to-index [] {
+    uniq 
+    | enumerate 
+    | group-by item 
+    | update cells { get 0 | get index } 
+    | get 0 
 }
 
-def simplify [output: string] {
-  # Remove empty lines
-  mut output = ($output | lines | filter { ($in | str length) != 0 } | str join "\n")
+def parse-label-with-function-index [name: string] {
+    let content = $in
 
-  # We replace all `.LBB123_45` and such with `.LBB_45`.
-  let indexes = $output 
-  | parse -r '\.LBB(?<index>[0-9]+)' 
-  | get index
-  | group-by-maybe-empty
-  | transpose value
-  | get value
+    $content
+    | parse --regex ($name + '(?<f>[0-9]+)_(?<i>[0-9]+)')
+    | group-by f? 
+    | update cells { get i | each { into int } | map-to-index } 
+    | get 0
+}
 
-  if ($indexes | length) > 1 {
-    error make { msg: "expected .LBB to always start with the same number inside a function" }
-  }
+def replace-label-with-function-index [function_map, map, prefix: string] {
+    mut content = $in
 
-  if ($indexes | length) > 0 {
-    let index = $indexes.0
-    $output = ($output | str replace -a $'.LBB($index)' ".LBB")
-  }
+    for $old in ($map | transpose function indices) {
+        let old_function = $old.function
+        let new_function = $function_map | get $old_function | into string
 
-  # We replace all `.L__unnamed_11` with indices starting at `0`
-  let indexes = $output 
-  | parse -r '\.L__unnamed_(?<index>[0-9]+)' 
-  | get index 
-  | group-by
-  | transpose index
-  | get index
-  | enumerate
-  
-  for entry in $indexes {
-    let old = $entry.item
-    let new = $entry.index
+        for $item in ($old.indices | transpose old_index new_index) {
+            let old_index = $item.old_index
+            let new_index = $item.new_index | into string
+            let old_re = '\.' + $prefix + $old_function + "_" + $old_index + '\b'
+            let new_re = "." + $prefix + $new_function + $MARKER_UNDERSCORE + $new_index
+            $content = ($content | str replace -a --regex $old_re $new_re)
+        }
+    }
 
-    $output = ($output | str replace -a $'.L__unnamed_($old)' $".L__unnamed__($new)")
-  }
+    $content
+}
 
-  $output
+def replace-label [map, prefix: string] {
+    mut content = $in
+
+    for $item in ($map | transpose old_index new_index) {
+        let old_index = $item.old_index
+        let new_index = $item.new_index | into string
+        let old_re = '\.' + $prefix + '_' + $old_index + '\b'
+        let new_re = "." + $prefix + $MARKER_UNDERSCORE + $new_index
+        $content = ($content | str replace -a --regex $old_re $new_re)
+    }
+
+    $content
+}
+
+def simplify [] {
+    let content = $in
+
+    let lbbs = $content | parse-label-with-function-index '(?m)^\.LBB'
+    let ljtis = $content | parse-label-with-function-index '\.LJTI'
+    let lcpis = $content | parse-label-with-function-index '\.LCPI'
+
+    let function_map = [$lbbs, $ljtis, $lcpis] 
+    | columns
+    | flatten 
+    | map-to-index
+
+    let unnameds = $content 
+    | parse --regex '\.L__unnamed_(?<i>[0-9]+)'
+    | get i
+    | map-to-index
+
+    return (
+        $content 
+        | replace-label-with-function-index $function_map $lbbs "LBB"
+        | replace-label-with-function-index $function_map $ljtis "LJTI"
+        | replace-label-with-function-index $function_map $lcpis "LCPI"
+        | replace-label $unnameds "L__unnamed"
+        | str replace -a $MARKER_UNDERSCORE "_" 
+    )
 }
 
 def report [file_name: string, symbol:string] {
@@ -78,7 +108,7 @@ def asm-save [name: string, target: string, extra_args: list<string>] {
   }
   
   let old_content = try { $file_path | open --raw } catch { "" }
-  let new_content = (simplify $result.stdout)
+  let new_content = ($result.stdout | simplify)
 
   if $new_content == $old_content {
     report $file_stem "="
@@ -90,12 +120,39 @@ def asm-save [name: string, target: string, extra_args: list<string>] {
   $new_content | save -f $file_path
 }
 
+def update-diffable [] {
+    for $file in (ls out/x86-64/**/*.asm) {
+        let old_content = $file.name | open --raw
+        let new_content = $old_content | simplify
+
+        let new_content = if ($new_content | str ends-with "\n") {
+            $new_content
+        } else {
+            $new_content + "\n"
+        }
+
+        let new_content = $new_content | str replace -a 'L__unnamed__' "L__unnamed_"
+
+        $new_content | save -f $file.name
+    }
+}
+
 def --wrapped main [
   target: string # Target directory under './out'.
   --filter: string # Only check functions whose path contains this string.
   --help (-h) # Display the help message for this command
+  --update-diffable # Update the existing asm output with more diffable labels
   ...args # Arguments for `cargo asm` (cargo-show-asm)
 ]: nothing -> nothing {
+  if $update_diffable {
+    if $target != "x86-64" {
+        error make { msg: "target not supported for `--update_diffable`" }
+    }
+
+    update-diffable
+    return
+  }
+
   mut names = []
 
   for name in [allocate, deallocate, grow, shrink] {

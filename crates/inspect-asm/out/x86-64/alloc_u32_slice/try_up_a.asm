@@ -9,20 +9,20 @@ inspect_asm::alloc_u32_slice::try_up_a:
 	mov rcx, qword ptr [rax + 8]
 	sub rcx, r14
 	cmp rdx, rcx
-	ja .LBB_3
+	ja .LBB0_2
 	lea rcx, [rdx + r14]
 	mov qword ptr [rax], rcx
-.LBB_2:
+.LBB0_0:
 	mov rdi, r14
 	call qword ptr [rip + memcpy@GOTPCREL]
-.LBB_5:
+.LBB0_1:
 	mov rax, r14
 	mov rdx, rbx
 	pop rbx
 	pop r14
 	pop r15
 	ret
-.LBB_3:
+.LBB0_2:
 	mov r14, rsi
 	mov rsi, rbx
 	mov r15, rdx
@@ -31,6 +31,6 @@ inspect_asm::alloc_u32_slice::try_up_a:
 	mov rsi, r14
 	mov r14, rax
 	test rax, rax
-	jne .LBB_2
+	jne .LBB0_0
 	xor r14d, r14d
-	jmp .LBB_5
+	jmp .LBB0_1

@@ -2,19 +2,19 @@ inspect_asm::shrink::up:
 	mov rax, rsi
 	lea rdx, [r8 - 1]
 	test rdx, rsi
-	jne .LBB_3
+	jne .LBB0_1
 	lea rsi, [rax + rcx]
 	mov rdx, qword ptr [rdi]
 	cmp rsi, qword ptr [rdx]
-	je .LBB_4
+	je .LBB0_0
 	mov rdx, rcx
 	ret
-.LBB_4:
+.LBB0_0:
 	lea rcx, [rax + r9]
 	mov qword ptr [rdx], rcx
 	mov rdx, r9
 	ret
-.LBB_3:
+.LBB0_1:
 	push rax
 	mov rsi, rax
 	mov rdx, rcx

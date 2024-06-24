@@ -8,11 +8,11 @@ inspect_asm::alloc_iter_u32::mut_down:
 	sub rsp, 40
 	mov ebx, 4
 	test rdx, rdx
-	je .LBB_12
+	je .LBB0_4
 	mov r14, rdx
 	mov rax, rdx
 	shr rax, 61
-	jne .LBB_17
+	jne .LBB0_9
 	mov r15, rsi
 	shl r14, 2
 	mov rax, qword ptr [rdi]
@@ -22,11 +22,11 @@ inspect_asm::alloc_iter_u32::mut_down:
 	mov rcx, rdx
 	sub rcx, rax
 	cmp rcx, r14
-	jb .LBB_16
+	jb .LBB0_8
 	add rax, 3
 	and rax, -4
-	je .LBB_16
-.LBB_4:
+	je .LBB0_8
+.LBB0_0:
 	sub rdx, rax
 	shr rdx, 2
 	mov qword ptr [rsp + 8], rax
@@ -36,29 +36,29 @@ inspect_asm::alloc_iter_u32::mut_down:
 	xor r13d, r13d
 	lea r12, [rsp + 8]
 	xor edx, edx
-	jmp .LBB_6
-.LBB_5:
+	jmp .LBB0_2
+.LBB0_1:
 	mov dword ptr [rax + 4*rcx], ebp
 	lea rdx, [rcx + 1]
 	mov qword ptr [rsp + 16], rdx
 	add r13, 4
 	cmp r14, r13
-	je .LBB_8
-.LBB_6:
+	je .LBB0_3
+.LBB0_2:
 	mov ebp, dword ptr [r15 + r13]
 	mov rcx, rdx
 	cmp qword ptr [rsp + 24], rdx
-	jne .LBB_5
+	jne .LBB0_1
 	mov esi, 1
 	mov rdi, r12
 	call bump_scope::mut_bump_vec::MutBumpVec<T,A,_,_,_>::generic_grow_cold
 	mov rax, qword ptr [rsp + 8]
 	mov rcx, qword ptr [rsp + 16]
-	jmp .LBB_5
-.LBB_8:
+	jmp .LBB0_1
+.LBB0_3:
 	mov rax, qword ptr [rsp + 24]
 	test rax, rax
-	je .LBB_12
+	je .LBB0_4
 	mov rsi, qword ptr [rsp + 8]
 	mov r14, qword ptr [rsp + 32]
 	lea rdi, [rsi + 4*rdx]
@@ -66,23 +66,23 @@ inspect_asm::alloc_iter_u32::mut_down:
 	not rcx
 	lea rbx, [rax + 4*rcx]
 	cmp rbx, rdi
-	jae .LBB_13
+	jae .LBB0_5
 	mov rbx, rsi
-	jmp .LBB_14
-.LBB_12:
+	jmp .LBB0_6
+.LBB0_4:
 	xor edx, edx
-	jmp .LBB_15
-.LBB_13:
+	jmp .LBB0_7
+.LBB0_5:
 	lea rax, [4*rdx]
 	mov rdi, rbx
 	mov r15, rdx
 	mov rdx, rax
 	call qword ptr [rip + memcpy@GOTPCREL]
 	mov rdx, r15
-.LBB_14:
+.LBB0_6:
 	mov rax, qword ptr [r14]
 	mov qword ptr [rax], rbx
-.LBB_15:
+.LBB0_7:
 	mov rax, rbx
 	add rsp, 40
 	pop rbx
@@ -92,12 +92,12 @@ inspect_asm::alloc_iter_u32::mut_down:
 	pop r15
 	pop rbp
 	ret
-.LBB_16:
+.LBB0_8:
 	mov esi, 4
 	mov r12, rdi
 	mov rdx, r14
 	call bump_scope::bump_scope::BumpScope<A,_,_,_>::alloc_greedy_in_another_chunk
 	mov rdi, r12
-	jmp .LBB_4
-.LBB_17:
+	jmp .LBB0_0
+.LBB0_9:
 	call qword ptr [rip + bump_scope::private::capacity_overflow@GOTPCREL]

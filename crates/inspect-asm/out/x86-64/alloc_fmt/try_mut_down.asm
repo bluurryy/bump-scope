@@ -9,7 +9,7 @@ inspect_asm::alloc_fmt::try_mut_down:
 	mov qword ptr [rsp + 48], rax
 	lea rax, [rip + <&T as core::fmt::Display>::fmt]
 	mov qword ptr [rsp + 56], rax
-	lea rax, [rip + .L__unnamed__0]
+	lea rax, [rip + .L__unnamed_0]
 	mov qword ptr [rsp + 64], rax
 	mov qword ptr [rsp + 72], 2
 	mov qword ptr [rsp + 96], 0
@@ -20,18 +20,18 @@ inspect_asm::alloc_fmt::try_mut_down:
 	xorps xmm0, xmm0
 	movups xmmword ptr [rsp + 8], xmm0
 	mov qword ptr [rsp + 24], rdi
-	lea rsi, [rip + .L__unnamed__1]
+	lea rsi, [rip + .L__unnamed_1]
 	mov rdi, rsp
 	lea rdx, [rsp + 64]
 	call qword ptr [rip + core::fmt::write@GOTPCREL]
 	test al, al
-	je .LBB_1
+	je .LBB0_0
 	xor eax, eax
-	jmp .LBB_8
-.LBB_1:
+	jmp .LBB0_4
+.LBB0_0:
 	mov rdi, qword ptr [rsp + 16]
 	test rdi, rdi
-	je .LBB_2
+	je .LBB0_1
 	mov rsi, qword ptr [rsp]
 	mov rbx, qword ptr [rsp + 8]
 	mov r14, qword ptr [rsp + 24]
@@ -39,22 +39,22 @@ inspect_asm::alloc_fmt::try_mut_down:
 	add rdi, rsi
 	sub rdi, rbx
 	cmp rdi, rax
-	jae .LBB_6
+	jae .LBB0_2
 	mov rax, rsi
-	jmp .LBB_7
-.LBB_2:
+	jmp .LBB0_3
+.LBB0_1:
 	mov eax, 1
 	xor ebx, ebx
-	jmp .LBB_8
-.LBB_6:
+	jmp .LBB0_4
+.LBB0_2:
 	mov rdx, rbx
 	mov r15, rdi
 	call qword ptr [rip + memcpy@GOTPCREL]
 	mov rax, r15
-.LBB_7:
+.LBB0_3:
 	mov rcx, qword ptr [r14]
 	mov qword ptr [rcx], rax
-.LBB_8:
+.LBB0_4:
 	mov rdx, rbx
 	add rsp, 112
 	pop rbx

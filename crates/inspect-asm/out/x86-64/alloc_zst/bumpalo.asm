@@ -3,14 +3,14 @@ inspect_asm::alloc_zst::bumpalo:
 	mov rcx, qword ptr [rdi + 16]
 	mov rax, qword ptr [rcx + 32]
 	cmp rax, qword ptr [rcx]
-	jb .LBB_1
-.LBB_2:
+	jb .LBB0_1
+.LBB0_0:
 	pop rcx
 	ret
-.LBB_1:
+.LBB0_1:
 	mov esi, 1
 	xor edx, edx
 	call qword ptr [rip + bumpalo::Bump::alloc_layout_slow@GOTPCREL]
 	test rax, rax
-	jne .LBB_2
+	jne .LBB0_0
 	call qword ptr [rip + bumpalo::oom@GOTPCREL]

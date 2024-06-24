@@ -8,17 +8,17 @@ inspect_asm::grow::up:
 	mov rdx, qword ptr [rax + 8]
 	lea r10, [r8 - 1]
 	test r10, rsi
-	jne .LBB_4
+	jne .LBB0_0
 	lea r10, [rsi + rcx]
 	cmp r10, r9
-	jne .LBB_4
+	jne .LBB0_0
 	sub rdx, rsi
 	cmp rdx, rbx
-	jb .LBB_11
+	jb .LBB0_5
 	lea rcx, [rsi + rbx]
 	mov qword ptr [rax], rcx
-	jmp .LBB_8
-.LBB_4:
+	jmp .LBB0_3
+.LBB0_0:
 	dec r9
 	mov r14, r8
 	neg r14
@@ -28,24 +28,24 @@ inspect_asm::grow::up:
 	mov r9, -1
 	cmovae r9, r10
 	cmp r9, rdx
-	ja .LBB_9
+	ja .LBB0_4
 	mov qword ptr [rax], r9
 	add r14, r8
-	je .LBB_9
-.LBB_6:
+	je .LBB0_4
+.LBB0_1:
 	mov rdi, r14
 	mov rdx, rcx
-.LBB_7:
+.LBB0_2:
 	call qword ptr [rip + memcpy@GOTPCREL]
 	mov rsi, r14
-.LBB_8:
+.LBB0_3:
 	mov rax, rsi
 	mov rdx, rbx
 	pop rbx
 	pop r14
 	pop r15
 	ret
-.LBB_9:
+.LBB0_4:
 	mov r14, rsi
 	mov rsi, r8
 	mov rdx, rbx
@@ -55,21 +55,21 @@ inspect_asm::grow::up:
 	mov rsi, r14
 	mov r14, rax
 	test rax, rax
-	jne .LBB_6
-	jmp .LBB_10
-.LBB_11:
+	jne .LBB0_1
+	jmp .LBB0_6
+.LBB0_5:
 	mov r14, rcx
 	mov r15, rsi
 	mov rsi, r8
 	mov rdx, rbx
 	call bump_scope::bump_scope::BumpScope<A,_,_,_>::alloc_in_another_chunk
 	test rax, rax
-	je .LBB_10
+	je .LBB0_6
 	mov rdi, rax
 	mov rsi, r15
 	mov rdx, r14
 	mov r14, rax
-	jmp .LBB_7
-.LBB_10:
+	jmp .LBB0_2
+.LBB0_6:
 	xor esi, esi
-	jmp .LBB_8
+	jmp .LBB0_3

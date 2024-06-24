@@ -8,25 +8,25 @@ inspect_asm::alloc_u32_slice_clone::try_down_a:
 	mov rcx, rbx
 	sub rcx, qword ptr [rax + 8]
 	cmp r14, rcx
-	ja .LBB_2
+	ja .LBB0_2
 	sub rbx, r14
 	mov qword ptr [rax], rbx
-	je .LBB_2
-.LBB_4:
+	je .LBB0_2
+.LBB0_0:
 	test rdx, rdx
-	je .LBB_6
+	je .LBB0_1
 	mov rdi, rbx
 	mov r15, rdx
 	mov rdx, r14
 	call qword ptr [rip + memcpy@GOTPCREL]
 	mov rdx, r15
-.LBB_6:
+.LBB0_1:
 	mov rax, rbx
 	pop rbx
 	pop r14
 	pop r15
 	ret
-.LBB_2:
+.LBB0_2:
 	mov rbx, rsi
 	mov rsi, rdx
 	mov r15, rdx
@@ -35,6 +35,6 @@ inspect_asm::alloc_u32_slice_clone::try_down_a:
 	mov rdx, r15
 	mov rbx, rax
 	test rax, rax
-	jne .LBB_4
+	jne .LBB0_0
 	xor ebx, ebx
-	jmp .LBB_6
+	jmp .LBB0_1

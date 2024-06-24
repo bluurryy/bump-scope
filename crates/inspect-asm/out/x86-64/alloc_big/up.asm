@@ -10,14 +10,14 @@ inspect_asm::alloc_big::up:
 	mov rdx, -1
 	cmovae rdx, r8
 	cmp rdx, qword ptr [rcx + 8]
-	ja .LBB_2
+	ja .LBB0_0
 	mov qword ptr [rcx], rdx
 	add rdi, 512
-	je .LBB_2
+	je .LBB0_0
 	mov edx, 512
 	pop rbx
 	jmp qword ptr [rip + memcpy@GOTPCREL]
-.LBB_2:
+.LBB0_0:
 	mov rdi, rax
 	mov rbx, rsi
 	call bump_scope::bump_scope::BumpScope<A,_,_,_>::do_alloc_sized_in_another_chunk

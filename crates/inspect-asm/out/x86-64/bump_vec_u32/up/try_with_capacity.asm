@@ -1,26 +1,26 @@
 inspect_asm::bump_vec_u32::up::try_with_capacity:
 	mov rax, rdi
 	test rsi, rsi
-	je .LBB_1
+	je .LBB0_1
 	push r14
 	push rbx
 	push rax
 	mov rcx, rsi
 	shr rcx, 61
-	je .LBB_4
-.LBB_10:
+	je .LBB0_2
+.LBB0_0:
 	mov qword ptr [rax], 0
 	add rsp, 8
 	pop rbx
 	pop r14
 	ret
-.LBB_1:
-	movups xmm0, xmmword ptr [rip + .L__unnamed__0]
+.LBB0_1:
+	movups xmm0, xmmword ptr [rip + .L__unnamed_0]
 	movups xmmword ptr [rax], xmm0
 	mov qword ptr [rax + 16], 0
 	mov qword ptr [rax + 24], rdx
 	ret
-.LBB_4:
+.LBB0_2:
 	shl rsi, 2
 	mov rdi, qword ptr [rdx]
 	mov rcx, qword ptr [rdi]
@@ -32,11 +32,11 @@ inspect_asm::bump_vec_u32::up::try_with_capacity:
 	sub rdi, rcx
 	mov r8, r9
 	cmp rdi, r9
-	jb .LBB_7
+	jb .LBB0_4
 	test rcx, rcx
-	je .LBB_7
+	je .LBB0_4
 	and rsi, -4
-.LBB_9:
+.LBB0_3:
 	sub rsi, rcx
 	shr rsi, 2
 	mov qword ptr [rax], rcx
@@ -47,7 +47,7 @@ inspect_asm::bump_vec_u32::up::try_with_capacity:
 	pop rbx
 	pop r14
 	ret
-.LBB_7:
+.LBB0_4:
 	mov esi, 4
 	mov rdi, rdx
 	mov rbx, rdx
@@ -57,7 +57,7 @@ inspect_asm::bump_vec_u32::up::try_with_capacity:
 	mov rcx, rax
 	mov rax, r14
 	test rcx, rcx
-	je .LBB_10
+	je .LBB0_0
 	mov rsi, rdx
 	mov rdx, rbx
-	jmp .LBB_9
+	jmp .LBB0_3

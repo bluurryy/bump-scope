@@ -6,24 +6,24 @@ inspect_asm::alloc_str::try_bumpalo:
 	mov rax, qword ptr [rdi + 16]
 	mov r14, qword ptr [rax + 32]
 	sub r14, rdx
-	jb .LBB_3
+	jb .LBB0_2
 	cmp r14, qword ptr [rax]
-	jb .LBB_3
+	jb .LBB0_2
 	mov qword ptr [rax + 32], r14
 	test r14, r14
-	je .LBB_3
-.LBB_5:
+	je .LBB0_2
+.LBB0_0:
 	mov rdi, r14
 	mov rdx, rbx
 	call qword ptr [rip + memcpy@GOTPCREL]
-.LBB_6:
+.LBB0_1:
 	mov rax, r14
 	mov rdx, rbx
 	add rsp, 8
 	pop rbx
 	pop r14
 	ret
-.LBB_3:
+.LBB0_2:
 	mov r14, rsi
 	mov esi, 1
 	mov rdx, rbx
@@ -31,6 +31,6 @@ inspect_asm::alloc_str::try_bumpalo:
 	mov rsi, r14
 	mov r14, rax
 	test rax, rax
-	jne .LBB_5
+	jne .LBB0_0
 	xor r14d, r14d
-	jmp .LBB_6
+	jmp .LBB0_1

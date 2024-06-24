@@ -8,12 +8,12 @@ inspect_asm::allocate::down:
 	neg rax
 	and rax, r8
 	cmp rax, qword ptr [rcx + 8]
-	jb .LBB_2
+	jb .LBB0_0
 	mov qword ptr [rcx], rax
 	test rax, rax
-	je .LBB_2
+	je .LBB0_0
 	ret
-.LBB_2:
+.LBB0_0:
 	push rbx
 	mov rbx, rdx
 	call bump_scope::bump_scope::BumpScope<A,_,_,_>::alloc_in_another_chunk

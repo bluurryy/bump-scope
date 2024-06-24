@@ -3,20 +3,20 @@ inspect_asm::alloc_layout::bumpalo:
 	mov rcx, qword ptr [rdi + 16]
 	mov rax, qword ptr [rcx + 32]
 	sub rax, rdx
-	jb .LBB_3
+	jb .LBB0_1
 	mov r8, rsi
 	neg r8
 	and rax, r8
 	cmp rax, qword ptr [rcx]
-	jb .LBB_3
+	jb .LBB0_1
 	mov qword ptr [rcx + 32], rax
 	test rax, rax
-	je .LBB_3
-.LBB_4:
+	je .LBB0_1
+.LBB0_0:
 	pop rcx
 	ret
-.LBB_3:
+.LBB0_1:
 	call qword ptr [rip + bumpalo::Bump::alloc_layout_slow@GOTPCREL]
 	test rax, rax
-	jne .LBB_4
+	jne .LBB0_0
 	call qword ptr [rip + bumpalo::oom@GOTPCREL]
