@@ -712,7 +712,7 @@ trait SizedTypeProperties: Sized {
 
     const IS_ZST: bool = mem::size_of::<Self>() == 0;
 
-    #[allow(dead_code)] // it's *not* dead code; this is a false positive
+    #[cfg(test)]
     const NEEDS_DROP: bool = mem::needs_drop::<Self>();
 }
 
