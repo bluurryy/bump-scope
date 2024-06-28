@@ -17,7 +17,7 @@ all:
   cargo test --all-features
   cargo miri test --all-features
   just test-fallibility
-  just inspect-asm
+  cargo semver-checks
 
 all-fast:
   just fmt
@@ -69,7 +69,3 @@ test-fallibility:
 
 inspect-asm *args:
   just crates/inspect-asm/inspect {{args}}
-
-publish:
-  cargo semver-checks
-  cargo publish
