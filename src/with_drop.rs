@@ -18,7 +18,7 @@
 //! let bump: Bump = Bump::new().with_drop();
 //!
 //! let foo = bump.alloc(Foo(None));
-//! let value = bump.alloc(String::from("FUCK"));
+//! let value = bump.alloc(String::from("Oh no!"));
 //!
 //! foo.0 = Some(value);
 //!
