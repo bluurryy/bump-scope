@@ -973,6 +973,45 @@ where
             }
         }
 
+        #[cfg(feature = "zerocopy")]
+        /// Resizes this vector in-place so that `len` is equal to `new_len`.
+        ///
+        /// If `new_len` is greater than `len`, the vector is extended by the
+        /// difference, with each additional slot filled with `value`.
+        /// If `new_len` is less than `len`, the vector is simply truncated.
+        impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, mut_bump_vec };
+        /// # let mut bump: Bump = Bump::new();
+        /// #
+        /// {
+        ///     let mut vec = mut_bump_vec![in bump; 1, 2, 3];
+        ///     vec.resize_zeroed(5);
+        ///     assert_eq!(vec, [1, 2, 3, 0, 0]);
+        /// }
+        ///
+        /// {
+        ///    let mut vec = mut_bump_vec![in bump; 1, 2, 3];
+        ///    vec.resize_zeroed(2);
+        ///    assert_eq!(vec, [1, 2]);
+        /// }
+        /// ```
+        for pub fn resize_zeroed
+        for pub fn try_resize_zeroed
+        fn generic_resize_zeroed(&mut self, new_len: usize)
+        where {
+            T: zerocopy::FromZeroes
+        } in {
+            let len = self.len();
+
+            if new_len > len {
+                self.generic_extend_zeroed(new_len - len)
+            } else {
+                self.truncate(new_len);
+                Ok(())
+            }
+        }
 
         /// Moves all the elements of `other` into `self`, leaving `other` empty.
         do examples
