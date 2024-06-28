@@ -467,6 +467,32 @@ where
             self.vec.generic_extend_from_within_copy(src)
         }
 
+        /// Extends this string by pushing `additional` new zero bytes.
+        impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, BumpString };
+        /// # let bump: Bump = Bump::new();
+        /// let mut string = BumpString::from_str_in("What?", &bump);
+        /// string.extend_zeroed(3);
+        /// assert_eq!(string, "What?\0\0\0");
+        /// ```
+        for pub fn extend_zeroed
+        for pub fn try_extend_zeroed
+        fn generic_extend_zeroed(&mut self, additional: usize) {
+            self.generic_reserve(additional)?;
+
+            unsafe {
+                let ptr = self.vec.as_mut_ptr();
+                let len = self.len();
+
+                ptr.add(len).write_bytes(0, additional);
+                self.vec.set_len(len + additional);
+            }
+
+            Ok(())
+        }
+
         /// Reserves capacity for at least `additional` bytes more than the
         /// current length. The allocator may reserve more space to speculatively
         /// avoid frequent allocations. After calling `reserve`,

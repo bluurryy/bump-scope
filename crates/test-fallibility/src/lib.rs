@@ -207,6 +207,10 @@ up_and_down! {
         vec.try_extend_from_slice_copy(slice)
     }
 
+    pub fn MutBumpVec_try_extend_zeroed(vec: &mut MutBumpVec<u32>, additional: usize) -> Result {
+        vec.try_extend_zeroed(additional)
+    }
+
     pub fn MutBumpVec__try_from_array_in(array: [u32; 24], bump: &mut Bump) -> Result<MutBumpVec<u32>> {
         MutBumpVec::try_from_array_in(array, bump)
     }
@@ -307,6 +311,10 @@ up_and_down! {
         vec.try_extend_from_slice_copy(slice)
     }
 
+    pub fn BumpVec_try_extend_zeroed(vec: &mut BumpVec<u32>, additional: usize) -> Result {
+        vec.try_extend_zeroed(additional)
+    }
+
     pub fn BumpVec__try_from_array_in(array: [u32; 24], bump: &Bump) -> Result<BumpVec<u32>> {
         BumpVec::try_from_array_in(array, bump)
     }
@@ -347,6 +355,10 @@ up_and_down! {
         bump.try_push_str(value)
     }
 
+    pub fn BumpString_try_extend_zeroed(vec: &mut BumpString, additional: usize) -> Result {
+        vec.try_extend_zeroed(additional)
+    }
+
     pub fn BumpString_try_reserve(vec: &mut BumpString, amount: usize) -> Result {
         vec.try_reserve(amount)
     }
@@ -371,6 +383,10 @@ up_and_down! {
         vec.try_extend_from_slice_copy(slice)
     }
 
+    pub fn FixedBumpVec_try_extend_zeroed(vec: &mut FixedBumpVec<u32>, additional: usize) -> Result {
+        vec.try_extend_zeroed(additional)
+    }
+
     pub fn FixedBumpVec_try_insert(bump: &mut FixedBumpVec<u32>, index: usize, value: u32) -> Result {
         bump.try_insert(index, value)
     }
@@ -393,5 +409,9 @@ up_and_down! {
 
     pub fn FixedBumpString_try_push_str(bump: &mut FixedBumpString, value: &str) -> Result {
         bump.try_push_str(value)
+    }
+
+    pub fn FixedBumpString_try_extend_zeroed(vec: &mut FixedBumpString, additional: usize) -> Result {
+        vec.try_extend_zeroed(additional)
     }
 }

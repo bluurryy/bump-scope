@@ -835,6 +835,37 @@ where
             Ok(())
         }
 
+        #[cfg(feature = "zerocopy")]
+        /// Extends this vector by pushing `additional` new items onto the end.
+        /// The new items are initialized with zeroes.
+        impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, mut_bump_vec };
+        /// # let mut bump: Bump = Bump::new();
+        /// let mut vec = mut_bump_vec![in bump; 1, 2, 3];
+        /// vec.extend_zeroed(2);
+        /// assert_eq!(vec, [1, 2, 3, 0, 0]);
+        /// ```
+        for pub fn extend_zeroed
+        for pub fn try_extend_zeroed
+        fn generic_extend_zeroed(&mut self, additional: usize)
+        where {
+            T: zerocopy::FromZeroes
+        } in {
+            self.generic_reserve(additional)?;
+
+            unsafe {
+                let ptr = self.as_mut_ptr();
+                let len = self.len();
+
+                ptr.add(len).write_bytes(0, additional);
+                self.set_len(len + additional);
+            }
+
+            Ok(())
+        }
+
         /// Reserves capacity for at least `additional` more elements to be inserted
         /// in the given `MutBumpVec<T>`. The collection may reserve more space to
         /// speculatively avoid frequent reallocations. After calling `reserve`,

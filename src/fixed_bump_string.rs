@@ -362,6 +362,33 @@ impl<'a> FixedBumpString<'a> {
 
             self.vec.generic_extend_from_within_copy(src)
         }
+
+        /// Extends this string by pushing `additional` new zero bytes.
+        impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, FixedBumpString };
+        /// # let bump: Bump = Bump::new();
+        /// let mut string = bump.alloc_fixed_string(8);
+        /// string.push_str("What?");
+        /// string.extend_zeroed(3);
+        /// assert_eq!(string, "What?\0\0\0");
+        /// ```
+        for pub fn extend_zeroed
+        for pub fn try_extend_zeroed
+        fn generic_extend_zeroed(&mut self, additional: usize) {
+            self.vec.generic_reserve(additional)?;
+
+            unsafe {
+                let ptr = self.vec.as_mut_ptr();
+                let len = self.len();
+
+                ptr.add(len).write_bytes(0, additional);
+                self.vec.set_len(len + additional);
+            }
+
+            Ok(())
+        }
     }
 
     unsafe fn insert_bytes<B: ErrorBehavior>(&mut self, idx: usize, bytes: &[u8]) -> Result<(), B> {
