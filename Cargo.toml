@@ -30,7 +30,7 @@ alloc = ["allocator-api2/alloc"]
 ## Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors. 
 serde = ["dep:serde"]
 
-## Adds `alloc_zeroed` and `alloc_zeroed_slice` and `BumpBox::init_zeroed`.
+## Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`.
 zerocopy = ["dep:zerocopy"]
 
 #! ### Nightly features
