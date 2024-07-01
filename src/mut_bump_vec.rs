@@ -1436,7 +1436,7 @@ where
         }
     }
 
-    #[doc = crate::doc_fn_allocator!()]
+    #[doc = include_str!("docs/allocator.md")]
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
@@ -1450,8 +1450,8 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
-    #[doc = crate::doc_fn_stats!(Stats)]
-    #[doc = crate::doc_fn_stats_greedy!(MutBumpVec)]
+    #[doc = include_str!("docs/stats.md")]
+    #[doc = include_str!("docs/stats_mut_collection_addendum.md")]
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, UP> {
@@ -1464,8 +1464,8 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator,
 {
-    #[doc = crate::doc_fn_stats!(GuaranteedAllocatedStats)]
-    #[doc = crate::doc_fn_stats_greedy!(MutBumpVec)]
+    #[doc = include_str!("docs/stats.md")]
+    #[doc = include_str!("docs/stats_mut_collection_addendum.md")]
     #[must_use]
     #[inline(always)]
     pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats<'a, UP> {

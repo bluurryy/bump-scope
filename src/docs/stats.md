@@ -1,0 +1,1 @@
+Returns a type which provides statistics about the memory usage of the bump allocator.

@@ -552,14 +552,14 @@ where
         self.into_boxed_str().into_mut()
     }
 
-    #[doc = crate::doc_fn_allocator!()]
+    #[doc = include_str!("docs/allocator.md")]
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
         self.vec.allocator()
     }
 
-    #[doc = crate::doc_fn_bump!()]
+    #[doc = include_str!("docs/bump.md")]
     #[must_use]
     #[inline(always)]
     pub fn bump(&self) -> &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
@@ -573,7 +573,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
-    #[doc = crate::doc_fn_stats!(Stats)]
+    #[doc = include_str!("docs/stats.md")]
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, UP> {
@@ -586,7 +586,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator,
 {
-    #[doc = crate::doc_fn_stats!(GuaranteedAllocatedStats)]
+    #[doc = include_str!("docs/stats.md")]
     #[must_use]
     #[inline(always)]
     pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats<'a, UP> {

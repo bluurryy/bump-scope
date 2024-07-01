@@ -176,12 +176,7 @@ where
             Self::generic_new_in(Default::default())
         }
 
-        /// Constructs a new `Bump` with a size hint for the first chunk.
-        ///
-        /// If you want to ensure a specific capacity use the <code>[with_capacity](Bump::with_capacity)\([_in](Bump::with_capacity_in)\)</code> constructor.
-        ///
-        /// The actual size that will be requested from the base allocator may be bigger or smaller.
-        /// (A small fixed amount will be subtracted to make it friendlier towards the base allocator that may store its own header information along with it.)
+        #[doc = include_str!("docs/bump/with_size.md")]
         impl
         #[must_use]
         for pub fn with_size
@@ -190,9 +185,7 @@ where
             Self::generic_with_size_in(size, Default::default())
         }
 
-        /// Constructs a new `Bump` with at least enough space for `layout`.
-        ///
-        /// To construct a `Bump` with some rough size estimate like `1 << 16` prefer the <code>[with_size](Bump::with_size)\([_in](Bump::with_size_in)\)</code> constructor.
+        #[doc = include_str!("docs/bump/with_capacity.md")]
         impl
         #[must_use]
         for pub fn with_capacity
@@ -228,12 +221,7 @@ where
             Self::generic_with_size_in(DEFAULT_START_CHUNK_SIZE, allocator)
         }
 
-        /// Constructs a new `Bump` with a size hint for the first chunk.
-        ///
-        /// If you want to ensure a specific capacity use the <code>[with_capacity](Bump::with_capacity)\([_in](Bump::with_capacity_in)\)</code> constructor.
-        ///
-        /// The actual size that will be requested from the base allocator may be bigger or smaller.
-        /// (A small fixed amount will be subtracted to make it friendlier towards the base allocator that may store its own header information along with it.)
+        #[doc = include_str!("docs/bump/with_size.md")]
         impl
         for pub fn with_size_in
         for pub fn try_with_size_in
@@ -247,9 +235,7 @@ where
             })
         }
 
-        /// Constructs a new `Bump` with at least enough space for `layout`.
-        ///
-        /// To construct a `Bump` with some rough size estimate like `1 << 16` prefer the <code>[with_size](Bump::with_size)\([_in](Bump::with_size_in)\)</code> constructor.
+        #[doc = include_str!("docs/bump/with_capacity.md")]
         impl
         for pub fn with_capacity_in
         for pub fn try_with_capacity_in
@@ -265,7 +251,7 @@ where
     }
 
     // This needs `&mut self` to make sure that no allocations are alive.
-    #[doc = crate::doc_fn_reset!()]
+    #[doc = include_str!("docs/bump/reset.md")]
     #[inline(always)]
     pub fn reset(&mut self) {
         let mut chunk = self.chunk.get();

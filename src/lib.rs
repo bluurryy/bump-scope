@@ -491,53 +491,6 @@ fn exact_size_iterator_bad_len() -> ! {
     panic!("ExactSizeIterator did not return as many items as promised")
 }
 
-macro_rules! doc_fn_stats {
-    ($name:ident) => {
-        concat!(
-            "Returns `",
-            stringify!($name),
-            "`, which provides statistics about the memory usage of the bump allocator."
-        )
-    };
-}
-
-macro_rules! doc_fn_stats_greedy {
-    ($name:ident) => {
-        concat!("\n\n`", stringify!($name), "` does not update the bump pointer until it has been turned into a slice, so it also doesn't contribute to the `remaining` and `allocated` stats.")
-    };
-}
-
-macro_rules! doc_fn_allocator {
-    () => {
-        "Returns a reference to the base allocator."
-    };
-}
-
-macro_rules! doc_fn_bump {
-    () => {
-        "Returns a reference to the bump allocator."
-    };
-}
-
-macro_rules! doc_fn_reset {
-    () => {
-        "This will only keep around the newest chunk, which is also the biggest."
-    };
-}
-
-macro_rules! doc_fn_scope {
-    () => {
-        "Returns a new `BumpScope`."
-    };
-}
-
-pub(crate) use doc_fn_allocator;
-pub(crate) use doc_fn_bump;
-pub(crate) use doc_fn_reset;
-pub(crate) use doc_fn_scope;
-pub(crate) use doc_fn_stats;
-pub(crate) use doc_fn_stats_greedy;
-
 /// An allocator that allows `grow(_zeroed)`, `shrink` and `deallocate` calls with pointers that were not allocated by this allocator.
 /// This trait is used for [`BumpBox::into_box`](BumpBox::into_box) to allow safely converting a `BumpBox` into a `Box`.
 ///
@@ -885,7 +838,7 @@ macro_rules! bump_scope_methods {
             }
         }
 
-        #[doc = crate::doc_fn_stats!(GuaranteedAllocatedStats)]
+        #[doc = include_str!("docs/stats.md")]
         #[must_use]
         #[inline(always)]
         pub fn guaranteed_allocated_stats(
@@ -909,7 +862,7 @@ macro_rules! bump_common_methods {
 
         $crate::condition! {
             if $is_scope {
-                #[doc = crate::doc_fn_stats!(Stats)]
+                #[doc = include_str!("docs/stats.md")]
                 #[must_use]
                 #[inline(always)]
                 pub fn stats(&self) -> Stats<'a, UP> {
@@ -918,7 +871,7 @@ macro_rules! bump_common_methods {
                     }
                 }
             } else {
-                #[doc = crate::doc_fn_stats!(Stats)]
+                #[doc = include_str!("docs/stats.md")]
                 #[must_use]
                 #[inline(always)]
                 pub fn stats(&self) -> Stats<UP> {
@@ -927,7 +880,7 @@ macro_rules! bump_common_methods {
             }
         }
 
-        #[doc = crate::doc_fn_allocator!()]
+        #[doc = include_str!("docs/allocator.md")]
         #[must_use]
         #[inline(always)]
         pub fn allocator(&self) -> &A {

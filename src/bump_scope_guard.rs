@@ -77,13 +77,13 @@ where
         }
     }
 
-    #[doc = crate::doc_fn_scope!()]
+    #[doc = include_str!("docs/bump_scope_guard/scope.md")]
     #[inline(always)]
     pub fn scope(&mut self) -> BumpScope<A, MIN_ALIGN, UP> {
         unsafe { BumpScope::new_unchecked(self.chunk) }
     }
 
-    #[doc = crate::doc_fn_reset!()]
+    #[doc = include_str!("docs/bump/reset.md")]
     #[inline(always)]
     pub fn reset(&mut self) {
         unsafe {
@@ -91,7 +91,7 @@ where
         }
     }
 
-    #[doc = crate::doc_fn_stats!(Stats)]
+    #[doc = include_str!("docs/stats.md")]
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<UP> {
@@ -100,7 +100,7 @@ where
         }
     }
 
-    #[doc = crate::doc_fn_stats!(GuaranteedAllocatedStats)]
+    #[doc = include_str!("docs/stats.md")]
     #[must_use]
     #[inline(always)]
     pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats<UP> {
@@ -109,7 +109,7 @@ where
         }
     }
 
-    #[doc = crate::doc_fn_allocator!()]
+    #[doc = include_str!("docs/allocator.md")]
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
@@ -170,19 +170,19 @@ where
         }
     }
 
-    #[doc = crate::doc_fn_scope!()]
+    #[doc = include_str!("docs/bump_scope_guard/scope.md")]
     #[inline(always)]
     pub fn scope(&mut self) -> BumpScope<A, MIN_ALIGN, UP> {
         unsafe { BumpScope::new_unchecked(self.chunk) }
     }
 
-    #[doc = crate::doc_fn_reset!()]
+    #[doc = include_str!("docs/bump/reset.md")]
     #[inline(always)]
     pub fn reset(&mut self) {
         self.chunk.reset();
     }
 
-    #[doc = crate::doc_fn_stats!(Stats)]
+    #[doc = include_str!("docs/stats.md")]
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<UP> {
@@ -191,7 +191,7 @@ where
         }
     }
 
-    #[doc = crate::doc_fn_stats!(GuaranteedAllocatedStats)]
+    #[doc = include_str!("docs/stats.md")]
     #[must_use]
     #[inline(always)]
     pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats<UP> {
@@ -200,7 +200,7 @@ where
         }
     }
 
-    #[doc = crate::doc_fn_allocator!()]
+    #[doc = include_str!("docs/allocator.md")]
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
