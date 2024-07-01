@@ -193,26 +193,7 @@ where
     }
 
     error_behavior_generic_methods_allocation_failure! {
-        /// Constructs a new empty `MutBumpVecRev<T>` with at least the specified capacity
-        /// with the provided `BumpScope`.
-        ///
-        /// The vector will be able to hold at least `capacity` elements without
-        /// reallocating. This method allocates for as much elements as the current chunk can hold.
-        /// If `capacity` is 0, the vector will not allocate.
-        ///
-        /// It is important to note that although the returned vector has the
-        /// minimum *capacity* specified, the vector will have a zero *length*. For
-        /// an explanation of the difference between length and capacity, see
-        /// *[Capacity and reallocation]*.
-        ///
-        /// If it is important to know the exact allocated capacity of a `MutBumpVecRev`,
-        /// always use the [`capacity`] method after construction.
-        ///
-        /// For `MutBumpVecRev<T>` where `T` is a zero-sized type, there will be no allocation
-        /// and the capacity will always be `usize::MAX`.
-        ///
-        /// [Capacity and reallocation]: alloc::vec::Vec#capacity-and-reallocation
-        /// [`capacity`]: MutBumpVecRev::capacity
+        #[doc = include_str!("docs/vec/with_capacity.md")]
         impl
         for pub fn with_capacity_in
         for pub fn try_with_capacity_in
@@ -332,9 +313,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
         nonnull::slice_from_raw_parts(self.as_nonnull_ptr(), self.len)
     }
 
-    /// Returns the total number of elements the vector can hold without
-    /// reallocating.
-    ///
+    #[doc = include_str!("docs/vec/capacity.md")]
     /// # Examples
     ///
     /// ```
@@ -349,15 +328,14 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
         self.cap
     }
 
-    /// Returns the number of elements in the vector, also referred to
-    /// as its 'length'.
+    #[doc = include_str!("docs/vec/len.md")]
     #[must_use]
     #[inline(always)]
     pub const fn len(&self) -> usize {
         self.len
     }
 
-    /// Returns `true` if the vector contains no elements.
+    #[doc = include_str!("docs/vec/is_empty.md")]
     #[must_use]
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
@@ -390,8 +368,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
         }
     }
 
-    /// Clears the vector, removing all values.
-    ///
+    #[doc = include_str!("docs/vec/clear.md")]
     /// Note that this method has no effect on the allocated capacity
     /// of the vector.
     ///
@@ -518,17 +495,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
         unsafe { nonnull::sub(self.end, self.len) }
     }
 
-    /// Shortens the vector, keeping the last `len` elements and dropping
-    /// the rest.
-    ///
-    /// If `len` is greater than the vector's current length, this has no
-    /// effect.
-    /// <!--
-    /// The [`drain`] method can emulate `truncate`, but causes the excess
-    /// elements to be returned instead of dropped.
-    /// -->
-    /// Note that this method has no effect on the allocated capacity
-    /// of the vector.
+    #[doc = include_str!("docs/vec/rev/truncate.md")]
     ///
     /// # Examples
     ///
@@ -1062,19 +1029,7 @@ where
         Ok(())
     }
 
-    /// Removes and returns the element at position `index` within the vector,
-    /// shifting all elements after it to the right.
-    ///
-    /// Note: Because this shifts over the remaining elements, it has a
-    /// worst-case performance of *O*(*n*). If you don't need the order of elements
-    /// to be preserved, use [`swap_remove`] instead.
-    ///
-    /// [`swap_remove`]: MutBumpVecRev::swap_remove
-    ///
-    /// # Panics
-    ///
-    /// Panics if `index` is out of bounds.
-    ///
+    #[doc = include_str!("docs/vec/rev/remove.md")]
     /// # Examples
     ///
     /// ```
@@ -1114,19 +1069,7 @@ where
         }
     }
 
-    /// Removes an element from the vector and returns it.
-    ///
-    /// The removed element is replaced by the first element of the vector.
-    ///
-    /// This does not preserve ordering, but is *O*(1).
-    /// If you need to preserve the element order, use [`remove`] instead.
-    ///
-    /// [`remove`]: MutBumpVecRev::remove
-    ///
-    /// # Panics
-    ///
-    /// Panics if `index` is out of bounds.
-    ///
+    #[doc = include_str!("docs/vec/rev/swap_remove.md")]
     /// # Examples
     ///
     /// ```

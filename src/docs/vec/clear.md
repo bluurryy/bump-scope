@@ -1,0 +1,1 @@
+Clears the vector, removing all values.    

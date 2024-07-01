@@ -216,22 +216,7 @@ where
     }
 
     error_behavior_generic_methods_allocation_failure! {
-        /// Constructs a new empty `BumpVec<T>` with at least the specified capacity
-        /// with the provided `BumpScope`.
-        ///
-        /// The vector will be able to hold `capacity` elements without
-        /// reallocating. If `capacity` is 0, the vector will not allocate.
-        ///
-        /// It is important to note that although the returned vector has the
-        /// minimum *capacity* specified, the vector will have a zero *length*. For
-        /// an explanation of the difference between length and capacity, see
-        /// *[Capacity and reallocation]*.
-        ///
-        /// For `BumpVec<T>` where `T` is a zero-sized type, there will be no allocation
-        /// and the capacity will always be `usize::MAX`.
-        ///
-        /// [Capacity and reallocation]: alloc::vec::Vec#capacity-and-reallocation
-        /// [`capacity`]: BumpVec::capacity
+        #[doc = include_str!("docs/vec/with_capacity.md")]
         impl
         for pub fn with_capacity_in
         for pub fn try_with_capacity_in
@@ -324,9 +309,7 @@ where
 impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
     BumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 {
-    /// Returns the total number of elements the vector can hold without
-    /// reallocating.
-    ///
+    #[doc = include_str!("docs/vec/capacity.md")]
     /// # Examples
     ///
     /// ```
@@ -341,30 +324,27 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
         self.fixed.capacity()
     }
 
-    /// Returns the number of elements in the vector, also referred to
-    /// as its 'length'.
+    #[doc = include_str!("docs/vec/len.md")]
     #[must_use]
     #[inline(always)]
     pub const fn len(&self) -> usize {
         self.fixed.len()
     }
 
-    /// Returns `true` if the vector contains no elements.
+    #[doc = include_str!("docs/vec/is_empty.md")]
     #[must_use]
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
-    /// Removes the last element from a vector and returns it, or [`None`] if it
-    /// is empty.
+    #[doc = include_str!("docs/vec/pop.md")]
     #[inline(always)]
     pub fn pop(&mut self) -> Option<T> {
         self.fixed.pop()
     }
 
-    /// Clears the vector, removing all values.
-    ///
+    #[doc = include_str!("docs/vec/clear.md")]
     /// # Examples
     /// ```
     /// # use bump_scope::{ Bump, bump_vec };
@@ -378,18 +358,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
         self.fixed.clear();
     }
 
-    /// Shortens the vector, keeping the first `len` elements and dropping
-    /// the rest.
-    ///
-    /// If `len` is greater than the vector's current length, this has no
-    /// effect.
-    ///
-    /// The [`drain`] method can emulate `truncate`, but causes the excess
-    /// elements to be returned instead of dropped.
-    ///
-    /// Note that this method has no effect on the allocated capacity
-    /// of the vector.
-    ///
+    #[doc = include_str!("docs/vec/truncate.md")]
     /// # Examples
     ///
     /// Truncating a five element vector to two elements:
@@ -433,16 +402,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
         self.fixed.truncate(len);
     }
 
-    /// Removes and returns the element at position `index` within the vector,
-    /// shifting all elements after it to the left.
-    ///
-    /// Note: Because this shifts over the remaining elements, it has a
-    /// worst-case performance of *O*(*n*). If you don't need the order of elements
-    /// to be preserved, use [`swap_remove`] instead.
-    ///
-    /// # Panics
-    /// Panics if `index` is out of bounds.
-    ///
+    #[doc = include_str!("docs/vec/remove.md")]
     /// # Examples
     /// ```
     /// # use bump_scope::{ Bump, bump_vec };
@@ -451,23 +411,12 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// assert_eq!(v.remove(1), 2);
     /// assert_eq!(v, [1, 3]);
     /// ```
-    ///
-    /// [`swap_remove`]: BumpVec::swap_remove
     #[track_caller]
     pub fn remove(&mut self, index: usize) -> T {
         self.fixed.remove(index)
     }
 
-    /// Removes an element from the vector and returns it.
-    ///
-    /// The removed element is replaced by the last element of the vector.
-    ///
-    /// This does not preserve ordering, but is *O*(1).
-    /// If you need to preserve the element order, use [`remove`] instead.
-    ///
-    /// # Panics
-    /// Panics if `index` is out of bounds.
-    ///
+    #[doc = include_str!("docs/vec/swap_remove.md")]
     /// # Examples
     /// ```
     /// # use bump_scope::{ Bump, bump_vec };
@@ -481,8 +430,6 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// assert_eq!(v.swap_remove(0), "foo");
     /// assert_eq!(v, ["baz", "qux"]);
     /// ```
-    ///
-    /// [`remove`]: BumpVec::remove
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> T {
         self.fixed.swap_remove(index)
@@ -1310,12 +1257,7 @@ where
         }
     }
 
-    /// Retains only the elements specified by the predicate, passing a mutable reference to it.
-    ///
-    /// In other words, remove all elements `e` such that `f(&mut e)` returns `false`.
-    /// This method operates in place, visiting each element exactly once in the
-    /// original order, and preserves the order of the retained elements.
-    ///
+    #[doc = include_str!("docs/retain.md")]
     /// # Examples
     ///
     /// ```

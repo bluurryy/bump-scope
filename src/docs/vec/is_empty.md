@@ -1,0 +1,1 @@
+Returns `true` if the vector contains no elements.
