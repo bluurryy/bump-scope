@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.4 (2024-07-26)
 - **fixed**: Rust Analyzer erroring and not showing suggestions
 
 ## 0.5.3 (2024-06-28)
