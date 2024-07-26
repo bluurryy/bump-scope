@@ -1,7 +1,7 @@
 # Changelog
 
 ## Unreleased
-- **fixed:**: Rust Analyzer erroring and not showing suggestions
+- **fixed**: Rust Analyzer erroring and not showing suggestions
 
 ## 0.5.3 (2024-06-28)
 - **added**: `extend_zeroed` for vectors and strings

@@ -1293,9 +1293,9 @@ define_alloc_methods! {
 
     /// Allocate an object with its default value.
     impl
-    /// This is equivalent to `alloc_with(T::default())`.
+    /// This is equivalent to `alloc_with(T::default)`.
     for pub fn alloc_default
-    /// This is equivalent to `try_alloc_with(T::default())`.
+    /// This is equivalent to `try_alloc_with(T::default)`.
     for pub fn try_alloc_default
     fn generic_alloc_default<{T: Default}>(&self) -> BumpBox<T> | BumpBox<'a, T> {
         self.generic_alloc_with(Default::default)
@@ -1461,7 +1461,7 @@ define_alloc_methods! {
 
     /// Allocate a `str` from format arguments.
     impl
-    /// Unlike [`alloc_fmt`](Bump::alloc_fmt), this function requires a mutable `Bump(Scope)`.
+    /// Unlike [`alloc_fmt`](Self::alloc_fmt), this function requires a mutable `Bump(Scope)`.
     do panics
     /// Panics if a formatting trait implementation returned an error.
     do examples
@@ -1591,7 +1591,7 @@ define_alloc_methods! {
     /// Allocate elements of an iterator into a slice in reverse order.
     impl
     ///
-    /// When bumping upwards, prefer [`alloc_iter_mut`](Bump::alloc_iter_mut) or [`alloc_iter_exact`](Bump::alloc_iter_exact) as in this case this function incurs an additional copy of the slice internally.
+    /// When bumping upwards, prefer [`alloc_iter_mut`](Self::alloc_iter_mut) or [`alloc_iter_exact`](Self::alloc_iter_exact) as in this case this function incurs an additional copy of the slice internally.
     do examples
     /// ```
     /// # use bump_scope::Bump;
@@ -1602,7 +1602,7 @@ define_alloc_methods! {
     /// ```
     for pub fn alloc_iter_mut_rev
     ///
-    /// When bumping upwards, prefer [`try_alloc_iter_mut`](Bump::try_alloc_iter) or [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) as in this case this function incurs an additional copy of the slice internally.
+    /// When bumping upwards, prefer [`try_alloc_iter_mut`](Self::try_alloc_iter) or [`try_alloc_iter_exact`](Self::try_alloc_iter_exact) as in this case this function incurs an additional copy of the slice internally.
     for pub fn try_alloc_iter_mut_rev
     fn generic_alloc_iter_mut_rev<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         let iter = iter.into_iter();
@@ -1659,7 +1659,12 @@ define_alloc_methods! {
 
     /// Allocate an unitialized object slice.
     ///
-    /// You can safely initialize the object with [`init_fill`](BumpBox::init_fill), [`init_fill_with`](BumpBox::init_fill_with), [`init_copy`](BumpBox::init_copy), [`init_clone`](BumpBox::init_clone) or unsafely with [`assume_init`](BumpBox::assume_init).
+    /// You can safely initialize the object with
+    /// [`init_fill`](BumpBox::init_fill),
+    /// [`init_fill_with`](BumpBox::init_fill_with),
+    /// [`init_copy`](BumpBox::init_copy),
+    /// [`init_clone`](BumpBox::init_clone) or unsafely with
+    /// [`assume_init`](BumpBox::assume_init).
     do examples
     /// Safely:
     /// ```
@@ -1706,12 +1711,19 @@ define_alloc_methods! {
 
     /// Allocate an unitialized object slice.
     ///
-    /// You can safely initialize the object with [`init_fill`](BumpBox::init_fill), [`init_fill_with`](BumpBox::init_fill_with), [`init_copy`](BumpBox::init_copy), [`init_clone`](BumpBox::init_clone) or unsafely with [`assume_init`](BumpBox::assume_init).
+    /// You can safely initialize the object with
+    /// [`init_fill`](BumpBox::init_fill),
+    /// [`init_fill_with`](BumpBox::init_fill_with),
+    /// [`init_copy`](BumpBox::init_copy),
+    /// [`init_clone`](BumpBox::init_clone) or unsafely with
+    /// [`assume_init`](BumpBox::assume_init).
     ///
-    /// This is just like `(try_)alloc_uninit_slice` but uses a `slice` to provide the `len`.
-    /// This avoids a check for a valid layout. The elements of `slice` are irrelevant.
     impl
+    /// This is just like [`alloc_uninit_slice`](Self::alloc_uninit_slice) but uses a `slice` to provide the `len`.
+    /// This avoids a check for a valid layout. The elements of `slice` are irrelevant.
     for pub fn alloc_uninit_slice_for
+    /// This is just like [`try_alloc_uninit_slice`](Self::try_alloc_uninit_slice) but uses a `slice` to provide the `len`.
+    /// This avoids a check for a valid layout. The elements of `slice` are irrelevant.
     for pub fn try_alloc_uninit_slice_for
     fn generic_alloc_uninit_slice_for<{T}>(&self, slice: &[T]) -> BumpBox<[MaybeUninit<T>]> | BumpBox<'a, [MaybeUninit<T>]> {
         if T::IS_ZST {
