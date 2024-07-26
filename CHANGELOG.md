@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.5 (2024-07-26)
 - **fixed:** Rust Analyzer breaking for other structs with a default `Global` allocator parameter
 
 ## 0.5.4 (2024-07-26)
