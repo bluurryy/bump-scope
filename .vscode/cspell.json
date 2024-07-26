@@ -71,6 +71,7 @@
     "slicemut",
     "sptr",
     "srcptr",
+    "structs",
     "tlsv",
     "trybuild",
     "Uninit",

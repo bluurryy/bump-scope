@@ -25,101 +25,57 @@ use crate::infallible;
 #[cfg(test)]
 use crate::WithDrop;
 
-/// A bump allocator.
-///
-/// Most of `Bump`'s constructors allocate memory.
-/// The exception is [`Bump::unallocated`]. A bump allocator created by this function has its [`GUARANTEED_ALLOCATED` parameter set to `false`](crate#guaranteed_allocated-parameter).
-/// Such a `Bump` is unable to create a scope with `scoped` or `scope_guard`.
-/// It can be converted into a guaranteed allocated `Bump` with [`into_guaranteed_allocated`](Bump::into_guaranteed_allocated) or [`as_guaranteed_allocated_mut`](Bump::as_guaranteed_allocated_mut).
-///
-/// # Gotchas
-///
-/// Allocating directly on a `Bump` is not compatible with entering bump scopes at the same time:
-///
-/// ```compile_fail,E0502
-/// # use bump_scope::Bump;
-/// let mut bump: Bump = Bump::new();
-///
-/// let one = bump.alloc(1);
-///
-/// bump.scoped(|bump| {
-///     // whatever
-/// });
-/// ```
-/// Instead convert it to a [`BumpScope`] first:
-/// ```
-/// # use bump_scope::Bump;
-/// let mut bump: Bump = Bump::new();
-/// let bump = bump.as_mut_scope();
-///
-/// let one = bump.alloc(1);
-///
-/// bump.scoped(|bump| {
-///     // whatever
-/// });
-/// ```
-// This `cfg` just adds a default parameter for `A`. We don't do this inline like
-// ```
-// #[cfg(feature = "alloc")] A = allocator_api2::alloc::Global,
-// #[cfg(not(feature = "alloc"))] A,
-// ```
-// because Rust Analyzer errors if we do that.
-#[cfg(feature = "alloc")]
-#[repr(transparent)]
-pub struct Bump<
-    A = allocator_api2::alloc::Global,
-    const MIN_ALIGN: usize = 1,
-    const UP: bool = true,
-    const GUARANTEED_ALLOCATED: bool = true,
-> where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-    pub(crate) chunk: Cell<RawChunk<UP, A>>,
+macro_rules! bump_declaration {
+    ($($allocator_parameter:tt)*) => {
+        /// A bump allocator.
+        ///
+        /// Most of `Bump`'s constructors allocate memory.
+        /// The exception is [`Bump::unallocated`]. A bump allocator created by this function has its [`GUARANTEED_ALLOCATED` parameter set to `false`](crate#guaranteed_allocated-parameter).
+        /// Such a `Bump` is unable to create a scope with `scoped` or `scope_guard`.
+        /// It can be converted into a guaranteed allocated `Bump` with [`into_guaranteed_allocated`](Bump::into_guaranteed_allocated) or [`as_guaranteed_allocated_mut`](Bump::as_guaranteed_allocated_mut).
+        ///
+        /// # Gotchas
+        ///
+        /// Allocating directly on a `Bump` is not compatible with entering bump scopes at the same time:
+        ///
+        /// ```compile_fail,E0502
+        /// # use bump_scope::Bump;
+        /// let mut bump: Bump = Bump::new();
+        ///
+        /// let one = bump.alloc(1);
+        ///
+        /// bump.scoped(|bump| {
+        ///     // whatever
+        /// });
+        /// ```
+        /// Instead convert it to a [`BumpScope`] first:
+        /// ```
+        /// # use bump_scope::Bump;
+        /// let mut bump: Bump = Bump::new();
+        /// let bump = bump.as_mut_scope();
+        ///
+        /// let one = bump.alloc(1);
+        ///
+        /// bump.scoped(|bump| {
+        ///     // whatever
+        /// });
+        /// ```
+        #[repr(transparent)]
+        pub struct Bump<
+            $($allocator_parameter)*,
+            const MIN_ALIGN: usize = 1,
+            const UP: bool = true,
+            const GUARANTEED_ALLOCATED: bool = true,
+        > where
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+            A: BaseAllocator<GUARANTEED_ALLOCATED>,
+        {
+            pub(crate) chunk: Cell<RawChunk<UP, A>>,
+        }
+    };
 }
 
-/// A bump allocator.
-///
-/// Most of `Bump`'s constructors allocate memory.
-/// The exception is [`Bump::unallocated`]. A bump allocator created by this function has its [`GUARANTEED_ALLOCATED` parameter set to `false`](crate#guaranteed_allocated-parameter).
-/// Such a `Bump` is unable to create a scope with `scoped` or `scope_guard`.
-/// It can be converted into a guaranteed allocated `Bump` with [`into_guaranteed_allocated`](Bump::into_guaranteed_allocated) or [`as_guaranteed_allocated_mut`](Bump::as_guaranteed_allocated_mut).
-///
-/// # Gotchas
-///
-/// Allocating directly on a `Bump` is not compatible with entering bump scopes at the same time:
-///
-/// ```compile_fail,E0502
-/// # use bump_scope::Bump;
-/// let mut bump: Bump = Bump::new();
-///
-/// let one = bump.alloc(1);
-///
-/// bump.scoped(|bump| {
-///     // whatever
-/// });
-/// ```
-/// Instead convert it to a [`BumpScope`] first:
-/// ```
-/// # use bump_scope::Bump;
-/// let mut bump: Bump = Bump::new();
-/// let bump = bump.as_mut_scope();
-///
-/// let one = bump.alloc(1);
-///
-/// bump.scoped(|bump| {
-///     // whatever
-/// });
-/// ```
-#[cfg(not(feature = "alloc"))]
-#[repr(transparent)]
-pub struct Bump<A, const MIN_ALIGN: usize = 1, const UP: bool = true, const GUARANTEED_ALLOCATED: bool = true>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-    pub(crate) chunk: Cell<RawChunk<UP, A>>,
-}
+crate::maybe_default_allocator!(bump_declaration);
 
 // Sending Bumps when nothing is allocated is fine.
 // When something is allocated Bump is borrowed and sending is not possible.

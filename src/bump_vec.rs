@@ -98,62 +98,67 @@ macro_rules! bump_vec {
     };
 }
 
-/// A bump allocated `Vec`.
-///
-/// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
-/// ```
-/// use bump_scope::{ Bump, BumpVec };
-/// let bump: Bump = Bump::new();
-/// let mut vec = BumpVec::new_in(&bump);
-///
-/// vec.push(1);
-/// vec.push(2);
-/// vec.push(3);
-///
-/// let slice: &[i32] = vec.into_slice();
-///
-/// assert_eq!(slice, [1, 2, 3]);
-/// ```
-///
-/// ## Why not just use a [`Vec`]?
-///
-/// You can use a `Vec` (from the standard library or from allocator-api2) in mostly the same way.
-/// The main difference is that a `BumpVec` can be turned into a slice that is live for `'a` of `BumpScope<'a>` instead of just `'b` of `&'b BumpScope`.
-/// This enables such a slice to be live while entering new scopes. This would not be possible with `Vec`:
-/// ```
-/// # use bump_scope::{ Bump, BumpVec };
-/// # let mut bump: Bump = Bump::new();
-/// let bump = bump.as_mut_scope();
-///
-/// let slice = {
-///     let mut vec = BumpVec::new_in(&*bump);
-///
-///     vec.push(1);
-///     vec.push(2);
-///     vec.push(3);
-///
-///     vec.into_slice()
-/// };
-///
-/// bump.scoped(|bump| {
-///     // allocate more things
-/// });
-///
-/// assert_eq!(slice, [1, 2, 3]);
-/// ```
-pub struct BumpVec<
-    'b,
-    'a: 'b,
-    T,
-    #[cfg(feature = "alloc")] A = allocator_api2::alloc::Global,
-    #[cfg(not(feature = "alloc"))] A,
-    const MIN_ALIGN: usize = 1,
-    const UP: bool = true,
-    const GUARANTEED_ALLOCATED: bool = true,
-> {
-    pub(crate) fixed: FixedBumpVec<'a, T>,
-    pub(crate) bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+macro_rules! bump_vec_declaration {
+    ($($allocator_parameter:tt)*) => {
+        /// A bump allocated `Vec`.
+        ///
+        /// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
+        /// ```
+        /// use bump_scope::{ Bump, BumpVec };
+        /// let bump: Bump = Bump::new();
+        /// let mut vec = BumpVec::new_in(&bump);
+        ///
+        /// vec.push(1);
+        /// vec.push(2);
+        /// vec.push(3);
+        ///
+        /// let slice: &[i32] = vec.into_slice();
+        ///
+        /// assert_eq!(slice, [1, 2, 3]);
+        /// ```
+        ///
+        /// ## Why not just use a [`Vec`]?
+        ///
+        /// You can use a `Vec` (from the standard library or from allocator-api2) in mostly the same way.
+        /// The main difference is that a `BumpVec` can be turned into a slice that is live for `'a` of `BumpScope<'a>` instead of just `'b` of `&'b BumpScope`.
+        /// This enables such a slice to be live while entering new scopes. This would not be possible with `Vec`:
+        /// ```
+        /// # use bump_scope::{ Bump, BumpVec };
+        /// # let mut bump: Bump = Bump::new();
+        /// let bump = bump.as_mut_scope();
+        ///
+        /// let slice = {
+        ///     let mut vec = BumpVec::new_in(&*bump);
+        ///
+        ///     vec.push(1);
+        ///     vec.push(2);
+        ///     vec.push(3);
+        ///
+        ///     vec.into_slice()
+        /// };
+        ///
+        /// bump.scoped(|bump| {
+        ///     // allocate more things
+        /// });
+        ///
+        /// assert_eq!(slice, [1, 2, 3]);
+        /// ```
+        pub struct BumpVec<
+            'b,
+            'a: 'b,
+            T,
+            $($allocator_parameter)*,
+            const MIN_ALIGN: usize = 1,
+            const UP: bool = true,
+            const GUARANTEED_ALLOCATED: bool = true,
+        > {
+            pub(crate) fixed: FixedBumpVec<'a, T>,
+            pub(crate) bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+        }
+    };
 }
+
+crate::maybe_default_allocator!(bump_vec_declaration);
 
 impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> UnwindSafe
     for BumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>

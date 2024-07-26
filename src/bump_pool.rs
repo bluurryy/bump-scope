@@ -8,75 +8,80 @@ use allocator_api2::alloc::AllocError;
 
 use crate::{BaseAllocator, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
 
-/// A pool of bump allocators.
-///
-/// This type allows you to do bump allocations from different threads that have their lifetime tied to the pool.
-///
-/// # Examples
-///
-/// Using `BumpPool` with parallel iterators from [`rayon`](https://docs.rs/rayon):
-/// ```
-/// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
-/// # use bump_scope::BumpPool;
-/// # use rayon::prelude::{ ParallelIterator, IntoParallelIterator };
-/// # if cfg!(miri) { return } // rayon violates strict-provenance :(
-/// #
-/// let mut pool: BumpPool = BumpPool::new();
-///
-/// let ints: Vec<&mut usize> = (0..1000)
-///     .into_par_iter()
-///     .map_init(|| pool.get(), |bump, i| {
-///         // do some expensive work
-///         bump.alloc(i).into_mut()
-///     })
-///     .collect();
-///
-/// dbg!(&ints);
-///
-/// pool.reset();
-///
-/// // memory of the int references is freed, trying to access ints will result in a lifetime error
-/// // dbg!(&ints);
-/// ```
-///
-/// Using `BumpPool` with [`std::thread::scope`]:
-/// ```
-/// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
-/// # use bump_scope::BumpPool;
-/// let pool: BumpPool = BumpPool::new();
-/// let (sender, receiver) = std::sync::mpsc::sync_channel(10);
-///
-/// std::thread::scope(|s| {
-///     s.spawn(|| {
-///         let bump = pool.get();
-///         let string = bump.alloc_str("Hello");
-///         sender.send(string).unwrap();
-///         drop(sender);
-///     });
-///
-///     s.spawn(|| {
-///         for string in receiver {
-///             assert_eq!(string, "Hello");
-///         }
-///     });
-/// });
-/// ```
-///
-#[doc(alias = "Herd")]
-#[derive(Debug)]
-pub struct BumpPool<
-    #[cfg(feature = "alloc")] A = allocator_api2::alloc::Global,
-    #[cfg(not(feature = "alloc"))] A,
-    const MIN_ALIGN: usize = 1,
-    const UP: bool = true,
-    const GUARANTEED_ALLOCATED: bool = true,
-> where
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-{
-    bumps: Mutex<Vec<Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>>,
-    allocator: A,
+macro_rules! bump_pool_declaration {
+    ($($allocator_parameter:tt)*) => {
+        /// A pool of bump allocators.
+        ///
+        /// This type allows you to do bump allocations from different threads that have their lifetime tied to the pool.
+        ///
+        /// # Examples
+        ///
+        /// Using `BumpPool` with parallel iterators from [`rayon`](https://docs.rs/rayon):
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::BumpPool;
+        /// # use rayon::prelude::{ ParallelIterator, IntoParallelIterator };
+        /// # if cfg!(miri) { return } // rayon violates strict-provenance :(
+        /// #
+        /// let mut pool: BumpPool = BumpPool::new();
+        ///
+        /// let ints: Vec<&mut usize> = (0..1000)
+        ///     .into_par_iter()
+        ///     .map_init(|| pool.get(), |bump, i| {
+        ///         // do some expensive work
+        ///         bump.alloc(i).into_mut()
+        ///     })
+        ///     .collect();
+        ///
+        /// dbg!(&ints);
+        ///
+        /// pool.reset();
+        ///
+        /// // memory of the int references is freed, trying to access ints will result in a lifetime error
+        /// // dbg!(&ints);
+        /// ```
+        ///
+        /// Using `BumpPool` with [`std::thread::scope`]:
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::BumpPool;
+        /// let pool: BumpPool = BumpPool::new();
+        /// let (sender, receiver) = std::sync::mpsc::sync_channel(10);
+        ///
+        /// std::thread::scope(|s| {
+        ///     s.spawn(|| {
+        ///         let bump = pool.get();
+        ///         let string = bump.alloc_str("Hello");
+        ///         sender.send(string).unwrap();
+        ///         drop(sender);
+        ///     });
+        ///
+        ///     s.spawn(|| {
+        ///         for string in receiver {
+        ///             assert_eq!(string, "Hello");
+        ///         }
+        ///     });
+        /// });
+        /// ```
+        ///
+        #[doc(alias = "Herd")]
+        #[derive(Debug)]
+        pub struct BumpPool<
+            $($allocator_parameter)*,
+            const MIN_ALIGN: usize = 1,
+            const UP: bool = true,
+            const GUARANTEED_ALLOCATED: bool = true,
+        > where
+            A: BaseAllocator<GUARANTEED_ALLOCATED>,
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        {
+            bumps: Mutex<Vec<Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>>,
+            allocator: A,
+        }
+    };
 }
+
+crate::maybe_default_allocator!(bump_pool_declaration);
 
 impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Default
     for BumpPool<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>

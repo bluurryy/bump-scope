@@ -97,54 +97,59 @@ macro_rules! mut_bump_vec_rev {
     };
 }
 
-/// This is like a [`MutBumpVec`](crate::MutBumpVec), but new elements are pushed to the front.
-///
-/// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
-/// ```
-/// use bump_scope::{ Bump, mut_bump_vec_rev };
-/// let mut bump: Bump = Bump::new();
-/// let mut vec = mut_bump_vec_rev![in bump];
-///
-/// vec.push(1);
-/// vec.push(2);
-/// vec.push(3);
-///
-/// let slice: &[i32] = vec.into_slice();
-///
-/// assert_eq!(slice, [3, 2, 1]);
-/// ```
-///
-/// When extending a `MutBumpVecRev` by a slice, the elements have the same order as in the source slice.
-///
-/// ```
-/// use bump_scope::{ Bump, mut_bump_vec_rev };
-/// let mut bump: Bump = Bump::new();
-/// let mut vec = mut_bump_vec_rev![in bump; 4, 5, 6];
-///
-/// vec.extend_from_slice_copy(&[1, 2, 3]);
-///
-/// assert_eq!(vec, [1, 2, 3, 4, 5, 6]);
-/// ```
-pub struct MutBumpVecRev<
-    'b,
-    'a: 'b,
-    T,
-    #[cfg(feature = "alloc")] A = allocator_api2::alloc::Global,
-    #[cfg(not(feature = "alloc"))] A,
-    const MIN_ALIGN: usize = 1,
-    const UP: bool = true,
-    const GUARANTEED_ALLOCATED: bool = true,
-> {
-    end: NonNull<T>,
-    len: usize,
-    cap: usize,
+macro_rules! mut_bump_vec_rev_declaration {
+    ($($allocator_parameter:tt)*) => {
+        /// This is like a [`MutBumpVec`](crate::MutBumpVec), but new elements are pushed to the front.
+        ///
+        /// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
+        /// ```
+        /// use bump_scope::{ Bump, mut_bump_vec_rev };
+        /// let mut bump: Bump = Bump::new();
+        /// let mut vec = mut_bump_vec_rev![in bump];
+        ///
+        /// vec.push(1);
+        /// vec.push(2);
+        /// vec.push(3);
+        ///
+        /// let slice: &[i32] = vec.into_slice();
+        ///
+        /// assert_eq!(slice, [3, 2, 1]);
+        /// ```
+        ///
+        /// When extending a `MutBumpVecRev` by a slice, the elements have the same order as in the source slice.
+        ///
+        /// ```
+        /// use bump_scope::{ Bump, mut_bump_vec_rev };
+        /// let mut bump: Bump = Bump::new();
+        /// let mut vec = mut_bump_vec_rev![in bump; 4, 5, 6];
+        ///
+        /// vec.extend_from_slice_copy(&[1, 2, 3]);
+        ///
+        /// assert_eq!(vec, [1, 2, 3, 4, 5, 6]);
+        /// ```
+        pub struct MutBumpVecRev<
+            'b,
+            'a: 'b,
+            T,
+            $($allocator_parameter)*,
+            const MIN_ALIGN: usize = 1,
+            const UP: bool = true,
+            const GUARANTEED_ALLOCATED: bool = true,
+        > {
+            end: NonNull<T>,
+            len: usize,
+            cap: usize,
 
-    pub(crate) bump: &'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+            pub(crate) bump: &'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
 
-    /// First field marks the lifetime.
-    /// Second field marks ownership over T. (<https://doc.rust-lang.org/nomicon/phantom-data.html#generic-parameters-and-drop-checking>)
-    marker: PhantomData<(&'a (), T)>,
+            /// First field marks the lifetime.
+            /// Second field marks ownership over T. (<https://doc.rust-lang.org/nomicon/phantom-data.html#generic-parameters-and-drop-checking>)
+            marker: PhantomData<(&'a (), T)>,
+        }
+    };
 }
+
+crate::maybe_default_allocator!(mut_bump_vec_rev_declaration);
 
 impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> UnwindSafe
     for MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>

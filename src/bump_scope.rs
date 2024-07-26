@@ -29,29 +29,34 @@ use crate::infallible;
 #[cfg(test)]
 use crate::WithDrop;
 
-/// A bump allocation scope whose allocations are valid for the lifetime of its associated [`BumpScopeGuard`] or closure.
-///
-/// Alternatively a [`Bump`] can be turned into a `BumpScope` with [`as_scope`], [`as_mut_scope`] and `into`.
-///
-/// [You can see examples in the crate documentation.](crate#scopes)
-///
-/// [`Bump`]: crate::Bump
-/// [`as_scope`]: crate::Bump::as_scope
-/// [`as_mut_scope`]: crate::Bump::as_mut_scope
-#[repr(transparent)]
-pub struct BumpScope<
-    'a,
-    #[cfg(feature = "alloc")] A = allocator_api2::alloc::Global,
-    #[cfg(not(feature = "alloc"))] A,
-    const MIN_ALIGN: usize = 1,
-    const UP: bool = true,
-    const GUARANTEED_ALLOCATED: bool = true,
-> {
-    pub(crate) chunk: Cell<RawChunk<UP, A>>,
+macro_rules! bump_scope_declaration {
+    ($($allocator_parameter:tt)*) => {
+        /// A bump allocation scope whose allocations are valid for the lifetime of its associated [`BumpScopeGuard`] or closure.
+        ///
+        /// Alternatively a [`Bump`] can be turned into a `BumpScope` with [`as_scope`], [`as_mut_scope`] and `into`.
+        ///
+        /// [You can see examples in the crate documentation.](crate#scopes)
+        ///
+        /// [`Bump`]: crate::Bump
+        /// [`as_scope`]: crate::Bump::as_scope
+        /// [`as_mut_scope`]: crate::Bump::as_mut_scope
+        #[repr(transparent)]
+        pub struct BumpScope<
+            'a,
+            $($allocator_parameter)*,
+            const MIN_ALIGN: usize = 1,
+            const UP: bool = true,
+            const GUARANTEED_ALLOCATED: bool = true,
+        > {
+            pub(crate) chunk: Cell<RawChunk<UP, A>>,
 
-    /// Marks the lifetime of the mutably borrowed `BumpScopeGuard(Root)`.
-    marker: PhantomData<&'a ()>,
+            /// Marks the lifetime of the mutably borrowed `BumpScopeGuard(Root)`.
+            marker: PhantomData<&'a ()>,
+        }
+    };
 }
+
+crate::maybe_default_allocator!(bump_scope_declaration);
 
 impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> UnwindSafe
     for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>

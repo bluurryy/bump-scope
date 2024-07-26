@@ -96,43 +96,48 @@ macro_rules! mut_bump_vec {
     };
 }
 
-/// A type like [`BumpVec`](crate::BumpVec), optimized for a `&mut Bump(Scope)`.
-///
-/// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
-/// ```
-/// use bump_scope::{ Bump, MutBumpVec };
-/// let mut bump: Bump = Bump::new();
-/// let mut vec = MutBumpVec::new_in(&mut bump);
-///
-/// vec.push(1);
-/// vec.push(2);
-/// vec.push(3);
-///
-/// let slice: &[i32] = vec.into_slice();
-///
-/// assert_eq!(slice, [1, 2, 3]);
-/// ```
-//
-// MutBumpVec never actually moves a bump pointer.
-// It may force allocation of a new chunk, but it does not move the pointer within.
-// So we don't need to move the bump pointer when dropping.
-//
-// If we want to reset the bump pointer to a previous chunk, we use a bump scope.
-// We could do it here, by resetting to the last non-empty chunk but that would require a loop.
-// Chunk allocations are supposed to be very rare, so this wouldn't be worth it.
-pub struct MutBumpVec<
-    'b,
-    'a: 'b,
-    T,
-    #[cfg(feature = "alloc")] A = allocator_api2::alloc::Global,
-    #[cfg(not(feature = "alloc"))] A,
-    const MIN_ALIGN: usize = 1,
-    const UP: bool = true,
-    const GUARANTEED_ALLOCATED: bool = true,
-> {
-    fixed: FixedBumpVec<'b, T>,
-    pub(crate) bump: &'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+macro_rules! mut_bump_vec_declaration {
+    ($($allocator_parameter:tt)*) => {
+        /// A type like [`BumpVec`](crate::BumpVec), optimized for a `&mut Bump(Scope)`.
+        ///
+        /// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
+        /// ```
+        /// use bump_scope::{ Bump, MutBumpVec };
+        /// let mut bump: Bump = Bump::new();
+        /// let mut vec = MutBumpVec::new_in(&mut bump);
+        ///
+        /// vec.push(1);
+        /// vec.push(2);
+        /// vec.push(3);
+        ///
+        /// let slice: &[i32] = vec.into_slice();
+        ///
+        /// assert_eq!(slice, [1, 2, 3]);
+        /// ```
+        //
+        // MutBumpVec never actually moves a bump pointer.
+        // It may force allocation of a new chunk, but it does not move the pointer within.
+        // So we don't need to move the bump pointer when dropping.
+        //
+        // If we want to reset the bump pointer to a previous chunk, we use a bump scope.
+        // We could do it here, by resetting to the last non-empty chunk but that would require a loop.
+        // Chunk allocations are supposed to be very rare, so this wouldn't be worth it.
+        pub struct MutBumpVec<
+            'b,
+            'a: 'b,
+            T,
+            $($allocator_parameter)*,
+            const MIN_ALIGN: usize = 1,
+            const UP: bool = true,
+            const GUARANTEED_ALLOCATED: bool = true,
+        > {
+            fixed: FixedBumpVec<'b, T>,
+            pub(crate) bump: &'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+        }
+    };
 }
+
+crate::maybe_default_allocator!(mut_bump_vec_declaration);
 
 impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> UnwindSafe
     for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>

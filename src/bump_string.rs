@@ -57,67 +57,72 @@ macro_rules! bump_format {
     }};
 }
 
-/// A bump allocated [`String`].
-///
-/// When you are done building the string, you can turn it into a `&str` with [`into_str`].
-///
-/// # Examples
-///
-/// You can create a `BumpString` from [a literal string][`&str`] with [`BumpString::from_str_in`]:
-///
-/// [`into_str`]: BumpString::into_str
-///
-/// ```
-/// # use bump_scope::{ Bump, BumpString };
-/// # let bump: Bump = Bump::new();
-/// let hello = BumpString::from_str_in("Hello, world!", &bump);
-/// ```
-///
-/// You can append a [`char`] to a `String` with the [`push`] method, and
-/// append a [`&str`] with the [`push_str`] method:
-///
-/// ```
-/// # use bump_scope::{ Bump, BumpString };
-/// # let bump: Bump = Bump::new();
-/// let mut hello = BumpString::from_str_in("Hello, ", &bump);
-///
-/// hello.push('w');
-/// hello.push_str("orld!");
-///
-/// assert_eq!(hello.as_str(), "Hello, world!");
-/// ```
-///
-/// [`push`]: BumpString::push
-/// [`push_str`]: BumpString::push_str
-///
-/// If you have a vector of UTF-8 bytes, you can create a `BumpString` from it with
-/// the [`from_utf8`] method:
-///
-/// ```
-/// # use bump_scope::{ Bump, BumpString, bump_vec };
-/// # let bump: Bump = Bump::new();
-/// // some bytes, in a vector
-/// let sparkle_heart = bump_vec![in bump; 240, 159, 146, 150];
-///
-/// // We know these bytes are valid, so we'll use `unwrap()`.
-/// let sparkle_heart = BumpString::from_utf8(sparkle_heart).unwrap();
-///
-/// assert_eq!("💖", sparkle_heart);
-/// ```
-///
-/// [`&str`]: prim@str "&str"
-/// [`from_utf8`]: BumpString::from_utf8
-pub struct BumpString<
-    'b,
-    'a: 'b,
-    #[cfg(feature = "alloc")] A = allocator_api2::alloc::Global,
-    #[cfg(not(feature = "alloc"))] A,
-    const MIN_ALIGN: usize = 1,
-    const UP: bool = true,
-    const GUARANTEED_ALLOCATED: bool = true,
-> {
-    pub(crate) vec: BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+macro_rules! bump_string_declaration {
+    ($($allocator_parameter:tt)*) => {
+        /// A bump allocated [`String`].
+        ///
+        /// When you are done building the string, you can turn it into a `&str` with [`into_str`].
+        ///
+        /// # Examples
+        ///
+        /// You can create a `BumpString` from [a literal string][`&str`] with [`BumpString::from_str_in`]:
+        ///
+        /// [`into_str`]: BumpString::into_str
+        ///
+        /// ```
+        /// # use bump_scope::{ Bump, BumpString };
+        /// # let bump: Bump = Bump::new();
+        /// let hello = BumpString::from_str_in("Hello, world!", &bump);
+        /// ```
+        ///
+        /// You can append a [`char`] to a `String` with the [`push`] method, and
+        /// append a [`&str`] with the [`push_str`] method:
+        ///
+        /// ```
+        /// # use bump_scope::{ Bump, BumpString };
+        /// # let bump: Bump = Bump::new();
+        /// let mut hello = BumpString::from_str_in("Hello, ", &bump);
+        ///
+        /// hello.push('w');
+        /// hello.push_str("orld!");
+        ///
+        /// assert_eq!(hello.as_str(), "Hello, world!");
+        /// ```
+        ///
+        /// [`push`]: BumpString::push
+        /// [`push_str`]: BumpString::push_str
+        ///
+        /// If you have a vector of UTF-8 bytes, you can create a `BumpString` from it with
+        /// the [`from_utf8`] method:
+        ///
+        /// ```
+        /// # use bump_scope::{ Bump, BumpString, bump_vec };
+        /// # let bump: Bump = Bump::new();
+        /// // some bytes, in a vector
+        /// let sparkle_heart = bump_vec![in bump; 240, 159, 146, 150];
+        ///
+        /// // We know these bytes are valid, so we'll use `unwrap()`.
+        /// let sparkle_heart = BumpString::from_utf8(sparkle_heart).unwrap();
+        ///
+        /// assert_eq!("💖", sparkle_heart);
+        /// ```
+        ///
+        /// [`&str`]: prim@str "&str"
+        /// [`from_utf8`]: BumpString::from_utf8
+        pub struct BumpString<
+            'b,
+            'a: 'b,
+            $($allocator_parameter)*,
+            const MIN_ALIGN: usize = 1,
+            const UP: bool = true,
+            const GUARANTEED_ALLOCATED: bool = true,
+        > {
+            pub(crate) vec: BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+        }
+    };
 }
+
+crate::maybe_default_allocator!(bump_string_declaration);
 
 impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>
     BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>

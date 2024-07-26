@@ -57,68 +57,73 @@ macro_rules! mut_bump_format {
     }};
 }
 
-/// A type like [`BumpString`](crate::BumpString), optimized for a `&mut Bump(Scope)`.
-///
-/// When you are done building the string, you can turn it into a `&str` with [`into_str`].
-///
-/// # Examples
-///
-/// You can create a `MutBumpString` from [a literal string][`&str`] with [`MutBumpString::from_str_in`]:
-///
-/// [`into_str`]: MutBumpString::into_str
-///
-/// ```
-/// # use bump_scope::{ Bump, MutBumpString };
-/// # let mut bump: Bump = Bump::new();
-/// let hello = MutBumpString::from_str_in("Hello, world!", &mut bump);
-/// # let _ = hello;
-/// ```
-///
-/// You can append a [`char`] to a `String` with the [`push`] method, and
-/// append a [`&str`] with the [`push_str`] method:
-///
-/// ```
-/// # use bump_scope::{ Bump, MutBumpString };
-/// # let mut bump: Bump = Bump::new();
-/// let mut hello = MutBumpString::from_str_in("Hello, ", &mut bump);
-///
-/// hello.push('w');
-/// hello.push_str("orld!");
-///
-/// assert_eq!(hello.as_str(), "Hello, world!");
-/// ```
-///
-/// [`push`]: MutBumpString::push
-/// [`push_str`]: MutBumpString::push_str
-///
-/// If you have a vector of UTF-8 bytes, you can create a `MutBumpString` from it with
-/// the [`from_utf8`] method:
-///
-/// ```
-/// # use bump_scope::{ Bump, MutBumpString, mut_bump_vec };
-/// # let mut bump: Bump = Bump::new();
-/// // some bytes, in a vector
-/// let sparkle_heart = mut_bump_vec![in bump; 240, 159, 146, 150];
-///
-/// // We know these bytes are valid, so we'll use `unwrap()`.
-/// let sparkle_heart = MutBumpString::from_utf8(sparkle_heart).unwrap();
-///
-/// assert_eq!("💖", sparkle_heart);
-/// ```
-///
-/// [`&str`]: prim@str "&str"
-/// [`from_utf8`]: MutBumpString::from_utf8
-pub struct MutBumpString<
-    'b,
-    'a: 'b,
-    #[cfg(feature = "alloc")] A = allocator_api2::alloc::Global,
-    #[cfg(not(feature = "alloc"))] A,
-    const MIN_ALIGN: usize = 1,
-    const UP: bool = true,
-    const GUARANTEED_ALLOCATED: bool = true,
-> {
-    vec: MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+macro_rules! mut_bump_string_declaration {
+    ($($allocator_parameter:tt)*) => {
+        /// A type like [`BumpString`](crate::BumpString), optimized for a `&mut Bump(Scope)`.
+        ///
+        /// When you are done building the string, you can turn it into a `&str` with [`into_str`].
+        ///
+        /// # Examples
+        ///
+        /// You can create a `MutBumpString` from [a literal string][`&str`] with [`MutBumpString::from_str_in`]:
+        ///
+        /// [`into_str`]: MutBumpString::into_str
+        ///
+        /// ```
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::new();
+        /// let hello = MutBumpString::from_str_in("Hello, world!", &mut bump);
+        /// # let _ = hello;
+        /// ```
+        ///
+        /// You can append a [`char`] to a `String` with the [`push`] method, and
+        /// append a [`&str`] with the [`push_str`] method:
+        ///
+        /// ```
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::new();
+        /// let mut hello = MutBumpString::from_str_in("Hello, ", &mut bump);
+        ///
+        /// hello.push('w');
+        /// hello.push_str("orld!");
+        ///
+        /// assert_eq!(hello.as_str(), "Hello, world!");
+        /// ```
+        ///
+        /// [`push`]: MutBumpString::push
+        /// [`push_str`]: MutBumpString::push_str
+        ///
+        /// If you have a vector of UTF-8 bytes, you can create a `MutBumpString` from it with
+        /// the [`from_utf8`] method:
+        ///
+        /// ```
+        /// # use bump_scope::{ Bump, MutBumpString, mut_bump_vec };
+        /// # let mut bump: Bump = Bump::new();
+        /// // some bytes, in a vector
+        /// let sparkle_heart = mut_bump_vec![in bump; 240, 159, 146, 150];
+        ///
+        /// // We know these bytes are valid, so we'll use `unwrap()`.
+        /// let sparkle_heart = MutBumpString::from_utf8(sparkle_heart).unwrap();
+        ///
+        /// assert_eq!("💖", sparkle_heart);
+        /// ```
+        ///
+        /// [`&str`]: prim@str "&str"
+        /// [`from_utf8`]: MutBumpString::from_utf8
+        pub struct MutBumpString<
+            'b,
+            'a: 'b,
+            $($allocator_parameter)*,
+            const MIN_ALIGN: usize = 1,
+            const UP: bool = true,
+            const GUARANTEED_ALLOCATED: bool = true,
+        > {
+            vec: MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+        }
+    };
 }
+
+crate::maybe_default_allocator!(mut_bump_string_declaration);
 
 impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>
     MutBumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>

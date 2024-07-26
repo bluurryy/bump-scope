@@ -1,7 +1,10 @@
 # Changelog
 
+## Unreleased
+- **fixed:** Rust Analyzer breaking for other structs with a default `Global` allocator parameter
+
 ## 0.5.4 (2024-07-26)
-- **fixed**: Rust Analyzer erroring and not showing suggestions
+- **fixed**: Rust Analyzer breaking for `Bump`
 
 ## 0.5.3 (2024-06-28)
 - **added**: `extend_zeroed` for vectors and strings

@@ -1889,6 +1889,26 @@ impl<A> BaseAllocator<false> for A where A: Allocator + Clone + Default {}
 
 impl<A> BaseAllocator<true> for A where A: Allocator + Clone {}
 
+/// Call this with a macro that accepts tokens of either `A` or `A = allocator_api2::alloc::Global`.
+///
+/// We do it this way instead of having a parameter like
+/// ```ignore
+/// #[cfg(feature = "alloc")] A = allocator_api2::alloc::Global,
+/// #[cfg(not(feature = "alloc"))] A,
+/// ```
+/// because Rust Analyzer thinks those are two parameters and gets confused.
+macro_rules! maybe_default_allocator {
+    ($macro:ident) => {
+        #[cfg(feature = "alloc")]
+        $macro!(A = allocator_api2::alloc::Global);
+
+        #[cfg(not(feature = "alloc"))]
+        $macro!(A);
+    };
+}
+
+pub(crate) use maybe_default_allocator;
+
 /// We don't use `document-features` the usual way because then we can't have our features
 /// be copied into the `README.md` via [`cargo-rdme`](https://github.com/orium/cargo-rdme).
 #[test]
