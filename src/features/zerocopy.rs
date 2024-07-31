@@ -55,7 +55,7 @@ where
 define_alloc_methods! {
     macro alloc_zeroed_methods
 
-    /// Allocate an zeroed object.
+    /// Allocate a zeroed object.
     impl
     do examples
     /// ```
@@ -73,7 +73,7 @@ define_alloc_methods! {
         Ok(self.generic_alloc_uninit::<B, T>()?.init_zeroed())
     }
 
-    /// Allocate an zeroed object slice.
+    /// Allocate a zeroed object slice.
     impl
     #[deprecated = "use `alloc_zeroed_slice` instead"]
     do examples
@@ -93,7 +93,7 @@ define_alloc_methods! {
         Ok(self.generic_alloc_uninit_slice::<B, T>(len)?.init_zeroed())
     }
 
-    /// Allocate an zeroed object slice.
+    /// Allocate a zeroed object slice.
     impl
     do examples
     /// ```
