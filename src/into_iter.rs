@@ -130,10 +130,10 @@ impl<'a, T> IntoIter<'a, T> {
     }
 
     /// Converts this iterator into a `BumpBox<[T]>`.
-    // NB: `BumpSliceIter<T>` might come from a `BumpBox<[T]>` or `MutBumpVec<T>`.
+    // NB: `IntoIter<T>` might come from a `BumpBox<[T]>` or `MutBumpVec<T>`.
     // For `BumpBox` of course we can turn it back to a `BumpBox`.
     // For `MutBumpVec`, `'a` is a mutable borrow of the bump allocator, so we can act as if we have a
-    // BumpBox allocated, for we can only mess with the bump allocator once this `BumpBox` is gone.
+    // BumpBox allocated, for we can only mess with the bump allocator once that `BumpBox` is gone.
     #[must_use]
     #[inline(always)]
     pub fn into_boxed_slice(self) -> BumpBox<'a, [T]> {
