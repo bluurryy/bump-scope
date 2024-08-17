@@ -1,7 +1,7 @@
 # Changelog
 
 ## Unreleased
-- **fixed:** `alloc_iter` to not take up more than the necessary memory
+- **fixed:** `alloc_iter` and `alloc_fmt` to not take up more than the necessary memory
 
 ## 0.5.5 (2024-07-26)
 - **fixed:** Rust Analyzer breaking for other structs with a default `Global` allocator parameter
