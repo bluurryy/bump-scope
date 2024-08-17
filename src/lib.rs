@@ -1519,7 +1519,7 @@ define_alloc_methods! {
         }
 
         vec.shrink_to_fit();
-        
+
         Ok(vec.into_boxed_slice())
     }
 

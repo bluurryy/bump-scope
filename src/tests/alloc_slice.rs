@@ -1,10 +1,12 @@
 use crate::Bump;
+use allocator_api2::alloc::Global;
 
-#[test]
-fn zst() {
+use super::either_way;
+
+fn zst<const UP: bool>() {
     const ZST: [u64; 0] = [0u64; 0];
 
-    let bump: Bump = Bump::new();
+    let bump: Bump<Global, 1, UP> = Bump::new();
 
     bump.alloc_slice_copy(&[ZST]);
     bump.alloc_slice_clone(&[ZST]);
@@ -14,9 +16,8 @@ fn zst() {
     assert_eq!(bump.stats().allocated(), 0);
 }
 
-#[test]
-fn empty() {
-    let bump: Bump = Bump::new();
+fn empty<const UP: bool>() {
+    let bump: Bump<Global, 1, UP> = Bump::new();
 
     bump.alloc_slice_copy::<u64>(&[]);
     bump.alloc_slice_clone::<String>(&[]);
@@ -28,9 +29,15 @@ fn empty() {
     assert_eq!(bump.stats().allocated(), 0);
 }
 
-#[test]
-#[should_panic(expected = "capacity overflow")]
-fn overflow() {
-    let bump: Bump = Bump::new();
+fn overflow<const UP: bool>() {
+    let bump: Bump<Global, 1, UP> = Bump::new();
     bump.alloc_slice_fill_with(usize::MAX, u64::default);
+}
+
+either_way! {
+    zst
+    empty
+
+    #[should_panic(expected = "capacity overflow")]
+    overflow
 }

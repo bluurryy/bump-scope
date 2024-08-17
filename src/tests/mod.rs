@@ -65,10 +65,11 @@ fn assert_covariant() {
 }
 
 macro_rules! either_way {
-    ($($ident:ident)*) => {
+    ($($(#[$attr:meta])* $ident:ident)*) => {
         mod up {
             $(
                 #[test]
+                $(#[$attr])*
                 fn $ident() {
                     eprintln!("`UP` is `true`");
                     super::$ident::<true>();
@@ -79,6 +80,7 @@ macro_rules! either_way {
         mod down {
             $(
                 #[test]
+                $(#[$attr])*
                 fn $ident() {
                     eprintln!("`UP` is `false`");
                     super::$ident::<false>();
