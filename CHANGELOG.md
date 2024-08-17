@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.6 (2024-08-17)
 - **fixed:** `alloc_iter` and `alloc_fmt` to not take up more than the necessary memory
 
 ## 0.5.5 (2024-07-26)
