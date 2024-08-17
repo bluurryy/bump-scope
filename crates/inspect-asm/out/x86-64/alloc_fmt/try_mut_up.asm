@@ -29,9 +29,9 @@ inspect_asm::alloc_fmt::try_mut_up:
 .LBB0_0:
 	cmp qword ptr [rsp + 24], 0
 	je .LBB0_1
-	mov rcx, qword ptr [rsp + 32]
 	mov rax, qword ptr [rsp + 8]
 	mov rdx, qword ptr [rsp + 16]
+	mov rcx, qword ptr [rsp + 32]
 	lea rsi, [rax + rdx]
 	mov rcx, qword ptr [rcx]
 	mov qword ptr [rcx], rsi

@@ -3,14 +3,14 @@ inspect_asm::grow::up:
 	push r14
 	push rbx
 	mov rbx, r9
+	lea r10, [rsi + rcx]
 	mov rax, qword ptr [rdi]
 	mov r9, qword ptr [rax]
 	mov rdx, qword ptr [rax + 8]
-	lea r10, [r8 - 1]
-	test r10, rsi
-	jne .LBB0_0
-	lea r10, [rsi + rcx]
-	cmp r10, r9
+	xor r10, r9
+	lea r11, [r8 - 1]
+	and r11, rsi
+	or r11, r10
 	jne .LBB0_0
 	sub rdx, rsi
 	cmp rdx, rbx

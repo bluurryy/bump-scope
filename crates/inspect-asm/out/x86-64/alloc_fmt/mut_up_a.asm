@@ -25,9 +25,9 @@ inspect_asm::alloc_fmt::mut_up_a:
 	jne .LBB0_1
 	cmp qword ptr [rsp + 16], 0
 	je .LBB0_0
-	mov rcx, qword ptr [rsp + 24]
 	mov rax, qword ptr [rsp]
 	mov rdx, qword ptr [rsp + 8]
+	mov rcx, qword ptr [rsp + 24]
 	mov rcx, qword ptr [rcx]
 	lea rsi, [rax + rdx]
 	add rsi, 3

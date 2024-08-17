@@ -3,28 +3,28 @@ inspect_asm::shrink::bumpalo:
 	push rbx
 	push rax
 	mov rbx, r9
-	mov rax, r8
-	neg rax
 	cmp rdx, r8
 	jae .LBB0_0
-	not rax
-	xor ecx, ecx
-	test rsi, rax
-	cmovne rsi, rcx
+	dec r8
+	xor eax, eax
+	test r8, rsi
+	cmovne rsi, rax
 	jmp .LBB0_1
 .LBB0_0:
-	mov rdx, qword ptr [rdi + 16]
-	cmp qword ptr [rdx + 32], rsi
+	mov rax, qword ptr [rdi + 16]
+	mov r14, qword ptr [rax + 32]
+	cmp r14, rsi
 	jne .LBB0_1
-	mov r14, rcx
-	sub r14, rbx
-	and r14, rax
+	mov rdx, rcx
+	sub rdx, rbx
+	neg r8
+	and r8, rdx
 	inc rcx
 	shr rcx
-	cmp r14, rcx
+	cmp r8, rcx
 	jb .LBB0_1
-	add r14, rsi
-	mov qword ptr [rdx + 32], r14
+	add r14, r8
+	mov qword ptr [rax + 32], r14
 	mov rdi, r14
 	mov rdx, rbx
 	call qword ptr [rip + memcpy@GOTPCREL]

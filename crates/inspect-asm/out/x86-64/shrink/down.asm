@@ -16,17 +16,15 @@ inspect_asm::shrink::down:
 	mov r14, rdi
 	add rcx, rsi
 	xor eax, eax
-	cmp r8, 1
-	mov edx, 0
-	sbb rdx, r8
 	sub rcx, rbx
-	cmovb rcx, rax
-	and rcx, rdx
+	cmovae rax, rcx
+	neg r8
+	and r8, rax
 	lea rax, [rsi + rbx]
-	mov r15, rcx
-	mov rdi, rcx
+	mov r15, r8
+	mov rdi, r8
 	mov rdx, rbx
-	cmp rax, rcx
+	cmp rax, r8
 	jbe .LBB0_1
 	call qword ptr [rip + memmove@GOTPCREL]
 	jmp .LBB0_2

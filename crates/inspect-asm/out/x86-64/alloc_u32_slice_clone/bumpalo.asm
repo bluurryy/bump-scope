@@ -1,57 +1,56 @@
 inspect_asm::alloc_u32_slice_clone::bumpalo:
+	push r15
 	push r14
 	push rbx
-	push rax
-	lea rcx, [4*rdx]
-	mov r8, qword ptr [rdi + 16]
-	mov rax, qword ptr [r8 + 32]
-	cmp rcx, rax
+	lea rbx, [4*rdx]
+	mov rcx, qword ptr [rdi + 16]
+	mov rax, qword ptr [rcx + 32]
+	cmp rbx, rax
 	ja .LBB0_2
-	sub rax, rcx
+	sub rax, rbx
 	and rax, -4
-	cmp rax, qword ptr [r8]
+	cmp rax, qword ptr [rcx]
 	jb .LBB0_2
-	mov qword ptr [r8 + 32], rax
+	mov qword ptr [rcx + 32], rax
 	test rax, rax
 	je .LBB0_2
 .LBB0_0:
 	test rdx, rdx
 	je .LBB0_6
-	lea rcx, [rdx - 1]
-	movabs r8, 4611686018427387903
-	and r8, rcx
+	add rbx, -4
 	xor edi, edi
-	cmp r8, 7
+	cmp rbx, 28
 	jb .LBB0_3
-	mov r9, rax
-	sub r9, rsi
+	mov r8, rax
+	sub r8, rsi
 	mov rcx, rsi
-	cmp r9, 32
+	cmp r8, 32
 	jb .LBB0_4
-	inc r8
-	mov rdi, r8
+	shr rbx, 2
+	inc rbx
+	mov rdi, rbx
 	and rdi, -8
 	lea rcx, [rsi + 4*rdi]
-	xor r9d, r9d
+	xor r8d, r8d
 .LBB0_1:
-	movups xmm0, xmmword ptr [rsi + 4*r9]
-	movups xmm1, xmmword ptr [rsi + 4*r9 + 16]
-	movups xmmword ptr [rax + 4*r9], xmm0
-	movups xmmword ptr [rax + 4*r9 + 16], xmm1
-	add r9, 8
-	cmp rdi, r9
+	movups xmm0, xmmword ptr [rsi + 4*r8]
+	movups xmm1, xmmword ptr [rsi + 4*r8 + 16]
+	movups xmmword ptr [rax + 4*r8], xmm0
+	movups xmmword ptr [rax + 4*r8 + 16], xmm1
+	add r8, 8
+	cmp rdi, r8
 	jne .LBB0_1
-	cmp r8, rdi
+	cmp rbx, rdi
 	jne .LBB0_4
 	jmp .LBB0_6
 .LBB0_2:
-	mov rbx, rsi
+	mov r14, rsi
 	mov esi, 4
-	mov r14, rdx
-	mov rdx, rcx
+	mov r15, rdx
+	mov rdx, rbx
 	call qword ptr [rip + bumpalo::Bump::alloc_layout_slow@GOTPCREL]
-	mov rsi, rbx
-	mov rdx, r14
+	mov rsi, r14
+	mov rdx, r15
 	test rax, rax
 	jne .LBB0_0
 	call qword ptr [rip + bumpalo::oom@GOTPCREL]
@@ -68,7 +67,7 @@ inspect_asm::alloc_u32_slice_clone::bumpalo:
 	cmp rcx, rsi
 	jne .LBB0_5
 .LBB0_6:
-	add rsp, 8
 	pop rbx
 	pop r14
+	pop r15
 	ret

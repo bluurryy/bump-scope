@@ -5,16 +5,18 @@ inspect_asm::grow::bumpalo:
 	mov rbx, r9
 	cmp rdx, r8
 	jb .LBB0_0
+	mov r14, rdx
 	mov rax, qword ptr [rdi + 16]
-	cmp qword ptr [rax + 32], rsi
+	mov rdx, qword ptr [rax + 32]
+	cmp rdx, rsi
 	je .LBB0_3
 .LBB0_0:
 	mov rax, qword ptr [rdi + 16]
 	mov r14, qword ptr [rax + 32]
 	sub r14, rbx
 	jb .LBB0_4
-	lea rdx, [r8 - 1]
-	not rdx
+	mov rdx, r8
+	neg rdx
 	and r14, rdx
 	cmp r14, qword ptr [rax]
 	jb .LBB0_4
@@ -33,24 +35,23 @@ inspect_asm::grow::bumpalo:
 	pop r15
 	ret
 .LBB0_3:
-	lea r9, [rdx - 1]
-	mov r10, rdx
-	xor r10, r9
-	xor r14d, r14d
-	cmp r10, r9
-	jbe .LBB0_2
-	mov r10, rbx
-	sub r10, rcx
+	mov r9, rbx
+	sub r9, rcx
+	lea r10, [r14 - 1]
+	mov r11, r14
+	xor r11, r10
+	cmp r11, r10
+	setbe r10b
 	movabs r11, -9223372036854775808
-	sub r11, rdx
-	cmp r10, r11
-	ja .LBB0_2
-	cmp r10, rsi
+	sub r11, r14
+	cmp r9, r11
+	seta r11b
+	or r11b, r10b
+	jne .LBB0_5
+	cmp r9, rsi
 	ja .LBB0_0
-	mov rdx, rsi
-	sub rdx, r10
-	not r9
-	mov r14, r9
+	sub rdx, r9
+	neg r14
 	and r14, rdx
 	cmp r14, qword ptr [rax]
 	jb .LBB0_0
@@ -72,5 +73,6 @@ inspect_asm::grow::bumpalo:
 	mov r14, rax
 	test rax, rax
 	jne .LBB0_1
+.LBB0_5:
 	xor r14d, r14d
 	jmp .LBB0_2

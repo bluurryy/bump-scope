@@ -29,13 +29,12 @@ inspect_asm::grow::down:
 	mov rdx, rbx
 	sub rdx, rcx
 	xor r9d, r9d
-	cmp r8, 1
-	mov r10d, 0
-	sbb r10, r8
-	mov r14, rsi
-	sub r14, rdx
-	cmovb r14, r9
-	and r14, r10
+	mov r10, rsi
+	sub r10, rdx
+	cmovae r9, r10
+	mov r14, r8
+	neg r14
+	and r14, r9
 	cmp r14, qword ptr [rax + 8]
 	jb .LBB0_6
 	mov r15, rdi
