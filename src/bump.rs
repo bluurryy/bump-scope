@@ -172,28 +172,44 @@ where
 {
     error_behavior_generic_methods_allocation_failure! {
         impl
-        /// This is equivalent to `Bump::with_capacity(512)`.
+        /// This is equivalent to <code>[with_size](Bump::with_size)(512)</code>.
         #[must_use]
         for pub fn new
-        /// This is equivalent to `Bump::try_with_capacity(512)`.
+        /// This is equivalent to <code>[try_with_size](Bump::try_with_size)(512)</code>.
         for pub fn try_new
         fn generic_new() -> Self {
             Self::generic_new_in(Default::default())
         }
 
-        #[doc = include_str!("docs/bump/with_size.md")]
         impl
         #[must_use]
+        /// Constructs a new `Bump` with a size hint for the first chunk.
+        ///
+        /// If you want to ensure a specific capacity use <code>[with_capacity](Bump::with_capacity)</code> instead.
+        ///
+        /// The actual size that will be requested from the base allocator may be bigger or smaller.
+        /// (A small fixed amount will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
         for pub fn with_size
+        /// Constructs a new `Bump` with a size hint for the first chunk.
+        ///
+        /// If you want to ensure a specific capacity use <code>[try_with_capacity](Bump::try_with_capacity)</code> instead.
+        ///
+        /// The actual size that will be requested from the base allocator may be bigger or smaller.
+        /// (A small fixed amount will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
         for pub fn try_with_size
         fn generic_with_size(size: usize) -> Self {
             Self::generic_with_size_in(size, Default::default())
         }
 
-        #[doc = include_str!("docs/bump/with_capacity.md")]
         impl
         #[must_use]
+        /// Constructs a new `Bump` with at least enough space for `layout`.
+        ///
+        /// To construct a `Bump` with some rough size estimate like `1 << 16` use <code>[with_size](Bump::with_size)</code> instead.
         for pub fn with_capacity
+        /// Constructs a new `Bump` with at least enough space for `layout`.
+        ///
+        /// To construct a `Bump` with some rough size estimate like `1 << 16` use <code>[try_with_size](Bump::try_with_size)</code> instead.
         for pub fn try_with_capacity
         fn generic_with_capacity(layout: Layout) -> Self {
             Self::generic_with_capacity_in(layout, Default::default())
@@ -218,17 +234,28 @@ where
 {
     error_behavior_generic_methods_allocation_failure! {
         impl
-        /// This is equivalent to `Bump::with_size_in(512, allocator)`.
+        /// This is equivalent to <code>[with_size_in](Bump::with_size_in)(512, allocator)</code>.
         for pub fn new_in
-        /// This is equivalent to `Bump::try_with_size_in(512, allocator)`.
+        /// This is equivalent to <code>[try_with_size_in](Bump::try_with_size_in)(512, allocator)</code>.
         for pub fn try_new_in
         fn generic_new_in(allocator: A) -> Self {
             Self::generic_with_size_in(DEFAULT_START_CHUNK_SIZE, allocator)
         }
 
-        #[doc = include_str!("docs/bump/with_size.md")]
         impl
+        /// Constructs a new `Bump` with a size hint for the first chunk.
+        ///
+        /// If you want to ensure a specific capacity use <code>[with_capacity_in](Bump::with_capacity_in)</code> instead.
+        ///
+        /// The actual size that will be requested from the base allocator may be bigger or smaller.
+        /// (A small fixed amount will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
         for pub fn with_size_in
+        /// Constructs a new `Bump` with a size hint for the first chunk.
+        ///
+        /// If you want to ensure a specific capacity use <code>[try_with_capacity_in](Bump::try_with_capacity_in)</code> instead.
+        ///
+        /// The actual size that will be requested from the base allocator may be bigger or smaller.
+        /// (A small fixed amount will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
         for pub fn try_with_size_in
         fn generic_with_size_in(size: usize, allocator: A) -> Self {
             Ok(Self {
@@ -240,9 +267,14 @@ where
             })
         }
 
-        #[doc = include_str!("docs/bump/with_capacity.md")]
         impl
+        /// Constructs a new `Bump` with at least enough space for `layout`.
+        ///
+        /// To construct a `Bump` with some rough size estimate like `1 << 16` use <code>[with_size_in](Bump::with_size_in)</code> instead.
         for pub fn with_capacity_in
+        /// Constructs a new `Bump` with at least enough space for `layout`.
+        ///
+        /// To construct a `Bump` with some rough size estimate like `1 << 16` use <code>[try_with_size_in](Bump::try_with_size_in)</code> instead.
         for pub fn try_with_capacity_in
         fn generic_with_capacity_in(layout: Layout, allocator: A) -> Self {
             Ok(Self {
