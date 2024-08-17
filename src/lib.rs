@@ -228,7 +228,7 @@
 //!
 //! - Bumping upwards...
 //!   - has the advantage that the most recent allocation can be grown and shrunk in place.
-//!   - makes [`alloc_iter(_mut)`](crate::Bump::alloc_iter) and [`alloc_fmt(_mut)`](crate::Bump::alloc_fmt) faster.
+//!   - makes <code>[alloc_iter](crate::Bump::alloc_iter)([_mut](crate::Bump::alloc_iter_mut))</code> and <code>[alloc_fmt](crate::Bump::alloc_fmt)([_mut](crate::Bump::alloc_fmt_mut))</code> faster.
 //! - Bumping downwards...
 //!   - uses slightly fewer instructions per allocation.
 //!   - makes [`alloc_iter_mut_rev`](crate::Bump::alloc_iter_mut_rev) faster.
@@ -1399,7 +1399,7 @@ define_alloc_methods! {
     /// Allocates a slice by fill it with elements returned by calling a closure repeatedly.
     ///
     /// This method uses a closure to create new values. If you'd rather
-    /// [`Clone`] a given value, use [`(try_)alloc_slice_fill`](Self::alloc_slice_fill). If you want to use the [`Default`]
+    /// [`Clone`] a given value, use <code>([try_](Self::try_alloc_slice_fill))[alloc_slice_fill](Self::alloc_slice_fill)</code>. If you want to use the [`Default`]
     /// trait to generate values, you can pass [`Default::default`] as the
     /// argument.
     impl
@@ -1504,9 +1504,9 @@ define_alloc_methods! {
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
     impl
-    /// For better performance prefer [`alloc_iter_exact`](Bump::try_alloc_iter_exact) or [`alloc_iter_mut(_rev)`](Bump::alloc_iter_mut).
+    /// For better performance prefer [`alloc_iter_exact`](Bump::try_alloc_iter_exact) or <code>[alloc_iter_mut](Bump::alloc_iter_mut)([_rev](Bump::alloc_iter_mut_rev))</code>.
     for pub fn alloc_iter
-    /// For better performance prefer [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) or [`try_alloc_iter_mut(_rev)`](Bump::try_alloc_iter_mut).
+    /// For better performance prefer [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) or <code>[try_alloc_iter_mut](Bump::try_alloc_iter_mut)([_rev](Bump::try_alloc_iter_mut_rev))</code>.
     for pub fn try_alloc_iter
     fn generic_alloc_iter<{T}>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         let iter = iter.into_iter();

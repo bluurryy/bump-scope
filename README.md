@@ -176,7 +176,7 @@ Bump direction is controlled by the generic parameter `const UP: bool`. By defau
 
 - Bumping upwards...
   - has the advantage that the most recent allocation can be grown and shrunk in place.
-  - makes `alloc_iter(_mut)` and `alloc_fmt(_mut)` faster.
+  - makes <code>alloc_iter(_mut)</code> and <code>alloc_fmt(_mut)</code> faster.
 - Bumping downwards...
   - uses slightly fewer instructions per allocation.
   - makes `alloc_iter_mut_rev` faster.
