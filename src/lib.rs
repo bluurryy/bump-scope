@@ -1569,11 +1569,11 @@ define_alloc_methods! {
     impl
     /// Unlike [`alloc_iter`](Bump::alloc_iter), this function requires a mutable `Bump(Scope)`.
     ///
-    /// When bumping downwards, prefer [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) or [`alloc_iter_exact`](Bump::alloc_iter_exact) as in this case this function incurs an additional copy of the slice internally.
+    /// When bumping downwards, prefer [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) or [`alloc_iter_exact`](Bump::alloc_iter_exact) to avoid having to internally move the slice after creation.
     for pub fn alloc_iter_mut
     /// Unlike [`try_alloc_iter`](Bump::try_alloc_iter), this function requires a mutable `Bump(Scope)`.
     ///
-    /// When bumping downwards, prefer [`try_alloc_iter_mut_rev`](Bump::try_alloc_iter_mut_rev) or [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) as in this case this function incurs an additional copy of the slice internally.
+    /// When bumping downwards, prefer [`try_alloc_iter_mut_rev`](Bump::try_alloc_iter_mut_rev) or [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) to avoid having to internally move the slice after creation.
     for pub fn try_alloc_iter_mut
     fn generic_alloc_iter_mut<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         let iter = iter.into_iter();
@@ -1591,7 +1591,7 @@ define_alloc_methods! {
     /// Allocate elements of an iterator into a slice in reverse order.
     impl
     ///
-    /// When bumping upwards, prefer [`alloc_iter_mut`](Self::alloc_iter_mut) or [`alloc_iter_exact`](Self::alloc_iter_exact) as in this case this function incurs an additional copy of the slice internally.
+    /// When bumping upwards, prefer [`alloc_iter_mut`](Self::alloc_iter_mut) or [`alloc_iter_exact`](Self::alloc_iter_exact) tto avoid having to internally move the slice after creation.
     do examples
     /// ```
     /// # use bump_scope::Bump;
@@ -1602,7 +1602,7 @@ define_alloc_methods! {
     /// ```
     for pub fn alloc_iter_mut_rev
     ///
-    /// When bumping upwards, prefer [`try_alloc_iter_mut`](Self::try_alloc_iter) or [`try_alloc_iter_exact`](Self::try_alloc_iter_exact) as in this case this function incurs an additional copy of the slice internally.
+    /// When bumping upwards, prefer [`try_alloc_iter_mut`](Self::try_alloc_iter) or [`try_alloc_iter_exact`](Self::try_alloc_iter_exact) to avoid having to internally move the slice after creation.
     for pub fn try_alloc_iter_mut_rev
     fn generic_alloc_iter_mut_rev<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         let iter = iter.into_iter();
