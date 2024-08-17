@@ -153,6 +153,7 @@ cases! {
     mod alloc_u8 fn(bump, value: u8) -> &mut u8 { bump.alloc(value) } in { bump.try_alloc(value) }
     mod alloc_u32 fn(bump, value: u32) -> &mut u32 { bump.alloc(value) } in { bump.try_alloc(value) }
     mod alloc_vec3 fn(bump, value: vec3) -> &mut vec3 { bump.alloc(value) } in { bump.try_alloc(value) }
+    mod alloc_12_u32 fn(bump, value: [u32;12]) -> &mut [u32;12] { bump.alloc(value) } in { bump.try_alloc(value) }
     mod alloc_big fn(bump, value: &big) -> &'a mut big { bump.alloc_with(|| *value) } in { bump.try_alloc_with(|| *value) }
     mod alloc_str fn(bump, value: &str) -> &'a mut str { bump.alloc_str(value) } in { bump.try_alloc_str(value) }
     mod alloc_u32_slice fn(bump, value: &[u32]) -> &'a mut [u32] { bump.alloc_slice_copy(value) } in { bump.try_alloc_slice_copy(value) }

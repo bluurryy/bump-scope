@@ -192,30 +192,46 @@ fn bench_alloc_u8(c: &mut Criterion) {
     group.bench_function("down", func(alloc_with::<Bump<Global, 1, false>, u8>));
 }
 
-#[rustfmt::skip]
 fn bench_alloc_u32(c: &mut Criterion) {
-    let mut group = c.benchmark_group("alloc_u32");
-    group.throughput(Throughput::Elements(ALLOCATIONS as u64));
-    group.bench_function("bumpalo", func(alloc_with::<bumpalo::Bump, u32>));
-    group.bench_function("up", func(alloc_with::<Bump<Global, 1, true>, u32>));
-    group.bench_function("up_aligned", func(alloc_with::<Bump<Global, 4, true>, u32>));
-    group.bench_function("up_overaligned", func(alloc_with::<Bump<Global, 16, true>, u32>));
-    group.bench_function("down", func(alloc_with::<Bump<Global, 1, false>, u32>));
-    group.bench_function("down_aligned", func(alloc_with::<Bump<Global, 4, false>, u32>));
-    group.bench_function("down_overaligned", func(alloc_with::<Bump<Global, 16, false>, u32>));
+    bench_alloc::<u32>(c, "alloc_u32")
+}
+
+fn bench_alloc_u32_try(c: &mut Criterion) {
+    bench_alloc_try::<u32>(c, "alloc_u32_try")
+}
+
+fn bench_alloc_12_u32(c: &mut Criterion) {
+    bench_alloc::<[u32; 12]>(c, "alloc_12_u32")
+}
+
+fn bench_alloc_12_u32_try(c: &mut Criterion) {
+    bench_alloc_try::<[u32; 12]>(c, "alloc_12_u32_try")
 }
 
 #[rustfmt::skip]
-fn bench_alloc_u32_try(c: &mut Criterion) {
-    let mut group = c.benchmark_group("alloc_u32_try");
+fn bench_alloc<T: Default>(c: &mut Criterion, name: &str) {
+    let mut group = c.benchmark_group(name);
     group.throughput(Throughput::Elements(ALLOCATIONS as u64));
-    group.bench_function("bumpalo", func(try_alloc_with::<bumpalo::Bump, u32>));
-    group.bench_function("up", func(try_alloc_with::<Bump<Global, 1, true>, u32>));
-    group.bench_function("up_aligned", func(try_alloc_with::<Bump<Global, 4, true>, u32>));
-    group.bench_function("up_overaligned", func(try_alloc_with::<Bump<Global, 16, true>, u32>));
-    group.bench_function("down", func(try_alloc_with::<Bump<Global, 1, false>, u32>));
-    group.bench_function("down_aligned", func(try_alloc_with::<Bump<Global, 4, false>, u32>));
-    group.bench_function("down_overaligned", func(try_alloc_with::<Bump<Global, 16, false>, u32>));
+    group.bench_function("bumpalo", func(alloc_with::<bumpalo::Bump, T>));
+    group.bench_function("up", func(alloc_with::<Bump<Global, 1, true>, T>));
+    group.bench_function("up_aligned", func(alloc_with::<Bump<Global, 4, true>, T>));
+    group.bench_function("up_overaligned", func(alloc_with::<Bump<Global, 16, true>, T>));
+    group.bench_function("down", func(alloc_with::<Bump<Global, 1, false>, T>));
+    group.bench_function("down_aligned", func(alloc_with::<Bump<Global, 4, false>, T>));
+    group.bench_function("down_overaligned", func(alloc_with::<Bump<Global, 16, false>, T>));
+}
+
+#[rustfmt::skip]
+fn bench_alloc_try<T: Default>(c: &mut Criterion, name: &str) {
+    let mut group = c.benchmark_group(name);
+    group.throughput(Throughput::Elements(ALLOCATIONS as u64));
+    group.bench_function("bumpalo", func(try_alloc_with::<bumpalo::Bump, T>));
+    group.bench_function("up", func(try_alloc_with::<Bump<Global, 1, true>, T>));
+    group.bench_function("up_aligned", func(try_alloc_with::<Bump<Global, 4, true>, T>));
+    group.bench_function("up_overaligned", func(try_alloc_with::<Bump<Global, 16, true>, T>));
+    group.bench_function("down", func(try_alloc_with::<Bump<Global, 1, false>, T>));
+    group.bench_function("down_aligned", func(try_alloc_with::<Bump<Global, 4, false>, T>));
+    group.bench_function("down_overaligned", func(try_alloc_with::<Bump<Global, 16, false>, T>));
 }
 
 #[rustfmt::skip]
@@ -294,6 +310,8 @@ criterion_group!(
     bench_alloc_u8,
     bench_alloc_u32,
     bench_alloc_u32_try,
+    bench_alloc_12_u32,
+    bench_alloc_12_u32_try,
     bench_alloc_try_with_ok_small_small,
     bench_alloc_try_with_ok_small_big,
     bench_alloc_try_with_ok_big_small,

@@ -167,7 +167,7 @@ def --wrapped main [
         $names ++= $"alloc_layout::($try)bumpalo"
     }
 
-    for ty in [zst u8, u32, vec3, big, str, u32_slice, u32_slice_clone] {
+    for ty in [zst u8, u32, vec3, 12_u32, big, str, u32_slice, u32_slice_clone] {
         for prefix in ["", try_] {
         $names ++= $"alloc_($ty)::($prefix)up"
         $names ++= $"alloc_($ty)::($prefix)up_a"
