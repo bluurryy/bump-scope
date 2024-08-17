@@ -1456,6 +1456,8 @@ define_alloc_methods! {
             return Err(B::capacity_overflow());
         }
 
+        string.shrink_to_fit();
+
         Ok(string.into_boxed_str())
     }
 

@@ -31,6 +31,7 @@ mod unaligned_collection;
 #[cfg(feature = "serde")]
 mod serde;
 mod unallocated;
+mod alloc_fmt;
 
 extern crate std;
 
