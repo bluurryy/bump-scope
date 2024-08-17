@@ -1518,6 +1518,8 @@ define_alloc_methods! {
             vec.generic_push(value)?;
         }
 
+        vec.shrink_to_fit();
+        
         Ok(vec.into_boxed_slice())
     }
 
