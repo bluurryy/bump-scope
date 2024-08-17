@@ -28,10 +28,10 @@ mod panic_safety;
 mod pool;
 mod unaligned_collection;
 
+mod alloc_fmt;
 #[cfg(feature = "serde")]
 mod serde;
 mod unallocated;
-mod alloc_fmt;
 
 extern crate std;
 
