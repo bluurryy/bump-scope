@@ -652,6 +652,7 @@ impl ErrorBehavior for AllocError {
 // this is just `Result::into_ok` but with a name to match our use case
 #[inline(always)]
 #[cfg(not(no_global_oom_handling))]
+#[allow(unreachable_patterns)] // msrv 1.64.0 does not allow omitting the `Err` arm
 fn infallible<T>(result: Result<T, Infallible>) -> T {
     match result {
         Ok(value) => value,
