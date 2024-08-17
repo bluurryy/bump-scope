@@ -6,10 +6,10 @@ inspect_asm::alloc_iter_u32::up:
 	push rbx
 	sub rsp, 32
 	test rdx, rdx
-	je .LBB0_4
+	je .LBB0_6
 	mov rax, rdx
 	shr rax, 61
-	jne .LBB0_7
+	jne .LBB0_8
 	mov rbx, rsi
 	lea r15, [4*rdx]
 	mov rcx, qword ptr [rdi]
@@ -19,11 +19,11 @@ inspect_asm::alloc_iter_u32::up:
 	and rax, -4
 	sub rsi, rax
 	cmp r15, rsi
-	ja .LBB0_6
+	ja .LBB0_7
 	lea rsi, [rax + r15]
 	mov qword ptr [rcx], rsi
 	test rax, rax
-	je .LBB0_6
+	je .LBB0_7
 .LBB0_0:
 	mov qword ptr [rsp], rax
 	mov qword ptr [rsp + 8], 0
@@ -51,10 +51,17 @@ inspect_asm::alloc_iter_u32::up:
 	jmp .LBB0_1
 .LBB0_3:
 	mov rax, qword ptr [rsp]
-	jmp .LBB0_5
+	mov rcx, qword ptr [rsp + 16]
+	mov rdi, qword ptr [rsp + 24]
+	shl rcx, 2
+	add rcx, rax
+	mov rsi, qword ptr [rdi]
+	cmp rcx, qword ptr [rsi]
+	jne .LBB0_5
 .LBB0_4:
-	mov eax, 4
-	xor edx, edx
+	lea rcx, [rax + 4*rdx]
+	mov qword ptr [rsi], rcx
+	mov qword ptr [rsp + 16], rdx
 .LBB0_5:
 	add rsp, 32
 	pop rbx
@@ -64,12 +71,21 @@ inspect_asm::alloc_iter_u32::up:
 	pop rbp
 	ret
 .LBB0_6:
+	mov eax, 4
+	xor edx, edx
+	xor ecx, ecx
+	add rcx, rax
+	mov rsi, qword ptr [rdi]
+	cmp rcx, qword ptr [rsi]
+	jne .LBB0_5
+	jmp .LBB0_4
+.LBB0_7:
 	mov r14, rdi
 	mov rsi, rdx
 	mov r12, rdx
 	call bump_scope::bump_scope::BumpScope<A,_,_,_>::do_alloc_slice_in_another_chunk
-	mov rdi, r14
 	mov rdx, r12
+	mov rdi, r14
 	jmp .LBB0_0
-.LBB0_7:
+.LBB0_8:
 	call qword ptr [rip + bump_scope::private::capacity_overflow@GOTPCREL]

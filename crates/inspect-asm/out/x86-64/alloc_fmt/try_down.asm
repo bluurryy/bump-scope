@@ -1,4 +1,6 @@
 inspect_asm::alloc_fmt::try_down:
+	push r14
+	push rbx
 	sub rsp, 120
 	mov qword ptr [rsp + 40], rsi
 	mov qword ptr [rsp + 48], rdx
@@ -25,9 +27,41 @@ inspect_asm::alloc_fmt::try_down:
 	je .LBB0_0
 	xor eax, eax
 	add rsp, 120
+	pop rbx
+	pop r14
 	ret
 .LBB0_0:
-	mov rax, qword ptr [rsp]
+	mov rsi, qword ptr [rsp]
+	mov rdx, qword ptr [rsp + 8]
+	mov rbx, qword ptr [rsp + 24]
+	mov rax, qword ptr [rbx]
+	cmp rsi, qword ptr [rax]
+	je .LBB0_1
+	mov rax, rsi
+	add rsp, 120
+	pop rbx
+	pop r14
+	ret
+.LBB0_1:
+	mov rax, qword ptr [rsp + 16]
+	add rax, rsi
+	xor edi, edi
+	sub rax, rdx
+	cmovae rdi, rax
+	lea rax, [rdx + rsi]
+	mov r14, rdi
+	cmp rax, rdi
+	jbe .LBB0_2
+	call qword ptr [rip + memmove@GOTPCREL]
+	jmp .LBB0_3
+.LBB0_2:
+	call qword ptr [rip + memcpy@GOTPCREL]
+.LBB0_3:
+	mov rcx, qword ptr [rbx]
+	mov rax, r14
+	mov qword ptr [rcx], r14
 	mov rdx, qword ptr [rsp + 8]
 	add rsp, 120
+	pop rbx
+	pop r14
 	ret
