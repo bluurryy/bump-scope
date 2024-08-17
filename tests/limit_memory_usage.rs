@@ -3,9 +3,7 @@
 
 use std::{alloc::Layout, cell::Cell, ptr::NonNull};
 
-use allocator_api2::alloc::{AllocError, Allocator};
-
-use allocator_api2::alloc::Global;
+use allocator_api2::alloc::{AllocError, Allocator, Global};
 
 use bump_scope::Bump;
 
@@ -24,16 +22,17 @@ impl<A> Limited<A> {
         }
     }
 
-    fn add(&self, size: usize) -> Result<(), AllocError> {
-        let new = self.current.get() + size;
+    fn add(&self, size: usize) -> Result<usize, AllocError> {
+        let new = match self.current.get().checked_add(size) {
+            Some(some) => some,
+            None => return Err(AllocError),
+        };
 
         if new > self.limit {
             return Err(AllocError);
         }
 
-        self.current.set(new);
-
-        Ok(())
+        Ok(new)
     }
 
     fn sub(&self, size: usize) {
@@ -46,8 +45,10 @@ where
     A: Allocator,
 {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.add(layout.size())?;
-        self.allocator.allocate(layout)
+        let new = self.add(layout.size())?;
+        let ptr = self.allocator.allocate(layout)?;
+        self.current.set(new);
+        Ok(ptr)
     }
 
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
@@ -56,13 +57,17 @@ where
     }
 
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.add(layout.size())?;
-        self.allocator.allocate_zeroed(layout)
+        let new = self.add(layout.size())?;
+        let ptr = self.allocator.allocate_zeroed(layout)?;
+        self.current.set(new);
+        Ok(ptr)
     }
 
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.add(new_layout.size() - old_layout.size())?;
-        self.allocator.grow(ptr, old_layout, new_layout)
+        let new = self.add(new_layout.size() - old_layout.size())?;
+        let ptr = self.allocator.grow(ptr, old_layout, new_layout)?;
+        self.current.set(new);
+        Ok(ptr)
     }
 
     unsafe fn grow_zeroed(
@@ -71,13 +76,16 @@ where
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        self.add(new_layout.size() - old_layout.size())?;
-        self.allocator.grow_zeroed(ptr, old_layout, new_layout)
+        let new = self.add(new_layout.size() - old_layout.size())?;
+        let ptr = self.allocator.grow_zeroed(ptr, old_layout, new_layout)?;
+        self.current.set(new);
+        Ok(ptr)
     }
 
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        let ptr = self.allocator.shrink(ptr, old_layout, new_layout)?;
         self.sub(old_layout.size() - new_layout.size());
-        self.allocator.shrink(ptr, old_layout, new_layout)
+        Ok(ptr)
     }
 }
 
