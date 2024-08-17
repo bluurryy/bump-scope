@@ -123,7 +123,7 @@ fn on_static() {
     let guard = MEMORY.lock().unwrap_or_else(PoisonError::into_inner);
     let memory = &*guard;
 
-    let bump = Bump::<_, 1, true>::new_in(&memory);
+    let bump = Bump::<_, 1, true>::new_in(memory);
     assert_eq!(bump.stats().size(), 1024);
 
     let str = bump.alloc_str("It works!");
