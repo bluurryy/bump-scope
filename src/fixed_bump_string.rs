@@ -108,7 +108,7 @@ impl<'a> FixedBumpString<'a> {
         self.vec.clear();
     }
 
-    /// Converts a bump allocated vector of bytes to a `FixedBumpString`.
+    /// Converts a vector of bytes to a `FixedBumpString`.
     ///
     /// A string ([`FixedBumpString`]) is made of bytes ([`u8`]), and a vector of bytes
     /// ([`FixedBumpVec<u8>`]) is made of bytes, so this function converts between the

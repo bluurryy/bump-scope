@@ -215,7 +215,7 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
         self.vec.clear();
     }
 
-    /// Converts a bump allocated vector of bytes to a `BumpString`.
+    /// Converts a vector of bytes to a `BumpString`.
     ///
     /// A string ([`BumpString`]) is made of bytes ([`u8`]), and a vector of bytes
     /// ([`BumpVec<u8>`]) is made of bytes, so this function converts between the
