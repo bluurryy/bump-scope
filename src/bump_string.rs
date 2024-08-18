@@ -7,7 +7,8 @@ use core::{
 };
 
 use crate::{
-    error_behavior_generic_methods_allocation_failure, polyfill, BaseAllocator, BumpBox, BumpScope, BumpVec, ErrorBehavior, FixedBumpString, FromUtf8Error, GuaranteedAllocatedStats, MinimumAlignment, Stats, SupportedMinimumAlignment
+    error_behavior_generic_methods_allocation_failure, polyfill, BaseAllocator, BumpBox, BumpScope, BumpVec, ErrorBehavior,
+    FixedBumpString, FromUtf8Error, GuaranteedAllocatedStats, MinimumAlignment, Stats, SupportedMinimumAlignment,
 };
 
 /// This is like [`format!`] but allocates inside a `Bump` or `BumpScope`, returning a [`BumpString`].
@@ -552,8 +553,6 @@ where
     }
 
     /// Turns this `BumpString` into a `FixedBumpString`.
-    ///
-    /// You may want to call [`shrink_to_fit`](Self::shrink_to_fit) before this, so the unused capacity does not take up space.
     #[must_use]
     #[inline(always)]
     pub fn into_fixed_string(self) -> FixedBumpString<'a> {
