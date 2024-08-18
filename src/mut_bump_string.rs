@@ -242,6 +242,31 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     /// Returns [`Err`] if the slice is not UTF-8 with a description as to why the
     /// provided bytes are not UTF-8. The vector you moved in is also included.
     ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// // some bytes, in a vector
+    /// let sparkle_heart = mut_bump_vec![in bump; 240, 159, 146, 150];
+    ///
+    /// // We know these bytes are valid, so we'll use `unwrap()`.
+    /// let sparkle_heart = MutBumpString::from_utf8(sparkle_heart).unwrap();
+    ///
+    /// assert_eq!("💖", sparkle_heart);
+    /// ```
+    ///
+    /// Incorrect bytes:
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// // some invalid bytes, in a vector
+    /// let sparkle_heart = mut_bump_vec![in bump; 0, 159, 146, 150];
+    ///
+    /// assert!(MutBumpString::from_utf8(sparkle_heart).is_err());
+    /// ```
+    ///
     /// [`from_utf8_unchecked`]: Self::from_utf8_unchecked
     /// [`MutBumpVec<u8>`]: MutBumpVec
     /// [`&str`]: prim@str "&str"

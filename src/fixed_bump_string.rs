@@ -134,6 +134,33 @@ impl<'a> FixedBumpString<'a> {
     /// Returns [`Err`] if the slice is not UTF-8 with a description as to why the
     /// provided bytes are not UTF-8. The vector you moved in is also included.
     ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # let bump: Bump = Bump::new();
+    /// // some bytes, in a vector
+    /// let mut sparkle_heart = bump.alloc_fixed_vec(4);
+    /// sparkle_heart.extend_from_slice_copy(&[240, 159, 146, 150]);
+    ///
+    /// // We know these bytes are valid, so we'll use `unwrap()`.
+    /// let sparkle_heart = FixedBumpString::from_utf8(sparkle_heart).unwrap();
+    ///
+    /// assert_eq!("💖", sparkle_heart);
+    /// ```
+    ///
+    /// Incorrect bytes:
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # let bump: Bump = Bump::new();
+    /// // some invalid bytes, in a vector
+    /// let mut sparkle_heart = bump.alloc_fixed_vec(4);
+    /// sparkle_heart.extend_from_slice_copy(&[0, 159, 146, 150]);
+    ///
+    /// assert!(FixedBumpString::from_utf8(sparkle_heart).is_err());
+    /// ```
+    ///
     /// [`from_utf8_unchecked`]: Self::from_utf8_unchecked
     /// [`FixedBumpVec<u8>`]: FixedBumpVec
     /// [`&str`]: prim@str "&str"
