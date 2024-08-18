@@ -579,15 +579,19 @@ where
 
     /// Shrinks the capacity of the string as much as possible.
     ///
+    /// This will also free space for future bump allocations iff this is the most recent allocation.
+    /// 
     /// # Examples
     /// ```
     /// # use bump_scope::{ Bump, BumpString };
     /// # let bump: Bump = Bump::new();
     /// let mut string = BumpString::with_capacity_in(10, &bump);
     /// string.push_str("123");
-    /// assert!(string.capacity() >= 10);
+    /// assert!(string.capacity() == 10);
+    /// assert_eq!(bump.stats().allocated(), 10);
     /// string.shrink_to_fit();
     /// assert!(string.capacity() == 3);
+    /// assert_eq!(bump.stats().allocated(), 3);
     /// ```
     pub fn shrink_to_fit(&mut self) {
         self.vec.shrink_to_fit();

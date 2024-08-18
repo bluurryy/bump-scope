@@ -1132,15 +1132,19 @@ where
 
     /// Shrinks the capacity of the vector as much as possible.
     ///
+    /// This will also free space for future bump allocations iff this is the most recent allocation.
+    /// 
     /// # Examples
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::new();
     /// let mut vec = BumpVec::with_capacity_in(10, &bump);
     /// vec.extend([1, 2, 3]);
-    /// assert!(vec.capacity() >= 10);
+    /// assert!(vec.capacity() == 10);
+    /// assert_eq!(bump.stats().allocated(), 10 * 4);
     /// vec.shrink_to_fit();
     /// assert!(vec.capacity() == 3);
+    /// assert_eq!(bump.stats().allocated(), 3 * 4);
     /// ```
     pub fn shrink_to_fit(&mut self) {
         let old_ptr = self.as_non_null_ptr();
