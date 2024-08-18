@@ -32,11 +32,36 @@ use crate::WithLifetime;
 /// You can turn a `BumpBox` into a reference with [`into_ref`] and [`into_mut`] and into a [`Box`] with [`into_box`].
 ///
 /// Unlike `Box`, `BumpBox` can not implement `Clone` or free the allocated space as it does not store its allocator.
+/// It's essentially an owned reference.
 ///
-/// ## Certain `BumpBox` types have additional methods
-/// - `BumpBox<MaybeUninit<T>>` and `BumpBox<[MaybeUninit<T>]>` provide methods to initialize the value(s).
-/// - `BumpBox<[T]>` provides some methods from `Vec<T>` and `[T]` like `pop`, `remove`, `split_at`, ...
-/// - `BumpBox<str>` and `BumpBox<[u8]>` provide methods to convert between the two.
+/// ## `BumpBox` has a lot of methods
+/// - `BumpBox<[T]>` provides methods from `Vec<T>` like
+///   [`pop`](Self::pop),
+///   [`clear`](Self::clear),
+///   [`truncate`](Self::truncate),
+///   [`remove`](Self::remove),
+///   [`swap_remove`](Self::swap_remove),
+///   [`retain`](Self::retain),
+///   [`drain`](Self::drain),
+///   [`extract_if`](Self::extract_if),
+///   [`dedup`](Self::dedup)
+///   and slice methods but with owned semantics like
+///   [`split_at`](Self::split_at),
+///   [`split_first`](Self::split_first) and
+///   [`split_last`](Self::split_last).
+/// - `BumpBox<str>` and `BumpBox<[u8]>` provide methods to convert between the two like
+///   [`into_boxed_bytes`](Self::into_boxed_bytes),
+///   [`into_boxed_str`](Self::into_boxed_str) and
+///   [`into_boxed_str_unchecked`](Self::into_boxed_str_unchecked).
+/// - `BumpBox<MaybeUninit<T>>` and `BumpBox<[MaybeUninit<T>]>` provides methods like
+///   [`init`](Self::init),
+///   [`assume_init`](Self::assume_init),
+///   [`init_fill`](Self::init_fill),
+///   [`init_fill_with`](Self::init_fill_with),
+///   [`init_fill_iter`](Self::init_fill_iter),
+///   [`init_copy`](Self::init_copy),
+///   [`init_clone`](Self::init_clone) and
+///   [`init_zeroed`](Self::init_zeroed).
 ///
 /// ## No pinning
 ///
