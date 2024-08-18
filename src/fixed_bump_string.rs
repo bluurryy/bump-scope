@@ -134,10 +134,10 @@ impl<'a> FixedBumpString<'a> {
     /// Returns [`Err`] if the slice is not UTF-8 with a description as to why the
     /// provided bytes are not UTF-8. The vector you moved in is also included.
     ///
-    /// [`from_utf8_unchecked`]: String::from_utf8_unchecked
+    /// [`from_utf8_unchecked`]: Self::from_utf8_unchecked
     /// [`FixedBumpVec<u8>`]: FixedBumpVec
     /// [`&str`]: prim@str "&str"
-    /// [`into_bytes`]: FixedBumpString::into_bytes
+    /// [`into_bytes`]: Self::into_bytes
     pub fn from_utf8(vec: FixedBumpVec<'a, u8>) -> Result<Self, FromUtf8Error<FixedBumpVec<'a, u8>>> {
         match str::from_utf8(vec.as_slice()) {
             Ok(_) => Ok(Self { vec }),

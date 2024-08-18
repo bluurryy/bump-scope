@@ -241,10 +241,10 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     /// Returns [`Err`] if the slice is not UTF-8 with a description as to why the
     /// provided bytes are not UTF-8. The vector you moved in is also included.
     ///
-    /// [`from_utf8_unchecked`]: String::from_utf8_unchecked
+    /// [`from_utf8_unchecked`]: Self::from_utf8_unchecked
     /// [`BumpVec<u8>`]: BumpVec
     /// [`&str`]: prim@str "&str"
-    /// [`into_bytes`]: BumpString::into_bytes
+    /// [`into_bytes`]: Self::into_bytes
     pub fn from_utf8(
         vec: BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     ) -> Result<Self, FromUtf8Error<BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>> {
