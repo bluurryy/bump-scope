@@ -145,6 +145,19 @@ impl<'a> FixedBumpString<'a> {
         }
     }
 
+    /// Converts a bump allocated vector of bytes to a `FixedBumpString`.
+    ///
+    /// See the safe version, [`from_utf8`](Self::from_utf8), for more information.
+    ///
+    /// # Safety
+    ///
+    /// The bytes passed in must be valid UTF-8.
+    #[must_use]
+    pub unsafe fn from_utf8_unchecked(vec: FixedBumpVec<'a, u8>) -> Self {
+        debug_assert!(str::from_utf8(vec.as_slice()).is_ok());
+        Self { vec }
+    }
+
     /// Converts a `FixedBumpString` into a `FixedBumpVec<u8>`.
     ///
     /// This consumes the `FixedBumpString`, so we do not need to copy its contents.

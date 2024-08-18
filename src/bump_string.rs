@@ -254,6 +254,19 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
         }
     }
 
+    /// Converts a bump allocated vector of bytes to a `BumpString`.
+    ///
+    /// See the safe version, [`from_utf8`](Self::from_utf8), for more information.
+    ///
+    /// # Safety
+    ///
+    /// The bytes passed in must be valid UTF-8.
+    #[must_use]
+    pub unsafe fn from_utf8_unchecked(vec: BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> Self {
+        debug_assert!(str::from_utf8(vec.as_slice()).is_ok());
+        Self { vec }
+    }
+
     /// Converts a `BumpString` into a `BumpVec<u8>`.
     ///
     /// This consumes the `BumpString`, so we do not need to copy its contents.
