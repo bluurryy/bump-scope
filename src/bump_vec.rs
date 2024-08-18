@@ -1192,6 +1192,8 @@ where
     }
 
     /// Turns this `BumpVec<T>` into a `FixedBumpVec<T>`.
+    ///
+    /// You may want to call `shrink_to_fit` before this, so the unused capacity does not take up space.
     #[must_use]
     #[inline(always)]
     pub fn into_fixed_vec(self) -> FixedBumpVec<'a, T> {
