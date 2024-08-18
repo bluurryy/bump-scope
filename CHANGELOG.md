@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.7 (2024-08-18)
 - **added**: `from_utf8_unchecked` for all string types
 - **added**: `BumpString::into_fixed_string`
 - **added**: `BumpBox<[T]>::partition`

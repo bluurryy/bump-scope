@@ -1133,7 +1133,7 @@ where
     /// Shrinks the capacity of the vector as much as possible.
     ///
     /// This will also free space for future bump allocations iff this is the most recent allocation.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
