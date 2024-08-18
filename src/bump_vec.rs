@@ -1193,7 +1193,7 @@ where
 
     /// Turns this `BumpVec<T>` into a `FixedBumpVec<T>`.
     ///
-    /// You may want to call `shrink_to_fit` before this, so the unused capacity does not take up space.
+    /// You may want to call [`shrink_to_fit`](Self::shrink_to_fit) before this, so the unused capacity does not take up space.
     #[must_use]
     #[inline(always)]
     pub fn into_fixed_vec(self) -> FixedBumpVec<'a, T> {
@@ -1202,7 +1202,7 @@ where
 
     /// Turns this `BumpVec<T>` into a `BumpBox<[T]>`.
     ///
-    /// You may want to call `shrink_to_fit` before this, so the unused capacity does not take up space.
+    /// You may want to call [`shrink_to_fit`](Self::shrink_to_fit) before this, so the unused capacity does not take up space.
     #[must_use]
     #[inline(always)]
     pub fn into_boxed_slice(self) -> BumpBox<'a, [T]> {
@@ -1211,11 +1211,11 @@ where
 
     /// Turns this `BumpVec<T>` into a `&[T]` that is live for the entire bump scope.
     ///
-    /// You may want to call `shrink_to_fit` before this, so the unused capacity does not take up space.
+    /// You may want to call [`shrink_to_fit`](Self::shrink_to_fit) before this, so the unused capacity does not take up space.
     ///
     /// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
     ///
-    /// `!NoDrop` types can still be turned into slices via `BumpBox::leak(vec.into_boxed_slice())`.
+    /// `!NoDrop` types can still be turned into slices via <code>BumpBox::[leak](BumpBox::leak)(vec.[into_boxed_slice](Self::into_boxed_slice)())</code>.
     #[must_use]
     #[inline(always)]
     pub fn into_slice(self) -> &'a mut [T]
@@ -1382,7 +1382,7 @@ where
     /// assert_eq!(odds, [1, 3, 5, 9, 11, 13, 15]);
     /// ```
     ///
-    /// [`retain`]: BumpVec::retain
+    /// [`retain`]: Self::retain
     pub fn extract_if<F>(&mut self, filter: F) -> ExtractIf<T, F>
     where
         F: FnMut(&mut T) -> bool,

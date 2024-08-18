@@ -404,7 +404,7 @@ where
 
     bump_common_methods!(true);
 
-    /// Returns `&self` as is. This is used in for macros that support both `Bump` and `BumpScope`, like [`bump_vec!`](crate::bump_vec!).
+    /// Returns `&self` as is. This is useful for macros that support both `Bump` and `BumpScope`, like [`bump_vec!`](crate::bump_vec!).
     #[inline(always)]
     pub fn as_scope(&self) -> &Self {
         self
@@ -589,7 +589,7 @@ where
         this.chunk.get().header_ptr().cast()
     }
 
-    /// Converts the raw pointer that was created with [`into_raw`](BumpScope::into_raw) back into a `BumpScope`.
+    /// Converts the raw pointer that was created with [`into_raw`](Self::into_raw) back into a `BumpScope`.
     ///
     /// # Safety
     /// This is highly unsafe, due to the number of invariants that aren't checked:

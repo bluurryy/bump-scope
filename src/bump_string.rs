@@ -541,7 +541,7 @@ where
 
     /// Converts a `BumpString` into a `BumpBox<str>`.
     ///
-    /// You may want to call `shrink_to_fit` before this, so the unused capacity does not take up space.
+    /// You may want to call [`shrink_to_fit`](Self::shrink_to_fit) before this, so the unused capacity does not take up space.
     #[must_use]
     #[inline(always)]
     pub fn into_boxed_str(self) -> BumpBox<'a, str> {
@@ -550,7 +550,7 @@ where
 
     /// Converts this `BumpBox<str>` into `&str` that is live for the entire bump scope.
     ///
-    /// You may want to call `shrink_to_fit` before this, so the unused capacity does not take up space.
+    /// You may want to call [`shrink_to_fit`](Self::shrink_to_fit) before this, so the unused capacity does not take up space.
     #[must_use]
     #[inline(always)]
     pub fn into_str(self) -> &'a mut str {

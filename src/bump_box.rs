@@ -752,15 +752,13 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// is done using one of the safe operations instead, such as
     /// [`truncate`] or [`clear`].
     ///
-    /// [`truncate`]: BumpBox::truncate
-    /// [`clear`]: BumpBox::clear
+    /// [`truncate`]: Self::truncate
+    /// [`clear`]: Self::clear
     ///
     /// # Safety
     ///
-    /// - `new_len` must be less than or equal to the [`capacity`] (capacity is not tracked by this type).
+    /// - `new_len` must be less than or equal to the `capacity` (capacity is not tracked by this type).
     /// - The elements at `old_len..new_len` must be initialized.
-    ///
-    /// [`capacity`]: crate::MutBumpVec::capacity
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: usize) {
         nonnull::set_len(&mut self.ptr, new_len);
@@ -1294,8 +1292,6 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// or the iteration short-circuits, then the remaining elements will be retained.
     /// Use [`retain`] with a negated predicate if you do not need the returned iterator.
     ///
-    /// [`retain`]: Vec::retain
-    ///
     /// Using this method is equivalent to the following code:
     ///
     /// ```
@@ -1337,6 +1333,8 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// assert_eq!(evens, [2, 4, 6, 8, 14]);
     /// assert_eq!(odds, [1, 3, 5, 9, 11, 13, 15]);
     /// ```
+    ///
+    /// [`retain`]: Self::retain
     pub fn extract_if<F>(&mut self, filter: F) -> ExtractIf<T, F>
     where
         F: FnMut(&mut T) -> bool,

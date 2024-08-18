@@ -1150,7 +1150,7 @@ where
     ///
     /// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
     ///
-    /// `!NoDrop` types can still be turned into slices via `BumpBox::leak(vec.into_boxed_slice())`.
+    /// `!NoDrop` types can still be turned into slices via <code>BumpBox::[leak](BumpBox::leak)(vec.[into_boxed_slice](Self::into_boxed_slice)())</code>.
     #[must_use]
     #[inline(always)]
     pub fn into_slice(self) -> &'a mut [T]
