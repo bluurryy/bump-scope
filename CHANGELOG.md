@@ -3,6 +3,7 @@
 ## Unreleased
 - **added**: `from_utf8_unchecked` for all string types
 - **added**: `BumpString::into_fixed_string`
+- **added**: `BumpBox<[T]>::partition`
 
 ## 0.5.6 (2024-08-17)
 - **fixed:** `alloc_iter` and `alloc_fmt` to not take up more than the necessary memory

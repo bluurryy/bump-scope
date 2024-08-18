@@ -1535,7 +1535,7 @@ impl<'a, T> BumpBox<'a, [T]> {
         }
     }
 
-    /// Consumes an iterator, creating two collections from it.
+    /// Consumes `self`, creating two boxed slices from it.
     ///
     /// The predicate passed to `partition()` can return `true`, or `false`.
     /// `partition()` returns a pair, all of the elements for which it returned
@@ -1553,19 +1553,18 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let slice = bump.alloc_slice_copy(&[1, 2, 3]);
+    /// let slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6, 7]);
     ///
     /// let (even, odd) = slice.partition(|n| n % 2 == 0);
     ///
-    /// assert_eq!(even, vec![2]);
-    /// assert_eq!(odd, vec![1, 3]);
+    /// assert!(even.iter().all(|n| n % 2 == 0));
+    /// assert!(odd.iter().all(|n| n % 2 != 0));
     /// ```
-    #[cfg(test)]
-    pub fn partition<F>(mut self, f: F) -> (BumpBox<'a, [T]>, BumpBox<'a, [T]>)
+    pub fn partition<F>(mut self, f: F) -> (Self, Self)
     where
         F: FnMut(&T) -> bool,
     {
-        let index = self.iter_mut().partition_in_place(f);
+        let index = polyfill::iter::partition_in_place(self.iter_mut(), f);
         self.split_at(index)
     }
 }

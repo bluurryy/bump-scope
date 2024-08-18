@@ -1,6 +1,7 @@
 //! A collection of stuff that is missing from stable std.
 //! Most of this is from nightly.
 
+pub mod iter;
 pub mod nonnull;
 pub mod nonzero;
 pub mod pointer;
