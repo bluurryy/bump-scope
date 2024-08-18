@@ -279,13 +279,29 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
         }
     }
 
-    /// Converts a bump allocated vector of bytes to a `BumpString`.
+    /// Converts a vector of bytes to a `BumpString` without checking that the
+    /// string contains valid UTF-8.
     ///
-    /// See the safe version, [`from_utf8`](Self::from_utf8), for more information.
+    /// See the safe version, [`from_utf8`](Self::from_utf8), for more details.
     ///
     /// # Safety
     ///
     /// The bytes passed in must be valid UTF-8.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, bump_vec, BumpString };
+    /// # let bump: Bump = Bump::new();
+    /// // some bytes, in a vector
+    /// let sparkle_heart = bump_vec![in bump; 240, 159, 146, 150];
+    ///
+    /// let sparkle_heart = unsafe {
+    ///     BumpString::from_utf8_unchecked(sparkle_heart)
+    /// };
+    ///
+    /// assert_eq!("💖", sparkle_heart);
+    /// ```
     #[must_use]
     pub unsafe fn from_utf8_unchecked(vec: BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> Self {
         debug_assert!(str::from_utf8(vec.as_slice()).is_ok());
