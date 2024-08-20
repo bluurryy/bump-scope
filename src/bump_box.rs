@@ -54,7 +54,7 @@ use crate::WithLifetime;
 ///   [`into_boxed_bytes`](Self::into_boxed_bytes),
 ///   [`into_boxed_str`](Self::into_boxed_str) and
 ///   [`into_boxed_str_unchecked`](Self::into_boxed_str_unchecked).
-/// - `BumpBox<MaybeUninit<T>>` and `BumpBox<[MaybeUninit<T>]>` provides methods like
+/// - `BumpBox<MaybeUninit<T>>` and `BumpBox<[MaybeUninit<T>]>` provide methods like
 ///   [`init`](Self::init),
 ///   [`assume_init`](Self::assume_init),
 ///   [`init_fill`](Self::init_fill),
