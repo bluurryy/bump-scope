@@ -83,7 +83,7 @@ where
         unsafe { BumpScope::new_unchecked(self.chunk) }
     }
 
-    #[doc = include_str!("docs/bump/reset.md")]
+    #[doc = include_str!("docs/bump_scope_guard/reset.md")]
     #[inline(always)]
     pub fn reset(&mut self) {
         unsafe {
@@ -176,7 +176,7 @@ where
         unsafe { BumpScope::new_unchecked(self.chunk) }
     }
 
-    #[doc = include_str!("docs/bump/reset.md")]
+    #[doc = include_str!("docs/bump_scope_guard/reset.md")]
     #[inline(always)]
     pub fn reset(&mut self) {
         self.chunk.reset();
