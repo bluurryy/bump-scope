@@ -32,7 +32,7 @@ use crate::WithLifetime;
 /// You can turn a `BumpBox` into a reference with [`into_ref`] and [`into_mut`] and into a [`Box`] with [`into_box`].
 ///
 /// Unlike `Box`, `BumpBox` can not implement `Clone` or free the allocated space as it does not store its allocator.
-/// It's essentially an owned reference.
+/// It's essentially just an owned reference.
 ///
 /// ## `BumpBox` has a lot of methods
 /// - `BumpBox<[T]>` provides methods from `Vec<T>` like
@@ -44,11 +44,12 @@ use crate::WithLifetime;
 ///   [`retain`](Self::retain),
 ///   [`drain`](Self::drain),
 ///   [`extract_if`](Self::extract_if),
-///   [`dedup`](Self::dedup)
-///   and slice methods but with owned semantics like
+///   [`dedup`](Self::dedup),
+///   slice methods but with owned semantics like
 ///   [`split_at`](Self::split_at),
-///   [`split_first`](Self::split_first) and
-///   [`split_last`](Self::split_last).
+///   [`split_first`](Self::split_first),
+///   [`split_last`](Self::split_last) and new methods like
+///   [`partition`](Self::partition).
 /// - `BumpBox<str>` and `BumpBox<[u8]>` provide methods to convert between the two like
 ///   [`into_boxed_bytes`](Self::into_boxed_bytes),
 ///   [`into_boxed_str`](Self::into_boxed_str) and
