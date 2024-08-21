@@ -1294,9 +1294,9 @@ define_alloc_methods! {
 
     /// Allocate an object with its default value.
     impl
-    /// This is equivalent to `alloc_with(T::default)`.
+    /// This is equivalent to <code>[alloc_with](Self::alloc_with)(T::default)</code>.
     for pub fn alloc_default
-    /// This is equivalent to `try_alloc_with(T::default)`.
+    /// This is equivalent to <code>[try_alloc_with](Self::try_alloc_with)(T::default)</code>.
     for pub fn try_alloc_default
     fn generic_alloc_default<{T: Default}>(&self) -> BumpBox<T> | BumpBox<'a, T> {
         self.generic_alloc_with(Default::default)
@@ -1507,7 +1507,7 @@ define_alloc_methods! {
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
     impl
-    /// For better performance prefer [`alloc_iter_exact`](Bump::try_alloc_iter_exact) or <code>[alloc_iter_mut](Bump::alloc_iter_mut)([_rev](Bump::alloc_iter_mut_rev))</code>.
+    /// For better performance prefer [`alloc_iter_exact`](Bump::alloc_iter_exact) or <code>[alloc_iter_mut](Bump::alloc_iter_mut)([_rev](Bump::alloc_iter_mut_rev))</code>.
     for pub fn alloc_iter
     /// For better performance prefer [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) or <code>[try_alloc_iter_mut](Bump::try_alloc_iter_mut)([_rev](Bump::try_alloc_iter_mut_rev))</code>.
     for pub fn try_alloc_iter
@@ -1607,7 +1607,7 @@ define_alloc_methods! {
     /// ```
     for pub fn alloc_iter_mut_rev
     ///
-    /// When bumping upwards, prefer [`try_alloc_iter_mut`](Self::try_alloc_iter) or [`try_alloc_iter_exact`](Self::try_alloc_iter_exact) to avoid having to internally move the slice after creation.
+    /// When bumping upwards, prefer [`try_alloc_iter_mut`](Self::try_alloc_iter_mut) or [`try_alloc_iter_exact`](Self::try_alloc_iter_exact) to avoid having to internally move the slice after creation.
     for pub fn try_alloc_iter_mut_rev
     fn generic_alloc_iter_mut_rev<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         let iter = iter.into_iter();
@@ -1761,18 +1761,17 @@ define_alloc_methods! {
         Ok(FixedBumpVec::from_uninit(self.generic_alloc_uninit_slice(len)?))
     }
 
-    /// Allocate a [`FixedBumpString`] with the given `capacity`.
+    /// Allocate a [`FixedBumpString`] with the given `capacity` in bytes.
+    impl
     do examples
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let mut values = bump.alloc_fixed_vec(3);
-    /// values.push(1);
-    /// values.push(2);
-    /// values.push(3);
-    /// assert_eq!(values, [1, 2, 3])
+    /// let mut string = bump.alloc_fixed_string(12);
+    /// string.push_str("Hello");
+    /// string.push_str(" world!");
+    /// assert_eq!(string, "Hello world!")
     /// ```
-    impl
     for pub fn alloc_fixed_string
     for pub fn try_alloc_fixed_string
     fn generic_alloc_fixed_string(&self, len: usize) -> FixedBumpString | FixedBumpString<'a> {
@@ -1792,8 +1791,8 @@ define_alloc_methods! {
 
     /// Reserves capacity for at least `additional` more bytes to be bump allocated.
     /// The bump allocator may reserve more space to avoid frequent reallocations.
-    /// After calling `reserve`, `chunks().remaining()` will be greater than or equal to
-    /// `additional`. Does nothing if capacity is already sufficient.
+    /// After calling `reserve_bytes`, <code>self.[stats](Self::stats)().[remaining](Stats::remaining)()</code> will be greater than or equal to
+    /// `additional`. Does nothing if the capacity is already sufficient.
     do examples
     /// ```
     /// # use bump_scope::{ Bump };

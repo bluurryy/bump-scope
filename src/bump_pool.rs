@@ -12,7 +12,7 @@ macro_rules! bump_pool_declaration {
     ($($allocator_parameter:tt)*) => {
         /// A pool of bump allocators.
         ///
-        /// This type allows you to do bump allocations from different threads that have their lifetime tied to the pool.
+        /// This type allows bump allocations in parallel, with the allocations' lifetimes tied to the pool.
         ///
         /// # Examples
         ///
