@@ -285,7 +285,6 @@ mod mut_bump_vec;
 /// Contains [`BumpString`] and associated types.
 mod bump_string;
 
-mod array_layout;
 mod chunk_raw;
 mod chunk_size;
 mod drain;
@@ -305,6 +304,7 @@ mod stats;
 mod with_drop;
 mod without_dealloc;
 
+mod allocation_behavior;
 #[cfg(feature = "std")]
 mod bump_pool;
 
@@ -338,7 +338,7 @@ pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, GuaranteedAllocatedStats, S
 pub use with_drop::WithDrop;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
-use array_layout::{ArrayLayout, LayoutTrait};
+use allocation_behavior::{ArrayLayout, CustomLayout};
 use chunk_header::{unallocated_chunk_header, ChunkHeader};
 use chunk_raw::RawChunk;
 use chunk_size::ChunkSize;
@@ -369,6 +369,7 @@ pub struct MinimumAlignment<const ALIGNMENT: usize>;
 mod supported_minimum_alignment {
     use crate::ArrayLayout;
 
+    #[allow(private_interfaces)]
     pub trait Sealed {
         /// We'd be fine with just an [`core::ptr::Alignment`], but that's not stable.
         const LAYOUT: ArrayLayout;
@@ -386,6 +387,7 @@ macro_rules! supported_alignments {
     ($($i:literal)*) => {
         $(
             impl supported_minimum_alignment::Sealed for MinimumAlignment<$i> {
+                #[allow(private_interfaces)]
                 const LAYOUT: ArrayLayout = match ArrayLayout::from_size_align(0, $i) {
                     Ok(layout) => layout,
                     Err(_) => unreachable!(),
@@ -1783,7 +1785,7 @@ define_alloc_methods! {
     for pub fn alloc_layout
     for pub fn try_alloc_layout
     fn generic_alloc_layout(&self, layout: Layout) -> NonNull<u8> | NonNull<u8> {
-        match self.chunk.get().alloc::<MIN_ALIGN, false, false, _>(layout) {
+        match self.chunk.get().alloc::<MIN_ALIGN>(CustomLayout(layout)) {
             Some(ptr) => Ok(ptr),
             None => self.alloc_in_another_chunk(layout),
         }

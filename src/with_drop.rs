@@ -39,10 +39,12 @@ use core::{
 
 #[cfg(feature = "alloc")]
 use core::fmt;
+use std::ops::Deref;
 
 use allocator_api2::alloc::Allocator;
 
 use crate::{
+    allocation_behavior::LayoutProps,
     polyfill::{layout, nonnull},
     AllocError, AnyBump, BumpAllocator, BumpBox, ErrorBehavior, SizedTypeProperties,
 };
@@ -276,7 +278,7 @@ impl<Bump: AnyBump> WithDrop<Bump> {
         len: usize,
         layout: Layout,
     ) -> Result<Allocation<[MaybeUninit<T>]>, B> {
-        let ptr = match self.inner.alloc_in_current_chunk::<false, true>(layout) {
+        let ptr = match self.inner.alloc_in_current_chunk(CustomLayoutConstAlign(layout)) {
             Some(ptr) => ptr,
             None => self.inner.alloc_in_another_chunk::<B>(layout)?,
         };
@@ -455,3 +457,27 @@ unsafe impl<Bump: Allocator> Allocator for WithDrop<Bump> {
 }
 
 unsafe impl<Bump: BumpAllocator> BumpAllocator for WithDrop<Bump> {}
+
+#[derive(Clone, Copy)]
+pub(crate) struct CustomLayoutConstAlign(pub Layout);
+
+impl LayoutProps for CustomLayoutConstAlign {
+    const ALIGN_IS_CONST: bool = true;
+    const SIZE_IS_CONST: bool = false;
+    const SIZE_IS_MULTIPLE_OF_ALIGN: bool = false;
+}
+
+impl CustomLayoutConstAlign {
+    #[inline(always)]
+    pub(crate) const fn new<T>() -> Self {
+        Self(Layout::new::<T>())
+    }
+}
+
+impl Deref for CustomLayoutConstAlign {
+    type Target = Layout;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}

@@ -3,7 +3,10 @@ use core::{alloc::Layout, mem::MaybeUninit, ptr::NonNull};
 #[cfg(feature = "alloc")]
 use core::fmt;
 
-use crate::{BaseAllocator, Bump, BumpBox, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment};
+use crate::{
+    allocation_behavior::LayoutProps, BaseAllocator, Bump, BumpBox, BumpScope, ErrorBehavior, MinimumAlignment,
+    SupportedMinimumAlignment,
+};
 
 pub(crate) trait Sealed {
     fn alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<BumpBox<MaybeUninit<T>>, B>;
@@ -17,10 +20,7 @@ pub(crate) trait Sealed {
     fn alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<BumpBox<str>, B>;
     fn reserve_bytes<B: ErrorBehavior>(&self, additional: usize) -> Result<(), B>;
 
-    fn alloc_in_current_chunk<const IS_CONST_SIZE: bool, const IS_CONST_ALIGN: bool>(
-        &self,
-        layout: Layout,
-    ) -> Option<NonNull<u8>>;
+    fn alloc_in_current_chunk(&self, layout: impl LayoutProps) -> Option<NonNull<u8>>;
     fn alloc_in_another_chunk<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E>;
 }
 
@@ -72,11 +72,8 @@ impl<U: Sealed> Sealed for &U {
     }
 
     #[inline(always)]
-    fn alloc_in_current_chunk<const IS_CONST_SIZE: bool, const IS_CONST_ALIGN: bool>(
-        &self,
-        layout: Layout,
-    ) -> Option<NonNull<u8>> {
-        U::alloc_in_current_chunk::<IS_CONST_SIZE, IS_CONST_ALIGN>(self, layout)
+    fn alloc_in_current_chunk(&self, layout: impl LayoutProps) -> Option<NonNull<u8>> {
+        U::alloc_in_current_chunk(self, layout)
     }
 
     #[inline(always)]
@@ -133,11 +130,8 @@ impl<U: Sealed> Sealed for &mut U {
     }
 
     #[inline(always)]
-    fn alloc_in_current_chunk<const IS_CONST_SIZE: bool, const IS_CONST_ALIGN: bool>(
-        &self,
-        layout: Layout,
-    ) -> Option<NonNull<u8>> {
-        U::alloc_in_current_chunk::<IS_CONST_SIZE, IS_CONST_ALIGN>(self, layout)
+    fn alloc_in_current_chunk(&self, layout: impl LayoutProps) -> Option<NonNull<u8>> {
+        U::alloc_in_current_chunk(self, layout)
     }
 
     #[inline(always)]
@@ -199,11 +193,8 @@ where
     }
 
     #[inline(always)]
-    fn alloc_in_current_chunk<const IS_CONST_SIZE: bool, const IS_CONST_ALIGN: bool>(
-        &self,
-        layout: Layout,
-    ) -> Option<NonNull<u8>> {
-        self.chunk.get().alloc::<MIN_ALIGN, IS_CONST_SIZE, IS_CONST_ALIGN, _>(layout)
+    fn alloc_in_current_chunk(&self, layout: impl LayoutProps) -> Option<NonNull<u8>> {
+        self.chunk.get().alloc::<MIN_ALIGN>(layout)
     }
 
     #[inline(always)]
@@ -265,14 +256,8 @@ where
     }
 
     #[inline(always)]
-    fn alloc_in_current_chunk<const IS_CONST_SIZE: bool, const IS_CONST_ALIGN: bool>(
-        &self,
-        layout: Layout,
-    ) -> Option<NonNull<u8>> {
-        <BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> as Sealed>::alloc_in_current_chunk::<IS_CONST_SIZE, IS_CONST_ALIGN>(
-            self.as_scope(),
-            layout,
-        )
+    fn alloc_in_current_chunk(&self, layout: impl LayoutProps) -> Option<NonNull<u8>> {
+        <BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> as Sealed>::alloc_in_current_chunk(self.as_scope(), layout)
     }
 
     #[inline(always)]

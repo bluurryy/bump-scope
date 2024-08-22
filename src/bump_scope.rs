@@ -13,14 +13,14 @@ use core::{
 use allocator_api2::alloc::AllocError;
 
 use crate::{
+    allocation_behavior::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     bump_align_guard::BumpAlignGuard,
     bump_common_methods, bump_scope_methods,
     chunk_size::ChunkSize,
     const_param_assert, doc_align_cant_decrease,
     polyfill::{nonnull, pointer},
-    ArrayLayout, BaseAllocator, BumpScopeGuard, Checkpoint, ErrorBehavior, GuaranteedAllocatedStats, LayoutTrait,
-    MinimumAlignment, RawChunk, SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
-    DEFAULT_START_CHUNK_SIZE,
+    BaseAllocator, BumpScopeGuard, Checkpoint, ErrorBehavior, GuaranteedAllocatedStats, MinimumAlignment, RawChunk,
+    SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink, DEFAULT_START_CHUNK_SIZE,
 };
 
 #[cfg(not(no_global_oom_handling))]
@@ -217,9 +217,9 @@ where
             Err(_) => return Err(B::capacity_overflow()),
         };
 
-        let range = match self.chunk.get().alloc_greedy::<MIN_ALIGN, true>(layout) {
+        let range = match self.chunk.get().alloc_greedy::<MIN_ALIGN>(layout) {
             Some(ptr) => ptr,
-            None => self.alloc_greedy_in_another_chunk(layout)?,
+            None => self.alloc_greedy_in_another_chunk(CustomLayout(*layout))?,
         };
 
         Ok(range.start.cast::<T>()..range.end.cast::<T>())
@@ -229,14 +229,14 @@ where
     #[inline(never)]
     pub(crate) fn alloc_greedy_in_another_chunk<E: ErrorBehavior>(
         &self,
-        layout: ArrayLayout,
+        layout: CustomLayout,
     ) -> Result<Range<NonNull<u8>>, E> {
-        unsafe { self.do_custom_alloc_in_another_chunk(layout, RawChunk::alloc_greedy::<MIN_ALIGN, false>) }
+        unsafe { self.do_custom_alloc_in_another_chunk(layout, RawChunk::alloc_greedy::<MIN_ALIGN>) }
     }
 
     #[inline(always)]
     pub(crate) fn alloc_in_current_chunk(&self, layout: Layout) -> Option<NonNull<u8>> {
-        self.chunk.get().alloc::<MIN_ALIGN, false, false, _>(layout)
+        self.chunk.get().alloc::<MIN_ALIGN>(CustomLayout(layout))
     }
 
     /// Allocation slow path.
@@ -244,12 +244,14 @@ where
     #[cold]
     #[inline(never)]
     pub(crate) fn alloc_in_another_chunk<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
-        unsafe { self.do_custom_alloc_in_another_chunk(layout, RawChunk::alloc::<MIN_ALIGN, false, false, _>) }
+        unsafe {
+            self.do_custom_alloc_in_another_chunk(CustomLayout(layout), RawChunk::alloc_inner::<MIN_ALIGN, CustomLayout>)
+        }
     }
 
     #[inline(always)]
     pub(crate) fn do_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
-        let result = match self.chunk.get().alloc::<MIN_ALIGN, true, true, _>(ArrayLayout::new::<T>()) {
+        let result = match self.chunk.get().alloc::<MIN_ALIGN>(SizedLayout::new::<T>()) {
             Some(ptr) => Ok(ptr),
             None => self.do_alloc_sized_in_another_chunk::<E, T>(),
         };
@@ -277,7 +279,7 @@ where
             Err(_) => return Err(E::capacity_overflow()),
         };
 
-        let result = match self.chunk.get().alloc::<MIN_ALIGN, false, true, _>(layout) {
+        let result = match self.chunk.get().alloc::<MIN_ALIGN>(layout) {
             Some(ptr) => Ok(ptr),
             None => unsafe { self.do_alloc_slice_in_another_chunk::<E, T>(len) },
         };
@@ -292,7 +294,7 @@ where
     pub(crate) fn do_alloc_slice_for<E: ErrorBehavior, T>(&self, value: &[T]) -> Result<NonNull<[T]>, E> {
         let layout = ArrayLayout::for_value(value);
 
-        let result = match self.chunk.get().alloc::<MIN_ALIGN, false, true, _>(layout) {
+        let result = match self.chunk.get().alloc::<MIN_ALIGN>(layout) {
             Some(ptr) => Ok(ptr),
             None => unsafe { self.do_alloc_slice_in_another_chunk::<E, T>(value.len()) },
         };
@@ -344,7 +346,7 @@ where
         let result = match self.chunk.get().alloc_no_bump_for::<MIN_ALIGN, T>() {
             Some(ptr) => Ok(ptr),
             None => unsafe {
-                self.do_custom_alloc_in_another_chunk(Layout::new::<T>(), |chunk, _| {
+                self.do_custom_alloc_in_another_chunk(CustomLayout::new::<T>(), |chunk, _| {
                     chunk.alloc_no_bump_for::<MIN_ALIGN, T>()
                 })
             },
@@ -360,14 +362,14 @@ where
     ///
     /// `allocate` on the new chunk created by `RawChunk::append_for` with the layout `layout` must return `Some`.
     #[inline(always)]
-    pub(crate) unsafe fn do_custom_alloc_in_another_chunk<E: ErrorBehavior, L: LayoutTrait, R>(
+    pub(crate) unsafe fn do_custom_alloc_in_another_chunk<E: ErrorBehavior, L: LayoutProps, R>(
         &self,
         layout: L,
         mut allocate: impl FnMut(RawChunk<UP, A>, L) -> Option<R>,
     ) -> Result<R, E> {
         let new_chunk = if self.is_unallocated() {
             let allocator = A::default_or_panic();
-            RawChunk::new_in(ChunkSize::for_capacity(layout.layout())?, None, allocator)
+            RawChunk::new_in(ChunkSize::for_capacity(*layout)?, None, allocator)
         } else {
             while let Some(chunk) = self.chunk.get().next() {
                 // We don't reset the chunk position when we leave a scope, so we need to do it here.
@@ -381,7 +383,7 @@ where
             }
 
             // there is no chunk that fits, we need a new chunk
-            self.chunk.get().append_for(layout.layout())
+            self.chunk.get().append_for(*layout)
         }?;
 
         self.chunk.set(new_chunk);
