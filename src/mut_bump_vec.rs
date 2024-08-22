@@ -99,6 +99,8 @@ macro_rules! mut_bump_vec {
 macro_rules! mut_bump_vec_declaration {
     ($($allocator_parameter:tt)*) => {
         /// A type like [`BumpVec`](crate::BumpVec), optimized for a `&mut Bump(Scope)`.
+        /// It has the advantage that it can assume the entire remaining chunk space as its capacity.
+        /// It also only needs to update the bump pointer when calling <code>[into_](Self::into_slice)([boxed_](Self::into_boxed_slice))[slice](Self::into_slice)</code>.
         ///
         /// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
         /// ```
@@ -1073,7 +1075,8 @@ where
 
     /// Turns this `MutBumpVec<T>` into a `BumpBox<[T]>`.
     ///
-    /// Unused capacity does not take up space.
+    /// Unused capacity does not take up space.<br/>
+    /// When [bumping downwards](crate#bumping-upwards-or-downwards) this needs to shift all elements to the other end of the chunk.
     #[must_use]
     #[inline(always)]
     pub fn into_boxed_slice(self) -> BumpBox<'a, [T]> {
@@ -1082,7 +1085,8 @@ where
 
     /// Turns this `MutBumpVec<T>` into a `&[T]` that is live for the entire bump scope.
     ///
-    /// Unused capacity does not take up space.
+    /// Unused capacity does not take up space.<br/>
+    /// When [bumping downwards](crate#bumping-upwards-or-downwards) this needs to shift all elements to the other end of the chunk.
     ///
     /// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
     ///

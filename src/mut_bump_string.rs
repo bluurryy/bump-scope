@@ -60,6 +60,8 @@ macro_rules! mut_bump_format {
 macro_rules! mut_bump_string_declaration {
     ($($allocator_parameter:tt)*) => {
         /// A type like [`BumpString`](crate::BumpString), optimized for a `&mut Bump(Scope)`.
+        /// It has the advantage that it can assume the entire remaining chunk space as its capacity.
+        /// It also only needs to update the bump pointer when calling <code>[into_](Self::into_str)([boxed_](Self::into_boxed_str))[str](Self::into_str)</code>.
         ///
         /// When you are done building the string, you can turn it into a `&str` with [`into_str`].
         ///
@@ -579,6 +581,9 @@ where
     }
 
     /// Converts a `MutBumpString` into a `BumpBox<str>`.
+    ///
+    /// Unused capacity does not take up space.<br/>
+    /// When [bumping downwards](crate#bumping-upwards-or-downwards) this needs to shift all elements to the other end of the chunk.
     #[must_use]
     #[inline(always)]
     pub fn into_boxed_str(self) -> BumpBox<'a, str> {
@@ -586,6 +591,9 @@ where
     }
 
     /// Converts this `BumpBox<str>` into `&str` that is live for the entire bump scope.
+    ///
+    /// Unused capacity does not take up space.<br/>
+    /// When [bumping downwards](crate#bumping-upwards-or-downwards) this needs to shift all elements to the other end of the chunk.
     #[must_use]
     #[inline(always)]
     pub fn into_str(self) -> &'a mut str {

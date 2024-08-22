@@ -144,6 +144,8 @@ where
                 let dst = nonnull::sub(dst_end, len);
 
                 // We only copy if we can do so nonoverlappingly.
+                // TODO: How about we don't? This is surprising, let's not.
+                //       This also makes the docs wrong saying that "unused capacity does not take up space".
                 if dst >= end {
                     nonnull::copy_nonoverlapping(start, dst, len);
                     start = dst;
@@ -165,6 +167,8 @@ where
                 let dst_end = nonnull::add(dst, len);
 
                 // We only copy if we can do so nonoverlappingly.
+                // TODO: How about we don't? This is surprising, let's not.
+                //       This also makes the docs wrong saying that "unused capacity does not take up space".
                 if dst_end <= start {
                     nonnull::copy_nonoverlapping(start, dst, len);
                     start = dst;
