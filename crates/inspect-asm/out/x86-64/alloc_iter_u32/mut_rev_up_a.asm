@@ -20,8 +20,8 @@ inspect_asm::alloc_iter_u32::mut_rev_up_a:
 	mov rdx, qword ptr [rcx + 8]
 	mov rcx, rdx
 	sub rcx, rax
-	cmp rcx, r14
-	jb .LBB0_6
+	cmp r14, rcx
+	ja .LBB0_6
 	and rdx, -4
 .LBB0_0:
 	mov rcx, rdx

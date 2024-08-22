@@ -24,8 +24,8 @@ inspect_asm::alloc_iter_u32::try_mut_up_a:
 	mov rdx, qword ptr [rcx + 8]
 	mov rcx, rdx
 	sub rcx, rax
-	cmp rcx, r14
-	jb .LBB0_8
+	cmp r14, rcx
+	ja .LBB0_8
 	and rdx, -4
 .LBB0_2:
 	sub rdx, rax

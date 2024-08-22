@@ -31,8 +31,8 @@ inspect_asm::bump_vec_u32::up::try_with_capacity:
 	mov rdi, rsi
 	sub rdi, rcx
 	mov r8, r9
-	cmp rdi, r9
-	jb .LBB0_4
+	cmp r9, rdi
+	ja .LBB0_4
 	test rcx, rcx
 	je .LBB0_4
 	and rsi, -4

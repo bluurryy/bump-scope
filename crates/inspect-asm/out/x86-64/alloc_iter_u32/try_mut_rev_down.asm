@@ -25,8 +25,8 @@ inspect_asm::alloc_iter_u32::try_mut_rev_down:
 	and rdx, -4
 	mov rcx, rdx
 	sub rcx, rax
-	cmp rcx, r14
-	jb .LBB0_8
+	cmp r14, rcx
+	ja .LBB0_8
 	add rax, 3
 	and rax, -4
 	je .LBB0_8

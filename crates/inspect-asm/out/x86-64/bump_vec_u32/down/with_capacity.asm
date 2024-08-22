@@ -14,8 +14,8 @@ inspect_asm::bump_vec_u32::down::with_capacity:
 	and rcx, -4
 	mov r8, rcx
 	sub r8, rax
-	cmp r8, rsi
-	jb .LBB0_3
+	cmp rsi, r8
+	ja .LBB0_3
 	add rax, 3
 	and rax, -4
 	je .LBB0_3
