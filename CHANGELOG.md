@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **fixed:** `Mut*` collections' `into(_boxed)_slice` as well as `alloc_iter_mut(_rev)` and `alloc_fmt_mut` to not take up more than the necessary memory
+
 ## 0.5.7 (2024-08-18)
 - **added**: `from_utf8_unchecked` for all string types
 - **added**: `BumpString::into_fixed_string`
