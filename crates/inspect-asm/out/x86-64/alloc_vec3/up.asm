@@ -6,12 +6,10 @@ inspect_asm::alloc_vec3::up:
 	add rax, 3
 	and rax, -4
 	sub rdx, rax
-	cmp rdx, 12
-	jb .LBB0_1
+	cmp rdx, 11
+	jbe .LBB0_1
 	lea rdx, [rax + 12]
 	mov qword ptr [rcx], rdx
-	test rax, rax
-	je .LBB0_1
 .LBB0_0:
 	mov ecx, dword ptr [rsi + 8]
 	mov dword ptr [rax + 8], ecx

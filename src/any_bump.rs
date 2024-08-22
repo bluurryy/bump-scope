@@ -4,8 +4,7 @@ use core::{alloc::Layout, mem::MaybeUninit, ptr::NonNull};
 use core::fmt;
 
 use crate::{
-    allocation_behavior::LayoutProps, BaseAllocator, Bump, BumpBox, BumpScope, ErrorBehavior, MinimumAlignment,
-    SupportedMinimumAlignment,
+    layout::LayoutProps, BaseAllocator, Bump, BumpBox, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment,
 };
 
 pub(crate) trait Sealed {
@@ -194,7 +193,7 @@ where
 
     #[inline(always)]
     fn alloc_in_current_chunk(&self, layout: impl LayoutProps) -> Option<NonNull<u8>> {
-        self.chunk.get().alloc::<MIN_ALIGN>(layout)
+        self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, layout)
     }
 
     #[inline(always)]

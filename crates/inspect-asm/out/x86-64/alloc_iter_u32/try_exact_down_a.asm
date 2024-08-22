@@ -1,61 +1,60 @@
 inspect_asm::alloc_iter_u32::try_exact_down_a:
+	push r15
 	push r14
 	push rbx
-	push rax
 	mov rax, rdx
 	shr rax, 61
 	je .LBB0_1
 	xor eax, eax
 .LBB0_0:
-	add rsp, 8
 	pop rbx
 	pop r14
+	pop r15
 	ret
 .LBB0_1:
-	lea rcx, [4*rdx]
-	mov r8, qword ptr [rdi]
-	mov rax, qword ptr [r8]
-	mov r9, rax
-	sub r9, qword ptr [r8 + 8]
-	cmp rcx, r9
+	lea rbx, [4*rdx]
+	mov rcx, qword ptr [rdi]
+	mov rax, qword ptr [rcx]
+	mov r8, rax
+	sub r8, qword ptr [rcx + 8]
+	cmp rbx, r8
 	ja .LBB0_6
-	sub rax, rcx
-	mov qword ptr [r8], rax
+	sub rax, rbx
+	mov qword ptr [rcx], rax
 	je .LBB0_6
 .LBB0_2:
 	test rdx, rdx
 	je .LBB0_0
-	lea rcx, [rdx - 1]
-	movabs r8, 4611686018427387903
-	and r8, rcx
-	cmp rdx, r8
-	cmovb r8, rdx
+	add rbx, -4
+	shr rbx, 2
+	cmp rdx, rbx
+	cmovb rbx, rdx
 	mov rcx, rax
 	mov rdi, rsi
-	cmp r8, 8
+	cmp rbx, 8
 	jb .LBB0_4
-	mov r9, rax
-	sub r9, rsi
+	mov r8, rax
+	sub r8, rsi
 	mov rcx, rax
 	mov rdi, rsi
-	cmp r9, 32
+	cmp r8, 32
 	jb .LBB0_4
-	inc r8
-	mov ecx, r8d
+	inc rbx
+	mov ecx, ebx
 	and ecx, 7
 	mov edi, 8
 	cmovne rdi, rcx
-	sub r8, rdi
-	lea rcx, [rax + 4*r8]
-	lea rdi, [rsi + 4*r8]
-	xor r9d, r9d
+	sub rbx, rdi
+	lea rcx, [rax + 4*rbx]
+	lea rdi, [rsi + 4*rbx]
+	xor r8d, r8d
 .LBB0_3:
-	movups xmm0, xmmword ptr [rsi + 4*r9]
-	movups xmm1, xmmword ptr [rsi + 4*r9 + 16]
-	movups xmmword ptr [rax + 4*r9], xmm0
-	movups xmmword ptr [rax + 4*r9 + 16], xmm1
-	add r9, 8
-	cmp r8, r9
+	movups xmm0, xmmword ptr [rsi + 4*r8]
+	movups xmm1, xmmword ptr [rsi + 4*r8 + 16]
+	movups xmmword ptr [rax + 4*r8], xmm0
+	movups xmmword ptr [rax + 4*r8 + 16], xmm1
+	add r8, 8
+	cmp rbx, r8
 	jne .LBB0_3
 .LBB0_4:
 	lea rsi, [rsi + 4*rdx]
@@ -71,18 +70,18 @@ inspect_asm::alloc_iter_u32::try_exact_down_a:
 	jne .LBB0_5
 	jmp .LBB0_0
 .LBB0_6:
-	mov rbx, rsi
+	mov r14, rsi
 	mov rsi, rdx
-	mov r14, rdx
+	mov r15, rdx
 	call bump_scope::bump_scope::BumpScope<A,_,_,_>::do_alloc_slice_in_another_chunk
-	mov rsi, rbx
-	mov rdx, r14
+	mov rsi, r14
+	mov rdx, r15
 	test rax, rax
 	jne .LBB0_2
 	xor eax, eax
-	add rsp, 8
 	pop rbx
 	pop r14
+	pop r15
 	ret
 .LBB0_7:
 	call qword ptr [rip + bump_scope::exact_size_iterator_bad_len@GOTPCREL]

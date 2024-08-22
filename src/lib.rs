@@ -304,9 +304,10 @@ mod stats;
 mod with_drop;
 mod without_dealloc;
 
-mod allocation_behavior;
 #[cfg(feature = "std")]
 mod bump_pool;
+mod error_behavior;
+mod layout;
 
 use allocator_api2::alloc::{AllocError, Allocator};
 
@@ -338,11 +339,12 @@ pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, GuaranteedAllocatedStats, S
 pub use with_drop::WithDrop;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
-use allocation_behavior::{ArrayLayout, CustomLayout};
 use chunk_header::{unallocated_chunk_header, ChunkHeader};
 use chunk_raw::RawChunk;
 use chunk_size::ChunkSize;
 use core::alloc::Layout;
+use error_behavior::ErrorBehavior;
+use layout::{ArrayLayout, CustomLayout};
 use polyfill::{nonnull, pointer};
 use set_len_on_drop::SetLenOnDrop;
 use set_len_on_drop_by_ptr::SetLenOnDropByPtr;
@@ -364,15 +366,17 @@ impl<T: Copy> NoDrop for T {}
 impl<T: Copy> NoDrop for [T] {}
 
 /// Specifies the current minimum alignment of a bump allocator.
+#[derive(Clone, Copy)]
 pub struct MinimumAlignment<const ALIGNMENT: usize>;
 
 mod supported_minimum_alignment {
     use crate::ArrayLayout;
 
-    #[allow(private_interfaces)]
     pub trait Sealed {
         /// We'd be fine with just an [`core::ptr::Alignment`], but that's not stable.
         const LAYOUT: ArrayLayout;
+
+        const MIN_ALIGN: usize;
     }
 }
 
@@ -381,17 +385,18 @@ mod supported_minimum_alignment {
 /// This trait is *sealed*: the list of implementors below is total. Users do not have the ability to mark additional
 /// `MinimumAlignment<N>` values as supported. Only bump allocators with the supported minimum alignments are constructable.
 #[allow(private_bounds)]
-pub trait SupportedMinimumAlignment: supported_minimum_alignment::Sealed {}
+pub trait SupportedMinimumAlignment: supported_minimum_alignment::Sealed + Copy {}
 
 macro_rules! supported_alignments {
     ($($i:literal)*) => {
         $(
             impl supported_minimum_alignment::Sealed for MinimumAlignment<$i> {
-                #[allow(private_interfaces)]
                 const LAYOUT: ArrayLayout = match ArrayLayout::from_size_align(0, $i) {
                     Ok(layout) => layout,
                     Err(_) => unreachable!(),
                 };
+
+                const MIN_ALIGN: usize = $i;
             }
             impl SupportedMinimumAlignment for MinimumAlignment<$i> {}
         )*
@@ -580,75 +585,11 @@ unsafe impl<'a, A: Allocator> Allocator for WithLifetime<'a, A> {
     }
 }
 
-trait ErrorBehavior: Sized {
-    fn allocation(layout: Layout) -> Self;
-    fn capacity_overflow() -> Self;
-    fn fixed_size_vector_is_full() -> Self;
-    fn fixed_size_vector_no_space(amount: usize) -> Self;
-}
-
-impl ErrorBehavior for Infallible {
-    #[inline(always)]
-    fn allocation(layout: Layout) -> Self {
-        handle_alloc_error(layout)
-    }
-
-    #[inline(always)]
-    fn capacity_overflow() -> Self {
-        capacity_overflow()
-    }
-
-    #[inline(always)]
-    fn fixed_size_vector_is_full() -> Self {
-        fixed_size_vector_is_full()
-    }
-
-    #[inline(always)]
-    fn fixed_size_vector_no_space(amount: usize) -> Self {
-        fixed_size_vector_no_space(amount)
-    }
-}
-
-#[cold]
-#[inline(never)]
-fn fixed_size_vector_is_full() -> ! {
-    panic!("fixed size vector is full");
-}
-
-#[cold]
-#[inline(never)]
-fn fixed_size_vector_no_space(amount: usize) -> ! {
-    panic!("fixed size vector does not have space for {amount} more elements");
-}
-
 #[cold]
 #[inline(never)]
 #[cfg(not(feature = "alloc"))]
 fn handle_alloc_error(_layout: Layout) -> ! {
     panic!("allocation failed")
-}
-
-impl ErrorBehavior for AllocError {
-    #[inline(always)]
-    fn allocation(_: Layout) -> Self {
-        Self
-    }
-
-    #[inline(always)]
-    fn capacity_overflow() -> Self {
-        Self
-    }
-
-    #[inline(always)]
-    fn fixed_size_vector_is_full() -> Self {
-        Self
-    }
-
-    #[inline(always)]
-    fn fixed_size_vector_no_space(amount: usize) -> Self {
-        let _ = amount;
-        Self
-    }
 }
 
 // this is just `Result::into_ok` but with a name to match our use case
@@ -1367,8 +1308,8 @@ define_alloc_methods! {
         let dst = self.do_alloc_slice_for(slice)?;
 
         unsafe {
-            core::ptr::copy_nonoverlapping(src, dst.cast::<T>().as_ptr(), len);
-            Ok(BumpBox::from_raw(dst))
+            core::ptr::copy_nonoverlapping(src, dst.as_ptr(), len);
+            Ok(BumpBox::from_raw(nonnull::slice_from_raw_parts(dst, len)))
         }
     }
 
@@ -1785,7 +1726,7 @@ define_alloc_methods! {
     for pub fn alloc_layout
     for pub fn try_alloc_layout
     fn generic_alloc_layout(&self, layout: Layout) -> NonNull<u8> | NonNull<u8> {
-        match self.chunk.get().alloc::<MIN_ALIGN>(CustomLayout(layout)) {
+        match self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, CustomLayout(layout)) {
             Some(ptr) => Ok(ptr),
             None => self.alloc_in_another_chunk(layout),
         }

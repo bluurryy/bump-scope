@@ -16,8 +16,6 @@ inspect_asm::alloc_iter_u32::exact_up:
 	ja .LBB0_5
 	add rcx, rax
 	mov qword ptr [r8], rcx
-	test rax, rax
-	je .LBB0_5
 	test rdx, rdx
 	je .LBB0_4
 .LBB0_0:

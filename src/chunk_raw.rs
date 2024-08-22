@@ -1,8 +1,8 @@
 use core::{alloc::Layout, cell::Cell, num::NonZeroUsize, ops::Range, ptr::NonNull};
 
 use crate::{
-    allocation_behavior::LayoutProps,
     down_align_usize,
+    layout::LayoutProps,
     polyfill::{const_unwrap, nonnull, pointer},
     unallocated_chunk_header, up_align_nonzero, up_align_nonzero_unchecked, up_align_usize_unchecked, ChunkHeader,
     ChunkSize, ErrorBehavior, MinimumAlignment, SizedTypeProperties, SupportedMinimumAlignment, CHUNK_ALIGN_MIN,
@@ -114,20 +114,22 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     ///
     /// On success, returns a [`NonNull<u8>`] meeting the size and alignment guarantees of `layout`.
     #[inline(always)]
-    pub fn alloc<const MIN_ALIGN: usize>(self, layout: impl LayoutProps) -> Option<NonNull<u8>>
+    pub fn alloc<M, L>(self, minimum_alignment: M, layout: L) -> Option<NonNull<u8>>
     where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        M: SupportedMinimumAlignment,
+        L: LayoutProps,
     {
-        self.alloc_inner(layout)
+        self.alloc_or_else(minimum_alignment, layout, || Err(())).ok()
     }
 
     #[inline(always)]
-    pub fn alloc_inner<const MIN_ALIGN: usize, L>(self, layout: L) -> Option<NonNull<u8>>
+    pub fn alloc_or_else<M, L, E, F>(self, _: M, layout: L, f: F) -> Result<NonNull<u8>, E>
     where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        M: SupportedMinimumAlignment,
         L: LayoutProps,
+        F: FnOnce() -> Result<NonNull<u8>, E>,
     {
-        debug_assert!(nonnull::is_aligned_to(self.pos(), MIN_ALIGN));
+        debug_assert!(nonnull::is_aligned_to(self.pos(), M::MIN_ALIGN));
 
         if L::SIZE_IS_MULTIPLE_OF_ALIGN {
             debug_assert!(layout.size() % layout.align() == 0);
@@ -150,7 +152,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
             if L::ALIGN_IS_CONST && layout.align() <= CHUNK_ALIGN_MIN {
                 // Constant, small alignment fast path!
 
-                if L::ALIGN_IS_CONST && layout.align() <= MIN_ALIGN {
+                if L::ALIGN_IS_CONST && layout.align() <= M::MIN_ALIGN {
                     // alignment is already sufficient
                 } else {
                     // Aligning an address that is `<= range.end` with an alignment
@@ -162,7 +164,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                 let remaining = end - start;
 
                 if layout.size() > remaining {
-                    return None;
+                    return f();
                 }
 
                 // doesn't exceed `end` because of the check above
@@ -184,30 +186,30 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                 // due to `end` being always aligned to `CHUNK_ALIGN_MIN`, it can't be `usize::MAX`;
                 // thus when `new_pos` is `usize::MAX` this will always return None;
                 if new_pos > end {
-                    return None;
+                    return f();
                 }
 
                 // doesn't exceed `end` because `aligned_down + align + size` didn't
                 start = aligned_down + layout.align();
             };
 
-            if (L::ALIGN_IS_CONST && L::SIZE_IS_MULTIPLE_OF_ALIGN && layout.align() >= MIN_ALIGN)
-                || (L::SIZE_IS_CONST && (layout.size() % MIN_ALIGN == 0))
+            if (L::ALIGN_IS_CONST && L::SIZE_IS_MULTIPLE_OF_ALIGN && layout.align() >= M::MIN_ALIGN)
+                || (L::SIZE_IS_CONST && (layout.size() % M::MIN_ALIGN == 0))
             {
                 // we are already aligned to `MIN_ALIGN`
             } else {
                 // up aligning an address `<= range.end` with an alignment `<= CHUNK_ALIGN_MIN` (which `MIN_ALIGN` is)
                 // can not exceed `range.end`, and thus also can't overflow
-                new_pos = up_align_usize_unchecked(new_pos, MIN_ALIGN);
+                new_pos = up_align_usize_unchecked(new_pos, M::MIN_ALIGN);
             }
 
             debug_assert!(is_aligned(start, layout.align()));
-            debug_assert!(is_aligned(start, MIN_ALIGN));
-            debug_assert!(is_aligned(new_pos, MIN_ALIGN));
+            debug_assert!(is_aligned(start, M::MIN_ALIGN));
+            debug_assert!(is_aligned(new_pos, M::MIN_ALIGN));
 
             unsafe {
                 self.set_pos(self.with_addr(new_pos));
-                Some(self.with_addr(start))
+                Ok(self.with_addr(start))
             }
         } else {
             let start = nonnull::addr(remaining.start).get();
@@ -221,41 +223,41 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                 end -= layout.size();
 
                 let needs_align_for_min_align =
-                    (!L::ALIGN_IS_CONST || !L::SIZE_IS_MULTIPLE_OF_ALIGN || layout.align() < MIN_ALIGN)
-                        && (!L::SIZE_IS_CONST || (layout.size() % MIN_ALIGN != 0));
+                    (!L::ALIGN_IS_CONST || !L::SIZE_IS_MULTIPLE_OF_ALIGN || layout.align() < M::MIN_ALIGN)
+                        && (!L::SIZE_IS_CONST || (layout.size() % M::MIN_ALIGN != 0));
                 let needs_align_for_layout =
-                    !L::ALIGN_IS_CONST || !L::SIZE_IS_MULTIPLE_OF_ALIGN || layout.align() > MIN_ALIGN;
+                    !L::ALIGN_IS_CONST || !L::SIZE_IS_MULTIPLE_OF_ALIGN || layout.align() > M::MIN_ALIGN;
 
                 if needs_align_for_min_align || needs_align_for_layout {
                     // At this point layout's align is const, because we assume `L::SIZE_IS_CONST` implies `L::ALIGN_IS_CONST`.
                     // That means `max` is evaluated at compile time, so we don't bother having different cases for either alignment.
-                    end = down_align_usize(end, layout.align().max(MIN_ALIGN));
+                    end = down_align_usize(end, layout.align().max(M::MIN_ALIGN));
                 }
 
                 if end < start {
-                    return None;
+                    return f();
                 }
             } else if L::ALIGN_IS_CONST && layout.align() <= CHUNK_ALIGN_MIN {
                 // Constant, small alignment fast path!
                 let remaining = end - start;
 
                 if layout.size() > remaining {
-                    return None;
+                    return f();
                 }
 
                 // doesn't overflow because of the check above
                 end -= layout.size();
 
                 let needs_align_for_min_align =
-                    (!L::ALIGN_IS_CONST || !L::SIZE_IS_MULTIPLE_OF_ALIGN || layout.align() < MIN_ALIGN)
-                        && (!L::SIZE_IS_CONST || (layout.size() % MIN_ALIGN != 0));
+                    (!L::ALIGN_IS_CONST || !L::SIZE_IS_MULTIPLE_OF_ALIGN || layout.align() < M::MIN_ALIGN)
+                        && (!L::SIZE_IS_CONST || (layout.size() % M::MIN_ALIGN != 0));
                 let needs_align_for_layout =
-                    !L::ALIGN_IS_CONST || !L::SIZE_IS_MULTIPLE_OF_ALIGN || layout.align() > MIN_ALIGN;
+                    !L::ALIGN_IS_CONST || !L::SIZE_IS_MULTIPLE_OF_ALIGN || layout.align() > M::MIN_ALIGN;
 
                 if needs_align_for_min_align || needs_align_for_layout {
                     // down aligning an address `>= range.start` with an alignment `<= CHUNK_ALIGN_MIN` (which `layout.align()` is)
                     // can not exceed `range.start`, and thus also can't overflow
-                    end = down_align_usize(end, layout.align().max(MIN_ALIGN));
+                    end = down_align_usize(end, layout.align().max(M::MIN_ALIGN));
                 }
             } else {
                 // Alignment is `> CHUNK_ALIGN_MIN` or unknown.
@@ -263,22 +265,22 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                 // this could also be a `checked_sub`, but we use `saturating_sub` to save us a branch;
                 // the `if` below will return None if the addition saturated and returned `0`
                 end = end.saturating_sub(layout.size());
-                end = down_align_usize(end, layout.align().max(MIN_ALIGN));
+                end = down_align_usize(end, layout.align().max(M::MIN_ALIGN));
 
                 // note that `end` being `0` is an invalid value for `end` and we MUST return None;
                 // due to `start` being `NonNull`, it can't be `0`;
                 // thus when `end` is `0` this will always return None;
                 if end < start {
-                    return None;
+                    return f();
                 }
             };
 
             debug_assert!(is_aligned(end, layout.align()));
-            debug_assert!(is_aligned(end, MIN_ALIGN));
+            debug_assert!(is_aligned(end, M::MIN_ALIGN));
 
             unsafe {
                 self.set_pos(self.with_addr(end));
-                Some(self.with_addr(end))
+                Ok(self.with_addr(end))
             }
         }
     }
@@ -380,17 +382,9 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// [`MutBumpVec`]: crate::MutBumpVec
     /// [`into_slice`]: crate::MutBumpVec::into_slice
     #[inline(always)]
-    pub fn alloc_greedy<const MIN_ALIGN: usize>(self, layout: impl LayoutProps) -> Option<Range<NonNull<u8>>>
+    pub fn alloc_greedy<M, L>(self, _: M, layout: L) -> Option<Range<NonNull<u8>>>
     where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    {
-        self.alloc_greedy_inner(layout)
-    }
-
-    #[inline(always)]
-    pub fn alloc_greedy_inner<const MIN_ALIGN: usize, L>(self, layout: L) -> Option<Range<NonNull<u8>>>
-    where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        M: SupportedMinimumAlignment,
         L: LayoutProps,
     {
         debug_assert_ne!(layout.size(), 0);
@@ -403,7 +397,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
             debug_assert!(start <= end);
             debug_assert!(end.get() % CHUNK_ALIGN_MIN == 0);
 
-            if L::ALIGN_IS_CONST && layout.align() <= MIN_ALIGN {
+            if L::ALIGN_IS_CONST && layout.align() <= M::MIN_ALIGN {
                 // alignment is already sufficient
             } else {
                 // `start` needs to be aligned
@@ -441,7 +435,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
             let mut end = end.get();
 
-            if L::ALIGN_IS_CONST && layout.align() <= MIN_ALIGN {
+            if L::ALIGN_IS_CONST && layout.align() <= M::MIN_ALIGN {
                 // alignment is already sufficient
             } else {
                 end = down_align_usize(end, layout.align());

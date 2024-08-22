@@ -44,7 +44,7 @@ use std::ops::Deref;
 use allocator_api2::alloc::Allocator;
 
 use crate::{
-    allocation_behavior::LayoutProps,
+    layout::LayoutProps,
     polyfill::{layout, nonnull},
     AllocError, AnyBump, BumpAllocator, BumpBox, ErrorBehavior, SizedTypeProperties,
 };

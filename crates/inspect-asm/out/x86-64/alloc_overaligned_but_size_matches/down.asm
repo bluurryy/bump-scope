@@ -6,8 +6,6 @@ inspect_asm::alloc_overaligned_but_size_matches::down:
 	cmp rax, qword ptr [rcx + 8]
 	jb .LBB0_0
 	mov qword ptr [rcx], rax
-	test rax, rax
-	je .LBB0_0
 	mov dword ptr [rax], esi
 	pop rbx
 	ret

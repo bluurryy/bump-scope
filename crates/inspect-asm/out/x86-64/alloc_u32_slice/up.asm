@@ -14,8 +14,6 @@ inspect_asm::alloc_u32_slice::up:
 	ja .LBB0_1
 	lea rcx, [r14 + rdx]
 	mov qword ptr [rax], rcx
-	test r14, r14
-	je .LBB0_1
 .LBB0_0:
 	mov rdi, r14
 	call qword ptr [rip + memcpy@GOTPCREL]

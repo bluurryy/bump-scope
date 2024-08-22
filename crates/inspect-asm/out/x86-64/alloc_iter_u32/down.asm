@@ -23,7 +23,6 @@ inspect_asm::alloc_iter_u32::down:
 	sub rax, r12
 	and rax, -4
 	mov qword ptr [rcx], rax
-	je .LBB0_10
 .LBB0_0:
 	mov qword ptr [rsp + 8], rax
 	mov qword ptr [rsp + 16], 0

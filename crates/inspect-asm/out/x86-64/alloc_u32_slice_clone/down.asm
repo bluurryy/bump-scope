@@ -12,7 +12,6 @@ inspect_asm::alloc_u32_slice_clone::down:
 	sub r14, rbx
 	and r14, -4
 	mov qword ptr [rax], r14
-	je .LBB0_2
 	test rdx, rdx
 	je .LBB0_1
 .LBB0_0:

@@ -11,9 +11,8 @@ inspect_asm::alloc_big::up:
 	cmovae rdx, r8
 	cmp rdx, qword ptr [rcx + 8]
 	ja .LBB0_0
-	mov qword ptr [rcx], rdx
 	add rdi, 512
-	je .LBB0_0
+	mov qword ptr [rcx], rdx
 	mov edx, 512
 	pop rbx
 	jmp qword ptr [rip + memcpy@GOTPCREL]

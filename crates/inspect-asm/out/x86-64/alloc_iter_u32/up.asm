@@ -22,8 +22,6 @@ inspect_asm::alloc_iter_u32::up:
 	ja .LBB0_7
 	lea rsi, [rax + r15]
 	mov qword ptr [rcx], rsi
-	test rax, rax
-	je .LBB0_7
 .LBB0_0:
 	mov qword ptr [rsp], rax
 	mov qword ptr [rsp + 8], 0
