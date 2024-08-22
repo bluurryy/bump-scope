@@ -16,17 +16,16 @@ mod coerce_unsized;
 
 mod alloc_iter;
 mod alloc_slice;
-
 mod allocator_api;
+mod bump_vec_doc;
 mod from_std;
 mod mut_bump_vec_doc;
-mod vec;
-
-mod bump_vec_doc;
 mod mut_bump_vec_rev_doc;
+mod mut_collections_do_not_waste_space;
 mod panic_safety;
 mod pool;
 mod unaligned_collection;
+mod vec;
 
 mod alloc_fmt;
 #[cfg(feature = "serde")]
