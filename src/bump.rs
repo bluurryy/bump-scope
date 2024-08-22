@@ -188,14 +188,14 @@ where
         /// If you want to ensure a specific capacity use <code>[with_capacity](Bump::with_capacity)</code> instead.
         ///
         /// The actual size that will be requested from the base allocator may be bigger or smaller.
-        /// (A small fixed amount will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
+        /// (The size of  `[usize;2]` will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
         for pub fn with_size
         /// Constructs a new `Bump` with a size hint for the first chunk.
         ///
         /// If you want to ensure a specific capacity use <code>[try_with_capacity](Bump::try_with_capacity)</code> instead.
         ///
         /// The actual size that will be requested from the base allocator may be bigger or smaller.
-        /// (A small fixed amount will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
+        /// (The size of  `[usize;2]` will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
         for pub fn try_with_size
         fn generic_with_size(size: usize) -> Self {
             Self::generic_with_size_in(size, Default::default())
@@ -248,14 +248,14 @@ where
         /// If you want to ensure a specific capacity use <code>[with_capacity_in](Bump::with_capacity_in)</code> instead.
         ///
         /// The actual size that will be requested from the base allocator may be bigger or smaller.
-        /// (A small fixed amount will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
+        /// (The size of  `[usize;2]` will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
         for pub fn with_size_in
         /// Constructs a new `Bump` with a size hint for the first chunk.
         ///
         /// If you want to ensure a specific capacity use <code>[try_with_capacity_in](Bump::try_with_capacity_in)</code> instead.
         ///
         /// The actual size that will be requested from the base allocator may be bigger or smaller.
-        /// (A small fixed amount will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
+        /// (The size of  `[usize;2]` will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
         for pub fn try_with_size_in
         fn generic_with_size_in(size: usize, allocator: A) -> Self {
             Ok(Self {

@@ -1,7 +1,7 @@
 # Changelog
 
 ## Unreleased
-- **fixed:** `Mut*` collections' `into(_boxed)_slice` as well as `alloc_iter_mut(_rev)` and `alloc_fmt_mut` to not take up more than the necessary memory
+- **fixed:** `Mut*` collections' `into(_boxed)_slice` as well as `alloc_iter_mut(_rev)` and `alloc_fmt_mut` to not take up more than the necessary space
 
 ## 0.5.7 (2024-08-18)
 - **added**: `from_utf8_unchecked` for all string types
@@ -9,7 +9,7 @@
 - **added**: `BumpBox<[T]>::partition`
 
 ## 0.5.6 (2024-08-17)
-- **fixed:** `alloc_iter` and `alloc_fmt` to not take up more than the necessary memory
+- **fixed:** `alloc_iter` and `alloc_fmt` to not take up more than the necessary space
 
 ## 0.5.5 (2024-07-26)
 - **fixed:** Rust Analyzer breaking for other structs with a default `Global` allocator parameter
