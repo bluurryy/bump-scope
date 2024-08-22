@@ -201,6 +201,11 @@ At the same time `Bump`'s that have already allocated a chunk don't suffer runti
 
 <!-- cargo-rdme end -->
 
+## Testing
+
+Running `cargo test` requires a nightly compiler. 
+This is because we use tests copied from `std` which make heavy use of nightly features.
+
 ## License
 
 Licensed under either of:
