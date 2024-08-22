@@ -60,7 +60,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
         // The chunk size must always be a multiple of `CHUNK_ALIGN_MIN`.
         // We use optimizations in `alloc` that require this.
-        // `ChunkSize::allocate` must have already trimmed the allocates size to a multiple of `CHUNK_ALIGN_MIN`
+        // `ChunkSize::allocate` must have already trimmed the allocation size to a multiple of `CHUNK_ALIGN_MIN`
         debug_assert!(size % CHUNK_ALIGN_MIN == 0);
 
         let header = unsafe {
@@ -154,8 +154,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                 if IS_CONST_ALIGN && layout.align() <= MIN_ALIGN {
                     // alignment is already sufficient
                 } else {
-                    // Aligning an address that is smaller or equal to `range.end` with an alignment
-                    // that is smaller or equal to `CHUNK_ALIGN_MIN` can not exceed `range.end` and
+                    // Aligning an address that is `<= range.end` with an alignment
+                    // that is `<= CHUNK_ALIGN_MIN` can not exceed `range.end` and
                     // can not overflow as `range.end` is always aligned to `CHUNK_ALIGN_MIN`
                     start = up_align_usize_unchecked(start, layout.align());
                 }
@@ -401,8 +401,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
                 if IS_CONST_ALIGN && layout.align() <= CHUNK_ALIGN_MIN {
                     // SAFETY:
-                    // Aligning an address that is smaller or equal to `range.end` with an alignment
-                    // that is smaller or equal to `CHUNK_ALIGN_MIN` can not exceed `range.end` and
+                    // Aligning an address that is `<= range.end` with an alignment
+                    // that is `<= CHUNK_ALIGN_MIN` can not exceed `range.end` and
                     // can not overflow
                     start = unsafe { up_align_nonzero_unchecked(start, layout.align()) }
                 } else {
@@ -470,8 +470,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         let mut pos = nonnull::addr(self.pos()).get();
 
         if UP {
-            // Aligning an address that is smaller or equal to `range.end` with an alignment
-            // that is smaller or equal to `CHUNK_ALIGN_MIN` can not exceed `range.end` and
+            // Aligning an address that is `<= range.end` with an alignment
+            // that is `<= CHUNK_ALIGN_MIN` can not exceed `range.end` and
             // can not overflow as `range.end` is always aligned to `CHUNK_ALIGN_MIN`.
             pos = up_align_usize_unchecked(pos, ALIGN);
         } else {

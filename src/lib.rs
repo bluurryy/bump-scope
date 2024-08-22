@@ -213,7 +213,7 @@
 //! * **`alloc`** —  Adds `Global` as the default allocator, `BumpBox::into_box` and some interactions with `alloc` collections.
 //! * **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 //! * **`zerocopy`** —  Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`.
-//!
+//! 
 //!  ### Nightly features
 //! * **`nightly-allocator-api`** —  Enables `allocator-api2`'s `nightly` feature which makes it reexport the nightly allocator api instead of its own implementation.
 //!   With this you can bump allocate collections from the standard library.
@@ -1507,9 +1507,9 @@ define_alloc_methods! {
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
     impl
-    /// For better performance prefer [`alloc_iter_exact`](Bump::alloc_iter_exact) or <code>[alloc_iter_mut](Bump::alloc_iter_mut)([_rev](Bump::alloc_iter_mut_rev))</code>.
+    /// For better performance prefer [`alloc_iter_exact`](Bump::alloc_iter_exact) or <code>[alloc_iter_mut](Bump::alloc_iter_mut)</code>.
     for pub fn alloc_iter
-    /// For better performance prefer [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) or <code>[try_alloc_iter_mut](Bump::try_alloc_iter_mut)([_rev](Bump::try_alloc_iter_mut_rev))</code>.
+    /// For better performance prefer [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) or <code>[try_alloc_iter_mut](Bump::try_alloc_iter_mut)</code>.
     for pub fn try_alloc_iter
     fn generic_alloc_iter<{T}>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         let iter = iter.into_iter();
@@ -1574,11 +1574,11 @@ define_alloc_methods! {
     impl
     /// Unlike [`alloc_iter`](Bump::alloc_iter), this function requires a mutable `Bump(Scope)`.
     ///
-    /// When bumping downwards, prefer [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) or [`alloc_iter_exact`](Bump::alloc_iter_exact) to avoid having to internally move the slice after creation.
+    /// When bumping downwards, prefer [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) or [`alloc_iter_exact`](Bump::alloc_iter_exact) to avoid a shift of the slice.
     for pub fn alloc_iter_mut
     /// Unlike [`try_alloc_iter`](Bump::try_alloc_iter), this function requires a mutable `Bump(Scope)`.
     ///
-    /// When bumping downwards, prefer [`try_alloc_iter_mut_rev`](Bump::try_alloc_iter_mut_rev) or [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) to avoid having to internally move the slice after creation.
+    /// When bumping downwards, prefer [`try_alloc_iter_mut_rev`](Bump::try_alloc_iter_mut_rev) or [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) to avoid a shift of the slice.
     for pub fn try_alloc_iter_mut
     fn generic_alloc_iter_mut<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         let iter = iter.into_iter();
@@ -1596,7 +1596,7 @@ define_alloc_methods! {
     /// Allocate elements of an iterator into a slice in reverse order.
     impl
     ///
-    /// When bumping upwards, prefer [`alloc_iter_mut`](Self::alloc_iter_mut) or [`alloc_iter_exact`](Self::alloc_iter_exact) tto avoid having to internally move the slice after creation.
+    /// When bumping upwards, prefer [`alloc_iter_mut`](Self::alloc_iter_mut) or [`alloc_iter_exact`](Self::alloc_iter_exact) to avoid a shift of the slice.
     do examples
     /// ```
     /// # use bump_scope::Bump;
@@ -1607,7 +1607,7 @@ define_alloc_methods! {
     /// ```
     for pub fn alloc_iter_mut_rev
     ///
-    /// When bumping upwards, prefer [`try_alloc_iter_mut`](Self::try_alloc_iter_mut) or [`try_alloc_iter_exact`](Self::try_alloc_iter_exact) to avoid having to internally move the slice after creation.
+    /// When bumping upwards, prefer [`try_alloc_iter_mut`](Self::try_alloc_iter_mut) or [`try_alloc_iter_exact`](Self::try_alloc_iter_exact) to avoid a shift of the slice.
     for pub fn try_alloc_iter_mut_rev
     fn generic_alloc_iter_mut_rev<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]> {
         let iter = iter.into_iter();
