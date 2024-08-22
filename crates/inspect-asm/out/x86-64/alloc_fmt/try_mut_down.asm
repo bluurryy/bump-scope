@@ -27,34 +27,27 @@ inspect_asm::alloc_fmt::try_mut_down:
 	test al, al
 	je .LBB0_0
 	xor eax, eax
-	jmp .LBB0_4
+	jmp .LBB0_2
 .LBB0_0:
 	mov rdi, qword ptr [rsp + 16]
 	test rdi, rdi
 	je .LBB0_1
 	mov rsi, qword ptr [rsp]
 	mov rbx, qword ptr [rsp + 8]
-	mov r14, qword ptr [rsp + 24]
-	lea rax, [rsi + rbx]
+	mov r15, qword ptr [rsp + 24]
 	add rdi, rsi
 	sub rdi, rbx
-	cmp rdi, rax
-	jae .LBB0_2
-	mov rax, rsi
-	jmp .LBB0_3
+	mov rdx, rbx
+	mov r14, rdi
+	call qword ptr [rip + memmove@GOTPCREL]
+	mov rax, r14
+	mov rcx, qword ptr [r15]
+	mov qword ptr [rcx], r14
+	jmp .LBB0_2
 .LBB0_1:
 	mov eax, 1
 	xor ebx, ebx
-	jmp .LBB0_4
 .LBB0_2:
-	mov rdx, rbx
-	mov r15, rdi
-	call qword ptr [rip + memcpy@GOTPCREL]
-	mov rax, r15
-.LBB0_3:
-	mov rcx, qword ptr [r14]
-	mov qword ptr [rcx], rax
-.LBB0_4:
 	mov rdx, rbx
 	add rsp, 112
 	pop rbx

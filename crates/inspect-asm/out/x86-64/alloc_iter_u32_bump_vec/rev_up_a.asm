@@ -22,65 +22,59 @@ inspect_asm::alloc_iter_u32_bump_vec::rev_up_a:
 	pop rbp
 	ret
 .LBB0_1:
-	mov rbx, rdx
-	mov r14, rsp
-	mov rdi, r14
+	mov rbx, rsp
+	mov rdi, rbx
 	mov r15, rsi
 	mov rsi, rdx
+	mov r14, rdx
 	call bump_scope::mut_bump_vec_rev::MutBumpVecRev<T,A,_,_,_>::generic_grow_cold
-	mov rax, r15
-	mov rdx, qword ptr [rsp + 16]
-	shl rbx, 2
+	mov rdx, r15
+	mov rcx, r14
+	mov rax, qword ptr [rsp + 16]
+	shl rcx, 2
 	xor r12d, r12d
 	jmp .LBB0_3
 .LBB0_2:
-	mov rcx, qword ptr [rsp]
-	mov rsi, rdx
+	mov r14, qword ptr [rsp]
+	mov rsi, rax
 	not rsi
-	mov dword ptr [rcx + 4*rsi], ebp
-	inc rdx
-	mov qword ptr [rsp + 16], rdx
+	mov dword ptr [r14 + 4*rsi], ebp
+	inc rax
+	mov qword ptr [rsp + 16], rax
 	add r12, 4
-	cmp rbx, r12
+	cmp rcx, r12
 	je .LBB0_4
 .LBB0_3:
-	mov ebp, dword ptr [rax + r12]
-	cmp qword ptr [rsp + 24], rdx
+	mov ebp, dword ptr [rdx + r12]
+	cmp qword ptr [rsp + 24], rax
 	jne .LBB0_2
 	mov esi, 1
-	mov rdi, r14
+	mov rdi, rbx
+	mov r14, rcx
 	call bump_scope::mut_bump_vec_rev::MutBumpVecRev<T,A,_,_,_>::generic_grow_cold
-	mov rax, r15
-	mov rdx, qword ptr [rsp + 16]
+	mov rdx, r15
+	mov rcx, r14
+	mov rax, qword ptr [rsp + 16]
 	jmp .LBB0_2
 .LBB0_4:
-	mov rax, qword ptr [rsp + 24]
-	test rax, rax
+	mov rcx, qword ptr [rsp + 24]
+	test rcx, rcx
 	je .LBB0_5
-	mov rbx, qword ptr [rsp + 8]
-	lea rsi, [rcx + 4*rsi]
-	shl rax, 2
-	mov rdi, rcx
-	sub rdi, rax
-	lea r14, [rdi + 4*rdx]
-	cmp r14, rsi
-	jbe .LBB0_6
-	mov rax, rsi
-	mov r14, rcx
-	jmp .LBB0_7
+	mov r15, qword ptr [rsp + 8]
+	lea rsi, [r14 + 4*rsi]
+	shl rcx, 2
+	sub r14, rcx
+	lea r12, [r14 + 4*rax]
+	lea rdx, [4*rax]
+	mov rdi, r14
+	mov rbx, rax
+	call qword ptr [rip + memmove@GOTPCREL]
+	mov rdx, rbx
+	mov rax, qword ptr [r15]
+	mov qword ptr [rax], r12
+	mov rax, r14
+	jmp .LBB0_0
 .LBB0_5:
 	xor edx, edx
 	mov eax, 4
-	jmp .LBB0_0
-.LBB0_6:
-	lea rax, [4*rdx]
-	mov r15, rdx
-	mov rdx, rax
-	mov r12, rdi
-	call qword ptr [rip + memcpy@GOTPCREL]
-	mov rdx, r15
-	mov rax, r12
-.LBB0_7:
-	mov rcx, qword ptr [rbx]
-	mov qword ptr [rcx], r14
 	jmp .LBB0_0

@@ -25,38 +25,31 @@ inspect_asm::alloc_fmt::mut_down:
 	lea rdx, [rsp + 64]
 	call qword ptr [rip + core::fmt::write@GOTPCREL]
 	test al, al
-	jne .LBB0_4
-	mov rdi, qword ptr [rsp + 16]
-	test rdi, rdi
+	jne .LBB0_2
+	mov rbx, qword ptr [rsp + 16]
+	test rbx, rbx
 	je .LBB0_0
 	mov rsi, qword ptr [rsp]
-	mov rdx, qword ptr [rsp + 8]
-	mov r14, qword ptr [rsp + 24]
-	lea rax, [rsi + rdx]
-	add rdi, rsi
-	sub rdi, rdx
-	cmp rdi, rax
-	jae .LBB0_1
-	mov rax, rsi
-	jmp .LBB0_2
+	mov r14, qword ptr [rsp + 8]
+	mov r15, qword ptr [rsp + 24]
+	add rbx, rsi
+	sub rbx, r14
+	mov rdi, rbx
+	mov rdx, r14
+	call qword ptr [rip + memmove@GOTPCREL]
+	mov rax, qword ptr [r15]
+	mov qword ptr [rax], rbx
+	jmp .LBB0_1
 .LBB0_0:
-	mov eax, 1
-	xor edx, edx
-	jmp .LBB0_3
+	mov ebx, 1
+	xor r14d, r14d
 .LBB0_1:
-	mov rbx, rdx
-	mov r15, rdi
-	call qword ptr [rip + memcpy@GOTPCREL]
-	mov rdx, rbx
-	mov rax, r15
-.LBB0_2:
-	mov rcx, qword ptr [r14]
-	mov qword ptr [rcx], rax
-.LBB0_3:
+	mov rax, rbx
+	mov rdx, r14
 	add rsp, 112
 	pop rbx
 	pop r14
 	pop r15
 	ret
-.LBB0_4:
+.LBB0_2:
 	call qword ptr [rip + bump_scope::private::capacity_overflow@GOTPCREL]
