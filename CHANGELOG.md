@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.8 (2024-08-22)
 - **fixed:** `Mut*` collections' `into(_boxed)_slice` as well as `alloc_iter_mut(_rev)` and `alloc_fmt_mut` to not take up more than the necessary space
 
 ## 0.5.7 (2024-08-18)
