@@ -55,7 +55,7 @@ doc *args:
   cargo rdme --force --intralinks-strip-links
 
 doc-priv *args:
-  cargo rustdoc {{args}} --all-features -- --cfg docsrs --cfg test --document-private-items
+  cargo rustdoc {{args}} --all-features -- --cfg docsrs --document-private-items
 
 check-msrv:
   cargo ('+' + (open Cargo.toml).package.rust-version) check

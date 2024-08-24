@@ -2,6 +2,23 @@ use core::{alloc::Layout, num::NonZeroUsize};
 
 pub(crate) const MIN_CHUNK_ALIGN: usize = 16;
 
+macro_rules! debug_assert_aligned {
+    ($addr:expr, $align:expr) => {
+        let addr = $addr;
+        let align = $align;
+
+        debug_assert!(align.is_power_of_two());
+        let is_aligned = addr & (align - 1) == 0;
+
+        debug_assert!(
+            is_aligned,
+            "expected `{}` ({}) to be aligned to `{}` ({})",
+            stringify!($addr), addr,
+            stringify!($align), align,
+        );
+    };
+}
+
 /// Arguments for [`bump_up`] and [`bump_down`].
 ///
 /// The fields `min_align`, `align_is_const`, `size_is_const`, `size_is_multiple_of_align` are expected to be constants.
@@ -46,7 +63,6 @@ pub(crate) unsafe fn bump_up(
     }
 
     debug_assert!(start <= end);
-
     debug_assert_eq!(end % MIN_CHUNK_ALIGN, 0);
 
     let mut new_pos;
@@ -108,9 +124,9 @@ pub(crate) unsafe fn bump_up(
         new_pos = up_align_usize_unchecked(new_pos, min_align);
     }
 
-    debug_assert!(is_aligned(start, layout.align()));
-    debug_assert!(is_aligned(start, min_align));
-    debug_assert!(is_aligned(new_pos, min_align));
+    debug_assert_aligned!(start, layout.align());
+    debug_assert_aligned!(start, min_align);
+    debug_assert_aligned!(new_pos, min_align);
 
     Some(BumpUp {
         new_pos: NonZeroUsize::new_unchecked(new_pos),
@@ -142,16 +158,18 @@ pub(crate) unsafe fn bump_down(
 
     debug_assert!(start <= end);
 
+    // these are expected to be evaluated at compile time
+    let needs_align_for_min_align = (!align_is_const || !size_is_multiple_of_align || layout.align() < min_align)
+        && (!size_is_const || (layout.size() % min_align != 0));
+    let needs_align_for_layout = !align_is_const || !size_is_multiple_of_align || layout.align() > min_align;
+    let needs_align = needs_align_for_min_align || needs_align_for_layout;
+
     if size_is_const && layout.size() <= MIN_CHUNK_ALIGN {
         // When `size <= CHUNK_ALIGN_MIN` subtracting it from `end` can't overflow, as the lowest value for `end` would be `start` which is aligned to `CHUNK_ALIGN_MIN`,
         // thus its address can't be smaller than it.
         end -= layout.size();
 
-        let needs_align_for_min_align = (!align_is_const || !size_is_multiple_of_align || layout.align() < min_align)
-            && (!size_is_const || (layout.size() % min_align != 0));
-        let needs_align_for_layout = !align_is_const || !size_is_multiple_of_align || layout.align() > min_align;
-
-        if needs_align_for_min_align || needs_align_for_layout {
+        if needs_align {
             // At this point layout's align is const, because we assume `L::SIZE_IS_CONST` implies `L::ALIGN_IS_CONST`.
             // That means `max` is evaluated at compile time, so we don't bother having different cases for either alignment.
             end = down_align_usize(end, layout.align().max(min_align));
@@ -171,11 +189,7 @@ pub(crate) unsafe fn bump_down(
         // doesn't overflow because of the check above
         end -= layout.size();
 
-        let needs_align_for_min_align = (!align_is_const || !size_is_multiple_of_align || layout.align() < min_align)
-            && (!size_is_const || (layout.size() % min_align != 0));
-        let needs_align_for_layout = !align_is_const || !size_is_multiple_of_align || layout.align() > min_align;
-
-        if needs_align_for_min_align || needs_align_for_layout {
+        if needs_align {
             // down aligning an address `>= range.start` with an alignment `<= CHUNK_ALIGN_MIN` (which `layout.align()` is)
             // can not exceed `range.start`, and thus also can't overflow
             end = down_align_usize(end, layout.align().max(min_align));
@@ -196,17 +210,10 @@ pub(crate) unsafe fn bump_down(
         }
     };
 
-    debug_assert!(is_aligned(end, layout.align()));
-    debug_assert!(is_aligned(end, min_align));
+    debug_assert_aligned!(end, layout.align());
+    debug_assert_aligned!(end, min_align);
 
     Some(NonZeroUsize::new_unchecked(end))
-}
-
-#[must_use]
-#[inline(always)]
-fn is_aligned(addr: usize, align: usize) -> bool {
-    assert!(align.is_power_of_two());
-    addr & (align - 1) == 0
 }
 
 #[inline(always)]
