@@ -1,20 +1,20 @@
 //! A collection of stuff that is missing from stable std.
 //! Most of this is from nightly.
 
-pub mod iter;
-pub mod nonnull;
-pub mod nonzero;
-pub mod pointer;
-pub mod slice;
-pub mod usize;
+pub(crate) mod iter;
+pub(crate) mod nonnull;
+pub(crate) mod nonzero;
+pub(crate) mod pointer;
+pub(crate) mod slice;
+pub(crate) mod usize;
 
 #[cfg(test)]
-pub mod layout;
+pub(crate) mod layout;
 
 #[allow(dead_code)]
 mod other {
     #[inline(always)]
-    pub const fn const_unwrap<T: Copy>(option: Option<T>) -> T {
+    pub(crate) const fn const_unwrap<T: Copy>(option: Option<T>) -> T {
         match option {
             Some(value) => value,
             None => panic!("expected Some"),
@@ -23,10 +23,10 @@ mod other {
 
     #[cold]
     #[inline(always)]
-    pub fn cold() {}
+    pub(crate) fn cold() {}
 
     #[inline(always)]
-    pub fn likely(condition: bool) -> bool {
+    pub(crate) fn likely(condition: bool) -> bool {
         if condition {
             // ...
         } else {
@@ -37,7 +37,7 @@ mod other {
     }
 
     #[inline(always)]
-    pub fn unlikely(condition: bool) -> bool {
+    pub(crate) fn unlikely(condition: bool) -> bool {
         if condition {
             cold();
         } else {
@@ -48,7 +48,7 @@ mod other {
     }
 }
 
-pub use other::*;
+pub(crate) use other::*;
 
 macro_rules! cfg_const {
     (

@@ -26,7 +26,7 @@ pub(crate) const ASSUMED_PAGE_SIZE: NonZeroUsize = const_unwrap(NonZeroUsize::ne
 /// If smaller than [`ASSUMED_PAGE_SIZE`] it is a power of two,
 /// otherwise it is aligned to [`ASSUMED_PAGE_SIZE`].
 /// It is never zero.
-pub struct ChunkSize<const UP: bool, A>(NonZeroUsize, PhantomData<*const A>);
+pub(crate) struct ChunkSize<const UP: bool, A>(NonZeroUsize, PhantomData<*const A>);
 
 impl<const UP: bool, A> Debug for ChunkSize<UP, A> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
@@ -43,14 +43,15 @@ impl<const UP: bool, A> Clone for ChunkSize<UP, A> {
 impl<const UP: bool, A> Copy for ChunkSize<UP, A> {}
 
 impl<const UP: bool, A> ChunkSize<UP, A> {
-    pub const OVERHEAD: NonZeroUsize = const_unwrap(ASSUMED_MALLOC_OVERHEAD_SIZE.checked_add(Self::HEADER_SIZE.get()));
-    pub const MIN: NonZeroUsize = const_unwrap(up_align_nonzero(Self::OVERHEAD, Self::HEADER_ALIGN.get()));
+    pub(crate) const OVERHEAD: NonZeroUsize =
+        const_unwrap(ASSUMED_MALLOC_OVERHEAD_SIZE.checked_add(Self::HEADER_SIZE.get()));
+    pub(crate) const MIN: NonZeroUsize = const_unwrap(up_align_nonzero(Self::OVERHEAD, Self::HEADER_ALIGN.get()));
 
-    pub const HEADER_LAYOUT: Layout = Layout::new::<ChunkHeader<A>>();
-    pub const HEADER_SIZE: NonZeroUsize = const_unwrap(NonZeroUsize::new(Self::HEADER_LAYOUT.size()));
-    pub const HEADER_ALIGN: NonZeroUsize = const_unwrap(NonZeroUsize::new(Self::HEADER_LAYOUT.align()));
+    pub(crate) const HEADER_LAYOUT: Layout = Layout::new::<ChunkHeader<A>>();
+    pub(crate) const HEADER_SIZE: NonZeroUsize = const_unwrap(NonZeroUsize::new(Self::HEADER_LAYOUT.size()));
+    pub(crate) const HEADER_ALIGN: NonZeroUsize = const_unwrap(NonZeroUsize::new(Self::HEADER_LAYOUT.align()));
 
-    pub const PAGE_SIZE: NonZeroUsize = nonzero::max(ASSUMED_PAGE_SIZE, Self::HEADER_ALIGN.get());
+    pub(crate) const PAGE_SIZE: NonZeroUsize = nonzero::max(ASSUMED_PAGE_SIZE, Self::HEADER_ALIGN.get());
 
     #[inline]
     pub(crate) fn new<E: ErrorBehavior>(size: usize) -> Result<Self, E> {
@@ -71,7 +72,7 @@ impl<const UP: bool, A> ChunkSize<UP, A> {
     }
 
     #[inline]
-    pub unsafe fn from_raw(size: NonZeroUsize) -> Self {
+    pub(crate) unsafe fn from_raw(size: NonZeroUsize) -> Self {
         debug_assert!(size.get() % Self::HEADER_ALIGN.get() == 0);
         debug_assert!(size >= Self::OVERHEAD);
         debug_assert!(if size < Self::PAGE_SIZE {
@@ -119,7 +120,7 @@ impl<const UP: bool, A> ChunkSize<UP, A> {
     }
 
     #[inline]
-    pub const fn get(self) -> NonZeroUsize {
+    pub(crate) const fn get(self) -> NonZeroUsize {
         self.0
     }
 
@@ -133,13 +134,13 @@ impl<const UP: bool, A> ChunkSize<UP, A> {
     }
 
     #[inline]
-    pub fn layout_size(self) -> usize {
+    pub(crate) fn layout_size(self) -> usize {
         let base_size = self.0.get();
         base_size - ASSUMED_MALLOC_OVERHEAD_SIZE.get()
     }
 
     #[inline]
-    pub const fn max(self, other: Self) -> Self {
+    pub(crate) const fn max(self, other: Self) -> Self {
         if self.get().get() > other.get().get() {
             self
         } else {

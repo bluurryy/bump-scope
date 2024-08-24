@@ -48,7 +48,7 @@ impl<const UP: bool, A> PartialEq for RawChunk<UP, A> {
 impl<const UP: bool, A> Eq for RawChunk<UP, A> {}
 
 impl<const UP: bool, A> RawChunk<UP, A> {
-    pub fn new_in<E: ErrorBehavior>(size: ChunkSize<UP, A>, prev: Option<Self>, allocator: A) -> Result<Self, E>
+    pub(crate) fn new_in<E: ErrorBehavior>(size: ChunkSize<UP, A>, prev: Option<Self>, allocator: A) -> Result<Self, E>
     where
         A: Allocator,
         for<'a> &'a A: Allocator,
@@ -98,15 +98,15 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         Ok(RawChunk { header })
     }
 
-    pub fn header_ptr(self) -> NonNull<ChunkHeader<A>> {
+    pub(crate) fn header_ptr(self) -> NonNull<ChunkHeader<A>> {
         self.header
     }
 
-    pub const unsafe fn from_header(header: NonNull<ChunkHeader<A>>) -> Self {
+    pub(crate) const unsafe fn from_header(header: NonNull<ChunkHeader<A>>) -> Self {
         Self { header }
     }
 
-    pub fn is_unallocated(self) -> bool {
+    pub(crate) fn is_unallocated(self) -> bool {
         self.header.cast() == unallocated_chunk_header()
     }
 
@@ -114,7 +114,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     ///
     /// On success, returns a [`NonNull<u8>`] meeting the size and alignment guarantees of `layout`.
     #[inline(always)]
-    pub fn alloc<M, L>(self, minimum_alignment: M, layout: L) -> Option<NonNull<u8>>
+    pub(crate) fn alloc<M, L>(self, minimum_alignment: M, layout: L) -> Option<NonNull<u8>>
     where
         M: SupportedMinimumAlignment,
         L: LayoutProps,
@@ -123,7 +123,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub fn alloc_or_else<M, L, E, F>(self, _: M, layout: L, f: F) -> Result<NonNull<u8>, E>
+    pub(crate) fn alloc_or_else<M, L, E, F>(self, _: M, layout: L, f: F) -> Result<NonNull<u8>, E>
     where
         M: SupportedMinimumAlignment,
         L: LayoutProps,
@@ -286,7 +286,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub fn alloc_no_bump_for<const MIN_ALIGN: usize, T>(self) -> Option<NonNull<u8>>
+    pub(crate) fn alloc_no_bump_for<const MIN_ALIGN: usize, T>(self) -> Option<NonNull<u8>>
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -382,7 +382,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// [`MutBumpVec`]: crate::MutBumpVec
     /// [`into_slice`]: crate::MutBumpVec::into_slice
     #[inline(always)]
-    pub fn alloc_greedy<M, L>(self, _: M, layout: L) -> Option<Range<NonNull<u8>>>
+    pub(crate) fn alloc_greedy<M, L>(self, _: M, layout: L) -> Option<Range<NonNull<u8>>>
     where
         M: SupportedMinimumAlignment,
         L: LayoutProps,
@@ -466,7 +466,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub fn align_pos_to<const ALIGN: usize>(self)
+    pub(crate) fn align_pos_to<const ALIGN: usize>(self)
     where
         MinimumAlignment<ALIGN>: SupportedMinimumAlignment,
     {
@@ -490,7 +490,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub fn chunk_start(self) -> NonNull<u8> {
+    pub(crate) fn chunk_start(self) -> NonNull<u8> {
         unsafe {
             if UP {
                 self.header.cast()
@@ -501,7 +501,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub fn chunk_end(self) -> NonNull<u8> {
+    pub(crate) fn chunk_end(self) -> NonNull<u8> {
         unsafe {
             if UP {
                 self.header.as_ref().end
@@ -512,7 +512,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub fn content_start(self) -> NonNull<u8> {
+    pub(crate) fn content_start(self) -> NonNull<u8> {
         if UP {
             self.after_header()
         } else {
@@ -521,7 +521,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub fn content_end(self) -> NonNull<u8> {
+    pub(crate) fn content_end(self) -> NonNull<u8> {
         if UP {
             self.chunk_end()
         } else {
@@ -530,17 +530,17 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub fn pos(self) -> NonNull<u8> {
+    pub(crate) fn pos(self) -> NonNull<u8> {
         unsafe { self.header.as_ref().pos.get() }
     }
 
     #[inline(always)]
-    pub fn set_pos(mut self, ptr: NonNull<u8>) {
+    pub(crate) fn set_pos(mut self, ptr: NonNull<u8>) {
         unsafe { self.header.as_mut().pos.set(ptr) }
     }
 
     #[inline(always)]
-    pub unsafe fn set_pos_addr(self, addr: usize) {
+    pub(crate) unsafe fn set_pos_addr(self, addr: usize) {
         let ptr = self.with_addr(addr);
         self.set_pos(ptr);
     }
@@ -548,7 +548,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// # Safety
     /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
     #[inline(always)]
-    pub unsafe fn with_addr(self, addr: usize) -> NonNull<u8> {
+    pub(crate) unsafe fn with_addr(self, addr: usize) -> NonNull<u8> {
         debug_assert!(self.contains_addr_or_end(addr));
         let ptr = self.header.cast();
         let addr = NonZeroUsize::new_unchecked(addr);
@@ -556,24 +556,24 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub fn contains_addr_or_end(self, addr: usize) -> bool {
+    pub(crate) fn contains_addr_or_end(self, addr: usize) -> bool {
         let start = nonnull::addr(self.content_start()).get();
         let end = nonnull::addr(self.content_end()).get();
         addr >= start && addr <= end
     }
 
     #[inline(always)]
-    pub fn prev(self) -> Option<Self> {
+    pub(crate) fn prev(self) -> Option<Self> {
         unsafe { Some(Self::from_header(self.header.as_ref().prev?)) }
     }
 
     #[inline(always)]
-    pub fn next(self) -> Option<Self> {
+    pub(crate) fn next(self) -> Option<Self> {
         unsafe { Some(Self::from_header(self.header.as_ref().next.get()?)) }
     }
 
     #[inline(always)]
-    pub fn capacity(self) -> usize {
+    pub(crate) fn capacity(self) -> usize {
         let start = nonnull::addr(self.content_start()).get();
         let end = nonnull::addr(self.content_end()).get();
         end - start
@@ -589,7 +589,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub fn allocated(self) -> usize {
+    pub(crate) fn allocated(self) -> usize {
         let range = self.allocated_range();
         let start = nonnull::addr(range.start).get();
         let end = nonnull::addr(range.end).get();
@@ -597,14 +597,14 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub fn remaining(self) -> usize {
+    pub(crate) fn remaining(self) -> usize {
         let range = self.remaining_range();
         let start = nonnull::addr(range.start).get();
         let end = nonnull::addr(range.end).get();
         end - start
     }
 
-    pub fn remaining_range(self) -> Range<NonNull<u8>> {
+    pub(crate) fn remaining_range(self) -> Range<NonNull<u8>> {
         if UP {
             let start = self.pos();
             let end = self.content_end();
@@ -617,14 +617,14 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub fn size(self) -> NonZeroUsize {
+    pub(crate) fn size(self) -> NonZeroUsize {
         let start = nonnull::addr(self.chunk_start()).get();
         let end = nonnull::addr(self.chunk_end()).get();
         unsafe { NonZeroUsize::new_unchecked(end - start) }
     }
 
     #[inline(always)]
-    pub fn layout(self) -> Layout {
+    pub(crate) fn layout(self) -> Layout {
         // SAFETY: this layout fits the one we allocated, which means it must be valid
         unsafe { Layout::from_size_align_unchecked(self.size().get(), ChunkSize::<UP, A>::HEADER_ALIGN.get()) }
     }
@@ -642,7 +642,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// # Panic
     ///
     /// [`self.next`](RawChunk::next) must return `None`
-    pub fn append_for<E: ErrorBehavior>(self, layout: Layout) -> Result<Self, E>
+    pub(crate) fn append_for<E: ErrorBehavior>(self, layout: Layout) -> Result<Self, E>
     where
         A: Allocator + Clone,
     {
@@ -660,7 +660,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub fn reset(self) {
+    pub(crate) fn reset(self) {
         if UP {
             self.set_pos(self.content_start());
         } else {
@@ -671,14 +671,14 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// # Safety
     /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
     #[inline(always)]
-    pub unsafe fn reset_to(self, addr: usize) {
+    pub(crate) unsafe fn reset_to(self, addr: usize) {
         let ptr = self.with_addr(addr);
         self.set_pos(ptr);
     }
 
     /// # Safety
     /// self must not be used after calling this.
-    pub unsafe fn deallocate(self)
+    pub(crate) unsafe fn deallocate(self)
     where
         A: Allocator,
     {
@@ -691,21 +691,21 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub fn set_prev(mut self, value: Option<Self>) {
+    pub(crate) fn set_prev(mut self, value: Option<Self>) {
         unsafe {
             self.header.as_mut().prev = value.map(|c| c.header);
         }
     }
 
     #[inline(always)]
-    pub fn set_next(mut self, value: Option<Self>) {
+    pub(crate) fn set_next(mut self, value: Option<Self>) {
         unsafe {
             self.header.as_mut().next.set(value.map(|c| c.header));
         }
     }
 
     /// This resolves the next chunk before calling `f`. So calling [`deallocate`](RawChunk::deallocate) on the chunk parameter of `f` is fine.
-    pub fn for_each_prev(self, mut f: impl FnMut(Self)) {
+    pub(crate) fn for_each_prev(self, mut f: impl FnMut(Self)) {
         let mut iter = self.prev();
 
         while let Some(chunk) = iter {
@@ -715,7 +715,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     /// This resolves the next chunk before calling `f`. So calling [`deallocate`](RawChunk::deallocate) on the chunk parameter of `f` is fine.
-    pub fn for_each_next(self, mut f: impl FnMut(Self)) {
+    pub(crate) fn for_each_next(self, mut f: impl FnMut(Self)) {
         let mut iter = self.next();
 
         while let Some(chunk) = iter {
@@ -725,12 +725,12 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub fn allocator(self) -> NonNull<A> {
+    pub(crate) fn allocator(self) -> NonNull<A> {
         unsafe { NonNull::from(&self.header.as_ref().allocator) }
     }
 
     #[inline(always)]
-    pub fn without_allocator(self) -> RawChunk<UP, ()> {
+    pub(crate) fn without_allocator(self) -> RawChunk<UP, ()> {
         RawChunk {
             header: self.header.cast(),
         }

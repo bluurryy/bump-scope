@@ -5,7 +5,7 @@ use allocator_api2::alloc::Global;
 
 use super::either_way;
 
-pub fn vec<const UP: bool>() {
+fn vec<const UP: bool>() {
     let mut bump: Bump<Global, 1, UP> = Bump::with_size(512);
     assert_eq!(bump.stats().size(), 512 - size_of::<[usize; 2]>());
 
@@ -20,7 +20,7 @@ pub fn vec<const UP: bool>() {
     }
 }
 
-pub fn vec_rev<const UP: bool>() {
+fn vec_rev<const UP: bool>() {
     let mut bump: Bump<Global, 1, UP> = Bump::with_size(512);
     assert_eq!(bump.stats().size(), 512 - size_of::<[usize; 2]>());
 

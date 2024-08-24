@@ -8,13 +8,13 @@ use crate::{polyfill::pointer, SizedTypeProperties};
 // Putting the expression in a function helps llvm to realize that it can initialize the value
 // at this pointer instead of allocating it on the stack and then copying it over.
 #[inline(always)]
-pub unsafe fn write_with<T>(ptr: NonNull<T>, f: impl FnOnce() -> T) {
+pub(crate) unsafe fn write_with<T>(ptr: NonNull<T>, f: impl FnOnce() -> T) {
     ptr::write(ptr.as_ptr(), f());
 }
 
 /// See `pointer::add` for semantics and safety requirements.
 #[inline(always)]
-pub unsafe fn add<T>(ptr: NonNull<T>, delta: usize) -> NonNull<T>
+pub(crate) unsafe fn add<T>(ptr: NonNull<T>, delta: usize) -> NonNull<T>
 where
     T: Sized,
 {
@@ -27,7 +27,7 @@ where
 
 /// See `pointer::sub` for semantics and safety requirements.
 #[inline(always)]
-pub unsafe fn sub<T>(ptr: NonNull<T>, delta: usize) -> NonNull<T>
+pub(crate) unsafe fn sub<T>(ptr: NonNull<T>, delta: usize) -> NonNull<T>
 where
     T: Sized,
 {
@@ -52,7 +52,7 @@ where
 #[inline(always)]
 #[allow(dead_code)]
 #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
-pub unsafe fn byte_add<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
+pub(crate) unsafe fn byte_add<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
     add(ptr.cast::<u8>(), count).cast()
 }
 
@@ -71,19 +71,19 @@ pub unsafe fn byte_add<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
 #[inline(always)]
 #[allow(dead_code)]
 #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
-pub unsafe fn byte_sub<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
+pub(crate) unsafe fn byte_sub<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
     sub(ptr.cast::<u8>(), count).cast()
 }
 
 // Must not overflow
 #[inline(always)]
-pub unsafe fn wrapping_byte_add<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
+pub(crate) unsafe fn wrapping_byte_add<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
     NonNull::new_unchecked(ptr.as_ptr().cast::<u8>().wrapping_add(count).cast())
 }
 
 // Must not overflow.
 #[inline(always)]
-pub unsafe fn wrapping_byte_sub<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
+pub(crate) unsafe fn wrapping_byte_sub<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
     NonNull::new_unchecked(ptr.as_ptr().cast::<u8>().wrapping_sub(count).cast())
 }
 
@@ -94,7 +94,7 @@ pub unsafe fn wrapping_byte_sub<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> 
 /// This API and its claimed semantics are part of the Strict Provenance experiment,
 /// see the [`ptr` module documentation][core::ptr].
 #[inline(always)]
-pub fn addr<T>(ptr: NonNull<T>) -> NonZeroUsize {
+pub(crate) fn addr<T>(ptr: NonNull<T>) -> NonZeroUsize {
     // SAFETY: The pointer is guaranteed by the type to be non-null,
     // meaning that the address will be non-zero.
     unsafe { NonZeroUsize::new_unchecked(sptr::Strict::addr(ptr.as_ptr())) }
@@ -108,7 +108,7 @@ pub fn addr<T>(ptr: NonNull<T>) -> NonZeroUsize {
 /// see the [`ptr` module documentation][core::ptr].
 #[must_use]
 #[inline(always)]
-pub fn with_addr<T>(ptr: NonNull<T>, addr: NonZeroUsize) -> NonNull<T> {
+pub(crate) fn with_addr<T>(ptr: NonNull<T>, addr: NonZeroUsize) -> NonNull<T> {
     // SAFETY: The result of `ptr::from::with_addr` is non-null because `addr` is [guaranteed allocated]o be non-zero.
     unsafe { NonNull::new_unchecked(sptr::Strict::with_addr(ptr.as_ptr(), addr.get())) }
 }
@@ -176,14 +176,14 @@ pub fn with_addr<T>(ptr: NonNull<T>, addr: NonZeroUsize) -> NonNull<T> {
 /// // ptr1.offset_from(ptr2)
 #[must_use]
 #[inline(always)]
-pub unsafe fn sub_ptr<T>(lhs: NonNull<T>, rhs: NonNull<T>) -> usize {
+pub(crate) unsafe fn sub_ptr<T>(lhs: NonNull<T>, rhs: NonNull<T>) -> usize {
     debug_assert!((addr(lhs).get() - addr(rhs).get()) % T::SIZE == 0);
     pointer::sub_ptr(lhs.as_ptr(), rhs.as_ptr())
 }
 
 #[must_use]
 #[inline(always)]
-pub unsafe fn byte_sub_ptr<T>(lhs: NonNull<T>, rhs: NonNull<T>) -> usize {
+pub(crate) unsafe fn byte_sub_ptr<T>(lhs: NonNull<T>, rhs: NonNull<T>) -> usize {
     sub_ptr::<u8>(lhs.cast(), rhs.cast())
 }
 
@@ -195,25 +195,25 @@ pub unsafe fn byte_sub_ptr<T>(lhs: NonNull<T>, rhs: NonNull<T>) -> usize {
 /// See the documentation of [`slice::from_raw_parts`](core::slice::from_raw_parts) for slice safety requirements.
 #[must_use]
 #[inline(always)]
-pub const fn slice_from_raw_parts<T>(data: NonNull<T>, len: usize) -> NonNull<[T]> {
+pub(crate) const fn slice_from_raw_parts<T>(data: NonNull<T>, len: usize) -> NonNull<[T]> {
     // SAFETY: `data` is a `NonNull` pointer which is necessarily non-null
     unsafe { NonNull::new_unchecked(pointer::cast_mut(ptr::slice_from_raw_parts(data.as_ptr(), len))) }
 }
 
 /// See [`ptr::copy`] for semantics and safety requirements.
 #[inline(always)]
-pub unsafe fn copy<T>(src: NonNull<T>, dst: NonNull<T>, count: usize) {
+pub(crate) unsafe fn copy<T>(src: NonNull<T>, dst: NonNull<T>, count: usize) {
     ptr::copy(src.as_ptr(), dst.as_ptr(), count);
 }
 
 /// See [`ptr::copy_nonoverlapping`] for semantics and safety requirements.
 #[inline(always)]
-pub unsafe fn copy_nonoverlapping<T>(src: NonNull<T>, dst: NonNull<T>, count: usize) {
+pub(crate) unsafe fn copy_nonoverlapping<T>(src: NonNull<T>, dst: NonNull<T>, count: usize) {
     ptr::copy_nonoverlapping(src.as_ptr(), dst.as_ptr(), count);
 }
 
 #[inline(always)]
-pub unsafe fn result<T, E>(mut ptr: NonNull<Result<T, E>>) -> Result<NonNull<T>, NonNull<E>> {
+pub(crate) unsafe fn result<T, E>(mut ptr: NonNull<Result<T, E>>) -> Result<NonNull<T>, NonNull<E>> {
     match ptr.as_mut() {
         Ok(ok) => Ok(ok.into()),
         Err(err) => Err(err.into()),
@@ -221,31 +221,31 @@ pub unsafe fn result<T, E>(mut ptr: NonNull<Result<T, E>>) -> Result<NonNull<T>,
 }
 
 #[inline(always)]
-pub fn is_aligned_to(ptr: NonNull<u8>, align: usize) -> bool {
+pub(crate) fn is_aligned_to(ptr: NonNull<u8>, align: usize) -> bool {
     debug_assert!(align.is_power_of_two());
     addr(ptr).get() & (align - 1) == 0
 }
 
 #[inline(always)]
-pub fn as_non_null_ptr<T>(ptr: NonNull<[T]>) -> NonNull<T> {
+pub(crate) fn as_non_null_ptr<T>(ptr: NonNull<[T]>) -> NonNull<T> {
     ptr.cast()
 }
 
 #[inline(always)]
-pub fn set_len<T>(ptr: &mut NonNull<[T]>, new_len: usize) {
+pub(crate) fn set_len<T>(ptr: &mut NonNull<[T]>, new_len: usize) {
     let elem_ptr = as_non_null_ptr(*ptr);
     *ptr = slice_from_raw_parts(elem_ptr, new_len);
 }
 
 #[inline(always)]
-pub unsafe fn drop_in_place<T: ?Sized>(ptr: NonNull<T>) {
+pub(crate) unsafe fn drop_in_place<T: ?Sized>(ptr: NonNull<T>) {
     ptr.as_ptr().drop_in_place();
 }
 
 /// # Safety
 ///
 /// `ptr` must point to a valid slice.
-pub unsafe fn truncate<T>(slice: &mut NonNull<[T]>, len: usize) {
+pub(crate) unsafe fn truncate<T>(slice: &mut NonNull<[T]>, len: usize) {
     // This is safe because:
     //
     // * the slice passed to `drop_in_place` is valid; the `len > self.len`
@@ -281,6 +281,6 @@ macro_rules! addr_of {
 pub(crate) use addr_of;
 
 /// like `<NonNull<T> as From<&T>>::from` but `const`
-pub const fn from_ref<T>(r: &T) -> NonNull<T> {
+pub(crate) const fn from_ref<T>(r: &T) -> NonNull<T> {
     unsafe { NonNull::new_unchecked(r as *const T as *mut T) }
 }

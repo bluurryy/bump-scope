@@ -1,5 +1,5 @@
 use core::ops;
-pub use core::slice::*;
+pub(crate) use core::slice::*;
 
 #[cold]
 #[inline(never)]
@@ -92,7 +92,7 @@ fn slice_end_index_len_fail(index: usize, len: usize) -> ! {
 /// [`Index::index`]: ops::Index::index
 #[track_caller]
 #[must_use]
-pub fn range<R>(range: R, bounds: ops::RangeTo<usize>) -> ops::Range<usize>
+pub(crate) fn range<R>(range: R, bounds: ops::RangeTo<usize>) -> ops::Range<usize>
 where
     R: ops::RangeBounds<usize>,
 {

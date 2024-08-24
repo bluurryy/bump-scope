@@ -11,7 +11,7 @@ either_way! {
     scope
 }
 
-pub fn rayon<const UP: bool>() {
+fn rayon<const UP: bool>() {
     if cfg!(miri) {
         // rayon violates strict-provenance :(
         return;
@@ -35,7 +35,7 @@ pub fn rayon<const UP: bool>() {
     pool.reset();
 }
 
-pub fn scope<const UP: bool>() {
+fn scope<const UP: bool>() {
     let pool = BumpPool::<Global, 1, UP>::new();
     let (sender, receiver) = std::sync::mpsc::sync_channel(10);
 

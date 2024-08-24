@@ -34,7 +34,7 @@ impl<T> Drop for BumpBoxSliceInitializer<'_, T> {
 
 impl<'a, T> BumpBoxSliceInitializer<'a, T> {
     #[inline(always)]
-    pub fn new(slice: BumpBox<'a, [MaybeUninit<T>]>) -> Self {
+    pub(crate) fn new(slice: BumpBox<'a, [MaybeUninit<T>]>) -> Self {
         if T::IS_ZST {
             return Self {
                 pos: NonNull::dangling(),
@@ -81,28 +81,28 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
     }
 
     #[inline(always)]
-    pub fn is_full(&self) -> bool {
+    pub(crate) fn is_full(&self) -> bool {
         self.pos == self.end
     }
 
     #[inline(always)]
-    pub fn push(&mut self, value: T) {
+    pub(crate) fn push(&mut self, value: T) {
         self.push_with(|| value);
     }
 
     #[inline(always)]
-    pub fn push_with(&mut self, f: impl FnOnce() -> T) {
+    pub(crate) fn push_with(&mut self, f: impl FnOnce() -> T) {
         assert!(!self.is_full());
         unsafe { self.push_with_unchecked(f) }
     }
 
     #[inline(always)]
-    pub unsafe fn push_unchecked(&mut self, value: T) {
+    pub(crate) unsafe fn push_unchecked(&mut self, value: T) {
         self.push_with_unchecked(|| value);
     }
 
     #[inline(always)]
-    pub unsafe fn push_with_unchecked(&mut self, f: impl FnOnce() -> T) {
+    pub(crate) unsafe fn push_with_unchecked(&mut self, f: impl FnOnce() -> T) {
         debug_assert!(!self.is_full());
         pointer::write_with(self.pos.as_ptr(), f);
 
@@ -114,13 +114,13 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
     }
 
     #[inline(always)]
-    pub fn into_init(self) -> BumpBox<'a, [T]> {
+    pub(crate) fn into_init(self) -> BumpBox<'a, [T]> {
         assert!(self.is_full());
         unsafe { self.into_init_unchecked() }
     }
 
     #[inline(always)]
-    pub unsafe fn into_init_unchecked(self) -> BumpBox<'a, [T]> {
+    pub(crate) unsafe fn into_init_unchecked(self) -> BumpBox<'a, [T]> {
         let this = ManuallyDrop::new(self);
         debug_assert!(this.is_full());
         let len = this.len();

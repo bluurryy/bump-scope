@@ -21,7 +21,7 @@ impl LayoutProps for SizedLayout {
 
 impl SizedLayout {
     #[inline(always)]
-    pub const fn new<T>() -> Self {
+    pub(crate) const fn new<T>() -> Self {
         Self(Layout::new::<T>())
     }
 }
@@ -34,6 +34,11 @@ impl Deref for SizedLayout {
     }
 }
 
+/// This must be `pub` because we use it in `supported_minimum_alignment::Sealed` which is pub. 
+/// The current msrv denies us using `pub(crate)` with the error:
+/// ```txt
+/// error[E0446]: crate-private type `ArrayLayout` in public interface
+/// ```
 #[derive(Clone, Copy)]
 pub struct ArrayLayout(Layout);
 
@@ -55,7 +60,7 @@ impl ArrayLayout {
     }
 
     #[inline(always)]
-    pub const fn from_layout(layout: Layout) -> Result<Self, ArrayLayoutError> {
+    pub(crate) const fn from_layout(layout: Layout) -> Result<Self, ArrayLayoutError> {
         if layout.size() % layout.align() == 0 {
             Ok(ArrayLayout(layout))
         } else {
@@ -64,7 +69,7 @@ impl ArrayLayout {
     }
 
     #[inline(always)]
-    pub const fn from_size_align(size: usize, align: usize) -> Result<Self, ArrayLayoutError> {
+    pub(crate) const fn from_size_align(size: usize, align: usize) -> Result<Self, ArrayLayoutError> {
         match Layout::from_size_align(size, align) {
             Ok(layout) => Self::from_layout(layout),
             Err(_) => Err(ArrayLayoutError),
@@ -81,7 +86,7 @@ impl Deref for ArrayLayout {
 }
 
 #[derive(Clone, Copy)]
-pub(crate) struct CustomLayout(pub Layout);
+pub(crate) struct CustomLayout(pub(crate) Layout);
 
 impl LayoutProps for CustomLayout {
     const ALIGN_IS_CONST: bool = false;
@@ -105,7 +110,7 @@ impl Deref for CustomLayout {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct ArrayLayoutError;
+pub(crate) struct ArrayLayoutError;
 
 impl fmt::Display for ArrayLayoutError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

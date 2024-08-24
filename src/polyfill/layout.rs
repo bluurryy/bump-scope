@@ -6,7 +6,7 @@ const LAYOUT_ERROR: LayoutError = match Layout::from_size_align(0, 0) {
     Err(error) => error,
 };
 
-pub const fn extend(this: Layout, next: Layout) -> Result<(Layout, usize), LayoutError> {
+pub(crate) const fn extend(this: Layout, next: Layout) -> Result<(Layout, usize), LayoutError> {
     let new_align = max(this.align(), next.align());
 
     let pad = padding_needed_for(this, next.align());
@@ -30,7 +30,7 @@ pub const fn extend(this: Layout, next: Layout) -> Result<(Layout, usize), Layou
     Ok((layout, offset))
 }
 
-pub const fn padding_needed_for(this: Layout, align: usize) -> usize {
+pub(crate) const fn padding_needed_for(this: Layout, align: usize) -> usize {
     let len = this.size();
     let len_rounded_up = len.wrapping_add(align).wrapping_sub(1) & !align.wrapping_sub(1);
     len_rounded_up.wrapping_sub(len)

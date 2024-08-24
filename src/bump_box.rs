@@ -82,7 +82,7 @@ use crate::WithLifetime;
 /// # use std::{ mem, task::{ Context, Poll }, pin::Pin, future::Future };
 /// #
 /// # #[must_use = "futures do nothing unless you `.await` or poll them"]
-/// # pub struct YieldNow(bool);
+/// # struct YieldNow(bool);
 /// #
 /// # impl Future for YieldNow {
 /// #     type Output = ();
@@ -98,7 +98,7 @@ use crate::WithLifetime;
 /// #     }
 /// # }
 /// #
-/// # pub fn yield_now() -> YieldNow {
+/// # fn yield_now() -> YieldNow {
 /// #     YieldNow(false)
 /// # }
 /// #

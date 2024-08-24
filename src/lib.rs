@@ -372,6 +372,7 @@ pub struct MinimumAlignment<const ALIGNMENT: usize>;
 mod supported_minimum_alignment {
     use crate::ArrayLayout;
 
+    #[allow(private_interfaces)]
     pub trait Sealed {
         /// We'd be fine with just an [`core::ptr::Alignment`], but that's not stable.
         const LAYOUT: ArrayLayout;
@@ -390,6 +391,7 @@ pub trait SupportedMinimumAlignment: supported_minimum_alignment::Sealed + Copy 
 macro_rules! supported_alignments {
     ($($i:literal)*) => {
         $(
+            #[allow(private_interfaces)]
             impl supported_minimum_alignment::Sealed for MinimumAlignment<$i> {
                 const LAYOUT: ArrayLayout = match ArrayLayout::from_size_align(0, $i) {
                     Ok(layout) => layout,

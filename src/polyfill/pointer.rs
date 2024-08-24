@@ -4,13 +4,13 @@ use crate::assume_unchecked;
 
 #[must_use]
 #[inline(always)]
-pub fn from_ref<T: ?Sized>(r: &T) -> *const T {
+pub(crate) fn from_ref<T: ?Sized>(r: &T) -> *const T {
     r
 }
 
 #[must_use]
 #[inline(always)]
-pub fn from_mut<T: ?Sized>(r: &mut T) -> *mut T {
+pub(crate) fn from_mut<T: ?Sized>(r: &mut T) -> *mut T {
     r
 }
 
@@ -19,13 +19,13 @@ pub fn from_mut<T: ?Sized>(r: &mut T) -> *mut T {
 /// This is equivalent to casting `self` to `*mut T`, but more type-safe.
 #[inline(always)]
 #[allow(dead_code)]
-pub const fn as_mut_ptr<T>(ptr: *mut [T]) -> *mut T {
+pub(crate) const fn as_mut_ptr<T>(ptr: *mut [T]) -> *mut T {
     ptr.cast()
 }
 
 #[must_use]
 #[inline(always)]
-pub unsafe fn len<T>(ptr: *const [T]) -> usize {
+pub(crate) unsafe fn len<T>(ptr: *const [T]) -> usize {
     (*ptr).len()
 }
 
@@ -93,7 +93,7 @@ pub unsafe fn len<T>(ptr: *const [T]) -> usize {
 #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
 #[allow(clippy::cast_sign_loss)]
 #[allow(clippy::checked_conversions)]
-pub unsafe fn sub_ptr<T>(lhs: *const T, rhs: *const T) -> usize {
+pub(crate) unsafe fn sub_ptr<T>(lhs: *const T, rhs: *const T) -> usize {
     assume_unchecked(lhs >= rhs);
     let pointee_size = mem::size_of::<T>();
     assert!(0 < pointee_size && pointee_size <= isize::MAX as usize);
@@ -103,7 +103,7 @@ pub unsafe fn sub_ptr<T>(lhs: *const T, rhs: *const T) -> usize {
 // Putting the expression in a function helps llvm to realize that it can initialize the value
 // at this pointer instead of allocating it on the stack and then copying it over.
 #[inline(always)]
-pub unsafe fn write_with<T>(ptr: *mut T, f: impl FnOnce() -> T) {
+pub(crate) unsafe fn write_with<T>(ptr: *mut T, f: impl FnOnce() -> T) {
     ptr::write(ptr, f());
 }
 
@@ -112,6 +112,6 @@ pub unsafe fn write_with<T>(ptr: *mut T, f: impl FnOnce() -> T) {
 /// This is a bit safer than `as` because it wouldn't silently change the type if the code is
 /// refactored.
 #[inline(always)]
-pub const fn cast_mut<T: ?Sized>(ptr: *const T) -> *mut T {
+pub(crate) const fn cast_mut<T: ?Sized>(ptr: *const T) -> *mut T {
     ptr as _
 }
