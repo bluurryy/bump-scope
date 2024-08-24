@@ -34,7 +34,7 @@ impl Deref for SizedLayout {
     }
 }
 
-/// This must be `pub` because we use it in `supported_minimum_alignment::Sealed` which is pub. 
+/// This must be `pub` because we use it in `supported_minimum_alignment::Sealed` which is pub.
 /// The current msrv denies us using `pub(crate)` with the error:
 /// ```txt
 /// error[E0446]: crate-private type `ArrayLayout` in public interface

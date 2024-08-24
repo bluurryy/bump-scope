@@ -1,6 +1,7 @@
 use core::{alloc::Layout, cell::Cell, num::NonZeroUsize, ops::Range, ptr::NonNull};
 
 use crate::{
+    bumping::{bump_down, bump_up, BumpProps, BumpUp},
     down_align_usize,
     layout::LayoutProps,
     polyfill::{const_unwrap, nonnull, pointer},
@@ -131,156 +132,36 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     {
         debug_assert!(nonnull::is_aligned_to(self.pos(), M::MIN_ALIGN));
 
-        if L::SIZE_IS_MULTIPLE_OF_ALIGN {
-            debug_assert!(layout.size() % layout.align() == 0);
-        }
-
         let remaining = self.remaining_range();
 
-        if UP {
-            let mut start = nonnull::addr(remaining.start).get();
-            let end = nonnull::addr(remaining.end).get();
+        let props = BumpProps {
+            start: nonnull::addr(remaining.start).get(),
+            end: nonnull::addr(remaining.end).get(),
+            layout: *layout,
+            min_align: M::MIN_ALIGN,
+            align_is_const: L::ALIGN_IS_CONST,
+            size_is_const: L::SIZE_IS_CONST,
+            size_is_multiple_of_align: L::SIZE_IS_MULTIPLE_OF_ALIGN,
+        };
 
-            debug_assert!(start <= end);
-            debug_assert!(end % CHUNK_ALIGN_MIN == 0);
-
-            let mut new_pos;
-
-            // doing the `layout.size() < CHUNK_ALIGN_MIN` trick here (as seen in !UP)
-            // results in worse codegen, so we don't
-
-            if L::ALIGN_IS_CONST && layout.align() <= CHUNK_ALIGN_MIN {
-                // Constant, small alignment fast path!
-
-                if L::ALIGN_IS_CONST && layout.align() <= M::MIN_ALIGN {
-                    // alignment is already sufficient
-                } else {
-                    // Aligning an address that is `<= range.end` with an alignment
-                    // that is `<= CHUNK_ALIGN_MIN` can not exceed `range.end` and
-                    // can not overflow as `range.end` is always aligned to `CHUNK_ALIGN_MIN`
-                    start = up_align_usize_unchecked(start, layout.align());
-                }
-
-                let remaining = end - start;
-
-                if layout.size() > remaining {
-                    return f();
-                }
-
-                // doesn't exceed `end` because of the check above
-                new_pos = start + layout.size();
-            } else {
-                // Alignment is `> CHUNK_ALIGN_MIN` or unknown.
-
-                // start and align are both nonzero
-                // `aligned_down` is the aligned pointer minus `layout.align()`
-                let aligned_down = (start - 1) & !(layout.align() - 1);
-
-                // align + size cannot overflow as per `Layout`'s rules
-                //
-                // this could also be a `checked_add`, but we use `saturating_add` to save us a branch;
-                // the `if` below will return None if the addition saturated and returned `usize::MAX`
-                new_pos = aligned_down.saturating_add(layout.align() + layout.size());
-
-                // note that `new_pos` being `usize::MAX` is an invalid value for `new_pos` and we MUST return None;
-                // due to `end` being always aligned to `CHUNK_ALIGN_MIN`, it can't be `usize::MAX`;
-                // thus when `new_pos` is `usize::MAX` this will always return None;
-                if new_pos > end {
-                    return f();
-                }
-
-                // doesn't exceed `end` because `aligned_down + align + size` didn't
-                start = aligned_down + layout.align();
-            };
-
-            if (L::ALIGN_IS_CONST && L::SIZE_IS_MULTIPLE_OF_ALIGN && layout.align() >= M::MIN_ALIGN)
-                || (L::SIZE_IS_CONST && (layout.size() % M::MIN_ALIGN == 0))
-            {
-                // we are already aligned to `MIN_ALIGN`
-            } else {
-                // up aligning an address `<= range.end` with an alignment `<= CHUNK_ALIGN_MIN` (which `MIN_ALIGN` is)
-                // can not exceed `range.end`, and thus also can't overflow
-                new_pos = up_align_usize_unchecked(new_pos, M::MIN_ALIGN);
-            }
-
-            debug_assert!(is_aligned(start, layout.align()));
-            debug_assert!(is_aligned(start, M::MIN_ALIGN));
-            debug_assert!(is_aligned(new_pos, M::MIN_ALIGN));
-
-            unsafe {
-                self.set_pos(self.with_addr(new_pos));
-                Ok(self.with_addr(start))
-            }
-        } else {
-            let start = nonnull::addr(remaining.start).get();
-            let mut end = nonnull::addr(remaining.end).get();
-
-            debug_assert!(start <= end);
-
-            if L::SIZE_IS_CONST && layout.size() <= CHUNK_ALIGN_MIN {
-                // When `size <= CHUNK_ALIGN_MIN` subtracting it from `end` can't overflow, as the lowest value for `end` would be `start` which is aligned to `CHUNK_ALIGN_MIN`,
-                // thus its address can't be smaller than it.
-                end -= layout.size();
-
-                let needs_align_for_min_align =
-                    (!L::ALIGN_IS_CONST || !L::SIZE_IS_MULTIPLE_OF_ALIGN || layout.align() < M::MIN_ALIGN)
-                        && (!L::SIZE_IS_CONST || (layout.size() % M::MIN_ALIGN != 0));
-                let needs_align_for_layout =
-                    !L::ALIGN_IS_CONST || !L::SIZE_IS_MULTIPLE_OF_ALIGN || layout.align() > M::MIN_ALIGN;
-
-                if needs_align_for_min_align || needs_align_for_layout {
-                    // At this point layout's align is const, because we assume `L::SIZE_IS_CONST` implies `L::ALIGN_IS_CONST`.
-                    // That means `max` is evaluated at compile time, so we don't bother having different cases for either alignment.
-                    end = down_align_usize(end, layout.align().max(M::MIN_ALIGN));
-                }
-
-                if end < start {
-                    return f();
-                }
-            } else if L::ALIGN_IS_CONST && layout.align() <= CHUNK_ALIGN_MIN {
-                // Constant, small alignment fast path!
-                let remaining = end - start;
-
-                if layout.size() > remaining {
-                    return f();
-                }
-
-                // doesn't overflow because of the check above
-                end -= layout.size();
-
-                let needs_align_for_min_align =
-                    (!L::ALIGN_IS_CONST || !L::SIZE_IS_MULTIPLE_OF_ALIGN || layout.align() < M::MIN_ALIGN)
-                        && (!L::SIZE_IS_CONST || (layout.size() % M::MIN_ALIGN != 0));
-                let needs_align_for_layout =
-                    !L::ALIGN_IS_CONST || !L::SIZE_IS_MULTIPLE_OF_ALIGN || layout.align() > M::MIN_ALIGN;
-
-                if needs_align_for_min_align || needs_align_for_layout {
-                    // down aligning an address `>= range.start` with an alignment `<= CHUNK_ALIGN_MIN` (which `layout.align()` is)
-                    // can not exceed `range.start`, and thus also can't overflow
-                    end = down_align_usize(end, layout.align().max(M::MIN_ALIGN));
+        unsafe {
+            if UP {
+                match bump_up(props) {
+                    Some(BumpUp { new_pos, ptr }) => {
+                        self.set_pos(self.with_addr(new_pos.get()));
+                        Ok(self.with_addr(ptr.get()))
+                    }
+                    None => f(),
                 }
             } else {
-                // Alignment is `> CHUNK_ALIGN_MIN` or unknown.
-
-                // this could also be a `checked_sub`, but we use `saturating_sub` to save us a branch;
-                // the `if` below will return None if the addition saturated and returned `0`
-                end = end.saturating_sub(layout.size());
-                end = down_align_usize(end, layout.align().max(M::MIN_ALIGN));
-
-                // note that `end` being `0` is an invalid value for `end` and we MUST return None;
-                // due to `start` being `NonNull`, it can't be `0`;
-                // thus when `end` is `0` this will always return None;
-                if end < start {
-                    return f();
+                match bump_down(props) {
+                    Some(ptr) => {
+                        let ptr = self.with_addr(ptr.get());
+                        self.set_pos(ptr);
+                        Ok(ptr)
+                    }
+                    None => f(),
                 }
-            };
-
-            debug_assert!(is_aligned(end, layout.align()));
-            debug_assert!(is_aligned(end, M::MIN_ALIGN));
-
-            unsafe {
-                self.set_pos(self.with_addr(end));
-                Ok(self.with_addr(end))
             }
         }
     }

@@ -114,14 +114,14 @@
 //! bump.scoped(|mut bump| {
 //!     let hello = bump.alloc_str("hello");
 //!     assert_eq!(bump.stats().allocated(), 5);
-//!     
+//!
 //!     bump.scoped(|bump| {
 //!         let world = bump.alloc_str("world");
 //!
 //!         println!("{hello} and {world} are both live");
 //!         assert_eq!(bump.stats().allocated(), 10);
 //!     });
-//!     
+//!
 //!     println!("{hello} is still live");
 //!     assert_eq!(bump.stats().allocated(), 5);
 //! });
@@ -135,7 +135,7 @@
 //!
 //!     let hello = bump.alloc_str("hello");
 //!     assert_eq!(bump.stats().allocated(), 5);
-//!     
+//!
 //!     {
 //!         let mut guard = bump.scope_guard();
 //!         let bump = guard.scope();
@@ -145,7 +145,7 @@
 //!         println!("{hello} and {world} are both live");
 //!         assert_eq!(bump.stats().allocated(), 10);
 //!     }
-//!     
+//!
 //!     println!("{hello} is still live");
 //!     assert_eq!(bump.stats().allocated(), 5);
 //! }
@@ -306,6 +306,7 @@ mod without_dealloc;
 
 #[cfg(feature = "std")]
 mod bump_pool;
+mod bumping;
 mod error_behavior;
 mod layout;
 
@@ -351,6 +352,8 @@ use set_len_on_drop_by_ptr::SetLenOnDropByPtr;
 
 // This must be kept in sync with ChunkHeaders `repr(align(16))`.
 const CHUNK_ALIGN_MIN: usize = 16;
+
+const _: () = assert!(CHUNK_ALIGN_MIN == bumping::MIN_CHUNK_ALIGN);
 
 const DEFAULT_START_CHUNK_SIZE: usize = 512;
 

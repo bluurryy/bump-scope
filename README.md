@@ -65,14 +65,14 @@ let mut bump: Bump = Bump::new();
 bump.scoped(|mut bump| {
     let hello = bump.alloc_str("hello");
     assert_eq!(bump.stats().allocated(), 5);
-    
+
     bump.scoped(|bump| {
         let world = bump.alloc_str("world");
 
         println!("{hello} and {world} are both live");
         assert_eq!(bump.stats().allocated(), 10);
     });
-    
+
     println!("{hello} is still live");
     assert_eq!(bump.stats().allocated(), 5);
 });
@@ -86,7 +86,7 @@ assert_eq!(bump.stats().allocated(), 0);
 
     let hello = bump.alloc_str("hello");
     assert_eq!(bump.stats().allocated(), 5);
-    
+
     {
         let mut guard = bump.scope_guard();
         let bump = guard.scope();
@@ -96,7 +96,7 @@ assert_eq!(bump.stats().allocated(), 0);
         println!("{hello} and {world} are both live");
         assert_eq!(bump.stats().allocated(), 10);
     }
-    
+
     println!("{hello} is still live");
     assert_eq!(bump.stats().allocated(), 5);
 }
