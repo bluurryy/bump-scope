@@ -260,7 +260,7 @@ where
         fn generic_with_size_in(size: usize, allocator: A) -> Self {
             Ok(Self {
                 chunk: Cell::new(RawChunk::new_in(
-                    ChunkSize::new(size)?,
+                    ChunkSize::new(size).ok_or_else(B::capacity_overflow)?,
                     None,
                     allocator,
                 )?),
@@ -279,7 +279,7 @@ where
         fn generic_with_capacity_in(layout: Layout, allocator: A) -> Self {
             Ok(Self {
                 chunk: Cell::new(RawChunk::new_in(
-                    ChunkSize::for_capacity(layout)?,
+                    ChunkSize::for_capacity(layout).ok_or_else(B::capacity_overflow)?,
                     None,
                     allocator,
                 )?),

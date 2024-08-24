@@ -119,12 +119,16 @@ where
 
     #[cold]
     #[inline(never)]
-    fn allocate_first_chunk<E: ErrorBehavior>(&self) -> Result<(), E> {
+    fn allocate_first_chunk<B: ErrorBehavior>(&self) -> Result<(), B> {
         // must only be called when we point to the empty chunk
         debug_assert!(self.chunk.get().is_unallocated());
 
         let allocator = A::default_or_panic();
-        let chunk = RawChunk::new_in(ChunkSize::new(DEFAULT_START_CHUNK_SIZE)?, None, allocator)?;
+        let chunk = RawChunk::new_in(
+            ChunkSize::new(DEFAULT_START_CHUNK_SIZE).ok_or_else(B::capacity_overflow)?,
+            None,
+            allocator,
+        )?;
 
         self.chunk.set(chunk);
 
@@ -354,14 +358,18 @@ where
     ///
     /// `allocate` on the new chunk created by `RawChunk::append_for` with the layout `layout` must return `Some`.
     #[inline(always)]
-    pub(crate) unsafe fn do_custom_alloc_in_another_chunk<E: ErrorBehavior, L: LayoutProps, R>(
+    pub(crate) unsafe fn do_custom_alloc_in_another_chunk<B: ErrorBehavior, L: LayoutProps, R>(
         &self,
         layout: L,
         mut allocate: impl FnMut(RawChunk<UP, A>, L) -> Option<R>,
-    ) -> Result<R, E> {
+    ) -> Result<R, B> {
         let new_chunk = if self.is_unallocated() {
             let allocator = A::default_or_panic();
-            RawChunk::new_in(ChunkSize::for_capacity(*layout)?, None, allocator)
+            RawChunk::new_in(
+                ChunkSize::for_capacity(*layout).ok_or_else(B::capacity_overflow)?,
+                None,
+                allocator,
+            )
         } else {
             while let Some(chunk) = self.chunk.get().next() {
                 // We don't reset the chunk position when we leave a scope, so we need to do it here.
@@ -421,7 +429,7 @@ where
     ///
     /// {
     ///     let scope = guard.scope().into_aligned::<1>();
-    ///     scope.alloc(0u8);      
+    ///     scope.alloc(0u8);
     /// }
     ///
     /// {

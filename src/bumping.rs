@@ -13,8 +13,10 @@ macro_rules! debug_assert_aligned {
         debug_assert!(
             is_aligned,
             "expected `{}` ({}) to be aligned to `{}` ({})",
-            stringify!($addr), addr,
-            stringify!($align), align,
+            stringify!($addr),
+            addr,
+            stringify!($align),
+            align,
         );
     };
 }

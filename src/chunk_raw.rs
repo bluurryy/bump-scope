@@ -1,4 +1,4 @@
-use core::{alloc::Layout, cell::Cell, num::NonZeroUsize, ops::Range, ptr::NonNull};
+use core::{alloc::Layout, cell::Cell, mem::align_of, num::NonZeroUsize, ops::Range, ptr::NonNull};
 
 use crate::{
     bumping::{bump_down, bump_up, BumpProps, BumpUp},
@@ -61,8 +61,11 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
         // The chunk size must always be a multiple of `CHUNK_ALIGN_MIN`.
         // We use optimizations in `alloc` that require this.
-        // `ChunkSize::allocate` must have already trimmed the allocation size to a multiple of `CHUNK_ALIGN_MIN`
+        // `ChunkSize::allocate` has already trimmed the allocation size to a multiple of `CHUNK_ALIGN_MIN`
         debug_assert!(size % CHUNK_ALIGN_MIN == 0);
+
+        let prev = prev.map(|c| c.header);
+        let next = Cell::new(None);
 
         let header = unsafe {
             if UP {
@@ -71,24 +74,23 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                 header.as_ptr().write(ChunkHeader {
                     pos: Cell::new(nonnull::add(header, 1).cast()),
                     end: nonnull::add(ptr, size),
-
-                    prev: prev.map(|c| c.header),
-                    next: Cell::new(None),
-
+                    prev,
+                    next,
                     allocator,
                 });
 
                 header
             } else {
+                // `Chunk::allocate` allocated a size that is a multiple of `align_of::<ChunkHeader<A>>()`.
+                debug_assert!(size % align_of::<ChunkHeader<A>>() == 0);
+
                 let header = nonnull::sub(nonnull::add(ptr, size).cast::<ChunkHeader<A>>(), 1);
 
                 header.as_ptr().write(ChunkHeader {
                     pos: Cell::new(header.cast()),
                     end: ptr,
-
-                    prev: prev.map(|c| c.header),
-                    next: Cell::new(None),
-
+                    prev,
+                    next,
                     allocator,
                 });
 
@@ -507,34 +509,34 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     #[inline(always)]
     pub(crate) fn layout(self) -> Layout {
         // SAFETY: this layout fits the one we allocated, which means it must be valid
-        unsafe { Layout::from_size_align_unchecked(self.size().get(), ChunkSize::<UP, A>::HEADER_ALIGN.get()) }
+        unsafe { Layout::from_size_align_unchecked(self.size().get(), align_of::<ChunkHeader<A>>()) }
     }
 
     #[inline(always)]
-    fn grow_size<E: ErrorBehavior>(self) -> Result<ChunkSize<UP, A>, E> {
+    fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSize<UP, A>, B> {
         const TWO: NonZeroUsize = const_unwrap(NonZeroUsize::new(2));
         let size = match self.size().checked_mul(TWO) {
             Some(size) => size,
-            None => return Err(E::capacity_overflow()),
+            None => return Err(B::capacity_overflow()),
         };
-        ChunkSize::<UP, A>::new(size.get())
+        ChunkSize::<UP, A>::new(size.get()).ok_or_else(B::capacity_overflow)
     }
 
     /// # Panic
     ///
     /// [`self.next`](RawChunk::next) must return `None`
-    pub(crate) fn append_for<E: ErrorBehavior>(self, layout: Layout) -> Result<Self, E>
+    pub(crate) fn append_for<B: ErrorBehavior>(self, layout: Layout) -> Result<Self, B>
     where
         A: Allocator + Clone,
     {
         debug_assert!(self.next().is_none());
 
-        let required_size = ChunkSize::for_capacity(layout)?;
+        let required_size = ChunkSize::for_capacity(layout).ok_or_else(B::capacity_overflow)?;
         let grown_size = self.grow_size()?;
         let size = required_size.max(grown_size);
 
         let allocator = unsafe { self.header.as_ref().allocator.clone() };
-        let new_chunk = RawChunk::new_in::<E>(size, Some(self), allocator)?;
+        let new_chunk = RawChunk::new_in::<B>(size, Some(self), allocator)?;
 
         self.set_next(Some(new_chunk));
         Ok(new_chunk)

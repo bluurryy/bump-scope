@@ -36,11 +36,11 @@ extern crate std;
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 
-const OVERHEAD: usize = ChunkSize::<true, Global>::OVERHEAD.get();
-const MALLOC_OVERHEAD: usize = ASSUMED_MALLOC_OVERHEAD_SIZE.get();
+const MALLOC_OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
+const OVERHEAD: usize = MALLOC_OVERHEAD + size_of::<ChunkHeader<Global>>();
 
 use crate::{
-    chunk_size::ASSUMED_MALLOC_OVERHEAD_SIZE, infallible, mut_bump_format, mut_bump_vec, mut_bump_vec_rev, Bump, BumpBox,
+    chunk_size::AssumedMallocOverhead, infallible, mut_bump_format, mut_bump_vec, mut_bump_vec_rev, Bump, BumpBox,
     BumpScope, BumpVec, Chunk, ChunkHeader, ChunkSize, FmtFn, IntoIter, MinimumAlignment, MutBumpString, MutBumpVec,
     MutBumpVecRev, SupportedMinimumAlignment,
 };

@@ -408,14 +408,6 @@ macro_rules! supported_alignments {
 
 supported_alignments!(1 2 4 8 16);
 
-#[inline(always)]
-fn up_align_usize(addr: usize, align: NonZeroUsize) -> Option<usize> {
-    debug_assert!(align.get().is_power_of_two());
-    let mask = align.get() - 1;
-    let aligned = addr.checked_add(mask)? & !mask;
-    Some(aligned)
-}
-
 /// Does not check for overflow.
 #[inline(always)]
 fn up_align_usize_unchecked(addr: usize, align: usize) -> usize {
@@ -1760,7 +1752,11 @@ define_alloc_methods! {
 
         if self.is_unallocated() {
             let allocator = A::default_or_panic();
-            let new_chunk = RawChunk::new_in(ChunkSize::for_capacity(layout)?, None, allocator)?;
+            let new_chunk = RawChunk::new_in(
+                ChunkSize::for_capacity(layout).ok_or_else(B::capacity_overflow)?,
+                None,
+                allocator
+            )?;
             self.chunk.set(new_chunk);
             return Ok(());
         }
