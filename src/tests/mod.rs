@@ -28,6 +28,7 @@ mod unaligned_collection;
 mod vec;
 
 mod alloc_fmt;
+mod chunk_size;
 #[cfg(feature = "serde")]
 mod serde;
 mod unallocated;
