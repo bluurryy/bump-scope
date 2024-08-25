@@ -70,12 +70,11 @@ macro_rules! bump_pool_declaration {
             $($allocator_parameter)*,
             const MIN_ALIGN: usize = 1,
             const UP: bool = true,
-            const GUARANTEED_ALLOCATED: bool = true,
         > where
-            A: BaseAllocator<GUARANTEED_ALLOCATED>,
+            A: BaseAllocator,
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
         {
-            bumps: Mutex<Vec<Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>>,
+            bumps: Mutex<Vec<Bump<A, MIN_ALIGN, UP>>>,
             allocator: A,
         }
     };
@@ -83,10 +82,9 @@ macro_rules! bump_pool_declaration {
 
 crate::maybe_default_allocator!(bump_pool_declaration);
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Default
-    for BumpPool<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<A, const MIN_ALIGN: usize, const UP: bool> Default for BumpPool<A, MIN_ALIGN, UP>
 where
-    A: BaseAllocator<GUARANTEED_ALLOCATED> + Default,
+    A: BaseAllocator + Default,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     fn default() -> Self {
@@ -97,11 +95,10 @@ where
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    BumpPool<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<A, const MIN_ALIGN: usize, const UP: bool> BumpPool<A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED> + Default,
+    A: BaseAllocator + Default,
 {
     /// Constructs a new `BumpPool`.
     #[inline]
@@ -111,10 +108,9 @@ where
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    BumpPool<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<A, const MIN_ALIGN: usize, const UP: bool> BumpPool<A, MIN_ALIGN, UP>
 where
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     /// Constructs a new `BumpPool` with the provided allocator.
@@ -135,7 +131,7 @@ where
     }
 
     /// Returns the vector of `Bump`s.
-    pub fn bumps(&mut self) -> &mut Vec<Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>> {
+    pub fn bumps(&mut self) -> &mut Vec<Bump<A, MIN_ALIGN, UP>> {
         self.bumps.get_mut().unwrap_or_else(PoisonError::into_inner)
     }
 
@@ -146,7 +142,7 @@ where
     /// Panics if the allocation fails.
     #[must_use]
     #[cfg(not(no_global_oom_handling))]
-    pub fn get(&self) -> BumpPoolGuard<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
+    pub fn get(&self) -> BumpPoolGuard<A, MIN_ALIGN, UP> {
         let bump = self.bumps.lock().unwrap_or_else(PoisonError::into_inner).pop();
         let bump = bump.unwrap_or_else(|| Bump::new_in(self.allocator.clone()));
 
@@ -161,7 +157,7 @@ where
     ///
     /// # Errors
     /// Errors if the allocation fails.
-    pub fn try_get(&self) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>, AllocError> {
+    pub fn try_get(&self) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP>, AllocError> {
         let bump = self.bumps.lock().unwrap_or_else(PoisonError::into_inner).pop();
 
         let bump = match bump {
@@ -178,22 +174,21 @@ where
 
 /// This is a wrapper around [`Bump`] that mutably derefs to a [`BumpScope`] and returns its [`Bump`] back to the [`BumpPool`] on drop.
 #[derive(Debug)]
-pub struct BumpPoolGuard<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+pub struct BumpPoolGuard<'a, A, const MIN_ALIGN: usize, const UP: bool>
 where
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
-    bump: ManuallyDrop<Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>,
-    pool: &'a BumpPool<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+    bump: ManuallyDrop<Bump<A, MIN_ALIGN, UP>>,
+    pool: &'a BumpPool<A, MIN_ALIGN, UP>,
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Deref
-    for BumpPoolGuard<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Deref for BumpPoolGuard<'a, A, MIN_ALIGN, UP>
 where
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
-    type Target = BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>;
+    type Target = BumpScope<'a, A, MIN_ALIGN, UP>;
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
@@ -201,10 +196,9 @@ where
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> DerefMut
-    for BumpPoolGuard<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> DerefMut for BumpPoolGuard<'a, A, MIN_ALIGN, UP>
 where
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     #[inline(always)]
@@ -213,10 +207,9 @@ where
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Drop
-    for BumpPoolGuard<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpPoolGuard<'a, A, MIN_ALIGN, UP>
 where
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     fn drop(&mut self) {
@@ -228,24 +221,16 @@ where
 
 // This exists as a "safer" transmute that only transmutes the `'a` lifetime parameter.
 #[allow(clippy::needless_lifetimes)]
-unsafe fn transmute_lifetime<'from, 'to, 'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-    scope: &'b BumpScope<'from, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
-) -> &'b BumpScope<'to, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
+unsafe fn transmute_lifetime<'from, 'to, 'b, A, const MIN_ALIGN: usize, const UP: bool>(
+    scope: &'b BumpScope<'from, A, MIN_ALIGN, UP>,
+) -> &'b BumpScope<'to, A, MIN_ALIGN, UP> {
     mem::transmute(scope)
 }
 
 // This exists as a "safer" transmute that only transmutes the `'a` lifetime parameter.
 #[allow(clippy::needless_lifetimes)]
-unsafe fn transmute_lifetime_mut<
-    'from,
-    'to,
-    'b,
-    A,
-    const MIN_ALIGN: usize,
-    const UP: bool,
-    const GUARANTEED_ALLOCATED: bool,
->(
-    scope: &'b mut BumpScope<'from, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
-) -> &'b mut BumpScope<'to, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
+unsafe fn transmute_lifetime_mut<'from, 'to, 'b, A, const MIN_ALIGN: usize, const UP: bool>(
+    scope: &'b mut BumpScope<'from, A, MIN_ALIGN, UP>,
+) -> &'b mut BumpScope<'to, A, MIN_ALIGN, UP> {
     mem::transmute(scope)
 }
