@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.9 (2024-08-25)
 - **improved:** removed a branch when bumping downwards (#25)
 - **fixed:** UB when using a base allocator with an alignment greater than `2 * size_of::<usize>()` (#32)
 
