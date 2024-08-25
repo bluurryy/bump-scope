@@ -157,7 +157,7 @@ assert_eq!(bump.stats().allocated(), 4);
 ```
 
 ## Feature Flags
-* **`std`** *(enabled by default)* —  Adds `BumpPool` and implementations of `std::io` traits for `BumpBox` and `{Fixed, Mut}BumpVec`.
+* **`std`** *(enabled by default)* —  Adds `BumpPool` and implementations of `std::io` traits for `BumpBox` and vectors.
 * **`alloc`** —  Adds `Global` as the default allocator, `BumpBox::into_box` and some interactions with `alloc` collections.
 * **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 * **`zerocopy`** —  Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`.

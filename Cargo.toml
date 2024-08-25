@@ -21,7 +21,7 @@ zerocopy = { version = "0.7.34", default-features = false, optional = true }
 [features]
 default = ["std"]
 
-## Adds `BumpPool` and implementations of `std::io` traits for `BumpBox` and `{Fixed, Mut}BumpVec`.
+## Adds `BumpPool` and implementations of `std::io` traits for `BumpBox` and vectors.
 std = ["allocator-api2/std", "alloc"]
 
 ## Adds `Global` as the default allocator, `BumpBox::into_box` and some interactions with `alloc` collections.
