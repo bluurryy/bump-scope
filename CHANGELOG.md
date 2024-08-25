@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 (2024-08-25)
 - **breaking:** `(Fixed)BumpString::as_mut_vec` now return `&mut` as they should instead of `&`.
 - **breaking:** removed `GUARANTEED_ALLOCATED` parameter from `BumpPool(Guard)`
 - **breaking:** removed deprecated `(try_)alloc_slice_zeroed` in favor of `(try_)alloc_zeroed_slice`
