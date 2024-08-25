@@ -171,8 +171,8 @@ impl Debug for Range {
 
 trait AnyBump {
     fn alloc_dynamic(&self, layout: Layout) -> Range;
-    fn alloc_static<T: Default>(&self, drop: bool) -> Range;
-    fn alloc_static_slice<T: Default>(&self, len: usize, drop: bool) -> Range;
+    fn alloc_static<T: Default>(&self) -> Range;
+    fn alloc_static_slice<T: Default>(&self, len: usize) -> Range;
 }
 
 impl<const UP: bool, const MIN_ALIGN: usize> AnyBump for &Bump<Global, MIN_ALIGN, UP>
@@ -187,33 +187,13 @@ where
         }
     }
 
-    fn alloc_static<T: Default>(&self, drop: bool) -> Range {
-        #![allow(clippy::overly_complex_bool_expr, clippy::needless_late_init)]
-
-        let ptr;
-
-        if false && drop {
-            unreachable!();
-            // self.with_drop_ref().alloc_with(T::default)
-        } else {
-            ptr = self.alloc_with(T::default).into_raw().as_ptr()
-        };
-
+    fn alloc_static<T: Default>(&self) -> Range {
+        let ptr = self.alloc_with(T::default).into_raw().as_ptr();
         Range::new(ptr)
     }
 
-    fn alloc_static_slice<T: Default>(&self, len: usize, drop: bool) -> Range {
-        #![allow(clippy::overly_complex_bool_expr, clippy::needless_late_init)]
-
-        let ptr;
-
-        if false && drop {
-            unreachable!()
-            // self.with_drop_ref().alloc_slice_fill_with(len, T::default)
-        } else {
-            ptr = self.alloc_slice_fill_with(len, T::default).into_raw().as_ptr()
-        }
-
+    fn alloc_static_slice<T: Default>(&self, len: usize) -> Range {
+        let ptr = self.alloc_slice_fill_with(len, T::default).into_raw().as_ptr();
         Range::new_slice(ptr)
     }
 }
@@ -260,7 +240,6 @@ impl DynamicAllocationDescription {
 #[derive(Debug, Clone, Copy, Arbitrary)]
 struct StaticAllocationDescription {
     is_slice: bool,
-    drop: bool,
     stride: Align,
     count: Count,
 }
@@ -273,49 +252,49 @@ impl StaticAllocationDescription {
     fn allocate(&self, bump: impl AnyBump) -> Range {
         match self.is_slice {
             true => match self.stride {
-                Align::T1 => bump.alloc_static_slice::<t1>(self.count as usize, self.drop),
-                Align::T2 => bump.alloc_static_slice::<t2>(self.count as usize, self.drop),
-                Align::T3 => bump.alloc_static_slice::<t3>(self.count as usize, self.drop),
-                Align::T4 => bump.alloc_static_slice::<t4>(self.count as usize, self.drop),
-                Align::T5 => bump.alloc_static_slice::<t5>(self.count as usize, self.drop),
-                Align::T6 => bump.alloc_static_slice::<t6>(self.count as usize, self.drop),
+                Align::T1 => bump.alloc_static_slice::<t1>(self.count as usize),
+                Align::T2 => bump.alloc_static_slice::<t2>(self.count as usize),
+                Align::T3 => bump.alloc_static_slice::<t3>(self.count as usize),
+                Align::T4 => bump.alloc_static_slice::<t4>(self.count as usize),
+                Align::T5 => bump.alloc_static_slice::<t5>(self.count as usize),
+                Align::T6 => bump.alloc_static_slice::<t6>(self.count as usize),
             },
             false => match self.stride {
                 Align::T1 => match self.count {
-                    Count::C0 => bump.alloc_static::<[t1; 0]>(self.drop),
-                    Count::C1 => bump.alloc_static::<[t1; 1]>(self.drop),
-                    Count::C2 => bump.alloc_static::<[t1; 2]>(self.drop),
-                    Count::C3 => bump.alloc_static::<[t1; 3]>(self.drop),
+                    Count::C0 => bump.alloc_static::<[t1; 0]>(),
+                    Count::C1 => bump.alloc_static::<[t1; 1]>(),
+                    Count::C2 => bump.alloc_static::<[t1; 2]>(),
+                    Count::C3 => bump.alloc_static::<[t1; 3]>(),
                 },
                 Align::T2 => match self.count {
-                    Count::C0 => bump.alloc_static::<[t2; 0]>(self.drop),
-                    Count::C1 => bump.alloc_static::<[t2; 1]>(self.drop),
-                    Count::C2 => bump.alloc_static::<[t2; 2]>(self.drop),
-                    Count::C3 => bump.alloc_static::<[t2; 3]>(self.drop),
+                    Count::C0 => bump.alloc_static::<[t2; 0]>(),
+                    Count::C1 => bump.alloc_static::<[t2; 1]>(),
+                    Count::C2 => bump.alloc_static::<[t2; 2]>(),
+                    Count::C3 => bump.alloc_static::<[t2; 3]>(),
                 },
                 Align::T3 => match self.count {
-                    Count::C0 => bump.alloc_static::<[t3; 0]>(self.drop),
-                    Count::C1 => bump.alloc_static::<[t3; 1]>(self.drop),
-                    Count::C2 => bump.alloc_static::<[t3; 2]>(self.drop),
-                    Count::C3 => bump.alloc_static::<[t3; 3]>(self.drop),
+                    Count::C0 => bump.alloc_static::<[t3; 0]>(),
+                    Count::C1 => bump.alloc_static::<[t3; 1]>(),
+                    Count::C2 => bump.alloc_static::<[t3; 2]>(),
+                    Count::C3 => bump.alloc_static::<[t3; 3]>(),
                 },
                 Align::T4 => match self.count {
-                    Count::C0 => bump.alloc_static::<[t4; 0]>(self.drop),
-                    Count::C1 => bump.alloc_static::<[t4; 1]>(self.drop),
-                    Count::C2 => bump.alloc_static::<[t4; 2]>(self.drop),
-                    Count::C3 => bump.alloc_static::<[t4; 3]>(self.drop),
+                    Count::C0 => bump.alloc_static::<[t4; 0]>(),
+                    Count::C1 => bump.alloc_static::<[t4; 1]>(),
+                    Count::C2 => bump.alloc_static::<[t4; 2]>(),
+                    Count::C3 => bump.alloc_static::<[t4; 3]>(),
                 },
                 Align::T5 => match self.count {
-                    Count::C0 => bump.alloc_static::<[t5; 0]>(self.drop),
-                    Count::C1 => bump.alloc_static::<[t5; 1]>(self.drop),
-                    Count::C2 => bump.alloc_static::<[t5; 2]>(self.drop),
-                    Count::C3 => bump.alloc_static::<[t5; 3]>(self.drop),
+                    Count::C0 => bump.alloc_static::<[t5; 0]>(),
+                    Count::C1 => bump.alloc_static::<[t5; 1]>(),
+                    Count::C2 => bump.alloc_static::<[t5; 2]>(),
+                    Count::C3 => bump.alloc_static::<[t5; 3]>(),
                 },
                 Align::T6 => match self.count {
-                    Count::C0 => bump.alloc_static::<[t6; 0]>(self.drop),
-                    Count::C1 => bump.alloc_static::<[t6; 1]>(self.drop),
-                    Count::C2 => bump.alloc_static::<[t6; 2]>(self.drop),
-                    Count::C3 => bump.alloc_static::<[t6; 3]>(self.drop),
+                    Count::C0 => bump.alloc_static::<[t6; 0]>(),
+                    Count::C1 => bump.alloc_static::<[t6; 1]>(),
+                    Count::C2 => bump.alloc_static::<[t6; 2]>(),
+                    Count::C3 => bump.alloc_static::<[t6; 3]>(),
                 },
             },
         }
