@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **breaking:** `(Fixed)BumpString::as_mut_vec` now return `&mut` as they should instead of `&`.
+
 ## 0.5.9 (2024-08-25)
 - **improved:** removed a branch when bumping downwards (#25)
 - **fixed:** UB when using a base allocator with an alignment greater than `2 * size_of::<usize>()` (#32)

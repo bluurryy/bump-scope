@@ -255,7 +255,7 @@ impl<'a> FixedBumpString<'a> {
     /// safety, as `FixedBumpString`s must be valid UTF-8.
     #[must_use]
     #[inline(always)]
-    pub unsafe fn as_mut_vec(&mut self) -> &FixedBumpVec<'a, u8> {
+    pub unsafe fn as_mut_vec(&mut self) -> &mut FixedBumpVec<'a, u8> {
         &mut self.vec
     }
 
