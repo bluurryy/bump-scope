@@ -3,6 +3,7 @@
 ## Unreleased
 - **breaking:** `(Fixed)BumpString::as_mut_vec` now return `&mut` as they should instead of `&`.
 - **breaking:** removed `GUARANTEED_ALLOCATED` parameter from `BumpPool(Guard)`
+- **breaking:** removed deprecated `(try_)alloc_slice_zeroed` in favor of `(try_)alloc_zeroed_slice`
 
 ## 0.5.9 (2024-08-25)
 - **improved:** removed a branch when bumping downwards (#25)
