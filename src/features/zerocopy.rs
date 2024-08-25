@@ -79,7 +79,7 @@ define_alloc_methods! {
     /// ```
     /// # use bump_scope::Bump;
     /// let mut bump: Bump = Bump::new();
-    /// let zeroes = bump.alloc_slice_zeroed::<i32>(3);
+    /// let zeroes = bump.alloc_zeroed_slice::<i32>(3);
     /// assert_eq!(*zeroes, [0; 3])
     /// ```
     for pub fn alloc_zeroed_slice
