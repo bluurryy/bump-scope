@@ -24,3 +24,17 @@ path = "fuzz_targets/allocator.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "bump_up"
+path = "fuzz_targets/bump_up.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bump_down"
+path = "fuzz_targets/bump_down.rs"
+test = false
+doc = false
+bench = false
