@@ -1154,7 +1154,6 @@ macro_rules! define_alloc_methods {
                     $(-> $return_ty)?
                     $(where $($where)*)?
                     {
-                        #[allow(deprecated)]
                         $crate::as_scope!($($self)+).$infallible($($arg_pat),*)
                     }
                 )*
@@ -1183,7 +1182,6 @@ macro_rules! define_alloc_methods {
                     -> $crate::wrap_result!($($return_ty)?, allocator_api2::alloc::AllocError)
                     $(where $($where)*)?
                     {
-                        #[allow(deprecated)]
                         $crate::as_scope!($($self)+).$fallible($($arg_pat),*)
                     }
                 )*
