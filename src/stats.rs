@@ -47,7 +47,7 @@ impl<'a, const UP: bool> Debug for GuaranteedAllocatedStats<'a, UP> {
 }
 
 impl<'a, const UP: bool> GuaranteedAllocatedStats<'a, UP> {
-    /// Returns the amount of chunks.
+    /// Returns the number of chunks.
     #[must_use]
     pub fn count(self) -> usize {
         let mut sum = 1;
@@ -192,7 +192,7 @@ impl<'a, const UP: bool> From<GuaranteedAllocatedStats<'a, UP>> for Stats<'a, UP
 }
 
 impl<'a, const UP: bool> Stats<'a, UP> {
-    /// Returns the amount of chunks.
+    /// Returns the number of chunks.
     #[must_use]
     pub fn count(self) -> usize {
         let current = match self.current {
