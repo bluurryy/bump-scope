@@ -9,7 +9,7 @@ use crate::{
     ChunkSize, ErrorBehavior, MinimumAlignment, SizedTypeProperties, SupportedMinimumAlignment, CHUNK_ALIGN_MIN,
 };
 
-use allocator_api2::alloc::Allocator;
+use allocator_api2::alloc::{AllocError, Allocator};
 
 /// Represents an allocated chunk.
 ///
@@ -54,15 +54,36 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         A: Allocator,
         for<'a> &'a A: Allocator,
     {
-        let ptr = size.allocate(&allocator)?;
+        let layout = size.layout();
 
-        let size = ptr.len();
-        let ptr = ptr.cast::<u8>();
+        let allocation = match allocator.allocate(layout) {
+            Ok(ok) => ok,
+            Err(AllocError) => return Err(E::allocation(layout)),
+        };
 
-        // The chunk size must always be a multiple of `CHUNK_ALIGN_MIN`.
-        // We use optimizations in `alloc` that require this.
-        // `ChunkSize::allocate` has already trimmed the allocation size to a multiple of `CHUNK_ALIGN_MIN`
+        // The size must always be a multiple of `CHUNK_ALIGN_MIN`.
+        // We use optimizations in `alloc` that make use of this.
+        //
+        // If `!UP`, the size must also be an aligned to `ChunkHeader<_>`
+        // so the header can live at the end.
+        let downwards_align = if UP {
+            CHUNK_ALIGN_MIN
+        } else {
+            CHUNK_ALIGN_MIN.max(align_of::<ChunkHeader<A>>())
+        };
+
+        // This truncation can not result in a size smaller than the layout's size because
+        // we truncated the layout's size in the same way (see ChunkSize::layout).
+        //
+        // NB: The size must not be smaller than layout's size, so it still [fits] the
+        // memory block so we can deallocate with that size.
+        //
+        // [fits]: https://doc.rust-lang.org/std/alloc/trait.Allocator.html#memory-fitting
+        let size = down_align_usize(allocation.len(), downwards_align);
+        debug_assert!(size >= layout.size());
         debug_assert!(size % CHUNK_ALIGN_MIN == 0);
+
+        let ptr = allocation.cast::<u8>();
 
         let prev = prev.map(|c| c.header);
         let next = Cell::new(None);
@@ -81,9 +102,6 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
                 header
             } else {
-                // `Chunk::allocate` allocated a size that is a multiple of `align_of::<ChunkHeader<A>>()`.
-                debug_assert!(size % align_of::<ChunkHeader<A>>() == 0);
-
                 let header = nonnull::sub(nonnull::add(ptr, size).cast::<ChunkHeader<A>>(), 1);
 
                 header.as_ptr().write(ChunkHeader {

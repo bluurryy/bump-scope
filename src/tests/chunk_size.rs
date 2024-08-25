@@ -21,7 +21,7 @@ fn aligned_allocator_issue_32() {
         }
 
         unsafe fn deallocate(&self, ptr: core::ptr::NonNull<u8>, layout: core::alloc::Layout) {
-            Global.deallocate(ptr, layout)
+            Global.deallocate(ptr, layout);
         }
     }
 

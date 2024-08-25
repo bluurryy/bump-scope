@@ -4,15 +4,13 @@ use core::{
     marker::PhantomData,
     mem::{align_of, size_of},
     num::NonZeroUsize,
-    ptr::NonNull,
 };
 
 use crate::{
-    polyfill::{const_unwrap, nonnull, nonzero},
-    up_align_nonzero, ChunkHeader, ErrorBehavior, CHUNK_ALIGN_MIN,
+    down_align_usize,
+    polyfill::{const_unwrap, nonzero},
+    up_align_nonzero, ChunkHeader, CHUNK_ALIGN_MIN,
 };
-
-use allocator_api2::alloc::Allocator;
 
 /// We leave some space per allocation for the base allocator.
 pub(crate) type AssumedMallocOverhead = [*const u8; 2];
@@ -113,7 +111,15 @@ impl<const UP: bool, A> ChunkSize<UP, A> {
     pub(crate) fn layout(self) -> Layout {
         // we checked in `new` that we can create a layout from this size
 
-        let size_for_layout = self.0.get() - size_of::<AssumedMallocOverhead>();
+        let size_without_overhead = self.0.get() - size_of::<AssumedMallocOverhead>();
+
+        let downwards_align = if UP {
+            CHUNK_ALIGN_MIN
+        } else {
+            CHUNK_ALIGN_MIN.max(align_of::<ChunkHeader<A>>())
+        };
+
+        let size_for_layout = down_align_usize(size_without_overhead, downwards_align);
         let align = align_of::<ChunkHeader<A>>();
 
         unsafe { Layout::from_size_align_unchecked(size_for_layout, align) }
@@ -126,33 +132,6 @@ impl<const UP: bool, A> ChunkSize<UP, A> {
         } else {
             other
         }
-    }
-
-    #[inline]
-    pub(crate) fn allocate<E: ErrorBehavior>(self, allocator: impl Allocator) -> Result<NonNull<[u8]>, E> {
-        let layout = self.layout();
-
-        let slice = match allocator.allocate(layout) {
-            Ok(slice) => slice,
-            Err(_) => return Err(E::allocation(layout)),
-        };
-
-        let size = slice.len();
-        let ptr = slice.cast::<u8>();
-
-        // `ptr + size` must be an aligned to `CHUNK_ALIGN_MIN`
-        // if `!UP`, `ptr + size` must also be an aligned `*const ChunkHeader<_>`
-        let down_alignment = if UP {
-            CHUNK_ALIGN_MIN
-        } else {
-            CHUNK_ALIGN_MIN.max(align_of::<ChunkHeader<A>>())
-        };
-
-        let truncated_size = down_align(size, down_alignment);
-        debug_assert!(truncated_size >= layout.size());
-
-        let truncated_slice = nonnull::slice_from_raw_parts(ptr, truncated_size);
-        Ok(truncated_slice)
     }
 }
 
@@ -210,11 +189,4 @@ const fn up_align(addr: usize, align: usize) -> Option<usize> {
 
     let aligned = addr_plus_mask & !mask;
     Some(aligned)
-}
-
-#[inline(always)]
-fn down_align(addr: usize, align: usize) -> usize {
-    debug_assert!(align.is_power_of_two());
-    let mask = align - 1;
-    addr & !mask
 }
