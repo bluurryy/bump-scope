@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **breaking:** allow returning values from closure arguments of `scoped`, `aligned` and `scoped_aligned`
+
 ## 0.6.0 (2024-08-25)
 - **breaking:** `(Fixed)BumpString::as_mut_vec` now return `&mut` as they should instead of `&`.
 - **breaking:** removed `GUARANTEED_ALLOCATED` parameter from `BumpPool(Guard)`

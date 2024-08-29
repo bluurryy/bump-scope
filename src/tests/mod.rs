@@ -482,7 +482,7 @@ fn aligned<const UP: bool>() {
     bump.scoped(|mut bump| {
         bump.alloc(0xDEAD_BEEF_u64);
         assert_eq!(bump.stats().allocated(), 8);
-        bump.aligned::<1>(|bump| {
+        bump.aligned::<1, ()>(|bump| {
             bump.alloc(1u8);
             assert_eq!(bump.stats().allocated(), 9);
             bump.alloc(2u8);
@@ -768,7 +768,7 @@ fn realign<const UP: bool>() {
             .bump_position()
             .cast::<AlignT>()
             .is_aligned());
-        bump.aligned::<ALIGN>(|bump| {
+        bump.aligned::<ALIGN, ()>(|bump| {
             assert!(bump
                 .guaranteed_allocated_stats()
                 .current
@@ -788,7 +788,7 @@ fn realign<const UP: bool>() {
             .bump_position()
             .cast::<AlignT>()
             .is_aligned());
-        bump.scoped_aligned::<ALIGN>(|bump| {
+        bump.scoped_aligned::<ALIGN, ()>(|bump| {
             assert!(bump
                 .guaranteed_allocated_stats()
                 .current

@@ -662,14 +662,17 @@ macro_rules! bump_scope_methods {
         /// assert_eq!(bump.stats().allocated(), 0);
         /// ```
         #[inline(always)]
-        pub fn scoped(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP>)) {
+        pub fn scoped<R>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP>) -> R) -> R {
             let mut guard = self.scope_guard();
-            f(guard.scope());
+            f(guard.scope())
         }
 
         /// Calls `f` with a new child scope of a new minimum alignment.
         #[inline(always)]
-        pub fn scoped_aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP>))
+        pub fn scoped_aligned<const NEW_MIN_ALIGN: usize, R>(
+            &mut self,
+            f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP>) -> R,
+        ) -> R
         where
             MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
         {
@@ -679,9 +682,9 @@ macro_rules! bump_scope_methods {
                     let mut guard = self.scope_guard();
                     let scope = guard.scope();
                     scope.align::<NEW_MIN_ALIGN>();
-                    f(unsafe { scope.cast_align() });
+                    f(unsafe { scope.cast_align() })
                 } else {
-                    self.as_mut_scope().scoped_aligned::<NEW_MIN_ALIGN>(f)
+                    self.as_mut_scope().scoped_aligned::<NEW_MIN_ALIGN, R>(f)
                 }
             }
         }
@@ -712,7 +715,7 @@ macro_rules! bump_scope_methods {
 
         /// Calls `f` with this scope but with a new minimum alignment.
         #[inline(always)]
-        pub fn aligned<const NEW_MIN_ALIGN: usize>(&mut self, f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP>))
+        pub fn aligned<const NEW_MIN_ALIGN: usize, R>(&mut self, f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP>) -> R) -> R
         where
             MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
         {
@@ -721,10 +724,10 @@ macro_rules! bump_scope_methods {
                     if NEW_MIN_ALIGN < MIN_ALIGN {
                         // This guard will align whatever the future bump position is to `MIN_ALIGN`.
                         let guard = BumpAlignGuard::new(self);
-                        f(unsafe { guard.scope.clone_unchecked().cast_align() });
+                        f(unsafe { guard.scope.clone_unchecked().cast_align() })
                     } else {
                         self.align::<NEW_MIN_ALIGN>();
-                        f(unsafe { self.clone_unchecked().cast_align() });
+                        f(unsafe { self.clone_unchecked().cast_align() })
                     }
                 } else {
                     self.as_mut_scope().aligned(f)
