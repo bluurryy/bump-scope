@@ -11,6 +11,9 @@ use crate::{
     FixedBumpString, FromUtf8Error, GuaranteedAllocatedStats, MinimumAlignment, Stats, SupportedMinimumAlignment,
 };
 
+#[cfg(not(no_global_oom_handling))]
+use crate::Infallibly;
+
 /// This is like [`format!`] but allocates inside a `Bump` or `BumpScope`, returning a [`BumpString`].
 ///
 /// If you don't need to push to the string after creation you can also use [`Bump::alloc_fmt`](crate::Bump::alloc_fmt).
@@ -39,10 +42,10 @@ macro_rules! bump_format {
         $crate::BumpString::new_in($bump.as_scope())
     }};
     (in $bump:expr, $($arg:tt)*) => {{
-        let mut string = $crate::BumpString::new_in($bump.as_scope());
+        let mut string = $crate::private::Infallibly($crate::BumpString::new_in($bump.as_scope()));
         match $crate::private::core::fmt::Write::write_fmt(&mut string, $crate::private::core::format_args!($($arg)*)) {
-            $crate::private::core::result::Result::Ok(_) => string,
-            $crate::private::core::result::Result::Err(_) => $crate::private::capacity_overflow(),
+            $crate::private::core::result::Result::Ok(_) => string.0,
+            $crate::private::core::result::Result::Err(_) => $crate::private::format_trait_error(),
         }
     }};
     (try in $bump:expr) => {{
@@ -679,6 +682,26 @@ where
     #[inline(always)]
     fn write_char(&mut self, c: char) -> fmt::Result {
         self.try_push(c).map_err(|_| fmt::Error)
+    }
+}
+
+#[cfg(not(no_global_oom_handling))]
+impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> fmt::Write
+    for Infallibly<BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+    #[inline(always)]
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.0.push_str(s);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_char(&mut self, c: char) -> fmt::Result {
+        self.0.push(c);
+        Ok(())
     }
 }
 

@@ -1,15 +1,18 @@
 use layout::LayoutProps;
 
-use crate::{
-    capacity_overflow, handle_alloc_error, layout, AllocError, Infallible, Layout, NonNull, RawChunk,
-    SupportedMinimumAlignment,
-};
+use crate::{layout, AllocError, Layout, NonNull, RawChunk, SupportedMinimumAlignment};
+
+#[cfg(not(no_global_oom_handling))]
+use crate::{capacity_overflow, format_trait_error, handle_alloc_error, Infallible};
 
 pub(crate) trait ErrorBehavior: Sized {
+    const IS_FALLIBLE: bool;
+
     fn allocation(layout: Layout) -> Self;
     fn capacity_overflow() -> Self;
     fn fixed_size_vector_is_full() -> Self;
     fn fixed_size_vector_no_space(amount: usize) -> Self;
+    fn format_trait_error() -> Self;
 
     /// For the infallible case we want to inline `f` but not for the fallible one. (Because it produces better code)
     fn alloc_or_else<const UP: bool, A>(
@@ -20,7 +23,10 @@ pub(crate) trait ErrorBehavior: Sized {
     ) -> Result<NonNull<u8>, Self>;
 }
 
+#[cfg(not(no_global_oom_handling))]
 impl ErrorBehavior for Infallible {
+    const IS_FALLIBLE: bool = false;
+
     #[inline(always)]
     fn allocation(layout: Layout) -> Self {
         handle_alloc_error(layout)
@@ -42,6 +48,11 @@ impl ErrorBehavior for Infallible {
     }
 
     #[inline(always)]
+    fn format_trait_error() -> Self {
+        format_trait_error()
+    }
+
+    #[inline(always)]
     fn alloc_or_else<const UP: bool, A>(
         chunk: RawChunk<UP, A>,
         minimum_alignment: impl SupportedMinimumAlignment,
@@ -53,6 +64,8 @@ impl ErrorBehavior for Infallible {
 }
 
 impl ErrorBehavior for AllocError {
+    const IS_FALLIBLE: bool = true;
+
     #[inline(always)]
     fn allocation(_: Layout) -> Self {
         Self
@@ -75,6 +88,11 @@ impl ErrorBehavior for AllocError {
     }
 
     #[inline(always)]
+    fn format_trait_error() -> Self {
+        Self
+    }
+
+    #[inline(always)]
     fn alloc_or_else<const UP: bool, A>(
         chunk: RawChunk<UP, A>,
         minimum_alignment: impl SupportedMinimumAlignment,
@@ -90,12 +108,14 @@ impl ErrorBehavior for AllocError {
 
 #[cold]
 #[inline(never)]
+#[cfg(not(no_global_oom_handling))]
 fn fixed_size_vector_is_full() -> ! {
     panic!("fixed size vector is full");
 }
 
 #[cold]
 #[inline(never)]
+#[cfg(not(no_global_oom_handling))]
 fn fixed_size_vector_no_space(amount: usize) -> ! {
     panic!("fixed size vector does not have space for {amount} more elements");
 }

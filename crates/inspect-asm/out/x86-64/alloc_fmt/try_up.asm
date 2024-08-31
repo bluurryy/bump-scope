@@ -28,19 +28,17 @@ inspect_asm::alloc_fmt::try_up:
 	ret
 .LBB0_0:
 	mov rax, qword ptr [rsp]
-	mov rcx, qword ptr [rsp + 24]
-	mov rdx, qword ptr [rsp + 16]
-	add rdx, rax
-	mov rcx, qword ptr [rcx]
-	cmp rdx, qword ptr [rcx]
-	je .LBB0_1
 	mov rdx, qword ptr [rsp + 8]
+	mov rcx, qword ptr [rsp + 24]
+	mov rsi, qword ptr [rsp + 16]
+	add rsi, rax
+	mov rcx, qword ptr [rcx]
+	cmp rsi, qword ptr [rcx]
+	je .LBB0_1
 	add rsp, 120
 	ret
 .LBB0_1:
-	add rax, qword ptr [rsp + 8]
-	mov qword ptr [rcx], rax
-	mov rax, qword ptr [rsp]
-	mov rdx, qword ptr [rsp + 8]
+	lea rsi, [rdx + rax]
+	mov qword ptr [rcx], rsi
 	add rsp, 120
 	ret

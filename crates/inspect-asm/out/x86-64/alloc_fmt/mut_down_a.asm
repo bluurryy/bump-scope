@@ -54,4 +54,4 @@ inspect_asm::alloc_fmt::mut_down_a:
 	pop r15
 	ret
 .LBB0_2:
-	call qword ptr [rip + bump_scope::private::capacity_overflow@GOTPCREL]
+	call qword ptr [rip + bump_scope::private::format_trait_error@GOTPCREL]

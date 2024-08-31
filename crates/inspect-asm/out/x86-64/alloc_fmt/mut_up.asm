@@ -34,9 +34,9 @@ inspect_asm::alloc_fmt::mut_up:
 	add rsp, 120
 	ret
 .LBB0_0:
-	mov eax, 1
 	xor edx, edx
+	mov eax, 1
 	add rsp, 120
 	ret
 .LBB0_1:
-	call qword ptr [rip + bump_scope::private::capacity_overflow@GOTPCREL]
+	call qword ptr [rip + bump_scope::private::format_trait_error@GOTPCREL]

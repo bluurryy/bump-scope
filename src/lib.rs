@@ -256,13 +256,15 @@
 extern crate alloc;
 
 use core::{
-    convert::Infallible,
     fmt::{self, Debug},
     marker::PhantomData,
     mem::{self, MaybeUninit},
     num::NonZeroUsize,
     ptr::NonNull,
 };
+
+#[cfg(not(no_global_oom_handling))]
+use core::convert::Infallible;
 
 mod allocator;
 #[cfg(test)]
@@ -312,7 +314,7 @@ mod layout;
 
 use allocator_api2::alloc::{AllocError, Allocator};
 
-#[cfg(feature = "alloc")]
+#[cfg(all(feature = "alloc", not(no_global_oom_handling)))]
 use allocator_api2::alloc::handle_alloc_error;
 
 pub use allocator_api2;
@@ -347,6 +349,8 @@ use core::alloc::Layout;
 use error_behavior::ErrorBehavior;
 use layout::{ArrayLayout, CustomLayout};
 use polyfill::{nonnull, pointer};
+#[cfg(not(no_global_oom_handling))]
+use private::{capacity_overflow, format_trait_error, Infallibly};
 use set_len_on_drop::SetLenOnDrop;
 use set_len_on_drop_by_ptr::SetLenOnDropByPtr;
 
@@ -474,18 +478,30 @@ mod chunk_header;
 mod tests;
 
 /// This is not part of the public api!
+///
+/// Any changes to this module are semver-exempt!
 #[doc(hidden)]
 pub mod private {
     pub use core;
 
-    #[inline(never)]
+    #[cfg(not(no_global_oom_handling))]
+    /// Wrapper type, used for ad hoc overwriting of trait implementations, like for `Write` in `alloc_fmt`.
+    pub struct Infallibly<T>(pub T);
+
     #[cold]
+    #[inline(never)]
+    #[cfg(not(no_global_oom_handling))]
     pub const fn capacity_overflow() -> ! {
         panic!("capacity overflow");
     }
-}
 
-use private::capacity_overflow;
+    #[cold]
+    #[inline(never)]
+    #[cfg(not(no_global_oom_handling))]
+    pub const fn format_trait_error() -> ! {
+        panic!("formatting trait implementation returned an error");
+    }
+}
 
 #[cold]
 #[inline(never)]
@@ -1392,9 +1408,34 @@ define_alloc_methods! {
 
         let mut string = BumpString::new_in(self);
 
-        if fmt::Write::write_fmt(&mut string, args).is_err() {
-            return Err(B::capacity_overflow());
-        }
+        let mut string = if B::IS_FALLIBLE {
+            if fmt::Write::write_fmt(&mut string, args).is_err() {
+                // Either the allocation failed or the formatting trait
+                // implementation returned an error.
+                // Either way we return an `AllocError`, it doesn't matter how.
+                return Err(B::format_trait_error());
+            }
+
+            string
+        } else {
+            #[cfg(not(no_global_oom_handling))]
+            {
+                let mut string = Infallibly(string);
+
+                if fmt::Write::write_fmt(&mut string, args).is_err() {
+                    // This can only be a formatting trait error.
+                    // If allocation failed we'd have already panicked.
+                    return Err(B::format_trait_error());
+                }
+
+                string.0
+            }
+
+            #[cfg(no_global_oom_handling)]
+            {
+                unreachable!()
+            }
+        };
 
         string.shrink_to_fit();
 
@@ -1429,9 +1470,34 @@ define_alloc_methods! {
 
         let mut string = MutBumpString::generic_with_capacity_in(0, self)?;
 
-        if fmt::Write::write_fmt(&mut string, args).is_err() {
-            return Err(B::capacity_overflow());
-        }
+        let string = if B::IS_FALLIBLE {
+            if fmt::Write::write_fmt(&mut string, args).is_err() {
+                // Either the allocation failed or the formatting trait
+                // implementation returned an error.
+                // Either way we return an `AllocError`, it doesn't matter how.
+                return Err(B::format_trait_error());
+            }
+
+            string
+        } else {
+            #[cfg(not(no_global_oom_handling))]
+            {
+                let mut string = Infallibly(string);
+
+                if fmt::Write::write_fmt(&mut string, args).is_err() {
+                    // This can only be a formatting trait error.
+                    // If allocation failed we'd have already panicked.
+                    return Err(B::format_trait_error());
+                }
+
+                string.0
+            }
+
+            #[cfg(no_global_oom_handling)]
+            {
+                unreachable!()
+            }
+        };
 
         Ok(string.into_boxed_str())
     }

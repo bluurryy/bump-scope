@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **fixed:** panic message on formatting failure to mention that, instead of a wrong "capacity overflow"
+
 ## 0.7.0 (2024-08-31)
 - **breaking:** allow returning values from closure arguments of `scoped`, `aligned` and `scoped_aligned`
 

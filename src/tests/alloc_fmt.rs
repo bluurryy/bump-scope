@@ -1,7 +1,11 @@
-use core::fmt::Display;
+use core::{
+    alloc::Layout,
+    fmt::{Debug, Display},
+};
+use std::ptr::NonNull;
 
-use crate::Bump;
-use allocator_api2::alloc::Global;
+use crate::{bump_format, mut_bump_format, Bump};
+use allocator_api2::alloc::{AllocError, Allocator, Global};
 
 use super::either_way;
 
@@ -54,10 +58,50 @@ fn three_mut<const UP: bool>() {
     assert_eq!(bump.stats().allocated(), 3);
 }
 
+struct ErrorsOnFmt;
+
+impl Display for ErrorsOnFmt {
+    fn fmt(&self, _: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        Err(core::fmt::Error)
+    }
+}
+
+fn trait_panic<const UP: bool>() {
+    let bump: Bump<Global, 1, UP> = Bump::new();
+    bump.alloc_fmt(format_args!("{ErrorsOnFmt}"));
+}
+
+fn trait_panic_mut<const UP: bool>() {
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    bump.alloc_fmt_mut(format_args!("{ErrorsOnFmt}"));
+}
+
+fn format_trait_panic<const UP: bool>() {
+    let bump: Bump<Global, 1, UP> = Bump::new();
+    bump_format!(in bump, "{ErrorsOnFmt}");
+}
+
+fn format_trait_panic_mut<const UP: bool>() {
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    mut_bump_format!(in bump, "{ErrorsOnFmt}");
+}
+
 either_way! {
     nothing
     nothing_extra
     nothing_extra_mut
     three
     three_mut
+
+    #[should_panic = "formatting trait implementation returned an error"]
+    trait_panic
+
+    #[should_panic = "formatting trait implementation returned an error"]
+    trait_panic_mut
+
+    #[should_panic = "formatting trait implementation returned an error"]
+    format_trait_panic
+
+    #[should_panic = "formatting trait implementation returned an error"]
+    format_trait_panic_mut
 }

@@ -1,56 +1,52 @@
 inspect_asm::alloc_fmt::try_down_a:
+	push r15
 	push r14
 	push rbx
-	sub rsp, 120
-	mov qword ptr [rsp + 40], rsi
-	mov qword ptr [rsp + 48], rdx
-	lea rax, [rsp + 40]
-	mov qword ptr [rsp + 56], rax
+	sub rsp, 112
+	mov qword ptr [rsp + 32], rsi
+	mov qword ptr [rsp + 40], rdx
+	lea rax, [rsp + 32]
+	mov qword ptr [rsp + 48], rax
 	lea rax, [rip + <&T as core::fmt::Display>::fmt]
-	mov qword ptr [rsp + 64], rax
+	mov qword ptr [rsp + 56], rax
 	lea rax, [rip + .L__unnamed_0]
-	mov qword ptr [rsp + 72], rax
-	mov qword ptr [rsp + 80], 2
-	mov qword ptr [rsp + 104], 0
-	lea rax, [rsp + 56]
-	mov qword ptr [rsp + 88], rax
-	mov qword ptr [rsp + 96], 1
+	mov qword ptr [rsp + 64], rax
+	mov qword ptr [rsp + 72], 2
+	mov qword ptr [rsp + 96], 0
+	lea rax, [rsp + 48]
+	mov qword ptr [rsp + 80], rax
+	mov qword ptr [rsp + 88], 1
 	movups xmm0, xmmword ptr [rip + .L__unnamed_1]
 	movaps xmmword ptr [rsp], xmm0
 	mov qword ptr [rsp + 16], 0
 	mov qword ptr [rsp + 24], rdi
 	lea rsi, [rip + .L__unnamed_2]
 	mov rdi, rsp
-	lea rdx, [rsp + 72]
+	lea rdx, [rsp + 64]
 	call qword ptr [rip + core::fmt::write@GOTPCREL]
 	test al, al
 	je .LBB0_0
 	xor eax, eax
-	add rsp, 120
-	pop rbx
-	pop r14
-	ret
+	jmp .LBB0_4
 .LBB0_0:
 	mov rsi, qword ptr [rsp]
-	mov rdx, qword ptr [rsp + 8]
-	mov rbx, qword ptr [rsp + 24]
-	mov rax, qword ptr [rbx]
+	mov rbx, qword ptr [rsp + 8]
+	mov r14, qword ptr [rsp + 24]
+	mov rax, qword ptr [r14]
 	cmp rsi, qword ptr [rax]
 	je .LBB0_1
 	mov rax, rsi
-	add rsp, 120
-	pop rbx
-	pop r14
-	ret
+	jmp .LBB0_4
 .LBB0_1:
 	mov rax, qword ptr [rsp + 16]
 	add rax, rsi
 	xor edi, edi
-	sub rax, rdx
+	sub rax, rbx
 	cmovae rdi, rax
 	and rdi, -4
-	lea rax, [rdx + rsi]
-	mov r14, rdi
+	lea rax, [rbx + rsi]
+	mov r15, rdi
+	mov rdx, rbx
 	cmp rax, rdi
 	jbe .LBB0_2
 	call qword ptr [rip + memmove@GOTPCREL]
@@ -58,11 +54,13 @@ inspect_asm::alloc_fmt::try_down_a:
 .LBB0_2:
 	call qword ptr [rip + memcpy@GOTPCREL]
 .LBB0_3:
-	mov rcx, qword ptr [rbx]
-	mov rax, r14
-	mov qword ptr [rcx], r14
-	mov rdx, qword ptr [rsp + 8]
-	add rsp, 120
+	mov rcx, qword ptr [r14]
+	mov rax, r15
+	mov qword ptr [rcx], r15
+.LBB0_4:
+	mov rdx, rbx
+	add rsp, 112
 	pop rbx
 	pop r14
+	pop r15
 	ret
