@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 (2024-08-31)
 - **breaking:** allow returning values from closure arguments of `scoped`, `aligned` and `scoped_aligned`
 
 ## 0.6.0 (2024-08-25)
