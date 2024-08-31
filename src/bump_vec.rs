@@ -19,9 +19,7 @@ use crate::{
     SupportedMinimumAlignment,
 };
 
-/// Creates a [`BumpVec`] containing the arguments.
-///
-/// `bump_vec!` allows `BumpVec`s to be defined with the same syntax as array expressions. `try` makes the allocations fallible.
+/// This is like [`vec!`] but allocates inside a `Bump` or `BumpScope`, returning a [`BumpVec`].
 ///
 /// `$bump` can be a [`Bump`](crate::Bump) or [`BumpScope`] (anything where `$bump.as_scope()` returns a `&BumpScope`).
 ///

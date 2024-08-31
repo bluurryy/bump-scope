@@ -17,9 +17,7 @@ use crate::{
     MinimumAlignment, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment,
 };
 
-/// Creates a [`MutBumpVec`] containing the arguments.
-///
-/// `mut_bump_vec!` allows `MutBumpVec`s to be defined with the same syntax as array expressions. `try` makes the allocations fallible.
+/// This is like [`vec!`] but allocates inside a `Bump` or `BumpScope`, returning a [`MutBumpVec`].
 ///
 /// `$bump` can be a mutable [`Bump`](crate::Bump) or [`BumpScope`] (anything where `$bump.as_mut_scope()` returns a `&mut BumpScope`).
 ///
