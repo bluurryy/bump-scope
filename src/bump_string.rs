@@ -617,7 +617,7 @@ where
         unsafe { self.vec.into_boxed_slice().into_boxed_str_unchecked() }
     }
 
-    /// Converts this `BumpBox<str>` into `&str` that is live for the entire bump scope.
+    /// Converts this `BumpString` into `&str` that is live for the entire bump scope.
     ///
     /// You may want to call [`shrink_to_fit`](Self::shrink_to_fit) before this, so the unused capacity does not take up space.
     #[must_use]
