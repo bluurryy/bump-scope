@@ -17,8 +17,6 @@ inspect_asm::alloc_try_u32::down:
 	jb .LBB0_5
 	mov qword ptr [r15], r13
 .LBB0_0:
-	mov rax, qword ptr [r14]
-	mov rbp, qword ptr [rax]
 	call rdx
 	mov dword ptr [r13], eax
 	mov dword ptr [r13 + 4], edx
@@ -26,7 +24,7 @@ inspect_asm::alloc_try_u32::down:
 	mov rsi, qword ptr [rcx]
 	test eax, eax
 	je .LBB0_2
-	cmp rbp, rsi
+	cmp r13, rsi
 	jne .LBB0_1
 	mov rdi, r15
 	mov rsi, r12
@@ -39,12 +37,12 @@ inspect_asm::alloc_try_u32::down:
 	mov eax, 1
 	jmp .LBB0_4
 .LBB0_2:
-	add r13, 4
-	cmp rbp, rsi
+	lea rax, [r13 + 4]
+	cmp r13, rsi
 	jne .LBB0_3
-	mov qword ptr [rcx], r13
+	mov qword ptr [rcx], rax
 .LBB0_3:
-	mov qword ptr [rbx + 8], r13
+	mov qword ptr [rbx + 8], rax
 	xor eax, eax
 .LBB0_4:
 	mov dword ptr [rbx], eax

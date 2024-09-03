@@ -1855,12 +1855,13 @@ define_alloc_methods! {
             }
         }
 
-        let checkpoint = self.checkpoint();
+        let checkpoint_before_alloc = self.checkpoint();
         let uninit = self.generic_alloc_uninit::<B, Result<T, E>>()?;
-
-        // TODO: use uninit's ptr for DOWN
-        let pos = self.chunk.get().pos();
         let ptr = BumpBox::into_raw(uninit).cast::<Result<T, E>>();
+
+        // When bumping downwards the chunk's position is the same as `ptr`.
+        // Using `ptr` is faster so we use that.
+        let pos = if UP { self.chunk.get().pos() } else { ptr.cast() };
 
         Ok(unsafe {
             nonnull::write_with(ptr, f);
@@ -1888,7 +1889,7 @@ define_alloc_methods! {
                     let error = error.as_ptr().read();
 
                     if can_shrink {
-                        self.reset_to(checkpoint);
+                        self.reset_to(checkpoint_before_alloc);
                     }
 
                     error

@@ -24,9 +24,6 @@ inspect_asm::alloc_try_big_ok::try_down:
 	je .LBB0_6
 .LBB0_0:
 	mov qword ptr [rsp + 504], r12
-	mov rax, qword ptr [r14]
-	mov rax, qword ptr [rax]
-	mov qword ptr [rsp + 496], rax
 	lea r12, [rsp + 512]
 	mov rdi, r12
 	call rdx
@@ -37,32 +34,33 @@ inspect_asm::alloc_try_big_ok::try_down:
 	mov rax, qword ptr [r14]
 	mov rcx, qword ptr [rax]
 	movzx esi, byte ptr [r13]
-	lea rdx, [r13 + 4]
-	add r13, 512
+	lea r12, [r13 + 4]
+	lea rdx, [r13 + 512]
 	test sil, sil
-	mov r12, r13
-	cmovne r12, rdx
+	cmove r12, rdx
 	test sil, 1
 	je .LBB0_2
-	mov r13d, dword ptr [rdx]
-	cmp qword ptr [rsp + 496], rcx
+	mov edx, dword ptr [r13 + 4]
+	cmp r13, rcx
 	jne .LBB0_1
 	mov rdi, r15
 	mov rsi, qword ptr [rsp + 504]
+	mov r13d, edx
 	call qword ptr [rip + bump_scope::bump_scope_guard::Checkpoint::reset_within_chunk@GOTPCREL]
+	mov edx, r13d
 	mov qword ptr [r14], r15
 .LBB0_1:
 	mov eax, 1
 	jmp .LBB0_4
 .LBB0_2:
-	cmp qword ptr [rsp + 496], rcx
+	cmp r13, rcx
 	jne .LBB0_3
-	mov qword ptr [rax], r13
+	mov qword ptr [rax], rdx
 .LBB0_3:
 	xor eax, eax
 .LBB0_4:
 	mov dword ptr [rbx], eax
-	mov dword ptr [rbx + 4], r13d
+	mov dword ptr [rbx + 4], edx
 	mov qword ptr [rbx + 8], r12
 .LBB0_5:
 	mov rax, rbx
