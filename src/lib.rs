@@ -2087,21 +2087,20 @@ pub(crate) use maybe_default_allocator;
 /// We don't use `document-features` the usual way because then we can't have our features
 /// be copied into the `README.md` via [`cargo-rdme`](https://github.com/orium/cargo-rdme).
 #[test]
-#[ignore = "this is not a real test, its just to insert documentation"]
+#[ignore = "this is not a real test, it's just to insert documentation"]
 fn insert_feature_docs() {
     let lib_rs = std::fs::read_to_string("src/lib.rs").unwrap();
 
     let start_marker = "//! # Feature Flags";
     let end_marker = "//! # ";
 
-    let start_index = lib_rs.find(start_marker).unwrap();
-    let end_index = lib_rs[start_index + start_marker.len()..].find(end_marker).unwrap() + start_index + start_marker.len();
+    let start_index = lib_rs.find(start_marker).unwrap() + start_marker.len();
+    let end_index = lib_rs[start_index..].find(end_marker).unwrap() + start_index;
 
-    let before = &lib_rs[..start_index + start_marker.len()];
+    let before = &lib_rs[..start_index];
     let after = &lib_rs[end_index..];
 
-    let features = document_features::document_features!();
-    let features = features
+    let features = document_features::document_features!()
         .lines()
         .map(|line| format!("//! {line}"))
         .collect::<Vec<_>>()
