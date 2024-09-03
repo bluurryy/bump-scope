@@ -147,7 +147,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// If there is not enough space, `f` will be called and its result returned.
     ///
     /// We use a callback for the fallback case for performance reasons.
-    /// If we were to just expose an api like `alloc` and matched over the `Option`, the compiler would
+    /// If we were to just expose an api like [`alloc`](Self::alloc) and matched over the `Option`, the compiler would
     /// introduce an unnecessary conditional jump in the infallible code path.
     ///
     /// `rustc` used to be able to optimize this away (see issue #25)
@@ -188,6 +188,60 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                         self.set_pos(ptr);
                         Ok(ptr)
                     }
+                    None => f(),
+                }
+            }
+        }
+    }
+
+    /// Attempts to reserve a block of memory.
+    ///
+    /// On success, returns a [`NonNull<u8>`] meeting the size and alignment guarantees of `layout`.
+    ///
+    /// This is like [`alloc`](Self::alloc_or_else), except that it won't change the bump pointer.
+    #[inline(always)]
+    pub(crate) fn reserve<M, L>(self, minimum_alignment: M, layout: L) -> Option<NonNull<u8>>
+    where
+        M: SupportedMinimumAlignment,
+        L: LayoutProps,
+    {
+        self.reserve_or_else(minimum_alignment, layout, || Err(())).ok()
+    }
+
+    /// Attempts to reserve a block of memory.
+    /// If there is not enough space, `f` will be called and its result returned.
+    ///
+    /// This is like [`alloc_or_else`](Self::alloc_or_else), except that it won't change the bump pointer.
+    #[inline(always)]
+    pub(crate) fn reserve_or_else<M, L, E, F>(self, _: M, layout: L, f: F) -> Result<NonNull<u8>, E>
+    where
+        M: SupportedMinimumAlignment,
+        L: LayoutProps,
+        F: FnOnce() -> Result<NonNull<u8>, E>,
+    {
+        debug_assert!(nonnull::is_aligned_to(self.pos(), M::MIN_ALIGN));
+
+        let remaining = self.remaining_range();
+
+        let props = BumpProps {
+            start: nonnull::addr(remaining.start).get(),
+            end: nonnull::addr(remaining.end).get(),
+            layout: *layout,
+            min_align: M::MIN_ALIGN,
+            align_is_const: L::ALIGN_IS_CONST,
+            size_is_const: L::SIZE_IS_CONST,
+            size_is_multiple_of_align: L::SIZE_IS_MULTIPLE_OF_ALIGN,
+        };
+
+        unsafe {
+            if UP {
+                match bump_up(props) {
+                    Some(BumpUp { ptr, .. }) => Ok(self.with_addr(ptr.get())),
+                    None => f(),
+                }
+            } else {
+                match bump_down(props) {
+                    Some(ptr) => Ok(self.with_addr(ptr.get())),
                     None => f(),
                 }
             }

@@ -21,6 +21,14 @@ pub(crate) trait ErrorBehavior: Sized {
         layout: impl LayoutProps,
         f: impl FnOnce() -> Result<NonNull<u8>, Self>,
     ) -> Result<NonNull<u8>, Self>;
+
+    /// For the infallible case we want to inline `f` but not for the fallible one. (Because it produces better code)
+    fn reserve_or_else<const UP: bool, A>(
+        chunk: RawChunk<UP, A>,
+        minimum_alignment: impl SupportedMinimumAlignment,
+        layout: impl LayoutProps,
+        f: impl FnOnce() -> Result<NonNull<u8>, Self>,
+    ) -> Result<NonNull<u8>, Self>;
 }
 
 #[cfg(not(no_global_oom_handling))]
@@ -61,6 +69,16 @@ impl ErrorBehavior for Infallible {
     ) -> Result<NonNull<u8>, Self> {
         chunk.alloc_or_else(minimum_alignment, layout, f)
     }
+
+    #[inline(always)]
+    fn reserve_or_else<const UP: bool, A>(
+        chunk: RawChunk<UP, A>,
+        minimum_alignment: impl SupportedMinimumAlignment,
+        layout: impl LayoutProps,
+        f: impl FnOnce() -> Result<NonNull<u8>, Self>,
+    ) -> Result<NonNull<u8>, Self> {
+        chunk.reserve_or_else(minimum_alignment, layout, f)
+    }
 }
 
 impl ErrorBehavior for AllocError {
@@ -100,6 +118,19 @@ impl ErrorBehavior for AllocError {
         f: impl FnOnce() -> Result<NonNull<u8>, Self>,
     ) -> Result<NonNull<u8>, Self> {
         match chunk.alloc(minimum_alignment, layout) {
+            Some(ptr) => Ok(ptr),
+            None => f(),
+        }
+    }
+
+    #[inline(always)]
+    fn reserve_or_else<const UP: bool, A>(
+        chunk: RawChunk<UP, A>,
+        minimum_alignment: impl SupportedMinimumAlignment,
+        layout: impl LayoutProps,
+        f: impl FnOnce() -> Result<NonNull<u8>, Self>,
+    ) -> Result<NonNull<u8>, Self> {
+        match chunk.reserve(minimum_alignment, layout) {
             Some(ptr) => Ok(ptr),
             None => f(),
         }

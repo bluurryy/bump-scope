@@ -11,11 +11,8 @@ inspect_asm::alloc_try_u32::down:
 	mov r13, r12
 	and r13, -4
 	add r13, -8
-	setne al
 	cmp r13, qword ptr [r15 + 8]
-	setae cl
-	test cl, al
-	jne .LBB0_2
+	jae .LBB0_2
 	mov rdi, r15
 .LBB0_0:
 	mov rax, qword ptr [rdi + 24]

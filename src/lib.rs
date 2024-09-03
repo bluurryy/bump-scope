@@ -1275,7 +1275,7 @@ define_alloc_methods! {
         let before_chunk = self.chunk.get();
         let before_chunk_pos = nonnull::addr(before_chunk.pos()).get();
 
-        let ptr = self.do_alloc_no_bump_for::<B, Result<T, E>>()?;
+        let ptr = self.do_reserve_sized::<B, Result<T, E>>()?;
 
         Ok(unsafe {
             pointer::write_with(ptr.as_ptr(), f);

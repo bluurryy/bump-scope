@@ -20,18 +20,15 @@ inspect_asm::alloc_try_big_ok::up:
 	mov rax, -1
 	cmovb rcx, rax
 	cmp rcx, qword ptr [r13 + 8]
-	ja .LBB0_0
-	add r15, 512
-	jne .LBB0_6
-.LBB0_0:
+	jbe .LBB0_2
 	mov rdi, r13
-	jmp .LBB0_2
-.LBB0_1:
+	jmp .LBB0_1
+.LBB0_0:
 	add r15, 512
 	mov rdi, rcx
 	test r15, r15
 	jne .LBB0_6
-.LBB0_2:
+.LBB0_1:
 	mov rcx, qword ptr [rdi + 24]
 	test rcx, rcx
 	je .LBB0_3
@@ -45,11 +42,14 @@ inspect_asm::alloc_try_big_ok::up:
 	add rsi, 1536
 	cmovb rsi, rax
 	cmp rsi, qword ptr [rcx + 8]
-	jbe .LBB0_1
+	jbe .LBB0_0
 	xor r15d, r15d
 	mov rdi, rcx
 	test r15, r15
-	je .LBB0_2
+	je .LBB0_1
+	jmp .LBB0_6
+.LBB0_2:
+	add r15, 512
 	jmp .LBB0_6
 .LBB0_3:
 	mov r12, rdx

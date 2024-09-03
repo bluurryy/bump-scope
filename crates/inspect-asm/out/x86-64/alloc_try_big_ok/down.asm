@@ -9,19 +9,16 @@ inspect_asm::alloc_try_big_ok::down:
 	and rsp, -512
 	sub rsp, 2048
 	mov r14, rsi
-	mov rbx, rdi
 	mov r13, qword ptr [rsi]
 	mov rax, qword ptr [r13]
 	xor r15d, r15d
 	mov qword ptr [rsp + 504], rax
 	sub rax, 1024
 	cmovae r15, rax
+	mov rbx, rdi
 	and r15, -512
-	setne al
 	cmp r15, qword ptr [r13 + 8]
-	setae cl
-	test cl, al
-	jne .LBB0_2
+	jae .LBB0_2
 	xor eax, eax
 	mov rdi, r13
 .LBB0_0:

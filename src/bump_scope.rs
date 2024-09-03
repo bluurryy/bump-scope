@@ -268,6 +268,21 @@ where
         .map(NonNull::cast)
     }
 
+    #[inline(always)]
+    pub(crate) fn do_reserve_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
+        E::reserve_or_else(
+            self.chunk.get(),
+            MinimumAlignment::<MIN_ALIGN>,
+            SizedLayout::new::<T>(),
+            || unsafe {
+                self.do_custom_alloc_in_another_chunk(CustomLayout::new::<T>(), |chunk, _| {
+                    chunk.alloc_no_bump_for::<MIN_ALIGN, T>()
+                })
+            },
+        )
+        .map(NonNull::cast)
+    }
+
     #[cold]
     #[inline(never)]
     pub(crate) fn do_alloc_sized_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E>
@@ -336,22 +351,6 @@ where
         }
 
         self.align::<NEW_MIN_ALIGN>();
-    }
-
-    pub(crate) fn do_alloc_no_bump_for<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
-        let result = match self.chunk.get().alloc_no_bump_for::<MIN_ALIGN, T>() {
-            Some(ptr) => Ok(ptr),
-            None => unsafe {
-                self.do_custom_alloc_in_another_chunk(CustomLayout::new::<T>(), |chunk, _| {
-                    chunk.alloc_no_bump_for::<MIN_ALIGN, T>()
-                })
-            },
-        };
-
-        match result {
-            Ok(ptr) => Ok(ptr.cast()),
-            Err(error) => Err(error),
-        }
     }
 
     /// # Safety
