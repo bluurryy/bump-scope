@@ -306,8 +306,8 @@ impl FuzzBumpGreedyProps {
             layout,
             min_align,
             align_is_const,
-            size_is_const: false,
-            size_is_multiple_of_align: layout.size() % layout.align() == 0,
+            size_is_const: false,             // unused
+            size_is_multiple_of_align: false, // unused
         }
     }
 }
