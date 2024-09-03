@@ -6,7 +6,7 @@ use crate::{
     layout::LayoutProps,
     polyfill::{const_unwrap, nonnull, pointer},
     unallocated_chunk_header, up_align_nonzero, up_align_nonzero_unchecked, up_align_usize_unchecked, ChunkHeader,
-    ChunkSize, ErrorBehavior, MinimumAlignment, SizedTypeProperties, SupportedMinimumAlignment, CHUNK_ALIGN_MIN,
+    ChunkSize, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment, CHUNK_ALIGN_MIN,
 };
 
 use allocator_api2::alloc::{AllocError, Allocator};
@@ -245,89 +245,6 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                     None => f(),
                 }
             }
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn alloc_no_bump_for<const MIN_ALIGN: usize, T>(self) -> Option<NonNull<u8>>
-    where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    {
-        // for comments see `alloc`
-
-        let remaining = self.remaining_range();
-
-        if UP {
-            let mut start = nonnull::addr(remaining.start).get();
-            let end = nonnull::addr(remaining.end).get();
-
-            debug_assert!(start <= end);
-            debug_assert!(end % CHUNK_ALIGN_MIN == 0);
-
-            if T::ALIGN <= CHUNK_ALIGN_MIN {
-                if T::ALIGN > MIN_ALIGN {
-                    start = up_align_usize_unchecked(start, T::ALIGN);
-                }
-
-                let remaining = end - start;
-
-                if T::SIZE > remaining {
-                    return None;
-                }
-            } else {
-                let aligned_down = (start - 1) & !(T::ALIGN - 1);
-                let new_pos = aligned_down.saturating_add(T::ALIGN + T::SIZE);
-
-                if new_pos > end {
-                    return None;
-                }
-
-                start = aligned_down + T::ALIGN;
-            };
-
-            debug_assert!(is_aligned(start, T::ALIGN));
-
-            unsafe { Some(self.with_addr(start)) }
-        } else {
-            let start = nonnull::addr(remaining.start).get();
-            let mut end = nonnull::addr(remaining.end).get();
-
-            debug_assert!(start <= end);
-
-            if T::SIZE <= CHUNK_ALIGN_MIN {
-                end -= T::SIZE;
-
-                if T::ALIGN != MIN_ALIGN {
-                    end = down_align_usize(end, T::ALIGN);
-                }
-
-                if end < start {
-                    return None;
-                }
-            } else if T::ALIGN <= CHUNK_ALIGN_MIN {
-                let remaining = end - start;
-
-                if T::SIZE > remaining {
-                    return None;
-                }
-
-                end -= T::SIZE;
-
-                if T::ALIGN != MIN_ALIGN {
-                    end = down_align_usize(end, T::ALIGN);
-                }
-            } else {
-                end = end.saturating_sub(T::SIZE);
-                end = down_align_usize(end, T::ALIGN);
-
-                if end < start {
-                    return None;
-                }
-            };
-
-            debug_assert!(is_aligned(end, T::SIZE));
-
-            unsafe { Some(self.with_addr(end)) }
         }
     }
 

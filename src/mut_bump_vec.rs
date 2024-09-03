@@ -1367,7 +1367,7 @@ where
         let ptr = self.as_mut_ptr();
 
         // SAFETY:
-        // - `ptr` is [guaranteed allocated]o be valid for `self.len` elements
+        // - `ptr` is guaranteed to be valid for `self.len` elements
         // - but the allocation extends out to `self.buf.capacity()` elements, possibly
         // uninitialized
         let spare_ptr = unsafe { ptr.add(self.len()) };
@@ -1375,7 +1375,7 @@ where
         let spare_len = self.capacity() - self.len();
 
         // SAFETY:
-        // - `ptr` is [guaranteed allocated]o be valid for `self.len` elements
+        // - `ptr` is guaranteed to be valid for `self.len` elements
         // - `spare_ptr` is pointing one element past the buffer, so it doesn't overlap with `initialized`
         unsafe {
             let initialized = slice::from_raw_parts_mut(ptr, self.len());

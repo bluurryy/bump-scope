@@ -25,6 +25,7 @@
         slice_partition_dedup,
         iter_partition_in_place,
         strict_provenance,
+        offset_of_enum,
     )
 )]
 #![cfg_attr(test, allow(stable_features))]
@@ -779,7 +780,7 @@ macro_rules! bump_scope_methods {
         /// - the bump allocator must not have been [`reset`](crate::Bump::reset) since creation of this checkpoint
         /// - there must be no references to allocations made since creation of this checkpoint
         #[inline]
-        pub unsafe fn reset_to(&mut self, checkpoint: Checkpoint) {
+        pub unsafe fn reset_to(&self, checkpoint: Checkpoint) {
             $crate::condition! {
                 if $is_scope {
                     debug_assert!(self.stats().big_to_small().any(|c| {
@@ -791,7 +792,7 @@ macro_rules! bump_scope_methods {
                     let chunk = RawChunk::from_header(checkpoint.chunk.cast());
                     self.chunk.set(chunk);
                 } else {
-                    self.as_mut_scope().reset_to(checkpoint)
+                    self.as_scope().reset_to(checkpoint)
                 }
             }
         }
@@ -1013,12 +1014,6 @@ macro_rules! map {
 }
 
 pub(crate) use map;
-
-macro_rules! doc_alloc_methods {
-    () => {
-        "Functions to allocate. Available as fallible or infallible."
-    };
-}
 
 macro_rules! last {
     ($self:ident) => {
@@ -1255,52 +1250,6 @@ define_alloc_methods! {
     for pub fn try_alloc_default
     fn generic_alloc_default<{T: Default}>(&self) -> BumpBox<T> | BumpBox<'a, T> {
         self.generic_alloc_with(Default::default)
-    }
-
-    #[allow(clippy::missing_errors_doc)]
-    /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
-    ///
-    /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
-    impl
-    for pub fn alloc_try_with
-    for pub fn try_alloc_try_with
-    fn generic_alloc_try_with<{T, E}>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> | Result<BumpBox<'a, T>, E> {
-        if T::IS_ZST {
-            return match f() {
-                Ok(value) => Ok(Ok(BumpBox::zst(value))),
-                Err(error) => Ok(Err(error)),
-            }
-        }
-
-        let before_chunk = self.chunk.get();
-        let before_chunk_pos = nonnull::addr(before_chunk.pos()).get();
-
-        let ptr = self.do_reserve_sized::<B, Result<T, E>>()?;
-
-        Ok(unsafe {
-            pointer::write_with(ptr.as_ptr(), f);
-
-            match nonnull::result(ptr) {
-                Ok(value) => Ok({
-                    let new_pos = if UP {
-                        let pos = nonnull::addr(nonnull::add(value, 1)).get();
-                        up_align_usize_unchecked(pos, MIN_ALIGN)
-                    } else {
-                        let pos = nonnull::addr(value).get();
-                        down_align_usize(pos, MIN_ALIGN)
-                    };
-
-                    self.chunk.get().set_pos_addr(new_pos);
-                    BumpBox::from_raw(value)
-                }),
-                Err(error) => Err({
-                    let error = error.as_ptr().read();
-                    before_chunk.reset_to(before_chunk_pos);
-                    self.chunk.set(before_chunk);
-                    error
-                }),
-            }
-        })
     }
 
     /// Allocate a slice and `Copy` elements from an existing slice.
@@ -1849,7 +1798,121 @@ define_alloc_methods! {
     }
 }
 
-#[doc = doc_alloc_methods!()]
+define_alloc_methods! {
+    macro alloc_try_with_methods
+
+    #[allow(clippy::missing_errors_doc)]
+    /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
+    ///
+    /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
+    impl
+    ///
+    /// There is also [`alloc_try_with_mut`](Self::alloc_try_with_mut), optimized for a mutable reference.
+    for pub fn alloc_try_with
+    ///
+    /// There is also [`try_alloc_try_with_mut`](Self::try_alloc_try_with_mut), optimized for a mutable reference.
+    for pub fn try_alloc_try_with
+    fn generic_alloc_try_with<{T, E}>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> | Result<BumpBox<'a, T>, E> {
+        if T::IS_ZST {
+            return match f() {
+                Ok(value) => Ok(Ok(BumpBox::zst(value))),
+                Err(error) => Ok(Err(error)),
+            }
+        }
+
+        let checkpoint = self.checkpoint();
+        let uninit = self.generic_alloc_uninit::<B, Result<T, E>>()?;
+
+        // TODO: use uninit's ptr for DOWN
+        let pos = self.chunk.get().pos();
+        let ptr = BumpBox::into_raw(uninit).cast::<Result<T, E>>();
+
+        Ok(unsafe {
+            nonnull::write_with(ptr, f);
+
+            // If `f` made allocations on this bump allocator we can't shrink the allocation.
+            let can_shrink = pos == self.chunk.get().pos();
+
+            match nonnull::result(ptr) {
+                Ok(value) => Ok({
+                    if can_shrink {
+                        let new_pos = if UP {
+                            let pos = nonnull::addr(nonnull::add(value, 1)).get();
+                            up_align_usize_unchecked(pos, MIN_ALIGN)
+                        } else {
+                            let pos = nonnull::addr(value).get();
+                            down_align_usize(pos, MIN_ALIGN)
+                        };
+
+                        self.chunk.get().set_pos_addr(new_pos);
+                    }
+
+                    BumpBox::from_raw(value)
+                }),
+                Err(error) => Err({
+                    let error = error.as_ptr().read();
+
+                    if can_shrink {
+                        self.reset_to(checkpoint);
+                    }
+
+                    error
+                }),
+            }
+        })
+    }
+
+    #[allow(clippy::missing_errors_doc)]
+    /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
+    ///
+    /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
+    impl
+    ///
+    /// This is just like [`alloc_try_with`](Self::alloc_try_with), but optimized for a mutable reference.
+    for pub fn alloc_try_with_mut
+    ///
+    /// This is just like [`try_alloc_try_with`](Self::try_alloc_try_with), but optimized for a mutable reference.
+    for pub fn try_alloc_try_with_mut
+    fn generic_alloc_try_with_mut<{T, E}>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> | Result<BumpBox<'a, T>, E> {
+        if T::IS_ZST {
+            return match f() {
+                Ok(value) => Ok(Ok(BumpBox::zst(value))),
+                Err(error) => Ok(Err(error)),
+            }
+        }
+
+        let checkpoint = self.checkpoint();
+        let ptr = self.do_reserve_sized::<B, Result<T, E>>()?;
+
+        Ok(unsafe {
+            nonnull::write_with(ptr, f);
+
+            // There is no need for `can_shrink` checks, because we have a mutable reference
+            // so there's no way anyone else has allocated in `f`.
+            match nonnull::result(ptr) {
+                Ok(value) => Ok({
+                    let new_pos = if UP {
+                        let pos = nonnull::addr(nonnull::add(value, 1)).get();
+                        up_align_usize_unchecked(pos, MIN_ALIGN)
+                    } else {
+                        let pos = nonnull::addr(value).get();
+                        down_align_usize(pos, MIN_ALIGN)
+                    };
+
+                    self.chunk.get().set_pos_addr(new_pos);
+                    BumpBox::from_raw(value)
+                }),
+                Err(error) => Err({
+                    let error = error.as_ptr().read();
+                    self.reset_to(checkpoint);
+                    error
+                }),
+            }
+        })
+    }
+}
+
+/// Functions to allocate. Available as fallible or infallible.
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
     BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
@@ -1859,7 +1922,18 @@ where
     alloc_methods!(BumpScope);
 }
 
-#[doc = doc_alloc_methods!()]
+/// Functions to allocate. Available as fallible or infallible.
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator,
+{
+    alloc_try_with_methods!(BumpScope);
+}
+
+/// Functions to allocate. Available as fallible or infallible.
+///
+/// These require a [guaranteed allocated](crate#guaranteed_allocated-parameter) bump allocator.
 impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
     Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
@@ -1867,6 +1941,17 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     alloc_methods!(Bump);
+}
+
+/// Functions to allocate. Available as fallible or infallible.
+///
+/// These require a [guaranteed allocated](crate#guaranteed_allocated-parameter) bump allocator.
+impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator,
+{
+    alloc_try_with_methods!(Bump);
 }
 
 mod supported_base_allocator {

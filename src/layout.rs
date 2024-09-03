@@ -94,13 +94,6 @@ impl LayoutProps for CustomLayout {
     const SIZE_IS_MULTIPLE_OF_ALIGN: bool = false;
 }
 
-impl CustomLayout {
-    #[inline(always)]
-    pub(crate) const fn new<T>() -> Self {
-        Self(Layout::new::<T>())
-    }
-}
-
 impl Deref for CustomLayout {
     type Target = Layout;
 

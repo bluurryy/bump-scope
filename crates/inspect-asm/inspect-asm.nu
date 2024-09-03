@@ -167,13 +167,23 @@ def --wrapped main [
         $names ++= $"alloc_layout::($try)bumpalo"
     }
 
-    for ty in [zst u8, u32, vec3, 12_u32, big, str, u32_slice, u32_slice_clone, try_u32, try_big_ok] {
+    for ty in [zst, u8, u32, vec3, 12_u32, big, str, u32_slice, u32_slice_clone] {
         for prefix in ["", try_] {
             $names ++= $"alloc_($ty)::($prefix)up"
             $names ++= $"alloc_($ty)::($prefix)up_a"
             $names ++= $"alloc_($ty)::($prefix)down"
             $names ++= $"alloc_($ty)::($prefix)down_a"
             $names ++= $"alloc_($ty)::($prefix)bumpalo"
+        }
+    }
+
+    for ty in [u32, big_ok] {
+        for prefix in ["", try_] {
+            $names ++= $"alloc_try_($ty)::($prefix)up"
+            $names ++= $"alloc_try_($ty)::($prefix)up_mut"
+            $names ++= $"alloc_try_($ty)::($prefix)down"
+            $names ++= $"alloc_try_($ty)::($prefix)down_mut"
+            $names ++= $"alloc_try_($ty)::($prefix)bumpalo"
         }
     }
 

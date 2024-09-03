@@ -257,6 +257,18 @@ where
         }
     }
 
+    /// Reserve slow path.
+    /// The active chunk must *not* have space for `layout`.
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn reserve_in_another_chunk<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
+        unsafe {
+            self.do_custom_alloc_in_another_chunk(CustomLayout(layout), |chunk, layout| {
+                chunk.reserve(MinimumAlignment::<MIN_ALIGN>, layout)
+            })
+        }
+    }
+
     #[inline(always)]
     pub(crate) fn do_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
         E::alloc_or_else(
@@ -274,11 +286,7 @@ where
             self.chunk.get(),
             MinimumAlignment::<MIN_ALIGN>,
             SizedLayout::new::<T>(),
-            || unsafe {
-                self.do_custom_alloc_in_another_chunk(CustomLayout::new::<T>(), |chunk, _| {
-                    chunk.alloc_no_bump_for::<MIN_ALIGN, T>()
-                })
-            },
+            || self.do_reserve_sized_in_another_chunk::<E, T>(),
         )
         .map(NonNull::cast)
     }
@@ -289,8 +297,16 @@ where
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        let layout = Layout::new::<T>();
-        self.alloc_in_another_chunk(layout)
+        self.alloc_in_another_chunk(Layout::new::<T>())
+    }
+
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn do_reserve_sized_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E>
+    where
+        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    {
+        self.reserve_in_another_chunk(Layout::new::<T>())
     }
 
     #[inline(always)]
