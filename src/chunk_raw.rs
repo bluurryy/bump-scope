@@ -143,6 +143,14 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         self.alloc_or_else(minimum_alignment, layout, || Err(())).ok()
     }
 
+    /// Attempts to allocate a block of memory.
+    /// If there is not enough space, `f` will be called and its result returned.
+    ///
+    /// We use a callback for the fallback case for performance reasons.
+    /// If we were to just expose an api like `alloc` and matched over the `Option`, the compiler would
+    /// introduce an unnecessary conditional jump in the infallible code path.
+    ///
+    /// `rustc` used to be able to optimize this away (see issue #25)
     #[inline(always)]
     pub(crate) fn alloc_or_else<M, L, E, F>(self, _: M, layout: L, f: F) -> Result<NonNull<u8>, E>
     where
