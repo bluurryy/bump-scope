@@ -1,10 +1,10 @@
 use arbitrary::Arbitrary;
 
-use crate::{from_bump_scope, FuzzBumpProps};
+use crate::{from_bump_scope, FuzzBumpGreedyProps};
 
 #[derive(Debug, Arbitrary)]
 pub struct Fuzz {
-    props: FuzzBumpProps,
+    props: FuzzBumpGreedyProps,
 }
 
 impl Fuzz {

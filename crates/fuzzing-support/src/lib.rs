@@ -235,6 +235,83 @@ impl FuzzBumpProps {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct FuzzBumpGreedyProps {
+    pub(crate) start: usize,
+    pub(crate) end: usize,
+    pub(crate) layout: Layout,
+    pub(crate) min_align: usize,
+    pub(crate) align_is_const: bool,
+}
+
+impl<'a> Arbitrary<'a> for FuzzBumpGreedyProps {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        let (mut start, mut end) = u.arbitrary()?;
+
+        if end < start {
+            swap(&mut start, &mut end);
+        }
+
+        start = align(start);
+        end = align(end);
+
+        let layout = {
+            let size: usize = u.arbitrary()?;
+            let align_pow2 = u.int_in_range(0..=10)?;
+            let align = 1 << align_pow2;
+            Layout::from_size_align(
+                size.checked_mul(align).ok_or_else(|| arbitrary::Error::IncorrectFormat)?,
+                align,
+            )
+            .map_err(|_| arbitrary::Error::IncorrectFormat)?
+        };
+
+        let min_align = *u.choose(&[1, 2, 4, 8, 16])?;
+
+        Ok(Self {
+            start,
+            end,
+            layout,
+            min_align,
+            align_is_const: u.arbitrary()?,
+        })
+    }
+}
+
+impl FuzzBumpGreedyProps {
+    fn for_up(mut self) -> Self {
+        self.start = down_align(self.start, self.min_align);
+        self
+    }
+
+    fn for_down(mut self) -> Self {
+        self.end = down_align(self.end, self.min_align);
+        self
+    }
+}
+
+impl FuzzBumpGreedyProps {
+    fn to(self) -> from_bump_scope::bumping::BumpProps {
+        let Self {
+            start,
+            end,
+            layout,
+            min_align,
+            align_is_const,
+        } = self;
+
+        from_bump_scope::bumping::BumpProps {
+            start,
+            end,
+            layout,
+            min_align,
+            align_is_const,
+            size_is_const: false,
+            size_is_multiple_of_align: layout.size() % layout.align() == 0,
+        }
+    }
+}
+
 #[inline(always)]
 fn down_align(addr: usize, align: usize) -> usize {
     debug_assert!(align.is_power_of_two());

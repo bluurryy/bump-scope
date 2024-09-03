@@ -230,9 +230,10 @@ pub(crate) fn bump_greedy_up(
         min_align,
         align_is_const,
         size_is_const: _,
-        size_is_multiple_of_align: _,
+        size_is_multiple_of_align,
     }: BumpProps,
 ) -> Option<Range<usize>> {
+    debug_assert!(size_is_multiple_of_align);
     debug_assert!(start <= end);
     debug_assert!(end % MIN_CHUNK_ALIGN == 0);
 
@@ -281,9 +282,10 @@ pub(crate) fn bump_greedy_down(
         min_align,
         align_is_const,
         size_is_const: _,
-        size_is_multiple_of_align: _,
+        size_is_multiple_of_align,
     }: BumpProps,
 ) -> Option<Range<usize>> {
+    debug_assert!(size_is_multiple_of_align);
     debug_assert!(start <= end);
 
     if align_is_const && layout.align() <= min_align {

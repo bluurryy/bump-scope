@@ -254,6 +254,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     ///
     /// - `range.start` and `range.end` are aligned.
     /// - `layout.size` must not be zero
+    /// - `layout.size` must be a multiple of `layout.align`
     ///
     /// [`MutBumpVec`]: crate::MutBumpVec
     /// [`into_slice`]: crate::MutBumpVec::into_slice
