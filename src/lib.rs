@@ -2055,6 +2055,9 @@ mod supported_base_allocator {
 
 /// Trait that any allocator used as a base allocator of a bump allocator needs to implement.
 ///
+/// Every [`Allocator`] that implements [`Clone`] also implements `BaseAllocator` when `GUARANTEED_ALLOCATED`.
+/// When not guaranteed allocated, allocators are additionally required to implement [`Default`].
+///
 /// This trait is *sealed*: the list of implementors below is total.
 pub trait BaseAllocator<const GUARANTEED_ALLOCATED: bool = true>:
     Allocator + Clone + supported_base_allocator::Sealed<GUARANTEED_ALLOCATED>
