@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Make sure you sync this file with `crates/fuzzing-support/src/from_bump_scope/bumping.rs`.
 
 use core::{alloc::Layout, num::NonZeroUsize, ops::Range};
@@ -40,12 +41,12 @@ pub(crate) struct BumpProps {
 }
 
 pub(crate) struct BumpUp {
-    pub(crate) new_pos: NonZeroUsize,
-    pub(crate) ptr: NonZeroUsize,
+    pub(crate) new_pos: usize,
+    pub(crate) ptr: usize,
 }
 
 #[inline(always)]
-pub(crate) unsafe fn bump_up(
+pub(crate) fn bump_up(
     BumpProps {
         mut start,
         end,
@@ -83,7 +84,7 @@ pub(crate) unsafe fn bump_up(
             // Aligning an address that is `<= range.end` with an alignment
             // that is `<= CHUNK_ALIGN_MIN` can not exceed `range.end` and
             // can not overflow as `range.end` is always aligned to `CHUNK_ALIGN_MIN`
-            start = up_align_usize_unchecked(start, layout.align());
+            start = up_align_unchecked(start, layout.align());
         }
 
         let remaining = end - start;
@@ -125,21 +126,20 @@ pub(crate) unsafe fn bump_up(
     } else {
         // up aligning an address `<= range.end` with an alignment `<= CHUNK_ALIGN_MIN` (which `MIN_ALIGN` is)
         // can not exceed `range.end`, and thus also can't overflow
-        new_pos = up_align_usize_unchecked(new_pos, min_align);
+        new_pos = up_align_unchecked(new_pos, min_align);
     }
 
     debug_assert_aligned!(start, layout.align());
     debug_assert_aligned!(start, min_align);
     debug_assert_aligned!(new_pos, min_align);
+    debug_assert_ne!(new_pos, 0);
+    debug_assert_ne!(start, 0);
 
-    Some(BumpUp {
-        new_pos: NonZeroUsize::new_unchecked(new_pos),
-        ptr: NonZeroUsize::new_unchecked(start),
-    })
+    Some(BumpUp { new_pos, ptr: start })
 }
 
 #[inline(always)]
-pub(crate) unsafe fn bump_down(
+pub(crate) fn bump_down(
     BumpProps {
         start,
         mut end,
@@ -149,7 +149,7 @@ pub(crate) unsafe fn bump_down(
         size_is_const,
         size_is_multiple_of_align,
     }: BumpProps,
-) -> Option<NonZeroUsize> {
+) -> Option<usize> {
     debug_assert_ne!(start, 0);
     debug_assert_ne!(end, 0);
 
@@ -176,7 +176,7 @@ pub(crate) unsafe fn bump_down(
         if needs_align {
             // At this point layout's align is const, because we assume `L::SIZE_IS_CONST` implies `L::ALIGN_IS_CONST`.
             // That means `max` is evaluated at compile time, so we don't bother having different cases for either alignment.
-            end = down_align_usize(end, layout.align().max(min_align));
+            end = down_align(end, layout.align().max(min_align));
         }
 
         if end < start {
@@ -196,7 +196,7 @@ pub(crate) unsafe fn bump_down(
         if needs_align {
             // down aligning an address `>= range.start` with an alignment `<= CHUNK_ALIGN_MIN` (which `layout.align()` is)
             // can not exceed `range.start`, and thus also can't overflow
-            end = down_align_usize(end, layout.align().max(min_align));
+            end = down_align(end, layout.align().max(min_align));
         }
     } else {
         // Alignment is `> CHUNK_ALIGN_MIN` or unknown.
@@ -204,7 +204,7 @@ pub(crate) unsafe fn bump_down(
         // this could also be a `checked_sub`, but we use `saturating_sub` to save us a branch;
         // the `if` below will return None if the addition saturated and returned `0`
         end = end.saturating_sub(layout.size());
-        end = down_align_usize(end, layout.align().max(min_align));
+        end = down_align(end, layout.align().max(min_align));
 
         // note that `end` being `0` is an invalid value for `end` and we MUST return None;
         // due to `start` being `NonNull`, it can't be `0`;
@@ -216,14 +216,15 @@ pub(crate) unsafe fn bump_down(
 
     debug_assert_aligned!(end, layout.align());
     debug_assert_aligned!(end, min_align);
+    debug_assert_ne!(end, 0);
 
-    Some(NonZeroUsize::new_unchecked(end))
+    Some(end)
 }
 
 #[inline(always)]
-pub(crate) unsafe fn bump_greedy_up(
+pub(crate) fn bump_greedy_up(
     BumpProps {
-        start,
+        mut start,
         end,
         layout,
         min_align,
@@ -231,12 +232,9 @@ pub(crate) unsafe fn bump_greedy_up(
         size_is_const: _,
         size_is_multiple_of_align: _,
     }: BumpProps,
-) -> Option<Range<NonZeroUsize>> {
-    let mut start = NonZeroUsize::new_unchecked(start);
-    let end = NonZeroUsize::new_unchecked(end);
-
+) -> Option<Range<usize>> {
     debug_assert!(start <= end);
-    debug_assert!(end.get() % MIN_CHUNK_ALIGN == 0);
+    debug_assert!(end % MIN_CHUNK_ALIGN == 0);
 
     if align_is_const && layout.align() <= min_align {
         // alignment is already sufficient
@@ -247,9 +245,9 @@ pub(crate) unsafe fn bump_greedy_up(
             // Aligning an address that is `<= range.end` with an alignment
             // that is `<= CHUNK_ALIGN_MIN` can not exceed `range.end` and
             // can not overflow
-            start = unsafe { up_align_nonzero_unchecked(start, layout.align()) }
+            start = up_align_unchecked(start, layout.align());
         } else {
-            start = up_align_nonzero(start, layout.align())?;
+            start = up_align(start, layout.align())?.get();
 
             if start > end {
                 return None;
@@ -257,23 +255,25 @@ pub(crate) unsafe fn bump_greedy_up(
         }
     }
 
-    let remaining = end.get() - start.get();
+    let remaining = end - start;
 
     if layout.size() > remaining {
         return None;
     }
 
     // layout does fit, we just trim off the excess to make end aligned
-    let end = down_align_nonzero_unchecked(end, layout.align());
+    let end = down_align(end, layout.align());
 
-    debug_assert_aligned!(start.get(), layout.align());
-    debug_assert_aligned!(end.get(), layout.align());
+    debug_assert_aligned!(start, layout.align());
+    debug_assert_aligned!(end, layout.align());
+    debug_assert_ne!(start, 0);
+    debug_assert_ne!(end, 0);
 
     Some(start..end)
 }
 
 #[inline(always)]
-pub(crate) unsafe fn bump_greedy_down(
+pub(crate) fn bump_greedy_down(
     BumpProps {
         start,
         mut end,
@@ -283,13 +283,13 @@ pub(crate) unsafe fn bump_greedy_down(
         size_is_const: _,
         size_is_multiple_of_align: _,
     }: BumpProps,
-) -> Option<Range<NonZeroUsize>> {
+) -> Option<Range<usize>> {
     debug_assert!(start <= end);
 
     if align_is_const && layout.align() <= min_align {
         // alignment is already sufficient
     } else {
-        end = down_align_usize(end, layout.align());
+        end = down_align(end, layout.align());
 
         if align_is_const && layout.align() <= MIN_CHUNK_ALIGN {
             // end is valid
@@ -308,19 +308,18 @@ pub(crate) unsafe fn bump_greedy_down(
     }
 
     // layout does fit, we just trim off the excess to make start aligned
-    let start = up_align_usize_unchecked(start, layout.align());
+    let start = up_align_unchecked(start, layout.align());
 
     debug_assert_aligned!(start, layout.align());
     debug_assert_aligned!(end, layout.align());
-
-    let start = NonZeroUsize::new_unchecked(start);
-    let end = NonZeroUsize::new_unchecked(end);
+    debug_assert_ne!(start, 0);
+    debug_assert_ne!(end, 0);
 
     Some(start..end)
 }
 
 #[inline(always)]
-fn down_align_usize(addr: usize, align: usize) -> usize {
+const fn down_align(addr: usize, align: usize) -> usize {
     debug_assert!(align.is_power_of_two());
     let mask = align - 1;
     addr & !mask
@@ -328,33 +327,19 @@ fn down_align_usize(addr: usize, align: usize) -> usize {
 
 /// Does not check for overflow.
 #[inline(always)]
-fn up_align_usize_unchecked(addr: usize, align: usize) -> usize {
+const fn up_align_unchecked(addr: usize, align: usize) -> usize {
     debug_assert!(align.is_power_of_two());
     let mask = align - 1;
     (addr + mask) & !mask
 }
 
 #[inline(always)]
-const fn up_align_nonzero(addr: NonZeroUsize, align: usize) -> Option<NonZeroUsize> {
+const fn up_align(addr: usize, align: usize) -> Option<NonZeroUsize> {
     debug_assert!(align.is_power_of_two());
     let mask = align - 1;
     let addr_plus_mask = match addr.checked_add(mask) {
         Some(addr_plus_mask) => addr_plus_mask,
         None => return None,
     };
-    let aligned = addr_plus_mask.get() & !mask;
-    NonZeroUsize::new(aligned)
-}
-
-#[inline(always)]
-unsafe fn up_align_nonzero_unchecked(addr: NonZeroUsize, align: usize) -> NonZeroUsize {
-    debug_assert!(align.is_power_of_two());
-    let mask = align - 1;
-    let aligned = (addr.get() + mask) & !mask;
-    NonZeroUsize::new_unchecked(aligned)
-}
-
-#[inline(always)]
-unsafe fn down_align_nonzero_unchecked(addr: NonZeroUsize, align: usize) -> NonZeroUsize {
-    NonZeroUsize::new_unchecked(down_align_usize(addr.get(), align))
+    NonZeroUsize::new(addr_plus_mask & !mask)
 }

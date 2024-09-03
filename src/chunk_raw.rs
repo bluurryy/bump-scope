@@ -164,15 +164,15 @@ impl<const UP: bool, A> RawChunk<UP, A> {
             if UP {
                 match bump_up(props) {
                     Some(BumpUp { new_pos, ptr }) => {
-                        self.set_pos(self.with_addr(new_pos.get()));
-                        Ok(self.with_addr(ptr.get()))
+                        self.set_pos(self.with_addr(new_pos));
+                        Ok(self.with_addr(ptr))
                     }
                     None => f(),
                 }
             } else {
                 match bump_down(props) {
                     Some(ptr) => {
-                        let ptr = self.with_addr(ptr.get());
+                        let ptr = self.with_addr(ptr);
                         self.set_pos(ptr);
                         Ok(ptr)
                     }
@@ -212,12 +212,12 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         unsafe {
             if UP {
                 match bump_up(props) {
-                    Some(BumpUp { ptr, .. }) => Ok(self.with_addr(ptr.get())),
+                    Some(BumpUp { ptr, .. }) => Ok(self.with_addr(ptr)),
                     None => f(),
                 }
             } else {
                 match bump_down(props) {
-                    Some(ptr) => Ok(self.with_addr(ptr.get())),
+                    Some(ptr) => Ok(self.with_addr(ptr)),
                     None => f(),
                 }
             }
@@ -368,10 +368,10 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn with_addr_range(self, range: Range<NonZeroUsize>) -> Range<NonNull<u8>> {
+    pub(crate) unsafe fn with_addr_range(self, range: Range<usize>) -> Range<NonNull<u8>> {
         debug_assert!(range.start <= range.end);
-        let start = self.with_addr(range.start.get());
-        let end = self.with_addr(range.end.get());
+        let start = self.with_addr(range.start);
+        let end = self.with_addr(range.end);
         start..end
     }
 

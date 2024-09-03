@@ -10,6 +10,6 @@ pub struct Fuzz {
 impl Fuzz {
     pub fn run(self) {
         let props = self.props.for_up().to();
-        unsafe { from_bump_scope::bumping::bump_up(props) };
+        from_bump_scope::bumping::bump_up(props);
     }
 }

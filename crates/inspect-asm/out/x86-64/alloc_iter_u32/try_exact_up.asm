@@ -33,14 +33,14 @@ inspect_asm::alloc_iter_u32::try_exact_up:
 	and r8, rcx
 	cmp rdx, r8
 	cmovb r8, rdx
-	mov rcx, rax
-	mov rdi, rsi
+	mov rcx, rsi
+	mov rdi, rax
 	cmp r8, 8
 	jb .LBB0_4
 	mov r9, rax
 	sub r9, rsi
-	mov rcx, rax
-	mov rdi, rsi
+	mov rcx, rsi
+	mov rdi, rax
 	cmp r9, 32
 	jb .LBB0_4
 	inc r8
@@ -49,8 +49,8 @@ inspect_asm::alloc_iter_u32::try_exact_up:
 	mov edi, 8
 	cmovne rdi, rcx
 	sub r8, rdi
-	lea rcx, [rax + 4*r8]
-	lea rdi, [rsi + 4*r8]
+	lea rcx, [rsi + 4*r8]
+	lea rdi, [rax + 4*r8]
 	xor r9d, r9d
 .LBB0_3:
 	movups xmm0, xmmword ptr [rsi + 4*r9]
@@ -64,13 +64,13 @@ inspect_asm::alloc_iter_u32::try_exact_up:
 	lea rsi, [rsi + 4*rdx]
 	lea r8, [rax + 4*rdx]
 .LBB0_5:
-	cmp rdi, rsi
+	cmp rcx, rsi
 	je .LBB0_7
-	mov r9d, dword ptr [rdi]
-	add rdi, 4
-	mov dword ptr [rcx], r9d
+	mov r9d, dword ptr [rcx]
 	add rcx, 4
-	cmp rcx, r8
+	mov dword ptr [rdi], r9d
+	add rdi, 4
+	cmp rdi, r8
 	jne .LBB0_5
 	jmp .LBB0_0
 .LBB0_6:
