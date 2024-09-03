@@ -24,7 +24,7 @@ default = ["std"]
 ## Adds `BumpPool` and implementations of `std::io` traits for `BumpBox` and vectors.
 std = ["allocator-api2/std", "alloc"]
 
-## Adds `Global` as the default allocator, `BumpBox::into_box` and some interactions with `alloc` collections.
+## Adds `Global` as the default base allocator, `BumpBox::into_box` and some interactions with `alloc` collections.
 alloc = ["allocator-api2/alloc"]
 
 ## Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.

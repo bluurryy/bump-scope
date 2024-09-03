@@ -16,7 +16,7 @@ When an allocation is made that pointer gets aligned and bumped towards the othe
 When its chunk is full, it allocates another chunk with twice the size.
 
 This makes allocations very fast. The drawback is that you can't reclaim memory like you do with a more general allocator.
-Memory for the most recent allocation *can* be reclaimed. You can also use [scopes, checkpoints](#scopes-and-checkpoints) and `reset` to reclaim memory.
+Memory for the most recent allocation *can* be reclaimed. You can also use [scopes, checkpoints](#scopes-and-checkpoints) and [`reset`](Bump::reset) to reclaim memory.
 
 A bump allocator is great for *phase-oriented allocations* where you allocate objects in a loop and free them at the end of every iteration.
 ```rust
@@ -28,7 +28,7 @@ loop {
     bump.reset();
 }
 ```
-The fact that the bump allocator allocates ever larger chunks and `reset` only keeps around the largest one means that after a few iterations, every bump allocation
+The fact that the bump allocator allocates ever larger chunks and [`reset`](Bump::reset) only keeps around the largest one means that after a few iterations, every bump allocation
 will be done on the same chunk and no more chunks need to be allocated.
 
 The introduction of scopes makes this bump allocator also great for temporary allocations and stack-like usage.
@@ -158,7 +158,7 @@ assert_eq!(bump.stats().allocated(), 4);
 
 ## Feature Flags
 * **`std`** *(enabled by default)* —  Adds `BumpPool` and implementations of `std::io` traits for `BumpBox` and vectors.
-* **`alloc`** —  Adds `Global` as the default allocator, `BumpBox::into_box` and some interactions with `alloc` collections.
+* **`alloc`** —  Adds `Global` as the default base allocator, `BumpBox::into_box` and some interactions with `alloc` collections.
 * **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 * **`zerocopy`** —  Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`.
 
