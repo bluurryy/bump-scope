@@ -3,11 +3,11 @@
 let MARKER_UNDERSCORE = "XXXXX"
 
 def map-to-index [] {
-    uniq 
-    | enumerate 
-    | group-by item 
-    | update cells { get 0 | get index } 
-    | get 0 
+    uniq
+    | enumerate
+    | group-by item
+    | update cells { get 0 | get index }
+    | get 0
 }
 
 def parse-label-with-function-index [name: string] {
@@ -15,8 +15,8 @@ def parse-label-with-function-index [name: string] {
 
     $content
     | parse --regex ($name + '(?<f>[0-9]+)_(?<i>[0-9]+)')
-    | group-by f? 
-    | update cells { get i | each { into int } | map-to-index } 
+    | group-by f?
+    | update cells { get i | each { into int } | map-to-index }
     | get 0
 }
 
@@ -60,23 +60,23 @@ def simplify [] {
     let ljtis = $content | parse-label-with-function-index '\.LJTI'
     let lcpis = $content | parse-label-with-function-index '\.LCPI'
 
-    let function_map = [$lbbs, $ljtis, $lcpis] 
+    let function_map = [$lbbs, $ljtis, $lcpis]
     | columns
-    | flatten 
+    | flatten
     | map-to-index
 
-    let unnameds = $content 
+    let unnameds = $content
     | parse --regex '\.L__unnamed_(?<i>[0-9]+)'
     | get i
     | map-to-index
 
     return (
-        $content 
+        $content
         | replace-label-with-function-index $function_map $lbbs "LBB"
         | replace-label-with-function-index $function_map $ljtis "LJTI"
         | replace-label-with-function-index $function_map $lcpis "LCPI"
         | replace-label $unnameds "L__unnamed"
-        | str replace -a $MARKER_UNDERSCORE "_" 
+        | str replace -a $MARKER_UNDERSCORE "_"
     )
 }
 
@@ -106,7 +106,7 @@ def asm-save [name: string, target: string, extra_args: list<string>] {
         print $result.stdout
         error make { msg: "cargo erred" }
     }
-    
+
     let old_content = try { $file_path | open --raw } catch { "" }
     let new_content = ($result.stdout | simplify)
 
@@ -114,7 +114,7 @@ def asm-save [name: string, target: string, extra_args: list<string>] {
         report $file_stem "="
         return
     }
-    
+
     report $file_stem "!"
     mkdir $out_dir
     $new_content | save -f $file_path
@@ -167,13 +167,13 @@ def --wrapped main [
         $names ++= $"alloc_layout::($try)bumpalo"
     }
 
-    for ty in [zst u8, u32, vec3, 12_u32, big, str, u32_slice, u32_slice_clone] {
+    for ty in [zst u8, u32, vec3, 12_u32, big, str, u32_slice, u32_slice_clone, try_u32, try_big_ok] {
         for prefix in ["", try_] {
-        $names ++= $"alloc_($ty)::($prefix)up"
-        $names ++= $"alloc_($ty)::($prefix)up_a"
-        $names ++= $"alloc_($ty)::($prefix)down"
-        $names ++= $"alloc_($ty)::($prefix)down_a"
-        $names ++= $"alloc_($ty)::($prefix)bumpalo"
+            $names ++= $"alloc_($ty)::($prefix)up"
+            $names ++= $"alloc_($ty)::($prefix)up_a"
+            $names ++= $"alloc_($ty)::($prefix)down"
+            $names ++= $"alloc_($ty)::($prefix)down_a"
+            $names ++= $"alloc_($ty)::($prefix)bumpalo"
         }
     }
 
@@ -192,16 +192,16 @@ def --wrapped main [
         for dir in [up, down] {
             for try in ["", try_] {
                 $names ++= $"bump_vec_($ty)::($dir)::($try)with_capacity"
-                $names ++= $"bump_vec_($ty)::($dir)::($try)push"  
+                $names ++= $"bump_vec_($ty)::($dir)::($try)push"
             }
         }
     }
-    
+
     for ty in [u32, u32_bump_vec] {
-        let prefixes = if $ty == "u32" { 
-            ["", exact_, mut_, mut_rev_] 
-        } else { 
-            ["", rev_] 
+        let prefixes = if $ty == "u32" {
+            ["", exact_, mut_, mut_rev_]
+        } else {
+            ["", rev_]
         }
 
         let tries = if $ty == "u32" {
@@ -224,7 +224,7 @@ def --wrapped main [
         }
     }
 
-    for try in ["", try_] {  
+    for try in ["", try_] {
         for $mut in ["", mut_] {
             $names ++= $"alloc_fmt::($try)($mut)up"
             $names ++= $"alloc_fmt::($try)($mut)up_a"

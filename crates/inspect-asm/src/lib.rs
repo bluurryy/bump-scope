@@ -4,7 +4,10 @@
 
 use std::{alloc::Layout, ptr::NonNull};
 
-use bump_scope::allocator_api2::alloc::{AllocError, Allocator, Global};
+use bump_scope::{
+    allocator_api2::alloc::{AllocError, Allocator, Global},
+    BumpBox,
+};
 
 #[derive(Clone, Copy)]
 #[repr(align(512))]
@@ -65,10 +68,10 @@ impl BumpaloExt for bumpalo::Bump {
     }
 }
 
-macro_rules! cases {
+macro_rules! alloc {
     (
         $(
-            mod $mod:ident fn($bump:ident, $value:ident: $value_ty:ty) -> &$($lifetime:lifetime)? mut $ty:ty { $body:expr } in { $try_body:expr }
+            mod $mod:ident fn($bump:ident, $value:ident: $value_ty:ty) -> &$($lifetime:lifetime)? mut $ty:ty { $body:expr } try { $try_body:expr }
         )*
     ) => {
 
@@ -120,6 +123,67 @@ macro_rules! cases {
     };
 }
 
+macro_rules! alloc_try_with {
+    (
+        $(
+            mod $mod:ident fn($bump:ident, $f:ident) -> Result<&$($lifetime:lifetime)? mut $ok:ty, $err:ty> { $body:expr } try { $try_body:expr }
+        )*
+    ) => {
+
+        $(
+            pub mod $mod {
+                use super::*;
+
+                pub fn up$(<$lifetime>)?($bump: &$($lifetime)? Bump<1, true>, $f: fn() -> Result<$ok, $err>) -> Result<&$($lifetime)? mut $ok, $err> {
+                    $body.map(BumpBox::into_mut)
+                }
+
+                pub fn down$(<$lifetime>)?($bump: &$($lifetime)? Bump<1, false>, $f: fn() -> Result<$ok, $err>) -> Result<&$($lifetime)? mut $ok, $err> {
+                    $body.map(BumpBox::into_mut)
+                }
+
+                pub fn up_a$(<$lifetime>)?($bump: &$($lifetime)? Bump<4, true>, $f: fn() -> Result<$ok, $err>) -> Result<&$($lifetime)? mut $ok, $err> {
+                    $body.map(BumpBox::into_mut)
+                }
+
+                pub fn down_a$(<$lifetime>)?($bump: &$($lifetime)? Bump<4, false>, $f: fn() -> Result<$ok, $err>) -> Result<&$($lifetime)? mut $ok, $err> {
+                    $body.map(BumpBox::into_mut)
+                }
+
+                pub fn try_up$(<$lifetime>)?($bump: &$($lifetime)? Bump<1, true>, $f: fn() -> Result<$ok, $err>) -> Option<Result<&$($lifetime)? mut $ok, $err>> {
+                    $try_body.ok().map(|x| x.map(BumpBox::into_mut))
+                }
+
+                pub fn try_down$(<$lifetime>)?($bump: &$($lifetime)? Bump<1, false>, $f: fn() -> Result<$ok, $err>) -> Option<Result<&$($lifetime)? mut $ok, $err>> {
+                    $try_body.ok().map(|x| x.map(BumpBox::into_mut))
+                }
+
+                pub fn try_up_a$(<$lifetime>)?($bump: &$($lifetime)? Bump<4, true>, $f: fn() -> Result<$ok, $err>) -> Option<Result<&$($lifetime)? mut $ok, $err>> {
+                    $try_body.ok().map(|x| x.map(BumpBox::into_mut))
+                }
+
+                pub fn try_down_a$(<$lifetime>)?($bump: &$($lifetime)? Bump<4, false>, $f: fn() -> Result<$ok, $err>) -> Option<Result<&$($lifetime)? mut $ok, $err>> {
+                    $try_body.ok().map(|x| x.map(BumpBox::into_mut))
+                }
+
+                pub fn bumpalo$(<$lifetime>)?($bump: &$($lifetime)? bumpalo::Bump, $f: fn() -> Result<$ok, $err>) -> Result<&$($lifetime)? mut $ok, $err> {
+                    $body
+                }
+
+                pub fn try_bumpalo$(<$lifetime>)?($bump: &$($lifetime)? bumpalo::Bump, $f: fn() -> Result<$ok, $err>) -> Option<Result<&$($lifetime)? mut $ok, $err>> {
+                    match $try_body {
+                        Ok(ok) => Some(Ok(ok)),
+                        Err(err) => match err {
+                            bumpalo::AllocOrInitError::Alloc(bumpalo::AllocErr) => None,
+                            bumpalo::AllocOrInitError::Init(err) => Some(Err(err)),
+                        },
+                    }
+                }
+            }
+        )*
+    };
+}
+
 pub mod alloc_layout {
     use super::*;
 
@@ -148,16 +212,21 @@ pub mod alloc_layout {
     }
 }
 
-cases! {
-    mod alloc_zst fn(bump, value: zst) -> &mut zst { bump.alloc(value) } in { bump.try_alloc(value) }
-    mod alloc_u8 fn(bump, value: u8) -> &mut u8 { bump.alloc(value) } in { bump.try_alloc(value) }
-    mod alloc_u32 fn(bump, value: u32) -> &mut u32 { bump.alloc(value) } in { bump.try_alloc(value) }
-    mod alloc_vec3 fn(bump, value: vec3) -> &mut vec3 { bump.alloc(value) } in { bump.try_alloc(value) }
-    mod alloc_12_u32 fn(bump, value: [u32;12]) -> &mut [u32;12] { bump.alloc(value) } in { bump.try_alloc(value) }
-    mod alloc_big fn(bump, value: &big) -> &'a mut big { bump.alloc_with(|| *value) } in { bump.try_alloc_with(|| *value) }
-    mod alloc_str fn(bump, value: &str) -> &'a mut str { bump.alloc_str(value) } in { bump.try_alloc_str(value) }
-    mod alloc_u32_slice fn(bump, value: &[u32]) -> &'a mut [u32] { bump.alloc_slice_copy(value) } in { bump.try_alloc_slice_copy(value) }
-    mod alloc_u32_slice_clone fn(bump, value: &[u32]) -> &'a mut [u32] { bump.alloc_slice_clone(value) } in { bump.try_alloc_slice_clone(value) }
+alloc! {
+    mod alloc_zst fn(bump, value: zst) -> &mut zst { bump.alloc(value) } try { bump.try_alloc(value) }
+    mod alloc_u8 fn(bump, value: u8) -> &mut u8 { bump.alloc(value) } try { bump.try_alloc(value) }
+    mod alloc_u32 fn(bump, value: u32) -> &mut u32 { bump.alloc(value) } try { bump.try_alloc(value) }
+    mod alloc_vec3 fn(bump, value: vec3) -> &mut vec3 { bump.alloc(value) } try { bump.try_alloc(value) }
+    mod alloc_12_u32 fn(bump, value: [u32;12]) -> &mut [u32;12] { bump.alloc(value) } try { bump.try_alloc(value) }
+    mod alloc_big fn(bump, value: &big) -> &'a mut big { bump.alloc_with(|| *value) } try { bump.try_alloc_with(|| *value) }
+    mod alloc_str fn(bump, value: &str) -> &'a mut str { bump.alloc_str(value) } try { bump.try_alloc_str(value) }
+    mod alloc_u32_slice fn(bump, value: &[u32]) -> &'a mut [u32] { bump.alloc_slice_copy(value) } try { bump.try_alloc_slice_copy(value) }
+    mod alloc_u32_slice_clone fn(bump, value: &[u32]) -> &'a mut [u32] { bump.alloc_slice_clone(value) } try { bump.try_alloc_slice_clone(value) }
+}
+
+alloc_try_with! {
+    mod alloc_try_u32 fn(bump, f) -> Result<&mut u32, u32> { bump.alloc_try_with(f) } try { bump.try_alloc_try_with(f) }
+    mod alloc_try_big_ok fn(bump, f) -> Result<&mut big, u32> { bump.alloc_try_with(f) } try { bump.try_alloc_try_with(f) }
 }
 
 pub mod alloc_overaligned_but_size_matches {
