@@ -1808,9 +1808,52 @@ define_alloc_methods! {
     impl
     ///
     /// There is also [`alloc_try_with_mut`](Self::alloc_try_with_mut), optimized for a mutable reference.
+    do examples
+    /// ```
+    /// # #![feature(offset_of_enum)]
+    /// # use core::mem::offset_of;
+    /// # use bump_scope::{ Bump };
+    /// # let bump: Bump = Bump::new();
+    /// let result = bump.alloc_try_with(|| -> Result<i32, i32> { Ok(123) });
+    /// assert_eq!(result.unwrap(), 123);
+    /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
+    /// ```
+    /// ```
+    /// # #![feature(offset_of_enum)]
+    /// # use core::mem::offset_of;
+    /// # use bump_scope::{ Bump };
+    /// # let bump: Bump = Bump::new();
+    /// let result = bump.alloc_try_with(|| -> Result<i32, i32> { Err(123) });
+    /// assert_eq!(result.unwrap_err(), 123);
+    /// assert_eq!(bump.stats().allocated(), 0);
+    /// ```
     for pub fn alloc_try_with
     ///
     /// There is also [`try_alloc_try_with_mut`](Self::try_alloc_try_with_mut), optimized for a mutable reference.
+    ///
+    /// do examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # #![feature(offset_of_enum)]
+    /// # use core::mem::offset_of;
+    /// # use bump_scope::{ Bump, allocator_api2::alloc::AllocError };
+    /// # let bump: Bump = Bump::new();
+    /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Ok(123) })?;
+    /// assert_eq!(result.unwrap(), 123);
+    /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
+    /// # Ok::<(), AllocError>(())
+    /// ```
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # #![feature(offset_of_enum)]
+    /// # use core::mem::offset_of;
+    /// # use bump_scope::{ Bump, allocator_api2::alloc::AllocError };
+    /// # let bump: Bump = Bump::new();
+    /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Err(123) })?;
+    /// assert_eq!(result.unwrap_err(), 123);
+    /// assert_eq!(bump.stats().allocated(), 0);
+    /// # Ok::<(), AllocError>(())
+    /// ```
     for pub fn try_alloc_try_with
     fn generic_alloc_try_with<{T, E}>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> | Result<BumpBox<'a, T>, E> {
         if T::IS_ZST {
@@ -1869,9 +1912,51 @@ define_alloc_methods! {
     impl
     ///
     /// This is just like [`alloc_try_with`](Self::alloc_try_with), but optimized for a mutable reference.
+    do examples
+    /// ```
+    /// # #![feature(offset_of_enum)]
+    /// # use core::mem::offset_of;
+    /// # use bump_scope::{ Bump };
+    /// # let mut bump: Bump = Bump::new();
+    /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) });
+    /// assert_eq!(result.unwrap(), 123);
+    /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
+    /// ```
+    /// ```
+    /// # #![feature(offset_of_enum)]
+    /// # use core::mem::offset_of;
+    /// # use bump_scope::{ Bump };
+    /// # let mut bump: Bump = Bump::new();
+    /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) });
+    /// assert_eq!(result.unwrap_err(), 123);
+    /// assert_eq!(bump.stats().allocated(), 0);
+    /// ```
     for pub fn alloc_try_with_mut
     ///
     /// This is just like [`try_alloc_try_with`](Self::try_alloc_try_with), but optimized for a mutable reference.
+    do examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # #![feature(offset_of_enum)]
+    /// # use core::mem::offset_of;
+    /// # use bump_scope::{ Bump, allocator_api2::alloc::AllocError };
+    /// # let mut bump: Bump = Bump::new();
+    /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) })?;
+    /// assert_eq!(result.unwrap(), 123);
+    /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
+    /// # Ok::<(), AllocError>(())
+    /// ```
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # #![feature(offset_of_enum)]
+    /// # use core::mem::offset_of;
+    /// # use bump_scope::{ Bump, allocator_api2::alloc::AllocError };
+    /// # let mut bump: Bump = Bump::new();
+    /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) })?;
+    /// assert_eq!(result.unwrap_err(), 123);
+    /// assert_eq!(bump.stats().allocated(), 0);
+    /// # Ok::<(), AllocError>(())
+    /// ```
     for pub fn try_alloc_try_with_mut
     fn generic_alloc_try_with_mut<{T, E}>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> | Result<BumpBox<'a, T>, E> {
         if T::IS_ZST {
