@@ -434,14 +434,6 @@ const fn up_align_nonzero(addr: NonZeroUsize, align: usize) -> Option<NonZeroUsi
 }
 
 #[inline(always)]
-unsafe fn up_align_nonzero_unchecked(addr: NonZeroUsize, align: usize) -> NonZeroUsize {
-    debug_assert!(align.is_power_of_two());
-    let mask = align - 1;
-    let aligned = (addr.get() + mask) & !mask;
-    NonZeroUsize::new_unchecked(aligned)
-}
-
-#[inline(always)]
 fn down_align_usize(addr: usize, align: usize) -> usize {
     debug_assert!(align.is_power_of_two());
     let mask = align - 1;

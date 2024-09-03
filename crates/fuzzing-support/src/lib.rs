@@ -10,6 +10,8 @@ pub use arbitrary;
 
 pub mod allocator_api;
 pub mod bump_down;
+pub mod bump_greedy_down;
+pub mod bump_greedy_up;
 pub mod bump_up;
 pub mod bumping;
 mod from_bump_scope;

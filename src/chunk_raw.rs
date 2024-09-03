@@ -1,12 +1,12 @@
 use core::{alloc::Layout, cell::Cell, mem::align_of, num::NonZeroUsize, ops::Range, ptr::NonNull};
 
 use crate::{
-    bumping::{bump_down, bump_up, BumpProps, BumpUp},
+    bumping::{bump_down, bump_greedy_down, bump_greedy_up, bump_up, BumpProps, BumpUp},
     down_align_usize,
     layout::LayoutProps,
     polyfill::{const_unwrap, nonnull, pointer},
-    unallocated_chunk_header, up_align_nonzero, up_align_nonzero_unchecked, up_align_usize_unchecked, ChunkHeader,
-    ChunkSize, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment, CHUNK_ALIGN_MIN,
+    unallocated_chunk_header, up_align_usize_unchecked, ChunkHeader, ChunkSize, ErrorBehavior, MinimumAlignment,
+    SupportedMinimumAlignment, CHUNK_ALIGN_MIN,
 };
 
 use allocator_api2::alloc::{AllocError, Allocator};
@@ -258,86 +258,22 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// [`MutBumpVec`]: crate::MutBumpVec
     /// [`into_slice`]: crate::MutBumpVec::into_slice
     #[inline(always)]
-    pub(crate) fn alloc_greedy<M, L>(self, _: M, layout: L) -> Option<Range<NonNull<u8>>>
+    pub(crate) fn alloc_greedy<M, L>(self, minimum_alignment: M, layout: L) -> Option<Range<NonNull<u8>>>
     where
         M: SupportedMinimumAlignment,
         L: LayoutProps,
     {
         debug_assert_ne!(layout.size(), 0);
+        let props = self.bump_props(minimum_alignment, layout);
 
-        if UP {
-            let remaining = self.remaining_range();
-            let mut start = nonnull::addr(remaining.start);
-            let end = nonnull::addr(remaining.end);
-
-            debug_assert!(start <= end);
-            debug_assert!(end.get() % CHUNK_ALIGN_MIN == 0);
-
-            if L::ALIGN_IS_CONST && layout.align() <= M::MIN_ALIGN {
-                // alignment is already sufficient
+        unsafe {
+            if UP {
+                let range = bump_greedy_up(props)?;
+                Some(self.with_addr_range(range))
             } else {
-                // `start` needs to be aligned
-
-                if L::ALIGN_IS_CONST && layout.align() <= CHUNK_ALIGN_MIN {
-                    // SAFETY:
-                    // Aligning an address that is `<= range.end` with an alignment
-                    // that is `<= CHUNK_ALIGN_MIN` can not exceed `range.end` and
-                    // can not overflow
-                    start = unsafe { up_align_nonzero_unchecked(start, layout.align()) }
-                } else {
-                    start = up_align_nonzero(start, layout.align())?;
-                }
+                let range = bump_greedy_down(props)?;
+                Some(self.with_addr_range(range))
             }
-
-            let remaining = end.get() - start.get();
-
-            if layout.size() > remaining {
-                return None;
-            }
-
-            // layout does fit, we just trim off the excess to make end aligned
-            let end = down_align_usize(end.get(), layout.align());
-
-            debug_assert!(is_aligned(start.get(), layout.align()));
-            debug_assert!(is_aligned(end, layout.align()));
-
-            Some(unsafe { self.with_addr(start.get())..self.with_addr(end) })
-        } else {
-            let remaining = self.remaining_range();
-            let start = nonnull::addr(remaining.start);
-            let end = nonnull::addr(remaining.end);
-
-            debug_assert!(start <= end);
-
-            let mut end = end.get();
-
-            if L::ALIGN_IS_CONST && layout.align() <= M::MIN_ALIGN {
-                // alignment is already sufficient
-            } else {
-                end = down_align_usize(end, layout.align());
-
-                if L::ALIGN_IS_CONST && layout.align() <= CHUNK_ALIGN_MIN {
-                    // end is valid
-                } else {
-                    // end could be less than start at this point
-                    if end < start.get() {
-                        return None;
-                    }
-                }
-            }
-
-            let remaining = end - start.get();
-
-            if layout.size() > remaining {
-                return None;
-            }
-
-            // layout does fit, we just trim off the excess to make start aligned
-            let start = up_align_usize_unchecked(start.get(), layout.align());
-
-            debug_assert!(is_aligned(end, layout.align()));
-            debug_assert!(is_aligned(start, layout.align()));
-            Some(unsafe { self.with_addr(start)..self.with_addr(end) })
         }
     }
 
@@ -429,6 +365,14 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         let ptr = self.header.cast();
         let addr = NonZeroUsize::new_unchecked(addr);
         nonnull::with_addr(ptr, addr)
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn with_addr_range(self, range: Range<NonZeroUsize>) -> Range<NonNull<u8>> {
+        debug_assert!(range.start <= range.end);
+        let start = self.with_addr(range.start.get());
+        let end = self.with_addr(range.end.get());
+        start..end
     }
 
     #[inline(always)]
@@ -611,11 +555,4 @@ impl<const UP: bool, A> RawChunk<UP, A> {
             header: self.header.cast(),
         }
     }
-}
-
-#[must_use]
-#[inline(always)]
-fn is_aligned(addr: usize, align: usize) -> bool {
-    assert!(align.is_power_of_two());
-    addr & (align - 1) == 0
 }
