@@ -348,8 +348,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub(crate) fn set_pos(mut self, ptr: NonNull<u8>) {
-        unsafe { self.header.as_mut().pos.set(ptr) }
+    pub(crate) fn set_pos(self, ptr: NonNull<u8>) {
+        unsafe { self.header.as_ref().pos.set(ptr) }
     }
 
     #[inline(always)]
@@ -519,9 +519,9 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub(crate) fn set_next(mut self, value: Option<Self>) {
+    pub(crate) fn set_next(self, value: Option<Self>) {
         unsafe {
-            self.header.as_mut().next.set(value.map(|c| c.header));
+            self.header.as_ref().next.set(value.map(|c| c.header));
         }
     }
 
