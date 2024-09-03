@@ -175,11 +175,11 @@ up_and_down! {
         bump.try_alloc_uninit_slice_for(slice)
     }
 
-    pub fn Bump_try_alloc_try_with<'a>(bump: &'a Bump, f: fn() -> Result<u32, u32>) -> Result<Result<BumpBox<'a, u32>, u32>> {
+    pub fn Bump_try_alloc_try_with(bump: &Bump, f: fn() -> Result<u32, u32>) -> Result<Result<BumpBox<u32>, u32>> {
         bump.try_alloc_try_with(f)
     }
 
-    pub fn Bump_try_alloc_try_with_mut<'a>(bump: &'a mut Bump, f: fn() -> Result<u32, u32>) -> Result<Result<BumpBox<'a, u32>, u32>> {
+    pub fn Bump_try_alloc_try_with_mut(bump: &mut Bump, f: fn() -> Result<u32, u32>) -> Result<Result<BumpBox<u32>, u32>> {
         bump.try_alloc_try_with_mut(f)
     }
 
