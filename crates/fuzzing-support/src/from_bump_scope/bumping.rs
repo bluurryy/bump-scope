@@ -250,6 +250,10 @@ pub(crate) unsafe fn bump_greedy_up(
             start = unsafe { up_align_nonzero_unchecked(start, layout.align()) }
         } else {
             start = up_align_nonzero(start, layout.align())?;
+
+            if start > end {
+                return None;
+            }
         }
     }
 

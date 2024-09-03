@@ -6,6 +6,7 @@
 - **breaking:** `(try_)alloc_try_with` now requires a guaranteed allocated `Bump(Scope)`
 - **added:** `(try_)alloc_try_with_mut` as an optimized version of `(try_)alloc_try_with`
 - **improved:** `reset_to` now takes a `&` instead of `&mut`
+- **fixed:** potential UB when using `alloc_iter_mut*` or `MutBump*` collections
 
 ## 0.7.0 (2024-08-31)
 - **breaking:** allow returning values from closure arguments of `scoped`, `aligned` and `scoped_aligned`
