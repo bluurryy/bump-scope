@@ -152,25 +152,13 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     ///
     /// `rustc` used to be able to optimize this away (see issue #25)
     #[inline(always)]
-    pub(crate) fn alloc_or_else<M, L, E, F>(self, _: M, layout: L, f: F) -> Result<NonNull<u8>, E>
+    pub(crate) fn alloc_or_else<M, L, E, F>(self, minimum_alignment: M, layout: L, f: F) -> Result<NonNull<u8>, E>
     where
         M: SupportedMinimumAlignment,
         L: LayoutProps,
         F: FnOnce() -> Result<NonNull<u8>, E>,
     {
-        debug_assert!(nonnull::is_aligned_to(self.pos(), M::MIN_ALIGN));
-
-        let remaining = self.remaining_range();
-
-        let props = BumpProps {
-            start: nonnull::addr(remaining.start).get(),
-            end: nonnull::addr(remaining.end).get(),
-            layout: *layout,
-            min_align: M::MIN_ALIGN,
-            align_is_const: L::ALIGN_IS_CONST,
-            size_is_const: L::SIZE_IS_CONST,
-            size_is_multiple_of_align: L::SIZE_IS_MULTIPLE_OF_ALIGN,
-        };
+        let props = self.bump_props(minimum_alignment, layout);
 
         unsafe {
             if UP {
@@ -213,25 +201,13 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     ///
     /// This is like [`alloc_or_else`](Self::alloc_or_else), except that it won't change the bump pointer.
     #[inline(always)]
-    pub(crate) fn reserve_or_else<M, L, E, F>(self, _: M, layout: L, f: F) -> Result<NonNull<u8>, E>
+    pub(crate) fn reserve_or_else<M, L, E, F>(self, minimum_alignment: M, layout: L, f: F) -> Result<NonNull<u8>, E>
     where
         M: SupportedMinimumAlignment,
         L: LayoutProps,
         F: FnOnce() -> Result<NonNull<u8>, E>,
     {
-        debug_assert!(nonnull::is_aligned_to(self.pos(), M::MIN_ALIGN));
-
-        let remaining = self.remaining_range();
-
-        let props = BumpProps {
-            start: nonnull::addr(remaining.start).get(),
-            end: nonnull::addr(remaining.end).get(),
-            layout: *layout,
-            min_align: M::MIN_ALIGN,
-            align_is_const: L::ALIGN_IS_CONST,
-            size_is_const: L::SIZE_IS_CONST,
-            size_is_multiple_of_align: L::SIZE_IS_MULTIPLE_OF_ALIGN,
-        };
+        let props = self.bump_props(minimum_alignment, layout);
 
         unsafe {
             if UP {
@@ -245,6 +221,26 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                     None => f(),
                 }
             }
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn bump_props<M, L>(self, _: M, layout: L) -> BumpProps
+    where
+        M: SupportedMinimumAlignment,
+        L: LayoutProps,
+    {
+        debug_assert!(nonnull::is_aligned_to(self.pos(), M::MIN_ALIGN));
+        let remaining = self.remaining_range();
+
+        BumpProps {
+            start: nonnull::addr(remaining.start).get(),
+            end: nonnull::addr(remaining.end).get(),
+            layout: *layout,
+            min_align: M::MIN_ALIGN,
+            align_is_const: L::ALIGN_IS_CONST,
+            size_is_const: L::SIZE_IS_CONST,
+            size_is_multiple_of_align: L::SIZE_IS_MULTIPLE_OF_ALIGN,
         }
     }
 
