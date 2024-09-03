@@ -50,9 +50,12 @@ spellcheck:
 doc *args:
   cargo test --package bump-scope --lib --all-features -- insert_feature_docs --exact --ignored
   cargo fmt
-  cargo rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition
+  @ just doc-fast {{args}}
   # TODO(blocked): stop stripping links when <https://github.com/orium/cargo-rdme/pull/236> is merged
   cargo rdme --force --intralinks-strip-links
+
+doc-fast *args:
+  cargo rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition
 
 doc-priv *args:
   cargo rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition --document-private-items

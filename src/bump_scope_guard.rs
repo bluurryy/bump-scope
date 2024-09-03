@@ -121,6 +121,9 @@ where
 ///
 /// This fulfills the same purpose as [`BumpScopeGuard`], but it does not need to store
 /// the address which the bump pointer needs to be reset to. It simply resets the bump pointer to the very start.
+///
+/// It is allowed to do so because it takes a `&mut Bump` to create this guard. This means that no
+/// allocations can be live when the guard is created.
 pub struct BumpScopeGuardRoot<'b, A, const MIN_ALIGN: usize = 1, const UP: bool = true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
