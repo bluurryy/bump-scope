@@ -259,11 +259,8 @@ impl<'a> Arbitrary<'a> for FuzzBumpGreedyProps {
             let size: usize = u.arbitrary()?;
             let align_pow2 = u.int_in_range(0..=10)?;
             let align = 1 << align_pow2;
-            Layout::from_size_align(
-                size.checked_mul(align).ok_or(arbitrary::Error::IncorrectFormat)?,
-                align,
-            )
-            .map_err(|_| arbitrary::Error::IncorrectFormat)?
+            Layout::from_size_align(size.checked_mul(align).ok_or(arbitrary::Error::IncorrectFormat)?, align)
+                .map_err(|_| arbitrary::Error::IncorrectFormat)?
         };
 
         let min_align = *u.choose(&[1, 2, 4, 8, 16])?;
