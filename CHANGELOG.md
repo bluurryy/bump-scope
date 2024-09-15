@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.8.1 (2024-09-15)
 - **added:** implementation of `NoDrop` for `BumpBox`, `FixedBumpVec`, `FixedBumpString` and `BumpScope`
 
 ## 0.8.0 (2024-09-03)
