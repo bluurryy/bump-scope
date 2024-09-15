@@ -366,14 +366,14 @@ const DEFAULT_START_CHUNK_SIZE: usize = 512;
 ///
 /// This trait is a best effort for modeling such a constraint. It is not implemented for all types that don't need dropping.
 ///
-/// Every `T` and `[T]` implements `NoDrop` where <code>T: [Copy]</code>.
+/// Every `T where T: Copy` and every `[T] where T: NoDrop` automatically implements `NoDrop`.
 ///
 /// It is used as a bound for [`BumpBox`]'s [`into_ref`](BumpBox::into_ref) and [`into_mut`](BumpBox::into_mut) so you don't accidentally omit a drop that does matter.
 pub trait NoDrop {}
 
 impl NoDrop for str {}
 impl<T: Copy> NoDrop for T {}
-impl<T: Copy> NoDrop for [T] {}
+impl<T: NoDrop> NoDrop for [T] {}
 
 /// Specifies the current minimum alignment of a bump allocator.
 #[derive(Clone, Copy)]

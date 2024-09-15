@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **added:** `NoDrop` blanket impl for `[T]` is more general, replacing `Copy` bound with `NoDrop`
+
 ## 0.8.1 (2024-09-15)
 - **added:** implementation of `NoDrop` for `BumpBox`, `FixedBumpVec`, `FixedBumpString` and `BumpScope`
 
