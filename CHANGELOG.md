@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **added:** implementation of `NoDrop` for `BumpBox`, `FixedBumpVec`, `FixedBumpString` and `BumpScope`
+
 ## 0.8.0 (2024-09-03)
 - **fixed:** panic message on formatting failure to mention that, instead of a wrong "capacity overflow"
 - **fixed:** `(try_)alloc_try_with` UB when allocating inside the provided closure, memory leak when using an *unallocated* bump allocator
