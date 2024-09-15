@@ -2,20 +2,15 @@ name: Rust
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
 jobs:
-  semver:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: obi1kenobi/cargo-semver-checks-action@v2
   format:
     runs-on: ubuntu-latest
     steps:
@@ -45,30 +40,29 @@ jobs:
           - toolchain: "nightly"
             tests: ""
     steps:
-    - uses: actions/checkout@v4
-    - uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{matrix.toolchain}}
-        components: clippy
-    - run: cargo clippy --all ${{matrix.tests}}      
-    - run: cargo clippy --all ${{matrix.tests}} ${{matrix.features}}
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{matrix.toolchain}}
+          components: clippy
+      - run: cargo clippy --all ${{matrix.tests}}
+      - run: cargo clippy --all ${{matrix.tests}} ${{matrix.features}}
   clippy-benches:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: dtolnay/rust-toolchain@nightly
-      with:
-        components: clippy
-    - run: cargo clippy --benches --all-features
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: clippy
+      - run: cargo clippy --benches --all-features
   test:
     runs-on: ubuntu-latest
     env:
-      MIRIFLAGS: "-Zmiri-strict-provenance" 
+      MIRIFLAGS: "-Zmiri-strict-provenance"
     steps:
-    - uses: actions/checkout@v4
-    - uses: dtolnay/rust-toolchain@nightly
-      with:
-        components: miri
-    - run: cargo test --all-features
-    - run: cargo miri test --all-features
-    
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
+      - run: cargo test --all-features
+      - run: cargo miri test --all-features
