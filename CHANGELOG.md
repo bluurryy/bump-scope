@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.8.2 (2024-09-15)
 - **added:** `NoDrop` blanket impl for `[T]` is more general, replacing `Copy` bound with `NoDrop`
 
 ## 0.8.1 (2024-09-15)
