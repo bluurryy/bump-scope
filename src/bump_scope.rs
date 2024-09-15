@@ -19,7 +19,7 @@ use crate::{
     const_param_assert, doc_align_cant_decrease,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::{nonnull, pointer},
-    BaseAllocator, BumpScopeGuard, Checkpoint, ErrorBehavior, GuaranteedAllocatedStats, MinimumAlignment, RawChunk,
+    BaseAllocator, BumpScopeGuard, Checkpoint, ErrorBehavior, GuaranteedAllocatedStats, MinimumAlignment, NoDrop, RawChunk,
     SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink, DEFAULT_START_CHUNK_SIZE,
 };
 
@@ -618,3 +618,5 @@ where
         }
     }
 }
+
+impl<A, const MIN_ALIGN: usize, const UP: bool> NoDrop for BumpScope<'_, A, MIN_ALIGN, UP> {}

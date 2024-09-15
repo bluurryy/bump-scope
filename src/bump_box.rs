@@ -1807,6 +1807,8 @@ impl<'a, T: ?Sized> Drop for BumpBox<'a, T> {
     }
 }
 
+impl<T> NoDrop for BumpBox<'_, T> where T: NoDrop {}
+
 impl<'a, T: ?Sized> Deref for BumpBox<'a, T> {
     type Target = T;
 

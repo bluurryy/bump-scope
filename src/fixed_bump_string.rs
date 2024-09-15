@@ -7,7 +7,7 @@ use core::{
     ptr, str,
 };
 
-use crate::{error_behavior_generic_methods_if, polyfill, BumpBox, ErrorBehavior, FixedBumpVec, FromUtf8Error};
+use crate::{error_behavior_generic_methods_if, polyfill, BumpBox, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop};
 
 /// A [`BumpString`](crate::BumpString) but with a fixed capacity.
 ///
@@ -672,3 +672,5 @@ impl<'a> From<FixedBumpString<'a>> for alloc::string::String {
         value.as_str().into()
     }
 }
+
+impl NoDrop for FixedBumpString<'_> {}

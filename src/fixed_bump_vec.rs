@@ -1631,3 +1631,5 @@ impl std::io::Write for FixedBumpVec<'_, u8> {
         Ok(())
     }
 }
+
+impl<T> NoDrop for FixedBumpVec<'_, T> where T: NoDrop {}
