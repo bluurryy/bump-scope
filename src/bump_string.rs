@@ -119,7 +119,11 @@ macro_rules! bump_string_declaration {
             const MIN_ALIGN: usize = 1,
             const UP: bool = true,
             const GUARANTEED_ALLOCATED: bool = true,
-        > {
+        >
+        where
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+            A: BaseAllocator<GUARANTEED_ALLOCATED>,
+        {
             pub(crate) vec: BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
         }
     };
@@ -170,6 +174,9 @@ where
 
 impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>
     BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     /// Returns this `BumpString`'s capacity, in bytes.
     #[must_use]
@@ -601,6 +608,8 @@ where
     }
 
     /// Turns this `BumpString` into a `FixedBumpString`.
+    ///
+    /// This retains the unused capacity unlike <code>[into_](Self::into_str)([boxed_](Self::into_boxed_str))[str](Self::into_str)</code>.
     #[must_use]
     #[inline(always)]
     pub fn into_fixed_string(self) -> FixedBumpString<'a> {
@@ -609,8 +618,6 @@ where
     }
 
     /// Converts a `BumpString` into a `BumpBox<str>`.
-    ///
-    /// You may want to call [`shrink_to_fit`](Self::shrink_to_fit) before this, so the unused capacity does not take up space.
     #[must_use]
     #[inline(always)]
     pub fn into_boxed_str(self) -> BumpBox<'a, str> {
@@ -618,12 +625,58 @@ where
     }
 
     /// Converts this `BumpString` into `&str` that is live for the entire bump scope.
-    ///
-    /// You may want to call [`shrink_to_fit`](Self::shrink_to_fit) before this, so the unused capacity does not take up space.
     #[must_use]
     #[inline(always)]
     pub fn into_str(self) -> &'a mut str {
         self.into_boxed_str().into_mut()
+    }
+
+    /// Creates a `BumpString` from its parts.
+    ///
+    /// The provided `bump` does not have to be the one the `fixed_string` was allocated in.
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, BumpString };
+    /// # let bump: Bump = Bump::new();
+    /// let mut fixed_string = bump.alloc_fixed_string(3);
+    /// fixed_string.push('a');
+    /// fixed_string.push('b');
+    /// fixed_string.push('c');
+    /// let mut string = BumpString::from_parts(fixed_string, &bump);
+    /// string.push('d');
+    /// string.push('e');
+    /// assert_eq!(string, "abcde");
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    pub fn from_parts(
+        fixed_string: FixedBumpString<'a>,
+        bump: impl Into<&'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>,
+    ) -> Self {
+        let fixed_vec = fixed_string.into_bytes();
+        Self {
+            vec: BumpVec::from_parts(fixed_vec, bump),
+        }
+    }
+
+    /// Turns this `BumpString` into its parts.
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, BumpString };
+    /// # let bump: Bump = Bump::new();
+    /// let mut string = BumpString::new_in(&bump);
+    /// string.reserve(3);
+    /// string.push('a');
+    /// let mut fixed_string = string.into_parts().0;
+    /// assert_eq!(fixed_string.capacity(), 3);
+    /// assert_eq!(fixed_string, "a");
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    pub fn into_parts(self) -> (FixedBumpString<'a>, &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) {
+        let (fixed_vec, bump) = self.vec.into_parts();
+        let fixed_string = unsafe { FixedBumpString::from_utf8_unchecked(fixed_vec) };
+        (fixed_string, bump)
     }
 
     #[doc = include_str!("docs/allocator.md")]
@@ -707,6 +760,9 @@ where
 
 impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Debug
     for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Debug::fmt(self.as_str(), f)
@@ -715,6 +771,9 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED:
 
 impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Display
     for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Display::fmt(self.as_str(), f)
@@ -723,6 +782,9 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED:
 
 impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Deref
     for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     type Target = str;
 
@@ -734,6 +796,9 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED:
 
 impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> DerefMut
     for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
@@ -756,6 +821,9 @@ where
 
 impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> AsRef<str>
     for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline]
     fn as_ref(&self) -> &str {
@@ -765,6 +833,9 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED:
 
 impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> AsMut<str>
     for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline]
     fn as_mut(&mut self) -> &mut str {
@@ -774,6 +845,9 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED:
 
 impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Borrow<str>
     for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline]
     fn borrow(&self) -> &str {
@@ -783,6 +857,9 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED:
 
 impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> BorrowMut<str>
     for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline]
     fn borrow_mut(&mut self) -> &mut str {
@@ -792,6 +869,9 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED:
 
 impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> PartialEq
     for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
@@ -813,7 +893,11 @@ macro_rules! impl_partial_eq {
     ) => {
         $(
             $(#[$attr])*
-            impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> PartialEq<$string_like> for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
+            impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> PartialEq<$string_like> for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+            where
+                MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+                A: BaseAllocator<GUARANTEED_ALLOCATED>,
+            {
                 #[inline]
                 fn eq(&self, other: &$string_like) -> bool {
                     <str as PartialEq>::eq(self, other)
@@ -826,7 +910,11 @@ macro_rules! impl_partial_eq {
             }
 
             $(#[$attr])*
-            impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> PartialEq<BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>> for $string_like {
+            impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> PartialEq<BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>> for $string_like
+            where
+                MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+                A: BaseAllocator<GUARANTEED_ALLOCATED>,
+            {
                 #[inline]
                 fn eq(&self, other: &BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> bool {
                     <str as PartialEq>::eq(self, other)
@@ -855,11 +943,17 @@ impl_partial_eq! {
 
 impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Eq
     for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
 }
 
 impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> PartialOrd
     for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
@@ -889,6 +983,9 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED:
 
 impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Ord
     for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         <str as Ord>::cmp(self, other)
@@ -897,6 +994,9 @@ impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED:
 
 impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Hash
     for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
@@ -922,6 +1022,9 @@ where
 #[cfg(feature = "alloc")]
 impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>
     From<BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>> for alloc::string::String
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline]
     fn from(value: BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> Self {

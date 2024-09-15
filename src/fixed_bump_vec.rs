@@ -14,7 +14,8 @@ use crate::{
     error_behavior_generic_methods_if,
     polyfill::{self, nonnull, pointer, slice},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BumpBox, BumpScope, BumpVec, Drain, ErrorBehavior, ExtractIf, IntoIter, NoDrop, SizedTypeProperties,
+    BaseAllocator, BumpBox, BumpScope, BumpVec, Drain, ErrorBehavior, ExtractIf, IntoIter, MinimumAlignment, NoDrop,
+    SizedTypeProperties, SupportedMinimumAlignment,
 };
 
 /// A [`BumpVec`] but with a fixed capacity.
@@ -118,11 +119,17 @@ impl<'a, T> FixedBumpVec<'a, T> {
     }
 
     /// Turns this `FixedBumpVec<T>` into a `BumpVec<T>`.
+    #[must_use]
+    #[inline(always)]
     pub fn into_vec<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
         self,
         bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
-    ) -> BumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
-        BumpVec { fixed: self, bump }
+    ) -> BumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    where
+        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    {
+        BumpVec::from_parts(self, bump)
     }
 
     /// Turns this `FixedBumpVec<T>` into a `BumpBox<[T]>`.

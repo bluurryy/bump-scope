@@ -7,7 +7,10 @@ use core::{
     ptr, str,
 };
 
-use crate::{error_behavior_generic_methods_if, polyfill, BumpBox, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop};
+use crate::{
+    error_behavior_generic_methods_if, polyfill, BaseAllocator, BumpBox, BumpScope, BumpString, ErrorBehavior, FixedBumpVec,
+    FromUtf8Error, MinimumAlignment, NoDrop, SupportedMinimumAlignment,
+};
 
 /// A [`BumpString`](crate::BumpString) but with a fixed capacity.
 ///
@@ -473,6 +476,20 @@ impl<'a> FixedBumpString<'a> {
     #[inline(always)]
     pub fn into_str(self) -> &'a mut str {
         self.into_boxed_str().into_mut()
+    }
+
+    /// Turns this `FixedBumpString<T>` into a `BumpVec<T>`.
+    #[must_use]
+    #[inline(always)]
+    pub fn into_string<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
+        self,
+        bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+    ) -> BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    where
+        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    {
+        BumpString::from_parts(self, bump)
     }
 }
 
