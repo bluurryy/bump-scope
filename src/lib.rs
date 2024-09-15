@@ -366,6 +366,8 @@ const DEFAULT_START_CHUNK_SIZE: usize = 512;
 ///
 /// This trait is a best effort for modeling such a constraint. It is not implemented for all types that don't need dropping.
 ///
+/// Every `T` and `[T]` implements `NoDrop` where <code>T: [Copy]</code>.
+///
 /// It is used as a bound for [`BumpBox`]'s [`into_ref`](BumpBox::into_ref) and [`into_mut`](BumpBox::into_mut) so you don't accidentally omit a drop that does matter.
 pub trait NoDrop {}
 
@@ -2055,7 +2057,7 @@ mod supported_base_allocator {
 
 /// Trait that any allocator used as a base allocator of a bump allocator needs to implement.
 ///
-/// Every [`Allocator`] that implements [`Clone`] also implements `BaseAllocator` when `GUARANTEED_ALLOCATED`.
+/// Every [`Allocator`] that implements [`Clone`] automatically implements `BaseAllocator` when `GUARANTEED_ALLOCATED`.
 /// When not guaranteed allocated, allocators are additionally required to implement [`Default`].
 ///
 /// This trait is *sealed*: the list of implementors below is total.
