@@ -1,9 +1,9 @@
 use crate::{
-    error_behavior_generic_methods_if,
+    error_behavior_generic_methods_if, owned_slice,
     polyfill::{self, nonnull, pointer, slice},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BaseAllocator, BumpBox, BumpScope, BumpVec, Drain, ErrorBehavior, ExtractIf, IntoIter, MinimumAlignment, NoDrop,
-    SizedTypeProperties, SupportedMinimumAlignment,
+    BaseAllocator, BumpBox, BumpScope, BumpVec, ErrorBehavior, MinimumAlignment, NoDrop, SizedTypeProperties,
+    SupportedMinimumAlignment,
 };
 use core::{
     alloc::Layout,
@@ -996,7 +996,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// v.drain(..);
     /// assert_eq!(v, []);
     /// ```
-    pub fn drain<R>(&mut self, range: R) -> Drain<'_, T>
+    pub fn drain<R>(&mut self, range: R) -> owned_slice::Drain<'_, T>
     where
         R: RangeBounds<usize>,
     {
@@ -1058,7 +1058,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// ```
     ///
     /// [`retain`]: Self::retain
-    pub fn extract_if<F>(&mut self, filter: F) -> ExtractIf<T, F>
+    pub fn extract_if<F>(&mut self, filter: F) -> owned_slice::ExtractIf<T, F>
     where
         F: FnMut(&mut T) -> bool,
     {
@@ -1512,7 +1512,7 @@ where
 
 impl<'a, T> IntoIterator for FixedBumpVec<'a, T> {
     type Item = T;
-    type IntoIter = IntoIter<'a, T>;
+    type IntoIter = owned_slice::IntoIter<'a, T>;
 
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {

@@ -1,8 +1,8 @@
 use crate::{
-    error_behavior_generic_methods_allocation_failure,
+    error_behavior_generic_methods_allocation_failure, owned_slice,
     polyfill::{self, nonnull, pointer},
-    BaseAllocator, BumpBox, BumpScope, ErrorBehavior, GuaranteedAllocatedStats, IntoIter, MinimumAlignment, NoDrop,
-    SetLenOnDrop, SizedTypeProperties, Stats, SupportedMinimumAlignment,
+    BaseAllocator, BumpBox, BumpScope, ErrorBehavior, GuaranteedAllocatedStats, MinimumAlignment, NoDrop, SetLenOnDrop,
+    SizedTypeProperties, Stats, SupportedMinimumAlignment,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
@@ -1620,7 +1620,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     type Item = T;
-    type IntoIter = IntoIter<'b, T>;
+    type IntoIter = owned_slice::IntoIter<'b, T>;
 
     /// Returns an iterator that borrows the `BumpScope` mutably. So you can't use the `BumpScope` while iterating.
     /// The advantage is that the space the items took up is freed.
@@ -1631,7 +1631,7 @@ where
         let this = ManuallyDrop::new(self);
         let start = this.as_nonnull_ptr();
         let slice = nonnull::slice_from_raw_parts(start, this.len);
-        unsafe { IntoIter::new(slice) }
+        unsafe { owned_slice::IntoIter::new(slice) }
     }
 }
 

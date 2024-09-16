@@ -274,20 +274,19 @@ pub mod bump_vec;
 mod bumping;
 mod chunk_raw;
 mod chunk_size;
-mod drain;
 mod error_behavior;
-mod extract_if;
 mod features;
 mod fixed_bump_string;
 mod fixed_bump_vec;
 mod from_utf8_error;
-mod into_iter;
 mod layout;
 mod mut_bump_string;
 /// Contains [`MutBumpVec`] and associated types.
 mod mut_bump_vec;
 /// Contains [`MutBumpVecRev`] and associated types.
 mod mut_bump_vec_rev;
+/// Contains types associated with owned slices.
+pub mod owned_slice;
 mod polyfill;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
@@ -324,13 +323,10 @@ use core::{
     num::NonZeroUsize,
     ptr::NonNull,
 };
-pub use drain::Drain;
 use error_behavior::ErrorBehavior;
-pub use extract_if::ExtractIf;
 pub use fixed_bump_string::FixedBumpString;
 pub use fixed_bump_vec::FixedBumpVec;
 pub use from_utf8_error::FromUtf8Error;
-pub use into_iter::IntoIter;
 use layout::{ArrayLayout, CustomLayout};
 pub use mut_bump_string::MutBumpString;
 pub use mut_bump_vec::MutBumpVec;

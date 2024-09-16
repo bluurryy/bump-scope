@@ -41,8 +41,8 @@ const MALLOC_OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
 const OVERHEAD: usize = MALLOC_OVERHEAD + size_of::<ChunkHeader<Global>>();
 
 use crate::{
-    chunk_size::AssumedMallocOverhead, infallible, mut_bump_format, mut_bump_vec, mut_bump_vec_rev, Bump, BumpBox,
-    BumpScope, BumpVec, Chunk, ChunkHeader, ChunkSize, FmtFn, IntoIter, MinimumAlignment, MutBumpString, MutBumpVec,
+    chunk_size::AssumedMallocOverhead, infallible, mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice, Bump,
+    BumpBox, BumpScope, BumpVec, Chunk, ChunkHeader, ChunkSize, FmtFn, MinimumAlignment, MutBumpString, MutBumpVec,
     MutBumpVecRev, SupportedMinimumAlignment,
 };
 
@@ -52,7 +52,9 @@ fn assert_covariant() {
         x
     }
 
-    fn bump_slice_iter<'a, 'other>(x: IntoIter<'static, &'static str>) -> IntoIter<'a, &'other str> {
+    fn bump_slice_iter<'a, 'other>(
+        x: owned_slice::IntoIter<'static, &'static str>,
+    ) -> owned_slice::IntoIter<'a, &'other str> {
         x
     }
 

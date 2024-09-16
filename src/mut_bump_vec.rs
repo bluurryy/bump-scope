@@ -1,8 +1,8 @@
 use crate::{
-    error_behavior_generic_methods_allocation_failure,
+    error_behavior_generic_methods_allocation_failure, owned_slice,
     polyfill::{nonnull, pointer, slice},
-    BaseAllocator, BumpBox, BumpScope, Drain, ErrorBehavior, ExtractIf, FixedBumpVec, GuaranteedAllocatedStats, IntoIter,
-    MinimumAlignment, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment,
+    BaseAllocator, BumpBox, BumpScope, ErrorBehavior, FixedBumpVec, GuaranteedAllocatedStats, MinimumAlignment, NoDrop,
+    SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
@@ -1196,7 +1196,7 @@ where
     /// v.drain(..);
     /// assert_eq!(v, []);
     /// ```
-    pub fn drain<R>(&mut self, range: R) -> Drain<'_, T>
+    pub fn drain<R>(&mut self, range: R) -> owned_slice::Drain<'_, T>
     where
         R: RangeBounds<usize>,
     {
@@ -1257,7 +1257,7 @@ where
     /// ```
     ///
     /// [`retain`]: Self::retain
-    pub fn extract_if<F>(&mut self, filter: F) -> ExtractIf<T, F>
+    pub fn extract_if<F>(&mut self, filter: F) -> owned_slice::ExtractIf<T, F>
     where
         F: FnMut(&mut T) -> bool,
     {
@@ -1691,7 +1691,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     type Item = T;
-    type IntoIter = IntoIter<'b, T>;
+    type IntoIter = owned_slice::IntoIter<'b, T>;
 
     /// Returns an iterator that borrows the `BumpScope` mutably. So you can't use the `BumpScope` while iterating.
     /// The advantage is that the space the items took up is freed.

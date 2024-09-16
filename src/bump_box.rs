@@ -3,8 +3,9 @@ mod slice_initializer;
 #[cfg(feature = "alloc")]
 use crate::WithLifetime;
 use crate::{
+    owned_slice,
     polyfill::{self, nonnull},
-    BumpAllocator, Drain, ExtractIf, FromUtf8Error, IntoIter, NoDrop, SizedTypeProperties,
+    BumpAllocator, FromUtf8Error, NoDrop, SizedTypeProperties,
 };
 #[cfg(feature = "alloc")]
 #[allow(unused_imports)]
@@ -1298,11 +1299,11 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// v.drain(..);
     /// assert_eq!(v, []);
     /// ```
-    pub fn drain<R>(&mut self, range: R) -> Drain<'_, T>
+    pub fn drain<R>(&mut self, range: R) -> owned_slice::Drain<'_, T>
     where
         R: RangeBounds<usize>,
     {
-        Drain::new(self, range)
+        owned_slice::Drain::new(self, range)
     }
 
     /// Creates an iterator which uses a closure to determine if an element should be removed.
@@ -1358,11 +1359,11 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// ```
     ///
     /// [`retain`]: Self::retain
-    pub fn extract_if<F>(&mut self, filter: F) -> ExtractIf<T, F>
+    pub fn extract_if<F>(&mut self, filter: F) -> owned_slice::ExtractIf<T, F>
     where
         F: FnMut(&mut T) -> bool,
     {
-        ExtractIf::new(self, filter)
+        owned_slice::ExtractIf::new(self, filter)
     }
 
     /// Removes consecutive repeated elements in the slice according to the
@@ -2091,12 +2092,12 @@ impl<'a> Extend<BumpBox<'a, str>> for alloc::string::String {
 
 impl<'a, T> IntoIterator for BumpBox<'a, [T]> {
     type Item = T;
-    type IntoIter = IntoIter<'a, T>;
+    type IntoIter = owned_slice::IntoIter<'a, T>;
 
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
         let this = ManuallyDrop::new(self);
-        unsafe { IntoIter::new(this.ptr) }
+        unsafe { owned_slice::IntoIter::new(this.ptr) }
     }
 }
 

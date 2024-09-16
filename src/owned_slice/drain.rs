@@ -1,6 +1,7 @@
 use crate::{
+    owned_slice,
     polyfill::{nonnull, slice},
-    BumpBox, IntoIter, SizedTypeProperties,
+    BumpBox, SizedTypeProperties,
 };
 use core::{
     fmt,
@@ -35,7 +36,7 @@ pub struct Drain<'a, T: 'a> {
     /// Length of tail
     tail_len: usize,
     /// Current remaining range to remove
-    iter: IntoIter<'a, T>,
+    iter: owned_slice::IntoIter<'a, T>,
     slice: &'a mut NonNull<[T]>,
 }
 
@@ -67,7 +68,7 @@ impl<'a, T> Drain<'a, T> {
             Drain {
                 tail_start: range.end,
                 tail_len: len - range.end,
-                iter: IntoIter::new_ranged(boxed.ptr, range),
+                iter: owned_slice::IntoIter::new_ranged(boxed.ptr, range),
                 slice: &mut boxed.ptr,
             }
         }
