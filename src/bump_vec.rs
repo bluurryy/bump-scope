@@ -1,8 +1,18 @@
+mod into_iter;
+
+use crate::{
+    bump_down, error_behavior_generic_methods_allocation_failure,
+    polyfill::{nonnull, pointer, slice},
+    up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScope, Drain, ErrorBehavior, ExtractIf, FixedBumpVec,
+    GuaranteedAllocatedStats, MinimumAlignment, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats,
+    SupportedMinimumAlignment,
+};
 use core::{
     borrow::{Borrow, BorrowMut},
     fmt::Debug,
     hash::Hash,
     iter,
+    marker::PhantomData,
     mem::{self, ManuallyDrop, MaybeUninit},
     num::NonZeroUsize,
     ops::{Deref, DerefMut, Index, IndexMut, RangeBounds},
@@ -10,14 +20,7 @@ use core::{
     ptr::{self, NonNull},
     slice::SliceIndex,
 };
-
-use crate::{
-    bump_down, error_behavior_generic_methods_allocation_failure,
-    polyfill::{nonnull, pointer, slice},
-    up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScope, Drain, ErrorBehavior, ExtractIf, FixedBumpVec,
-    GuaranteedAllocatedStats, IntoIter, MinimumAlignment, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats,
-    SupportedMinimumAlignment,
-};
+pub use into_iter::IntoIter;
 
 /// This is like [`vec!`] but allocates inside a `Bump` or `BumpScope`, returning a [`BumpVec`].
 ///
@@ -1929,12 +1932,31 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     type Item = T;
-    type IntoIter = IntoIter<'a, T>;
+    type IntoIter = IntoIter<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>;
 
-    #[inline(always)]
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        // FIXME: use a dellocating `IntoIter`
-        self.into_boxed_slice().into_iter()
+        unsafe {
+            let me = ManuallyDrop::new(self);
+
+            let begin = me.as_non_null_ptr();
+            let end = if T::IS_ZST {
+                nonnull::wrapping_byte_add(begin, me.len())
+            } else {
+                nonnull::add(begin, me.len())
+            };
+
+            IntoIter {
+                buf: begin,
+                cap: me.capacity(),
+
+                ptr: begin,
+                end,
+
+                bump: me.bump,
+                marker: PhantomData,
+            }
+        }
     }
 }
 

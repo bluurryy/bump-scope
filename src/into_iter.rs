@@ -15,7 +15,6 @@ use crate::{polyfill::nonnull, BumpBox, SizedTypeProperties};
 /// This `struct` is created by the `into_iter` method on
 /// [`BumpBox`](BumpBox::into_iter),
 /// [`FixedBumpVec`](crate::FixedBumpVec::into_iter),
-/// [`BumpVec`](crate::BumpVec::into_iter),
 /// [`MutBumpVec`](crate::MutBumpVec::into_iter) and
 /// [`MutBumpVecRev`](crate::MutBumpVecRev::into_iter)
 /// (provided by the [`IntoIterator`] trait).

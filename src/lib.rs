@@ -280,7 +280,7 @@ mod bump_scope_guard;
 mod mut_bump_string;
 
 /// Contains [`BumpVec`] and associated types.
-mod bump_vec;
+pub mod bump_vec;
 
 /// Contains [`MutBumpVec`] and associated types.
 mod mut_bump_vec;
