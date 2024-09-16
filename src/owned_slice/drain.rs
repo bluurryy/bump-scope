@@ -24,7 +24,7 @@ use core::{
 /// # Example
 ///
 /// ```
-/// use bump_scope::{ Bump, Drain };
+/// use bump_scope::{ Bump, owned_slice::Drain };
 /// let bump: Bump = Bump::new();
 ///
 /// let mut v = bump.alloc_slice_copy(&[0, 1, 2]);

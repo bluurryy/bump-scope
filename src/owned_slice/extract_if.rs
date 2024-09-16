@@ -14,7 +14,7 @@ use core::ptr::NonNull;
 /// # Example
 ///
 /// ```
-/// use bump_scope::{ Bump, ExtractIf };
+/// use bump_scope::{ Bump, owned_slice::ExtractIf };
 /// let bump: Bump = Bump::new();
 ///
 /// let mut v = bump.alloc_slice_copy(&[0, 1, 2]);
