@@ -30,7 +30,7 @@ inspect_asm::alloc_fmt::try_down:
 	mov rax, qword ptr [rsp]
 	mov rcx, qword ptr [rsp + 24]
 	mov rcx, qword ptr [rcx]
-	cmp rax, qword ptr [rcx]
+	cmp qword ptr [rcx], rax
 	jne .LBB0_0
 	add rax, qword ptr [rsp + 16]
 	mov qword ptr [rcx], rax
@@ -108,7 +108,7 @@ inspect_asm::alloc_fmt::try_down:
 	mov rcx, qword ptr [rsp]
 	mov rdx, qword ptr [rsp + 24]
 	mov rdx, qword ptr [rdx]
-	cmp rcx, qword ptr [rdx]
+	cmp qword ptr [rdx], rcx
 	jne .LBB0_10
 	add rcx, qword ptr [rsp + 16]
 	mov qword ptr [rdx], rcx

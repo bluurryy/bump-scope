@@ -99,14 +99,16 @@ inspect_asm::alloc_fmt::down_a:
 .LBB0_8:
 	call qword ptr [rip + bump_scope::private::format_trait_error@GOTPCREL]
 	ud2
-	mov rcx, qword ptr [rsp]
-	mov rdx, qword ptr [rsp + 24]
-	mov rdx, qword ptr [rdx]
-	cmp rcx, qword ptr [rdx]
+	mov rdx, qword ptr [rsp]
+	mov rcx, qword ptr [rsp + 24]
+	mov rcx, qword ptr [rcx]
+	cmp qword ptr [rcx], rdx
 	jne .LBB0_9
-	add rcx, qword ptr [rsp + 16]
-	and rcx, -4
-	mov qword ptr [rdx], rcx
+	mov rsi, qword ptr [rsp + 16]
+	add rdx, rsi
+	add rdx, 3
+	and rdx, -4
+	mov qword ptr [rcx], rdx
 .LBB0_9:
 	mov rdi, rax
 	call _Unwind_Resume@PLT

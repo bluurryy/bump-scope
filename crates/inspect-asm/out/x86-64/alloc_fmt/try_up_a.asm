@@ -30,8 +30,6 @@ inspect_asm::alloc_fmt::try_up_a:
 	mov rcx, qword ptr [rcx]
 	cmp rdx, qword ptr [rcx]
 	jne .LBB0_0
-	add rax, 3
-	and rax, -4
 	mov qword ptr [rcx], rax
 .LBB0_0:
 	xor eax, eax
@@ -78,8 +76,6 @@ inspect_asm::alloc_fmt::try_up_a:
 	mov rdx, qword ptr [rdx]
 	cmp rsi, qword ptr [rdx]
 	jne .LBB0_5
-	add rcx, 3
-	and rcx, -4
 	mov qword ptr [rdx], rcx
 .LBB0_5:
 	mov rdi, rax

@@ -138,10 +138,11 @@ inspect_asm::alloc_iter_u32::down_a:
 	mov rdx, qword ptr [rsp + 8]
 	mov rcx, qword ptr [rsp + 32]
 	mov rcx, qword ptr [rcx]
-	cmp rdx, qword ptr [rcx]
+	cmp qword ptr [rcx], rdx
 	jne .LBB0_16
 	mov rsi, qword ptr [rsp + 24]
 	lea rdx, [rdx + 4*rsi]
+	add rdx, 3
 	and rdx, -4
 	mov qword ptr [rcx], rdx
 .LBB0_16:

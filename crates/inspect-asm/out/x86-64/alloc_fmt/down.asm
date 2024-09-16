@@ -100,7 +100,7 @@ inspect_asm::alloc_fmt::down:
 	mov rcx, qword ptr [rsp]
 	mov rdx, qword ptr [rsp + 24]
 	mov rdx, qword ptr [rdx]
-	cmp rcx, qword ptr [rdx]
+	cmp qword ptr [rdx], rcx
 	jne .LBB0_9
 	add rcx, qword ptr [rsp + 16]
 	mov qword ptr [rdx], rcx

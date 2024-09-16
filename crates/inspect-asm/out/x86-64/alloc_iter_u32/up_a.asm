@@ -102,13 +102,11 @@ inspect_asm::alloc_iter_u32::up_a:
 	call qword ptr [rip + bump_scope::private::capacity_overflow@GOTPCREL]
 	mov rcx, qword ptr [rsp]
 	mov rdx, qword ptr [rsp + 16]
-	lea rsi, [rcx + 4*rdx]
-	mov rdx, qword ptr [rsp + 24]
-	mov rdx, qword ptr [rdx]
-	cmp rsi, qword ptr [rdx]
+	mov rsi, qword ptr [rsp + 24]
+	lea rdi, [rcx + 4*rdx]
+	mov rdx, qword ptr [rsi]
+	cmp rdi, qword ptr [rdx]
 	jne .LBB0_11
-	add rcx, 3
-	and rcx, -4
 	mov qword ptr [rdx], rcx
 .LBB0_11:
 	mov rdi, rax

@@ -7,7 +7,9 @@ use crate::{
     GuaranteedAllocatedStats, MinimumAlignment, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats,
     SupportedMinimumAlignment,
 };
+use allocator_api2::alloc::Allocator;
 use core::{
+    alloc::Layout,
     borrow::{Borrow, BorrowMut},
     fmt::Debug,
     hash::Hash,
@@ -216,8 +218,34 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     fn drop(&mut self) {
-        self.clear();
-        self.shrink_to_fit();
+        struct DropGuard<'i, 'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
+            &'i mut BumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+        )
+        where
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+            A: BaseAllocator<GUARANTEED_ALLOCATED>;
+
+        impl<'i, 'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Drop
+            for DropGuard<'i, 'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+        where
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+            A: BaseAllocator<GUARANTEED_ALLOCATED>,
+        {
+            fn drop(&mut self) {
+                unsafe {
+                    let ptr = self.0.fixed.initialized.ptr.cast();
+                    let layout = Layout::from_size_align_unchecked(self.0.fixed.capacity * T::SIZE, T::ALIGN);
+                    self.0.bump.deallocate(ptr, layout)
+                }
+            }
+        }
+
+        let guard = DropGuard(self);
+
+        // destroy the remaining elements
+        guard.0.clear();
+
+        // now `guard` will be dropped and deallocate the memory
     }
 }
 

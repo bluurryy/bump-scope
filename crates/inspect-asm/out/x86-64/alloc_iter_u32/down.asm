@@ -136,15 +136,14 @@ inspect_asm::alloc_iter_u32::down:
 	jmp .LBB0_0
 .LBB0_15:
 	call qword ptr [rip + bump_scope::private::capacity_overflow@GOTPCREL]
-	mov rdx, qword ptr [rsp + 8]
-	mov rcx, qword ptr [rsp + 32]
-	mov rcx, qword ptr [rcx]
-	cmp rdx, qword ptr [rcx]
+	mov rcx, qword ptr [rsp + 8]
+	mov rdx, qword ptr [rsp + 32]
+	mov rdx, qword ptr [rdx]
+	cmp qword ptr [rdx], rcx
 	jne .LBB0_16
 	mov rsi, qword ptr [rsp + 24]
-	lea rdx, [rdx + 4*rsi]
-	and rdx, -4
-	mov qword ptr [rcx], rdx
+	lea rcx, [rcx + 4*rsi]
+	mov qword ptr [rdx], rcx
 .LBB0_16:
 	mov rdi, rax
 	call _Unwind_Resume@PLT

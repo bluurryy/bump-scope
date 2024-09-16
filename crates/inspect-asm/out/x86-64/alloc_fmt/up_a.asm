@@ -66,8 +66,6 @@ inspect_asm::alloc_fmt::up_a:
 	mov rdx, qword ptr [rdx]
 	cmp rsi, qword ptr [rdx]
 	jne .LBB0_4
-	add rcx, 3
-	and rcx, -4
 	mov qword ptr [rdx], rcx
 .LBB0_4:
 	mov rdi, rax
