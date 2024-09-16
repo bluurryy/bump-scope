@@ -8,10 +8,10 @@ inspect_asm::alloc_iter_u32::down_a:
 	sub rsp, 40
 	mov r14, rdi
 	test rdx, rdx
-	je .LBB0_5
+	je .LBB0_4
 	mov rax, rdx
 	shr rax, 61
-	jne .LBB0_11
+	jne .LBB0_15
 	mov r15, rsi
 	lea r12, [4*rdx]
 	mov rcx, qword ptr [r14]
@@ -19,7 +19,7 @@ inspect_asm::alloc_iter_u32::down_a:
 	mov rsi, rax
 	sub rsi, qword ptr [rcx + 8]
 	cmp r12, rsi
-	ja .LBB0_10
+	ja .LBB0_14
 	sub rax, r12
 	mov qword ptr [rcx], rax
 .LBB0_0:
@@ -50,41 +50,73 @@ inspect_asm::alloc_iter_u32::down_a:
 .LBB0_3:
 	mov rsi, qword ptr [rsp + 8]
 	mov r14, qword ptr [rsp + 32]
-	mov rax, qword ptr [r14]
-	cmp rsi, qword ptr [rax]
-	je .LBB0_6
+	jmp .LBB0_5
 .LBB0_4:
-	mov rax, rsi
-	jmp .LBB0_9
-.LBB0_5:
 	mov qword ptr [rsp + 24], rdx
 	mov esi, 4
 	xor ebx, ebx
+.LBB0_5:
+	lea r15, [4*rbx]
 	mov rax, qword ptr [r14]
-	cmp rsi, qword ptr [rax]
-	jne .LBB0_4
+	mov rax, qword ptr [rax]
+	cmp rsi, rax
+	je .LBB0_7
+	mov r12, rsi
+	cmp r12, rax
+	je .LBB0_10
 .LBB0_6:
-	lea rdx, [4*rbx]
+	mov rax, r12
+	jmp .LBB0_13
+.LBB0_7:
 	mov rax, qword ptr [rsp + 24]
 	lea rax, [rsi + 4*rax]
-	xor edi, edi
-	sub rax, rdx
-	cmovae rdi, rax
-	and rdi, -4
-	lea rax, [rdx + rsi]
-	mov r15, rdi
-	cmp rax, rdi
-	jbe .LBB0_7
+	xor r12d, r12d
+	sub rax, r15
+	cmovae r12, rax
+	and r12, -4
+	lea rax, [r15 + rsi]
+	mov rdi, r12
+	mov rdx, r15
+	cmp rax, r12
+	jbe .LBB0_8
 	call qword ptr [rip + memmove@GOTPCREL]
-	jmp .LBB0_8
-.LBB0_7:
-	call qword ptr [rip + memcpy@GOTPCREL]
+	jmp .LBB0_9
 .LBB0_8:
-	mov rcx, qword ptr [r14]
-	mov rax, r15
-	mov qword ptr [rcx], r15
-	mov qword ptr [rsp + 24], rbx
+	call qword ptr [rip + memcpy@GOTPCREL]
 .LBB0_9:
+	mov rax, qword ptr [r14]
+	mov qword ptr [rax], r12
+	mov qword ptr [rsp + 24], rbx
+	mov rax, qword ptr [r14]
+	mov rax, qword ptr [rax]
+	cmp r12, rax
+	jne .LBB0_6
+.LBB0_10:
+	mov rcx, qword ptr [rsp + 24]
+	lea rcx, [rax + 4*rcx]
+	xor edx, edx
+	sub rcx, r15
+	cmovae rdx, rcx
+	and rdx, -4
+	lea rcx, [r15 + rax]
+	mov rdi, rdx
+	sub rdi, rax
+	add rdi, r12
+	mov r13, rdi
+	mov rsi, r12
+	cmp rcx, rdx
+	jbe .LBB0_11
+	mov rdx, r15
+	call qword ptr [rip + memmove@GOTPCREL]
+	jmp .LBB0_12
+.LBB0_11:
+	mov rdx, r15
+	call qword ptr [rip + memcpy@GOTPCREL]
+.LBB0_12:
+	mov rcx, qword ptr [r14]
+	mov rax, r13
+	mov qword ptr [rcx], r13
+.LBB0_13:
 	mov rdx, rbx
 	add rsp, 40
 	pop rbx
@@ -94,12 +126,24 @@ inspect_asm::alloc_iter_u32::down_a:
 	pop r15
 	pop rbp
 	ret
-.LBB0_10:
+.LBB0_14:
 	mov rdi, r14
 	mov rsi, rdx
 	mov rbx, rdx
 	call bump_scope::bump_scope::BumpScope<A,_,_,_>::do_alloc_slice_in_another_chunk
 	mov rdx, rbx
 	jmp .LBB0_0
-.LBB0_11:
+.LBB0_15:
 	call qword ptr [rip + bump_scope::private::capacity_overflow@GOTPCREL]
+	mov rdx, qword ptr [rsp + 8]
+	mov rcx, qword ptr [rsp + 32]
+	mov rcx, qword ptr [rcx]
+	cmp rdx, qword ptr [rcx]
+	jne .LBB0_16
+	mov rsi, qword ptr [rsp + 24]
+	lea rdx, [rdx + 4*rsi]
+	and rdx, -4
+	mov qword ptr [rcx], rdx
+.LBB0_16:
+	mov rdi, rax
+	call _Unwind_Resume@PLT
