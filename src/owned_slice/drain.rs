@@ -79,7 +79,9 @@ impl<'a, T> Drain<'a, T> {
     /// # Examples
     ///
     /// ```
-    /// let mut vec = vec!['a', 'b', 'c'];
+    /// # use bump_scope::{ Bump, bump_vec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = bump_vec![in bump; 'a', 'b', 'c'];
     /// let mut drain = vec.drain(..);
     /// assert_eq!(drain.as_slice(), &['a', 'b', 'c']);
     /// let _ = drain.next().unwrap();
@@ -95,9 +97,9 @@ impl<'a, T> Drain<'a, T> {
     /// # Examples
     ///
     /// ```
-    /// #![feature(drain_keep_rest)]
-    ///
-    /// let mut vec = vec!['a', 'b', 'c'];
+    /// # use bump_scope::{ Bump, bump_vec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = bump_vec![in bump; 'a', 'b', 'c'];
     /// let mut drain = vec.drain(..);
     ///
     /// assert_eq!(drain.next().unwrap(), 'a');
