@@ -13,6 +13,7 @@ use core::{
     borrow::{Borrow, BorrowMut},
     fmt::Debug,
     hash::Hash,
+    hint::unreachable_unchecked,
     iter,
     marker::PhantomData,
     mem::{self, ManuallyDrop, MaybeUninit},
@@ -1205,51 +1206,52 @@ where
     /// assert_eq!(bump.stats().allocated(), 3 * 4);
     /// ```
     pub fn shrink_to_fit(&mut self) {
-        let old_ptr = self.as_non_null_ptr();
+        let old_ptr = self.as_non_null_ptr().cast::<u8>();
         let old_size = self.fixed.capacity * T::SIZE; // we already allocated that amount so this can't overflow
         let new_size = self.len() * T::SIZE; // its less than the capacity so this can't overflow
 
+        // Adapted from `Allocator::shrink`.
         unsafe {
             let is_last = if UP {
-                nonnull::byte_add(old_ptr, old_size).cast() == self.bump.chunk.get().pos()
+                old_ptr.as_ptr().add(old_size) == self.bump.chunk.get().pos().as_ptr()
             } else {
-                old_ptr.cast() == self.bump.chunk.get().pos()
+                old_ptr == self.bump.chunk.get().pos()
             };
 
-            if is_last {
-                // we can only do something if this is the last allocation
+            // if that's not the last allocation, there is nothing we can do
+            if !is_last {
+                return;
+            }
 
-                if UP {
-                    let end = nonnull::addr(old_ptr).get() + new_size;
+            if UP {
+                let end = nonnull::addr(old_ptr).get() + new_size;
 
-                    // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
-                    let new_pos = up_align_usize_unchecked(end, MIN_ALIGN);
+                // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
+                let new_pos = up_align_usize_unchecked(end, MIN_ALIGN);
 
-                    self.bump.chunk.get().set_pos_addr(new_pos);
+                self.bump.chunk.get().set_pos_addr(new_pos);
+            } else {
+                let old_addr = nonnull::addr(old_ptr);
+                let old_addr_old_end = NonZeroUsize::new_unchecked(old_addr.get() + old_size);
+
+                let new_addr = bump_down(old_addr_old_end, new_size, T::ALIGN.max(MIN_ALIGN));
+                let new_addr = NonZeroUsize::new_unchecked(new_addr);
+                let old_addr_new_end = NonZeroUsize::new_unchecked(old_addr.get() + new_size);
+
+                let new_ptr = nonnull::with_addr(old_ptr, new_addr);
+                let overlaps = old_addr_new_end > new_addr;
+
+                if overlaps {
+                    nonnull::copy(old_ptr, new_ptr, new_size);
                 } else {
-                    let old_addr = nonnull::addr(old_ptr);
-                    let old_addr_old_end = NonZeroUsize::new_unchecked(old_addr.get() + old_size);
-
-                    let new_addr = bump_down(old_addr_old_end, new_size, T::ALIGN.max(MIN_ALIGN));
-                    let new_addr = NonZeroUsize::new_unchecked(new_addr);
-                    let old_addr_new_end = NonZeroUsize::new_unchecked(old_addr.get() + new_size);
-
-                    let new_ptr = nonnull::with_addr(old_ptr, new_addr);
-
-                    let overlaps = old_addr_new_end > new_addr;
-
-                    if overlaps {
-                        nonnull::copy::<u8>(old_ptr.cast(), new_ptr.cast(), new_size);
-                    } else {
-                        nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), new_size);
-                    }
-
-                    self.bump.chunk.get().set_pos(new_ptr.cast());
-                    self.fixed.initialized.set_ptr(new_ptr);
+                    nonnull::copy_nonoverlapping(old_ptr, new_ptr, new_size);
                 }
 
-                self.fixed.capacity = self.len();
+                self.bump.chunk.get().set_pos(new_ptr);
+                self.fixed.initialized.set_ptr(new_ptr.cast());
             }
+
+            self.fixed.capacity = self.len();
         }
     }
 
