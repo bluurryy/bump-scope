@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+- **added:** `from_parts` and `into_parts` to `BumpVec` and `BumpString`
+- **added:** `FixedBumpString::into_string` returning a `BumpString`
+- **breaking:** `BumpVec` and `BumpString` now deallocate on drop, and shrink when calling `into_(boxed_)slice`
+- **breaking:** `BumpVec::into_iter` now returns `bump_vec::IntoIter` which deallocates on drop
+
 ## 0.8.2 (2024-09-15)
 - **added:** `NoDrop` blanket impl for `[T]` is more general, replacing `Copy` bound with `NoDrop`
 

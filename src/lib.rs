@@ -280,7 +280,7 @@ mod bump_scope_guard;
 mod mut_bump_string;
 
 /// Contains [`BumpVec`] and associated types.
-mod bump_vec;
+pub mod bump_vec;
 
 /// Contains [`MutBumpVec`] and associated types.
 mod mut_bump_vec;
@@ -328,6 +328,7 @@ pub use bump_pool::{BumpPool, BumpPoolGuard};
 pub use bump_scope::BumpScope;
 pub use bump_scope_guard::{BumpScopeGuard, BumpScopeGuardRoot, Checkpoint};
 pub use bump_string::BumpString;
+#[doc(inline)]
 pub use bump_vec::BumpVec;
 pub use drain::Drain;
 pub use extract_if::ExtractIf;

@@ -11,28 +11,27 @@ use core::{
 };
 use std::io::IoSlice;
 
-#[cfg(feature = "nightly-coerce-unsized")]
-mod coerce_unsized;
-
+mod alloc_fmt;
 mod alloc_iter;
 mod alloc_slice;
+mod alloc_try_with;
 mod allocator_api;
+mod bump_vec;
 mod bump_vec_doc;
+mod chunk_size;
+#[cfg(feature = "nightly-coerce-unsized")]
+mod coerce_unsized;
 mod from_std;
 mod mut_bump_vec_doc;
 mod mut_bump_vec_rev_doc;
 mod mut_collections_do_not_waste_space;
 mod panic_safety;
 mod pool;
-mod unaligned_collection;
-mod vec;
-
-mod alloc_fmt;
-mod alloc_try_with;
-mod chunk_size;
 #[cfg(feature = "serde")]
 mod serde;
+mod unaligned_collection;
 mod unallocated;
+mod vec;
 
 extern crate std;
 
