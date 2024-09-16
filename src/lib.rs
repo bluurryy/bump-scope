@@ -61,7 +61,7 @@
 //! # What is bump allocation?
 //! A bump allocator owns a big chunk of memory. It has a pointer that starts at one end of that chunk.
 //! When an allocation is made that pointer gets aligned and bumped towards the other end of the chunk by the allocation's size.
-//! When its chunk is full, it allocates another chunk with twice the size.
+//! When its chunk is full, this allocator allocates another chunk with twice the size.
 //!
 //! This makes allocations very fast. The drawback is that you can't reclaim memory like you do with a more general allocator.
 //! Memory for the most recent allocation *can* be reclaimed. You can also use [scopes, checkpoints](#scopes-and-checkpoints) and [`reset`](Bump::reset) to reclaim memory.
