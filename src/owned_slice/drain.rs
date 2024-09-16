@@ -11,7 +11,7 @@ use core::{
     ptr::{self, NonNull},
 };
 
-/// A draining iterator owned slices.
+/// A draining iterator for owned slices.
 ///
 /// This struct is created by the `drain` method on
 /// [`BumpBox`](BumpBox::drain),
