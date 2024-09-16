@@ -235,7 +235,7 @@ where
                 unsafe {
                     let ptr = self.0.fixed.initialized.ptr.cast();
                     let layout = Layout::from_size_align_unchecked(self.0.fixed.capacity * T::SIZE, T::ALIGN);
-                    self.0.bump.deallocate(ptr, layout)
+                    self.0.bump.deallocate(ptr, layout);
                 }
             }
         }
