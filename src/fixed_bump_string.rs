@@ -1,3 +1,7 @@
+use crate::{
+    error_behavior_generic_methods_if, polyfill, BaseAllocator, BumpBox, BumpScope, BumpString, ErrorBehavior, FixedBumpVec,
+    FromUtf8Error, MinimumAlignment, NoDrop, SupportedMinimumAlignment,
+};
 use core::{
     borrow::{Borrow, BorrowMut},
     fmt::{self, Debug, Display},
@@ -5,11 +9,6 @@ use core::{
     mem::MaybeUninit,
     ops::{Deref, DerefMut, Range, RangeBounds},
     ptr, str,
-};
-
-use crate::{
-    error_behavior_generic_methods_if, polyfill, BaseAllocator, BumpBox, BumpScope, BumpString, ErrorBehavior, FixedBumpVec,
-    FromUtf8Error, MinimumAlignment, NoDrop, SupportedMinimumAlignment,
 };
 
 /// A [`BumpString`](crate::BumpString) but with a fixed capacity.

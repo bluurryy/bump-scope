@@ -1,11 +1,9 @@
-use core::{alloc::Layout, mem::MaybeUninit, ptr::NonNull};
-
-#[cfg(feature = "alloc")]
-use core::fmt;
-
 use crate::{
     layout::LayoutProps, BaseAllocator, Bump, BumpBox, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment,
 };
+#[cfg(feature = "alloc")]
+use core::fmt;
+use core::{alloc::Layout, mem::MaybeUninit, ptr::NonNull};
 
 pub(crate) trait Sealed {
     fn alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<BumpBox<MaybeUninit<T>>, B>;

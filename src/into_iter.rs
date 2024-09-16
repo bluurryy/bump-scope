@@ -1,3 +1,4 @@
+use crate::{polyfill::nonnull, BumpBox, SizedTypeProperties};
 use core::{
     fmt::Debug,
     iter::FusedIterator,
@@ -7,8 +8,6 @@ use core::{
     ptr::NonNull,
     slice,
 };
-
-use crate::{polyfill::nonnull, BumpBox, SizedTypeProperties};
 
 /// An iterator that moves out of an owned slice.
 ///

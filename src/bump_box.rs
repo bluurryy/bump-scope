@@ -1,3 +1,14 @@
+mod slice_initializer;
+
+#[cfg(feature = "alloc")]
+use crate::WithLifetime;
+use crate::{
+    polyfill::{self, nonnull},
+    BumpAllocator, Drain, ExtractIf, FromUtf8Error, IntoIter, NoDrop, SizedTypeProperties,
+};
+#[cfg(feature = "alloc")]
+#[allow(unused_imports)]
+use allocator_api2::boxed::Box;
 use core::{
     alloc::Layout,
     any::Any,
@@ -11,21 +22,7 @@ use core::{
     ptr::{self, NonNull},
     slice::{self, SliceIndex},
 };
-
-#[cfg(feature = "alloc")]
-#[allow(unused_imports)]
-use allocator_api2::boxed::Box;
-
-mod slice_initializer;
 pub(crate) use slice_initializer::BumpBoxSliceInitializer;
-
-use crate::{
-    polyfill::{self, nonnull},
-    BumpAllocator, Drain, ExtractIf, FromUtf8Error, IntoIter, NoDrop, SizedTypeProperties,
-};
-
-#[cfg(feature = "alloc")]
-use crate::WithLifetime;
 
 /// A pointer type that uniquely owns a bump allocation of type `T`. This type is returned whenever a bump allocation is made.
 ///

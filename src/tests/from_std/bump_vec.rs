@@ -1,5 +1,10 @@
 //! Adapted from rust's `library/alloc/tests/vec.rs` commit f7ca9df69549470541fbf542f87a03eb9ed024b6
 
+use allocator_api2::alloc::{AllocError, Allocator, Layout};
+#[cfg(feature = "std")]
+use std::alloc::System;
+#[cfg(not(feature = "std"))]
+use std::alloc::System;
 use std::{
     assert_eq,
     assert_matches::assert_matches,
@@ -20,14 +25,6 @@ use std::{
     },
     vec::{Drain, IntoIter},
 };
-
-use allocator_api2::alloc::{AllocError, Allocator, Layout};
-
-#[cfg(feature = "std")]
-use std::alloc::System;
-
-#[cfg(not(feature = "std"))]
-use std::alloc::System;
 
 use crate::{bump_vec, Bump, BumpVec};
 

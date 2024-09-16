@@ -1,8 +1,6 @@
-use core::mem::MaybeUninit;
-
-use zerocopy::FromZeroes;
-
 use crate::{define_alloc_methods, BaseAllocator, Bump, BumpBox, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
+use core::mem::MaybeUninit;
+use zerocopy::FromZeroes;
 
 impl<'a, T> BumpBox<'a, MaybeUninit<T>>
 where

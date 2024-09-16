@@ -1,6 +1,5 @@
-use arbitrary::Arbitrary;
-
 use crate::{from_bump_scope, FuzzBumpGreedyProps};
+use arbitrary::Arbitrary;
 
 #[derive(Debug, Arbitrary)]
 pub struct Fuzz {

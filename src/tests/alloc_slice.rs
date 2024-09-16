@@ -1,7 +1,6 @@
+use super::either_way;
 use crate::Bump;
 use allocator_api2::alloc::Global;
-
-use super::either_way;
 
 fn zst<const UP: bool>() {
     const ZST: [u64; 0] = [0u64; 0];

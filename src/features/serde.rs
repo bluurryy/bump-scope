@@ -1,15 +1,13 @@
-use core::fmt::Display;
-
-use ::serde::Serialize;
-use allocator_api2::alloc::AllocError;
-use serde::{
-    de::{self, DeserializeSeed, Expected, Visitor},
-    Deserialize,
-};
-
 use crate::{
     BaseAllocator, BumpBox, BumpString, BumpVec, FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec,
     MutBumpVecRev, SupportedMinimumAlignment,
+};
+use ::serde::Serialize;
+use allocator_api2::alloc::AllocError;
+use core::fmt::Display;
+use serde::{
+    de::{self, DeserializeSeed, Expected, Visitor},
+    Deserialize,
 };
 
 impl<T> Serialize for BumpBox<'_, T>

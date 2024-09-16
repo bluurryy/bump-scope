@@ -1,3 +1,9 @@
+#[cfg(not(no_global_oom_handling))]
+use crate::Infallibly;
+use crate::{
+    error_behavior_generic_methods_allocation_failure, polyfill, BaseAllocator, BumpBox, BumpScope, BumpVec, ErrorBehavior,
+    FixedBumpString, FromUtf8Error, GuaranteedAllocatedStats, MinimumAlignment, Stats, SupportedMinimumAlignment,
+};
 use core::{
     borrow::{Borrow, BorrowMut},
     fmt::{self, Debug, Display},
@@ -5,14 +11,6 @@ use core::{
     ops::{Deref, DerefMut, Range, RangeBounds},
     ptr, str,
 };
-
-use crate::{
-    error_behavior_generic_methods_allocation_failure, polyfill, BaseAllocator, BumpBox, BumpScope, BumpVec, ErrorBehavior,
-    FixedBumpString, FromUtf8Error, GuaranteedAllocatedStats, MinimumAlignment, Stats, SupportedMinimumAlignment,
-};
-
-#[cfg(not(no_global_oom_handling))]
-use crate::Infallibly;
 
 /// This is like [`format!`] but allocates inside a `Bump` or `BumpScope`, returning a [`BumpString`].
 ///

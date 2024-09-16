@@ -3,13 +3,12 @@
 #![allow(clippy::missing_safety_doc)]
 extern crate alloc;
 
-use core::{alloc::Layout, fmt, mem::MaybeUninit, ptr::NonNull};
-
 use alloc::boxed::Box;
 use bump_scope::{
     allocator_api2::alloc::{AllocError, Allocator, Global},
     BumpBox, FixedBumpString, FixedBumpVec,
 };
+use core::{alloc::Layout, fmt, mem::MaybeUninit, ptr::NonNull};
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 

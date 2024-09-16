@@ -1,9 +1,7 @@
+use super::either_way;
 use crate::BumpPool;
-
 use allocator_api2::alloc::Global;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-
-use super::either_way;
 
 either_way! {
     rayon

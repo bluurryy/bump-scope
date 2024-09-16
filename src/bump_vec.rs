@@ -13,7 +13,6 @@ use core::{
     borrow::{Borrow, BorrowMut},
     fmt::Debug,
     hash::Hash,
-    hint::unreachable_unchecked,
     iter,
     marker::PhantomData,
     mem::{self, ManuallyDrop, MaybeUninit},

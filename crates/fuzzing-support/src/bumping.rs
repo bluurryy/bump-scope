@@ -1,10 +1,9 @@
 #![allow(non_camel_case_types)]
 
-use core::fmt::Debug;
-use std::{alloc::Layout, mem};
-
 use arbitrary::{Arbitrary, Unstructured};
 use bump_scope::{allocator_api2::alloc::Global, Bump, MinimumAlignment, SupportedMinimumAlignment};
+use core::fmt::Debug;
+use std::{alloc::Layout, mem};
 
 fn do_fuzz(fuzz: Fuzz) {
     if fuzz.up {

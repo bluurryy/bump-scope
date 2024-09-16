@@ -1,9 +1,8 @@
-use core::{fmt::Debug, marker::PhantomData, num::NonZeroUsize, ptr::NonNull};
-
 use crate::{
     chunk_header::ChunkHeader, polyfill::nonnull, BaseAllocator, Bump, BumpScope, Chunk, GuaranteedAllocatedStats,
     MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment,
 };
+use core::{fmt::Debug, marker::PhantomData, num::NonZeroUsize, ptr::NonNull};
 
 /// This is returned from [`checkpoint`](Bump::checkpoint) and used for [`reset_to`](Bump::reset_to).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

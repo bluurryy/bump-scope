@@ -1,13 +1,11 @@
 #![feature(pointer_is_aligned_to, strict_provenance, allocator_api)]
 #![allow(clippy::cargo_common_metadata)]
 
-use std::{alloc::Layout, cell::Cell, mem::swap, ops::Deref, ptr::NonNull, rc::Rc};
-
 use arbitrary::Arbitrary;
 use bump_scope::allocator_api2::alloc::{AllocError, Allocator};
+use std::{alloc::Layout, cell::Cell, mem::swap, ops::Deref, ptr::NonNull, rc::Rc};
 
 pub use arbitrary;
-
 pub mod allocator_api;
 pub mod bump_down;
 pub mod bump_greedy_down;

@@ -1,5 +1,3 @@
-use core::{alloc::Layout, cell::Cell, mem::align_of, num::NonZeroUsize, ops::Range, ptr::NonNull};
-
 use crate::{
     bumping::{bump_down, bump_greedy_down, bump_greedy_up, bump_up, BumpProps, BumpUp},
     down_align_usize,
@@ -8,8 +6,8 @@ use crate::{
     unallocated_chunk_header, up_align_usize_unchecked, ChunkHeader, ChunkSize, ErrorBehavior, MinimumAlignment,
     SupportedMinimumAlignment, CHUNK_ALIGN_MIN,
 };
-
 use allocator_api2::alloc::{AllocError, Allocator};
+use core::{alloc::Layout, cell::Cell, mem::align_of, num::NonZeroUsize, ops::Range, ptr::NonNull};
 
 /// Represents an allocated chunk.
 ///

@@ -29,6 +29,14 @@
 
 #![allow(dead_code)]
 
+use crate::{
+    layout::LayoutProps,
+    polyfill::{layout, nonnull},
+    AllocError, AnyBump, BumpAllocator, BumpBox, ErrorBehavior, SizedTypeProperties,
+};
+use allocator_api2::alloc::Allocator;
+#[cfg(feature = "alloc")]
+use core::fmt;
 use core::{
     alloc::Layout,
     cell::Cell,
@@ -36,18 +44,7 @@ use core::{
     ptr::NonNull,
     slice,
 };
-
-#[cfg(feature = "alloc")]
-use core::fmt;
 use std::ops::Deref;
-
-use allocator_api2::alloc::Allocator;
-
-use crate::{
-    layout::LayoutProps,
-    polyfill::{layout, nonnull},
-    AllocError, AnyBump, BumpAllocator, BumpBox, ErrorBehavior, SizedTypeProperties,
-};
 
 /// Wraps a bump allocator, makes all of the `alloc*` functions return `&mut T` and drops those `T` when it drops itself.
 ///

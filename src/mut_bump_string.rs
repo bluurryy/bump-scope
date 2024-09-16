@@ -1,14 +1,13 @@
+use crate::{
+    error_behavior_generic_methods_allocation_failure, polyfill, BaseAllocator, BumpBox, BumpScope, ErrorBehavior,
+    FromUtf8Error, GuaranteedAllocatedStats, MinimumAlignment, MutBumpVec, Stats, SupportedMinimumAlignment,
+};
 use core::{
     borrow::{Borrow, BorrowMut},
     fmt::{self, Debug, Display},
     hash::Hash,
     ops::{Deref, DerefMut, Range, RangeBounds},
     ptr, str,
-};
-
-use crate::{
-    error_behavior_generic_methods_allocation_failure, polyfill, BaseAllocator, BumpBox, BumpScope, ErrorBehavior,
-    FromUtf8Error, GuaranteedAllocatedStats, MinimumAlignment, MutBumpVec, Stats, SupportedMinimumAlignment,
 };
 
 #[cfg(not(no_global_oom_handling))]

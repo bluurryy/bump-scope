@@ -1,3 +1,10 @@
+use crate::{
+    error_behavior_generic_methods_if,
+    polyfill::{self, nonnull, pointer, slice},
+    set_len_on_drop_by_ptr::SetLenOnDropByPtr,
+    BaseAllocator, BumpBox, BumpScope, BumpVec, Drain, ErrorBehavior, ExtractIf, IntoIter, MinimumAlignment, NoDrop,
+    SizedTypeProperties, SupportedMinimumAlignment,
+};
 use core::{
     alloc::Layout,
     borrow::{Borrow, BorrowMut},
@@ -8,14 +15,6 @@ use core::{
     ops::{Deref, DerefMut, Index, IndexMut, RangeBounds},
     ptr::{self, NonNull},
     slice::SliceIndex,
-};
-
-use crate::{
-    error_behavior_generic_methods_if,
-    polyfill::{self, nonnull, pointer, slice},
-    set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BaseAllocator, BumpBox, BumpScope, BumpVec, Drain, ErrorBehavior, ExtractIf, IntoIter, MinimumAlignment, NoDrop,
-    SizedTypeProperties, SupportedMinimumAlignment,
 };
 
 /// A [`BumpVec`] but with a fixed capacity.

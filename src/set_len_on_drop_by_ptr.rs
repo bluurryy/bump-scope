@@ -1,6 +1,5 @@
-use core::ptr::NonNull;
-
 use crate::polyfill::nonnull;
+use core::ptr::NonNull;
 
 // Set the length of the vec when the `SetLenOnDropByPtr` value goes out of scope.
 //

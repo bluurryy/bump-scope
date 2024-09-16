@@ -1,3 +1,9 @@
+use crate::{
+    error_behavior_generic_methods_allocation_failure,
+    polyfill::{nonnull, pointer, slice},
+    BaseAllocator, BumpBox, BumpScope, Drain, ErrorBehavior, ExtractIf, FixedBumpVec, GuaranteedAllocatedStats, IntoIter,
+    MinimumAlignment, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment,
+};
 use core::{
     borrow::{Borrow, BorrowMut},
     fmt::Debug,
@@ -8,13 +14,6 @@ use core::{
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::{self, NonNull},
     slice::SliceIndex,
-};
-
-use crate::{
-    error_behavior_generic_methods_allocation_failure,
-    polyfill::{nonnull, pointer, slice},
-    BaseAllocator, BumpBox, BumpScope, Drain, ErrorBehavior, ExtractIf, FixedBumpVec, GuaranteedAllocatedStats, IntoIter,
-    MinimumAlignment, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment,
 };
 
 /// This is like [`vec!`] but allocates inside a `Bump` or `BumpScope`, returning a [`MutBumpVec`].

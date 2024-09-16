@@ -1,9 +1,7 @@
-use layout::LayoutProps;
-
-use crate::{layout, AllocError, Layout, NonNull, RawChunk, SupportedMinimumAlignment};
-
 #[cfg(not(no_global_oom_handling))]
 use crate::{capacity_overflow, format_trait_error, handle_alloc_error, Infallible};
+use crate::{layout, AllocError, Layout, NonNull, RawChunk, SupportedMinimumAlignment};
+use layout::LayoutProps;
 
 pub(crate) trait ErrorBehavior: Sized {
     const IS_FALLIBLE: bool;

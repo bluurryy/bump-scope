@@ -1,15 +1,14 @@
+use crate::{
+    down_align_usize,
+    polyfill::{const_unwrap, nonzero},
+    up_align_nonzero, ChunkHeader, CHUNK_ALIGN_MIN,
+};
 use core::{
     alloc::Layout,
     fmt::{Debug, Formatter},
     marker::PhantomData,
     mem::{align_of, size_of},
     num::NonZeroUsize,
-};
-
-use crate::{
-    down_align_usize,
-    polyfill::{const_unwrap, nonzero},
-    up_align_nonzero, ChunkHeader, CHUNK_ALIGN_MIN,
 };
 
 /// We leave some space per allocation for the base allocator.

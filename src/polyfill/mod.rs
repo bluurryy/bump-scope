@@ -2,14 +2,13 @@
 //! Most of this is from nightly.
 
 pub(crate) mod iter;
+#[cfg(test)]
+pub(crate) mod layout;
 pub(crate) mod nonnull;
 pub(crate) mod nonzero;
 pub(crate) mod pointer;
 pub(crate) mod slice;
 pub(crate) mod usize;
-
-#[cfg(test)]
-pub(crate) mod layout;
 
 #[allow(dead_code)]
 mod other {

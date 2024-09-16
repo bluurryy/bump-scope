@@ -1,9 +1,7 @@
+use super::either_way;
+use crate::{nonnull, Bump};
 use allocator_api2::alloc::{Allocator, Global};
 use core::{alloc::Layout, ptr::NonNull};
-
-use crate::{nonnull, Bump};
-
-use super::either_way;
 
 either_way! {
   grow

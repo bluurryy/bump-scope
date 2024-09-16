@@ -1,7 +1,6 @@
+use super::either_way;
 use crate::Bump;
 use allocator_api2::alloc::Global;
-
-use super::either_way;
 
 fn zst<const UP: bool>() {
     let mut bump: Bump<Global, 1, UP> = Bump::new();

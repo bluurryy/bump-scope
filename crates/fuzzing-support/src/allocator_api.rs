@@ -1,14 +1,12 @@
-use core::fmt::Debug;
-use std::{alloc::Layout, ops::Range, ptr::NonNull, rc::Rc};
-
+use crate::{dbg, eprintln, MaybeFailingAllocator, RcAllocator};
 use arbitrary::{Arbitrary, Unstructured};
 use bump_scope::{
     allocator_api2::alloc::{Allocator, Global},
     Bump, MinimumAlignment, SupportedMinimumAlignment,
 };
+use core::fmt::Debug;
 use rangemap::RangeSet;
-
-use crate::{dbg, eprintln, MaybeFailingAllocator, RcAllocator};
+use std::{alloc::Layout, ops::Range, ptr::NonNull, rc::Rc};
 
 fn do_fuzz(fuzz: Fuzz) {
     if fuzz.up {

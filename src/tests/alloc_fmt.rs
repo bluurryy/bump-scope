@@ -1,13 +1,11 @@
+use super::either_way;
+use crate::{bump_format, mut_bump_format, Bump};
+use allocator_api2::alloc::{AllocError, Allocator, Global};
 use core::{
     alloc::Layout,
     fmt::{Debug, Display},
 };
 use std::ptr::NonNull;
-
-use crate::{bump_format, mut_bump_format, Bump};
-use allocator_api2::alloc::{AllocError, Allocator, Global};
-
-use super::either_way;
 
 fn nothing<const UP: bool>() {
     struct Nothing;

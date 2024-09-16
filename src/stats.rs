@@ -1,11 +1,10 @@
+use crate::{BaseAllocator, BumpScope, FmtFn, MinimumAlignment, RawChunk, SupportedMinimumAlignment};
 use core::{
     fmt::{self, Debug},
     iter::FusedIterator,
     marker::PhantomData,
     ptr::NonNull,
 };
-
-use crate::{BaseAllocator, BumpScope, FmtFn, MinimumAlignment, RawChunk, SupportedMinimumAlignment};
 
 /// Provides statistics about the memory usage of the bump allocator.
 ///

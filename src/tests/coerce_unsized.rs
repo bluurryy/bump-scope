@@ -1,6 +1,5 @@
-use core::{fmt::Debug, future::Future};
-
 use crate::{Bump, BumpBox};
+use core::{fmt::Debug, future::Future};
 
 #[test]
 fn slice() {

@@ -1,14 +1,13 @@
+use crate::{
+    polyfill::{nonnull, slice},
+    BumpBox, IntoIter, SizedTypeProperties,
+};
 use core::{
     fmt,
     iter::FusedIterator,
     mem::{self, ManuallyDrop},
     ops::RangeBounds,
     ptr::{self, NonNull},
-};
-
-use crate::{
-    polyfill::{nonnull, slice},
-    BumpBox, IntoIter, SizedTypeProperties,
 };
 
 /// A draining iterator owned slices.

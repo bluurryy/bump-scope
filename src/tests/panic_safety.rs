@@ -1,3 +1,4 @@
+use crate::{mut_bump_vec, Bump, MutBumpVec};
 use core::{
     cell::Cell,
     mem::ManuallyDrop,
@@ -7,8 +8,6 @@ use std::{
     panic::catch_unwind,
     sync::{Mutex, PoisonError},
 };
-
-use crate::{mut_bump_vec, Bump, MutBumpVec};
 
 fn check_t<T: Clone + Default + UnwindSafe + RefUnwindSafe>() {
     thread_local! {

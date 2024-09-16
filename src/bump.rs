@@ -1,14 +1,7 @@
-use core::{
-    alloc::Layout,
-    cell::Cell,
-    fmt::{self, Debug},
-    mem::{self, ManuallyDrop},
-    panic::{RefUnwindSafe, UnwindSafe},
-    ptr::NonNull,
-};
-
-use allocator_api2::alloc::AllocError;
-
+#[cfg(not(no_global_oom_handling))]
+use crate::infallible;
+#[cfg(test)]
+use crate::WithDrop;
 use crate::{
     bump_common_methods, bump_scope_methods,
     chunk_size::ChunkSize,
@@ -18,12 +11,15 @@ use crate::{
     GuaranteedAllocatedStats, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
     DEFAULT_START_CHUNK_SIZE,
 };
-
-#[cfg(not(no_global_oom_handling))]
-use crate::infallible;
-
-#[cfg(test)]
-use crate::WithDrop;
+use allocator_api2::alloc::AllocError;
+use core::{
+    alloc::Layout,
+    cell::Cell,
+    fmt::{self, Debug},
+    mem::{self, ManuallyDrop},
+    panic::{RefUnwindSafe, UnwindSafe},
+    ptr::NonNull,
+};
 
 macro_rules! bump_declaration {
     ($($allocator_parameter:tt)*) => {

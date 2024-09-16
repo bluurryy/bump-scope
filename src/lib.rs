@@ -256,47 +256,36 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-use core::{
-    fmt::{self, Debug},
-    marker::PhantomData,
-    mem::{self, MaybeUninit},
-    num::NonZeroUsize,
-    ptr::NonNull,
-};
-
-#[cfg(not(no_global_oom_handling))]
-use core::convert::Infallible;
-
 mod allocator;
 #[cfg(test)]
 pub(crate) mod any_bump;
 mod bump;
 mod bump_align_guard;
-
 /// Contains [`BumpBox`] and associated types.
 mod bump_box;
+#[cfg(feature = "std")]
+mod bump_pool;
 mod bump_scope;
 mod bump_scope_guard;
-mod mut_bump_string;
-
-/// Contains [`BumpVec`] and associated types.
-pub mod bump_vec;
-
-/// Contains [`MutBumpVec`] and associated types.
-mod mut_bump_vec;
-
 /// Contains [`BumpString`] and associated types.
 mod bump_string;
-
+/// Contains [`BumpVec`] and associated types.
+pub mod bump_vec;
+mod bumping;
 mod chunk_raw;
 mod chunk_size;
 mod drain;
+mod error_behavior;
 mod extract_if;
 mod features;
 mod fixed_bump_string;
 mod fixed_bump_vec;
 mod from_utf8_error;
 mod into_iter;
+mod layout;
+mod mut_bump_string;
+/// Contains [`MutBumpVec`] and associated types.
+mod mut_bump_vec;
 /// Contains [`MutBumpVecRev`] and associated types.
 mod mut_bump_vec_rev;
 mod polyfill;
@@ -307,18 +296,10 @@ mod stats;
 mod with_drop;
 mod without_dealloc;
 
-#[cfg(feature = "std")]
-mod bump_pool;
-mod bumping;
-mod error_behavior;
-mod layout;
-
-use allocator_api2::alloc::{AllocError, Allocator};
-
+pub use allocator_api2;
 #[cfg(all(feature = "alloc", not(no_global_oom_handling)))]
 use allocator_api2::alloc::handle_alloc_error;
-
-pub use allocator_api2;
+use allocator_api2::alloc::{AllocError, Allocator};
 #[cfg(test)]
 pub use any_bump::AnyBump;
 pub use bump::Bump;
@@ -330,31 +311,39 @@ pub use bump_scope_guard::{BumpScopeGuard, BumpScopeGuardRoot, Checkpoint};
 pub use bump_string::BumpString;
 #[doc(inline)]
 pub use bump_vec::BumpVec;
+use chunk_header::{unallocated_chunk_header, ChunkHeader};
+use chunk_raw::RawChunk;
+use chunk_size::ChunkSize;
+#[cfg(not(no_global_oom_handling))]
+use core::convert::Infallible;
+use core::{
+    alloc::Layout,
+    fmt::{self, Debug},
+    marker::PhantomData,
+    mem::{self, MaybeUninit},
+    num::NonZeroUsize,
+    ptr::NonNull,
+};
 pub use drain::Drain;
+use error_behavior::ErrorBehavior;
 pub use extract_if::ExtractIf;
 pub use fixed_bump_string::FixedBumpString;
 pub use fixed_bump_vec::FixedBumpVec;
 pub use from_utf8_error::FromUtf8Error;
 pub use into_iter::IntoIter;
+use layout::{ArrayLayout, CustomLayout};
 pub use mut_bump_string::MutBumpString;
 pub use mut_bump_vec::MutBumpVec;
 pub use mut_bump_vec_rev::MutBumpVecRev;
-pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, GuaranteedAllocatedStats, Stats};
-#[cfg(test)]
-pub use with_drop::WithDrop;
-pub use without_dealloc::{WithoutDealloc, WithoutShrink};
-
-use chunk_header::{unallocated_chunk_header, ChunkHeader};
-use chunk_raw::RawChunk;
-use chunk_size::ChunkSize;
-use core::alloc::Layout;
-use error_behavior::ErrorBehavior;
-use layout::{ArrayLayout, CustomLayout};
 use polyfill::{nonnull, pointer};
 #[cfg(not(no_global_oom_handling))]
 use private::{capacity_overflow, format_trait_error, Infallibly};
 use set_len_on_drop::SetLenOnDrop;
 use set_len_on_drop_by_ptr::SetLenOnDropByPtr;
+pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, GuaranteedAllocatedStats, Stats};
+#[cfg(test)]
+pub use with_drop::WithDrop;
+pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
 // This must be kept in sync with ChunkHeaders `repr(align(16))`.
 const CHUNK_ALIGN_MIN: usize = 16;

@@ -1,12 +1,10 @@
+use crate::{BaseAllocator, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
+use allocator_api2::alloc::AllocError;
 use core::{
     mem::{self, ManuallyDrop},
     ops::{Deref, DerefMut},
 };
 use std::sync::{Mutex, PoisonError};
-
-use allocator_api2::alloc::AllocError;
-
-use crate::{BaseAllocator, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
 
 macro_rules! bump_pool_declaration {
     ($($allocator_parameter:tt)*) => {

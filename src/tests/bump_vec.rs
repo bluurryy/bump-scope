@@ -1,8 +1,6 @@
-use allocator_api2::alloc::Global;
-
-use crate::{bump_vec, Bump};
-
 use super::either_way;
+use crate::{bump_vec, Bump};
+use allocator_api2::alloc::Global;
 
 fn shrinks<const UP: bool>() {
     let bump: Bump<Global, 1, UP> = Bump::new();
