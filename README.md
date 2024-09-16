@@ -35,7 +35,9 @@ The introduction of scopes makes this bump allocator also great for temporary al
 
 ## Comparison to [`bumpalo`](https://docs.rs/bumpalo)
 
-Bumpalo is a popular crate for bump allocation. This crate was inspired by bumpalo and [Always Bump Downwards](https://fitzgeraldnick.com/2019/11/01/always-bump-downwards.html).
+Bumpalo is a popular crate for bump allocation.
+This crate was inspired by bumpalo and [Always Bump Downwards](https://fitzgeraldnick.com/2019/11/01/always-bump-downwards.html)
+(but completely disregards the title).
 
 Unlike `bumpalo`, this crate...
 - Supports [scopes and checkpoints](#scopes-and-checkpoints).
@@ -53,7 +55,7 @@ Unlike `bumpalo`, this crate...
 
 ## Scopes and Checkpoints
 You can create scopes to make allocations that live only for a part of its parent scope.
-Creating and exiting scopes is virtually free. Allocating within a scope has no overhead.
+Entering and exiting scopes is virtually free. Allocating within a scope has no overhead.
 
 You can create a new scope either with a `scoped` closure or with a `scope_guard`:
 ```rust
