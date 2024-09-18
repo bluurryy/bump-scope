@@ -330,7 +330,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// [`truncate`] or [`clear`].
     ///
     /// # Safety
-    /// - `new_len` must be less than or equal to the [`capacity`] (capacity is not tracked by this type).
+    /// - `new_len` must be less than or equal to the [`capacity`].
     /// - The elements at `old_len..new_len` must be initialized.
     ///
     /// [`truncate`]: FixedBumpVec::truncate

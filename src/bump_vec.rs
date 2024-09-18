@@ -569,12 +569,13 @@ where
     /// This is a low-level operation that maintains none of the normal
     /// invariants of the type. Normally changing the length of a vector
     /// is done using one of the safe operations instead, such as
-    /// [`truncate`] or [`clear`].
+    /// [`resize`], [`truncate`] or [`clear`].
     ///
     /// # Safety
-    /// - `new_len` must be less than or equal to the [`capacity`] (capacity is not tracked by this type).
+    /// - `new_len` must be less than or equal to the [`capacity`].
     /// - The elements at `old_len..new_len` must be initialized.
     ///
+    /// [`resize`]: BumpVec::resize
     /// [`truncate`]: BumpVec::truncate
     /// [`clear`]: BumpVec::clear
     /// [`capacity`]: BumpVec::capacity
