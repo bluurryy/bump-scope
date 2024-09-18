@@ -569,7 +569,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// This is a low-level operation that maintains none of the normal
     /// invariants of the type. Normally changing the length of a vector
     /// is done using one of the safe operations instead, such as
-    /// [`truncate`], [`resize`], [`extend`], or [`clear`].
+    /// [`resize`], [`truncate`], [`extend`], or [`clear`].
     ///
     /// [`truncate`]: MutBumpVecRev::truncate
     /// [`resize`]: MutBumpVecRev::resize
@@ -578,10 +578,10 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     ///
     /// # Safety
     ///
-    /// - `new_len` must be less than or equal to [`capacity()`].
+    /// - `new_len` must be less than or equal to [`capacity`].
     /// - The elements at `old_len..new_len` must be initialized.
     ///
-    /// [`capacity()`]: MutBumpVecRev::capacity
+    /// [`capacity`]: MutBumpVecRev::capacity
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: usize) {
         debug_assert!(new_len <= self.cap);
