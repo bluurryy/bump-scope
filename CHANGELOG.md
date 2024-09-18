@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 (2024-09-18)
 - **added:** `from_parts` and `into_parts` to `BumpVec` and `BumpString`
 - **added:** `FixedBumpString::into_string` returning a `BumpString`
 - **breaking:** `BumpVec` and `BumpString` now deallocate on drop, and shrink when calling `into_(boxed_)slice`
