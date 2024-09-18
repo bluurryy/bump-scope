@@ -14,37 +14,43 @@ use crate::{
 
 use super::BumpVec;
 
-/// An iterator that moves out of a vector.
-///
-/// This `struct` is created by the `into_iter` method on
-/// [`BumpVec`](crate::BumpVec::into_iter),
-/// (provided by the [`IntoIterator`] trait).
-// This is modelled after rust's `alloc/src/vec/into_iter.rs`
-pub struct IntoIter<
-    'b,
-    'a: 'b,
-    T,
-    A,
-    const MIN_ALIGN: usize = 1,
-    const UP: bool = true,
-    const GUARANTEED_ALLOCATED: bool = true,
-> where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-    pub(super) buf: NonNull<T>,
-    pub(super) cap: usize,
+macro_rules! into_iter_declaration {
+    ($($allocator_parameter:tt)*) => {
+        /// An iterator that moves out of a vector.
+        ///
+        /// This `struct` is created by the `into_iter` method on
+        /// [`BumpVec`](crate::BumpVec::into_iter),
+        /// (provided by the [`IntoIterator`] trait).
+        // This is modelled after rust's `alloc/src/vec/into_iter.rs`
+        pub struct IntoIter<
+            'b,
+            'a: 'b,
+            T,
+            $($allocator_parameter)*,
+            const MIN_ALIGN: usize = 1,
+            const UP: bool = true,
+            const GUARANTEED_ALLOCATED: bool = true,
+        > where
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+            A: BaseAllocator<GUARANTEED_ALLOCATED>,
+        {
+            pub(super) buf: NonNull<T>,
+            pub(super) cap: usize,
 
-    pub(super) ptr: NonNull<T>,
+            pub(super) ptr: NonNull<T>,
 
-    /// If T is a ZST this is ptr + len.
-    pub(super) end: NonNull<T>,
+            /// If T is a ZST this is ptr + len.
+            pub(super) end: NonNull<T>,
 
-    pub(super) bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+            pub(super) bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
 
-    /// Marks ownership over T. (<https://doc.rust-lang.org/nomicon/phantom-data.html#generic-parameters-and-drop-checking>)
-    pub(super) marker: PhantomData<T>,
+            /// Marks ownership over T. (<https://doc.rust-lang.org/nomicon/phantom-data.html#generic-parameters-and-drop-checking>)
+            pub(super) marker: PhantomData<T>,
+        }
+    }
 }
+
+crate::maybe_default_allocator!(into_iter_declaration);
 
 impl<'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Debug
     for IntoIter<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
