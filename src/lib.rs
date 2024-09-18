@@ -1693,8 +1693,8 @@ define_alloc_methods! {
     impl
     for pub fn alloc_fixed_vec
     for pub fn try_alloc_fixed_vec
-    fn generic_alloc_fixed_vec<{T}>(&self, len: usize) -> FixedBumpVec<T> | FixedBumpVec<'a, T> {
-        Ok(FixedBumpVec::from_uninit(self.generic_alloc_uninit_slice(len)?))
+    fn generic_alloc_fixed_vec<{T}>(&self, capacity: usize) -> FixedBumpVec<T> | FixedBumpVec<'a, T> {
+        Ok(FixedBumpVec::from_uninit(self.generic_alloc_uninit_slice(capacity)?))
     }
 
     /// Allocate a [`FixedBumpString`] with the given `capacity` in bytes.
@@ -1710,8 +1710,8 @@ define_alloc_methods! {
     /// ```
     for pub fn alloc_fixed_string
     for pub fn try_alloc_fixed_string
-    fn generic_alloc_fixed_string(&self, len: usize) -> FixedBumpString | FixedBumpString<'a> {
-        Ok(FixedBumpString::from_uninit(self.generic_alloc_uninit_slice(len)?))
+    fn generic_alloc_fixed_string(&self, capacity: usize) -> FixedBumpString | FixedBumpString<'a> {
+        Ok(FixedBumpString::from_uninit(self.generic_alloc_uninit_slice(capacity)?))
     }
 
     /// Allocates memory as described by the given `Layout`.
