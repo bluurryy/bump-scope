@@ -727,15 +727,15 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// # let mut bump: Bump = Bump::new();
         /// #
         /// let mut vec = bump.alloc_fixed_vec(10);
-        /// vec.extend_from_slice_copy(&[1, 2, 3]);
-        /// vec.resize_with(5, Default::default);
-        /// assert_eq!(vec, [1, 2, 3, 0, 0]);
+        /// vec.extend_from_slice_copy(&["hello"]);
+        /// vec.resize3(3, "world");
+        /// assert_eq!(vec, ["hello", "world", "world"]);
         /// drop(vec);
         ///
         /// let mut vec = bump.alloc_fixed_vec(10);
-        /// let mut p = 1;
-        /// vec.resize_with(4, || { p *= 2; p });
-        /// assert_eq!(vec, [2, 4, 8, 16]);
+        /// vec.extend_from_slice_copy(&[1, 2, 3, 4]);
+        /// vec.resize(2, 0);
+        /// assert_eq!(vec, [1, 2]);
         /// ```
         ///
         /// [`resize_with`]: FixedBumpVec::resize_with
