@@ -728,7 +728,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// #
         /// let mut vec = bump.alloc_fixed_vec(10);
         /// vec.extend_from_slice_copy(&["hello"]);
-        /// vec.resize3(3, "world");
+        /// vec.resize(3, "world");
         /// assert_eq!(vec, ["hello", "world", "world"]);
         /// drop(vec);
         ///
