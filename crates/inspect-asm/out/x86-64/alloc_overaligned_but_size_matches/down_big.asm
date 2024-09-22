@@ -4,8 +4,8 @@ inspect_asm::alloc_overaligned_but_size_matches::down_big:
 	mov rax, qword ptr [rcx]
 	mov rdx, rax
 	sub rdx, qword ptr [rcx + 8]
-	cmp rdx, 39
-	jbe .LBB0_1
+	cmp rdx, 40
+	jb .LBB0_1
 	add rax, -40
 	mov qword ptr [rcx], rax
 .LBB0_0:

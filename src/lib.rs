@@ -333,7 +333,7 @@ use layout::{ArrayLayout, CustomLayout};
 pub use mut_bump_string::MutBumpString;
 pub use mut_bump_vec::MutBumpVec;
 pub use mut_bump_vec_rev::MutBumpVecRev;
-use polyfill::{nonnull, pointer};
+use polyfill::nonnull;
 #[cfg(not(no_global_oom_handling))]
 use private::{capacity_overflow, format_trait_error, Infallibly};
 use set_len_on_drop::SetLenOnDrop;
@@ -1196,10 +1196,6 @@ define_alloc_methods! {
     for pub fn alloc
     for pub fn try_alloc
     fn generic_alloc<{T}>(&self, value: T) -> BumpBox<T> | BumpBox<'a, T> {
-        if T::IS_ZST {
-            return Ok(BumpBox::zst(value));
-        }
-
         self.generic_alloc_with(|| value)
     }
 
@@ -1209,17 +1205,7 @@ define_alloc_methods! {
     for pub fn alloc_with
     for pub fn try_alloc_with
     fn generic_alloc_with<{T}>(&self, f: impl FnOnce() -> T) -> BumpBox<T> | BumpBox<'a, T> {
-        if T::IS_ZST {
-            let value = f();
-            return Ok(BumpBox::zst(value));
-        }
-
-        let ptr = self.do_alloc_sized::<B, T>()?;
-
-        unsafe {
-            pointer::write_with(ptr.as_ptr(), f);
-            Ok(BumpBox::from_raw(ptr))
-        }
+        self.do_alloc_with(f)
     }
 
     /// Allocate an object with its default value.

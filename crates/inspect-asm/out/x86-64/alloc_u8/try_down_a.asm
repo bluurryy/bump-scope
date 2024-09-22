@@ -7,8 +7,6 @@ inspect_asm::alloc_u8::try_down_a:
 	cmp rax, qword ptr [rcx + 8]
 	jb .LBB0_1
 	mov qword ptr [rcx], rax
-	test rax, rax
-	je .LBB0_1
 .LBB0_0:
 	mov byte ptr [rax], sil
 	pop rbx

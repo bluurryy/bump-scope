@@ -9,7 +9,6 @@ inspect_asm::alloc_12_u32::try_down:
 	and rax, -4
 	add rax, -48
 	mov qword ptr [rcx], rax
-	je .LBB0_1
 .LBB0_0:
 	movups xmm0, xmmword ptr [rsi]
 	movups xmm1, xmmword ptr [rsi + 16]
