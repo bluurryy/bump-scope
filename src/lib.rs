@@ -1196,7 +1196,7 @@ define_alloc_methods! {
     for pub fn alloc
     for pub fn try_alloc
     fn generic_alloc<{T}>(&self, value: T) -> BumpBox<T> | BumpBox<'a, T> {
-        B::alloc(self, value)
+        self.generic_alloc_with(|| value)
     }
 
     /// Pre-allocate space for an object. Once space is allocated `f` will be called to create the value to be put at that place.
@@ -1205,17 +1205,7 @@ define_alloc_methods! {
     for pub fn alloc_with
     for pub fn try_alloc_with
     fn generic_alloc_with<{T}>(&self, f: impl FnOnce() -> T) -> BumpBox<T> | BumpBox<'a, T> {
-        if T::IS_ZST {
-            let value = f();
-            return Ok(BumpBox::zst(value));
-        }
-
-        let ptr = self.do_alloc_sized::<B, T>()?;
-
-        unsafe {
-            pointer::write_with(ptr.as_ptr(), f);
-            Ok(BumpBox::from_raw(ptr))
-        }
+        B::alloc_with(self, f)
     }
 
     /// Allocate an object with its default value.

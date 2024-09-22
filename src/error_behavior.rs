@@ -1,5 +1,6 @@
 use crate::{
     bumping::{bump_down, bump_up, BumpUp},
+    polyfill::nonnull,
     BaseAllocator, BumpBox, MinimumAlignment,
 };
 #[cfg(not(no_global_oom_handling))]
@@ -21,6 +22,14 @@ pub(crate) trait ErrorBehavior: Sized {
     fn alloc<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, T>(
         bump: &BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
         value: T,
+    ) -> Result<BumpBox<'a, T>, Self>
+    where
+        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        A: BaseAllocator<GUARANTEED_ALLOCATED>;
+
+    fn alloc_with<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, T>(
+        bump: &BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+        f: impl FnOnce() -> T,
     ) -> Result<BumpBox<'a, T>, Self>
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -97,6 +106,28 @@ impl ErrorBehavior for Infallible {
 
         unsafe {
             ptr.write(value);
+            Ok(BumpBox::from_raw(ptr))
+        }
+    }
+
+    #[inline(always)]
+    fn alloc_with<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, T>(
+        bump: &BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+        f: impl FnOnce() -> T,
+    ) -> Result<BumpBox<'a, T>, Self>
+    where
+        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    {
+        if T::IS_ZST {
+            let value = f();
+            return Ok(BumpBox::zst(value));
+        }
+
+        let ptr = bump.do_alloc_sized::<Self, T>()?;
+
+        unsafe {
+            nonnull::write_with(ptr, f);
             Ok(BumpBox::from_raw(ptr))
         }
     }
@@ -189,6 +220,49 @@ impl ErrorBehavior for AllocError {
 
         unsafe {
             ptr.write(value);
+            Ok(BumpBox::from_raw(ptr))
+        }
+    }
+
+    #[inline(always)]
+    fn alloc_with<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, T>(
+        bump: &BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+        f: impl FnOnce() -> T,
+    ) -> Result<BumpBox<'a, T>, Self>
+    where
+        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    {
+        if T::IS_ZST {
+            let value = f();
+            return Ok(BumpBox::zst(value));
+        }
+
+        let chunk = bump.chunk.get();
+        let props = chunk.bump_props(MinimumAlignment::<MIN_ALIGN>, crate::layout::SizedLayout::new::<T>());
+
+        let ptr = unsafe {
+            if UP {
+                if let Some(BumpUp { new_pos, ptr }) = bump_up(props) {
+                    chunk.set_pos_addr(new_pos);
+                    chunk.with_addr(ptr)
+                } else {
+                    bump.do_alloc_sized_in_another_chunk::<Self, T>()?
+                }
+            } else {
+                if let Some(addr) = bump_down(props) {
+                    chunk.set_pos_addr(addr);
+                    chunk.with_addr(addr)
+                } else {
+                    bump.do_alloc_sized_in_another_chunk::<Self, T>()?
+                }
+            }
+        };
+
+        let ptr = ptr.cast::<T>();
+
+        unsafe {
+            nonnull::write_with(ptr, f);
             Ok(BumpBox::from_raw(ptr))
         }
     }

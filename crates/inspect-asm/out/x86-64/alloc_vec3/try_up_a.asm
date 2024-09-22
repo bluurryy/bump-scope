@@ -4,8 +4,8 @@ inspect_asm::alloc_vec3::try_up_a:
 	mov rax, qword ptr [rcx]
 	mov rdx, qword ptr [rcx + 8]
 	sub rdx, rax
-	cmp rdx, 11
-	jbe .LBB0_1
+	cmp rdx, 12
+	jb .LBB0_1
 	lea rdx, [rax + 12]
 	mov qword ptr [rcx], rdx
 .LBB0_0:
