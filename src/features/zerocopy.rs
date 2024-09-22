@@ -1,4 +1,7 @@
-use crate::{define_alloc_methods, BaseAllocator, Bump, BumpBox, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
+use crate::{
+    define_alloc_methods, error_behavior::ErrorBehavior, BaseAllocator, Bump, BumpBox, BumpScope, MinimumAlignment,
+    SupportedMinimumAlignment,
+};
 use core::mem::MaybeUninit;
 use zerocopy::FromZeroes;
 
@@ -68,7 +71,7 @@ define_alloc_methods! {
     where {
         T: FromZeroes
     } in {
-        Ok(self.generic_alloc_uninit::<B, T>()?.init_zeroed())
+        self.do_alloc_zeroed()
     }
 
     /// Allocate a zeroed object slice.
@@ -86,7 +89,7 @@ define_alloc_methods! {
     where {
         T: FromZeroes
     } in {
-        Ok(self.generic_alloc_uninit_slice::<B, T>(len)?.init_zeroed())
+        self.do_alloc_zeroed_slice(len)
     }
 }
 
@@ -106,4 +109,27 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     alloc_zeroed_methods!(Bump);
+}
+
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+    BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+    #[inline(always)]
+    pub(crate) fn do_alloc_zeroed<B: ErrorBehavior, T>(&self) -> Result<BumpBox<'a, T>, B>
+    where
+        T: FromZeroes,
+    {
+        Ok(self.generic_alloc_uninit::<B, T>()?.init_zeroed())
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_zeroed_slice<B: ErrorBehavior, T>(&self, len: usize) -> Result<BumpBox<'a, [T]>, B>
+    where
+        T: FromZeroes,
+    {
+        Ok(self.generic_alloc_uninit_slice::<B, T>(len)?.init_zeroed())
+    }
 }

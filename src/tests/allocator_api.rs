@@ -1,5 +1,5 @@
 use super::either_way;
-use crate::{nonnull, Bump};
+use crate::{polyfill::nonnull, Bump};
 use allocator_api2::alloc::{Allocator, Global};
 use core::{alloc::Layout, ptr::NonNull};
 
