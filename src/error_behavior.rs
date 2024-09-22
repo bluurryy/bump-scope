@@ -169,30 +169,18 @@ impl ErrorBehavior for AllocError {
 
         let ptr = unsafe {
             if UP {
-                let ptr = if let Some(BumpUp { new_pos, ptr }) = bump_up(props) {
+                if let Some(BumpUp { new_pos, ptr }) = bump_up(props) {
                     chunk.set_pos_addr(new_pos);
-                    Some(chunk.with_addr(ptr))
+                    chunk.with_addr(ptr)
                 } else {
-                    bump.do_alloc_sized_in_another_chunk::<Self, T>().ok()
-                };
-
-                match ptr {
-                    Some(some) => some,
-                    None => return Err(AllocError),
+                    bump.do_alloc_sized_in_another_chunk::<Self, T>()?
                 }
             } else {
-                let addr = bump_down(props);
-                let mut ptr = addr.map(|addr| chunk.with_addr(addr));
-
-                if let Some(ptr) = ptr {
-                    chunk.set_pos(ptr);
+                if let Some(addr) = bump_down(props) {
+                    chunk.set_pos_addr(addr);
+                    chunk.with_addr(addr)
                 } else {
-                    ptr = bump.do_alloc_sized_in_another_chunk::<Self, T>().ok()
-                }
-
-                match ptr {
-                    Some(some) => some,
-                    None => return Err(AllocError),
+                    bump.do_alloc_sized_in_another_chunk::<Self, T>()?
                 }
             }
         };

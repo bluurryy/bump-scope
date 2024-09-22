@@ -6,8 +6,8 @@ inspect_asm::alloc_u32::try_up:
 	add rax, 3
 	and rax, -4
 	sub rdx, rax
-	cmp rdx, 4
-	jb .LBB0_1
+	cmp rdx, 3
+	jbe .LBB0_1
 	lea rdx, [rax + 4]
 	mov qword ptr [rcx], rdx
 .LBB0_0:
