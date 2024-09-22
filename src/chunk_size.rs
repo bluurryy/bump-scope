@@ -40,6 +40,8 @@ impl<const UP: bool, A> Clone for ChunkSize<UP, A> {
 impl<const UP: bool, A> Copy for ChunkSize<UP, A> {}
 
 impl<const UP: bool, A> ChunkSize<UP, A> {
+    pub(crate) const DEFAULT_START: Self = const_unwrap(Self::new(512));
+
     pub(crate) const MIN: Self = Self(
         {
             let size = ByteSize(0);
@@ -53,7 +55,7 @@ impl<const UP: bool, A> ChunkSize<UP, A> {
     pub(crate) const SIZE_STEP: NonZeroUsize = nonzero::max(ASSUMED_PAGE_SIZE, align_of::<ChunkHeader<A>>());
 
     #[inline]
-    pub(crate) fn new(size: usize) -> Option<Self> {
+    pub(crate) const fn new(size: usize) -> Option<Self> {
         let size = nonzero::max(Self::MIN.0, size);
 
         let size = if size.get() < Self::SIZE_STEP.get() {
@@ -61,19 +63,26 @@ impl<const UP: bool, A> ChunkSize<UP, A> {
             size.checked_next_power_of_two()
         } else {
             up_align_nonzero(size, Self::SIZE_STEP.get())
-        }?;
+        };
+
+        let size = match size {
+            Some(some) => some,
+            None => return None,
+        };
 
         let size_for_layout = size.get() - size_of::<AssumedMallocOverhead>();
         let align = align_of::<ChunkHeader<A>>();
 
         // lets make sure we can create a layout from this size
         // so later on we can create a layout without checking
-        Layout::from_size_align(size_for_layout, align).ok()?;
+        if Layout::from_size_align(size_for_layout, align).is_err() {
+            return None;
+        }
 
         debug_assert!(size.get() % align_of::<ChunkHeader<A>>() == 0);
-        debug_assert!(size >= Self::MIN.0);
+        debug_assert!(size.get() >= Self::MIN.0.get());
 
-        debug_assert!(if size < Self::SIZE_STEP {
+        debug_assert!(if size.get() < Self::SIZE_STEP.get() {
             size.is_power_of_two()
         } else {
             size.get() % Self::SIZE_STEP.get() == 0

@@ -10,7 +10,7 @@ use crate::{
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::{nonnull, pointer},
     BaseAllocator, BumpScopeGuard, Checkpoint, ErrorBehavior, GuaranteedAllocatedStats, MinimumAlignment, NoDrop, RawChunk,
-    SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink, DEFAULT_START_CHUNK_SIZE,
+    SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 use allocator_api2::alloc::AllocError;
 use core::{
@@ -120,11 +120,7 @@ where
         debug_assert!(self.chunk.get().is_unallocated());
 
         let allocator = A::default_or_panic();
-        let chunk = RawChunk::new_in(
-            ChunkSize::new(DEFAULT_START_CHUNK_SIZE).ok_or_else(B::capacity_overflow)?,
-            None,
-            allocator,
-        )?;
+        let chunk = RawChunk::new_in(ChunkSize::DEFAULT_START, None, allocator)?;
 
         self.chunk.set(chunk);
 

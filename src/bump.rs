@@ -9,7 +9,6 @@ use crate::{
     polyfill::{cfg_const, pointer},
     unallocated_chunk_header, BaseAllocator, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior,
     GuaranteedAllocatedStats, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
-    DEFAULT_START_CHUNK_SIZE,
 };
 use allocator_api2::alloc::AllocError;
 use core::{
@@ -235,7 +234,13 @@ where
         /// This is equivalent to <code>[try_with_size_in](Bump::try_with_size_in)(512, allocator)</code>.
         for pub fn try_new_in
         fn generic_new_in(allocator: A) -> Self {
-            Self::generic_with_size_in(DEFAULT_START_CHUNK_SIZE, allocator)
+            Ok(Self {
+                chunk: Cell::new(RawChunk::new_in(
+                    ChunkSize::DEFAULT_START,
+                    None,
+                    allocator,
+                )?),
+            })
         }
 
         impl

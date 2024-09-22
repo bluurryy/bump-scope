@@ -348,8 +348,6 @@ const CHUNK_ALIGN_MIN: usize = 16;
 
 const _: () = assert!(CHUNK_ALIGN_MIN == bumping::MIN_CHUNK_ALIGN);
 
-const DEFAULT_START_CHUNK_SIZE: usize = 512;
-
 /// This trait marks types that don't need dropping.
 ///
 /// This trait is a best effort for modeling such a constraint. It is not implemented for all types that don't need dropping.
