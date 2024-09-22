@@ -1205,7 +1205,7 @@ define_alloc_methods! {
     for pub fn alloc_with
     for pub fn try_alloc_with
     fn generic_alloc_with<{T}>(&self, f: impl FnOnce() -> T) -> BumpBox<T> | BumpBox<'a, T> {
-        B::alloc_with(self, f)
+        self.do_alloc_with(f)
     }
 
     /// Allocate an object with its default value.

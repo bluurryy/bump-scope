@@ -1,12 +1,7 @@
-use crate::{
-    bumping::{bump_down, bump_up, BumpUp},
-    polyfill::nonnull,
-    BaseAllocator, BumpBox, MinimumAlignment,
-};
 #[cfg(not(no_global_oom_handling))]
 use crate::{
-    capacity_overflow, format_trait_error, handle_alloc_error, layout, AllocError, BumpScope, Infallible, Layout, NonNull,
-    RawChunk, SizedTypeProperties, SupportedMinimumAlignment,
+    capacity_overflow, format_trait_error, handle_alloc_error, layout, AllocError, Infallible, Layout, NonNull, RawChunk,
+    SupportedMinimumAlignment,
 };
 use layout::LayoutProps;
 
@@ -18,49 +13,6 @@ pub(crate) trait ErrorBehavior: Sized {
     fn fixed_size_vector_is_full() -> Self;
     fn fixed_size_vector_no_space(amount: usize) -> Self;
     fn format_trait_error() -> Self;
-
-    #[inline(always)]
-    fn alloc_with<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, T>(
-        bump: &BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
-        f: impl FnOnce() -> T,
-    ) -> Result<BumpBox<'a, T>, Self>
-    where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        A: BaseAllocator<GUARANTEED_ALLOCATED>,
-    {
-        if T::IS_ZST {
-            let value = f();
-            return Ok(BumpBox::zst(value));
-        }
-
-        let chunk = bump.chunk.get();
-        let props = chunk.bump_props(MinimumAlignment::<MIN_ALIGN>, crate::layout::SizedLayout::new::<T>());
-
-        let ptr = unsafe {
-            if UP {
-                if let Some(BumpUp { new_pos, ptr }) = bump_up(props) {
-                    chunk.set_pos_addr(new_pos);
-                    chunk.with_addr(ptr)
-                } else {
-                    bump.do_alloc_sized_in_another_chunk::<Self, T>()?
-                }
-            } else {
-                if let Some(addr) = bump_down(props) {
-                    chunk.set_pos_addr(addr);
-                    chunk.with_addr(addr)
-                } else {
-                    bump.do_alloc_sized_in_another_chunk::<Self, T>()?
-                }
-            }
-        };
-
-        let ptr = ptr.cast::<T>();
-
-        unsafe {
-            nonnull::write_with(ptr, f);
-            Ok(BumpBox::from_raw(ptr))
-        }
-    }
 
     /// For the infallible case we want to inline `f` but not for the fallible one. (Because it produces better code)
     fn alloc_or_else<const UP: bool, A>(

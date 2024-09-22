@@ -5,12 +5,13 @@ use crate::WithDrop;
 use crate::{
     bump_align_guard::BumpAlignGuard,
     bump_common_methods, bump_scope_methods,
+    bumping::{bump_down, bump_up, BumpUp},
     chunk_size::ChunkSize,
     const_param_assert, doc_align_cant_decrease,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::{nonnull, pointer},
-    BaseAllocator, BumpScopeGuard, Checkpoint, ErrorBehavior, GuaranteedAllocatedStats, MinimumAlignment, NoDrop, RawChunk,
-    SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    BaseAllocator, BumpBox, BumpScopeGuard, Checkpoint, ErrorBehavior, GuaranteedAllocatedStats, MinimumAlignment, NoDrop,
+    RawChunk, SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 use allocator_api2::alloc::AllocError;
 use core::{
@@ -125,6 +126,42 @@ where
         self.chunk.set(chunk);
 
         Ok(())
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<BumpBox<'a, T>, B> {
+        if T::IS_ZST {
+            let value = f();
+            return Ok(BumpBox::zst(value));
+        }
+
+        let chunk = self.chunk.get();
+        let props = chunk.bump_props(MinimumAlignment::<MIN_ALIGN>, crate::layout::SizedLayout::new::<T>());
+
+        let ptr = unsafe {
+            if UP {
+                if let Some(BumpUp { new_pos, ptr }) = bump_up(props) {
+                    chunk.set_pos_addr(new_pos);
+                    chunk.with_addr(ptr)
+                } else {
+                    self.do_alloc_sized_in_another_chunk::<B, T>()?
+                }
+            } else {
+                if let Some(addr) = bump_down(props) {
+                    chunk.set_pos_addr(addr);
+                    chunk.with_addr(addr)
+                } else {
+                    self.do_alloc_sized_in_another_chunk::<B, T>()?
+                }
+            }
+        };
+
+        let ptr = ptr.cast::<T>();
+
+        unsafe {
+            nonnull::write_with(ptr, f);
+            Ok(BumpBox::from_raw(ptr))
+        }
     }
 
     #[inline(always)]
