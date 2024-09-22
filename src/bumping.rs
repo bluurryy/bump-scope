@@ -163,12 +163,14 @@ pub(crate) fn bump_down(
     debug_assert!(start <= end);
 
     // these are expected to be evaluated at compile time
-    let does_not_need_align_for_min_align_due_to_align = size_is_multiple_of_align && align_is_const && layout.align() >= min_align;
+    let does_not_need_align_for_min_align_due_to_align =
+        size_is_multiple_of_align && align_is_const && layout.align() >= min_align;
     let does_not_need_align_for_min_align_due_to_size = size_is_const && (layout.size() % min_align == 0);
-    let does_not_need_align_for_min_align = does_not_need_align_for_min_align_due_to_align || does_not_need_align_for_min_align_due_to_size;
-    
+    let does_not_need_align_for_min_align =
+        does_not_need_align_for_min_align_due_to_align || does_not_need_align_for_min_align_due_to_size;
+
     let does_not_need_align_for_layout = size_is_multiple_of_align && align_is_const && layout.align() <= min_align;
-    
+
     let does_not_need_align = does_not_need_align_for_min_align && does_not_need_align_for_layout;
     let needs_align = !does_not_need_align;
 
