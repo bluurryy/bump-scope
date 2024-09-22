@@ -87,7 +87,28 @@ impl ErrorBehavior for Infallible {
             return Ok(BumpBox::zst(value));
         }
 
-        let ptr = bump.do_alloc_sized::<Self, T>()?;
+        let chunk = bump.chunk.get();
+        let props = chunk.bump_props(MinimumAlignment::<MIN_ALIGN>, crate::layout::SizedLayout::new::<T>());
+
+        let ptr = unsafe {
+            if UP {
+                if let Some(BumpUp { new_pos, ptr }) = bump_up(props) {
+                    chunk.set_pos_addr(new_pos);
+                    chunk.with_addr(ptr)
+                } else {
+                    bump.do_alloc_sized_in_another_chunk::<Self, T>()?
+                }
+            } else {
+                if let Some(addr) = bump_down(props) {
+                    chunk.set_pos_addr(addr);
+                    chunk.with_addr(addr)
+                } else {
+                    bump.do_alloc_sized_in_another_chunk::<Self, T>()?
+                }
+            }
+        };
+
+        let ptr = ptr.cast::<T>();
 
         unsafe {
             nonnull::write_with(ptr, f);
