@@ -333,7 +333,7 @@ use layout::{ArrayLayout, CustomLayout};
 pub use mut_bump_string::MutBumpString;
 pub use mut_bump_vec::MutBumpVec;
 pub use mut_bump_vec_rev::MutBumpVecRev;
-use polyfill::{nonnull, pointer};
+use polyfill::nonnull;
 #[cfg(not(no_global_oom_handling))]
 use private::{capacity_overflow, format_trait_error, Infallibly};
 use set_len_on_drop::SetLenOnDrop;
