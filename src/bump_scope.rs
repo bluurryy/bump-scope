@@ -132,369 +132,6 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc<B: ErrorBehavior, T>(&self, value: T) -> Result<BumpBox<'a, T>, B> {
-        self.do_alloc_with(|| value)
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<BumpBox<'a, T>, B> {
-        if T::IS_ZST {
-            let value = f();
-            return Ok(BumpBox::zst(value));
-        }
-
-        let chunk = self.chunk.get();
-        let props = chunk.bump_props(MinimumAlignment::<MIN_ALIGN>, crate::layout::SizedLayout::new::<T>());
-
-        let ptr = unsafe {
-            if UP {
-                if let Some(BumpUp { new_pos, ptr }) = bump_up(props) {
-                    chunk.set_pos_addr(new_pos);
-                    chunk.with_addr(ptr)
-                } else {
-                    self.do_alloc_sized_in_another_chunk::<B, T>()?
-                }
-            } else {
-                if let Some(addr) = bump_down(props) {
-                    chunk.set_pos_addr(addr);
-                    chunk.with_addr(addr)
-                } else {
-                    self.do_alloc_sized_in_another_chunk::<B, T>()?
-                }
-            }
-        };
-
-        let ptr = ptr.cast::<T>();
-
-        unsafe {
-            nonnull::write_with(ptr, f);
-            Ok(BumpBox::from_raw(ptr))
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_default<B: ErrorBehavior, T: Default>(&self) -> Result<BumpBox<'a, T>, B> {
-        self.do_alloc_with(Default::default)
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_slice_copy<B: ErrorBehavior, T: Copy>(&self, slice: &[T]) -> Result<BumpBox<'a, [T]>, B> {
-        if T::IS_ZST {
-            return Ok(BumpBox::zst_slice_clone(slice));
-        }
-
-        let len = slice.len();
-        let src = slice.as_ptr();
-        let dst = self.do_alloc_slice_for(slice)?;
-
-        unsafe {
-            core::ptr::copy_nonoverlapping(src, dst.as_ptr(), len);
-            Ok(BumpBox::from_raw(nonnull::slice_from_raw_parts(dst, len)))
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_slice_clone<B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<BumpBox<'a, [T]>, B> {
-        if T::IS_ZST {
-            return Ok(BumpBox::zst_slice_clone(slice));
-        }
-
-        Ok(self.generic_alloc_uninit_slice_for(slice)?.init_clone(slice))
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_slice_fill<B: ErrorBehavior, T: Clone>(
-        &self,
-        len: usize,
-        value: T,
-    ) -> Result<BumpBox<'a, [T]>, B> {
-        if T::IS_ZST {
-            return Ok(BumpBox::zst_slice_fill(len, value));
-        }
-
-        Ok(self.generic_alloc_uninit_slice(len)?.init_fill(value))
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_slice_fill_with<B: ErrorBehavior, T>(
-        &self,
-        len: usize,
-        f: impl FnMut() -> T,
-    ) -> Result<BumpBox<'a, [T]>, B> {
-        if T::IS_ZST {
-            return Ok(BumpBox::zst_slice_fill_with(len, f));
-        }
-
-        Ok(self.generic_alloc_uninit_slice(len)?.init_fill_with(f))
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_str<B: ErrorBehavior>(&self, src: &str) -> Result<BumpBox<'a, str>, B> {
-        let slice = self.generic_alloc_slice_copy(src.as_bytes())?;
-
-        // SAFETY: input is `str` so this is too
-        Ok(unsafe { slice.into_boxed_str_unchecked() })
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<BumpBox<'a, str>, B> {
-        if let Some(string) = args.as_str() {
-            return self.generic_alloc_str(string);
-        }
-
-        let mut string = BumpString::new_in(self);
-
-        let mut string = if B::IS_FALLIBLE {
-            if fmt::Write::write_fmt(&mut string, args).is_err() {
-                // Either the allocation failed or the formatting trait
-                // implementation returned an error.
-                // Either way we return an `AllocError`, it doesn't matter how.
-                return Err(B::format_trait_error());
-            }
-
-            string
-        } else {
-            #[cfg(not(no_global_oom_handling))]
-            {
-                let mut string = Infallibly(string);
-
-                if fmt::Write::write_fmt(&mut string, args).is_err() {
-                    // This can only be a formatting trait error.
-                    // If allocation failed we'd have already panicked.
-                    return Err(B::format_trait_error());
-                }
-
-                string.0
-            }
-
-            #[cfg(no_global_oom_handling)]
-            {
-                unreachable!()
-            }
-        };
-
-        string.shrink_to_fit();
-
-        Ok(string.into_boxed_str())
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_fmt_mut<B: ErrorBehavior>(&mut self, args: fmt::Arguments) -> Result<BumpBox<'a, str>, B> {
-        if let Some(string) = args.as_str() {
-            return self.generic_alloc_str(string);
-        }
-
-        let mut string = MutBumpString::generic_with_capacity_in(0, self)?;
-
-        let string = if B::IS_FALLIBLE {
-            if fmt::Write::write_fmt(&mut string, args).is_err() {
-                // Either the allocation failed or the formatting trait
-                // implementation returned an error.
-                // Either way we return an `AllocError`, it doesn't matter how.
-                return Err(B::format_trait_error());
-            }
-
-            string
-        } else {
-            #[cfg(not(no_global_oom_handling))]
-            {
-                let mut string = Infallibly(string);
-
-                if fmt::Write::write_fmt(&mut string, args).is_err() {
-                    // This can only be a formatting trait error.
-                    // If allocation failed we'd have already panicked.
-                    return Err(B::format_trait_error());
-                }
-
-                string.0
-            }
-
-            #[cfg(no_global_oom_handling)]
-            {
-                unreachable!()
-            }
-        };
-
-        Ok(string.into_boxed_str())
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_iter<B: ErrorBehavior, T>(
-        &self,
-        iter: impl IntoIterator<Item = T>,
-    ) -> Result<BumpBox<'a, [T]>, B> {
-        let iter = iter.into_iter();
-        let capacity = iter.size_hint().0;
-
-        let mut vec = BumpVec::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
-
-        for value in iter {
-            vec.generic_push(value)?;
-        }
-
-        vec.shrink_to_fit();
-
-        Ok(vec.into_boxed_slice())
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_iter_exact<B: ErrorBehavior, T, I>(
-        &self,
-        iter: impl IntoIterator<Item = T, IntoIter = I>,
-    ) -> Result<BumpBox<'a, [T]>, B>
-    where
-        I: ExactSizeIterator<Item = T>,
-    {
-        let mut iter = iter.into_iter();
-        let len = iter.len();
-
-        let uninit = self.generic_alloc_uninit_slice(len)?;
-        let mut initializer = uninit.initializer();
-
-        while !initializer.is_full() {
-            let value = match iter.next() {
-                Some(value) => value,
-                None => exact_size_iterator_bad_len(),
-            };
-
-            initializer.push(value);
-        }
-
-        Ok(initializer.into_init())
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_iter_mut<B: ErrorBehavior, T>(
-        &mut self,
-        iter: impl IntoIterator<Item = T>,
-    ) -> Result<BumpBox<'a, [T]>, B> {
-        let iter = iter.into_iter();
-        let capacity = iter.size_hint().0;
-
-        let mut vec = MutBumpVec::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
-
-        for value in iter {
-            vec.generic_push(value)?;
-        }
-
-        Ok(vec.into_boxed_slice())
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_iter_mut_rev<B: ErrorBehavior, T>(
-        &mut self,
-        iter: impl IntoIterator<Item = T>,
-    ) -> Result<BumpBox<'a, [T]>, B> {
-        let iter = iter.into_iter();
-        let capacity = iter.size_hint().0;
-
-        let mut vec = MutBumpVecRev::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
-
-        for value in iter {
-            vec.generic_push(value)?;
-        }
-
-        Ok(vec.into_boxed_slice())
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<BumpBox<'a, MaybeUninit<T>>, B> {
-        if T::IS_ZST {
-            return Ok(BumpBox::zst(MaybeUninit::uninit()));
-        }
-
-        let ptr = self.do_alloc_sized::<B, T>()?.cast::<MaybeUninit<T>>();
-        unsafe { Ok(BumpBox::from_raw(ptr)) }
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_uninit_slice<B: ErrorBehavior, T>(&self, len: usize) -> Result<BumpBox<'a, [MaybeUninit<T>]>, B> {
-        if T::IS_ZST {
-            return Ok(BumpBox::uninit_zst_slice(len));
-        }
-
-        let ptr = self.do_alloc_slice::<B, T>(len)?.cast::<MaybeUninit<T>>();
-
-        unsafe {
-            let ptr = nonnull::slice_from_raw_parts(ptr, len);
-            Ok(BumpBox::from_raw(ptr))
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_uninit_slice_for<B: ErrorBehavior, T>(
-        &self,
-        slice: &[T],
-    ) -> Result<BumpBox<'a, [MaybeUninit<T>]>, B> {
-        if T::IS_ZST {
-            return Ok(BumpBox::uninit_zst_slice(slice.len()));
-        }
-
-        let ptr = self.do_alloc_slice_for::<B, T>(slice)?.cast::<MaybeUninit<T>>();
-
-        unsafe {
-            let ptr = nonnull::slice_from_raw_parts(ptr, slice.len());
-            Ok(BumpBox::from_raw(ptr))
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_fixed_vec<B: ErrorBehavior, T>(&self, capacity: usize) -> Result<FixedBumpVec<'a, T>, B> {
-        Ok(FixedBumpVec::from_uninit(self.generic_alloc_uninit_slice(capacity)?))
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_fixed_string<B: ErrorBehavior>(&self, capacity: usize) -> Result<FixedBumpString<'a>, B> {
-        Ok(FixedBumpString::from_uninit(self.generic_alloc_uninit_slice(capacity)?))
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_alloc_layout<B: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, B> {
-        match self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, CustomLayout(layout)) {
-            Some(ptr) => Ok(ptr),
-            None => self.alloc_in_another_chunk(layout),
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn do_reserve_bytes<B: ErrorBehavior>(&self, additional: usize) -> Result<(), B> {
-        let layout = match Layout::from_size_align(additional, 1) {
-            Ok(ok) => ok,
-            Err(_) => return Err(B::capacity_overflow()),
-        };
-
-        if self.is_unallocated() {
-            let allocator = A::default_or_panic();
-            let new_chunk = RawChunk::new_in(
-                ChunkSize::for_capacity(layout).ok_or_else(B::capacity_overflow)?,
-                None,
-                allocator,
-            )?;
-            self.chunk.set(new_chunk);
-            return Ok(());
-        }
-
-        let mut additional = additional;
-        let mut chunk = self.chunk.get();
-
-        loop {
-            if let Some(rest) = additional.checked_sub(chunk.remaining()) {
-                additional = rest;
-            } else {
-                return Ok(());
-            }
-
-            if let Some(next) = chunk.next() {
-                chunk = next;
-            } else {
-                break;
-            }
-        }
-
-        chunk.append_for(layout).map(drop)
-    }
-
-    #[inline(always)]
     pub(crate) unsafe fn consolidate_greed<T>(&mut self, mut start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         let end = nonnull::add(start, len);
 
@@ -979,6 +616,376 @@ where
 }
 
 impl<A, const MIN_ALIGN: usize, const UP: bool> NoDrop for BumpScope<'_, A, MIN_ALIGN, UP> {}
+
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+    BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+    #[inline(always)]
+    pub(crate) fn do_alloc<B: ErrorBehavior, T>(&self, value: T) -> Result<BumpBox<'a, T>, B> {
+        self.do_alloc_with(|| value)
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<BumpBox<'a, T>, B> {
+        if T::IS_ZST {
+            let value = f();
+            return Ok(BumpBox::zst(value));
+        }
+
+        let chunk = self.chunk.get();
+        let props = chunk.bump_props(MinimumAlignment::<MIN_ALIGN>, crate::layout::SizedLayout::new::<T>());
+
+        let ptr = unsafe {
+            if UP {
+                if let Some(BumpUp { new_pos, ptr }) = bump_up(props) {
+                    chunk.set_pos_addr(new_pos);
+                    chunk.with_addr(ptr)
+                } else {
+                    self.do_alloc_sized_in_another_chunk::<B, T>()?
+                }
+            } else {
+                if let Some(addr) = bump_down(props) {
+                    chunk.set_pos_addr(addr);
+                    chunk.with_addr(addr)
+                } else {
+                    self.do_alloc_sized_in_another_chunk::<B, T>()?
+                }
+            }
+        };
+
+        let ptr = ptr.cast::<T>();
+
+        unsafe {
+            nonnull::write_with(ptr, f);
+            Ok(BumpBox::from_raw(ptr))
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_default<B: ErrorBehavior, T: Default>(&self) -> Result<BumpBox<'a, T>, B> {
+        self.do_alloc_with(Default::default)
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_slice_copy<B: ErrorBehavior, T: Copy>(&self, slice: &[T]) -> Result<BumpBox<'a, [T]>, B> {
+        if T::IS_ZST {
+            return Ok(BumpBox::zst_slice_clone(slice));
+        }
+
+        let len = slice.len();
+        let src = slice.as_ptr();
+        let dst = self.do_alloc_slice_for(slice)?;
+
+        unsafe {
+            core::ptr::copy_nonoverlapping(src, dst.as_ptr(), len);
+            Ok(BumpBox::from_raw(nonnull::slice_from_raw_parts(dst, len)))
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_slice_clone<B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<BumpBox<'a, [T]>, B> {
+        if T::IS_ZST {
+            return Ok(BumpBox::zst_slice_clone(slice));
+        }
+
+        Ok(self.generic_alloc_uninit_slice_for(slice)?.init_clone(slice))
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_slice_fill<B: ErrorBehavior, T: Clone>(
+        &self,
+        len: usize,
+        value: T,
+    ) -> Result<BumpBox<'a, [T]>, B> {
+        if T::IS_ZST {
+            return Ok(BumpBox::zst_slice_fill(len, value));
+        }
+
+        Ok(self.generic_alloc_uninit_slice(len)?.init_fill(value))
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_slice_fill_with<B: ErrorBehavior, T>(
+        &self,
+        len: usize,
+        f: impl FnMut() -> T,
+    ) -> Result<BumpBox<'a, [T]>, B> {
+        if T::IS_ZST {
+            return Ok(BumpBox::zst_slice_fill_with(len, f));
+        }
+
+        Ok(self.generic_alloc_uninit_slice(len)?.init_fill_with(f))
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_str<B: ErrorBehavior>(&self, src: &str) -> Result<BumpBox<'a, str>, B> {
+        let slice = self.generic_alloc_slice_copy(src.as_bytes())?;
+
+        // SAFETY: input is `str` so this is too
+        Ok(unsafe { slice.into_boxed_str_unchecked() })
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<BumpBox<'a, str>, B> {
+        if let Some(string) = args.as_str() {
+            return self.generic_alloc_str(string);
+        }
+
+        let mut string = BumpString::new_in(self);
+
+        let mut string = if B::IS_FALLIBLE {
+            if fmt::Write::write_fmt(&mut string, args).is_err() {
+                // Either the allocation failed or the formatting trait
+                // implementation returned an error.
+                // Either way we return an `AllocError`, it doesn't matter how.
+                return Err(B::format_trait_error());
+            }
+
+            string
+        } else {
+            #[cfg(not(no_global_oom_handling))]
+            {
+                let mut string = Infallibly(string);
+
+                if fmt::Write::write_fmt(&mut string, args).is_err() {
+                    // This can only be a formatting trait error.
+                    // If allocation failed we'd have already panicked.
+                    return Err(B::format_trait_error());
+                }
+
+                string.0
+            }
+
+            #[cfg(no_global_oom_handling)]
+            {
+                unreachable!()
+            }
+        };
+
+        string.shrink_to_fit();
+
+        Ok(string.into_boxed_str())
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_fmt_mut<B: ErrorBehavior>(&mut self, args: fmt::Arguments) -> Result<BumpBox<'a, str>, B> {
+        if let Some(string) = args.as_str() {
+            return self.generic_alloc_str(string);
+        }
+
+        let mut string = MutBumpString::generic_with_capacity_in(0, self)?;
+
+        let string = if B::IS_FALLIBLE {
+            if fmt::Write::write_fmt(&mut string, args).is_err() {
+                // Either the allocation failed or the formatting trait
+                // implementation returned an error.
+                // Either way we return an `AllocError`, it doesn't matter how.
+                return Err(B::format_trait_error());
+            }
+
+            string
+        } else {
+            #[cfg(not(no_global_oom_handling))]
+            {
+                let mut string = Infallibly(string);
+
+                if fmt::Write::write_fmt(&mut string, args).is_err() {
+                    // This can only be a formatting trait error.
+                    // If allocation failed we'd have already panicked.
+                    return Err(B::format_trait_error());
+                }
+
+                string.0
+            }
+
+            #[cfg(no_global_oom_handling)]
+            {
+                unreachable!()
+            }
+        };
+
+        Ok(string.into_boxed_str())
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_iter<B: ErrorBehavior, T>(
+        &self,
+        iter: impl IntoIterator<Item = T>,
+    ) -> Result<BumpBox<'a, [T]>, B> {
+        let iter = iter.into_iter();
+        let capacity = iter.size_hint().0;
+
+        let mut vec = BumpVec::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
+
+        for value in iter {
+            vec.generic_push(value)?;
+        }
+
+        vec.shrink_to_fit();
+
+        Ok(vec.into_boxed_slice())
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_iter_exact<B: ErrorBehavior, T, I>(
+        &self,
+        iter: impl IntoIterator<Item = T, IntoIter = I>,
+    ) -> Result<BumpBox<'a, [T]>, B>
+    where
+        I: ExactSizeIterator<Item = T>,
+    {
+        let mut iter = iter.into_iter();
+        let len = iter.len();
+
+        let uninit = self.generic_alloc_uninit_slice(len)?;
+        let mut initializer = uninit.initializer();
+
+        while !initializer.is_full() {
+            let value = match iter.next() {
+                Some(value) => value,
+                None => exact_size_iterator_bad_len(),
+            };
+
+            initializer.push(value);
+        }
+
+        Ok(initializer.into_init())
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_iter_mut<B: ErrorBehavior, T>(
+        &mut self,
+        iter: impl IntoIterator<Item = T>,
+    ) -> Result<BumpBox<'a, [T]>, B> {
+        let iter = iter.into_iter();
+        let capacity = iter.size_hint().0;
+
+        let mut vec = MutBumpVec::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
+
+        for value in iter {
+            vec.generic_push(value)?;
+        }
+
+        Ok(vec.into_boxed_slice())
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_iter_mut_rev<B: ErrorBehavior, T>(
+        &mut self,
+        iter: impl IntoIterator<Item = T>,
+    ) -> Result<BumpBox<'a, [T]>, B> {
+        let iter = iter.into_iter();
+        let capacity = iter.size_hint().0;
+
+        let mut vec = MutBumpVecRev::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
+
+        for value in iter {
+            vec.generic_push(value)?;
+        }
+
+        Ok(vec.into_boxed_slice())
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<BumpBox<'a, MaybeUninit<T>>, B> {
+        if T::IS_ZST {
+            return Ok(BumpBox::zst(MaybeUninit::uninit()));
+        }
+
+        let ptr = self.do_alloc_sized::<B, T>()?.cast::<MaybeUninit<T>>();
+        unsafe { Ok(BumpBox::from_raw(ptr)) }
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_uninit_slice<B: ErrorBehavior, T>(&self, len: usize) -> Result<BumpBox<'a, [MaybeUninit<T>]>, B> {
+        if T::IS_ZST {
+            return Ok(BumpBox::uninit_zst_slice(len));
+        }
+
+        let ptr = self.do_alloc_slice::<B, T>(len)?.cast::<MaybeUninit<T>>();
+
+        unsafe {
+            let ptr = nonnull::slice_from_raw_parts(ptr, len);
+            Ok(BumpBox::from_raw(ptr))
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_uninit_slice_for<B: ErrorBehavior, T>(
+        &self,
+        slice: &[T],
+    ) -> Result<BumpBox<'a, [MaybeUninit<T>]>, B> {
+        if T::IS_ZST {
+            return Ok(BumpBox::uninit_zst_slice(slice.len()));
+        }
+
+        let ptr = self.do_alloc_slice_for::<B, T>(slice)?.cast::<MaybeUninit<T>>();
+
+        unsafe {
+            let ptr = nonnull::slice_from_raw_parts(ptr, slice.len());
+            Ok(BumpBox::from_raw(ptr))
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_fixed_vec<B: ErrorBehavior, T>(&self, capacity: usize) -> Result<FixedBumpVec<'a, T>, B> {
+        Ok(FixedBumpVec::from_uninit(self.generic_alloc_uninit_slice(capacity)?))
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_fixed_string<B: ErrorBehavior>(&self, capacity: usize) -> Result<FixedBumpString<'a>, B> {
+        Ok(FixedBumpString::from_uninit(self.generic_alloc_uninit_slice(capacity)?))
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_alloc_layout<B: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, B> {
+        match self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, CustomLayout(layout)) {
+            Some(ptr) => Ok(ptr),
+            None => self.alloc_in_another_chunk(layout),
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn do_reserve_bytes<B: ErrorBehavior>(&self, additional: usize) -> Result<(), B> {
+        let layout = match Layout::from_size_align(additional, 1) {
+            Ok(ok) => ok,
+            Err(_) => return Err(B::capacity_overflow()),
+        };
+
+        if self.is_unallocated() {
+            let allocator = A::default_or_panic();
+            let new_chunk = RawChunk::new_in(
+                ChunkSize::for_capacity(layout).ok_or_else(B::capacity_overflow)?,
+                None,
+                allocator,
+            )?;
+            self.chunk.set(new_chunk);
+            return Ok(());
+        }
+
+        let mut additional = additional;
+        let mut chunk = self.chunk.get();
+
+        loop {
+            if let Some(rest) = additional.checked_sub(chunk.remaining()) {
+                additional = rest;
+            } else {
+                return Ok(());
+            }
+
+            if let Some(next) = chunk.next() {
+                chunk = next;
+            } else {
+                break;
+            }
+        }
+
+        chunk.append_for(layout).map(drop)
+    }
+}
 
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
 where
