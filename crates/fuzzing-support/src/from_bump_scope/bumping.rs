@@ -72,7 +72,7 @@ pub(crate) fn bump_up(
 
     let mut new_pos;
 
-    // doing the `layout.size() < CHUNK_ALIGN_MIN` trick here (as seen in !UP)
+    // doing the `layout.size() < MIN_CHUNK_ALIGN` trick here (as seen in !UP)
     // results in worse codegen, so we don't
 
     if align_is_const && layout.align() <= MIN_CHUNK_ALIGN {
@@ -82,8 +82,8 @@ pub(crate) fn bump_up(
             // alignment is already sufficient
         } else {
             // Aligning an address that is `<= range.end` with an alignment
-            // that is `<= CHUNK_ALIGN_MIN` can not exceed `range.end` and
-            // can not overflow as `range.end` is always aligned to `CHUNK_ALIGN_MIN`
+            // that is `<= MIN_CHUNK_ALIGN` can not exceed `range.end` and
+            // can not overflow as `range.end` is always aligned to `MIN_CHUNK_ALIGN`
             start = up_align_unchecked(start, layout.align());
         }
 
@@ -96,7 +96,7 @@ pub(crate) fn bump_up(
         // doesn't exceed `end` because of the check above
         new_pos = start + layout.size();
     } else {
-        // Alignment is `> CHUNK_ALIGN_MIN` or unknown.
+        // Alignment is `> MIN_CHUNK_ALIGN` or unknown.
 
         // start and align are both nonzero
         // `aligned_down` is the aligned pointer minus `layout.align()`
@@ -109,7 +109,7 @@ pub(crate) fn bump_up(
         new_pos = aligned_down.saturating_add(layout.align() + layout.size());
 
         // note that `new_pos` being `usize::MAX` is an invalid value for `new_pos` and we MUST return None;
-        // due to `end` being always aligned to `CHUNK_ALIGN_MIN`, it can't be `usize::MAX`;
+        // due to `end` being always aligned to `MIN_CHUNK_ALIGN`, it can't be `usize::MAX`;
         // thus when `new_pos` is `usize::MAX` this will always return None;
         if new_pos > end {
             return None;
@@ -124,7 +124,7 @@ pub(crate) fn bump_up(
     {
         // we are already aligned to `MIN_ALIGN`
     } else {
-        // up aligning an address `<= range.end` with an alignment `<= CHUNK_ALIGN_MIN` (which `MIN_ALIGN` is)
+        // up aligning an address `<= range.end` with an alignment `<= MIN_CHUNK_ALIGN` (which `MIN_ALIGN` is)
         // can not exceed `range.end`, and thus also can't overflow
         new_pos = up_align_unchecked(new_pos, min_align);
     }
@@ -169,7 +169,7 @@ pub(crate) fn bump_down(
     let needs_align = needs_align_for_min_align || needs_align_for_layout;
 
     if size_is_const && layout.size() <= MIN_CHUNK_ALIGN {
-        // When `size <= CHUNK_ALIGN_MIN` subtracting it from `end` can't overflow, as the lowest value for `end` would be `start` which is aligned to `CHUNK_ALIGN_MIN`,
+        // When `size <= MIN_CHUNK_ALIGN` subtracting it from `end` can't overflow, as the lowest value for `end` would be `start` which is aligned to `MIN_CHUNK_ALIGN`,
         // thus its address can't be smaller than it.
         end -= layout.size();
 
@@ -194,12 +194,12 @@ pub(crate) fn bump_down(
         end -= layout.size();
 
         if needs_align {
-            // down aligning an address `>= range.start` with an alignment `<= CHUNK_ALIGN_MIN` (which `layout.align()` is)
+            // down aligning an address `>= range.start` with an alignment `<= MIN_CHUNK_ALIGN` (which `layout.align()` is)
             // can not exceed `range.start`, and thus also can't overflow
             end = down_align(end, layout.align().max(min_align));
         }
     } else {
-        // Alignment is `> CHUNK_ALIGN_MIN` or unknown.
+        // Alignment is `> MIN_CHUNK_ALIGN` or unknown.
 
         // this could also be a `checked_sub`, but we use `saturating_sub` to save us a branch;
         // the `if` below will return None if the addition saturated and returned `0`
@@ -244,7 +244,7 @@ pub(crate) fn bump_greedy_up(
         if align_is_const && layout.align() <= MIN_CHUNK_ALIGN {
             // SAFETY:
             // Aligning an address that is `<= range.end` with an alignment
-            // that is `<= CHUNK_ALIGN_MIN` can not exceed `range.end` and
+            // that is `<= MIN_CHUNK_ALIGN` can not exceed `range.end` and
             // can not overflow
             start = up_align_unchecked(start, layout.align());
         } else {
