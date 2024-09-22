@@ -10,8 +10,6 @@ inspect_asm::alloc_u32::try_up:
 	jb .LBB0_1
 	lea rdx, [rax + 4]
 	mov qword ptr [rcx], rdx
-	test rax, rax
-	je .LBB0_1
 .LBB0_0:
 	mov dword ptr [rax], esi
 	pop rbx

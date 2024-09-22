@@ -1196,11 +1196,7 @@ define_alloc_methods! {
     for pub fn alloc
     for pub fn try_alloc
     fn generic_alloc<{T}>(&self, value: T) -> BumpBox<T> | BumpBox<'a, T> {
-        if T::IS_ZST {
-            return Ok(BumpBox::zst(value));
-        }
-
-        self.generic_alloc_with(|| value)
+        B::alloc(self, value)
     }
 
     /// Pre-allocate space for an object. Once space is allocated `f` will be called to create the value to be put at that place.
