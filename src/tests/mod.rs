@@ -146,6 +146,10 @@ either_way! {
     alloc_zst
 
     call_zst_creation_closures
+
+    deallocate_in_ltr
+
+    deallocate_in_rtl
 }
 
 macro_rules! assert_chunk_sizes {
@@ -952,7 +956,7 @@ fn alloc_zst<const UP: bool>() {
 }
 
 fn call_zst_creation_closures<const UP: bool>() {
-    let bump = Bump::<Global, 1, true>::new();
+    let bump = Bump::<Global, 1, UP>::new();
 
     {
         let mut calls = 0;
@@ -968,5 +972,57 @@ fn call_zst_creation_closures<const UP: bool>() {
             calls += 1;
         });
         assert_eq!(calls, 3);
+    }
+}
+
+fn deallocate_in_ltr<const UP: bool>() {
+    let bump = Bump::<Global, 1, UP>::new();
+    let slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]);
+    let (lhs, rhs) = slice.split_at(3);
+
+    assert_eq!(lhs, [1, 2, 3]);
+    assert_eq!(rhs, [4, 5, 6]);
+    assert_eq!(bump.stats().allocated(), 6 * 4);
+
+    lhs.deallocate_in(&bump);
+
+    if UP {
+        assert_eq!(bump.stats().allocated(), 6 * 4);
+    } else {
+        assert_eq!(bump.stats().allocated(), 3 * 4);
+    }
+
+    rhs.deallocate_in(&bump);
+
+    if UP {
+        assert_eq!(bump.stats().allocated(), 3 * 4);
+    } else {
+        assert_eq!(bump.stats().allocated(), 0 * 4);
+    }
+}
+
+fn deallocate_in_rtl<const UP: bool>() {
+    let bump = Bump::<Global, 1, UP>::new();
+    let slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]);
+    let (lhs, rhs) = slice.split_at(3);
+
+    assert_eq!(lhs, [1, 2, 3]);
+    assert_eq!(rhs, [4, 5, 6]);
+    assert_eq!(bump.stats().allocated(), 6 * 4);
+
+    rhs.deallocate_in(&bump);
+
+    if UP {
+        assert_eq!(bump.stats().allocated(), 3 * 4);
+    } else {
+        assert_eq!(bump.stats().allocated(), 6 * 4);
+    }
+
+    lhs.deallocate_in(&bump);
+
+    if UP {
+        assert_eq!(bump.stats().allocated(), 0 * 4);
+    } else {
+        assert_eq!(bump.stats().allocated(), 3 * 4);
     }
 }
