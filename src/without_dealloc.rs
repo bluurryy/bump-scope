@@ -17,7 +17,7 @@ impl<A> WithoutDealloc<A> {
     }
 }
 
-unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
+unsafe impl<'a, A: BumpAllocator<'a>> Allocator for WithoutDealloc<A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         self.0.allocate(layout)
@@ -54,7 +54,7 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
     }
 }
 
-unsafe impl<A: BumpAllocator> BumpAllocator for WithoutDealloc<A> {}
+unsafe impl<'a, A: BumpAllocator<'a>> BumpAllocator<'a> for WithoutDealloc<A> {}
 
 /// Wraps an bump allocator and does nothing on [`shrink`](Allocator::shrink).
 ///
@@ -71,7 +71,7 @@ impl<A> WithoutShrink<A> {
     }
 }
 
-unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
+unsafe impl<'a, A: BumpAllocator<'a>> Allocator for WithoutShrink<A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         self.0.allocate(layout)
@@ -106,7 +106,7 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         #[cold]
         #[inline(never)]
-        unsafe fn shrink_unfit<A: BumpAllocator>(
+        unsafe fn shrink_unfit<'a, A: BumpAllocator<'a>>(
             this: &WithoutShrink<A>,
             ptr: NonNull<u8>,
             old_layout: Layout,
@@ -126,4 +126,4 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
     }
 }
 
-unsafe impl<A: BumpAllocator> BumpAllocator for WithoutShrink<A> {}
+unsafe impl<'a, A: BumpAllocator<'a>> BumpAllocator<'a> for WithoutShrink<A> {}

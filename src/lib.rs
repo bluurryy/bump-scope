@@ -263,6 +263,7 @@ mod allocator;
 pub(crate) mod any_bump;
 mod bump;
 mod bump_align_guard;
+mod bump_allocator;
 /// Contains [`BumpBox`] and associated types.
 mod bump_box;
 #[cfg(feature = "std")]
@@ -304,6 +305,7 @@ use allocator_api2::alloc::{AllocError, Allocator};
 #[cfg(test)]
 pub use any_bump::AnyBump;
 pub use bump::Bump;
+pub use bump_allocator::BumpAllocator;
 pub use bump_box::BumpBox;
 #[cfg(feature = "std")]
 pub use bump_pool::{BumpPool, BumpPoolGuard};
@@ -320,7 +322,6 @@ use core::convert::Infallible;
 use core::{
     alloc::Layout,
     fmt::{self, Debug},
-    marker::PhantomData,
     mem::{self, MaybeUninit},
     num::NonZeroUsize,
     ptr::NonNull,
@@ -487,93 +488,6 @@ pub mod private {
 #[inline(never)]
 fn exact_size_iterator_bad_len() -> ! {
     panic!("ExactSizeIterator did not return as many items as promised")
-}
-
-/// An allocator that allows `grow(_zeroed)`, `shrink` and `deallocate` calls with pointers that were not allocated by this allocator.
-/// This trait is used for [`BumpBox::into_box`](BumpBox::into_box) to allow safely converting a `BumpBox` into a `Box`.
-///
-/// # Safety
-/// - `grow(_zeroed)`, `shrink` and `deallocate` must be ok to be called with a pointer that was not allocated by this Allocator
-pub unsafe trait BumpAllocator: Allocator {}
-
-unsafe impl<A: BumpAllocator> BumpAllocator for &A {}
-
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
-    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-}
-
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
-    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-}
-
-/// Associates a lifetime to a wrapped type.
-///
-/// This is used for [`BumpBox::into_box`] to attach a lifetime to the `Box`.
-#[derive(Debug, Clone)]
-pub struct WithLifetime<'a, A> {
-    inner: A,
-    marker: PhantomData<&'a mut ()>,
-}
-
-#[allow(missing_docs)]
-impl<'a, A> WithLifetime<'a, A> {
-    #[inline(always)]
-    pub fn new(inner: A) -> Self {
-        Self {
-            inner,
-            marker: PhantomData,
-        }
-    }
-
-    #[inline(always)]
-    pub fn into_inner(self) -> A {
-        self.inner
-    }
-}
-
-unsafe impl<'a, A: Allocator> Allocator for WithLifetime<'a, A> {
-    #[inline(always)]
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.allocate(layout)
-    }
-
-    #[inline(always)]
-    fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.allocate_zeroed(layout)
-    }
-
-    #[inline(always)]
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        self.inner.deallocate(ptr, layout);
-    }
-
-    #[inline(always)]
-    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.grow(ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    unsafe fn grow_zeroed(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: Layout,
-        new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.grow_zeroed(ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.shrink(ptr, old_layout, new_layout)
-    }
 }
 
 #[cold]

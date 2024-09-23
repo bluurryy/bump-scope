@@ -42,6 +42,7 @@
     "justfile",
     "kenobi",
     "libfuzzer",
+    "LMAO",
     "maybeuninits",
     "memmove",
     "miri",

@@ -453,7 +453,7 @@ unsafe impl<Bump: Allocator> Allocator for WithDrop<Bump> {
     }
 }
 
-unsafe impl<Bump: BumpAllocator> BumpAllocator for WithDrop<Bump> {}
+unsafe impl<'a, Bump: BumpAllocator<'a>> BumpAllocator<'a> for WithDrop<Bump> {}
 
 #[derive(Clone, Copy)]
 pub(crate) struct CustomLayoutConstAlign(pub Layout);
