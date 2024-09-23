@@ -63,9 +63,18 @@ define_alloc_methods! {
     /// # use bump_scope::Bump;
     /// let mut bump: Bump = Bump::new();
     /// let zero = bump.alloc_zeroed::<i32>();
-    /// assert_eq!(*zero, 0)
+    /// assert_eq!(*zero, 0);
     /// ```
     for fn alloc_zeroed
+    do examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// let mut bump: Bump = Bump::try_new()?;
+    /// let zero = bump.try_alloc_zeroed::<i32>()?;
+    /// assert_eq!(*zero, 0);
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
     for fn try_alloc_zeroed
     use fn generic_alloc_zeroed<{T}>(&self) -> BumpBox<T> | BumpBox<'a, T>
     where {
@@ -79,9 +88,18 @@ define_alloc_methods! {
     /// # use bump_scope::Bump;
     /// let mut bump: Bump = Bump::new();
     /// let zeroes = bump.alloc_zeroed_slice::<i32>(3);
-    /// assert_eq!(*zeroes, [0; 3])
+    /// assert_eq!(*zeroes, [0; 3]);
     /// ```
     for fn alloc_zeroed_slice
+    do examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// let mut bump: Bump = Bump::try_new()?;
+    /// let zeroes = bump.try_alloc_zeroed_slice::<i32>(3)?;
+    /// assert_eq!(*zeroes, [0; 3]);
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
     for fn try_alloc_zeroed_slice
     use fn generic_alloc_zeroed_slice<{T}>(&self, len: usize) -> BumpBox<[T]> | BumpBox<'a, [T]>
     where {

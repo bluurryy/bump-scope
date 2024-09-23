@@ -1024,7 +1024,6 @@ macro_rules! define_alloc_methods {
             $(#[$attr:meta])*
             $(do panics $(#[doc = $panics:literal])*)?
             $(do errors $(#[doc = $errors:literal])*)?
-            $(do examples $(#[doc = $examples:literal])*)?
             impl
 
             $(#[$attr_infallible:meta])*
@@ -1049,6 +1048,7 @@ macro_rules! define_alloc_methods {
         macro_rules! $macro_name {
             (BumpScope) => {
                 $(
+                    #[cfg(not(no_global_oom_handling))]
                     $(#[$attr])*
                     $(#[$attr_infallible])*
 
@@ -1061,12 +1061,10 @@ macro_rules! define_alloc_methods {
                     $(#[doc = "\n"] $(#[doc = $errors])*)?
                     $(#[doc = "\n"] $(#[doc = $infallible_errors])*)?
 
-                    #[doc = $crate::map!({ $($($examples)*)? $($($infallible_examples)*)? } become { "# Examples" } else { "" })]
-                    $(#[doc = "\n"] $(#[doc = $examples])*)?
+                    #[doc = $crate::map!({ $($($infallible_examples)*)? } become { "# Examples" } else { "" })]
                     $(#[doc = "\n"] $(#[doc = $infallible_examples])*)?
 
                     #[inline(always)]
-                    #[cfg(not(no_global_oom_handling))]
                     pub fn $infallible
                     $(<$($generic_params)*>)?
                     (&$($self)+ $(, $arg_pat: $arg_ty)*)
@@ -1090,8 +1088,7 @@ macro_rules! define_alloc_methods {
                     $(#[doc = "\n"] $(#[doc = $errors])*)?
                     $(#[doc = "\n"] $(#[doc = $fallible_errors])*)?
 
-                    #[doc = $crate::map!({ $($($examples)*)? $($($fallible_examples)*)? } become { "# Examples" } else { "" })]
-                    $(#[doc = "\n"] $(#[doc = $examples])*)?
+                    #[doc = $crate::map!({ $($($fallible_examples)*)? } become { "# Examples" } else { "" })]
                     $(#[doc = "\n"] $(#[doc = $fallible_examples])*)?
 
                     #[inline(always)]
@@ -1119,8 +1116,7 @@ macro_rules! define_alloc_methods {
                     $(#[doc = "\n"] $(#[doc = $errors])*)?
                     $(#[doc = "\n"] $(#[doc = $infallible_errors])*)?
 
-                    #[doc = $crate::map!({ $($($examples)*)? $($($infallible_examples)*)? } become { "# Examples" } else { "" })]
-                    $(#[doc = "\n"] $(#[doc = $examples])*)?
+                    #[doc = $crate::map!({ $($($infallible_examples)*)? } become { "# Examples" } else { "" })]
                     $(#[doc = "\n"] $(#[doc = $infallible_examples])*)?
 
                     #[inline(always)]
@@ -1148,8 +1144,7 @@ macro_rules! define_alloc_methods {
                     $(#[doc = "\n"] $(#[doc = $errors])*)?
                     $(#[doc = "\n"] $(#[doc = $fallible_errors])*)?
 
-                    #[doc = $crate::map!({ $($($examples)*)? $($($fallible_examples)*)? } become { "# Examples" } else { "" })]
-                    $(#[doc = "\n"] $(#[doc = $examples])*)?
+                    #[doc = $crate::map!({ $($($fallible_examples)*)? } become { "# Examples" } else { "" })]
                     $(#[doc = "\n"] $(#[doc = $fallible_examples])*)?
 
                     #[inline(always)]
@@ -1245,7 +1240,6 @@ define_alloc_methods! {
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// #
     /// let one = 1;
     /// let two = 2;
     /// let string = bump.alloc_fmt(format_args!("{one} + {two} = {}", one + two));
@@ -1256,6 +1250,18 @@ define_alloc_methods! {
     /// For better performance prefer [`try_alloc_fmt_mut`](Bump::try_alloc_fmt_mut).
     do errors
     /// Errors if a formatting trait implementation returned an error.
+    do examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let one = 1;
+    /// let two = 2;
+    /// let string = bump.try_alloc_fmt(format_args!("{one} + {two} = {}", one + two))?;
+    ///
+    /// assert_eq!(string, "1 + 2 = 3");
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
     for fn try_alloc_fmt
     use fn generic_alloc_fmt(&self, args: fmt::Arguments) -> BumpBox<str> | BumpBox<'a, str>;
 
@@ -1268,7 +1274,6 @@ define_alloc_methods! {
     /// ```
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
-    /// #
     /// let one = 1;
     /// let two = 2;
     /// let string = bump.alloc_fmt_mut(format_args!("{one} + {two} = {}", one + two));
@@ -1279,22 +1284,41 @@ define_alloc_methods! {
     /// Unlike [`try_alloc_fmt`](Bump::try_alloc_fmt), this function requires a mutable `Bump(Scope)`.
     do errors
     /// Errors if a formatting trait implementation returned an error.
+    do examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let one = 1;
+    /// let two = 2;
+    /// let string = bump.try_alloc_fmt_mut(format_args!("{one} + {two} = {}", one + two))?;
+    ///
+    /// assert_eq!(string, "1 + 2 = 3");
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
     for fn try_alloc_fmt_mut
     use fn generic_alloc_fmt_mut(&mut self, args: fmt::Arguments) -> BumpBox<str> | BumpBox<'a, str>;
 
     /// Allocate elements of an iterator into a slice.
+    impl
+    /// For better performance prefer [`alloc_iter_exact`](Bump::alloc_iter_exact) or <code>[alloc_iter_mut](Bump::alloc_iter_mut)</code>.
     do examples
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// #
     /// let slice = bump.alloc_iter([1, 2, 3]);
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
-    impl
-    /// For better performance prefer [`alloc_iter_exact`](Bump::alloc_iter_exact) or <code>[alloc_iter_mut](Bump::alloc_iter_mut)</code>.
     for fn alloc_iter
     /// For better performance prefer [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) or <code>[try_alloc_iter_mut](Bump::try_alloc_iter_mut)</code>.
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let slice = bump.try_alloc_iter([1, 2, 3])?;
+    /// assert_eq!(slice, [1, 2, 3]);
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
     for fn try_alloc_iter
     use fn generic_alloc_iter<{T}>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]>;
 
@@ -1306,11 +1330,19 @@ define_alloc_methods! {
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// #
     /// let slice = bump.alloc_iter_exact([1, 2, 3]);
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
     for fn alloc_iter_exact
+    do examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let slice = bump.try_alloc_iter_exact([1, 2, 3])?;
+    /// assert_eq!(slice, [1, 2, 3]);
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
     for fn try_alloc_iter_exact
     use fn generic_alloc_iter_exact<{T, I}>(&self, iter: impl IntoIterator<Item = T, IntoIter = I>) -> BumpBox<[T]> | BumpBox<'a, [T]>
     where {
@@ -1318,22 +1350,30 @@ define_alloc_methods! {
     };
 
     /// Allocate elements of an iterator into a slice.
-    do examples
-    /// ```
-    /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
-    /// #
-    /// let slice = bump.alloc_iter_mut([1, 2, 3]);
-    /// assert_eq!(slice, [1, 2, 3]);
-    /// ```
     impl
     /// Unlike [`alloc_iter`](Bump::alloc_iter), this function requires a mutable `Bump(Scope)`.
     ///
     /// When bumping downwards, prefer [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) or [`alloc_iter_exact`](Bump::alloc_iter_exact) to avoid a shift of the slice.
+    do examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let mut bump: Bump = Bump::new();
+    /// let slice = bump.alloc_iter_mut([1, 2, 3]);
+    /// assert_eq!(slice, [1, 2, 3]);
+    /// ```
     for fn alloc_iter_mut
     /// Unlike [`try_alloc_iter`](Bump::try_alloc_iter), this function requires a mutable `Bump(Scope)`.
     ///
     /// When bumping downwards, prefer [`try_alloc_iter_mut_rev`](Bump::try_alloc_iter_mut_rev) or [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) to avoid a shift of the slice.
+    do examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let slice = bump.try_alloc_iter_mut([1, 2, 3])?;
+    /// assert_eq!(slice, [1, 2, 3]);
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
     for fn try_alloc_iter_mut
     use fn generic_alloc_iter_mut<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]>;
 
@@ -1345,24 +1385,33 @@ define_alloc_methods! {
     /// ```
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
-    /// #
     /// let slice = bump.alloc_iter_mut_rev([1, 2, 3]);
     /// assert_eq!(slice, [3, 2, 1]);
     /// ```
     for fn alloc_iter_mut_rev
     ///
     /// When bumping upwards, prefer [`try_alloc_iter_mut`](Self::try_alloc_iter_mut) or [`try_alloc_iter_exact`](Self::try_alloc_iter_exact) to avoid a shift of the slice.
+    do examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let slice = bump.try_alloc_iter_mut_rev([1, 2, 3])?;
+    /// assert_eq!(slice, [3, 2, 1]);
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
     for fn try_alloc_iter_mut_rev
     use fn generic_alloc_iter_mut_rev<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]>;
 
     /// Allocate an unitialized object.
     ///
     /// You can safely initialize the object with [`init`](BumpBox::init) or unsafely with [`assume_init`](BumpBox::assume_init).
+    impl
     do examples
     /// Safely:
     /// ```
     /// # use bump_scope::Bump;
-    /// let bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let five = bump.alloc_uninit();
     ///
     /// let five = five.init(5);
@@ -1373,7 +1422,7 @@ define_alloc_methods! {
     /// Unsafely:
     /// ```
     /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::new();
+    /// # let mut bump: Bump = Bump::new();
     /// let mut five = bump.alloc_uninit();
     ///
     /// let five = unsafe {
@@ -1383,8 +1432,36 @@ define_alloc_methods! {
     ///
     /// assert_eq!(*five, 5)
     /// ```
-    impl
     for fn alloc_uninit
+    do examples
+    /// Safely:
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let five = bump.try_alloc_uninit()?;
+    ///
+    /// let five = five.init(5);
+    ///
+    /// assert_eq!(*five, 5);
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
+    ///
+    /// Unsafely:
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut five = bump.try_alloc_uninit()?;
+    ///
+    /// let five = unsafe {
+    ///     five.write(5);
+    ///     five.assume_init()
+    /// };
+    ///
+    /// assert_eq!(*five, 5);
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
     for fn try_alloc_uninit
     use fn generic_alloc_uninit<{T}>(&self) -> BumpBox<MaybeUninit<T>> | BumpBox<'a, MaybeUninit<T>>;
 
@@ -1396,6 +1473,7 @@ define_alloc_methods! {
     /// [`init_copy`](BumpBox::init_copy),
     /// [`init_clone`](BumpBox::init_clone) or unsafely with
     /// [`assume_init`](BumpBox::assume_init).
+    impl
     do examples
     /// Safely:
     /// ```
@@ -1422,10 +1500,41 @@ define_alloc_methods! {
     ///     values.assume_init()
     /// };
     ///
-    /// assert_eq!(*values, [1, 2, 3])
+    /// assert_eq!(*values, [1, 2, 3]);
     /// ```
-    impl
     for fn alloc_uninit_slice
+    do examples
+    /// Safely:
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// let bump: Bump = Bump::new();
+    /// let values = bump.try_alloc_uninit_slice(3)?;
+    ///
+    /// let values = values.init_copy(&[1, 2, 3]);
+    ///
+    /// assert_eq!(*values, [1, 2, 3]);
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
+    ///
+    /// Unsafely:
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// let bump: Bump = Bump::new();
+    /// let mut values = bump.try_alloc_uninit_slice(3)?;
+    ///
+    /// let values = unsafe {
+    ///     values[0].write(1);
+    ///     values[1].write(2);
+    ///     values[2].write(3);
+    ///
+    ///     values.assume_init()
+    /// };
+    ///
+    /// assert_eq!(*values, [1, 2, 3]);
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
     for fn try_alloc_uninit_slice
     use fn generic_alloc_uninit_slice<{T}>(&self, len: usize) -> BumpBox<[MaybeUninit<T>]> | BumpBox<'a, [MaybeUninit<T>]>;
 
@@ -1448,6 +1557,7 @@ define_alloc_methods! {
     use fn generic_alloc_uninit_slice_for<{T}>(&self, slice: &[T]) -> BumpBox<[MaybeUninit<T>]> | BumpBox<'a, [MaybeUninit<T>]>;
 
     /// Allocate a [`FixedBumpVec`] with the given `capacity`.
+    impl
     do examples
     /// ```
     /// # use bump_scope::Bump;
@@ -1458,8 +1568,19 @@ define_alloc_methods! {
     /// values.push(3);
     /// assert_eq!(values, [1, 2, 3])
     /// ```
-    impl
     for fn alloc_fixed_vec
+    do examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let mut values = bump.try_alloc_fixed_vec(3)?;
+    /// values.push(1);
+    /// values.push(2);
+    /// values.push(3);
+    /// assert_eq!(values, [1, 2, 3]);
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
     for fn try_alloc_fixed_vec
     use fn generic_alloc_fixed_vec<{T}>(&self, capacity: usize) -> FixedBumpVec<T> | FixedBumpVec<'a, T>;
 
@@ -1472,9 +1593,20 @@ define_alloc_methods! {
     /// let mut string = bump.alloc_fixed_string(12);
     /// string.push_str("Hello");
     /// string.push_str(" world!");
-    /// assert_eq!(string, "Hello world!")
+    /// assert_eq!(string, "Hello world!");
     /// ```
     for fn alloc_fixed_string
+    do examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let mut string = bump.try_alloc_fixed_string(12)?;
+    /// string.push_str("Hello");
+    /// string.push_str(" world!");
+    /// assert_eq!(string, "Hello world!");
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
     for fn try_alloc_fixed_string
     use fn generic_alloc_fixed_string(&self, capacity: usize) -> FixedBumpString | FixedBumpString<'a>;
 
@@ -1488,18 +1620,28 @@ define_alloc_methods! {
     /// The bump allocator may reserve more space to avoid frequent reallocations.
     /// After calling `reserve_bytes`, <code>self.[stats](Self::stats)().[remaining](Stats::remaining)()</code> will be greater than or equal to
     /// `additional`. Does nothing if the capacity is already sufficient.
+    impl
     do examples
     /// ```
     /// # use bump_scope::{ Bump };
-    /// #
     /// let bump: Bump = Bump::new();
     /// assert!(bump.stats().capacity() < 4096);
     ///
     /// bump.reserve_bytes(4096);
     /// assert!(bump.stats().capacity() > 4096);
     /// ```
-    impl
     for fn reserve_bytes
+    do examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::{ Bump };
+    /// let bump: Bump = Bump::try_new()?;
+    /// assert!(bump.stats().capacity() < 4096);
+    ///
+    /// bump.try_reserve_bytes(4096)?;
+    /// assert!(bump.stats().capacity() > 4096);
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
     for fn try_reserve_bytes
     use fn generic_reserve_bytes(&self, additional: usize);
 }
@@ -1542,23 +1684,23 @@ define_alloc_methods! {
     /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
-    /// # use bump_scope::{ Bump, allocator_api2::alloc::AllocError };
+    /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Ok(123) })?;
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
-    /// # Ok::<(), AllocError>(())
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     /// ```
     /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
-    /// # use bump_scope::{ Bump, allocator_api2::alloc::AllocError };
+    /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Err(123) })?;
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
-    /// # Ok::<(), AllocError>(())
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     for fn try_alloc_try_with
     use fn generic_alloc_try_with<{T, E}>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> | Result<BumpBox<'a, T>, E>;
@@ -1597,23 +1739,23 @@ define_alloc_methods! {
     /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
-    /// # use bump_scope::{ Bump, allocator_api2::alloc::AllocError };
+    /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
     /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) })?;
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
-    /// # Ok::<(), AllocError>(())
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     /// ```
     /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
-    /// # use bump_scope::{ Bump, allocator_api2::alloc::AllocError };
+    /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
     /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) })?;
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
-    /// # Ok::<(), AllocError>(())
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     for fn try_alloc_try_with_mut
     use fn generic_alloc_try_with_mut<{T, E}>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> | Result<BumpBox<'a, T>, E>;
