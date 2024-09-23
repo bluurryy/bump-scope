@@ -1,5 +1,3 @@
-#[cfg(test)]
-use crate::WithDrop;
 use crate::{
     bump_align_guard::BumpAlignGuard,
     bump_common_methods, bump_scope_methods,
@@ -814,7 +812,7 @@ where
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = BumpVec::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = BumpVec::<T, _>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;

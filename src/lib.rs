@@ -259,8 +259,6 @@
 extern crate alloc;
 
 mod allocator;
-#[cfg(test)]
-pub(crate) mod any_bump;
 mod bump;
 mod bump_align_guard;
 mod bump_allocator;
@@ -294,16 +292,12 @@ mod polyfill;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
 mod stats;
-#[cfg(test)]
-mod with_drop;
 mod without_dealloc;
 
 pub use allocator_api2;
 #[cfg(all(feature = "alloc", not(no_global_oom_handling)))]
 use allocator_api2::alloc::handle_alloc_error;
 use allocator_api2::alloc::{AllocError, Allocator};
-#[cfg(test)]
-pub use any_bump::AnyBump;
 pub use bump::Bump;
 pub use bump_allocator::BumpAllocator;
 pub use bump_box::BumpBox;
@@ -339,8 +333,6 @@ use private::{capacity_overflow, format_trait_error, Infallibly};
 use set_len_on_drop::SetLenOnDrop;
 use set_len_on_drop_by_ptr::SetLenOnDropByPtr;
 pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, GuaranteedAllocatedStats, Stats};
-#[cfg(test)]
-pub use with_drop::WithDrop;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
 // This must be kept in sync with ChunkHeaders `repr(align(16))`.
@@ -737,24 +729,6 @@ macro_rules! bump_common_methods {
         #[inline(always)]
         pub fn allocator(&self) -> &A {
             unsafe { self.chunk.get().allocator().as_ref() }
-        }
-
-        #[cfg(test)]
-        /// Wraps `self` in [`WithDrop`] so that allocations return `&mut T`.
-        pub fn with_drop(self) -> WithDrop<Self> {
-            WithDrop::new(self)
-        }
-
-        #[cfg(test)]
-        /// Wraps `&self` in [`WithDrop`] so that allocations return `&mut T`.
-        pub fn with_drop_ref(&self) -> WithDrop<&Self> {
-            WithDrop::new(self)
-        }
-
-        #[cfg(test)]
-        /// Wraps `&mut self` in [`WithDrop`] so that allocations return `&mut T`.
-        pub fn with_drop_mut(&mut self) -> WithDrop<&mut Self> {
-            WithDrop::new(self)
         }
 
         /// Wraps `&self` in [`WithoutDealloc`] so that [`deallocate`] becomes a no-op.

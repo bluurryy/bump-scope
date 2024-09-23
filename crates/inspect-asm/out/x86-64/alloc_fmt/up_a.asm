@@ -27,8 +27,8 @@ inspect_asm::alloc_fmt::up_a:
 	mov rdx, qword ptr [rsp + 8]
 	mov rsi, qword ptr [rsp + 16]
 	mov r8, qword ptr [rsp + 24]
-	lea r9, [rax + rsi]
 	mov rcx, qword ptr [r8]
+	lea r9, [rax + rsi]
 	mov rdi, qword ptr [rcx]
 	cmp r9, rdi
 	je .LBB0_1

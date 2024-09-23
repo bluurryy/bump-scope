@@ -54,7 +54,7 @@ inspect_asm::alloc_iter_u32::try_down:
 	cmp qword ptr [rsp + 24], rbx
 	jne .LBB0_4
 	mov rdi, r14
-	call bump_scope::bump_vec::BumpVec<T,A,_,_,_>::generic_grow_cold
+	call bump_scope::bump_vec::BumpVec<T,A>::generic_grow_cold
 	test al, al
 	jne .LBB0_16
 	mov rax, qword ptr [rsp + 8]
@@ -102,28 +102,27 @@ inspect_asm::alloc_iter_u32::try_down:
 .LBB0_12:
 	mov rcx, qword ptr [rsp + 24]
 	lea rcx, [rax + 4*rcx]
-	xor edx, edx
+	xor r13d, r13d
 	sub rcx, r15
-	cmovae rdx, rcx
-	and rdx, -4
+	cmovae r13, rcx
+	and r13, -4
 	lea rcx, [r15 + rax]
-	mov rdi, rdx
+	mov rdi, r13
 	sub rdi, rax
 	add rdi, r12
-	mov r13, rdi
+	mov rbp, rdi
 	mov rsi, r12
-	cmp rcx, rdx
-	jbe .LBB0_13
 	mov rdx, r15
+	cmp rcx, r13
+	jbe .LBB0_13
 	call qword ptr [rip + memmove@GOTPCREL]
 	jmp .LBB0_14
 .LBB0_13:
-	mov rdx, r15
 	call qword ptr [rip + memcpy@GOTPCREL]
 .LBB0_14:
-	mov rcx, qword ptr [r14]
-	mov rax, r13
-	mov qword ptr [rcx], r13
+	mov rax, qword ptr [r14]
+	mov qword ptr [rax], r13
+	mov rax, rbp
 .LBB0_15:
 	mov rdx, rbx
 	add rsp, 40

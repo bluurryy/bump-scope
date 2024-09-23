@@ -18,8 +18,8 @@ macro_rules! type_definitions {
         type BumpScope<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScope<'a, Global, MIN_ALIGN, $up>;
         type BumpScopeGuard<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuard<'a, Global, MIN_ALIGN, $up>;
         type BumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuardRoot<'a, Global, MIN_ALIGN, $up>;
-        type BumpVec<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<'b, 'a, T, Global, MIN_ALIGN, $up>;
-        type BumpString<'b, 'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<'b, 'a, Global, MIN_ALIGN, $up>;
+        type BumpVec<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<'a, T, &'b BumpScope<'a, MIN_ALIGN>>;
+        type BumpString<'b, 'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<'a, &'b BumpScope<'a, MIN_ALIGN>>;
         type MutBumpVec<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<'b, 'a, T, Global, MIN_ALIGN, $up>;
         type MutBumpVecRev<'b, 'a, T, const MIN_ALIGN: usize = 1> =
             bump_scope::MutBumpVecRev<'b, 'a, T, Global, MIN_ALIGN, $up>;
@@ -323,11 +323,11 @@ up_and_down! {
     }
 
     pub fn BumpVec__try_from_array_in(array: [u32; 24], bump: &Bump) -> Result<BumpVec<u32>> {
-        BumpVec::try_from_array_in(array, bump)
+        BumpVec::try_from_array_in(array, bump.as_scope())
     }
 
     pub fn BumpVec__try_from_elem_in(value: u32, count: usize, bump: &Bump) -> Result<BumpVec<u32>> {
-        BumpVec::try_from_elem_in(value, count, bump)
+        BumpVec::try_from_elem_in(value, count, bump.as_scope())
     }
 
     pub fn BumpVec_try_insert(bump: &mut BumpVec<u32>, index: usize, value: u32) -> Result {
@@ -347,11 +347,11 @@ up_and_down! {
     }
 
     pub fn BumpVec__try_with_capacity_in(capacity: usize, bump: &Bump) -> Result<BumpVec<u32>> {
-        BumpVec::try_with_capacity_in(capacity, bump)
+        BumpVec::try_with_capacity_in(capacity, bump.as_scope())
     }
 
     pub fn BumpString__try_from_str_in<'b>(string: &str, bump: &'b Bump) -> Result<BumpString<'b, 'b>> {
-        BumpString::try_from_str_in(string, bump)
+        BumpString::try_from_str_in(string, bump.as_scope())
     }
 
     pub fn BumpString_try_push(bump: &mut BumpString, value: char) -> Result {
@@ -371,7 +371,7 @@ up_and_down! {
     }
 
     pub fn BumpString__try_with_capacity_in(capacity: usize, bump: &Bump) -> Result<BumpString> {
-        BumpString::try_with_capacity_in(capacity, bump)
+        BumpString::try_with_capacity_in(capacity, bump.as_scope())
     }
 
     pub fn FixedBumpVec__new(capacity: usize, bump: &Bump) -> Result<FixedBumpVec<u32>> {

@@ -1,5 +1,6 @@
 //! Adapted from rust's `library/alloc/tests/vec.rs` commit f7ca9df69549470541fbf542f87a03eb9ed024b6
 
+use crate::{bump_vec, Bump, BumpAllocator, BumpScope, BumpVec};
 use allocator_api2::alloc::{AllocError, Allocator, Layout};
 #[cfg(feature = "std")]
 use std::alloc::System;
@@ -25,8 +26,6 @@ use std::{
     },
     vec::{Drain, IntoIter},
 };
-
-use crate::{bump_vec, Bump, BumpVec};
 
 struct DropCounter<'a> {
     count: &'a mut u32,
@@ -57,7 +56,7 @@ impl Drop for DropCounterMutex {
 
 #[test]
 fn test_small_vec_struct() {
-    assert_eq!(size_of::<BumpVec<u8>>(), size_of::<usize>() * 4);
+    assert_eq!(size_of::<BumpVec<u8, &BumpScope>>(), size_of::<usize>() * 4);
 }
 
 #[test]
@@ -66,8 +65,8 @@ fn test_double_drop() {
     let bump_y: Bump = Bump::new();
 
     struct TwoVec<'a, T> {
-        x: BumpVec<'a, 'a, T>,
-        y: BumpVec<'a, 'a, T>,
+        x: BumpVec<'a, T, &'a Bump>,
+        y: BumpVec<'a, T, &'a Bump>,
     }
 
     let (mut count_x, mut count_y) = (0, 0);
@@ -119,14 +118,14 @@ fn test_reserve() {
 fn test_zst_capacity() {
     let bump: Bump = Bump::new();
 
-    assert_eq!(BumpVec::<()>::new_in(&bump).capacity(), usize::MAX);
+    assert_eq!(BumpVec::<(), _>::new_in(&bump).capacity(), usize::MAX);
 }
 
 #[test]
 fn test_indexing() {
     let bump: Bump = Bump::new();
 
-    let v: BumpVec<isize> = bump_vec![in bump; 10, 20];
+    let v: BumpVec<isize, _> = bump_vec![in bump; 10, 20];
     assert_eq!(v[0], 10);
     assert_eq!(v[1], 20);
     let mut x: usize = 0;
@@ -142,7 +141,7 @@ fn test_debug_fmt() {
     let bump1: Bump = Bump::new();
     let bump2: Bump = Bump::new();
 
-    let vec1: BumpVec<isize> = bump_vec![in bump1; ];
+    let vec1: BumpVec<isize, _> = bump_vec![in bump1; ];
     assert_eq!("[]", format!("{:?}", vec1));
 
     let vec2 = bump_vec![in bump2; 0, 1];
@@ -170,8 +169,8 @@ fn test_extend() {
     let bump_v: Bump = Bump::new();
     let bump_w: Bump = Bump::new();
 
-    let mut v = BumpVec::<i32>::new_in(&bump_v);
-    let mut w = BumpVec::<i32>::new_in(&bump_w);
+    let mut v = BumpVec::<i32, _>::new_in(&bump_v);
+    let mut w = BumpVec::<i32, _>::new_in(&bump_w);
 
     v.extend(&w);
     assert!(v.is_empty());
@@ -224,10 +223,10 @@ fn test_extend_from_slice() {
     let bump_a: Bump = Bump::new();
     let bump_b: Bump = Bump::new();
 
-    let a: BumpVec<isize> = bump_vec![in bump_a; 1, 2, 3, 4, 5];
-    let b: BumpVec<isize> = bump_vec![in bump_b; 6, 7, 8, 9, 0];
+    let a: BumpVec<isize, _> = bump_vec![in bump_a; 1, 2, 3, 4, 5];
+    let b: BumpVec<isize, _> = bump_vec![in bump_b; 6, 7, 8, 9, 0];
 
-    let mut v: BumpVec<isize> = a;
+    let mut v: BumpVec<isize, _> = a;
 
     v.extend_from_slice_copy(&b);
 
@@ -466,10 +465,10 @@ fn test_retain_maybeuninits() {
 
 #[test]
 fn test_dedup() {
-    fn case(a: BumpVec<i32>, b: BumpVec<i32>) {
+    fn case<'a, A: BumpAllocator<'a>>(a: BumpVec<'a, i32, A>, b: BumpVec<'a, i32, A>) {
         let mut v = a;
         v.dedup();
-        assert_eq!(v, b);
+        assert_eq!(v.as_slice(), b.as_slice());
     }
 
     let bump0: Bump = Bump::new();
@@ -487,7 +486,7 @@ fn test_dedup() {
 
 #[test]
 fn test_dedup_by_key() {
-    fn case(a: BumpVec<i32>, b: BumpVec<i32>) {
+    fn case<'a, A: BumpAllocator<'a>>(a: BumpVec<'a, i32, A>, b: BumpVec<'a, i32, A>) {
         let mut v = a;
         v.dedup_by_key(|i| *i / 10);
         assert_eq!(v, b);
@@ -536,11 +535,11 @@ fn test_dedup_unique() {
     let bump1: Bump = Bump::new();
     let bump2: Bump = Bump::new();
 
-    let mut v0: BumpVec<Box<_>> = bump_vec![in bump0; Box::new(1), Box::new(1), Box::new(2), Box::new(3)];
+    let mut v0: BumpVec<Box<_>, _> = bump_vec![in bump0; Box::new(1), Box::new(1), Box::new(2), Box::new(3)];
     v0.dedup();
-    let mut v1: BumpVec<Box<_>> = bump_vec![in bump1; Box::new(1), Box::new(2), Box::new(2), Box::new(3)];
+    let mut v1: BumpVec<Box<_>, _> = bump_vec![in bump1; Box::new(1), Box::new(2), Box::new(2), Box::new(3)];
     v1.dedup();
-    let mut v2: BumpVec<Box<_>> = bump_vec![in bump2; Box::new(1), Box::new(2), Box::new(3), Box::new(3)];
+    let mut v2: BumpVec<Box<_>, _> = bump_vec![in bump2; Box::new(1), Box::new(2), Box::new(3), Box::new(3)];
     v2.dedup();
     // If the boxed pointers were leaked or otherwise misused, valgrind
     // and/or rt should raise errors.
@@ -617,7 +616,7 @@ fn test_cmp() {
     let cmp: &[isize] = &[2, 3, 4];
     assert_eq!(&x[1..4], cmp);
 
-    let x: BumpVec<isize> = bump_vec![in bump; 1, 2, 3, 4, 5];
+    let x: BumpVec<isize, _> = bump_vec![in bump; 1, 2, 3, 4, 5];
     let cmp: &[isize] = &[1, 2, 3, 4, 5];
     assert_eq!(&x[..], cmp);
     let cmp: &[isize] = &[3, 4, 5];
@@ -727,7 +726,7 @@ fn test_slice_out_of_bounds_5() {
 #[should_panic]
 fn test_swap_remove_empty() {
     let bump: Bump = Bump::new();
-    let mut vec = BumpVec::<i32>::new_in(&bump);
+    let mut vec = BumpVec::<i32, _>::new_in(&bump);
     vec.swap_remove(0);
 }
 
@@ -772,8 +771,8 @@ fn test_drain_empty_vec() {
     let bump0: Bump = Bump::new();
     let bump1: Bump = Bump::new();
 
-    let mut vec: BumpVec<i32> = bump_vec![in bump0; ];
-    let mut vec2: BumpVec<i32> = bump_vec![in bump1; ];
+    let mut vec: BumpVec<i32, _> = bump_vec![in bump0; ];
+    let mut vec2: BumpVec<i32, _> = bump_vec![in bump1; ];
     for i in vec.drain(..) {
         vec2.push(i);
     }
@@ -850,7 +849,7 @@ fn test_drain_range() {
     assert_eq!(v.as_slice(), &[1.to_string(), 5.to_string()]);
     drop(v);
 
-    let mut v: BumpVec<_> = bump_vec![in bump; (); 5];
+    let mut v: BumpVec<_, _> = bump_vec![in bump; (); 5];
     for _ in v.drain(1..4).rev() {}
     assert_eq!(v, &[(), ()]);
     drop(v);
@@ -890,7 +889,7 @@ fn test_drain_inclusive_range() {
 fn test_drain_max_vec_size() {
     let bump: Bump = Bump::new();
 
-    let mut v = BumpVec::<()>::with_capacity_in(usize::MAX, &bump);
+    let mut v = BumpVec::<(), _>::with_capacity_in(usize::MAX, &bump);
     unsafe {
         v.set_len(usize::MAX);
     }
@@ -898,7 +897,7 @@ fn test_drain_max_vec_size() {
     assert_eq!(v.len(), usize::MAX - 1);
     drop(v);
 
-    let mut v = BumpVec::<()>::with_capacity_in(usize::MAX, &bump);
+    let mut v = BumpVec::<(), _>::with_capacity_in(usize::MAX, &bump);
     unsafe {
         v.set_len(usize::MAX);
     }
@@ -911,7 +910,7 @@ fn test_drain_max_vec_size() {
 #[should_panic]
 fn test_drain_index_overflow() {
     let bump: Bump = Bump::new();
-    let mut v = BumpVec::<()>::with_capacity_in(usize::MAX, &bump);
+    let mut v = BumpVec::<(), _>::with_capacity_in(usize::MAX, &bump);
     unsafe {
         v.set_len(usize::MAX);
     }
@@ -1336,7 +1335,7 @@ fn overaligned_allocations() {
 fn extract_if_empty() {
     let bump0: Bump = Bump::new();
     let bump1: Bump = Bump::new();
-    let mut vec: BumpVec<i32> = bump_vec![in bump0; ];
+    let mut vec: BumpVec<i32, _> = bump_vec![in bump0; ];
 
     {
         let mut iter = vec.extract_if(|_| true);
@@ -1348,7 +1347,7 @@ fn extract_if_empty() {
     }
     assert_eq!(vec.len(), 0);
 
-    let empty: BumpVec<i32> = bump_vec![in bump1; ];
+    let empty: BumpVec<i32, _> = bump_vec![in bump1; ];
     assert_eq!(vec, empty);
 }
 
@@ -1423,7 +1422,7 @@ fn extract_if_true() {
     assert_eq!(count, initial_len);
     assert_eq!(vec.len(), 0);
 
-    let empty: BumpVec<i32> = bump_vec![in bump1; ];
+    let empty: BumpVec<i32, _> = bump_vec![in bump1; ];
     assert_eq!(vec, empty);
 }
 
@@ -1710,7 +1709,7 @@ fn test_stable_pointers() {
 
 macro_rules! generate_assert_eq_vec_and_prim {
     ($name:ident<$B:ident>($type:ty)) => {
-        fn $name<A: PartialEq<$B> + Debug, $B: Debug>(a: BumpVec<A>, b: $type) {
+        fn $name<'a, A: PartialEq<$B> + Debug, $B: Debug, Bump: BumpAllocator<'a>>(a: BumpVec<'a, A, Bump>, b: $type) {
             assert!(a == b);
             assert_eq!(a, b);
         }
@@ -1744,8 +1743,8 @@ macro_rules! assert_partial_eq_valid {
 fn partialeq_vec_full() {
     let bump2: Bump = Bump::new();
     let bump3: Bump = Bump::new();
-    let vec2: BumpVec<_> = bump_vec![in bump2; 1, 2];
-    let vec3: BumpVec<_> = bump_vec![in bump3; 1, 2, 3];
+    let vec2: BumpVec<_, _> = bump_vec![in bump2; 1, 2];
+    let vec3: BumpVec<_, _> = bump_vec![in bump3; 1, 2, 3];
     let slice2: &[_] = &[1, 2];
     let slice3: &[_] = &[1, 2, 3];
     let slicemut2: &[_] = &mut [1, 2];
@@ -1769,7 +1768,7 @@ fn partialeq_vec_full() {
 fn test_zero_sized_capacity() {
     for len in [0, 1, 2, 4, 8, 16, 32, 64, 128, 256] {
         let bump: Bump = Bump::new();
-        let v = BumpVec::<()>::with_capacity_in(len, &bump);
+        let v = BumpVec::<(), _>::with_capacity_in(len, &bump);
         assert_eq!(v.len(), 0);
         assert_eq!(v.capacity(), usize::MAX);
     }
@@ -1815,7 +1814,7 @@ fn test_vec_macro_repeat() {
 #[test]
 fn test_vec_swap() {
     let bump: Bump = Bump::new();
-    let mut a: BumpVec<isize> = bump_vec![in bump; 0, 1, 2, 3, 4, 5, 6];
+    let mut a: BumpVec<isize, _> = bump_vec![in bump; 0, 1, 2, 3, 4, 5, 6];
     a.swap(2, 4);
     assert_eq!(a[2], 4);
     assert_eq!(a[4], 2);
@@ -1916,13 +1915,13 @@ fn test_extend_from_within_zst() {
 fn test_extend_from_within_empty_vec() {
     {
         let bump: Bump = Bump::new();
-        let mut v = BumpVec::<i32>::new_in(&bump);
+        let mut v = BumpVec::<i32, _>::new_in(&bump);
         v.extend_from_within_copy(..);
         assert!(v.is_empty());
     }
     {
         let bump: Bump = Bump::new();
-        let mut v = BumpVec::<i32>::new_in(&bump);
+        let mut v = BumpVec::<i32, _>::new_in(&bump);
         v.extend_from_within_clone(..);
         assert!(v.is_empty());
     }
@@ -1940,7 +1939,7 @@ fn test_extend_from_within() {
 #[test]
 fn test_vec_dedup_by() {
     let bump: Bump = Bump::new();
-    let mut vec: BumpVec<i32> = bump_vec![in bump; 1, -1, 2, 3, 1, -5, 5, -2, 2];
+    let mut vec: BumpVec<i32, _> = bump_vec![in bump; 1, -1, 2, 3, 1, -5, 5, -2, 2];
 
     vec.dedup_by(|a, b| a.abs() == b.abs());
 
@@ -1950,7 +1949,7 @@ fn test_vec_dedup_by() {
 #[test]
 fn test_vec_dedup_empty() {
     let bump: Bump = Bump::new();
-    let mut vec: BumpVec<i32> = BumpVec::new_in(&bump);
+    let mut vec: BumpVec<i32, _> = BumpVec::new_in(&bump);
 
     vec.dedup();
 
@@ -2001,7 +2000,7 @@ fn test_vec_dedup() {
     let bump0: Bump = Bump::new();
     let bump1: Bump = Bump::new();
 
-    let mut vec: BumpVec<bool> = BumpVec::with_capacity_in(8, &bump0);
+    let mut vec: BumpVec<bool, _> = BumpVec::with_capacity_in(8, &bump0);
 
     let mut template = BumpVec::new_in(&bump1);
     template.extend(vec.iter());

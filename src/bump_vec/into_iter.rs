@@ -1,62 +1,47 @@
+use crate::{
+    infallible,
+    polyfill::{nonnull, pointer},
+    BumpAllocator, BumpBox, FixedBumpVec, SizedTypeProperties,
+};
 use core::{
     fmt::Debug,
     iter::FusedIterator,
     marker::PhantomData,
-    mem,
-    ptr::{self, NonNull},
+    mem::{self, MaybeUninit},
+    ptr::{self, addr_of_mut, NonNull},
     slice,
-};
-
-use crate::{
-    polyfill::nonnull, BaseAllocator, BumpBox, BumpScope, FixedBumpVec, MinimumAlignment, SizedTypeProperties,
-    SupportedMinimumAlignment,
 };
 
 use super::BumpVec;
 
-macro_rules! into_iter_declaration {
-    ($($allocator_parameter:tt)*) => {
-        /// An iterator that moves out of a vector.
-        ///
-        /// This `struct` is created by the `into_iter` method on
-        /// [`BumpVec`](crate::BumpVec::into_iter),
-        /// (provided by the [`IntoIterator`] trait).
-        // This is modelled after rust's `alloc/src/vec/into_iter.rs`
-        pub struct IntoIter<
-            'b,
-            'a: 'b,
-            T,
-            $($allocator_parameter)*,
-            const MIN_ALIGN: usize = 1,
-            const UP: bool = true,
-            const GUARANTEED_ALLOCATED: bool = true,
-        > where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-            A: BaseAllocator<GUARANTEED_ALLOCATED>,
-        {
-            pub(super) buf: NonNull<T>,
-            pub(super) cap: usize,
+/// An iterator that moves out of a vector.
+///
+/// This `struct` is created by the `into_iter` method on
+/// [`BumpVec`](crate::BumpVec::into_iter),
+/// (provided by the [`IntoIterator`] trait).
+// This is modelled after rust's `alloc/src/vec/into_iter.rs`
+pub struct IntoIter<'a, T, A>
+where
+    A: BumpAllocator<'a>,
+{
+    pub(super) buf: NonNull<T>,
+    pub(super) cap: usize,
 
-            pub(super) ptr: NonNull<T>,
+    pub(super) ptr: NonNull<T>,
 
-            /// If T is a ZST this is ptr + len.
-            pub(super) end: NonNull<T>,
+    /// If T is a ZST this is ptr + len.
+    pub(super) end: NonNull<T>,
 
-            pub(super) bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+    pub(super) bump: A,
 
-            /// Marks ownership over T. (<https://doc.rust-lang.org/nomicon/phantom-data.html#generic-parameters-and-drop-checking>)
-            pub(super) marker: PhantomData<T>,
-        }
-    }
+    /// First field marks the lifetime.
+    /// Second field marks ownership over T. (<https://doc.rust-lang.org/nomicon/phantom-data.html#generic-parameters-and-drop-checking>)
+    pub(super) marker: PhantomData<(&'a (), T)>,
 }
 
-crate::maybe_default_allocator!(into_iter_declaration);
-
-impl<'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Debug
-    for IntoIter<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<'a, T, A> Debug for IntoIter<'a, T, A>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BumpAllocator<'a>,
     T: Debug,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -64,11 +49,9 @@ where
     }
 }
 
-impl<'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    IntoIter<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<'a, T, A> IntoIter<'a, T, A>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BumpAllocator<'a>,
 {
     /// Returns the remaining items of this iterator as a slice.
     ///
@@ -113,8 +96,8 @@ where
     #[doc = include_str!("../docs/bump.md")]
     #[must_use]
     #[inline(always)]
-    pub fn bump(&self) -> &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
-        self.bump
+    pub fn bump(&self) -> &A {
+        &self.bump
     }
 
     fn as_raw_mut_slice(&mut self) -> *mut [T] {
@@ -122,11 +105,9 @@ where
     }
 }
 
-impl<'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> AsRef<[T]>
-    for IntoIter<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<'a, T, A> AsRef<[T]> for IntoIter<'a, T, A>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BumpAllocator<'a>,
 {
     #[inline]
     fn as_ref(&self) -> &[T] {
@@ -134,11 +115,9 @@ where
     }
 }
 
-impl<'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Iterator
-    for IntoIter<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<'a, T, A> Iterator for IntoIter<'a, T, A>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BumpAllocator<'a>,
 {
     type Item = T;
 
@@ -177,11 +156,9 @@ where
     }
 }
 
-impl<'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> DoubleEndedIterator
-    for IntoIter<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<'a, T, A> DoubleEndedIterator for IntoIter<'a, T, A>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BumpAllocator<'a>,
 {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -201,77 +178,60 @@ where
     }
 }
 
-impl<'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> ExactSizeIterator
-    for IntoIter<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-}
+impl<'a, T, A> ExactSizeIterator for IntoIter<'a, T, A> where A: BumpAllocator<'a> {}
 
-impl<'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> FusedIterator
-    for IntoIter<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-}
+impl<'a, T, A> FusedIterator for IntoIter<'a, T, A> where A: BumpAllocator<'a> {}
 
 #[cfg(feature = "nightly-trusted-len")]
-unsafe impl<'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> core::iter::TrustedLen
-    for IntoIter<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-}
+unsafe impl<'a, T, A> core::iter::TrustedLen for IntoIter<'a, T, A> where A: BumpAllocator<'a> {}
 
 #[cfg(not(no_global_oom_handling))]
-impl<'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Clone
-    for IntoIter<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<'a, T, A> Clone for IntoIter<'a, T, A>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BumpAllocator<'a> + Clone,
     T: Clone,
 {
     fn clone(&self) -> Self {
         let slice = self.as_slice();
-        let boxed = self.bump.alloc_slice_clone(slice);
+        let boxed = infallible(self.bump.slice_clone(slice));
         let fixed = FixedBumpVec::from_init(boxed);
-        let vec = BumpVec::from_parts(fixed, self.bump);
+        let vec = BumpVec::from_parts(fixed, self.bump.clone());
         vec.into_iter()
     }
 }
 
-impl<'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Drop
-    for IntoIter<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<'a, T, A> Drop for IntoIter<'a, T, A>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BumpAllocator<'a>,
 {
     fn drop(&mut self) {
-        struct DropGuard<'i, 'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-            &'i mut IntoIter<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
-        )
+        struct DropGuard<'i, 'a, T, A>(&'i mut IntoIter<'a, T, A>)
         where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-            A: BaseAllocator<GUARANTEED_ALLOCATED>;
+            A: BumpAllocator<'a>;
 
-        impl<'i, 'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Drop
-            for DropGuard<'i, 'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+        impl<'i, 'a, T, A> Drop for DropGuard<'i, 'a, T, A>
         where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-            A: BaseAllocator<GUARANTEED_ALLOCATED>,
+            A: BumpAllocator<'a>,
         {
             fn drop(&mut self) {
                 unsafe {
                     // BumpVec handles deallocation
+                    let mut this = MaybeUninit::new(pointer::from_mut(self.0).read());
+
+                    let this_buf = addr_of_mut!((*this.as_mut_ptr()).buf);
+                    let this_cap = addr_of_mut!((*this.as_mut_ptr()).cap);
+                    let this_bump = addr_of_mut!((*this.as_mut_ptr()).bump);
+
+                    let buf = this_buf.read();
+                    let capacity = this_cap.read();
+                    let bump = this_bump.read();
+
                     let _ = BumpVec {
                         fixed: FixedBumpVec {
-                            initialized: BumpBox::from_raw(nonnull::slice_from_raw_parts(self.0.buf, 0)),
-                            capacity: self.0.cap,
+                            initialized: BumpBox::from_raw(nonnull::slice_from_raw_parts(buf, 0)),
+                            capacity,
                         },
-                        bump: self.0.bump,
+                        bump,
                     };
                 }
             }

@@ -1,29 +1,30 @@
 inspect_asm::alloc_fmt::down:
 	push r15
 	push r14
+	push r13
 	push r12
 	push rbx
-	sub rsp, 120
-	mov qword ptr [rsp + 40], rsi
-	mov qword ptr [rsp + 48], rdx
-	lea rax, [rsp + 40]
-	mov qword ptr [rsp + 56], rax
+	sub rsp, 112
+	mov qword ptr [rsp + 32], rsi
+	mov qword ptr [rsp + 40], rdx
+	lea rax, [rsp + 32]
+	mov qword ptr [rsp + 48], rax
 	lea rax, [rip + <&T as core::fmt::Display>::fmt]
-	mov qword ptr [rsp + 64], rax
+	mov qword ptr [rsp + 56], rax
 	lea rax, [rip + .L__unnamed_0]
-	mov qword ptr [rsp + 72], rax
-	mov qword ptr [rsp + 80], 2
-	mov qword ptr [rsp + 104], 0
-	lea rax, [rsp + 56]
-	mov qword ptr [rsp + 88], rax
-	mov qword ptr [rsp + 96], 1
+	mov qword ptr [rsp + 64], rax
+	mov qword ptr [rsp + 72], 2
+	mov qword ptr [rsp + 96], 0
+	lea rax, [rsp + 48]
+	mov qword ptr [rsp + 80], rax
+	mov qword ptr [rsp + 88], 1
 	movups xmm0, xmmword ptr [rip + .L__unnamed_1]
 	movaps xmmword ptr [rsp], xmm0
 	mov qword ptr [rsp + 16], 0
 	mov qword ptr [rsp + 24], rdi
 	lea rsi, [rip + .L__unnamed_2]
 	mov rdi, rsp
-	lea rdx, [rsp + 72]
+	lea rdx, [rsp + 64]
 	call qword ptr [rip + core::fmt::write@GOTPCREL]
 	test al, al
 	jne .LBB0_8
@@ -65,32 +66,32 @@ inspect_asm::alloc_fmt::down:
 	jne .LBB0_0
 .LBB0_4:
 	add rax, rcx
-	xor edx, edx
+	xor r13d, r13d
 	sub rax, rbx
-	cmovae rdx, rax
+	cmovae r13, rax
 	lea rax, [rbx + rcx]
-	mov r15, rdx
+	mov r15, r13
 	sub r15, rcx
 	add r15, r14
 	mov rdi, r15
 	mov rsi, r14
-	cmp rax, rdx
-	jbe .LBB0_5
 	mov rdx, rbx
+	cmp rax, r13
+	jbe .LBB0_5
 	call qword ptr [rip + memmove@GOTPCREL]
 	jmp .LBB0_6
 .LBB0_5:
-	mov rdx, rbx
 	call qword ptr [rip + memcpy@GOTPCREL]
 .LBB0_6:
 	mov rax, qword ptr [r12]
-	mov qword ptr [rax], r15
+	mov qword ptr [rax], r13
 .LBB0_7:
 	mov rax, r15
 	mov rdx, rbx
-	add rsp, 120
+	add rsp, 112
 	pop rbx
 	pop r12
+	pop r13
 	pop r14
 	pop r15
 	ret

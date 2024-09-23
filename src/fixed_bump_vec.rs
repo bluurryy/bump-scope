@@ -2,8 +2,7 @@ use crate::{
     error_behavior_generic_methods_if, owned_slice,
     polyfill::{self, nonnull, pointer, slice},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BaseAllocator, BumpBox, BumpScope, BumpVec, ErrorBehavior, MinimumAlignment, NoDrop, SizedTypeProperties,
-    SupportedMinimumAlignment,
+    BumpAllocator, BumpBox, BumpVec, ErrorBehavior, NoDrop, SizedTypeProperties,
 };
 use core::{
     alloc::Layout,
@@ -120,13 +119,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Turns this `FixedBumpVec<T>` into a `BumpVec<T>`.
     #[must_use]
     #[inline(always)]
-    pub fn into_vec<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-        self,
-        bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
-    ) -> BumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    pub fn into_vec<A>(self, bump: A) -> BumpVec<'a, T, A>
     where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        A: BaseAllocator<GUARANTEED_ALLOCATED>,
+        A: BumpAllocator<'a>,
     {
         BumpVec::from_parts(self, bump)
     }

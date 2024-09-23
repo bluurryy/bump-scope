@@ -521,35 +521,6 @@ fn as_aligned<const UP: bool>() {
     }
 }
 
-#[test]
-fn with_drop() {
-    thread_local! {
-        static DROPS: Cell<usize> = const { Cell::new(0) };
-    }
-
-    #[derive(Default, Debug)]
-    struct Foo(#[allow(dead_code)] i32);
-
-    impl Drop for Foo {
-        fn drop(&mut self) {
-            dbg!(self);
-            DROPS.set(DROPS.get() + 1);
-        }
-    }
-
-    let bump: Bump = Bump::new();
-    let bump = bump.with_drop();
-
-    let _one: &mut Foo = infallible(bump.generic_alloc(Foo(1)));
-    let _two: &mut Foo = infallible(bump.generic_alloc(Foo(2)));
-
-    assert_eq!(DROPS.get(), 0);
-
-    drop(bump);
-
-    assert_eq!(DROPS.get(), 2);
-}
-
 #[allow(dead_code)]
 fn api_that_accepts_bump_or_bump_scope() {
     fn vec_from_mut_bump(bump: &mut Bump) -> MutBumpVec<i32> {
@@ -688,7 +659,7 @@ fn vec_of_strings() {
 fn bump_vec_shrink_can<const UP: bool>() {
     let bump = Bump::<Global, 1, UP>::with_size(64);
 
-    let mut vec = BumpVec::<i32, Global, 1, UP>::from_array_in([1, 2, 3], &bump);
+    let mut vec = BumpVec::<i32, _>::from_array_in([1, 2, 3], &bump);
     let addr = vec.as_ptr().addr();
     assert_eq!(vec.capacity(), 3);
     vec.shrink_to_fit();
@@ -710,7 +681,7 @@ fn bump_vec_shrink_can<const UP: bool>() {
 fn bump_vec_shrink_cant<const UP: bool>() {
     let bump = Bump::<Global, 1, UP>::with_size(64);
 
-    let mut vec = BumpVec::<i32, Global, 1, UP>::from_array_in([1, 2, 3], &bump);
+    let mut vec = BumpVec::<i32, _>::from_array_in([1, 2, 3], &bump);
     let addr = vec.as_ptr().addr();
     assert_eq!(vec.capacity(), 3);
     bump.alloc_str("now you can't shrink haha");
@@ -997,7 +968,7 @@ fn deallocate_in_ltr<const UP: bool>() {
     if UP {
         assert_eq!(bump.stats().allocated(), 3 * 4);
     } else {
-        assert_eq!(bump.stats().allocated(), 0 * 4);
+        assert_eq!(bump.stats().allocated(), 0);
     }
 }
 
@@ -1021,7 +992,7 @@ fn deallocate_in_rtl<const UP: bool>() {
     lhs.deallocate_in(&bump);
 
     if UP {
-        assert_eq!(bump.stats().allocated(), 0 * 4);
+        assert_eq!(bump.stats().allocated(), 0);
     } else {
         assert_eq!(bump.stats().allocated(), 3 * 4);
     }

@@ -29,7 +29,7 @@ either_way! {
 
 fn new<const UP: bool>() {
     let bump: Bump<Global, 1, UP> = Bump::new();
-    let vec: BumpVec<i32, Global, 1, UP> = bump_vec![in bump];
+    let vec: BumpVec<i32, _> = bump_vec![in bump];
     assert!(vec.is_empty());
 }
 
@@ -95,7 +95,7 @@ fn resize_with<const UP: bool>() {
 fn capacity<const UP: bool>() {
     let bump: Bump<Global, 1, UP> = Bump::new();
 
-    let vec: BumpVec<i32, Global, 1, UP> = BumpVec::with_capacity_in(2048, &bump);
+    let vec: BumpVec<i32, _> = BumpVec::with_capacity_in(2048, &bump);
     assert!(vec.capacity() >= 2048);
 }
 
