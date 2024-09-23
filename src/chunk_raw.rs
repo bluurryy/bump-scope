@@ -345,11 +345,15 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         unsafe { self.header.as_ref().pos.get() }
     }
 
+    /// # Safety
+    /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
     #[inline(always)]
     pub(crate) unsafe fn set_pos(self, ptr: NonNull<u8>) {
         self.set_pos_addr(nonnull::addr(ptr).get());
     }
 
+    /// # Safety
+    /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
     #[inline(always)]
     pub(crate) unsafe fn set_pos_addr(self, addr: usize) {
         let ptr = self.with_addr(addr);
@@ -487,14 +491,6 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                 self.set_pos(self.content_end());
             }
         }
-    }
-
-    /// # Safety
-    /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
-    #[inline(always)]
-    pub(crate) unsafe fn reset_to(self, addr: usize) {
-        let ptr = self.with_addr(addr);
-        self.set_pos(ptr);
     }
 
     /// # Safety

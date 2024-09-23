@@ -86,7 +86,7 @@ where
     #[inline(always)]
     pub fn reset(&mut self) {
         unsafe {
-            self.chunk.reset_to(self.address);
+            self.chunk.set_pos_addr(self.address);
         }
     }
 
