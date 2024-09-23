@@ -70,9 +70,7 @@ define_alloc_methods! {
     fn generic_alloc_zeroed<{T}>(&self) -> BumpBox<T> | BumpBox<'a, T>
     where {
         T: FromZeroes
-    } in {
-        self.do_alloc_zeroed()
-    }
+    };
 
     /// Allocate a zeroed object slice.
     impl
@@ -88,9 +86,7 @@ define_alloc_methods! {
     fn generic_alloc_zeroed_slice<{T}>(&self, len: usize) -> BumpBox<[T]> | BumpBox<'a, [T]>
     where {
         T: FromZeroes
-    } in {
-        self.do_alloc_zeroed_slice(len)
-    }
+    };
 }
 
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
@@ -118,7 +114,7 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
-    pub(crate) fn do_alloc_zeroed<B: ErrorBehavior, T>(&self) -> Result<BumpBox<'a, T>, B>
+    pub(crate) fn generic_alloc_zeroed<B: ErrorBehavior, T>(&self) -> Result<BumpBox<'a, T>, B>
     where
         T: FromZeroes,
     {
@@ -126,7 +122,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_zeroed_slice<B: ErrorBehavior, T>(&self, len: usize) -> Result<BumpBox<'a, [T]>, B>
+    pub(crate) fn generic_alloc_zeroed_slice<B: ErrorBehavior, T>(&self, len: usize) -> Result<BumpBox<'a, [T]>, B>
     where
         T: FromZeroes,
     {

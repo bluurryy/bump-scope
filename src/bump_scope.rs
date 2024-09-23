@@ -624,12 +624,12 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
-    pub(crate) fn do_alloc<B: ErrorBehavior, T>(&self, value: T) -> Result<BumpBox<'a, T>, B> {
-        self.do_alloc_with(|| value)
+    pub(crate) fn generic_alloc<B: ErrorBehavior, T>(&self, value: T) -> Result<BumpBox<'a, T>, B> {
+        self.generic_alloc_with(|| value)
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<BumpBox<'a, T>, B> {
+    pub(crate) fn generic_alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<BumpBox<'a, T>, B> {
         if T::IS_ZST {
             let value = f();
             return Ok(BumpBox::zst(value));
@@ -665,12 +665,12 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_default<B: ErrorBehavior, T: Default>(&self) -> Result<BumpBox<'a, T>, B> {
-        self.do_alloc_with(Default::default)
+    pub(crate) fn generic_alloc_default<B: ErrorBehavior, T: Default>(&self) -> Result<BumpBox<'a, T>, B> {
+        self.generic_alloc_with(Default::default)
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_slice_copy<B: ErrorBehavior, T: Copy>(&self, slice: &[T]) -> Result<BumpBox<'a, [T]>, B> {
+    pub(crate) fn generic_alloc_slice_copy<B: ErrorBehavior, T: Copy>(&self, slice: &[T]) -> Result<BumpBox<'a, [T]>, B> {
         if T::IS_ZST {
             return Ok(BumpBox::zst_slice_clone(slice));
         }
@@ -686,7 +686,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_slice_clone<B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<BumpBox<'a, [T]>, B> {
+    pub(crate) fn generic_alloc_slice_clone<B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<BumpBox<'a, [T]>, B> {
         if T::IS_ZST {
             return Ok(BumpBox::zst_slice_clone(slice));
         }
@@ -695,7 +695,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_slice_fill<B: ErrorBehavior, T: Clone>(
+    pub(crate) fn generic_alloc_slice_fill<B: ErrorBehavior, T: Clone>(
         &self,
         len: usize,
         value: T,
@@ -708,7 +708,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_slice_fill_with<B: ErrorBehavior, T>(
+    pub(crate) fn generic_alloc_slice_fill_with<B: ErrorBehavior, T>(
         &self,
         len: usize,
         f: impl FnMut() -> T,
@@ -721,7 +721,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_str<B: ErrorBehavior>(&self, src: &str) -> Result<BumpBox<'a, str>, B> {
+    pub(crate) fn generic_alloc_str<B: ErrorBehavior>(&self, src: &str) -> Result<BumpBox<'a, str>, B> {
         let slice = self.generic_alloc_slice_copy(src.as_bytes())?;
 
         // SAFETY: input is `str` so this is too
@@ -729,7 +729,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<BumpBox<'a, str>, B> {
+    pub(crate) fn generic_alloc_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<BumpBox<'a, str>, B> {
         if let Some(string) = args.as_str() {
             return self.generic_alloc_str(string);
         }
@@ -771,7 +771,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_fmt_mut<B: ErrorBehavior>(&mut self, args: fmt::Arguments) -> Result<BumpBox<'a, str>, B> {
+    pub(crate) fn generic_alloc_fmt_mut<B: ErrorBehavior>(&mut self, args: fmt::Arguments) -> Result<BumpBox<'a, str>, B> {
         if let Some(string) = args.as_str() {
             return self.generic_alloc_str(string);
         }
@@ -811,7 +811,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_iter<B: ErrorBehavior, T>(
+    pub(crate) fn generic_alloc_iter<B: ErrorBehavior, T>(
         &self,
         iter: impl IntoIterator<Item = T>,
     ) -> Result<BumpBox<'a, [T]>, B> {
@@ -830,7 +830,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_iter_exact<B: ErrorBehavior, T, I>(
+    pub(crate) fn generic_alloc_iter_exact<B: ErrorBehavior, T, I>(
         &self,
         iter: impl IntoIterator<Item = T, IntoIter = I>,
     ) -> Result<BumpBox<'a, [T]>, B>
@@ -856,7 +856,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_iter_mut<B: ErrorBehavior, T>(
+    pub(crate) fn generic_alloc_iter_mut<B: ErrorBehavior, T>(
         &mut self,
         iter: impl IntoIterator<Item = T>,
     ) -> Result<BumpBox<'a, [T]>, B> {
@@ -873,7 +873,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_iter_mut_rev<B: ErrorBehavior, T>(
+    pub(crate) fn generic_alloc_iter_mut_rev<B: ErrorBehavior, T>(
         &mut self,
         iter: impl IntoIterator<Item = T>,
     ) -> Result<BumpBox<'a, [T]>, B> {
@@ -890,7 +890,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<BumpBox<'a, MaybeUninit<T>>, B> {
+    pub(crate) fn generic_alloc_uninit<B: ErrorBehavior, T>(&self) -> Result<BumpBox<'a, MaybeUninit<T>>, B> {
         if T::IS_ZST {
             return Ok(BumpBox::zst(MaybeUninit::uninit()));
         }
@@ -900,7 +900,10 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_uninit_slice<B: ErrorBehavior, T>(&self, len: usize) -> Result<BumpBox<'a, [MaybeUninit<T>]>, B> {
+    pub(crate) fn generic_alloc_uninit_slice<B: ErrorBehavior, T>(
+        &self,
+        len: usize,
+    ) -> Result<BumpBox<'a, [MaybeUninit<T>]>, B> {
         if T::IS_ZST {
             return Ok(BumpBox::uninit_zst_slice(len));
         }
@@ -914,7 +917,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_uninit_slice_for<B: ErrorBehavior, T>(
+    pub(crate) fn generic_alloc_uninit_slice_for<B: ErrorBehavior, T>(
         &self,
         slice: &[T],
     ) -> Result<BumpBox<'a, [MaybeUninit<T>]>, B> {
@@ -931,17 +934,17 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_fixed_vec<B: ErrorBehavior, T>(&self, capacity: usize) -> Result<FixedBumpVec<'a, T>, B> {
+    pub(crate) fn generic_alloc_fixed_vec<B: ErrorBehavior, T>(&self, capacity: usize) -> Result<FixedBumpVec<'a, T>, B> {
         Ok(FixedBumpVec::from_uninit(self.generic_alloc_uninit_slice(capacity)?))
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_fixed_string<B: ErrorBehavior>(&self, capacity: usize) -> Result<FixedBumpString<'a>, B> {
+    pub(crate) fn generic_alloc_fixed_string<B: ErrorBehavior>(&self, capacity: usize) -> Result<FixedBumpString<'a>, B> {
         Ok(FixedBumpString::from_uninit(self.generic_alloc_uninit_slice(capacity)?))
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_layout<B: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, B> {
+    pub(crate) fn generic_alloc_layout<B: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, B> {
         match self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, CustomLayout(layout)) {
             Some(ptr) => Ok(ptr),
             None => self.alloc_in_another_chunk(layout),
@@ -949,7 +952,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_reserve_bytes<B: ErrorBehavior>(&self, additional: usize) -> Result<(), B> {
+    pub(crate) fn generic_reserve_bytes<B: ErrorBehavior>(&self, additional: usize) -> Result<(), B> {
         let layout = match Layout::from_size_align(additional, 1) {
             Ok(ok) => ok,
             Err(_) => return Err(B::capacity_overflow()),
@@ -993,7 +996,7 @@ where
     A: BaseAllocator,
 {
     #[inline(always)]
-    pub(crate) fn do_alloc_try_with<B: ErrorBehavior, T, E>(
+    pub(crate) fn generic_alloc_try_with<B: ErrorBehavior, T, E>(
         &self,
         f: impl FnOnce() -> Result<T, E>,
     ) -> Result<Result<BumpBox<'a, T>, E>, B> {
@@ -1048,7 +1051,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_try_with_mut<B: ErrorBehavior, T, E>(
+    pub(crate) fn generic_alloc_try_with_mut<B: ErrorBehavior, T, E>(
         &mut self,
         f: impl FnOnce() -> Result<T, E>,
     ) -> Result<Result<BumpBox<'a, T>, E>, B> {
