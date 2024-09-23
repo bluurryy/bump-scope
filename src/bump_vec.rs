@@ -1169,7 +1169,7 @@ where
                             nonnull::copy::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
                         }
 
-                        self.bump.chunk.get().set_pos_addr(new_addr.get());
+                        self.bump.chunk.get().set_pos(new_ptr.cast());
                         self.fixed.initialized.set_ptr(new_ptr);
                     } else {
                         // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.

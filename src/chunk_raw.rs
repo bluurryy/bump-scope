@@ -162,7 +162,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
             if UP {
                 match bump_up(props) {
                     Some(BumpUp { new_pos, ptr }) => {
-                        self.set_pos(self.with_addr(new_pos));
+                        self.set_pos_addr(new_pos);
                         Ok(self.with_addr(ptr))
                     }
                     None => f(),
@@ -292,7 +292,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
             pos = down_align_usize(pos, ALIGN);
         }
 
-        unsafe { self.set_pos(self.with_addr(pos)) }
+        unsafe { self.set_pos_addr(pos) }
     }
 
     #[inline(always)]
@@ -346,14 +346,14 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub(crate) fn set_pos(self, ptr: NonNull<u8>) {
-        unsafe { self.header.as_ref().pos.set(ptr) }
+    pub(crate) unsafe fn set_pos(self, ptr: NonNull<u8>) {
+        self.set_pos_addr(nonnull::addr(ptr).get());
     }
 
     #[inline(always)]
     pub(crate) unsafe fn set_pos_addr(self, addr: usize) {
         let ptr = self.with_addr(addr);
-        self.set_pos(ptr);
+        unsafe { self.header.as_ref().pos.set(ptr) }
     }
 
     /// # Safety
@@ -480,10 +480,12 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
     #[inline(always)]
     pub(crate) fn reset(self) {
-        if UP {
-            self.set_pos(self.content_start());
-        } else {
-            self.set_pos(self.content_end());
+        unsafe {
+            if UP {
+                self.set_pos(self.content_start());
+            } else {
+                self.set_pos(self.content_end());
+            }
         }
     }
 
