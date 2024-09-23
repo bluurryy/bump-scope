@@ -199,7 +199,7 @@ where
         impl
         for fn with_capacity_in
         for fn try_with_capacity_in
-        fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
+        use fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
             let bump = bump.into();
 
             if T::IS_ZST {
@@ -237,7 +237,7 @@ where
         impl
         for fn from_elem_in
         for fn try_from_elem_in
-        fn generic_from_elem_in(value: T, count: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self
+        use fn generic_from_elem_in(value: T, count: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self
         where {
             T: Clone
         } in {
@@ -260,7 +260,7 @@ where
         impl
         for fn from_array_in
         for fn try_from_array_in
-        fn generic_from_array_in<{const N: usize}>(array: [T; N], bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
+        use fn generic_from_array_in<{const N: usize}>(array: [T; N], bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
             #![allow(clippy::needless_pass_by_value)]
             #![allow(clippy::needless_pass_by_ref_mut)]
 
@@ -611,7 +611,7 @@ where
         /// ```
         for fn push
         for fn try_push
-        fn generic_push(&mut self, value: T) {
+        use fn generic_push(&mut self, value: T) {
             self.generic_push_with(|| value)
         }
 
@@ -619,7 +619,7 @@ where
         impl
         for fn push_with
         for fn try_push_with
-        fn generic_push_with(&mut self, f: impl FnOnce() -> T) {
+        use fn generic_push_with(&mut self, f: impl FnOnce() -> T) {
             self.generic_reserve_one()?;
             unsafe {
                 self.unchecked_push_with(f);
@@ -643,7 +643,7 @@ where
         impl
         for fn insert
         for fn try_insert
-        fn generic_insert(&mut self, index: usize, element: T) {
+        use fn generic_insert(&mut self, index: usize, element: T) {
             #[cold]
             #[inline(never)]
             fn assert_failed(index: usize, len: usize) -> ! {
@@ -679,7 +679,7 @@ where
         impl
         for fn extend_from_slice_copy
         for fn try_extend_from_slice_copy
-        fn generic_extend_from_slice_copy(&mut self, slice: &[T])
+        use fn generic_extend_from_slice_copy(&mut self, slice: &[T])
         where {
             T: Copy
         } in {
@@ -693,7 +693,7 @@ where
         impl
         for fn extend_from_slice_clone
         for fn try_extend_from_slice_clone
-        fn generic_extend_from_slice_clone(&mut self, slice: &[T])
+        use fn generic_extend_from_slice_clone(&mut self, slice: &[T])
         where {
             T: Clone
         } in {
@@ -721,7 +721,7 @@ where
         impl
         for fn extend_from_array
         for fn try_extend_from_array
-        fn generic_extend_from_array<{const N: usize}>(&mut self, array: [T; N]) {
+        use fn generic_extend_from_array<{const N: usize}>(&mut self, array: [T; N]) {
             unsafe { self.extend_by_copy_nonoverlapping(&array) }
         }
 
@@ -748,7 +748,7 @@ where
         impl
         for fn extend_from_within_copy
         for fn try_extend_from_within_copy
-        fn generic_extend_from_within_copy<{R}>(&mut self, src: R)
+        use fn generic_extend_from_within_copy<{R}>(&mut self, src: R)
         where {
             T: Copy,
             R: RangeBounds<usize>,
@@ -786,7 +786,7 @@ where
         /// ```
         for fn extend_zeroed
         for fn try_extend_zeroed
-        fn generic_extend_zeroed(&mut self, additional: usize)
+        use fn generic_extend_zeroed(&mut self, additional: usize)
         where {
             T: zerocopy::FromZeroes
         } in {
@@ -809,7 +809,7 @@ where
         impl
         for fn reserve
         for fn try_reserve
-        fn generic_reserve(&mut self, additional: usize) {
+        use fn generic_reserve(&mut self, additional: usize) {
             if additional > (self.cap - self.len) {
                 self.generic_grow_cold(additional)?;
             }
@@ -847,7 +847,7 @@ where
         impl
         for fn resize
         for fn try_resize
-        fn generic_resize(&mut self, new_len: usize, value: T)
+        use fn generic_resize(&mut self, new_len: usize, value: T)
         where { T: Clone } in
         {
             let len = self.len();
@@ -892,7 +892,7 @@ where
         impl
         for fn resize_with
         for fn try_resize_with
-        fn generic_resize_with<{F}>(&mut self, new_len: usize, f: F)
+        use fn generic_resize_with<{F}>(&mut self, new_len: usize, f: F)
         where {
             F: FnMut() -> T,
         } in {
@@ -931,7 +931,7 @@ where
         /// ```
         for fn resize_zeroed
         for fn try_resize_zeroed
-        fn generic_resize_zeroed(&mut self, new_len: usize)
+        use fn generic_resize_zeroed(&mut self, new_len: usize)
         where {
             T: zerocopy::FromZeroes
         } in {
@@ -1312,7 +1312,7 @@ where
         impl
         for fn extend_from_within_clone
         for fn try_extend_from_within_clone
-        fn generic_extend_from_within_clone<{R}>(&mut self, src: R)
+        use fn generic_extend_from_within_clone<{R}>(&mut self, src: R)
         where {
             T: Clone,
             R: RangeBounds<usize>,

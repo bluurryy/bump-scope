@@ -891,7 +891,7 @@ macro_rules! error_behavior_generic_methods_if {
             $(do examples $(#[doc = $fallible_examples:literal])*)?
             for fn $fallible:ident
 
-            fn $generic:ident
+            use fn $generic:ident
             $(<{$($generic_params:tt)*}>)?
             (
                 $(&mut $self_mut:ident ,)?

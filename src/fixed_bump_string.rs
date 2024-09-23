@@ -309,7 +309,7 @@ impl<'a> FixedBumpString<'a> {
         impl
         for fn push
         for fn try_push
-        fn generic_push(&mut self, ch: char) {
+        use fn generic_push(&mut self, ch: char) {
             match ch.len_utf8() {
                 1 => self.vec.generic_push(ch as u8),
                 _ => self.vec.generic_extend_from_slice_copy(ch.encode_utf8(&mut [0; 4]).as_bytes()),
@@ -320,7 +320,7 @@ impl<'a> FixedBumpString<'a> {
         impl
         for fn push_str
         for fn try_push_str
-        fn generic_push_str(&mut self, string: &str) {
+        use fn generic_push_str(&mut self, string: &str) {
             self.vec.generic_extend_from_slice_copy(string.as_bytes())
         }
 
@@ -347,7 +347,7 @@ impl<'a> FixedBumpString<'a> {
         impl
         for fn insert
         for fn try_insert
-        fn generic_insert(&mut self, idx: usize, ch: char) {
+        use fn generic_insert(&mut self, idx: usize, ch: char) {
             assert!(self.is_char_boundary(idx));
             let mut bits = [0; 4];
             let bits = ch.encode_utf8(&mut bits).as_bytes();
@@ -379,7 +379,7 @@ impl<'a> FixedBumpString<'a> {
         impl
         for fn insert_str
         for fn try_insert_str
-        fn generic_insert_str(&mut self, idx: usize, string: &str) {
+        use fn generic_insert_str(&mut self, idx: usize, string: &str) {
             assert!(self.is_char_boundary(idx));
 
             unsafe {
@@ -411,7 +411,7 @@ impl<'a> FixedBumpString<'a> {
         impl
         for fn extend_from_within
         for fn try_extend_from_within
-        fn generic_extend_from_within<{R}>(&mut self, src: R)
+        use fn generic_extend_from_within<{R}>(&mut self, src: R)
         where {
             R: RangeBounds<usize>,
         } in {
@@ -436,7 +436,7 @@ impl<'a> FixedBumpString<'a> {
         /// ```
         for fn extend_zeroed
         for fn try_extend_zeroed
-        fn generic_extend_zeroed(&mut self, additional: usize) {
+        use fn generic_extend_zeroed(&mut self, additional: usize) {
             self.vec.generic_reserve(additional)?;
 
             unsafe {
