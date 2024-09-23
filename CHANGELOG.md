@@ -1,7 +1,7 @@
 # Changelog
 
-## Unreleased
-- **improved:** removed a branch when doing fallible sized allocations like `try_alloc_*` (#25)
+## 0.9.1 (2024-09-23)
+- **improved:** removed a branch when doing fallible sized allocations like `try_alloc_*` ([#34](https://github.com/bluurryy/bump-scope/pull/34))
 
 ## 0.9.0 (2024-09-18)
 - **added:** `from_parts` and `into_parts` to `BumpVec` and `BumpString`
@@ -34,7 +34,7 @@
 
 ## 0.5.9 (2024-08-25)
 - **improved:** removed a branch when bumping downwards (#25)
-- **fixed:** UB when using a base allocator with an alignment greater than `2 * size_of::<usize>()` (#32)
+- **fixed:** UB when using a base allocator with an alignment greater than `2 * size_of::<usize>()` ([#32](https://github.com/bluurryy/bump-scope/pull/32))
 
 ## 0.5.8 (2024-08-22)
 - **fixed:** `Mut*` collections' `into(_boxed)_slice` as well as `alloc_iter_mut(_rev)` and `alloc_fmt_mut` to not take up more than the necessary space
