@@ -152,16 +152,16 @@ where
         /// reallocating. This method allocates for as much elements as the< current chunk can hold.
         /// If `capacity` is 0, the string will not allocate.
         impl
-        for pub fn with_capacity_in
-        for pub fn try_with_capacity_in
+        for fn with_capacity_in
+        for fn try_with_capacity_in
         fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
             Ok(Self { vec: MutBumpVec::generic_with_capacity_in(capacity, bump.into())? } )
         }
 
         /// Constructs a new `MutBumpString` from a `&str`.
         impl
-        for pub fn from_str_in
-        for pub fn try_from_str_in
+        for fn from_str_in
+        for fn try_from_str_in
         fn generic_from_str_in(string: &str, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
             let mut this = Self::new_in(bump);
             this.generic_push_str(string)?;
@@ -417,8 +417,8 @@ where
     error_behavior_generic_methods_allocation_failure! {
         /// Appends the given [`char`] to the end of this `MutBumpString`.
         impl
-        for pub fn push
-        for pub fn try_push
+        for fn push
+        for fn try_push
         fn generic_push(&mut self, ch: char) {
             match ch.len_utf8() {
                 1 => self.vec.generic_push(ch as u8),
@@ -428,8 +428,8 @@ where
 
         /// Appends a given string slice onto the end of this `MutBumpString`.
         impl
-        for pub fn push_str
-        for pub fn try_push_str
+        for fn push_str
+        for fn try_push_str
         fn generic_push_str(&mut self, string: &str) {
             self.vec.generic_extend_from_slice_copy(string.as_bytes())
         }
@@ -455,8 +455,8 @@ where
         /// assert_eq!("foo", s);
         /// ```
         impl
-        for pub fn insert
-        for pub fn try_insert
+        for fn insert
+        for fn try_insert
         fn generic_insert(&mut self, idx: usize, ch: char) {
             assert!(self.is_char_boundary(idx));
             let mut bits = [0; 4];
@@ -486,8 +486,8 @@ where
         /// assert_eq!("foobar", s);
         /// ```
         impl
-        for pub fn insert_str
-        for pub fn try_insert_str
+        for fn insert_str
+        for fn try_insert_str
         fn generic_insert_str(&mut self, idx: usize, string: &str) {
             assert!(self.is_char_boundary(idx));
 
@@ -517,8 +517,8 @@ where
         /// assert_eq!(string, "abcdecdeabecde");
         /// ```
         impl
-        for pub fn extend_from_within
-        for pub fn try_extend_from_within
+        for fn extend_from_within
+        for fn try_extend_from_within
         fn generic_extend_from_within<{R}>(&mut self, src: R)
         where {
             R: RangeBounds<usize>,
@@ -541,8 +541,8 @@ where
         /// string.extend_zeroed(3);
         /// assert_eq!(string, "What?\0\0\0");
         /// ```
-        for pub fn extend_zeroed
-        for pub fn try_extend_zeroed
+        for fn extend_zeroed
+        for fn try_extend_zeroed
         fn generic_extend_zeroed(&mut self, additional: usize) {
             self.generic_reserve(additional)?;
 
@@ -563,8 +563,8 @@ where
         /// capacity will be greater than or equal to `self.len() + additional`.
         /// Does nothing if capacity is already sufficient.
         impl
-        for pub fn reserve
-        for pub fn try_reserve
+        for fn reserve
+        for fn try_reserve
         fn generic_reserve(&mut self, additional: usize) {
             self.vec.generic_reserve(additional)
         }

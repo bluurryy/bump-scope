@@ -65,8 +65,8 @@ define_alloc_methods! {
     /// let zero = bump.alloc_zeroed::<i32>();
     /// assert_eq!(*zero, 0)
     /// ```
-    for pub fn alloc_zeroed
-    for pub fn try_alloc_zeroed
+    for fn alloc_zeroed
+    for fn try_alloc_zeroed
     use fn generic_alloc_zeroed<{T}>(&self) -> BumpBox<T> | BumpBox<'a, T>
     where {
         T: FromZeroes
@@ -81,8 +81,8 @@ define_alloc_methods! {
     /// let zeroes = bump.alloc_zeroed_slice::<i32>(3);
     /// assert_eq!(*zeroes, [0; 3])
     /// ```
-    for pub fn alloc_zeroed_slice
-    for pub fn try_alloc_zeroed_slice
+    for fn alloc_zeroed_slice
+    for fn try_alloc_zeroed_slice
     use fn generic_alloc_zeroed_slice<{T}>(&self, len: usize) -> BumpBox<[T]> | BumpBox<'a, [T]>
     where {
         T: FromZeroes

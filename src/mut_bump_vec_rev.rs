@@ -197,8 +197,8 @@ where
     error_behavior_generic_methods_allocation_failure! {
         #[doc = include_str!("docs/vec/with_capacity.md")]
         impl
-        for pub fn with_capacity_in
-        for pub fn try_with_capacity_in
+        for fn with_capacity_in
+        for fn try_with_capacity_in
         fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
             let bump = bump.into();
 
@@ -235,8 +235,8 @@ where
 
         /// Constructs a new `MutBumpVecRev<T>` and pushes `value` `count` times.
         impl
-        for pub fn from_elem_in
-        for pub fn try_from_elem_in
+        for fn from_elem_in
+        for fn try_from_elem_in
         fn generic_from_elem_in(value: T, count: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self
         where {
             T: Clone
@@ -258,8 +258,8 @@ where
 
         /// Constructs a new `MutBumpVecRev<T>` from a `[T; N]`.
         impl
-        for pub fn from_array_in
-        for pub fn try_from_array_in
+        for fn from_array_in
+        for fn try_from_array_in
         fn generic_from_array_in<{const N: usize}>(array: [T; N], bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
             #![allow(clippy::needless_pass_by_value)]
             #![allow(clippy::needless_pass_by_ref_mut)]
@@ -609,16 +609,16 @@ where
         /// assert_eq!(vec, [3, 2, 1]);
         /// # let _ = vec;
         /// ```
-        for pub fn push
-        for pub fn try_push
+        for fn push
+        for fn try_push
         fn generic_push(&mut self, value: T) {
             self.generic_push_with(|| value)
         }
 
         /// Appends an element to the front of a collection.
         impl
-        for pub fn push_with
-        for pub fn try_push_with
+        for fn push_with
+        for fn try_push_with
         fn generic_push_with(&mut self, f: impl FnOnce() -> T) {
             self.generic_reserve_one()?;
             unsafe {
@@ -641,8 +641,8 @@ where
         /// assert_eq!(vec, [1, 4, 2, 3, 5]);
         /// ```
         impl
-        for pub fn insert
-        for pub fn try_insert
+        for fn insert
+        for fn try_insert
         fn generic_insert(&mut self, index: usize, element: T) {
             #[cold]
             #[inline(never)]
@@ -677,8 +677,8 @@ where
         /// Iterates over the `slice`, copies each element, and then appends
         /// it to this `MutBumpVecRev`. The `slice` is traversed in-order.
         impl
-        for pub fn extend_from_slice_copy
-        for pub fn try_extend_from_slice_copy
+        for fn extend_from_slice_copy
+        for fn try_extend_from_slice_copy
         fn generic_extend_from_slice_copy(&mut self, slice: &[T])
         where {
             T: Copy
@@ -691,8 +691,8 @@ where
         /// Iterates over the `slice`, clones each element, and then appends
         /// it to this `MutBumpVecRev`. The `slice` is traversed in-order.
         impl
-        for pub fn extend_from_slice_clone
-        for pub fn try_extend_from_slice_clone
+        for fn extend_from_slice_clone
+        for fn try_extend_from_slice_clone
         fn generic_extend_from_slice_clone(&mut self, slice: &[T])
         where {
             T: Clone
@@ -719,8 +719,8 @@ where
         /// it to this `MutBumpVecRev`. The `array` is traversed in-order.
         #[allow(clippy::needless_pass_by_value)]
         impl
-        for pub fn extend_from_array
-        for pub fn try_extend_from_array
+        for fn extend_from_array
+        for fn try_extend_from_array
         fn generic_extend_from_array<{const N: usize}>(&mut self, array: [T; N]) {
             unsafe { self.extend_by_copy_nonoverlapping(&array) }
         }
@@ -746,8 +746,8 @@ where
         /// assert_eq!(vec, [4, 0, 1, 2, 2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
         /// ```
         impl
-        for pub fn extend_from_within_copy
-        for pub fn try_extend_from_within_copy
+        for fn extend_from_within_copy
+        for fn try_extend_from_within_copy
         fn generic_extend_from_within_copy<{R}>(&mut self, src: R)
         where {
             T: Copy,
@@ -784,8 +784,8 @@ where
         /// vec.extend_zeroed(2);
         /// assert_eq!(vec, [0, 0, 1, 2, 3]);
         /// ```
-        for pub fn extend_zeroed
-        for pub fn try_extend_zeroed
+        for fn extend_zeroed
+        for fn try_extend_zeroed
         fn generic_extend_zeroed(&mut self, additional: usize)
         where {
             T: zerocopy::FromZeroes
@@ -807,8 +807,8 @@ where
         /// capacity will be greater than or equal to `self.len() + additional`.
         /// Does nothing if capacity is already sufficient.
         impl
-        for pub fn reserve
-        for pub fn try_reserve
+        for fn reserve
+        for fn try_reserve
         fn generic_reserve(&mut self, additional: usize) {
             if additional > (self.cap - self.len) {
                 self.generic_grow_cold(additional)?;
@@ -845,8 +845,8 @@ where
         /// assert_eq!(vec, [3, 4]);
         /// ```
         impl
-        for pub fn resize
-        for pub fn try_resize
+        for fn resize
+        for fn try_resize
         fn generic_resize(&mut self, new_len: usize, value: T)
         where { T: Clone } in
         {
@@ -890,8 +890,8 @@ where
         /// assert_eq!(vec, [16, 8, 4, 2]);
         /// ```
         impl
-        for pub fn resize_with
-        for pub fn try_resize_with
+        for fn resize_with
+        for fn try_resize_with
         fn generic_resize_with<{F}>(&mut self, new_len: usize, f: F)
         where {
             F: FnMut() -> T,
@@ -929,8 +929,8 @@ where
         ///     assert_eq!(vec, [2, 3]);
         /// }
         /// ```
-        for pub fn resize_zeroed
-        for pub fn try_resize_zeroed
+        for fn resize_zeroed
+        for fn try_resize_zeroed
         fn generic_resize_zeroed(&mut self, new_len: usize)
         where {
             T: zerocopy::FromZeroes
@@ -1310,8 +1310,8 @@ where
         /// assert_eq!(vec, [4, 0, 1, 2, 2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
         /// ```
         impl
-        for pub fn extend_from_within_clone
-        for pub fn try_extend_from_within_clone
+        for fn extend_from_within_clone
+        for fn try_extend_from_within_clone
         fn generic_extend_from_within_clone<{R}>(&mut self, src: R)
         where {
             T: Clone,

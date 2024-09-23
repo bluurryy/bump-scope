@@ -307,8 +307,8 @@ impl<'a> FixedBumpString<'a> {
 
         /// Appends the given [`char`] to the end of this `FixedBumpString`.
         impl
-        for pub fn push
-        for pub fn try_push
+        for fn push
+        for fn try_push
         fn generic_push(&mut self, ch: char) {
             match ch.len_utf8() {
                 1 => self.vec.generic_push(ch as u8),
@@ -318,8 +318,8 @@ impl<'a> FixedBumpString<'a> {
 
         /// Appends a given string slice onto the end of this `FixedBumpString`.
         impl
-        for pub fn push_str
-        for pub fn try_push_str
+        for fn push_str
+        for fn try_push_str
         fn generic_push_str(&mut self, string: &str) {
             self.vec.generic_extend_from_slice_copy(string.as_bytes())
         }
@@ -345,8 +345,8 @@ impl<'a> FixedBumpString<'a> {
         /// assert_eq!("foo", s);
         /// ```
         impl
-        for pub fn insert
-        for pub fn try_insert
+        for fn insert
+        for fn try_insert
         fn generic_insert(&mut self, idx: usize, ch: char) {
             assert!(self.is_char_boundary(idx));
             let mut bits = [0; 4];
@@ -377,8 +377,8 @@ impl<'a> FixedBumpString<'a> {
         /// assert_eq!("foobar", s);
         /// ```
         impl
-        for pub fn insert_str
-        for pub fn try_insert_str
+        for fn insert_str
+        for fn try_insert_str
         fn generic_insert_str(&mut self, idx: usize, string: &str) {
             assert!(self.is_char_boundary(idx));
 
@@ -409,8 +409,8 @@ impl<'a> FixedBumpString<'a> {
         /// assert_eq!(string, "abcdecdeabecde");
         /// ```
         impl
-        for pub fn extend_from_within
-        for pub fn try_extend_from_within
+        for fn extend_from_within
+        for fn try_extend_from_within
         fn generic_extend_from_within<{R}>(&mut self, src: R)
         where {
             R: RangeBounds<usize>,
@@ -434,8 +434,8 @@ impl<'a> FixedBumpString<'a> {
         /// string.extend_zeroed(3);
         /// assert_eq!(string, "What?\0\0\0");
         /// ```
-        for pub fn extend_zeroed
-        for pub fn try_extend_zeroed
+        for fn extend_zeroed
+        for fn try_extend_zeroed
         fn generic_extend_zeroed(&mut self, additional: usize) {
             self.vec.generic_reserve(additional)?;
 
