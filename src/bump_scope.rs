@@ -638,8 +638,8 @@ where
         let chunk = self.chunk.get();
         let props = chunk.bump_props(MinimumAlignment::<MIN_ALIGN>, crate::layout::SizedLayout::new::<T>());
 
-        let ptr = unsafe {
-            if UP {
+        unsafe {
+            let ptr = if UP {
                 if let Some(BumpUp { new_pos, ptr }) = bump_up(props) {
                     chunk.set_pos_addr(new_pos);
                     chunk.with_addr(ptr)
@@ -653,12 +653,10 @@ where
                 } else {
                     self.do_alloc_sized_in_another_chunk::<B, T>()?
                 }
-            }
-        };
+            };
 
-        let ptr = ptr.cast::<T>();
+            let ptr = ptr.cast::<T>();
 
-        unsafe {
             nonnull::write_with(ptr, f);
             Ok(BumpBox::from_raw(ptr))
         }
