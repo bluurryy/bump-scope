@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **improved:** removed a branch when doing fallible sized allocations like `try_alloc_*` (#25)
+
 ## 0.9.0 (2024-09-18)
 - **added:** `from_parts` and `into_parts` to `BumpVec` and `BumpString`
 - **added:** `FixedBumpString::into_string` returning a `BumpString`
