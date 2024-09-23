@@ -1039,7 +1039,7 @@ macro_rules! define_alloc_methods {
             $(do examples $(#[doc = $fallible_examples:literal])*)?
             for pub fn $fallible:ident
 
-            fn $generic:ident
+            use fn $generic:ident
             $(<{$($generic_params:tt)*}>)?
             (&$($self:ident)+ $(, $arg_pat:ident: $arg_ty:ty)* $(,)?)
             $(-> $return_ty:ty | $return_ty_scope:ty)?
@@ -1178,14 +1178,14 @@ define_alloc_methods! {
     impl
     for pub fn alloc
     for pub fn try_alloc
-    fn generic_alloc<{T}>(&self, value: T) -> BumpBox<T> | BumpBox<'a, T>;
+    use fn generic_alloc<{T}>(&self, value: T) -> BumpBox<T> | BumpBox<'a, T>;
 
     /// Pre-allocate space for an object. Once space is allocated `f` will be called to create the value to be put at that place.
     /// In some situations this can help the compiler realize that `T` can be constructed at the allocated space instead of having to copy it over.
     impl
     for pub fn alloc_with
     for pub fn try_alloc_with
-    fn generic_alloc_with<{T}>(&self, f: impl FnOnce() -> T) -> BumpBox<T> | BumpBox<'a, T>;
+    use fn generic_alloc_with<{T}>(&self, f: impl FnOnce() -> T) -> BumpBox<T> | BumpBox<'a, T>;
 
     /// Allocate an object with its default value.
     impl
@@ -1193,13 +1193,13 @@ define_alloc_methods! {
     for pub fn alloc_default
     /// This is equivalent to <code>[try_alloc_with](Self::try_alloc_with)(T::default)</code>.
     for pub fn try_alloc_default
-    fn generic_alloc_default<{T: Default}>(&self) -> BumpBox<T> | BumpBox<'a, T>;
+    use fn generic_alloc_default<{T: Default}>(&self) -> BumpBox<T> | BumpBox<'a, T>;
 
     /// Allocate a slice and `Copy` elements from an existing slice.
     impl
     for pub fn alloc_slice_copy
     for pub fn try_alloc_slice_copy
-    fn generic_alloc_slice_copy<{T: Copy}>(
+    use fn generic_alloc_slice_copy<{T: Copy}>(
         &self,
         slice: &[T],
     ) -> BumpBox<[T]> | BumpBox<'a, [T]>;
@@ -1208,7 +1208,7 @@ define_alloc_methods! {
     impl
     for pub fn alloc_slice_clone
     for pub fn try_alloc_slice_clone
-    fn generic_alloc_slice_clone<{T: Clone}>(
+    use fn generic_alloc_slice_clone<{T: Clone}>(
         &self,
         slice: &[T],
     ) -> BumpBox<[T]> | BumpBox<'a, [T]>;
@@ -1217,7 +1217,7 @@ define_alloc_methods! {
     impl
     for pub fn alloc_slice_fill
     for pub fn try_alloc_slice_fill
-    fn generic_alloc_slice_fill<{T: Clone}>(&self, len: usize, value: T) -> BumpBox<[T]> | BumpBox<'a, [T]>;
+    use fn generic_alloc_slice_fill<{T: Clone}>(&self, len: usize, value: T) -> BumpBox<[T]> | BumpBox<'a, [T]>;
 
     /// Allocates a slice by fill it with elements returned by calling a closure repeatedly.
     ///
@@ -1228,13 +1228,13 @@ define_alloc_methods! {
     impl
     for pub fn alloc_slice_fill_with
     for pub fn try_alloc_slice_fill_with
-    fn generic_alloc_slice_fill_with<{T}>(&self, len: usize, f: impl FnMut() -> T) -> BumpBox<[T]> | BumpBox<'a, [T]>;
+    use fn generic_alloc_slice_fill_with<{T}>(&self, len: usize, f: impl FnMut() -> T) -> BumpBox<[T]> | BumpBox<'a, [T]>;
 
     /// Allocate a `str`.
     impl
     for pub fn alloc_str
     for pub fn try_alloc_str
-    fn generic_alloc_str(&self, src: &str) -> BumpBox<str> | BumpBox<'a, str>;
+    use fn generic_alloc_str(&self, src: &str) -> BumpBox<str> | BumpBox<'a, str>;
 
     /// Allocate a `str` from format arguments.
     impl
@@ -1257,7 +1257,7 @@ define_alloc_methods! {
     do errors
     /// Errors if a formatting trait implementation returned an error.
     for pub fn try_alloc_fmt
-    fn generic_alloc_fmt(&self, args: fmt::Arguments) -> BumpBox<str> | BumpBox<'a, str>;
+    use fn generic_alloc_fmt(&self, args: fmt::Arguments) -> BumpBox<str> | BumpBox<'a, str>;
 
     /// Allocate a `str` from format arguments.
     impl
@@ -1280,7 +1280,7 @@ define_alloc_methods! {
     do errors
     /// Errors if a formatting trait implementation returned an error.
     for pub fn try_alloc_fmt_mut
-    fn generic_alloc_fmt_mut(&mut self, args: fmt::Arguments) -> BumpBox<str> | BumpBox<'a, str>;
+    use fn generic_alloc_fmt_mut(&mut self, args: fmt::Arguments) -> BumpBox<str> | BumpBox<'a, str>;
 
     /// Allocate elements of an iterator into a slice.
     do examples
@@ -1296,7 +1296,7 @@ define_alloc_methods! {
     for pub fn alloc_iter
     /// For better performance prefer [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) or <code>[try_alloc_iter_mut](Bump::try_alloc_iter_mut)</code>.
     for pub fn try_alloc_iter
-    fn generic_alloc_iter<{T}>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]>;
+    use fn generic_alloc_iter<{T}>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]>;
 
     /// Allocate elements of an `ExactSizeIterator` into a slice.
     do panics
@@ -1312,7 +1312,7 @@ define_alloc_methods! {
     /// ```
     for pub fn alloc_iter_exact
     for pub fn try_alloc_iter_exact
-    fn generic_alloc_iter_exact<{T, I}>(&self, iter: impl IntoIterator<Item = T, IntoIter = I>) -> BumpBox<[T]> | BumpBox<'a, [T]>
+    use fn generic_alloc_iter_exact<{T, I}>(&self, iter: impl IntoIterator<Item = T, IntoIter = I>) -> BumpBox<[T]> | BumpBox<'a, [T]>
     where {
         I: ExactSizeIterator<Item = T>
     };
@@ -1335,7 +1335,7 @@ define_alloc_methods! {
     ///
     /// When bumping downwards, prefer [`try_alloc_iter_mut_rev`](Bump::try_alloc_iter_mut_rev) or [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) to avoid a shift of the slice.
     for pub fn try_alloc_iter_mut
-    fn generic_alloc_iter_mut<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]>;
+    use fn generic_alloc_iter_mut<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]>;
 
     /// Allocate elements of an iterator into a slice in reverse order.
     impl
@@ -1353,7 +1353,7 @@ define_alloc_methods! {
     ///
     /// When bumping upwards, prefer [`try_alloc_iter_mut`](Self::try_alloc_iter_mut) or [`try_alloc_iter_exact`](Self::try_alloc_iter_exact) to avoid a shift of the slice.
     for pub fn try_alloc_iter_mut_rev
-    fn generic_alloc_iter_mut_rev<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]>;
+    use fn generic_alloc_iter_mut_rev<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]>;
 
     /// Allocate an unitialized object.
     ///
@@ -1386,7 +1386,7 @@ define_alloc_methods! {
     impl
     for pub fn alloc_uninit
     for pub fn try_alloc_uninit
-    fn generic_alloc_uninit<{T}>(&self) -> BumpBox<MaybeUninit<T>> | BumpBox<'a, MaybeUninit<T>>;
+    use fn generic_alloc_uninit<{T}>(&self) -> BumpBox<MaybeUninit<T>> | BumpBox<'a, MaybeUninit<T>>;
 
     /// Allocate an unitialized object slice.
     ///
@@ -1427,7 +1427,7 @@ define_alloc_methods! {
     impl
     for pub fn alloc_uninit_slice
     for pub fn try_alloc_uninit_slice
-    fn generic_alloc_uninit_slice<{T}>(&self, len: usize) -> BumpBox<[MaybeUninit<T>]> | BumpBox<'a, [MaybeUninit<T>]>;
+    use fn generic_alloc_uninit_slice<{T}>(&self, len: usize) -> BumpBox<[MaybeUninit<T>]> | BumpBox<'a, [MaybeUninit<T>]>;
 
     /// Allocate an unitialized object slice.
     ///
@@ -1445,7 +1445,7 @@ define_alloc_methods! {
     /// This is just like [`try_alloc_uninit_slice`](Self::try_alloc_uninit_slice) but uses a `slice` to provide the `len`.
     /// This avoids a check for a valid layout. The elements of `slice` are irrelevant.
     for pub fn try_alloc_uninit_slice_for
-    fn generic_alloc_uninit_slice_for<{T}>(&self, slice: &[T]) -> BumpBox<[MaybeUninit<T>]> | BumpBox<'a, [MaybeUninit<T>]>;
+    use fn generic_alloc_uninit_slice_for<{T}>(&self, slice: &[T]) -> BumpBox<[MaybeUninit<T>]> | BumpBox<'a, [MaybeUninit<T>]>;
 
     /// Allocate a [`FixedBumpVec`] with the given `capacity`.
     do examples
@@ -1461,7 +1461,7 @@ define_alloc_methods! {
     impl
     for pub fn alloc_fixed_vec
     for pub fn try_alloc_fixed_vec
-    fn generic_alloc_fixed_vec<{T}>(&self, capacity: usize) -> FixedBumpVec<T> | FixedBumpVec<'a, T>;
+    use fn generic_alloc_fixed_vec<{T}>(&self, capacity: usize) -> FixedBumpVec<T> | FixedBumpVec<'a, T>;
 
     /// Allocate a [`FixedBumpString`] with the given `capacity` in bytes.
     impl
@@ -1476,13 +1476,13 @@ define_alloc_methods! {
     /// ```
     for pub fn alloc_fixed_string
     for pub fn try_alloc_fixed_string
-    fn generic_alloc_fixed_string(&self, capacity: usize) -> FixedBumpString | FixedBumpString<'a>;
+    use fn generic_alloc_fixed_string(&self, capacity: usize) -> FixedBumpString | FixedBumpString<'a>;
 
     /// Allocates memory as described by the given `Layout`.
     impl
     for pub fn alloc_layout
     for pub fn try_alloc_layout
-    fn generic_alloc_layout(&self, layout: Layout) -> NonNull<u8> | NonNull<u8>;
+    use fn generic_alloc_layout(&self, layout: Layout) -> NonNull<u8> | NonNull<u8>;
 
     /// Reserves capacity for at least `additional` more bytes to be bump allocated.
     /// The bump allocator may reserve more space to avoid frequent reallocations.
@@ -1501,7 +1501,7 @@ define_alloc_methods! {
     impl
     for pub fn reserve_bytes
     for pub fn try_reserve_bytes
-    fn generic_reserve_bytes(&self, additional: usize);
+    use fn generic_reserve_bytes(&self, additional: usize);
 }
 
 define_alloc_methods! {
@@ -1561,7 +1561,7 @@ define_alloc_methods! {
     /// # Ok::<(), AllocError>(())
     /// ```
     for pub fn try_alloc_try_with
-    fn generic_alloc_try_with<{T, E}>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> | Result<BumpBox<'a, T>, E>;
+    use fn generic_alloc_try_with<{T, E}>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> | Result<BumpBox<'a, T>, E>;
 
     #[allow(clippy::missing_errors_doc)]
     /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
@@ -1616,7 +1616,7 @@ define_alloc_methods! {
     /// # Ok::<(), AllocError>(())
     /// ```
     for pub fn try_alloc_try_with_mut
-    fn generic_alloc_try_with_mut<{T, E}>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> | Result<BumpBox<'a, T>, E>;
+    use fn generic_alloc_try_with_mut<{T, E}>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> | Result<BumpBox<'a, T>, E>;
 }
 
 /// Functions to allocate. Available as fallible or infallible.

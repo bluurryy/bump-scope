@@ -67,7 +67,7 @@ define_alloc_methods! {
     /// ```
     for pub fn alloc_zeroed
     for pub fn try_alloc_zeroed
-    fn generic_alloc_zeroed<{T}>(&self) -> BumpBox<T> | BumpBox<'a, T>
+    use fn generic_alloc_zeroed<{T}>(&self) -> BumpBox<T> | BumpBox<'a, T>
     where {
         T: FromZeroes
     };
@@ -83,7 +83,7 @@ define_alloc_methods! {
     /// ```
     for pub fn alloc_zeroed_slice
     for pub fn try_alloc_zeroed_slice
-    fn generic_alloc_zeroed_slice<{T}>(&self, len: usize) -> BumpBox<[T]> | BumpBox<'a, [T]>
+    use fn generic_alloc_zeroed_slice<{T}>(&self, len: usize) -> BumpBox<[T]> | BumpBox<'a, [T]>
     where {
         T: FromZeroes
     };
