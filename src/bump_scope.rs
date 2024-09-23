@@ -1,5 +1,3 @@
-#[cfg(not(no_global_oom_handling))]
-use crate::infallible;
 #[cfg(test)]
 use crate::WithDrop;
 use crate::{
@@ -10,24 +8,24 @@ use crate::{
     const_param_assert, doc_align_cant_decrease, down_align_usize, exact_size_iterator_bad_len,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::{nonnull, pointer},
-    private::Infallibly,
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
     FixedBumpString, FixedBumpVec, GuaranteedAllocatedStats, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev,
     NoDrop, RawChunk, SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
+#[cfg(not(no_global_oom_handling))]
+use crate::{infallible, Infallibly};
 use allocator_api2::alloc::AllocError;
 use core::{
     alloc::Layout,
     cell::Cell,
     fmt::{self, Debug},
     marker::PhantomData,
-    mem::ManuallyDrop,
+    mem::{ManuallyDrop, MaybeUninit},
     num::NonZeroUsize,
     ops::Range,
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::NonNull,
 };
-use std::mem::MaybeUninit;
 
 macro_rules! bump_scope_declaration {
     ($($allocator_parameter:tt)*) => {
