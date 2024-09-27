@@ -1,6 +1,6 @@
 use crate::{
-    error_behavior_generic_methods_if, polyfill, BumpAllocator, BumpBox, BumpString, ErrorBehavior, FixedBumpVec,
-    FromUtf8Error, NoDrop,
+    bump_allocator::LifetimeMarker, error_behavior_generic_methods_if, polyfill, BumpAllocator, BumpBox, BumpString,
+    ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
@@ -482,7 +482,7 @@ impl<'a> FixedBumpString<'a> {
     #[inline(always)]
     pub fn into_string<A>(self, bump: A) -> BumpString<'a, A>
     where
-        A: BumpAllocator<'a>,
+        A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
     {
         BumpString::from_parts(self, bump)
     }

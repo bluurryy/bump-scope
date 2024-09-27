@@ -1,4 +1,5 @@
 use crate::{
+    bump_allocator::{BumpAllocatorExt, LifetimeMarker},
     infallible,
     polyfill::{nonnull, pointer},
     BumpAllocator, BumpBox, FixedBumpVec, SizedTypeProperties,
@@ -22,7 +23,7 @@ use super::BumpVec;
 // This is modelled after rust's `alloc/src/vec/into_iter.rs`
 pub struct IntoIter<'a, T, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     pub(super) buf: NonNull<T>,
     pub(super) cap: usize,
@@ -41,7 +42,7 @@ where
 
 impl<'a, T, A> Debug for IntoIter<'a, T, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
     T: Debug,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -51,7 +52,7 @@ where
 
 impl<'a, T, A> IntoIter<'a, T, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     /// Returns the remaining items of this iterator as a slice.
     ///
@@ -107,7 +108,7 @@ where
 
 impl<'a, T, A> AsRef<[T]> for IntoIter<'a, T, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     #[inline]
     fn as_ref(&self) -> &[T] {
@@ -117,7 +118,7 @@ where
 
 impl<'a, T, A> Iterator for IntoIter<'a, T, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     type Item = T;
 
@@ -158,7 +159,7 @@ where
 
 impl<'a, T, A> DoubleEndedIterator for IntoIter<'a, T, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -178,22 +179,22 @@ where
     }
 }
 
-impl<'a, T, A> ExactSizeIterator for IntoIter<'a, T, A> where A: BumpAllocator<'a> {}
+impl<'a, T, A> ExactSizeIterator for IntoIter<'a, T, A> where A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>> {}
 
-impl<'a, T, A> FusedIterator for IntoIter<'a, T, A> where A: BumpAllocator<'a> {}
+impl<'a, T, A> FusedIterator for IntoIter<'a, T, A> where A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>> {}
 
 #[cfg(feature = "nightly-trusted-len")]
-unsafe impl<'a, T, A> core::iter::TrustedLen for IntoIter<'a, T, A> where A: BumpAllocator<'a> {}
+unsafe impl<'a, T, A> core::iter::TrustedLen for IntoIter<'a, T, A> where A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>> {}
 
 #[cfg(not(no_global_oom_handling))]
 impl<'a, T, A> Clone for IntoIter<'a, T, A>
 where
-    A: BumpAllocator<'a> + Clone,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>> + Clone,
     T: Clone,
 {
     fn clone(&self) -> Self {
         let slice = self.as_slice();
-        let boxed = infallible(self.bump.slice_clone(slice));
+        let boxed = infallible(self.bump.clone_slice(slice));
         let fixed = FixedBumpVec::from_init(boxed);
         let vec = BumpVec::from_parts(fixed, self.bump.clone());
         vec.into_iter()
@@ -202,16 +203,16 @@ where
 
 impl<'a, T, A> Drop for IntoIter<'a, T, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     fn drop(&mut self) {
         struct DropGuard<'i, 'a, T, A>(&'i mut IntoIter<'a, T, A>)
         where
-            A: BumpAllocator<'a>;
+            A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>;
 
         impl<'i, 'a, T, A> Drop for DropGuard<'i, 'a, T, A>
         where
-            A: BumpAllocator<'a>,
+            A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
         {
             fn drop(&mut self) {
                 unsafe {

@@ -1,6 +1,6 @@
 //! Adapted from rust's `library/alloc/tests/vec.rs` commit f7ca9df69549470541fbf542f87a03eb9ed024b6
 
-use crate::{bump_vec, Bump, BumpAllocator, BumpScope, BumpVec};
+use crate::{bump_allocator::LifetimeMarker, bump_vec, Bump, BumpAllocator, BumpScope, BumpVec};
 use allocator_api2::alloc::{AllocError, Allocator, Layout};
 #[cfg(feature = "std")]
 use std::alloc::System;
@@ -465,7 +465,7 @@ fn test_retain_maybeuninits() {
 
 #[test]
 fn test_dedup() {
-    fn case<'a, A: BumpAllocator<'a>>(a: BumpVec<'a, i32, A>, b: BumpVec<'a, i32, A>) {
+    fn case<'a, A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>>(a: BumpVec<'a, i32, A>, b: BumpVec<'a, i32, A>) {
         let mut v = a;
         v.dedup();
         assert_eq!(v.as_slice(), b.as_slice());
@@ -486,7 +486,7 @@ fn test_dedup() {
 
 #[test]
 fn test_dedup_by_key() {
-    fn case<'a, A: BumpAllocator<'a>>(a: BumpVec<'a, i32, A>, b: BumpVec<'a, i32, A>) {
+    fn case<'a, A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>>(a: BumpVec<'a, i32, A>, b: BumpVec<'a, i32, A>) {
         let mut v = a;
         v.dedup_by_key(|i| *i / 10);
         assert_eq!(v, b);
@@ -1709,7 +1709,10 @@ fn test_stable_pointers() {
 
 macro_rules! generate_assert_eq_vec_and_prim {
     ($name:ident<$B:ident>($type:ty)) => {
-        fn $name<'a, A: PartialEq<$B> + Debug, $B: Debug, Bump: BumpAllocator<'a>>(a: BumpVec<'a, A, Bump>, b: $type) {
+        fn $name<'a, A: PartialEq<$B> + Debug, $B: Debug, Bump: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>>(
+            a: BumpVec<'a, A, Bump>,
+            b: $type,
+        ) {
             assert!(a == b);
             assert_eq!(a, b);
         }

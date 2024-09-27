@@ -1,8 +1,8 @@
 #[cfg(not(no_global_oom_handling))]
 use crate::Infallibly;
 use crate::{
-    error_behavior_generic_methods_allocation_failure, polyfill, BumpAllocator, BumpBox, BumpVec, ErrorBehavior,
-    FixedBumpString, FromUtf8Error,
+    bump_allocator::LifetimeMarker, error_behavior_generic_methods_allocation_failure, polyfill, BumpAllocator, BumpBox,
+    BumpVec, ErrorBehavior, FixedBumpString, FromUtf8Error,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
@@ -110,14 +110,14 @@ macro_rules! bump_format {
 /// [`from_utf8`]: BumpString::from_utf8
 pub struct BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     pub(crate) vec: BumpVec<'a, u8, A>,
 }
 
 impl<'a, A> BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     /// Constructs a new empty `BumpString`.
     ///
@@ -156,7 +156,7 @@ where
 
 impl<'a, A> BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     /// Returns this `BumpString`'s capacity, in bytes.
     #[must_use]
@@ -393,7 +393,7 @@ where
 
 impl<'a, A> BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     error_behavior_generic_methods_allocation_failure! {
         /// Appends the given [`char`] to the end of this `BumpString`.
@@ -662,7 +662,7 @@ where
 
 impl<'a, A> fmt::Write for BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
@@ -678,7 +678,7 @@ where
 #[cfg(not(no_global_oom_handling))]
 impl<'a, A> fmt::Write for Infallibly<BumpString<'a, A>>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
@@ -695,7 +695,7 @@ where
 
 impl<'a, A> Debug for BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Debug::fmt(self.as_str(), f)
@@ -704,7 +704,7 @@ where
 
 impl<'a, A> Display for BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Display::fmt(self.as_str(), f)
@@ -713,7 +713,7 @@ where
 
 impl<'a, A> Deref for BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     type Target = str;
 
@@ -725,7 +725,7 @@ where
 
 impl<'a, A> DerefMut for BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
@@ -736,7 +736,7 @@ where
 #[cfg(not(no_global_oom_handling))]
 impl<'a, A> core::ops::AddAssign<&str> for BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     #[inline]
     fn add_assign(&mut self, rhs: &str) {
@@ -746,7 +746,7 @@ where
 
 impl<'a, A> AsRef<str> for BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     #[inline]
     fn as_ref(&self) -> &str {
@@ -756,7 +756,7 @@ where
 
 impl<'a, A> AsMut<str> for BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     #[inline]
     fn as_mut(&mut self) -> &mut str {
@@ -766,7 +766,7 @@ where
 
 impl<'a, A> Borrow<str> for BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     #[inline]
     fn borrow(&self) -> &str {
@@ -776,7 +776,7 @@ where
 
 impl<'a, A> BorrowMut<str> for BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     #[inline]
     fn borrow_mut(&mut self) -> &mut str {
@@ -786,7 +786,7 @@ where
 
 impl<'a, A> PartialEq for BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
@@ -810,7 +810,7 @@ macro_rules! impl_partial_eq {
             $(#[$attr])*
             impl<'a, A> PartialEq<$string_like> for BumpString<'a, A>
             where
-                A: BumpAllocator<'a>,
+                A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
             {
                 #[inline]
                 fn eq(&self, other: &$string_like) -> bool {
@@ -826,7 +826,7 @@ macro_rules! impl_partial_eq {
             $(#[$attr])*
             impl<'a, A> PartialEq<BumpString<'a, A>> for $string_like
             where
-                A: BumpAllocator<'a>,
+                A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
             {
                 #[inline]
                 fn eq(&self, other: &BumpString<'a, A>) -> bool {
@@ -854,11 +854,11 @@ impl_partial_eq! {
     alloc::borrow::Cow<'_, str>,
 }
 
-impl<'a, A> Eq for BumpString<'a, A> where A: BumpAllocator<'a> {}
+impl<'a, A> Eq for BumpString<'a, A> where A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>> {}
 
 impl<'a, A> PartialOrd for BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
@@ -888,7 +888,7 @@ where
 
 impl<'a, A> Ord for BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         <str as Ord>::cmp(self, other)
@@ -897,7 +897,7 @@ where
 
 impl<'a, A> Hash for BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     #[inline]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
@@ -908,7 +908,7 @@ where
 #[cfg(not(no_global_oom_handling))]
 impl<'s, 'a, A> Extend<&'s str> for BumpString<'a, A>
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     #[inline]
     fn extend<T: IntoIterator<Item = &'s str>>(&mut self, iter: T) {
@@ -921,7 +921,7 @@ where
 #[cfg(feature = "alloc")]
 impl<'a, A> From<BumpString<'a, A>> for alloc::string::String
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
 {
     #[inline]
     fn from(value: BumpString<'a, A>) -> Self {

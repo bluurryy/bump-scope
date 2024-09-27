@@ -1,4 +1,5 @@
 use crate::{
+    bump_allocator::LifetimeMarker,
     error_behavior_generic_methods_if, owned_slice,
     polyfill::{self, nonnull, pointer, slice},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
@@ -121,7 +122,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     #[inline(always)]
     pub fn into_vec<A>(self, bump: A) -> BumpVec<'a, T, A>
     where
-        A: BumpAllocator<'a>,
+        A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
     {
         BumpVec::from_parts(self, bump)
     }
