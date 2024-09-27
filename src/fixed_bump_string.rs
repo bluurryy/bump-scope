@@ -482,7 +482,7 @@ impl<'a> FixedBumpString<'a> {
     #[inline(always)]
     pub fn into_string<A>(self, bump: A) -> BumpString<'a, A>
     where
-        A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
+        A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     {
         BumpString::from_parts(self, bump)
     }

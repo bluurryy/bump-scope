@@ -23,7 +23,7 @@ use allocator_api2::alloc::Allocator;
 ///
 /// # Safety
 /// - `grow(_zeroed)`, `shrink` and `deallocate` must be ok to be called with a pointer that was not allocated by this Allocator
-pub unsafe trait BumpAllocator<'a>: Allocator {
+pub unsafe trait BumpAllocator: Allocator {
     type Lifetime;
 
     unsafe fn raw_alloc_vec<'x, B: ErrorBehavior, T>(&self, capacity: usize) -> Result<FixedBumpVec<'x, T>, B>;
@@ -45,7 +45,7 @@ pub(crate) unsafe trait BumpAllocatorExt<'a>: Allocator {
 
 unsafe impl<'a, A> BumpAllocatorExt<'a> for A
 where
-    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
+    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
     fn alloc_vec<B: ErrorBehavior, T>(&self, capacity: usize) -> Result<FixedBumpVec<'a, T>, B> {
         unsafe { self.raw_alloc_vec(capacity) }
@@ -63,9 +63,9 @@ where
 
 pub struct LifetimeMarker<'a>(PhantomData<&'a ()>);
 
-unsafe impl<'a, A> BumpAllocator<'a> for &A
+unsafe impl<'a, A> BumpAllocator for &A
 where
-    A: BumpAllocator<'a>,
+    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
     type Lifetime = LifetimeMarker<'a>;
 
@@ -90,7 +90,7 @@ where
     }
 }
 
-unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator<'a>
+unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
     for &'a Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -119,7 +119,7 @@ where
     }
 }
 
-unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator<'a>
+unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
     for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -153,7 +153,10 @@ where
     }
 }
 
-unsafe impl<'a, A: BumpAllocator<'a>> BumpAllocator<'a> for WithoutDealloc<A> {
+unsafe impl<'a, A> BumpAllocator for WithoutDealloc<A>
+where
+    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
+{
     type Lifetime = LifetimeMarker<'a>;
 
     unsafe fn raw_alloc_vec<'x, B: ErrorBehavior, T>(&self, capacity: usize) -> Result<FixedBumpVec<'x, T>, B> {
@@ -177,7 +180,10 @@ unsafe impl<'a, A: BumpAllocator<'a>> BumpAllocator<'a> for WithoutDealloc<A> {
     }
 }
 
-unsafe impl<'a, A: BumpAllocator<'a>> BumpAllocator<'a> for WithoutShrink<A> {
+unsafe impl<'a, A> BumpAllocator for WithoutShrink<A>
+where
+    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
+{
     type Lifetime = LifetimeMarker<'a>;
 
     unsafe fn raw_alloc_vec<'x, B: ErrorBehavior, T>(&self, capacity: usize) -> Result<FixedBumpVec<'x, T>, B> {

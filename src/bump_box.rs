@@ -216,7 +216,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "alloc")]
-    pub fn into_box<A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>>(self, bump: A) -> Box<T, A> {
+    pub fn into_box<A: BumpAllocator<Lifetime = LifetimeMarker<'a>>>(self, bump: A) -> Box<T, A> {
         let ptr = BumpBox::into_raw(self).as_ptr();
 
         // SAFETY: bump might not be the allocator self was allocated with;
@@ -234,7 +234,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// boxed.deallocate_in(&bump);
     /// assert_eq!(bump.stats().allocated(), 0);
     /// ```
-    pub fn deallocate_in<A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>>(self, bump: A) {
+    pub fn deallocate_in<A: BumpAllocator<Lifetime = LifetimeMarker<'a>>>(self, bump: A) {
         let layout = Layout::for_value::<T>(&self);
         let ptr = self.into_raw();
 

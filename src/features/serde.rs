@@ -36,7 +36,7 @@ where
 
 impl<'a, T, A> Serialize for BumpVec<'a, T, A>
 where
-    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
+    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     T: Serialize,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -84,7 +84,7 @@ impl Serialize for FixedBumpString<'_> {
 
 impl<'a, A> Serialize for BumpString<'a, A>
 where
-    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
+    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -183,7 +183,7 @@ where
 
 impl<'a, 'de, T, A> DeserializeSeed<'de> for &'_ mut BumpVec<'a, T, A>
 where
-    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
+    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     T: Deserialize<'de>,
 {
     type Value = ();
@@ -198,7 +198,7 @@ where
 
 impl<'a, 'de, T, A> Visitor<'de> for &'_ mut BumpVec<'a, T, A>
 where
-    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
+    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     T: Deserialize<'de>,
 {
     type Value = ();
@@ -343,7 +343,7 @@ impl<'de> Visitor<'de> for &'_ mut FixedBumpString<'_> {
 
 impl<'a, 'de, A> DeserializeSeed<'de> for &'_ mut BumpString<'a, A>
 where
-    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
+    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
     type Value = ();
 
@@ -357,7 +357,7 @@ where
 
 impl<'a, 'de, A> Visitor<'de> for &'_ mut BumpString<'a, A>
 where
-    A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
+    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
     type Value = ();
 

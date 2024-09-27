@@ -122,7 +122,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     #[inline(always)]
     pub fn into_vec<A>(self, bump: A) -> BumpVec<'a, T, A>
     where
-        A: BumpAllocator<'a, Lifetime = LifetimeMarker<'a>>,
+        A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     {
         BumpVec::from_parts(self, bump)
     }
