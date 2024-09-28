@@ -108,14 +108,14 @@ macro_rules! bump_format {
 ///
 /// [`&str`]: prim@str "&str"
 /// [`from_utf8`]: BumpString::from_utf8
-pub struct BumpString<'a, A>
+pub struct BumpString<A>
 where
-    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
+    A: BumpAllocator,
 {
-    pub(crate) vec: BumpVec<'a, u8, A>,
+    pub(crate) vec: BumpVec<u8, A>,
 }
 
-impl<'a, A> BumpString<'a, A>
+impl<'a, A> BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -154,7 +154,7 @@ where
     }
 }
 
-impl<'a, A> BumpString<'a, A>
+impl<'a, A> BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -260,7 +260,7 @@ where
     /// [`BumpVec<u8>`]: BumpVec
     /// [`&str`]: prim@str "&str"
     /// [`into_bytes`]: Self::into_bytes
-    pub fn from_utf8(vec: BumpVec<'a, u8, A>) -> Result<Self, FromUtf8Error<BumpVec<'a, u8, A>>> {
+    pub fn from_utf8(vec: BumpVec<u8, A>) -> Result<Self, FromUtf8Error<BumpVec<u8, A>>> {
         match str::from_utf8(vec.as_slice()) {
             Ok(_) => Ok(Self { vec }),
             Err(error) => Err(FromUtf8Error { error, bytes: vec }),
@@ -291,7 +291,7 @@ where
     /// assert_eq!("💖", sparkle_heart);
     /// ```
     #[must_use]
-    pub unsafe fn from_utf8_unchecked(vec: BumpVec<'a, u8, A>) -> Self {
+    pub unsafe fn from_utf8_unchecked(vec: BumpVec<u8, A>) -> Self {
         debug_assert!(str::from_utf8(vec.as_slice()).is_ok());
         Self { vec }
     }
@@ -313,7 +313,7 @@ where
     /// ```
     #[inline(always)]
     #[must_use = "`self` will be dropped if the result is not used"]
-    pub fn into_bytes(self) -> BumpVec<'a, u8, A> {
+    pub fn into_bytes(self) -> BumpVec<u8, A> {
         self.vec
     }
 
@@ -348,7 +348,7 @@ where
     /// safety, as `BumpString`s must be valid UTF-8.
     #[must_use]
     #[inline(always)]
-    pub unsafe fn as_mut_vec(&mut self) -> &mut BumpVec<'a, u8, A> {
+    pub unsafe fn as_mut_vec(&mut self) -> &mut BumpVec<u8, A> {
         &mut self.vec
     }
 
@@ -391,7 +391,7 @@ where
     }
 }
 
-impl<'a, A> BumpString<'a, A>
+impl<'a, A> BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -660,7 +660,7 @@ where
     }
 }
 
-impl<'a, A> fmt::Write for BumpString<'a, A>
+impl<'a, A> fmt::Write for BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -676,7 +676,7 @@ where
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'a, A> fmt::Write for Infallibly<BumpString<'a, A>>
+impl<'a, A> fmt::Write for Infallibly<BumpString<A>>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -693,7 +693,7 @@ where
     }
 }
 
-impl<'a, A> Debug for BumpString<'a, A>
+impl<'a, A> Debug for BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -702,7 +702,7 @@ where
     }
 }
 
-impl<'a, A> Display for BumpString<'a, A>
+impl<'a, A> Display for BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -711,7 +711,7 @@ where
     }
 }
 
-impl<'a, A> Deref for BumpString<'a, A>
+impl<'a, A> Deref for BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -723,7 +723,7 @@ where
     }
 }
 
-impl<'a, A> DerefMut for BumpString<'a, A>
+impl<'a, A> DerefMut for BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -734,7 +734,7 @@ where
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'a, A> core::ops::AddAssign<&str> for BumpString<'a, A>
+impl<'a, A> core::ops::AddAssign<&str> for BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -744,7 +744,7 @@ where
     }
 }
 
-impl<'a, A> AsRef<str> for BumpString<'a, A>
+impl<'a, A> AsRef<str> for BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -754,7 +754,7 @@ where
     }
 }
 
-impl<'a, A> AsMut<str> for BumpString<'a, A>
+impl<'a, A> AsMut<str> for BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -764,7 +764,7 @@ where
     }
 }
 
-impl<'a, A> Borrow<str> for BumpString<'a, A>
+impl<'a, A> Borrow<str> for BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -774,7 +774,7 @@ where
     }
 }
 
-impl<'a, A> BorrowMut<str> for BumpString<'a, A>
+impl<'a, A> BorrowMut<str> for BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -784,7 +784,7 @@ where
     }
 }
 
-impl<'a, A> PartialEq for BumpString<'a, A>
+impl<'a, A> PartialEq for BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -808,7 +808,7 @@ macro_rules! impl_partial_eq {
     ) => {
         $(
             $(#[$attr])*
-            impl<'a, A> PartialEq<$string_like> for BumpString<'a, A>
+            impl<'a, A> PartialEq<$string_like> for BumpString<A>
             where
                 A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
             {
@@ -824,17 +824,17 @@ macro_rules! impl_partial_eq {
             }
 
             $(#[$attr])*
-            impl<'a, A> PartialEq<BumpString<'a, A>> for $string_like
+            impl<'a, A> PartialEq<BumpString<A>> for $string_like
             where
                 A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
             {
                 #[inline]
-                fn eq(&self, other: &BumpString<'a, A>) -> bool {
+                fn eq(&self, other: &BumpString<A>) -> bool {
                     <str as PartialEq>::eq(self, other)
                 }
 
                 #[inline]
-                fn ne(&self, other: &BumpString<'a, A>) -> bool {
+                fn ne(&self, other: &BumpString<A>) -> bool {
                     <str as PartialEq>::ne(self, other)
                 }
             }
@@ -854,9 +854,9 @@ impl_partial_eq! {
     alloc::borrow::Cow<'_, str>,
 }
 
-impl<'a, A> Eq for BumpString<'a, A> where A: BumpAllocator<Lifetime = LifetimeMarker<'a>> {}
+impl<'a, A> Eq for BumpString<A> where A: BumpAllocator<Lifetime = LifetimeMarker<'a>> {}
 
-impl<'a, A> PartialOrd for BumpString<'a, A>
+impl<'a, A> PartialOrd for BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -886,7 +886,7 @@ where
     }
 }
 
-impl<'a, A> Ord for BumpString<'a, A>
+impl<'a, A> Ord for BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -895,7 +895,7 @@ where
     }
 }
 
-impl<'a, A> Hash for BumpString<'a, A>
+impl<'a, A> Hash for BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -906,7 +906,7 @@ where
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'s, 'a, A> Extend<&'s str> for BumpString<'a, A>
+impl<'s, 'a, A> Extend<&'s str> for BumpString<A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -919,12 +919,12 @@ where
 }
 
 #[cfg(feature = "alloc")]
-impl<'a, A> From<BumpString<'a, A>> for alloc::string::String
+impl<'a, A> From<BumpString<A>> for alloc::string::String
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
     #[inline]
-    fn from(value: BumpString<'a, A>) -> Self {
+    fn from(value: BumpString<A>) -> Self {
         value.as_str().into()
     }
 }

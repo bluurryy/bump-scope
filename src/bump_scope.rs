@@ -4,6 +4,7 @@ use crate::{
     bumping::{bump_down, bump_up, BumpUp},
     chunk_size::ChunkSize,
     const_param_assert, doc_align_cant_decrease, down_align_usize, exact_size_iterator_bad_len,
+    fixed_bump_vec::RawFixedBumpVec,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::{nonnull, pointer},
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
@@ -622,10 +623,10 @@ where
 {
     pub(crate) fn generic_grow_vec<B: ErrorBehavior, T>(
         &self,
-        fixed: &mut FixedBumpVec<'a, T>,
+        vec: &mut RawFixedBumpVec<T>,
         additional: usize,
     ) -> Result<(), B> {
-        let required_cap = match fixed.len().checked_add(additional) {
+        let required_cap = match vec.initialized.len().checked_add(additional) {
             Some(required_cap) => required_cap,
             None => return Err(B::capacity_overflow())?,
         };
@@ -634,14 +635,14 @@ where
             return Ok(());
         }
 
-        if fixed.capacity() == 0 {
-            *fixed = self.generic_alloc_fixed_vec(required_cap)?;
+        if vec.capacity == 0 {
+            *vec = self.generic_alloc_fixed_vec(additional)?.into_raw();
             return Ok(());
         }
 
-        let old_ptr = fixed.as_non_null_ptr();
-        let new_cap = fixed.capacity().checked_mul(2).unwrap_or(required_cap).max(required_cap);
-        let old_size = fixed.capacity * T::SIZE; // we already allocated that amount so this can't overflow
+        let old_ptr = vec.as_non_null_ptr();
+        let new_cap = vec.capacity().checked_mul(2).unwrap_or(required_cap).max(required_cap);
+        let old_size = vec.capacity * T::SIZE; // we already allocated that amount so this can't overflow
         let new_size = new_cap.checked_mul(T::SIZE).ok_or_else(|| B::capacity_overflow())?;
 
         unsafe {
@@ -666,12 +667,12 @@ where
                         // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
                         let new_ptr = self.do_alloc_slice_in_another_chunk::<B, T>(new_cap)?.cast();
                         nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
-                        fixed.initialized.set_ptr(new_ptr);
+                        vec.set_ptr(new_ptr);
                     }
                 } else {
                     let new_ptr = self.do_alloc_slice::<B, T>(new_cap)?.cast();
                     nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
-                    fixed.initialized.set_ptr(new_ptr);
+                    vec.set_ptr(new_ptr);
                 }
             } else {
                 let is_last = old_ptr.cast() == self.chunk.get().pos();
@@ -701,22 +702,22 @@ where
                         }
 
                         self.chunk.get().set_pos(new_ptr.cast());
-                        fixed.initialized.set_ptr(new_ptr);
+                        vec.set_ptr(new_ptr);
                     } else {
                         // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
                         let new_ptr = self.do_alloc_slice_in_another_chunk::<B, T>(new_cap)?.cast();
                         nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
-                        fixed.initialized.set_ptr(new_ptr);
+                        vec.set_ptr(new_ptr);
                     }
                 } else {
                     let new_ptr = self.do_alloc_slice::<B, T>(new_cap)?.cast();
                     nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
-                    fixed.initialized.set_ptr(new_ptr);
+                    vec.set_ptr(new_ptr);
                 }
             }
         }
 
-        fixed.capacity = new_cap;
+        vec.capacity = new_cap;
         Ok(())
     }
 

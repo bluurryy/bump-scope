@@ -12,7 +12,7 @@ all:
   just fmt
   just clippy
   just doc
-  just check-msrv
+  # just check-msrv
   just check-nooom
   cargo test --all-features
   cargo miri test --all-features

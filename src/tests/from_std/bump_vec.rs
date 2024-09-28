@@ -65,8 +65,8 @@ fn test_double_drop() {
     let bump_y: Bump = Bump::new();
 
     struct TwoVec<'a, T> {
-        x: BumpVec<'a, T, &'a Bump>,
-        y: BumpVec<'a, T, &'a Bump>,
+        x: BumpVec<T, &'a Bump>,
+        y: BumpVec<T, &'a Bump>,
     }
 
     let (mut count_x, mut count_y) = (0, 0);
@@ -465,7 +465,7 @@ fn test_retain_maybeuninits() {
 
 #[test]
 fn test_dedup() {
-    fn case<'a, A: BumpAllocator<Lifetime = LifetimeMarker<'a>>>(a: BumpVec<'a, i32, A>, b: BumpVec<'a, i32, A>) {
+    fn case<'a, A: BumpAllocator<Lifetime = LifetimeMarker<'a>>>(a: BumpVec<i32, A>, b: BumpVec<i32, A>) {
         let mut v = a;
         v.dedup();
         assert_eq!(v.as_slice(), b.as_slice());
@@ -486,7 +486,7 @@ fn test_dedup() {
 
 #[test]
 fn test_dedup_by_key() {
-    fn case<'a, A: BumpAllocator<Lifetime = LifetimeMarker<'a>>>(a: BumpVec<'a, i32, A>, b: BumpVec<'a, i32, A>) {
+    fn case<'a, A: BumpAllocator<Lifetime = LifetimeMarker<'a>>>(a: BumpVec<i32, A>, b: BumpVec<i32, A>) {
         let mut v = a;
         v.dedup_by_key(|i| *i / 10);
         assert_eq!(v, b);
@@ -1710,7 +1710,7 @@ fn test_stable_pointers() {
 macro_rules! generate_assert_eq_vec_and_prim {
     ($name:ident<$B:ident>($type:ty)) => {
         fn $name<'a, A: PartialEq<$B> + Debug, $B: Debug, Bump: BumpAllocator<Lifetime = LifetimeMarker<'a>>>(
-            a: BumpVec<'a, A, Bump>,
+            a: BumpVec<A, Bump>,
             b: $type,
         ) {
             assert!(a == b);

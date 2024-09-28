@@ -1,8 +1,10 @@
 mod into_iter;
 
 use crate::{
-    bump_allocator::{BumpAllocatorExt as _, LifetimeMarker},
-    error_behavior_generic_methods_allocation_failure, owned_slice,
+    bump_allocator::LifetimeMarker,
+    error_behavior_generic_methods_allocation_failure,
+    fixed_bump_vec::RawFixedBumpVec,
+    owned_slice,
     polyfill::{nonnull, pointer, slice},
     BumpAllocator, BumpBox, ErrorBehavior, FixedBumpVec, NoDrop, SetLenOnDropByPtr, SizedTypeProperties,
 };
@@ -141,64 +143,64 @@ macro_rules! bump_vec {
 ///
 /// assert_eq!(slice, [1, 2, 3]);
 /// ```
-pub struct BumpVec<'a, T, A>
+pub struct BumpVec<T, A>
 where
-    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
+    A: BumpAllocator,
 {
-    pub(crate) fixed: FixedBumpVec<'a, T>,
+    pub(crate) fixed: RawFixedBumpVec<T>,
     pub(crate) bump: A,
 }
 
-impl<'a, T, A> UnwindSafe for BumpVec<'a, T, A>
+impl<T, A> UnwindSafe for BumpVec<T, A>
 where
     T: UnwindSafe,
-    A: UnwindSafe + BumpAllocator<Lifetime = LifetimeMarker<'a>>,
+    A: UnwindSafe + BumpAllocator,
 {
 }
 
-impl<'a, T, A> RefUnwindSafe for BumpVec<'a, T, A>
+impl<T, A> RefUnwindSafe for BumpVec<T, A>
 where
     T: RefUnwindSafe,
-    A: RefUnwindSafe + BumpAllocator<Lifetime = LifetimeMarker<'a>>,
+    A: RefUnwindSafe + BumpAllocator,
 {
 }
 
-impl<'a, T, A> Deref for BumpVec<'a, T, A>
+impl<T, A> Deref for BumpVec<T, A>
 where
-    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
+    A: BumpAllocator,
 {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
-        &self.fixed
+        unsafe { self.fixed.initialized.as_ref() }
     }
 }
 
-impl<'a, T, A> DerefMut for BumpVec<'a, T, A>
+impl<T, A> DerefMut for BumpVec<T, A>
 where
-    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
+    A: BumpAllocator,
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.fixed
+        unsafe { self.fixed.initialized.as_mut() }
     }
 }
 
-impl<'a, T, A> Drop for BumpVec<'a, T, A>
+impl<T, A> Drop for BumpVec<T, A>
 where
-    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
+    A: BumpAllocator,
 {
     fn drop(&mut self) {
-        struct DropGuard<'d, 'a, T, A>(&'d mut BumpVec<'a, T, A>)
+        struct DropGuard<'d, T, A>(&'d mut BumpVec<T, A>)
         where
-            A: BumpAllocator<Lifetime = LifetimeMarker<'a>>;
+            A: BumpAllocator;
 
-        impl<'d, 'a, T, A> Drop for DropGuard<'d, 'a, T, A>
+        impl<'d, T, A> Drop for DropGuard<'d, T, A>
         where
-            A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
+            A: BumpAllocator,
         {
             fn drop(&mut self) {
                 unsafe {
-                    let ptr = self.0.fixed.initialized.ptr.cast();
+                    let ptr = self.0.fixed.initialized.cast();
                     let layout = Layout::from_size_align_unchecked(self.0.fixed.capacity * T::SIZE, T::ALIGN);
                     self.0.bump.deallocate(ptr, layout);
                 }
@@ -208,13 +210,13 @@ where
         let guard = DropGuard(self);
 
         // destroy the remaining elements
-        guard.0.clear();
+        unsafe { guard.0.fixed.as_mut_cooked().clear() };
 
         // now `guard` will be dropped and deallocate the memory
     }
 }
 
-impl<'a, T, A> BumpVec<'a, T, A>
+impl<'a, T, A> BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -233,7 +235,7 @@ where
     #[inline]
     pub fn new_in(bump: A) -> Self {
         Self {
-            fixed: FixedBumpVec::EMPTY,
+            fixed: RawFixedBumpVec::EMPTY,
             bump,
         }
     }
@@ -245,23 +247,15 @@ where
         for fn try_with_capacity_in
         use fn generic_with_capacity_in(capacity: usize, bump: A) -> Self {
             if T::IS_ZST {
-                return Ok(Self {
-                    fixed: FixedBumpVec::EMPTY,
-                    bump,
-                });
+                return Ok(Self::new_in(bump));
             }
 
             if capacity == 0 {
-                return Ok(Self {
-                    fixed: FixedBumpVec::EMPTY,
-                    bump,
-                });
+                return Ok(Self::new_in(bump));
             }
 
-            Ok(Self {
-                fixed: bump.alloc_vec(capacity)?,
-                bump,
-            })
+            let ptr = bump.alloc_vec(capacity)?;
+            Ok(Self { fixed: RawFixedBumpVec::empty(ptr, capacity), bump })
         }
 
         /// Constructs a new `BumpVec<T>` and pushes `value` `count` times.
@@ -298,38 +292,24 @@ where
             let array = ManuallyDrop::new(array);
 
             if T::IS_ZST {
-                return Ok(Self {
-                    fixed: FixedBumpVec { initialized: unsafe { BumpBox::from_raw(nonnull::slice_from_raw_parts(NonNull::dangling(), N)) }, capacity: usize::MAX },
-                    bump,
-                });
+                return Ok(Self::new_in(bump));
             }
 
             if N == 0 {
-                return Ok(Self {
-                    fixed: FixedBumpVec::EMPTY,
-                    bump,
-                });
+                return Ok(Self::new_in(bump));
             }
-
-            let mut fixed = bump.alloc_vec(N)?;
 
             let src = array.as_ptr();
-            let dst = fixed.as_mut_ptr();
+            let dst = bump.alloc_vec(N)?;
 
             unsafe {
-                ptr::copy_nonoverlapping(src, dst, N);
-                fixed.set_len(N);
+                ptr::copy_nonoverlapping(src, dst.as_ptr(), N);
             }
 
-            Ok(Self { fixed, bump })
+            Ok(Self { fixed: RawFixedBumpVec { initialized: nonnull::slice_from_raw_parts(dst, N), capacity: N, marker: PhantomData }, bump })
         }
     }
-}
 
-impl<'a, T, A> BumpVec<'a, T, A>
-where
-    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
-{
     #[doc = include_str!("docs/vec/capacity.md")]
     /// # Examples
     ///
@@ -342,14 +322,14 @@ where
     #[must_use]
     #[inline(always)]
     pub const fn capacity(&self) -> usize {
-        self.fixed.capacity()
+        self.fixed.capacity
     }
 
     #[doc = include_str!("docs/vec/len.md")]
     #[must_use]
     #[inline(always)]
     pub const fn len(&self) -> usize {
-        self.fixed.len()
+        self.fixed.initialized.len()
     }
 
     #[doc = include_str!("docs/vec/is_empty.md")]
@@ -359,10 +339,14 @@ where
         self.len() == 0
     }
 
+    fn as_mut_fixed(&mut self) -> &mut FixedBumpVec<'a, T> {
+        unsafe { self.fixed.as_mut_cooked() }
+    }
+
     #[doc = include_str!("docs/vec/pop.md")]
     #[inline(always)]
     pub fn pop(&mut self) -> Option<T> {
-        self.fixed.pop()
+        self.as_mut_fixed().pop()
     }
 
     #[doc = include_str!("docs/vec/clear.md")]
@@ -376,7 +360,7 @@ where
     /// ```
     #[inline(always)]
     pub fn clear(&mut self) {
-        self.fixed.clear();
+        self.as_mut_fixed().clear();
     }
 
     #[doc = include_str!("docs/vec/truncate.md")]
@@ -420,7 +404,7 @@ where
     /// [`clear`]: BumpVec::clear
     /// [`drain`]: BumpVec::drain
     pub fn truncate(&mut self, len: usize) {
-        self.fixed.truncate(len);
+        self.as_mut_fixed().truncate(len);
     }
 
     #[doc = include_str!("docs/vec/remove.md")]
@@ -434,7 +418,7 @@ where
     /// ```
     #[track_caller]
     pub fn remove(&mut self, index: usize) -> T {
-        self.fixed.remove(index)
+        self.as_mut_fixed().remove(index)
     }
 
     #[doc = include_str!("docs/vec/swap_remove.md")]
@@ -453,7 +437,7 @@ where
     /// ```
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> T {
-        self.fixed.swap_remove(index)
+        self.as_mut_fixed().swap_remove(index)
     }
 
     /// Extracts a slice containing the entire vector.
@@ -462,7 +446,7 @@ where
     #[must_use]
     #[inline(always)]
     pub const fn as_slice(&self) -> &[T] {
-        self.fixed.as_slice()
+        unsafe { self.fixed.as_cooked().as_slice() }
     }
 
     /// Extracts a mutable slice containing the entire vector.
@@ -471,7 +455,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn as_mut_slice(&mut self) -> &mut [T] {
-        self.fixed.as_mut_slice()
+        unsafe { self.fixed.as_mut_cooked().as_mut_slice() }
     }
 
     /// Returns a raw pointer to the slice, or a dangling raw pointer
@@ -479,14 +463,14 @@ where
     #[inline]
     #[must_use]
     pub fn as_ptr(&self) -> *const T {
-        self.fixed.as_ptr()
+        self.as_non_null_ptr().as_ptr()
     }
 
     /// Returns an unsafe mutable pointer to slice, or a dangling
     /// raw pointer valid for zero sized reads.
     #[inline]
     pub fn as_mut_ptr(&mut self) -> *mut T {
-        self.fixed.as_mut_ptr()
+        self.as_non_null_ptr().as_ptr()
     }
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
@@ -494,7 +478,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_ptr(&self) -> NonNull<T> {
-        self.fixed.as_non_null_ptr()
+        nonnull::as_non_null_ptr(self.fixed.initialized)
     }
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
@@ -502,7 +486,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        self.fixed.as_non_null_slice()
+        self.fixed.initialized
     }
 
     /// Appends an element to the back of the collection.
@@ -511,7 +495,7 @@ where
     /// Vector must not be full.
     #[inline(always)]
     pub unsafe fn unchecked_push(&mut self, value: T) {
-        self.fixed.unchecked_push(value);
+        self.as_mut_fixed().unchecked_push(value);
     }
 
     /// Appends an element to the back of the collection.
@@ -520,7 +504,7 @@ where
     /// Vector must not be full.
     #[inline(always)]
     pub unsafe fn unchecked_push_with(&mut self, f: impl FnOnce() -> T) {
-        self.fixed.unchecked_push_with(f);
+        self.as_mut_fixed().unchecked_push_with(f);
     }
 
     /// Forces the length of the vector to `new_len`.
@@ -541,19 +525,14 @@ where
     /// [`capacity`]: BumpVec::capacity
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: usize) {
-        self.fixed.set_len(new_len);
+        self.as_mut_fixed().set_len(new_len);
     }
 
     #[inline]
     pub(crate) unsafe fn inc_len(&mut self, amount: usize) {
-        self.fixed.inc_len(amount);
+        self.as_mut_fixed().inc_len(amount);
     }
-}
 
-impl<'a, T, A> BumpVec<'a, T, A>
-where
-    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
-{
     error_behavior_generic_methods_allocation_failure! {
         /// Appends an element to the back of a collection.
         impl
@@ -1021,7 +1000,7 @@ where
     {
         self.generic_reserve(n)?;
         unsafe {
-            self.fixed.extend_with_unchecked(n, value);
+            self.as_mut_fixed().extend_with_unchecked(n, value);
         }
         Ok(())
     }
@@ -1052,7 +1031,7 @@ where
     #[inline(never)]
     fn generic_grow_cold<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
         let Self { fixed, bump } = self;
-        bump.grow_vec(fixed, additional)
+        unsafe { bump.grow_vec(fixed, additional) }
     }
 
     /// Shrinks the capacity of the vector as much as possible.
@@ -1073,7 +1052,7 @@ where
     /// ```
     pub fn shrink_to_fit(&mut self) {
         let Self { fixed, bump } = self;
-        bump.shrink_vec_to_fit(fixed);
+        unsafe { bump.raw_shrink_vec_to_fit(fixed) };
     }
 
     /// Turns this `BumpVec<T>` into a `FixedBumpVec<T>`.
@@ -1126,7 +1105,10 @@ where
     #[must_use]
     #[inline(always)]
     pub fn from_parts(fixed_vec: FixedBumpVec<'a, T>, bump: A) -> Self {
-        Self { fixed: fixed_vec, bump }
+        Self {
+            fixed: fixed_vec.into_raw(),
+            bump,
+        }
     }
 
     /// Turns this `BumpVec<T>` into its parts.
@@ -1149,7 +1131,7 @@ where
             let this_bump = addr_of_mut!((*this.as_mut_ptr()).bump);
             let bump = this_bump.read();
             let fixed = this_fixed.read();
-            (fixed, bump)
+            (fixed.cook(), bump)
         }
     }
 
@@ -1169,7 +1151,7 @@ where
             self.generic_reserve(additional)?;
 
             let ptr = self.as_mut_ptr();
-            let mut local_len = SetLenOnDropByPtr::new(&mut self.fixed.initialized.ptr);
+            let mut local_len = SetLenOnDropByPtr::new(&mut self.fixed.initialized);
 
             iterator.for_each(move |element| {
                 let dst = ptr.add(local_len.current_len());
@@ -1215,7 +1197,7 @@ where
     where
         F: FnMut(&mut T) -> bool,
     {
-        self.fixed.retain(f)
+        self.as_mut_fixed().retain(f)
     }
 
     /// Removes the specified range from the vector in bulk, returning all
@@ -1255,7 +1237,7 @@ where
     where
         R: RangeBounds<usize>,
     {
-        self.fixed.drain(range)
+        unsafe { self.fixed.as_mut_cooked().drain(range) }
     }
 
     /// Creates an iterator which uses a closure to determine if an element should be removed.
@@ -1315,7 +1297,7 @@ where
     where
         F: FnMut(&mut T) -> bool,
     {
-        self.fixed.extract_if(filter)
+        unsafe { self.fixed.as_mut_cooked().extract_if(filter) }
     }
 
     /// Removes consecutive repeated elements in the vector according to the
@@ -1339,7 +1321,7 @@ where
     where
         T: PartialEq,
     {
-        self.fixed.dedup();
+        self.as_mut_fixed().dedup();
     }
 
     /// Removes all but the first of consecutive elements in the vector that resolve to the same
@@ -1364,7 +1346,7 @@ where
         F: FnMut(&mut T) -> K,
         K: PartialEq,
     {
-        self.fixed.dedup_by_key(key);
+        self.as_mut_fixed().dedup_by_key(key);
     }
 
     /// Removes all but the first of consecutive elements in the vector satisfying a given equality
@@ -1391,7 +1373,7 @@ where
     where
         F: FnMut(&mut T, &mut T) -> bool,
     {
-        self.fixed.dedup_by(same_bucket);
+        self.as_mut_fixed().dedup_by(same_bucket);
     }
 
     /// Returns vector content as a slice of `T`, along with the remaining spare
@@ -1446,7 +1428,7 @@ where
     }
 }
 
-impl<'a, T, const N: usize, A> BumpVec<'a, [T; N], A>
+impl<'a, T, const N: usize, A> BumpVec<[T; N], A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -1473,14 +1455,14 @@ where
     /// assert_eq!(flattened.pop(), Some(6));
     /// ```
     #[must_use]
-    pub fn into_flattened(self) -> BumpVec<'a, T, A> {
+    pub fn into_flattened(self) -> BumpVec<T, A> {
         let (fixed, bump) = self.into_parts();
         let fixed = fixed.into_flattened();
-        BumpVec { fixed, bump }
+        BumpVec::from_parts(fixed, bump)
     }
 }
 
-impl<'a, T: Debug, A> Debug for BumpVec<'a, T, A>
+impl<'a, T: Debug, A> Debug for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -1489,7 +1471,7 @@ where
     }
 }
 
-impl<'a, T, A, I: SliceIndex<[T]>> Index<I> for BumpVec<'a, T, A>
+impl<'a, T, A, I: SliceIndex<[T]>> Index<I> for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -1501,7 +1483,7 @@ where
     }
 }
 
-impl<'a, T, A, I: SliceIndex<[T]>> IndexMut<I> for BumpVec<'a, T, A>
+impl<'a, T, A, I: SliceIndex<[T]>> IndexMut<I> for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -1512,7 +1494,7 @@ where
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'a, T, A> Extend<T> for BumpVec<'a, T, A>
+impl<'a, T, A> Extend<T> for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -1529,7 +1511,7 @@ where
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'a, 't, T, A> Extend<&'t T> for BumpVec<'a, T, A>
+impl<'a, 't, T, A> Extend<&'t T> for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     T: Clone + 't,
@@ -1546,24 +1528,24 @@ where
     }
 }
 
-impl<'a0, 'a1, T, U, A0, A1> PartialEq<BumpVec<'a1, U, A1>> for BumpVec<'a0, T, A0>
+impl<'a0, 'a1, T, U, A0, A1> PartialEq<BumpVec<U, A1>> for BumpVec<T, A0>
 where
     A0: BumpAllocator<Lifetime = LifetimeMarker<'a0>>,
     A1: BumpAllocator<Lifetime = LifetimeMarker<'a1>>,
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &BumpVec<'a1, U, A1>) -> bool {
+    fn eq(&self, other: &BumpVec<U, A1>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &BumpVec<'a1, U, A1>) -> bool {
+    fn ne(&self, other: &BumpVec<U, A1>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'a, T, U, const N: usize, A> PartialEq<[U; N]> for BumpVec<'a, T, A>
+impl<'a, T, U, const N: usize, A> PartialEq<[U; N]> for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     T: PartialEq<U>,
@@ -1579,7 +1561,7 @@ where
     }
 }
 
-impl<'a, T, U, const N: usize, A> PartialEq<&[U; N]> for BumpVec<'a, T, A>
+impl<'a, T, U, const N: usize, A> PartialEq<&[U; N]> for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     T: PartialEq<U>,
@@ -1595,7 +1577,7 @@ where
     }
 }
 
-impl<'a, T, U, const N: usize, A> PartialEq<&mut [U; N]> for BumpVec<'a, T, A>
+impl<'a, T, U, const N: usize, A> PartialEq<&mut [U; N]> for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     T: PartialEq<U>,
@@ -1611,7 +1593,7 @@ where
     }
 }
 
-impl<'a, T, U, A> PartialEq<[U]> for BumpVec<'a, T, A>
+impl<'a, T, U, A> PartialEq<[U]> for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     T: PartialEq<U>,
@@ -1627,7 +1609,7 @@ where
     }
 }
 
-impl<'a, T, U, A> PartialEq<&[U]> for BumpVec<'a, T, A>
+impl<'a, T, U, A> PartialEq<&[U]> for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     T: PartialEq<U>,
@@ -1643,7 +1625,7 @@ where
     }
 }
 
-impl<'a, T, U, A> PartialEq<&mut [U]> for BumpVec<'a, T, A>
+impl<'a, T, U, A> PartialEq<&mut [U]> for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     T: PartialEq<U>,
@@ -1659,55 +1641,55 @@ where
     }
 }
 
-impl<'a, T, U, A> PartialEq<BumpVec<'a, U, A>> for [T]
+impl<'a, T, U, A> PartialEq<BumpVec<U, A>> for [T]
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &BumpVec<'a, U, A>) -> bool {
+    fn eq(&self, other: &BumpVec<U, A>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &BumpVec<'a, U, A>) -> bool {
+    fn ne(&self, other: &BumpVec<U, A>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'a, T, U, A> PartialEq<BumpVec<'a, U, A>> for &[T]
+impl<'a, T, U, A> PartialEq<BumpVec<U, A>> for &[T]
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &BumpVec<'a, U, A>) -> bool {
+    fn eq(&self, other: &BumpVec<U, A>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &BumpVec<'a, U, A>) -> bool {
+    fn ne(&self, other: &BumpVec<U, A>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'a, T, U, A> PartialEq<BumpVec<'a, U, A>> for &mut [T]
+impl<'a, T, U, A> PartialEq<BumpVec<U, A>> for &mut [T]
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &BumpVec<'a, U, A>) -> bool {
+    fn eq(&self, other: &BumpVec<U, A>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &BumpVec<'a, U, A>) -> bool {
+    fn ne(&self, other: &BumpVec<U, A>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'a, T, A> IntoIterator for BumpVec<'a, T, A>
+impl<'a, T, A> IntoIterator for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -1741,7 +1723,7 @@ where
     }
 }
 
-impl<'v, 'a, T, A> IntoIterator for &'v BumpVec<'a, T, A>
+impl<'v, 'a, T, A> IntoIterator for &'v BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -1754,7 +1736,7 @@ where
     }
 }
 
-impl<'v, 'a, T, A> IntoIterator for &'v mut BumpVec<'a, T, A>
+impl<'v, 'a, T, A> IntoIterator for &'v mut BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -1767,7 +1749,7 @@ where
     }
 }
 
-impl<'a, T, A> AsRef<[T]> for BumpVec<'a, T, A>
+impl<'a, T, A> AsRef<[T]> for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -1777,7 +1759,7 @@ where
     }
 }
 
-impl<'a, T, A> AsMut<[T]> for BumpVec<'a, T, A>
+impl<'a, T, A> AsMut<[T]> for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -1787,7 +1769,7 @@ where
     }
 }
 
-impl<'a, T, A> Borrow<[T]> for BumpVec<'a, T, A>
+impl<'a, T, A> Borrow<[T]> for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -1797,7 +1779,7 @@ where
     }
 }
 
-impl<'a, T, A> BorrowMut<[T]> for BumpVec<'a, T, A>
+impl<'a, T, A> BorrowMut<[T]> for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -1807,7 +1789,7 @@ where
     }
 }
 
-impl<'a, T: Hash, A> Hash for BumpVec<'a, T, A>
+impl<'a, T: Hash, A> Hash for BumpVec<T, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {
@@ -1819,7 +1801,7 @@ where
 
 /// Returns [`ErrorKind::OutOfMemory`](std::io::ErrorKind::OutOfMemory) when allocations fail.
 #[cfg(feature = "std")]
-impl<'a, A> std::io::Write for BumpVec<'a, u8, A>
+impl<'a, A> std::io::Write for BumpVec<u8, A>
 where
     A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
 {

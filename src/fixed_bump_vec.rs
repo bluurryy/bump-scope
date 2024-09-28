@@ -11,6 +11,7 @@ use core::{
     fmt::Debug,
     hash::Hash,
     iter,
+    marker::PhantomData,
     mem::{ManuallyDrop, MaybeUninit},
     ops::{Deref, DerefMut, Index, IndexMut, RangeBounds},
     ptr::{self, NonNull},
@@ -39,6 +40,7 @@ use core::{
 /// [`alloc_fixed_vec`]: crate::Bump::alloc_fixed_vec
 /// [`from_uninit`]: FixedBumpVec::from_uninit
 /// [`from_init`]: FixedBumpVec::from_init
+#[repr(C)]
 pub struct FixedBumpVec<'a, T> {
     pub(crate) initialized: BumpBox<'a, [T]>,
     pub(crate) capacity: usize,
@@ -120,7 +122,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Turns this `FixedBumpVec<T>` into a `BumpVec<T>`.
     #[must_use]
     #[inline(always)]
-    pub fn into_vec<A>(self, bump: A) -> BumpVec<'a, T, A>
+    pub fn into_vec<A>(self, bump: A) -> BumpVec<T, A>
     where
         A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     {
@@ -1635,3 +1637,65 @@ impl std::io::Write for FixedBumpVec<'_, u8> {
 }
 
 impl<T> NoDrop for FixedBumpVec<'_, T> where T: NoDrop {}
+
+impl<T> FixedBumpVec<'_, T> {
+    pub(crate) fn into_raw(self) -> RawFixedBumpVec<T> {
+        unsafe { core::mem::transmute(self) }
+    }
+}
+
+#[repr(C)]
+pub struct RawFixedBumpVec<T> {
+    pub(crate) initialized: NonNull<[T]>,
+    pub(crate) capacity: usize,
+
+    /// Marks ownership over T. (<https://doc.rust-lang.org/nomicon/phantom-data.html#generic-parameters-and-drop-checking>)
+    pub(crate) marker: PhantomData<T>,
+}
+
+impl<T> RawFixedBumpVec<T> {
+    /// Empty fixed vector.
+    pub const EMPTY: Self = Self {
+        initialized: nonnull::slice_from_raw_parts(NonNull::dangling(), 0),
+        capacity: if T::IS_ZST { usize::MAX } else { 0 },
+        marker: PhantomData,
+    };
+
+    pub(crate) fn empty(ptr: NonNull<T>, capacity: usize) -> Self {
+        Self {
+            initialized: nonnull::slice_from_raw_parts(ptr, 0),
+            capacity,
+            marker: PhantomData,
+        }
+    }
+
+    pub(crate) const fn capacity(&self) -> usize {
+        self.capacity
+    }
+
+    pub(crate) const fn as_non_null_ptr(&self) -> NonNull<T> {
+        nonnull::as_non_null_ptr(self.initialized)
+    }
+
+    pub(crate) fn set_ptr(&mut self, ptr: NonNull<T>) {
+        nonnull::set_ptr(&mut self.initialized, ptr);
+    }
+
+    pub(crate) unsafe fn cook<'a>(self) -> FixedBumpVec<'a, T> {
+        let Self {
+            initialized, capacity, ..
+        } = self;
+        FixedBumpVec {
+            initialized: BumpBox::from_raw(initialized),
+            capacity,
+        }
+    }
+
+    pub(crate) const unsafe fn as_cooked<'a>(&self) -> &FixedBumpVec<'a, T> {
+        &*(self as *const RawFixedBumpVec<T>).cast::<FixedBumpVec<'_, T>>()
+    }
+
+    pub(crate) unsafe fn as_mut_cooked<'a>(&mut self) -> &mut FixedBumpVec<'a, T> {
+        &mut *(self as *mut RawFixedBumpVec<T>).cast::<FixedBumpVec<'_, T>>()
+    }
+}

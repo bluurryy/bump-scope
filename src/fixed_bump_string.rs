@@ -480,7 +480,7 @@ impl<'a> FixedBumpString<'a> {
     /// Turns this `FixedBumpString<T>` into a `BumpVec<T>`.
     #[must_use]
     #[inline(always)]
-    pub fn into_string<A>(self, bump: A) -> BumpString<'a, A>
+    pub fn into_string<A>(self, bump: A) -> BumpString<A>
     where
         A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
     {

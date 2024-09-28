@@ -1,8 +1,11 @@
+#[cfg(not(no_global_oom_handling))]
+use crate::{bump_allocator::BumpAllocatorExt, infallible, FixedBumpVec};
+
 use crate::{
-    bump_allocator::{BumpAllocatorExt, LifetimeMarker},
-    infallible,
+    bump_allocator::LifetimeMarker,
+    fixed_bump_vec::RawFixedBumpVec,
     polyfill::{nonnull, pointer},
-    BumpAllocator, BumpBox, FixedBumpVec, SizedTypeProperties,
+    BumpAllocator, SizedTypeProperties,
 };
 use core::{
     fmt::Debug,
@@ -228,10 +231,7 @@ where
                     let bump = this_bump.read();
 
                     let _ = BumpVec {
-                        fixed: FixedBumpVec {
-                            initialized: BumpBox::from_raw(nonnull::slice_from_raw_parts(buf, 0)),
-                            capacity,
-                        },
+                        fixed: RawFixedBumpVec::empty(buf, capacity),
                         bump,
                     };
                 }

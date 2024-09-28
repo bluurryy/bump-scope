@@ -7,12 +7,11 @@
     clippy::missing_safety_doc
 )]
 
-use core::mem::transmute;
-use std::marker::PhantomData;
+use core::{marker::PhantomData, mem::transmute, ptr::NonNull};
 
 use crate::{
-    error_behavior::ErrorBehavior, BaseAllocator, Bump, BumpBox, BumpScope, FixedBumpVec, MinimumAlignment,
-    SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    error_behavior::ErrorBehavior, fixed_bump_vec::RawFixedBumpVec, BaseAllocator, Bump, BumpBox, BumpScope,
+    MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 use allocator_api2::alloc::Allocator;
 
@@ -26,40 +25,22 @@ use allocator_api2::alloc::Allocator;
 pub unsafe trait BumpAllocator: Allocator {
     type Lifetime;
 
-    unsafe fn raw_alloc_vec<'x, B: ErrorBehavior, T>(&self, capacity: usize) -> Result<FixedBumpVec<'x, T>, B>;
-    unsafe fn raw_grow_vec<'x, B: ErrorBehavior, T>(
-        &self,
-        fixed: &mut FixedBumpVec<'x, T>,
-        additional: usize,
-    ) -> Result<(), B>;
-    unsafe fn raw_shrink_vec_to_fit<'x, T>(&self, fixed: &mut FixedBumpVec<'x, T>);
+    fn alloc_vec<B: ErrorBehavior, T>(&self, capacity: usize) -> Result<NonNull<T>, B>;
+
+    unsafe fn grow_vec<B: ErrorBehavior, T>(&self, vec: &mut RawFixedBumpVec<T>, additional: usize) -> Result<(), B>;
+    unsafe fn raw_shrink_vec_to_fit<T>(&self, fixed: &mut RawFixedBumpVec<T>);
     unsafe fn raw_clone_slice<'x, B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<BumpBox<'x, [T]>, B>;
 }
 
-pub(crate) unsafe trait BumpAllocatorExt<'a>: Allocator {
-    fn alloc_vec<B: ErrorBehavior, T>(&self, capacity: usize) -> Result<FixedBumpVec<'a, T>, B>;
-    fn grow_vec<B: ErrorBehavior, T>(&self, fixed: &mut FixedBumpVec<'a, T>, additional: usize) -> Result<(), B>;
-    fn shrink_vec_to_fit<T>(&self, fixed: &mut FixedBumpVec<'a, T>);
-    fn clone_slice<B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<BumpBox<'a, [T]>, B>;
-}
-
-unsafe impl<'a, A> BumpAllocatorExt<'a> for A
-where
-    A: BumpAllocator<Lifetime = LifetimeMarker<'a>>,
-{
-    fn alloc_vec<B: ErrorBehavior, T>(&self, capacity: usize) -> Result<FixedBumpVec<'a, T>, B> {
-        unsafe { self.raw_alloc_vec(capacity) }
-    }
-    fn grow_vec<B: ErrorBehavior, T>(&self, fixed: &mut FixedBumpVec<'a, T>, additional: usize) -> Result<(), B> {
-        unsafe { self.raw_grow_vec(fixed, additional) }
-    }
-    fn shrink_vec_to_fit<T>(&self, fixed: &mut FixedBumpVec<'a, T>) {
-        unsafe { self.raw_shrink_vec_to_fit(fixed) }
-    }
+#[cfg(not(no_global_oom_handling))]
+pub(crate) unsafe trait BumpAllocatorExt<'a>: BumpAllocator<Lifetime = LifetimeMarker<'a>> {
     fn clone_slice<B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<BumpBox<'a, [T]>, B> {
         unsafe { self.raw_clone_slice(slice) }
     }
 }
+
+#[cfg(not(no_global_oom_handling))]
+unsafe impl<'a, A> BumpAllocatorExt<'a> for A where A: BumpAllocator<Lifetime = LifetimeMarker<'a>> {}
 
 pub struct LifetimeMarker<'a>(PhantomData<&'a ()>);
 
@@ -69,19 +50,15 @@ where
 {
     type Lifetime = LifetimeMarker<'a>;
 
-    unsafe fn raw_alloc_vec<'x, B: ErrorBehavior, T>(&self, capacity: usize) -> Result<FixedBumpVec<'x, T>, B> {
-        A::raw_alloc_vec(self, capacity)
+    fn alloc_vec<B: ErrorBehavior, T>(&self, capacity: usize) -> Result<NonNull<T>, B> {
+        A::alloc_vec(self, capacity)
     }
 
-    unsafe fn raw_grow_vec<'x, B: ErrorBehavior, T>(
-        &self,
-        fixed: &mut FixedBumpVec<'x, T>,
-        additional: usize,
-    ) -> Result<(), B> {
-        A::raw_grow_vec(self, fixed, additional)
+    unsafe fn grow_vec<B: ErrorBehavior, T>(&self, vec: &mut RawFixedBumpVec<T>, additional: usize) -> Result<(), B> {
+        A::grow_vec(self, vec, additional)
     }
 
-    unsafe fn raw_shrink_vec_to_fit<'x, T>(&self, fixed: &mut FixedBumpVec<'x, T>) {
+    unsafe fn raw_shrink_vec_to_fit<T>(&self, fixed: &mut RawFixedBumpVec<T>) {
         A::raw_shrink_vec_to_fit(self, fixed);
     }
 
@@ -98,19 +75,15 @@ where
 {
     type Lifetime = LifetimeMarker<'a>;
 
-    unsafe fn raw_alloc_vec<'x, B: ErrorBehavior, T>(&self, capacity: usize) -> Result<FixedBumpVec<'x, T>, B> {
-        self.as_scope().raw_alloc_vec(capacity)
+    fn alloc_vec<B: ErrorBehavior, T>(&self, capacity: usize) -> Result<NonNull<T>, B> {
+        self.as_scope().alloc_vec(capacity)
     }
 
-    unsafe fn raw_grow_vec<'x, B: ErrorBehavior, T>(
-        &self,
-        fixed: &mut FixedBumpVec<'x, T>,
-        additional: usize,
-    ) -> Result<(), B> {
-        self.as_scope().raw_grow_vec(fixed, additional)
+    unsafe fn grow_vec<B: ErrorBehavior, T>(&self, vec: &mut RawFixedBumpVec<T>, additional: usize) -> Result<(), B> {
+        self.as_scope().grow_vec(vec, additional)
     }
 
-    unsafe fn raw_shrink_vec_to_fit<'x, T>(&self, fixed: &mut FixedBumpVec<'x, T>) {
+    unsafe fn raw_shrink_vec_to_fit<T>(&self, fixed: &mut RawFixedBumpVec<T>) {
         self.as_scope().raw_shrink_vec_to_fit(fixed);
     }
 
@@ -127,24 +100,16 @@ where
 {
     type Lifetime = LifetimeMarker<'a>;
 
-    unsafe fn raw_alloc_vec<'x, B: ErrorBehavior, T>(&self, capacity: usize) -> Result<FixedBumpVec<'x, T>, B> {
-        self.generic_alloc_fixed_vec(capacity)
-            .map(|fixed| unsafe { transmute::<FixedBumpVec<'a, T>, FixedBumpVec<'x, T>>(fixed) })
+    fn alloc_vec<B: ErrorBehavior, T>(&self, capacity: usize) -> Result<NonNull<T>, B> {
+        Ok(self.generic_alloc_uninit_slice::<B, T>(capacity)?.into_raw().cast())
     }
 
-    unsafe fn raw_grow_vec<'x, B: ErrorBehavior, T>(
-        &self,
-        fixed: &mut FixedBumpVec<'x, T>,
-        additional: usize,
-    ) -> Result<(), B> {
-        self.generic_grow_vec(
-            transmute::<&mut FixedBumpVec<'x, T>, &mut FixedBumpVec<'a, T>>(fixed),
-            additional,
-        )
+    unsafe fn grow_vec<B: ErrorBehavior, T>(&self, vec: &mut RawFixedBumpVec<T>, additional: usize) -> Result<(), B> {
+        self.generic_grow_vec(vec, additional)
     }
 
-    unsafe fn raw_shrink_vec_to_fit<'x, T>(&self, fixed: &mut FixedBumpVec<'x, T>) {
-        self.generic_shrink_vec_to_fit(transmute::<&mut FixedBumpVec<'x, T>, &mut FixedBumpVec<'a, T>>(fixed));
+    unsafe fn raw_shrink_vec_to_fit<T>(&self, fixed: &mut RawFixedBumpVec<T>) {
+        self.generic_shrink_vec_to_fit(fixed.as_mut_cooked());
     }
 
     unsafe fn raw_clone_slice<'x, B: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<BumpBox<'x, [T]>, B> {
@@ -159,19 +124,15 @@ where
 {
     type Lifetime = LifetimeMarker<'a>;
 
-    unsafe fn raw_alloc_vec<'x, B: ErrorBehavior, T>(&self, capacity: usize) -> Result<FixedBumpVec<'x, T>, B> {
-        A::raw_alloc_vec(&self.0, capacity)
+    fn alloc_vec<B: ErrorBehavior, T>(&self, capacity: usize) -> Result<NonNull<T>, B> {
+        A::alloc_vec(&self.0, capacity)
     }
 
-    unsafe fn raw_grow_vec<'x, B: ErrorBehavior, T>(
-        &self,
-        fixed: &mut FixedBumpVec<'x, T>,
-        additional: usize,
-    ) -> Result<(), B> {
-        A::raw_grow_vec(&self.0, fixed, additional)
+    unsafe fn grow_vec<B: ErrorBehavior, T>(&self, vec: &mut RawFixedBumpVec<T>, additional: usize) -> Result<(), B> {
+        A::grow_vec(&self.0, vec, additional)
     }
 
-    unsafe fn raw_shrink_vec_to_fit<'x, T>(&self, fixed: &mut FixedBumpVec<'x, T>) {
+    unsafe fn raw_shrink_vec_to_fit<T>(&self, fixed: &mut RawFixedBumpVec<T>) {
         A::raw_shrink_vec_to_fit(&self.0, fixed);
     }
 
@@ -186,19 +147,15 @@ where
 {
     type Lifetime = LifetimeMarker<'a>;
 
-    unsafe fn raw_alloc_vec<'x, B: ErrorBehavior, T>(&self, capacity: usize) -> Result<FixedBumpVec<'x, T>, B> {
-        A::raw_alloc_vec(&self.0, capacity)
+    fn alloc_vec<B: ErrorBehavior, T>(&self, capacity: usize) -> Result<NonNull<T>, B> {
+        A::alloc_vec(&self.0, capacity)
     }
 
-    unsafe fn raw_grow_vec<'x, B: ErrorBehavior, T>(
-        &self,
-        fixed: &mut FixedBumpVec<'x, T>,
-        additional: usize,
-    ) -> Result<(), B> {
-        A::raw_grow_vec(&self.0, fixed, additional)
+    unsafe fn grow_vec<'x, B: ErrorBehavior, T>(&self, vec: &mut RawFixedBumpVec<T>, additional: usize) -> Result<(), B> {
+        A::grow_vec(&self.0, vec, additional)
     }
 
-    unsafe fn raw_shrink_vec_to_fit<'x, T>(&self, fixed: &mut FixedBumpVec<'x, T>) {
+    unsafe fn raw_shrink_vec_to_fit<T>(&self, fixed: &mut RawFixedBumpVec<T>) {
         A::raw_shrink_vec_to_fit(&self.0, fixed);
     }
 

@@ -226,8 +226,14 @@ pub(crate) fn is_aligned_to(ptr: NonNull<u8>, align: usize) -> bool {
 }
 
 #[inline(always)]
-pub(crate) fn as_non_null_ptr<T>(ptr: NonNull<[T]>) -> NonNull<T> {
+pub(crate) const fn as_non_null_ptr<T>(ptr: NonNull<[T]>) -> NonNull<T> {
     ptr.cast()
+}
+
+#[inline(always)]
+pub(crate) fn set_ptr<T>(ptr: &mut NonNull<[T]>, new_ptr: NonNull<T>) {
+    let len = ptr.len();
+    *ptr = slice_from_raw_parts(new_ptr, len);
 }
 
 #[inline(always)]
