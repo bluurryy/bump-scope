@@ -263,12 +263,14 @@ impl<'a, T> FixedBumpVec<'a, T> {
 
     /// Extracts a boxed slice containing the entire vector.
     #[must_use]
+    #[deprecated = "not useful"]
     pub const fn as_boxed_slice(&self) -> &BumpBox<[T]> {
         &self.initialized
     }
 
     /// Extracts a mutable boxed slice containing the entire vector.
     #[must_use]
+    #[deprecated = "unsound if the pointer is changed"]
     pub fn as_mut_boxed_slice(&mut self) -> &mut BumpBox<'a, [T]> {
         &mut self.initialized
     }
