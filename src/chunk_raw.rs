@@ -357,7 +357,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     #[inline(always)]
     pub(crate) unsafe fn set_pos_addr(self, addr: usize) {
         let ptr = self.with_addr(addr);
-        unsafe { self.header.as_ref().pos.set(ptr) }
+        self.header.as_ref().pos.set(ptr);
     }
 
     /// # Safety
