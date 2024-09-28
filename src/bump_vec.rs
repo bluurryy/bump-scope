@@ -41,7 +41,7 @@ pub use into_iter::IntoIter;
 /// ```
 /// # use bump_scope::{ bump_vec, Bump, BumpVec };
 /// # let bump: Bump = Bump::new();
-/// let vec: BumpVec<i32> = bump_vec![in bump];
+/// let vec: BumpVec<i32, _> = bump_vec![in bump];
 /// assert!(vec.is_empty());
 /// ```
 ///
@@ -230,7 +230,7 @@ where
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::new();
     /// # #[allow(unused_mut)]
-    /// let mut vec = BumpVec::<i32>::new_in(&bump);
+    /// let mut vec = BumpVec::<i32, _>::new_in(&bump);
     /// ```
     #[inline]
     pub fn new_in(bump: A) -> Self {
@@ -292,7 +292,7 @@ where
             let array = ManuallyDrop::new(array);
 
             if T::IS_ZST {
-                return Ok(Self::new_in(bump));
+                return Ok(Self { fixed: RawFixedBumpVec { initialized: nonnull::slice_from_raw_parts(NonNull::<T>::dangling(), N), capacity: usize::MAX, marker: PhantomData }, bump });
             }
 
             if N == 0 {
@@ -316,7 +316,7 @@ where
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::new();
-    /// let vec = BumpVec::<i32>::with_capacity_in(2048, &bump);
+    /// let vec = BumpVec::<i32, _>::with_capacity_in(2048, &bump);
     /// assert!(vec.capacity() >= 2048);
     /// ```
     #[must_use]
@@ -1700,6 +1700,7 @@ where
     fn into_iter(self) -> Self::IntoIter {
         unsafe {
             let (fixed, allocator) = self.into_parts();
+            let fixed = ManuallyDrop::new(fixed);
 
             let begin = fixed.as_non_null_ptr();
 

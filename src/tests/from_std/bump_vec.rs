@@ -27,12 +27,14 @@ use std::{
     vec::{Drain, IntoIter},
 };
 
+#[derive(Debug)]
 struct DropCounter<'a> {
     count: &'a mut u32,
 }
 
 impl Drop for DropCounter<'_> {
     fn drop(&mut self) {
+        eprintln!("dropping #{}", self.count);
         *self.count += 1;
     }
 }
