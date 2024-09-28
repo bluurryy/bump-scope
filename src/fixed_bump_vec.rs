@@ -112,6 +112,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
 
     /// Returns the layout of the vector.
     #[must_use]
+    #[deprecated = "not useful enough"]
     pub const fn layout(&self) -> Layout {
         // We have an allocated slice. So the layout is valid.
         unsafe { Layout::from_size_align_unchecked(T::SIZE * self.len(), T::ALIGN) }
