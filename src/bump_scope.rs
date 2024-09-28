@@ -732,7 +732,7 @@ where
 
         let mut string = BumpString::new_in(self);
 
-        let mut string = if B::IS_FALLIBLE {
+        let string = if B::IS_FALLIBLE {
             if fmt::Write::write_fmt(&mut string, args).is_err() {
                 // Either the allocation failed or the formatting trait
                 // implementation returned an error.
@@ -760,8 +760,6 @@ where
                 unreachable!()
             }
         };
-
-        string.shrink_to_fit();
 
         Ok(string.into_boxed_str())
     }
@@ -819,8 +817,6 @@ where
         for value in iter {
             vec.generic_push(value)?;
         }
-
-        vec.shrink_to_fit();
 
         Ok(vec.into_boxed_slice())
     }

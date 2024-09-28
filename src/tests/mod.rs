@@ -997,7 +997,7 @@ fn deallocate_in_ltr<const UP: bool>() {
     if UP {
         assert_eq!(bump.stats().allocated(), 3 * 4);
     } else {
-        assert_eq!(bump.stats().allocated(), 0 * 4);
+        assert_eq!(bump.stats().allocated(), 0);
     }
 }
 
@@ -1021,7 +1021,7 @@ fn deallocate_in_rtl<const UP: bool>() {
     lhs.deallocate_in(&bump);
 
     if UP {
-        assert_eq!(bump.stats().allocated(), 0 * 4);
+        assert_eq!(bump.stats().allocated(), 0);
     } else {
         assert_eq!(bump.stats().allocated(), 3 * 4);
     }

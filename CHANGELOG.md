@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **improved:** removed a duplicate call to `shrink_to_fit` in `alloc_iter` and `alloc_fmt`
+
 ## 0.9.1 (2024-09-23)
 - **improved:** removed a branch when doing fallible sized allocations like `try_alloc_*` ([#34](https://github.com/bluurryy/bump-scope/pull/34))
 
