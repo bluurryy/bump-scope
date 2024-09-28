@@ -1,8 +1,6 @@
 inspect_asm::alloc_fmt::down_a:
 	push r15
 	push r14
-	push r13
-	push r12
 	push rbx
 	sub rsp, 112
 	mov qword ptr [rsp + 32], rsi
@@ -27,22 +25,17 @@ inspect_asm::alloc_fmt::down_a:
 	lea rdx, [rsp + 64]
 	call qword ptr [rip + core::fmt::write@GOTPCREL]
 	test al, al
-	jne .LBB0_8
+	jne .LBB0_4
 	mov rsi, qword ptr [rsp]
 	mov rbx, qword ptr [rsp + 8]
-	mov rax, qword ptr [rsp + 16]
-	mov r12, qword ptr [rsp + 24]
-	mov rcx, qword ptr [r12]
-	mov rcx, qword ptr [rcx]
-	cmp rsi, rcx
-	je .LBB0_1
+	mov r15, qword ptr [rsp + 24]
+	mov rax, qword ptr [r15]
+	cmp rsi, qword ptr [rax]
+	je .LBB0_0
 	mov r14, rsi
-	cmp r14, rcx
-	je .LBB0_4
+	jmp .LBB0_3
 .LBB0_0:
-	mov r15, r14
-	jmp .LBB0_7
-.LBB0_1:
+	mov rax, qword ptr [rsp + 16]
 	add rax, rsi
 	xor r14d, r14d
 	sub rax, rbx
@@ -52,64 +45,35 @@ inspect_asm::alloc_fmt::down_a:
 	mov rdi, r14
 	mov rdx, rbx
 	cmp rax, r14
-	jbe .LBB0_2
+	jbe .LBB0_1
 	call qword ptr [rip + memmove@GOTPCREL]
-	jmp .LBB0_3
+	jmp .LBB0_2
+.LBB0_1:
+	call qword ptr [rip + memcpy@GOTPCREL]
 .LBB0_2:
-	call qword ptr [rip + memcpy@GOTPCREL]
-.LBB0_3:
-	mov rax, qword ptr [r12]
+	mov rax, qword ptr [r15]
 	mov qword ptr [rax], r14
-	mov rax, qword ptr [r12]
-	mov rcx, qword ptr [rax]
-	mov rax, rbx
-	cmp r14, rcx
-	jne .LBB0_0
-.LBB0_4:
-	add rax, rcx
-	xor r13d, r13d
-	sub rax, rbx
-	cmovae r13, rax
-	and r13, -4
-	lea rax, [rbx + rcx]
-	mov r15, r13
-	sub r15, rcx
-	add r15, r14
-	mov rdi, r15
-	mov rsi, r14
-	mov rdx, rbx
-	cmp rax, r13
-	jbe .LBB0_5
-	call qword ptr [rip + memmove@GOTPCREL]
-	jmp .LBB0_6
-.LBB0_5:
-	call qword ptr [rip + memcpy@GOTPCREL]
-.LBB0_6:
-	mov rax, qword ptr [r12]
-	mov qword ptr [rax], r13
-.LBB0_7:
-	mov rax, r15
+.LBB0_3:
+	mov rax, r14
 	mov rdx, rbx
 	add rsp, 112
 	pop rbx
-	pop r12
-	pop r13
 	pop r14
 	pop r15
 	ret
-.LBB0_8:
+.LBB0_4:
 	call qword ptr [rip + bump_scope::private::format_trait_error@GOTPCREL]
 	ud2
 	mov rdx, qword ptr [rsp]
 	mov rcx, qword ptr [rsp + 24]
 	mov rcx, qword ptr [rcx]
 	cmp qword ptr [rcx], rdx
-	jne .LBB0_9
+	jne .LBB0_5
 	mov rsi, qword ptr [rsp + 16]
 	add rdx, rsi
 	add rdx, 3
 	and rdx, -4
 	mov qword ptr [rcx], rdx
-.LBB0_9:
+.LBB0_5:
 	mov rdi, rax
 	call _Unwind_Resume@PLT
