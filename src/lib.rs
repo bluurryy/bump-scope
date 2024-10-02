@@ -292,6 +292,8 @@ mod polyfill;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
 mod stats;
+#[cfg(feature = "alloc")]
+mod vec_ext;
 mod without_dealloc;
 
 pub use allocator_api2;
@@ -333,6 +335,8 @@ use private::{capacity_overflow, format_trait_error, Infallibly};
 use set_len_on_drop::SetLenOnDrop;
 use set_len_on_drop_by_ptr::SetLenOnDropByPtr;
 pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, GuaranteedAllocatedStats, Stats};
+#[cfg(feature = "alloc")]
+pub use vec_ext::VecExt;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
 // This must be kept in sync with ChunkHeaders `repr(align(16))`.
