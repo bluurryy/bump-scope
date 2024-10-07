@@ -6,7 +6,6 @@ use crate::{
     SupportedMinimumAlignment,
 };
 use core::{
-    alloc::Layout,
     borrow::{Borrow, BorrowMut},
     fmt::Debug,
     hash::Hash,
@@ -108,14 +107,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
     #[inline(always)]
     pub const fn is_full(&self) -> bool {
         self.len() >= self.capacity
-    }
-
-    /// Returns the layout of the vector.
-    #[must_use]
-    #[deprecated = "not useful enough"]
-    pub const fn layout(&self) -> Layout {
-        // We have an allocated slice. So the layout is valid.
-        unsafe { Layout::from_size_align_unchecked(T::SIZE * self.len(), T::ALIGN) }
     }
 
     /// Turns this `FixedBumpVec<T>` into a `BumpVec<T>`.
@@ -260,20 +251,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
             self.dec_len(1);
             value
         }
-    }
-
-    /// Extracts a boxed slice containing the entire vector.
-    #[must_use]
-    #[deprecated = "not useful"]
-    pub const fn as_boxed_slice(&self) -> &BumpBox<[T]> {
-        &self.initialized
-    }
-
-    /// Extracts a mutable boxed slice containing the entire vector.
-    #[must_use]
-    #[deprecated = "unsound if the pointer is changed"]
-    pub fn as_mut_boxed_slice(&mut self) -> &mut BumpBox<'a, [T]> {
-        &mut self.initialized
     }
 
     /// Extracts a slice containing the entire vector.
