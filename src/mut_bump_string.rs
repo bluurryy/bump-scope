@@ -441,11 +441,11 @@ where
         do panics
         /// Panics if `idx` is larger than the `String`'s length, or if it does not
         /// lie on a [`char`] boundary.
+        impl
         do examples
         /// ```
         /// # use bump_scope::{ Bump, MutBumpString };
         /// # let mut bump: Bump = Bump::new();
-        /// #
         /// let mut s = MutBumpString::with_capacity_in(3, &mut bump);
         ///
         /// s.insert(0, 'f');
@@ -454,8 +454,21 @@ where
         ///
         /// assert_eq!("foo", s);
         /// ```
-        impl
         for fn insert
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let mut s = MutBumpString::try_with_capacity_in(3, &mut bump)?;
+        ///
+        /// s.try_insert(0, 'f')?;
+        /// s.try_insert(1, 'o')?;
+        /// s.try_insert(2, 'o')?;
+        ///
+        /// assert_eq!("foo", s);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_insert
         use fn generic_insert(&mut self, idx: usize, ch: char) {
             assert!(self.is_char_boundary(idx));
@@ -474,19 +487,30 @@ where
         do panics
         /// Panics if `idx` is larger than the `MutBumpString`'s length, or if it does not
         /// lie on a [`char`] boundary.
+        impl
         do examples
         /// ```
         /// # use bump_scope::{ Bump, MutBumpString };
         /// # let mut bump: Bump = Bump::new();
-        /// #
         /// let mut s = MutBumpString::from_str_in("bar", &mut bump);
         ///
         /// s.insert_str(0, "foo");
         ///
         /// assert_eq!("foobar", s);
         /// ```
-        impl
         for fn insert_str
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let mut s = MutBumpString::try_from_str_in("bar", &mut bump)?;
+        ///
+        /// s.try_insert_str(0, "foo")?;
+        ///
+        /// assert_eq!("foobar", s);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_insert_str
         use fn generic_insert_str(&mut self, idx: usize, string: &str) {
             assert!(self.is_char_boundary(idx));
@@ -500,11 +524,11 @@ where
         do panics
         /// Panics if the starting point or end point do not lie on a [`char`]
         /// boundary, or if they're out of bounds.
+        impl
         do examples
         /// ```
         /// # use bump_scope::{ Bump, MutBumpString };
         /// # let mut bump: Bump = Bump::new();
-        /// #
         /// let mut string = MutBumpString::from_str_in("abcde", &mut bump);
         ///
         /// string.extend_from_within(2..);
@@ -516,8 +540,24 @@ where
         /// string.extend_from_within(4..8);
         /// assert_eq!(string, "abcdecdeabecde");
         /// ```
-        impl
         for fn extend_from_within
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let mut string = MutBumpString::try_from_str_in("abcde", &mut bump)?;
+        ///
+        /// string.try_extend_from_within(2..)?;
+        /// assert_eq!(string, "abcdecde");
+        ///
+        /// string.try_extend_from_within(..2)?;
+        /// assert_eq!(string, "abcdecdeab");
+        ///
+        /// string.try_extend_from_within(4..8)?;
+        /// assert_eq!(string, "abcdecdeabecde");
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_extend_from_within
         use fn generic_extend_from_within<{R}>(&mut self, src: R)
         where {
@@ -542,6 +582,16 @@ where
         /// assert_eq!(string, "What?\0\0\0");
         /// ```
         for fn extend_zeroed
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::new();
+        /// let mut string = MutBumpString::try_from_str_in("What?", &mut bump)?;
+        /// string.try_extend_zeroed(3)?;
+        /// assert_eq!(string, "What?\0\0\0");
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_extend_zeroed
         use fn generic_extend_zeroed(&mut self, additional: usize) {
             self.generic_reserve(additional)?;

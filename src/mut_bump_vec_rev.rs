@@ -469,7 +469,6 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// ```
     /// # use bump_scope::{ Bump, MutBumpVecRev };
     /// # let mut bump: Bump = Bump::new();
-    /// #
     /// // Allocate vector big enough for 4 elements.
     /// let size = 4;
     /// let mut x = MutBumpVecRev::<i32>::with_capacity_in(size, &mut bump);
@@ -599,8 +598,7 @@ where
 
         /// Appends an element to the front of a collection.
         impl
-        /// # Examples
-        ///
+        do examples
         /// ```
         /// # use bump_scope::{ mut_bump_vec_rev, Bump };
         /// # let mut bump: Bump = Bump::new();
@@ -610,6 +608,17 @@ where
         /// # let _ = vec;
         /// ```
         for fn push
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ mut_bump_vec_rev, Bump };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let mut vec = mut_bump_vec_rev![try in bump; 2, 1]?;
+        /// vec.try_push(3)?;
+        /// assert_eq!(vec, [3, 2, 1]);
+        /// # let _ = vec;
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_push
         use fn generic_push(&mut self, value: T) {
             self.generic_push_with(|| value)
@@ -630,6 +639,7 @@ where
         /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.
         do panics
         /// Panics if `index > len`.
+        impl
         do examples
         /// ```
         /// # use bump_scope::{ mut_bump_vec_rev, Bump };
@@ -640,8 +650,19 @@ where
         /// vec.insert(4, 5);
         /// assert_eq!(vec, [1, 4, 2, 3, 5]);
         /// ```
-        impl
         for fn insert
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ mut_bump_vec_rev, Bump };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let mut vec = mut_bump_vec_rev![try in bump; 1, 2, 3]?;
+        /// vec.try_insert(1, 4)?;
+        /// assert_eq!(vec, [1, 4, 2, 3]);
+        /// vec.try_insert(4, 5)?;
+        /// assert_eq!(vec, [1, 4, 2, 3, 5]);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_insert
         use fn generic_insert(&mut self, index: usize, element: T) {
             #[cold]
@@ -729,11 +750,11 @@ where
         do panics
         /// Panics if the starting point is greater than the end point or if
         /// the end point is greater than the length of the vector.
+        impl
         do examples
         /// ```
         /// # use bump_scope::{ Bump, mut_bump_vec_rev };
         /// # let mut bump: Bump = Bump::new();
-        /// #
         /// let mut vec = mut_bump_vec_rev![in bump; 0, 1, 2, 3, 4];
         ///
         /// vec.extend_from_within_copy(2..);
@@ -745,8 +766,24 @@ where
         /// vec.extend_from_within_copy(4..8);
         /// assert_eq!(vec, [4, 0, 1, 2, 2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
         /// ```
-        impl
         for fn extend_from_within_copy
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let mut vec = mut_bump_vec_rev![try in bump; 0, 1, 2, 3, 4]?;
+        ///
+        /// vec.try_extend_from_within_copy(2..)?;
+        /// assert_eq!(vec, [2, 3, 4, 0, 1, 2, 3, 4]);
+        ///
+        /// vec.try_extend_from_within_copy(..2)?;
+        /// assert_eq!(vec, [2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
+        ///
+        /// vec.try_extend_from_within_copy(4..8)?;
+        /// assert_eq!(vec, [4, 0, 1, 2, 2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_extend_from_within_copy
         use fn generic_extend_from_within_copy<{R}>(&mut self, src: R)
         where {
@@ -785,6 +822,16 @@ where
         /// assert_eq!(vec, [0, 0, 1, 2, 3]);
         /// ```
         for fn extend_zeroed
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let mut vec = mut_bump_vec_rev![try in bump; 1, 2, 3]?;
+        /// vec.try_extend_zeroed(2)?;
+        /// assert_eq!(vec, [0, 0, 1, 2, 3]);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_extend_zeroed
         use fn generic_extend_zeroed(&mut self, additional: usize)
         where {
@@ -828,13 +875,11 @@ where
         /// If you need more flexibility (or want to rely on [`Default`] instead of
         /// [`Clone`]), use [`MutBumpVecRev::resize_with`].
         /// If you only need to resize to a smaller size, use [`MutBumpVecRev::truncate`].
-        ///
-        /// # Examples
-        ///
+        impl
+        do examples
         /// ```
         /// # use bump_scope::{ Bump, mut_bump_vec_rev };
         /// # let mut bump: Bump = Bump::new();
-        /// #
         /// let mut vec = mut_bump_vec_rev![in bump; "hello"];
         /// vec.resize(3, "world");
         /// assert_eq!(vec, ["world", "world", "hello"]);
@@ -844,8 +889,22 @@ where
         /// vec.resize(2, 0);
         /// assert_eq!(vec, [3, 4]);
         /// ```
-        impl
         for fn resize
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let mut vec = mut_bump_vec_rev![try in bump; "hello"]?;
+        /// vec.try_resize(3, "world")?;
+        /// assert_eq!(vec, ["world", "world", "hello"]);
+        /// drop(vec);
+        ///
+        /// let mut vec = mut_bump_vec_rev![try in bump; 1, 2, 3, 4]?;
+        /// vec.try_resize(2, 0)?;
+        /// assert_eq!(vec, [3, 4]);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_resize
         use fn generic_resize(&mut self, new_len: usize, value: T)
         where { T: Clone } in
@@ -873,12 +932,11 @@ where
         /// you'd rather [`Clone`] a given value, use [`MutBumpVecRev::resize`]. If you
         /// want to use the [`Default`] trait to generate values, you can
         /// pass [`Default::default`] as the second argument.
-        ///
+        impl
         do examples
         /// ```
         /// # use bump_scope::{ Bump, mut_bump_vec_rev };
         /// # let mut bump: Bump = Bump::new();
-        /// #
         /// let mut vec = mut_bump_vec_rev![in bump; 1, 2, 3];
         /// vec.resize_with(5, Default::default);
         /// assert_eq!(vec, [0, 0, 1, 2, 3]);
@@ -889,8 +947,23 @@ where
         /// vec.resize_with(4, || { p *= 2; p });
         /// assert_eq!(vec, [16, 8, 4, 2]);
         /// ```
-        impl
         for fn resize_with
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let mut vec = mut_bump_vec_rev![try in bump; 1, 2, 3]?;
+        /// vec.try_resize_with(5, Default::default)?;
+        /// assert_eq!(vec, [0, 0, 1, 2, 3]);
+        /// drop(vec);
+        ///
+        /// let mut vec = mut_bump_vec_rev![try in bump]?;
+        /// let mut p = 1;
+        /// vec.try_resize_with(4, || { p *= 2; p })?;
+        /// assert_eq!(vec, [16, 8, 4, 2]);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_resize_with
         use fn generic_resize_with<{F}>(&mut self, new_len: usize, f: F)
         where {
@@ -916,7 +989,6 @@ where
         /// ```
         /// # use bump_scope::{ Bump, mut_bump_vec_rev };
         /// # let mut bump: Bump = Bump::new();
-        /// #
         /// {
         ///     let mut vec = mut_bump_vec_rev![in bump; 1, 2, 3];
         ///     vec.resize_zeroed(5);
@@ -930,6 +1002,24 @@ where
         /// }
         /// ```
         for fn resize_zeroed
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// {
+        ///     let mut vec = mut_bump_vec_rev![try in bump; 1, 2, 3]?;
+        ///     vec.try_resize_zeroed(5)?;
+        ///     assert_eq!(vec, [0, 0, 1, 2, 3]);
+        /// }
+        ///
+        /// {
+        ///     let mut vec = mut_bump_vec_rev![try in bump; 1, 2, 3]?;
+        ///     vec.try_resize_zeroed(2)?;
+        ///     assert_eq!(vec, [2, 3]);
+        /// }
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_resize_zeroed
         use fn generic_resize_zeroed(&mut self, new_len: usize)
         where {
@@ -1293,11 +1383,11 @@ where
         do panics
         /// Panics if the starting point is greater than the end point or if
         /// the end point is greater than the length of the vector.
+        impl
         do examples
         /// ```
         /// # use bump_scope::{ Bump, mut_bump_vec_rev };
         /// # let mut bump: Bump = Bump::new();
-        /// #
         /// let mut vec = mut_bump_vec_rev![in bump; 0, 1, 2, 3, 4];
         ///
         /// vec.extend_from_within_clone(2..);
@@ -1309,8 +1399,24 @@ where
         /// vec.extend_from_within_clone(4..8);
         /// assert_eq!(vec, [4, 0, 1, 2, 2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
         /// ```
-        impl
         for fn extend_from_within_clone
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let mut vec = mut_bump_vec_rev![try in bump; 0, 1, 2, 3, 4]?;
+        ///
+        /// vec.try_extend_from_within_clone(2..)?;
+        /// assert_eq!(vec, [2, 3, 4, 0, 1, 2, 3, 4]);
+        ///
+        /// vec.try_extend_from_within_clone(..2)?;
+        /// assert_eq!(vec, [2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
+        ///
+        /// vec.try_extend_from_within_clone(4..8)?;
+        /// assert_eq!(vec, [4, 0, 1, 2, 2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_extend_from_within_clone
         use fn generic_extend_from_within_clone<{R}>(&mut self, src: R)
         where {

@@ -1759,7 +1759,6 @@ define_alloc_methods! {
 
     /// Allocates memory as described by the given `Layout`.
     impl
-    do examples
     for fn alloc_layout
     for fn try_alloc_layout
     use fn generic_alloc_layout(&self, layout: Layout) -> NonNull<u8> | NonNull<u8>;
