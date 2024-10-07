@@ -39,7 +39,7 @@ impl<const UP: bool> PartialEq for GuaranteedAllocatedStats<'_, UP> {
 
 impl<const UP: bool> Eq for GuaranteedAllocatedStats<'_, UP> {}
 
-impl<'a, const UP: bool> Debug for GuaranteedAllocatedStats<'a, UP> {
+impl<const UP: bool> Debug for GuaranteedAllocatedStats<'_, UP> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.debug_format("GuaranteedAllocatedStats", f)
     }
@@ -176,7 +176,7 @@ impl<const UP: bool> PartialEq for Stats<'_, UP> {
 
 impl<const UP: bool> Eq for Stats<'_, UP> {}
 
-impl<'a, const UP: bool> Debug for Stats<'a, UP> {
+impl<const UP: bool> Debug for Stats<'_, UP> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.debug_format("Stats", f)
     }
@@ -499,9 +499,9 @@ impl<'a, const UP: bool> Iterator for ChunkPrevIter<'a, UP> {
     }
 }
 
-impl<'a, const UP: bool> FusedIterator for ChunkPrevIter<'a, UP> {}
+impl<const UP: bool> FusedIterator for ChunkPrevIter<'_, UP> {}
 
-impl<'a, const UP: bool> Debug for ChunkPrevIter<'a, UP> {
+impl<const UP: bool> Debug for ChunkPrevIter<'_, UP> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_list().entries(self.map(Chunk::size)).finish()
     }
@@ -525,9 +525,9 @@ impl<'a, const UP: bool> Iterator for ChunkNextIter<'a, UP> {
     }
 }
 
-impl<'a, const UP: bool> FusedIterator for ChunkNextIter<'a, UP> {}
+impl<const UP: bool> FusedIterator for ChunkNextIter<'_, UP> {}
 
-impl<'a, const UP: bool> Debug for ChunkNextIter<'a, UP> {
+impl<const UP: bool> Debug for ChunkNextIter<'_, UP> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_list().entries(self.map(Chunk::size)).finish()
     }

@@ -806,8 +806,8 @@ where
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Debug
-    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Debug
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -817,8 +817,8 @@ where
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Display
-    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Display
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -828,8 +828,8 @@ where
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Deref
-    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Deref
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -842,8 +842,8 @@ where
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> DerefMut
-    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> DerefMut
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -855,8 +855,8 @@ where
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> core::ops::AddAssign<&str>
-    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> core::ops::AddAssign<&str>
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -867,8 +867,8 @@ where
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> AsRef<str>
-    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> AsRef<str>
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -879,8 +879,8 @@ where
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> AsMut<str>
-    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> AsMut<str>
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -891,8 +891,8 @@ where
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Borrow<str>
-    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Borrow<str>
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -903,8 +903,8 @@ where
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> BorrowMut<str>
-    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> BorrowMut<str>
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -915,8 +915,8 @@ where
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> PartialEq
-    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> PartialEq
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -989,16 +989,16 @@ impl_partial_eq! {
     alloc::borrow::Cow<'_, str>,
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Eq
-    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Eq
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> PartialOrd
-    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> PartialOrd
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -1029,8 +1029,8 @@ where
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Ord
-    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Ord
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -1040,8 +1040,8 @@ where
     }
 }
 
-impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Hash
-    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Hash
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -1053,8 +1053,8 @@ where
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'s, 'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Extend<&'s str>
-    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<'s, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Extend<&'s str>
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,

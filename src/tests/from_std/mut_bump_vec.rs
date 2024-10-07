@@ -2030,13 +2030,13 @@ fn test_vec_dedup_panicking() {
         index: usize,
     }
 
-    impl<'a> PartialEq for Panic<'a> {
+    impl PartialEq for Panic<'_> {
         fn eq(&self, other: &Self) -> bool {
             self.value == other.value
         }
     }
 
-    impl<'a> Drop for Panic<'a> {
+    impl Drop for Panic<'_> {
         fn drop(&mut self) {
             self.drop_counter.set(self.drop_counter.get() + 1);
             if !std::thread::panicking() {

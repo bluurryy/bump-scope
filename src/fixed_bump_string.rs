@@ -37,8 +37,8 @@ pub struct FixedBumpString<'a> {
     vec: FixedBumpVec<'a, u8>,
 }
 
-unsafe impl<'a> Send for FixedBumpString<'a> {}
-unsafe impl<'a> Sync for FixedBumpString<'a> {}
+unsafe impl Send for FixedBumpString<'_> {}
+unsafe impl Sync for FixedBumpString<'_> {}
 
 impl<'a> FixedBumpString<'a> {
     /// Empty fixed string.
@@ -545,7 +545,7 @@ impl<'a> FixedBumpString<'a> {
     }
 }
 
-impl<'a> fmt::Write for FixedBumpString<'a> {
+impl fmt::Write for FixedBumpString<'_> {
     #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.try_push_str(s).map_err(|_| fmt::Error)
@@ -557,19 +557,19 @@ impl<'a> fmt::Write for FixedBumpString<'a> {
     }
 }
 
-impl<'a> Debug for FixedBumpString<'a> {
+impl Debug for FixedBumpString<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Debug::fmt(self.as_str(), f)
     }
 }
 
-impl<'a> Display for FixedBumpString<'a> {
+impl Display for FixedBumpString<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Display::fmt(self.as_str(), f)
     }
 }
 
-impl<'a> Deref for FixedBumpString<'a> {
+impl Deref for FixedBumpString<'_> {
     type Target = str;
 
     #[inline]
@@ -578,7 +578,7 @@ impl<'a> Deref for FixedBumpString<'a> {
     }
 }
 
-impl<'a> DerefMut for FixedBumpString<'a> {
+impl DerefMut for FixedBumpString<'_> {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut_str()
@@ -586,42 +586,42 @@ impl<'a> DerefMut for FixedBumpString<'a> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'a> core::ops::AddAssign<&str> for FixedBumpString<'a> {
+impl core::ops::AddAssign<&str> for FixedBumpString<'_> {
     #[inline]
     fn add_assign(&mut self, rhs: &str) {
         self.push_str(rhs);
     }
 }
 
-impl<'a> AsRef<str> for FixedBumpString<'a> {
+impl AsRef<str> for FixedBumpString<'_> {
     #[inline]
     fn as_ref(&self) -> &str {
         self.as_str()
     }
 }
 
-impl<'a> AsMut<str> for FixedBumpString<'a> {
+impl AsMut<str> for FixedBumpString<'_> {
     #[inline]
     fn as_mut(&mut self) -> &mut str {
         self.as_mut_str()
     }
 }
 
-impl<'a> Borrow<str> for FixedBumpString<'a> {
+impl Borrow<str> for FixedBumpString<'_> {
     #[inline]
     fn borrow(&self) -> &str {
         self.as_str()
     }
 }
 
-impl<'a> BorrowMut<str> for FixedBumpString<'a> {
+impl BorrowMut<str> for FixedBumpString<'_> {
     #[inline]
     fn borrow_mut(&mut self) -> &mut str {
         self.as_mut_str()
     }
 }
 
-impl<'a> PartialEq for FixedBumpString<'a> {
+impl PartialEq for FixedBumpString<'_> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         <str as PartialEq>::eq(self, other)
@@ -682,9 +682,9 @@ impl_partial_eq! {
     alloc::borrow::Cow<'_, str>,
 }
 
-impl<'a> Eq for FixedBumpString<'a> {}
+impl Eq for FixedBumpString<'_> {}
 
-impl<'a> PartialOrd for FixedBumpString<'a> {
+impl PartialOrd for FixedBumpString<'_> {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(self.cmp(other))
@@ -711,13 +711,13 @@ impl<'a> PartialOrd for FixedBumpString<'a> {
     }
 }
 
-impl<'a> Ord for FixedBumpString<'a> {
+impl Ord for FixedBumpString<'_> {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         <str as Ord>::cmp(self, other)
     }
 }
 
-impl<'a> Hash for FixedBumpString<'a> {
+impl Hash for FixedBumpString<'_> {
     #[inline]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.vec.hash(state);
@@ -725,7 +725,7 @@ impl<'a> Hash for FixedBumpString<'a> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'s, 'a> Extend<&'s str> for FixedBumpString<'a> {
+impl<'s> Extend<&'s str> for FixedBumpString<'_> {
     #[inline]
     fn extend<T: IntoIterator<Item = &'s str>>(&mut self, iter: T) {
         for str in iter {

@@ -35,7 +35,7 @@ where
     marker: PhantomData<&'a mut ()>,
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Debug for BumpScopeGuard<'a, A, MIN_ALIGN, UP>
+impl<A, const MIN_ALIGN: usize, const UP: bool> Debug for BumpScopeGuard<'_, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator,
@@ -45,7 +45,7 @@ where
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpScopeGuard<'a, A, MIN_ALIGN, UP>
+impl<A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpScopeGuard<'_, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator,
@@ -132,7 +132,7 @@ where
     marker: PhantomData<&'b mut ()>,
 }
 
-impl<'b, A, const MIN_ALIGN: usize, const UP: bool> Debug for BumpScopeGuardRoot<'b, A, MIN_ALIGN, UP>
+impl<A, const MIN_ALIGN: usize, const UP: bool> Debug for BumpScopeGuardRoot<'_, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator,
@@ -142,7 +142,7 @@ where
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpScopeGuardRoot<'a, A, MIN_ALIGN, UP>
+impl<A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpScopeGuardRoot<'_, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator,

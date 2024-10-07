@@ -26,10 +26,10 @@ pub struct IntoIter<'a, T> {
     marker: PhantomData<(&'a (), T)>,
 }
 
-unsafe impl<'a, T: Send> Send for IntoIter<'a, T> {}
-unsafe impl<'a, T: Sync> Sync for IntoIter<'a, T> {}
+unsafe impl<T: Send> Send for IntoIter<'_, T> {}
+unsafe impl<T: Sync> Sync for IntoIter<'_, T> {}
 
-impl<'a, T: Debug> Debug for IntoIter<'a, T> {
+impl<T: Debug> Debug for IntoIter<'_, T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_tuple("IntoIter").field(&self.as_slice()).finish()
     }
@@ -145,7 +145,7 @@ impl<'a, T> IntoIter<'a, T> {
     }
 }
 
-impl<'a, T> Iterator for IntoIter<'a, T> {
+impl<T> Iterator for IntoIter<'_, T> {
     type Item = T;
 
     #[inline(always)]
@@ -181,7 +181,7 @@ impl<'a, T> Iterator for IntoIter<'a, T> {
     }
 }
 
-impl<'a, T> DoubleEndedIterator for IntoIter<'a, T> {
+impl<T> DoubleEndedIterator for IntoIter<'_, T> {
     #[inline(always)]
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.end == self.ptr {
@@ -203,16 +203,16 @@ impl<'a, T> DoubleEndedIterator for IntoIter<'a, T> {
     }
 }
 
-impl<'a, T> ExactSizeIterator for IntoIter<'a, T> {
+impl<T> ExactSizeIterator for IntoIter<'_, T> {
     #[inline(always)]
     fn len(&self) -> usize {
         IntoIter::len(self)
     }
 }
 
-impl<'a, T> FusedIterator for IntoIter<'a, T> {}
+impl<T> FusedIterator for IntoIter<'_, T> {}
 
-impl<'a, T> Drop for IntoIter<'a, T> {
+impl<T> Drop for IntoIter<'_, T> {
     #[inline]
     fn drop(&mut self) {
         unsafe {

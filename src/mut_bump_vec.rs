@@ -96,6 +96,7 @@ macro_rules! mut_bump_vec {
 macro_rules! mut_bump_vec_declaration {
     ($($allocator_parameter:tt)*) => {
         /// A type like [`BumpVec`](crate::BumpVec), optimized for a `&mut Bump(Scope)`.
+        ///
         /// It has the advantage that it can assume the entire remaining chunk space as its capacity.
         /// It also only needs to update the bump pointer when calling <code>[into_](Self::into_slice)([boxed_](Self::into_boxed_slice))[slice](Self::into_slice)</code>.
         ///

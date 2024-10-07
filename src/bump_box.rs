@@ -161,10 +161,10 @@ pub struct BumpBox<'a, T: ?Sized> {
     marker: PhantomData<(&'a (), T)>,
 }
 
-unsafe impl<'a, T: ?Sized + Send> Send for BumpBox<'a, T> {}
-unsafe impl<'a, T: ?Sized + Sync> Sync for BumpBox<'a, T> {}
+unsafe impl<T: ?Sized + Send> Send for BumpBox<'_, T> {}
+unsafe impl<T: ?Sized + Sync> Sync for BumpBox<'_, T> {}
 
-impl<'a, T> BumpBox<'a, T> {
+impl<T> BumpBox<'_, T> {
     #[must_use]
     #[inline(always)]
     pub(crate) fn zst(value: T) -> Self {
@@ -1457,7 +1457,7 @@ impl<'a, T> BumpBox<'a, [T]> {
             boxed: &'b mut BumpBox<'a, [T]>,
         }
 
-        impl<'b, 'a, T> Drop for FillGapOnDrop<'b, 'a, T> {
+        impl<T> Drop for FillGapOnDrop<'_, '_, T> {
             fn drop(&mut self) {
                 /* This code gets executed when `same_bucket` panics */
 
@@ -1611,7 +1611,7 @@ impl<'a, T, const N: usize> BumpBox<'a, [[T; N]]> {
     }
 }
 
-impl<'a, T: ?Sized> BumpBox<'a, T> {
+impl<T: ?Sized> BumpBox<'_, T> {
     /// Consumes the `BumpBox`, returning a wrapped raw pointer.
     ///
     /// The pointer will be properly aligned and non-null. It is only valid for the lifetime `'a`.
@@ -1788,7 +1788,7 @@ impl<'a> BumpBox<'a, dyn Any + Send + Sync> {
 // just like std's Rc and Arc this implements Unpin,
 // at time of writing Box does not implement Unpin unconditionally, but that is probably an oversight
 // see https://github.com/rust-lang/rust/pull/118634
-impl<'a, T: ?Sized> Unpin for BumpBox<'a, T> {}
+impl<T: ?Sized> Unpin for BumpBox<'_, T> {}
 
 #[cfg(feature = "nightly-coerce-unsized")]
 impl<'a, T, U> core::ops::CoerceUnsized<BumpBox<'a, U>> for BumpBox<'a, T>
@@ -1798,7 +1798,7 @@ where
 {
 }
 
-impl<'a, T: ?Sized> Drop for BumpBox<'a, T> {
+impl<T: ?Sized> Drop for BumpBox<'_, T> {
     #[inline(always)]
     fn drop(&mut self) {
         unsafe { self.ptr.as_ptr().drop_in_place() }
@@ -1807,7 +1807,7 @@ impl<'a, T: ?Sized> Drop for BumpBox<'a, T> {
 
 impl<T> NoDrop for BumpBox<'_, T> where T: NoDrop {}
 
-impl<'a, T: ?Sized> Deref for BumpBox<'a, T> {
+impl<T: ?Sized> Deref for BumpBox<'_, T> {
     type Target = T;
 
     #[inline(always)]
@@ -1816,7 +1816,7 @@ impl<'a, T: ?Sized> Deref for BumpBox<'a, T> {
     }
 }
 
-impl<'a, T: ?Sized> DerefMut for BumpBox<'a, T> {
+impl<T: ?Sized> DerefMut for BumpBox<'_, T> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { self.ptr.as_mut() }
@@ -1851,35 +1851,35 @@ impl<T: ?Sized> BorrowMut<T> for BumpBox<'_, T> {
     }
 }
 
-impl<'a, T: ?Sized + Debug> Debug for BumpBox<'a, T> {
+impl<T: ?Sized + Debug> Debug for BumpBox<'_, T> {
     #[inline(always)]
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         T::fmt(self, f)
     }
 }
 
-impl<'a, T: ?Sized + Display> Display for BumpBox<'a, T> {
+impl<T: ?Sized + Display> Display for BumpBox<'_, T> {
     #[inline(always)]
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         T::fmt(self, f)
     }
 }
 
-impl<'a, T> Default for BumpBox<'a, [T]> {
+impl<T> Default for BumpBox<'_, [T]> {
     #[inline(always)]
     fn default() -> Self {
         unsafe { Self::from_raw(NonNull::from(&mut [])) }
     }
 }
 
-impl<'a> Default for BumpBox<'a, str> {
+impl Default for BumpBox<'_, str> {
     #[inline(always)]
     fn default() -> Self {
         unsafe { Self::from_raw(NonNull::from(core::str::from_utf8_unchecked_mut(&mut []))) }
     }
 }
 
-impl<'b, 'a, T: ?Sized + PartialEq> PartialEq<BumpBox<'b, T>> for BumpBox<'a, T> {
+impl<'b, T: ?Sized + PartialEq> PartialEq<BumpBox<'b, T>> for BumpBox<'_, T> {
     #[inline(always)]
     fn eq(&self, other: &BumpBox<'b, T>) -> bool {
         T::eq(self, other)
@@ -1984,7 +1984,7 @@ impl<T: PartialEq, const N: usize> PartialEq<[T; N]> for BumpBox<'_, [T]> {
     }
 }
 
-impl<'b, 'a, T: ?Sized + PartialOrd> PartialOrd<BumpBox<'b, T>> for BumpBox<'a, T> {
+impl<'b, T: ?Sized + PartialOrd> PartialOrd<BumpBox<'b, T>> for BumpBox<'_, T> {
     #[inline(always)]
     fn partial_cmp(&self, other: &BumpBox<'b, T>) -> Option<Ordering> {
         T::partial_cmp(self, other)
@@ -2014,16 +2014,16 @@ impl<'a, T: ?Sized + Ord> Ord for BumpBox<'a, T> {
     }
 }
 
-impl<'a, T: ?Sized + Eq> Eq for BumpBox<'a, T> {}
+impl<T: ?Sized + Eq> Eq for BumpBox<'_, T> {}
 
-impl<'a, T: ?Sized + Hash> Hash for BumpBox<'a, T> {
+impl<T: ?Sized + Hash> Hash for BumpBox<'_, T> {
     #[inline(always)]
     fn hash<H: Hasher>(&self, state: &mut H) {
         T::hash(self, state);
     }
 }
 
-impl<'a, T: ?Sized + Hasher> Hasher for BumpBox<'a, T> {
+impl<T: ?Sized + Hasher> Hasher for BumpBox<'_, T> {
     #[inline(always)]
     fn finish(&self) -> u64 {
         T::finish(self)
@@ -2101,7 +2101,7 @@ impl<'a, T> IntoIterator for BumpBox<'a, [T]> {
     }
 }
 
-impl<'b, 'a, T> IntoIterator for &'b BumpBox<'a, [T]> {
+impl<'b, T> IntoIterator for &'b BumpBox<'_, [T]> {
     type Item = &'b T;
     type IntoIter = slice::Iter<'b, T>;
 
@@ -2111,7 +2111,7 @@ impl<'b, 'a, T> IntoIterator for &'b BumpBox<'a, [T]> {
     }
 }
 
-impl<'b, 'a, T> IntoIterator for &'b mut BumpBox<'a, [T]> {
+impl<'b, T> IntoIterator for &'b mut BumpBox<'_, [T]> {
     type Item = &'b mut T;
     type IntoIter = slice::IterMut<'b, T>;
 

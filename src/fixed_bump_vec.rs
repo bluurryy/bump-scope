@@ -43,8 +43,8 @@ pub struct FixedBumpVec<'a, T> {
     pub(crate) capacity: usize,
 }
 
-unsafe impl<'a, T: Send> Send for FixedBumpVec<'a, T> {}
-unsafe impl<'a, T: Sync> Sync for FixedBumpVec<'a, T> {}
+unsafe impl<T: Send> Send for FixedBumpVec<'_, T> {}
+unsafe impl<T: Sync> Sync for FixedBumpVec<'_, T> {}
 
 impl<'a, T> FixedBumpVec<'a, T> {
     /// Empty fixed vector.
@@ -1393,7 +1393,7 @@ impl<'a, T, const N: usize> FixedBumpVec<'a, [T; N]> {
     }
 }
 
-impl<'a, T> Debug for FixedBumpVec<'a, T>
+impl<T> Debug for FixedBumpVec<'_, T>
 where
     T: Debug,
 {
@@ -1402,13 +1402,13 @@ where
     }
 }
 
-impl<'a, T> Default for FixedBumpVec<'a, T> {
+impl<T> Default for FixedBumpVec<'_, T> {
     fn default() -> Self {
         Self::EMPTY
     }
 }
 
-impl<'a, T> Deref for FixedBumpVec<'a, T> {
+impl<T> Deref for FixedBumpVec<'_, T> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -1416,13 +1416,13 @@ impl<'a, T> Deref for FixedBumpVec<'a, T> {
     }
 }
 
-impl<'a, T> DerefMut for FixedBumpVec<'a, T> {
+impl<T> DerefMut for FixedBumpVec<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.initialized
     }
 }
 
-impl<'a, T, I: SliceIndex<[T]>> Index<I> for FixedBumpVec<'a, T> {
+impl<T, I: SliceIndex<[T]>> Index<I> for FixedBumpVec<'_, T> {
     type Output = I::Output;
 
     #[inline(always)]
@@ -1431,7 +1431,7 @@ impl<'a, T, I: SliceIndex<[T]>> Index<I> for FixedBumpVec<'a, T> {
     }
 }
 
-impl<'a, T, I: SliceIndex<[T]>> IndexMut<I> for FixedBumpVec<'a, T> {
+impl<T, I: SliceIndex<[T]>> IndexMut<I> for FixedBumpVec<'_, T> {
     #[inline(always)]
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
         IndexMut::index_mut(self.as_mut_slice(), index)
@@ -1439,7 +1439,7 @@ impl<'a, T, I: SliceIndex<[T]>> IndexMut<I> for FixedBumpVec<'a, T> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'a, T> Extend<T> for FixedBumpVec<'a, T> {
+impl<T> Extend<T> for FixedBumpVec<'_, T> {
     #[inline]
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         let iter = iter.into_iter();
@@ -1453,7 +1453,7 @@ impl<'a, T> Extend<T> for FixedBumpVec<'a, T> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'a, 't, T> Extend<&'t T> for FixedBumpVec<'a, T>
+impl<'t, T> Extend<&'t T> for FixedBumpVec<'_, T>
 where
     T: Clone + 't,
 {
@@ -1469,7 +1469,7 @@ where
     }
 }
 
-impl<'a0, 'a1, T, U> PartialEq<FixedBumpVec<'a1, U>> for FixedBumpVec<'a0, T>
+impl<'a1, T, U> PartialEq<FixedBumpVec<'a1, U>> for FixedBumpVec<'_, T>
 where
     T: PartialEq<U>,
 {
@@ -1484,7 +1484,7 @@ where
     }
 }
 
-impl<'a, T, U, const N: usize> PartialEq<[U; N]> for FixedBumpVec<'a, T>
+impl<T, U, const N: usize> PartialEq<[U; N]> for FixedBumpVec<'_, T>
 where
     T: PartialEq<U>,
 {
@@ -1499,7 +1499,7 @@ where
     }
 }
 
-impl<'a, T, U, const N: usize> PartialEq<&[U; N]> for FixedBumpVec<'a, T>
+impl<T, U, const N: usize> PartialEq<&[U; N]> for FixedBumpVec<'_, T>
 where
     T: PartialEq<U>,
 {
@@ -1514,7 +1514,7 @@ where
     }
 }
 
-impl<'a, T, U, const N: usize> PartialEq<&mut [U; N]> for FixedBumpVec<'a, T>
+impl<T, U, const N: usize> PartialEq<&mut [U; N]> for FixedBumpVec<'_, T>
 where
     T: PartialEq<U>,
 {
@@ -1529,7 +1529,7 @@ where
     }
 }
 
-impl<'a, T, U> PartialEq<[U]> for FixedBumpVec<'a, T>
+impl<T, U> PartialEq<[U]> for FixedBumpVec<'_, T>
 where
     T: PartialEq<U>,
 {
@@ -1544,7 +1544,7 @@ where
     }
 }
 
-impl<'a, T, U> PartialEq<&[U]> for FixedBumpVec<'a, T>
+impl<T, U> PartialEq<&[U]> for FixedBumpVec<'_, T>
 where
     T: PartialEq<U>,
 {
@@ -1559,7 +1559,7 @@ where
     }
 }
 
-impl<'a, T, U> PartialEq<&mut [U]> for FixedBumpVec<'a, T>
+impl<T, U> PartialEq<&mut [U]> for FixedBumpVec<'_, T>
 where
     T: PartialEq<U>,
 {
@@ -1629,7 +1629,7 @@ impl<'a, T> IntoIterator for FixedBumpVec<'a, T> {
     }
 }
 
-impl<'c, 'a, T> IntoIterator for &'c FixedBumpVec<'a, T> {
+impl<'c, T> IntoIterator for &'c FixedBumpVec<'_, T> {
     type Item = &'c T;
     type IntoIter = slice::Iter<'c, T>;
 
@@ -1639,7 +1639,7 @@ impl<'c, 'a, T> IntoIterator for &'c FixedBumpVec<'a, T> {
     }
 }
 
-impl<'c, 'a, T> IntoIterator for &'c mut FixedBumpVec<'a, T> {
+impl<'c, T> IntoIterator for &'c mut FixedBumpVec<'_, T> {
     type Item = &'c mut T;
     type IntoIter = slice::IterMut<'c, T>;
 
@@ -1649,49 +1649,49 @@ impl<'c, 'a, T> IntoIterator for &'c mut FixedBumpVec<'a, T> {
     }
 }
 
-impl<'a, T> AsRef<Self> for FixedBumpVec<'a, T> {
+impl<T> AsRef<Self> for FixedBumpVec<'_, T> {
     #[inline(always)]
     fn as_ref(&self) -> &Self {
         self
     }
 }
 
-impl<'a, T> AsMut<Self> for FixedBumpVec<'a, T> {
+impl<T> AsMut<Self> for FixedBumpVec<'_, T> {
     #[inline(always)]
     fn as_mut(&mut self) -> &mut Self {
         self
     }
 }
 
-impl<'a, T> AsRef<[T]> for FixedBumpVec<'a, T> {
+impl<T> AsRef<[T]> for FixedBumpVec<'_, T> {
     #[inline(always)]
     fn as_ref(&self) -> &[T] {
         self
     }
 }
 
-impl<'a, T> AsMut<[T]> for FixedBumpVec<'a, T> {
+impl<T> AsMut<[T]> for FixedBumpVec<'_, T> {
     #[inline(always)]
     fn as_mut(&mut self) -> &mut [T] {
         self
     }
 }
 
-impl<'a, T> Borrow<[T]> for FixedBumpVec<'a, T> {
+impl<T> Borrow<[T]> for FixedBumpVec<'_, T> {
     #[inline(always)]
     fn borrow(&self) -> &[T] {
         self
     }
 }
 
-impl<'a, T> BorrowMut<[T]> for FixedBumpVec<'a, T> {
+impl<T> BorrowMut<[T]> for FixedBumpVec<'_, T> {
     #[inline(always)]
     fn borrow_mut(&mut self) -> &mut [T] {
         self
     }
 }
 
-impl<'a, T: Hash> Hash for FixedBumpVec<'a, T> {
+impl<T: Hash> Hash for FixedBumpVec<'_, T> {
     #[inline(always)]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.as_slice().hash(state);

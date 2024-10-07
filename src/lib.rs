@@ -490,6 +490,7 @@ fn exact_size_iterator_bad_len() -> ! {
 }
 
 /// An allocator that allows `grow(_zeroed)`, `shrink` and `deallocate` calls with pointers that were not allocated by this allocator.
+///
 /// This trait is used for [`BumpBox::into_box`](BumpBox::into_box) to allow safely converting a `BumpBox` into a `Box`.
 ///
 /// # Safety
@@ -524,7 +525,7 @@ pub struct WithLifetime<'a, A> {
 }
 
 #[allow(missing_docs)]
-impl<'a, A> WithLifetime<'a, A> {
+impl<A> WithLifetime<'_, A> {
     #[inline(always)]
     pub fn new(inner: A) -> Self {
         Self {
@@ -539,7 +540,7 @@ impl<'a, A> WithLifetime<'a, A> {
     }
 }
 
-unsafe impl<'a, A: Allocator> Allocator for WithLifetime<'a, A> {
+unsafe impl<A: Allocator> Allocator for WithLifetime<'_, A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         self.inner.allocate(layout)

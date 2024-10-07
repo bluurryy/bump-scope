@@ -194,7 +194,7 @@ where
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> DerefMut for BumpPoolGuard<'a, A, MIN_ALIGN, UP>
+impl<A, const MIN_ALIGN: usize, const UP: bool> DerefMut for BumpPoolGuard<'_, A, MIN_ALIGN, UP>
 where
     A: BaseAllocator,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -205,7 +205,7 @@ where
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpPoolGuard<'a, A, MIN_ALIGN, UP>
+impl<A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpPoolGuard<'_, A, MIN_ALIGN, UP>
 where
     A: BaseAllocator,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,

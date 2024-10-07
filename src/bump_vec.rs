@@ -224,8 +224,8 @@ where
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
             A: BaseAllocator<GUARANTEED_ALLOCATED>;
 
-        impl<'i, 'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Drop
-            for DropGuard<'i, 'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+        impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Drop
+            for DropGuard<'_, '_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
         where
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
             A: BaseAllocator<GUARANTEED_ALLOCATED>,
