@@ -828,10 +828,11 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// // needs a scope because of lifetime shenanigans
         /// let bump = bump.as_mut_scope();
         /// let mut a = bump.alloc_fixed_vec(6);
-        /// let mut b = bump.alloc_fixed_vec(3);
         /// a.extend_from_slice_copy(&[1, 2, 3]);
-        /// b.extend_from_slice_copy(&[4, 5, 6]);
-        /// a.append(b.as_mut_boxed_slice());
+        ///
+        /// let mut b = bump.alloc_slice_copy(&[4, 5, 6]);
+        ///
+        /// a.append(&mut b);
         /// assert_eq!(a, [1, 2, 3, 4, 5, 6]);
         /// assert_eq!(b, []);
         /// ```
