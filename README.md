@@ -162,7 +162,9 @@ assert_eq!(bump.stats().allocated(), 4);
 * **`std`** *(enabled by default)* —  Adds `BumpPool` and implementations of `std::io` traits for `BumpBox` and vectors.
 * **`alloc`** —  Adds `Global` as the default base allocator, `BumpBox::into_box` and some interactions with `alloc` collections.
 * **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
+  *(may increase msrv)*
 * **`zerocopy`** —  Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`.
+  *(may increase msrv)*
 
  #### Nightly features
 * **`nightly-allocator-api`** —  Enables `allocator-api2`'s `nightly` feature which makes it reexport the nightly allocator api instead of its own implementation.

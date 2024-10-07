@@ -27,10 +27,12 @@ std = ["allocator-api2/std", "alloc"]
 ## Adds `Global` as the default base allocator, `BumpBox::into_box` and some interactions with `alloc` collections.
 alloc = ["allocator-api2/alloc"]
 
-## Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
+## Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors. 
+## *(may increase msrv)*
 serde = ["dep:serde"]
 
-## Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`.
+## Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`. 
+## *(may increase msrv)*
 zerocopy = ["dep:zerocopy"]
 
 #! ### Nightly features
