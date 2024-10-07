@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 bump-scope = { path = "../.." }
-bumpalo = { version = "3.15.3", features = ["allocator-api2"] }
+bumpalo = { version = "3.16.0", features = ["allocator-api2"] }
