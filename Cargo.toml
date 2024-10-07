@@ -16,7 +16,7 @@ exclude = ["*.nu", "justfile", "tests", ".vscode", ".github"]
 allocator-api2 = { version = "0.2.16", default-features = false }
 sptr = "0.3.2"
 serde = { version = "1.0.197", optional = true }
-zerocopy = { version = "0.7.34", default-features = false, optional = true }
+zerocopy = { version = "0.8.2", default-features = false, optional = true }
 
 [features]
 default = ["std"]

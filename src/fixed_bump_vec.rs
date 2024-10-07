@@ -680,7 +680,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         for fn try_extend_zeroed
         use fn generic_extend_zeroed(&mut self, additional: usize)
         where {
-            T: zerocopy::FromZeroes
+            T: zerocopy::FromZeros
         } in {
             self.generic_reserve(additional)?;
 
@@ -831,7 +831,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         for fn try_resize_zeroed
         use fn generic_resize_zeroed(&mut self, new_len: usize)
         where {
-            T: zerocopy::FromZeroes
+            T: zerocopy::FromZeros
         } in {
             let len = self.len();
 
