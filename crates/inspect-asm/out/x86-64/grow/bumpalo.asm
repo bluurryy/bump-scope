@@ -1,14 +1,16 @@
 inspect_asm::grow::bumpalo:
+	push rbp
 	push r15
 	push r14
+	push r13
+	push r12
 	push rbx
+	push rax
 	mov rbx, r9
 	cmp rdx, r8
 	jb .LBB0_0
-	mov r14, rdx
 	mov rax, qword ptr [rdi + 16]
-	mov rdx, qword ptr [rax + 32]
-	cmp rdx, rsi
+	cmp qword ptr [rax + 32], rsi
 	je .LBB0_3
 .LBB0_0:
 	mov rax, qword ptr [rdi + 16]
@@ -30,27 +32,36 @@ inspect_asm::grow::bumpalo:
 .LBB0_2:
 	mov rax, r14
 	mov rdx, rbx
+	add rsp, 8
 	pop rbx
+	pop r12
+	pop r13
 	pop r14
 	pop r15
+	pop rbp
 	ret
 .LBB0_3:
-	mov r9, rbx
-	sub r9, rcx
-	lea r10, [r14 - 1]
-	mov r11, r14
-	xor r11, r10
-	cmp r11, r10
-	setbe r10b
-	movabs r11, -9223372036854775808
-	sub r11, r14
-	cmp r9, r11
-	seta r11b
-	or r11b, r10b
-	jne .LBB0_5
-	cmp r9, rsi
+	mov r14, rdx
+	mov r12, rdi
+	mov qword ptr [rsp], r8
+	mov r13, rsi
+	mov r15, rbx
+	mov rbp, rcx
+	sub r15, rcx
+	mov rdi, r15
+	mov rsi, rdx
+	call qword ptr [rip + core::alloc::layout::Layout::is_size_align_valid@GOTPCREL]
+	test al, al
+	je .LBB0_5
+	mov rdi, r12
+	mov rax, qword ptr [r12 + 16]
+	mov rdx, qword ptr [rax + 32]
+	cmp r15, rdx
+	mov rcx, rbp
+	mov rsi, r13
+	mov r8, qword ptr [rsp]
 	ja .LBB0_0
-	sub rdx, r9
+	sub rdx, r15
 	neg r14
 	and r14, rdx
 	cmp r14, qword ptr [rax]
