@@ -2,7 +2,7 @@
 
 ## Unreleased
 - **breaking:** upgraded `zerocopy` dependency to version `0.8.2`
-- **breaking:** removed deprecated functions `FixedBumpVec::{ layout, as_(mut_)boxed_slice}`, 
+- **breaking:** removed deprecated methods `FixedBumpVec::{ layout, as_(mut_)boxed_slice }`, 
 
 ## 0.9.2 (2024-09-28)
 - **improved:** removed a duplicate call to `shrink_to_fit` in `alloc_iter` and `alloc_fmt`
