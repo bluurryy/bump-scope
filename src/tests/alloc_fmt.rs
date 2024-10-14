@@ -26,13 +26,16 @@ fn nothing<const UP: bool>() {
 
 fn nothing_extra<const UP: bool>() {
     let bump: Bump<Global, 1, UP> = Bump::new();
-    bump.alloc_fmt(format_args!("ext{Nothing}ra"));
+    let string = bump.alloc_fmt(format_args!("ext{Nothing}ra"));
+    assert_eq!(string, "extra");
     assert_eq!(bump.stats().allocated(), 5);
 }
 
 fn nothing_extra_mut<const UP: bool>() {
     let mut bump: Bump<Global, 1, UP> = Bump::new();
-    bump.alloc_fmt_mut(format_args!("ext{Nothing}ra"));
+    let string = bump.alloc_fmt_mut(format_args!("ext{Nothing}ra"));
+    assert_eq!(string, "extra");
+    drop(string);
     assert_eq!(bump.stats().allocated(), 5);
 }
 

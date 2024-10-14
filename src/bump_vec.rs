@@ -147,6 +147,8 @@ macro_rules! bump_vec_declaration {
         ///
         /// assert_eq!(slice, [1, 2, 3]);
         /// ```
+        // `BumpString` and `BumpVec<u8>` have the same repr.
+        #[repr(C)]
         pub struct BumpVec<
             'b,
             'a: 'b,
