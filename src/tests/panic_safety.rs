@@ -241,7 +241,13 @@ mod helper {
     }
 
     fn catch<F: FnOnce() -> R + UnwindSafe, R>(f: F) -> Result<R, String> {
-        match std::panic::catch_unwind(f) {
+        let hook = std::panic::take_hook();
+
+        std::panic::set_hook(Box::new(|_| {
+            // be quiet
+        }));
+
+        let result = match std::panic::catch_unwind(f) {
             Ok(r) => Ok(r),
             Err(err) => {
                 if let Some(&err) = err.downcast_ref::<&str>() {
@@ -254,6 +260,9 @@ mod helper {
 
                 Err("panicked".into())
             }
-        }
+        };
+
+        std::panic::set_hook(hook);
+        result
     }
 }
