@@ -101,7 +101,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     #[must_use]
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.initialized.is_empty()
     }
 
     /// Returns `true` if the vector has reached its capacity.

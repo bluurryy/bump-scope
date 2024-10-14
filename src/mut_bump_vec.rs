@@ -327,7 +327,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     #[must_use]
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.fixed.is_empty()
     }
 
     #[doc = include_str!("docs/vec/pop.md")]

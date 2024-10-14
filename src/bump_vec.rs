@@ -401,7 +401,7 @@ where
     #[must_use]
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.fixed.is_empty()
     }
 
     #[doc = include_str!("docs/vec/pop.md")]

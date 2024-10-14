@@ -217,7 +217,7 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     #[must_use]
     #[inline(always)]
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.fixed.is_empty()
     }
 
     /// Truncates this `MutBumpString`, removing all contents.

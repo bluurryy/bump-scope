@@ -218,7 +218,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.fixed.is_empty()
     }
 
     /// Truncates this `BumpString`, removing all contents.
