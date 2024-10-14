@@ -1203,7 +1203,7 @@ where
         unsafe { BumpBox::from_raw(self.into_slice_ptr()) }
     }
 
-    /// Turns this `MutBumpVec<T>` into a `&[T]` that is live for the entire bump scope.
+    /// Turns this `MutBumpVec<T>` into a `&[T]` that is live for this bump scope.
     ///
     /// Unused capacity does not take up space.<br/>
     /// When [bumping downwards](crate#bumping-upwards-or-downwards) this needs to shift all elements to the other end of the chunk.

@@ -523,7 +523,7 @@ impl<'a> FixedBumpString<'a> {
         unsafe { self.vec.into_boxed_slice().into_boxed_str_unchecked() }
     }
 
-    /// Converts this `FixedBumpString` into `&str` that is live for the entire bump scope.
+    /// Converts this `FixedBumpString` into `&str` that is live for this bump scope.
     #[must_use]
     #[inline(always)]
     pub fn into_str(self) -> &'a mut str {

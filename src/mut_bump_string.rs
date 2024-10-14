@@ -643,7 +643,7 @@ where
         unsafe { self.vec.into_boxed_slice().into_boxed_str_unchecked() }
     }
 
-    /// Converts this `MutBumpString` into `&str` that is live for the entire bump scope.
+    /// Converts this `MutBumpString` into `&str` that is live for this bump scope.
     ///
     /// Unused capacity does not take up space.<br/>
     /// When [bumping downwards](crate#bumping-upwards-or-downwards) this needs to shift all elements to the other end of the chunk.

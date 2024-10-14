@@ -672,7 +672,7 @@ where
         unsafe { self.vec.into_boxed_slice().into_boxed_str_unchecked() }
     }
 
-    /// Converts this `BumpString` into `&str` that is live for the entire bump scope.
+    /// Converts this `BumpString` into `&str` that is live for this bump scope.
     #[must_use]
     #[inline(always)]
     pub fn into_str(self) -> &'a mut str {

@@ -1387,7 +1387,7 @@ where
         self.into_fixed_vec().into_boxed_slice()
     }
 
-    /// Turns this `BumpVec<T>` into a `&[T]` that is live for the entire bump scope.
+    /// Turns this `BumpVec<T>` into a `&[T]` that is live for this bump scope.
     ///
     /// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
     ///

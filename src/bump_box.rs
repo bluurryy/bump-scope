@@ -178,7 +178,7 @@ impl<T> BumpBox<'_, T> {
 }
 
 impl<'a, T: ?Sized + NoDrop> BumpBox<'a, T> {
-    /// Turns this `BumpBox<T>` into `&T` that is live for the entire bump scope.
+    /// Turns this `BumpBox<T>` into `&T` that is live for this bump scope.
     /// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
     ///
     /// `!NoDrop` types can still be turned into references via [`leak`](BumpBox::leak).
@@ -188,7 +188,7 @@ impl<'a, T: ?Sized + NoDrop> BumpBox<'a, T> {
         self.into_mut()
     }
 
-    /// Turns this `BumpBox<T>` into `&mut T` that is live for the entire bump scope.
+    /// Turns this `BumpBox<T>` into `&mut T` that is live for this bump scope.
     /// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
     ///
     /// `!NoDrop` types can still be turned into references via [`leak`](BumpBox::leak).
@@ -245,7 +245,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
         }
     }
 
-    /// Turns this `BumpBox<T>` into `&mut T` that is live for the entire bump scope.
+    /// Turns this `BumpBox<T>` into `&mut T` that is live for this bump scope.
     /// `T` won't be dropped which may leak resources.
     ///
     /// If `T` is [`NoDrop`], prefer to call [`into_mut`](BumpBox::into_mut) to signify that nothing gets leaked.

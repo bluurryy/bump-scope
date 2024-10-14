@@ -130,7 +130,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         self.initialized
     }
 
-    /// Turns this `FixedBumpVec<T>` into a `&[T]` that is live for the entire bump scope.
+    /// Turns this `FixedBumpVec<T>` into a `&[T]` that is live for this bump scope.
     ///
     /// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
     ///
