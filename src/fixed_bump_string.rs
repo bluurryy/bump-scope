@@ -1,6 +1,8 @@
 use crate::{
-    error_behavior_generic_methods_if, polyfill, BaseAllocator, BumpBox, BumpScope, BumpString, ErrorBehavior, FixedBumpVec,
-    FromUtf8Error, MinimumAlignment, NoDrop, SupportedMinimumAlignment,
+    error_behavior_generic_methods_if,
+    polyfill::{self, nonnull},
+    BaseAllocator, BumpBox, BumpScope, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, MinimumAlignment, NoDrop,
+    SupportedMinimumAlignment,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
@@ -33,8 +35,11 @@ use core::{
 /// [`alloc_fixed_string`]: crate::Bump::alloc_fixed_string
 /// [`from_uninit`]: FixedBumpString::from_uninit
 /// [`from_init`]: FixedBumpString::from_init
+// `FixedBumpString` and `FixedBumpVec<u8>` have the same repr.
+#[repr(C)]
 pub struct FixedBumpString<'a> {
-    vec: FixedBumpVec<'a, u8>,
+    pub(crate) initialized: BumpBox<'a, str>,
+    pub(crate) capacity: usize,
 }
 
 unsafe impl Send for FixedBumpString<'_> {}
@@ -43,30 +48,34 @@ unsafe impl Sync for FixedBumpString<'_> {}
 impl<'a> FixedBumpString<'a> {
     /// Empty fixed string.
     pub const EMPTY: Self = Self {
-        vec: FixedBumpVec::EMPTY,
+        initialized: BumpBox::EMPTY_STR,
+        capacity: 0,
     };
 
     /// Turns a `BumpBox<str>` into a full `FixedBumpString`.
     #[must_use]
     pub fn from_init(initialized: BumpBox<'a, str>) -> Self {
-        Self {
-            vec: FixedBumpVec::from_init(initialized.into_boxed_bytes()),
-        }
+        let capacity = initialized.len();
+        Self { initialized, capacity }
     }
 
     /// Turns a `BumpBox<[MaybeUninit<u8>]>` into a `FixedBumpString` with a length of `0`.
     #[must_use]
     pub fn from_uninit(uninitialized: BumpBox<'a, [MaybeUninit<u8>]>) -> Self {
-        Self {
-            vec: FixedBumpVec::from_uninit(uninitialized),
-        }
+        let uninitialized = uninitialized.into_raw();
+        let capacity = uninitialized.len();
+
+        let ptr = nonnull::as_non_null_ptr(uninitialized).cast::<u8>();
+        let initialized = unsafe { BumpBox::from_raw(nonnull::str_from_utf8(nonnull::slice_from_raw_parts(ptr, 0))) };
+
+        Self { initialized, capacity }
     }
 
     /// Returns this `FixedBumpString`'s capacity, in bytes.
     #[must_use]
     #[inline(always)]
     pub const fn capacity(&self) -> usize {
-        self.vec.capacity()
+        self.capacity
     }
 
     /// Returns the length of this `FixedBumpString`, in bytes, not [`char`]s or
@@ -75,14 +84,14 @@ impl<'a> FixedBumpString<'a> {
     #[must_use]
     #[inline(always)]
     pub fn len(&self) -> usize {
-        self.vec.len()
+        self.initialized.len()
     }
 
     /// Returns `true` if this `FixedBumpString` has a length of zero, and `false` otherwise.
     #[must_use]
     #[inline(always)]
     pub fn is_empty(&self) -> bool {
-        self.vec.is_empty()
+        self.initialized.is_empty()
     }
 
     /// Truncates this `FixedBumpString`, removing all contents.
@@ -107,7 +116,7 @@ impl<'a> FixedBumpString<'a> {
     /// ```
     #[inline]
     pub fn clear(&mut self) {
-        self.vec.clear();
+        self.initialized.clear();
     }
 
     /// Converts a vector of bytes to a `FixedBumpString`.
@@ -168,8 +177,8 @@ impl<'a> FixedBumpString<'a> {
     /// [`&str`]: prim@str "&str"
     /// [`into_bytes`]: Self::into_bytes
     pub fn from_utf8(vec: FixedBumpVec<'a, u8>) -> Result<Self, FromUtf8Error<FixedBumpVec<'a, u8>>> {
-        match str::from_utf8(vec.as_slice()) {
-            Ok(_) => Ok(Self { vec }),
+        match core::str::from_utf8(vec.as_slice()) {
+            Ok(_) => Ok(unsafe { Self::from_utf8_unchecked(vec) }),
             Err(error) => Err(FromUtf8Error { error, bytes: vec }),
         }
     }
@@ -201,8 +210,9 @@ impl<'a> FixedBumpString<'a> {
     /// ```
     #[must_use]
     pub unsafe fn from_utf8_unchecked(vec: FixedBumpVec<'a, u8>) -> Self {
-        debug_assert!(str::from_utf8(vec.as_slice()).is_ok());
-        Self { vec }
+        let FixedBumpVec { initialized, capacity } = vec;
+        let initialized = initialized.into_boxed_str_unchecked();
+        Self { initialized, capacity }
     }
 
     /// Converts a `FixedBumpString` into a `FixedBumpVec<u8>`.
@@ -223,28 +233,30 @@ impl<'a> FixedBumpString<'a> {
     #[inline(always)]
     #[must_use = "`self` will be dropped if the result is not used"]
     pub fn into_bytes(self) -> FixedBumpVec<'a, u8> {
-        self.vec
+        let Self { initialized, capacity } = self;
+        let initialized = initialized.into_boxed_bytes();
+        FixedBumpVec { initialized, capacity }
     }
 
     /// Returns a byte slice of this `FixedBumpString`'s contents.
     #[must_use]
     #[inline(always)]
     pub fn as_bytes(&self) -> &[u8] {
-        self.vec.as_slice()
+        self.initialized.as_bytes()
     }
 
     /// Extracts a string slice containing the entire `FixedBumpString`.
     #[must_use]
     #[inline(always)]
     pub fn as_str(&self) -> &str {
-        unsafe { str::from_utf8_unchecked(self.vec.as_slice()) }
+        &self.initialized
     }
 
     /// Converts a `FixedBumpString` into a mutable string slice.
     #[must_use]
     #[inline(always)]
     pub fn as_mut_str(&mut self) -> &mut str {
-        unsafe { str::from_utf8_unchecked_mut(self.vec.as_mut_slice()) }
+        &mut self.initialized
     }
 
     /// Returns a mutable reference to the contents of this `FixedBumpString`.
@@ -258,17 +270,18 @@ impl<'a> FixedBumpString<'a> {
     #[must_use]
     #[inline(always)]
     pub unsafe fn as_mut_vec(&mut self) -> &mut FixedBumpVec<'a, u8> {
-        &mut self.vec
+        // SAFETY: The repr of `FixedBumpVec` and `FixedBumpVec<u8>` are compatible.
+        &mut *(self as *mut FixedBumpString<'a>).cast::<FixedBumpVec<'a, u8>>()
     }
 
-    /// Removes a [`char`] from this `String` at a byte position and returns it.
+    /// Removes a [`char`] from this string at a byte position and returns it.
     ///
     /// This is an *O*(*n*) operation, as it requires copying every element in the
     /// buffer.
     ///
     /// # Panics
     ///
-    /// Panics if `idx` is larger than or equal to the `String`'s length,
+    /// Panics if `idx` is larger than or equal to the string's length,
     /// or if it does not lie on a [`char`] boundary.
     ///
     /// # Examples
@@ -276,7 +289,6 @@ impl<'a> FixedBumpString<'a> {
     /// ```
     /// # use bump_scope::{ Bump, FixedBumpString };
     /// # let bump: Bump = Bump::new();
-    /// #
     /// let mut s = bump.alloc_fixed_string(4);
     /// s.push_str("abç");
     ///
@@ -286,18 +298,7 @@ impl<'a> FixedBumpString<'a> {
     /// ```
     #[inline]
     pub fn remove(&mut self, idx: usize) -> char {
-        let ch = match self[idx..].chars().next() {
-            Some(ch) => ch,
-            None => panic!("cannot remove a char from the end of a string"),
-        };
-
-        let next = idx + ch.len_utf8();
-        let len = self.len();
-        unsafe {
-            ptr::copy(self.vec.as_ptr().add(next), self.vec.as_mut_ptr().add(idx), len - next);
-            self.vec.set_len(len - (next - idx));
-        }
-        ch
+        self.initialized.remove(idx)
     }
 }
 
@@ -310,9 +311,11 @@ impl<'a> FixedBumpString<'a> {
         for fn push
         for fn try_push
         use fn generic_push(&mut self, ch: char) {
+            let vec = unsafe { self.as_mut_vec() };
+
             match ch.len_utf8() {
-                1 => self.vec.generic_push(ch as u8),
-                _ => self.vec.generic_extend_from_slice_copy(ch.encode_utf8(&mut [0; 4]).as_bytes()),
+                1 => vec.generic_push(ch as u8),
+                _ => vec.generic_extend_from_slice_copy(ch.encode_utf8(&mut [0; 4]).as_bytes()),
             }
         }
 
@@ -321,7 +324,8 @@ impl<'a> FixedBumpString<'a> {
         for fn push_str
         for fn try_push_str
         use fn generic_push_str(&mut self, string: &str) {
-            self.vec.generic_extend_from_slice_copy(string.as_bytes())
+            let vec = unsafe { self.as_mut_vec() };
+            vec.generic_extend_from_slice_copy(string.as_bytes())
         }
 
         /// Inserts a character into this `FixedBumpString` at a byte position.
@@ -462,7 +466,8 @@ impl<'a> FixedBumpString<'a> {
             assert!(self.is_char_boundary(start));
             assert!(self.is_char_boundary(end));
 
-            self.vec.generic_extend_from_within_copy(src)
+            let vec = unsafe { self.as_mut_vec() };
+            vec.generic_extend_from_within_copy(src)
         }
 
         /// Extends this string by pushing `additional` new zero bytes.
@@ -490,14 +495,15 @@ impl<'a> FixedBumpString<'a> {
         /// ```
         for fn try_extend_zeroed
         use fn generic_extend_zeroed(&mut self, additional: usize) {
-            self.vec.generic_reserve(additional)?;
+            let vec = unsafe { self.as_mut_vec() };
+            vec.generic_reserve(additional)?;
 
             unsafe {
-                let ptr = self.vec.as_mut_ptr();
-                let len = self.len();
+                let ptr = vec.as_mut_ptr();
+                let len = vec.len();
 
                 ptr.add(len).write_bytes(0, additional);
-                self.vec.set_len(len + additional);
+                vec.set_len(len + additional);
             }
 
             Ok(())
@@ -505,13 +511,15 @@ impl<'a> FixedBumpString<'a> {
     }
 
     unsafe fn insert_bytes<B: ErrorBehavior>(&mut self, idx: usize, bytes: &[u8]) -> Result<(), B> {
-        let len = self.len();
-        let amt = bytes.len();
-        self.vec.generic_reserve(amt)?;
+        let vec = unsafe { self.as_mut_vec() };
 
-        ptr::copy(self.vec.as_ptr().add(idx), self.vec.as_mut_ptr().add(idx + amt), len - idx);
-        ptr::copy_nonoverlapping(bytes.as_ptr(), self.vec.as_mut_ptr().add(idx), amt);
-        self.vec.set_len(len + amt);
+        let len = vec.len();
+        let amt = bytes.len();
+        vec.generic_reserve(amt)?;
+
+        ptr::copy(vec.as_ptr().add(idx), vec.as_mut_ptr().add(idx + amt), len - idx);
+        ptr::copy_nonoverlapping(bytes.as_ptr(), vec.as_mut_ptr().add(idx), amt);
+        vec.set_len(len + amt);
 
         Ok(())
     }
@@ -520,14 +528,14 @@ impl<'a> FixedBumpString<'a> {
     #[must_use]
     #[inline(always)]
     pub fn into_boxed_str(self) -> BumpBox<'a, str> {
-        unsafe { self.vec.into_boxed_slice().into_boxed_str_unchecked() }
+        self.initialized
     }
 
     /// Converts this `FixedBumpString` into `&str` that is live for this bump scope.
     #[must_use]
     #[inline(always)]
     pub fn into_str(self) -> &'a mut str {
-        self.into_boxed_str().into_mut()
+        self.initialized.into_mut()
     }
 
     /// Turns this `FixedBumpString<T>` into a `BumpVec<T>`.
@@ -720,7 +728,7 @@ impl Ord for FixedBumpString<'_> {
 impl Hash for FixedBumpString<'_> {
     #[inline]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        self.vec.hash(state);
+        self.as_str().hash(state);
     }
 }
 

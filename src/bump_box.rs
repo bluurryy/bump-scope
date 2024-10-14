@@ -22,6 +22,7 @@ use core::{
     ops::{Deref, DerefMut, Index, IndexMut, RangeBounds},
     ptr::{self, NonNull},
     slice::{self, SliceIndex},
+    str,
 };
 pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 
@@ -313,6 +314,8 @@ impl<'a> BumpBox<'a, [u8]> {
     #[inline]
     #[must_use]
     pub const unsafe fn into_boxed_str_unchecked(self) -> BumpBox<'a, str> {
+        debug_assert!(str::from_utf8(self.as_slice()).is_ok());
+
         let ptr = self.ptr.as_ptr();
         let _ = ManuallyDrop::new(self);
 
@@ -352,6 +355,43 @@ impl<'a> BumpBox<'a, str> {
         self.len() == 0
     }
 
+    /// Truncates this string, removing all contents.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut str = bump.alloc_str("hello");
+    /// str.clear();
+    /// assert!(str.is_empty());
+    /// ```
+    #[inline(always)]
+    pub fn clear(&mut self) {
+        unsafe {
+            self.set_len(0);
+        }
+    }
+
+    /// Returns a raw pointer to the str, or a dangling raw pointer
+    /// valid for zero sized reads.
+    #[inline]
+    #[must_use]
+    pub fn as_ptr(&self) -> *const u8 {
+        // We shadow the str method of the same name to avoid going through
+        // `deref`, which creates an intermediate reference.
+        self.ptr.as_ptr().cast()
+    }
+
+    /// Returns an unsafe mutable pointer to str, or a dangling
+    /// raw pointer valid for zero sized reads.
+    #[inline]
+    pub fn as_mut_ptr(&mut self) -> *mut u8 {
+        // We shadow the str method of the same name to avoid going through
+        // `deref_mut`, which creates an intermediate reference.
+        self.ptr.as_ptr().cast()
+    }
+
     /// Forces the length of the string to `new_len`.
     ///
     /// This is a low-level operation that maintains none of the normal
@@ -365,13 +405,50 @@ impl<'a> BumpBox<'a, str> {
     /// # Safety
     ///
     /// - `new_len` must be less than or equal to the `capacity` (capacity is not tracked by this type).
-    /// . `new_len` must lie on a `char` boundary
+    /// - `new_len` must lie on a `char` boundary
     /// - The elements at `old_len..new_len` must be initialized.
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: usize) {
         let ptr = self.ptr.cast::<u8>();
         let bytes = nonnull::slice_from_raw_parts(ptr, new_len);
         self.ptr = nonnull::str_from_utf8(bytes);
+    }
+
+    /// Removes a [`char`] from this string at a byte position and returns it.
+    ///
+    /// This is an *O*(*n*) operation, as it requires copying every element in the
+    /// buffer.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `idx` is larger than or equal to the string's length,
+    /// or if it does not lie on a [`char`] boundary.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_str("abç");
+    ///
+    /// assert_eq!(s.remove(0), 'a');
+    /// assert_eq!(s.remove(1), 'ç');
+    /// assert_eq!(s.remove(0), 'b');
+    /// ```
+    #[inline]
+    pub fn remove(&mut self, idx: usize) -> char {
+        let ch = match self[idx..].chars().next() {
+            Some(ch) => ch,
+            None => panic!("cannot remove a char from the end of a string"),
+        };
+
+        let next = idx + ch.len_utf8();
+        let len = self.len();
+        unsafe {
+            ptr::copy(self.as_ptr().add(next), self.as_mut_ptr().add(idx), len - next);
+            self.set_len(len - (next - idx));
+        }
+        ch
     }
 
     /// Retains only the characters specified by the predicate.
@@ -456,7 +533,7 @@ impl<'a> BumpBox<'a, str> {
             guard.idx += ch_len;
         }
 
-        drop(guard)
+        drop(guard);
     }
 }
 

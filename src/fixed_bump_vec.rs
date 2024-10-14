@@ -38,6 +38,8 @@ use core::{
 /// [`alloc_fixed_vec`]: crate::Bump::alloc_fixed_vec
 /// [`from_uninit`]: FixedBumpVec::from_uninit
 /// [`from_init`]: FixedBumpVec::from_init
+// `FixedBumpString` and `FixedBumpVec<u8>` have the same repr.
+#[repr(C)]
 pub struct FixedBumpVec<'a, T> {
     pub(crate) initialized: BumpBox<'a, [T]>,
     pub(crate) capacity: usize,
@@ -1268,12 +1270,12 @@ impl<'a, T> FixedBumpVec<'a, T> {
     }
 
     #[inline(always)]
-    fn into_raw_parts(self) -> (BumpBox<'a, [T]>, usize) {
+    pub(crate) fn into_raw_parts(self) -> (BumpBox<'a, [T]>, usize) {
         (self.initialized, self.capacity)
     }
 
     #[inline(always)]
-    unsafe fn from_raw_parts(initialized: BumpBox<'a, [T]>, capacity: usize) -> Self {
+    pub(crate) unsafe fn from_raw_parts(initialized: BumpBox<'a, [T]>, capacity: usize) -> Self {
         Self { initialized, capacity }
     }
 
