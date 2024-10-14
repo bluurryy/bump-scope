@@ -87,7 +87,7 @@
 //!
 //! Bumpalo is a popular crate for bump allocation.
 //! This crate was inspired by bumpalo and [Always Bump Downwards](https://fitzgeraldnick.com/2019/11/01/always-bump-downwards.html)
-//! (but completely disregards the title).
+//! (but ignores the title).
 //!
 //! Unlike `bumpalo`, this crate...
 //! - Supports [scopes and checkpoints](#scopes-and-checkpoints).
