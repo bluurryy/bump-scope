@@ -133,8 +133,12 @@ macro_rules! mut_bump_vec_rev_declaration {
             const UP: bool = true,
             const GUARANTEED_ALLOCATED: bool = true,
         > {
+            /// This points at the end of the slice (start_ptr + len).
+            /// When `T` is a ZST this is always `NonNull::<T>::dangling()`.
             end: NonNull<T>,
             len: usize,
+
+            /// When `T` is a ZST this is always `usize::MAX`.
             cap: usize,
 
             pub(crate) bump: &'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
