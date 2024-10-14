@@ -98,6 +98,10 @@ macro_rules! mut_bump_vec_rev_declaration {
     ($($allocator_parameter:tt)*) => {
         /// This is like a [`MutBumpVec`](crate::MutBumpVec), but new elements are pushed to the front.
         ///
+        /// The point of this vector is to have a more performant <code>[into](Self::into_slice)([_boxed](Self::into_boxed_slice))[_slice](Self::into_slice)`</code> for a downwards bumping allocator.
+        ///
+        /// # Examples
+        ///
         /// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
         /// ```
         /// use bump_scope::{ Bump, mut_bump_vec_rev };
