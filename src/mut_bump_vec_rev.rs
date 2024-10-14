@@ -133,7 +133,7 @@ macro_rules! mut_bump_vec_rev_declaration {
             const UP: bool = true,
             const GUARANTEED_ALLOCATED: bool = true,
         > {
-            /// This points at the end of the slice (start_ptr + len).
+            /// This points at the end of the slice (`ptr` + `len`).
             /// When `T` is a ZST this is always `NonNull::<T>::dangling()`.
             end: NonNull<T>,
             len: usize,

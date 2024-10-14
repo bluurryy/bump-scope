@@ -28,7 +28,6 @@
         offset_of_enum,
     )
 )]
-#![cfg_attr(test, allow(stable_features))]
 #![cfg_attr(
     docsrs,
     feature(doc_auto_cfg, doc_cfg_hide),
@@ -54,6 +53,7 @@
     clippy::items_after_statements,
     unknown_lints,
     rustdoc::redundant_explicit_links, // for cargo-rdme
+    stable_features, // for const_refs_to_static
 )]
 #![doc(test(attr(warn(dead_code))))]
 //! A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
