@@ -1,4 +1,4 @@
-use crate::{mut_bump_vec, mut_bump_vec_rev, Bump, MutBumpVec, MutBumpVecRev};
+use crate::{bump_vec, mut_bump_vec, mut_bump_vec_rev, Bump, BumpVec, MutBumpVec, MutBumpVecRev};
 use core::{
     cell::Cell,
     mem::ManuallyDrop,
@@ -45,7 +45,11 @@ zst_or_not! {
 
     into_iter
 
+    bump_vec_extend_from_slice
+
     mut_bump_vec_extend_from_slice
+
+    mut_bump_vec_rev_extend_from_slice
 }
 
 fn init_clone<T: Testable>() {
@@ -95,7 +99,33 @@ fn into_iter<T: Testable>() {
     });
 }
 
+fn bump_vec_extend_from_slice<T: Testable>() {
+    let bump: Bump = Bump::new();
+    let mut vec: BumpVec<T> = bump_vec![in bump];
+    let slice = ManuallyDrop::new(T::array::<5>());
+
+    expected_drops(0).panic_on_clone(3).run(|| {
+        vec.extend_from_slice_clone(&*slice);
+    });
+
+    assert_eq!(vec.len(), 3);
+    assert_initialized(vec);
+}
+
 fn mut_bump_vec_extend_from_slice<T: Testable>() {
+    let mut bump: Bump = Bump::new();
+    let mut vec: MutBumpVec<T> = mut_bump_vec![in bump];
+    let slice = ManuallyDrop::new(T::array::<5>());
+
+    expected_drops(0).panic_on_clone(3).run(|| {
+        vec.extend_from_slice_clone(&*slice);
+    });
+
+    assert_eq!(vec.len(), 3);
+    assert_initialized(vec);
+}
+
+fn mut_bump_vec_rev_extend_from_slice<T: Testable>() {
     let mut bump: Bump = Bump::new();
     let mut vec: MutBumpVecRev<T> = mut_bump_vec_rev![in bump];
     let slice = ManuallyDrop::new(T::array::<5>());
