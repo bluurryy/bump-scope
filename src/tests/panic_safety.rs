@@ -1,10 +1,11 @@
-use crate::{mut_bump_vec, Bump, MutBumpVec};
+use crate::{mut_bump_vec, mut_bump_vec_rev, Bump, MutBumpVec, MutBumpVecRev};
 use core::{
     cell::Cell,
     mem::ManuallyDrop,
     panic::{RefUnwindSafe, UnwindSafe},
 };
 use std::{
+    hint::black_box,
     panic::catch_unwind,
     sync::{Mutex, PoisonError},
 };
@@ -43,6 +44,8 @@ zst_or_not! {
     mut_bump_vec_from_elem_in
 
     into_iter
+
+    mut_bump_vec_extend_from_slice
 }
 
 fn init_clone<T: Testable>() {
@@ -98,12 +101,36 @@ fn into_iter<T: Testable>() {
     });
 }
 
+fn mut_bump_vec_extend_from_slice<T: Testable>() {
+    let mut bump: Bump = Bump::new();
+    let mut vec: MutBumpVecRev<Wrap<T>> = mut_bump_vec_rev![in bump];
+    let slice = ManuallyDrop::new([
+        Wrap(T::default()),
+        Wrap(T::default()),
+        Wrap(T::default()),
+        Wrap(T::default()),
+        Wrap(T::default()),
+    ]);
+
+    cfg().max_clones(3).run(|| {
+        vec.extend_from_slice_clone(&*slice);
+    });
+
+    assert_eq!(vec.len(), 3);
+
+    // make sure items are initialized
+    // miri will catch that
+    for item in vec {
+        black_box(item);
+    }
+}
+
 use helper::{cfg, Testable, Wrap};
 
 mod helper {
     use core::{
         cell::Cell,
-        panic::{RefUnwindSafe, UnwindSafe},
+        panic::{AssertUnwindSafe, RefUnwindSafe, UnwindSafe},
     };
 
     pub(super) trait Testable: Clone + Default + UnwindSafe + RefUnwindSafe {}
@@ -139,7 +166,7 @@ mod helper {
             self
         }
 
-        pub(super) fn run(self, f: fn()) {
+        pub(super) fn run(self, f: impl FnOnce()) {
             let Self {
                 max_clones,
                 expected_drops,
@@ -148,7 +175,7 @@ mod helper {
             let msg = msg.unwrap_or("too many clones");
 
             MAX_CLONES.set(max_clones.unwrap_or(usize::MAX));
-            let panic = catch(f).unwrap_err();
+            let panic = catch(AssertUnwindSafe(f)).unwrap_err();
             assert_eq!(panic, msg);
             assert_eq!(DROPS.get(), expected_drops);
 
@@ -163,6 +190,9 @@ mod helper {
     }
 
     pub(super) struct Wrap<T>(pub(super) T);
+
+    impl<T: UnwindSafe> UnwindSafe for Wrap<T> {}
+    impl<T: RefUnwindSafe> RefUnwindSafe for Wrap<T> {}
 
     impl<T: Clone> Clone for Wrap<T> {
         fn clone(&self) -> Self {

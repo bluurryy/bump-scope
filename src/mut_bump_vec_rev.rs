@@ -769,11 +769,11 @@ where
 
             unsafe {
                 // Addition doesn't overflow because `reserve` checked for that.
-                let mut ptr = nonnull::sub(self.end, self.len + slice.len());
+                let mut ptr = nonnull::sub(self.end, self.len);
 
-                for value in slice {
+                for value in slice.iter().rev() {
+                    ptr = nonnull::sub(ptr, 1);
                     nonnull::write_with(ptr, || value.clone());
-                    ptr = nonnull::add(ptr, 1);
                     self.len += 1;
                 }
             }

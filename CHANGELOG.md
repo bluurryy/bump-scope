@@ -2,7 +2,8 @@
 
 ## Unreleased
 - **added:** `MutBumpVecRev::{ append, into_flattened }`
-- **fixed:** `MutBumpVecRev::extend_from_within_clone` for ZSTs
+- **fixed:** `MutBumpVecRev::extend_from_within_clone` doing nothing for ZSTs
+- **fixed:** potential UB in `MutBumpVecRev::extend_from_slice_clone` when clone panics
 
 ## 0.10.0 (2024-10-07)
 - **breaking:** upgraded `zerocopy` dependency to version `0.8.2`
