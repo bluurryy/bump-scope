@@ -345,6 +345,11 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     }
 
     #[inline(always)]
+    unsafe fn unchecked_push(&mut self, value: T) {
+        self.unchecked_push_with(|| value);
+    }
+
+    #[inline(always)]
     unsafe fn unchecked_push_with(&mut self, f: impl FnOnce() -> T) {
         debug_assert!(self.len < self.cap);
 
@@ -1503,6 +1508,20 @@ where
             let count = range.len();
 
             self.generic_reserve(count)?;
+
+            if T::IS_ZST {
+                unsafe {
+                    // We can materialize ZST's from nothing.
+                    #[allow(clippy::uninit_assumed_init)]
+                    let fake = ManuallyDrop::new(MaybeUninit::<T>::uninit().assume_init());
+
+                    for _ in 0..count {
+                        self.unchecked_push((*fake).clone());
+                    }
+
+                    return Ok(());
+                }
+            }
 
             // SAFETY:
             // - `slice::range` guarantees that the given range is valid for indexing self
