@@ -1,7 +1,7 @@
 # Changelog
 
 ## Unreleased
-- **added:** `MutBumpVecRev::{ append, into_flattened }`
+- **added:** `MutBumpVecRev::{ append, into_flattened, as_non_null_{ptr, slice} }`
 - **fixed:** `MutBumpVecRev::extend_from_within_clone` doing nothing for ZSTs
 - **fixed:** potential UB in `MutBumpVecRev::extend_from_slice_clone` when clone panics
 

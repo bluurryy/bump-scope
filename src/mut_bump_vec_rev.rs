@@ -313,12 +313,6 @@ where
 impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
     MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 {
-    #[must_use]
-    #[inline(always)]
-    fn as_nonnull_slice(&self) -> NonNull<[T]> {
-        nonnull::slice_from_raw_parts(self.as_nonnull_ptr(), self.len)
-    }
-
     #[doc = include_str!("docs/vec/capacity.md")]
     /// # Examples
     ///
@@ -500,9 +494,20 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
         self.as_nonnull_ptr().as_ptr()
     }
 
-    #[inline]
-    fn as_nonnull_ptr(&self) -> NonNull<T> {
+    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
+    /// valid for zero sized reads.
+    #[must_use]
+    #[inline(always)]
+    pub fn as_nonnull_ptr(&self) -> NonNull<T> {
         unsafe { nonnull::sub(self.end, self.len) }
+    }
+
+    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
+    /// valid for zero sized reads.
+    #[must_use]
+    #[inline(always)]
+    pub fn as_nonnull_slice(&self) -> NonNull<[T]> {
+        nonnull::slice_from_raw_parts(self.as_nonnull_ptr(), self.len)
     }
 
     #[doc = include_str!("docs/vec/rev/truncate.md")]
