@@ -8,7 +8,7 @@ use core::{
     borrow::{Borrow, BorrowMut},
     fmt::{self, Debug, Display},
     hash::Hash,
-    mem::MaybeUninit,
+    mem::{self, MaybeUninit},
     ops::{Deref, DerefMut, Range, RangeBounds},
     ptr, str,
 };
@@ -178,7 +178,9 @@ impl<'a> FixedBumpString<'a> {
     /// [`into_bytes`]: Self::into_bytes
     pub fn from_utf8(vec: FixedBumpVec<'a, u8>) -> Result<Self, FromUtf8Error<FixedBumpVec<'a, u8>>> {
         match core::str::from_utf8(vec.as_slice()) {
-            Ok(_) => Ok(unsafe { Self::from_utf8_unchecked(vec) }),
+            // SAFETY: `FixedBumpVec<u8>` and `FixedBumpString` have the same representation;
+            // only the invariant that the bytes are utf8 is different.
+            Ok(_) => Ok(unsafe { mem::transmute(vec) }),
             Err(error) => Err(FromUtf8Error { error, bytes: vec }),
         }
     }
@@ -210,9 +212,10 @@ impl<'a> FixedBumpString<'a> {
     /// ```
     #[must_use]
     pub unsafe fn from_utf8_unchecked(vec: FixedBumpVec<'a, u8>) -> Self {
-        let FixedBumpVec { initialized, capacity } = vec;
-        let initialized = initialized.into_boxed_str_unchecked();
-        Self { initialized, capacity }
+        debug_assert!(str::from_utf8(vec.as_slice()).is_ok());
+        // SAFETY: `FixedBumpVec<u8>` and `FixedBumpString` have the same representation;
+        // only the invariant that the bytes are utf8 is different.
+        mem::transmute(vec)
     }
 
     /// Converts a `FixedBumpString` into a `FixedBumpVec<u8>`.
@@ -233,9 +236,9 @@ impl<'a> FixedBumpString<'a> {
     #[inline(always)]
     #[must_use = "`self` will be dropped if the result is not used"]
     pub fn into_bytes(self) -> FixedBumpVec<'a, u8> {
-        let Self { initialized, capacity } = self;
-        let initialized = initialized.into_boxed_bytes();
-        FixedBumpVec { initialized, capacity }
+        // SAFETY: `FixedBumpVec<u8>` and `FixedBumpString` have the same representation;
+        // only the invariant that the bytes are utf8 is different.
+        unsafe { mem::transmute(self) }
     }
 
     /// Returns a byte slice of this `FixedBumpString`'s contents.
@@ -270,8 +273,9 @@ impl<'a> FixedBumpString<'a> {
     #[must_use]
     #[inline(always)]
     pub unsafe fn as_mut_vec(&mut self) -> &mut FixedBumpVec<'a, u8> {
-        // SAFETY: The repr of `FixedBumpVec` and `FixedBumpVec<u8>` are compatible.
-        &mut *(self as *mut FixedBumpString<'a>).cast::<FixedBumpVec<'a, u8>>()
+        // SAFETY: `BumpVec<u8>` and `BumpString` have the same representation;
+        // only the invariant that the bytes are utf8 is different.
+        mem::transmute(self)
     }
 
     /// Removes a [`char`] from this string at a byte position and returns it.

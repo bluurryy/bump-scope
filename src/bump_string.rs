@@ -303,7 +303,8 @@ where
     ) -> Result<Self, FromUtf8Error<BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>> {
         #[allow(clippy::missing_transmute_annotations)]
         match str::from_utf8(vec.as_slice()) {
-            // SAFETY: `BumpVec<u8>` and `BumpString` have the same repr
+            // SAFETY: `BumpVec<u8>` and `BumpString` have the same representation;
+            // only the invariant that the bytes are utf8 is different.
             Ok(_) => Ok(unsafe { mem::transmute(vec) }),
             Err(error) => Err(FromUtf8Error { error, bytes: vec }),
         }
@@ -335,6 +336,9 @@ where
     #[must_use]
     pub unsafe fn from_utf8_unchecked(vec: BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> Self {
         debug_assert!(str::from_utf8(vec.as_slice()).is_ok());
+
+        // SAFETY: `BumpVec<u8>` and `BumpString` have the same representation;
+        // only the invariant that the bytes are utf8 is different.
         mem::transmute(vec)
     }
 
@@ -356,6 +360,8 @@ where
     #[inline(always)]
     #[must_use = "`self` will be dropped if the result is not used"]
     pub fn into_bytes(self) -> BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
+        // SAFETY: `BumpVec<u8>` and `BumpString` have the same representation;
+        // only the invariant that the bytes are utf8 is different.
         unsafe { mem::transmute(self) }
     }
 
@@ -391,16 +397,9 @@ where
     #[must_use]
     #[inline(always)]
     pub unsafe fn as_mut_vec(&mut self) -> &mut BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
-        // SAFETY: The repr of `FixedBumpVec` and `FixedBumpVec<u8>` are compatible.
-        &mut *(self as *mut BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>).cast::<BumpVec<
-            'b,
-            'a,
-            u8,
-            A,
-            MIN_ALIGN,
-            UP,
-            GUARANTEED_ALLOCATED,
-        >>()
+        // SAFETY: `BumpVec<u8>` and `BumpString` have the same representation;
+        // only the invariant that the bytes are utf8 is different.
+        mem::transmute(self)
     }
 
     /// Removes a [`char`] from this string at a byte position and returns it.
@@ -456,8 +455,6 @@ where
         for fn push_str
         for fn try_push_str
         use fn generic_push_str(&mut self, string: &str) {
-            eprintln!("pushing string: {string:?}");
-
             let vec = unsafe { self.as_mut_vec() };
             vec.generic_extend_from_slice_copy(string.as_bytes())
         }
