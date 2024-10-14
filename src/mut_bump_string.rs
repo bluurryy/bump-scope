@@ -242,6 +242,34 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
         self.fixed.pop()
     }
 
+    /// Shortens this string to the specified length.
+    ///
+    /// If `new_len` is greater than or equal to the string's current length, this has no
+    /// effect.
+    ///
+    /// Note that this method has no effect on the allocated capacity
+    /// of the string
+    ///
+    /// # Panics
+    ///
+    /// Panics if `new_len` does not lie on a [`char`] boundary.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut s = MutBumpString::from_str_in("hello", &mut bump);
+    ///
+    /// s.truncate(2);
+    ///
+    /// assert_eq!("he", s);
+    /// ```
+    #[inline]
+    pub fn truncate(&mut self, new_len: usize) {
+        self.fixed.truncate(new_len);
+    }
+
     /// Truncates this `MutBumpString`, removing all contents.
     ///
     /// While this means the `MutBumpString` will have a length of zero, it does not

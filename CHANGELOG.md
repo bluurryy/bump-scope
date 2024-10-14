@@ -1,8 +1,9 @@
 # Changelog
 
 ## Unreleased
-- **added:** missing string methods to `BumpBox<str>`: `len`, `is_empty`, `set_len`, `retain`, `clear`, `as_ptr`, `as_mut_ptr`, `remove`
+- **added:** missing string methods to `BumpBox<str>`: `len`, `is_empty`, `set_len`, `retain`, `clear`, `as_ptr`, `as_mut_ptr`, `remove`, `as_mut_bytes`
 - **added:** `Default` for `FixedBumpString`
+- **added:** string methods `pop`, `truncate`
 
 ## 0.10.1 (2024-10-14)
 - **added:** `MutBumpVecRev::{ append, into_flattened, unchecked_push(_with), as_non_null_{ptr, slice} }`

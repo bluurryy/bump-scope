@@ -117,6 +117,35 @@ impl<'a> FixedBumpString<'a> {
         self.initialized.pop()
     }
 
+    /// Shortens this string to the specified length.
+    ///
+    /// If `new_len` is greater than or equal to the string's current length, this has no
+    /// effect.
+    ///
+    /// Note that this method has no effect on the allocated capacity
+    /// of the string
+    ///
+    /// # Panics
+    ///
+    /// Panics if `new_len` does not lie on a [`char`] boundary.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_fixed_string(5);
+    /// s.push_str("hello");
+    ///
+    /// s.truncate(2);
+    ///
+    /// assert_eq!("he", s);
+    /// ```
+    #[inline]
+    pub fn truncate(&mut self, new_len: usize) {
+        self.initialized.truncate(new_len);
+    }
+
     /// Truncates this `FixedBumpString`, removing all contents.
     ///
     /// While this means the `FixedBumpString` will have a length of zero, it does not

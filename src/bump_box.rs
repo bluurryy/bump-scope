@@ -4,7 +4,7 @@ mod slice_initializer;
 use crate::WithLifetime;
 use crate::{
     owned_slice,
-    polyfill::{self, nonnull},
+    polyfill::{self, nonnull, transmute_mut},
     BumpAllocator, FromUtf8Error, NoDrop, SizedTypeProperties,
 };
 #[cfg(feature = "alloc")]
@@ -340,6 +340,22 @@ impl<'a> BumpBox<'a, str> {
         }
     }
 
+    /// Returns a mutable reference to the bytes of this string.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because the returned `&mut BumpBox<[u8]>` allows writing
+    /// bytes which are not valid UTF-8. If this constraint is violated, using
+    /// the original `BumpBox<str>` after dropping the `&mut Vec` may violate memory
+    /// safety, as `BumpBox<str>`s must be valid UTF-8.
+    #[must_use]
+    #[inline(always)]
+    pub unsafe fn as_mut_bytes(&mut self) -> &mut BumpBox<'a, [u8]> {
+        // SAFETY: `BumpBox<[u8]>` and `BumpBox<str>` have the same representation;
+        // only the invariant that the bytes are utf8 is different.
+        transmute_mut(self)
+    }
+
     /// Returns the number of bytes in the string, also referred to
     /// as its 'length'.
     #[must_use]
@@ -374,12 +390,43 @@ impl<'a> BumpBox<'a, str> {
     /// ```
     #[inline]
     pub fn pop(&mut self) -> Option<char> {
-        let ch = self.chars().rev().next()?;
+        let ch = self.chars().next_back()?;
         let new_len = self.len() - ch.len_utf8();
         unsafe {
             self.set_len(new_len);
         }
         Some(ch)
+    }
+
+    /// Shortens this string to the specified length.
+    ///
+    /// If `new_len` is greater than or equal to the string's current length, this has no
+    /// effect.
+    ///
+    /// Note that this method has no effect on the allocated capacity
+    /// of the string
+    ///
+    /// # Panics
+    ///
+    /// Panics if `new_len` does not lie on a [`char`] boundary.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_str("hello");
+    ///
+    /// s.truncate(2);
+    ///
+    /// assert_eq!("he", s);
+    /// ```
+    #[inline]
+    pub fn truncate(&mut self, new_len: usize) {
+        if new_len <= self.len() {
+            assert!(self.is_char_boundary(new_len));
+            unsafe { self.as_mut_bytes().truncate(new_len) }
+        }
     }
 
     /// Truncates this string, removing all contents.
