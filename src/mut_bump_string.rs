@@ -209,14 +209,14 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     /// length of the string.
     #[must_use]
     #[inline(always)]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.fixed.len()
     }
 
     /// Returns `true` if this `MutBumpString` has a length of zero, and `false` otherwise.
     #[must_use]
     #[inline(always)]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.fixed.is_empty()
     }
 
@@ -702,7 +702,7 @@ where
     }
 
     unsafe fn insert_bytes<B: ErrorBehavior>(&mut self, idx: usize, bytes: &[u8]) -> Result<(), B> {
-        let vec = unsafe { self.as_mut_vec() };
+        let vec = self.as_mut_vec();
 
         let len = vec.len();
         let amt = bytes.len();
