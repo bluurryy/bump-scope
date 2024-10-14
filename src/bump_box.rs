@@ -332,9 +332,131 @@ impl<'a> BumpBox<'a, str> {
     #[must_use]
     pub fn into_boxed_bytes(self) -> BumpBox<'a, [u8]> {
         BumpBox {
-            ptr: unsafe { NonNull::new_unchecked(self.ptr.as_ptr() as *mut [u8]) },
+            ptr: nonnull::str_bytes(self.ptr),
             marker: PhantomData,
         }
+    }
+
+    /// Returns the number of bytes in the string, also referred to
+    /// as its 'length'.
+    #[must_use]
+    #[inline(always)]
+    pub const fn len(&self) -> usize {
+        nonnull::str_len(self.ptr)
+    }
+
+    /// Returns `true` if the slice contains no elements.
+    #[must_use]
+    #[inline(always)]
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Forces the length of the string to `new_len`.
+    ///
+    /// This is a low-level operation that maintains none of the normal
+    /// invariants of the type. Normally changing the length of a boxed slice
+    /// is done using one of the safe operations instead, such as
+    /// [`truncate`] or [`clear`].
+    ///
+    /// [`truncate`]: Self::truncate
+    /// [`clear`]: Self::clear
+    ///
+    /// # Safety
+    ///
+    /// - `new_len` must be less than or equal to the `capacity` (capacity is not tracked by this type).
+    /// . `new_len` must lie on a `char` boundary
+    /// - The elements at `old_len..new_len` must be initialized.
+    #[inline]
+    pub unsafe fn set_len(&mut self, new_len: usize) {
+        let ptr = self.ptr.cast::<u8>();
+        let bytes = nonnull::slice_from_raw_parts(ptr, new_len);
+        self.ptr = nonnull::str_from_utf8(bytes);
+    }
+
+    /// Retains only the characters specified by the predicate.
+    ///
+    /// In other words, remove all characters `c` such that `f(c)` returns `false`.
+    /// This method operates in place, visiting each character exactly once in the
+    /// original order, and preserves the order of the retained characters.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_str("f_o_ob_ar");
+    ///
+    /// s.retain(|c| c != '_');
+    ///
+    /// assert_eq!(s, "foobar");
+    /// ```
+    ///
+    /// Because the elements are visited exactly once in the original order,
+    /// external state may be used to decide which elements to keep.
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_str("abcde");
+    /// let keep = [false, true, true, false, true];
+    /// let mut iter = keep.iter();
+    /// s.retain(|_| *iter.next().unwrap());
+    /// assert_eq!(s, "bce");
+    /// ```
+    #[inline]
+    pub fn retain<F>(&mut self, mut f: F)
+    where
+        F: FnMut(char) -> bool,
+    {
+        struct SetLenOnDrop<'b, 'a> {
+            s: &'b mut BumpBox<'a, str>,
+            idx: usize,
+            del_bytes: usize,
+        }
+
+        impl Drop for SetLenOnDrop<'_, '_> {
+            fn drop(&mut self) {
+                let new_len = self.idx - self.del_bytes;
+                debug_assert!(new_len <= self.s.len());
+                unsafe { self.s.set_len(new_len) };
+            }
+        }
+
+        let len = self.len();
+        let mut guard = SetLenOnDrop {
+            s: self,
+            idx: 0,
+            del_bytes: 0,
+        };
+
+        while guard.idx < len {
+            let ch =
+                // SAFETY: `guard.idx` is positive-or-zero and less that len so the `get_unchecked`
+                // is in bound. `self` is valid UTF-8 like string and the returned slice starts at
+                // a unicode code point so the `Chars` always return one character.
+                unsafe { guard.s.get_unchecked(guard.idx..len).chars().next().unwrap_unchecked() };
+            let ch_len = ch.len_utf8();
+
+            if !f(ch) {
+                guard.del_bytes += ch_len;
+            } else if guard.del_bytes > 0 {
+                // SAFETY: `guard.idx` is in bound and `guard.del_bytes` represent the number of
+                // bytes that are erased from the string so the resulting `guard.idx -
+                // guard.del_bytes` always represent a valid unicode code point.
+                //
+                // `guard.del_bytes` >= `ch.len_utf8()`, so taking a slice with `ch.len_utf8()` len
+                // is safe.
+                ch.encode_utf8(unsafe {
+                    slice::from_raw_parts_mut(guard.s.as_mut_ptr().add(guard.idx - guard.del_bytes), ch.len_utf8())
+                });
+            }
+
+            // Point idx to the next char
+            guard.idx += ch_len;
+        }
+
+        drop(guard)
     }
 }
 

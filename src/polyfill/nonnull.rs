@@ -199,6 +199,24 @@ pub(crate) const fn slice_from_raw_parts<T>(data: NonNull<T>, len: usize) -> Non
     unsafe { NonNull::new_unchecked(pointer::cast_mut(ptr::slice_from_raw_parts(data.as_ptr(), len))) }
 }
 
+#[must_use]
+#[inline(always)]
+pub(crate) const fn str_from_utf8(bytes: NonNull<[u8]>) -> NonNull<str> {
+    unsafe { NonNull::new_unchecked(bytes.as_ptr() as *mut str) }
+}
+
+#[must_use]
+#[inline(always)]
+pub(crate) const fn str_bytes(str: NonNull<str>) -> NonNull<[u8]> {
+    unsafe { NonNull::new_unchecked(str.as_ptr() as *mut [u8]) }
+}
+
+#[must_use]
+#[inline(always)]
+pub(crate) const fn str_len(str: NonNull<str>) -> usize {
+    str_bytes(str).len()
+}
+
 /// See [`ptr::copy`] for semantics and safety requirements.
 #[inline(always)]
 pub(crate) unsafe fn copy<T>(src: NonNull<T>, dst: NonNull<T>, count: usize) {
