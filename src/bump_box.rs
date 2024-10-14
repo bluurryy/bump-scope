@@ -355,6 +355,33 @@ impl<'a> BumpBox<'a, str> {
         self.len() == 0
     }
 
+    /// Removes the last character from the string buffer and returns it.
+    ///
+    /// Returns [`None`] if this string is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_str("abč");
+    ///
+    /// assert_eq!(s.pop(), Some('č'));
+    /// assert_eq!(s.pop(), Some('b'));
+    /// assert_eq!(s.pop(), Some('a'));
+    ///
+    /// assert_eq!(s.pop(), None);
+    /// ```
+    #[inline]
+    pub fn pop(&mut self) -> Option<char> {
+        let ch = self.chars().rev().next()?;
+        let new_len = self.len() - ch.len_utf8();
+        unsafe {
+            self.set_len(new_len);
+        }
+        Some(ch)
+    }
+
     /// Truncates this string, removing all contents.
     ///
     /// # Examples

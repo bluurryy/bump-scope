@@ -94,6 +94,29 @@ impl<'a> FixedBumpString<'a> {
         self.initialized.is_empty()
     }
 
+    /// Removes the last character from the string buffer and returns it.
+    ///
+    /// Returns [`None`] if this string is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_fixed_string(4);
+    /// s.push_str("abč");
+    ///
+    /// assert_eq!(s.pop(), Some('č'));
+    /// assert_eq!(s.pop(), Some('b'));
+    /// assert_eq!(s.pop(), Some('a'));
+    ///
+    /// assert_eq!(s.pop(), None);
+    /// ```
+    #[inline]
+    pub fn pop(&mut self) -> Option<char> {
+        self.initialized.pop()
+    }
+
     /// Truncates this `FixedBumpString`, removing all contents.
     ///
     /// While this means the `FixedBumpString` will have a length of zero, it does not

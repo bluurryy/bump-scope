@@ -220,6 +220,28 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
         self.fixed.is_empty()
     }
 
+    /// Removes the last character from the string buffer and returns it.
+    ///
+    /// Returns [`None`] if this string is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut s = MutBumpString::from_str_in("abč", &mut bump);
+    ///
+    /// assert_eq!(s.pop(), Some('č'));
+    /// assert_eq!(s.pop(), Some('b'));
+    /// assert_eq!(s.pop(), Some('a'));
+    ///
+    /// assert_eq!(s.pop(), None);
+    /// ```
+    #[inline]
+    pub fn pop(&mut self) -> Option<char> {
+        self.fixed.pop()
+    }
+
     /// Truncates this `MutBumpString`, removing all contents.
     ///
     /// While this means the `MutBumpString` will have a length of zero, it does not
