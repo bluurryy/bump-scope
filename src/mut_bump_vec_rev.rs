@@ -13,7 +13,7 @@ use core::{
     mem::{ManuallyDrop, MaybeUninit},
     ops::{Deref, DerefMut, Index, IndexMut, RangeBounds},
     panic::{RefUnwindSafe, UnwindSafe},
-    ptr::{self, NonNull},
+    ptr::{self, addr_of_mut, NonNull},
     slice::{self, SliceIndex},
 };
 
@@ -585,6 +585,44 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     pub unsafe fn set_len(&mut self, new_len: usize) {
         debug_assert!(new_len <= self.cap);
         self.len = new_len;
+    }
+
+    #[inline(always)]
+    fn into_raw_parts(
+        self,
+    ) -> (
+        NonNull<T>,
+        usize,
+        usize,
+        &'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+    ) {
+        let end = self.end;
+        let len = self.len;
+        let cap = self.cap;
+
+        unsafe {
+            let mut this = MaybeUninit::new(self);
+            let bump = addr_of_mut!((*this.as_mut_ptr()).bump).read();
+
+            (end, len, cap, bump)
+        }
+    }
+
+    #[expect(dead_code)]
+    #[inline(always)]
+    unsafe fn from_raw_parts(
+        end: NonNull<T>,
+        len: usize,
+        cap: usize,
+        bump: &'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+    ) -> Self {
+        Self {
+            end,
+            len,
+            cap,
+            bump,
+            marker: PhantomData,
+        }
     }
 }
 
@@ -1487,6 +1525,59 @@ where
             }
 
             Ok(())
+        }
+    }
+}
+
+impl<'b, 'a: 'b, T, A, const N: usize, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+    MutBumpVecRev<'b, 'a, [T; N], A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+    /// Takes a `MutBumpVecRev<[T; N]>` and flattens it into a `MutBumpVecRev<T>`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the length of the resulting vector would overflow a `usize`.
+    ///
+    /// This is only possible when flattening a vector of arrays of zero-sized
+    /// types, and thus tends to be irrelevant in practice. If
+    /// `size_of::<T>() > 0`, this will never panic.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec_rev };
+    /// # let mut bump: Bump = Bump::new();
+    /// #
+    /// let mut vec = mut_bump_vec_rev![in bump; [1, 2, 3], [4, 5, 6], [7, 8, 9]];
+    /// assert_eq!(vec.pop(), Some([1, 2, 3]));
+    ///
+    /// let mut flattened = vec.into_flattened();
+    /// assert_eq!(flattened.pop(), Some(4));
+    /// ```
+    #[must_use]
+    pub fn into_flattened(self) -> MutBumpVecRev<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
+        let (end, len, cap, bump) = self.into_raw_parts();
+
+        let (new_len, new_cap) = if T::IS_ZST {
+            (len.checked_mul(N).expect("vec len overflow"), usize::MAX)
+        } else {
+            // SAFETY:
+            // - `cap * N` cannot overflow because the allocation is already in
+            // the address space.
+            // - Each `[T; N]` has `N` valid elements, so there are `len * N`
+            // valid elements in the allocation.
+            unsafe { (polyfill::usize::unchecked_mul(len, N), polyfill::usize::unchecked_mul(cap, N)) }
+        };
+
+        MutBumpVecRev {
+            end: end.cast(),
+            len: new_len,
+            cap: new_cap,
+            bump,
+            marker: PhantomData,
         }
     }
 }

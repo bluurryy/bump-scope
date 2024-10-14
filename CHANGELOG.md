@@ -1,7 +1,7 @@
 # Changelog
 
 ## Unreleased
-- **added:** `MutBumpVecRev::append`
+- **added:** `MutBumpVecRev::{ append, into_flattened }`
 
 ## 0.10.0 (2024-10-07)
 - **breaking:** upgraded `zerocopy` dependency to version `0.8.2`
