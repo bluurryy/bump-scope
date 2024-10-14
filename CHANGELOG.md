@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- **added:** missing string methods to `BumpBox<str>`: `len`, `is_empty`, `set_len`, `retain`, `clear`, `as_ptr`, `as_mut_ptr`, `remove`
+- **added:** `Default` for `FixedBumpString`
+
 ## 0.10.1 (2024-10-14)
 - **added:** `MutBumpVecRev::{ append, into_flattened, unchecked_push(_with), as_non_null_{ptr, slice} }`
 - **fixed:** `MutBumpVecRev::extend_from_within_clone` doing nothing for ZSTs
