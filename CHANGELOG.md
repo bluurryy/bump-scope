@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **added:** `MutBumpVecRev::append`
+
 ## 0.10.0 (2024-10-07)
 - **breaking:** upgraded `zerocopy` dependency to version `0.8.2`
 - **breaking:** removed deprecated methods `FixedBumpVec::{ layout, as_(mut_)boxed_slice }`, 

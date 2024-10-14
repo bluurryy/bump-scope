@@ -1034,6 +1034,44 @@ where
                 Ok(())
             }
         }
+
+        /// Moves all the elements of `other` into `self`, leaving `other` empty.
+        impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
+        /// # let mut bump: Bump = Bump::new();
+        /// // needs a scope because of lifetime shenanigans
+        /// let mut bump = bump.as_mut_scope();
+        /// let mut slice = bump.alloc_slice_copy(&[4, 5, 6]);
+        /// let mut vec = mut_bump_vec_rev![in bump; 1, 2, 3];
+        /// vec.append(&mut slice);
+        /// assert_eq!(vec, [4, 5, 6, 1, 2, 3]);
+        /// assert_eq!(slice, []);
+        /// ```
+        for fn append
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// // needs a scope because of lifetime shenanigans
+        /// let mut bump = bump.as_mut_scope();
+        /// let mut slice = bump.try_alloc_slice_copy(&[4, 5, 6])?;
+        /// let mut vec = mut_bump_vec_rev![try in bump; 1, 2, 3]?;
+        /// vec.try_append(&mut slice)?;
+        /// assert_eq!(vec, [4, 5, 6, 1, 2, 3]);
+        /// assert_eq!(slice, []);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        for fn try_append
+        use fn generic_append(&mut self, other: &mut BumpBox<[T]>) {
+            unsafe {
+                self.extend_by_copy_nonoverlapping(other.as_slice())?;
+                other.set_len(0);
+                Ok(())
+            }
+        }
     }
 
     /// Extend the vector by `n` clones of value.
