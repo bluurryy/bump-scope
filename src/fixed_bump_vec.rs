@@ -1273,7 +1273,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     }
 
     #[inline(always)]
-    fn from_raw_parts(initialized: BumpBox<'a, [T]>, capacity: usize) -> Self {
+    unsafe fn from_raw_parts(initialized: BumpBox<'a, [T]>, capacity: usize) -> Self {
         Self { initialized, capacity }
     }
 

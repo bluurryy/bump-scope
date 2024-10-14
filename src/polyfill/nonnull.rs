@@ -269,16 +269,6 @@ pub(crate) unsafe fn truncate<T>(slice: &mut NonNull<[T]>, len: usize) {
     drop_in_place(to_drop);
 }
 
-#[allow(unused_macros)]
-macro_rules! addr_of {
-    ($ptr:ident.$member:ident) => {{
-        NonNull::new_unchecked(core::ptr::addr_of_mut!((*$ptr.as_ptr()).$member))
-    }};
-}
-
-#[allow(unused_imports)]
-pub(crate) use addr_of;
-
 /// like `<NonNull<T> as From<&T>>::from` but `const`
 pub(crate) const fn from_ref<T>(r: &T) -> NonNull<T> {
     unsafe { NonNull::new_unchecked(r as *const T as *mut T) }
