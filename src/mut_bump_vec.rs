@@ -124,6 +124,7 @@ macro_rules! mut_bump_vec_declaration {
         // If we want to reset the bump pointer to a previous chunk, we use a bump scope.
         // We could do it here, by resetting to the last non-empty chunk but that would require a loop.
         // Chunk allocations are supposed to be very rare, so this wouldn't be worth it.
+        #[repr(C)]
         pub struct MutBumpVec<
             'b,
             'a: 'b,

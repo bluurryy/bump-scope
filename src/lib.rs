@@ -51,6 +51,7 @@
     clippy::partialeq_ne_impl,
     clippy::collapsible_else_if,
     clippy::items_after_statements,
+    clippy::missing_transmute_annotations,
     unknown_lints,
     rustdoc::redundant_explicit_links, // for cargo-rdme
     stable_features, // for const_refs_to_static

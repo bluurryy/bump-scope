@@ -1,6 +1,6 @@
 use crate::{
     error_behavior_generic_methods_if,
-    polyfill::{self, nonnull},
+    polyfill::{self, nonnull, transmute_mut},
     BaseAllocator, BumpBox, BumpScope, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, MinimumAlignment, NoDrop,
     SupportedMinimumAlignment,
 };
@@ -275,7 +275,7 @@ impl<'a> FixedBumpString<'a> {
     pub unsafe fn as_mut_vec(&mut self) -> &mut FixedBumpVec<'a, u8> {
         // SAFETY: `BumpVec<u8>` and `BumpString` have the same representation;
         // only the invariant that the bytes are utf8 is different.
-        mem::transmute(self)
+        transmute_mut(self)
     }
 
     /// Removes a [`char`] from this string at a byte position and returns it.

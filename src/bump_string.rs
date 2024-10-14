@@ -3,8 +3,10 @@ use allocator_api2::alloc::Allocator;
 #[cfg(not(no_global_oom_handling))]
 use crate::Infallibly;
 use crate::{
-    error_behavior_generic_methods_allocation_failure, polyfill, BaseAllocator, BumpBox, BumpScope, BumpVec, ErrorBehavior,
-    FixedBumpString, FromUtf8Error, GuaranteedAllocatedStats, MinimumAlignment, Stats, SupportedMinimumAlignment,
+    error_behavior_generic_methods_allocation_failure,
+    polyfill::{self, transmute_mut},
+    BaseAllocator, BumpBox, BumpScope, BumpVec, ErrorBehavior, FixedBumpString, FromUtf8Error, GuaranteedAllocatedStats,
+    MinimumAlignment, Stats, SupportedMinimumAlignment,
 };
 use core::{
     alloc::Layout,
@@ -399,7 +401,7 @@ where
     pub unsafe fn as_mut_vec(&mut self) -> &mut BumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
         // SAFETY: `BumpVec<u8>` and `BumpString` have the same representation;
         // only the invariant that the bytes are utf8 is different.
-        mem::transmute(self)
+        transmute_mut(self)
     }
 
     /// Removes a [`char`] from this string at a byte position and returns it.
@@ -682,7 +684,6 @@ where
     /// ```
     pub fn shrink_to_fit(&mut self) {
         let vec = unsafe { self.as_mut_vec() };
-
         vec.shrink_to_fit();
     }
 

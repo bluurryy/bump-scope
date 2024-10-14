@@ -1,11 +1,14 @@
 use crate::{
-    error_behavior_generic_methods_allocation_failure, polyfill, BaseAllocator, BumpBox, BumpScope, ErrorBehavior,
-    FromUtf8Error, GuaranteedAllocatedStats, MinimumAlignment, MutBumpVec, Stats, SupportedMinimumAlignment,
+    error_behavior_generic_methods_allocation_failure,
+    polyfill::{self, nonnull, transmute_mut},
+    BaseAllocator, BumpBox, BumpScope, ErrorBehavior, FixedBumpString, FromUtf8Error, GuaranteedAllocatedStats,
+    MinimumAlignment, MutBumpVec, Stats, SupportedMinimumAlignment,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
     fmt::{self, Debug, Display},
     hash::Hash,
+    mem,
     ops::{Deref, DerefMut, Range, RangeBounds},
     ptr, str,
 };
@@ -115,6 +118,7 @@ macro_rules! mut_bump_string_declaration {
         ///
         /// [`&str`]: prim@str "&str"
         /// [`from_utf8`]: MutBumpString::from_utf8
+        #[repr(C)]
         pub struct MutBumpString<
             'b,
             'a: 'b,
@@ -123,7 +127,8 @@ macro_rules! mut_bump_string_declaration {
             const UP: bool = true,
             const GUARANTEED_ALLOCATED: bool = true,
         > {
-            vec: MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+            fixed: FixedBumpString<'b>,
+            pub(crate) bump: &'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
         }
     };
 }
@@ -141,7 +146,8 @@ where
     /// The vector will not allocate until elements are pushed onto it.
     pub fn new_in(bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
         Self {
-            vec: MutBumpVec::new_in(bump),
+            fixed: FixedBumpString::EMPTY,
+            bump: bump.into(),
         }
     }
 
@@ -156,7 +162,24 @@ where
         for fn with_capacity_in
         for fn try_with_capacity_in
         use fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
-            Ok(Self { vec: MutBumpVec::generic_with_capacity_in(capacity, bump.into())? } )
+            let bump = bump.into();
+
+            if capacity == 0 {
+                return Ok(Self {
+                    fixed: FixedBumpString::EMPTY,
+                    bump,
+                });
+            }
+
+            let (ptr, capacity) = bump.alloc_greedy(capacity)?;
+
+            Ok(Self {
+                fixed: FixedBumpString {
+                    initialized: unsafe{ BumpBox::from_raw(nonnull::str_from_utf8(nonnull::slice_from_raw_parts(ptr, 0))) },
+                    capacity,
+                },
+                bump,
+            })
         }
 
         /// Constructs a new `MutBumpString` from a `&str`.
@@ -178,7 +201,7 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     #[must_use]
     #[inline(always)]
     pub const fn capacity(&self) -> usize {
-        self.vec.capacity()
+        self.fixed.capacity()
     }
 
     /// Returns the length of this `MutBumpString`, in bytes, not [`char`]s or
@@ -187,14 +210,14 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     #[must_use]
     #[inline(always)]
     pub fn len(&self) -> usize {
-        self.vec.len()
+        self.fixed.len()
     }
 
     /// Returns `true` if this `MutBumpString` has a length of zero, and `false` otherwise.
     #[must_use]
     #[inline(always)]
     pub fn is_empty(&self) -> bool {
-        self.vec.is_empty()
+        self.len() == 0
     }
 
     /// Truncates this `MutBumpString`, removing all contents.
@@ -218,7 +241,7 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     /// ```
     #[inline]
     pub fn clear(&mut self) {
-        self.vec.clear();
+        self.fixed.clear();
     }
 
     /// Converts a vector of bytes to a `MutBumpString`.
@@ -279,8 +302,11 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     pub fn from_utf8(
         vec: MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     ) -> Result<Self, FromUtf8Error<MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>> {
+        #[allow(clippy::missing_transmute_annotations)]
         match str::from_utf8(vec.as_slice()) {
-            Ok(_) => Ok(Self { vec }),
+            // SAFETY: `MutBumpVec<u8>` and `MutBumpString` have the same representation;
+            // only the invariant that the bytes are utf8 is different.
+            Ok(_) => Ok(unsafe { mem::transmute(vec) }),
             Err(error) => Err(FromUtf8Error { error, bytes: vec }),
         }
     }
@@ -311,7 +337,10 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     #[must_use]
     pub unsafe fn from_utf8_unchecked(vec: MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> Self {
         debug_assert!(str::from_utf8(vec.as_slice()).is_ok());
-        Self { vec }
+
+        // SAFETY: `MutBumpVec<u8>` and `MutBumpString` have the same representation;
+        // only the invariant that the bytes are utf8 is different.
+        mem::transmute(vec)
     }
 
     /// Converts a `MutBumpString` into a `MutBumpVec<u8>`.
@@ -332,28 +361,30 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     #[inline(always)]
     #[must_use = "`self` will be dropped if the result is not used"]
     pub fn into_bytes(self) -> MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
-        self.vec
+        // SAFETY: `MutBumpVec<u8>` and `MutBumpString` have the same representation;
+        // only the invariant that the bytes are utf8 is different.
+        unsafe { mem::transmute(self) }
     }
 
     /// Returns a byte slice of this `MutBumpString`'s contents.
     #[must_use]
     #[inline(always)]
     pub fn as_bytes(&self) -> &[u8] {
-        self.vec.as_slice()
+        self.fixed.as_bytes()
     }
 
     /// Extracts a string slice containing the entire `MutBumpString`.
     #[must_use]
     #[inline(always)]
     pub fn as_str(&self) -> &str {
-        unsafe { str::from_utf8_unchecked(self.vec.as_slice()) }
+        self.fixed.as_str()
     }
 
     /// Converts a `MutBumpString` into a mutable string slice.
     #[must_use]
     #[inline(always)]
     pub fn as_mut_str(&mut self) -> &mut str {
-        unsafe { str::from_utf8_unchecked_mut(self.vec.as_mut_slice()) }
+        self.fixed.as_mut_str()
     }
 
     /// Returns a mutable reference to the contents of this `MutBumpString`.
@@ -367,7 +398,9 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     #[must_use]
     #[inline(always)]
     pub unsafe fn as_mut_vec(&mut self) -> &mut MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
-        &mut self.vec
+        // SAFETY: `MutBumpVec<u8>` and `MutBumpString` have the same representation;
+        // only the invariant that the bytes are utf8 is different.
+        transmute_mut(self)
     }
 
     /// Removes a [`char`] from this `String` at a byte position and returns it.
@@ -394,18 +427,7 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     /// ```
     #[inline]
     pub fn remove(&mut self, idx: usize) -> char {
-        let ch = match self[idx..].chars().next() {
-            Some(ch) => ch,
-            None => panic!("cannot remove a char from the end of a string"),
-        };
-
-        let next = idx + ch.len_utf8();
-        let len = self.len();
-        unsafe {
-            ptr::copy(self.vec.as_ptr().add(next), self.vec.as_mut_ptr().add(idx), len - next);
-            self.vec.set_len(len - (next - idx));
-        }
-        ch
+        self.fixed.remove(idx)
     }
 }
 
@@ -421,9 +443,11 @@ where
         for fn push
         for fn try_push
         use fn generic_push(&mut self, ch: char) {
+            let vec = unsafe { self.as_mut_vec() };
+
             match ch.len_utf8() {
-                1 => self.vec.generic_push(ch as u8),
-                _ => self.vec.generic_extend_from_slice_copy(ch.encode_utf8(&mut [0; 4]).as_bytes()),
+                1 => vec.generic_push(ch as u8),
+                _ => vec.generic_extend_from_slice_copy(ch.encode_utf8(&mut [0; 4]).as_bytes()),
             }
         }
 
@@ -432,7 +456,8 @@ where
         for fn push_str
         for fn try_push_str
         use fn generic_push_str(&mut self, string: &str) {
-            self.vec.generic_extend_from_slice_copy(string.as_bytes())
+            let vec = unsafe { self.as_mut_vec() };
+            vec.generic_extend_from_slice_copy(string.as_bytes())
         }
 
         /// Inserts a character into this `MutBumpString` at a byte position.
@@ -569,7 +594,8 @@ where
             assert!(self.is_char_boundary(start));
             assert!(self.is_char_boundary(end));
 
-            self.vec.generic_extend_from_within_copy(src)
+            let vec = unsafe { self.as_mut_vec() };
+            vec.generic_extend_from_within_copy(src)
         }
 
         /// Extends this string by pushing `additional` new zero bytes.
@@ -595,14 +621,16 @@ where
         /// ```
         for fn try_extend_zeroed
         use fn generic_extend_zeroed(&mut self, additional: usize) {
-            self.generic_reserve(additional)?;
+            let vec = unsafe { self.as_mut_vec() };
+
+            vec.generic_reserve(additional)?;
 
             unsafe {
-                let ptr = self.vec.as_mut_ptr();
-                let len = self.len();
+                let ptr = vec.as_mut_ptr();
+                let len = vec.len();
 
                 ptr.add(len).write_bytes(0, additional);
-                self.vec.set_len(len + additional);
+                vec.set_len(len + additional);
             }
 
             Ok(())
@@ -617,18 +645,22 @@ where
         for fn reserve
         for fn try_reserve
         use fn generic_reserve(&mut self, additional: usize) {
-            self.vec.generic_reserve(additional)
+            let vec = unsafe { self.as_mut_vec() };
+
+            vec.generic_reserve(additional)
         }
     }
 
     unsafe fn insert_bytes<B: ErrorBehavior>(&mut self, idx: usize, bytes: &[u8]) -> Result<(), B> {
-        let len = self.len();
-        let amt = bytes.len();
-        self.vec.generic_reserve(amt)?;
+        let vec = unsafe { self.as_mut_vec() };
 
-        ptr::copy(self.vec.as_ptr().add(idx), self.vec.as_mut_ptr().add(idx + amt), len - idx);
-        ptr::copy_nonoverlapping(bytes.as_ptr(), self.vec.as_mut_ptr().add(idx), amt);
-        self.vec.set_len(len + amt);
+        let len = vec.len();
+        let amt = bytes.len();
+        vec.generic_reserve(amt)?;
+
+        ptr::copy(vec.as_ptr().add(idx), vec.as_mut_ptr().add(idx + amt), len - idx);
+        ptr::copy_nonoverlapping(bytes.as_ptr(), vec.as_mut_ptr().add(idx), amt);
+        vec.set_len(len + amt);
 
         Ok(())
     }
@@ -640,7 +672,8 @@ where
     #[must_use]
     #[inline(always)]
     pub fn into_boxed_str(self) -> BumpBox<'a, str> {
-        unsafe { self.vec.into_boxed_slice().into_boxed_str_unchecked() }
+        let bytes = self.into_bytes().into_boxed_slice();
+        unsafe { bytes.into_boxed_str_unchecked() }
     }
 
     /// Converts this `MutBumpString` into `&str` that is live for this bump scope.
@@ -657,7 +690,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
-        self.vec.allocator()
+        self.bump.allocator()
     }
 }
 
@@ -672,7 +705,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, UP> {
-        self.vec.stats()
+        self.bump.stats()
     }
 }
 
@@ -686,7 +719,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats<'a, UP> {
-        self.vec.guaranteed_allocated_stats()
+        self.bump.guaranteed_allocated_stats()
     }
 }
 
@@ -922,7 +955,7 @@ impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A
 {
     #[inline]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        self.vec.hash(state);
+        self.as_str().hash(state);
     }
 }
 
