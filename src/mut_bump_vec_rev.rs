@@ -342,13 +342,21 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
         self.len == 0
     }
 
+    /// Appends an element to the back of the collection.
+    ///
+    /// # Safety
+    /// Vector must not be full.
     #[inline(always)]
-    unsafe fn unchecked_push(&mut self, value: T) {
+    pub unsafe fn unchecked_push(&mut self, value: T) {
         self.unchecked_push_with(|| value);
     }
 
+    /// Appends an element to the back of the collection.
+    ///
+    /// # Safety
+    /// Vector must not be full.
     #[inline(always)]
-    unsafe fn unchecked_push_with(&mut self, f: impl FnOnce() -> T) {
+    pub unsafe fn unchecked_push_with(&mut self, f: impl FnOnce() -> T) {
         debug_assert!(self.len < self.cap);
 
         let ptr = nonnull::sub(self.end, self.len + 1);
