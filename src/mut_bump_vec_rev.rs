@@ -617,7 +617,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
         }
     }
 
-    #[expect(dead_code)]
+    #[allow(dead_code)]
     #[inline(always)]
     unsafe fn from_raw_parts(
         end: NonNull<T>,
