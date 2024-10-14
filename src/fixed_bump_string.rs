@@ -577,6 +577,12 @@ impl Display for FixedBumpString<'_> {
     }
 }
 
+impl Default for FixedBumpString<'_> {
+    fn default() -> Self {
+        Self::EMPTY
+    }
+}
+
 impl Deref for FixedBumpString<'_> {
     type Target = str;
 
