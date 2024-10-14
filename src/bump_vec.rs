@@ -102,28 +102,13 @@ macro_rules! bump_vec {
 
 macro_rules! bump_vec_declaration {
     ($($allocator_parameter:tt)*) => {
-        /// A bump allocated `Vec`.
+        /// A bump allocated [`Vec`](alloc::vec::Vec).
         ///
-        /// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
-        /// ```
-        /// use bump_scope::{ Bump, BumpVec };
-        /// let bump: Bump = Bump::new();
-        /// let mut vec = BumpVec::new_in(&bump);
+        /// The main difference to `Vec` is that it can be turned into a slice that is live for this bump scope (`'a`).
+        /// Such a slice can be live while entering new scopes.
         ///
-        /// vec.push(1);
-        /// vec.push(2);
-        /// vec.push(3);
+        /// This would not be possible with `Vec`:
         ///
-        /// let slice: &[i32] = vec.into_slice();
-        ///
-        /// assert_eq!(slice, [1, 2, 3]);
-        /// ```
-        ///
-        /// ## Why not just use a [`Vec`]?
-        ///
-        /// You can use a `Vec` (from the standard library or from allocator-api2) in mostly the same way.
-        /// The main difference is that a `BumpVec` can be turned into a slice that is live for `'a` of `BumpScope<'a>` instead of just `'b` of `&'b BumpScope`.
-        /// This enables such a slice to be live while entering new scopes. This would not be possible with `Vec`:
         /// ```
         /// # use bump_scope::{ Bump, BumpVec };
         /// # let mut bump: Bump = Bump::new();
@@ -142,6 +127,23 @@ macro_rules! bump_vec_declaration {
         /// bump.scoped(|bump| {
         ///     // allocate more things
         /// });
+        ///
+        /// assert_eq!(slice, [1, 2, 3]);
+        /// ```
+        ///
+        /// # Examples
+        ///
+        /// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
+        /// ```
+        /// use bump_scope::{ Bump, BumpVec };
+        /// let bump: Bump = Bump::new();
+        /// let mut vec = BumpVec::new_in(&bump);
+        ///
+        /// vec.push(1);
+        /// vec.push(2);
+        /// vec.push(3);
+        ///
+        /// let slice: &[i32] = vec.into_slice();
         ///
         /// assert_eq!(slice, [1, 2, 3]);
         /// ```

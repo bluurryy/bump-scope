@@ -96,7 +96,7 @@ macro_rules! mut_bump_vec_rev {
 
 macro_rules! mut_bump_vec_rev_declaration {
     ($($allocator_parameter:tt)*) => {
-        /// This is like a [`MutBumpVec`](crate::MutBumpVec), but new elements are pushed to the front.
+        /// A type like [`MutBumpVec`](crate::MutBumpVec), but new elements are pushed to the front.
         ///
         /// The point of this vector is to have a more performant <code>[into](Self::into_slice)([_boxed](Self::into_boxed_slice))[_slice](Self::into_slice)`</code> for a downwards bumping allocator.
         ///
@@ -128,6 +128,14 @@ macro_rules! mut_bump_vec_rev_declaration {
         ///
         /// assert_eq!(vec, [1, 2, 3, 4, 5, 6]);
         /// ```
+        //
+        // MutBumpVecRev never actually moves a bump pointer.
+        // It may force allocation of a new chunk, but it does not move the pointer within.
+        // So we don't need to move the bump pointer when dropping.
+        //
+        // If we want to reset the bump pointer to a previous chunk, we use a bump scope.
+        // We could do it here, by resetting to the last non-empty chunk but that would require a loop.
+        // Chunk allocations are supposed to be very rare, so this wouldn't be worth it.
         pub struct MutBumpVecRev<
             'b,
             'a: 'b,

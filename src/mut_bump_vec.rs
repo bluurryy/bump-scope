@@ -100,6 +100,8 @@ macro_rules! mut_bump_vec_declaration {
         /// It has the advantage that it can assume the entire remaining chunk space as its capacity.
         /// It also only needs to update the bump pointer when calling <code>[into_](Self::into_slice)([boxed_](Self::into_boxed_slice))[slice](Self::into_slice)</code>.
         ///
+        /// # Examples
+        ///
         /// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
         /// ```
         /// use bump_scope::{ Bump, MutBumpVec };
