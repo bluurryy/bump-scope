@@ -719,7 +719,7 @@ where
         let slice = self.generic_alloc_slice_copy(src.as_bytes())?;
 
         // SAFETY: input is `str` so this is too
-        Ok(unsafe { slice.into_boxed_str_unchecked() })
+        Ok(unsafe { BumpBox::from_utf8_unchecked(slice) })
     }
 
     #[inline(always)]

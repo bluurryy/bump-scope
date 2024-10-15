@@ -719,7 +719,7 @@ where
     #[inline(always)]
     pub fn into_boxed_str(self) -> BumpBox<'a, str> {
         let bytes = self.into_bytes().into_boxed_slice();
-        unsafe { bytes.into_boxed_str_unchecked() }
+        unsafe { BumpBox::from_utf8_unchecked(bytes) }
     }
 
     unsafe fn insert_bytes<B: ErrorBehavior>(&mut self, idx: usize, bytes: &[u8]) -> Result<(), B> {
