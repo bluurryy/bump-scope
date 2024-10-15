@@ -1278,6 +1278,33 @@ where
     }
 }
 
+#[cfg(not(no_global_oom_handling))]
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Extend<char>
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+    fn extend<I: IntoIterator<Item = char>>(&mut self, iter: I) {
+        let iterator = iter.into_iter();
+        let (lower_bound, _) = iterator.size_hint();
+        self.reserve(lower_bound);
+        iterator.for_each(move |c| self.push(c));
+    }
+}
+
+#[cfg(not(no_global_oom_handling))]
+impl<'s, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Extend<&'s char>
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+    fn extend<I: IntoIterator<Item = &'s char>>(&mut self, iter: I) {
+        self.extend(iter.into_iter().copied());
+    }
+}
+
 #[cfg(feature = "alloc")]
 impl<'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>
     From<BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>> for alloc::string::String

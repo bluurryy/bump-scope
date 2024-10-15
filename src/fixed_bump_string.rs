@@ -679,6 +679,15 @@ impl FixedBumpString<'_> {
 
             Ok(())
         }
+
+        /// Checks if at least `additional` more bytes can be inserted
+        /// in the given `FixedBumpString` due to capacity.
+        impl
+        for fn reserve
+        for fn try_reserve
+        use fn generic_reserve(&mut self, additional: usize) {
+            unsafe { self.as_mut_vec() }.generic_reserve(additional)
+        }
     }
 
     unsafe fn insert_bytes<B: ErrorBehavior>(&mut self, idx: usize, bytes: &[u8]) -> Result<(), B> {
@@ -888,6 +897,23 @@ impl<'s> Extend<&'s str> for FixedBumpString<'_> {
         for str in iter {
             self.push_str(str);
         }
+    }
+}
+
+#[cfg(not(no_global_oom_handling))]
+impl Extend<char> for FixedBumpString<'_> {
+    fn extend<I: IntoIterator<Item = char>>(&mut self, iter: I) {
+        let iterator = iter.into_iter();
+        let (lower_bound, _) = iterator.size_hint();
+        self.reserve(lower_bound);
+        iterator.for_each(move |c| self.push(c));
+    }
+}
+
+#[cfg(not(no_global_oom_handling))]
+impl<'s> Extend<&'s char> for FixedBumpString<'_> {
+    fn extend<I: IntoIterator<Item = &'s char>>(&mut self, iter: I) {
+        self.extend(iter.into_iter().copied());
     }
 }
 

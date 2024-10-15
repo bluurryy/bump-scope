@@ -740,14 +740,10 @@ impl<'a, T> FixedBumpVec<'a, T> {
             Ok(())
         }
 
-        /// Reserves capacity for at least `additional` more elements to be inserted
-        /// in the given `FixedBumpVec<T>`. The collection may reserve more space to
-        /// speculatively avoid frequent reallocations. After calling `reserve`,
-        /// capacity will be greater than or equal to `self.len() + additional`.
-        /// Does nothing if capacity is already sufficient.
+        /// Checks if at least `additional` more elements can be inserted
+        /// in the given `FixedBumpVec<T>` due to capacity.
         impl
         for fn reserve
-        #[allow(dead_code)]
         for fn try_reserve
         use fn generic_reserve(&mut self, additional: usize) {
             if additional > (self.capacity() - self.len()) {
