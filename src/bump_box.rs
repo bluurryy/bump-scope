@@ -1336,7 +1336,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     #[inline]
     #[must_use = "use `.truncate()` if you don't need the other half"]
     pub fn split_off(&mut self, at: usize) -> Self {
-        let took = std::mem::take(self);
+        let took = mem::take(self);
         let (lhs, rhs) = took.split_at(at);
         *self = lhs;
         rhs
