@@ -17,7 +17,7 @@ all:
   cargo test --all-features
   cargo miri test --all-features
   just test-fallibility
-  # cargo semver-checks
+  cargo +stable semver-checks
 
 all-fast:
   just fmt

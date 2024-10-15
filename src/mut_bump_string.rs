@@ -10,6 +10,7 @@ use core::{
     hash::Hash,
     mem,
     ops::{Deref, DerefMut, Range, RangeBounds},
+    panic::{RefUnwindSafe, UnwindSafe},
     ptr, str,
 };
 
@@ -134,6 +135,20 @@ macro_rules! mut_bump_string_declaration {
 }
 
 crate::maybe_default_allocator!(mut_bump_string_declaration);
+
+impl<'b, 'a: 'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> UnwindSafe
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    A: UnwindSafe,
+{
+}
+
+impl<'b, 'a: 'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> RefUnwindSafe
+    for MutBumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    A: RefUnwindSafe,
+{
+}
 
 impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>
     MutBumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>

@@ -15,6 +15,7 @@ use core::{
     hash::Hash,
     mem::{self, ManuallyDrop},
     ops::{Deref, DerefMut, Range, RangeBounds},
+    panic::{RefUnwindSafe, UnwindSafe},
     ptr, str,
 };
 
@@ -137,6 +138,22 @@ macro_rules! bump_string_declaration {
 }
 
 crate::maybe_default_allocator!(bump_string_declaration);
+
+impl<'b, 'a: 'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> UnwindSafe
+    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED> + UnwindSafe,
+{
+}
+
+impl<'b, 'a: 'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> RefUnwindSafe
+    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED> + RefUnwindSafe,
+{
+}
 
 impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>
     BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
