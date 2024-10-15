@@ -170,14 +170,14 @@ impl<'a> FixedBumpString<'a> {
         mem::transmute(vec)
     }
 
-    /// Returns this `FixedBumpString`'s capacity, in bytes.
+    /// Returns this string's capacity, in bytes.
     #[must_use]
     #[inline(always)]
     pub const fn capacity(&self) -> usize {
         self.capacity
     }
 
-    /// Returns the length of this `FixedBumpString`, in bytes, not [`char`]s or
+    /// Returns the length of this string, in bytes, not [`char`]s or
     /// graphemes. In other words, it might not be what a human considers the
     /// length of the string.
     #[must_use]
@@ -186,7 +186,7 @@ impl<'a> FixedBumpString<'a> {
         self.initialized.len()
     }
 
-    /// Returns `true` if this `FixedBumpString` has a length of zero, and `false` otherwise.
+    /// Returns `true` if this string has a length of zero, and `false` otherwise.
     #[must_use]
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
@@ -267,9 +267,9 @@ impl<'a> FixedBumpString<'a> {
         self.initialized.pop()
     }
 
-    /// Truncates this `FixedBumpString`, removing all contents.
+    /// Truncates this string, removing all contents.
     ///
-    /// While this means the `FixedBumpString` will have a length of zero, it does not
+    /// While this means the string will have a length of zero, it does not
     /// touch its capacity.
     ///
     /// # Examples
@@ -390,7 +390,7 @@ impl FixedBumpString<'_> {
     error_behavior_generic_methods_if! {
         if "the string is full"
 
-        /// Appends the given [`char`] to the end of this `FixedBumpString`.
+        /// Appends the given [`char`] to the end of this string.
         impl
         for fn push
         for fn try_push
@@ -403,7 +403,7 @@ impl FixedBumpString<'_> {
             }
         }
 
-        /// Appends a given string slice onto the end of this `FixedBumpString`.
+        /// Appends a given string slice onto the end of this string.
         impl
         for fn push_str
         for fn try_push_str
@@ -412,7 +412,7 @@ impl FixedBumpString<'_> {
             vec.generic_extend_from_slice_copy(string.as_bytes())
         }
 
-        /// Inserts a character into this `FixedBumpString` at a byte position.
+        /// Inserts a character into this string at a byte position.
         ///
         /// This is an *O*(*n*) operation as it requires copying every element in the
         /// buffer.
@@ -458,12 +458,12 @@ impl FixedBumpString<'_> {
             }
         }
 
-        /// Inserts a string slice into this `FixedBumpString` at a byte position.
+        /// Inserts a string slice into this string at a byte position.
         ///
         /// This is an *O*(*n*) operation as it requires copying every element in the
         /// buffer.
         do panics
-        /// Panics if `idx` is larger than the `FixedBumpString`'s length, or if it does not
+        /// Panics if `idx` is larger than the string's length, or if it does not
         /// lie on a [`char`] boundary.
         impl
         do examples

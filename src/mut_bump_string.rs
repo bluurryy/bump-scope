@@ -296,14 +296,14 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
         mem::transmute(vec)
     }
 
-    /// Returns this `MutBumpString`'s capacity, in bytes.
+    /// Returns this string's capacity, in bytes.
     #[must_use]
     #[inline(always)]
     pub const fn capacity(&self) -> usize {
         self.fixed.capacity()
     }
 
-    /// Returns the length of this `MutBumpString`, in bytes, not [`char`]s or
+    /// Returns the length of this string, in bytes, not [`char`]s or
     /// graphemes. In other words, it might not be what a human considers the
     /// length of the string.
     #[must_use]
@@ -312,7 +312,7 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
         self.fixed.len()
     }
 
-    /// Returns `true` if this `MutBumpString` has a length of zero, and `false` otherwise.
+    /// Returns `true` if this string has a length of zero, and `false` otherwise.
     #[must_use]
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
@@ -364,9 +364,9 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
         self.fixed.pop()
     }
 
-    /// Truncates this `MutBumpString`, removing all contents.
+    /// Truncates this string, removing all contents.
     ///
-    /// While this means the `MutBumpString` will have a length of zero, it does not
+    /// While this means the string will have a length of zero, it does not
     /// touch its capacity.
     ///
     /// # Examples
@@ -488,7 +488,7 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     error_behavior_generic_methods_allocation_failure! {
-        /// Appends the given [`char`] to the end of this `MutBumpString`.
+        /// Appends the given [`char`] to the end of this string.
         impl
         for fn push
         for fn try_push
@@ -501,7 +501,7 @@ where
             }
         }
 
-        /// Appends a given string slice onto the end of this `MutBumpString`.
+        /// Appends a given string slice onto the end of this string.
         impl
         for fn push_str
         for fn try_push_str
@@ -510,7 +510,7 @@ where
             vec.generic_extend_from_slice_copy(string.as_bytes())
         }
 
-        /// Inserts a character into this `MutBumpString` at a byte position.
+        /// Inserts a character into this string at a byte position.
         ///
         /// This is an *O*(*n*) operation as it requires copying every element in the
         /// buffer.
@@ -556,12 +556,12 @@ where
             }
         }
 
-        /// Inserts a string slice into this `MutBumpString` at a byte position.
+        /// Inserts a string slice into this string at a byte position.
         ///
         /// This is an *O*(*n*) operation as it requires copying every element in the
         /// buffer.
         do panics
-        /// Panics if `idx` is larger than the `MutBumpString`'s length, or if it does not
+        /// Panics if `idx` is larger than the string's length, or if it does not
         /// lie on a [`char`] boundary.
         impl
         do examples
