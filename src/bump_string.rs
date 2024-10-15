@@ -367,6 +367,37 @@ where
         unsafe { mem::transmute(self) }
     }
 
+    /// Splits the string into two at the given byte index.
+    ///
+    /// Returns a newly allocated `BumpString`. `self` contains bytes `[0, at)`, and
+    /// the returned `BumpString` contains bytes `[at, len)`. `at` must be on the
+    /// boundary of a UTF-8 code point.
+    ///
+    /// Note that the capacity of `self` does not change.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `at` is not on a `UTF-8` code point boundary, or if it is beyond the last
+    /// code point of the string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, BumpString };
+    /// # let bump: Bump = Bump::new();
+    /// let mut hello = BumpString::from_str_in("Hello, World!", &bump);
+    /// let world = hello.split_off(7);
+    /// assert_eq!(hello, "Hello, ");
+    /// assert_eq!(world, "World!");
+    /// ```
+    #[inline]
+    #[must_use = "use `.truncate()` if you don't need the other half"]
+    pub fn split_off(&mut self, at: usize) -> Self {
+        assert!(self.is_char_boundary(at));
+        let other = unsafe { self.as_mut_vec() }.split_off(at);
+        unsafe { Self::from_utf8_unchecked(other) }
+    }
+
     /// Removes the last character from the string buffer and returns it.
     ///
     /// Returns [`None`] if this string is empty.
