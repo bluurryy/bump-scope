@@ -1496,33 +1496,32 @@ fn extract_if_complex() {
     }
 }
 
-#[cfg(any())]
 #[test]
 #[cfg(not(target_os = "emscripten"))]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn extract_if_consumed_panic() {
     use std::{rc::Rc, sync::Mutex};
 
-    struct Check {
+    struct Check<'a> {
         index: usize,
-        drop_counts: Rc<Mutex<BumpVec<usize>>>,
+        drop_counts: Rc<Mutex<BumpVec<'a, 'a, usize>>>,
     }
 
-    impl Drop for Check {
+    impl Drop for Check<'_> {
         fn drop(&mut self) {
             self.drop_counts.lock().unwrap()[self.index] += 1;
             println!("drop: {}", self.index);
         }
     }
 
+    let bump: Bump = Bump::new();
     let check_count = 10;
     let drop_counts = Rc::new(Mutex::new(bump_vec![in bump; 0_usize; check_count]));
-    let mut data: BumpVec<Check> = (0..check_count)
-        .map(|index| Check {
-            index,
-            drop_counts: Rc::clone(&drop_counts),
-        })
-        .collect();
+    let mut data: BumpVec<Check> = bump_vec![in bump];
+    data.extend((0..check_count).map(|index| Check {
+        index,
+        drop_counts: Rc::clone(&drop_counts),
+    }));
 
     let _ = std::panic::catch_unwind(move || {
         let filter = |c: &mut Check| {
@@ -1551,33 +1550,32 @@ fn extract_if_consumed_panic() {
     }
 }
 
-#[cfg(any())]
 #[test]
 #[cfg(not(target_os = "emscripten"))]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn extract_if_unconsumed_panic() {
     use std::{rc::Rc, sync::Mutex};
 
-    struct Check {
+    struct Check<'a> {
         index: usize,
-        drop_counts: Rc<Mutex<BumpVec<usize>>>,
+        drop_counts: Rc<Mutex<BumpVec<'a, 'a, usize>>>,
     }
 
-    impl Drop for Check {
+    impl Drop for Check<'_> {
         fn drop(&mut self) {
             self.drop_counts.lock().unwrap()[self.index] += 1;
             println!("drop: {}", self.index);
         }
     }
 
+    let bump: Bump = Bump::new();
     let check_count = 10;
     let drop_counts = Rc::new(Mutex::new(bump_vec![in bump; 0_usize; check_count]));
-    let mut data: BumpVec<Check> = (0..check_count)
-        .map(|index| Check {
-            index,
-            drop_counts: Rc::clone(&drop_counts),
-        })
-        .collect();
+    let mut data: BumpVec<Check> = bump_vec![in bump];
+    data.extend((0..check_count).map(|index| Check {
+        index,
+        drop_counts: Rc::clone(&drop_counts),
+    }));
 
     let _ = std::panic::catch_unwind(move || {
         let filter = |c: &mut Check| {
