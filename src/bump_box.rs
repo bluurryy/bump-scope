@@ -1313,6 +1313,35 @@ impl<'a, T> BumpBox<'a, [T]> {
         }
     }
 
+    /// Splits the collection into two at the given index.
+    ///
+    /// Returns a boxed slice containing the elements in the range
+    /// `[at, len)`. After the call, the original vector will be left containing
+    /// the elements `[0, at)` with its previous capacity unchanged.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `at > len`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = bump.alloc_slice_copy(&[1, 2, 3]);
+    /// let vec2 = vec.split_off(1);
+    /// assert_eq!(vec, [1]);
+    /// assert_eq!(vec2, [2, 3]);
+    /// ```
+    #[inline]
+    #[must_use = "use `.truncate()` if you don't need the other half"]
+    pub fn split_off(&mut self, at: usize) -> Self {
+        let took = std::mem::take(self);
+        let (lhs, rhs) = took.split_at(at);
+        *self = lhs;
+        rhs
+    }
+
     /// Divides one slice into two at an index.
     ///
     /// The first will contain all indices from `[0, mid)` (excluding
@@ -1356,11 +1385,20 @@ impl<'a, T> BumpBox<'a, [T]> {
     #[inline]
     #[must_use]
     #[track_caller]
-    pub fn split_at(self, mid: usize) -> (Self, Self) {
-        assert!(mid <= self.len());
+    pub fn split_at(self, at: usize) -> (Self, Self) {
+        #[cold]
+        #[inline(never)]
+        fn assert_failed(at: usize, len: usize) -> ! {
+            panic!("`at` split index (is {at}) should be <= len (is {len})");
+        }
+
+        if at > self.len() {
+            assert_failed(at, self.len());
+        }
+
         // SAFETY: `[ptr; mid]` and `[mid; len]` are inside `self`, which
         // fulfills the requirements of `split_at_unchecked`.
-        unsafe { self.split_at_unchecked(mid) }
+        unsafe { self.split_at_unchecked(at) }
     }
 
     /// Divides one slice into two at an index, without doing bounds checking.
