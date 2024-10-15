@@ -14,7 +14,7 @@ use core::{
     fmt::{self, Debug, Display},
     hash::Hash,
     mem::{self, ManuallyDrop},
-    ops::{Add, Deref, DerefMut, Range, RangeBounds},
+    ops::{Deref, DerefMut, Range, RangeBounds},
     ptr, str,
 };
 
@@ -380,6 +380,8 @@ where
     /// Panics if `at` is not on a `UTF-8` code point boundary, or if it is beyond the last
     /// code point of the string.
     ///
+    /// Panics on allocation failure.
+    ///
     /// # Examples
     ///
     /// ```
@@ -390,6 +392,7 @@ where
     /// assert_eq!(hello, "Hello, ");
     /// assert_eq!(world, "World!");
     /// ```
+    #[cfg(not(no_global_oom_handling))]
     #[inline]
     #[must_use = "use `.truncate()` if you don't need the other half"]
     pub fn split_off(&mut self, at: usize) -> Self {
@@ -1362,7 +1365,7 @@ where
 /// let c = BumpString::from_str_in(a, &bump) + b;
 /// ```
 #[cfg(not(no_global_oom_handling))]
-impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Add<&str>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> core::ops::Add<&str>
     for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,

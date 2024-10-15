@@ -414,6 +414,8 @@ where
     ///
     /// Panics if `at > len`.
     ///
+    /// Panics on allocation failure.
+    ///
     /// # Examples
     ///
     /// ```
@@ -424,6 +426,7 @@ where
     /// assert_eq!(vec, [1]);
     /// assert_eq!(vec2, [2, 3]);
     /// ```
+    #[cfg(not(no_global_oom_handling))]
     #[inline]
     #[must_use = "use `.truncate()` if you don't need the other half"]
     pub fn split_off(&mut self, at: usize) -> Self
