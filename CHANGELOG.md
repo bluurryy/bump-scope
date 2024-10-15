@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **added:** made `owned_str` module `pub`
+
 ## 0.10.2 (2024-10-15)
 - **added:** missing string methods to `BumpBox<str>`: `len`, `is_empty`, `set_len`, `retain`, `clear`, `as(_mut)_ptr`, `remove`, `as_mut_bytes`, `from_utf8(_unchecked)`
 - **deprecated:** `BumpBox`'s `into_boxed_str(_unchecked)` in favor of `from_utf8(_unchecked)`

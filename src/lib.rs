@@ -288,7 +288,8 @@ mod mut_bump_vec;
 mod mut_bump_vec_rev;
 /// Contains types associated with owned slices.
 pub mod owned_slice;
-mod owned_str;
+/// Contains types associated with owned strings.
+pub mod owned_str;
 mod polyfill;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
