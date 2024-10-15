@@ -404,6 +404,61 @@ where
         self.fixed.is_empty()
     }
 
+    /// Splits the collection into two at the given index.
+    ///
+    /// Returns a newly allocated vector containing the elements in the range
+    /// `[at, len)`. After the call, the original vector will be left containing
+    /// the elements `[0, at)` with its previous capacity unchanged.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `at > len`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, BumpVec, bump_vec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = bump_vec![in bump; 1, 2, 3];
+    /// let vec2 = vec.split_off(1);
+    /// assert_eq!(vec, [1]);
+    /// assert_eq!(vec2, [2, 3]);
+    /// ```
+    #[inline]
+    #[must_use = "use `.truncate()` if you don't need the other half"]
+    pub fn split_off(&mut self, at: usize) -> Self
+    where
+        A: Clone,
+    {
+        #[cold]
+        #[inline(never)]
+        fn assert_failed(at: usize, len: usize) -> ! {
+            panic!("`at` split index (is {at}) should be <= len (is {len})");
+        }
+
+        if at > self.len() {
+            assert_failed(at, self.len());
+        }
+
+        if at == 0 {
+            // the new vector can take over the original buffer and avoid the copy
+            return mem::replace(self, BumpVec::with_capacity_in(self.capacity(), self.bump()));
+        }
+
+        let other_len = self.len() - at;
+        let mut other = BumpVec::with_capacity_in(other_len, self.bump());
+
+        // Unsafely `set_len` and copy items to `other`.
+        unsafe {
+            self.set_len(at);
+            other.set_len(other_len);
+
+            ptr::copy_nonoverlapping(self.as_ptr().add(at), other.as_mut_ptr(), other.len());
+        }
+
+        other
+    }
+
     #[doc = include_str!("docs/vec/pop.md")]
     #[inline(always)]
     pub fn pop(&mut self) -> Option<T> {
