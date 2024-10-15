@@ -348,6 +348,47 @@ impl<'a> FixedBumpString<'a> {
         self.initialized.remove(idx)
     }
 
+    /// Retains only the characters specified by the predicate.
+    ///
+    /// In other words, remove all characters `c` such that `f(c)` returns `false`.
+    /// This method operates in place, visiting each character exactly once in the
+    /// original order, and preserves the order of the retained characters.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_fixed_string(50);
+    /// s.push_str("f_o_ob_ar");
+    ///
+    /// s.retain(|c| c != '_');
+    ///
+    /// assert_eq!(s, "foobar");
+    /// ```
+    ///
+    /// Because the elements are visited exactly once in the original order,
+    /// external state may be used to decide which elements to keep.
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_fixed_string(50);
+    /// s.push_str("abcde");
+    ///
+    /// let keep = [false, true, true, false, true];
+    /// let mut iter = keep.iter();
+    /// s.retain(|_| *iter.next().unwrap());
+    /// assert_eq!(s, "bce");
+    /// ```
+    #[inline]
+    pub fn retain<F>(&mut self, f: F)
+    where
+        F: FnMut(char) -> bool,
+    {
+        self.initialized.retain(f);
+    }
+
     /// Removes the specified range from the string in bulk, returning all
     /// removed characters as an iterator.
     ///

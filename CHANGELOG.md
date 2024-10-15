@@ -3,7 +3,7 @@
 ## Unreleased
 - **added:** missing string methods to `BumpBox<str>`: `len`, `is_empty`, `set_len`, `retain`, `clear`, `as(_mut)_ptr`, `remove`, `as_mut_bytes`, `from_utf8(_unchecked)`
 - **added:** `Default` for `FixedBumpString`
-- **added:** string methods `pop`, `truncate`
+- **added:** string methods `pop`, `truncate`, `retain`, `drain`
 - **added:** made more `len` and `is_empty` methods `const`
 - **deprecated:** `BumpBox`'s `into_boxed_str(_unchecked)` in favor of `from_utf8(_unchecked)`
 
