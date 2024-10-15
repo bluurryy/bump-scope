@@ -409,7 +409,7 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     ///
     /// s.truncate(2);
     ///
-    /// assert_eq!("he", s);
+    /// assert_eq!(s, "he");
     /// ```
     #[inline]
     pub fn truncate(&mut self, new_len: usize) {

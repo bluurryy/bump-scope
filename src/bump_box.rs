@@ -419,7 +419,7 @@ impl<'a> BumpBox<'a, str> {
     ///
     /// s.truncate(2);
     ///
-    /// assert_eq!("he", s);
+    /// assert_eq!(s, "he");
     /// ```
     #[inline]
     pub fn truncate(&mut self, new_len: usize) {
