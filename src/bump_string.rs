@@ -14,7 +14,7 @@ use core::{
     fmt::{self, Debug, Display},
     hash::Hash,
     mem::{self, ManuallyDrop},
-    ops::{Deref, DerefMut, Range, RangeBounds},
+    ops::{Add, Deref, DerefMut, Range, RangeBounds},
     ptr, str,
 };
 
@@ -1288,5 +1288,64 @@ where
     #[inline]
     fn from(value: BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> Self {
         value.as_str().into()
+    }
+}
+
+/// Implements the `+` operator for concatenating two strings.
+///
+/// This consumes the `BumpString` on the left-hand side and re-uses its buffer (growing it if
+/// necessary). This is done to avoid allocating a new `BumpString` and copying the entire contents on
+/// every operation, which would lead to *O*(*n*^2) running time when building an *n*-byte string by
+/// repeated concatenation.
+///
+/// The string on the right-hand side is only borrowed; its contents are copied into the returned
+/// `BumpString`.
+///
+/// # Examples
+///
+/// Concatenating two `BumpString`s takes the first by value and borrows the second:
+///
+/// ```
+/// # use bump_scope::{ Bump, BumpString };
+/// # let bump: Bump = Bump::new();
+/// let a = BumpString::from_str_in("hello", &bump);
+/// let b = BumpString::from_str_in(" world", &bump);
+/// let c = a + &b;
+/// // `a` is moved and can no longer be used here.
+/// ```
+///
+/// If you want to keep using the first `String`, you can clone it and append to the clone instead:
+///
+/// ```
+/// # use bump_scope::{ Bump, BumpString };
+/// # let bump: Bump = Bump::new();
+/// let a = BumpString::from_str_in("hello", &bump);
+/// let b = BumpString::from_str_in(" world", &bump);
+/// let c = a.clone() + &b;
+/// // `a` is still valid here.
+/// ```
+///
+/// Concatenating `&str` slices can be done by converting the first to a `BumpString`:
+///
+/// ```
+/// # use bump_scope::{ Bump, BumpString };
+/// # let bump: Bump = Bump::new();
+/// let a = "hello";
+/// let b = " world";
+/// let c = BumpString::from_str_in(a, &bump) + b;
+/// ```
+#[cfg(not(no_global_oom_handling))]
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Add<&str>
+    for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+    type Output = Self;
+
+    #[inline]
+    fn add(mut self, other: &str) -> Self {
+        self.push_str(other);
+        self
     }
 }

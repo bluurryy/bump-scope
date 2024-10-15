@@ -7,6 +7,7 @@
 - **added:** made more `len` and `is_empty` methods `const`
 - **deprecated:** `BumpBox`'s `into_boxed_str(_unchecked)` in favor of `from_utf8(_unchecked)`
 - **added:** `split_off` to suitable vector and string types
+- **added:** `impl Add<&str> for BumpString`
 
 ## 0.10.1 (2024-10-14)
 - **added:** `MutBumpVecRev::{ append, into_flattened, unchecked_push(_with), as_non_null_{ptr, slice} }`
