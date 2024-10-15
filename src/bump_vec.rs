@@ -252,6 +252,22 @@ where
     }
 }
 
+#[cfg(not(no_global_oom_handling))]
+impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Clone
+    for BumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    T: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            fixed: FixedBumpVec::from_init(self.bump.alloc_slice_clone(self)),
+            bump: self.bump,
+        }
+    }
+}
+
 impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
     BumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where

@@ -1069,6 +1069,21 @@ where
 }
 
 #[cfg(not(no_global_oom_handling))]
+impl<'b, 'a: 'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Clone
+    for BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+    fn clone(&self) -> Self {
+        Self {
+            fixed: FixedBumpString::from_init(self.bump.alloc_str(self)),
+            bump: self.bump,
+        }
+    }
+}
+
+#[cfg(not(no_global_oom_handling))]
 impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> core::ops::AddAssign<&str>
     for BumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
