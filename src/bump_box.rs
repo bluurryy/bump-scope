@@ -49,10 +49,16 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///   [`split_first`](Self::split_first),
 ///   [`split_last`](Self::split_last) and new methods like
 ///   [`partition`](Self::partition).
-/// - `BumpBox<str>` and `BumpBox<[u8]>` provide methods to convert between the two like
+/// - `BumpBox<str>` provide methods from `String` like
+///   <code>[from_utf8](Self::from_utf8)([_unchecked](Self::from_utf8_unchecked))</code>,
 ///   [`into_boxed_bytes`](Self::into_boxed_bytes),
-///   [`into_boxed_str`](Self::into_boxed_str) and
-///   [`into_boxed_str_unchecked`](Self::into_boxed_str_unchecked).
+///   [`as_mut_bytes`](Self::as_mut_bytes),
+///   [`pop`](Self::pop),
+///   [`truncate`](Self::truncate),
+///   [`clear`](Self::clear),
+///   [`remove`](Self::remove),
+///   [`retain`](Self::retain) and
+///   [`drain`](Self::drain).
 /// - `BumpBox<MaybeUninit<T>>` and `BumpBox<[MaybeUninit<T>]>` provide methods like
 ///   [`init`](Self::init),
 ///   [`assume_init`](Self::assume_init),
