@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.10.3 (2024-10-15)
 - **added:** made `owned_str` module `pub`
 
 ## 0.10.2 (2024-10-15)
