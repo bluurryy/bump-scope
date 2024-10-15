@@ -31,6 +31,8 @@
     "doesnt",
     "dtolnay",
     "dvec",
+    "ệfoobar",
+    "ệfooยbar",
     "elems",
     "emscripten",
     "expl",
@@ -93,6 +95,7 @@
     "zerocopy",
     "Zmiri",
     "ประเทศไทย",
+    "ศไทย",
     "ศไทย中华Việt"
   ]
 }
