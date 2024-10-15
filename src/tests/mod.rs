@@ -521,35 +521,6 @@ fn as_aligned<const UP: bool>() {
     }
 }
 
-#[test]
-fn with_drop() {
-    thread_local! {
-        static DROPS: Cell<usize> = const { Cell::new(0) };
-    }
-
-    #[derive(Default, Debug)]
-    struct Foo(#[allow(dead_code)] i32);
-
-    impl Drop for Foo {
-        fn drop(&mut self) {
-            dbg!(self);
-            DROPS.set(DROPS.get() + 1);
-        }
-    }
-
-    let bump: Bump = Bump::new();
-    let bump = bump.with_drop();
-
-    let _one: &mut Foo = infallible(bump.generic_alloc(Foo(1)));
-    let _two: &mut Foo = infallible(bump.generic_alloc(Foo(2)));
-
-    assert_eq!(DROPS.get(), 0);
-
-    drop(bump);
-
-    assert_eq!(DROPS.get(), 2);
-}
-
 #[allow(dead_code)]
 fn api_that_accepts_bump_or_bump_scope() {
     fn vec_from_mut_bump(bump: &mut Bump) -> MutBumpVec<i32> {

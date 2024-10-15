@@ -1,7 +1,5 @@
 #[cfg(not(no_global_oom_handling))]
 use crate::infallible;
-#[cfg(test)]
-use crate::WithDrop;
 use crate::{
     bump_common_methods, bump_scope_methods,
     chunk_size::ChunkSize,

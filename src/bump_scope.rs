@@ -1,5 +1,3 @@
-#[cfg(test)]
-use crate::WithDrop;
 use crate::{
     bump_align_guard::BumpAlignGuard,
     bump_common_methods, bump_scope_methods,

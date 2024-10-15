@@ -2,8 +2,6 @@
 //! Most of this is from nightly.
 
 pub(crate) mod iter;
-#[cfg(test)]
-pub(crate) mod layout;
 pub(crate) mod nonnull;
 pub(crate) mod nonzero;
 pub(crate) mod pointer;
