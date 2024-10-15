@@ -3,7 +3,7 @@ mod slice_initializer;
 #[cfg(feature = "alloc")]
 use crate::WithLifetime;
 use crate::{
-    owned_slice,
+    owned_slice, owned_str,
     polyfill::{self, nonnull, transmute_mut},
     BumpAllocator, FromUtf8Error, NoDrop, SizedTypeProperties,
 };
@@ -19,7 +19,7 @@ use core::{
     hash::{Hash, Hasher},
     marker::PhantomData,
     mem::{self, ManuallyDrop, MaybeUninit},
-    ops::{Deref, DerefMut, Index, IndexMut, RangeBounds},
+    ops::{Deref, DerefMut, Index, IndexMut, Range, RangeBounds},
     ptr::{self, NonNull},
     slice::{self, SliceIndex},
     str,
@@ -694,6 +694,71 @@ impl<'a> BumpBox<'a, str> {
         }
 
         drop(guard);
+    }
+
+    /// Removes the specified range from the string in bulk, returning all
+    /// removed characters as an iterator.
+    ///
+    /// The returned iterator keeps a mutable borrow on the string to optimize
+    /// its implementation.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the starting point or end point do not lie on a [`char`]
+    /// boundary, or if they're out of bounds.
+    ///
+    /// # Leaking
+    ///
+    /// If the returned iterator goes out of scope without being dropped (due to
+    /// [`core::mem::forget`], for example), the string may still contain a copy
+    /// of any drained characters, or may have lost characters arbitrarily,
+    /// including characters outside the range.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_str("α is alpha, β is beta");
+    /// let beta_offset = s.find('β').unwrap_or(s.len());
+    ///
+    /// // Remove the range up until the β from the string
+    /// let t: String = s.drain(..beta_offset).collect();
+    /// assert_eq!(t, "α is alpha, ");
+    /// assert_eq!(s, "β is beta");
+    ///
+    /// // A full range clears the string, like `clear()` does
+    /// s.drain(..);
+    /// assert_eq!(s, "");
+    /// ```
+    pub fn drain<R>(&mut self, range: R) -> owned_str::Drain<'_>
+    where
+        R: RangeBounds<usize>,
+    {
+        // Memory safety
+        //
+        // The String version of Drain does not have the memory safety issues
+        // of the vector version. The data is just plain bytes.
+        // Because the range removal happens in Drop, if the Drain iterator is leaked,
+        // the removal will not happen.
+        let Range { start, end } = polyfill::slice::range(range, ..self.len());
+        assert!(self.is_char_boundary(start));
+        assert!(self.is_char_boundary(end));
+
+        // Take out two simultaneous borrows. The &mut String won't be accessed
+        // until iteration is over, in Drop.
+        let self_ptr = unsafe { NonNull::new_unchecked(self as *mut _) };
+        // SAFETY: `slice::range` and `is_char_boundary` do the appropriate bounds checks.
+        let chars_iter = unsafe { self.get_unchecked(start..end) }.chars();
+
+        owned_str::Drain {
+            start,
+            end,
+            iter: chars_iter,
+            string: self_ptr,
+        }
     }
 }
 

@@ -3,7 +3,7 @@ use allocator_api2::alloc::Allocator;
 #[cfg(not(no_global_oom_handling))]
 use crate::Infallibly;
 use crate::{
-    error_behavior_generic_methods_allocation_failure,
+    error_behavior_generic_methods_allocation_failure, owned_str,
     polyfill::{self, transmute_mut},
     BaseAllocator, BumpBox, BumpScope, BumpVec, ErrorBehavior, FixedBumpString, FromUtf8Error, GuaranteedAllocatedStats,
     MinimumAlignment, Stats, SupportedMinimumAlignment,
@@ -466,6 +466,50 @@ where
     #[inline]
     pub fn remove(&mut self, idx: usize) -> char {
         self.fixed.remove(idx)
+    }
+
+    /// Removes the specified range from the string in bulk, returning all
+    /// removed characters as an iterator.
+    ///
+    /// The returned iterator keeps a mutable borrow on the string to optimize
+    /// its implementation.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the starting point or end point do not lie on a [`char`]
+    /// boundary, or if they're out of bounds.
+    ///
+    /// # Leaking
+    ///
+    /// If the returned iterator goes out of scope without being dropped (due to
+    /// [`core::mem::forget`], for example), the string may still contain a copy
+    /// of any drained characters, or may have lost characters arbitrarily,
+    /// including characters outside the range.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, BumpString };
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = BumpString::from_str_in("α is alpha, β is beta", &bump);
+    /// let beta_offset = s.find('β').unwrap_or(s.len());
+    ///
+    /// // Remove the range up until the β from the string
+    /// let t: String = s.drain(..beta_offset).collect();
+    /// assert_eq!(t, "α is alpha, ");
+    /// assert_eq!(s, "β is beta");
+    ///
+    /// // A full range clears the string, like `clear()` does
+    /// s.drain(..);
+    /// assert_eq!(s, "");
+    /// ```
+    pub fn drain<R>(&mut self, range: R) -> owned_str::Drain<'_>
+    where
+        R: RangeBounds<usize>,
+    {
+        self.fixed.drain(range)
     }
 
     /// Extracts a string slice containing the entire `BumpString`.

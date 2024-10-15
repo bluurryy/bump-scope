@@ -1,5 +1,5 @@
 use crate::{
-    error_behavior_generic_methods_if,
+    error_behavior_generic_methods_if, owned_str,
     polyfill::{self, nonnull, transmute_mut},
     BaseAllocator, BumpBox, BumpScope, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, MinimumAlignment, NoDrop,
     SupportedMinimumAlignment,
@@ -346,6 +346,52 @@ impl<'a> FixedBumpString<'a> {
     #[inline]
     pub fn remove(&mut self, idx: usize) -> char {
         self.initialized.remove(idx)
+    }
+
+    /// Removes the specified range from the string in bulk, returning all
+    /// removed characters as an iterator.
+    ///
+    /// The returned iterator keeps a mutable borrow on the string to optimize
+    /// its implementation.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the starting point or end point do not lie on a [`char`]
+    /// boundary, or if they're out of bounds.
+    ///
+    /// # Leaking
+    ///
+    /// If the returned iterator goes out of scope without being dropped (due to
+    /// [`core::mem::forget`], for example), the string may still contain a copy
+    /// of any drained characters, or may have lost characters arbitrarily,
+    /// including characters outside the range.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_fixed_string(50);
+    /// s.push_str("α is alpha, β is beta");
+    ///
+    /// let beta_offset = s.find('β').unwrap_or(s.len());
+    ///
+    /// // Remove the range up until the β from the string
+    /// let t: String = s.drain(..beta_offset).collect();
+    /// assert_eq!(t, "α is alpha, ");
+    /// assert_eq!(s, "β is beta");
+    ///
+    /// // A full range clears the string, like `clear()` does
+    /// s.drain(..);
+    /// assert_eq!(s, "");
+    /// ```
+    pub fn drain<R>(&mut self, range: R) -> owned_str::Drain<'_>
+    where
+        R: RangeBounds<usize>,
+    {
+        self.initialized.drain(range)
     }
 
     /// Extracts a string slice containing the entire `FixedBumpString`.
