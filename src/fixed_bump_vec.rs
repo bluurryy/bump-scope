@@ -111,27 +111,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
         self.len() >= self.capacity
     }
 
-    /// Turns this `FixedBumpVec<T>` into a `BumpVec<T>`.
-    #[must_use]
-    #[inline(always)]
-    pub fn into_vec<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-        self,
-        bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
-    ) -> BumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-    where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        A: BaseAllocator<GUARANTEED_ALLOCATED>,
-    {
-        BumpVec::from_parts(self, bump)
-    }
-
-    /// Turns this `FixedBumpVec<T>` into a `BumpBox<[T]>`.
-    #[must_use]
-    #[inline(always)]
-    pub fn into_boxed_slice(self) -> BumpBox<'a, [T]> {
-        self.initialized
-    }
-
     /// Turns this `FixedBumpVec<T>` into a `&[T]` that is live for this bump scope.
     ///
     /// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
@@ -144,6 +123,27 @@ impl<'a, T> FixedBumpVec<'a, T> {
         [T]: NoDrop,
     {
         self.into_boxed_slice().into_mut()
+    }
+
+    /// Turns this `FixedBumpVec<T>` into a `BumpBox<[T]>`.
+    #[must_use]
+    #[inline(always)]
+    pub fn into_boxed_slice(self) -> BumpBox<'a, [T]> {
+        self.initialized
+    }
+
+    /// Turns this `FixedBumpVec<T>` into a `BumpVec<T>`.
+    #[must_use]
+    #[inline(always)]
+    pub fn into_vec<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
+        self,
+        bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+    ) -> BumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    where
+        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    {
+        BumpVec::from_parts(self, bump)
     }
 
     #[doc = include_str!("docs/vec/pop.md")]

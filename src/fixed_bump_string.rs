@@ -71,106 +71,6 @@ impl<'a> FixedBumpString<'a> {
         Self { initialized, capacity }
     }
 
-    /// Returns this `FixedBumpString`'s capacity, in bytes.
-    #[must_use]
-    #[inline(always)]
-    pub const fn capacity(&self) -> usize {
-        self.capacity
-    }
-
-    /// Returns the length of this `FixedBumpString`, in bytes, not [`char`]s or
-    /// graphemes. In other words, it might not be what a human considers the
-    /// length of the string.
-    #[must_use]
-    #[inline(always)]
-    pub const fn len(&self) -> usize {
-        self.initialized.len()
-    }
-
-    /// Returns `true` if this `FixedBumpString` has a length of zero, and `false` otherwise.
-    #[must_use]
-    #[inline(always)]
-    pub const fn is_empty(&self) -> bool {
-        self.initialized.is_empty()
-    }
-
-    /// Removes the last character from the string buffer and returns it.
-    ///
-    /// Returns [`None`] if this string is empty.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let mut s = bump.alloc_fixed_string(4);
-    /// s.push_str("abč");
-    ///
-    /// assert_eq!(s.pop(), Some('č'));
-    /// assert_eq!(s.pop(), Some('b'));
-    /// assert_eq!(s.pop(), Some('a'));
-    ///
-    /// assert_eq!(s.pop(), None);
-    /// ```
-    #[inline]
-    pub fn pop(&mut self) -> Option<char> {
-        self.initialized.pop()
-    }
-
-    /// Shortens this string to the specified length.
-    ///
-    /// If `new_len` is greater than or equal to the string's current length, this has no
-    /// effect.
-    ///
-    /// Note that this method has no effect on the allocated capacity
-    /// of the string
-    ///
-    /// # Panics
-    ///
-    /// Panics if `new_len` does not lie on a [`char`] boundary.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let mut s = bump.alloc_fixed_string(5);
-    /// s.push_str("hello");
-    ///
-    /// s.truncate(2);
-    ///
-    /// assert_eq!("he", s);
-    /// ```
-    #[inline]
-    pub fn truncate(&mut self, new_len: usize) {
-        self.initialized.truncate(new_len);
-    }
-
-    /// Truncates this `FixedBumpString`, removing all contents.
-    ///
-    /// While this means the `FixedBumpString` will have a length of zero, it does not
-    /// touch its capacity.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use bump_scope::{ Bump, FixedBumpString };
-    /// # let bump: Bump = Bump::new();
-    /// #
-    /// let mut s = bump.alloc_fixed_string(3);
-    /// s.push_str("foo");
-    ///
-    /// s.clear();
-    ///
-    /// assert!(s.is_empty());
-    /// assert_eq!(s.len(), 0);
-    /// assert!(s.capacity() == 3);
-    /// ```
-    #[inline]
-    pub fn clear(&mut self) {
-        self.initialized.clear();
-    }
-
     /// Converts a vector of bytes to a `FixedBumpString`.
     ///
     /// A string ([`FixedBumpString`]) is made of bytes ([`u8`]), and a vector of bytes
@@ -270,6 +170,57 @@ impl<'a> FixedBumpString<'a> {
         mem::transmute(vec)
     }
 
+    /// Returns this `FixedBumpString`'s capacity, in bytes.
+    #[must_use]
+    #[inline(always)]
+    pub const fn capacity(&self) -> usize {
+        self.capacity
+    }
+
+    /// Returns the length of this `FixedBumpString`, in bytes, not [`char`]s or
+    /// graphemes. In other words, it might not be what a human considers the
+    /// length of the string.
+    #[must_use]
+    #[inline(always)]
+    pub const fn len(&self) -> usize {
+        self.initialized.len()
+    }
+
+    /// Returns `true` if this `FixedBumpString` has a length of zero, and `false` otherwise.
+    #[must_use]
+    #[inline(always)]
+    pub const fn is_empty(&self) -> bool {
+        self.initialized.is_empty()
+    }
+
+    /// Converts this `FixedBumpString` into `&str` that is live for this bump scope.
+    #[must_use]
+    #[inline(always)]
+    pub fn into_str(self) -> &'a mut str {
+        self.initialized.into_mut()
+    }
+
+    /// Converts a `FixedBumpString` into a `BumpBox<str>`.
+    #[must_use]
+    #[inline(always)]
+    pub fn into_boxed_str(self) -> BumpBox<'a, str> {
+        self.initialized
+    }
+
+    /// Turns this `FixedBumpString<T>` into a `BumpVec<T>`.
+    #[must_use]
+    #[inline(always)]
+    pub fn into_string<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
+        self,
+        bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+    ) -> BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    where
+        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    {
+        BumpString::from_parts(self, bump)
+    }
+
     /// Converts a `FixedBumpString` into a `FixedBumpVec<u8>`.
     ///
     /// This consumes the `FixedBumpString`, so we do not need to copy its contents.
@@ -293,41 +244,81 @@ impl<'a> FixedBumpString<'a> {
         unsafe { mem::transmute(self) }
     }
 
-    /// Returns a byte slice of this `FixedBumpString`'s contents.
-    #[must_use]
-    #[inline(always)]
-    pub fn as_bytes(&self) -> &[u8] {
-        self.initialized.as_bytes()
-    }
-
-    /// Extracts a string slice containing the entire `FixedBumpString`.
-    #[must_use]
-    #[inline(always)]
-    pub fn as_str(&self) -> &str {
-        &self.initialized
-    }
-
-    /// Converts a `FixedBumpString` into a mutable string slice.
-    #[must_use]
-    #[inline(always)]
-    pub fn as_mut_str(&mut self) -> &mut str {
-        &mut self.initialized
-    }
-
-    /// Returns a mutable reference to the contents of this `FixedBumpString`.
+    /// Removes the last character from the string buffer and returns it.
     ///
-    /// # Safety
+    /// Returns [`None`] if this string is empty.
     ///
-    /// This function is unsafe because the returned `&mut Vec` allows writing
-    /// bytes which are not valid UTF-8. If this constraint is violated, using
-    /// the original `FixedBumpString` after dropping the `&mut Vec` may violate memory
-    /// safety, as `FixedBumpString`s must be valid UTF-8.
-    #[must_use]
-    #[inline(always)]
-    pub unsafe fn as_mut_vec(&mut self) -> &mut FixedBumpVec<'a, u8> {
-        // SAFETY: `BumpVec<u8>` and `BumpString` have the same representation;
-        // only the invariant that the bytes are utf8 is different.
-        transmute_mut(self)
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_fixed_string(4);
+    /// s.push_str("abč");
+    ///
+    /// assert_eq!(s.pop(), Some('č'));
+    /// assert_eq!(s.pop(), Some('b'));
+    /// assert_eq!(s.pop(), Some('a'));
+    ///
+    /// assert_eq!(s.pop(), None);
+    /// ```
+    #[inline]
+    pub fn pop(&mut self) -> Option<char> {
+        self.initialized.pop()
+    }
+
+    /// Truncates this `FixedBumpString`, removing all contents.
+    ///
+    /// While this means the `FixedBumpString` will have a length of zero, it does not
+    /// touch its capacity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # let bump: Bump = Bump::new();
+    /// #
+    /// let mut s = bump.alloc_fixed_string(3);
+    /// s.push_str("foo");
+    ///
+    /// s.clear();
+    ///
+    /// assert!(s.is_empty());
+    /// assert_eq!(s.len(), 0);
+    /// assert!(s.capacity() == 3);
+    /// ```
+    #[inline]
+    pub fn clear(&mut self) {
+        self.initialized.clear();
+    }
+
+    /// Shortens this string to the specified length.
+    ///
+    /// If `new_len` is greater than or equal to the string's current length, this has no
+    /// effect.
+    ///
+    /// Note that this method has no effect on the allocated capacity
+    /// of the string
+    ///
+    /// # Panics
+    ///
+    /// Panics if `new_len` does not lie on a [`char`] boundary.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_fixed_string(5);
+    /// s.push_str("hello");
+    ///
+    /// s.truncate(2);
+    ///
+    /// assert_eq!("he", s);
+    /// ```
+    #[inline]
+    pub fn truncate(&mut self, new_len: usize) {
+        self.initialized.truncate(new_len);
     }
 
     /// Removes a [`char`] from this string at a byte position and returns it.
@@ -356,9 +347,46 @@ impl<'a> FixedBumpString<'a> {
     pub fn remove(&mut self, idx: usize) -> char {
         self.initialized.remove(idx)
     }
+
+    /// Extracts a string slice containing the entire `FixedBumpString`.
+    #[must_use]
+    #[inline(always)]
+    pub fn as_str(&self) -> &str {
+        &self.initialized
+    }
+
+    /// Converts a `FixedBumpString` into a mutable string slice.
+    #[must_use]
+    #[inline(always)]
+    pub fn as_mut_str(&mut self) -> &mut str {
+        &mut self.initialized
+    }
+
+    /// Returns a byte slice of this `FixedBumpString`'s contents.
+    #[must_use]
+    #[inline(always)]
+    pub fn as_bytes(&self) -> &[u8] {
+        self.initialized.as_bytes()
+    }
+
+    /// Returns a mutable reference to the contents of this `FixedBumpString`.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because the returned `&mut Vec` allows writing
+    /// bytes which are not valid UTF-8. If this constraint is violated, using
+    /// the original `FixedBumpString` after dropping the `&mut Vec` may violate memory
+    /// safety, as `FixedBumpString`s must be valid UTF-8.
+    #[must_use]
+    #[inline(always)]
+    pub unsafe fn as_mut_vec(&mut self) -> &mut FixedBumpVec<'a, u8> {
+        // SAFETY: `BumpVec<u8>` and `BumpString` have the same representation;
+        // only the invariant that the bytes are utf8 is different.
+        transmute_mut(self)
+    }
 }
 
-impl<'a> FixedBumpString<'a> {
+impl FixedBumpString<'_> {
     error_behavior_generic_methods_if! {
         if "the string is full"
 
@@ -578,34 +606,6 @@ impl<'a> FixedBumpString<'a> {
         vec.set_len(len + amt);
 
         Ok(())
-    }
-
-    /// Converts a `FixedBumpString` into a `BumpBox<str>`.
-    #[must_use]
-    #[inline(always)]
-    pub fn into_boxed_str(self) -> BumpBox<'a, str> {
-        self.initialized
-    }
-
-    /// Converts this `FixedBumpString` into `&str` that is live for this bump scope.
-    #[must_use]
-    #[inline(always)]
-    pub fn into_str(self) -> &'a mut str {
-        self.initialized.into_mut()
-    }
-
-    /// Turns this `FixedBumpString<T>` into a `BumpVec<T>`.
-    #[must_use]
-    #[inline(always)]
-    pub fn into_string<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-        self,
-        bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
-    ) -> BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-    where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        A: BaseAllocator<GUARANTEED_ALLOCATED>,
-    {
-        BumpString::from_parts(self, bump)
     }
 }
 
