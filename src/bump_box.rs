@@ -330,6 +330,101 @@ impl<'a> BumpBox<'a, str> {
     /// Empty str.
     pub const EMPTY_STR: Self = unsafe { BumpBox::<[u8]>::EMPTY.into_boxed_str_unchecked() };
 
+    /// Converts a `BumpBox<[u8]>` to a `BumpBox<str>`.
+    ///
+    /// A string ([`BumpBox<str>`]) is made of bytes ([`u8`]), and a vector of bytes
+    /// ([`BumpBox<[u8]>`]) is made of bytes, so this function converts between the
+    /// two. Not all byte slices are valid `BumpBox<str>`s, however: `BumpBox<str>`
+    /// requires that it is valid UTF-8. `from_utf8()` checks to ensure that
+    /// the bytes are valid UTF-8, and then does the conversion.
+    ///
+    /// If you are sure that the byte slice is valid UTF-8, and you don't want
+    /// to incur the overhead of the validity check, there is an unsafe version
+    /// of this function, [`from_utf8_unchecked`], which has the same behavior
+    /// but skips the check.
+    ///
+    /// This method will take care to not copy the vector, for efficiency's
+    /// sake.
+    ///
+    /// If you need a [`&str`] instead of a `BumpBox<str>`, consider
+    /// [`str::from_utf8`].
+    ///
+    /// The inverse of this method is [`into_boxed_bytes`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Err`] if the slice is not UTF-8 with a description as to why the
+    /// provided bytes are not UTF-8. The vector you moved in is also included.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    /// ```
+    /// # use bump_scope::{ Bump, BumpBox };
+    /// # let bump: Bump = Bump::new();
+    /// // some bytes, in a vector
+    /// let sparkle_heart = bump.alloc_slice_copy(&[240, 159, 146, 150]);
+    ///
+    /// // We know these bytes are valid, so we'll use `unwrap()`.
+    /// let sparkle_heart = BumpBox::from_utf8(sparkle_heart).unwrap();
+    ///
+    /// assert_eq!(sparkle_heart, "💖");
+    /// ```
+    ///
+    /// Incorrect bytes:
+    /// ```
+    /// # use bump_scope::{ Bump, BumpBox };
+    /// # let bump: Bump = Bump::new();
+    /// // some invalid bytes, in a vector
+    /// let sparkle_heart = bump.alloc_slice_copy(&[0, 159, 146, 150]);
+    ///
+    /// assert!(BumpBox::from_utf8(sparkle_heart).is_err());
+    /// ```
+    ///
+    /// [`from_utf8_unchecked`]: Self::from_utf8_unchecked
+    /// [`&str`]: prim@str "&str"
+    /// [`into_boxed_bytes`]: Self::into_boxed_bytes
+    pub const fn from_utf8(bytes: BumpBox<'a, [u8]>) -> Result<Self, FromUtf8Error<BumpBox<'a, [u8]>>> {
+        match str::from_utf8(bytes.as_slice()) {
+            // SAFETY: `BumpBox<[u8]>` and `BumpBox<str>` have the same representation;
+            // only the invariant that the bytes are utf8 is different.
+            Ok(_) => Ok(unsafe { mem::transmute(bytes) }),
+            Err(error) => Err(FromUtf8Error { error, bytes }),
+        }
+    }
+
+    /// Converts a vector of bytes to a `BumpString` without checking that the
+    /// string contains valid UTF-8.
+    ///
+    /// See the safe version, [`from_utf8`](Self::from_utf8), for more details.
+    ///
+    /// # Safety
+    ///
+    /// The bytes passed in must be valid UTF-8.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, BumpBox };
+    /// # let bump: Bump = Bump::new();
+    /// // some bytes, in a vector
+    /// let sparkle_heart = bump.alloc_slice_copy(&[240, 159, 146, 150]);
+    ///
+    /// let sparkle_heart = unsafe {
+    ///     BumpBox::from_utf8_unchecked(sparkle_heart)
+    /// };
+    ///
+    /// assert_eq!(sparkle_heart, "💖");
+    /// ```
+    #[must_use]
+    pub const unsafe fn from_utf8_unchecked(bytes: BumpBox<'a, [u8]>) -> Self {
+        debug_assert!(str::from_utf8(bytes.as_slice()).is_ok());
+
+        // SAFETY: `BumpBox<[u8]>` and `BumpBox<str>` have the same representation;
+        // only the invariant that the bytes are utf8 is different.
+        mem::transmute(bytes)
+    }
+
     /// Converts a `BumpBox<str>` into a `BumpBox<[u8]>`.
     #[inline]
     #[must_use]

@@ -1,7 +1,7 @@
 # Changelog
 
 ## Unreleased
-- **added:** missing string methods to `BumpBox<str>`: `len`, `is_empty`, `set_len`, `retain`, `clear`, `as_ptr`, `as_mut_ptr`, `remove`, `as_mut_bytes`
+- **added:** missing string methods to `BumpBox<str>`: `len`, `is_empty`, `set_len`, `retain`, `clear`, `as(_mut)_ptr`, `remove`, `as_mut_bytes`, `from_utf8(_unchecked)`
 - **added:** `Default` for `FixedBumpString`
 - **added:** string methods `pop`, `truncate`
 - **added:** made more `len` and `is_empty` methods `const`
