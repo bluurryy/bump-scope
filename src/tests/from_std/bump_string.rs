@@ -204,7 +204,8 @@ fn remove() {
 #[test]
 #[should_panic]
 fn remove_bad() {
-    "ศ".to_string().remove(1);
+    let bump: Bump = Bump::new();
+    BumpString::from_str_in("ศ", &bump).remove(1);
 }
 
 #[test]
@@ -308,14 +309,14 @@ fn test_from_iterator() {
     let a: String = s.chars().collect();
     assert_eq!(s, a);
 
-    let mut b = t.to_string();
+    let mut b = BumpString::from_str_in(t, &bump);
     b.extend(u.chars());
     assert_eq!(s, b);
 
     let c: String = [t, u].into_iter().collect();
     assert_eq!(s, c);
 
-    let mut d = t.to_string();
+    let mut d = BumpString::from_str_in(t, &bump);
     d.extend(vec![u]);
     assert_eq!(s, d);
 }
@@ -356,7 +357,8 @@ fn test_drain_end_overflow() {
 
 #[test]
 fn test_extend_ref() {
-    let mut a = "foo".to_string();
+    let bump: Bump = Bump::new();
+    let mut a = BumpString::from_str_in("foo", &bump);
     a.extend(&['b', 'a', 'r']);
 
     assert_eq!(&a, "foobar");
