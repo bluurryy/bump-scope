@@ -32,9 +32,9 @@ inspect_asm::alloc_fmt::try_mut_down:
 	mov rdi, qword ptr [rsp + 16]
 	test rdi, rdi
 	je .LBB0_1
+	mov r15, qword ptr [rsp + 24]
 	mov rsi, qword ptr [rsp]
 	mov rbx, qword ptr [rsp + 8]
-	mov r15, qword ptr [rsp + 24]
 	add rdi, rsi
 	sub rdi, rbx
 	mov rdx, rbx
