@@ -5,6 +5,7 @@
     "abcdecde",
     "abcdecdeab",
     "abcdecdeabecde",
+    "abcประเทศไทย",
     "alloc",
     "arrayref",
     "backshift",
@@ -14,6 +15,7 @@
     "cfgs",
     "clippy",
     "codegen",
+    "codepoint",
     "constness",
     "curr",
     "Dealloc",
@@ -32,6 +34,7 @@
     "elems",
     "emscripten",
     "expl",
+    "FFFD",
     "foobarbaz",
     "genericity",
     "haha",
@@ -85,8 +88,11 @@
     "usize",
     "valgrind",
     "Vec's",
+    "Việt",
     "vtable",
     "zerocopy",
-    "Zmiri"
+    "Zmiri",
+    "ประเทศไทย",
+    "ศไทย中华Việt"
   ]
 }
