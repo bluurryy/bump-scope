@@ -287,7 +287,7 @@ where
     }
 
     // This needs `&mut self` to make sure that no allocations are alive.
-    #[doc = include_str!("docs/bump/reset.md")]
+    /// This will only keep around the newest chunk, which is also the biggest.
     #[inline(always)]
     pub fn reset(&mut self) {
         let mut chunk = self.chunk.get();

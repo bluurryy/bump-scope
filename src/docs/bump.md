@@ -1,1 +1,0 @@
-Returns a reference to the bump allocator.

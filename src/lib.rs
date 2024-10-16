@@ -761,7 +761,7 @@ macro_rules! bump_scope_methods {
             }
         }
 
-        #[doc = include_str!("docs/stats.md")]
+        /// Returns a type which provides statistics about the memory usage of the bump allocator.
         #[must_use]
         #[inline(always)]
         pub fn guaranteed_allocated_stats(
@@ -785,7 +785,7 @@ macro_rules! bump_common_methods {
 
         $crate::condition! {
             if $is_scope {
-                #[doc = include_str!("docs/stats.md")]
+                /// Returns a type which provides statistics about the memory usage of the bump allocator.
                 #[must_use]
                 #[inline(always)]
                 pub fn stats(&self) -> Stats<'a, UP> {
@@ -794,7 +794,7 @@ macro_rules! bump_common_methods {
                     }
                 }
             } else {
-                #[doc = include_str!("docs/stats.md")]
+                /// Returns a type which provides statistics about the memory usage of the bump allocator.
                 #[must_use]
                 #[inline(always)]
                 pub fn stats(&self) -> Stats<UP> {
@@ -803,7 +803,7 @@ macro_rules! bump_common_methods {
             }
         }
 
-        #[doc = include_str!("docs/allocator.md")]
+        /// Returns a reference to the base allocator.
         #[must_use]
         #[inline(always)]
         pub fn allocator(&self) -> &A {

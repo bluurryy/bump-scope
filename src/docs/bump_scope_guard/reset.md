@@ -1,1 +1,0 @@
-Frees the memory taken up by allocations made since creation of this bump scope guard.

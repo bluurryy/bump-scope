@@ -110,7 +110,7 @@ where
         unsafe { &mut *self.as_raw_mut_slice() }
     }
 
-    #[doc = include_str!("../docs/bump.md")]
+    /// Returns a reference to the bump allocator.
     #[must_use]
     #[inline(always)]
     pub fn bump(&self) -> &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {

@@ -1234,7 +1234,18 @@ impl<'a, T> BumpBox<'a, [T]> {
         self.ptr = nonnull::slice_from_raw_parts(ptr, len);
     }
 
-    #[doc = include_str!("docs/vec/remove.md")]
+    /// Removes and returns the element at position `index` within the vector,
+    /// shifting all elements after it to the left.
+    ///
+    /// Note: Because this shifts over the remaining elements, it has a
+    /// worst-case performance of *O*(*n*). If you don't need the order of elements
+    /// to be preserved, use [`swap_remove`] instead.
+    ///
+    /// # Panics
+    /// Panics if `index` is out of bounds.
+    ///
+    /// [`swap_remove`]: Self::swap_remove
+    ///
     /// # Examples
     ///
     /// ```
@@ -1276,7 +1287,18 @@ impl<'a, T> BumpBox<'a, [T]> {
         }
     }
 
-    #[doc = include_str!("docs/vec/swap_remove.md")]
+    /// Removes an element from the vector and returns it.
+    ///
+    /// The removed element is replaced by the last element of the vector.
+    ///
+    /// This does not preserve ordering, but is *O*(1).
+    /// If you need to preserve the element order, use [`remove`] instead.
+    ///
+    /// # Panics
+    /// Panics if `index` is out of bounds.
+    ///
+    /// [`remove`]: Self::remove
+    ///
     /// # Examples
     ///
     /// ```
@@ -1621,7 +1643,12 @@ impl<'a, T> BumpBox<'a, [T]> {
         }
     }
 
-    #[doc = include_str!("docs/retain.md")]
+    /// Retains only the elements specified by the predicate, passing a mutable reference to it.
+    ///
+    /// In other words, remove all elements `e` such that `f(&mut e)` returns `false`.
+    /// This method operates in place, visiting each element exactly once in the
+    /// original order, and preserves the order of the retained elements.
+    ///
     /// # Examples
     ///
     /// ```

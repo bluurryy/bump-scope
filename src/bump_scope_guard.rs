@@ -76,13 +76,13 @@ where
         }
     }
 
-    #[doc = include_str!("docs/bump_scope_guard/scope.md")]
+    /// Returns a new `BumpScope`.
     #[inline(always)]
     pub fn scope(&mut self) -> BumpScope<A, MIN_ALIGN, UP> {
         unsafe { BumpScope::new_unchecked(self.chunk) }
     }
 
-    #[doc = include_str!("docs/bump_scope_guard/reset.md")]
+    /// Frees the memory taken up by allocations made since creation of this bump scope guard.
     #[inline(always)]
     pub fn reset(&mut self) {
         unsafe {
@@ -90,7 +90,7 @@ where
         }
     }
 
-    #[doc = include_str!("docs/stats.md")]
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<UP> {
@@ -99,7 +99,7 @@ where
         }
     }
 
-    #[doc = include_str!("docs/stats.md")]
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
     pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats<UP> {
@@ -108,7 +108,7 @@ where
         }
     }
 
-    #[doc = include_str!("docs/allocator.md")]
+    /// Returns a reference to the base allocator.
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
@@ -172,19 +172,19 @@ where
         }
     }
 
-    #[doc = include_str!("docs/bump_scope_guard/scope.md")]
+    /// Returns a new `BumpScope`.
     #[inline(always)]
     pub fn scope(&mut self) -> BumpScope<A, MIN_ALIGN, UP> {
         unsafe { BumpScope::new_unchecked(self.chunk) }
     }
 
-    #[doc = include_str!("docs/bump_scope_guard/reset.md")]
+    /// Frees the memory taken up by allocations made since creation of this bump scope guard.
     #[inline(always)]
     pub fn reset(&mut self) {
         self.chunk.reset();
     }
 
-    #[doc = include_str!("docs/stats.md")]
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<UP> {
@@ -193,7 +193,7 @@ where
         }
     }
 
-    #[doc = include_str!("docs/stats.md")]
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
     pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats<UP> {
@@ -202,7 +202,7 @@ where
         }
     }
 
-    #[doc = include_str!("docs/allocator.md")]
+    /// Returns a reference to the base allocator.
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {

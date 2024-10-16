@@ -204,7 +204,21 @@ where
     }
 
     error_behavior_generic_methods_allocation_failure! {
-        #[doc = include_str!("docs/vec/with_capacity.md")]
+        /// Constructs a new empty vector with at least the specified capacity
+        /// with the provided `BumpScope`.
+        ///
+        /// The vector will be able to hold `capacity` elements without
+        /// reallocating. If `capacity` is 0, the vector will not allocate.
+        ///
+        /// It is important to note that although the returned vector has the
+        /// minimum *capacity* specified, the vector will have a zero *length*. For
+        /// an explanation of the difference between length and capacity, see
+        /// *[Capacity and reallocation]*.
+        ///
+        /// When `T` is a zero-sized type, there will be no allocation
+        /// and the capacity will always be `usize::MAX`.
+        ///
+        /// [Capacity and reallocation]: alloc::vec::Vec#capacity-and-reallocation
         impl
         for fn with_capacity_in
         for fn try_with_capacity_in
@@ -301,7 +315,9 @@ where
 impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
     MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 {
-    #[doc = include_str!("docs/vec/capacity.md")]
+    /// Returns the total number of elements the vector can hold without
+    /// reallocating.
+    ///
     /// # Examples
     ///
     /// ```
@@ -316,27 +332,30 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
         self.fixed.capacity()
     }
 
-    #[doc = include_str!("docs/vec/len.md")]
+    /// Returns the number of elements in the vector, also referred to
+    /// as its 'length'.
     #[must_use]
     #[inline(always)]
     pub const fn len(&self) -> usize {
         self.fixed.len()
     }
 
-    #[doc = include_str!("docs/vec/is_empty.md")]
+    /// Returns `true` if the vector contains no elements.
     #[must_use]
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
         self.fixed.is_empty()
     }
 
-    #[doc = include_str!("docs/vec/pop.md")]
+    /// Removes the last element from a vector and returns it, or [`None`] if it
+    /// is empty.
     #[inline(always)]
     pub fn pop(&mut self) -> Option<T> {
         self.fixed.pop()
     }
 
-    #[doc = include_str!("docs/vec/clear.md")]
+    /// Clears the vector, removing all values.
+    ///
     /// # Examples
     /// ```
     /// # use bump_scope::{ Bump, mut_bump_vec };
@@ -350,7 +369,18 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
         self.fixed.clear();
     }
 
-    #[doc = include_str!("docs/vec/truncate.md")]
+    /// Shortens the vector, keeping the first `len` elements and dropping
+    /// the rest.
+    ///
+    /// If `len` is greater than the vector's current length, this has no
+    /// effect.
+    ///
+    /// The [`drain`] method can emulate `truncate`, but causes the excess
+    /// elements to be returned instead of dropped.
+    ///
+    /// Note that this method has no effect on the allocated capacity
+    /// of the vector.
+    ///
     /// # Examples
     ///
     /// Truncating a five element vector to two elements:
@@ -394,7 +424,17 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
         self.fixed.truncate(len);
     }
 
-    #[doc = include_str!("docs/vec/remove.md")]
+    /// Removes and returns the element at position `index` within the vector,
+    /// shifting all elements after it to the left.
+    ///
+    /// Note: Because this shifts over the remaining elements, it has a
+    /// worst-case performance of *O*(*n*). If you don't need the order of elements
+    /// to be preserved, use [`swap_remove`] instead.
+    ///
+    /// # Panics
+    /// Panics if `index` is out of bounds.
+    ///
+    /// [`swap_remove`]: Self::swap_remove
     ///
     /// # Examples
     /// ```
@@ -409,7 +449,17 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
         self.fixed.remove(index)
     }
 
-    #[doc = include_str!("docs/vec/swap_remove.md")]
+    /// Removes an element from the vector and returns it.
+    ///
+    /// The removed element is replaced by the last element of the vector.
+    ///
+    /// This does not preserve ordering, but is *O*(1).
+    /// If you need to preserve the element order, use [`remove`] instead.
+    ///
+    /// # Panics
+    /// Panics if `index` is out of bounds.
+    ///
+    /// [`remove`]: Self::remove
     ///
     /// # Examples
     /// ```
@@ -1260,7 +1310,12 @@ where
         }
     }
 
-    #[doc = include_str!("docs/retain.md")]
+    /// Retains only the elements specified by the predicate, passing a mutable reference to it.
+    ///
+    /// In other words, remove all elements `e` such that `f(&mut e)` returns `false`.
+    /// This method operates in place, visiting each element exactly once in the
+    /// original order, and preserves the order of the retained elements.
+    ///
     /// # Examples
     ///
     /// ```
@@ -1508,7 +1563,7 @@ where
         }
     }
 
-    #[doc = include_str!("docs/allocator.md")]
+    /// Returns a reference to the base allocator.
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
@@ -1522,8 +1577,9 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
-    #[doc = include_str!("docs/stats.md")]
-    #[doc = include_str!("docs/stats_mut_collection_addendum.md")]
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
+    ///
+    /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, UP> {
@@ -1536,8 +1592,9 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator,
 {
-    #[doc = include_str!("docs/stats.md")]
-    #[doc = include_str!("docs/stats_mut_collection_addendum.md")]
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
+    ///
+    /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
     #[must_use]
     #[inline(always)]
     pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats<'a, UP> {

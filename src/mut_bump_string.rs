@@ -833,7 +833,7 @@ where
         Ok(())
     }
 
-    #[doc = include_str!("docs/allocator.md")]
+    /// Returns a reference to the base allocator.
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
@@ -847,8 +847,9 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
-    #[doc = include_str!("docs/stats.md")]
-    #[doc = include_str!("docs/stats_mut_collection_addendum.md")]
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
+    ///
+    /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, UP> {
@@ -861,8 +862,9 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator,
 {
-    #[doc = include_str!("docs/stats.md")]
-    #[doc = include_str!("docs/stats_mut_collection_addendum.md")]
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
+    ///
+    /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
     #[must_use]
     #[inline(always)]
     pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats<'a, UP> {

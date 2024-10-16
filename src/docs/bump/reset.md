@@ -1,1 +1,0 @@
-This will only keep around the newest chunk, which is also the biggest.
