@@ -648,7 +648,33 @@ where
     error_behavior_generic_methods_allocation_failure! {
         /// Appends the given [`char`] to the end of this string.
         impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, BumpString };
+        /// # let bump: Bump = Bump::new();
+        /// let mut s = BumpString::from_str_in("abc", &bump);
+        ///
+        /// s.push('1');
+        /// s.push('2');
+        /// s.push('3');
+        ///
+        /// assert_eq!(s, "abc123");
+        /// ```
         for fn push
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, BumpString };
+        /// # let bump: Bump = Bump::try_new()?;
+        /// let mut s = BumpString::try_from_str_in("abc", &bump)?;
+        ///
+        /// s.try_push('1')?;
+        /// s.try_push('2')?;
+        /// s.try_push('3')?;
+        ///
+        /// assert_eq!(s, "abc123");
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_push
         use fn generic_push(&mut self, ch: char) {
             let vec = unsafe { self.as_mut_vec() };
@@ -661,7 +687,29 @@ where
 
         /// Appends a given string slice onto the end of this string.
         impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, BumpString };
+        /// # let bump: Bump = Bump::new();
+        /// let mut s = BumpString::from_str_in("foo", &bump);
+        ///
+        /// s.push_str("bar");
+        ///
+        /// assert_eq!(s, "foobar");
+        /// ```
         for fn push_str
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, BumpString };
+        /// # let bump: Bump = Bump::try_new()?;
+        /// let mut s = BumpString::try_from_str_in("foo", &bump)?;
+        ///
+        /// s.try_push_str("bar")?;
+        ///
+        /// assert_eq!(s, "foobar");
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_push_str
         use fn generic_push_str(&mut self, string: &str) {
             let vec = unsafe { self.as_mut_vec() };
