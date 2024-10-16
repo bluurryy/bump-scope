@@ -618,17 +618,6 @@ macro_rules! const_param_assert {
 
 pub(crate) use const_param_assert;
 
-macro_rules! doc_align_cant_decrease {
-    () => {
-        "**This can not decrease the alignment.** Trying to decrease alignment will result in a compile error. \
-        You can use [`aligned`](Self::aligned) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment."
-        // To decrease alignment we need to ensure that we return to our original alignment. We can only do this
-        // using a closure which uses "guard" type that resets to the original alignment on drop.
-    };
-}
-
-pub(crate) use doc_align_cant_decrease;
-
 macro_rules! condition {
     (if true { $($then:tt)* } else { $($else:tt)* }) => { $($then)* };
     (if false { $($then:tt)* } else { $($else:tt)* }) => { $($else)* };

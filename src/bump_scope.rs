@@ -3,7 +3,7 @@ use crate::{
     bump_common_methods, bump_scope_methods,
     bumping::{bump_down, bump_up, BumpUp},
     chunk_size::ChunkSize,
-    const_param_assert, doc_align_cant_decrease, down_align_usize, exact_size_iterator_bad_len,
+    const_param_assert, down_align_usize, exact_size_iterator_bad_len,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::{nonnull, pointer},
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
@@ -421,7 +421,11 @@ where
 
     /// Converts this `BumpScope` into a `BumpScope` with a new minimum alignment.
     ///
-    #[doc = doc_align_cant_decrease!()]
+    /// **This can not decrease the alignment.** Trying to decrease alignment will result in a compile error.
+    /// You can use [`aligned`](Self::aligned) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment."
+    ///
+    /// To decrease alignment we need to ensure that we return to our original alignment.
+    /// That can only be guaranteed by a function taking a closure like the ones mentioned above.
     ///
     /// <details>
     /// <summary>This mustn't decrease alignment because otherwise you could do this:</summary>
@@ -457,7 +461,11 @@ where
 
     /// Mutably borrows `BumpScope` with a new minimum alignment.
     ///
-    #[doc = doc_align_cant_decrease!()]
+    /// **This can not decrease the alignment.** Trying to decrease alignment will result in a compile error.
+    /// You can use [`aligned`](Self::aligned) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment."
+    ///
+    /// To decrease alignment we need to ensure that we return to our original alignment.
+    /// That can only be guaranteed by a function taking a closure like the ones mentioned above.
     #[inline(always)]
     pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(
         &mut self,

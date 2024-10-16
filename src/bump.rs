@@ -3,7 +3,7 @@ use crate::infallible;
 use crate::{
     bump_common_methods, bump_scope_methods,
     chunk_size::ChunkSize,
-    doc_align_cant_decrease, error_behavior_generic_methods_allocation_failure,
+    error_behavior_generic_methods_allocation_failure,
     polyfill::{cfg_const, pointer},
     unallocated_chunk_header, BaseAllocator, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior,
     GuaranteedAllocatedStats, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
@@ -336,7 +336,11 @@ where
 
     /// Mutably borrows `Bump` with a new minimum alignment.
     ///
-    #[doc = doc_align_cant_decrease!()]
+    /// **This can not decrease the alignment.** Trying to decrease alignment will result in a compile error.
+    /// You can use [`aligned`](Self::aligned) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment."
+    ///
+    /// To decrease alignment we need to ensure that we return to our original alignment.
+    /// That can only be guaranteed by a function taking a closure like the ones mentioned above.
     #[inline(always)]
     pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(&mut self) -> &mut Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
     where
