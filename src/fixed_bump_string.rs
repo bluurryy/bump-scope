@@ -13,7 +13,7 @@ use core::{
     ptr, str,
 };
 
-/// A [`BumpString`](crate::BumpString) but with a fixed capacity.
+/// A type like [`BumpString`](crate::BumpString) but with a fixed capacity.
 ///
 /// It can be constructed with [`alloc_fixed_string`] or from a `BumpBox` via [`from_init`] or [`from_uninit`].
 ///
