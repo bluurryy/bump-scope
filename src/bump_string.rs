@@ -199,11 +199,32 @@ where
 
         /// Constructs a new `BumpString` from a `&str`.
         impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, BumpString };
+        /// # let bump: Bump = Bump::new();
+        /// let string = BumpString::from_str_in("Hello!", &bump);
+        /// assert_eq!(string, "Hello!");
+        /// ```
         for fn from_str_in
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, BumpString };
+        /// # let bump: Bump = Bump::try_new()?;
+        /// let string = BumpString::try_from_str_in("Hello!", &bump)?;
+        /// assert_eq!(string, "Hello!");
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_from_str_in
         use fn generic_from_str_in(string: &str, bump: impl Into<&'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
-            let mut this = Self::new_in(bump);
-            this.generic_push_str(string)?;
+            let mut this = Self::generic_with_capacity_in(string.len(), bump)?;
+
+            unsafe {
+                ptr::copy_nonoverlapping(string.as_ptr(), this.fixed.initialized.as_mut_ptr(), string.len());
+                this.as_mut_vec().set_len(string.len());
+            }
+
             Ok(this)
         }
     }

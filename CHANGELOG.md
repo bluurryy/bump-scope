@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **improved:** increased performance of `(Mut)BumpString::from_str_in`
+
 ## 0.10.3 (2024-10-15)
 - **added:** made `owned_str` module `pub`
 
