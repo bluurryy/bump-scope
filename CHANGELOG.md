@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.10.5 (2024-10-19)
 - **added:** `splice` to `BumpVec`
 - **added:** `reserve_exact` to vectors and strings
 - **added:** `spare_capacity_mut` and `from_iter(_exact)_in` to vectors
