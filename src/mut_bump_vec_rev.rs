@@ -987,12 +987,75 @@ where
         /// speculatively avoid frequent reallocations. After calling `reserve`,
         /// capacity will be greater than or equal to `self.len() + additional`.
         /// Does nothing if capacity is already sufficient.
+        do panics
+        /// Panics if the new capacity exceeds `isize::MAX` bytes.
         impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
+        /// # let mut bump: Bump = Bump::new();
+        /// let mut vec = mut_bump_vec_rev![in bump; 1];
+        /// vec.reserve(10);
+        /// assert!(vec.capacity() >= 11);
+        /// ```
         for fn reserve
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let mut vec = mut_bump_vec_rev![try in bump; 1]?;
+        /// vec.try_reserve(10)?;
+        /// assert!(vec.capacity() >= 11);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_reserve
         use fn generic_reserve(&mut self, additional: usize) {
-            if additional > (self.cap - self.len) {
+            if additional > (self.capacity() - self.len()) {
                 self.generic_grow_cold(additional)?;
+            }
+
+            Ok(())
+        }
+
+        /// Reserves the minimum capacity for at least `additional` more elements to
+        /// be inserted in the given `MutBumpVecRev<T>`. Unlike [`reserve`], this will not
+        /// deliberately over-allocate to speculatively avoid frequent allocations.
+        /// After calling `reserve_exact`, capacity will be greater than or equal to
+        /// `self.len() + additional`. Does nothing if the capacity is already
+        /// sufficient.
+        ///
+        /// Note that the allocator may give the collection more space than it
+        /// requests. Therefore, capacity can not be relied upon to be precisely
+        /// minimal. Prefer [`reserve`] if future insertions are expected.
+        ///
+        /// [`reserve`]: Self::reserve
+        do panics
+        /// Panics if the new capacity exceeds `isize::MAX` bytes.
+        impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
+        /// # let mut bump: Bump = Bump::new();
+        /// let mut vec = mut_bump_vec_rev![in bump; 1];
+        /// vec.reserve_exact(10);
+        /// assert!(vec.capacity() >= 11);
+        /// ```
+        for fn reserve_exact
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let mut vec = mut_bump_vec_rev![try in bump; 1]?;
+        /// vec.try_reserve_exact(10)?;
+        /// assert!(vec.capacity() >= 11);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        for fn try_reserve_exact
+        use fn generic_reserve_exact(&mut self, additional: usize) {
+            if additional > (self.capacity() - self.len()) {
+                self.generic_grow_cold_exact(additional)?;
             }
 
             Ok(())
@@ -1269,7 +1332,7 @@ where
     #[cold]
     #[inline(never)]
     fn generic_grow_cold<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
-        let required_cap = match self.cap.checked_add(additional) {
+        let required_cap = match self.len().checked_add(additional) {
             Some(required_cap) => required_cap,
             None => return Err(E::capacity_overflow())?,
         };
@@ -1278,17 +1341,37 @@ where
             return Ok(());
         }
 
-        let min_cap = self.cap.checked_mul(2).unwrap_or(required_cap).max(required_cap);
-        let (end, cap) = self.bump.alloc_greedy_rev::<E, T>(min_cap)?;
+        let new_cap = self.capacity().checked_mul(2).unwrap_or(required_cap).max(required_cap);
+        unsafe { self.generic_grow_to(new_cap) }
+    }
 
-        unsafe {
-            let src = self.as_mut_ptr();
-            let dst = end.as_ptr().sub(self.len);
-            ptr::copy_nonoverlapping(src, dst, self.len);
+    #[cold]
+    #[inline(never)]
+    fn generic_grow_cold_exact<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
+        let required_cap = match self.len().checked_add(additional) {
+            Some(required_cap) => required_cap,
+            None => return Err(E::capacity_overflow())?,
+        };
 
-            self.end = end;
-            self.cap = cap;
+        if T::IS_ZST {
+            return Ok(());
         }
+
+        unsafe { self.generic_grow_to(required_cap) }
+    }
+
+    /// # Safety
+    ///
+    /// `new_capacity` must be greater than the current capacity.
+    unsafe fn generic_grow_to<E: ErrorBehavior>(&mut self, new_capacity: usize) -> Result<(), E> {
+        let (end, cap) = self.bump.alloc_greedy_rev::<E, T>(new_capacity)?;
+
+        let src = self.as_mut_ptr();
+        let dst = end.as_ptr().sub(self.len);
+        ptr::copy_nonoverlapping(src, dst, self.len);
+
+        self.end = end;
+        self.cap = cap;
 
         Ok(())
     }

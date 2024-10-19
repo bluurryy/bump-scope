@@ -972,7 +972,7 @@ where
         }
 
         /// Reserves capacity for at least `additional` more elements to be inserted
-        /// in the given `BumpVec<T>`. The collection may reserve more space to
+        /// in the given `MutBumpVec<T>`. The collection may reserve more space to
         /// speculatively avoid frequent reallocations. After calling `reserve`,
         /// capacity will be greater than or equal to `self.len() + additional`.
         /// Does nothing if capacity is already sufficient.
@@ -1008,7 +1008,7 @@ where
         }
 
         /// Reserves the minimum capacity for at least `additional` more elements to
-        /// be inserted in the given `BumpVec<T>`. Unlike [`reserve`], this will not
+        /// be inserted in the given `MutBumpVec<T>`. Unlike [`reserve`], this will not
         /// deliberately over-allocate to speculatively avoid frequent allocations.
         /// After calling `reserve_exact`, capacity will be greater than or equal to
         /// `self.len() + additional`. Does nothing if the capacity is already
