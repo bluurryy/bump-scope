@@ -333,6 +333,43 @@ where
                 marker: PhantomData,
             })
         }
+
+        /// Create a new [`MutBumpVecRev`] whose elements are taken from an iterator and allocated in the given `bump`.
+        ///
+        /// This is behaviorally identical to [`FromIterator::from_iter`].
+        impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, MutBumpVecRev };
+        /// # let mut bump: Bump = Bump::new();
+        /// let vec = MutBumpVecRev::from_iter_in([1, 2, 3], &mut bump);
+        /// assert_eq!(vec, [3, 2, 1]);
+        /// ```
+        for fn from_iter_in
+        do examples
+        /// ```
+        /// #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, MutBumpVecRev };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let vec = MutBumpVecRev::try_from_iter_in([1, 2, 3], &mut bump)?;
+        /// assert_eq!(vec, [3, 2, 1]);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        for fn try_from_iter_in
+        use fn generic_from_iter_in<{I}>(iter: I, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self
+        where {
+            I: IntoIterator<Item = T>
+        } in {
+            let iter = iter.into_iter();
+            let capacity = iter.size_hint().0;
+            let mut vec = Self::generic_with_capacity_in(capacity, bump)?;
+
+            for value in iter {
+                vec.generic_push(value)?;
+            }
+
+            Ok(vec)
+        }
     }
 }
 

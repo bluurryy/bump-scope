@@ -859,7 +859,7 @@ macro_rules! error_behavior_generic_methods_if {
             for fn $fallible:ident
 
             use fn $generic:ident
-            $(<{$($generic_params:tt)*}>)?
+            $(<{$($generic_params:tt)*} $({$($generic_params_lifetime:tt)*})?>)?
             (
                 $(&mut $self_mut:ident ,)?
                 $($arg_pat:ident: $arg_ty:ty),* $(,)?
@@ -891,7 +891,7 @@ macro_rules! error_behavior_generic_methods_if {
             #[inline(always)]
             #[cfg(not(no_global_oom_handling))]
             pub fn $infallible
-            $(<$($generic_params)*>)?
+            $(<$($($generic_params_lifetime)*)? $($generic_params)*>)?
             ($(&mut $self_mut,)?  $($arg_pat: $arg_ty),*) $(-> $return_ty)?
             $(where $($where)*)?
             {
@@ -918,7 +918,7 @@ macro_rules! error_behavior_generic_methods_if {
 
             #[inline(always)]
             pub fn $fallible
-            $(<$($generic_params)*>)?
+            $(<$($($generic_params_lifetime)*)? $($generic_params)*>)?
             ($(&mut $self_mut,)? $($arg_pat: $arg_ty),*)
             -> $crate::wrap_result!($($return_ty)?, allocator_api2::alloc::AllocError)
             $(where $($where)*)?
@@ -931,7 +931,7 @@ macro_rules! error_behavior_generic_methods_if {
             $(#[$attr])*
             #[inline]
             pub(crate) fn $generic
-            <B: ErrorBehavior $(, $($generic_params)*)?>
+            <$($($($generic_params_lifetime)*)?)? B: ErrorBehavior $(, $($generic_params)*)?>
             ($(&mut $self_mut,)? $($arg_pat: $arg_ty),*)
             -> $crate::wrap_result!($($return_ty)?, B)
             $(where $($where)*)?

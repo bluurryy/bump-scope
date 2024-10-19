@@ -1,5 +1,5 @@
 use crate::{
-    error_behavior_generic_methods_if, owned_slice,
+    error_behavior_generic_methods_allocation_failure, error_behavior_generic_methods_if, owned_slice,
     polyfill::{self, nonnull, pointer, slice},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
     BaseAllocator, BumpBox, BumpScope, BumpVec, ErrorBehavior, MinimumAlignment, NoDrop, SizedTypeProperties,
@@ -54,6 +54,93 @@ impl<'a, T> FixedBumpVec<'a, T> {
         initialized: BumpBox::EMPTY,
         capacity: if T::IS_ZST { usize::MAX } else { 0 },
     };
+
+    error_behavior_generic_methods_allocation_failure! {
+        /// Create a new [`FixedBumpVec`] whose elements are taken from an iterator and allocated in the given `bump`.
+        ///
+        /// This is behaviorally identical to [`FromIterator::from_iter`].
+        ///
+        /// For better performance prefer [`from_iter_exact_in`](Self::from_iter_exact_in).
+        impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, FixedBumpVec };
+        /// # let bump: Bump = Bump::new();
+        /// let vec = FixedBumpVec::from_iter_in([1, 2, 3], &bump);
+        /// assert_eq!(vec, [1, 2, 3]);
+        /// ```
+        for fn from_iter_in
+        do examples
+        /// ```
+        /// #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, FixedBumpVec };
+        /// # let bump: Bump = Bump::try_new()?;
+        /// let vec = FixedBumpVec::try_from_iter_in([1, 2, 3], &bump)?;
+        /// assert_eq!(vec, [1, 2, 3]);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        for fn try_from_iter_in
+        use fn generic_from_iter_in<{
+            I,
+            A,
+            const MIN_ALIGN: usize,
+            const UP: bool,
+            const GUARANTEED_ALLOCATED: bool,
+        } {
+            'b,
+        }>(iter: I, bump: impl Into<&'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self
+        where {
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+            A: BaseAllocator<GUARANTEED_ALLOCATED> + 'b,
+            I: IntoIterator<Item = T>,
+            'a: 'b,
+        } in {
+            let bump = bump.into();
+            Ok(Self::from_init(bump.generic_alloc_iter(iter)?))
+        }
+
+        /// Create a new [`FixedBumpVec`] whose elements are taken from an iterator and allocated in the given `bump`.
+        ///
+        /// This is just like [`from_iter_in`](Self::from_iter_in) but optimized for an [`ExactSizeIterator`].
+        impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, FixedBumpVec };
+        /// # let bump: Bump = Bump::new();
+        /// let vec = FixedBumpVec::from_iter_exact_in([1, 2, 3], &bump);
+        /// assert_eq!(vec, [1, 2, 3]);
+        /// ```
+        for fn from_iter_exact_in
+        do examples
+        /// ```
+        /// #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, FixedBumpVec };
+        /// # let bump: Bump = Bump::try_new()?;
+        /// let vec = FixedBumpVec::try_from_iter_exact_in([1, 2, 3], &bump)?;
+        /// assert_eq!(vec, [1, 2, 3]);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        for fn try_from_iter_exact_in
+        use fn generic_from_iter_exact_in<{
+            I,
+            A,
+            const MIN_ALIGN: usize,
+            const UP: bool,
+            const GUARANTEED_ALLOCATED: bool,
+        } {
+            'b,
+        }>(iter: I, bump: impl Into<&'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self
+        where {
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+            A: BaseAllocator<GUARANTEED_ALLOCATED> + 'b,
+            I: IntoIterator<Item = T>,
+            I::IntoIter: ExactSizeIterator,
+            'a: 'b,
+        } in {
+            let bump = bump.into();
+            Ok(Self::from_init(bump.generic_alloc_iter_exact(iter)?))
+        }
+    }
 
     /// Turns a `BumpBox<[T]>` into a full `FixedBumpVec<T>`.
     #[must_use]
