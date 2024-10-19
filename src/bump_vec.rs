@@ -1464,8 +1464,8 @@ where
     /// let mut v = bump_vec![in bump; 1, 2, 3, 4];
     /// let new = [7, 8, 9];
     /// let u = bump.alloc_iter(v.splice(1..3, new));
-    /// assert_eq!(v, &[1, 7, 8, 9, 4]);
-    /// assert_eq!(u, &[2, 3]);
+    /// assert_eq!(v, [1, 7, 8, 9, 4]);
+    /// assert_eq!(u, [2, 3]);
     /// ```
     #[cfg(not(no_global_oom_handling))]
     #[inline]
