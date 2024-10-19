@@ -2084,7 +2084,7 @@ where
     /// reading from a file) before marking the data as initialized using the
     /// [`set_len`] method.
     ///
-    /// [`set_len`]: Vec::set_len
+    /// [`set_len`]: Self::set_len
     ///
     /// # Examples
     ///

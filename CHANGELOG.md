@@ -1,8 +1,9 @@
 # Changelog
 
 ## Unreleased
-- **added:** added `splice` and `spare_capacity_mut` to `BumpVec`
-- **added:** added `reserve_exact` and `from_iter(_exact)_in` to vectors
+- **added:** `splice` to `BumpVec`
+- **added:** `reserve_exact` to vectors and strings
+- **added:** `spare_capacity_mut` and `from_iter(_exact)_in` to vectors
 
 ## 0.10.4 (2024-10-18)
 - **improved:** increased performance of `(Mut)BumpString::from_str_in`
