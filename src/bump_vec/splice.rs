@@ -8,17 +8,21 @@ use super::Drain;
 
 macro_rules! splice_declaration {
     ($($allocator_parameter:tt)*) => {
-        /// A splicing iterator for `Vec`.
+        /// A splicing iterator for `BumpVec`.
         ///
-        /// This struct is created by [`Vec::splice()`].
+        /// This struct is created by [`BumpVec::splice()`].
         /// See its documentation for more.
         ///
         /// # Example
         ///
         /// ```
-        /// let mut v = vec![0, 1, 2];
+        /// # use bump_scope::{ Bump, bump_vec };
+        /// # let bump: Bump = Bump::new();
+        /// let mut v = bump_vec![in bump; 0, 1, 2];
         /// let new = [7, 8];
-        /// let iter: std::vec::Splice<'_, _> = v.splice(1.., new);
+        /// let old = bump.alloc_iter_exact(v.splice(1.., new));
+        /// assert_eq!(old, [1, 2]);
+        /// assert_eq!(v, [0, 7, 8]);
         /// ```
         #[derive(Debug)]
         pub struct Splice<
