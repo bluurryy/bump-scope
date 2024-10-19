@@ -28,7 +28,7 @@ macro_rules! splice_declaration {
         pub struct Splice<
             'a,
             I,
-            A,
+            $($allocator_parameter)*,
             const MIN_ALIGN: usize = 1,
             const UP: bool = true,
             const GUARANTEED_ALLOCATED: bool = true,
