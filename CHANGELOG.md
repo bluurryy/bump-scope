@@ -1,7 +1,7 @@
 # Changelog
 
 ## Unreleased
-- **added:** added `splice` and `spare_capacity_mut` to `BumpVec`
+- **added:** added `splice`, `reserve_exact` and `spare_capacity_mut` to `BumpVec`
 
 ## 0.10.4 (2024-10-18)
 - **improved:** increased performance of `(Mut)BumpString::from_str_in`

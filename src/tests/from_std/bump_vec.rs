@@ -1326,7 +1326,10 @@ fn overaligned_allocations() {
     struct Foo(usize);
     let mut v = bump_vec![in bump; Foo(273)];
     for i in 0..0x1000 {
-        v.reserve(i);
+        v.reserve_exact(i);
+        assert!(v[0].0 == 273);
+        assert!(v.as_ptr() as usize & 0xff == 0);
+        v.shrink_to_fit();
         assert!(v[0].0 == 273);
         assert!(v.as_ptr() as usize & 0xff == 0);
     }
@@ -1613,6 +1616,31 @@ fn extract_if_unconsumed() {
 }
 
 #[test]
+fn test_reserve_exact() {
+    // This is all the same as test_reserve
+
+    let bump: Bump = Bump::new();
+    let mut v = bump_vec![in bump];
+    assert_eq!(v.capacity(), 0);
+
+    v.reserve_exact(2);
+    assert!(v.capacity() >= 2);
+
+    for i in 0..16 {
+        v.push(i);
+    }
+
+    assert!(v.capacity() >= 16);
+    v.reserve_exact(16);
+    assert!(v.capacity() >= 32);
+
+    v.push(16);
+
+    v.reserve_exact(16);
+    assert!(v.capacity() >= 33)
+}
+
+#[test]
 fn test_stable_pointers() {
     /// Pull an element from the iterator, then drop it.
     /// Useful to cover both the `next` and `drop` paths of an iterator.
@@ -1678,6 +1706,7 @@ fn test_stable_pointers() {
 
     // No-op reservation
     v.reserve(32);
+    v.reserve_exact(32);
     assert_eq!(*v0, 13);
 
     // Partial draining

@@ -1090,12 +1090,75 @@ where
         /// speculatively avoid frequent reallocations. After calling `reserve`,
         /// capacity will be greater than or equal to `self.len() + additional`.
         /// Does nothing if capacity is already sufficient.
+        do panics
+        /// Panics if the new capacity exceeds `isize::MAX` bytes.
         impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, bump_vec };
+        /// # let bump: Bump = Bump::new();
+        /// let mut vec = bump_vec![in bump; 1];
+        /// vec.reserve(10);
+        /// assert!(vec.capacity() >= 11);
+        /// ```
         for fn reserve
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, bump_vec };
+        /// # let bump: Bump = Bump::try_new()?;
+        /// let mut vec = bump_vec![try in bump; 1]?;
+        /// vec.try_reserve(10)?;
+        /// assert!(vec.capacity() >= 11);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_reserve
         use fn generic_reserve(&mut self, additional: usize) {
             if additional > (self.capacity() - self.len()) {
                 self.generic_grow_cold(additional)?;
+            }
+
+            Ok(())
+        }
+
+        /// Reserves the minimum capacity for at least `additional` more elements to
+        /// be inserted in the given `BumpVec<T>`. Unlike [`reserve`], this will not
+        /// deliberately over-allocate to speculatively avoid frequent allocations.
+        /// After calling `reserve_exact`, capacity will be greater than or equal to
+        /// `self.len() + additional`. Does nothing if the capacity is already
+        /// sufficient.
+        ///
+        /// Note that the allocator may give the collection more space than it
+        /// requests. Therefore, capacity can not be relied upon to be precisely
+        /// minimal. Prefer [`reserve`] if future insertions are expected.
+        ///
+        /// [`reserve`]: Self::reserve
+        do panics
+        /// Panics if the new capacity exceeds `isize::MAX` bytes.
+        impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, bump_vec };
+        /// # let bump: Bump = Bump::new();
+        /// let mut vec = bump_vec![in bump; 1];
+        /// vec.reserve_exact(10);
+        /// assert!(vec.capacity() >= 11);
+        /// ```
+        for fn reserve_exact
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, bump_vec };
+        /// # let bump: Bump = Bump::try_new()?;
+        /// let mut vec = bump_vec![try in bump; 1]?;
+        /// vec.try_reserve_exact(10)?;
+        /// assert!(vec.capacity() >= 11);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        for fn try_reserve_exact
+        use fn generic_reserve_exact(&mut self, additional: usize) {
+            if additional > (self.capacity() - self.len()) {
+                self.generic_grow_cold_exact(additional)?;
             }
 
             Ok(())
@@ -1454,80 +1517,106 @@ where
             return Ok(());
         }
 
+        let new_capacity = self.capacity().checked_mul(2).unwrap_or(required_cap).max(required_cap);
+        unsafe { self.generic_grow_to(new_capacity) }
+    }
+
+    #[cold]
+    #[inline(never)]
+    fn generic_grow_cold_exact<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
+        let required_cap = match self.len().checked_add(additional) {
+            Some(required_cap) => required_cap,
+            None => return Err(E::capacity_overflow())?,
+        };
+
+        if T::IS_ZST {
+            return Ok(());
+        }
+
+        if self.capacity() == 0 {
+            self.fixed = self.bump.generic_alloc_fixed_vec(required_cap)?;
+            return Ok(());
+        }
+
+        unsafe { self.generic_grow_to(required_cap) }
+    }
+
+    /// # Safety
+    ///
+    /// `new_capacity` must be greater than the current capacity.
+    unsafe fn generic_grow_to<E: ErrorBehavior>(&mut self, new_capacity: usize) -> Result<(), E> {
         let old_ptr = self.as_non_null_ptr();
-        let new_cap = self.capacity().checked_mul(2).unwrap_or(required_cap).max(required_cap);
+        let new_cap = new_capacity;
         let old_size = self.fixed.capacity * T::SIZE; // we already allocated that amount so this can't overflow
         let new_size = new_cap.checked_mul(T::SIZE).ok_or_else(|| E::capacity_overflow())?;
 
-        unsafe {
-            if UP {
-                let is_last = nonnull::byte_add(old_ptr, old_size).cast() == self.bump.chunk.get().pos();
+        if UP {
+            let is_last = nonnull::byte_add(old_ptr, old_size).cast() == self.bump.chunk.get().pos();
 
-                if is_last {
-                    let chunk_end = self.bump.chunk.get().content_end();
-                    let remaining = nonnull::addr(chunk_end).get() - nonnull::addr(old_ptr).get();
+            if is_last {
+                let chunk_end = self.bump.chunk.get().content_end();
+                let remaining = nonnull::addr(chunk_end).get() - nonnull::addr(old_ptr).get();
 
-                    if new_size <= remaining {
-                        // There is enough space! We will grow in place. Just need to update the bump pointer.
+                if new_size <= remaining {
+                    // There is enough space! We will grow in place. Just need to update the bump pointer.
 
-                        let old_addr = nonnull::addr(old_ptr);
-                        let new_end = old_addr.get() + new_size;
+                    let old_addr = nonnull::addr(old_ptr);
+                    let new_end = old_addr.get() + new_size;
 
-                        // Up-aligning a pointer inside a chunks content by `MIN_ALIGN` never overflows.
-                        let new_pos = up_align_usize_unchecked(new_end, MIN_ALIGN);
+                    // Up-aligning a pointer inside a chunks content by `MIN_ALIGN` never overflows.
+                    let new_pos = up_align_usize_unchecked(new_end, MIN_ALIGN);
 
-                        self.bump.chunk.get().set_pos_addr(new_pos);
-                    } else {
-                        // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
-                        let new_ptr = self.bump.do_alloc_slice_in_another_chunk::<E, T>(new_cap)?.cast();
-                        nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
-                        self.fixed.initialized.set_ptr(new_ptr);
-                    }
+                    self.bump.chunk.get().set_pos_addr(new_pos);
                 } else {
-                    let new_ptr = self.bump.do_alloc_slice::<E, T>(new_cap)?.cast();
+                    // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
+                    let new_ptr = self.bump.do_alloc_slice_in_another_chunk::<E, T>(new_cap)?.cast();
                     nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
                     self.fixed.initialized.set_ptr(new_ptr);
                 }
             } else {
-                let is_last = old_ptr.cast() == self.bump.chunk.get().pos();
+                let new_ptr = self.bump.do_alloc_slice::<E, T>(new_cap)?.cast();
+                nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
+                self.fixed.initialized.set_ptr(new_ptr);
+            }
+        } else {
+            let is_last = old_ptr.cast() == self.bump.chunk.get().pos();
 
-                if is_last {
-                    // We may be able to reuse the currently allocated space. Just need to check if the current chunk has enough space for that.
-                    let additional_size = new_size - old_size;
+            if is_last {
+                // We may be able to reuse the currently allocated space. Just need to check if the current chunk has enough space for that.
+                let additional_size = new_size - old_size;
 
-                    let old_addr = nonnull::addr(old_ptr);
-                    let new_addr = bump_down(old_addr, additional_size, T::ALIGN.max(MIN_ALIGN));
+                let old_addr = nonnull::addr(old_ptr);
+                let new_addr = bump_down(old_addr, additional_size, T::ALIGN.max(MIN_ALIGN));
 
-                    let very_start = nonnull::addr(self.bump.chunk.get().content_start());
+                let very_start = nonnull::addr(self.bump.chunk.get().content_start());
 
-                    if new_addr >= very_start.get() {
-                        // There is enough space in the current chunk! We will reuse the allocated space.
+                if new_addr >= very_start.get() {
+                    // There is enough space in the current chunk! We will reuse the allocated space.
 
-                        let new_addr = NonZeroUsize::new_unchecked(new_addr);
-                        let new_addr_end = new_addr.get() + new_size;
+                    let new_addr = NonZeroUsize::new_unchecked(new_addr);
+                    let new_addr_end = new_addr.get() + new_size;
 
-                        let new_ptr = nonnull::with_addr(old_ptr, new_addr);
+                    let new_ptr = nonnull::with_addr(old_ptr, new_addr);
 
-                        // Check if the regions don't overlap so we may use the faster `copy_nonoverlapping`.
-                        if new_addr_end < old_addr.get() {
-                            nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
-                        } else {
-                            nonnull::copy::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
-                        }
-
-                        self.bump.chunk.get().set_pos(new_ptr.cast());
-                        self.fixed.initialized.set_ptr(new_ptr);
-                    } else {
-                        // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
-                        let new_ptr = self.bump.do_alloc_slice_in_another_chunk::<E, T>(new_cap)?.cast();
+                    // Check if the regions don't overlap so we may use the faster `copy_nonoverlapping`.
+                    if new_addr_end < old_addr.get() {
                         nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
-                        self.fixed.initialized.set_ptr(new_ptr);
+                    } else {
+                        nonnull::copy::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
                     }
+
+                    self.bump.chunk.get().set_pos(new_ptr.cast());
+                    self.fixed.initialized.set_ptr(new_ptr);
                 } else {
-                    let new_ptr = self.bump.do_alloc_slice::<E, T>(new_cap)?.cast();
+                    // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
+                    let new_ptr = self.bump.do_alloc_slice_in_another_chunk::<E, T>(new_cap)?.cast();
                     nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
                     self.fixed.initialized.set_ptr(new_ptr);
                 }
+            } else {
+                let new_ptr = self.bump.do_alloc_slice::<E, T>(new_cap)?.cast();
+                nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
+                self.fixed.initialized.set_ptr(new_ptr);
             }
         }
 
