@@ -218,7 +218,7 @@ up_and_down! {
         vec.try_extend_zeroed(additional)
     }
 
-    pub fn MutBumpVec_try_from_iter_in<'i, 'a>(iter: core::slice::Iter<'i, u32>, bump: &'a mut Bump) -> Result<MutBumpVec<'a, 'a, u32>> {
+    pub fn MutBumpVec_try_from_iter_in<'a>(iter: core::slice::Iter<u32>, bump: &'a mut Bump) -> Result<MutBumpVec<'a, 'a, u32>> {
         MutBumpVec::try_from_iter_in(iter.copied(), bump)
     }
 
@@ -266,7 +266,7 @@ up_and_down! {
         vec.try_extend_from_slice_copy(slice)
     }
 
-    pub fn MutBumpVecRev_try_from_iter_in<'i, 'a>(iter: core::slice::Iter<'i, u32>, bump: &'a mut Bump) -> Result<MutBumpVecRev<'a, 'a, u32>> {
+    pub fn MutBumpVecRev_try_from_iter_in<'a>(iter: core::slice::Iter<u32>, bump: &'a mut Bump) -> Result<MutBumpVecRev<'a, 'a, u32>> {
         MutBumpVecRev::try_from_iter_in(iter.copied(), bump)
     }
 
@@ -342,11 +342,11 @@ up_and_down! {
         vec.try_extend_zeroed(additional)
     }
 
-    pub fn BumpVec_try_from_iter_in<'i, 'a>(iter: core::slice::Iter<'i, u32>, bump: &'a Bump) -> Result<BumpVec<'a, 'a, u32>> {
+    pub fn BumpVec_try_from_iter_in<'a>(iter: core::slice::Iter<u32>, bump: &'a Bump) -> Result<BumpVec<'a, 'a, u32>> {
         BumpVec::try_from_iter_in(iter.copied(), bump)
     }
 
-    pub fn BumpVec_try_from_iter_exact_in<'i, 'a>(iter: core::slice::Iter<u32>, bump: &'a Bump) -> Result<BumpVec<'a, 'a, u32>> {
+    pub fn BumpVec_try_from_iter_exact_in<'a>(iter: core::slice::Iter<u32>, bump: &'a Bump) -> Result<BumpVec<'a, 'a, u32>> {
         BumpVec::try_from_iter_exact_in(iter.copied(), bump)
     }
 
@@ -414,7 +414,7 @@ up_and_down! {
         bump.try_alloc_fixed_vec(capacity)
     }
 
-    pub fn FixedBumpVec_try_from_iter_in<'i, 'a>(iter: core::slice::Iter<'i, u32>, bump: &'a Bump) -> Result<FixedBumpVec<'a, u32>> {
+    pub fn FixedBumpVec_try_from_iter_in<'a>(iter: core::slice::Iter<u32>, bump: &'a Bump) -> Result<FixedBumpVec<'a, u32>> {
         FixedBumpVec::try_from_iter_in(iter.copied(), bump)
     }
 
