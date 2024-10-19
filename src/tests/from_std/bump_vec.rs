@@ -1022,9 +1022,9 @@ fn test_drain_keep_rest_none() {
     assert_eq!(v, &[0, 6]);
 }
 
-#[cfg(any())]
 #[test]
 fn test_splice() {
+    let bump: Bump = Bump::new();
     let mut v = bump_vec![in bump; 1, 2, 3, 4, 5];
     let a = [10, 11, 12];
     v.splice(2..4, a);
@@ -1033,59 +1033,59 @@ fn test_splice() {
     assert_eq!(v, &[1, 20, 11, 12, 5]);
 }
 
-#[cfg(any())]
 #[test]
 fn test_splice_inclusive_range() {
+    let bump: Bump = Bump::new();
     let mut v = bump_vec![in bump; 1, 2, 3, 4, 5];
     let a = [10, 11, 12];
-    let t1: BumpVec<_> = v.splice(2..=3, a).collect();
+    let t1: Vec<_> = v.splice(2..=3, a).collect();
     assert_eq!(v, &[1, 2, 10, 11, 12, 5]);
     assert_eq!(t1, &[3, 4]);
-    let t2: BumpVec<_> = v.splice(1..=2, Some(20)).collect();
+    let t2: Vec<_> = v.splice(1..=2, Some(20)).collect();
     assert_eq!(v, &[1, 20, 11, 12, 5]);
     assert_eq!(t2, &[2, 10]);
 }
 
-#[cfg(any())]
 #[test]
 #[should_panic]
 fn test_splice_out_of_bounds() {
+    let bump: Bump = Bump::new();
     let mut v = bump_vec![in bump; 1, 2, 3, 4, 5];
     let a = [10, 11, 12];
     v.splice(5..6, a);
 }
 
-#[cfg(any())]
 #[test]
 #[should_panic]
 fn test_splice_inclusive_out_of_bounds() {
+    let bump: Bump = Bump::new();
     let mut v = bump_vec![in bump; 1, 2, 3, 4, 5];
     let a = [10, 11, 12];
     v.splice(5..=5, a);
 }
 
-#[cfg(any())]
 #[test]
 fn test_splice_items_zero_sized() {
+    let bump: Bump = Bump::new();
     let mut vec = bump_vec![in bump; (), (), ()];
     let vec2 = bump_vec![in bump; ];
-    let t: BumpVec<_> = vec.splice(1..2, vec2.iter().cloned()).collect();
+    let t: Vec<_> = vec.splice(1..2, vec2.iter().cloned()).collect();
     assert_eq!(vec, &[(), ()]);
     assert_eq!(t, &[()]);
 }
 
-#[cfg(any())]
 #[test]
 fn test_splice_unbounded() {
+    let bump: Bump = Bump::new();
     let mut vec = bump_vec![in bump; 1, 2, 3, 4, 5];
-    let t: BumpVec<_> = vec.splice(.., None).collect();
-    assert_eq!(vec, &[]);
+    let t: Vec<_> = vec.splice(.., None).collect();
+    assert!(vec.is_empty());
     assert_eq!(t, &[1, 2, 3, 4, 5]);
 }
 
-#[cfg(any())]
 #[test]
 fn test_splice_forget() {
+    let bump: Bump = Bump::new();
     let mut v = bump_vec![in bump; 1, 2, 3, 4, 5];
     let a = [10, 11, 12];
     std::mem::forget(v.splice(2..4, a));
@@ -1685,21 +1685,18 @@ fn test_stable_pointers() {
     next_then_drop(v.drain(5..));
     assert_eq!(*v0, 13);
 
-    #[cfg(any())]
-    {
-        // Splicing
-        v.resize_with(10, || 42);
-        next_then_drop(v.splice(5.., bump_vec![in bump1; 1, 2, 3, 4, 5])); // empty tail after range
-        assert_eq!(*v0, 13);
-        next_then_drop(v.splice(5..8, bump_vec![in bump1; 1])); // replacement is smaller than original range
-        assert_eq!(*v0, 13);
-        next_then_drop(v.splice(5..6, [1; 10].into_iter().filter(|_| true))); // lower bound not exact
-        assert_eq!(*v0, 13);
+    // Splicing
+    v.resize_with(10, || 42);
+    next_then_drop(v.splice(5.., bump_vec![in bump1; 1, 2, 3, 4, 5])); // empty tail after range
+    assert_eq!(*v0, 13);
+    next_then_drop(v.splice(5..8, bump_vec![in bump1; 1])); // replacement is smaller than original range
+    assert_eq!(*v0, 13);
+    next_then_drop(v.splice(5..6, [1; 10].into_iter().filter(|_| true))); // lower bound not exact
+    assert_eq!(*v0, 13);
 
-        // spare_capacity_mut
-        v.spare_capacity_mut();
-        assert_eq!(*v0, 13);
-    }
+    // spare_capacity_mut
+    v.spare_capacity_mut();
+    assert_eq!(*v0, 13);
 
     // Smoke test that would fire even outside Miri if an actual relocation happened.
     *v0 -= 13;

@@ -1,4 +1,6 @@
+mod drain;
 mod into_iter;
+mod splice;
 
 use crate::{
     bump_down, error_behavior_generic_methods_allocation_failure, owned_slice,
@@ -21,7 +23,13 @@ use core::{
     ptr::{self, NonNull},
     slice::SliceIndex,
 };
+
+#[cfg(not(no_global_oom_handling))]
+pub(crate) use drain::Drain;
 pub use into_iter::IntoIter;
+
+#[cfg(not(no_global_oom_handling))]
+pub use splice::Splice;
 
 /// This is like [`vec!`] but allocates inside a `Bump` or `BumpScope`, returning a [`BumpVec`].
 ///
@@ -1298,6 +1306,103 @@ where
         }
     }
 
+    /// Creates a splicing iterator that replaces the specified range in the vector
+    /// with the given `replace_with` iterator and yields the removed items.
+    /// `replace_with` does not need to be the same length as `range`.
+    ///
+    /// `range` is removed even if the iterator is not consumed until the end.
+    ///
+    /// It is unspecified how many elements are removed from the vector
+    /// if the `Splice` value is leaked.
+    ///
+    /// The input iterator `replace_with` is only consumed when the `Splice` value is dropped.
+    ///
+    /// This is optimal if:
+    ///
+    /// * The tail (elements in the vector after `range`) is empty,
+    /// * or `replace_with` yields fewer or equal elements than `range`’s length
+    /// * or the lower bound of its `size_hint()` is exact.
+    ///
+    /// Otherwise, a temporary vector is allocated and the tail is moved twice.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the starting point is greater than the end point or if
+    /// the end point is greater than the length of the vector.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, bump_vec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut v = bump_vec![in bump; 1, 2, 3, 4];
+    /// let new = [7, 8, 9];
+    /// let u = bump.alloc_iter(v.splice(1..3, new));
+    /// assert_eq!(v, &[1, 7, 8, 9, 4]);
+    /// assert_eq!(u, &[2, 3]);
+    /// ```
+    #[cfg(not(no_global_oom_handling))]
+    #[inline]
+    pub fn splice<R, I>(
+        &mut self,
+        range: R,
+        replace_with: I,
+    ) -> Splice<'_, I::IntoIter, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    where
+        R: RangeBounds<usize>,
+        I: IntoIterator<Item = T>,
+    {
+        // Memory safety
+        //
+        // When the Drain is first created, it shortens the length of
+        // the source vector to make sure no uninitialized or moved-from elements
+        // are accessible at all if the Drain's destructor never gets to run.
+        //
+        // Drain will ptr::read out the values to remove.
+        // When finished, remaining tail of the vec is copied back to cover
+        // the hole, and the vector length is restored to the new length.
+        //
+
+        use core::ops::Range;
+        let len = self.len();
+        let Range { start, end } = slice::range(range, ..len);
+
+        let drain = unsafe {
+            // set self.vec length's to start, to be safe in case Drain is leaked
+            self.set_len(start);
+            let range_slice = slice::from_raw_parts(self.as_ptr().add(start), end - start);
+
+            Drain {
+                tail_start: end,
+                tail_len: len - end,
+                iter: range_slice.iter(),
+                vec: NonNull::from(self),
+            }
+        };
+
+        Splice {
+            drain,
+            replace_with: replace_with.into_iter(),
+        }
+    }
+
+    /// Like [`reserve`] but allows you to provide a different `len`.
+    ///
+    /// This helps with algorithms from the standard library that make use of
+    /// `RawVec::reserve` which behaves the same.
+    ///
+    /// # Safety
+    /// TODO
+    #[cfg(not(no_global_oom_handling))]
+    #[inline(always)]
+    pub(crate) unsafe fn buf_reserve(&mut self, len: usize, additional: usize) {
+        use crate::infallible;
+
+        if additional > (self.capacity() - len) {
+            infallible(self.generic_grow_cold(additional));
+        }
+    }
+
     /// Extend the vector by `n` clones of value.
     fn extend_with<B: ErrorBehavior>(&mut self, n: usize, value: T) -> Result<(), B>
     where
@@ -1818,6 +1923,49 @@ where
         F: FnMut(&mut T, &mut T) -> bool,
     {
         self.fixed.dedup_by(same_bucket);
+    }
+
+    /// Returns the remaining spare capacity of the vector as a slice of
+    /// `MaybeUninit<T>`.
+    ///
+    /// The returned slice can be used to fill the vector with data (e.g. by
+    /// reading from a file) before marking the data as initialized using the
+    /// [`set_len`] method.
+    ///
+    /// [`set_len`]: Vec::set_len
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// // Allocate vector big enough for 10 elements.
+    /// let mut v = BumpVec::with_capacity_in(10, &bump);
+    ///
+    /// // Fill in the first 3 elements.
+    /// let uninit = v.spare_capacity_mut();
+    /// uninit[0].write(0);
+    /// uninit[1].write(1);
+    /// uninit[2].write(2);
+    ///
+    /// // Mark the first 3 elements of the vector as being initialized.
+    /// unsafe {
+    ///     v.set_len(3);
+    /// }
+    ///
+    /// assert_eq!(&v, &[0, 1, 2]);
+    /// ```
+    #[inline]
+    pub fn spare_capacity_mut(&mut self) -> &mut [MaybeUninit<T>] {
+        // Note:
+        // This method is not implemented in terms of `split_at_spare_mut`,
+        // to prevent invalidation of pointers to the buffer.
+        unsafe {
+            slice::from_raw_parts_mut(
+                self.as_mut_ptr().add(self.len()).cast::<MaybeUninit<T>>(),
+                self.capacity() - self.len(),
+            )
+        }
     }
 
     /// Returns vector content as a slice of `T`, along with the remaining spare
