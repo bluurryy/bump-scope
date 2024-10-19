@@ -857,13 +857,172 @@ where
         /// avoid frequent allocations. After calling `reserve`,
         /// capacity will be greater than or equal to `self.len() + additional`.
         /// Does nothing if capacity is already sufficient.
+        do panics
+        /// Panics if the new capacity exceeds `isize::MAX` bytes.
         impl
+        do examples
+        /// Basic usage:
+        ///
+        /// ```
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::new();
+        /// let mut s = MutBumpString::new_in(&mut bump);
+        ///
+        /// s.reserve(10);
+        ///
+        /// assert!(s.capacity() >= 10);
+        /// ```
+        ///
+        /// This might not actually increase the capacity:
+        ///
+        /// ```
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::new();
+        /// let mut s = MutBumpString::with_capacity_in(10, &mut bump);
+        /// s.push('a');
+        /// s.push('b');
+        ///
+        /// // s now has a length of 2 and a capacity of at least 10
+        /// let capacity = s.capacity();
+        /// assert_eq!(2, s.len());
+        /// assert!(capacity >= 10);
+        ///
+        /// // Since we already have at least an extra 8 capacity, calling this...
+        /// s.reserve(8);
+        ///
+        /// // ... doesn't actually increase.
+        /// assert_eq!(capacity, s.capacity());
+        /// ```
         for fn reserve
+        do examples
+        /// Basic usage:
+        ///
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let mut s = MutBumpString::new_in(&mut bump);
+        ///
+        /// s.try_reserve(10)?;
+        ///
+        /// assert!(s.capacity() >= 10);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        ///
+        /// This might not actually increase the capacity:
+        ///
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let mut s = MutBumpString::try_with_capacity_in(10, &mut bump)?;
+        /// s.push('a');
+        /// s.push('b');
+        ///
+        /// // s now has a length of 2 and a capacity of at least 10
+        /// let capacity = s.capacity();
+        /// assert_eq!(2, s.len());
+        /// assert!(capacity >= 10);
+        ///
+        /// // Since we already have at least an extra 8 capacity, calling this...
+        /// s.try_reserve(8)?;
+        ///
+        /// // ... doesn't actually increase.
+        /// assert_eq!(capacity, s.capacity());
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_reserve
         use fn generic_reserve(&mut self, additional: usize) {
             let vec = unsafe { self.as_mut_vec() };
-
             vec.generic_reserve(additional)
+        }
+
+        /// Reserves the minimum capacity for at least `additional` bytes more than
+        /// the current length. Unlike [`reserve`], this will not
+        /// deliberately over-allocate to speculatively avoid frequent allocations.
+        /// After calling `reserve_exact`, capacity will be greater than or equal to
+        /// `self.len() + additional`. Does nothing if the capacity is already
+        /// sufficient.
+        ///
+        /// [`reserve`]: Self::reserve
+        do panics
+        /// Panics if the new capacity exceeds `isize::MAX` bytes.
+        impl
+        do examples
+        /// Basic usage:
+        ///
+        /// ```
+        /// # use bump_scope::{ Bump, BumpString };
+        /// # let bump: Bump = Bump::new();
+        /// let mut s = BumpString::new_in(&bump);
+        ///
+        /// s.reserve_exact(10);
+        ///
+        /// assert!(s.capacity() >= 10);
+        /// ```
+        ///
+        /// This might not actually increase the capacity:
+        ///
+        /// ```
+        /// # use bump_scope::{ Bump, BumpString };
+        /// # let bump: Bump = Bump::new();
+        /// let mut s = BumpString::with_capacity_in(10, &bump);
+        /// s.push('a');
+        /// s.push('b');
+        ///
+        /// // s now has a length of 2 and a capacity of at least 10
+        /// let capacity = s.capacity();
+        /// assert_eq!(2, s.len());
+        /// assert!(capacity >= 10);
+        ///
+        /// // Since we already have at least an extra 8 capacity, calling this...
+        /// s.reserve_exact(8);
+        ///
+        /// // ... doesn't actually increase.
+        /// assert_eq!(capacity, s.capacity());
+        /// ```
+        for fn reserve_exact
+        do examples
+        /// Basic usage:
+        ///
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, BumpString };
+        /// # let bump: Bump = Bump::try_new()?;
+        /// let mut s = BumpString::new_in(&bump);
+        ///
+        /// s.try_reserve_exact(10)?;
+        ///
+        /// assert!(s.capacity() >= 10);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        ///
+        /// This might not actually increase the capacity:
+        ///
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, BumpString };
+        /// # let bump: Bump = Bump::try_new()?;
+        /// let mut s = BumpString::try_with_capacity_in(10, &bump)?;
+        /// s.push('a');
+        /// s.push('b');
+        ///
+        /// // s now has a length of 2 and a capacity of at least 10
+        /// let capacity = s.capacity();
+        /// assert_eq!(2, s.len());
+        /// assert!(capacity >= 10);
+        ///
+        /// // Since we already have at least an extra 8 capacity, calling this...
+        /// s.try_reserve_exact(8)?;
+        ///
+        /// // ... doesn't actually increase.
+        /// assert_eq!(capacity, s.capacity());
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        for fn try_reserve_exact
+        use fn generic_reserve_exact(&mut self, additional: usize) {
+            let vec = unsafe { self.as_mut_vec() };
+            vec.generic_reserve_exact(additional)
         }
     }
 
