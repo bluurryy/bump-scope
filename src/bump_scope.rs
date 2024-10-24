@@ -269,9 +269,10 @@ where
                 addr >= nonnull::addr(c.content_start()).get() && addr <= nonnull::addr(c.content_end()).get()
             });
 
-        let chunk = if let Some((i, found_chunk)) = found_chunk {
-            let size = found_chunk.size().to_string();
-            format!("{i}({size})")
+        let chunk = if let Some((i, chunk)) = found_chunk {
+            let allocated = chunk.allocated();
+            let capacity = chunk.capacity();
+            format!("{i}/{capacity}/{allocated}")
         } else {
             "?".to_string()
         };
