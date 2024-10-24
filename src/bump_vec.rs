@@ -3,7 +3,9 @@ mod into_iter;
 mod splice;
 
 use crate::{
-    bump_down, error_behavior_generic_methods_allocation_failure, owned_slice,
+    bump_down,
+    destructure::destructure,
+    error_behavior_generic_methods_allocation_failure, owned_slice,
     polyfill::{nonnull, pointer, slice},
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScope, ErrorBehavior, FixedBumpVec, GuaranteedAllocatedStats,
     MinimumAlignment, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment,
@@ -1826,9 +1828,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn into_parts(self) -> (FixedBumpVec<'a, T>, &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) {
-        let mut this = ManuallyDrop::new(self);
-        let bump = this.bump;
-        let fixed = mem::take(&mut this.fixed);
+        destructure!(let { fixed, bump } = self);
         (fixed, bump)
     }
 

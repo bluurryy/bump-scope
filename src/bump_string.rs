@@ -3,6 +3,7 @@ use allocator_api2::alloc::Allocator;
 #[cfg(not(no_global_oom_handling))]
 use crate::Infallibly;
 use crate::{
+    destructure::destructure,
     error_behavior_generic_methods_allocation_failure, owned_str,
     polyfill::{self, transmute_mut},
     BaseAllocator, BumpBox, BumpScope, BumpVec, ErrorBehavior, FixedBumpString, FromUtf8Error, GuaranteedAllocatedStats,
@@ -13,7 +14,7 @@ use core::{
     borrow::{Borrow, BorrowMut},
     fmt::{self, Debug, Display},
     hash::Hash,
-    mem::{self, ManuallyDrop},
+    mem,
     ops::{Deref, DerefMut, Range, RangeBounds},
     panic::{RefUnwindSafe, UnwindSafe},
     ptr, str,
@@ -1165,9 +1166,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn into_parts(self) -> (FixedBumpString<'a>, &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) {
-        let mut this = ManuallyDrop::new(self);
-        let bump = this.bump;
-        let fixed = mem::take(&mut this.fixed);
+        destructure!(let { fixed, bump } = self);
         (fixed, bump)
     }
 

@@ -1,4 +1,5 @@
 use crate::{
+    destructure::destructure,
     error_behavior_generic_methods_allocation_failure, owned_slice,
     polyfill::{self, nonnull, pointer},
     BaseAllocator, BumpBox, BumpScope, ErrorBehavior, GuaranteedAllocatedStats, MinimumAlignment, NoDrop, SetLenOnDrop,
@@ -13,7 +14,7 @@ use core::{
     mem::{ManuallyDrop, MaybeUninit},
     ops::{Deref, DerefMut, Index, IndexMut, RangeBounds},
     panic::{RefUnwindSafe, UnwindSafe},
-    ptr::{self, addr_of_mut, NonNull},
+    ptr::{self, NonNull},
     slice::{self, SliceIndex},
 };
 
@@ -692,16 +693,8 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
         usize,
         &'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     ) {
-        let end = self.end;
-        let len = self.len;
-        let cap = self.cap;
-
-        unsafe {
-            let mut this = MaybeUninit::new(self);
-            let bump = addr_of_mut!((*this.as_mut_ptr()).bump).read();
-
-            (end, len, cap, bump)
-        }
+        destructure!(let { end, len, cap, bump } = self);
+        (end, len, cap, bump)
     }
 
     #[allow(dead_code)]

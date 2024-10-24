@@ -275,6 +275,7 @@ pub mod bump_vec;
 mod bumping;
 mod chunk_raw;
 mod chunk_size;
+mod destructure;
 mod error_behavior;
 mod features;
 mod fixed_bump_string;
