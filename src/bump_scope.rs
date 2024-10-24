@@ -379,10 +379,23 @@ where
     pub(crate) fn do_alloc_slice_for<E: ErrorBehavior, T>(&self, value: &[T]) -> Result<NonNull<T>, E> {
         let layout = ArrayLayout::for_value(value);
 
-        E::alloc_or_else(self.chunk.get(), MinimumAlignment::<MIN_ALIGN>, layout, || unsafe {
+        let result = E::alloc_or_else(self.chunk.get(), MinimumAlignment::<MIN_ALIGN>, layout, || unsafe {
             self.do_alloc_slice_in_another_chunk::<E, T>(value.len())
         })
-        .map(NonNull::cast)
+        .map(NonNull::cast);
+
+        #[cfg(debug_assertions)]
+        if let Ok(ptr) = result {
+            let len = value.len();
+            self.trace(
+                "allocated",
+                &format!("slice_for({len})"),
+                (nonnull::addr(ptr).get(), *layout),
+                None,
+            );
+        }
+
+        result
     }
 
     #[cold]
