@@ -1973,6 +1973,14 @@ macro_rules! maybe_default_allocator {
 
 pub(crate) use maybe_default_allocator;
 
+#[inline(never)]
+pub(crate) fn log(message: &str) {
+    use core::sync::atomic::AtomicUsize;
+    static I: AtomicUsize = AtomicUsize::new(0);
+    let i = I.fetch_add(1, core::sync::atomic::Ordering::SeqCst);
+    eprintln!("bump-scope: [{i}] {message}");
+}
+
 /// We don't use `document-features` the usual way because then we can't have our features
 /// be copied into the `README.md` via [`cargo-rdme`](https://github.com/orium/cargo-rdme).
 #[test]

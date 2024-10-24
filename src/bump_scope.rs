@@ -5,6 +5,7 @@ use crate::{
     chunk_size::ChunkSize,
     const_param_assert, down_align_usize, exact_size_iterator_bad_len,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
+    log,
     polyfill::{nonnull, pointer},
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
     FixedBumpString, FixedBumpVec, GuaranteedAllocatedStats, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev,
@@ -23,7 +24,6 @@ use core::{
     ops::Range,
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::NonNull,
-    sync::atomic::AtomicUsize,
 };
 
 macro_rules! bump_scope_declaration {
@@ -288,9 +288,6 @@ where
 
     #[inline(never)]
     pub(crate) fn trace(&self, what: &str, kind: &str, old: (usize, Layout), new: Option<(usize, Layout)>) {
-        static I: AtomicUsize = AtomicUsize::new(0);
-
-        let i = I.fetch_add(1, core::sync::atomic::Ordering::SeqCst);
         let old = self.fmt_range(old);
 
         let ranges = if let Some(new) = new {
@@ -300,7 +297,7 @@ where
             format!("{{{old}}}")
         };
 
-        eprintln!("bump-scope: [{i}] {what:9} {ranges} ({kind})");
+        log(&format!("{what:9} {ranges} ({kind})"));
     }
 
     #[inline(always)]
