@@ -52,6 +52,11 @@ nightly-exact-size-is-empty = []
 ## Implements `TrustedLen` for some iterators.
 nightly-trusted-len = []
 
+#! ### Dev features
+
+## Enables logging for debugging `bump-scope`.
+debug-log = []
+
 [dev-dependencies]
 trybuild = "1.0.90"
 expect-test = "1.4.1"

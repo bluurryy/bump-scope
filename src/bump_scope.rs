@@ -287,6 +287,7 @@ where
     }
 
     #[inline(never)]
+    #[cfg(feature = "debug-log")]
     pub(crate) fn trace(&self, what: &str, kind: &str, old: (usize, Layout), new: Option<(usize, Layout)>) {
         let old = self.fmt_range(old);
 
@@ -297,7 +298,7 @@ where
             format!("{{{old}}}")
         };
 
-        log(&format!("{what:9} {ranges} ({kind})"));
+        log!("{what:9} {ranges} ({kind})");
     }
 
     #[inline(always)]
@@ -310,7 +311,7 @@ where
         )
         .map(NonNull::cast);
 
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "debug-log")]
         if let Ok(ptr) = result {
             self.trace("allocated", "sized", (nonnull::addr(ptr).get(), Layout::new::<T>()), None);
         }
@@ -359,7 +360,7 @@ where
         })
         .map(NonNull::cast);
 
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "debug-log")]
         if let Ok(ptr) = result {
             self.trace(
                 "allocated",
@@ -381,7 +382,7 @@ where
         })
         .map(NonNull::cast);
 
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "debug-log")]
         if let Ok(ptr) = result {
             let len = value.len();
             self.trace(
