@@ -525,7 +525,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// }
     /// ```
     ///
-    /// [`as_mut_ptr`]: MutBumpVecRev::as_mut_ptr
+    /// [`as_mut_ptr`]: Self::as_mut_ptr
     #[inline]
     #[must_use]
     pub fn as_ptr(&self) -> *const T {
@@ -631,8 +631,8 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// assert_eq!(vec, []);
     /// ```
     ///
-    /// [`clear`]: MutBumpVecRev::clear
-    /// [`drain`]: MutBumpVecRev::drain
+    /// [`clear`]: Self::clear
+    /// [`drain`]: Self::drain
     pub fn truncate(&mut self, len: usize) {
         // This is safe because:
         //
@@ -666,17 +666,17 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// is done using one of the safe operations instead, such as
     /// [`resize`], [`truncate`], [`extend`], or [`clear`].
     ///
-    /// [`truncate`]: MutBumpVecRev::truncate
-    /// [`resize`]: MutBumpVecRev::resize
-    /// [`extend`]: MutBumpVecRev::extend
-    /// [`clear`]: MutBumpVecRev::clear
+    /// [`truncate`]: Self::truncate
+    /// [`resize`]: Self::resize
+    /// [`extend`]: Self::extend
+    /// [`clear`]: Self::clear
     ///
     /// # Safety
     ///
     /// - `new_len` must be less than or equal to [`capacity`].
     /// - The elements at `old_len..new_len` must be initialized.
     ///
-    /// [`capacity`]: MutBumpVecRev::capacity
+    /// [`capacity`]: Self::capacity
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: usize) {
         debug_assert!(new_len <= self.cap);
@@ -1618,7 +1618,7 @@ where
     /// (e.g. by reading from a file) before marking the data as initialized using
     /// the [`set_len`] method.
     ///
-    /// [`set_len`]: MutBumpVecRev::set_len
+    /// [`set_len`]: Self::set_len
     ///
     /// Note that this is a low-level API, which should be used with care for
     /// optimization purposes. If you need to append data to a `MutBumpVecRev`
@@ -1626,12 +1626,12 @@ where
     /// `extend_from_within`[`_copy`](MutBumpVecRev::extend_from_within_copy)`/`[`_clone`](MutBumpVecRev::extend_from_within_clone), [`insert`], [`resize`] or
     /// [`resize_with`], depending on your exact needs.
     ///
-    /// [`push`]: MutBumpVecRev::push
-    /// [`extend`]: MutBumpVecRev::extend
-    /// [`insert`]: MutBumpVecRev::insert
-    /// [`append`]: MutBumpVecRev::append
-    /// [`resize`]: MutBumpVecRev::resize
-    /// [`resize_with`]: MutBumpVecRev::resize_with
+    /// [`push`]: Self::push
+    /// [`extend`]: Self::extend
+    /// [`insert`]: Self::insert
+    /// [`append`]: Self::append
+    /// [`resize`]: Self::resize
+    /// [`resize_with`]: Self::resize_with
     #[inline]
     pub fn split_at_spare_mut(&mut self) -> (&mut [T], &mut [MaybeUninit<T>]) {
         // SAFETY:

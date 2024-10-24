@@ -455,8 +455,8 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// assert_eq!(vec, []);
     /// ```
     ///
-    /// [`clear`]: MutBumpVec::clear
-    /// [`drain`]: MutBumpVec::drain
+    /// [`clear`]: Self::clear
+    /// [`drain`]: Self::drain
     pub fn truncate(&mut self, len: usize) {
         self.fixed.truncate(len);
     }
@@ -512,7 +512,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// assert_eq!(v, ["baz", "qux"]);
     /// ```
     ///
-    /// [`remove`]: MutBumpVec::remove
+    /// [`remove`]: Self::remove
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> T {
         self.fixed.swap_remove(index)
@@ -596,11 +596,11 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// - `new_len` must be less than or equal to the [`capacity`].
     /// - The elements at `old_len..new_len` must be initialized.
     ///
-    /// [`resize`]: MutBumpVec::resize
-    /// [`truncate`]: MutBumpVec::truncate
-    /// [`extend`]: MutBumpVec::extend
-    /// [`clear`]: MutBumpVec::clear
-    /// [`capacity`]: MutBumpVec::capacity
+    /// [`resize`]: Self::resize
+    /// [`truncate`]: Self::truncate
+    /// [`extend`]: Self::extend
+    /// [`clear`]: Self::clear
+    /// [`capacity`]: Self::capacity
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: usize) {
         self.fixed.set_len(new_len);
@@ -721,7 +721,7 @@ where
         /// Note that this function is same as [`extend`] except that it is
         /// specialized to work with copyable slices instead.
         ///
-        /// [`extend`]: MutBumpVec::extend
+        /// [`extend`]: Self::extend
         impl
         for fn extend_from_slice_copy
         for fn try_extend_from_slice_copy
@@ -740,7 +740,7 @@ where
         /// Note that this function is same as [`extend`] except that it is
         /// specialized to work with slices instead.
         ///
-        /// [`extend`]: MutBumpVec::extend
+        /// [`extend`]: Self::extend
         impl
         for fn extend_from_slice_clone
         for fn try_extend_from_slice_clone
@@ -771,7 +771,7 @@ where
         /// Note that this function is same as [`extend`] except that it is
         /// specialized to work with arrays instead.
         ///
-        /// [`extend`]: MutBumpVec::extend
+        /// [`extend`]: Self::extend
         #[allow(clippy::needless_pass_by_value)]
         impl
         for fn extend_from_array
@@ -1062,8 +1062,8 @@ where
         /// [`Clone`]), use [`resize_with`].
         /// If you only need to resize to a smaller size, use [`truncate`].
         ///
-        /// [`resize_with`]: MutBumpVec::resize_with
-        /// [`truncate`]: BumpBox::truncate
+        /// [`resize_with`]: Self::resize_with
+        /// [`truncate`]: Self::truncate
         impl
         do examples
         /// ```
@@ -1689,7 +1689,7 @@ where
     /// (e.g. by reading from a file) before marking the data as initialized using
     /// the [`set_len`] method.
     ///
-    /// [`set_len`]: BumpBox::set_len
+    /// [`set_len`]: Self::set_len
     ///
     /// Note that this is a low-level API, which should be used with care for
     /// optimization purposes. If you need to append data to a `MutBumpVec`
@@ -1697,12 +1697,12 @@ where
     /// `extend_from_within`[`_copy`](MutBumpVec::extend_from_within_copy)`/`[`_clone`](MutBumpVec::extend_from_within_clone), [`insert`], [`resize`] or
     /// [`resize_with`], depending on your exact needs.
     ///
-    /// [`push`]: MutBumpVec::push
-    /// [`extend`]: MutBumpVec::extend
-    /// [`insert`]: MutBumpVec::insert
-    /// [`append`]: MutBumpVec::append
-    /// [`resize`]: MutBumpVec::resize
-    /// [`resize_with`]: MutBumpVec::resize_with
+    /// [`push`]: Self::push
+    /// [`extend`]: Self::extend
+    /// [`insert`]: Self::insert
+    /// [`append`]: Self::append
+    /// [`resize`]: Self::resize
+    /// [`resize_with`]: Self::resize_with
     #[inline]
     pub fn split_at_spare_mut(&mut self) -> (&mut [T], &mut [MaybeUninit<T>]) {
         let ptr = self.as_mut_ptr();
@@ -2042,8 +2042,8 @@ where
     ///
     /// If you need to use the `Bump(Scope)` while iterating you can first turn it to a slice with [`into_slice`] or [`into_boxed_slice`].
     ///
-    /// [`into_slice`]: MutBumpVec::into_slice
-    /// [`into_boxed_slice`]: MutBumpVec::into_boxed_slice
+    /// [`into_slice`]: Self::into_slice
+    /// [`into_boxed_slice`]: Self::into_boxed_slice
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
         self.fixed.into_iter()

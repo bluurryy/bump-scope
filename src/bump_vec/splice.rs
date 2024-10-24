@@ -24,6 +24,8 @@ macro_rules! splice_declaration {
         /// assert_eq!(old, [1, 2]);
         /// assert_eq!(v, [0, 7, 8]);
         /// ```
+        ///
+        /// [`BumpVec::splice()`]: crate::BumpVec::splice
         #[derive(Debug)]
         pub struct Splice<
             'a,

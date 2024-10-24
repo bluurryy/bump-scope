@@ -33,8 +33,8 @@ use core::{
 /// ```
 ///
 /// [`alloc_fixed_string`]: crate::Bump::alloc_fixed_string
-/// [`from_uninit`]: FixedBumpString::from_uninit
-/// [`from_init`]: FixedBumpString::from_init
+/// [`from_uninit`]: Self::from_uninit
+/// [`from_init`]: Self::from_init
 // `FixedBumpString` and `FixedBumpVec<u8>` have the same repr.
 #[repr(C)]
 pub struct FixedBumpString<'a> {

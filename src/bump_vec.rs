@@ -637,8 +637,8 @@ where
     /// assert_eq!(vec, []);
     /// ```
     ///
-    /// [`clear`]: BumpVec::clear
-    /// [`drain`]: BumpVec::drain
+    /// [`clear`]: Self::clear
+    /// [`drain`]: Self::drain
     pub fn truncate(&mut self, len: usize) {
         self.fixed.truncate(len);
     }
@@ -774,11 +774,11 @@ where
     /// - `new_len` must be less than or equal to the [`capacity`].
     /// - The elements at `old_len..new_len` must be initialized.
     ///
-    /// [`resize`]: BumpVec::resize
-    /// [`truncate`]: BumpVec::truncate
-    /// [`extend`]: BumpVec::extend
-    /// [`clear`]: BumpVec::clear
-    /// [`capacity`]: BumpVec::capacity
+    /// [`resize`]: Self::resize
+    /// [`truncate`]: Self::truncate
+    /// [`extend`]: Self::extend
+    /// [`clear`]: Self::clear
+    /// [`capacity`]: Self::capacity
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: usize) {
         self.fixed.set_len(new_len);
@@ -899,7 +899,7 @@ where
         /// Note that this function is same as [`extend`] except that it is
         /// specialized to work with copyable slices instead.
         ///
-        /// [`extend`]: BumpVec::extend
+        /// [`extend`]: Self::extend
         impl
         for fn extend_from_slice_copy
         for fn try_extend_from_slice_copy
@@ -918,7 +918,7 @@ where
         /// Note that this function is same as [`extend`] except that it is
         /// specialized to work with slices instead.
         ///
-        /// [`extend`]: BumpVec::extend
+        /// [`extend`]: Self::extend
         impl
         for fn extend_from_slice_clone
         for fn try_extend_from_slice_clone
@@ -949,7 +949,7 @@ where
         /// Note that this function is same as [`extend`] except that it is
         /// specialized to work with arrays instead.
         ///
-        /// [`extend`]: BumpVec::extend
+        /// [`extend`]: Self::extend
         #[allow(clippy::needless_pass_by_value)]
         impl
         for fn extend_from_array
@@ -1239,8 +1239,8 @@ where
         /// [`Clone`]), use [`resize_with`].
         /// If you only need to resize to a smaller size, use [`truncate`].
         ///
-        /// [`resize_with`]: BumpVec::resize_with
-        /// [`truncate`]: BumpBox::truncate
+        /// [`resize_with`]: Self::resize_with
+        /// [`truncate`]: Self::truncate
         impl
         do examples
         /// ```
@@ -2127,7 +2127,7 @@ where
     /// (e.g. by reading from a file) before marking the data as initialized using
     /// the [`set_len`] method.
     ///
-    /// [`set_len`]: BumpBox::set_len
+    /// [`set_len`]: Self::set_len
     ///
     /// Note that this is a low-level API, which should be used with care for
     /// optimization purposes. If you need to append data to a `BumpVec`
@@ -2135,12 +2135,12 @@ where
     /// `extend_from_within`[`_copy`](BumpVec::extend_from_within_copy)`/`[`_clone`](BumpVec::extend_from_within_clone), [`insert`], [`resize`] or
     /// [`resize_with`], depending on your exact needs.
     ///
-    /// [`push`]: BumpVec::push
-    /// [`extend`]: BumpVec::extend
-    /// [`insert`]: BumpVec::insert
-    /// [`append`]: BumpVec::append
-    /// [`resize`]: BumpVec::resize
-    /// [`resize_with`]: BumpVec::resize_with
+    /// [`push`]: Self::push
+    /// [`extend`]: Self::extend
+    /// [`insert`]: Self::insert
+    /// [`append`]: Self::append
+    /// [`resize`]: Self::resize
+    /// [`resize_with`]: Self::resize_with
     #[inline]
     pub fn split_at_spare_mut(&mut self) -> (&mut [T], &mut [MaybeUninit<T>]) {
         let ptr = self.as_mut_ptr();

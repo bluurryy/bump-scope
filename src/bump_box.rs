@@ -153,7 +153,7 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 /// ```
 /// </details>
 ///
-/// [`into_ref`]: BumpBox::into_ref
+/// [`into_ref`]: Self::into_ref
 /// [`into_mut`]: BumpBox::into_mut
 /// [`into_box`]: BumpBox::into_box
 /// [`leak`]: BumpBox::leak
@@ -1140,8 +1140,8 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// assert_eq!(slice, []);
     /// ```
     ///
-    /// [`clear`]: BumpBox::clear
-    /// [`drain`]: BumpBox::drain
+    /// [`clear`]: Self::clear
+    /// [`drain`]: Self::drain
     pub fn truncate(&mut self, len: usize) {
         unsafe { nonnull::truncate(&mut self.ptr, len) }
     }

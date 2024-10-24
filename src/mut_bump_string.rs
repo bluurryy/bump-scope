@@ -76,7 +76,7 @@ macro_rules! mut_bump_string_declaration {
         ///
         /// You can create a `MutBumpString` from [a literal string][`&str`] with [`MutBumpString::from_str_in`]:
         ///
-        /// [`into_str`]: MutBumpString::into_str
+        /// [`into_str`]: Self::into_str
         ///
         /// ```
         /// # use bump_scope::{ Bump, MutBumpString };
@@ -99,8 +99,8 @@ macro_rules! mut_bump_string_declaration {
         /// assert_eq!(hello.as_str(), "Hello, world!");
         /// ```
         ///
-        /// [`push`]: MutBumpString::push
-        /// [`push_str`]: MutBumpString::push_str
+        /// [`push`]: Self::push
+        /// [`push_str`]: Self::push_str
         ///
         /// If you have a vector of UTF-8 bytes, you can create a `MutBumpString` from it with
         /// the [`from_utf8`] method:
@@ -118,7 +118,7 @@ macro_rules! mut_bump_string_declaration {
         /// ```
         ///
         /// [`&str`]: prim@str "&str"
-        /// [`from_utf8`]: MutBumpString::from_utf8
+        /// [`from_utf8`]: Self::from_utf8
         #[repr(C)]
         pub struct MutBumpString<
             'b,

@@ -36,8 +36,8 @@ use core::{
 /// ```
 ///
 /// [`alloc_fixed_vec`]: crate::Bump::alloc_fixed_vec
-/// [`from_uninit`]: FixedBumpVec::from_uninit
-/// [`from_init`]: FixedBumpVec::from_init
+/// [`from_uninit`]: Self::from_uninit
+/// [`from_init`]: Self::from_init
 // `FixedBumpString` and `FixedBumpVec<u8>` have the same repr.
 #[repr(C)]
 pub struct FixedBumpVec<'a, T> {
@@ -309,8 +309,8 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// assert_eq!(vec, []);
     /// ```
     ///
-    /// [`clear`]: FixedBumpVec::clear
-    /// [`drain`]: FixedBumpVec::drain
+    /// [`clear`]: Self::clear
+    /// [`drain`]: Self::drain
     pub fn truncate(&mut self, len: usize) {
         self.initialized.truncate(len);
     }
@@ -427,9 +427,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// - `new_len` must be less than or equal to the [`capacity`].
     /// - The elements at `old_len..new_len` must be initialized.
     ///
-    /// [`truncate`]: FixedBumpVec::truncate
-    /// [`clear`]: FixedBumpVec::clear
-    /// [`capacity`]: FixedBumpVec::capacity
+    /// [`truncate`]: Self::truncate
+    /// [`clear`]: Self::clear
+    /// [`capacity`]: Self::capacity
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: usize) {
         self.initialized.set_len(new_len);
@@ -607,7 +607,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// Note that this function is same as [`extend`] except that it is
         /// specialized to work with copyable slices instead.
         ///
-        /// [`extend`]: FixedBumpVec::extend
+        /// [`extend`]: Self::extend
         impl
         for fn extend_from_slice_copy
         for fn try_extend_from_slice_copy
@@ -626,7 +626,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// Note that this function is same as [`extend`] except that it is
         /// specialized to work with slices instead.
         ///
-        /// [`extend`]: FixedBumpVec::extend
+        /// [`extend`]: Self::extend
         impl
         for fn extend_from_slice_clone
         for fn try_extend_from_slice_clone
@@ -657,7 +657,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// Note that this function is same as [`extend`] except that it is
         /// specialized to work with arrays instead.
         ///
-        /// [`extend`]: FixedBumpVec::extend
+        /// [`extend`]: Self::extend
         #[allow(clippy::needless_pass_by_value)]
         impl
         for fn extend_from_array
@@ -888,8 +888,8 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// [`Clone`]), use [`resize_with`].
         /// If you only need to resize to a smaller size, use [`truncate`].
         ///
-        /// [`resize_with`]: FixedBumpVec::resize_with
-        /// [`truncate`]: BumpBox::truncate
+        /// [`resize_with`]: Self::resize_with
+        /// [`truncate`]: Self::truncate
         impl
         do examples
         /// ```
