@@ -1,6 +1,13 @@
 use super::either_way;
-use crate::{bump_vec, Bump};
+use crate::{bump_vec, Bump, BumpVec};
 use allocator_api2::alloc::Global;
+
+either_way! {
+    shrinks
+    deallocates
+    into_slice
+    into_slice_without_shrink
+}
 
 fn shrinks<const UP: bool>() {
     let bump: Bump<Global, 1, UP> = Bump::new();
@@ -22,7 +29,22 @@ fn deallocates<const UP: bool>() {
     assert_eq!(bump.stats().allocated(), 0);
 }
 
-either_way! {
-    shrinks
-    deallocates
+fn into_slice<const UP: bool>() {
+    let bump: Bump<Global, 1, UP> = Bump::new();
+    let mut vec = bump_vec![in bump; 1, 2, 3, 4, 5];
+    assert_eq!(bump.stats().allocated(), 5 * 4);
+    vec.truncate(3);
+    let slice = vec.into_slice();
+    assert_eq!(bump.stats().allocated(), 3 * 4);
+    _ = slice;
+}
+
+fn into_slice_without_shrink<const UP: bool>() {
+    let bump: Bump<Global, 1, UP> = Bump::new();
+    let mut vec = bump_vec![in bump; 1, 2, 3, 4, 5];
+    assert_eq!(bump.stats().allocated(), 5 * 4);
+    vec.truncate(3);
+    let slice = vec.into_fixed_vec().into_slice();
+    assert_eq!(bump.stats().allocated(), 5 * 4);
+    _ = slice;
 }

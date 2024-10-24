@@ -32,6 +32,7 @@ mod serde;
 mod unaligned_collection;
 mod unallocated;
 mod vec;
+mod bump_string;
 
 extern crate std;
 
