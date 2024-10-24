@@ -16,17 +16,44 @@ where
 {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        allocate(self, layout)
+        let result = allocate(self, layout);
+
+        #[cfg(debug_assertions)]
+        if let Ok(ptr) = result {
+            self.trace(
+                "allocated",
+                "via trait",
+                (nonnull::addr(ptr.cast::<u8>()).get(), layout),
+                None,
+            );
+        }
+
+        result
     }
 
     #[inline(always)]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        #[cfg(debug_assertions)]
+        self.trace("deallocated", "via trait", (nonnull::addr(ptr).get(), layout), None);
+
         deallocate(self, ptr, layout);
     }
 
     #[inline(always)]
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        grow(self, ptr, old_layout, new_layout)
+        let result = grow(self, ptr, old_layout, new_layout);
+
+        #[cfg(debug_assertions)]
+        if let Ok(new_ptr) = result {
+            self.trace(
+                "grow",
+                "via trait",
+                (nonnull::addr(ptr.cast::<u8>()).get(), old_layout),
+                Some((nonnull::addr(new_ptr.cast::<u8>()).get(), new_layout)),
+            );
+        }
+
+        result
     }
 
     #[inline(always)]
@@ -36,12 +63,36 @@ where
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        grow_zeroed(self, ptr, old_layout, new_layout)
+        let result = grow_zeroed(self, ptr, old_layout, new_layout);
+
+        #[cfg(debug_assertions)]
+        if let Ok(new_ptr) = result {
+            self.trace(
+                "grow zeroed",
+                "via trait",
+                (nonnull::addr(ptr.cast::<u8>()).get(), old_layout),
+                Some((nonnull::addr(new_ptr.cast::<u8>()).get(), new_layout)),
+            );
+        }
+
+        result
     }
 
     #[inline(always)]
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        shrink(self, ptr, old_layout, new_layout)
+        let result = shrink(self, ptr, old_layout, new_layout);
+
+        #[cfg(debug_assertions)]
+        if let Ok(new_ptr) = result {
+            self.trace(
+                "shrink",
+                "via trait",
+                (nonnull::addr(ptr.cast::<u8>()).get(), old_layout),
+                Some((nonnull::addr(new_ptr.cast::<u8>()).get(), new_layout)),
+            );
+        }
+
+        result
     }
 }
 

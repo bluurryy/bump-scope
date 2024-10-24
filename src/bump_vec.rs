@@ -1623,6 +1623,7 @@ where
         let new_cap = new_capacity;
         let old_size = self.fixed.capacity * T::SIZE; // we already allocated that amount so this can't overflow
         let new_size = new_cap.checked_mul(T::SIZE).ok_or_else(|| E::capacity_overflow())?;
+        let new_ptr;
 
         if UP {
             let is_last = nonnull::byte_add(old_ptr, old_size).cast() == self.bump.chunk.get().pos();
@@ -1639,16 +1640,17 @@ where
 
                     // Up-aligning a pointer inside a chunks content by `MIN_ALIGN` never overflows.
                     let new_pos = up_align_usize_unchecked(new_end, MIN_ALIGN);
+                    new_ptr = nonnull::with_addr(old_ptr, NonZeroUsize::new_unchecked(new_pos));
 
                     self.bump.chunk.get().set_pos_addr(new_pos);
                 } else {
                     // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
-                    let new_ptr = self.bump.do_alloc_slice_in_another_chunk::<E, T>(new_cap)?.cast();
+                    new_ptr = self.bump.do_alloc_slice_in_another_chunk::<E, T>(new_cap)?.cast();
                     nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
                     self.fixed.initialized.set_ptr(new_ptr);
                 }
             } else {
-                let new_ptr = self.bump.do_alloc_slice::<E, T>(new_cap)?.cast();
+                new_ptr = self.bump.do_alloc_slice::<E, T>(new_cap)?.cast();
                 nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
                 self.fixed.initialized.set_ptr(new_ptr);
             }
@@ -1670,7 +1672,7 @@ where
                     let new_addr = NonZeroUsize::new_unchecked(new_addr);
                     let new_addr_end = new_addr.get() + new_size;
 
-                    let new_ptr = nonnull::with_addr(old_ptr, new_addr);
+                    new_ptr = nonnull::with_addr(old_ptr, new_addr);
 
                     // Check if the regions don't overlap so we may use the faster `copy_nonoverlapping`.
                     if new_addr_end < old_addr.get() {
@@ -1683,16 +1685,30 @@ where
                     self.fixed.initialized.set_ptr(new_ptr);
                 } else {
                     // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
-                    let new_ptr = self.bump.do_alloc_slice_in_another_chunk::<E, T>(new_cap)?.cast();
+                    new_ptr = self.bump.do_alloc_slice_in_another_chunk::<E, T>(new_cap)?.cast();
                     nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
                     self.fixed.initialized.set_ptr(new_ptr);
                 }
             } else {
-                let new_ptr = self.bump.do_alloc_slice::<E, T>(new_cap)?.cast();
+                new_ptr = self.bump.do_alloc_slice::<E, T>(new_cap)?.cast();
                 nonnull::copy_nonoverlapping::<u8>(old_ptr.cast(), new_ptr.cast(), old_size);
                 self.fixed.initialized.set_ptr(new_ptr);
             }
         }
+
+        #[cfg(debug_assertions)]
+        self.bump.trace(
+            "grow",
+            "vec",
+            (
+                nonnull::addr(old_ptr.cast::<u8>()).get(),
+                Layout::from_size_align_unchecked(old_size, T::ALIGN),
+            ),
+            Some((
+                nonnull::addr(new_ptr.cast::<u8>()).get(),
+                Layout::from_size_align_unchecked(new_size, T::ALIGN),
+            )),
+        );
 
         self.fixed.capacity = new_cap;
         Ok(())
@@ -1718,6 +1734,7 @@ where
         let old_ptr = self.as_non_null_ptr().cast::<u8>();
         let old_size = self.fixed.capacity * T::SIZE; // we already allocated that amount so this can't overflow
         let new_size = self.len() * T::SIZE; // its less than the capacity so this can't overflow
+        let new_ptr;
 
         // Adapted from `Allocator::shrink`.
         unsafe {
@@ -1737,6 +1754,7 @@ where
 
                 // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
                 let new_pos = up_align_usize_unchecked(end, MIN_ALIGN);
+                new_ptr = nonnull::with_addr(old_ptr, NonZeroUsize::new_unchecked(new_pos));
 
                 self.bump.chunk.get().set_pos_addr(new_pos);
             } else {
@@ -1747,7 +1765,7 @@ where
                 let new_addr = NonZeroUsize::new_unchecked(new_addr);
                 let old_addr_new_end = NonZeroUsize::new_unchecked(old_addr.get() + new_size);
 
-                let new_ptr = nonnull::with_addr(old_ptr, new_addr);
+                new_ptr = nonnull::with_addr(old_ptr, new_addr);
                 let overlaps = old_addr_new_end > new_addr;
 
                 if overlaps {
@@ -1759,6 +1777,20 @@ where
                 self.bump.chunk.get().set_pos(new_ptr);
                 self.fixed.initialized.set_ptr(new_ptr.cast());
             }
+
+            #[cfg(debug_assertions)]
+            self.bump.trace(
+                "shrink",
+                "vec",
+                (
+                    nonnull::addr(old_ptr.cast::<u8>()).get(),
+                    Layout::from_size_align_unchecked(old_size, T::ALIGN),
+                ),
+                Some((
+                    nonnull::addr(new_ptr.cast::<u8>()).get(),
+                    Layout::from_size_align_unchecked(new_size, T::ALIGN),
+                )),
+            );
 
             self.fixed.capacity = self.len();
         }

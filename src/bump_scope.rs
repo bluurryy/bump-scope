@@ -23,6 +23,7 @@ use core::{
     ops::Range,
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::NonNull,
+    sync::atomic::AtomicUsize,
 };
 
 macro_rules! bump_scope_declaration {
@@ -261,15 +262,62 @@ where
         }
     }
 
+    #[inline(never)]
+    fn fmt_range(&self, (addr, layout): (usize, Layout)) -> String {
+        let found_chunk =
+            self.stats().small_to_big().enumerate().find(|(_, c)| {
+                addr >= nonnull::addr(c.content_start()).get() && addr <= nonnull::addr(c.content_end()).get()
+            });
+
+        let chunk = if let Some((i, found_chunk)) = found_chunk {
+            let size = found_chunk.size().to_string();
+            format!("{i}({size})")
+        } else {
+            "?".to_string()
+        };
+
+        let size = layout.size();
+        let align = layout.align();
+
+        let start = addr;
+        let end = addr + size;
+
+        format!("[0x{start:x}..0x{end:x}] size={size} align={align} chunk={chunk}")
+    }
+
+    #[inline(never)]
+    pub(crate) fn trace(&self, what: &str, kind: &str, old: (usize, Layout), new: Option<(usize, Layout)>) {
+        static I: AtomicUsize = AtomicUsize::new(0);
+
+        let i = I.fetch_add(1, core::sync::atomic::Ordering::SeqCst);
+        let old = self.fmt_range(old);
+
+        let ranges = if let Some(new) = new {
+            let new = self.fmt_range(new);
+            format!("{{{old}}} -> {{{new}}}")
+        } else {
+            format!("{{{old}}}")
+        };
+
+        eprintln!("bump-scope: [{i}] {what:9} {ranges} ({kind})");
+    }
+
     #[inline(always)]
     pub(crate) fn do_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
-        E::alloc_or_else(
+        let result = E::alloc_or_else(
             self.chunk.get(),
             MinimumAlignment::<MIN_ALIGN>,
             SizedLayout::new::<T>(),
             || self.do_alloc_sized_in_another_chunk::<E, T>(),
         )
-        .map(NonNull::cast)
+        .map(NonNull::cast);
+
+        #[cfg(debug_assertions)]
+        if let Ok(ptr) = result {
+            self.trace("allocated", "sized", (nonnull::addr(ptr).get(), Layout::new::<T>()), None);
+        }
+
+        result
     }
 
     #[inline(always)]
@@ -308,10 +356,22 @@ where
             Err(_) => return Err(E::capacity_overflow()),
         };
 
-        E::alloc_or_else(self.chunk.get(), MinimumAlignment::<MIN_ALIGN>, layout, || unsafe {
+        let result = E::alloc_or_else(self.chunk.get(), MinimumAlignment::<MIN_ALIGN>, layout, || unsafe {
             self.do_alloc_slice_in_another_chunk::<E, T>(len)
         })
-        .map(NonNull::cast)
+        .map(NonNull::cast);
+
+        #[cfg(debug_assertions)]
+        if let Ok(ptr) = result {
+            self.trace(
+                "allocated",
+                &format!("slice({len})"),
+                (nonnull::addr(ptr).get(), *layout),
+                None,
+            );
+        }
+
+        result
     }
 
     #[inline(always)]
