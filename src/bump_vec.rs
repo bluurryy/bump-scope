@@ -245,6 +245,15 @@ where
             A: BaseAllocator<GUARANTEED_ALLOCATED>,
         {
             fn drop(&mut self) {
+                // SAFETY:
+                // The dangling pointer can not be a valid ptr into a chunk; because
+                // of the minimum chunk alignment of 16 the smallest address the chunk
+                // may be at is 16. The bump allocator handles deallocate requests
+                // from pointers outside its bound just fine by ignoring them.
+                //
+                // A deallocation with a dangling pointer higher than 16 would still
+                // be fine because the layout size is zero and the alignment is higher than
+                // any requested minimum alignment. So the bump pointer won't move at all.
                 unsafe {
                     let ptr = self.0.fixed.initialized.ptr.cast();
                     let layout = Layout::from_size_align_unchecked(self.0.fixed.capacity * T::SIZE, T::ALIGN);
