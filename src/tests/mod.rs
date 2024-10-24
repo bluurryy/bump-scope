@@ -16,6 +16,7 @@ mod alloc_iter;
 mod alloc_slice;
 mod alloc_try_with;
 mod allocator_api;
+mod bump_string;
 mod bump_vec;
 mod bump_vec_doc;
 mod chunk_size;
@@ -32,7 +33,6 @@ mod serde;
 mod unaligned_collection;
 mod unallocated;
 mod vec;
-mod bump_string;
 
 extern crate std;
 
