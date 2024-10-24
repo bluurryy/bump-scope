@@ -356,6 +356,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
     #[inline(always)]
     pub(crate) unsafe fn set_pos_addr(self, addr: usize) {
+        #[cfg(debug_assertions)]
+        eprintln!("bump-scope: setting bump pointer to 0x{addr:x}");
         let ptr = self.with_addr(addr);
         self.header.as_ref().pos.set(ptr);
     }
