@@ -24,6 +24,38 @@ macro_rules! debug_assert_aligned {
     };
 }
 
+macro_rules! debug_assert_ge {
+    ($lhs:expr, $rhs:expr) => {
+        let lhs = $lhs;
+        let rhs = $rhs;
+
+        debug_assert!(
+            lhs >= rhs,
+            "expected `{}` ({}) to be greater or equal to `{}` ({})",
+            stringify!($lhs),
+            lhs,
+            stringify!($rhs),
+            rhs,
+        )
+    };
+}
+
+macro_rules! debug_assert_le {
+    ($lhs:expr, $rhs:expr) => {
+        let lhs = $lhs;
+        let rhs = $rhs;
+
+        debug_assert!(
+            lhs <= rhs,
+            "expected `{}` ({}) to be less than or equal to `{}` ({})",
+            stringify!($lhs),
+            lhs,
+            stringify!($rhs),
+            rhs,
+        )
+    };
+}
+
 /// Arguments for [`bump_up`] and [`bump_down`].
 ///
 /// The fields `min_align`, `align_is_const`, `size_is_const`, `size_is_multiple_of_align` are expected to be constants.
@@ -57,6 +89,9 @@ pub(crate) fn bump_up(
         size_is_multiple_of_align,
     }: BumpProps,
 ) -> Option<BumpUp> {
+    // used for assertion only
+    let original_start = start;
+
     debug_assert_ne!(start, 0);
     debug_assert_ne!(end, 0);
 
@@ -134,6 +169,11 @@ pub(crate) fn bump_up(
     debug_assert_aligned!(new_pos, min_align);
     debug_assert_ne!(new_pos, 0);
     debug_assert_ne!(start, 0);
+    debug_assert_le!(start, end);
+    debug_assert_ge!(start, original_start);
+    debug_assert_ge!(new_pos - start, layout.size());
+    debug_assert_le!(new_pos, end);
+    debug_assert_ge!(new_pos, start);
 
     Some(BumpUp { new_pos, ptr: start })
 }
@@ -150,6 +190,9 @@ pub(crate) fn bump_down(
         size_is_multiple_of_align,
     }: BumpProps,
 ) -> Option<usize> {
+    // used for assertion only
+    let original_end = end;
+
     debug_assert_ne!(start, 0);
     debug_assert_ne!(end, 0);
 
@@ -223,6 +266,8 @@ pub(crate) fn bump_down(
     debug_assert_aligned!(end, layout.align());
     debug_assert_aligned!(end, min_align);
     debug_assert_ne!(end, 0);
+    debug_assert_ge!(end, start);
+    debug_assert_ge!(original_end - end, layout.size());
 
     Some(end)
 }
