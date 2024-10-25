@@ -13,6 +13,7 @@ pub mod bump_greedy_up;
 pub mod bump_up;
 pub mod bumping;
 mod from_bump_scope;
+pub mod many_vecs;
 
 #[derive(Debug, Clone)]
 struct RcAllocator<A> {
