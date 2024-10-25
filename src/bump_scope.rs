@@ -732,7 +732,7 @@ where
             };
 
             #[cfg(feature = "debug-log")]
-            self.trace("allocated", "sized_a", (nonnull::addr(ptr).get(), Layout::new::<T>()), None);
+            self.trace("allocated", "sized", (nonnull::addr(ptr).get(), Layout::new::<T>()), None);
 
             let ptr = ptr.cast::<T>();
 
