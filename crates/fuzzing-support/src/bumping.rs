@@ -5,40 +5,51 @@ use bump_scope::{allocator_api2::alloc::Global, Bump, MinimumAlignment, Supporte
 use core::fmt::Debug;
 use std::{alloc::Layout, mem};
 
-fn do_fuzz(fuzz: Fuzz) {
-    if fuzz.up {
-        do_fuzz_dir::<true>(&fuzz);
-    } else {
-        do_fuzz_dir::<false>(&fuzz);
-    }
+#[derive(Debug, Arbitrary)]
+pub struct Fuzz {
+    up: bool,
+    min_align: MinAlign,
+
+    offset: UpTo<17>,
+    allocations: Vec<AllocationDescription>,
 }
 
-fn do_fuzz_dir<const UP: bool>(fuzz: &Fuzz) {
-    match fuzz.min_align {
-        MinAlign::A1 => do_fuzz_dir_align::<UP, 1>(fuzz),
-        MinAlign::A2 => do_fuzz_dir_align::<UP, 2>(fuzz),
-        MinAlign::A3 => do_fuzz_dir_align::<UP, 4>(fuzz),
-        MinAlign::A4 => do_fuzz_dir_align::<UP, 8>(fuzz),
-        MinAlign::A5 => do_fuzz_dir_align::<UP, 16>(fuzz),
+impl Fuzz {
+    pub fn run(self) {
+        if self.up {
+            self.run_dir::<true>();
+        } else {
+            self.run_dir::<false>();
+        }
     }
-}
 
-fn do_fuzz_dir_align<const UP: bool, const MIN_ALIGN: usize>(fuzz: &Fuzz)
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-{
-    let bump: Bump<Global, MIN_ALIGN, UP> = Bump::with_capacity(Layout::new::<[u8; 32]>());
+    fn run_dir<const UP: bool>(self) {
+        match self.min_align {
+            MinAlign::A1 => self.run_dir_align::<UP, 1>(),
+            MinAlign::A2 => self.run_dir_align::<UP, 2>(),
+            MinAlign::A3 => self.run_dir_align::<UP, 4>(),
+            MinAlign::A4 => self.run_dir_align::<UP, 8>(),
+            MinAlign::A5 => self.run_dir_align::<UP, 16>(),
+        }
+    }
 
-    let mut prev = Range::new_slice(bump.alloc_uninit_slice::<u8>(fuzz.offset.0).into_ref());
+    fn run_dir_align<const UP: bool, const MIN_ALIGN: usize>(self)
+    where
+        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    {
+        let bump: Bump<Global, MIN_ALIGN, UP> = Bump::with_capacity(Layout::new::<[u8; 32]>());
 
-    for allocation in &fuzz.allocations {
-        let curr = allocation.allocate(&bump);
+        let mut prev = Range::new_slice(bump.alloc_uninit_slice::<u8>(self.offset.0).into_ref());
 
-        let align = allocation.align() as usize;
-        assert!(curr.start % align == 0);
+        for allocation in &self.allocations {
+            let curr = allocation.allocate(&bump);
 
-        prev.assert_no_overlap(curr);
-        prev = curr;
+            let align = allocation.align() as usize;
+            assert!(curr.start % align == 0);
+
+            prev.assert_no_overlap(curr);
+            prev = curr;
+        }
     }
 }
 
@@ -86,21 +97,6 @@ macro_rules! impl_drop {
 
 impl_drop! {
     t1 t2 t3 t4 t5 t6
-}
-
-#[derive(Debug, Arbitrary)]
-pub struct Fuzz {
-    up: bool,
-    min_align: MinAlign,
-
-    offset: UpTo<17>,
-    allocations: Vec<AllocationDescription>,
-}
-
-impl Fuzz {
-    pub fn run(self) {
-        do_fuzz(self)
-    }
 }
 
 #[derive(Debug, Clone, Copy, Arbitrary)]

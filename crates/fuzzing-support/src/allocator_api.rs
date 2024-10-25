@@ -8,193 +8,203 @@ use core::fmt::Debug;
 use rangemap::RangeSet;
 use std::{alloc::Layout, ops::Range, ptr::NonNull, rc::Rc};
 
-fn do_fuzz(fuzz: Fuzz) {
-    if fuzz.up {
-        do_fuzz_dir::<true>(&fuzz);
-    } else {
-        do_fuzz_dir::<false>(&fuzz);
-    }
+#[derive(Debug, Arbitrary)]
+pub struct Fuzz {
+    up: bool,
+    min_align: MinAlign,
+
+    operations: Vec<Operation>,
 }
 
-fn do_fuzz_dir<const UP: bool>(fuzz: &Fuzz) {
-    match fuzz.min_align {
-        MinAlign::Shl0 => do_fuzz_dir_align::<UP, 1>(fuzz),
-        MinAlign::Shl1 => do_fuzz_dir_align::<UP, 2>(fuzz),
-        MinAlign::Shl2 => do_fuzz_dir_align::<UP, 4>(fuzz),
-        MinAlign::Shl3 => do_fuzz_dir_align::<UP, 8>(fuzz),
-        MinAlign::Shl4 => do_fuzz_dir_align::<UP, 16>(fuzz),
-    }
-}
-
-fn do_fuzz_dir_align<const UP: bool, const MIN_ALIGN: usize>(fuzz: &Fuzz)
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-{
-    dbg!(UP);
-    dbg!(MIN_ALIGN);
-
-    // We use rc to also check that allocator cloning works.
-    let allocator = RcAllocator::new(Rc::new(MaybeFailingAllocator::new(Global)));
-    let bump: Bump<_, MIN_ALIGN, UP> = Bump::with_capacity_in(Layout::new::<[u8; 32]>(), allocator);
-
-    let mut allocations = vec![];
-    let mut used_ranges = UsedRanges::default();
-
-    #[allow(clippy::unused_enumerate_index)]
-    for (_operation_i, &operation) in fuzz.operations.iter().enumerate() {
-        eprintln!("======================================");
-        eprintln!("OPERATION {_operation_i}");
-        dbg!(&allocations);
-        dbg!(&used_ranges);
-        dbg!(&bump);
-
-        match operation {
-            Operation::Allocate { layout, zero, fails } => unsafe {
-                let layout = layout.0;
-
-                bump.allocator().fails.set(fails);
-
-                let ptr = if zero {
-                    bump.allocate_zeroed(layout)
-                } else {
-                    bump.allocate(layout)
-                };
-
-                eprintln!("ALLOCATE");
-                dbg!(layout);
-                dbg!(&ptr);
-
-                if let Ok(ptr) = ptr {
-                    assert_eq!(ptr.len(), layout.size());
-                    assert!(ptr.is_aligned_to(layout.align()));
-                    used_ranges.insert(ptr);
-
-                    if zero {
-                        assert_zeroed(ptr);
-                    }
-
-                    initialize(ptr);
-                    assert_initialized(ptr);
-
-                    allocations.push(Allocation { ptr, layout });
-                }
-            },
-            Operation::Deallocate { index } => unsafe {
-                if allocations.is_empty() {
-                    continue;
-                }
-
-                let i = index % allocations.len();
-                let Allocation { ptr, layout } = allocations.swap_remove(i);
-
-                eprintln!("DEALLOCATE");
-                dbg!(layout);
-                dbg!(&ptr);
-
-                assert_eq!(ptr.len(), layout.size());
-                assert!(ptr.is_aligned_to(layout.align()));
-                used_ranges.remove(ptr);
-
-                assert_initialized(ptr);
-                deinitialize(ptr);
-
-                bump.deallocate(ptr.cast(), layout);
-            },
-            Operation::Reallocate {
-                index,
-                layout: new_layout,
-                zero,
-                fails,
-            } => unsafe {
-                let mut new_layout = new_layout.0;
-
-                eprintln!("REALLOCATE");
-                dbg!(new_layout);
-                dbg!(index);
-
-                if allocations.is_empty() {
-                    eprintln!("CANCELLED: NO ALLOCATIONS");
-                    continue;
-                }
-
-                bump.allocator().fails.set(fails);
-
-                let i = index % allocations.len();
-                dbg!(i);
-
-                let Allocation {
-                    ptr: old_ptr,
-                    layout: old_layout,
-                } = allocations[i];
-
-                dbg!(old_layout);
-                dbg!(old_ptr);
-
-                assert_eq!(old_ptr.len(), old_layout.size());
-                assert!(old_ptr.is_aligned_to(old_layout.align()));
-                assert_initialized(old_ptr);
-
-                let new_ptr = if new_layout.size() > old_layout.size() {
-                    if zero {
-                        bump.grow_zeroed(old_ptr.cast(), old_layout, new_layout)
-                    } else {
-                        bump.grow(old_ptr.cast(), old_layout, new_layout)
-                    }
-                } else {
-                    bump.shrink(old_ptr.cast(), old_layout, new_layout)
-                };
-
-                dbg!(&new_ptr);
-
-                if let Ok(new_ptr) = new_ptr {
-                    #[allow(ambiguous_wide_pointer_comparisons)]
-                    if new_ptr == old_ptr {
-                        assert_eq!(new_ptr.len(), old_layout.size());
-                        new_layout = Layout::from_size_align(old_layout.size(), new_layout.align()).unwrap();
-                    } else {
-                        assert_eq!(new_ptr.len(), new_layout.size());
-                    }
-
-                    assert!(new_ptr.is_aligned_to(new_layout.align()));
-
-                    if new_layout.size() > old_layout.size() {
-                        let [old_part, new_part] = split_slice(new_ptr, old_layout.size());
-                        assert_initialized(old_part);
-
-                        if zero {
-                            assert_zeroed(new_part);
-                        }
-
-                        initialize(new_ptr);
-                    }
-
-                    assert_initialized(new_ptr);
-
-                    used_ranges.remove(old_ptr);
-                    used_ranges.insert(new_ptr);
-
-                    allocations[i] = Allocation {
-                        ptr: new_ptr,
-                        layout: new_layout,
-                    }
-                }
-            },
+impl Fuzz {
+    pub fn run(self) {
+        if self.up {
+            self.run_dir::<true>();
+        } else {
+            self.run_dir::<false>();
         }
     }
 
-    eprintln!("====================================");
-    eprintln!("DONE WITH ALL OPERATIONS");
-    eprintln!("DROPPING REMAINING ALLOCATIONS");
-    eprintln!("====================================");
+    fn run_dir<const UP: bool>(self) {
+        match self.min_align {
+            MinAlign::Shl0 => self.run_dir_align::<UP, 1>(),
+            MinAlign::Shl1 => self.run_dir_align::<UP, 2>(),
+            MinAlign::Shl2 => self.run_dir_align::<UP, 4>(),
+            MinAlign::Shl3 => self.run_dir_align::<UP, 8>(),
+            MinAlign::Shl4 => self.run_dir_align::<UP, 16>(),
+        }
+    }
 
-    unsafe {
-        for Allocation { ptr, layout } in allocations {
-            dbg!(layout);
-            dbg!(ptr);
-            used_ranges.remove(ptr);
-            assert_initialized(ptr);
-            deinitialize(ptr);
-            bump.deallocate(ptr.cast(), layout);
+    fn run_dir_align<const UP: bool, const MIN_ALIGN: usize>(self)
+    where
+        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    {
+        dbg!(UP);
+        dbg!(MIN_ALIGN);
+
+        // We use rc to also check that allocator cloning works.
+        let allocator = RcAllocator::new(Rc::new(MaybeFailingAllocator::new(Global)));
+        let bump: Bump<_, MIN_ALIGN, UP> = Bump::with_capacity_in(Layout::new::<[u8; 32]>(), allocator);
+
+        let mut allocations = vec![];
+        let mut used_ranges = UsedRanges::default();
+
+        #[allow(clippy::unused_enumerate_index)]
+        for (_operation_i, &operation) in self.operations.iter().enumerate() {
+            eprintln!("======================================");
+            eprintln!("OPERATION {_operation_i}");
+            dbg!(&allocations);
+            dbg!(&used_ranges);
+            dbg!(&bump);
+
+            match operation {
+                Operation::Allocate { layout, zero, fails } => unsafe {
+                    let layout = layout.0;
+
+                    bump.allocator().fails.set(fails);
+
+                    let ptr = if zero {
+                        bump.allocate_zeroed(layout)
+                    } else {
+                        bump.allocate(layout)
+                    };
+
+                    eprintln!("ALLOCATE");
+                    dbg!(layout);
+                    dbg!(&ptr);
+
+                    if let Ok(ptr) = ptr {
+                        assert_eq!(ptr.len(), layout.size());
+                        assert!(ptr.is_aligned_to(layout.align()));
+                        used_ranges.insert(ptr);
+
+                        if zero {
+                            assert_zeroed(ptr);
+                        }
+
+                        initialize(ptr);
+                        assert_initialized(ptr);
+
+                        allocations.push(Allocation { ptr, layout });
+                    }
+                },
+                Operation::Deallocate { index } => unsafe {
+                    if allocations.is_empty() {
+                        continue;
+                    }
+
+                    let i = index % allocations.len();
+                    let Allocation { ptr, layout } = allocations.swap_remove(i);
+
+                    eprintln!("DEALLOCATE");
+                    dbg!(layout);
+                    dbg!(&ptr);
+
+                    assert_eq!(ptr.len(), layout.size());
+                    assert!(ptr.is_aligned_to(layout.align()));
+                    used_ranges.remove(ptr);
+
+                    assert_initialized(ptr);
+                    deinitialize(ptr);
+
+                    bump.deallocate(ptr.cast(), layout);
+                },
+                Operation::Reallocate {
+                    index,
+                    layout: new_layout,
+                    zero,
+                    fails,
+                } => unsafe {
+                    let mut new_layout = new_layout.0;
+
+                    eprintln!("REALLOCATE");
+                    dbg!(new_layout);
+                    dbg!(index);
+
+                    if allocations.is_empty() {
+                        eprintln!("CANCELLED: NO ALLOCATIONS");
+                        continue;
+                    }
+
+                    bump.allocator().fails.set(fails);
+
+                    let i = index % allocations.len();
+                    dbg!(i);
+
+                    let Allocation {
+                        ptr: old_ptr,
+                        layout: old_layout,
+                    } = allocations[i];
+
+                    dbg!(old_layout);
+                    dbg!(old_ptr);
+
+                    assert_eq!(old_ptr.len(), old_layout.size());
+                    assert!(old_ptr.is_aligned_to(old_layout.align()));
+                    assert_initialized(old_ptr);
+
+                    let new_ptr = if new_layout.size() > old_layout.size() {
+                        if zero {
+                            bump.grow_zeroed(old_ptr.cast(), old_layout, new_layout)
+                        } else {
+                            bump.grow(old_ptr.cast(), old_layout, new_layout)
+                        }
+                    } else {
+                        bump.shrink(old_ptr.cast(), old_layout, new_layout)
+                    };
+
+                    dbg!(&new_ptr);
+
+                    if let Ok(new_ptr) = new_ptr {
+                        #[allow(ambiguous_wide_pointer_comparisons)]
+                        if new_ptr == old_ptr {
+                            assert_eq!(new_ptr.len(), old_layout.size());
+                            new_layout = Layout::from_size_align(old_layout.size(), new_layout.align()).unwrap();
+                        } else {
+                            assert_eq!(new_ptr.len(), new_layout.size());
+                        }
+
+                        assert!(new_ptr.is_aligned_to(new_layout.align()));
+
+                        if new_layout.size() > old_layout.size() {
+                            let [old_part, new_part] = split_slice(new_ptr, old_layout.size());
+                            assert_initialized(old_part);
+
+                            if zero {
+                                assert_zeroed(new_part);
+                            }
+
+                            initialize(new_ptr);
+                        }
+
+                        assert_initialized(new_ptr);
+
+                        used_ranges.remove(old_ptr);
+                        used_ranges.insert(new_ptr);
+
+                        allocations[i] = Allocation {
+                            ptr: new_ptr,
+                            layout: new_layout,
+                        }
+                    }
+                },
+            }
+        }
+
+        eprintln!("====================================");
+        eprintln!("DONE WITH ALL OPERATIONS");
+        eprintln!("DROPPING REMAINING ALLOCATIONS");
+        eprintln!("====================================");
+
+        unsafe {
+            for Allocation { ptr, layout } in allocations {
+                dbg!(layout);
+                dbg!(ptr);
+                used_ranges.remove(ptr);
+                assert_initialized(ptr);
+                deinitialize(ptr);
+                bump.deallocate(ptr.cast(), layout);
+            }
         }
     }
 }
@@ -304,20 +314,6 @@ unsafe fn assert_zeroed(ptr: NonNull<[u8]>) {
 struct Allocation {
     ptr: NonNull<[u8]>,
     layout: Layout,
-}
-
-#[derive(Debug, Arbitrary)]
-pub struct Fuzz {
-    up: bool,
-    min_align: MinAlign,
-
-    operations: Vec<Operation>,
-}
-
-impl Fuzz {
-    pub fn run(self) {
-        do_fuzz(self)
-    }
 }
 
 #[derive(Debug, Clone, Copy, Arbitrary)]
