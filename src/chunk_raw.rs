@@ -2,7 +2,6 @@ use crate::{
     bumping::{bump_down, bump_greedy_down, bump_greedy_up, bump_up, BumpProps, BumpUp},
     down_align_usize,
     layout::LayoutProps,
-    log,
     polyfill::{const_unwrap, nonnull, pointer},
     unallocated_chunk_header, up_align_usize_unchecked, ChunkHeader, ChunkSize, ErrorBehavior, MinimumAlignment,
     SupportedMinimumAlignment, CHUNK_ALIGN_MIN,
@@ -357,11 +356,11 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
     #[inline(always)]
     pub(crate) unsafe fn set_pos_addr(self, addr: usize) {
-        log!(
-            "setting bump pointer to 0x{addr:x} (0x{start:x} .. 0x{end:x})",
-            start = nonnull::addr(self.content_start()),
-            end = nonnull::addr(self.content_end()),
-        );
+        // log!(
+        //     "setting bump pointer to 0x{addr:x} (0x{start:x} .. 0x{end:x})",
+        //     start = nonnull::addr(self.content_start()),
+        //     end = nonnull::addr(self.content_end()),
+        // );
         let ptr = self.with_addr(addr);
         self.header.as_ref().pos.set(ptr);
     }
