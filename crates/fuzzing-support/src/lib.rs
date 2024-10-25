@@ -1,7 +1,7 @@
 #![feature(pointer_is_aligned_to, strict_provenance, allocator_api)]
 #![allow(clippy::cargo_common_metadata)]
 
-use arbitrary::Arbitrary;
+use arbitrary::{Arbitrary, Unstructured};
 use bump_scope::allocator_api2::alloc::{AllocError, Allocator};
 use std::{alloc::Layout, cell::Cell, mem::swap, ops::Deref, ptr::NonNull, rc::Rc};
 
@@ -323,5 +323,27 @@ fn align(addr: usize) -> usize {
         16
     } else {
         addr
+    }
+}
+
+#[derive(Debug, Clone, Copy, Arbitrary)]
+enum MinAlign {
+    Shl0 = 1 << 0,
+    Shl1 = 1 << 1,
+    Shl2 = 1 << 2,
+    Shl3 = 1 << 3,
+    Shl4 = 1 << 4,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct UpTo<const MAX: usize>(usize);
+
+impl<'a, const MAX: usize> Arbitrary<'a> for UpTo<MAX> {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self(u.int_in_range(0..=MAX)?))
+    }
+
+    fn size_hint(depth: usize) -> (usize, Option<usize>) {
+        <usize as Arbitrary>::size_hint(depth)
     }
 }

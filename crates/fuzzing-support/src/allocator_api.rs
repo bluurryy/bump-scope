@@ -1,4 +1,4 @@
-use crate::{dbg, eprintln, MaybeFailingAllocator, RcAllocator};
+use crate::{dbg, eprintln, MaybeFailingAllocator, MinAlign, RcAllocator};
 use arbitrary::{Arbitrary, Unstructured};
 use bump_scope::{
     allocator_api2::alloc::{Allocator, Global},
@@ -314,15 +314,6 @@ unsafe fn assert_zeroed(ptr: NonNull<[u8]>) {
 struct Allocation {
     ptr: NonNull<[u8]>,
     layout: Layout,
-}
-
-#[derive(Debug, Clone, Copy, Arbitrary)]
-enum MinAlign {
-    Shl0 = 1 << 0,
-    Shl1 = 1 << 1,
-    Shl2 = 1 << 2,
-    Shl3 = 1 << 3,
-    Shl4 = 1 << 4,
 }
 
 #[derive(Debug, Clone, Copy, Arbitrary)]

@@ -1,9 +1,11 @@
 #![allow(non_camel_case_types)]
 
-use arbitrary::{Arbitrary, Unstructured};
+use arbitrary::Arbitrary;
 use bump_scope::{allocator_api2::alloc::Global, Bump, MinimumAlignment, SupportedMinimumAlignment};
 use core::fmt::Debug;
 use std::{alloc::Layout, mem};
+
+use crate::{MinAlign, UpTo};
 
 #[derive(Debug, Arbitrary)]
 pub struct Fuzz {
@@ -25,11 +27,11 @@ impl Fuzz {
 
     fn run_dir<const UP: bool>(self) {
         match self.min_align {
-            MinAlign::A1 => self.run_dir_align::<UP, 1>(),
-            MinAlign::A2 => self.run_dir_align::<UP, 2>(),
-            MinAlign::A3 => self.run_dir_align::<UP, 4>(),
-            MinAlign::A4 => self.run_dir_align::<UP, 8>(),
-            MinAlign::A5 => self.run_dir_align::<UP, 16>(),
+            MinAlign::Shl0 => self.run_dir_align::<UP, 1>(),
+            MinAlign::Shl1 => self.run_dir_align::<UP, 2>(),
+            MinAlign::Shl2 => self.run_dir_align::<UP, 4>(),
+            MinAlign::Shl3 => self.run_dir_align::<UP, 8>(),
+            MinAlign::Shl4 => self.run_dir_align::<UP, 16>(),
         }
     }
 
@@ -97,28 +99,6 @@ macro_rules! impl_drop {
 
 impl_drop! {
     t1 t2 t3 t4 t5 t6
-}
-
-#[derive(Debug, Clone, Copy, Arbitrary)]
-enum MinAlign {
-    A1 = 1,
-    A2 = 2,
-    A3 = 4,
-    A4 = 8,
-    A5 = 16,
-}
-
-#[derive(Debug, Clone, Copy)]
-struct UpTo<const MAX: usize>(usize);
-
-impl<'a, const MAX: usize> Arbitrary<'a> for UpTo<MAX> {
-    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        Ok(Self(u.int_in_range(0..=MAX)?))
-    }
-
-    fn size_hint(depth: usize) -> (usize, Option<usize>) {
-        <usize as Arbitrary>::size_hint(depth)
-    }
 }
 
 #[derive(Clone, Copy)]

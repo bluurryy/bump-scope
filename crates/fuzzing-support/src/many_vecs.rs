@@ -2,6 +2,8 @@ use arbitrary::Arbitrary;
 use bump_scope::{allocator_api2::alloc::Global, Bump, BumpVec, MinimumAlignment, SupportedMinimumAlignment};
 use zerocopy::{FromBytes, Immutable, IntoBytes};
 
+use crate::MinAlign;
+
 impl Fuzz {
     pub fn run(self) {
         if self.up {
@@ -13,11 +15,11 @@ impl Fuzz {
 
     fn run_dir<const UP: bool>(self) {
         match self.min_align {
-            MinAlign::A1 => self.run_dir_align::<UP, 1>(),
-            MinAlign::A2 => self.run_dir_align::<UP, 2>(),
-            MinAlign::A3 => self.run_dir_align::<UP, 4>(),
-            MinAlign::A4 => self.run_dir_align::<UP, 8>(),
-            MinAlign::A5 => self.run_dir_align::<UP, 16>(),
+            MinAlign::Shl0 => self.run_dir_align::<UP, 1>(),
+            MinAlign::Shl1 => self.run_dir_align::<UP, 2>(),
+            MinAlign::Shl2 => self.run_dir_align::<UP, 4>(),
+            MinAlign::Shl3 => self.run_dir_align::<UP, 8>(),
+            MinAlign::Shl4 => self.run_dir_align::<UP, 16>(),
         }
     }
 
@@ -155,15 +157,6 @@ enum Align {
     T4 = 1 << 3,
     T5 = 1 << 4,
     T6 = 1 << 5,
-}
-
-#[derive(Debug, Clone, Copy, Arbitrary)]
-enum MinAlign {
-    A1 = 1,
-    A2 = 2,
-    A3 = 4,
-    A4 = 8,
-    A5 = 16,
 }
 
 #[repr(transparent)]
