@@ -731,6 +731,9 @@ where
                 }
             };
 
+            #[cfg(feature = "debug-log")]
+            self.trace("allocated", "sized_a", (nonnull::addr(ptr).get(), Layout::new::<T>()), None);
+
             let ptr = ptr.cast::<T>();
 
             nonnull::write_with(ptr, f);
