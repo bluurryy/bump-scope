@@ -18,13 +18,16 @@ use core::{
     hash::Hash,
     iter,
     marker::PhantomData,
-    mem::{self, ManuallyDrop, MaybeUninit},
+    mem::{ManuallyDrop, MaybeUninit},
     num::NonZeroUsize,
     ops::{Deref, DerefMut, Index, IndexMut, RangeBounds},
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::{self, NonNull},
     slice::SliceIndex,
 };
+
+#[cfg(not(no_global_oom_handling))]
+use core::mem;
 
 #[cfg(not(no_global_oom_handling))]
 pub(crate) use drain::Drain;
@@ -1598,6 +1601,7 @@ where
 
     #[cold]
     #[inline(never)]
+    #[cfg(not(no_global_oom_handling))]
     fn generic_grow_cold_buf<E: ErrorBehavior>(&mut self, len: usize, additional: usize) -> Result<(), E> {
         let required_cap = match len.checked_add(additional) {
             Some(required_cap) => required_cap,
