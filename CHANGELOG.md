@@ -2,6 +2,7 @@
 
 ## Unreleased
 - **fixed:** potential UB when using `BumpVec::splice`
+- **added:** default generic allocator parameter for `bump_vec::Splice`
 
 ## 0.10.5 (2024-10-19)
 - **added:** `splice` to `BumpVec`
