@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **fixed:** potential UB when using `BumpVec::splice`
+
 ## 0.10.5 (2024-10-19)
 - **added:** `splice` to `BumpVec`
 - **added:** `reserve_exact` to vectors and strings

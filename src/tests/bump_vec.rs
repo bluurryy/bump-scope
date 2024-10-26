@@ -48,3 +48,24 @@ fn into_slice_without_shrink<const UP: bool>() {
     assert_eq!(bump.stats().allocated(), 5 * 4);
     _ = slice;
 }
+
+#[test]
+fn buf_reserve() {
+    let bump: Bump = Bump::new();
+
+    let mut vec: BumpVec<i32> = BumpVec::with_capacity_in(1, &bump);
+    unsafe { vec.buf_reserve(1, 2) };
+    assert_eq!(vec.capacity(), 3);
+
+    let mut vec: BumpVec<i32> = bump_vec![in bump; 1, 2];
+    unsafe { vec.buf_reserve(2, 5) };
+    assert_eq!(vec.capacity(), 7);
+
+    let mut vec = bump_vec![in bump; 1, 2, 3];
+    unsafe { vec.buf_reserve(2, 5) };
+    assert_eq!(vec.capacity(), 7);
+
+    let mut vec = bump_vec![in bump; 1, 2, 3, 4];
+    unsafe { vec.buf_reserve(2, 5) };
+    assert_eq!(vec.capacity(), 8);
+}

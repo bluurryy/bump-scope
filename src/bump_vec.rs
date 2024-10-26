@@ -1529,14 +1529,15 @@ where
     /// `RawVec::reserve` which behaves the same.
     ///
     /// # Safety
-    /// TODO
+    ///
+    /// - `len` must be less than or equal to `self.capacity()`
     #[cfg(not(no_global_oom_handling))]
     #[inline(always)]
     pub(crate) unsafe fn buf_reserve(&mut self, len: usize, additional: usize) {
         use crate::infallible;
 
         if additional > (self.capacity() - len) {
-            infallible(self.generic_grow_cold(additional));
+            infallible(self.generic_grow_cold_buf(len, additional));
         }
     }
 
@@ -1578,6 +1579,27 @@ where
     #[inline(never)]
     fn generic_grow_cold<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
         let required_cap = match self.len().checked_add(additional) {
+            Some(required_cap) => required_cap,
+            None => return Err(E::capacity_overflow())?,
+        };
+
+        if T::IS_ZST {
+            return Ok(());
+        }
+
+        if self.capacity() == 0 {
+            self.fixed = self.bump.generic_alloc_fixed_vec(required_cap)?;
+            return Ok(());
+        }
+
+        let new_capacity = self.capacity().checked_mul(2).unwrap_or(required_cap).max(required_cap);
+        unsafe { self.generic_grow_to(new_capacity) }
+    }
+
+    #[cold]
+    #[inline(never)]
+    fn generic_grow_cold_buf<E: ErrorBehavior>(&mut self, len: usize, additional: usize) -> Result<(), E> {
+        let required_cap = match len.checked_add(additional) {
             Some(required_cap) => required_cap,
             None => return Err(E::capacity_overflow())?,
         };
