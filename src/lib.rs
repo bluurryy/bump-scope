@@ -365,8 +365,10 @@ mod supported_minimum_alignment {
 
     pub trait Sealed {
         /// We'd be fine with just an [`core::ptr::Alignment`], but that's not stable.
+        #[doc(hidden)]
         const LAYOUT: ArrayLayout;
 
+        #[doc(hidden)]
         const MIN_ALIGN: usize;
     }
 }
@@ -1919,6 +1921,7 @@ where
 
 mod supported_base_allocator {
     pub trait Sealed<const GUARANTEED_ALLOCATED: bool> {
+        #[doc(hidden)]
         fn default_or_panic() -> Self;
     }
 
