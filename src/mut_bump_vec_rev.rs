@@ -1334,8 +1334,9 @@ where
             return Ok(());
         }
 
-        let new_cap = self.capacity().checked_mul(2).unwrap_or(required_cap).max(required_cap);
-        let new_cap = new_cap.max(min_non_zero_cap(T::SIZE));
+        // This guarantees exponential growth. The doubling cannot overflow
+        // because `capacity <= isize::MAX` and the type of `capacity` is usize;
+        let new_cap = (self.capacity() * 2).max(required_cap).max(min_non_zero_cap(T::SIZE));
 
         unsafe { self.generic_grow_to(new_cap) }
     }
