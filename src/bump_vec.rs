@@ -1590,14 +1590,8 @@ where
             return Ok(());
         }
 
-        let new_cap = required_cap.max(min_non_zero_cap(T::SIZE));
-
-        if self.capacity() == 0 {
-            self.fixed = self.bump.generic_alloc_fixed_vec(new_cap)?;
-            return Ok(());
-        }
-
-        let new_cap = self.capacity().checked_mul(2).unwrap_or(new_cap).max(new_cap);
+        let new_cap = self.capacity().checked_mul(2).unwrap_or(required_cap).max(required_cap);
+        let new_cap = new_cap.max(min_non_zero_cap(T::SIZE));
 
         unsafe { self.generic_grow_to(new_cap) }
     }
@@ -1622,11 +1616,6 @@ where
             return Ok(());
         }
 
-        if self.capacity() == 0 {
-            self.fixed = self.bump.generic_alloc_fixed_vec(required_cap)?;
-            return Ok(());
-        }
-
         let new_cap = self.capacity().checked_mul(2).unwrap_or(required_cap).max(required_cap);
         let new_cap = new_cap.max(min_non_zero_cap(T::SIZE));
 
@@ -1645,11 +1634,6 @@ where
             return Ok(());
         }
 
-        if self.capacity() == 0 {
-            self.fixed = self.bump.generic_alloc_fixed_vec(required_cap)?;
-            return Ok(());
-        }
-
         unsafe { self.generic_grow_to(required_cap) }
     }
 
@@ -1657,8 +1641,14 @@ where
     ///
     /// `new_capacity` must be greater than the current capacity.
     unsafe fn generic_grow_to<E: ErrorBehavior>(&mut self, new_capacity: usize) -> Result<(), E> {
-        let old_ptr = self.as_non_null_ptr();
         let new_cap = new_capacity;
+
+        if self.capacity() == 0 {
+            self.fixed = self.bump.generic_alloc_fixed_vec(new_cap)?;
+            return Ok(());
+        }
+
+        let old_ptr = self.as_non_null_ptr();
         let old_size = self.fixed.capacity * T::SIZE; // we already allocated that amount so this can't overflow
         let new_size = new_cap.checked_mul(T::SIZE).ok_or_else(|| E::capacity_overflow())?;
 
