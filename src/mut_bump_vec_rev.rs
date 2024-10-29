@@ -1325,14 +1325,16 @@ where
     #[cold]
     #[inline(never)]
     fn generic_grow_amortized<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
+        if T::IS_ZST {
+            // This function is only called after we checked that the current capacity is not
+            // sufficient. When `T::IS_ZST` the capacity is `usize::MAX`, so it can't grow.
+            return Err(E::capacity_overflow());
+        }
+
         let required_cap = match self.len().checked_add(additional) {
             Some(required_cap) => required_cap,
             None => return Err(E::capacity_overflow())?,
         };
-
-        if T::IS_ZST {
-            return Ok(());
-        }
 
         // This guarantees exponential growth. The doubling cannot overflow
         // because `capacity <= isize::MAX` and the type of `capacity` is usize;
@@ -1344,14 +1346,16 @@ where
     #[cold]
     #[inline(never)]
     fn generic_grow_exact<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
+        if T::IS_ZST {
+            // This function is only called after we checked that the current capacity is not
+            // sufficient. When `T::IS_ZST` the capacity is `usize::MAX`, so it can't grow.
+            return Err(E::capacity_overflow());
+        }
+
         let required_cap = match self.len().checked_add(additional) {
             Some(required_cap) => required_cap,
             None => return Err(E::capacity_overflow())?,
         };
-
-        if T::IS_ZST {
-            return Ok(());
-        }
 
         unsafe { self.generic_grow_to(required_cap) }
     }
