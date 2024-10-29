@@ -1,5 +1,5 @@
 // NB: We avoid using closures to map `Result` and `Option`s in various places because they result in less readable assembly output.
-// When using closures, functions like `capacity_overflow` can get the name of some closure that invokes it instead, like `bump_scope::mut_bump_vec::MutBumpVec<T,_,_,A>::generic_grow_cold::{{closure}}`.
+// When using closures, functions like `capacity_overflow` can get the name of some closure that invokes it instead, like `bump_scope::mut_bump_vec::MutBumpVec<T,_,_,A>::generic_grow_amortized::{{closure}}`.
 
 // This crate uses modified code from the rust standard library. <https://github.com/rust-lang/rust/tree/master/library>.
 // Especially `BumpBox` methods, vectors, strings, `polyfill` and `tests/from_std` are based on code from the standard library.

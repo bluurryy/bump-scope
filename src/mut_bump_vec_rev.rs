@@ -1005,7 +1005,7 @@ where
         for fn try_reserve
         use fn generic_reserve(&mut self, additional: usize) {
             if additional > (self.capacity() - self.len()) {
-                self.generic_grow_cold(additional)?;
+                self.generic_grow_amortized(additional)?;
             }
 
             Ok(())
@@ -1048,7 +1048,7 @@ where
         for fn try_reserve_exact
         use fn generic_reserve_exact(&mut self, additional: usize) {
             if additional > (self.capacity() - self.len()) {
-                self.generic_grow_cold_exact(additional)?;
+                self.generic_grow_exact(additional)?;
             }
 
             Ok(())
@@ -1316,7 +1316,7 @@ where
     #[inline]
     fn generic_reserve_one<E: ErrorBehavior>(&mut self) -> Result<(), E> {
         if self.cap == self.len {
-            self.generic_grow_cold::<E>(1)?;
+            self.generic_grow_amortized::<E>(1)?;
         }
 
         Ok(())
@@ -1324,7 +1324,7 @@ where
 
     #[cold]
     #[inline(never)]
-    fn generic_grow_cold<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
+    fn generic_grow_amortized<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
         let required_cap = match self.len().checked_add(additional) {
             Some(required_cap) => required_cap,
             None => return Err(E::capacity_overflow())?,
@@ -1340,7 +1340,7 @@ where
 
     #[cold]
     #[inline(never)]
-    fn generic_grow_cold_exact<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
+    fn generic_grow_exact<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
         let required_cap = match self.len().checked_add(additional) {
             Some(required_cap) => required_cap,
             None => return Err(E::capacity_overflow())?,

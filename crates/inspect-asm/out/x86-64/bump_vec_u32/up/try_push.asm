@@ -19,7 +19,7 @@ inspect_asm::bump_vec_u32::up::try_push:
 .LBB0_2:
 	mov ebx, esi
 	mov r14, rdi
-	call bump_scope::mut_bump_vec::MutBumpVec<T,A,_,_,_>::generic_grow_cold
+	call bump_scope::mut_bump_vec::MutBumpVec<T,A,_,_,_>::generic_grow_amortized
 	mov ecx, eax
 	mov al, 1
 	test cl, cl
