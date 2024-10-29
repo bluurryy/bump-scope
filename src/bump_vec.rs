@@ -5,7 +5,7 @@ mod splice;
 use crate::{
     bump_down,
     destructure::destructure,
-    error_behavior_generic_methods_allocation_failure, owned_slice,
+    error_behavior_generic_methods_allocation_failure, min_non_zero_cap, owned_slice,
     polyfill::{nonnull, pointer, slice},
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScope, ErrorBehavior, FixedBumpVec, GuaranteedAllocatedStats,
     MinimumAlignment, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment,
@@ -1590,13 +1590,16 @@ where
             return Ok(());
         }
 
+        let new_cap = required_cap.max(min_non_zero_cap(T::SIZE));
+
         if self.capacity() == 0 {
-            self.fixed = self.bump.generic_alloc_fixed_vec(required_cap)?;
+            self.fixed = self.bump.generic_alloc_fixed_vec(new_cap)?;
             return Ok(());
         }
 
-        let new_capacity = self.capacity().checked_mul(2).unwrap_or(required_cap).max(required_cap);
-        unsafe { self.generic_grow_to(new_capacity) }
+        let new_cap = self.capacity().checked_mul(2).unwrap_or(new_cap).max(new_cap);
+
+        unsafe { self.generic_grow_to(new_cap) }
     }
 
     /// Like [`reserve`] but allows you to provide a different `len`.
@@ -1624,8 +1627,10 @@ where
             return Ok(());
         }
 
-        let new_capacity = self.capacity().checked_mul(2).unwrap_or(required_cap).max(required_cap);
-        unsafe { self.generic_grow_to(new_capacity) }
+        let new_cap = self.capacity().checked_mul(2).unwrap_or(required_cap).max(required_cap);
+        let new_cap = new_cap.max(min_non_zero_cap(T::SIZE));
+
+        self.generic_grow_to(new_cap)
     }
 
     #[cold]
@@ -1861,10 +1866,10 @@ where
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::new();
     /// let mut vec = BumpVec::new_in(&bump);
-    /// vec.reserve(3);
+    /// vec.reserve(10);
     /// vec.push(1);
     /// let mut fixed_vec = vec.into_parts().0;
-    /// assert_eq!(fixed_vec.capacity(), 3);
+    /// assert_eq!(fixed_vec.capacity(), 10);
     /// assert_eq!(fixed_vec, [1]);
     /// ```
     #[must_use]

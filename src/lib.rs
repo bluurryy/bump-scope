@@ -1976,6 +1976,23 @@ macro_rules! maybe_default_allocator {
 
 pub(crate) use maybe_default_allocator;
 
+// (copied from rust standard library)
+//
+// Tiny Vecs are dumb. Skip to:
+// - 8 if the element size is 1, because any heap allocators is likely
+//   to round up a request of less than 8 bytes to at least 8 bytes.
+// - 4 if elements are moderate-sized (<= 1 KiB).
+// - 1 otherwise, to avoid wasting too much space for very short Vecs.
+const fn min_non_zero_cap(size: usize) -> usize {
+    if size == 1 {
+        8
+    } else if size <= 1024 {
+        4
+    } else {
+        1
+    }
+}
+
 /// We don't use `document-features` the usual way because then we can't have our features
 /// be copied into the `README.md` via [`cargo-rdme`](https://github.com/orium/cargo-rdme).
 #[test]

@@ -43,8 +43,8 @@ const OVERHEAD: usize = MALLOC_OVERHEAD + size_of::<ChunkHeader<Global>>();
 
 use crate::{
     chunk_size::AssumedMallocOverhead, infallible, mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice, Bump,
-    BumpBox, BumpScope, BumpVec, Chunk, ChunkHeader, ChunkSize, FmtFn, MinimumAlignment, MutBumpString, MutBumpVec,
-    MutBumpVecRev, SupportedMinimumAlignment,
+    BumpBox, BumpScope, BumpString, BumpVec, Chunk, ChunkHeader, ChunkSize, FmtFn, MinimumAlignment, MutBumpString,
+    MutBumpVec, MutBumpVecRev, SupportedMinimumAlignment,
 };
 
 #[allow(dead_code)]
@@ -996,5 +996,69 @@ fn deallocate_in_rtl<const UP: bool>() {
         assert_eq!(bump.stats().allocated(), 0);
     } else {
         assert_eq!(bump.stats().allocated(), 3 * 4);
+    }
+}
+
+#[test]
+fn min_non_zero_cap() {
+    fn bump_with_remaining_capacity(capacity: usize) -> Bump {
+        let bump = Bump::with_capacity(Layout::array::<u8>(capacity).unwrap());
+        let to_be_occupied = bump.stats().capacity() - capacity;
+        bump.alloc_uninit_slice::<u8>(to_be_occupied);
+        bump
+    }
+
+    #[allow(dead_code)]
+    struct Big([u8; 1025]);
+
+    impl Default for Big {
+        fn default() -> Self {
+            Self([0u8; 1025])
+        }
+    }
+
+    fn test_vecs<T: Default>(expected_capacity: usize) {
+        {
+            let bump: Bump = Bump::new();
+            let mut vec: BumpVec<T> = BumpVec::new_in(&bump);
+            vec.push_with(Default::default);
+            assert_eq!(vec.capacity(), expected_capacity, "{}", std::any::type_name::<T>());
+        }
+
+        {
+            let mut bump = bump_with_remaining_capacity(size_of::<T>() * expected_capacity);
+            let mut vec: MutBumpVec<T> = MutBumpVec::new_in(&mut bump);
+            vec.push_with(Default::default);
+            assert_eq!(vec.capacity(), expected_capacity, "{}", std::any::type_name::<T>());
+            drop(vec);
+        }
+
+        {
+            let mut bump = bump_with_remaining_capacity(size_of::<T>() * expected_capacity);
+            let mut vec: MutBumpVecRev<T> = MutBumpVecRev::new_in(&mut bump);
+            vec.push_with(Default::default);
+            assert_eq!(vec.capacity(), expected_capacity, "{}", std::any::type_name::<T>());
+            drop(vec);
+        }
+    }
+
+    test_vecs::<u8>(8);
+    test_vecs::<[u8; 4]>(4);
+    test_vecs::<Big>(1);
+
+    {
+        let bump: Bump = Bump::new();
+        let mut string = BumpString::new_in(&bump);
+        string.push('a');
+        assert_eq!(string.capacity(), 8);
+        drop(string);
+    }
+
+    {
+        let mut bump = bump_with_remaining_capacity(8);
+        let mut string = MutBumpString::new_in(&mut bump);
+        string.push('a');
+        assert_eq!(string.capacity(), 8);
+        drop(string);
     }
 }

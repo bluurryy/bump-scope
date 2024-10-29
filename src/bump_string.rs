@@ -1157,10 +1157,10 @@ where
     /// # use bump_scope::{ Bump, BumpString };
     /// # let bump: Bump = Bump::new();
     /// let mut string = BumpString::new_in(&bump);
-    /// string.reserve(3);
+    /// string.reserve(10);
     /// string.push('a');
     /// let mut fixed_string = string.into_parts().0;
-    /// assert_eq!(fixed_string.capacity(), 3);
+    /// assert_eq!(fixed_string.capacity(), 10);
     /// assert_eq!(fixed_string, "a");
     /// ```
     #[must_use]

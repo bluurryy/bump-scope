@@ -1,5 +1,5 @@
 use crate::{
-    error_behavior_generic_methods_allocation_failure, owned_slice,
+    error_behavior_generic_methods_allocation_failure, min_non_zero_cap, owned_slice,
     polyfill::{nonnull, pointer, slice},
     BaseAllocator, BumpBox, BumpScope, ErrorBehavior, FixedBumpVec, GuaranteedAllocatedStats, MinimumAlignment, NoDrop,
     SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment,
@@ -1310,6 +1310,8 @@ where
         }
 
         let new_cap = self.capacity().checked_mul(2).unwrap_or(required_cap).max(required_cap);
+        let new_cap = new_cap.max(min_non_zero_cap(T::SIZE));
+
         unsafe { self.generic_grow_to(new_cap) }
     }
 

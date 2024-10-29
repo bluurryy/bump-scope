@@ -54,8 +54,8 @@ fn buf_reserve() {
     let bump: Bump = Bump::new();
 
     let mut vec: BumpVec<i32> = BumpVec::with_capacity_in(1, &bump);
-    unsafe { vec.buf_reserve(1, 2) };
-    assert_eq!(vec.capacity(), 3);
+    unsafe { vec.buf_reserve(1, 4) };
+    assert_eq!(vec.capacity(), 5);
 
     let mut vec: BumpVec<i32> = bump_vec![in bump; 1, 2];
     unsafe { vec.buf_reserve(2, 5) };
