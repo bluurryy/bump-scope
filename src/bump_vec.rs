@@ -1599,10 +1599,17 @@ where
         unsafe { self.generic_grow_to(new_capacity) }
     }
 
+    /// Like [`reserve`] but allows you to provide a different `len`.
+    ///
+    /// This is only used for [`buf_reserve`](Self::buf_reserve), read its documentation for more.
+    ///
+    /// # Safety
+    ///
+    /// - `len` must be less than or equal to `self.capacity()`
     #[cold]
     #[inline(never)]
     #[cfg(not(no_global_oom_handling))]
-    fn generic_grow_amortized_buf<E: ErrorBehavior>(&mut self, len: usize, additional: usize) -> Result<(), E> {
+    unsafe fn generic_grow_amortized_buf<E: ErrorBehavior>(&mut self, len: usize, additional: usize) -> Result<(), E> {
         let required_cap = match len.checked_add(additional) {
             Some(required_cap) => required_cap,
             None => return Err(E::capacity_overflow())?,
