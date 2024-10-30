@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **added:** `FromUtf8Error` now implements `Clone`, `PartialEq`, `Eq`, `Display` and `Error`.
+
 ## 0.10.7 (2024-10-30)
 - **added:** minimum capacity when growing vectors and strings (just like `Vec`)
 - **added:** `(try_)from_utf8_lossy_in` for strings

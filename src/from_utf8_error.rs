@@ -1,4 +1,4 @@
-use core::{ops::Deref, str::Utf8Error};
+use core::{fmt, ops::Deref, str::Utf8Error};
 
 /// A possible error value when converting a string from a UTF-8 byte vector.
 ///
@@ -16,7 +16,8 @@ use core::{ops::Deref, str::Utf8Error};
 /// [`std::str`]: core::str "std::str"
 /// [`&str`]: prim@str "&str"
 /// [`utf8_error`]: FromUtf8Error::utf8_error
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(not(no_global_oom_handling), derive(Clone))]
 pub struct FromUtf8Error<Bytes> {
     pub(crate) bytes: Bytes,
     pub(crate) error: Utf8Error,
@@ -52,5 +53,19 @@ impl<Bytes> FromUtf8Error<Bytes> {
     #[inline(always)]
     pub fn utf8_error(&self) -> Utf8Error {
         self.error
+    }
+}
+
+impl<Bytes> fmt::Display for FromUtf8Error<Bytes> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.error, f)
+    }
+}
+
+#[cfg(feature = "std")]
+impl<Bytes: fmt::Debug> std::error::Error for FromUtf8Error<Bytes> {
+    #[allow(deprecated)]
+    fn description(&self) -> &str {
+        "invalid utf-8"
     }
 }
