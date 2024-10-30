@@ -1749,7 +1749,7 @@ define_alloc_methods! {
     /// assert!(bump.stats().capacity() < 4096);
     ///
     /// bump.reserve_bytes(4096);
-    /// assert!(bump.stats().capacity() > 4096);
+    /// assert!(bump.stats().capacity() >= 4096);
     /// ```
     for fn reserve_bytes
     do examples
@@ -1760,7 +1760,7 @@ define_alloc_methods! {
     /// assert!(bump.stats().capacity() < 4096);
     ///
     /// bump.try_reserve_bytes(4096)?;
-    /// assert!(bump.stats().capacity() > 4096);
+    /// assert!(bump.stats().capacity() >= 4096);
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     for fn try_reserve_bytes
