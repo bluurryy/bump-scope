@@ -12,6 +12,7 @@ all:
   just fmt
   just clippy
   just doc
+  just check-nostd
   just check-msrv
   just check-nooom
   cargo test --all-features
@@ -22,7 +23,8 @@ all:
 all-fast:
   just fmt
   just clippy
-  just doc
+  just doc-fast
+  just check-nostd
   just check-msrv
   just check-nooom
   just test-fallibility
@@ -59,6 +61,9 @@ doc-fast *args:
 
 doc-priv *args:
   cargo rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition --document-private-items
+
+check-nostd:
+  cd crates/test-fallibility; cargo check
 
 check-msrv:
   cargo ('+' + (open Cargo.toml).package.rust-version) check
