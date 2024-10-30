@@ -306,7 +306,6 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_from_utf8_lossy_in
-        #[inline]
         use fn generic_from_utf8_lossy_in(v: &[u8], bump: impl Into<&'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
             let mut iter = crate::polyfill::str::lossy::utf8_chunks(v);
 
@@ -375,7 +374,6 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_from_utf16_in
-        #[inline]
         use fn generic_from_utf16_in(v: &[u16], bump: impl Into<&'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Result<Self, FromUtf16Error> {
             // This isn't done via collect::<Result<_, _>>() for performance reasons.
             // FIXME: the function can be simplified again when #48994 is closed.
