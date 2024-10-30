@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.10.7 (2024-10-30)
 - **added:** minimum capacity when growing vectors and strings (just like `Vec`)
 - **added:** `(try_)from_utf8_lossy_in` for strings
 - **added:** `(try_)from_utf16(_lossy)_in` for strings
