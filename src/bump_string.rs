@@ -246,7 +246,7 @@ where
         /// of this function, [`from_utf8_unchecked`], which has the same behavior
         /// but skips the checks.
         ///
-        /// [`from_utf8_unchecked`]: String::from_utf8_unchecked
+        /// [`from_utf8_unchecked`]: Self::from_utf8_unchecked
         impl
         do examples
         /// Basic usage:
@@ -391,7 +391,6 @@ where
         /// Decode a UTF-16–encoded slice `v` into a `BumpString`, replacing
         /// invalid data with [the replacement character (`U+FFFD`)][U+FFFD].
         ///
-        /// [`from_utf8_lossy_in`]: Self::from_utf8_lossy_in
         /// [U+FFFD]: core::char::REPLACEMENT_CHARACTER
         impl
         do examples
