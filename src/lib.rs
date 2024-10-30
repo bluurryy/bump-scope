@@ -864,6 +864,7 @@ macro_rules! error_behavior_generic_methods_if {
             $(do examples $(#[doc = $fallible_examples:literal])*)?
             for fn $fallible:ident
 
+            $(#[$attr_generic:meta])*
             use fn $generic:ident
             $(<{$($generic_params:tt)*} $({$($generic_params_lifetime:tt)*})?>)?
             (
@@ -935,7 +936,7 @@ macro_rules! error_behavior_generic_methods_if {
 
         $(
             $(#[$attr])*
-            #[inline]
+            $(#[$attr_generic])*
             pub(crate) fn $generic
             <$($($($generic_params_lifetime)*)?)? B: ErrorBehavior $(, $($generic_params)*)?>
             ($(&mut $self_mut,)? $($arg_pat: $arg_ty),*)

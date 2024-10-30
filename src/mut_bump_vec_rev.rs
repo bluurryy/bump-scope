@@ -230,6 +230,7 @@ where
         impl
         for fn with_capacity_in
         for fn try_with_capacity_in
+        #[inline]
         use fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
             let bump = bump.into();
 
@@ -268,6 +269,7 @@ where
         impl
         for fn from_elem_in
         for fn try_from_elem_in
+        #[inline]
         use fn generic_from_elem_in(value: T, count: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self
         where {
             T: Clone
@@ -291,6 +293,7 @@ where
         impl
         for fn from_array_in
         for fn try_from_array_in
+        #[inline]
         use fn generic_from_array_in<{const N: usize}>(array: [T; N], bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
             #![allow(clippy::needless_pass_by_value)]
             #![allow(clippy::needless_pass_by_ref_mut)]
@@ -357,6 +360,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_from_iter_in
+        #[inline]
         use fn generic_from_iter_in<{I}>(iter: I, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self
         where {
             I: IntoIterator<Item = T>
@@ -747,6 +751,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_push
+        #[inline]
         use fn generic_push(&mut self, value: T) {
             self.generic_push_with(|| value)
         }
@@ -755,6 +760,7 @@ where
         impl
         for fn push_with
         for fn try_push_with
+        #[inline]
         use fn generic_push_with(&mut self, f: impl FnOnce() -> T) {
             self.generic_reserve_one()?;
             unsafe {
@@ -791,6 +797,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_insert
+        #[inline]
         use fn generic_insert(&mut self, index: usize, element: T) {
             #[cold]
             #[inline(never)]
@@ -827,6 +834,7 @@ where
         impl
         for fn extend_from_slice_copy
         for fn try_extend_from_slice_copy
+        #[inline]
         use fn generic_extend_from_slice_copy(&mut self, slice: &[T])
         where {
             T: Copy
@@ -841,6 +849,7 @@ where
         impl
         for fn extend_from_slice_clone
         for fn try_extend_from_slice_clone
+        #[inline]
         use fn generic_extend_from_slice_clone(&mut self, slice: &[T])
         where {
             T: Clone
@@ -869,6 +878,7 @@ where
         impl
         for fn extend_from_array
         for fn try_extend_from_array
+        #[inline]
         use fn generic_extend_from_array<{const N: usize}>(&mut self, array: [T; N]) {
             unsafe { self.extend_by_copy_nonoverlapping(&array) }
         }
@@ -912,6 +922,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_extend_from_within_copy
+        #[inline]
         use fn generic_extend_from_within_copy<{R}>(&mut self, src: R)
         where {
             T: Copy,
@@ -960,6 +971,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_extend_zeroed
+        #[inline]
         use fn generic_extend_zeroed(&mut self, additional: usize)
         where {
             T: zerocopy::FromZeros
@@ -1003,6 +1015,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_reserve
+        #[inline]
         use fn generic_reserve(&mut self, additional: usize) {
             if additional > (self.capacity() - self.len()) {
                 self.generic_grow_amortized(additional)?;
@@ -1046,6 +1059,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_reserve_exact
+        #[inline]
         use fn generic_reserve_exact(&mut self, additional: usize) {
             if additional > (self.capacity() - self.len()) {
                 self.generic_grow_exact(additional)?;
@@ -1096,6 +1110,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_resize
+        #[inline]
         use fn generic_resize(&mut self, new_len: usize, value: T)
         where { T: Clone } in
         {
@@ -1155,6 +1170,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_resize_with
+        #[inline]
         use fn generic_resize_with<{F}>(&mut self, new_len: usize, f: F)
         where {
             F: FnMut() -> T,
@@ -1211,6 +1227,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_resize_zeroed
+        #[inline]
         use fn generic_resize_zeroed(&mut self, new_len: usize)
         where {
             T: zerocopy::FromZeros
@@ -1255,6 +1272,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_append
+        #[inline]
         use fn generic_append(&mut self, other: &mut BumpBox<[T]>) {
             unsafe {
                 self.extend_by_copy_nonoverlapping(other.as_slice())?;
@@ -1741,6 +1759,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_extend_from_within_clone
+        #[inline]
         use fn generic_extend_from_within_clone<{R}>(&mut self, src: R)
         where {
             T: Clone,

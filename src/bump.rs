@@ -170,6 +170,7 @@ where
         for fn new
         /// This is equivalent to <code>[try_with_size](Bump::try_with_size)(512)</code>.
         for fn try_new
+        #[inline]
         use fn generic_new() -> Self {
             Self::generic_new_in(Default::default())
         }
@@ -190,6 +191,7 @@ where
         /// The actual size that will be requested from the base allocator may be bigger or smaller.
         /// (The size of  `[usize;2]` will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
         for fn try_with_size
+        #[inline]
         use fn generic_with_size(size: usize) -> Self {
             Self::generic_with_size_in(size, Default::default())
         }
@@ -204,6 +206,7 @@ where
         ///
         /// To construct a `Bump` with some rough size estimate like `1 << 16` use <code>[try_with_size](Bump::try_with_size)</code> instead.
         for fn try_with_capacity
+        #[inline]
         use fn generic_with_capacity(layout: Layout) -> Self {
             Self::generic_with_capacity_in(layout, Default::default())
         }
@@ -231,6 +234,7 @@ where
         for fn new_in
         /// This is equivalent to <code>[try_with_size_in](Bump::try_with_size_in)(512, allocator)</code>.
         for fn try_new_in
+        #[inline]
         use fn generic_new_in(allocator: A) -> Self {
             Ok(Self {
                 chunk: Cell::new(RawChunk::new_in(
@@ -256,6 +260,7 @@ where
         /// The actual size that will be requested from the base allocator may be bigger or smaller.
         /// (The size of  `[usize;2]` will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
         for fn try_with_size_in
+        #[inline]
         use fn generic_with_size_in(size: usize, allocator: A) -> Self {
             Ok(Self {
                 chunk: Cell::new(RawChunk::new_in(
@@ -275,6 +280,7 @@ where
         ///
         /// To construct a `Bump` with some rough size estimate like `1 << 16` use <code>[try_with_size_in](Bump::try_with_size_in)</code> instead.
         for fn try_with_capacity_in
+        #[inline]
         use fn generic_with_capacity_in(layout: Layout, allocator: A) -> Self {
             Ok(Self {
                 chunk: Cell::new(RawChunk::new_in(

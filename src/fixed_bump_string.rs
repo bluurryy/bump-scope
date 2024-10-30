@@ -507,6 +507,7 @@ impl FixedBumpString<'_> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_push
+        #[inline]
         use fn generic_push(&mut self, ch: char) {
             let vec = unsafe { self.as_mut_vec() };
 
@@ -544,6 +545,7 @@ impl FixedBumpString<'_> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_push_str
+        #[inline]
         use fn generic_push_str(&mut self, string: &str) {
             let vec = unsafe { self.as_mut_vec() };
             vec.generic_extend_from_slice_copy(string.as_bytes())
@@ -585,6 +587,7 @@ impl FixedBumpString<'_> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_insert
+        #[inline]
         use fn generic_insert(&mut self, idx: usize, ch: char) {
             assert!(self.is_char_boundary(idx));
             let mut bits = [0; 4];
@@ -629,6 +632,7 @@ impl FixedBumpString<'_> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_insert_str
+        #[inline]
         use fn generic_insert_str(&mut self, idx: usize, string: &str) {
             assert!(self.is_char_boundary(idx));
 
@@ -678,6 +682,7 @@ impl FixedBumpString<'_> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_extend_from_within
+        #[inline]
         use fn generic_extend_from_within<{R}>(&mut self, src: R)
         where {
             R: RangeBounds<usize>,
@@ -715,6 +720,7 @@ impl FixedBumpString<'_> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_extend_zeroed
+        #[inline]
         use fn generic_extend_zeroed(&mut self, additional: usize) {
             let vec = unsafe { self.as_mut_vec() };
             vec.generic_reserve(additional)?;
@@ -735,6 +741,7 @@ impl FixedBumpString<'_> {
         impl
         for fn reserve
         for fn try_reserve
+        #[inline]
         use fn generic_reserve(&mut self, additional: usize) {
             unsafe { self.as_mut_vec() }.generic_reserve(additional)
         }

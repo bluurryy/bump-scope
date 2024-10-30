@@ -80,6 +80,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_from_iter_in
+        #[inline]
         use fn generic_from_iter_in<{
             I,
             A,
@@ -121,6 +122,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_from_iter_exact_in
+        #[inline]
         use fn generic_from_iter_exact_in<{
             I,
             A,
@@ -525,6 +527,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_push
+        #[inline]
         use fn generic_push(&mut self, value: T) {
             self.generic_push_with(|| value)
         }
@@ -533,6 +536,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         impl
         for fn push_with
         for fn try_push_with
+        #[inline]
         use fn generic_push_with(&mut self, f: impl FnOnce() -> T) {
             self.generic_reserve_one()?;
             unsafe {
@@ -571,6 +575,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_insert
+        #[inline]
         use fn generic_insert(&mut self, index: usize, element: T) {
             #[cold]
             #[inline(never)]
@@ -611,6 +616,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         impl
         for fn extend_from_slice_copy
         for fn try_extend_from_slice_copy
+        #[inline]
         use fn generic_extend_from_slice_copy(&mut self, slice: &[T])
         where {
             T: Copy
@@ -630,6 +636,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         impl
         for fn extend_from_slice_clone
         for fn try_extend_from_slice_clone
+        #[inline]
         use fn generic_extend_from_slice_clone(&mut self, slice: &[T])
         where {
             T: Clone
@@ -662,6 +669,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         impl
         for fn extend_from_array
         for fn try_extend_from_array
+        #[inline]
         use fn generic_extend_from_array<{const N: usize}>(&mut self, array: [T; N]) {
             unsafe { self.extend_by_copy_nonoverlapping(&array) }
         }
@@ -707,6 +715,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_extend_from_within_copy
+        #[inline]
         use fn generic_extend_from_within_copy<{R}>(&mut self, src: R)
         where {
             T: Copy,
@@ -774,6 +783,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_extend_from_within_clone
+        #[inline]
         use fn generic_extend_from_within_clone<{R}>(&mut self, src: R)
         where {
             T: Clone,
@@ -846,6 +856,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_extend_zeroed
+        #[inline]
         use fn generic_extend_zeroed(&mut self, additional: usize)
         where {
             T: zerocopy::FromZeros
@@ -868,6 +879,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         impl
         for fn reserve
         for fn try_reserve
+        #[inline]
         use fn generic_reserve(&mut self, additional: usize) {
             if additional > (self.capacity() - self.len()) {
                 Err(B::fixed_size_vector_no_space(additional))
@@ -925,6 +937,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_resize
+        #[inline]
         use fn generic_resize(&mut self, new_len: usize, value: T)
         where { T: Clone } in
         {
@@ -986,6 +999,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_resize_with
+        #[inline]
         use fn generic_resize_with<{F}>(&mut self, new_len: usize, f: F)
         where {
             F: FnMut() -> T,
@@ -1038,6 +1052,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_resize_zeroed
+        #[inline]
         use fn generic_resize_zeroed(&mut self, new_len: usize)
         where {
             T: zerocopy::FromZeros
@@ -1088,6 +1103,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_append
+        #[inline]
         use fn generic_append(&mut self, other: &mut BumpBox<[T]>) {
             unsafe {
                 self.extend_by_copy_nonoverlapping(other.as_slice())?;

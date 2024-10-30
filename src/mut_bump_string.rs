@@ -176,6 +176,7 @@ where
         impl
         for fn with_capacity_in
         for fn try_with_capacity_in
+        #[inline]
         use fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
             let bump = bump.into();
 
@@ -217,6 +218,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_from_str_in
+        #[inline]
         use fn generic_from_str_in(string: &str, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
             let mut this = Self::generic_with_capacity_in(string.len(), bump)?;
 
@@ -303,6 +305,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_from_utf8_lossy_in
+        #[inline]
         use fn generic_from_utf8_lossy_in(v: &[u8], bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
             let mut iter = crate::polyfill::str::lossy::utf8_chunks(v);
 
@@ -373,6 +376,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_from_utf16_in
+        #[inline]
         use fn generic_from_utf16_in(v: &[u16], bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Result<Self, FromUtf16Error> {
             // This isn't done via collect::<Result<_, _>>() for performance reasons.
             // FIXME: the function can be simplified again when #48994 is closed.
@@ -424,6 +428,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_from_utf16_lossy_in
+        #[inline]
         use fn generic_from_utf16_lossy_in(v: &[u16], bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
             let iter = char::decode_utf16(v.iter().copied());
             let capacity = iter.size_hint().0;
@@ -844,6 +849,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_push
+        #[inline]
         use fn generic_push(&mut self, ch: char) {
             let vec = unsafe { self.as_mut_vec() };
 
@@ -879,6 +885,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_push_str
+        #[inline]
         use fn generic_push_str(&mut self, string: &str) {
             let vec = unsafe { self.as_mut_vec() };
             vec.generic_extend_from_slice_copy(string.as_bytes())
@@ -920,6 +927,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_insert
+        #[inline]
         use fn generic_insert(&mut self, idx: usize, ch: char) {
             assert!(self.is_char_boundary(idx));
             let mut bits = [0; 4];
@@ -962,6 +970,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_insert_str
+        #[inline]
         use fn generic_insert_str(&mut self, idx: usize, string: &str) {
             assert!(self.is_char_boundary(idx));
 
@@ -1009,6 +1018,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_extend_from_within
+        #[inline]
         use fn generic_extend_from_within<{R}>(&mut self, src: R)
         where {
             R: RangeBounds<usize>,
@@ -1044,6 +1054,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_extend_zeroed
+        #[inline]
         use fn generic_extend_zeroed(&mut self, additional: usize) {
             let vec = unsafe { self.as_mut_vec() };
 
@@ -1140,6 +1151,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_reserve
+        #[inline]
         use fn generic_reserve(&mut self, additional: usize) {
             let vec = unsafe { self.as_mut_vec() };
             vec.generic_reserve(additional)
@@ -1228,6 +1240,7 @@ where
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_reserve_exact
+        #[inline]
         use fn generic_reserve_exact(&mut self, additional: usize) {
             let vec = unsafe { self.as_mut_vec() };
             vec.generic_reserve_exact(additional)
