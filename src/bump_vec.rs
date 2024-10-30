@@ -552,10 +552,7 @@ where
     #[cfg(not(no_global_oom_handling))]
     #[inline]
     #[must_use = "use `.truncate()` if you don't need the other half"]
-    pub fn split_off(&mut self, at: usize) -> Self
-    where
-        A: Clone,
-    {
+    pub fn split_off(&mut self, at: usize) -> Self {
         #[cold]
         #[inline(never)]
         fn assert_failed(at: usize, len: usize) -> ! {
