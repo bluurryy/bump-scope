@@ -265,7 +265,7 @@ where
         ///
         /// ```
         /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let bump: Bump = Bump::new();
+        /// # let mut bump: Bump = Bump::new();
         /// // some invalid bytes
         /// let input = b"Hello \xF0\x90\x80World";
         /// let output = MutBumpString::from_utf8_lossy_in(input, &mut bump);
@@ -279,7 +279,7 @@ where
         /// ```
         /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let bump: Bump = Bump::try_new()?;
+        /// # let mut bump: Bump = Bump::try_new()?;
         /// // some bytes, in a vector
         /// let sparkle_heart = [240, 159, 146, 150];
         ///
