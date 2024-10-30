@@ -2,7 +2,8 @@
 
 ## Unreleased
 - **added:** minimum capacity when growing vectors and strings (just like `Vec`)
-- **added:** `(try_)from_utf8_lossy_in` for strings 
+- **added:** `(try_)from_utf8_lossy_in` for strings
+- **added:** `(try_)from_utf16(_lossy)_in` for strings
 
 ## 0.10.6 (2024-10-26)
 - **fixed:** potential UB when using `BumpVec::splice`

@@ -55,6 +55,7 @@
     unknown_lints,
     rustdoc::redundant_explicit_links, // for cargo-rdme
     stable_features, // for const_refs_to_static
+    unused_unsafe, // only triggered in old rust versions, like msrv
 )]
 #![doc(test(attr(warn(dead_code))))]
 //! A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
@@ -280,6 +281,7 @@ mod error_behavior;
 mod features;
 mod fixed_bump_string;
 mod fixed_bump_vec;
+mod from_utf16_error;
 mod from_utf8_error;
 mod layout;
 mod mut_bump_string;
@@ -326,6 +328,7 @@ use core::{
 use error_behavior::ErrorBehavior;
 pub use fixed_bump_string::FixedBumpString;
 pub use fixed_bump_vec::FixedBumpVec;
+pub use from_utf16_error::FromUtf16Error;
 pub use from_utf8_error::FromUtf8Error;
 use layout::ArrayLayout;
 pub use mut_bump_string::MutBumpString;

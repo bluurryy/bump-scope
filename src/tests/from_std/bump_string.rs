@@ -86,6 +86,108 @@ fn test_from_utf8_lossy() {
 }
 
 #[test]
+fn test_from_utf16() {
+    let bump: Bump = Bump::new();
+
+    let pairs = [
+        (
+            BumpString::from_str_in("𐍅𐌿𐌻𐍆𐌹𐌻𐌰\n", &bump),
+            vec![
+                0xd800, 0xdf45, 0xd800, 0xdf3f, 0xd800, 0xdf3b, 0xd800, 0xdf46, 0xd800, 0xdf39, 0xd800, 0xdf3b, 0xd800,
+                0xdf30, 0x000a,
+            ],
+        ),
+        (
+            BumpString::from_str_in("𐐒𐑉𐐮𐑀𐐲𐑋 𐐏𐐲𐑍\n", &bump),
+            vec![
+                0xd801, 0xdc12, 0xd801, 0xdc49, 0xd801, 0xdc2e, 0xd801, 0xdc40, 0xd801, 0xdc32, 0xd801, 0xdc4b, 0x0020,
+                0xd801, 0xdc0f, 0xd801, 0xdc32, 0xd801, 0xdc4d, 0x000a,
+            ],
+        ),
+        (
+            BumpString::from_str_in("𐌀𐌖𐌋𐌄𐌑𐌉·𐌌𐌄𐌕𐌄𐌋𐌉𐌑\n", &bump),
+            vec![
+                0xd800, 0xdf00, 0xd800, 0xdf16, 0xd800, 0xdf0b, 0xd800, 0xdf04, 0xd800, 0xdf11, 0xd800, 0xdf09, 0x00b7,
+                0xd800, 0xdf0c, 0xd800, 0xdf04, 0xd800, 0xdf15, 0xd800, 0xdf04, 0xd800, 0xdf0b, 0xd800, 0xdf09, 0xd800,
+                0xdf11, 0x000a,
+            ],
+        ),
+        (
+            BumpString::from_str_in("𐒋𐒘𐒈𐒑𐒛𐒒 𐒕𐒓 𐒈𐒚𐒍 𐒏𐒜𐒒𐒖𐒆 𐒕𐒆\n", &bump),
+            vec![
+                0xd801, 0xdc8b, 0xd801, 0xdc98, 0xd801, 0xdc88, 0xd801, 0xdc91, 0xd801, 0xdc9b, 0xd801, 0xdc92, 0x0020,
+                0xd801, 0xdc95, 0xd801, 0xdc93, 0x0020, 0xd801, 0xdc88, 0xd801, 0xdc9a, 0xd801, 0xdc8d, 0x0020, 0xd801,
+                0xdc8f, 0xd801, 0xdc9c, 0xd801, 0xdc92, 0xd801, 0xdc96, 0xd801, 0xdc86, 0x0020, 0xd801, 0xdc95, 0xd801,
+                0xdc86, 0x000a,
+            ],
+        ),
+        // Issue #12318, even-numbered non-BMP planes
+        (BumpString::from_str_in("\u{20000}", &bump), vec![0xD840, 0xDC00]),
+    ];
+
+    for p in &pairs {
+        let (s, u) = (*p).clone();
+        let s_as_utf16 = s.encode_utf16().collect::<Vec<_>>();
+        let u_as_string = BumpString::from_utf16_in(&u, &bump).unwrap();
+
+        assert!(core::char::decode_utf16(u.iter().cloned()).all(|r| r.is_ok()));
+        assert_eq!(s_as_utf16, u);
+
+        assert_eq!(u_as_string, s);
+        assert_eq!(BumpString::from_utf16_lossy_in(&u, &bump), s);
+
+        assert_eq!(BumpString::from_utf16_in(&s_as_utf16, &bump).unwrap(), s);
+        assert_eq!(u_as_string.encode_utf16().collect::<Vec<u16>>(), u);
+    }
+}
+
+#[test]
+fn test_utf16_invalid() {
+    let bump: Bump = Bump::new();
+
+    // completely positive cases tested above.
+    // lead + eof
+    assert!(BumpString::from_utf16_in(&[0xD800], &bump).is_err());
+    // lead + lead
+    assert!(BumpString::from_utf16_in(&[0xD800, 0xD800], &bump).is_err());
+
+    // isolated trail
+    assert!(BumpString::from_utf16_in(&[0x0061, 0xDC00], &bump).is_err());
+
+    // general
+    assert!(BumpString::from_utf16_in(&[0xD800, 0xd801, 0xdc8b, 0xD800], &bump).is_err());
+}
+
+#[test]
+fn test_from_utf16_lossy() {
+    let bump: Bump = Bump::new();
+
+    // completely positive cases tested above.
+    // lead + eof
+    assert_eq!(
+        BumpString::from_utf16_lossy_in(&[0xD800], &bump),
+        BumpString::from_str_in("\u{FFFD}", &bump)
+    );
+    // lead + lead
+    assert_eq!(
+        BumpString::from_utf16_lossy_in(&[0xD800, 0xD800], &bump),
+        BumpString::from_str_in("\u{FFFD}\u{FFFD}", &bump)
+    );
+
+    // isolated trail
+    assert_eq!(
+        BumpString::from_utf16_lossy_in(&[0x0061, 0xDC00], &bump),
+        BumpString::from_str_in("a\u{FFFD}", &bump)
+    );
+
+    // general
+    assert_eq!(
+        BumpString::from_utf16_lossy_in(&[0xD800, 0xd801, 0xdc8b, 0xD800], &bump),
+        BumpString::from_str_in("\u{FFFD}𐒋\u{FFFD}", &bump)
+    );
+}
+
+#[test]
 fn test_push_bytes() {
     let bump: Bump = Bump::new();
     let mut s = BumpString::from_str_in("ABC", &bump);
