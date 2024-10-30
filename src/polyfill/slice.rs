@@ -1,6 +1,8 @@
 use core::ops;
 pub(crate) use core::slice::*;
 
+use crate::polyfill::usize::unchecked_sub;
+
 #[cold]
 #[inline(never)]
 #[track_caller]
@@ -120,4 +122,68 @@ where
     }
 
     ops::Range { start, end }
+}
+
+/// Divides one slice into two at an index, without doing bounds checking.
+///
+/// The first will contain all indices from `[0, mid)` (excluding
+/// the index `mid` itself) and the second will contain all
+/// indices from `[mid, len)` (excluding the index `len` itself).
+///
+/// For a safe alternative see [`split_at`].
+///
+/// # Safety
+///
+/// Calling this method with an out-of-bounds index is *[undefined behavior]*
+/// even if the resulting reference is not used. The caller has to ensure that
+/// `0 <= mid <= self.len()`.
+///
+/// [`split_at`]: slice::split_at
+/// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+///
+/// # Examples
+///
+/// ```
+/// let v = [1, 2, 3, 4, 5, 6];
+///
+/// unsafe {
+///    let (left, right) = v.split_at_unchecked(0);
+///    assert_eq!(left, []);
+///    assert_eq!(right, [1, 2, 3, 4, 5, 6]);
+/// }
+///
+/// unsafe {
+///     let (left, right) = v.split_at_unchecked(2);
+///     assert_eq!(left, [1, 2]);
+///     assert_eq!(right, [3, 4, 5, 6]);
+/// }
+///
+/// unsafe {
+///     let (left, right) = v.split_at_unchecked(6);
+///     assert_eq!(left, [1, 2, 3, 4, 5, 6]);
+///     assert_eq!(right, []);
+/// }
+/// ```
+#[inline]
+#[must_use]
+pub unsafe fn split_at_unchecked<T>(slice: &[T], mid: usize) -> (&[T], &[T]) {
+    // FIXME(const-hack): the const function `from_raw_parts` is used to make this
+    // function const; previously the implementation used
+    // `(self.get_unchecked(..mid), self.get_unchecked(mid..))`
+
+    let len = slice.len();
+    let ptr = slice.as_ptr();
+
+    debug_assert!(
+        mid <= len,
+        "slice::split_at_unchecked requires the index to be within the slice"
+    );
+
+    // SAFETY: Caller has to check that `0 <= mid <= self.len()`
+    unsafe {
+        (
+            from_raw_parts(ptr, mid),
+            from_raw_parts(ptr.add(mid), unchecked_sub(len, mid)),
+        )
+    }
 }

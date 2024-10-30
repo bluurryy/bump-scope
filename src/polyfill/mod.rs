@@ -6,6 +6,7 @@ pub(crate) mod nonnull;
 pub(crate) mod nonzero;
 pub(crate) mod pointer;
 pub(crate) mod slice;
+pub(crate) mod str;
 pub(crate) mod usize;
 
 #[allow(dead_code)]

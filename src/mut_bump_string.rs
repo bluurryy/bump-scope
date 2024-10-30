@@ -227,6 +227,111 @@ where
 
             Ok(this)
         }
+
+                /// Converts a slice of bytes to a string, including invalid characters.
+        ///
+        /// Strings are made of bytes ([`u8`]), and a slice of bytes
+        /// ([`&[u8]`][byteslice]) is made of bytes, so this function converts
+        /// between the two. Not all byte slices are valid strings, however: strings
+        /// are required to be valid UTF-8. During this conversion,
+        /// `from_utf8_lossy()` will replace any invalid UTF-8 sequences with
+        /// [`U+FFFD REPLACEMENT CHARACTER`][U+FFFD], which looks like this: �
+        ///
+        /// [byteslice]: prim@slice
+        /// [U+FFFD]: core::char::REPLACEMENT_CHARACTER
+        ///
+        /// If you are sure that the byte slice is valid UTF-8, and you don't want
+        /// to incur the overhead of the conversion, there is an unsafe version
+        /// of this function, [`from_utf8_unchecked`], which has the same behavior
+        /// but skips the checks.
+        ///
+        /// [`from_utf8_unchecked`]: String::from_utf8_unchecked
+        impl
+        do examples
+        /// Basic usage:
+        ///
+        /// ```
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::new();
+        /// // some bytes, in a vector
+        /// let sparkle_heart = [240, 159, 146, 150];
+        ///
+        /// let sparkle_heart = MutBumpString::from_utf8_lossy_in(&sparkle_heart, &mut bump);
+        ///
+        /// assert_eq!("💖", sparkle_heart);
+        /// ```
+        ///
+        /// Incorrect bytes:
+        ///
+        /// ```
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let bump: Bump = Bump::new();
+        /// // some invalid bytes
+        /// let input = b"Hello \xF0\x90\x80World";
+        /// let output = MutBumpString::from_utf8_lossy_in(input, &mut bump);
+        ///
+        /// assert_eq!("Hello �World", output);
+        /// ```
+        for fn from_utf8_lossy_in
+        do examples
+        /// Basic usage:
+        ///
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let bump: Bump = Bump::try_new()?;
+        /// // some bytes, in a vector
+        /// let sparkle_heart = [240, 159, 146, 150];
+        ///
+        /// let sparkle_heart = MutBumpString::try_from_utf8_lossy_in(&sparkle_heart, &mut bump)?;
+        ///
+        /// assert_eq!("💖", sparkle_heart);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        ///
+        /// Incorrect bytes:
+        ///
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// // some invalid bytes
+        /// let input = b"Hello \xF0\x90\x80World";
+        /// let output = MutBumpString::try_from_utf8_lossy_in(input, &mut bump)?;
+        ///
+        /// assert_eq!("Hello �World", output);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        for fn try_from_utf8_lossy_in
+        use fn generic_from_utf8_lossy_in(v: &[u8], bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
+            let mut iter = crate::polyfill::str::lossy::utf8_chunks(v);
+
+            let first_valid = if let Some(chunk) = iter.next() {
+                let valid = chunk.valid();
+                if chunk.invalid().is_empty() {
+                    debug_assert_eq!(valid.len(), v.len());
+                    return Self::generic_from_str_in(valid, bump);
+                }
+                valid
+            } else {
+                return Ok(Self::new_in(bump));
+            };
+
+            const REPLACEMENT: &str = "\u{FFFD}";
+
+            let mut res = Self::generic_with_capacity_in(v.len(), bump)?;
+            res.generic_push_str(first_valid)?;
+            res.generic_push_str(REPLACEMENT)?;
+
+            for chunk in iter {
+                res.generic_push_str(chunk.valid())?;
+                if !chunk.invalid().is_empty() {
+                    res.generic_push_str(REPLACEMENT)?;
+                }
+            }
+
+            Ok(res)
+        }
     }
 }
 

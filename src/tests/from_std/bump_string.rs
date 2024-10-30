@@ -30,6 +30,62 @@ fn test_from_utf8() {
 }
 
 #[test]
+fn test_from_utf8_lossy() {
+    let bump: Bump = Bump::new();
+
+    let xs = b"hello";
+    let ys = "hello";
+    assert_eq!(BumpString::from_utf8_lossy_in(xs, &bump), ys);
+
+    let xs = "ศไทย中华Việt Nam".as_bytes();
+    let ys = "ศไทย中华Việt Nam";
+    assert_eq!(BumpString::from_utf8_lossy_in(xs, &bump), ys);
+
+    let xs = b"Hello\xC2 There\xFF Goodbye";
+    assert_eq!(
+        BumpString::from_utf8_lossy_in(xs, &bump),
+        BumpString::from_str_in("Hello\u{FFFD} There\u{FFFD} Goodbye", &bump)
+    );
+
+    let xs = b"Hello\xC0\x80 There\xE6\x83 Goodbye";
+    assert_eq!(
+        BumpString::from_utf8_lossy_in(xs, &bump),
+        BumpString::from_str_in("Hello\u{FFFD}\u{FFFD} There\u{FFFD} Goodbye", &bump)
+    );
+
+    let xs = b"\xF5foo\xF5\x80bar";
+    assert_eq!(
+        BumpString::from_utf8_lossy_in(xs, &bump),
+        BumpString::from_str_in("\u{FFFD}foo\u{FFFD}\u{FFFD}bar", &bump)
+    );
+
+    let xs = b"\xF1foo\xF1\x80bar\xF1\x80\x80baz";
+    assert_eq!(
+        BumpString::from_utf8_lossy_in(xs, &bump),
+        BumpString::from_str_in("\u{FFFD}foo\u{FFFD}bar\u{FFFD}baz", &bump)
+    );
+
+    let xs = b"\xF4foo\xF4\x80bar\xF4\xBFbaz";
+    assert_eq!(
+        BumpString::from_utf8_lossy_in(xs, &bump),
+        BumpString::from_str_in("\u{FFFD}foo\u{FFFD}bar\u{FFFD}\u{FFFD}baz", &bump)
+    );
+
+    let xs = b"\xF0\x80\x80\x80foo\xF0\x90\x80\x80bar";
+    assert_eq!(
+        BumpString::from_utf8_lossy_in(xs, &bump),
+        BumpString::from_str_in("\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}foo\u{10000}bar", &bump)
+    );
+
+    // surrogates
+    let xs = b"\xED\xA0\x80foo\xED\xBF\xBFbar";
+    assert_eq!(
+        BumpString::from_utf8_lossy_in(xs, &bump),
+        BumpString::from_str_in("\u{FFFD}\u{FFFD}\u{FFFD}foo\u{FFFD}\u{FFFD}\u{FFFD}bar", &bump)
+    );
+}
+
+#[test]
 fn test_push_bytes() {
     let bump: Bump = Bump::new();
     let mut s = BumpString::from_str_in("ABC", &bump);

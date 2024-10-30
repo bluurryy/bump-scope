@@ -12,6 +12,7 @@
     "backshifted",
     "bufs",
     "bumpalo",
+    "byteslice",
     "cfgs",
     "clippy",
     "codegen",
