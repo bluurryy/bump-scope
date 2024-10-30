@@ -231,7 +231,6 @@ where
             Ok(this)
         }
 
-        #[must_use]
         /// Converts a slice of bytes to a string, including invalid characters.
         ///
         /// Strings are made of bytes ([`u8`]), and a slice of bytes
@@ -251,6 +250,7 @@ where
         ///
         /// [`from_utf8_unchecked`]: Self::from_utf8_unchecked
         impl
+        #[must_use]
         do examples
         /// Basic usage:
         ///
@@ -391,12 +391,12 @@ where
             Ok(Ok(ret))
         }
 
-        #[must_use]
         /// Decode a UTF-16–encoded slice `v` into a `BumpString`, replacing
         /// invalid data with [the replacement character (`U+FFFD`)][U+FFFD].
         ///
         /// [U+FFFD]: core::char::REPLACEMENT_CHARACTER
         impl
+        #[must_use]
         do examples
         /// ```
         /// # use bump_scope::{ Bump, BumpString };
