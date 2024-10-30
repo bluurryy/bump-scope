@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.10.8 (2024-10-30)
 - **added:** `FromUtf8Error` now implements `Clone`, `PartialEq`, `Eq`, `Display` and `Error`.
 
 ## 0.10.7 (2024-10-30)
