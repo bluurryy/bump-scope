@@ -263,6 +263,7 @@ extern crate alloc;
 mod allocator;
 mod bump;
 mod bump_align_guard;
+mod bump_allocator;
 /// Contains [`BumpBox`] and associated types.
 mod bump_box;
 #[cfg(feature = "std")]
@@ -304,6 +305,7 @@ pub use allocator_api2;
 use allocator_api2::alloc::handle_alloc_error;
 use allocator_api2::alloc::{AllocError, Allocator};
 pub use bump::Bump;
+pub use bump_allocator::BumpAllocator;
 pub use bump_box::BumpBox;
 #[cfg(feature = "std")]
 pub use bump_pool::{BumpPool, BumpPoolGuard};
@@ -488,32 +490,6 @@ pub mod private {
 #[inline(never)]
 fn exact_size_iterator_bad_len() -> ! {
     panic!("ExactSizeIterator did not return as many items as promised")
-}
-
-/// An allocator that allows `grow(_zeroed)`, `shrink` and `deallocate` calls with pointers that were not allocated by this allocator.
-///
-/// This trait is used for [`BumpBox::into_box`](BumpBox::into_box) to allow safely converting a `BumpBox` into a `Box`.
-///
-/// # Safety
-/// - `grow(_zeroed)`, `shrink` and `deallocate` must be ok to be called with a pointer that was not allocated by this Allocator
-pub unsafe trait BumpAllocator: Allocator {}
-
-unsafe impl<A: BumpAllocator> BumpAllocator for &A {}
-
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
-    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-}
-
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
-    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
 }
 
 /// Associates a lifetime to a wrapped type.
