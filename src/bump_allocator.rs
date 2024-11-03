@@ -4,10 +4,12 @@ use crate::{BaseAllocator, Bump, BumpScope, MinimumAlignment, SupportedMinimumAl
 
 /// An allocator that allows `grow(_zeroed)`, `shrink` and `deallocate` calls with pointers that were not allocated by this allocator.
 ///
-/// This trait is used for [`BumpBox::into_box`](BumpBox::into_box) to allow safely converting a `BumpBox` into a `Box`.
+/// This trait is used for [`BumpBox::into_box`][into_box] to allow safely converting a `BumpBox` into a `Box`.
 ///
 /// # Safety
 /// - `grow(_zeroed)`, `shrink` and `deallocate` must be ok to be called with a pointer that was not allocated by this Allocator
+///
+/// [into_box]: crate::BumpBox::into_box
 pub unsafe trait BumpAllocator: Allocator {}
 
 unsafe impl<A: BumpAllocator> BumpAllocator for &A {}
