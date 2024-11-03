@@ -5,7 +5,7 @@ use std::{
     panic, str,
 };
 
-use crate::{bump_format, Bump, BumpString, BumpVec};
+use crate::{bump_format, bump_vec, Bump, BumpString, BumpVec};
 
 #[test]
 fn test_from_utf8() {
@@ -447,15 +447,17 @@ fn test_simple_types() {
     assert_eq!(bump_format!(in bump, "{}", BumpString::from_str_in("hi", &bump)), "hi");
 }
 
-// TODO: bump_vec!
 #[test]
 fn test_vectors() {
     let bump: Bump = Bump::new();
-    let x: Vec<i32> = vec![];
+    let x: BumpVec<i32> = bump_vec![in bump];
     assert_eq!(bump_format!(in bump, "{x:?}"), "[]");
-    assert_eq!(bump_format!(in bump, "{:?}", vec![1]), "[1]");
-    assert_eq!(bump_format!(in bump, "{:?}", vec![1, 2, 3]), "[1, 2, 3]");
-    assert!(bump_format!(in bump, "{:?}", vec![vec![], vec![1], vec![1, 1]]) == "[[], [1], [1, 1]]");
+    assert_eq!(bump_format!(in bump, "{:?}", bump_vec![in bump; 1]), "[1]");
+    assert_eq!(bump_format!(in bump, "{:?}", bump_vec![in bump; 1, 2, 3]), "[1, 2, 3]");
+    assert!(
+        bump_format!(in bump, "{:?}", bump_vec![in bump; bump_vec![in bump], bump_vec![in bump; 1], bump_vec![in bump; 1, 1]])
+            == "[[], [1], [1, 1]]"
+    );
 }
 
 #[test]
