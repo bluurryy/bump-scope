@@ -460,9 +460,9 @@ impl<'a> FixedBumpString<'a> {
     ///
     /// # Safety
     ///
-    /// This function is unsafe because the returned `&mut Vec` allows writing
+    /// This function is unsafe because the returned `&mut FixedBumpVec<u8>` allows writing
     /// bytes which are not valid UTF-8. If this constraint is violated, using
-    /// the original `FixedBumpString` after dropping the `&mut Vec` may violate memory
+    /// the original `FixedBumpString` after dropping the `&mut FixedBumpVec<u8>` may violate memory
     /// safety, as `FixedBumpString`s must be valid UTF-8.
     #[must_use]
     #[inline(always)]
@@ -556,7 +556,7 @@ impl FixedBumpString<'_> {
         /// This is an *O*(*n*) operation as it requires copying every element in the
         /// buffer.
         do panics
-        /// Panics if `idx` is larger than the `String`'s length, or if it does not
+        /// Panics if `idx` is larger than the string's length, or if it does not
         /// lie on a [`char`] boundary.
         impl
         do examples

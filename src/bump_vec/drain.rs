@@ -16,15 +16,15 @@ macro_rules! drain_declaration {
     ($($allocator_parameter:tt)*) => {
         /// A draining iterator for `BumpVec<T>`.
         ///
-        /// This `struct` is created by [`Vec::drain`].
-        /// See its documentation for more.
+        /// This `struct` is not directly created by any method.
+        /// It is an implementation detail of `Splice`.
         ///
-        /// # Example
+        /// The implementation of `drain` does not need a pointer to the whole `BumpVec`
+        /// (and all the generic parameters that come with it).
+        /// That's why we return `owned_slice::Drain` from `BumpVec::drain`.
         ///
-        /// ```
-        /// let mut v = vec![0, 1, 2];
-        /// let iter: std::vec::Drain<_> = v.drain(..);
-        /// ```
+        /// However just like the standard library we use a `Drain` implementation to implement
+        /// `Splice`. For this particular case we *do* need a pointer to `BumpVec`.
         pub struct Drain<
             'a,
             T: 'a,
@@ -93,7 +93,7 @@ where
         unsafe { self.vec.as_ref().allocator() }
     }
 
-    /// Keep unyielded elements in the source `Vec`.
+    /// Keep unyielded elements in the source vector.
     ///
     /// # Examples
     ///
@@ -214,7 +214,7 @@ where
 {
     #[inline]
     fn drop(&mut self) {
-        /// Moves back the un-`Drain`ed elements to restore the original `Vec`.
+        /// Moves back the un-`Drain`ed elements to restore the original vector.
         struct DropGuard<'r, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
             &'r mut Drain<'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
         )
@@ -253,7 +253,7 @@ where
 
         if T::IS_ZST {
             // ZSTs have no identity, so we don't need to move them around, we only need to drop the correct amount.
-            // this can be achieved by manipulating the Vec length instead of moving values out from `iter`.
+            // this can be achieved by manipulating the vector length instead of moving values out from `iter`.
             unsafe {
                 let vec = vec.as_mut();
                 let old_len = vec.len();

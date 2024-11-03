@@ -447,6 +447,7 @@ fn test_simple_types() {
     assert_eq!(bump_format!(in bump, "{}", BumpString::from_str_in("hi", &bump)), "hi");
 }
 
+// TODO: bump_vec!
 #[test]
 fn test_vectors() {
     let bump: Bump = Bump::new();

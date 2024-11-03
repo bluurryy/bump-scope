@@ -85,7 +85,7 @@ macro_rules! mut_bump_string_declaration {
         /// # let _ = hello;
         /// ```
         ///
-        /// You can append a [`char`] to a `String` with the [`push`] method, and
+        /// You can append a [`char`] to a string with the [`push`] method, and
         /// append a [`&str`] with the [`push_str`] method:
         ///
         /// ```
@@ -665,14 +665,14 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
         self.fixed.truncate(new_len);
     }
 
-    /// Removes a [`char`] from this `String` at a byte position and returns it.
+    /// Removes a [`char`] from this string at a byte position and returns it.
     ///
     /// This is an *O*(*n*) operation, as it requires copying every element in the
     /// buffer.
     ///
     /// # Panics
     ///
-    /// Panics if `idx` is larger than or equal to the `String`'s length,
+    /// Panics if `idx` is larger than or equal to the string's length,
     /// or if it does not lie on a [`char`] boundary.
     ///
     /// # Examples
@@ -799,9 +799,9 @@ impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCA
     ///
     /// # Safety
     ///
-    /// This function is unsafe because the returned `&mut Vec` allows writing
+    /// This function is unsafe because the returned `&mut MutBumpVec<u8>` allows writing
     /// bytes which are not valid UTF-8. If this constraint is violated, using
-    /// the original `MutBumpString` after dropping the `&mut Vec` may violate memory
+    /// the original `MutBumpString` after dropping the `&mut MutBumpVec<u8>` may violate memory
     /// safety, as `MutBumpString`s must be valid UTF-8.
     #[must_use]
     #[inline(always)]
@@ -896,7 +896,7 @@ where
         /// This is an *O*(*n*) operation as it requires copying every element in the
         /// buffer.
         do panics
-        /// Panics if `idx` is larger than the `String`'s length, or if it does not
+        /// Panics if `idx` is larger than the string's length, or if it does not
         /// lie on a [`char`] boundary.
         impl
         do examples

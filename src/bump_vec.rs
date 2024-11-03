@@ -1551,6 +1551,8 @@ where
     /// # Safety
     ///
     /// - `len` must be less than or equal to `self.capacity()`
+    ///
+    /// [`reserve`]: Self::reserve
     #[cfg(not(no_global_oom_handling))]
     #[inline(always)]
     pub(crate) unsafe fn buf_reserve(&mut self, len: usize, additional: usize) {
@@ -1617,11 +1619,14 @@ where
 
     /// Like [`reserve`] but allows you to provide a different `len`.
     ///
-    /// This is only used for [`buf_reserve`](Self::buf_reserve), read its documentation for more.
+    /// This is only used for [`buf_reserve`], read its documentation for more.
     ///
     /// # Safety
     ///
     /// - `len` must be less than or equal to `self.capacity()`
+    ///
+    /// [`reserve`]: Self::reserve
+    /// [`buf_reserve`]: Self::buf_reserve
     #[cold]
     #[inline(never)]
     #[cfg(not(no_global_oom_handling))]

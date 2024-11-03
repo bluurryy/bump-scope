@@ -99,7 +99,7 @@ impl<'a> Utf8Chunk<'a> {
     /// CHARACTER`].
     ///
     /// [`valid`]: Self::valid
-    /// [`U+FFFD REPLACEMENT CHARACTER`]: crate::char::REPLACEMENT_CHARACTER
+    /// [`U+FFFD REPLACEMENT CHARACTER`]: core::char::REPLACEMENT_CHARACTER
     #[must_use]
     pub fn invalid(&self) -> &'a [u8] {
         self.invalid
@@ -152,7 +152,7 @@ impl fmt::Debug for Debug<'_> {
 /// See the [`Utf8Chunk`] type for documentation of the items yielded by this iterator.
 ///
 /// [byteslice]: slice
-/// [`from_utf8`]: super::from_utf8
+/// [`from_utf8`]: core::str::from_utf8
 ///
 /// # Examples
 ///
@@ -171,7 +171,7 @@ impl fmt::Debug for Debug<'_> {
 /// }
 /// ```
 ///
-/// [`String::from_utf8_lossy`]: ../../std/string/struct.String.html#method.from_utf8_lossy
+/// [`String::from_utf8_lossy`]: alloc::string::String::from_utf8_lossy
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone)]
 pub struct Utf8Chunks<'a> {

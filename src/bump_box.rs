@@ -438,7 +438,7 @@ impl<'a> BumpBox<'a, str> {
     ///
     /// This function is unsafe because the returned `&mut BumpBox<[u8]>` allows writing
     /// bytes which are not valid UTF-8. If this constraint is violated, using
-    /// the original `BumpBox<str>` after dropping the `&mut Vec` may violate memory
+    /// the original `BumpBox<str>` after dropping the `&mut BumpBox<[u8]>` may violate memory
     /// safety, as `BumpBox<str>`s must be valid UTF-8.
     #[must_use]
     #[inline(always)]

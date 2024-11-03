@@ -194,7 +194,7 @@ impl<T> DoubleEndedIterator for Drain<'_, T> {
 
 impl<T> Drop for Drain<'_, T> {
     fn drop(&mut self) {
-        /// Moves back the un-`Drain`ed elements to restore the original `Vec`.
+        /// Moves back the un-`Drain`ed elements to restore the original slice.
         struct DropGuard<'r, 'a, T>(&'r mut Drain<'a, T>);
 
         impl<T> Drop for DropGuard<'_, '_, T> {

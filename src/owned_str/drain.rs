@@ -34,7 +34,7 @@ unsafe impl Send for Drain<'_> {}
 impl Drop for Drain<'_> {
     fn drop(&mut self) {
         unsafe {
-            // Use Vec::drain. "Reaffirm" the bounds checks to avoid
+            // Use `BumpBox::<[u8]>::drain`. "Reaffirm" the bounds checks to avoid
             // panic code being inserted again.
             let self_vec = self.string.as_mut().as_mut_bytes();
 
@@ -51,7 +51,9 @@ impl Drain<'_> {
     /// # Examples
     ///
     /// ```
-    /// let mut s = String::from("abc");
+    /// # use bump_scope::{ Bump };
+    /// # let bump: Bump = Bump::new();    ///
+    /// let mut s = bump.alloc_str("abc");
     /// let mut drain = s.drain(..);
     /// assert_eq!(drain.as_str(), "abc");
     /// let _ = drain.next().unwrap();

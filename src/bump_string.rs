@@ -84,7 +84,7 @@ macro_rules! bump_string_declaration {
         /// let hello = BumpString::from_str_in("Hello, world!", &bump);
         /// ```
         ///
-        /// You can append a [`char`] to a `String` with the [`push`] method, and
+        /// You can append a [`char`] to a string with the [`push`] method, and
         /// append a [`&str`] with the [`push_str`] method:
         ///
         /// ```
@@ -857,9 +857,9 @@ where
     ///
     /// # Safety
     ///
-    /// This function is unsafe because the returned `&mut Vec` allows writing
+    /// This function is unsafe because the returned `&mut BumpVec<u8>` allows writing
     /// bytes which are not valid UTF-8. If this constraint is violated, using
-    /// the original `BumpString` after dropping the `&mut Vec` may violate memory
+    /// the original `BumpString` after dropping the `&mut BumpVec<u8>` may violate memory
     /// safety, as `BumpString`s must be valid UTF-8.
     #[must_use]
     #[inline(always)]
@@ -954,7 +954,7 @@ where
         /// This is an *O*(*n*) operation as it requires copying every element in the
         /// buffer.
         do panics
-        /// Panics if `idx` is larger than the `String`'s length, or if it does not
+        /// Panics if `idx` is larger than the string's length, or if it does not
         /// lie on a [`char`] boundary.
         impl
         do examples
@@ -1825,7 +1825,7 @@ where
 /// // `a` is moved and can no longer be used here.
 /// ```
 ///
-/// If you want to keep using the first `String`, you can clone it and append to the clone instead:
+/// If you want to keep using the first `BumpString`, you can clone it and append to the clone instead:
 ///
 /// ```
 /// # use bump_scope::{ Bump, BumpString };
