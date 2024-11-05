@@ -1,5 +1,7 @@
-use crate::{BaseAllocator, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
-use allocator_api2::alloc::AllocError;
+use crate::{
+    error_behavior_generic_methods_allocation_failure, BaseAllocator, Bump, BumpScope, MinimumAlignment,
+    SupportedMinimumAlignment,
+};
 use core::{
     mem::{self, ManuallyDrop},
     ops::{Deref, DerefMut},
@@ -133,40 +135,26 @@ where
         self.bumps.get_mut().unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// Borrows a bump allocator from the pool.
-    /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
-    #[must_use]
-    #[cfg(not(no_global_oom_handling))]
-    pub fn get(&self) -> BumpPoolGuard<A, MIN_ALIGN, UP> {
-        let bump = self.bumps.lock().unwrap_or_else(PoisonError::into_inner).pop();
-        let bump = bump.unwrap_or_else(|| Bump::new_in(self.allocator.clone()));
+    error_behavior_generic_methods_allocation_failure! {
+        /// Borrows a bump allocator from the pool.
+        /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
+        impl
+        #[must_use]
+        for fn get
+        for fn try_get
+        use fn generic_get(&self,) -> BumpPoolGuard<A, MIN_ALIGN, UP> {
+            let bump = self.bumps.lock().unwrap_or_else(PoisonError::into_inner).pop();
 
-        BumpPoolGuard {
-            pool: self,
-            bump: ManuallyDrop::new(bump),
+            let bump = match bump {
+                Some(bump) => bump,
+                None => Bump::generic_new_in(self.allocator.clone())?,
+            };
+
+            Ok(BumpPoolGuard {
+                pool: self,
+                bump: ManuallyDrop::new(bump),
+            })
         }
-    }
-
-    /// Borrows a bump allocator from the pool.
-    /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    pub fn try_get(&self) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP>, AllocError> {
-        let bump = self.bumps.lock().unwrap_or_else(PoisonError::into_inner).pop();
-
-        let bump = match bump {
-            Some(bump) => bump,
-            None => Bump::try_new_in(self.allocator.clone())?,
-        };
-
-        Ok(BumpPoolGuard {
-            pool: self,
-            bump: ManuallyDrop::new(bump),
-        })
     }
 }
 
