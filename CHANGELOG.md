@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **added:** `BumpPool`'s `(try_)get_with_size` and `(try_)get_with_capacity`.
+
 ## 0.10.8 (2024-10-30)
 - **added:** `FromUtf8Error` now implements `Clone`, `PartialEq`, `Eq`, `Display` and `Error`.
 
