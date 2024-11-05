@@ -2,6 +2,7 @@
 
 ## Unreleased
 - **added:** `BumpPool`'s `(try_)get_with_size` and `(try_)get_with_capacity`.
+- **added:** `BumpPoolGuard`'s `pool` field is now `pub`.
 
 ## 0.10.8 (2024-10-30)
 - **added:** `FromUtf8Error` now implements `Clone`, `PartialEq`, `Eq`, `Display` and `Error`.

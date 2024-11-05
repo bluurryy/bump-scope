@@ -231,7 +231,9 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     bump: ManuallyDrop<Bump<A, MIN_ALIGN, UP>>,
-    pool: &'a BumpPool<A, MIN_ALIGN, UP>,
+
+    /// The [`BumpPool`], this [`BumpPoolGuard`] was created from.
+    pub pool: &'a BumpPool<A, MIN_ALIGN, UP>,
 }
 
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Deref for BumpPoolGuard<'a, A, MIN_ALIGN, UP>
