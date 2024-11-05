@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.10.9 (2024-11-05)
 - **added:** `BumpPool`'s `(try_)get_with_size` and `(try_)get_with_capacity`.
 - **added:** `BumpPoolGuard`'s `pool` field is now `pub`.
 
