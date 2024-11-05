@@ -843,10 +843,7 @@ macro_rules! error_behavior_generic_methods_if {
             $(#[$attr_generic:meta])*
             use fn $generic:ident
             $(<{$($generic_params:tt)*} $({$($generic_params_lifetime:tt)*})?>)?
-            (
-                $(&mut $self_mut:ident ,)?
-                $($arg_pat:ident: $arg_ty:ty),* $(,)?
-            )
+            ($(&$($self:ident)+ ,)? $($arg_pat:ident: $arg_ty:ty),* $(,)?)
             $(-> $return_ty:ty)?
             $(where { $($where:tt)* } in)?
             {
@@ -875,10 +872,11 @@ macro_rules! error_behavior_generic_methods_if {
             #[cfg(not(no_global_oom_handling))]
             pub fn $infallible
             $(<$($($generic_params_lifetime)*)? $($generic_params)*>)?
-            ($(&mut $self_mut,)?  $($arg_pat: $arg_ty),*) $(-> $return_ty)?
+            ($(&$($self)+,)? $($arg_pat: $arg_ty),*)
+            $(-> $return_ty)?
             $(where $($where)*)?
             {
-                $crate::infallible(Self::$generic($($self_mut,)? $($arg_pat),*))
+                $crate::infallible(Self::$generic($($crate::last!($($self)+), )? $($arg_pat),*))
             }
         )*
 
@@ -902,11 +900,11 @@ macro_rules! error_behavior_generic_methods_if {
             #[inline(always)]
             pub fn $fallible
             $(<$($($generic_params_lifetime)*)? $($generic_params)*>)?
-            ($(&mut $self_mut,)? $($arg_pat: $arg_ty),*)
+            ($(&$($self)+,)? $($arg_pat: $arg_ty),*)
             -> $crate::wrap_result!($($return_ty)?, allocator_api2::alloc::AllocError)
             $(where $($where)*)?
             {
-                Self::$generic($($self_mut,)? $($arg_pat),*)
+                Self::$generic($($crate::last!($($self)+), )? $($arg_pat),*)
             }
         )*
 
@@ -914,8 +912,8 @@ macro_rules! error_behavior_generic_methods_if {
             $(#[$attr])*
             $(#[$attr_generic])*
             pub(crate) fn $generic
-            <$($($($generic_params_lifetime)*)?)? B: ErrorBehavior $(, $($generic_params)*)?>
-            ($(&mut $self_mut,)? $($arg_pat: $arg_ty),*)
+            <$($($($generic_params_lifetime)*)?)? B: $crate::ErrorBehavior $(, $($generic_params)*)?>
+            ($(&$($self)+,)? $($arg_pat: $arg_ty),*)
             -> $crate::wrap_result!($($return_ty)?, B)
             $(where $($where)*)?
             {
