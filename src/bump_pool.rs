@@ -223,18 +223,29 @@ where
     }
 }
 
-/// This is a wrapper around [`Bump`] that mutably derefs to a [`BumpScope`] and returns its [`Bump`] back to the [`BumpPool`] on drop.
-#[derive(Debug)]
-pub struct BumpPoolGuard<'a, A, const MIN_ALIGN: usize, const UP: bool>
-where
-    A: BaseAllocator,
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-{
-    bump: ManuallyDrop<Bump<A, MIN_ALIGN, UP>>,
+macro_rules! bump_pool_guard_declaration {
+    ($($allocator_parameter:tt)*) => {
 
-    /// The [`BumpPool`], this [`BumpPoolGuard`] was created from.
-    pub pool: &'a BumpPool<A, MIN_ALIGN, UP>,
+        /// This is a wrapper around [`Bump`] that mutably derefs to a [`BumpScope`] and returns its [`Bump`] back to the [`BumpPool`] on drop.
+        #[derive(Debug)]
+        pub struct BumpPoolGuard<
+            'a,
+            $($allocator_parameter)*,
+            const MIN_ALIGN: usize = 1,
+            const UP: bool = true,
+        > where
+            A: BaseAllocator,
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        {
+            bump: ManuallyDrop<Bump<A, MIN_ALIGN, UP>>,
+
+            /// The [`BumpPool`], this [`BumpPoolGuard`] was created from.
+            pub pool: &'a BumpPool<A, MIN_ALIGN, UP>,
+        }
+    };
 }
+
+crate::maybe_default_allocator!(bump_pool_guard_declaration);
 
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Deref for BumpPoolGuard<'a, A, MIN_ALIGN, UP>
 where
