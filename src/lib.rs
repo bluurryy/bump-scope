@@ -52,6 +52,7 @@
     clippy::collapsible_else_if,
     clippy::items_after_statements,
     clippy::missing_transmute_annotations,
+    clippy::manual_assert,
     unknown_lints,
     rustdoc::redundant_explicit_links, // for cargo-rdme
     stable_features, // for const_refs_to_static
@@ -484,12 +485,6 @@ pub mod private {
     pub const fn format_trait_error() -> ! {
         panic!("formatting trait implementation returned an error");
     }
-}
-
-#[cold]
-#[inline(never)]
-fn exact_size_iterator_bad_len() -> ! {
-    panic!("ExactSizeIterator did not return as many items as promised")
 }
 
 /// Associates a lifetime to a wrapped type.

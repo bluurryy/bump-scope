@@ -3,7 +3,7 @@ use crate::{
     bump_common_methods, bump_scope_methods,
     bumping::{bump_down, bump_up, BumpUp},
     chunk_size::ChunkSize,
-    const_param_assert, down_align_usize, exact_size_iterator_bad_len,
+    const_param_assert, down_align_usize,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::{nonnull, pointer},
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
@@ -838,19 +838,17 @@ where
         let mut iter = iter.into_iter();
         let len = iter.len();
 
-        let uninit = self.generic_alloc_uninit_slice(len)?;
-        let mut initializer = uninit.initializer();
+        let mut vec = BumpVec::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(len, self)?;
 
-        while !initializer.is_full() {
-            let value = match iter.next() {
-                Some(value) => value,
-                None => exact_size_iterator_bad_len(),
-            };
-
-            initializer.push(value);
+        while vec.len() != vec.capacity() {
+            match iter.next() {
+                // SAFETY: we checked above that `len != capacity`, so there is space
+                Some(value) => unsafe { vec.unchecked_push(value) },
+                None => break,
+            }
         }
 
-        Ok(initializer.into_init())
+        Ok(vec.into_fixed_vec().into_boxed_slice())
     }
 
     #[inline(always)]

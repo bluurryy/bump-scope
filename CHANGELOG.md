@@ -5,6 +5,7 @@
 - **added:** `(try_)map` to `BumpVec`
 - **added:** `map_in_place` to `FixedBumpVec` and `BumpBox<[T]>`
 - **fixed:** don't leak ZSTs when `(try_)alloc_slice_fill_with` panics
+- **fixed:** don't allocate when the iterator of `(try_)alloc_iter_exact` panics
 
 ## 0.10.9 (2024-11-05)
 - **added:** `BumpPool`'s `(try_)get_with_size` and `(try_)get_with_capacity`.

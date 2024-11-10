@@ -190,14 +190,9 @@ fn map_bigger_layout<const UP: bool>() {
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
         }
 
-        // FIXME: on panic it should be `0`
         assert_eq!(
             bump.stats().allocated(),
-            if panic_on == 0 {
-                size_of::<Box<str>>() * 3
-            } else {
-                size_of::<Box<str>>() * 3 + size_of::<String>() * 3
-            },
+            if panic_on == 0 { size_of::<Box<str>>() * 3 } else { 0 },
             "panic_on={panic_on}"
         );
     }
@@ -258,12 +253,7 @@ fn map_from_zst<const UP: bool>() {
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
         }
 
-        // FIXME: should be `0`, but `generic_alloc_iter_exact` does not deallocate on panic
-        assert_eq!(
-            bump.stats().allocated(),
-            if panic_on == 0 { 0 } else { size_of::<String>() * 3 },
-            "panic_on={panic_on}"
-        );
+        assert_eq!(bump.stats().allocated(), 0, "panic_on={panic_on}");
     }
 }
 
