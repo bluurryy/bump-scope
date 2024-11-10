@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **fixed:** divide by zero panic when calling `map_in_place` with a ZST
+
 ## 0.10.10 (2024-11-10)
 - **added:** default generic parameters to `BumpPoolGuard`
 - **added:** `(try_)map` to `BumpVec`

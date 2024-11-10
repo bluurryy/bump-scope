@@ -35,7 +35,9 @@ fn map_same_layout<const UP: bool>() {
             dbg!(b);
         });
 
-        if panic_on != 0 {
+        if panic_on == 0 {
+            result.unwrap();
+        } else {
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
         }
 
@@ -66,7 +68,9 @@ fn map_smaller_layout<const UP: bool>() {
             dbg!(b);
         });
 
-        if panic_on != 0 {
+        if panic_on == 0 {
+            result.unwrap();
+        } else {
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
         }
 
@@ -90,12 +94,14 @@ fn map_to_zst<const UP: bool>() {
 
                 i += 1;
             });
-            assert_eq!(b.capacity(), 3);
-            assert_eq!(bump.stats().allocated(), 0);
+            assert_eq!(b.capacity(), usize::MAX);
+            assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
             dbg!(b);
         });
 
-        if panic_on != 0 {
+        if panic_on == 0 {
+            result.unwrap();
+        } else {
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
         }
 
@@ -110,6 +116,7 @@ fn map_from_zst_to_zst<const UP: bool>() {
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
             let a = FixedBumpVec::<()>::from_iter_exact_in([(), (), ()], &bump);
+            // FIXME: 3 should be usize::MAX
             assert_eq!(a.capacity(), 3);
             assert_eq!(bump.stats().allocated(), 0);
             let b: FixedBumpVec<()> = a.map_in_place(|()| {
@@ -119,12 +126,14 @@ fn map_from_zst_to_zst<const UP: bool>() {
 
                 i += 1;
             });
-            assert_eq!(b.capacity(), 3);
+            assert_eq!(b.capacity(), usize::MAX);
             assert_eq!(bump.stats().allocated(), 0);
             dbg!(b);
         });
 
-        if panic_on != 0 {
+        if panic_on == 0 {
+            result.unwrap();
+        } else {
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
         }
 

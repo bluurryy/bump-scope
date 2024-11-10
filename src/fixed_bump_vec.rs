@@ -1151,9 +1151,15 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// ```
     pub fn map_in_place<U>(self, f: impl FnMut(T) -> U) -> FixedBumpVec<'a, U> {
         let Self { initialized, capacity } = self;
-        let initialized = initialized.map_in_place(f);
-        let capacity = (capacity * T::SIZE) / U::SIZE;
-        FixedBumpVec { initialized, capacity }
+
+        FixedBumpVec {
+            initialized: initialized.map_in_place(f),
+            capacity: if U::IS_ZST {
+                usize::MAX
+            } else {
+                (capacity * T::SIZE) / U::SIZE
+            },
+        }
     }
 
     /// Appends an element to the back of the collection.
