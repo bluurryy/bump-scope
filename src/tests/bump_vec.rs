@@ -234,7 +234,7 @@ fn map_from_zst<const UP: bool>() {
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
             let a = BumpVec::<(), Global, 1, UP>::from_iter_exact_in([(), (), ()], &bump);
-            assert_eq!(a.capacity(), 3);
+            assert_eq!(a.capacity(), usize::MAX);
             assert_eq!(bump.stats().allocated(), 0);
             let b: BumpVec<String, Global, 1, UP> = a.map(|()| {
                 if i == panic_on {
@@ -264,7 +264,7 @@ fn map_from_zst_to_zst<const UP: bool>() {
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
             let a = BumpVec::<(), Global, 1, UP>::from_iter_exact_in([(), (), ()], &bump);
-            assert_eq!(a.capacity(), 3);
+            assert_eq!(a.capacity(), usize::MAX);
             assert_eq!(bump.stats().allocated(), 0);
             let b: BumpVec<(), Global, 1, UP> = a.map(|()| {
                 if i == panic_on {

@@ -147,7 +147,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Turns a `BumpBox<[T]>` into a full `FixedBumpVec<T>`.
     #[must_use]
     pub fn from_init(initialized: BumpBox<'a, [T]>) -> Self {
-        let capacity = initialized.len();
+        let capacity = if T::IS_ZST { usize::MAX } else { initialized.len() };
         Self { initialized, capacity }
     }
 
@@ -155,7 +155,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     #[must_use]
     pub fn from_uninit(uninitialized: BumpBox<'a, [MaybeUninit<T>]>) -> Self {
         let uninitialized = uninitialized.into_raw();
-        let capacity = uninitialized.len();
+        let capacity = if T::IS_ZST { usize::MAX } else { uninitialized.len() };
 
         let ptr = nonnull::as_non_null_ptr(uninitialized).cast::<T>();
         let initialized = unsafe { BumpBox::from_raw(nonnull::slice_from_raw_parts(ptr, 0)) };

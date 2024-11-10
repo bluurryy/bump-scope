@@ -117,8 +117,7 @@ fn map_from_zst_to_zst<const UP: bool>() {
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
             let a = FixedBumpVec::<()>::from_iter_exact_in([(), (), ()], &bump);
-            // FIXME: 3 should be usize::MAX
-            assert_eq!(a.capacity(), 3);
+            assert_eq!(a.capacity(), usize::MAX);
             assert_eq!(bump.stats().allocated(), 0);
             let b: FixedBumpVec<AlignedZst> = a.map_in_place(|()| {
                 if i == panic_on {
