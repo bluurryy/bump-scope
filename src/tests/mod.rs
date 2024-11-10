@@ -889,6 +889,25 @@ fn alloc_zst<const UP: bool>() {
 
     {
         reset();
+
+        let result = std::panic::catch_unwind(|| {
+            let mut i = 0;
+            bump.alloc_slice_fill_with(5, || {
+                if i == 3 {
+                    panic!("AAAAAAA");
+                }
+
+                i += 1;
+                DropEmit
+            });
+        });
+
+        assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "AAAAAAA");
+        assert_eq!(DROPS.get(), 3);
+    }
+
+    {
+        reset();
         let drop_emit = bump.alloc_slice_fill_with(0, || DropEmit);
         assert_eq!(DROPS.get(), 0);
         drop(drop_emit);

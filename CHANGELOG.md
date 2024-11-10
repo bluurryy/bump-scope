@@ -4,6 +4,7 @@
 - **added:** default generic parameters to `BumpPoolGuard`
 - **added:** `(try_)map` to `BumpVec`
 - **added:** `map_in_place` to `FixedBumpVec` and `BumpBox<[T]>`
+- **fixed:** don't leak ZSTs when `(try_)alloc_slice_fill_with` panics
 
 ## 0.10.9 (2024-11-05)
 - **added:** `BumpPool`'s `(try_)get_with_size` and `(try_)get_with_capacity`.

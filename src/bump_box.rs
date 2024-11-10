@@ -1016,13 +1016,9 @@ impl<'a, T> BumpBox<'a, [T]> {
 
     #[must_use]
     #[inline(always)]
-    pub(crate) fn zst_slice_fill_with(len: usize, mut f: impl FnMut() -> T) -> Self {
+    pub(crate) fn zst_slice_fill_with(len: usize, f: impl FnMut() -> T) -> Self {
         assert!(T::IS_ZST);
-        for _ in 0..len {
-            // FIXME: don't leak values on panic
-            mem::forget(f());
-        }
-        unsafe { BumpBox::zst_slice_from_len(len) }
+        BumpBox::uninit_zst_slice(len).init_fill_with(f)
     }
 
     /// Creates `T` values from nothing!
