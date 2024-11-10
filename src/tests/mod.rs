@@ -22,6 +22,7 @@ mod bump_vec_doc;
 mod chunk_size;
 #[cfg(feature = "nightly-coerce-unsized")]
 mod coerce_unsized;
+mod fixed_bump_vec;
 mod from_std;
 mod mut_bump_vec_doc;
 mod mut_bump_vec_rev_doc;

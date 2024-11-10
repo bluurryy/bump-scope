@@ -4,7 +4,7 @@ mod slice_initializer;
 use crate::WithLifetime;
 use crate::{
     owned_slice, owned_str,
-    polyfill::{self, nonnull, transmute_mut},
+    polyfill::{self, nonnull, pointer, transmute_mut},
     BumpAllocator, FromUtf8Error, NoDrop, SizedTypeProperties,
 };
 #[cfg(feature = "alloc")]
@@ -1019,6 +1019,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     pub(crate) fn zst_slice_fill_with(len: usize, mut f: impl FnMut() -> T) -> Self {
         assert!(T::IS_ZST);
         for _ in 0..len {
+            // FIXME: don't leak values on panic
             mem::forget(f());
         }
         unsafe { BumpBox::zst_slice_from_len(len) }
@@ -2062,6 +2063,97 @@ impl<'a, T> BumpBox<'a, [T]> {
         let index = polyfill::iter::partition_in_place(self.iter_mut(), f);
         self.split_at(index)
     }
+
+    /// Returns a boxed slice of the same size as `self`, with function `f` applied to each element in order.
+    ///
+    /// This function only compiles with `U`s with an alignment and size less or equal to `T`'s.
+    ///
+    /// # Examples
+    /// Mapping to a type with an equal alignment and size:
+    /// ```
+    /// # use bump_scope::{ Bump };
+    /// # use core::num::NonZero;
+    /// # let bump: Bump = Bump::new();
+    /// let a = bump.alloc_slice_copy(&[0, 1, 2]);
+    /// let b = a.map_in_place(NonZero::new);
+    /// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2)]");
+    /// ```
+    ///
+    /// Mapping to a type with an smaller alignment and size:
+    /// ```
+    /// # use bump_scope::{ Bump, BumpBox };
+    /// # let bump: Bump = Bump::new();
+    /// let a: BumpBox<[u32]> = bump.alloc_slice_copy(&[0, 1, 2]);
+    /// let b: BumpBox<[u16]> = a.map_in_place(|i| i as u16);
+    /// assert_eq!(b, [0, 1, 2]);
+    /// ```
+    ///
+    /// Mapping to a type with a higher alignment or size won't compile:
+    /// ```compile_fail,E0080
+    /// # use bump_scope::{ Bump, BumpBox };
+    /// # let bump: Bump = Bump::new();
+    /// let a: BumpBox<[u16]> = bump.alloc_slice_copy(&[0, 1, 2]);
+    /// let b: BumpBox<[u32]> = a.map_in_place(|i| i as u32);
+    /// # _ = b;
+    /// ```
+    pub fn map_in_place<U>(self, mut f: impl FnMut(T) -> U) -> BumpBox<'a, [U]> {
+        assert_in_place_mappable!(T, U);
+
+        if U::IS_ZST {
+            return BumpBox::uninit_zst_slice(self.len()).init_fill_iter(self.into_iter().map(f));
+        }
+
+        let slice = self;
+        let len = slice.len();
+
+        struct DropGuard<T, U> {
+            ptr: NonNull<()>,
+            end: *mut T,
+            src: *mut T,
+            dst: *mut U,
+        }
+
+        impl<T, U> Drop for DropGuard<T, U> {
+            fn drop(&mut self) {
+                unsafe {
+                    // drop `T`s
+                    let drop_ptr = self.src.add(1);
+                    let drop_len = pointer::sub_ptr(self.end, drop_ptr);
+                    ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
+
+                    // drop `U`s
+                    let drop_ptr = self.ptr.as_ptr().cast::<U>();
+                    let drop_len = pointer::sub_ptr(self.dst, drop_ptr);
+                    ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
+                }
+            }
+        }
+
+        unsafe {
+            let mut guard = {
+                let ptr = slice.into_raw().cast::<()>();
+                let src: *mut T = ptr.as_ptr().cast::<T>();
+                let dst: *mut U = src.cast::<U>();
+                let end = src.add(len);
+
+                DropGuard { ptr, end, src, dst }
+            };
+
+            while guard.src < guard.end {
+                let src_value = guard.src.read();
+                let dst_value = f(src_value);
+                guard.dst.write(dst_value);
+                guard.src = guard.src.add(1);
+                guard.dst = guard.dst.add(1);
+            }
+
+            let ptr = guard.ptr;
+
+            mem::forget(guard);
+
+            BumpBox::from_raw(nonnull::slice_from_raw_parts(ptr.cast(), len))
+        }
+    }
 }
 
 impl<'a, T, const N: usize> BumpBox<'a, [[T; N]]> {
@@ -2728,4 +2820,24 @@ impl<T: ?Sized + std::io::BufRead> std::io::BufRead for BumpBox<'_, T> {
 #[inline(always)]
 fn as_uninit_slice<T>(slice: &[T]) -> &[MaybeUninit<T>] {
     unsafe { &*(slice as *const _ as *const [MaybeUninit<T>]) }
+}
+
+macro_rules! assert_in_place_mappable {
+    ($src:ty, $dst:ty) => {
+        #[allow(unused_variables)]
+        let _assert = AssertInPlaceMappable::<$src, $dst>::ASSERT;
+    };
+}
+
+// False positive; i need `pub(self)` to forward declare it.
+// Useless attribute is needed for msrv clippy.
+#[allow(clippy::useless_attribute)]
+#[allow(clippy::needless_pub_self)]
+pub(self) use assert_in_place_mappable;
+
+struct AssertInPlaceMappable<Src, Dst>(PhantomData<(Src, Dst)>);
+
+impl<Src, Dst> AssertInPlaceMappable<Src, Dst> {
+    #[allow(dead_code)]
+    const ASSERT: () = assert!((!Src::IS_ZST || Dst::IS_ZST) && Src::ALIGN >= Dst::ALIGN && Src::SIZE >= Dst::SIZE);
 }
