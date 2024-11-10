@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.10.10 (2024-11-10)
 - **added:** default generic parameters to `BumpPoolGuard`
 - **added:** `(try_)map` to `BumpVec`
 - **added:** `map_in_place` to `FixedBumpVec` and `BumpBox<[T]>`
