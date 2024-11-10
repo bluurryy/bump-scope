@@ -243,6 +243,12 @@ def --wrapped main [
         }
     }
 
+    for try in ["", try_] {
+        for which in [same, grow, shrink] {
+            $names ++= $"vec_map::($try)($which)"
+        }
+    }
+
     if $filter != null {
         $names = ($names | filter { str contains $filter })
     }

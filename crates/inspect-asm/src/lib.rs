@@ -711,3 +711,32 @@ pub mod alloc_fmt {
             .map(BumpBox::into_ref)
     }
 }
+
+pub mod vec_map {
+    use bump_scope::{allocator_api2::alloc::AllocError, BumpVec};
+    use std::num::NonZeroU32;
+
+    pub fn same<'b, 'a>(vec: BumpVec<'b, 'a, u32>) -> BumpVec<'b, 'a, Option<NonZeroU32>> {
+        vec.map(NonZeroU32::new)
+    }
+
+    pub fn try_same<'b, 'a>(vec: BumpVec<'b, 'a, u32>) -> Result<BumpVec<'b, 'a, Option<NonZeroU32>>, AllocError> {
+        vec.try_map(NonZeroU32::new)
+    }
+
+    pub fn grow<'b, 'a>(vec: BumpVec<'b, 'a, u32>) -> BumpVec<'b, 'a, u64> {
+        vec.map(|i| i as _)
+    }
+
+    pub fn try_grow<'b, 'a>(vec: BumpVec<'b, 'a, u32>) -> Result<BumpVec<'b, 'a, u64>, AllocError> {
+        vec.try_map(|i| i as _)
+    }
+
+    pub fn shrink<'b, 'a>(vec: BumpVec<'b, 'a, u64>) -> BumpVec<'b, 'a, u32> {
+        vec.map(|i| i as _)
+    }
+
+    pub fn try_shrink<'b, 'a>(vec: BumpVec<'b, 'a, u64>) -> Result<BumpVec<'b, 'a, u32>, AllocError> {
+        vec.try_map(|i| i as _)
+    }
+}

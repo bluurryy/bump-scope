@@ -10,7 +10,7 @@ use crate::{
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScope, ErrorBehavior, FixedBumpVec, GuaranteedAllocatedStats,
     MinimumAlignment, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment,
 };
-use allocator_api2::alloc::Allocator;
+use allocator_api2::alloc::{AllocError, Allocator};
 use core::{
     alloc::Layout,
     borrow::{Borrow, BorrowMut},
@@ -18,6 +18,7 @@ use core::{
     hash::Hash,
     iter,
     marker::PhantomData,
+    mem,
     mem::{ManuallyDrop, MaybeUninit},
     num::NonZeroUsize,
     ops::{Deref, DerefMut, Index, IndexMut, RangeBounds},
@@ -27,7 +28,7 @@ use core::{
 };
 
 #[cfg(not(no_global_oom_handling))]
-use core::mem;
+use crate::infallible;
 
 #[cfg(not(no_global_oom_handling))]
 pub(crate) use drain::Drain;
@@ -1463,6 +1464,212 @@ where
         }
     }
 
+    /// Returns a vector of the same size as `self`, with function `f` applied to each element in order.
+    ///
+    /// Compared to `from_iter_in(into_iter().map(f), ...)` this method has the advantage that it can reuse the existing allocation.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// When the mapped-to type has a `<=` alignment and an `==` size, no allocation takes place and the capacity won't change:
+    /// ```
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let vec_a: BumpVec<u8> = BumpVec::from_iter_in([1, 2, 3, 4], &bump);
+    /// assert_eq!(vec_a.capacity(), 4);
+    /// assert_eq!(bump.stats().allocated(), 4);
+    ///
+    /// let vec_b = vec_a.map(|i| i + 10);
+    /// assert_eq!(vec_b.capacity(), 4);
+    /// assert_eq!(bump.stats().allocated(), 4);
+    /// ```
+    ///
+    /// When the mapped-to type has a `<=` alignment and a `<` size, no allocation takes place and the capacity may grow:
+    /// ```
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let vec_a: BumpVec<u32> = BumpVec::from_iter_in([1, 2, 3, 4], &bump);
+    /// assert_eq!(vec_a.capacity(), 4);
+    /// assert_eq!(bump.stats().allocated(), 4 * 4);
+    ///
+    /// let vec_b: BumpVec<u16> = vec_a.map(|i| i as u16);
+    /// assert_eq!(vec_b.capacity(), 8);
+    /// assert_eq!(bump.stats().allocated(), 4 * 4);
+    /// ```
+    ///
+    /// When the mapped-to type has a `>` alignment or a `>` size, then this method is equal to
+    /// `BumpVec::from_iter_in(self.into_iter().map(f), bump)`:
+    /// ```
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let vec_a: BumpVec<u16> = BumpVec::from_iter_in([1, 2, 3, 4], &bump);
+    /// assert_eq!(vec_a.capacity(), 4);
+    /// assert_eq!(bump.stats().allocated(), 4 * 2);
+    ///
+    /// let vec_b: BumpVec<u32> = vec_a.map(|i| i as u32);
+    /// assert_eq!(vec_b.capacity(), 4);
+    /// assert_eq!(bump.stats().allocated(), 4 * 2 + 4 * 4);
+    /// ```
+    #[inline(always)]
+    #[cfg(not(no_global_oom_handling))]
+    pub fn map<U>(self, f: impl FnMut(T) -> U) -> BumpVec<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
+        infallible(self.generic_map(f))
+    }
+
+    /// Returns a vector of the same size as `self`, with function `f` applied to each element in order.
+    ///
+    /// Compared to `from_iter_in(into_iter().map(f), ...)` this method has the advantage that it can reuse the existing allocation.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// When the mapped-to type has a `<=` alignment and an `==` size, no allocation takes place and the capacity won't change:
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let vec_a: BumpVec<u8> = BumpVec::try_from_iter_in([1, 2, 3, 4], &bump)?;
+    /// assert_eq!(vec_a.capacity(), 4);
+    /// assert_eq!(bump.stats().allocated(), 4);
+    ///
+    /// let vec_b = vec_a.try_map(|i| i + 10)?;
+    /// assert_eq!(vec_b.capacity(), 4);
+    /// assert_eq!(bump.stats().allocated(), 4);
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
+    ///
+    /// When the mapped-to type has a `<=` alignment and a `<` size, no allocation takes place and the capacity may grow:
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let vec_a: BumpVec<u32> = BumpVec::try_from_iter_in([1, 2, 3, 4], &bump)?;
+    /// assert_eq!(vec_a.capacity(), 4);
+    /// assert_eq!(bump.stats().allocated(), 4 * 4);
+    ///
+    /// let vec_b: BumpVec<u16> = vec_a.try_map(|i| i as u16)?;
+    /// assert_eq!(vec_b.capacity(), 8);
+    /// assert_eq!(bump.stats().allocated(), 4 * 4);
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
+    ///
+    /// When the mapped-to type has a `>` alignment or a `>` size, then this method is equal to
+    /// `BumpVec::from_iter_in(self.into_iter().map(f), bump)`:
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let vec_a: BumpVec<u16> = BumpVec::try_from_iter_in([1, 2, 3, 4], &bump)?;
+    /// assert_eq!(vec_a.capacity(), 4);
+    /// assert_eq!(bump.stats().allocated(), 4 * 2);
+    ///
+    /// let vec_b: BumpVec<u32> = vec_a.try_map(|i| i as u32)?;
+    /// assert_eq!(vec_b.capacity(), 4);
+    /// assert_eq!(bump.stats().allocated(), 4 * 2 + 4 * 4);
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_map<U>(
+        self,
+        f: impl FnMut(T) -> U,
+    ) -> Result<BumpVec<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>, AllocError> {
+        self.generic_map(f)
+    }
+
+    #[inline]
+    fn generic_map<B: ErrorBehavior, U>(
+        self,
+        mut f: impl FnMut(T) -> U,
+    ) -> Result<BumpVec<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>, B> {
+        if !T::IS_ZST && !U::IS_ZST && T::ALIGN >= U::ALIGN && T::SIZE >= U::SIZE {
+            let (fixed, bump) = self.into_parts();
+            let cap = fixed.capacity();
+            let slice = fixed.into_boxed_slice();
+            let len = slice.len();
+
+            struct DropGuard<'b, 'a, T, U, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+            where
+                MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+                A: BaseAllocator<GUARANTEED_ALLOCATED>,
+            {
+                ptr: NonNull<()>,
+                cap: usize,
+                end: *mut T,
+                src: *mut T,
+                dst: *mut U,
+                bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+            }
+
+            impl<T, U, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Drop
+                for DropGuard<'_, '_, T, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+            where
+                MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+                A: BaseAllocator<GUARANTEED_ALLOCATED>,
+            {
+                fn drop(&mut self) {
+                    unsafe {
+                        // drop `T`s
+                        let drop_ptr = self.src.add(1);
+                        let drop_len = pointer::sub_ptr(self.end, drop_ptr);
+                        ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
+
+                        // drop `U`s
+                        let drop_ptr = self.ptr.as_ptr().cast::<U>();
+                        let drop_len = pointer::sub_ptr(self.dst, drop_ptr);
+                        ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
+
+                        // deallocate memory block (for additional safety notes see `Self::drop::DropGuard::drop`)
+                        let layout = Layout::from_size_align_unchecked(self.cap * T::SIZE, T::ALIGN);
+                        self.bump.deallocate(self.ptr.cast(), layout);
+                    }
+                }
+            }
+
+            unsafe {
+                let mut guard = {
+                    let ptr = slice.into_raw().cast::<()>();
+                    let src: *mut T = ptr.as_ptr().cast::<T>();
+                    let dst: *mut U = src.cast::<U>();
+                    let end = src.add(len);
+
+                    DropGuard {
+                        ptr,
+                        cap,
+                        end,
+                        src,
+                        dst,
+                        bump,
+                    }
+                };
+
+                while guard.src < guard.end {
+                    let src_value = guard.src.read();
+                    let dst_value = f(src_value);
+                    guard.dst.write(dst_value);
+                    guard.src = guard.src.add(1);
+                    guard.dst = guard.dst.add(1);
+                }
+
+                let ptr = guard.ptr;
+
+                mem::forget(guard);
+
+                let new_cap = (cap * T::SIZE) / U::SIZE;
+
+                Ok(BumpVec::from_parts(
+                    FixedBumpVec::from_raw_parts(BumpBox::from_raw(nonnull::slice_from_raw_parts(ptr.cast(), len)), new_cap),
+                    bump,
+                ))
+            }
+        } else {
+            // fallback
+            let bump = self.bump();
+            Ok(BumpVec::generic_from_iter_exact_in(self.into_iter().map(f), bump)?)
+        }
+    }
+
     /// Creates a splicing iterator that replaces the specified range in the vector
     /// with the given `replace_with` iterator and yields the removed items.
     /// `replace_with` does not need to be the same length as `range`.
@@ -1553,11 +1760,9 @@ where
     /// - `len` must be less than or equal to `self.capacity()`
     ///
     /// [`reserve`]: Self::reserve
-    #[cfg(not(no_global_oom_handling))]
     #[inline(always)]
+    #[cfg(not(no_global_oom_handling))]
     pub(crate) unsafe fn buf_reserve(&mut self, len: usize, additional: usize) {
-        use crate::infallible;
-
         if additional > (self.capacity() - len) {
             infallible(self.generic_grow_amortized_buf(len, additional));
         }

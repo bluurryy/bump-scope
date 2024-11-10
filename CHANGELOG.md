@@ -2,6 +2,7 @@
 
 ## Unreleased
 - **added:** default generic parameters to `BumpPoolGuard`
+- **added:** `(try_)map` to `BumpVec`
 
 ## 0.10.9 (2024-11-05)
 - **added:** `BumpPool`'s `(try_)get_with_size` and `(try_)get_with_capacity`.

@@ -382,6 +382,10 @@ up_and_down! {
         BumpVec::try_with_capacity_in(capacity, bump)
     }
 
+    pub fn BumpVec_try_map<'b, 'a>(bump: BumpVec<'b, 'a, u32>, f: fn(u32) -> i16) -> Result<BumpVec<'b, 'a, i16>> {
+        bump.try_map(f)
+    }
+
     pub fn BumpString__try_from_str_in<'b>(string: &str, bump: &'b Bump) -> Result<BumpString<'b, 'b>> {
         BumpString::try_from_str_in(string, bump)
     }
