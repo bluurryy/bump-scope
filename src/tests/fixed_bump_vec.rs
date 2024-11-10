@@ -87,12 +87,13 @@ fn map_to_zst<const UP: bool>() {
             let a = FixedBumpVec::<String>::from_iter_exact_in([1, 2, 3].map(|i| i.to_string()), &bump);
             assert_eq!(a.capacity(), 3);
             assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
-            let b: FixedBumpVec<()> = a.map_in_place(|_| {
+            let b: FixedBumpVec<AlignedZst> = a.map_in_place(|_| {
                 if i == panic_on {
                     panic!("oh no");
                 }
 
                 i += 1;
+                AlignedZst
             });
             assert_eq!(b.capacity(), usize::MAX);
             assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
@@ -119,12 +120,13 @@ fn map_from_zst_to_zst<const UP: bool>() {
             // FIXME: 3 should be usize::MAX
             assert_eq!(a.capacity(), 3);
             assert_eq!(bump.stats().allocated(), 0);
-            let b: FixedBumpVec<()> = a.map_in_place(|()| {
+            let b: FixedBumpVec<AlignedZst> = a.map_in_place(|()| {
                 if i == panic_on {
                     panic!("oh no");
                 }
 
                 i += 1;
+                AlignedZst
             });
             assert_eq!(b.capacity(), usize::MAX);
             assert_eq!(bump.stats().allocated(), 0);
@@ -140,3 +142,7 @@ fn map_from_zst_to_zst<const UP: bool>() {
         assert_eq!(bump.stats().allocated(), 0, "panic_on={panic_on}");
     }
 }
+
+#[repr(align(1024))]
+#[derive(Debug)]
+struct AlignedZst;

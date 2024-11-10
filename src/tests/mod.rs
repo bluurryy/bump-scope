@@ -1116,3 +1116,19 @@ fn map_in_place_compile_fail_due_to_size() {
     let long_ints = lengthen(ints);
     dbg!(long_ints);
 }
+
+// This must fail to compile.
+//
+// Can't have a trybuild test for this because trybuild just `check`s
+// whereas the compile error we trigger `E0080` only gets triggered when building.
+#[cfg(any())]
+#[test]
+fn map_in_place_compile_fail_due_to_zst() {
+    pub fn foo(bump: BumpBox<[()]>) -> BumpBox<[u64]> {
+        bump.map_in_place(|_| 0)
+    }
+
+    let bump: Bump = Bump::new();
+    let slice = bump.alloc_slice_copy(&[(), (), ()]);
+    foo(slice);
+}

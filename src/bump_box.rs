@@ -2835,5 +2835,18 @@ struct AssertInPlaceMappable<Src, Dst>(PhantomData<(Src, Dst)>);
 
 impl<Src, Dst> AssertInPlaceMappable<Src, Dst> {
     #[allow(dead_code)]
-    const ASSERT: () = assert!((!Src::IS_ZST || Dst::IS_ZST) && Src::ALIGN >= Dst::ALIGN && Src::SIZE >= Dst::SIZE);
+    const ASSERT: () = assert!(Dst::IS_ZST || (Src::ALIGN >= Dst::ALIGN && Src::SIZE >= Dst::SIZE));
 }
+
+const _: () = {
+    #[repr(align(1024))]
+    struct AlignedZst;
+    assert_in_place_mappable!(u32, u32);
+    assert_in_place_mappable!(u32, Option<core::num::NonZeroU32>);
+    assert_in_place_mappable!(u32, [u8; 4]);
+    assert_in_place_mappable!(u32, [u16; 2]);
+    assert_in_place_mappable!(u32, ());
+    assert_in_place_mappable!(u32, AlignedZst);
+    assert_in_place_mappable!((), ());
+    assert_in_place_mappable!((), AlignedZst);
+};
