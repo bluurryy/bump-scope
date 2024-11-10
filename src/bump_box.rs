@@ -2075,7 +2075,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2)]");
     /// ```
     ///
-    /// Mapping to a type with an smaller alignment and size:
+    /// Mapping to a type with a smaller alignment and size:
     /// ```
     /// # use bump_scope::{ Bump, BumpBox };
     /// # let bump: Bump = Bump::new();

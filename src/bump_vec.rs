@@ -1469,10 +1469,10 @@ where
     /// Compared to `from_iter_in(into_iter().map(f), ...)` this method has the advantage that it can reuse the existing allocation.
     ///
     /// # Panics
-    /// Panics if the allocation fails.
+    /// Panics if the allocation fails. An allocation only occurs when the alignment or size of `U` is greater than that of `T`.
     ///
     /// # Examples
-    /// When the mapped-to type has a `<=` alignment and an `==` size, no allocation takes place and the capacity won't change:
+    /// Mapping to a type with an equal alignment and size (allocator won't be touched):
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::new();
@@ -1485,7 +1485,7 @@ where
     /// assert_eq!(bump.stats().allocated(), 4);
     /// ```
     ///
-    /// When the mapped-to type has a `<=` alignment and a `<` size, no allocation takes place and the capacity may grow:
+    /// Mapping to a type with a smaller alignment and size (allocator won't be touched, capacity may grow):
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::new();
@@ -1498,8 +1498,8 @@ where
     /// assert_eq!(bump.stats().allocated(), 4 * 4);
     /// ```
     ///
-    /// When the mapped-to type has a `>` alignment or a `>` size, then this method is equal to
-    /// `BumpVec::from_iter_in(self.into_iter().map(f), bump)`:
+    /// Mapping to a type with a higher alignment or size is equivalent to
+    /// calling `from_iter_in(self.into_iter().map(f), ...)`:
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::new();
@@ -1519,13 +1519,13 @@ where
 
     /// Returns a vector of the same size as `self`, with function `f` applied to each element in order.
     ///
-    /// Compared to `from_iter_in(into_iter().map(f), ...)` this method has the advantage that it can reuse the existing allocation.
+    /// Compared to `try_from_iter_in(into_iter().map(f), ...)` this method has the advantage that it can reuse the existing allocation.
     ///
     /// # Errors
-    /// Errors if the allocation fails.
+    /// Errors if the allocation fails. An allocation only occurs when the alignment or size of `U` is greater than that of `T`.
     ///
     /// # Examples
-    /// When the mapped-to type has a `<=` alignment and an `==` size, no allocation takes place and the capacity won't change:
+    /// Mapping to a type with an equal alignment and size (allocator won't be touched):
     /// ```
     /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::{ Bump, BumpVec };
@@ -1540,7 +1540,7 @@ where
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     ///
-    /// When the mapped-to type has a `<=` alignment and a `<` size, no allocation takes place and the capacity may grow:
+    /// Mapping to a type with a smaller alignment and size (allocator won't be touched, capacity may grow):
     /// ```
     /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::{ Bump, BumpVec };
@@ -1555,8 +1555,8 @@ where
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     ///
-    /// When the mapped-to type has a `>` alignment or a `>` size, then this method is equal to
-    /// `BumpVec::from_iter_in(self.into_iter().map(f), bump)`:
+    /// Mapping to a type with a higher alignment or size is equivalent to
+    /// calling `try_from_iter_in(self.into_iter().map(f), ...)`:
     /// ```
     /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::{ Bump, BumpVec };
