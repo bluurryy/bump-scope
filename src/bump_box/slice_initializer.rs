@@ -1,6 +1,6 @@
 use core::{
     marker::PhantomData,
-    mem::{ManuallyDrop, MaybeUninit},
+    mem::{self, ManuallyDrop, MaybeUninit},
     ptr::NonNull,
 };
 
@@ -36,12 +36,13 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
     #[inline(always)]
     pub(crate) fn new(slice: BumpBox<'a, [MaybeUninit<T>]>) -> Self {
         if T::IS_ZST {
+            let start = NonNull::dangling();
+            let end = unsafe { nonnull::wrapping_byte_add(start, slice.len()) };
+
             return Self {
-                pos: NonNull::dangling(),
-
-                start: NonNull::dangling(),
-                end: unsafe { nonnull::wrapping_byte_add(NonNull::dangling(), slice.len()) },
-
+                pos: start,
+                start,
+                end,
                 marker: PhantomData,
             };
         }
@@ -104,11 +105,12 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
     #[inline(always)]
     pub(crate) unsafe fn push_with_unchecked(&mut self, f: impl FnOnce() -> T) {
         debug_assert!(!self.is_full());
-        pointer::write_with(self.pos.as_ptr(), f);
 
         if T::IS_ZST {
+            mem::forget(f());
             self.pos = nonnull::wrapping_byte_add(self.pos, 1);
         } else {
+            pointer::write_with(self.pos.as_ptr(), f);
             self.pos = nonnull::add(self.pos, 1);
         }
     }
