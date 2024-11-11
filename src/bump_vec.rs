@@ -1662,6 +1662,48 @@ where
         }
     }
 
+    /// Returns a vector of the same size as `self`, with function `f` applied to each element in order.
+    ///
+    /// This function only compiles with `U`s with an alignment and size less or equal to `T`'s.
+    ///
+    /// # Examples
+    /// Mapping to a type with an equal alignment and size:
+    /// ```
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # use core::num::NonZero;
+    /// # let bump: Bump = Bump::new();
+    /// let a = BumpVec::from_iter_exact_in([0, 1, 2], &bump);
+    /// let b = a.map_in_place(NonZero::new);
+    /// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2)]");
+    /// ```
+    ///
+    /// Mapping to a type with a smaller alignment and size:
+    /// ```
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let a: BumpVec<u32> = BumpVec::from_iter_exact_in([0, 1, 2], &bump);
+    /// assert_eq!(a.capacity(), 3);
+    ///
+    /// let b: BumpVec<u16> = a.map_in_place(|i| i as u16);
+    /// assert_eq!(b.capacity(), 6);
+    ///
+    /// assert_eq!(b, [0, 1, 2]);
+    /// ```
+    ///
+    /// Mapping to a type with a higher alignment or size won't compile:
+    /// ```compile_fail,E0080
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let a: BumpVec<u16> = BumpVec::from_iter_exact_in([0, 1, 2], &bump);
+    /// let b: BumpVec<u32> = a.map_in_place(|i| i as u32);
+    /// # _ = b;
+    /// ```
+    pub fn map_in_place<U>(self, f: impl FnMut(T) -> U) -> BumpVec<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
+        let (fixed, bump) = self.into_parts();
+        let fixed = fixed.map_in_place(f);
+        BumpVec::from_parts(fixed, bump)
+    }
+
     /// Creates a splicing iterator that replaces the specified range in the vector
     /// with the given `replace_with` iterator and yields the removed items.
     /// `replace_with` does not need to be the same length as `range`.

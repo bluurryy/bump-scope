@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **added:** `map_in_place` to `(Mut)BumpVec`
 - **fixed:** divide by zero panic when calling `map_in_place` with a ZST
 - **added:** allow `map_in_place` to ZST's regardless of alignment
 - **fixed:** many cases where constructing a `FixedBumpVec` of ZSTs resulted in a non-`usize::MAX` capacity
