@@ -224,7 +224,7 @@ fn map_to_zst<const UP: bool>() {
 
                 i += 1;
             });
-            assert_eq!(b.capacity(), 3);
+            assert_eq!(b.capacity(), usize::MAX);
             assert_eq!(bump.stats().allocated(), 0);
             dbg!(b);
         });
@@ -287,7 +287,7 @@ fn map_from_zst_to_zst<const UP: bool>() {
 
                 i += 1;
             });
-            assert_eq!(b.capacity(), 3);
+            assert_eq!(b.capacity(), usize::MAX);
             assert_eq!(bump.stats().allocated(), 0);
             dbg!(b);
         });
