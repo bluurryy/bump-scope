@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.10.11 (2024-11-11)
 - **added:** `map_in_place` to `(Mut)BumpVec`
 - **added:** allow `map_in_place` to ZSTs regardless of alignment
 - **fixed:** divide by zero panic when calling `map_in_place` with a ZST
