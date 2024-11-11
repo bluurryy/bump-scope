@@ -1584,17 +1584,12 @@ where
         mut f: impl FnMut(T) -> U,
     ) -> Result<BumpVec<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>, B> {
         if !T::IS_ZST && !U::IS_ZST && T::ALIGN >= U::ALIGN && T::SIZE >= U::SIZE {
-            let (fixed, bump) = self.into_parts();
-            let cap = fixed.capacity();
-            let slice = fixed.into_boxed_slice();
-            let len = slice.len();
-
             struct DropGuard<'b, 'a, T, U, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
             where
                 MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
                 A: BaseAllocator<GUARANTEED_ALLOCATED>,
             {
-                ptr: NonNull<()>,
+                ptr: NonNull<T>,
                 cap: usize,
                 end: *mut T,
                 src: *mut T,
@@ -1627,21 +1622,20 @@ where
                 }
             }
 
-            unsafe {
-                let mut guard = {
-                    let ptr = slice.into_raw().cast::<()>();
-                    let src: *mut T = ptr.as_ptr().cast::<T>();
-                    let dst: *mut U = src.cast::<U>();
-                    let end = src.add(len);
+            let (fixed, bump) = self.into_parts();
+            let cap = fixed.capacity();
+            let slice = fixed.into_boxed_slice().into_raw();
+            let ptr = slice.cast::<T>();
+            let len = slice.len();
 
-                    DropGuard {
-                        ptr,
-                        cap,
-                        end,
-                        src,
-                        dst,
-                        bump,
-                    }
+            unsafe {
+                let mut guard = DropGuard {
+                    ptr,
+                    cap,
+                    end: ptr.as_ptr().add(len),
+                    src: ptr.as_ptr(),
+                    dst: ptr.as_ptr().cast::<U>(),
+                    bump,
                 };
 
                 while guard.src < guard.end {
@@ -1651,8 +1645,6 @@ where
                     guard.src = guard.src.add(1);
                     guard.dst = guard.dst.add(1);
                 }
-
-                let ptr = guard.ptr;
 
                 mem::forget(guard);
 
