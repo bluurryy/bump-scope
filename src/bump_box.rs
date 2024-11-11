@@ -2062,7 +2062,7 @@ impl<'a, T> BumpBox<'a, [T]> {
 
     /// Returns a boxed slice of the same size as `self`, with function `f` applied to each element in order.
     ///
-    /// This function only compiles with `U`s with an alignment and size less or equal to `T`'s.
+    /// This function only compiles when `U`s size and alignment is less or equal to `T`'s or if `U` has a size of 0.
     ///
     /// # Examples
     /// Mapping to a type with an equal alignment and size:
