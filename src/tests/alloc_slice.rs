@@ -7,10 +7,10 @@ fn zst<const UP: bool>() {
 
     let bump: Bump<Global, 1, UP> = Bump::new();
 
-    bump.alloc_slice_copy(&[ZST]);
-    bump.alloc_slice_clone(&[ZST]);
-    bump.alloc_slice_fill(1, ZST);
-    bump.alloc_slice_fill_with(1, || ZST);
+    bump.alloc_slice_copy(&[ZST; 10]);
+    bump.alloc_slice_clone(&[ZST; 10]);
+    bump.alloc_slice_fill(10, ZST);
+    bump.alloc_slice_fill_with(10, || ZST);
 
     assert_eq!(bump.stats().allocated(), 0);
 }

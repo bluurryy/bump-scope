@@ -5,20 +5,20 @@ use allocator_api2::alloc::Global;
 fn zst<const UP: bool>() {
     let mut bump: Bump<Global, 1, UP> = Bump::new();
 
-    bump.alloc_iter([[0u8; 0]]);
-    bump.alloc_iter([[0u16; 0]]);
-    bump.alloc_iter([[0u32; 0]]);
-    bump.alloc_iter([[0u64; 0]]);
+    bump.alloc_iter([[0u8; 0]; 10]);
+    bump.alloc_iter([[0u16; 0]; 10]);
+    bump.alloc_iter([[0u32; 0]; 10]);
+    bump.alloc_iter([[0u64; 0]; 10]);
 
-    bump.alloc_iter_mut([[0u8; 0]]);
-    bump.alloc_iter_mut([[0u16; 0]]);
-    bump.alloc_iter_mut([[0u32; 0]]);
-    bump.alloc_iter_mut([[0u64; 0]]);
+    bump.alloc_iter_mut([[0u8; 0]; 10]);
+    bump.alloc_iter_mut([[0u16; 0]; 10]);
+    bump.alloc_iter_mut([[0u32; 0]; 10]);
+    bump.alloc_iter_mut([[0u64; 0]; 10]);
 
-    bump.alloc_iter_mut_rev([[0u8; 0]]);
-    bump.alloc_iter_mut_rev([[0u16; 0]]);
-    bump.alloc_iter_mut_rev([[0u32; 0]]);
-    bump.alloc_iter_mut_rev([[0u64; 0]]);
+    bump.alloc_iter_mut_rev([[0u8; 0]; 10]);
+    bump.alloc_iter_mut_rev([[0u16; 0]; 10]);
+    bump.alloc_iter_mut_rev([[0u32; 0]; 10]);
+    bump.alloc_iter_mut_rev([[0u64; 0]; 10]);
 
     assert_eq!(bump.stats().allocated(), 0);
 }
