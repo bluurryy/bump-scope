@@ -26,20 +26,20 @@ macro_rules! bump_pool_declaration {
         /// #
         /// let mut pool: BumpPool = BumpPool::new();
         ///
-        /// let ints: Vec<&mut usize> = (0..1000)
+        /// let strings: Vec<&str> = (0..1000)
         ///     .into_par_iter()
         ///     .map_init(|| pool.get(), |bump, i| {
         ///         // do some expensive work
-        ///         bump.alloc(i).into_mut()
+        ///         bump.alloc_fmt(format_args!("{i}")).into_ref()
         ///     })
         ///     .collect();
         ///
-        /// dbg!(&ints);
+        /// dbg!(&strings);
         ///
         /// pool.reset();
         ///
-        /// // memory of the int references is freed, trying to access ints will result in a lifetime error
-        /// // dbg!(&ints);
+        /// // memory of the strings is freed, trying to access `strings` will result in a lifetime error
+        /// // dbg!(&strings);
         /// ```
         ///
         /// Using `BumpPool` with [`std::thread::scope`]:
