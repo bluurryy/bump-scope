@@ -4,7 +4,7 @@
 - **fixed:** divide by zero panic when calling `map_in_place` with a ZST
 - **added:** allow `map_in_place` to ZST's regardless of alignment
 - **fixed:** many cases where constructing a `FixedBumpVec` of ZSTs resulted in a non-`usize::MAX` capacity
-- **fixed:** potential UB when allocating or `map_in_place`ing a ZST with an alignment > 1
+- **fixed:** potential UB when using `*fill*` or `map_in_place` with a ZST of alignment > 1
 
 ## 0.10.10 (2024-11-10)
 - **added:** default generic parameters to `BumpPoolGuard`
