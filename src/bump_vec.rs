@@ -250,9 +250,8 @@ where
         {
             fn drop(&mut self) {
                 // SAFETY:
-                // The dangling pointer can not be a valid ptr into a chunk; because
-                // of the minimum chunk alignment of 16 the smallest address the chunk
-                // may be at is 16. The bump allocator handles deallocate requests
+                // The dangling pointer smaller than 16 can not be a valid ptr into a chunk because
+                // of the minimum chunk alignment of 16. The bump allocator handles deallocate requests
                 // from pointers outside its bound just fine by ignoring them.
                 //
                 // A deallocation with a dangling pointer higher than 16 would still
