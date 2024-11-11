@@ -2099,11 +2099,8 @@ impl<'a, T> BumpBox<'a, [T]> {
             return BumpBox::uninit_zst_slice(self.len()).init_fill_iter(self.into_iter().map(f));
         }
 
-        let slice = self;
-        let len = slice.len();
-
         struct DropGuard<T, U> {
-            ptr: NonNull<()>,
+            ptr: *mut T,
             end: *mut T,
             src: *mut T,
             dst: *mut U,
@@ -2118,7 +2115,7 @@ impl<'a, T> BumpBox<'a, [T]> {
                     ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
 
                     // drop `U`s
-                    let drop_ptr = self.ptr.as_ptr().cast::<U>();
+                    let drop_ptr = self.ptr.cast::<U>();
                     let drop_len = pointer::sub_ptr(self.dst, drop_ptr);
                     ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
                 }
@@ -2126,13 +2123,15 @@ impl<'a, T> BumpBox<'a, [T]> {
         }
 
         unsafe {
-            let mut guard = {
-                let ptr = slice.into_raw().cast::<()>();
-                let src: *mut T = ptr.as_ptr().cast::<T>();
-                let dst: *mut U = src.cast::<U>();
-                let end = src.add(len);
+            let slice = self.into_raw();
+            let ptr = slice.as_ptr().cast::<T>();
+            let len = slice.len();
 
-                DropGuard { ptr, end, src, dst }
+            let mut guard = DropGuard {
+                ptr,
+                end: ptr.add(len),
+                src: ptr,
+                dst: ptr.cast::<U>(),
             };
 
             while guard.src < guard.end {
@@ -2143,11 +2142,9 @@ impl<'a, T> BumpBox<'a, [T]> {
                 guard.dst = guard.dst.add(1);
             }
 
-            let ptr = guard.ptr;
-
             mem::forget(guard);
 
-            BumpBox::from_raw(nonnull::slice_from_raw_parts(ptr.cast(), len))
+            BumpBox::from_raw(NonNull::new_unchecked(ptr::slice_from_raw_parts_mut(ptr.cast(), len)))
         }
     }
 }
