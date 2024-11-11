@@ -48,7 +48,7 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///   [`split_at`](Self::split_at),
 ///   [`split_first`](Self::split_first),
 ///   [`split_last`](Self::split_last) and new methods like
-///   [`partition`](Self::partition).
+///   [`partition`](Self::partition) and [`map_in_place`](Self::map_in_place).
 /// - `BumpBox<str>` provide methods from `String` like
 ///   <code>[from_utf8](Self::from_utf8)([_unchecked](Self::from_utf8_unchecked))</code>,
 ///   [`into_boxed_bytes`](Self::into_boxed_bytes),
