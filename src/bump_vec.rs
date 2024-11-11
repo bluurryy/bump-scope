@@ -1699,9 +1699,46 @@ where
     /// # _ = b;
     /// ```
     pub fn map_in_place<U>(self, f: impl FnMut(T) -> U) -> BumpVec<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
+        // `FixedBumpVec::map_in_place` handles dropping `T`s and `U`s on panic.
+        // What is left to do is deallocating the memory.
+
+        struct DropGuard<'b, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+        where
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+            A: BaseAllocator<GUARANTEED_ALLOCATED>,
+        {
+            ptr: NonNull<T>,
+            cap: usize,
+            bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+        }
+
+        impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Drop
+            for DropGuard<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+        where
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+            A: BaseAllocator<GUARANTEED_ALLOCATED>,
+        {
+            fn drop(&mut self) {
+                unsafe {
+                    let layout = Layout::from_size_align_unchecked(self.cap * T::SIZE, T::ALIGN);
+                    self.bump.deallocate(self.ptr.cast(), layout);
+                }
+            }
+        }
+
         let (fixed, bump) = self.into_parts();
+
+        let guard = DropGuard {
+            ptr: fixed.as_non_null_ptr(),
+            cap: fixed.capacity(),
+            bump,
+        };
+
         let fixed = fixed.map_in_place(f);
-        BumpVec::from_parts(fixed, bump)
+
+        mem::forget(guard);
+
+        BumpVec { fixed, bump }
     }
 
     /// Creates a splicing iterator that replaces the specified range in the vector

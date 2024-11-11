@@ -6,13 +6,13 @@ use crate::{bump_vec, Bump, FixedBumpVec};
 use allocator_api2::alloc::Global;
 
 either_way! {
-    map_same_layout
-    map_smaller_layout
-    map_to_zst
-    map_from_zst_to_zst
+    map_in_place_same_layout
+    map_in_place_smaller_layout
+    map_in_place_to_zst
+    map_in_place_from_zst_to_zst
 }
 
-fn map_same_layout<const UP: bool>() {
+fn map_in_place_same_layout<const UP: bool>() {
     for panic_on in 0..4 {
         let bump: Bump<Global, 1, UP> = Bump::new();
 
@@ -45,7 +45,7 @@ fn map_same_layout<const UP: bool>() {
     }
 }
 
-fn map_smaller_layout<const UP: bool>() {
+fn map_in_place_smaller_layout<const UP: bool>() {
     for panic_on in 0..4 {
         let bump: Bump<Global, 1, UP> = Bump::new();
 
@@ -78,7 +78,7 @@ fn map_smaller_layout<const UP: bool>() {
     }
 }
 
-fn map_to_zst<const UP: bool>() {
+fn map_in_place_to_zst<const UP: bool>() {
     for panic_on in 0..4 {
         let bump: Bump<Global, 1, UP> = Bump::new();
 
@@ -110,7 +110,7 @@ fn map_to_zst<const UP: bool>() {
     }
 }
 
-fn map_from_zst_to_zst<const UP: bool>() {
+fn map_in_place_from_zst_to_zst<const UP: bool>() {
     for panic_on in 0..4 {
         let bump: Bump<Global, 1, UP> = Bump::new();
 

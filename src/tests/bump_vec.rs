@@ -16,6 +16,10 @@ either_way! {
     map_to_zst
     map_from_zst
     map_from_zst_to_zst
+    map_in_place_same_layout
+    map_in_place_smaller_layout
+    map_in_place_to_zst
+    map_in_place_from_zst_to_zst
 }
 
 fn shrinks<const UP: bool>() {
@@ -102,7 +106,9 @@ fn map_same_layout<const UP: bool>() {
             dbg!(b);
         });
 
-        if panic_on != 0 {
+        if panic_on == 0 {
+            result.unwrap();
+        } else {
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
         }
 
@@ -133,7 +139,9 @@ fn map_smaller_layout<const UP: bool>() {
             dbg!(b);
         });
 
-        if panic_on != 0 {
+        if panic_on == 0 {
+            result.unwrap();
+        } else {
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
         }
 
@@ -186,7 +194,9 @@ fn map_bigger_layout<const UP: bool>() {
             dbg!(b);
         });
 
-        if panic_on != 0 {
+        if panic_on == 0 {
+            result.unwrap();
+        } else {
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
         }
 
@@ -219,7 +229,9 @@ fn map_to_zst<const UP: bool>() {
             dbg!(b);
         });
 
-        if panic_on != 0 {
+        if panic_on == 0 {
+            result.unwrap();
+        } else {
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
         }
 
@@ -249,7 +261,9 @@ fn map_from_zst<const UP: bool>() {
             dbg!(b);
         });
 
-        if panic_on != 0 {
+        if panic_on == 0 {
+            result.unwrap();
+        } else {
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
         }
 
@@ -278,10 +292,172 @@ fn map_from_zst_to_zst<const UP: bool>() {
             dbg!(b);
         });
 
-        if panic_on != 0 {
+        if panic_on == 0 {
+            result.unwrap();
+        } else {
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
         }
 
         assert_eq!(bump.stats().allocated(), 0, "panic_on={panic_on}");
     }
 }
+
+fn map_in_place_same_layout<const UP: bool>() {
+    for panic_on in 0..4 {
+        let bump: Bump<Global, 1, UP> = Bump::new();
+
+        let result = std::panic::catch_unwind(|| {
+            let mut i = 1;
+            let a = BumpVec::<String, Global, 1, UP>::from_iter_exact_in([1, 2, 3].map(|i| i.to_string()), &bump);
+            assert_eq!(a.capacity(), 3);
+            assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
+            let b: BumpVec<Option<String>, Global, 1, UP> = a.map_in_place(|s| {
+                if i == panic_on {
+                    panic!("oh no");
+                }
+
+                let value = format!("hello: {s}");
+                i += 1;
+                Some(value)
+            });
+            assert_eq!(b.capacity(), 3);
+            assert_eq!(bump.stats().allocated(), size_of::<Option<String>>() * 3);
+            dbg!(b);
+        });
+
+        if panic_on == 0 {
+            result.unwrap();
+        } else {
+            assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
+        }
+
+        assert_eq!(bump.stats().allocated(), 0, "panic_on={panic_on}");
+    }
+}
+
+fn map_in_place_smaller_layout<const UP: bool>() {
+    for panic_on in 0..4 {
+        let bump: Bump<Global, 1, UP> = Bump::new();
+
+        let result = std::panic::catch_unwind(|| {
+            let mut i = 1;
+            let a = BumpVec::<String, Global, 1, UP>::from_iter_exact_in([1, 2, 3].map(|i| i.to_string()), &bump);
+            assert_eq!(a.capacity(), 3);
+            assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
+            let b: BumpVec<Box<str>, Global, 1, UP> = a.map_in_place(|s| {
+                if i == panic_on {
+                    panic!("oh no");
+                }
+
+                let value = format!("hello: {s}");
+                i += 1;
+                value.into()
+            });
+            assert_eq!(b.capacity(), 4);
+            assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
+            dbg!(b);
+        });
+
+        if panic_on == 0 {
+            result.unwrap();
+        } else {
+            assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
+        }
+
+        if UP {
+            // when upwards allocating we can't deallocate `b`,
+            // because it can no longer be identified as the last allocation
+            assert_eq!(
+                bump.stats().allocated(),
+                if panic_on == 0 { size_of::<String>() * 3 } else { 0 },
+                "panic_on={panic_on}"
+            );
+        } else {
+            // when downwards allocating we can deallocate `b`,
+            // but we only retain the knowledge of its new extent of `size_of::<Box<str>>() * 4`
+            // which is smaller than its old extent of `size_of::<String>() * 3`, so 8 bytes
+            // are left over
+            assert_eq!(
+                bump.stats().allocated(),
+                if panic_on == 0 {
+                    size_of::<String>() * 3 - size_of::<Box<str>>() * 4
+                } else {
+                    0
+                },
+                "panic_on={panic_on}"
+            );
+        }
+    }
+}
+
+fn map_in_place_to_zst<const UP: bool>() {
+    for panic_on in 0..4 {
+        let bump: Bump<Global, 1, UP> = Bump::new();
+
+        let result = std::panic::catch_unwind(|| {
+            let mut i = 1;
+            let a = BumpVec::<String, Global, 1, UP>::from_iter_exact_in([1, 2, 3].map(|i| i.to_string()), &bump);
+            assert_eq!(a.capacity(), 3);
+            assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
+            let b: BumpVec<AlignedZst, Global, 1, UP> = a.map_in_place(|_| {
+                if i == panic_on {
+                    panic!("oh no");
+                }
+
+                i += 1;
+                AlignedZst
+            });
+            assert_eq!(b.capacity(), usize::MAX);
+            assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
+            dbg!(b);
+        });
+
+        if panic_on == 0 {
+            result.unwrap();
+        } else {
+            assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
+        }
+
+        if panic_on == 0 {
+            assert_eq!(bump.stats().allocated(), size_of::<String>() * 3, "panic_on={panic_on}");
+        } else {
+            assert_eq!(bump.stats().allocated(), 0, "panic_on={panic_on}");
+        }
+    }
+}
+
+fn map_in_place_from_zst_to_zst<const UP: bool>() {
+    for panic_on in 0..4 {
+        let bump: Bump<Global, 1, UP> = Bump::new();
+
+        let result = std::panic::catch_unwind(|| {
+            let mut i = 1;
+            let a = BumpVec::<(), Global, 1, UP>::from_iter_exact_in([(), (), ()], &bump);
+            assert_eq!(a.capacity(), usize::MAX);
+            assert_eq!(bump.stats().allocated(), 0);
+            let b: BumpVec<AlignedZst, Global, 1, UP> = a.map_in_place(|()| {
+                if i == panic_on {
+                    panic!("oh no");
+                }
+
+                i += 1;
+                AlignedZst
+            });
+            assert_eq!(b.capacity(), usize::MAX);
+            assert_eq!(bump.stats().allocated(), 0);
+            dbg!(b);
+        });
+
+        if panic_on == 0 {
+            result.unwrap();
+        } else {
+            assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
+        }
+
+        assert_eq!(bump.stats().allocated(), 0, "panic_on={panic_on}");
+    }
+}
+
+#[repr(align(1024))]
+#[derive(Debug)]
+struct AlignedZst;
