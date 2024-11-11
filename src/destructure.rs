@@ -1,15 +1,16 @@
 /// Allows you to destructure structs that have a drop implementation.
 macro_rules! destructure {
-    (let {
+    (let $ty:ty {
         $($field:ident $(: $field_alias:ident)?),* $(,)?
-    } = $value:ident) => {
-        let mut maybe_uninit = ::core::mem::MaybeUninit::new($value);
+    } = $value:expr) => {
+        let value: $ty = $value;
+        let value = ::core::mem::ManuallyDrop::new(value);
 
         #[allow(dead_code)]
         const _: () = assert!(!$crate::destructure::has_duplicates(&[$(stringify!($field)),*]), "you can't destructure a field twice");
 
         $(
-            let $crate::destructure::or!($($field_alias)? $field) = unsafe { ::core::ptr::addr_of_mut!((*maybe_uninit.as_mut_ptr()).$field).read() };
+            let $crate::destructure::or!($($field_alias)? $field) = unsafe { ::core::ptr::read(&value.$field) };
         )*
     };
 }
@@ -74,16 +75,26 @@ mod tests {
 
     #[test]
     fn example() {
-        struct Foo {
-            bar: i32,
-            baz: i64,
+        pub struct Foo {
+            bar: String,
+            baz: String,
         }
 
-        let foo = Foo { bar: 3, baz: 5 };
+        impl Drop for Foo {
+            fn drop(&mut self) {}
+        }
 
-        destructure!(let { bar: qux, baz } = foo);
+        let foo = Foo {
+            bar: "bar".into(),
+            baz: "baz".into(),
+        };
 
-        assert_eq!(qux, 3);
-        assert_eq!(baz, 5);
+        // won't compile
+        // let Foo { bar: qux, baz } = foo;
+
+        destructure!(let Foo { bar: qux, baz } = foo);
+
+        assert_eq!(qux, "bar");
+        assert_eq!(baz, "baz");
     }
 }

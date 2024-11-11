@@ -2133,7 +2133,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn into_parts(self) -> (FixedBumpVec<'a, T>, &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) {
-        destructure!(let { fixed, bump } = self);
+        destructure!(let Self { fixed, bump } = self);
         (fixed, bump)
     }
 

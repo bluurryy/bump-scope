@@ -697,7 +697,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
         usize,
         &'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     ) {
-        destructure!(let { end, len, cap, bump } = self);
+        destructure!(let Self { end, len, cap, bump } = self);
         (end, len, cap, bump)
     }
 
