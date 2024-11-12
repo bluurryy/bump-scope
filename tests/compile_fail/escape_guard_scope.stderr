@@ -1,13 +1,13 @@
 error[E0597]: `guard` does not live long enough
-  --> tests/compile_fail/escape_guard_scope.rs:9:17
+  --> tests/compile_fail/escape_guard_scope.rs:9:21
    |
-8  |     let mut guard = bump.scope_guard();
-   |         --------- binding `guard` declared here
-9  |     let scope = guard.scope();
-   |                 ^^^^^ borrowed value does not live long enough
+8  |         let mut guard = bump.scope_guard();
+   |             --------- binding `guard` declared here
+9  |         let scope = guard.scope();
+   |                     ^^^^^ borrowed value does not live long enough
 ...
-12 |   }
-   |   - `guard` dropped here while still borrowed
+12 |     }
+   |     - `guard` dropped here while still borrowed
 13 |
-14 |   dbg!(escapee);
-   |        ------- borrow later used here
+14 |     dbg!(escapee);
+   |          ------- borrow later used here

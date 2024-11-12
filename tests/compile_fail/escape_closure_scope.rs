@@ -1,13 +1,13 @@
 use bump_scope::BumpScope;
 
 fn escape_closure(mut bump: BumpScope) {
-  let mut escapee = None;
+    let mut escapee = None;
 
-  bump.scoped(|scope| {
-    escapee = Some(scope.alloc("escape?"));
-  });
+    bump.scoped(|scope| {
+        escapee = Some(scope.alloc("escape?"));
+    });
 
-  dbg!(escapee);
+    dbg!(escapee);
 }
 
 fn main() {}
