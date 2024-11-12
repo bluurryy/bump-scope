@@ -99,7 +99,7 @@
 //! - You can allocate a slice from *any* `Iterator` with [`alloc_iter`](crate::Bump::alloc_iter).
 //! - Every method that panics on allocation failure has a fallible `try_*` counterpart.
 //! - `Bump`'s base allocator is generic.
-//! - `Bump` and `BumpScope` have the same repr as `NonNull<u8>`. (vs 3x pointer sized)
+//! - `Bump` and `BumpScope` have the same repr as `Cell<NonNull<()>>`. (vs 3x pointer sized)
 //! - Won't try to allocate a smaller chunk if allocation failed.
 //! - No built-in allocation limit. You can provide an allocator that enforces an allocation limit (see `tests/limit_memory_usage.rs`).
 //! - Allocations are a bit more optimized. (see `crates/inspect-asm/out/x86-64` and [benchmarks](https://bluurryy.github.io/bump-scope/criterion/report/))

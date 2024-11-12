@@ -7,6 +7,7 @@ use core::{
     fmt::Debug,
     mem,
     ops::Index,
+    ptr::NonNull,
     sync::atomic::{AtomicUsize, Ordering},
 };
 use std::io::IoSlice;
@@ -45,7 +46,7 @@ const OVERHEAD: usize = MALLOC_OVERHEAD + size_of::<ChunkHeader<Global>>();
 use crate::{
     chunk_size::AssumedMallocOverhead, infallible, mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice, Bump,
     BumpBox, BumpScope, BumpString, BumpVec, Chunk, ChunkHeader, ChunkSize, FmtFn, MinimumAlignment, MutBumpString,
-    MutBumpVec, MutBumpVecRev, SupportedMinimumAlignment,
+    MutBumpVec, MutBumpVecRev, SizedTypeProperties, SupportedMinimumAlignment,
 };
 
 #[allow(dead_code)]
@@ -1131,4 +1132,23 @@ fn map_in_place_compile_fail_due_to_zst() {
     let bump: Bump = Bump::new();
     let slice = bump.alloc_slice_copy(&[(), (), ()]);
     foo(slice);
+}
+
+// test claim in crate docs that layout equals `Cell<NonNull<()>>`
+// make sure to also check that niches are the same
+mod doc_layout_claim {
+    #![allow(dead_code)]
+    use crate::SizedTypeProperties;
+    use allocator_api2::alloc::Global;
+    use core::{cell::Cell, ptr::NonNull};
+    type Bump = crate::Bump<Global, 1, true, true>;
+    type BumpScope = crate::BumpScope<'static, Global, 1, true, true>;
+    type Comparand = Cell<NonNull<()>>;
+    const _: () = assert!(Bump::SIZE == Comparand::SIZE && Bump::ALIGN == Comparand::ALIGN);
+    const _: () = assert!(BumpScope::SIZE == Comparand::SIZE && BumpScope::ALIGN == Comparand::ALIGN);
+    const _: () =
+        assert!(Option::<Bump>::SIZE == Option::<Comparand>::SIZE && Option::<Bump>::ALIGN == Option::<Comparand>::ALIGN);
+    const _: () = assert!(
+        Option::<BumpScope>::SIZE == Option::<Comparand>::SIZE && Option::<BumpScope>::ALIGN == Option::<Comparand>::ALIGN
+    );
 }

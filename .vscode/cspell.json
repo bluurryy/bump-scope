@@ -17,6 +17,7 @@
     "clippy",
     "codegen",
     "codepoint",
+    "Comparand",
     "constness",
     "curr",
     "Dealloc",
