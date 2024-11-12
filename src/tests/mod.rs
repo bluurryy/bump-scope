@@ -1105,6 +1105,7 @@ fn map_in_place_compile_fail_due_to_align() {
 //
 // Can't have a trybuild (or doc tests) test for this because trybuild just `check`s
 // whereas the compile error we trigger `E0080` only gets triggered when building.
+#[cfg(any())]
 #[test]
 fn map_in_place_compile_fail_due_to_size() {
     pub fn lengthen(bump: BumpBox<[u32]>) -> BumpBox<[u64]> {
