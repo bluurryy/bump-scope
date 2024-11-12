@@ -1441,7 +1441,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// even if the resulting reference is not used. The caller has to ensure that
     /// `0 <= mid <= self.len()`.
     ///
-    /// [`split_at`]: slice::split_at
+    /// [`split_at`]: Self::split_at
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
     ///
     /// # Examples
