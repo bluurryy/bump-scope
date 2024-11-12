@@ -2832,7 +2832,10 @@ struct AssertInPlaceMappable<Src, Dst>(PhantomData<(Src, Dst)>);
 
 impl<Src, Dst> AssertInPlaceMappable<Src, Dst> {
     #[allow(dead_code)]
-    const ASSERT: () = assert!(Dst::IS_ZST || (Src::ALIGN >= Dst::ALIGN && Src::SIZE >= Dst::SIZE));
+    const ASSERT: () = assert!(
+        Dst::IS_ZST || (Src::ALIGN >= Dst::ALIGN && Src::SIZE >= Dst::SIZE),
+        "`map_in_place` only compiles when `U`s size and alignment is less or equal to `T`'s or if `U` has a size of 0"
+    );
 }
 
 const _: () = {
