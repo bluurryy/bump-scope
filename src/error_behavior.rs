@@ -1,6 +1,6 @@
 #[cfg(not(no_global_oom_handling))]
 use crate::{capacity_overflow, format_trait_error, handle_alloc_error, Infallible};
-use crate::{layout, AllocError, Layout, NonNull, RawChunk, SupportedMinimumAlignment};
+use crate::{layout, AllocError, BumpAllocator, Layout, NonNull, RawChunk, SupportedMinimumAlignment};
 use layout::LayoutProps;
 
 pub(crate) trait ErrorBehavior: Sized {
@@ -27,6 +27,10 @@ pub(crate) trait ErrorBehavior: Sized {
         layout: impl LayoutProps,
         f: impl FnOnce() -> Result<NonNull<u8>, Self>,
     ) -> Result<NonNull<u8>, Self>;
+
+    fn allocate_layout(allocator: &impl BumpAllocator, layout: Layout) -> Result<NonNull<u8>, Self>;
+    fn allocate_sized<T>(allocator: &impl BumpAllocator) -> Result<NonNull<u8>, Self>;
+    fn allocate_slice<T>(allocator: &impl BumpAllocator, len: usize) -> Result<NonNull<u8>, Self>;
 }
 
 #[cfg(not(no_global_oom_handling))]
@@ -76,6 +80,21 @@ impl ErrorBehavior for Infallible {
         f: impl FnOnce() -> Result<NonNull<u8>, Self>,
     ) -> Result<NonNull<u8>, Self> {
         chunk.reserve_or_else(minimum_alignment, layout, f)
+    }
+
+    #[inline(always)]
+    fn allocate_layout(allocator: &impl BumpAllocator, layout: Layout) -> Result<NonNull<u8>, Self> {
+        Ok(allocator.allocate_layout(layout))
+    }
+
+    #[inline(always)]
+    fn allocate_sized<T>(allocator: &impl BumpAllocator) -> Result<NonNull<u8>, Self> {
+        Ok(allocator.allocate_sized::<T>())
+    }
+
+    #[inline(always)]
+    fn allocate_slice<T>(allocator: &impl BumpAllocator, len: usize) -> Result<NonNull<u8>, Self> {
+        Ok(allocator.allocate_slice::<T>(len))
     }
 }
 
@@ -132,6 +151,21 @@ impl ErrorBehavior for AllocError {
             Some(ptr) => Ok(ptr),
             None => f(),
         }
+    }
+
+    #[inline(always)]
+    fn allocate_layout(allocator: &impl BumpAllocator, layout: Layout) -> Result<NonNull<u8>, Self> {
+        allocator.try_allocate_layout(layout)
+    }
+
+    #[inline(always)]
+    fn allocate_sized<T>(allocator: &impl BumpAllocator) -> Result<NonNull<u8>, Self> {
+        allocator.try_allocate_sized::<T>()
+    }
+
+    #[inline(always)]
+    fn allocate_slice<T>(allocator: &impl BumpAllocator, len: usize) -> Result<NonNull<u8>, Self> {
+        allocator.try_allocate_slice::<T>(len)
     }
 }
 
