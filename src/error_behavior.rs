@@ -29,8 +29,8 @@ pub(crate) trait ErrorBehavior: Sized {
     ) -> Result<NonNull<u8>, Self>;
 
     fn allocate_layout(allocator: &impl BumpAllocator, layout: Layout) -> Result<NonNull<u8>, Self>;
-    fn allocate_sized<T>(allocator: &impl BumpAllocator) -> Result<NonNull<u8>, Self>;
-    fn allocate_slice<T>(allocator: &impl BumpAllocator, len: usize) -> Result<NonNull<u8>, Self>;
+    fn allocate_sized<T>(allocator: &impl BumpAllocator) -> Result<NonNull<T>, Self>;
+    fn allocate_slice<T>(allocator: &impl BumpAllocator, len: usize) -> Result<NonNull<T>, Self>;
 }
 
 #[cfg(not(no_global_oom_handling))]
@@ -88,12 +88,12 @@ impl ErrorBehavior for Infallible {
     }
 
     #[inline(always)]
-    fn allocate_sized<T>(allocator: &impl BumpAllocator) -> Result<NonNull<u8>, Self> {
+    fn allocate_sized<T>(allocator: &impl BumpAllocator) -> Result<NonNull<T>, Self> {
         Ok(allocator.allocate_sized::<T>())
     }
 
     #[inline(always)]
-    fn allocate_slice<T>(allocator: &impl BumpAllocator, len: usize) -> Result<NonNull<u8>, Self> {
+    fn allocate_slice<T>(allocator: &impl BumpAllocator, len: usize) -> Result<NonNull<T>, Self> {
         Ok(allocator.allocate_slice::<T>(len))
     }
 }
@@ -159,12 +159,12 @@ impl ErrorBehavior for AllocError {
     }
 
     #[inline(always)]
-    fn allocate_sized<T>(allocator: &impl BumpAllocator) -> Result<NonNull<u8>, Self> {
+    fn allocate_sized<T>(allocator: &impl BumpAllocator) -> Result<NonNull<T>, Self> {
         allocator.try_allocate_sized::<T>()
     }
 
     #[inline(always)]
-    fn allocate_slice<T>(allocator: &impl BumpAllocator, len: usize) -> Result<NonNull<u8>, Self> {
+    fn allocate_slice<T>(allocator: &impl BumpAllocator, len: usize) -> Result<NonNull<T>, Self> {
         allocator.try_allocate_slice::<T>(len)
     }
 }

@@ -35,7 +35,7 @@ pub unsafe trait BumpAllocator: Allocator {
     }
 
     /// A specialized version of `allocate`.
-    fn allocate_sized<T>(&self) -> NonNull<u8>
+    fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
     {
@@ -48,7 +48,7 @@ pub unsafe trait BumpAllocator: Allocator {
     }
 
     /// A specialized version of `allocate`.
-    fn try_allocate_sized<T>(&self) -> Result<NonNull<u8>, AllocError>
+    fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>
     where
         Self: Sized,
     {
@@ -59,7 +59,7 @@ pub unsafe trait BumpAllocator: Allocator {
     }
 
     /// A specialized version of `allocate`.
-    fn allocate_slice<T>(&self, len: usize) -> NonNull<u8>
+    fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
     {
@@ -75,7 +75,7 @@ pub unsafe trait BumpAllocator: Allocator {
     }
 
     /// A specialized version of `allocate`.
-    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<u8>, AllocError>
+    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError>
     where
         Self: Sized,
     {

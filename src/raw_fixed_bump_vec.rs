@@ -1,4 +1,4 @@
-use core::{marker::PhantomData, mem::transmute};
+use core::mem::transmute;
 
 use crate::{
     error_behavior::ErrorBehavior,
@@ -32,7 +32,7 @@ impl<T> RawFixedBumpVec<T> {
 
     #[inline(always)]
     pub(crate) unsafe fn allocate<B: ErrorBehavior>(allocator: &impl BumpAllocator, len: usize) -> Result<Self, B> {
-        let ptr = B::allocate_slice::<T>(allocator, len)?.cast();
+        let ptr = B::allocate_slice::<T>(allocator, len)?;
         let initialized = RawBumpBox::new(nonnull::slice_from_raw_parts(ptr, 0));
         Ok(Self {
             initialized,
