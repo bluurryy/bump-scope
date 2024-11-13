@@ -8,7 +8,7 @@ use crate::{
 /// Like [`BumpBox`] but without its lifetime.
 #[repr(transparent)]
 pub struct RawBumpBox<T: ?Sized> {
-    pub(crate) ptr: NonNull<T>,
+    ptr: NonNull<T>,
 
     /// Marks ownership over T. (<https://doc.rust-lang.org/nomicon/phantom-data.html#generic-parameters-and-drop-checking>)
     marker: PhantomData<T>,
@@ -38,5 +38,13 @@ impl<T: ?Sized> RawBumpBox<T> {
     #[inline(always)]
     pub(crate) unsafe fn cook_mut<'a>(&mut self) -> &mut BumpBox<'a, T> {
         transmute_mut(self)
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn new(ptr: NonNull<T>) -> Self {
+        Self {
+            ptr,
+            marker: PhantomData,
+        }
     }
 }

@@ -1,9 +1,10 @@
-use core::mem::transmute;
+use core::{marker::PhantomData, mem::transmute};
 
 use crate::{
-    polyfill::{transmute_mut, transmute_ref},
+    error_behavior::ErrorBehavior,
+    polyfill::{nonnull, transmute_mut, transmute_ref},
     raw_bump_box::RawBumpBox,
-    FixedBumpVec,
+    BumpAllocator, FixedBumpVec,
 };
 
 /// Like [`FixedBumpVec`] but without its lifetime.
@@ -27,5 +28,15 @@ impl<T> RawFixedBumpVec<T> {
     #[inline(always)]
     pub(crate) unsafe fn cook_mut<'a>(&mut self) -> &mut FixedBumpVec<'a, T> {
         transmute_mut(self)
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn allocate<B: ErrorBehavior>(allocator: &impl BumpAllocator, len: usize) -> Result<Self, B> {
+        let ptr = B::allocate_slice::<T>(allocator, len)?.cast();
+        let initialized = RawBumpBox::new(nonnull::slice_from_raw_parts(ptr, 0));
+        Ok(Self {
+            initialized,
+            capacity: len,
+        })
     }
 }
