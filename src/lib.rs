@@ -296,6 +296,8 @@ pub mod owned_slice;
 /// Contains types associated with owned strings.
 pub mod owned_str;
 mod polyfill;
+mod raw_bump_box;
+mod raw_fixed_bump_vec;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
 mod stats;

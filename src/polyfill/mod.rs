@@ -66,6 +66,10 @@ macro_rules! cfg_const {
 
 pub(crate) use cfg_const;
 
+pub(crate) unsafe fn transmute_ref<A, B>(a: &A) -> &B {
+    &*(a as *const A).cast::<B>()
+}
+
 pub(crate) unsafe fn transmute_mut<A, B>(a: &mut A) -> &mut B {
     &mut *(a as *mut A).cast::<B>()
 }
