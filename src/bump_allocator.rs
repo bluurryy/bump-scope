@@ -1,4 +1,7 @@
-use allocator_api2::alloc::Allocator;
+use core::{alloc::Layout, ptr::NonNull};
+use std::alloc::handle_alloc_error;
+
+use allocator_api2::alloc::{AllocError, Allocator};
 
 use crate::{BaseAllocator, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
 
@@ -13,7 +16,80 @@ use crate::{BaseAllocator, Bump, BumpScope, MinimumAlignment, SupportedMinimumAl
 /// - `deallocate` can be called with any pointer or alignment when the size is `0`
 ///
 /// [into_box]: crate::BumpBox::into_box
-pub unsafe trait BumpAllocator: Allocator {}
+#[allow(clippy::missing_errors_doc)]
+pub unsafe trait BumpAllocator: Allocator {
+    /// A specialized version of `allocate`.
+    fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
+        match self.allocate(layout) {
+            Ok(ptr) => ptr.cast(),
+            Err(AllocError) => handle_alloc_error(layout),
+        }
+    }
+
+    /// A specialized version of `allocate`.
+    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
+        match self.allocate(layout) {
+            Ok(ptr) => Ok(ptr.cast()),
+            Err(err) => Err(err),
+        }
+    }
+
+    /// A specialized version of `allocate`.
+    fn allocate_sized<T>(&self) -> NonNull<u8>
+    where
+        Self: Sized,
+    {
+        let layout = Layout::new::<T>();
+
+        match self.allocate(layout) {
+            Ok(ptr) => ptr.cast(),
+            Err(AllocError) => handle_alloc_error(Layout::new::<T>()),
+        }
+    }
+
+    /// A specialized version of `allocate`.
+    fn try_allocate_sized<T>(&self) -> Result<NonNull<u8>, AllocError>
+    where
+        Self: Sized,
+    {
+        match self.allocate(Layout::new::<T>()) {
+            Ok(ptr) => Ok(ptr.cast()),
+            Err(err) => Err(err),
+        }
+    }
+
+    /// A specialized version of `allocate`.
+    fn allocate_slice<T>(&self, len: usize) -> NonNull<u8>
+    where
+        Self: Sized,
+    {
+        let layout = match Layout::array::<T>(len) {
+            Ok(layout) => layout,
+            Err(_) => invalid_slice_layout(),
+        };
+
+        match self.allocate(layout) {
+            Ok(ptr) => ptr.cast(),
+            Err(AllocError) => handle_alloc_error(layout),
+        }
+    }
+
+    /// A specialized version of `allocate`.
+    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<u8>, AllocError>
+    where
+        Self: Sized,
+    {
+        let layout = match Layout::array::<T>(len) {
+            Ok(layout) => layout,
+            Err(_) => return Err(AllocError),
+        };
+
+        match self.allocate(layout) {
+            Ok(ptr) => Ok(ptr.cast()),
+            Err(err) => Err(err),
+        }
+    }
+}
 
 unsafe impl<A: BumpAllocator> BumpAllocator for &A {}
 
@@ -70,4 +146,11 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
+}
+
+#[cold]
+#[inline(never)]
+#[cfg(not(no_global_oom_handling))]
+pub const fn invalid_slice_layout() -> ! {
+    panic!("invalid slice layout");
 }
