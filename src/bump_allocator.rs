@@ -4,7 +4,7 @@ use allocator_api2::alloc::{AllocError, Allocator};
 
 use crate::{
     bump_down, polyfill::nonnull, up_align_usize_unchecked, BaseAllocator, Bump, BumpScope, MinimumAlignment,
-    SizedTypeProperties, SupportedMinimumAlignment,
+    SizedTypeProperties, Stats, SupportedMinimumAlignment,
 };
 
 #[cfg(not(no_global_oom_handling))]
@@ -28,6 +28,11 @@ use crate::{handle_alloc_error, infallible};
 /// [try_prepare_slice_allocation]: Self::try_prepare_slice_allocation
 #[allow(clippy::missing_errors_doc)]
 pub unsafe trait BumpAllocator: Allocator {
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
+    fn stats(&self) -> Stats<'_> {
+        Stats { current: None }
+    }
+
     /// A specialized version of `allocate`.
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         #[cfg(not(no_global_oom_handling))]
@@ -184,6 +189,11 @@ pub unsafe trait BumpAllocator: Allocator {
 
 unsafe impl<A: BumpAllocator> BumpAllocator for &A {
     #[inline(always)]
+    fn stats(&self) -> Stats<'_> {
+        A::stats(self)
+    }
+
+    #[inline(always)]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         A::allocate_layout(self, layout)
     }
@@ -238,6 +248,11 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
+    #[inline(always)]
+    fn stats(&self) -> Stats<'_> {
+        BumpScope::stats(self)
+    }
+
     #[inline(always)]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         #[cfg(not(no_global_oom_handling))]
@@ -404,6 +419,11 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
+    fn stats(&self) -> Stats<'_> {
+        Bump::stats(self)
+    }
+
+    #[inline(always)]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         self.as_scope().allocate_layout(layout)
     }
@@ -490,6 +510,11 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
+    fn stats(&self) -> Stats<'_> {
+        BumpScope::stats(self)
+    }
+
+    #[inline(always)]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         BumpScope::allocate_layout(self, layout)
     }
@@ -573,6 +598,11 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
+    #[inline(always)]
+    fn stats(&self) -> Stats<'_> {
+        Bump::stats(self)
+    }
+
     #[inline(always)]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         Bump::allocate_layout(self, layout)
@@ -670,7 +700,9 @@ where
 ///     unsafe { ptr.as_ref() }
 /// }
 /// ```
-pub unsafe trait BumpAllocatorScope<'a>: BumpAllocator {}
+pub unsafe trait BumpAllocatorScope<'a>: BumpAllocator {
+    // TODO: implement `stats` that live for `'a`?
+}
 
 unsafe impl<'a, A: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for &A {}
 

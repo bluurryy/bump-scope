@@ -808,6 +808,13 @@ impl<A: BumpAllocator> BumpString<A> {
         // only the invariant that the bytes are utf8 is different.
         transmute_mut(self)
     }
+
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
+    #[must_use]
+    #[inline(always)]
+    pub fn stats(&self) -> Stats {
+        self.allocator.stats()
+    }
 }
 
 impl<A: BumpAllocator> BumpString<A> {
@@ -1350,13 +1357,6 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
     pub fn into_parts(self) -> (FixedBumpString<'a>, A) {
         destructure!(let Self { fixed, allocator } = self);
         (unsafe { fixed.cook() }, allocator)
-    }
-
-    /// Returns a type which provides statistics about the memory usage of the bump allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn stats(&self) -> Stats<'a> {
-        todo!()
     }
 }
 

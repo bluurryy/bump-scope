@@ -2317,6 +2317,13 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     pub fn allocator(&self) -> &A {
         &self.allocator
     }
+
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
+    #[must_use]
+    #[inline(always)]
+    pub fn stats(&self) -> Stats {
+        self.allocator.stats()
+    }
 }
 
 impl<'a, T, A: BumpAllocatorScope<'a>> BumpVec<T, A> {
@@ -2429,13 +2436,6 @@ impl<'a, T, A: BumpAllocatorScope<'a>> BumpVec<T, A> {
 
         destructure!(let Self { fixed, allocator } = self);
         (unsafe { fixed.cook() }, allocator)
-    }
-
-    /// Returns a type which provides statistics about the memory usage of the bump allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn stats(&self) -> Stats<'a> {
-        todo!()
     }
 }
 
