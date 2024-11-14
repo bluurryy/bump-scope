@@ -2434,7 +2434,7 @@ impl<'a, T, A: BumpAllocatorScope<'a>> BumpVec<T, A> {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'a, true> {
+    pub fn stats(&self) -> Stats<'a> {
         todo!()
     }
 }

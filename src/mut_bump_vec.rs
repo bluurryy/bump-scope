@@ -1813,7 +1813,7 @@ where
     /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'a, UP> {
+    pub fn stats(&self) -> Stats<'a> {
         self.bump.stats()
     }
 }
@@ -1828,7 +1828,7 @@ where
     /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
     #[must_use]
     #[inline(always)]
-    pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats<'a, UP> {
+    pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats<'a> {
         self.bump.guaranteed_allocated_stats()
     }
 }

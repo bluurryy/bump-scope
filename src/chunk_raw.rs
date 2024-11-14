@@ -545,11 +545,4 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     pub(crate) fn allocator(self) -> NonNull<A> {
         unsafe { NonNull::from(&self.header.as_ref().allocator) }
     }
-
-    #[inline(always)]
-    pub(crate) fn without_allocator(self) -> RawChunk<UP, ()> {
-        RawChunk {
-            header: self.header.cast(),
-        }
-    }
 }

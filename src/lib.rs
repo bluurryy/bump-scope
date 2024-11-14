@@ -728,8 +728,8 @@ macro_rules! bump_scope_methods {
             $crate::condition! {
                 if $is_scope {
                     debug_assert!(self.stats().big_to_small().any(|c| {
-                        c.chunk.header_ptr() == checkpoint.chunk.cast() &&
-                        c.chunk.contains_addr_or_end(checkpoint.address.get())
+                        c.chunk == checkpoint.chunk.cast() &&
+                        crate::stats::raw!(c.contains_addr_or_end(checkpoint.address.get()))
                     }));
 
                     checkpoint.reset_within_chunk();
@@ -746,7 +746,7 @@ macro_rules! bump_scope_methods {
         #[inline(always)]
         pub fn guaranteed_allocated_stats(
             &self,
-        ) -> $crate::condition! { if $is_scope { GuaranteedAllocatedStats<'a, UP> } else { GuaranteedAllocatedStats<UP> } } {
+        ) -> $crate::condition! { if $is_scope { GuaranteedAllocatedStats<'a> } else { GuaranteedAllocatedStats } } {
             GuaranteedAllocatedStats {
                 current: crate::Chunk::new_guaranteed_allocated(self.as_scope()),
             }
@@ -768,7 +768,7 @@ macro_rules! bump_common_methods {
                 /// Returns a type which provides statistics about the memory usage of the bump allocator.
                 #[must_use]
                 #[inline(always)]
-                pub fn stats(&self) -> Stats<'a, UP> {
+                pub fn stats(&self) -> Stats<'a> {
                     Stats {
                         current: crate::Chunk::new(self.as_scope()),
                     }
@@ -777,7 +777,7 @@ macro_rules! bump_common_methods {
                 /// Returns a type which provides statistics about the memory usage of the bump allocator.
                 #[must_use]
                 #[inline(always)]
-                pub fn stats(&self) -> Stats<UP> {
+                pub fn stats(&self) -> Stats {
                     self.as_scope().stats()
                 }
             }
