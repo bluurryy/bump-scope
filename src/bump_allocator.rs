@@ -126,6 +126,33 @@ pub unsafe trait BumpAllocator: Allocator {
         }
     }
 
+    /// A specialized version of `shrink`.
+    ///
+    /// Returns `Some` if a shrink was performed, `None` if not.
+    ///
+    /// # Safety
+    ///
+    /// `new_len` must be less than `old_len`
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>
+    where
+        Self: Sized,
+    {
+        _ = (ptr, old_len, new_len);
+        None
+    }
+
+    /// Returns `true` if this allocator has an optimized `allocate` version in
+    /// <code>([try_][try_allocate_slice_greedy])[mut_allocate_slice][allocate_slice_greedy])</code>.
+    ///
+    /// If `false`, then <code>([try_][try_allocate_slice_greedy])[mut_allocate_slice][allocate_slice_greedy])</code>
+    /// must not be manually implemented.
+    ///
+    /// [allocate_slice_greedy]: Self::allocate_slice_greedy
+    /// [try_allocate_slice_greedy]: Self::try_allocate_slice_greedy
+    fn supports_greedy_allocations(&self) -> bool {
+        false
+    }
+
     /// A specialized version of `allocate`.
     ///
     /// # Safety
@@ -163,33 +190,6 @@ pub unsafe trait BumpAllocator: Allocator {
             Ok(ptr) => Ok(nonnull::slice_from_raw_parts(ptr, len)),
             Err(err) => Err(err),
         }
-    }
-
-    /// A specialized version of `shrink`.
-    ///
-    /// Returns `Some` if a shrink was performed, `None` if not.
-    ///
-    /// # Safety
-    ///
-    /// `new_len` must be less than `old_len`
-    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>
-    where
-        Self: Sized,
-    {
-        _ = (ptr, old_len, new_len);
-        None
-    }
-
-    /// Returns `true` if this allocator has an optimized `allocate` version in
-    /// <code>([try_][try_allocate_slice_greedy])[mut_allocate_slice][allocate_slice_greedy])</code>.
-    ///
-    /// If `false`, then <code>([try_][try_allocate_slice_greedy])[mut_allocate_slice][allocate_slice_greedy])</code>
-    /// must not be manually implemented.
-    ///
-    /// [allocate_slice_greedy]: Self::allocate_slice_greedy
-    /// [try_allocate_slice_greedy]: Self::try_allocate_slice_greedy
-    fn supports_greedy_allocations(&self) -> bool {
-        false
     }
 }
 
@@ -318,33 +318,6 @@ where
     }
 
     #[inline(always)]
-    unsafe fn allocate_slice_greedy<T>(&mut self, len: usize) -> NonNull<[T]>
-    where
-        Self: Sized,
-    {
-        #[cfg(not(no_global_oom_handling))]
-        {
-            let (ptr, len) = infallible(BumpScope::alloc_greedy(self, len));
-            nonnull::slice_from_raw_parts(ptr, len)
-        }
-
-        #[cfg(no_global_oom_handling)]
-        {
-            _ = len;
-            unreachable!()
-        }
-    }
-
-    #[inline(always)]
-    unsafe fn try_allocate_slice_greedy<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
-    where
-        Self: Sized,
-    {
-        let (ptr, len) = BumpScope::alloc_greedy(self, len)?;
-        Ok(nonnull::slice_from_raw_parts(ptr, len))
-    }
-
-    #[inline(always)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
         let old_ptr = ptr.cast::<u8>();
         let old_size = old_len * T::SIZE; // we already allocated that amount so this can't overflow
@@ -398,6 +371,33 @@ where
     fn supports_greedy_allocations(&self) -> bool {
         true
     }
+
+    #[inline(always)]
+    unsafe fn allocate_slice_greedy<T>(&mut self, len: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        #[cfg(not(no_global_oom_handling))]
+        {
+            let (ptr, len) = infallible(BumpScope::alloc_greedy(self, len));
+            nonnull::slice_from_raw_parts(ptr, len)
+        }
+
+        #[cfg(no_global_oom_handling)]
+        {
+            _ = len;
+            unreachable!()
+        }
+    }
+
+    #[inline(always)]
+    unsafe fn try_allocate_slice_greedy<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    where
+        Self: Sized,
+    {
+        let (ptr, len) = BumpScope::alloc_greedy(self, len)?;
+        Ok(nonnull::slice_from_raw_parts(ptr, len))
+    }
 }
 
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
@@ -449,6 +449,19 @@ where
     }
 
     #[inline(always)]
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>
+    where
+        Self: Sized,
+    {
+        self.as_scope().shrink_slice(ptr, old_len, new_len)
+    }
+
+    #[inline(always)]
+    fn supports_greedy_allocations(&self) -> bool {
+        self.as_scope().supports_greedy_allocations()
+    }
+
+    #[inline(always)]
     unsafe fn allocate_slice_greedy<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
@@ -462,19 +475,6 @@ where
         Self: Sized,
     {
         self.as_mut_scope().try_allocate_slice_greedy(len)
-    }
-
-    #[inline(always)]
-    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>
-    where
-        Self: Sized,
-    {
-        self.as_scope().shrink_slice(ptr, old_len, new_len)
-    }
-
-    #[inline(always)]
-    fn supports_greedy_allocations(&self) -> bool {
-        self.as_scope().supports_greedy_allocations()
     }
 }
 
@@ -528,6 +528,16 @@ where
     }
 
     #[inline(always)]
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
+        BumpScope::shrink_slice(self, ptr, old_len, new_len)
+    }
+
+    #[inline(always)]
+    fn supports_greedy_allocations(&self) -> bool {
+        BumpScope::supports_greedy_allocations(self)
+    }
+
+    #[inline(always)]
     unsafe fn allocate_slice_greedy<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
@@ -541,16 +551,6 @@ where
         Self: Sized,
     {
         BumpScope::try_allocate_slice_greedy(self, len)
-    }
-
-    #[inline(always)]
-    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        BumpScope::shrink_slice(self, ptr, old_len, new_len)
-    }
-
-    #[inline(always)]
-    fn supports_greedy_allocations(&self) -> bool {
-        BumpScope::supports_greedy_allocations(self)
     }
 }
 
@@ -604,6 +604,16 @@ where
     }
 
     #[inline(always)]
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
+        Bump::shrink_slice(self, ptr, old_len, new_len)
+    }
+
+    #[inline(always)]
+    fn supports_greedy_allocations(&self) -> bool {
+        Bump::supports_greedy_allocations(self)
+    }
+
+    #[inline(always)]
     unsafe fn allocate_slice_greedy<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
@@ -617,16 +627,6 @@ where
         Self: Sized,
     {
         Bump::try_allocate_slice_greedy(self, len)
-    }
-
-    #[inline(always)]
-    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        Bump::shrink_slice(self, ptr, old_len, new_len)
-    }
-
-    #[inline(always)]
-    fn supports_greedy_allocations(&self) -> bool {
-        Bump::supports_greedy_allocations(self)
     }
 }
 
