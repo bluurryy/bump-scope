@@ -2326,15 +2326,42 @@ impl<'a, T, A: BumpAllocatorScope<'a>> BumpVec<T, A> {
     #[must_use]
     #[inline(always)]
     pub fn into_fixed_vec(self) -> FixedBumpVec<'a, T> {
-        self.into_parts().0
+        if self.allocator.is_exclusive_allocator() {
+            todo!()
+        } else {
+            self.into_parts().0
+        }
     }
 
     /// Turns this `BumpVec<T>` into a `BumpBox<[T]>`.
     #[must_use]
     #[inline(always)]
     pub fn into_boxed_slice(mut self) -> BumpBox<'a, [T]> {
-        self.shrink_to_fit();
-        self.into_fixed_vec().into_boxed_slice()
+        if self.allocator.is_exclusive_allocator() {
+            let mut this = ManuallyDrop::new(self);
+
+            unsafe {
+                if T::IS_ZST {
+                    return BumpBox::from_raw(nonnull::slice_from_raw_parts(NonNull::dangling(), this.len()));
+                }
+
+                if this.capacity() == 0 {
+                    // We didn't touch the allocator, so no need to do anything.
+                    debug_assert_eq!(this.as_non_null_ptr(), NonNull::<T>::dangling());
+                    return BumpBox::from_raw(nonnull::slice_from_raw_parts(NonNull::<T>::dangling(), 0));
+                }
+
+                let ptr = this.as_non_null_ptr();
+                let len = this.len();
+                let cap = this.capacity();
+
+                let slice = this.allocator.use_reserved_allocation(ptr, len, cap);
+                BumpBox::from_raw(slice)
+            }
+        } else {
+            self.shrink_to_fit();
+            self.into_fixed_vec().into_boxed_slice()
+        }
     }
 
     /// Turns this `BumpVec<T>` into a `&[T]` that is live for this bump scope.
@@ -2370,6 +2397,11 @@ impl<'a, T, A: BumpAllocatorScope<'a>> BumpVec<T, A> {
     #[must_use]
     #[inline(always)]
     pub fn from_parts(vec: FixedBumpVec<'a, T>, allocator: A) -> Self {
+        if allocator.is_exclusive_allocator() {
+            // TODO: is this reachable?
+            unreachable!()
+        }
+
         Self {
             fixed: unsafe { RawFixedBumpVec::from_cooked(vec) },
             allocator,
@@ -2390,6 +2422,11 @@ impl<'a, T, A: BumpAllocatorScope<'a>> BumpVec<T, A> {
     #[must_use]
     #[inline(always)]
     pub fn into_parts(self) -> (FixedBumpVec<'a, T>, A) {
+        if self.allocator.is_exclusive_allocator() {
+            // TODO: is this reachable?
+            unreachable!()
+        }
+
         destructure!(let Self { fixed, allocator } = self);
         (unsafe { fixed.cook() }, allocator)
     }

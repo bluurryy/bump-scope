@@ -7,8 +7,8 @@ use crate::{
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::{nonnull, pointer},
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
-    FixedBumpString, FixedBumpVec, GuaranteedAllocatedStats, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev,
-    NoDrop, RawChunk, SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    FixedBumpString, FixedBumpVec, GuaranteedAllocatedStats, MinimumAlignment, MutBumpString, MutBumpVecRev, NoDrop,
+    RawChunk, SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 #[cfg(not(no_global_oom_handling))]
 use crate::{infallible, Infallibly};
@@ -859,7 +859,7 @@ where
         let iter = iter.into_iter();
         let capacity = iter.size_hint().0;
 
-        let mut vec = MutBumpVec::<T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>::generic_with_capacity_in(capacity, self)?;
+        let mut vec = BumpVec::<T, &mut Self>::generic_with_capacity_in(capacity, self)?;
 
         for value in iter {
             vec.generic_push(value)?;
