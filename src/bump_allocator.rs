@@ -20,12 +20,12 @@ use crate::{handle_alloc_error, infallible};
 /// - `grow(_zeroed)`, `shrink` and `deallocate` can be called with a pointer that was not allocated by this Allocator
 /// - `deallocate` can be called with any pointer or alignment when the size is `0`
 /// - `shrink` does not error
-/// - if `supports_greedy_allocations` returns `false` then <code>([try_][try_allocate_slice_greedy])[mut_allocate_slice][allocate_slice_greedy])</code>
+/// - if `supports_greedy_allocations` returns `false` then <code>([try_][try_prepare_slice_allocation])[mut_allocate_slice][prepare_slice_allocation])</code>
 ///   must not be manually implemented.
 ///
 /// [into_box]: crate::BumpBox::into_box
-/// [allocate_slice_greedy]: Self::allocate_slice_greedy
-/// [try_allocate_slice_greedy]: Self::try_allocate_slice_greedy
+/// [prepare_slice_allocation]: Self::prepare_slice_allocation
+/// [try_prepare_slice_allocation]: Self::try_prepare_slice_allocation
 #[allow(clippy::missing_errors_doc)]
 pub unsafe trait BumpAllocator: Allocator {
     /// A specialized version of `allocate`.
@@ -149,13 +149,8 @@ pub unsafe trait BumpAllocator: Allocator {
         false
     }
 
-    /// A specialized version of `allocate`.
-    ///
-    /// # Safety
-    ///
-    /// The caller must behave as if this function returned a `&mut [u8]` in the sense that
-    /// the allocator is mutably borrowed while the memory block is live.
-    unsafe fn allocate_slice_greedy<T>(&mut self, len: usize) -> NonNull<[T]>
+    /// Does not allocate, just returns a slice of `T` that are currently available.
+    unsafe fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
@@ -178,7 +173,7 @@ pub unsafe trait BumpAllocator: Allocator {
     ///
     /// The caller must behave as if this function returned a `&mut [u8]` in the sense that
     /// the allocator is mutably borrowed while the memory block is live.
-    unsafe fn try_allocate_slice_greedy<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    unsafe fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
     where
         Self: Sized,
     {
@@ -369,7 +364,7 @@ where
     }
 
     #[inline(always)]
-    unsafe fn allocate_slice_greedy<T>(&mut self, len: usize) -> NonNull<[T]>
+    unsafe fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
@@ -387,7 +382,7 @@ where
     }
 
     #[inline(always)]
-    unsafe fn try_allocate_slice_greedy<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    unsafe fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
     where
         Self: Sized,
     {
@@ -458,19 +453,19 @@ where
     }
 
     #[inline(always)]
-    unsafe fn allocate_slice_greedy<T>(&mut self, len: usize) -> NonNull<[T]>
+    unsafe fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        self.as_mut_scope().allocate_slice_greedy(len)
+        self.as_mut_scope().prepare_slice_allocation(len)
     }
 
     #[inline(always)]
-    unsafe fn try_allocate_slice_greedy<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    unsafe fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
     where
         Self: Sized,
     {
-        self.as_mut_scope().try_allocate_slice_greedy(len)
+        self.as_mut_scope().try_prepare_slice_allocation(len)
     }
 }
 
@@ -534,19 +529,19 @@ where
     }
 
     #[inline(always)]
-    unsafe fn allocate_slice_greedy<T>(&mut self, len: usize) -> NonNull<[T]>
+    unsafe fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        BumpScope::allocate_slice_greedy(self, len)
+        BumpScope::prepare_slice_allocation(self, len)
     }
 
     #[inline(always)]
-    unsafe fn try_allocate_slice_greedy<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    unsafe fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
     where
         Self: Sized,
     {
-        BumpScope::try_allocate_slice_greedy(self, len)
+        BumpScope::try_prepare_slice_allocation(self, len)
     }
 }
 
@@ -610,19 +605,19 @@ where
     }
 
     #[inline(always)]
-    unsafe fn allocate_slice_greedy<T>(&mut self, len: usize) -> NonNull<[T]>
+    unsafe fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        Bump::allocate_slice_greedy(self, len)
+        Bump::prepare_slice_allocation(self, len)
     }
 
     #[inline(always)]
-    unsafe fn try_allocate_slice_greedy<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    unsafe fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
     where
         Self: Sized,
     {
-        Bump::try_allocate_slice_greedy(self, len)
+        Bump::try_prepare_slice_allocation(self, len)
     }
 }
 
