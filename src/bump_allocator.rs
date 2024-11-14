@@ -4,8 +4,8 @@ use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 use allocator_api2::alloc::{AllocError, Allocator};
 
 use crate::{
-    bump_down, polyfill::nonnull, raw_fixed_bump_vec::RawFixedBumpVec, up_align_usize_unchecked, BaseAllocator, Bump,
-    BumpScope, MinimumAlignment, SizedTypeProperties, SupportedMinimumAlignment,
+    bump_down, infallible, polyfill::nonnull, raw_fixed_bump_vec::RawFixedBumpVec, up_align_usize_unchecked, BaseAllocator,
+    Bump, BumpScope, MinimumAlignment, SizedTypeProperties, SupportedMinimumAlignment,
 };
 
 /// An allocator that allows `grow(_zeroed)`, `shrink` and `deallocate` calls with pointers that were not allocated by this allocator.
@@ -167,6 +167,48 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
+    #[inline(always)]
+    fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
+        BumpScope::alloc_layout(self, layout)
+    }
+
+    #[inline(always)]
+    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
+        BumpScope::try_alloc_layout(self, layout)
+    }
+
+    #[inline(always)]
+    fn allocate_sized<T>(&self) -> NonNull<T>
+    where
+        Self: Sized,
+    {
+        infallible(self.do_alloc_sized())
+    }
+
+    #[inline(always)]
+    fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>
+    where
+        Self: Sized,
+    {
+        self.do_alloc_sized()
+    }
+
+    #[inline(always)]
+    fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
+    where
+        Self: Sized,
+    {
+        infallible(self.do_alloc_slice(len))
+    }
+
+    #[inline(always)]
+    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError>
+    where
+        Self: Sized,
+    {
+        self.do_alloc_slice(len)
+    }
+
     #[inline(always)]
     fn is_last_allocation(&self, allocation: NonNull<[u8]>) -> bool {
         unsafe {
