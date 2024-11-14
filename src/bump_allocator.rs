@@ -1,12 +1,14 @@
-use alloc::alloc::handle_alloc_error;
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use allocator_api2::alloc::{AllocError, Allocator};
 
 use crate::{
-    bump_down, infallible, polyfill::nonnull, raw_fixed_bump_vec::RawFixedBumpVec, up_align_usize_unchecked, BaseAllocator,
-    Bump, BumpScope, MinimumAlignment, SizedTypeProperties, SupportedMinimumAlignment,
+    bump_down, polyfill::nonnull, raw_fixed_bump_vec::RawFixedBumpVec, up_align_usize_unchecked, BaseAllocator, Bump,
+    BumpScope, MinimumAlignment, SizedTypeProperties, SupportedMinimumAlignment,
 };
+
+#[cfg(not(no_global_oom_handling))]
+use crate::{handle_alloc_error, infallible};
 
 /// An allocator that allows `grow(_zeroed)`, `shrink` and `deallocate` calls with pointers that were not allocated by this allocator.
 ///
@@ -23,6 +25,7 @@ use crate::{
 #[allow(clippy::missing_errors_doc)]
 pub unsafe trait BumpAllocator: Allocator {
     /// A specialized version of `allocate`.
+    #[cfg(not(no_global_oom_handling))]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         match self.allocate(layout) {
             Ok(ptr) => ptr.cast(),
@@ -39,6 +42,7 @@ pub unsafe trait BumpAllocator: Allocator {
     }
 
     /// A specialized version of `allocate`.
+    #[cfg(not(no_global_oom_handling))]
     fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
@@ -63,6 +67,7 @@ pub unsafe trait BumpAllocator: Allocator {
     }
 
     /// A specialized version of `allocate`.
+    #[cfg(not(no_global_oom_handling))]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
@@ -109,6 +114,7 @@ pub unsafe trait BumpAllocator: Allocator {
 
 unsafe impl<A: BumpAllocator> BumpAllocator for &A {
     #[inline(always)]
+    #[cfg(not(no_global_oom_handling))]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         A::allocate_layout(self, layout)
     }
@@ -119,6 +125,7 @@ unsafe impl<A: BumpAllocator> BumpAllocator for &A {
     }
 
     #[inline(always)]
+    #[cfg(not(no_global_oom_handling))]
     fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
@@ -135,6 +142,7 @@ unsafe impl<A: BumpAllocator> BumpAllocator for &A {
     }
 
     #[inline(always)]
+    #[cfg(not(no_global_oom_handling))]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
@@ -168,6 +176,7 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
+    #[cfg(not(no_global_oom_handling))]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         BumpScope::alloc_layout(self, layout)
     }
@@ -178,6 +187,7 @@ where
     }
 
     #[inline(always)]
+    #[cfg(not(no_global_oom_handling))]
     fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
@@ -194,6 +204,7 @@ where
     }
 
     #[inline(always)]
+    #[cfg(not(no_global_oom_handling))]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,

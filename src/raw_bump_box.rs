@@ -64,7 +64,7 @@ impl<T: ?Sized> RawBumpBox<T> {
     }
 
     #[inline(always)]
-    pub(crate) const fn into_ptr(self) -> NonNull<T> {
+    pub(crate) fn into_ptr(self) -> NonNull<T> {
         let ptr = unsafe { ptr::read(&self.ptr) };
         mem::forget(self);
         ptr

@@ -3,16 +3,18 @@ use core::{
     fmt::Debug,
     iter::FusedIterator,
     marker::PhantomData,
-    mem::{self, MaybeUninit},
+    mem,
     ptr::{self, NonNull},
     slice,
 };
 
-use crate::{
-    polyfill::nonnull, raw_fixed_bump_vec::RawFixedBumpVec, BumpAllocator, BumpBox, FixedBumpVec, SizedTypeProperties,
-};
+use crate::{polyfill::nonnull, BumpAllocator, SizedTypeProperties};
 
-use super::BumpVec;
+#[cfg(not(no_global_oom_handling))]
+use core::mem::MaybeUninit;
+
+#[cfg(not(no_global_oom_handling))]
+use crate::{raw_fixed_bump_vec::RawFixedBumpVec, BumpBox, BumpVec, FixedBumpVec};
 
 /// An iterator that moves out of a vector.
 ///

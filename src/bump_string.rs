@@ -3,8 +3,7 @@ use crate::Infallibly;
 use crate::{
     destructure::destructure,
     error_behavior_generic_methods_allocation_failure, owned_str,
-    polyfill::{self, nonnull, transmute_mut, transmute_value},
-    raw_bump_box::RawBumpBox,
+    polyfill::{self, transmute_mut, transmute_value},
     raw_fixed_bump_string::RawFixedBumpString,
     BumpAllocator, BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, FixedBumpString, FromUtf16Error, FromUtf8Error,
     Stats,
@@ -14,11 +13,16 @@ use core::{
     borrow::{Borrow, BorrowMut},
     fmt::{self, Debug, Display},
     hash::Hash,
-    mem::MaybeUninit,
     ops::{Deref, DerefMut, Range, RangeBounds},
     panic::{RefUnwindSafe, UnwindSafe},
     ptr, str,
 };
+
+#[cfg(not(no_global_oom_handling))]
+use core::mem::MaybeUninit;
+
+#[cfg(not(no_global_oom_handling))]
+use crate::{polyfill::nonnull, raw_bump_box::RawBumpBox};
 
 /// This is like [`format!`] but allocates inside a `Bump` or `BumpScope`, returning a [`BumpString`].
 ///

@@ -1214,13 +1214,13 @@ where
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// {
-        ///     let mut vec = mut_bump_vec![try in &bump; 1, 2, 3]?;
+        ///     let mut vec = mut_bump_vec![try in bump; 1, 2, 3]?;
         ///     vec.try_resize_zeroed(5)?;
         ///     assert_eq!(vec, [1, 2, 3, 0, 0]);
         /// }
         ///
         /// {
-        ///    let mut vec = mut_bump_vec![try in &bump; 1, 2, 3]?;
+        ///    let mut vec = mut_bump_vec![try in bump; 1, 2, 3]?;
         ///    vec.try_resize_zeroed(2)?;
         ///    assert_eq!(vec, [1, 2]);
         /// }
