@@ -76,4 +76,4 @@ test-fallibility:
   @ just crates/test-fallibility/test
 
 inspect-asm *args:
-  just crates/inspect-asm/inspect {{args}}
+  just crates/inspect-asm/inspect-asm {{args}}

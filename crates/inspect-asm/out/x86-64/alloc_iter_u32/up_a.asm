@@ -41,7 +41,7 @@ inspect_asm::alloc_iter_u32::up_a:
 	cmp qword ptr [rsp + 16], rdx
 	jne .LBB0_1
 	mov rdi, r14
-	call bump_scope::bump_vec::BumpVec<T,A,_,_,_>::generic_grow_amortized
+	call bump_scope::bump_vec::BumpVec<T,A>::generic_grow_amortized
 	mov rax, qword ptr [rsp]
 	mov rdx, qword ptr [rsp + 8]
 	jmp .LBB0_1
@@ -50,8 +50,8 @@ inspect_asm::alloc_iter_u32::up_a:
 	mov rcx, qword ptr [rsp + 16]
 	mov rdi, qword ptr [rsp + 24]
 	shl rcx, 2
-	add rcx, rax
 	mov rsi, qword ptr [rdi]
+	add rcx, rax
 	cmp rcx, qword ptr [rsi]
 	jne .LBB0_5
 .LBB0_4:
@@ -71,8 +71,8 @@ inspect_asm::alloc_iter_u32::up_a:
 	mov eax, 4
 	xor ecx, ecx
 	xor edx, edx
-	add rcx, rax
 	mov rsi, qword ptr [rdi]
+	add rcx, rax
 	cmp rcx, qword ptr [rsi]
 	jne .LBB0_5
 	jmp .LBB0_4

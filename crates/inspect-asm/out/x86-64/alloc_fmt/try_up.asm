@@ -39,9 +39,9 @@ inspect_asm::alloc_fmt::try_up:
 	mov rax, qword ptr [rsp]
 	mov rdx, qword ptr [rsp + 8]
 	mov rcx, qword ptr [rsp + 24]
+	mov rcx, qword ptr [rcx]
 	mov rsi, qword ptr [rsp + 16]
 	add rsi, rax
-	mov rcx, qword ptr [rcx]
 	cmp rsi, qword ptr [rcx]
 	je .LBB0_2
 	add rsp, 120
