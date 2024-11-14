@@ -4,63 +4,41 @@ set shell := ["nu", "-c"]
 export RUST_BACKTRACE := "1"
 export MIRIFLAGS := "-Zmiri-strict-provenance"
 
-default *args:
-  cargo fmt --all
-  cargo clippy --all --tests
+default:
+  just --list
 
-all:
-  just fmt
-  just clippy
+pre-release:
+  # TODO: fix issues
+  # just spellcheck
   just doc
-  just check-nostd
-  just check-msrv
-  just check-nooom
+  just check
   cargo test --all-features
   cargo miri test --all-features
-  just test-fallibility
   cargo +stable semver-checks
 
-all-fast:
-  just fmt
-  just clippy
-  just doc-fast
+check: 
+  just check-fmt
+  just check-clippy
   just check-nostd
   just check-msrv
   just check-nooom
-  just test-fallibility
+  just check-fallibility
 
-fmt:
-  cargo fmt --all
-  cd crates/fuzzing-support; cargo fmt --all
-  cd crates/inspect-asm; cargo fmt --all
-  cd crates/test-fallibility; cargo fmt --all
-  cd fuzz; cargo fmt --all
+check-fmt:
+  cargo fmt --check
+  cd crates/fuzzing-support; cargo fmt --check
+  cd crates/inspect-asm; cargo fmt --check
+  cd crates/test-fallibility; cargo fmt --check
+  cd fuzz; cargo fmt --check
 
-clippy:
-  cargo clippy --all --tests
-  cargo clippy --all --tests --no-default-features
-  cargo clippy --all --tests --no-default-features --features alloc
-  cd crates/fuzzing-support; cargo clippy --all --tests
-  cd crates/inspect-asm; cargo clippy --all --tests
-  cd crates/test-fallibility; cargo clippy --all --tests
-  cd fuzz; cargo clippy --all
-
-spellcheck:
-  # https://www.npmjs.com/package/cspell
-  cspell lint --gitignore "**/*.{rs,md,toml}"
-
-doc *args:
-  cargo test --package bump-scope --lib --all-features -- insert_feature_docs --exact --ignored
-  cargo fmt
-  @ just doc-fast {{args}}
-  # TODO(blocked): stop stripping links when <https://github.com/orium/cargo-rdme/pull/236> is merged
-  cargo rdme --force --intralinks-strip-links
-
-doc-fast *args:
-  cargo rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition
-
-doc-priv *args:
-  cargo rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition --document-private-items
+check-clippy:
+  cargo clippy --tests
+  cargo clippy --tests --no-default-features
+  cargo clippy --tests --no-default-features --features alloc
+  cd crates/fuzzing-support; cargo clippy --tests
+  cd crates/inspect-asm; cargo clippy --tests
+  cd crates/test-fallibility; cargo clippy --tests
+  cd fuzz; cargo clippy
 
 check-nostd:
   cd crates/test-fallibility; cargo check
@@ -72,8 +50,33 @@ check-msrv:
 check-nooom:
   RUSTFLAGS="--cfg no_global_oom_handling" cargo check --features nightly-allocator-api
 
-test-fallibility:
+check-fallibility:
   @ just crates/test-fallibility/test
+
+fmt:
+  cargo fmt
+  cd crates/fuzzing-support; cargo fmt
+  cd crates/inspect-asm; cargo fmt
+  cd crates/test-fallibility; cargo fmt
+  cd fuzz; cargo fmt
+
+spellcheck:
+  # https://www.npmjs.com/package/cspell
+  cspell lint --gitignore "**/*.{rs,md,toml}"
+
+doc *args:
+  cargo test --package bump-scope --lib --all-features -- insert_feature_docs --exact --ignored
+  cargo fmt
+  @ just doc-rustdoc {{args}}
+  @# https://github.com/orium/cargo-rdme
+  @# TODO(blocked): stop stripping links when <https://github.com/orium/cargo-rdme/pull/236> is merged
+  cargo rdme --force --intralinks-strip-links
+
+doc-rustdoc *args:
+  cargo rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition
+
+doc-rustdoc-priv *args:
+  cargo rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition --document-private-items
 
 inspect-asm *args:
   just crates/inspect-asm/inspect-asm {{args}}
