@@ -1,5 +1,5 @@
+use alloc::alloc::handle_alloc_error;
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
-use std::alloc::handle_alloc_error;
 
 use allocator_api2::alloc::{AllocError, Allocator};
 
