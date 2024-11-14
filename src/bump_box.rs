@@ -261,6 +261,91 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     pub fn leak(boxed: Self) -> &'a mut T {
         unsafe { BumpBox::into_raw(boxed).as_mut() }
     }
+
+    /// Consumes the `BumpBox`, returning a wrapped raw pointer.
+    ///
+    /// The pointer will be properly aligned and non-null. It is only valid for the lifetime `'a`.
+    ///
+    /// After calling this function, the caller is responsible for dropping the
+    /// value previously managed by the `BumpBox`. The easiest way to do this is to `p.drop_in_place()`.
+    ///
+    /// You can turn this pointer back into a `BumpBox` with [`BumpBox::from_raw`].
+    ///
+    /// # Examples
+    /// Manually dropping `T`:
+    /// ```
+    /// use bump_scope::{ Bump, BumpBox };
+    /// let bump: Bump = Bump::new();
+    /// let x = bump.alloc(String::from("Hello"));
+    /// let p = BumpBox::into_raw(x);
+    /// unsafe { p.as_ptr().drop_in_place() }
+    /// ```
+    #[inline(always)]
+    #[must_use = "use `leak` if you don't make use of the pointer"]
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn into_raw(self) -> NonNull<T> {
+        ManuallyDrop::new(self).ptr
+    }
+
+    /// Constructs a `BumpBox` from a raw pointer.
+    ///
+    /// After calling this function, the pointed to value is owned by the resulting `BumpBox`.
+    /// Specifically, the `BumpBox` destructor will call the destructor of `T`.
+    /// For this to be safe, the pointer must point to a valid `T` for the lifetime of `'a`.
+    ///
+    /// # Safety
+    /// - `ptr` must point to a valid value for the lifetime `'a`
+    ///
+    /// # Examples
+    ///
+    /// Recreate a `BumpBox` which was previously converted to a raw pointer
+    /// using [`BumpBox::into_raw`]:
+    /// ```
+    /// use bump_scope::{ Bump, BumpBox };
+    /// use core::ptr::NonNull;
+    ///
+    /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, bump: &'a Bump) -> BumpBox<'a, T> {
+    ///     BumpBox::from_raw(ptr)
+    /// }
+    ///
+    /// let bump: Bump = Bump::new();
+    /// let x = bump.alloc(String::from("Hello"));
+    /// let ptr = BumpBox::into_raw(x);
+    /// let x = unsafe { from_raw_in(ptr, &bump) };
+    /// assert_eq!(x.as_str(), "Hello");
+    /// drop(x);
+    /// ```
+    /// Manually create a `BumpBox` from scratch by using the bump allocator:
+    /// ```
+    /// use bump_scope::{ Bump, BumpBox };
+    /// use core::alloc::Layout;
+    /// use core::ptr::NonNull;
+    ///
+    /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, bump: &'a Bump) -> BumpBox<'a, T> {
+    ///     BumpBox::from_raw(ptr)
+    /// }
+    ///
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let five = unsafe {
+    ///     let ptr = bump.alloc_layout(Layout::new::<i32>());
+    ///     // In general .write is required to avoid attempting to destruct
+    ///     // the (uninitialized) previous contents of `ptr`, though for this
+    ///     // simple example `*ptr = 5` would have worked as well.
+    ///     ptr.as_ptr().write(5);
+    ///     from_raw_in(ptr, &bump)
+    /// };
+    ///
+    /// assert_eq!(*five, 5);
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    pub unsafe fn from_raw(ptr: NonNull<T>) -> Self {
+        Self {
+            ptr,
+            marker: PhantomData,
+        }
+    }
 }
 
 impl<'a, T> BumpBox<'a, T> {
@@ -2189,93 +2274,6 @@ impl<'a, T, const N: usize> BumpBox<'a, [[T; N]]> {
         };
 
         unsafe { BumpBox::from_raw(nonnull::slice_from_raw_parts(ptr.cast(), new_len)) }
-    }
-}
-
-impl<T: ?Sized> BumpBox<'_, T> {
-    /// Consumes the `BumpBox`, returning a wrapped raw pointer.
-    ///
-    /// The pointer will be properly aligned and non-null. It is only valid for the lifetime `'a`.
-    ///
-    /// After calling this function, the caller is responsible for dropping the
-    /// value previously managed by the `BumpBox`. The easiest way to do this is to `p.drop_in_place()`.
-    ///
-    /// You can turn this pointer back into a `BumpBox` with [`BumpBox::from_raw`].
-    ///
-    /// # Examples
-    /// Manually dropping `T`:
-    /// ```
-    /// use bump_scope::{ Bump, BumpBox };
-    /// let bump: Bump = Bump::new();
-    /// let x = bump.alloc(String::from("Hello"));
-    /// let p = BumpBox::into_raw(x);
-    /// unsafe { p.as_ptr().drop_in_place() }
-    /// ```
-    #[inline(always)]
-    #[must_use = "use `leak` if you don't make use of the pointer"]
-    #[allow(clippy::needless_pass_by_value)]
-    pub fn into_raw(self) -> NonNull<T> {
-        ManuallyDrop::new(self).ptr
-    }
-
-    /// Constructs a `BumpBox` from a raw pointer.
-    ///
-    /// After calling this function, the pointed to value is owned by the resulting `BumpBox`.
-    /// Specifically, the `BumpBox` destructor will call the destructor of `T`.
-    /// For this to be safe, the pointer must point to a valid `T` for the lifetime of `'a`.
-    ///
-    /// # Safety
-    /// - `ptr` must point to a valid value for the lifetime `'a`
-    ///
-    /// # Examples
-    ///
-    /// Recreate a `BumpBox` which was previously converted to a raw pointer
-    /// using [`BumpBox::into_raw`]:
-    /// ```
-    /// use bump_scope::{ Bump, BumpBox };
-    /// use core::ptr::NonNull;
-    ///
-    /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, bump: &'a Bump) -> BumpBox<'a, T> {
-    ///     BumpBox::from_raw(ptr)
-    /// }
-    ///
-    /// let bump: Bump = Bump::new();
-    /// let x = bump.alloc(String::from("Hello"));
-    /// let ptr = BumpBox::into_raw(x);
-    /// let x = unsafe { from_raw_in(ptr, &bump) };
-    /// assert_eq!(x.as_str(), "Hello");
-    /// drop(x);
-    /// ```
-    /// Manually create a `BumpBox` from scratch by using the bump allocator:
-    /// ```
-    /// use bump_scope::{ Bump, BumpBox };
-    /// use core::alloc::Layout;
-    /// use core::ptr::NonNull;
-    ///
-    /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, bump: &'a Bump) -> BumpBox<'a, T> {
-    ///     BumpBox::from_raw(ptr)
-    /// }
-    ///
-    /// let bump: Bump = Bump::new();
-    ///
-    /// let five = unsafe {
-    ///     let ptr = bump.alloc_layout(Layout::new::<i32>());
-    ///     // In general .write is required to avoid attempting to destruct
-    ///     // the (uninitialized) previous contents of `ptr`, though for this
-    ///     // simple example `*ptr = 5` would have worked as well.
-    ///     ptr.as_ptr().write(5);
-    ///     from_raw_in(ptr, &bump)
-    /// };
-    ///
-    /// assert_eq!(*five, 5);
-    /// ```
-    #[must_use]
-    #[inline(always)]
-    pub unsafe fn from_raw(ptr: NonNull<T>) -> Self {
-        Self {
-            ptr,
-            marker: PhantomData,
-        }
     }
 }
 

@@ -454,9 +454,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
             Ok(vec)
         }
     }
-}
 
-impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// Returns the total number of elements the vector can hold without
     /// reallocating.
     ///
@@ -764,9 +762,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     pub(crate) unsafe fn inc_len(&mut self, amount: usize) {
         unsafe { self.fixed.cook_mut() }.inc_len(amount);
     }
-}
 
-impl<T, A: BumpAllocator> BumpVec<T, A> {
     error_behavior_generic_methods_allocation_failure! {
         /// Appends an element to the back of a collection.
         impl
