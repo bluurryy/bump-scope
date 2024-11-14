@@ -99,6 +99,37 @@ pub unsafe trait BumpAllocator: Allocator {
         }
     }
 
+    /// A specialized version of `allocate`.
+    ///
+    /// # Safety
+    ///
+    /// The caller must behave as if this function returned a `&mut [u8]` in the sense that
+    /// the allocator is mutably borrowed while the memory block is live.
+    #[cfg(not(no_global_oom_handling))]
+    unsafe fn mut_allocate_slice<T>(&mut self, len: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        let ptr = self.allocate_slice(len);
+        nonnull::slice_from_raw_parts(ptr, len)
+    }
+
+    /// A specialized version of `allocate`.
+    ///
+    /// # Safety
+    ///
+    /// The caller must behave as if this function returned a `&mut [u8]` in the sense that
+    /// the allocator is mutably borrowed while the memory block is live.
+    unsafe fn try_mut_allocate_slice<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    where
+        Self: Sized,
+    {
+        match self.try_allocate_slice(len) {
+            Ok(ptr) => Ok(nonnull::slice_from_raw_parts(ptr, len)),
+            Err(err) => Err(err),
+        }
+    }
+
     /// A specialized version of `shrink`.
     ///
     /// Returns `Some` if a shrink was performed, `None` if not.
@@ -112,6 +143,15 @@ pub unsafe trait BumpAllocator: Allocator {
     {
         _ = (ptr, old_len, new_len);
         None
+    }
+
+    /// Returns `true` if this allocator has an optimized `allocate` version in
+    /// <code>([try_][try_alloc_slice_greedy])[mut_allocate_slice][alloc_slice_greedy])</code>.
+    ///
+    /// [alloc_slice_greedy]: Self::mut_allocate_slice
+    /// [try_alloc_slice_greedy]: Self::try_mut_allocate_slice
+    fn has_mut_optimizations(&self) -> bool {
+        false
     }
 }
 
@@ -219,6 +259,25 @@ where
     }
 
     #[inline(always)]
+    #[cfg(not(no_global_oom_handling))]
+    unsafe fn mut_allocate_slice<T>(&mut self, len: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        let (ptr, len) = infallible(BumpScope::alloc_greedy(self, len));
+        nonnull::slice_from_raw_parts(ptr, len)
+    }
+
+    #[inline(always)]
+    unsafe fn try_mut_allocate_slice<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    where
+        Self: Sized,
+    {
+        let (ptr, len) = BumpScope::alloc_greedy(self, len)?;
+        Ok(nonnull::slice_from_raw_parts(ptr, len))
+    }
+
+    #[inline(always)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
         let old_ptr = ptr.cast::<u8>();
         let old_size = old_len * T::SIZE; // we already allocated that amount so this can't overflow
@@ -266,6 +325,11 @@ where
                 Some(new_ptr.cast())
             }
         }
+    }
+
+    #[inline(always)]
+    fn has_mut_optimizations(&self) -> bool {
+        false
     }
 }
 
