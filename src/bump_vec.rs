@@ -307,7 +307,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
             }
 
             Ok(Self {
-                fixed: unsafe { RawFixedBumpVec::allocate_greedy(&mut allocator, capacity)? },
+                fixed: unsafe { RawFixedBumpVec::allocate(&mut allocator, capacity)? },
                 allocator,
             })
         }
@@ -362,7 +362,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
                 });
             }
 
-            let mut fixed = unsafe { RawFixedBumpVec::allocate_greedy(&mut allocator, N)? };
+            let mut fixed = unsafe { RawFixedBumpVec::allocate(&mut allocator, N)? };
 
             let src = array.as_ptr();
             let dst = fixed.initialized.ptr.cast::<T>().as_ptr();
@@ -1909,7 +1909,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// `new_capacity` must be greater than the current capacity.
     unsafe fn generic_grow_to<E: ErrorBehavior>(&mut self, new_capacity: usize) -> Result<(), E> {
         if self.allocator.is_exclusive_allocator() {
-            let mut new_vec = RawFixedBumpVec::allocate_greedy(&mut self.allocator, new_capacity)?;
+            let mut new_vec = RawFixedBumpVec::allocate(&mut self.allocator, new_capacity)?;
             ptr::copy_nonoverlapping(self.as_ptr(), new_vec.as_mut_ptr(), self.len());
             new_vec.set_len(self.len());
             self.fixed = new_vec;
@@ -1917,7 +1917,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
             let new_cap = new_capacity;
 
             if self.capacity() == 0 {
-                self.fixed = RawFixedBumpVec::allocate(&self.allocator, new_cap)?;
+                self.fixed = RawFixedBumpVec::allocate(&mut self.allocator, new_cap)?;
                 return Ok(());
             }
 

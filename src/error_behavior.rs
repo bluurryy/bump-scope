@@ -102,7 +102,7 @@ impl ErrorBehavior for Infallible {
 
     #[inline(always)]
     unsafe fn allocate_slice_greedy<T>(allocator: &mut impl BumpAllocator, len: usize) -> Result<NonNull<[T]>, Self> {
-        Ok(allocator.allocate_slice_greedy::<T>(len))
+        Ok(allocator.prepare_slice_allocation::<T>(len))
     }
 }
 
@@ -178,7 +178,7 @@ impl ErrorBehavior for AllocError {
 
     #[inline(always)]
     unsafe fn allocate_slice_greedy<T>(allocator: &mut impl BumpAllocator, len: usize) -> Result<NonNull<[T]>, Self> {
-        allocator.try_allocate_slice_greedy::<T>(len)
+        allocator.try_prepare_slice_allocation::<T>(len)
     }
 }
 

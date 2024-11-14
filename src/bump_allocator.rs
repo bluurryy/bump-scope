@@ -150,21 +150,35 @@ pub unsafe trait BumpAllocator: Allocator {
     }
 
     /// Does not allocate, just returns a slice of `T` that are currently available.
-    unsafe fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
+    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
         _ = len;
-        panic!("`prepare_slice_allocation` is not usable when `is_exclusive_allocator` is false")
+        panic!("`prepare_slice_allocation` is invalid when `is_exclusive_allocator` is false")
     }
 
     /// Does not allocate, just returns a slice of `T` that are currently available.
-    unsafe fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
     where
         Self: Sized,
     {
         _ = len;
-        panic!("`try_prepare_slice_allocation` is not usable when `is_exclusive_allocator` is false")
+        panic!("`try_prepare_slice_allocation` is invalid when `is_exclusive_allocator` is false")
+    }
+
+    /// Allocate part of a valid free slice like one returned by `(try_)prepare_slice_allocation`.
+    ///
+    /// # Safety
+    ///
+    /// `ptr + cap` must be a slice returned by `(try_)prepare_slice_allocation`. No allocation,
+    /// grow, shrink or deallocate must have been called since then.
+    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        _ = (ptr, len, cap);
+        panic!("`use_reserved_allocation` is invalid when `is_exclusive_allocator` is false")
     }
 }
 
@@ -348,7 +362,7 @@ where
     }
 
     #[inline(always)]
-    unsafe fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
+    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
@@ -366,12 +380,20 @@ where
     }
 
     #[inline(always)]
-    unsafe fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
     where
         Self: Sized,
     {
         let (ptr, len) = BumpScope::alloc_greedy(self, len)?;
         Ok(nonnull::slice_from_raw_parts(ptr, len))
+    }
+
+    #[inline(always)]
+    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        BumpScope::consolidate_greed(self, ptr, len, cap)
     }
 }
 
@@ -437,7 +459,7 @@ where
     }
 
     #[inline(always)]
-    unsafe fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
+    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
@@ -445,11 +467,19 @@ where
     }
 
     #[inline(always)]
-    unsafe fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
     where
         Self: Sized,
     {
         self.as_mut_scope().try_prepare_slice_allocation(len)
+    }
+
+    #[inline(always)]
+    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        self.as_mut_scope().use_reserved_allocation(ptr, len, cap)
     }
 }
 
@@ -513,7 +543,7 @@ where
     }
 
     #[inline(always)]
-    unsafe fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
+    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
@@ -521,11 +551,19 @@ where
     }
 
     #[inline(always)]
-    unsafe fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
     where
         Self: Sized,
     {
         BumpScope::try_prepare_slice_allocation(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        BumpScope::use_reserved_allocation(self, ptr, len, cap)
     }
 }
 
@@ -589,7 +627,7 @@ where
     }
 
     #[inline(always)]
-    unsafe fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
+    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
@@ -597,11 +635,19 @@ where
     }
 
     #[inline(always)]
-    unsafe fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
     where
         Self: Sized,
     {
         Bump::try_prepare_slice_allocation(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        Bump::use_reserved_allocation(self, ptr, len, cap)
     }
 }
 

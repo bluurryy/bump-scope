@@ -42,27 +42,24 @@ impl<T> RawFixedBumpVec<T> {
         capacity: if T::IS_ZST { usize::MAX } else { 0 },
     };
 
+    // TODO take allocator by immutable
     #[inline(always)]
-    pub(crate) unsafe fn allocate<B: ErrorBehavior>(allocator: &impl BumpAllocator, len: usize) -> Result<Self, B> {
-        let ptr = B::allocate_slice::<T>(allocator, len)?;
+    pub(crate) unsafe fn allocate<B: ErrorBehavior>(allocator: &mut impl BumpAllocator, len: usize) -> Result<Self, B> {
+        if allocator.is_exclusive_allocator() {
+            let allocation = B::allocate_slice_greedy::<T>(allocator, len)?;
 
-        Ok(Self {
-            initialized: RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(ptr, 0)),
-            capacity: len,
-        })
-    }
+            Ok(Self {
+                initialized: RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(nonnull::as_non_null_ptr(allocation), 0)),
+                capacity: allocation.len(),
+            })
+        } else {
+            let ptr = B::allocate_slice::<T>(allocator, len)?;
 
-    #[inline(always)]
-    pub(crate) unsafe fn allocate_greedy<B: ErrorBehavior>(
-        allocator: &mut impl BumpAllocator,
-        len: usize,
-    ) -> Result<Self, B> {
-        let allocation = B::allocate_slice_greedy::<T>(allocator, len)?;
-
-        Ok(Self {
-            initialized: RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(nonnull::as_non_null_ptr(allocation), 0)),
-            capacity: allocation.len(),
-        })
+            Ok(Self {
+                initialized: RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(ptr, 0)),
+                capacity: len,
+            })
+        }
     }
 
     #[inline(always)]
