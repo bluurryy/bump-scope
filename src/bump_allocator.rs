@@ -141,15 +141,11 @@ pub unsafe trait BumpAllocator: Allocator {
         None
     }
 
-    /// Returns `true` if this allocator has an optimized `allocate` version in
-    /// <code>([try_][try_allocate_slice_greedy])[mut_allocate_slice][allocate_slice_greedy])</code>.
+    /// Returns `true` if this allocator is exclusive.
     ///
-    /// If `false`, then <code>([try_][try_allocate_slice_greedy])[mut_allocate_slice][allocate_slice_greedy])</code>
-    /// must not be manually implemented.
-    ///
-    /// [allocate_slice_greedy]: Self::allocate_slice_greedy
-    /// [try_allocate_slice_greedy]: Self::try_allocate_slice_greedy
-    fn supports_greedy_allocations(&self) -> bool {
+    /// In practice this means that this is a `Bump(Scope)` or a `&mut Bump(Scope)`. A `&Bump(Scope)` or a `Rc<Bump>`
+    /// will not be an exclusive allocator.
+    fn is_exclusive_allocator(&self) -> bool {
         false
     }
 
@@ -368,7 +364,7 @@ where
     }
 
     #[inline(always)]
-    fn supports_greedy_allocations(&self) -> bool {
+    fn is_exclusive_allocator(&self) -> bool {
         true
     }
 
@@ -457,8 +453,8 @@ where
     }
 
     #[inline(always)]
-    fn supports_greedy_allocations(&self) -> bool {
-        self.as_scope().supports_greedy_allocations()
+    fn is_exclusive_allocator(&self) -> bool {
+        self.as_scope().is_exclusive_allocator()
     }
 
     #[inline(always)]
@@ -533,8 +529,8 @@ where
     }
 
     #[inline(always)]
-    fn supports_greedy_allocations(&self) -> bool {
-        BumpScope::supports_greedy_allocations(self)
+    fn is_exclusive_allocator(&self) -> bool {
+        BumpScope::is_exclusive_allocator(self)
     }
 
     #[inline(always)]
@@ -609,8 +605,8 @@ where
     }
 
     #[inline(always)]
-    fn supports_greedy_allocations(&self) -> bool {
-        Bump::supports_greedy_allocations(self)
+    fn is_exclusive_allocator(&self) -> bool {
+        Bump::is_exclusive_allocator(self)
     }
 
     #[inline(always)]

@@ -197,7 +197,7 @@ impl<T, A: BumpAllocator> DerefMut for BumpVec<T, A> {
 
 impl<T, A: BumpAllocator> Drop for BumpVec<T, A> {
     fn drop(&mut self) {
-        if !self.allocator.supports_greedy_allocations() {
+        if !self.allocator.is_exclusive_allocator() {
             struct DropGuard<'a, T, A: BumpAllocator>(&'a mut BumpVec<T, A>);
 
             impl<T, A: BumpAllocator> Drop for DropGuard<'_, T, A> {
@@ -1573,7 +1573,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
                         let drop_len = pointer::sub_ptr(self.dst, drop_ptr);
                         ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
 
-                        if !self.allocator.supports_greedy_allocations() {
+                        if !self.allocator.is_exclusive_allocator() {
                             // deallocate memory block (for additional safety notes see `Self::drop::DropGuard::drop`)
                             let layout = Layout::from_size_align_unchecked(self.cap * T::SIZE, T::ALIGN);
                             self.allocator.deallocate(self.ptr.cast(), layout);
@@ -1663,7 +1663,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     pub fn map_in_place<U>(self, f: impl FnMut(T) -> U) -> BumpVec<U, A> {
         destructure!(let Self { fixed, allocator } = self);
 
-        if allocator.supports_greedy_allocations() {
+        if allocator.is_exclusive_allocator() {
             let fixed = unsafe { RawFixedBumpVec::from_cooked(fixed.cook().map_in_place(f)) };
             BumpVec { fixed, allocator }
         } else {
@@ -1686,7 +1686,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
             impl<T, A: BumpAllocator> Drop for DropGuard<T, A> {
                 fn drop(&mut self) {
                     unsafe {
-                        if !self.allocator.supports_greedy_allocations() {
+                        if !self.allocator.is_exclusive_allocator() {
                             let layout = Layout::from_size_align_unchecked(self.cap * T::SIZE, T::ALIGN);
                             self.allocator.deallocate(self.ptr.cast(), layout);
                         }
@@ -1908,7 +1908,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// `new_capacity` must be greater than the current capacity.
     unsafe fn generic_grow_to<E: ErrorBehavior>(&mut self, new_capacity: usize) -> Result<(), E> {
-        if self.allocator.supports_greedy_allocations() {
+        if self.allocator.is_exclusive_allocator() {
             let mut new_vec = RawFixedBumpVec::allocate_greedy(&mut self.allocator, new_capacity)?;
             ptr::copy_nonoverlapping(self.as_ptr(), new_vec.as_mut_ptr(), self.len());
             new_vec.set_len(self.len());
@@ -1961,7 +1961,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// assert_eq!(bump.stats().allocated(), 3 * 4);
     /// ```
     pub fn shrink_to_fit(&mut self) {
-        if self.allocator.supports_greedy_allocations() {
+        if self.allocator.is_exclusive_allocator() {
             return;
         }
 
