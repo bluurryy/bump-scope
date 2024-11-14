@@ -154,33 +154,17 @@ pub unsafe trait BumpAllocator: Allocator {
     where
         Self: Sized,
     {
-        #[cfg(not(no_global_oom_handling))]
-        {
-            let ptr = self.allocate_slice(len);
-            nonnull::slice_from_raw_parts(ptr, len)
-        }
-
-        #[cfg(no_global_oom_handling)]
-        {
-            _ = len;
-            unreachable!()
-        }
+        _ = len;
+        panic!("`prepare_slice_allocation` is not usable when `is_exclusive_allocator` is false")
     }
 
-    /// A specialized version of `allocate`.
-    ///
-    /// # Safety
-    ///
-    /// The caller must behave as if this function returned a `&mut [u8]` in the sense that
-    /// the allocator is mutably borrowed while the memory block is live.
+    /// Does not allocate, just returns a slice of `T` that are currently available.
     unsafe fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
     where
         Self: Sized,
     {
-        match self.try_allocate_slice(len) {
-            Ok(ptr) => Ok(nonnull::slice_from_raw_parts(ptr, len)),
-            Err(err) => Err(err),
-        }
+        _ = len;
+        panic!("`try_prepare_slice_allocation` is not usable when `is_exclusive_allocator` is false")
     }
 }
 
@@ -525,7 +509,7 @@ where
 
     #[inline(always)]
     fn is_exclusive_allocator(&self) -> bool {
-        BumpScope::is_exclusive_allocator(self)
+        true
     }
 
     #[inline(always)]
@@ -601,7 +585,7 @@ where
 
     #[inline(always)]
     fn is_exclusive_allocator(&self) -> bool {
-        Bump::is_exclusive_allocator(self)
+        true
     }
 
     #[inline(always)]
