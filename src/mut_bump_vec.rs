@@ -629,7 +629,7 @@ where
         /// ```
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in bump; 1, 2];
+        /// let mut vec = mut_bump_vec![in &mut bump; 1, 2];
         /// vec.push(3);
         /// assert_eq!(vec, [1, 2, 3]);
         /// ```
@@ -639,7 +639,7 @@ where
         /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in bump; 1, 2]?;
+        /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2]?;
         /// vec.try_push(3)?;
         /// assert_eq!(vec, [1, 2, 3]);
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
@@ -671,7 +671,7 @@ where
         /// ```
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in bump; 1, 2, 3];
+        /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
         /// vec.insert(1, 4);
         /// assert_eq!(vec, [1, 4, 2, 3]);
         /// vec.insert(4, 5);
@@ -683,7 +683,7 @@ where
         /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in bump; 1, 2, 3]?;
+        /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
         /// vec.try_insert(1, 4)?;
         /// assert_eq!(vec, [1, 4, 2, 3]);
         /// vec.try_insert(4, 5)?;
@@ -799,7 +799,7 @@ where
         /// ```
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in bump; 0, 1, 2, 3, 4];
+        /// let mut vec = mut_bump_vec![in &mut bump; 0, 1, 2, 3, 4];
         ///
         /// vec.extend_from_within_copy(2..);
         /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
@@ -816,7 +816,7 @@ where
         /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in bump; 0, 1, 2, 3, 4]?;
+        /// let mut vec = mut_bump_vec![try in &mut bump; 0, 1, 2, 3, 4]?;
         ///
         /// vec.try_extend_from_within_copy(2..)?;
         /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
@@ -865,7 +865,7 @@ where
         /// ```
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in bump; 0, 1, 2, 3, 4];
+        /// let mut vec = mut_bump_vec![in &mut bump; 0, 1, 2, 3, 4];
         ///
         /// vec.extend_from_within_clone(2..);
         /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
@@ -882,7 +882,7 @@ where
         /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in bump; 0, 1, 2, 3, 4]?;
+        /// let mut vec = mut_bump_vec![try in &mut bump; 0, 1, 2, 3, 4]?;
         ///
         /// vec.try_extend_from_within_clone(2..)?;
         /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
@@ -950,7 +950,7 @@ where
         /// ```
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in bump; 1, 2, 3];
+        /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
         /// vec.extend_zeroed(2);
         /// assert_eq!(vec, [1, 2, 3, 0, 0]);
         /// ```
@@ -960,7 +960,7 @@ where
         /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in bump; 1, 2, 3]?;
+        /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
         /// vec.try_extend_zeroed(2)?;
         /// assert_eq!(vec, [1, 2, 3, 0, 0]);
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
@@ -996,7 +996,7 @@ where
         /// ```
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in bump; 1];
+        /// let mut vec = mut_bump_vec![in &mut bump; 1];
         /// vec.reserve(10);
         /// assert!(vec.capacity() >= 11);
         /// ```
@@ -1006,7 +1006,7 @@ where
         /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in bump; 1]?;
+        /// let mut vec = mut_bump_vec![try in &mut bump; 1]?;
         /// vec.try_reserve(10)?;
         /// assert!(vec.capacity() >= 11);
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
@@ -1040,7 +1040,7 @@ where
         /// ```
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in bump; 1];
+        /// let mut vec = mut_bump_vec![in &mut bump; 1];
         /// vec.reserve_exact(10);
         /// assert!(vec.capacity() >= 11);
         /// ```
@@ -1050,7 +1050,7 @@ where
         /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in bump; 1]?;
+        /// let mut vec = mut_bump_vec![try in &mut bump; 1]?;
         /// vec.try_reserve_exact(10)?;
         /// assert!(vec.capacity() >= 11);
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
@@ -1084,12 +1084,12 @@ where
         /// ```
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in bump; "hello"];
+        /// let mut vec = mut_bump_vec![in &mut bump; "hello"];
         /// vec.resize(3, "world");
         /// assert_eq!(vec, ["hello", "world", "world"]);
         /// drop(vec);
         ///
-        /// let mut vec = mut_bump_vec![in bump; 1, 2, 3, 4];
+        /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4];
         /// vec.resize(2, 0);
         /// assert_eq!(vec, [1, 2]);
         /// ```
@@ -1099,12 +1099,12 @@ where
         /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in bump; "hello"]?;
+        /// let mut vec = mut_bump_vec![try in &mut bump; "hello"]?;
         /// vec.try_resize(3, "world")?;
         /// assert_eq!(vec, ["hello", "world", "world"]);
         /// drop(vec);
         ///
-        /// let mut vec = mut_bump_vec![try in bump; 1, 2, 3, 4]?;
+        /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3, 4]?;
         /// vec.try_resize(2, 0)?;
         /// assert_eq!(vec, [1, 2]);
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
@@ -1142,12 +1142,12 @@ where
         /// ```
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in bump; 1, 2, 3];
+        /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
         /// vec.resize_with(5, Default::default);
         /// assert_eq!(vec, [1, 2, 3, 0, 0]);
         /// drop(vec);
         ///
-        /// let mut vec = mut_bump_vec![in bump];
+        /// let mut vec = mut_bump_vec![in &mut bump];
         /// let mut p = 1;
         /// vec.resize_with(4, || { p *= 2; p });
         /// assert_eq!(vec, [2, 4, 8, 16]);
@@ -1158,12 +1158,12 @@ where
         /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in bump; 1, 2, 3]?;
+        /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
         /// vec.try_resize_with(5, Default::default)?;
         /// assert_eq!(vec, [1, 2, 3, 0, 0]);
         /// drop(vec);
         ///
-        /// let mut vec = mut_bump_vec![try in bump]?;
+        /// let mut vec = mut_bump_vec![try in &mut bump]?;
         /// let mut p = 1;
         /// vec.try_resize_with(4, || { p *= 2; p })?;
         /// assert_eq!(vec, [2, 4, 8, 16]);
@@ -1214,13 +1214,13 @@ where
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// {
-        ///     let mut vec = mut_bump_vec![try in bump; 1, 2, 3]?;
+        ///     let mut vec = mut_bump_vec![try in &bump; 1, 2, 3]?;
         ///     vec.try_resize_zeroed(5)?;
         ///     assert_eq!(vec, [1, 2, 3, 0, 0]);
         /// }
         ///
         /// {
-        ///    let mut vec = mut_bump_vec![try in bump; 1, 2, 3]?;
+        ///    let mut vec = mut_bump_vec![try in &bump; 1, 2, 3]?;
         ///    vec.try_resize_zeroed(2)?;
         ///    assert_eq!(vec, [1, 2]);
         /// }

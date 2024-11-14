@@ -1,8 +1,7 @@
 use crate::{
     error_behavior_generic_methods_if, owned_str,
     polyfill::{self, nonnull, transmute_mut},
-    BaseAllocator, BumpBox, BumpScope, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, MinimumAlignment, NoDrop,
-    SupportedMinimumAlignment,
+    BumpAllocatorScope, BumpBox, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
@@ -210,15 +209,8 @@ impl<'a> FixedBumpString<'a> {
     /// Turns this `FixedBumpString<T>` into a `BumpVec<T>`.
     #[must_use]
     #[inline(always)]
-    pub fn into_string<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-        self,
-        bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
-    ) -> BumpString<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-    where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        A: BaseAllocator<GUARANTEED_ALLOCATED>,
-    {
-        BumpString::from_parts(self, bump)
+    pub fn into_string<A: BumpAllocatorScope<'a>>(self, allocator: A) -> BumpString<A> {
+        BumpString::from_parts(self, allocator)
     }
 
     /// Converts a `FixedBumpString` into a `FixedBumpVec<u8>`.

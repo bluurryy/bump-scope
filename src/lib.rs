@@ -297,6 +297,7 @@ pub mod owned_slice;
 pub mod owned_str;
 mod polyfill;
 mod raw_bump_box;
+mod raw_fixed_bump_string;
 mod raw_fixed_bump_vec;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;

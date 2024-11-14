@@ -3,6 +3,7 @@
 
 use core::{
     alloc::Layout,
+    any::Any,
     cell::Cell,
     fmt::Debug,
     mem,
@@ -662,7 +663,7 @@ fn vec_of_strings() {
 fn bump_vec_shrink_can<const UP: bool>() {
     let bump = Bump::<Global, 1, UP>::with_size(64);
 
-    let mut vec = BumpVec::<i32, Global, 1, UP>::from_array_in([1, 2, 3], &bump);
+    let mut vec = BumpVec::<i32, _>::from_array_in([1, 2, 3], &bump);
     let addr = vec.as_ptr().addr();
     assert_eq!(vec.capacity(), 3);
     vec.shrink_to_fit();
@@ -684,7 +685,7 @@ fn bump_vec_shrink_can<const UP: bool>() {
 fn bump_vec_shrink_cant<const UP: bool>() {
     let bump = Bump::<Global, 1, UP>::with_size(64);
 
-    let mut vec = BumpVec::<i32, Global, 1, UP>::from_array_in([1, 2, 3], &bump);
+    let mut vec = BumpVec::<i32, _>::from_array_in([1, 2, 3], &bump);
     let addr = vec.as_ptr().addr();
     assert_eq!(vec.capacity(), 3);
     bump.alloc_str("now you can't shrink haha");
@@ -1041,7 +1042,7 @@ fn min_non_zero_cap() {
     fn test_vecs<T: Default>(expected_capacity: usize) {
         {
             let bump: Bump = Bump::new();
-            let mut vec: BumpVec<T> = BumpVec::new_in(&bump);
+            let mut vec: BumpVec<T, _> = BumpVec::new_in(&bump);
             vec.push_with(Default::default);
             assert_eq!(vec.capacity(), expected_capacity, "{}", std::any::type_name::<T>());
         }
@@ -1135,4 +1136,33 @@ mod doc_layout_claim {
     const _: () = assert!(
         Option::<BumpScope>::SIZE == Option::<Comparand>::SIZE && Option::<BumpScope>::ALIGN == Option::<Comparand>::ALIGN
     );
+}
+
+fn expect_no_panic<T>(result: Result<T, Box<dyn Any + Send>>) -> T {
+    match result {
+        Ok(value) => value,
+        Err(payload) => unexpected_panic(payload),
+    }
+}
+
+#[allow(clippy::match_wild_err_arm)]
+fn unexpected_panic(payload: Box<dyn Any + Send>) -> ! {
+    match panic_payload_string(payload) {
+        Ok(msg) => panic!("unexpected panic: {msg}"),
+        Err(_) => panic!("unexpected panic (no message)"),
+    }
+}
+
+fn panic_payload_string(payload: Box<dyn Any + Send>) -> Result<String, Box<dyn Any + Send>> {
+    let payload = match payload.downcast::<&'static str>() {
+        Ok(string) => return Ok(string.to_string()),
+        Err(payload) => payload,
+    };
+
+    let payload = match payload.downcast::<String>() {
+        Ok(string) => return Ok(*string),
+        Err(payload) => payload,
+    };
+
+    Err(payload)
 }

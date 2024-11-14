@@ -101,7 +101,7 @@ fn into_iter<T: Testable>() {
 
 fn bump_vec_extend_from_slice<T: Testable>() {
     let bump: Bump = Bump::new();
-    let mut vec: BumpVec<T> = bump_vec![in bump];
+    let mut vec: BumpVec<T, _> = bump_vec![in &bump];
     let slice = ManuallyDrop::new(T::array::<5>());
 
     expected_drops(0).panic_on_clone(3).run(|| {

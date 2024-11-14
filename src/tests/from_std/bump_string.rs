@@ -251,7 +251,7 @@ fn test_split_off_empty() {
     let bump: Bump = Bump::new();
     let orig = "Hello, world!";
     let mut split = BumpString::from_str_in(orig, &bump);
-    let empty: BumpString = split.split_off(orig.len());
+    let empty: BumpString<_> = split.split_off(orig.len());
     assert!(empty.is_empty());
 }
 
@@ -450,12 +450,12 @@ fn test_simple_types() {
 #[test]
 fn test_vectors() {
     let bump: Bump = Bump::new();
-    let x: BumpVec<i32> = bump_vec![in bump];
+    let x: BumpVec<i32, _> = bump_vec![in &bump];
     assert_eq!(bump_format!(in bump, "{x:?}"), "[]");
-    assert_eq!(bump_format!(in bump, "{:?}", bump_vec![in bump; 1]), "[1]");
-    assert_eq!(bump_format!(in bump, "{:?}", bump_vec![in bump; 1, 2, 3]), "[1, 2, 3]");
+    assert_eq!(bump_format!(in bump, "{:?}", bump_vec![in &bump; 1]), "[1]");
+    assert_eq!(bump_format!(in bump, "{:?}", bump_vec![in &bump; 1, 2, 3]), "[1, 2, 3]");
     assert!(
-        bump_format!(in bump, "{:?}", bump_vec![in bump; bump_vec![in bump], bump_vec![in bump; 1], bump_vec![in bump; 1, 1]])
+        bump_format!(in bump, "{:?}", bump_vec![in &bump; bump_vec![in &bump], bump_vec![in &bump; 1], bump_vec![in &bump; 1, 1]])
             == "[[], [1], [1, 1]]"
     );
 }

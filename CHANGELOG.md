@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+- **fixed:** `BumpVec::split_off` now retains the capacity of `self` like the docs say
+- **improved:** removed implicit `shrink_to_fit` from `(Fixed)BumpVec::from_iter` and inside `Splice` (TODO: confirm in tests)
+- **improved:** no more temporary allocation taking up permanent space in `Splice`'s drop (TODO: confirm in tests)
+
 ## 0.10.11 (2024-11-11)
 - **added:** `map_in_place` to `(Mut)BumpVec`
 - **added:** allow `map_in_place` to ZSTs regardless of alignment

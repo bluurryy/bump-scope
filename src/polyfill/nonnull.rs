@@ -249,6 +249,12 @@ pub(crate) fn as_non_null_ptr<T>(ptr: NonNull<[T]>) -> NonNull<T> {
 }
 
 #[inline(always)]
+pub(crate) fn set_ptr<T>(ptr: &mut NonNull<[T]>, new_ptr: NonNull<T>) {
+    let len = ptr.len();
+    *ptr = slice_from_raw_parts(new_ptr, len);
+}
+
+#[inline(always)]
 pub(crate) fn set_len<T>(ptr: &mut NonNull<[T]>, new_len: usize) {
     let elem_ptr = as_non_null_ptr(*ptr);
     *ptr = slice_from_raw_parts(elem_ptr, new_len);

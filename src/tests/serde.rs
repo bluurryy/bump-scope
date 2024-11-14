@@ -26,7 +26,7 @@ fn ser() {
     }
 
     {
-        let a = bump_vec![in bump; 1, 2, 3];
+        let a = bump_vec![in &bump; 1, 2, 3];
         let b = vec![1, 2, 3];
         assert_same(&a, &b);
     }
@@ -81,8 +81,8 @@ fn de() {
     }
 
     {
-        let src = bump_vec![in bump_src; 1, 2, 3];
-        let mut dst = bump_vec![in bump_dst];
+        let src = bump_vec![in &bump_src; 1, 2, 3];
+        let mut dst = bump_vec![in &bump_dst];
         roundtrip(&src, &mut dst);
     }
 

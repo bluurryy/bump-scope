@@ -2,8 +2,8 @@ use crate::{
     error_behavior_generic_methods_allocation_failure, error_behavior_generic_methods_if, owned_slice,
     polyfill::{self, nonnull, pointer, slice},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BaseAllocator, BumpBox, BumpScope, BumpVec, ErrorBehavior, MinimumAlignment, NoDrop, SizedTypeProperties,
-    SupportedMinimumAlignment,
+    BaseAllocator, BumpAllocatorScope, BumpBox, BumpScope, BumpVec, ErrorBehavior, MinimumAlignment, NoDrop,
+    SizedTypeProperties, SupportedMinimumAlignment,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
@@ -225,15 +225,8 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Turns this `FixedBumpVec<T>` into a `BumpVec<T>`.
     #[must_use]
     #[inline(always)]
-    pub fn into_vec<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-        self,
-        bump: &'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
-    ) -> BumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-    where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        A: BaseAllocator<GUARANTEED_ALLOCATED>,
-    {
-        BumpVec::from_parts(self, bump)
+    pub fn into_vec<A: BumpAllocatorScope<'a>>(self, allocator: A) -> BumpVec<T, A> {
+        BumpVec::from_parts(self, allocator)
     }
 
     /// Removes the last element from a vector and returns it, or [`None`] if it

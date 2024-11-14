@@ -28,7 +28,9 @@ pub(crate) trait ErrorBehavior: Sized {
         f: impl FnOnce() -> Result<NonNull<u8>, Self>,
     ) -> Result<NonNull<u8>, Self>;
 
+    #[allow(dead_code)]
     fn allocate_layout(allocator: &impl BumpAllocator, layout: Layout) -> Result<NonNull<u8>, Self>;
+    #[allow(dead_code)]
     fn allocate_sized<T>(allocator: &impl BumpAllocator) -> Result<NonNull<T>, Self>;
     fn allocate_slice<T>(allocator: &impl BumpAllocator, len: usize) -> Result<NonNull<T>, Self>;
 }
