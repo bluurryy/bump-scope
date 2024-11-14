@@ -2,7 +2,7 @@
 
 use core::{ptr, slice};
 
-use crate::BumpAllocator;
+use crate::{destructure::destructure, BumpAllocator, BumpVec};
 
 use super::Drain;
 
@@ -83,8 +83,10 @@ impl<I: Iterator, A: BumpAllocator> Drop for Splice<'_, I, A> {
 
             // Collect any remaining elements.
             // This is a zero-length vector which does not allocate if `lower_bound` was exact.
-            // TODO: allocate with `BumpVec` in the `A`
-            let mut collected = (&mut self.replace_with).collect::<Vec<_>>().into_iter();
+            // TODO: deallocate this on drop
+            let collected = BumpVec::from_iter_in(&mut self.replace_with, self.drain.vec.as_ref().allocator());
+            destructure!(let BumpVec::<I::Item, &A> { fixed: collected } = collected);
+            let mut collected = collected.cook().into_iter();
 
             // Now we have an exact count.
             #[allow(clippy::len_zero)]
@@ -94,8 +96,6 @@ impl<I: Iterator, A: BumpAllocator> Drop for Splice<'_, I, A> {
                 debug_assert!(filled);
                 debug_assert_eq!(collected.len(), 0);
             }
-
-            drop(collected);
         }
         // Let `Drain::drop` move the tail back if necessary and restore `vec.len`.
     }
