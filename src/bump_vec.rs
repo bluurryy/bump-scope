@@ -91,6 +91,8 @@ pub use splice::Splice;
 /// Also, note that `bump_vec![in &bump; expr; 0]` is allowed, and produces an empty vector.
 /// This will still evaluate `expr`, however, and immediately drop the resulting value, so
 /// be mindful of side effects.
+///
+/// [`BumpScope`]: crate::BumpScope
 #[macro_export]
 macro_rules! bump_vec {
     [in $bump:expr] => {
