@@ -1,7 +1,7 @@
 mod slice_initializer;
 
 #[cfg(feature = "alloc")]
-use crate::WithLifetime;
+use crate::BumpAllocatorScope;
 use crate::{
     owned_slice, owned_str,
     polyfill::{self, nonnull, pointer, transmute_mut},
@@ -224,13 +224,13 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "alloc")]
-    pub fn into_box<A: BumpAllocator>(self, bump: A) -> Box<T, WithLifetime<'a, A>> {
+    pub fn into_box<A: BumpAllocatorScope<'a>>(self, allocator: A) -> Box<T, A> {
         let ptr = BumpBox::into_raw(self).as_ptr();
 
         // SAFETY: bump might not be the allocator self was allocated with;
         // that's fine though because a `BumpAllocator` allows deallocate calls
         // from allocations that don't belong to it
-        unsafe { Box::from_raw_in(ptr, WithLifetime::new(bump)) }
+        unsafe { Box::from_raw_in(ptr, allocator) }
     }
 
     /// Drops this box and frees its memory iff it is the last allocation:
