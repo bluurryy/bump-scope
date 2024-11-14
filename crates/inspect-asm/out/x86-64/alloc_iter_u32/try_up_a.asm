@@ -17,8 +17,8 @@ inspect_asm::alloc_iter_u32::try_up_a:
 	mov eax, 4
 	xor ecx, ecx
 	xor edx, edx
-	mov rsi, qword ptr [rdi]
 	add rcx, rax
+	mov rsi, qword ptr [rdi]
 	cmp rcx, qword ptr [rsi]
 	jne .LBB0_3
 .LBB0_2:
@@ -77,8 +77,8 @@ inspect_asm::alloc_iter_u32::try_up_a:
 	mov rcx, qword ptr [rsp + 16]
 	mov rdi, qword ptr [rsp + 24]
 	shl rcx, 2
-	mov rsi, qword ptr [rdi]
 	add rcx, rax
+	mov rsi, qword ptr [rdi]
 	cmp rcx, qword ptr [rsi]
 	jne .LBB0_3
 	jmp .LBB0_2

@@ -329,7 +329,7 @@ where
 
     #[inline(always)]
     fn has_mut_optimizations(&self) -> bool {
-        false
+        true
     }
 }
 
@@ -339,11 +339,75 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
+    #[inline(always)]
+    fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
+        self.as_scope().allocate_layout(layout)
+    }
+
+    #[inline(always)]
+    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
+        self.as_scope().try_allocate_layout(layout)
+    }
+
+    #[inline(always)]
+    fn allocate_sized<T>(&self) -> NonNull<T>
+    where
+        Self: Sized,
+    {
+        self.as_scope().allocate_sized()
+    }
+
+    #[inline(always)]
+    fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>
+    where
+        Self: Sized,
+    {
+        self.as_scope().try_allocate_sized()
+    }
+
+    #[inline(always)]
+    fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
+    where
+        Self: Sized,
+    {
+        self.as_scope().allocate_slice(len)
+    }
+
+    #[inline(always)]
+    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError>
+    where
+        Self: Sized,
+    {
+        self.as_scope().try_allocate_slice(len)
+    }
+
+    #[inline(always)]
+    unsafe fn mut_allocate_slice<T>(&mut self, len: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        self.as_mut_scope().mut_allocate_slice(len)
+    }
+
+    #[inline(always)]
+    unsafe fn try_mut_allocate_slice<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    where
+        Self: Sized,
+    {
+        self.as_mut_scope().try_mut_allocate_slice(len)
+    }
+
+    #[inline(always)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>
     where
         Self: Sized,
     {
         self.as_scope().shrink_slice(ptr, old_len, new_len)
+    }
+
+    #[inline(always)]
+    fn has_mut_optimizations(&self) -> bool {
+        self.as_scope().has_mut_optimizations()
     }
 }
 
