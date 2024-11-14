@@ -478,6 +478,158 @@ where
     }
 }
 
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
+    for &mut BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+    #[inline(always)]
+    fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
+        BumpScope::allocate_layout(self, layout)
+    }
+
+    #[inline(always)]
+    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
+        BumpScope::try_allocate_layout(self, layout)
+    }
+
+    #[inline(always)]
+    fn allocate_sized<T>(&self) -> NonNull<T>
+    where
+        Self: Sized,
+    {
+        BumpScope::allocate_sized(self)
+    }
+
+    #[inline(always)]
+    fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>
+    where
+        Self: Sized,
+    {
+        BumpScope::try_allocate_sized(self)
+    }
+
+    #[inline(always)]
+    #[cfg(not(no_global_oom_handling))]
+    fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
+    where
+        Self: Sized,
+    {
+        BumpScope::allocate_slice(self, len)
+    }
+
+    #[inline(always)]
+    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError>
+    where
+        Self: Sized,
+    {
+        BumpScope::try_allocate_slice(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn allocate_slice_greedy<T>(&mut self, len: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        BumpScope::allocate_slice_greedy(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn try_allocate_slice_greedy<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    where
+        Self: Sized,
+    {
+        BumpScope::try_allocate_slice_greedy(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
+        BumpScope::shrink_slice(self, ptr, old_len, new_len)
+    }
+
+    #[inline(always)]
+    fn supports_greedy_allocations(&self) -> bool {
+        BumpScope::supports_greedy_allocations(self)
+    }
+}
+
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
+    for &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+    #[inline(always)]
+    fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
+        Bump::allocate_layout(self, layout)
+    }
+
+    #[inline(always)]
+    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
+        Bump::try_allocate_layout(self, layout)
+    }
+
+    #[inline(always)]
+    fn allocate_sized<T>(&self) -> NonNull<T>
+    where
+        Self: Sized,
+    {
+        Bump::allocate_sized(self)
+    }
+
+    #[inline(always)]
+    fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>
+    where
+        Self: Sized,
+    {
+        Bump::try_allocate_sized(self)
+    }
+
+    #[inline(always)]
+    #[cfg(not(no_global_oom_handling))]
+    fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
+    where
+        Self: Sized,
+    {
+        Bump::allocate_slice(self, len)
+    }
+
+    #[inline(always)]
+    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError>
+    where
+        Self: Sized,
+    {
+        Bump::try_allocate_slice(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn allocate_slice_greedy<T>(&mut self, len: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        Bump::allocate_slice_greedy(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn try_allocate_slice_greedy<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    where
+        Self: Sized,
+    {
+        Bump::try_allocate_slice_greedy(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
+        Bump::shrink_slice(self, ptr, old_len, new_len)
+    }
+
+    #[inline(always)]
+    fn supports_greedy_allocations(&self) -> bool {
+        Bump::supports_greedy_allocations(self)
+    }
+}
+
 /// An allocator that makes allocations with a lifetime of `'a`.
 ///
 /// # Safety
@@ -511,6 +663,22 @@ where
 
 unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorScope<'a>
     for &'a Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+}
+
+unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorScope<'a>
+    for &mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+}
+
+unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorScope<'a>
+    for &'a mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
