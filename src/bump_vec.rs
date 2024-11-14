@@ -1961,6 +1961,10 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// assert_eq!(bump.stats().allocated(), 3 * 4);
     /// ```
     pub fn shrink_to_fit(&mut self) {
+        if self.allocator.supports_greedy_allocations() {
+            return;
+        }
+
         let Self { fixed, allocator } = self;
 
         let old_ptr = fixed.initialized.ptr.cast::<T>();
