@@ -20,16 +20,28 @@ use crate::{handle_alloc_error, infallible};
 /// - `grow(_zeroed)`, `shrink` and `deallocate` can be called with a pointer that was not allocated by this Allocator
 /// - `deallocate` can be called with any pointer or alignment when the size is `0`
 /// - `shrink` does not error
+/// - if `supports_greedy_allocations` returns `false` then <code>([try_][try_allocate_slice_greedy])[mut_allocate_slice][allocate_slice_greedy])</code>
+///   must not be manually implemented.
 ///
 /// [into_box]: crate::BumpBox::into_box
+/// [allocate_slice_greedy]: Self::allocate_slice_greedy
+/// [try_allocate_slice_greedy]: Self::try_allocate_slice_greedy
 #[allow(clippy::missing_errors_doc)]
 pub unsafe trait BumpAllocator: Allocator {
     /// A specialized version of `allocate`.
-    #[cfg(not(no_global_oom_handling))]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
-        match self.allocate(layout) {
-            Ok(ptr) => ptr.cast(),
-            Err(AllocError) => handle_alloc_error(layout),
+        #[cfg(not(no_global_oom_handling))]
+        {
+            match self.allocate(layout) {
+                Ok(ptr) => ptr.cast(),
+                Err(AllocError) => handle_alloc_error(layout),
+            }
+        }
+
+        #[cfg(no_global_oom_handling)]
+        {
+            _ = layout;
+            unreachable!()
         }
     }
 
@@ -42,16 +54,23 @@ pub unsafe trait BumpAllocator: Allocator {
     }
 
     /// A specialized version of `allocate`.
-    #[cfg(not(no_global_oom_handling))]
     fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
     {
-        let layout = Layout::new::<T>();
+        #[cfg(not(no_global_oom_handling))]
+        {
+            let layout = Layout::new::<T>();
 
-        match self.allocate(layout) {
-            Ok(ptr) => ptr.cast(),
-            Err(AllocError) => handle_alloc_error(Layout::new::<T>()),
+            match self.allocate(layout) {
+                Ok(ptr) => ptr.cast(),
+                Err(AllocError) => handle_alloc_error(Layout::new::<T>()),
+            }
+        }
+
+        #[cfg(no_global_oom_handling)]
+        {
+            unreachable!()
         }
     }
 
@@ -67,19 +86,27 @@ pub unsafe trait BumpAllocator: Allocator {
     }
 
     /// A specialized version of `allocate`.
-    #[cfg(not(no_global_oom_handling))]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
     {
-        let layout = match Layout::array::<T>(len) {
-            Ok(layout) => layout,
-            Err(_) => invalid_slice_layout(),
-        };
+        #[cfg(not(no_global_oom_handling))]
+        {
+            let layout = match Layout::array::<T>(len) {
+                Ok(layout) => layout,
+                Err(_) => invalid_slice_layout(),
+            };
 
-        match self.allocate(layout) {
-            Ok(ptr) => ptr.cast(),
-            Err(AllocError) => handle_alloc_error(layout),
+            match self.allocate(layout) {
+                Ok(ptr) => ptr.cast(),
+                Err(AllocError) => handle_alloc_error(layout),
+            }
+        }
+
+        #[cfg(no_global_oom_handling)]
+        {
+            _ = len;
+            unreachable!()
         }
     }
 
@@ -105,13 +132,21 @@ pub unsafe trait BumpAllocator: Allocator {
     ///
     /// The caller must behave as if this function returned a `&mut [u8]` in the sense that
     /// the allocator is mutably borrowed while the memory block is live.
-    #[cfg(not(no_global_oom_handling))]
-    unsafe fn mut_allocate_slice<T>(&mut self, len: usize) -> NonNull<[T]>
+    unsafe fn allocate_slice_greedy<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        let ptr = self.allocate_slice(len);
-        nonnull::slice_from_raw_parts(ptr, len)
+        #[cfg(not(no_global_oom_handling))]
+        {
+            let ptr = self.allocate_slice(len);
+            nonnull::slice_from_raw_parts(ptr, len)
+        }
+
+        #[cfg(no_global_oom_handling)]
+        {
+            _ = len;
+            unreachable!()
+        }
     }
 
     /// A specialized version of `allocate`.
@@ -120,7 +155,7 @@ pub unsafe trait BumpAllocator: Allocator {
     ///
     /// The caller must behave as if this function returned a `&mut [u8]` in the sense that
     /// the allocator is mutably borrowed while the memory block is live.
-    unsafe fn try_mut_allocate_slice<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    unsafe fn try_allocate_slice_greedy<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
     where
         Self: Sized,
     {
@@ -146,18 +181,20 @@ pub unsafe trait BumpAllocator: Allocator {
     }
 
     /// Returns `true` if this allocator has an optimized `allocate` version in
-    /// <code>([try_][try_alloc_slice_greedy])[mut_allocate_slice][alloc_slice_greedy])</code>.
+    /// <code>([try_][try_allocate_slice_greedy])[mut_allocate_slice][allocate_slice_greedy])</code>.
     ///
-    /// [alloc_slice_greedy]: Self::mut_allocate_slice
-    /// [try_alloc_slice_greedy]: Self::try_mut_allocate_slice
-    fn has_mut_optimizations(&self) -> bool {
+    /// If `false`, then <code>([try_][try_allocate_slice_greedy])[mut_allocate_slice][allocate_slice_greedy])</code>
+    /// must not be manually implemented.
+    ///
+    /// [allocate_slice_greedy]: Self::allocate_slice_greedy
+    /// [try_allocate_slice_greedy]: Self::try_allocate_slice_greedy
+    fn supports_greedy_allocations(&self) -> bool {
         false
     }
 }
 
 unsafe impl<A: BumpAllocator> BumpAllocator for &A {
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         A::allocate_layout(self, layout)
     }
@@ -168,7 +205,6 @@ unsafe impl<A: BumpAllocator> BumpAllocator for &A {
     }
 
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
     fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
@@ -214,9 +250,17 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
-        BumpScope::alloc_layout(self, layout)
+        #[cfg(not(no_global_oom_handling))]
+        {
+            BumpScope::alloc_layout(self, layout)
+        }
+
+        #[cfg(no_global_oom_handling)]
+        {
+            _ = layout;
+            unreachable!()
+        }
     }
 
     #[inline(always)]
@@ -225,12 +269,19 @@ where
     }
 
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
     fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
     {
-        infallible(self.do_alloc_sized())
+        #[cfg(not(no_global_oom_handling))]
+        {
+            infallible(self.do_alloc_sized())
+        }
+
+        #[cfg(no_global_oom_handling)]
+        {
+            unreachable!()
+        }
     }
 
     #[inline(always)]
@@ -242,12 +293,20 @@ where
     }
 
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
     {
-        infallible(self.do_alloc_slice(len))
+        #[cfg(not(no_global_oom_handling))]
+        {
+            infallible(self.do_alloc_slice(len))
+        }
+
+        #[cfg(no_global_oom_handling)]
+        {
+            _ = len;
+            unreachable!()
+        }
     }
 
     #[inline(always)]
@@ -259,17 +318,25 @@ where
     }
 
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
-    unsafe fn mut_allocate_slice<T>(&mut self, len: usize) -> NonNull<[T]>
+    unsafe fn allocate_slice_greedy<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        let (ptr, len) = infallible(BumpScope::alloc_greedy(self, len));
-        nonnull::slice_from_raw_parts(ptr, len)
+        #[cfg(not(no_global_oom_handling))]
+        {
+            let (ptr, len) = infallible(BumpScope::alloc_greedy(self, len));
+            nonnull::slice_from_raw_parts(ptr, len)
+        }
+
+        #[cfg(no_global_oom_handling)]
+        {
+            _ = len;
+            unreachable!()
+        }
     }
 
     #[inline(always)]
-    unsafe fn try_mut_allocate_slice<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    unsafe fn try_allocate_slice_greedy<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
     where
         Self: Sized,
     {
@@ -328,7 +395,7 @@ where
     }
 
     #[inline(always)]
-    fn has_mut_optimizations(&self) -> bool {
+    fn supports_greedy_allocations(&self) -> bool {
         true
     }
 }
@@ -382,19 +449,19 @@ where
     }
 
     #[inline(always)]
-    unsafe fn mut_allocate_slice<T>(&mut self, len: usize) -> NonNull<[T]>
+    unsafe fn allocate_slice_greedy<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        self.as_mut_scope().mut_allocate_slice(len)
+        self.as_mut_scope().allocate_slice_greedy(len)
     }
 
     #[inline(always)]
-    unsafe fn try_mut_allocate_slice<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    unsafe fn try_allocate_slice_greedy<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
     where
         Self: Sized,
     {
-        self.as_mut_scope().try_mut_allocate_slice(len)
+        self.as_mut_scope().try_allocate_slice_greedy(len)
     }
 
     #[inline(always)]
@@ -406,8 +473,8 @@ where
     }
 
     #[inline(always)]
-    fn has_mut_optimizations(&self) -> bool {
-        self.as_scope().has_mut_optimizations()
+    fn supports_greedy_allocations(&self) -> bool {
+        self.as_scope().supports_greedy_allocations()
     }
 }
 

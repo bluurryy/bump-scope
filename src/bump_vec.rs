@@ -197,32 +197,35 @@ impl<T, A: BumpAllocator> DerefMut for BumpVec<T, A> {
 
 impl<T, A: BumpAllocator> Drop for BumpVec<T, A> {
     fn drop(&mut self) {
-        struct DropGuard<'a, T, A: BumpAllocator>(&'a mut BumpVec<T, A>);
+        if !self.allocator.supports_greedy_allocations() {
+            struct DropGuard<'a, T, A: BumpAllocator>(&'a mut BumpVec<T, A>);
 
-        impl<T, A: BumpAllocator> Drop for DropGuard<'_, T, A> {
-            fn drop(&mut self) {
-                // SAFETY:
-                // The dangling pointer smaller than 16 can not be a valid ptr into a chunk because
-                // of the minimum chunk alignment of 16. The bump allocator handles deallocate requests
-                // from pointers outside its bound just fine by ignoring them.
-                //
-                // A deallocation with a dangling pointer higher than 16 would still
-                // be fine because the layout size is zero and the alignment is higher than
-                // any requested minimum alignment. So the bump pointer won't move at all.
-                unsafe {
-                    let ptr = self.0.fixed.initialized.as_non_null_ptr().cast();
-                    let layout = Layout::from_size_align_unchecked(self.0.fixed.capacity * T::SIZE, T::ALIGN);
-                    self.0.allocator.deallocate(ptr, layout);
+            impl<T, A: BumpAllocator> Drop for DropGuard<'_, T, A> {
+                fn drop(&mut self) {
+                    // TODO: simplify disclaimer, dangling means size is 0 other things don't really matter
+                    // SAFETY:
+                    // The dangling pointer smaller than 16 can not be a valid ptr into a chunk because
+                    // of the minimum chunk alignment of 16. The bump allocator handles deallocate requests
+                    // from pointers outside its bound just fine by ignoring them.
+                    //
+                    // A deallocation with a dangling pointer higher than 16 would still
+                    // be fine because the layout size is zero and the alignment is higher than
+                    // any requested minimum alignment. So the bump pointer won't move at all.
+                    unsafe {
+                        let ptr = self.0.fixed.initialized.as_non_null_ptr().cast();
+                        let layout = Layout::from_size_align_unchecked(self.0.fixed.capacity * T::SIZE, T::ALIGN);
+                        self.0.allocator.deallocate(ptr, layout);
+                    }
                 }
             }
+
+            let guard = DropGuard(self);
+
+            // destroy the remaining elements
+            guard.0.clear();
+
+            // now `guard` will be dropped and deallocate the memory
         }
-
-        let guard = DropGuard(self);
-
-        // destroy the remaining elements
-        guard.0.clear();
-
-        // now `guard` will be dropped and deallocate the memory
     }
 }
 
@@ -287,6 +290,8 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         for fn try_with_capacity_in
         #[inline]
         use fn generic_with_capacity_in(capacity: usize, allocator: A) -> Self {
+            let mut allocator = allocator;
+
             if T::IS_ZST {
                 return Ok(Self {
                     fixed: RawFixedBumpVec::EMPTY,
@@ -302,7 +307,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
             }
 
             Ok(Self {
-                fixed: unsafe { RawFixedBumpVec::allocate(&allocator, capacity)? },
+                fixed: unsafe { RawFixedBumpVec::allocate_greedy(&mut allocator, capacity)? },
                 allocator,
             })
         }
@@ -341,6 +346,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
             #![allow(clippy::needless_pass_by_ref_mut)]
 
             let array = ManuallyDrop::new(array);
+            let mut allocator = allocator;
 
             if T::IS_ZST {
                 return Ok(Self {
@@ -356,7 +362,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
                 });
             }
 
-            let mut fixed = unsafe { RawFixedBumpVec::allocate(&allocator, N)? };
+            let mut fixed = unsafe { RawFixedBumpVec::allocate_greedy(&mut allocator, N)? };
 
             let src = array.as_ptr();
             let dst = fixed.initialized.ptr.cast::<T>().as_ptr();
@@ -1531,6 +1537,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         self.generic_map(f)
     }
 
+    // TODO: add tests for mut optimized A
     #[inline]
     fn generic_map<B: ErrorBehavior, U>(self, mut f: impl FnMut(T) -> U) -> Result<BumpVec<U, A>, B>
     where
@@ -1566,9 +1573,11 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
                         let drop_len = pointer::sub_ptr(self.dst, drop_ptr);
                         ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
 
-                        // deallocate memory block (for additional safety notes see `Self::drop::DropGuard::drop`)
-                        let layout = Layout::from_size_align_unchecked(self.cap * T::SIZE, T::ALIGN);
-                        self.allocator.deallocate(self.ptr.cast(), layout);
+                        if !self.allocator.supports_greedy_allocations() {
+                            // deallocate memory block (for additional safety notes see `Self::drop::DropGuard::drop`)
+                            let layout = Layout::from_size_align_unchecked(self.cap * T::SIZE, T::ALIGN);
+                            self.allocator.deallocate(self.ptr.cast(), layout);
+                        }
                     }
                 }
             }
@@ -1652,43 +1661,50 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// # _ = b;
     /// ```
     pub fn map_in_place<U>(self, f: impl FnMut(T) -> U) -> BumpVec<U, A> {
-        // `FixedBumpVec::map_in_place` handles dropping `T`s and `U`s on panic.
-        // What is left to do is deallocating the memory.
-
-        struct DropGuard<T, A: BumpAllocator> {
-            ptr: NonNull<T>,
-            cap: usize,
-            allocator: A,
-        }
-
-        impl<T, A: BumpAllocator> DropGuard<T, A> {
-            fn into_allocator(self) -> A {
-                destructure!(let Self { allocator } = self);
-                allocator
-            }
-        }
-
-        impl<T, A: BumpAllocator> Drop for DropGuard<T, A> {
-            fn drop(&mut self) {
-                unsafe {
-                    let layout = Layout::from_size_align_unchecked(self.cap * T::SIZE, T::ALIGN);
-                    self.allocator.deallocate(self.ptr.cast(), layout);
-                }
-            }
-        }
-
         destructure!(let Self { fixed, allocator } = self);
 
-        let guard = DropGuard::<T, _> {
-            ptr: fixed.initialized.as_non_null_ptr().cast(),
-            cap: fixed.capacity,
-            allocator,
-        };
+        if allocator.supports_greedy_allocations() {
+            let fixed = unsafe { RawFixedBumpVec::from_cooked(fixed.cook().map_in_place(f)) };
+            BumpVec { fixed, allocator }
+        } else {
+            // `FixedBumpVec::map_in_place` handles dropping `T`s and `U`s on panic.
+            // What is left to do is deallocating the memory.
 
-        let fixed = unsafe { RawFixedBumpVec::from_cooked(fixed.cook().map_in_place(f)) };
-        let allocator = guard.into_allocator();
+            struct DropGuard<T, A: BumpAllocator> {
+                ptr: NonNull<T>,
+                cap: usize,
+                allocator: A,
+            }
 
-        BumpVec { fixed, allocator }
+            impl<T, A: BumpAllocator> DropGuard<T, A> {
+                fn into_allocator(self) -> A {
+                    destructure!(let Self { allocator } = self);
+                    allocator
+                }
+            }
+
+            impl<T, A: BumpAllocator> Drop for DropGuard<T, A> {
+                fn drop(&mut self) {
+                    unsafe {
+                        if !self.allocator.supports_greedy_allocations() {
+                            let layout = Layout::from_size_align_unchecked(self.cap * T::SIZE, T::ALIGN);
+                            self.allocator.deallocate(self.ptr.cast(), layout);
+                        }
+                    }
+                }
+            }
+
+            let guard = DropGuard::<T, _> {
+                ptr: fixed.initialized.as_non_null_ptr().cast(),
+                cap: fixed.capacity,
+                allocator,
+            };
+
+            let fixed = unsafe { RawFixedBumpVec::from_cooked(fixed.cook().map_in_place(f)) };
+            let allocator = guard.into_allocator();
+
+            BumpVec { fixed, allocator }
+        }
     }
 
     /// Creates a splicing iterator that replaces the specified range in the vector
@@ -1892,31 +1908,39 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// `new_capacity` must be greater than the current capacity.
     unsafe fn generic_grow_to<E: ErrorBehavior>(&mut self, new_capacity: usize) -> Result<(), E> {
-        let new_cap = new_capacity;
+        if self.allocator.supports_greedy_allocations() {
+            let mut new_vec = RawFixedBumpVec::allocate_greedy(&mut self.allocator, new_capacity)?;
+            ptr::copy_nonoverlapping(self.as_ptr(), new_vec.as_mut_ptr(), self.len());
+            new_vec.set_len(self.len());
+            self.fixed = new_vec;
+        } else {
+            let new_cap = new_capacity;
 
-        if self.capacity() == 0 {
-            self.fixed = RawFixedBumpVec::allocate(&self.allocator, new_cap)?;
-            return Ok(());
+            if self.capacity() == 0 {
+                self.fixed = RawFixedBumpVec::allocate(&self.allocator, new_cap)?;
+                return Ok(());
+            }
+
+            let old_ptr = self.as_non_null_ptr().cast();
+
+            let old_size = self.fixed.capacity * T::SIZE; // we already allocated that amount so this can't overflow
+            let new_size = new_cap.checked_mul(T::SIZE).ok_or_else(|| E::capacity_overflow())?;
+
+            let old_layout = Layout::from_size_align_unchecked(old_size, T::ALIGN);
+            let new_layout = match Layout::from_size_align(new_size, T::ALIGN) {
+                Ok(ok) => ok,
+                Err(_) => return Err(E::capacity_overflow()),
+            };
+
+            let new_ptr = match self.allocator.grow(old_ptr, old_layout, new_layout) {
+                Ok(ok) => ok.cast(),
+                Err(_) => return Err(E::allocation(new_layout)),
+            };
+
+            self.fixed.initialized.set_ptr(new_ptr);
+            self.fixed.capacity = new_cap;
         }
 
-        let old_ptr = self.as_non_null_ptr().cast();
-
-        let old_size = self.fixed.capacity * T::SIZE; // we already allocated that amount so this can't overflow
-        let new_size = new_cap.checked_mul(T::SIZE).ok_or_else(|| E::capacity_overflow())?;
-
-        let old_layout = Layout::from_size_align_unchecked(old_size, T::ALIGN);
-        let new_layout = match Layout::from_size_align(new_size, T::ALIGN) {
-            Ok(ok) => ok,
-            Err(_) => return Err(E::capacity_overflow()),
-        };
-
-        let new_ptr = match self.allocator.grow(old_ptr, old_layout, new_layout) {
-            Ok(ok) => ok.cast(),
-            Err(_) => return Err(E::allocation(new_layout)),
-        };
-
-        self.fixed.initialized.set_ptr(new_ptr);
-        self.fixed.capacity = new_cap;
         Ok(())
     }
 

@@ -5,7 +5,7 @@ export RUST_BACKTRACE := "1"
 export MIRIFLAGS := "-Zmiri-strict-provenance"
 
 default:
-  just --list
+  @just --list
 
 pre-release:
   # TODO: fix issues
