@@ -1938,30 +1938,17 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// ```
     pub fn shrink_to_fit(&mut self) {
         let Self { fixed, allocator } = self;
-        allocator.shrink_to_fit(fixed);
 
-        // let old_ptr = self.as_non_null_ptr().cast();
+        let old_ptr = fixed.initialized.ptr.cast::<T>();
+        let old_len = fixed.capacity;
+        let new_len = fixed.len();
 
-        // let old_size = self.fixed.capacity * T::SIZE; // we already allocated that amount so this can't overflow
-        // let new_size = self.len() * T::SIZE; // its less than the capacity so this can't overflow
-
-        // if !self
-        //     .allocator
-        //     .is_last_allocation(nonnull::slice_from_raw_parts(old_ptr, old_size))
-        // {
-        //     return;
-        // }
-
-        // let old_layout = unsafe { Layout::from_size_align_unchecked(old_size, T::ALIGN) };
-        // let new_layout = unsafe { Layout::from_size_align_unchecked(new_size, T::ALIGN) };
-
-        // let new_ptr = match unsafe { self.allocator.shrink(old_ptr, old_layout, new_layout) } {
-        //     Ok(ok) => ok.cast(),
-        //     Err(_) => unreachable!(),
-        // };
-
-        // self.fixed.initialized.ptr = nonnull::slice_from_raw_parts(new_ptr, self.len());
-        // self.fixed.capacity = self.len();
+        unsafe {
+            if let Some(new_ptr) = allocator.shrink_slice(old_ptr, old_len, new_len) {
+                fixed.initialized.set_ptr(new_ptr);
+                fixed.capacity = fixed.len();
+            }
+        }
     }
 
     /// # Safety

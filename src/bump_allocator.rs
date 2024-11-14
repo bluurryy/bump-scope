@@ -3,8 +3,8 @@ use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 use allocator_api2::alloc::{AllocError, Allocator};
 
 use crate::{
-    bump_down, polyfill::nonnull, raw_fixed_bump_vec::RawFixedBumpVec, up_align_usize_unchecked, BaseAllocator, Bump,
-    BumpScope, MinimumAlignment, SizedTypeProperties, SupportedMinimumAlignment,
+    bump_down, polyfill::nonnull, up_align_usize_unchecked, BaseAllocator, Bump, BumpScope, MinimumAlignment,
+    SizedTypeProperties, SupportedMinimumAlignment,
 };
 
 #[cfg(not(no_global_oom_handling))]
@@ -99,16 +99,19 @@ pub unsafe trait BumpAllocator: Allocator {
         }
     }
 
-    /// Returns whether this memory block is the last allocation.
-    fn is_last_allocation(&self, allocation: NonNull<[u8]>) -> bool {
-        _ = allocation;
-        false
-    }
-
-    /// TODO
-    fn shrink_to_fit<T>(&self, vec: &mut RawFixedBumpVec<T>) {
-        _ = vec;
-        todo!()
+    /// A specialized version of `shrink`.
+    ///
+    /// Returns `Some` if a shrink was performed, `None` if not.
+    ///
+    /// # Safety
+    ///
+    /// `new_len` must be less than `old_len`
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>
+    where
+        Self: Sized,
+    {
+        _ = (ptr, old_len, new_len);
+        None
     }
 }
 
@@ -159,13 +162,8 @@ unsafe impl<A: BumpAllocator> BumpAllocator for &A {
     }
 
     #[inline(always)]
-    fn is_last_allocation(&self, allocation: NonNull<[u8]>) -> bool {
-        A::is_last_allocation(self, allocation)
-    }
-
-    #[inline(always)]
-    fn shrink_to_fit<T>(&self, vec: &mut RawFixedBumpVec<T>) {
-        A::shrink_to_fit(self, vec);
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
+        A::shrink_slice(self, ptr, old_len, new_len)
     }
 }
 
@@ -221,24 +219,10 @@ where
     }
 
     #[inline(always)]
-    fn is_last_allocation(&self, allocation: NonNull<[u8]>) -> bool {
-        unsafe {
-            let size = allocation.len();
-            let start = allocation.cast::<u8>().as_ptr();
-            let end = unsafe { start.add(size) };
-
-            if UP {
-                end == self.chunk.get().pos().as_ptr()
-            } else {
-                start == self.chunk.get().pos().as_ptr()
-            }
-        }
-    }
-
-    fn shrink_to_fit<T>(&self, vec: &mut RawFixedBumpVec<T>) {
-        let old_ptr = vec.initialized.ptr.cast::<u8>();
-        let old_size = vec.capacity * T::SIZE; // we already allocated that amount so this can't overflow
-        let new_size = vec.len() * T::SIZE; // its less than the capacity so this can't overflow
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
+        let old_ptr = ptr.cast::<u8>();
+        let old_size = old_len * T::SIZE; // we already allocated that amount so this can't overflow
+        let new_size = new_len * T::SIZE; // its less than the capacity so this can't overflow
 
         // Adapted from `Allocator::shrink`.
         unsafe {
@@ -250,7 +234,7 @@ where
 
             // if that's not the last allocation, there is nothing we can do
             if !is_last {
-                return;
+                return None;
             }
 
             if UP {
@@ -260,6 +244,7 @@ where
                 let new_pos = up_align_usize_unchecked(end, MIN_ALIGN);
 
                 self.chunk.get().set_pos_addr(new_pos);
+                Some(old_ptr.cast())
             } else {
                 let old_addr = nonnull::addr(old_ptr);
                 let old_addr_old_end = NonZeroUsize::new_unchecked(old_addr.get() + old_size);
@@ -278,10 +263,8 @@ where
                 }
 
                 self.chunk.get().set_pos(new_ptr);
-                nonnull::set_ptr(&mut vec.initialized.ptr, new_ptr.cast());
+                Some(new_ptr.cast())
             }
-
-            vec.capacity = vec.len();
         }
     }
 }
@@ -292,14 +275,11 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
-    #[inline(always)]
-    fn is_last_allocation(&self, allocation: NonNull<[u8]>) -> bool {
-        self.as_scope().is_last_allocation(allocation)
-    }
-
-    #[inline(always)]
-    fn shrink_to_fit<T>(&self, vec: &mut RawFixedBumpVec<T>) {
-        self.as_scope().shrink_to_fit(vec);
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>
+    where
+        Self: Sized,
+    {
+        self.as_scope().shrink_slice(ptr, old_len, new_len)
     }
 }
 
