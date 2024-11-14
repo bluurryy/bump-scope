@@ -2,8 +2,7 @@ use crate::{
     error_behavior_generic_methods_allocation_failure, error_behavior_generic_methods_if, owned_slice,
     polyfill::{self, nonnull, pointer, slice},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BaseAllocator, BumpAllocatorScope, BumpBox, BumpScope, BumpVec, ErrorBehavior, MinimumAlignment, NoDrop,
-    SizedTypeProperties, SupportedMinimumAlignment,
+    BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, NoDrop, SizedTypeProperties,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
@@ -81,23 +80,12 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// ```
         for fn try_from_iter_in
         #[inline]
-        use fn generic_from_iter_in<{
-            I,
-            A,
-            const MIN_ALIGN: usize,
-            const UP: bool,
-            const GUARANTEED_ALLOCATED: bool,
-        } {
-            'b,
-        }>(iter: I, bump: impl Into<&'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self
+        use fn generic_from_iter_in<{I, A}>(iter: I, allocator: A) -> Self
         where {
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-            A: BaseAllocator<GUARANTEED_ALLOCATED> + 'b,
             I: IntoIterator<Item = T>,
-            'a: 'b,
+            A: BumpAllocatorScope<'a>,
         } in {
-            let bump = bump.into();
-            Ok(Self::from_init(bump.generic_alloc_iter(iter)?))
+            Ok(BumpVec::generic_from_iter_in(iter, allocator)?.into_fixed_vec())
         }
 
         /// Create a new [`FixedBumpVec`] whose elements are taken from an iterator and allocated in the given `bump`.
@@ -123,24 +111,13 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// ```
         for fn try_from_iter_exact_in
         #[inline]
-        use fn generic_from_iter_exact_in<{
-            I,
-            A,
-            const MIN_ALIGN: usize,
-            const UP: bool,
-            const GUARANTEED_ALLOCATED: bool,
-        } {
-            'b,
-        }>(iter: I, bump: impl Into<&'b BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self
+        use fn generic_from_iter_exact_in<{I, A}>(iter: I, allocator: A) -> Self
         where {
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-            A: BaseAllocator<GUARANTEED_ALLOCATED> + 'b,
             I: IntoIterator<Item = T>,
             I::IntoIter: ExactSizeIterator,
-            'a: 'b,
+            A: BumpAllocatorScope<'a>,
         } in {
-            let bump = bump.into();
-            Ok(Self::from_init(bump.generic_alloc_iter_exact(iter)?))
+            Ok(BumpVec::generic_from_iter_exact_in(iter, allocator)?.into_fixed_vec())
         }
     }
 
