@@ -190,15 +190,10 @@ impl<T, A: BumpAllocator> Drop for BumpVec<T, A> {
 
         impl<T, A: BumpAllocator> Drop for DropGuard<'_, T, A> {
             fn drop(&mut self) {
-                // TODO: simplify disclaimer, dangling means size is 0 other things don't really matter
                 // SAFETY:
-                // The dangling pointer smaller than 16 can not be a valid ptr into a chunk because
-                // of the minimum chunk alignment of 16. The bump allocator handles deallocate requests
-                // from pointers outside its bound just fine by ignoring them.
-                //
-                // A deallocation with a dangling pointer higher than 16 would still
-                // be fine because the layout size is zero and the alignment is higher than
-                // any requested minimum alignment. So the bump pointer won't move at all.
+                // Calling `deallocate` with a dangling pointer is fine because
+                // - `layout.size()` will be `0` which will make it have no effect in the allocator
+                // - calling deallocate with a pointer not owned by this allocator is explicitly allowed; see `BumpAllocator`
                 unsafe {
                     let ptr = self.0.fixed.initialized.as_non_null_ptr().cast();
                     let layout = Layout::from_size_align_unchecked(self.0.fixed.capacity * T::SIZE, T::ALIGN);
