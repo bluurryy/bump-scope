@@ -2,8 +2,6 @@
 
 ## Unreleased
 - **fixed:** `BumpVec::split_off` now retains the capacity of `self` like the docs say
-- **improved:** removed implicit `shrink_to_fit` from `(Fixed)BumpVec::from_iter` and inside `Splice` (TODO: confirm in tests)
-- **improved:** no more temporary allocation taking up permanent space in `Splice`'s drop (TODO: confirm in tests)
 - **breaking:** vectors and strings now take a single `A` generic parameter instead of the `'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool` of before
 - **breaking:** `bump` methods on vectors and strings has been renamed to `allocator`, the old `allocator` method which returned the base allocator is gone
 - **breaking:** `vec`-like macros now take the bump allocator as is instead of by `$bump.as_scope()`
