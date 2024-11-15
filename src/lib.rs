@@ -326,7 +326,6 @@ use core::convert::Infallible;
 use core::{
     alloc::Layout,
     fmt::{self, Debug},
-    marker::PhantomData,
     mem::{self, MaybeUninit},
     num::NonZeroUsize,
     ptr::NonNull,
@@ -488,68 +487,6 @@ pub mod private {
     #[cfg(not(no_global_oom_handling))]
     pub const fn format_trait_error() -> ! {
         panic!("formatting trait implementation returned an error");
-    }
-}
-
-/// Associates a lifetime to a wrapped type.
-///
-/// This is used for [`BumpBox::into_box`] to attach a lifetime to the `Box`.
-#[derive(Debug, Clone)]
-pub struct WithLifetime<'a, A> {
-    inner: A,
-    marker: PhantomData<&'a mut ()>,
-}
-
-#[allow(missing_docs)]
-impl<A> WithLifetime<'_, A> {
-    #[inline(always)]
-    pub fn new(inner: A) -> Self {
-        Self {
-            inner,
-            marker: PhantomData,
-        }
-    }
-
-    #[inline(always)]
-    pub fn into_inner(self) -> A {
-        self.inner
-    }
-}
-
-unsafe impl<A: Allocator> Allocator for WithLifetime<'_, A> {
-    #[inline(always)]
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.allocate(layout)
-    }
-
-    #[inline(always)]
-    fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.allocate_zeroed(layout)
-    }
-
-    #[inline(always)]
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        self.inner.deallocate(ptr, layout);
-    }
-
-    #[inline(always)]
-    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.grow(ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    unsafe fn grow_zeroed(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: Layout,
-        new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.grow_zeroed(ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.shrink(ptr, old_layout, new_layout)
     }
 }
 
