@@ -24,7 +24,7 @@ use core::{
 
 /// This is like [`vec!`] but allocates inside a `Bump` or `BumpScope`, returning a [`MutBumpVec`].
 ///
-/// `$bump` can be a mutable [`Bump`](crate::Bump) or [`BumpScope`] (anything where `$bump.as_mut_scope()` returns a `&mut BumpScope`).
+/// `$bump` can be any type that implements [`BumpAllocatorMut`].
 ///
 /// # Panics
 /// If used without `try`, panics on allocation failure.
