@@ -1,6 +1,6 @@
 use crate::{
-    chunk_header::ChunkHeader, polyfill::nonnull, BaseAllocator, Bump, BumpScope, Chunk, GuaranteedAllocatedStats,
-    MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment,
+    chunk_header::ChunkHeader, polyfill::nonnull, BaseAllocator, Bump, BumpScope, MinimumAlignment, RawChunk, Stats,
+    SupportedMinimumAlignment,
 };
 use core::{fmt::Debug, marker::PhantomData, num::NonZeroUsize, ptr::NonNull};
 
@@ -93,19 +93,10 @@ where
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats {
-        Stats {
-            current: Some(unsafe { Chunk::from_raw(self.chunk) }),
-        }
-    }
-
-    /// Returns a type which provides statistics about the memory usage of the bump allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats {
-        GuaranteedAllocatedStats {
-            current: unsafe { Chunk::from_raw(self.chunk) },
-        }
+    pub fn stats(&self) -> Stats<'a, true> {
+        let header = self.chunk.header_ptr().cast();
+        // SAFETY: `header` points to a valid chunk header which is guaranteed allocated
+        unsafe { Stats::from_header_unchecked(header) }
     }
 
     /// Returns a reference to the base allocator.
@@ -138,7 +129,7 @@ where
     A: BaseAllocator,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.guaranteed_allocated_stats().debug_format("BumpScopeGuardRoot", f)
+        self.stats().debug_format("BumpScopeGuardRoot", f)
     }
 }
 
@@ -188,18 +179,9 @@ where
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats {
-        Stats {
-            current: Some(unsafe { Chunk::from_raw(self.chunk) }),
-        }
-    }
-
-    /// Returns a type which provides statistics about the memory usage of the bump allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats {
-        GuaranteedAllocatedStats {
-            current: unsafe { Chunk::from_raw(self.chunk) },
-        }
+        let header = self.chunk.header_ptr().cast();
+        // SAFETY: `header` points to a valid chunk header which is guaranteed allocated
+        unsafe { Stats::from_header_unchecked(header) }
     }
 
     /// Returns a reference to the base allocator.

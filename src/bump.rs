@@ -5,8 +5,8 @@ use crate::{
     chunk_size::ChunkSize,
     error_behavior_generic_methods_allocation_failure,
     polyfill::{cfg_const, pointer},
-    unallocated_chunk_header, BaseAllocator, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior,
-    GuaranteedAllocatedStats, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    unallocated_chunk_header, BaseAllocator, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment,
+    RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 use allocator_api2::alloc::AllocError;
 use core::{

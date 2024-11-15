@@ -26,7 +26,7 @@ use crate::{handle_alloc_error, infallible};
 pub unsafe trait BumpAllocator: Allocator {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     fn stats(&self) -> Stats<'_> {
-        Stats { current: None }
+        Stats::unallocated()
     }
 
     /// A specialized version of [`allocate`](Allocator::allocate).
@@ -237,7 +237,7 @@ where
 {
     #[inline(always)]
     fn stats(&self) -> Stats<'_> {
-        BumpScope::stats(self)
+        BumpScope::stats(self).not_guaranteed_allocated()
     }
 
     #[inline(always)]
@@ -367,7 +367,7 @@ where
 {
     #[inline(always)]
     fn stats(&self) -> Stats<'_> {
-        Bump::stats(self)
+        Bump::stats(self).not_guaranteed_allocated()
     }
 
     #[inline(always)]
@@ -429,7 +429,7 @@ where
 {
     #[inline(always)]
     fn stats(&self) -> Stats<'_> {
-        BumpScope::stats(self)
+        BumpScope::stats(self).not_guaranteed_allocated()
     }
 
     #[inline(always)]
@@ -489,7 +489,7 @@ where
 {
     #[inline(always)]
     fn stats(&self) -> Stats<'_> {
-        Bump::stats(self)
+        Bump::stats(self).not_guaranteed_allocated()
     }
 
     #[inline(always)]
