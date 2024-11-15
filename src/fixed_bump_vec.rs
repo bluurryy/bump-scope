@@ -1908,4 +1908,4 @@ impl std::io::Write for FixedBumpVec<'_, u8> {
     }
 }
 
-impl<T> NoDrop for FixedBumpVec<'_, T> where T: NoDrop {}
+impl<T: NoDrop> NoDrop for FixedBumpVec<'_, T> {}

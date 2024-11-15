@@ -167,19 +167,8 @@ pub struct BumpVec<T, A: BumpAllocator> {
     pub(crate) allocator: A,
 }
 
-impl<T, A: BumpAllocator> UnwindSafe for BumpVec<T, A>
-where
-    T: UnwindSafe,
-    A: UnwindSafe,
-{
-}
-
-impl<T, A: BumpAllocator> RefUnwindSafe for BumpVec<T, A>
-where
-    T: RefUnwindSafe,
-    A: RefUnwindSafe,
-{
-}
+impl<T: UnwindSafe, A: BumpAllocator + UnwindSafe> UnwindSafe for BumpVec<T, A> {}
+impl<T: RefUnwindSafe, A: BumpAllocator + RefUnwindSafe> RefUnwindSafe for BumpVec<T, A> {}
 
 impl<T, A: BumpAllocator> Deref for BumpVec<T, A> {
     type Target = [T];

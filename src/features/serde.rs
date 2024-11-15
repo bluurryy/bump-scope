@@ -10,10 +10,7 @@ use serde::{
     Deserialize,
 };
 
-impl<T> Serialize for BumpBox<'_, T>
-where
-    T: Serialize + ?Sized,
-{
+impl<T: Serialize + ?Sized> Serialize for BumpBox<'_, T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -22,10 +19,7 @@ where
     }
 }
 
-impl<T> Serialize for FixedBumpVec<'_, T>
-where
-    T: Serialize,
-{
+impl<T: Serialize> Serialize for FixedBumpVec<'_, T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -118,10 +112,7 @@ impl Expected for AtMost {
     }
 }
 
-impl<'de, T> DeserializeSeed<'de> for &'_ mut FixedBumpVec<'_, T>
-where
-    T: Deserialize<'de>,
-{
+impl<'de, T: Deserialize<'de>> DeserializeSeed<'de> for &'_ mut FixedBumpVec<'_, T> {
     type Value = ();
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -132,10 +123,7 @@ where
     }
 }
 
-impl<'de, T> Visitor<'de> for &'_ mut FixedBumpVec<'_, T>
-where
-    T: Deserialize<'de>,
-{
+impl<'de, T: Deserialize<'de>> Visitor<'de> for &'_ mut FixedBumpVec<'_, T> {
     type Value = ();
 
     fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
