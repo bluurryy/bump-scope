@@ -10,64 +10,36 @@ use core::{
     slice::{self},
 };
 
-use crate::{BaseAllocator, BumpVec, MinimumAlignment, SizedTypeProperties, SupportedMinimumAlignment};
+use crate::{BumpAllocator, BumpVec, SizedTypeProperties};
 
-macro_rules! drain_declaration {
-    ($($allocator_parameter:tt)*) => {
-        /// A draining iterator for `BumpVec<T>`.
-        ///
-        /// This `struct` is not directly created by any method.
-        /// It is an implementation detail of `Splice`.
-        ///
-        /// The implementation of `drain` does not need a pointer to the whole `BumpVec`
-        /// (and all the generic parameters that come with it).
-        /// That's why we return `owned_slice::Drain` from `BumpVec::drain`.
-        ///
-        /// However just like the standard library we use a `Drain` implementation to implement
-        /// `Splice`. For this particular case we *do* need a pointer to `BumpVec`.
-        pub struct Drain<
-            'a,
-            T: 'a,
-            $($allocator_parameter)*,
-            const MIN_ALIGN: usize = 1,
-            const UP: bool = true,
-            const GUARANTEED_ALLOCATED: bool = true,
-        >
-        where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-            A: BaseAllocator<GUARANTEED_ALLOCATED>,
-        {
-            /// Index of tail to preserve
-            pub(super) tail_start: usize,
-            /// Length of tail
-            pub(super) tail_len: usize,
-            /// Current remaining range to remove
-            pub(super) iter: slice::Iter<'a, T>,
-            pub(super) vec: NonNull<BumpVec<'a, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>,
-        }
-    }
+/// A draining iterator for `BumpVec<T>`.
+///
+/// This `struct` is not directly created by any method.
+/// It is an implementation detail of `Splice`.
+///
+/// The implementation of `drain` does not need a pointer to the whole `BumpVec`
+/// (and all the generic parameters that come with it).
+/// That's why we return `owned_slice::Drain` from `BumpVec::drain`.
+///
+/// However just like the standard library we use a `Drain` implementation to implement
+/// `Splice`. For this particular case we *do* need a pointer to `BumpVec`.
+pub struct Drain<'a, T: 'a, A: BumpAllocator> {
+    /// Index of tail to preserve
+    pub(super) tail_start: usize,
+    /// Length of tail
+    pub(super) tail_len: usize,
+    /// Current remaining range to remove
+    pub(super) iter: slice::Iter<'a, T>,
+    pub(super) vec: NonNull<BumpVec<T, A>>,
 }
 
-crate::maybe_default_allocator!(drain_declaration);
-
-impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Debug
-    for Drain<'_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-    T: Debug,
-{
+impl<T: Debug, A: BumpAllocator> Debug for Drain<'_, T, A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("Drain").field(&self.iter.as_slice()).finish()
     }
 }
 
-impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    Drain<'_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<T, A: BumpAllocator> Drain<'_, T, A> {
     /// Returns the remaining items of this iterator as a slice.
     ///
     /// # Examples
@@ -163,24 +135,14 @@ where
     }
 }
 
-impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> AsRef<[T]>
-    for Drain<'_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<T, A: BumpAllocator> AsRef<[T]> for Drain<'_, T, A> {
     #[inline(always)]
     fn as_ref(&self) -> &[T] {
         self.as_slice()
     }
 }
 
-impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Iterator
-    for Drain<'_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<T, A: BumpAllocator> Iterator for Drain<'_, T, A> {
     type Item = T;
 
     #[inline(always)]
@@ -194,40 +156,20 @@ where
     }
 }
 
-impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> DoubleEndedIterator
-    for Drain<'_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<T, A: BumpAllocator> DoubleEndedIterator for Drain<'_, T, A> {
     #[inline(always)]
     fn next_back(&mut self) -> Option<T> {
         self.iter.next_back().map(|elt| unsafe { ptr::read(elt as *const _) })
     }
 }
 
-impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Drop
-    for Drain<'_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<T, A: BumpAllocator> Drop for Drain<'_, T, A> {
     #[inline]
     fn drop(&mut self) {
         /// Moves back the un-`Drain`ed elements to restore the original vector.
-        struct DropGuard<'r, 'a, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-            &'r mut Drain<'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
-        )
-        where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-            A: BaseAllocator<GUARANTEED_ALLOCATED>;
+        struct DropGuard<'r, 'a, T, A: BumpAllocator>(&'r mut Drain<'a, T, A>);
 
-        impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Drop
-            for DropGuard<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-        where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-            A: BaseAllocator<GUARANTEED_ALLOCATED>,
-        {
+        impl<T, A: BumpAllocator> Drop for DropGuard<'_, '_, T, A> {
             fn drop(&mut self) {
                 if self.0.tail_len > 0 {
                     unsafe {
@@ -291,18 +233,6 @@ where
     }
 }
 
-impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> ExactSizeIterator
-    for Drain<'_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-}
+impl<T, A: BumpAllocator> ExactSizeIterator for Drain<'_, T, A> {}
 
-impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> FusedIterator
-    for Drain<'_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-}
+impl<T, A: BumpAllocator> FusedIterator for Drain<'_, T, A> {}

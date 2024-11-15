@@ -51,9 +51,8 @@ inspect_asm::alloc_iter_u32::mut_rev_down:
 	mov ebp, dword ptr [r15 + r13]
 	cmp qword ptr [rsp + 32], rcx
 	jne .LBB0_1
-	mov esi, 1
 	mov rdi, r12
-	call bump_scope::mut_bump_vec_rev::MutBumpVecRev<T,A,_,_,_>::generic_grow_amortized
+	call bump_scope::mut_bump_vec_rev::MutBumpVecRev<T,A>::generic_grow_amortized
 	mov rdx, qword ptr [rsp + 8]
 	mov rcx, qword ptr [rsp + 24]
 	jmp .LBB0_1

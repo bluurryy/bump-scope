@@ -91,7 +91,7 @@ inspect_asm::vec_map::try_grow:
 .LBB0_9:
 	mov qword ptr [rbx], rax
 	mov qword ptr [rbx + 8], rdx
-	mov qword ptr [rbx + 16], rdx
+	mov qword ptr [rbx + 16], r15
 	mov qword ptr [rbx + 24], r14
 .LBB0_10:
 	mov rax, rbx

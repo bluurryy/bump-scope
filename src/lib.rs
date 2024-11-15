@@ -288,7 +288,7 @@ mod from_utf8_error;
 mod layout;
 mod mut_bump_string;
 /// Contains [`MutBumpVec`] and associated types.
-mod mut_bump_vec;
+pub mod mut_bump_vec;
 /// Contains [`MutBumpVecRev`] and associated types.
 mod mut_bump_vec_rev;
 /// Contains types associated with owned slices.
@@ -296,6 +296,9 @@ pub mod owned_slice;
 /// Contains types associated with owned strings.
 pub mod owned_str;
 mod polyfill;
+mod raw_bump_box;
+mod raw_fixed_bump_string;
+mod raw_fixed_bump_vec;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
 mod stats;
@@ -306,7 +309,7 @@ pub use allocator_api2;
 use allocator_api2::alloc::handle_alloc_error;
 use allocator_api2::alloc::{AllocError, Allocator};
 pub use bump::Bump;
-pub use bump_allocator::BumpAllocator;
+pub use bump_allocator::{BumpAllocator, BumpAllocatorScope, MutBumpAllocator, MutBumpAllocatorScope};
 pub use bump_box::BumpBox;
 #[cfg(feature = "std")]
 pub use bump_pool::{BumpPool, BumpPoolGuard};
@@ -323,7 +326,6 @@ use core::convert::Infallible;
 use core::{
     alloc::Layout,
     fmt::{self, Debug},
-    marker::PhantomData,
     mem::{self, MaybeUninit},
     num::NonZeroUsize,
     ptr::NonNull,
@@ -335,6 +337,7 @@ pub use from_utf16_error::FromUtf16Error;
 pub use from_utf8_error::FromUtf8Error;
 use layout::ArrayLayout;
 pub use mut_bump_string::MutBumpString;
+#[doc(inline)]
 pub use mut_bump_vec::MutBumpVec;
 pub use mut_bump_vec_rev::MutBumpVecRev;
 #[cfg(not(no_global_oom_handling))]
@@ -484,68 +487,6 @@ pub mod private {
     #[cfg(not(no_global_oom_handling))]
     pub const fn format_trait_error() -> ! {
         panic!("formatting trait implementation returned an error");
-    }
-}
-
-/// Associates a lifetime to a wrapped type.
-///
-/// This is used for [`BumpBox::into_box`] to attach a lifetime to the `Box`.
-#[derive(Debug, Clone)]
-pub struct WithLifetime<'a, A> {
-    inner: A,
-    marker: PhantomData<&'a mut ()>,
-}
-
-#[allow(missing_docs)]
-impl<A> WithLifetime<'_, A> {
-    #[inline(always)]
-    pub fn new(inner: A) -> Self {
-        Self {
-            inner,
-            marker: PhantomData,
-        }
-    }
-
-    #[inline(always)]
-    pub fn into_inner(self) -> A {
-        self.inner
-    }
-}
-
-unsafe impl<A: Allocator> Allocator for WithLifetime<'_, A> {
-    #[inline(always)]
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.allocate(layout)
-    }
-
-    #[inline(always)]
-    fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.allocate_zeroed(layout)
-    }
-
-    #[inline(always)]
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        self.inner.deallocate(ptr, layout);
-    }
-
-    #[inline(always)]
-    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.grow(ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    unsafe fn grow_zeroed(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: Layout,
-        new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.grow_zeroed(ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.shrink(ptr, old_layout, new_layout)
     }
 }
 
@@ -725,8 +666,8 @@ macro_rules! bump_scope_methods {
             $crate::condition! {
                 if $is_scope {
                     debug_assert!(self.stats().big_to_small().any(|c| {
-                        c.chunk.header_ptr() == checkpoint.chunk.cast() &&
-                        c.chunk.contains_addr_or_end(checkpoint.address.get())
+                        c.chunk == checkpoint.chunk.cast() &&
+                        crate::stats::raw!(c.contains_addr_or_end(checkpoint.address.get()))
                     }));
 
                     checkpoint.reset_within_chunk();
@@ -743,7 +684,7 @@ macro_rules! bump_scope_methods {
         #[inline(always)]
         pub fn guaranteed_allocated_stats(
             &self,
-        ) -> $crate::condition! { if $is_scope { GuaranteedAllocatedStats<'a, UP> } else { GuaranteedAllocatedStats<UP> } } {
+        ) -> $crate::condition! { if $is_scope { GuaranteedAllocatedStats<'a> } else { GuaranteedAllocatedStats } } {
             GuaranteedAllocatedStats {
                 current: crate::Chunk::new_guaranteed_allocated(self.as_scope()),
             }
@@ -765,7 +706,7 @@ macro_rules! bump_common_methods {
                 /// Returns a type which provides statistics about the memory usage of the bump allocator.
                 #[must_use]
                 #[inline(always)]
-                pub fn stats(&self) -> Stats<'a, UP> {
+                pub fn stats(&self) -> Stats<'a> {
                     Stats {
                         current: crate::Chunk::new(self.as_scope()),
                     }
@@ -774,7 +715,7 @@ macro_rules! bump_common_methods {
                 /// Returns a type which provides statistics about the memory usage of the bump allocator.
                 #[must_use]
                 #[inline(always)]
-                pub fn stats(&self) -> Stats<UP> {
+                pub fn stats(&self) -> Stats {
                     self.as_scope().stats()
                 }
             }

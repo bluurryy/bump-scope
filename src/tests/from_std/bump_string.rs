@@ -251,7 +251,7 @@ fn test_split_off_empty() {
     let bump: Bump = Bump::new();
     let orig = "Hello, world!";
     let mut split = BumpString::from_str_in(orig, &bump);
-    let empty: BumpString = split.split_off(orig.len());
+    let empty: BumpString<_> = split.split_off(orig.len());
     assert!(empty.is_empty());
 }
 
@@ -438,24 +438,24 @@ fn test_slicing() {
 #[test]
 fn test_simple_types() {
     let bump: Bump = Bump::new();
-    assert_eq!(bump_format!(in bump, "{}", 1), "1");
-    assert_eq!(bump_format!(in bump, "{}", -1), "-1");
-    assert_eq!(bump_format!(in bump, "{}", 200), "200");
-    assert_eq!(bump_format!(in bump, "{}", 2), "2");
-    assert_eq!(bump_format!(in bump, "{}", true), "true");
-    assert_eq!(bump_format!(in bump, "{}", false), "false");
-    assert_eq!(bump_format!(in bump, "{}", BumpString::from_str_in("hi", &bump)), "hi");
+    assert_eq!(bump_format!(in &bump, "{}", 1), "1");
+    assert_eq!(bump_format!(in &bump, "{}", -1), "-1");
+    assert_eq!(bump_format!(in &bump, "{}", 200), "200");
+    assert_eq!(bump_format!(in &bump, "{}", 2), "2");
+    assert_eq!(bump_format!(in &bump, "{}", true), "true");
+    assert_eq!(bump_format!(in &bump, "{}", false), "false");
+    assert_eq!(bump_format!(in &bump, "{}", BumpString::from_str_in("hi", &bump)), "hi");
 }
 
 #[test]
 fn test_vectors() {
     let bump: Bump = Bump::new();
-    let x: BumpVec<i32> = bump_vec![in bump];
-    assert_eq!(bump_format!(in bump, "{x:?}"), "[]");
-    assert_eq!(bump_format!(in bump, "{:?}", bump_vec![in bump; 1]), "[1]");
-    assert_eq!(bump_format!(in bump, "{:?}", bump_vec![in bump; 1, 2, 3]), "[1, 2, 3]");
+    let x: BumpVec<i32, _> = bump_vec![in &bump];
+    assert_eq!(bump_format!(in &bump, "{x:?}"), "[]");
+    assert_eq!(bump_format!(in &bump, "{:?}", bump_vec![in &bump; 1]), "[1]");
+    assert_eq!(bump_format!(in &bump, "{:?}", bump_vec![in &bump; 1, 2, 3]), "[1, 2, 3]");
     assert!(
-        bump_format!(in bump, "{:?}", bump_vec![in bump; bump_vec![in bump], bump_vec![in bump; 1], bump_vec![in bump; 1, 1]])
+        bump_format!(in &bump, "{:?}", bump_vec![in &bump; bump_vec![in &bump], bump_vec![in &bump; 1], bump_vec![in &bump; 1, 1]])
             == "[[], [1], [1, 1]]"
     );
 }
@@ -573,6 +573,6 @@ fn test_str_concat() {
     let bump: Bump = Bump::new();
     let a = BumpString::from_str_in("hello", &bump);
     let b = BumpString::from_str_in("world", &bump);
-    let s = bump_format!(in bump, "{a}{b}");
+    let s = bump_format!(in &bump, "{a}{b}");
     assert_eq!(s.as_bytes()[9], 'd' as u8);
 }

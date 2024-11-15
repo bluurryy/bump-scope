@@ -56,7 +56,7 @@ impl Drop for DropCounterMutex {
 
 #[test]
 fn test_small_vec_struct() {
-    assert_eq!(size_of::<MutBumpVecRev<u8>>(), size_of::<usize>() * 4);
+    assert_eq!(size_of::<MutBumpVecRev<u8, Bump>>(), size_of::<usize>() * 4);
 }
 
 #[test]
@@ -65,8 +65,8 @@ fn test_double_drop() {
     let mut bump_y: Bump = Bump::new();
 
     struct TwoVec<'a, T> {
-        x: MutBumpVecRev<'a, 'a, T>,
-        y: MutBumpVecRev<'a, 'a, T>,
+        x: MutBumpVecRev<T, &'a mut Bump>,
+        y: MutBumpVecRev<T, &'a mut Bump>,
     }
 
     let (mut count_x, mut count_y) = (0, 0);
@@ -118,14 +118,14 @@ fn test_reserve() {
 fn test_zst_capacity() {
     let mut bump: Bump = Bump::new();
 
-    assert_eq!(MutBumpVecRev::<()>::new_in(&mut bump).capacity(), usize::MAX);
+    assert_eq!(MutBumpVecRev::<(), &mut Bump>::new_in(&mut bump).capacity(), usize::MAX);
 }
 
 #[test]
 fn test_indexing() {
     let mut bump: Bump = Bump::new();
 
-    let v: MutBumpVecRev<isize> = mut_bump_vec_rev![in bump; 10, 20];
+    let v: MutBumpVecRev<isize, _> = mut_bump_vec_rev![in &mut bump; 10, 20];
     assert_eq!(v[0], 10);
     assert_eq!(v[1], 20);
     let mut x: usize = 0;
@@ -141,10 +141,10 @@ fn test_debug_fmt() {
     let mut bump1: Bump = Bump::new();
     let mut bump2: Bump = Bump::new();
 
-    let vec1: MutBumpVecRev<isize> = mut_bump_vec_rev![in bump1; ];
+    let vec1: MutBumpVecRev<isize, _> = mut_bump_vec_rev![in &mut bump1; ];
     assert_eq!("[]", format!("{:?}", vec1));
 
-    let vec2 = mut_bump_vec_rev![in bump2; 0, 1];
+    let vec2 = mut_bump_vec_rev![in &mut bump2; 0, 1];
     assert_eq!("[0, 1]", format!("{:?}", vec2));
 
     let slice: &[isize] = &[4, 5];
@@ -155,7 +155,7 @@ fn test_debug_fmt() {
 fn test_push() {
     let mut bump: Bump = Bump::new();
 
-    let mut v = mut_bump_vec_rev![in bump; ];
+    let mut v = mut_bump_vec_rev![in &mut bump; ];
     v.push(1);
     assert_eq!(v, [1]);
     v.push(2);
@@ -169,8 +169,8 @@ fn test_extend() {
     let mut bump_v: Bump = Bump::new();
     let mut bump_w: Bump = Bump::new();
 
-    let mut v = MutBumpVecRev::<i32>::new_in(&mut bump_v);
-    let mut w = MutBumpVecRev::<i32>::new_in(&mut bump_w);
+    let mut v = MutBumpVecRev::<i32, _>::new_in(&mut bump_v);
+    let mut w = MutBumpVecRev::<i32, _>::new_in(&mut bump_w);
 
     v.extend(&w);
     assert!(v.is_empty());
@@ -200,7 +200,7 @@ fn test_extend() {
     let mut bump_b: Bump = Bump::new();
 
     let mut a = MutBumpVecRev::new_in(&mut bump_a);
-    let b = mut_bump_vec_rev![in bump_b; Foo, Foo];
+    let b = mut_bump_vec_rev![in &mut bump_b; Foo, Foo];
 
     a.extend(b);
     assert_eq!(a, &[Foo, Foo]);
@@ -212,7 +212,7 @@ fn test_extend() {
         let mut bump_y: Bump = Bump::new();
 
         let mut x = MutBumpVecRev::new_in(&mut bump_x);
-        let y = mut_bump_vec_rev![in bump_y; DropCounter { count: &mut count_x }];
+        let y = mut_bump_vec_rev![in &mut bump_y; DropCounter { count: &mut count_x }];
         x.extend(y);
     }
     assert_eq!(count_x, 1);
@@ -223,10 +223,10 @@ fn test_extend_from_slice() {
     let mut bump_a: Bump = Bump::new();
     let mut bump_b: Bump = Bump::new();
 
-    let b: MutBumpVecRev<isize> = mut_bump_vec_rev![in bump_b; 6, 7, 8, 9, 0];
-    let a: MutBumpVecRev<isize> = mut_bump_vec_rev![in bump_a; 1, 2, 3, 4, 5];
+    let b: MutBumpVecRev<isize, _> = mut_bump_vec_rev![in &mut bump_b; 6, 7, 8, 9, 0];
+    let a: MutBumpVecRev<isize, _> = mut_bump_vec_rev![in &mut bump_a; 1, 2, 3, 4, 5];
 
-    let mut v: MutBumpVecRev<isize> = a;
+    let mut v: MutBumpVecRev<isize, _> = a;
 
     v.extend_from_slice_copy(&b);
 
@@ -238,13 +238,13 @@ fn test_extend_ref() {
     let mut bump_v: Bump = Bump::new();
     let mut bump_w: Bump = Bump::new();
 
-    let mut v = mut_bump_vec_rev![in bump_v; 1, 2];
+    let mut v = mut_bump_vec_rev![in &mut bump_v; 1, 2];
     v.extend(&[3, 4, 5]);
 
     assert_eq!(v.len(), 5);
     assert_eq!(v, [5, 4, 3, 1, 2]);
 
-    let w = mut_bump_vec_rev![in bump_w; 6, 7];
+    let w = mut_bump_vec_rev![in &mut bump_w; 6, 7];
     v.extend(&w);
 
     assert_eq!(v.len(), 7);
@@ -255,7 +255,7 @@ fn test_extend_ref() {
 fn test_slice_from_ref() {
     let mut bump: Bump = Bump::new();
 
-    let values = mut_bump_vec_rev![in bump; 1, 2, 3, 4, 5];
+    let values = mut_bump_vec_rev![in &mut bump; 1, 2, 3, 4, 5];
     let slice = &values[1..3];
 
     assert_eq!(slice, [2, 3]);
@@ -265,7 +265,7 @@ fn test_slice_from_ref() {
 fn test_slice_from_mut() {
     let mut bump: Bump = Bump::new();
 
-    let mut values = mut_bump_vec_rev![in bump; 1, 2, 3, 4, 5];
+    let mut values = mut_bump_vec_rev![in &mut bump; 1, 2, 3, 4, 5];
     {
         let slice = &mut values[2..];
         assert!(slice == [3, 4, 5]);
@@ -281,7 +281,7 @@ fn test_slice_from_mut() {
 fn test_slice_to_mut() {
     let mut bump: Bump = Bump::new();
 
-    let mut values = mut_bump_vec_rev![in bump; 1, 2, 3, 4, 5];
+    let mut values = mut_bump_vec_rev![in &mut bump; 1, 2, 3, 4, 5];
     {
         let slice = &mut values[..2];
         assert!(slice == [1, 2]);
@@ -297,7 +297,7 @@ fn test_slice_to_mut() {
 fn test_split_at_mut() {
     let mut bump: Bump = Bump::new();
 
-    let mut values = mut_bump_vec_rev![in bump; 1, 2, 3, 4, 5];
+    let mut values = mut_bump_vec_rev![in &mut bump; 1, 2, 3, 4, 5];
     {
         let (left, right) = values.split_at_mut(2);
         {
@@ -391,7 +391,7 @@ fn test_cmp() {
     let cmp: &[isize] = &[2, 3, 4];
     assert_eq!(&x[1..4], cmp);
 
-    let x: MutBumpVecRev<isize> = mut_bump_vec_rev![in bump; 1, 2, 3, 4, 5];
+    let x: MutBumpVecRev<isize, _> = mut_bump_vec_rev![in &mut bump; 1, 2, 3, 4, 5];
     let cmp: &[isize] = &[1, 2, 3, 4, 5];
     assert_eq!(&x[..], cmp);
     let cmp: &[isize] = &[3, 4, 5];
@@ -416,7 +416,7 @@ fn test_vec_truncate_drop() {
     }
 
     let mut bump: Bump = Bump::new();
-    let mut v = mut_bump_vec_rev![in bump; Elem(1), Elem(2), Elem(3), Elem(4), Elem(5)];
+    let mut v = mut_bump_vec_rev![in &mut bump; Elem(1), Elem(2), Elem(3), Elem(4), Elem(5)];
     assert_eq!(unsafe { DROPS }, 0);
     v.truncate(3);
     assert_eq!(unsafe { DROPS }, 2);
@@ -438,14 +438,14 @@ fn test_vec_truncate_fail() {
     }
 
     let mut bump: Bump = Bump::new();
-    let mut v = mut_bump_vec_rev![in bump; BadElem(1), BadElem(2), BadElem(0xbadbeef), BadElem(4)];
+    let mut v = mut_bump_vec_rev![in &mut bump; BadElem(1), BadElem(2), BadElem(0xbadbeef), BadElem(4)];
     v.truncate(0);
 }
 
 #[test]
 fn test_index() {
     let mut bump: Bump = Bump::new();
-    let vec = mut_bump_vec_rev![in bump; 1, 2, 3];
+    let vec = mut_bump_vec_rev![in &mut bump; 1, 2, 3];
     assert!(vec[1] == 2);
 }
 
@@ -453,7 +453,7 @@ fn test_index() {
 #[should_panic]
 fn test_index_out_of_bounds() {
     let mut bump: Bump = Bump::new();
-    let vec = mut_bump_vec_rev![in bump; 1, 2, 3];
+    let vec = mut_bump_vec_rev![in &mut bump; 1, 2, 3];
     let _ = vec[3];
 }
 
@@ -461,7 +461,7 @@ fn test_index_out_of_bounds() {
 #[should_panic]
 fn test_slice_out_of_bounds_1() {
     let mut bump: Bump = Bump::new();
-    let x = mut_bump_vec_rev![in bump; 1, 2, 3, 4, 5];
+    let x = mut_bump_vec_rev![in &mut bump; 1, 2, 3, 4, 5];
     let _ = &x[!0..];
 }
 
@@ -469,7 +469,7 @@ fn test_slice_out_of_bounds_1() {
 #[should_panic]
 fn test_slice_out_of_bounds_2() {
     let mut bump: Bump = Bump::new();
-    let x = mut_bump_vec_rev![in bump; 1, 2, 3, 4, 5];
+    let x = mut_bump_vec_rev![in &mut bump; 1, 2, 3, 4, 5];
     let _ = &x[..6];
 }
 
@@ -477,7 +477,7 @@ fn test_slice_out_of_bounds_2() {
 #[should_panic]
 fn test_slice_out_of_bounds_3() {
     let mut bump: Bump = Bump::new();
-    let x = mut_bump_vec_rev![in bump; 1, 2, 3, 4, 5];
+    let x = mut_bump_vec_rev![in &mut bump; 1, 2, 3, 4, 5];
     let _ = &x[!0..4];
 }
 
@@ -485,7 +485,7 @@ fn test_slice_out_of_bounds_3() {
 #[should_panic]
 fn test_slice_out_of_bounds_4() {
     let mut bump: Bump = Bump::new();
-    let x = mut_bump_vec_rev![in bump; 1, 2, 3, 4, 5];
+    let x = mut_bump_vec_rev![in &mut bump; 1, 2, 3, 4, 5];
     let _ = &x[1..6];
 }
 
@@ -493,7 +493,7 @@ fn test_slice_out_of_bounds_4() {
 #[should_panic]
 fn test_slice_out_of_bounds_5() {
     let mut bump: Bump = Bump::new();
-    let x = mut_bump_vec_rev![in bump; 1, 2, 3, 4, 5];
+    let x = mut_bump_vec_rev![in &mut bump; 1, 2, 3, 4, 5];
     let _ = &x[3..2];
 }
 
@@ -501,7 +501,7 @@ fn test_slice_out_of_bounds_5() {
 #[should_panic]
 fn test_swap_remove_empty() {
     let mut bump: Bump = Bump::new();
-    let mut vec = MutBumpVecRev::<i32>::new_in(&mut bump);
+    let mut vec = MutBumpVecRev::<i32, _>::new_in(&mut bump);
     vec.swap_remove(0);
 }
 
@@ -509,8 +509,8 @@ fn test_swap_remove_empty() {
 fn test_move_items() {
     let mut bump0: Bump = Bump::new();
     let mut bump1: Bump = Bump::new();
-    let vec = mut_bump_vec_rev![in bump0; 1, 2, 3];
-    let mut vec2 = mut_bump_vec_rev![in bump1; ];
+    let vec = mut_bump_vec_rev![in &mut bump0; 1, 2, 3];
+    let mut vec2 = mut_bump_vec_rev![in &mut bump1; ];
     for i in vec {
         vec2.push(i);
     }
@@ -521,8 +521,8 @@ fn test_move_items() {
 fn test_move_items_reverse() {
     let mut bump0: Bump = Bump::new();
     let mut bump1: Bump = Bump::new();
-    let vec = mut_bump_vec_rev![in bump0; 1, 2, 3];
-    let mut vec2 = mut_bump_vec_rev![in bump1; ];
+    let vec = mut_bump_vec_rev![in &mut bump0; 1, 2, 3];
+    let mut vec2 = mut_bump_vec_rev![in &mut bump1; ];
     for i in vec.into_iter().rev() {
         vec2.push(i);
     }
@@ -533,8 +533,8 @@ fn test_move_items_reverse() {
 fn test_move_items_zero_sized() {
     let mut bump0: Bump = Bump::new();
     let mut bump1: Bump = Bump::new();
-    let vec = mut_bump_vec_rev![in bump0; (), (), ()];
-    let mut vec2 = mut_bump_vec_rev![in bump1; ];
+    let vec = mut_bump_vec_rev![in &mut bump0; (), (), ()];
+    let mut vec2 = mut_bump_vec_rev![in &mut bump1; ];
     for i in vec {
         vec2.push(i);
     }
@@ -544,7 +544,7 @@ fn test_move_items_zero_sized() {
 #[test]
 fn test_into_boxed_slice() {
     let mut bump: Bump = Bump::new();
-    let xs = mut_bump_vec_rev![in bump; 1, 2, 3];
+    let xs = mut_bump_vec_rev![in &mut bump; 1, 2, 3];
     let ys = xs.into_boxed_slice();
     assert_eq!(&*ys, [1, 2, 3]);
 }
@@ -563,7 +563,7 @@ fn test_append() {
 #[test]
 fn test_into_iter_as_slice() {
     let mut bump: Bump = Bump::new();
-    let vec = mut_bump_vec_rev![in bump; 'a', 'b', 'c'];
+    let vec = mut_bump_vec_rev![in &mut bump; 'a', 'b', 'c'];
     let mut into_iter = vec.into_iter();
     assert_eq!(into_iter.as_slice(), &['a', 'b', 'c']);
     let _ = into_iter.next().unwrap();
@@ -576,7 +576,7 @@ fn test_into_iter_as_slice() {
 #[test]
 fn test_into_iter_as_mut_slice() {
     let mut bump: Bump = Bump::new();
-    let vec = mut_bump_vec_rev![in bump; 'a', 'b', 'c'];
+    let vec = mut_bump_vec_rev![in &mut bump; 'a', 'b', 'c'];
     let mut into_iter = vec.into_iter();
     assert_eq!(into_iter.as_slice(), &['a', 'b', 'c']);
     into_iter.as_mut_slice()[0] = 'x';
@@ -588,7 +588,7 @@ fn test_into_iter_as_mut_slice() {
 #[test]
 fn test_into_iter_debug() {
     let mut bump: Bump = Bump::new();
-    let vec = mut_bump_vec_rev![in bump; 'a', 'b', 'c'];
+    let vec = mut_bump_vec_rev![in &mut bump; 'a', 'b', 'c'];
     let into_iter = vec.into_iter();
     let debug = format!("{into_iter:?}");
     assert_eq!(debug, "IntoIter(['a', 'b', 'c'])");
@@ -615,7 +615,7 @@ fn test_into_iter_next_chunk() {
 fn test_into_iter_clone() {
     fn iter_rev_equal<I: DoubleEndedIterator<Item = i32>>(it: I, slice: &[i32]) {
         let mut bump: Bump = Bump::new();
-        let mut v = mut_bump_vec_rev![in bump];
+        let mut v = mut_bump_vec_rev![in &mut bump];
         v.extend(it.rev());
         assert_eq!(&v[..], slice);
     }
@@ -651,9 +651,9 @@ fn test_into_iter_leak() {
     }
 
     let mut bump: Bump = Bump::new();
-    let v = mut_bump_vec_rev![in bump; D(false), D(true), D(false)];
+    let v = mut_bump_vec_rev![in &mut bump; D(false), D(true), D(false)];
 
-    catch_unwind(move || drop(v.into_iter())).ok();
+    catch_unwind(AssertUnwindSafe(move || drop(v.into_iter()))).ok();
 
     assert_eq!(unsafe { DROPS }, 3);
 }
@@ -661,7 +661,7 @@ fn test_into_iter_leak() {
 #[test]
 fn test_into_iter_advance_by() {
     let mut bump: Bump = Bump::new();
-    let mut i = mut_bump_vec_rev![in bump; 1, 2, 3, 4, 5].into_iter();
+    let mut i = mut_bump_vec_rev![in &mut bump; 1, 2, 3, 4, 5].into_iter();
     assert_eq!(i.advance_by(0), Ok(()));
     assert_eq!(i.advance_back_by(0), Ok(()));
     assert_eq!(i.as_slice(), [1, 2, 3, 4, 5]);
@@ -724,18 +724,18 @@ fn test_into_iter_zst() {
     const C: AlignedZstWithDrop = AlignedZstWithDrop([0u64; 0]);
 
     let mut bump: Bump = Bump::new();
-    for _ in mut_bump_vec_rev![in bump; C].into_iter() {}
-    for _ in mut_bump_vec_rev![in bump; C; 5].into_iter().rev() {}
+    for _ in mut_bump_vec_rev![in &mut bump; C].into_iter() {}
+    for _ in mut_bump_vec_rev![in &mut bump; C; 5].into_iter().rev() {}
 
-    let mut it = mut_bump_vec_rev![in bump; C, C].into_iter();
+    let mut it = mut_bump_vec_rev![in &mut bump; C, C].into_iter();
     assert_eq!(it.advance_by(1), Ok(()));
     drop(it);
 
-    let mut it = mut_bump_vec_rev![in bump; C, C].into_iter();
+    let mut it = mut_bump_vec_rev![in &mut bump; C, C].into_iter();
     it.next_chunk::<1>().unwrap();
     drop(it);
 
-    let mut it = mut_bump_vec_rev![in bump; C, C].into_iter();
+    let mut it = mut_bump_vec_rev![in &mut bump; C, C].into_iter();
     it.next_chunk::<4>().unwrap_err();
     drop(it);
 }
@@ -773,7 +773,7 @@ fn overaligned_allocations() {
 
     #[repr(align(256))]
     struct Foo(usize);
-    let mut v = mut_bump_vec_rev![in bump; Foo(273)];
+    let mut v = mut_bump_vec_rev![in &mut bump; Foo(273)];
     for i in 0..0x1000 {
         v.reserve(i);
         assert!(v[0].0 == 273);
@@ -783,7 +783,7 @@ fn overaligned_allocations() {
 
 macro_rules! generate_assert_eq_vec_and_prim {
     ($name:ident<$B:ident>($type:ty)) => {
-        fn $name<A: PartialEq<$B> + Debug, $B: Debug>(a: MutBumpVecRev<A>, b: $type) {
+        fn $name<A: PartialEq<$B> + Debug, $B: Debug>(a: MutBumpVecRev<A, &mut Bump>, b: $type) {
             assert!(a == b);
             assert_eq!(a, b);
         }
@@ -796,8 +796,8 @@ generate_assert_eq_vec_and_prim! { assert_eq_vec_and_array_3<B>([B; 3]) }
 #[test]
 fn partialeq_vec_and_prim() {
     let mut bump: Bump = Bump::new();
-    assert_eq_vec_and_slice(mut_bump_vec_rev![in bump; 1, 2, 3], &[1, 2, 3]);
-    assert_eq_vec_and_array_3(mut_bump_vec_rev![in bump; 1, 2, 3], [1, 2, 3]);
+    assert_eq_vec_and_slice(mut_bump_vec_rev![in &mut bump; 1, 2, 3], &[1, 2, 3]);
+    assert_eq_vec_and_array_3(mut_bump_vec_rev![in &mut bump; 1, 2, 3], [1, 2, 3]);
 }
 
 macro_rules! assert_partial_eq_valid {
@@ -817,8 +817,8 @@ macro_rules! assert_partial_eq_valid {
 fn partialeq_vec_full() {
     let mut bump2: Bump = Bump::new();
     let mut bump3: Bump = Bump::new();
-    let vec2: MutBumpVecRev<_> = mut_bump_vec_rev![in bump2; 1, 2];
-    let vec3: MutBumpVecRev<_> = mut_bump_vec_rev![in bump3; 1, 2, 3];
+    let vec2: MutBumpVecRev<_, _> = mut_bump_vec_rev![in &mut bump2; 1, 2];
+    let vec3: MutBumpVecRev<_, _> = mut_bump_vec_rev![in &mut bump3; 1, 2, 3];
     let slice2: &[_] = &[1, 2];
     let slice3: &[_] = &[1, 2, 3];
     let slicemut2: &[_] = &mut [1, 2];
@@ -842,7 +842,7 @@ fn partialeq_vec_full() {
 fn test_zero_sized_capacity() {
     for len in [0, 1, 2, 4, 8, 16, 32, 64, 128, 256] {
         let mut bump: Bump = Bump::new();
-        let v = MutBumpVecRev::<()>::with_capacity_in(len, &mut bump);
+        let v = MutBumpVecRev::<(), _>::with_capacity_in(len, &mut bump);
         assert_eq!(v.len(), 0);
         assert_eq!(v.capacity(), usize::MAX);
     }
@@ -871,24 +871,27 @@ fn test_vec_macro_repeat() {
     let mut bump0: Bump = Bump::new();
     let mut bump1: Bump = Bump::new();
 
-    assert_eq!(mut_bump_vec_rev![in bump0; 1; 3], mut_bump_vec_rev![in bump1; 1, 1, 1]);
-    assert_eq!(mut_bump_vec_rev![in bump0; 1; 2], mut_bump_vec_rev![in bump1; 1, 1]);
-    assert_eq!(mut_bump_vec_rev![in bump0; 1; 1], mut_bump_vec_rev![in bump1; 1]);
-    // assert_eq!(mut_bump_vec_rev![in bump0; 1; 0], mut_bump_vec_rev![in bump1; ]);
+    assert_eq!(
+        mut_bump_vec_rev![in &mut bump0; 1; 3],
+        mut_bump_vec_rev![in &mut bump1; 1, 1, 1]
+    );
+    assert_eq!(mut_bump_vec_rev![in &mut bump0; 1; 2], mut_bump_vec_rev![in &mut bump1; 1, 1]);
+    assert_eq!(mut_bump_vec_rev![in &mut bump0; 1; 1], mut_bump_vec_rev![in &mut bump1; 1]);
+    // assert_eq!(mut_bump_vec_rev![in &mut bump0; 1; 0], mut_bump_vec_rev![in &mut bump1; ]);
 
     // from_elem syntax (see RFC 832)
     let el = Box::new(1);
     let n = 3;
     assert_eq!(
-        mut_bump_vec_rev![in bump0; el; n],
-        mut_bump_vec_rev![in bump1; Box::new(1), Box::new(1), Box::new(1)]
+        mut_bump_vec_rev![in &mut bump0; el; n],
+        mut_bump_vec_rev![in &mut bump1; Box::new(1), Box::new(1), Box::new(1)]
     );
 }
 
 #[test]
 fn test_vec_swap() {
     let mut bump: Bump = Bump::new();
-    let mut a: MutBumpVecRev<isize> = mut_bump_vec_rev![in bump; 0, 1, 2, 3, 4, 5, 6];
+    let mut a: MutBumpVecRev<isize, _> = mut_bump_vec_rev![in &mut bump; 0, 1, 2, 3, 4, 5, 6];
     a.swap(2, 4);
     assert_eq!(a[2], 4);
     assert_eq!(a[4], 2);
@@ -910,13 +913,13 @@ fn test_extend_from_within_spec() {
     }
 
     let mut bump: Bump = Bump::new();
-    mut_bump_vec_rev![in bump; CopyOnly, CopyOnly].extend_from_within_copy(..);
+    mut_bump_vec_rev![in &mut bump; CopyOnly, CopyOnly].extend_from_within_copy(..);
 }
 
 #[test]
 fn test_extend_from_within_clone() {
     let mut bump: Bump = Bump::new();
-    let mut v = mut_bump_vec_rev![in bump; String::from("sssss"), String::from("12334567890"), String::from("c")];
+    let mut v = mut_bump_vec_rev![in &mut bump; String::from("sssss"), String::from("12334567890"), String::from("c")];
     v.extend_from_within_clone(1..);
     assert_eq!(v, ["12334567890", "c", "sssss", "12334567890", "c"]);
 }
@@ -925,13 +928,13 @@ fn test_extend_from_within_clone() {
 fn test_extend_from_within_complete_rande() {
     {
         let mut bump: Bump = Bump::new();
-        let mut v = mut_bump_vec_rev![in bump; 0, 1, 2, 3];
+        let mut v = mut_bump_vec_rev![in &mut bump; 0, 1, 2, 3];
         v.extend_from_within_copy(..);
         assert_eq!(v, [0, 1, 2, 3, 0, 1, 2, 3]);
     }
     {
         let mut bump: Bump = Bump::new();
-        let mut v = mut_bump_vec_rev![in bump; 0, 1, 2, 3];
+        let mut v = mut_bump_vec_rev![in &mut bump; 0, 1, 2, 3];
         v.extend_from_within_clone(..);
         assert_eq!(v, [0, 1, 2, 3, 0, 1, 2, 3]);
     }
@@ -941,13 +944,13 @@ fn test_extend_from_within_complete_rande() {
 fn test_extend_from_within_empty_rande() {
     {
         let mut bump: Bump = Bump::new();
-        let mut v = mut_bump_vec_rev![in bump; 0, 1, 2, 3];
+        let mut v = mut_bump_vec_rev![in &mut bump; 0, 1, 2, 3];
         v.extend_from_within_copy(1..1);
         assert_eq!(v, [0, 1, 2, 3]);
     }
     {
         let mut bump: Bump = Bump::new();
-        let mut v = mut_bump_vec_rev![in bump; 0, 1, 2, 3];
+        let mut v = mut_bump_vec_rev![in &mut bump; 0, 1, 2, 3];
         v.extend_from_within_clone(1..1);
         assert_eq!(v, [0, 1, 2, 3]);
     }
@@ -958,13 +961,13 @@ fn test_extend_from_within_empty_rande() {
 fn test_extend_from_within_out_of_rande() {
     {
         let mut bump: Bump = Bump::new();
-        let mut v = mut_bump_vec_rev![in bump; 0, 1];
+        let mut v = mut_bump_vec_rev![in &mut bump; 0, 1];
         v.extend_from_within_copy(..3);
     }
 
     {
         let mut bump: Bump = Bump::new();
-        let mut v = mut_bump_vec_rev![in bump; 0, 1];
+        let mut v = mut_bump_vec_rev![in &mut bump; 0, 1];
         v.extend_from_within_clone(..3);
     }
 }
@@ -973,13 +976,13 @@ fn test_extend_from_within_out_of_rande() {
 fn test_extend_from_within_zst() {
     {
         let mut bump: Bump = Bump::new();
-        let mut v = mut_bump_vec_rev![in bump; (); 8];
+        let mut v = mut_bump_vec_rev![in &mut bump; (); 8];
         v.extend_from_within_copy(3..7);
         assert_eq!(v, [(); 12]);
     }
     {
         let mut bump: Bump = Bump::new();
-        let mut v = mut_bump_vec_rev![in bump; (); 8];
+        let mut v = mut_bump_vec_rev![in &mut bump; (); 8];
         v.extend_from_within_clone(3..7);
         assert_eq!(v, [(); 12]);
     }
@@ -989,13 +992,13 @@ fn test_extend_from_within_zst() {
 fn test_extend_from_within_empty_vec() {
     {
         let mut bump: Bump = Bump::new();
-        let mut v = MutBumpVecRev::<i32>::new_in(&mut bump);
+        let mut v = MutBumpVecRev::<i32, _>::new_in(&mut bump);
         v.extend_from_within_copy(..);
         assert!(v.is_empty());
     }
     {
         let mut bump: Bump = Bump::new();
-        let mut v = MutBumpVecRev::<i32>::new_in(&mut bump);
+        let mut v = MutBumpVecRev::<i32, _>::new_in(&mut bump);
         v.extend_from_within_clone(..);
         assert!(v.is_empty());
     }
@@ -1004,7 +1007,7 @@ fn test_extend_from_within_empty_vec() {
 #[test]
 fn test_extend_from_within() {
     let mut bump: Bump = Bump::new();
-    let mut v = mut_bump_vec_rev![in bump; String::from("a"), String::from("b"), String::from("c")];
+    let mut v = mut_bump_vec_rev![in &mut bump; String::from("a"), String::from("b"), String::from("c")];
     v.extend_from_within_clone(1..=2);
     v.extend_from_within_clone(..=1);
     assert_eq!(v, ["b", "c", "b", "c", "a", "b", "c"]);
@@ -1038,7 +1041,7 @@ fn test_extend_from_within_panicking_clone() {
     let count = core::sync::atomic::AtomicU32::new(0);
     let mut bump: Bump = Bump::new();
 
-    let mut vec = mut_bump_vec_rev![in bump;
+    let mut vec = mut_bump_vec_rev![in &mut bump;
         Panic {
             drop_count: &count,
             aaaaa: false,
@@ -1058,7 +1061,7 @@ fn test_extend_from_within_panicking_clone() {
     // 4 times (3 for items already in vector, 1 for just appended).
     //
     // Previously just appended item was leaked, making drop_count = 3, instead of 4.
-    std::panic::catch_unwind(move || vec.extend_from_within_clone(..)).unwrap_err();
+    std::panic::catch_unwind(AssertUnwindSafe(move || vec.extend_from_within_clone(..))).unwrap_err();
 
     assert_eq!(count.load(Ordering::SeqCst), 4);
 }
@@ -1067,6 +1070,6 @@ fn test_extend_from_within_panicking_clone() {
 #[should_panic = "vec len overflow"]
 fn test_into_flattened_size_overflow() {
     let mut bump: Bump = Bump::new();
-    let v = mut_bump_vec_rev![in bump; [(); usize::MAX]; 2];
+    let v = mut_bump_vec_rev![in &mut bump; [(); usize::MAX]; 2];
     let _ = v.into_flattened();
 }

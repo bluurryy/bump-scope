@@ -46,6 +46,8 @@ mod other {
     }
 }
 
+use core::mem::{size_of, ManuallyDrop};
+
 pub(crate) use other::*;
 
 macro_rules! cfg_const {
@@ -66,6 +68,17 @@ macro_rules! cfg_const {
 
 pub(crate) use cfg_const;
 
+pub(crate) unsafe fn transmute_value<A, B>(a: A) -> B {
+    assert!(size_of::<A>() == size_of::<B>());
+    core::mem::transmute_copy(&ManuallyDrop::new(a))
+}
+
+pub(crate) const unsafe fn transmute_ref<A, B>(a: &A) -> &B {
+    assert!(size_of::<A>() == size_of::<B>());
+    &*(a as *const A).cast::<B>()
+}
+
 pub(crate) unsafe fn transmute_mut<A, B>(a: &mut A) -> &mut B {
+    assert!(size_of::<A>() == size_of::<B>());
     &mut *(a as *mut A).cast::<B>()
 }

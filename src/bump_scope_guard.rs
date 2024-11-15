@@ -93,7 +93,7 @@ where
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<UP> {
+    pub fn stats(&self) -> Stats {
         Stats {
             current: Some(unsafe { Chunk::from_raw(self.chunk) }),
         }
@@ -102,7 +102,7 @@ where
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats<UP> {
+    pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats {
         GuaranteedAllocatedStats {
             current: unsafe { Chunk::from_raw(self.chunk) },
         }
@@ -187,7 +187,7 @@ where
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<UP> {
+    pub fn stats(&self) -> Stats {
         Stats {
             current: Some(unsafe { Chunk::from_raw(self.chunk) }),
         }
@@ -196,7 +196,7 @@ where
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats<UP> {
+    pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats {
         GuaranteedAllocatedStats {
             current: unsafe { Chunk::from_raw(self.chunk) },
         }

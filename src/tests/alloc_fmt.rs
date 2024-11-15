@@ -79,12 +79,12 @@ fn trait_panic_mut<const UP: bool>() {
 
 fn format_trait_panic<const UP: bool>() {
     let bump: Bump<Global, 1, UP> = Bump::new();
-    bump_format!(in bump, "{ErrorsOnFmt}");
+    bump_format!(in &bump, "{ErrorsOnFmt}");
 }
 
 fn format_trait_panic_mut<const UP: bool>() {
     let mut bump: Bump<Global, 1, UP> = Bump::new();
-    mut_bump_format!(in bump, "{ErrorsOnFmt}");
+    mut_bump_format!(in &mut bump, "{ErrorsOnFmt}");
 }
 
 either_way! {

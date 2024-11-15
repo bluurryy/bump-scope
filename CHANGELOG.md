@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+- **fixed:** `BumpVec::split_off` now retains the capacity of `self` like the docs say
+- **breaking:** vectors and strings now take a single `A` generic parameter instead of the `'b, 'a, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool` of before
+- **breaking:** `bump` methods on vectors and strings has been renamed to `allocator`, the old `allocator` method which returned the base allocator is gone
+- **breaking:** `vec`-like macros now take the bump allocator as is instead of by `$bump.as_scope()`
+- **breaking:** `WithLifetime` has been removed
+
 ## 0.10.11 (2024-11-11)
 - **added:** `map_in_place` to `(Mut)BumpVec`
 - **added:** allow `map_in_place` to ZSTs regardless of alignment

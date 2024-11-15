@@ -99,7 +99,7 @@ inspect_asm::vec_map::grow:
 .LBB0_9:
 	mov qword ptr [r14], rax
 	mov qword ptr [r14 + 8], rdx
-	mov qword ptr [r14 + 16], rdx
+	mov qword ptr [r14 + 16], r15
 	mov qword ptr [r14 + 24], rbx
 	mov rax, r14
 	pop rbx

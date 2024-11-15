@@ -18,12 +18,11 @@ macro_rules! type_definitions {
         type BumpScope<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScope<'a, Global, MIN_ALIGN, $up>;
         type BumpScopeGuard<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuard<'a, Global, MIN_ALIGN, $up>;
         type BumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuardRoot<'a, Global, MIN_ALIGN, $up>;
-        type BumpVec<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<'b, 'a, T, Global, MIN_ALIGN, $up>;
-        type BumpString<'b, 'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<'b, 'a, Global, MIN_ALIGN, $up>;
-        type MutBumpVec<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<'b, 'a, T, Global, MIN_ALIGN, $up>;
-        type MutBumpVecRev<'b, 'a, T, const MIN_ALIGN: usize = 1> =
-            bump_scope::MutBumpVecRev<'b, 'a, T, Global, MIN_ALIGN, $up>;
-        type MutBumpString<'b, 'a, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpString<'b, 'a, Global, MIN_ALIGN, $up>;
+        type BumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<T, &'a Bump>;
+        type BumpString<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<&'a Bump>;
+        type MutBumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<T, &'a mut Bump<MIN_ALIGN>>;
+        type MutBumpString<'a, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpString<&'a mut Bump<MIN_ALIGN>>;
+        type MutBumpVecRev<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVecRev<T, &'a mut Bump<MIN_ALIGN>>;
     };
 }
 
@@ -218,7 +217,7 @@ up_and_down! {
         vec.try_extend_zeroed(additional)
     }
 
-    pub fn MutBumpVec_try_from_iter_in<'a>(iter: core::slice::Iter<u32>, bump: &'a mut Bump) -> Result<MutBumpVec<'a, 'a, u32>> {
+    pub fn MutBumpVec_try_from_iter_in<'a>(iter: core::slice::Iter<u32>, bump: &'a mut Bump) -> Result<MutBumpVec<'a, u32>> {
         MutBumpVec::try_from_iter_in(iter.copied(), bump)
     }
 
@@ -266,7 +265,7 @@ up_and_down! {
         vec.try_extend_from_slice_copy(slice)
     }
 
-    pub fn MutBumpVecRev_try_from_iter_in<'a>(iter: core::slice::Iter<u32>, bump: &'a mut Bump) -> Result<MutBumpVecRev<'a, 'a, u32>> {
+    pub fn MutBumpVecRev_try_from_iter_in<'a>(iter: core::slice::Iter<u32>, bump: &'a mut Bump) -> Result<MutBumpVecRev<'a, u32>> {
         MutBumpVecRev::try_from_iter_in(iter.copied(), bump)
     }
 
@@ -302,7 +301,7 @@ up_and_down! {
         MutBumpVecRev::try_with_capacity_in(capacity, bump)
     }
 
-    pub fn MutBumpString__try_from_str_in<'b>(string: &str, bump: &'b mut Bump) -> Result<MutBumpString<'b, 'b>> {
+    pub fn MutBumpString__try_from_str_in<'b>(string: &str, bump: &'b mut Bump) -> Result<MutBumpString<'b>> {
         MutBumpString::try_from_str_in(string, bump)
     }
 
@@ -342,11 +341,11 @@ up_and_down! {
         vec.try_extend_zeroed(additional)
     }
 
-    pub fn BumpVec_try_from_iter_in<'a>(iter: core::slice::Iter<u32>, bump: &'a Bump) -> Result<BumpVec<'a, 'a, u32>> {
+    pub fn BumpVec_try_from_iter_in<'a>(iter: core::slice::Iter<u32>, bump: &'a Bump) -> Result<BumpVec<'a, u32>> {
         BumpVec::try_from_iter_in(iter.copied(), bump)
     }
 
-    pub fn BumpVec_try_from_iter_exact_in<'a>(iter: core::slice::Iter<u32>, bump: &'a Bump) -> Result<BumpVec<'a, 'a, u32>> {
+    pub fn BumpVec_try_from_iter_exact_in<'a>(iter: core::slice::Iter<u32>, bump: &'a Bump) -> Result<BumpVec<'a, u32>> {
         BumpVec::try_from_iter_exact_in(iter.copied(), bump)
     }
 
@@ -382,11 +381,11 @@ up_and_down! {
         BumpVec::try_with_capacity_in(capacity, bump)
     }
 
-    pub fn BumpVec_try_map<'b, 'a>(bump: BumpVec<'b, 'a, u32>, f: fn(u32) -> i16) -> Result<BumpVec<'b, 'a, i16>> {
+    pub fn BumpVec_try_map(bump: BumpVec<u32>, f: fn(u32) -> i16) -> Result<BumpVec<i16>> {
         bump.try_map(f)
     }
 
-    pub fn BumpString__try_from_str_in<'b>(string: &str, bump: &'b Bump) -> Result<BumpString<'b, 'b>> {
+    pub fn BumpString__try_from_str_in<'a>(string: &str, bump: &'a Bump) -> Result<BumpString<'a>> {
         BumpString::try_from_str_in(string, bump)
     }
 

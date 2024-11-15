@@ -2,7 +2,7 @@
 use core::hint::black_box;
 
 use super::either_way;
-use crate::{bump_vec, Bump, FixedBumpVec};
+use crate::{bump_vec, tests::expect_no_panic, Bump, FixedBumpVec};
 use allocator_api2::alloc::Global;
 
 either_way! {
@@ -36,7 +36,7 @@ fn map_in_place_same_layout<const UP: bool>() {
         });
 
         if panic_on == 0 {
-            result.unwrap();
+            expect_no_panic(result);
         } else {
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
         }
@@ -69,7 +69,7 @@ fn map_in_place_smaller_layout<const UP: bool>() {
         });
 
         if panic_on == 0 {
-            result.unwrap();
+            expect_no_panic(result);
         } else {
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
         }
@@ -101,7 +101,7 @@ fn map_in_place_to_zst<const UP: bool>() {
         });
 
         if panic_on == 0 {
-            result.unwrap();
+            expect_no_panic(result);
         } else {
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
         }
@@ -133,7 +133,7 @@ fn map_in_place_from_zst_to_zst<const UP: bool>() {
         });
 
         if panic_on == 0 {
-            result.unwrap();
+            expect_no_panic(result);
         } else {
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
         }

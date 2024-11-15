@@ -1,6 +1,6 @@
 [package]
 name = "bump-scope"
-version = "0.10.11"
+version = "0.11.0-dev"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types."
@@ -67,7 +67,7 @@ rustdoc-args = ["--generate-link-to-definition"]
 
 [package.metadata.release]
 allow-branch = ["main"]
-pre-release-hook = ["just", "all"]
+pre-release-hook = ["just", "pre-release"]
 pre-release-commit-message = "release: version {{version}}"
 pre-release-replacements = [
     { file = "CHANGELOG.md", search = "Unreleased", replace = "{{version}} ({{date}})" },

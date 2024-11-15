@@ -1,5 +1,5 @@
 use arbitrary::Arbitrary;
-use bump_scope::{allocator_api2::alloc::Global, Bump, BumpVec, MinimumAlignment, SupportedMinimumAlignment};
+use bump_scope::{allocator_api2::alloc::Global, Bump, BumpAllocator, BumpVec, MinimumAlignment, SupportedMinimumAlignment};
 use zerocopy::{FromBytes, Immutable, IntoBytes};
 
 use crate::MinAlign;
@@ -111,7 +111,7 @@ impl<'a> VecObj<'a> {
         T: Default + FromBytes + IntoBytes + Immutable + 'static,
     {
         Self {
-            vec: Box::new(BumpVec::<T, Global, MIN_ALIGN, UP>::new_in(bump)),
+            vec: Box::new(BumpVec::<T, _>::new_in(bump)),
             bit_pattern,
         }
     }
@@ -127,9 +127,9 @@ impl<'a> VecObj<'a> {
     }
 }
 
-impl<T, const MIN_ALIGN: usize, const UP: bool> VecTrait for BumpVec<'_, '_, T, Global, MIN_ALIGN, UP>
+impl<T, A> VecTrait for BumpVec<T, A>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BumpAllocator,
     T: Default + FromBytes + IntoBytes + Immutable,
 {
     fn push(&mut self, bit_pattern: u8) {

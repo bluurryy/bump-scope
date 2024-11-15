@@ -26,31 +26,31 @@ fn ser() {
     }
 
     {
-        let a = bump_vec![in bump; 1, 2, 3];
+        let a = bump_vec![in &bump; 1, 2, 3];
         let b = vec![1, 2, 3];
         assert_same(&a, &b);
     }
 
     {
-        let a = mut_bump_vec![in bump; 1, 2, 3];
+        let a = mut_bump_vec![in &mut bump; 1, 2, 3];
         let b = vec![1, 2, 3];
         assert_same(&a, &b);
     }
 
     {
-        let a = mut_bump_vec_rev![in bump; 1, 2, 3];
+        let a = mut_bump_vec_rev![in &mut bump; 1, 2, 3];
         let b = vec![1, 2, 3];
         assert_same(&a, &b);
     }
 
     {
-        let a = bump_format!(in bump, "Hello world!");
+        let a = bump_format!(in &bump, "Hello world!");
         let b = "Hello world!";
         assert_same(&a, &b);
     }
 
     {
-        let a = mut_bump_format!(in bump, "Hello world!");
+        let a = mut_bump_format!(in &mut bump, "Hello world!");
         let b = "Hello world!";
         assert_same(&a, &b);
     }
@@ -81,20 +81,20 @@ fn de() {
     }
 
     {
-        let src = bump_vec![in bump_src; 1, 2, 3];
-        let mut dst = bump_vec![in bump_dst];
+        let src = bump_vec![in &bump_src; 1, 2, 3];
+        let mut dst = bump_vec![in &bump_dst];
         roundtrip(&src, &mut dst);
     }
 
     {
-        let src = mut_bump_vec![in bump_src; 1, 2, 3];
-        let mut dst = mut_bump_vec![in bump_dst];
+        let src = mut_bump_vec![in &mut bump_src; 1, 2, 3];
+        let mut dst = mut_bump_vec![in &mut bump_dst];
         roundtrip(&src, &mut dst);
     }
 
     {
-        let src = mut_bump_vec_rev![in bump_src; 1, 2, 3];
-        let mut dst: MutBumpVecRev<i32> = mut_bump_vec_rev![in bump_dst];
+        let src = mut_bump_vec_rev![in &mut bump_src; 1, 2, 3];
+        let mut dst: MutBumpVecRev<i32, _> = mut_bump_vec_rev![in &mut bump_dst];
 
         let json = serde_json::to_string(&src).unwrap();
         let mut deserializer = serde_json::Deserializer::from_str(&json);
@@ -118,8 +118,8 @@ fn de() {
     }
 
     {
-        let src = mut_bump_format!(in bump_src, "Hello World!");
-        let mut dst = mut_bump_format!(in bump_dst);
+        let src = mut_bump_format!(in &mut bump_src, "Hello World!");
+        let mut dst = mut_bump_format!(in &mut bump_dst);
         roundtrip(&src, &mut dst);
     }
 }

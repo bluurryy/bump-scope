@@ -25,10 +25,9 @@ trait BumpaloExt {
 }
 
 type Bump<const MIN_ALIGN: usize, const UP: bool> = bump_scope::Bump<Global, MIN_ALIGN, UP>;
-type MutBumpVec<'b, 'a, T, const MIN_ALIGN: usize, const UP: bool> =
-    bump_scope::MutBumpVec<'b, 'a, T, Global, MIN_ALIGN, UP>;
-type MutBumpVecRev<'b, 'a, T, const MIN_ALIGN: usize, const UP: bool> =
-    bump_scope::MutBumpVecRev<'b, 'a, T, Global, MIN_ALIGN, UP>;
+type MutBumpVec<'a, T, const MIN_ALIGN: usize, const UP: bool> = bump_scope::MutBumpVec<T, &'a mut Bump<MIN_ALIGN, UP>>;
+type MutBumpVecRev<'a, T, const MIN_ALIGN: usize, const UP: bool> =
+    bump_scope::MutBumpVecRev<T, &'a mut Bump<MIN_ALIGN, UP>>;
 
 impl BumpaloExt for bumpalo::Bump {
     fn try_alloc_str(&self, value: &str) -> Result<&mut str, bumpalo::AllocErr> {
@@ -713,30 +712,32 @@ pub mod alloc_fmt {
 }
 
 pub mod vec_map {
-    use bump_scope::{allocator_api2::alloc::AllocError, BumpVec};
+    use bump_scope::{allocator_api2::alloc::AllocError, Bump};
     use std::num::NonZeroU32;
 
-    pub fn same<'b, 'a>(vec: BumpVec<'b, 'a, u32>) -> BumpVec<'b, 'a, Option<NonZeroU32>> {
+    type BumpVec<'a, T> = bump_scope::BumpVec<T, &'a Bump>;
+
+    pub fn same(vec: BumpVec<u32>) -> BumpVec<Option<NonZeroU32>> {
         vec.map(NonZeroU32::new)
     }
 
-    pub fn try_same<'b, 'a>(vec: BumpVec<'b, 'a, u32>) -> Result<BumpVec<'b, 'a, Option<NonZeroU32>>, AllocError> {
+    pub fn try_same(vec: BumpVec<u32>) -> Result<BumpVec<Option<NonZeroU32>>, AllocError> {
         vec.try_map(NonZeroU32::new)
     }
 
-    pub fn grow<'b, 'a>(vec: BumpVec<'b, 'a, u32>) -> BumpVec<'b, 'a, u64> {
+    pub fn grow(vec: BumpVec<u32>) -> BumpVec<u64> {
         vec.map(|i| i as _)
     }
 
-    pub fn try_grow<'b, 'a>(vec: BumpVec<'b, 'a, u32>) -> Result<BumpVec<'b, 'a, u64>, AllocError> {
+    pub fn try_grow(vec: BumpVec<u32>) -> Result<BumpVec<u64>, AllocError> {
         vec.try_map(|i| i as _)
     }
 
-    pub fn shrink<'b, 'a>(vec: BumpVec<'b, 'a, u64>) -> BumpVec<'b, 'a, u32> {
+    pub fn shrink(vec: BumpVec<u64>) -> BumpVec<u32> {
         vec.map(|i| i as _)
     }
 
-    pub fn try_shrink<'b, 'a>(vec: BumpVec<'b, 'a, u64>) -> Result<BumpVec<'b, 'a, u32>, AllocError> {
+    pub fn try_shrink(vec: BumpVec<u64>) -> Result<BumpVec<u32>, AllocError> {
         vec.try_map(|i| i as _)
     }
 }

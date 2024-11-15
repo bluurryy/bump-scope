@@ -2,58 +2,35 @@
 
 use core::{ptr, slice};
 
-use crate::{BaseAllocator, MinimumAlignment, SupportedMinimumAlignment};
+use crate::{destructure::destructure, BumpAllocator, BumpVec};
 
 use super::Drain;
 
-macro_rules! splice_declaration {
-    ($($allocator_parameter:tt)*) => {
-        /// A splicing iterator for `BumpVec`.
-        ///
-        /// This struct is created by [`BumpVec::splice()`].
-        /// See its documentation for more.
-        ///
-        /// # Example
-        ///
-        /// ```
-        /// # use bump_scope::{ Bump, bump_vec };
-        /// # let bump: Bump = Bump::new();
-        /// let mut v = bump_vec![in bump; 0, 1, 2];
-        /// let new = [7, 8];
-        /// let old = bump.alloc_iter_exact(v.splice(1.., new));
-        /// assert_eq!(old, [1, 2]);
-        /// assert_eq!(v, [0, 7, 8]);
-        /// ```
-        ///
-        /// [`BumpVec::splice()`]: crate::BumpVec::splice
-        #[derive(Debug)]
-        pub struct Splice<
-            'a,
-            I,
-            $($allocator_parameter)*,
-            const MIN_ALIGN: usize = 1,
-            const UP: bool = true,
-            const GUARANTEED_ALLOCATED: bool = true,
-        > where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-            A: BaseAllocator<GUARANTEED_ALLOCATED>,
-            I: Iterator + 'a,
-        {
-            pub(super) drain: Drain<'a, I::Item, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
-            pub(super) replace_with: I,
-        }
-    };
+/// A splicing iterator for `BumpVec`.
+///
+/// This struct is created by [`BumpVec::splice()`].
+/// See its documentation for more.
+///
+/// # Example
+///
+/// ```
+/// # use bump_scope::{ Bump, bump_vec };
+/// # let bump: Bump = Bump::new();
+/// let mut v = bump_vec![in &bump; 0, 1, 2];
+/// let new = [7, 8];
+/// let old = bump.alloc_iter_exact(v.splice(1.., new));
+/// assert_eq!(old, [1, 2]);
+/// assert_eq!(v, [0, 7, 8]);
+/// ```
+///
+/// [`BumpVec::splice()`]: crate::BumpVec::splice
+#[derive(Debug)]
+pub struct Splice<'a, I: Iterator + 'a, A: BumpAllocator> {
+    pub(super) drain: Drain<'a, I::Item, A>,
+    pub(super) replace_with: I,
 }
 
-crate::maybe_default_allocator!(splice_declaration);
-
-impl<I, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Iterator
-    for Splice<'_, I, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    I: Iterator,
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<I: Iterator, A: BumpAllocator> Iterator for Splice<'_, I, A> {
     type Item = I::Item;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -65,34 +42,15 @@ where
     }
 }
 
-impl<I, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> DoubleEndedIterator
-    for Splice<'_, I, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    I: Iterator,
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<I: Iterator, A: BumpAllocator> DoubleEndedIterator for Splice<'_, I, A> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.drain.next_back()
     }
 }
 
-impl<I, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> ExactSizeIterator
-    for Splice<'_, I, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    I: Iterator,
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-}
+impl<I: Iterator, A: BumpAllocator> ExactSizeIterator for Splice<'_, I, A> {}
 
-impl<I, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Drop
-    for Splice<'_, I, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    I: Iterator,
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<I: Iterator, A: BumpAllocator> Drop for Splice<'_, I, A> {
     fn drop(&mut self) {
         self.drain.by_ref().for_each(drop);
         // At this point draining is done and the only remaining tasks are splicing
@@ -125,7 +83,10 @@ where
 
             // Collect any remaining elements.
             // This is a zero-length vector which does not allocate if `lower_bound` was exact.
-            let mut collected = self.drain.vec.as_ref().bump.alloc_iter(&mut self.replace_with).into_iter();
+            // TODO: deallocate this on drop
+            let collected = BumpVec::from_iter_in(&mut self.replace_with, self.drain.vec.as_ref().allocator());
+            destructure!(let BumpVec::<I::Item, &A> { fixed: collected } = collected);
+            let mut collected = collected.cook().into_iter();
 
             // Now we have an exact count.
             #[allow(clippy::len_zero)]
@@ -141,12 +102,7 @@ where
 }
 
 /// Private helper methods for `Splice::drop`
-impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    Drain<'_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<T, A: BumpAllocator> Drain<'_, T, A> {
     /// The range from `self.vec.len` to `self.tail_start` contains elements
     /// that have been moved out.
     /// Fill that range as much as possible with new elements from the `replace_with` iterator.
