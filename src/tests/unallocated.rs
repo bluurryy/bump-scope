@@ -22,9 +22,9 @@ fn allocated_by_usage() {
 }
 
 #[test]
-fn into_guaranteed_allocated() {
+fn guaranteed_allocated() {
     let bump: Bump = Bump::unallocated();
-    let bump = bump.into_guaranteed_allocated();
+    let bump = bump.guaranteed_allocated();
     assert!(bump.stats().size() > 0);
     drop(bump);
 }

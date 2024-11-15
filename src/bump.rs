@@ -25,7 +25,7 @@ macro_rules! bump_declaration {
         /// Most of `Bump`'s constructors allocate memory.
         /// The exception is [`Bump::unallocated`]. A bump allocator created by this function has its [`GUARANTEED_ALLOCATED` parameter set to `false`](crate#guaranteed_allocated-parameter).
         /// Such a `Bump` is unable to create a scope with `scoped` or `scope_guard`.
-        /// It can be converted into a guaranteed allocated `Bump` with [`into_guaranteed_allocated`](Bump::into_guaranteed_allocated) or [`as_guaranteed_allocated_mut`](Bump::as_guaranteed_allocated_mut).
+        /// It can be converted into a guaranteed allocated `Bump` with [`guaranteed_allocated`](Bump::guaranteed_allocated) or [`guaranteed_allocated_mut`](Bump::guaranteed_allocated_mut).
         ///
         /// # Gotchas
         ///
@@ -382,19 +382,19 @@ where
     /// # Panics
     /// Panics if the allocation fails.
     #[cfg(not(no_global_oom_handling))]
-    pub fn into_guaranteed_allocated(self) -> Bump<A, MIN_ALIGN, UP> {
-        infallible(self.generic_into_guaranteed_allocated())
+    pub fn guaranteed_allocated(self) -> Bump<A, MIN_ALIGN, UP> {
+        infallible(self.generic_guaranteed_allocated())
     }
 
     /// Converts this `Bump` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
     /// # Errors
     /// Errors if the allocation fails.
-    pub fn try_into_guaranteed_allocated(self) -> Result<Bump<A, MIN_ALIGN, UP>, AllocError> {
-        self.generic_into_guaranteed_allocated()
+    pub fn try_guaranteed_allocated(self) -> Result<Bump<A, MIN_ALIGN, UP>, AllocError> {
+        self.generic_guaranteed_allocated()
     }
 
-    fn generic_into_guaranteed_allocated<E: ErrorBehavior>(self) -> Result<Bump<A, MIN_ALIGN, UP>, E> {
+    fn generic_guaranteed_allocated<E: ErrorBehavior>(self) -> Result<Bump<A, MIN_ALIGN, UP>, E> {
         self.as_scope().ensure_allocated()?;
         Ok(unsafe { self.cast_allocated() })
     }
@@ -404,19 +404,19 @@ where
     /// # Panics
     /// Panics if the allocation fails.
     #[cfg(not(no_global_oom_handling))]
-    pub fn as_guaranteed_allocated_mut(&mut self) -> &mut Bump<A, MIN_ALIGN, UP> {
-        infallible(self.generic_as_guaranteed_allocated_mut())
+    pub fn guaranteed_allocated_mut(&mut self) -> &mut Bump<A, MIN_ALIGN, UP> {
+        infallible(self.generic_guaranteed_allocated_mut())
     }
 
     /// Mutably borrows `Bump` in an [guaranteed allocated](crate#guaranteed_allocated-parameter) state.
     ///
     /// # Errors
     /// Errors if the allocation fails.
-    pub fn try_as_guaranteed_allocated_mut(&mut self) -> Result<&mut Bump<A, MIN_ALIGN, UP>, AllocError> {
-        self.generic_as_guaranteed_allocated_mut()
+    pub fn try_guaranteed_allocated_mut(&mut self) -> Result<&mut Bump<A, MIN_ALIGN, UP>, AllocError> {
+        self.generic_guaranteed_allocated_mut()
     }
 
-    fn generic_as_guaranteed_allocated_mut<E: ErrorBehavior>(&mut self) -> Result<&mut Bump<A, MIN_ALIGN, UP>, E> {
+    fn generic_guaranteed_allocated_mut<E: ErrorBehavior>(&mut self) -> Result<&mut Bump<A, MIN_ALIGN, UP>, E> {
         self.as_scope().ensure_allocated()?;
         Ok(unsafe { self.cast_allocated_mut() })
     }

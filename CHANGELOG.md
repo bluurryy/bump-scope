@@ -9,6 +9,7 @@
 - **breaking:** `Stats<'a, UP>` is now `Stats<'a, GUARANTEED_ALLOCATED>`
 - **breaking:** `GuaranteedAllocatedStats` has been removed in favor of `Stats<'a, true>`
 - **breaking:** removed deprecated functions `BumpBox<[u8]>::into_boxed_str(_unchecked)`; use `BumpBox<str>::from_utf8(_unchecked)` instead
+- **breaking:** renamed `into_guaranteed_allocated` to `guaranteed_allocated`; `as_guaranteed_allocated` to `guaranteed_allocated_ref`; `as_guaranteed_allocated_mut` to `guaranteed_allocated_mut`
 - **fixed:** `BumpVec::split_off` now retains the capacity of `self` like the docs say
 - **added:** more general `PartialEq` for vectors
 
