@@ -54,11 +54,11 @@ impl RawFixedBumpString {
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn allocate_greedy<B: ErrorBehavior>(
+    pub(crate) unsafe fn prepare_allocation<B: ErrorBehavior>(
         allocator: &mut impl BumpAllocatorMut,
         len: usize,
     ) -> Result<Self, B> {
-        let allocation = B::allocate_slice_greedy::<u8>(allocator, len)?;
+        let allocation = B::prepare_slice_allocation::<u8>(allocator, len)?;
         let initialized = RawBumpBox::from_ptr(nonnull::str_from_utf8(nonnull::slice_from_raw_parts(
             nonnull::as_non_null_ptr(allocation),
             0,

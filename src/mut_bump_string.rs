@@ -160,7 +160,7 @@ impl<A: BumpAllocatorMut> MutBumpString<A> {
             }
 
             Ok(Self {
-                fixed: unsafe { RawFixedBumpString::allocate_greedy(&mut allocator, capacity)? },
+                fixed: unsafe { RawFixedBumpString::prepare_allocation(&mut allocator, capacity)? },
                 allocator,
             })
         }

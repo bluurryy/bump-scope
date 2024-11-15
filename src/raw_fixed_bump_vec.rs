@@ -42,9 +42,8 @@ impl<T> RawFixedBumpVec<T> {
         capacity: if T::IS_ZST { usize::MAX } else { 0 },
     };
 
-    // TODO take allocator by immutable
     #[inline(always)]
-    pub(crate) unsafe fn allocate<B: ErrorBehavior>(allocator: &mut impl BumpAllocator, len: usize) -> Result<Self, B> {
+    pub(crate) unsafe fn allocate<B: ErrorBehavior>(allocator: &impl BumpAllocator, len: usize) -> Result<Self, B> {
         let ptr = B::allocate_slice::<T>(allocator, len)?;
 
         Ok(Self {
@@ -53,13 +52,12 @@ impl<T> RawFixedBumpVec<T> {
         })
     }
 
-    // TODO take allocator by immutable
     #[inline(always)]
-    pub(crate) unsafe fn allocate_greedy<B: ErrorBehavior>(
+    pub(crate) unsafe fn prepare_allocation<B: ErrorBehavior>(
         allocator: &mut impl BumpAllocatorMut,
         len: usize,
     ) -> Result<Self, B> {
-        let allocation = B::allocate_slice_greedy::<T>(allocator, len)?;
+        let allocation = B::prepare_slice_allocation::<T>(allocator, len)?;
 
         Ok(Self {
             initialized: RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(nonnull::as_non_null_ptr(allocation), 0)),
