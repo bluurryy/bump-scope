@@ -29,7 +29,12 @@ pub unsafe trait BumpAllocator: Allocator {
         Stats { current: None }
     }
 
-    /// A specialized version of `allocate`.
+    /// A specialized version of [`allocate`](Allocator::allocate).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the allocation fails.
+    #[doc(hidden)]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         #[cfg(not(no_global_oom_handling))]
         {
@@ -46,7 +51,12 @@ pub unsafe trait BumpAllocator: Allocator {
         }
     }
 
-    /// A specialized version of `allocate`.
+    /// A specialized version of [`allocate`](Allocator::allocate).
+    ///
+    /// # Errors
+    ///
+    /// Errors if the allocation fails.
+    #[doc(hidden)]
     fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
         match self.allocate(layout) {
             Ok(ptr) => Ok(ptr.cast()),
@@ -54,7 +64,12 @@ pub unsafe trait BumpAllocator: Allocator {
         }
     }
 
-    /// A specialized version of `allocate`.
+    /// A specialized version of [`allocate`](Allocator::allocate).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the allocation fails.
+    #[doc(hidden)]
     fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
@@ -75,7 +90,12 @@ pub unsafe trait BumpAllocator: Allocator {
         }
     }
 
-    /// A specialized version of `allocate`.
+    /// A specialized version of [`allocate`](Allocator::allocate).
+    ///
+    /// # Errors
+    ///
+    /// Errors if the allocation fails.
+    #[doc(hidden)]
     fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>
     where
         Self: Sized,
@@ -86,7 +106,12 @@ pub unsafe trait BumpAllocator: Allocator {
         }
     }
 
-    /// A specialized version of `allocate`.
+    /// A specialized version of [`allocate`](Allocator::allocate).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the allocation fails.
+    #[doc(hidden)]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
@@ -111,7 +136,12 @@ pub unsafe trait BumpAllocator: Allocator {
         }
     }
 
-    /// A specialized version of `allocate`.
+    /// A specialized version of [`allocate`](Allocator::allocate).
+    ///
+    /// # Errors
+    ///
+    /// Errors if the allocation fails.
+    #[doc(hidden)]
     fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError>
     where
         Self: Sized,
@@ -127,13 +157,14 @@ pub unsafe trait BumpAllocator: Allocator {
         }
     }
 
-    /// A specialized version of `shrink`.
+    /// A specialized version of [`shrink`](Allocator::shrink).
     ///
     /// Returns `Some` if a shrink was performed, `None` if not.
     ///
     /// # Safety
     ///
     /// `new_len` must be less than `old_len`
+    #[doc(hidden)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>
     where
         Self: Sized,
@@ -511,20 +542,14 @@ where
 }
 
 /// A [`BumpAllocator`] who has exclusive access to allocation.
-///
-/// # Safety
-///
-/// TODO
-///
-/// [into_box]: crate::BumpBox::into_box
-/// [prepare_slice_allocation]: Self::prepare_slice_allocation
-/// [try_prepare_slice_allocation]: Self::try_prepare_slice_allocation
+#[allow(clippy::missing_safety_doc)] // TODO
 pub unsafe trait MutBumpAllocator: BumpAllocator {
     /// Does not allocate, just returns a slice of `T` that are currently available.
     ///
     /// # Panics
     ///
     /// Panics when the allocation fails.
+    #[doc(hidden)]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized;
@@ -534,6 +559,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator {
     /// # Errors
     ///
     /// Errors when the allocation fails.
+    #[doc(hidden)]
     fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
     where
         Self: Sized;
@@ -545,6 +571,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator {
     /// - `ptr + cap` must be a slice returned by `(try_)prepare_slice_allocation`. No allocation,
     ///   grow, shrink or deallocate must have been called since then.
     /// - `len` must be less than or equal to `cap`
+    #[doc(hidden)]
     unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized;
@@ -554,6 +581,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator {
     /// # Panics
     ///
     /// Panics when the allocation fails.
+    #[doc(hidden)]
     fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
     where
         Self: Sized;
@@ -563,6 +591,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator {
     /// # Errors
     ///
     /// Errors when the allocation fails.
+    #[doc(hidden)]
     fn try_prepare_slice_allocation_rev<T>(&mut self, len: usize) -> Result<(NonNull<T>, usize), AllocError>
     where
         Self: Sized;
@@ -574,6 +603,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator {
     /// - `ptr + cap` must be a slice returned by `(try_)prepare_slice_allocation`. No allocation,
     ///   grow, shrink or deallocate must have been called since then.
     /// - `len` must be less than or equal to `cap`
+    #[doc(hidden)]
     unsafe fn use_reserved_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized;
@@ -876,9 +906,9 @@ where
 {
 }
 
-/// Shorthand for <code>[BumpAllocatorScope]<'a> + [MutBumpAllocator]</code>
-pub trait MutBumpAllocatorScope<'a>: BumpAllocatorScope<'a> + MutBumpAllocator {}
-impl<'a, T: BumpAllocatorScope<'a> + MutBumpAllocator> MutBumpAllocatorScope<'a> for T {}
+/// Shorthand for <code>[MutBumpAllocator] + [BumpAllocatorScope]<'a></code>
+pub trait MutBumpAllocatorScope<'a>: MutBumpAllocator + BumpAllocatorScope<'a> {}
+impl<'a, T: MutBumpAllocator + BumpAllocatorScope<'a>> MutBumpAllocatorScope<'a> for T {}
 
 #[cold]
 #[inline(never)]
