@@ -295,6 +295,7 @@ mod mut_bump_vec_rev;
 pub mod owned_slice;
 /// Contains types associated with owned strings.
 pub mod owned_str;
+mod partial_eq;
 mod polyfill;
 mod raw_bump_box;
 mod raw_fixed_bump_string;

@@ -8,6 +8,7 @@
 - **breaking:** `Stats<'a, UP>` is now `Stats<'a, GUARANTEED_ALLOCATED>`
 - **breaking:** `GuaranteedAllocatedStats` has been removed in favor of `Stats<'a, true>`
 - **fixed:** `BumpVec::split_off` now retains the capacity of `self` like the docs say
+- **added:** more general `PartialEq` for vectors
 
 ## 0.10.11 (2024-11-11)
 - **added:** `map_in_place` to `(Mut)BumpVec`
