@@ -20,12 +20,8 @@ use crate::{handle_alloc_error, infallible};
 /// - `grow(_zeroed)`, `shrink` and `deallocate` can be called with a pointer that was not allocated by this Allocator
 /// - `deallocate` can be called with any pointer or alignment when the size is `0`
 /// - `shrink` does not error
-/// - if `supports_greedy_allocations` returns `false` then <code>([try_][try_prepare_slice_allocation])[mut_allocate_slice][prepare_slice_allocation])</code>
-///   must not be manually implemented.
 ///
 /// [into_box]: crate::BumpBox::into_box
-/// [prepare_slice_allocation]: Self::prepare_slice_allocation
-/// [try_prepare_slice_allocation]: Self::try_prepare_slice_allocation
 #[allow(clippy::missing_errors_doc)]
 pub unsafe trait BumpAllocator: Allocator {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
@@ -144,46 +140,6 @@ pub unsafe trait BumpAllocator: Allocator {
     {
         _ = (ptr, old_len, new_len);
         None
-    }
-
-    /// Returns `true` if this allocator is exclusive.
-    ///
-    /// In practice this means that this is a `Bump(Scope)` or a `&mut Bump(Scope)`. A `&Bump(Scope)` or a `Rc<Bump>`
-    /// will not be an exclusive allocator.
-    fn is_exclusive_allocator(&self) -> bool {
-        false
-    }
-
-    /// Does not allocate, just returns a slice of `T` that are currently available.
-    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
-    where
-        Self: Sized,
-    {
-        _ = len;
-        panic!("`prepare_slice_allocation` is invalid when `is_exclusive_allocator` is false")
-    }
-
-    /// Does not allocate, just returns a slice of `T` that are currently available.
-    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
-    where
-        Self: Sized,
-    {
-        _ = len;
-        panic!("`try_prepare_slice_allocation` is invalid when `is_exclusive_allocator` is false")
-    }
-
-    /// Allocate part of a valid free slice like one returned by `(try_)prepare_slice_allocation`.
-    ///
-    /// # Safety
-    ///
-    /// `ptr + cap` must be a slice returned by `(try_)prepare_slice_allocation`. No allocation,
-    /// grow, shrink or deallocate must have been called since then.
-    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
-    where
-        Self: Sized,
-    {
-        _ = (ptr, len, cap);
-        panic!("`use_reserved_allocation` is invalid when `is_exclusive_allocator` is false")
     }
 }
 
@@ -370,46 +326,6 @@ where
             }
         }
     }
-
-    #[inline(always)]
-    fn is_exclusive_allocator(&self) -> bool {
-        true
-    }
-
-    #[inline(always)]
-    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
-    where
-        Self: Sized,
-    {
-        #[cfg(not(no_global_oom_handling))]
-        {
-            let (ptr, len) = infallible(BumpScope::alloc_greedy(self, len));
-            nonnull::slice_from_raw_parts(ptr, len)
-        }
-
-        #[cfg(no_global_oom_handling)]
-        {
-            _ = len;
-            unreachable!()
-        }
-    }
-
-    #[inline(always)]
-    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
-    where
-        Self: Sized,
-    {
-        let (ptr, len) = BumpScope::alloc_greedy(self, len)?;
-        Ok(nonnull::slice_from_raw_parts(ptr, len))
-    }
-
-    #[inline(always)]
-    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
-    where
-        Self: Sized,
-    {
-        BumpScope::consolidate_greed(self, ptr, len, cap)
-    }
 }
 
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
@@ -472,35 +388,6 @@ where
     {
         self.as_scope().shrink_slice(ptr, old_len, new_len)
     }
-
-    #[inline(always)]
-    fn is_exclusive_allocator(&self) -> bool {
-        self.as_scope().is_exclusive_allocator()
-    }
-
-    #[inline(always)]
-    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
-    where
-        Self: Sized,
-    {
-        self.as_mut_scope().prepare_slice_allocation(len)
-    }
-
-    #[inline(always)]
-    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
-    where
-        Self: Sized,
-    {
-        self.as_mut_scope().try_prepare_slice_allocation(len)
-    }
-
-    #[inline(always)]
-    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
-    where
-        Self: Sized,
-    {
-        self.as_mut_scope().use_reserved_allocation(ptr, len, cap)
-    }
 }
 
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
@@ -560,35 +447,6 @@ where
     #[inline(always)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
         BumpScope::shrink_slice(self, ptr, old_len, new_len)
-    }
-
-    #[inline(always)]
-    fn is_exclusive_allocator(&self) -> bool {
-        true
-    }
-
-    #[inline(always)]
-    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
-    where
-        Self: Sized,
-    {
-        BumpScope::prepare_slice_allocation(self, len)
-    }
-
-    #[inline(always)]
-    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
-    where
-        Self: Sized,
-    {
-        BumpScope::try_prepare_slice_allocation(self, len)
-    }
-
-    #[inline(always)]
-    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
-    where
-        Self: Sized,
-    {
-        BumpScope::use_reserved_allocation(self, ptr, len, cap)
     }
 }
 
@@ -650,12 +508,158 @@ where
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
         Bump::shrink_slice(self, ptr, old_len, new_len)
     }
+}
 
+/// A [`BumpAllocator`] who has exclusive access to allocation.
+///
+/// # Safety
+///
+/// TODO
+///
+/// [into_box]: crate::BumpBox::into_box
+/// [prepare_slice_allocation]: Self::prepare_slice_allocation
+/// [try_prepare_slice_allocation]: Self::try_prepare_slice_allocation
+pub unsafe trait BumpAllocatorMut: BumpAllocator {
+    /// Does not allocate, just returns a slice of `T` that are currently available.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the allocation fails.
+    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
+    where
+        Self: Sized;
+
+    /// Does not allocate, just returns a slice of `T` that are currently available.
+    ///
+    /// # Errors
+    ///
+    /// Errors when the allocation fails.
+    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    where
+        Self: Sized;
+
+    /// Allocate part of a valid free slice returned by `(try_)prepare_slice_allocation`.
+    ///
+    /// # Safety
+    ///
+    /// - `ptr + cap` must be a slice returned by `(try_)prepare_slice_allocation`. No allocation,
+    ///   grow, shrink or deallocate must have been called since then.
+    /// - `len` must be less than or equal to `cap`
+    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized;
+}
+
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorMut
+    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
     #[inline(always)]
-    fn is_exclusive_allocator(&self) -> bool {
-        true
+    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        #[cfg(not(no_global_oom_handling))]
+        {
+            let (ptr, len) = infallible(BumpScope::alloc_greedy(self, len));
+            nonnull::slice_from_raw_parts(ptr, len)
+        }
+
+        #[cfg(no_global_oom_handling)]
+        {
+            _ = len;
+            unreachable!()
+        }
     }
 
+    #[inline(always)]
+    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    where
+        Self: Sized,
+    {
+        let (ptr, len) = BumpScope::alloc_greedy(self, len)?;
+        Ok(nonnull::slice_from_raw_parts(ptr, len))
+    }
+
+    #[inline(always)]
+    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        BumpScope::consolidate_greed(self, ptr, len, cap)
+    }
+}
+
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorMut
+    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+    #[inline(always)]
+    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        self.as_mut_scope().prepare_slice_allocation(len)
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    where
+        Self: Sized,
+    {
+        self.as_mut_scope().try_prepare_slice_allocation(len)
+    }
+
+    #[inline(always)]
+    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        self.as_mut_scope().use_reserved_allocation(ptr, len, cap)
+    }
+}
+
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorMut
+    for &mut BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+    #[inline(always)]
+    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        BumpScope::prepare_slice_allocation(self, len)
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    where
+        Self: Sized,
+    {
+        BumpScope::try_prepare_slice_allocation(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        BumpScope::use_reserved_allocation(self, ptr, len, cap)
+    }
+}
+
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorMut
+    for &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
     #[inline(always)]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
@@ -737,6 +741,10 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
 }
+
+/// Shorthand for <code>[BumpAllocatorScope]<'a> + [BumpAllocatorMut]</code>
+pub trait BumpAllocatorScopeMut<'a>: BumpAllocatorScope<'a> + BumpAllocatorMut {}
+impl<'a, T: BumpAllocatorScope<'a> + BumpAllocatorMut> BumpAllocatorScopeMut<'a> for T {}
 
 #[cold]
 #[inline(never)]

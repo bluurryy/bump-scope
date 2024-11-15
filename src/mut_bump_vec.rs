@@ -7,7 +7,7 @@ use crate::{
     polyfill::{nonnull, pointer, slice},
     raw_bump_box::RawBumpBox,
     raw_fixed_bump_vec::RawFixedBumpVec,
-    BumpAllocator, BumpAllocatorScope, BumpBox, ErrorBehavior, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats,
+    BumpAllocatorMut, BumpAllocatorScopeMut, BumpBox, ErrorBehavior, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
@@ -151,7 +151,7 @@ impl<T, A> DerefMut for MutBumpVec<T, A> {
     }
 }
 
-impl<T, A: BumpAllocator> MutBumpVec<T, A> {
+impl<T, A: BumpAllocatorMut> MutBumpVec<T, A> {
     /// Constructs a new empty `MutBumpVec<T>`.
     ///
     /// The vector will not allocate until elements are pushed onto it.
@@ -579,7 +579,7 @@ impl<T, A> MutBumpVec<T, A> {
     }
 }
 
-impl<T, A: BumpAllocator> MutBumpVec<T, A> {
+impl<T, A: BumpAllocatorMut> MutBumpVec<T, A> {
     error_behavior_generic_methods_allocation_failure! {
         /// Appends an element to the back of a collection.
         impl
@@ -1734,7 +1734,7 @@ impl<T, A: BumpAllocator> MutBumpVec<T, A> {
     }
 }
 
-impl<'a, T, A: BumpAllocatorScope<'a>> MutBumpVec<T, A> {
+impl<'a, T, A: BumpAllocatorScopeMut<'a>> MutBumpVec<T, A> {
     /// Turns this `MutBumpVec<T>` into a `BumpBox<[T]>`.
     ///
     /// Unused capacity does not take up space.<br/>
@@ -1800,7 +1800,7 @@ impl<T: Debug, A> Debug for MutBumpVec<T, A> {
     }
 }
 
-impl<T, A: BumpAllocator, I: SliceIndex<[T]>> Index<I> for MutBumpVec<T, A> {
+impl<T, A: BumpAllocatorMut, I: SliceIndex<[T]>> Index<I> for MutBumpVec<T, A> {
     type Output = I::Output;
 
     #[inline(always)]
@@ -1809,7 +1809,7 @@ impl<T, A: BumpAllocator, I: SliceIndex<[T]>> Index<I> for MutBumpVec<T, A> {
     }
 }
 
-impl<T, A: BumpAllocator, I: SliceIndex<[T]>> IndexMut<I> for MutBumpVec<T, A> {
+impl<T, A: BumpAllocatorMut, I: SliceIndex<[T]>> IndexMut<I> for MutBumpVec<T, A> {
     #[inline(always)]
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
         IndexMut::index_mut(self.as_mut_slice(), index)
@@ -1817,7 +1817,7 @@ impl<T, A: BumpAllocator, I: SliceIndex<[T]>> IndexMut<I> for MutBumpVec<T, A> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<T, A: BumpAllocator> Extend<T> for MutBumpVec<T, A> {
+impl<T, A: BumpAllocatorMut> Extend<T> for MutBumpVec<T, A> {
     #[inline]
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         let iter = iter.into_iter();
@@ -1831,7 +1831,7 @@ impl<T, A: BumpAllocator> Extend<T> for MutBumpVec<T, A> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'t, T: Clone + 't, A: BumpAllocator> Extend<&'t T> for MutBumpVec<T, A> {
+impl<'t, T: Clone + 't, A: BumpAllocatorMut> Extend<&'t T> for MutBumpVec<T, A> {
     #[inline]
     fn extend<I: IntoIterator<Item = &'t T>>(&mut self, iter: I) {
         let iter = iter.into_iter();
@@ -2090,7 +2090,7 @@ impl<T: Hash, A> Hash for MutBumpVec<T, A> {
 
 /// Returns [`ErrorKind::OutOfMemory`](std::io::ErrorKind::OutOfMemory) when allocations fail.
 #[cfg(feature = "std")]
-impl<A: BumpAllocator> std::io::Write for MutBumpVec<u8, A> {
+impl<A: BumpAllocatorMut> std::io::Write for MutBumpVec<u8, A> {
     #[inline(always)]
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         if self.try_extend_from_slice_copy(buf).is_err() {

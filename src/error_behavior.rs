@@ -1,6 +1,6 @@
 #[cfg(not(no_global_oom_handling))]
 use crate::{capacity_overflow, format_trait_error, handle_alloc_error, Infallible};
-use crate::{layout, AllocError, BumpAllocator, Layout, NonNull, RawChunk, SupportedMinimumAlignment};
+use crate::{layout, AllocError, BumpAllocator, BumpAllocatorMut, Layout, NonNull, RawChunk, SupportedMinimumAlignment};
 use layout::LayoutProps;
 
 pub(crate) trait ErrorBehavior: Sized {
@@ -33,7 +33,7 @@ pub(crate) trait ErrorBehavior: Sized {
     #[allow(dead_code)]
     fn allocate_sized<T>(allocator: &impl BumpAllocator) -> Result<NonNull<T>, Self>;
     fn allocate_slice<T>(allocator: &impl BumpAllocator, len: usize) -> Result<NonNull<T>, Self>;
-    unsafe fn allocate_slice_greedy<T>(allocator: &mut impl BumpAllocator, len: usize) -> Result<NonNull<[T]>, Self>;
+    unsafe fn allocate_slice_greedy<T>(allocator: &mut impl BumpAllocatorMut, len: usize) -> Result<NonNull<[T]>, Self>;
 }
 
 #[cfg(not(no_global_oom_handling))]
@@ -101,7 +101,7 @@ impl ErrorBehavior for Infallible {
     }
 
     #[inline(always)]
-    unsafe fn allocate_slice_greedy<T>(allocator: &mut impl BumpAllocator, len: usize) -> Result<NonNull<[T]>, Self> {
+    unsafe fn allocate_slice_greedy<T>(allocator: &mut impl BumpAllocatorMut, len: usize) -> Result<NonNull<[T]>, Self> {
         Ok(allocator.prepare_slice_allocation::<T>(len))
     }
 }
@@ -177,7 +177,7 @@ impl ErrorBehavior for AllocError {
     }
 
     #[inline(always)]
-    unsafe fn allocate_slice_greedy<T>(allocator: &mut impl BumpAllocator, len: usize) -> Result<NonNull<[T]>, Self> {
+    unsafe fn allocate_slice_greedy<T>(allocator: &mut impl BumpAllocatorMut, len: usize) -> Result<NonNull<[T]>, Self> {
         allocator.try_prepare_slice_allocation::<T>(len)
     }
 }

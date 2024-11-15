@@ -20,8 +20,8 @@ macro_rules! type_definitions {
         type BumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuardRoot<'a, Global, MIN_ALIGN, $up>;
         type BumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<T, &'a Bump>;
         type BumpString<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<&'a Bump>;
-        type MutBumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<T, &'a Bump>;
-        type MutBumpString<'a, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpString<&'a Bump>;
+        type MutBumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<T, &'a mut Bump>;
+        type MutBumpString<'a, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpString<&'a mut Bump>;
         type MutBumpVecRev<'b, 'a, T, const MIN_ALIGN: usize = 1> =
             bump_scope::MutBumpVecRev<'b, 'a, T, Global, MIN_ALIGN, $up>;
     };

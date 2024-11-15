@@ -4,7 +4,7 @@ use crate::{
     error_behavior::ErrorBehavior,
     polyfill::{nonnull, transmute_mut, transmute_ref},
     raw_bump_box::RawBumpBox,
-    BumpAllocator, FixedBumpString,
+    BumpAllocator, BumpAllocatorMut, FixedBumpString,
 };
 
 /// Like [`FixedBumpVec`] but without its lifetime.
@@ -55,7 +55,7 @@ impl RawFixedBumpString {
 
     #[inline(always)]
     pub(crate) unsafe fn allocate_greedy<B: ErrorBehavior>(
-        allocator: &mut impl BumpAllocator,
+        allocator: &mut impl BumpAllocatorMut,
         len: usize,
     ) -> Result<Self, B> {
         let allocation = B::allocate_slice_greedy::<u8>(allocator, len)?;

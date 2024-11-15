@@ -2,7 +2,7 @@ use crate::{
     error_behavior_generic_methods_allocation_failure, owned_str,
     polyfill::{self, transmute_mut, transmute_value},
     raw_fixed_bump_string::RawFixedBumpString,
-    BumpAllocator, BumpAllocatorScope, BumpBox, ErrorBehavior, FromUtf16Error, FromUtf8Error, MutBumpVec, Stats,
+    BumpAllocatorMut, BumpAllocatorScopeMut, BumpBox, ErrorBehavior, FromUtf16Error, FromUtf8Error, MutBumpVec, Stats,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
@@ -137,7 +137,7 @@ impl<A> MutBumpString<A> {
     }
 }
 
-impl<A: BumpAllocator> MutBumpString<A> {
+impl<A: BumpAllocatorMut> MutBumpString<A> {
     error_behavior_generic_methods_allocation_failure! {
         /// Constructs a new empty `MutBumpString` with at least the specified capacity
         /// with the provided `BumpScope`.
@@ -775,7 +775,7 @@ impl<A> MutBumpString<A> {
     }
 }
 
-impl<A: BumpAllocator> MutBumpString<A> {
+impl<A: BumpAllocatorMut> MutBumpString<A> {
     error_behavior_generic_methods_allocation_failure! {
         /// Appends the given [`char`] to the end of this string.
         impl
@@ -1229,7 +1229,7 @@ impl<A: BumpAllocator> MutBumpString<A> {
     }
 }
 
-impl<'a, A: BumpAllocatorScope<'a>> MutBumpString<A> {
+impl<'a, A: BumpAllocatorScopeMut<'a>> MutBumpString<A> {
     /// Converts this `MutBumpString` into `&str` that is live for this bump scope.
     ///
     /// Unused capacity does not take up space.<br/>
@@ -1252,7 +1252,7 @@ impl<'a, A: BumpAllocatorScope<'a>> MutBumpString<A> {
     }
 }
 
-impl<A: BumpAllocator> fmt::Write for MutBumpString<A> {
+impl<A: BumpAllocatorMut> fmt::Write for MutBumpString<A> {
     #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.try_push_str(s).map_err(|_| fmt::Error)
@@ -1265,7 +1265,7 @@ impl<A: BumpAllocator> fmt::Write for MutBumpString<A> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<A: BumpAllocator> fmt::Write for Infallibly<MutBumpString<A>> {
+impl<A: BumpAllocatorMut> fmt::Write for Infallibly<MutBumpString<A>> {
     #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.0.push_str(s);
@@ -1308,7 +1308,7 @@ impl<A> DerefMut for MutBumpString<A> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<A: BumpAllocator> core::ops::AddAssign<&str> for MutBumpString<A> {
+impl<A: BumpAllocatorMut> core::ops::AddAssign<&str> for MutBumpString<A> {
     #[inline]
     fn add_assign(&mut self, rhs: &str) {
         self.push_str(rhs);
@@ -1447,7 +1447,7 @@ impl<A> Hash for MutBumpString<A> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'s, A: BumpAllocator> Extend<&'s str> for MutBumpString<A> {
+impl<'s, A: BumpAllocatorMut> Extend<&'s str> for MutBumpString<A> {
     #[inline]
     fn extend<T: IntoIterator<Item = &'s str>>(&mut self, iter: T) {
         for str in iter {
@@ -1457,7 +1457,7 @@ impl<'s, A: BumpAllocator> Extend<&'s str> for MutBumpString<A> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<A: BumpAllocator> Extend<char> for MutBumpString<A> {
+impl<A: BumpAllocatorMut> Extend<char> for MutBumpString<A> {
     fn extend<I: IntoIterator<Item = char>>(&mut self, iter: I) {
         let iterator = iter.into_iter();
         let (lower_bound, _) = iterator.size_hint();
@@ -1467,7 +1467,7 @@ impl<A: BumpAllocator> Extend<char> for MutBumpString<A> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'s, A: BumpAllocator> Extend<&'s char> for MutBumpString<A> {
+impl<'s, A: BumpAllocatorMut> Extend<&'s char> for MutBumpString<A> {
     fn extend<I: IntoIterator<Item = &'s char>>(&mut self, iter: I) {
         self.extend(iter.into_iter().copied());
     }

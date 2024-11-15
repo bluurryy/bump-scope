@@ -309,7 +309,7 @@ pub use allocator_api2;
 use allocator_api2::alloc::handle_alloc_error;
 use allocator_api2::alloc::{AllocError, Allocator};
 pub use bump::Bump;
-pub use bump_allocator::{BumpAllocator, BumpAllocatorScope};
+pub use bump_allocator::{BumpAllocator, BumpAllocatorMut, BumpAllocatorScope, BumpAllocatorScopeMut};
 pub use bump_box::BumpBox;
 #[cfg(feature = "std")]
 pub use bump_pool::{BumpPool, BumpPoolGuard};

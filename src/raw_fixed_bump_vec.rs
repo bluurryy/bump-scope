@@ -4,7 +4,7 @@ use crate::{
     error_behavior::ErrorBehavior,
     polyfill::{nonnull, transmute_mut, transmute_ref},
     raw_bump_box::RawBumpBox,
-    BumpAllocator, FixedBumpVec, SizedTypeProperties,
+    BumpAllocator, BumpAllocatorMut, FixedBumpVec, SizedTypeProperties,
 };
 
 /// Like [`FixedBumpVec`] but without its lifetime.
@@ -45,27 +45,18 @@ impl<T> RawFixedBumpVec<T> {
     // TODO take allocator by immutable
     #[inline(always)]
     pub(crate) unsafe fn allocate<B: ErrorBehavior>(allocator: &mut impl BumpAllocator, len: usize) -> Result<Self, B> {
-        if allocator.is_exclusive_allocator() {
-            let allocation = B::allocate_slice_greedy::<T>(allocator, len)?;
+        let ptr = B::allocate_slice::<T>(allocator, len)?;
 
-            Ok(Self {
-                initialized: RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(nonnull::as_non_null_ptr(allocation), 0)),
-                capacity: allocation.len(),
-            })
-        } else {
-            let ptr = B::allocate_slice::<T>(allocator, len)?;
-
-            Ok(Self {
-                initialized: RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(ptr, 0)),
-                capacity: len,
-            })
-        }
+        Ok(Self {
+            initialized: RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(ptr, 0)),
+            capacity: len,
+        })
     }
 
     // TODO take allocator by immutable
     #[inline(always)]
     pub(crate) unsafe fn allocate_greedy<B: ErrorBehavior>(
-        allocator: &mut impl BumpAllocator,
+        allocator: &mut impl BumpAllocatorMut,
         len: usize,
     ) -> Result<Self, B> {
         let allocation = B::allocate_slice_greedy::<T>(allocator, len)?;
