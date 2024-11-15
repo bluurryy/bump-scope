@@ -5,10 +5,7 @@ use crate::{
 use core::mem::MaybeUninit;
 use zerocopy::FromZeros;
 
-impl<'a, T> BumpBox<'a, MaybeUninit<T>>
-where
-    T: FromZeros,
-{
+impl<'a, T: FromZeros> BumpBox<'a, MaybeUninit<T>> {
     /// Initializes `self` by filling it with zero.
     ///
     /// # Examples
@@ -29,10 +26,7 @@ where
     }
 }
 
-impl<'a, T> BumpBox<'a, [MaybeUninit<T>]>
-where
-    T: FromZeros,
-{
+impl<'a, T: FromZeros> BumpBox<'a, [MaybeUninit<T>]> {
     /// Initializes `self` by filling it with zeroes.
     ///
     /// # Examples
