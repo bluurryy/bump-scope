@@ -1085,6 +1085,16 @@ fn min_non_zero_cap() {
     }
 }
 
+#[test]
+fn unsound_exclusive_allocator() {
+    let mut bump: Bump = Bump::new();
+    let vec = BumpVec::<i32, _>::from_array_in([1], &mut bump);
+    dbg!(vec.stats().capacity());
+    assert!(vec.stats().capacity() > 100);
+    vec.allocator().alloc(5);
+    assert_ne!(vec[0], 5);
+}
+
 // This must fail to compile.
 //
 // Can't have a trybuild (or doc tests) test for this because trybuild just `check`s
