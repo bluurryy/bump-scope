@@ -327,7 +327,7 @@ impl<'a> Stats<'a> {
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Chunk<'a> {
-    pub(crate) chunk: NonNull<ChunkHeader<()>>,
+    pub(crate) chunk: NonNull<ChunkHeader>,
     marker: PhantomData<&'a ()>,
 }
 
