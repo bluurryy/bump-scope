@@ -4,7 +4,7 @@ use crate::{
     error_behavior::ErrorBehavior,
     polyfill::{nonnull, transmute_mut, transmute_ref},
     raw_bump_box::RawBumpBox,
-    BumpAllocator, BumpAllocatorMut, FixedBumpVec, SizedTypeProperties,
+    BumpAllocator, FixedBumpVec, MutBumpAllocator, SizedTypeProperties,
 };
 
 /// Like [`FixedBumpVec`] but without its lifetime.
@@ -54,7 +54,7 @@ impl<T> RawFixedBumpVec<T> {
 
     #[inline(always)]
     pub(crate) unsafe fn prepare_allocation<B: ErrorBehavior>(
-        allocator: &mut impl BumpAllocatorMut,
+        allocator: &mut impl MutBumpAllocator,
         len: usize,
     ) -> Result<Self, B> {
         let allocation = B::prepare_slice_allocation::<T>(allocator, len)?;

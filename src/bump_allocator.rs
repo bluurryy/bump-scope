@@ -519,7 +519,7 @@ where
 /// [into_box]: crate::BumpBox::into_box
 /// [prepare_slice_allocation]: Self::prepare_slice_allocation
 /// [try_prepare_slice_allocation]: Self::try_prepare_slice_allocation
-pub unsafe trait BumpAllocatorMut: BumpAllocator {
+pub unsafe trait MutBumpAllocator: BumpAllocator {
     /// Does not allocate, just returns a slice of `T` that are currently available.
     ///
     /// # Panics
@@ -579,7 +579,7 @@ pub unsafe trait BumpAllocatorMut: BumpAllocator {
         Self: Sized;
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorMut
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> MutBumpAllocator
     for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -654,7 +654,7 @@ where
     }
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorMut
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> MutBumpAllocator
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -709,7 +709,7 @@ where
     }
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorMut
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> MutBumpAllocator
     for &mut BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -764,7 +764,7 @@ where
     }
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorMut
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> MutBumpAllocator
     for &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -876,9 +876,9 @@ where
 {
 }
 
-/// Shorthand for <code>[BumpAllocatorScope]<'a> + [BumpAllocatorMut]</code>
-pub trait BumpAllocatorScopeMut<'a>: BumpAllocatorScope<'a> + BumpAllocatorMut {}
-impl<'a, T: BumpAllocatorScope<'a> + BumpAllocatorMut> BumpAllocatorScopeMut<'a> for T {}
+/// Shorthand for <code>[BumpAllocatorScope]<'a> + [MutBumpAllocator]</code>
+pub trait MutBumpAllocatorScope<'a>: BumpAllocatorScope<'a> + MutBumpAllocator {}
+impl<'a, T: BumpAllocatorScope<'a> + MutBumpAllocator> MutBumpAllocatorScope<'a> for T {}
 
 #[cold]
 #[inline(never)]

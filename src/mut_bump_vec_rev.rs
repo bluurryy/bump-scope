@@ -3,7 +3,7 @@ use crate::{
     error_behavior_generic_methods_allocation_failure, min_non_zero_cap,
     mut_bump_vec::IntoIter,
     polyfill::{self, nonnull, pointer},
-    BumpAllocatorMut, BumpAllocatorScopeMut, BumpBox, ErrorBehavior, NoDrop, SetLenOnDrop, SizedTypeProperties, Stats,
+    BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SetLenOnDrop, SizedTypeProperties, Stats,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
@@ -20,7 +20,7 @@ use core::{
 
 /// This is like [`vec!`] but allocates inside a `Bump` or `BumpScope`, returning a [`MutBumpVecRev`].
 ///
-/// `$bump` can be any type that implements [`BumpAllocatorMut`].
+/// `$bump` can be any type that implements [`MutBumpAllocator`].
 ///
 /// # Panics
 /// If used without `try`, panics on allocation failure.
@@ -504,7 +504,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     }
 }
 
-impl<T, A: BumpAllocatorMut> MutBumpVecRev<T, A> {
+impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     error_behavior_generic_methods_allocation_failure! {
         /// Constructs a new empty vector with at least the specified capacity
         /// with the provided `BumpScope`.
@@ -1690,7 +1690,7 @@ impl<T, A: BumpAllocatorMut> MutBumpVecRev<T, A> {
     }
 }
 
-impl<'a, T, A: BumpAllocatorScopeMut<'a>> MutBumpVecRev<T, A> {
+impl<'a, T, A: MutBumpAllocatorScope<'a>> MutBumpVecRev<T, A> {
     /// Turns this `MutBumpVecRev<T>` into a `BumpBox<[T]>`.
     ///
     /// Unused capacity does not take up space.<br/>
@@ -1806,7 +1806,7 @@ impl<T, A, I: SliceIndex<[T]>> IndexMut<I> for MutBumpVecRev<T, A> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<U, A: BumpAllocatorMut> Extend<U> for MutBumpVecRev<U, A> {
+impl<U, A: MutBumpAllocator> Extend<U> for MutBumpVecRev<U, A> {
     #[inline]
     fn extend<T: IntoIterator<Item = U>>(&mut self, iter: T) {
         let iter = iter.into_iter();
@@ -1837,7 +1837,7 @@ impl<T, A> Drop for MutBumpVecRev<T, A> {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'t, T: Clone + 't, A: BumpAllocatorMut> Extend<&'t T> for MutBumpVecRev<T, A> {
+impl<'t, T: Clone + 't, A: MutBumpAllocator> Extend<&'t T> for MutBumpVecRev<T, A> {
     #[inline]
     fn extend<I: IntoIterator<Item = &'t T>>(&mut self, iter: I) {
         let iter = iter.into_iter();

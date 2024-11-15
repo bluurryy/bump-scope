@@ -1,5 +1,5 @@
 use crate::{
-    BumpAllocator, BumpAllocatorMut, BumpBox, BumpString, BumpVec, FixedBumpString, FixedBumpVec, MutBumpString, MutBumpVec,
+    BumpAllocator, BumpBox, BumpString, BumpVec, FixedBumpString, FixedBumpVec, MutBumpAllocator, MutBumpString, MutBumpVec,
     MutBumpVecRev,
 };
 use ::serde::Serialize;
@@ -198,7 +198,7 @@ impl<'de, T: Deserialize<'de>, A: BumpAllocator> Visitor<'de> for &'_ mut BumpVe
     }
 }
 
-impl<'de, T: Deserialize<'de>, A: BumpAllocatorMut> DeserializeSeed<'de> for &'_ mut MutBumpVec<T, A> {
+impl<'de, T: Deserialize<'de>, A: MutBumpAllocator> DeserializeSeed<'de> for &'_ mut MutBumpVec<T, A> {
     type Value = ();
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -209,7 +209,7 @@ impl<'de, T: Deserialize<'de>, A: BumpAllocatorMut> DeserializeSeed<'de> for &'_
     }
 }
 
-impl<'de, T: Deserialize<'de>, A: BumpAllocatorMut> Visitor<'de> for &'_ mut MutBumpVec<T, A> {
+impl<'de, T: Deserialize<'de>, A: MutBumpAllocator> Visitor<'de> for &'_ mut MutBumpVec<T, A> {
     type Value = ();
 
     fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
@@ -232,7 +232,7 @@ impl<'de, T: Deserialize<'de>, A: BumpAllocatorMut> Visitor<'de> for &'_ mut Mut
     }
 }
 
-impl<'de, T: Deserialize<'de>, A: BumpAllocatorMut> DeserializeSeed<'de> for &mut MutBumpVecRev<T, A> {
+impl<'de, T: Deserialize<'de>, A: MutBumpAllocator> DeserializeSeed<'de> for &mut MutBumpVecRev<T, A> {
     type Value = ();
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -243,7 +243,7 @@ impl<'de, T: Deserialize<'de>, A: BumpAllocatorMut> DeserializeSeed<'de> for &mu
     }
 }
 
-impl<'de, T: Deserialize<'de>, A: BumpAllocatorMut> Visitor<'de> for &mut MutBumpVecRev<T, A> {
+impl<'de, T: Deserialize<'de>, A: MutBumpAllocator> Visitor<'de> for &mut MutBumpVecRev<T, A> {
     type Value = ();
 
     fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
@@ -318,7 +318,7 @@ impl<A: BumpAllocator> Visitor<'_> for &'_ mut BumpString<A> {
     }
 }
 
-impl<'de, A: BumpAllocatorMut> DeserializeSeed<'de> for &'_ mut MutBumpString<A> {
+impl<'de, A: MutBumpAllocator> DeserializeSeed<'de> for &'_ mut MutBumpString<A> {
     type Value = ();
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -329,7 +329,7 @@ impl<'de, A: BumpAllocatorMut> DeserializeSeed<'de> for &'_ mut MutBumpString<A>
     }
 }
 
-impl<A: BumpAllocatorMut> Visitor<'_> for &mut MutBumpString<A> {
+impl<A: MutBumpAllocator> Visitor<'_> for &mut MutBumpString<A> {
     type Value = ();
 
     fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
