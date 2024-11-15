@@ -38,6 +38,27 @@ impl<T: Debug, A: BumpAllocator> Debug for IntoIter<T, A> {
 }
 
 impl<T, A> IntoIter<T, A> {
+    pub(crate) unsafe fn new(slice: NonNull<[T]>, allocator: A) -> Self {
+        if T::IS_ZST {
+            IntoIter {
+                ptr: NonNull::dangling(),
+                end: unsafe { nonnull::wrapping_byte_add(NonNull::dangling(), slice.len()) },
+                allocator,
+                marker: PhantomData,
+            }
+        } else {
+            let start = nonnull::as_non_null_ptr(slice);
+            let end = nonnull::add(start, slice.len());
+
+            IntoIter {
+                ptr: start,
+                end,
+                allocator,
+                marker: PhantomData,
+            }
+        }
+    }
+
     /// Returns the exact remaining length of the iterator.
     #[must_use]
     #[inline(always)]

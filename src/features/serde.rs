@@ -1,6 +1,6 @@
 use crate::{
-    BaseAllocator, BumpAllocator, BumpAllocatorMut, BumpBox, BumpString, BumpVec, FixedBumpString, FixedBumpVec,
-    MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, SupportedMinimumAlignment,
+    BumpAllocator, BumpAllocatorMut, BumpBox, BumpString, BumpVec, FixedBumpString, FixedBumpVec, MutBumpString, MutBumpVec,
+    MutBumpVecRev,
 };
 use ::serde::Serialize;
 use allocator_api2::alloc::AllocError;
@@ -52,11 +52,7 @@ impl<T: Serialize, A> Serialize for MutBumpVec<T, A> {
     }
 }
 
-impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Serialize
-    for MutBumpVecRev<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    T: Serialize,
-{
+impl<T: Serialize, A> Serialize for MutBumpVecRev<T, A> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -236,13 +232,7 @@ impl<'de, T: Deserialize<'de>, A: BumpAllocatorMut> Visitor<'de> for &'_ mut Mut
     }
 }
 
-impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> DeserializeSeed<'de>
-    for &'_ mut MutBumpVecRev<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    T: Deserialize<'de>,
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<'de, T: Deserialize<'de>, A: BumpAllocatorMut> DeserializeSeed<'de> for &mut MutBumpVecRev<T, A> {
     type Value = ();
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -253,13 +243,7 @@ where
     }
 }
 
-impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Visitor<'de>
-    for &'_ mut MutBumpVecRev<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    T: Deserialize<'de>,
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<'de, T: Deserialize<'de>, A: BumpAllocatorMut> Visitor<'de> for &mut MutBumpVecRev<T, A> {
     type Value = ();
 
     fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {

@@ -548,6 +548,35 @@ pub unsafe trait BumpAllocatorMut: BumpAllocator {
     unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized;
+
+    /// Does not allocate, just returns a slice of `T` that are currently available.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the allocation fails.
+    fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
+    where
+        Self: Sized;
+
+    /// Does not allocate, just returns a slice of `T` that are currently available.
+    ///
+    /// # Errors
+    ///
+    /// Errors when the allocation fails.
+    fn try_prepare_slice_allocation_rev<T>(&mut self, len: usize) -> Result<(NonNull<T>, usize), AllocError>
+    where
+        Self: Sized;
+
+    /// Allocate part of a valid free slice returned by `(try_)prepare_slice_allocation`.
+    ///
+    /// # Safety
+    ///
+    /// - `ptr + cap` must be a slice returned by `(try_)prepare_slice_allocation`. No allocation,
+    ///   grow, shrink or deallocate must have been called since then.
+    /// - `len` must be less than or equal to `cap`
+    unsafe fn use_reserved_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized;
 }
 
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorMut
@@ -590,6 +619,39 @@ where
     {
         BumpScope::consolidate_greed(self, ptr, len, cap)
     }
+
+    #[inline(always)]
+    fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
+    where
+        Self: Sized,
+    {
+        #[cfg(not(no_global_oom_handling))]
+        {
+            infallible(BumpScope::alloc_greedy_rev(self, len))
+        }
+
+        #[cfg(no_global_oom_handling)]
+        {
+            _ = len;
+            unreachable!()
+        }
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation_rev<T>(&mut self, len: usize) -> Result<(NonNull<T>, usize), AllocError>
+    where
+        Self: Sized,
+    {
+        BumpScope::alloc_greedy_rev(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn use_reserved_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        BumpScope::consolidate_greed_rev(self, ptr, len, cap)
+    }
 }
 
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorMut
@@ -620,6 +682,30 @@ where
         Self: Sized,
     {
         self.as_mut_scope().use_reserved_allocation(ptr, len, cap)
+    }
+
+    #[inline(always)]
+    fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
+    where
+        Self: Sized,
+    {
+        self.as_mut_scope().prepare_slice_allocation_rev(len)
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation_rev<T>(&mut self, len: usize) -> Result<(NonNull<T>, usize), AllocError>
+    where
+        Self: Sized,
+    {
+        self.as_mut_scope().try_prepare_slice_allocation_rev(len)
+    }
+
+    #[inline(always)]
+    unsafe fn use_reserved_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        self.as_mut_scope().use_reserved_allocation_rev(ptr, len, cap)
     }
 }
 
@@ -652,6 +738,30 @@ where
     {
         BumpScope::use_reserved_allocation(self, ptr, len, cap)
     }
+
+    #[inline(always)]
+    fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
+    where
+        Self: Sized,
+    {
+        BumpScope::prepare_slice_allocation_rev(self, len)
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation_rev<T>(&mut self, len: usize) -> Result<(NonNull<T>, usize), AllocError>
+    where
+        Self: Sized,
+    {
+        BumpScope::try_prepare_slice_allocation_rev(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn use_reserved_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        BumpScope::use_reserved_allocation_rev(self, ptr, len, cap)
+    }
 }
 
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorMut
@@ -682,6 +792,30 @@ where
         Self: Sized,
     {
         Bump::use_reserved_allocation(self, ptr, len, cap)
+    }
+
+    #[inline(always)]
+    fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
+    where
+        Self: Sized,
+    {
+        Bump::prepare_slice_allocation_rev(self, len)
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation_rev<T>(&mut self, len: usize) -> Result<(NonNull<T>, usize), AllocError>
+    where
+        Self: Sized,
+    {
+        Bump::try_prepare_slice_allocation_rev(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn use_reserved_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        Bump::use_reserved_allocation_rev(self, ptr, len, cap)
     }
 }
 

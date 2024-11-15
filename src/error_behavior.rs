@@ -34,6 +34,10 @@ pub(crate) trait ErrorBehavior: Sized {
     fn allocate_sized<T>(allocator: &impl BumpAllocator) -> Result<NonNull<T>, Self>;
     fn allocate_slice<T>(allocator: &impl BumpAllocator, len: usize) -> Result<NonNull<T>, Self>;
     unsafe fn prepare_slice_allocation<T>(allocator: &mut impl BumpAllocatorMut, len: usize) -> Result<NonNull<[T]>, Self>;
+    unsafe fn prepare_slice_allocation_rev<T>(
+        allocator: &mut impl BumpAllocatorMut,
+        len: usize,
+    ) -> Result<(NonNull<T>, usize), Self>;
 }
 
 #[cfg(not(no_global_oom_handling))]
@@ -103,6 +107,14 @@ impl ErrorBehavior for Infallible {
     #[inline(always)]
     unsafe fn prepare_slice_allocation<T>(allocator: &mut impl BumpAllocatorMut, len: usize) -> Result<NonNull<[T]>, Self> {
         Ok(allocator.prepare_slice_allocation::<T>(len))
+    }
+
+    #[inline(always)]
+    unsafe fn prepare_slice_allocation_rev<T>(
+        allocator: &mut impl BumpAllocatorMut,
+        len: usize,
+    ) -> Result<(NonNull<T>, usize), Self> {
+        Ok(allocator.prepare_slice_allocation_rev::<T>(len))
     }
 }
 
@@ -179,6 +191,14 @@ impl ErrorBehavior for AllocError {
     #[inline(always)]
     unsafe fn prepare_slice_allocation<T>(allocator: &mut impl BumpAllocatorMut, len: usize) -> Result<NonNull<[T]>, Self> {
         allocator.try_prepare_slice_allocation::<T>(len)
+    }
+
+    #[inline(always)]
+    unsafe fn prepare_slice_allocation_rev<T>(
+        allocator: &mut impl BumpAllocatorMut,
+        len: usize,
+    ) -> Result<(NonNull<T>, usize), Self> {
+        allocator.try_prepare_slice_allocation_rev::<T>(len)
     }
 }
 

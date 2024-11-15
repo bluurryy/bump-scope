@@ -288,8 +288,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         for fn try_with_capacity_in
         #[inline]
         use fn generic_with_capacity_in(capacity: usize, allocator: A) -> Self {
-            let mut allocator = allocator;
-
             if T::IS_ZST {
                 return Ok(Self {
                     fixed: RawFixedBumpVec::EMPTY,
@@ -305,7 +303,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
             }
 
             Ok(Self {
-                fixed: unsafe { RawFixedBumpVec::allocate(&mut allocator, capacity)? },
+                fixed: unsafe { RawFixedBumpVec::allocate(&allocator, capacity)? },
                 allocator,
             })
         }
@@ -344,7 +342,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
             #![allow(clippy::needless_pass_by_ref_mut)]
 
             let array = ManuallyDrop::new(array);
-            let mut allocator = allocator;
 
             if T::IS_ZST {
                 return Ok(Self {
@@ -360,7 +357,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
                 });
             }
 
-            let mut fixed = unsafe { RawFixedBumpVec::allocate(&mut allocator, N)? };
+            let mut fixed = unsafe { RawFixedBumpVec::allocate(&allocator, N)? };
 
             let src = array.as_ptr();
             let dst = fixed.initialized.ptr.cast::<T>().as_ptr();
@@ -1900,7 +1897,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         let new_cap = new_capacity;
 
         if self.capacity() == 0 {
-            self.fixed = RawFixedBumpVec::allocate(&mut self.allocator, new_cap)?;
+            self.fixed = RawFixedBumpVec::allocate(&self.allocator, new_cap)?;
             return Ok(());
         }
 

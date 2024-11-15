@@ -127,7 +127,7 @@ fn mut_bump_vec_extend_from_slice<T: Testable>() {
 
 fn mut_bump_vec_rev_extend_from_slice<T: Testable>() {
     let mut bump: Bump = Bump::new();
-    let mut vec: MutBumpVecRev<T> = mut_bump_vec_rev![in bump];
+    let mut vec: MutBumpVecRev<T, _> = mut_bump_vec_rev![in &mut bump];
     let slice = ManuallyDrop::new(T::array::<5>());
 
     expected_drops(0).panic_on_clone(3).run(|| {

@@ -14,7 +14,6 @@ use core::{
     fmt::Debug,
     hash::Hash,
     iter,
-    marker::PhantomData,
     mem::{ManuallyDrop, MaybeUninit},
     ops::{Deref, DerefMut, Index, IndexMut, RangeBounds},
     panic::{RefUnwindSafe, UnwindSafe},
@@ -2009,27 +2008,7 @@ impl<T, A> IntoIterator for MutBumpVec<T, A> {
     fn into_iter(self) -> Self::IntoIter {
         let Self { fixed, allocator } = self;
         let slice = fixed.initialized.into_ptr();
-
-        unsafe {
-            if T::IS_ZST {
-                IntoIter {
-                    ptr: NonNull::dangling(),
-                    end: unsafe { nonnull::wrapping_byte_add(NonNull::dangling(), slice.len()) },
-                    allocator,
-                    marker: PhantomData,
-                }
-            } else {
-                let start = nonnull::as_non_null_ptr(slice);
-                let end = nonnull::add(start, slice.len());
-
-                IntoIter {
-                    ptr: start,
-                    end,
-                    allocator,
-                    marker: PhantomData,
-                }
-            }
-        }
+        unsafe { IntoIter::new(slice, allocator) }
     }
 }
 

@@ -25,7 +25,7 @@ fn vec_rev<const UP: bool>() {
     for size in [0, 100, 200, 300, 400] {
         bump.reset();
 
-        let mut vec: MutBumpVecRev<u8, Global, 1, UP> = MutBumpVecRev::new_in(&mut bump);
+        let mut vec: MutBumpVecRev<u8, _> = MutBumpVecRev::new_in(&mut bump);
         vec.extend(iter::repeat(0).take(size));
         assert_eq!(vec.stats().allocated(), 0); // `Mut*` allocations don't bump the pointer
         _ = vec.into_slice();

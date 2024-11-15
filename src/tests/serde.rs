@@ -38,7 +38,7 @@ fn ser() {
     }
 
     {
-        let a = mut_bump_vec_rev![in bump; 1, 2, 3];
+        let a = mut_bump_vec_rev![in &mut bump; 1, 2, 3];
         let b = vec![1, 2, 3];
         assert_same(&a, &b);
     }
@@ -94,7 +94,7 @@ fn de() {
 
     {
         let src = mut_bump_vec_rev![in &mut bump_src; 1, 2, 3];
-        let mut dst: MutBumpVecRev<i32> = mut_bump_vec_rev![in &mut bump_dst];
+        let mut dst: MutBumpVecRev<i32, _> = mut_bump_vec_rev![in &mut bump_dst];
 
         let json = serde_json::to_string(&src).unwrap();
         let mut deserializer = serde_json::Deserializer::from_str(&json);

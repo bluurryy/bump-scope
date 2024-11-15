@@ -570,27 +570,27 @@ fn bump_vec_macro() {
 
 #[allow(dead_code)]
 fn bump_vec_rev_macro() {
-    fn new_in(bump: &mut Bump) -> MutBumpVecRev<u32> {
+    fn new_in(bump: &mut Bump) -> MutBumpVecRev<u32, &mut Bump> {
         mut_bump_vec_rev![in bump]
     }
 
-    fn from_array_in(bump: &mut Bump) -> MutBumpVecRev<u32> {
+    fn from_array_in(bump: &mut Bump) -> MutBumpVecRev<u32, &mut Bump> {
         mut_bump_vec_rev![in bump; 1, 2, 3]
     }
 
-    fn from_elem_in(bump: &mut Bump) -> MutBumpVecRev<u32> {
+    fn from_elem_in(bump: &mut Bump) -> MutBumpVecRev<u32, &mut Bump> {
         mut_bump_vec_rev![in bump; 3; 5]
     }
 
-    fn try_new_in(bump: &mut Bump) -> Result<MutBumpVecRev<u32>> {
+    fn try_new_in(bump: &mut Bump) -> Result<MutBumpVecRev<u32, &mut Bump>> {
         mut_bump_vec_rev![try in bump]
     }
 
-    fn try_from_array_in(bump: &mut Bump) -> Result<MutBumpVecRev<u32>> {
+    fn try_from_array_in(bump: &mut Bump) -> Result<MutBumpVecRev<u32, &mut Bump>> {
         mut_bump_vec_rev![try in bump; 1, 2, 3]
     }
 
-    fn try_from_elem_in(bump: &mut Bump) -> Result<MutBumpVecRev<u32>> {
+    fn try_from_elem_in(bump: &mut Bump) -> Result<MutBumpVecRev<u32, &mut Bump>> {
         mut_bump_vec_rev![try in bump; 3; 5]
     }
 }
@@ -1054,7 +1054,7 @@ fn min_non_zero_cap() {
 
         {
             let mut bump = bump_with_remaining_capacity(size_of::<T>() * expected_capacity);
-            let mut vec: MutBumpVecRev<T> = MutBumpVecRev::new_in(&mut bump);
+            let mut vec: MutBumpVecRev<T, _> = MutBumpVecRev::new_in(&mut bump);
             vec.push_with(Default::default);
             assert_eq!(vec.capacity(), expected_capacity, "{}", std::any::type_name::<T>());
             drop(vec);
