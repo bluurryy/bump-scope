@@ -5,7 +5,6 @@
     "abcdecde",
     "abcdecdeab",
     "abcdecdeabecde",
-    "abcประเทศไทย",
     "alloc",
     "arrayref",
     "backshift",
@@ -60,7 +59,6 @@
     "nonoverlapping",
     "nonoverlappingly",
     "nushell",
-    "oopsie",
     "orld",
     "overaligned",
     "Peekable",
@@ -88,6 +86,7 @@
     "tlsv",
     "trybuild",
     "Uninit",
+    "uninlined",
     "unitialized",
     "unsize",
     "Unsized",
@@ -96,12 +95,8 @@
     "valgrind",
     "Vec's",
     "Vecs",
-    "Việt",
     "vtable",
     "zerocopy",
-    "Zmiri",
-    "ประเทศไทย",
-    "ศไทย",
-    "ศไทย中华Việt"
+    "Zmiri"
   ]
 }
