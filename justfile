@@ -32,7 +32,7 @@ check-fmt:
   cd fuzz; cargo fmt --check
 
 check-clippy:
-  cargo clippy --tests
+  cargo clippy --tests --all-features
   cargo clippy --tests --no-default-features
   cargo clippy --tests --no-default-features --features alloc
   cd crates/fuzzing-support; cargo clippy --tests

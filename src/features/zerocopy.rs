@@ -20,6 +20,7 @@ where
     /// let init = uninit.init_zeroed();
     /// assert_eq!(*init, 0);
     /// ```
+    #[must_use]
     pub fn init_zeroed(self) -> BumpBox<'a, T> {
         unsafe {
             self.ptr.as_ptr().write_bytes(0, 1);
@@ -43,6 +44,7 @@ where
     /// let init = uninit.init_zeroed();
     /// assert_eq!(*init, [0; 10]);
     /// ```
+    #[must_use]
     pub fn init_zeroed(self) -> BumpBox<'a, [T]> {
         unsafe {
             let len = self.len();
