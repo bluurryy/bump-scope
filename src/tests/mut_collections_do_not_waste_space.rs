@@ -10,7 +10,7 @@ fn vec<const UP: bool>() {
     for size in [0, 100, 200, 300, 400] {
         bump.reset();
 
-        let mut vec: MutBumpVec<u8, Global, 1, UP> = MutBumpVec::new_in(&mut bump);
+        let mut vec: MutBumpVec<u8, _> = MutBumpVec::new_in(&mut bump);
         vec.extend(iter::repeat(0).take(size));
         assert_eq!(vec.stats().allocated(), 0); // `Mut*` allocations don't bump the pointer
         _ = vec.into_slice();

@@ -1517,7 +1517,7 @@ impl<'a, T, const N: usize> FixedBumpVec<'a, [T; N]> {
     /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let mut vec = mut_bump_vec![in bump; [1, 2, 3], [4, 5, 6], [7, 8, 9]];
+    /// let mut vec = mut_bump_vec![in &mut bump; [1, 2, 3], [4, 5, 6], [7, 8, 9]];
     /// assert_eq!(vec.pop(), Some([7, 8, 9]));
     ///
     /// let mut flattened = vec.into_flattened();

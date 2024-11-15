@@ -62,6 +62,20 @@ impl<T> RawFixedBumpVec<T> {
         }
     }
 
+    // TODO take allocator by immutable
+    #[inline(always)]
+    pub(crate) unsafe fn allocate_greedy<B: ErrorBehavior>(
+        allocator: &mut impl BumpAllocator,
+        len: usize,
+    ) -> Result<Self, B> {
+        let allocation = B::allocate_slice_greedy::<T>(allocator, len)?;
+
+        Ok(Self {
+            initialized: RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(nonnull::as_non_null_ptr(allocation), 0)),
+            capacity: allocation.len(),
+        })
+    }
+
     #[inline(always)]
     pub(crate) fn as_ptr(&self) -> *const T {
         self.initialized.as_non_null_ptr().as_ptr().cast()

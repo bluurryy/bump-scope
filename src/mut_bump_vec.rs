@@ -1,14 +1,20 @@
+mod into_iter;
+
+pub use into_iter::IntoIter;
+
 use crate::{
     error_behavior_generic_methods_allocation_failure, min_non_zero_cap, owned_slice,
     polyfill::{nonnull, pointer, slice},
-    BaseAllocator, BumpBox, BumpScope, ErrorBehavior, FixedBumpVec, GuaranteedAllocatedStats, MinimumAlignment, NoDrop,
-    SetLenOnDropByPtr, SizedTypeProperties, Stats, SupportedMinimumAlignment,
+    raw_bump_box::RawBumpBox,
+    raw_fixed_bump_vec::RawFixedBumpVec,
+    BumpAllocator, BumpAllocatorScope, BumpBox, ErrorBehavior, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
     fmt::Debug,
     hash::Hash,
     iter,
+    marker::PhantomData,
     mem::{ManuallyDrop, MaybeUninit},
     ops::{Deref, DerefMut, Index, IndexMut, RangeBounds},
     panic::{RefUnwindSafe, UnwindSafe},
@@ -34,7 +40,7 @@ use core::{
 /// ```
 /// # use bump_scope::{ mut_bump_vec, Bump, MutBumpVec };
 /// # let mut bump: Bump = Bump::new();
-/// let vec: MutBumpVec<i32> = mut_bump_vec![in bump];
+/// let vec: MutBumpVec<i32, _> = mut_bump_vec![in &mut bump];
 /// assert!(vec.is_empty());
 /// ```
 ///
@@ -43,7 +49,7 @@ use core::{
 /// ```
 /// # use bump_scope::{ mut_bump_vec, Bump };
 /// # let mut bump: Bump = Bump::new();
-/// let vec = mut_bump_vec![in bump; 1, 2, 3];
+/// let vec = mut_bump_vec![in &mut bump; 1, 2, 3];
 /// assert_eq!(vec[0], 1);
 /// assert_eq!(vec[1], 2);
 /// assert_eq!(vec[2], 3);
@@ -54,7 +60,7 @@ use core::{
 /// ```
 /// # use bump_scope::{ mut_bump_vec, Bump };
 /// # let mut bump: Bump = Bump::new();
-/// let vec = mut_bump_vec![in bump; 1; 3];
+/// let vec = mut_bump_vec![in &mut bump; 1; 3];
 /// assert_eq!(vec, [1, 1, 1]);
 /// ```
 ///
@@ -64,124 +70,88 @@ use core::{
 ///
 /// This will use `clone` to duplicate an expression, so one should be careful
 /// using this with types having a nonstandard `Clone` implementation. For
-/// example, `mut_bump_vec![in bump; Rc::new(1); 5]` will create a vector of five references
+/// example, `mut_bump_vec![in &mut bump; Rc::new(1); 5]` will create a vector of five references
 /// to the same boxed integer value, not five references pointing to independently
 /// boxed integers.
 ///
-/// Also, note that `mut_bump_vec![in bump; expr; 0]` is allowed, and produces an empty vector.
+/// Also, note that `mut_bump_vec![in &mut bump; expr; 0]` is allowed, and produces an empty vector.
 /// This will still evaluate `expr`, however, and immediately drop the resulting value, so
 /// be mindful of side effects.
 #[macro_export]
 macro_rules! mut_bump_vec {
     [in $bump:expr] => {
-        $crate::MutBumpVec::new_in($bump.as_mut_scope())
+        $crate::MutBumpVec::new_in($bump)
     };
     [in $bump:expr; $($values:expr),* $(,)?] => {
-        $crate::MutBumpVec::from_array_in([$($values),*], $bump.as_mut_scope())
+        $crate::MutBumpVec::from_array_in([$($values),*], $bump)
     };
     [in $bump:expr; $value:expr; $count:expr] => {
-        $crate::MutBumpVec::from_elem_in($value, $count, $bump.as_mut_scope())
+        $crate::MutBumpVec::from_elem_in($value, $count, $bump)
     };
     [try in $bump:expr] => {
-        Ok::<_, $crate::allocator_api2::alloc::AllocError>($crate::MutBumpVec::new_in($bump.as_mut_scope()))
+        Ok::<_, $crate::allocator_api2::alloc::AllocError>($crate::MutBumpVec::new_in($bump))
     };
     [try in $bump:expr; $($values:expr),* $(,)?] => {
-        $crate::MutBumpVec::try_from_array_in([$($values),*], $bump.as_mut_scope())
+        $crate::MutBumpVec::try_from_array_in([$($values),*], $bump)
     };
     [try in $bump:expr; $value:expr; $count:expr] => {
-        $crate::MutBumpVec::try_from_elem_in($value, $count, $bump.as_mut_scope())
+        $crate::MutBumpVec::try_from_elem_in($value, $count, $bump)
     };
 }
 
-macro_rules! mut_bump_vec_declaration {
-    ($($allocator_parameter:tt)*) => {
-        /// A type like [`BumpVec`](crate::BumpVec), optimized for a `&mut Bump(Scope)`.
-        ///
-        /// It has the advantage that it can assume the entire remaining chunk space as its capacity.
-        /// It also only needs to update the bump pointer when calling <code>[into_](Self::into_slice)([boxed_](Self::into_boxed_slice))[slice](Self::into_slice)</code>.
-        ///
-        /// # Examples
-        ///
-        /// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
-        /// ```
-        /// use bump_scope::{ Bump, MutBumpVec };
-        /// let mut bump: Bump = Bump::new();
-        /// let mut vec = MutBumpVec::new_in(&mut bump);
-        ///
-        /// vec.push(1);
-        /// vec.push(2);
-        /// vec.push(3);
-        ///
-        /// let slice: &[i32] = vec.into_slice();
-        ///
-        /// assert_eq!(slice, [1, 2, 3]);
-        /// ```
-        //
-        // MutBumpVec never actually moves a bump pointer.
-        // It may force allocation of a new chunk, but it does not move the pointer within.
-        // So we don't need to move the bump pointer when dropping.
-        //
-        // If we want to reset the bump pointer to a previous chunk, we use a bump scope.
-        // We could do it here, by resetting to the last non-empty chunk but that would require a loop.
-        // Chunk allocations are supposed to be very rare, so this wouldn't be worth it.
-        #[repr(C)]
-        pub struct MutBumpVec<
-            'b,
-            'a: 'b,
-            T,
-            $($allocator_parameter)*,
-            const MIN_ALIGN: usize = 1,
-            const UP: bool = true,
-            const GUARANTEED_ALLOCATED: bool = true,
-        > {
-            fixed: FixedBumpVec<'b, T>,
-            pub(crate) bump: &'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
-        }
-    };
+/// A type like [`BumpVec`](crate::BumpVec), optimized for a `&mut Bump(Scope)`.
+///
+/// It has the advantage that it can assume the entire remaining chunk space as its capacity.
+/// It also only needs to update the bump pointer when calling <code>[into_](Self::into_slice)([boxed_](Self::into_boxed_slice))[slice](Self::into_slice)</code>.
+///
+/// # Examples
+///
+/// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
+/// ```
+/// use bump_scope::{ Bump, MutBumpVec };
+/// let mut bump: Bump = Bump::new();
+/// let mut vec = MutBumpVec::new_in(&mut bump);
+///
+/// vec.push(1);
+/// vec.push(2);
+/// vec.push(3);
+///
+/// let slice: &[i32] = vec.into_slice();
+///
+/// assert_eq!(slice, [1, 2, 3]);
+/// ```
+//
+// MutBumpVec never actually moves a bump pointer.
+// It may force allocation of a new chunk, but it does not move the pointer within.
+// So we don't need to move the bump pointer when dropping.
+//
+// If we want to reset the bump pointer to a previous chunk, we use a bump scope.
+// We could do it here, by resetting to the last non-empty chunk but that would require a loop.
+// Chunk allocations are supposed to be very rare, so this wouldn't be worth it.
+#[repr(C)]
+pub struct MutBumpVec<T, A> {
+    fixed: RawFixedBumpVec<T>,
+    pub(crate) allocator: A,
 }
 
-crate::maybe_default_allocator!(mut_bump_vec_declaration);
+impl<T: UnwindSafe, A: UnwindSafe> UnwindSafe for MutBumpVec<T, A> {}
+impl<T: RefUnwindSafe, A: RefUnwindSafe> RefUnwindSafe for MutBumpVec<T, A> {}
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> UnwindSafe
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    T: UnwindSafe,
-    A: UnwindSafe,
-{
-}
-
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> RefUnwindSafe
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    T: RefUnwindSafe,
-    A: RefUnwindSafe,
-{
-}
-
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Deref
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-{
+impl<T, A> Deref for MutBumpVec<T, A> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
-        &self.fixed
+        unsafe { self.fixed.cook_ref() }
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> DerefMut
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-{
+impl<T, A> DerefMut for MutBumpVec<T, A> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.fixed
+        unsafe { self.fixed.cook_mut() }
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<T, A: BumpAllocator> MutBumpVec<T, A> {
     /// Constructs a new empty `MutBumpVec<T>`.
     ///
     /// The vector will not allocate until elements are pushed onto it.
@@ -192,14 +162,14 @@ where
     /// # use bump_scope::{ Bump, MutBumpVec };
     /// # let mut bump: Bump = Bump::new();
     /// # #[allow(unused_mut)]
-    /// let mut vec = MutBumpVec::<i32>::new_in(&mut bump);
+    /// let mut vec = MutBumpVec::<i32, _>::new_in(&mut bump);
     /// # let _ = vec;
     /// ```
     #[inline]
-    pub fn new_in(bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
+    pub fn new_in(allocator: A) -> Self {
         Self {
-            fixed: FixedBumpVec::EMPTY,
-            bump: bump.into(),
+            fixed: RawFixedBumpVec::EMPTY,
+            allocator,
         }
     }
 
@@ -223,31 +193,26 @@ where
         for fn with_capacity_in
         for fn try_with_capacity_in
         #[inline]
-        use fn generic_with_capacity_in(capacity: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
-            let bump = bump.into();
+        use fn generic_with_capacity_in(capacity: usize, allocator: A) -> Self {
+            let mut allocator = allocator;
 
             if T::IS_ZST {
                 return Ok(Self {
-                    fixed: FixedBumpVec::EMPTY,
-                    bump,
+                    fixed: RawFixedBumpVec::EMPTY,
+                    allocator,
                 });
             }
 
             if capacity == 0 {
                 return Ok(Self {
-                    fixed: FixedBumpVec::EMPTY,
-                    bump,
+                    fixed: RawFixedBumpVec::EMPTY,
+                    allocator,
                 });
             }
 
-            let (ptr, capacity) = bump.alloc_greedy(capacity)?;
-
             Ok(Self {
-                fixed: FixedBumpVec {
-                    initialized: unsafe{ BumpBox::from_raw(nonnull::slice_from_raw_parts(ptr, 0)) },
-                    capacity,
-                },
-                bump,
+                fixed: unsafe { RawFixedBumpVec::allocate_greedy(&mut allocator, capacity)? },
+                allocator,
             })
         }
 
@@ -256,11 +221,11 @@ where
         for fn from_elem_in
         for fn try_from_elem_in
         #[inline]
-        use fn generic_from_elem_in(value: T, count: usize, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self
+        use fn generic_from_elem_in(value: T, count: usize, allocator: A) -> Self
         where {
             T: Clone
         } in {
-            let mut vec = Self::generic_with_capacity_in(count, bump)?;
+            let mut vec = Self::generic_with_capacity_in(count, allocator)?;
 
             unsafe {
                 if count != 0 {
@@ -280,37 +245,38 @@ where
         for fn from_array_in
         for fn try_from_array_in
         #[inline]
-        use fn generic_from_array_in<{const N: usize}>(array: [T; N], bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self {
+        use fn generic_from_array_in<{const N: usize}>(array: [T; N], allocator: A) -> Self {
             #![allow(clippy::needless_pass_by_value)]
             #![allow(clippy::needless_pass_by_ref_mut)]
 
             let array = ManuallyDrop::new(array);
-            let bump = bump.into();
+            let mut allocator = allocator;
 
             if T::IS_ZST {
                 return Ok(Self {
-                    fixed: FixedBumpVec { initialized: unsafe { BumpBox::from_raw(nonnull::slice_from_raw_parts(NonNull::dangling(), N)) }, capacity: usize::MAX },
-                    bump,
+                    fixed: RawFixedBumpVec { initialized: unsafe { RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(NonNull::dangling(), N)) }, capacity: usize::MAX },
+                    allocator,
                 });
             }
 
             if N == 0 {
                 return Ok(Self {
-                    fixed: FixedBumpVec::EMPTY,
-                    bump,
+                    fixed: RawFixedBumpVec::EMPTY,
+                    allocator,
                 });
             }
 
-            let (ptr, capacity) = bump.alloc_greedy(N)?;
+            let mut fixed = unsafe { RawFixedBumpVec::allocate_greedy(&mut allocator, N)? };
 
             let src = array.as_ptr();
-            let dst = ptr.as_ptr();
-            unsafe { ptr::copy_nonoverlapping(src, dst, N) };
+            let dst = fixed.initialized.ptr.cast::<T>().as_ptr();
 
-            Ok(Self {
-                fixed: FixedBumpVec { initialized: unsafe { BumpBox::from_raw(nonnull::slice_from_raw_parts(ptr, N)) }, capacity },
-                bump,
-            })
+            unsafe {
+                ptr::copy_nonoverlapping(src, dst, N);
+                fixed.set_len(N);
+            }
+
+            Ok(Self { fixed, allocator })
         }
 
         /// Create a new [`MutBumpVec`] whose elements are taken from an iterator and allocated in the given `bump`.
@@ -336,13 +302,13 @@ where
         /// ```
         for fn try_from_iter_in
         #[inline]
-        use fn generic_from_iter_in<{I}>(iter: I, bump: impl Into<&'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>) -> Self
+        use fn generic_from_iter_in<{I}>(iter: I, allocator: A) -> Self
         where {
             I: IntoIterator<Item = T>
         } in {
             let iter = iter.into_iter();
             let capacity = iter.size_hint().0;
-            let mut vec = Self::generic_with_capacity_in(capacity, bump)?;
+            let mut vec = Self::generic_with_capacity_in(capacity, allocator)?;
 
             for value in iter {
                 vec.generic_push(value)?;
@@ -353,9 +319,7 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-{
+impl<T, A> MutBumpVec<T, A> {
     /// Returns the total number of elements the vector can hold without
     /// reallocating.
     ///
@@ -364,13 +328,13 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// ```
     /// # use bump_scope::{ Bump, MutBumpVec };
     /// # let mut bump: Bump = Bump::new();
-    /// let vec = MutBumpVec::<i32>::with_capacity_in(2048, &mut bump);
+    /// let vec = MutBumpVec::<i32, _>::with_capacity_in(2048, &mut bump);
     /// assert!(vec.capacity() >= 2048);
     /// ```
     #[must_use]
     #[inline(always)]
     pub const fn capacity(&self) -> usize {
-        self.fixed.capacity()
+        self.fixed.capacity
     }
 
     /// Returns the number of elements in the vector, also referred to
@@ -385,14 +349,14 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     #[must_use]
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
-        self.fixed.is_empty()
+        self.fixed.len() == 0
     }
 
     /// Removes the last element from a vector and returns it, or [`None`] if it
     /// is empty.
     #[inline(always)]
     pub fn pop(&mut self) -> Option<T> {
-        self.fixed.pop()
+        unsafe { self.fixed.cook_mut() }.pop()
     }
 
     /// Clears the vector, removing all values.
@@ -401,13 +365,13 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// ```
     /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
-    /// let mut vec = mut_bump_vec![in bump; 1, 2, 3];
+    /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
     /// vec.clear();
     /// assert!(vec.is_empty());
     /// ```
     #[inline(always)]
     pub fn clear(&mut self) {
-        self.fixed.clear();
+        unsafe { self.fixed.cook_mut() }.clear();
     }
 
     /// Shortens the vector, keeping the first `len` elements and dropping
@@ -430,7 +394,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let mut vec = mut_bump_vec![in bump; 1, 2, 3, 4, 5];
+    /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4, 5];
     /// vec.truncate(2);
     /// assert_eq!(vec, [1, 2]);
     /// ```
@@ -442,7 +406,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let mut vec = mut_bump_vec![in bump; 1, 2, 3];
+    /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
     /// vec.truncate(8);
     /// assert_eq!(vec, [1, 2, 3]);
     /// ```
@@ -454,7 +418,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let mut vec = mut_bump_vec![in bump; 1, 2, 3];
+    /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
     /// vec.truncate(0);
     /// assert_eq!(vec, []);
     /// ```
@@ -462,7 +426,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// [`clear`]: Self::clear
     /// [`drain`]: Self::drain
     pub fn truncate(&mut self, len: usize) {
-        self.fixed.truncate(len);
+        unsafe { self.fixed.cook_mut() }.truncate(len);
     }
 
     /// Removes and returns the element at position `index` within the vector,
@@ -481,15 +445,14 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// ```
     /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
-    /// let mut v = mut_bump_vec![in bump; 1, 2, 3];
+    /// let mut v = mut_bump_vec![in &mut bump; 1, 2, 3];
     /// assert_eq!(v.remove(1), 2);
     /// assert_eq!(v, [1, 3]);
     /// ```
     #[track_caller]
     pub fn remove(&mut self, index: usize) -> T {
-        self.fixed.remove(index)
+        unsafe { self.fixed.cook_mut() }.remove(index)
     }
-
     /// Removes an element from the vector and returns it.
     ///
     /// The removed element is replaced by the last element of the vector.
@@ -507,7 +470,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let mut v = mut_bump_vec![in bump; "foo", "bar", "baz", "qux"];
+    /// let mut v = mut_bump_vec![in &mut bump; "foo", "bar", "baz", "qux"];
     ///
     /// assert_eq!(v.swap_remove(1), "bar");
     /// assert_eq!(v, ["foo", "qux", "baz"]);
@@ -519,7 +482,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// [`remove`]: Self::remove
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> T {
-        self.fixed.swap_remove(index)
+        unsafe { self.fixed.cook_mut() }.swap_remove(index)
     }
 
     /// Extracts a slice containing the entire vector.
@@ -528,7 +491,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     #[must_use]
     #[inline(always)]
     pub const fn as_slice(&self) -> &[T] {
-        self.fixed.as_slice()
+        unsafe { self.fixed.cook_ref() }.as_slice()
     }
 
     /// Extracts a mutable slice containing the entire vector.
@@ -537,7 +500,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     #[must_use]
     #[inline(always)]
     pub fn as_mut_slice(&mut self) -> &mut [T] {
-        self.fixed.as_mut_slice()
+        unsafe { self.fixed.cook_mut() }.as_mut_slice()
     }
 
     /// Returns a raw pointer to the slice, or a dangling raw pointer
@@ -568,7 +531,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        self.fixed.as_non_null_slice()
+        self.fixed.initialized.ptr
     }
 
     /// Appends an element to the back of the collection.
@@ -577,7 +540,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// Vector must not be full.
     #[inline(always)]
     pub unsafe fn unchecked_push(&mut self, value: T) {
-        self.fixed.unchecked_push(value);
+        unsafe { self.fixed.cook_mut() }.unchecked_push(value);
     }
 
     /// Appends an element to the back of the collection.
@@ -586,7 +549,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     /// Vector must not be full.
     #[inline(always)]
     pub unsafe fn unchecked_push_with(&mut self, f: impl FnOnce() -> T) {
-        self.fixed.unchecked_push_with(f);
+        unsafe { self.fixed.cook_mut() }.unchecked_push_with(f);
     }
 
     /// Forces the length of the vector to `new_len`.
@@ -612,16 +575,11 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
 
     #[inline]
     pub(crate) unsafe fn inc_len(&mut self, amount: usize) {
-        self.fixed.inc_len(amount);
+        unsafe { self.fixed.cook_mut() }.inc_len(amount);
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<T, A: BumpAllocator> MutBumpVec<T, A> {
     error_behavior_generic_methods_allocation_failure! {
         /// Appends an element to the back of a collection.
         impl
@@ -1196,13 +1154,13 @@ where
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::new();
         /// {
-        ///     let mut vec = mut_bump_vec![in bump; 1, 2, 3];
+        ///     let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
         ///     vec.resize_zeroed(5);
         ///     assert_eq!(vec, [1, 2, 3, 0, 0]);
         /// }
         ///
         /// {
-        ///    let mut vec = mut_bump_vec![in bump; 1, 2, 3];
+        ///    let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
         ///    vec.resize_zeroed(2);
         ///    assert_eq!(vec, [1, 2]);
         /// }
@@ -1301,10 +1259,10 @@ where
     /// ```
     /// # use bump_scope::{ Bump, MutBumpVec };
     /// # let mut bump: Bump = Bump::new();
-    /// let a: MutBumpVec<u32> = MutBumpVec::from_iter_in([0, 1, 2], &mut bump);
+    /// let a: MutBumpVec<u32, _> = MutBumpVec::from_iter_in([0, 1, 2], &mut bump);
     /// let a_capacity = a.capacity();
     ///
-    /// let b: MutBumpVec<u16> = a.map_in_place(|i| i as u16);
+    /// let b: MutBumpVec<u16, _> = a.map_in_place(|i| i as u16);
     /// assert_eq!(b.capacity(), a_capacity * 2);
     ///
     /// assert_eq!(b, [0, 1, 2]);
@@ -1314,14 +1272,14 @@ where
     /// ```compile_fail,E0080
     /// # use bump_scope::{ Bump, MutBumpVec };
     /// # let mut bump: Bump = Bump::new();
-    /// let a: MutBumpVec<u16> = MutBumpVec::from_iter_in([0, 1, 2], &mut bump);
-    /// let b: MutBumpVec<u32> = a.map_in_place(|i| i as u32);
+    /// let a: MutBumpVec<u16, _> = MutBumpVec::from_iter_in([0, 1, 2], &mut bump);
+    /// let b: MutBumpVec<u32, _> = a.map_in_place(|i| i as u32);
     /// # _ = b;
     /// ```
-    pub fn map_in_place<U>(self, f: impl FnMut(T) -> U) -> MutBumpVec<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
-        let MutBumpVec { fixed, bump } = self;
-        let fixed = fixed.map_in_place(f);
-        MutBumpVec { fixed, bump }
+    pub fn map_in_place<U>(self, f: impl FnMut(T) -> U) -> MutBumpVec<U, A> {
+        let MutBumpVec { fixed, allocator } = self;
+        let fixed = unsafe { RawFixedBumpVec::from_cooked(fixed.cook().map_in_place(f)) };
+        MutBumpVec { fixed, allocator }
     }
 
     /// Extend the vector by `n` clones of value.
@@ -1331,7 +1289,7 @@ where
     {
         self.generic_reserve(n)?;
         unsafe {
-            self.fixed.extend_with_unchecked(n, value);
+            self.fixed.cook_mut().extend_with_unchecked(n, value);
         }
         Ok(())
     }
@@ -1400,13 +1358,10 @@ where
     ///
     /// `new_capacity` must be greater than the current capacity.
     unsafe fn generic_grow_to<E: ErrorBehavior>(&mut self, new_capacity: usize) -> Result<(), E> {
-        let (ptr, capacity) = self.bump.alloc_greedy::<E, T>(new_capacity)?;
-
-        ptr::copy_nonoverlapping(self.as_ptr(), ptr.as_ptr(), self.len());
-
-        self.fixed.initialized.set_ptr(ptr);
-        self.fixed.capacity = capacity;
-
+        let mut new_vec = RawFixedBumpVec::allocate_greedy(&mut self.allocator, new_capacity)?;
+        ptr::copy_nonoverlapping(self.as_ptr(), new_vec.as_mut_ptr(), self.len());
+        new_vec.set_len(self.len());
+        self.fixed = new_vec;
         Ok(())
     }
 
@@ -1415,48 +1370,23 @@ where
     fn into_slice_ptr(self) -> NonNull<[T]> {
         let mut this = ManuallyDrop::new(self);
 
-        if T::IS_ZST {
-            return nonnull::slice_from_raw_parts(NonNull::dangling(), this.len());
+        unsafe {
+            if T::IS_ZST {
+                return nonnull::slice_from_raw_parts(NonNull::dangling(), this.len());
+            }
+
+            if this.capacity() == 0 {
+                // We didn't touch the allocator, so no need to do anything.
+                debug_assert_eq!(this.as_non_null_ptr(), NonNull::<T>::dangling());
+                return nonnull::slice_from_raw_parts(NonNull::<T>::dangling(), 0);
+            }
+
+            let ptr = this.as_non_null_ptr();
+            let len = this.len();
+            let cap = this.capacity();
+
+            this.allocator.use_reserved_allocation(ptr, len, cap)
         }
-
-        if this.capacity() == 0 {
-            // We didn't touch the bump, so no need to do anything.
-            debug_assert_eq!(this.as_non_null_ptr(), NonNull::<T>::dangling());
-            return nonnull::slice_from_raw_parts(NonNull::<T>::dangling(), 0);
-        }
-
-        let ptr = this.as_non_null_ptr();
-        let len = this.len();
-        let cap = this.capacity();
-
-        unsafe { this.bump.consolidate_greed(ptr, len, cap) }
-    }
-
-    /// Turns this `MutBumpVec<T>` into a `BumpBox<[T]>`.
-    ///
-    /// Unused capacity does not take up space.<br/>
-    /// When [bumping downwards](crate#bumping-upwards-or-downwards) this needs to shift all elements to the other end of the chunk.
-    #[must_use]
-    #[inline(always)]
-    pub fn into_boxed_slice(self) -> BumpBox<'a, [T]> {
-        unsafe { BumpBox::from_raw(self.into_slice_ptr()) }
-    }
-
-    /// Turns this `MutBumpVec<T>` into a `&[T]` that is live for this bump scope.
-    ///
-    /// Unused capacity does not take up space.<br/>
-    /// When [bumping downwards](crate#bumping-upwards-or-downwards) this needs to shift all elements to the other end of the chunk.
-    ///
-    /// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
-    ///
-    /// `!NoDrop` types can still be turned into slices via <code>BumpBox::[leak](BumpBox::leak)(vec.[into_boxed_slice](Self::into_boxed_slice)())</code>.
-    #[must_use]
-    #[inline(always)]
-    pub fn into_slice(self) -> &'a mut [T]
-    where
-        [T]: NoDrop,
-    {
-        self.into_boxed_slice().into_mut()
     }
 
     /// # Safety
@@ -1510,7 +1440,7 @@ where
     /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let mut vec = mut_bump_vec![in bump; 1, 2, 3, 4];
+    /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4];
     ///
     /// vec.retain(|x| if *x <= 3 {
     ///     *x += 1;
@@ -1526,7 +1456,7 @@ where
     where
         F: FnMut(&mut T) -> bool,
     {
-        self.fixed.retain(f)
+        unsafe { self.fixed.cook_mut() }.retain(f)
     }
 
     /// Removes the specified range from the vector in bulk, returning all
@@ -1554,7 +1484,7 @@ where
     /// # let mut bump1: Bump = Bump::new();
     /// # let bump2: Bump = Bump::new();
     /// #
-    /// let mut v = mut_bump_vec![in bump1; 1, 2, 3];
+    /// let mut v = mut_bump_vec![in &mut bump1; 1, 2, 3];
     /// let u = bump2.alloc_iter(v.drain(1..));
     /// assert_eq!(v, [1]);
     /// assert_eq!(u, [2, 3]);
@@ -1567,7 +1497,7 @@ where
     where
         R: RangeBounds<usize>,
     {
-        self.fixed.drain(range)
+        unsafe { self.fixed.cook_mut() }.drain(range)
     }
 
     /// Creates an iterator which uses a closure to determine if an element should be removed.
@@ -1586,7 +1516,7 @@ where
     /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let some_predicate = |x: &mut i32| { *x == 2 || *x == 3 || *x == 6 };
     /// # let mut bump: Bump = Bump::new();
-    /// # let mut vec = mut_bump_vec![in bump; 1, 2, 3, 4, 5, 6];
+    /// # let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4, 5, 6];
     /// let mut i = 0;
     /// while i < vec.len() {
     ///     if some_predicate(&mut vec[i]) {
@@ -1614,7 +1544,7 @@ where
     /// ```
     /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
-    /// let mut numbers = mut_bump_vec![in bump; 1, 2, 3, 4, 5, 6, 8, 9, 11, 13, 14, 15];
+    /// let mut numbers = mut_bump_vec![in &mut bump; 1, 2, 3, 4, 5, 6, 8, 9, 11, 13, 14, 15];
     ///
     /// let evens = numbers.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
     /// let odds = numbers;
@@ -1628,7 +1558,7 @@ where
     where
         F: FnMut(&mut T) -> bool,
     {
-        self.fixed.extract_if(filter)
+        unsafe { self.fixed.cook_mut() }.extract_if(filter)
     }
 
     /// Removes consecutive repeated elements in the vector according to the
@@ -1641,7 +1571,7 @@ where
     /// ```
     /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
-    /// let mut vec = mut_bump_vec![in bump; 1, 2, 2, 3, 2];
+    /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 2, 3, 2];
     ///
     /// vec.dedup();
     ///
@@ -1652,7 +1582,7 @@ where
     where
         T: PartialEq,
     {
-        self.fixed.dedup();
+        unsafe { self.fixed.cook_mut() }.dedup();
     }
 
     /// Removes all but the first of consecutive elements in the vector that resolve to the same
@@ -1665,7 +1595,7 @@ where
     /// ```
     /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
-    /// let mut vec = mut_bump_vec![in bump; 10, 20, 21, 30, 20];
+    /// let mut vec = mut_bump_vec![in &mut bump; 10, 20, 21, 30, 20];
     ///
     /// vec.dedup_by_key(|i| *i / 10);
     ///
@@ -1677,7 +1607,7 @@ where
         F: FnMut(&mut T) -> K,
         K: PartialEq,
     {
-        self.fixed.dedup_by_key(key);
+        unsafe { self.fixed.cook_mut() }.dedup_by_key(key);
     }
 
     /// Removes all but the first of consecutive elements in the vector satisfying a given equality
@@ -1694,7 +1624,7 @@ where
     /// ```
     /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
-    /// let mut vec = mut_bump_vec![in bump; "foo", "bar", "Bar", "baz", "bar"];
+    /// let mut vec = mut_bump_vec![in &mut bump; "foo", "bar", "Bar", "baz", "bar"];
     ///
     /// vec.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
     ///
@@ -1704,7 +1634,7 @@ where
     where
         F: FnMut(&mut T, &mut T) -> bool,
     {
-        self.fixed.dedup_by(same_bucket);
+        unsafe { self.fixed.cook_mut() }.dedup_by(same_bucket);
     }
 
     /// Returns the remaining spare capacity of the vector as a slice of
@@ -1794,51 +1724,46 @@ where
         }
     }
 
-    /// Returns a reference to the base allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn allocator(&self) -> &A {
-        self.bump.allocator()
-    }
-}
-
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     ///
     /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'a> {
-        self.bump.stats()
+    pub fn stats(&self) -> Stats {
+        self.allocator.stats()
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool> MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator,
-{
-    /// Returns a type which provides statistics about the memory usage of the bump allocator.
+impl<'a, T, A: BumpAllocatorScope<'a>> MutBumpVec<T, A> {
+    /// Turns this `MutBumpVec<T>` into a `BumpBox<[T]>`.
     ///
-    /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
+    /// Unused capacity does not take up space.<br/>
+    /// When [bumping downwards](crate#bumping-upwards-or-downwards) this needs to shift all elements to the other end of the chunk.
     #[must_use]
     #[inline(always)]
-    pub fn guaranteed_allocated_stats(&self) -> GuaranteedAllocatedStats<'a> {
-        self.bump.guaranteed_allocated_stats()
+    pub fn into_boxed_slice(self) -> BumpBox<'a, [T]> {
+        unsafe { BumpBox::from_raw(self.into_slice_ptr()) }
+    }
+
+    /// Turns this `MutBumpVec<T>` into a `&[T]` that is live for this bump scope.
+    ///
+    /// Unused capacity does not take up space.<br/>
+    /// When [bumping downwards](crate#bumping-upwards-or-downwards) this needs to shift all elements to the other end of the chunk.
+    ///
+    /// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
+    ///
+    /// `!NoDrop` types can still be turned into slices via <code>BumpBox::[leak](BumpBox::leak)(vec.[into_boxed_slice](Self::into_boxed_slice)())</code>.
+    #[must_use]
+    #[inline(always)]
+    pub fn into_slice(self) -> &'a mut [T]
+    where
+        [T]: NoDrop,
+    {
+        self.into_boxed_slice().into_mut()
     }
 }
 
-impl<'b, 'a: 'b, T, A, const N: usize, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    MutBumpVec<'b, 'a, [T; N], A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<T, const N: usize, A> MutBumpVec<[T; N], A> {
     /// Takes a `MutBumpVec<[T; N]>` and flattens it into a `MutBumpVec<T>`.
     ///
     /// # Panics
@@ -1855,31 +1780,27 @@ where
     /// # use bump_scope::{ Bump, mut_bump_vec };
     /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let mut vec = mut_bump_vec![in bump; [1, 2, 3], [4, 5, 6], [7, 8, 9]];
+    /// let mut vec = mut_bump_vec![in &mut bump; [1, 2, 3], [4, 5, 6], [7, 8, 9]];
     /// assert_eq!(vec.pop(), Some([7, 8, 9]));
     ///
     /// let mut flattened = vec.into_flattened();
     /// assert_eq!(flattened.pop(), Some(6));
     /// ```
     #[must_use]
-    pub fn into_flattened(self) -> MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
-        let Self { fixed, bump } = self;
-        let fixed = fixed.into_flattened();
-        MutBumpVec { fixed, bump }
+    pub fn into_flattened(self) -> MutBumpVec<T, A> {
+        let Self { fixed, allocator } = self;
+        let fixed = unsafe { RawFixedBumpVec::from_cooked(fixed.cook().into_flattened()) };
+        MutBumpVec { fixed, allocator }
     }
 }
 
-impl<'b, 'a: 'b, T: Debug, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Debug
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-{
+impl<T: Debug, A> Debug for MutBumpVec<T, A> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Debug::fmt(self.as_slice(), f)
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, I: SliceIndex<[T]>> Index<I>
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-{
+impl<T, A: BumpAllocator, I: SliceIndex<[T]>> Index<I> for MutBumpVec<T, A> {
     type Output = I::Output;
 
     #[inline(always)]
@@ -1888,9 +1809,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, I: SliceIndex<[T]>>
-    IndexMut<I> for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-{
+impl<T, A: BumpAllocator, I: SliceIndex<[T]>> IndexMut<I> for MutBumpVec<T, A> {
     #[inline(always)]
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
         IndexMut::index_mut(self.as_mut_slice(), index)
@@ -1898,12 +1817,7 @@ impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Extend<T>
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED> + 'a,
-{
+impl<T, A: BumpAllocator> Extend<T> for MutBumpVec<T, A> {
     #[inline]
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         let iter = iter.into_iter();
@@ -1917,13 +1831,7 @@ where
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'b, 'a: 'b, 't, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Extend<&'t T>
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED> + 'a,
-    T: Clone + 't,
-{
+impl<'t, T: Clone + 't, A: BumpAllocator> Extend<&'t T> for MutBumpVec<T, A> {
     #[inline]
     fn extend<I: IntoIterator<Item = &'t T>>(&mut self, iter: I) {
         let iter = iter.into_iter();
@@ -1936,25 +1844,22 @@ where
     }
 }
 
-impl<'b0, 'a0: 'b0, 'b1, 'a1: 'b1, T, U, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>
-    PartialEq<MutBumpVec<'b1, 'a1, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>
-    for MutBumpVec<'b0, 'a0, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<T, U, A> PartialEq<MutBumpVec<U, A>> for MutBumpVec<T, A>
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &MutBumpVec<'b1, 'a1, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> bool {
+    fn eq(&self, other: &MutBumpVec<U, A>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &MutBumpVec<'b1, 'a1, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> bool {
+    fn ne(&self, other: &MutBumpVec<U, A>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'b, 'a: 'b, T, U, const N: usize, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>
-    PartialEq<[U; N]> for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<T, U, const N: usize, A> PartialEq<[U; N]> for MutBumpVec<T, A>
 where
     T: PartialEq<U>,
 {
@@ -1969,8 +1874,7 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, U, const N: usize, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>
-    PartialEq<&[U; N]> for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<T, U, const N: usize, A> PartialEq<&[U; N]> for MutBumpVec<T, A>
 where
     T: PartialEq<U>,
 {
@@ -1985,8 +1889,7 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, U, const N: usize, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>
-    PartialEq<&mut [U; N]> for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<T, U, const N: usize, A> PartialEq<&mut [U; N]> for MutBumpVec<T, A>
 where
     T: PartialEq<U>,
 {
@@ -2001,8 +1904,7 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> PartialEq<[U]>
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<T, U, A> PartialEq<[U]> for MutBumpVec<T, A>
 where
     T: PartialEq<U>,
 {
@@ -2017,8 +1919,7 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> PartialEq<&[U]>
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<T, U, A> PartialEq<&[U]> for MutBumpVec<T, A>
 where
     T: PartialEq<U>,
 {
@@ -2033,8 +1934,7 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> PartialEq<&mut [U]>
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<T, U, A> PartialEq<&mut [U]> for MutBumpVec<T, A>
 where
     T: PartialEq<U>,
 {
@@ -2049,61 +1949,54 @@ where
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>
-    PartialEq<MutBumpVec<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>> for [T]
+impl<T, U, A> PartialEq<MutBumpVec<U, A>> for [T]
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &MutBumpVec<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> bool {
+    fn eq(&self, other: &MutBumpVec<U, A>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &MutBumpVec<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> bool {
+    fn ne(&self, other: &MutBumpVec<U, A>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>
-    PartialEq<MutBumpVec<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>> for &[T]
+impl<T, U, A> PartialEq<MutBumpVec<U, A>> for &[T]
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &MutBumpVec<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> bool {
+    fn eq(&self, other: &MutBumpVec<U, A>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &MutBumpVec<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> bool {
+    fn ne(&self, other: &MutBumpVec<U, A>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'b, 'a: 'b, T, U, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>
-    PartialEq<MutBumpVec<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>> for &mut [T]
+impl<T, U, A> PartialEq<MutBumpVec<U, A>> for &mut [T]
 where
     T: PartialEq<U>,
 {
     #[inline(always)]
-    fn eq(&self, other: &MutBumpVec<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> bool {
+    fn eq(&self, other: &MutBumpVec<U, A>) -> bool {
         <[T] as PartialEq<[U]>>::eq(self, other)
     }
 
     #[inline(always)]
-    fn ne(&self, other: &MutBumpVec<'b, 'a, U, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> bool {
+    fn ne(&self, other: &MutBumpVec<U, A>) -> bool {
         <[T] as PartialEq<[U]>>::ne(self, other)
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> IntoIterator
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-{
+impl<T, A> IntoIterator for MutBumpVec<T, A> {
     type Item = T;
-    type IntoIter = owned_slice::IntoIter<'b, T>;
+    type IntoIter = IntoIter<T, A>;
 
     /// Returns an iterator that borrows the `BumpScope` mutably. So you can't use the `BumpScope` while iterating.
     /// The advantage is that the space the items took up is freed.
@@ -2114,13 +2007,33 @@ where
     /// [`into_boxed_slice`]: Self::into_boxed_slice
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
-        self.fixed.into_iter()
+        let Self { fixed, allocator } = self;
+        let slice = fixed.initialized.into_ptr();
+
+        unsafe {
+            if T::IS_ZST {
+                IntoIter {
+                    ptr: NonNull::dangling(),
+                    end: unsafe { nonnull::wrapping_byte_add(NonNull::dangling(), slice.len()) },
+                    allocator,
+                    marker: PhantomData,
+                }
+            } else {
+                let start = nonnull::as_non_null_ptr(slice);
+                let end = nonnull::add(start, slice.len());
+
+                IntoIter {
+                    ptr: start,
+                    end,
+                    allocator,
+                    marker: PhantomData,
+                }
+            }
+        }
     }
 }
 
-impl<'c, 'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> IntoIterator
-    for &'c MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-{
+impl<'c, T, A> IntoIterator for &'c MutBumpVec<T, A> {
     type Item = &'c T;
     type IntoIter = slice::Iter<'c, T>;
 
@@ -2130,9 +2043,7 @@ impl<'c, 'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANT
     }
 }
 
-impl<'c, 'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> IntoIterator
-    for &'c mut MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-{
+impl<'c, T, A> IntoIterator for &'c mut MutBumpVec<T, A> {
     type Item = &'c mut T;
     type IntoIter = slice::IterMut<'c, T>;
 
@@ -2142,45 +2053,35 @@ impl<'c, 'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANT
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> AsRef<[T]>
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-{
+impl<T, A> AsRef<[T]> for MutBumpVec<T, A> {
     #[inline(always)]
     fn as_ref(&self) -> &[T] {
         self
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> AsMut<[T]>
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-{
+impl<T, A> AsMut<[T]> for MutBumpVec<T, A> {
     #[inline(always)]
     fn as_mut(&mut self) -> &mut [T] {
         self
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Borrow<[T]>
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-{
+impl<T, A> Borrow<[T]> for MutBumpVec<T, A> {
     #[inline(always)]
     fn borrow(&self) -> &[T] {
         self
     }
 }
 
-impl<'b, 'a: 'b, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BorrowMut<[T]>
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-{
+impl<T, A> BorrowMut<[T]> for MutBumpVec<T, A> {
     #[inline(always)]
     fn borrow_mut(&mut self) -> &mut [T] {
         self
     }
 }
 
-impl<'b, 'a: 'b, T: Hash, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> Hash
-    for MutBumpVec<'b, 'a, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-{
+impl<T: Hash, A> Hash for MutBumpVec<T, A> {
     #[inline(always)]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.as_slice().hash(state);
@@ -2189,12 +2090,7 @@ impl<'b, 'a: 'b, T: Hash, const MIN_ALIGN: usize, const UP: bool, const GUARANTE
 
 /// Returns [`ErrorKind::OutOfMemory`](std::io::ErrorKind::OutOfMemory) when allocations fail.
 #[cfg(feature = "std")]
-impl<'b, 'a: 'b, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> std::io::Write
-    for MutBumpVec<'b, 'a, u8, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED> + 'a,
-{
+impl<A: BumpAllocator> std::io::Write for MutBumpVec<u8, A> {
     #[inline(always)]
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         if self.try_extend_from_slice_copy(buf).is_err() {

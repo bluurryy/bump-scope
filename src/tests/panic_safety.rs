@@ -88,7 +88,7 @@ fn mut_bump_vec_from_elem_in<T: Testable>() {
 fn into_iter<T: Testable>() {
     expected_drops(5).expected_msg("whoops").run(|| {
         let mut bump: Bump = Bump::new();
-        let vec = mut_bump_vec![in bump; T::default(); 5];
+        let vec = mut_bump_vec![in &mut bump; T::default(); 5];
 
         #[allow(clippy::manual_assert)]
         for (i, _) in vec.into_iter().enumerate() {
@@ -114,7 +114,7 @@ fn bump_vec_extend_from_slice<T: Testable>() {
 
 fn mut_bump_vec_extend_from_slice<T: Testable>() {
     let mut bump: Bump = Bump::new();
-    let mut vec: MutBumpVec<T> = mut_bump_vec![in bump];
+    let mut vec: MutBumpVec<T, _> = mut_bump_vec![in &mut bump];
     let slice = ManuallyDrop::new(T::array::<5>());
 
     expected_drops(0).panic_on_clone(3).run(|| {
@@ -243,6 +243,7 @@ mod helper {
     fn catch<F: FnOnce() -> R + UnwindSafe, R>(f: F) -> Result<R, String> {
         let hook = std::panic::take_hook();
 
+        #[cfg(any())]
         std::panic::set_hook(Box::new(|_| {
             // be quiet
         }));

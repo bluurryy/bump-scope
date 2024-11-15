@@ -4,6 +4,7 @@
 - **fixed:** `BumpVec::split_off` now retains the capacity of `self` like the docs say
 - **improved:** removed implicit `shrink_to_fit` from `(Fixed)BumpVec::from_iter` and inside `Splice` (TODO: confirm in tests)
 - **improved:** no more temporary allocation taking up permanent space in `Splice`'s drop (TODO: confirm in tests)
+- **breaking:** `bump` methods on vectors and strings has been renamed to `allocator`, the old `allocator` method which returned the base allocator is gone
 
 ## 0.10.11 (2024-11-11)
 - **added:** `map_in_place` to `(Mut)BumpVec`

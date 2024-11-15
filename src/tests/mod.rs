@@ -190,9 +190,9 @@ fn mut_bump_vec<const UP: bool>() {
     for (size, count) in [(0, 2), (512, 1)] {
         let mut bump = Bump::<Global, 1, UP>::with_size(size);
         let mut vec = MutBumpVec::new_in(&mut bump);
-        assert_eq!(vec.guaranteed_allocated_stats().count(), 1);
+        assert_eq!(vec.stats().count(), 1);
         vec.extend(core::iter::repeat(3).take(TIMES));
-        assert_eq!(vec.guaranteed_allocated_stats().count(), count);
+        assert_eq!(vec.stats().count(), count);
         let _ = vec.into_boxed_slice();
         dbg!(bump.guaranteed_allocated_stats());
         assert_eq!(
@@ -206,7 +206,7 @@ fn mut_bump_vec<const UP: bool>() {
 
 fn mut_bump_vec_push_pop<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
-    let mut vec = mut_bump_vec![in bump; 1, 2];
+    let mut vec = mut_bump_vec![in &mut bump; 1, 2];
 
     vec.push(3);
 
@@ -222,7 +222,7 @@ fn mut_bump_vec_push_pop<const UP: bool>() {
 
 fn mut_bump_vec_insert<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
-    let mut vec = mut_bump_vec![in bump; 1, 2, 3];
+    let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
 
     vec.insert(1, 4);
     assert_eq!(vec, [1, 4, 2, 3]);
@@ -236,7 +236,7 @@ fn mut_bump_vec_insert<const UP: bool>() {
 
 fn mut_bump_vec_remove<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
-    let mut vec = mut_bump_vec![in bump; 1, 2, 3, 4, 5];
+    let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4, 5];
 
     assert_eq!(vec.remove(1), 2);
     assert_eq!(vec, [1, 3, 4, 5]);
@@ -250,7 +250,7 @@ fn mut_bump_vec_remove<const UP: bool>() {
 
 fn mut_bump_vec_swap_remove<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
-    let mut vec = mut_bump_vec![in bump; 1, 2, 3, 4, 5];
+    let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4, 5];
 
     assert_eq!(vec.swap_remove(1), 2);
     assert_eq!(vec, [1, 5, 3, 4]);
@@ -264,7 +264,7 @@ fn mut_bump_vec_swap_remove<const UP: bool>() {
 
 fn mut_bump_vec_extend<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
-    let mut vec = mut_bump_vec![in bump];
+    let mut vec = mut_bump_vec![in &mut bump];
 
     vec.extend([1, 2, 3]);
     assert_eq!(vec, [1, 2, 3]);
@@ -291,16 +291,13 @@ fn mut_bump_vec_drop<const UP: bool>() {
     assert_eq!(bump.guaranteed_allocated_stats().capacity(), 64 - OVERHEAD);
     assert_eq!(bump.guaranteed_allocated_stats().remaining(), 64 - OVERHEAD);
 
-    let mut vec: MutBumpVec<u8, Global, 1, UP> = mut_bump_vec![in bump];
+    let mut vec: MutBumpVec<u8, _> = mut_bump_vec![in &mut bump];
     vec.reserve(33);
 
-    assert_eq!(vec.guaranteed_allocated_stats().current.size(), 128 - MALLOC_OVERHEAD);
-    assert_eq!(
-        vec.guaranteed_allocated_stats().current.prev().unwrap().size(),
-        64 - MALLOC_OVERHEAD
-    );
-    assert_eq!(vec.guaranteed_allocated_stats().size(), 64 + 128 - MALLOC_OVERHEAD * 2);
-    assert_eq!(vec.guaranteed_allocated_stats().count(), 2);
+    assert_eq!(vec.stats().current.unwrap().size(), 128 - MALLOC_OVERHEAD);
+    assert_eq!(vec.stats().current.unwrap().prev().unwrap().size(), 64 - MALLOC_OVERHEAD);
+    assert_eq!(vec.stats().size(), 64 + 128 - MALLOC_OVERHEAD * 2);
+    assert_eq!(vec.stats().count(), 2);
 
     drop(vec);
 
@@ -313,7 +310,7 @@ fn mut_bump_vec_write<const UP: bool>() {
     use std::io::Write;
 
     let mut bump = Bump::<Global, 1, UP>::new();
-    let mut vec: MutBumpVec<u8, Global, 1, UP> = mut_bump_vec![in bump];
+    let mut vec: MutBumpVec<u8, _> = mut_bump_vec![in &mut bump];
 
     let _ = vec.write(&[0]).unwrap();
 
@@ -345,16 +342,16 @@ fn reset_single_chunk<const UP: bool>() {
 
 fn macro_syntax<const UP: bool>() {
     #[allow(clippy::needless_pass_by_value)]
-    fn check<T: Debug + PartialEq, const UP: bool>(v: MutBumpVec<T, Global, 1, UP>, expected: &[T]) {
+    fn check<T: Debug + PartialEq, const UP: bool>(v: MutBumpVec<T, &mut Bump<Global, 1, UP>>, expected: &[T]) {
         dbg!(&v);
         assert_eq!(v, expected);
     }
 
     let mut bump = Bump::<Global, 1, UP>::new();
 
-    check::<i32, UP>(mut_bump_vec![in bump], &[]);
-    check(mut_bump_vec![in bump; 1, 2, 3], &[1, 2, 3]);
-    check(mut_bump_vec![in bump; 5; 3], &[5, 5, 5]);
+    check::<i32, UP>(mut_bump_vec![in &mut bump], &[]);
+    check(mut_bump_vec![in &mut bump; 1, 2, 3], &[1, 2, 3]);
+    check(mut_bump_vec![in &mut bump; 5; 3], &[5, 5, 5]);
 
     check::<i32, UP>(mut_bump_vec![in &mut bump], &[]);
     check(mut_bump_vec![in &mut bump; 1, 2, 3], &[1, 2, 3]);
@@ -527,46 +524,46 @@ fn as_aligned<const UP: bool>() {
 
 #[allow(dead_code)]
 fn api_that_accepts_bump_or_bump_scope() {
-    fn vec_from_mut_bump(bump: &mut Bump) -> MutBumpVec<i32> {
+    fn vec_from_mut_bump(bump: &mut Bump) -> MutBumpVec<i32, &mut Bump> {
         MutBumpVec::new_in(bump)
     }
 
-    fn vec_from_mut_bump_scope<'b, 'a>(bump: &'b mut BumpScope<'a>) -> MutBumpVec<'b, 'a, i32> {
+    fn vec_from_mut_bump_scope<'b, 'a>(bump: &'b mut BumpScope<'a>) -> MutBumpVec<i32, &'b mut BumpScope<'a>> {
         MutBumpVec::new_in(bump)
     }
 
-    fn string_from_mut_bump(bump: &mut Bump) -> MutBumpString {
+    fn string_from_mut_bump(bump: &mut Bump) -> MutBumpString<&mut Bump> {
         MutBumpString::new_in(bump)
     }
 
-    fn string_from_mut_bump_scope<'b, 'a>(bump: &'b mut BumpScope<'a>) -> MutBumpString<'b, 'a> {
+    fn string_from_mut_bump_scope<'b, 'a>(bump: &'b mut BumpScope<'a>) -> MutBumpString<&'b mut BumpScope<'a>> {
         MutBumpString::new_in(bump)
     }
 }
 
 #[allow(dead_code)]
 fn bump_vec_macro() {
-    fn new_in(bump: &mut Bump) -> MutBumpVec<u32> {
+    fn new_in(bump: &mut Bump) -> MutBumpVec<u32, &mut Bump> {
         mut_bump_vec![in bump]
     }
 
-    fn from_array_in(bump: &mut Bump) -> MutBumpVec<u32> {
+    fn from_array_in(bump: &mut Bump) -> MutBumpVec<u32, &mut Bump> {
         mut_bump_vec![in bump; 1, 2, 3]
     }
 
-    fn from_elem_in(bump: &mut Bump) -> MutBumpVec<u32> {
+    fn from_elem_in(bump: &mut Bump) -> MutBumpVec<u32, &mut Bump> {
         mut_bump_vec![in bump; 3; 5]
     }
 
-    fn try_new_in(bump: &mut Bump) -> Result<MutBumpVec<u32>> {
+    fn try_new_in(bump: &mut Bump) -> Result<MutBumpVec<u32, &mut Bump>> {
         mut_bump_vec![try in bump]
     }
 
-    fn try_from_array_in(bump: &mut Bump) -> Result<MutBumpVec<u32>> {
+    fn try_from_array_in(bump: &mut Bump) -> Result<MutBumpVec<u32, &mut Bump>> {
         mut_bump_vec![try in bump; 1, 2, 3]
     }
 
-    fn try_from_elem_in(bump: &mut Bump) -> Result<MutBumpVec<u32>> {
+    fn try_from_elem_in(bump: &mut Bump) -> Result<MutBumpVec<u32, &mut Bump>> {
         mut_bump_vec![try in bump; 3; 5]
     }
 }
@@ -600,29 +597,29 @@ fn bump_vec_rev_macro() {
 
 #[allow(dead_code)]
 fn bump_format_macro() {
-    fn infallible_new(bump: &mut Bump) -> MutBumpString {
+    fn infallible_new(bump: &mut Bump) -> MutBumpString<&mut Bump> {
         mut_bump_format!(in bump)
     }
 
-    fn fallible_new(bump: &mut Bump) -> Result<MutBumpString> {
+    fn fallible_new(bump: &mut Bump) -> Result<MutBumpString<&mut Bump>> {
         mut_bump_format!(try in bump)
     }
 
-    fn infallible_raw(bump: &mut Bump) -> MutBumpString {
+    fn infallible_raw(bump: &mut Bump) -> MutBumpString<&mut Bump> {
         mut_bump_format!(in bump, r"hey")
     }
 
-    fn fallible_raw(bump: &mut Bump) -> Result<MutBumpString> {
+    fn fallible_raw(bump: &mut Bump) -> Result<MutBumpString<&mut Bump>> {
         mut_bump_format!(try in bump, r"hey")
     }
 
-    fn infallible_fmt(bump: &mut Bump) -> MutBumpString {
+    fn infallible_fmt(bump: &mut Bump) -> MutBumpString<&mut Bump> {
         let one = 1;
         let two = 2;
         mut_bump_format!(in bump, "{one} + {two} = {}", one + two)
     }
 
-    fn fallible_fmt(bump: &mut Bump) -> Result<MutBumpString> {
+    fn fallible_fmt(bump: &mut Bump) -> Result<MutBumpString<&mut Bump>> {
         let one = 1;
         let two = 2;
         mut_bump_format!(try in bump, "{one} + {two} = {}", one + two)
@@ -1049,7 +1046,7 @@ fn min_non_zero_cap() {
 
         {
             let mut bump = bump_with_remaining_capacity(size_of::<T>() * expected_capacity);
-            let mut vec: MutBumpVec<T> = MutBumpVec::new_in(&mut bump);
+            let mut vec: MutBumpVec<T, _> = MutBumpVec::new_in(&mut bump);
             vec.push_with(Default::default);
             assert_eq!(vec.capacity(), expected_capacity, "{}", std::any::type_name::<T>());
             drop(vec);
@@ -1083,16 +1080,6 @@ fn min_non_zero_cap() {
         assert_eq!(string.capacity(), 8);
         drop(string);
     }
-}
-
-#[test]
-fn unsound_exclusive_allocator() {
-    let mut bump: Bump = Bump::new();
-    let vec = BumpVec::<i32, _>::from_array_in([1], &mut bump);
-    dbg!(vec.stats().capacity());
-    assert!(vec.stats().capacity() > 100);
-    vec.allocator().alloc(5);
-    assert_ne!(vec[0], 5);
 }
 
 // This must fail to compile.

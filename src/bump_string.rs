@@ -41,7 +41,7 @@ use crate::{polyfill::nonnull, raw_bump_box::RawBumpBox};
 /// # let bump: Bump = Bump::new();
 /// #
 /// let greeting = "Hello";
-/// let mut string = bump_format!(in bump, "{greeting} world!");
+/// let mut string = bump_format!(in &bump, "{greeting} world!");
 /// string.push_str(" How are you?");
 ///
 /// assert_eq!(string, "Hello world! How are you?");

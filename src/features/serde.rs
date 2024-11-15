@@ -43,11 +43,7 @@ impl<T: Serialize, A: BumpAllocator> Serialize for BumpVec<T, A> {
     }
 }
 
-impl<T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Serialize
-    for MutBumpVec<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    T: Serialize,
-{
+impl<T: Serialize, A> Serialize for MutBumpVec<T, A> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -87,9 +83,7 @@ impl<A: BumpAllocator> Serialize for BumpString<A> {
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Serialize
-    for MutBumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-{
+impl<A> Serialize for MutBumpString<A> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -208,13 +202,7 @@ impl<'de, T: Deserialize<'de>, A: BumpAllocator> Visitor<'de> for &'_ mut BumpVe
     }
 }
 
-impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> DeserializeSeed<'de>
-    for &'_ mut MutBumpVec<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    T: Deserialize<'de>,
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<'de, T: Deserialize<'de>, A: BumpAllocator> DeserializeSeed<'de> for &'_ mut MutBumpVec<T, A> {
     type Value = ();
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -225,13 +213,7 @@ where
     }
 }
 
-impl<'de, T, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Visitor<'de>
-    for &'_ mut MutBumpVec<'_, '_, T, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    T: Deserialize<'de>,
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<'de, T: Deserialize<'de>, A: BumpAllocator> Visitor<'de> for &'_ mut MutBumpVec<T, A> {
     type Value = ();
 
     fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
@@ -352,12 +334,7 @@ impl<'de, A: BumpAllocator> Visitor<'de> for &'_ mut BumpString<A> {
     }
 }
 
-impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> DeserializeSeed<'de>
-    for &'_ mut MutBumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<'de, A: BumpAllocator> DeserializeSeed<'de> for &'_ mut MutBumpString<A> {
     type Value = ();
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -368,12 +345,7 @@ where
     }
 }
 
-impl<'de, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Visitor<'de>
-    for &'_ mut MutBumpString<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
+impl<'de, A: BumpAllocator> Visitor<'de> for &mut MutBumpString<A> {
     type Value = ();
 
     fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {

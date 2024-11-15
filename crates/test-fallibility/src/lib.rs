@@ -20,10 +20,10 @@ macro_rules! type_definitions {
         type BumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuardRoot<'a, Global, MIN_ALIGN, $up>;
         type BumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<T, &'a Bump>;
         type BumpString<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<&'a Bump>;
-        type MutBumpVec<'b, 'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<'b, 'a, T, Global, MIN_ALIGN, $up>;
+        type MutBumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<T, &'a Bump>;
+        type MutBumpString<'a, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpString<&'a Bump>;
         type MutBumpVecRev<'b, 'a, T, const MIN_ALIGN: usize = 1> =
             bump_scope::MutBumpVecRev<'b, 'a, T, Global, MIN_ALIGN, $up>;
-        type MutBumpString<'b, 'a, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpString<'b, 'a, Global, MIN_ALIGN, $up>;
     };
 }
 
@@ -218,7 +218,7 @@ up_and_down! {
         vec.try_extend_zeroed(additional)
     }
 
-    pub fn MutBumpVec_try_from_iter_in<'a>(iter: core::slice::Iter<u32>, bump: &'a mut Bump) -> Result<MutBumpVec<'a, 'a, u32>> {
+    pub fn MutBumpVec_try_from_iter_in<'a>(iter: core::slice::Iter<u32>, bump: &'a mut Bump) -> Result<MutBumpVec<'a, u32>> {
         MutBumpVec::try_from_iter_in(iter.copied(), bump)
     }
 
@@ -302,7 +302,7 @@ up_and_down! {
         MutBumpVecRev::try_with_capacity_in(capacity, bump)
     }
 
-    pub fn MutBumpString__try_from_str_in<'b>(string: &str, bump: &'b mut Bump) -> Result<MutBumpString<'b, 'b>> {
+    pub fn MutBumpString__try_from_str_in<'b>(string: &str, bump: &'b mut Bump) -> Result<MutBumpString<'b>> {
         MutBumpString::try_from_str_in(string, bump)
     }
 

@@ -1310,12 +1310,6 @@ impl<'a, T> BumpBox<'a, [T]> {
         self.set_len(self.len() - amount);
     }
 
-    #[inline]
-    pub(crate) unsafe fn set_ptr(&mut self, ptr: NonNull<T>) {
-        let len = self.ptr.len();
-        self.ptr = nonnull::slice_from_raw_parts(ptr, len);
-    }
-
     /// Removes and returns the element at position `index` within the vector,
     /// shifting all elements after it to the left.
     ///
