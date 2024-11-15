@@ -344,7 +344,7 @@ pub use mut_bump_vec_rev::MutBumpVecRev;
 use private::{capacity_overflow, format_trait_error, Infallibly};
 use set_len_on_drop::SetLenOnDrop;
 use set_len_on_drop_by_ptr::SetLenOnDropByPtr;
-pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, GuaranteedAllocatedStats, Stats};
+pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
 // This must be kept in sync with ChunkHeaders `repr(align(16))`.
@@ -665,9 +665,9 @@ macro_rules! bump_scope_methods {
         pub unsafe fn reset_to(&self, checkpoint: Checkpoint) {
             $crate::condition! {
                 if $is_scope {
-                    debug_assert!(self.stats().big_to_small().any(|c| {
-                        c.chunk == checkpoint.chunk.cast() &&
-                        crate::stats::raw!(c.contains_addr_or_end(checkpoint.address.get()))
+                    debug_assert!(self.stats().big_to_small().any(|chunk| {
+                        chunk.header == checkpoint.chunk.cast() &&
+                        crate::stats::raw!(chunk.contains_addr_or_end(checkpoint.address.get()))
                     }));
 
                     checkpoint.reset_within_chunk();
@@ -676,17 +676,6 @@ macro_rules! bump_scope_methods {
                 } else {
                     self.as_scope().reset_to(checkpoint)
                 }
-            }
-        }
-
-        /// Returns a type which provides statistics about the memory usage of the bump allocator.
-        #[must_use]
-        #[inline(always)]
-        pub fn guaranteed_allocated_stats(
-            &self,
-        ) -> $crate::condition! { if $is_scope { GuaranteedAllocatedStats<'a> } else { GuaranteedAllocatedStats } } {
-            GuaranteedAllocatedStats {
-                current: crate::Chunk::new_guaranteed_allocated(self.as_scope()),
             }
         }
     };
@@ -706,17 +695,17 @@ macro_rules! bump_common_methods {
                 /// Returns a type which provides statistics about the memory usage of the bump allocator.
                 #[must_use]
                 #[inline(always)]
-                pub fn stats(&self) -> Stats<'a> {
-                    Stats {
-                        current: crate::Chunk::new(self.as_scope()),
-                    }
+                pub fn stats(&self) -> Stats<'a, GUARANTEED_ALLOCATED> {
+                    let header = self.chunk.get().header_ptr().cast();
+                    unsafe { Stats::from_header_unchecked(header) }
                 }
             } else {
                 /// Returns a type which provides statistics about the memory usage of the bump allocator.
                 #[must_use]
                 #[inline(always)]
-                pub fn stats(&self) -> Stats {
-                    self.as_scope().stats()
+                pub fn stats(&self) -> Stats<GUARANTEED_ALLOCATED> {
+                    let header = self.chunk.get().header_ptr().cast();
+                    unsafe { Stats::from_header_unchecked(header) }
                 }
             }
         }

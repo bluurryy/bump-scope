@@ -160,7 +160,7 @@ either_way! {
 macro_rules! assert_chunk_sizes {
     ($bump:expr, $prev:expr, $curr:expr, $next:expr) => {
         let bump = &$bump;
-        let curr = bump.guaranteed_allocated_stats().current;
+        let curr = bump.stats().current_chunk();
         debug_sizes(bump);
         assert_eq!(curr.size(), $curr - MALLOC_OVERHEAD, "wrong curr");
         assert!(
@@ -195,13 +195,10 @@ fn mut_bump_vec<const UP: bool>() {
         vec.extend(core::iter::repeat(3).take(TIMES));
         assert_eq!(vec.stats().count(), count);
         let _ = vec.into_boxed_slice();
-        dbg!(bump.guaranteed_allocated_stats());
-        assert_eq!(
-            bump.guaranteed_allocated_stats().current.allocated(),
-            TIMES * core::mem::size_of::<i32>()
-        );
+        dbg!(bump.stats());
+        assert_eq!(bump.stats().current_chunk().allocated(), TIMES * core::mem::size_of::<i32>());
         bump.reset();
-        assert_eq!(bump.guaranteed_allocated_stats().allocated(), 0);
+        assert_eq!(bump.stats().allocated(), 0);
     }
 }
 
@@ -288,23 +285,26 @@ fn mut_bump_vec_drop<const UP: bool>() {
     assert_eq!(mem::size_of::<ChunkHeader<Global>>(), SIZE);
 
     let mut bump = Bump::<Global, 1, UP>::with_size(64);
-    assert_eq!(bump.guaranteed_allocated_stats().current.size(), 64 - MALLOC_OVERHEAD);
-    assert_eq!(bump.guaranteed_allocated_stats().capacity(), 64 - OVERHEAD);
-    assert_eq!(bump.guaranteed_allocated_stats().remaining(), 64 - OVERHEAD);
+    assert_eq!(bump.stats().current_chunk().size(), 64 - MALLOC_OVERHEAD);
+    assert_eq!(bump.stats().capacity(), 64 - OVERHEAD);
+    assert_eq!(bump.stats().remaining(), 64 - OVERHEAD);
 
     let mut vec: MutBumpVec<u8, _> = mut_bump_vec![in &mut bump];
     vec.reserve(33);
 
-    assert_eq!(vec.stats().current.unwrap().size(), 128 - MALLOC_OVERHEAD);
-    assert_eq!(vec.stats().current.unwrap().prev().unwrap().size(), 64 - MALLOC_OVERHEAD);
+    assert_eq!(vec.stats().current_chunk().unwrap().size(), 128 - MALLOC_OVERHEAD);
+    assert_eq!(
+        vec.stats().current_chunk().unwrap().prev().unwrap().size(),
+        64 - MALLOC_OVERHEAD
+    );
     assert_eq!(vec.stats().size(), 64 + 128 - MALLOC_OVERHEAD * 2);
     assert_eq!(vec.stats().count(), 2);
 
     drop(vec);
 
-    assert_eq!(bump.guaranteed_allocated_stats().current.size(), 128 - MALLOC_OVERHEAD);
-    assert_eq!(bump.guaranteed_allocated_stats().size(), 64 + 128 - MALLOC_OVERHEAD * 2);
-    assert_eq!(bump.guaranteed_allocated_stats().count(), 2);
+    assert_eq!(bump.stats().current_chunk().size(), 128 - MALLOC_OVERHEAD);
+    assert_eq!(bump.stats().size(), 64 + 128 - MALLOC_OVERHEAD * 2);
+    assert_eq!(bump.stats().count(), 2);
 }
 
 fn mut_bump_vec_write<const UP: bool>() {
@@ -360,14 +360,14 @@ fn macro_syntax<const UP: bool>() {
 }
 
 fn debug_sizes<const UP: bool>(bump: &Bump<Global, 1, UP>) {
-    let iter = bump.guaranteed_allocated_stats().small_to_big();
+    let iter = bump.stats().small_to_big();
     let vec = iter.map(Chunk::size).collect::<Vec<_>>();
     let sizes = FmtFn(|f| write!(f, "{vec:?}"));
     dbg!(sizes);
 }
 
 fn force_alloc_new_chunk<const UP: bool>(bump: &BumpScope<Global, 1, UP>) {
-    let size = bump.guaranteed_allocated_stats().current.remaining() + 1;
+    let size = bump.stats().current_chunk().remaining() + 1;
     let layout = Layout::from_size_align(size, 1).unwrap();
     bump.alloc_layout(layout);
 }
@@ -703,57 +703,27 @@ fn realign<const UP: bool>() {
     {
         let bump = Bump::<Global, 1, UP>::with_size(64);
         bump.alloc(0u8);
-        assert!(!bump
-            .guaranteed_allocated_stats()
-            .current
-            .bump_position()
-            .cast::<AlignT>()
-            .is_aligned());
+        assert!(!bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
         let bump = bump.into_aligned::<ALIGN>();
-        assert!(bump
-            .guaranteed_allocated_stats()
-            .current
-            .bump_position()
-            .cast::<AlignT>()
-            .is_aligned());
+        assert!(bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
     }
 
     // as_aligned_mut
     {
         let mut bump = Bump::<Global, 1, UP>::with_size(64);
         bump.alloc(0u8);
-        assert!(!bump
-            .guaranteed_allocated_stats()
-            .current
-            .bump_position()
-            .cast::<AlignT>()
-            .is_aligned());
+        assert!(!bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
         let bump = bump.as_aligned_mut::<ALIGN>();
-        assert!(bump
-            .guaranteed_allocated_stats()
-            .current
-            .bump_position()
-            .cast::<AlignT>()
-            .is_aligned());
+        assert!(bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
     }
 
     // aligned
     {
         let mut bump = Bump::<Global, 1, UP>::with_size(64);
         bump.alloc(0u8);
-        assert!(!bump
-            .guaranteed_allocated_stats()
-            .current
-            .bump_position()
-            .cast::<AlignT>()
-            .is_aligned());
+        assert!(!bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
         bump.aligned::<ALIGN, ()>(|bump| {
-            assert!(bump
-                .guaranteed_allocated_stats()
-                .current
-                .bump_position()
-                .cast::<AlignT>()
-                .is_aligned());
+            assert!(bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
         });
     }
 
@@ -761,19 +731,9 @@ fn realign<const UP: bool>() {
     {
         let mut bump = Bump::<Global, 1, UP>::with_size(64);
         bump.alloc(0u8);
-        assert!(!bump
-            .guaranteed_allocated_stats()
-            .current
-            .bump_position()
-            .cast::<AlignT>()
-            .is_aligned());
+        assert!(!bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
         bump.scoped_aligned::<ALIGN, ()>(|bump| {
-            assert!(bump
-                .guaranteed_allocated_stats()
-                .current
-                .bump_position()
-                .cast::<AlignT>()
-                .is_aligned());
+            assert!(bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
         });
     }
 }
