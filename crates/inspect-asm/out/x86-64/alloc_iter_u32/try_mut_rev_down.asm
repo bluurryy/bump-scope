@@ -56,7 +56,7 @@ inspect_asm::alloc_iter_u32::try_mut_rev_down:
 	cmp qword ptr [rsp + 32], rcx
 	jne .LBB0_3
 	mov rdi, r12
-	call bump_scope::mut_bump_vec_rev::MutBumpVecRev<T,A,_,_,_>::generic_grow_amortized
+	call bump_scope::mut_bump_vec_rev::MutBumpVecRev<T,A>::generic_grow_amortized
 	test al, al
 	jne .LBB0_0
 	mov rdx, qword ptr [rsp + 8]
