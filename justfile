@@ -8,8 +8,7 @@ default:
   @just --list
 
 pre-release:
-  # TODO: fix issues
-  # just spellcheck
+  just spellcheck
   just doc
   just check
   cargo test --all-features
@@ -62,7 +61,7 @@ fmt:
 
 spellcheck:
   # https://www.npmjs.com/package/cspell
-  cspell lint --gitignore "**/*.{rs,md,toml}"
+  cspell lint --gitignore "**/*.{rs,md,toml}" --exclude src/tests/from_std
 
 doc *args:
   cargo test --package bump-scope --lib --all-features -- insert_feature_docs --exact --ignored
