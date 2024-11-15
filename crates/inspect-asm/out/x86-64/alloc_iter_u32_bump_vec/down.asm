@@ -45,7 +45,7 @@ inspect_asm::alloc_iter_u32_bump_vec::down:
 	mov r14, rsi
 	mov rsi, rdx
 	mov r15, rdx
-	call bump_scope::mut_bump_vec::MutBumpVec<T,A,_,_,_>::generic_grow_amortized
+	call bump_scope::mut_bump_vec::MutBumpVec<T,A>::generic_grow_amortized
 	mov rcx, r14
 	mov rax, r15
 	mov rdx, qword ptr [rsp + 8]
@@ -67,7 +67,7 @@ inspect_asm::alloc_iter_u32_bump_vec::down:
 	mov esi, 1
 	mov rdi, rbx
 	mov r12, rax
-	call bump_scope::mut_bump_vec::MutBumpVec<T,A,_,_,_>::generic_grow_amortized
+	call bump_scope::mut_bump_vec::MutBumpVec<T,A>::generic_grow_amortized
 	mov rcx, r14
 	mov rax, r12
 	mov rdx, qword ptr [rsp + 8]

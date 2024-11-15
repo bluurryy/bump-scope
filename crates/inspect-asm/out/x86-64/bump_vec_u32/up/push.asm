@@ -18,7 +18,7 @@ inspect_asm::bump_vec_u32::up::push:
 	mov ebp, esi
 	mov esi, 1
 	mov rbx, rdi
-	call bump_scope::mut_bump_vec::MutBumpVec<T,A,_,_,_>::generic_grow_amortized
+	call bump_scope::mut_bump_vec::MutBumpVec<T,A>::generic_grow_amortized
 	mov esi, ebp
 	mov rdi, rbx
 	mov rax, qword ptr [rbx + 8]
