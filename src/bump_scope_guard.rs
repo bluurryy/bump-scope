@@ -7,7 +7,7 @@ use core::{fmt::Debug, marker::PhantomData, num::NonZeroUsize, ptr::NonNull};
 /// This is returned from [`checkpoint`](Bump::checkpoint) and used for [`reset_to`](Bump::reset_to).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Checkpoint {
-    pub(crate) chunk: NonNull<ChunkHeader<()>>,
+    pub(crate) chunk: NonNull<ChunkHeader>,
     pub(crate) address: NonZeroUsize,
 }
 
