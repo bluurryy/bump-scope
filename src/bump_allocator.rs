@@ -19,6 +19,7 @@ use crate::{handle_alloc_error, infallible};
 /// This trait must only be implemented when
 /// - `grow(_zeroed)`, `shrink` and `deallocate` can be called with a pointer that was not allocated by this Allocator
 /// - `deallocate` can be called with any pointer or alignment when the size is `0`
+/// - `deallocate` can be called with a pointer allocated from another allocator and have no effect
 /// - `shrink` does not error
 ///
 /// [into_box]: crate::BumpBox::into_box
