@@ -379,35 +379,6 @@ impl<'a, T> BumpBox<'a, T> {
     }
 }
 
-impl<'a> BumpBox<'a, [u8]> {
-    /// Converts a slice of bytes to a string slice.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Err`] if the slice is not UTF-8 with a description as to why the
-    /// provided bytes are not UTF-8. The vector you moved in is also included.
-    #[inline]
-    #[deprecated = "use `BumpBox<str>::from_utf8` instead"]
-    pub const fn into_boxed_str(self) -> Result<BumpBox<'a, str>, FromUtf8Error<Self>> {
-        BumpBox::from_utf8(self)
-    }
-
-    /// Converts a slice of bytes to a string slice without checking
-    /// that the string contains valid UTF-8.
-    ///
-    /// See the safe version, [`into_boxed_str`](Self::into_boxed_str), for more information.
-    ///
-    /// # Safety
-    ///
-    /// The bytes passed in must be valid UTF-8.
-    #[inline]
-    #[must_use]
-    #[deprecated = "use `BumpBox<str>::from_utf8_unchecked` instead"]
-    pub const unsafe fn into_boxed_str_unchecked(self) -> BumpBox<'a, str> {
-        BumpBox::from_utf8_unchecked(self)
-    }
-}
-
 impl<'a> BumpBox<'a, str> {
     /// Empty str.
     pub const EMPTY_STR: Self = unsafe { BumpBox::from_utf8_unchecked(BumpBox::<[u8]>::EMPTY) };
