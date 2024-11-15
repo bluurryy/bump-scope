@@ -288,7 +288,7 @@ mod from_utf8_error;
 mod layout;
 mod mut_bump_string;
 /// Contains [`MutBumpVec`] and associated types.
-mod mut_bump_vec;
+pub mod mut_bump_vec;
 /// Contains [`MutBumpVecRev`] and associated types.
 mod mut_bump_vec_rev;
 /// Contains types associated with owned slices.
@@ -338,6 +338,7 @@ pub use from_utf16_error::FromUtf16Error;
 pub use from_utf8_error::FromUtf8Error;
 use layout::ArrayLayout;
 pub use mut_bump_string::MutBumpString;
+#[doc(inline)]
 pub use mut_bump_vec::MutBumpVec;
 pub use mut_bump_vec_rev::MutBumpVecRev;
 #[cfg(not(no_global_oom_handling))]

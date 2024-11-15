@@ -62,10 +62,10 @@ macro_rules! mut_bump_format {
     }};
 }
 
-/// A type like [`BumpString`](crate::BumpString), optimized for a `&mut Bump(Scope)`.
+/// A type like [`BumpString`](crate::BumpString), optimized for a mutable bump allocator.
 ///
 /// It has the advantage that it can assume the entire remaining chunk space as its capacity.
-/// It also only needs to update the bump pointer when calling <code>[into_](Self::into_str)([boxed_](Self::into_boxed_str))[str](Self::into_str)</code>.
+/// It also only needs to update the bump pointer when calling [`into_str`](Self::into_str) or [`into_boxed_str`](Self::into_boxed_str).
 ///
 /// When you are done building the string, you can turn it into a `&str` with [`into_str`].
 ///
@@ -135,282 +135,7 @@ impl<A> MutBumpString<A> {
             allocator,
         }
     }
-}
 
-impl<A: BumpAllocatorMut> MutBumpString<A> {
-    error_behavior_generic_methods_allocation_failure! {
-        /// Constructs a new empty `MutBumpString` with at least the specified capacity
-        /// with the provided `BumpScope`.
-        ///
-        /// The string will be able to hold at least `capacity` bytes without
-        /// reallocating. This method allocates for as much elements as the< current chunk can hold.
-        /// If `capacity` is 0, the string will not allocate.
-        impl
-        for fn with_capacity_in
-        for fn try_with_capacity_in
-        #[inline]
-        use fn generic_with_capacity_in(capacity: usize, allocator: A) -> Self {
-            let mut allocator = allocator;
-
-            if capacity == 0 {
-                return Ok(Self {
-                    fixed: RawFixedBumpString::EMPTY,
-                    allocator,
-                });
-            }
-
-            Ok(Self {
-                fixed: unsafe { RawFixedBumpString::prepare_allocation(&mut allocator, capacity)? },
-                allocator,
-            })
-        }
-
-        /// Constructs a new `MutBumpString` from a `&str`.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::new();
-        /// let string = MutBumpString::from_str_in("Hello!", &mut bump);
-        /// assert_eq!(string, "Hello!");
-        /// ```
-        for fn from_str_in
-        do examples
-        /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let string = MutBumpString::try_from_str_in("Hello!", &mut bump)?;
-        /// assert_eq!(string, "Hello!");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
-        /// ```
-        for fn try_from_str_in
-        #[inline]
-        use fn generic_from_str_in(string: &str, allocator: A) -> Self {
-            let mut this = Self::generic_with_capacity_in(string.len(), allocator)?;
-
-            unsafe {
-                ptr::copy_nonoverlapping(string.as_ptr(), this.fixed.as_mut_ptr(), string.len());
-                this.as_mut_vec().set_len(string.len());
-            }
-
-            Ok(this)
-        }
-
-        /// Converts a slice of bytes to a string, including invalid characters.
-        ///
-        /// Strings are made of bytes ([`u8`]), and a slice of bytes
-        /// ([`&[u8]`][byteslice]) is made of bytes, so this function converts
-        /// between the two. Not all byte slices are valid strings, however: strings
-        /// are required to be valid UTF-8. During this conversion,
-        /// `from_utf8_lossy()` will replace any invalid UTF-8 sequences with
-        /// [`U+FFFD REPLACEMENT CHARACTER`][U+FFFD], which looks like this: �
-        ///
-        /// [byteslice]: prim@slice
-        /// [U+FFFD]: core::char::REPLACEMENT_CHARACTER
-        ///
-        /// If you are sure that the byte slice is valid UTF-8, and you don't want
-        /// to incur the overhead of the conversion, there is an unsafe version
-        /// of this function, [`from_utf8_unchecked`], which has the same behavior
-        /// but skips the checks.
-        ///
-        /// [`from_utf8_unchecked`]: Self::from_utf8_unchecked
-        impl
-        #[must_use]
-        do examples
-        /// Basic usage:
-        ///
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::new();
-        /// // some bytes, in a vector
-        /// let sparkle_heart = [240, 159, 146, 150];
-        ///
-        /// let sparkle_heart = MutBumpString::from_utf8_lossy_in(&sparkle_heart, &mut bump);
-        ///
-        /// assert_eq!("💖", sparkle_heart);
-        /// ```
-        ///
-        /// Incorrect bytes:
-        ///
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::new();
-        /// // some invalid bytes
-        /// let input = b"Hello \xF0\x90\x80World";
-        /// let output = MutBumpString::from_utf8_lossy_in(input, &mut bump);
-        ///
-        /// assert_eq!("Hello �World", output);
-        /// ```
-        for fn from_utf8_lossy_in
-        do examples
-        /// Basic usage:
-        ///
-        /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// // some bytes, in a vector
-        /// let sparkle_heart = [240, 159, 146, 150];
-        ///
-        /// let sparkle_heart = MutBumpString::try_from_utf8_lossy_in(&sparkle_heart, &mut bump)?;
-        ///
-        /// assert_eq!("💖", sparkle_heart);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
-        /// ```
-        ///
-        /// Incorrect bytes:
-        ///
-        /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// // some invalid bytes
-        /// let input = b"Hello \xF0\x90\x80World";
-        /// let output = MutBumpString::try_from_utf8_lossy_in(input, &mut bump)?;
-        ///
-        /// assert_eq!("Hello �World", output);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
-        /// ```
-        for fn try_from_utf8_lossy_in
-        use fn generic_from_utf8_lossy_in(v: &[u8], allocator: A) -> Self {
-            let mut iter = crate::polyfill::str::lossy::utf8_chunks(v);
-
-            let first_valid = if let Some(chunk) = iter.next() {
-                let valid = chunk.valid();
-                if chunk.invalid().is_empty() {
-                    debug_assert_eq!(valid.len(), v.len());
-                    return Self::generic_from_str_in(valid, allocator);
-                }
-                valid
-            } else {
-                return Ok(Self::new_in(allocator));
-            };
-
-            const REPLACEMENT: &str = "\u{FFFD}";
-
-            let mut res = Self::generic_with_capacity_in(v.len(), allocator)?;
-            res.generic_push_str(first_valid)?;
-            res.generic_push_str(REPLACEMENT)?;
-
-            for chunk in iter {
-                res.generic_push_str(chunk.valid())?;
-                if !chunk.invalid().is_empty() {
-                    res.generic_push_str(REPLACEMENT)?;
-                }
-            }
-
-            Ok(res)
-        }
-
-        /// Decode a UTF-16–encoded vector `v` into a `MutBumpString`, returning [`Err`]
-        /// if `v` contains any invalid data.
-        impl
-        #[allow(clippy::missing_errors_doc)]
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump1: Bump = Bump::new();
-        /// # let mut bump2: Bump = Bump::new();
-        /// // 𝄞music
-        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
-        ///           0x0073, 0x0069, 0x0063];
-        /// assert_eq!(MutBumpString::from_str_in("𝄞music", &mut bump1),
-        ///            MutBumpString::from_utf16_in(v, &mut bump2).unwrap());
-        ///
-        /// // 𝄞mu<invalid>ic
-        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
-        ///           0xD800, 0x0069, 0x0063];
-        /// assert!(MutBumpString::from_utf16_in(v, &mut bump2).is_err());
-        /// ```
-        for fn from_utf16_in
-        do examples
-        /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump1: Bump = Bump::try_new()?;
-        /// # let mut bump2: Bump = Bump::try_new()?;
-        /// // 𝄞music
-        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
-        ///           0x0073, 0x0069, 0x0063];
-        /// assert_eq!(MutBumpString::try_from_str_in("𝄞music", &mut bump1)?,
-        ///            MutBumpString::try_from_utf16_in(v, &mut bump2)?.unwrap());
-        ///
-        /// // 𝄞mu<invalid>ic
-        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
-        ///           0xD800, 0x0069, 0x0063];
-        /// assert!(MutBumpString::try_from_utf16_in(v, &mut bump2)?.is_err());
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
-        /// ```
-        for fn try_from_utf16_in
-        use fn generic_from_utf16_in(v: &[u16], allocator: A) -> Result<Self, FromUtf16Error> {
-            // This isn't done via collect::<Result<_, _>>() for performance reasons.
-            // FIXME: the function can be simplified again when #48994 is closed.
-            let mut ret = Self::generic_with_capacity_in(v.len(), allocator)?;
-
-            for c in char::decode_utf16(v.iter().copied()) {
-                if let Ok(c) = c {
-                    ret.generic_push(c)?;
-                } else {
-                    return Ok(Err(FromUtf16Error(())));
-                }
-            }
-
-            Ok(Ok(ret))
-        }
-
-        /// Decode a UTF-16–encoded slice `v` into a `MutBumpString`, replacing
-        /// invalid data with [the replacement character (`U+FFFD`)][U+FFFD].
-        ///
-        /// [U+FFFD]: core::char::REPLACEMENT_CHARACTER
-        impl
-        #[must_use]
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump1: Bump = Bump::new();
-        /// # let mut bump2: Bump = Bump::new();
-        /// // 𝄞mus<invalid>ic<invalid>
-        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
-        ///           0x0073, 0xDD1E, 0x0069, 0x0063,
-        ///           0xD834];
-        ///
-        /// assert_eq!(MutBumpString::from_str_in("𝄞mus\u{FFFD}ic\u{FFFD}", &mut bump1),
-        ///            MutBumpString::from_utf16_lossy_in(v, &mut bump2));
-        /// ```
-        for fn from_utf16_lossy_in
-        do examples
-        /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump1: Bump = Bump::try_new()?;
-        /// # let mut bump2: Bump = Bump::try_new()?;
-        /// // 𝄞mus<invalid>ic<invalid>
-        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
-        ///           0x0073, 0xDD1E, 0x0069, 0x0063,
-        ///           0xD834];
-        ///
-        /// assert_eq!(MutBumpString::try_from_str_in("𝄞mus\u{FFFD}ic\u{FFFD}", &mut bump1)?,
-        ///            MutBumpString::try_from_utf16_lossy_in(v, &mut bump2)?);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
-        /// ```
-        for fn try_from_utf16_lossy_in
-        #[inline]
-        use fn generic_from_utf16_lossy_in(v: &[u16], allocator: A) -> Self {
-            let iter = char::decode_utf16(v.iter().copied());
-            let capacity = iter.size_hint().0;
-            let mut string = Self::generic_with_capacity_in(capacity, allocator)?;
-
-            for r in iter {
-                string.generic_push(r.unwrap_or(char::REPLACEMENT_CHARACTER))?;
-            }
-
-            Ok(string)
-        }
-    }
-}
-
-impl<A> MutBumpString<A> {
     /// Converts a vector of bytes to a `MutBumpString`.
     ///
     /// A string ([`MutBumpString`]) is made of bytes ([`u8`]), and a vector of bytes
@@ -777,6 +502,275 @@ impl<A> MutBumpString<A> {
 
 impl<A: BumpAllocatorMut> MutBumpString<A> {
     error_behavior_generic_methods_allocation_failure! {
+        /// Constructs a new empty `MutBumpString` with at least the specified capacity
+        /// with the provided `BumpScope`.
+        ///
+        /// The string will be able to hold at least `capacity` bytes without
+        /// reallocating. This method allocates for as much elements as the< current chunk can hold.
+        /// If `capacity` is 0, the string will not allocate.
+        impl
+        for fn with_capacity_in
+        for fn try_with_capacity_in
+        #[inline]
+        use fn generic_with_capacity_in(capacity: usize, allocator: A) -> Self {
+            let mut allocator = allocator;
+
+            if capacity == 0 {
+                return Ok(Self {
+                    fixed: RawFixedBumpString::EMPTY,
+                    allocator,
+                });
+            }
+
+            Ok(Self {
+                fixed: unsafe { RawFixedBumpString::prepare_allocation(&mut allocator, capacity)? },
+                allocator,
+            })
+        }
+
+        /// Constructs a new `MutBumpString` from a `&str`.
+        impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::new();
+        /// let string = MutBumpString::from_str_in("Hello!", &mut bump);
+        /// assert_eq!(string, "Hello!");
+        /// ```
+        for fn from_str_in
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let string = MutBumpString::try_from_str_in("Hello!", &mut bump)?;
+        /// assert_eq!(string, "Hello!");
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        for fn try_from_str_in
+        #[inline]
+        use fn generic_from_str_in(string: &str, allocator: A) -> Self {
+            let mut this = Self::generic_with_capacity_in(string.len(), allocator)?;
+
+            unsafe {
+                ptr::copy_nonoverlapping(string.as_ptr(), this.fixed.as_mut_ptr(), string.len());
+                this.as_mut_vec().set_len(string.len());
+            }
+
+            Ok(this)
+        }
+
+        /// Converts a slice of bytes to a string, including invalid characters.
+        ///
+        /// Strings are made of bytes ([`u8`]), and a slice of bytes
+        /// ([`&[u8]`][byteslice]) is made of bytes, so this function converts
+        /// between the two. Not all byte slices are valid strings, however: strings
+        /// are required to be valid UTF-8. During this conversion,
+        /// `from_utf8_lossy()` will replace any invalid UTF-8 sequences with
+        /// [`U+FFFD REPLACEMENT CHARACTER`][U+FFFD], which looks like this: �
+        ///
+        /// [byteslice]: prim@slice
+        /// [U+FFFD]: core::char::REPLACEMENT_CHARACTER
+        ///
+        /// If you are sure that the byte slice is valid UTF-8, and you don't want
+        /// to incur the overhead of the conversion, there is an unsafe version
+        /// of this function, [`from_utf8_unchecked`], which has the same behavior
+        /// but skips the checks.
+        ///
+        /// [`from_utf8_unchecked`]: Self::from_utf8_unchecked
+        impl
+        #[must_use]
+        do examples
+        /// Basic usage:
+        ///
+        /// ```
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::new();
+        /// // some bytes, in a vector
+        /// let sparkle_heart = [240, 159, 146, 150];
+        ///
+        /// let sparkle_heart = MutBumpString::from_utf8_lossy_in(&sparkle_heart, &mut bump);
+        ///
+        /// assert_eq!("💖", sparkle_heart);
+        /// ```
+        ///
+        /// Incorrect bytes:
+        ///
+        /// ```
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::new();
+        /// // some invalid bytes
+        /// let input = b"Hello \xF0\x90\x80World";
+        /// let output = MutBumpString::from_utf8_lossy_in(input, &mut bump);
+        ///
+        /// assert_eq!("Hello �World", output);
+        /// ```
+        for fn from_utf8_lossy_in
+        do examples
+        /// Basic usage:
+        ///
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// // some bytes, in a vector
+        /// let sparkle_heart = [240, 159, 146, 150];
+        ///
+        /// let sparkle_heart = MutBumpString::try_from_utf8_lossy_in(&sparkle_heart, &mut bump)?;
+        ///
+        /// assert_eq!("💖", sparkle_heart);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        ///
+        /// Incorrect bytes:
+        ///
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// // some invalid bytes
+        /// let input = b"Hello \xF0\x90\x80World";
+        /// let output = MutBumpString::try_from_utf8_lossy_in(input, &mut bump)?;
+        ///
+        /// assert_eq!("Hello �World", output);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        for fn try_from_utf8_lossy_in
+        use fn generic_from_utf8_lossy_in(v: &[u8], allocator: A) -> Self {
+            let mut iter = crate::polyfill::str::lossy::utf8_chunks(v);
+
+            let first_valid = if let Some(chunk) = iter.next() {
+                let valid = chunk.valid();
+                if chunk.invalid().is_empty() {
+                    debug_assert_eq!(valid.len(), v.len());
+                    return Self::generic_from_str_in(valid, allocator);
+                }
+                valid
+            } else {
+                return Ok(Self::new_in(allocator));
+            };
+
+            const REPLACEMENT: &str = "\u{FFFD}";
+
+            let mut res = Self::generic_with_capacity_in(v.len(), allocator)?;
+            res.generic_push_str(first_valid)?;
+            res.generic_push_str(REPLACEMENT)?;
+
+            for chunk in iter {
+                res.generic_push_str(chunk.valid())?;
+                if !chunk.invalid().is_empty() {
+                    res.generic_push_str(REPLACEMENT)?;
+                }
+            }
+
+            Ok(res)
+        }
+
+        /// Decode a UTF-16–encoded vector `v` into a `MutBumpString`, returning [`Err`]
+        /// if `v` contains any invalid data.
+        impl
+        #[allow(clippy::missing_errors_doc)]
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump1: Bump = Bump::new();
+        /// # let mut bump2: Bump = Bump::new();
+        /// // 𝄞music
+        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
+        ///           0x0073, 0x0069, 0x0063];
+        /// assert_eq!(MutBumpString::from_str_in("𝄞music", &mut bump1),
+        ///            MutBumpString::from_utf16_in(v, &mut bump2).unwrap());
+        ///
+        /// // 𝄞mu<invalid>ic
+        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
+        ///           0xD800, 0x0069, 0x0063];
+        /// assert!(MutBumpString::from_utf16_in(v, &mut bump2).is_err());
+        /// ```
+        for fn from_utf16_in
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump1: Bump = Bump::try_new()?;
+        /// # let mut bump2: Bump = Bump::try_new()?;
+        /// // 𝄞music
+        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
+        ///           0x0073, 0x0069, 0x0063];
+        /// assert_eq!(MutBumpString::try_from_str_in("𝄞music", &mut bump1)?,
+        ///            MutBumpString::try_from_utf16_in(v, &mut bump2)?.unwrap());
+        ///
+        /// // 𝄞mu<invalid>ic
+        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
+        ///           0xD800, 0x0069, 0x0063];
+        /// assert!(MutBumpString::try_from_utf16_in(v, &mut bump2)?.is_err());
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        for fn try_from_utf16_in
+        use fn generic_from_utf16_in(v: &[u16], allocator: A) -> Result<Self, FromUtf16Error> {
+            // This isn't done via collect::<Result<_, _>>() for performance reasons.
+            // FIXME: the function can be simplified again when #48994 is closed.
+            let mut ret = Self::generic_with_capacity_in(v.len(), allocator)?;
+
+            for c in char::decode_utf16(v.iter().copied()) {
+                if let Ok(c) = c {
+                    ret.generic_push(c)?;
+                } else {
+                    return Ok(Err(FromUtf16Error(())));
+                }
+            }
+
+            Ok(Ok(ret))
+        }
+
+        /// Decode a UTF-16–encoded slice `v` into a `MutBumpString`, replacing
+        /// invalid data with [the replacement character (`U+FFFD`)][U+FFFD].
+        ///
+        /// [U+FFFD]: core::char::REPLACEMENT_CHARACTER
+        impl
+        #[must_use]
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump1: Bump = Bump::new();
+        /// # let mut bump2: Bump = Bump::new();
+        /// // 𝄞mus<invalid>ic<invalid>
+        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
+        ///           0x0073, 0xDD1E, 0x0069, 0x0063,
+        ///           0xD834];
+        ///
+        /// assert_eq!(MutBumpString::from_str_in("𝄞mus\u{FFFD}ic\u{FFFD}", &mut bump1),
+        ///            MutBumpString::from_utf16_lossy_in(v, &mut bump2));
+        /// ```
+        for fn from_utf16_lossy_in
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, MutBumpString };
+        /// # let mut bump1: Bump = Bump::try_new()?;
+        /// # let mut bump2: Bump = Bump::try_new()?;
+        /// // 𝄞mus<invalid>ic<invalid>
+        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
+        ///           0x0073, 0xDD1E, 0x0069, 0x0063,
+        ///           0xD834];
+        ///
+        /// assert_eq!(MutBumpString::try_from_str_in("𝄞mus\u{FFFD}ic\u{FFFD}", &mut bump1)?,
+        ///            MutBumpString::try_from_utf16_lossy_in(v, &mut bump2)?);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        for fn try_from_utf16_lossy_in
+        #[inline]
+        use fn generic_from_utf16_lossy_in(v: &[u16], allocator: A) -> Self {
+            let iter = char::decode_utf16(v.iter().copied());
+            let capacity = iter.size_hint().0;
+            let mut string = Self::generic_with_capacity_in(capacity, allocator)?;
+
+            for r in iter {
+                string.generic_push(r.unwrap_or(char::REPLACEMENT_CHARACTER))?;
+            }
+
+            Ok(string)
+        }
+
         /// Appends the given [`char`] to the end of this string.
         impl
         do examples

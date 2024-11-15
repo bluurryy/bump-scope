@@ -20,7 +20,7 @@ use core::{
 
 /// This is like [`vec!`] but allocates inside a `Bump` or `BumpScope`, returning a [`MutBumpVecRev`].
 ///
-/// `$bump` can be a mutable [`Bump`](crate::Bump) or [`BumpScope`] (anything where `$bump.as_mut_scope()` returns a `&mut BumpScope`).
+/// `$bump` can be any type that implements [`BumpAllocatorMut`].
 ///
 /// # Panics
 /// If used without `try`, panics on allocation failure.
@@ -177,186 +177,7 @@ impl<T, A> MutBumpVecRev<T, A> {
             marker: PhantomData,
         }
     }
-}
 
-impl<T, A: BumpAllocatorMut> MutBumpVecRev<T, A> {
-    error_behavior_generic_methods_allocation_failure! {
-        /// Constructs a new empty vector with at least the specified capacity
-        /// with the provided `BumpScope`.
-        ///
-        /// The vector will be able to hold `capacity` elements without
-        /// reallocating. If `capacity` is 0, the vector will not allocate.
-        ///
-        /// It is important to note that although the returned vector has the
-        /// minimum *capacity* specified, the vector will have a zero *length*. For
-        /// an explanation of the difference between length and capacity, see
-        /// *[Capacity and reallocation]*.
-        ///
-        /// When `T` is a zero-sized type, there will be no allocation
-        /// and the capacity will always be `usize::MAX`.
-        ///
-        /// [Capacity and reallocation]: alloc::vec::Vec#capacity-and-reallocation
-        impl
-        for fn with_capacity_in
-        for fn try_with_capacity_in
-        #[inline]
-        use fn generic_with_capacity_in(capacity: usize, allocator: A) -> Self {
-            let mut allocator = allocator;
-
-            if T::IS_ZST {
-                return Ok(Self {
-                    end: NonNull::dangling(),
-                    len: 0,
-                    cap: usize::MAX,
-                    allocator,
-                    marker: PhantomData,
-                });
-            }
-
-            if capacity == 0 {
-                return Ok(Self {
-                    end: NonNull::dangling(),
-                    len: 0,
-                    cap: 0,
-                    allocator,
-                    marker: PhantomData,
-                });
-            }
-
-            let (end, cap) = unsafe { B::prepare_slice_allocation_rev(&mut allocator, capacity)? };
-
-            Ok(Self {
-                end,
-                len: 0,
-                cap,
-                allocator,
-                marker: PhantomData,
-            })
-        }
-
-        /// Constructs a new `MutBumpVecRev<T>` and pushes `value` `count` times.
-        impl
-        for fn from_elem_in
-        for fn try_from_elem_in
-        #[inline]
-        use fn generic_from_elem_in(value: T, count: usize, allocator: A) -> Self
-        where {
-            T: Clone
-        } in {
-            let mut vec = Self::generic_with_capacity_in(count, allocator)?;
-
-            unsafe {
-                if count != 0 {
-                    for _ in 0..(count - 1) {
-                        vec.unchecked_push_with(|| value.clone());
-                    }
-
-                    vec.unchecked_push_with(|| value);
-                }
-            }
-
-            Ok(vec)
-        }
-
-        /// Constructs a new `MutBumpVecRev<T>` from a `[T; N]`.
-        impl
-        for fn from_array_in
-        for fn try_from_array_in
-        #[inline]
-        use fn generic_from_array_in<{const N: usize}>(array: [T; N], allocator: A) -> Self {
-            #![allow(clippy::needless_pass_by_value)]
-            #![allow(clippy::needless_pass_by_ref_mut)]
-
-            let array = ManuallyDrop::new(array);
-            let mut allocator = allocator;
-
-            if T::IS_ZST {
-                return Ok(Self {
-                    end: NonNull::dangling(),
-                    len: N,
-                    cap: usize::MAX,
-                    allocator,
-                    marker: PhantomData,
-                });
-            }
-
-            if N == 0 {
-                return Ok(Self {
-                    end: NonNull::dangling(),
-                    len: 0,
-                    cap: 0,
-                    allocator,
-                    marker: PhantomData,
-                });
-            }
-
-            let (end, cap) = unsafe { B::prepare_slice_allocation_rev::<T>(&mut allocator, N)? };
-            let src = array.as_ptr();
-
-            unsafe {
-                let dst = end.as_ptr().sub(N);
-                ptr::copy_nonoverlapping(src, dst, N);
-            };
-
-            Ok(Self {
-                end,
-                len: N,
-                cap,
-                allocator,
-                marker: PhantomData,
-            })
-        }
-
-        /// Create a new [`MutBumpVecRev`] whose elements are taken from an iterator and allocated in the given `bump`.
-        ///
-        /// This is behaviorally identical to [`FromIterator::from_iter`].
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpVecRev };
-        /// # let mut bump: Bump = Bump::new();
-        /// let vec = MutBumpVecRev::from_iter_in([1, 2, 3], &mut bump);
-        /// assert_eq!(vec, [3, 2, 1]);
-        /// ```
-        for fn from_iter_in
-        do examples
-        /// ```
-        /// #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
-        /// # use bump_scope::{ Bump, MutBumpVecRev };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let vec = MutBumpVecRev::try_from_iter_in([1, 2, 3], &mut bump)?;
-        /// assert_eq!(vec, [3, 2, 1]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
-        /// ```
-        for fn try_from_iter_in
-        #[inline]
-        use fn generic_from_iter_in<{I}>(iter: I, allocator: A) -> Self
-        where {
-            I: IntoIterator<Item = T>
-        } in {
-            let iter = iter.into_iter();
-            let capacity = iter.size_hint().0;
-            let mut vec = Self::generic_with_capacity_in(capacity, allocator)?;
-
-            for value in iter {
-                vec.generic_push(value)?;
-            }
-
-            Ok(vec)
-        }
-    }
-
-    /// Returns a type which provides statistics about the memory usage of the bump allocator.
-    ///
-    /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
-    #[must_use]
-    #[inline(always)]
-    pub fn stats(&self) -> Stats {
-        self.allocator.stats()
-    }
-}
-
-impl<T, A> MutBumpVecRev<T, A> {
     /// Returns the total number of elements the vector can hold without
     /// reallocating.
     ///
@@ -685,6 +506,169 @@ impl<T, A> MutBumpVecRev<T, A> {
 
 impl<T, A: BumpAllocatorMut> MutBumpVecRev<T, A> {
     error_behavior_generic_methods_allocation_failure! {
+        /// Constructs a new empty vector with at least the specified capacity
+        /// with the provided `BumpScope`.
+        ///
+        /// The vector will be able to hold `capacity` elements without
+        /// reallocating. If `capacity` is 0, the vector will not allocate.
+        ///
+        /// It is important to note that although the returned vector has the
+        /// minimum *capacity* specified, the vector will have a zero *length*. For
+        /// an explanation of the difference between length and capacity, see
+        /// *[Capacity and reallocation]*.
+        ///
+        /// When `T` is a zero-sized type, there will be no allocation
+        /// and the capacity will always be `usize::MAX`.
+        ///
+        /// [Capacity and reallocation]: alloc::vec::Vec#capacity-and-reallocation
+        impl
+        for fn with_capacity_in
+        for fn try_with_capacity_in
+        #[inline]
+        use fn generic_with_capacity_in(capacity: usize, allocator: A) -> Self {
+            let mut allocator = allocator;
+
+            if T::IS_ZST {
+                return Ok(Self {
+                    end: NonNull::dangling(),
+                    len: 0,
+                    cap: usize::MAX,
+                    allocator,
+                    marker: PhantomData,
+                });
+            }
+
+            if capacity == 0 {
+                return Ok(Self {
+                    end: NonNull::dangling(),
+                    len: 0,
+                    cap: 0,
+                    allocator,
+                    marker: PhantomData,
+                });
+            }
+
+            let (end, cap) = unsafe { B::prepare_slice_allocation_rev(&mut allocator, capacity)? };
+
+            Ok(Self {
+                end,
+                len: 0,
+                cap,
+                allocator,
+                marker: PhantomData,
+            })
+        }
+
+        /// Constructs a new `MutBumpVecRev<T>` and pushes `value` `count` times.
+        impl
+        for fn from_elem_in
+        for fn try_from_elem_in
+        #[inline]
+        use fn generic_from_elem_in(value: T, count: usize, allocator: A) -> Self
+        where {
+            T: Clone
+        } in {
+            let mut vec = Self::generic_with_capacity_in(count, allocator)?;
+
+            unsafe {
+                if count != 0 {
+                    for _ in 0..(count - 1) {
+                        vec.unchecked_push_with(|| value.clone());
+                    }
+
+                    vec.unchecked_push_with(|| value);
+                }
+            }
+
+            Ok(vec)
+        }
+
+        /// Constructs a new `MutBumpVecRev<T>` from a `[T; N]`.
+        impl
+        for fn from_array_in
+        for fn try_from_array_in
+        #[inline]
+        use fn generic_from_array_in<{const N: usize}>(array: [T; N], allocator: A) -> Self {
+            #![allow(clippy::needless_pass_by_value)]
+            #![allow(clippy::needless_pass_by_ref_mut)]
+
+            let array = ManuallyDrop::new(array);
+            let mut allocator = allocator;
+
+            if T::IS_ZST {
+                return Ok(Self {
+                    end: NonNull::dangling(),
+                    len: N,
+                    cap: usize::MAX,
+                    allocator,
+                    marker: PhantomData,
+                });
+            }
+
+            if N == 0 {
+                return Ok(Self {
+                    end: NonNull::dangling(),
+                    len: 0,
+                    cap: 0,
+                    allocator,
+                    marker: PhantomData,
+                });
+            }
+
+            let (end, cap) = unsafe { B::prepare_slice_allocation_rev::<T>(&mut allocator, N)? };
+            let src = array.as_ptr();
+
+            unsafe {
+                let dst = end.as_ptr().sub(N);
+                ptr::copy_nonoverlapping(src, dst, N);
+            };
+
+            Ok(Self {
+                end,
+                len: N,
+                cap,
+                allocator,
+                marker: PhantomData,
+            })
+        }
+
+        /// Create a new [`MutBumpVecRev`] whose elements are taken from an iterator and allocated in the given `bump`.
+        ///
+        /// This is behaviorally identical to [`FromIterator::from_iter`].
+        impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, MutBumpVecRev };
+        /// # let mut bump: Bump = Bump::new();
+        /// let vec = MutBumpVecRev::from_iter_in([1, 2, 3], &mut bump);
+        /// assert_eq!(vec, [3, 2, 1]);
+        /// ```
+        for fn from_iter_in
+        do examples
+        /// ```
+        /// #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, MutBumpVecRev };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let vec = MutBumpVecRev::try_from_iter_in([1, 2, 3], &mut bump)?;
+        /// assert_eq!(vec, [3, 2, 1]);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        for fn try_from_iter_in
+        #[inline]
+        use fn generic_from_iter_in<{I}>(iter: I, allocator: A) -> Self
+        where {
+            I: IntoIterator<Item = T>
+        } in {
+            let iter = iter.into_iter();
+            let capacity = iter.size_hint().0;
+            let mut vec = Self::generic_with_capacity_in(capacity, allocator)?;
+
+            for value in iter {
+                vec.generic_push(value)?;
+            }
+
+            Ok(vec)
+        }
 
         /// Appends an element to the front of a collection.
         impl
@@ -1239,6 +1223,93 @@ impl<T, A: BumpAllocatorMut> MutBumpVecRev<T, A> {
                 Ok(())
             }
         }
+
+        /// Clones elements from `src` range to the end of the vector.
+        do panics
+        /// Panics if the starting point is greater than the end point or if
+        /// the end point is greater than the length of the vector.
+        impl
+        do examples
+        /// ```
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
+        /// # let mut bump: Bump = Bump::new();
+        /// let mut vec = mut_bump_vec_rev![in &mut bump; 0, 1, 2, 3, 4];
+        ///
+        /// vec.extend_from_within_clone(2..);
+        /// assert_eq!(vec, [2, 3, 4, 0, 1, 2, 3, 4]);
+        ///
+        /// vec.extend_from_within_clone(..2);
+        /// assert_eq!(vec, [2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
+        ///
+        /// vec.extend_from_within_clone(4..8);
+        /// assert_eq!(vec, [4, 0, 1, 2, 2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
+        /// ```
+        for fn extend_from_within_clone
+        do examples
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
+        /// # let mut bump: Bump = Bump::try_new()?;
+        /// let mut vec = mut_bump_vec_rev![try in bump; 0, 1, 2, 3, 4]?;
+        ///
+        /// vec.try_extend_from_within_clone(2..)?;
+        /// assert_eq!(vec, [2, 3, 4, 0, 1, 2, 3, 4]);
+        ///
+        /// vec.try_extend_from_within_clone(..2)?;
+        /// assert_eq!(vec, [2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
+        ///
+        /// vec.try_extend_from_within_clone(4..8)?;
+        /// assert_eq!(vec, [4, 0, 1, 2, 2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        for fn try_extend_from_within_clone
+        #[inline]
+        use fn generic_extend_from_within_clone<{R}>(&mut self, src: R)
+        where {
+            T: Clone,
+            R: RangeBounds<usize>,
+        } in {
+            let range = polyfill::slice::range(src, ..self.len());
+            let count = range.len();
+
+            self.generic_reserve(count)?;
+
+            if T::IS_ZST {
+                unsafe {
+                    // We can materialize ZST's from nothing.
+                    #[allow(clippy::uninit_assumed_init)]
+                    let fake = ManuallyDrop::new(MaybeUninit::<T>::uninit().assume_init());
+
+                    for _ in 0..count {
+                        self.unchecked_push((*fake).clone());
+                    }
+
+                    return Ok(());
+                }
+            }
+
+            // SAFETY:
+            // - `slice::range` guarantees that the given range is valid for indexing self
+            unsafe {
+                let ptr = self.as_mut_ptr();
+
+                let mut src = ptr.add(range.end);
+                let mut dst = ptr;
+
+                let src_end = src.sub(count);
+
+                while src != src_end {
+                    src = src.sub(1);
+                    dst = dst.sub(1);
+
+                    dst.write((*src).clone());
+
+                    self.len += 1;
+                }
+            }
+
+            Ok(())
+        }
     }
 
     /// Extend the vector by `n` clones of value.
@@ -1608,6 +1679,15 @@ impl<T, A: BumpAllocatorMut> MutBumpVecRev<T, A> {
 
         (initialized, spare, &mut self.len)
     }
+
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
+    ///
+    /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
+    #[must_use]
+    #[inline(always)]
+    pub fn stats(&self) -> Stats {
+        self.allocator.stats()
+    }
 }
 
 impl<'a, T, A: BumpAllocatorScopeMut<'a>> MutBumpVecRev<T, A> {
@@ -1636,97 +1716,6 @@ impl<'a, T, A: BumpAllocatorScopeMut<'a>> MutBumpVecRev<T, A> {
         [T]: NoDrop,
     {
         self.into_boxed_slice().into_mut()
-    }
-}
-
-impl<T, A: BumpAllocatorMut> MutBumpVecRev<T, A> {
-    error_behavior_generic_methods_allocation_failure! {
-        /// Clones elements from `src` range to the end of the vector.
-        do panics
-        /// Panics if the starting point is greater than the end point or if
-        /// the end point is greater than the length of the vector.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec_rev![in &mut bump; 0, 1, 2, 3, 4];
-        ///
-        /// vec.extend_from_within_clone(2..);
-        /// assert_eq!(vec, [2, 3, 4, 0, 1, 2, 3, 4]);
-        ///
-        /// vec.extend_from_within_clone(..2);
-        /// assert_eq!(vec, [2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
-        ///
-        /// vec.extend_from_within_clone(4..8);
-        /// assert_eq!(vec, [4, 0, 1, 2, 2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
-        /// ```
-        for fn extend_from_within_clone
-        do examples
-        /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
-        /// # use bump_scope::{ Bump, mut_bump_vec_rev };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec_rev![try in bump; 0, 1, 2, 3, 4]?;
-        ///
-        /// vec.try_extend_from_within_clone(2..)?;
-        /// assert_eq!(vec, [2, 3, 4, 0, 1, 2, 3, 4]);
-        ///
-        /// vec.try_extend_from_within_clone(..2)?;
-        /// assert_eq!(vec, [2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
-        ///
-        /// vec.try_extend_from_within_clone(4..8)?;
-        /// assert_eq!(vec, [4, 0, 1, 2, 2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
-        /// ```
-        for fn try_extend_from_within_clone
-        #[inline]
-        use fn generic_extend_from_within_clone<{R}>(&mut self, src: R)
-        where {
-            T: Clone,
-            R: RangeBounds<usize>,
-        } in {
-            let range = polyfill::slice::range(src, ..self.len());
-            let count = range.len();
-
-            self.generic_reserve(count)?;
-
-            if T::IS_ZST {
-                unsafe {
-                    // We can materialize ZST's from nothing.
-                    #[allow(clippy::uninit_assumed_init)]
-                    let fake = ManuallyDrop::new(MaybeUninit::<T>::uninit().assume_init());
-
-                    for _ in 0..count {
-                        self.unchecked_push((*fake).clone());
-                    }
-
-                    return Ok(());
-                }
-            }
-
-            // SAFETY:
-            // - `slice::range` guarantees that the given range is valid for indexing self
-            unsafe {
-                let ptr = self.as_mut_ptr();
-
-                let mut src = ptr.add(range.end);
-                let mut dst = ptr;
-
-                let src_end = src.sub(count);
-
-                while src != src_end {
-                    src = src.sub(1);
-                    dst = dst.sub(1);
-
-                    dst.write((*src).clone());
-
-                    self.len += 1;
-                }
-            }
-
-            Ok(())
-        }
     }
 }
 
@@ -2015,10 +2004,10 @@ impl<T, A> IntoIterator for MutBumpVecRev<T, A> {
     type Item = T;
     type IntoIter = IntoIter<T, A>;
 
-    /// Returns an iterator that borrows the `BumpScope` mutably. So you can't use the `BumpScope` while iterating.
-    /// The advantage is that the space the items took up is freed.
+    /// If you need to use the allocator while iterating you can first turn it to a slice with [`into_slice`] or [`into_boxed_slice`].
     ///
-    /// If you need to use the `BumpScope` while iterating you can first turn it to a slice with [`MutBumpVecRev::into_boxed_slice`].
+    /// [`into_slice`]: Self::into_slice
+    /// [`into_boxed_slice`]: Self::into_boxed_slice
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
         let (end, len, _cap, allocator) = self.into_raw_parts();

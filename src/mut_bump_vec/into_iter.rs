@@ -11,21 +11,22 @@ use crate::{polyfill::nonnull, BumpAllocator, SizedTypeProperties};
 
 /// An iterator that moves out of a vector.
 ///
-/// This `struct` is created by the `into_iter` method on
-/// [`MutBumpVec`](crate::MutBumpVec::into_iter),
+/// This `struct` is created by the [`into_iter`] method on [`MutBumpVec`],
 /// (provided by the [`IntoIterator`] trait).
-// This is modelled after rust's `alloc/src/vec/into_iter.rs`
+///
+/// [`into_iter`]: crate::MutBumpVec::into_iter
+/// [`MutBumpVec`]: crate::MutBumpVec
 pub struct IntoIter<T, A> {
-    pub(super) ptr: NonNull<T>,
-    pub(super) end: NonNull<T>, // if T is a ZST this is ptr + len
+    ptr: NonNull<T>,
+    end: NonNull<T>, // if T is a ZST this is ptr + len
 
     // Just holding on to it so it doesn't drop.
     #[allow(dead_code)]
-    pub(super) allocator: A,
+    allocator: A,
 
     /// First field marks the lifetime in the form of the allocator.
     /// Second field marks ownership over T. (<https://doc.rust-lang.org/nomicon/phantom-data.html#generic-parameters-and-drop-checking>)
-    pub(super) marker: PhantomData<(A, T)>,
+    marker: PhantomData<(A, T)>,
 }
 
 unsafe impl<T: Send, A: Send> Send for IntoIter<T, A> {}
