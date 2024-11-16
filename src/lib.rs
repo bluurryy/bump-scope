@@ -308,7 +308,8 @@ mod raw_fixed_bump_string;
 mod raw_fixed_bump_vec;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
-mod stats;
+/// Types that provide statistics about the memory usage of the bump allocator.
+pub mod stats;
 mod without_dealloc;
 
 pub use allocator_api2;
@@ -351,7 +352,8 @@ pub use mut_bump_vec_rev::MutBumpVecRev;
 use private::{capacity_overflow, format_trait_error, Infallibly};
 use set_len_on_drop::SetLenOnDrop;
 use set_len_on_drop_by_ptr::SetLenOnDropByPtr;
-pub use stats::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
+#[doc(inline)]
+pub use stats::Stats;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
 // This must be kept in sync with ChunkHeaders `repr(align(16))`.

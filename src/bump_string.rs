@@ -5,8 +5,8 @@ use crate::{
     error_behavior_generic_methods_allocation_failure, owned_str,
     polyfill::{self, transmute_mut, transmute_value},
     raw_fixed_bump_string::RawFixedBumpString,
+    stats::Stats,
     BumpAllocator, BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, FixedBumpString, FromUtf16Error, FromUtf8Error,
-    Stats,
 };
 use core::{
     alloc::Layout,

@@ -13,6 +13,7 @@
 - **breaking:** added `"panic-on-alloc"` feature which enables the panicking alloc functions (on by default); if you had `default-features = false` before you might need to enable this feature now
 - **breaking:** renamed `MutBumpVecRev`'s `as_nonnull_ptr` to `as_non_null_ptr` and `as_nonnull_slice` to `as_non_null_slice`
 - **breaking:** `append` methods now take `impl OwnedSlice<T>` instead
+- **breaking:** `Chunk`, `ChunkNextIter` and `ChunkPrevIter` have moved to the `stats` module
 - **fixed:** `BumpVec::split_off` now retains the capacity of `self` like the docs say
 - **added:** more general `PartialEq` for vectors
 - **added:** `not_guaranteed_allocated(_ref)` methods on `Bump(Scope)` to turn `GUARANTEED_ALLOCATED` false
