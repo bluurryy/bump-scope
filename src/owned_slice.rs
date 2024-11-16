@@ -21,7 +21,7 @@ use allocator_api2::{alloc::Allocator, vec::Vec};
 ///
 /// The slice remains valid as long as the implementor is only accessed through methods provided by this trait.  
 /// Interaction outside this trait's API may invalidate the slice.
-#[allow(clippy::missing_safety_doc)]
+#[allow(clippy::len_without_is_empty)]
 pub unsafe trait OwnedSlice<T> {
     /// Returns the length of the slice.
     fn len(&self) -> usize;

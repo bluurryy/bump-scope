@@ -1,6 +1,6 @@
 use alloc::rc::Rc;
-use allocator_api2::alloc::{Allocator, Global};
-use core::ops::Deref;
+use allocator_api2::alloc::{AllocError, Allocator, Global};
+use core::{alloc::Layout, ops::Deref, ptr::NonNull};
 
 use crate::{Bump, BumpAllocator, BumpAllocatorScope};
 
@@ -33,42 +33,32 @@ impl<A: Allocator + Clone> Deref for RcBump<A> {
 }
 
 unsafe impl<A: Allocator + Clone> Allocator for RcBump<A> {
-    fn allocate(&self, layout: core::alloc::Layout) -> Result<core::ptr::NonNull<[u8]>, std::alloc::AllocError> {
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         Bump::allocate(&self.0, layout)
     }
 
-    unsafe fn deallocate(&self, ptr: core::ptr::NonNull<u8>, layout: core::alloc::Layout) {
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
         Bump::deallocate(&self.0, ptr, layout);
     }
 
-    fn allocate_zeroed(&self, layout: core::alloc::Layout) -> Result<core::ptr::NonNull<[u8]>, std::alloc::AllocError> {
+    fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         Bump::allocate_zeroed(&self.0, layout)
     }
 
-    unsafe fn grow(
-        &self,
-        ptr: core::ptr::NonNull<u8>,
-        old_layout: core::alloc::Layout,
-        new_layout: core::alloc::Layout,
-    ) -> Result<core::ptr::NonNull<[u8]>, std::alloc::AllocError> {
+    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         Bump::grow(&self.0, ptr, old_layout, new_layout)
     }
 
     unsafe fn grow_zeroed(
         &self,
-        ptr: core::ptr::NonNull<u8>,
-        old_layout: core::alloc::Layout,
-        new_layout: core::alloc::Layout,
-    ) -> Result<core::ptr::NonNull<[u8]>, std::alloc::AllocError> {
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> {
         Bump::grow_zeroed(&self.0, ptr, old_layout, new_layout)
     }
 
-    unsafe fn shrink(
-        &self,
-        ptr: core::ptr::NonNull<u8>,
-        old_layout: core::alloc::Layout,
-        new_layout: core::alloc::Layout,
-    ) -> Result<core::ptr::NonNull<[u8]>, std::alloc::AllocError> {
+    unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         Bump::shrink(&self.0, ptr, old_layout, new_layout)
     }
 
@@ -85,48 +75,43 @@ unsafe impl<A: Allocator + Clone> BumpAllocator for RcBump<A> {
         <Bump<A> as BumpAllocator>::stats(self)
     }
 
-    fn allocate_layout(&self, layout: core::alloc::Layout) -> core::ptr::NonNull<u8> {
+    fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         Bump::allocate_layout(&self.0, layout)
     }
 
-    fn try_allocate_layout(&self, layout: core::alloc::Layout) -> Result<core::ptr::NonNull<u8>, std::alloc::AllocError> {
+    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
         Bump::try_allocate_layout(&self.0, layout)
     }
 
-    fn allocate_sized<T>(&self) -> core::ptr::NonNull<T>
+    fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
     {
         Bump::allocate_sized(&self.0)
     }
 
-    fn try_allocate_sized<T>(&self) -> Result<core::ptr::NonNull<T>, std::alloc::AllocError>
+    fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>
     where
         Self: Sized,
     {
         Bump::try_allocate_sized(&self.0)
     }
 
-    fn allocate_slice<T>(&self, len: usize) -> core::ptr::NonNull<T>
+    fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
     {
         Bump::allocate_slice(&self.0, len)
     }
 
-    fn try_allocate_slice<T>(&self, len: usize) -> Result<core::ptr::NonNull<T>, std::alloc::AllocError>
+    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError>
     where
         Self: Sized,
     {
         Bump::try_allocate_slice(&self.0, len)
     }
 
-    unsafe fn shrink_slice<T>(
-        &self,
-        ptr: core::ptr::NonNull<T>,
-        old_len: usize,
-        new_len: usize,
-    ) -> Option<core::ptr::NonNull<T>>
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>
     where
         Self: Sized,
     {
