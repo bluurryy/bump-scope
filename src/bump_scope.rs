@@ -523,7 +523,7 @@ where
         Ok(unsafe { self.cast_allocated() })
     }
 
-    /// Borrows `BumpScope` in a [guaranteed allocated](crate#guaranteed_allocated-parameter) state.
+    /// Borrows `BumpScope` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -532,7 +532,7 @@ where
         infallible(self.generic_guaranteed_allocated_ref())
     }
 
-    /// Borrows `BumpScope` in a [guaranteed allocated](crate#guaranteed_allocated-parameter) state.
+    /// Borrows `BumpScope` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -545,7 +545,7 @@ where
         Ok(unsafe { self.cast_allocated_ref() })
     }
 
-    /// Mutably borrows `BumpScope` in a [guaranteed allocated](crate#guaranteed_allocated-parameter) state.
+    /// Mutably borrows `BumpScope` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -554,7 +554,7 @@ where
         infallible(self.generic_guaranteed_allocated_mut())
     }
 
-    /// Mutably borrows `BumpScope` in a [guaranteed allocated](crate#guaranteed_allocated-parameter) state.
+    /// Mutably borrows `BumpScope` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -573,7 +573,7 @@ where
         unsafe { self.cast_allocated() }
     }
 
-    /// Borrows `BumpScope` in a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) state.
+    /// Borrows `BumpScope` as a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
     ///
     /// Note that it's not possible to mutably borrow as a not guaranteed allocated bump allocator. That's because
     /// a user could `mem::swap` it with an actual unallocated bump allocator which in turn would make `&mut self` be

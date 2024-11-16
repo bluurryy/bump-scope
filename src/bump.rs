@@ -4,7 +4,7 @@ use crate::{
     bump_common_methods, bump_scope_methods,
     chunk_size::ChunkSize,
     error_behavior_generic_methods_allocation_failure,
-    polyfill::{cfg_const, pointer, transmute_ref},
+    polyfill::{cfg_const, pointer, transmute_mut, transmute_ref},
     unallocated_chunk_header, BaseAllocator, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment,
     RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
@@ -396,10 +396,32 @@ where
 
     fn generic_guaranteed_allocated<E: ErrorBehavior>(self) -> Result<Bump<A, MIN_ALIGN, UP>, E> {
         self.as_scope().ensure_allocated()?;
-        Ok(unsafe { self.cast_allocated() })
+        Ok(unsafe { transmute(self) })
     }
 
-    /// Mutably borrows `Bump` in a [guaranteed allocated](crate#guaranteed_allocated-parameter) state.
+    /// Borrows `Bump` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    #[cfg(not(no_global_oom_handling))]
+    pub fn guaranteed_allocated_ref(&self) -> &Bump<A, MIN_ALIGN, UP> {
+        infallible(self.generic_guaranteed_allocated_ref())
+    }
+
+    /// Borrows `Bump` as an [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    pub fn try_guaranteed_allocated_ref(&self) -> Result<&Bump<A, MIN_ALIGN, UP>, AllocError> {
+        self.generic_guaranteed_allocated_ref()
+    }
+
+    fn generic_guaranteed_allocated_ref<E: ErrorBehavior>(&self) -> Result<&Bump<A, MIN_ALIGN, UP>, E> {
+        self.as_scope().ensure_allocated()?;
+        Ok(unsafe { transmute_ref(self) })
+    }
+
+    /// Mutably borrows `Bump` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -408,7 +430,7 @@ where
         infallible(self.generic_guaranteed_allocated_mut())
     }
 
-    /// Mutably borrows `Bump` in an [guaranteed allocated](crate#guaranteed_allocated-parameter) state.
+    /// Mutably borrows `Bump` as an [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -418,20 +440,7 @@ where
 
     fn generic_guaranteed_allocated_mut<E: ErrorBehavior>(&mut self) -> Result<&mut Bump<A, MIN_ALIGN, UP>, E> {
         self.as_scope().ensure_allocated()?;
-        Ok(unsafe { self.cast_allocated_mut() })
-    }
-
-    #[inline(always)]
-    pub(crate) unsafe fn cast_allocated(self) -> Bump<A, MIN_ALIGN, UP> {
-        let chunk = self.chunk.get();
-        mem::forget(self);
-
-        Bump { chunk: Cell::new(chunk) }
-    }
-
-    #[inline(always)]
-    pub(crate) unsafe fn cast_allocated_mut(&mut self) -> &mut Bump<A, MIN_ALIGN, UP> {
-        &mut *pointer::from_mut(self).cast::<Bump<A, MIN_ALIGN, UP>>()
+        Ok(unsafe { transmute_mut(self) })
     }
 
     /// Converts this `BumpScope` into a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
@@ -443,7 +452,7 @@ where
         unsafe { transmute(self) }
     }
 
-    /// Borrows `Bump` in a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) state.
+    /// Borrows `Bump` as a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
     /// Note that it's not possible to mutably borrow as a not guaranteed allocated bump allocator. That's because
     /// a user could `mem::swap` it with an actual unallocated bump allocator which in turn would make `&mut self` be
