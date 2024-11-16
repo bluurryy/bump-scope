@@ -1557,7 +1557,7 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
         let end = this.end;
         let len = this.len;
         let cap = this.cap;
-        unsafe { this.allocator.use_reserved_allocation_rev(end, len, cap) }
+        unsafe { this.allocator.use_prepared_slice_allocation_rev(end, len, cap) }
     }
 
     /// # Safety

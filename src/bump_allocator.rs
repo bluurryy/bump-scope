@@ -680,7 +680,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator {
     ///   grow, shrink or deallocate must have been called since then.
     /// - `len` must be less than or equal to `cap`
     #[doc(hidden)]
-    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    unsafe fn use_prepared_slice_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized;
 
@@ -712,7 +712,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator {
     ///   grow, shrink or deallocate must have been called since then.
     /// - `len` must be less than or equal to `cap`
     #[doc(hidden)]
-    unsafe fn use_reserved_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    unsafe fn use_prepared_slice_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized;
 }
@@ -735,11 +735,11 @@ unsafe impl<A: MutBumpAllocator> MutBumpAllocator for WithoutDealloc<A> {
     }
 
     #[inline(always)]
-    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    unsafe fn use_prepared_slice_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        A::use_reserved_allocation(&mut self.0, ptr, len, cap)
+        A::use_prepared_slice_allocation(&mut self.0, ptr, len, cap)
     }
 
     #[inline(always)]
@@ -759,11 +759,11 @@ unsafe impl<A: MutBumpAllocator> MutBumpAllocator for WithoutDealloc<A> {
     }
 
     #[inline(always)]
-    unsafe fn use_reserved_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    unsafe fn use_prepared_slice_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        A::use_reserved_allocation_rev(&mut self.0, ptr, len, cap)
+        A::use_prepared_slice_allocation_rev(&mut self.0, ptr, len, cap)
     }
 }
 
@@ -785,11 +785,11 @@ unsafe impl<A: MutBumpAllocator> MutBumpAllocator for WithoutShrink<A> {
     }
 
     #[inline(always)]
-    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    unsafe fn use_prepared_slice_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        A::use_reserved_allocation(&mut self.0, ptr, len, cap)
+        A::use_prepared_slice_allocation(&mut self.0, ptr, len, cap)
     }
 
     #[inline(always)]
@@ -809,11 +809,11 @@ unsafe impl<A: MutBumpAllocator> MutBumpAllocator for WithoutShrink<A> {
     }
 
     #[inline(always)]
-    unsafe fn use_reserved_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    unsafe fn use_prepared_slice_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        A::use_reserved_allocation_rev(&mut self.0, ptr, len, cap)
+        A::use_prepared_slice_allocation_rev(&mut self.0, ptr, len, cap)
     }
 }
 
@@ -851,11 +851,11 @@ where
     }
 
     #[inline(always)]
-    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    unsafe fn use_prepared_slice_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        BumpScope::use_reserved_allocation(self, ptr, len, cap)
+        BumpScope::use_prepared_slice_allocation(self, ptr, len, cap)
     }
 
     #[inline(always)]
@@ -884,11 +884,11 @@ where
     }
 
     #[inline(always)]
-    unsafe fn use_reserved_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    unsafe fn use_prepared_slice_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        BumpScope::use_reserved_allocation_rev(self, ptr, len, cap)
+        BumpScope::use_prepared_slice_allocation_rev(self, ptr, len, cap)
     }
 }
 
@@ -915,11 +915,11 @@ where
     }
 
     #[inline(always)]
-    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    unsafe fn use_prepared_slice_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        self.as_mut_scope().use_reserved_allocation(ptr, len, cap)
+        self.as_mut_scope().use_prepared_slice_allocation(ptr, len, cap)
     }
 
     #[inline(always)]
@@ -939,11 +939,11 @@ where
     }
 
     #[inline(always)]
-    unsafe fn use_reserved_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    unsafe fn use_prepared_slice_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        self.as_mut_scope().use_reserved_allocation_rev(ptr, len, cap)
+        self.as_mut_scope().use_prepared_slice_allocation_rev(ptr, len, cap)
     }
 }
 
@@ -970,11 +970,11 @@ where
     }
 
     #[inline(always)]
-    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    unsafe fn use_prepared_slice_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        BumpScope::use_reserved_allocation(self, ptr, len, cap)
+        BumpScope::use_prepared_slice_allocation(self, ptr, len, cap)
     }
 
     #[inline(always)]
@@ -994,11 +994,11 @@ where
     }
 
     #[inline(always)]
-    unsafe fn use_reserved_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    unsafe fn use_prepared_slice_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        BumpScope::use_reserved_allocation_rev(self, ptr, len, cap)
+        BumpScope::use_prepared_slice_allocation_rev(self, ptr, len, cap)
     }
 }
 
@@ -1025,11 +1025,11 @@ where
     }
 
     #[inline(always)]
-    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    unsafe fn use_prepared_slice_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        Bump::use_reserved_allocation(self, ptr, len, cap)
+        Bump::use_prepared_slice_allocation(self, ptr, len, cap)
     }
 
     #[inline(always)]
@@ -1049,11 +1049,11 @@ where
     }
 
     #[inline(always)]
-    unsafe fn use_reserved_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    unsafe fn use_prepared_slice_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        Bump::use_reserved_allocation_rev(self, ptr, len, cap)
+        Bump::use_prepared_slice_allocation_rev(self, ptr, len, cap)
     }
 }
 

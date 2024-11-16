@@ -1390,7 +1390,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
             let len = this.len();
             let cap = this.capacity();
 
-            this.allocator.use_reserved_allocation(ptr, len, cap)
+            this.allocator.use_prepared_slice_allocation(ptr, len, cap)
         }
     }
 

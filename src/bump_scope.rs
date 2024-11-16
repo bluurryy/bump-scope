@@ -129,7 +129,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn use_reserved_allocation<T>(
+    pub(crate) unsafe fn use_prepared_slice_allocation<T>(
         &mut self,
         mut start: NonNull<T>,
         len: usize,
@@ -155,7 +155,12 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn use_reserved_allocation_rev<T>(&self, mut end: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+    pub(crate) unsafe fn use_prepared_slice_allocation_rev<T>(
+        &self,
+        mut end: NonNull<T>,
+        len: usize,
+        cap: usize,
+    ) -> NonNull<[T]> {
         let mut start = nonnull::sub(end, len);
 
         if UP {
