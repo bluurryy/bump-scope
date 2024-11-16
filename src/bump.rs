@@ -4,7 +4,7 @@ use crate::{
     bump_common_methods, bump_scope_methods,
     chunk_size::ChunkSize,
     error_behavior_generic_methods_allocation_failure,
-    polyfill::{cfg_const, pointer},
+    polyfill::{cfg_const, pointer, transmute_ref},
     unallocated_chunk_header, BaseAllocator, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment,
     RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
@@ -13,7 +13,7 @@ use core::{
     alloc::Layout,
     cell::Cell,
     fmt::{self, Debug},
-    mem::{self, ManuallyDrop},
+    mem::{self, transmute, ManuallyDrop},
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::NonNull,
 };
@@ -432,6 +432,28 @@ where
     #[inline(always)]
     pub(crate) unsafe fn cast_allocated_mut(&mut self) -> &mut Bump<A, MIN_ALIGN, UP> {
         &mut *pointer::from_mut(self).cast::<Bump<A, MIN_ALIGN, UP>>()
+    }
+
+    /// Converts this `BumpScope` into a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
+    pub fn not_guaranteed_allocated(self) -> Bump<A, MIN_ALIGN, UP, false>
+    where
+        A: Default,
+    {
+        // SAFETY: it's always valid to interpret a guaranteed allocated as a non guaranteed allocated
+        unsafe { transmute(self) }
+    }
+
+    /// Borrows `Bump` in a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) state.
+    ///
+    /// Note that it's not possible to mutably borrow as a not guaranteed allocated bump allocator. That's because
+    /// a user could `mem::swap` it with an actual unallocated bump allocator which in turn would make `&mut self` be
+    /// unallocated.
+    pub fn not_guaranteed_allocated_ref(&self) -> &Bump<A, MIN_ALIGN, UP, false>
+    where
+        A: Default,
+    {
+        // SAFETY: it's always valid to interpret a guaranteed allocated as a non guaranteed allocated
+        unsafe { transmute_ref(self) }
     }
 
     /// Converts this `Bump` into a raw pointer.

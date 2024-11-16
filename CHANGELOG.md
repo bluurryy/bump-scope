@@ -12,6 +12,7 @@
 - **breaking:** renamed `into_guaranteed_allocated` to `guaranteed_allocated`; `as_guaranteed_allocated` to `guaranteed_allocated_ref`; `as_guaranteed_allocated_mut` to `guaranteed_allocated_mut`
 - **fixed:** `BumpVec::split_off` now retains the capacity of `self` like the docs say
 - **added:** more general `PartialEq` for vectors
+- **added:** `not_guaranteed_allocated(_ref)` methods on `Bump(Scope)` to turn `GUARANTEED_ALLOCATED` false
 
 ## 0.10.11 (2024-11-11)
 - **added:** `map_in_place` to `(Mut)BumpVec`

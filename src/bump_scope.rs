@@ -5,7 +5,7 @@ use crate::{
     chunk_size::ChunkSize,
     const_param_assert, down_align_usize,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
-    polyfill::{nonnull, pointer},
+    polyfill::{nonnull, pointer, transmute_mut, transmute_ref},
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
     FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk,
     SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
@@ -567,8 +567,26 @@ where
         Ok(unsafe { self.cast_allocated_mut() })
     }
 
+    /// Converts this `BumpScope` into a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
+    pub fn not_guaranteed_allocated(self) -> BumpScope<'a, A, MIN_ALIGN, UP, false> {
+        // SAFETY: it's always valid to interpret a guaranteed allocated as a non guaranteed allocated
+        unsafe { self.cast_allocated() }
+    }
+
+    /// Borrows `BumpScope` in a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) state.
+    ///
+    /// Note that it's not possible to mutably borrow as a not guaranteed allocated bump allocator. That's because
+    /// a user could `mem::swap` it with an actual unallocated bump allocator which in turn would make `&mut self` be
+    /// unallocated.
+    pub fn not_guaranteed_allocated_ref(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP, false> {
+        // SAFETY: it's always valid to interpret a guaranteed allocated as a non guaranteed allocated
+        unsafe { self.cast_allocated_ref() }
+    }
+
     #[inline(always)]
-    pub(crate) unsafe fn cast_allocated(self) -> BumpScope<'a, A, MIN_ALIGN, UP> {
+    pub(crate) unsafe fn cast_allocated<const NEW_GUARANTEED_ALLOCATED: bool>(
+        self,
+    ) -> BumpScope<'a, A, MIN_ALIGN, UP, NEW_GUARANTEED_ALLOCATED> {
         BumpScope {
             chunk: self.chunk,
             marker: PhantomData,
@@ -576,13 +594,17 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn cast_allocated_ref(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP> {
-        &*pointer::from_ref(self).cast::<BumpScope<'a, A, MIN_ALIGN, UP>>()
+    pub(crate) unsafe fn cast_allocated_ref<const NEW_GUARANTEED_ALLOCATED: bool>(
+        &self,
+    ) -> &BumpScope<'a, A, MIN_ALIGN, UP, NEW_GUARANTEED_ALLOCATED> {
+        transmute_ref(self)
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn cast_allocated_mut(&mut self) -> &mut BumpScope<'a, A, MIN_ALIGN, UP> {
-        &mut *pointer::from_mut(self).cast::<BumpScope<'a, A, MIN_ALIGN, UP>>()
+    pub(crate) unsafe fn cast_allocated_mut<const NEW_GUARANTEED_ALLOCATED: bool>(
+        &mut self,
+    ) -> &mut BumpScope<'a, A, MIN_ALIGN, UP, NEW_GUARANTEED_ALLOCATED> {
+        transmute_mut(self)
     }
 
     /// # Safety
