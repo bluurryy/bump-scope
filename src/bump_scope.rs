@@ -18,7 +18,7 @@ use core::{
     cell::Cell,
     fmt::{self, Debug},
     marker::PhantomData,
-    mem::{ManuallyDrop, MaybeUninit},
+    mem::{transmute, ManuallyDrop, MaybeUninit},
     num::NonZeroUsize,
     ops::Range,
     panic::{RefUnwindSafe, UnwindSafe},
@@ -523,7 +523,7 @@ where
     #[inline(always)]
     fn generic_guaranteed_allocated<E: ErrorBehavior>(self) -> Result<BumpScope<'a, A, MIN_ALIGN, UP>, E> {
         self.as_scope().ensure_allocated()?;
-        Ok(unsafe { self.cast_allocated() })
+        Ok(unsafe { transmute(self) })
     }
 
     /// Borrows `BumpScope` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
@@ -548,7 +548,7 @@ where
     #[inline(always)]
     fn generic_guaranteed_allocated_ref<E: ErrorBehavior>(&self) -> Result<&BumpScope<'a, A, MIN_ALIGN, UP>, E> {
         self.as_scope().ensure_allocated()?;
-        Ok(unsafe { self.cast_allocated_ref() })
+        Ok(unsafe { transmute_ref(self) })
     }
 
     /// Mutably borrows `BumpScope` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
@@ -573,14 +573,14 @@ where
     #[inline(always)]
     fn generic_guaranteed_allocated_mut<E: ErrorBehavior>(&mut self) -> Result<&mut BumpScope<'a, A, MIN_ALIGN, UP>, E> {
         self.as_scope().ensure_allocated()?;
-        Ok(unsafe { self.cast_allocated_mut() })
+        Ok(unsafe { transmute_mut(self) })
     }
 
     /// Converts this `BumpScope` into a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
     #[inline(always)]
     pub fn not_guaranteed_allocated(self) -> BumpScope<'a, A, MIN_ALIGN, UP, false> {
         // SAFETY: it's always valid to interpret a guaranteed allocated as a non guaranteed allocated
-        unsafe { self.cast_allocated() }
+        unsafe { transmute(self) }
     }
 
     /// Borrows `BumpScope` as a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
@@ -591,31 +591,7 @@ where
     #[inline(always)]
     pub fn not_guaranteed_allocated_ref(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP, false> {
         // SAFETY: it's always valid to interpret a guaranteed allocated as a non guaranteed allocated
-        unsafe { self.cast_allocated_ref() }
-    }
-
-    #[inline(always)]
-    pub(crate) unsafe fn cast_allocated<const NEW_GUARANTEED_ALLOCATED: bool>(
-        self,
-    ) -> BumpScope<'a, A, MIN_ALIGN, UP, NEW_GUARANTEED_ALLOCATED> {
-        BumpScope {
-            chunk: self.chunk,
-            marker: PhantomData,
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) unsafe fn cast_allocated_ref<const NEW_GUARANTEED_ALLOCATED: bool>(
-        &self,
-    ) -> &BumpScope<'a, A, MIN_ALIGN, UP, NEW_GUARANTEED_ALLOCATED> {
-        transmute_ref(self)
-    }
-
-    #[inline(always)]
-    pub(crate) unsafe fn cast_allocated_mut<const NEW_GUARANTEED_ALLOCATED: bool>(
-        &mut self,
-    ) -> &mut BumpScope<'a, A, MIN_ALIGN, UP, NEW_GUARANTEED_ALLOCATED> {
-        transmute_mut(self)
+        unsafe { transmute_ref(self) }
     }
 
     /// # Safety
