@@ -10,11 +10,11 @@
 - **breaking:** `GuaranteedAllocatedStats` has been removed in favor of `Stats<'a, true>`
 - **breaking:** removed deprecated functions `BumpBox<[u8]>::into_boxed_str(_unchecked)`; use `BumpBox<str>::from_utf8(_unchecked)` instead
 - **breaking:** renamed `into_guaranteed_allocated` to `guaranteed_allocated`; `as_guaranteed_allocated` to `guaranteed_allocated_ref`; `as_guaranteed_allocated_mut` to `guaranteed_allocated_mut`
+- **breaking:** added `"panic-on-alloc"` feature which enables the panicking alloc functions (on by default); if you had `default-features = false` before you might need to enable this feature now
 - **fixed:** `BumpVec::split_off` now retains the capacity of `self` like the docs say
 - **added:** more general `PartialEq` for vectors
 - **added:** `not_guaranteed_allocated(_ref)` methods on `Bump(Scope)` to turn `GUARANTEED_ALLOCATED` false
 - **added:** `Bump::(try_)guaranteed_allocated_ref`
-- **added:** added `"panic-on-alloc"` feature which enabled the panicking alloc functions (on by default)
 
 ## 0.10.11 (2024-11-11)
 - **added:** `map_in_place` to `(Mut)BumpVec`
