@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.11.0 (2024-11-16)
 - **breaking:** vectors and strings now take a single `A` generic parameter instead of the `'b, 'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool` of before
 - **breaking:** `vec`-like macros now take the bump allocator as is instead of by `$bump.as_scope()`;
 - **breaking:** `bump` methods on vectors and strings has been renamed to `allocator`, the old `allocator` method which returned the base allocator is gone
