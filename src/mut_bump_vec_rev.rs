@@ -2,6 +2,7 @@ use crate::{
     destructure::destructure,
     error_behavior_generic_methods_allocation_failure, min_non_zero_cap,
     mut_bump_vec::IntoIter,
+    owned_slice::OwnedSlice,
     polyfill::{self, nonnull, pointer},
     BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SetLenOnDrop, SizedTypeProperties, Stats,
 };
@@ -333,7 +334,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     pub fn as_ptr(&self) -> *const T {
         // We shadow the slice method of the same name to avoid going through
         // `deref`, which creates an intermediate reference.
-        self.as_nonnull_ptr().as_ptr()
+        self.as_non_null_ptr().as_ptr()
     }
 
     /// Returns an unsafe mutable pointer to the vector's buffer, or a dangling
@@ -368,14 +369,14 @@ impl<T, A> MutBumpVecRev<T, A> {
     pub fn as_mut_ptr(&mut self) -> *mut T {
         // We shadow the slice method of the same name to avoid going through
         // `deref_mut`, which creates an intermediate reference.
-        self.as_nonnull_ptr().as_ptr()
+        self.as_non_null_ptr().as_ptr()
     }
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
     /// valid for zero sized reads.
     #[must_use]
     #[inline(always)]
-    pub fn as_nonnull_ptr(&self) -> NonNull<T> {
+    pub fn as_non_null_ptr(&self) -> NonNull<T> {
         unsafe { nonnull::sub(self.end, self.len) }
     }
 
@@ -383,8 +384,8 @@ impl<T, A> MutBumpVecRev<T, A> {
     /// valid for zero sized reads.
     #[must_use]
     #[inline(always)]
-    pub fn as_nonnull_slice(&self) -> NonNull<[T]> {
-        nonnull::slice_from_raw_parts(self.as_nonnull_ptr(), self.len)
+    pub fn as_non_null_slice(&self) -> NonNull<[T]> {
+        nonnull::slice_from_raw_parts(self.as_non_null_ptr(), self.len)
     }
 
     /// Shortens the vector, keeping the first `len` elements and dropping
@@ -1216,10 +1217,19 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
         /// ```
         for fn try_append
         #[inline]
-        use fn generic_append(&mut self, other: &mut BumpBox<[T]>) {
+        use fn generic_append(&mut self, slice: impl OwnedSlice<T>) {
             unsafe {
-                self.extend_by_copy_nonoverlapping(other.as_slice())?;
-                other.set_len(0);
+                let len = slice.len();
+                self.generic_reserve(len)?;
+
+                let mut slice = slice;
+                let slice = slice.take_slice();
+
+                let src = slice.cast::<T>().as_ptr();
+                self.len += len;
+                let dst = self.as_mut_ptr();
+
+                ptr::copy_nonoverlapping(src, dst, len);
                 Ok(())
             }
         }
@@ -1831,7 +1841,7 @@ impl<T, A> Drop for MutBumpVecRev<T, A> {
         // Chunk allocations are supposed to be very rare, so this wouldn't be worth it.
 
         unsafe {
-            self.as_nonnull_slice().as_ptr().drop_in_place();
+            self.as_non_null_slice().as_ptr().drop_in_place();
         }
     }
 }

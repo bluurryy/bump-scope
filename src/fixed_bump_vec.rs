@@ -1,5 +1,6 @@
 use crate::{
     error_behavior_generic_methods_allocation_failure, error_behavior_generic_methods_if, owned_slice,
+    owned_slice::OwnedSlice,
     polyfill::{self, nonnull, pointer, slice},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
     BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, NoDrop, SizedTypeProperties,
@@ -1074,10 +1075,19 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// ```
         for fn try_append
         #[inline]
-        use fn generic_append(&mut self, other: &mut BumpBox<[T]>) {
+        use fn generic_append(&mut self, slice: impl OwnedSlice<T>) {
             unsafe {
-                self.extend_by_copy_nonoverlapping(other.as_slice())?;
-                other.set_len(0);
+                let len = slice.len();
+                self.generic_reserve(len)?;
+
+                let mut slice = slice;
+                let slice = slice.take_slice();
+
+                let src = slice.cast::<T>().as_ptr();
+                let dst = self.as_mut_ptr().add(self.len());
+                ptr::copy_nonoverlapping(src, dst, len);
+
+                self.inc_len(len);
                 Ok(())
             }
         }

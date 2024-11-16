@@ -5,6 +5,7 @@ mod splice;
 use crate::{
     destructure::destructure,
     error_behavior_generic_methods_allocation_failure, min_non_zero_cap, owned_slice,
+    owned_slice::OwnedSlice,
     polyfill::{nonnull, pointer, slice},
     raw_bump_box::RawBumpBox,
     raw_fixed_bump_vec::RawFixedBumpVec,
@@ -1388,10 +1389,19 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         /// ```
         for fn try_append
         #[inline]
-        use fn generic_append(&mut self, other: &mut BumpBox<[T]>) {
+        use fn generic_append(&mut self, slice: impl OwnedSlice<T>) {
             unsafe {
-                self.extend_by_copy_nonoverlapping(other.as_slice())?;
-                other.set_len(0);
+                let len = slice.len();
+                self.generic_reserve(len)?;
+
+                let mut slice = slice;
+                let slice = slice.take_slice();
+
+                let src = slice.cast::<T>().as_ptr();
+                let dst = self.as_mut_ptr().add(self.len());
+                ptr::copy_nonoverlapping(src, dst, len);
+
+                self.inc_len(len);
                 Ok(())
             }
         }
