@@ -31,7 +31,7 @@
 #![cfg_attr(
     docsrs,
     feature(doc_auto_cfg, doc_cfg_hide),
-    doc(cfg_hide(no_global_oom_handling, feature = "nightly-const-refs-to-static"))
+    doc(cfg_hide(feature = "panic-on-alloc", feature = "nightly-const-refs-to-static"))
 )]
 #![warn(
     clippy::pedantic,
