@@ -32,6 +32,7 @@ mod mut_bump_vec_rev_doc;
 mod mut_collections_do_not_waste_space;
 mod panic_safety;
 mod pool;
+mod rc_bump;
 #[cfg(feature = "serde")]
 mod serde;
 mod unaligned_collection;
@@ -50,6 +51,8 @@ use crate::{
     BumpBox, BumpScope, BumpString, BumpVec, Chunk, ChunkHeader, ChunkSize, FmtFn, MinimumAlignment, MutBumpString,
     MutBumpVec, MutBumpVecRev, SizedTypeProperties, SupportedMinimumAlignment,
 };
+
+pub(crate) use rc_bump::RcBump;
 
 #[allow(dead_code)]
 fn assert_covariant() {
