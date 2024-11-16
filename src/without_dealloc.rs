@@ -54,8 +54,6 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
     }
 }
 
-unsafe impl<A: BumpAllocator> BumpAllocator for WithoutDealloc<A> {}
-
 /// Wraps an bump allocator and does nothing on [`shrink`](Allocator::shrink).
 ///
 /// This type only implements [`Allocator`] for wrapped types that implement [`BumpAllocator`], so you don't accidentally leak memory.
@@ -125,5 +123,3 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
         }
     }
 }
-
-unsafe impl<A: BumpAllocator> BumpAllocator for WithoutShrink<A> {}

@@ -4,7 +4,7 @@ use allocator_api2::alloc::{AllocError, Allocator};
 
 use crate::{
     bump_down, polyfill::nonnull, up_align_usize_unchecked, BaseAllocator, Bump, BumpScope, MinimumAlignment,
-    SizedTypeProperties, Stats, SupportedMinimumAlignment,
+    SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -208,7 +208,6 @@ unsafe impl<A: BumpAllocator> BumpAllocator for &A {
     }
 
     #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
@@ -227,6 +226,114 @@ unsafe impl<A: BumpAllocator> BumpAllocator for &A {
     #[inline(always)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
         A::shrink_slice(self, ptr, old_len, new_len)
+    }
+}
+
+unsafe impl<A: BumpAllocator> BumpAllocator for WithoutDealloc<A> {
+    #[inline(always)]
+    fn stats(&self) -> Stats<'_> {
+        A::stats(&self.0)
+    }
+
+    #[inline(always)]
+    fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
+        A::allocate_layout(&self.0, layout)
+    }
+
+    #[inline(always)]
+    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
+        A::try_allocate_layout(&self.0, layout)
+    }
+
+    #[inline(always)]
+    fn allocate_sized<T>(&self) -> NonNull<T>
+    where
+        Self: Sized,
+    {
+        A::allocate_sized(&self.0)
+    }
+
+    #[inline(always)]
+    fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>
+    where
+        Self: Sized,
+    {
+        A::try_allocate_sized(&self.0)
+    }
+
+    #[inline(always)]
+    fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
+    where
+        Self: Sized,
+    {
+        A::allocate_slice(&self.0, len)
+    }
+
+    #[inline(always)]
+    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError>
+    where
+        Self: Sized,
+    {
+        A::try_allocate_slice(&self.0, len)
+    }
+
+    #[inline(always)]
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
+        A::shrink_slice(&self.0, ptr, old_len, new_len)
+    }
+}
+
+unsafe impl<A: BumpAllocator> BumpAllocator for WithoutShrink<A> {
+    #[inline(always)]
+    fn stats(&self) -> Stats<'_> {
+        A::stats(&self.0)
+    }
+
+    #[inline(always)]
+    fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
+        A::allocate_layout(&self.0, layout)
+    }
+
+    #[inline(always)]
+    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
+        A::try_allocate_layout(&self.0, layout)
+    }
+
+    #[inline(always)]
+    fn allocate_sized<T>(&self) -> NonNull<T>
+    where
+        Self: Sized,
+    {
+        A::allocate_sized(&self.0)
+    }
+
+    #[inline(always)]
+    fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>
+    where
+        Self: Sized,
+    {
+        A::try_allocate_sized(&self.0)
+    }
+
+    #[inline(always)]
+    fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
+    where
+        Self: Sized,
+    {
+        A::allocate_slice(&self.0, len)
+    }
+
+    #[inline(always)]
+    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError>
+    where
+        Self: Sized,
+    {
+        A::try_allocate_slice(&self.0, len)
+    }
+
+    #[inline(always)]
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
+        A::shrink_slice(&self.0, ptr, old_len, new_len)
     }
 }
 
@@ -610,6 +717,106 @@ pub unsafe trait MutBumpAllocator: BumpAllocator {
         Self: Sized;
 }
 
+unsafe impl<A: MutBumpAllocator> MutBumpAllocator for WithoutDealloc<A> {
+    #[inline(always)]
+    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        A::prepare_slice_allocation(&mut self.0, len)
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    where
+        Self: Sized,
+    {
+        A::try_prepare_slice_allocation(&mut self.0, len)
+    }
+
+    #[inline(always)]
+    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        A::use_reserved_allocation(&mut self.0, ptr, len, cap)
+    }
+
+    #[inline(always)]
+    fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
+    where
+        Self: Sized,
+    {
+        A::prepare_slice_allocation_rev(&mut self.0, len)
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation_rev<T>(&mut self, len: usize) -> Result<(NonNull<T>, usize), AllocError>
+    where
+        Self: Sized,
+    {
+        A::try_prepare_slice_allocation_rev(&mut self.0, len)
+    }
+
+    #[inline(always)]
+    unsafe fn use_reserved_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        A::use_reserved_allocation_rev(&mut self.0, ptr, len, cap)
+    }
+}
+
+unsafe impl<A: MutBumpAllocator> MutBumpAllocator for WithoutShrink<A> {
+    #[inline(always)]
+    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        A::prepare_slice_allocation(&mut self.0, len)
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    where
+        Self: Sized,
+    {
+        A::try_prepare_slice_allocation(&mut self.0, len)
+    }
+
+    #[inline(always)]
+    unsafe fn use_reserved_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        A::use_reserved_allocation(&mut self.0, ptr, len, cap)
+    }
+
+    #[inline(always)]
+    fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
+    where
+        Self: Sized,
+    {
+        A::prepare_slice_allocation_rev(&mut self.0, len)
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation_rev<T>(&mut self, len: usize) -> Result<(NonNull<T>, usize), AllocError>
+    where
+        Self: Sized,
+    {
+        A::try_prepare_slice_allocation_rev(&mut self.0, len)
+    }
+
+    #[inline(always)]
+    unsafe fn use_reserved_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        A::use_reserved_allocation_rev(&mut self.0, ptr, len, cap)
+    }
+}
+
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> MutBumpAllocator
     for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
@@ -874,6 +1081,8 @@ pub unsafe trait BumpAllocatorScope<'a>: BumpAllocator {
 }
 
 unsafe impl<'a, A: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for &A {}
+unsafe impl<'a, A: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for WithoutDealloc<A> {}
+unsafe impl<'a, A: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for WithoutShrink<A> {}
 
 unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorScope<'a>
     for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
@@ -914,6 +1123,6 @@ impl<'a, T: MutBumpAllocator + BumpAllocatorScope<'a>> MutBumpAllocatorScope<'a>
 #[cold]
 #[inline(never)]
 #[cfg(feature = "panic-on-alloc")]
-pub const fn invalid_slice_layout() -> ! {
+pub(crate) const fn invalid_slice_layout() -> ! {
     panic!("invalid slice layout");
 }
