@@ -1478,67 +1478,6 @@ impl<A: BumpAllocator> BorrowMut<str> for BumpString<A> {
     }
 }
 
-impl<A: BumpAllocator> PartialEq for BumpString<A> {
-    #[inline]
-    fn eq(&self, other: &Self) -> bool {
-        <str as PartialEq>::eq(self, other)
-    }
-
-    #[inline]
-    fn ne(&self, other: &Self) -> bool {
-        <str as PartialEq>::ne(self, other)
-    }
-}
-
-macro_rules! impl_partial_eq {
-    (
-        $(
-            $(#[$attr:meta])*
-            $string_like:ty,
-        )*
-    ) => {
-        $(
-            $(#[$attr])*
-            impl<A: BumpAllocator> PartialEq<$string_like> for BumpString<A> {
-                #[inline]
-                fn eq(&self, other: &$string_like) -> bool {
-                    <str as PartialEq>::eq(self, other)
-                }
-
-                #[inline]
-                fn ne(&self, other: &$string_like) -> bool {
-                    <str as PartialEq>::ne(self, other)
-                }
-            }
-
-            $(#[$attr])*
-            impl<A: BumpAllocator> PartialEq<BumpString<A>> for $string_like {
-                #[inline]
-                fn eq(&self, other: &BumpString<A>) -> bool {
-                    <str as PartialEq>::eq(self, other)
-                }
-
-                #[inline]
-                fn ne(&self, other: &BumpString<A>) -> bool {
-                    <str as PartialEq>::ne(self, other)
-                }
-            }
-        )*
-    };
-}
-
-impl_partial_eq! {
-    str,
-
-    &str,
-
-    #[cfg(feature = "alloc")]
-    alloc::string::String,
-
-    #[cfg(feature = "alloc")]
-    alloc::borrow::Cow<'_, str>,
-}
-
 impl<A: BumpAllocator> Eq for BumpString<A> {}
 
 impl<A: BumpAllocator> PartialOrd for BumpString<A> {

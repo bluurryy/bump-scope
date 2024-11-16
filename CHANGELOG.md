@@ -15,7 +15,7 @@
 - **breaking:** `append` methods now take `impl OwnedSlice<T>` instead
 - **breaking:** `Chunk`, `ChunkNextIter` and `ChunkPrevIter` have moved to the `stats` module
 - **fixed:** `BumpVec::split_off` now retains the capacity of `self` like the docs say
-- **added:** more general `PartialEq` for vectors
+- **added:** more general `PartialEq` for vectors and strings
 - **added:** `not_guaranteed_allocated(_ref)` methods on `Bump(Scope)` to turn `GUARANTEED_ALLOCATED` false
 - **added:** `Bump::(try_)guaranteed_allocated_ref`
 

@@ -1,4 +1,4 @@
-use crate::{BumpAllocator, BumpVec, FixedBumpVec, MutBumpAllocator, MutBumpVec, MutBumpVecRev};
+use crate::{BumpAllocator, BumpString, BumpVec, FixedBumpVec, MutBumpAllocator, MutBumpString, MutBumpVec, MutBumpVecRev};
 
 macro_rules! impl_slice_eq {
     ([$($vars:tt)*] $lhs:ty, $rhs:ty $(where $ty:ty: $bound:ident)?) => {
@@ -58,3 +58,50 @@ impl_slice_eq! { [A: MutBumpAllocator] &mut [T], MutBumpVecRev<U, A> }
 impl_slice_eq! { [A: MutBumpAllocator, const N: usize] MutBumpVecRev<T, A>, [U; N] }
 impl_slice_eq! { [A: MutBumpAllocator, const N: usize] MutBumpVecRev<T, A>, &[U; N] }
 impl_slice_eq! { [A: MutBumpAllocator, const N: usize] MutBumpVecRev<T, A>, &mut [U; N] }
+
+macro_rules! impl_str_eq {
+    ([$($vars:tt)*] $lhs:ty, $rhs:ty $(where $ty:ty: $bound:ident)?) => {
+        impl<$($vars)*> PartialEq<$rhs> for $lhs
+        where
+            $($ty: $bound)?
+        {
+            #[inline]
+            fn eq(&self, other: &$rhs) -> bool { &self[..] == &other[..] }
+            #[inline]
+            fn ne(&self, other: &$rhs) -> bool { &self[..] != &other[..] }
+        }
+    }
+}
+
+impl_str_eq! { [A1: BumpAllocator, A2: BumpAllocator] BumpString<A1>, BumpString<A2> }
+impl_str_eq! { [A: BumpAllocator] BumpString<A>, str }
+impl_str_eq! { [A: BumpAllocator] BumpString<A>, &str }
+impl_str_eq! { [A: BumpAllocator] BumpString<A>, &mut str }
+impl_str_eq! { [A: BumpAllocator] str, BumpString<A> }
+impl_str_eq! { [A: BumpAllocator] &str, BumpString<A> }
+impl_str_eq! { [A: BumpAllocator] &mut str, BumpString<A> }
+
+impl_str_eq! { [A1, A2] MutBumpString<A1>, MutBumpString<A2> }
+impl_str_eq! { [A] MutBumpString<A>, str }
+impl_str_eq! { [A] MutBumpString<A>, &str }
+impl_str_eq! { [A] MutBumpString<A>, &mut str }
+impl_str_eq! { [A] str, MutBumpString<A> }
+impl_str_eq! { [A] &str, MutBumpString<A> }
+impl_str_eq! { [A] &mut str, MutBumpString<A> }
+
+#[cfg(feature = "alloc")]
+mod alloc_impl {
+    use super::*;
+
+    use alloc::{borrow::Cow, string::String};
+
+    impl_str_eq! { [A: BumpAllocator] BumpString<A>, String }
+    impl_str_eq! { [A: BumpAllocator] String, BumpString<A> }
+    impl_str_eq! { [A: BumpAllocator] BumpString<A>, Cow<'_, str> }
+    impl_str_eq! { [A: BumpAllocator] Cow<'_, str>, BumpString<A> }
+
+    impl_str_eq! { [A] MutBumpString<A>, String }
+    impl_str_eq! { [A] String, MutBumpString<A> }
+    impl_str_eq! { [A] MutBumpString<A>, Cow<'_, str> }
+    impl_str_eq! { [A] Cow<'_, str>, MutBumpString<A> }
+}
