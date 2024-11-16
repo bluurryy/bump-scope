@@ -19,7 +19,7 @@ serde = { version = "1.0.197", optional = true }
 zerocopy = { version = "0.8.2", default-features = false, optional = true }
 
 [features]
-default = ["std", "panic-on-alloc"]
+default = ["std", "alloc", "panic-on-alloc"]
 
 ## Adds `BumpPool` and implementations of `std::io` traits for `BumpBox` and vectors.
 std = ["allocator-api2/std", "alloc"]
@@ -29,7 +29,7 @@ alloc = ["allocator-api2/alloc"]
 
 ## Adds functions and traits that will panic when allocations fails. 
 ## Without this feature, allocation failures cannot cause panics, and only 
-## `try_`-prefixed allocation functions will be available.
+## `try_`-prefixed allocation methods will be available.
 panic-on-alloc = []
 
 ## Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors. 
