@@ -505,6 +505,7 @@ where
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    #[inline(always)]
     #[cfg(not(no_global_oom_handling))]
     pub fn guaranteed_allocated(self) -> BumpScope<'a, A, MIN_ALIGN, UP> {
         infallible(self.generic_guaranteed_allocated())
@@ -514,10 +515,12 @@ where
     ///
     /// # Errors
     /// Errors if the allocation fails.
+    #[inline(always)]
     pub fn try_guaranteed_allocated(self) -> Result<BumpScope<'a, A, MIN_ALIGN, UP>, AllocError> {
         self.generic_guaranteed_allocated()
     }
 
+    #[inline(always)]
     fn generic_guaranteed_allocated<E: ErrorBehavior>(self) -> Result<BumpScope<'a, A, MIN_ALIGN, UP>, E> {
         self.as_scope().ensure_allocated()?;
         Ok(unsafe { self.cast_allocated() })
@@ -527,6 +530,7 @@ where
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    #[inline(always)]
     #[cfg(not(no_global_oom_handling))]
     pub fn guaranteed_allocated_ref(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP> {
         infallible(self.generic_guaranteed_allocated_ref())
@@ -536,10 +540,12 @@ where
     ///
     /// # Errors
     /// Errors if the allocation fails.
+    #[inline(always)]
     pub fn try_guaranteed_allocated_ref(&self) -> Result<&BumpScope<'a, A, MIN_ALIGN, UP>, AllocError> {
         self.generic_guaranteed_allocated_ref()
     }
 
+    #[inline(always)]
     fn generic_guaranteed_allocated_ref<E: ErrorBehavior>(&self) -> Result<&BumpScope<'a, A, MIN_ALIGN, UP>, E> {
         self.as_scope().ensure_allocated()?;
         Ok(unsafe { self.cast_allocated_ref() })
@@ -549,6 +555,7 @@ where
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    #[inline(always)]
     #[cfg(not(no_global_oom_handling))]
     pub fn guaranteed_allocated_mut(&mut self) -> &mut BumpScope<'a, A, MIN_ALIGN, UP> {
         infallible(self.generic_guaranteed_allocated_mut())
@@ -558,16 +565,19 @@ where
     ///
     /// # Errors
     /// Errors if the allocation fails.
+    #[inline(always)]
     pub fn try_guaranteed_allocated_mut(&mut self) -> Result<&mut BumpScope<'a, A, MIN_ALIGN, UP>, AllocError> {
         self.generic_guaranteed_allocated_mut()
     }
 
+    #[inline(always)]
     fn generic_guaranteed_allocated_mut<E: ErrorBehavior>(&mut self) -> Result<&mut BumpScope<'a, A, MIN_ALIGN, UP>, E> {
         self.as_scope().ensure_allocated()?;
         Ok(unsafe { self.cast_allocated_mut() })
     }
 
     /// Converts this `BumpScope` into a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
+    #[inline(always)]
     pub fn not_guaranteed_allocated(self) -> BumpScope<'a, A, MIN_ALIGN, UP, false> {
         // SAFETY: it's always valid to interpret a guaranteed allocated as a non guaranteed allocated
         unsafe { self.cast_allocated() }
@@ -578,6 +588,7 @@ where
     /// Note that it's not possible to mutably borrow as a not guaranteed allocated bump allocator. That's because
     /// a user could `mem::swap` it with an actual unallocated bump allocator which in turn would make `&mut self` be
     /// unallocated.
+    #[inline(always)]
     pub fn not_guaranteed_allocated_ref(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP, false> {
         // SAFETY: it's always valid to interpret a guaranteed allocated as a non guaranteed allocated
         unsafe { self.cast_allocated_ref() }
