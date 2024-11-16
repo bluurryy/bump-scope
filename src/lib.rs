@@ -255,7 +255,10 @@
 //! This is usually the case unless you create it with [`Bump::unallocated`](crate::Bump::unallocated).
 //!
 //! You need a guaranteed allocated `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
-//! You can convert a maybe unallocated `Bump(Scope)` into a guaranteed allocated one with `guaranteed_allocated`, `*_ref` and `*_mut`.
+//! You can convert a maybe unallocated `Bump(Scope)` into a guaranteed allocated one with
+//! [`guaranteed_allocated`](Bump::guaranteed_allocated),
+//! [`guaranteed_allocated_ref`](Bump::guaranteed_allocated_ref), and
+//! [`guaranteed_allocated_mut`](Bump::guaranteed_allocated_mut).
 //!
 //! The point of this is so `Bump`s can be created without allocating memory and even `const` constructed when the feature `nightly-const-refs-to-static` is enabled.
 //! At the same time `Bump`'s that have already allocated a chunk don't suffer runtime checks for entering scopes and creating checkpoints.

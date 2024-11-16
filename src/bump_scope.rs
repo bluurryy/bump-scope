@@ -600,7 +600,7 @@ where
     /// Borrows `BumpScope` as a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
     ///
     /// Note that it's not possible to mutably borrow as a not guaranteed allocated bump allocator. That's because
-    /// a user could `mem::swap` it with an actual unallocated bump allocator which in turn would make `&mut self` be
+    /// a user could `mem::swap` it with an actual unallocated bump allocator which in turn would make `&mut self`
     /// unallocated.
     #[inline(always)]
     pub fn not_guaranteed_allocated_ref(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP, false> {
