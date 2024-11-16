@@ -1,14 +1,14 @@
-use crate::{from_bump_scope, FuzzBumpGreedyProps};
+use crate::{from_bump_scope, FuzzBumpPrepareProps};
 use arbitrary::Arbitrary;
 
 #[derive(Debug, Arbitrary)]
 pub struct Fuzz {
-    props: FuzzBumpGreedyProps,
+    props: FuzzBumpPrepareProps,
 }
 
 impl Fuzz {
     pub fn run(self) {
         let props = self.props.for_up().to();
-        from_bump_scope::bumping::bump_greedy_up(props);
+        from_bump_scope::bumping::bump_prepare_up(props);
     }
 }

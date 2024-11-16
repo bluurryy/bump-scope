@@ -273,7 +273,7 @@ pub(crate) fn bump_down(
 }
 
 #[inline(always)]
-pub(crate) fn bump_greedy_up(
+pub(crate) fn bump_prepare_up(
     BumpProps {
         mut start,
         end,
@@ -325,7 +325,7 @@ pub(crate) fn bump_greedy_up(
 }
 
 #[inline(always)]
-pub(crate) fn bump_greedy_down(
+pub(crate) fn bump_prepare_down(
     BumpProps {
         start,
         mut end,

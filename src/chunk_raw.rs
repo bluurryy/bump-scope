@@ -1,5 +1,5 @@
 use crate::{
-    bumping::{bump_down, bump_greedy_down, bump_greedy_up, bump_up, BumpProps, BumpUp},
+    bumping::{bump_down, bump_prepare_down, bump_prepare_up, bump_up, BumpProps, BumpUp},
     down_align_usize,
     layout::LayoutProps,
     polyfill::{const_unwrap, nonnull, pointer},
@@ -257,7 +257,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// [`MutBumpVec`]: crate::MutBumpVec
     /// [`into_slice`]: crate::MutBumpVec::into_slice
     #[inline(always)]
-    pub(crate) fn alloc_greedy<M, L>(self, minimum_alignment: M, layout: L) -> Option<Range<NonNull<u8>>>
+    pub(crate) fn prepare_allocation<M, L>(self, minimum_alignment: M, layout: L) -> Option<Range<NonNull<u8>>>
     where
         M: SupportedMinimumAlignment,
         L: LayoutProps,
@@ -267,10 +267,10 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
         unsafe {
             if UP {
-                let range = bump_greedy_up(props)?;
+                let range = bump_prepare_up(props)?;
                 Some(self.with_addr_range(range))
             } else {
-                let range = bump_greedy_down(props)?;
+                let range = bump_prepare_down(props)?;
                 Some(self.with_addr_range(range))
             }
         }

@@ -623,7 +623,7 @@ where
     {
         #[cfg(not(no_global_oom_handling))]
         {
-            let (ptr, len) = infallible(BumpScope::alloc_greedy(self, len));
+            let (ptr, len) = infallible(BumpScope::generic_prepare_slice_allocation(self, len));
             nonnull::slice_from_raw_parts(ptr, len)
         }
 
@@ -639,7 +639,7 @@ where
     where
         Self: Sized,
     {
-        let (ptr, len) = BumpScope::alloc_greedy(self, len)?;
+        let (ptr, len) = BumpScope::generic_prepare_slice_allocation(self, len)?;
         Ok(nonnull::slice_from_raw_parts(ptr, len))
     }
 
@@ -648,7 +648,7 @@ where
     where
         Self: Sized,
     {
-        BumpScope::consolidate_greed(self, ptr, len, cap)
+        BumpScope::use_reserved_allocation(self, ptr, len, cap)
     }
 
     #[inline(always)]
@@ -658,7 +658,7 @@ where
     {
         #[cfg(not(no_global_oom_handling))]
         {
-            infallible(BumpScope::alloc_greedy_rev(self, len))
+            infallible(BumpScope::generic_prepare_slice_allocation_rev(self, len))
         }
 
         #[cfg(no_global_oom_handling)]
@@ -673,7 +673,7 @@ where
     where
         Self: Sized,
     {
-        BumpScope::alloc_greedy_rev(self, len)
+        BumpScope::generic_prepare_slice_allocation_rev(self, len)
     }
 
     #[inline(always)]
@@ -681,7 +681,7 @@ where
     where
         Self: Sized,
     {
-        BumpScope::consolidate_greed_rev(self, ptr, len, cap)
+        BumpScope::use_reserved_allocation_rev(self, ptr, len, cap)
     }
 }
 

@@ -8,8 +8,8 @@ use std::{alloc::Layout, cell::Cell, mem::swap, ops::Deref, ptr::NonNull, rc::Rc
 pub use arbitrary;
 pub mod allocator_api;
 pub mod bump_down;
-pub mod bump_greedy_down;
-pub mod bump_greedy_up;
+pub mod bump_prepare_down;
+pub mod bump_prepare_up;
 pub mod bump_up;
 pub mod bumping;
 mod from_bump_scope;
@@ -235,7 +235,7 @@ impl FuzzBumpProps {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct FuzzBumpGreedyProps {
+pub(crate) struct FuzzBumpPrepareProps {
     pub(crate) start: usize,
     pub(crate) end: usize,
     pub(crate) layout: Layout,
@@ -243,7 +243,7 @@ pub(crate) struct FuzzBumpGreedyProps {
     pub(crate) align_is_const: bool,
 }
 
-impl<'a> Arbitrary<'a> for FuzzBumpGreedyProps {
+impl<'a> Arbitrary<'a> for FuzzBumpPrepareProps {
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
         let (mut start, mut end) = u.arbitrary()?;
 
@@ -274,7 +274,7 @@ impl<'a> Arbitrary<'a> for FuzzBumpGreedyProps {
     }
 }
 
-impl FuzzBumpGreedyProps {
+impl FuzzBumpPrepareProps {
     fn for_up(mut self) -> Self {
         self.start = down_align(self.start, self.min_align);
         self
@@ -286,7 +286,7 @@ impl FuzzBumpGreedyProps {
     }
 }
 
-impl FuzzBumpGreedyProps {
+impl FuzzBumpPrepareProps {
     fn to(self) -> from_bump_scope::bumping::BumpProps {
         let Self {
             start,

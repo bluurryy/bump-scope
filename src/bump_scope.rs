@@ -129,7 +129,12 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn consolidate_greed<T>(&mut self, mut start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+    pub(crate) unsafe fn use_reserved_allocation<T>(
+        &mut self,
+        mut start: NonNull<T>,
+        len: usize,
+        cap: usize,
+    ) -> NonNull<[T]> {
         let end = nonnull::add(start, len);
 
         if UP {
@@ -150,7 +155,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn consolidate_greed_rev<T>(&self, mut end: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+    pub(crate) unsafe fn use_reserved_allocation_rev<T>(&self, mut end: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         let mut start = nonnull::sub(end, len);
 
         if UP {
@@ -184,8 +189,11 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn alloc_greedy<B: ErrorBehavior, T>(&mut self, cap: usize) -> Result<(NonNull<T>, usize), B> {
-        let Range { start, end } = self.alloc_greedy_range::<B, T>(cap)?;
+    pub(crate) fn generic_prepare_slice_allocation<B: ErrorBehavior, T>(
+        &mut self,
+        cap: usize,
+    ) -> Result<(NonNull<T>, usize), B> {
+        let Range { start, end } = self.prepare_allocation_range::<B, T>(cap)?;
 
         // NB: We can't use `sub_ptr`, because the size is not a multiple of `T`'s.
         let capacity = unsafe { nonnull::byte_sub_ptr(end, start) } / T::SIZE;
@@ -194,8 +202,11 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn alloc_greedy_rev<B: ErrorBehavior, T>(&mut self, cap: usize) -> Result<(NonNull<T>, usize), B> {
-        let Range { start, end } = self.alloc_greedy_range::<B, T>(cap)?;
+    pub(crate) fn generic_prepare_slice_allocation_rev<B: ErrorBehavior, T>(
+        &mut self,
+        cap: usize,
+    ) -> Result<(NonNull<T>, usize), B> {
+        let Range { start, end } = self.prepare_allocation_range::<B, T>(cap)?;
 
         // NB: We can't use `sub_ptr`, because the size is not a multiple of `T`'s.
         let capacity = unsafe { nonnull::byte_sub_ptr(end, start) } / T::SIZE;
@@ -208,15 +219,15 @@ where
     /// But `end - start` is *not* a multiple of `size_of::<T>()`.
     /// So `end.sub_ptr(start)` may not be used!
     #[inline(always)]
-    fn alloc_greedy_range<B: ErrorBehavior, T>(&mut self, cap: usize) -> Result<Range<NonNull<T>>, B> {
+    fn prepare_allocation_range<B: ErrorBehavior, T>(&mut self, cap: usize) -> Result<Range<NonNull<T>>, B> {
         let layout = match ArrayLayout::array::<T>(cap) {
             Ok(ok) => ok,
             Err(_) => return Err(B::capacity_overflow()),
         };
 
-        let range = match self.chunk.get().alloc_greedy(MinimumAlignment::<MIN_ALIGN>, layout) {
+        let range = match self.chunk.get().prepare_allocation(MinimumAlignment::<MIN_ALIGN>, layout) {
             Some(ptr) => ptr,
-            None => self.alloc_greedy_in_another_chunk(*layout)?,
+            None => self.prepare_allocation_in_another_chunk(*layout)?,
         };
 
         Ok(range.start.cast::<T>()..range.end.cast::<T>())
@@ -224,11 +235,14 @@ where
 
     #[cold]
     #[inline(never)]
-    pub(crate) fn alloc_greedy_in_another_chunk<E: ErrorBehavior>(&self, layout: Layout) -> Result<Range<NonNull<u8>>, E> {
+    pub(crate) fn prepare_allocation_in_another_chunk<E: ErrorBehavior>(
+        &self,
+        layout: Layout,
+    ) -> Result<Range<NonNull<u8>>, E> {
         let layout = CustomLayout(layout);
         unsafe {
             self.do_custom_alloc_in_another_chunk(layout, |chunk, layout| {
-                chunk.alloc_greedy(MinimumAlignment::<MIN_ALIGN>, layout)
+                chunk.prepare_allocation(MinimumAlignment::<MIN_ALIGN>, layout)
             })
         }
     }
