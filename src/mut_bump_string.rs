@@ -503,7 +503,7 @@ impl<A> MutBumpString<A> {
 impl<A: MutBumpAllocator> MutBumpString<A> {
     error_behavior_generic_methods_allocation_failure! {
         /// Constructs a new empty `MutBumpString` with at least the specified capacity
-        /// with the provided `BumpScope`.
+        /// with the provided bump allocator.
         ///
         /// The string will be able to hold at least `capacity` bytes without
         /// reallocating. This method allocates for as much elements as the< current chunk can hold.

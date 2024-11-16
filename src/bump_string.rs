@@ -24,7 +24,7 @@ use core::mem::MaybeUninit;
 #[cfg(not(no_global_oom_handling))]
 use crate::{polyfill::nonnull, raw_bump_box::RawBumpBox};
 
-/// This is like [`format!`] but allocates inside a `Bump` or `BumpScope`, returning a [`BumpString`].
+/// This is like [`format!`] but allocates inside a bump allocator, returning a [`BumpString`].
 ///
 /// If you don't need to push to the string after creation you can also use [`Bump::alloc_fmt`](crate::Bump::alloc_fmt).
 ///
@@ -544,7 +544,7 @@ impl<A: BumpAllocator> BumpString<A> {
 
     error_behavior_generic_methods_allocation_failure! {
         /// Constructs a new empty `BumpString` with the specified capacity
-        /// in the provided `BumpScope`.
+        /// in the provided bump allocator.
         ///
         /// The string will be able to hold `capacity` bytes without
         /// reallocating. If `capacity` is 0, the string will not allocate.

@@ -21,7 +21,7 @@ use core::{
     slice::SliceIndex,
 };
 
-/// This is like [`vec!`] but allocates inside a `Bump` or `BumpScope`, returning a [`MutBumpVec`].
+/// This is like [`vec!`] but allocates inside a bump allocator, returning a [`MutBumpVec`].
 ///
 /// `$bump` can be any type that implements [`MutBumpAllocator`].
 ///
@@ -434,7 +434,7 @@ impl<T, A> MutBumpVec<T, A> {
 impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     error_behavior_generic_methods_allocation_failure! {
         /// Constructs a new empty vector with at least the specified capacity
-        /// with the provided `BumpScope`.
+        /// with the provided bump allocator.
         ///
         /// The vector will be able to hold `capacity` elements without
         /// reallocating. If `capacity` is 0, the vector will not allocate.

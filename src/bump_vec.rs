@@ -36,7 +36,7 @@ pub use into_iter::IntoIter;
 #[cfg(not(no_global_oom_handling))]
 pub use splice::Splice;
 
-/// This is like [`vec!`] but allocates inside a `Bump` or `BumpScope`, returning a [`BumpVec`].
+/// This is like [`vec!`] but allocates inside a bump allocator, returning a [`BumpVec`].
 ///
 /// `$bump` can be any type that implements [`BumpAllocator`].
 ///
@@ -91,8 +91,6 @@ pub use splice::Splice;
 /// Also, note that `bump_vec![in &bump; expr; 0]` is allowed, and produces an empty vector.
 /// This will still evaluate `expr`, however, and immediately drop the resulting value, so
 /// be mindful of side effects.
-///
-/// [`BumpScope`]: crate::BumpScope
 #[macro_export]
 macro_rules! bump_vec {
     [in $bump:expr] => {
@@ -253,7 +251,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
 
     error_behavior_generic_methods_allocation_failure! {
         /// Constructs a new empty vector with at least the specified capacity
-        /// in the provided `BumpScope`.
+        /// in the provided bump allocator.
         ///
         /// The vector will be able to hold `capacity` elements without
         /// reallocating. If `capacity` is 0, the vector will not allocate.
