@@ -1,4 +1,4 @@
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 use crate::{capacity_overflow, format_trait_error, handle_alloc_error, Infallible};
 use crate::{layout, AllocError, BumpAllocator, Layout, MutBumpAllocator, NonNull, RawChunk, SupportedMinimumAlignment};
 use layout::LayoutProps;
@@ -40,7 +40,7 @@ pub(crate) trait ErrorBehavior: Sized {
     ) -> Result<(NonNull<T>, usize), Self>;
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl ErrorBehavior for Infallible {
     const IS_FALLIBLE: bool = false;
 
@@ -204,14 +204,14 @@ impl ErrorBehavior for AllocError {
 
 #[cold]
 #[inline(never)]
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 fn fixed_size_vector_is_full() -> ! {
     panic!("fixed size vector is full");
 }
 
 #[cold]
 #[inline(never)]
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 fn fixed_size_vector_no_space(amount: usize) -> ! {
     panic!("fixed size vector does not have space for {amount} more elements");
 }

@@ -14,6 +14,7 @@
 - **added:** more general `PartialEq` for vectors
 - **added:** `not_guaranteed_allocated(_ref)` methods on `Bump(Scope)` to turn `GUARANTEED_ALLOCATED` false
 - **added:** `Bump::(try_)guaranteed_allocated_ref`
+- **added:** added `"panic-on-alloc"` feature which enabled the panicking alloc functions (on by default)
 
 ## 0.10.11 (2024-11-11)
 - **added:** `map_in_place` to `(Mut)BumpVec`

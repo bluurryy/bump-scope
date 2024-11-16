@@ -1,4 +1,4 @@
-#![cfg(not(no_global_oom_handling))]
+#![cfg(feature = "panic-on-alloc")]
 
 use core::{ptr, slice};
 
@@ -125,7 +125,7 @@ impl<T, A: BumpAllocator> Drain<'_, T, A> {
     }
 
     /// Makes room for inserting more elements before the tail.
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     unsafe fn move_tail(&mut self, additional: usize) {
         let vec = self.vec.as_mut();
         let len = self.tail_start + self.tail_len;

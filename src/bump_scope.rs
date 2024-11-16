@@ -10,7 +10,7 @@ use crate::{
     FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk,
     SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 use crate::{infallible, Infallibly};
 use allocator_api2::alloc::AllocError;
 use core::{
@@ -520,7 +520,7 @@ where
     /// # Panics
     /// Panics if the allocation fails.
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     pub fn guaranteed_allocated(self) -> BumpScope<'a, A, MIN_ALIGN, UP> {
         infallible(self.generic_guaranteed_allocated())
     }
@@ -545,7 +545,7 @@ where
     /// # Panics
     /// Panics if the allocation fails.
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     pub fn guaranteed_allocated_ref(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP> {
         infallible(self.generic_guaranteed_allocated_ref())
     }
@@ -570,7 +570,7 @@ where
     /// # Panics
     /// Panics if the allocation fails.
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     pub fn guaranteed_allocated_mut(&mut self) -> &mut BumpScope<'a, A, MIN_ALIGN, UP> {
         infallible(self.generic_guaranteed_allocated_mut())
     }
@@ -772,7 +772,7 @@ where
 
             string
         } else {
-            #[cfg(not(no_global_oom_handling))]
+            #[cfg(feature = "panic-on-alloc")]
             {
                 let mut string = Infallibly(string);
 
@@ -785,7 +785,7 @@ where
                 string.0
             }
 
-            #[cfg(no_global_oom_handling)]
+            #[cfg(not(feature = "panic-on-alloc"))]
             {
                 unreachable!()
             }
@@ -812,7 +812,7 @@ where
 
             string
         } else {
-            #[cfg(not(no_global_oom_handling))]
+            #[cfg(feature = "panic-on-alloc")]
             {
                 let mut string = Infallibly(string);
 
@@ -825,7 +825,7 @@ where
                 string.0
             }
 
-            #[cfg(no_global_oom_handling)]
+            #[cfg(not(feature = "panic-on-alloc"))]
             {
                 unreachable!()
             }

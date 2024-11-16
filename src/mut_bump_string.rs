@@ -13,7 +13,7 @@ use core::{
     ptr, str,
 };
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 use crate::Infallibly;
 
 /// This is like [`format!`] but allocates inside a *mutable* `Bump` or `BumpScope`, returning a [`MutBumpString`].
@@ -1258,7 +1258,7 @@ impl<A: MutBumpAllocator> fmt::Write for MutBumpString<A> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<A: MutBumpAllocator> fmt::Write for Infallibly<MutBumpString<A>> {
     #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
@@ -1301,7 +1301,7 @@ impl<A> DerefMut for MutBumpString<A> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<A: MutBumpAllocator> core::ops::AddAssign<&str> for MutBumpString<A> {
     #[inline]
     fn add_assign(&mut self, rhs: &str) {
@@ -1440,7 +1440,7 @@ impl<A> Hash for MutBumpString<A> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<'s, A: MutBumpAllocator> Extend<&'s str> for MutBumpString<A> {
     #[inline]
     fn extend<T: IntoIterator<Item = &'s str>>(&mut self, iter: T) {
@@ -1450,7 +1450,7 @@ impl<'s, A: MutBumpAllocator> Extend<&'s str> for MutBumpString<A> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<A: MutBumpAllocator> Extend<char> for MutBumpString<A> {
     fn extend<I: IntoIterator<Item = char>>(&mut self, iter: I) {
         let iterator = iter.into_iter();
@@ -1460,7 +1460,7 @@ impl<A: MutBumpAllocator> Extend<char> for MutBumpString<A> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<'s, A: MutBumpAllocator> Extend<&'s char> for MutBumpString<A> {
     fn extend<I: IntoIterator<Item = &'s char>>(&mut self, iter: I) {
         self.extend(iter.into_iter().copied());

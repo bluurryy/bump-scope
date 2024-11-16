@@ -1,4 +1,4 @@
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 use crate::infallible;
 use crate::{
     bump_common_methods, bump_scope_methods,
@@ -127,7 +127,7 @@ where
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Default
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
@@ -382,7 +382,7 @@ where
     /// # Panics
     /// Panics if the allocation fails.
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     pub fn guaranteed_allocated(self) -> Bump<A, MIN_ALIGN, UP> {
         infallible(self.generic_guaranteed_allocated())
     }
@@ -407,7 +407,7 @@ where
     /// # Panics
     /// Panics if the allocation fails.
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     pub fn guaranteed_allocated_ref(&self) -> &Bump<A, MIN_ALIGN, UP> {
         infallible(self.generic_guaranteed_allocated_ref())
     }
@@ -432,7 +432,7 @@ where
     /// # Panics
     /// Panics if the allocation fails.
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     pub fn guaranteed_allocated_mut(&mut self) -> &mut Bump<A, MIN_ALIGN, UP> {
         infallible(self.generic_guaranteed_allocated_mut())
     }

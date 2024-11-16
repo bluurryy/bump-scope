@@ -26,14 +26,14 @@ use core::{
     slice::SliceIndex,
 };
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 use crate::infallible;
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 pub(crate) use drain::Drain;
 pub use into_iter::IntoIter;
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 pub use splice::Splice;
 
 /// This is like [`vec!`] but allocates inside a bump allocator, returning a [`BumpVec`].
@@ -209,7 +209,7 @@ impl<T, A: BumpAllocator> Drop for BumpVec<T, A> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<T: Clone, A: BumpAllocator + Clone> Clone for BumpVec<T, A> {
     fn clone(&self) -> Self {
         let allocator = self.allocator.clone();
@@ -492,7 +492,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// assert_eq!(vec, [1]);
     /// assert_eq!(vec2, [2, 3]);
     /// ```
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     #[inline]
     #[must_use = "use `.truncate()` if you don't need the other half"]
     pub fn split_off(&mut self, at: usize) -> Self
@@ -1445,7 +1445,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// assert_eq!(bump.stats().allocated(), 4 * 2 + 4 * 4);
     /// ```
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     pub fn map<U>(self, f: impl FnMut(T) -> U) -> BumpVec<U, A>
     where
         A: Clone,
@@ -1710,7 +1710,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// assert_eq!(v, [1, 7, 8, 9, 4]);
     /// assert_eq!(u, [2, 3]);
     /// ```
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     #[inline]
     pub fn splice<R, I>(&mut self, range: R, replace_with: I) -> Splice<'_, I::IntoIter, A>
     where
@@ -1762,7 +1762,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// [`reserve`]: Self::reserve
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     pub(crate) unsafe fn buf_reserve(&mut self, len: usize, additional: usize) {
         if additional > (self.capacity() - len) {
             infallible(self.generic_grow_amortized_buf(len, additional));
@@ -1835,7 +1835,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// [`buf_reserve`]: Self::buf_reserve
     #[cold]
     #[inline(never)]
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     unsafe fn generic_grow_amortized_buf<E: ErrorBehavior>(&mut self, len: usize, additional: usize) -> Result<(), E> {
         if T::IS_ZST {
             // This function is only called after we checked that the current capacity is not
@@ -2412,7 +2412,7 @@ impl<T, A: BumpAllocator, I: SliceIndex<[T]>> IndexMut<I> for BumpVec<T, A> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<T, A: BumpAllocator> Extend<T> for BumpVec<T, A> {
     #[inline]
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
@@ -2426,7 +2426,7 @@ impl<T, A: BumpAllocator> Extend<T> for BumpVec<T, A> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<'t, T: Clone + 't, A: BumpAllocator> Extend<&'t T> for BumpVec<T, A> {
     #[inline]
     fn extend<I: IntoIterator<Item = &'t T>>(&mut self, iter: I) {

@@ -10,10 +10,10 @@ use core::{
 
 use crate::{polyfill::nonnull, BumpAllocator, SizedTypeProperties};
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 use core::mem::MaybeUninit;
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 use crate::{raw_fixed_bump_vec::RawFixedBumpVec, BumpBox, BumpVec, FixedBumpVec};
 
 /// An iterator that moves out of a vector.
@@ -166,7 +166,7 @@ impl<T, A: BumpAllocator> FusedIterator for IntoIter<T, A> {}
 #[cfg(feature = "nightly-trusted-len")]
 unsafe impl<T, A: BumpAllocator> core::iter::TrustedLen for IntoIter<T, A> {}
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<T: Clone, A: BumpAllocator + Clone> Clone for IntoIter<T, A> {
     fn clone(&self) -> Self {
         let allocator = self.allocator.clone();

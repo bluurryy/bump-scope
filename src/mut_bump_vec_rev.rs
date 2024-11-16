@@ -1805,7 +1805,7 @@ impl<T, A, I: SliceIndex<[T]>> IndexMut<I> for MutBumpVecRev<T, A> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<U, A: MutBumpAllocator> Extend<U> for MutBumpVecRev<U, A> {
     #[inline]
     fn extend<T: IntoIterator<Item = U>>(&mut self, iter: T) {
@@ -1836,7 +1836,7 @@ impl<T, A> Drop for MutBumpVecRev<T, A> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<'t, T: Clone + 't, A: MutBumpAllocator> Extend<&'t T> for MutBumpVecRev<T, A> {
     #[inline]
     fn extend<I: IntoIterator<Item = &'t T>>(&mut self, iter: I) {

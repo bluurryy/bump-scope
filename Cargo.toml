@@ -19,13 +19,18 @@ serde = { version = "1.0.197", optional = true }
 zerocopy = { version = "0.8.2", default-features = false, optional = true }
 
 [features]
-default = ["std"]
+default = ["std", "panic-on-alloc"]
 
 ## Adds `BumpPool` and implementations of `std::io` traits for `BumpBox` and vectors.
 std = ["allocator-api2/std", "alloc"]
 
 ## Adds `Global` as the default base allocator, `BumpBox::into_box` and some interactions with `alloc` collections.
 alloc = ["allocator-api2/alloc"]
+
+## Adds functions and traits that will panic when allocations fails. 
+## Without this feature, allocation failures cannot cause panics, and only 
+## `try_`-prefixed allocation functions will be available.
+panic-on-alloc = []
 
 ## Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors. 
 serde = ["dep:serde"]
@@ -72,11 +77,6 @@ pre-release-commit-message = "release: version {{version}}"
 pre-release-replacements = [
     { file = "CHANGELOG.md", search = "Unreleased", replace = "{{version}} ({{date}})" },
 ]
-
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = [
-    'cfg(no_global_oom_handling)',
-] }
 
 [[bench]]
 name = "benches"

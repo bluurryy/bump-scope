@@ -1408,7 +1408,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// assert_eq!(vec, [1]);
     /// assert_eq!(vec2, [2, 3]);
     /// ```
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     #[inline]
     #[must_use = "use `.truncate()` if you don't need the other half"]
     pub fn split_off(&mut self, at: usize) -> Self {

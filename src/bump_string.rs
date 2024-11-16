@@ -1,4 +1,4 @@
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 use crate::Infallibly;
 use crate::{
     destructure::destructure,
@@ -18,10 +18,10 @@ use core::{
     ptr, str,
 };
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 use core::mem::MaybeUninit;
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 use crate::{polyfill::nonnull, raw_bump_box::RawBumpBox};
 
 /// This is like [`format!`] but allocates inside a bump allocator, returning a [`BumpString`].
@@ -310,7 +310,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// assert_eq!(hello, "Hello, ");
     /// assert_eq!(world, "World!");
     /// ```
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     #[inline]
     #[must_use = "use `.truncate()` if you don't need the other half"]
     pub fn split_off(&mut self, at: usize) -> Self
@@ -1364,7 +1364,7 @@ impl<A: BumpAllocator> fmt::Write for BumpString<A> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<A: BumpAllocator> fmt::Write for Infallibly<BumpString<A>> {
     #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
@@ -1422,7 +1422,7 @@ impl<A: BumpAllocator> Drop for BumpString<A> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<A: BumpAllocator + Clone> Clone for BumpString<A> {
     fn clone(&self) -> Self {
         let allocator = self.allocator.clone();
@@ -1442,7 +1442,7 @@ impl<A: BumpAllocator + Clone> Clone for BumpString<A> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<A: BumpAllocator> core::ops::AddAssign<&str> for BumpString<A> {
     #[inline]
     fn add_assign(&mut self, rhs: &str) {
@@ -1581,7 +1581,7 @@ impl<A: BumpAllocator> Hash for BumpString<A> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<'s, A: BumpAllocator> Extend<&'s str> for BumpString<A> {
     #[inline]
     fn extend<T: IntoIterator<Item = &'s str>>(&mut self, iter: T) {
@@ -1591,7 +1591,7 @@ impl<'s, A: BumpAllocator> Extend<&'s str> for BumpString<A> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<A: BumpAllocator> Extend<char> for BumpString<A> {
     fn extend<I: IntoIterator<Item = char>>(&mut self, iter: I) {
         let iterator = iter.into_iter();
@@ -1601,7 +1601,7 @@ impl<A: BumpAllocator> Extend<char> for BumpString<A> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<'s, A: BumpAllocator> Extend<&'s char> for BumpString<A> {
     fn extend<I: IntoIterator<Item = &'s char>>(&mut self, iter: I) {
         self.extend(iter.into_iter().copied());
@@ -1659,7 +1659,7 @@ impl<A: BumpAllocator> From<BumpString<A>> for alloc::string::String {
 /// let b = " world";
 /// let c = BumpString::from_str_in(a, &bump) + b;
 /// ```
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<A: BumpAllocator> core::ops::Add<&str> for BumpString<A> {
     type Output = Self;
 

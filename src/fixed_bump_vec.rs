@@ -1599,7 +1599,7 @@ impl<T, I: SliceIndex<[T]>> IndexMut<I> for FixedBumpVec<'_, T> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<T> Extend<T> for FixedBumpVec<'_, T> {
     #[inline]
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
@@ -1613,7 +1613,7 @@ impl<T> Extend<T> for FixedBumpVec<'_, T> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<'t, T> Extend<&'t T> for FixedBumpVec<'_, T>
 where
     T: Clone + 't,

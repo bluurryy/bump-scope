@@ -17,7 +17,7 @@ use core::{fmt, ops::Deref, str::Utf8Error};
 /// [`&str`]: prim@str "&str"
 /// [`utf8_error`]: FromUtf8Error::utf8_error
 #[derive(Debug, PartialEq, Eq)]
-#[cfg_attr(not(no_global_oom_handling), derive(Clone))]
+#[cfg_attr(feature = "panic-on-alloc", derive(Clone))]
 pub struct FromUtf8Error<Bytes> {
     pub(crate) bytes: Bytes,
     pub(crate) error: Utf8Error,

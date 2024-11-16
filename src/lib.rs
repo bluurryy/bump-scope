@@ -216,6 +216,9 @@
 //!
 //! # Feature Flags
 //! * **`std`** *(enabled by default)* —  Adds `BumpPool` and implementations of `std::io` traits for `BumpBox` and vectors.
+//! * **`panic-on-alloc`** *(enabled by default)* —  Adds functions and traits that will panic when allocations fails.
+//!   Without this feature, allocation failures cannot cause panics, and only
+//!   `try_`-prefixed allocation functions will be available.
 //! * **`alloc`** —  Adds `Global` as the default base allocator, `BumpBox::into_box` and some interactions with `alloc` collections.
 //! * **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 //! * **`zerocopy`** —  Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`.
@@ -306,7 +309,7 @@ mod stats;
 mod without_dealloc;
 
 pub use allocator_api2;
-#[cfg(all(feature = "alloc", not(no_global_oom_handling)))]
+#[cfg(all(feature = "alloc", feature = "panic-on-alloc"))]
 use allocator_api2::alloc::handle_alloc_error;
 use allocator_api2::alloc::{AllocError, Allocator};
 pub use bump::Bump;
@@ -322,7 +325,7 @@ pub use bump_vec::BumpVec;
 use chunk_header::{unallocated_chunk_header, ChunkHeader};
 use chunk_raw::RawChunk;
 use chunk_size::ChunkSize;
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 use core::convert::Infallible;
 use core::{
     alloc::Layout,
@@ -341,7 +344,7 @@ pub use mut_bump_string::MutBumpString;
 #[doc(inline)]
 pub use mut_bump_vec::MutBumpVec;
 pub use mut_bump_vec_rev::MutBumpVecRev;
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 use private::{capacity_overflow, format_trait_error, Infallibly};
 use set_len_on_drop::SetLenOnDrop;
 use set_len_on_drop_by_ptr::SetLenOnDropByPtr;
@@ -472,20 +475,20 @@ mod tests;
 pub mod private {
     pub use core;
 
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     /// Wrapper type, used for ad hoc overwriting of trait implementations, like for `Write` in `alloc_fmt`.
     pub struct Infallibly<T>(pub T);
 
     #[cold]
     #[inline(never)]
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     pub const fn capacity_overflow() -> ! {
         panic!("capacity overflow");
     }
 
     #[cold]
     #[inline(never)]
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     pub const fn format_trait_error() -> ! {
         panic!("formatting trait implementation returned an error");
     }
@@ -493,14 +496,14 @@ pub mod private {
 
 #[cold]
 #[inline(never)]
-#[cfg(not(feature = "alloc"))]
+#[cfg(all(not(feature = "alloc"), feature = "panic-on-alloc"))]
 fn handle_alloc_error(_layout: Layout) -> ! {
     panic!("allocation failed")
 }
 
 // this is just `Result::into_ok` but with a name to match our use case
 #[inline(always)]
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 #[allow(unreachable_patterns)] // msrv 1.64.0 does not allow omitting the `Err` arm
 fn infallible<T>(result: Result<T, Infallible>) -> T {
     match result {
@@ -795,7 +798,7 @@ macro_rules! error_behavior_generic_methods_if {
             $(#[doc = "\n"] $(#[doc = $infallible_examples])*)?
 
             #[inline(always)]
-            #[cfg(not(no_global_oom_handling))]
+            #[cfg(feature = "panic-on-alloc")]
             pub fn $infallible
             $(<$($($generic_params_lifetime)*)? $($generic_params)*>)?
             ($(&$($self)+,)? $($arg_pat: $arg_ty),*)
@@ -922,7 +925,7 @@ macro_rules! define_alloc_methods {
         macro_rules! $macro_name {
             (BumpScope) => {
                 $(
-                    #[cfg(not(no_global_oom_handling))]
+                    #[cfg(feature = "panic-on-alloc")]
                     $(#[$attr])*
                     $(#[$attr_infallible])*
 
@@ -994,7 +997,7 @@ macro_rules! define_alloc_methods {
                     $(#[doc = "\n"] $(#[doc = $infallible_examples])*)?
 
                     #[inline(always)]
-                    #[cfg(not(no_global_oom_handling))]
+                    #[cfg(feature = "panic-on-alloc")]
                     pub fn $infallible
                     $(<$($generic_params)*>)?
                     (&$($self)+ $(, $arg_pat: $arg_ty)*)

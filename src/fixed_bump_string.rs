@@ -800,7 +800,7 @@ impl DerefMut for FixedBumpString<'_> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl core::ops::AddAssign<&str> for FixedBumpString<'_> {
     #[inline]
     fn add_assign(&mut self, rhs: &str) {
@@ -939,7 +939,7 @@ impl Hash for FixedBumpString<'_> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<'s> Extend<&'s str> for FixedBumpString<'_> {
     #[inline]
     fn extend<T: IntoIterator<Item = &'s str>>(&mut self, iter: T) {
@@ -949,7 +949,7 @@ impl<'s> Extend<&'s str> for FixedBumpString<'_> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl Extend<char> for FixedBumpString<'_> {
     fn extend<I: IntoIterator<Item = char>>(&mut self, iter: I) {
         let iterator = iter.into_iter();
@@ -959,7 +959,7 @@ impl Extend<char> for FixedBumpString<'_> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 impl<'s> Extend<&'s char> for FixedBumpString<'_> {
     fn extend<I: IntoIterator<Item = &'s char>>(&mut self, iter: I) {
         self.extend(iter.into_iter().copied());

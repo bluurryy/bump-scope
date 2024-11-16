@@ -20,7 +20,6 @@ check:
   just check-clippy
   just check-nostd
   just check-msrv
-  just check-nooom
   just check-fallibility
 
 check-fmt:
@@ -32,8 +31,8 @@ check-fmt:
 
 check-clippy:
   cargo clippy --tests --all-features
-  cargo clippy --tests --no-default-features
-  cargo clippy --tests --no-default-features --features alloc
+  cargo clippy --no-default-features
+  cargo clippy --tests --no-default-features --features alloc,panic-on-alloc
   cd crates/fuzzing-support; cargo clippy --tests
   cd crates/inspect-asm; cargo clippy --tests
   cd crates/test-fallibility; cargo clippy --tests
@@ -44,10 +43,6 @@ check-nostd:
 
 check-msrv:
   cargo ('+' + (open Cargo.toml).package.rust-version) check
-
-# allocator-api2 doesn't work with no_global_oom_handling, we need nightly
-check-nooom:
-  RUSTFLAGS="--cfg no_global_oom_handling" cargo check --features nightly-allocator-api
 
 check-fallibility:
   @ just crates/test-fallibility/test

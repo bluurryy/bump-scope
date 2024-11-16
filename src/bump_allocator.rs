@@ -7,7 +7,7 @@ use crate::{
     SizedTypeProperties, Stats, SupportedMinimumAlignment,
 };
 
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 use crate::{handle_alloc_error, infallible};
 
 /// An allocator that allows `grow(_zeroed)`, `shrink` and `deallocate` calls with pointers that were not allocated by this allocator.
@@ -37,7 +37,7 @@ pub unsafe trait BumpAllocator: Allocator {
     /// Panics if the allocation fails.
     #[doc(hidden)]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
-        #[cfg(not(no_global_oom_handling))]
+        #[cfg(feature = "panic-on-alloc")]
         {
             match self.allocate(layout) {
                 Ok(ptr) => ptr.cast(),
@@ -45,7 +45,7 @@ pub unsafe trait BumpAllocator: Allocator {
             }
         }
 
-        #[cfg(no_global_oom_handling)]
+        #[cfg(not(feature = "panic-on-alloc"))]
         {
             _ = layout;
             unreachable!()
@@ -75,7 +75,7 @@ pub unsafe trait BumpAllocator: Allocator {
     where
         Self: Sized,
     {
-        #[cfg(not(no_global_oom_handling))]
+        #[cfg(feature = "panic-on-alloc")]
         {
             let layout = Layout::new::<T>();
 
@@ -85,7 +85,7 @@ pub unsafe trait BumpAllocator: Allocator {
             }
         }
 
-        #[cfg(no_global_oom_handling)]
+        #[cfg(not(feature = "panic-on-alloc"))]
         {
             unreachable!()
         }
@@ -117,7 +117,7 @@ pub unsafe trait BumpAllocator: Allocator {
     where
         Self: Sized,
     {
-        #[cfg(not(no_global_oom_handling))]
+        #[cfg(feature = "panic-on-alloc")]
         {
             let layout = match Layout::array::<T>(len) {
                 Ok(layout) => layout,
@@ -130,7 +130,7 @@ pub unsafe trait BumpAllocator: Allocator {
             }
         }
 
-        #[cfg(no_global_oom_handling)]
+        #[cfg(not(feature = "panic-on-alloc"))]
         {
             _ = len;
             unreachable!()
@@ -208,7 +208,7 @@ unsafe impl<A: BumpAllocator> BumpAllocator for &A {
     }
 
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
@@ -243,12 +243,12 @@ where
 
     #[inline(always)]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
-        #[cfg(not(no_global_oom_handling))]
+        #[cfg(feature = "panic-on-alloc")]
         {
             BumpScope::alloc_layout(self, layout)
         }
 
-        #[cfg(no_global_oom_handling)]
+        #[cfg(not(feature = "panic-on-alloc"))]
         {
             _ = layout;
             unreachable!()
@@ -265,12 +265,12 @@ where
     where
         Self: Sized,
     {
-        #[cfg(not(no_global_oom_handling))]
+        #[cfg(feature = "panic-on-alloc")]
         {
             infallible(self.do_alloc_sized())
         }
 
-        #[cfg(no_global_oom_handling)]
+        #[cfg(not(feature = "panic-on-alloc"))]
         {
             unreachable!()
         }
@@ -289,12 +289,12 @@ where
     where
         Self: Sized,
     {
-        #[cfg(not(no_global_oom_handling))]
+        #[cfg(feature = "panic-on-alloc")]
         {
             infallible(self.do_alloc_slice(len))
         }
 
-        #[cfg(no_global_oom_handling)]
+        #[cfg(not(feature = "panic-on-alloc"))]
         {
             _ = len;
             unreachable!()
@@ -460,7 +460,7 @@ where
     }
 
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
@@ -520,7 +520,7 @@ where
     }
 
     #[inline(always)]
-    #[cfg(not(no_global_oom_handling))]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
@@ -621,13 +621,13 @@ where
     where
         Self: Sized,
     {
-        #[cfg(not(no_global_oom_handling))]
+        #[cfg(feature = "panic-on-alloc")]
         {
             let (ptr, len) = infallible(BumpScope::generic_prepare_slice_allocation(self, len));
             nonnull::slice_from_raw_parts(ptr, len)
         }
 
-        #[cfg(no_global_oom_handling)]
+        #[cfg(not(feature = "panic-on-alloc"))]
         {
             _ = len;
             unreachable!()
@@ -656,12 +656,12 @@ where
     where
         Self: Sized,
     {
-        #[cfg(not(no_global_oom_handling))]
+        #[cfg(feature = "panic-on-alloc")]
         {
             infallible(BumpScope::generic_prepare_slice_allocation_rev(self, len))
         }
 
-        #[cfg(no_global_oom_handling)]
+        #[cfg(not(feature = "panic-on-alloc"))]
         {
             _ = len;
             unreachable!()
@@ -913,7 +913,7 @@ impl<'a, T: MutBumpAllocator + BumpAllocatorScope<'a>> MutBumpAllocatorScope<'a>
 
 #[cold]
 #[inline(never)]
-#[cfg(not(no_global_oom_handling))]
+#[cfg(feature = "panic-on-alloc")]
 pub const fn invalid_slice_layout() -> ! {
     panic!("invalid slice layout");
 }
