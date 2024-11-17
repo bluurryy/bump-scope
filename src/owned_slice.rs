@@ -2,7 +2,7 @@ mod drain;
 mod extract_if;
 mod into_iter;
 
-use core::ptr::NonNull;
+use core::ptr::{self, NonNull};
 
 pub use drain::Drain;
 pub use extract_if::ExtractIf;
@@ -17,111 +17,110 @@ use allocator_api2::{alloc::Allocator, vec::Vec};
 ///
 /// # Safety
 ///
-/// `take_slice` returns a pointer to a valid slice of initialized values, with a length corresponding to the most recent call to `len`.
+/// `owned_slice` returns a pointer to a valid slice of initialized values.
 ///
-/// The slice remains valid as long as the implementor is only accessed through methods provided by this trait.  
+/// The slice remains valid as long as the implementor is only accessed through methods provided by this trait.
 /// Interaction outside this trait's API may invalidate the slice.
 #[allow(clippy::len_without_is_empty)]
-pub unsafe trait OwnedSlice<T> {
-    /// Returns the length of the slice.
-    fn len(&self) -> usize;
-    /// Returns a pointer to a valid slice of initialized values, with a length corresponding to the most recent call to `len`.
-    /// The caller is now responsible for dropping the values of this slice.
-    fn take_slice(&mut self) -> NonNull<T>;
+pub unsafe trait OwnedSlice {
+    /// The element type of the slice.
+    type Item;
+
+    /// Returns the raw slice pointer.
+    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]>;
+
+    /// This makes the container forget all of its elements.
+    /// It is equivalent to <code>[set_len]\(0)</code>.
+    ///
+    /// The caller is now responsible for dropping the elements.
+    ///
+    /// [set_len]: alloc::vec::Vec::set_len
+    fn take_owned_slice(&mut self);
 }
 
-unsafe impl<T, S: OwnedSlice<T>> OwnedSlice<T> for &mut S {
-    fn len(&self) -> usize {
-        S::len(self)
+unsafe impl<T: OwnedSlice> OwnedSlice for &mut T {
+    type Item = T::Item;
+
+    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
+        T::owned_slice_ptr(self)
     }
 
-    fn take_slice(&mut self) -> NonNull<T> {
-        S::take_slice(self)
-    }
-}
-
-unsafe impl<T> OwnedSlice<T> for BumpBox<'_, [T]> {
-    fn len(&self) -> usize {
-        BumpBox::<[T]>::len(self)
-    }
-
-    fn take_slice(&mut self) -> NonNull<T> {
-        unsafe {
-            let ptr = self.as_non_null_ptr();
-            self.set_len(0);
-            ptr
-        }
+    fn take_owned_slice(&mut self) {
+        T::take_owned_slice(self)
     }
 }
 
-unsafe impl<T> OwnedSlice<T> for FixedBumpVec<'_, T> {
-    fn len(&self) -> usize {
-        FixedBumpVec::len(self)
+unsafe impl<T> OwnedSlice for BumpBox<'_, [T]> {
+    type Item = T;
+
+    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
+        self.as_non_null_slice()
     }
 
-    fn take_slice(&mut self) -> NonNull<T> {
-        unsafe {
-            let ptr = self.as_non_null_ptr();
-            self.set_len(0);
-            ptr
-        }
+    fn take_owned_slice(&mut self) {
+        unsafe { self.set_len(0) }
     }
 }
 
-unsafe impl<T, A: BumpAllocator> OwnedSlice<T> for BumpVec<T, A> {
-    fn len(&self) -> usize {
-        BumpVec::len(self)
+unsafe impl<T> OwnedSlice for FixedBumpVec<'_, T> {
+    type Item = T;
+
+    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
+        self.as_non_null_slice()
     }
 
-    fn take_slice(&mut self) -> NonNull<T> {
-        unsafe {
-            let ptr = self.as_non_null_ptr();
-            self.set_len(0);
-            ptr
-        }
+    fn take_owned_slice(&mut self) {
+        unsafe { self.set_len(0) }
     }
 }
 
-unsafe impl<T, A> OwnedSlice<T> for MutBumpVec<T, A> {
-    fn len(&self) -> usize {
-        MutBumpVec::len(self)
+unsafe impl<T, A: BumpAllocator> OwnedSlice for BumpVec<T, A> {
+    type Item = T;
+
+    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
+        self.as_non_null_slice()
     }
 
-    fn take_slice(&mut self) -> NonNull<T> {
-        unsafe {
-            let ptr = self.as_non_null_ptr();
-            self.set_len(0);
-            ptr
-        }
+    fn take_owned_slice(&mut self) {
+        unsafe { self.set_len(0) }
     }
 }
 
-unsafe impl<T, A> OwnedSlice<T> for MutBumpVecRev<T, A> {
-    fn len(&self) -> usize {
-        MutBumpVecRev::len(self)
+unsafe impl<T, A> OwnedSlice for MutBumpVec<T, A> {
+    type Item = T;
+
+    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
+        self.as_non_null_slice()
     }
 
-    fn take_slice(&mut self) -> NonNull<T> {
-        unsafe {
-            let slice = self.as_non_null_ptr();
-            self.set_len(0);
-            slice
-        }
+    fn take_owned_slice(&mut self) {
+        unsafe { self.set_len(0) }
+    }
+}
+
+unsafe impl<T, A> OwnedSlice for MutBumpVecRev<T, A> {
+    type Item = T;
+
+    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
+        self.as_non_null_slice()
+    }
+
+    fn take_owned_slice(&mut self) {
+        unsafe { self.set_len(0) }
     }
 }
 
 #[cfg(feature = "alloc")]
-unsafe impl<T, A: Allocator> OwnedSlice<T> for Vec<T, A> {
-    fn len(&self) -> usize {
-        Vec::len(self)
+unsafe impl<T, A: Allocator> OwnedSlice for Vec<T, A> {
+    type Item = T;
+
+    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
+        let slice = ptr::slice_from_raw_parts(self.as_ptr(), self.len());
+        unsafe { NonNull::new_unchecked(slice.cast_mut()) }
     }
 
-    fn take_slice(&mut self) -> NonNull<T> {
-        unsafe {
-            let ptr = NonNull::new_unchecked(self.as_mut_ptr());
-            self.set_len(0);
-            ptr
-        }
+    fn take_owned_slice(&mut self) {
+        unsafe { self.set_len(0) }
     }
 }
 
@@ -132,21 +131,12 @@ mod tests {
 
     use super::*;
 
-    const _: () = {
-        fn assertions() {
-            type T = i32;
-            fn implements<S: OwnedSlice<T>>() {}
-            implements::<BumpBox<[T]>>();
-            implements::<&mut BumpBox<[T]>>();
-        }
-    };
-
     macro_rules! assert_implements {
         ($($ty:ty)*) => {
             const _: () = {
                 fn assertions() {
                     type T = i32;
-                    fn implements<S: OwnedSlice<T>>() {}
+                    fn implements<S: OwnedSlice>() {}
                     $(implements::<$ty>();)*
                 }
             };

@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **breaking:** redesigned `OwnedSlice` trait
+
 ## 0.11.1 (2024-11-17)
 - **fixed:** double dropping the elements of `MutBumpVec` when growing
 

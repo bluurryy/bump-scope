@@ -1075,19 +1075,19 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// ```
         for fn try_append
         #[inline]
-        use fn generic_append(&mut self, slice: impl OwnedSlice<T>) {
+        use fn generic_append(&mut self, owned_slice: impl OwnedSlice<Item = T>) {
             unsafe {
-                let len = slice.len();
-                self.generic_reserve(len)?;
+                let mut owned_slice = owned_slice;
 
-                let mut slice = slice;
-                let slice = slice.take_slice();
+                let slice = owned_slice.owned_slice_ptr();
+                self.generic_reserve(slice.len())?;
 
                 let src = slice.cast::<T>().as_ptr();
                 let dst = self.as_mut_ptr().add(self.len());
-                ptr::copy_nonoverlapping(src, dst, len);
+                ptr::copy_nonoverlapping(src, dst, slice.len());
 
-                self.inc_len(len);
+                owned_slice.take_owned_slice();
+                self.inc_len(slice.len());
                 Ok(())
             }
         }
