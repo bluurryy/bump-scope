@@ -1,4 +1,5 @@
 use crate::{Bump, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev};
+use allocator_api2::vec::Vec;
 
 struct StringCounter(i32);
 
