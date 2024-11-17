@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.12.0 (2024-11-17)
 - **breaking:** redesigned `OwnedSlice` trait
 
 ## 0.11.1 (2024-11-17)
