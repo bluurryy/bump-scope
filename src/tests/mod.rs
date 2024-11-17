@@ -27,6 +27,7 @@ mod chunk_size;
 mod coerce_unsized;
 mod fixed_bump_vec;
 mod from_std;
+mod grow_vec;
 mod mut_bump_vec_doc;
 mod mut_bump_vec_rev_doc;
 mod mut_collections_do_not_waste_space;

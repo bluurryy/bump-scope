@@ -1,4 +1,7 @@
-use core::{mem::transmute, ptr::NonNull};
+use core::{
+    mem::transmute,
+    ptr::{self, NonNull},
+};
 
 use crate::{
     error_behavior::ErrorBehavior,
@@ -63,6 +66,26 @@ impl<T> RawFixedBumpVec<T> {
             initialized: RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(nonnull::as_non_null_ptr(allocation), 0)),
             capacity: allocation.len(),
         })
+    }
+
+    /// `new_cap` must be greater than `self.capacity`
+    pub(crate) unsafe fn grow_prepared_allocation<B: ErrorBehavior>(
+        &mut self,
+        allocator: &mut impl MutBumpAllocator,
+        minimum_new_cap: usize,
+    ) -> Result<(), B> {
+        debug_assert!(minimum_new_cap > self.capacity);
+        let allocation = B::prepare_slice_allocation::<T>(allocator, minimum_new_cap)?;
+
+        let new_ptr = allocation.cast::<T>();
+        let new_cap = allocation.len();
+
+        ptr::copy_nonoverlapping(self.as_ptr(), new_ptr.as_ptr(), self.len());
+
+        self.initialized.set_ptr(new_ptr);
+        self.capacity = new_cap;
+
+        Ok(())
     }
 
     #[inline(always)]
