@@ -1227,9 +1227,9 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         /// ```
         for fn try_append
         #[inline]
-        use fn generic_append(&mut self, owned_slice: impl OwnedSlice<Item = T>) {
+        use fn generic_append(&mut self, other: impl OwnedSlice<Item = T>) {
             unsafe {
-                let mut owned_slice = owned_slice;
+                let mut owned_slice = other;
 
                 let slice = owned_slice.owned_slice_ptr();
                 self.generic_reserve(slice.len())?;
