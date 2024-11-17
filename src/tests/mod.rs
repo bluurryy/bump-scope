@@ -18,6 +18,7 @@ mod alloc_iter;
 mod alloc_slice;
 mod alloc_try_with;
 mod allocator_api;
+mod append;
 mod bump_allocator;
 mod bump_string;
 mod bump_vec;
