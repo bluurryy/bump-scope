@@ -2,7 +2,7 @@ mod drain;
 mod extract_if;
 mod into_iter;
 
-use core::ptr::{self, NonNull};
+use core::ptr::NonNull;
 
 pub use drain::Drain;
 pub use extract_if::ExtractIf;
@@ -12,6 +12,9 @@ use crate::{BumpAllocator, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVe
 
 #[cfg(feature = "alloc")]
 use allocator_api2::{alloc::Allocator, vec::Vec};
+
+#[cfg(feature = "alloc")]
+use core::ptr;
 
 /// An owned slice, like a `Vec<T>`. This allows for efficient generic `append` implementations.
 ///
@@ -46,7 +49,7 @@ unsafe impl<T: OwnedSlice> OwnedSlice for &mut T {
     }
 
     fn take_owned_slice(&mut self) {
-        T::take_owned_slice(self)
+        T::take_owned_slice(self);
     }
 }
 
@@ -116,7 +119,7 @@ unsafe impl<T, A: Allocator> OwnedSlice for Vec<T, A> {
 
     fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
         let slice = ptr::slice_from_raw_parts(self.as_ptr(), self.len());
-        unsafe { NonNull::new_unchecked(slice.cast_mut()) }
+        unsafe { NonNull::new_unchecked(slice as *mut [T]) }
     }
 
     fn take_owned_slice(&mut self) {
