@@ -18,8 +18,8 @@ use core::{
 ///
 /// # Examples
 /// ```
-/// use bump_scope::Bump;
-/// let mut bump: Bump = Bump::new();
+/// # use bump_scope::Bump;
+/// # let mut bump: Bump = Bump::new();
 /// let mut string = bump.alloc_fixed_string(9);
 ///
 /// string.push_str("foo");

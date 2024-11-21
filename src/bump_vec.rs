@@ -147,8 +147,8 @@ macro_rules! bump_vec {
 ///
 /// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
 /// ```
-/// use bump_scope::{ Bump, BumpVec };
-/// let bump: Bump = Bump::new();
+/// # use bump_scope::{ Bump, BumpVec };
+/// # let bump: Bump = Bump::new();
 /// let mut vec = BumpVec::new_in(&bump);
 ///
 /// vec.push(1);

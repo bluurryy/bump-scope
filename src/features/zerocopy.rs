@@ -57,7 +57,7 @@ define_alloc_methods! {
     do examples
     /// ```
     /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::new();
+    /// # let mut bump: Bump = Bump::new();
     /// let zero = bump.alloc_zeroed::<i32>();
     /// assert_eq!(*zero, 0);
     /// ```
@@ -66,7 +66,7 @@ define_alloc_methods! {
     /// ```
     /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::try_new()?;
+    /// # let mut bump: Bump = Bump::try_new()?;
     /// let zero = bump.try_alloc_zeroed::<i32>()?;
     /// assert_eq!(*zero, 0);
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
@@ -82,7 +82,7 @@ define_alloc_methods! {
     do examples
     /// ```
     /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::new();
+    /// # let mut bump: Bump = Bump::new();
     /// let zeroes = bump.alloc_zeroed_slice::<i32>(3);
     /// assert_eq!(*zeroes, [0; 3]);
     /// ```
@@ -91,7 +91,7 @@ define_alloc_methods! {
     /// ```
     /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::try_new()?;
+    /// # let mut bump: Bump = Bump::try_new()?;
     /// let zeroes = bump.try_alloc_zeroed_slice::<i32>(3)?;
     /// assert_eq!(*zeroes, [0; 3]);
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())

@@ -22,8 +22,8 @@ use core::{
 ///
 /// # Examples
 /// ```
-/// use bump_scope::Bump;
-/// let mut bump: Bump = Bump::new();
+/// # use bump_scope::Bump;
+/// # let mut bump: Bump = Bump::new();
 /// let mut vec = bump.alloc_fixed_vec(3);
 ///
 /// vec.push(1);

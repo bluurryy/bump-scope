@@ -104,8 +104,8 @@ macro_rules! mut_bump_vec_rev {
 ///
 /// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
 /// ```
-/// use bump_scope::{ Bump, mut_bump_vec_rev };
-/// let mut bump: Bump = Bump::new();
+/// # use bump_scope::{ Bump, mut_bump_vec_rev };
+/// # let mut bump: Bump = Bump::new();
 /// let mut vec = mut_bump_vec_rev![in &mut bump];
 ///
 /// vec.push(1);
@@ -120,8 +120,8 @@ macro_rules! mut_bump_vec_rev {
 /// When extending a `MutBumpVecRev` by a slice, the elements have the same order as in the source slice.
 ///
 /// ```
-/// use bump_scope::{ Bump, mut_bump_vec_rev };
-/// let mut bump: Bump = Bump::new();
+/// # use bump_scope::{ Bump, mut_bump_vec_rev };
+/// # let mut bump: Bump = Bump::new();
 /// let mut vec = mut_bump_vec_rev![in &mut bump; 4, 5, 6];
 ///
 /// vec.extend_from_slice_copy(&[1, 2, 3]);
