@@ -10,3 +10,13 @@ pub trait NoDrop {}
 impl NoDrop for str {}
 impl<T: Copy> NoDrop for T {}
 impl<T: NoDrop> NoDrop for [T] {}
+
+impl NoDrop for core::ffi::CStr {}
+
+#[cfg(feature = "std")]
+mod std_impl {
+    use super::NoDrop;
+
+    impl NoDrop for std::ffi::OsStr {}
+    impl NoDrop for std::path::Path {}
+}

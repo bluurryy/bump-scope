@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **added:** implemented `NoDrop` for `CStr`, `OsStr` and `Path`
+
 ## 0.12.0 (2024-11-17)
 - **breaking:** redesigned `OwnedSlice` trait
 
