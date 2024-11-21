@@ -16,6 +16,7 @@ use allocator_api2::alloc::AllocError;
 use core::{
     alloc::Layout,
     cell::Cell,
+    ffi::CStr,
     fmt::{self, Debug},
     marker::PhantomData,
     mem::{transmute, ManuallyDrop, MaybeUninit},
@@ -837,6 +838,118 @@ where
         };
 
         Ok(string.into_boxed_str())
+    }
+
+    #[inline(always)]
+    pub(crate) fn generic_alloc_cstr<B: ErrorBehavior>(&self, src: &CStr) -> Result<&'a CStr, B> {
+        let slice = self.generic_alloc_slice_copy(src.to_bytes_with_nul())?.into_ref();
+
+        // SAFETY: input is `CStr` so this is too
+        Ok(unsafe { CStr::from_bytes_with_nul_unchecked(slice) })
+    }
+
+    #[inline(always)]
+    pub(crate) fn generic_alloc_cstr_from_str<B: ErrorBehavior>(&self, src: &str) -> Result<&'a CStr, B> {
+        let slice = src.as_bytes();
+
+        let src = slice.as_ptr();
+
+        // Can not overflow, maximum layout size is `isize::MAX`.
+        let dst = self.do_alloc_slice(slice.len() + 1)?;
+
+        unsafe {
+            core::ptr::copy_nonoverlapping(src, dst.as_ptr(), slice.len());
+            dst.as_ptr().add(slice.len()).write(0);
+
+            let bytes = core::slice::from_raw_parts(dst.as_ptr(), slice.len() + 1);
+            Ok(CStr::from_bytes_with_nul_unchecked(bytes))
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn generic_alloc_cstr_fmt<B: ErrorBehavior>(&self, args: fmt::Arguments) -> Result<&'a CStr, B> {
+        if let Some(string) = args.as_str() {
+            return self.generic_alloc_cstr_from_str(string);
+        }
+
+        let mut string = BumpString::new_in(self);
+
+        let mut string = if B::IS_FALLIBLE {
+            if fmt::Write::write_fmt(&mut string, args).is_err() {
+                // Either the allocation failed or the formatting trait
+                // implementation returned an error.
+                // Either way we return an `AllocError`, it doesn't matter how.
+                return Err(B::format_trait_error());
+            }
+
+            string
+        } else {
+            #[cfg(feature = "panic-on-alloc")]
+            {
+                let mut string = Infallibly(string);
+
+                if fmt::Write::write_fmt(&mut string, args).is_err() {
+                    // This can only be a formatting trait error.
+                    // If allocation failed we'd have already panicked.
+                    return Err(B::format_trait_error());
+                }
+
+                string.0
+            }
+
+            #[cfg(not(feature = "panic-on-alloc"))]
+            {
+                unreachable!()
+            }
+        };
+
+        string.generic_push('\0')?;
+        let bytes = string.into_boxed_str().into_ref().as_bytes();
+
+        Ok(unsafe { CStr::from_bytes_with_nul_unchecked(bytes) })
+    }
+
+    #[inline(always)]
+    pub(crate) fn generic_alloc_cstr_fmt_mut<B: ErrorBehavior>(&mut self, args: fmt::Arguments) -> Result<&'a CStr, B> {
+        if let Some(string) = args.as_str() {
+            return self.generic_alloc_cstr_from_str(string);
+        }
+
+        let mut string = MutBumpString::generic_with_capacity_in(0, self)?;
+
+        let mut string = if B::IS_FALLIBLE {
+            if fmt::Write::write_fmt(&mut string, args).is_err() {
+                // Either the allocation failed or the formatting trait
+                // implementation returned an error.
+                // Either way we return an `AllocError`, it doesn't matter how.
+                return Err(B::format_trait_error());
+            }
+
+            string
+        } else {
+            #[cfg(feature = "panic-on-alloc")]
+            {
+                let mut string = Infallibly(string);
+
+                if fmt::Write::write_fmt(&mut string, args).is_err() {
+                    // This can only be a formatting trait error.
+                    // If allocation failed we'd have already panicked.
+                    return Err(B::format_trait_error());
+                }
+
+                string.0
+            }
+
+            #[cfg(not(feature = "panic-on-alloc"))]
+            {
+                unreachable!()
+            }
+        };
+
+        string.generic_push('\0')?;
+        let bytes = string.into_boxed_str().into_ref().as_bytes();
+
+        Ok(unsafe { CStr::from_bytes_with_nul_unchecked(bytes) })
     }
 
     #[inline(always)]

@@ -8,7 +8,7 @@ use bump_scope::{
     allocator_api2::alloc::{AllocError, Allocator, Global},
     BumpBox, FixedBumpString, FixedBumpVec,
 };
-use core::{alloc::Layout, fmt, mem::MaybeUninit, ptr::NonNull};
+use core::{alloc::Layout, ffi::CStr, fmt, mem::MaybeUninit, ptr::NonNull};
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 
@@ -113,8 +113,32 @@ up_and_down! {
         bump.try_alloc_zeroed()
     }
 
+    pub fn Bump_try_alloc_str<'a>(bump: &'a Bump, value: &str) -> Result<BumpBox<'a, str>> {
+        bump.try_alloc_str(value)
+    }
+
     pub fn Bump_try_alloc_fmt<'a>(bump: &'a Bump, args: fmt::Arguments) -> Result<BumpBox<'a, str>> {
         bump.try_alloc_fmt(args)
+    }
+
+    pub fn Bump_try_alloc_fmt_mut<'a>(bump: &'a mut Bump, args: fmt::Arguments) -> Result<BumpBox<'a, str>> {
+        bump.try_alloc_fmt_mut(args)
+    }
+
+    pub fn Bump_try_alloc_cstr<'a>(bump: &'a Bump, value: &CStr) -> Result<&'a CStr> {
+        bump.try_alloc_cstr(value)
+    }
+
+    pub fn Bump_try_alloc_cstr_from_str<'a>(bump: &'a Bump, value: &str) -> Result<&'a CStr> {
+        bump.try_alloc_cstr_from_str(value)
+    }
+
+    pub fn Bump_try_alloc_cstr_fmt<'a>(bump: &'a Bump, value: fmt::Arguments) -> Result<&'a CStr> {
+        bump.try_alloc_cstr_fmt(value)
+    }
+
+    pub fn Bump_try_alloc_cstr_fmt_mut<'a>(bump: &'a mut Bump, value: fmt::Arguments) -> Result<&'a CStr> {
+        bump.try_alloc_cstr_fmt_mut(value)
     }
 
     pub fn Bump_try_alloc_iter(bump: &Bump, value: core::ops::Range<u32>) -> Result<BumpBox<[u32]>> {
@@ -155,10 +179,6 @@ up_and_down! {
 
     pub fn Bump_try_alloc_zeroed_slice(bump: &Bump, len: usize) -> Result<BumpBox<[u32]>> {
         bump.try_alloc_zeroed_slice(len)
-    }
-
-    pub fn Bump_try_alloc_str<'a>(bump: &'a Bump, value: &str) -> Result<BumpBox<'a, str>> {
-        bump.try_alloc_str(value)
     }
 
     pub fn Bump_try_alloc_uninit(bump: &Bump) -> Result<BumpBox<MaybeUninit<u32>>> {

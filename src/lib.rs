@@ -334,6 +334,7 @@ use chunk_size::ChunkSize;
 use core::convert::Infallible;
 use core::{
     alloc::Layout,
+    ffi::CStr,
     fmt::{self, Debug},
     mem::{self, MaybeUninit},
     num::NonZeroUsize,
@@ -1297,6 +1298,118 @@ define_alloc_methods! {
     /// ```
     for fn try_alloc_fmt_mut
     use fn generic_alloc_fmt_mut(&mut self, args: fmt::Arguments) -> BumpBox<str> | BumpBox<'a, str>;
+
+    /// Allocate a `CStr`.
+    impl
+    do examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let allocated = bump.alloc_cstr(c"Hello world!");
+    /// assert_eq!(allocated, c"Hello world!");
+    /// ```
+    for fn alloc_cstr
+    do examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let allocated = bump.try_alloc_cstr(c"Hello world!")?;
+    /// assert_eq!(allocated, c"Hello world!");
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
+    for fn try_alloc_cstr
+    use fn generic_alloc_cstr(&self, src: &CStr) -> &CStr | &'a CStr;
+
+    /// Allocate a `CStr` from a `str`.
+    impl
+    do examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let allocated = bump.alloc_cstr_from_str("Hello world!");
+    /// assert_eq!(allocated, c"Hello world!");
+    /// ```
+    for fn alloc_cstr_from_str
+    do examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let allocated = bump.try_alloc_cstr_from_str("Hello world!")?;
+    /// assert_eq!(allocated, c"Hello world!");
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
+    for fn try_alloc_cstr_from_str
+    use fn generic_alloc_cstr_from_str(&self, src: &str) -> &CStr | &'a CStr;
+
+    /// Allocate a `CStr` from format arguments.
+    impl
+    /// For better performance prefer [`alloc_cstr_fmt_mut`](Bump::alloc_cstr_fmt_mut).
+    do panics
+    /// Panics if a formatting trait implementation returned an error.
+    do examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let one = 1;
+    /// let two = 2;
+    /// let string = bump.alloc_cstr_fmt(format_args!("{one} + {two} = {}", one + two));
+    ///
+    /// assert_eq!(string, c"1 + 2 = 3");
+    /// ```
+    for fn alloc_cstr_fmt
+    /// For better performance prefer [`try_alloc_cstr_fmt_mut`](Bump::try_alloc_cstr_fmt_mut).
+    do errors
+    /// Errors if a formatting trait implementation returned an error.
+    do examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let one = 1;
+    /// let two = 2;
+    /// let string = bump.try_alloc_cstr_fmt(format_args!("{one} + {two} = {}", one + two))?;
+    ///
+    /// assert_eq!(string, c"1 + 2 = 3");
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
+    for fn try_alloc_cstr_fmt
+    use fn generic_alloc_cstr_fmt(&self, args: fmt::Arguments) -> &CStr | &'a CStr;
+
+    /// Allocate a `str` from format arguments.
+    impl
+    /// Unlike [`alloc_cstr_fmt`](Self::alloc_cstr_fmt), this function requires a mutable `Bump(Scope)`.
+    do panics
+    /// Panics if a formatting trait implementation returned an error.
+    do examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let mut bump: Bump = Bump::new();
+    /// let one = 1;
+    /// let two = 2;
+    /// let string = bump.alloc_cstr_fmt_mut(format_args!("{one} + {two} = {}", one + two));
+    ///
+    /// assert_eq!(string, c"1 + 2 = 3");
+    /// ```
+    for fn alloc_cstr_fmt_mut
+    /// Unlike [`try_alloc_cstr_fmt`](Bump::try_alloc_cstr_fmt), this function requires a mutable `Bump(Scope)`.
+    do errors
+    /// Errors if a formatting trait implementation returned an error.
+    do examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::Bump;
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let one = 1;
+    /// let two = 2;
+    /// let string = bump.try_alloc_cstr_fmt_mut(format_args!("{one} + {two} = {}", one + two))?;
+    ///
+    /// assert_eq!(string, c"1 + 2 = 3");
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
+    for fn try_alloc_cstr_fmt_mut
+    use fn generic_alloc_cstr_fmt_mut(&mut self, args: fmt::Arguments) -> &CStr | &'a CStr;
 
     /// Allocate elements of an iterator into a slice.
     impl

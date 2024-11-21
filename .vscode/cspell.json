@@ -18,6 +18,7 @@
     "codepoint",
     "Comparand",
     "constness",
+    "cstr",
     "curr",
     "Dealloc",
     "deallocate",

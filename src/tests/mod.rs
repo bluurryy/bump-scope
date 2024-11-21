@@ -13,6 +13,7 @@ use core::{
 };
 use std::io::IoSlice;
 
+mod alloc_cstr;
 mod alloc_fmt;
 mod alloc_iter;
 mod alloc_slice;

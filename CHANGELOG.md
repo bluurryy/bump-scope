@@ -2,6 +2,7 @@
 
 ## Unreleased
 - **added:** implemented `NoDrop` for `CStr`, `OsStr` and `Path`
+- **added:** `alloc_cstr`, `alloc_cstr_from_str`, `alloc_cstr_fmt` and `alloc_cstr_fmt_mut`
 
 ## 0.12.0 (2024-11-17)
 - **breaking:** redesigned `OwnedSlice` trait
