@@ -1736,7 +1736,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         // Drain will ptr::read out the values to remove.
         // When finished, remaining tail of the vec is copied back to cover
         // the hole, and the vector length is restored to the new length.
-        //
 
         use core::ops::Range;
         let len = self.len();

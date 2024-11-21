@@ -656,7 +656,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator {
     ///
     /// # Panics
     ///
-    /// Panics when the allocation fails.
+    /// Panics if the allocation fails.
     #[doc(hidden)]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
@@ -666,7 +666,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator {
     ///
     /// # Errors
     ///
-    /// Errors when the allocation fails.
+    /// Errors if the allocation fails.
     #[doc(hidden)]
     fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
     where
@@ -688,7 +688,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator {
     ///
     /// # Panics
     ///
-    /// Panics when the allocation fails.
+    /// Panics if the allocation fails.
     #[doc(hidden)]
     fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
     where
@@ -698,7 +698,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator {
     ///
     /// # Errors
     ///
-    /// Errors when the allocation fails.
+    /// Errors if the allocation fails.
     #[doc(hidden)]
     fn try_prepare_slice_allocation_rev<T>(&mut self, len: usize) -> Result<(NonNull<T>, usize), AllocError>
     where

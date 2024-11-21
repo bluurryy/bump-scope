@@ -149,7 +149,7 @@ where
         #[cfg_const(feature = "nightly-const-refs-to-static")]
         /// Constructs a new `Bump` without doing any allocations.
         ///
-        /// **This is `const` when the `nightly-const-refs-to-static` feature is enabled.**
+        /// **This is `const` iff the `nightly-const-refs-to-static` feature is enabled.**
         #[must_use]
         pub fn unallocated() -> Self {
             Self { chunk: Cell::new(unsafe { RawChunk::from_header(unallocated_chunk_header().cast()) }) }
