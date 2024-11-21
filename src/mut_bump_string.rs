@@ -6,6 +6,7 @@ use crate::{
 };
 use core::{
     borrow::{Borrow, BorrowMut},
+    ffi::CStr,
     fmt::{self, Debug, Display},
     hash::Hash,
     ops::{Deref, DerefMut, Range, RangeBounds},
@@ -13,8 +14,10 @@ use core::{
     ptr, str,
 };
 
+use allocator_api2::alloc::AllocError;
+
 #[cfg(feature = "panic-on-alloc")]
-use crate::Infallibly;
+use crate::{infallible, Infallibly};
 
 /// This is like [`format!`] but allocates inside a *mutable* `Bump` or `BumpScope`, returning a [`MutBumpString`].
 ///
@@ -1243,6 +1246,60 @@ impl<'a, A: MutBumpAllocatorScope<'a>> MutBumpString<A> {
     pub fn into_boxed_str(self) -> BumpBox<'a, str> {
         let bytes = self.into_bytes().into_boxed_slice();
         unsafe { BumpBox::from_utf8_unchecked(bytes) }
+    }
+
+    /// Converts this `MutBumpString` into `&CStr` that is live for this bump scope.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut hello = MutBumpString::from_str_in("Hello, ", &mut bump);
+    ///
+    /// hello.push('w');
+    /// hello.push_str("orld!");
+    ///
+    /// assert_eq!(hello.into_cstr(), c"Hello, world!");
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn into_cstr(self) -> &'a CStr {
+        infallible(self.generic_into_cstr())
+    }
+
+    /// Converts this `BumpString` into `&CStr` that is live for this bump scope.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut hello = MutBumpString::from_str_in("Hello, ", &mut bump);
+    ///
+    /// hello.push('w');
+    /// hello.push_str("orld!");
+    ///
+    /// assert_eq!(hello.into_cstr(), c"Hello, world!");
+    ///
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_into_cstr(self) -> Result<&'a CStr, AllocError> {
+        self.generic_into_cstr()
+    }
+
+    #[inline]
+    pub(crate) fn generic_into_cstr<B: ErrorBehavior>(mut self) -> Result<&'a CStr, B> {
+        self.generic_push('\0')?;
+        let bytes = self.into_boxed_str().into_ref().as_bytes();
+        Ok(unsafe { CStr::from_bytes_with_nul_unchecked(bytes) })
     }
 }
 

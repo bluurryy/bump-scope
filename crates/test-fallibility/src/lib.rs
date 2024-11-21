@@ -345,6 +345,10 @@ up_and_down! {
         MutBumpString::try_with_capacity_in(capacity, bump)
     }
 
+    pub fn MutBumpString_try_into_cstr(string: MutBumpString) -> Result<&CStr> {
+        string.try_into_cstr()
+    }
+
     pub fn BumpVec_try_extend_from_array(vec: &mut BumpVec<u32>, array: [u32; 24]) -> Result {
         vec.try_extend_from_array(array)
     }
@@ -431,6 +435,10 @@ up_and_down! {
 
     pub fn BumpString__try_with_capacity_in(capacity: usize, bump: &Bump) -> Result<BumpString> {
         BumpString::try_with_capacity_in(capacity, bump)
+    }
+
+    pub fn BumpString_try_into_cstr(string: BumpString) -> Result<&CStr> {
+        string.try_into_cstr()
     }
 
     pub fn FixedBumpVec__new(capacity: usize, bump: &Bump) -> Result<FixedBumpVec<u32>> {

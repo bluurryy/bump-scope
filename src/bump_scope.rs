@@ -874,7 +874,7 @@ where
 
         let mut string = BumpString::new_in(self);
 
-        let mut string = if B::IS_FALLIBLE {
+        let string = if B::IS_FALLIBLE {
             if fmt::Write::write_fmt(&mut string, args).is_err() {
                 // Either the allocation failed or the formatting trait
                 // implementation returned an error.
@@ -903,10 +903,7 @@ where
             }
         };
 
-        string.generic_push('\0')?;
-        let bytes = string.into_boxed_str().into_ref().as_bytes();
-
-        Ok(unsafe { CStr::from_bytes_with_nul_unchecked(bytes) })
+        string.generic_into_cstr()
     }
 
     #[inline(always)]
@@ -917,7 +914,7 @@ where
 
         let mut string = MutBumpString::generic_with_capacity_in(0, self)?;
 
-        let mut string = if B::IS_FALLIBLE {
+        let string = if B::IS_FALLIBLE {
             if fmt::Write::write_fmt(&mut string, args).is_err() {
                 // Either the allocation failed or the formatting trait
                 // implementation returned an error.
@@ -946,10 +943,7 @@ where
             }
         };
 
-        string.generic_push('\0')?;
-        let bytes = string.into_boxed_str().into_ref().as_bytes();
-
-        Ok(unsafe { CStr::from_bytes_with_nul_unchecked(bytes) })
+        string.generic_into_cstr()
     }
 
     #[inline(always)]
