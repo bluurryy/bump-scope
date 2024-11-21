@@ -189,14 +189,14 @@ Bump direction is controlled by the generic parameter `const UP: bool`. By defau
 ## Minimum alignment?
 The minimum alignment is controlled by the generic parameter `const MIN_ALIGN: usize`. By default, `MIN_ALIGN` is `1`.
 
-Changing the minimum alignment to e.g. `4` makes it so allocations with the alignment of `4` don't need to align the bump pointer anymore.
+For example changing the minimum alignment to `4` makes it so allocations with the alignment of `4` don't need to align the bump pointer anymore.
 This will penalize allocations of a smaller alignment as their size now needs to be rounded up the next multiple of `4`.
 
-This amounts to about 1 or 2 non-branch assembly instructions per allocation.
+The overhead of aligning and rounding up is 1 (`UP = false`) or 2 (`UP = true`) non-branch instructions on x86-64.
 
 ## `GUARANTEED_ALLOCATED` parameter?
-When `GUARANTEED_ALLOCATED` is `true`, the bump allocator is guaranteed to have at least one allocated chunk.
-This is usually the case unless you create it with `Bump::unallocated`.
+If `GUARANTEED_ALLOCATED` is `true` then the bump allocator is guaranteed to have at least one allocated chunk.
+This is usually the case unless it was created with `Bump::unallocated`.
 
 You need a guaranteed allocated `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
 You can convert a maybe unallocated `Bump(Scope)` into a guaranteed allocated one with
