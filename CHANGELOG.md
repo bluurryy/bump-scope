@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.12.2 (2024-11-22)
 - **fixed:** `CStr` now stops at the first nul; before, interior nuls were ignored (unsound)
 
 ## 0.12.1 (2024-11-21)
