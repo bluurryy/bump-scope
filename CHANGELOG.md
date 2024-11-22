@@ -1,7 +1,7 @@
 # Changelog
 
 ## Unreleased
-- **fixed:** `CStr` interior nul not being handled; now we stop at the first nul
+- **fixed:** `CStr` now stops at the first nul; before, interior nuls were ignored (unsound)
 
 ## 0.12.1 (2024-11-21)
 - **added:** implemented `NoDrop` for `CStr`, `OsStr` and `Path`
