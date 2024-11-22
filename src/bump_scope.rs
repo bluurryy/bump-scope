@@ -850,19 +850,23 @@ where
 
     #[inline(always)]
     pub(crate) fn generic_alloc_cstr_from_str<B: ErrorBehavior>(&self, src: &str) -> Result<&'a CStr, B> {
-        let slice = src.as_bytes();
+        let src = src.as_bytes();
 
-        let src = slice.as_ptr();
+        if let Some(nul) = src.iter().position(|&c| c == b'\0') {
+            let bytes_with_nul = unsafe { src.get_unchecked(..nul + 1) };
+            let cstr = unsafe { CStr::from_bytes_with_nul_unchecked(bytes_with_nul) };
+            self.generic_alloc_cstr(cstr)
+        } else {
+            // `src` contains no null
+            let dst = self.do_alloc_slice(src.len() + 1)?;
 
-        // Can not overflow, maximum layout size is `isize::MAX`.
-        let dst = self.do_alloc_slice(slice.len() + 1)?;
+            unsafe {
+                core::ptr::copy_nonoverlapping(src.as_ptr(), dst.as_ptr(), src.len());
+                dst.as_ptr().add(src.len()).write(0);
 
-        unsafe {
-            core::ptr::copy_nonoverlapping(src, dst.as_ptr(), slice.len());
-            dst.as_ptr().add(slice.len()).write(0);
-
-            let bytes = core::slice::from_raw_parts(dst.as_ptr(), slice.len() + 1);
-            Ok(CStr::from_bytes_with_nul_unchecked(bytes))
+                let bytes = core::slice::from_raw_parts(dst.as_ptr(), src.len() + 1);
+                Ok(CStr::from_bytes_with_nul_unchecked(bytes))
+            }
         }
     }
 

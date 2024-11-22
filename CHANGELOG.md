@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **fixed:** `CStr` interior nul not being handled; now we stop at the first nul
+
 ## 0.12.1 (2024-11-21)
 - **added:** implemented `NoDrop` for `CStr`, `OsStr` and `Path`
 - **added:** `alloc_cstr`, `alloc_cstr_from_str`, `alloc_cstr_fmt` and `alloc_cstr_fmt_mut`

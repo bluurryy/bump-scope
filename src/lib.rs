@@ -53,6 +53,7 @@
     clippy::items_after_statements,
     clippy::missing_transmute_annotations,
     clippy::manual_assert,
+    clippy::range_plus_one,
     unknown_lints,
     rustdoc::redundant_explicit_links, // for cargo-rdme
     stable_features, // for const_refs_to_static
@@ -1322,6 +1323,8 @@ define_alloc_methods! {
     use fn generic_alloc_cstr(&self, src: &CStr) -> &CStr | &'a CStr;
 
     /// Allocate a `CStr` from a `str`.
+    ///
+    /// If `src` contains a `'\0'` then the `CStr` will stop there.
     impl
     do examples
     /// ```
@@ -1344,7 +1347,10 @@ define_alloc_methods! {
     use fn generic_alloc_cstr_from_str(&self, src: &str) -> &CStr | &'a CStr;
 
     /// Allocate a `CStr` from format arguments.
+    ///
+    /// If the string contains a `'\0'` then the `CStr` will stop there.
     impl
+    ///
     /// For better performance prefer [`alloc_cstr_fmt_mut`](Bump::alloc_cstr_fmt_mut).
     do panics
     /// Panics if a formatting trait implementation returned an error.
@@ -1359,6 +1365,7 @@ define_alloc_methods! {
     /// assert_eq!(string, c"1 + 2 = 3");
     /// ```
     for fn alloc_cstr_fmt
+    ///
     /// For better performance prefer [`try_alloc_cstr_fmt_mut`](Bump::try_alloc_cstr_fmt_mut).
     do errors
     /// Errors if a formatting trait implementation returned an error.
@@ -1377,8 +1384,11 @@ define_alloc_methods! {
     for fn try_alloc_cstr_fmt
     use fn generic_alloc_cstr_fmt(&self, args: fmt::Arguments) -> &CStr | &'a CStr;
 
-    /// Allocate a `str` from format arguments.
+    /// Allocate a `CStr` from format arguments.
+    ///
+    /// If the string contains a `'\0'` then the `CStr` will stop there.
     impl
+    ///
     /// Unlike [`alloc_cstr_fmt`](Self::alloc_cstr_fmt), this function requires a mutable `Bump(Scope)`.
     do panics
     /// Panics if a formatting trait implementation returned an error.
@@ -1393,6 +1403,7 @@ define_alloc_methods! {
     /// assert_eq!(string, c"1 + 2 = 3");
     /// ```
     for fn alloc_cstr_fmt_mut
+    ///
     /// Unlike [`try_alloc_cstr_fmt`](Bump::try_alloc_cstr_fmt), this function requires a mutable `Bump(Scope)`.
     do errors
     /// Errors if a formatting trait implementation returned an error.
