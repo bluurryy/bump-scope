@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.12.3 (2024-11-23)
 - **fixed:** interior nuls being ignored for `alloc_cstr_fmt_mut` and `MutBumpString::into_cstr` (unsound)
 
 ## 0.12.2 (2024-11-22)
