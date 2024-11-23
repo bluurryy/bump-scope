@@ -13,12 +13,12 @@ inspect_asm::alloc_fmt::try_mut_up_a:
 	lea rax, [rsp + 56]
 	mov qword ptr [rsp + 88], rax
 	mov qword ptr [rsp + 96], 1
-	mov qword ptr [rsp + 8], 1
-	xorps xmm0, xmm0
-	movups xmmword ptr [rsp + 16], xmm0
-	mov qword ptr [rsp + 32], rdi
-	lea rsi, [rip + .L__unnamed_1]
-	lea rdi, [rsp + 8]
+	movups xmm0, xmmword ptr [rip + .L__unnamed_1]
+	movaps xmmword ptr [rsp], xmm0
+	mov qword ptr [rsp + 16], 0
+	mov qword ptr [rsp + 24], rdi
+	lea rsi, [rip + .L__unnamed_2]
+	mov rdi, rsp
 	lea rdx, [rsp + 72]
 	call qword ptr [rip + core::fmt::write@GOTPCREL]
 	test al, al
@@ -27,11 +27,11 @@ inspect_asm::alloc_fmt::try_mut_up_a:
 	add rsp, 120
 	ret
 .LBB0_0:
-	cmp qword ptr [rsp + 24], 0
+	cmp qword ptr [rsp + 16], 0
 	je .LBB0_1
-	mov rcx, qword ptr [rsp + 32]
-	mov rax, qword ptr [rsp + 8]
-	mov rdx, qword ptr [rsp + 16]
+	mov rcx, qword ptr [rsp + 24]
+	mov rax, qword ptr [rsp]
+	mov rdx, qword ptr [rsp + 8]
 	mov rcx, qword ptr [rcx]
 	lea rsi, [rax + rdx]
 	add rsi, 3

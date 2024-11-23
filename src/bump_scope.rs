@@ -806,7 +806,7 @@ where
             return self.generic_alloc_str(string);
         }
 
-        let mut string = MutBumpString::generic_with_capacity_in(0, self)?;
+        let mut string = MutBumpString::new_in(self);
 
         let string = if B::IS_FALLIBLE {
             if fmt::Write::write_fmt(&mut string, args).is_err() {
@@ -916,7 +916,7 @@ where
             return self.generic_alloc_cstr_from_str(string);
         }
 
-        let mut string = MutBumpString::generic_with_capacity_in(0, self)?;
+        let mut string = MutBumpString::new_in(self);
 
         let string = if B::IS_FALLIBLE {
             if fmt::Write::write_fmt(&mut string, args).is_err() {
