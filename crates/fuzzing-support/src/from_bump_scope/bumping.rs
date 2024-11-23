@@ -314,6 +314,10 @@ pub(crate) fn bump_prepare_up(
     }
 
     // layout does fit, we just trim off the excess to make end aligned
+    //
+    // Note that `end` does *not* need to be aligned to `min_align` because the `prepare` operation does not
+    // move the bump pointer which is the thing that does need to be aligned.
+    // Aligning to `min_align` will happen once `use_prepared_slice_allocation` is called.
     let end = down_align(end, layout.align());
 
     debug_assert_aligned!(start, layout.align());
@@ -361,6 +365,10 @@ pub(crate) fn bump_prepare_down(
     }
 
     // layout does fit, we just trim off the excess to make start aligned
+    //
+    // Note that `start` does *not* need to be aligned to `min_align` because the `prepare` operation does not
+    // move the bump pointer which is the thing that does need to be aligned.
+    // Aligning to `min_align` will happen once `use_prepared_slice_allocation` is called.
     let start = up_align_unchecked(start, layout.align());
 
     debug_assert_aligned!(start, layout.align());
