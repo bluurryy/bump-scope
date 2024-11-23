@@ -56,7 +56,7 @@ macro_rules! debug_assert_le {
     };
 }
 
-/// Arguments for [`bump_up`] and [`bump_down`].
+/// Arguments for the [`bump_up`], [`bump_down`], [`bump_prepare_up`] and [`bump_prepare_down`].
 ///
 /// The fields `min_align`, `align_is_const`, `size_is_const`, `size_is_multiple_of_align` are expected to be constants.
 /// `bump_up` and `bump_down` are optimized for that case.
@@ -157,9 +157,9 @@ pub(crate) fn bump_up(
     if (align_is_const && size_is_multiple_of_align && layout.align() >= min_align)
         || (size_is_const && (layout.size() % min_align == 0))
     {
-        // we are already aligned to `MIN_ALIGN`
+        // we are already aligned to `min_align`
     } else {
-        // up aligning an address `<= range.end` with an alignment `<= MIN_CHUNK_ALIGN` (which `MIN_ALIGN` is)
+        // up aligning an address `<= range.end` with an alignment `<= MIN_CHUNK_ALIGN` (which `min_align` is)
         // can not exceed `range.end`, and thus also can't overflow
         new_pos = up_align_unchecked(new_pos, min_align);
     }
