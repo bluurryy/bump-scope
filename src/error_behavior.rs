@@ -4,7 +4,7 @@ use crate::{layout, AllocError, BumpAllocator, Layout, MutBumpAllocator, NonNull
 use layout::LayoutProps;
 
 pub(crate) trait ErrorBehavior: Sized {
-    const IS_FALLIBLE: bool;
+    const PANICS_ON_ALLOC: bool;
 
     fn allocation(layout: Layout) -> Self;
     fn capacity_overflow() -> Self;
@@ -42,7 +42,7 @@ pub(crate) trait ErrorBehavior: Sized {
 
 #[cfg(feature = "panic-on-alloc")]
 impl ErrorBehavior for Infallible {
-    const IS_FALLIBLE: bool = false;
+    const PANICS_ON_ALLOC: bool = true;
 
     #[inline(always)]
     fn allocation(layout: Layout) -> Self {
@@ -119,7 +119,7 @@ impl ErrorBehavior for Infallible {
 }
 
 impl ErrorBehavior for AllocError {
-    const IS_FALLIBLE: bool = true;
+    const PANICS_ON_ALLOC: bool = false;
 
     #[inline(always)]
     fn allocation(_: Layout) -> Self {

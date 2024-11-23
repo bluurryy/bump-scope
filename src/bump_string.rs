@@ -1286,7 +1286,7 @@ impl<A: BumpAllocator> BumpString<A> {
 
     pub(crate) fn generic_write_fmt<B: ErrorBehavior>(&mut self, args: fmt::Arguments) -> Result<(), B> {
         #[cfg(feature = "panic-on-alloc")]
-        if !B::IS_FALLIBLE {
+        if B::PANICS_ON_ALLOC {
             if fmt::Write::write_fmt(Infallibly::from_mut(self), args).is_err() {
                 // Our `Infallibly` wrapped `Write` implementation panics on allocation failure.
                 // So this can only be an error returned by a `fmt()` implementor.
