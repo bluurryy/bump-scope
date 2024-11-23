@@ -10,19 +10,26 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::{handle_alloc_error, infallible};
 
-/// An allocator that allows `grow(_zeroed)`, `shrink` and `deallocate` calls with pointers that were not allocated by this allocator.
+/// A bump allocator.
 ///
-/// This trait is used for [`BumpBox::into_box`][into_box] to allow safely converting a `BumpBox` into a `Box`.
+/// This trait guarantees that it can be used as the allocator for an allocation that wasn't made by itself.
+///
+/// When handling allocations from a foreign allocator:
+/// - `grow` will always allocate a new memory block
+/// - `deallocate` and `shrink` will do nothing (`shrink` may allocate iff the alignment increases)
+///
+/// This makes functions such as [`BumpVec::from_parts`][from_parts] and [`BumpBox::into_box`][into_box] possible.
 ///
 /// # Safety
 ///
 /// This trait must only be implemented when
-/// - `grow(_zeroed)`, `shrink` and `deallocate` can be called with a pointer that was not allocated by this Allocator
+/// - `grow(_zeroed)`, `shrink` and `deallocate` can be called with a pointer that was not allocated by this allocator
 /// - `deallocate` can be called with any pointer or alignment when the size is `0`
-/// - `deallocate` can be called with a pointer allocated from another allocator and have no effect
-/// - `shrink` does not error
 ///
 /// [into_box]: crate::BumpBox::into_box
+/// [from_parts]: crate::BumpVec::from_parts
+// FIXME: only add infallible methods when `feature = "panic-on-alloc"`
+// FIXME: properly document the methods and remove `doc(hidden)`
 #[allow(clippy::missing_errors_doc)]
 pub unsafe trait BumpAllocator: Allocator {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
