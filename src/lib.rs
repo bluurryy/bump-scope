@@ -283,7 +283,6 @@ mod bump_string;
 /// Contains [`BumpVec`] and associated types.
 pub mod bump_vec;
 mod bumping;
-mod chunk_raw;
 mod chunk_size;
 mod destructure;
 mod error_behavior;
@@ -306,6 +305,7 @@ pub mod owned_str;
 mod partial_eq;
 mod polyfill;
 mod raw_bump_box;
+mod raw_chunk;
 mod raw_fixed_bump_string;
 mod raw_fixed_bump_vec;
 mod set_len_on_drop;
@@ -329,7 +329,6 @@ pub use bump_string::BumpString;
 #[doc(inline)]
 pub use bump_vec::BumpVec;
 use chunk_header::{unallocated_chunk_header, ChunkHeader};
-use chunk_raw::RawChunk;
 use chunk_size::ChunkSize;
 #[cfg(feature = "panic-on-alloc")]
 use core::convert::Infallible;
@@ -354,6 +353,7 @@ pub use mut_bump_vec_rev::MutBumpVecRev;
 pub use no_drop::NoDrop;
 #[cfg(feature = "panic-on-alloc")]
 use private::{capacity_overflow, format_trait_error, Infallibly};
+use raw_chunk::RawChunk;
 use set_len_on_drop::SetLenOnDrop;
 use set_len_on_drop_by_ptr::SetLenOnDropByPtr;
 #[doc(inline)]
