@@ -29,9 +29,9 @@ inspect_asm::alloc_fmt::mut_down_a:
 	mov rbx, qword ptr [rsp + 16]
 	test rbx, rbx
 	je .LBB0_0
+	mov r15, qword ptr [rsp + 24]
 	mov rsi, qword ptr [rsp]
 	mov r14, qword ptr [rsp + 8]
-	mov r15, qword ptr [rsp + 24]
 	add rbx, rsi
 	sub rbx, r14
 	mov rdi, rbx

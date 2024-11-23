@@ -1224,6 +1224,30 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     pub fn stats(&self) -> Stats {
         self.allocator.stats()
     }
+
+    pub(crate) fn generic_write_fmt<B: ErrorBehavior>(&mut self, args: fmt::Arguments) -> Result<(), B> {
+        #[cfg(feature = "panic-on-alloc")]
+        if !B::IS_FALLIBLE {
+            if fmt::Write::write_fmt(Infallibly::from_mut(self), args).is_err() {
+                // Our `Infallibly` wrapped `Write` implementation panics on allocation failure.
+                // So this can only be an error returned by a `fmt()` implementor.
+                // Note that `fmt()` implementors *should* not return errors (see `std::fmt::Error`)
+                return Err(B::format_trait_error());
+            }
+
+            return Ok(());
+        }
+
+        if fmt::Write::write_fmt(self, args).is_err() {
+            // Either an allocation failed or the `fmt()` implementor returned an error.
+            // Either way we return an `AllocError`.
+            // Note that `fmt()` implementors *should* not return errors (see `std::fmt::Error`).
+            // So it's fine not to have an extra error variant for that.
+            return Err(B::format_trait_error());
+        }
+
+        Ok(())
+    }
 }
 
 impl<'a, A: MutBumpAllocatorScope<'a>> MutBumpString<A> {

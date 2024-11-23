@@ -1,3 +1,5 @@
+#[cfg(feature = "panic-on-alloc")]
+use crate::infallible;
 use crate::{
     bump_align_guard::BumpAlignGuard,
     bump_common_methods, bump_scope_methods,
@@ -10,8 +12,6 @@ use crate::{
     FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk,
     SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
-#[cfg(feature = "panic-on-alloc")]
-use crate::{infallible, Infallibly};
 use allocator_api2::alloc::AllocError;
 use core::{
     alloc::Layout,
@@ -767,36 +767,7 @@ where
         }
 
         let mut string = BumpString::new_in(self);
-
-        let string = if B::IS_FALLIBLE {
-            if fmt::Write::write_fmt(&mut string, args).is_err() {
-                // Either the allocation failed or the formatting trait
-                // implementation returned an error.
-                // Either way we return an `AllocError`, it doesn't matter how.
-                return Err(B::format_trait_error());
-            }
-
-            string
-        } else {
-            #[cfg(feature = "panic-on-alloc")]
-            {
-                let mut string = Infallibly(string);
-
-                if fmt::Write::write_fmt(&mut string, args).is_err() {
-                    // This can only be a formatting trait error.
-                    // If allocation failed we'd have already panicked.
-                    return Err(B::format_trait_error());
-                }
-
-                string.0
-            }
-
-            #[cfg(not(feature = "panic-on-alloc"))]
-            {
-                unreachable!()
-            }
-        };
-
+        string.generic_write_fmt(args)?;
         Ok(string.into_boxed_str())
     }
 
@@ -807,36 +778,7 @@ where
         }
 
         let mut string = MutBumpString::new_in(self);
-
-        let string = if B::IS_FALLIBLE {
-            if fmt::Write::write_fmt(&mut string, args).is_err() {
-                // Either the allocation failed or the formatting trait
-                // implementation returned an error.
-                // Either way we return an `AllocError`, it doesn't matter how.
-                return Err(B::format_trait_error());
-            }
-
-            string
-        } else {
-            #[cfg(feature = "panic-on-alloc")]
-            {
-                let mut string = Infallibly(string);
-
-                if fmt::Write::write_fmt(&mut string, args).is_err() {
-                    // This can only be a formatting trait error.
-                    // If allocation failed we'd have already panicked.
-                    return Err(B::format_trait_error());
-                }
-
-                string.0
-            }
-
-            #[cfg(not(feature = "panic-on-alloc"))]
-            {
-                unreachable!()
-            }
-        };
-
+        string.generic_write_fmt(args)?;
         Ok(string.into_boxed_str())
     }
 
@@ -877,36 +819,7 @@ where
         }
 
         let mut string = BumpString::new_in(self);
-
-        let string = if B::IS_FALLIBLE {
-            if fmt::Write::write_fmt(&mut string, args).is_err() {
-                // Either the allocation failed or the formatting trait
-                // implementation returned an error.
-                // Either way we return an `AllocError`, it doesn't matter how.
-                return Err(B::format_trait_error());
-            }
-
-            string
-        } else {
-            #[cfg(feature = "panic-on-alloc")]
-            {
-                let mut string = Infallibly(string);
-
-                if fmt::Write::write_fmt(&mut string, args).is_err() {
-                    // This can only be a formatting trait error.
-                    // If allocation failed we'd have already panicked.
-                    return Err(B::format_trait_error());
-                }
-
-                string.0
-            }
-
-            #[cfg(not(feature = "panic-on-alloc"))]
-            {
-                unreachable!()
-            }
-        };
-
+        string.generic_write_fmt(args)?;
         string.generic_into_cstr()
     }
 
@@ -917,36 +830,7 @@ where
         }
 
         let mut string = MutBumpString::new_in(self);
-
-        let string = if B::IS_FALLIBLE {
-            if fmt::Write::write_fmt(&mut string, args).is_err() {
-                // Either the allocation failed or the formatting trait
-                // implementation returned an error.
-                // Either way we return an `AllocError`, it doesn't matter how.
-                return Err(B::format_trait_error());
-            }
-
-            string
-        } else {
-            #[cfg(feature = "panic-on-alloc")]
-            {
-                let mut string = Infallibly(string);
-
-                if fmt::Write::write_fmt(&mut string, args).is_err() {
-                    // This can only be a formatting trait error.
-                    // If allocation failed we'd have already panicked.
-                    return Err(B::format_trait_error());
-                }
-
-                string.0
-            }
-
-            #[cfg(not(feature = "panic-on-alloc"))]
-            {
-                unreachable!()
-            }
-        };
-
+        string.generic_write_fmt(args)?;
         string.generic_into_cstr()
     }
 

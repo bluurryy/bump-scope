@@ -473,7 +473,14 @@ pub mod private {
 
     #[cfg(feature = "panic-on-alloc")]
     /// Wrapper type, used for ad hoc overwriting of trait implementations, like for `Write` in `alloc_fmt`.
+    #[repr(transparent)]
     pub struct Infallibly<T>(pub T);
+
+    impl<T> Infallibly<T> {
+        pub(crate) fn from_mut(value: &mut T) -> &mut Infallibly<T> {
+            unsafe { &mut *(value as *mut T as *mut Self) }
+        }
+    }
 
     #[cold]
     #[inline(never)]

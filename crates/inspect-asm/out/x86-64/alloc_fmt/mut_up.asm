@@ -25,17 +25,17 @@ inspect_asm::alloc_fmt::mut_up:
 	jne .LBB0_1
 	cmp qword ptr [rsp + 16], 0
 	je .LBB0_0
+	mov rcx, qword ptr [rsp + 24]
 	mov rax, qword ptr [rsp]
 	mov rdx, qword ptr [rsp + 8]
-	mov rcx, qword ptr [rsp + 24]
 	lea rsi, [rax + rdx]
 	mov rcx, qword ptr [rcx]
 	mov qword ptr [rcx], rsi
 	add rsp, 120
 	ret
 .LBB0_0:
-	xor edx, edx
 	mov eax, 1
+	xor edx, edx
 	add rsp, 120
 	ret
 .LBB0_1:
