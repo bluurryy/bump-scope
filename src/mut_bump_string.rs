@@ -1297,9 +1297,13 @@ impl<'a, A: MutBumpAllocatorScope<'a>> MutBumpString<A> {
 
     #[inline]
     pub(crate) fn generic_into_cstr<B: ErrorBehavior>(mut self) -> Result<&'a CStr, B> {
-        self.generic_push('\0')?;
-        let bytes = self.into_boxed_str().into_ref().as_bytes();
-        Ok(unsafe { CStr::from_bytes_with_nul_unchecked(bytes) })
+        match self.as_bytes().iter().position(|&c| c == b'\0') {
+            Some(nul) => unsafe { self.fixed.cook_mut().initialized.as_mut_bytes().truncate(nul + 1) },
+            None => self.generic_push('\0')?,
+        }
+
+        let bytes_with_nul = self.into_boxed_str().into_ref().as_bytes();
+        Ok(unsafe { CStr::from_bytes_with_nul_unchecked(bytes_with_nul) })
     }
 }
 

@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **fixed:** interior nuls being ignored for `alloc_cstr_fmt_mut` and `MutBumpString::into_cstr` (unsound)
+
 ## 0.12.2 (2024-11-22)
 - **fixed:** `CStr` now stops at the first nul; before, interior nuls were ignored (unsound)
 

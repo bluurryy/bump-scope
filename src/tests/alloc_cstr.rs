@@ -1,3 +1,5 @@
+use core::fmt;
+
 use allocator_api2::alloc::Global;
 
 use crate::Bump;
@@ -11,6 +13,7 @@ either_way! {
     fmt
     interior_null_from_str
     interior_null_fmt
+    interior_null_fmt_mut
 }
 
 fn simple<const UP: bool>() {
@@ -55,7 +58,25 @@ fn interior_null_from_str<const UP: bool>() {
 
 fn interior_null_fmt<const UP: bool>() {
     let bump: Bump<Global, 1, UP> = Bump::new();
-    let allocated = bump.alloc_cstr_fmt(format_args!("{}\0{}", "hello", "world"));
+    let hello = "hello";
+    let world = "world";
+    let allocated = bump.alloc_cstr_fmt(assert_multiple(format_args!("{hello}\0{world}")));
     assert_eq!(allocated, c"hello");
+    assert_eq!(allocated.to_bytes(), b"hello");
     assert_eq!(bump.stats().allocated(), 6);
+}
+
+fn interior_null_fmt_mut<const UP: bool>() {
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    let hello = "hello";
+    let world = "world";
+    let allocated = bump.alloc_cstr_fmt_mut(assert_multiple(format_args!("{hello}\0{world}")));
+    assert_eq!(allocated, c"hello");
+    assert_eq!(allocated.to_bytes(), b"hello");
+    assert_eq!(bump.stats().allocated(), 6);
+}
+
+fn assert_multiple(args: fmt::Arguments) -> fmt::Arguments {
+    assert!(args.as_str().is_none(), "expected multiple format arguments");
+    args
 }
