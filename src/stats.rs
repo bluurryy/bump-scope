@@ -214,7 +214,7 @@ impl<'a> Stats<'a, true> {
     }
 }
 
-impl<'a> Stats<'a> {
+impl<'a> Stats<'a, false> {
     /// This is the chunk we are currently allocating on.
     #[must_use]
     pub fn current_chunk(self) -> Option<Chunk<'a>> {
