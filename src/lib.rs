@@ -1455,8 +1455,6 @@ define_alloc_methods! {
     use fn generic_alloc_iter<{T}>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]>;
 
     /// Allocate elements of an `ExactSizeIterator` into a slice.
-    do panics
-    /// Panics if the supplied iterator returns fewer elements than it promised.
     impl
     do examples
     /// ```
