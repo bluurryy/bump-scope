@@ -285,6 +285,7 @@ pub mod bump_vec;
 mod bumping;
 mod chunk_size;
 mod destructure;
+mod doc;
 mod error_behavior;
 mod features;
 mod fixed_bump_string;
@@ -1242,7 +1243,7 @@ define_alloc_methods! {
 
     /// Allocate a `str` from format arguments.
     impl
-    /// For better performance prefer [`alloc_fmt_mut`](Bump::alloc_fmt_mut).
+    #[doc = doc::use_mut_instead!(alloc_fmt_mut)]
     do panics
     /// Panics if a formatting trait implementation returned an error.
     do examples
@@ -1256,7 +1257,7 @@ define_alloc_methods! {
     /// assert_eq!(string, "1 + 2 = 3");
     /// ```
     for fn alloc_fmt
-    /// For better performance prefer [`try_alloc_fmt_mut`](Bump::try_alloc_fmt_mut).
+    #[doc = doc::use_mut_instead!(try_alloc_fmt_mut)]
     do errors
     /// Errors if a formatting trait implementation returned an error.
     do examples
@@ -1276,7 +1277,7 @@ define_alloc_methods! {
 
     /// Allocate a `str` from format arguments.
     impl
-    /// Unlike [`alloc_fmt`](Self::alloc_fmt), this function requires a mutable `Bump(Scope)`.
+    #[doc = doc::mut_alloc_function!(alloc_fmt, "string buffer")]
     do panics
     /// Panics if a formatting trait implementation returned an error.
     do examples
@@ -1290,7 +1291,7 @@ define_alloc_methods! {
     /// assert_eq!(string, "1 + 2 = 3");
     /// ```
     for fn alloc_fmt_mut
-    /// Unlike [`try_alloc_fmt`](Bump::try_alloc_fmt), this function requires a mutable `Bump(Scope)`.
+    #[doc = doc::mut_alloc_function!(try_alloc_fmt, "string buffer")]
     do errors
     /// Errors if a formatting trait implementation returned an error.
     do examples
@@ -1396,8 +1397,7 @@ define_alloc_methods! {
     ///
     /// If the string contains a `'\0'` then the `CStr` will stop there.
     impl
-    ///
-    /// Unlike [`alloc_cstr_fmt`](Self::alloc_cstr_fmt), this function requires a mutable `Bump(Scope)`.
+    #[doc = doc::mut_alloc_function!(alloc_cstr_fmt, "string buffer")]
     do panics
     /// Panics if a formatting trait implementation returned an error.
     do examples
@@ -1411,8 +1411,7 @@ define_alloc_methods! {
     /// assert_eq!(string, c"1 + 2 = 3");
     /// ```
     for fn alloc_cstr_fmt_mut
-    ///
-    /// Unlike [`try_alloc_cstr_fmt`](Bump::try_alloc_cstr_fmt), this function requires a mutable `Bump(Scope)`.
+    #[doc = doc::mut_alloc_function!(try_alloc_cstr_fmt, "string buffer")]
     do errors
     /// Errors if a formatting trait implementation returned an error.
     do examples
@@ -1432,7 +1431,13 @@ define_alloc_methods! {
 
     /// Allocate elements of an iterator into a slice.
     impl
-    /// For better performance prefer [`alloc_iter_exact`](Bump::alloc_iter_exact) or <code>[alloc_iter_mut](Bump::alloc_iter_mut)</code>.
+    ///
+    /// If you have an `impl ExactSizeIterator` then you can use [`alloc_iter_exact`] instead for better performance.
+    ///
+    /// If `iter` is not an `ExactSizeIterator` but you have a `&mut self` you can still get somewhat better performance by using [`alloc_iter_mut`].
+    ///
+    /// [`alloc_iter_exact`]: Self::alloc_iter_exact
+    /// [`alloc_iter_mut`]: Self::alloc_iter_mut
     do examples
     /// ```
     /// # use bump_scope::Bump;
@@ -1441,7 +1446,13 @@ define_alloc_methods! {
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
     for fn alloc_iter
-    /// For better performance prefer [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) or <code>[try_alloc_iter_mut](Bump::try_alloc_iter_mut)</code>.
+    ///
+    /// If you have an `impl ExactSizeIterator` then you can use [`try_alloc_iter_exact`] instead for better performance.
+    ///
+    /// If `iter` is not an `ExactSizeIterator` but you have a `&mut self` you can still get somewhat better performance by using [`try_alloc_iter_mut`].
+    ///
+    /// [`try_alloc_iter_exact`]: Self::try_alloc_iter_exact
+    /// [`try_alloc_iter_mut`]: Self::try_alloc_iter_mut
     do examples
     /// ```
     /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
@@ -1481,9 +1492,9 @@ define_alloc_methods! {
 
     /// Allocate elements of an iterator into a slice.
     impl
-    /// Unlike [`alloc_iter`](Bump::alloc_iter), this function requires a mutable `Bump(Scope)`.
+    #[doc = doc::mut_alloc_function!(alloc_iter, "vector")]
     ///
-    /// When bumping downwards, prefer [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) or [`alloc_iter_exact`](Bump::alloc_iter_exact) to avoid a shift of the slice.
+    /// When bumping downwards, prefer [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) instead.
     do examples
     /// ```
     /// # use bump_scope::Bump;
@@ -1492,9 +1503,9 @@ define_alloc_methods! {
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
     for fn alloc_iter_mut
-    /// Unlike [`try_alloc_iter`](Bump::try_alloc_iter), this function requires a mutable `Bump(Scope)`.
+    #[doc = doc::mut_alloc_function!(try_alloc_iter, "vector")]
     ///
-    /// When bumping downwards, prefer [`try_alloc_iter_mut_rev`](Bump::try_alloc_iter_mut_rev) or [`try_alloc_iter_exact`](Bump::try_alloc_iter_exact) to avoid a shift of the slice.
+    /// When bumping downwards, prefer [`try_alloc_iter_mut_rev`](Bump::try_alloc_iter_mut_rev) instead.
     do examples
     /// ```
     /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
@@ -1508,9 +1519,16 @@ define_alloc_methods! {
     use fn generic_alloc_iter_mut<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]>;
 
     /// Allocate elements of an iterator into a slice in reverse order.
-    impl
     ///
-    /// When bumping upwards, prefer [`alloc_iter_mut`](Self::alloc_iter_mut) or [`alloc_iter_exact`](Self::alloc_iter_exact) to avoid a shift of the slice.
+    impl
+    /// Compared to [`alloc_iter_mut`] this function is more performant
+    /// for downwards bumping allocators as the allocation for the vector can be shrunk in place
+    /// without any `ptr::copy`.
+    ///
+    /// The reverse is true when upwards allocating. In that case it's better to use [`alloc_iter_mut`] to prevent
+    /// the `ptr::copy`.
+    ///
+    /// [`alloc_iter_mut`]: Self::alloc_iter_mut
     do examples
     /// ```
     /// # use bump_scope::Bump;
@@ -1519,8 +1537,14 @@ define_alloc_methods! {
     /// assert_eq!(slice, [3, 2, 1]);
     /// ```
     for fn alloc_iter_mut_rev
+    /// Compared to [`try_alloc_iter_mut`] this function is more performant
+    /// for downwards bumping allocators as the allocation for the vector can be shrunk in place
+    /// without any `ptr::copy`.
     ///
-    /// When bumping upwards, prefer [`try_alloc_iter_mut`](Self::try_alloc_iter_mut) or [`try_alloc_iter_exact`](Self::try_alloc_iter_exact) to avoid a shift of the slice.
+    /// The reverse is true when upwards allocating. In that case it's better to use [`try_alloc_iter_mut`] to prevent
+    /// the `ptr::copy`.
+    ///
+    /// [`try_alloc_iter_mut`]: Self::try_alloc_iter_mut
     do examples
     /// ```
     /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
