@@ -190,7 +190,7 @@ Bump direction is controlled by the generic parameter `const UP: bool`. By defau
 The minimum alignment is controlled by the generic parameter `const MIN_ALIGN: usize`. By default, `MIN_ALIGN` is `1`.
 
 For example changing the minimum alignment to `4` makes it so allocations with the alignment of `4` don't need to align the bump pointer anymore.
-This will penalize allocations of a smaller alignment as their size now needs to be rounded up the next multiple of `4`.
+This will penalize allocations whose sizes are not a multiple of `4` as their size now needs to be rounded up the next multiple of `4`.
 
 The overhead of aligning and rounding up is 1 (`UP = false`) or 2 (`UP = true`) non-branch instructions on x86-64.
 
