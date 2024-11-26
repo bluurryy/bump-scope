@@ -1193,12 +1193,12 @@ define_alloc_methods! {
     use fn generic_alloc_slice_fill<{T: Clone}>(&self, len: usize, value: T) -> BumpBox<[T]> | BumpBox<'a, [T]>;
 
     /// Allocates a slice by fill it with elements returned by calling a closure repeatedly.
+    impl
     ///
     /// This method uses a closure to create new values. If you'd rather
-    /// [`Clone`] a given value, use <code>([try_](Self::try_alloc_slice_fill))[alloc_slice_fill](Self::alloc_slice_fill)</code>. If you want to use the [`Default`]
+    /// [`Clone`] a given value, use [`alloc_slice_fill`](Self::alloc_slice_fill). If you want to use the [`Default`]
     /// trait to generate values, you can pass [`Default::default`] as the
     /// argument.
-    impl
     do examples
     /// ```
     /// # use bump_scope::Bump;
@@ -1207,6 +1207,11 @@ define_alloc_methods! {
     /// assert_eq!(allocated, [0, 0, 0]);
     /// ```
     for fn alloc_slice_fill_with
+    ///
+    /// This method uses a closure to create new values. If you'd rather
+    /// [`Clone`] a given value, use [`try_alloc_slice_fill`](Self::try_alloc_slice_fill). If you want to use the [`Default`]
+    /// trait to generate values, you can pass [`Default::default`] as the
+    /// argument.
     do examples
     /// ```
     /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
