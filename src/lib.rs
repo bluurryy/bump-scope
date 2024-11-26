@@ -1365,8 +1365,7 @@ define_alloc_methods! {
     ///
     /// If the string contains a `'\0'` then the `CStr` will stop there.
     impl
-    ///
-    /// For better performance prefer [`alloc_cstr_fmt_mut`](Bump::alloc_cstr_fmt_mut).
+    #[doc = doc::use_mut_instead!(alloc_cstr_fmt_mut)]
     do panics
     /// Panics if a formatting trait implementation returned an error.
     do examples
@@ -1382,8 +1381,7 @@ define_alloc_methods! {
     /// assert_eq!(one, c"1");
     /// ```
     for fn alloc_cstr_fmt
-    ///
-    /// For better performance prefer [`try_alloc_cstr_fmt_mut`](Bump::try_alloc_cstr_fmt_mut).
+    #[doc = doc::use_mut_instead!(try_alloc_cstr_fmt_mut)]
     do errors
     /// Errors if a formatting trait implementation returned an error.
     do examples

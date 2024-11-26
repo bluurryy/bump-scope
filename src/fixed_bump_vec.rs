@@ -60,7 +60,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         ///
         /// This is behaviorally identical to [`FromIterator::from_iter`].
         ///
-        /// For better performance prefer [`from_iter_exact_in`](Self::from_iter_exact_in).
+        /// If you have an `impl ExactSizeIterator` then you can use [`from_iter_exact_in`](Self::from_iter_exact_in) instead for better performance.
         impl
         do examples
         /// ```
