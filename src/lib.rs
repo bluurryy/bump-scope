@@ -1341,6 +1341,9 @@ define_alloc_methods! {
     /// # let bump: Bump = Bump::new();
     /// let allocated = bump.alloc_cstr_from_str("Hello world!");
     /// assert_eq!(allocated, c"Hello world!");
+    ///
+    /// let allocated = bump.alloc_cstr_from_str("abc\0def");
+    /// assert_eq!(allocated, c"abc");
     /// ```
     for fn alloc_cstr_from_str
     do examples
@@ -1350,6 +1353,9 @@ define_alloc_methods! {
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc_cstr_from_str("Hello world!")?;
     /// assert_eq!(allocated, c"Hello world!");
+    ///
+    /// let allocated = bump.try_alloc_cstr_from_str("abc\0def")?;
+    /// assert_eq!(allocated, c"abc");
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     for fn try_alloc_cstr_from_str
@@ -1370,8 +1376,10 @@ define_alloc_methods! {
     /// let one = 1;
     /// let two = 2;
     /// let string = bump.alloc_cstr_fmt(format_args!("{one} + {two} = {}", one + two));
-    ///
     /// assert_eq!(string, c"1 + 2 = 3");
+    ///
+    /// let one = bump.alloc_cstr_fmt(format_args!("{one}\0{two}"));
+    /// assert_eq!(one, c"1");
     /// ```
     for fn alloc_cstr_fmt
     ///
@@ -1386,8 +1394,10 @@ define_alloc_methods! {
     /// let one = 1;
     /// let two = 2;
     /// let string = bump.try_alloc_cstr_fmt(format_args!("{one} + {two} = {}", one + two))?;
-    ///
     /// assert_eq!(string, c"1 + 2 = 3");
+    ///
+    /// let one = bump.try_alloc_cstr_fmt(format_args!("{one}\0{two}"))?;
+    /// assert_eq!(one, c"1");
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     for fn try_alloc_cstr_fmt
@@ -1407,8 +1417,10 @@ define_alloc_methods! {
     /// let one = 1;
     /// let two = 2;
     /// let string = bump.alloc_cstr_fmt_mut(format_args!("{one} + {two} = {}", one + two));
-    ///
     /// assert_eq!(string, c"1 + 2 = 3");
+    ///
+    /// let one = bump.alloc_cstr_fmt_mut(format_args!("{one}\0{two}"));
+    /// assert_eq!(one, c"1");
     /// ```
     for fn alloc_cstr_fmt_mut
     #[doc = doc::mut_alloc_function!(try_alloc_cstr_fmt, "string buffer")]
@@ -1422,8 +1434,10 @@ define_alloc_methods! {
     /// let one = 1;
     /// let two = 2;
     /// let string = bump.try_alloc_cstr_fmt_mut(format_args!("{one} + {two} = {}", one + two))?;
-    ///
     /// assert_eq!(string, c"1 + 2 = 3");
+    ///
+    /// let one = bump.try_alloc_cstr_fmt_mut(format_args!("{one}\0{two}"))?;
+    /// assert_eq!(one, c"1");
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     for fn try_alloc_cstr_fmt_mut
