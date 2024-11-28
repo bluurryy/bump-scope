@@ -179,7 +179,7 @@ where
         #[must_use]
         /// Constructs a new `Bump` with a size hint for the first chunk.
         ///
-        /// If you want to ensure a specific capacity, use [`with_capacity`](Self::with_capacity)</code> instead.
+        /// If you want to ensure a specific capacity, use [`with_capacity`](Self::with_capacity) instead.
         ///
         /// The size of the chunk allocation will be the provided `size` rounded up and with a small size subtracted to account for base allocator metadata.
         /// The resulting chunk size may be larger still if the base allocator returned a bigger memory block than requested.
@@ -189,7 +189,7 @@ where
         for fn with_size
         /// Constructs a new `Bump` with a size hint for the first chunk.
         ///
-        /// If you want to ensure a specific capacity, use [`try_with_capacity`](Self::try_with_capacity)</code> instead.
+        /// If you want to ensure a specific capacity, use [`try_with_capacity`](Self::try_with_capacity) instead.
         ///
         /// The size of the chunk allocation will be the provided `size` rounded up and with a small size subtracted to account for base allocator metadata.
         /// The resulting chunk size may be larger still if the base allocator returned a bigger memory block than requested.
@@ -254,7 +254,7 @@ where
         impl
         /// Constructs a new `Bump` with a size hint for the first chunk.
         ///
-        /// If you want to ensure a specific capacity, use [`with_capacity_in`](Self::with_capacity_in)</code> instead.
+        /// If you want to ensure a specific capacity, use [`with_capacity_in`](Self::with_capacity_in) instead.
         ///
         /// The size of the chunk allocation will be the provided `size` rounded up and with a small size subtracted to account for base allocator metadata.
         /// The resulting chunk size may be larger still if the base allocator returned a bigger memory block than requested.
@@ -264,7 +264,7 @@ where
         for fn with_size_in
         /// Constructs a new `Bump` with a size hint for the first chunk.
         ///
-        /// If you want to ensure a specific capacity, use [`try_with_capacity_in`](Self::try_with_capacity_in)</code> instead.
+        /// If you want to ensure a specific capacity, use [`try_with_capacity_in`](Self::try_with_capacity_in) instead.
         ///
         /// The size of the chunk allocation will be the provided `size` rounded up and with a small size subtracted to account for base allocator metadata.
         /// The resulting chunk size may be larger still if the base allocator returned a bigger memory block than requested.
