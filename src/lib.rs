@@ -24,7 +24,6 @@
         slice_flatten,
         slice_partition_dedup,
         iter_partition_in_place,
-        strict_provenance,
         offset_of_enum,
     )
 )]

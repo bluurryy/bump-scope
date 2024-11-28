@@ -1,4 +1,4 @@
-#![feature(pointer_is_aligned_to, strict_provenance, allocator_api)]
+#![feature(pointer_is_aligned_to, allocator_api)]
 #![allow(clippy::cargo_common_metadata)]
 
 use arbitrary::{Arbitrary, Unstructured};
