@@ -179,17 +179,23 @@ where
         #[must_use]
         /// Constructs a new `Bump` with a size hint for the first chunk.
         ///
-        /// If you want to ensure a specific capacity use <code>[with_capacity](Bump::with_capacity)</code> instead.
+        /// If you want to ensure a specific capacity, use [`with_capacity`](Self::with_capacity)</code> instead.
         ///
-        /// The actual size that will be requested from the base allocator may be bigger or smaller.
-        /// (The size of  `[usize;2]` will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
+        /// The size of the chunk allocation will be the provided `size` rounded up and with a small size subtracted to account for base allocator metadata.
+        /// The resulting chunk size may be larger still if the base allocator returned a bigger memory block than requested.
+        ///
+        /// **Disclaimer:** The way in which the chunk layout is calculated might change.
+        /// Such a change is not considered semver breaking.
         for fn with_size
         /// Constructs a new `Bump` with a size hint for the first chunk.
         ///
-        /// If you want to ensure a specific capacity use <code>[try_with_capacity](Bump::try_with_capacity)</code> instead.
+        /// If you want to ensure a specific capacity, use [`try_with_capacity`](Self::try_with_capacity)</code> instead.
         ///
-        /// The actual size that will be requested from the base allocator may be bigger or smaller.
-        /// (The size of  `[usize;2]` will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
+        /// The size of the chunk allocation will be the provided `size` rounded up and with a small size subtracted to account for base allocator metadata.
+        /// The resulting chunk size may be larger still if the base allocator returned a bigger memory block than requested.
+        ///
+        /// **Disclaimer:** The way in which the chunk layout is calculated might change.
+        /// Such a change is not considered semver breaking.
         for fn try_with_size
         #[inline]
         use fn generic_with_size(size: usize) -> Self {
@@ -200,11 +206,11 @@ where
         #[must_use]
         /// Constructs a new `Bump` with at least enough space for `layout`.
         ///
-        /// To construct a `Bump` with some rough size estimate like `1 << 16` use <code>[with_size](Bump::with_size)</code> instead.
+        /// To construct a `Bump` with a size hint use <code>[with_size](Bump::with_size)</code> instead.
         for fn with_capacity
         /// Constructs a new `Bump` with at least enough space for `layout`.
         ///
-        /// To construct a `Bump` with some rough size estimate like `1 << 16` use <code>[try_with_size](Bump::try_with_size)</code> instead.
+        /// To construct a `Bump` with a size hint use <code>[try_with_size](Bump::try_with_size)</code> instead.
         for fn try_with_capacity
         #[inline]
         use fn generic_with_capacity(layout: Layout) -> Self {
@@ -248,17 +254,23 @@ where
         impl
         /// Constructs a new `Bump` with a size hint for the first chunk.
         ///
-        /// If you want to ensure a specific capacity use <code>[with_capacity_in](Bump::with_capacity_in)</code> instead.
+        /// If you want to ensure a specific capacity, use [`with_capacity_in`](Self::with_capacity_in)</code> instead.
         ///
-        /// The actual size that will be requested from the base allocator may be bigger or smaller.
-        /// (The size of  `[usize;2]` will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
+        /// The size of the chunk allocation will be the provided `size` rounded up and with a small size subtracted to account for base allocator metadata.
+        /// The resulting chunk size may be larger still if the base allocator returned a bigger memory block than requested.
+        ///
+        /// **Disclaimer:** The way in which the chunk layout is calculated might change.
+        /// Such a change is not considered semver breaking.
         for fn with_size_in
         /// Constructs a new `Bump` with a size hint for the first chunk.
         ///
-        /// If you want to ensure a specific capacity use <code>[try_with_capacity_in](Bump::try_with_capacity_in)</code> instead.
+        /// If you want to ensure a specific capacity, use [`try_with_capacity_in`](Self::try_with_capacity_in)</code> instead.
         ///
-        /// The actual size that will be requested from the base allocator may be bigger or smaller.
-        /// (The size of  `[usize;2]` will be subtracted to make it friendlier towards its base allocator that may store its own header information along with it.)
+        /// The size of the chunk allocation will be the provided `size` rounded up and with a small size subtracted to account for base allocator metadata.
+        /// The resulting chunk size may be larger still if the base allocator returned a bigger memory block than requested.
+        ///
+        /// **Disclaimer:** The way in which the chunk layout is calculated might change.
+        /// Such a change is not considered semver breaking.
         for fn try_with_size_in
         #[inline]
         use fn generic_with_size_in(size: usize, allocator: A) -> Self {
@@ -274,11 +286,11 @@ where
         impl
         /// Constructs a new `Bump` with at least enough space for `layout`.
         ///
-        /// To construct a `Bump` with some rough size estimate like `1 << 16` use <code>[with_size_in](Bump::with_size_in)</code> instead.
+        /// To construct a `Bump` with a size hint use <code>[with_size_in](Bump::with_size_in)</code> instead.
         for fn with_capacity_in
         /// Constructs a new `Bump` with at least enough space for `layout`.
         ///
-        /// To construct a `Bump` with some rough size estimate like `1 << 16` use <code>[try_with_size_in](Bump::try_with_size_in)</code> instead.
+        /// To construct a `Bump` with a size hint use <code>[try_with_size_in](Bump::try_with_size_in)</code> instead.
         for fn try_with_capacity_in
         #[inline]
         use fn generic_with_capacity_in(layout: Layout, allocator: A) -> Self {

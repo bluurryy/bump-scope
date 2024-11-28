@@ -161,6 +161,10 @@ either_way! {
     deallocate_in_ltr
 
     deallocate_in_rtl
+
+    default_chunk_size
+
+    min_chunk_size
 }
 
 macro_rules! assert_chunk_sizes {
@@ -1129,4 +1133,15 @@ fn panic_payload_string(payload: Box<dyn Any + Send>) -> Result<String, Box<dyn 
     };
 
     Err(payload)
+}
+
+fn default_chunk_size<const UP: bool>() {
+    assert_eq!(Bump::<Global, 1, UP>::new().stats().size(), 512 - size_of::<[usize; 2]>());
+}
+
+fn min_chunk_size<const UP: bool>() {
+    assert_eq!(
+        Bump::<Global, 1, UP>::with_size(0).stats().size(),
+        64 - size_of::<[usize; 2]>()
+    );
 }
