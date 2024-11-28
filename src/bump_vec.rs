@@ -2557,22 +2557,11 @@ impl<A: BumpAllocator> std::io::Write for BumpVec<u8, A> {
     #[inline]
     fn write_vectored(&mut self, bufs: &[std::io::IoSlice<'_>]) -> std::io::Result<usize> {
         let len = bufs.iter().map(|b| b.len()).sum();
-
-        if self.try_reserve(len).is_err() {
-            return Err(std::io::ErrorKind::OutOfMemory.into());
+        self.try_reserve(len).map_err(|_| std::io::ErrorKind::OutOfMemory)?;
+        for buf in bufs {
+            self.try_extend_from_slice_copy(buf)
+                .map_err(|_| std::io::ErrorKind::OutOfMemory)?;
         }
-
-        unsafe {
-            let mut dst = self.as_mut_ptr().add(self.len());
-
-            for buf in bufs {
-                buf.as_ptr().copy_to_nonoverlapping(dst, buf.len());
-                dst = dst.add(buf.len());
-            }
-
-            self.inc_len(len);
-        }
-
         Ok(len)
     }
 
