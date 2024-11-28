@@ -10,7 +10,7 @@ use crate::{
     polyfill::{nonnull, pointer, transmute_mut, transmute_ref},
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
     FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk,
-    SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    SizedTypeProperties, Stats, SupportedMinimumAlignment,
 };
 use allocator_api2::alloc::AllocError;
 use core::{

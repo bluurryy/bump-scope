@@ -6,7 +6,7 @@ use crate::{
     error_behavior_generic_methods_allocation_failure,
     polyfill::{pointer, transmute_mut, transmute_ref},
     unallocated_chunk_header, BaseAllocator, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment,
-    RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    RawChunk, Stats, SupportedMinimumAlignment,
 };
 use allocator_api2::alloc::AllocError;
 use core::{

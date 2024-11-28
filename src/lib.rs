@@ -195,10 +195,10 @@
 //!
 //! A bump allocator does not *require* `deallocate` or `shrink` to free memory.
 //! After all, memory will be reclaimed when exiting a scope or calling `reset`.
-//! You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using [`without_dealloc`](crate::Bump::without_dealloc) and [`without_shrink`](crate::Bump::without_shrink).
+//! You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using [`WithoutDealloc`] and [`WithoutShrink`].
 //! ```
 //! # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
-//! use bump_scope::Bump;
+//! use bump_scope::{ Bump, WithoutDealloc };
 //! use allocator_api2::boxed::Box;
 //! let bump: Bump = Bump::new();
 //!
@@ -207,7 +207,7 @@
 //! drop(boxed);
 //! assert_eq!(bump.stats().allocated(), 0);
 //!
-//! let boxed = Box::new_in(5, bump.without_dealloc());
+//! let boxed = Box::new_in(5, WithoutDealloc(&bump));
 //! assert_eq!(bump.stats().allocated(), 4);
 //! drop(boxed);
 //! assert_eq!(bump.stats().allocated(), 4);
@@ -721,20 +721,6 @@ macro_rules! bump_common_methods {
         #[inline(always)]
         pub fn allocator(&self) -> &A {
             unsafe { self.chunk.get().allocator().as_ref() }
-        }
-
-        /// Wraps `&self` in [`WithoutDealloc`] so that [`deallocate`] becomes a no-op.
-        ///
-        /// [`deallocate`]: allocator_api2::alloc::Allocator::deallocate
-        pub fn without_dealloc(&self) -> WithoutDealloc<&Self> {
-            WithoutDealloc(self)
-        }
-
-        /// Wraps `&self` in [`WithoutShrink`] so that [`shrink`] becomes a no-op.
-        ///
-        /// [`shrink`]: allocator_api2::alloc::Allocator::shrink
-        pub fn without_shrink(&self) -> WithoutShrink<&Self> {
-            WithoutShrink(self)
         }
     };
 }
