@@ -179,12 +179,12 @@ assert_eq!(bump.stats().allocated(), 4);
 ## Bumping upwards or downwards?
 Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
 
-- Bumping upwards...
-  - has the advantage that the most recent allocation can be grown and shrunk in place.
-  - makes <code>alloc_iter(_mut)</code> and <code>alloc_fmt(_mut)</code> faster.
-- Bumping downwards...
-  - uses slightly fewer instructions per allocation.
-  - makes `alloc_iter_mut_rev` faster.
+Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
+This benefits collections as well as <code>alloc_iter(_mut)</code> and <code>alloc_fmt(_mut)</code>
+with the exception of [`MutBumpVecRev`] and `alloc_iter_mut_rev`.
+[`MutBumpVecRev`] can be grown and shrunk in place iff bumping downwards.
+
+Bumping downwards shaves off a few non-branch instructions per allocation.
 
 ## Minimum alignment?
 The minimum alignment is controlled by the generic parameter `const MIN_ALIGN: usize`. By default, `MIN_ALIGN` is `1`.
