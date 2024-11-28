@@ -51,7 +51,7 @@ Unlike `bumpalo`, this crate...
 - No built-in allocation limit. You can provide an allocator that enforces an allocation limit (see `tests/limit_memory_usage.rs`).
 - Allocations are a bit more optimized. (see `crates/inspect-asm/out/x86-64` and [benchmarks](https://bluurryy.github.io/bump-scope/criterion/report/))
 - [You can choose the bump direction.](#bumping-upwards-or-downwards) Bumps upwards by default.
-- [You can choose the minimum alignment.](#minimum-alignment)
+- [You can choose the minimum alignment.](#minimum-alignment) `1` by default.
 
 ## Scopes and Checkpoints
 You can create scopes to make allocations that live only for a part of its parent scope.
@@ -172,7 +172,6 @@ assert_eq!(bump.stats().allocated(), 4);
   With this you can bump allocate collections from the standard library.
 * **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
-* **`nightly-const-refs-to-static`** —  Makes `Bump::unallocated` a `const fn`.
 * **`nightly-exact-size-is-empty`** —  Implements `is_empty` manually for some iterators.
 * **`nightly-trusted-len`** —  Implements `TrustedLen` for some iterators.
 

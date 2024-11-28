@@ -4,7 +4,7 @@ use crate::{
     bump_common_methods, bump_scope_methods,
     chunk_size::ChunkSize,
     error_behavior_generic_methods_allocation_failure,
-    polyfill::{cfg_const, pointer, transmute_mut, transmute_ref},
+    polyfill::{pointer, transmute_mut, transmute_ref},
     unallocated_chunk_header, BaseAllocator, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment,
     RawChunk, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
@@ -145,14 +145,14 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<false>,
 {
-    cfg_const! {
-        #[cfg_const(feature = "nightly-const-refs-to-static")]
-        /// Constructs a new `Bump` without doing any allocations.
-        ///
-        /// **This is `const` iff the `nightly-const-refs-to-static` feature is enabled.**
-        #[must_use]
-        pub fn unallocated() -> Self {
-            Self { chunk: Cell::new(unsafe { RawChunk::from_header(unallocated_chunk_header().cast()) }) }
+    /// Constructs a new `Bump` without doing any allocations.
+    ///
+    /// **This function is `const` starting from rust version 1.83.**
+    #[must_use]
+    #[rustversion::attr(since(1.83), const)]
+    pub fn unallocated() -> Self {
+        Self {
+            chunk: Cell::new(unsafe { RawChunk::from_header(unallocated_chunk_header().cast()) }),
         }
     }
 }

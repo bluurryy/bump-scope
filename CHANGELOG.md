@@ -2,6 +2,7 @@
 
 ## Unreleased
 - **fixed:** potential UB in `write_vectored` in pathologic case of `usize` overflow when `bufs` contains a large amount of duplicate `IoSlice`s
+- **breaking:** removed `"nightly-const-refs-to-static"` feature; `Bump::unallocated` is now automatically const for any rust version since 1.83
 
 ## 0.12.3 (2024-11-23)
 - **fixed:** interior nuls being ignored for `alloc_cstr_fmt_mut` and `MutBumpString::into_cstr` (unsound)

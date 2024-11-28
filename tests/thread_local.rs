@@ -1,5 +1,4 @@
 #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
-#![cfg(feature = "nightly-const-refs-to-static")]
 
 use bump_scope::allocator_api2::alloc::Global;
 

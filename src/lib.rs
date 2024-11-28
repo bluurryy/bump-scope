@@ -9,7 +9,6 @@
 #![cfg_attr(feature = "nightly-coerce-unsized", feature(coerce_unsized, unsize))]
 #![cfg_attr(feature = "nightly-exact-size-is-empty", feature(exact_size_is_empty))]
 #![cfg_attr(feature = "nightly-trusted-len", feature(trusted_len))]
-#![cfg_attr(feature = "nightly-const-refs-to-static", feature(const_refs_to_static))]
 #![cfg_attr(
     test,
     feature(
@@ -228,7 +227,6 @@
 //!   With this you can bump allocate collections from the standard library.
 //! * **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
 //!   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
-//! * **`nightly-const-refs-to-static`** —  Makes `Bump::unallocated` a `const fn`.
 //! * **`nightly-exact-size-is-empty`** —  Implements `is_empty` manually for some iterators.
 //! * **`nightly-trusted-len`** —  Implements `TrustedLen` for some iterators.
 //!

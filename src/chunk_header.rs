@@ -1,4 +1,4 @@
-use crate::polyfill::{cfg_const, nonnull};
+use crate::polyfill::nonnull;
 use core::{cell::Cell, ptr::NonNull};
 
 #[repr(C, align(16))]
@@ -26,9 +26,7 @@ static UNALLOCATED_CHUNK_HEADER: UnallocatedChunkHeader = UnallocatedChunkHeader
     allocator: (),
 });
 
-cfg_const! {
-    #[cfg_const(feature = "nightly-const-refs-to-static")]
-    pub(crate) fn unallocated_chunk_header() -> NonNull<ChunkHeader> {
-        nonnull::from_ref(&UNALLOCATED_CHUNK_HEADER.0)
-    }
+#[rustversion::attr(since(1.83), const)]
+pub(crate) fn unallocated_chunk_header() -> NonNull<ChunkHeader> {
+    nonnull::from_ref(&UNALLOCATED_CHUNK_HEADER.0)
 }

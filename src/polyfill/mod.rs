@@ -50,24 +50,6 @@ use core::mem::{size_of, ManuallyDrop};
 
 pub(crate) use other::*;
 
-macro_rules! cfg_const {
-    (
-        #[cfg_const($($tt:tt)*)]
-        $(#[$attr:meta])*
-        $vis:vis fn $ident:ident($($params:tt)*) $(-> $result:ty)? $body:block
-    ) => {
-        #[cfg($($tt)*)]
-        $(#[$attr])*
-        $vis const fn $ident($($params)*) $(-> $result)? $body
-
-        #[cfg(not($($tt)*))]
-        $(#[$attr])*
-        $vis fn $ident($($params)*) $(-> $result)? $body
-    };
-}
-
-pub(crate) use cfg_const;
-
 pub(crate) unsafe fn transmute_value<A, B>(a: A) -> B {
     assert!(size_of::<A>() == size_of::<B>());
     core::mem::transmute_copy(&ManuallyDrop::new(a))

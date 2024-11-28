@@ -1,6 +1,6 @@
 [package]
 name = "bump-scope"
-version = "0.12.3"
+version = "0.13.0-dev"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types."
@@ -17,6 +17,7 @@ allocator-api2 = { version = "0.2.16", default-features = false }
 sptr = "0.3.2"
 serde = { version = "1.0.197", optional = true }
 zerocopy = { version = "0.8.2", default-features = false, optional = true }
+rustversion = "1.0.18"
 
 [features]
 default = ["std", "alloc", "panic-on-alloc"]
@@ -47,9 +48,6 @@ nightly-allocator-api = ["allocator-api2/nightly"]
 ## Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
 ## With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
 nightly-coerce-unsized = []
-
-## Makes `Bump::unallocated` a `const fn`.
-nightly-const-refs-to-static = []
 
 ## Implements `is_empty` manually for some iterators.
 nightly-exact-size-is-empty = []
