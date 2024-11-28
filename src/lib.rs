@@ -104,7 +104,7 @@
 //! - No built-in allocation limit. You can provide an allocator that enforces an allocation limit (see `tests/limit_memory_usage.rs`).
 //! - Allocations are a bit more optimized. (see `crates/inspect-asm/out/x86-64` and [benchmarks](https://bluurryy.github.io/bump-scope/criterion/report/))
 //! - [You can choose the bump direction.](#bumping-upwards-or-downwards) Bumps upwards by default.
-//! - [You can choose the minimum alignment.](#minimum-alignment)
+//! - [You can choose the minimum alignment.](#minimum-alignment) `1` by default.
 //!
 //! # Scopes and Checkpoints
 //! You can create scopes to make allocations that live only for a part of its parent scope.
