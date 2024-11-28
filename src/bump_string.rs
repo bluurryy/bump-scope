@@ -748,7 +748,7 @@ impl<A: BumpAllocator> BumpString<A> {
         for fn try_from_utf16_in
         use fn generic_from_utf16_in(v: &[u16], allocator: A) -> Result<Self, FromUtf16Error> {
             // This isn't done via collect::<Result<_, _>>() for performance reasons.
-            // FIXME: the function can be simplified again when #48994 is closed.
+            // STD-FIXME: the function can be simplified again when #48994 is closed.
             let mut ret = Self::generic_with_capacity_in(v.len(), allocator)?;
 
             for c in char::decode_utf16(v.iter().copied()) {

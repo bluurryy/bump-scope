@@ -9,7 +9,7 @@ pub(crate) fn partition_in_place<'a, T: 'a, P>(
 where
     P: FnMut(&T) -> bool,
 {
-    // FIXME: should we worry about the count overflowing? The only way to have more than
+    // STD-FIXME: should we worry about the count overflowing? The only way to have more than
     // `usize::MAX` mutable references is with ZSTs, which aren't useful to partition...
 
     // These closure "factory" functions exist to avoid genericity in `Self`.
