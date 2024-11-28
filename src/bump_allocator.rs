@@ -626,7 +626,6 @@ where
 }
 
 /// A [`BumpAllocator`] who has exclusive access to allocation.
-#[allow(clippy::missing_safety_doc)] // TODO
 pub unsafe trait MutBumpAllocator: BumpAllocator {
     /// Does not allocate, just returns a slice of `T` that are currently available.
     ///

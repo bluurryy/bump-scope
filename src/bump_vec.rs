@@ -1525,7 +1525,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         self.generic_map(f)
     }
 
-    // TODO: add tests for mut optimized A
     #[inline]
     fn generic_map<B: ErrorBehavior, U>(self, mut f: impl FnMut(T) -> U) -> Result<BumpVec<U, A>, B>
     where
