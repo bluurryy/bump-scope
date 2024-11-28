@@ -28,7 +28,6 @@ use crate::{handle_alloc_error, infallible};
 ///
 /// [into_box]: crate::BumpBox::into_box
 /// [from_parts]: crate::BumpVec::from_parts
-// FIXME: only add infallible methods when `feature = "panic-on-alloc"`
 // FIXME: properly document the methods and remove `doc(hidden)`
 #[allow(clippy::missing_errors_doc)]
 pub unsafe trait BumpAllocator: Allocator {
@@ -43,19 +42,11 @@ pub unsafe trait BumpAllocator: Allocator {
     ///
     /// Panics if the allocation fails.
     #[doc(hidden)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
-        #[cfg(feature = "panic-on-alloc")]
-        {
-            match self.allocate(layout) {
-                Ok(ptr) => ptr.cast(),
-                Err(AllocError) => handle_alloc_error(layout),
-            }
-        }
-
-        #[cfg(not(feature = "panic-on-alloc"))]
-        {
-            _ = layout;
-            unreachable!()
+        match self.allocate(layout) {
+            Ok(ptr) => ptr.cast(),
+            Err(AllocError) => handle_alloc_error(layout),
         }
     }
 
@@ -78,23 +69,16 @@ pub unsafe trait BumpAllocator: Allocator {
     ///
     /// Panics if the allocation fails.
     #[doc(hidden)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
     {
-        #[cfg(feature = "panic-on-alloc")]
-        {
-            let layout = Layout::new::<T>();
+        let layout = Layout::new::<T>();
 
-            match self.allocate(layout) {
-                Ok(ptr) => ptr.cast(),
-                Err(AllocError) => handle_alloc_error(Layout::new::<T>()),
-            }
-        }
-
-        #[cfg(not(feature = "panic-on-alloc"))]
-        {
-            unreachable!()
+        match self.allocate(layout) {
+            Ok(ptr) => ptr.cast(),
+            Err(AllocError) => handle_alloc_error(Layout::new::<T>()),
         }
     }
 
@@ -120,27 +104,19 @@ pub unsafe trait BumpAllocator: Allocator {
     ///
     /// Panics if the allocation fails.
     #[doc(hidden)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
     {
-        #[cfg(feature = "panic-on-alloc")]
-        {
-            let layout = match Layout::array::<T>(len) {
-                Ok(layout) => layout,
-                Err(_) => invalid_slice_layout(),
-            };
+        let layout = match Layout::array::<T>(len) {
+            Ok(layout) => layout,
+            Err(_) => invalid_slice_layout(),
+        };
 
-            match self.allocate(layout) {
-                Ok(ptr) => ptr.cast(),
-                Err(AllocError) => handle_alloc_error(layout),
-            }
-        }
-
-        #[cfg(not(feature = "panic-on-alloc"))]
-        {
-            _ = len;
-            unreachable!()
+        match self.allocate(layout) {
+            Ok(ptr) => ptr.cast(),
+            Err(AllocError) => handle_alloc_error(layout),
         }
     }
 
@@ -189,6 +165,7 @@ unsafe impl<A: BumpAllocator> BumpAllocator for &A {
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         A::allocate_layout(self, layout)
     }
@@ -199,6 +176,7 @@ unsafe impl<A: BumpAllocator> BumpAllocator for &A {
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
@@ -215,6 +193,7 @@ unsafe impl<A: BumpAllocator> BumpAllocator for &A {
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
@@ -243,6 +222,7 @@ unsafe impl<A: BumpAllocator> BumpAllocator for WithoutDealloc<A> {
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         A::allocate_layout(&self.0, layout)
     }
@@ -253,6 +233,7 @@ unsafe impl<A: BumpAllocator> BumpAllocator for WithoutDealloc<A> {
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
@@ -269,6 +250,7 @@ unsafe impl<A: BumpAllocator> BumpAllocator for WithoutDealloc<A> {
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
@@ -297,6 +279,7 @@ unsafe impl<A: BumpAllocator> BumpAllocator for WithoutShrink<A> {
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         A::allocate_layout(&self.0, layout)
     }
@@ -307,6 +290,7 @@ unsafe impl<A: BumpAllocator> BumpAllocator for WithoutShrink<A> {
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
@@ -323,6 +307,7 @@ unsafe impl<A: BumpAllocator> BumpAllocator for WithoutShrink<A> {
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
@@ -356,17 +341,9 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
-        #[cfg(feature = "panic-on-alloc")]
-        {
-            BumpScope::alloc_layout(self, layout)
-        }
-
-        #[cfg(not(feature = "panic-on-alloc"))]
-        {
-            _ = layout;
-            unreachable!()
-        }
+        BumpScope::alloc_layout(self, layout)
     }
 
     #[inline(always)]
@@ -375,19 +352,12 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
     {
-        #[cfg(feature = "panic-on-alloc")]
-        {
-            infallible(self.do_alloc_sized())
-        }
-
-        #[cfg(not(feature = "panic-on-alloc"))]
-        {
-            unreachable!()
-        }
+        infallible(self.do_alloc_sized())
     }
 
     #[inline(always)]
@@ -399,20 +369,12 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
     {
-        #[cfg(feature = "panic-on-alloc")]
-        {
-            infallible(self.do_alloc_slice(len))
-        }
-
-        #[cfg(not(feature = "panic-on-alloc"))]
-        {
-            _ = len;
-            unreachable!()
-        }
+        infallible(self.do_alloc_slice(len))
     }
 
     #[inline(always)]
@@ -486,6 +448,7 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         self.as_scope().allocate_layout(layout)
     }
@@ -496,6 +459,7 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
@@ -512,6 +476,7 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
         Self: Sized,
@@ -548,6 +513,7 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         BumpScope::allocate_layout(self, layout)
     }
@@ -558,6 +524,7 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
@@ -608,6 +575,7 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
         Bump::allocate_layout(self, layout)
     }
@@ -618,6 +586,7 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn allocate_sized<T>(&self) -> NonNull<T>
     where
         Self: Sized,
@@ -665,6 +634,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator {
     ///
     /// Panics if the allocation fails.
     #[doc(hidden)]
+    #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized;
@@ -697,6 +667,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator {
     ///
     /// Panics if the allocation fails.
     #[doc(hidden)]
+    #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
     where
         Self: Sized;
@@ -726,6 +697,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator {
 
 unsafe impl<A: MutBumpAllocator> MutBumpAllocator for WithoutDealloc<A> {
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
@@ -750,6 +722,7 @@ unsafe impl<A: MutBumpAllocator> MutBumpAllocator for WithoutDealloc<A> {
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
     where
         Self: Sized,
@@ -776,6 +749,7 @@ unsafe impl<A: MutBumpAllocator> MutBumpAllocator for WithoutDealloc<A> {
 
 unsafe impl<A: MutBumpAllocator> MutBumpAllocator for WithoutShrink<A> {
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
@@ -800,6 +774,7 @@ unsafe impl<A: MutBumpAllocator> MutBumpAllocator for WithoutShrink<A> {
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
     where
         Self: Sized,
@@ -831,21 +806,13 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
     {
-        #[cfg(feature = "panic-on-alloc")]
-        {
-            let (ptr, len) = infallible(BumpScope::generic_prepare_slice_allocation(self, len));
-            nonnull::slice_from_raw_parts(ptr, len)
-        }
-
-        #[cfg(not(feature = "panic-on-alloc"))]
-        {
-            _ = len;
-            unreachable!()
-        }
+        let (ptr, len) = infallible(BumpScope::generic_prepare_slice_allocation(self, len));
+        nonnull::slice_from_raw_parts(ptr, len)
     }
 
     #[inline(always)]
@@ -866,20 +833,12 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
     where
         Self: Sized,
     {
-        #[cfg(feature = "panic-on-alloc")]
-        {
-            infallible(BumpScope::generic_prepare_slice_allocation_rev(self, len))
-        }
-
-        #[cfg(not(feature = "panic-on-alloc"))]
-        {
-            _ = len;
-            unreachable!()
-        }
+        infallible(BumpScope::generic_prepare_slice_allocation_rev(self, len))
     }
 
     #[inline(always)]
@@ -906,6 +865,7 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
@@ -930,6 +890,7 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
     where
         Self: Sized,
@@ -961,6 +922,7 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
@@ -985,6 +947,7 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
     where
         Self: Sized,
@@ -1016,6 +979,7 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
     where
         Self: Sized,
@@ -1040,6 +1004,7 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
     where
         Self: Sized,
