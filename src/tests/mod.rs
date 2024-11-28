@@ -197,9 +197,9 @@ fn mut_bump_vec<const UP: bool>() {
     for (size, count) in [(0, 2), (512, 1)] {
         let mut bump = Bump::<Global, 1, UP>::with_size(size);
         let mut vec = MutBumpVec::new_in(&mut bump);
-        assert_eq!(vec.stats().count(), 1);
+        assert_eq!(vec.allocator_stats().count(), 1);
         vec.extend(core::iter::repeat(3).take(TIMES));
-        assert_eq!(vec.stats().count(), count);
+        assert_eq!(vec.allocator_stats().count(), count);
         let _ = vec.into_boxed_slice();
         dbg!(bump.stats());
         assert_eq!(bump.stats().current_chunk().allocated(), TIMES * core::mem::size_of::<i32>());
@@ -298,13 +298,13 @@ fn mut_bump_vec_drop<const UP: bool>() {
     let mut vec: MutBumpVec<u8, _> = mut_bump_vec![in &mut bump];
     vec.reserve(33);
 
-    assert_eq!(vec.stats().current_chunk().unwrap().size(), 128 - MALLOC_OVERHEAD);
+    assert_eq!(vec.allocator_stats().current_chunk().unwrap().size(), 128 - MALLOC_OVERHEAD);
     assert_eq!(
-        vec.stats().current_chunk().unwrap().prev().unwrap().size(),
+        vec.allocator_stats().current_chunk().unwrap().prev().unwrap().size(),
         64 - MALLOC_OVERHEAD
     );
-    assert_eq!(vec.stats().size(), 64 + 128 - MALLOC_OVERHEAD * 2);
-    assert_eq!(vec.stats().count(), 2);
+    assert_eq!(vec.allocator_stats().size(), 64 + 128 - MALLOC_OVERHEAD * 2);
+    assert_eq!(vec.allocator_stats().count(), 2);
 
     drop(vec);
 

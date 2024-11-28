@@ -2048,6 +2048,37 @@ const fn min_non_zero_cap(size: usize) -> usize {
     }
 }
 
+macro_rules! collection_method_allocator_stats {
+    () => {
+        /// Returns a type which provides statistics about the memory usage of the bump allocator.
+        ///
+        /// This is equivalent to calling `.allocator().stats()`.
+        /// This merely exists for api parity with `Mut*` collections which can't have a `allocator` method.
+        #[must_use]
+        #[inline(always)]
+        pub fn allocator_stats(&self) -> Stats {
+            self.allocator.stats()
+        }
+    };
+}
+
+pub(crate) use collection_method_allocator_stats;
+
+macro_rules! mut_collection_method_allocator_stats {
+    () => {
+        /// Returns a type which provides statistics about the memory usage of the bump allocator.
+        ///
+        /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
+        #[must_use]
+        #[inline(always)]
+        pub fn allocator_stats(&self) -> Stats {
+            self.allocator.stats()
+        }
+    };
+}
+
+pub(crate) use mut_collection_method_allocator_stats;
+
 /// We don't use `document-features` the usual way because then we can't have our features
 /// be copied into the `README.md` via [`cargo-rdme`](https://github.com/orium/cargo-rdme).
 #[test]

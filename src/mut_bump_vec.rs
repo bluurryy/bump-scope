@@ -3,8 +3,8 @@ mod into_iter;
 pub use into_iter::IntoIter;
 
 use crate::{
-    error_behavior_generic_methods_allocation_failure, min_non_zero_cap, owned_slice,
-    owned_slice::OwnedSlice,
+    error_behavior_generic_methods_allocation_failure, min_non_zero_cap, mut_collection_method_allocator_stats,
+    owned_slice::{self, OwnedSlice},
     polyfill::{nonnull, pointer, slice},
     raw_bump_box::RawBumpBox,
     raw_fixed_bump_vec::RawFixedBumpVec,
@@ -1726,14 +1726,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         }
     }
 
-    /// Returns a type which provides statistics about the memory usage of the bump allocator.
-    ///
-    /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
-    #[must_use]
-    #[inline(always)]
-    pub fn stats(&self) -> Stats {
-        self.allocator.stats()
-    }
+    mut_collection_method_allocator_stats!();
 }
 
 impl<'a, T, A: MutBumpAllocatorScope<'a>> MutBumpVec<T, A> {

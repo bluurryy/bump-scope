@@ -1,5 +1,5 @@
 use crate::{
-    error_behavior_generic_methods_allocation_failure, owned_str,
+    error_behavior_generic_methods_allocation_failure, mut_collection_method_allocator_stats, owned_str,
     polyfill::{self, transmute_mut, transmute_value},
     raw_fixed_bump_string::RawFixedBumpString,
     BumpBox, ErrorBehavior, FromUtf16Error, FromUtf8Error, MutBumpAllocator, MutBumpAllocatorScope, MutBumpVec, Stats,
@@ -1216,14 +1216,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         Ok(())
     }
 
-    /// Returns a type which provides statistics about the memory usage of the bump allocator.
-    ///
-    /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
-    #[must_use]
-    #[inline(always)]
-    pub fn stats(&self) -> Stats {
-        self.allocator.stats()
-    }
+    mut_collection_method_allocator_stats!();
 
     pub(crate) fn generic_write_fmt<B: ErrorBehavior>(&mut self, args: fmt::Arguments) -> Result<(), B> {
         #[cfg(feature = "panic-on-alloc")]

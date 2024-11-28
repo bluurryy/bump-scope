@@ -12,7 +12,7 @@ fn vec<const UP: bool>() {
 
         let mut vec: MutBumpVec<u8, _> = MutBumpVec::new_in(&mut bump);
         vec.extend(iter::repeat(0).take(size));
-        assert_eq!(vec.stats().allocated(), 0); // `Mut*` allocations don't bump the pointer
+        assert_eq!(vec.allocator_stats().allocated(), 0); // `Mut*` allocations don't bump the pointer
         _ = vec.into_slice();
         assert_eq!(bump.stats().allocated(), size);
     }
@@ -27,7 +27,7 @@ fn vec_rev<const UP: bool>() {
 
         let mut vec: MutBumpVecRev<u8, _> = MutBumpVecRev::new_in(&mut bump);
         vec.extend(iter::repeat(0).take(size));
-        assert_eq!(vec.stats().allocated(), 0); // `Mut*` allocations don't bump the pointer
+        assert_eq!(vec.allocator_stats().allocated(), 0); // `Mut*` allocations don't bump the pointer
         _ = vec.into_slice();
         assert_eq!(bump.stats().allocated(), size);
     }

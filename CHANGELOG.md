@@ -3,6 +3,7 @@
 ## Unreleased
 - **breaking:** removed `"nightly-const-refs-to-static"` feature; `Bump::unallocated` is now automatically const for any rust version since 1.83
 - **breaking:** removed `Bump`'s `without_dealloc` and `without_shrink`; use `WithoutDealloc(&bump)` and `WithoutShrink(&bump)` instead
+- **breaking:** renamed `stats` method on strings and vectors to `allocator_stats`
 - **fixed:** potential UB in `write_vectored` in pathologic case of `usize` overflow when `bufs` contains a large amount of duplicate `IoSlice`s
 
 ## 0.12.3 (2024-11-23)

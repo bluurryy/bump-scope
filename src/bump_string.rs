@@ -1,6 +1,7 @@
 #[cfg(feature = "panic-on-alloc")]
 use crate::Infallibly;
 use crate::{
+    collection_method_allocator_stats,
     destructure::destructure,
     error_behavior_generic_methods_allocation_failure, owned_str,
     polyfill::{self, transmute_mut, transmute_value},
@@ -1277,12 +1278,7 @@ impl<A: BumpAllocator> BumpString<A> {
         &self.allocator
     }
 
-    /// Returns a type which provides statistics about the memory usage of the bump allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn stats(&self) -> Stats {
-        self.allocator.stats()
-    }
+    collection_method_allocator_stats!();
 
     pub(crate) fn generic_write_fmt<B: ErrorBehavior>(&mut self, args: fmt::Arguments) -> Result<(), B> {
         #[cfg(feature = "panic-on-alloc")]

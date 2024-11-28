@@ -2,6 +2,7 @@ use crate::{
     destructure::destructure,
     error_behavior_generic_methods_allocation_failure, min_non_zero_cap,
     mut_bump_vec::IntoIter,
+    mut_collection_method_allocator_stats,
     owned_slice::OwnedSlice,
     polyfill::{self, nonnull, pointer},
     BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SetLenOnDrop, SizedTypeProperties, Stats,
@@ -1690,14 +1691,7 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
         (initialized, spare, &mut self.len)
     }
 
-    /// Returns a type which provides statistics about the memory usage of the bump allocator.
-    ///
-    /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
-    #[must_use]
-    #[inline(always)]
-    pub fn stats(&self) -> Stats {
-        self.allocator.stats()
-    }
+    mut_collection_method_allocator_stats!();
 }
 
 impl<'a, T, A: MutBumpAllocatorScope<'a>> MutBumpVecRev<T, A> {
