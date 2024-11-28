@@ -5,6 +5,7 @@
 - **breaking:** removed `Bump`'s `without_dealloc` and `without_shrink`; use `WithoutDealloc(&bump)` and `WithoutShrink(&bump)` instead
 - **breaking:** renamed `stats` method on strings and vectors to `allocator_stats`
 - **fixed:** potential UB in `write_vectored` in pathologic case of `usize` overflow when `bufs` contains a large amount of duplicate `IoSlice`s
+- **added:** implemented `core::error::Error` for error types when rust version allows
 
 ## 0.12.3 (2024-11-23)
 - **fixed:** interior nuls being ignored for `alloc_cstr_fmt_mut` and `MutBumpString::into_cstr` (unsound)

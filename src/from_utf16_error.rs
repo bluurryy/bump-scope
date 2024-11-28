@@ -29,5 +29,9 @@ impl fmt::Display for FromUtf16Error {
     }
 }
 
+#[cfg(not(feature = "std"))]
+#[rustversion::since(1.81)]
+impl core::error::Error for FromUtf16Error {}
+
 #[cfg(feature = "std")]
 impl std::error::Error for FromUtf16Error {}

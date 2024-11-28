@@ -62,11 +62,9 @@ impl<Bytes> fmt::Display for FromUtf8Error<Bytes> {
     }
 }
 
+#[cfg(not(feature = "std"))]
+#[rustversion::since(1.81)]
+impl<Bytes: fmt::Debug> core::error::Error for FromUtf8Error<Bytes> {}
+
 #[cfg(feature = "std")]
-impl<Bytes: fmt::Debug> std::error::Error for FromUtf8Error<Bytes> {
-    #[allow(deprecated)]
-    #[allow(clippy::unnecessary_literal_bound)] // false positive
-    fn description(&self) -> &str {
-        "invalid utf-8"
-    }
-}
+impl<Bytes: fmt::Debug> std::error::Error for FromUtf8Error<Bytes> {}
