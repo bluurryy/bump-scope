@@ -255,7 +255,7 @@
 //! [`guaranteed_allocated_mut`](Bump::guaranteed_allocated_mut).
 //!
 //! The point of this is so `Bump`s can be created without allocating memory and even `const` constructed since rust version 1.83.
-//! At the same time `Bump`'s that have already allocated a chunk don't suffer runtime checks for entering scopes and creating checkpoints.
+//! At the same time `Bump`s that have already allocated a chunk don't suffer runtime checks for entering scopes and creating checkpoints.
 
 #[doc(hidden)]
 #[cfg(feature = "alloc")]
