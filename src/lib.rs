@@ -212,7 +212,7 @@
 //! # Feature Flags
 //! * **`std`** *(enabled by default)* —  Adds `BumpPool` and implementations of `std::io` traits for `BumpBox` and vectors.
 //! * **`alloc`** *(enabled by default)* —  Adds `Global` as the default base allocator, `BumpBox::into_box` and some interactions with `alloc` collections.
-//! * **`panic-on-alloc`** *(enabled by default)* —  Adds functions and traits that will panic when allocations fails.
+//! * **`panic-on-alloc`** *(enabled by default)* —  Adds functions and traits that will panic when the allocation fails.
 //!   Without this feature, allocation failures cannot cause panics, and only
 //!   `try_`-prefixed allocation methods will be available.
 //! * **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
