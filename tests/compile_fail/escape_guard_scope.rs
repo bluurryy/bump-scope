@@ -1,4 +1,3 @@
-#![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
 use bump_scope::BumpScope;
 
 #[allow(unused_assignments)]

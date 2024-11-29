@@ -49,6 +49,10 @@ check-msrv:
 check-fallibility:
   @ just crates/test-fallibility/test
 
+test:
+  cargo test
+  cargo test --all-features
+
 fmt:
   cargo fmt
   cd crates/fuzzing-support; cargo fmt
