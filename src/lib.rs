@@ -26,11 +26,7 @@
         offset_of_enum,
     )
 )]
-#![cfg_attr(
-    docsrs,
-    feature(doc_auto_cfg, doc_cfg_hide),
-    doc(cfg_hide(feature = "panic-on-alloc", feature = "nightly-const-refs-to-static"))
-)]
+#![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg_hide), doc(cfg_hide(feature = "panic-on-alloc")))]
 #![warn(
     clippy::pedantic,
     clippy::cargo,
@@ -258,7 +254,7 @@
 //! [`guaranteed_allocated_ref`](Bump::guaranteed_allocated_ref), and
 //! [`guaranteed_allocated_mut`](Bump::guaranteed_allocated_mut).
 //!
-//! The point of this is so `Bump`s can be created without allocating memory and even `const` constructed when the feature `nightly-const-refs-to-static` is enabled.
+//! The point of this is so `Bump`s can be created without allocating memory and even `const` constructed since rust version 1.83.
 //! At the same time `Bump`'s that have already allocated a chunk don't suffer runtime checks for entering scopes and creating checkpoints.
 
 #[doc(hidden)]
