@@ -28,15 +28,27 @@ use core::{
 
 macro_rules! bump_scope_declaration {
     ($($allocator_parameter:tt)*) => {
-        /// A bump allocation scope whose allocations are valid for the lifetime of its associated [`BumpScopeGuard`] or closure.
+        /// A bump allocation scope.
         ///
-        /// Alternatively a [`Bump`] can be turned into a `BumpScope` with [`as_scope`], [`as_mut_scope`] and `into`.
+        /// A `BumpScope`'s allocations are live for `'a`, which is the lifetime of its associated `BumpScopeGuard(Root)` or `scoped` closure.
         ///
-        /// [You can see examples in the crate documentation.](crate#scopes)
+        /// `BumpScope` has the same allocation api as `Bump`.
+        /// The only thing that is missing is [`reset`] and methods that consume the `Bump`.
+        /// For a method overview and examples, have a look at the [`Bump` docs][`Bump`].
         ///
+        /// This type is provided as a parameter to the closure of [`Bump::scoped`], [`BumpScope::scoped`] or created
+        /// by [`BumpScopeGuard::scope`] and [`BumpScopeGuardRoot::scope`]. A [`Bump`] can also turned into a `BumpScope` using
+        /// [`as_scope`], [`as_mut_scope`] or [`into`].
+        ///
+        /// [`Bump::scoped`]: crate::Bump::scoped
+        /// [`BumpScopeGuard::scope`]: crate::BumpScopeGuard::scope
+        /// [`BumpScopeGuardRoot::scope`]: crate::BumpScopeGuardRoot::scope
         /// [`Bump`]: crate::Bump
+        /// [`scoped`]: Self::scoped
         /// [`as_scope`]: crate::Bump::as_scope
         /// [`as_mut_scope`]: crate::Bump::as_mut_scope
+        /// [`reset`]: crate::Bump::reset
+        /// [`into`]: crate::Bump#impl-From<%26Bump<A,+MIN_ALIGN,+UP,+GUARANTEED_ALLOCATED>>-for-%26BumpScope<'b,+A,+MIN_ALIGN,+UP,+GUARANTEED_ALLOCATED>
         #[repr(transparent)]
         pub struct BumpScope<
             'a,

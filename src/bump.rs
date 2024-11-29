@@ -22,16 +22,117 @@ macro_rules! bump_declaration {
     ($($allocator_parameter:tt)*) => {
         /// A bump allocator.
         ///
-        /// Most of `Bump`'s constructors allocate memory.
-        /// The exception is [`Bump::unallocated`]. A bump allocator created by this function has its [`GUARANTEED_ALLOCATED` parameter set to `false`](crate#guaranteed_allocated-parameter).
-        /// Such a `Bump` is unable to create a scope with `scoped` or `scope_guard`.
-        /// It can be converted into a guaranteed allocated `Bump` with [`guaranteed_allocated`](Bump::guaranteed_allocated) or [`guaranteed_allocated_mut`](Bump::guaranteed_allocated_mut).
+        /// # Overview
+        /// All of the methods mentioned here that do allocations, panic if the base allocator returned an error.
+        /// For every such panicking method, there is a corresponding `try_`-prefixed version that returns a `Result` instead.
+        ///
+        /// ## Creation
+        /// - with a default size hint: <code>[new]\([_in][new_in])</code> / <code>[default]</code>
+        /// - provide a size hint: <code>[with_size]\([_in][with_size_in])</code>
+        /// - provide a minimum capacity: <code>[with_capacity]\([_in][with_capacity_in])</code>
+        /// - create a bump without allocation: <code>[unallocated]</code>
+        ///
+        /// [new]: Self::new
+        /// [new_in]: Self::new_in
+        /// [default]: Self::default
+        /// [with_size]: Self::with_size
+        /// [with_size_in]: Self::with_size_in
+        /// [with_capacity]: Self::with_capacity
+        /// [with_capacity_in]: Self::with_capacity_in
+        /// [unallocated]: Self::unallocated
+        ///
+        /// ## Allocation methods
+        /// - sized values: [`alloc`], [`alloc_with`], [`alloc_default`], [`alloc_zeroed`]
+        /// - strings: [`alloc_str`], [`alloc_fmt`], [`alloc_fmt_mut`]
+        /// - slices: [`alloc_slice_clone`], [`alloc_slice_copy`], [`alloc_slice_fill`], [`alloc_slice_fill_with`], [`alloc_zeroed_slice`]
+        /// - slices from an iterator: [`alloc_iter`], [`alloc_iter_exact`], [`alloc_iter_mut`], [`alloc_iter_mut_rev`]
+        /// - uninitialized values: [`alloc_uninit`], [`alloc_uninit_slice`], [`alloc_uninit_slice_for`]
+        ///
+        ///   which can then be conveniently initialized by the [`init*` methods of `BumpBox`](crate::BumpBox#bumpbox-has-a-lot-of-methods).
+        /// - fixed collections: [`alloc_fixed_vec`], [`alloc_fixed_string`]
+        ///
+        /// ## Collections
+        /// A `Bump` (and [`BumpScope`]) can be used to allocate collections of this crate...
+        /// ```
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// use bump_scope::{ Bump, BumpString };
+        /// let bump: Bump = Bump::new();
+        ///
+        /// let mut string = BumpString::new_in(&bump);
+        /// string.push_str("Hello");
+        /// string.push_str(" world!");
+        /// ```
+        ///
+        /// ... and collections from crates that use `allocator_api2`'s [`Allocator`](allocator_api2::alloc::Allocator) like [hashbrown](https://docs.rs/hashbrown)'s [`HashMap`](https://docs.rs/hashbrown/latest/hashbrown/struct.HashMap.html):
+        /// <!-- TODO -->
+        /// ```ignore
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// use bump_scope::{ Bump, BumpString };
+        /// use hashbrown::HashMap;
+        ///
+        /// let bump: Bump = Bump::new();
+        /// let mut map = HashMap::new_in(&bump);
+        /// map.insert("tau", 6.283);
+        /// ```
+        ///
+        /// On nightly and with the feature `"nightly-allocator-api"` you can also bump allocate collections from `std` that have an allocator parameter:
+        #[cfg_attr(feature = "nightly-allocator-api", doc = "```")]
+        #[cfg_attr(not(feature = "nightly-allocator-api"), doc = "```no_run")]
+        /// #![feature(allocator_api, btreemap_alloc)]
+        /// # #[cfg(feature = "nightly-allocator-api")] fn main() {
+        /// use bump_scope::Bump;
+        /// use std::collections::{ VecDeque, BTreeMap, LinkedList };
+        ///
+        /// let bump: Bump = Bump::new();
+        /// let vec = Vec::new_in(&bump);
+        /// let queue = VecDeque::new_in(&bump);
+        /// let map = BTreeMap::new_in(&bump);
+        /// let list = LinkedList::new_in(&bump);
+        /// # let _: Vec<i32, _> = vec;
+        /// # let _: VecDeque<i32, _> = queue;
+        /// # let _: BTreeMap<i32, i32, _> = map;
+        /// # let _: LinkedList<i32, _> = list;
+        /// # }
+        /// # #[cfg(not(feature = "nightly-allocator-api"))] fn main() {}
+        /// ```
+        ///
+        /// [`alloc`]: Self::alloc
+        /// [`alloc_with`]: Self::alloc_with
+        /// [`alloc_default`]: Self::alloc_default
+        /// [`alloc_zeroed`]: Self::alloc_zeroed
+        ///
+        /// [`alloc_str`]: Self::alloc_str
+        /// [`alloc_fmt`]: Self::alloc_fmt
+        /// [`alloc_fmt_mut`]: Self::alloc_fmt_mut
+        ///
+        /// [`alloc_slice_clone`]: Self::alloc_slice_clone
+        /// [`alloc_slice_copy`]: Self::alloc_slice_copy
+        /// [`alloc_slice_fill`]: Self::alloc_slice_fill
+        /// [`alloc_slice_fill_with`]: Self::alloc_slice_fill_with
+        /// [`alloc_zeroed_slice`]: Self::alloc_zeroed_slice
+        ///
+        /// [`alloc_iter`]: Self::alloc_iter
+        /// [`alloc_iter_exact`]: Self::alloc_iter_exact
+        /// [`alloc_iter_mut`]: Self::alloc_iter_mut
+        /// [`alloc_iter_mut_rev`]: Self::alloc_iter_mut_rev
+        ///
+        /// [`alloc_uninit`]: Self::alloc_uninit
+        /// [`alloc_uninit_slice`]: Self::alloc_uninit_slice
+        /// [`alloc_uninit_slice_for`]: Self::alloc_uninit_slice_for
+        ///
+        /// [`alloc_fixed_vec`]: Self::alloc_fixed_vec
+        /// [`alloc_fixed_string`]: Self::alloc_fixed_string
+        ///
+        /// ## Scopes and Checkpoints
+        ///
+        /// See [Scopes and Checkpoints](crate#scopes-and-checkpoints).
         ///
         /// # Gotchas
         ///
         /// Allocating directly on a `Bump` is not compatible with entering bump scopes at the same time:
         ///
         /// ```compile_fail,E0502
+        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::Bump;
         /// let mut bump: Bump = Bump::new();
         ///
@@ -147,6 +248,10 @@ where
 {
     /// Constructs a new `Bump` without doing any allocations.
     ///
+    /// The resulting `Bump` will have its [`GUARANTEED_ALLOCATED` parameter set to `false`](crate#guaranteed_allocated-parameter).
+    /// Such a `Bump` is unable to create a scope with `scoped` or `scope_guard`.
+    /// It has to first be converted into a guaranteed allocated `Bump` using [`guaranteed_allocated`](Bump::guaranteed_allocated), [`guaranteed_allocated_ref`](Bump::guaranteed_allocated_ref) or [`guaranteed_allocated_mut`](Bump::guaranteed_allocated_mut).
+    ///
     /// **This function is `const` starting from rust version 1.83.**
     #[must_use]
     #[rustversion::attr(since(1.83), const)]
@@ -164,6 +269,8 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED> + Default,
 {
     error_behavior_generic_methods_allocation_failure! {
+        // TODO: Change this to say that this is *currently* equivalent to that, or perhaps don't mention 512 at all.
+        //       This should only be done in a semver breaking release, considering how matter-of-factly it is stated here.
         impl
         /// This is equivalent to <code>[with_size](Bump::with_size)(512)</code>.
         #[must_use]
