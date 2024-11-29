@@ -370,7 +370,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         for fn from_iter_in
         do examples
         /// ```
-        /// #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpVec };
         /// # let bump: Bump = Bump::try_new()?;
         /// let vec = BumpVec::try_from_iter_in([1, 2, 3], &bump)?;
@@ -409,7 +408,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         for fn from_iter_exact_in
         do examples
         /// ```
-        /// #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpVec };
         /// # let bump: Bump = Bump::try_new()?;
         /// let vec = BumpVec::try_from_iter_exact_in([1, 2, 3], &bump)?;
@@ -762,7 +760,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         for fn push
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ bump_vec, Bump };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut vec = bump_vec![try in &bump; 1, 2]?;
@@ -806,7 +803,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         for fn insert
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ bump_vec, Bump, BumpVec };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
@@ -939,7 +935,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         for fn extend_from_within_copy
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, bump_vec };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut vec = bump_vec![try in &bump; 0, 1, 2, 3, 4]?;
@@ -1004,7 +999,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         for fn extend_from_within_clone
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, bump_vec };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut vec = bump_vec![try in &bump; 0, 1, 2, 3, 4]?;
@@ -1082,7 +1076,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         for fn extend_zeroed
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, bump_vec };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
@@ -1128,7 +1121,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         for fn reserve
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, bump_vec };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut vec = bump_vec![try in &bump; 1]?;
@@ -1172,7 +1164,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         for fn reserve_exact
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, bump_vec };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut vec = bump_vec![try in &bump; 1]?;
@@ -1221,7 +1212,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         for fn resize
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, bump_vec };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut vec = bump_vec![try in &bump; "hello"]?;
@@ -1280,7 +1270,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         for fn resize_with
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, bump_vec };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
@@ -1331,7 +1320,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         for fn resize_zeroed
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, bump_vec };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
@@ -1376,7 +1364,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         for fn append
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, bump_vec };
         /// # let bump: Bump = Bump::try_new()?;
         /// // needs a scope because of lifetime shenanigans
@@ -1474,7 +1461,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// # Examples
     /// Mapping to a type with an equal alignment and size (allocator won't be touched):
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::try_new()?;
     /// let vec_a: BumpVec<u8, _> = BumpVec::try_from_iter_in([1, 2, 3, 4], &bump)?;
@@ -1489,7 +1475,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// Mapping to a type with a smaller alignment and size (allocator won't be touched, capacity may grow):
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::try_new()?;
     /// let vec_a: BumpVec<u32, _> = BumpVec::try_from_iter_in([1, 2, 3, 4], &bump)?;
@@ -1505,7 +1490,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// Mapping to a type with a higher alignment or size is equivalent to
     /// calling `try_from_iter_in(self.into_iter().map(f), ...)`:
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::try_new()?;
     /// let vec_a: BumpVec<u16, _> = BumpVec::try_from_iter_in([1, 2, 3, 4], &bump)?;

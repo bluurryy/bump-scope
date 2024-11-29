@@ -54,7 +54,6 @@ macro_rules! bump_declaration {
         /// ## Collections
         /// A `Bump` (and [`BumpScope`]) can be used to allocate collections of this crate...
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// use bump_scope::{ Bump, BumpString };
         /// let bump: Bump = Bump::new();
         ///
@@ -64,9 +63,7 @@ macro_rules! bump_declaration {
         /// ```
         ///
         /// ... and collections from crates that use `allocator_api2`'s [`Allocator`](allocator_api2::alloc::Allocator) like [hashbrown](https://docs.rs/hashbrown)'s [`HashMap`](https://docs.rs/hashbrown/latest/hashbrown/struct.HashMap.html):
-        /// <!-- TODO -->
-        /// ```ignore
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
+        /// ```
         /// use bump_scope::{ Bump, BumpString };
         /// use hashbrown::HashMap;
         ///
@@ -78,7 +75,11 @@ macro_rules! bump_declaration {
         /// On nightly and with the feature `"nightly-allocator-api"` you can also bump allocate collections from `std` that have an allocator parameter:
         #[cfg_attr(feature = "nightly-allocator-api", doc = "```")]
         #[cfg_attr(not(feature = "nightly-allocator-api"), doc = "```no_run")]
+        /// # /*
+        /// # those features are already been enabled by a `doc(test(attr`
+        /// # but we still want it here for demonstration
         /// #![feature(allocator_api, btreemap_alloc)]
+        /// # */
         /// # #[cfg(feature = "nightly-allocator-api")] fn main() {
         /// use bump_scope::Bump;
         /// use std::collections::{ VecDeque, BTreeMap, LinkedList };
@@ -132,7 +133,6 @@ macro_rules! bump_declaration {
         /// Allocating directly on a `Bump` is not compatible with entering bump scopes at the same time:
         ///
         /// ```compile_fail,E0502
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::Bump;
         /// let mut bump: Bump = Bump::new();
         ///

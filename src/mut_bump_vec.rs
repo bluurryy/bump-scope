@@ -553,7 +553,6 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         for fn from_iter_in
         do examples
         /// ```
-        /// #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, MutBumpVec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// let vec = MutBumpVec::try_from_iter_in([1, 2, 3], &mut bump)?;
@@ -590,7 +589,6 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         for fn push
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2]?;
@@ -634,7 +632,6 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         for fn insert
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
@@ -767,7 +764,6 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         for fn extend_from_within_copy
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// let mut vec = mut_bump_vec![try in &mut bump; 0, 1, 2, 3, 4]?;
@@ -833,7 +829,6 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         for fn extend_from_within_clone
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// let mut vec = mut_bump_vec![try in &mut bump; 0, 1, 2, 3, 4]?;
@@ -911,7 +906,6 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         for fn extend_zeroed
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
@@ -957,7 +951,6 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         for fn reserve
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// let mut vec = mut_bump_vec![try in &mut bump; 1]?;
@@ -1001,7 +994,6 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         for fn reserve_exact
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// let mut vec = mut_bump_vec![try in &mut bump; 1]?;
@@ -1050,7 +1042,6 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         for fn resize
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// let mut vec = mut_bump_vec![try in &mut bump; "hello"]?;
@@ -1109,7 +1100,6 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         for fn resize_with
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
@@ -1164,7 +1154,6 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         for fn resize_zeroed
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// {
@@ -1213,7 +1202,6 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         for fn append
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// // needs a scope because of lifetime shenanigans

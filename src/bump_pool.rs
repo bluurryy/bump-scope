@@ -19,7 +19,6 @@ macro_rules! bump_pool_declaration {
         ///
         /// Using `BumpPool` with parallel iterators from [`rayon`](https://docs.rs/rayon):
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::BumpPool;
         /// # use rayon::prelude::{ ParallelIterator, IntoParallelIterator };
         /// # if cfg!(miri) { return } // rayon violates strict-provenance :(
@@ -44,7 +43,6 @@ macro_rules! bump_pool_declaration {
         ///
         /// Using `BumpPool` with [`std::thread::scope`]:
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::BumpPool;
         /// let pool: BumpPool = BumpPool::new();
         /// let (sender, receiver) = std::sync::mpsc::sync_channel(10);

@@ -54,6 +54,7 @@
     unused_unsafe, // only triggered in old rust versions, like msrv
 )]
 #![doc(test(attr(warn(dead_code))))]
+#![doc(test(attr(cfg_attr(feature = "nightly-allocator-api", feature(allocator_api, btreemap_alloc)))))] // TODO: remove duplicates of that in doc tests
 //! A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
 //!
 //! # What is bump allocation?
@@ -193,7 +194,6 @@
 //! After all, memory will be reclaimed when exiting a scope or calling `reset`.
 //! You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using [`WithoutDealloc`] and [`WithoutShrink`].
 //! ```
-//! # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
 //! use bump_scope::{ Bump, WithoutDealloc };
 //! use allocator_api2::boxed::Box;
 //! let bump: Bump = Bump::new();
@@ -1042,7 +1042,6 @@ define_alloc_methods! {
     for fn alloc
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc(123)?;
@@ -1065,7 +1064,6 @@ define_alloc_methods! {
     for fn alloc_with
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc_with(|| 123)?;
@@ -1089,7 +1087,6 @@ define_alloc_methods! {
     /// This is equivalent to <code>[try_alloc_with](Self::try_alloc_with)(T::default)</code>.
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc_default()?;
@@ -1111,7 +1108,6 @@ define_alloc_methods! {
     for fn alloc_slice_copy
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.alloc_slice_copy(&[1, 2, 3]);
@@ -1136,7 +1132,6 @@ define_alloc_methods! {
     for fn alloc_slice_clone
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc_slice_clone(&[String::from("a"), String::from("b")])?;
@@ -1161,7 +1156,6 @@ define_alloc_methods! {
     for fn alloc_slice_fill
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc_slice_fill(3, "ho")?;
@@ -1193,7 +1187,6 @@ define_alloc_methods! {
     /// argument.
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc_slice_fill_with::<i32>(3, Default::default)?;
@@ -1215,7 +1208,6 @@ define_alloc_methods! {
     for fn alloc_str
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc_str("Hello world!")?;
@@ -1246,7 +1238,6 @@ define_alloc_methods! {
     /// Errors if a formatting trait implementation returned an error.
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let one = 1;
@@ -1280,7 +1271,6 @@ define_alloc_methods! {
     /// Errors if a formatting trait implementation returned an error.
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let one = 1;
@@ -1305,7 +1295,6 @@ define_alloc_methods! {
     for fn alloc_cstr
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc_cstr(c"Hello world!")?;
@@ -1332,7 +1321,6 @@ define_alloc_methods! {
     for fn alloc_cstr_from_str
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc_cstr_from_str("Hello world!")?;
@@ -1370,7 +1358,6 @@ define_alloc_methods! {
     /// Errors if a formatting trait implementation returned an error.
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let one = 1;
@@ -1410,7 +1397,6 @@ define_alloc_methods! {
     /// Errors if a formatting trait implementation returned an error.
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let one = 1;
@@ -1451,7 +1437,6 @@ define_alloc_methods! {
     /// [`try_alloc_iter_mut`]: Self::try_alloc_iter_mut
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let slice = bump.try_alloc_iter([1, 2, 3])?;
@@ -1473,7 +1458,6 @@ define_alloc_methods! {
     for fn alloc_iter_exact
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let slice = bump.try_alloc_iter_exact([1, 2, 3])?;
@@ -1504,7 +1488,6 @@ define_alloc_methods! {
     /// When bumping downwards, prefer [`try_alloc_iter_mut_rev`](Bump::try_alloc_iter_mut_rev) instead.
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let slice = bump.try_alloc_iter_mut([1, 2, 3])?;
@@ -1543,7 +1526,6 @@ define_alloc_methods! {
     /// [`try_alloc_iter_mut`]: Self::try_alloc_iter_mut
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let slice = bump.try_alloc_iter_mut_rev([1, 2, 3])?;
@@ -1586,7 +1568,6 @@ define_alloc_methods! {
     do examples
     /// Safely:
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// let five = bump.try_alloc_uninit()?;
@@ -1599,7 +1580,6 @@ define_alloc_methods! {
     ///
     /// Unsafely:
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let mut five = bump.try_alloc_uninit()?;
@@ -1656,7 +1636,6 @@ define_alloc_methods! {
     do examples
     /// Safely:
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// let values = bump.try_alloc_uninit_slice(3)?;
@@ -1669,7 +1648,6 @@ define_alloc_methods! {
     ///
     /// Unsafely:
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut values = bump.try_alloc_uninit_slice(3)?;
@@ -1713,7 +1691,6 @@ define_alloc_methods! {
     /// This avoids a check for a valid layout. The elements of `slice` are irrelevant.
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let slice = &[1, 2, 3];
@@ -1739,7 +1716,6 @@ define_alloc_methods! {
     for fn alloc_fixed_vec
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut values = bump.try_alloc_fixed_vec(3)?;
@@ -1766,7 +1742,6 @@ define_alloc_methods! {
     for fn alloc_fixed_string
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut string = bump.try_alloc_fixed_string(12)?;
@@ -1801,7 +1776,6 @@ define_alloc_methods! {
     for fn reserve_bytes
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::{ Bump };
     /// let bump: Bump = Bump::try_new()?;
     /// assert!(bump.stats().capacity() < 4096);
@@ -1848,7 +1822,6 @@ define_alloc_methods! {
     /// There is also [`try_alloc_try_with_mut`](Self::try_alloc_try_with_mut), optimized for a mutable reference.
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
     /// # use bump_scope::Bump;
@@ -1859,7 +1832,6 @@ define_alloc_methods! {
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
     /// # use bump_scope::Bump;
@@ -1903,7 +1875,6 @@ define_alloc_methods! {
     /// This is just like [`try_alloc_try_with`](Self::try_alloc_try_with), but optimized for a mutable reference.
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
     /// # use bump_scope::Bump;
@@ -1914,7 +1885,6 @@ define_alloc_methods! {
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
     /// # use bump_scope::Bump;

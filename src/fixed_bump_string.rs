@@ -486,7 +486,6 @@ impl FixedBumpString<'_> {
         for fn push
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::Bump;
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut s = bump.try_alloc_fixed_string(3)?;
@@ -525,7 +524,6 @@ impl FixedBumpString<'_> {
         for fn push_str
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::Bump;
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut s = bump.try_alloc_fixed_string(6)?;
@@ -566,7 +564,6 @@ impl FixedBumpString<'_> {
         for fn insert
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, FixedBumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut s = bump.try_alloc_fixed_string(3)?;
@@ -612,7 +609,6 @@ impl FixedBumpString<'_> {
         for fn insert_str
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, FixedBumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut s = bump.try_alloc_fixed_string(6)?;
@@ -657,7 +653,6 @@ impl FixedBumpString<'_> {
         for fn extend_from_within
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, FixedBumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut string = bump.try_alloc_fixed_string(14)?;
@@ -702,7 +697,6 @@ impl FixedBumpString<'_> {
         for fn extend_zeroed
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, FixedBumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut string = bump.try_alloc_fixed_string(8)?;

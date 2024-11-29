@@ -1037,7 +1037,6 @@ where
 /// In other words this function must be sound:
 ///
 /// ```
-/// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
 /// # #![allow(dead_code)]
 /// use bump_scope::BumpAllocatorScope;
 /// use core::alloc::Layout;

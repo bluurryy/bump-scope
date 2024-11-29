@@ -466,7 +466,6 @@ where
     /// ```ignore
     /// # // We can't `compile_fail,E0080` this doc test because it does not do the compile step
     /// # // that triggers the error.
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::{ Bump, allocator_api2::alloc::Global };
     /// let mut bump: Bump<Global, 8, true> = Bump::new();
     /// let mut guard = bump.scope_guard();

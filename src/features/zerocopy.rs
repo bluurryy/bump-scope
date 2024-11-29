@@ -64,7 +64,6 @@ define_alloc_methods! {
     for fn alloc_zeroed
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let zero = bump.try_alloc_zeroed::<i32>()?;
@@ -89,7 +88,6 @@ define_alloc_methods! {
     for fn alloc_zeroed_slice
     do examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let zeroes = bump.try_alloc_zeroed_slice::<i32>(3)?;

@@ -72,7 +72,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
         for fn from_iter_in
         do examples
         /// ```
-        /// #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, FixedBumpVec };
         /// # let bump: Bump = Bump::try_new()?;
         /// let vec = FixedBumpVec::try_from_iter_in([1, 2, 3], &bump)?;
@@ -103,7 +102,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
         for fn from_iter_exact_in
         do examples
         /// ```
-        /// #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, FixedBumpVec };
         /// # let bump: Bump = Bump::try_new()?;
         /// let vec = FixedBumpVec::try_from_iter_exact_in([1, 2, 3], &bump)?;
@@ -488,7 +486,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
         for fn push
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ mut_bump_vec, Bump };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// let mut vec = bump.try_alloc_fixed_vec(3)?;
@@ -534,7 +531,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
         for fn insert
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ mut_bump_vec, Bump, FixedBumpVec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// let mut vec = bump.try_alloc_fixed_vec(5)?;
@@ -669,7 +665,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
         for fn extend_from_within_copy
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// let mut vec = bump.try_alloc_fixed_vec(100)?;
@@ -737,7 +732,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
         for fn extend_from_within_clone
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::Bump;
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut vec = bump.try_alloc_fixed_vec(14)?;
@@ -817,7 +811,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
         for fn extend_zeroed
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::Bump;
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut vec = bump.try_alloc_fixed_vec(5)?;
@@ -892,7 +885,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
         for fn resize
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, mut_bump_vec };
         /// # let mut bump: Bump = Bump::try_new()?;
         /// let mut vec = bump.try_alloc_fixed_vec(10)?;
@@ -954,7 +946,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
         for fn resize_with
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::Bump;
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut vec = bump.try_alloc_fixed_vec(5)?;
@@ -1008,7 +999,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
         for fn resize_zeroed
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::Bump;
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut vec = bump.try_alloc_fixed_vec(5)?;
@@ -1058,7 +1048,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
         for fn append
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::Bump;
         /// # let mut bump: Bump = Bump::try_new()?;
         /// // needs a scope because of lifetime shenanigans

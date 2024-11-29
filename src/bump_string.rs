@@ -582,7 +582,6 @@ impl<A: BumpAllocator> BumpString<A> {
         for fn from_str_in
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// let string = BumpString::try_from_str_in("Hello!", &bump)?;
@@ -652,7 +651,6 @@ impl<A: BumpAllocator> BumpString<A> {
         /// Basic usage:
         ///
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// // some bytes, in a vector
@@ -667,7 +665,6 @@ impl<A: BumpAllocator> BumpString<A> {
         /// Incorrect bytes:
         ///
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// // some invalid bytes
@@ -730,7 +727,6 @@ impl<A: BumpAllocator> BumpString<A> {
         for fn from_utf16_in
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// // 𝄞music
@@ -783,7 +779,6 @@ impl<A: BumpAllocator> BumpString<A> {
         for fn from_utf16_lossy_in
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// // 𝄞mus<invalid>ic<invalid>
@@ -825,7 +820,6 @@ impl<A: BumpAllocator> BumpString<A> {
         for fn push
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut s = BumpString::try_from_str_in("abc", &bump)?;
@@ -863,7 +857,6 @@ impl<A: BumpAllocator> BumpString<A> {
         for fn push_str
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut s = BumpString::try_from_str_in("foo", &bump)?;
@@ -903,7 +896,6 @@ impl<A: BumpAllocator> BumpString<A> {
         for fn insert
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut s = BumpString::try_with_capacity_in(3, &bump)?;
@@ -948,7 +940,6 @@ impl<A: BumpAllocator> BumpString<A> {
         for fn insert_str
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut s = BumpString::try_from_str_in("bar", &bump)?;
@@ -991,7 +982,6 @@ impl<A: BumpAllocator> BumpString<A> {
         for fn extend_from_within
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut string = BumpString::try_from_str_in("abcde", &bump)?;
@@ -1034,7 +1024,6 @@ impl<A: BumpAllocator> BumpString<A> {
         for fn extend_zeroed
         do examples
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut string = BumpString::try_from_str_in("What?", &bump)?;
@@ -1106,7 +1095,6 @@ impl<A: BumpAllocator> BumpString<A> {
         /// Basic usage:
         ///
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut s = BumpString::new_in(&bump);
@@ -1120,7 +1108,6 @@ impl<A: BumpAllocator> BumpString<A> {
         /// This might not actually increase the capacity:
         ///
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut s = BumpString::try_with_capacity_in(10, &bump)?;
@@ -1195,7 +1182,6 @@ impl<A: BumpAllocator> BumpString<A> {
         /// Basic usage:
         ///
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut s = BumpString::new_in(&bump);
@@ -1209,7 +1195,6 @@ impl<A: BumpAllocator> BumpString<A> {
         /// This might not actually increase the capacity:
         ///
         /// ```
-        /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
         /// # use bump_scope::{ Bump, BumpString };
         /// # let bump: Bump = Bump::try_new()?;
         /// let mut s = BumpString::try_with_capacity_in(10, &bump)?;
@@ -1360,7 +1345,6 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
     /// # use bump_scope::{ Bump, BumpString };
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut hello = BumpString::from_str_in("Hello, ", &bump);
