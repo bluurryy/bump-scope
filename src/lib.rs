@@ -192,7 +192,7 @@
 //!
 //! A bump allocator does not *require* `deallocate` or `shrink` to free memory.
 //! After all, memory will be reclaimed when exiting a scope or calling `reset`.
-//! You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using [`WithoutDealloc`] and [`WithoutShrink`].
+//! You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using [`WithoutDealloc`](crate::WithoutDealloc) and [`WithoutShrink`](crate::WithoutShrink).
 //! ```
 //! use bump_scope::{ Bump, WithoutDealloc };
 //! use allocator_api2::boxed::Box;
@@ -231,8 +231,8 @@
 //!
 //! Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
 //! This benefits collections as well as <code>[alloc_iter](crate::Bump::alloc_iter)([_mut](crate::Bump::alloc_iter_mut))</code> and <code>[alloc_fmt](crate::Bump::alloc_fmt)([_mut](crate::Bump::alloc_fmt_mut))</code>
-//! with the exception of [`MutBumpVecRev`] and [`alloc_iter_mut_rev`](crate::Bump::alloc_iter_mut_rev).
-//! [`MutBumpVecRev`] can be grown and shrunk in place iff bumping downwards.
+//! with the exception of [`MutBumpVecRev`](crate::MutBumpVecRev) and [`alloc_iter_mut_rev`](crate::Bump::alloc_iter_mut_rev).
+//! [`MutBumpVecRev`](crate::MutBumpVecRev) can be grown and shrunk in place iff bumping downwards.
 //!
 //! Bumping downwards shaves off a few non-branch instructions per allocation.
 //!
