@@ -1,10 +1,10 @@
 error[E0521]: borrowed data escapes outside of closure
- --> tests/compile_fail/escape_closure_scope.rs:7:9
+ --> tests/compile_fail/escape_closure_scope.rs:8:9
   |
-4 |     let mut escapee = None;
+5 |     let mut escapee = None;
   |         ----------- `escapee` declared here, outside of the closure body
-5 |
-6 |     bump.scoped(|scope| {
+6 |
+7 |     bump.scoped(|scope| {
   |                  ----- `scope` is a reference that is only valid in the closure body
-7 |         escapee = Some(scope.alloc("escape?"));
+8 |         escapee = Some(scope.alloc("escape?"));
   |         ^^^^^^^ `scope` escapes the closure body here
