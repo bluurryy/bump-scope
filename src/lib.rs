@@ -180,10 +180,8 @@
 //! To bump allocate in parallel you can use a [`BumpPool`](crate::BumpPool).
 //!
 //! # Allocator API
-//! `Bump` and `BumpScope` implement [`allocator_api2::alloc::Allocator`](https://docs.rs/allocator-api2/0.2.16/allocator_api2/alloc/trait.Allocator.html).
-//! With this you can bump allocate [`allocator_api2::boxed::Box`](https://docs.rs/allocator-api2/0.2.16/allocator_api2/boxed/struct.Box.html), [`allocator_api2::vec::Vec`](https://docs.rs/allocator-api2/0.2.16/allocator_api2/vec/struct.Vec.html) and collections
-//! from other crates that support it like [`hashbrown::HashMap`](https://docs.rs/hashbrown/latest/hashbrown/struct.HashMap.html).
-//! They also implement the nightly allocator api with a [feature flag](#nightly-features).
+//! `Bump` and `BumpScope` implement `allocator_api2` [`Allocator`](https://docs.rs/allocator-api2/0.2.16/allocator_api2/alloc/trait.Allocator.html) trait.
+//! They can be used to [allocate collections](crate::Bump#collections).
 //!
 //! A bump allocator can grow, shrink and deallocate the most recent allocation.
 //! When bumping upwards it can even do so in place.
