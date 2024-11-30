@@ -50,6 +50,7 @@ macro_rules! bump_declaration {
         ///
         ///   which can then be conveniently initialized by the [`init*` methods of `BumpBox`](crate::BumpBox#bumpbox-has-a-lot-of-methods).
         /// - fixed collections: [`alloc_fixed_vec`], [`alloc_fixed_string`]
+        /// - results: [`alloc_try_with`], [`alloc_try_with_mut`]
         ///
         /// ## Collections
         /// A `Bump` (and [`BumpScope`]) can be used to allocate collections of this crate...
@@ -123,6 +124,9 @@ macro_rules! bump_declaration {
         ///
         /// [`alloc_fixed_vec`]: Self::alloc_fixed_vec
         /// [`alloc_fixed_string`]: Self::alloc_fixed_string
+        ///
+        /// [`alloc_try_with`]: Self::alloc_try_with
+        /// [`alloc_try_with_mut`]: Self::alloc_try_with_mut
         ///
         /// ## Scopes and Checkpoints
         ///
