@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **docs:** improved documentation of `Bump` and `BumpScope` and in some other places
+
 ## 0.13.0 (2024-11-29)
 - **breaking:** removed `"nightly-const-refs-to-static"` feature; `Bump::unallocated` is now automatically const for any rust version since 1.83
 - **breaking:** removed `Bump(Scope)`'s `without_dealloc` and `without_shrink`; use `WithoutDealloc(&bump)` and `WithoutShrink(&bump)` instead
