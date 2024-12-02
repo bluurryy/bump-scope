@@ -398,7 +398,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut v = bump.alloc_slice_copy(&["foo", "bar", "baz", "qux"]);
