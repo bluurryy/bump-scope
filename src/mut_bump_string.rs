@@ -17,7 +17,7 @@ use core::{
 use allocator_api2::alloc::AllocError;
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{infallible, Infallibly};
+use crate::{infallible, PanicsOnAlloc};
 
 /// This is like [`format!`] but allocates inside a *mutable* bump allocator, returning a [`MutBumpString`].
 ///
@@ -47,7 +47,7 @@ macro_rules! mut_bump_format {
         $crate::MutBumpString::new_in($bump)
     }};
     (in $bump:expr, $($arg:tt)*) => {{
-        let mut string = $crate::private::Infallibly($crate::MutBumpString::new_in($bump));
+        let mut string = $crate::private::PanicsOnAlloc($crate::MutBumpString::new_in($bump));
         match $crate::private::core::fmt::Write::write_fmt(&mut string, $crate::private::core::format_args!($($arg)*)) {
             $crate::private::core::result::Result::Ok(_) => string.0,
             $crate::private::core::result::Result::Err(_) => $crate::private::format_trait_error(),
@@ -1206,8 +1206,8 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     pub(crate) fn generic_write_fmt<B: ErrorBehavior>(&mut self, args: fmt::Arguments) -> Result<(), B> {
         #[cfg(feature = "panic-on-alloc")]
         if B::PANICS_ON_ALLOC {
-            if fmt::Write::write_fmt(Infallibly::from_mut(self), args).is_err() {
-                // Our `Infallibly` wrapped `Write` implementation panics on allocation failure.
+            if fmt::Write::write_fmt(PanicsOnAlloc::from_mut(self), args).is_err() {
+                // Our `PanicsOnAlloc` wrapped `Write` implementation panics on allocation failure.
                 // So this can only be an error returned by a `fmt()` implementor.
                 // Note that `fmt()` implementors *should* not return errors (see `std::fmt::Error`)
                 return Err(B::format_trait_error());
@@ -1321,7 +1321,7 @@ impl<A: MutBumpAllocator> fmt::Write for MutBumpString<A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<A: MutBumpAllocator> fmt::Write for Infallibly<MutBumpString<A>> {
+impl<A: MutBumpAllocator> fmt::Write for PanicsOnAlloc<MutBumpString<A>> {
     #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.0.push_str(s);

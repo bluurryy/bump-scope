@@ -344,7 +344,7 @@ pub use mut_bump_vec::MutBumpVec;
 pub use mut_bump_vec_rev::MutBumpVecRev;
 pub use no_drop::NoDrop;
 #[cfg(feature = "panic-on-alloc")]
-use private::{capacity_overflow, format_trait_error, Infallibly};
+use private::{capacity_overflow, format_trait_error, PanicsOnAlloc};
 use raw_chunk::RawChunk;
 use set_len_on_drop::SetLenOnDrop;
 use set_len_on_drop_by_ptr::SetLenOnDropByPtr;
@@ -466,11 +466,11 @@ pub mod private {
     #[cfg(feature = "panic-on-alloc")]
     /// Wrapper type, used for ad hoc overwriting of trait implementations, like for `Write` in `alloc_fmt`.
     #[repr(transparent)]
-    pub struct Infallibly<T: ?Sized>(pub T);
+    pub struct PanicsOnAlloc<T: ?Sized>(pub T);
 
     #[cfg(feature = "panic-on-alloc")]
-    impl<T: ?Sized> Infallibly<T> {
-        pub(crate) fn from_mut(value: &mut T) -> &mut Infallibly<T> {
+    impl<T: ?Sized> PanicsOnAlloc<T> {
+        pub(crate) fn from_mut(value: &mut T) -> &mut PanicsOnAlloc<T> {
             unsafe { &mut *(value as *mut T as *mut Self) }
         }
     }

@@ -1,5 +1,5 @@
 #[cfg(feature = "panic-on-alloc")]
-use crate::Infallibly;
+use crate::PanicsOnAlloc;
 use crate::{
     collection_method_allocator_stats,
     destructure::destructure,
@@ -56,7 +56,7 @@ macro_rules! bump_format {
         $crate::BumpString::new_in($bump.as_scope())
     }};
     (in $bump:expr, $($arg:tt)*) => {{
-        let mut string = $crate::private::Infallibly($crate::BumpString::new_in($bump.as_scope()));
+        let mut string = $crate::private::PanicsOnAlloc($crate::BumpString::new_in($bump.as_scope()));
         match $crate::private::core::fmt::Write::write_fmt(&mut string, $crate::private::core::format_args!($($arg)*)) {
             $crate::private::core::result::Result::Ok(_) => string.0,
             $crate::private::core::result::Result::Err(_) => $crate::private::format_trait_error(),
@@ -1268,8 +1268,8 @@ impl<A: BumpAllocator> BumpString<A> {
     pub(crate) fn generic_write_fmt<B: ErrorBehavior>(&mut self, args: fmt::Arguments) -> Result<(), B> {
         #[cfg(feature = "panic-on-alloc")]
         if B::PANICS_ON_ALLOC {
-            if fmt::Write::write_fmt(Infallibly::from_mut(self), args).is_err() {
-                // Our `Infallibly` wrapped `Write` implementation panics on allocation failure.
+            if fmt::Write::write_fmt(PanicsOnAlloc::from_mut(self), args).is_err() {
+                // Our `PanicsOnAlloc` wrapped `Write` implementation panics on allocation failure.
                 // So this can only be an error returned by a `fmt()` implementor.
                 // Note that `fmt()` implementors *should* not return errors (see `std::fmt::Error`)
                 return Err(B::format_trait_error());
@@ -1430,7 +1430,7 @@ impl<A: BumpAllocator> fmt::Write for BumpString<A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<A: BumpAllocator> fmt::Write for Infallibly<BumpString<A>> {
+impl<A: BumpAllocator> fmt::Write for PanicsOnAlloc<BumpString<A>> {
     #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.0.push_str(s);
