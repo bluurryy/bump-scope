@@ -20,7 +20,6 @@
         iter_next_chunk,
         iter_advance_by,
         extract_if,
-        slice_flatten,
         slice_partition_dedup,
         iter_partition_in_place,
         offset_of_enum,
@@ -48,13 +47,14 @@
     clippy::missing_transmute_annotations,
     clippy::manual_assert,
     clippy::range_plus_one,
-    unknown_lints,
     rustdoc::redundant_explicit_links, // for cargo-rdme
-    stable_features, // for const_refs_to_static
+    unknown_lints, // for `private_bounds` in msrv
     unused_unsafe, // only triggered in old rust versions, like msrv
 )]
-#![doc(test(attr(warn(dead_code))))]
-#![doc(test(attr(cfg_attr(feature = "nightly-allocator-api", feature(allocator_api, btreemap_alloc)))))] // TODO: remove duplicates of that in doc tests
+#![doc(test(
+    attr(warn(dead_code, unused_imports)),
+    attr(cfg_attr(feature = "nightly-allocator-api", feature(allocator_api, btreemap_alloc)))
+))]
 //! A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
 //!
 //! # What is bump allocation?
