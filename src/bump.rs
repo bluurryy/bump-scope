@@ -20,7 +20,7 @@ use core::{
 
 macro_rules! bump_declaration {
     ($($allocator_parameter:tt)*) => {
-        /// A bump allocator.
+        /// The bump allocator.
         ///
         /// # Overview
         /// All of the methods mentioned here that do allocations, panic if the base allocator returned an error.
