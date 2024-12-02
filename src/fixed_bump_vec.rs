@@ -306,36 +306,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// assert_eq!(v.remove(1), 2);
     /// assert_eq!(v, [1, 3]);
     /// ```
-    #[track_caller]
+    #[inline(always)]
     pub fn remove(&mut self, index: usize) -> T {
-        #[cold]
-        #[inline(never)]
-        #[track_caller]
-        fn assert_failed(index: usize, len: usize) -> ! {
-            panic!("removal index (is {index}) should be < len (is {len})");
-        }
-
-        if index >= self.len() {
-            assert_failed(index, self.len());
-        }
-
-        unsafe {
-            let start = self.as_mut_ptr();
-            let value_ptr = start.add(index);
-
-            // copy it out, unsafely having a copy of the value on
-            // the stack and in the vector at the same time
-            let value = value_ptr.read();
-
-            // shift everything to fill in that spot
-            if index != self.len() {
-                let len = self.len() - index - 1;
-                value_ptr.add(1).copy_to(value_ptr, len);
-            }
-
-            self.dec_len(1);
-            value
-        }
+        self.initialized.remove(index)
     }
 
     /// Extracts a slice containing the entire vector.
@@ -411,11 +384,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
         self.initialized.inc_len(amount);
     }
 
-    #[inline]
-    pub(crate) unsafe fn dec_len(&mut self, amount: usize) {
-        self.initialized.dec_len(amount);
-    }
-
     /// Removes an element from the vector and returns it.
     ///
     /// The removed element is replaced by the last element of the vector.
@@ -443,30 +411,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// ```
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> T {
-        #[cold]
-        #[inline(never)]
-        #[track_caller]
-        fn assert_failed(index: usize, len: usize) -> ! {
-            panic!("swap_remove index (is {index}) should be < len (is {len})");
-        }
-
-        if index >= self.len() {
-            assert_failed(index, self.len());
-        }
-
-        unsafe {
-            // We replace self[index] with the last element. Note that if the
-            // bounds check above succeeds there must be a last element (which
-            // can be self[index] itself).
-
-            let start = self.as_mut_ptr();
-            let value_ptr = start.add(index);
-            let value = value_ptr.read();
-            self.dec_len(1);
-
-            start.add(self.len()).copy_to(value_ptr, 1);
-            value
-        }
+        self.initialized.swap_remove(index)
     }
 
     error_behavior_generic_methods_if! {
