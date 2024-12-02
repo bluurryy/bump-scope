@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{handle_alloc_error, infallible};
+use crate::{handle_alloc_error, panic_on_error};
 
 /// A bump allocator.
 ///
@@ -357,7 +357,7 @@ where
     where
         Self: Sized,
     {
-        infallible(self.do_alloc_sized())
+        panic_on_error(self.do_alloc_sized())
     }
 
     #[inline(always)]
@@ -374,7 +374,7 @@ where
     where
         Self: Sized,
     {
-        infallible(self.do_alloc_slice(len))
+        panic_on_error(self.do_alloc_slice(len))
     }
 
     #[inline(always)]
@@ -811,7 +811,7 @@ where
     where
         Self: Sized,
     {
-        let (ptr, len) = infallible(BumpScope::generic_prepare_slice_allocation(self, len));
+        let (ptr, len) = panic_on_error(BumpScope::generic_prepare_slice_allocation(self, len));
         nonnull::slice_from_raw_parts(ptr, len)
     }
 
@@ -838,7 +838,7 @@ where
     where
         Self: Sized,
     {
-        infallible(BumpScope::generic_prepare_slice_allocation_rev(self, len))
+        panic_on_error(BumpScope::generic_prepare_slice_allocation_rev(self, len))
     }
 
     #[inline(always)]

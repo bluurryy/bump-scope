@@ -17,7 +17,7 @@ use core::{
 use allocator_api2::alloc::AllocError;
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{infallible, PanicsOnAlloc};
+use crate::{panic_on_error, PanicsOnAlloc};
 
 /// This is like [`format!`] but allocates inside a *mutable* bump allocator, returning a [`MutBumpString`].
 ///
@@ -1270,7 +1270,7 @@ impl<'a, A: MutBumpAllocatorScope<'a>> MutBumpString<A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn into_cstr(self) -> &'a CStr {
-        infallible(self.generic_into_cstr())
+        panic_on_error(self.generic_into_cstr())
     }
 
     /// Converts this `BumpString` into `&CStr` that is live for this bump scope.

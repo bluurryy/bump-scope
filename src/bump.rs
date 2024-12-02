@@ -1,5 +1,5 @@
 #[cfg(feature = "panic-on-alloc")]
-use crate::infallible;
+use crate::panic_on_error;
 use crate::{
     bump_common_methods, bump_scope_methods,
     chunk_size::ChunkSize,
@@ -513,7 +513,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn guaranteed_allocated(self) -> Bump<A, MIN_ALIGN, UP> {
-        infallible(self.generic_guaranteed_allocated())
+        panic_on_error(self.generic_guaranteed_allocated())
     }
 
     /// Converts this `Bump` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
@@ -538,7 +538,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn guaranteed_allocated_ref(&self) -> &Bump<A, MIN_ALIGN, UP> {
-        infallible(self.generic_guaranteed_allocated_ref())
+        panic_on_error(self.generic_guaranteed_allocated_ref())
     }
 
     /// Borrows `Bump` as an [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
@@ -563,7 +563,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn guaranteed_allocated_mut(&mut self) -> &mut Bump<A, MIN_ALIGN, UP> {
-        infallible(self.generic_guaranteed_allocated_mut())
+        panic_on_error(self.generic_guaranteed_allocated_mut())
     }
 
     /// Mutably borrows `Bump` as an [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.

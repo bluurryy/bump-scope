@@ -501,7 +501,7 @@ fn handle_alloc_error(_layout: Layout) -> ! {
 #[inline(always)]
 #[cfg(feature = "panic-on-alloc")]
 #[allow(unreachable_patterns)] // msrv 1.64.0 does not allow omitting the `Err` arm
-fn infallible<T>(result: Result<T, Infallible>) -> T {
+fn panic_on_error<T>(result: Result<T, Infallible>) -> T {
     match result {
         Ok(value) => value,
         Err(_) => unreachable!(),
@@ -787,7 +787,7 @@ macro_rules! error_behavior_generic_methods_if {
             $(-> $return_ty)?
             $(where $($where)*)?
             {
-                $crate::infallible(Self::$generic($($crate::last!($($self)+), )? $($arg_pat),*))
+                $crate::panic_on_error(Self::$generic($($crate::last!($($self)+), )? $($arg_pat),*))
             }
         )*
 
@@ -930,7 +930,7 @@ macro_rules! define_alloc_methods {
                     $(-> $return_ty_scope)?
                     $(where $($where)*)?
                     {
-                        $crate::infallible($crate::last!($($self)+).$generic($($arg_pat),*))
+                        $crate::panic_on_error($crate::last!($($self)+).$generic($($arg_pat),*))
                     }
                 )*
 

@@ -29,7 +29,7 @@ use core::{
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::infallible;
+use crate::panic_on_error;
 
 #[cfg(feature = "panic-on-alloc")]
 pub(crate) use drain::Drain;
@@ -1448,7 +1448,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     where
         A: Clone,
     {
-        infallible(self.generic_map(f))
+        panic_on_error(self.generic_map(f))
     }
 
     /// Returns a vector of the same size as `self`, with function `f` applied to each element in order.
@@ -1758,7 +1758,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     #[cfg(feature = "panic-on-alloc")]
     pub(crate) unsafe fn buf_reserve(&mut self, len: usize, additional: usize) {
         if additional > (self.capacity() - len) {
-            infallible(self.generic_grow_amortized_buf(len, additional));
+            panic_on_error(self.generic_grow_amortized_buf(len, additional));
         }
     }
 

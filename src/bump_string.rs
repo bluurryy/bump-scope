@@ -26,7 +26,7 @@ use allocator_api2::alloc::AllocError;
 use core::mem::MaybeUninit;
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{infallible, polyfill::nonnull, raw_bump_box::RawBumpBox};
+use crate::{panic_on_error, polyfill::nonnull, raw_bump_box::RawBumpBox};
 
 /// This is like [`format!`] but allocates inside a bump allocator, returning a [`BumpString`].
 ///
@@ -1335,7 +1335,7 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn into_cstr(self) -> &'a CStr {
-        infallible(self.generic_into_cstr())
+        panic_on_error(self.generic_into_cstr())
     }
 
     /// Converts this `BumpString` into `&CStr` that is live for this bump scope.

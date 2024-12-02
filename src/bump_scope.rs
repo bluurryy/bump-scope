@@ -1,5 +1,5 @@
 #[cfg(feature = "panic-on-alloc")]
-use crate::infallible;
+use crate::panic_on_error;
 use crate::{
     bump_align_guard::BumpAlignGuard,
     bump_common_methods, bump_scope_methods,
@@ -539,7 +539,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn guaranteed_allocated(self) -> BumpScope<'a, A, MIN_ALIGN, UP> {
-        infallible(self.generic_guaranteed_allocated())
+        panic_on_error(self.generic_guaranteed_allocated())
     }
 
     /// Converts this `BumpScope` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
@@ -564,7 +564,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn guaranteed_allocated_ref(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP> {
-        infallible(self.generic_guaranteed_allocated_ref())
+        panic_on_error(self.generic_guaranteed_allocated_ref())
     }
 
     /// Borrows `BumpScope` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
@@ -589,7 +589,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn guaranteed_allocated_mut(&mut self) -> &mut BumpScope<'a, A, MIN_ALIGN, UP> {
-        infallible(self.generic_guaranteed_allocated_mut())
+        panic_on_error(self.generic_guaranteed_allocated_mut())
     }
 
     /// Mutably borrows `BumpScope` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
