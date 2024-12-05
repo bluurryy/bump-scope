@@ -306,6 +306,14 @@ where
         ///
         /// **Disclaimer:** The way in which the chunk layout is calculated might change.
         /// Such a change is not considered semver breaking.
+        ///
+        do examples
+        /// ```
+        /// use bump_scope::Bump;
+        ///
+        /// // `Bump` with a roughly 1 Mebibyte sized chunk
+        /// let bump_1mib: Bump = Bump::with_size(1024 * 1024);
+        /// ```
         for fn with_size
         /// Constructs a new `Bump` with a size hint for the first chunk.
         ///
@@ -319,6 +327,15 @@ where
         ///
         /// **Disclaimer:** The way in which the chunk layout is calculated might change.
         /// Such a change is not considered semver breaking.
+        ///
+        do examples
+        /// ```
+        /// use bump_scope::Bump;
+        ///
+        /// // `Bump` with a roughly 1 Mebibyte sized chunk
+        /// let bump_1mib: Bump = Bump::try_with_size(1024 * 1024)?;
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_with_size
         #[inline]
         use fn generic_with_size(size: usize) -> Self {

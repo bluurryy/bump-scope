@@ -55,6 +55,7 @@
     "kenobi",
     "libfuzzer",
     "maybeuninits",
+    "Mebibyte",
     "memmove",
     "miri",
     "MIRIFLAGS",
