@@ -347,10 +347,29 @@ where
         /// Constructs a new `Bump` with at least enough space for `layout`.
         ///
         /// To construct a `Bump` with a size hint use <code>[with_size](Bump::with_size)</code> instead.
+        do examples
+        /// ```
+        /// use bump_scope::Bump;
+        /// use core::alloc::Layout;
+        ///
+        /// let layout = Layout::array::<u8>(1234).unwrap();
+        /// let bump: Bump = Bump::with_capacity(layout);
+        /// assert!(bump.stats().capacity() >= layout.size());
+        /// ```
         for fn with_capacity
         /// Constructs a new `Bump` with at least enough space for `layout`.
         ///
         /// To construct a `Bump` with a size hint use <code>[try_with_size](Bump::try_with_size)</code> instead.
+        do examples
+        /// ```
+        /// use bump_scope::Bump;
+        /// use core::alloc::Layout;
+        ///
+        /// let layout = Layout::array::<u8>(1234).unwrap();
+        /// let bump: Bump = Bump::try_with_capacity(layout)?;
+        /// assert!(bump.stats().capacity() >= layout.size());
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_with_capacity
         #[inline]
         use fn generic_with_capacity(layout: Layout) -> Self {
