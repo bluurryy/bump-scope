@@ -23,14 +23,14 @@ macro_rules! bump_declaration {
         /// The bump allocator.
         ///
         /// # Overview
-        /// All of the methods mentioned here that do allocations, panic if the base allocator returned an error.
+        /// All of the mentioned methods that do allocations panic if the base allocator returned an error.
         /// For every such panicking method, there is a corresponding `try_`-prefixed version that returns a `Result` instead.
         ///
-        /// ## Creation
+        /// ## Create a `Bump` ...
         /// - with a default size hint: <code>[new]\([_in][new_in])</code> / <code>[default]</code>
         /// - provide a size hint: <code>[with_size]\([_in][with_size_in])</code>
         /// - provide a minimum capacity: <code>[with_capacity]\([_in][with_capacity_in])</code>
-        /// - create a bump without allocation: <code>[unallocated]</code>
+        /// - without allocation: <code>[unallocated]</code>
         ///
         /// [new]: Self::new
         /// [new_in]: Self::new_in
@@ -41,7 +41,7 @@ macro_rules! bump_declaration {
         /// [with_capacity_in]: Self::with_capacity_in
         /// [unallocated]: Self::unallocated
         ///
-        /// ## Allocation methods
+        /// ## Allocate ...
         /// - sized values: [`alloc`], [`alloc_with`], [`alloc_default`], [`alloc_zeroed`]
         /// - strings: [`alloc_str`], [`alloc_fmt`], [`alloc_fmt_mut`]
         /// - c strings: [`alloc_cstr`], [`alloc_cstr_from_str`] [`alloc_cstr_fmt`], [`alloc_cstr_fmt_mut`]
@@ -74,7 +74,7 @@ macro_rules! bump_declaration {
         /// map.insert("tau", 6.283);
         /// ```
         ///
-        /// On nightly and with the feature `"nightly-allocator-api"` you can also bump allocate collections from `std` that have an allocator parameter:
+        /// On nightly and with the feature `"nightly-allocator-api"` you can also allocate collections from `std` that have an allocator parameter:
         #[cfg_attr(feature = "nightly-allocator-api", doc = "```")]
         #[cfg_attr(not(feature = "nightly-allocator-api"), doc = "```no_run")]
         /// # /*

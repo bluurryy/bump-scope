@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **docs:** various improvements
+
 ## 0.13.1 (2024-11-30)
 - **docs:** improved documentation of `Bump` and `BumpScope` and in some other places
 
