@@ -298,8 +298,11 @@ where
         ///
         /// If you want to ensure a specific capacity, use [`with_capacity`](Self::with_capacity) instead.
         ///
-        /// The size of the chunk allocation will be the provided `size` rounded up and with a small size subtracted to account for base allocator metadata.
-        /// The resulting chunk size may be larger still if the base allocator returned a bigger memory block than requested.
+        /// An effort is made to ensure the size requested from the base allocator is friendly to an allocator that uses size classes and stores metadata alongside allocations.
+        /// To achieve this, the requested size is rounded up to either the next power of two or the next multiple of `0x1000`, whichever is smaller.
+        /// After that, the size of `[usize; 2]` is subtracted.
+        ///
+        /// If the base allocator returns a memory block that is larger than requested, then the chunk will use the extra space.
         ///
         /// **Disclaimer:** The way in which the chunk layout is calculated might change.
         /// Such a change is not considered semver breaking.
@@ -308,8 +311,11 @@ where
         ///
         /// If you want to ensure a specific capacity, use [`try_with_capacity`](Self::try_with_capacity) instead.
         ///
-        /// The size of the chunk allocation will be the provided `size` rounded up and with a small size subtracted to account for base allocator metadata.
-        /// The resulting chunk size may be larger still if the base allocator returned a bigger memory block than requested.
+        /// An effort is made to ensure the size requested from the base allocator is friendly to an allocator that uses size classes and stores metadata alongside allocations.
+        /// To achieve this, the requested size is rounded up to either the next power of two or the next multiple of `0x1000`, whichever is smaller.
+        /// After that, the size of `[usize; 2]` is subtracted.
+        ///
+        /// If the base allocator returns a memory block that is larger than requested, then the chunk will use the extra space.
         ///
         /// **Disclaimer:** The way in which the chunk layout is calculated might change.
         /// Such a change is not considered semver breaking.
