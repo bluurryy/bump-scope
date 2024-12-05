@@ -256,6 +256,22 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// `T` won't be dropped which may leak resources.
     ///
     /// If `T` is [`NoDrop`], prefer to call [`into_mut`](BumpBox::into_mut) to signify that nothing gets leaked.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, BumpBox };
+    /// # let bump: Bump = Bump::new();
+    /// #
+    /// let boxed_slice_of_slices: BumpBox<[&mut [i32]]> = bump.alloc_iter_exact((0..3).map(|_| {
+    ///     bump.alloc_slice_fill_with(3, Default::default).into_mut()
+    /// }));
+    ///
+    /// // `&mut T` don't implement `NoDrop` even though they should
+    /// // (the blanket implementation `impl<T: Copy> NoDrop for T {}` prevents us from implementing it)
+    /// // so we need to use `leak`
+    /// let slice_of_slices: &mut [&mut [i32]] = BumpBox::leak(boxed_slice_of_slices);
+    /// ```
     #[inline(always)]
     #[allow(clippy::must_use_candidate)]
     pub fn leak(boxed: Self) -> &'a mut T {
