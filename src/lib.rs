@@ -263,6 +263,7 @@ mod allocator;
 mod bump;
 mod bump_align_guard;
 mod bump_allocator;
+mod bump_allocator_scope;
 /// Contains [`BumpBox`] and associated types.
 mod bump_box;
 #[cfg(feature = "std")]
@@ -284,6 +285,8 @@ mod fixed_bump_vec;
 mod from_utf16_error;
 mod from_utf8_error;
 mod layout;
+mod mut_bump_allocator;
+mod mut_bump_allocator_scope;
 mod mut_bump_string;
 /// Contains [`MutBumpVec`] and associated types.
 pub mod mut_bump_vec;
@@ -311,7 +314,8 @@ pub use allocator_api2;
 use allocator_api2::alloc::handle_alloc_error;
 use allocator_api2::alloc::{AllocError, Allocator};
 pub use bump::Bump;
-pub use bump_allocator::{BumpAllocator, BumpAllocatorScope, MutBumpAllocator, MutBumpAllocatorScope};
+pub use bump_allocator::BumpAllocator;
+pub use bump_allocator_scope::BumpAllocatorScope;
 pub use bump_box::BumpBox;
 #[cfg(feature = "std")]
 pub use bump_pool::{BumpPool, BumpPoolGuard};
@@ -338,6 +342,8 @@ pub use fixed_bump_vec::FixedBumpVec;
 pub use from_utf16_error::FromUtf16Error;
 pub use from_utf8_error::FromUtf8Error;
 use layout::ArrayLayout;
+pub use mut_bump_allocator::MutBumpAllocator;
+pub use mut_bump_allocator_scope::MutBumpAllocatorScope;
 pub use mut_bump_string::MutBumpString;
 #[doc(inline)]
 pub use mut_bump_vec::MutBumpVec;
