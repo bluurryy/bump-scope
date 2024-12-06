@@ -34,19 +34,19 @@ impl<A: Allocator + Clone> Deref for RcBump<A> {
 
 unsafe impl<A: Allocator + Clone> Allocator for RcBump<A> {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        Bump::allocate(&self.0, layout)
+        <Bump<A> as Allocator>::allocate(&self.0, layout)
     }
 
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        Bump::deallocate(&self.0, ptr, layout);
+        <Bump<A> as Allocator>::deallocate(&self.0, ptr, layout);
     }
 
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        Bump::allocate_zeroed(&self.0, layout)
+        <Bump<A> as Allocator>::allocate_zeroed(&self.0, layout)
     }
 
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        Bump::grow(&self.0, ptr, old_layout, new_layout)
+        <Bump<A> as Allocator>::grow(&self.0, ptr, old_layout, new_layout)
     }
 
     unsafe fn grow_zeroed(
@@ -55,11 +55,11 @@ unsafe impl<A: Allocator + Clone> Allocator for RcBump<A> {
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        Bump::grow_zeroed(&self.0, ptr, old_layout, new_layout)
+        <Bump<A> as Allocator>::grow_zeroed(&self.0, ptr, old_layout, new_layout)
     }
 
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        Bump::shrink(&self.0, ptr, old_layout, new_layout)
+        <Bump<A> as Allocator>::shrink(&self.0, ptr, old_layout, new_layout)
     }
 
     fn by_ref(&self) -> &Self
@@ -71,6 +71,14 @@ unsafe impl<A: Allocator + Clone> Allocator for RcBump<A> {
 }
 
 unsafe impl<A: Allocator + Clone> BumpAllocator for RcBump<A> {
+    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        <Bump<A> as BumpAllocator>::grow(&self.0, ptr, old_layout, new_layout)
+    }
+
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        <Bump<A> as BumpAllocator>::deallocate(&self.0, ptr, layout)
+    }
+
     fn stats(&self) -> crate::Stats<'_> {
         <Bump<A> as BumpAllocator>::stats(self)
     }
@@ -109,6 +117,20 @@ unsafe impl<A: Allocator + Clone> BumpAllocator for RcBump<A> {
         Self: Sized,
     {
         Bump::try_allocate_slice(&self.0, len)
+    }
+
+    fn allocate_slice_for<T>(&self, slice: &[T]) -> NonNull<T>
+    where
+        Self: Sized,
+    {
+        Bump::allocate_slice_for(&self.0, slice)
+    }
+
+    fn try_allocate_slice_for<T>(&self, slice: &[T]) -> Result<NonNull<T>, AllocError>
+    where
+        Self: Sized,
+    {
+        Bump::try_allocate_slice_for(&self.0, slice)
     }
 
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>

@@ -50,9 +50,7 @@ const MALLOC_OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
 const OVERHEAD: usize = MALLOC_OVERHEAD + size_of::<ChunkHeader<Global>>();
 
 use crate::{
-    chunk_size::AssumedMallocOverhead, mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice, panic_on_error,
-    stats::Chunk, Bump, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, ChunkSize, FmtFn, MinimumAlignment,
-    MutBumpString, MutBumpVec, MutBumpVecRev, SizedTypeProperties, SupportedMinimumAlignment,
+    chunk_size::AssumedMallocOverhead, mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice, panic_on_error, stats::Chunk, Bump, BumpAllocatorScope, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, ChunkSize, FmtFn, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, SizedTypeProperties, SupportedMinimumAlignment
 };
 
 pub(crate) use rc_bump::RcBump;
@@ -1144,4 +1142,22 @@ fn min_chunk_size<const UP: bool>() {
         Bump::<Global, 1, UP>::with_size(0).stats().size(),
         64 - size_of::<[usize; 2]>()
     );
+}
+
+#[test]
+#[cfg(any())] // TODO
+fn what() {
+    fn foo<'a>(bump: &mut impl BumpAllocatorScope<'a> + CanCreateScopes) {
+        assert_eq!(bump.stats().allocated(), 0);
+
+        bump.scoped(|bump| {
+            (&bump).alloc_str("hello");
+            assert_eq!(bump.stats().allocated(), 5);
+        });
+
+        assert_eq!(bump.stats().allocated(), 0);
+    }
+
+    let mut bump: Bump = Bump::new();
+    foo(bump.as_mut_scope())
 }

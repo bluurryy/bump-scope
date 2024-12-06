@@ -80,6 +80,58 @@ pub unsafe trait MutBumpAllocator: BumpAllocator {
         Self: Sized;
 }
 
+unsafe impl<A: MutBumpAllocator> MutBumpAllocator for &mut A {
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        A::prepare_slice_allocation(self, len)
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
+    where
+        Self: Sized,
+    {
+        A::try_prepare_slice_allocation(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn use_prepared_slice_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        A::use_prepared_slice_allocation(self, ptr, len, cap)
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
+    where
+        Self: Sized,
+    {
+        A::prepare_slice_allocation_rev(self, len)
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation_rev<T>(&mut self, len: usize) -> Result<(NonNull<T>, usize), AllocError>
+    where
+        Self: Sized,
+    {
+        A::try_prepare_slice_allocation_rev(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn use_prepared_slice_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
+    where
+        Self: Sized,
+    {
+        A::use_prepared_slice_allocation_rev(self, ptr, len, cap)
+    }
+}
+
 unsafe impl<A: MutBumpAllocator> MutBumpAllocator for WithoutDealloc<A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -297,119 +349,5 @@ where
         Self: Sized,
     {
         self.as_mut_scope().use_prepared_slice_allocation_rev(ptr, len, cap)
-    }
-}
-
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> MutBumpAllocator
-    for &mut BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
-    where
-        Self: Sized,
-    {
-        BumpScope::prepare_slice_allocation(self, len)
-    }
-
-    #[inline(always)]
-    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
-    where
-        Self: Sized,
-    {
-        BumpScope::try_prepare_slice_allocation(self, len)
-    }
-
-    #[inline(always)]
-    unsafe fn use_prepared_slice_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
-    where
-        Self: Sized,
-    {
-        BumpScope::use_prepared_slice_allocation(self, ptr, len, cap)
-    }
-
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
-    where
-        Self: Sized,
-    {
-        BumpScope::prepare_slice_allocation_rev(self, len)
-    }
-
-    #[inline(always)]
-    fn try_prepare_slice_allocation_rev<T>(&mut self, len: usize) -> Result<(NonNull<T>, usize), AllocError>
-    where
-        Self: Sized,
-    {
-        BumpScope::try_prepare_slice_allocation_rev(self, len)
-    }
-
-    #[inline(always)]
-    unsafe fn use_prepared_slice_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
-    where
-        Self: Sized,
-    {
-        BumpScope::use_prepared_slice_allocation_rev(self, ptr, len, cap)
-    }
-}
-
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> MutBumpAllocator
-    for &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation<T>(&mut self, len: usize) -> NonNull<[T]>
-    where
-        Self: Sized,
-    {
-        Bump::prepare_slice_allocation(self, len)
-    }
-
-    #[inline(always)]
-    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<NonNull<[T]>, AllocError>
-    where
-        Self: Sized,
-    {
-        Bump::try_prepare_slice_allocation(self, len)
-    }
-
-    #[inline(always)]
-    unsafe fn use_prepared_slice_allocation<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
-    where
-        Self: Sized,
-    {
-        Bump::use_prepared_slice_allocation(self, ptr, len, cap)
-    }
-
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation_rev<T>(&mut self, len: usize) -> (NonNull<T>, usize)
-    where
-        Self: Sized,
-    {
-        Bump::prepare_slice_allocation_rev(self, len)
-    }
-
-    #[inline(always)]
-    fn try_prepare_slice_allocation_rev<T>(&mut self, len: usize) -> Result<(NonNull<T>, usize), AllocError>
-    where
-        Self: Sized,
-    {
-        Bump::try_prepare_slice_allocation_rev(self, len)
-    }
-
-    #[inline(always)]
-    unsafe fn use_prepared_slice_allocation_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>
-    where
-        Self: Sized,
-    {
-        Bump::use_prepared_slice_allocation_rev(self, ptr, len, cap)
     }
 }

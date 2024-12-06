@@ -7,6 +7,7 @@ use crate::{
     polyfill::{self, nonnull, pointer, transmute_mut},
     BumpAllocator, FromUtf8Error, NoDrop, SizedTypeProperties,
 };
+use allocator_api2::alloc::Allocator;
 #[cfg(feature = "alloc")]
 #[allow(unused_imports)]
 use allocator_api2::boxed::Box;
@@ -224,7 +225,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "alloc")]
-    pub fn into_box<A: BumpAllocatorScope<'a>>(self, allocator: A) -> Box<T, A> {
+    pub fn into_box<A: BumpAllocatorScope<'a> + Allocator>(self, allocator: A) -> Box<T, A> {
         let ptr = BumpBox::into_raw(self).as_ptr();
 
         // SAFETY: bump might not be the allocator self was allocated with;

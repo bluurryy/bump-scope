@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{handle_alloc_error, panic_on_error};
+use crate::panic_on_error;
 
 /// A bump allocator.
 ///
@@ -29,8 +29,84 @@ use crate::{handle_alloc_error, panic_on_error};
 /// [into_box]: crate::BumpBox::into_box
 /// [from_parts]: crate::BumpVec::from_parts
 // FIXME: properly document the methods and remove `doc(hidden)`
+// TODO(docs): this should be a super trait of `Allocator`, but we want a blanket impl for `&mut A` which wouldn't work for `Allocator`
 #[allow(clippy::missing_errors_doc)]
-pub unsafe trait BumpAllocator: Allocator {
+pub unsafe trait BumpAllocator {
+    /// Attempts to extend the memory block.
+    ///
+    /// Returns a new [`NonNull<[u8]>`][NonNull] containing a pointer and the actual size of the allocated
+    /// memory. The pointer is suitable for holding data described by `new_layout`. To accomplish
+    /// this, the allocator may extend the allocation referenced by `ptr` to fit the new layout.
+    ///
+    /// If this returns `Ok`, then ownership of the memory block referenced by `ptr` has been
+    /// transferred to this allocator. Any access to the old `ptr` is Undefined Behavior, even if the
+    /// allocation was grown in-place. The newly returned pointer is the only valid pointer
+    /// for accessing this memory now.
+    ///
+    /// If this method returns `Err`, then ownership of the memory block has not been transferred to
+    /// this allocator, and the contents of the memory block are unaltered.
+    ///
+    /// # Safety
+    ///
+    /// * `ptr` must denote a block of memory [*currently allocated*] via this allocator.
+    /// * `old_layout` must [*fit*] that block of memory (The `new_layout` argument need not fit it.).
+    /// * `new_layout.size()` must be greater than or equal to `old_layout.size()`.
+    ///
+    /// Note that `new_layout.align()` need not be the same as `old_layout.align()`.
+    ///
+    /// [*currently allocated*]: #currently-allocated-memory
+    /// [*fit*]: #memory-fitting
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the new layout does not meet the allocator's size and alignment
+    /// constraints of the allocator, or if growing otherwise fails.
+    ///
+    /// Implementations are encouraged to return `Err` on memory exhaustion rather than panicking or
+    /// aborting, but this is not a strict requirement. (Specifically: it is *legal* to implement
+    /// this trait atop an underlying native allocation library that aborts on memory exhaustion.)
+    ///
+    /// Clients wishing to abort computation in response to an allocation error are encouraged to
+    /// call the [`handle_alloc_error`] function, rather than directly invoking `panic!` or similar.
+    ///
+    /// [`handle_alloc_error`]: ../../alloc/alloc/fn.handle_alloc_error.html
+    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError>;
+
+    /// Deallocates the memory referenced by `ptr`.
+    ///
+    /// # Safety
+    ///
+    /// * `ptr` must denote a block of memory [*currently allocated*] via this allocator, and
+    /// * `layout` must [*fit*] that block of memory.
+    ///
+    /// [*currently allocated*]: #currently-allocated-memory
+    /// [*fit*]: #memory-fitting
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout);
+
+    /// Reserves capacity for at least `additional` more bytes to be bump allocated.
+    /// The bump allocator may reserve more space to avoid frequent reallocations.
+    /// After calling `reserve_bytes`, <code>self.[stats](Self::stats)().[remaining](Stats::remaining)()</code> will be greater than or equal to
+    /// `additional`. Does nothing if the capacity is already sufficient.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump };
+    /// let bump: Bump = Bump::new();
+    /// assert!(bump.stats().capacity() < 4096);
+    ///
+    /// bump.reserve_bytes(4096);
+    /// assert!(bump.stats().capacity() >= 4096);
+    /// ```
+    fn reserve_bytes(&self, additional: usize) {
+        _ = additional;
+        todo!("TODO") // TODO
+    }
+
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     fn stats(&self) -> Stats<'_> {
         Stats::unallocated()
@@ -43,11 +119,18 @@ pub unsafe trait BumpAllocator: Allocator {
     /// Panics if the allocation fails.
     #[doc(hidden)]
     #[cfg(feature = "panic-on-alloc")]
-    fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
-        match self.allocate(layout) {
-            Ok(ptr) => ptr.cast(),
-            Err(AllocError) => handle_alloc_error(layout),
-        }
+    fn allocate_layout(&self, layout: Layout) -> NonNull<u8>;
+
+    /// Allocates memory as described by the given `Layout`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the allocation fails.
+    #[doc(hidden)]
+    #[cfg(feature = "panic-on-alloc")]
+    #[deprecated = "use `allocate_layout` instead"]
+    fn alloc_layout(&self, layout: Layout) -> NonNull<u8> {
+        self.allocate_layout(layout)
     }
 
     /// A specialized version of [`allocate`](Allocator::allocate).
@@ -56,12 +139,7 @@ pub unsafe trait BumpAllocator: Allocator {
     ///
     /// Errors if the allocation fails.
     #[doc(hidden)]
-    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
-        match self.allocate(layout) {
-            Ok(ptr) => Ok(ptr.cast()),
-            Err(err) => Err(err),
-        }
-    }
+    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError>;
 
     /// A specialized version of [`allocate`](Allocator::allocate).
     ///
@@ -70,17 +148,7 @@ pub unsafe trait BumpAllocator: Allocator {
     /// Panics if the allocation fails.
     #[doc(hidden)]
     #[cfg(feature = "panic-on-alloc")]
-    fn allocate_sized<T>(&self) -> NonNull<T>
-    where
-        Self: Sized,
-    {
-        let layout = Layout::new::<T>();
-
-        match self.allocate(layout) {
-            Ok(ptr) => ptr.cast(),
-            Err(AllocError) => handle_alloc_error(Layout::new::<T>()),
-        }
-    }
+    fn allocate_sized<T>(&self) -> NonNull<T>;
 
     /// A specialized version of [`allocate`](Allocator::allocate).
     ///
@@ -90,13 +158,7 @@ pub unsafe trait BumpAllocator: Allocator {
     #[doc(hidden)]
     fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>
     where
-        Self: Sized,
-    {
-        match self.allocate(Layout::new::<T>()) {
-            Ok(ptr) => Ok(ptr.cast()),
-            Err(err) => Err(err),
-        }
-    }
+        Self: Sized;
 
     /// A specialized version of [`allocate`](Allocator::allocate).
     ///
@@ -107,18 +169,7 @@ pub unsafe trait BumpAllocator: Allocator {
     #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
     where
-        Self: Sized,
-    {
-        let layout = match Layout::array::<T>(len) {
-            Ok(layout) => layout,
-            Err(_) => invalid_slice_layout(),
-        };
-
-        match self.allocate(layout) {
-            Ok(ptr) => ptr.cast(),
-            Err(AllocError) => handle_alloc_error(layout),
-        }
-    }
+        Self: Sized;
 
     /// A specialized version of [`allocate`](Allocator::allocate).
     ///
@@ -128,18 +179,7 @@ pub unsafe trait BumpAllocator: Allocator {
     #[doc(hidden)]
     fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError>
     where
-        Self: Sized,
-    {
-        let layout = match Layout::array::<T>(len) {
-            Ok(layout) => layout,
-            Err(_) => return Err(AllocError),
-        };
-
-        match self.allocate(layout) {
-            Ok(ptr) => Ok(ptr.cast()),
-            Err(err) => Err(err),
-        }
-    }
+        Self: Sized;
 
     /// A specialized version of [`allocate`](Allocator::allocate).
     ///
@@ -150,15 +190,7 @@ pub unsafe trait BumpAllocator: Allocator {
     #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice_for<T>(&self, slice: &[T]) -> NonNull<T>
     where
-        Self: Sized,
-    {
-        let layout = Layout::for_value(slice);
-
-        match self.allocate(layout) {
-            Ok(ptr) => ptr.cast(),
-            Err(AllocError) => handle_alloc_error(layout),
-        }
-    }
+        Self: Sized;
 
     /// A specialized version of [`allocate`](Allocator::allocate).
     ///
@@ -168,15 +200,7 @@ pub unsafe trait BumpAllocator: Allocator {
     #[doc(hidden)]
     fn try_allocate_slice_for<T>(&self, slice: &[T]) -> Result<NonNull<T>, AllocError>
     where
-        Self: Sized,
-    {
-        let layout = Layout::for_value(slice);
-
-        match self.allocate(layout) {
-            Ok(ptr) => Ok(ptr.cast()),
-            Err(err) => Err(err),
-        }
-    }
+        Self: Sized;
 
     /// A specialized version of [`shrink`](Allocator::shrink).
     ///
@@ -188,14 +212,104 @@ pub unsafe trait BumpAllocator: Allocator {
     #[doc(hidden)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>
     where
-        Self: Sized,
-    {
-        _ = (ptr, old_len, new_len);
-        None
-    }
+        Self: Sized;
 }
 
 unsafe impl<A: BumpAllocator> BumpAllocator for &A {
+    #[inline(always)]
+    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        A::grow(self, ptr, old_layout, new_layout)
+    }
+
+    #[inline(always)]
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        A::deallocate(self, ptr, layout);
+    }
+
+    #[inline(always)]
+    fn stats(&self) -> Stats<'_> {
+        A::stats(self)
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
+        A::allocate_layout(self, layout)
+    }
+
+    #[inline(always)]
+    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
+        A::try_allocate_layout(self, layout)
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn allocate_sized<T>(&self) -> NonNull<T>
+    where
+        Self: Sized,
+    {
+        A::allocate_sized(self)
+    }
+
+    #[inline(always)]
+    fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>
+    where
+        Self: Sized,
+    {
+        A::try_allocate_sized(self)
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
+    where
+        Self: Sized,
+    {
+        A::allocate_slice(self, len)
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn allocate_slice_for<T>(&self, slice: &[T]) -> NonNull<T>
+    where
+        Self: Sized,
+    {
+        A::allocate_slice_for(self, slice)
+    }
+
+    #[inline(always)]
+    fn try_allocate_slice_for<T>(&self, slice: &[T]) -> Result<NonNull<T>, AllocError>
+    where
+        Self: Sized,
+    {
+        A::try_allocate_slice_for(self, slice)
+    }
+
+    #[inline(always)]
+    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError>
+    where
+        Self: Sized,
+    {
+        A::try_allocate_slice(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
+        A::shrink_slice(self, ptr, old_len, new_len)
+    }
+}
+
+unsafe impl<A: BumpAllocator> BumpAllocator for &mut A {
+    #[inline(always)]
+    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        A::grow(self, ptr, old_layout, new_layout)
+    }
+
+    #[inline(always)]
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        A::deallocate(self, ptr, layout);
+    }
+
     #[inline(always)]
     fn stats(&self) -> Stats<'_> {
         A::stats(self)
@@ -271,6 +385,16 @@ unsafe impl<A: BumpAllocator> BumpAllocator for &A {
 
 unsafe impl<A: BumpAllocator> BumpAllocator for WithoutDealloc<A> {
     #[inline(always)]
+    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        A::grow(&self.0, ptr, old_layout, new_layout)
+    }
+
+    #[inline(always)]
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        A::deallocate(&self.0, ptr, layout);
+    }
+
+    #[inline(always)]
     fn stats(&self) -> Stats<'_> {
         A::stats(&self.0)
     }
@@ -344,6 +468,16 @@ unsafe impl<A: BumpAllocator> BumpAllocator for WithoutDealloc<A> {
 }
 
 unsafe impl<A: BumpAllocator> BumpAllocator for WithoutShrink<A> {
+    #[inline(always)]
+    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        A::grow(&self.0, ptr, old_layout, new_layout)
+    }
+
+    #[inline(always)]
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        A::deallocate(&self.0, ptr, layout);
+    }
+
     #[inline(always)]
     fn stats(&self) -> Stats<'_> {
         A::stats(&self.0)
@@ -423,6 +557,16 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
+    #[inline(always)]
+    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        <Self as Allocator>::grow(self, ptr, old_layout, new_layout)
+    }
+
+    #[inline(always)]
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        <Self as Allocator>::deallocate(self, ptr, layout);
+    }
+
     #[inline(always)]
     fn stats(&self) -> Stats<'_> {
         BumpScope::stats(self).not_guaranteed_allocated()
@@ -548,6 +692,16 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
+    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        <Self as Allocator>::grow(self, ptr, old_layout, new_layout)
+    }
+
+    #[inline(always)]
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        <Self as Allocator>::deallocate(self, ptr, layout);
+    }
+
+    #[inline(always)]
     fn stats(&self) -> Stats<'_> {
         Bump::stats(self).not_guaranteed_allocated()
     }
@@ -621,169 +775,4 @@ where
     {
         self.as_scope().shrink_slice(ptr, old_len, new_len)
     }
-}
-
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
-    for &mut BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-    #[inline(always)]
-    fn stats(&self) -> Stats<'_> {
-        BumpScope::stats(self).not_guaranteed_allocated()
-    }
-
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
-        BumpScope::allocate_layout(self, layout)
-    }
-
-    #[inline(always)]
-    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
-        BumpScope::try_allocate_layout(self, layout)
-    }
-
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    fn allocate_sized<T>(&self) -> NonNull<T>
-    where
-        Self: Sized,
-    {
-        BumpScope::allocate_sized(self)
-    }
-
-    #[inline(always)]
-    fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>
-    where
-        Self: Sized,
-    {
-        BumpScope::try_allocate_sized(self)
-    }
-
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
-    where
-        Self: Sized,
-    {
-        BumpScope::allocate_slice(self, len)
-    }
-
-    #[inline(always)]
-    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError>
-    where
-        Self: Sized,
-    {
-        BumpScope::try_allocate_slice(self, len)
-    }
-
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    fn allocate_slice_for<T>(&self, slice: &[T]) -> NonNull<T>
-    where
-        Self: Sized,
-    {
-        BumpScope::allocate_slice_for(self, slice)
-    }
-
-    #[inline(always)]
-    fn try_allocate_slice_for<T>(&self, slice: &[T]) -> Result<NonNull<T>, AllocError>
-    where
-        Self: Sized,
-    {
-        BumpScope::try_allocate_slice_for(self, slice)
-    }
-
-    #[inline(always)]
-    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        BumpScope::shrink_slice(self, ptr, old_len, new_len)
-    }
-}
-
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
-    for &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-    #[inline(always)]
-    fn stats(&self) -> Stats<'_> {
-        Bump::stats(self).not_guaranteed_allocated()
-    }
-
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
-        Bump::allocate_layout(self, layout)
-    }
-
-    #[inline(always)]
-    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
-        Bump::try_allocate_layout(self, layout)
-    }
-
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    fn allocate_sized<T>(&self) -> NonNull<T>
-    where
-        Self: Sized,
-    {
-        Bump::allocate_sized(self)
-    }
-
-    #[inline(always)]
-    fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>
-    where
-        Self: Sized,
-    {
-        Bump::try_allocate_sized(self)
-    }
-
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    fn allocate_slice<T>(&self, len: usize) -> NonNull<T>
-    where
-        Self: Sized,
-    {
-        Bump::allocate_slice(self, len)
-    }
-
-    #[inline(always)]
-    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError>
-    where
-        Self: Sized,
-    {
-        Bump::try_allocate_slice(self, len)
-    }
-
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    fn allocate_slice_for<T>(&self, slice: &[T]) -> NonNull<T>
-    where
-        Self: Sized,
-    {
-        Bump::allocate_slice_for(self, slice)
-    }
-
-    #[inline(always)]
-    fn try_allocate_slice_for<T>(&self, slice: &[T]) -> Result<NonNull<T>, AllocError>
-    where
-        Self: Sized,
-    {
-        Bump::try_allocate_slice_for(self, slice)
-    }
-
-    #[inline(always)]
-    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        Bump::shrink_slice(self, ptr, old_len, new_len)
-    }
-}
-
-#[cold]
-#[inline(never)]
-#[cfg(feature = "panic-on-alloc")]
-pub(crate) const fn invalid_slice_layout() -> ! {
-    panic!("invalid slice layout");
 }

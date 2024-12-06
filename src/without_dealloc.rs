@@ -17,15 +17,15 @@ impl<A> WithoutDealloc<A> {
     }
 }
 
-unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
+unsafe impl<A: BumpAllocator + Allocator> Allocator for WithoutDealloc<A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.0.allocate(layout)
+        <A as Allocator>::allocate(&self.0, layout)
     }
 
     #[inline(always)]
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.0.allocate_zeroed(layout)
+        <A as Allocator>::allocate_zeroed(&self.0, layout)
     }
 
     #[inline(always)]
@@ -35,7 +35,7 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
 
     #[inline(always)]
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.0.grow(ptr, old_layout, new_layout)
+        <A as Allocator>::grow(&self.0, ptr, old_layout, new_layout)
     }
 
     #[inline(always)]
@@ -45,12 +45,12 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        self.0.grow_zeroed(ptr, old_layout, new_layout)
+        <A as Allocator>::grow_zeroed(&self.0, ptr, old_layout, new_layout)
     }
 
     #[inline(always)]
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.0.shrink(ptr, old_layout, new_layout)
+        <A as Allocator>::shrink(&self.0, ptr, old_layout, new_layout)
     }
 }
 
@@ -69,25 +69,25 @@ impl<A> WithoutShrink<A> {
     }
 }
 
-unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
+unsafe impl<A: BumpAllocator + Allocator> Allocator for WithoutShrink<A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.0.allocate(layout)
+        <A as Allocator>::allocate(&self.0, layout)
     }
 
     #[inline(always)]
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.0.allocate_zeroed(layout)
+        <A as Allocator>::allocate_zeroed(&self.0, layout)
     }
 
     #[inline(always)]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        self.0.deallocate(ptr, layout);
+        <A as Allocator>::deallocate(&self.0, ptr, layout);
     }
 
     #[inline(always)]
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.0.grow(ptr, old_layout, new_layout)
+        <A as Allocator>::grow(&self.0, ptr, old_layout, new_layout)
     }
 
     #[inline(always)]
@@ -97,20 +97,20 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        self.0.grow_zeroed(ptr, old_layout, new_layout)
+        <A as Allocator>::grow_zeroed(&self.0, ptr, old_layout, new_layout)
     }
 
     #[inline(always)]
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         #[cold]
         #[inline(never)]
-        unsafe fn shrink_unfit<A: BumpAllocator>(
+        unsafe fn shrink_unfit<A: BumpAllocator + Allocator>(
             this: &WithoutShrink<A>,
             ptr: NonNull<u8>,
             old_layout: Layout,
             new_layout: Layout,
         ) -> Result<NonNull<[u8]>, AllocError> {
-            let new_ptr = this.0.allocate(new_layout)?.cast::<u8>();
+            let new_ptr = <A as Allocator>::allocate(&this.0, new_layout)?.cast::<u8>();
             nonnull::copy_nonoverlapping(ptr, new_ptr, old_layout.size());
             Ok(nonnull::slice_from_raw_parts(new_ptr, new_layout.size()))
         }
