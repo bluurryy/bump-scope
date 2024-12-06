@@ -263,6 +263,7 @@ mod allocator;
 mod bump;
 mod bump_align_guard;
 mod bump_allocator;
+mod bump_allocator_methods;
 mod bump_allocator_scope;
 /// Contains [`BumpBox`] and associated types.
 mod bump_box;
@@ -315,6 +316,7 @@ use allocator_api2::alloc::handle_alloc_error;
 use allocator_api2::alloc::{AllocError, Allocator};
 pub use bump::Bump;
 pub use bump_allocator::BumpAllocator;
+pub use bump_allocator_methods::BumpAllocatorMethods;
 pub use bump_allocator_scope::BumpAllocatorScope;
 pub use bump_box::BumpBox;
 #[cfg(feature = "std")]
