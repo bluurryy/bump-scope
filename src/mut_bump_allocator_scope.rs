@@ -8,8 +8,10 @@ use crate::{panic_on_error, BumpAllocatorScope, BumpBox, MutBumpAllocator, MutBu
 pub trait MutBumpAllocatorScope<'a>: MutBumpAllocator + BumpAllocatorScope<'a> {
     /// Allocate a `str` from format arguments.
     ///
-    /// This function is designed as a performance improvement over [`alloc_fmt`](Self::alloc_fmt). By taking `self` as `&mut`, it can use the entire remaining chunk space
+    /// This function is designed as a performance improvement over [`alloc_fmt`]. By taking `self` as `&mut`, it can use the entire remaining chunk space
     /// as the capacity for its string buffer. As a result, the string buffer rarely needs to grow.
+    ///
+    /// [`alloc_fmt`]: BumpAllocatorScope::alloc_fmt
     ///
     /// # Panics
     ///
@@ -45,8 +47,10 @@ pub trait MutBumpAllocatorScope<'a>: MutBumpAllocator + BumpAllocatorScope<'a> {
     ///
     /// If the string contains a `'\0'` then the `CStr` will stop there.
     ///
-    /// This function is designed as a performance improvement over [`alloc_fmt`](Self::alloc_fmt). By taking `self` as `&mut`, it can use the entire remaining chunk space
+    /// This function is designed as a performance improvement over [`alloc_fmt`]. By taking `self` as `&mut`, it can use the entire remaining chunk space
     /// as the capacity for its string buffer. As a result, the string buffer rarely needs to grow.
+    ///
+    /// [`alloc_fmt`]: BumpAllocatorScope::alloc_fmt
     ///
     /// # Panics
     ///
@@ -82,10 +86,13 @@ pub trait MutBumpAllocatorScope<'a>: MutBumpAllocator + BumpAllocatorScope<'a> {
 
     /// Allocate elements of an iterator into a slice.
     ///
-    /// This function is designed as a performance improvement over [`alloc_iter`](Self::alloc_iter). By taking `self` as `&mut`, it can use the entire remaining chunk space
+    /// This function is designed as a performance improvement over [`alloc_iter`]. By taking `self` as `&mut`, it can use the entire remaining chunk space
     /// as the capacity for its string buffer. As a result, the string buffer rarely needs to grow.
     ///
-    /// When bumping downwards, prefer [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) instead.
+    /// When bumping downwards, prefer [`alloc_iter_mut_rev`] instead.
+    ///
+    /// [`alloc_iter`]: BumpAllocatorScope::alloc_iter
+    /// [`alloc_iter_mut_rev`]: MutBumpAllocatorScope::alloc_iter_mut_rev
     ///
     /// # Panics
     ///

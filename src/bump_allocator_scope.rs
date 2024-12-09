@@ -204,7 +204,9 @@ pub unsafe trait BumpAllocatorScope<'a>: BumpAllocator {
 
     /// Allocate a `str` from format arguments.
     ///
-    /// If you have a `&mut self` you can use [`alloc_fmt_mut`](Self::alloc_fmt_mut) instead for better performance.
+    /// If you have a `&mut self` you can use [`alloc_fmt_mut`] instead for better performance.
+    ///
+    /// [`alloc_fmt_mut`]: crate::MutBumpAllocatorScope::alloc_fmt_mut
     ///
     /// # Panics
     ///
@@ -305,7 +307,9 @@ pub unsafe trait BumpAllocatorScope<'a>: BumpAllocator {
     ///
     /// If the string contains a `'\0'` then the `CStr` will stop there.
     ///
-    /// If you have a `&mut self` you can use [`alloc_cstr_fmt_mut`](Self::alloc_cstr_fmt_mut) instead for better performance.
+    /// If you have a `&mut self` you can use [`alloc_cstr_fmt_mut`] instead for better performance.
+    ///
+    /// [`alloc_cstr_fmt_mut`]: crate::MutBumpAllocatorScope::alloc_cstr_fmt_mut
     ///
     /// # Panics
     ///
@@ -345,8 +349,8 @@ pub unsafe trait BumpAllocatorScope<'a>: BumpAllocator {
     ///
     /// If `iter` is not an `ExactSizeIterator` but you have a `&mut self` you can still get somewhat better performance by using [`alloc_iter_mut`].
     ///
-    /// [`alloc_iter_exact`]: Self::alloc_iter_exact
-    /// [`alloc_iter_mut`]: Self::alloc_iter_mut
+    /// [`alloc_iter_exact`]: BumpAllocatorScope::alloc_iter_exact
+    /// [`alloc_iter_mut`]: crate::MutBumpAllocatorScope::alloc_iter_mut
     ///
     /// # Panics
     ///
