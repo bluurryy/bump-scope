@@ -65,7 +65,7 @@ inspect_asm::alloc_try_big_ok::try_up_mut:
 .LBB0_4:
 	mov rdi, r14
 	mov r13, rdx
-	call bump_scope::bump_scope::BumpScope<A,_,_,_>::do_reserve_sized_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_,_>::prepare_allocation_in_another_chunk
 	mov rdx, r13
 	mov r13, rax
 	test rax, rax

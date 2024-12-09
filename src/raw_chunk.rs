@@ -186,12 +186,12 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     ///
     /// This is like [`alloc`](Self::alloc_or_else), except that it won't change the bump pointer.
     #[inline(always)]
-    pub(crate) fn reserve<M, L>(self, minimum_alignment: M, layout: L) -> Option<NonNull<u8>>
+    pub(crate) fn prepare_allocation<M, L>(self, minimum_alignment: M, layout: L) -> Option<NonNull<u8>>
     where
         M: SupportedMinimumAlignment,
         L: LayoutProps,
     {
-        self.reserve_or_else(minimum_alignment, layout, || Err(())).ok()
+        self.prepare_allocation_or_else(minimum_alignment, layout, || Err(())).ok()
     }
 
     /// Attempts to reserve a block of memory.
@@ -199,7 +199,12 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     ///
     /// This is like [`alloc_or_else`](Self::alloc_or_else), except that it won't change the bump pointer.
     #[inline(always)]
-    pub(crate) fn reserve_or_else<M, L, E, F>(self, minimum_alignment: M, layout: L, f: F) -> Result<NonNull<u8>, E>
+    pub(crate) fn prepare_allocation_or_else<M, L, E, F>(
+        self,
+        minimum_alignment: M,
+        layout: L,
+        f: F,
+    ) -> Result<NonNull<u8>, E>
     where
         M: SupportedMinimumAlignment,
         L: LayoutProps,
@@ -257,7 +262,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// [`MutBumpVec`]: crate::MutBumpVec
     /// [`into_slice`]: crate::MutBumpVec::into_slice
     #[inline(always)]
-    pub(crate) fn prepare_allocation<M, L>(self, minimum_alignment: M, layout: L) -> Option<Range<NonNull<u8>>>
+    pub(crate) fn prepare_allocation_range<M, L>(self, minimum_alignment: M, layout: L) -> Option<Range<NonNull<u8>>>
     where
         M: SupportedMinimumAlignment,
         L: LayoutProps,

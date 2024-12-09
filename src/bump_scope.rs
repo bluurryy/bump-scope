@@ -207,6 +207,32 @@ where
     }
 
     #[inline(always)]
+    pub(crate) fn generic_prepare_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
+        B::prepare_allocation_or_else(
+            self.chunk.get(),
+            MinimumAlignment::<MIN_ALIGN>,
+            SizedLayout::new::<T>(),
+            || self.prepare_allocation_in_another_chunk::<B, T>(),
+        )
+        .map(NonNull::cast)
+    }
+
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn prepare_allocation_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E>
+    where
+        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    {
+        let layout = Layout::new::<T>();
+
+        unsafe {
+            self.in_another_chunk(layout, |chunk, layout| {
+                chunk.prepare_allocation(MinimumAlignment::<MIN_ALIGN>, CustomLayout(layout))
+            })
+        }
+    }
+
+    #[inline(always)]
     pub(crate) fn generic_prepare_slice_allocation<B: ErrorBehavior, T>(
         &mut self,
         cap: usize,
@@ -243,9 +269,13 @@ where
             Err(_) => return Err(B::capacity_overflow()),
         };
 
-        let range = match self.chunk.get().prepare_allocation(MinimumAlignment::<MIN_ALIGN>, layout) {
+        let range = match self
+            .chunk
+            .get()
+            .prepare_allocation_range(MinimumAlignment::<MIN_ALIGN>, layout)
+        {
             Some(ptr) => ptr,
-            None => self.prepare_allocation_in_another_chunk(*layout)?,
+            None => self.prepare_allocation_range_in_another_chunk(*layout)?,
         };
 
         Ok(range.start.cast::<T>()..range.end.cast::<T>())
@@ -253,13 +283,13 @@ where
 
     #[cold]
     #[inline(never)]
-    pub(crate) fn prepare_allocation_in_another_chunk<E: ErrorBehavior>(
+    pub(crate) fn prepare_allocation_range_in_another_chunk<E: ErrorBehavior>(
         &self,
         layout: Layout,
     ) -> Result<Range<NonNull<u8>>, E> {
         unsafe {
             self.in_another_chunk(layout, |chunk, layout| {
-                chunk.prepare_allocation(MinimumAlignment::<MIN_ALIGN>, CustomLayout(layout))
+                chunk.prepare_allocation_range(MinimumAlignment::<MIN_ALIGN>, CustomLayout(layout))
             })
         }
     }
@@ -281,18 +311,6 @@ where
         }
     }
 
-    /// Reserve slow path.
-    /// The active chunk must *not* have space for `layout`.
-    #[cold]
-    #[inline(never)]
-    pub(crate) fn reserve_in_another_chunk<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
-        unsafe {
-            self.in_another_chunk(layout, |chunk, layout| {
-                chunk.reserve(MinimumAlignment::<MIN_ALIGN>, CustomLayout(layout))
-            })
-        }
-    }
-
     #[inline(always)]
     pub(crate) fn do_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
         E::alloc_or_else(
@@ -304,17 +322,6 @@ where
         .map(NonNull::cast)
     }
 
-    #[inline(always)]
-    pub(crate) fn do_reserve_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
-        E::reserve_or_else(
-            self.chunk.get(),
-            MinimumAlignment::<MIN_ALIGN>,
-            SizedLayout::new::<T>(),
-            || self.do_reserve_sized_in_another_chunk::<E, T>(),
-        )
-        .map(NonNull::cast)
-    }
-
     #[cold]
     #[inline(never)]
     pub(crate) fn do_alloc_sized_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E>
@@ -322,15 +329,6 @@ where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     {
         self.alloc_in_another_chunk(Layout::new::<T>())
-    }
-
-    #[cold]
-    #[inline(never)]
-    pub(crate) fn do_reserve_sized_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E>
-    where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    {
-        self.reserve_in_another_chunk(Layout::new::<T>())
     }
 
     #[inline(always)]
@@ -1096,7 +1094,7 @@ where
         }
 
         let checkpoint = self.checkpoint();
-        let ptr = self.do_reserve_sized::<B, Result<T, E>>()?;
+        let ptr = self.generic_prepare_allocation::<B, Result<T, E>>()?;
 
         Ok(unsafe {
             nonnull::write_with(ptr, f);

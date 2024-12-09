@@ -52,7 +52,7 @@ inspect_asm::alloc_try_u32::try_down_mut:
 .LBB0_4:
 	mov rdi, r15
 	mov r14, rdx
-	call bump_scope::bump_scope::BumpScope<A,_,_,_>::do_reserve_sized_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_,_>::prepare_allocation_in_another_chunk
 	mov rdx, r14
 	mov r14, rax
 	test rax, rax
