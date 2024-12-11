@@ -414,7 +414,6 @@ where
     /// ```
     /// # #![feature(pointer_is_aligned_to)]
     /// # use bump_scope::{ Bump, Stats };
-    ///
     /// let mut bump: Bump = Bump::new();
     ///
     /// // bump starts off by being aligned to 16
