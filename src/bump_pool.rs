@@ -7,7 +7,7 @@ use core::{
     mem::{self, ManuallyDrop},
     ops::{Deref, DerefMut},
 };
-use std::sync::{Mutex, PoisonError};
+use std::sync::{Mutex, MutexGuard, PoisonError};
 
 macro_rules! bump_pool_declaration {
     ($($allocator_parameter:tt)*) => {
@@ -96,8 +96,8 @@ where
 
 impl<A, const MIN_ALIGN: usize, const UP: bool> BumpPool<A, MIN_ALIGN, UP>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator + Default,
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     /// Constructs a new `BumpPool`.
     #[inline]
@@ -124,7 +124,7 @@ where
 
     /// [Resets](Bump::reset) all `Bump`s in this pool.
     pub fn reset(&mut self) {
-        for bump in self.bumps().iter_mut() {
+        for bump in self.bumps() {
             bump.reset();
         }
     }
@@ -132,6 +132,10 @@ where
     /// Returns the vector of `Bump`s.
     pub fn bumps(&mut self) -> &mut Vec<Bump<A, MIN_ALIGN, UP>> {
         self.bumps.get_mut().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    fn lock(&self) -> MutexGuard<'_, Vec<Bump<A, MIN_ALIGN, UP>>> {
+        self.bumps.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
     error_behavior_generic_methods_allocation_failure! {
@@ -150,9 +154,7 @@ where
         /// [try_new]: Bump::try_new
         for fn try_get
         use fn generic_get(&self,) -> BumpPoolGuard<A, MIN_ALIGN, UP> {
-            let bump = self.bumps.lock().unwrap_or_else(PoisonError::into_inner).pop();
-
-            let bump = match bump {
+            let bump = match self.lock().pop() {
                 Some(bump) => bump,
                 None => Bump::generic_new_in(self.allocator.clone())?,
             };
@@ -178,9 +180,7 @@ where
         /// [try_with_size]: Bump::try_with_size
         for fn try_get_with_size
         use fn generic_get_with_size(&self, size: usize) -> BumpPoolGuard<A, MIN_ALIGN, UP> {
-            let bump = self.bumps.lock().unwrap_or_else(PoisonError::into_inner).pop();
-
-            let bump = match bump {
+            let bump = match self.lock().pop() {
                 Some(bump) => bump,
                 None => Bump::generic_with_size_in(size, self.allocator.clone())?,
             };
@@ -206,9 +206,7 @@ where
         /// [try_with_capacity]: Bump::try_with_capacity
         for fn try_get_with_capacity
         use fn generic_get_with_capacity(&self, layout: Layout) -> BumpPoolGuard<A, MIN_ALIGN, UP> {
-            let bump = self.bumps.lock().unwrap_or_else(PoisonError::into_inner).pop();
-
-            let bump = match bump {
+            let bump = match self.lock().pop() {
                 Some(bump) => bump,
                 None => Bump::generic_with_capacity_in(layout, self.allocator.clone())?,
             };
@@ -275,9 +273,8 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     fn drop(&mut self) {
-        let mut bumps = self.pool.bumps.lock().unwrap();
         let bump = unsafe { ManuallyDrop::take(&mut self.bump) };
-        bumps.push(bump);
+        self.pool.lock().push(bump);
     }
 }
 
