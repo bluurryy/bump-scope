@@ -459,8 +459,19 @@ where
     }
 
     /// Calls `f` with this scope but with a new minimum alignment.
+    ///
+    /// The [`scoped` Gotcha][gotcha] applies to `aligned` too,
+    /// so you might want to turn this into a [`BumpScope`] using [`as_mut_scope`] before calling `aligned`.
+    ///
+    /// See [`BumpScope::aligned`] for examples.
+    ///
+    /// [gotcha]: Self#gotchas
+    /// [`as_mut_scope`]: Self::as_mut_scope
     #[inline(always)]
-    pub fn aligned<const NEW_MIN_ALIGN: usize, R>(&mut self, f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP>) -> R) -> R
+    pub fn aligned<'a, const NEW_MIN_ALIGN: usize, R>(
+        &'a mut self,
+        f: impl FnOnce(BumpScope<'a, A, NEW_MIN_ALIGN, UP>) -> R,
+    ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {

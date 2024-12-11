@@ -178,8 +178,76 @@ where
     }
 
     /// Calls `f` with this scope but with a new minimum alignment.
+    ///
+    /// # Examples
+    ///
+    /// Increase the minimum alignment:
+    /// ```
+    /// # #![feature(pointer_is_aligned_to)]
+    /// # use bump_scope::Bump;
+    /// let mut bump: Bump = Bump::new();
+    /// let bump = bump.as_mut_scope();
+    ///
+    /// // here we're allocating with a `MIN_ALIGN` of `1`
+    /// let foo = bump.alloc_str("foo");
+    ///
+    /// let bar = bump.aligned::<8, _>(|bump| {
+    ///     // in here the bump position has been aligned to `8` and will stay aligned to `8`
+    ///     assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
+    ///     assert_eq!(bump.stats().allocated(), 8);
+    ///
+    ///     // make some allocations that benefit from the higher `MIN_ALIGN` of `8`
+    ///     let bar = bump.alloc(0u64);
+    ///
+    ///     assert_eq!(bump.stats().allocated(), 16);
+    ///
+    ///     bar
+    /// });
+    ///
+    /// assert_eq!(bump.stats().allocated(), 16);
+    ///
+    /// // continue making allocations with a `MIN_ALIGN` of `1`
+    /// let baz = bump.alloc_str("baz");
+    /// assert_eq!(bump.stats().allocated(), 16 + 3);
+    ///
+    /// dbg!(foo);
+    /// dbg!(bar);
+    /// dbg!(baz);
+    /// ```
+    ///
+    /// Decrease the minimum alignment:
+    /// ```
+    /// # #![feature(pointer_is_aligned_to)]
+    /// # use bump_scope::{ Bump, allocator_api2::alloc::Global };
+    /// let mut bump: Bump<Global, 8> = Bump::new();
+    /// let bump = bump.as_mut_scope();
+    ///
+    /// // make some allocations that benefit from the `MIN_ALIGN` of `8`
+    /// let foo = bump.alloc(0u64);
+    ///
+    /// let bar = bump.aligned::<1, _>(|bump| {
+    ///     // make some allocations that benefit from the lower `MIN_ALIGN` of `1`
+    ///     let bar = bump.alloc(0u8);
+    ///
+    ///     // the bump position will not get aligned to `8` in here
+    ///     assert!(bump.stats().current_chunk().bump_position().addr().get() % 2 == 1);
+    ///     assert_eq!(bump.stats().allocated(), 8 + 1);
+    ///
+    ///     bar
+    /// });
+    ///
+    /// // after `aligned()`, the bump position will be aligned to `8` again
+    /// // to satisfy our `MIN_ALIGN`
+    /// assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
+    /// assert_eq!(bump.stats().allocated(), 16);
+    ///
+    /// // continue making allocations that benefit from the `MIN_ALIGN` of `8`
+    /// let baz = bump.alloc(0u64);
+    ///
+    /// dbg!(foo, bar, baz);
+    /// ```
     #[inline(always)]
-    pub fn aligned<const NEW_MIN_ALIGN: usize, R>(&mut self, f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP>) -> R) -> R
+    pub fn aligned<const NEW_MIN_ALIGN: usize, R>(&mut self, f: impl FnOnce(BumpScope<'a, A, NEW_MIN_ALIGN, UP>) -> R) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
