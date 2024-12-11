@@ -409,7 +409,10 @@ where
 
     /// Calls `f` with a new child scope of a new minimum alignment.
     #[inline(always)]
-    pub fn scoped_aligned<const NEW_MIN_ALIGN: usize, R>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP>) -> R) -> R
+    pub fn scoped_aligned<const NEW_MIN_ALIGN: usize, R>(
+        &mut self,
+        f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP>) -> R,
+    ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **breaking:** fix `scoped_aligned`'s closure to take a `BumpScope` with `NEW_MIN_ALIGN` instead of `MIN_ALIGN`
 - **docs:** various improvements
 
 ## 0.13.1 (2024-11-30)
