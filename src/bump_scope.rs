@@ -123,6 +123,46 @@ where
     }
 
     /// Calls `f` with a new child scope of a new minimum alignment.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #![feature(pointer_is_aligned_to)]
+    /// # use bump_scope::{ Bump, Stats };
+    ///
+    /// let mut bump: Bump = Bump::new();
+    ///
+    /// // bump starts off by being aligned to 16
+    /// assert!(bump.stats().current_chunk().bump_position().is_aligned_to(16));
+    ///
+    /// // allocate one byte
+    /// bump.alloc(1u8);
+    ///
+    /// // now the bump is only aligned to 1
+    /// // (if our `MIN_ALIGN` was higher, it would be that)
+    /// assert!(bump.stats().current_chunk().bump_position().addr().get() % 2 == 1);
+    /// assert_eq!(bump.stats().allocated(), 1);
+    ///
+    /// bump.scoped_aligned::<8, ()>(|bump| {
+    ///    // in here, the bump will have the specified minimum alignment of 8
+    ///    assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
+    ///    assert_eq!(bump.stats().allocated(), 8);
+    ///
+    ///    // allocating a value with its size being a multiple of 8 will no longer have
+    ///    // to align the bump pointer before allocation
+    ///    bump.alloc(1u64);
+    ///    assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
+    ///    assert_eq!(bump.stats().allocated(), 16);
+    ///    
+    ///    // allocating a value smaller than the minimum alignment must align the bump pointer
+    ///    // after the allocation, resulting in some wasted space
+    ///    bump.alloc(1u8);
+    ///    assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
+    ///    assert_eq!(bump.stats().allocated(), 24);
+    /// });
+    ///
+    /// assert_eq!(bump.stats().allocated(), 1);
+    /// ```
     #[inline(always)]
     pub fn scoped_aligned<const NEW_MIN_ALIGN: usize, R>(
         &mut self,
