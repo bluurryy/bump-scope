@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.14.0 (2024-12-12)
 - **breaking:** fix `scoped_aligned`'s closure to take a `BumpScope` with `NEW_MIN_ALIGN` instead of `MIN_ALIGN`
 - **breaking:** `aligned`'s closure now takes a `BumpScope` with lifetime `'a` instead of `'_`
 - **docs:** various improvements
