@@ -532,7 +532,7 @@ where
     /// - there must be no references to allocations made since creation of this checkpoint
     #[inline]
     pub unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        self.as_scope().reset_to(checkpoint)
+        self.as_scope().reset_to(checkpoint);
     }
 }
 
