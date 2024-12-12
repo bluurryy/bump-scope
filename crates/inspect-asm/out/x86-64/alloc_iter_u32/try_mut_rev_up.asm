@@ -95,7 +95,7 @@ inspect_asm::alloc_iter_u32::try_mut_rev_up:
 	mov esi, 4
 	mov r12, rdi
 	mov rdx, r14
-	call bump_scope::bump_scope::BumpScope<A,_,_,_>::prepare_allocation_in_another_chunk
+	call bump_scope::bump_scope::BumpScope<A,_,_,_>::prepare_allocation_range_in_another_chunk
 	test rax, rax
 	je .LBB0_0
 	mov rdi, r12
