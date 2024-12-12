@@ -1,4 +1,4 @@
-# This was written for nushell version 0.91.0 and cargo-show-asm version 0.2.30
+# This was written for nushell version 0.100.0 and cargo-show-asm version 0.2.30
 
 let MARKER_UNDERSCORE = "XXXXX"
 
