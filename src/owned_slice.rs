@@ -21,7 +21,7 @@ use core::ptr;
 /// # Safety
 ///
 /// - [`owned_slice_ptr`] must return a pointer to a valid slice of initialized values
-/// - [`take_owned_slice`] will make the implementor relinquish its ownership over the elements of this slice, the caller is now responsible for for dropping those elements
+/// - [`take_owned_slice`] will make the implementor relinquish its ownership over the elements of this slice, the caller is now responsible for dropping those elements
 ///   The elements must no longer be accessible via the implementor. (like <code>Vec::[set_len]\(0)</code>)
 ///
 /// For example this function must be sound:
