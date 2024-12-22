@@ -20,10 +20,41 @@ use core::ptr;
 ///
 /// # Safety
 ///
-/// `owned_slice` returns a pointer to a valid slice of initialized values.
+/// - [`owned_slice_ptr`] must return a pointer to a valid slice of initialized values
+/// - [`take_owned_slice`] will make the implementor relinquish its ownership over the elements of this slice, the caller is now responsible for for dropping those elements
+///   The elements must no longer be accessible via the implementor. (like <code>Vec::[set_len]\(0)</code>)
 ///
-/// The slice remains valid as long as the implementor is only accessed through methods provided by this trait.
-/// Interaction outside this trait's API may invalidate the slice.
+/// For example this function must be sound:
+/// ```
+/// # extern crate alloc;
+/// # use alloc::vec::Vec;
+/// # use bump_scope::owned_slice::OwnedSlice;
+/// fn append<T>(vec: &mut Vec<T>, mut to_append: impl OwnedSlice) {
+///     let slice = to_append.owned_slice_ptr();
+///     vec.reserve(slice.len());
+///     
+///     unsafe {
+///         let src = slice.cast::<T>().as_ptr();
+///         let dst = vec.as_mut_ptr().add(vec.len());
+///         src.copy_to_nonoverlapping(dst, slice.len());
+///
+///         to_append.take_owned_slice();
+///         vec.set_len(vec.len() + slice.len());
+///     }
+/// }
+///
+/// # use alloc::string::ToString;
+/// # let mut vec = (0..3).map(|i| i.to_string()).collect::<Vec<_>>();
+/// # let mut to_append = (3..10).map(|i| i.to_string()).collect::<Vec<_>>();
+/// # append(&mut vec, &mut to_append);
+/// # assert_eq!(to_append.len(), 0);
+/// # assert_eq!(vec.len(), 10);
+/// # assert_eq!(vec, ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"])
+/// ```
+///
+/// [set_len]: alloc::vec::Vec::set_len
+/// [`owned_slice_ptr`]: OwnedSlice::owned_slice_ptr
+/// [`take_owned_slice`]: OwnedSlice::take_owned_slice
 #[allow(clippy::len_without_is_empty)]
 pub unsafe trait OwnedSlice {
     /// The element type of the slice.
@@ -33,7 +64,7 @@ pub unsafe trait OwnedSlice {
     fn owned_slice_ptr(&self) -> NonNull<[Self::Item]>;
 
     /// This makes the container forget all of its elements.
-    /// It is equivalent to <code>[set_len]\(0)</code>.
+    /// (like <code>Vec::[set_len]\(0)</code>)
     ///
     /// The caller is now responsible for dropping the elements.
     ///
