@@ -217,8 +217,8 @@ impl<T, A> MutBumpVecRev<T, A> {
     /// # Safety
     /// Vector must not be full.
     #[inline(always)]
-    pub unsafe fn unchecked_push(&mut self, value: T) {
-        self.unchecked_push_with(|| value);
+    pub unsafe fn push_unchecked(&mut self, value: T) {
+        self.push_with_unchecked(|| value);
     }
 
     /// Appends an element to the back of the collection.
@@ -226,7 +226,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     /// # Safety
     /// Vector must not be full.
     #[inline(always)]
-    pub unsafe fn unchecked_push_with(&mut self, f: impl FnOnce() -> T) {
+    pub unsafe fn push_with_unchecked(&mut self, f: impl FnOnce() -> T) {
         debug_assert!(self.len < self.cap);
 
         let ptr = nonnull::sub(self.end, self.len + 1);
@@ -575,10 +575,10 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
             unsafe {
                 if count != 0 {
                     for _ in 0..(count - 1) {
-                        vec.unchecked_push_with(|| value.clone());
+                        vec.push_with_unchecked(|| value.clone());
                     }
 
-                    vec.unchecked_push_with(|| value);
+                    vec.push_with_unchecked(|| value);
                 }
             }
 
@@ -707,7 +707,7 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
         use fn generic_push_with(&mut self, f: impl FnOnce() -> T) {
             self.generic_reserve_one()?;
             unsafe {
-                self.unchecked_push_with(f);
+                self.push_with_unchecked(f);
             }
             Ok(())
         }
@@ -1280,7 +1280,7 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
                     let fake = ManuallyDrop::new(MaybeUninit::<T>::uninit().assume_init());
 
                     for _ in 0..count {
-                        self.unchecked_push((*fake).clone());
+                        self.push_unchecked((*fake).clone());
                     }
 
                     return Ok(());

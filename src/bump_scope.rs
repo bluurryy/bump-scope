@@ -1101,7 +1101,7 @@ where
         while vec.len() != vec.capacity() {
             match iter.next() {
                 // SAFETY: we checked above that `len != capacity`, so there is space
-                Some(value) => unsafe { vec.unchecked_push(value) },
+                Some(value) => unsafe { vec.push_unchecked(value) },
                 None => break,
             }
         }
