@@ -4,6 +4,7 @@
 - **breaking:** renamed `unchecked_push` to `push_unchecked`
 - **breaking:** renamed `unchecked_push_with` to `push_with_unchecked`
 - **breaking:** improved docs of `OwnedSlice`, technically making the safety conditions stricter
+- **added:** implemented `OwnedSlice` for `owned_slice::{IntoIter, Drain}`
 
 ## 0.14.0 (2024-12-12)
 - **breaking:** fix `scoped_aligned`'s closure to take a `BumpScope` with `NEW_MIN_ALIGN` instead of `MIN_ALIGN`

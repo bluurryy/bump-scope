@@ -38,6 +38,7 @@ mod pool;
 mod rc_bump;
 #[cfg(feature = "serde")]
 mod serde;
+mod test_wrap;
 mod unaligned_collection;
 mod unallocated;
 mod vec;
@@ -56,6 +57,7 @@ use crate::{
 };
 
 pub(crate) use rc_bump::RcBump;
+pub(crate) use test_wrap::TestWrap;
 
 #[allow(dead_code)]
 fn assert_covariant() {

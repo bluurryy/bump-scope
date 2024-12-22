@@ -9,6 +9,8 @@ use core::{
     slice,
 };
 
+use super::OwnedSlice;
+
 /// An iterator that moves out of an owned slice.
 ///
 /// This `struct` is created by the `into_iter` method on
@@ -218,5 +220,19 @@ impl<T> Drop for IntoIter<'_, T> {
         unsafe {
             nonnull::slice_from_raw_parts(self.ptr, self.len()).as_ptr().drop_in_place();
         }
+    }
+}
+
+// this implementation is tested in `drain.rs`
+unsafe impl<T> OwnedSlice for IntoIter<'_, T> {
+    type Item = T;
+
+    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
+        nonnull::slice_from_raw_parts(self.ptr, self.len())
+    }
+
+    fn take_owned_slice(&mut self) {
+        // advance the iterator to the end without calling drop
+        self.ptr = self.end;
     }
 }
