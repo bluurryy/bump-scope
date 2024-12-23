@@ -1,6 +1,5 @@
 #![no_std]
-#![allow(non_snake_case)]
-#![allow(clippy::missing_safety_doc)]
+#![allow(non_snake_case, clippy::missing_safety_doc, deprecated)]
 extern crate alloc;
 
 use alloc::boxed::Box;

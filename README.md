@@ -128,7 +128,7 @@ assert_eq!(bump.stats().allocated(), 0);
 To bump allocate in parallel you can use a `BumpPool`.
 
 ## Allocator API
-`Bump` and `BumpScope` implement `allocator_api2` [`Allocator`](https://docs.rs/allocator-api2/0.2.16/allocator_api2/alloc/trait.Allocator.html) trait.
+`Bump` and `BumpScope` implement `allocator_api2`'s [`Allocator`](https://docs.rs/allocator-api2/0.2.16/allocator_api2/alloc/trait.Allocator.html) trait.
 They can be used to allocate collections.
 
 A bump allocator can grow, shrink and deallocate the most recent allocation.
