@@ -10,8 +10,8 @@ use crate::{
     polyfill::{nonnull, pointer, slice},
     raw_bump_box::RawBumpBox,
     raw_fixed_bump_vec::RawFixedBumpVec,
-    BumpAllocator, BumpAllocatorScope, BumpBox, ErrorBehavior, FixedBumpVec, NoDrop, SetLenOnDropByPtr, SizedTypeProperties,
-    Stats,
+    BumpAllocator, BumpAllocatorScope, BumpBox, ErrorBehavior, FixedBumpVec, NoDrop, OneSidedRange, SetLenOnDropByPtr,
+    SizedTypeProperties, Stats,
 };
 use allocator_api2::alloc::AllocError;
 use core::{
@@ -472,10 +472,10 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
 
     /// Splits the collection into two at the given index.
     ///
-    /// Returns a vector containing the elements in the range `[at, len)`.
-    /// After the call, the original vector will be left containing the elements `[0, at)`.
+    /// Returns a vector containing the elements in the provided range.
+    /// After the call, the original vector will be left containing the remaining elements.
     ///
-    /// The returned vector will have the excess capacity if any.
+    /// The vector on the right hand side will have the excess capacity if any.
     ///
     /// *This behavior is different to <code>[Vec]::[split_off]</code> which allocates a new vector
     /// to store the split-off elements.*
@@ -492,32 +492,30 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = BumpVec::with_capacity_in(5, &bump);
-    /// vec.append([1, 2, 3]);
-    /// let vec2 = vec.split_off(1);
-    /// assert_eq!(vec, [1]);
-    /// assert_eq!(vec2, [2, 3]);
+    /// let mut vec = BumpVec::with_capacity_in(10, &bump);
+    /// vec.append([1, 2, 3, 4, 5]);
+    ///
+    /// let vec_lhs = vec.split_off(..2);
+    /// assert_eq!(vec_lhs, [1, 2]);
+    /// assert_eq!(vec, [3, 4, 5]);
+    ///
+    /// assert_eq!(vec_lhs.capacity(), 2);
+    /// assert_eq!(vec.capacity(), 8);
+    ///
+    /// let vec_rhs = vec.split_off(1..);
+    /// assert_eq!(vec_rhs, [4, 5]);
+    /// assert_eq!(vec, [3]);
+    ///
+    /// assert_eq!(vec_rhs.capacity(), 7);
     /// assert_eq!(vec.capacity(), 1);
-    /// assert_eq!(vec2.capacity(), 4);
     /// ```
     #[inline]
-    #[must_use = "use `.truncate()` if you don't need the other half"]
-    pub fn split_off(&mut self, at: usize) -> Self
+    #[allow(clippy::return_self_not_must_use)]
+    pub fn split_off(&mut self, range: impl OneSidedRange<usize>) -> Self
     where
         A: Clone,
     {
-        #[cold]
-        #[inline(never)]
-        #[track_caller]
-        fn assert_failed(at: usize, len: usize) -> ! {
-            panic!("`at` split index (is {at}) should be <= len (is {len})");
-        }
-
-        if at > self.len() {
-            assert_failed(at, self.len());
-        }
-
-        let other = unsafe { self.fixed.cook_mut() }.split_off(at);
+        let other = unsafe { self.fixed.cook_mut() }.split_off(range);
 
         Self {
             fixed: unsafe { RawFixedBumpVec::from_cooked(other) },

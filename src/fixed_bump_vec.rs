@@ -1,9 +1,9 @@
 use crate::{
-    error_behavior_generic_methods_allocation_failure, error_behavior_generic_methods_if,
+    error_behavior_generic_methods_allocation_failure, error_behavior_generic_methods_if, one_sided_range,
     owned_slice::{self, IntoOwnedSlice, OwnedSlice},
     polyfill::{self, nonnull, pointer, slice},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, NoDrop, SizedTypeProperties,
+    BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, NoDrop, OneSidedRange, SizedTypeProperties,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
@@ -416,10 +416,10 @@ impl<'a, T> FixedBumpVec<'a, T> {
 
     /// Splits the collection into two at the given index.
     ///
-    /// Returns a vector containing the elements in the range `[at, len)`.
-    /// After the call, the original vector will be left containing the elements `[0, at)`.
+    /// Returns a vector containing the elements in the provided range.
+    /// After the call, the original vector will be left containing the remaining elements.
     ///
-    /// The returned vector will have the excess capacity if any.
+    /// The vector on the right hand side will have the excess capacity if any.
     ///
     /// # Panics
     ///
@@ -430,25 +430,57 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec(5);
-    /// vec.append([1, 2, 3]);
-    /// let vec2 = vec.split_off(1);
-    /// assert_eq!(vec, [1]);
-    /// assert_eq!(vec2, [2, 3]);
+    /// let mut vec = bump.alloc_fixed_vec(10);
+    /// vec.append([1, 2, 3, 4, 5]);
+    ///
+    /// let vec_lhs = vec.split_off(..2);
+    /// assert_eq!(vec_lhs, [1, 2]);
+    /// assert_eq!(vec, [3, 4, 5]);
+    ///
+    /// assert_eq!(vec_lhs.capacity(), 2);
+    /// assert_eq!(vec.capacity(), 8);
+    ///
+    /// let vec_rhs = vec.split_off(1..);
+    /// assert_eq!(vec_rhs, [4, 5]);
+    /// assert_eq!(vec, [3]);
+    ///
+    /// assert_eq!(vec_rhs.capacity(), 7);
     /// assert_eq!(vec.capacity(), 1);
-    /// assert_eq!(vec2.capacity(), 4);
     /// ```
     #[inline]
-    #[must_use = "use `.truncate()` if you don't need the other half"]
-    pub fn split_off(&mut self, at: usize) -> Self {
-        let other = self.initialized.split_off(at);
-        let other_capacity = self.capacity - at;
+    #[allow(clippy::return_self_not_must_use)]
+    pub fn split_off(&mut self, range: impl OneSidedRange<usize>) -> Self {
+        let (direction, mid) = one_sided_range::direction(range, ..self.len());
 
-        self.capacity = at;
+        let ptr = self.as_non_null_ptr();
+        let len = self.len();
+        let cap = self.capacity;
 
-        FixedBumpVec {
-            initialized: other,
-            capacity: other_capacity,
+        let lhs = nonnull::slice_from_raw_parts(ptr, mid);
+        let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, mid) }, len - mid);
+
+        let lhs_capacity = mid;
+        let rhs_capacity = cap - mid;
+
+        match direction {
+            one_sided_range::Direction::From => unsafe {
+                self.initialized.ptr = lhs;
+                self.capacity = lhs_capacity;
+
+                FixedBumpVec {
+                    initialized: BumpBox::from_raw(rhs),
+                    capacity: rhs_capacity,
+                }
+            },
+            one_sided_range::Direction::To => unsafe {
+                self.initialized.ptr = rhs;
+                self.capacity = rhs_capacity;
+
+                FixedBumpVec {
+                    initialized: BumpBox::from_raw(lhs),
+                    capacity: lhs_capacity,
+                }
+            },
         }
     }
 

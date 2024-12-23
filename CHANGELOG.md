@@ -7,6 +7,7 @@
 - **breaking:** `append` methods take a new `impl IntoOwnedSlice` parameter
 - **breaking:** `append` can now be called with `alloc::vec::Vec` but no longer with `allocator_api2::vec::Vec`
 - **breaking:** `split_off` for vectors and strings no longer allocates, but splits in place
+- **breaking:** `split_off` now takes a one sided range operand instead of a position
 - **deprecated:** `extend_from_array` in favor of `append`
 - **added:** `append` can now handle arrays, boxed arrays, boxed slices and trait objects
 - **added:** implemented `OwnedSlice` for `owned_slice::{IntoIter, Drain}`

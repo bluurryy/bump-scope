@@ -8,6 +8,7 @@ use crate::{
     raw_fixed_bump_string::RawFixedBumpString,
     stats::Stats,
     BumpAllocator, BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, FixedBumpString, FromUtf16Error, FromUtf8Error,
+    OneSidedRange,
 };
 use core::{
     alloc::Layout,
@@ -291,11 +292,11 @@ impl<A: BumpAllocator> BumpString<A> {
 
     /// Splits the string into two at the given byte index.
     ///
-    /// Returns a string containing the bytes in the range `[0, at)`.
-    /// After the call, the original string will be left containing the bytes `[0, at)`.
-    /// `at` must be on the boundary of a UTF-8 code point.
+    /// Returns a string containing the bytes in the provided range.
+    /// After the call, the original string will be left containing the remaining bytes.
+    /// The splitting point must be on the boundary of a UTF-8 code point.
     ///
-    /// The returned string will have the excess capacity if any.
+    /// The string on the right will have the excess capacity if any.
     ///
     /// *This behavior is different to <code>[String]::[split_off]</code> which allocates a new string
     /// to store the split-off elements.*
@@ -313,23 +314,35 @@ impl<A: BumpAllocator> BumpString<A> {
     /// ```
     /// # use bump_scope::{ Bump, BumpString };
     /// # let bump: Bump = Bump::new();
-    /// let mut hello = BumpString::with_capacity_in(50, &bump);
-    /// hello.push_str("Hello, World!");
-    /// let world = hello.split_off(7);
-    /// assert_eq!(hello, "Hello, ");
-    /// assert_eq!(world, "World!");
-    /// assert_eq!(hello.capacity(), 7);
-    /// assert_eq!(world.capacity(), 50 - 7);
+    /// let mut string = BumpString::with_capacity_in(10, &bump);
+    /// string.push_str("foobarbaz");
+    ///
+    /// let foo = string.split_off(..3);
+    /// assert_eq!(foo, "foo");
+    /// assert_eq!(string, "barbaz");
+    ///
+    /// assert_eq!(foo.capacity(), 3);
+    /// assert_eq!(string.capacity(), 7);
+    ///
+    /// let baz = string.split_off(3..);
+    /// assert_eq!(baz, "baz");
+    /// assert_eq!(string, "bar");
+    ///
+    /// assert_eq!(baz.capacity(), 4);
+    /// assert_eq!(string.capacity(), 3);
     /// ```
     #[inline]
-    #[must_use = "use `.truncate()` if you don't need the other half"]
-    pub fn split_off(&mut self, at: usize) -> Self
+    #[allow(clippy::return_self_not_must_use)]
+    pub fn split_off(&mut self, range: impl OneSidedRange<usize>) -> Self
     where
         A: Clone,
     {
-        assert!(self.is_char_boundary(at));
-        let other = unsafe { self.as_mut_vec() }.split_off(at);
-        unsafe { Self::from_utf8_unchecked(other) }
+        let other = unsafe { self.fixed.cook_mut() }.split_off(range);
+
+        Self {
+            fixed: unsafe { RawFixedBumpString::from_cooked(other) },
+            allocator: self.allocator.clone(),
+        }
     }
 
     /// Removes the last character from the string buffer and returns it.

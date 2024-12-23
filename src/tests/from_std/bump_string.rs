@@ -251,7 +251,7 @@ fn test_split_off_empty() {
     let bump: Bump = Bump::new();
     let orig = "Hello, world!";
     let mut split = BumpString::from_str_in(orig, &bump);
-    let empty: BumpString<_> = split.split_off(orig.len());
+    let empty: BumpString<_> = split.split_off(orig.len()..);
     assert!(empty.is_empty());
 }
 
@@ -261,7 +261,7 @@ fn test_split_off_past_end() {
     let bump: Bump = Bump::new();
     let orig = "Hello, world!";
     let mut split = BumpString::from_str_in(orig, &bump);
-    let _ = split.split_off(orig.len() + 1);
+    let _ = split.split_off(orig.len() + 1..);
 }
 
 #[test]
@@ -269,7 +269,7 @@ fn test_split_off_past_end() {
 fn test_split_off_mid_char() {
     let bump: Bump = Bump::new();
     let mut shan = BumpString::from_str_in("山", &bump);
-    let _broken_mountain = shan.split_off(1);
+    let _broken_mountain = shan.split_off(1..);
 }
 
 #[test]
@@ -277,7 +277,7 @@ fn test_split_off_ascii() {
     let bump: Bump = Bump::new();
     let mut ab = BumpString::from_str_in("ABCD", &bump);
     let orig_capacity = ab.capacity();
-    let cd = ab.split_off(2);
+    let cd = ab.split_off(2..);
     assert_eq!(ab, "AB");
     assert_eq!(cd, "CD");
     assert_eq!(ab.capacity(), ab.len());
@@ -289,7 +289,7 @@ fn test_split_off_unicode() {
     let bump: Bump = Bump::new();
     let mut nihon = BumpString::from_str_in("日本語", &bump);
     let orig_capacity = nihon.capacity();
-    let go = nihon.split_off("日本".len());
+    let go = nihon.split_off("日本".len()..);
     assert_eq!(nihon, "日本");
     assert_eq!(go, "語");
     assert_eq!(nihon.capacity(), nihon.len());

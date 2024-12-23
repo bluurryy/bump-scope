@@ -3,9 +3,9 @@ mod slice_initializer;
 #[cfg(feature = "alloc")]
 use crate::BumpAllocatorScope;
 use crate::{
-    owned_slice, owned_str,
+    one_sided_range, owned_slice, owned_str,
     polyfill::{self, nonnull, pointer, transmute_mut},
-    BumpAllocator, FromUtf8Error, NoDrop, SizedTypeProperties,
+    BumpAllocator, FromUtf8Error, NoDrop, OneSidedRange, SizedTypeProperties,
 };
 #[cfg(feature = "alloc")]
 #[allow(unused_imports)]
@@ -1418,18 +1418,37 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_slice_copy(&[1, 2, 3]);
-    /// let vec2 = vec.split_off(1);
-    /// assert_eq!(vec, [1]);
-    /// assert_eq!(vec2, [2, 3]);
+    /// let mut vec = bump.alloc_slice_copy(&[1, 2, 3, 4, 5]);
+    ///
+    /// let vec_lhs = vec.split_off(..2);
+    /// assert_eq!(vec_lhs, [1, 2]);
+    /// assert_eq!(vec, [3, 4, 5]);
+    ///
+    /// let vec_rhs = vec.split_off(1..);
+    /// assert_eq!(vec_rhs, [4, 5]);
+    /// assert_eq!(vec, [3]);
     /// ```
     #[inline]
-    #[must_use = "use `.truncate()` if you don't need the other half"]
-    pub fn split_off(&mut self, at: usize) -> Self {
-        let took = mem::take(self);
-        let (lhs, rhs) = took.split_at(at);
-        *self = lhs;
-        rhs
+    #[allow(clippy::return_self_not_must_use)]
+    pub fn split_off(&mut self, range: impl OneSidedRange<usize>) -> Self {
+        let (direction, mid) = one_sided_range::direction(range, ..self.len());
+
+        let ptr = self.as_non_null_ptr();
+        let len = self.len();
+
+        let lhs = nonnull::slice_from_raw_parts(ptr, mid);
+        let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, mid) }, len - mid);
+
+        match direction {
+            one_sided_range::Direction::From => unsafe {
+                self.ptr = lhs;
+                Self::from_raw(rhs)
+            },
+            one_sided_range::Direction::To => unsafe {
+                self.ptr = rhs;
+                Self::from_raw(lhs)
+            },
+        }
     }
 
     /// Divides one slice into two at an index.

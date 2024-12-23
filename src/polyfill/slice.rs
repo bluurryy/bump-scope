@@ -6,14 +6,14 @@ use crate::polyfill::usize::unchecked_sub;
 #[cold]
 #[inline(never)]
 #[track_caller]
-const fn slice_start_index_overflow_fail() -> ! {
+pub(crate) const fn slice_start_index_overflow_fail() -> ! {
     panic!("attempted to index slice from after maximum usize");
 }
 
 #[cold]
 #[inline(never)]
 #[track_caller]
-const fn slice_end_index_overflow_fail() -> ! {
+pub(crate) const fn slice_end_index_overflow_fail() -> ! {
     panic!("attempted to index slice up to maximum usize");
 }
 

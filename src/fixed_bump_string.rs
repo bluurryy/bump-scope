@@ -1,7 +1,7 @@
 use crate::{
-    error_behavior_generic_methods_if, owned_str,
+    error_behavior_generic_methods_if, one_sided_range, owned_str,
     polyfill::{self, nonnull, transmute_mut},
-    BumpAllocatorScope, BumpBox, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop,
+    BumpAllocatorScope, BumpBox, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop, OneSidedRange,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
@@ -260,20 +260,63 @@ impl<'a> FixedBumpString<'a> {
     /// ```
     /// # use bump_scope::{ Bump, BumpString };
     /// # let bump: Bump = Bump::new();
-    /// let mut hello = BumpString::with_capacity_in(50, &bump);
-    /// hello.push_str("Hello, World!");
-    /// let world = hello.split_off(7);
-    /// assert_eq!(hello, "Hello, ");
-    /// assert_eq!(world, "World!");
-    /// assert_eq!(hello.capacity(), 7);
-    /// assert_eq!(world.capacity(), 50 - 7);
+    /// let mut string = BumpString::with_capacity_in(10, &bump);
+    /// string.push_str("foobarbaz");
+    ///
+    /// let foo = string.split_off(..3);
+    /// assert_eq!(foo, "foo");
+    /// assert_eq!(string, "barbaz");
+    ///
+    /// assert_eq!(foo.capacity(), 3);
+    /// assert_eq!(string.capacity(), 7);
+    ///
+    /// let baz = string.split_off(3..);
+    /// assert_eq!(baz, "baz");
+    /// assert_eq!(string, "bar");
+    ///
+    /// assert_eq!(baz.capacity(), 4);
+    /// assert_eq!(string.capacity(), 3);
     /// ```
     #[inline]
-    #[must_use = "use `.truncate()` if you don't need the other half"]
-    pub fn split_off(&mut self, at: usize) -> Self {
-        assert!(self.is_char_boundary(at));
-        let other = unsafe { self.as_mut_vec() }.split_off(at);
-        unsafe { Self::from_utf8_unchecked(other) }
+    #[allow(clippy::return_self_not_must_use)]
+    pub fn split_off(&mut self, range: impl OneSidedRange<usize>) -> Self {
+        let (direction, mid) = one_sided_range::direction(range, ..self.len());
+
+        assert!(self.is_char_boundary(mid));
+
+        let ptr = self.initialized.ptr.cast::<u8>();
+        let len = self.len();
+        let cap = self.capacity;
+
+        let lhs = nonnull::slice_from_raw_parts(ptr, mid);
+        let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, mid) }, len - mid);
+
+        let lhs = nonnull::str_from_utf8(lhs);
+        let rhs = nonnull::str_from_utf8(rhs);
+
+        let lhs_capacity = mid;
+        let rhs_capacity = cap - mid;
+
+        match direction {
+            one_sided_range::Direction::From => unsafe {
+                self.initialized.ptr = lhs;
+                self.capacity = lhs_capacity;
+
+                FixedBumpString {
+                    initialized: BumpBox::from_raw(rhs),
+                    capacity: rhs_capacity,
+                }
+            },
+            one_sided_range::Direction::To => unsafe {
+                self.initialized.ptr = rhs;
+                self.capacity = rhs_capacity;
+
+                FixedBumpString {
+                    initialized: BumpBox::from_raw(lhs),
+                    capacity: lhs_capacity,
+                }
+            },
+        }
     }
 
     /// Removes the last character from the string buffer and returns it.
