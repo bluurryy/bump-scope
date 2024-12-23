@@ -2,21 +2,83 @@ mod drain;
 mod extract_if;
 mod into_iter;
 
-use core::ptr::NonNull;
-
 pub use drain::Drain;
 pub use extract_if::ExtractIf;
 pub use into_iter::IntoIter;
 
-use crate::{BumpAllocator, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev};
+use core::{mem::ManuallyDrop, ptr::NonNull};
 
 #[cfg(feature = "alloc")]
-use allocator_api2::{alloc::Allocator, vec::Vec};
+use alloc::{boxed::Box, vec::Vec};
 
 #[cfg(feature = "alloc")]
 use core::ptr;
 
+use crate::{
+    polyfill::{nonnull, transmute_value},
+    BumpAllocator, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev,
+};
+
+/// Conversion to an [`OwnedSlice`].
+///
+/// Any implementor of `OwnedSlice` automatically implements this trait.
+pub trait IntoOwnedSlice {
+    /// The type of the elements of the owned slice.
+    type Item;
+
+    /// Which kind of owned slice are we turning this into?
+    type OwnedSlice: OwnedSlice<Item = Self::Item>;
+
+    /// Creates an owned slice from a value.
+    fn into_owned_slice(self) -> Self::OwnedSlice;
+}
+
+impl<T: OwnedSlice> IntoOwnedSlice for T {
+    type Item = <T as OwnedSlice>::Item;
+    type OwnedSlice = T;
+
+    fn into_owned_slice(self) -> Self::OwnedSlice {
+        self
+    }
+}
+
+impl<'a, T, const N: usize> IntoOwnedSlice for BumpBox<'a, [T; N]> {
+    type Item = T;
+
+    type OwnedSlice = BumpBox<'a, [T]>;
+
+    fn into_owned_slice(self) -> Self::OwnedSlice {
+        self.into_unsized()
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<T, const N: usize> IntoOwnedSlice for Box<[T; N]> {
+    type Item = T;
+
+    type OwnedSlice = Vec<T>;
+
+    fn into_owned_slice(self) -> Self::OwnedSlice {
+        let boxed_slice: Box<[T]> = self;
+        boxed_slice.into_owned_slice()
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<T> IntoOwnedSlice for Box<[T]> {
+    type Item = T;
+
+    type OwnedSlice = Vec<T>;
+
+    fn into_owned_slice(self) -> Self::OwnedSlice {
+        self.into()
+    }
+}
+
 /// An owned slice, like a `Vec<T>`. This allows for efficient generic `append` implementations.
+///
+/// This trait can only be implemented for types that can empty their slice.
+/// Types like `[T;N]` or `Box<[T]>` can not implement it but do implement [`IntoOwnedSlice`].
 ///
 /// # Safety
 ///
@@ -29,7 +91,7 @@ use core::ptr;
 /// # extern crate alloc;
 /// # use alloc::vec::Vec;
 /// # use bump_scope::owned_slice::OwnedSlice;
-/// fn append<T>(vec: &mut Vec<T>, mut to_append: impl OwnedSlice) {
+/// fn append<T>(vec: &mut Vec<T>, mut to_append: impl OwnedSlice<Item = T>) {
 ///     let slice = to_append.owned_slice_ptr();
 ///     vec.reserve(slice.len());
 ///     
@@ -72,7 +134,7 @@ pub unsafe trait OwnedSlice {
     fn take_owned_slice(&mut self);
 }
 
-unsafe impl<T: OwnedSlice> OwnedSlice for &mut T {
+unsafe impl<T: OwnedSlice + ?Sized> OwnedSlice for &mut T {
     type Item = T::Item;
 
     fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
@@ -145,7 +207,7 @@ unsafe impl<T, A> OwnedSlice for MutBumpVecRev<T, A> {
 }
 
 #[cfg(feature = "alloc")]
-unsafe impl<T, A: Allocator> OwnedSlice for Vec<T, A> {
+unsafe impl<T> OwnedSlice for Vec<T> {
     type Item = T;
 
     fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
@@ -158,26 +220,76 @@ unsafe impl<T, A: Allocator> OwnedSlice for Vec<T, A> {
     }
 }
 
+/// The type returned from <code><[T; N]>::[into_owned_slice]</code>.
+///
+/// [into_owned_slice]: IntoOwnedSlice::into_owned_slice
+pub struct ArrayOwnedSlice<T, const N: usize> {
+    array: [ManuallyDrop<T>; N],
+    taken: bool,
+}
+
+unsafe impl<T, const N: usize> OwnedSlice for ArrayOwnedSlice<T, N> {
+    type Item = T;
+
+    #[inline(always)]
+    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
+        if self.taken {
+            return nonnull::slice_from_raw_parts(NonNull::dangling(), 0);
+        }
+
+        unsafe {
+            let ptr = NonNull::new_unchecked(self.array.as_ptr() as *mut T);
+            nonnull::slice_from_raw_parts(ptr, self.array.len())
+        }
+    }
+
+    #[inline(always)]
+    fn take_owned_slice(&mut self) {
+        self.taken = true;
+    }
+}
+
+impl<T, const N: usize> IntoOwnedSlice for [T; N] {
+    type Item = T;
+
+    type OwnedSlice = ArrayOwnedSlice<T, N>;
+
+    fn into_owned_slice(self) -> Self::OwnedSlice {
+        ArrayOwnedSlice {
+            array: unsafe { transmute_value(self) },
+            taken: false,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::Bump;
-    use allocator_api2::alloc::Global;
 
     use super::*;
+
+    const _: () = {
+        const fn is_dyn_compatible<T: OwnedSlice + ?Sized>() {}
+        is_dyn_compatible::<dyn OwnedSlice<Item = i32>>();
+        is_dyn_compatible::<&mut dyn OwnedSlice<Item = i32>>();
+    };
 
     macro_rules! assert_implements {
         ($($ty:ty)*) => {
             const _: () = {
-                fn assertions() {
-                    type T = i32;
-                    fn implements<S: OwnedSlice>() {}
-                    $(implements::<$ty>();)*
-                }
+                type T = i32;
+                const fn implements<S: IntoOwnedSlice + ?Sized>() {}
+                $(implements::<$ty>();)*
             };
         };
     }
 
     assert_implements! {
+        &mut dyn OwnedSlice<Item = T>
+
+        [T; 3]
+        BumpBox<[T; 3]>
+
         BumpBox<[T]>
         &mut BumpBox<[T]>
         FixedBumpVec<T>
@@ -198,7 +310,10 @@ mod tests {
 
     #[cfg(feature = "alloc")]
     assert_implements! {
-        Vec<T, Global>
-        &mut Vec<T, Global>
+        Box<[T; 3]>
+
+        Box<[T]>
+        Vec<T>
+        &mut Vec<T>
     }
 }

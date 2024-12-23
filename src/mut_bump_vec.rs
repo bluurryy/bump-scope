@@ -4,7 +4,7 @@ pub use into_iter::IntoIter;
 
 use crate::{
     error_behavior_generic_methods_allocation_failure, min_non_zero_cap, mut_collection_method_allocator_stats,
-    owned_slice::{self, OwnedSlice},
+    owned_slice::{self, IntoOwnedSlice, OwnedSlice},
     polyfill::{nonnull, pointer, slice},
     raw_bump_box::RawBumpBox,
     raw_fixed_bump_vec::RawFixedBumpVec,
@@ -1215,9 +1215,9 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         /// ```
         for fn try_append
         #[inline]
-        use fn generic_append(&mut self, other: impl OwnedSlice<Item = T>) {
+        use fn generic_append(&mut self, other: impl IntoOwnedSlice<Item = T>) {
             unsafe {
-                let mut owned_slice = other;
+                let mut owned_slice = other.into_owned_slice();
 
                 let slice = owned_slice.owned_slice_ptr();
                 self.generic_reserve(slice.len())?;

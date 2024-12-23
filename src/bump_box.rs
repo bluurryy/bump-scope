@@ -2215,6 +2215,26 @@ impl<'a, T> BumpBox<'a, [T]> {
     }
 }
 
+impl<'a, T, const N: usize> BumpBox<'a, [T; N]> {
+    /// Converts this `BumpBox<[T; N]>` into a `BumpBox<[T]>`.
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// // explicit types are just for demonstration
+    /// let array: BumpBox<[i32; N]> = bump.alloc([1, 2, 3]);
+    /// let slice: BumpBox<[i32]> = array.into_unsized();
+    /// assert_eq!(slice, [1, 2, 3]);
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    pub fn into_unsized(self) -> BumpBox<'a, [T]> {
+        let ptr = nonnull::as_non_null_ptr(self.into_raw());
+        let slice = nonnull::slice_from_raw_parts(ptr, N);
+        unsafe { BumpBox::from_raw(slice) }
+    }
+}
+
 impl<'a, T, const N: usize> BumpBox<'a, [[T; N]]> {
     /// Takes a `BumpBox<[[T; N]]>` and flattens it into a `BumpBox<[T]>`.
     ///

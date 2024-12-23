@@ -4,6 +4,9 @@
 - **breaking:** renamed `unchecked_push` to `push_unchecked`
 - **breaking:** renamed `unchecked_push_with` to `push_with_unchecked`
 - **breaking:** improved docs of `OwnedSlice`, technically making the safety conditions stricter
+- **breaking:** `append` methods take a new `impl IntoOwnedSlice` parameter
+- **breaking:** `append` can now be called `alloc`'s `Vec` but no longer with `allocator_api2`'s
+- **added:** `append` can now handle arrays, boxed arrays, boxed slices and trait objects
 - **added:** implemented `OwnedSlice` for `owned_slice::{IntoIter, Drain}`
 
 ## 0.14.0 (2024-12-12)
