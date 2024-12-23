@@ -48,7 +48,7 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///   [`split_at`](Self::split_at),
 ///   [`split_first`](Self::split_first),
 ///   [`split_last`](Self::split_last) and additional methods like
-///   [`split_off`](Self::split_off)
+///   [`split_off`](Self::split_off),
 ///   [`partition`](Self::partition) and [`map_in_place`](Self::map_in_place).
 /// - `BumpBox<str>` provide methods from `String` like
 ///   <code>[from_utf8](Self::from_utf8)([_unchecked](Self::from_utf8_unchecked))</code>,
@@ -565,6 +565,7 @@ impl<'a> BumpBox<'a, str> {
     /// ```
     #[inline]
     #[allow(clippy::return_self_not_must_use)]
+    // FIXME: compare with drain; allow for any RangeBounds
     pub fn split_off(&mut self, range: impl OneSidedRange<usize>) -> Self {
         let (direction, mid) = one_sided_range::direction(range, ..self.len());
 
