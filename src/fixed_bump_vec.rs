@@ -414,6 +414,44 @@ impl<'a, T> FixedBumpVec<'a, T> {
         self.initialized.swap_remove(index)
     }
 
+    /// Splits the collection into two at the given index.
+    ///
+    /// Returns a vector containing the elements in the range `[at, len)`.
+    /// After the call, the original vector will be left containing the elements `[0, at)`.
+    ///
+    /// The returned vector will have the excess capacity if any.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `at > len`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = bump.alloc_fixed_vec(5);
+    /// vec.append([1, 2, 3]);
+    /// let vec2 = vec.split_off(1);
+    /// assert_eq!(vec, [1]);
+    /// assert_eq!(vec2, [2, 3]);
+    /// assert_eq!(vec.capacity(), 1);
+    /// assert_eq!(vec2.capacity(), 4);
+    /// ```
+    #[inline]
+    #[must_use = "use `.truncate()` if you don't need the other half"]
+    pub fn split_off(&mut self, at: usize) -> Self {
+        let other = self.initialized.split_off(at);
+        let other_capacity = self.capacity - at;
+
+        self.capacity = at;
+
+        FixedBumpVec {
+            initialized: other,
+            capacity: other_capacity,
+        }
+    }
+
     error_behavior_generic_methods_if! {
         if "the vector is full"
 

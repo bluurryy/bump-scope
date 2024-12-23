@@ -291,30 +291,36 @@ impl<A: BumpAllocator> BumpString<A> {
 
     /// Splits the string into two at the given byte index.
     ///
-    /// Returns a newly allocated `BumpString`. `self` contains bytes `[0, at)`, and
-    /// the returned `BumpString` contains bytes `[at, len)`. `at` must be on the
-    /// boundary of a UTF-8 code point.
+    /// Returns a string containing the bytes in the range `[0, at)`.
+    /// After the call, the original string will be left containing the bytes `[0, at)`.
+    /// `at` must be on the boundary of a UTF-8 code point.
     ///
-    /// Note that the capacity of `self` does not change.
+    /// The returned string will have the excess capacity if any.
+    ///
+    /// *This behavior is different to <code>[String]::[split_off]</code> which allocates a new string
+    /// to store the split-off elements.*
+    ///
+    /// [String]: alloc::string::String
+    /// [split_off]: alloc::string::String::split_off
     ///
     /// # Panics
     ///
     /// Panics if `at` is not on a `UTF-8` code point boundary, or if it is beyond the last
     /// code point of the string.
     ///
-    /// Panics on allocation failure.
-    ///
     /// # Examples
     ///
     /// ```
     /// # use bump_scope::{ Bump, BumpString };
     /// # let bump: Bump = Bump::new();
-    /// let mut hello = BumpString::from_str_in("Hello, World!", &bump);
+    /// let mut hello = BumpString::with_capacity_in(50, &bump);
+    /// hello.push_str("Hello, World!");
     /// let world = hello.split_off(7);
     /// assert_eq!(hello, "Hello, ");
     /// assert_eq!(world, "World!");
+    /// assert_eq!(hello.capacity(), 7);
+    /// assert_eq!(world.capacity(), 50 - 7);
     /// ```
-    #[cfg(feature = "panic-on-alloc")]
     #[inline]
     #[must_use = "use `.truncate()` if you don't need the other half"]
     pub fn split_off(&mut self, at: usize) -> Self

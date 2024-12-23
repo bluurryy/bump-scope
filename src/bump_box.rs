@@ -1404,11 +1404,10 @@ impl<'a, T> BumpBox<'a, [T]> {
         }
     }
 
-    /// Splits the collection into two at the given index.
+    /// Splits the slice into two at the given index.
     ///
-    /// Returns a boxed slice containing the elements in the range
-    /// `[at, len)`. After the call, the original vector will be left containing
-    /// the elements `[0, at)` with its previous capacity unchanged.
+    /// Returns a slice containing the elements in the range `[at, len)`.
+    /// After the call, the original slice will be left containing the elements `[0, at)`.
     ///
     /// # Panics
     ///
@@ -1424,7 +1423,6 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// assert_eq!(vec, [1]);
     /// assert_eq!(vec2, [2, 3]);
     /// ```
-    #[cfg(feature = "panic-on-alloc")]
     #[inline]
     #[must_use = "use `.truncate()` if you don't need the other half"]
     pub fn split_off(&mut self, at: usize) -> Self {
@@ -1476,10 +1474,10 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// ```
     #[inline]
     #[must_use]
-    #[track_caller]
     pub fn split_at(self, at: usize) -> (Self, Self) {
         #[cold]
         #[inline(never)]
+        #[track_caller]
         fn assert_failed(at: usize, len: usize) -> ! {
             panic!("`at` split index (is {at}) should be <= len (is {len})");
         }

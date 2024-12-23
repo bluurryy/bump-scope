@@ -6,9 +6,11 @@
 - **breaking:** improved docs of `OwnedSlice`, technically making the safety conditions stricter
 - **breaking:** `append` methods take a new `impl IntoOwnedSlice` parameter
 - **breaking:** `append` can now be called with `alloc::vec::Vec` but no longer with `allocator_api2::vec::Vec`
+- **breaking:** `split_off` for vectors and strings no longer allocates, but splits in place
 - **deprecated:** `extend_from_array` in favor of `append`
 - **added:** `append` can now handle arrays, boxed arrays, boxed slices and trait objects
 - **added:** implemented `OwnedSlice` for `owned_slice::{IntoIter, Drain}`
+- **added:** `split_off` for `Fixed*` collections
 
 ## 0.14.0 (2024-12-12)
 - **breaking:** fix `scoped_aligned`'s closure to take a `BumpScope` with `NEW_MIN_ALIGN` instead of `MIN_ALIGN`

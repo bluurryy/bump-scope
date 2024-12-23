@@ -236,6 +236,46 @@ impl<'a> FixedBumpString<'a> {
         unsafe { mem::transmute(self) }
     }
 
+    /// Splits the string into two at the given byte index.
+    ///
+    /// Returns a newly allocated `BumpString`. `self` contains bytes `[0, at)`, and
+    /// the returned `BumpString` contains bytes `[at, len)`. `at` must be on the
+    /// boundary of a UTF-8 code point.
+    ///
+    /// The returned vector will have the excess capacity if any.
+    ///
+    /// *This behavior is different to <code>[String]::[split_off]</code> which allocates a new vector
+    /// to store the split-off elements.*
+    ///
+    /// [String]: alloc::string::String
+    /// [split_off]: alloc::string::String::split_off
+    ///
+    /// # Panics
+    ///
+    /// Panics if `at` is not on a `UTF-8` code point boundary, or if it is beyond the last
+    /// code point of the string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, BumpString };
+    /// # let bump: Bump = Bump::new();
+    /// let mut hello = BumpString::with_capacity_in(50, &bump);
+    /// hello.push_str("Hello, World!");
+    /// let world = hello.split_off(7);
+    /// assert_eq!(hello, "Hello, ");
+    /// assert_eq!(world, "World!");
+    /// assert_eq!(hello.capacity(), 7);
+    /// assert_eq!(world.capacity(), 50 - 7);
+    /// ```
+    #[inline]
+    #[must_use = "use `.truncate()` if you don't need the other half"]
+    pub fn split_off(&mut self, at: usize) -> Self {
+        assert!(self.is_char_boundary(at));
+        let other = unsafe { self.as_mut_vec() }.split_off(at);
+        unsafe { Self::from_utf8_unchecked(other) }
+    }
+
     /// Removes the last character from the string buffer and returns it.
     ///
     /// Returns [`None`] if this string is empty.
