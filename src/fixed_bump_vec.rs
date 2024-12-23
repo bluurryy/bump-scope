@@ -579,7 +579,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// [`extend`]: Self::extend
         #[allow(clippy::needless_pass_by_value)]
         impl
+        #[deprecated = "use `append` instead"]
         for fn extend_from_array
+        #[deprecated = "use `append` instead"]
         for fn try_extend_from_array
         #[inline]
         use fn generic_extend_from_array<{const N: usize}>(&mut self, array: [T; N]) {

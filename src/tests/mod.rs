@@ -282,7 +282,7 @@ fn mut_bump_vec_extend<const UP: bool>() {
     vec.clear();
     assert!(vec.is_empty());
 
-    vec.extend_from_array([1, 2, 3]);
+    vec.append([1, 2, 3]);
     assert_eq!(vec, [1, 2, 3]);
 
     vec.extend_from_slice_copy(&[4, 5, 6]);
