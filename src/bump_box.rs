@@ -47,7 +47,8 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///   slice methods but with owned semantics like
 ///   [`split_at`](Self::split_at),
 ///   [`split_first`](Self::split_first),
-///   [`split_last`](Self::split_last) and new methods like
+///   [`split_last`](Self::split_last) and additional methods like
+///   [`split_off`](Self::split_off)
 ///   [`partition`](Self::partition) and [`map_in_place`](Self::map_in_place).
 /// - `BumpBox<str>` provide methods from `String` like
 ///   <code>[from_utf8](Self::from_utf8)([_unchecked](Self::from_utf8_unchecked))</code>,
@@ -57,8 +58,9 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///   [`truncate`](Self::truncate),
 ///   [`clear`](Self::clear),
 ///   [`remove`](Self::remove),
-///   [`retain`](Self::retain) and
-///   [`drain`](Self::drain).
+///   [`retain`](Self::retain),
+///   [`drain`](Self::drain) and
+///   [`split_off`](Self::split_off).
 /// - `BumpBox<MaybeUninit<T>>` and `BumpBox<[MaybeUninit<T>]>` provide methods like
 ///   [`init`](Self::init),
 ///   [`assume_init`](Self::assume_init),
