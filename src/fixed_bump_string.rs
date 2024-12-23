@@ -238,11 +238,11 @@ impl<'a> FixedBumpString<'a> {
 
     /// Splits the string into two at the given byte index.
     ///
-    /// Returns a newly allocated `BumpString`. `self` contains bytes `[0, at)`, and
-    /// the returned `BumpString` contains bytes `[at, len)`. `at` must be on the
-    /// boundary of a UTF-8 code point.
+    /// Returns a string containing the bytes in the provided range.
+    /// After the call, the original string will be left containing the remaining bytes.
+    /// The splitting point must be on the boundary of a UTF-8 code point.
     ///
-    /// The returned vector will have the excess capacity if any.
+    /// The string on the right will have the excess capacity if any.
     ///
     /// [String]: alloc::string::String
     /// [split_off]: alloc::string::String::split_off

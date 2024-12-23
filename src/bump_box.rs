@@ -537,12 +537,9 @@ impl<'a> BumpBox<'a, str> {
 
     /// Splits the string into two at the given byte index.
     ///
-    /// Returns a newly allocated `BumpString`. `self` contains bytes `[0, at)`, and
-    /// the returned `BumpString` contains bytes `[at, len)`. `at` must be on the
-    /// boundary of a UTF-8 code point.
-    ///
-    /// [String]: alloc::string::String
-    /// [split_off]: alloc::string::String::split_off
+    /// Returns a string containing the bytes in the provided range.
+    /// After the call, the original string will be left containing the remaining bytes.
+    /// The splitting point must be on the boundary of a UTF-8 code point.
     ///
     /// # Panics
     ///
@@ -1463,8 +1460,8 @@ impl<'a, T> BumpBox<'a, [T]> {
 
     /// Splits the slice into two at the given index.
     ///
-    /// Returns a slice containing the elements in the range `[at, len)`.
-    /// After the call, the original slice will be left containing the elements `[0, at)`.
+    /// Returns a vector containing the elements in the provided range.
+    /// After the call, the original vector will be left containing the remaining elements.
     ///
     /// # Panics
     ///

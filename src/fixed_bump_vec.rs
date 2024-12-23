@@ -414,7 +414,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         self.initialized.swap_remove(index)
     }
 
-    /// Splits the collection into two at the given index.
+    /// Splits the vector into two at the given index.
     ///
     /// Returns a vector containing the elements in the provided range.
     /// After the call, the original vector will be left containing the remaining elements.
