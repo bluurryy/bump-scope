@@ -22,6 +22,9 @@ use crate::{
 /// Conversion to an [`OwnedSlice`].
 ///
 /// Any implementor of `OwnedSlice` automatically implements this trait.
+// FIXME: this naming is just plain wrong; of course boxed slices or arrays are owned slices
+//        and don't need to be converted to such; the `OwnedSlice` trait conveys something different
+//        like `Appendable`(?); this trait could be named `OwnedSlice` instead
 pub trait IntoOwnedSlice {
     /// The type of the elements of the owned slice.
     type Item;
