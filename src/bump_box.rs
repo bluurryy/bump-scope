@@ -535,6 +535,63 @@ impl<'a> BumpBox<'a, str> {
         self.len() == 0
     }
 
+    /// Splits the string into two at the given byte index.
+    ///
+    /// Returns a newly allocated `BumpString`. `self` contains bytes `[0, at)`, and
+    /// the returned `BumpString` contains bytes `[at, len)`. `at` must be on the
+    /// boundary of a UTF-8 code point.
+    ///
+    /// [String]: alloc::string::String
+    /// [split_off]: alloc::string::String::split_off
+    ///
+    /// # Panics
+    ///
+    /// Panics if `at` is not on a `UTF-8` code point boundary, or if it is beyond the last
+    /// code point of the string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut string = bump.alloc_str("foobarbaz");
+    ///
+    /// let foo = string.split_off(..3);
+    /// assert_eq!(foo, "foo");
+    /// assert_eq!(string, "barbaz");
+    ///
+    /// let baz = string.split_off(3..);
+    /// assert_eq!(baz, "baz");
+    /// assert_eq!(string, "bar");
+    /// ```
+    #[inline]
+    #[allow(clippy::return_self_not_must_use)]
+    pub fn split_off(&mut self, range: impl OneSidedRange<usize>) -> Self {
+        let (direction, mid) = one_sided_range::direction(range, ..self.len());
+
+        assert!(self.is_char_boundary(mid));
+
+        let ptr = self.ptr.cast::<u8>();
+        let len = self.len();
+
+        let lhs = nonnull::slice_from_raw_parts(ptr, mid);
+        let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, mid) }, len - mid);
+
+        let lhs = nonnull::str_from_utf8(lhs);
+        let rhs = nonnull::str_from_utf8(rhs);
+
+        match direction {
+            one_sided_range::Direction::From => unsafe {
+                self.ptr = lhs;
+                Self::from_raw(rhs)
+            },
+            one_sided_range::Direction::To => unsafe {
+                self.ptr = rhs;
+                Self::from_raw(lhs)
+            },
+        }
+    }
+
     /// Removes the last character from the string buffer and returns it.
     ///
     /// Returns [`None`] if this string is empty.

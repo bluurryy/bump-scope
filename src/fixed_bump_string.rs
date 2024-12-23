@@ -244,9 +244,6 @@ impl<'a> FixedBumpString<'a> {
     ///
     /// The returned vector will have the excess capacity if any.
     ///
-    /// *This behavior is different to <code>[String]::[split_off]</code> which allocates a new vector
-    /// to store the split-off elements.*
-    ///
     /// [String]: alloc::string::String
     /// [split_off]: alloc::string::String::split_off
     ///
