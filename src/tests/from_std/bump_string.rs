@@ -280,7 +280,8 @@ fn test_split_off_ascii() {
     let cd = ab.split_off(2);
     assert_eq!(ab, "AB");
     assert_eq!(cd, "CD");
-    assert_eq!(ab.capacity(), orig_capacity);
+    assert_eq!(ab.capacity(), ab.len());
+    assert_eq!(cd.capacity(), orig_capacity - ab.len());
 }
 
 #[test]
@@ -291,7 +292,8 @@ fn test_split_off_unicode() {
     let go = nihon.split_off("日本".len());
     assert_eq!(nihon, "日本");
     assert_eq!(go, "語");
-    assert_eq!(nihon.capacity(), orig_capacity);
+    assert_eq!(nihon.capacity(), nihon.len());
+    assert_eq!(go.capacity(), orig_capacity - nihon.len());
 }
 
 #[test]

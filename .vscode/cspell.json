@@ -6,6 +6,7 @@
     "abcdecdeab",
     "abcdecdeabecde",
     "alloc",
+    "Appendable",
     "arrayref",
     "backshift",
     "backshifted",
