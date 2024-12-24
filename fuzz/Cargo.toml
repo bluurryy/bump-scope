@@ -59,3 +59,17 @@ path = "fuzz_targets/many_vecs.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "slice_split_off"
+path = "fuzz_targets/slice_split_off.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "vec_split_off"
+path = "fuzz_targets/vec_split_off.rs"
+test = false
+doc = false
+bench = false

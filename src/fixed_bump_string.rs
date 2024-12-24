@@ -1,14 +1,14 @@
 use crate::{
-    error_behavior_generic_methods_if, one_sided_range, owned_str,
+    error_behavior_generic_methods_if, owned_str,
     polyfill::{self, nonnull, transmute_mut},
-    BumpAllocatorScope, BumpBox, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop, OneSidedRange,
+    BumpAllocatorScope, BumpBox, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
     fmt::{self, Debug, Display},
     hash::Hash,
     mem::{self, MaybeUninit},
-    ops::{Deref, DerefMut, Range, RangeBounds},
+    ops::{self, Deref, DerefMut, Range, RangeBounds},
     ptr, str,
 };
 
@@ -236,6 +236,10 @@ impl<'a> FixedBumpString<'a> {
         unsafe { mem::transmute(self) }
     }
 
+    pub(crate) fn assert_char_boundary(&self, index: usize) {
+        self.initialized.assert_char_boundary(index)
+    }
+
     /// Splits the string into two at the given byte index.
     ///
     /// Returns a string containing the bytes in the provided range.
@@ -255,64 +259,113 @@ impl<'a> FixedBumpString<'a> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let mut string = BumpString::with_capacity_in(10, &bump);
-    /// string.push_str("foobarbaz");
+    /// let mut string = bump.alloc_fixed_string(20);
+    /// string.push_str("foobarbazqux");
     ///
     /// let foo = string.split_off(..3);
     /// assert_eq!(foo, "foo");
+    /// assert_eq!(string, "barbazqux");
+    ///
+    /// let qux = string.split_off(6..);
+    /// assert_eq!(qux, "qux");
     /// assert_eq!(string, "barbaz");
     ///
-    /// assert_eq!(foo.capacity(), 3);
-    /// assert_eq!(string.capacity(), 7);
+    /// let rb = string.split_off(2..4);
+    /// assert_eq!(rb, "rb");
+    /// assert_eq!(string, "baaz");
     ///
-    /// let baz = string.split_off(3..);
-    /// assert_eq!(baz, "baz");
-    /// assert_eq!(string, "bar");
-    ///
-    /// assert_eq!(baz.capacity(), 4);
-    /// assert_eq!(string.capacity(), 3);
+    /// let rest = string.split_off(..);
+    /// assert_eq!(rest, "baaz");
+    /// assert_eq!(string, "");
     /// ```
     #[inline]
     #[allow(clippy::return_self_not_must_use)]
-    pub fn split_off(&mut self, range: impl OneSidedRange<usize>) -> Self {
-        let (direction, mid) = one_sided_range::direction(range, ..self.len());
-
-        assert!(self.is_char_boundary(mid));
-
-        let ptr = self.initialized.ptr.cast::<u8>();
+    pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self {
         let len = self.len();
-        let cap = self.capacity;
+        let ops::Range { start, end } = polyfill::slice::range(range, ..len);
+        let ptr = nonnull::as_non_null_ptr(nonnull::str_bytes(self.initialized.ptr));
 
-        let lhs = nonnull::slice_from_raw_parts(ptr, mid);
-        let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, mid) }, len - mid);
+        if start == 0 && end == len {
+            return mem::take(self);
+        }
 
-        let lhs = nonnull::str_from_utf8(lhs);
-        let rhs = nonnull::str_from_utf8(rhs);
+        if start == 0 {
+            self.assert_char_boundary(end);
 
-        let lhs_capacity = mid;
-        let rhs_capacity = cap - mid;
+            let lhs = nonnull::slice_from_raw_parts(ptr, end);
+            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, end) }, len - end);
 
-        match direction {
-            one_sided_range::Direction::From => unsafe {
-                self.initialized.ptr = lhs;
-                self.capacity = lhs_capacity;
+            let lhs = nonnull::str_from_utf8(lhs);
+            let rhs = nonnull::str_from_utf8(rhs);
 
-                FixedBumpString {
-                    initialized: BumpBox::from_raw(rhs),
-                    capacity: rhs_capacity,
-                }
-            },
-            one_sided_range::Direction::To => unsafe {
-                self.initialized.ptr = rhs;
-                self.capacity = rhs_capacity;
+            let lhs_capacity = end;
+            let rhs_capacity = self.capacity - lhs_capacity;
 
-                FixedBumpString {
-                    initialized: BumpBox::from_raw(lhs),
-                    capacity: lhs_capacity,
-                }
-            },
+            self.initialized.ptr = rhs;
+            self.capacity = rhs_capacity;
+
+            return FixedBumpString {
+                initialized: unsafe { BumpBox::from_raw(lhs) },
+                capacity: lhs_capacity,
+            };
+        }
+
+        if end == len {
+            self.assert_char_boundary(start);
+
+            let lhs = nonnull::slice_from_raw_parts(ptr, start);
+            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, start) }, len - start);
+
+            let lhs = nonnull::str_from_utf8(lhs);
+            let rhs = nonnull::str_from_utf8(rhs);
+
+            let lhs_capacity = start;
+            let rhs_capacity = self.capacity - lhs_capacity;
+
+            self.initialized.ptr = lhs;
+            self.capacity = lhs_capacity;
+
+            return FixedBumpString {
+                initialized: unsafe { BumpBox::from_raw(rhs) },
+                capacity: rhs_capacity,
+            };
+        }
+
+        if start == end {
+            return FixedBumpString::EMPTY;
+        }
+
+        self.assert_char_boundary(start);
+        self.assert_char_boundary(end);
+
+        let range_len = end - start;
+        let remaining_len = len - range_len;
+
+        unsafe {
+            // move the range of elements to split off to the end
+            // using array rotation by reversal
+            self.as_mut_vec()[start..end].reverse();
+            self.as_mut_vec()[end..].reverse();
+            self.as_mut_vec()[start..].reverse();
+
+            let lhs = nonnull::slice_from_raw_parts(ptr, remaining_len);
+            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, remaining_len) }, range_len);
+
+            let lhs = nonnull::str_from_utf8(lhs);
+            let rhs = nonnull::str_from_utf8(rhs);
+
+            let lhs_capacity = remaining_len;
+            let rhs_capacity = self.capacity - lhs_capacity;
+
+            self.initialized.ptr = lhs;
+            self.capacity = lhs_capacity;
+
+            return FixedBumpString {
+                initialized: unsafe { BumpBox::from_raw(rhs) },
+                capacity: rhs_capacity,
+            };
         }
     }
 

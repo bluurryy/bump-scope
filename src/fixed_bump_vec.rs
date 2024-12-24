@@ -1,17 +1,17 @@
 use crate::{
-    error_behavior_generic_methods_allocation_failure, error_behavior_generic_methods_if, one_sided_range,
+    error_behavior_generic_methods_allocation_failure, error_behavior_generic_methods_if,
     owned_slice::{self, IntoOwnedSlice, OwnedSlice},
     polyfill::{self, nonnull, pointer, slice},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, NoDrop, OneSidedRange, SizedTypeProperties,
+    BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, NoDrop, SizedTypeProperties,
 };
 use core::{
     borrow::{Borrow, BorrowMut},
     fmt::Debug,
     hash::Hash,
     iter,
-    mem::{ManuallyDrop, MaybeUninit},
-    ops::{Deref, DerefMut, Index, IndexMut, RangeBounds},
+    mem::{self, ManuallyDrop, MaybeUninit},
+    ops::{self, Deref, DerefMut, Index, IndexMut, RangeBounds},
     ptr::{self, NonNull},
     slice::SliceIndex,
 };
@@ -431,56 +431,94 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// let mut vec = bump.alloc_fixed_vec(10);
-    /// vec.append([1, 2, 3, 4, 5]);
+    /// vec.append([1, 2, 3, 4, 5, 6, 7, 8]);
     ///
-    /// let vec_lhs = vec.split_off(..2);
-    /// assert_eq!(vec_lhs, [1, 2]);
-    /// assert_eq!(vec, [3, 4, 5]);
+    /// let front = vec.split_off(..2);
+    /// assert_eq!(front, [1, 2]);
+    /// assert_eq!(vec, [3, 4, 5, 6, 7, 8]);
     ///
-    /// assert_eq!(vec_lhs.capacity(), 2);
-    /// assert_eq!(vec.capacity(), 8);
+    /// let back = vec.split_off(4..);
+    /// assert_eq!(back, [7, 8]);
+    /// assert_eq!(vec, [3, 4, 5, 6]);
     ///
-    /// let vec_rhs = vec.split_off(1..);
-    /// assert_eq!(vec_rhs, [4, 5]);
-    /// assert_eq!(vec, [3]);
+    /// let middle = vec.split_off(1..3);
+    /// assert_eq!(middle, [4, 5]);
+    /// assert_eq!(vec, [3, 6]);
     ///
-    /// assert_eq!(vec_rhs.capacity(), 7);
-    /// assert_eq!(vec.capacity(), 1);
+    /// let rest = vec.split_off(..);
+    /// assert_eq!(rest, [3, 6]);
+    /// assert_eq!(vec, []);
     /// ```
     #[inline]
     #[allow(clippy::return_self_not_must_use)]
-    pub fn split_off(&mut self, range: impl OneSidedRange<usize>) -> Self {
-        let (direction, mid) = one_sided_range::direction(range, ..self.len());
-
-        let ptr = self.as_non_null_ptr();
+    pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self {
         let len = self.len();
-        let cap = self.capacity;
+        let ops::Range { start, end } = polyfill::slice::range(range, ..len);
+        let ptr = nonnull::as_non_null_ptr(self.initialized.ptr);
 
-        let lhs = nonnull::slice_from_raw_parts(ptr, mid);
-        let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, mid) }, len - mid);
+        if start == 0 && end == len {
+            return mem::take(self);
+        }
 
-        let lhs_capacity = mid;
-        let rhs_capacity = cap - mid;
+        if start == 0 {
+            let lhs = nonnull::slice_from_raw_parts(ptr, end);
+            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, end) }, len - end);
 
-        match direction {
-            one_sided_range::Direction::From => unsafe {
-                self.initialized.ptr = lhs;
-                self.capacity = lhs_capacity;
+            let lhs_capacity = end;
+            let rhs_capacity = self.capacity - lhs_capacity;
 
-                FixedBumpVec {
-                    initialized: BumpBox::from_raw(rhs),
-                    capacity: rhs_capacity,
-                }
-            },
-            one_sided_range::Direction::To => unsafe {
-                self.initialized.ptr = rhs;
-                self.capacity = rhs_capacity;
+            self.initialized.ptr = rhs;
+            self.capacity = rhs_capacity;
 
-                FixedBumpVec {
-                    initialized: BumpBox::from_raw(lhs),
-                    capacity: lhs_capacity,
-                }
-            },
+            return FixedBumpVec {
+                initialized: unsafe { BumpBox::from_raw(lhs) },
+                capacity: lhs_capacity,
+            };
+        }
+
+        if end == len {
+            let lhs = nonnull::slice_from_raw_parts(ptr, start);
+            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, start) }, len - start);
+
+            let lhs_capacity = start;
+            let rhs_capacity = self.capacity - lhs_capacity;
+
+            self.initialized.ptr = lhs;
+            self.capacity = lhs_capacity;
+
+            return FixedBumpVec {
+                initialized: unsafe { BumpBox::from_raw(rhs) },
+                capacity: rhs_capacity,
+            };
+        }
+
+        if start == end {
+            return FixedBumpVec::EMPTY;
+        }
+
+        let range_len = end - start;
+        let remaining_len = len - range_len;
+
+        unsafe {
+            // move the range of elements to split off to the end
+            // using array rotation by reversal
+            self.as_mut_slice()[start..end].reverse();
+            self.as_mut_slice()[end..].reverse();
+            self.as_mut_slice()[start..].reverse();
+
+            let lhs = nonnull::slice_from_raw_parts(ptr, remaining_len);
+            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, remaining_len) }, range_len);
+
+            let lhs_capacity = remaining_len;
+            let rhs_capacity = self.capacity - lhs_capacity;
+
+            self.initialized.ptr = lhs;
+            self.capacity = lhs_capacity;
+
+            return FixedBumpVec {
+                initialized: unsafe { BumpBox::from_raw(rhs) },
+                capacity: rhs_capacity,
+            };
         }
     }
 

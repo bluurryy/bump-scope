@@ -8,7 +8,6 @@ use crate::{
     raw_fixed_bump_string::RawFixedBumpString,
     stats::Stats,
     BumpAllocator, BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, FixedBumpString, FromUtf16Error, FromUtf8Error,
-    OneSidedRange,
 };
 use core::{
     alloc::Layout,
@@ -315,25 +314,27 @@ impl<A: BumpAllocator> BumpString<A> {
     /// # use bump_scope::{ Bump, BumpString };
     /// # let bump: Bump = Bump::new();
     /// let mut string = BumpString::with_capacity_in(10, &bump);
-    /// string.push_str("foobarbaz");
+    /// string.push_str("foobarbazqux");
     ///
     /// let foo = string.split_off(..3);
     /// assert_eq!(foo, "foo");
+    /// assert_eq!(string, "barbazqux");
+    ///
+    /// let qux = string.split_off(6..);
+    /// assert_eq!(qux, "qux");
     /// assert_eq!(string, "barbaz");
     ///
-    /// assert_eq!(foo.capacity(), 3);
-    /// assert_eq!(string.capacity(), 7);
+    /// let rb = string.split_off(2..4);
+    /// assert_eq!(rb, "rb");
+    /// assert_eq!(string, "baaz");
     ///
-    /// let baz = string.split_off(3..);
-    /// assert_eq!(baz, "baz");
-    /// assert_eq!(string, "bar");
-    ///
-    /// assert_eq!(baz.capacity(), 4);
-    /// assert_eq!(string.capacity(), 3);
+    /// let rest = string.split_off(..);
+    /// assert_eq!(rest, "baaz");
+    /// assert_eq!(string, "");
     /// ```
     #[inline]
     #[allow(clippy::return_self_not_must_use)]
-    pub fn split_off(&mut self, range: impl OneSidedRange<usize>) -> Self
+    pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self
     where
         A: Clone,
     {

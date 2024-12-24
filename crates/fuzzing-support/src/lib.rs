@@ -6,6 +6,7 @@ use bump_scope::allocator_api2::alloc::{AllocError, Allocator};
 use std::{alloc::Layout, cell::Cell, mem::swap, ops::Deref, ptr::NonNull, rc::Rc};
 
 pub use arbitrary;
+pub use bump_scope;
 pub mod allocator_api;
 pub mod bump_down;
 pub mod bump_prepare_down;

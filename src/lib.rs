@@ -292,7 +292,6 @@ pub mod mut_bump_vec;
 /// Contains [`MutBumpVecRev`] and associated types.
 mod mut_bump_vec_rev;
 mod no_drop;
-mod one_sided_range;
 /// Contains types associated with owned slices.
 pub mod owned_slice;
 /// Contains types associated with owned strings.
@@ -349,7 +348,6 @@ pub use mut_bump_string::MutBumpString;
 pub use mut_bump_vec::MutBumpVec;
 pub use mut_bump_vec_rev::MutBumpVecRev;
 pub use no_drop::NoDrop;
-pub use one_sided_range::OneSidedRange;
 #[cfg(feature = "panic-on-alloc")]
 use private::{capacity_overflow, format_trait_error, PanicsOnAlloc};
 use raw_chunk::RawChunk;

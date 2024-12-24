@@ -10,8 +10,8 @@ use crate::{
     polyfill::{nonnull, pointer, slice},
     raw_bump_box::RawBumpBox,
     raw_fixed_bump_vec::RawFixedBumpVec,
-    BumpAllocator, BumpAllocatorScope, BumpBox, ErrorBehavior, FixedBumpVec, NoDrop, OneSidedRange, SetLenOnDropByPtr,
-    SizedTypeProperties, Stats,
+    BumpAllocator, BumpAllocatorScope, BumpBox, ErrorBehavior, FixedBumpVec, NoDrop, SetLenOnDropByPtr, SizedTypeProperties,
+    Stats,
 };
 use allocator_api2::alloc::AllocError;
 use core::{
@@ -493,25 +493,27 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::new();
     /// let mut vec = BumpVec::with_capacity_in(10, &bump);
-    /// vec.append([1, 2, 3, 4, 5]);
+    /// vec.append([1, 2, 3, 4, 5, 6, 7, 8]);
     ///
-    /// let vec_lhs = vec.split_off(..2);
-    /// assert_eq!(vec_lhs, [1, 2]);
-    /// assert_eq!(vec, [3, 4, 5]);
+    /// let front = vec.split_off(..2);
+    /// assert_eq!(front, [1, 2]);
+    /// assert_eq!(vec, [3, 4, 5, 6, 7, 8]);
     ///
-    /// assert_eq!(vec_lhs.capacity(), 2);
-    /// assert_eq!(vec.capacity(), 8);
+    /// let back = vec.split_off(4..);
+    /// assert_eq!(back, [7, 8]);
+    /// assert_eq!(vec, [3, 4, 5, 6]);
     ///
-    /// let vec_rhs = vec.split_off(1..);
-    /// assert_eq!(vec_rhs, [4, 5]);
-    /// assert_eq!(vec, [3]);
+    /// let middle = vec.split_off(1..3);
+    /// assert_eq!(middle, [4, 5]);
+    /// assert_eq!(vec, [3, 6]);
     ///
-    /// assert_eq!(vec_rhs.capacity(), 7);
-    /// assert_eq!(vec.capacity(), 1);
+    /// let rest = vec.split_off(..);
+    /// assert_eq!(rest, [3, 6]);
+    /// assert_eq!(vec, []);
     /// ```
     #[inline]
     #[allow(clippy::return_self_not_must_use)]
-    pub fn split_off(&mut self, range: impl OneSidedRange<usize>) -> Self
+    pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self
     where
         A: Clone,
     {

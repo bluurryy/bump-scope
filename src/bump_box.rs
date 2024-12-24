@@ -3,9 +3,9 @@ mod slice_initializer;
 #[cfg(feature = "alloc")]
 use crate::BumpAllocatorScope;
 use crate::{
-    one_sided_range, owned_slice, owned_str,
+    owned_slice, owned_str,
     polyfill::{self, nonnull, pointer, transmute_mut},
-    BumpAllocator, FromUtf8Error, NoDrop, OneSidedRange, SizedTypeProperties,
+    BumpAllocator, FromUtf8Error, NoDrop, SizedTypeProperties,
 };
 #[cfg(feature = "alloc")]
 #[allow(unused_imports)]
@@ -19,7 +19,7 @@ use core::{
     hash::{Hash, Hasher},
     marker::PhantomData,
     mem::{self, ManuallyDrop, MaybeUninit},
-    ops::{Deref, DerefMut, Index, IndexMut, Range, RangeBounds},
+    ops::{self, Deref, DerefMut, Index, IndexMut, Range, RangeBounds},
     ptr::{self, NonNull},
     slice::{self, SliceIndex},
     str,
@@ -537,6 +537,19 @@ impl<'a> BumpBox<'a, str> {
         self.len() == 0
     }
 
+    pub(crate) fn assert_char_boundary(&self, index: usize) {
+        #[cold]
+        #[track_caller]
+        #[inline(never)]
+        fn assert_failed() {
+            panic!("index is not on a char boundary")
+        }
+
+        if !self.is_char_boundary(index) {
+            assert_failed();
+        }
+    }
+
     /// Splits the string into two at the given byte index.
     ///
     /// Returns a string containing the bytes in the provided range.
@@ -553,42 +566,79 @@ impl<'a> BumpBox<'a, str> {
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let mut string = bump.alloc_str("foobarbaz");
+    /// let mut string = bump.alloc_str("foobarbazqux");
     ///
     /// let foo = string.split_off(..3);
     /// assert_eq!(foo, "foo");
+    /// assert_eq!(string, "barbazqux");
+    ///
+    /// let qux = string.split_off(6..);
+    /// assert_eq!(qux, "qux");
     /// assert_eq!(string, "barbaz");
     ///
-    /// let baz = string.split_off(3..);
-    /// assert_eq!(baz, "baz");
-    /// assert_eq!(string, "bar");
+    /// let rb = string.split_off(2..4);
+    /// assert_eq!(rb, "rb");
+    /// assert_eq!(string, "baaz");
+    ///
+    /// let rest = string.split_off(..);
+    /// assert_eq!(rest, "baaz");
+    /// assert_eq!(string, "");
     /// ```
     #[inline]
     #[allow(clippy::return_self_not_must_use)]
     // FIXME: compare with drain; allow for any RangeBounds
-    pub fn split_off(&mut self, range: impl OneSidedRange<usize>) -> Self {
-        let (direction, mid) = one_sided_range::direction(range, ..self.len());
-
-        assert!(self.is_char_boundary(mid));
-
-        let ptr = self.ptr.cast::<u8>();
+    // FIXME: add fuzzing test for char boundary
+    pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self {
         let len = self.len();
+        let ops::Range { start, end } = polyfill::slice::range(range, ..len);
+        let ptr = nonnull::as_non_null_ptr(nonnull::str_bytes(self.ptr));
 
-        let lhs = nonnull::slice_from_raw_parts(ptr, mid);
-        let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, mid) }, len - mid);
+        if start == 0 && end == len {
+            return mem::take(self);
+        }
 
-        let lhs = nonnull::str_from_utf8(lhs);
-        let rhs = nonnull::str_from_utf8(rhs);
+        if start == 0 {
+            self.assert_char_boundary(end);
 
-        match direction {
-            one_sided_range::Direction::From => unsafe {
-                self.ptr = lhs;
-                Self::from_raw(rhs)
-            },
-            one_sided_range::Direction::To => unsafe {
-                self.ptr = rhs;
-                Self::from_raw(lhs)
-            },
+            let lhs = nonnull::slice_from_raw_parts(ptr, end);
+            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, end) }, len - end);
+
+            self.ptr = nonnull::str_from_utf8(rhs);
+            return unsafe { BumpBox::from_raw(nonnull::str_from_utf8(lhs)) };
+        }
+
+        if end == len {
+            self.assert_char_boundary(start);
+
+            let lhs = nonnull::slice_from_raw_parts(ptr, start);
+            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, start) }, len - start);
+
+            self.ptr = nonnull::str_from_utf8(lhs);
+            return unsafe { BumpBox::from_raw(nonnull::str_from_utf8(rhs)) };
+        }
+
+        if start == end {
+            return BumpBox::EMPTY_STR;
+        }
+
+        self.assert_char_boundary(start);
+        self.assert_char_boundary(end);
+
+        let range_len = end - start;
+        let remaining_len = len - range_len;
+
+        unsafe {
+            // move the range of elements to split off to the end
+            // using array rotation by reversal
+            self.as_mut_bytes()[start..end].reverse();
+            self.as_mut_bytes()[end..].reverse();
+            self.as_mut_bytes()[start..].reverse();
+
+            let lhs = nonnull::slice_from_raw_parts(ptr, remaining_len);
+            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, remaining_len) }, range_len);
+
+            self.ptr = nonnull::str_from_utf8(lhs);
+            return unsafe { BumpBox::from_raw(nonnull::str_from_utf8(rhs)) };
         }
     }
 
@@ -1475,36 +1525,70 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_slice_copy(&[1, 2, 3, 4, 5]);
+    /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6, 7, 8]);
     ///
-    /// let vec_lhs = vec.split_off(..2);
-    /// assert_eq!(vec_lhs, [1, 2]);
-    /// assert_eq!(vec, [3, 4, 5]);
+    /// let front = slice.split_off(..2);
+    /// assert_eq!(front, [1, 2]);
+    /// assert_eq!(slice, [3, 4, 5, 6, 7, 8]);
     ///
-    /// let vec_rhs = vec.split_off(1..);
-    /// assert_eq!(vec_rhs, [4, 5]);
-    /// assert_eq!(vec, [3]);
+    /// let back = slice.split_off(4..);
+    /// assert_eq!(back, [7, 8]);
+    /// assert_eq!(slice, [3, 4, 5, 6]);
+    ///
+    /// let middle = slice.split_off(1..3);
+    /// assert_eq!(middle, [4, 5]);
+    /// assert_eq!(slice, [3, 6]);
+    ///
+    /// let rest = slice.split_off(..);
+    /// assert_eq!(rest, [3, 6]);
+    /// assert_eq!(slice, []);
     /// ```
     #[inline]
     #[allow(clippy::return_self_not_must_use)]
-    pub fn split_off(&mut self, range: impl OneSidedRange<usize>) -> Self {
-        let (direction, mid) = one_sided_range::direction(range, ..self.len());
-
-        let ptr = self.as_non_null_ptr();
+    pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self {
         let len = self.len();
+        let ops::Range { start, end } = polyfill::slice::range(range, ..len);
+        let ptr = nonnull::as_non_null_ptr(self.ptr);
 
-        let lhs = nonnull::slice_from_raw_parts(ptr, mid);
-        let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, mid) }, len - mid);
+        if start == 0 && end == len {
+            return mem::take(self);
+        }
 
-        match direction {
-            one_sided_range::Direction::From => unsafe {
-                self.ptr = lhs;
-                Self::from_raw(rhs)
-            },
-            one_sided_range::Direction::To => unsafe {
-                self.ptr = rhs;
-                Self::from_raw(lhs)
-            },
+        if start == 0 {
+            let lhs = nonnull::slice_from_raw_parts(ptr, end);
+            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, end) }, len - end);
+
+            self.ptr = rhs;
+            return unsafe { BumpBox::from_raw(lhs) };
+        }
+
+        if end == len {
+            let lhs = nonnull::slice_from_raw_parts(ptr, start);
+            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, start) }, len - start);
+
+            self.ptr = lhs;
+            return unsafe { BumpBox::from_raw(rhs) };
+        }
+
+        if start == end {
+            return BumpBox::EMPTY;
+        }
+
+        let range_len = end - start;
+        let remaining_len = len - range_len;
+
+        unsafe {
+            // move the range of elements to split off to the end
+            // using array rotation by reversal
+            self.as_mut_slice()[start..end].reverse();
+            self.as_mut_slice()[end..].reverse();
+            self.as_mut_slice()[start..].reverse();
+
+            let lhs = nonnull::slice_from_raw_parts(ptr, remaining_len);
+            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, remaining_len) }, range_len);
+
+            self.ptr = lhs;
+            return unsafe { BumpBox::from_raw(rhs) };
         }
     }
 
