@@ -4,10 +4,6 @@ thread_local! {
     static DROPS: Cell<usize> = const { Cell::new(0) };
     static CLONES: Cell<usize> = const { Cell::new(0) };
     static DEFAULTS: Cell<usize> = const { Cell::new(0) };
-
-    static EXPECTED_DROPS: Cell<Option<usize>> = const { Cell::new(None) };
-    static EXPECTED_CLONES: Cell<Option<usize>> = const { Cell::new(None) };
-    static EXPECTED_DEFAULTS: Cell<Option<usize>> = const { Cell::new(None) };
 }
 
 #[repr(transparent)]
