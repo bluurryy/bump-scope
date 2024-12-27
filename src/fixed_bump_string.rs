@@ -237,7 +237,7 @@ impl<'a> FixedBumpString<'a> {
     }
 
     pub(crate) fn assert_char_boundary(&self, index: usize) {
-        self.initialized.assert_char_boundary(index)
+        self.initialized.assert_char_boundary(index);
     }
 
     /// Splits the string into two at the given byte index.
@@ -362,10 +362,10 @@ impl<'a> FixedBumpString<'a> {
             self.initialized.ptr = lhs;
             self.capacity = lhs_capacity;
 
-            return FixedBumpString {
+            FixedBumpString {
                 initialized: unsafe { BumpBox::from_raw(rhs) },
                 capacity: rhs_capacity,
-            };
+            }
         }
     }
 

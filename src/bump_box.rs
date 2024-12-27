@@ -638,7 +638,7 @@ impl<'a> BumpBox<'a, str> {
             let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, remaining_len) }, range_len);
 
             self.ptr = nonnull::str_from_utf8(lhs);
-            return unsafe { BumpBox::from_raw(nonnull::str_from_utf8(rhs)) };
+            unsafe { BumpBox::from_raw(nonnull::str_from_utf8(rhs)) }
         }
     }
 
@@ -1598,7 +1598,7 @@ impl<'a, T> BumpBox<'a, [T]> {
             let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, remaining_len) }, range_len);
 
             self.ptr = lhs;
-            return unsafe { BumpBox::from_raw(rhs) };
+            unsafe { BumpBox::from_raw(rhs) }
         }
     }
 

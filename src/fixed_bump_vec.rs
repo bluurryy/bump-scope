@@ -528,10 +528,10 @@ impl<'a, T> FixedBumpVec<'a, T> {
             self.initialized.ptr = lhs;
             self.capacity = lhs_capacity;
 
-            return FixedBumpVec {
+            FixedBumpVec {
                 initialized: unsafe { BumpBox::from_raw(rhs) },
                 capacity: rhs_capacity,
-            };
+            }
         }
     }
 

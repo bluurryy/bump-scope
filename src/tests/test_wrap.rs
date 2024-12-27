@@ -61,10 +61,12 @@ impl TestWrap<Infallible> {
         DEFAULTS.get()
     }
 
+    #[expect(dead_code)]
     pub(crate) fn current_clones() -> usize {
         CLONES.get()
     }
 
+    #[expect(dead_code)]
     pub(crate) fn current_drops() -> usize {
         DROPS.get()
     }
