@@ -512,9 +512,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
         unsafe {
             // move the range of elements to split off to the end
             // using array rotation by reversal
-            self.as_mut_slice()[start..end].reverse();
-            self.as_mut_slice()[end..].reverse();
-            self.as_mut_slice()[start..].reverse();
+            self.as_mut_slice().get_unchecked_mut(start..end).reverse();
+            self.as_mut_slice().get_unchecked_mut(end..).reverse();
+            self.as_mut_slice().get_unchecked_mut(start..).reverse();
 
             let lhs = nonnull::slice_from_raw_parts(ptr, remaining_len);
             let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, remaining_len) }, range_len);
