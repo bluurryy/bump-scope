@@ -247,3 +247,67 @@ fn string_split_off() {
         assert_eq!(rem.capacity(), 10);
     }
 }
+
+#[test]
+#[should_panic = "index is not on a char boundary"]
+fn boxed_str_split_off_panic_front() {
+    let bump: Bump = Bump::new();
+    let mut string = bump.alloc_str("❤️❤️❤️");
+    string.split_off(1..);
+}
+
+#[test]
+#[should_panic = "index is not on a char boundary"]
+fn boxed_str_split_off_panic_back() {
+    let bump: Bump = Bump::new();
+    let mut string = bump.alloc_str("❤️❤️❤️");
+    string.split_off(..string.len() - 1);
+}
+
+#[test]
+#[should_panic = "index is not on a char boundary"]
+fn boxed_str_split_off_panic_middle_start() {
+    let bump: Bump = Bump::new();
+    let mut string = bump.alloc_str("❤️❤️❤️");
+    string.split_off((string.len() / 3) + 1..(string.len() / 3) * 2);
+}
+
+#[test]
+#[should_panic = "index is not on a char boundary"]
+fn boxed_str_split_off_panic_middle_end() {
+    let bump: Bump = Bump::new();
+    let mut string = bump.alloc_str("❤️❤️❤️");
+    string.split_off((string.len() / 3)..(string.len() / 3) * 2 - 1);
+}
+
+#[test]
+#[should_panic = "index is not on a char boundary"]
+fn string_split_off_panic_front() {
+    let bump: Bump = Bump::new();
+    let mut string = BumpString::from_str_in("❤️❤️❤️", &bump);
+    string.split_off(1..);
+}
+
+#[test]
+#[should_panic = "index is not on a char boundary"]
+fn string_split_off_panic_back() {
+    let bump: Bump = Bump::new();
+    let mut string = BumpString::from_str_in("❤️❤️❤️", &bump);
+    string.split_off(..string.len() - 1);
+}
+
+#[test]
+#[should_panic = "index is not on a char boundary"]
+fn string_split_off_panic_middle_start() {
+    let bump: Bump = Bump::new();
+    let mut string = BumpString::from_str_in("❤️❤️❤️", &bump);
+    string.split_off((string.len() / 3) + 1..(string.len() / 3) * 2);
+}
+
+#[test]
+#[should_panic = "index is not on a char boundary"]
+fn string_split_off_panic_middle_end() {
+    let bump: Bump = Bump::new();
+    let mut string = BumpString::from_str_in("❤️❤️❤️", &bump);
+    string.split_off((string.len() / 3)..(string.len() / 3) * 2 - 1);
+}

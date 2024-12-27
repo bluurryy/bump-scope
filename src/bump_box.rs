@@ -584,7 +584,6 @@ impl<'a> BumpBox<'a, str> {
     /// ```
     #[inline]
     #[allow(clippy::return_self_not_must_use)]
-    // FIXME: add fuzzing test for char boundary
     pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self {
         let len = self.len();
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
