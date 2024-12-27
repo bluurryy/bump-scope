@@ -456,6 +456,19 @@ impl<'a, T> FixedBumpVec<'a, T> {
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
         let ptr = nonnull::as_non_null_ptr(self.initialized.ptr);
 
+        if T::IS_ZST {
+            let range_len = end - start;
+            let remaining_len = len - range_len;
+
+            unsafe {
+                self.set_len(remaining_len);
+                return FixedBumpVec {
+                    initialized: BumpBox::zst_slice_from_len(range_len),
+                    capacity: usize::MAX,
+                };
+            }
+        }
+
         if start == 0 && end == len {
             return mem::take(self);
         }

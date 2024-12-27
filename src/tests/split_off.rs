@@ -1,5 +1,97 @@
 use crate::{Bump, BumpString, BumpVec};
 
+use super::TestWrap;
+
+#[test]
+fn boxed_slice_split_off_zst() {
+    let bump: Bump = Bump::new();
+
+    fn defaults() -> impl Iterator<Item = TestWrap<()>> {
+        core::iter::repeat_with(Default::default)
+    }
+
+    TestWrap::expect().defaults(5).drops(5).run(|| {
+        let mut vec = bump.alloc_iter(defaults().take(5));
+        let rem = vec.split_off(3..);
+        assert_eq!(vec.len(), 3);
+        assert_eq!(rem.len(), 2);
+    });
+
+    TestWrap::expect().defaults(5).drops(5).run(|| {
+        let mut vec = bump.alloc_iter(defaults().take(5));
+        let rem = vec.split_off(..3);
+        assert_eq!(vec.len(), 2);
+        assert_eq!(rem.len(), 3);
+    });
+
+    TestWrap::expect().defaults(5).drops(5).run(|| {
+        let mut vec = bump.alloc_iter(defaults().take(5));
+        let rem = vec.split_off(1..4);
+        assert_eq!(vec.len(), 2);
+        assert_eq!(rem.len(), 3);
+    });
+
+    TestWrap::expect().defaults(5).drops(5).run(|| {
+        let mut vec = bump.alloc_iter(defaults().take(5));
+        let rem = vec.split_off(..);
+        assert_eq!(vec.len(), 0);
+        assert_eq!(rem.len(), 5);
+    });
+}
+
+#[test]
+fn vec_split_off_zst() {
+    let bump: Bump = Bump::new();
+
+    fn defaults() -> impl Iterator<Item = TestWrap<()>> {
+        core::iter::repeat_with(Default::default)
+    }
+
+    TestWrap::expect().defaults(5).drops(5).run(|| {
+        let mut vec = BumpVec::with_capacity_in(10, &bump);
+        vec.extend(defaults().take(5));
+        assert_eq!(vec.capacity(), usize::MAX);
+        let rem = vec.split_off(3..);
+        assert_eq!(vec.len(), 3);
+        assert_eq!(rem.len(), 2);
+        assert_eq!(vec.capacity(), usize::MAX);
+        assert_eq!(rem.capacity(), usize::MAX);
+    });
+
+    TestWrap::expect().defaults(5).drops(5).run(|| {
+        let mut vec = BumpVec::with_capacity_in(10, &bump);
+        vec.extend(defaults().take(5));
+        assert_eq!(vec.capacity(), usize::MAX);
+        let rem = vec.split_off(..3);
+        assert_eq!(vec.len(), 2);
+        assert_eq!(rem.len(), 3);
+        assert_eq!(vec.capacity(), usize::MAX);
+        assert_eq!(rem.capacity(), usize::MAX);
+    });
+
+    TestWrap::expect().defaults(5).drops(5).run(|| {
+        let mut vec = BumpVec::with_capacity_in(10, &bump);
+        vec.extend(defaults().take(5));
+        assert_eq!(vec.capacity(), usize::MAX);
+        let rem = vec.split_off(1..4);
+        assert_eq!(vec.len(), 2);
+        assert_eq!(rem.len(), 3);
+        assert_eq!(vec.capacity(), usize::MAX);
+        assert_eq!(rem.capacity(), usize::MAX);
+    });
+
+    TestWrap::expect().defaults(5).drops(5).run(|| {
+        let mut vec = BumpVec::with_capacity_in(10, &bump);
+        vec.extend(defaults().take(5));
+        assert_eq!(vec.capacity(), usize::MAX);
+        let rem = vec.split_off(..);
+        assert_eq!(vec.len(), 0);
+        assert_eq!(rem.len(), 5);
+        assert_eq!(vec.capacity(), usize::MAX);
+        assert_eq!(rem.capacity(), usize::MAX);
+    });
+}
+
 #[test]
 fn boxed_slice_split_off() {
     let bump: Bump = Bump::new();

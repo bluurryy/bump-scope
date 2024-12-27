@@ -55,6 +55,19 @@ impl TestWrap<Infallible> {
     pub(crate) fn expect() -> TestZstExpect {
         TestZstExpect::default()
     }
+
+    #[expect(dead_code)]
+    pub(crate) fn current_defaults() -> usize {
+        DEFAULTS.get()
+    }
+
+    pub(crate) fn current_clones() -> usize {
+        CLONES.get()
+    }
+
+    pub(crate) fn current_drops() -> usize {
+        DROPS.get()
+    }
 }
 
 #[derive(Default)]

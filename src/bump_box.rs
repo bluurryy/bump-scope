@@ -1203,7 +1203,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// Creates `T` values from nothing!
     #[must_use]
     #[inline(always)]
-    unsafe fn zst_slice_from_len(len: usize) -> Self {
+    pub(crate) unsafe fn zst_slice_from_len(len: usize) -> Self {
         assert!(T::IS_ZST);
         Self {
             ptr: nonnull::slice_from_raw_parts(NonNull::dangling(), len),
@@ -1549,6 +1549,16 @@ impl<'a, T> BumpBox<'a, [T]> {
         let len = self.len();
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
         let ptr = nonnull::as_non_null_ptr(self.ptr);
+
+        if T::IS_ZST {
+            let range_len = end - start;
+            let remaining_len = len - range_len;
+
+            unsafe {
+                self.set_len(remaining_len);
+                return BumpBox::zst_slice_from_len(range_len);
+            }
+        }
 
         if start == 0 && end == len {
             return mem::take(self);
