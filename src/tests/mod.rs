@@ -38,6 +38,7 @@ mod pool;
 mod rc_bump;
 #[cfg(feature = "serde")]
 mod serde;
+mod split_off;
 mod test_wrap;
 mod unaligned_collection;
 mod unallocated;
