@@ -466,22 +466,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
             }
         }
 
-        if start == 0 {
-            let lhs = nonnull::slice_from_raw_parts(ptr, end);
-            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, end) }, len - end);
-
-            let lhs_capacity = end;
-            let rhs_capacity = self.capacity - lhs_capacity;
-
-            self.initialized.ptr = rhs;
-            self.capacity = rhs_capacity;
-
-            return FixedBumpVec {
-                initialized: unsafe { BumpBox::from_raw(lhs) },
-                capacity: lhs_capacity,
-            };
-        }
-
         if end == len {
             let lhs = nonnull::slice_from_raw_parts(ptr, start);
             let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, start) }, len - start);
@@ -495,6 +479,22 @@ impl<'a, T> FixedBumpVec<'a, T> {
             return FixedBumpVec {
                 initialized: unsafe { BumpBox::from_raw(rhs) },
                 capacity: rhs_capacity,
+            };
+        }
+
+        if start == 0 {
+            let lhs = nonnull::slice_from_raw_parts(ptr, end);
+            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, end) }, len - end);
+
+            let lhs_capacity = end;
+            let rhs_capacity = self.capacity - lhs_capacity;
+
+            self.initialized.ptr = rhs;
+            self.capacity = rhs_capacity;
+
+            return FixedBumpVec {
+                initialized: unsafe { BumpBox::from_raw(lhs) },
+                capacity: lhs_capacity,
             };
         }
 

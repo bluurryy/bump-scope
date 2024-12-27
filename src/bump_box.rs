@@ -1554,20 +1554,20 @@ impl<'a, T> BumpBox<'a, [T]> {
             }
         }
 
-        if start == 0 {
-            let lhs = nonnull::slice_from_raw_parts(ptr, end);
-            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, end) }, len - end);
-
-            self.ptr = rhs;
-            return unsafe { BumpBox::from_raw(lhs) };
-        }
-
         if end == len {
             let lhs = nonnull::slice_from_raw_parts(ptr, start);
             let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, start) }, len - start);
 
             self.ptr = lhs;
             return unsafe { BumpBox::from_raw(rhs) };
+        }
+
+        if start == 0 {
+            let lhs = nonnull::slice_from_raw_parts(ptr, end);
+            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, end) }, len - end);
+
+            self.ptr = rhs;
+            return unsafe { BumpBox::from_raw(lhs) };
         }
 
         if start == end {
