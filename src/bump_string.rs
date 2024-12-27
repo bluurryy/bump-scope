@@ -289,24 +289,13 @@ impl<A: BumpAllocator> BumpString<A> {
         unsafe { transmute_value(self) }
     }
 
-    /// Splits the string into two at the given byte index.
+    /// Splits the string into two by removing the specified range.
     ///
-    /// Returns a string containing the bytes in the provided range.
-    /// After the call, the original string will be left containing the remaining bytes.
-    /// The splitting point must be on the boundary of a UTF-8 code point.
-    ///
-    /// The string on the right will have the excess capacity if any.
-    ///
-    /// *This behavior is different to <code>[String]::[split_off]</code> which allocates a new string
-    /// to store the split-off elements.*
-    ///
-    /// [String]: alloc::string::String
-    /// [split_off]: alloc::string::String::split_off
+    /// This operation is `O(1)` if either the range starts at 0 or ends at `len`. Otherwise it's `O(n)`.
     ///
     /// # Panics
     ///
-    /// Panics if `at` is not on a `UTF-8` code point boundary, or if it is beyond the last
-    /// code point of the string.
+    /// Panics if the starting point or end point do not lie on a [`char`] boundary, or if they're out of bounds.
     ///
     /// # Examples
     ///

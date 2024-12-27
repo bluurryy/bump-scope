@@ -551,16 +551,13 @@ impl<'a> BumpBox<'a, str> {
         }
     }
 
-    /// Splits the string into two at the given byte index.
+    /// Splits the string into two by removing the specified range.
     ///
-    /// Returns a string containing the bytes in the provided range.
-    /// After the call, the original string will be left containing the remaining bytes.
-    /// The splitting point must be on the boundary of a UTF-8 code point.
+    /// This operation is `O(1)` if either the range starts at 0 or ends at `len`. Otherwise it's `O(n)`.
     ///
     /// # Panics
     ///
-    /// Panics if `at` is not on a `UTF-8` code point boundary, or if it is beyond the last
-    /// code point of the string.
+    /// Panics if the starting point or end point do not lie on a [`char`] boundary, or if they're out of bounds.
     ///
     /// # Examples
     ///
@@ -587,7 +584,6 @@ impl<'a> BumpBox<'a, str> {
     /// ```
     #[inline]
     #[allow(clippy::return_self_not_must_use)]
-    // FIXME: compare with drain; allow for any RangeBounds
     // FIXME: add fuzzing test for char boundary
     pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self {
         let len = self.len();
@@ -1511,15 +1507,13 @@ impl<'a, T> BumpBox<'a, [T]> {
             value
         }
     }
-
-    /// Splits the slice into two at the given index.
+    /// Splits the vector into two by removing the specified range.
     ///
-    /// Returns a vector containing the elements in the provided range.
-    /// After the call, the original vector will be left containing the remaining elements.
+    /// This operation is `O(1)` if either the range starts at 0 or ends at `len`. Otherwise it's `O(n)`.
     ///
     /// # Panics
     ///
-    /// Panics if `at > len`.
+    /// Panics if the starting point is greater than the end point or if the end point is greater than the length of the vector.
     ///
     /// # Examples
     ///

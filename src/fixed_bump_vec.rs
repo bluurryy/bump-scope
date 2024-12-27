@@ -414,16 +414,13 @@ impl<'a, T> FixedBumpVec<'a, T> {
         self.initialized.swap_remove(index)
     }
 
-    /// Splits the vector into two at the given index.
+    /// Splits the vector into two by removing the specified range.
     ///
-    /// Returns a vector containing the elements in the provided range.
-    /// After the call, the original vector will be left containing the remaining elements.
-    ///
-    /// The vector on the right hand side will have the excess capacity if any.
+    /// This operation is `O(1)` if either the range starts at 0 or ends at `len`. Otherwise it's `O(n)`.
     ///
     /// # Panics
     ///
-    /// Panics if `at > len`.
+    /// Panics if the starting point is greater than the end point or if the end point is greater than the length of the vector.
     ///
     /// # Examples
     ///
