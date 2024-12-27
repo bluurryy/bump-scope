@@ -10,7 +10,7 @@ use core::{
     fmt::Debug,
     hash::Hash,
     iter,
-    mem::{self, ManuallyDrop, MaybeUninit},
+    mem::{ManuallyDrop, MaybeUninit},
     ops::{self, Deref, DerefMut, Index, IndexMut, RangeBounds},
     ptr::{self, NonNull},
     slice::SliceIndex,
@@ -464,10 +464,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
                     capacity: usize::MAX,
                 };
             }
-        }
-
-        if start == 0 && end == len {
-            return mem::take(self);
         }
 
         if start == 0 {

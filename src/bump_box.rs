@@ -1555,10 +1555,6 @@ impl<'a, T> BumpBox<'a, [T]> {
             }
         }
 
-        if start == 0 && end == len {
-            return mem::take(self);
-        }
-
         if start == 0 {
             let lhs = nonnull::slice_from_raw_parts(ptr, end);
             let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, end) }, len - end);
