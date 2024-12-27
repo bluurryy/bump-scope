@@ -12,6 +12,7 @@
 - **added:** `append` can now handle arrays, boxed arrays, boxed slices and trait objects
 - **added:** implemented `OwnedSlice` for `owned_slice::{IntoIter, Drain}`
 - **added:** `split_off` for `Fixed*` collections and `BumpBox<str>`
+- **added:** `BumpBox<[T; N]>::into_unsized` returning `BumpBox<[T]>`
 
 ## 0.14.0 (2024-12-12)
 - **breaking:** fix `scoped_aligned`'s closure to take a `BumpScope` with `NEW_MIN_ALIGN` instead of `MIN_ALIGN`
