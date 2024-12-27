@@ -279,8 +279,6 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED> + Default,
 {
     error_behavior_generic_methods_allocation_failure! {
-        // TODO: Change this to say that this is *currently* equivalent to that, or perhaps don't mention 512 at all.
-        //       This should only be done in a semver breaking release, considering how matter-of-factly it is stated here.
         /// Constructs a new `Bump` with a default size hint for the first chunk.
         ///
         impl
