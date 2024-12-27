@@ -236,6 +236,7 @@ impl<'a> FixedBumpString<'a> {
         unsafe { mem::transmute(self) }
     }
 
+    #[track_caller]
     pub(crate) fn assert_char_boundary(&self, index: usize) {
         self.initialized.assert_char_boundary(index);
     }

@@ -537,6 +537,7 @@ impl<'a> BumpBox<'a, str> {
         self.len() == 0
     }
 
+    #[track_caller]
     pub(crate) fn assert_char_boundary(&self, index: usize) {
         #[cold]
         #[track_caller]
