@@ -19,17 +19,19 @@ use crate::{
     BumpAllocator, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev,
 };
 
-/// Conversion to an [`OwnedSlice`].
+/// A type that owns a slice of elements.
 ///
-/// Any implementor of `OwnedSlice` automatically implements this trait.
+/// The whole point of this trait is as a parameter of the `append` method available on this crate's vector types.
+///
+/// Any implementor of `TakeOwnedSlice` automatically implements this trait.
 pub trait OwnedSlice {
-    /// The type of the elements of the owned slice.
+    /// The type of an element of this owned slice.
     type Item;
 
-    /// Which kind of owned slice are we turning this into?
+    /// A type can convert into that implements `TakeOwnedSlice`.
     type Take: TakeOwnedSlice<Item = Self::Item>;
 
-    /// Creates an owned slice from a value.
+    /// Converts this type into one that implements `TakeOwnedSlice`.
     fn into_take_owned_slice(self) -> Self::Take;
 }
 
@@ -75,10 +77,12 @@ impl<T> OwnedSlice for Box<[T]> {
     }
 }
 
-/// An owned slice, like a `Vec<T>`. This allows for efficient generic `append` implementations.
+/// A type which owns a slice and can abandon its ownership over it.
+///
+/// This trait is used for the `append` method of this crate's vector types via the [`OwnedSlice`] trait.
 ///
 /// This trait can only be implemented for types that can empty their slice.
-/// Types like `[T;N]` or `Box<[T]>` can not implement it but do implement [`IntoOwnedSlice`].
+/// Types like `[T; N]` or `Box<[T]>` can not implement it but can be converted into a type that does via the [`OwnedSlice`] trait.
 ///
 /// # Safety
 ///
@@ -92,7 +96,7 @@ impl<T> OwnedSlice for Box<[T]> {
 /// # extern crate alloc;
 /// # use alloc::vec::Vec;
 /// # use bump_scope::owned_slice::OwnedSlice;
-/// fn append<T>(vec: &mut Vec<T>, mut to_append: impl OwnedSlice<Item = T>) {
+/// fn append<T>(vec: &mut Vec<T>, mut to_append: impl TakeOwnedSlice<Item = T>) {
 ///     let slice = to_append.owned_slice_ptr();
 ///     vec.reserve(slice.len());
 ///     
@@ -116,8 +120,8 @@ impl<T> OwnedSlice for Box<[T]> {
 /// ```
 ///
 /// [set_len]: alloc::vec::Vec::set_len
-/// [`owned_slice_ptr`]: OwnedSlice::owned_slice_ptr
-/// [`take_owned_slice`]: OwnedSlice::take_owned_slice
+/// [`owned_slice_ptr`]: TakeOwnedSlice::owned_slice_ptr
+/// [`take_owned_slice`]: TakeOwnedSlice::take_owned_slice
 #[allow(clippy::len_without_is_empty)]
 pub unsafe trait TakeOwnedSlice {
     /// The element type of the slice.
@@ -221,9 +225,9 @@ unsafe impl<T> TakeOwnedSlice for Vec<T> {
     }
 }
 
-/// The type returned from <code><[T; N]>::[into_owned_slice]</code>.
+/// The type returned from <code><[T; N]>::[into_take_owned_slice]</code>.
 ///
-/// [into_owned_slice]: IntoOwnedSlice::into_owned_slice
+/// [into_take_owned_slice]: OwnedSlice::into_take_owned_slice
 pub struct ArrayOwnedSlice<T, const N: usize> {
     array: [ManuallyDrop<T>; N],
     taken: bool,
