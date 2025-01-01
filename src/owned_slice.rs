@@ -6,7 +6,7 @@ pub use drain::Drain;
 pub use extract_if::ExtractIf;
 pub use into_iter::IntoIter;
 
-use core::{mem::ManuallyDrop, ptr::NonNull};
+use core::{array, mem, ptr::NonNull};
 
 #[cfg(feature = "alloc")]
 use alloc::{boxed::Box, vec::Vec};
@@ -14,10 +14,7 @@ use alloc::{boxed::Box, vec::Vec};
 #[cfg(feature = "alloc")]
 use core::ptr;
 
-use crate::{
-    polyfill::{nonnull, transmute_value},
-    BumpAllocator, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev,
-};
+use crate::{polyfill::pointer, BumpAllocator, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev};
 
 /// A type that owns a slice of elements.
 ///
@@ -35,12 +32,24 @@ pub trait OwnedSlice {
     fn into_take_owned_slice(self) -> Self::Take;
 }
 
+// every `TakeOwnedSlice` automatically implements `OwnedSlice`
 impl<T: TakeOwnedSlice> OwnedSlice for T {
     type Item = <T as TakeOwnedSlice>::Item;
+
     type Take = T;
 
     fn into_take_owned_slice(self) -> Self::Take {
         self
+    }
+}
+
+impl<T, const N: usize> OwnedSlice for [T; N] {
+    type Item = T;
+
+    type Take = array::IntoIter<T, N>;
+
+    fn into_take_owned_slice(self) -> Self::Take {
+        self.into_iter()
     }
 }
 
@@ -151,6 +160,18 @@ unsafe impl<T: TakeOwnedSlice + ?Sized> TakeOwnedSlice for &mut T {
     }
 }
 
+unsafe impl<T, const N: usize> TakeOwnedSlice for array::IntoIter<T, N> {
+    type Item = T;
+
+    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
+        unsafe { NonNull::new_unchecked(pointer::from_ref(self.as_slice()).cast_mut()) }
+    }
+
+    fn take_owned_slice(&mut self) {
+        self.for_each(mem::forget);
+    }
+}
+
 unsafe impl<T> TakeOwnedSlice for BumpBox<'_, [T]> {
     type Item = T;
 
@@ -222,48 +243,6 @@ unsafe impl<T> TakeOwnedSlice for Vec<T> {
 
     fn take_owned_slice(&mut self) {
         unsafe { self.set_len(0) }
-    }
-}
-
-/// The type returned from <code><[T; N]>::[into_take_owned_slice]</code>.
-///
-/// [into_take_owned_slice]: OwnedSlice::into_take_owned_slice
-pub struct ArrayOwnedSlice<T, const N: usize> {
-    array: [ManuallyDrop<T>; N],
-    taken: bool,
-}
-
-unsafe impl<T, const N: usize> TakeOwnedSlice for ArrayOwnedSlice<T, N> {
-    type Item = T;
-
-    #[inline(always)]
-    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
-        if self.taken {
-            return nonnull::slice_from_raw_parts(NonNull::dangling(), 0);
-        }
-
-        unsafe {
-            let ptr = NonNull::new_unchecked(self.array.as_ptr() as *mut T);
-            nonnull::slice_from_raw_parts(ptr, self.array.len())
-        }
-    }
-
-    #[inline(always)]
-    fn take_owned_slice(&mut self) {
-        self.taken = true;
-    }
-}
-
-impl<T, const N: usize> OwnedSlice for [T; N] {
-    type Item = T;
-
-    type Take = ArrayOwnedSlice<T, N>;
-
-    fn into_take_owned_slice(self) -> Self::Take {
-        ArrayOwnedSlice {
-            array: unsafe { transmute_value(self) },
-            taken: false,
-        }
     }
 }
 
