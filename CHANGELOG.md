@@ -3,15 +3,9 @@
 ## Unreleased
 - **breaking:** renamed `unchecked_push` to `push_unchecked`
 - **breaking:** renamed `unchecked_push_with` to `push_with_unchecked`
-- **breaking:** improved docs of `OwnedSlice`, technically making the safety conditions stricter
-- **breaking:** `append` methods take a new `impl IntoOwnedSlice` parameter
-- **breaking:** `append` can now be called with `alloc::vec::Vec` but no longer with `allocator_api2::vec::Vec`
-- **breaking:** `split_off` for vectors and strings no longer allocates, but splits in place
-- **breaking:** `split_off` now takes a range operand instead of a position
+- **breaking:** redesigned `OwnedSlice` trait (used as `append` parameter); `append` now accepts more types; `append` now accepts `alloc::vec::Vec` but no longer `allocator_api2::vec::Vec`
+- **breaking:** redesigned `split_off`; it no longer allocates, but splits in place; it now takes a range operand instead of a position; now available for `Fixed*` and `BumpBox<str>`
 - **deprecated:** `extend_from_array` in favor of `append`
-- **added:** `append` can now handle arrays, boxed arrays, boxed slices and trait objects
-- **added:** implemented `OwnedSlice` for `owned_slice::{IntoIter, Drain}`
-- **added:** `split_off` for `Fixed*` collections and `BumpBox<str>`
 - **added:** `BumpBox<[T; N]>::into_unsized` returning `BumpBox<[T]>`
 
 ## 0.14.0 (2024-12-12)
