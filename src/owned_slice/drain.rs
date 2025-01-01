@@ -11,7 +11,7 @@ use core::{
     ptr::{self, NonNull},
 };
 
-use super::OwnedSlice;
+use super::TakeOwnedSlice;
 
 /// A draining iterator for owned slices.
 ///
@@ -255,7 +255,7 @@ unsafe impl<T> core::iter::TrustedLen for Drain<'_, T> {}
 
 impl<T> FusedIterator for Drain<'_, T> {}
 
-unsafe impl<T> OwnedSlice for Drain<'_, T> {
+unsafe impl<T> TakeOwnedSlice for Drain<'_, T> {
     type Item = T;
 
     fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {

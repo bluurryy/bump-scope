@@ -3,7 +3,7 @@ use crate::{
     error_behavior_generic_methods_allocation_failure, min_non_zero_cap,
     mut_bump_vec::IntoIter,
     mut_collection_method_allocator_stats,
-    owned_slice::{IntoOwnedSlice, OwnedSlice},
+    owned_slice::{OwnedSlice, TakeOwnedSlice},
     polyfill::{self, nonnull, pointer},
     BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SetLenOnDrop, SizedTypeProperties, Stats,
 };
@@ -1209,9 +1209,9 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
         /// ```
         for fn try_append
         #[inline]
-        use fn generic_append(&mut self, other: impl IntoOwnedSlice<Item = T>) {
+        use fn generic_append(&mut self, other: impl OwnedSlice<Item = T>) {
             unsafe {
-                let mut owned_slice = other.into_owned_slice();
+                let mut owned_slice = other.into_take_owned_slice();
 
                 let slice = owned_slice.owned_slice_ptr();
                 self.generic_reserve(slice.len())?;

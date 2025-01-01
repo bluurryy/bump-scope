@@ -9,7 +9,7 @@ use core::{
     slice,
 };
 
-use super::OwnedSlice;
+use super::TakeOwnedSlice;
 
 /// An iterator that moves out of an owned slice.
 ///
@@ -224,7 +224,7 @@ impl<T> Drop for IntoIter<'_, T> {
 }
 
 // this implementation is tested in `drain.rs`
-unsafe impl<T> OwnedSlice for IntoIter<'_, T> {
+unsafe impl<T> TakeOwnedSlice for IntoIter<'_, T> {
     type Item = T;
 
     fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {

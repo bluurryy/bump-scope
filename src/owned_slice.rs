@@ -22,58 +22,55 @@ use crate::{
 /// Conversion to an [`OwnedSlice`].
 ///
 /// Any implementor of `OwnedSlice` automatically implements this trait.
-// FIXME: this naming is just plain wrong; of course boxed slices or arrays are owned slices
-//        and don't need to be converted to such; the `OwnedSlice` trait conveys something different
-//        like `Appendable`(?); this trait could be named `OwnedSlice` instead
-pub trait IntoOwnedSlice {
+pub trait OwnedSlice {
     /// The type of the elements of the owned slice.
     type Item;
 
     /// Which kind of owned slice are we turning this into?
-    type OwnedSlice: OwnedSlice<Item = Self::Item>;
+    type Take: TakeOwnedSlice<Item = Self::Item>;
 
     /// Creates an owned slice from a value.
-    fn into_owned_slice(self) -> Self::OwnedSlice;
+    fn into_take_owned_slice(self) -> Self::Take;
 }
 
-impl<T: OwnedSlice> IntoOwnedSlice for T {
-    type Item = <T as OwnedSlice>::Item;
-    type OwnedSlice = T;
+impl<T: TakeOwnedSlice> OwnedSlice for T {
+    type Item = <T as TakeOwnedSlice>::Item;
+    type Take = T;
 
-    fn into_owned_slice(self) -> Self::OwnedSlice {
+    fn into_take_owned_slice(self) -> Self::Take {
         self
     }
 }
 
-impl<'a, T, const N: usize> IntoOwnedSlice for BumpBox<'a, [T; N]> {
+impl<'a, T, const N: usize> OwnedSlice for BumpBox<'a, [T; N]> {
     type Item = T;
 
-    type OwnedSlice = BumpBox<'a, [T]>;
+    type Take = BumpBox<'a, [T]>;
 
-    fn into_owned_slice(self) -> Self::OwnedSlice {
+    fn into_take_owned_slice(self) -> Self::Take {
         self.into_unsized()
     }
 }
 
 #[cfg(feature = "alloc")]
-impl<T, const N: usize> IntoOwnedSlice for Box<[T; N]> {
+impl<T, const N: usize> OwnedSlice for Box<[T; N]> {
     type Item = T;
 
-    type OwnedSlice = Vec<T>;
+    type Take = Vec<T>;
 
-    fn into_owned_slice(self) -> Self::OwnedSlice {
+    fn into_take_owned_slice(self) -> Self::Take {
         let boxed_slice: Box<[T]> = self;
-        boxed_slice.into_owned_slice()
+        boxed_slice.into_take_owned_slice()
     }
 }
 
 #[cfg(feature = "alloc")]
-impl<T> IntoOwnedSlice for Box<[T]> {
+impl<T> OwnedSlice for Box<[T]> {
     type Item = T;
 
-    type OwnedSlice = Vec<T>;
+    type Take = Vec<T>;
 
-    fn into_owned_slice(self) -> Self::OwnedSlice {
+    fn into_take_owned_slice(self) -> Self::Take {
         self.into()
     }
 }
@@ -122,7 +119,7 @@ impl<T> IntoOwnedSlice for Box<[T]> {
 /// [`owned_slice_ptr`]: OwnedSlice::owned_slice_ptr
 /// [`take_owned_slice`]: OwnedSlice::take_owned_slice
 #[allow(clippy::len_without_is_empty)]
-pub unsafe trait OwnedSlice {
+pub unsafe trait TakeOwnedSlice {
     /// The element type of the slice.
     type Item;
 
@@ -138,7 +135,7 @@ pub unsafe trait OwnedSlice {
     fn take_owned_slice(&mut self);
 }
 
-unsafe impl<T: OwnedSlice + ?Sized> OwnedSlice for &mut T {
+unsafe impl<T: TakeOwnedSlice + ?Sized> TakeOwnedSlice for &mut T {
     type Item = T::Item;
 
     fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
@@ -150,7 +147,7 @@ unsafe impl<T: OwnedSlice + ?Sized> OwnedSlice for &mut T {
     }
 }
 
-unsafe impl<T> OwnedSlice for BumpBox<'_, [T]> {
+unsafe impl<T> TakeOwnedSlice for BumpBox<'_, [T]> {
     type Item = T;
 
     fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
@@ -162,7 +159,7 @@ unsafe impl<T> OwnedSlice for BumpBox<'_, [T]> {
     }
 }
 
-unsafe impl<T> OwnedSlice for FixedBumpVec<'_, T> {
+unsafe impl<T> TakeOwnedSlice for FixedBumpVec<'_, T> {
     type Item = T;
 
     fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
@@ -174,7 +171,7 @@ unsafe impl<T> OwnedSlice for FixedBumpVec<'_, T> {
     }
 }
 
-unsafe impl<T, A: BumpAllocator> OwnedSlice for BumpVec<T, A> {
+unsafe impl<T, A: BumpAllocator> TakeOwnedSlice for BumpVec<T, A> {
     type Item = T;
 
     fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
@@ -186,7 +183,7 @@ unsafe impl<T, A: BumpAllocator> OwnedSlice for BumpVec<T, A> {
     }
 }
 
-unsafe impl<T, A> OwnedSlice for MutBumpVec<T, A> {
+unsafe impl<T, A> TakeOwnedSlice for MutBumpVec<T, A> {
     type Item = T;
 
     fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
@@ -198,7 +195,7 @@ unsafe impl<T, A> OwnedSlice for MutBumpVec<T, A> {
     }
 }
 
-unsafe impl<T, A> OwnedSlice for MutBumpVecRev<T, A> {
+unsafe impl<T, A> TakeOwnedSlice for MutBumpVecRev<T, A> {
     type Item = T;
 
     fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
@@ -211,7 +208,7 @@ unsafe impl<T, A> OwnedSlice for MutBumpVecRev<T, A> {
 }
 
 #[cfg(feature = "alloc")]
-unsafe impl<T> OwnedSlice for Vec<T> {
+unsafe impl<T> TakeOwnedSlice for Vec<T> {
     type Item = T;
 
     fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
@@ -232,7 +229,7 @@ pub struct ArrayOwnedSlice<T, const N: usize> {
     taken: bool,
 }
 
-unsafe impl<T, const N: usize> OwnedSlice for ArrayOwnedSlice<T, N> {
+unsafe impl<T, const N: usize> TakeOwnedSlice for ArrayOwnedSlice<T, N> {
     type Item = T;
 
     #[inline(always)]
@@ -253,12 +250,12 @@ unsafe impl<T, const N: usize> OwnedSlice for ArrayOwnedSlice<T, N> {
     }
 }
 
-impl<T, const N: usize> IntoOwnedSlice for [T; N] {
+impl<T, const N: usize> OwnedSlice for [T; N] {
     type Item = T;
 
-    type OwnedSlice = ArrayOwnedSlice<T, N>;
+    type Take = ArrayOwnedSlice<T, N>;
 
-    fn into_owned_slice(self) -> Self::OwnedSlice {
+    fn into_take_owned_slice(self) -> Self::Take {
         ArrayOwnedSlice {
             array: unsafe { transmute_value(self) },
             taken: false,
@@ -273,23 +270,23 @@ mod tests {
     use super::*;
 
     const _: () = {
-        const fn is_dyn_compatible<T: OwnedSlice + ?Sized>() {}
-        is_dyn_compatible::<dyn OwnedSlice<Item = i32>>();
-        is_dyn_compatible::<&mut dyn OwnedSlice<Item = i32>>();
+        const fn is_dyn_compatible<T: TakeOwnedSlice + ?Sized>() {}
+        is_dyn_compatible::<dyn TakeOwnedSlice<Item = i32>>();
+        is_dyn_compatible::<&mut dyn TakeOwnedSlice<Item = i32>>();
     };
 
     macro_rules! assert_implements {
         ($($ty:ty)*) => {
             const _: () = {
                 type T = i32;
-                const fn implements<S: IntoOwnedSlice + ?Sized>() {}
+                const fn implements<S: OwnedSlice + ?Sized>() {}
                 $(implements::<$ty>();)*
             };
         };
     }
 
     assert_implements! {
-        &mut dyn OwnedSlice<Item = T>
+        &mut dyn TakeOwnedSlice<Item = T>
 
         [T; 3]
         BumpBox<[T; 3]>
