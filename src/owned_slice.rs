@@ -6,19 +6,15 @@ pub use drain::Drain;
 pub use extract_if::ExtractIf;
 pub use into_iter::IntoIter;
 
-use core::{
-    array,
-    mem::{self, ManuallyDrop},
-    ptr::NonNull,
-};
+use core::{array, mem, ptr::NonNull};
+
+#[cfg(feature = "alloc")]
+use core::mem::ManuallyDrop;
 
 #[cfg(feature = "alloc")]
 use alloc::{boxed::Box, vec::Vec};
 
-#[cfg(feature = "alloc")]
-use core::ptr;
-
-use crate::{polyfill::pointer, BumpAllocator, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev};
+use crate::{BumpAllocator, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev};
 
 /// A type that owns a slice of elements.
 ///
@@ -156,7 +152,7 @@ unsafe impl<T, const N: usize> TakeOwnedSlice for array::IntoIter<T, N> {
     type Item = T;
 
     fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
-        unsafe { NonNull::new_unchecked(pointer::from_ref(self.as_slice()).cast_mut()) }
+        NonNull::from(self.as_slice())
     }
 
     fn take_owned_slice(&mut self) {
@@ -236,7 +232,7 @@ unsafe impl<T> TakeOwnedSlice for Box<[T]> {
         // we must not drop the elements but we must deallocate the slice itself
         let ptr = Box::into_raw(mem::take(self));
         let forget_elements_box = unsafe { Box::<[ManuallyDrop<T>]>::from_raw(ptr as *mut [ManuallyDrop<T>]) };
-        drop(forget_elements_box)
+        drop(forget_elements_box);
     }
 }
 
@@ -245,8 +241,7 @@ unsafe impl<T> TakeOwnedSlice for Vec<T> {
     type Item = T;
 
     fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
-        let slice = ptr::slice_from_raw_parts(self.as_ptr(), self.len());
-        unsafe { NonNull::new_unchecked(slice as *mut [T]) }
+        NonNull::from(&**self)
     }
 
     fn take_owned_slice(&mut self) {
@@ -302,9 +297,9 @@ mod tests {
 
     #[cfg(feature = "alloc")]
     assert_implements! {
+        Box<[T]>
         Box<[T; 3]>
 
-        Box<[T]>
         Vec<T>
         &mut Vec<T>
     }

@@ -14,25 +14,25 @@ trait Append<T>: Deref<Target = [T]> {
 
 impl<T> Append<T> for FixedBumpVec<'_, T> {
     fn append(&mut self, other: impl OwnedSlice<Item = T>) {
-        FixedBumpVec::append(self, other)
+        FixedBumpVec::append(self, other);
     }
 }
 
 impl<T, A: BumpAllocator> Append<T> for BumpVec<T, A> {
     fn append(&mut self, other: impl OwnedSlice<Item = T>) {
-        BumpVec::append(self, other)
+        BumpVec::append(self, other);
     }
 }
 
 impl<T, A: MutBumpAllocator> Append<T> for MutBumpVec<T, A> {
     fn append(&mut self, other: impl OwnedSlice<Item = T>) {
-        MutBumpVec::append(self, other)
+        MutBumpVec::append(self, other);
     }
 }
 
 impl<T, A: MutBumpAllocator> Append<T> for MutBumpVecRev<T, A> {
     fn append(&mut self, other: impl OwnedSlice<Item = T>) {
-        MutBumpVecRev::append(self, other)
+        MutBumpVecRev::append(self, other);
     }
 }
 
