@@ -1,117 +1,338 @@
-use crate::{Bump, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev};
+#![allow(unused_allocation)]
+
 use alloc::vec::Vec;
+use core::{array, ops::Deref};
 
-struct StringCounter(i32);
+use crate::{
+    owned_slice::{OwnedSlice, TakeOwnedSlice},
+    Bump, BumpAllocator, BumpBox, BumpVec, FixedBumpVec, MutBumpAllocator, MutBumpVec, MutBumpVecRev,
+};
 
-impl StringCounter {
-    // use strings so miri catches missed or double drops
-    fn inc(&mut self) -> String {
-        let i = self.0;
-        self.0 += 1;
-        i.to_string()
+trait Append<T>: Deref<Target = [T]> {
+    fn append(&mut self, other: impl OwnedSlice<Item = T>);
+}
+
+impl<T> Append<T> for FixedBumpVec<'_, T> {
+    fn append(&mut self, other: impl OwnedSlice<Item = T>) {
+        FixedBumpVec::append(self, other)
     }
 }
 
-macro_rules! append {
-    (
-        $collector:ident;
-        $(
-            |$bump:ident, $items:ident| -> $ret:ty {
-                $($body:tt)*
-            }
-        )*
-    ) => {
-        let mut counter = StringCounter(0);
+impl<T, A: BumpAllocator> Append<T> for BumpVec<T, A> {
+    fn append(&mut self, other: impl OwnedSlice<Item = T>) {
+        BumpVec::append(self, other)
+    }
+}
 
-        $({
-            #[allow(unused_variables)]
-            fn f($bump: &mut Bump, $items: [String; 2]) -> $ret {
-                $($body)*
-            }
+impl<T, A: MutBumpAllocator> Append<T> for MutBumpVec<T, A> {
+    fn append(&mut self, other: impl OwnedSlice<Item = T>) {
+        MutBumpVec::append(self, other)
+    }
+}
 
-            let mut bump: Bump = Bump::new();
-            let array = [counter.inc(), counter.inc()];
-            let mut by_mut = f(&mut bump, array.clone());
-            assert_eq!(by_mut, array);
-            $collector.append(&mut by_mut);
-            assert_eq!(by_mut.len(), 0);
+impl<T, A: MutBumpAllocator> Append<T> for MutBumpVecRev<T, A> {
+    fn append(&mut self, other: impl OwnedSlice<Item = T>) {
+        MutBumpVecRev::append(self, other)
+    }
+}
 
-            let mut bump: Bump = Bump::new();
-            let array = [counter.inc(), counter.inc()];
-            let by_val = f(&mut bump, array.clone());
-            assert_eq!(by_val, array);
-            $collector.append(by_val);
-        })*
-    };
+fn test_strings() -> [String; 3] {
+    array::from_fn(|i| (i + 1).to_string())
+}
+
+fn test_append(mut vec: impl Append<String>, other: impl OwnedSlice<Item = String>) {
+    vec.append(other);
+    assert_eq!(&*vec, ["1", "2", "3"]);
+}
+
+#[test]
+fn append_fixed_vec() {
+    let bump: Bump = Bump::new();
+    let mut other_bump: Bump = Bump::new();
+
+    {
+        let vec = bump.alloc_fixed_vec(10);
+        let mut other = test_strings().into_take_owned_slice();
+        let other: &mut dyn TakeOwnedSlice<Item = String> = &mut other;
+        test_append(vec, other);
+    }
+
+    {
+        let vec = bump.alloc_fixed_vec(10);
+        let other: [String; 3] = test_strings();
+        test_append(vec, other);
+    }
+
+    {
+        let vec = bump.alloc_fixed_vec(10);
+        let other: Box<[String; 3]> = Box::new(test_strings());
+        test_append(vec, other);
+    }
+
+    {
+        let vec = bump.alloc_fixed_vec(10);
+        let other: Box<[String]> = Box::new(test_strings());
+        test_append(vec, other);
+    }
+
+    {
+        let vec = bump.alloc_fixed_vec(10);
+        let other: Vec<String> = Box::new(test_strings()).to_vec();
+        test_append(vec, other);
+    }
+
+    {
+        let vec = bump.alloc_fixed_vec(10);
+        let other: BumpBox<[String; 3]> = other_bump.alloc(test_strings());
+        test_append(vec, other);
+    }
+
+    {
+        let vec = bump.alloc_fixed_vec(10);
+        let other: BumpBox<[String]> = other_bump.alloc(test_strings()).into_unsized();
+        test_append(vec, other);
+    }
+
+    {
+        let vec = bump.alloc_fixed_vec(10);
+        let other: FixedBumpVec<String> = FixedBumpVec::from_iter_in(test_strings(), &other_bump);
+        test_append(vec, other);
+    }
+
+    {
+        let vec = bump.alloc_fixed_vec(10);
+        let other: BumpVec<String, _> = BumpVec::from_array_in(test_strings(), &other_bump);
+        test_append(vec, other);
+    }
+
+    {
+        let vec = bump.alloc_fixed_vec(10);
+        let other: MutBumpVec<String, _> = MutBumpVec::from_array_in(test_strings(), &mut other_bump);
+        test_append(vec, other);
+    }
+
+    {
+        let vec = bump.alloc_fixed_vec(10);
+        let other: MutBumpVecRev<String, _> = MutBumpVecRev::from_array_in(test_strings(), &mut other_bump);
+        test_append(vec, other);
+    }
 }
 
 #[test]
 fn append_vec() {
     let bump: Bump = Bump::new();
-    let mut collector = BumpVec::new_in(&bump);
+    let mut other_bump: Bump = Bump::new();
 
-    append! {
-        collector;
-        |bump, items| -> Vec<String> { Vec::from_iter(items) }
-        |bump, items| -> BumpBox<[String]> { bump.alloc_iter_exact(items) }
-        |bump, items| -> FixedBumpVec<String> { BumpVec::from_array_in(items, bump).into_fixed_vec() }
-        |bump, items| -> BumpVec<String, &Bump> { BumpVec::from_array_in(items, bump) }
-        |bump, items| -> MutBumpVec<String, &mut Bump> { MutBumpVec::from_array_in(items, bump) }
-        |bump, items| -> MutBumpVecRev<String, &mut Bump> { MutBumpVecRev::from_array_in(items, bump) }
+    {
+        let vec = BumpVec::new_in(&bump);
+        let mut other = test_strings().into_take_owned_slice();
+        let other: &mut dyn TakeOwnedSlice<Item = String> = &mut other;
+        test_append(vec, other);
     }
 
-    assert_eq!(
-        collector.as_slice(),
-        (0..(4 * 6)).map(|i| i.to_string()).collect::<Vec<_>>().as_slice()
-    );
+    {
+        let vec = BumpVec::new_in(&bump);
+        let other: [String; 3] = test_strings();
+        test_append(vec, other);
+    }
+
+    {
+        let vec = BumpVec::new_in(&bump);
+        let other: Box<[String; 3]> = Box::new(test_strings());
+        test_append(vec, other);
+    }
+
+    {
+        let vec = BumpVec::new_in(&bump);
+        let other: Box<[String]> = Box::new(test_strings());
+        test_append(vec, other);
+    }
+
+    {
+        let vec = BumpVec::new_in(&bump);
+        let other: Vec<String> = Box::new(test_strings()).to_vec();
+        test_append(vec, other);
+    }
+
+    {
+        let vec = BumpVec::new_in(&bump);
+        let other: BumpBox<[String; 3]> = other_bump.alloc(test_strings());
+        test_append(vec, other);
+    }
+
+    {
+        let vec = BumpVec::new_in(&bump);
+        let other: BumpBox<[String]> = other_bump.alloc(test_strings()).into_unsized();
+        test_append(vec, other);
+    }
+
+    {
+        let vec = BumpVec::new_in(&bump);
+        let other: FixedBumpVec<String> = FixedBumpVec::from_iter_in(test_strings(), &other_bump);
+        test_append(vec, other);
+    }
+
+    {
+        let vec = BumpVec::new_in(&bump);
+        let other: BumpVec<String, _> = BumpVec::from_array_in(test_strings(), &other_bump);
+        test_append(vec, other);
+    }
+
+    {
+        let vec = BumpVec::new_in(&bump);
+        let other: MutBumpVec<String, _> = MutBumpVec::from_array_in(test_strings(), &mut other_bump);
+        test_append(vec, other);
+    }
+
+    {
+        let vec = BumpVec::new_in(&bump);
+        let other: MutBumpVecRev<String, _> = MutBumpVecRev::from_array_in(test_strings(), &mut other_bump);
+        test_append(vec, other);
+    }
 }
 
 #[test]
-fn append_vec_mut() {
+fn append_mut_vec() {
     let mut bump: Bump = Bump::new();
-    let mut collector = MutBumpVec::new_in(&mut bump);
+    let mut other_bump: Bump = Bump::new();
 
-    append! {
-        collector;
-        |bump, items| -> Vec<String> { Vec::from_iter(items) }
-        |bump, items| -> BumpBox<[String]> { bump.alloc_iter_exact(items) }
-        |bump, items| -> FixedBumpVec<String> { BumpVec::from_array_in(items, bump).into_fixed_vec() }
-        |bump, items| -> BumpVec<String, &Bump> { BumpVec::from_array_in(items, bump) }
-        |bump, items| -> MutBumpVec<String, &mut Bump> { MutBumpVec::from_array_in(items, bump) }
-        |bump, items| -> MutBumpVecRev<String, &mut Bump> { MutBumpVecRev::from_array_in(items, bump) }
+    {
+        let vec = MutBumpVec::new_in(&mut bump);
+        let mut other = test_strings().into_take_owned_slice();
+        let other: &mut dyn TakeOwnedSlice<Item = String> = &mut other;
+        test_append(vec, other);
     }
 
-    assert_eq!(
-        collector.as_slice(),
-        (0..(4 * 6)).map(|i| i.to_string()).collect::<Vec<_>>().as_slice()
-    );
+    {
+        let vec = MutBumpVec::new_in(&mut bump);
+        let other: [String; 3] = test_strings();
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVec::new_in(&mut bump);
+        let other: Box<[String; 3]> = Box::new(test_strings());
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVec::new_in(&mut bump);
+        let other: Box<[String]> = Box::new(test_strings());
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVec::new_in(&mut bump);
+        let other: Vec<String> = Box::new(test_strings()).to_vec();
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVec::new_in(&mut bump);
+        let other: BumpBox<[String; 3]> = other_bump.alloc(test_strings());
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVec::new_in(&mut bump);
+        let other: BumpBox<[String]> = other_bump.alloc(test_strings()).into_unsized();
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVec::new_in(&mut bump);
+        let other: FixedBumpVec<String> = FixedBumpVec::from_iter_in(test_strings(), &other_bump);
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVec::new_in(&mut bump);
+        let other: BumpVec<String, _> = BumpVec::from_array_in(test_strings(), &other_bump);
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVec::new_in(&mut bump);
+        let other: MutBumpVec<String, _> = MutBumpVec::from_array_in(test_strings(), &mut other_bump);
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVec::new_in(&mut bump);
+        let other: MutBumpVecRev<String, _> = MutBumpVecRev::from_array_in(test_strings(), &mut other_bump);
+        test_append(vec, other);
+    }
 }
 
 #[test]
-fn append_vec_mut_rev() {
+fn append_mut_vec_rev() {
     let mut bump: Bump = Bump::new();
-    let mut collector = MutBumpVecRev::new_in(&mut bump);
+    let mut other_bump: Bump = Bump::new();
 
-    append! {
-        collector;
-        |bump, items| -> Vec<String> { Vec::from_iter(items) }
-        |bump, items| -> BumpBox<[String]> { bump.alloc_iter_exact(items) }
-        |bump, items| -> FixedBumpVec<String> { BumpVec::from_array_in(items, bump).into_fixed_vec() }
-        |bump, items| -> BumpVec<String, &Bump> { BumpVec::from_array_in(items, bump) }
-        |bump, items| -> MutBumpVec<String, &mut Bump> { MutBumpVec::from_array_in(items, bump) }
-        |bump, items| -> MutBumpVecRev<String, &mut Bump> { MutBumpVecRev::from_array_in(items, bump) }
+    {
+        let vec = MutBumpVecRev::new_in(&mut bump);
+        let mut other = test_strings().into_take_owned_slice();
+        let other: &mut dyn TakeOwnedSlice<Item = String> = &mut other;
+        test_append(vec, other);
     }
 
-    assert_eq!(
-        collector.as_slice(),
-        (0..(4 * 6))
-            .map(|i| i.to_string())
-            .collect::<Vec<_>>()
-            .chunks(2)
-            .rev()
-            .flatten()
-            .cloned()
-            .collect::<Vec<_>>()
-            .as_slice()
-    );
+    {
+        let vec = MutBumpVecRev::new_in(&mut bump);
+        let other: [String; 3] = test_strings();
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVecRev::new_in(&mut bump);
+        let other: Box<[String; 3]> = Box::new(test_strings());
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVecRev::new_in(&mut bump);
+        let other: Box<[String]> = Box::new(test_strings());
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVecRev::new_in(&mut bump);
+        let other: Vec<String> = Box::new(test_strings()).to_vec();
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVecRev::new_in(&mut bump);
+        let other: BumpBox<[String; 3]> = other_bump.alloc(test_strings());
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVecRev::new_in(&mut bump);
+        let other: BumpBox<[String]> = other_bump.alloc(test_strings()).into_unsized();
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVecRev::new_in(&mut bump);
+        let other: FixedBumpVec<String> = FixedBumpVec::from_iter_in(test_strings(), &other_bump);
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVecRev::new_in(&mut bump);
+        let other: BumpVec<String, _> = BumpVec::from_array_in(test_strings(), &other_bump);
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVecRev::new_in(&mut bump);
+        let other: MutBumpVecRev<String, _> = MutBumpVecRev::from_array_in(test_strings(), &mut other_bump);
+        test_append(vec, other);
+    }
+
+    {
+        let vec = MutBumpVecRev::new_in(&mut bump);
+        let other: MutBumpVecRev<String, _> = MutBumpVecRev::from_array_in(test_strings(), &mut other_bump);
+        test_append(vec, other);
+    }
 }
