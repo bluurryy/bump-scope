@@ -6,7 +6,11 @@ pub use drain::Drain;
 pub use extract_if::ExtractIf;
 pub use into_iter::IntoIter;
 
-use core::{array, mem, ptr::NonNull};
+use core::{
+    array,
+    mem::{self, ManuallyDrop},
+    ptr::NonNull,
+};
 
 #[cfg(feature = "alloc")]
 use alloc::{boxed::Box, vec::Vec};
@@ -67,22 +71,10 @@ impl<'a, T, const N: usize> OwnedSlice for BumpBox<'a, [T; N]> {
 impl<T, const N: usize> OwnedSlice for Box<[T; N]> {
     type Item = T;
 
-    type Take = Vec<T>;
+    type Take = Box<[T]>;
 
     fn into_take_owned_slice(self) -> Self::Take {
-        let boxed_slice: Box<[T]> = self;
-        boxed_slice.into_take_owned_slice()
-    }
-}
-
-#[cfg(feature = "alloc")]
-impl<T> OwnedSlice for Box<[T]> {
-    type Item = T;
-
-    type Take = Vec<T>;
-
-    fn into_take_owned_slice(self) -> Self::Take {
-        self.into()
+        self
     }
 }
 
@@ -229,6 +221,22 @@ unsafe impl<T, A> TakeOwnedSlice for MutBumpVecRev<T, A> {
 
     fn take_owned_slice(&mut self) {
         unsafe { self.set_len(0) }
+    }
+}
+
+#[cfg(feature = "alloc")]
+unsafe impl<T> TakeOwnedSlice for Box<[T]> {
+    type Item = T;
+
+    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
+        NonNull::from(&**self)
+    }
+
+    fn take_owned_slice(&mut self) {
+        // we must not drop the elements but we must deallocate the slice itself
+        let ptr = Box::into_raw(mem::take(self));
+        let forget_elements_box = unsafe { Box::<[ManuallyDrop<T>]>::from_raw(ptr as *mut [ManuallyDrop<T>]) };
+        drop(forget_elements_box)
     }
 }
 
