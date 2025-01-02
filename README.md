@@ -52,7 +52,13 @@ Unlike `bumpalo`, this crate...
 - [You can choose the bump direction.](#bumping-upwards-or-downwards) Bumps upwards by default.
 - [You can choose the minimum alignment.](#minimum-alignment) `1` by default.
 
+## Allocator Methods
+
+The bump allocator provides many methods to conveniently allocate values, strings and slices.
+Have a look at the documentation of [`Bump`] for a method overview and more.
+
 ## Scopes and Checkpoints
+
 You can create scopes to make allocations that live only for a part of its parent scope.
 Entering and exiting scopes is virtually free. Allocating within a scope has no overhead.
 
@@ -121,6 +127,9 @@ assert_eq!(bump.stats().allocated(), 0);
 `bump-scope` provides bump allocated variants of `Vec` and `String` called `BumpVec` and `BumpString`. They also come in a different flavors:
 - `Fixed*` for fixed capacity collections
 - `Mut*` for collections optimized for a mutable bump allocator
+
+The api of vectors and strings should reflect the standard library. An exception is [`retain`](BumpVec::retain) which has the signature of std's `retain_mut` and [`split_off`](BumpVec::split_off) which
+takes a range as a parameter and does not allocate. There are also some additions like [`map`](BumpVec::map) and [`map_in_place`](BumpVec::map_in_place).
 
 ## Parallel Allocation
 `Bump` is `!Sync` which means it can't be shared between threads.
