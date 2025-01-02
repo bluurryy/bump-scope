@@ -10,10 +10,12 @@ use core::{array, mem, ptr::NonNull};
 
 #[cfg(feature = "alloc")]
 use core::mem::ManuallyDrop;
-use std::vec;
 
 #[cfg(feature = "alloc")]
-use alloc::{boxed::Box, vec::Vec};
+use alloc::{
+    boxed::Box,
+    vec::{self, Vec},
+};
 
 use crate::{BumpAllocator, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev};
 
