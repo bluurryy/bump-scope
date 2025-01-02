@@ -1,3 +1,5 @@
+#![allow(clippy::similar_names)]
+
 use crate::{bump_vec, Bump, BumpString, BumpVec};
 
 use super::TestWrap;
