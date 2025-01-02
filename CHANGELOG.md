@@ -3,8 +3,8 @@
 ## Unreleased
 - **breaking:** renamed `unchecked_push` to `push_unchecked`
 - **breaking:** renamed `unchecked_push_with` to `push_with_unchecked`
-- **breaking:** redesigned `OwnedSlice` trait (used as `append` parameter); `append` now accepts more types; `append` now accepts `alloc::vec::Vec` but no longer `allocator_api2::vec::Vec`
-- **breaking:** redesigned `split_off`; it no longer allocates, but splits in place; it now takes a range operand instead of a position; now available for `Fixed*` and `BumpBox<str>`
+- **breaking:** redesigned `OwnedSlice` trait (used as `append` parameter); `append` now accepts more types; `append` now accepts `alloc::vec::Vec` instead of `allocator_api2::vec::Vec`
+- **breaking:** redesigned `split_off`; it no longer allocates, but splits in place; it now takes a range parameter instead of a position; now available for `Fixed*` and `BumpBox<str>`
 - **breaking:** added safety condition of splittable memory blocks to `BumpAllocator`
 - **deprecated:** `extend_from_array` in favor of `append`
 - **added:** `BumpBox<[T; N]>::into_unsized` returning `BumpBox<[T]>`
