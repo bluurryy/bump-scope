@@ -74,21 +74,15 @@ impl<T, const N: usize> OwnedSlice for Box<[T; N]> {
     }
 }
 
-/// A type which owns a slice and can abandon its ownership over it.
+/// A type which owns a slice and can relinquish its ownership of it.
 ///
 /// This trait is used for the `append` method of this crate's vector types via the [`OwnedSlice`] trait.
 ///
-/// This trait can only be implemented for types that can empty their slice.
-/// Types like `[T; N]` or `Box<[T]>` can not implement it but can be converted into a type that does via the [`OwnedSlice`] trait.
+/// The key idea behind this trait is that implementors must behave like a `Vec<T>` in the sense that
+/// they manage a slice they fully own. When the slice is "taken" using `take_owned_slice`, the implementor
+/// must relinquish ownership of its elements entirely, leaving behind an empty slice.
 ///
-/// # Safety
-///
-/// - [`owned_slice_ptr`] must return a pointer to a valid slice of initialized values
-/// - [`take_owned_slice`] will make the implementor relinquish its ownership over the elements of this slice, the caller is now responsible for dropping those elements
-///   The elements must no longer be accessible via the implementor. (like <code>Vec::[set_len]\(0)</code>).
-///   After calling this, `owned_slice_ptr` must return a slice pointer with a length of `0`.
-///
-/// For example this function must be sound:
+/// The goal of the safety conditions for implementor and caller are so that a function like this is sound:
 /// ```
 /// # extern crate alloc;
 /// # use alloc::vec::Vec;
@@ -116,6 +110,15 @@ impl<T, const N: usize> OwnedSlice for Box<[T; N]> {
 /// # assert_eq!(vec, ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"])
 /// ```
 ///
+/// # Safety
+///
+/// The implementor must own a slice, that both of the methods operate on. Lets call it *the slice*.
+///
+/// - `owned_slice_ptr` must return a pointer to *the slice* valid to be read.
+/// - `take_owned_slice` relinquishes the ownership of *the slice*. The elements of *the slice* **must not be dropped**. Once called, *the slice* becomes an empty slice.
+/// - Between calls to `owned_slice_ptr` and `take_owned_slice`, the caller can assume that *the slice* won't change as long as the caller itself does not interact
+///   with the type. As such the implementor must not be implemented for a type whose *the slice* could change from a different thread for instance.
+///
 /// [set_len]: alloc::vec::Vec::set_len
 /// [`owned_slice_ptr`]: TakeOwnedSlice::owned_slice_ptr
 /// [`take_owned_slice`]: TakeOwnedSlice::take_owned_slice
@@ -124,15 +127,17 @@ pub unsafe trait TakeOwnedSlice {
     /// The element type of the slice.
     type Item;
 
-    /// Returns the raw slice pointer.
+    /// Returns a pointer to its slice valid to be read.
     fn owned_slice_ptr(&self) -> NonNull<[Self::Item]>;
 
-    /// This makes the container forget all of its elements.
-    /// (like <code>Vec::[set_len]\(0)</code>)
+    /// This will make the slice forget all of its elements.
     ///
-    /// The caller is now responsible for dropping the elements.
+    /// *Its elements* are the same elements pointed to by its [`owned_slice_ptr`].
+    /// The caller is now responsible for dropping those elements.
     ///
-    /// [set_len]: alloc::vec::Vec::set_len
+    /// After calling this, `owned_slice_ptr` will return a slice pointer with a length of `0`.
+    ///
+    /// [`owned_slice_ptr`]: Self::owned_slice_ptr
     fn take_owned_slice(&mut self);
 }
 
