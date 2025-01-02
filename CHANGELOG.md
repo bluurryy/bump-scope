@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **added:** implemented `TakeOwnedSlice` for `vec::IntoIter` and `vec::Drain`
+
 ## 0.15.0 (2025-01-02)
 - **breaking:** renamed `unchecked_push` to `push_unchecked`
 - **breaking:** renamed `unchecked_push_with` to `push_with_unchecked`

@@ -10,6 +10,7 @@ use core::{array, mem, ptr::NonNull};
 
 #[cfg(feature = "alloc")]
 use core::mem::ManuallyDrop;
+use std::vec;
 
 #[cfg(feature = "alloc")]
 use alloc::{boxed::Box, vec::Vec};
@@ -251,6 +252,32 @@ unsafe impl<T> TakeOwnedSlice for Vec<T> {
 
     fn take_owned_slice(&mut self) {
         unsafe { self.set_len(0) }
+    }
+}
+
+#[cfg(feature = "alloc")]
+unsafe impl<T> TakeOwnedSlice for vec::IntoIter<T> {
+    type Item = T;
+
+    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
+        NonNull::from(self.as_slice())
+    }
+
+    fn take_owned_slice(&mut self) {
+        self.for_each(mem::forget);
+    }
+}
+
+#[cfg(feature = "alloc")]
+unsafe impl<T> TakeOwnedSlice for vec::Drain<'_, T> {
+    type Item = T;
+
+    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
+        NonNull::from(self.as_slice())
+    }
+
+    fn take_owned_slice(&mut self) {
+        self.for_each(mem::forget);
     }
 }
 
