@@ -13,11 +13,11 @@ readme = "README.md"
 exclude = ["*.nu", "justfile", "tests", ".vscode", ".github"]
 
 [dependencies]
-allocator-api2 = { version = "0.2.16", default-features = false }
+allocator-api2 = { version = "0.2.21", default-features = false }
 sptr = "0.3.2"
-serde = { version = "1.0.197", optional = true }
-zerocopy = { version = "0.8.2", default-features = false, optional = true }
-rustversion = "1.0.18"
+serde = { version = "1.0.217", optional = true }
+zerocopy = { version = "0.8.14", default-features = false, optional = true }
+rustversion = "1.0.19"
 
 [features]
 default = ["std", "alloc", "panic-on-alloc"]
