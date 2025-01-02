@@ -1346,28 +1346,40 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         impl
         do examples
         /// ```
-        /// # use bump_scope::{ Bump, bump_vec };
+        /// # use bump_scope::{ Bump, BumpVec };
         /// # let bump: Bump = Bump::new();
-        /// // needs a scope because of lifetime shenanigans
-        /// let bump = bump.as_scope();
-        /// let mut slice = bump.alloc_slice_copy(&[4, 5, 6]);
-        /// let mut vec = bump_vec![in &bump; 1, 2, 3];
-        /// vec.append(&mut slice);
-        /// assert_eq!(vec, [1, 2, 3, 4, 5, 6]);
-        /// assert_eq!(slice, []);
+        /// let mut vec = BumpVec::new_in(&bump);
+        ///
+        /// // append by value
+        /// vec.append([1, 2]);
+        /// vec.append(vec![3, 4]);
+        /// vec.append(bump.alloc_iter(5..=6));
+        ///
+        /// // append mutable reference
+        /// let mut other = vec![7, 8];
+        /// vec.append(&mut other);
+        ///
+        /// assert_eq!(other, []);
+        /// assert_eq!(vec, [1, 2, 3, 4, 5, 6, 7, 8]);
         /// ```
         for fn append
         do examples
         /// ```
-        /// # use bump_scope::{ Bump, bump_vec };
-        /// # let bump: Bump = Bump::try_new()?;
-        /// // needs a scope because of lifetime shenanigans
-        /// let bump = bump.as_scope();
-        /// let mut slice = bump.try_alloc_slice_copy(&[4, 5, 6])?;
-        /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
-        /// vec.try_append(&mut slice)?;
-        /// assert_eq!(vec, [1, 2, 3, 4, 5, 6]);
-        /// assert_eq!(slice, []);
+        /// # use bump_scope::{ Bump, BumpVec };
+        /// # let bump: Bump = Bump::new();
+        /// let mut vec = BumpVec::new_in(&bump);
+        ///
+        /// // append by value
+        /// vec.try_append([1, 2])?;
+        /// vec.try_append(vec![3, 4])?;
+        /// vec.try_append(bump.alloc_iter(5..=6))?;
+        ///
+        /// // append mutable reference
+        /// let mut other = vec![7, 8];
+        /// vec.try_append(&mut other)?;
+        ///
+        /// assert_eq!(other, []);
+        /// assert_eq!(vec, [1, 2, 3, 4, 5, 6, 7, 8]);
         /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
         /// ```
         for fn try_append
