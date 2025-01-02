@@ -93,6 +93,7 @@
     "shrinknt",
     "sinkptr",
     "slicemut",
+    "splittable",
     "sptr",
     "srcptr",
     "structs",
