@@ -1,4 +1,4 @@
-#![allow(unused_allocation)]
+#![allow(unused_allocation, clippy::unnecessary_to_owned)]
 
 use alloc::vec::{self, Vec};
 use core::{array, ops::Deref};
