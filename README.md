@@ -55,7 +55,7 @@ Unlike `bumpalo`, this crate...
 ## Allocator Methods
 
 The bump allocator provides many methods to conveniently allocate values, strings and slices.
-Have a look at the documentation of [`Bump`] for a method overview and more.
+Have a look at the documentation of `Bump` for a method overview.
 
 ## Scopes and Checkpoints
 
