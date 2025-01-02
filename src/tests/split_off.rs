@@ -1,4 +1,4 @@
-use crate::{Bump, BumpString, BumpVec};
+use crate::{bump_vec, Bump, BumpString, BumpVec};
 
 use super::TestWrap;
 
@@ -310,4 +310,36 @@ fn string_split_off_panic_middle_end() {
     let bump: Bump = Bump::new();
     let mut string = BumpString::from_str_in("❤️❤️❤️", &bump);
     string.split_off((string.len() / 3)..(string.len() / 3) * 2 - 1);
+}
+
+#[test]
+fn vec_compare_to_std() {
+    let bump: Bump = Bump::new();
+
+    let mut std = vec!['a', 'b', 'c', 'd', 'e'];
+    let mut bmp = bump_vec![in &bump; 'a', 'b', 'c', 'd', 'e'];
+
+    let std_off = std.split_off(2);
+    let bmp_off = bmp.split_off(2..);
+
+    assert_eq!(&*std, &*bmp);
+    assert_eq!(&*std_off, &*bmp_off);
+    assert_eq!(&*std, ['a', 'b']);
+    assert_eq!(&*std_off, ['c', 'd', 'e']);
+}
+
+#[test]
+fn string_compare_to_std() {
+    let bump: Bump = Bump::new();
+
+    let mut std = String::from("abcde");
+    let mut bmp = BumpString::from_str_in("abcde", &bump);
+
+    let std_off = std.split_off(2);
+    let bmp_off = bmp.split_off(2..);
+
+    assert_eq!(&*std, &*bmp);
+    assert_eq!(&*std_off, &*bmp_off);
+    assert_eq!(&*std, "ab");
+    assert_eq!(&*std_off, "cde");
 }
