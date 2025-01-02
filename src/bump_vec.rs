@@ -1407,7 +1407,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// Compared to `from_iter_in(into_iter().map(f), ...)` this method has the advantage that it can reuse the existing allocation.
     ///
     /// # Panics
-    /// Panics if the allocation fails. An allocation only occurs when the alignment or size of `U` is greater than that of `T`.
+    /// Panics if the allocation fails. An allocation can only occurs when the alignment or size of `U` is greater than that of `T`.
     ///
     /// # Examples
     /// Mapping to a type with an equal alignment and size (allocator won't be touched):
@@ -1463,7 +1463,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// Compared to `try_from_iter_in(into_iter().map(f), ...)` this method has the advantage that it can reuse the existing allocation.
     ///
     /// # Errors
-    /// Errors if the allocation fails. An allocation only occurs when the alignment or size of `U` is greater than that of `T`.
+    /// Errors if the allocation fails. An allocation can only occurs when the alignment or size of `U` is greater than that of `T`.
     ///
     /// # Examples
     /// Mapping to a type with an equal alignment and size (allocator won't be touched):
