@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.15.0 (2025-01-02)
 - **breaking:** renamed `unchecked_push` to `push_unchecked`
 - **breaking:** renamed `unchecked_push_with` to `push_with_unchecked`
 - **breaking:** redesigned `OwnedSlice` trait (used as `append` parameter); `append` now accepts more types; `append` now accepts `alloc::vec::Vec` instead of `allocator_api2::vec::Vec`
