@@ -2,12 +2,14 @@
 #![allow(non_snake_case, clippy::missing_safety_doc, deprecated)]
 extern crate alloc;
 
+use core::{alloc::Layout, ffi::CStr, fmt, mem::MaybeUninit, ptr::NonNull};
+
 use alloc::boxed::Box;
+
 use bump_scope::{
     allocator_api2::alloc::{AllocError, Allocator, Global},
     BumpBox, FixedBumpString, FixedBumpVec,
 };
-use core::{alloc::Layout, ffi::CStr, fmt, mem::MaybeUninit, ptr::NonNull};
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 

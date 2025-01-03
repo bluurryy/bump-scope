@@ -1,9 +1,9 @@
 #![allow(non_camel_case_types)]
 
+use std::{alloc::Layout, fmt::Debug, mem};
+
 use arbitrary::Arbitrary;
 use bump_scope::{allocator_api2::alloc::Global, Bump, MinimumAlignment, SupportedMinimumAlignment};
-use core::fmt::Debug;
-use std::{alloc::Layout, mem};
 
 use crate::{MinAlign, UpTo};
 

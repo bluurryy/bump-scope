@@ -1,7 +1,5 @@
 //! Adapted from rust's `library/alloc/tests/vec.rs` commit f7ca9df69549470541fbf542f87a03eb9ed024b6
 
-use allocator_api2::alloc::{AllocError, Allocator, Layout};
-
 use std::{
     alloc::System,
     assert_eq,
@@ -27,6 +25,8 @@ use std::{
     },
     vec::{Drain, IntoIter, Vec},
 };
+
+use allocator_api2::alloc::{AllocError, Allocator, Layout};
 
 use crate::{bump_vec, Bump, BumpVec};
 

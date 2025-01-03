@@ -1,6 +1,8 @@
-use super::either_way;
-use crate::{Bump, BumpString, BumpVec};
 use allocator_api2::alloc::Global;
+
+use crate::{Bump, BumpString, BumpVec};
+
+use super::either_way;
 
 either_way! {
     shrinks

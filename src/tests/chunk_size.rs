@@ -1,6 +1,8 @@
-use crate::Bump;
+use std::convert::Infallible;
+
 use allocator_api2::alloc::{Allocator, Global};
-use core::convert::Infallible;
+
+use crate::Bump;
 
 #[test]
 fn aligned_allocator_issue_32() {

@@ -1,12 +1,3 @@
-use crate::{
-    destructure::destructure,
-    error_behavior_generic_methods_allocation_failure, min_non_zero_cap,
-    mut_bump_vec::IntoIter,
-    mut_collection_method_allocator_stats,
-    owned_slice::{OwnedSlice, TakeOwnedSlice},
-    polyfill::{self, nonnull, pointer},
-    BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SetLenOnDrop, SizedTypeProperties, Stats,
-};
 use core::{
     borrow::{Borrow, BorrowMut},
     fmt::Debug,
@@ -18,6 +9,16 @@ use core::{
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::{self, NonNull},
     slice::{self, SliceIndex},
+};
+
+use crate::{
+    destructure::destructure,
+    error_behavior_generic_methods_allocation_failure, min_non_zero_cap,
+    mut_bump_vec::IntoIter,
+    mut_collection_method_allocator_stats,
+    owned_slice::{OwnedSlice, TakeOwnedSlice},
+    polyfill::{self, nonnull, pointer},
+    BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SetLenOnDrop, SizedTypeProperties, Stats,
 };
 
 /// This is like [`vec!`](alloc::vec!) but allocates inside a bump allocator, returning a [`MutBumpVecRev`].

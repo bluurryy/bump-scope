@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 //! Make sure you sync this file with `crates/fuzzing-support/src/from_bump_scope/bumping.rs`.
 
-use core::{alloc::Layout, num::NonZeroUsize, ops::Range};
+use std::{alloc::Layout, num::NonZeroUsize, ops::Range};
 
 pub(crate) const MIN_CHUNK_ALIGN: usize = 16;
 

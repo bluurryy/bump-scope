@@ -1,6 +1,23 @@
 #![allow(unused_imports, clippy::incompatible_msrv)]
 #![cfg(feature = "std")]
 
+use std::{
+    alloc::Layout,
+    any::Any,
+    boxed::Box,
+    cell::Cell,
+    dbg, eprintln,
+    fmt::Debug,
+    io::IoSlice,
+    mem,
+    ops::Index,
+    ptr::NonNull,
+    string::{String, ToString},
+    sync::atomic::{AtomicUsize, Ordering},
+    thread_local,
+    vec::Vec,
+};
+
 mod alloc_cstr;
 mod alloc_fmt;
 mod alloc_iter;
@@ -31,26 +48,6 @@ mod test_wrap;
 mod unaligned_collection;
 mod unallocated;
 mod vec;
-
-use core::{
-    alloc::Layout,
-    any::Any,
-    cell::Cell,
-    fmt::Debug,
-    mem,
-    ops::Index,
-    ptr::NonNull,
-    sync::atomic::{AtomicUsize, Ordering},
-};
-
-use std::{
-    boxed::Box,
-    dbg, eprintln,
-    io::IoSlice,
-    string::{String, ToString},
-    thread_local,
-    vec::Vec,
-};
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 

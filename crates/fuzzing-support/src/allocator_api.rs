@@ -1,4 +1,5 @@
-use crate::{dbg, eprintln, MaybeFailingAllocator, MinAlign, RcAllocator};
+use std::{alloc::Layout, ops::Range, ptr::NonNull, rc::Rc};
+
 use arbitrary::{Arbitrary, Unstructured};
 use bump_scope::{
     allocator_api2::alloc::{Allocator, Global},
@@ -6,7 +7,8 @@ use bump_scope::{
 };
 use core::fmt::Debug;
 use rangemap::RangeSet;
-use std::{alloc::Layout, ops::Range, ptr::NonNull, rc::Rc};
+
+use crate::{dbg, eprintln, MaybeFailingAllocator, MinAlign, RcAllocator};
 
 #[derive(Debug, Arbitrary)]
 pub struct Fuzz {

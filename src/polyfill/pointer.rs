@@ -1,5 +1,6 @@
-use crate::assume_unchecked;
 use core::{mem, ptr};
+
+use crate::assume_unchecked;
 
 #[must_use]
 #[inline(always)]

@@ -1,9 +1,3 @@
-use crate::{
-    error_behavior_generic_methods_allocation_failure, mut_collection_method_allocator_stats, owned_str,
-    polyfill::{self, transmute_mut, transmute_value},
-    raw_fixed_bump_string::RawFixedBumpString,
-    BumpBox, ErrorBehavior, FromUtf16Error, FromUtf8Error, MutBumpAllocator, MutBumpAllocatorScope, MutBumpVec, Stats,
-};
 use core::{
     borrow::{Borrow, BorrowMut},
     ffi::CStr,
@@ -15,6 +9,13 @@ use core::{
 };
 
 use allocator_api2::alloc::AllocError;
+
+use crate::{
+    error_behavior_generic_methods_allocation_failure, mut_collection_method_allocator_stats, owned_str,
+    polyfill::{self, transmute_mut, transmute_value},
+    raw_fixed_bump_string::RawFixedBumpString,
+    BumpBox, ErrorBehavior, FromUtf16Error, FromUtf8Error, MutBumpAllocator, MutBumpAllocatorScope, MutBumpVec, Stats,
+};
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::{panic_on_error, PanicsOnAlloc};

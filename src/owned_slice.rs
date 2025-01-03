@@ -1,11 +1,3 @@
-mod drain;
-mod extract_if;
-mod into_iter;
-
-pub use drain::Drain;
-pub use extract_if::ExtractIf;
-pub use into_iter::IntoIter;
-
 use core::{array, mem, ptr::NonNull};
 
 #[cfg(feature = "alloc")]
@@ -18,6 +10,14 @@ use alloc::{
 };
 
 use crate::{BumpAllocator, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev};
+
+mod drain;
+mod extract_if;
+mod into_iter;
+
+pub use drain::Drain;
+pub use extract_if::ExtractIf;
+pub use into_iter::IntoIter;
 
 /// A type that owns a slice of elements.
 ///

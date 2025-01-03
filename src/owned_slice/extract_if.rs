@@ -1,5 +1,6 @@
-use crate::{polyfill::nonnull, BumpBox};
 use core::ptr::NonNull;
+
+use crate::{polyfill::nonnull, BumpBox};
 
 /// An iterator which uses a closure to determine if an element should be removed.
 ///

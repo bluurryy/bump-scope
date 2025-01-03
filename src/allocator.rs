@@ -1,12 +1,14 @@
 // TODO: Figure out a way to make coverage report not suck because of `if UP { ... } else { ... }`.
 #![allow(clippy::unnecessary_wraps)]
 
+use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
+
+use allocator_api2::alloc::{AllocError, Allocator};
+
 use crate::{
     bump_down, polyfill::nonnull, up_align_usize_unchecked, BaseAllocator, Bump, BumpScope, MinimumAlignment,
     SupportedMinimumAlignment,
 };
-use allocator_api2::alloc::{AllocError, Allocator};
-use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
     for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>

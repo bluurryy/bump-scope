@@ -1,5 +1,6 @@
-use crate::polyfill::nonnull;
 use core::{cell::Cell, ptr::NonNull};
+
+use crate::polyfill::nonnull;
 
 #[repr(C, align(16))]
 pub(crate) struct ChunkHeader<A = ()> {

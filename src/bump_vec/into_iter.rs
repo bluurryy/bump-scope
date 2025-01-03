@@ -8,10 +8,10 @@ use core::{
     slice,
 };
 
-use crate::{polyfill::nonnull, BumpAllocator, SizedTypeProperties};
-
 #[cfg(feature = "panic-on-alloc")]
 use core::mem::MaybeUninit;
+
+use crate::{polyfill::nonnull, BumpAllocator, SizedTypeProperties};
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::{raw_fixed_bump_vec::RawFixedBumpVec, BumpBox, BumpVec, FixedBumpVec};

@@ -2,11 +2,12 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_imports)]
 
+use std::{alloc::Layout, ptr::NonNull};
+
 use bump_scope::{
     allocator_api2::alloc::{AllocError, Allocator, Global},
     BumpBox,
 };
-use std::{alloc::Layout, ptr::NonNull};
 
 #[derive(Clone, Copy)]
 #[repr(align(512))]

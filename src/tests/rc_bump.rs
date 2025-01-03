@@ -1,6 +1,6 @@
-use alloc::rc::Rc;
+use std::{alloc::Layout, ops::Deref, ptr::NonNull, rc::Rc};
+
 use allocator_api2::alloc::{AllocError, Allocator, Global};
-use core::{alloc::Layout, ops::Deref, ptr::NonNull};
 
 use crate::{Bump, BumpAllocator, BumpAllocatorScope};
 

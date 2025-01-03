@@ -1,9 +1,10 @@
 #![feature(pointer_is_aligned_to, allocator_api)]
 #![allow(clippy::cargo_common_metadata)]
 
+use std::{alloc::Layout, cell::Cell, mem::swap, ops::Deref, ptr::NonNull, rc::Rc};
+
 use arbitrary::{Arbitrary, Unstructured};
 use bump_scope::allocator_api2::alloc::{AllocError, Allocator};
-use std::{alloc::Layout, cell::Cell, mem::swap, ops::Deref, ptr::NonNull, rc::Rc};
 
 pub use arbitrary;
 pub use bump_scope;

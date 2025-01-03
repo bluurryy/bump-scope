@@ -1,10 +1,10 @@
-use alloc::vec::Vec;
-use core::{
+use std::{
     alloc::Layout,
     mem::{self, ManuallyDrop},
     ops::{Deref, DerefMut},
+    sync::{Mutex, MutexGuard, PoisonError},
+    vec::Vec,
 };
-use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use crate::{
     error_behavior_generic_methods_allocation_failure, BaseAllocator, Bump, BumpScope, MinimumAlignment,

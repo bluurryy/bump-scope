@@ -1,6 +1,8 @@
+use crate::{layout, AllocError, BumpAllocator, Layout, MutBumpAllocator, NonNull, RawChunk, SupportedMinimumAlignment};
+
 #[cfg(feature = "panic-on-alloc")]
 use crate::{capacity_overflow, format_trait_error, handle_alloc_error, Infallible};
-use crate::{layout, AllocError, BumpAllocator, Layout, MutBumpAllocator, NonNull, RawChunk, SupportedMinimumAlignment};
+
 use layout::LayoutProps;
 
 pub(crate) trait ErrorBehavior: Sized {

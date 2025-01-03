@@ -1,15 +1,3 @@
-mod into_iter;
-
-pub use into_iter::IntoIter;
-
-use crate::{
-    error_behavior_generic_methods_allocation_failure, min_non_zero_cap, mut_collection_method_allocator_stats,
-    owned_slice::{self, OwnedSlice, TakeOwnedSlice},
-    polyfill::{nonnull, pointer, slice},
-    raw_bump_box::RawBumpBox,
-    raw_fixed_bump_vec::RawFixedBumpVec,
-    BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats,
-};
 use core::{
     borrow::{Borrow, BorrowMut},
     fmt::Debug,
@@ -21,6 +9,19 @@ use core::{
     ptr::{self, NonNull},
     slice::SliceIndex,
 };
+
+use crate::{
+    error_behavior_generic_methods_allocation_failure, min_non_zero_cap, mut_collection_method_allocator_stats,
+    owned_slice::{self, OwnedSlice, TakeOwnedSlice},
+    polyfill::{nonnull, pointer, slice},
+    raw_bump_box::RawBumpBox,
+    raw_fixed_bump_vec::RawFixedBumpVec,
+    BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats,
+};
+
+mod into_iter;
+
+pub use into_iter::IntoIter;
 
 /// This is like [`vec!`](alloc::vec!) but allocates inside a bump allocator, returning a [`MutBumpVec`].
 ///

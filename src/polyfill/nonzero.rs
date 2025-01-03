@@ -1,5 +1,6 @@
-use super::const_unwrap;
 use core::num::NonZeroUsize;
+
+use super::const_unwrap;
 
 #[inline(always)]
 pub(crate) const fn max(lhs: NonZeroUsize, rhs: usize) -> NonZeroUsize {

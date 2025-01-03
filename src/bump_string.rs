@@ -1,14 +1,3 @@
-#[cfg(feature = "panic-on-alloc")]
-use crate::PanicsOnAlloc;
-use crate::{
-    collection_method_allocator_stats,
-    destructure::destructure,
-    error_behavior_generic_methods_allocation_failure, owned_str,
-    polyfill::{self, transmute_mut, transmute_value},
-    raw_fixed_bump_string::RawFixedBumpString,
-    stats::Stats,
-    BumpAllocator, BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, FixedBumpString, FromUtf16Error, FromUtf8Error,
-};
 use core::{
     alloc::Layout,
     borrow::{Borrow, BorrowMut},
@@ -20,13 +9,23 @@ use core::{
     ptr, str,
 };
 
-use allocator_api2::alloc::AllocError;
-
 #[cfg(feature = "panic-on-alloc")]
 use core::mem::MaybeUninit;
 
+use allocator_api2::alloc::AllocError;
+
+use crate::{
+    collection_method_allocator_stats,
+    destructure::destructure,
+    error_behavior_generic_methods_allocation_failure, owned_str,
+    polyfill::{self, transmute_mut, transmute_value},
+    raw_fixed_bump_string::RawFixedBumpString,
+    stats::Stats,
+    BumpAllocator, BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, FixedBumpString, FromUtf16Error, FromUtf8Error,
+};
+
 #[cfg(feature = "panic-on-alloc")]
-use crate::{panic_on_error, polyfill::nonnull, raw_bump_box::RawBumpBox};
+use crate::{panic_on_error, polyfill::nonnull, raw_bump_box::RawBumpBox, PanicsOnAlloc};
 
 /// This is like [`format!`](alloc::format) but allocates inside a bump allocator, returning a [`BumpString`].
 ///

@@ -1,14 +1,15 @@
-use crate::{
-    owned_slice,
-    polyfill::{nonnull, slice},
-    BumpBox, SizedTypeProperties,
-};
 use core::{
     fmt,
     iter::FusedIterator,
     mem::{self, ManuallyDrop},
     ops::RangeBounds,
     ptr::{self, NonNull},
+};
+
+use crate::{
+    owned_slice,
+    polyfill::{nonnull, slice},
+    BumpBox, SizedTypeProperties,
 };
 
 use super::TakeOwnedSlice;

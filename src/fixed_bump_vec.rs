@@ -1,10 +1,3 @@
-use crate::{
-    error_behavior_generic_methods_allocation_failure, error_behavior_generic_methods_if,
-    owned_slice::{self, OwnedSlice, TakeOwnedSlice},
-    polyfill::{self, nonnull, pointer, slice},
-    set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, NoDrop, SizedTypeProperties,
-};
 use core::{
     borrow::{Borrow, BorrowMut},
     fmt::Debug,
@@ -14,6 +7,14 @@ use core::{
     ops::{self, Deref, DerefMut, Index, IndexMut, RangeBounds},
     ptr::{self, NonNull},
     slice::SliceIndex,
+};
+
+use crate::{
+    error_behavior_generic_methods_allocation_failure, error_behavior_generic_methods_if,
+    owned_slice::{self, OwnedSlice, TakeOwnedSlice},
+    polyfill::{self, nonnull, pointer, slice},
+    set_len_on_drop_by_ptr::SetLenOnDropByPtr,
+    BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, NoDrop, SizedTypeProperties,
 };
 
 /// A type like [`BumpVec`] but with a fixed capacity.

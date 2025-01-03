@@ -1,7 +1,10 @@
-use super::either_way;
-use crate::{Bump, MutBumpVec, MutBumpVecRev};
-use allocator_api2::alloc::Global;
 use std::iter;
+
+use allocator_api2::alloc::Global;
+
+use crate::{Bump, MutBumpVec, MutBumpVecRev};
+
+use super::either_way;
 
 fn vec<const UP: bool>() {
     let mut bump: Bump<Global, 1, UP> = Bump::with_size(512);

@@ -1,19 +1,3 @@
-mod drain;
-mod into_iter;
-mod splice;
-
-use crate::{
-    collection_method_allocator_stats,
-    destructure::destructure,
-    error_behavior_generic_methods_allocation_failure, min_non_zero_cap,
-    owned_slice::{self, OwnedSlice, TakeOwnedSlice},
-    polyfill::{nonnull, pointer, slice},
-    raw_bump_box::RawBumpBox,
-    raw_fixed_bump_vec::RawFixedBumpVec,
-    BumpAllocator, BumpAllocatorScope, BumpBox, ErrorBehavior, FixedBumpVec, NoDrop, SetLenOnDropByPtr, SizedTypeProperties,
-    Stats,
-};
-use allocator_api2::alloc::AllocError;
 use core::{
     alloc::Layout,
     borrow::{Borrow, BorrowMut},
@@ -28,12 +12,31 @@ use core::{
     slice::SliceIndex,
 };
 
+use allocator_api2::alloc::AllocError;
+
+use crate::{
+    collection_method_allocator_stats,
+    destructure::destructure,
+    error_behavior_generic_methods_allocation_failure, min_non_zero_cap,
+    owned_slice::{self, OwnedSlice, TakeOwnedSlice},
+    polyfill::{nonnull, pointer, slice},
+    raw_bump_box::RawBumpBox,
+    raw_fixed_bump_vec::RawFixedBumpVec,
+    BumpAllocator, BumpAllocatorScope, BumpBox, ErrorBehavior, FixedBumpVec, NoDrop, SetLenOnDropByPtr, SizedTypeProperties,
+    Stats,
+};
+
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
+mod drain;
+mod into_iter;
+mod splice;
+
+pub use into_iter::IntoIter;
+
 #[cfg(feature = "panic-on-alloc")]
 pub(crate) use drain::Drain;
-pub use into_iter::IntoIter;
 
 #[cfg(feature = "panic-on-alloc")]
 pub use splice::Splice;

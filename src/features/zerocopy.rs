@@ -1,9 +1,11 @@
+use core::mem::MaybeUninit;
+
+use zerocopy::FromZeros;
+
 use crate::{
     define_alloc_methods, error_behavior::ErrorBehavior, BaseAllocator, Bump, BumpBox, BumpScope, MinimumAlignment,
     SupportedMinimumAlignment,
 };
-use core::mem::MaybeUninit;
-use zerocopy::FromZeros;
 
 impl<'a, T: FromZeros> BumpBox<'a, MaybeUninit<T>> {
     /// Initializes `self` by filling it with zero.

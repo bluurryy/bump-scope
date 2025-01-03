@@ -1,7 +1,10 @@
-use super::either_way;
-use crate::{polyfill::nonnull, Bump};
+use std::{alloc::Layout, ptr::NonNull};
+
 use allocator_api2::alloc::{Allocator, Global};
-use core::{alloc::Layout, ptr::NonNull};
+
+use crate::{polyfill::nonnull, Bump};
+
+use super::either_way;
 
 either_way! {
   grow

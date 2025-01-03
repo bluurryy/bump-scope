@@ -1,8 +1,9 @@
-use crate::{polyfill::pointer, SizedTypeProperties};
 use core::{
     num::NonZeroUsize,
     ptr::{self, NonNull},
 };
+
+use crate::{polyfill::pointer, SizedTypeProperties};
 
 // Putting the expression in a function helps llvm to realize that it can initialize the value
 // at this pointer instead of allocating it on the stack and then copying it over.

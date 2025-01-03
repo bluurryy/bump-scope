@@ -1,5 +1,3 @@
-mod slice_initializer;
-
 use core::{
     alloc::Layout,
     any::Any,
@@ -30,6 +28,8 @@ use crate::{
 
 #[cfg(feature = "alloc")]
 use crate::BumpAllocatorScope;
+
+mod slice_initializer;
 
 pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 

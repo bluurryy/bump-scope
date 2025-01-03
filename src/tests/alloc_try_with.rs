@@ -1,6 +1,7 @@
-use core::mem;
-
-use std::{dbg, mem::offset_of};
+use std::{
+    dbg,
+    mem::{self, offset_of},
+};
 
 use allocator_api2::alloc::Global;
 

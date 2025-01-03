@@ -1,14 +1,3 @@
-#[cfg(feature = "panic-on-alloc")]
-use crate::panic_on_error;
-use crate::{
-    bump_common_methods,
-    chunk_size::ChunkSize,
-    error_behavior_generic_methods_allocation_failure,
-    polyfill::{pointer, transmute_mut, transmute_ref},
-    unallocated_chunk_header, BaseAllocator, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment,
-    RawChunk, Stats, SupportedMinimumAlignment,
-};
-use allocator_api2::alloc::AllocError;
 use core::{
     alloc::Layout,
     cell::Cell,
@@ -17,6 +6,20 @@ use core::{
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::NonNull,
 };
+
+use allocator_api2::alloc::AllocError;
+
+use crate::{
+    bump_common_methods,
+    chunk_size::ChunkSize,
+    error_behavior_generic_methods_allocation_failure,
+    polyfill::{pointer, transmute_mut, transmute_ref},
+    unallocated_chunk_header, BaseAllocator, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment,
+    RawChunk, Stats, SupportedMinimumAlignment,
+};
+
+#[cfg(feature = "panic-on-alloc")]
+use crate::panic_on_error;
 
 macro_rules! bump_declaration {
     ($($allocator_parameter:tt)*) => {

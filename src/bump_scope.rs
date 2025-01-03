@@ -1,18 +1,3 @@
-#[cfg(feature = "panic-on-alloc")]
-use crate::panic_on_error;
-use crate::{
-    bump_align_guard::BumpAlignGuard,
-    bump_common_methods,
-    bumping::{bump_down, bump_up, BumpUp},
-    chunk_size::ChunkSize,
-    const_param_assert, down_align_usize,
-    layout::{ArrayLayout, CustomLayout, SizedLayout},
-    polyfill::{nonnull, pointer, transmute_mut, transmute_ref},
-    up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
-    FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk,
-    SizedTypeProperties, Stats, SupportedMinimumAlignment,
-};
-use allocator_api2::alloc::AllocError;
 use core::{
     alloc::Layout,
     cell::Cell,
@@ -25,6 +10,24 @@ use core::{
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::NonNull,
 };
+
+use allocator_api2::alloc::AllocError;
+
+use crate::{
+    bump_align_guard::BumpAlignGuard,
+    bump_common_methods,
+    bumping::{bump_down, bump_up, BumpUp},
+    chunk_size::ChunkSize,
+    const_param_assert, down_align_usize,
+    layout::{ArrayLayout, CustomLayout, SizedLayout},
+    polyfill::{nonnull, pointer, transmute_mut, transmute_ref},
+    up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
+    FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk,
+    SizedTypeProperties, Stats, SupportedMinimumAlignment,
+};
+
+#[cfg(feature = "panic-on-alloc")]
+use crate::panic_on_error;
 
 macro_rules! bump_scope_declaration {
     ($($allocator_parameter:tt)*) => {

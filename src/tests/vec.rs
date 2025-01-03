@@ -1,6 +1,8 @@
-use super::either_way;
-use crate::Bump;
 use allocator_api2::{alloc::Global, vec::Vec};
+
+use crate::Bump;
+
+use super::either_way;
 
 either_way! {
     grow

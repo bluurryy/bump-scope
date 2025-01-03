@@ -1,13 +1,14 @@
-use crate::{
-    chunk_header::{unallocated_chunk_header, ChunkHeader},
-    polyfill::nonnull,
-    FmtFn, RawChunk,
-};
 use core::{
     fmt::{self, Debug},
     iter::FusedIterator,
     marker::PhantomData,
     ptr::NonNull,
+};
+
+use crate::{
+    chunk_header::{unallocated_chunk_header, ChunkHeader},
+    polyfill::nonnull,
+    FmtFn, RawChunk,
 };
 
 /// Provides statistics about the memory usage of the bump allocator.

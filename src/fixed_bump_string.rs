@@ -1,8 +1,3 @@
-use crate::{
-    error_behavior_generic_methods_if, owned_str,
-    polyfill::{self, nonnull, transmute_mut},
-    BumpAllocatorScope, BumpBox, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop,
-};
 use core::{
     borrow::{Borrow, BorrowMut},
     fmt::{self, Debug, Display},
@@ -10,6 +5,12 @@ use core::{
     mem::{self, MaybeUninit},
     ops::{self, Deref, DerefMut, Range, RangeBounds},
     ptr, str,
+};
+
+use crate::{
+    error_behavior_generic_methods_if, owned_str,
+    polyfill::{self, nonnull, transmute_mut},
+    BumpAllocatorScope, BumpBox, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop,
 };
 
 /// A type like [`BumpString`](crate::BumpString) but with a fixed capacity.
