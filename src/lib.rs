@@ -4,7 +4,7 @@
 // This crate uses modified code from the rust standard library. <https://github.com/rust-lang/rust/tree/master/library>.
 // Especially `BumpBox` methods, vectors, strings, `polyfill` and `tests/from_std` are based on code from the standard library.
 
-#![cfg_attr(not(any(test, feature = "std")), no_std)]
+#![no_std]
 #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api, vec_into_raw_parts))]
 #![cfg_attr(feature = "nightly-coerce-unsized", feature(coerce_unsized, unsize))]
 #![cfg_attr(feature = "nightly-exact-size-is-empty", feature(exact_size_is_empty))]
@@ -263,7 +263,9 @@
 //! The point of this is so `Bump`s can be created without allocating memory and even `const` constructed since rust version 1.83.
 //! At the same time `Bump`s that have already allocated a chunk don't suffer runtime checks for entering scopes and creating checkpoints.
 
-#[doc(hidden)]
+#[cfg(any(feature = "std", test))]
+extern crate std;
+
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
@@ -1922,6 +1924,8 @@ pub(crate) use mut_collection_method_allocator_stats;
 #[test]
 #[ignore = "this is not a real test, it's just to insert documentation"]
 fn insert_feature_docs() {
+    use alloc::{format, vec::Vec};
+
     let lib_rs = std::fs::read_to_string("src/lib.rs").unwrap();
 
     let start_marker = "//! # Feature Flags";

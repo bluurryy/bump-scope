@@ -71,6 +71,8 @@ const fn str_eq(a: &str, b: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use std::string::String;
+
     use super::*;
 
     #[test]

@@ -28,7 +28,7 @@ use core::mem::MaybeUninit;
 #[cfg(feature = "panic-on-alloc")]
 use crate::{panic_on_error, polyfill::nonnull, raw_bump_box::RawBumpBox};
 
-/// This is like [`format!`] but allocates inside a bump allocator, returning a [`BumpString`].
+/// This is like [`format!`](alloc::format) but allocates inside a bump allocator, returning a [`BumpString`].
 ///
 /// If you don't need to push to the string after creation you can also use [`Bump::alloc_fmt`](crate::Bump::alloc_fmt).
 ///
@@ -74,7 +74,7 @@ macro_rules! bump_format {
     }};
 }
 
-/// A bump allocated [`String`].
+/// A bump allocated [`String`](alloc::string::String).
 ///
 /// When you are done building the string, you can turn it into a `&str` with [`into_str`].
 ///

@@ -19,7 +19,7 @@ use allocator_api2::alloc::AllocError;
 #[cfg(feature = "panic-on-alloc")]
 use crate::{panic_on_error, PanicsOnAlloc};
 
-/// This is like [`format!`] but allocates inside a *mutable* bump allocator, returning a [`MutBumpString`].
+/// This is like [`format!`](alloc::format) but allocates inside a *mutable* bump allocator, returning a [`MutBumpString`].
 ///
 /// If you don't need to push to the string after creation you can also use [`Bump::alloc_fmt_mut`](crate::Bump::alloc_fmt_mut).
 ///

@@ -1,8 +1,12 @@
-use super::either_way;
-use crate::Bump;
-use allocator_api2::alloc::Global;
 use core::mem;
-use std::mem::offset_of;
+
+use std::{dbg, mem::offset_of};
+
+use allocator_api2::alloc::Global;
+
+use crate::Bump;
+
+use super::either_way;
 
 macro_rules! assert_allocated {
     ($bump:ident, $expected:expr) => {

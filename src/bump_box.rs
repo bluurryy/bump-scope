@@ -1,15 +1,5 @@
 mod slice_initializer;
 
-#[cfg(feature = "alloc")]
-use crate::BumpAllocatorScope;
-use crate::{
-    owned_slice, owned_str,
-    polyfill::{self, nonnull, pointer, transmute_mut},
-    BumpAllocator, FromUtf8Error, NoDrop, SizedTypeProperties,
-};
-#[cfg(feature = "alloc")]
-#[allow(unused_imports)]
-use allocator_api2::boxed::Box;
 use core::{
     alloc::Layout,
     any::Any,
@@ -24,6 +14,23 @@ use core::{
     slice::{self, SliceIndex},
     str,
 };
+
+#[cfg(feature = "std")]
+use alloc::{string::String, vec::Vec};
+
+#[cfg(feature = "alloc")]
+#[allow(unused_imports)]
+use allocator_api2::boxed::Box;
+
+use crate::{
+    owned_slice, owned_str,
+    polyfill::{self, nonnull, pointer, transmute_mut},
+    BumpAllocator, FromUtf8Error, NoDrop, SizedTypeProperties,
+};
+
+#[cfg(feature = "alloc")]
+use crate::BumpAllocatorScope;
+
 pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 
 /// A pointer type that uniquely owns a bump allocation of type `T`. This type is returned whenever a bump allocation is made.

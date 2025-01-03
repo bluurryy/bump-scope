@@ -20,7 +20,7 @@ use core::{
     slice::{self, SliceIndex},
 };
 
-/// This is like [`vec!`] but allocates inside a bump allocator, returning a [`MutBumpVecRev`].
+/// This is like [`vec!`](alloc::vec!) but allocates inside a bump allocator, returning a [`MutBumpVecRev`].
 ///
 /// `$bump` can be any type that implements [`MutBumpAllocator`].
 ///

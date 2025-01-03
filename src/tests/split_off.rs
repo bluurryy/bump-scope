@@ -1,5 +1,7 @@
 #![allow(clippy::similar_names)]
 
+use std::{string::String, vec};
+
 use crate::{bump_vec, Bump, BumpString, BumpVec};
 
 use super::TestWrap;

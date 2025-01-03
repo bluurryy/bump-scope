@@ -1,18 +1,6 @@
 #![allow(unused_imports, clippy::incompatible_msrv)]
 #![cfg(feature = "std")]
 
-use core::{
-    alloc::Layout,
-    any::Any,
-    cell::Cell,
-    fmt::Debug,
-    mem,
-    ops::Index,
-    ptr::NonNull,
-    sync::atomic::{AtomicUsize, Ordering},
-};
-use std::io::IoSlice;
-
 mod alloc_cstr;
 mod alloc_fmt;
 mod alloc_iter;
@@ -44,7 +32,25 @@ mod unaligned_collection;
 mod unallocated;
 mod vec;
 
-extern crate std;
+use core::{
+    alloc::Layout,
+    any::Any,
+    cell::Cell,
+    fmt::Debug,
+    mem,
+    ops::Index,
+    ptr::NonNull,
+    sync::atomic::{AtomicUsize, Ordering},
+};
+
+use std::{
+    boxed::Box,
+    dbg, eprintln,
+    io::IoSlice,
+    string::{String, ToString},
+    thread_local,
+    vec::Vec,
+};
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 
@@ -88,7 +94,7 @@ macro_rules! either_way {
                 #[test]
                 $(#[$attr])*
                 fn $ident() {
-                    eprintln!("`UP` is `true`");
+                    std::eprintln!("`UP` is `true`");
                     super::$ident::<true>();
                 }
             )*
@@ -99,7 +105,7 @@ macro_rules! either_way {
                 #[test]
                 $(#[$attr])*
                 fn $ident() {
-                    eprintln!("`UP` is `false`");
+                    std::eprintln!("`UP` is `false`");
                     super::$ident::<false>();
                 }
             )*

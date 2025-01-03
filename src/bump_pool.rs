@@ -1,13 +1,15 @@
-use crate::{
-    error_behavior_generic_methods_allocation_failure, BaseAllocator, Bump, BumpScope, MinimumAlignment,
-    SupportedMinimumAlignment,
-};
+use alloc::vec::Vec;
 use core::{
     alloc::Layout,
     mem::{self, ManuallyDrop},
     ops::{Deref, DerefMut},
 };
 use std::sync::{Mutex, MutexGuard, PoisonError};
+
+use crate::{
+    error_behavior_generic_methods_allocation_failure, BaseAllocator, Bump, BumpScope, MinimumAlignment,
+    SupportedMinimumAlignment,
+};
 
 macro_rules! bump_pool_declaration {
     ($($allocator_parameter:tt)*) => {

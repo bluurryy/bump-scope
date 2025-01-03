@@ -1,9 +1,17 @@
 #![allow(clippy::manual_assert)]
-use core::hint::black_box;
+
+use std::{
+    boxed::Box,
+    dbg, format,
+    hint::black_box,
+    string::{String, ToString},
+};
+
+use allocator_api2::alloc::Global;
+
+use crate::{bump_vec, tests::expect_no_panic, Bump, BumpVec};
 
 use super::either_way;
-use crate::{bump_vec, tests::expect_no_panic, Bump, BumpVec};
-use allocator_api2::alloc::Global;
 
 either_way! {
     shrinks

@@ -1,17 +1,15 @@
 //! Adapted from rust's `library/alloc/tests/vec.rs` commit f7ca9df69549470541fbf542f87a03eb9ed024b6
 
-use allocator_api2::alloc::{AllocError, Allocator, Layout};
-#[cfg(feature = "std")]
-use std::alloc::System;
-#[cfg(not(feature = "std"))]
-use std::alloc::System;
 use std::{
+    alloc::System,
     assert_eq,
     assert_matches::assert_matches,
     borrow::Cow,
+    boxed::Box,
     cell::Cell,
+    dbg,
     fmt::Debug,
-    hint,
+    format, hint,
     iter::{InPlaceIterable, IntoIterator},
     mem::{self, size_of, swap},
     num::NonZeroUsize,
@@ -19,12 +17,15 @@ use std::{
     panic::{catch_unwind, AssertUnwindSafe},
     ptr::NonNull,
     rc::Rc,
+    string::{String, ToString},
     sync::{
         atomic::{AtomicU32, Ordering},
         Arc, Mutex, PoisonError,
     },
-    vec::{Drain, IntoIter},
+    vec::{Drain, IntoIter, Vec},
 };
+
+use allocator_api2::alloc::{AllocError, Allocator, Layout};
 
 use crate::{bump_vec, tests::RcBump, BumpVec};
 
@@ -1519,7 +1520,7 @@ fn extract_if_complex() {
 #[cfg(not(target_os = "emscripten"))]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn extract_if_consumed_panic() {
-    use std::{rc::Rc, sync::Mutex};
+    use std::{println, rc::Rc, sync::Mutex};
 
     struct Check {
         index: usize,
@@ -1573,7 +1574,7 @@ fn extract_if_consumed_panic() {
 #[cfg(not(target_os = "emscripten"))]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn extract_if_unconsumed_panic() {
-    use std::{rc::Rc, sync::Mutex};
+    use std::{println, rc::Rc, sync::Mutex};
 
     struct Check {
         index: usize,

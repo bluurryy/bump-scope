@@ -1,8 +1,14 @@
 use std::{
     assert_matches::assert_matches,
     cell::Cell,
-    ops::{Bound, Bound::*, RangeBounds},
+    ops::{
+        Bound::{self, *},
+        RangeBounds,
+    },
     panic, str,
+    string::String,
+    vec,
+    vec::Vec,
 };
 
 use crate::{bump_format, bump_vec, Bump, BumpString, BumpVec};

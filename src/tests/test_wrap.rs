@@ -1,5 +1,7 @@
 use core::{cell::Cell, convert::Infallible, fmt};
 
+use std::thread_local;
+
 thread_local! {
     static DROPS: Cell<usize> = const { Cell::new(0) };
     static CLONES: Cell<usize> = const { Cell::new(0) };

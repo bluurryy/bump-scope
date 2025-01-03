@@ -1,7 +1,16 @@
 #![allow(unused_allocation, clippy::unnecessary_to_owned)]
 
-use alloc::vec::{self, Vec};
 use core::{array, ops::Deref};
+
+use alloc::{
+    string,
+    vec::{self, Vec},
+};
+
+use std::{
+    boxed::Box,
+    string::{String, ToString},
+};
 
 use crate::{
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},

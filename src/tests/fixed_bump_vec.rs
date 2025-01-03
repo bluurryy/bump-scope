@@ -1,9 +1,18 @@
 #![allow(clippy::manual_assert)]
-use core::hint::black_box;
+
+use std::{
+    boxed::Box,
+    dbg, format,
+    hint::black_box,
+    string::{String, ToString},
+    vec::Vec,
+};
+
+use allocator_api2::alloc::Global;
+
+use crate::{bump_vec, tests::expect_no_panic, Bump, FixedBumpVec};
 
 use super::either_way;
-use crate::{bump_vec, tests::expect_no_panic, Bump, FixedBumpVec};
-use allocator_api2::alloc::Global;
 
 either_way! {
     map_in_place_same_layout

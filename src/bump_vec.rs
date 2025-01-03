@@ -38,7 +38,7 @@ pub use into_iter::IntoIter;
 #[cfg(feature = "panic-on-alloc")]
 pub use splice::Splice;
 
-/// This is like [`vec!`] but allocates inside a bump allocator, returning a [`BumpVec`].
+/// This is like [`vec!`](alloc::vec!) but allocates inside a bump allocator, returning a [`BumpVec`].
 ///
 /// `$bump` can be any type that implements [`BumpAllocator`].
 ///

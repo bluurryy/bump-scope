@@ -1,3 +1,8 @@
+use std::{
+    string::{String, ToString},
+    vec::Vec,
+};
+
 use crate::{Bump, BumpVec, MutBumpVec, MutBumpVecRev};
 
 #[test]

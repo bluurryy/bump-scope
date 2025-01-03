@@ -1,6 +1,10 @@
-use super::*;
-use crate::{bump_format, bump_vec};
+use std::vec;
+
 use ::serde::{de::DeserializeSeed, Serialize};
+
+use crate::{bump_format, bump_vec};
+
+use super::*;
 
 fn assert_same<A: Serialize, B: Serialize>(a: &A, b: &B) {
     let a_json = serde_json::to_string(a).unwrap();

@@ -1,14 +1,14 @@
-use crate::{bump_vec, mut_bump_vec, mut_bump_vec_rev, Bump, BumpVec, MutBumpVec, MutBumpVecRev};
-use core::{
-    cell::Cell,
-    mem::ManuallyDrop,
-    panic::{RefUnwindSafe, UnwindSafe},
-};
 use std::{
+    cell::Cell,
     hint::black_box,
-    panic::catch_unwind,
+    mem::ManuallyDrop,
+    panic::{catch_unwind, RefUnwindSafe, UnwindSafe},
+    string::String,
     sync::{Mutex, PoisonError},
+    thread_local,
 };
+
+use crate::{bump_vec, mut_bump_vec, mut_bump_vec_rev, Bump, BumpVec, MutBumpVec, MutBumpVecRev};
 
 macro_rules! zst_or_not {
     (
@@ -141,11 +141,13 @@ fn mut_bump_vec_rev_extend_from_slice<T: Testable>() {
 use helper::{assert_initialized, expected_drops, Testable};
 
 mod helper {
-    use core::{
+    use std::{
         array,
         cell::Cell,
         hint::black_box,
         panic::{AssertUnwindSafe, RefUnwindSafe, UnwindSafe},
+        string::String,
+        thread_local,
     };
 
     pub fn assert_initialized(iter: impl IntoIterator) {

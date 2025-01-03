@@ -1,6 +1,10 @@
-use super::either_way;
-use crate::Bump;
+use std::string::{String, ToString};
+
 use allocator_api2::alloc::Global;
+
+use crate::Bump;
+
+use super::either_way;
 
 fn zst<const UP: bool>() {
     const ZST: [u64; 0] = [0u64; 0];

@@ -1,29 +1,31 @@
 //! Adapted from rust's `library/alloc/tests/vec.rs` commit f7ca9df69549470541fbf542f87a03eb9ed024b6
 
 use allocator_api2::alloc::{AllocError, Allocator, Layout};
-#[cfg(feature = "std")]
-use std::alloc::System;
-#[cfg(not(feature = "std"))]
-use std::alloc::System;
+
 use std::{
+    alloc::System,
     assert_eq,
     assert_matches::assert_matches,
     borrow::Cow,
+    boxed::Box,
     cell::Cell,
+    dbg,
     fmt::Debug,
-    hint,
+    format, hint,
     iter::{InPlaceIterable, IntoIterator},
     mem::{self, size_of, swap},
     num::NonZeroUsize,
     ops::Bound::*,
     panic::{catch_unwind, AssertUnwindSafe},
+    println,
     ptr::NonNull,
     rc::Rc,
+    string::{String, ToString},
     sync::{
         atomic::{AtomicU32, Ordering},
         Arc, Mutex, PoisonError,
     },
-    vec::{Drain, IntoIter},
+    vec::{Drain, IntoIter, Vec},
 };
 
 use crate::{bump_vec, Bump, BumpVec};

@@ -1,3 +1,8 @@
+use std::{
+    string::{String, ToString},
+    vec::Vec,
+};
+
 use crate::{Bump, BumpAllocator, BumpVec, MutBumpAllocator, MutBumpVec};
 
 fn number_strings(numbers: impl IntoIterator<Item = i32>) -> impl Iterator<Item = String> {

@@ -269,6 +269,8 @@ unsafe impl<T> TakeOwnedSlice for Drain<'_, T> {
 
 #[cfg(all(test, feature = "std"))]
 mod tests {
+    use std::{string::ToString, vec::Vec};
+
     use crate::{tests::TestWrap, Bump};
 
     #[test]
