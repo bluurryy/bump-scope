@@ -77,15 +77,15 @@ impl<T, const N: usize> OwnedSlice for Box<[T; N]> {
     }
 }
 
-/// A type which owns a slice and can relinquish its ownership of it.
+/// A type which owns a slice and can relinquish its ownership of all its elements at once.
 ///
 /// This trait is used for the `append` method of this crate's vector types via the [`OwnedSlice`] trait.
 ///
-/// The key idea behind this trait is that implementors must behave like a `Vec<T>` in the sense that
-/// they manage a slice they fully own. When the slice is "taken" using `take_owned_slice`, the implementor
+/// Implementors of this trait must behave like a `Vec<T>` in the sense that they manage a slice they own.
+/// When the slice is "taken" using `take_owned_slice`, the implementor
 /// must relinquish ownership of its elements entirely, leaving behind an empty slice.
 ///
-/// The goal of the safety conditions for implementor and caller are so that a function like this is sound:
+/// The goal of the safety conditions are so that a function like this is sound:
 /// ```
 /// # extern crate alloc;
 /// # use alloc::vec::Vec;
