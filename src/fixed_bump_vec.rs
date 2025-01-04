@@ -417,6 +417,8 @@ impl<'a, T> FixedBumpVec<'a, T> {
 
     /// Splits the vector into two by removing the specified range.
     ///
+    /// This method does not allocate and does not change the order of the elements.
+    ///
     /// # Panics
     ///
     /// Panics if the starting point is greater than the end point or if the end point is greater than the length of the vector.

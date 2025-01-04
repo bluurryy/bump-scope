@@ -244,6 +244,8 @@ impl<'a> FixedBumpString<'a> {
 
     /// Splits the string into two by removing the specified range.
     ///
+    /// This method does not allocate and does not change the order of the elements.
+    ///
     /// # Panics
     ///
     /// Panics if the starting point or end point do not lie on a [`char`] boundary, or if they're out of bounds.
