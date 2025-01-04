@@ -179,8 +179,18 @@
 //! - [`Fixed*`](crate::FixedBumpVec) for fixed capacity collections
 //! - [`Mut*`](crate::MutBumpVec) for collections optimized for a mutable bump allocator
 //!
-//! The api of vectors and strings should reflect the standard library. An exception is [`retain`](BumpVec::retain) which has the signature of std's `retain_mut` and [`split_off`](BumpVec::split_off) which
-//! takes a range as a parameter and does not allocate. There are also some additions like [`map`](BumpVec::map) and [`map_in_place`](BumpVec::map_in_place).
+//! #### Api changes
+//! The collections are designed to have a similar api to their std counterparts.
+//! They do make some changes that enhance the usefulness of the methods, for instance ...
+//! - [`append`](BumpVec::append) allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>` and similar types
+//! - [`split_off`](BumpVec::split_off) splits the collection in place without allocation; the parameter is a range instead of a single index
+//! - [`retain`](BumpVec::retain) takes a closure with a `&mut T` parameter like [`Vec::retain_mut`](alloc::vec::Vec::retain_mut)
+//!
+//! #### New features
+//! They also add new methods like...
+//! - [`map`](BumpVec::map) maps the elements, potentially reusing the existing allocation
+//! - [`map_in_place`](BumpVec::map_in_place) maps the elements without allocation
+//! - conversions between the regular collections, their `Fixed*` variants and `BumpBox<[T]>` / `BumpBox<str>`
 //!
 //! # Parallel Allocation
 //! [`Bump`](crate::Bump) is `!Sync` which means it can't be shared between threads.
