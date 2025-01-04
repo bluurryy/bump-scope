@@ -2,6 +2,7 @@
 
 ## Unreleased
 - **added:** implemented `TakeOwnedSlice` for `vec::IntoIter` and `vec::Drain`
+- **performance:** improved speed and time complexity of `split_off`
 
 ## 0.15.0 (2025-01-02)
 - **breaking:** renamed `unchecked_push` to `push_unchecked`

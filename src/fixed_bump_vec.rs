@@ -417,11 +417,14 @@ impl<'a, T> FixedBumpVec<'a, T> {
 
     /// Splits the vector into two by removing the specified range.
     ///
-    /// This operation is `O(1)` if either the range starts at 0 or ends at `len`. Otherwise it's `O(n)`.
-    ///
     /// # Panics
     ///
     /// Panics if the starting point is greater than the end point or if the end point is greater than the length of the vector.
+    ///
+    /// # Complexity
+    ///
+    /// This operation takes `O(1)` time if either the range starts at 0, ends at `len`, or is empty.
+    /// Otherwise it takes `O(min(end, len - start))` time.
     ///
     /// # Examples
     ///
@@ -503,25 +506,47 @@ impl<'a, T> FixedBumpVec<'a, T> {
             return FixedBumpVec::EMPTY;
         }
 
+        let head_len = start;
+        let tail_len = len - end;
+
         let range_len = end - start;
         let remaining_len = len - range_len;
 
         unsafe {
-            // move the range of elements to split off to the end
-            self.as_mut_slice().get_unchecked_mut(start..).rotate_left(range_len);
+            if head_len < tail_len {
+                // move the range of elements to split off to the start
+                self.as_mut_slice().get_unchecked_mut(..end).rotate_right(range_len);
 
-            let lhs = nonnull::slice_from_raw_parts(ptr, remaining_len);
-            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, remaining_len) }, range_len);
+                let lhs = nonnull::slice_from_raw_parts(ptr, range_len);
+                let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, range_len) }, remaining_len);
 
-            let lhs_capacity = remaining_len;
-            let rhs_capacity = self.capacity - lhs_capacity;
+                let lhs_capacity = range_len;
+                let rhs_capacity = self.capacity - lhs_capacity;
 
-            self.initialized.ptr = lhs;
-            self.capacity = lhs_capacity;
+                self.initialized.ptr = rhs;
+                self.capacity = rhs_capacity;
 
-            FixedBumpVec {
-                initialized: unsafe { BumpBox::from_raw(rhs) },
-                capacity: rhs_capacity,
+                FixedBumpVec {
+                    initialized: unsafe { BumpBox::from_raw(lhs) },
+                    capacity: lhs_capacity,
+                }
+            } else {
+                // move the range of elements to split off to the end
+                self.as_mut_slice().get_unchecked_mut(start..).rotate_left(range_len);
+
+                let lhs = nonnull::slice_from_raw_parts(ptr, remaining_len);
+                let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, remaining_len) }, range_len);
+
+                let lhs_capacity = remaining_len;
+                let rhs_capacity = self.capacity - lhs_capacity;
+
+                self.initialized.ptr = lhs;
+                self.capacity = lhs_capacity;
+
+                FixedBumpVec {
+                    initialized: unsafe { BumpBox::from_raw(rhs) },
+                    capacity: rhs_capacity,
+                }
             }
         }
     }

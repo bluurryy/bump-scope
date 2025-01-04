@@ -560,11 +560,14 @@ impl<'a> BumpBox<'a, str> {
 
     /// Splits the string into two by removing the specified range.
     ///
-    /// This operation is `O(1)` if either the range starts at 0 or ends at `len`. Otherwise it's `O(n)`.
-    ///
     /// # Panics
     ///
     /// Panics if the starting point or end point do not lie on a [`char`] boundary, or if they're out of bounds.
+    ///
+    /// # Complexity
+    ///
+    /// This operation takes `O(1)` time if either the range starts at 0, ends at `len`, or is empty.
+    /// Otherwise it takes `O(min(end, len - start))` time.
     ///
     /// # Examples
     ///
@@ -627,18 +630,40 @@ impl<'a> BumpBox<'a, str> {
         self.assert_char_boundary(start);
         self.assert_char_boundary(end);
 
+        let head_len = start;
+        let tail_len = len - end;
+
         let range_len = end - start;
         let remaining_len = len - range_len;
 
         unsafe {
-            // move the range of elements to split off to the end
-            self.as_mut_bytes().get_unchecked_mut(start..).rotate_left(range_len);
+            if head_len < tail_len {
+                // move the range of elements to split off to the start
+                self.as_mut_bytes().get_unchecked_mut(..end).rotate_right(range_len);
 
-            let lhs = nonnull::slice_from_raw_parts(ptr, remaining_len);
-            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, remaining_len) }, range_len);
+                let lhs = nonnull::slice_from_raw_parts(ptr, range_len);
+                let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, range_len) }, remaining_len);
 
-            self.ptr = nonnull::str_from_utf8(lhs);
-            unsafe { BumpBox::from_raw(nonnull::str_from_utf8(rhs)) }
+                let lhs = nonnull::str_from_utf8(lhs);
+                let rhs = nonnull::str_from_utf8(rhs);
+
+                self.ptr = rhs;
+
+                BumpBox::from_raw(lhs)
+            } else {
+                // move the range of elements to split off to the end
+                self.as_mut_bytes().get_unchecked_mut(start..).rotate_left(range_len);
+
+                let lhs = nonnull::slice_from_raw_parts(ptr, remaining_len);
+                let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, remaining_len) }, range_len);
+
+                let lhs = nonnull::str_from_utf8(lhs);
+                let rhs = nonnull::str_from_utf8(rhs);
+
+                self.ptr = lhs;
+
+                BumpBox::from_raw(rhs)
+            }
         }
     }
 
@@ -1512,11 +1537,14 @@ impl<'a, T> BumpBox<'a, [T]> {
     }
     /// Splits the vector into two by removing the specified range.
     ///
-    /// This operation is `O(1)` if either the range starts at 0 or ends at `len`. Otherwise it's `O(n)`.
-    ///
     /// # Panics
     ///
     /// Panics if the starting point is greater than the end point or if the end point is greater than the length of the vector.
+    ///
+    /// # Complexity
+    ///
+    /// This operation takes `O(1)` time if either the range starts at 0, ends at `len`, or is empty.
+    /// Otherwise it takes `O(min(end, len - start))` time.
     ///
     /// # Examples
     ///
@@ -1578,18 +1606,34 @@ impl<'a, T> BumpBox<'a, [T]> {
             return BumpBox::EMPTY;
         }
 
+        let head_len = start;
+        let tail_len = len - end;
+
         let range_len = end - start;
         let remaining_len = len - range_len;
 
         unsafe {
-            // move the range of elements to split off to the end
-            self.as_mut_slice().get_unchecked_mut(start..).rotate_left(range_len);
+            if head_len < tail_len {
+                // move the range of elements to split off to the start
+                self.as_mut_slice().get_unchecked_mut(..end).rotate_right(range_len);
 
-            let lhs = nonnull::slice_from_raw_parts(ptr, remaining_len);
-            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, remaining_len) }, range_len);
+                let lhs = nonnull::slice_from_raw_parts(ptr, range_len);
+                let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, range_len) }, remaining_len);
 
-            self.ptr = lhs;
-            unsafe { BumpBox::from_raw(rhs) }
+                self.ptr = rhs;
+
+                BumpBox::from_raw(lhs)
+            } else {
+                // move the range of elements to split off to the end
+                self.as_mut_slice().get_unchecked_mut(start..).rotate_left(range_len);
+
+                let lhs = nonnull::slice_from_raw_parts(ptr, remaining_len);
+                let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, remaining_len) }, range_len);
+
+                self.ptr = lhs;
+
+                BumpBox::from_raw(rhs)
+            }
         }
     }
 
