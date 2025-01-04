@@ -175,19 +175,17 @@
 //! ```
 //!
 //! # Collections
-//! `bump-scope` provides bump allocated variants of `Vec` and `String` called [`BumpVec`](crate::BumpVec) and [`BumpString`](crate::BumpString). They also come in a different flavors:
+//! `bump-scope` provides bump allocated variants of `Vec` and `String` called [`BumpVec`](crate::BumpVec) and [`BumpString`](crate::BumpString). They also come in a different variants:
 //! - [`Fixed*`](crate::FixedBumpVec) for fixed capacity collections
 //! - [`Mut*`](crate::MutBumpVec) for collections optimized for a mutable bump allocator
 //!
 //! #### Api changes
-//! The collections are designed to have a similar api to their std counterparts.
-//! They do make some changes that enhance the usefulness of the methods:
-//! - [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>` and similar types
+//! The collections are designed to have a similar api to their std counterparts but they do make some breaking changes:
 //! - [`split_off`](BumpVec::split_off) —  splits the collection in place without allocation; the parameter is a range instead of a single index
 //! - [`retain`](BumpVec::retain) —  takes a closure with a `&mut T` parameter like [`Vec::retain_mut`](alloc::vec::Vec::retain_mut)
 //!
 //! #### New features
-//! There are new methods:
+//! - [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>` and similar types
 //! - [`map`](BumpVec::map) —  maps the elements, potentially reusing the existing allocation
 //! - [`map_in_place`](BumpVec::map_in_place) —  maps the elements without allocation
 //! - conversions between the regular collections, their `Fixed*` variants and `BumpBox<[T]>` / `BumpBox<str>`
