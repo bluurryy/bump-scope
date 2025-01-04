@@ -1194,7 +1194,7 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
         /// vec.append(vec![3, 4]);
         /// vec.append(bump2.alloc_iter(5..=6));
         ///
-        /// // append mutable reference
+        /// // append by mutable reference
         /// let mut other = vec![7, 8];
         /// vec.append(&mut other);
         ///
@@ -1214,7 +1214,7 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
         /// vec.try_append(vec![3, 4])?;
         /// vec.try_append(bump2.alloc_iter(5..=6))?;
         ///
-        /// // append mutable reference
+        /// // append by mutable reference
         /// let mut other = vec![7, 8];
         /// vec.try_append(&mut other)?;
         ///
