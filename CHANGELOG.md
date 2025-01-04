@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.15.1 (2025-01-04)
 - **added:** implemented `TakeOwnedSlice` for `vec::IntoIter` and `vec::Drain`
 - **performance:** improved speed and time complexity of `split_off`
 - **docs:** improvements to crate docs, owned slice and `split_off`
