@@ -339,10 +339,7 @@ impl<'a> FixedBumpString<'a> {
 
         unsafe {
             // move the range of elements to split off to the end
-            // using array rotation by reversal
-            self.as_mut_vec().get_unchecked_mut(start..end).reverse();
-            self.as_mut_vec().get_unchecked_mut(end..).reverse();
-            self.as_mut_vec().get_unchecked_mut(start..).reverse();
+            self.as_mut_vec().get_unchecked_mut(start..).rotate_left(range_len);
 
             let lhs = nonnull::slice_from_raw_parts(ptr, remaining_len);
             let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, remaining_len) }, range_len);
