@@ -295,10 +295,10 @@ where
             Self::generic_new_in(Default::default())
         }
 
-        impl
-        #[must_use]
         /// Constructs a new `Bump` with a size hint for the first chunk.
         ///
+        impl
+        #[must_use]
         /// If you want to ensure a specific capacity, use [`with_capacity`](Self::with_capacity) instead.
         ///
         /// An effort is made to ensure the size requested from the base allocator is friendly to an allocator that uses size classes and stores metadata alongside allocations.
@@ -309,7 +309,6 @@ where
         ///
         /// **Disclaimer:** The way in which the chunk layout is calculated might change.
         /// Such a change is not considered semver breaking.
-        ///
         do examples
         /// ```
         /// use bump_scope::Bump;
@@ -318,8 +317,6 @@ where
         /// let bump_1mib: Bump = Bump::with_size(1024 * 1024);
         /// ```
         for fn with_size
-        /// Constructs a new `Bump` with a size hint for the first chunk.
-        ///
         /// If you want to ensure a specific capacity, use [`try_with_capacity`](Self::try_with_capacity) instead.
         ///
         /// An effort is made to ensure the size requested from the base allocator is friendly to an allocator that uses size classes and stores metadata alongside allocations.
@@ -330,7 +327,6 @@ where
         ///
         /// **Disclaimer:** The way in which the chunk layout is calculated might change.
         /// Such a change is not considered semver breaking.
-        ///
         do examples
         /// ```
         /// use bump_scope::Bump;
@@ -396,8 +392,8 @@ where
     /// let mut bump: Bump = Bump::new();
     ///
     /// bump.scoped(|bump| {
-    ///     bump.alloc_str("Hello world!");
-    ///     assert_eq!(bump.stats().allocated(), 12);
+    ///     bump.alloc_str("Hello, world!");
+    ///     assert_eq!(bump.stats().allocated(), 13);
     /// });
     ///
     /// assert_eq!(bump.stats().allocated(), 0);
@@ -492,8 +488,8 @@ where
     /// {
     ///     let mut guard = bump.scope_guard();
     ///     let bump = guard.scope();
-    ///     bump.alloc_str("Hello world!");
-    ///     assert_eq!(bump.stats().allocated(), 12);
+    ///     bump.alloc_str("Hello, world!");
+    ///     assert_eq!(bump.stats().allocated(), 13);
     /// }
     ///
     /// assert_eq!(bump.stats().allocated(), 0);
@@ -544,6 +540,8 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     error_behavior_generic_methods_allocation_failure! {
+        /// Constructs a new `Bump` with a default size hint for the first chunk.
+        ///
         impl
         /// This is equivalent to <code>[with_size_in](Bump::with_size_in)(512, allocator)</code>.
         for fn new_in
@@ -560,26 +558,47 @@ where
             })
         }
 
-        impl
         /// Constructs a new `Bump` with a size hint for the first chunk.
         ///
+        impl
         /// If you want to ensure a specific capacity, use [`with_capacity_in`](Self::with_capacity_in) instead.
         ///
-        /// The size of the chunk allocation will be the provided `size` rounded up and with a small size subtracted to account for base allocator metadata.
-        /// The resulting chunk size may be larger still if the base allocator returned a bigger memory block than requested.
+        /// An effort is made to ensure the size requested from the base allocator is friendly to an allocator that uses size classes and stores metadata alongside allocations.
+        /// To achieve this, the requested size is rounded up to either the next power of two or the next multiple of `0x1000`, whichever is smaller.
+        /// After that, the size of `[usize; 2]` is subtracted.
+        ///
+        /// If the base allocator returns a memory block that is larger than requested, then the chunk will use the extra space.
         ///
         /// **Disclaimer:** The way in which the chunk layout is calculated might change.
         /// Such a change is not considered semver breaking.
+        do examples
+        /// ```
+        /// use bump_scope::Bump;
+        /// use bump_scope::allocator_api2::alloc::Global;
+        ///
+        /// // `Bump` with a roughly 1 Mebibyte sized chunk
+        /// let bump_1mib: Bump = Bump::with_size_in(1024 * 1024, Global);
+        /// ```
         for fn with_size_in
-        /// Constructs a new `Bump` with a size hint for the first chunk.
+        /// If you want to ensure a specific capacity, use [`try_with_capacity`](Self::try_with_capacity) instead.
         ///
-        /// If you want to ensure a specific capacity, use [`try_with_capacity_in`](Self::try_with_capacity_in) instead.
+        /// An effort is made to ensure the size requested from the base allocator is friendly to an allocator that uses size classes and stores metadata alongside allocations.
+        /// To achieve this, the requested size is rounded up to either the next power of two or the next multiple of `0x1000`, whichever is smaller.
+        /// After that, the size of `[usize; 2]` is subtracted.
         ///
-        /// The size of the chunk allocation will be the provided `size` rounded up and with a small size subtracted to account for base allocator metadata.
-        /// The resulting chunk size may be larger still if the base allocator returned a bigger memory block than requested.
+        /// If the base allocator returns a memory block that is larger than requested, then the chunk will use the extra space.
         ///
         /// **Disclaimer:** The way in which the chunk layout is calculated might change.
         /// Such a change is not considered semver breaking.
+        do examples
+        /// ```
+        /// use bump_scope::Bump;
+        /// use bump_scope::allocator_api2::alloc::Global;
+        ///
+        /// // `Bump` with a roughly 1 Mebibyte sized chunk
+        /// let bump_1mib: Bump = Bump::try_with_size_in(1024 * 1024, Global)?;
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_with_size_in
         #[inline]
         use fn generic_with_size_in(size: usize, allocator: A) -> Self {

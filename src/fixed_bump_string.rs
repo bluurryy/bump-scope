@@ -207,7 +207,7 @@ impl<'a> FixedBumpString<'a> {
         self.initialized
     }
 
-    /// Turns this `FixedBumpString<T>` into a `BumpVec<T>`.
+    /// Turns this `FixedBumpString` into a `BumpString`.
     #[must_use]
     #[inline(always)]
     pub fn into_string<A: BumpAllocatorScope<'a>>(self, allocator: A) -> BumpString<A> {

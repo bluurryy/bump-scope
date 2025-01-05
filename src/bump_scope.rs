@@ -113,8 +113,8 @@ where
     /// let mut bump: Bump = Bump::new();
     ///
     /// bump.scoped(|bump| {
-    ///     bump.alloc_str("Hello world!");
-    ///     assert_eq!(bump.stats().allocated(), 12);
+    ///     bump.alloc_str("Hello, world!");
+    ///     assert_eq!(bump.stats().allocated(), 13);
     /// });
     ///
     /// assert_eq!(bump.stats().allocated(), 0);
@@ -277,8 +277,8 @@ where
     /// {
     ///     let mut guard = bump.scope_guard();
     ///     let bump = guard.scope();
-    ///     bump.alloc_str("Hello world!");
-    ///     assert_eq!(bump.stats().allocated(), 12);
+    ///     bump.alloc_str("Hello, world!");
+    ///     assert_eq!(bump.stats().allocated(), 13);
     /// }
     ///
     /// assert_eq!(bump.stats().allocated(), 0);

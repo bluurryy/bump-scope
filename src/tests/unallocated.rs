@@ -17,7 +17,7 @@ fn unallocated() {
 #[test]
 fn allocated_by_usage() {
     let bump: Bump = Bump::unallocated();
-    bump.alloc_str("Hello World!");
+    bump.alloc_str("Hello, World!");
     drop(bump);
 }
 

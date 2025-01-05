@@ -225,7 +225,7 @@
 //!
 //! # Feature Flags
 //! * **`std`** *(enabled by default)* —  Adds `BumpPool` and implementations of `std::io` traits for `BumpBox` and vectors.
-//! * **`alloc`** *(enabled by default)* —  Adds `Global` as the default base allocator, `BumpBox::into_box` and some interactions with `alloc` collections.
+//! * **`alloc`** *(enabled by default)* —  Adds `Global` as the default base allocator and some interactions with `alloc` collections.
 //! * **`panic-on-alloc`** *(enabled by default)* —  Adds functions and traits that will panic when the allocation fails.
 //!   Without this feature, allocation failures cannot cause panics, and only
 //!   `try_`-prefixed allocation methods will be available.
@@ -1084,16 +1084,16 @@ define_alloc_methods! {
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.alloc_str("Hello world!");
-    /// assert_eq!(allocated, "Hello world!");
+    /// let allocated = bump.alloc_str("Hello, world!");
+    /// assert_eq!(allocated, "Hello, world!");
     /// ```
     for fn alloc_str
     do examples
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
-    /// let allocated = bump.try_alloc_str("Hello world!")?;
-    /// assert_eq!(allocated, "Hello world!");
+    /// let allocated = bump.try_alloc_str("Hello, world!")?;
+    /// assert_eq!(allocated, "Hello, world!");
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     for fn try_alloc_str
@@ -1171,16 +1171,16 @@ define_alloc_methods! {
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.alloc_cstr(c"Hello world!");
-    /// assert_eq!(allocated, c"Hello world!");
+    /// let allocated = bump.alloc_cstr(c"Hello, world!");
+    /// assert_eq!(allocated, c"Hello, world!");
     /// ```
     for fn alloc_cstr
     do examples
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
-    /// let allocated = bump.try_alloc_cstr(c"Hello world!")?;
-    /// assert_eq!(allocated, c"Hello world!");
+    /// let allocated = bump.try_alloc_cstr(c"Hello, world!")?;
+    /// assert_eq!(allocated, c"Hello, world!");
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     for fn try_alloc_cstr
@@ -1194,8 +1194,8 @@ define_alloc_methods! {
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.alloc_cstr_from_str("Hello world!");
-    /// assert_eq!(allocated, c"Hello world!");
+    /// let allocated = bump.alloc_cstr_from_str("Hello, world!");
+    /// assert_eq!(allocated, c"Hello, world!");
     ///
     /// let allocated = bump.alloc_cstr_from_str("abc\0def");
     /// assert_eq!(allocated, c"abc");
@@ -1205,8 +1205,8 @@ define_alloc_methods! {
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
-    /// let allocated = bump.try_alloc_cstr_from_str("Hello world!")?;
-    /// assert_eq!(allocated, c"Hello world!");
+    /// let allocated = bump.try_alloc_cstr_from_str("Hello, world!")?;
+    /// assert_eq!(allocated, c"Hello, world!");
     ///
     /// let allocated = bump.try_alloc_cstr_from_str("abc\0def")?;
     /// assert_eq!(allocated, c"abc");
@@ -1616,20 +1616,20 @@ define_alloc_methods! {
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let mut string = bump.alloc_fixed_string(12);
-    /// string.push_str("Hello");
+    /// let mut string = bump.alloc_fixed_string(13);
+    /// string.push_str("Hello,");
     /// string.push_str(" world!");
-    /// assert_eq!(string, "Hello world!");
+    /// assert_eq!(string, "Hello, world!");
     /// ```
     for fn alloc_fixed_string
     do examples
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
-    /// let mut string = bump.try_alloc_fixed_string(12)?;
-    /// string.push_str("Hello");
+    /// let mut string = bump.try_alloc_fixed_string(13)?;
+    /// string.push_str("Hello,");
     /// string.push_str(" world!");
-    /// assert_eq!(string, "Hello world!");
+    /// assert_eq!(string, "Hello, world!");
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     for fn try_alloc_fixed_string

@@ -37,10 +37,10 @@ use crate::{panic_on_error, PanicsOnAlloc};
 /// # let mut bump: Bump = Bump::new();
 /// #
 /// let greeting = "Hello";
-/// let mut string = mut_bump_format!(in &mut bump, "{greeting} world!");
+/// let mut string = mut_bump_format!(in &mut bump, "{greeting}, world!");
 /// string.push_str(" How are you?");
 ///
-/// assert_eq!(string, "Hello world! How are you?");
+/// assert_eq!(string, "Hello, world! How are you?");
 /// ```
 #[macro_export]
 macro_rules! mut_bump_format {
@@ -1253,6 +1253,8 @@ impl<'a, A: MutBumpAllocatorScope<'a>> MutBumpString<A> {
 
     /// Converts this `MutBumpString` into `&CStr` that is live for this bump scope.
     ///
+    /// If the string contains a `'\0'` then the `CStr` will stop there.
+    ///
     /// # Panics
     /// Panics if the allocation fails.
     ///
@@ -1260,12 +1262,11 @@ impl<'a, A: MutBumpAllocatorScope<'a>> MutBumpString<A> {
     /// ```
     /// # use bump_scope::{ Bump, MutBumpString };
     /// # let mut bump: Bump = Bump::new();
-    /// let mut hello = MutBumpString::from_str_in("Hello, ", &mut bump);
-    ///
-    /// hello.push('w');
-    /// hello.push_str("orld!");
-    ///
+    /// let hello = MutBumpString::from_str_in("Hello, world!", &mut bump);
     /// assert_eq!(hello.into_cstr(), c"Hello, world!");
+    ///
+    /// let abc0def = MutBumpString::from_str_in("abc\0def", &mut bump);
+    /// assert_eq!(abc0def.into_cstr(), c"abc");
     /// ```
     #[must_use]
     #[inline(always)]
@@ -1276,6 +1277,8 @@ impl<'a, A: MutBumpAllocatorScope<'a>> MutBumpString<A> {
 
     /// Converts this `BumpString` into `&CStr` that is live for this bump scope.
     ///
+    /// If the string contains a `'\0'` then the `CStr` will stop there.
+    ///
     /// # Errors
     /// Errors if the allocation fails.
     ///
@@ -1283,13 +1286,11 @@ impl<'a, A: MutBumpAllocatorScope<'a>> MutBumpString<A> {
     /// ```
     /// # use bump_scope::{ Bump, MutBumpString };
     /// # let mut bump: Bump = Bump::try_new()?;
-    /// let mut hello = MutBumpString::from_str_in("Hello, ", &mut bump);
-    ///
-    /// hello.push('w');
-    /// hello.push_str("orld!");
-    ///
+    /// let hello = MutBumpString::from_str_in("Hello, world!", &mut bump);    ///
     /// assert_eq!(hello.into_cstr(), c"Hello, world!");
     ///
+    /// let abc0def = MutBumpString::try_from_str_in("abc\0def", &mut bump)?;
+    /// assert_eq!(abc0def.try_into_cstr()?, c"abc");
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     #[inline(always)]

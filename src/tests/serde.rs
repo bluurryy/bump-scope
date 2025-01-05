@@ -17,8 +17,8 @@ fn ser() {
     let mut bump: Bump = Bump::new();
 
     {
-        let a = bump.alloc_str("Hello world!");
-        let b = "Hello world!";
+        let a = bump.alloc_str("Hello, world!");
+        let b = "Hello, world!";
         assert_same(&a, &b);
     }
 
@@ -48,14 +48,14 @@ fn ser() {
     }
 
     {
-        let a = bump_format!(in &bump, "Hello world!");
-        let b = "Hello world!";
+        let a = bump_format!(in &bump, "Hello, world!");
+        let b = "Hello, world!";
         assert_same(&a, &b);
     }
 
     {
-        let a = mut_bump_format!(in &mut bump, "Hello world!");
-        let b = "Hello world!";
+        let a = mut_bump_format!(in &mut bump, "Hello, world!");
+        let b = "Hello, world!";
         assert_same(&a, &b);
     }
 }
@@ -110,19 +110,19 @@ fn de() {
 
     {
         let mut src = bump_src.alloc_fixed_string(15);
-        src.push_str("Hello World!");
+        src.push_str("Hello, World!");
         let mut dst = bump_dst.alloc_fixed_string(15);
         roundtrip(&src, &mut dst);
     }
 
     {
-        let src = bump_format!(in bump_src, "Hello World!");
+        let src = bump_format!(in bump_src, "Hello, World!");
         let mut dst = bump_format!(in bump_dst);
         roundtrip(&src, &mut dst);
     }
 
     {
-        let src = mut_bump_format!(in &mut bump_src, "Hello World!");
+        let src = mut_bump_format!(in &mut bump_src, "Hello, World!");
         let mut dst = mut_bump_format!(in &mut bump_dst);
         roundtrip(&src, &mut dst);
     }

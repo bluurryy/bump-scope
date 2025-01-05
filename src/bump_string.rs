@@ -44,10 +44,10 @@ use crate::{panic_on_error, polyfill::nonnull, raw_bump_box::RawBumpBox, PanicsO
 /// # let bump: Bump = Bump::new();
 /// #
 /// let greeting = "Hello";
-/// let mut string = bump_format!(in &bump, "{greeting} world!");
+/// let mut string = bump_format!(in &bump, "{greeting}, world!");
 /// string.push_str(" How are you?");
 ///
-/// assert_eq!(string, "Hello world! How are you?");
+/// assert_eq!(string, "Hello, world! How are you?");
 /// ```
 #[macro_export]
 macro_rules! bump_format {
@@ -1325,6 +1325,8 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
 
     /// Converts this `BumpString` into `&CStr` that is live for this bump scope.
     ///
+    /// If the string contains a `'\0'` then the `CStr` will stop there.
+    ///
     /// # Panics
     /// Panics if the allocation fails.
     ///
@@ -1332,12 +1334,11 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
     /// ```
     /// # use bump_scope::{ Bump, BumpString };
     /// # let bump: Bump = Bump::new();
-    /// let mut hello = BumpString::from_str_in("Hello, ", &bump);
-    ///
-    /// hello.push('w');
-    /// hello.push_str("orld!");
-    ///
+    /// let hello = BumpString::from_str_in("Hello, world!", &bump);
     /// assert_eq!(hello.into_cstr(), c"Hello, world!");
+    ///
+    /// let abc0def = BumpString::from_str_in("abc\0def", &bump);
+    /// assert_eq!(abc0def.into_cstr(), c"abc");
     /// ```
     #[must_use]
     #[inline(always)]
@@ -1348,6 +1349,8 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
 
     /// Converts this `BumpString` into `&CStr` that is live for this bump scope.
     ///
+    /// If the string contains a `'\0'` then the `CStr` will stop there.
+    ///
     /// # Errors
     /// Errors if the allocation fails.
     ///
@@ -1355,13 +1358,11 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
     /// ```
     /// # use bump_scope::{ Bump, BumpString };
     /// # let bump: Bump = Bump::try_new()?;
-    /// let mut hello = BumpString::from_str_in("Hello, ", &bump);
+    /// let hello = BumpString::try_from_str_in("Hello, world!", &bump)?;    ///
+    /// assert_eq!(hello.try_into_cstr()?, c"Hello, world!");
     ///
-    /// hello.push('w');
-    /// hello.push_str("orld!");
-    ///
-    /// assert_eq!(hello.into_cstr(), c"Hello, world!");
-    ///
+    /// let abc0def = BumpString::try_from_str_in("abc\0def", &bump)?;
+    /// assert_eq!(abc0def.try_into_cstr()?, c"abc");
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     #[inline(always)]
