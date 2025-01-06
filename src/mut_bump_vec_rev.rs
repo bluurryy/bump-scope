@@ -488,6 +488,11 @@ impl<T, A> MutBumpVecRev<T, A> {
         self.len = new_len;
     }
 
+    #[inline]
+    pub(crate) unsafe fn inc_len(&mut self, amount: usize) {
+        self.len += amount;
+    }
+
     #[inline(always)]
     fn into_raw_parts(self) -> (NonNull<T>, usize, usize, A) {
         destructure!(let Self { end, len, cap, allocator } = self);
@@ -1232,11 +1237,11 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
                 self.generic_reserve(slice.len())?;
 
                 let src = slice.cast::<T>().as_ptr();
-                self.len += slice.len();
-                let dst = self.as_mut_ptr();
-
+                let dst = self.end.as_ptr().sub(self.len + slice.len());
                 ptr::copy_nonoverlapping(src, dst, slice.len());
+
                 owned_slice.take_owned_slice();
+                self.inc_len(slice.len());
                 Ok(())
             }
         }

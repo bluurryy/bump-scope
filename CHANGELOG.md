@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **fixed:** `append` implementation of `MutBumpVecRev` now accounts for `take_owned_slice` panicking
 - **added:** implemented `Default` for `Stats`, `ChunkPrevIter`, `ChunkNextIter`, `WithoutShrink` and `WithoutDealloc`
 
 ## 0.15.1 (2025-01-04)
