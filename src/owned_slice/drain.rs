@@ -259,8 +259,8 @@ impl<T> FusedIterator for Drain<'_, T> {}
 unsafe impl<T> TakeOwnedSlice for Drain<'_, T> {
     type Item = T;
 
-    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
-        self.iter.owned_slice_ptr()
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        self.iter.owned_slice_ref()
     }
 
     fn take_owned_slice(&mut self) {

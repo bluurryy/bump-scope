@@ -1233,7 +1233,7 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
             unsafe {
                 let mut owned_slice = other.into_take_owned_slice();
 
-                let slice = owned_slice.owned_slice_ptr();
+                let slice = NonNull::from(owned_slice.owned_slice_ref());
                 self.generic_reserve(slice.len())?;
 
                 let src = slice.cast::<T>().as_ptr();

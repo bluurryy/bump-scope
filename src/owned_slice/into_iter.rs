@@ -228,8 +228,8 @@ impl<T> Drop for IntoIter<'_, T> {
 unsafe impl<T> TakeOwnedSlice for IntoIter<'_, T> {
     type Item = T;
 
-    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
-        nonnull::slice_from_raw_parts(self.ptr, self.len())
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        self.as_slice()
     }
 
     fn take_owned_slice(&mut self) {

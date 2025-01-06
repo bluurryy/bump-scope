@@ -1,4 +1,4 @@
-use core::{array, mem, ptr::NonNull};
+use core::{array, mem};
 
 #[cfg(feature = "alloc")]
 use core::mem::ManuallyDrop;
@@ -88,10 +88,11 @@ impl<T, const N: usize> OwnedSlice for Box<[T; N]> {
 /// The goal of the safety conditions are so that a function like this is sound:
 /// ```
 /// # extern crate alloc;
+/// # use core::ptr::NonNull;
 /// # use alloc::vec::Vec;
 /// # use bump_scope::owned_slice::TakeOwnedSlice;
 /// fn append<T>(vec: &mut Vec<T>, mut to_append: impl TakeOwnedSlice<Item = T>) {
-///     let slice = to_append.owned_slice_ptr();
+///     let slice = NonNull::from(to_append.owned_slice_ref());
 ///     vec.reserve(slice.len());
 ///     
 ///     unsafe {
@@ -115,15 +116,19 @@ impl<T, const N: usize> OwnedSlice for Box<[T; N]> {
 ///
 /// # Safety
 ///
-/// The implementor must own a slice, that both of the methods operate on. Lets call it *the slice*.
+/// The implementor must own a slice, that both of the methods operate on.
+/// Let's call it *the slice*.
 ///
-/// - `owned_slice_ptr` must return a pointer to *the slice* valid to be read.
-/// - `take_owned_slice` relinquishes the ownership of *the slice*. The elements of *the slice* **must not be dropped**. Once called, *the slice* becomes an empty slice.
-/// - Between calls to `owned_slice_ptr` and `take_owned_slice`, the caller can assume that *the slice* won't change as long as the caller itself does not interact
-///   with the type. As such the implementor must not be implemented for a type whose *the slice* could change from a different thread for instance.
+/// - `owned_slice_ref` returns *the slice*.
+/// - `take_owned_slice` relinquishes the ownership of the slice.
+///   The elements of *the slice* **must not be dropped**.
+///   Once called, *the slice* becomes an empty slice.
+/// - Between calls to `owned_slice_ref` and `take_owned_slice`,
+///   the caller can assume that *the slice* won't change as long as the caller itself does not interact with the type.
+///   As such the implementor must not be implemented for a type whose *the slice* could change from a different thread for instance.
 ///
 /// [set_len]: alloc::vec::Vec::set_len
-/// [`owned_slice_ptr`]: TakeOwnedSlice::owned_slice_ptr
+/// [`owned_slice_ref`]: TakeOwnedSlice::owned_slice_ref
 /// [`take_owned_slice`]: TakeOwnedSlice::take_owned_slice
 #[allow(clippy::len_without_is_empty)]
 pub unsafe trait TakeOwnedSlice {
@@ -131,24 +136,24 @@ pub unsafe trait TakeOwnedSlice {
     type Item;
 
     /// Returns a pointer to its slice valid to be read.
-    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]>;
+    fn owned_slice_ref(&self) -> &[Self::Item];
 
     /// This will make the slice forget all of its elements.
     ///
-    /// *Its elements* are the same elements pointed to by its [`owned_slice_ptr`].
+    /// *Its elements* are the same elements referred to by [`owned_slice_ref`].
     /// The caller is now responsible for dropping those elements.
     ///
-    /// After calling this, `owned_slice_ptr` will return a slice pointer with a length of `0`.
+    /// After calling this, `owned_slice_ref` will return a slice with a length of `0`.
     ///
-    /// [`owned_slice_ptr`]: Self::owned_slice_ptr
+    /// [`owned_slice_ref`]: Self::owned_slice_ref
     fn take_owned_slice(&mut self);
 }
 
 unsafe impl<T: TakeOwnedSlice + ?Sized> TakeOwnedSlice for &mut T {
     type Item = T::Item;
 
-    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
-        T::owned_slice_ptr(self)
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        T::owned_slice_ref(self)
     }
 
     fn take_owned_slice(&mut self) {
@@ -159,8 +164,8 @@ unsafe impl<T: TakeOwnedSlice + ?Sized> TakeOwnedSlice for &mut T {
 unsafe impl<T, const N: usize> TakeOwnedSlice for array::IntoIter<T, N> {
     type Item = T;
 
-    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
-        NonNull::from(self.as_slice())
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        self.as_slice()
     }
 
     fn take_owned_slice(&mut self) {
@@ -171,8 +176,8 @@ unsafe impl<T, const N: usize> TakeOwnedSlice for array::IntoIter<T, N> {
 unsafe impl<T> TakeOwnedSlice for BumpBox<'_, [T]> {
     type Item = T;
 
-    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
-        self.as_non_null_slice()
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        self
     }
 
     fn take_owned_slice(&mut self) {
@@ -183,8 +188,8 @@ unsafe impl<T> TakeOwnedSlice for BumpBox<'_, [T]> {
 unsafe impl<T> TakeOwnedSlice for FixedBumpVec<'_, T> {
     type Item = T;
 
-    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
-        self.as_non_null_slice()
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        self
     }
 
     fn take_owned_slice(&mut self) {
@@ -195,8 +200,8 @@ unsafe impl<T> TakeOwnedSlice for FixedBumpVec<'_, T> {
 unsafe impl<T, A: BumpAllocator> TakeOwnedSlice for BumpVec<T, A> {
     type Item = T;
 
-    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
-        self.as_non_null_slice()
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        self
     }
 
     fn take_owned_slice(&mut self) {
@@ -207,8 +212,8 @@ unsafe impl<T, A: BumpAllocator> TakeOwnedSlice for BumpVec<T, A> {
 unsafe impl<T, A> TakeOwnedSlice for MutBumpVec<T, A> {
     type Item = T;
 
-    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
-        self.as_non_null_slice()
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        self
     }
 
     fn take_owned_slice(&mut self) {
@@ -219,8 +224,8 @@ unsafe impl<T, A> TakeOwnedSlice for MutBumpVec<T, A> {
 unsafe impl<T, A> TakeOwnedSlice for MutBumpVecRev<T, A> {
     type Item = T;
 
-    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
-        self.as_non_null_slice()
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        self
     }
 
     fn take_owned_slice(&mut self) {
@@ -232,8 +237,8 @@ unsafe impl<T, A> TakeOwnedSlice for MutBumpVecRev<T, A> {
 unsafe impl<T> TakeOwnedSlice for Box<[T]> {
     type Item = T;
 
-    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
-        NonNull::from(&**self)
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        self
     }
 
     fn take_owned_slice(&mut self) {
@@ -248,8 +253,8 @@ unsafe impl<T> TakeOwnedSlice for Box<[T]> {
 unsafe impl<T> TakeOwnedSlice for Vec<T> {
     type Item = T;
 
-    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
-        NonNull::from(&**self)
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        self
     }
 
     fn take_owned_slice(&mut self) {
@@ -261,8 +266,8 @@ unsafe impl<T> TakeOwnedSlice for Vec<T> {
 unsafe impl<T> TakeOwnedSlice for vec::IntoIter<T> {
     type Item = T;
 
-    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
-        NonNull::from(self.as_slice())
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        self.as_slice()
     }
 
     fn take_owned_slice(&mut self) {
@@ -274,8 +279,8 @@ unsafe impl<T> TakeOwnedSlice for vec::IntoIter<T> {
 unsafe impl<T> TakeOwnedSlice for vec::Drain<'_, T> {
     type Item = T;
 
-    fn owned_slice_ptr(&self) -> NonNull<[Self::Item]> {
-        NonNull::from(self.as_slice())
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        self.as_slice()
     }
 
     fn take_owned_slice(&mut self) {
