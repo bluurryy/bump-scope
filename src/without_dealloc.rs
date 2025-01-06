@@ -7,7 +7,7 @@ use crate::{polyfill::nonnull, BumpAllocator};
 /// Wraps an bump allocator and does nothing on [`deallocate`](Allocator::deallocate).
 ///
 /// This type only implements [`Allocator`] for wrapped types that implement [`BumpAllocator`], so you don't accidentally leak memory.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct WithoutDealloc<A>(pub A);
 
 impl<A> WithoutDealloc<A> {
@@ -59,7 +59,7 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
 /// Wraps an bump allocator and does nothing on [`shrink`](Allocator::shrink).
 ///
 /// This type only implements [`Allocator`] for wrapped types that implement [`BumpAllocator`], so you don't accidentally leak memory.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct WithoutShrink<A>(pub A);
 
 impl<A> WithoutShrink<A> {

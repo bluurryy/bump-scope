@@ -233,6 +233,12 @@ impl<'a, const GUARANTEED_ALLOCATED: bool> From<Chunk<'a>> for Stats<'a, GUARANT
     }
 }
 
+impl Default for Stats<'_, false> {
+    fn default() -> Self {
+        Self::unallocated()
+    }
+}
+
 /// Refers to a chunk of memory that was allocated by the bump allocator.
 ///
 /// See [`Stats`].
@@ -398,7 +404,7 @@ impl<'a> Chunk<'a> {
 }
 
 /// Iterator that iterates over previous chunks by continuously calling [`Chunk::prev`].
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub struct ChunkPrevIter<'a> {
     #[allow(missing_docs)]
     pub chunk: Option<Chunk<'a>>,
@@ -424,7 +430,7 @@ impl Debug for ChunkPrevIter<'_> {
 }
 
 /// Iterator that iterates over next chunks by continuously calling [`Chunk::next`].
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub struct ChunkNextIter<'a> {
     #[allow(missing_docs)]
     pub chunk: Option<Chunk<'a>>,
