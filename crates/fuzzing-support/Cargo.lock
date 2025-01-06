@@ -19,7 +19,7 @@ dependencies = [
 
 [[package]]
 name = "bump-scope"
-version = "0.15.1"
+version = "0.15.2"
 dependencies = [
  "allocator-api2",
  "rustversion",
