@@ -112,6 +112,7 @@ assert_eq!(bump.stats().allocated(), 0);
 ```
 You can also use the unsafe `checkpoint` api to reset the bump pointer to a previous location.
 ```rust
+let mut bump: Bump = Bump::new();
 let checkpoint = bump.checkpoint();
 
 {
@@ -212,10 +213,8 @@ If `GUARANTEED_ALLOCATED` is `true` then the bump allocator is guaranteed to hav
 This is usually the case unless it was created with `Bump::unallocated`.
 
 You need a guaranteed allocated `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
-You can convert a `Bump(Scope)` into a guaranteed allocated one with
-[`guaranteed_allocated`](Bump::guaranteed_allocated),
-[`guaranteed_allocated_ref`](Bump::guaranteed_allocated_ref), and
-[`guaranteed_allocated_mut`](Bump::guaranteed_allocated_mut).
+You can make a `Bump(Scope)` guaranteed allocated using
+<code>[guaranteed_allocated](Bump::guaranteed_allocated)([_ref](Bump::guaranteed_allocated_ref)/[_mut](Bump::guaranteed_allocated_mut))</code>.
 
 The point of this is so `Bump`s can be created without allocating memory and even `const` constructed since rust version 1.83.
 At the same time `Bump`s that have already allocated a chunk don't suffer runtime checks for entering scopes and creating checkpoints.

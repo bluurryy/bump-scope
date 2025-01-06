@@ -261,11 +261,21 @@ where
 {
     /// Constructs a new `Bump` without doing any allocations.
     ///
-    /// The resulting `Bump` will have its [`GUARANTEED_ALLOCATED` parameter set to `false`](crate#guaranteed_allocated-parameter).
+    /// The resulting `Bump` will have its [`GUARANTEED_ALLOCATED`](crate#guaranteed_allocated-parameter) parameter set to `false`.
     /// Such a `Bump` is unable to create a scope with `scoped` or `scope_guard`.
-    /// It has to first be converted into a guaranteed allocated `Bump` using [`guaranteed_allocated`](Bump::guaranteed_allocated), [`guaranteed_allocated_ref`](Bump::guaranteed_allocated_ref) or [`guaranteed_allocated_mut`](Bump::guaranteed_allocated_mut).
+    /// It has to first be converted into a guaranteed allocated `Bump` using
+    /// <code>[guaranteed_allocated](Bump::guaranteed_allocated)([_ref](Bump::guaranteed_allocated_ref)/[_mut](Bump::guaranteed_allocated_mut))</code>.
     ///
     /// **This function is `const` starting from rust version 1.83.**
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bump_scope::Bump;
+    /// use bump_scope::allocator_api2::alloc::Global;
+    ///
+    /// let bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    /// ```
     #[must_use]
     #[rustversion::attr(since(1.83), const)]
     pub fn unallocated() -> Self {
@@ -287,8 +297,21 @@ where
         impl
         /// This is equivalent to <code>[with_size](Bump::with_size)(512)</code>.
         #[must_use]
+        do examples
+        /// ```
+        /// use bump_scope::Bump;
+        ///
+        /// let bump: Bump = Bump::new();
+        /// ```
         for fn new
         /// This is equivalent to <code>[try_with_size](Bump::try_with_size)(512)</code>.
+        do examples
+        /// ```
+        /// use bump_scope::Bump;
+        ///
+        /// let bump: Bump = Bump::try_new()?;
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_new
         #[inline]
         use fn generic_new() -> Self {
@@ -457,13 +480,74 @@ where
 
     /// Calls `f` with this scope but with a new minimum alignment.
     ///
-    /// The [`scoped` Gotcha][gotcha] applies to `aligned` too,
-    /// so you might want to turn this into a [`BumpScope`] using [`as_mut_scope`] before calling `aligned`.
+    /// # Examples
     ///
-    /// See [`BumpScope::aligned`] for examples.
+    /// Increase the minimum alignment:
+    /// ```
+    /// # #![feature(pointer_is_aligned_to)]
+    /// # use bump_scope::Bump;
+    /// let mut bump: Bump = Bump::new();
+    /// let bump = bump.as_mut_scope();
     ///
-    /// [gotcha]: Self#gotchas
-    /// [`as_mut_scope`]: Self::as_mut_scope
+    /// // here we're allocating with a `MIN_ALIGN` of `1`
+    /// let foo = bump.alloc_str("foo");
+    /// assert_eq!(bump.stats().allocated(), 3);
+    ///
+    /// let bar = bump.aligned::<8, _>(|bump| {
+    ///     // in here the bump position has been aligned to `8`
+    ///     assert_eq!(bump.stats().allocated(), 8);
+    ///     assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
+    ///
+    ///     // make some allocations that benefit from the higher `MIN_ALIGN` of `8`
+    ///     let bar = bump.alloc(0u64);
+    ///     assert_eq!(bump.stats().allocated(), 16);
+    ///  
+    ///     // the bump position will stay aligned to `8`
+    ///     bump.alloc(0u8);
+    ///     assert_eq!(bump.stats().allocated(), 24);
+    ///
+    ///     bar
+    /// });
+    ///
+    /// assert_eq!(bump.stats().allocated(), 24);
+    ///
+    /// // continue making allocations with a `MIN_ALIGN` of `1`
+    /// let baz = bump.alloc_str("baz");
+    /// assert_eq!(bump.stats().allocated(), 24 + 3);
+    ///
+    /// dbg!(foo, bar, baz);
+    /// ```
+    ///
+    /// Decrease the minimum alignment:
+    /// ```
+    /// # #![feature(pointer_is_aligned_to)]
+    /// # use bump_scope::{ Bump, allocator_api2::alloc::Global };
+    /// let mut bump: Bump<Global, 8> = Bump::new();
+    /// let bump = bump.as_mut_scope();
+    ///
+    /// // make some allocations that benefit from the `MIN_ALIGN` of `8`
+    /// let foo = bump.alloc(0u64);
+    ///
+    /// let bar = bump.aligned::<1, _>(|bump| {
+    ///     // make some allocations that benefit from the lower `MIN_ALIGN` of `1`
+    ///     let bar = bump.alloc(0u8);
+    ///
+    ///     // the bump position will not get aligned to `8` in here
+    ///     assert_eq!(bump.stats().allocated(), 8 + 1);
+    ///
+    ///     bar
+    /// });
+    ///
+    /// // after `aligned()`, the bump position will be aligned to `8` again
+    /// // to satisfy our `MIN_ALIGN`
+    /// assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
+    /// assert_eq!(bump.stats().allocated(), 16);
+    ///
+    /// // continue making allocations that benefit from the `MIN_ALIGN` of `8`
+    /// let baz = bump.alloc(0u64);
+    ///
+    /// dbg!(foo, bar, baz);
+    /// ```
     #[inline(always)]
     pub fn aligned<'a, const NEW_MIN_ALIGN: usize, R>(
         &'a mut self,
@@ -503,6 +587,7 @@ where
     /// Creates a checkpoint of the current bump position.
     ///
     /// # Examples
+    ///
     /// ```
     /// # use bump_scope::Bump;
     /// let mut bump: Bump = Bump::new();
@@ -524,9 +609,26 @@ where
     /// Resets the bump position to a previously created checkpoint. The memory that has been allocated since then will be reused by future allocations.
     ///
     /// # Safety
+    ///
     /// - the checkpoint must have been created by this bump allocator
     /// - the bump allocator must not have been [`reset`](crate::Bump::reset) since creation of this checkpoint
     /// - there must be no references to allocations made since creation of this checkpoint
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// let mut bump: Bump = Bump::new();
+    /// let checkpoint = bump.checkpoint();
+    ///
+    /// {
+    ///     let hello = bump.alloc_str("hello");
+    ///     assert_eq!(bump.stats().allocated(), 5);
+    /// }
+    ///
+    /// unsafe { bump.reset_to(checkpoint); }
+    /// assert_eq!(bump.stats().allocated(), 0);
+    /// ```
     #[inline]
     pub unsafe fn reset_to(&self, checkpoint: Checkpoint) {
         self.as_scope().reset_to(checkpoint);
@@ -544,8 +646,23 @@ where
         ///
         impl
         /// This is equivalent to <code>[with_size_in](Bump::with_size_in)(512, allocator)</code>.
+        do examples
+        /// ```
+        /// use bump_scope::Bump;
+        /// use bump_scope::allocator_api2::alloc::Global;
+        ///
+        /// let bump: Bump = Bump::new_in(Global);
+        /// ```
         for fn new_in
         /// This is equivalent to <code>[try_with_size_in](Bump::try_with_size_in)(512, allocator)</code>.
+        do examples
+        /// ```
+        /// use bump_scope::Bump;
+        /// use bump_scope::allocator_api2::alloc::Global;
+        ///
+        /// let bump: Bump = Bump::try_new_in(Global)?;
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_new_in
         #[inline]
         use fn generic_new_in(allocator: A) -> Self {
@@ -615,10 +732,32 @@ where
         /// Constructs a new `Bump` with at least enough space for `layout`.
         ///
         /// To construct a `Bump` with a size hint use <code>[with_size_in](Bump::with_size_in)</code> instead.
+        do examples
+        /// ```
+        /// use bump_scope::Bump;
+        /// use bump_scope::allocator_api2::alloc::Global;
+        /// use core::alloc::Layout;
+        ///
+        /// let layout = Layout::array::<u8>(1234).unwrap();
+        /// let bump: Bump = Bump::with_capacity_in(layout, Global);
+        /// assert!(bump.stats().capacity() >= layout.size());
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn with_capacity_in
         /// Constructs a new `Bump` with at least enough space for `layout`.
         ///
         /// To construct a `Bump` with a size hint use <code>[try_with_size_in](Bump::try_with_size_in)</code> instead.
+        do examples
+        /// ```
+        /// use bump_scope::Bump;
+        /// use bump_scope::allocator_api2::alloc::Global;
+        /// use core::alloc::Layout;
+        ///
+        /// let layout = Layout::array::<u8>(1234).unwrap();
+        /// let bump: Bump = Bump::try_with_capacity_in(layout, Global)?;
+        /// assert!(bump.stats().capacity() >= layout.size());
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
         for fn try_with_capacity_in
         #[inline]
         use fn generic_with_capacity_in(layout: Layout, allocator: A) -> Self {
@@ -634,6 +773,29 @@ where
 
     // This needs `&mut self` to make sure that no allocations are alive.
     /// Deallocates every chunk but the newest, which is also the biggest.
+    ///
+    /// ```
+    /// use bump_scope::Bump;
+    ///
+    /// let mut bump: Bump = Bump::new();
+    ///
+    /// // won't fit in the default sized first chunk
+    /// bump.alloc_uninit_slice::<u8>(600);
+    ///
+    /// let chunks = bump.stats().small_to_big().collect::<Vec<_>>();
+    /// assert_eq!(chunks.len(), 2);
+    /// assert!(chunks[0].size() < chunks[1].size());
+    /// assert_eq!(chunks[0].allocated(), 0);
+    /// assert_eq!(chunks[1].allocated(), 600);
+    /// let last_chunk_size = chunks[1].size();
+    ///
+    /// bump.reset();
+    ///
+    /// let chunks = bump.stats().small_to_big().collect::<Vec<_>>();
+    /// assert_eq!(chunks.len(), 1);
+    /// assert_eq!(chunks[0].size(), last_chunk_size);
+    /// assert_eq!(chunks[0].allocated(), 0);
+    /// ```
     #[inline(always)]
     pub fn reset(&mut self) {
         let mut chunk = self.chunk.get();
@@ -720,7 +882,33 @@ where
     /// Converts this `Bump` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
     /// # Panics
+    ///
     /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    ///
+    /// Creating scopes with a non-`GUARANTEED_ALLOCATED` bump is not possible.
+    /// ```compile_fail,E0599
+    /// # use bump_scope::Bump;
+    /// # use bump_scope::allocator_api2::alloc::Global;
+    /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    ///
+    /// bump.scoped(|bump| {
+    ///    // ...
+    /// });
+    /// ```
+    ///
+    /// Using this function you can make a `Bump` guaranteed allocated and create scopes.
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # use bump_scope::allocator_api2::alloc::Global;
+    /// let bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    /// let mut bump = bump.guaranteed_allocated();
+    ///
+    /// bump.scoped(|bump| {
+    ///    // ...
+    /// });
+    /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn guaranteed_allocated(self) -> Bump<A, MIN_ALIGN, UP> {
@@ -730,7 +918,34 @@ where
     /// Converts this `Bump` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
     /// # Errors
+    ///
     /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    ///
+    /// Creating scopes with a non-`GUARANTEED_ALLOCATED` bump is not possible.
+    /// ```compile_fail,E0599
+    /// # use bump_scope::Bump;
+    /// # use bump_scope::allocator_api2::alloc::Global;
+    /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    ///
+    /// bump.scoped(|bump| {
+    ///    // ...
+    /// });
+    /// ```
+    ///
+    /// Using this function you can make a `Bump` guaranteed allocated and create scopes.
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # use bump_scope::allocator_api2::alloc::Global;
+    /// let bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    /// let mut bump = bump.try_guaranteed_allocated()?;
+    ///
+    /// bump.scoped(|bump| {
+    ///    // ...
+    /// });
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
     pub fn try_guaranteed_allocated(self) -> Result<Bump<A, MIN_ALIGN, UP>, AllocError> {
         self.generic_guaranteed_allocated()
@@ -745,6 +960,7 @@ where
     /// Borrows `Bump` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
     /// # Panics
+    ///
     /// Panics if the allocation fails.
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -770,7 +986,32 @@ where
     /// Mutably borrows `Bump` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
     /// # Panics
+    ///
     /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    ///
+    /// Creating scopes with a non-`GUARANTEED_ALLOCATED` bump is not possible.
+    /// ```compile_fail,E0599
+    /// # use bump_scope::Bump;
+    /// # use bump_scope::allocator_api2::alloc::Global;
+    /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    ///
+    /// bump.scoped(|bump| {
+    ///    // ...
+    /// });
+    /// ```
+    ///
+    /// Using this function you can make a `Bump` guaranteed allocated and create scopes.
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # use bump_scope::allocator_api2::alloc::Global;
+    /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    ///
+    /// bump.guaranteed_allocated_mut().scoped(|bump| {
+    ///    // ...
+    /// });
+    /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn guaranteed_allocated_mut(&mut self) -> &mut Bump<A, MIN_ALIGN, UP> {
@@ -780,7 +1021,33 @@ where
     /// Mutably borrows `Bump` as an [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
     /// # Errors
+    ///
     /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    ///
+    /// Creating scopes with a non-`GUARANTEED_ALLOCATED` bump is not possible.
+    /// ```compile_fail,E0599
+    /// # use bump_scope::Bump;
+    /// # use bump_scope::allocator_api2::alloc::Global;
+    /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    ///
+    /// bump.scoped(|bump| {
+    ///    // ...
+    /// });
+    /// ```
+    ///
+    /// Using this function you can make a `Bump` guaranteed allocated and create scopes.
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # use bump_scope::allocator_api2::alloc::Global;
+    /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    ///
+    /// bump.try_guaranteed_allocated_mut()?.scoped(|bump| {
+    ///    // ...
+    /// });
+    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
     pub fn try_guaranteed_allocated_mut(&mut self) -> Result<&mut Bump<A, MIN_ALIGN, UP>, AllocError> {
         self.generic_guaranteed_allocated_mut()

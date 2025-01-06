@@ -193,29 +193,31 @@ where
     ///
     /// // here we're allocating with a `MIN_ALIGN` of `1`
     /// let foo = bump.alloc_str("foo");
+    /// assert_eq!(bump.stats().allocated(), 3);
     ///
     /// let bar = bump.aligned::<8, _>(|bump| {
-    ///     // in here the bump position has been aligned to `8` and will stay aligned to `8`
-    ///     assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
+    ///     // in here the bump position has been aligned to `8`
     ///     assert_eq!(bump.stats().allocated(), 8);
+    ///     assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
     ///
     ///     // make some allocations that benefit from the higher `MIN_ALIGN` of `8`
     ///     let bar = bump.alloc(0u64);
-    ///
     ///     assert_eq!(bump.stats().allocated(), 16);
+    ///  
+    ///     // the bump position will stay aligned to `8`
+    ///     bump.alloc(0u8);
+    ///     assert_eq!(bump.stats().allocated(), 24);
     ///
     ///     bar
     /// });
     ///
-    /// assert_eq!(bump.stats().allocated(), 16);
+    /// assert_eq!(bump.stats().allocated(), 24);
     ///
     /// // continue making allocations with a `MIN_ALIGN` of `1`
     /// let baz = bump.alloc_str("baz");
-    /// assert_eq!(bump.stats().allocated(), 16 + 3);
+    /// assert_eq!(bump.stats().allocated(), 24 + 3);
     ///
-    /// dbg!(foo);
-    /// dbg!(bar);
-    /// dbg!(baz);
+    /// dbg!(foo, bar, baz);
     /// ```
     ///
     /// Decrease the minimum alignment:
@@ -233,7 +235,6 @@ where
     ///     let bar = bump.alloc(0u8);
     ///
     ///     // the bump position will not get aligned to `8` in here
-    ///     assert!(bump.stats().current_chunk().bump_position().addr().get() % 2 == 1);
     ///     assert_eq!(bump.stats().allocated(), 8 + 1);
     ///
     ///     bar
@@ -314,9 +315,26 @@ where
     /// Resets the bump position to a previously created checkpoint. The memory that has been allocated since then will be reused by future allocations.
     ///
     /// # Safety
+    ///
     /// - the checkpoint must have been created by this bump allocator
     /// - the bump allocator must not have been [`reset`](crate::Bump::reset) since creation of this checkpoint
     /// - there must be no references to allocations made since creation of this checkpoint
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// let mut bump: Bump = Bump::new();
+    /// let checkpoint = bump.checkpoint();
+    ///
+    /// {
+    ///     let hello = bump.alloc_str("hello");
+    ///     assert_eq!(bump.stats().allocated(), 5);
+    /// }
+    ///
+    /// unsafe { bump.reset_to(checkpoint); }
+    /// assert_eq!(bump.stats().allocated(), 0);
+    /// ```
     #[inline]
     pub unsafe fn reset_to(&self, checkpoint: Checkpoint) {
         debug_assert!(self.stats().big_to_small().any(|chunk| {
