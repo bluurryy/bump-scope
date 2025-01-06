@@ -63,7 +63,7 @@ macro_rules! bump_declaration {
         /// let bump: Bump = Bump::new();
         ///
         /// let mut string = BumpString::new_in(&bump);
-        /// string.push_str("Hello");
+        /// string.push_str("Hello,");
         /// string.push_str(" world!");
         /// ```
         ///

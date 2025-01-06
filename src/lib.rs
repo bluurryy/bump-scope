@@ -263,7 +263,7 @@
 //! This is usually the case unless it was created with [`Bump::unallocated`](crate::Bump::unallocated).
 //!
 //! You need a guaranteed allocated `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
-//! You can convert a maybe unallocated `Bump(Scope)` into a guaranteed allocated one with
+//! You can convert a `Bump(Scope)` into a guaranteed allocated one with
 //! [`guaranteed_allocated`](Bump::guaranteed_allocated),
 //! [`guaranteed_allocated_ref`](Bump::guaranteed_allocated_ref), and
 //! [`guaranteed_allocated_mut`](Bump::guaranteed_allocated_mut).
