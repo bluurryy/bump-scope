@@ -290,11 +290,16 @@ impl<A: BumpAllocator> BumpString<A> {
 
     /// Splits the string into two by removing the specified range.
     ///
-    /// This operation is `O(1)` if either the range starts at 0 or ends at `len`. Otherwise it's `O(n)`.
+    /// This method does not allocate and does not change the order of the elements.
     ///
     /// # Panics
     ///
     /// Panics if the starting point or end point do not lie on a [`char`] boundary, or if they're out of bounds.
+    ///
+    /// # Complexity
+    ///
+    /// This operation takes `O(1)` time if either the range starts at 0, ends at `len`, or is empty.
+    /// Otherwise it takes `O(min(end, len - start))` time.
     ///
     /// # Examples
     ///

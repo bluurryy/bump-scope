@@ -475,11 +475,16 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
 
     /// Splits the vector into two by removing the specified range.
     ///
-    /// This operation is `O(1)` if either the range starts at 0 or ends at `len`. Otherwise it's `O(n)`.
+    /// This method does not allocate and does not change the order of the elements.
     ///
     /// # Panics
     ///
     /// Panics if the starting point is greater than the end point or if the end point is greater than the length of the vector.
+    ///
+    /// # Complexity
+    ///
+    /// This operation takes `O(1)` time if either the range starts at 0, ends at `len`, or is empty.
+    /// Otherwise it takes `O(min(end, len - start))` time.
     ///
     /// # Examples
     ///

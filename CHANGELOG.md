@@ -2,6 +2,7 @@
 
 ## Unreleased
 - **breaking:** replaced `OwnedSlice`'s `owned_slice_ptr` method with `owned_slice_ref` which returns a reference instead of a pointer
+- **docs:** improved docs for `split_off`
 
 ## 0.15.2 (2025-01-06)
 - **fixed:** `append` implementation of `MutBumpVecRev` now accounts for `take_owned_slice` panicking
