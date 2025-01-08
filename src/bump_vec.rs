@@ -477,6 +477,22 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// This method does not allocate and does not change the order of the elements.
     ///
+    /// The excess capacity may end up in either vector.
+    /// This behavior is different from <code>Vec::[split_off](alloc::vec::Vec::split_off)</code> which allocates a new vector for the split-off elements
+    /// so the original vector keeps its capacity.
+    /// If you rather want that behavior then you can write this instead:
+    /// ```
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// # let mut vec = BumpVec::from_array_in(['a', 'b', 'c', 'd', 'e'], &bump);
+    /// # let start = 1;
+    /// # let end = 4;
+    /// let mut other = BumpVec::new_in(*vec.allocator());
+    /// other.append(vec.drain(start..end));
+    /// # assert_eq!(vec, ['a', 'e']);
+    /// # assert_eq!(other, ['b', 'c', 'd']);
+    /// ```
+    ///
     /// # Panics
     ///
     /// Panics if the starting point is greater than the end point or if the end point is greater than the length of the vector.

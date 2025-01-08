@@ -419,6 +419,23 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// This method does not allocate and does not change the order of the elements.
     ///
+    /// The excess capacity may end up in either vector.
+    /// This behavior is different from <code>Vec::[split_off](alloc::vec::Vec::split_off)</code> which allocates a new vector for the split-off elements
+    /// so the original vector keeps its capacity.
+    /// If you rather want that behavior then you can write this instead:
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// # let mut vec = bump.alloc_fixed_vec(5);
+    /// # vec.append([1, 2, 3, 4, 5]);
+    /// # let start = 1;
+    /// # let end = 4;
+    /// let mut other = bump.alloc_fixed_vec(end - start);
+    /// other.append(vec.drain(start..end));
+    /// # assert_eq!(vec, [1, 5]);
+    /// # assert_eq!(other, [2, 3, 4]);
+    /// ```
+    ///
     /// # Panics
     ///
     /// Panics if the starting point is greater than the end point or if the end point is greater than the length of the vector.

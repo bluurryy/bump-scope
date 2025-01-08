@@ -292,6 +292,23 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// This method does not allocate and does not change the order of the elements.
     ///
+    /// The excess capacity may end up in either string.
+    /// This behavior is different from <code>String::[split_off](alloc::string::String::split_off)</code> which allocates a new string for the split-off bytes
+    /// so the original string keeps its capacity.
+    /// If you rather want that behavior then you can write this instead:
+    /// ```
+    /// # use bump_scope::{ Bump, BumpString };
+    /// # let bump: Bump = Bump::new();
+    /// # let mut string = BumpString::from_str_in("abcde", &bump);
+    /// # let start = 1;
+    /// # let end = 4;
+    /// let mut other = BumpString::new_in(*string.allocator());
+    /// other.push_str(&string[start..end]);
+    /// string.drain(start..end);
+    /// # assert_eq!(string, "ae");
+    /// # assert_eq!(other, "bcd");
+    /// ```
+    ///
     /// # Panics
     ///
     /// Panics if the starting point or end point do not lie on a [`char`] boundary, or if they're out of bounds.

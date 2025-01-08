@@ -347,3 +347,50 @@ fn string_compare_to_std() {
     assert_eq!(&*std, "ab");
     assert_eq!(&*std_off, "cde");
 }
+
+#[test]
+fn vec_alternative_using_drain() {
+    let bump: Bump = Bump::new();
+    let start = 1;
+    let end = 4;
+
+    {
+        let mut vec = BumpVec::from_array_in(['a', 'b', 'c', 'd', 'e'], &bump);
+        let allocator = *vec.allocator();
+        let other = BumpVec::from_iter_in(vec.drain(start..end), allocator);
+        assert_eq!(vec, ['a', 'e']);
+        assert_eq!(other, ['b', 'c', 'd']);
+    }
+
+    {
+        let mut vec = BumpVec::from_array_in(['a', 'b', 'c', 'd', 'e'], &bump);
+        let mut other = BumpVec::new_in(*vec.allocator());
+        other.append(vec.drain(start..end));
+        assert_eq!(vec, ['a', 'e']);
+        assert_eq!(other, ['b', 'c', 'd']);
+    }
+}
+
+#[test]
+fn string_alternative_using_drain() {
+    let bump: Bump = Bump::new();
+    let start = 1;
+    let end = 4;
+
+    {
+        let mut string = BumpString::from_str_in("abcde", &bump);
+        let mut other = BumpString::new_in(*string.allocator());
+        other.extend(string.drain(start..end));
+        assert_eq!(string, "ae");
+        assert_eq!(other, "bcd");
+    }
+
+    {
+        let mut string = BumpString::from_str_in("abcde", &bump);
+        let mut other = BumpString::new_in(*string.allocator());
+        other.push_str(&string[start..end]);
+        string.drain(start..end);
+        assert_eq!(string, "ae");
+        assert_eq!(other, "bcd");
+    }
+}
