@@ -1,7 +1,10 @@
 #![forbid(unsafe_code)]
 //! Make sure you sync this file with `crates/fuzzing-support/src/from_bump_scope/bumping.rs`.
+//!
+//! This file intentionally doesn't import anything other than `core`
+//! to make it easy to fuzz (see above) and debug.
 
-use std::{alloc::Layout, num::NonZeroUsize, ops::Range};
+use core::{alloc::Layout, num::NonZeroUsize, ops::Range};
 
 pub(crate) const MIN_CHUNK_ALIGN: usize = 16;
 
@@ -89,7 +92,7 @@ pub(crate) fn bump_up(
         size_is_multiple_of_align,
     }: BumpProps,
 ) -> Option<BumpUp> {
-    // used for assertion only
+    // Used for assertions only.
     let original_start = start;
 
     debug_assert_ne!(start, 0);
@@ -107,18 +110,17 @@ pub(crate) fn bump_up(
 
     let mut new_pos;
 
-    // doing the `layout.size() < MIN_CHUNK_ALIGN` trick here (as seen in !UP)
-    // results in worse codegen, so we don't
+    // Doing the `layout.size() < MIN_CHUNK_ALIGN` trick here (as seen in !UP)
+    // results in worse codegen, so we don't.
 
     if align_is_const && layout.align() <= MIN_CHUNK_ALIGN {
         // Constant, small alignment fast path!
 
         if align_is_const && layout.align() <= min_align {
-            // alignment is already sufficient
+            // Alignment is already sufficient.
         } else {
-            // Aligning an address that is `<= range.end` with an alignment
-            // that is `<= MIN_CHUNK_ALIGN` can not exceed `range.end` and
-            // can not overflow as `range.end` is always aligned to `MIN_CHUNK_ALIGN`
+            // Aligning an address that is `<= range.end` with an alignment `<= MIN_CHUNK_ALIGN`
+            // can't exceed `range.end` nor overflow as `range.end` is always aligned to `MIN_CHUNK_ALIGN`.
             start = up_align_unchecked(start, layout.align());
         }
 
@@ -128,39 +130,39 @@ pub(crate) fn bump_up(
             return None;
         }
 
-        // doesn't exceed `end` because of the check above
+        // Doesn't exceed `end` because of the check above.
         new_pos = start + layout.size();
     } else {
-        // Alignment is `> MIN_CHUNK_ALIGN` or unknown.
+        // Alignment is `> MIN_CHUNK_ALIGN` or not const.
 
-        // start and align are both nonzero
-        // `aligned_down` is the aligned pointer minus `layout.align()`
+        // `start` and `align` are both nonzero.
+        // `aligned_down` is the aligned pointer minus `layout.align()`.
         let aligned_down = (start - 1) & !(layout.align() - 1);
 
-        // align + size cannot overflow as per `Layout`'s rules
+        // `align + size` cannot overflow as per `Layout`'s rules.
         //
-        // this could also be a `checked_add`, but we use `saturating_add` to save us a branch;
-        // the `if` below will return None if the addition saturated and returned `usize::MAX`
+        // This could also be a `checked_add`, but we use `saturating_add` to save us a branch.
+        // The `if` below will return None if the addition saturated and returned `usize::MAX`.
         new_pos = aligned_down.saturating_add(layout.align() + layout.size());
 
-        // note that `new_pos` being `usize::MAX` is an invalid value for `new_pos` and we MUST return None;
-        // due to `end` being always aligned to `MIN_CHUNK_ALIGN`, it can't be `usize::MAX`;
-        // thus when `new_pos` is `usize::MAX` this will always return None;
+        // Note that `new_pos` being `usize::MAX` is an invalid value for `new_pos` and we MUST return None.
+        // Due to `end` being always aligned to `MIN_CHUNK_ALIGN`, it can't be `usize::MAX`.
+        // Thus when `new_pos` is `usize::MAX` this will always return None.
         if new_pos > end {
             return None;
         }
 
-        // doesn't exceed `end` because `aligned_down + align + size` didn't
+        // Doesn't exceed `end` because `aligned_down + align + size` didn't.
         start = aligned_down + layout.align();
     };
 
     if (align_is_const && size_is_multiple_of_align && layout.align() >= min_align)
         || (size_is_const && (layout.size() % min_align == 0))
     {
-        // we are already aligned to `min_align`
+        // We are already aligned to `min_align`.
     } else {
-        // up aligning an address `<= range.end` with an alignment `<= MIN_CHUNK_ALIGN` (which `min_align` is)
-        // can not exceed `range.end`, and thus also can't overflow
+        // Up aligning an address `<= range.end` with an alignment `<= MIN_CHUNK_ALIGN` (which `min_align` is)
+        // can't exceed `range.end` and thus also can't overflow.
         new_pos = up_align_unchecked(new_pos, min_align);
     }
 
@@ -190,7 +192,7 @@ pub(crate) fn bump_down(
         size_is_multiple_of_align,
     }: BumpProps,
 ) -> Option<usize> {
-    // used for assertion only
+    // Used for assertions only.
     let original_end = end;
 
     debug_assert_ne!(start, 0);
@@ -205,7 +207,7 @@ pub(crate) fn bump_down(
 
     debug_assert!(start <= end);
 
-    // these are expected to be evaluated at compile time
+    // These are expected to be evaluated at compile time.
     let does_not_need_align_for_min_align_due_to_align =
         size_is_multiple_of_align && align_is_const && layout.align() >= min_align;
     let does_not_need_align_for_min_align_due_to_size = size_is_const && (layout.size() % min_align == 0);
@@ -223,7 +225,7 @@ pub(crate) fn bump_down(
         end -= layout.size();
 
         if needs_align {
-            // At this point layout's align is const, because we assume `L::SIZE_IS_CONST` implies `L::ALIGN_IS_CONST`.
+            // At this point layout's align is const, because we assume `size_is_const` implies `align_is_const`.
             // That means `max` is evaluated at compile time, so we don't bother having different cases for either alignment.
             end = down_align(end, layout.align().max(min_align));
         }
@@ -239,25 +241,25 @@ pub(crate) fn bump_down(
             return None;
         }
 
-        // doesn't overflow because of the check above
+        // Doesn't overflow because of the check above.
         end -= layout.size();
 
         if needs_align {
-            // down aligning an address `>= range.start` with an alignment `<= MIN_CHUNK_ALIGN` (which `layout.align()` is)
-            // can not exceed `range.start`, and thus also can't overflow
+            // Down aligning an address `>= range.start` with an alignment `<= MIN_CHUNK_ALIGN` (which `layout.align()` is)
+            // can't exceed `range.start`, and thus also can't overflow.
             end = down_align(end, layout.align().max(min_align));
         }
     } else {
-        // Alignment is `> MIN_CHUNK_ALIGN` or unknown.
+        // Alignment is `> MIN_CHUNK_ALIGN` or not const.
 
-        // this could also be a `checked_sub`, but we use `saturating_sub` to save us a branch;
-        // the `if` below will return None if the addition saturated and returned `0`
+        // This could also be a `checked_sub`, but we use `saturating_sub` to save us a branch.
+        // The `if` below will return None if the addition saturated and returned `0`.
         end = end.saturating_sub(layout.size());
         end = down_align(end, layout.align().max(min_align));
 
-        // note that `end` being `0` is an invalid value for `end` and we MUST return None;
-        // due to `start` being `NonNull`, it can't be `0`;
-        // thus when `end` is `0` this will always return None;
+        // Note that `end` being `0` is an invalid value for `end` and we MUST return None.
+        // Due to `start` being `NonNull`, it can't be `0`.
+        // Thus when `end` is `0` this will always return None.
         if end < start {
             return None;
         }
@@ -289,14 +291,13 @@ pub(crate) fn bump_prepare_up(
     debug_assert!(end % MIN_CHUNK_ALIGN == 0);
 
     if align_is_const && layout.align() <= min_align {
-        // alignment is already sufficient
+        // Alignment is already sufficient.
     } else {
-        // `start` needs to be aligned
+        // `start` needs to be aligned.
         if align_is_const && layout.align() <= MIN_CHUNK_ALIGN {
-            // SAFETY:
             // Aligning an address that is `<= range.end` with an alignment
-            // that is `<= MIN_CHUNK_ALIGN` can not exceed `range.end` and
-            // can not overflow
+            // that is `<= MIN_CHUNK_ALIGN` can't exceed `range.end` and
+            // thus can't overflow.
             start = up_align_unchecked(start, layout.align());
         } else {
             start = up_align(start, layout.align())?.get();
@@ -313,10 +314,11 @@ pub(crate) fn bump_prepare_up(
         return None;
     }
 
-    // layout does fit, we just trim off the excess to make end aligned
+    // Layout fits, we just trim off the excess to make end aligned.
     //
-    // Note that `end` does *not* need to be aligned to `min_align` because the `prepare` operation does not
+    // Note that `end` does *not* need to be aligned to `min_align` because the `prepare` operation doesn't
     // move the bump pointer which is the thing that does need to be aligned.
+    //
     // Aligning to `min_align` will happen once `use_prepared_slice_allocation` is called.
     let end = down_align(end, layout.align());
 
@@ -344,14 +346,14 @@ pub(crate) fn bump_prepare_down(
     debug_assert!(start <= end);
 
     if align_is_const && layout.align() <= min_align {
-        // alignment is already sufficient
+        // Alignment is already sufficient.
     } else {
         end = down_align(end, layout.align());
 
         if align_is_const && layout.align() <= MIN_CHUNK_ALIGN {
-            // end is valid
+            // End is valid.
         } else {
-            // end could be less than start at this point
+            // End could be less than start at this point.
             if end < start {
                 return None;
             }
@@ -364,10 +366,11 @@ pub(crate) fn bump_prepare_down(
         return None;
     }
 
-    // layout does fit, we just trim off the excess to make start aligned
+    // Layout fits, we just trim off the excess to make start aligned.
     //
-    // Note that `start` does *not* need to be aligned to `min_align` because the `prepare` operation does not
-    // move the bump pointer which is the thing that does need to be aligned.
+    // Note that `start` doesn't need to be aligned to `min_align` because the `prepare` operation doesn't
+    // move the bump pointer which is the thing that needs to be aligned.
+    //
     // Aligning to `min_align` will happen once `use_prepared_slice_allocation` is called.
     let start = up_align_unchecked(start, layout.align());
 
@@ -386,7 +389,7 @@ const fn down_align(addr: usize, align: usize) -> usize {
     addr & !mask
 }
 
-/// Does not check for overflow.
+/// Doesn't check for overflow.
 #[inline(always)]
 const fn up_align_unchecked(addr: usize, align: usize) -> usize {
     debug_assert!(align.is_power_of_two());
