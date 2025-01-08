@@ -33,16 +33,19 @@ pub struct Splice<'a, I: Iterator + 'a, A: BumpAllocator> {
 impl<I: Iterator, A: BumpAllocator> Iterator for Splice<'_, I, A> {
     type Item = I::Item;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.drain.next()
     }
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.drain.size_hint()
     }
 }
 
 impl<I: Iterator, A: BumpAllocator> DoubleEndedIterator for Splice<'_, I, A> {
+    #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.drain.next_back()
     }

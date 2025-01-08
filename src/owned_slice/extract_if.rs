@@ -93,6 +93,7 @@ where
         }
     }
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         (0, Some(self.original_len - self.index))
     }

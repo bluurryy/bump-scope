@@ -259,10 +259,12 @@ impl<T> FusedIterator for Drain<'_, T> {}
 unsafe impl<T> TakeOwnedSlice for Drain<'_, T> {
     type Item = T;
 
+    #[inline]
     fn owned_slice_ref(&self) -> &[Self::Item] {
         self.iter.owned_slice_ref()
     }
 
+    #[inline]
     fn take_owned_slice(&mut self) {
         self.iter.take_owned_slice();
     }

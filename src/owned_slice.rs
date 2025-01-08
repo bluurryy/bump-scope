@@ -152,10 +152,12 @@ pub unsafe trait TakeOwnedSlice {
 unsafe impl<T: TakeOwnedSlice + ?Sized> TakeOwnedSlice for &mut T {
     type Item = T::Item;
 
+    #[inline]
     fn owned_slice_ref(&self) -> &[Self::Item] {
         T::owned_slice_ref(self)
     }
 
+    #[inline]
     fn take_owned_slice(&mut self) {
         T::take_owned_slice(self);
     }
@@ -164,10 +166,12 @@ unsafe impl<T: TakeOwnedSlice + ?Sized> TakeOwnedSlice for &mut T {
 unsafe impl<T, const N: usize> TakeOwnedSlice for array::IntoIter<T, N> {
     type Item = T;
 
+    #[inline]
     fn owned_slice_ref(&self) -> &[Self::Item] {
         self.as_slice()
     }
 
+    #[inline]
     fn take_owned_slice(&mut self) {
         self.for_each(mem::forget);
     }
@@ -176,10 +180,12 @@ unsafe impl<T, const N: usize> TakeOwnedSlice for array::IntoIter<T, N> {
 unsafe impl<T> TakeOwnedSlice for BumpBox<'_, [T]> {
     type Item = T;
 
+    #[inline]
     fn owned_slice_ref(&self) -> &[Self::Item] {
         self
     }
 
+    #[inline]
     fn take_owned_slice(&mut self) {
         unsafe { self.set_len(0) }
     }
@@ -188,10 +194,12 @@ unsafe impl<T> TakeOwnedSlice for BumpBox<'_, [T]> {
 unsafe impl<T> TakeOwnedSlice for FixedBumpVec<'_, T> {
     type Item = T;
 
+    #[inline]
     fn owned_slice_ref(&self) -> &[Self::Item] {
         self
     }
 
+    #[inline]
     fn take_owned_slice(&mut self) {
         unsafe { self.set_len(0) }
     }
@@ -200,10 +208,12 @@ unsafe impl<T> TakeOwnedSlice for FixedBumpVec<'_, T> {
 unsafe impl<T, A: BumpAllocator> TakeOwnedSlice for BumpVec<T, A> {
     type Item = T;
 
+    #[inline]
     fn owned_slice_ref(&self) -> &[Self::Item] {
         self
     }
 
+    #[inline]
     fn take_owned_slice(&mut self) {
         unsafe { self.set_len(0) }
     }
@@ -212,10 +222,12 @@ unsafe impl<T, A: BumpAllocator> TakeOwnedSlice for BumpVec<T, A> {
 unsafe impl<T, A> TakeOwnedSlice for MutBumpVec<T, A> {
     type Item = T;
 
+    #[inline]
     fn owned_slice_ref(&self) -> &[Self::Item] {
         self
     }
 
+    #[inline]
     fn take_owned_slice(&mut self) {
         unsafe { self.set_len(0) }
     }
@@ -224,10 +236,12 @@ unsafe impl<T, A> TakeOwnedSlice for MutBumpVec<T, A> {
 unsafe impl<T, A> TakeOwnedSlice for MutBumpVecRev<T, A> {
     type Item = T;
 
+    #[inline]
     fn owned_slice_ref(&self) -> &[Self::Item] {
         self
     }
 
+    #[inline]
     fn take_owned_slice(&mut self) {
         unsafe { self.set_len(0) }
     }
@@ -237,10 +251,12 @@ unsafe impl<T, A> TakeOwnedSlice for MutBumpVecRev<T, A> {
 unsafe impl<T> TakeOwnedSlice for Box<[T]> {
     type Item = T;
 
+    #[inline]
     fn owned_slice_ref(&self) -> &[Self::Item] {
         self
     }
 
+    #[inline]
     fn take_owned_slice(&mut self) {
         // we must not drop the elements but we must deallocate the slice itself
         let ptr = Box::into_raw(mem::take(self));
@@ -253,10 +269,12 @@ unsafe impl<T> TakeOwnedSlice for Box<[T]> {
 unsafe impl<T> TakeOwnedSlice for Vec<T> {
     type Item = T;
 
+    #[inline]
     fn owned_slice_ref(&self) -> &[Self::Item] {
         self
     }
 
+    #[inline]
     fn take_owned_slice(&mut self) {
         unsafe { self.set_len(0) }
     }
@@ -266,10 +284,12 @@ unsafe impl<T> TakeOwnedSlice for Vec<T> {
 unsafe impl<T> TakeOwnedSlice for vec::IntoIter<T> {
     type Item = T;
 
+    #[inline]
     fn owned_slice_ref(&self) -> &[Self::Item] {
         self.as_slice()
     }
 
+    #[inline]
     fn take_owned_slice(&mut self) {
         self.for_each(mem::forget);
     }
@@ -279,10 +299,12 @@ unsafe impl<T> TakeOwnedSlice for vec::IntoIter<T> {
 unsafe impl<T> TakeOwnedSlice for vec::Drain<'_, T> {
     type Item = T;
 
+    #[inline]
     fn owned_slice_ref(&self) -> &[Self::Item] {
         self.as_slice()
     }
 
+    #[inline]
     fn take_owned_slice(&mut self) {
         self.for_each(mem::forget);
     }

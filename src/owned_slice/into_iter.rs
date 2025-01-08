@@ -228,10 +228,12 @@ impl<T> Drop for IntoIter<'_, T> {
 unsafe impl<T> TakeOwnedSlice for IntoIter<'_, T> {
     type Item = T;
 
+    #[inline]
     fn owned_slice_ref(&self) -> &[Self::Item] {
         self.as_slice()
     }
 
+    #[inline]
     fn take_owned_slice(&mut self) {
         // advance the iterator to the end without calling drop
         self.ptr = self.end;
