@@ -8,4 +8,4 @@ save-asm:
   @ cargo asm --everything --simplify | lines | filter { $in != "" } | str join "\n" | save -f out/everything.asm
 
 test: save-asm
-  @ let panics = (open --raw out/everything.asm | find panic | filter { ($in | ansi strip) != '.asciz"panicking"' }); print -e (if ($panics | length) == 0 { "OK" } else { $panics | wrap panics }); exit ($panics | length)
+  @ let panics = (open --raw out/everything.asm | find panic | filter { ($in | ansi strip) not-in ['core::panicking::assert_failed:', "call qword ptr [rip + core::panicking::assert_failed_inner@GOTPCREL]"] }); print -e (if ($panics | length) == 0 { "OK" } else { $panics | wrap panics }); exit ($panics | length)

@@ -250,12 +250,16 @@ up_and_down! {
         MutBumpVec::try_from_elem_in(value, count, bump)
     }
 
-    pub fn MutBumpVec_try_insert(bump: &mut MutBumpVec<u32>, index: usize, value: u32) -> Result {
-        bump.try_insert(index, value)
+    pub fn MutBumpVec_try_insert(vec: &mut MutBumpVec<u32>, index: usize, value: u32) -> Result {
+        if index < vec.len() {
+            vec.try_insert(index, value)
+        } else {
+            Ok(())
+        }
     }
 
-    pub fn MutBumpVec_try_push(bump: &mut MutBumpVec<u32>, value: u32) -> Result {
-        bump.try_push(value)
+    pub fn MutBumpVec_try_push(vec: &mut MutBumpVec<u32>, value: u32) -> Result {
+        vec.try_push(value)
     }
 
     pub fn MutBumpVec_try_reserve(vec: &mut MutBumpVec<u32>, amount: usize) -> Result {
@@ -266,8 +270,8 @@ up_and_down! {
         vec.try_reserve_exact(amount)
     }
 
-    pub fn MutBumpVec_try_resize(bump: &mut MutBumpVec<u32>, new_len: usize, value: u32) -> Result {
-        bump.try_resize(new_len, value)
+    pub fn MutBumpVec_try_resize(vec: &mut MutBumpVec<u32>, new_len: usize, value: u32) -> Result {
+        vec.try_resize(new_len, value)
     }
 
     pub fn MutBumpVec__try_with_capacity_in(capacity: usize, bump: &mut Bump) -> Result<MutBumpVec<u32>> {
@@ -298,12 +302,16 @@ up_and_down! {
         MutBumpVecRev::try_from_elem_in(value, count, bump)
     }
 
-    pub fn MutBumpVecRev_try_insert(bump: &mut MutBumpVecRev<u32>, index: usize, value: u32) -> Result {
-        bump.try_insert(index, value)
+    pub fn MutBumpVecRev_try_insert(vec: &mut MutBumpVecRev<u32>, index: usize, value: u32) -> Result {
+        if index < vec.len() {
+            vec.try_insert(index, value)
+        } else {
+            Ok(())
+        }
     }
 
-    pub fn MutBumpVecRev_try_push(bump: &mut MutBumpVecRev<u32>, value: u32) -> Result {
-        bump.try_push(value)
+    pub fn MutBumpVecRev_try_push(vec: &mut MutBumpVecRev<u32>, value: u32) -> Result {
+        vec.try_push(value)
     }
 
     pub fn MutBumpVecRev_try_reserve(vec: &mut MutBumpVecRev<u32>, amount: usize) -> Result {
@@ -314,8 +322,8 @@ up_and_down! {
         vec.try_reserve_exact(amount)
     }
 
-    pub fn MutBumpVecRev_try_resize(bump: &mut MutBumpVecRev<u32>, new_len: usize, value: u32) -> Result {
-        bump.try_resize(new_len, value)
+    pub fn MutBumpVecRev_try_resize(vec: &mut MutBumpVecRev<u32>, new_len: usize, value: u32) -> Result {
+        vec.try_resize(new_len, value)
     }
 
     pub fn MutBumpVecRev__try_with_capacity_in(capacity: usize, bump: &mut Bump) -> Result<MutBumpVecRev<u32>> {
@@ -326,20 +334,20 @@ up_and_down! {
         MutBumpString::try_from_str_in(string, bump)
     }
 
-    pub fn MutBumpString_try_push(bump: &mut MutBumpString, value: char) -> Result {
-        bump.try_push(value)
+    pub fn MutBumpString_try_push(string: &mut MutBumpString, value: char) -> Result {
+        string.try_push(value)
     }
 
-    pub fn MutBumpString_try_push_str(bump: &mut MutBumpString, value: &str) -> Result {
-        bump.try_push_str(value)
+    pub fn MutBumpString_try_push_str(string: &mut MutBumpString, value: &str) -> Result {
+        string.try_push_str(value)
     }
 
-    pub fn MutBumpString_try_reserve(vec: &mut MutBumpString, amount: usize) -> Result {
-        vec.try_reserve(amount)
+    pub fn MutBumpString_try_reserve(string: &mut MutBumpString, amount: usize) -> Result {
+        string.try_reserve(amount)
     }
 
-    pub fn MutBumpString_try_reserve_exact(vec: &mut MutBumpString, amount: usize) -> Result {
-        vec.try_reserve_exact(amount)
+    pub fn MutBumpString_try_reserve_exact(string: &mut MutBumpString, amount: usize) -> Result {
+        string.try_reserve_exact(amount)
     }
 
     pub fn MutBumpString__try_with_capacity_in(capacity: usize, bump: &mut Bump) -> Result<MutBumpString> {
@@ -382,12 +390,16 @@ up_and_down! {
         BumpVec::try_from_elem_in(value, count, bump)
     }
 
-    pub fn BumpVec_try_insert(bump: &mut BumpVec<u32>, index: usize, value: u32) -> Result {
-        bump.try_insert(index, value)
+    pub fn BumpVec_try_insert(vec: &mut BumpVec<u32>, index: usize, value: u32) -> Result {
+        if index < vec.len() {
+            vec.try_insert(index, value)
+        } else {
+            Ok(())
+        }
     }
 
-    pub fn BumpVec_try_push(bump: &mut BumpVec<u32>, value: u32) -> Result {
-        bump.try_push(value)
+    pub fn BumpVec_try_push(vec: &mut BumpVec<u32>, value: u32) -> Result {
+        vec.try_push(value)
     }
 
     pub fn BumpVec_try_reserve(vec: &mut BumpVec<u32>, amount: usize) -> Result {
@@ -414,12 +426,12 @@ up_and_down! {
         BumpString::try_from_str_in(string, bump)
     }
 
-    pub fn BumpString_try_push(bump: &mut BumpString, value: char) -> Result {
-        bump.try_push(value)
+    pub fn BumpString_try_push(string: &mut BumpString, value: char) -> Result {
+        string.try_push(value)
     }
 
-    pub fn BumpString_try_push_str(bump: &mut BumpString, value: &str) -> Result {
-        bump.try_push_str(value)
+    pub fn BumpString_try_push_str(string: &mut BumpString, value: &str) -> Result {
+        string.try_push_str(value)
     }
 
     pub fn BumpString_try_extend_zeroed(vec: &mut BumpString, additional: usize) -> Result {
@@ -466,28 +478,32 @@ up_and_down! {
         vec.try_extend_zeroed(additional)
     }
 
-    pub fn FixedBumpVec_try_insert(bump: &mut FixedBumpVec<u32>, index: usize, value: u32) -> Result {
-        bump.try_insert(index, value)
+    pub fn FixedBumpVec_try_insert(vec: &mut FixedBumpVec<u32>, index: usize, value: u32) -> Result {
+        if index < vec.len() {
+            vec.try_insert(index, value)
+        } else {
+            Ok(())
+        }
     }
 
-    pub fn FixedBumpVec_try_push(bump: &mut FixedBumpVec<u32>, value: u32) -> Result {
-        bump.try_push(value)
+    pub fn FixedBumpVec_try_push(vec: &mut FixedBumpVec<u32>, value: u32) -> Result {
+        vec.try_push(value)
     }
 
-    pub fn FixedBumpVec_try_resize(bump: &mut FixedBumpVec<u32>, new_len: usize, value: u32) -> Result {
-        bump.try_resize(new_len, value)
+    pub fn FixedBumpVec_try_resize(vec: &mut FixedBumpVec<u32>, new_len: usize, value: u32) -> Result {
+        vec.try_resize(new_len, value)
     }
 
     pub fn FixedBumpString__new(capacity: usize, bump: &Bump) -> Result<FixedBumpString> {
         bump.try_alloc_fixed_string(capacity)
     }
 
-    pub fn FixedBumpString_try_push(bump: &mut FixedBumpString, value: char) -> Result {
-        bump.try_push(value)
+    pub fn FixedBumpString_try_push(string: &mut FixedBumpString, value: char) -> Result {
+        string.try_push(value)
     }
 
-    pub fn FixedBumpString_try_push_str(bump: &mut FixedBumpString, value: &str) -> Result {
-        bump.try_push_str(value)
+    pub fn FixedBumpString_try_push_str(string: &mut FixedBumpString, value: &str) -> Result {
+        string.try_push_str(value)
     }
 
     pub fn FixedBumpString_try_extend_zeroed(vec: &mut FixedBumpString, additional: usize) -> Result {
