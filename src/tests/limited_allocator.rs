@@ -51,7 +51,7 @@ where
 
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
         self.sub(layout.size());
-        self.allocator.deallocate(ptr, layout)
+        self.allocator.deallocate(ptr, layout);
     }
 
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
