@@ -1822,7 +1822,7 @@ impl<T: Hash> Hash for FixedBumpVec<'_, T> {
 impl std::io::Write for FixedBumpVec<'_, u8> {
     #[inline(always)]
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        if (self.capacity - self.len()) < buf.len() {
+        if self.try_extend_from_slice_copy(buf).is_err() {
             return Err(std::io::ErrorKind::OutOfMemory.into());
         }
 
@@ -1847,7 +1847,7 @@ impl std::io::Write for FixedBumpVec<'_, u8> {
 
     #[inline(always)]
     fn write_all(&mut self, buf: &[u8]) -> std::io::Result<()> {
-        if (self.capacity - self.len()) < buf.len() {
+        if self.try_extend_from_slice_copy(buf).is_err() {
             return Err(std::io::ErrorKind::OutOfMemory.into());
         }
 
