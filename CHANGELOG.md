@@ -3,6 +3,7 @@
 ## Unreleased
 - **breaking:** replaced `OwnedSlice`'s `owned_slice_ptr` method with `owned_slice_ref` which returns a reference instead of a pointer
 - **fixed:** `Write` impl for `FixedBumpVec<u8>` not actually writing
+- **added:** `unsize_bump_box` to unsize `BumpBox`es on stable
 - **docs:** improved docs for `split_off`
 
 ## 0.15.2 (2025-01-06)

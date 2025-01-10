@@ -177,6 +177,53 @@ pub struct BumpBox<'a, T: ?Sized> {
     marker: PhantomData<(&'a (), T)>,
 }
 
+/// Allows unsizing to be performed on `T` of `BumpBox<T>`.
+///
+/// This macro is required to unsize the pointee of a `BumpBox` on stable rust.
+///
+/// On nightly and when the feature "nightly-coerce-unsized" is enabled, `BumpBox` implements `CoerceUnsized` so `T` will coerce just like with [`Box`](alloc::boxed::Box).
+///
+/// # Examples
+/// ```
+/// use bump_scope::{ Bump, BumpBox, unsize_bump_box };
+/// use core::any::Any;
+///
+/// let bump: Bump = Bump::new();
+///
+/// let sized_box: BumpBox<[i32; 3]> = bump.alloc([1, 2, 3]);
+/// let unsized_box_slice: BumpBox<[i32]> = unsize_bump_box!(sized_box);
+///
+/// let sized_box: BumpBox<[i32; 3]> = bump.alloc([1, 2, 3]);
+/// let unsized_box_dyn: BumpBox<dyn Any> = unsize_bump_box!(sized_box);
+/// #
+/// # _ = unsized_box_slice;
+/// # _ = unsized_box_dyn;
+/// ```
+/// On nightly with the feature "nightly-coerce-unsized":
+/// ```
+/// use bump_scope::{ Bump, BumpBox };
+/// use core::any::Any;
+///
+/// let bump: Bump = Bump::new();
+///
+/// let sized_box: BumpBox<[i32; 3]> = bump.alloc([1, 2, 3]);
+/// let unsized_box_slice: BumpBox<[i32]> = sized_box;
+///
+/// let sized_box: BumpBox<[i32; 3]> = bump.alloc([1, 2, 3]);
+/// let unsized_box_dyn: BumpBox<dyn Any> = sized_box;
+/// #
+/// # _ = unsized_box_slice;
+/// # _ = unsized_box_dyn;
+/// ```
+#[macro_export]
+macro_rules! unsize_bump_box {
+    ($boxed:expr) => {{
+        let (ptr, lt) = $crate::private::bump_box_into_raw_with_lifetime($boxed);
+        let ptr: $crate::private::core::ptr::NonNull<_> = ptr;
+        unsafe { $crate::private::bump_box_from_raw_with_lifetime(ptr, lt) }
+    }};
+}
+
 unsafe impl<T: ?Sized + Send> Send for BumpBox<'_, T> {}
 unsafe impl<T: ?Sized + Sync> Sync for BumpBox<'_, T> {}
 

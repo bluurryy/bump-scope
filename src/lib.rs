@@ -486,6 +486,9 @@ mod tests;
 #[doc(hidden)]
 pub mod private {
     pub use core;
+    use core::ptr::NonNull;
+
+    use crate::BumpBox;
 
     #[cfg(feature = "panic-on-alloc")]
     /// Wrapper type, used for ad hoc overwriting of trait implementations, like for `Write` in `alloc_fmt`.
@@ -511,6 +514,18 @@ pub mod private {
     #[cfg(feature = "panic-on-alloc")]
     pub const fn format_trait_error() -> ! {
         panic!("formatting trait implementation returned an error");
+    }
+
+    #[must_use]
+    #[allow(clippy::needless_lifetimes)]
+    pub fn bump_box_into_raw_with_lifetime<'a, T: ?Sized>(boxed: BumpBox<'a, T>) -> (NonNull<T>, &'a ()) {
+        (boxed.into_raw(), &())
+    }
+
+    #[must_use]
+    #[allow(clippy::needless_lifetimes)]
+    pub unsafe fn bump_box_from_raw_with_lifetime<'a, T: ?Sized>(ptr: NonNull<T>, _lifetime: &'a ()) -> BumpBox<'a, T> {
+        BumpBox::from_raw(ptr)
     }
 }
 
