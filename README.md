@@ -125,7 +125,8 @@ assert_eq!(bump.stats().allocated(), 0);
 ```
 
 ## Collections
-`bump-scope` provides bump allocated variants of `Vec` and `String` called `BumpVec` and `BumpString`. They also come in a different variants:
+`bump-scope` provides bump allocated variants of `Vec` and `String` called `BumpVec` and `BumpString`.
+They are also available in the following variants:
 - `Fixed*` for fixed capacity collections
 - `Mut*` for collections optimized for a mutable bump allocator
 
@@ -135,7 +136,7 @@ The collections are designed to have a similar api to their std counterparts but
 - [`retain`](BumpVec::retain) —  takes a closure with a `&mut T` parameter like [`Vec::retain_mut`](alloc::vec::Vec::retain_mut)
 
 ##### New features
-- [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>` and similar types
+- [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `Drain<T>` and similar types
 - [`map`](BumpVec::map) —  maps the elements, potentially reusing the existing allocation
 - [`map_in_place`](BumpVec::map_in_place) —  maps the elements without allocation
 - conversions between the regular collections, their `Fixed*` variants and `BumpBox<[T]>` / `BumpBox<str>`
@@ -174,7 +175,7 @@ assert_eq!(bump.stats().allocated(), 4);
 ```
 
 ## Feature Flags
-* **`std`** *(enabled by default)* —  Adds `BumpPool` and implementations of `std::io` traits for `BumpBox` and vectors.
+* **`std`** *(enabled by default)* —  Adds `BumpPool` and implementations of `std::io` traits.
 * **`alloc`** *(enabled by default)* —  Adds `Global` as the default base allocator and some interactions with `alloc` collections.
 * **`panic-on-alloc`** *(enabled by default)* —  Adds functions and traits that will panic when the allocation fails.
   Without this feature, allocation failures cannot cause panics, and only

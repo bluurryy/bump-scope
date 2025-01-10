@@ -22,7 +22,7 @@ rustversion = "1.0.19"
 [features]
 default = ["std", "alloc", "panic-on-alloc"]
 
-## Adds `BumpPool` and implementations of `std::io` traits for `BumpBox` and vectors.
+## Adds `BumpPool` and implementations of `std::io` traits.
 std = ["allocator-api2/std", "alloc"]
 
 ## Adds `Global` as the default base allocator and some interactions with `alloc` collections.
