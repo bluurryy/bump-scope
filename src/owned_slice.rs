@@ -358,9 +358,10 @@ mod tests {
 
     #[cfg(feature = "alloc")]
     assert_implements! {
-        Box<[T]>
         Box<[T; 3]>
 
+        Box<[T]>
+        &mut Box<[T]>
         Vec<T>
         &mut Vec<T>
     }
