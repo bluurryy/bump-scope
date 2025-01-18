@@ -125,7 +125,7 @@ impl<T, const N: usize> OwnedSlice for Box<[T; N]> {
 ///   Once called, *the slice* becomes an empty slice.
 /// - Between calls to `owned_slice_ref` and `take_owned_slice`,
 ///   the caller can assume that *the slice* won't change as long as the caller itself does not interact with the type.
-///   As such the implementor must not be implemented for a type whose *the slice* could change from a different thread for instance.
+///   As such this trait must not be implemented for a type whose *slice* could change from a different thread for instance.
 ///
 /// [set_len]: alloc::vec::Vec::set_len
 /// [`owned_slice_ref`]: TakeOwnedSlice::owned_slice_ref
@@ -135,7 +135,7 @@ pub unsafe trait TakeOwnedSlice {
     /// The element type of the slice.
     type Item;
 
-    /// Returns a pointer to its slice valid to be read.
+    /// Returns a slice of its elements.
     fn owned_slice_ref(&self) -> &[Self::Item];
 
     /// This will make the slice forget all of its elements.
