@@ -37,9 +37,9 @@ pub trait OwnedSlice {
 
 // every `TakeOwnedSlice` automatically implements `OwnedSlice`
 impl<T: TakeOwnedSlice> OwnedSlice for T {
-    type Item = <T as TakeOwnedSlice>::Item;
+    type Item = <Self as TakeOwnedSlice>::Item;
 
-    type Take = T;
+    type Take = Self;
 
     fn into_take_owned_slice(self) -> Self::Take {
         self
