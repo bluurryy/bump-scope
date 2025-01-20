@@ -25,7 +25,6 @@ check:
 check-fmt:
   cargo fmt --check
   cd crates/fuzzing-support; cargo fmt --check
-  cd crates/inspect-asm; cargo fmt --check
   cd crates/test-fallibility; cargo fmt --check
   cd fuzz; cargo fmt --check
 
@@ -34,7 +33,6 @@ check-clippy:
   cargo clippy --no-default-features
   cargo clippy --tests --no-default-features --features alloc,panic-on-alloc
   cd crates/fuzzing-support; cargo clippy --tests
-  cd crates/inspect-asm; cargo clippy --tests
   cd crates/test-fallibility; cargo clippy --tests
   cd fuzz; cargo clippy
 
@@ -56,7 +54,6 @@ test:
 fmt:
   cargo fmt
   cd crates/fuzzing-support; cargo fmt
-  cd crates/inspect-asm; cargo fmt
   cd crates/test-fallibility; cargo fmt
   cd fuzz; cargo fmt
 
@@ -77,6 +74,3 @@ doc-rustdoc *args:
 
 doc-rustdoc-priv *args:
   cargo rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition --document-private-items
-
-inspect-asm *args:
-  just crates/inspect-asm/inspect-asm {{args}}
