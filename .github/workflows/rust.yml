@@ -19,8 +19,6 @@ jobs:
         run: cargo fmt --all -- --check
       - name: format fuzzing-support
         run: cd crates/fuzzing-support && cargo fmt --all -- --check
-      - name: format inspect-asm
-        run: cd crates/inspect-asm && cargo fmt --all -- --check
       - name: format test-fallibility
         run: cd crates/test-fallibility && cargo fmt --all -- --check
       - name: format fuzz
