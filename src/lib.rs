@@ -187,7 +187,7 @@
 //! - [`retain`](BumpVec::retain) —  takes a closure with a `&mut T` parameter like [`Vec::retain_mut`](alloc::vec::Vec::retain_mut)
 //!
 //! #### New features
-//! - [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `Drain<T>` and similar types
+//! - [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `Drain<T>` etc
 //! - [`map`](BumpVec::map) —  maps the elements, potentially reusing the existing allocation
 //! - [`map_in_place`](BumpVec::map_in_place) —  maps the elements without allocation
 //! - conversions between the regular collections, their `Fixed*` variants and `BumpBox<[T]>` / `BumpBox<str>`
