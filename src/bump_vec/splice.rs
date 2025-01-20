@@ -86,8 +86,10 @@ impl<I: Iterator, A: BumpAllocator> Drop for Splice<'_, I, A> {
 
             // Collect any remaining elements.
             // This is a zero-length vector which does not allocate if `lower_bound` was exact.
-            // TODO: deallocate this on drop
             let collected = BumpVec::from_iter_in(&mut self.replace_with, self.drain.vec.as_ref().allocator());
+
+            // We can't use `into_fixed_vec` here because that would require a
+            // `BumpAllocatorScope<'a>` instead of just a `BumpAllocator`.
             destructure!(let BumpVec::<I::Item, &A> { fixed: collected } = collected);
             let mut collected = collected.cook().into_iter();
 
@@ -128,7 +130,6 @@ impl<T, A: BumpAllocator> Drain<'_, T, A> {
     }
 
     /// Makes room for inserting more elements before the tail.
-    #[cfg(feature = "panic-on-alloc")]
     unsafe fn move_tail(&mut self, additional: usize) {
         let vec = self.vec.as_mut();
         let len = self.tail_start + self.tail_len;
