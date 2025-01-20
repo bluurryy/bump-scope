@@ -362,7 +362,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
 
     #[inline(always)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<T>) {
-        self.initialized.set_ptr(new_ptr)
+        self.initialized.set_ptr(new_ptr);
     }
 
     /// Forces the length of the vector to `new_len`.
@@ -485,53 +485,82 @@ impl<'a, T> FixedBumpVec<'a, T> {
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
         let ptr = self.initialized.as_non_null_ptr();
 
-        if T::IS_ZST {
-            let range_len = end - start;
-            let remaining_len = len - range_len;
+        unsafe {
+            if T::IS_ZST {
+                let range_len = end - start;
+                let remaining_len = len - range_len;
 
-            return unsafe {
                 self.set_len(remaining_len);
 
-                FixedBumpVec {
+                return FixedBumpVec {
                     initialized: BumpBox::zst_slice_from_len(range_len),
                     capacity: usize::MAX,
-                }
-            };
-        }
+                };
+            }
 
-        if end == len {
-            let lhs = ptr;
-            let rhs = unsafe { nonnull::add(ptr, start) };
+            if end == len {
+                let lhs = ptr;
+                let rhs = nonnull::add(ptr, start);
 
-            let lhs_len = start;
-            let rhs_len = len - start;
+                let lhs_len = start;
+                let rhs_len = len - start;
 
-            let lhs_cap = start;
-            let rhs_cap = self.capacity - lhs_cap;
+                let lhs_cap = start;
+                let rhs_cap = self.capacity - lhs_cap;
 
-            return unsafe {
                 self.set_ptr(lhs);
                 self.set_len(lhs_len);
                 self.set_cap(lhs_cap);
 
-                FixedBumpVec {
+                return FixedBumpVec {
                     initialized: BumpBox::from_raw(nonnull::slice_from_raw_parts(rhs, rhs_len)),
                     capacity: rhs_cap,
-                }
-            };
-        }
+                };
+            }
 
-        if start == 0 {
-            let lhs = ptr;
-            let rhs = unsafe { nonnull::add(ptr, end) };
+            if start == 0 {
+                let lhs = ptr;
+                let rhs = nonnull::add(ptr, end);
 
-            let lhs_len = end;
-            let rhs_len = len - end;
+                let lhs_len = end;
+                let rhs_len = len - end;
 
-            let lhs_cap = end;
-            let rhs_cap = self.capacity - lhs_cap;
+                let lhs_cap = end;
+                let rhs_cap = self.capacity - lhs_cap;
 
-            return unsafe {
+                self.set_ptr(rhs);
+                self.set_len(rhs_len);
+                self.set_cap(rhs_cap);
+
+                return FixedBumpVec {
+                    initialized: BumpBox::from_raw(nonnull::slice_from_raw_parts(lhs, lhs_len)),
+                    capacity: lhs_cap,
+                };
+            }
+
+            if start == end {
+                return FixedBumpVec::EMPTY;
+            }
+
+            let head_len = start;
+            let tail_len = len - end;
+
+            let range_len = end - start;
+            let remaining_len = len - range_len;
+
+            if head_len < tail_len {
+                // move the range of elements to split off to the start
+                self.as_mut_slice().get_unchecked_mut(..end).rotate_right(range_len);
+
+                let lhs = ptr;
+                let rhs = nonnull::add(ptr, range_len);
+
+                let lhs_len = range_len;
+                let rhs_len = remaining_len;
+
+                let lhs_cap = range_len;
+                let rhs_cap = self.capacity - lhs_cap;
+
                 self.set_ptr(rhs);
                 self.set_len(rhs_len);
                 self.set_cap(rhs_cap);
@@ -540,49 +569,12 @@ impl<'a, T> FixedBumpVec<'a, T> {
                     initialized: BumpBox::from_raw(nonnull::slice_from_raw_parts(lhs, lhs_len)),
                     capacity: lhs_cap,
                 }
-            };
-        }
-
-        if start == end {
-            return FixedBumpVec::EMPTY;
-        }
-
-        let head_len = start;
-        let tail_len = len - end;
-
-        let range_len = end - start;
-        let remaining_len = len - range_len;
-
-        unsafe {
-            if head_len < tail_len {
-                // move the range of elements to split off to the start
-                self.as_mut_slice().get_unchecked_mut(..end).rotate_right(range_len);
-
-                let lhs = ptr;
-                let rhs = unsafe { nonnull::add(ptr, range_len) };
-
-                let lhs_len = range_len;
-                let rhs_len = remaining_len;
-
-                let lhs_cap = range_len;
-                let rhs_cap = self.capacity - lhs_cap;
-
-                unsafe {
-                    self.set_ptr(rhs);
-                    self.set_len(rhs_len);
-                    self.set_cap(rhs_cap);
-
-                    FixedBumpVec {
-                        initialized: BumpBox::from_raw(nonnull::slice_from_raw_parts(lhs, lhs_len)),
-                        capacity: lhs_cap,
-                    }
-                }
             } else {
                 // move the range of elements to split off to the end
                 self.as_mut_slice().get_unchecked_mut(start..).rotate_left(range_len);
 
                 let lhs = ptr;
-                let rhs = unsafe { nonnull::add(ptr, remaining_len) };
+                let rhs = nonnull::add(ptr, remaining_len);
 
                 let lhs_len = remaining_len;
                 let rhs_len = range_len;
@@ -590,16 +582,14 @@ impl<'a, T> FixedBumpVec<'a, T> {
                 let lhs_cap = remaining_len;
                 let rhs_cap = self.capacity - lhs_cap;
 
-                return unsafe {
-                    self.set_ptr(lhs);
-                    self.set_len(lhs_len);
-                    self.set_cap(lhs_cap);
+                self.set_ptr(lhs);
+                self.set_len(lhs_len);
+                self.set_cap(lhs_cap);
 
-                    FixedBumpVec {
-                        initialized: BumpBox::from_raw(nonnull::slice_from_raw_parts(rhs, rhs_len)),
-                        capacity: rhs_cap,
-                    }
-                };
+                FixedBumpVec {
+                    initialized: BumpBox::from_raw(nonnull::slice_from_raw_parts(rhs, rhs_len)),
+                    capacity: rhs_cap,
+                }
             }
         }
     }

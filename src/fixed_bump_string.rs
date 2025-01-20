@@ -309,74 +309,70 @@ impl<'a> FixedBumpString<'a> {
             return mem::take(self);
         }
 
-        if start == 0 {
-            self.assert_char_boundary(end);
+        unsafe {
+            if start == 0 {
+                self.assert_char_boundary(end);
 
-            let lhs = ptr;
-            let rhs = unsafe { nonnull::add(ptr, end) };
+                let lhs = ptr;
+                let rhs = nonnull::add(ptr, end);
 
-            let lhs_len = end;
-            let rhs_len = len - end;
+                let lhs_len = end;
+                let rhs_len = len - end;
 
-            let lhs_cap = end;
-            let rhs_cap = self.capacity - lhs_cap;
+                let lhs_cap = end;
+                let rhs_cap = self.capacity - lhs_cap;
 
-            return unsafe {
                 self.set_ptr(rhs);
                 self.set_len(rhs_len);
                 self.set_cap(rhs_cap);
 
-                FixedBumpString {
+                return FixedBumpString {
                     initialized: BumpBox::from_raw(nonnull::str_from_utf8(nonnull::slice_from_raw_parts(lhs, lhs_len))),
                     capacity: lhs_cap,
-                }
-            };
-        }
+                };
+            }
 
-        if end == len {
-            self.assert_char_boundary(start);
+            if end == len {
+                self.assert_char_boundary(start);
 
-            let lhs = ptr;
-            let rhs = unsafe { nonnull::add(ptr, start) };
+                let lhs = ptr;
+                let rhs = nonnull::add(ptr, start);
 
-            let lhs_len = start;
-            let rhs_len = len - start;
+                let lhs_len = start;
+                let rhs_len = len - start;
 
-            let lhs_cap = start;
-            let rhs_cap = self.capacity - lhs_cap;
+                let lhs_cap = start;
+                let rhs_cap = self.capacity - lhs_cap;
 
-            return unsafe {
                 self.set_ptr(lhs);
                 self.set_len(lhs_len);
                 self.set_cap(lhs_cap);
 
-                FixedBumpString {
+                return FixedBumpString {
                     initialized: BumpBox::from_raw(nonnull::str_from_utf8(nonnull::slice_from_raw_parts(rhs, rhs_len))),
                     capacity: rhs_cap,
-                }
-            };
-        }
+                };
+            }
 
-        if start == end {
-            return FixedBumpString::EMPTY;
-        }
+            if start == end {
+                return FixedBumpString::EMPTY;
+            }
 
-        self.assert_char_boundary(start);
-        self.assert_char_boundary(end);
+            self.assert_char_boundary(start);
+            self.assert_char_boundary(end);
 
-        let head_len = start;
-        let tail_len = len - end;
+            let head_len = start;
+            let tail_len = len - end;
 
-        let range_len = end - start;
-        let remaining_len = len - range_len;
+            let range_len = end - start;
+            let remaining_len = len - range_len;
 
-        unsafe {
             if head_len < tail_len {
                 // move the range of elements to split off to the start
                 self.as_mut_vec().get_unchecked_mut(..end).rotate_right(range_len);
 
                 let lhs = ptr;
-                let rhs = unsafe { nonnull::add(ptr, range_len) };
+                let rhs = nonnull::add(ptr, range_len);
 
                 let lhs_len = range_len;
                 let rhs_len = remaining_len;
@@ -397,7 +393,7 @@ impl<'a> FixedBumpString<'a> {
                 self.as_mut_vec().get_unchecked_mut(start..).rotate_left(range_len);
 
                 let lhs = ptr;
-                let rhs = unsafe { nonnull::add(ptr, remaining_len) };
+                let rhs = nonnull::add(ptr, remaining_len);
 
                 let lhs_len = remaining_len;
                 let rhs_len = range_len;
@@ -647,7 +643,7 @@ impl<'a> FixedBumpString<'a> {
 
     #[inline(always)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<u8>) {
-        self.initialized.set_ptr(new_ptr)
+        self.initialized.set_ptr(new_ptr);
     }
 
     #[inline(always)]
