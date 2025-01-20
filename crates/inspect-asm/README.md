@@ -1,1 +1,1 @@
-Inspect generated assembly. Requires nushell version 0.100.0 and cargo-show-asm version 0.2.43.
+Moved to <https://github.com/bluurryy/bump-scope-inspect-asm>.
