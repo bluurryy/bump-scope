@@ -20,10 +20,8 @@ use crate::{
     error_behavior_generic_methods_allocation_failure, min_non_zero_cap,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     polyfill::{nonnull, pointer, slice},
-    raw_bump_box::RawBumpBox,
     raw_fixed_bump_vec::RawFixedBumpVec,
-    BumpAllocator, BumpAllocatorScope, BumpBox, ErrorBehavior, FixedBumpVec, NoDrop, SetLenOnDropByPtr, SizedTypeProperties,
-    Stats,
+    BumpAllocator, BumpAllocatorScope, BumpBox, ErrorBehavior, FixedBumpVec, NoDrop, SizedTypeProperties, Stats,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -166,8 +164,8 @@ macro_rules! bump_vec {
 // `BumpString` and `BumpVec<u8>` have the same repr.
 #[repr(C)]
 pub struct BumpVec<T, A: BumpAllocator> {
-    pub(crate) fixed: RawFixedBumpVec<T>,
-    pub(crate) allocator: A,
+    fixed: RawFixedBumpVec<T>,
+    allocator: A,
 }
 
 impl<T: UnwindSafe, A: BumpAllocator + UnwindSafe> UnwindSafe for BumpVec<T, A> {}
@@ -198,8 +196,8 @@ impl<T, A: BumpAllocator> Drop for BumpVec<T, A> {
                 // - `layout.size()` will be `0` which will make it have no effect in the allocator
                 // - calling deallocate with a pointer not owned by this allocator is explicitly allowed; see `BumpAllocator`
                 unsafe {
-                    let ptr = self.0.fixed.initialized.as_non_null_ptr().cast();
-                    let layout = Layout::from_size_align_unchecked(self.0.fixed.capacity * T::SIZE, T::ALIGN);
+                    let ptr = self.0.fixed.as_non_null_ptr().cast();
+                    let layout = Layout::from_size_align_unchecked(self.0.fixed.capacity() * T::SIZE, T::ALIGN);
                     self.0.allocator.deallocate(ptr, layout);
                 }
             }
@@ -222,14 +220,9 @@ impl<T: Clone, A: BumpAllocator + Clone> Clone for BumpVec<T, A> {
         let slice = nonnull::slice_from_raw_parts(ptr, self.len());
         let boxed = unsafe { BumpBox::from_raw(slice) };
         let boxed = boxed.init_clone(self);
-
-        Self {
-            fixed: RawFixedBumpVec {
-                initialized: unsafe { RawBumpBox::from_cooked(boxed) },
-                capacity: self.len(),
-            },
-            allocator,
-        }
+        let fixed = FixedBumpVec::from_init(boxed);
+        let fixed = unsafe { RawFixedBumpVec::from_cooked(fixed) };
+        Self { fixed, allocator }
     }
 }
 
@@ -332,7 +325,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
 
             if T::IS_ZST {
                 return Ok(Self {
-                    fixed: RawFixedBumpVec { initialized: unsafe { RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(NonNull::dangling(), N)) }, capacity: usize::MAX },
+                    fixed: unsafe { RawFixedBumpVec::new_zst(N) },
                     allocator,
                 });
             }
@@ -347,7 +340,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
             let mut fixed = unsafe { RawFixedBumpVec::allocate(&allocator, N)? };
 
             let src = array.as_ptr();
-            let dst = fixed.initialized.ptr.cast::<T>().as_ptr();
+            let dst = fixed.as_mut_ptr();
 
             unsafe {
                 ptr::copy_nonoverlapping(src, dst, N);
@@ -455,7 +448,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     #[must_use]
     #[inline(always)]
     pub const fn capacity(&self) -> usize {
-        self.fixed.capacity
+        self.fixed.capacity()
     }
 
     /// Returns the number of elements in the vector, also referred to
@@ -708,7 +701,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_ptr(&self) -> NonNull<T> {
-        self.fixed.initialized.as_non_null_ptr().cast()
+        self.fixed.as_non_null_ptr()
     }
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
@@ -716,7 +709,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        self.fixed.initialized.as_non_null_ptr()
+        self.fixed.as_non_null_slice()
     }
 
     /// Appends an element to the back of the collection.
@@ -1583,7 +1576,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
             }
 
             destructure!(let Self { fixed, allocator } = self);
-            let cap = fixed.capacity;
+            let cap = fixed.capacity();
             let slice = unsafe { fixed.cook() }.into_boxed_slice().into_raw();
             let ptr = slice.cast::<T>();
             let len = slice.len();
@@ -1610,10 +1603,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
                 let new_cap = (cap * T::SIZE) / U::SIZE;
 
                 Ok(BumpVec {
-                    fixed: RawFixedBumpVec {
-                        initialized: RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(ptr.cast(), len)),
-                        capacity: new_cap,
-                    },
+                    fixed: RawFixedBumpVec::from_raw_parts(nonnull::slice_from_raw_parts(ptr.cast(), len), new_cap),
                     allocator,
                 })
             }
@@ -1689,8 +1679,8 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         }
 
         let guard = DropGuard::<T, _> {
-            ptr: fixed.initialized.as_non_null_ptr().cast(),
-            cap: fixed.capacity,
+            ptr: fixed.as_non_null_ptr(),
+            cap: fixed.capacity(),
             allocator,
         };
 
@@ -1909,7 +1899,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
 
         let old_ptr = self.as_non_null_ptr().cast();
 
-        let old_size = self.fixed.capacity * T::SIZE; // we already allocated that amount so this can't overflow
+        let old_size = self.capacity() * T::SIZE; // we already allocated that amount so this can't overflow
         let new_size = new_cap.checked_mul(T::SIZE).ok_or_else(|| E::capacity_overflow())?;
 
         let old_layout = Layout::from_size_align_unchecked(old_size, T::ALIGN);
@@ -1923,8 +1913,8 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
             Err(_) => return Err(E::allocation(new_layout)),
         };
 
-        self.fixed.initialized.set_ptr(new_ptr);
-        self.fixed.capacity = new_cap;
+        self.fixed.set_ptr(new_ptr);
+        self.fixed.set_cap(new_cap);
 
         Ok(())
     }
@@ -1948,14 +1938,14 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     pub fn shrink_to_fit(&mut self) {
         let Self { fixed, allocator } = self;
 
-        let old_ptr = fixed.initialized.ptr.cast::<T>();
-        let old_len = fixed.capacity;
+        let old_ptr = fixed.as_non_null_ptr();
+        let old_len = fixed.capacity();
         let new_len = fixed.len();
 
         unsafe {
             if let Some(new_ptr) = allocator.shrink_slice(old_ptr, old_len, new_len) {
-                fixed.initialized.set_ptr(new_ptr);
-                fixed.capacity = fixed.len();
+                fixed.set_ptr(new_ptr);
+                fixed.set_cap(new_len);
             }
         }
     }
@@ -1976,7 +1966,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
             self.generic_reserve(additional)?;
 
             let ptr = self.as_mut_ptr();
-            let mut local_len = SetLenOnDropByPtr::new(&mut self.fixed.initialized.ptr);
+            let mut local_len = self.fixed.set_len_on_drop();
 
             iterator.for_each(move |element| {
                 let dst = ptr.add(local_len.current_len());
@@ -2468,8 +2458,7 @@ impl<T, A: BumpAllocator> IntoIterator for BumpVec<T, A> {
         unsafe {
             destructure!(let Self { fixed, allocator } = self);
 
-            let cap = fixed.capacity;
-            let slice = fixed.initialized.into_ptr();
+            let (slice, cap) = fixed.into_raw_parts();
             let begin = slice.cast::<T>();
 
             let end = if T::IS_ZST {

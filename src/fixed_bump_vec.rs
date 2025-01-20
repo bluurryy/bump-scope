@@ -13,7 +13,6 @@ use crate::{
     error_behavior_generic_methods_allocation_failure, error_behavior_generic_methods_if,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     polyfill::{self, nonnull, pointer, slice},
-    set_len_on_drop_by_ptr::SetLenOnDropByPtr,
     BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, NoDrop, SizedTypeProperties,
 };
 
@@ -42,8 +41,8 @@ use crate::{
 // `FixedBumpString` and `FixedBumpVec<u8>` have the same repr.
 #[repr(C)]
 pub struct FixedBumpVec<'a, T> {
-    pub(crate) initialized: BumpBox<'a, [T]>,
-    pub(crate) capacity: usize,
+    initialized: BumpBox<'a, [T]>,
+    capacity: usize,
 }
 
 unsafe impl<T: Send> Send for FixedBumpVec<'_, T> {}
@@ -361,6 +360,11 @@ impl<'a, T> FixedBumpVec<'a, T> {
         self.initialized.as_non_null_slice()
     }
 
+    #[inline(always)]
+    pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<T>) {
+        self.initialized.set_ptr(new_ptr)
+    }
+
     /// Forces the length of the vector to `new_len`.
     ///
     /// This is a low-level operation that maintains none of the normal
@@ -375,9 +379,14 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// [`truncate`]: Self::truncate
     /// [`clear`]: Self::clear
     /// [`capacity`]: Self::capacity
-    #[inline]
+    #[inline(always)]
     pub unsafe fn set_len(&mut self, new_len: usize) {
         self.initialized.set_len(new_len);
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn set_cap(&mut self, new_cap: usize) {
+        self.capacity = new_cap;
     }
 
     #[inline]
@@ -474,50 +483,63 @@ impl<'a, T> FixedBumpVec<'a, T> {
     pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self {
         let len = self.len();
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
-        let ptr = nonnull::as_non_null_ptr(self.initialized.ptr);
+        let ptr = self.initialized.as_non_null_ptr();
 
         if T::IS_ZST {
             let range_len = end - start;
             let remaining_len = len - range_len;
 
-            unsafe {
+            return unsafe {
                 self.set_len(remaining_len);
-                return FixedBumpVec {
+
+                FixedBumpVec {
                     initialized: BumpBox::zst_slice_from_len(range_len),
                     capacity: usize::MAX,
-                };
-            }
+                }
+            };
         }
 
         if end == len {
-            let lhs = nonnull::slice_from_raw_parts(ptr, start);
-            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, start) }, len - start);
+            let lhs = ptr;
+            let rhs = unsafe { nonnull::add(ptr, start) };
 
-            let lhs_capacity = start;
-            let rhs_capacity = self.capacity - lhs_capacity;
+            let lhs_len = start;
+            let rhs_len = len - start;
 
-            self.initialized.ptr = lhs;
-            self.capacity = lhs_capacity;
+            let lhs_cap = start;
+            let rhs_cap = self.capacity - lhs_cap;
 
-            return FixedBumpVec {
-                initialized: unsafe { BumpBox::from_raw(rhs) },
-                capacity: rhs_capacity,
+            return unsafe {
+                self.set_ptr(lhs);
+                self.set_len(lhs_len);
+                self.set_cap(lhs_cap);
+
+                FixedBumpVec {
+                    initialized: BumpBox::from_raw(nonnull::slice_from_raw_parts(rhs, rhs_len)),
+                    capacity: rhs_cap,
+                }
             };
         }
 
         if start == 0 {
-            let lhs = nonnull::slice_from_raw_parts(ptr, end);
-            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, end) }, len - end);
+            let lhs = ptr;
+            let rhs = unsafe { nonnull::add(ptr, end) };
 
-            let lhs_capacity = end;
-            let rhs_capacity = self.capacity - lhs_capacity;
+            let lhs_len = end;
+            let rhs_len = len - end;
 
-            self.initialized.ptr = rhs;
-            self.capacity = rhs_capacity;
+            let lhs_cap = end;
+            let rhs_cap = self.capacity - lhs_cap;
 
-            return FixedBumpVec {
-                initialized: unsafe { BumpBox::from_raw(lhs) },
-                capacity: lhs_capacity,
+            return unsafe {
+                self.set_ptr(rhs);
+                self.set_len(rhs_len);
+                self.set_cap(rhs_cap);
+
+                FixedBumpVec {
+                    initialized: BumpBox::from_raw(nonnull::slice_from_raw_parts(lhs, lhs_len)),
+                    capacity: lhs_cap,
+                }
             };
         }
 
@@ -536,36 +558,48 @@ impl<'a, T> FixedBumpVec<'a, T> {
                 // move the range of elements to split off to the start
                 self.as_mut_slice().get_unchecked_mut(..end).rotate_right(range_len);
 
-                let lhs = nonnull::slice_from_raw_parts(ptr, range_len);
-                let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, range_len) }, remaining_len);
+                let lhs = ptr;
+                let rhs = unsafe { nonnull::add(ptr, range_len) };
 
-                let lhs_capacity = range_len;
-                let rhs_capacity = self.capacity - lhs_capacity;
+                let lhs_len = range_len;
+                let rhs_len = remaining_len;
 
-                self.initialized.ptr = rhs;
-                self.capacity = rhs_capacity;
+                let lhs_cap = range_len;
+                let rhs_cap = self.capacity - lhs_cap;
 
-                FixedBumpVec {
-                    initialized: unsafe { BumpBox::from_raw(lhs) },
-                    capacity: lhs_capacity,
+                unsafe {
+                    self.set_ptr(rhs);
+                    self.set_len(rhs_len);
+                    self.set_cap(rhs_cap);
+
+                    FixedBumpVec {
+                        initialized: BumpBox::from_raw(nonnull::slice_from_raw_parts(lhs, lhs_len)),
+                        capacity: lhs_cap,
+                    }
                 }
             } else {
                 // move the range of elements to split off to the end
                 self.as_mut_slice().get_unchecked_mut(start..).rotate_left(range_len);
 
-                let lhs = nonnull::slice_from_raw_parts(ptr, remaining_len);
-                let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, remaining_len) }, range_len);
+                let lhs = ptr;
+                let rhs = unsafe { nonnull::add(ptr, remaining_len) };
 
-                let lhs_capacity = remaining_len;
-                let rhs_capacity = self.capacity - lhs_capacity;
+                let lhs_len = remaining_len;
+                let rhs_len = range_len;
 
-                self.initialized.ptr = lhs;
-                self.capacity = lhs_capacity;
+                let lhs_cap = remaining_len;
+                let rhs_cap = self.capacity - lhs_cap;
 
-                FixedBumpVec {
-                    initialized: unsafe { BumpBox::from_raw(rhs) },
-                    capacity: rhs_capacity,
-                }
+                return unsafe {
+                    self.set_ptr(lhs);
+                    self.set_len(lhs_len);
+                    self.set_cap(lhs_cap);
+
+                    FixedBumpVec {
+                        initialized: BumpBox::from_raw(nonnull::slice_from_raw_parts(rhs, rhs_len)),
+                        capacity: rhs_cap,
+                    }
+                };
             }
         }
     }
@@ -1288,7 +1322,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         // Use SetLenOnDrop to work around bug where compiler
         // might not realize the store through `ptr` through self.set_len()
         // don't alias.
-        let mut local_len = SetLenOnDropByPtr::new(&mut self.initialized.ptr);
+        let mut local_len = self.initialized.set_len_on_drop();
 
         // Write all elements except the last one
         for _ in 1..n {
@@ -1575,7 +1609,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
             self.generic_reserve(additional)?;
 
             let ptr = self.as_mut_ptr();
-            let mut local_len = SetLenOnDropByPtr::new(&mut self.initialized.ptr);
+            let mut local_len = self.initialized.set_len_on_drop();
 
             iterator.for_each(move |element| {
                 let dst = ptr.add(local_len.current_len());

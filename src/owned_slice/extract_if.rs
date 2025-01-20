@@ -46,7 +46,7 @@ where
         // The 'a2 lifetime is shortened to 'a even though &'b mut BumpBox<'a2> is invariant
         // over 'a2. We are careful not to expose any api where that could cause issues.
 
-        let ptr = &mut boxed.ptr;
+        let ptr = unsafe { boxed.mut_ptr() };
         let len = ptr.len();
 
         nonnull::set_len(ptr, 0);

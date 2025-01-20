@@ -72,7 +72,19 @@ impl<T: ?Sized> RawBumpBox<T> {
 
     #[must_use]
     #[inline(always)]
-    pub const fn as_non_null_ptr(&self) -> NonNull<T> {
+    pub(crate) const fn as_ptr(&self) -> *const T {
+        self.ptr.as_ptr()
+    }
+
+    #[must_use]
+    #[inline(always)]
+    pub(crate) fn as_mut_ptr(&mut self) -> *mut T {
+        self.ptr.as_ptr()
+    }
+
+    #[must_use]
+    #[inline(always)]
+    pub(crate) const fn as_non_null_ptr(&self) -> NonNull<T> {
         self.ptr
     }
 }
@@ -85,7 +97,7 @@ impl<T> RawBumpBox<[T]> {
 
     #[allow(dead_code)]
     #[inline(always)]
-    pub(crate) fn len(&self) -> usize {
+    pub(crate) const fn len(&self) -> usize {
         self.ptr.len()
     }
 
@@ -107,7 +119,7 @@ impl RawBumpBox<str> {
     };
 
     #[inline(always)]
-    pub(crate) fn len(&self) -> usize {
+    pub(crate) const fn len(&self) -> usize {
         nonnull::str_bytes(self.ptr).len()
     }
 

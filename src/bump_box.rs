@@ -23,6 +23,7 @@ use allocator_api2::boxed::Box;
 use crate::{
     owned_slice, owned_str,
     polyfill::{self, nonnull, pointer, transmute_mut},
+    set_len_on_drop_by_ptr::SetLenOnDropByPtr,
     BumpAllocator, FromUtf8Error, NoDrop, SizedTypeProperties,
 };
 
@@ -170,7 +171,7 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 /// [*drop guarantee*]: https://doc.rust-lang.org/std/pin/index.html#subtle-details-and-the-drop-guarantee
 #[repr(transparent)]
 pub struct BumpBox<'a, T: ?Sized> {
-    pub(crate) ptr: NonNull<T>,
+    ptr: NonNull<T>,
 
     /// First field marks the lifetime.
     /// Second field marks ownership over T. (<https://doc.rust-lang.org/nomicon/phantom-data.html#generic-parameters-and-drop-checking>)
@@ -263,6 +264,18 @@ impl<'a, T: ?Sized + NoDrop> BumpBox<'a, T> {
 }
 
 impl<'a, T: ?Sized> BumpBox<'a, T> {
+    #[must_use]
+    #[inline(always)]
+    pub(crate) const fn ptr(&self) -> NonNull<T> {
+        self.ptr
+    }
+
+    #[must_use]
+    #[inline(always)]
+    pub(crate) unsafe fn mut_ptr(&mut self) -> &mut NonNull<T> {
+        &mut self.ptr
+    }
+
     /// Turns this `BumpBox<T>` into `Box<T>`. The `bump` allocator is not required to be
     /// the allocator this box was allocated in.
     ///
@@ -514,7 +527,7 @@ impl<'a> BumpBox<'a, str> {
             // SAFETY: `BumpBox<[u8]>` and `BumpBox<str>` have the same representation;
             // only the invariant that the bytes are utf8 is different.
             Ok(_) => Ok(unsafe { mem::transmute(bytes) }),
-            Err(error) => Err(FromUtf8Error { bytes, error }),
+            Err(error) => Err(FromUtf8Error::new(error, bytes)),
         }
     }
 
@@ -809,6 +822,11 @@ impl<'a> BumpBox<'a, str> {
         // We shadow the str method of the same name to avoid going through
         // `deref_mut`, which creates an intermediate reference.
         self.ptr.as_ptr().cast()
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<u8>) {
+        self.ptr = nonnull::str_from_utf8(nonnull::slice_from_raw_parts(new_ptr, self.len()));
     }
 
     /// Forces the length of the string to `new_len`.
@@ -1449,6 +1467,11 @@ impl<'a, T> BumpBox<'a, [T]> {
         self.ptr
     }
 
+    #[inline(always)]
+    pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<T>) {
+        nonnull::set_ptr(&mut self.ptr, new_ptr);
+    }
+
     /// Forces the length of the slice to `new_len`.
     ///
     /// This is a low-level operation that maintains none of the normal
@@ -1476,6 +1499,11 @@ impl<'a, T> BumpBox<'a, [T]> {
     #[inline]
     pub(crate) unsafe fn dec_len(&mut self, amount: usize) {
         self.set_len(self.len() - amount);
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn set_len_on_drop(&mut self) -> SetLenOnDropByPtr<T> {
+        SetLenOnDropByPtr::new(&mut self.ptr)
     }
 
     /// Removes and returns the element at position `index` within the vector,

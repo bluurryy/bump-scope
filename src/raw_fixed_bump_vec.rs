@@ -7,17 +7,32 @@ use crate::{
     error_behavior::ErrorBehavior,
     polyfill::{nonnull, transmute_mut, transmute_ref},
     raw_bump_box::RawBumpBox,
+    set_len_on_drop_by_ptr::SetLenOnDropByPtr,
     BumpAllocator, FixedBumpVec, MutBumpAllocator, SizedTypeProperties,
 };
 
 /// Like [`FixedBumpVec`] but without its lifetime.
 #[repr(C)]
 pub struct RawFixedBumpVec<T> {
-    pub(crate) initialized: RawBumpBox<[T]>,
-    pub(crate) capacity: usize,
+    initialized: RawBumpBox<[T]>,
+    capacity: usize,
 }
 
 impl<T> RawFixedBumpVec<T> {
+    pub(crate) const EMPTY: Self = RawFixedBumpVec {
+        initialized: RawBumpBox::EMPTY,
+        capacity: if T::IS_ZST { usize::MAX } else { 0 },
+    };
+
+    pub(crate) const unsafe fn new_zst(len: usize) -> Self {
+        assert!(T::IS_ZST);
+
+        RawFixedBumpVec {
+            initialized: unsafe { RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(NonNull::dangling(), len)) },
+            capacity: usize::MAX,
+        }
+    }
+
     #[inline(always)]
     pub(crate) const unsafe fn cook<'a>(self) -> FixedBumpVec<'a, T> {
         transmute(self)
@@ -39,11 +54,6 @@ impl<T> RawFixedBumpVec<T> {
         let initialized = RawBumpBox::from_cooked(initialized);
         Self { initialized, capacity }
     }
-
-    pub(crate) const EMPTY: Self = RawFixedBumpVec {
-        initialized: RawBumpBox::EMPTY,
-        capacity: if T::IS_ZST { usize::MAX } else { 0 },
-    };
 
     #[inline(always)]
     pub(crate) unsafe fn allocate<B: ErrorBehavior>(allocator: &impl BumpAllocator, len: usize) -> Result<Self, B> {
@@ -89,13 +99,23 @@ impl<T> RawFixedBumpVec<T> {
     }
 
     #[inline(always)]
+    pub(crate) const fn len(&self) -> usize {
+        self.initialized.len()
+    }
+
+    #[inline(always)]
+    pub(crate) const fn capacity(&self) -> usize {
+        self.capacity
+    }
+
+    #[inline(always)]
     pub(crate) fn as_ptr(&self) -> *const T {
-        self.initialized.as_non_null_ptr().as_ptr().cast()
+        self.initialized.as_ptr().cast()
     }
 
     #[inline(always)]
     pub(crate) fn as_mut_ptr(&mut self) -> *mut T {
-        self.initialized.as_non_null_ptr().as_ptr().cast()
+        self.initialized.as_mut_ptr().cast()
     }
 
     #[must_use]
@@ -105,9 +125,11 @@ impl<T> RawFixedBumpVec<T> {
         self.initialized.as_non_null_ptr().cast()
     }
 
+    #[must_use]
     #[inline(always)]
-    pub(crate) const fn len(&self) -> usize {
-        self.initialized.as_non_null_ptr().len()
+    #[allow(dead_code)]
+    pub fn as_non_null_slice(&self) -> NonNull<[T]> {
+        self.initialized.as_non_null_ptr()
     }
 
     #[allow(dead_code)]
@@ -119,5 +141,29 @@ impl<T> RawFixedBumpVec<T> {
     #[inline(always)]
     pub(crate) unsafe fn set_len(&mut self, new_len: usize) {
         self.initialized.set_len(new_len);
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn set_cap(&mut self, new_cap: usize) {
+        self.capacity = new_cap;
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn set_len_on_drop(&mut self) -> SetLenOnDropByPtr<T> {
+        SetLenOnDropByPtr::new(&mut self.initialized.ptr)
+    }
+
+    #[inline(always)]
+    pub(crate) fn into_raw_parts(self) -> (NonNull<[T]>, usize) {
+        let Self { initialized, capacity } = self;
+        (initialized.into_ptr(), capacity)
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn from_raw_parts(slice: NonNull<[T]>, capacity: usize) -> Self {
+        Self {
+            initialized: RawBumpBox::from_ptr(slice),
+            capacity,
+        }
     }
 }

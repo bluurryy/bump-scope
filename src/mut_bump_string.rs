@@ -123,7 +123,7 @@ macro_rules! mut_bump_format {
 #[repr(C)]
 pub struct MutBumpString<A> {
     fixed: RawFixedBumpString,
-    pub(crate) allocator: A,
+    allocator: A,
 }
 
 impl<A: UnwindSafe> UnwindSafe for MutBumpString<A> {}
@@ -201,7 +201,7 @@ impl<A> MutBumpString<A> {
             // SAFETY: `MutBumpVec<u8>` and `MutBumpString` have the same representation;
             // only the invariant that the bytes are utf8 is different.
             Ok(_) => Ok(unsafe { transmute_value(vec) }),
-            Err(error) => Err(FromUtf8Error { error, bytes: vec }),
+            Err(error) => Err(FromUtf8Error::new(error, vec)),
         }
     }
 
@@ -241,7 +241,7 @@ impl<A> MutBumpString<A> {
     #[must_use]
     #[inline(always)]
     pub const fn capacity(&self) -> usize {
-        self.fixed.capacity
+        self.fixed.capacity()
     }
 
     /// Returns the length of this string, in bytes, not [`char`]s or
@@ -1301,7 +1301,7 @@ impl<'a, A: MutBumpAllocatorScope<'a>> MutBumpString<A> {
     #[inline]
     pub(crate) fn generic_into_cstr<B: ErrorBehavior>(mut self) -> Result<&'a CStr, B> {
         match self.as_bytes().iter().position(|&c| c == b'\0') {
-            Some(nul) => unsafe { self.fixed.cook_mut().initialized.as_mut_bytes().truncate(nul + 1) },
+            Some(nul) => unsafe { self.fixed.cook_mut().as_mut_vec().truncate(nul + 1) },
             None => self.generic_push('\0')?,
         }
 

@@ -19,11 +19,16 @@ use core::{fmt, ops::Deref, str::Utf8Error};
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "panic-on-alloc", derive(Clone))]
 pub struct FromUtf8Error<Bytes> {
-    pub(crate) bytes: Bytes,
-    pub(crate) error: Utf8Error,
+    bytes: Bytes,
+    error: Utf8Error,
 }
 
 impl<Bytes> FromUtf8Error<Bytes> {
+    #[inline(always)]
+    pub(crate) const fn new(error: Utf8Error, bytes: Bytes) -> Self {
+        Self { bytes, error }
+    }
+
     /// Returns a slice of [`u8`]s bytes that were attempted to convert to a `String`.
     #[must_use]
     #[inline(always)]

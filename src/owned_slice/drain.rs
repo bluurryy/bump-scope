@@ -71,8 +71,8 @@ impl<'a, T> Drain<'a, T> {
             Drain {
                 tail_start: range.end,
                 tail_len: len - range.end,
-                iter: owned_slice::IntoIter::new_ranged(boxed.ptr, range),
-                slice: &mut boxed.ptr,
+                iter: owned_slice::IntoIter::new_ranged(boxed.ptr(), range),
+                slice: boxed.mut_ptr(),
             }
         }
     }

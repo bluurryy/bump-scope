@@ -20,9 +20,9 @@ impl<'a, T: FromZeros> BumpBox<'a, MaybeUninit<T>> {
     /// assert_eq!(*init, 0);
     /// ```
     #[must_use]
-    pub fn init_zeroed(self) -> BumpBox<'a, T> {
+    pub fn init_zeroed(mut self) -> BumpBox<'a, T> {
         unsafe {
-            self.ptr.as_ptr().write_bytes(0, 1);
+            self.as_mut_ptr().write_bytes(0, 1);
             self.assume_init()
         }
     }
@@ -41,11 +41,10 @@ impl<'a, T: FromZeros> BumpBox<'a, [MaybeUninit<T>]> {
     /// assert_eq!(*init, [0; 10]);
     /// ```
     #[must_use]
-    pub fn init_zeroed(self) -> BumpBox<'a, [T]> {
+    pub fn init_zeroed(mut self) -> BumpBox<'a, [T]> {
         unsafe {
             let len = self.len();
-
-            self.ptr.as_ptr().cast::<T>().write_bytes(0, len);
+            self.as_mut_ptr().write_bytes(0, len);
             self.assume_init()
         }
     }

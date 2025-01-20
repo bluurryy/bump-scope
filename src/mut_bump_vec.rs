@@ -14,9 +14,8 @@ use crate::{
     error_behavior_generic_methods_allocation_failure, min_non_zero_cap, mut_collection_method_allocator_stats,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     polyfill::{nonnull, pointer, slice},
-    raw_bump_box::RawBumpBox,
     raw_fixed_bump_vec::RawFixedBumpVec,
-    BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SetLenOnDropByPtr, SizedTypeProperties, Stats,
+    BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SizedTypeProperties, Stats,
 };
 
 mod into_iter;
@@ -132,7 +131,7 @@ macro_rules! mut_bump_vec {
 #[repr(C)]
 pub struct MutBumpVec<T, A> {
     fixed: RawFixedBumpVec<T>,
-    pub(crate) allocator: A,
+    allocator: A,
 }
 
 impl<T: UnwindSafe, A: UnwindSafe> UnwindSafe for MutBumpVec<T, A> {}
@@ -188,7 +187,7 @@ impl<T, A> MutBumpVec<T, A> {
     #[must_use]
     #[inline(always)]
     pub const fn capacity(&self) -> usize {
-        self.fixed.capacity
+        self.fixed.capacity()
     }
 
     /// Returns the number of elements in the vector, also referred to
@@ -385,7 +384,7 @@ impl<T, A> MutBumpVec<T, A> {
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        self.fixed.initialized.ptr
+        self.fixed.as_non_null_slice()
     }
 
     /// Appends an element to the back of the collection.
@@ -515,7 +514,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
 
             if T::IS_ZST {
                 return Ok(Self {
-                    fixed: RawFixedBumpVec { initialized: unsafe { RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(NonNull::dangling(), N)) }, capacity: usize::MAX },
+                    fixed: unsafe { RawFixedBumpVec::new_zst(N) },
                     allocator,
                 });
             }
@@ -530,7 +529,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
             let mut fixed = unsafe { RawFixedBumpVec::prepare_allocation(&mut allocator, N)? };
 
             let src = array.as_ptr();
-            let dst = fixed.initialized.ptr.cast::<T>().as_ptr();
+            let dst = fixed.as_mut_ptr();
 
             unsafe {
                 ptr::copy_nonoverlapping(src, dst, N);
@@ -1412,7 +1411,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
             self.generic_reserve(additional)?;
 
             let ptr = self.as_mut_ptr();
-            let mut local_len = SetLenOnDropByPtr::new(&mut self.fixed.initialized.ptr);
+            let mut local_len = self.fixed.set_len_on_drop();
 
             iterator.for_each(move |element| {
                 let dst = ptr.add(local_len.current_len());
@@ -1855,7 +1854,7 @@ impl<T, A> IntoIterator for MutBumpVec<T, A> {
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
         let Self { fixed, allocator } = self;
-        let slice = fixed.initialized.into_ptr();
+        let (slice, _) = fixed.into_raw_parts();
         unsafe { IntoIter::new(slice, allocator) }
     }
 }

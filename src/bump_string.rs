@@ -9,9 +9,6 @@ use core::{
     ptr, str,
 };
 
-#[cfg(feature = "panic-on-alloc")]
-use core::mem::MaybeUninit;
-
 use allocator_api2::alloc::AllocError;
 
 use crate::{
@@ -25,7 +22,7 @@ use crate::{
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{panic_on_error, polyfill::nonnull, raw_bump_box::RawBumpBox, PanicsOnAlloc};
+use crate::{panic_on_error, polyfill::nonnull, PanicsOnAlloc};
 
 /// This is like [`format!`](alloc::format) but allocates inside a bump allocator, returning a [`BumpString`].
 ///
@@ -126,8 +123,8 @@ macro_rules! bump_format {
 // `BumpString` and `BumpVec<u8>` have the same repr.
 #[repr(C)]
 pub struct BumpString<A: BumpAllocator> {
-    pub(crate) fixed: RawFixedBumpString,
-    pub(crate) allocator: A,
+    fixed: RawFixedBumpString,
+    allocator: A,
 }
 
 impl<A: BumpAllocator + UnwindSafe> UnwindSafe for BumpString<A> {}
@@ -206,7 +203,7 @@ impl<A: BumpAllocator> BumpString<A> {
             // SAFETY: `BumpVec<u8>` and `BumpString` have the same representation;
             // only the invariant that the bytes are utf8 is different.
             Ok(_) => Ok(unsafe { transmute_value(vec) }),
-            Err(error) => Err(FromUtf8Error { error, bytes: vec }),
+            Err(error) => Err(FromUtf8Error::new(error, vec)),
         }
     }
 
@@ -246,7 +243,7 @@ impl<A: BumpAllocator> BumpString<A> {
     #[must_use]
     #[inline(always)]
     pub const fn capacity(&self) -> usize {
-        self.fixed.capacity
+        self.fixed.capacity()
     }
 
     /// Returns the length of this string, in bytes, not [`char`]s or
@@ -1395,7 +1392,7 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
     #[inline]
     pub(crate) fn generic_into_cstr<B: ErrorBehavior>(mut self) -> Result<&'a CStr, B> {
         match self.as_bytes().iter().position(|&c| c == b'\0') {
-            Some(nul) => unsafe { self.fixed.cook_mut().initialized.as_mut_bytes().truncate(nul + 1) },
+            Some(nul) => unsafe { self.fixed.cook_mut().as_mut_vec().truncate(nul + 1) },
             None => self.generic_push('\0')?,
         }
 
@@ -1511,8 +1508,8 @@ impl<A: BumpAllocator> Drop for BumpString<A> {
         // may be at is 16. The bump allocator handles deallocate requests
         // from pointers outside its bound just fine by ignoring them.
         unsafe {
-            let ptr = self.fixed.initialized.as_non_null_ptr().cast();
-            let layout = Layout::from_size_align_unchecked(self.fixed.capacity, 1);
+            let ptr = self.fixed.as_non_null_ptr().cast();
+            let layout = Layout::from_size_align_unchecked(self.fixed.capacity(), 1);
             self.allocator.deallocate(ptr, layout);
         }
     }
@@ -1521,19 +1518,17 @@ impl<A: BumpAllocator> Drop for BumpString<A> {
 #[cfg(feature = "panic-on-alloc")]
 impl<A: BumpAllocator + Clone> Clone for BumpString<A> {
     fn clone(&self) -> Self {
+        let len = self.len();
         let allocator = self.allocator.clone();
-        let ptr = allocator.allocate_slice::<MaybeUninit<u8>>(self.len());
-        let slice = nonnull::slice_from_raw_parts(ptr, self.len());
-        let boxed = unsafe { BumpBox::from_raw(slice) };
-        let boxed = boxed.init_copy(self.as_bytes());
-        let boxed = unsafe { BumpBox::from_utf8_unchecked(boxed) };
+        let ptr = allocator.allocate_slice::<u8>(len);
 
-        Self {
-            fixed: RawFixedBumpString {
-                initialized: unsafe { RawBumpBox::from_cooked(boxed) },
-                capacity: self.len(),
-            },
-            allocator,
+        unsafe {
+            self.as_ptr().copy_to_nonoverlapping(ptr.as_ptr(), len);
+
+            let slice = nonnull::str_from_utf8(nonnull::slice_from_raw_parts(ptr, len));
+            let fixed = RawFixedBumpString::from_raw_parts(slice, len);
+
+            Self { fixed, allocator }
         }
     }
 }
