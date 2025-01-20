@@ -305,33 +305,7 @@ impl<'a> FixedBumpString<'a> {
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
         let ptr = nonnull::as_non_null_ptr(nonnull::str_bytes(self.initialized.ptr()));
 
-        if start == 0 && end == len {
-            return mem::take(self);
-        }
-
         unsafe {
-            if start == 0 {
-                self.assert_char_boundary(end);
-
-                let lhs = ptr;
-                let rhs = nonnull::add(ptr, end);
-
-                let lhs_len = end;
-                let rhs_len = len - end;
-
-                let lhs_cap = end;
-                let rhs_cap = self.capacity - lhs_cap;
-
-                self.set_ptr(rhs);
-                self.set_len(rhs_len);
-                self.set_cap(rhs_cap);
-
-                return FixedBumpString {
-                    initialized: BumpBox::from_raw(nonnull::str_from_utf8(nonnull::slice_from_raw_parts(lhs, lhs_len))),
-                    capacity: lhs_cap,
-                };
-            }
-
             if end == len {
                 self.assert_char_boundary(start);
 
@@ -351,6 +325,28 @@ impl<'a> FixedBumpString<'a> {
                 return FixedBumpString {
                     initialized: BumpBox::from_raw(nonnull::str_from_utf8(nonnull::slice_from_raw_parts(rhs, rhs_len))),
                     capacity: rhs_cap,
+                };
+            }
+
+            if start == 0 {
+                self.assert_char_boundary(end);
+
+                let lhs = ptr;
+                let rhs = nonnull::add(ptr, end);
+
+                let lhs_len = end;
+                let rhs_len = len - end;
+
+                let lhs_cap = end;
+                let rhs_cap = self.capacity - lhs_cap;
+
+                self.set_ptr(rhs);
+                self.set_len(rhs_len);
+                self.set_cap(rhs_cap);
+
+                return FixedBumpString {
+                    initialized: BumpBox::from_raw(nonnull::str_from_utf8(nonnull::slice_from_raw_parts(lhs, lhs_len))),
+                    capacity: lhs_cap,
                 };
             }
 

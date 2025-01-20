@@ -661,8 +661,14 @@ impl<'a> BumpBox<'a, str> {
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
         let ptr = nonnull::as_non_null_ptr(nonnull::str_bytes(self.ptr));
 
-        if start == 0 && end == len {
-            return mem::take(self);
+        if end == len {
+            self.assert_char_boundary(start);
+
+            let lhs = nonnull::slice_from_raw_parts(ptr, start);
+            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, start) }, len - start);
+
+            self.ptr = nonnull::str_from_utf8(lhs);
+            return unsafe { BumpBox::from_raw(nonnull::str_from_utf8(rhs)) };
         }
 
         if start == 0 {
@@ -673,16 +679,6 @@ impl<'a> BumpBox<'a, str> {
 
             self.ptr = nonnull::str_from_utf8(rhs);
             return unsafe { BumpBox::from_raw(nonnull::str_from_utf8(lhs)) };
-        }
-
-        if end == len {
-            self.assert_char_boundary(start);
-
-            let lhs = nonnull::slice_from_raw_parts(ptr, start);
-            let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, start) }, len - start);
-
-            self.ptr = nonnull::str_from_utf8(lhs);
-            return unsafe { BumpBox::from_raw(nonnull::str_from_utf8(rhs)) };
         }
 
         if start == end {
@@ -704,7 +700,7 @@ impl<'a> BumpBox<'a, str> {
                 self.as_mut_bytes().get_unchecked_mut(..end).rotate_right(range_len);
 
                 let lhs = nonnull::slice_from_raw_parts(ptr, range_len);
-                let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, range_len) }, remaining_len);
+                let rhs = nonnull::slice_from_raw_parts(nonnull::add(ptr, range_len), remaining_len);
 
                 let lhs = nonnull::str_from_utf8(lhs);
                 let rhs = nonnull::str_from_utf8(rhs);
@@ -717,7 +713,7 @@ impl<'a> BumpBox<'a, str> {
                 self.as_mut_bytes().get_unchecked_mut(start..).rotate_left(range_len);
 
                 let lhs = nonnull::slice_from_raw_parts(ptr, remaining_len);
-                let rhs = nonnull::slice_from_raw_parts(unsafe { nonnull::add(ptr, remaining_len) }, range_len);
+                let rhs = nonnull::slice_from_raw_parts(nonnull::add(ptr, remaining_len), range_len);
 
                 let lhs = nonnull::str_from_utf8(lhs);
                 let rhs = nonnull::str_from_utf8(rhs);
