@@ -1,4 +1,4 @@
-//! Adapted from rust's `library/alloc/tests/vec.rs` commit f7ca9df69549470541fbf542f87a03eb9ed024b6
+//! Adapted from rust's `library/alloc/tests/vec.rs` commit 4426e9a3c260e329f51c94e2b231f72574271f0b
 
 use std::{
     alloc::System,
@@ -12,7 +12,7 @@ use std::{
     format, hint,
     iter::{InPlaceIterable, IntoIterator},
     mem::{self, size_of, swap},
-    num::NonZeroUsize,
+    num::NonZero,
     ops::Bound::*,
     panic::{catch_unwind, AssertUnwindSafe},
     println,
@@ -115,6 +115,45 @@ fn test_reserve() {
 
     v.reserve(16);
     assert!(v.capacity() >= 33)
+}
+
+#[test]
+fn test_reserve_exact() {
+    // This is all the same as test_reserve
+
+    let bump: Bump = Bump::new();
+
+    let mut v = BumpVec::new_in(&bump);
+    assert_eq!(v.capacity(), 0);
+
+    v.reserve_exact(2);
+    assert!(v.capacity() >= 2);
+
+    for i in 0..16 {
+        v.push(i);
+    }
+
+    assert!(v.capacity() >= 16);
+    v.reserve_exact(16);
+    assert!(v.capacity() >= 32);
+
+    v.push(16);
+
+    v.reserve_exact(16);
+    assert!(v.capacity() >= 33)
+}
+
+#[test]
+#[cfg_attr(miri, ignore)] // Miri does not support signalling OOM
+fn test_try_with_capacity() {
+    let bump: Bump = Bump::new();
+
+    let mut vec = BumpVec::<i32, _>::try_with_capacity_in(5, &bump).unwrap();
+    assert_eq!(0, vec.len());
+    assert!(vec.capacity() >= 5 && vec.capacity() <= isize::MAX as usize / 4);
+    assert!(vec.spare_capacity_mut().len() >= 5);
+
+    assert!(BumpVec::<u16, _>::try_with_capacity_in(isize::MAX as usize + 1, &bump).is_err());
 }
 
 #[test]
@@ -633,8 +672,7 @@ fn test_cmp() {
 #[test]
 fn test_vec_truncate_drop() {
     static mut DROPS: u32 = 0;
-    #[allow(dead_code)]
-    struct Elem(i32);
+    struct Elem(#[allow(dead_code)] i32);
     impl Drop for Elem {
         fn drop(&mut self) {
             unsafe {
@@ -1106,11 +1144,46 @@ fn test_into_boxed_slice() {
 fn test_append() {
     let bump: Bump = Bump::new();
     let bump = bump.as_scope();
-    let mut slice = bump.alloc_slice_copy(&[4, 5, 6]);
     let mut vec = bump_vec![in &bump; 1, 2, 3];
-    vec.append(&mut slice);
+    let mut vec2 = bump_vec![in &bump; 4, 5, 6];
+    vec.append(&mut vec2);
     assert_eq!(vec, [1, 2, 3, 4, 5, 6]);
-    assert!(slice.is_empty());
+    assert!(vec2.is_empty());
+}
+
+#[test]
+fn test_split_off() {
+    let bump: Bump = Bump::new();
+    let mut vec = bump_vec![in &bump; 1, 2, 3, 4, 5, 6];
+    let orig_ptr = vec.as_ptr();
+    let orig_capacity = vec.capacity();
+
+    let split_off = vec.split_off(4..);
+    assert_eq!(vec, [1, 2, 3, 4]);
+    assert_eq!(split_off, [5, 6]);
+    assert_eq!(vec.capacity(), vec.len());
+    assert_eq!(vec.as_ptr(), orig_ptr);
+    assert_eq!(split_off.capacity(), orig_capacity - vec.capacity());
+}
+
+#[test]
+fn test_split_off_take_all() {
+    let bump: Bump = Bump::new();
+
+    // Allocate enough capacity that we can tell whether the split-off vector's
+    // capacity is based on its size, or on the original capacity.
+    let mut vec = BumpVec::with_capacity_in(1000, &bump);
+    vec.extend([1, 2, 3, 4, 5, 6]);
+    let orig_ptr = vec.as_ptr();
+    let orig_capacity = vec.capacity();
+
+    let split_off = vec.split_off(0..);
+    assert!(vec.is_empty());
+    assert_eq!(split_off, [1, 2, 3, 4, 5, 6]);
+    assert_eq!(vec.capacity(), vec.len());
+    assert_eq!(vec.as_ptr(), orig_ptr);
+    assert_eq!(split_off.as_ptr(), orig_ptr);
+    assert_eq!(split_off.capacity(), orig_capacity - vec.capacity());
 }
 
 #[test]
@@ -1223,9 +1296,12 @@ fn test_into_iter_advance_by() {
     assert_eq!(i.advance_back_by(1), Ok(()));
     assert_eq!(i.as_slice(), [2, 3, 4]);
 
-    assert_eq!(i.advance_back_by(usize::MAX), Err(NonZeroUsize::new(usize::MAX - 3).unwrap()));
+    assert_eq!(
+        i.advance_back_by(usize::MAX),
+        Err(NonZero::<usize>::new(usize::MAX - 3).unwrap())
+    );
 
-    assert_eq!(i.advance_by(usize::MAX), Err(NonZeroUsize::new(usize::MAX).unwrap()));
+    assert_eq!(i.advance_by(usize::MAX), Err(NonZero::<usize>::new(usize::MAX).unwrap()));
 
     assert_eq!(i.advance_by(0), Ok(()));
     assert_eq!(i.advance_back_by(0), Ok(()));
@@ -1234,7 +1310,7 @@ fn test_into_iter_advance_by() {
 }
 
 #[test]
-fn test_drop_allocator() {
+fn test_into_iter_drop_allocator() {
     #[allow(dead_code)]
     #[derive(Clone)]
     struct ReferenceCountedAllocator(DropCounterMutex);
@@ -1336,6 +1412,8 @@ fn overaligned_allocations() {
         assert!(v.as_ptr() as usize & 0xff == 0);
     }
 }
+
+// TODO: extract_if ranges?
 
 #[test]
 fn extract_if_empty() {
@@ -1618,31 +1696,6 @@ fn extract_if_unconsumed() {
 }
 
 #[test]
-fn test_reserve_exact() {
-    // This is all the same as test_reserve
-
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump];
-    assert_eq!(v.capacity(), 0);
-
-    v.reserve_exact(2);
-    assert!(v.capacity() >= 2);
-
-    for i in 0..16 {
-        v.push(i);
-    }
-
-    assert!(v.capacity() >= 16);
-    v.reserve_exact(16);
-    assert!(v.capacity() >= 32);
-
-    v.push(16);
-
-    v.reserve_exact(16);
-    assert!(v.capacity() >= 33)
-}
-
-#[test]
 fn test_stable_pointers() {
     /// Pull an element from the iterator, then drop it.
     /// Useful to cover both the `next` and `drop` paths of an iterator.
@@ -1730,6 +1783,7 @@ fn test_stable_pointers() {
     assert_eq!(*v0, 13);
 
     // Smoke test that would fire even outside Miri if an actual relocation happened.
+    // Also ensures the pointer is still writeable after all this.
     *v0 -= 13;
     assert_eq!(v[0], 0);
 }
@@ -2211,4 +2265,84 @@ fn test_into_flattened_size_overflow() {
     let bump: Bump = Bump::new();
     let v = bump_vec![in &bump; [(); usize::MAX]; 2];
     let _ = v.into_flattened();
+}
+
+/*
+TODO
+
+#[test]
+fn test_pop_if() {
+    let mut v = vec![1, 2, 3, 4];
+    let pred = |x: &mut i32| *x % 2 == 0;
+
+    assert_eq!(v.pop_if(pred), Some(4));
+    assert_eq!(v, [1, 2, 3]);
+
+    assert_eq!(v.pop_if(pred), None);
+    assert_eq!(v, [1, 2, 3]);
+}
+
+#[test]
+fn test_pop_if_empty() {
+    let mut v = Vec::<i32>::new();
+    assert_eq!(v.pop_if(|_| true), None);
+    assert!(v.is_empty());
+}
+
+#[test]
+fn test_pop_if_mutates() {
+    let mut v = vec![1];
+    let pred = |x: &mut i32| {
+        *x += 1;
+        false
+    };
+    assert_eq!(v.pop_if(pred), None);
+    assert_eq!(v, [2]);
+}
+*/
+
+/// This assortment of tests, in combination with miri, verifies we handle UB on fishy arguments
+/// in the stdlib. Draining and extending the allocation are fairly well-tested earlier, but
+/// `vec.insert(usize::MAX, val)` once slipped by!
+///
+/// All code that manipulates the collection types should be tested with "trivially wrong" args.
+#[test]
+fn max_dont_panic() {
+    let bump: Bump = Bump::new();
+    let mut v = bump_vec![in &bump; 0];
+    let _ = v.get(usize::MAX);
+    // v.shrink_to(usize::MAX); // TODO
+    v.truncate(usize::MAX);
+}
+
+#[test]
+#[should_panic]
+fn max_insert() {
+    let bump: Bump = Bump::new();
+    let mut v = bump_vec![in &bump; 0];
+    v.insert(usize::MAX, 1);
+}
+
+#[test]
+#[should_panic]
+fn max_remove() {
+    let bump: Bump = Bump::new();
+    let mut v = bump_vec![in &bump; 0];
+    v.remove(usize::MAX);
+}
+
+#[test]
+#[should_panic]
+fn max_splice() {
+    let bump: Bump = Bump::new();
+    let mut v = bump_vec![in &bump; 0];
+    v.splice(usize::MAX.., core::iter::once(1));
+}
+
+#[test]
+#[should_panic]
+fn max_swap_remove() {
+    let bump: Bump = Bump::new();
+    let mut v = bump_vec![in &bump; 0];
+    v.swap_remove(usize::MAX);
 }

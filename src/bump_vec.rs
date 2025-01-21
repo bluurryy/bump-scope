@@ -826,6 +826,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         #[inline]
         use fn generic_insert(&mut self, index: usize, element: T) {
             #[cold]
+            #[track_caller]
             #[inline(never)]
             fn assert_failed(index: usize, len: usize) -> ! {
                 panic!("insertion index (is {index}) should be <= len (is {len})");

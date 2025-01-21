@@ -13,7 +13,10 @@ use std::{
     ops::Index,
     ptr::NonNull,
     string::{String, ToString},
-    sync::atomic::{AtomicUsize, Ordering},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc, Mutex, PoisonError,
+    },
     thread_local,
     vec::Vec,
 };
@@ -61,6 +64,8 @@ use crate::{
     stats::Chunk, Bump, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, ChunkSize, FmtFn, MinimumAlignment,
     MutBumpString, MutBumpVec, MutBumpVecRev, SizedTypeProperties, SupportedMinimumAlignment,
 };
+
+use allocator_api2::alloc::Global as System;
 
 pub(crate) use rc_bump::RcBump;
 pub(crate) use test_wrap::TestWrap;
@@ -1153,3 +1158,52 @@ fn min_chunk_size<const UP: bool>() {
         64 - size_of::<[usize; 2]>()
     );
 }
+
+#[test]
+fn test_drop_allocator() {
+    #[derive(Clone, Default)]
+    struct DropCounterMutex {
+        count: Arc<Mutex<u32>>,
+    }
+
+    impl DropCounterMutex {
+        fn get(&self) -> u32 {
+            *self.count.lock().unwrap_or_else(PoisonError::into_inner)
+        }
+    }
+
+    impl Drop for DropCounterMutex {
+        fn drop(&mut self) {
+            *self.count.lock().unwrap_or_else(PoisonError::into_inner) += 1;
+        }
+    }
+
+    #[allow(dead_code)]
+    #[derive(Clone)]
+    struct ReferenceCountedAllocator(DropCounterMutex);
+
+    unsafe impl Allocator for ReferenceCountedAllocator {
+        fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+            System.allocate(layout)
+        }
+
+        unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+            // Safety: Invariants passed to caller.
+            unsafe { System.deallocate(ptr, layout) }
+        }
+    }
+
+    let drop_count = DropCounterMutex::default();
+
+    let allocator = ReferenceCountedAllocator(drop_count.clone());
+    let bump = Bump::<_, 1, true>::new_in(allocator.clone());
+    drop(bump);
+    assert_eq!(drop_count.get(), 1);
+
+    let bump = Bump::<_, 1, true>::new_in(allocator);
+    bump.reserve_bytes(1024);
+    drop(bump);
+    assert_eq!(drop_count.get(), 3);
+}
+
+// FIXME: add vec/test_try_reserve kinds of test for `Bump`
