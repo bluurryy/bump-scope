@@ -996,7 +996,7 @@ impl FixedBumpString<'_> {
                 let src = replace_with.as_ptr();
                 let dst = self.as_mut_ptr().add(start);
                 let len = replace_with.len();
-                src.copy_to(dst, len);
+                src.copy_to_nonoverlapping(dst, len);
             }
 
             // update len
