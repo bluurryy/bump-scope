@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **added:** `(try_)replace_range` and `as_(mut_)ptr` to `(Fixed)BumpString`
 - **docs:** small improvements
 
 ## 0.16.0 (2025-01-10)

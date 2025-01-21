@@ -525,6 +525,128 @@ fn test_drain_end_overflow() {
 }
 
 #[test]
+fn test_replace_range() {
+    let bump: Bump = Bump::new();
+    let mut s = BumpString::from_str_in("Hello, world!", &bump);
+    s.replace_range(7..12, "世界");
+    assert_eq!(s, "Hello, 世界!");
+}
+
+#[test]
+#[should_panic]
+fn test_replace_range_char_boundary() {
+    let bump: Bump = Bump::new();
+    let mut s = BumpString::from_str_in("Hello, 世界!", &bump);
+    s.replace_range(..8, "");
+}
+
+#[test]
+fn test_replace_range_inclusive_range() {
+    let bump: Bump = Bump::new();
+    let mut v = BumpString::from_str_in("12345", &bump);
+    v.replace_range(2..=3, "789");
+    assert_eq!(v, "127895");
+    v.replace_range(1..=2, "A");
+    assert_eq!(v, "1A895");
+}
+
+#[test]
+#[should_panic]
+fn test_replace_range_out_of_bounds() {
+    let bump: Bump = Bump::new();
+    let mut s = BumpString::from_str_in("12345", &bump);
+    s.replace_range(5..6, "789");
+}
+
+#[test]
+#[should_panic]
+fn test_replace_range_inclusive_out_of_bounds() {
+    let bump: Bump = Bump::new();
+    let mut s = BumpString::from_str_in("12345", &bump);
+    s.replace_range(5..=5, "789");
+}
+
+#[test]
+#[should_panic]
+fn test_replace_range_start_overflow() {
+    let bump: Bump = Bump::new();
+    let mut s = BumpString::from_str_in("123", &bump);
+    s.replace_range((Excluded(usize::MAX), Included(0)), "");
+}
+
+#[test]
+#[should_panic]
+fn test_replace_range_end_overflow() {
+    let bump: Bump = Bump::new();
+    let mut s = BumpString::from_str_in("456", &bump);
+    s.replace_range((Included(0), Included(usize::MAX)), "");
+}
+
+#[test]
+fn test_replace_range_empty() {
+    let bump: Bump = Bump::new();
+    let mut s = BumpString::from_str_in("12345", &bump);
+    s.replace_range(1..2, "");
+    assert_eq!(s, "1345");
+}
+
+#[test]
+fn test_replace_range_unbounded() {
+    let bump: Bump = Bump::new();
+    let mut s = BumpString::from_str_in("12345", &bump);
+    s.replace_range(.., "");
+    assert_eq!(s, "");
+}
+
+#[test]
+fn test_replace_range_evil_start_bound() {
+    struct EvilRange(Cell<bool>);
+
+    impl RangeBounds<usize> for EvilRange {
+        fn start_bound(&self) -> Bound<&usize> {
+            Bound::Included(if self.0.get() {
+                &1
+            } else {
+                self.0.set(true);
+                &0
+            })
+        }
+        fn end_bound(&self) -> Bound<&usize> {
+            Bound::Unbounded
+        }
+    }
+
+    let bump: Bump = Bump::new();
+    let mut s = BumpString::from_str_in("🦀", &bump);
+    s.replace_range(EvilRange(Cell::new(false)), "");
+    assert_eq!(Ok(""), str::from_utf8(s.as_bytes()));
+}
+
+#[test]
+fn test_replace_range_evil_end_bound() {
+    struct EvilRange(Cell<bool>);
+
+    impl RangeBounds<usize> for EvilRange {
+        fn start_bound(&self) -> Bound<&usize> {
+            Bound::Included(&0)
+        }
+        fn end_bound(&self) -> Bound<&usize> {
+            Bound::Excluded(if self.0.get() {
+                &3
+            } else {
+                self.0.set(true);
+                &4
+            })
+        }
+    }
+
+    let bump: Bump = Bump::new();
+    let mut s = BumpString::from_str_in("🦀", &bump);
+    s.replace_range(EvilRange(Cell::new(false)), "");
+    assert_eq!(Ok(""), str::from_utf8(s.as_bytes()));
+}
+
+#[test]
 fn test_extend_ref() {
     let bump: Bump = Bump::new();
     let mut a = BumpString::from_str_in("foo", &bump);

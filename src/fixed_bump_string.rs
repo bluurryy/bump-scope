@@ -239,6 +239,7 @@ impl<'a> FixedBumpString<'a> {
     }
 
     #[track_caller]
+    #[inline(always)]
     pub(crate) fn assert_char_boundary(&self, index: usize) {
         self.initialized.assert_char_boundary(index);
     }
@@ -637,6 +638,21 @@ impl<'a> FixedBumpString<'a> {
         transmute_mut(self)
     }
 
+    /// Returns a raw pointer to the slice, or a dangling raw pointer
+    /// valid for zero sized reads.
+    #[inline]
+    #[must_use]
+    pub fn as_ptr(&self) -> *const u8 {
+        self.initialized.as_ptr()
+    }
+
+    /// Returns an unsafe mutable pointer to slice, or a dangling
+    /// raw pointer valid for zero sized reads.
+    #[inline]
+    pub fn as_mut_ptr(&mut self) -> *mut u8 {
+        self.initialized.as_mut_ptr()
+    }
+
     #[inline(always)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<u8>) {
         self.initialized.set_ptr(new_ptr);
@@ -905,6 +921,90 @@ impl FixedBumpString<'_> {
 
                 ptr.add(len).write_bytes(0, additional);
                 vec.set_len(len + additional);
+            }
+
+            Ok(())
+        }
+
+        /// Removes the specified range in the string,
+        /// and replaces it with the given string.
+        /// The given string doesn't need to be the same length as the range.
+        do panics
+        /// Panics if the starting point or end point do not lie on a [`char`]
+        /// boundary, or if they're out of bounds.
+        impl
+        do examples
+        /// ```
+        /// # use bump_scope::Bump;
+        /// # let bump: Bump = Bump::new();
+        /// let mut s = bump.alloc_fixed_string(50);
+        /// s.push_str("α is alpha, β is beta");
+        /// let beta_offset = s.find('β').unwrap_or(s.len());
+        ///
+        /// // Replace the range up until the β from the string
+        /// s.replace_range(..beta_offset, "Α is capital alpha; ");
+        /// assert_eq!(s, "Α is capital alpha; β is beta");
+        /// ```
+        for fn replace_range
+        do examples
+        /// ```
+        /// # use bump_scope::Bump;
+        /// # let bump: Bump = Bump::try_new()?;
+        /// let mut s = bump.try_alloc_fixed_string(50)?;
+        /// s.push_str("α is alpha, β is beta");
+        /// let beta_offset = s.find('β').unwrap_or(s.len());
+        ///
+        /// // Replace the range up until the β from the string
+        /// s.try_replace_range(..beta_offset, "Α is capital alpha; ")?;
+        /// assert_eq!(s, "Α is capital alpha; β is beta");
+        ///
+        /// // An error will be returned when the capacity does not suffice
+        /// let mut s = bump.try_alloc_fixed_string(5)?;
+        /// s.push_str("hello");
+        /// assert!(s.try_replace_range(4..=4, " n").is_err());
+        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// ```
+        for fn try_replace_range
+        #[inline]
+        use fn generic_replace_range<{R}>(&mut self, range: R, replace_with: &str)
+        where {
+            R: RangeBounds<usize>,
+        } in {
+            let Range { start, end } = polyfill::slice::range(range, ..self.len());
+
+            self.assert_char_boundary(start);
+            self.assert_char_boundary(end);
+
+            let range_len = end - start;
+            let given_len = replace_with.len();
+
+            let additional_len = given_len.saturating_sub(range_len);
+            self.generic_reserve(additional_len)?;
+
+            // move the tail
+            if range_len != given_len {
+                unsafe {
+                    let src = self.as_ptr().add(end);
+                    let dst = self.as_mut_ptr().add(start + given_len);
+                    let len = self.len() - end;
+                    src.copy_to(dst, len);
+                }
+            }
+
+            // fill with given string
+            unsafe {
+                let src = replace_with.as_ptr();
+                let dst = self.as_mut_ptr().add(start);
+                let len = replace_with.len();
+                src.copy_to(dst, len);
+            }
+
+            // update len
+            unsafe {
+                // Casting to `isize` is fine because per `Layout`'s rules all the `*len`s must be
+                // less than isize::MAX. Subtracting two positive `isize`s can't overflow.
+                let len_diff = given_len as isize - range_len as isize;
+                self.set_len((self.len() as isize + len_diff) as usize);
             }
 
             Ok(())
