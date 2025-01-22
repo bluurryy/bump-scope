@@ -1431,14 +1431,11 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// Mapping to a type with an equal alignment and size (no allocation):
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
+    /// # use core::num::NonZero;
     /// # let bump: Bump = Bump::new();
-    /// let vec_a: BumpVec<u8, _> = BumpVec::from_iter_in([1, 2, 3, 4], &bump);
-    /// assert_eq!(vec_a.capacity(), 4);
-    /// assert_eq!(bump.stats().allocated(), 4);
-    ///
-    /// let vec_b = vec_a.map(|i| i + 10);
-    /// assert_eq!(vec_b.capacity(), 4);
-    /// assert_eq!(bump.stats().allocated(), 4);
+    /// let a = BumpVec::from_iter_exact_in([0, 1, 2], &bump);
+    /// let b = a.map(NonZero::new);
+    /// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2)]");
     /// ```
     ///
     /// Mapping to a type with a smaller alignment and size (no allocation, capacity may grow):
@@ -1487,14 +1484,11 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// Mapping to a type with an equal alignment and size (no allocation):
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
+    /// # use core::num::NonZero;
     /// # let bump: Bump = Bump::try_new()?;
-    /// let vec_a: BumpVec<u8, _> = BumpVec::try_from_iter_in([1, 2, 3, 4], &bump)?;
-    /// assert_eq!(vec_a.capacity(), 4);
-    /// assert_eq!(bump.stats().allocated(), 4);
-    ///
-    /// let vec_b = vec_a.try_map(|i| i + 10)?;
-    /// assert_eq!(vec_b.capacity(), 4);
-    /// assert_eq!(bump.stats().allocated(), 4);
+    /// let a = BumpVec::try_from_iter_exact_in([0, 1, 2], &bump)?;
+    /// let b = a.try_map(NonZero::new)?;
+    /// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2)]");
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     ///
