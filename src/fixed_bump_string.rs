@@ -1000,6 +1000,7 @@ impl FixedBumpString<'_> {
             }
 
             // update len
+            #[allow(clippy::cast_sign_loss, clippy::cast_possible_wrap)]
             unsafe {
                 // Casting to `isize` is fine because per `Layout`'s rules all the `*len`s must be
                 // less than isize::MAX. Subtracting two positive `isize`s can't overflow.
