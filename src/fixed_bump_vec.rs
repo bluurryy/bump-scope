@@ -1646,10 +1646,11 @@ impl<'a, T, const N: usize> FixedBumpVec<'a, [T; N]> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
-    /// # let mut bump: Bump = Bump::new();
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
     /// #
-    /// let mut vec = mut_bump_vec![in &mut bump; [1, 2, 3], [4, 5, 6], [7, 8, 9]];
+    /// let mut vec = bump.alloc_fixed_vec(3);
+    /// vec.append([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
     /// assert_eq!(vec.pop(), Some([7, 8, 9]));
     ///
     /// let mut flattened = vec.into_flattened();
