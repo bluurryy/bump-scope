@@ -2581,6 +2581,7 @@ impl<'a> BumpBox<'a, dyn Any> {
     #[must_use]
     #[inline(always)]
     pub unsafe fn downcast_unchecked<T: Any>(self) -> BumpBox<'a, T> {
+        debug_assert!(self.is::<T>());
         BumpBox::from_raw(BumpBox::into_raw(self).cast())
     }
 }
@@ -2610,6 +2611,7 @@ impl<'a> BumpBox<'a, dyn Any + Send> {
     #[must_use]
     #[inline(always)]
     pub unsafe fn downcast_unchecked<T: Any>(self) -> BumpBox<'a, T> {
+        debug_assert!(self.is::<T>());
         BumpBox::from_raw(BumpBox::into_raw(self).cast())
     }
 }
@@ -2639,6 +2641,7 @@ impl<'a> BumpBox<'a, dyn Any + Send + Sync> {
     #[must_use]
     #[inline(always)]
     pub unsafe fn downcast_unchecked<T: Any>(self) -> BumpBox<'a, T> {
+        debug_assert!(self.is::<T>());
         BumpBox::from_raw(BumpBox::into_raw(self).cast())
     }
 }
