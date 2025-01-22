@@ -1455,7 +1455,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// ```
     ///
     /// Mapping to a type with a higher alignment or size is equivalent to
-    /// calling `from_iter_in(self.into_iter().map(f), ...)`:
+    /// calling `from_iter_in(into_iter().map(f), ...)`:
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::new();
@@ -1484,7 +1484,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// Errors if the allocation fails. An allocation can only occurs when the alignment or size of `U` is greater than that of `T`.
     ///
     /// # Examples
-    /// Mapping to a type with an equal alignment and size (allocator won't be touched):
+    /// Mapping to a type with an equal alignment and size (no allocation):
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::try_new()?;
@@ -1498,7 +1498,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
     /// ```
     ///
-    /// Mapping to a type with a smaller alignment and size (allocator won't be touched, capacity may grow):
+    /// Mapping to a type with a smaller alignment and size (no allocation, capacity may grow):
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::try_new()?;
@@ -1513,7 +1513,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// ```
     ///
     /// Mapping to a type with a higher alignment or size is equivalent to
-    /// calling `try_from_iter_in(self.into_iter().map(f), ...)`:
+    /// calling `try_from_iter_in(into_iter().map(f), ...)`:
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::try_new()?;
