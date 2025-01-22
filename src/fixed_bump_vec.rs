@@ -1658,8 +1658,8 @@ impl<'a, T, const N: usize> FixedBumpVec<'a, [T; N]> {
     #[must_use]
     pub fn into_flattened(self) -> FixedBumpVec<'a, T> {
         let (initialized, cap) = self.into_raw_parts();
-        let ptr = initialized.as_non_null_ptr();
-        let len = initialized.len();
+        let ptr = initialized.into_raw();
+        let len = ptr.len();
 
         let (new_len, new_cap) = if T::IS_ZST {
             (len.checked_mul(N).expect("vec len overflow"), usize::MAX)

@@ -2538,11 +2538,11 @@ impl<'a, T, const N: usize> BumpBox<'a, [[T; N]]> {
     /// ```
     #[must_use]
     pub fn into_flattened(self) -> BumpBox<'a, [T]> {
-        let ptr = self.as_non_null_ptr();
-        let len = self.len();
+        let ptr = self.into_raw();
+        let len = ptr.len();
 
         let new_len = if T::IS_ZST {
-            len.checked_mul(N).expect("vec len overflow")
+            len.checked_mul(N).expect("slice len overflow")
         } else {
             // SAFETY:
             // - `len * N` cannot overflow because the allocation is already in

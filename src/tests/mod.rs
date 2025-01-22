@@ -38,6 +38,7 @@ mod coerce_unsized;
 mod fixed_bump_vec;
 mod from_std;
 mod grow_vec;
+mod into_flattened;
 mod io_write;
 mod limited_allocator;
 mod mut_bump_vec_doc;

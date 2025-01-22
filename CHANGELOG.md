@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **fixed:** double-dropping elements when calling `into_flattened`
 - **added:** `(try_)replace_range` and `as_(mut_)ptr` to strings
 - **docs:** small improvements
 
