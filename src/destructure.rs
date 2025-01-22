@@ -1,4 +1,6 @@
 /// Allows you to destructure structs that have a drop implementation.
+///
+/// The drop implementation will not be called for `$ty` nor for any field that is not bound.
 macro_rules! destructure {
     (let $ty:ty {
         $($field:ident $(: $field_alias:ident)?),* $(,)?
@@ -83,7 +85,9 @@ mod tests {
         }
 
         impl Drop for Foo {
-            fn drop(&mut self) {}
+            fn drop(&mut self) {
+                unreachable!()
+            }
         }
 
         let foo = Foo {
