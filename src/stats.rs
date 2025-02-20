@@ -8,7 +8,7 @@ use core::{
 use crate::{
     chunk_header::{unallocated_chunk_header, ChunkHeader},
     polyfill::nonnull,
-    FmtFn, RawChunk,
+    RawChunk,
 };
 
 /// Provides statistics about the memory usage of the bump allocator.
@@ -133,46 +133,7 @@ impl<'a, const GUARANTEED_ALLOCATED: bool> Stats<'a, GUARANTEED_ALLOCATED> {
     }
 
     pub(crate) fn debug_format(self, name: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let alternate = f.alternate();
-        let mut debug = f.debug_struct(name);
-
-        if let Some(current) = self.get_current_chunk() {
-            fn fmt_list_compact<T: Debug>(iter: impl Iterator<Item = T> + Clone) -> impl Debug {
-                let list = FmtFn(move |f| f.debug_list().entries(iter.clone()).finish());
-                FmtFn(move |f| write!(f, "{list:?}"))
-            }
-
-            if alternate {
-                // low-level, verbose
-                let (index, first) = match current.iter_prev().enumerate().last() {
-                    Some((i, chunk)) => (i + 1, chunk),
-                    None => (0, current),
-                };
-                let chunks = FmtFn(move |f| f.debug_list().entries(ChunkNextIter { chunk: Some(first) }).finish());
-
-                debug.field("current", &index);
-                debug.field("chunks", &chunks);
-            } else {
-                // high-level
-                debug.field("prev", &fmt_list_compact(current.iter_prev().map(Chunk::size)));
-                debug.field("next", &fmt_list_compact(current.iter_next().map(Chunk::size)));
-                debug.field("curr", &current);
-            }
-
-            debug.finish()
-        } else {
-            const NONE: Option<()> = None::<()>;
-            const EMPTY: &[()] = &[];
-
-            if alternate {
-                debug.field("current", &NONE);
-                debug.field("chunks", &EMPTY);
-            } else {
-                debug.field("curr", &NONE);
-            }
-
-            debug.finish()
-        }
+        f.debug_struct(name).field("allocated", &self.allocated()).finish()
     }
 
     #[inline]
@@ -258,22 +219,10 @@ pub struct Chunk<'a> {
 
 impl Debug for Chunk<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if f.alternate() {
-            // low-level
-            f.debug_struct("Chunk")
-                .field("content_start", &self.content_start())
-                .field("content_end", &self.content_end())
-                .field("bump_position", &self.bump_position())
-                .field("start", &self.chunk_start())
-                .field("end", &self.chunk_end())
-                .finish()
-        } else {
-            // high-level
-            f.debug_struct("Chunk")
-                .field("allocated", &self.allocated())
-                .field("capacity", &self.capacity())
-                .finish()
-        }
+        f.debug_struct("Chunk")
+            .field("allocated", &self.allocated())
+            .field("capacity", &self.capacity())
+            .finish()
     }
 }
 
@@ -444,7 +393,7 @@ impl FusedIterator for ChunkPrevIter<'_> {}
 
 impl Debug for ChunkPrevIter<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_list().entries(self.map(Chunk::size)).finish()
+        f.debug_list().entries(*self).finish()
     }
 }
 

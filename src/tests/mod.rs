@@ -62,8 +62,8 @@ const OVERHEAD: usize = MALLOC_OVERHEAD + size_of::<ChunkHeader<Global>>();
 
 use crate::{
     chunk_size::AssumedMallocOverhead, mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice, panic_on_error,
-    stats::Chunk, Bump, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, ChunkSize, FmtFn, MinimumAlignment,
-    MutBumpString, MutBumpVec, MutBumpVecRev, SizedTypeProperties, SupportedMinimumAlignment,
+    stats::Chunk, Bump, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, ChunkSize, MinimumAlignment, MutBumpString,
+    MutBumpVec, MutBumpVecRev, SizedTypeProperties, SupportedMinimumAlignment,
 };
 
 use allocator_api2::alloc::Global as System;
@@ -386,8 +386,7 @@ fn macro_syntax<const UP: bool>() {
 fn debug_sizes<const UP: bool>(bump: &Bump<Global, 1, UP>) {
     let iter = bump.stats().small_to_big();
     let vec = iter.map(Chunk::size).collect::<Vec<_>>();
-    let sizes = FmtFn(|f| write!(f, "{vec:?}"));
-    dbg!(sizes);
+    eprintln!("sizes: {vec:?}");
 }
 
 fn force_alloc_new_chunk<const UP: bool>(bump: &BumpScope<Global, 1, UP>) {
