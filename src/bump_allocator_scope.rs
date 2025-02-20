@@ -8,7 +8,7 @@ use crate::{
 /// # Safety
 ///
 /// This trait must only be implemented when allocations live for `'a`.
-/// In other words this function must be sound:
+/// For example this function must be sound:
 ///
 /// ```
 /// # #![allow(dead_code)]

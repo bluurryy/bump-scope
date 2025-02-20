@@ -12,7 +12,9 @@ use crate::{handle_alloc_error, panic_on_error};
 
 /// A bump allocator.
 ///
-/// A bump allocator is much more relaxed in what memory block parameters it allows. Notably:
+/// A bump allocator is much more relaxed in what memory block parameters it allows.
+///
+/// Notably:
 /// - You can call `grow*`, `shrink` and `deallocate` with pointers that did not come from this allocator. In this case:
 ///   - `grow*` will always allocate a new memory block.
 ///   - `deallocate` will do nothing
@@ -20,17 +22,20 @@ use crate::{handle_alloc_error, panic_on_error};
 /// - Memory blocks can be split.
 /// - `deallocate` can be called with any pointer or alignment when the size is `0`.
 ///
-/// Handling of foreign pointers is necessary for implementing [`BumpVec::from_parts`][from_parts] and [`BumpBox::into_box`][into_box].
-/// Memory block splitting is necessary for [`split_off`][split_off] and [`split_at`][split_at].
+/// Examples:
+/// - Handling of foreign pointers is necessary for implementing [`BumpVec::from_parts`][from_parts] and [`BumpBox::into_box`][into_box].
+/// - Memory block splitting is necessary for [`split_off`][split_off] and [`split_at`][split_at].
+/// - Deallocate with a size of `0` is used in the drop implementation of [`BumpVec`][BumpVec].
 ///
 /// # Safety
 ///
-/// An implementor must support the more lax conditions described above.
+/// An implementor must support the conditions described above.
 ///
 /// [into_box]: crate::BumpBox::into_box
 /// [from_parts]: crate::BumpVec::from_parts
 /// [split_off]: crate::BumpVec::split_off
 /// [split_at]: crate::BumpBox::split_at
+/// [BumpVec]: crate::BumpVec
 // FIXME: properly document the methods and remove `doc(hidden)`
 #[allow(clippy::missing_errors_doc)]
 pub unsafe trait BumpAllocator: Allocator {
