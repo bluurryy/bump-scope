@@ -350,7 +350,7 @@ use core::convert::Infallible;
 use core::{
     alloc::Layout,
     ffi::CStr,
-    fmt::{self, Debug},
+    fmt,
     mem::{self, MaybeUninit},
     num::NonZeroUsize,
     ptr::NonNull,
@@ -460,19 +460,6 @@ fn bump_down(addr: NonZeroUsize, size: usize, align: usize) -> usize {
 const unsafe fn assume_unchecked(condition: bool) {
     if !condition {
         core::hint::unreachable_unchecked();
-    }
-}
-
-struct FmtFn<F>(F)
-where
-    F: Fn(&mut fmt::Formatter<'_>) -> fmt::Result;
-
-impl<F> Debug for FmtFn<F>
-where
-    F: Fn(&mut fmt::Formatter<'_>) -> fmt::Result,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0(f)
     }
 }
 

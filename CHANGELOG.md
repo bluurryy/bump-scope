@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **changed:** simpler and shorter `Debug` output for `Bump(Scope(Guard(Root)))` and `Chunk(NextIter, PrevIter)`
+
 ## 0.16.1 (2025-01-22)
 - **fixed:** double-dropping elements when calling `into_flattened`
 - **added:** `(try_)replace_range` and `as_(mut_)ptr` to strings
