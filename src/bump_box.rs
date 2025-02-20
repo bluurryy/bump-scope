@@ -201,7 +201,8 @@ pub struct BumpBox<'a, T: ?Sized> {
 /// # _ = unsized_box_dyn;
 /// ```
 /// On nightly with the feature "nightly-coerce-unsized":
-/// ```
+#[cfg_attr(feature = "nightly-coerce-unsized", doc = "```")]
+#[cfg_attr(not(feature = "nightly-coerce-unsized"), doc = "```ignore")]
 /// use bump_scope::{ Bump, BumpBox };
 /// use core::any::Any;
 ///
