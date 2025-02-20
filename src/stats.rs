@@ -69,7 +69,11 @@ impl<'a, const GUARANTEED_ALLOCATED: bool> Stats<'a, GUARANTEED_ALLOCATED> {
         sum
     }
 
-    /// Returns the amount of allocated bytes. This includes padding and wasted space due to reallocations.
+    /// Returns the amount of allocated bytes.
+    /// This includes padding and wasted space due to reallocations.
+    ///
+    /// This is not the same as the sum of the chunks' `allocated` property!
+    /// Instead this is the `allocated` of the current chunk plus the total `capacity` of all previous chunks.
     #[must_use]
     pub fn allocated(self) -> usize {
         let current = match self.get_current_chunk() {
@@ -82,7 +86,10 @@ impl<'a, const GUARANTEED_ALLOCATED: bool> Stats<'a, GUARANTEED_ALLOCATED> {
         sum
     }
 
-    /// Returns the total remaining capacity of all chunks.
+    /// Returns the remaining capacity in bytes.
+    ///
+    /// This is not the same as the sum of the chunks' `remaining` property!
+    /// Instead this is the `remaining` of the current chunk plus the total `capacity` of all next chunks.
     #[must_use]
     pub fn remaining(self) -> usize {
         let current = match self.get_current_chunk() {
@@ -353,7 +360,12 @@ impl<'a> Chunk<'a> {
         raw!(self.capacity())
     }
 
-    /// Returns the amount of allocated bytes. This includes padding and wasted space due to reallocations.
+    /// Returns the amount of allocated bytes.
+    /// This includes padding and wasted space due to reallocations.
+    ///
+    /// This property can be misleading for chunks that come after the current chunk because
+    /// their `bump_position` and consequently the `allocated` property is not reset until
+    /// they become the current chunk again.
     #[must_use]
     #[inline]
     pub fn allocated(self) -> usize {
@@ -361,6 +373,10 @@ impl<'a> Chunk<'a> {
     }
 
     /// Returns the remaining capacity.
+    ///
+    /// This property can be misleading for chunks that come after the current chunk because
+    /// their `bump_position` and consequently the `remaining` property is not reset until
+    /// they become the current chunk again.
     #[must_use]
     #[inline]
     pub fn remaining(self) -> usize {
@@ -396,6 +412,9 @@ impl<'a> Chunk<'a> {
     }
 
     /// Returns the bump pointer. It lies within the chunk's content range.
+    ///
+    /// This property can be misleading for chunks that come after the current chunk because
+    /// their `bump_position` is not reset until they become the current chunk again.
     #[must_use]
     #[inline]
     pub fn bump_position(self) -> NonNull<u8> {
