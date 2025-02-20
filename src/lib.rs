@@ -207,8 +207,8 @@
 //! Growing allocations other than the most recent one will require a new allocation and the old memory block becomes wasted space.
 //! Shrinking or deallocating allocations other than the most recent one does nothing, which means wasted space.
 //!
-//! A bump allocator does not *require* `deallocate` or `shrink` to free memory.
-//! After all, memory will be reclaimed when exiting a scope or calling `reset`.
+//! A bump allocator does not require `deallocate` or `shrink` to free memory.
+//! After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
 //! You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using [`WithoutDealloc`](crate::WithoutDealloc) and [`WithoutShrink`](crate::WithoutShrink).
 //! ```
 //! use bump_scope::{ Bump, WithoutDealloc };
