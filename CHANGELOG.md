@@ -2,6 +2,7 @@
 
 ## Unreleased
 - **changed:** simpler and shorter `Debug` output for `Bump(Scope(Guard(Root)))` and `Chunk(NextIter, PrevIter)`
+- **docs:** improvements
 
 ## 0.16.1 (2025-01-22)
 - **fixed:** double-dropping elements when calling `into_flattened`
