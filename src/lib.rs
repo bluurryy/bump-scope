@@ -240,6 +240,7 @@
 //!   With this you can bump allocate collections from the standard library.
 //! * **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
 //!   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
+//!   You can unsize a `BumpBox` in stable without this feature using [`unsize_bump_box`].
 //! * **`nightly-exact-size-is-empty`** —  Implements `is_empty` manually for some iterators.
 //! * **`nightly-trusted-len`** —  Implements `TrustedLen` for some iterators.
 //!
