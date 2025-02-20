@@ -47,6 +47,7 @@ nightly-allocator-api = ["allocator-api2/nightly", "hashbrown/nightly"]
 
 ## Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
 ## With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
+## You can unsize a `BumpBox` in stable without this feature using [`unsize_bump_box`].
 nightly-coerce-unsized = []
 
 ## Implements `is_empty` manually for some iterators.
