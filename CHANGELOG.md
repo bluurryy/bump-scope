@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.16.3 (2025-02-21)
 - **added:** `capacity` field to the `Debug` representation of `Stats` and `Bump(Scope(Guard(Root)))`
 
 ## 0.16.2 (2025-02-21)
