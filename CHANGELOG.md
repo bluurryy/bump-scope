@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.16.2 (2025-02-21)
 - **changed:** simpler and shorter `Debug` output for `Bump(Scope(Guard(Root)))` and `Chunk(NextIter, PrevIter)`
 - **docs:** removed `rust-patterns` from `package.categories`, added `no-std::no-alloc`
 - **docs:** documentation improvements
