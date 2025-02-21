@@ -133,7 +133,10 @@ impl<'a, const GUARANTEED_ALLOCATED: bool> Stats<'a, GUARANTEED_ALLOCATED> {
     }
 
     pub(crate) fn debug_format(self, name: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct(name).field("allocated", &self.allocated()).finish()
+        f.debug_struct(name)
+            .field("allocated", &self.allocated())
+            .field("capacity", &self.capacity())
+            .finish()
     }
 
     #[inline]
