@@ -483,8 +483,8 @@ where
     ) -> Result<(NonNull<T>, usize), B> {
         let Range { start, end } = self.prepare_allocation_range::<B, T>(cap)?;
 
-        // NB: We can't use `sub_ptr`, because the size is not a multiple of `T`'s.
-        let capacity = unsafe { nonnull::byte_sub_ptr(end, start) } / T::SIZE;
+        // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
+        let capacity = unsafe { nonnull::byte_offset_from_unsigned(end, start) } / T::SIZE;
 
         Ok((start, capacity))
     }
@@ -496,8 +496,8 @@ where
     ) -> Result<(NonNull<T>, usize), B> {
         let Range { start, end } = self.prepare_allocation_range::<B, T>(cap)?;
 
-        // NB: We can't use `sub_ptr`, because the size is not a multiple of `T`'s.
-        let capacity = unsafe { nonnull::byte_sub_ptr(end, start) } / T::SIZE;
+        // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
+        let capacity = unsafe { nonnull::byte_offset_from_unsigned(end, start) } / T::SIZE;
 
         Ok((end, capacity))
     }
@@ -505,7 +505,7 @@ where
     /// Returns a pointer range.
     /// The start and end pointers are aligned.
     /// But `end - start` is *not* a multiple of `size_of::<T>()`.
-    /// So `end.sub_ptr(start)` may not be used!
+    /// So `end.offset_from_unsigned(start)` may not be used!
     #[inline(always)]
     fn prepare_allocation_range<B: ErrorBehavior, T>(&mut self, cap: usize) -> Result<Range<NonNull<T>>, B> {
         let layout = match ArrayLayout::array::<T>(cap) {

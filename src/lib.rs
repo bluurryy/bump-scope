@@ -19,7 +19,6 @@
         drain_keep_rest,
         iter_next_chunk,
         iter_advance_by,
-        extract_if,
         slice_partition_dedup,
         iter_partition_in_place,
         offset_of_enum,
@@ -505,13 +504,13 @@ pub mod private {
     }
 
     #[must_use]
-    #[allow(clippy::needless_lifetimes)]
+    #[allow(clippy::needless_lifetimes, clippy::elidable_lifetime_names)]
     pub fn bump_box_into_raw_with_lifetime<'a, T: ?Sized>(boxed: BumpBox<'a, T>) -> (NonNull<T>, &'a ()) {
         (boxed.into_raw(), &())
     }
 
     #[must_use]
-    #[allow(clippy::needless_lifetimes)]
+    #[allow(clippy::needless_lifetimes, clippy::elidable_lifetime_names)]
     pub unsafe fn bump_box_from_raw_with_lifetime<'a, T: ?Sized>(ptr: NonNull<T>, _lifetime: &'a ()) -> BumpBox<'a, T> {
         BumpBox::from_raw(ptr)
     }

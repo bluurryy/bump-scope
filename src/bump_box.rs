@@ -2456,12 +2456,12 @@ impl<'a, T> BumpBox<'a, [T]> {
                 unsafe {
                     // drop `T`s
                     let drop_ptr = self.src.add(1);
-                    let drop_len = pointer::sub_ptr(self.end, drop_ptr);
+                    let drop_len = pointer::offset_from_unsigned(self.end, drop_ptr);
                     ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
 
                     // drop `U`s
                     let drop_ptr = self.ptr.cast::<U>().as_ptr();
-                    let drop_len = pointer::sub_ptr(self.dst, drop_ptr);
+                    let drop_len = pointer::offset_from_unsigned(self.dst, drop_ptr);
                     ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
                 }
             }

@@ -154,7 +154,7 @@ pub(crate) fn bump_up(
 
         // Doesn't exceed `end` because `aligned_down + align + size` didn't.
         start = aligned_down + layout.align();
-    };
+    }
 
     if (align_is_const && size_is_multiple_of_align && layout.align() >= min_align)
         || (size_is_const && (layout.size() % min_align == 0))
@@ -263,7 +263,7 @@ pub(crate) fn bump_down(
         if end < start {
             return None;
         }
-    };
+    }
 
     debug_assert_aligned!(end, layout.align());
     debug_assert_aligned!(end, min_align);

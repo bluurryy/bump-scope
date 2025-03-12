@@ -68,7 +68,7 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
         if T::IS_ZST {
             nonnull::addr(self.pos).get().wrapping_sub(nonnull::addr(self.start).get())
         } else {
-            unsafe { nonnull::sub_ptr(self.pos, self.start) }
+            unsafe { nonnull::offset_from_unsigned(self.pos, self.start) }
         }
     }
 
@@ -77,7 +77,7 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
         if T::IS_ZST {
             nonnull::addr(self.end).get().wrapping_sub(nonnull::addr(self.start).get())
         } else {
-            unsafe { nonnull::sub_ptr(self.end, self.start) }
+            unsafe { nonnull::offset_from_unsigned(self.end, self.start) }
         }
     }
 

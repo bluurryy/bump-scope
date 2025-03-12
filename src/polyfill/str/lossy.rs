@@ -178,7 +178,7 @@ pub struct Utf8Chunks<'a> {
     source: &'a [u8],
 }
 
-impl<'a> Utf8Chunks<'a> {
+impl Utf8Chunks<'_> {
     #[doc(hidden)]
     pub fn debug(&self) -> Debug<'_> {
         Debug(self.source)

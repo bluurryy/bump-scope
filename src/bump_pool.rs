@@ -281,7 +281,7 @@ where
 }
 
 // This exists as a "safer" transmute that only transmutes the `'a` lifetime parameter.
-#[allow(clippy::needless_lifetimes)]
+#[allow(clippy::needless_lifetimes, clippy::elidable_lifetime_names)]
 unsafe fn transmute_lifetime<'from, 'to, 'b, A, const MIN_ALIGN: usize, const UP: bool>(
     scope: &'b BumpScope<'from, A, MIN_ALIGN, UP>,
 ) -> &'b BumpScope<'to, A, MIN_ALIGN, UP> {
@@ -289,7 +289,7 @@ unsafe fn transmute_lifetime<'from, 'to, 'b, A, const MIN_ALIGN: usize, const UP
 }
 
 // This exists as a "safer" transmute that only transmutes the `'a` lifetime parameter.
-#[allow(clippy::needless_lifetimes)]
+#[allow(clippy::needless_lifetimes, clippy::elidable_lifetime_names)]
 unsafe fn transmute_lifetime_mut<'from, 'to, 'b, A, const MIN_ALIGN: usize, const UP: bool>(
     scope: &'b mut BumpScope<'from, A, MIN_ALIGN, UP>,
 ) -> &'b mut BumpScope<'to, A, MIN_ALIGN, UP> {

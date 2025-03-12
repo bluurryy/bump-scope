@@ -29,30 +29,29 @@ pub(crate) unsafe fn len<T>(ptr: *const [T]) -> usize {
     (*ptr).len()
 }
 
-/// Calculates the distance between two pointers, *where it's known that
+/// Calculates the distance between two pointers within the same allocation, *where it's known that
 /// `self` is equal to or greater than `origin`*. The returned value is in
-/// units of T: the distance in bytes is divided by `mem::size_of::<T>()`.
+/// units of T: the distance in bytes is divided by `size_of::<T>()`.
 ///
 /// This computes the same value that [`offset_from`](#method.offset_from)
 /// would compute, but with the added precondition that the offset is
-/// [guaranteed allocated]o be non-negative.  This method is equivalent to
+/// guaranteed to be non-negative.  This method is equivalent to
 /// `usize::try_from(self.offset_from(origin)).unwrap_unchecked()`,
 /// but it provides slightly more information to the optimizer, which can
 /// sometimes allow it to optimize slightly better with some backends.
 ///
-/// This method can be though of as recovering the `count` that was passed
+/// This method can be thought of as recovering the `count` that was passed
 /// to [`add`](#method.add) (or, with the parameters in the other order,
 /// to [`sub`](#method.sub)).  The following are all equivalent, assuming
 /// that their safety preconditions are met:
-/// ```
-/// # #![feature(ptr_sub_ptr)]
-/// # unsafe fn blah(ptr: *const i32, origin: *const i32, count: usize) -> bool {
-/// ptr.sub_ptr(origin) == count
+/// ```rust
+/// # unsafe fn blah(ptr: *const i32, origin: *const i32, count: usize) -> bool { unsafe {
+/// ptr.offset_from_unsigned(origin) == count
 /// # &&
 /// origin.add(count) == ptr
 /// # &&
 /// ptr.sub(count) == origin
-/// # }
+/// # } }
 /// ```
 ///
 /// # Safety
@@ -74,26 +73,24 @@ pub(crate) unsafe fn len<T>(ptr: *const [T]) -> usize {
 /// # Examples
 ///
 /// ```
-/// #![feature(ptr_sub_ptr)]
-///
 /// let a = [0; 5];
 /// let ptr1: *const i32 = &a[1];
 /// let ptr2: *const i32 = &a[3];
 /// unsafe {
-///     assert_eq!(ptr2.sub_ptr(ptr1), 2);
+///     assert_eq!(ptr2.offset_from_unsigned(ptr1), 2);
 ///     assert_eq!(ptr1.add(2), ptr2);
 ///     assert_eq!(ptr2.sub(2), ptr1);
-///     assert_eq!(ptr2.sub_ptr(ptr2), 0);
+///     assert_eq!(ptr2.offset_from_unsigned(ptr2), 0);
 /// }
 ///
 /// // This would be incorrect, as the pointers are not correctly ordered:
-/// // ptr1.sub_ptr(ptr2)
+/// // ptr1.offset_from_unsigned(ptr2)
 /// ```
 #[inline]
 #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
 #[allow(clippy::cast_sign_loss)]
 #[allow(clippy::checked_conversions)]
-pub(crate) unsafe fn sub_ptr<T>(lhs: *const T, rhs: *const T) -> usize {
+pub(crate) unsafe fn offset_from_unsigned<T>(lhs: *const T, rhs: *const T) -> usize {
     assume_unchecked(lhs >= rhs);
     let pointee_size = mem::size_of::<T>();
     assert!(0 < pointee_size && pointee_size <= isize::MAX as usize);

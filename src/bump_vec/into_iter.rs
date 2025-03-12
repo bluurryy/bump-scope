@@ -130,7 +130,7 @@ impl<T, A: BumpAllocator> Iterator for IntoIter<T, A> {
         let exact = if T::IS_ZST {
             nonnull::addr(self.end).get().wrapping_sub(nonnull::addr(self.ptr).get())
         } else {
-            unsafe { nonnull::sub_ptr(self.end, self.ptr) }
+            unsafe { nonnull::offset_from_unsigned(self.end, self.ptr) }
         };
         (exact, Some(exact))
     }

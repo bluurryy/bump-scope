@@ -437,7 +437,6 @@ impl<T, A> MutBumpVecRev<T, A> {
     /// ```
     ///
     /// [`clear`]: Self::clear
-    /// [`drain`]: Self::drain
     pub fn truncate(&mut self, len: usize) {
         // This is safe because:
         //

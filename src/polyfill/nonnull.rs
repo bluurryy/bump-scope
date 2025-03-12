@@ -113,9 +113,9 @@ pub(crate) fn with_addr<T>(ptr: NonNull<T>, addr: NonZeroUsize) -> NonNull<T> {
     unsafe { NonNull::new_unchecked(sptr::Strict::with_addr(ptr.as_ptr(), addr.get())) }
 }
 
-/// Calculates the distance between two pointers, *where it's known that
+/// Calculates the distance between two pointers within the same allocation, *where it's known that
 /// `self` is equal to or greater than `origin`*. The returned value is in
-/// units of T: the distance in bytes is divided by `mem::size_of::<T>()`.
+/// units of T: the distance in bytes is divided by `size_of::<T>()`.
 ///
 /// This computes the same value that [`offset_from`](#method.offset_from)
 /// would compute, but with the added precondition that the offset is
@@ -128,15 +128,14 @@ pub(crate) fn with_addr<T>(ptr: NonNull<T>, addr: NonZeroUsize) -> NonNull<T> {
 /// to [`add`](#method.add) (or, with the parameters in the other order,
 /// to [`sub`](#method.sub)).  The following are all equivalent, assuming
 /// that their safety preconditions are met:
-/// ```
-/// # #![feature(ptr_sub_ptr)]
-/// # unsafe fn blah(ptr: *mut i32, origin: *mut i32, count: usize) -> bool {
-/// ptr.sub_ptr(origin) == count
+/// ```rust
+/// # unsafe fn blah(ptr: std::ptr::NonNull<u32>, origin: std::ptr::NonNull<u32>, count: usize) -> bool { unsafe {
+/// ptr.offset_from_unsigned(origin) == count
 /// # &&
 /// origin.add(count) == ptr
 /// # &&
 /// ptr.sub(count) == origin
-/// # }
+/// # } }
 /// ```
 ///
 /// # Safety
@@ -158,33 +157,32 @@ pub(crate) fn with_addr<T>(ptr: NonNull<T>, addr: NonZeroUsize) -> NonNull<T> {
 /// # Examples
 ///
 /// ```
-/// #![feature(ptr_sub_ptr)]
+/// use std::ptr::NonNull;
 ///
-/// let mut a = [0; 5];
-/// let p: *mut i32 = a.as_mut_ptr();
+/// let a = [0; 5];
+/// let ptr1: NonNull<u32> = NonNull::from(&a[1]);
+/// let ptr2: NonNull<u32> = NonNull::from(&a[3]);
 /// unsafe {
-///     let ptr1: *mut i32 = p.add(1);
-///     let ptr2: *mut i32 = p.add(3);
-///
-///     assert_eq!(ptr2.sub_ptr(ptr1), 2);
+///     assert_eq!(ptr2.offset_from_unsigned(ptr1), 2);
 ///     assert_eq!(ptr1.add(2), ptr2);
 ///     assert_eq!(ptr2.sub(2), ptr1);
-///     assert_eq!(ptr2.sub_ptr(ptr2), 0);
+///     assert_eq!(ptr2.offset_from_unsigned(ptr2), 0);
 /// }
 ///
 /// // This would be incorrect, as the pointers are not correctly ordered:
-/// // ptr1.offset_from(ptr2)
+/// // ptr1.offset_from_unsigned(ptr2)
+/// ```
 #[must_use]
 #[inline(always)]
-pub(crate) unsafe fn sub_ptr<T>(lhs: NonNull<T>, rhs: NonNull<T>) -> usize {
+pub(crate) unsafe fn offset_from_unsigned<T>(lhs: NonNull<T>, rhs: NonNull<T>) -> usize {
     debug_assert!((addr(lhs).get() - addr(rhs).get()) % T::SIZE == 0);
-    pointer::sub_ptr(lhs.as_ptr(), rhs.as_ptr())
+    pointer::offset_from_unsigned(lhs.as_ptr(), rhs.as_ptr())
 }
 
 #[must_use]
 #[inline(always)]
-pub(crate) unsafe fn byte_sub_ptr<T>(lhs: NonNull<T>, rhs: NonNull<T>) -> usize {
-    sub_ptr::<u8>(lhs.cast(), rhs.cast())
+pub(crate) unsafe fn byte_offset_from_unsigned<T>(lhs: NonNull<T>, rhs: NonNull<T>) -> usize {
+    offset_from_unsigned::<u8>(lhs.cast(), rhs.cast())
 }
 
 /// Creates a non-null raw slice from a thin pointer and a length.
