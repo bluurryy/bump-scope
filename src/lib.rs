@@ -911,6 +911,11 @@ macro_rules! define_alloc_methods {
 
 pub(crate) use define_alloc_methods;
 
+// The implementations of these methods lives in `bump_scope.rs`.
+//
+// TODO(blocked): once the nightly feature "clone_to_uninit" is stabilized we
+// can do away with `alloc_slice_{clone,copy}`, `alloc_str`, `alloc_cstr` and have
+// a generic `alloc_clone<T: ?Sized + CloneToUninit>(_: &T)` instead.
 define_alloc_methods! {
     macro alloc_methods
 
