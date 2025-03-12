@@ -11,9 +11,9 @@ pre-release:
   just spellcheck
   just doc
   just check
+  cargo +stable semver-checks
   cargo test --all-features
   cargo miri test --all-features
-  cargo +stable semver-checks
 
 check: 
   just check-fmt
@@ -31,7 +31,6 @@ check-fmt:
 check-clippy:
   cargo clippy --tests --all-features
   cargo clippy --no-default-features
-  cargo clippy --tests --no-default-features --features alloc,panic-on-alloc
   cd crates/fuzzing-support; cargo clippy --tests
   cd crates/test-fallibility; cargo clippy --tests
   cd fuzz; cargo clippy
