@@ -28,23 +28,18 @@ jobs:
     strategy:
       matrix:
         toolchain: ["1.64.0", "stable", "nightly"]
-        features: ["--no-default-features"]
-        tests: [""]
+        flags: ["--no-default-features"]
         include:
           - toolchain: "nightly"
-            features: "--all-features"
-            tests: "--tests"
-        exclude:
-          - toolchain: "nightly"
-            tests: ""
+            flags: "--all-features --tests"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{matrix.toolchain}}
           components: clippy
-      - run: cargo clippy --all ${{matrix.tests}}
-      - run: cargo clippy --all ${{matrix.tests}} ${{matrix.features}}
+      - run: cargo clippy --all
+      - run: cargo clippy --all ${{matrix.flags}}
   clippy-benches:
     runs-on: ubuntu-latest
     steps:
@@ -69,7 +64,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
-      - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@cargo-hack
       - uses: taiki-e/install-action@cargo-minimal-versions
       - uses: Swatinem/rust-cache@v2
