@@ -1,7 +1,7 @@
 # Changelog
 
 ## Unreleased
-- **added:** `BumpBox<T>` now implements the `Fn*` traits if `T` does (just like `Box`). This requires the new `"nightly-fn-traits"` feature.
+- **added:** with the new `"nightly-fn-traits"` feature, `BumpBox<T>` implements the `Fn*` traits if `T` does (just like `Box`). This makes `BumpBox<T: FnOnce + ?Sized>` callable.
 
 ## 0.16.3 (2025-02-21)
 - **added:** `capacity` field to the `Debug` representation of `Stats` and `Bump(Scope(Guard(Root)))`
