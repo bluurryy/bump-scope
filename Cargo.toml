@@ -56,6 +56,9 @@ nightly-exact-size-is-empty = []
 ## Implements `TrustedLen` for some iterators.
 nightly-trusted-len = []
 
+## Implements `Fn*` traits for `BumpBox<T>`. Makes `BumpBox<T: FnOnce>` callable. Requires alloc crate.
+nightly-fn-traits = []
+
 [dev-dependencies]
 trybuild = "1.0.90"
 expect-test = "1.4.1"

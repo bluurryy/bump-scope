@@ -5,10 +5,15 @@
 // Especially `BumpBox` methods, vectors, strings, `polyfill` and `tests/from_std` are based on code from the standard library.
 
 #![no_std]
-#![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api, vec_into_raw_parts))]
+#![cfg_attr(
+    any(feature = "nightly-allocator-api", feature = "nightly-fn-traits"),
+    feature(allocator_api)
+)]
+#![cfg_attr(feature = "nightly-allocator-api", feature(vec_into_raw_parts))]
 #![cfg_attr(feature = "nightly-coerce-unsized", feature(coerce_unsized, unsize))]
 #![cfg_attr(feature = "nightly-exact-size-is-empty", feature(exact_size_is_empty))]
 #![cfg_attr(feature = "nightly-trusted-len", feature(trusted_len))]
+#![cfg_attr(feature = "nightly-fn-traits", feature(fn_traits, tuple_trait, unboxed_closures))]
 #![cfg_attr(
     test,
     feature(
@@ -242,6 +247,7 @@
 //!   You can unsize a `BumpBox` in stable without this feature using [`unsize_bump_box`].
 //! * **`nightly-exact-size-is-empty`** —  Implements `is_empty` manually for some iterators.
 //! * **`nightly-trusted-len`** —  Implements `TrustedLen` for some iterators.
+//! * **`nightly-fn-traits`** —  Implements `Fn*` traits for `BumpBox<T>`. Makes `BumpBox<T: FnOnce>` callable. Requires alloc crate.
 //!
 //! # Bumping upwards or downwards?
 //! Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
@@ -275,7 +281,7 @@
 #[cfg(any(feature = "std", test))]
 extern crate std;
 
-#[cfg(feature = "alloc")]
+#[cfg(any(feature = "alloc", feature = "nightly-fn-traits"))]
 extern crate alloc;
 
 mod allocator;
