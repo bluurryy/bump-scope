@@ -1,6 +1,6 @@
 [package]
 name = "bump-scope"
-version = "0.16.3"
+version = "0.16.4"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types."

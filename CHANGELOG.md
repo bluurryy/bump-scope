@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.16.4 (2025-04-10)
 - **added:** with the new `"nightly-fn-traits"` feature, `BumpBox<T>` implements the `Fn*` traits if `T` does (just like `Box`). This makes `BumpBox<T: FnOnce + ?Sized>` callable.
 
 ## 0.16.3 (2025-02-21)

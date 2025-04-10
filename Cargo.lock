@@ -37,7 +37,7 @@ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
 name = "bump-scope"
-version = "0.16.3"
+version = "0.16.4"
 dependencies = [
  "allocator-api2",
  "bumpalo",
