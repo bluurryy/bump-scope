@@ -3099,9 +3099,10 @@ impl<Args: Tuple, F: FnOnce<Args> + ?Sized> FnOnce<Args> for BumpBox<'_, F> {
     type Output = <F as FnOnce<Args>>::Output;
 
     extern "rust-call" fn call_once(self, args: Args) -> Self::Output {
-        use alloc::boxed::Box;
-
-        use allocator_api2::alloc::{AllocError, Allocator};
+        use alloc::{
+            alloc::{AllocError, Allocator},
+            boxed::Box,
+        };
 
         struct NoopAllocator;
 
