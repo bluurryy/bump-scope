@@ -13,6 +13,9 @@ use core::{
     str,
 };
 
+#[cfg(feature = "nightly-fn-traits")]
+use core::marker::Tuple;
+
 #[cfg(feature = "std")]
 use alloc::{string::String, vec::Vec};
 
@@ -3088,6 +3091,57 @@ impl<T: ?Sized + std::io::BufRead> std::io::BufRead for BumpBox<'_, T> {
     #[inline(always)]
     fn read_line(&mut self, buf: &mut String) -> std::io::Result<usize> {
         T::read_line(self, buf)
+    }
+}
+
+#[cfg(feature = "nightly-fn-traits")]
+impl<Args: Tuple, F: FnOnce<Args> + ?Sized> FnOnce<Args> for BumpBox<'_, F> {
+    type Output = <F as FnOnce<Args>>::Output;
+
+    extern "rust-call" fn call_once(self, args: Args) -> Self::Output {
+        use alloc::boxed::Box;
+
+        use allocator_api2::alloc::{AllocError, Allocator};
+
+        struct NoopAllocator;
+
+        // SAFETY:
+        // An allocator that always fails allocation and does nothing on deallocation
+        // satisfies the safety invariants.
+        unsafe impl Allocator for NoopAllocator {
+            fn allocate(&self, _layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+                Err(AllocError)
+            }
+
+            unsafe fn deallocate(&self, _ptr: NonNull<u8>, _layout: Layout) {}
+        }
+
+        let ptr = self.into_raw().as_ptr();
+
+        // SAFETY:
+        // The allocator will only be used to call `deallocate` which does nothing
+        // just like the `BumpBox` would do no deallocation on drop.
+        //
+        // The `Box` or its allocator do not encode the lifetime of the `BumpBox` but
+        // it's fine here because it only lives in this function.
+        unsafe {
+            let boxed = Box::from_raw_in(ptr, NoopAllocator);
+            <Box<F, NoopAllocator> as FnOnce<Args>>::call_once(boxed, args)
+        }
+    }
+}
+
+#[cfg(feature = "nightly-fn-traits")]
+impl<Args: Tuple, F: FnMut<Args> + ?Sized> FnMut<Args> for BumpBox<'_, F> {
+    extern "rust-call" fn call_mut(&mut self, args: Args) -> Self::Output {
+        <F as FnMut<Args>>::call_mut(self, args)
+    }
+}
+
+#[cfg(feature = "nightly-fn-traits")]
+impl<Args: Tuple, F: Fn<Args> + ?Sized> Fn<Args> for BumpBox<'_, F> {
+    extern "rust-call" fn call(&self, args: Args) -> Self::Output {
+        <F as Fn<Args>>::call(self, args)
     }
 }
 
