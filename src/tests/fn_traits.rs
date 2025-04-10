@@ -52,4 +52,18 @@ fn does_impl() {
     let string = String::from("hello");
     let f = bump.alloc(|| drop(string));
     impls_fn_once(&f);
+
+    let f: BumpBox<dyn Fn()> = bump.alloc(|| {});
+    impls_fn_once(&f);
+    impls_fn_mut(&f);
+    impls_fn(&f);
+
+    let mut string = String::from("hello");
+    let f: BumpBox<dyn FnMut()> = bump.alloc(|| string.push('x'));
+    impls_fn_once(&f);
+    impls_fn_mut(&f);
+
+    let string = String::from("hello");
+    let f: BumpBox<dyn FnOnce()> = bump.alloc(|| drop(string));
+    impls_fn_once(&f);
 }

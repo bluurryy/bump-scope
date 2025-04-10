@@ -36,7 +36,7 @@ mod chunk_size;
 #[cfg(feature = "nightly-coerce-unsized")]
 mod coerce_unsized;
 mod fixed_bump_vec;
-#[cfg(feature = "nightly-fn-traits")]
+#[cfg(all(feature = "nightly-fn-traits", feature = "nightly-coerce-unsized"))]
 mod fn_traits;
 mod from_std;
 mod grow_vec;
