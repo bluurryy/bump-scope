@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **added:** `pop_if` method to vector types
+
 ## 0.16.4 (2025-04-10)
 - **added:** with the new `"nightly-fn-traits"` feature, `BumpBox<T>` implements the `Fn*` traits if `T` does (just like `Box`). This makes `BumpBox<T: FnOnce + ?Sized>` callable.
 

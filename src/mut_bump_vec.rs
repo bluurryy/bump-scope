@@ -212,6 +212,31 @@ impl<T, A> MutBumpVec<T, A> {
         unsafe { self.fixed.cook_mut() }.pop()
     }
 
+    /// Removes and returns the last element from a vector if the predicate
+    /// returns `true`, or [`None`] if the predicate returns false or the vector
+    /// is empty (the predicate will not be called in that case).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4];
+    /// let pred = |x: &mut i32| *x % 2 == 0;
+    ///
+    /// assert_eq!(vec.pop_if(pred), Some(4));
+    /// assert_eq!(vec, [1, 2, 3]);
+    /// assert_eq!(vec.pop_if(pred), None);
+    /// ```
+    pub fn pop_if(&mut self, predicate: impl FnOnce(&mut T) -> bool) -> Option<T> {
+        let last = self.last_mut()?;
+        if predicate(last) {
+            self.pop()
+        } else {
+            None
+        }
+    }
+
     /// Clears the vector, removing all values.
     ///
     /// # Examples
