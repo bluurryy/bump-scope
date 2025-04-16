@@ -1,23 +1,62 @@
-//! Adapted from rust's `library/alloc/tests/vec.rs` commit 4426e9a3c260e329f51c94e2b231f72574271f0b
+//! Adapted from rust's `library/alloctests/tests/vec.rs` commit fb04372dc56129d69e39af80cac6e81694bd285f
 
-use std::alloc::{AllocError, Allocator, Layout, System};
-use std::boxed::Box;
+use core::alloc::{AllocError, Allocator, Layout};
+use core::num::NonZero;
+use core::ptr::NonNull;
+use core::{assert_eq, assert_ne};
 use std::cell::Cell;
 use std::fmt::Debug;
-use std::iter::IntoIterator;
-use std::mem::{self, size_of, swap};
-use std::num::NonZero;
+use std::hint;
+use std::mem::swap;
 use std::ops::Bound::*;
 use std::panic::{AssertUnwindSafe, catch_unwind};
-use std::ptr::NonNull;
 use std::rc::Rc;
-use std::string::{String, ToString};
 use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::{Arc, Mutex, PoisonError};
-use std::vec::{Drain, IntoIter, Vec};
-use std::{assert_eq, dbg, format, hint, println};
 
-use bump_scope::{Bump, BumpVec, bump_vec};
+use bump_scope::{Bump, BumpAllocator};
+
+type Vec<T, A = bump_scope::Bump> = bump_scope::BumpVec<T, A>;
+
+trait VecNew: Sized {
+    fn new() -> Self;
+    fn with_capacity(n: usize) -> Self;
+    fn try_with_capacity(n: usize) -> Result<Self, AllocError>;
+}
+
+impl<T> VecNew for Vec<T> {
+    fn new() -> Self {
+        Vec::new_in(Default::default())
+    }
+
+    fn with_capacity(n: usize) -> Self {
+        Vec::with_capacity_in(n, Default::default())
+    }
+
+    fn try_with_capacity(n: usize) -> Result<Self, AllocError> {
+        Vec::try_with_capacity_in(n, Default::default())
+    }
+}
+
+trait VecClone {
+    fn clone(&self) -> Self;
+}
+
+impl<T: Clone> VecClone for Vec<T> {
+    fn clone(&self) -> Self {
+        let mut vec = Vec::new_in(Default::default());
+        vec.extend_from_slice_clone(self);
+        vec
+    }
+}
+
+macro_rules! vec {
+    (in $($tt:tt)*) => {
+        bump_scope::bump_vec![in $($tt)*]
+    };
+    ($($tt:tt)*) => {
+        bump_scope::bump_vec![in <bump_scope::Bump>::default(); $($tt)*]
+    };
+}
 
 struct DropCounter<'a> {
     count: &'a mut u32,
@@ -29,45 +68,25 @@ impl Drop for DropCounter<'_> {
     }
 }
 
-#[derive(Clone, Default)]
-struct DropCounterMutex {
-    count: Arc<Mutex<u32>>,
-}
-
-impl DropCounterMutex {
-    fn get(&self) -> u32 {
-        *self.count.lock().unwrap_or_else(PoisonError::into_inner)
-    }
-}
-
-impl Drop for DropCounterMutex {
-    fn drop(&mut self) {
-        *self.count.lock().unwrap_or_else(PoisonError::into_inner) += 1;
-    }
-}
-
 #[test]
 fn test_small_vec_struct() {
-    assert_eq!(size_of::<BumpVec<u8, Bump>>(), size_of::<usize>() * 4);
+    assert_eq!(size_of::<Vec<u8>>(), size_of::<usize>() * 4);
 }
 
 #[test]
 fn test_double_drop() {
-    let bump_x: Bump = Bump::new();
-    let bump_y: Bump = Bump::new();
-
-    struct TwoVec<'a, T> {
-        x: BumpVec<T, &'a Bump>,
-        y: BumpVec<T, &'a Bump>,
+    struct TwoVec<T> {
+        x: Vec<T>,
+        y: Vec<T>,
     }
 
     let (mut count_x, mut count_y) = (0, 0);
     {
-        let mut tv = TwoVec { x: BumpVec::new_in(&bump_x), y: BumpVec::new_in(&bump_y) };
+        let mut tv = TwoVec { x: Vec::new(), y: Vec::new() };
         tv.x.push(DropCounter { count: &mut count_x });
         tv.y.push(DropCounter { count: &mut count_y });
 
-        // If BumpVec had a drop flag, here is where it would be zeroed.
+        // If Vec had a drop flag, here is where it would be zeroed.
         // Instead, it should rely on its internal state to prevent
         // doing anything significant when dropped multiple times.
         drop(tv.x);
@@ -81,9 +100,7 @@ fn test_double_drop() {
 
 #[test]
 fn test_reserve() {
-    let bump: Bump = Bump::new();
-
-    let mut v = BumpVec::new_in(&bump);
+    let mut v = Vec::new();
     assert_eq!(v.capacity(), 0);
 
     v.reserve(2);
@@ -104,56 +121,13 @@ fn test_reserve() {
 }
 
 #[test]
-fn test_reserve_exact() {
-    // This is all the same as test_reserve
-
-    let bump: Bump = Bump::new();
-
-    let mut v = BumpVec::new_in(&bump);
-    assert_eq!(v.capacity(), 0);
-
-    v.reserve_exact(2);
-    assert!(v.capacity() >= 2);
-
-    for i in 0..16 {
-        v.push(i);
-    }
-
-    assert!(v.capacity() >= 16);
-    v.reserve_exact(16);
-    assert!(v.capacity() >= 32);
-
-    v.push(16);
-
-    v.reserve_exact(16);
-    assert!(v.capacity() >= 33)
-}
-
-#[test]
-#[cfg_attr(miri, ignore)] // Miri does not support signalling OOM
-fn test_try_with_capacity() {
-    let bump: Bump = Bump::new();
-
-    let mut vec = BumpVec::<i32, _>::try_with_capacity_in(5, &bump).unwrap();
-    assert_eq!(0, vec.len());
-    assert!(vec.capacity() >= 5 && vec.capacity() <= isize::MAX as usize / 4);
-    assert!(vec.spare_capacity_mut().len() >= 5);
-
-    assert!(BumpVec::<u16, _>::try_with_capacity_in(isize::MAX as usize + 1, &bump).is_err());
-}
-
-#[test]
 fn test_zst_capacity() {
-    let bump: Bump = Bump::new();
-
-    assert_eq!(BumpVec::<(), _>::new_in(&bump).capacity(), usize::MAX);
+    assert_eq!(Vec::<()>::new().capacity(), usize::MAX);
 }
 
 #[test]
 fn test_indexing() {
-    let bump: Bump = Bump::new();
-
-    let v: BumpVec<isize, _> = bump_vec![in &bump; 10, 20];
+    let v: Vec<isize> = vec![10, 20];
     assert_eq!(v[0], 10);
     assert_eq!(v[1], 20);
     let mut x: usize = 0;
@@ -166,13 +140,10 @@ fn test_indexing() {
 
 #[test]
 fn test_debug_fmt() {
-    let bump1: Bump = Bump::new();
-    let bump2: Bump = Bump::new();
-
-    let vec1: BumpVec<isize, _> = bump_vec![in &bump1; ];
+    let vec1: Vec<isize> = vec![];
     assert_eq!("[]", format!("{:?}", vec1));
 
-    let vec2 = bump_vec![in &bump2; 0, 1];
+    let vec2 = vec![0, 1];
     assert_eq!("[0, 1]", format!("{:?}", vec2));
 
     let slice: &[isize] = &[4, 5];
@@ -181,9 +152,7 @@ fn test_debug_fmt() {
 
 #[test]
 fn test_push() {
-    let bump: Bump = Bump::new();
-
-    let mut v = bump_vec![in &bump; ];
+    let mut v = vec![];
     v.push(1);
     assert_eq!(v, [1]);
     v.push(2);
@@ -194,14 +163,13 @@ fn test_push() {
 
 #[test]
 fn test_extend() {
-    let bump_v: Bump = Bump::new();
-    let bump_w: Bump = Bump::new();
+    let bump: Bump = Bump::new();
 
-    let mut v = BumpVec::<i32, _>::new_in(&bump_v);
-    let mut w = BumpVec::<i32, _>::new_in(&bump_w);
+    let mut v = Vec::new_in(&bump);
+    let mut w = Vec::new_in(&bump);
 
-    v.extend(&w);
-    assert!(v.is_empty());
+    v.extend(w.clone());
+    assert_eq!(v, &[]);
 
     v.extend(0..3);
     for i in 0..3 {
@@ -217,18 +185,15 @@ fn test_extend() {
 
     assert_eq!(v, w);
 
-    v.extend(&w); // specializes to `append`
+    v.extend(w.clone()); // specializes to `append` (no it doesn't)
     assert!(v.iter().eq(w.iter().chain(w.iter())));
 
     // Zero sized types
     #[derive(PartialEq, Debug)]
     struct Foo;
 
-    let bump_a: Bump = Bump::new();
-    let bump_b: Bump = Bump::new();
-
-    let mut a = BumpVec::new_in(&bump_a);
-    let b = bump_vec![in &bump_b; Foo, Foo];
+    let mut a = Vec::new();
+    let b = vec![Foo, Foo];
 
     a.extend(b);
     assert_eq!(a, &[Foo, Foo]);
@@ -236,11 +201,8 @@ fn test_extend() {
     // Double drop
     let mut count_x = 0;
     {
-        let bump_x: Bump = Bump::new();
-        let bump_y: Bump = Bump::new();
-
-        let mut x = BumpVec::new_in(&bump_x);
-        let y = bump_vec![in &bump_y; DropCounter { count: &mut count_x }];
+        let mut x = Vec::new();
+        let y = vec![DropCounter { count: &mut count_x }];
         x.extend(y);
     }
     assert_eq!(count_x, 1);
@@ -248,13 +210,10 @@ fn test_extend() {
 
 #[test]
 fn test_extend_from_slice() {
-    let bump_a: Bump = Bump::new();
-    let bump_b: Bump = Bump::new();
+    let a: Vec<isize> = vec![1, 2, 3, 4, 5];
+    let b: Vec<isize> = vec![6, 7, 8, 9, 0];
 
-    let a: BumpVec<isize, _> = bump_vec![in &bump_a; 1, 2, 3, 4, 5];
-    let b: BumpVec<isize, _> = bump_vec![in &bump_b; 6, 7, 8, 9, 0];
-
-    let mut v: BumpVec<isize, _> = a;
+    let mut v: Vec<isize> = a;
 
     v.extend_from_slice_copy(&b);
 
@@ -263,16 +222,13 @@ fn test_extend_from_slice() {
 
 #[test]
 fn test_extend_ref() {
-    let bump_v: Bump = Bump::new();
-    let bump_w: Bump = Bump::new();
-
-    let mut v = bump_vec![in &bump_v; 1, 2];
+    let mut v = vec![1, 2];
     v.extend(&[3, 4, 5]);
 
     assert_eq!(v.len(), 5);
     assert_eq!(v, [1, 2, 3, 4, 5]);
 
-    let w = bump_vec![in &bump_w; 6, 7];
+    let w = vec![6, 7];
     v.extend(&w);
 
     assert_eq!(v.len(), 7);
@@ -281,9 +237,7 @@ fn test_extend_ref() {
 
 #[test]
 fn test_slice_from_ref() {
-    let bump: Bump = Bump::new();
-
-    let values = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let values = vec![1, 2, 3, 4, 5];
     let slice = &values[1..3];
 
     assert_eq!(slice, [2, 3]);
@@ -291,9 +245,7 @@ fn test_slice_from_ref() {
 
 #[test]
 fn test_slice_from_mut() {
-    let bump: Bump = Bump::new();
-
-    let mut values = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let mut values = vec![1, 2, 3, 4, 5];
     {
         let slice = &mut values[2..];
         assert!(slice == [3, 4, 5]);
@@ -307,9 +259,7 @@ fn test_slice_from_mut() {
 
 #[test]
 fn test_slice_to_mut() {
-    let bump: Bump = Bump::new();
-
-    let mut values = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let mut values = vec![1, 2, 3, 4, 5];
     {
         let slice = &mut values[..2];
         assert!(slice == [1, 2]);
@@ -323,9 +273,7 @@ fn test_slice_to_mut() {
 
 #[test]
 fn test_split_at_mut() {
-    let bump: Bump = Bump::new();
-
-    let mut values = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let mut values = vec![1, 2, 3, 4, 5];
     {
         let (left, right) = values.split_at_mut(2);
         {
@@ -349,21 +297,56 @@ fn test_split_at_mut() {
 }
 
 #[test]
-fn test_retain() {
+fn test_clone() {
     let bump: Bump = Bump::new();
 
-    let mut vec = bump_vec![in &bump; 1, 2, 3, 4];
+    let v: Vec<i32, _> = vec![in &bump];
+    let w = vec![in &bump; 1, 2, 3];
+
+    assert_eq!(v, v.clone());
+
+    let z = w.clone();
+    assert_eq!(w, z);
+    // they should be disjoint in memory.
+    assert!(w.as_ptr() != z.as_ptr())
+}
+
+#[test]
+fn test_clone_from() {
+    let bump: Bump = Bump::new();
+
+    let mut v = vec![in &bump];
+    let three: Vec<Box<_>, _> = vec![in &bump; Box::new(1), Box::new(2), Box::new(3)];
+    let two: Vec<Box<_>, _> = vec![in &bump; Box::new(4), Box::new(5)];
+    // zero, long
+    v.clone_from(&three);
+    assert_eq!(v, three);
+
+    // equal
+    v.clone_from(&three);
+    assert_eq!(v, three);
+
+    // long, short
+    v.clone_from(&two);
+    assert_eq!(v, two);
+
+    // short, long
+    v.clone_from(&three);
+    assert_eq!(v, three)
+}
+
+#[test]
+fn test_retain() {
+    let mut vec = vec![1, 2, 3, 4];
     vec.retain(|&mut x| x % 2 == 0);
     assert_eq!(vec, [2, 4]);
 }
 
 #[test]
 fn test_retain_predicate_order() {
-    let bump: Bump = Bump::new();
-
     for to_keep in [true, false] {
         let mut number_of_executions = 0;
-        let mut vec = bump_vec![in &bump; 1, 2, 3, 4];
+        let mut vec = vec![1, 2, 3, 4];
         let mut next_expected = 1;
         vec.retain(|&mut x| {
             assert_eq!(next_expected, x);
@@ -379,15 +362,9 @@ fn test_retain_predicate_order() {
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn test_retain_pred_panic_with_hole() {
     let bump: Bump = Bump::new();
-    let mut v = BumpVec::new_in(&bump);
-
-    v.extend((0..5).map(Rc::new));
-
+    let v = Vec::from_iter_in((0..5).map(Rc::new), &bump);
     catch_unwind(AssertUnwindSafe(|| {
-        let bump_for_clone: Bump = Bump::new();
-        let mut v_clone = BumpVec::new_in(&bump_for_clone);
-        v_clone.extend(v.iter().cloned());
-
+        let mut v = v.clone();
         v.retain(|r| match **r {
             0 => true,
             1 => false,
@@ -404,17 +381,15 @@ fn test_retain_pred_panic_with_hole() {
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn test_retain_pred_panic_no_hole() {
     let bump: Bump = Bump::new();
-    let v = bump.alloc_iter((0..5).map(Rc::new));
-
+    let v = Vec::from_iter_in((0..5).map(Rc::new), &bump);
     catch_unwind(AssertUnwindSafe(|| {
-        let mut v = bump.alloc_slice_clone(&v);
+        let mut v = v.clone();
         v.retain(|r| match **r {
             0 | 1 | 2 => true,
             _ => panic!(),
         });
     }))
     .unwrap_err();
-
     // Everything is dropped when predicate panicked.
     assert!(v.iter().all(|r| Rc::strong_count(r) == 1));
 }
@@ -433,11 +408,9 @@ fn test_retain_drop_panic() {
     }
 
     let bump: Bump = Bump::new();
-    let v = bump.alloc_iter((0..5).map(Rc::new));
-
+    let v = Vec::from_iter_in((0..5).map(Rc::new), &bump);
     catch_unwind(AssertUnwindSafe(|| {
-        let mut v = bump.alloc_iter(v.iter().map(|r| Wrap(r.clone())));
-
+        let mut v = Vec::from_iter_in(v.iter().map(|r| Wrap(r.clone())), &bump);
         v.retain(|w| match *w.0 {
             0 => true,
             1 => false,
@@ -454,93 +427,76 @@ fn test_retain_drop_panic() {
 
 #[test]
 fn test_retain_maybeuninits() {
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-
-    let bumps = core::iter::repeat_with::<Bump, _>(Bump::new).take(4).collect::<Vec<_>>();
-
     // This test aimed to be run under miri.
     use core::mem::MaybeUninit;
-    let mut vec = bump0.alloc_iter(
-        [1i32, 2, 3, 4].iter().zip(&bumps).map(|(v, bump)| MaybeUninit::new(bump_vec![in bump; v])),
-    );
-
+    let mut vec: Vec<_> =
+        Vec::from_array_in([1i32, 2, 3, 4].map(|v| MaybeUninit::new(vec![v])), Bump::new());
     vec.retain(|x| {
-        // SAFETY: Retain must visit every element of BumpVec in original order and exactly once.
-        // Our values is initialized at creation of BumpVec.
+        // SAFETY: Retain must visit every element of Vec in original order and exactly once.
+        // Our values is initialized at creation of Vec.
         let v = unsafe { x.assume_init_ref()[0] };
         if v & 1 == 0 {
             return true;
         }
         // SAFETY: Value is initialized.
-        // Value wouldn't be dropped by `BumpVec::retain`
+        // Value wouldn't be dropped by `Vec::retain`
         // because `MaybeUninit` doesn't drop content.
         drop(unsafe { x.assume_init_read() });
         false
     });
-
-    let vec = bump1.alloc_iter(vec.into_iter().map(|x| unsafe {
-        // SAFETY: All values dropped in retain predicate must be removed by `BumpVec::retain`.
-        // Remaining values are initialized.
-        *x.assume_init()[0]
-    }));
-
-    assert_eq!(vec.as_slice(), &[2, 4]);
+    let vec: Vec<i32> = Vec::from_iter_in(
+        vec.into_iter().map(|x| unsafe {
+            // SAFETY: All values dropped in retain predicate must be removed by `Vec::retain`.
+            // Remaining values are initialized.
+            x.assume_init()[0]
+        }),
+        Bump::new(),
+    );
+    assert_eq!(vec, [2, 4]);
 }
 
 #[test]
 fn test_dedup() {
-    fn case(a: BumpVec<i32, &Bump>, b: BumpVec<i32, &Bump>) {
+    fn case(a: Vec<i32>, b: Vec<i32>) {
         let mut v = a;
         v.dedup();
         assert_eq!(v, b);
     }
-
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-
-    case(bump_vec![in &bump0; ], bump_vec![in &bump1; ]);
-    case(bump_vec![in &bump0; 1], bump_vec![in &bump1; 1]);
-    case(bump_vec![in &bump0; 1, 1], bump_vec![in &bump1; 1]);
-    case(bump_vec![in &bump0; 1, 2, 3], bump_vec![in &bump1; 1, 2, 3]);
-    case(bump_vec![in &bump0; 1, 1, 2, 3], bump_vec![in &bump1; 1, 2, 3]);
-    case(bump_vec![in &bump0; 1, 2, 2, 3], bump_vec![in &bump1; 1, 2, 3]);
-    case(bump_vec![in &bump0; 1, 2, 3, 3], bump_vec![in &bump1; 1, 2, 3]);
-    case(bump_vec![in &bump0; 1, 1, 2, 2, 2, 3, 3], bump_vec![in &bump1; 1, 2, 3]);
+    case(vec![], vec![]);
+    case(vec![1], vec![1]);
+    case(vec![1, 1], vec![1]);
+    case(vec![1, 2, 3], vec![1, 2, 3]);
+    case(vec![1, 1, 2, 3], vec![1, 2, 3]);
+    case(vec![1, 2, 2, 3], vec![1, 2, 3]);
+    case(vec![1, 2, 3, 3], vec![1, 2, 3]);
+    case(vec![1, 1, 2, 2, 2, 3, 3], vec![1, 2, 3]);
 }
 
 #[test]
 fn test_dedup_by_key() {
-    fn case(a: BumpVec<i32, &Bump>, b: BumpVec<i32, &Bump>) {
+    fn case(a: Vec<i32>, b: Vec<i32>) {
         let mut v = a;
         v.dedup_by_key(|i| *i / 10);
         assert_eq!(v, b);
     }
-
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-
-    case(bump_vec![in &bump0; ], bump_vec![in &bump1; ]);
-    case(bump_vec![in &bump0; 10], bump_vec![in &bump1; 10]);
-    case(bump_vec![in &bump0; 10, 11], bump_vec![in &bump1; 10]);
-    case(bump_vec![in &bump0; 10, 20, 30], bump_vec![in &bump1; 10, 20, 30]);
-    case(bump_vec![in &bump0; 10, 11, 20, 30], bump_vec![in &bump1; 10, 20, 30]);
-    case(bump_vec![in &bump0; 10, 20, 21, 30], bump_vec![in &bump1; 10, 20, 30]);
-    case(bump_vec![in &bump0; 10, 20, 30, 31], bump_vec![in &bump1; 10, 20, 30]);
-    case(bump_vec![in &bump0; 10, 11, 20, 21, 22, 30, 31], bump_vec![in &bump1; 10, 20, 30]);
+    case(vec![], vec![]);
+    case(vec![10], vec![10]);
+    case(vec![10, 11], vec![10]);
+    case(vec![10, 20, 30], vec![10, 20, 30]);
+    case(vec![10, 11, 20, 30], vec![10, 20, 30]);
+    case(vec![10, 20, 21, 30], vec![10, 20, 30]);
+    case(vec![10, 20, 30, 31], vec![10, 20, 30]);
+    case(vec![10, 11, 20, 21, 22, 30, 31], vec![10, 20, 30]);
 }
 
 #[test]
 fn test_dedup_by() {
-    let bump: Bump = Bump::new();
-
-    let mut vec = bump_vec![in &bump; "foo", "bar", "Bar", "baz", "bar"];
+    let mut vec = vec!["foo", "bar", "Bar", "baz", "bar"];
     vec.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
 
     assert_eq!(vec, ["foo", "bar", "baz", "bar"]);
-    drop(vec);
 
-    let mut vec = bump_vec![in &bump; ("foo", 1), ("foo", 2), ("bar", 3), ("bar", 4), ("bar", 5)];
+    let mut vec = vec![("foo", 1), ("foo", 2), ("bar", 3), ("bar", 4), ("bar", 5)];
     vec.dedup_by(|a, b| {
         a.0 == b.0 && {
             b.1 += a.1;
@@ -553,18 +509,11 @@ fn test_dedup_by() {
 
 #[test]
 fn test_dedup_unique() {
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-    let bump2: Bump = Bump::new();
-
-    let mut v0: BumpVec<Box<_>, _> =
-        bump_vec![in &bump0; Box::new(1), Box::new(1), Box::new(2), Box::new(3)];
+    let mut v0: Vec<Box<_>> = vec![Box::new(1), Box::new(1), Box::new(2), Box::new(3)];
     v0.dedup();
-    let mut v1: BumpVec<Box<_>, _> =
-        bump_vec![in &bump1; Box::new(1), Box::new(2), Box::new(2), Box::new(3)];
+    let mut v1: Vec<Box<_>> = vec![Box::new(1), Box::new(2), Box::new(2), Box::new(3)];
     v1.dedup();
-    let mut v2: BumpVec<Box<_>, _> =
-        bump_vec![in &bump2; Box::new(1), Box::new(2), Box::new(3), Box::new(3)];
+    let mut v2: Vec<Box<_>> = vec![Box::new(1), Box::new(2), Box::new(3), Box::new(3)];
     v2.dedup();
     // If the boxed pointers were leaked or otherwise misused, valgrind
     // and/or rt should raise errors.
@@ -572,9 +521,7 @@ fn test_dedup_unique() {
 
 #[test]
 fn zero_sized_values() {
-    let bump: Bump = Bump::new();
-
-    let mut v = BumpVec::new_in(&bump);
+    let mut v = Vec::new();
     assert_eq!(v.len(), 0);
     v.push(());
     assert_eq!(v.len(), 1);
@@ -607,30 +554,25 @@ fn zero_sized_values() {
 
 #[test]
 fn test_partition() {
-    let bump: Bump = Bump::new();
+    assert_eq!([].into_iter().partition(|x: &i32| *x < 3), (vec![], vec![]));
+    assert_eq!([1, 2, 3].into_iter().partition(|x| *x < 4), (vec![1, 2, 3], vec![]));
+    assert_eq!([1, 2, 3].into_iter().partition(|x| *x < 2), (vec![1], vec![2, 3]));
+    assert_eq!([1, 2, 3].into_iter().partition(|x| *x < 0), (vec![], vec![1, 2, 3]));
+}
 
-    assert_eq!(
-        bump.alloc_slice_copy(&[]).partition(|x: &i32| *x < 3),
-        (bump.alloc_slice_copy(&[]), bump.alloc_slice_copy(&[]))
-    );
-    assert_eq!(
-        bump.alloc_slice_copy(&[1, 2, 3]).partition(|x| *x < 4),
-        (bump.alloc_slice_copy(&[1, 2, 3]), bump.alloc_slice_copy(&[]))
-    );
-    assert_eq!(
-        bump.alloc_slice_copy(&[1, 2, 3]).partition(|x| *x < 2),
-        (bump.alloc_slice_copy(&[1]), bump.alloc_slice_copy(&[2, 3]))
-    );
-    assert_eq!(
-        bump.alloc_slice_copy(&[1, 2, 3]).partition(|x| *x < 0),
-        (bump.alloc_slice_copy(&[]), bump.alloc_slice_copy(&[1, 2, 3]))
-    );
+#[test]
+fn test_zip_unzip() {
+    let z1 = vec![(1, 4), (2, 5), (3, 6)];
+
+    let (left, right): (Vec<_>, Vec<_>) = z1.iter().cloned().unzip();
+
+    assert_eq!((1, 4), (left[0], right[0]));
+    assert_eq!((2, 5), (left[1], right[1]));
+    assert_eq!((3, 6), (left[2], right[2]));
 }
 
 #[test]
 fn test_cmp() {
-    let bump: Bump = Bump::new();
-
     let x: &[isize] = &[1, 2, 3, 4, 5];
     let cmp: &[isize] = &[1, 2, 3, 4, 5];
     assert_eq!(&x[..], cmp);
@@ -641,7 +583,7 @@ fn test_cmp() {
     let cmp: &[isize] = &[2, 3, 4];
     assert_eq!(&x[1..4], cmp);
 
-    let x: BumpVec<isize, _> = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let x: Vec<isize> = vec![1, 2, 3, 4, 5];
     let cmp: &[isize] = &[1, 2, 3, 4, 5];
     assert_eq!(&x[..], cmp);
     let cmp: &[isize] = &[3, 4, 5];
@@ -664,8 +606,7 @@ fn test_vec_truncate_drop() {
         }
     }
 
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; Elem(1), Elem(2), Elem(3), Elem(4), Elem(5)];
+    let mut v = vec![Elem(1), Elem(2), Elem(3), Elem(4), Elem(5)];
     assert_eq!(unsafe { DROPS }, 0);
     v.truncate(3);
     assert_eq!(unsafe { DROPS }, 2);
@@ -686,80 +627,69 @@ fn test_vec_truncate_fail() {
         }
     }
 
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; BadElem(1), BadElem(2), BadElem(0xbadbeef), BadElem(4)];
+    let mut v = vec![BadElem(1), BadElem(2), BadElem(0xbadbeef), BadElem(4)];
     v.truncate(0);
 }
 
 #[test]
 fn test_index() {
-    let bump: Bump = Bump::new();
-    let vec = bump_vec![in &bump; 1, 2, 3];
+    let vec = vec![1, 2, 3];
     assert!(vec[1] == 2);
 }
 
 #[test]
 #[should_panic]
 fn test_index_out_of_bounds() {
-    let bump: Bump = Bump::new();
-    let vec = bump_vec![in &bump; 1, 2, 3];
+    let vec = vec![1, 2, 3];
     let _ = vec[3];
 }
 
 #[test]
 #[should_panic]
 fn test_slice_out_of_bounds_1() {
-    let bump: Bump = Bump::new();
-    let x = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let x = vec![1, 2, 3, 4, 5];
     let _ = &x[!0..];
 }
 
 #[test]
 #[should_panic]
 fn test_slice_out_of_bounds_2() {
-    let bump: Bump = Bump::new();
-    let x = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let x = vec![1, 2, 3, 4, 5];
     let _ = &x[..6];
 }
 
 #[test]
 #[should_panic]
 fn test_slice_out_of_bounds_3() {
-    let bump: Bump = Bump::new();
-    let x = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let x = vec![1, 2, 3, 4, 5];
     let _ = &x[!0..4];
 }
 
 #[test]
 #[should_panic]
 fn test_slice_out_of_bounds_4() {
-    let bump: Bump = Bump::new();
-    let x = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let x = vec![1, 2, 3, 4, 5];
     let _ = &x[1..6];
 }
 
 #[test]
 #[should_panic]
 fn test_slice_out_of_bounds_5() {
-    let bump: Bump = Bump::new();
-    let x = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let x = vec![1, 2, 3, 4, 5];
     let _ = &x[3..2];
 }
 
 #[test]
 #[should_panic]
 fn test_swap_remove_empty() {
-    let bump: Bump = Bump::new();
-    let mut vec = BumpVec::<i32, _>::new_in(&bump);
+    let mut vec = Vec::<i32>::new();
     vec.swap_remove(0);
 }
 
 #[test]
 fn test_move_items() {
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-    let vec = bump_vec![in &bump0; 1, 2, 3];
-    let mut vec2 = bump_vec![in &bump1; ];
+    let vec = vec![1, 2, 3];
+    let mut vec2 = vec![];
     for i in vec {
         vec2.push(i);
     }
@@ -768,10 +698,8 @@ fn test_move_items() {
 
 #[test]
 fn test_move_items_reverse() {
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-    let vec = bump_vec![in &bump0; 1, 2, 3];
-    let mut vec2 = bump_vec![in &bump1; ];
+    let vec = vec![1, 2, 3];
+    let mut vec2 = vec![];
     for i in vec.into_iter().rev() {
         vec2.push(i);
     }
@@ -780,10 +708,8 @@ fn test_move_items_reverse() {
 
 #[test]
 fn test_move_items_zero_sized() {
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-    let vec = bump_vec![in &bump0; (), (), ()];
-    let mut vec2 = bump_vec![in &bump1; ];
+    let vec = vec![(), (), ()];
+    let mut vec2 = vec![];
     for i in vec {
         vec2.push(i);
     }
@@ -792,11 +718,8 @@ fn test_move_items_zero_sized() {
 
 #[test]
 fn test_drain_empty_vec() {
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-
-    let mut vec: BumpVec<i32, _> = bump_vec![in &bump0; ];
-    let mut vec2: BumpVec<i32, _> = bump_vec![in &bump1; ];
+    let mut vec: Vec<i32> = vec![];
+    let mut vec2: Vec<i32> = vec![];
     for i in vec.drain(..) {
         vec2.push(i);
     }
@@ -806,39 +729,30 @@ fn test_drain_empty_vec() {
 
 #[test]
 fn test_drain_items() {
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-
-    let mut vec = bump_vec![in &bump0; 1, 2, 3];
-    let mut vec2 = bump_vec![in &bump1; ];
+    let mut vec = vec![1, 2, 3];
+    let mut vec2 = vec![];
     for i in vec.drain(..) {
         vec2.push(i);
     }
-    assert!(vec.is_empty());
+    assert_eq!(vec, []);
     assert_eq!(vec2, [1, 2, 3]);
 }
 
 #[test]
 fn test_drain_items_reverse() {
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-
-    let mut vec = bump_vec![in &bump0; 1, 2, 3];
-    let mut vec2 = bump_vec![in &bump1; ];
+    let mut vec = vec![1, 2, 3];
+    let mut vec2 = vec![];
     for i in vec.drain(..).rev() {
         vec2.push(i);
     }
-    assert!(vec.is_empty());
+    assert_eq!(vec, []);
     assert_eq!(vec2, [3, 2, 1]);
 }
 
 #[test]
 fn test_drain_items_zero_sized() {
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-
-    let mut vec = bump_vec![in &bump0; (), (), ()];
-    let mut vec2 = bump_vec![in &bump1; ];
+    let mut vec = vec![(), (), ()];
+    let mut vec2 = vec![];
     for i in vec.drain(..) {
         vec2.push(i);
     }
@@ -849,92 +763,73 @@ fn test_drain_items_zero_sized() {
 #[test]
 #[should_panic]
 fn test_drain_out_of_bounds() {
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let mut v = vec![1, 2, 3, 4, 5];
     v.drain(5..6);
 }
 
 #[test]
 fn test_drain_range() {
-    let bump: Bump = Bump::new();
-
-    let mut v = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let mut v = vec![1, 2, 3, 4, 5];
     for _ in v.drain(4..) {}
-    assert_eq!(v.as_slice(), &[1, 2, 3, 4]);
-    drop(v);
+    assert_eq!(v, &[1, 2, 3, 4]);
 
-    let mut v = bump.alloc_iter((1..6).map(|x| x.to_string()));
+    let mut v: Vec<_> = (1..6).map(|x| x.to_string()).collect();
     for _ in v.drain(1..4) {}
-    assert_eq!(v.as_slice(), &[1.to_string(), 5.to_string()]);
-    drop(v);
+    assert_eq!(v, &[1.to_string(), 5.to_string()]);
 
-    let mut v = bump.alloc_iter((1..6).map(|x| x.to_string()));
+    let mut v: Vec<_> = (1..6).map(|x| x.to_string()).collect();
     for _ in v.drain(1..4).rev() {}
-    assert_eq!(v.as_slice(), &[1.to_string(), 5.to_string()]);
-    drop(v);
+    assert_eq!(v, &[1.to_string(), 5.to_string()]);
 
-    let mut v: BumpVec<_, _> = bump_vec![in &bump; (); 5];
+    let mut v: Vec<_> = vec![(); 5];
     for _ in v.drain(1..4).rev() {}
     assert_eq!(v, &[(), ()]);
-    drop(v);
 }
 
 #[test]
 fn test_drain_inclusive_range() {
-    let bump: Bump = Bump::new();
-
-    let mut v = bump_vec![in &bump; 'a', 'b', 'c', 'd', 'e'];
+    let mut v = vec!['a', 'b', 'c', 'd', 'e'];
     for _ in v.drain(1..=3) {}
     assert_eq!(v, &['a', 'e']);
-    drop(v);
 
-    let mut v = bump.alloc_iter((0..=5).map(|x| x.to_string()));
+    let mut v: Vec<_> = (0..=5).map(|x| x.to_string()).collect();
     for _ in v.drain(1..=5) {}
-    assert_eq!(v.as_slice(), &["0".to_string()]);
-    drop(v);
+    assert_eq!(v, &["0".to_string()]);
 
-    let mut v = bump.alloc_iter((0..=5).map(|x| x.to_string()));
+    let mut v: Vec<String> = (0..=5).map(|x| x.to_string()).collect();
     for _ in v.drain(0..=5) {}
-    assert!(v.as_slice().is_empty());
-    drop(v);
+    assert_eq!(v, Vec::<String>::new());
 
-    let mut v = bump.alloc_iter((0..=5).map(|x| x.to_string()));
+    let mut v: Vec<_> = (0..=5).map(|x| x.to_string()).collect();
     for _ in v.drain(0..=3) {}
-    assert_eq!(v.as_slice(), &["4".to_string(), "5".to_string()]);
-    drop(v);
+    assert_eq!(v, &["4".to_string(), "5".to_string()]);
 
-    let mut v = bump.alloc_iter((0..=1).map(|x| x.to_string()));
+    let mut v: Vec<_> = (0..=1).map(|x| x.to_string()).collect();
     for _ in v.drain(..=0) {}
-    assert_eq!(v.as_slice(), &["1".to_string()]);
-    drop(v);
+    assert_eq!(v, &["1".to_string()]);
 }
 
 #[test]
 fn test_drain_max_vec_size() {
-    let bump: Bump = Bump::new();
-
-    let mut v = BumpVec::<(), _>::with_capacity_in(usize::MAX, &bump);
+    let mut v = Vec::<()>::with_capacity(usize::MAX);
     unsafe {
         v.set_len(usize::MAX);
     }
     for _ in v.drain(usize::MAX - 1..) {}
     assert_eq!(v.len(), usize::MAX - 1);
-    drop(v);
 
-    let mut v = BumpVec::<(), _>::with_capacity_in(usize::MAX, &bump);
+    let mut v = Vec::<()>::with_capacity(usize::MAX);
     unsafe {
         v.set_len(usize::MAX);
     }
     for _ in v.drain(usize::MAX - 1..=usize::MAX - 1) {}
     assert_eq!(v.len(), usize::MAX - 1);
-    drop(v);
 }
 
 #[test]
 #[should_panic]
 fn test_drain_index_overflow() {
-    let bump: Bump = Bump::new();
-    let mut v = BumpVec::<(), _>::with_capacity_in(usize::MAX, &bump);
+    let mut v = Vec::<()>::with_capacity(usize::MAX);
     unsafe {
         v.set_len(usize::MAX);
     }
@@ -944,33 +839,27 @@ fn test_drain_index_overflow() {
 #[test]
 #[should_panic]
 fn test_drain_inclusive_out_of_bounds() {
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let mut v = vec![1, 2, 3, 4, 5];
     v.drain(5..=5);
 }
 
 #[test]
 #[should_panic]
 fn test_drain_start_overflow() {
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; 1, 2, 3];
+    let mut v = vec![1, 2, 3];
     v.drain((Excluded(usize::MAX), Included(0)));
 }
 
 #[test]
 #[should_panic]
 fn test_drain_end_overflow() {
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; 1, 2, 3];
+    let mut v = vec![1, 2, 3];
     v.drain((Included(0), Included(usize::MAX)));
 }
 
 #[test]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn test_drain_leak() {
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-
     static mut DROPS: i32 = 0;
 
     #[derive(Debug, PartialEq)]
@@ -980,8 +869,6 @@ fn test_drain_leak() {
         fn drop(&mut self) {
             unsafe {
                 DROPS += 1;
-                dbg!(self.0);
-                dbg!(DROPS);
             }
 
             if self.1 {
@@ -990,7 +877,7 @@ fn test_drain_leak() {
         }
     }
 
-    let mut v = bump_vec![in &bump0;
+    let mut v = vec![
         D(0, false),
         D(1, false),
         D(2, false),
@@ -1006,14 +893,12 @@ fn test_drain_leak() {
     .ok();
 
     assert_eq!(unsafe { DROPS }, 4);
-    assert_eq!(v, bump_vec![in &bump1; D(0, false), D(1, false), D(6, false),]);
+    assert_eq!(v, vec![D(0, false), D(1, false), D(6, false),]);
 }
 
 #[test]
 fn test_drain_keep_rest() {
-    let bump: Bump = Bump::new();
-
-    let mut v = bump_vec![in &bump; 0, 1, 2, 3, 4, 5, 6];
+    let mut v = vec![0, 1, 2, 3, 4, 5, 6];
     let mut drain = v.drain(1..6);
     assert_eq!(drain.next(), Some(1));
     assert_eq!(drain.next_back(), Some(5));
@@ -1025,18 +910,14 @@ fn test_drain_keep_rest() {
 
 #[test]
 fn test_drain_keep_rest_all() {
-    let bump: Bump = Bump::new();
-
-    let mut v = bump_vec![in &bump; 0, 1, 2, 3, 4, 5, 6];
+    let mut v = vec![0, 1, 2, 3, 4, 5, 6];
     v.drain(1..6).keep_rest();
     assert_eq!(v, &[0, 1, 2, 3, 4, 5, 6]);
 }
 
 #[test]
 fn test_drain_keep_rest_none() {
-    let bump: Bump = Bump::new();
-
-    let mut v = bump_vec![in &bump; 0, 1, 2, 3, 4, 5, 6];
+    let mut v = vec![0, 1, 2, 3, 4, 5, 6];
     let mut drain = v.drain(1..6);
 
     drain.by_ref().for_each(drop);
@@ -1047,8 +928,7 @@ fn test_drain_keep_rest_none() {
 
 #[test]
 fn test_splice() {
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let mut v = vec![1, 2, 3, 4, 5];
     let a = [10, 11, 12];
     v.splice(2..4, a);
     assert_eq!(v, &[1, 2, 10, 11, 12, 5]);
@@ -1058,8 +938,7 @@ fn test_splice() {
 
 #[test]
 fn test_splice_inclusive_range() {
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let mut v = vec![1, 2, 3, 4, 5];
     let a = [10, 11, 12];
     let t1: Vec<_> = v.splice(2..=3, a).collect();
     assert_eq!(v, &[1, 2, 10, 11, 12, 5]);
@@ -1072,8 +951,7 @@ fn test_splice_inclusive_range() {
 #[test]
 #[should_panic]
 fn test_splice_out_of_bounds() {
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let mut v = vec![1, 2, 3, 4, 5];
     let a = [10, 11, 12];
     v.splice(5..6, a);
 }
@@ -1081,17 +959,15 @@ fn test_splice_out_of_bounds() {
 #[test]
 #[should_panic]
 fn test_splice_inclusive_out_of_bounds() {
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let mut v = vec![1, 2, 3, 4, 5];
     let a = [10, 11, 12];
     v.splice(5..=5, a);
 }
 
 #[test]
 fn test_splice_items_zero_sized() {
-    let bump: Bump = Bump::new();
-    let mut vec = bump_vec![in &bump; (), (), ()];
-    let vec2 = bump_vec![in &bump; ];
+    let mut vec = vec![(), (), ()];
+    let vec2 = vec![];
     let t: Vec<_> = vec.splice(1..2, vec2.iter().cloned()).collect();
     assert_eq!(vec, &[(), ()]);
     assert_eq!(t, &[()]);
@@ -1099,17 +975,15 @@ fn test_splice_items_zero_sized() {
 
 #[test]
 fn test_splice_unbounded() {
-    let bump: Bump = Bump::new();
-    let mut vec = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let mut vec = vec![1, 2, 3, 4, 5];
     let t: Vec<_> = vec.splice(.., None).collect();
-    assert!(vec.is_empty());
+    assert_eq!(vec, &[]);
     assert_eq!(t, &[1, 2, 3, 4, 5]);
 }
 
 #[test]
 fn test_splice_forget() {
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; 1, 2, 3, 4, 5];
+    let mut v = vec![1, 2, 3, 4, 5];
     let a = [10, 11, 12];
     std::mem::forget(v.splice(2..4, a));
     assert_eq!(v, &[1, 2]);
@@ -1118,32 +992,34 @@ fn test_splice_forget() {
 #[test]
 fn test_into_boxed_slice() {
     let bump: Bump = Bump::new();
-    let xs = bump_vec![in &bump; 1, 2, 3];
+    let xs = vec![in &bump; 1, 2, 3];
     let ys = xs.into_boxed_slice();
     assert_eq!(&*ys, [1, 2, 3]);
 }
 
 #[test]
 fn test_append() {
-    let bump: Bump = Bump::new();
-    let bump = bump.as_scope();
-    let mut vec = bump_vec![in &bump; 1, 2, 3];
-    let mut vec2 = bump_vec![in &bump; 4, 5, 6];
+    let mut vec = vec![1, 2, 3];
+    let mut vec2 = vec![4, 5, 6];
     vec.append(&mut vec2);
     assert_eq!(vec, [1, 2, 3, 4, 5, 6]);
-    assert!(vec2.is_empty());
+    assert_eq!(vec2, []);
 }
 
 #[test]
 fn test_split_off() {
     let bump: Bump = Bump::new();
-    let mut vec = bump_vec![in &bump; 1, 2, 3, 4, 5, 6];
+
+    let mut vec = vec![in &bump; 1, 2, 3, 4, 5, 6];
     let orig_ptr = vec.as_ptr();
     let orig_capacity = vec.capacity();
 
     let split_off = vec.split_off(4..);
     assert_eq!(vec, [1, 2, 3, 4]);
     assert_eq!(split_off, [5, 6]);
+
+    // It's not guaranteed that these assertions succeed
+    // but they will in the current implementation.
     assert_eq!(vec.capacity(), vec.len());
     assert_eq!(vec.as_ptr(), orig_ptr);
     assert_eq!(split_off.capacity(), orig_capacity - vec.capacity());
@@ -1154,15 +1030,18 @@ fn test_split_off_take_all() {
     let bump: Bump = Bump::new();
 
     // Allocate enough capacity that we can tell whether the split-off vector's
-    // capacity is based on its size, or on the original capacity.
-    let mut vec = BumpVec::with_capacity_in(1000, &bump);
+    // capacity is based on its size, or (incorrectly) on the original capacity.
+    let mut vec = Vec::with_capacity_in(1000, &bump);
     vec.extend([1, 2, 3, 4, 5, 6]);
     let orig_ptr = vec.as_ptr();
     let orig_capacity = vec.capacity();
 
     let split_off = vec.split_off(0..);
-    assert!(vec.is_empty());
+    assert_eq!(vec, []);
     assert_eq!(split_off, [1, 2, 3, 4, 5, 6]);
+
+    // It's not guaranteed that these assertions succeed
+    // but they will in the current implementation.
     assert_eq!(vec.capacity(), vec.len());
     assert_eq!(vec.as_ptr(), orig_ptr);
     assert_eq!(split_off.as_ptr(), orig_ptr);
@@ -1171,8 +1050,7 @@ fn test_split_off_take_all() {
 
 #[test]
 fn test_into_iter_as_slice() {
-    let bump: Bump = Bump::new();
-    let vec = bump_vec![in &bump; 'a', 'b', 'c'];
+    let vec = vec!['a', 'b', 'c'];
     let mut into_iter = vec.into_iter();
     assert_eq!(into_iter.as_slice(), &['a', 'b', 'c']);
     let _ = into_iter.next().unwrap();
@@ -1184,8 +1062,7 @@ fn test_into_iter_as_slice() {
 
 #[test]
 fn test_into_iter_as_mut_slice() {
-    let bump: Bump = Bump::new();
-    let vec = bump_vec![in &bump; 'a', 'b', 'c'];
+    let vec = vec!['a', 'b', 'c'];
     let mut into_iter = vec.into_iter();
     assert_eq!(into_iter.as_slice(), &['a', 'b', 'c']);
     into_iter.as_mut_slice()[0] = 'x';
@@ -1196,8 +1073,7 @@ fn test_into_iter_as_mut_slice() {
 
 #[test]
 fn test_into_iter_debug() {
-    let bump: Bump = Bump::new();
-    let vec = bump_vec![in &bump; 'a', 'b', 'c'];
+    let vec = vec!['a', 'b', 'c'];
     let into_iter = vec.into_iter();
     let debug = format!("{into_iter:?}");
     assert_eq!(debug, "IntoIter(['a', 'b', 'c'])");
@@ -1205,27 +1081,22 @@ fn test_into_iter_debug() {
 
 #[test]
 fn test_into_iter_count() {
-    let bump: Bump = Bump::new();
-    let v = BumpVec::from_array_in([1, 2, 3], &bump);
-    assert_eq!(v.into_iter().count(), 3);
+    assert_eq!([1, 2, 3].into_iter().count(), 3);
 }
 
 #[test]
 fn test_into_iter_next_chunk() {
-    let bump: Bump = Bump::new();
-    let mut iter = BumpVec::from_array_in(*b"lorem", &bump).into_iter();
+    let mut iter = b"lorem".to_vec().into_iter();
 
     assert_eq!(iter.next_chunk().unwrap(), [b'l', b'o']); // N is inferred as 2
     assert_eq!(iter.next_chunk().unwrap(), [b'r', b'e', b'm']); // N is inferred as 3
-    assert!(iter.next_chunk::<4>().unwrap_err().as_slice().is_empty()); // N is explicitly 4
+    assert_eq!(iter.next_chunk::<4>().unwrap_err().as_slice(), &[]); // N is explicitly 4
 }
 
 #[test]
 fn test_into_iter_clone() {
     fn iter_equal<I: Iterator<Item = i32>>(it: I, slice: &[i32]) {
-        let bump: Bump = Bump::new();
-        let mut v = bump_vec![in &bump];
-        v.extend(it);
+        let v: Vec<i32> = it.collect();
         assert_eq!(&v[..], slice);
     }
     let mut it = [1, 2, 3].into_iter();
@@ -1259,8 +1130,7 @@ fn test_into_iter_leak() {
         }
     }
 
-    let bump: Bump = Bump::new();
-    let v = bump_vec![in &bump; D(false), D(true), D(false)];
+    let v = vec![D(false), D(true), D(false)];
 
     catch_unwind(move || drop(v.into_iter())).ok();
 
@@ -1269,8 +1139,7 @@ fn test_into_iter_leak() {
 
 #[test]
 fn test_into_iter_advance_by() {
-    let bump: Bump = Bump::new();
-    let mut i = bump_vec![in &bump; 1, 2, 3, 4, 5].into_iter();
+    let mut i = vec![1, 2, 3, 4, 5].into_iter();
     assert_eq!(i.advance_by(0), Ok(()));
     assert_eq!(i.advance_back_by(0), Ok(()));
     assert_eq!(i.as_slice(), [1, 2, 3, 4, 5]);
@@ -1279,9 +1148,9 @@ fn test_into_iter_advance_by() {
     assert_eq!(i.advance_back_by(1), Ok(()));
     assert_eq!(i.as_slice(), [2, 3, 4]);
 
-    assert_eq!(i.advance_back_by(usize::MAX), Err(NonZero::<usize>::new(usize::MAX - 3).unwrap()));
+    assert_eq!(i.advance_back_by(usize::MAX), Err(NonZero::new(usize::MAX - 3).unwrap()));
 
-    assert_eq!(i.advance_by(usize::MAX), Err(NonZero::<usize>::new(usize::MAX).unwrap()));
+    assert_eq!(i.advance_by(usize::MAX), Err(NonZero::new(usize::MAX).unwrap()));
 
     assert_eq!(i.advance_by(0), Ok(()));
     assert_eq!(i.advance_back_by(0), Ok(()));
@@ -1291,32 +1160,40 @@ fn test_into_iter_advance_by() {
 
 #[test]
 fn test_into_iter_drop_allocator() {
-    #[allow(dead_code)]
-    #[derive(Clone)]
-    struct ReferenceCountedAllocator(DropCounterMutex);
+    struct ReferenceCountedAllocator<'a> {
+        bump: Bump,
+        #[allow(dead_code)]
+        counter: DropCounter<'a>,
+    }
 
-    unsafe impl Allocator for ReferenceCountedAllocator {
-        fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-            System.allocate(layout)
+    unsafe impl Allocator for ReferenceCountedAllocator<'_> {
+        fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, core::alloc::AllocError> {
+            self.bump.allocate(layout)
         }
 
         unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
             // Safety: Invariants passed to caller.
-            unsafe { System.deallocate(ptr, layout) }
+            unsafe { self.bump.deallocate(ptr, layout) }
         }
     }
 
-    let drop_count = DropCounterMutex::default();
+    unsafe impl BumpAllocator for ReferenceCountedAllocator<'_> {}
 
-    let allocator = ReferenceCountedAllocator(drop_count.clone());
-    let bump = Bump::<_, 1, true>::new_in(allocator.clone());
-    drop(bump);
-    assert_eq!(drop_count.get(), 1);
+    let mut drop_count = 0;
 
-    let bump = Bump::<_, 1, true>::new_in(allocator);
-    bump.reserve_bytes(1024);
-    drop(bump);
-    assert_eq!(drop_count.get(), 3);
+    let allocator = ReferenceCountedAllocator {
+        bump: Bump::new(),
+        counter: DropCounter { count: &mut drop_count },
+    };
+    let _ = Vec::<u32, _>::new_in(allocator);
+    assert_eq!(drop_count, 1);
+
+    let allocator = ReferenceCountedAllocator {
+        bump: Bump::new(),
+        counter: DropCounter { count: &mut drop_count },
+    };
+    let _ = Vec::<u32, _>::new_in(allocator).into_iter();
+    assert_eq!(drop_count, 2);
 }
 
 #[test]
@@ -1326,63 +1203,86 @@ fn test_into_iter_zst() {
     impl Drop for AlignedZstWithDrop {
         fn drop(&mut self) {
             let addr = self as *mut _ as usize;
-            assert!(hint::black_box(addr) % mem::align_of::<u64>() == 0);
+            assert!(hint::black_box(addr) % align_of::<u64>() == 0);
         }
     }
 
     const C: AlignedZstWithDrop = AlignedZstWithDrop([0u64; 0]);
 
-    let bump: Bump = Bump::new();
-    for _ in bump_vec![in &bump; C].into_iter() {}
-    for _ in bump_vec![in &bump; C; 5].into_iter().rev() {}
+    for _ in vec![C].into_iter() {}
+    for _ in vec![C; 5].into_iter().rev() {}
 
-    let mut it = bump_vec![in &bump; C, C].into_iter();
+    let mut it = vec![C, C].into_iter();
     assert_eq!(it.advance_by(1), Ok(()));
     drop(it);
 
-    let mut it = bump_vec![in &bump; C, C].into_iter();
+    let mut it = vec![C, C].into_iter();
     it.next_chunk::<1>().unwrap();
     drop(it);
 
-    let mut it = bump_vec![in &bump; C, C].into_iter();
+    let mut it = vec![C, C].into_iter();
     it.next_chunk::<4>().unwrap_err();
     drop(it);
 }
 
+#[cfg(any())] // not applicable
+fn test_from_iter_specialization() {}
+
+#[cfg(any())] // not applicable
+fn test_from_iter_partially_drained_in_place_specialization() {}
+
+#[cfg(any())] // not applicable
+fn test_from_iter_specialization_with_iterator_adapters() {}
+
+#[cfg(any())] // not applicable
+fn test_in_place_specialization_step_up_down() {}
+
+#[cfg(any())] // not applicable
+fn test_from_iter_specialization_head_tail_drop() {}
+
+#[cfg(any())] // not applicable
+fn test_from_iter_specialization_panic_during_iteration_drops() {}
+
+#[cfg(any())] // not applicable
+fn test_from_iter_specialization_panic_during_drop_doesnt_leak() {}
+
+#[cfg(any())] // not applicable
+#[test]
+fn test_collect_after_iterator_clone() {}
+
+#[cfg(any())] // not applicable
+#[test]
+fn test_flatten_clone() {}
+
+#[cfg(any())] // not applicable
+#[test]
+fn test_cow_from() {}
+
+#[cfg(any())] // not applicable
+#[test]
+fn test_from_cow() {}
+
+#[cfg(any())] // TODO: fix this
 #[allow(dead_code)]
 fn assert_covariance() {
     fn drain<'new>(d: Drain<'static, &'static str>) -> Drain<'new, &'new str> {
         d
     }
-    fn into_iter<'new>(i: IntoIter<&'static str>) -> IntoIter<&'new str> {
+    fn into_iter<'new>(i: IntoIter<'static, &'static str>) -> IntoIter<'new, &'new str> {
         i
     }
 }
 
+#[cfg(any())] // not applicable (no `FromIterator` impl nor specialization)
 #[test]
-fn from_into_inner() {
-    let bump: Bump = Bump::new();
-    let vec = bump.alloc_slice_copy(&[1, 2, 3]);
-    let ptr = vec.as_ptr();
-    let vec = vec.into_iter().into_boxed_slice();
-    assert_eq!(vec.as_slice(), [1, 2, 3]);
-    assert_eq!(vec.as_ptr(), ptr);
-
-    let ptr = &vec[1] as *const _;
-    let mut it = vec.into_iter();
-    it.next().unwrap();
-    let vec = it.into_boxed_slice();
-    assert_eq!(vec.as_slice(), &[2, 3]);
-    assert!(ptr == vec.as_ptr());
-}
+fn from_into_inner() {}
 
 #[test]
+#[cfg(not(miri))] // too slow
 fn overaligned_allocations() {
-    let bump: Bump = Bump::new();
-
     #[repr(align(256))]
     struct Foo(usize);
-    let mut v = bump_vec![in &bump; Foo(273)];
+    let mut v = vec![Foo(273)];
     for i in 0..0x1000 {
         v.reserve_exact(i);
         assert!(v[0].0 == 273);
@@ -1393,13 +1293,9 @@ fn overaligned_allocations() {
     }
 }
 
-// TODO: extract_if ranges?
-
 #[test]
 fn extract_if_empty() {
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-    let mut vec: BumpVec<i32, _> = bump_vec![in &bump0; ];
+    let mut vec: Vec<i32> = vec![];
 
     {
         let mut iter = vec.extract_if(|_| true);
@@ -1410,16 +1306,12 @@ fn extract_if_empty() {
         assert_eq!(iter.size_hint(), (0, Some(0)));
     }
     assert_eq!(vec.len(), 0);
-
-    let empty: BumpVec<i32, _> = bump_vec![in &bump1; ];
-    assert_eq!(vec, empty);
+    assert_eq!(vec, vec![]);
 }
 
 #[test]
 fn extract_if_zst() {
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-    let mut vec = bump_vec![in &bump0; (), (), (), (), ()];
+    let mut vec = vec![(), (), (), (), ()];
     let initial_len = vec.len();
     let mut count = 0;
     {
@@ -1436,14 +1328,12 @@ fn extract_if_zst() {
 
     assert_eq!(count, initial_len);
     assert_eq!(vec.len(), 0);
-    assert_eq!(vec, bump_vec![in &bump1; ]);
+    assert_eq!(vec, vec![]);
 }
 
 #[test]
 fn extract_if_false() {
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-    let mut vec = bump_vec![in &bump0; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let mut vec = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
     let initial_len = vec.len();
     let mut count = 0;
@@ -1460,14 +1350,12 @@ fn extract_if_false() {
 
     assert_eq!(count, 0);
     assert_eq!(vec.len(), initial_len);
-    assert_eq!(vec, bump_vec![in &bump1; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    assert_eq!(vec, vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 }
 
 #[test]
 fn extract_if_true() {
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-    let mut vec = bump_vec![in &bump0; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let mut vec = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
     let initial_len = vec.len();
     let mut count = 0;
@@ -1485,106 +1373,128 @@ fn extract_if_true() {
 
     assert_eq!(count, initial_len);
     assert_eq!(vec.len(), 0);
+    assert_eq!(vec, vec![]);
+}
 
-    let empty: BumpVec<i32, _> = bump_vec![in &bump1; ];
-    assert_eq!(vec, empty);
+#[cfg(any())] // TODO: implement extract_if with range
+#[test]
+fn extract_if_ranges() {
+    let mut vec = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+    let mut count = 0;
+    let it = vec.extract_if(1..=3, |_| {
+        count += 1;
+        true
+    });
+    assert_eq!(it.collect::<Vec<_>>(), vec![1, 2, 3]);
+    assert_eq!(vec, vec![0, 4, 5, 6, 7, 8, 9, 10]);
+    assert_eq!(count, 3);
+
+    let it = vec.extract_if(1..=3, |_| false);
+    assert_eq!(it.collect::<Vec<_>>(), vec![]);
+    assert_eq!(vec, vec![0, 4, 5, 6, 7, 8, 9, 10]);
+}
+
+#[cfg(any())] // TODO: implement extract_if with range
+#[test]
+#[should_panic]
+fn extract_if_out_of_bounds() {
+    let mut vec = vec![0, 1];
+    let _ = vec.extract_if(5.., |_| true).for_each(drop);
 }
 
 #[test]
 fn extract_if_complex() {
-    let bump: Bump = Bump::new();
-
     {
         //                [+xxx++++++xxxxx++++x+x++]
-        let mut vec = bump_vec![in &bump;
-            1, 2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36, 37, 39,
+        let mut vec = vec![
+            1, 2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36, 37,
+            39,
         ];
 
         let removed = vec.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
         assert_eq!(removed.len(), 10);
-        assert_eq!(removed, &[2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
+        assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
 
         assert_eq!(vec.len(), 14);
-        assert_eq!(vec, &[1, 7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]);
+        assert_eq!(vec, vec![1, 7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]);
     }
 
     {
         //                [xxx++++++xxxxx++++x+x++]
-        let mut vec = bump_vec![in &bump;
+        let mut vec = vec![
             2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36, 37, 39,
         ];
 
         let removed = vec.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
         assert_eq!(removed.len(), 10);
-        assert_eq!(removed, &[2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
+        assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
 
         assert_eq!(vec.len(), 13);
-        assert_eq!(vec, &[7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]);
+        assert_eq!(vec, vec![7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]);
     }
 
     {
         //                [xxx++++++xxxxx++++x+x]
-        let mut vec = bump_vec![in &bump; 2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36];
+        let mut vec =
+            vec![2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36];
 
         let removed = vec.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
         assert_eq!(removed.len(), 10);
-        assert_eq!(removed, &[2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
+        assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
 
         assert_eq!(vec.len(), 11);
-        assert_eq!(vec, &[7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35]);
+        assert_eq!(vec, vec![7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35]);
     }
 
     {
         //                [xxxxxxxxxx+++++++++++]
-        let mut vec = bump_vec![in &bump; 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
+        let mut vec = vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
 
         let removed = vec.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
         assert_eq!(removed.len(), 10);
-        assert_eq!(removed, &[2, 4, 6, 8, 10, 12, 14, 16, 18, 20]);
+        assert_eq!(removed, vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20]);
 
         assert_eq!(vec.len(), 10);
-        assert_eq!(vec, &[1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
+        assert_eq!(vec, vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
     }
 
     {
         //                [+++++++++++xxxxxxxxxx]
-        let mut vec = bump_vec![in &bump; 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
+        let mut vec = vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
 
         let removed = vec.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
         assert_eq!(removed.len(), 10);
-        assert_eq!(removed, &[2, 4, 6, 8, 10, 12, 14, 16, 18, 20]);
+        assert_eq!(removed, vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20]);
 
         assert_eq!(vec.len(), 10);
-        assert_eq!(vec, &[1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
+        assert_eq!(vec, vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
     }
 }
 
 #[test]
-#[cfg(not(target_os = "emscripten"))]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn extract_if_consumed_panic() {
     use std::rc::Rc;
     use std::sync::Mutex;
 
-    struct Check<'a> {
+    struct Check {
         index: usize,
-        drop_counts: Rc<Mutex<BumpVec<usize, &'a Bump>>>,
+        drop_counts: Rc<Mutex<Vec<usize>>>,
     }
 
-    impl Drop for Check<'_> {
+    impl Drop for Check {
         fn drop(&mut self) {
             self.drop_counts.lock().unwrap()[self.index] += 1;
             println!("drop: {}", self.index);
         }
     }
 
-    let bump: Bump = Bump::new();
     let check_count = 10;
-    let drop_counts = Rc::new(Mutex::new(bump_vec![in &bump; 0_usize; check_count]));
-    let mut data: BumpVec<Check, _> = bump_vec![in &bump];
-    data.extend(
-        (0..check_count).map(|index| Check { index, drop_counts: Rc::clone(&drop_counts) }),
-    );
+    let drop_counts = Rc::new(Mutex::new(vec![0_usize; check_count]));
+    let mut data: Vec<Check> = (0..check_count)
+        .map(|index| Check { index, drop_counts: Rc::clone(&drop_counts) })
+        .collect();
 
     let _ = std::panic::catch_unwind(move || {
         let filter = |c: &mut Check| {
@@ -1614,31 +1524,28 @@ fn extract_if_consumed_panic() {
 }
 
 #[test]
-#[cfg(not(target_os = "emscripten"))]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn extract_if_unconsumed_panic() {
     use std::rc::Rc;
     use std::sync::Mutex;
 
-    struct Check<'a> {
+    struct Check {
         index: usize,
-        drop_counts: Rc<Mutex<BumpVec<usize, &'a Bump>>>,
+        drop_counts: Rc<Mutex<Vec<usize>>>,
     }
 
-    impl Drop for Check<'_> {
+    impl Drop for Check {
         fn drop(&mut self) {
             self.drop_counts.lock().unwrap()[self.index] += 1;
             println!("drop: {}", self.index);
         }
     }
 
-    let bump: Bump = Bump::new();
     let check_count = 10;
-    let drop_counts = Rc::new(Mutex::new(bump_vec![in &bump; 0_usize; check_count]));
-    let mut data: BumpVec<Check, _> = bump_vec![in &bump];
-    data.extend(
-        (0..check_count).map(|index| Check { index, drop_counts: Rc::clone(&drop_counts) }),
-    );
+    let drop_counts = Rc::new(Mutex::new(vec![0_usize; check_count]));
+    let mut data: Vec<Check> = (0..check_count)
+        .map(|index| Check { index, drop_counts: Rc::clone(&drop_counts) })
+        .collect();
 
     let _ = std::panic::catch_unwind(move || {
         let filter = |c: &mut Check| {
@@ -1668,12 +1575,52 @@ fn extract_if_unconsumed_panic() {
 
 #[test]
 fn extract_if_unconsumed() {
-    let bump: Bump = Bump::new();
-    let mut vec = bump_vec![in &bump; 1, 2, 3, 4];
+    let mut vec = vec![1, 2, 3, 4];
     let drain = vec.extract_if(|&mut x| x % 2 != 0);
     drop(drain);
     assert_eq!(vec, [1, 2, 3, 4]);
 }
+
+#[test]
+fn test_reserve_exact() {
+    // This is all the same as test_reserve
+
+    let mut v = Vec::new();
+    assert_eq!(v.capacity(), 0);
+
+    v.reserve_exact(2);
+    assert!(v.capacity() >= 2);
+
+    for i in 0..16 {
+        v.push(i);
+    }
+
+    assert!(v.capacity() >= 16);
+    v.reserve_exact(16);
+    assert!(v.capacity() >= 32);
+
+    v.push(16);
+
+    v.reserve_exact(16);
+    assert!(v.capacity() >= 33)
+}
+
+#[test]
+#[cfg_attr(miri, ignore)] // Miri does not support signalling OOM
+fn test_try_with_capacity() {
+    let mut vec: Vec<u32> = Vec::try_with_capacity(5).unwrap();
+    assert_eq!(0, vec.len());
+    assert!(vec.capacity() >= 5 && vec.capacity() <= isize::MAX as usize / 4);
+    assert!(vec.spare_capacity_mut().len() >= 5);
+
+    assert!(Vec::<u16>::try_with_capacity(isize::MAX as usize + 1).is_err());
+}
+
+#[cfg(any())] // we don't have try reserve error variants
+fn test_try_reserve() {}
+
+#[cfg(any())] // we don't have try reserve error variants
+fn test_try_reserve_exact() {}
 
 #[test]
 fn test_stable_pointers() {
@@ -1684,16 +1631,13 @@ fn test_stable_pointers() {
         drop(i);
     }
 
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-
     // Test that, if we reserved enough space, adding and removing elements does not
     // invalidate references into the vector (such as `v0`). This test also
     // runs in Miri, which would detect such problems.
     // Note that this test does *not* constitute a stable guarantee that all these functions do not
     // reallocate! Only what is explicitly documented at
-    // <https://doc.rust-lang.org/nightly/std/vec/struct.BumpVec.html#guarantees> is stably guaranteed.
-    let mut v = BumpVec::with_capacity_in(128, &bump0);
+    // <https://doc.rust-lang.org/nightly/std/vec/struct.Vec.html#guarantees> is stably guaranteed.
+    let mut v = Vec::with_capacity(128);
     v.push(13);
 
     // Laundering the lifetime -- we take care that `v` does not reallocate, so that's okay.
@@ -1716,13 +1660,13 @@ fn test_stable_pointers() {
     assert_eq!(*v0, 13);
 
     // Appending
-    v.append(&mut bump_vec![in &bump1; 27, 19].into_boxed_slice());
+    v.append(&mut vec![27, 19]);
     assert_eq!(*v0, 13);
 
     // Extending
     v.extend_from_slice_copy(&[1, 2]);
     v.extend(&[1, 2]); // `slice::Iter` (with `T: Copy`) specialization
-    v.extend(bump_vec![in &bump1; 2, 3]); // `vec::IntoIter` specialization
+    v.extend(vec![2, 3]); // `vec::IntoIter` specialization
     v.extend(std::iter::once(3)); // `TrustedLen` specialization
     v.extend(std::iter::empty::<i32>()); // `TrustedLen` specialization with empty iterator
     v.extend(std::iter::once(3).filter(|_| true)); // base case
@@ -1751,9 +1695,9 @@ fn test_stable_pointers() {
 
     // Splicing
     v.resize_with(10, || 42);
-    next_then_drop(v.splice(5.., bump_vec![in &bump1; 1, 2, 3, 4, 5])); // empty tail after range
+    next_then_drop(v.splice(5.., vec![1, 2, 3, 4, 5])); // empty tail after range
     assert_eq!(*v0, 13);
-    next_then_drop(v.splice(5..8, bump_vec![in &bump1; 1])); // replacement is smaller than original range
+    next_then_drop(v.splice(5..8, vec![1])); // replacement is smaller than original range
     assert_eq!(*v0, 13);
     next_then_drop(v.splice(5..6, [1; 10].into_iter().filter(|_| true))); // lower bound not exact
     assert_eq!(*v0, 13);
@@ -1768,9 +1712,165 @@ fn test_stable_pointers() {
     assert_eq!(v[0], 0);
 }
 
+// https://github.com/rust-lang/rust/pull/49496 introduced specialization based on:
+//
+// ```
+// unsafe impl<T: ?Sized> IsZero for *mut T {
+//     fn is_zero(&self) -> bool {
+//         (*self).is_null()
+//     }
+// }
+// ```
+//
+// … to call `RawVec::with_capacity_zeroed` for creating `Vec<*mut T>`,
+// which is incorrect for fat pointers since `<*mut T>::is_null` only looks at the data component.
+// That is, a fat pointer can be “null” without being made entirely of zero bits.
+#[test]
+fn vec_macro_repeating_null_raw_fat_pointer() {
+    let raw_dyn = &mut (|| ()) as &mut dyn Fn() as *mut dyn Fn();
+    let vtable = dbg!(ptr_metadata(raw_dyn));
+    let null_raw_dyn = ptr_from_raw_parts(std::ptr::null_mut(), vtable);
+    assert!(null_raw_dyn.is_null());
+
+    let vec = vec![null_raw_dyn; 1];
+    dbg!(ptr_metadata(vec[0]));
+    assert!(std::ptr::eq(vec[0], null_raw_dyn));
+
+    // Polyfill for https://github.com/rust-lang/rfcs/pull/2580
+
+    fn ptr_metadata(ptr: *mut dyn Fn()) -> *mut () {
+        unsafe { std::mem::transmute::<*mut dyn Fn(), DynRepr>(ptr).vtable }
+    }
+
+    fn ptr_from_raw_parts(data: *mut (), vtable: *mut ()) -> *mut dyn Fn() {
+        unsafe { std::mem::transmute::<DynRepr, *mut dyn Fn()>(DynRepr { data, vtable }) }
+    }
+
+    #[repr(C)]
+    struct DynRepr {
+        data: *mut (),
+        vtable: *mut (),
+    }
+}
+
+// This test will likely fail if you change the capacities used in
+// `RawVec::grow_amortized`.
+#[test]
+fn test_push_growth_strategy() {
+    // If the element size is 1, we jump from 0 to 8, then double.
+    {
+        let mut v1: Vec<u8> = vec![];
+        assert_eq!(v1.capacity(), 0);
+
+        for _ in 0..8 {
+            v1.push(0);
+            assert_eq!(v1.capacity(), 8);
+        }
+
+        for _ in 8..16 {
+            v1.push(0);
+            assert_eq!(v1.capacity(), 16);
+        }
+
+        for _ in 16..32 {
+            v1.push(0);
+            assert_eq!(v1.capacity(), 32);
+        }
+
+        for _ in 32..64 {
+            v1.push(0);
+            assert_eq!(v1.capacity(), 64);
+        }
+    }
+
+    // If the element size is 2..=1024, we jump from 0 to 4, then double.
+    {
+        let mut v2: Vec<u16> = vec![];
+        let mut v1024: Vec<[u8; 1024]> = vec![];
+        assert_eq!(v2.capacity(), 0);
+        assert_eq!(v1024.capacity(), 0);
+
+        for _ in 0..4 {
+            v2.push(0);
+            v1024.push([0; 1024]);
+            assert_eq!(v2.capacity(), 4);
+            assert_eq!(v1024.capacity(), 4);
+        }
+
+        for _ in 4..8 {
+            v2.push(0);
+            v1024.push([0; 1024]);
+            assert_eq!(v2.capacity(), 8);
+            assert_eq!(v1024.capacity(), 8);
+        }
+
+        for _ in 8..16 {
+            v2.push(0);
+            v1024.push([0; 1024]);
+            assert_eq!(v2.capacity(), 16);
+            assert_eq!(v1024.capacity(), 16);
+        }
+
+        for _ in 16..32 {
+            v2.push(0);
+            v1024.push([0; 1024]);
+            assert_eq!(v2.capacity(), 32);
+            assert_eq!(v1024.capacity(), 32);
+        }
+
+        for _ in 32..64 {
+            v2.push(0);
+            v1024.push([0; 1024]);
+            assert_eq!(v2.capacity(), 64);
+            assert_eq!(v1024.capacity(), 64);
+        }
+    }
+
+    // If the element size is > 1024, we jump from 0 to 1, then double.
+    {
+        let mut v1025: Vec<[u8; 1025]> = vec![];
+        assert_eq!(v1025.capacity(), 0);
+
+        for _ in 0..1 {
+            v1025.push([0; 1025]);
+            assert_eq!(v1025.capacity(), 1);
+        }
+
+        for _ in 1..2 {
+            v1025.push([0; 1025]);
+            assert_eq!(v1025.capacity(), 2);
+        }
+
+        for _ in 2..4 {
+            v1025.push([0; 1025]);
+            assert_eq!(v1025.capacity(), 4);
+        }
+
+        for _ in 4..8 {
+            v1025.push([0; 1025]);
+            assert_eq!(v1025.capacity(), 8);
+        }
+
+        for _ in 8..16 {
+            v1025.push([0; 1025]);
+            assert_eq!(v1025.capacity(), 16);
+        }
+
+        for _ in 16..32 {
+            v1025.push([0; 1025]);
+            assert_eq!(v1025.capacity(), 32);
+        }
+
+        for _ in 32..64 {
+            v1025.push([0; 1025]);
+            assert_eq!(v1025.capacity(), 64);
+        }
+    }
+}
+
 macro_rules! generate_assert_eq_vec_and_prim {
     ($name:ident<$B:ident>($type:ty)) => {
-        fn $name<A: PartialEq<$B> + Debug, $B: Debug>(a: BumpVec<A, &Bump>, b: $type) {
+        fn $name<A: PartialEq<$B> + Debug, $B: Debug>(a: Vec<A>, b: $type) {
             assert!(a == b);
             assert_eq!(a, b);
         }
@@ -1782,9 +1882,8 @@ generate_assert_eq_vec_and_prim! { assert_eq_vec_and_array_3<B>([B; 3]) }
 
 #[test]
 fn partialeq_vec_and_prim() {
-    let bump: Bump = Bump::new();
-    assert_eq_vec_and_slice(bump_vec![in &bump; 1, 2, 3], &[1, 2, 3]);
-    assert_eq_vec_and_array_3(bump_vec![in &bump; 1, 2, 3], [1, 2, 3]);
+    assert_eq_vec_and_slice(vec![1, 2, 3], &[1, 2, 3]);
+    assert_eq_vec_and_array_3(vec![1, 2, 3], [1, 2, 3]);
 }
 
 macro_rules! assert_partial_eq_valid {
@@ -1802,10 +1901,8 @@ macro_rules! assert_partial_eq_valid {
 
 #[test]
 fn partialeq_vec_full() {
-    let bump2: Bump = Bump::new();
-    let bump3: Bump = Bump::new();
-    let vec2: BumpVec<_, _> = bump_vec![in &bump2; 1, 2];
-    let vec3: BumpVec<_, _> = bump_vec![in &bump3; 1, 2, 3];
+    let vec2: Vec<_> = vec![1, 2];
+    let vec3: Vec<_> = vec![1, 2, 3];
     let slice2: &[_] = &[1, 2];
     let slice3: &[_] = &[1, 2, 3];
     let slicemut2: &[_] = &mut [1, 2];
@@ -1825,11 +1922,91 @@ fn partialeq_vec_full() {
     assert_partial_eq_valid!(vec2,vec3; arrayref2[..],arrayref3[..]);
 }
 
+#[cfg(any())] // TODO: `#[may_dangle]`?
+#[test]
+fn test_vec_cycle() {
+    #[derive(Debug)]
+    struct C<'a> {
+        v: Vec<Cell<Option<&'a C<'a>>>>,
+    }
+
+    impl<'a> C<'a> {
+        fn new() -> C<'a> {
+            C { v: Vec::new() }
+        }
+    }
+
+    let mut c1 = C::new();
+    let mut c2 = C::new();
+    let mut c3 = C::new();
+
+    // Push
+    c1.v.push(Cell::new(None));
+    c1.v.push(Cell::new(None));
+
+    c2.v.push(Cell::new(None));
+    c2.v.push(Cell::new(None));
+
+    c3.v.push(Cell::new(None));
+    c3.v.push(Cell::new(None));
+
+    // Set
+    c1.v[0].set(Some(&c2));
+    c1.v[1].set(Some(&c3));
+
+    c2.v[0].set(Some(&c2));
+    c2.v[1].set(Some(&c3));
+
+    c3.v[0].set(Some(&c1));
+    c3.v[1].set(Some(&c2));
+}
+
+#[cfg(any())] // TODO: `#[may_dangle]`?
+#[test]
+fn test_vec_cycle_wrapped() {
+    struct Refs<'a> {
+        v: Vec<Cell<Option<&'a C<'a>>>>,
+    }
+
+    struct C<'a> {
+        refs: Refs<'a>,
+    }
+
+    impl<'a> Refs<'a> {
+        fn new() -> Refs<'a> {
+            Refs { v: Vec::new() }
+        }
+    }
+
+    impl<'a> C<'a> {
+        fn new() -> C<'a> {
+            C { refs: Refs::new() }
+        }
+    }
+
+    let mut c1 = C::new();
+    let mut c2 = C::new();
+    let mut c3 = C::new();
+
+    c1.refs.v.push(Cell::new(None));
+    c1.refs.v.push(Cell::new(None));
+    c2.refs.v.push(Cell::new(None));
+    c2.refs.v.push(Cell::new(None));
+    c3.refs.v.push(Cell::new(None));
+    c3.refs.v.push(Cell::new(None));
+
+    c1.refs.v[0].set(Some(&c2));
+    c1.refs.v[1].set(Some(&c3));
+    c2.refs.v[0].set(Some(&c2));
+    c2.refs.v[1].set(Some(&c3));
+    c3.refs.v[0].set(Some(&c1));
+    c3.refs.v[1].set(Some(&c2));
+}
+
 #[test]
 fn test_zero_sized_capacity() {
     for len in [0, 1, 2, 4, 8, 16, 32, 64, 128, 256] {
-        let bump: Bump = Bump::new();
-        let v = BumpVec::<(), _>::with_capacity_in(len, &bump);
+        let v = Vec::<()>::with_capacity(len);
         assert_eq!(v.len(), 0);
         assert_eq!(v.capacity(), usize::MAX);
     }
@@ -1840,8 +2017,7 @@ fn test_zero_sized_vec_push() {
     const N: usize = 8;
 
     for len in 0..N {
-        let bump: Bump = Bump::new();
-        let mut tester = BumpVec::with_capacity_in(len, &bump);
+        let mut tester = Vec::with_capacity(len);
         assert_eq!(tester.len(), 0);
         assert!(tester.capacity() >= len);
         for _ in 0..len {
@@ -1855,27 +2031,20 @@ fn test_zero_sized_vec_push() {
 
 #[test]
 fn test_vec_macro_repeat() {
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-
-    assert_eq!(bump_vec![in &bump0; 1; 3], bump_vec![in &bump1; 1, 1, 1]);
-    assert_eq!(bump_vec![in &bump0; 1; 2], bump_vec![in &bump1; 1, 1]);
-    assert_eq!(bump_vec![in &bump0; 1; 1], bump_vec![in &bump1; 1]);
-    // assert_eq!(bump_vec![in &bump0; 1; 0], bump_vec![in &bump1; ]);
+    assert_eq!(vec![1; 3], vec![1, 1, 1]);
+    assert_eq!(vec![1; 2], vec![1, 1]);
+    assert_eq!(vec![1; 1], vec![1]);
+    assert_eq!(vec![1; 0], vec![]);
 
     // from_elem syntax (see RFC 832)
     let el = Box::new(1);
     let n = 3;
-    assert_eq!(
-        bump_vec![in &bump0; el; n],
-        bump_vec![in &bump1; Box::new(1), Box::new(1), Box::new(1)]
-    );
+    assert_eq!(vec![el; n], vec![Box::new(1), Box::new(1), Box::new(1)]);
 }
 
 #[test]
 fn test_vec_swap() {
-    let bump: Bump = Bump::new();
-    let mut a: BumpVec<isize, _> = bump_vec![in &bump; 0, 1, 2, 3, 4, 5, 6];
+    let mut a: Vec<isize> = vec![0, 1, 2, 3, 4, 5, 6];
     a.swap(2, 4);
     assert_eq!(a[2], 4);
     assert_eq!(a[4], 2);
@@ -1896,112 +2065,68 @@ fn test_extend_from_within_spec() {
         }
     }
 
-    let bump: Bump = Bump::new();
-    bump_vec![in &bump; CopyOnly, CopyOnly].extend_from_within_copy(..);
+    vec![CopyOnly, CopyOnly].extend_from_within_copy(..);
 }
 
 #[test]
 fn test_extend_from_within_clone() {
-    let bump: Bump = Bump::new();
-    let mut v =
-        bump_vec![in &bump; String::from("sssss"), String::from("12334567890"), String::from("c")];
+    let mut v = vec![String::from("sssss"), String::from("12334567890"), String::from("c")];
     v.extend_from_within_clone(1..);
+
     assert_eq!(v, ["sssss", "12334567890", "c", "12334567890", "c"]);
 }
 
 #[test]
 fn test_extend_from_within_complete_rande() {
-    {
-        let bump: Bump = Bump::new();
-        let mut v = bump_vec![in &bump; 0, 1, 2, 3];
-        v.extend_from_within_copy(..);
-        assert_eq!(v, [0, 1, 2, 3, 0, 1, 2, 3]);
-    }
-    {
-        let bump: Bump = Bump::new();
-        let mut v = bump_vec![in &bump; 0, 1, 2, 3];
-        v.extend_from_within_clone(..);
-        assert_eq!(v, [0, 1, 2, 3, 0, 1, 2, 3]);
-    }
+    let mut v = vec![0, 1, 2, 3];
+    v.extend_from_within_copy(..);
+
+    assert_eq!(v, [0, 1, 2, 3, 0, 1, 2, 3]);
 }
 
 #[test]
 fn test_extend_from_within_empty_rande() {
-    {
-        let bump: Bump = Bump::new();
-        let mut v = bump_vec![in &bump; 0, 1, 2, 3];
-        v.extend_from_within_copy(1..1);
-        assert_eq!(v, [0, 1, 2, 3]);
-    }
-    {
-        let bump: Bump = Bump::new();
-        let mut v = bump_vec![in &bump; 0, 1, 2, 3];
-        v.extend_from_within_clone(1..1);
-        assert_eq!(v, [0, 1, 2, 3]);
-    }
+    let mut v = vec![0, 1, 2, 3];
+    v.extend_from_within_copy(1..1);
+
+    assert_eq!(v, [0, 1, 2, 3]);
 }
 
 #[test]
 #[should_panic]
 fn test_extend_from_within_out_of_rande() {
-    {
-        let bump: Bump = Bump::new();
-        let mut v = bump_vec![in &bump; 0, 1];
-        v.extend_from_within_copy(..3);
-    }
-
-    {
-        let bump: Bump = Bump::new();
-        let mut v = bump_vec![in &bump; 0, 1];
-        v.extend_from_within_clone(..3);
-    }
+    let mut v = vec![0, 1];
+    v.extend_from_within_copy(..3);
 }
 
 #[test]
 fn test_extend_from_within_zst() {
-    {
-        let bump: Bump = Bump::new();
-        let mut v = bump_vec![in &bump; (); 8];
-        v.extend_from_within_copy(3..7);
-        assert_eq!(v, [(); 12]);
-    }
-    {
-        let bump: Bump = Bump::new();
-        let mut v = bump_vec![in &bump; (); 8];
-        v.extend_from_within_clone(3..7);
-        assert_eq!(v, [(); 12]);
-    }
+    let mut v = vec![(); 8];
+    v.extend_from_within_copy(3..7);
+
+    assert_eq!(v, [(); 12]);
 }
 
 #[test]
 fn test_extend_from_within_empty_vec() {
-    {
-        let bump: Bump = Bump::new();
-        let mut v = BumpVec::<i32, _>::new_in(&bump);
-        v.extend_from_within_copy(..);
-        assert!(v.is_empty());
-    }
-    {
-        let bump: Bump = Bump::new();
-        let mut v = BumpVec::<i32, _>::new_in(&bump);
-        v.extend_from_within_clone(..);
-        assert!(v.is_empty());
-    }
+    let mut v = Vec::<i32>::new();
+    v.extend_from_within_copy(..);
+
+    assert_eq!(v, []);
 }
 
 #[test]
 fn test_extend_from_within() {
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; String::from("a"), String::from("b"), String::from("c")];
+    let mut v = vec![String::from("a"), String::from("b"), String::from("c")];
     v.extend_from_within_clone(1..=2);
     v.extend_from_within_clone(..=1);
+
     assert_eq!(v, ["a", "b", "c", "b", "c", "a", "b"]);
 }
 
 #[test]
 fn test_vec_dedup_by() {
-    let bump: Bump = Bump::new();
-    let mut vec: BumpVec<i32, _> = bump_vec![in &bump; 1, -1, 2, 3, 1, -5, 5, -2, 2];
+    let mut vec: Vec<i32> = vec![1, -1, 2, 3, 1, -5, 5, -2, 2];
 
     vec.dedup_by(|a, b| a.abs() == b.abs());
 
@@ -2010,18 +2135,16 @@ fn test_vec_dedup_by() {
 
 #[test]
 fn test_vec_dedup_empty() {
-    let bump: Bump = Bump::new();
-    let mut vec: BumpVec<i32, _> = BumpVec::new_in(&bump);
+    let mut vec: Vec<i32> = Vec::new();
 
     vec.dedup();
 
-    assert!(vec.is_empty());
+    assert_eq!(vec, []);
 }
 
 #[test]
 fn test_vec_dedup_one() {
-    let bump: Bump = Bump::new();
-    let mut vec = bump_vec![in &bump; 12i32];
+    let mut vec = vec![12i32];
 
     vec.dedup();
 
@@ -2030,8 +2153,7 @@ fn test_vec_dedup_one() {
 
 #[test]
 fn test_vec_dedup_multiple_ident() {
-    let bump: Bump = Bump::new();
-    let mut vec = bump_vec![in &bump; 12, 12, 12, 12, 12, 11, 11, 11, 11, 11, 11];
+    let mut vec = vec![12, 12, 12, 12, 12, 11, 11, 11, 11, 11, 11];
 
     vec.dedup();
 
@@ -2041,8 +2163,7 @@ fn test_vec_dedup_multiple_ident() {
 #[test]
 fn test_vec_dedup_partialeq() {
     #[derive(Debug)]
-    #[allow(dead_code)]
-    struct Foo(i32, i32);
+    struct Foo(i32, #[allow(dead_code)] i32);
 
     impl PartialEq for Foo {
         fn eq(&self, other: &Foo) -> bool {
@@ -2050,8 +2171,7 @@ fn test_vec_dedup_partialeq() {
         }
     }
 
-    let bump: Bump = Bump::new();
-    let mut vec = bump_vec![in &bump; Foo(0, 1), Foo(0, 5), Foo(1, 7), Foo(1, 9)];
+    let mut vec = vec![Foo(0, 1), Foo(0, 5), Foo(1, 7), Foo(1, 9)];
 
     vec.dedup();
     assert_eq!(vec, [Foo(0, 1), Foo(1, 7)]);
@@ -2059,13 +2179,8 @@ fn test_vec_dedup_partialeq() {
 
 #[test]
 fn test_vec_dedup() {
-    let bump0: Bump = Bump::new();
-    let bump1: Bump = Bump::new();
-
-    let mut vec: BumpVec<bool, _> = BumpVec::with_capacity_in(8, &bump0);
-
-    let mut template = BumpVec::new_in(&bump1);
-    template.extend(vec.iter());
+    let mut vec: Vec<bool> = Vec::with_capacity(8);
+    let mut template = vec.clone();
 
     for x in 0u8..255u8 {
         vec.clear();
@@ -2092,13 +2207,13 @@ fn test_vec_dedup_panicking() {
         index: usize,
     }
 
-    impl PartialEq for Panic<'_> {
+    impl<'a> PartialEq for Panic<'a> {
         fn eq(&self, other: &Self) -> bool {
             self.value == other.value
         }
     }
 
-    impl Drop for Panic<'_> {
+    impl<'a> Drop for Panic<'a> {
         fn drop(&mut self) {
             self.drop_counter.set(self.drop_counter.get() + 1);
             if !std::thread::panicking() {
@@ -2107,7 +2222,6 @@ fn test_vec_dedup_panicking() {
         }
     }
 
-    let bump: Bump = Bump::new();
     let drop_counter = &Cell::new(0);
     let expected = [
         Panic { drop_counter, value: false, index: 0 },
@@ -2115,49 +2229,17 @@ fn test_vec_dedup_panicking() {
         Panic { drop_counter, value: true, index: 6 },
         Panic { drop_counter, value: true, index: 7 },
     ];
-    let mut vec = bump_vec![in &bump;
-        Panic {
-            drop_counter,
-            value: false,
-            index: 0,
-        },
+    let mut vec = vec![
+        Panic { drop_counter, value: false, index: 0 },
         // these elements get deduplicated
-        Panic {
-            drop_counter,
-            value: false,
-            index: 1,
-        },
-        Panic {
-            drop_counter,
-            value: false,
-            index: 2,
-        },
-        Panic {
-            drop_counter,
-            value: false,
-            index: 3,
-        },
-        Panic {
-            drop_counter,
-            value: false,
-            index: 4,
-        },
+        Panic { drop_counter, value: false, index: 1 },
+        Panic { drop_counter, value: false, index: 2 },
+        Panic { drop_counter, value: false, index: 3 },
+        Panic { drop_counter, value: false, index: 4 },
         // here it panics while dropping the item with index==4
-        Panic {
-            drop_counter,
-            value: false,
-            index: 5,
-        },
-        Panic {
-            drop_counter,
-            value: true,
-            index: 6,
-        },
-        Panic {
-            drop_counter,
-            value: true,
-            index: 7,
-        },
+        Panic { drop_counter, value: false, index: 5 },
+        Panic { drop_counter, value: true, index: 6 },
+        Panic { drop_counter, value: true, index: 7 },
     ];
 
     let _ = catch_unwind(AssertUnwindSafe(|| vec.dedup())).unwrap_err();
@@ -2197,21 +2279,10 @@ fn test_extend_from_within_panicking_clone() {
     }
 
     let count = core::sync::atomic::AtomicU32::new(0);
-    let bump: Bump = Bump::new();
-
-    let mut vec = bump_vec![in &bump;
-        Panic {
-            drop_count: &count,
-            aaaaa: false,
-        },
-        Panic {
-            drop_count: &count,
-            aaaaa: true,
-        },
-        Panic {
-            drop_count: &count,
-            aaaaa: false,
-        },
+    let mut vec = vec![
+        Panic { drop_count: &count, aaaaa: false },
+        Panic { drop_count: &count, aaaaa: true },
+        Panic { drop_count: &count, aaaaa: false },
     ];
 
     // This should clone&append one Panic{..} at the end, and then panic while
@@ -2227,13 +2298,20 @@ fn test_extend_from_within_panicking_clone() {
 #[test]
 #[should_panic = "vec len overflow"]
 fn test_into_flattened_size_overflow() {
-    let bump: Bump = Bump::new();
-    let v = bump_vec![in &bump; [(); usize::MAX]; 2];
+    let v = vec![[(); usize::MAX]; 2];
     let _ = v.into_flattened();
 }
 
-/*
-TODO
+#[cfg(any())] // not applicable, `BumpAllocator` has special behavior that must accept any zero sized deallocations
+fn test_box_zero_allocator() {}
+
+#[cfg(any())] // not applicable
+#[test]
+fn test_vec_from_array_ref() {}
+
+#[cfg(any())] // not applicable
+#[test]
+fn test_vec_from_array_mut_ref() {}
 
 #[test]
 fn test_pop_if() {
@@ -2264,7 +2342,6 @@ fn test_pop_if_mutates() {
     assert_eq!(v.pop_if(pred), None);
     assert_eq!(v, [2]);
 }
-*/
 
 /// This assortment of tests, in combination with miri, verifies we handle UB on fishy arguments
 /// in the stdlib. Draining and extending the allocation are fairly well-tested earlier, but
@@ -2273,41 +2350,46 @@ fn test_pop_if_mutates() {
 /// All code that manipulates the collection types should be tested with "trivially wrong" args.
 #[test]
 fn max_dont_panic() {
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; 0];
+    let mut v = vec![0];
     let _ = v.get(usize::MAX);
-    // v.shrink_to(usize::MAX); // TODO
+    // v.shrink_to(usize::MAX); TODO: implement shrink_to
     v.truncate(usize::MAX);
 }
 
 #[test]
 #[should_panic]
 fn max_insert() {
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; 0];
+    let mut v = vec![0];
     v.insert(usize::MAX, 1);
 }
 
 #[test]
 #[should_panic]
 fn max_remove() {
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; 0];
+    let mut v = vec![0];
     v.remove(usize::MAX);
 }
 
 #[test]
 #[should_panic]
 fn max_splice() {
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; 0];
+    let mut v = vec![0];
     v.splice(usize::MAX.., core::iter::once(1));
 }
 
 #[test]
 #[should_panic]
 fn max_swap_remove() {
-    let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; 0];
+    let mut v = vec![0];
     v.swap_remove(usize::MAX);
+}
+
+// Regression test for #135338
+#[test]
+fn vec_null_ptr_roundtrip() {
+    let ptr = std::ptr::from_ref(&42);
+    let zero = ptr.with_addr(0);
+    let roundtripped = vec![zero; 1].pop().unwrap();
+    let new = roundtripped.with_addr(ptr.addr());
+    unsafe { new.read() };
 }

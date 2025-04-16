@@ -10,7 +10,9 @@
     try_with_capacity,
     iter_array_chunks,
     iter_next_chunk,
-    iter_advance_by
+    iter_advance_by,
+    slice_ptr_get,
+    default_field_values
 )]
 #![allow(
     clippy::pedantic,
