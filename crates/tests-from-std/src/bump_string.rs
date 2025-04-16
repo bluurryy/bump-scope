@@ -1,7 +1,6 @@
 // Adapted from rust's `library/alloc/tests/string.rs` commit c682aa162b0d41e21cc6748f4fecfe01efb69d1f
 
 use std::{
-    assert_matches::assert_matches,
     cell::Cell,
     ops::{
         Bound::{self, *},
@@ -13,7 +12,7 @@ use std::{
     vec::Vec,
 };
 
-use crate::{bump_format, bump_vec, Bump, BumpString, BumpVec};
+use bump_scope::{Bump, BumpString, BumpVec, bump_format, bump_vec};
 
 #[test]
 fn test_from_utf8() {

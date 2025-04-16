@@ -3,31 +3,31 @@
 use std::{
     alloc::System,
     assert_eq,
-    assert_matches::assert_matches,
-    borrow::Cow,
     boxed::Box,
     cell::Cell,
     dbg,
     fmt::Debug,
     format, hint,
-    iter::{InPlaceIterable, IntoIterator},
+    iter::IntoIterator,
     mem::{self, size_of, swap},
     num::NonZeroUsize,
     ops::Bound::*,
-    panic::{catch_unwind, AssertUnwindSafe},
+    panic::{AssertUnwindSafe, catch_unwind},
     ptr::NonNull,
     rc::Rc,
     string::{String, ToString},
     sync::{
-        atomic::{AtomicU32, Ordering},
         Arc, Mutex, PoisonError,
+        atomic::{AtomicU32, Ordering},
     },
     vec::{Drain, IntoIter, Vec},
 };
 
-use allocator_api2::alloc::{AllocError, Allocator, Layout};
+use std::alloc::{AllocError, Allocator, Layout};
 
-use crate::{bump_vec, tests::RcBump, BumpVec};
+use bump_scope::{BumpVec, bump_vec};
+
+use crate::rc_bump::RcBump;
 
 struct DropCounter<'a> {
     count: &'a mut u32,

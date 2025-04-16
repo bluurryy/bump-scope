@@ -1,14 +1,31 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+//! These test cases were taken from the rust standard library.
+#![cfg(test)]
+#![feature(
+    assert_matches,
+    allocator_api,
+    inplace_iteration,
+    try_reserve_kind,
+    drain_keep_rest,
+    slice_partition_dedup,
+    try_with_capacity,
+    iter_array_chunks,
+    iter_next_chunk,
+    iter_advance_by
+)]
+#![allow(
+    clippy::pedantic,
+    clippy::style,
+    clippy::op_ref,
+    clippy::redundant_slicing,
+    clippy::reversed_empty_ranges,
+    clippy::manual_range_patterns,
+    clippy::non_canonical_clone_impl,
+    clippy::char_lit_as_u8
+)]
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+mod bump_string;
+mod bump_vec;
+mod mut_bump_vec;
+mod mut_bump_vec_rev;
+mod rc_bump;
+mod rc_bump_vec;
