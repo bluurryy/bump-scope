@@ -212,6 +212,12 @@ impl<T, A: BumpAllocator> Drop for BumpVec<T, A> {
     }
 }
 
+impl<T, A: BumpAllocator + Default> Default for BumpVec<T, A> {
+    fn default() -> Self {
+        Self::new_in(A::default())
+    }
+}
+
 #[cfg(feature = "panic-on-alloc")]
 impl<T: Clone, A: BumpAllocator + Clone> Clone for BumpVec<T, A> {
     fn clone(&self) -> Self {
@@ -2591,5 +2597,13 @@ impl<A: BumpAllocator> std::io::Write for BumpVec<u8, A> {
         }
 
         Ok(())
+    }
+}
+
+impl<T, A: BumpAllocator + Default> FromIterator<T> for BumpVec<T, A> {
+    #[inline]
+    #[track_caller]
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        Self::from_iter_in(iter.into_iter(), A::default())
     }
 }

@@ -1827,6 +1827,12 @@ impl<T, A> DerefMut for MutBumpVecRev<T, A> {
     }
 }
 
+impl<T, A: Default> Default for MutBumpVecRev<T, A> {
+    fn default() -> Self {
+        Self::new_in(A::default())
+    }
+}
+
 impl<T, A, I: SliceIndex<[T]>> Index<I> for MutBumpVecRev<T, A> {
     type Output = I::Output;
 

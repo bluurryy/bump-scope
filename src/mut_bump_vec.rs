@@ -151,6 +151,12 @@ impl<T, A> DerefMut for MutBumpVec<T, A> {
     }
 }
 
+impl<T, A: Default> Default for MutBumpVec<T, A> {
+    fn default() -> Self {
+        Self::new_in(A::default())
+    }
+}
+
 impl<T, A> MutBumpVec<T, A> {
     /// Constructs a new empty `MutBumpVec<T>`.
     ///
