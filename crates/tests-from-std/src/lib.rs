@@ -29,5 +29,3 @@ mod bump_string;
 mod bump_vec;
 mod mut_bump_vec;
 mod mut_bump_vec_rev;
-mod rc_bump;
-mod rc_bump_vec;
