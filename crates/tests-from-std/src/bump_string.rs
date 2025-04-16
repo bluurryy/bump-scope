@@ -1,10 +1,10 @@
-// Adapted from rust's `library/alloc/tests/string.rs` commit c682aa162b0d41e21cc6748f4fecfe01efb69d1f
+//! Adapted from rust's `library/alloctests/tests/vec.rs` commit fb04372dc56129d69e39af80cac6e81694bd285f
 
 use std::cell::Cell;
-use std::ops::Bound::{self, *};
-use std::ops::RangeBounds;
+use std::ops::Bound::*;
+use std::ops::{Bound, RangeBounds};
 use std::string::String as StdString;
-use std::{panic, str, vec};
+use std::{panic, str};
 
 use bump_scope::{Bump, bump_format, bump_vec};
 
@@ -19,6 +19,15 @@ macro_rules! vec {
         bump_scope::bump_vec![in <bump_scope::Bump>::default(); $($tt)*]
     };
 }
+
+#[cfg(any())] // not applicable
+fn test_from_str() {}
+
+#[cfg(any())] // not applicable
+fn test_from_cow_str() {}
+
+#[cfg(any())] // not applicable
+fn test_unsized_to_string() {}
 
 #[test]
 fn test_from_utf8() {
@@ -93,6 +102,44 @@ fn test_from_utf8_lossy() {
         String::from_utf8_lossy_in(xs, &bump),
         String::from_str_in("\u{FFFD}\u{FFFD}\u{FFFD}foo\u{FFFD}\u{FFFD}\u{FFFD}bar", &bump)
     );
+}
+
+#[cfg(any())] // TODO: implement
+#[test]
+fn test_fromutf8error_into_lossy() {
+    fn func(input: &[u8]) -> String {
+        String::from_utf8(input.to_owned()).unwrap_or_else(|e| e.into_utf8_lossy())
+    }
+
+    let xs = b"hello";
+    let ys = "hello".to_owned();
+    assert_eq!(func(xs), ys);
+
+    let xs = "ศไทย中华Việt Nam".as_bytes();
+    let ys = "ศไทย中华Việt Nam".to_owned();
+    assert_eq!(func(xs), ys);
+
+    let xs = b"Hello\xC2 There\xFF Goodbye";
+    assert_eq!(func(xs), "Hello\u{FFFD} There\u{FFFD} Goodbye".to_owned());
+
+    let xs = b"Hello\xC0\x80 There\xE6\x83 Goodbye";
+    assert_eq!(func(xs), "Hello\u{FFFD}\u{FFFD} There\u{FFFD} Goodbye".to_owned());
+
+    let xs = b"\xF5foo\xF5\x80bar";
+    assert_eq!(func(xs), "\u{FFFD}foo\u{FFFD}\u{FFFD}bar".to_owned());
+
+    let xs = b"\xF1foo\xF1\x80bar\xF1\x80\x80baz";
+    assert_eq!(func(xs), "\u{FFFD}foo\u{FFFD}bar\u{FFFD}baz".to_owned());
+
+    let xs = b"\xF4foo\xF4\x80bar\xF4\xBFbaz";
+    assert_eq!(func(xs), "\u{FFFD}foo\u{FFFD}bar\u{FFFD}\u{FFFD}baz".to_owned());
+
+    let xs = b"\xF0\x80\x80\x80foo\xF0\x90\x80\x80bar";
+    assert_eq!(func(xs), "\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}foo\u{10000}bar".to_owned());
+
+    // surrogates
+    let xs = b"\xED\xA0\x80foo\xED\xBF\xBFbar";
+    assert_eq!(func(xs), "\u{FFFD}\u{FFFD}\u{FFFD}foo\u{FFFD}\u{FFFD}\u{FFFD}bar".to_owned());
 }
 
 #[test]
@@ -303,6 +350,9 @@ fn test_split_off_unicode() {
     let go = nihon.split_off("日本".len()..);
     assert_eq!(nihon, "日本");
     assert_eq!(go, "語");
+
+    // It's not guaranteed that these assertions succeed
+    // but they will in the current implementation.
     assert_eq!(nihon.capacity(), nihon.len());
     assert_eq!(go.capacity(), orig_capacity - nihon.len());
 }
@@ -379,9 +429,7 @@ fn remove_bad() {
     String::from_str_in("ศ", &bump).remove(1);
 }
 
-/*
-TODO
-
+#[cfg(any())] // TODO: implement `remove_matches`
 #[test]
 fn test_remove_matches() {
     // test_single_pattern_occurrence
@@ -452,7 +500,6 @@ fn test_remove_matches() {
     s.remove_matches("**");
     assert_eq!(s, "Pattern  found  multiple  times  in  text.");
 }
-*/
 
 #[test]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
@@ -745,31 +792,7 @@ fn test_into_boxed_str() {
 }
 
 #[test]
-fn test_reserve() {
-    let bump: Bump = Bump::new();
-    let mut s = String::new_in(&bump);
-    assert_eq!(s.capacity(), 0);
-
-    s.reserve(2);
-    assert!(s.capacity() >= 2);
-
-    for _i in 0..16 {
-        s.push('0');
-    }
-
-    assert!(s.capacity() >= 16);
-    s.reserve(16);
-    assert!(s.capacity() >= 32);
-
-    s.push('0');
-
-    s.reserve(16);
-    assert!(s.capacity() >= 33)
-}
-
-#[test]
 fn test_reserve_exact() {
-    // This is all the same as test_reserve
     let bump: Bump = Bump::new();
     let mut s = String::new_in(&bump);
     assert_eq!(s.capacity(), 0);
@@ -802,6 +825,12 @@ fn test_try_with_capacity() {
 
     assert!(String::try_with_capacity_in(usize::MAX, &bump).is_err());
 }
+
+#[cfg(any())] // we don't have try reserve error variants
+fn test_try_reserve() {}
+
+#[cfg(any())] // we don't have try reserve error variants
+fn test_try_reserve_exact() {}
 
 #[test]
 fn test_from_char() {
