@@ -1,25 +1,18 @@
 //! Adapted from rust's `library/alloc/tests/vec.rs` commit f7ca9df69549470541fbf542f87a03eb9ed024b6
 
-use std::{
-    alloc::System,
-    assert_eq,
-    boxed::Box,
-    fmt::Debug,
-    format, hint,
-    iter::IntoIterator,
-    mem::{self, size_of, swap},
-    num::NonZeroUsize,
-    panic::{AssertUnwindSafe, catch_unwind},
-    ptr::NonNull,
-    string::String,
-    sync::{
-        Arc, Mutex, PoisonError,
-        atomic::{AtomicU32, Ordering},
-    },
-    vec::{Drain, IntoIter},
-};
-
-use std::alloc::{AllocError, Allocator, Layout};
+use std::alloc::{AllocError, Allocator, Layout, System};
+use std::boxed::Box;
+use std::fmt::Debug;
+use std::iter::IntoIterator;
+use std::mem::{self, size_of, swap};
+use std::num::NonZeroUsize;
+use std::panic::{AssertUnwindSafe, catch_unwind};
+use std::ptr::NonNull;
+use std::string::String;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::{Arc, Mutex, PoisonError};
+use std::vec::{Drain, IntoIter};
+use std::{assert_eq, format, hint};
 
 use bump_scope::{Bump, MutBumpVecRev, mut_bump_vec_rev};
 
@@ -67,10 +60,8 @@ fn test_double_drop() {
 
     let (mut count_x, mut count_y) = (0, 0);
     {
-        let mut tv = TwoVec {
-            x: MutBumpVecRev::new_in(&mut bump_x),
-            y: MutBumpVecRev::new_in(&mut bump_y),
-        };
+        let mut tv =
+            TwoVec { x: MutBumpVecRev::new_in(&mut bump_x), y: MutBumpVecRev::new_in(&mut bump_y) };
         tv.x.push(DropCounter { count: &mut count_x });
         tv.y.push(DropCounter { count: &mut count_y });
 
@@ -434,7 +425,8 @@ fn test_vec_truncate_fail() {
     }
 
     let mut bump: Bump = Bump::new();
-    let mut v = mut_bump_vec_rev![in &mut bump; BadElem(1), BadElem(2), BadElem(0xbadbeef), BadElem(4)];
+    let mut v =
+        mut_bump_vec_rev![in &mut bump; BadElem(1), BadElem(2), BadElem(0xbadbeef), BadElem(4)];
     v.truncate(0);
 }
 
@@ -867,10 +859,7 @@ fn test_vec_macro_repeat() {
     let mut bump0: Bump = Bump::new();
     let mut bump1: Bump = Bump::new();
 
-    assert_eq!(
-        mut_bump_vec_rev![in &mut bump0; 1; 3],
-        mut_bump_vec_rev![in &mut bump1; 1, 1, 1]
-    );
+    assert_eq!(mut_bump_vec_rev![in &mut bump0; 1; 3], mut_bump_vec_rev![in &mut bump1; 1, 1, 1]);
     assert_eq!(mut_bump_vec_rev![in &mut bump0; 1; 2], mut_bump_vec_rev![in &mut bump1; 1, 1]);
     assert_eq!(mut_bump_vec_rev![in &mut bump0; 1; 1], mut_bump_vec_rev![in &mut bump1; 1]);
     // assert_eq!(mut_bump_vec_rev![in &mut bump0; 1; 0], mut_bump_vec_rev![in &mut bump1; ]);
@@ -1003,7 +992,8 @@ fn test_extend_from_within_empty_vec() {
 #[test]
 fn test_extend_from_within() {
     let mut bump: Bump = Bump::new();
-    let mut v = mut_bump_vec_rev![in &mut bump; String::from("a"), String::from("b"), String::from("c")];
+    let mut v =
+        mut_bump_vec_rev![in &mut bump; String::from("a"), String::from("b"), String::from("c")];
     v.extend_from_within_clone(1..=2);
     v.extend_from_within_clone(..=1);
     assert_eq!(v, ["b", "c", "b", "c", "a", "b", "c"]);
@@ -1057,7 +1047,8 @@ fn test_extend_from_within_panicking_clone() {
     // 4 times (3 for items already in vector, 1 for just appended).
     //
     // Previously just appended item was leaked, making drop_count = 3, instead of 4.
-    std::panic::catch_unwind(AssertUnwindSafe(move || vec.extend_from_within_clone(..))).unwrap_err();
+    std::panic::catch_unwind(AssertUnwindSafe(move || vec.extend_from_within_clone(..)))
+        .unwrap_err();
 
     assert_eq!(count.load(Ordering::SeqCst), 4);
 }

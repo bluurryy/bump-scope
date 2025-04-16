@@ -1,6 +1,7 @@
-use std::{alloc::Layout, ops::Deref, ptr::NonNull, rc::Rc};
-
-use std::alloc::{AllocError, Allocator, Global};
+use std::alloc::{AllocError, Allocator, Global, Layout};
+use std::ops::Deref;
+use std::ptr::NonNull;
+use std::rc::Rc;
 
 use bump_scope::{Bump, BumpAllocator, BumpAllocatorScope, Stats};
 
@@ -45,7 +46,12 @@ unsafe impl<A: Allocator + Clone> Allocator for RcBump<A> {
         Bump::allocate_zeroed(&self.0, layout)
     }
 
-    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+    unsafe fn grow(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> {
         unsafe { Bump::grow(&self.0, ptr, old_layout, new_layout) }
     }
 
@@ -58,7 +64,12 @@ unsafe impl<A: Allocator + Clone> Allocator for RcBump<A> {
         unsafe { Bump::grow_zeroed(&self.0, ptr, old_layout, new_layout) }
     }
 
-    unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+    unsafe fn shrink(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> {
         unsafe { Bump::shrink(&self.0, ptr, old_layout, new_layout) }
     }
 
@@ -111,7 +122,12 @@ unsafe impl<A: Allocator + Clone> BumpAllocator for RcBump<A> {
         Bump::try_allocate_slice(&self.0, len)
     }
 
-    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>
+    unsafe fn shrink_slice<T>(
+        &self,
+        ptr: NonNull<T>,
+        old_len: usize,
+        new_len: usize,
+    ) -> Option<NonNull<T>>
     where
         Self: Sized,
     {

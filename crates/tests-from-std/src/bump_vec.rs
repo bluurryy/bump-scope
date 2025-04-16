@@ -1,30 +1,21 @@
 //! Adapted from rust's `library/alloc/tests/vec.rs` commit 4426e9a3c260e329f51c94e2b231f72574271f0b
 
-use std::{
-    alloc::System,
-    assert_eq,
-    boxed::Box,
-    cell::Cell,
-    dbg,
-    fmt::Debug,
-    format, hint,
-    iter::IntoIterator,
-    mem::{self, size_of, swap},
-    num::NonZero,
-    ops::Bound::*,
-    panic::{AssertUnwindSafe, catch_unwind},
-    println,
-    ptr::NonNull,
-    rc::Rc,
-    string::{String, ToString},
-    sync::{
-        Arc, Mutex, PoisonError,
-        atomic::{AtomicU32, Ordering},
-    },
-    vec::{Drain, IntoIter, Vec},
-};
-
-use std::alloc::{AllocError, Allocator, Layout};
+use std::alloc::{AllocError, Allocator, Layout, System};
+use std::boxed::Box;
+use std::cell::Cell;
+use std::fmt::Debug;
+use std::iter::IntoIterator;
+use std::mem::{self, size_of, swap};
+use std::num::NonZero;
+use std::ops::Bound::*;
+use std::panic::{AssertUnwindSafe, catch_unwind};
+use std::ptr::NonNull;
+use std::rc::Rc;
+use std::string::{String, ToString};
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::{Arc, Mutex, PoisonError};
+use std::vec::{Drain, IntoIter, Vec};
+use std::{assert_eq, dbg, format, hint, println};
 
 use bump_scope::{Bump, BumpVec, bump_vec};
 
@@ -72,10 +63,7 @@ fn test_double_drop() {
 
     let (mut count_x, mut count_y) = (0, 0);
     {
-        let mut tv = TwoVec {
-            x: BumpVec::new_in(&bump_x),
-            y: BumpVec::new_in(&bump_y),
-        };
+        let mut tv = TwoVec { x: BumpVec::new_in(&bump_x), y: BumpVec::new_in(&bump_y) };
         tv.x.push(DropCounter { count: &mut count_x });
         tv.y.push(DropCounter { count: &mut count_y });
 
@@ -474,10 +462,7 @@ fn test_retain_maybeuninits() {
     // This test aimed to be run under miri.
     use core::mem::MaybeUninit;
     let mut vec = bump0.alloc_iter(
-        [1i32, 2, 3, 4]
-            .iter()
-            .zip(&bumps)
-            .map(|(v, bump)| MaybeUninit::new(bump_vec![in bump; v])),
+        [1i32, 2, 3, 4].iter().zip(&bumps).map(|(v, bump)| MaybeUninit::new(bump_vec![in bump; v])),
     );
 
     vec.retain(|x| {
@@ -542,10 +527,7 @@ fn test_dedup_by_key() {
     case(bump_vec![in &bump0; 10, 11, 20, 30], bump_vec![in &bump1; 10, 20, 30]);
     case(bump_vec![in &bump0; 10, 20, 21, 30], bump_vec![in &bump1; 10, 20, 30]);
     case(bump_vec![in &bump0; 10, 20, 30, 31], bump_vec![in &bump1; 10, 20, 30]);
-    case(
-        bump_vec![in &bump0; 10, 11, 20, 21, 22, 30, 31],
-        bump_vec![in &bump1; 10, 20, 30],
-    );
+    case(bump_vec![in &bump0; 10, 11, 20, 21, 22, 30, 31], bump_vec![in &bump1; 10, 20, 30]);
 }
 
 #[test]
@@ -575,11 +557,14 @@ fn test_dedup_unique() {
     let bump1: Bump = Bump::new();
     let bump2: Bump = Bump::new();
 
-    let mut v0: BumpVec<Box<_>, _> = bump_vec![in &bump0; Box::new(1), Box::new(1), Box::new(2), Box::new(3)];
+    let mut v0: BumpVec<Box<_>, _> =
+        bump_vec![in &bump0; Box::new(1), Box::new(1), Box::new(2), Box::new(3)];
     v0.dedup();
-    let mut v1: BumpVec<Box<_>, _> = bump_vec![in &bump1; Box::new(1), Box::new(2), Box::new(2), Box::new(3)];
+    let mut v1: BumpVec<Box<_>, _> =
+        bump_vec![in &bump1; Box::new(1), Box::new(2), Box::new(2), Box::new(3)];
     v1.dedup();
-    let mut v2: BumpVec<Box<_>, _> = bump_vec![in &bump2; Box::new(1), Box::new(2), Box::new(3), Box::new(3)];
+    let mut v2: BumpVec<Box<_>, _> =
+        bump_vec![in &bump2; Box::new(1), Box::new(2), Box::new(3), Box::new(3)];
     v2.dedup();
     // If the boxed pointers were leaked or otherwise misused, valgrind
     // and/or rt should raise errors.
@@ -1294,10 +1279,7 @@ fn test_into_iter_advance_by() {
     assert_eq!(i.advance_back_by(1), Ok(()));
     assert_eq!(i.as_slice(), [2, 3, 4]);
 
-    assert_eq!(
-        i.advance_back_by(usize::MAX),
-        Err(NonZero::<usize>::new(usize::MAX - 3).unwrap())
-    );
+    assert_eq!(i.advance_back_by(usize::MAX), Err(NonZero::<usize>::new(usize::MAX - 3).unwrap()));
 
     assert_eq!(i.advance_by(usize::MAX), Err(NonZero::<usize>::new(usize::MAX).unwrap()));
 
@@ -1581,7 +1563,8 @@ fn extract_if_complex() {
 #[cfg(not(target_os = "emscripten"))]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn extract_if_consumed_panic() {
-    use std::{rc::Rc, sync::Mutex};
+    use std::rc::Rc;
+    use std::sync::Mutex;
 
     struct Check<'a> {
         index: usize,
@@ -1599,10 +1582,9 @@ fn extract_if_consumed_panic() {
     let check_count = 10;
     let drop_counts = Rc::new(Mutex::new(bump_vec![in &bump; 0_usize; check_count]));
     let mut data: BumpVec<Check, _> = bump_vec![in &bump];
-    data.extend((0..check_count).map(|index| Check {
-        index,
-        drop_counts: Rc::clone(&drop_counts),
-    }));
+    data.extend(
+        (0..check_count).map(|index| Check { index, drop_counts: Rc::clone(&drop_counts) }),
+    );
 
     let _ = std::panic::catch_unwind(move || {
         let filter = |c: &mut Check| {
@@ -1635,7 +1617,8 @@ fn extract_if_consumed_panic() {
 #[cfg(not(target_os = "emscripten"))]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn extract_if_unconsumed_panic() {
-    use std::{rc::Rc, sync::Mutex};
+    use std::rc::Rc;
+    use std::sync::Mutex;
 
     struct Check<'a> {
         index: usize,
@@ -1653,10 +1636,9 @@ fn extract_if_unconsumed_panic() {
     let check_count = 10;
     let drop_counts = Rc::new(Mutex::new(bump_vec![in &bump; 0_usize; check_count]));
     let mut data: BumpVec<Check, _> = bump_vec![in &bump];
-    data.extend((0..check_count).map(|index| Check {
-        index,
-        drop_counts: Rc::clone(&drop_counts),
-    }));
+    data.extend(
+        (0..check_count).map(|index| Check { index, drop_counts: Rc::clone(&drop_counts) }),
+    );
 
     let _ = std::panic::catch_unwind(move || {
         let filter = |c: &mut Check| {
@@ -1921,7 +1903,8 @@ fn test_extend_from_within_spec() {
 #[test]
 fn test_extend_from_within_clone() {
     let bump: Bump = Bump::new();
-    let mut v = bump_vec![in &bump; String::from("sssss"), String::from("12334567890"), String::from("c")];
+    let mut v =
+        bump_vec![in &bump; String::from("sssss"), String::from("12334567890"), String::from("c")];
     v.extend_from_within_clone(1..);
     assert_eq!(v, ["sssss", "12334567890", "c", "12334567890", "c"]);
 }
@@ -2127,26 +2110,10 @@ fn test_vec_dedup_panicking() {
     let bump: Bump = Bump::new();
     let drop_counter = &Cell::new(0);
     let expected = [
-        Panic {
-            drop_counter,
-            value: false,
-            index: 0,
-        },
-        Panic {
-            drop_counter,
-            value: false,
-            index: 5,
-        },
-        Panic {
-            drop_counter,
-            value: true,
-            index: 6,
-        },
-        Panic {
-            drop_counter,
-            value: true,
-            index: 7,
-        },
+        Panic { drop_counter, value: false, index: 0 },
+        Panic { drop_counter, value: false, index: 5 },
+        Panic { drop_counter, value: true, index: 6 },
+        Panic { drop_counter, value: true, index: 7 },
     ];
     let mut vec = bump_vec![in &bump;
         Panic {

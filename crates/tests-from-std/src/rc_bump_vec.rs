@@ -1,29 +1,21 @@
 //! Adapted from rust's `library/alloc/tests/vec.rs` commit f7ca9df69549470541fbf542f87a03eb9ed024b6
 
-use std::{
-    alloc::System,
-    assert_eq,
-    boxed::Box,
-    cell::Cell,
-    dbg,
-    fmt::Debug,
-    format, hint,
-    iter::IntoIterator,
-    mem::{self, size_of, swap},
-    num::NonZeroUsize,
-    ops::Bound::*,
-    panic::{AssertUnwindSafe, catch_unwind},
-    ptr::NonNull,
-    rc::Rc,
-    string::{String, ToString},
-    sync::{
-        Arc, Mutex, PoisonError,
-        atomic::{AtomicU32, Ordering},
-    },
-    vec::{Drain, IntoIter, Vec},
-};
-
-use std::alloc::{AllocError, Allocator, Layout};
+use std::alloc::{AllocError, Allocator, Layout, System};
+use std::boxed::Box;
+use std::cell::Cell;
+use std::fmt::Debug;
+use std::iter::IntoIterator;
+use std::mem::{self, size_of, swap};
+use std::num::NonZeroUsize;
+use std::ops::Bound::*;
+use std::panic::{AssertUnwindSafe, catch_unwind};
+use std::ptr::NonNull;
+use std::rc::Rc;
+use std::string::{String, ToString};
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::{Arc, Mutex, PoisonError};
+use std::vec::{Drain, IntoIter, Vec};
+use std::{assert_eq, dbg, format, hint};
 
 use bump_scope::{BumpVec, bump_vec};
 
@@ -73,10 +65,8 @@ fn test_double_drop() {
 
     let (mut count_x, mut count_y) = (0, 0);
     {
-        let mut tv = TwoVec {
-            x: BumpVec::new_in(bump_x.clone()),
-            y: BumpVec::new_in(bump_y.clone()),
-        };
+        let mut tv =
+            TwoVec { x: BumpVec::new_in(bump_x.clone()), y: BumpVec::new_in(bump_y.clone()) };
         tv.x.push(DropCounter { count: &mut count_x });
         tv.y.push(DropCounter { count: &mut count_y });
 
@@ -483,10 +473,7 @@ fn test_dedup() {
     case(bump_vec![in bump0.clone(); 1, 1, 2, 3], bump_vec![in bump1.clone(); 1, 2, 3]);
     case(bump_vec![in bump0.clone(); 1, 2, 2, 3], bump_vec![in bump1.clone(); 1, 2, 3]);
     case(bump_vec![in bump0.clone(); 1, 2, 3, 3], bump_vec![in bump1.clone(); 1, 2, 3]);
-    case(
-        bump_vec![in bump0.clone(); 1, 1, 2, 2, 2, 3, 3],
-        bump_vec![in bump1.clone(); 1, 2, 3],
-    );
+    case(bump_vec![in bump0.clone(); 1, 1, 2, 2, 2, 3, 3], bump_vec![in bump1.clone(); 1, 2, 3]);
 }
 
 #[test]
@@ -503,22 +490,10 @@ fn test_dedup_by_key() {
     case(bump_vec![in bump0.clone(); ], bump_vec![in bump1.clone(); ]);
     case(bump_vec![in bump0.clone(); 10], bump_vec![in bump1.clone(); 10]);
     case(bump_vec![in bump0.clone(); 10, 11], bump_vec![in bump1.clone(); 10]);
-    case(
-        bump_vec![in bump0.clone(); 10, 20, 30],
-        bump_vec![in bump1.clone(); 10, 20, 30],
-    );
-    case(
-        bump_vec![in bump0.clone(); 10, 11, 20, 30],
-        bump_vec![in bump1.clone(); 10, 20, 30],
-    );
-    case(
-        bump_vec![in bump0.clone(); 10, 20, 21, 30],
-        bump_vec![in bump1.clone(); 10, 20, 30],
-    );
-    case(
-        bump_vec![in bump0.clone(); 10, 20, 30, 31],
-        bump_vec![in bump1.clone(); 10, 20, 30],
-    );
+    case(bump_vec![in bump0.clone(); 10, 20, 30], bump_vec![in bump1.clone(); 10, 20, 30]);
+    case(bump_vec![in bump0.clone(); 10, 11, 20, 30], bump_vec![in bump1.clone(); 10, 20, 30]);
+    case(bump_vec![in bump0.clone(); 10, 20, 21, 30], bump_vec![in bump1.clone(); 10, 20, 30]);
+    case(bump_vec![in bump0.clone(); 10, 20, 30, 31], bump_vec![in bump1.clone(); 10, 20, 30]);
     case(
         bump_vec![in bump0.clone(); 10, 11, 20, 21, 22, 30, 31],
         bump_vec![in bump1.clone(); 10, 20, 30],
@@ -535,7 +510,8 @@ fn test_dedup_by() {
     assert_eq!(vec, ["foo", "bar", "baz", "bar"]);
     drop(vec);
 
-    let mut vec = bump_vec![in bump.clone(); ("foo", 1), ("foo", 2), ("bar", 3), ("bar", 4), ("bar", 5)];
+    let mut vec =
+        bump_vec![in bump.clone(); ("foo", 1), ("foo", 2), ("bar", 3), ("bar", 4), ("bar", 5)];
     vec.dedup_by(|a, b| {
         a.0 == b.0 && {
             b.1 += a.1;
@@ -552,11 +528,14 @@ fn test_dedup_unique() {
     let bump1: RcBump = RcBump::new();
     let bump2: RcBump = RcBump::new();
 
-    let mut v0: BumpVec<Box<_>, _> = bump_vec![in bump0.clone(); Box::new(1), Box::new(1), Box::new(2), Box::new(3)];
+    let mut v0: BumpVec<Box<_>, _> =
+        bump_vec![in bump0.clone(); Box::new(1), Box::new(1), Box::new(2), Box::new(3)];
     v0.dedup();
-    let mut v1: BumpVec<Box<_>, _> = bump_vec![in bump1.clone(); Box::new(1), Box::new(2), Box::new(2), Box::new(3)];
+    let mut v1: BumpVec<Box<_>, _> =
+        bump_vec![in bump1.clone(); Box::new(1), Box::new(2), Box::new(2), Box::new(3)];
     v1.dedup();
-    let mut v2: BumpVec<Box<_>, _> = bump_vec![in bump2.clone(); Box::new(1), Box::new(2), Box::new(3), Box::new(3)];
+    let mut v2: BumpVec<Box<_>, _> =
+        bump_vec![in bump2.clone(); Box::new(1), Box::new(2), Box::new(3), Box::new(3)];
     v2.dedup();
     // If the boxed pointers were leaked or otherwise misused, valgrind
     // and/or rt should raise errors.
@@ -1480,8 +1459,7 @@ fn extract_if_complex() {
 
     {
         //                [xxx++++++xxxxx++++x+x]
-        let mut vec =
-            bump_vec![in bump.clone(); 2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36];
+        let mut vec = bump_vec![in bump.clone(); 2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36];
 
         let removed = vec.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
         assert_eq!(removed.len(), 10);
@@ -1520,7 +1498,9 @@ fn extract_if_complex() {
 #[cfg(not(target_os = "emscripten"))]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn extract_if_consumed_panic() {
-    use std::{println, rc::Rc, sync::Mutex};
+    use std::println;
+    use std::rc::Rc;
+    use std::sync::Mutex;
 
     struct Check {
         index: usize,
@@ -1538,10 +1518,9 @@ fn extract_if_consumed_panic() {
     let check_count = 10;
     let drop_counts = Rc::new(Mutex::new(bump_vec![in bump.clone(); 0_usize; check_count]));
     let mut data: BumpVec<Check, _> = bump_vec![in bump.clone()];
-    data.extend((0..check_count).map(|index| Check {
-        index,
-        drop_counts: Rc::clone(&drop_counts),
-    }));
+    data.extend(
+        (0..check_count).map(|index| Check { index, drop_counts: Rc::clone(&drop_counts) }),
+    );
 
     let _ = std::panic::catch_unwind(move || {
         let filter = |c: &mut Check| {
@@ -1574,7 +1553,9 @@ fn extract_if_consumed_panic() {
 #[cfg(not(target_os = "emscripten"))]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn extract_if_unconsumed_panic() {
-    use std::{println, rc::Rc, sync::Mutex};
+    use std::println;
+    use std::rc::Rc;
+    use std::sync::Mutex;
 
     struct Check {
         index: usize,
@@ -1592,10 +1573,9 @@ fn extract_if_unconsumed_panic() {
     let check_count = 10;
     let drop_counts = Rc::new(Mutex::new(bump_vec![in bump.clone(); 0_usize; check_count]));
     let mut data: BumpVec<Check, _> = bump_vec![in bump.clone()];
-    data.extend((0..check_count).map(|index| Check {
-        index,
-        drop_counts: Rc::clone(&drop_counts),
-    }));
+    data.extend(
+        (0..check_count).map(|index| Check { index, drop_counts: Rc::clone(&drop_counts) }),
+    );
 
     let _ = std::panic::catch_unwind(move || {
         let filter = |c: &mut Check| {
@@ -2090,26 +2070,10 @@ fn test_vec_dedup_panicking() {
     let bump: RcBump = RcBump::new();
     let drop_counter = &Cell::new(0);
     let expected = [
-        Panic {
-            drop_counter,
-            value: false,
-            index: 0,
-        },
-        Panic {
-            drop_counter,
-            value: false,
-            index: 5,
-        },
-        Panic {
-            drop_counter,
-            value: true,
-            index: 6,
-        },
-        Panic {
-            drop_counter,
-            value: true,
-            index: 7,
-        },
+        Panic { drop_counter, value: false, index: 0 },
+        Panic { drop_counter, value: false, index: 5 },
+        Panic { drop_counter, value: true, index: 6 },
+        Panic { drop_counter, value: true, index: 7 },
     ];
     let mut vec = bump_vec![in bump.clone();
         Panic {
