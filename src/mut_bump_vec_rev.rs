@@ -1979,3 +1979,11 @@ impl<T: Hash, A> Hash for MutBumpVecRev<T, A> {
         self.as_slice().hash(state);
     }
 }
+
+impl<T, A: MutBumpAllocator + Default> FromIterator<T> for MutBumpVecRev<T, A> {
+    #[inline]
+    #[track_caller]
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        Self::from_iter_in(iter.into_iter(), A::default())
+    }
+}
