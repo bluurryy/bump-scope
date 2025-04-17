@@ -151,6 +151,12 @@ impl<T, A> DerefMut for MutBumpVec<T, A> {
     }
 }
 
+impl<T, A: Default> Default for MutBumpVec<T, A> {
+    fn default() -> Self {
+        Self::new_in(A::default())
+    }
+}
+
 impl<T, A> MutBumpVec<T, A> {
     /// Constructs a new empty `MutBumpVec<T>`.
     ///
@@ -1974,5 +1980,14 @@ impl<A: MutBumpAllocator> std::io::Write for MutBumpVec<u8, A> {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(feature = "panic-on-alloc")]
+impl<T, A: MutBumpAllocator + Default> FromIterator<T> for MutBumpVec<T, A> {
+    #[inline]
+    #[track_caller]
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        Self::from_iter_in(iter, A::default())
     }
 }

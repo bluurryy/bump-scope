@@ -12,8 +12,7 @@ pre-release:
   just doc
   just check
   cargo +stable semver-checks
-  cargo test --all-features
-  cargo miri test --all-features
+  just test
 
 check: 
   just check-fmt
@@ -45,6 +44,18 @@ check-msrv:
 
 check-fallibility:
   @ just crates/test-fallibility/test
+
+test:
+  just test-non-miri
+  just test-miri
+
+test-non-miri: 
+  cargo test --all-features
+  cd crates/tests-from-std; cargo test
+
+test-miri:
+  cargo miri test --all-features
+  cd crates/tests-from-std; cargo miri test
 
 fmt:
   cargo fmt

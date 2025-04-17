@@ -14,22 +14,7 @@
 #![cfg_attr(feature = "nightly-exact-size-is-empty", feature(exact_size_is_empty))]
 #![cfg_attr(feature = "nightly-trusted-len", feature(trusted_len))]
 #![cfg_attr(feature = "nightly-fn-traits", feature(fn_traits, tuple_trait, unboxed_closures))]
-#![cfg_attr(
-    test,
-    feature(
-        exclusive_wrapper,
-        pointer_is_aligned_to,
-        assert_matches,
-        inplace_iteration,
-        drain_keep_rest,
-        iter_next_chunk,
-        iter_advance_by,
-        slice_partition_dedup,
-        iter_partition_in_place,
-        offset_of_enum,
-        iter_array_chunks,
-    )
-)]
+#![cfg_attr(test, feature(offset_of_enum))]
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg_hide), doc(cfg_hide(feature = "panic-on-alloc")))]
 #![warn(
     clippy::pedantic,

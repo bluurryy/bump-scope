@@ -15,14 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: format bump-scope
-        run: cargo fmt --all -- --check
-      - name: format fuzzing-support
-        run: cd crates/fuzzing-support && cargo fmt --all -- --check
-      - name: format test-fallibility
-        run: cd crates/test-fallibility && cargo fmt --all -- --check
-      - name: format fuzz
-        run: cd fuzz && cargo fmt --all -- --check
+      - run: cargo fmt --all -- --check
+      - run: cd crates/fuzzing-support && cargo fmt --all -- --check
+      - run: cd crates/test-fallibility && cargo fmt --all -- --check
+      - run: cd crates/tests-from-std && cargo fmt --all -- --check
+      - run: cd fuzz && cargo fmt --all -- --check
   clippy:
     runs-on: ubuntu-latest
     strategy:
@@ -59,6 +56,8 @@ jobs:
           components: miri
       - run: cargo test --all-features
       - run: cargo miri test --all-features
+      - run: cd crates/tests-from-std && cargo test
+      - run: cd crates/tests-from-std && cargo miri test
   minimal-versions:
     runs-on: ubuntu-latest
     steps:
