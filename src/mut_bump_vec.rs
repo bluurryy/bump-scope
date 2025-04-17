@@ -1987,6 +1987,6 @@ impl<T, A: MutBumpAllocator + Default> FromIterator<T> for MutBumpVec<T, A> {
     #[inline]
     #[track_caller]
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
-        Self::from_iter_in(iter.into_iter(), A::default())
+        Self::from_iter_in(iter, A::default())
     }
 }
