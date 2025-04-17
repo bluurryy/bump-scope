@@ -1983,6 +1983,7 @@ impl<A: MutBumpAllocator> std::io::Write for MutBumpVec<u8, A> {
     }
 }
 
+#[cfg(feature = "panic-on-alloc")]
 impl<T, A: MutBumpAllocator + Default> FromIterator<T> for MutBumpVec<T, A> {
     #[inline]
     #[track_caller]

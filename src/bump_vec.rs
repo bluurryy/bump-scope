@@ -2600,6 +2600,7 @@ impl<A: BumpAllocator> std::io::Write for BumpVec<u8, A> {
     }
 }
 
+#[cfg(feature = "panic-on-alloc")]
 impl<T, A: BumpAllocator + Default> FromIterator<T> for BumpVec<T, A> {
     #[inline]
     #[track_caller]

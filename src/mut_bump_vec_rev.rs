@@ -1980,6 +1980,7 @@ impl<T: Hash, A> Hash for MutBumpVecRev<T, A> {
     }
 }
 
+#[cfg(feature = "panic-on-alloc")]
 impl<T, A: MutBumpAllocator + Default> FromIterator<T> for MutBumpVecRev<T, A> {
     #[inline]
     #[track_caller]
