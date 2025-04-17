@@ -47,7 +47,6 @@ mod mut_bump_vec_rev_doc;
 mod mut_collections_do_not_waste_space;
 mod panic_safety;
 mod pool;
-mod rc_bump;
 #[cfg(feature = "serde")]
 mod serde;
 mod split_off;
@@ -69,7 +68,6 @@ use crate::{
 
 use allocator_api2::alloc::Global as System;
 
-pub(crate) use rc_bump::RcBump;
 pub(crate) use test_wrap::TestWrap;
 
 #[allow(dead_code)]
