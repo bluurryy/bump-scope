@@ -1,12 +1,21 @@
 use std::{
     format,
     string::{String, ToString},
+    vec::Vec,
 };
 
 use crate::{Bump, BumpVec, MutBumpVec, MutBumpVecRev};
 
 fn items() -> impl Iterator<Item = [String; 3]> {
-    (1..).map(|i| i.to_string()).array_chunks().take(3)
+    // would use `array_chunks`, but it's not stable
+    (1..)
+        .map(|i| i.to_string())
+        .take(3 * 3)
+        .collect::<Vec<_>>()
+        .chunks(3)
+        .map(|s| s.to_vec().try_into().unwrap())
+        .collect::<Vec<_>>()
+        .into_iter()
 }
 
 #[test]
