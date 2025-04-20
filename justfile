@@ -54,10 +54,14 @@ test:
 test-non-miri: 
   cargo test --all-features
   cd crates/tests-from-std; cargo test
+  cd crates/test-hashbrown; cargo test
+  cd crates/test-hashbrown; cargo test --all-features
 
 test-miri:
   cargo miri test --all-features
   cd crates/tests-from-std; cargo miri test
+  cd crates/test-hashbrown; cargo miri test
+  cd crates/test-hashbrown; cargo miri test --all-features
 
 fmt:
   cargo fmt

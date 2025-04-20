@@ -68,13 +68,19 @@ macro_rules! bump_declaration {
         /// ```
         ///
         /// ... and collections from crates that use `allocator_api2`'s [`Allocator`](allocator_api2::alloc::Allocator) like [hashbrown](https://docs.rs/hashbrown)'s [`HashMap`](https://docs.rs/hashbrown/latest/hashbrown/struct.HashMap.html):
+        // NOTE: This code is tested in `crates/test-hashbrown/lib.rs`.
+        // It's not tested here because using hashbrown requires us to either have both the crate features for a nightly allocator api in bump-scope and hashbrown or neither.
+        // This could be solved by making bump-scope's "nightly-allocator-api" depend on "hashbrown/nightly" but that currently breaks tools like cargo-hack and cargo-minimal-versions.
         /// ```
-        /// use bump_scope::{ Bump, BumpString };
+        /// # /*
+        /// use bump_scope::Bump;
         /// use hashbrown::HashMap;
         ///
         /// let bump: Bump = Bump::new();
         /// let mut map = HashMap::new_in(&bump);
         /// map.insert("tau", 6.283);
+        /// # */
+        /// # ()
         /// ```
         ///
         /// On nightly and with the feature `"nightly-allocator-api"` you can also allocate collections from `std` that have an allocator parameter:
