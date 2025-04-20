@@ -1469,6 +1469,12 @@ impl<A> DerefMut for MutBumpString<A> {
     }
 }
 
+impl<A: Default> Default for MutBumpString<A> {
+    fn default() -> Self {
+        Self::new_in(A::default())
+    }
+}
+
 #[cfg(feature = "panic-on-alloc")]
 impl<A: MutBumpAllocator> core::ops::AddAssign<&str> for MutBumpString<A> {
     #[inline]

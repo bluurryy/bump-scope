@@ -1619,6 +1619,12 @@ impl<A: BumpAllocator> Drop for BumpString<A> {
     }
 }
 
+impl<A: BumpAllocator + Default> Default for BumpString<A> {
+    fn default() -> Self {
+        Self::new_in(A::default())
+    }
+}
+
 #[cfg(feature = "panic-on-alloc")]
 impl<A: BumpAllocator + Clone> Clone for BumpString<A> {
     fn clone(&self) -> Self {

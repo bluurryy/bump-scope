@@ -1,0 +1,10 @@
+[package]
+name = "tests-from-std"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bump-scope = { path = "../..", features = [
+    "nightly-allocator-api",
+    "nightly-coerce-unsized",
+] }

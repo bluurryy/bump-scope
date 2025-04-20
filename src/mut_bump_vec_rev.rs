@@ -1827,6 +1827,12 @@ impl<T, A> DerefMut for MutBumpVecRev<T, A> {
     }
 }
 
+impl<T, A: Default> Default for MutBumpVecRev<T, A> {
+    fn default() -> Self {
+        Self::new_in(A::default())
+    }
+}
+
 impl<T, A, I: SliceIndex<[T]>> Index<I> for MutBumpVecRev<T, A> {
     type Output = I::Output;
 
@@ -1971,5 +1977,14 @@ impl<T: Hash, A> Hash for MutBumpVecRev<T, A> {
     #[inline(always)]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.as_slice().hash(state);
+    }
+}
+
+#[cfg(feature = "panic-on-alloc")]
+impl<T, A: MutBumpAllocator + Default> FromIterator<T> for MutBumpVecRev<T, A> {
+    #[inline]
+    #[track_caller]
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        Self::from_iter_in(iter, A::default())
     }
 }
