@@ -1,0 +1,11 @@
+[package]
+name = "test-hashbrown"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+nightly = ["bump-scope/nightly-allocator-api", "hashbrown/nightly"]
+
+[dependencies]
+bump-scope = "0.16.4"
+hashbrown = "0.15.2"
