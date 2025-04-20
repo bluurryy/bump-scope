@@ -1,0 +1,1 @@
+This crate contains tests copied from the rust repository. They make use of nightly features, so running them requires a **nightly compiler**.

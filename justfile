@@ -20,6 +20,8 @@ check:
   just check-nostd
   just check-msrv
   just check-fallibility
+  # regression test making sure hashbrown compiles
+  cargo check --tests --features nightly-allocator-api 
 
 check-fmt:
   cargo fmt --check
