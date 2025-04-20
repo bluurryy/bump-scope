@@ -56,6 +56,10 @@ jobs:
           components: miri
       - run: cargo test --all-features
       - run: cargo miri test --all-features
+      - run: cd crates/test-hashbrown; cargo test
+      - run: cd crates/test-hashbrown; cargo test --all-features
+      - run: cd crates/test-hashbrown; cargo miri test
+      - run: cd crates/test-hashbrown; cargo miri test --all-features
       - run: cd crates/tests-from-std && cargo test
       - run: cd crates/tests-from-std && cargo miri test
   minimal-versions:
