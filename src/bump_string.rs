@@ -58,13 +58,13 @@ macro_rules! bump_format {
         }
     }};
     (try in $bump:expr) => {{
-        Ok::<_, $crate::$crate::alloc_reexport::alloc::AllocError>($crate::BumpString::new_in($bump.as_scope()))
+        Ok::<_, $crate::alloc_reexport::alloc::AllocError>($crate::BumpString::new_in($bump.as_scope()))
     }};
     (try in $bump:expr, $($arg:tt)*) => {{
         let mut string = $crate::BumpString::new_in($bump.as_scope());
         match $crate::private::core::fmt::Write::write_fmt(&mut string, $crate::private::core::format_args!($($arg)*)) {
             $crate::private::core::result::Result::Ok(_) => $crate::private::core::result::Result::Ok(string),
-            $crate::private::core::result::Result::Err(_) => $crate::private::core::result::Result::Err($crate::$crate::alloc_reexport::alloc::AllocError),
+            $crate::private::core::result::Result::Err(_) => $crate::private::core::result::Result::Err($crate::alloc_reexport::alloc::AllocError),
         }
     }};
 }

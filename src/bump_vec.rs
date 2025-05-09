@@ -105,7 +105,7 @@ macro_rules! bump_vec {
         $crate::BumpVec::from_elem_in($value, $count, $bump)
     };
     [try in $bump:expr] => {
-        Ok::<_, $crate::$crate::alloc_reexport::alloc::AllocError>($crate::BumpVec::new_in($bump))
+        Ok::<_, $crate::alloc_reexport::alloc::AllocError>($crate::BumpVec::new_in($bump))
     };
     [try in $bump:expr; $($values:expr),* $(,)?] => {
         $crate::BumpVec::try_from_array_in([$($values),*], $bump)
