@@ -147,7 +147,10 @@ The collections are designed to have a similar api to their std counterparts but
 To bump allocate in parallel you can use a `BumpPool`.
 
 ## Allocator API
-`Bump` and `BumpScope` implement `allocator_api2`'s [`Allocator`](https://docs.rs/allocator-api2/0.2.16/allocator_api2/alloc/trait.Allocator.html) trait.
+`Bump` and `BumpScope` implement either the `Allocator` trait from
+[`allocator_api2`](https://docs.rs/allocator-api2/0.3.0/allocator_api2/alloc/trait.Allocator.html)
+or from [`alloc`](https://doc.rust-lang.org/nightly/alloc/alloc/trait.Allocator.html)
+with the "nightly-allocator-api" feature.
 They can be used to allocate collections.
 
 A bump allocator can grow, shrink and deallocate the most recent allocation.
