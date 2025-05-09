@@ -268,6 +268,8 @@ extern crate std;
 #[cfg(any(feature = "alloc", feature = "nightly-fn-traits"))]
 extern crate alloc;
 
+/// Either exports the nightly allocator api or `allocator-api2`'s polyfill.
+mod alloc_reexport;
 mod allocator;
 mod bump;
 mod bump_align_guard;
