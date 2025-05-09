@@ -159,8 +159,8 @@ A bump allocator does not require `deallocate` or `shrink` to free memory.
 After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
 You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using `WithoutDealloc` and `WithoutShrink`.
 ```rust
-use bump_scope::{ Bump, WithoutDealloc };
-use allocator_api2::boxed::Box;
+use bump_scope::{ Bump, WithoutDealloc, alloc_reexport::boxed::Box };
+
 let bump: Bump = Bump::new();
 
 let boxed = Box::new_in(5, &bump);
@@ -184,8 +184,8 @@ assert_eq!(bump.stats().allocated(), 4);
 * **`zerocopy`** —  Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`.
 
  #### Nightly features
-* **`nightly-allocator-api`** —  Enables `allocator-api2`'s `nightly` feature which makes it reexport the nightly allocator api instead of its own implementation.
-  With this you can bump allocate collections from the standard library.
+* **`nightly-allocator-api`** —  Makes this crate use the nightly api instead of the one provided by the `allocator-api2` crate.
+  **Warning:** this feature is not additive. This can break code that expects `allocator-api2`'s types and traits.
 * **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
   You can unsize a `BumpBox` in stable without this feature using [`unsize_bump_box`].
