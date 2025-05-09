@@ -10,7 +10,10 @@ mod inner {
 
 #[cfg(not(feature = "nightly-allocator-api"))]
 mod inner {
-    pub use allocator_api2::{alloc, boxed, collections, vec};
+    pub use ::allocator_api2::alloc;
+
+    #[cfg(feature = "alloc")]
+    pub use ::allocator_api2::{boxed, collections, vec};
 }
 
 pub use inner::*;

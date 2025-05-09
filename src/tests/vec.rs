@@ -1,6 +1,7 @@
-use allocator_api2::{alloc::Global, vec::Vec};
-
-use crate::Bump;
+use crate::{
+    alloc_reexport::{alloc::Global, vec::Vec},
+    Bump,
+};
 
 use super::either_way;
 

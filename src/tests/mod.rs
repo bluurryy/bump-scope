@@ -61,12 +61,13 @@ const MALLOC_OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
 const OVERHEAD: usize = MALLOC_OVERHEAD + size_of::<ChunkHeader<Global>>();
 
 use crate::{
-    chunk_size::AssumedMallocOverhead, mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice, panic_on_error,
-    stats::Chunk, Bump, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, ChunkSize, MinimumAlignment, MutBumpString,
-    MutBumpVec, MutBumpVecRev, SizedTypeProperties, SupportedMinimumAlignment,
+    alloc_reexport::alloc::{AllocError, Allocator, Global as System, Global},
+    chunk_size::AssumedMallocOverhead,
+    mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice, panic_on_error,
+    stats::Chunk,
+    Bump, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, ChunkSize, MinimumAlignment, MutBumpString, MutBumpVec,
+    MutBumpVecRev, SizedTypeProperties, SupportedMinimumAlignment,
 };
-
-use allocator_api2::alloc::Global as System;
 
 pub(crate) use test_wrap::TestWrap;
 
@@ -117,7 +118,6 @@ macro_rules! either_way {
     };
 }
 
-use allocator_api2::alloc::{AllocError, Allocator, Global};
 pub(crate) use either_way;
 
 either_way! {
@@ -1103,8 +1103,7 @@ fn map_in_place_compile_fail_due_to_size() {
 // make sure to also check that niches are the same
 mod doc_layout_claim {
     #![allow(dead_code)]
-    use crate::SizedTypeProperties;
-    use allocator_api2::alloc::Global;
+    use crate::{alloc_reexport::alloc::Global, SizedTypeProperties};
     use core::{cell::Cell, ptr::NonNull};
     type Bump = crate::Bump<Global, 1, true, true>;
     type BumpScope = crate::BumpScope<'static, Global, 1, true, true>;

@@ -8,8 +8,10 @@ use core::{
 };
 use std::sync::{Mutex, PoisonError};
 
-use allocator_api2::alloc::{AllocError, Allocator};
-use bump_scope::Bump;
+use bump_scope::{
+    alloc_reexport::alloc::{AllocError, Allocator},
+    Bump,
+};
 
 #[repr(C, align(16))]
 struct StaticAllocator<const SIZE: usize> {

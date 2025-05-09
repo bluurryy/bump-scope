@@ -1,6 +1,4 @@
-use allocator_api2::alloc::Global;
-
-use crate::{Bump, BumpString, BumpVec};
+use crate::{alloc_reexport::alloc::Global, Bump, BumpString, BumpVec};
 
 use super::either_way;
 

@@ -7,9 +7,8 @@ use core::{
     ptr::NonNull,
 };
 
-use allocator_api2::alloc::AllocError;
-
 use crate::{
+    alloc_reexport::alloc::AllocError,
     bump_common_methods,
     chunk_size::ChunkSize,
     error_behavior_generic_methods_allocation_failure,
@@ -278,7 +277,7 @@ where
     ///
     /// ```
     /// use bump_scope::Bump;
-    /// use bump_scope::allocator_api2::alloc::Global;
+    /// use bump_scope::alloc_reexport::alloc::Global;
     ///
     /// let bump: Bump<Global, 1, true, false> = Bump::unallocated();
     /// ```
@@ -316,7 +315,7 @@ where
         /// use bump_scope::Bump;
         ///
         /// let bump: Bump = Bump::try_new()?;
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_new
         #[inline]
@@ -362,7 +361,7 @@ where
         ///
         /// // `Bump` with a roughly 1 Mebibyte sized chunk
         /// let bump_1mib: Bump = Bump::try_with_size(1024 * 1024)?;
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_with_size
         #[inline]
@@ -396,7 +395,7 @@ where
         /// let layout = Layout::array::<u8>(1234).unwrap();
         /// let bump: Bump = Bump::try_with_capacity(layout)?;
         /// assert!(bump.stats().capacity() >= layout.size());
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_with_capacity
         #[inline]
@@ -527,7 +526,7 @@ where
     /// Decrease the minimum alignment:
     /// ```
     /// # #![feature(pointer_is_aligned_to)]
-    /// # use bump_scope::{ Bump, allocator_api2::alloc::Global };
+    /// # use bump_scope::{ Bump, alloc_reexport::alloc::Global };
     /// let mut bump: Bump<Global, 8> = Bump::new();
     /// let bump = bump.as_mut_scope();
     ///
@@ -655,7 +654,7 @@ where
         do examples
         /// ```
         /// use bump_scope::Bump;
-        /// use bump_scope::allocator_api2::alloc::Global;
+        /// use bump_scope::alloc_reexport::alloc::Global;
         ///
         /// let bump: Bump = Bump::new_in(Global);
         /// ```
@@ -664,10 +663,10 @@ where
         do examples
         /// ```
         /// use bump_scope::Bump;
-        /// use bump_scope::allocator_api2::alloc::Global;
+        /// use bump_scope::alloc_reexport::alloc::Global;
         ///
         /// let bump: Bump = Bump::try_new_in(Global)?;
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_new_in
         #[inline]
@@ -697,7 +696,7 @@ where
         do examples
         /// ```
         /// use bump_scope::Bump;
-        /// use bump_scope::allocator_api2::alloc::Global;
+        /// use bump_scope::alloc_reexport::alloc::Global;
         ///
         /// // `Bump` with a roughly 1 Mebibyte sized chunk
         /// let bump_1mib: Bump = Bump::with_size_in(1024 * 1024, Global);
@@ -716,11 +715,11 @@ where
         do examples
         /// ```
         /// use bump_scope::Bump;
-        /// use bump_scope::allocator_api2::alloc::Global;
+        /// use bump_scope::alloc_reexport::alloc::Global;
         ///
         /// // `Bump` with a roughly 1 Mebibyte sized chunk
         /// let bump_1mib: Bump = Bump::try_with_size_in(1024 * 1024, Global)?;
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_with_size_in
         #[inline]
@@ -741,13 +740,13 @@ where
         do examples
         /// ```
         /// use bump_scope::Bump;
-        /// use bump_scope::allocator_api2::alloc::Global;
+        /// use bump_scope::alloc_reexport::alloc::Global;
         /// use core::alloc::Layout;
         ///
         /// let layout = Layout::array::<u8>(1234).unwrap();
         /// let bump: Bump = Bump::with_capacity_in(layout, Global);
         /// assert!(bump.stats().capacity() >= layout.size());
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn with_capacity_in
         /// Constructs a new `Bump` with at least enough space for `layout`.
@@ -756,13 +755,13 @@ where
         do examples
         /// ```
         /// use bump_scope::Bump;
-        /// use bump_scope::allocator_api2::alloc::Global;
+        /// use bump_scope::alloc_reexport::alloc::Global;
         /// use core::alloc::Layout;
         ///
         /// let layout = Layout::array::<u8>(1234).unwrap();
         /// let bump: Bump = Bump::try_with_capacity_in(layout, Global)?;
         /// assert!(bump.stats().capacity() >= layout.size());
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_with_capacity_in
         #[inline]
@@ -896,7 +895,7 @@ where
     /// Creating scopes with a non-`GUARANTEED_ALLOCATED` bump is not possible.
     /// ```compile_fail,E0599
     /// # use bump_scope::Bump;
-    /// # use bump_scope::allocator_api2::alloc::Global;
+    /// # use bump_scope::alloc_reexport::alloc::Global;
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
     /// bump.scoped(|bump| {
@@ -907,7 +906,7 @@ where
     /// Using this function you can make a `Bump` guaranteed allocated and create scopes.
     /// ```
     /// # use bump_scope::Bump;
-    /// # use bump_scope::allocator_api2::alloc::Global;
+    /// # use bump_scope::alloc_reexport::alloc::Global;
     /// let bump: Bump<Global, 1, true, false> = Bump::unallocated();
     /// let mut bump = bump.guaranteed_allocated();
     ///
@@ -932,7 +931,7 @@ where
     /// Creating scopes with a non-`GUARANTEED_ALLOCATED` bump is not possible.
     /// ```compile_fail,E0599
     /// # use bump_scope::Bump;
-    /// # use bump_scope::allocator_api2::alloc::Global;
+    /// # use bump_scope::alloc_reexport::alloc::Global;
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
     /// bump.scoped(|bump| {
@@ -943,14 +942,14 @@ where
     /// Using this function you can make a `Bump` guaranteed allocated and create scopes.
     /// ```
     /// # use bump_scope::Bump;
-    /// # use bump_scope::allocator_api2::alloc::Global;
+    /// # use bump_scope::alloc_reexport::alloc::Global;
     /// let bump: Bump<Global, 1, true, false> = Bump::unallocated();
     /// let mut bump = bump.try_guaranteed_allocated()?;
     ///
     /// bump.scoped(|bump| {
     ///    // ...
     /// });
-    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_guaranteed_allocated(self) -> Result<Bump<A, MIN_ALIGN, UP>, AllocError> {
@@ -1000,7 +999,7 @@ where
     /// Creating scopes with a non-`GUARANTEED_ALLOCATED` bump is not possible.
     /// ```compile_fail,E0599
     /// # use bump_scope::Bump;
-    /// # use bump_scope::allocator_api2::alloc::Global;
+    /// # use bump_scope::alloc_reexport::alloc::Global;
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
     /// bump.scoped(|bump| {
@@ -1011,7 +1010,7 @@ where
     /// Using this function you can make a `Bump` guaranteed allocated and create scopes.
     /// ```
     /// # use bump_scope::Bump;
-    /// # use bump_scope::allocator_api2::alloc::Global;
+    /// # use bump_scope::alloc_reexport::alloc::Global;
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
     /// bump.guaranteed_allocated_mut().scoped(|bump| {
@@ -1035,7 +1034,7 @@ where
     /// Creating scopes with a non-`GUARANTEED_ALLOCATED` bump is not possible.
     /// ```compile_fail,E0599
     /// # use bump_scope::Bump;
-    /// # use bump_scope::allocator_api2::alloc::Global;
+    /// # use bump_scope::alloc_reexport::alloc::Global;
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
     /// bump.scoped(|bump| {
@@ -1046,13 +1045,13 @@ where
     /// Using this function you can make a `Bump` guaranteed allocated and create scopes.
     /// ```
     /// # use bump_scope::Bump;
-    /// # use bump_scope::allocator_api2::alloc::Global;
+    /// # use bump_scope::alloc_reexport::alloc::Global;
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
     /// bump.try_guaranteed_allocated_mut()?.scoped(|bump| {
     ///    // ...
     /// });
-    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_guaranteed_allocated_mut(&mut self) -> Result<&mut Bump<A, MIN_ALIGN, UP>, AllocError> {

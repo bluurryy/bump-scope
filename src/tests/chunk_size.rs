@@ -1,8 +1,10 @@
+use core::{alloc::Layout, ptr::NonNull};
 use std::convert::Infallible;
 
-use allocator_api2::alloc::{Allocator, Global};
-
-use crate::Bump;
+use crate::{
+    alloc_reexport::alloc::{AllocError, Allocator, Global},
+    Bump,
+};
 
 #[test]
 fn aligned_allocator_issue_32() {
@@ -13,14 +15,11 @@ fn aligned_allocator_issue_32() {
     const BIG_ALLOCATOR: BigAllocator = BigAllocator([0u8; 32]);
 
     unsafe impl Allocator for BigAllocator {
-        fn allocate(
-            &self,
-            layout: core::alloc::Layout,
-        ) -> Result<core::ptr::NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+        fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
             Global.allocate(layout)
         }
 
-        unsafe fn deallocate(&self, ptr: core::ptr::NonNull<u8>, layout: core::alloc::Layout) {
+        unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
             Global.deallocate(ptr, layout);
         }
     }

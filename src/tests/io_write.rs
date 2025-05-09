@@ -5,9 +5,10 @@ use std::{
     vec::Vec,
 };
 
-use allocator_api2::alloc::{Allocator, Global};
-
-use crate::{Bump, BumpVec, MutBumpVec};
+use crate::{
+    alloc_reexport::alloc::{Allocator, Global},
+    Bump, BumpVec, MutBumpVec,
+};
 
 use super::limited_allocator::Limited;
 

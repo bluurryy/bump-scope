@@ -3,9 +3,10 @@
 
 use std::{alloc::Layout, cell::Cell, ptr::NonNull};
 
-use allocator_api2::alloc::{AllocError, Allocator, Global};
-
-use bump_scope::Bump;
+use bump_scope::{
+    alloc_reexport::alloc::{AllocError, Allocator, Global},
+    Bump,
+};
 
 struct Limited<A> {
     current: Cell<usize>,
