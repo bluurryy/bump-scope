@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.16.5 (2025-05-09)
 - **added:** `pop_if` method to vector types
 - **added:** vector and string types implement `Default`
 - **added:** vector types implement `FromIterator`
