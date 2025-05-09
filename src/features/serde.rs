@@ -1,4 +1,4 @@
-use core::fmt::Display;
+use core::fmt::{self, Display};
 
 use serde::{
     de::{self, DeserializeSeed, Expected, Visitor},
@@ -88,7 +88,7 @@ const A_STRING: &str = "a string";
 struct AllocationFailed;
 
 impl Display for AllocationFailed {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("allocation failed")
     }
 }
@@ -107,7 +107,7 @@ fn map_alloc_error<E: de::Error>(result: Result<(), AllocError>) -> Result<(), E
 struct AtMost(usize);
 
 impl Expected for AtMost {
-    fn fmt(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "at most {}", self.0)
     }
 }
@@ -126,7 +126,7 @@ impl<'de, T: Deserialize<'de>> DeserializeSeed<'de> for &'_ mut FixedBumpVec<'_,
 impl<'de, T: Deserialize<'de>> Visitor<'de> for &'_ mut FixedBumpVec<'_, T> {
     type Value = ();
 
-    fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str(AN_ARRAY)
     }
 
@@ -166,7 +166,7 @@ impl<'de, T: Deserialize<'de>, A: BumpAllocator> DeserializeSeed<'de> for &'_ mu
 impl<'de, T: Deserialize<'de>, A: BumpAllocator> Visitor<'de> for &'_ mut BumpVec<T, A> {
     type Value = ();
 
-    fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str(AN_ARRAY)
     }
 
@@ -200,7 +200,7 @@ impl<'de, T: Deserialize<'de>, A: MutBumpAllocator> DeserializeSeed<'de> for &'_
 impl<'de, T: Deserialize<'de>, A: MutBumpAllocator> Visitor<'de> for &'_ mut MutBumpVec<T, A> {
     type Value = ();
 
-    fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str(AN_ARRAY)
     }
 
@@ -234,7 +234,7 @@ impl<'de, T: Deserialize<'de>, A: MutBumpAllocator> DeserializeSeed<'de> for &mu
 impl<'de, T: Deserialize<'de>, A: MutBumpAllocator> Visitor<'de> for &mut MutBumpVecRev<T, A> {
     type Value = ();
 
-    fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str(AN_ARRAY)
     }
 
@@ -268,7 +268,7 @@ impl<'de> DeserializeSeed<'de> for &'_ mut FixedBumpString<'_> {
 impl Visitor<'_> for &'_ mut FixedBumpString<'_> {
     type Value = ();
 
-    fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str(A_STRING)
     }
 
@@ -294,7 +294,7 @@ impl<'de, A: BumpAllocator> DeserializeSeed<'de> for &'_ mut BumpString<A> {
 impl<A: BumpAllocator> Visitor<'_> for &'_ mut BumpString<A> {
     type Value = ();
 
-    fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str(A_STRING)
     }
 
@@ -320,7 +320,7 @@ impl<'de, A: MutBumpAllocator> DeserializeSeed<'de> for &'_ mut MutBumpString<A>
 impl<A: MutBumpAllocator> Visitor<'_> for &mut MutBumpString<A> {
     type Value = ();
 
-    fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str(A_STRING)
     }
 
