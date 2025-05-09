@@ -42,6 +42,8 @@ zerocopy = ["dep:zerocopy"]
 #! ### Nightly features
 
 ## Makes this crate use the nightly allocator api instead of the one provided by the `allocator-api2` crate.
+## With this you can bump allocate collections from the standard library.
+##
 ## **Warning:** This feature is not additive. 
 ## Enabling this feature may break an unrelated dependency that relied on the types and traits from `bump-scope` and `allocator-api2` being the same.
 nightly-allocator-api = []

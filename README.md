@@ -188,6 +188,8 @@ assert_eq!(bump.stats().allocated(), 4);
 
  #### Nightly features
 * **`nightly-allocator-api`** —  Makes this crate use the nightly allocator api instead of the one provided by the `allocator-api2` crate.
+  With this you can bump allocate collections from the standard library.
+ 
   **Warning:** This feature is not additive.
   Enabling this feature may break an unrelated dependency that relied on the types and traits from `bump-scope` and `allocator-api2` being the same.
 * **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
