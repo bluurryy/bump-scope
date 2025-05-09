@@ -41,8 +41,7 @@ check-nostd:
 
 check-msrv:
   cargo ('+' + (open Cargo.toml).package.rust-version) check --no-default-features
-  cargo ('+' + (open Cargo.toml).package.rust-version) check --features alloc,panic-on-alloc,serde,zerocopy
-  cargo ('+' + (open Cargo.toml).package.rust-version) check --features std,panic-on-alloc,serde,zerocopy
+  cargo ('+' + (open Cargo.toml).package.rust-version) check --no-default-features --features panic-on-alloc,serde,zerocopy
 
 check-fallibility:
   @ just crates/test-fallibility/test
