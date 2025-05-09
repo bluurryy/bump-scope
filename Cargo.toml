@@ -13,7 +13,7 @@ readme = "README.md"
 exclude = ["*.nu", "justfile", "tests", ".vscode", ".github"]
 
 [dependencies]
-allocator-api2 = { version = "0.2.21", default-features = false }
+allocator-api2 = { version = "0.3.0", default-features = false }
 sptr = "0.3.2"
 serde = { version = "1.0.217", optional = true }
 zerocopy = { version = "0.8.14", default-features = false, optional = true }
@@ -41,9 +41,12 @@ zerocopy = ["dep:zerocopy"]
 
 #! ### Nightly features
 
-## Enables `allocator-api2`'s `nightly` feature which makes it reexport the nightly allocator api instead of its own implementation.
+## Makes this crate use the nightly allocator api instead of the one provided by the `allocator-api2` crate.
 ## With this you can bump allocate collections from the standard library.
-nightly-allocator-api = ["allocator-api2/nightly"]
+##
+## **Warning:** This feature is not additive. 
+## Enabling this feature may break an unrelated dependency that relied on the types and traits from `bump-scope` and `allocator-api2` being the same.
+nightly-allocator-api = []
 
 ## Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
 ## With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.

@@ -3,11 +3,11 @@
 
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
-use allocator_api2::alloc::{AllocError, Allocator};
-
 use crate::{
-    bump_down, polyfill::nonnull, up_align_usize_unchecked, BaseAllocator, Bump, BumpScope, MinimumAlignment,
-    SupportedMinimumAlignment,
+    alloc_reexport::alloc::{AllocError, Allocator},
+    bump_down,
+    polyfill::nonnull,
+    up_align_usize_unchecked, BaseAllocator, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment,
 };
 
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator

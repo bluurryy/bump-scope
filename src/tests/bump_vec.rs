@@ -7,9 +7,7 @@ use std::{
     string::{String, ToString},
 };
 
-use allocator_api2::alloc::Global;
-
-use crate::{bump_vec, tests::expect_no_panic, Bump, BumpVec};
+use crate::{alloc_reexport::alloc::Global, bump_vec, tests::expect_no_panic, Bump, BumpVec};
 
 use super::either_way;
 

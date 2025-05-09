@@ -147,7 +147,10 @@ The collections are designed to have a similar api to their std counterparts but
 To bump allocate in parallel you can use a `BumpPool`.
 
 ## Allocator API
-`Bump` and `BumpScope` implement `allocator_api2`'s [`Allocator`](https://docs.rs/allocator-api2/0.2.16/allocator_api2/alloc/trait.Allocator.html) trait.
+`Bump` and `BumpScope` implement either the `Allocator` trait from
+[`allocator_api2`](https://docs.rs/allocator-api2/0.3.0/allocator_api2/alloc/trait.Allocator.html)
+or from [`alloc`](https://doc.rust-lang.org/nightly/alloc/alloc/trait.Allocator.html)
+with the "nightly-allocator-api" feature.
 They can be used to allocate collections.
 
 A bump allocator can grow, shrink and deallocate the most recent allocation.
@@ -159,8 +162,8 @@ A bump allocator does not require `deallocate` or `shrink` to free memory.
 After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
 You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using `WithoutDealloc` and `WithoutShrink`.
 ```rust
-use bump_scope::{ Bump, WithoutDealloc };
-use allocator_api2::boxed::Box;
+use bump_scope::{ Bump, WithoutDealloc, alloc_reexport::boxed::Box };
+
 let bump: Bump = Bump::new();
 
 let boxed = Box::new_in(5, &bump);
@@ -184,8 +187,11 @@ assert_eq!(bump.stats().allocated(), 4);
 * **`zerocopy`** —  Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`.
 
  #### Nightly features
-* **`nightly-allocator-api`** —  Enables `allocator-api2`'s `nightly` feature which makes it reexport the nightly allocator api instead of its own implementation.
+* **`nightly-allocator-api`** —  Makes this crate use the nightly allocator api instead of the one provided by the `allocator-api2` crate.
   With this you can bump allocate collections from the standard library.
+ 
+  **Warning:** This feature is not additive.
+  Enabling this feature may break an unrelated dependency that relied on the types and traits from `bump-scope` and `allocator-api2` being the same.
 * **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
   You can unsize a `BumpBox` in stable without this feature using [`unsize_bump_box`].

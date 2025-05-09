@@ -1,10 +1,8 @@
 use core::ptr::NonNull;
 
-use allocator_api2::alloc::AllocError;
-
 use crate::{
-    polyfill::nonnull, BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment,
-    WithoutDealloc, WithoutShrink,
+    alloc_reexport::alloc::AllocError, polyfill::nonnull, BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment,
+    SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 
 #[cfg(feature = "panic-on-alloc")]

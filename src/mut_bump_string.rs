@@ -8,9 +8,8 @@ use core::{
     ptr, str,
 };
 
-use allocator_api2::alloc::AllocError;
-
 use crate::{
+    alloc_reexport::alloc::AllocError,
     error_behavior_generic_methods_allocation_failure, mut_collection_method_allocator_stats, owned_str,
     polyfill::{self, transmute_mut, transmute_value},
     raw_fixed_bump_string::RawFixedBumpString,
@@ -55,13 +54,13 @@ macro_rules! mut_bump_format {
         }
     }};
     (try in $bump:expr) => {{
-        Ok::<_, $crate::allocator_api2::alloc::AllocError>($crate::MutBumpString::new_in($bump))
+        Ok::<_, $crate::alloc_reexport::alloc::AllocError>($crate::MutBumpString::new_in($bump))
     }};
     (try in $bump:expr, $($arg:tt)*) => {{
         let mut string = $crate::MutBumpString::new_in($bump);
         match $crate::private::core::fmt::Write::write_fmt(&mut string, $crate::private::core::format_args!($($arg)*)) {
             $crate::private::core::result::Result::Ok(_) => $crate::private::core::result::Result::Ok(string),
-            $crate::private::core::result::Result::Err(_) => $crate::private::core::result::Result::Err($crate::allocator_api2::alloc::AllocError),
+            $crate::private::core::result::Result::Err(_) => $crate::private::core::result::Result::Err($crate::alloc_reexport::alloc::AllocError),
         }
     }};
 }
@@ -574,7 +573,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         /// # let mut bump: Bump = Bump::try_new()?;
         /// let string = MutBumpString::try_from_str_in("Hello!", &mut bump)?;
         /// assert_eq!(string, "Hello!");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_from_str_in
         #[inline]
@@ -647,7 +646,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         /// let sparkle_heart = MutBumpString::try_from_utf8_lossy_in(&sparkle_heart, &mut bump)?;
         ///
         /// assert_eq!("💖", sparkle_heart);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         ///
         /// Incorrect bytes:
@@ -660,7 +659,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         /// let output = MutBumpString::try_from_utf8_lossy_in(input, &mut bump)?;
         ///
         /// assert_eq!("Hello �World", output);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_from_utf8_lossy_in
         use fn generic_from_utf8_lossy_in(v: &[u8], allocator: A) -> Self {
@@ -729,7 +728,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
         ///           0xD800, 0x0069, 0x0063];
         /// assert!(MutBumpString::try_from_utf16_in(v, &mut bump2)?.is_err());
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_from_utf16_in
         use fn generic_from_utf16_in(v: &[u16], allocator: A) -> Result<Self, FromUtf16Error> {
@@ -780,7 +779,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         ///
         /// assert_eq!(MutBumpString::try_from_str_in("𝄞mus\u{FFFD}ic\u{FFFD}", &mut bump1)?,
         ///            MutBumpString::try_from_utf16_lossy_in(v, &mut bump2)?);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_from_utf16_lossy_in
         #[inline]
@@ -822,7 +821,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         /// s.try_push('3')?;
         ///
         /// assert_eq!(s, "abc123");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_push
         #[inline]
@@ -857,7 +856,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         /// s.try_push_str("bar")?;
         ///
         /// assert_eq!(s, "foobar");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_push_str
         #[inline]
@@ -898,7 +897,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         /// s.try_insert(2, 'o')?;
         ///
         /// assert_eq!("foo", s);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_insert
         #[inline]
@@ -940,7 +939,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         /// s.try_insert_str(0, "foo")?;
         ///
         /// assert_eq!("foobar", s);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_insert_str
         #[inline]
@@ -987,7 +986,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         ///
         /// string.try_extend_from_within(4..8)?;
         /// assert_eq!(string, "abcdecdeabecde");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_extend_from_within
         #[inline]
@@ -1022,7 +1021,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         /// let mut string = MutBumpString::try_from_str_in("What?", &mut bump)?;
         /// string.try_extend_zeroed(3)?;
         /// assert_eq!(string, "What?\0\0\0");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_extend_zeroed
         #[inline]
@@ -1071,7 +1070,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         /// // Replace the range up until the β from the string
         /// s.try_replace_range(..beta_offset, "Α is capital alpha; ")?;
         /// assert_eq!(s, "Α is capital alpha; β is beta");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_replace_range
         #[inline]
@@ -1173,7 +1172,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         /// s.try_reserve(10)?;
         ///
         /// assert!(s.capacity() >= 10);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         ///
         /// This might not actually increase the capacity:
@@ -1195,7 +1194,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         ///
         /// // ... doesn't actually increase.
         /// assert_eq!(capacity, s.capacity());
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_reserve
         #[inline]
@@ -1260,7 +1259,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         /// s.try_reserve_exact(10)?;
         ///
         /// assert!(s.capacity() >= 10);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         ///
         /// This might not actually increase the capacity:
@@ -1282,7 +1281,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         ///
         /// // ... doesn't actually increase.
         /// assert_eq!(capacity, s.capacity());
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
         /// ```
         for fn try_reserve_exact
         #[inline]
@@ -1395,7 +1394,7 @@ impl<'a, A: MutBumpAllocatorScope<'a>> MutBumpString<A> {
     ///
     /// let abc0def = MutBumpString::try_from_str_in("abc\0def", &mut bump)?;
     /// assert_eq!(abc0def.try_into_cstr()?, c"abc");
-    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_into_cstr(self) -> Result<&'a CStr, AllocError> {

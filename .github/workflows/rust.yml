@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        toolchain: ["1.64.0", "stable", "nightly"]
+        toolchain: ["stable", "nightly"]
         flags: ["--no-default-features"]
         include:
           - toolchain: "nightly"
@@ -62,6 +62,12 @@ jobs:
       - run: cd crates/test-hashbrown; cargo miri test --all-features
       - run: cd crates/tests-from-std && cargo test
       - run: cd crates/tests-from-std && cargo miri test
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.64.0
+      - run: cargo check --no-default-features
   minimal-versions:
     runs-on: ubuntu-latest
     steps:

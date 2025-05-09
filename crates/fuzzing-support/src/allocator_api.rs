@@ -2,7 +2,7 @@ use std::{alloc::Layout, ops::Range, ptr::NonNull, rc::Rc};
 
 use arbitrary::{Arbitrary, Unstructured};
 use bump_scope::{
-    allocator_api2::alloc::{Allocator, Global},
+    alloc_reexport::alloc::{Allocator, Global},
     Bump, MinimumAlignment, SupportedMinimumAlignment,
 };
 use core::fmt::Debug;

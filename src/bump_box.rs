@@ -21,7 +21,7 @@ use alloc::{string::String, vec::Vec};
 
 #[cfg(feature = "alloc")]
 #[allow(unused_imports)]
-use allocator_api2::boxed::Box;
+use crate::alloc_reexport::boxed::Box;
 
 use crate::{
     owned_slice, owned_str,
@@ -170,7 +170,7 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 /// [`into_mut`]: BumpBox::into_mut
 /// [`into_box`]: BumpBox::into_box
 /// [`leak`]: BumpBox::leak
-/// [`Box`]: allocator_api2::boxed::Box
+/// [`Box`]: crate::alloc_reexport::boxed::Box
 /// [*drop guarantee*]: https://doc.rust-lang.org/std/pin/index.html#subtle-details-and-the-drop-guarantee
 #[repr(transparent)]
 pub struct BumpBox<'a, T: ?Sized> {

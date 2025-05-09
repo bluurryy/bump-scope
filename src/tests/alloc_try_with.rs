@@ -3,9 +3,7 @@ use std::{
     mem::{self, offset_of},
 };
 
-use allocator_api2::alloc::Global;
-
-use crate::Bump;
+use crate::{alloc_reexport::alloc::Global, Bump};
 
 use super::either_way;
 

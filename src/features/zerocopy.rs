@@ -69,7 +69,7 @@ define_alloc_methods! {
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let zero = bump.try_alloc_zeroed::<i32>()?;
     /// assert_eq!(*zero, 0);
-    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
     /// ```
     for fn try_alloc_zeroed
     use fn generic_alloc_zeroed<{T}>(&self) -> BumpBox<T> | BumpBox<'a, T>
@@ -93,7 +93,7 @@ define_alloc_methods! {
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let zeroes = bump.try_alloc_zeroed_slice::<i32>(3)?;
     /// assert_eq!(*zeroes, [0; 3]);
-    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
     /// ```
     for fn try_alloc_zeroed_slice
     use fn generic_alloc_zeroed_slice<{T}>(&self, len: usize) -> BumpBox<[T]> | BumpBox<'a, [T]>

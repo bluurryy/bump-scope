@@ -1,10 +1,11 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
-use allocator_api2::alloc::{AllocError, Allocator};
-
 use crate::{
-    bump_down, polyfill::nonnull, up_align_usize_unchecked, BaseAllocator, Bump, BumpScope, MinimumAlignment,
-    SizedTypeProperties, Stats, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    alloc_reexport::alloc::{AllocError, Allocator},
+    bump_down,
+    polyfill::nonnull,
+    up_align_usize_unchecked, BaseAllocator, Bump, BumpScope, MinimumAlignment, SizedTypeProperties, Stats,
+    SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 
 #[cfg(feature = "panic-on-alloc")]

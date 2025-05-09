@@ -2,7 +2,7 @@
 #![allow(clippy::mut_from_ref)]
 
 use bump_scope::{
-    allocator_api2::alloc::{AllocError, Global, Layout},
+    alloc_reexport::alloc::{AllocError, Global, Layout},
     Bump, BumpBox, MinimumAlignment, SupportedMinimumAlignment,
 };
 

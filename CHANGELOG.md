@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+- **breaking:** updates `allocator-api2` to version `0.3.0`.
+
+  The `0.3.0` release of `allocator-api2` removes its "nightly" feature that would make it re-export the nightly api instead of its own types and traits.
+  
+  So now `bump-scope` does the conditional re-export itself. The `alloc_reexport` module will either contain the types and traits from `allocator-api2` or from `alloc`.
+  
+- **fix:** allow `serde` without `alloc` feature
+
 ## 0.16.5 (2025-05-09)
 - **added:** `pop_if` method to vector types
 - **added:** vector and string types implement `Default`

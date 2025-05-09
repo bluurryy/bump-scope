@@ -8,9 +8,7 @@ use std::{
     vec::Vec,
 };
 
-use allocator_api2::alloc::Global;
-
-use crate::{bump_vec, tests::expect_no_panic, Bump, FixedBumpVec};
+use crate::{alloc_reexport::alloc::Global, bump_vec, tests::expect_no_panic, Bump, FixedBumpVec};
 
 use super::either_way;
 
