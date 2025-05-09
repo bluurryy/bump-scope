@@ -187,8 +187,9 @@ assert_eq!(bump.stats().allocated(), 4);
 * **`zerocopy`** —  Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`.
 
  #### Nightly features
-* **`nightly-allocator-api`** —  Makes this crate use the nightly api instead of the one provided by the `allocator-api2` crate.
-  **Warning:** this feature is not additive. This can break code that expects `allocator-api2`'s types and traits.
+* **`nightly-allocator-api`** —  Makes this crate use the nightly allocator api instead of the one provided by the `allocator-api2` crate.
+  **Warning:** This feature is not additive.
+  Enabling this feature may break an unrelated dependency that relied on the types and traits from `bump-scope` and `allocator-api2` being the same.
 * **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
   You can unsize a `BumpBox` in stable without this feature using [`unsize_bump_box`].

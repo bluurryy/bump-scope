@@ -41,8 +41,9 @@ zerocopy = ["dep:zerocopy"]
 
 #! ### Nightly features
 
-## Makes this crate use the nightly api instead of the one provided by the `allocator-api2` crate.
-## **Warning:** this feature is not additive. This can break code that expects `allocator-api2`'s types and traits.
+## Makes this crate use the nightly allocator api instead of the one provided by the `allocator-api2` crate.
+## **Warning:** This feature is not additive. 
+## Enabling this feature may break an unrelated dependency that relied on the types and traits from `bump-scope` and `allocator-api2` being the same.
 nightly-allocator-api = []
 
 ## Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
