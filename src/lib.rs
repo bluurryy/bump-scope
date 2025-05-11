@@ -276,7 +276,7 @@ extern crate alloc;
 
 /// Either exports the nightly allocator api or `allocator-api2`'s polyfill.
 pub mod alloc_reexport;
-mod allocator;
+mod allocator_impl;
 mod bump;
 mod bump_align_guard;
 mod bump_allocator;
