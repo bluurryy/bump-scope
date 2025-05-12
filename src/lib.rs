@@ -372,6 +372,17 @@ use set_len_on_drop::SetLenOnDrop;
 pub use stats::Stats;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
+/// Contains wrappers that makes implementors of foreign `Allocator` traits implement this crate's [`Allocator`].
+///
+/// Note that the bump allocator itself already implements foreign `Allocator` traits, you
+/// generally only need this for a base allocator.
+pub mod compat {
+    #[cfg(feature = "allocator-api2-02")]
+    pub use crate::features::allocator_api2_02::AllocatorApi2V02Compat;
+    #[cfg(feature = "allocator-api2-03")]
+    pub use crate::features::allocator_api2_03::AllocatorApi2V03Compat;
+}
+
 // This must be kept in sync with ChunkHeaders `repr(align(16))`.
 const CHUNK_ALIGN_MIN: usize = 16;
 
