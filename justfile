@@ -11,8 +11,8 @@ pre-release:
   just spellcheck
   just doc
   just check
-  cargo +stable semver-checks
   just test
+  cargo +stable semver-checks
 
 check: 
   just check-fmt
