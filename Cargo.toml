@@ -13,7 +13,8 @@ readme = "README.md"
 exclude = ["*.nu", "justfile", "tests", ".vscode", ".github"]
 
 [dependencies]
-allocator-api2 = { version = "0.3.0", default-features = false }
+allocator-api2-02 = { package = "allocator-api2", version = "0.2.21", default-features = false, optional = true }
+allocator-api2-03 = { package = "allocator-api2", version = "0.3.0", default-features = false, optional = true }
 sptr = "0.3.2"
 serde = { version = "1.0.217", optional = true }
 zerocopy = { version = "0.8.14", default-features = false, optional = true }
@@ -23,10 +24,10 @@ rustversion = "1.0.19"
 default = ["std", "alloc", "panic-on-alloc"]
 
 ## Adds `BumpPool` and implementations of `std::io` traits.
-std = ["allocator-api2/std", "alloc"]
+std = ["allocator-api2-02?/std", "alloc"]
 
 ## Adds `Global` as the default base allocator and some interactions with `alloc` collections.
-alloc = ["allocator-api2/alloc"]
+alloc = ["allocator-api2-02?/alloc"]
 
 ## Adds functions and traits that will panic when the allocation fails. 
 ## Without this feature, allocation failures cannot cause panics, and only 
@@ -38,6 +39,9 @@ serde = ["dep:serde"]
 
 ## Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`. 
 zerocopy = ["dep:zerocopy"]
+
+allocator-api2-02 = ["dep:allocator-api2-02"]
+allocator-api2-03 = ["dep:allocator-api2-03"]
 
 #! ### Nightly features
 

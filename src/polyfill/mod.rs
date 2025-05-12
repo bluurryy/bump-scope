@@ -1,6 +1,7 @@
 //! A collection of stuff that is missing from stable std.
 //! Most of this is from nightly.
 
+pub(crate) mod hint;
 pub(crate) mod iter;
 pub(crate) mod layout;
 pub(crate) mod nonnull;

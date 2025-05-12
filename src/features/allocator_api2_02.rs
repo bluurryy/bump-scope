@@ -1,6 +1,6 @@
 use core::{alloc::Layout, ptr::NonNull};
 
-use allocator_api2_03::{
+use allocator_api2_02::{
     alloc::{AllocError, Allocator},
     boxed::Box,
 };
