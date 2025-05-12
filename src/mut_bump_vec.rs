@@ -22,7 +22,7 @@ mod into_iter;
 
 pub use into_iter::IntoIter;
 
-/// This is like [`vec!`](alloc::vec!) but allocates inside a bump allocator, returning a [`MutBumpVec`].
+/// This is like [`vec!`](alloc_crate::vec!) but allocates inside a bump allocator, returning a [`MutBumpVec`].
 ///
 /// `$bump` can be any type that implements [`MutBumpAllocator`].
 ///
@@ -479,7 +479,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         /// When `T` is a zero-sized type, there will be no allocation
         /// and the capacity will always be `usize::MAX`.
         ///
-        /// [Capacity and reallocation]: alloc::vec::Vec#capacity-and-reallocation
+        /// [Capacity and reallocation]: alloc_crate::vec::Vec#capacity-and-reallocation
         impl
         for fn with_capacity_in
         for fn try_with_capacity_in

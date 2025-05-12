@@ -170,7 +170,7 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 /// [`into_mut`]: BumpBox::into_mut
 /// [`into_box`]: BumpBox::into_box
 /// [`leak`]: BumpBox::leak
-/// [`Box`]: crate::alloc_reexport::boxed::Box
+/// [`Box`]: alloc_crate::boxed::Box
 /// [*drop guarantee*]: https://doc.rust-lang.org/std/pin/index.html#subtle-details-and-the-drop-guarantee
 #[repr(transparent)]
 pub struct BumpBox<'a, T: ?Sized> {
@@ -185,7 +185,7 @@ pub struct BumpBox<'a, T: ?Sized> {
 ///
 /// This macro is required to unsize the pointee of a `BumpBox` on stable rust.
 ///
-/// On nightly and when the feature "nightly-coerce-unsized" is enabled, `BumpBox` implements `CoerceUnsized` so `T` will coerce just like with [`Box`](alloc::boxed::Box).
+/// On nightly and when the feature "nightly-coerce-unsized" is enabled, `BumpBox` implements `CoerceUnsized` so `T` will coerce just like with [`Box`](alloc_crate::boxed::Box).
 ///
 /// # Examples
 /// ```

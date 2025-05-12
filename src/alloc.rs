@@ -42,7 +42,7 @@ impl fmt::Display for AllocError {
 /// An allocator for `MyAlloc([u8; N])` cannot be moved, without updating the pointers to the
 /// allocated memory.
 ///
-/// In contrast to [`GlobalAlloc`][], `Allocator` allows zero-sized allocations. If an underlying
+/// In contrast to [`GlobalAlloc`][alloc_crate::alloc::GlobalAlloc], `Allocator` allows zero-sized allocations. If an underlying
 /// allocator does not support this (like jemalloc) or responds by returning a null pointer
 /// (such as `libc::malloc`), this must be caught by the implementation.
 ///

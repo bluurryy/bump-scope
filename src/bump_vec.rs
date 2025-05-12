@@ -38,7 +38,7 @@ pub(crate) use drain::Drain;
 #[cfg(feature = "panic-on-alloc")]
 pub use splice::Splice;
 
-/// This is like [`vec!`](alloc::vec!) but allocates inside a bump allocator, returning a [`BumpVec`].
+/// This is like [`vec!`](alloc_crate::vec!) but allocates inside a bump allocator, returning a [`BumpVec`].
 ///
 /// `$bump` can be any type that implements [`BumpAllocator`].
 ///
@@ -115,7 +115,7 @@ macro_rules! bump_vec {
     };
 }
 
-/// A bump allocated [`Vec`](alloc::vec::Vec).
+/// A bump allocated [`Vec`](alloc_crate::vec::Vec).
 ///
 /// The main difference to `Vec` is that it can be turned into a slice that is live for this bump scope (`'a`).
 /// Such a slice can be live while entering new scopes.
@@ -267,7 +267,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         /// When `T` is a zero-sized type, there will be no allocation
         /// and the capacity will always be `usize::MAX`.
         ///
-        /// [Capacity and reallocation]: alloc::vec::Vec#capacity-and-reallocation
+        /// [Capacity and reallocation]: alloc_crate::vec::Vec#capacity-and-reallocation
         impl
         for fn with_capacity_in
         for fn try_with_capacity_in
@@ -476,7 +476,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// This method does not allocate and does not change the order of the elements.
     ///
     /// The excess capacity may end up in either vector.
-    /// This behavior is different from <code>Vec::[split_off](alloc::vec::Vec::split_off)</code> which allocates a new vector for the split-off elements
+    /// This behavior is different from <code>Vec::[split_off](alloc_crate::vec::Vec::split_off)</code> which allocates a new vector for the split-off elements
     /// so the original vector keeps its capacity.
     /// If you rather want that behavior then you can write this instead:
     /// ```

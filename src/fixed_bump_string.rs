@@ -249,7 +249,7 @@ impl<'a> FixedBumpString<'a> {
     /// This method does not allocate and does not change the order of the elements.
     ///
     /// The excess capacity may end up in either string.
-    /// This behavior is different from <code>String::[split_off](alloc::string::String::split_off)</code> which allocates a new string for the split-off bytes
+    /// This behavior is different from <code>String::[split_off](alloc_crate::string::String::split_off)</code> which allocates a new string for the split-off bytes
     /// so the original string keeps its capacity.
     /// If you rather want that behavior then you can write this instead:
     /// ```

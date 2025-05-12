@@ -23,7 +23,7 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::{panic_on_error, polyfill::nonnull, PanicsOnAlloc};
 
-/// This is like [`format!`](alloc::format) but allocates inside a bump allocator, returning a [`BumpString`].
+/// This is like [`format!`](alloc_crate::format) but allocates inside a bump allocator, returning a [`BumpString`].
 ///
 /// If you don't need to push to the string after creation you can also use [`Bump::alloc_fmt`](crate::Bump::alloc_fmt).
 ///
@@ -69,7 +69,7 @@ macro_rules! bump_format {
     }};
 }
 
-/// A bump allocated [`String`](alloc::string::String).
+/// A bump allocated [`String`](alloc_crate::string::String).
 ///
 /// When you are done building the string, you can turn it into a `&str` with [`into_str`].
 ///
@@ -295,7 +295,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// This method does not allocate and does not change the order of the elements.
     ///
     /// The excess capacity may end up in either string.
-    /// This behavior is different from <code>String::[split_off](alloc::string::String::split_off)</code> which allocates a new string for the split-off bytes
+    /// This behavior is different from <code>String::[split_off](alloc_crate::string::String::split_off)</code> which allocates a new string for the split-off bytes
     /// so the original string keeps its capacity.
     /// If you rather want that behavior then you can write this instead:
     /// ```

@@ -66,7 +66,7 @@ macro_rules! bump_declaration {
         /// string.push_str(" world!");
         /// ```
         ///
-        /// ... and collections from crates that use `allocator_api2`'s [`Allocator`](allocator_api2::alloc::Allocator) like [hashbrown](https://docs.rs/hashbrown)'s [`HashMap`](https://docs.rs/hashbrown/latest/hashbrown/struct.HashMap.html):
+        /// ... and collections from crates that use `allocator_api2`'s [`Allocator`](allocator_api2_02::alloc::Allocator) like [hashbrown](https://docs.rs/hashbrown)'s [`HashMap`](https://docs.rs/hashbrown/latest/hashbrown/struct.HashMap.html):
         ///
         /// *(As of this writing, `hashbrown` version `0.15` uses `allocator-api2` version `0.2`, which is not compatible with `bump-scope` version `0.17` and later. You can use `bump-scope` version `0.16` to be compatible with `hashbrown` version `0.15`)*
         // NOTE: This code is tested in `crates/test-hashbrown/lib.rs`.
