@@ -5,9 +5,6 @@ use core::alloc::{AllocError, Allocator};
 #[cfg(feature = "alloc")]
 use alloc_crate::{alloc::Global, boxed::Box};
 
-#[cfg(feature = "std")]
-use std::alloc::System;
-
 use crate::{
     alloc::{box_like, AllocError as CrateAllocError, Allocator as CrateAllocator, BoxLike},
     polyfill, BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc,
@@ -16,55 +13,6 @@ use crate::{
 
 #[cfg(feature = "alloc")]
 unsafe impl CrateAllocator for Global {
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, CrateAllocError> {
-        <Self as Allocator>::allocate(self, layout).map_err(Into::into)
-    }
-
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        <Self as Allocator>::deallocate(self, ptr, layout);
-    }
-
-    fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, CrateAllocError> {
-        <Self as Allocator>::allocate_zeroed(self, layout).map_err(Into::into)
-    }
-
-    unsafe fn grow(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: Layout,
-        new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, CrateAllocError> {
-        <Self as Allocator>::grow(self, ptr, old_layout, new_layout).map_err(Into::into)
-    }
-
-    unsafe fn grow_zeroed(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: Layout,
-        new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, CrateAllocError> {
-        <Self as Allocator>::grow_zeroed(self, ptr, old_layout, new_layout).map_err(Into::into)
-    }
-
-    unsafe fn shrink(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: Layout,
-        new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, CrateAllocError> {
-        <Self as Allocator>::shrink(self, ptr, old_layout, new_layout).map_err(Into::into)
-    }
-
-    fn by_ref(&self) -> &Self
-    where
-        Self: Sized,
-    {
-        self
-    }
-}
-
-#[cfg(feature = "std")]
-unsafe impl CrateAllocator for System {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, CrateAllocError> {
         <Self as Allocator>::allocate(self, layout).map_err(Into::into)
     }
@@ -469,8 +417,6 @@ fn test_compat() {
 
     #[cfg(feature = "alloc")]
     is_base_allocator(Global);
-    #[cfg(feature = "std")]
-    is_base_allocator(System);
     is_base_allocator(AllocatorNightlyCompat(TestAllocator));
     is_base_allocator(AllocatorNightlyCompat::from_ref(&TestAllocator));
 }

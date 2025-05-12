@@ -2,6 +2,8 @@
 
 #[cfg(feature = "alloc")]
 mod global;
+#[cfg(feature = "std")]
+mod system;
 
 use core::{
     alloc::Layout,
