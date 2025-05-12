@@ -1,6 +1,6 @@
 use std::iter;
 
-use crate::{alloc_reexport::alloc::Global, Bump, MutBumpVec, MutBumpVecRev};
+use crate::{alloc::Global, Bump, MutBumpVec, MutBumpVecRev};
 
 use super::either_way;
 

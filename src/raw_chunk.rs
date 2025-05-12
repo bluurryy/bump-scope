@@ -1,7 +1,7 @@
 use core::{alloc::Layout, cell::Cell, mem::align_of, num::NonZeroUsize, ops::Range, ptr::NonNull};
 
 use crate::{
-    alloc_reexport::alloc::{AllocError, Allocator},
+    alloc::{AllocError, Allocator},
     bumping::{bump_down, bump_prepare_down, bump_prepare_up, bump_up, BumpProps, BumpUp},
     down_align_usize,
     layout::LayoutProps,

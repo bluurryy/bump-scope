@@ -7,7 +7,7 @@ use std::{
     string::{String, ToString},
 };
 
-use crate::{alloc_reexport::alloc::Global, bump_vec, tests::expect_no_panic, Bump, BumpVec};
+use crate::{alloc::Global, bump_vec, tests::expect_no_panic, Bump, BumpVec};
 
 use super::either_way;
 

@@ -1,7 +1,7 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    alloc_reexport::alloc::{AllocError, Allocator},
+    alloc::{AllocError, Allocator},
     bump_down,
     polyfill::nonnull,
     up_align_usize_unchecked, BaseAllocator, Bump, BumpScope, MinimumAlignment, SizedTypeProperties, Stats,
@@ -9,7 +9,7 @@ use crate::{
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{handle_alloc_error, panic_on_error};
+use crate::{alloc::handle_alloc_error, panic_on_error};
 
 /// A bump allocator.
 ///

@@ -1,7 +1,7 @@
 use std::{alloc::Layout, ptr::NonNull};
 
 use crate::{
-    alloc_reexport::alloc::{Allocator, Global},
+    alloc::{Allocator, Global},
     polyfill::nonnull,
     Bump,
 };

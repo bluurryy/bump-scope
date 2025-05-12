@@ -1,6 +1,6 @@
 #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
 
-use bump_scope::alloc_reexport::alloc::Global;
+use bump_scope::alloc::Global;
 
 type Bump = bump_scope::Bump<Global, 1, true, false>;
 

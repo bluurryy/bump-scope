@@ -1,4 +1,4 @@
-use crate::{alloc_reexport::alloc::Global, Bump};
+use crate::{alloc::Global, Bump};
 
 use super::either_way;
 

@@ -21,7 +21,7 @@ use alloc_crate::{string::String, vec::Vec};
 
 #[cfg(feature = "alloc")]
 #[allow(unused_imports)]
-use crate::alloc_reexport::boxed::Box;
+use alloc_crate::boxed::Box;
 
 use crate::{
     owned_slice, owned_str,
@@ -297,13 +297,17 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "alloc")]
-    pub fn into_box<A: BumpAllocatorScope<'a>>(self, allocator: A) -> Box<T, A> {
+    pub fn into_box<A, B>(self, allocator: A) -> B
+    where
+        A: BumpAllocatorScope<'a>,
+        B: crate::alloc::BoxLike<T = T, A = A>,
+    {
         let ptr = BumpBox::into_raw(self).as_ptr();
 
         // SAFETY: bump might not be the allocator self was allocated with;
         // that's fine though because a `BumpAllocator` allows deallocate calls
         // from allocations that don't belong to it
-        unsafe { Box::from_raw_in(ptr, allocator) }
+        unsafe { B::from_raw_in(ptr, allocator) }
     }
 
     /// Drops this box and frees its memory iff it is the last allocation:

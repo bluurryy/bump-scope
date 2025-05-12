@@ -203,6 +203,6 @@ unsafe impl Allocator for Global {
 #[cfg(all(feature = "alloc", feature = "panic-on-alloc"))]
 #[cold]
 #[inline(never)]
-pub const fn handle_alloc_error(layout: Layout) -> ! {
+pub const fn handle_alloc_error(_: Layout) -> ! {
     panic!("allocation failed");
 }

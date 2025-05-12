@@ -4,7 +4,7 @@
 use std::{alloc::Layout, cell::Cell, ptr::NonNull};
 
 use bump_scope::{
-    alloc_reexport::alloc::{AllocError, Allocator, Global},
+    alloc::{AllocError, Allocator, Global},
     Bump,
 };
 

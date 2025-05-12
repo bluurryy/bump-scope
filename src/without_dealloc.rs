@@ -1,7 +1,7 @@
 use core::{alloc::Layout, ptr::NonNull};
 
 use crate::{
-    alloc_reexport::alloc::{AllocError, Allocator},
+    alloc::{AllocError, Allocator},
     polyfill::nonnull,
     BumpAllocator,
 };

@@ -699,7 +699,7 @@ impl FixedBumpString<'_> {
         /// s.try_push('c')?;
         ///
         /// assert_eq!(s, "abc");
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_push
         #[inline]
@@ -736,7 +736,7 @@ impl FixedBumpString<'_> {
         /// s.try_push_str("bar")?;
         ///
         /// assert_eq!(s, "foobar");
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_push_str
         #[inline]
@@ -777,7 +777,7 @@ impl FixedBumpString<'_> {
         /// s.try_insert(2, 'o')?;
         ///
         /// assert_eq!("foo", s);
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_insert
         #[inline]
@@ -821,7 +821,7 @@ impl FixedBumpString<'_> {
         /// s.try_insert_str(0, "foo")?;
         ///
         /// assert_eq!("foobar", s);
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_insert_str
         #[inline]
@@ -870,7 +870,7 @@ impl FixedBumpString<'_> {
         ///
         /// string.try_extend_from_within(4..8)?;
         /// assert_eq!(string, "abcdecdeabecde");
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_extend_from_within
         #[inline]
@@ -907,7 +907,7 @@ impl FixedBumpString<'_> {
         /// string.try_push_str("What?")?;
         /// string.try_extend_zeroed(3)?;
         /// assert_eq!(string, "What?\0\0\0");
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_extend_zeroed
         #[inline]
@@ -962,7 +962,7 @@ impl FixedBumpString<'_> {
         /// let mut s = bump.try_alloc_fixed_string(5)?;
         /// s.push_str("hello");
         /// assert!(s.try_replace_range(4..=4, " n").is_err());
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_replace_range
         #[inline]

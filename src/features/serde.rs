@@ -6,8 +6,8 @@ use serde::{
 };
 
 use crate::{
-    alloc_reexport::alloc::AllocError, BumpAllocator, BumpBox, BumpString, BumpVec, FixedBumpString, FixedBumpVec,
-    MutBumpAllocator, MutBumpString, MutBumpVec, MutBumpVecRev,
+    alloc::AllocError, BumpAllocator, BumpBox, BumpString, BumpVec, FixedBumpString, FixedBumpVec, MutBumpAllocator,
+    MutBumpString, MutBumpVec, MutBumpVecRev,
 };
 
 impl<T: Serialize + ?Sized> Serialize for BumpBox<'_, T> {

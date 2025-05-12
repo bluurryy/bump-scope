@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    alloc_reexport::alloc::{AllocError, Allocator, Global},
+    alloc::{AllocError, Allocator, Global},
     bump_format, mut_bump_format, Bump,
 };
 

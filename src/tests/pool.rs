@@ -2,7 +2,7 @@ use std::vec::Vec;
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{alloc_reexport::alloc::Global, BumpPool};
+use crate::{alloc::Global, BumpPool};
 
 use super::either_way;
 

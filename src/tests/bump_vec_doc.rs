@@ -1,6 +1,6 @@
 //! doc tests but for up and down
 
-use crate::{alloc_reexport::alloc::Global, bump_vec, Bump, BumpVec};
+use crate::{alloc::Global, bump_vec, Bump, BumpVec};
 
 use super::either_way;
 

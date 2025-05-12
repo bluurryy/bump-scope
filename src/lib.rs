@@ -274,9 +274,7 @@ extern crate std;
 #[cfg(any(feature = "alloc", feature = "nightly-fn-traits"))]
 extern crate alloc as alloc_crate;
 
-/// Either exports the nightly allocator api or `allocator-api2`'s polyfill.
-pub mod alloc_reexport;
-mod allocator;
+pub mod alloc;
 mod allocator_impl;
 mod bump;
 mod bump_align_guard;
@@ -327,9 +325,7 @@ mod set_len_on_drop_by_ptr;
 pub mod stats;
 mod without_dealloc;
 
-#[cfg(all(feature = "alloc", feature = "panic-on-alloc"))]
-use alloc_reexport::alloc::handle_alloc_error;
-use alloc_reexport::alloc::Allocator;
+use alloc::Allocator;
 pub use bump::Bump;
 pub use bump_allocator::BumpAllocator;
 pub use bump_allocator_scope::BumpAllocatorScope;
@@ -696,7 +692,7 @@ macro_rules! error_behavior_generic_methods_if {
             pub fn $fallible
             $(<$($($generic_params_lifetime)*)? $($generic_params)*>)?
             ($(&$($self)+,)? $($arg_pat: $arg_ty),*)
-            -> $crate::wrap_result!($($return_ty)?, $crate::alloc_reexport::alloc::AllocError)
+            -> $crate::wrap_result!($($return_ty)?, $crate::alloc::AllocError)
             $(where $($where)*)?
             {
                 Self::$generic($($crate::last!($($self)+), )? $($arg_pat),*)
@@ -838,7 +834,7 @@ macro_rules! define_alloc_methods {
                     pub fn $fallible
                     $(<$($generic_params)*>)?
                     (&$($self)+ $(, $arg_pat: $arg_ty)*)
-                    -> $crate::wrap_result!($($return_ty_scope)?, $crate::alloc_reexport::alloc::AllocError)
+                    -> $crate::wrap_result!($($return_ty_scope)?, $crate::alloc::AllocError)
                     $(where $($where)*)?
                     {
                         $crate::last!($($self)+).$generic($($arg_pat),*)
@@ -894,7 +890,7 @@ macro_rules! define_alloc_methods {
                     pub fn $fallible
                     $(<$($generic_params)*>)?
                     (&$($self)+ $(, $arg_pat: $arg_ty)*)
-                    -> $crate::wrap_result!($($return_ty)?, $crate::alloc_reexport::alloc::AllocError)
+                    -> $crate::wrap_result!($($return_ty)?, $crate::alloc::AllocError)
                     $(where $($where)*)?
                     {
                         $crate::as_scope!($($self)+).$fallible($($arg_pat),*)
@@ -933,7 +929,7 @@ define_alloc_methods! {
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc(123)?;
     /// assert_eq!(allocated, 123);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc
     use fn generic_alloc<{T}>(&self, value: T) -> BumpBox<T> | BumpBox<'a, T>;
@@ -955,7 +951,7 @@ define_alloc_methods! {
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc_with(|| 123)?;
     /// assert_eq!(allocated, 123);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_with
     use fn generic_alloc_with<{T}>(&self, f: impl FnOnce() -> T) -> BumpBox<T> | BumpBox<'a, T>;
@@ -978,7 +974,7 @@ define_alloc_methods! {
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc_default()?;
     /// assert_eq!(allocated, 0);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_default
     use fn generic_alloc_default<{T: Default}>(&self) -> BumpBox<T> | BumpBox<'a, T>;
@@ -999,7 +995,7 @@ define_alloc_methods! {
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.alloc_slice_copy(&[1, 2, 3]);
     /// assert_eq!(allocated, [1, 2, 3]);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_slice_copy
     use fn generic_alloc_slice_copy<{T: Copy}>(
@@ -1023,7 +1019,7 @@ define_alloc_methods! {
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc_slice_clone(&[String::from("a"), String::from("b")])?;
     /// assert_eq!(allocated, [String::from("a"), String::from("b")]);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_slice_clone
     use fn generic_alloc_slice_clone<{T: Clone}>(
@@ -1047,7 +1043,7 @@ define_alloc_methods! {
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc_slice_fill(3, "ho")?;
     /// assert_eq!(allocated, ["ho", "ho", "ho"]);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_slice_fill
     use fn generic_alloc_slice_fill<{T: Clone}>(&self, len: usize, value: T) -> BumpBox<[T]> | BumpBox<'a, [T]>;
@@ -1078,7 +1074,7 @@ define_alloc_methods! {
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc_slice_fill_with::<i32>(3, Default::default)?;
     /// assert_eq!(allocated, [0, 0, 0]);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_slice_fill_with
     use fn generic_alloc_slice_fill_with<{T}>(&self, len: usize, f: impl FnMut() -> T) -> BumpBox<[T]> | BumpBox<'a, [T]>;
@@ -1099,7 +1095,7 @@ define_alloc_methods! {
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc_str("Hello, world!")?;
     /// assert_eq!(allocated, "Hello, world!");
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_str
     use fn generic_alloc_str(&self, src: &str) -> BumpBox<str> | BumpBox<'a, str>;
@@ -1132,7 +1128,7 @@ define_alloc_methods! {
     /// let string = bump.try_alloc_fmt(format_args!("{one} + {two} = {}", one + two))?;
     ///
     /// assert_eq!(string, "1 + 2 = 3");
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_fmt
     use fn generic_alloc_fmt(&self, args: fmt::Arguments) -> BumpBox<str> | BumpBox<'a, str>;
@@ -1165,7 +1161,7 @@ define_alloc_methods! {
     /// let string = bump.try_alloc_fmt_mut(format_args!("{one} + {two} = {}", one + two))?;
     ///
     /// assert_eq!(string, "1 + 2 = 3");
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_fmt_mut
     use fn generic_alloc_fmt_mut(&mut self, args: fmt::Arguments) -> BumpBox<str> | BumpBox<'a, str>;
@@ -1186,7 +1182,7 @@ define_alloc_methods! {
     /// # let bump: Bump = Bump::try_new()?;
     /// let allocated = bump.try_alloc_cstr(c"Hello, world!")?;
     /// assert_eq!(allocated, c"Hello, world!");
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_cstr
     use fn generic_alloc_cstr(&self, src: &CStr) -> &CStr | &'a CStr;
@@ -1215,7 +1211,7 @@ define_alloc_methods! {
     ///
     /// let allocated = bump.try_alloc_cstr_from_str("abc\0def")?;
     /// assert_eq!(allocated, c"abc");
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_cstr_from_str
     use fn generic_alloc_cstr_from_str(&self, src: &str) -> &CStr | &'a CStr;
@@ -1254,7 +1250,7 @@ define_alloc_methods! {
     ///
     /// let one = bump.try_alloc_cstr_fmt(format_args!("{one}\0{two}"))?;
     /// assert_eq!(one, c"1");
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_cstr_fmt
     use fn generic_alloc_cstr_fmt(&self, args: fmt::Arguments) -> &CStr | &'a CStr;
@@ -1293,7 +1289,7 @@ define_alloc_methods! {
     ///
     /// let one = bump.try_alloc_cstr_fmt_mut(format_args!("{one}\0{two}"))?;
     /// assert_eq!(one, c"1");
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_cstr_fmt_mut
     use fn generic_alloc_cstr_fmt_mut(&mut self, args: fmt::Arguments) -> &CStr | &'a CStr;
@@ -1328,7 +1324,7 @@ define_alloc_methods! {
     /// # let bump: Bump = Bump::try_new()?;
     /// let slice = bump.try_alloc_iter([1, 2, 3])?;
     /// assert_eq!(slice, [1, 2, 3]);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_iter
     use fn generic_alloc_iter<{T}>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]>;
@@ -1349,7 +1345,7 @@ define_alloc_methods! {
     /// # let bump: Bump = Bump::try_new()?;
     /// let slice = bump.try_alloc_iter_exact([1, 2, 3])?;
     /// assert_eq!(slice, [1, 2, 3]);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_iter_exact
     use fn generic_alloc_iter_exact<{T, I}>(&self, iter: impl IntoIterator<Item = T, IntoIter = I>) -> BumpBox<[T]> | BumpBox<'a, [T]>
@@ -1379,7 +1375,7 @@ define_alloc_methods! {
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let slice = bump.try_alloc_iter_mut([1, 2, 3])?;
     /// assert_eq!(slice, [1, 2, 3]);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_iter_mut
     use fn generic_alloc_iter_mut<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]>;
@@ -1417,7 +1413,7 @@ define_alloc_methods! {
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let slice = bump.try_alloc_iter_mut_rev([1, 2, 3])?;
     /// assert_eq!(slice, [3, 2, 1]);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_iter_mut_rev
     use fn generic_alloc_iter_mut_rev<{T}>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> | BumpBox<'a, [T]>;
@@ -1462,7 +1458,7 @@ define_alloc_methods! {
     /// let five = five.init(5);
     ///
     /// assert_eq!(*five, 5);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     ///
     /// Unsafely:
@@ -1477,7 +1473,7 @@ define_alloc_methods! {
     /// };
     ///
     /// assert_eq!(*five, 5);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_uninit
     use fn generic_alloc_uninit<{T}>(&self) -> BumpBox<MaybeUninit<T>> | BumpBox<'a, MaybeUninit<T>>;
@@ -1530,7 +1526,7 @@ define_alloc_methods! {
     /// let values = values.init_copy(&[1, 2, 3]);
     ///
     /// assert_eq!(values, [1, 2, 3]);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     ///
     /// Unsafely:
@@ -1548,7 +1544,7 @@ define_alloc_methods! {
     /// };
     ///
     /// assert_eq!(values, [1, 2, 3]);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_uninit_slice
     use fn generic_alloc_uninit_slice<{T}>(&self, len: usize) -> BumpBox<[MaybeUninit<T>]> | BumpBox<'a, [MaybeUninit<T>]>;
@@ -1583,7 +1579,7 @@ define_alloc_methods! {
     /// let slice = &[1, 2, 3];
     /// let other_slice = bump.try_alloc_uninit_slice_for(slice)?;
     /// assert_eq!(other_slice.len(), 3);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_uninit_slice_for
     use fn generic_alloc_uninit_slice_for<{T}>(&self, slice: &[T]) -> BumpBox<[MaybeUninit<T>]> | BumpBox<'a, [MaybeUninit<T>]>;
@@ -1610,7 +1606,7 @@ define_alloc_methods! {
     /// values.push(2);
     /// values.push(3);
     /// assert_eq!(values, [1, 2, 3]);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_fixed_vec
     use fn generic_alloc_fixed_vec<{T}>(&self, capacity: usize) -> FixedBumpVec<T> | FixedBumpVec<'a, T>;
@@ -1635,7 +1631,7 @@ define_alloc_methods! {
     /// string.push_str("Hello,");
     /// string.push_str(" world!");
     /// assert_eq!(string, "Hello, world!");
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_fixed_string
     use fn generic_alloc_fixed_string(&self, capacity: usize) -> FixedBumpString | FixedBumpString<'a>;
@@ -1669,7 +1665,7 @@ define_alloc_methods! {
     ///
     /// bump.try_reserve_bytes(4096)?;
     /// assert!(bump.stats().capacity() >= 4096);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_reserve_bytes
     use fn generic_reserve_bytes(&self, additional: usize);
@@ -1716,7 +1712,7 @@ define_alloc_methods! {
     /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Ok(123) })?;
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     /// ```
     /// # #![feature(offset_of_enum)]
@@ -1726,7 +1722,7 @@ define_alloc_methods! {
     /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Err(123) })?;
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_try_with
     use fn generic_alloc_try_with<{T, E}>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> | Result<BumpBox<'a, T>, E>;
@@ -1769,7 +1765,7 @@ define_alloc_methods! {
     /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) })?;
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     /// ```
     /// # #![feature(offset_of_enum)]
@@ -1779,7 +1775,7 @@ define_alloc_methods! {
     /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) })?;
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
-    /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_try_with_mut
     use fn generic_alloc_try_with_mut<{T, E}>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> | Result<BumpBox<'a, T>, E>;
@@ -1864,18 +1860,18 @@ impl<A> BaseAllocator<false> for A where A: Allocator + Clone + Default {}
 
 impl<A> BaseAllocator<true> for A where A: Allocator + Clone {}
 
-/// Call this with a macro that accepts tokens of either `A` or `A = $crate::alloc_reexport::alloc::Global`.
+/// Call this with a macro that accepts tokens of either `A` or `A = $crate::alloc::Global`.
 ///
 /// We do it this way instead of having a parameter like
 /// ```ignore
-/// #[cfg(feature = "alloc")] A = $crate::alloc_reexport::alloc::Global,
+/// #[cfg(feature = "alloc")] A = $crate::alloc::Global,
 /// #[cfg(not(feature = "alloc"))] A,
 /// ```
 /// because Rust Analyzer thinks those are two parameters and gets confused.
 macro_rules! maybe_default_allocator {
     ($macro:ident) => {
         #[cfg(feature = "alloc")]
-        $macro!(A = $crate::alloc_reexport::alloc::Global);
+        $macro!(A = $crate::alloc::Global);
 
         #[cfg(not(feature = "alloc"))]
         $macro!(A);

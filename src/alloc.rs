@@ -384,3 +384,15 @@ where
         unsafe { (**self).shrink(ptr, old_layout, new_layout) }
     }
 }
+
+pub(crate) mod box_like {
+    pub trait Sealed {
+        type T: ?Sized;
+        type A;
+
+        unsafe fn from_raw_in(ptr: *mut Self::T, allocator: Self::A) -> Self;
+    }
+}
+
+/// TODO: document this
+pub trait BoxLike: box_like::Sealed {}

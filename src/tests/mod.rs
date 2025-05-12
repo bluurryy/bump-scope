@@ -61,7 +61,7 @@ const MALLOC_OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
 const OVERHEAD: usize = MALLOC_OVERHEAD + size_of::<ChunkHeader<Global>>();
 
 use crate::{
-    alloc_reexport::alloc::{AllocError, Allocator, Global as System, Global},
+    alloc::{AllocError, Allocator, Global as System, Global},
     chunk_size::AssumedMallocOverhead,
     mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice, panic_on_error,
     stats::Chunk,
@@ -1103,7 +1103,7 @@ fn map_in_place_compile_fail_due_to_size() {
 // make sure to also check that niches are the same
 mod doc_layout_claim {
     #![allow(dead_code)]
-    use crate::{alloc_reexport::alloc::Global, SizedTypeProperties};
+    use crate::{alloc::Global, SizedTypeProperties};
     use core::{cell::Cell, ptr::NonNull};
     type Bump = crate::Bump<Global, 1, true, true>;
     type BumpScope = crate::BumpScope<'static, Global, 1, true, true>;

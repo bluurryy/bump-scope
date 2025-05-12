@@ -1,7 +1,7 @@
 use core::ptr::NonNull;
 
 use crate::{
-    alloc_reexport::alloc::AllocError, polyfill::nonnull, BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment,
+    alloc::AllocError, polyfill::nonnull, BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment,
     SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 
@@ -203,7 +203,7 @@ where
     where
         Self: Sized,
     {
-        let (ptr, len) = BumpScope::generic_prepare_slice_allocation(self, len)?;
+        let (ptr, len) = BumpScope::generic_prepare_slice_allocation::<AllocError, T>(self, len)?;
         Ok(nonnull::slice_from_raw_parts(ptr, len))
     }
 

@@ -9,7 +9,7 @@ use core::{
 use std::sync::{Mutex, PoisonError};
 
 use bump_scope::{
-    alloc_reexport::alloc::{AllocError, Allocator},
+    alloc::{AllocError, Allocator},
     Bump,
 };
 

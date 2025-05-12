@@ -89,7 +89,7 @@ macro_rules! mut_bump_vec {
         $crate::MutBumpVec::from_elem_in($value, $count, $bump)
     };
     [try in $bump:expr] => {
-        Ok::<_, $crate::alloc_reexport::alloc::AllocError>($crate::MutBumpVec::new_in($bump))
+        Ok::<_, $crate::alloc::AllocError>($crate::MutBumpVec::new_in($bump))
     };
     [try in $bump:expr; $($values:expr),* $(,)?] => {
         $crate::MutBumpVec::try_from_array_in([$($values),*], $bump)
@@ -588,7 +588,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         /// # let mut bump: Bump = Bump::try_new()?;
         /// let vec = MutBumpVec::try_from_iter_in([1, 2, 3], &mut bump)?;
         /// assert_eq!(vec, [1, 2, 3]);
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_from_iter_in
         #[inline]
@@ -625,7 +625,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2]?;
         /// vec.try_push(3)?;
         /// assert_eq!(vec, [1, 2, 3]);
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_push
         #[inline]
@@ -670,7 +670,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         /// assert_eq!(vec, [1, 4, 2, 3]);
         /// vec.try_insert(4, 5)?;
         /// assert_eq!(vec, [1, 4, 2, 3, 5]);
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_insert
         #[inline]
@@ -809,7 +809,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         ///
         /// vec.try_extend_from_within_copy(4..8)?;
         /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_extend_from_within_copy
         #[inline]
@@ -874,7 +874,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         ///
         /// vec.try_extend_from_within_clone(4..8)?;
         /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_extend_from_within_clone
         #[inline]
@@ -944,7 +944,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
         /// vec.try_extend_zeroed(2)?;
         /// assert_eq!(vec, [1, 2, 3, 0, 0]);
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_extend_zeroed
         #[inline]
@@ -989,7 +989,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         /// let mut vec = mut_bump_vec![try in &mut bump; 1]?;
         /// vec.try_reserve(10)?;
         /// assert!(vec.capacity() >= 11);
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_reserve
         #[inline]
@@ -1032,7 +1032,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         /// let mut vec = mut_bump_vec![try in &mut bump; 1]?;
         /// vec.try_reserve_exact(10)?;
         /// assert!(vec.capacity() >= 11);
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_reserve_exact
         #[inline]
@@ -1085,7 +1085,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3, 4]?;
         /// vec.try_resize(2, 0)?;
         /// assert_eq!(vec, [1, 2]);
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_resize
         #[inline]
@@ -1144,7 +1144,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         /// let mut p = 1;
         /// vec.try_resize_with(4, || { p *= 2; p })?;
         /// assert_eq!(vec, [2, 4, 8, 16]);
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_resize_with
         #[inline]
@@ -1200,7 +1200,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         ///    vec.try_resize_zeroed(2)?;
         ///    assert_eq!(vec, [1, 2]);
         /// }
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_resize_zeroed
         #[inline]
@@ -1258,7 +1258,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         ///
         /// assert_eq!(other, []);
         /// assert_eq!(vec, [1, 2, 3, 4, 5, 6, 7, 8]);
-        /// # Ok::<(), bump_scope::alloc_reexport::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_append
         #[inline]

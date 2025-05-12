@@ -2,7 +2,7 @@ use core::{alloc::Layout, ptr::NonNull};
 use std::convert::Infallible;
 
 use crate::{
-    alloc_reexport::alloc::{AllocError, Allocator, Global},
+    alloc::{AllocError, Allocator, Global},
     Bump,
 };
 

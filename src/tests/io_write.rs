@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{
-    alloc_reexport::alloc::{Allocator, Global},
+    alloc::{Allocator, Global},
     Bump, BumpVec, MutBumpVec,
 };
 

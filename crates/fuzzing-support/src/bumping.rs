@@ -3,7 +3,7 @@
 use std::{alloc::Layout, fmt::Debug, mem};
 
 use arbitrary::Arbitrary;
-use bump_scope::{alloc_reexport::alloc::Global, Bump, MinimumAlignment, SupportedMinimumAlignment};
+use bump_scope::{alloc::Global, Bump, MinimumAlignment, SupportedMinimumAlignment};
 
 use crate::{MinAlign, UpTo};
 

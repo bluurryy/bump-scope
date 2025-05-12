@@ -4,7 +4,7 @@
 use std::{alloc::Layout, cell::Cell, mem::swap, ops::Deref, ptr::NonNull, rc::Rc};
 
 use arbitrary::{Arbitrary, Unstructured};
-use bump_scope::alloc_reexport::alloc::{AllocError, Allocator};
+use bump_scope::alloc::{AllocError, Allocator};
 
 pub use arbitrary;
 pub use bump_scope;
