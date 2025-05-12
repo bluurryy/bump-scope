@@ -350,7 +350,6 @@ impl<T: ?Sized, A: Allocator> box_like::Sealed for Box<T, A> {
 impl<T: ?Sized, A: Allocator> BoxLike for Box<T, A> {}
 
 #[test]
-#[should_panic = "not implemented"]
 fn test_compat() {
     fn is_base_allocator<T: BaseAllocator>(_: T) {}
 
