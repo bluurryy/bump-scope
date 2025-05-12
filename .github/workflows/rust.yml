@@ -45,15 +45,7 @@ jobs:
           components: clippy
       - run: cargo clippy --tests --no-default-features
       - run: cargo clippy --tests --features serde,zerocopy,allocator-api2-02,allocator-api2-03
-      - run: cargo clippy --tests --all-features
-  clippy-benches:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
-        with:
-          components: clippy
-      - run: cargo clippy --benches --all-features
+      - run: cargo clippy --tests --benches --all-features
   test:
     runs-on: ubuntu-latest
     env:
