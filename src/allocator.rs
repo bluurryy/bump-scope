@@ -10,6 +10,8 @@ use core::{
 
 use crate::polyfill::nonnull;
 
+pub use global::{handle_alloc_error, Global};
+
 /// The `AllocError` error indicates an allocation failure
 /// that may be due to resource exhaustion or to
 /// something wrong when combining the given input arguments with this

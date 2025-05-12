@@ -1,11 +1,13 @@
 //! Memory allocation APIs
 
-use alloc::alloc::{alloc, alloc_zeroed, dealloc, realloc};
+use alloc_crate::alloc::{alloc, alloc_zeroed, dealloc, realloc};
 use core::{
     alloc::Layout,
     hint,
     ptr::{self, NonNull},
 };
+
+use crate::polyfill;
 
 use super::{AllocError, Allocator};
 
@@ -26,7 +28,7 @@ impl Global {
     #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
     fn alloc_impl(&self, layout: Layout, zeroed: bool) -> Result<NonNull<[u8]>, AllocError> {
         match layout.size() {
-            0 => Ok(NonNull::slice_from_raw_parts(layout.dangling(), 0)),
+            0 => Ok(NonNull::slice_from_raw_parts(polyfill::layout::dangling(layout), 0)),
             // SAFETY: `layout` is non-zero in size,
             size => unsafe {
                 let raw_ptr = if zeroed { alloc_zeroed(layout) } else { alloc(layout) };
@@ -77,7 +79,7 @@ impl Global {
             // for `dealloc` must be upheld by the caller.
             old_size => unsafe {
                 let new_ptr = self.alloc_impl(new_layout, zeroed)?;
-                ptr::copy_nonoverlapping(ptr.as_ptr(), new_ptr.as_mut_ptr(), old_size);
+                ptr::copy_nonoverlapping(ptr.as_ptr(), polyfill::nonnull::as_mut_ptr(new_ptr), old_size);
                 self.deallocate(ptr, old_layout);
                 Ok(new_ptr)
             },
@@ -145,7 +147,7 @@ unsafe impl Allocator for Global {
             // SAFETY: conditions must be upheld by the caller
             0 => unsafe {
                 self.deallocate(ptr, old_layout);
-                Ok(NonNull::slice_from_raw_parts(new_layout.dangling(), 0))
+                Ok(NonNull::slice_from_raw_parts(polyfill::layout::dangling(new_layout), 0))
             },
 
             // SAFETY: `new_size` is non-zero. Other conditions must be upheld by the caller
@@ -165,7 +167,7 @@ unsafe impl Allocator for Global {
             // for `dealloc` must be upheld by the caller.
             new_size => unsafe {
                 let new_ptr = self.allocate(new_layout)?;
-                ptr::copy_nonoverlapping(ptr.as_ptr(), new_ptr.as_mut_ptr(), new_size);
+                ptr::copy_nonoverlapping(ptr.as_ptr(), polyfill::nonnull::as_mut_ptr(new_ptr), new_size);
                 self.deallocate(ptr, old_layout);
                 Ok(new_ptr)
             },

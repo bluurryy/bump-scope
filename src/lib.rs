@@ -272,7 +272,7 @@
 extern crate std;
 
 #[cfg(any(feature = "alloc", feature = "nightly-fn-traits"))]
-extern crate alloc;
+extern crate alloc as alloc_crate;
 
 /// Either exports the nightly allocator api or `allocator-api2`'s polyfill.
 pub mod alloc_reexport;
@@ -1937,7 +1937,7 @@ pub(crate) use mut_collection_method_allocator_stats;
 #[test]
 #[ignore = "this is not a real test, it's just to insert documentation"]
 fn insert_feature_docs() {
-    use alloc::{format, vec::Vec};
+    use alloc_crate::{format, vec::Vec};
 
     let lib_rs = std::fs::read_to_string("src/lib.rs").unwrap();
 

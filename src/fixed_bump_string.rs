@@ -1174,10 +1174,10 @@ impl_partial_eq! {
     &str,
 
     #[cfg(feature = "alloc")]
-    alloc::string::String,
+    alloc_crate::string::String,
 
     #[cfg(feature = "alloc")]
-    alloc::borrow::Cow<'_, str>,
+    alloc_crate::borrow::Cow<'_, str>,
 }
 
 impl Eq for FixedBumpString<'_> {}
@@ -1250,7 +1250,7 @@ impl<'s> Extend<&'s char> for FixedBumpString<'_> {
 }
 
 #[cfg(feature = "alloc")]
-impl<'a> From<FixedBumpString<'a>> for alloc::string::String {
+impl<'a> From<FixedBumpString<'a>> for alloc_crate::string::String {
     #[inline]
     fn from(value: FixedBumpString<'a>) -> Self {
         value.as_str().into()

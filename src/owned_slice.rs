@@ -4,7 +4,7 @@ use core::{array, mem};
 use core::mem::ManuallyDrop;
 
 #[cfg(feature = "alloc")]
-use alloc::{
+use alloc_crate::{
     boxed::Box,
     vec::{self, Vec},
 };

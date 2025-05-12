@@ -1,5 +1,5 @@
 use core::{
-    num::NonZeroUsize,
+    num::{NonZero, NonZeroUsize},
     ptr::{self, NonNull},
 };
 
@@ -302,4 +302,18 @@ pub(crate) const fn from_ref<T>(r: &T) -> NonNull<T> {
 #[must_use]
 pub const fn as_mut_ptr<T>(p: NonNull<[T]>) -> *mut T {
     as_non_null_ptr(p).as_ptr()
+}
+
+/// Creates a pointer with the given address and no [provenance][crate::ptr#provenance].
+///
+/// For more details, see the equivalent method on a raw pointer, [`ptr::without_provenance_mut`].
+///
+/// This is a [Strict Provenance][crate::ptr#strict-provenance] API.
+#[must_use]
+#[inline]
+pub const fn without_provenance<T>(addr: NonZero<usize>) -> NonNull<T> {
+    let pointer = sptr::invalid_mut(addr.get());
+
+    // SAFETY: we know `addr` is non-zero.
+    unsafe { NonNull::new_unchecked(pointer) }
 }

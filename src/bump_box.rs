@@ -17,7 +17,7 @@ use core::{
 use core::marker::Tuple;
 
 #[cfg(feature = "std")]
-use alloc::{string::String, vec::Vec};
+use alloc_crate::{string::String, vec::Vec};
 
 #[cfg(feature = "alloc")]
 #[allow(unused_imports)]
@@ -2948,7 +2948,7 @@ impl<T: ?Sized + Hasher> Hasher for BumpBox<'_, T> {
 }
 
 #[cfg(feature = "alloc")]
-impl<'a> Extend<BumpBox<'a, str>> for alloc::string::String {
+impl<'a> Extend<BumpBox<'a, str>> for alloc_crate::string::String {
     #[inline(always)]
     fn extend<T: IntoIterator<Item = BumpBox<'a, str>>>(&mut self, iter: T) {
         iter.into_iter().for_each(move |s| self.push_str(&s));
@@ -3053,7 +3053,7 @@ impl<T: ?Sized + std::io::Write> std::io::Write for BumpBox<'_, T> {
     }
 
     #[inline(always)]
-    fn write_fmt(&mut self, fmt: alloc::fmt::Arguments<'_>) -> std::io::Result<()> {
+    fn write_fmt(&mut self, fmt: std::fmt::Arguments<'_>) -> std::io::Result<()> {
         T::write_fmt(self, fmt)
     }
 }
@@ -3084,12 +3084,12 @@ impl<T: ?Sized + std::io::BufRead> std::io::BufRead for BumpBox<'_, T> {
     }
 
     #[inline(always)]
-    fn read_until(&mut self, byte: u8, buf: &mut Vec<u8>) -> std::io::Result<usize> {
+    fn read_until(&mut self, byte: u8, buf: &mut std::vec::Vec<u8>) -> std::io::Result<usize> {
         T::read_until(self, byte, buf)
     }
 
     #[inline(always)]
-    fn read_line(&mut self, buf: &mut String) -> std::io::Result<usize> {
+    fn read_line(&mut self, buf: &mut std::string::String) -> std::io::Result<usize> {
         T::read_line(self, buf)
     }
 }
@@ -3099,7 +3099,7 @@ impl<Args: Tuple, F: FnOnce<Args> + ?Sized> FnOnce<Args> for BumpBox<'_, F> {
     type Output = <F as FnOnce<Args>>::Output;
 
     extern "rust-call" fn call_once(self, args: Args) -> Self::Output {
-        use alloc::{
+        use alloc_crate::{
             alloc::{AllocError, Allocator},
             boxed::Box,
         };

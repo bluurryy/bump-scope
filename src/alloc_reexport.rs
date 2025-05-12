@@ -1,6 +1,6 @@
 #[cfg(all(feature = "nightly-allocator-api", feature = "alloc"))]
 mod inner {
-    pub use ::alloc::{alloc, boxed, collections, vec};
+    pub use ::alloc_crate::{alloc, boxed, collections, vec};
 }
 
 #[cfg(all(feature = "nightly-allocator-api", not(feature = "alloc")))]

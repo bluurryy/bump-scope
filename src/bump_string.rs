@@ -1748,7 +1748,7 @@ impl<'s, A: BumpAllocator> Extend<&'s char> for BumpString<A> {
 }
 
 #[cfg(feature = "alloc")]
-impl<A: BumpAllocator> From<BumpString<A>> for alloc::string::String {
+impl<A: BumpAllocator> From<BumpString<A>> for alloc_crate::string::String {
     #[inline]
     fn from(value: BumpString<A>) -> Self {
         value.as_str().into()

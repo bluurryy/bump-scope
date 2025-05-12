@@ -1580,7 +1580,7 @@ impl<'s, A: MutBumpAllocator> Extend<&'s char> for MutBumpString<A> {
 }
 
 #[cfg(feature = "alloc")]
-impl<A> From<MutBumpString<A>> for alloc::string::String {
+impl<A> From<MutBumpString<A>> for alloc_crate::string::String {
     #[inline]
     fn from(value: MutBumpString<A>) -> Self {
         value.as_str().into()
