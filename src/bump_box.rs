@@ -286,8 +286,9 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// Unlike `BumpBox`, `Box` implements `Clone` and frees space iff it is the last allocation:
     /// ```
     /// # use bump_scope::Bump;
+    /// # use allocator_api2_02::boxed::Box;
     /// # let bump: Bump = Bump::new();
-    /// let a = bump.alloc(3i32).into_box(&bump);
+    /// let a: Box<_, _> = bump.alloc(3i32).into_box(&bump);
     /// let b = a.clone();
     /// assert_eq!(a, b);
     /// drop(b);

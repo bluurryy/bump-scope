@@ -203,7 +203,8 @@
 //! After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
 //! You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using [`WithoutDealloc`](crate::WithoutDealloc) and [`WithoutShrink`](crate::WithoutShrink).
 //! ```
-//! use bump_scope::{ Bump, WithoutDealloc, alloc_reexport::boxed::Box };
+//! use bump_scope::{ Bump, WithoutDealloc };
+//! use allocator_api2_03::boxed::Box;
 //!
 //! let bump: Bump = Bump::new();
 //!
