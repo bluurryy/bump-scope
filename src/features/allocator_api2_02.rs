@@ -13,6 +13,7 @@ use crate::{
 
 /// Wrap an <code>allocator_api2::[Allocator](Allocator)</code> to implement <code>bump_scope::[Allocator](CrateAllocator)</code>.
 #[repr(transparent)]
+#[derive(Debug, Default, Clone)]
 pub struct AllocatorApi2V02Compat<A: ?Sized>(pub A);
 
 impl<A: ?Sized> AllocatorApi2V02Compat<A> {
@@ -347,3 +348,24 @@ impl<T: ?Sized, A: Allocator> box_like::Sealed for Box<T, A> {
 }
 
 impl<T: ?Sized, A: Allocator> BoxLike for Box<T, A> {}
+
+#[test]
+#[should_panic = "not implemented"]
+fn test_compat() {
+    #[derive(Clone)]
+    struct TestAllocator;
+
+    unsafe impl Allocator for TestAllocator {
+        fn allocate(&self, _: Layout) -> Result<NonNull<[u8]>, AllocError> {
+            unimplemented!()
+        }
+
+        unsafe fn deallocate(&self, _: NonNull<u8>, _: Layout) {
+            unimplemented!()
+        }
+    }
+
+    let base = AllocatorApi2V02Compat(TestAllocator);
+    let bump: Bump<_> = Bump::new_in(base);
+    bump.alloc_str("a");
+}
