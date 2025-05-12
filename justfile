@@ -42,7 +42,8 @@ check-nostd:
 
 check-msrv:
   cargo ('+' + (open Cargo.toml).package.rust-version) check --no-default-features
-  cargo ('+' + (open Cargo.toml).package.rust-version) check --no-default-features --features panic-on-alloc,serde,zerocopy
+  # TODO: add "allocator-api2-03" once it got a new release that makes its "alloc" feature msrv compliant
+  cargo ('+' + (open Cargo.toml).package.rust-version) check --features panic-on-alloc,serde,zerocopy,allocator-api2-02
 
 check-fallibility:
   @ just crates/test-fallibility/test
