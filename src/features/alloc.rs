@@ -352,6 +352,8 @@ impl<T: ?Sized, A: Allocator> BoxLike for Box<T, A> {}
 #[test]
 #[should_panic = "not implemented"]
 fn test_compat() {
+    fn is_base_allocator<T: BaseAllocator>(_: T) {}
+
     #[derive(Clone)]
     struct TestAllocator;
 
@@ -365,7 +367,6 @@ fn test_compat() {
         }
     }
 
-    let base = AllocatorNightlyCompat(TestAllocator);
-    let bump: Bump<_> = Bump::new_in(base);
-    bump.alloc_str("a");
+    is_base_allocator(AllocatorNightlyCompat(TestAllocator));
+    is_base_allocator(AllocatorNightlyCompat::from_ref(&TestAllocator));
 }
