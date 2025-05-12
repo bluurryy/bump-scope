@@ -1,12 +1,12 @@
 # Changelog
 
 ## Unreleased
-- **breaking:** updates `allocator-api2` to version `0.3.0`.
-
-  The `0.3.0` release of `allocator-api2` removes its "nightly" feature that would make it re-export the nightly api instead of its own types and traits.
-  
-  So now `bump-scope` does the conditional re-export itself. The `alloc_reexport` module will either contain the types and traits from `allocator-api2` or from `alloc`.
-  
+- **breaking:** `bump-scope` no longer uses the types and traits from `allocator-api2` but defines its own `Allocator`, `AllocError` and `Global`.
+  - added the "allocator-api2-02" feature that makes bump allocators implement the `Allocator` trait from `allocator-api2` version `0.2`
+  - added the "allocator-api2-03" feature that makes bump allocators implement the `Allocator` trait from `allocator-api2` version `0.3` 
+  - bump allocators will additionally implement the nightly `Allocator` trait when you enable the `nightly-allocator-api` feature
+  - to use base allocator that implements a foreign `Allocator` trait, you can use the wrapper types in the new `compat` module
+  - to be able to allocate `hashbrown` hash maps you will either need to enable the `allocator-api2-02` feature or enable both `bump-scope`'s "nightly-allocator-api" and `hashbrown`'s "nightly" feature.  
 - **fix:** allow `serde` without `alloc` feature
 
 ## 0.16.5 (2025-05-09)
