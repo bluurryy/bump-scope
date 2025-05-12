@@ -31,7 +31,7 @@ use crate::{
 };
 
 #[cfg(feature = "alloc")]
-use crate::BumpAllocatorScope;
+use crate::{alloc::BoxLike, BumpAllocatorScope};
 
 mod slice_initializer;
 
@@ -300,7 +300,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     pub fn into_box<A, B>(self, allocator: A) -> B
     where
         A: BumpAllocatorScope<'a>,
-        B: crate::alloc::BoxLike<T = T, A = A>,
+        B: BoxLike<T = T, A = A>,
     {
         let ptr = BumpBox::into_raw(self).as_ptr();
 
