@@ -205,6 +205,7 @@ assert_eq!(bump.stats().allocated(), 4);
 * **`nightly-exact-size-is-empty`** —  Implements `is_empty` manually for some iterators.
 * **`nightly-trusted-len`** —  Implements `TrustedLen` for some iterators.
 * **`nightly-fn-traits`** —  Implements `Fn*` traits for `BumpBox<T>`. Makes `BumpBox<T: FnOnce + ?Sized>` callable. Requires alloc crate.
+* **`nightly-tests`** —  Enables some tests that require a nightly compiler.
 
 ## Bumping upwards or downwards?
 Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.

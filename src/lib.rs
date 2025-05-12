@@ -13,7 +13,7 @@
 #![cfg_attr(feature = "nightly-exact-size-is-empty", feature(exact_size_is_empty))]
 #![cfg_attr(feature = "nightly-trusted-len", feature(trusted_len))]
 #![cfg_attr(feature = "nightly-fn-traits", feature(fn_traits, tuple_trait, unboxed_closures))]
-#![cfg_attr(test, feature(offset_of_enum))]
+#![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg_hide), doc(cfg_hide(feature = "panic-on-alloc")))]
 #![warn(
     clippy::pedantic,
@@ -41,10 +41,11 @@
     unknown_lints, // for `private_bounds` in msrv
     unused_unsafe, // only triggered in old rust versions, like msrv
     clippy::multiple_crate_versions, // we have allocator-api2 version 0.2 and 0.3
+    rustdoc::invalid_rust_codeblocks, // for our current workaround to conditionally enable doc tests in macro
 )]
 #![doc(test(
     attr(warn(dead_code, unused_imports)),
-    attr(cfg_attr(feature = "nightly-allocator-api", feature(allocator_api, btreemap_alloc)))
+    attr(cfg_attr(feature = "nightly-allocator-api", feature(allocator_api, btreemap_alloc))),
 ))]
 //! A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
 //!
@@ -203,6 +204,8 @@
 //! After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
 //! You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using [`WithoutDealloc`](crate::WithoutDealloc) and [`WithoutShrink`](crate::WithoutShrink).
 //! ```
+//! # #[cfg(feature = "allocator-api2-03")]
+//! # {
 //! use bump_scope::{ Bump, WithoutDealloc };
 //! use allocator_api2_03::boxed::Box;
 //!
@@ -217,6 +220,7 @@
 //! assert_eq!(bump.stats().allocated(), 4);
 //! drop(boxed);
 //! assert_eq!(bump.stats().allocated(), 4);
+//! # }
 //! ```
 //!
 //! # Feature Flags
@@ -246,6 +250,7 @@
 //! * **`nightly-exact-size-is-empty`** —  Implements `is_empty` manually for some iterators.
 //! * **`nightly-trusted-len`** —  Implements `TrustedLen` for some iterators.
 //! * **`nightly-fn-traits`** —  Implements `Fn*` traits for `BumpBox<T>`. Makes `BumpBox<T: FnOnce + ?Sized>` callable. Requires alloc crate.
+//! * **`nightly-tests`** —  Enables some tests that require a nightly compiler.
 //!
 //! # Bumping upwards or downwards?
 //! Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
@@ -1694,29 +1699,37 @@ define_alloc_methods! {
     /// There is also [`alloc_try_with_mut`](Self::alloc_try_with_mut), optimized for a mutable reference.
     do examples
     /// ```
-    /// # #![feature(offset_of_enum)]
+    /// # #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
+    /// # #[cfg(feature = "nightly-tests")]
+    /// # {
     /// # use core::mem::offset_of;
     /// # use bump_scope::{ Bump };
     /// # let bump: Bump = Bump::new();
     /// let result = bump.alloc_try_with(|| -> Result<i32, i32> { Ok(123) });
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
+    /// # }
     /// ```
     /// ```
-    /// # #![feature(offset_of_enum)]
+    /// # #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
+    /// #[cfg(feature = "nightly-tests")]
+    /// # {
     /// # use core::mem::offset_of;
     /// # use bump_scope::{ Bump };
     /// # let bump: Bump = Bump::new();
     /// let result = bump.alloc_try_with(|| -> Result<i32, i32> { Err(123) });
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
+    /// # }
     /// ```
     for fn alloc_try_with
     ///
     /// There is also [`try_alloc_try_with_mut`](Self::try_alloc_try_with_mut), optimized for a mutable reference.
     do examples
     /// ```
-    /// # #![feature(offset_of_enum)]
+    /// # #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
+    /// # #[cfg(feature = "nightly-tests")]
+    /// # {
     /// # use core::mem::offset_of;
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
@@ -1724,15 +1737,22 @@ define_alloc_methods! {
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # }
+    /// # #[cfg(not(feature = "nightly-tests"))]
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
-    /// ```
-    /// # #![feature(offset_of_enum)]
+    /// # #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
+    /// # #[cfg(feature = "nightly-tests")]
+    /// # {
     /// # use core::mem::offset_of;
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Err(123) })?;
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # }
+    /// # #[cfg(not(feature = "nightly-tests"))]
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_try_with
@@ -1747,29 +1767,37 @@ define_alloc_methods! {
     /// This is just like [`alloc_try_with`](Self::alloc_try_with), but optimized for a mutable reference.
     do examples
     /// ```
-    /// # #![feature(offset_of_enum)]
+    /// # #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
+    /// # #[cfg(feature = "nightly-tests")]
+    /// # {
     /// # use core::mem::offset_of;
     /// # use bump_scope::{ Bump };
     /// # let mut bump: Bump = Bump::new();
     /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) });
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
+    /// # }
     /// ```
     /// ```
-    /// # #![feature(offset_of_enum)]
+    /// # #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
+    /// # #[cfg(feature = "nightly-tests")]
+    /// # {
     /// # use core::mem::offset_of;
     /// # use bump_scope::{ Bump };
     /// # let mut bump: Bump = Bump::new();
     /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) });
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
+    /// # }
     /// ```
     for fn alloc_try_with_mut
     ///
     /// This is just like [`try_alloc_try_with`](Self::try_alloc_try_with), but optimized for a mutable reference.
     do examples
     /// ```
-    /// # #![feature(offset_of_enum)]
+    /// # #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
+    /// # #[cfg(feature = "nightly-tests")]
+    /// # {
     /// # use core::mem::offset_of;
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::try_new()?;
@@ -1777,15 +1805,23 @@ define_alloc_methods! {
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # }
+    /// # #[cfg(not(feature = "nightly-tests"))]
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     /// ```
-    /// # #![feature(offset_of_enum)]
+    /// # #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
+    /// # #[cfg(feature = "nightly-tests")]
+    /// # {
     /// # use core::mem::offset_of;
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) })?;
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # }
+    /// # #[cfg(not(feature = "nightly-tests"))]
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     for fn try_alloc_try_with_mut

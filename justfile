@@ -18,7 +18,6 @@ check:
   just check-fmt
   just check-clippy
   just check-nostd
-  just check-msrv
   just check-fallibility
   # regression test making sure hashbrown compiles
   cargo check --tests --features nightly-allocator-api 
@@ -30,19 +29,23 @@ check-fmt:
   cd fuzz; cargo fmt --check
 
 check-clippy:
-  cargo clippy --tests --no-default-features
-  cargo clippy --tests
-  cargo clippy --tests --benches --all-features
+  # TODO: add "allocator-api2-03" once it got a new release that makes its "alloc" feature msrv compliant
+  cargo +1.64.0 check --no-default-features
+  cargo +1.64.0 check --features serde,zerocopy,allocator-api2-02
+
+  cargo +stable clippy --tests --no-default-features
+  cargo +stable clippy --tests --features serde,zerocopy,allocator-api2-02,allocator-api2-03
+
+  cargo +nightly clippy --tests --no-default-features
+  cargo +nightly clippy --tests --features serde,zerocopy,allocator-api2-02,allocator-api2-03
+  cargo +nightly clippy --tests --all-features
+
   cd crates/fuzzing-support; cargo clippy --tests
   cd crates/test-fallibility; cargo clippy --tests
   cd fuzz; cargo clippy
 
 check-nostd:
   cd crates/test-fallibility; cargo check
-
-check-msrv:
-  cargo ('+' + (open Cargo.toml).package.rust-version) check --no-default-features
-  cargo ('+' + (open Cargo.toml).package.rust-version) check --no-default-features --features panic-on-alloc,serde,zerocopy
 
 check-fallibility:
   @ just crates/test-fallibility/test

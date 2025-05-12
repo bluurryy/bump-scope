@@ -20,31 +20,32 @@ jobs:
       - run: cd crates/test-fallibility && cargo fmt --all -- --check
       - run: cd crates/tests-from-std && cargo fmt --all -- --check
       - run: cd fuzz && cargo fmt --all -- --check
-  clippy:
+  check-msrv:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        toolchain: ["stable", "nightly"]
-        flags: ["--no-default-features"]
-        include:
-          - toolchain: "nightly"
-            flags: "--all-features --tests"
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{matrix.toolchain}}
+      - uses: dtolnay/rust-toolchain@1.64.0
+      - run: cargo check --no-default-features
+      - run: cargo check --features serde,zerocopy,allocator-api2-02
+  check-stable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: 
           components: clippy
-      - run: cargo clippy --all
-      - run: cargo clippy --all ${{matrix.flags}}
-  clippy-benches:
+      - run: cargo clippy --tests --no-default-features
+      - run: cargo clippy --tests --features serde,zerocopy,allocator-api2-02,allocator-api2-03
+  check-nightly:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
-        with:
+        with: 
           components: clippy
-      - run: cargo clippy --benches --all-features
+      - run: cargo clippy --tests --no-default-features
+      - run: cargo clippy --tests --features serde,zerocopy,allocator-api2-02,allocator-api2-03
+      - run: cargo clippy --tests --benches --all-features
   test:
     runs-on: ubuntu-latest
     env:
@@ -62,12 +63,13 @@ jobs:
       - run: cd crates/test-hashbrown; cargo miri test --all-features
       - run: cd crates/tests-from-std && cargo test
       - run: cd crates/tests-from-std && cargo miri test
-  msrv:
+  test-stable:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.64.0
-      - run: cargo check --no-default-features
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo clippy --tests --no-default-features
+      - run: cargo clippy --tests --features serde,zerocopy,allocator-api2-02,allocator-api2-03
   minimal-versions:
     runs-on: ubuntu-latest
     steps:

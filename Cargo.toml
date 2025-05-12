@@ -73,6 +73,9 @@ nightly-trusted-len = []
 ## Implements `Fn*` traits for `BumpBox<T>`. Makes `BumpBox<T: FnOnce + ?Sized>` callable. Requires alloc crate.
 nightly-fn-traits = []
 
+## Enables some tests that require a nightly compiler.
+nightly-tests = []
+
 [dev-dependencies]
 trybuild = "1.0.90"
 expect-test = "1.4.1"

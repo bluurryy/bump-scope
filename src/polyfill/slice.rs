@@ -55,7 +55,7 @@ fn slice_end_index_len_fail(index: usize, len: usize) -> ! {
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// #![feature(slice_range)]
 ///
 /// use std::slice;
@@ -68,7 +68,7 @@ fn slice_end_index_len_fail(index: usize, len: usize) -> ! {
 ///
 /// Panics when [`Index::index`] would panic:
 ///
-/// ```should_panic
+/// ```ignore
 /// #![feature(slice_range)]
 ///
 /// use std::slice;
@@ -76,7 +76,7 @@ fn slice_end_index_len_fail(index: usize, len: usize) -> ! {
 /// let _ = slice::range(2..1, ..3);
 /// ```
 ///
-/// ```should_panic
+/// ```ignore
 /// #![feature(slice_range)]
 ///
 /// use std::slice;
@@ -84,7 +84,7 @@ fn slice_end_index_len_fail(index: usize, len: usize) -> ! {
 /// let _ = slice::range(1..4, ..3);
 /// ```
 ///
-/// ```should_panic
+/// ```ignore
 /// #![feature(slice_range)]
 ///
 /// use std::slice;

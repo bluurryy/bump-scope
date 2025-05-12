@@ -34,6 +34,7 @@ type TestOk = [u32; 32];
 type TestErr = [u32; 128];
 type TestResult = Result<TestOk, TestErr>;
 
+#[cfg(feature = "nightly-tests")]
 fn basic_ok<const UP: bool>() {
     let bump: Bump<Global, 1, UP> = Bump::with_size(SIZE);
     _ = bump.alloc_try_with(|| -> TestResult { Ok(zeroes()) });
@@ -47,6 +48,7 @@ fn basic_ok<const UP: bool>() {
     }
 }
 
+#[cfg(feature = "nightly-tests")]
 fn basic_ok_mut<const UP: bool>() {
     let mut bump: Bump<Global, 1, UP> = Bump::with_size(SIZE);
     _ = bump.alloc_try_with_mut(|| -> TestResult { Ok(zeroes()) });
@@ -104,7 +106,9 @@ fn wat() {
 }
 
 either_way! {
+    #[cfg(feature = "nightly-tests")]
     basic_ok
+    #[cfg(feature = "nightly-tests")]
     basic_ok_mut
     basic_err
     basic_err_mut
