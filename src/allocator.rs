@@ -1,5 +1,7 @@
 //! Memory allocation APIs
 
+mod global;
+
 use core::{
     alloc::Layout,
     fmt,
