@@ -71,7 +71,7 @@ unsafe impl CrateAllocator for Global {
 /// # use allocator_api2::alloc::{AllocError, Global};
 /// use allocator_api2::alloc::Allocator;
 ///
-/// use bump_scope::{Bump, compat::AllocatorApi2V03Compat};
+/// use bump_scope::{Bump, alloc::compat::AllocatorApi2V03Compat};
 ///
 /// #[derive(Clone)]
 /// struct MyAllocatorApi2Allocator;

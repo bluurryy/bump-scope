@@ -71,7 +71,7 @@ unsafe impl CrateAllocator for Global {
 /// # use alloc::alloc::{AllocError, Global};
 /// use alloc::alloc::Allocator;
 ///
-/// use bump_scope::{Bump, compat::AllocatorNightlyCompat};
+/// use bump_scope::{Bump, alloc::compat::AllocatorNightlyCompat};
 ///
 /// #[derive(Clone)]
 /// struct MyNightlyAllocator;

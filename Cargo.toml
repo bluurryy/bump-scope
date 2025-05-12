@@ -42,19 +42,19 @@ zerocopy = ["dep:zerocopy"]
 
 ## Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and
 ## makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-## [`AllocatorApiV02Compat`](crate::compat::AllocatorApi2V02Compat).
+## [`AllocatorApiV02Compat`](crate::alloc::compat::AllocatorApi2V02Compat).
 allocator-api2-02 = ["dep:allocator-api2-02"]
 
 ## Makes `Bump(Scope)` implement `allocator_api2` version `0.3`'s `Allocator` and
 ## makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-## [`AllocatorApiV03Compat`](crate::compat::AllocatorApi2V03Compat).
+## [`AllocatorApiV03Compat`](crate::alloc::compat::AllocatorApi2V03Compat).
 allocator-api2-03 = ["dep:allocator-api2-03"]
 
 #! ### Nightly features
 
 ## Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
 ## allows using an `alloc::alloc::Allocator` as a base allocator via
-## [`AllocatorNightlyCompat`](crate::compat::AllocatorNightlyCompat).
+## [`AllocatorNightlyCompat`](crate::alloc::compat::AllocatorNightlyCompat).
 ##
 ## This will also enable `allocator-api2` version `0.2`'s `nightly` feature.
 nightly-allocator-api = ["allocator-api2-02/nightly"]

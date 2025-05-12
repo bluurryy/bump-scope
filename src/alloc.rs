@@ -5,8 +5,8 @@
 //!
 //! `bump-scope` provides compatibility with the allocator api's of
 //! - the nightly standard library via the feature `nightly-allocator-api`
-//! - allocator_api2 version 0.2 via the feature `allocator-api2-02`
-//! - allocator_api2 version 0.3 via the feature `allocator-api2-03`
+//! - `allocator_api2` version 0.2 via the feature `allocator-api2-02`
+//! - `allocator_api2` version 0.3 via the feature `allocator-api2-03`
 //!
 //! `Bump` and `Bump(Scope)` will implement those foreign `Allocator` traits when the respective feature is enabled.
 //! You can also use implementors of their `Allocator` trait as base allocators via the [compat] wrapper types.

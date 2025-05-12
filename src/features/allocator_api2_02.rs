@@ -81,7 +81,7 @@ unsafe impl CrateAllocator for Global {
 /// # use allocator_api2::alloc::{AllocError, Global};
 /// use allocator_api2::alloc::Allocator;
 ///
-/// use bump_scope::{Bump, compat::AllocatorApi2V02Compat};
+/// use bump_scope::{Bump, alloc::compat::AllocatorApi2V02Compat};
 ///
 /// #[derive(Clone)]
 /// struct MyAllocatorApi2Allocator;
@@ -466,6 +466,9 @@ fn test_compat() {
         }
     }
 
+    #[cfg(feature = "alloc")]
+    #[cfg(not(feature = "nightly-allocator-api"))]
+    is_base_allocator(Global);
     is_base_allocator(AllocatorApi2V02Compat(TestAllocator));
     is_base_allocator(AllocatorApi2V02Compat::from_ref(&TestAllocator));
 }
