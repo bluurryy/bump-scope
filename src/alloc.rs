@@ -1,5 +1,6 @@
 //! Memory allocation APIs
 
+#[cfg(feature = "alloc")]
 mod global;
 
 use core::{
@@ -10,7 +11,8 @@ use core::{
 
 use crate::polyfill::nonnull;
 
-pub use global::{handle_alloc_error, Global};
+#[cfg(feature = "alloc")]
+pub use global::Global;
 
 /// The `AllocError` error indicates an allocation failure
 /// that may be due to resource exhaustion or to

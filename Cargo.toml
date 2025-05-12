@@ -24,10 +24,10 @@ rustversion = "1.0.19"
 default = ["std", "alloc", "panic-on-alloc"]
 
 ## Adds `BumpPool` and implementations of `std::io` traits.
-std = ["allocator-api2-02?/std", "alloc"]
+std = ["alloc", "allocator-api2-02?/std", "allocator-api2-03?/std"]
 
 ## Adds `Global` as the default base allocator and some interactions with `alloc` collections.
-alloc = ["allocator-api2-02?/alloc"]
+alloc = ["allocator-api2-02?/alloc", "allocator-api2-03?/alloc"]
 
 ## Adds functions and traits that will panic when the allocation fails. 
 ## Without this feature, allocation failures cannot cause panics, and only 

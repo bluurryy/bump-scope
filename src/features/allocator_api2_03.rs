@@ -1,9 +1,9 @@
 use core::{alloc::Layout, ptr::NonNull};
 
-use allocator_api2_03::{
-    alloc::{AllocError, Allocator},
-    boxed::Box,
-};
+use allocator_api2_03::alloc::{AllocError, Allocator};
+
+#[cfg(feature = "alloc")]
+use allocator_api2_03::boxed::Box;
 
 use crate::{
     alloc::{box_like, AllocError as CrateAllocError, Allocator as CrateAllocator, BoxLike},

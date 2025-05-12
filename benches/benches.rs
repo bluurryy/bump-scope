@@ -1,8 +1,10 @@
 #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
 #![allow(clippy::mut_from_ref)]
 
+use core::alloc::Layout;
+
 use bump_scope::{
-    alloc::{AllocError, Global, Layout},
+    alloc::{AllocError, Global},
     Bump, BumpBox, MinimumAlignment, SupportedMinimumAlignment,
 };
 

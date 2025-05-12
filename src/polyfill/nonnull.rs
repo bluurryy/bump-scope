@@ -1,5 +1,5 @@
 use core::{
-    num::{NonZero, NonZeroUsize},
+    num::NonZeroUsize,
     ptr::{self, NonNull},
 };
 
@@ -311,7 +311,8 @@ pub const fn as_mut_ptr<T>(p: NonNull<[T]>) -> *mut T {
 /// This is a [Strict Provenance][crate::ptr#strict-provenance] API.
 #[must_use]
 #[inline]
-pub const fn without_provenance<T>(addr: NonZero<usize>) -> NonNull<T> {
+#[cfg(feature = "alloc")]
+pub const fn without_provenance<T>(addr: NonZeroUsize) -> NonNull<T> {
     let pointer = sptr::invalid_mut(addr.get());
 
     // SAFETY: we know `addr` is non-zero.

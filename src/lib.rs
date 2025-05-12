@@ -40,6 +40,7 @@
     rustdoc::redundant_explicit_links, // for cargo-rdme
     unknown_lints, // for `private_bounds` in msrv
     unused_unsafe, // only triggered in old rust versions, like msrv
+    clippy::multiple_crate_versions, // we have allocator-api2 version 0.2 and 0.3
 )]
 #![doc(test(
     attr(warn(dead_code, unused_imports)),
@@ -509,6 +510,9 @@ pub mod private {
         BumpBox::from_raw(ptr)
     }
 }
+
+#[cfg(all(feature = "alloc", feature = "panic-on-alloc"))]
+use alloc_crate::alloc::handle_alloc_error;
 
 #[cold]
 #[inline(never)]

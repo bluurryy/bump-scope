@@ -1,4 +1,6 @@
-use allocator_api2::{boxed::Box, vec::Vec};
+#![cfg(feature = "allocator-api2-02")]
+
+use allocator_api2_02::{boxed::Box, vec::Vec};
 
 use crate::{alloc::Global, Bump};
 

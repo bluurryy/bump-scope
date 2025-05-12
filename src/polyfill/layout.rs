@@ -1,3 +1,4 @@
+#[cfg(feature = "alloc")]
 use core::{alloc::Layout, num::NonZero, ptr::NonNull};
 
 /// Creates a `NonNull` that is dangling, but well-aligned for this Layout.
@@ -8,6 +9,7 @@ use core::{alloc::Layout, num::NonZero, ptr::NonNull};
 /// some other means.
 #[must_use]
 #[inline]
+#[cfg(feature = "alloc")]
 pub const fn dangling(layout: Layout) -> NonNull<u8> {
     unsafe { super::nonnull::without_provenance(NonZero::new_unchecked(layout.align())) }
 }
