@@ -383,12 +383,12 @@ pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 /// Note that the bump allocator itself already implements foreign `Allocator` traits, so you
 /// generally only need this for a base allocator.
 pub mod compat {
-    #[cfg(all(feature = "alloc", feature = "nightly-allocator-api"))]
-    pub use crate::features::alloc::AllocatorNightlyCompat;
     #[cfg(feature = "allocator-api2-02")]
     pub use crate::features::allocator_api2_02::AllocatorApi2V02Compat;
     #[cfg(feature = "allocator-api2-03")]
     pub use crate::features::allocator_api2_03::AllocatorApi2V03Compat;
+    #[cfg(all(feature = "alloc", feature = "nightly-allocator-api"))]
+    pub use crate::features::nightly_allocator_api::AllocatorNightlyCompat;
 }
 
 // This must be kept in sync with ChunkHeaders `repr(align(16))`.
