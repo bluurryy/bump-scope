@@ -60,7 +60,38 @@ unsafe impl CrateAllocator for Global {
     }
 }
 
-/// Wrap an <code>alloc::[Allocator](Allocator)</code> to implement <code>bump_scope::[Allocator](CrateAllocator)</code>.
+/// Wraps an <code>alloc::alloc::[Allocator](Allocator)</code> to implement
+/// <code>bump_scope::alloc::[Allocator](CrateAllocator)</code> and vice versa.
+///
+/// # Example
+///
+/// ```
+/// # extern crate alloc;
+/// # use core::{alloc::Layout, ptr::NonNull};
+/// # use alloc::alloc::{AllocError, Global};
+/// use alloc::alloc::Allocator;
+///
+/// use bump_scope::{Bump, compat::AllocatorNightlyCompat};
+///
+/// #[derive(Clone)]
+/// struct MyNightlyAllocator;
+///
+/// unsafe impl Allocator for MyNightlyAllocator {
+/// # /*
+///     ...
+/// # */
+/// #   fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+/// #       <Global as Allocator>::allocate(&Global, layout)
+/// #   }
+/// #       
+/// #   unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+/// #       <Global as Allocator>::deallocate(&Global, ptr, layout)
+/// #   }
+/// }
+///
+/// let bump: Bump<_> = Bump::new_in(AllocatorNightlyCompat(MyNightlyAllocator));
+/// # _ = bump;
+/// ```
 #[repr(transparent)]
 #[derive(Debug, Default, Clone)]
 pub struct AllocatorNightlyCompat<A: ?Sized>(pub A);

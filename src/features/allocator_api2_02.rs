@@ -70,7 +70,38 @@ unsafe impl CrateAllocator for Global {
     }
 }
 
-/// Wrap an <code>allocator_api2::[Allocator](Allocator)</code> to implement <code>bump_scope::[Allocator](CrateAllocator)</code>.
+/// Wraps an <code>allocator_api2::alloc::[Allocator](Allocator)</code> to implement
+/// <code>bump_scope::alloc::[Allocator](CrateAllocator)</code> and vice versa.
+///
+/// # Example
+///
+/// ```
+/// # use allocator_api2_02 as allocator_api2;
+/// # use core::{alloc::Layout, ptr::NonNull};
+/// # use allocator_api2::alloc::{AllocError, Global};
+/// use allocator_api2::alloc::Allocator;
+///
+/// use bump_scope::{Bump, compat::AllocatorApi2V02Compat};
+///
+/// #[derive(Clone)]
+/// struct MyAllocatorApi2Allocator;
+///
+/// unsafe impl Allocator for MyAllocatorApi2Allocator {
+/// # /*
+///     ...
+/// # */
+/// #   fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+/// #       <Global as Allocator>::allocate(&Global, layout)
+/// #   }
+/// #       
+/// #   unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+/// #       <Global as Allocator>::deallocate(&Global, ptr, layout)
+/// #   }
+/// }
+///
+/// let bump: Bump<_> = Bump::new_in(AllocatorApi2V02Compat(MyAllocatorApi2Allocator));
+/// # _ = bump;
+/// ```
 #[repr(transparent)]
 #[derive(Debug, Default, Clone)]
 pub struct AllocatorApi2V02Compat<A: ?Sized>(pub A);

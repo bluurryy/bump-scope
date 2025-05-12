@@ -40,23 +40,23 @@ serde = ["dep:serde"]
 ## Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`. 
 zerocopy = ["dep:zerocopy"]
 
-## Makes `Bump(Scope)` implement `allocator_api2::Allocator` and
-## allows using an `allocator_api2::Allocator` as a base allocators via
+## Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and
+## makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
 ## [`AllocatorApiV02Compat`](crate::compat::AllocatorApi2V02Compat).
 allocator-api2-02 = ["dep:allocator-api2-02"]
 
-## Makes `Bump(Scope)` implement `allocator_api2::Allocator` and
-## allows using an `allocator_api2::Allocator` as a base allocators via
+## Makes `Bump(Scope)` implement `allocator_api2` version `0.3`'s `Allocator` and
+## makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
 ## [`AllocatorApiV03Compat`](crate::compat::AllocatorApi2V03Compat).
 allocator-api2-03 = ["dep:allocator-api2-03"]
 
 #! ### Nightly features
 
-## Makes `Bump(Scope)` implement `alloc::Allocator` and
-## allows using an `alloc::Allocator` as a base allocators via
+## Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
+## allows using an `alloc::alloc::Allocator` as a base allocator via
 ## [`AllocatorNightlyCompat`](crate::compat::AllocatorNightlyCompat).
 ##
-## This will also enable "allocator-api2-02/nightly".
+## This will also enable `allocator-api2` version `0.2`'s `nightly` feature.
 nightly-allocator-api = ["allocator-api2-02/nightly"]
 
 ## Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).

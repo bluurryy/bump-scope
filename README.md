@@ -186,19 +186,19 @@ assert_eq!(bump.stats().allocated(), 4);
   `try_`-prefixed allocation methods will be available.
 * **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 * **`zerocopy`** —  Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`.
-* **`allocator-api2-02`** —  Makes `Bump(Scope)` implement `allocator_api2::Allocator` and
-  allows using an `allocator_api2::Allocator` as a base allocators via
+* **`allocator-api2-02`** —  Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and
+  makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
   `AllocatorApiV02Compat`.
-* **`allocator-api2-03`** —  Makes `Bump(Scope)` implement `allocator_api2::Allocator` and
-  allows using an `allocator_api2::Allocator` as a base allocators via
+* **`allocator-api2-03`** —  Makes `Bump(Scope)` implement `allocator_api2` version `0.3`'s `Allocator` and
+  makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
   `AllocatorApiV03Compat`.
 
  #### Nightly features
-* **`nightly-allocator-api`** —  Makes `Bump(Scope)` implement `alloc::Allocator` and
-  allows using an `alloc::Allocator` as a base allocators via
+* **`nightly-allocator-api`** —  Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
+  allows using an `alloc::alloc::Allocator` as a base allocator via
   `AllocatorNightlyCompat`.
  
-  This will also enable "allocator-api2-02/nightly".
+  This will also enable `allocator-api2` version `0.2`'s `nightly` feature.
 * **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
   You can unsize a `BumpBox` in stable without this feature using [`unsize_bump_box`].
