@@ -2472,29 +2472,23 @@ where
     /// Panics if the allocation fails.
     ///
     /// # Examples
-    /// ```
-    /// # #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
-    /// # #[cfg(feature = "nightly-tests")]
-    /// # {
+    #[cfg_attr(feature = "nightly-tests", doc = "```")]
+    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
+    /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
     /// # use bump_scope::{ Bump };
     /// # let bump: Bump = Bump::new();
     /// let result = bump.alloc_try_with(|| -> Result<i32, i32> { Ok(123) });
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
-    /// # }
     /// ```
-    /// ```
-    /// # #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
-    /// #[cfg(feature = "nightly-tests")]
-    /// # {
-    /// # use core::mem::offset_of;
+    #[cfg_attr(feature = "nightly-tests", doc = "```")]
+    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # use bump_scope::{ Bump };
     /// # let bump: Bump = Bump::new();
     /// let result = bump.alloc_try_with(|| -> Result<i32, i32> { Err(123) });
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
-    /// # }
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -2513,10 +2507,9 @@ where
     /// Errors if the allocation fails.
     ///
     /// # Examples
-    /// ```
-    /// # #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
-    /// # #[cfg(feature = "nightly-tests")]
-    /// # {
+    #[cfg_attr(feature = "nightly-tests", doc = "```")]
+    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
+    /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
@@ -2524,23 +2517,14 @@ where
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
-    /// # }
-    /// # #[cfg(not(feature = "nightly-tests"))]
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
-    /// ```
-    /// # #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
-    /// # #[cfg(feature = "nightly-tests")]
-    /// # {
-    /// # use core::mem::offset_of;
+    #[cfg_attr(feature = "nightly-tests", doc = "```")]
+    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
     /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Err(123) })?;
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
-    /// # }
-    /// # #[cfg(not(feature = "nightly-tests"))]
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
@@ -2616,29 +2600,23 @@ where
     /// Panics if the allocation fails.
     ///
     /// # Examples
-    /// ```
-    /// # #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
-    /// # #[cfg(feature = "nightly-tests")]
-    /// # {
+    #[cfg_attr(feature = "nightly-tests", doc = "```")]
+    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
+    /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
     /// # use bump_scope::{ Bump };
     /// # let mut bump: Bump = Bump::new();
     /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) });
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
-    /// # }
     /// ```
-    /// ```
-    /// # #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
-    /// # #[cfg(feature = "nightly-tests")]
-    /// # {
-    /// # use core::mem::offset_of;
+    #[cfg_attr(feature = "nightly-tests", doc = "```")]
+    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # use bump_scope::{ Bump };
     /// # let mut bump: Bump = Bump::new();
     /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) });
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
-    /// # }
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -2657,10 +2635,9 @@ where
     /// Errors if the allocation fails.
     ///
     /// # Examples
-    /// ```
-    /// # #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
-    /// # #[cfg(feature = "nightly-tests")]
-    /// # {
+    #[cfg_attr(feature = "nightly-tests", doc = "```")]
+    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
+    /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::try_new()?;
@@ -2668,23 +2645,14 @@ where
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
-    /// # }
-    /// # #[cfg(not(feature = "nightly-tests"))]
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
-    /// ```
-    /// # #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
-    /// # #[cfg(feature = "nightly-tests")]
-    /// # {
-    /// # use core::mem::offset_of;
+    #[cfg_attr(feature = "nightly-tests", doc = "```")]
+    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) })?;
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
-    /// # }
-    /// # #[cfg(not(feature = "nightly-tests"))]
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
