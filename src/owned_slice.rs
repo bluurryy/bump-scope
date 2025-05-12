@@ -310,7 +310,7 @@ unsafe impl<T> TakeOwnedSlice for vec::Drain<'_, T> {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 mod tests {
     use crate::Bump;
 

@@ -1,7 +1,7 @@
 #[cfg(feature = "serde")]
 mod serde;
 
-#[cfg(all(feature = "alloc", feature = "nightly-allocator-api"))]
+#[cfg(feature = "nightly-allocator-api")]
 pub mod alloc;
 
 #[cfg(feature = "allocator-api2-02")]

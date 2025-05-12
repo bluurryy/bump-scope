@@ -1956,6 +1956,7 @@ pub(crate) use mut_collection_method_allocator_stats;
 /// be copied into the `README.md` via [`cargo-rdme`](https://github.com/orium/cargo-rdme).
 #[test]
 #[ignore = "this is not a real test, it's just to insert documentation"]
+#[cfg(feature = "alloc")]
 fn insert_feature_docs() {
     use alloc_crate::{format, vec::Vec};
 

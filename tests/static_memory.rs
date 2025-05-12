@@ -1,3 +1,4 @@
+#![cfg(feature = "panic-on-alloc")]
 #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
 
 use core::{
