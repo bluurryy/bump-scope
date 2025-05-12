@@ -186,6 +186,12 @@ assert_eq!(bump.stats().allocated(), 4);
   `try_`-prefixed allocation methods will be available.
 * **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 * **`zerocopy`** —  Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`.
+* **`allocator-api2-02`** —  Makes `Bump(Scope)` implement `allocator_api2::Allocator` and
+  allows using `allocator_api2::Allocator`s as base allocators via
+  [`compat::AllocatorApiV02Compat`].
+* **`allocator-api2-03`** —  Makes `Bump(Scope)` implement `allocator_api2::Allocator` and
+  allows using `allocator_api2::Allocator`s as base allocators via
+  `AllocatorApiV03Compat`.
 
  #### Nightly features
 * **`nightly-allocator-api`** —  Makes this crate use the nightly allocator api instead of the one provided by the `allocator-api2` crate.

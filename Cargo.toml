@@ -40,7 +40,14 @@ serde = ["dep:serde"]
 ## Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`. 
 zerocopy = ["dep:zerocopy"]
 
+## Makes `Bump(Scope)` implement `allocator_api2::Allocator` and
+## allows using `allocator_api2::Allocator`s as base allocators via
+## [`AllocatorApiV02Compat`](crate::compat::AllocatorApi2V02Compat).
 allocator-api2-02 = ["dep:allocator-api2-02"]
+
+## Makes `Bump(Scope)` implement `allocator_api2::Allocator` and
+## allows using `allocator_api2::Allocator`s as base allocators via
+## [`AllocatorApiV03Compat`](crate::compat::AllocatorApi2V03Compat).
 allocator-api2-03 = ["dep:allocator-api2-03"]
 
 #! ### Nightly features
