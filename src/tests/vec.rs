@@ -1,6 +1,8 @@
-use allocator_api2::{alloc::Global, vec::Vec};
+#![cfg(feature = "allocator-api2-02")]
 
-use crate::Bump;
+use allocator_api2_02::{boxed::Box, vec::Vec};
+
+use crate::{alloc::Global, Bump};
 
 use super::either_way;
 
@@ -49,7 +51,7 @@ fn shrink<const UP: bool>() {
     vec.shrink_to(1);
     assert_eq!(bump.stats().allocated(), 4);
 
-    let boxed = bump.alloc_uninit::<u8>().into_box(&bump);
+    let boxed: Box<_, _> = bump.alloc_uninit::<u8>().into_box(&bump);
     assert_eq!(bump.stats().allocated(), 5);
 
     drop(boxed);

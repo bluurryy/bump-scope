@@ -4,9 +4,10 @@ use std::{
     ptr::NonNull,
 };
 
-use allocator_api2::alloc::{AllocError, Allocator, Global};
-
-use crate::{bump_format, mut_bump_format, Bump};
+use crate::{
+    alloc::{AllocError, Allocator, Global},
+    bump_format, mut_bump_format, Bump,
+};
 
 use super::either_way;
 

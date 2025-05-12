@@ -7,7 +7,7 @@ use core::{alloc::Layout, ffi::CStr, fmt, mem::MaybeUninit, ptr::NonNull};
 use alloc::boxed::Box;
 
 use bump_scope::{
-    allocator_api2::alloc::{AllocError, Allocator, Global},
+    alloc::{AllocError, Allocator, Global},
     BumpBox, FixedBumpString, FixedBumpVec,
 };
 

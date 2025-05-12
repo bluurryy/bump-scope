@@ -1,10 +1,8 @@
 use core::ptr::NonNull;
 
-use allocator_api2::alloc::AllocError;
-
 use crate::{
-    polyfill::nonnull, BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment,
-    WithoutDealloc, WithoutShrink,
+    alloc::AllocError, polyfill::nonnull, BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment,
+    SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -205,7 +203,7 @@ where
     where
         Self: Sized,
     {
-        let (ptr, len) = BumpScope::generic_prepare_slice_allocation(self, len)?;
+        let (ptr, len) = BumpScope::generic_prepare_slice_allocation::<AllocError, T>(self, len)?;
         Ok(nonnull::slice_from_raw_parts(ptr, len))
     }
 

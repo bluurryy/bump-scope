@@ -11,9 +11,8 @@ use core::{
     ptr::NonNull,
 };
 
-use allocator_api2::alloc::AllocError;
-
 use crate::{
+    alloc::AllocError,
     bump_align_guard::BumpAlignGuard,
     bump_common_methods,
     bumping::{bump_down, bump_up, BumpUp},
@@ -223,7 +222,7 @@ where
     /// Decrease the minimum alignment:
     /// ```
     /// # #![feature(pointer_is_aligned_to)]
-    /// # use bump_scope::{ Bump, allocator_api2::alloc::Global };
+    /// # use bump_scope::{ Bump, alloc::Global };
     /// let mut bump: Bump<Global, 8> = Bump::new();
     /// let bump = bump.as_mut_scope();
     ///
@@ -710,7 +709,7 @@ where
     /// ```ignore
     /// # // We can't `compile_fail,E0080` this doc test because it does not do the compile step
     /// # // that triggers the error.
-    /// # use bump_scope::{ Bump, allocator_api2::alloc::Global };
+    /// # use bump_scope::{ Bump, alloc::Global };
     /// let mut bump: Bump<Global, 8, true> = Bump::new();
     /// let mut guard = bump.scope_guard();
     ///

@@ -76,7 +76,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// # let bump: Bump = Bump::try_new()?;
         /// let vec = FixedBumpVec::try_from_iter_in([1, 2, 3], &bump)?;
         /// assert_eq!(vec, [1, 2, 3]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_from_iter_in
         #[inline]
@@ -106,7 +106,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// # let bump: Bump = Bump::try_new()?;
         /// let vec = FixedBumpVec::try_from_iter_exact_in([1, 2, 3], &bump)?;
         /// assert_eq!(vec, [1, 2, 3]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_from_iter_exact_in
         #[inline]
@@ -455,7 +455,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// This method does not allocate and does not change the order of the elements.
     ///
     /// The excess capacity may end up in either vector.
-    /// This behavior is different from <code>Vec::[split_off](alloc::vec::Vec::split_off)</code> which allocates a new vector for the split-off elements
+    /// This behavior is different from <code>Vec::[split_off](alloc_crate::vec::Vec::split_off)</code> which allocates a new vector for the split-off elements
     /// so the original vector keeps its capacity.
     /// If you rather want that behavior then you can write this instead:
     /// ```
@@ -643,7 +643,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// vec.try_extend_from_slice_copy(&[1, 2])?;
         /// vec.try_push(3)?;
         /// assert_eq!(vec, [1, 2, 3]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_push
         #[inline]
@@ -690,7 +690,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// assert_eq!(vec, [1, 4, 2, 3]);
         /// vec.try_insert(4, 5)?;
         /// assert_eq!(vec, [1, 4, 2, 3, 5]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_insert
         #[inline]
@@ -831,7 +831,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         ///
         /// vec.try_extend_from_within_copy(4..8)?;
         /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_extend_from_within_copy
         #[inline]
@@ -898,7 +898,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         ///
         /// vec.try_extend_from_within_clone(4..8)?;
         /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_extend_from_within_clone
         #[inline]
@@ -970,7 +970,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// vec.try_extend_from_slice_copy(&[1, 2, 3])?;
         /// vec.try_extend_zeroed(2)?;
         /// assert_eq!(vec, [1, 2, 3, 0, 0]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_extend_zeroed
         #[inline]
@@ -1050,7 +1050,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// vec.try_extend_from_slice_copy(&[1, 2, 3, 4])?;
         /// vec.try_resize(2, 0)?;
         /// assert_eq!(vec, [1, 2]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_resize
         #[inline]
@@ -1111,7 +1111,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// let mut p = 1;
         /// vec.try_resize_with(4, || { p *= 2; p })?;
         /// assert_eq!(vec, [2, 4, 8, 16]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_resize_with
         #[inline]
@@ -1163,7 +1163,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         /// vec.try_extend_from_slice_copy(&[1, 2, 3])?;
         /// vec.try_resize_zeroed(2)?;
         /// assert_eq!(vec, [1, 2]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_resize_zeroed
         #[inline]
@@ -1219,7 +1219,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         ///
         /// assert_eq!(other, []);
         /// assert_eq!(vec, [1, 2, 3, 4, 5, 6, 7, 8]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_append
         #[inline]

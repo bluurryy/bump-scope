@@ -1,8 +1,6 @@
 use std::iter;
 
-use allocator_api2::alloc::Global;
-
-use crate::{Bump, MutBumpVec, MutBumpVecRev};
+use crate::{alloc::Global, Bump, MutBumpVec, MutBumpVecRev};
 
 use super::either_way;
 

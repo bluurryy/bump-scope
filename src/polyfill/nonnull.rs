@@ -243,7 +243,7 @@ pub(crate) fn is_aligned_to(ptr: NonNull<u8>, align: usize) -> bool {
 }
 
 #[inline(always)]
-pub(crate) fn as_non_null_ptr<T>(ptr: NonNull<[T]>) -> NonNull<T> {
+pub(crate) const fn as_non_null_ptr<T>(ptr: NonNull<[T]>) -> NonNull<T> {
     ptr.cast()
 }
 
@@ -295,4 +295,26 @@ pub(crate) unsafe fn truncate<T>(slice: &mut NonNull<[T]>, len: usize) {
 /// like `<NonNull<T> as From<&T>>::from` but `const`
 pub(crate) const fn from_ref<T>(r: &T) -> NonNull<T> {
     unsafe { NonNull::new_unchecked(r as *const T as *mut T) }
+}
+
+/// Returns a raw pointer to the slice's buffer.
+#[inline]
+#[must_use]
+pub const fn as_mut_ptr<T>(p: NonNull<[T]>) -> *mut T {
+    as_non_null_ptr(p).as_ptr()
+}
+
+/// Creates a pointer with the given address and no [provenance][crate::ptr#provenance].
+///
+/// For more details, see the equivalent method on a raw pointer, [`ptr::without_provenance_mut`].
+///
+/// This is a [Strict Provenance][crate::ptr#strict-provenance] API.
+#[must_use]
+#[inline]
+#[cfg(feature = "alloc")]
+pub const fn without_provenance<T>(addr: NonZeroUsize) -> NonNull<T> {
+    let pointer = sptr::invalid_mut(addr.get());
+
+    // SAFETY: we know `addr` is non-zero.
+    unsafe { NonNull::new_unchecked(pointer) }
 }

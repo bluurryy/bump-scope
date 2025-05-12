@@ -1,6 +1,4 @@
-use allocator_api2::alloc::Global;
-
-use crate::Bump;
+use crate::{alloc::Global, Bump};
 
 use super::either_way;
 

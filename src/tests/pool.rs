@@ -1,9 +1,8 @@
 use std::vec::Vec;
 
-use allocator_api2::alloc::Global;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::BumpPool;
+use crate::{alloc::Global, BumpPool};
 
 use super::either_way;
 

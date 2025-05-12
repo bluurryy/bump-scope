@@ -1,8 +1,10 @@
 use core::{alloc::Layout, ptr::NonNull};
 
-use allocator_api2::alloc::{AllocError, Allocator};
-
-use crate::{polyfill::nonnull, BumpAllocator};
+use crate::{
+    alloc::{AllocError, Allocator},
+    polyfill::nonnull,
+    BumpAllocator,
+};
 
 /// Wraps an bump allocator and does nothing on [`deallocate`](Allocator::deallocate).
 ///

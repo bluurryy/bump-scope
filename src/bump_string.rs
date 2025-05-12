@@ -9,9 +9,8 @@ use core::{
     ptr, str,
 };
 
-use allocator_api2::alloc::AllocError;
-
 use crate::{
+    alloc::AllocError,
     collection_method_allocator_stats,
     destructure::destructure,
     error_behavior_generic_methods_allocation_failure, owned_str,
@@ -24,7 +23,7 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::{panic_on_error, polyfill::nonnull, PanicsOnAlloc};
 
-/// This is like [`format!`](alloc::format) but allocates inside a bump allocator, returning a [`BumpString`].
+/// This is like [`format!`](alloc_crate::format) but allocates inside a bump allocator, returning a [`BumpString`].
 ///
 /// If you don't need to push to the string after creation you can also use [`Bump::alloc_fmt`](crate::Bump::alloc_fmt).
 ///
@@ -59,18 +58,18 @@ macro_rules! bump_format {
         }
     }};
     (try in $bump:expr) => {{
-        Ok::<_, $crate::allocator_api2::alloc::AllocError>($crate::BumpString::new_in($bump.as_scope()))
+        Ok::<_, $crate::alloc::AllocError>($crate::BumpString::new_in($bump.as_scope()))
     }};
     (try in $bump:expr, $($arg:tt)*) => {{
         let mut string = $crate::BumpString::new_in($bump.as_scope());
         match $crate::private::core::fmt::Write::write_fmt(&mut string, $crate::private::core::format_args!($($arg)*)) {
             $crate::private::core::result::Result::Ok(_) => $crate::private::core::result::Result::Ok(string),
-            $crate::private::core::result::Result::Err(_) => $crate::private::core::result::Result::Err($crate::allocator_api2::alloc::AllocError),
+            $crate::private::core::result::Result::Err(_) => $crate::private::core::result::Result::Err($crate::alloc::AllocError),
         }
     }};
 }
 
-/// A bump allocated [`String`](alloc::string::String).
+/// A bump allocated [`String`](alloc_crate::string::String).
 ///
 /// When you are done building the string, you can turn it into a `&str` with [`into_str`].
 ///
@@ -296,7 +295,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// This method does not allocate and does not change the order of the elements.
     ///
     /// The excess capacity may end up in either string.
-    /// This behavior is different from <code>String::[split_off](alloc::string::String::split_off)</code> which allocates a new string for the split-off bytes
+    /// This behavior is different from <code>String::[split_off](alloc_crate::string::String::split_off)</code> which allocates a new string for the split-off bytes
     /// so the original string keeps its capacity.
     /// If you rather want that behavior then you can write this instead:
     /// ```
@@ -639,7 +638,7 @@ impl<A: BumpAllocator> BumpString<A> {
         /// # let bump: Bump = Bump::try_new()?;
         /// let string = BumpString::try_from_str_in("Hello!", &bump)?;
         /// assert_eq!(string, "Hello!");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_from_str_in
         #[inline]
@@ -712,7 +711,7 @@ impl<A: BumpAllocator> BumpString<A> {
         /// let sparkle_heart = BumpString::try_from_utf8_lossy_in(&sparkle_heart, &bump)?;
         ///
         /// assert_eq!("💖", sparkle_heart);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         ///
         /// Incorrect bytes:
@@ -725,7 +724,7 @@ impl<A: BumpAllocator> BumpString<A> {
         /// let output = BumpString::try_from_utf8_lossy_in(input, &bump)?;
         ///
         /// assert_eq!("Hello �World", output);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_from_utf8_lossy_in
         use fn generic_from_utf8_lossy_in(v: &[u8], allocator: A) -> Self {
@@ -792,7 +791,7 @@ impl<A: BumpAllocator> BumpString<A> {
         /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
         ///           0xD800, 0x0069, 0x0063];
         /// assert!(BumpString::try_from_utf16_in(v, &bump)?.is_err());
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_from_utf16_in
         use fn generic_from_utf16_in(v: &[u16], allocator: A) -> Result<Self, FromUtf16Error> {
@@ -841,7 +840,7 @@ impl<A: BumpAllocator> BumpString<A> {
         ///
         /// assert_eq!(BumpString::try_from_str_in("𝄞mus\u{FFFD}ic\u{FFFD}", &bump)?,
         ///            BumpString::try_from_utf16_lossy_in(v, &bump)?);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_from_utf16_lossy_in
         #[inline]
@@ -882,7 +881,7 @@ impl<A: BumpAllocator> BumpString<A> {
         /// s.try_push('3')?;
         ///
         /// assert_eq!(s, "abc123");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_push
         #[inline]
@@ -917,7 +916,7 @@ impl<A: BumpAllocator> BumpString<A> {
         /// s.try_push_str("bar")?;
         ///
         /// assert_eq!(s, "foobar");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_push_str
         #[inline]
@@ -958,7 +957,7 @@ impl<A: BumpAllocator> BumpString<A> {
         /// s.try_insert(2, 'o')?;
         ///
         /// assert_eq!("foo", s);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_insert
         #[inline]
@@ -1000,7 +999,7 @@ impl<A: BumpAllocator> BumpString<A> {
         /// s.try_insert_str(0, "foo")?;
         ///
         /// assert_eq!("foobar", s);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_insert_str
         #[inline]
@@ -1047,7 +1046,7 @@ impl<A: BumpAllocator> BumpString<A> {
         ///
         /// string.try_extend_from_within(4..8)?;
         /// assert_eq!(string, "abcdecdeabecde");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_extend_from_within
         #[inline]
@@ -1082,7 +1081,7 @@ impl<A: BumpAllocator> BumpString<A> {
         /// let mut string = BumpString::try_from_str_in("What?", &bump)?;
         /// string.try_extend_zeroed(3)?;
         /// assert_eq!(string, "What?\0\0\0");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_extend_zeroed
         #[inline]
@@ -1131,7 +1130,7 @@ impl<A: BumpAllocator> BumpString<A> {
         /// // Replace the range up until the β from the string
         /// s.try_replace_range(..beta_offset, "Α is capital alpha; ")?;
         /// assert_eq!(s, "Α is capital alpha; β is beta");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_replace_range
         #[inline]
@@ -1233,7 +1232,7 @@ impl<A: BumpAllocator> BumpString<A> {
         /// s.try_reserve(10)?;
         ///
         /// assert!(s.capacity() >= 10);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         ///
         /// This might not actually increase the capacity:
@@ -1255,7 +1254,7 @@ impl<A: BumpAllocator> BumpString<A> {
         ///
         /// // ... doesn't actually increase.
         /// assert_eq!(capacity, s.capacity());
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_reserve
         #[inline]
@@ -1320,7 +1319,7 @@ impl<A: BumpAllocator> BumpString<A> {
         /// s.try_reserve_exact(10)?;
         ///
         /// assert!(s.capacity() >= 10);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         ///
         /// This might not actually increase the capacity:
@@ -1342,7 +1341,7 @@ impl<A: BumpAllocator> BumpString<A> {
         ///
         /// // ... doesn't actually increase.
         /// assert_eq!(capacity, s.capacity());
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_reserve_exact
         #[inline]
@@ -1486,7 +1485,7 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
     ///
     /// let abc0def = BumpString::try_from_str_in("abc\0def", &bump)?;
     /// assert_eq!(abc0def.try_into_cstr()?, c"abc");
-    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_into_cstr(self) -> Result<&'a CStr, AllocError> {
@@ -1749,7 +1748,7 @@ impl<'s, A: BumpAllocator> Extend<&'s char> for BumpString<A> {
 }
 
 #[cfg(feature = "alloc")]
-impl<A: BumpAllocator> From<BumpString<A>> for alloc::string::String {
+impl<A: BumpAllocator> From<BumpString<A>> for alloc_crate::string::String {
     #[inline]
     fn from(value: BumpString<A>) -> Self {
         value.as_str().into()

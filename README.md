@@ -133,7 +133,7 @@ They are also available in the following variants:
 ##### Api changes
 The collections are designed to have a similar api to their std counterparts but they do make some breaking changes:
 - [`split_off`](BumpVec::split_off) —  splits the collection in place without allocation; the parameter is a range instead of a single index
-- [`retain`](BumpVec::retain) —  takes a closure with a `&mut T` parameter like [`Vec::retain_mut`](alloc::vec::Vec::retain_mut)
+- [`retain`](BumpVec::retain) —  takes a closure with a `&mut T` parameter like [`Vec::retain_mut`](alloc_crate::vec::Vec::retain_mut)
 
 ##### New features
 - [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `Drain<T>` etc
@@ -147,7 +147,10 @@ The collections are designed to have a similar api to their std counterparts but
 To bump allocate in parallel you can use a `BumpPool`.
 
 ## Allocator API
-`Bump` and `BumpScope` implement `allocator_api2`'s [`Allocator`](https://docs.rs/allocator-api2/0.2.16/allocator_api2/alloc/trait.Allocator.html) trait.
+`Bump` and `BumpScope` implement either the `Allocator` trait from
+[`allocator_api2`](https://docs.rs/allocator-api2/0.3.0/allocator_api2/alloc/trait.Allocator.html)
+or from [`alloc`](https://doc.rust-lang.org/nightly/alloc/alloc/trait.Allocator.html)
+with the "nightly-allocator-api" feature.
 They can be used to allocate collections.
 
 A bump allocator can grow, shrink and deallocate the most recent allocation.
@@ -160,7 +163,8 @@ After all, memory will be reclaimed when exiting a scope, calling `reset` or dro
 You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using `WithoutDealloc` and `WithoutShrink`.
 ```rust
 use bump_scope::{ Bump, WithoutDealloc };
-use allocator_api2::boxed::Box;
+use allocator_api2_03::boxed::Box;
+
 let bump: Bump = Bump::new();
 
 let boxed = Box::new_in(5, &bump);
@@ -182,10 +186,19 @@ assert_eq!(bump.stats().allocated(), 4);
   `try_`-prefixed allocation methods will be available.
 * **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 * **`zerocopy`** —  Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`.
+* **`allocator-api2-02`** —  Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and
+  makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
+  `AllocatorApiV02Compat`.
+* **`allocator-api2-03`** —  Makes `Bump(Scope)` implement `allocator_api2` version `0.3`'s `Allocator` and
+  makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
+  `AllocatorApiV03Compat`.
 
  #### Nightly features
-* **`nightly-allocator-api`** —  Enables `allocator-api2`'s `nightly` feature which makes it reexport the nightly allocator api instead of its own implementation.
-  With this you can bump allocate collections from the standard library.
+* **`nightly-allocator-api`** —  Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
+  allows using an `alloc::alloc::Allocator` as a base allocator via
+  `AllocatorNightlyCompat`.
+ 
+  This will also enable `allocator-api2` version `0.2`'s `nightly` feature.
 * **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
   You can unsize a `BumpBox` in stable without this feature using [`unsize_bump_box`].
@@ -236,6 +249,13 @@ Licensed under either of:
  * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or https://www.apache.org/licenses/LICENSE-2.0)
 
 at your option.
+
+---
+
+This project includes code adapted from the Rust standard library 
+(https://github.com/rust-lang/rust),  
+Copyright © The Rust Project Developers.
+Such code is also licensed under MIT OR Apache-2.0.
 
 ### Your contributions
 

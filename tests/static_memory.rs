@@ -1,3 +1,4 @@
+#![cfg(feature = "panic-on-alloc")]
 #![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
 
 use core::{
@@ -8,8 +9,10 @@ use core::{
 };
 use std::sync::{Mutex, PoisonError};
 
-use allocator_api2::alloc::{AllocError, Allocator};
-use bump_scope::Bump;
+use bump_scope::{
+    alloc::{AllocError, Allocator},
+    Bump,
+};
 
 #[repr(C, align(16))]
 struct StaticAllocator<const SIZE: usize> {

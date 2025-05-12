@@ -1,8 +1,10 @@
 use std::{alloc::Layout, ptr::NonNull};
 
-use allocator_api2::alloc::{Allocator, Global};
-
-use crate::{polyfill::nonnull, Bump};
+use crate::{
+    alloc::{Allocator, Global},
+    polyfill::nonnull,
+    Bump,
+};
 
 use super::either_way;
 

@@ -2,7 +2,7 @@
 
 use std::{alloc::Layout, cell::Cell, ptr::NonNull};
 
-use allocator_api2::alloc::{AllocError, Allocator, Global};
+use crate::alloc::{AllocError, Allocator, Global};
 
 #[derive(Clone)]
 pub(crate) struct Limited<A> {

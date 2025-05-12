@@ -11,8 +11,8 @@ pre-release:
   just spellcheck
   just doc
   just check
-  cargo +stable semver-checks
   just test
+  cargo +stable semver-checks
 
 check: 
   just check-fmt
@@ -30,8 +30,9 @@ check-fmt:
   cd fuzz; cargo fmt --check
 
 check-clippy:
-  cargo clippy --tests --all-features
-  cargo clippy --no-default-features
+  cargo clippy --tests --no-default-features
+  cargo clippy --tests
+  cargo clippy --tests --benches --all-features
   cd crates/fuzzing-support; cargo clippy --tests
   cd crates/test-fallibility; cargo clippy --tests
   cd fuzz; cargo clippy
@@ -41,8 +42,7 @@ check-nostd:
 
 check-msrv:
   cargo ('+' + (open Cargo.toml).package.rust-version) check --no-default-features
-  cargo ('+' + (open Cargo.toml).package.rust-version) check --features alloc,panic-on-alloc,serde,zerocopy
-  cargo ('+' + (open Cargo.toml).package.rust-version) check --features std,panic-on-alloc,serde,zerocopy
+  cargo ('+' + (open Cargo.toml).package.rust-version) check --no-default-features --features panic-on-alloc,serde,zerocopy
 
 check-fallibility:
   @ just crates/test-fallibility/test

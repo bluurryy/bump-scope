@@ -1,4 +1,4 @@
-use allocator_api2::alloc::Global;
+use crate::alloc::Global;
 
 type Bump = crate::Bump<Global, 1, true, false>;
 

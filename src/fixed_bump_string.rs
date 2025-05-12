@@ -249,7 +249,7 @@ impl<'a> FixedBumpString<'a> {
     /// This method does not allocate and does not change the order of the elements.
     ///
     /// The excess capacity may end up in either string.
-    /// This behavior is different from <code>String::[split_off](alloc::string::String::split_off)</code> which allocates a new string for the split-off bytes
+    /// This behavior is different from <code>String::[split_off](alloc_crate::string::String::split_off)</code> which allocates a new string for the split-off bytes
     /// so the original string keeps its capacity.
     /// If you rather want that behavior then you can write this instead:
     /// ```
@@ -699,7 +699,7 @@ impl FixedBumpString<'_> {
         /// s.try_push('c')?;
         ///
         /// assert_eq!(s, "abc");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_push
         #[inline]
@@ -736,7 +736,7 @@ impl FixedBumpString<'_> {
         /// s.try_push_str("bar")?;
         ///
         /// assert_eq!(s, "foobar");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_push_str
         #[inline]
@@ -777,7 +777,7 @@ impl FixedBumpString<'_> {
         /// s.try_insert(2, 'o')?;
         ///
         /// assert_eq!("foo", s);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_insert
         #[inline]
@@ -821,7 +821,7 @@ impl FixedBumpString<'_> {
         /// s.try_insert_str(0, "foo")?;
         ///
         /// assert_eq!("foobar", s);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_insert_str
         #[inline]
@@ -870,7 +870,7 @@ impl FixedBumpString<'_> {
         ///
         /// string.try_extend_from_within(4..8)?;
         /// assert_eq!(string, "abcdecdeabecde");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_extend_from_within
         #[inline]
@@ -907,7 +907,7 @@ impl FixedBumpString<'_> {
         /// string.try_push_str("What?")?;
         /// string.try_extend_zeroed(3)?;
         /// assert_eq!(string, "What?\0\0\0");
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_extend_zeroed
         #[inline]
@@ -962,7 +962,7 @@ impl FixedBumpString<'_> {
         /// let mut s = bump.try_alloc_fixed_string(5)?;
         /// s.push_str("hello");
         /// assert!(s.try_replace_range(4..=4, " n").is_err());
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_replace_range
         #[inline]
@@ -1174,10 +1174,10 @@ impl_partial_eq! {
     &str,
 
     #[cfg(feature = "alloc")]
-    alloc::string::String,
+    alloc_crate::string::String,
 
     #[cfg(feature = "alloc")]
-    alloc::borrow::Cow<'_, str>,
+    alloc_crate::borrow::Cow<'_, str>,
 }
 
 impl Eq for FixedBumpString<'_> {}
@@ -1250,7 +1250,7 @@ impl<'s> Extend<&'s char> for FixedBumpString<'_> {
 }
 
 #[cfg(feature = "alloc")]
-impl<'a> From<FixedBumpString<'a>> for alloc::string::String {
+impl<'a> From<FixedBumpString<'a>> for alloc_crate::string::String {
     #[inline]
     fn from(value: FixedBumpString<'a>) -> Self {
         value.as_str().into()

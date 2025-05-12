@@ -12,9 +12,8 @@ use core::{
     slice::SliceIndex,
 };
 
-use allocator_api2::alloc::AllocError;
-
 use crate::{
+    alloc::AllocError,
     collection_method_allocator_stats,
     destructure::destructure,
     error_behavior_generic_methods_allocation_failure, min_non_zero_cap,
@@ -39,7 +38,7 @@ pub(crate) use drain::Drain;
 #[cfg(feature = "panic-on-alloc")]
 pub use splice::Splice;
 
-/// This is like [`vec!`](alloc::vec!) but allocates inside a bump allocator, returning a [`BumpVec`].
+/// This is like [`vec!`](alloc_crate::vec!) but allocates inside a bump allocator, returning a [`BumpVec`].
 ///
 /// `$bump` can be any type that implements [`BumpAllocator`].
 ///
@@ -106,7 +105,7 @@ macro_rules! bump_vec {
         $crate::BumpVec::from_elem_in($value, $count, $bump)
     };
     [try in $bump:expr] => {
-        Ok::<_, $crate::allocator_api2::alloc::AllocError>($crate::BumpVec::new_in($bump))
+        Ok::<_, $crate::alloc::AllocError>($crate::BumpVec::new_in($bump))
     };
     [try in $bump:expr; $($values:expr),* $(,)?] => {
         $crate::BumpVec::try_from_array_in([$($values),*], $bump)
@@ -116,7 +115,7 @@ macro_rules! bump_vec {
     };
 }
 
-/// A bump allocated [`Vec`](alloc::vec::Vec).
+/// A bump allocated [`Vec`](alloc_crate::vec::Vec).
 ///
 /// The main difference to `Vec` is that it can be turned into a slice that is live for this bump scope (`'a`).
 /// Such a slice can be live while entering new scopes.
@@ -268,7 +267,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         /// When `T` is a zero-sized type, there will be no allocation
         /// and the capacity will always be `usize::MAX`.
         ///
-        /// [Capacity and reallocation]: alloc::vec::Vec#capacity-and-reallocation
+        /// [Capacity and reallocation]: alloc_crate::vec::Vec#capacity-and-reallocation
         impl
         for fn with_capacity_in
         for fn try_with_capacity_in
@@ -376,7 +375,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         /// # let bump: Bump = Bump::try_new()?;
         /// let vec = BumpVec::try_from_iter_in([1, 2, 3], &bump)?;
         /// assert_eq!(vec, [1, 2, 3]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_from_iter_in
         #[inline]
@@ -414,7 +413,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         /// # let bump: Bump = Bump::try_new()?;
         /// let vec = BumpVec::try_from_iter_exact_in([1, 2, 3], &bump)?;
         /// assert_eq!(vec, [1, 2, 3]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_from_iter_exact_in
         #[inline]
@@ -477,7 +476,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// This method does not allocate and does not change the order of the elements.
     ///
     /// The excess capacity may end up in either vector.
-    /// This behavior is different from <code>Vec::[split_off](alloc::vec::Vec::split_off)</code> which allocates a new vector for the split-off elements
+    /// This behavior is different from <code>Vec::[split_off](alloc_crate::vec::Vec::split_off)</code> which allocates a new vector for the split-off elements
     /// so the original vector keeps its capacity.
     /// If you rather want that behavior then you can write this instead:
     /// ```
@@ -806,7 +805,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         /// let mut vec = bump_vec![try in &bump; 1, 2]?;
         /// vec.try_push(3);
         /// assert_eq!(vec, [1, 2, 3]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_push
         #[inline]
@@ -851,7 +850,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         /// assert_eq!(vec, [1, 4, 2, 3]);
         /// vec.try_insert(4, 5)?;
         /// assert_eq!(vec, [1, 4, 2, 3, 5]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_insert
         #[inline]
@@ -991,7 +990,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         ///
         /// vec.try_extend_from_within_copy(4..8)?;
         /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_extend_from_within_copy
         #[inline]
@@ -1055,7 +1054,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         ///
         /// vec.try_extend_from_within_clone(4..8)?;
         /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_extend_from_within_clone
         #[inline]
@@ -1125,7 +1124,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
         /// vec.try_extend_zeroed(2)?;
         /// assert_eq!(vec, [1, 2, 3, 0, 0]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_extend_zeroed
         #[inline]
@@ -1170,7 +1169,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         /// let mut vec = bump_vec![try in &bump; 1]?;
         /// vec.try_reserve(10)?;
         /// assert!(vec.capacity() >= 11);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_reserve
         #[inline]
@@ -1213,7 +1212,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         /// let mut vec = bump_vec![try in &bump; 1]?;
         /// vec.try_reserve_exact(10)?;
         /// assert!(vec.capacity() >= 11);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_reserve_exact
         #[inline]
@@ -1266,7 +1265,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         /// let mut vec = bump_vec![try in &bump; 1, 2, 3, 4]?;
         /// vec.try_resize(2, 0)?;
         /// assert_eq!(vec, [1, 2]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_resize
         #[inline]
@@ -1325,7 +1324,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         /// let mut p = 1;
         /// vec.try_resize_with(4, || { p *= 2; p })?;
         /// assert_eq!(vec, [2, 4, 8, 16]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_resize_with
         #[inline]
@@ -1373,7 +1372,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
         /// vec.try_resize_zeroed(2)?;
         /// assert_eq!(vec, [1, 2]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_resize_zeroed
         #[inline]
@@ -1429,7 +1428,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         ///
         /// assert_eq!(other, []);
         /// assert_eq!(vec, [1, 2, 3, 4, 5, 6, 7, 8]);
-        /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+        /// # Ok::<(), bump_scope::alloc::AllocError>(())
         /// ```
         for fn try_append
         #[inline]
@@ -1520,7 +1519,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// let a = BumpVec::try_from_iter_exact_in([0, 1, 2], &bump)?;
     /// let b = a.try_map(NonZero::new)?;
     /// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2)]");
-    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     ///
     /// Mapping to a type with a smaller alignment and size (no allocation, capacity may grow):
@@ -1534,7 +1533,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// let vec_b: BumpVec<u16, _> = vec_a.try_map(|i| i as u16)?;
     /// assert_eq!(vec_b.capacity(), 8);
     /// assert_eq!(bump.stats().allocated(), 4 * 4);
-    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     ///
     /// Mapping to a type with a higher alignment or size is equivalent to
@@ -1549,7 +1548,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// let vec_b: BumpVec<u32, _> = vec_a.try_map(|i| i as u32)?;
     /// assert_eq!(vec_b.capacity(), 4);
     /// assert_eq!(bump.stats().allocated(), 4 * 2 + 4 * 4);
-    /// # Ok::<(), bump_scope::allocator_api2::alloc::AllocError>(())
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_map<U>(self, f: impl FnMut(T) -> U) -> Result<BumpVec<U, A>, AllocError>

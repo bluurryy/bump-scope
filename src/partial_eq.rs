@@ -94,7 +94,7 @@ mod alloc_impl {
     #[allow(clippy::wildcard_imports)]
     use super::*;
 
-    use alloc::{borrow::Cow, string::String};
+    use alloc_crate::{borrow::Cow, string::String};
 
     impl_str_eq! { [A: BumpAllocator] BumpString<A>, String }
     impl_str_eq! { [A: BumpAllocator] String, BumpString<A> }

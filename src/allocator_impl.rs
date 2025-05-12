@@ -3,11 +3,11 @@
 
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
-use allocator_api2::alloc::{AllocError, Allocator};
-
 use crate::{
-    bump_down, polyfill::nonnull, up_align_usize_unchecked, BaseAllocator, Bump, BumpScope, MinimumAlignment,
-    SupportedMinimumAlignment,
+    alloc::{AllocError, Allocator},
+    bump_down,
+    polyfill::nonnull,
+    up_align_usize_unchecked, BaseAllocator, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment,
 };
 
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
@@ -258,7 +258,7 @@ where
                 Ok(nonnull::slice_from_raw_parts(old_ptr, new_layout.size()))
             } else {
                 // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
-                let new_ptr = bump.alloc_in_another_chunk(new_layout)?;
+                let new_ptr = bump.alloc_in_another_chunk::<AllocError>(new_layout)?;
                 nonnull::copy_nonoverlapping(old_ptr, new_ptr, old_layout.size());
                 Ok(nonnull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
@@ -297,7 +297,7 @@ where
                 Ok(nonnull::slice_from_raw_parts(new_ptr, new_layout.size()))
             } else {
                 // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
-                let new_ptr = bump.alloc_in_another_chunk(new_layout)?;
+                let new_ptr = bump.alloc_in_another_chunk::<AllocError>(new_layout)?;
                 nonnull::copy_nonoverlapping(old_ptr, new_ptr, old_layout.size());
                 Ok(nonnull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
