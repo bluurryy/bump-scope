@@ -57,7 +57,7 @@ allocator-api2-03 = ["dep:allocator-api2-03"]
 ##
 ## **Warning:** This feature is not additive. 
 ## Enabling this feature may break an unrelated dependency that relied on the types and traits from `bump-scope` and `allocator-api2` being the same.
-nightly-allocator-api = []
+nightly-allocator-api = ["allocator-api2-02/nightly"]
 
 ## Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
 ## With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.

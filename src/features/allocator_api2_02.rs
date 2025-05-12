@@ -3,13 +3,22 @@ use core::{alloc::Layout, ptr::NonNull};
 use allocator_api2_02::alloc::{AllocError, Allocator};
 
 #[cfg(feature = "alloc")]
+#[cfg(not(feature = "nightly-allocator-api"))]
 use allocator_api2_02::boxed::Box;
 
 use crate::{
-    alloc::{box_like, AllocError as CrateAllocError, Allocator as CrateAllocator, BoxLike},
-    polyfill, BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc,
-    WithoutShrink,
+    alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator},
+    polyfill,
 };
+
+#[cfg(not(feature = "nightly-allocator-api"))]
+use crate::{
+    alloc::{box_like, BoxLike},
+    Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+};
+
+#[cfg(any(test, not(feature = "nightly-allocator-api")))]
+use crate::BaseAllocator;
 
 /// Wrap an <code>allocator_api2::[Allocator](Allocator)</code> to implement <code>bump_scope::[Allocator](CrateAllocator)</code>.
 #[repr(transparent)]
@@ -114,18 +123,21 @@ unsafe impl<A: ?Sized + CrateAllocator> Allocator for AllocatorApi2V02Compat<A> 
     }
 }
 
+#[cfg(not(feature = "nightly-allocator-api"))]
 impl From<AllocError> for CrateAllocError {
     fn from(_: AllocError) -> Self {
         CrateAllocError
     }
 }
 
+#[cfg(not(feature = "nightly-allocator-api"))]
 impl From<CrateAllocError> for AllocError {
     fn from(_: CrateAllocError) -> Self {
         AllocError
     }
 }
 
+#[cfg(not(feature = "nightly-allocator-api"))]
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
     for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
@@ -163,6 +175,7 @@ where
     }
 }
 
+#[cfg(not(feature = "nightly-allocator-api"))]
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
     for &mut BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
@@ -200,6 +213,7 @@ where
     }
 }
 
+#[cfg(not(feature = "nightly-allocator-api"))]
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
@@ -237,6 +251,7 @@ where
     }
 }
 
+#[cfg(not(feature = "nightly-allocator-api"))]
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
     for &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
@@ -274,6 +289,7 @@ where
     }
 }
 
+#[cfg(not(feature = "nightly-allocator-api"))]
 unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -306,6 +322,7 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
     }
 }
 
+#[cfg(not(feature = "nightly-allocator-api"))]
 unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -338,6 +355,7 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
     }
 }
 
+#[cfg(not(feature = "nightly-allocator-api"))]
 impl<T: ?Sized, A: Allocator> box_like::Sealed for Box<T, A> {
     type T = T;
     type A = A;
@@ -347,6 +365,7 @@ impl<T: ?Sized, A: Allocator> box_like::Sealed for Box<T, A> {
     }
 }
 
+#[cfg(not(feature = "nightly-allocator-api"))]
 impl<T: ?Sized, A: Allocator> BoxLike for Box<T, A> {}
 
 #[test]
