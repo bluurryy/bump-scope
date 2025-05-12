@@ -374,7 +374,7 @@ pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
 /// Contains wrappers that makes implementors of foreign `Allocator` traits implement this crate's [`Allocator`].
 ///
-/// Note that the bump allocator itself already implements foreign `Allocator` traits, you
+/// Note that the bump allocator itself already implements foreign `Allocator` traits, so you
 /// generally only need this for a base allocator.
 pub mod compat {
     #[cfg(all(feature = "alloc", feature = "nightly-allocator-api"))]

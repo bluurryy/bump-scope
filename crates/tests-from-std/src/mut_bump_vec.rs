@@ -1,6 +1,6 @@
 //! Adapted from rust's `library/alloctests/tests/vec.rs` commit fb04372dc56129d69e39af80cac6e81694bd285f
 
-use core::alloc::{AllocError, Allocator, Layout};
+use core::alloc::Layout;
 use core::num::NonZero;
 use core::ptr::NonNull;
 use core::{assert_eq, assert_ne};
@@ -13,6 +13,7 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
+use bump_scope::alloc::{AllocError, Allocator};
 use bump_scope::{Bump, BumpAllocator};
 
 type Vec<T, A = bump_scope::Bump> = bump_scope::MutBumpVec<T, A>;
@@ -1058,7 +1059,7 @@ fn test_into_iter_drop_allocator() {
     }
 
     unsafe impl Allocator for ReferenceCountedAllocator<'_> {
-        fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, core::alloc::AllocError> {
+        fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
             self.bump.allocate(layout)
         }
 
