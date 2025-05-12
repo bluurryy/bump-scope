@@ -24,6 +24,7 @@
     "codegen",
     "codepoint",
     "Comparand",
+    "compat",
     "constness",
     "cstr",
     "curr",
