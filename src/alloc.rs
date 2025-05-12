@@ -9,7 +9,7 @@
 //! - allocator_api2 version 0.3 via the feature `allocator-api2-03`
 //!
 //! `Bump` and `Bump(Scope)` will implement those foreign `Allocator` traits when the respective feature is enabled.
-//! You can also use implementors of their `Allocator` trait as base allocators via the [compat](crate::compat) wrapper types.
+//! You can also use implementors of their `Allocator` trait as base allocators via the [compat] wrapper types.
 //!
 //! You can convert between this crate's `AllocError` and foreign one's via the `From` and `Into` traits.
 
@@ -28,6 +28,19 @@ use crate::polyfill::nonnull;
 
 #[cfg(feature = "alloc")]
 pub use global::Global;
+
+/// Contains wrappers that makes implementors of foreign `Allocator` traits implement this crate's [`Allocator`].
+///
+/// Note that the bump allocator itself already implements foreign `Allocator` traits, so you
+/// generally only need this for a base allocator.
+pub mod compat {
+    #[cfg(feature = "allocator-api2-02")]
+    pub use crate::features::allocator_api2_02::AllocatorApi2V02Compat;
+    #[cfg(feature = "allocator-api2-03")]
+    pub use crate::features::allocator_api2_03::AllocatorApi2V03Compat;
+    #[cfg(all(feature = "alloc", feature = "nightly-allocator-api"))]
+    pub use crate::features::nightly_allocator_api::AllocatorNightlyCompat;
+}
 
 /// The `AllocError` error indicates an allocation failure
 /// that may be due to resource exhaustion or to

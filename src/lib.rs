@@ -229,15 +229,15 @@
 //! * **`zerocopy`** —  Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`.
 //! * **`allocator-api2-02`** —  Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and
 //!   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-//!   [`AllocatorApiV02Compat`](crate::compat::AllocatorApi2V02Compat).
+//!   [`AllocatorApiV02Compat`](crate::alloc::compat::AllocatorApi2V02Compat).
 //! * **`allocator-api2-03`** —  Makes `Bump(Scope)` implement `allocator_api2` version `0.3`'s `Allocator` and
 //!   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-//!   [`AllocatorApiV03Compat`](crate::compat::AllocatorApi2V03Compat).
+//!   [`AllocatorApiV03Compat`](crate::alloc::compat::AllocatorApi2V03Compat).
 //!
 //!  ### Nightly features
 //! * **`nightly-allocator-api`** —  Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
 //!   allows using an `alloc::alloc::Allocator` as a base allocator via
-//!   [`AllocatorNightlyCompat`](crate::compat::AllocatorNightlyCompat).
+//!   [`AllocatorNightlyCompat`](crate::alloc::compat::AllocatorNightlyCompat).
 //!  
 //!   This will also enable `allocator-api2` version `0.2`'s `nightly` feature.
 //! * **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
@@ -377,19 +377,6 @@ use set_len_on_drop::SetLenOnDrop;
 #[doc(inline)]
 pub use stats::Stats;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
-
-/// Contains wrappers that makes implementors of foreign `Allocator` traits implement this crate's [`Allocator`].
-///
-/// Note that the bump allocator itself already implements foreign `Allocator` traits, so you
-/// generally only need this for a base allocator.
-pub mod compat {
-    #[cfg(feature = "allocator-api2-02")]
-    pub use crate::features::allocator_api2_02::AllocatorApi2V02Compat;
-    #[cfg(feature = "allocator-api2-03")]
-    pub use crate::features::allocator_api2_03::AllocatorApi2V03Compat;
-    #[cfg(all(feature = "alloc", feature = "nightly-allocator-api"))]
-    pub use crate::features::nightly_allocator_api::AllocatorNightlyCompat;
-}
 
 // This must be kept in sync with ChunkHeaders `repr(align(16))`.
 const CHUNK_ALIGN_MIN: usize = 16;
