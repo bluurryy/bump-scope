@@ -187,15 +187,15 @@ assert_eq!(bump.stats().allocated(), 4);
 * **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 * **`zerocopy`** —  Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`.
 * **`allocator-api2-02`** —  Makes `Bump(Scope)` implement `allocator_api2::Allocator` and
-  allows using `allocator_api2::Allocator`s as base allocators via
+  allows using an `allocator_api2::Allocator` as a base allocators via
   `AllocatorApiV02Compat`.
 * **`allocator-api2-03`** —  Makes `Bump(Scope)` implement `allocator_api2::Allocator` and
-  allows using `allocator_api2::Allocator`s as base allocators via
+  allows using an `allocator_api2::Allocator` as a base allocators via
   `AllocatorApiV03Compat`.
 
  #### Nightly features
 * **`nightly-allocator-api`** —  Makes `Bump(Scope)` implement `alloc::Allocator` and
-  allows using `alloc::Allocator`s as base allocators via
+  allows using an `alloc::Allocator` as a base allocators via
   `AllocatorNightlyCompat`.
  
   This will also enable "allocator-api2-02/nightly".
