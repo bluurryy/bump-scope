@@ -13,7 +13,7 @@
 #![cfg_attr(feature = "nightly-exact-size-is-empty", feature(exact_size_is_empty))]
 #![cfg_attr(feature = "nightly-trusted-len", feature(trusted_len))]
 #![cfg_attr(feature = "nightly-fn-traits", feature(fn_traits, tuple_trait, unboxed_closures))]
-#![cfg_attr(test, feature(offset_of_enum))]
+#![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg_hide), doc(cfg_hide(feature = "panic-on-alloc")))]
 #![warn(
     clippy::pedantic,
