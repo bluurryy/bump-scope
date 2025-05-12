@@ -1298,7 +1298,7 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
-    /// let allocated = bump.alloc_slice_copy(&[1, 2, 3]);
+    /// let allocated = bump.try_alloc_slice_copy(&[1, 2, 3])?;
     /// assert_eq!(allocated, [1, 2, 3]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
