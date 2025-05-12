@@ -1,9 +1,3 @@
-// Portions of this file are adapted from Rust’s standard library:
-//   https://github.com/rust-lang/rust
-// Copyright (c) The Rust Project Developers
-// Licensed under MIT OR Apache-2.0 (dual-licensed)
-// See LICENSE-MIT and LICENSE-APACHE in the project root for the full text.
-
 //! Memory allocation APIs
 
 use core::{

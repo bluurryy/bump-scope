@@ -243,6 +243,13 @@ Licensed under either of:
 
 at your option.
 
+---
+
+This project includes code adapted from the Rust standard library 
+(https://github.com/rust-lang/rust),  
+Copyright © The Rust Project Developers.
+Such code is also licensed under MIT OR Apache-2.0.
+
 ### Your contributions
 
 Unless you explicitly state otherwise,
