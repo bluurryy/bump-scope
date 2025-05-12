@@ -438,7 +438,8 @@ where
     ///
     /// # Examples
     ///
-    /// ```
+    #[cfg_attr(feature = "nightly-tests", doc = "```")]
+    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # #![feature(pointer_is_aligned_to)]
     /// # use bump_scope::{ Bump, Stats };
     /// let mut bump: Bump = Bump::new();
@@ -490,7 +491,8 @@ where
     /// # Examples
     ///
     /// Increase the minimum alignment:
-    /// ```
+    #[cfg_attr(feature = "nightly-tests", doc = "```")]
+    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # #![feature(pointer_is_aligned_to)]
     /// # use bump_scope::Bump;
     /// let mut bump: Bump = Bump::new();
@@ -526,7 +528,8 @@ where
     /// ```
     ///
     /// Decrease the minimum alignment:
-    /// ```
+    #[cfg_attr(feature = "nightly-tests", doc = "```")]
+    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # #![feature(pointer_is_aligned_to)]
     /// # use bump_scope::{ Bump, alloc::Global };
     /// let mut bump: Bump<Global, 8> = Bump::new();

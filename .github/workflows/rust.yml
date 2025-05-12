@@ -71,6 +71,13 @@ jobs:
       - run: cd crates/test-hashbrown; cargo miri test --all-features
       - run: cd crates/tests-from-std && cargo test
       - run: cd crates/tests-from-std && cargo miri test
+  test-stable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo clippy --tests --no-default-features
+      - run: cargo clippy --tests --features serde,zerocopy,allocator-api2-02,allocator-api2-03
   minimal-versions:
     runs-on: ubuntu-latest
     steps:

@@ -44,7 +44,7 @@ pub(crate) unsafe fn len<T>(ptr: *const [T]) -> usize {
 /// to [`add`](#method.add) (or, with the parameters in the other order,
 /// to [`sub`](#method.sub)).  The following are all equivalent, assuming
 /// that their safety preconditions are met:
-/// ```rust
+/// ```ignore
 /// # unsafe fn blah(ptr: *const i32, origin: *const i32, count: usize) -> bool { unsafe {
 /// ptr.offset_from_unsigned(origin) == count
 /// # &&
@@ -72,7 +72,7 @@ pub(crate) unsafe fn len<T>(ptr: *const [T]) -> usize {
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// let a = [0; 5];
 /// let ptr1: *const i32 = &a[1];
 /// let ptr2: *const i32 = &a[3];

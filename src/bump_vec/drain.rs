@@ -69,7 +69,8 @@ impl<T, A: BumpAllocator> Drain<'_, T, A> {
     ///
     /// # Examples
     ///
-    /// ```
+    #[cfg_attr(feature = "nightly-tests", doc = "```")]
+    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// #![feature(drain_keep_rest)]
     ///
     /// let mut vec = vec!['a', 'b', 'c'];

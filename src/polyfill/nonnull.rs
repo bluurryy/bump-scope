@@ -128,7 +128,7 @@ pub(crate) fn with_addr<T>(ptr: NonNull<T>, addr: NonZeroUsize) -> NonNull<T> {
 /// to [`add`](#method.add) (or, with the parameters in the other order,
 /// to [`sub`](#method.sub)).  The following are all equivalent, assuming
 /// that their safety preconditions are met:
-/// ```rust
+/// ```ignore
 /// # unsafe fn blah(ptr: std::ptr::NonNull<u32>, origin: std::ptr::NonNull<u32>, count: usize) -> bool { unsafe {
 /// ptr.offset_from_unsigned(origin) == count
 /// # &&
@@ -156,7 +156,7 @@ pub(crate) fn with_addr<T>(ptr: NonNull<T>, addr: NonZeroUsize) -> NonNull<T> {
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use std::ptr::NonNull;
 ///
 /// let a = [0; 5];
