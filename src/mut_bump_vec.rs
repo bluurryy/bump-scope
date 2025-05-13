@@ -11,12 +11,16 @@ use core::{
 };
 
 use crate::{
-    error_behavior_generic_methods_allocation_failure, min_non_zero_cap, mut_collection_method_allocator_stats,
+    alloc::AllocError,
+    min_non_zero_cap, mut_collection_method_allocator_stats,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     polyfill::{nonnull, pointer, slice},
     raw_fixed_bump_vec::RawFixedBumpVec,
     BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SizedTypeProperties, Stats,
 };
+
+#[cfg(feature = "panic-on-alloc")]
+use crate::panic_on_error;
 
 mod into_iter;
 
@@ -464,819 +468,1305 @@ impl<T, A> MutBumpVec<T, A> {
 }
 
 impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
-    error_behavior_generic_methods_allocation_failure! {
-        /// Constructs a new empty vector with at least the specified capacity
-        /// with the provided bump allocator.
-        ///
-        /// The vector will be able to hold `capacity` elements without
-        /// reallocating. If `capacity` is 0, the vector will not allocate.
-        ///
-        /// It is important to note that although the returned vector has the
-        /// minimum *capacity* specified, the vector will have a zero *length*. For
-        /// an explanation of the difference between length and capacity, see
-        /// *[Capacity and reallocation]*.
-        ///
-        /// When `T` is a zero-sized type, there will be no allocation
-        /// and the capacity will always be `usize::MAX`.
-        ///
-        /// [Capacity and reallocation]: alloc_crate::vec::Vec#capacity-and-reallocation
-        impl
-        for fn with_capacity_in
-        for fn try_with_capacity_in
-        #[inline]
-        use fn generic_with_capacity_in(capacity: usize, allocator: A) -> Self {
-            let mut allocator = allocator;
+    /// Constructs a new empty vector with at least the specified capacity
+    /// in the provided bump allocator.
+    ///
+    /// The vector will be able to hold `capacity` elements without
+    /// reallocating. If `capacity` is 0, the vector will not allocate.
+    ///
+    /// It is important to note that although the returned vector has the
+    /// minimum *capacity* specified, the vector will have a zero *length*. For
+    /// an explanation of the difference between length and capacity, see
+    /// *[Capacity and reallocation]*.
+    ///
+    /// When `T` is a zero-sized type, there will be no allocation
+    /// and the capacity will always be `usize::MAX`.
+    ///
+    /// [Capacity and reallocation]: alloc_crate::vec::Vec#capacity-and-reallocation
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn with_capacity_in(capacity: usize, allocator: A) -> Self {
+        panic_on_error(Self::generic_with_capacity_in(capacity, allocator))
+    }
 
-            if T::IS_ZST {
-                return Ok(Self {
-                    fixed: RawFixedBumpVec::EMPTY,
-                    allocator,
-                });
-            }
+    /// Constructs a new empty vector with at least the specified capacity
+    /// in the provided bump allocator.
+    ///
+    /// The vector will be able to hold `capacity` elements without
+    /// reallocating. If `capacity` is 0, the vector will not allocate.
+    ///
+    /// It is important to note that although the returned vector has the
+    /// minimum *capacity* specified, the vector will have a zero *length*. For
+    /// an explanation of the difference between length and capacity, see
+    /// *[Capacity and reallocation]*.
+    ///
+    /// When `T` is a zero-sized type, there will be no allocation
+    /// and the capacity will always be `usize::MAX`.
+    ///
+    /// [Capacity and reallocation]: alloc_crate::vec::Vec#capacity-and-reallocation
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    #[inline(always)]
+    pub fn try_with_capacity_in(capacity: usize, allocator: A) -> Result<Self, AllocError> {
+        Self::generic_with_capacity_in(capacity, allocator)
+    }
 
-            if capacity == 0 {
-                return Ok(Self {
-                    fixed: RawFixedBumpVec::EMPTY,
-                    allocator,
-                });
-            }
+    #[inline]
+    pub(crate) fn generic_with_capacity_in<E: ErrorBehavior>(capacity: usize, allocator: A) -> Result<Self, E> {
+        let mut allocator = allocator;
 
-            Ok(Self {
-                fixed: unsafe { RawFixedBumpVec::prepare_allocation(&mut allocator, capacity)? },
+        if T::IS_ZST {
+            return Ok(Self {
+                fixed: RawFixedBumpVec::EMPTY,
                 allocator,
-            })
+            });
         }
 
-        /// Constructs a new `MutBumpVec<T>` and pushes `value` `count` times.
-        impl
-        for fn from_elem_in
-        for fn try_from_elem_in
-        #[inline]
-        use fn generic_from_elem_in(value: T, count: usize, allocator: A) -> Self
-        where {
-            T: Clone
-        } in {
-            let mut vec = Self::generic_with_capacity_in(count, allocator)?;
-
-            unsafe {
-                if count != 0 {
-                    for _ in 0..(count - 1) {
-                        vec.push_with_unchecked(|| value.clone());
-                    }
-
-                    vec.push_with_unchecked(|| value);
-                }
-            }
-
-            Ok(vec)
+        if capacity == 0 {
+            return Ok(Self {
+                fixed: RawFixedBumpVec::EMPTY,
+                allocator,
+            });
         }
 
-        /// Constructs a new `MutBumpVec<T>` from a `[T; N]`.
-        impl
-        for fn from_array_in
-        for fn try_from_array_in
-        #[inline]
-        use fn generic_from_array_in<{const N: usize}>(array: [T; N], allocator: A) -> Self {
-            #![allow(clippy::needless_pass_by_value)]
-            #![allow(clippy::needless_pass_by_ref_mut)]
+        Ok(Self {
+            fixed: unsafe { RawFixedBumpVec::prepare_allocation(&mut allocator, capacity)? },
+            allocator,
+        })
+    }
 
-            let array = ManuallyDrop::new(array);
-            let mut allocator = allocator;
+    /// Constructs a new `MutBumpVec<T>` and pushes `value` `count` times.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn from_elem_in(value: T, count: usize, allocator: A) -> Self
+    where
+        T: Clone,
+    {
+        panic_on_error(Self::generic_from_elem_in(value, count, allocator))
+    }
 
-            if T::IS_ZST {
-                return Ok(Self {
-                    fixed: unsafe { RawFixedBumpVec::new_zst(N) },
-                    allocator,
-                });
-            }
+    /// Constructs a new `MutBumpVec<T>` and pushes `value` `count` times.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    #[inline(always)]
+    pub fn try_from_elem_in(value: T, count: usize, allocator: A) -> Result<Self, AllocError>
+    where
+        T: Clone,
+    {
+        Self::generic_from_elem_in(value, count, allocator)
+    }
 
-            if N == 0 {
-                return Ok(Self {
-                    fixed: RawFixedBumpVec::EMPTY,
-                    allocator,
-                });
-            }
+    #[inline]
+    pub(crate) fn generic_from_elem_in<E: ErrorBehavior>(value: T, count: usize, allocator: A) -> Result<Self, E>
+    where
+        T: Clone,
+    {
+        let mut vec = Self::generic_with_capacity_in(count, allocator)?;
 
-            let mut fixed = unsafe { RawFixedBumpVec::prepare_allocation(&mut allocator, N)? };
-
-            let src = array.as_ptr();
-            let dst = fixed.as_mut_ptr();
-
-            unsafe {
-                ptr::copy_nonoverlapping(src, dst, N);
-                fixed.set_len(N);
-            }
-
-            Ok(Self { fixed, allocator })
-        }
-
-        /// Create a new [`MutBumpVec`] whose elements are taken from an iterator and allocated in the given `bump`.
-        ///
-        /// This is behaviorally identical to [`FromIterator::from_iter`].
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpVec };
-        /// # let mut bump: Bump = Bump::new();
-        /// let vec = MutBumpVec::from_iter_in([1, 2, 3], &mut bump);
-        /// assert_eq!(vec, [1, 2, 3]);
-        /// ```
-        for fn from_iter_in
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpVec };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let vec = MutBumpVec::try_from_iter_in([1, 2, 3], &mut bump)?;
-        /// assert_eq!(vec, [1, 2, 3]);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_from_iter_in
-        #[inline]
-        use fn generic_from_iter_in<{I}>(iter: I, allocator: A) -> Self
-        where {
-            I: IntoIterator<Item = T>
-        } in {
-            let iter = iter.into_iter();
-            let capacity = iter.size_hint().0;
-            let mut vec = Self::generic_with_capacity_in(capacity, allocator)?;
-
-            for value in iter {
-                vec.generic_push(value)?;
-            }
-
-            Ok(vec)
-        }
-
-        /// Appends an element to the back of a collection.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in &mut bump; 1, 2];
-        /// vec.push(3);
-        /// assert_eq!(vec, [1, 2, 3]);
-        /// ```
-        for fn push
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2]?;
-        /// vec.try_push(3)?;
-        /// assert_eq!(vec, [1, 2, 3]);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_push
-        #[inline]
-        use fn generic_push(&mut self, value: T) {
-            self.generic_push_with(|| value)
-        }
-
-        /// Appends an element to the back of a collection.
-        impl
-        for fn push_with
-        for fn try_push_with
-        #[inline]
-        use fn generic_push_with(&mut self, f: impl FnOnce() -> T) {
-            self.generic_reserve_one()?;
-            unsafe {
-                self.push_with_unchecked(f);
-            }
-            Ok(())
-        }
-
-        /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.
-        do panics
-        /// Panics if `index > len`.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
-        /// vec.insert(1, 4);
-        /// assert_eq!(vec, [1, 4, 2, 3]);
-        /// vec.insert(4, 5);
-        /// assert_eq!(vec, [1, 4, 2, 3, 5]);
-        /// ```
-        for fn insert
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
-        /// vec.try_insert(1, 4)?;
-        /// assert_eq!(vec, [1, 4, 2, 3]);
-        /// vec.try_insert(4, 5)?;
-        /// assert_eq!(vec, [1, 4, 2, 3, 5]);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_insert
-        #[inline]
-        use fn generic_insert(&mut self, index: usize, element: T) {
-            #[cold]
-            #[inline(never)]
-            fn assert_failed(index: usize, len: usize) -> ! {
-                panic!("insertion index (is {index}) should be <= len (is {len})");
-            }
-
-            if index > self.len() {
-                assert_failed(index, self.len());
-            }
-
-            self.generic_reserve_one()?;
-
-            unsafe {
-                let pos = self.as_mut_ptr().add(index);
-
-                if index != self.len() {
-                    let len = self.len() - index;
-                    ptr::copy(pos, pos.add(1), len);
+        unsafe {
+            if count != 0 {
+                for _ in 0..(count - 1) {
+                    vec.push_with_unchecked(|| value.clone());
                 }
 
-                pos.write(element);
+                vec.push_with_unchecked(|| value);
+            }
+        }
+
+        Ok(vec)
+    }
+
+    /// Constructs a new `MutBumpVec<T>` from a `[T; N]`.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn from_array_in<const N: usize>(array: [T; N], allocator: A) -> Self {
+        panic_on_error(Self::generic_from_array_in(array, allocator))
+    }
+
+    /// Constructs a new `MutBumpVec<T>` from a `[T; N]`.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    #[inline(always)]
+    pub fn try_from_array_in<const N: usize>(array: [T; N], allocator: A) -> Result<Self, AllocError> {
+        Self::generic_from_array_in(array, allocator)
+    }
+
+    #[inline]
+    pub(crate) fn generic_from_array_in<E: ErrorBehavior, const N: usize>(array: [T; N], allocator: A) -> Result<Self, E> {
+        #![allow(clippy::needless_pass_by_value)]
+        #![allow(clippy::needless_pass_by_ref_mut)]
+
+        let array = ManuallyDrop::new(array);
+        let mut allocator = allocator;
+
+        if T::IS_ZST {
+            return Ok(Self {
+                fixed: unsafe { RawFixedBumpVec::new_zst(N) },
+                allocator,
+            });
+        }
+
+        if N == 0 {
+            return Ok(Self {
+                fixed: RawFixedBumpVec::EMPTY,
+                allocator,
+            });
+        }
+
+        let mut fixed = unsafe { RawFixedBumpVec::prepare_allocation(&mut allocator, N)? };
+
+        let src = array.as_ptr();
+        let dst = fixed.as_mut_ptr();
+
+        unsafe {
+            ptr::copy_nonoverlapping(src, dst, N);
+            fixed.set_len(N);
+        }
+
+        Ok(Self { fixed, allocator })
+    }
+
+    /// Create a new [`MutBumpVec`] whose elements are taken from an iterator and allocated in the given `bump`.
+    ///
+    /// This is behaviorally identical to [`FromIterator::from_iter`].
+    ///
+    /// If you have an `impl ExactSizeIterator` then you can use [`from_iter_exact_in`](Self::from_iter_exact_in) instead for better performance.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # let mut bump: Bump = Bump::new();
+    /// let vec = MutBumpVec::from_iter_in([1, 2, 3], &mut bump);
+    /// assert_eq!(vec, [1, 2, 3]);
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn from_iter_in<I>(iter: I, allocator: A) -> Self
+    where
+        I: IntoIterator<Item = T>,
+    {
+        panic_on_error(Self::generic_from_iter_in(iter, allocator))
+    }
+
+    /// Create a new [`MutBumpVec`] whose elements are taken from an iterator and allocated in the given `bump`.
+    ///
+    /// This is behaviorally identical to [`FromIterator::from_iter`].
+    ///
+    /// If you have an `impl ExactSizeIterator` then you can use [`from_iter_exact_in`](Self::from_iter_exact_in) instead for better performance.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let vec = MutBumpVec::try_from_iter_in([1, 2, 3], &mut bump)?;
+    /// assert_eq!(vec, [1, 2, 3]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_from_iter_in<I>(iter: I, allocator: A) -> Result<Self, AllocError>
+    where
+        I: IntoIterator<Item = T>,
+    {
+        Self::generic_from_iter_in(iter, allocator)
+    }
+
+    #[inline]
+    pub(crate) fn generic_from_iter_in<E: ErrorBehavior, I>(iter: I, allocator: A) -> Result<Self, E>
+    where
+        I: IntoIterator<Item = T>,
+    {
+        let iter = iter.into_iter();
+        let capacity = iter.size_hint().0;
+
+        let mut vec = Self::generic_with_capacity_in(capacity, allocator)?;
+
+        for value in iter {
+            vec.generic_push(value)?;
+        }
+
+        Ok(vec)
+    }
+
+    /// Appends an element to the back of a collection.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec![in &mut bump; 1, 2];
+    /// vec.push(3);
+    /// assert_eq!(vec, [1, 2, 3]);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn push(&mut self, value: T) {
+        panic_on_error(self.generic_push(value));
+    }
+
+    /// Appends an element to the back of a collection.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2]?;
+    /// vec.try_push(3)?;
+    /// assert_eq!(vec, [1, 2, 3]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_push(&mut self, value: T) -> Result<(), AllocError> {
+        self.generic_push(value)
+    }
+
+    #[inline]
+    pub(crate) fn generic_push<E: ErrorBehavior>(&mut self, value: T) -> Result<(), E> {
+        self.generic_push_with(|| value)
+    }
+
+    /// Appends an element to the back of a collection.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn push_with(&mut self, f: impl FnOnce() -> T) {
+        panic_on_error(self.generic_push_with(f));
+    }
+
+    /// Appends an element to the back of a collection.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    #[inline(always)]
+    pub fn try_push_with(&mut self, f: impl FnOnce() -> T) -> Result<(), AllocError> {
+        self.generic_push_with(f)
+    }
+
+    #[inline]
+    pub(crate) fn generic_push_with<E: ErrorBehavior>(&mut self, f: impl FnOnce() -> T) -> Result<(), E> {
+        self.generic_reserve_one()?;
+        unsafe {
+            self.push_with_unchecked(f);
+        }
+        Ok(())
+    }
+
+    /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// Panics if `index > len`.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
+    /// vec.insert(1, 4);
+    /// assert_eq!(vec, [1, 4, 2, 3]);
+    /// vec.insert(4, 5);
+    /// assert_eq!(vec, [1, 4, 2, 3, 5]);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn insert(&mut self, index: usize, element: T) {
+        panic_on_error(self.generic_insert(index, element));
+    }
+
+    /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.
+    ///
+    /// # Panics
+    /// Panics if `index > len`.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
+    /// vec.try_insert(1, 4)?;
+    /// assert_eq!(vec, [1, 4, 2, 3]);
+    /// vec.try_insert(4, 5)?;
+    /// assert_eq!(vec, [1, 4, 2, 3, 5]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_insert(&mut self, index: usize, element: T) -> Result<(), AllocError> {
+        self.generic_insert(index, element)
+    }
+
+    #[inline]
+    pub(crate) fn generic_insert<E: ErrorBehavior>(&mut self, index: usize, element: T) -> Result<(), E> {
+        #[cold]
+        #[track_caller]
+        #[inline(never)]
+        fn assert_failed(index: usize, len: usize) -> ! {
+            panic!("insertion index (is {index}) should be <= len (is {len})");
+        }
+
+        if index > self.len() {
+            assert_failed(index, self.len());
+        }
+
+        self.generic_reserve_one()?;
+
+        unsafe {
+            let pos = self.as_mut_ptr().add(index);
+
+            if index != self.len() {
+                let len = self.len() - index;
+                ptr::copy(pos, pos.add(1), len);
+            }
+
+            pos.write(element);
+            self.inc_len(1);
+        }
+
+        Ok(())
+    }
+
+    /// Copies and appends all elements in a slice to the `MutBumpVec`.
+    ///
+    /// Iterates over the `slice`, copies each element, and then appends
+    /// it to this `MutBumpVec`. The `slice` is traversed in-order.
+    ///
+    /// Note that this function is same as [`extend`] except that it is
+    /// specialized to work with copyable slices instead.
+    ///
+    /// [`extend`]: Self::extend
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn extend_from_slice_copy(&mut self, slice: &[T])
+    where
+        T: Copy,
+    {
+        panic_on_error(self.generic_extend_from_slice_copy(slice));
+    }
+
+    /// Copies and appends all elements in a slice to the `MutBumpVec`.
+    ///
+    /// Iterates over the `slice`, copies each element, and then appends
+    /// it to this `MutBumpVec`. The `slice` is traversed in-order.
+    ///
+    /// Note that this function is same as [`extend`] except that it is
+    /// specialized to work with copyable slices instead.
+    ///
+    /// [`extend`]: Self::extend
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    #[inline(always)]
+    pub fn try_extend_from_slice_copy(&mut self, slice: &[T]) -> Result<(), AllocError>
+    where
+        T: Copy,
+    {
+        self.generic_extend_from_slice_copy(slice)
+    }
+
+    #[inline]
+    pub(crate) fn generic_extend_from_slice_copy<E: ErrorBehavior>(&mut self, slice: &[T]) -> Result<(), E>
+    where
+        T: Copy,
+    {
+        unsafe { self.extend_by_copy_nonoverlapping(slice) }
+    }
+
+    /// Clones and appends all elements in a slice to the `MutBumpVec`.
+    ///
+    /// Iterates over the `slice`, clones each element, and then appends
+    /// it to this `MutBumpVec`. The `slice` is traversed in-order.
+    ///
+    /// Note that this function is same as [`extend`] except that it is
+    /// specialized to work with slices instead.
+    ///
+    /// [`extend`]: Self::extend
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn extend_from_slice_clone(&mut self, slice: &[T])
+    where
+        T: Clone,
+    {
+        panic_on_error(self.generic_extend_from_slice_clone(slice));
+    }
+
+    /// Clones and appends all elements in a slice to the `MutBumpVec`.
+    ///
+    /// Iterates over the `slice`, clones each element, and then appends
+    /// it to this `MutBumpVec`. The `slice` is traversed in-order.
+    ///
+    /// Note that this function is same as [`extend`] except that it is
+    /// specialized to work with slices instead.
+    ///
+    /// [`extend`]: Self::extend
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    #[inline(always)]
+    pub fn try_extend_from_slice_clone(&mut self, slice: &[T]) -> Result<(), AllocError>
+    where
+        T: Clone,
+    {
+        self.generic_extend_from_slice_clone(slice)
+    }
+
+    #[inline]
+    pub(crate) fn generic_extend_from_slice_clone<E: ErrorBehavior>(&mut self, slice: &[T]) -> Result<(), E>
+    where
+        T: Clone,
+    {
+        self.generic_reserve(slice.len())?;
+
+        unsafe {
+            let mut ptr = self.as_mut_ptr().add(self.len());
+
+            for value in slice {
+                pointer::write_with(ptr, || value.clone());
+                ptr = ptr.add(1);
                 self.inc_len(1);
             }
+        }
 
+        Ok(())
+    }
+
+    /// Appends all elements in an array to the `MutBumpVec`.
+    ///
+    /// Iterates over the `array`, copies each element, and then appends
+    /// it to this `MutBumpVec`. The `array` is traversed in-order.
+    ///
+    /// Note that this function is same as [`extend`] except that it is
+    /// specialized to work with arrays instead.
+    ///
+    /// [`extend`]: Self::extend
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    #[deprecated = "use `append` instead"]
+    pub fn extend_from_array<const N: usize>(&mut self, array: [T; N]) {
+        panic_on_error(self.generic_extend_from_array(array));
+    }
+
+    /// Appends all elements in an array to the `MutBumpVec`.
+    ///
+    /// Iterates over the `array`, copies each element, and then appends
+    /// it to this `MutBumpVec`. The `array` is traversed in-order.
+    ///
+    /// Note that this function is same as [`extend`] except that it is
+    /// specialized to work with arrays instead.
+    ///
+    /// [`extend`]: Self::extend
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    #[inline(always)]
+    #[deprecated = "use `append` instead"]
+    pub fn try_extend_from_array<const N: usize>(&mut self, array: [T; N]) -> Result<(), AllocError> {
+        self.generic_extend_from_array(array)
+    }
+
+    #[inline]
+    #[allow(clippy::needless_pass_by_value)]
+    pub(crate) fn generic_extend_from_array<E: ErrorBehavior, const N: usize>(&mut self, array: [T; N]) -> Result<(), E> {
+        unsafe { self.extend_by_copy_nonoverlapping(&array) }
+    }
+
+    /// Copies elements from `src` range to the end of the vector.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// Panics if the starting point is greater than the end point or if
+    /// the end point is greater than the length of the vector.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec![in &mut bump; 0, 1, 2, 3, 4];
+    ///
+    /// vec.extend_from_within_copy(2..);
+    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
+    ///
+    /// vec.extend_from_within_copy(..2);
+    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1]);
+    ///
+    /// vec.extend_from_within_copy(4..8);
+    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn extend_from_within_copy<R>(&mut self, src: R)
+    where
+        T: Copy,
+        R: RangeBounds<usize>,
+    {
+        panic_on_error(self.generic_extend_from_within_copy(src));
+    }
+
+    /// Copies elements from `src` range to the end of the vector.
+    ///
+    /// # Panics
+    /// Panics if the starting point is greater than the end point or if
+    /// the end point is greater than the length of the vector.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut vec = mut_bump_vec![try in &mut bump; 0, 1, 2, 3, 4]?;
+    ///
+    /// vec.try_extend_from_within_copy(2..)?;
+    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
+    ///
+    /// vec.try_extend_from_within_copy(..2)?;
+    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1]);
+    ///
+    /// vec.try_extend_from_within_copy(4..8)?;
+    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_extend_from_within_copy<R>(&mut self, src: R) -> Result<(), AllocError>
+    where
+        T: Copy,
+        R: RangeBounds<usize>,
+    {
+        self.generic_extend_from_within_copy(src)
+    }
+
+    #[inline]
+    pub(crate) fn generic_extend_from_within_copy<E: ErrorBehavior, R>(&mut self, src: R) -> Result<(), E>
+    where
+        T: Copy,
+        R: RangeBounds<usize>,
+    {
+        let range = slice::range(src, ..self.len());
+        let count = range.len();
+
+        self.generic_reserve(count)?;
+
+        // SAFETY:
+        // - `slice::range` guarantees that the given range is valid for indexing self
+        unsafe {
+            let ptr = self.as_mut_ptr();
+
+            let src = ptr.add(range.start);
+            let dst = ptr.add(self.len());
+            ptr::copy_nonoverlapping(src, dst, count);
+
+            self.inc_len(count);
             Ok(())
         }
+    }
 
-        /// Copies and appends all elements in a slice to the `MutBumpVec`.
-        ///
-        /// Iterates over the `slice`, copies each element, and then appends
-        /// it to this `MutBumpVec`. The `slice` is traversed in-order.
-        ///
-        /// Note that this function is same as [`extend`] except that it is
-        /// specialized to work with copyable slices instead.
-        ///
-        /// [`extend`]: Self::extend
-        impl
-        for fn extend_from_slice_copy
-        for fn try_extend_from_slice_copy
-        #[inline]
-        use fn generic_extend_from_slice_copy(&mut self, slice: &[T])
-        where {
-            T: Copy
-        } in {
-            unsafe { self.extend_by_copy_nonoverlapping(slice) }
+    /// Clones elements from `src` range to the end of the vector.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// Panics if the starting point is greater than the end point or if
+    /// the end point is greater than the length of the vector.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec![in &mut bump; 0, 1, 2, 3, 4];
+    ///
+    /// vec.extend_from_within_clone(2..);
+    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
+    ///
+    /// vec.extend_from_within_clone(..2);
+    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1]);
+    ///
+    /// vec.extend_from_within_clone(4..8);
+    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn extend_from_within_clone<R>(&mut self, src: R)
+    where
+        T: Clone,
+        R: RangeBounds<usize>,
+    {
+        panic_on_error(self.generic_extend_from_within_clone(src));
+    }
+
+    /// Clones elements from `src` range to the end of the vector.
+    ///
+    /// # Panics
+    /// Panics if the starting point is greater than the end point or if
+    /// the end point is greater than the length of the vector.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut vec = mut_bump_vec![try in &mut bump; 0, 1, 2, 3, 4]?;
+    ///
+    /// vec.try_extend_from_within_clone(2..)?;
+    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
+    ///
+    /// vec.try_extend_from_within_clone(..2)?;
+    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1]);
+    ///
+    /// vec.try_extend_from_within_clone(4..8)?;
+    /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_extend_from_within_clone<R>(&mut self, src: R) -> Result<(), AllocError>
+    where
+        T: Clone,
+        R: RangeBounds<usize>,
+    {
+        self.generic_extend_from_within_clone(src)
+    }
+
+    #[inline]
+    pub(crate) fn generic_extend_from_within_clone<E: ErrorBehavior, R>(&mut self, src: R) -> Result<(), E>
+    where
+        T: Clone,
+        R: RangeBounds<usize>,
+    {
+        let range = slice::range(src, ..self.len());
+        let count = range.len();
+
+        self.generic_reserve(count)?;
+
+        if T::IS_ZST {
+            unsafe {
+                // We can materialize ZST's from nothing.
+                #[allow(clippy::uninit_assumed_init)]
+                let fake = ManuallyDrop::new(MaybeUninit::<T>::uninit().assume_init());
+
+                for _ in 0..count {
+                    self.push_unchecked((*fake).clone());
+                }
+
+                return Ok(());
+            }
         }
 
-        /// Clones and appends all elements in a slice to the `MutBumpVec`.
-        ///
-        /// Iterates over the `slice`, clones each element, and then appends
-        /// it to this `MutBumpVec`. The `slice` is traversed in-order.
-        ///
-        /// Note that this function is same as [`extend`] except that it is
-        /// specialized to work with slices instead.
-        ///
-        /// [`extend`]: Self::extend
-        impl
-        for fn extend_from_slice_clone
-        for fn try_extend_from_slice_clone
-        #[inline]
-        use fn generic_extend_from_slice_clone(&mut self, slice: &[T])
-        where {
-            T: Clone
-        } in {
+        // SAFETY:
+        // - `slice::range` guarantees that the given range is valid for indexing self
+        unsafe {
+            let ptr = self.as_mut_ptr();
+
+            let mut src = ptr.add(range.start);
+            let mut dst = ptr.add(self.len());
+
+            let src_end = src.add(count);
+
+            while src != src_end {
+                dst.write((*src).clone());
+
+                src = src.add(1);
+                dst = dst.add(1);
+                self.inc_len(1);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Extends this vector by pushing `additional` new items onto the end.
+    /// The new items are initialized with zeroes.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
+    /// vec.extend_zeroed(2);
+    /// assert_eq!(vec, [1, 2, 3, 0, 0]);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    #[cfg(feature = "zerocopy")]
+    pub fn extend_zeroed(&mut self, additional: usize)
+    where
+        T: zerocopy::FromZeros,
+    {
+        panic_on_error(self.generic_extend_zeroed(additional));
+    }
+
+    /// Extends this vector by pushing `additional` new items onto the end.
+    /// The new items are initialized with zeroes.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
+    /// vec.try_extend_zeroed(2)?;
+    /// assert_eq!(vec, [1, 2, 3, 0, 0]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "zerocopy")]
+    pub fn try_extend_zeroed(&mut self, additional: usize) -> Result<(), AllocError>
+    where
+        T: zerocopy::FromZeros,
+    {
+        self.generic_extend_zeroed(additional)
+    }
+
+    #[inline]
+    #[cfg(feature = "zerocopy")]
+    pub(crate) fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E>
+    where
+        T: zerocopy::FromZeros,
+    {
+        self.generic_reserve(additional)?;
+
+        unsafe {
+            let ptr = self.as_mut_ptr();
+            let len = self.len();
+
+            ptr.add(len).write_bytes(0, additional);
+            self.set_len(len + additional);
+        }
+
+        Ok(())
+    }
+
+    /// Reserves capacity for at least `additional` more elements to be inserted
+    /// in the given `MutBumpVec<T>`. The collection may reserve more space to
+    /// speculatively avoid frequent reallocations. After calling `reserve`,
+    /// capacity will be greater than or equal to `self.len() + additional`.
+    /// Does nothing if capacity is already sufficient.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// Panics if the new capacity exceeds `isize::MAX` bytes.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec![in &mut bump; 1];
+    /// vec.reserve(10);
+    /// assert!(vec.capacity() >= 11);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn reserve(&mut self, additional: usize) {
+        panic_on_error(self.generic_reserve(additional));
+    }
+
+    /// Reserves capacity for at least `additional` more elements to be inserted
+    /// in the given `MutBumpVec<T>`. The collection may reserve more space to
+    /// speculatively avoid frequent reallocations. After calling `reserve`,
+    /// capacity will be greater than or equal to `self.len() + additional`.
+    /// Does nothing if capacity is already sufficient.
+    ///
+    /// # Panics
+    /// Panics if the new capacity exceeds `isize::MAX` bytes.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut vec = mut_bump_vec![try in &mut bump; 1]?;
+    /// vec.try_reserve(10)?;
+    /// assert!(vec.capacity() >= 11);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_reserve(&mut self, additional: usize) -> Result<(), AllocError> {
+        self.generic_reserve(additional)
+    }
+
+    #[inline]
+    pub(crate) fn generic_reserve<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
+        if additional > (self.capacity() - self.len()) {
+            self.generic_grow_amortized(additional)?;
+        }
+
+        Ok(())
+    }
+
+    /// Reserves the minimum capacity for at least `additional` more elements to
+    /// be inserted in the given `MutBumpVec<T>`. Unlike [`reserve`], this will not
+    /// deliberately over-allocate to speculatively avoid frequent allocations.
+    /// After calling `reserve_exact`, capacity will be greater than or equal to
+    /// `self.len() + additional`. Does nothing if the capacity is already
+    /// sufficient.
+    ///
+    /// Note that the allocator may give the collection more space than it
+    /// requests. Therefore, capacity can not be relied upon to be precisely
+    /// minimal. Prefer [`reserve`] if future insertions are expected.
+    ///
+    /// [`reserve`]: Self::reserve
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// Panics if the new capacity exceeds `isize::MAX` bytes.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec![in &mut bump; 1];
+    /// vec.reserve_exact(10);
+    /// assert!(vec.capacity() >= 11);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn reserve_exact(&mut self, additional: usize) {
+        panic_on_error(self.generic_reserve_exact(additional));
+    }
+
+    /// Reserves the minimum capacity for at least `additional` more elements to
+    /// be inserted in the given `MutBumpVec<T>`. Unlike [`reserve`], this will not
+    /// deliberately over-allocate to speculatively avoid frequent allocations.
+    /// After calling `reserve_exact`, capacity will be greater than or equal to
+    /// `self.len() + additional`. Does nothing if the capacity is already
+    /// sufficient.
+    ///
+    /// Note that the allocator may give the collection more space than it
+    /// requests. Therefore, capacity can not be relied upon to be precisely
+    /// minimal. Prefer [`reserve`] if future insertions are expected.
+    ///
+    /// [`reserve`]: Self::reserve
+    ///
+    /// # Panics
+    /// Panics if the new capacity exceeds `isize::MAX` bytes.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut vec = mut_bump_vec![try in &mut bump; 1]?;
+    /// vec.try_reserve_exact(10)?;
+    /// assert!(vec.capacity() >= 11);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), AllocError> {
+        self.generic_reserve_exact(additional)
+    }
+
+    #[inline]
+    pub(crate) fn generic_reserve_exact<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
+        if additional > (self.capacity() - self.len()) {
+            self.generic_grow_exact(additional)?;
+        }
+
+        Ok(())
+    }
+
+    /// Resizes the `MutBumpVec` in-place so that `len` is equal to `new_len`.
+    ///
+    /// If `new_len` is greater than `len`, the `MutBumpVec` is extended by the
+    /// difference, with each additional slot filled with `value`.
+    /// If `new_len` is less than `len`, the `MutBumpVec` is simply truncated.
+    ///
+    /// This method requires `T` to implement [`Clone`],
+    /// in order to be able to clone the passed value.
+    /// If you need more flexibility (or want to rely on [`Default`] instead of
+    /// [`Clone`]), use [`resize_with`].
+    /// If you only need to resize to a smaller size, use [`truncate`].
+    ///
+    /// [`resize_with`]: Self::resize_with
+    /// [`truncate`]: Self::truncate
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec![in &mut bump; "hello"];
+    /// vec.resize(3, "world");
+    /// assert_eq!(vec, ["hello", "world", "world"]);
+    /// drop(vec);
+    ///
+    /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4];
+    /// vec.resize(2, 0);
+    /// assert_eq!(vec, [1, 2]);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn resize(&mut self, new_len: usize, value: T)
+    where
+        T: Clone,
+    {
+        panic_on_error(self.generic_resize(new_len, value));
+    }
+
+    /// Resizes the `MutBumpVec` in-place so that `len` is equal to `new_len`.
+    ///
+    /// If `new_len` is greater than `len`, the `MutBumpVec` is extended by the
+    /// difference, with each additional slot filled with `value`.
+    /// If `new_len` is less than `len`, the `MutBumpVec` is simply truncated.
+    ///
+    /// This method requires `T` to implement [`Clone`],
+    /// in order to be able to clone the passed value.
+    /// If you need more flexibility (or want to rely on [`Default`] instead of
+    /// [`Clone`]), use [`resize_with`].
+    /// If you only need to resize to a smaller size, use [`truncate`].
+    ///
+    /// [`resize_with`]: Self::resize_with
+    /// [`truncate`]: Self::truncate
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut vec = mut_bump_vec![try in &mut bump; "hello"]?;
+    /// vec.try_resize(3, "world")?;
+    /// assert_eq!(vec, ["hello", "world", "world"]);
+    /// drop(vec);
+    ///
+    /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3, 4]?;
+    /// vec.try_resize(2, 0)?;
+    /// assert_eq!(vec, [1, 2]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_resize(&mut self, new_len: usize, value: T) -> Result<(), AllocError>
+    where
+        T: Clone,
+    {
+        self.generic_resize(new_len, value)
+    }
+
+    #[inline]
+    pub(crate) fn generic_resize<E: ErrorBehavior>(&mut self, new_len: usize, value: T) -> Result<(), E>
+    where
+        T: Clone,
+    {
+        let len = self.len();
+
+        if new_len > len {
+            self.extend_with(new_len - len, value)
+        } else {
+            self.truncate(new_len);
+            Ok(())
+        }
+    }
+
+    /// Resizes the `MutBumpVec` in-place so that `len` is equal to `new_len`.
+    ///
+    /// If `new_len` is greater than `len`, the `MutBumpVec` is extended by the
+    /// difference, with each additional slot filled with the result of
+    /// calling the closure `f`. The return values from `f` will end up
+    /// in the `MutBumpVec` in the order they have been generated.
+    ///
+    /// If `new_len` is less than `len`, the `MutBumpVec` is simply truncated.
+    ///
+    /// This method uses a closure to create new values on every push. If
+    /// you'd rather [`Clone`] a given value, use [`MutBumpVec::resize`]. If you
+    /// want to use the [`Default`] trait to generate values, you can
+    /// pass [`Default::default`] as the second argument.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
+    /// vec.resize_with(5, Default::default);
+    /// assert_eq!(vec, [1, 2, 3, 0, 0]);
+    /// drop(vec);
+    ///
+    /// let mut vec = mut_bump_vec![in &mut bump];
+    /// let mut p = 1;
+    /// vec.resize_with(4, || { p *= 2; p });
+    /// assert_eq!(vec, [2, 4, 8, 16]);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn resize_with<F>(&mut self, new_len: usize, f: F)
+    where
+        F: FnMut() -> T,
+    {
+        panic_on_error(self.generic_resize_with(new_len, f));
+    }
+
+    /// Resizes the `MutBumpVec` in-place so that `len` is equal to `new_len`.
+    ///
+    /// If `new_len` is greater than `len`, the `MutBumpVec` is extended by the
+    /// difference, with each additional slot filled with the result of
+    /// calling the closure `f`. The return values from `f` will end up
+    /// in the `MutBumpVec` in the order they have been generated.
+    ///
+    /// If `new_len` is less than `len`, the `MutBumpVec` is simply truncated.
+    ///
+    /// This method uses a closure to create new values on every push. If
+    /// you'd rather [`Clone`] a given value, use [`MutBumpVec::resize`]. If you
+    /// want to use the [`Default`] trait to generate values, you can
+    /// pass [`Default::default`] as the second argument.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
+    /// vec.try_resize_with(5, Default::default)?;
+    /// assert_eq!(vec, [1, 2, 3, 0, 0]);
+    /// drop(vec);
+    ///
+    /// let mut vec = mut_bump_vec![try in &mut bump]?;
+    /// let mut p = 1;
+    /// vec.try_resize_with(4, || { p *= 2; p })?;
+    /// assert_eq!(vec, [2, 4, 8, 16]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_resize_with<F>(&mut self, new_len: usize, f: F) -> Result<(), AllocError>
+    where
+        F: FnMut() -> T,
+    {
+        self.generic_resize_with(new_len, f)
+    }
+
+    #[inline]
+    pub(crate) fn generic_resize_with<E: ErrorBehavior, F>(&mut self, new_len: usize, f: F) -> Result<(), E>
+    where
+        F: FnMut() -> T,
+    {
+        let len = self.len();
+        if new_len > len {
+            unsafe { self.extend_trusted(iter::repeat_with(f).take(new_len - len)) }
+        } else {
+            self.truncate(new_len);
+            Ok(())
+        }
+    }
+
+    /// Resizes this vector in-place so that `len` is equal to `new_len`.
+    ///
+    /// If `new_len` is greater than `len`, the vector is extended by the
+    /// difference, with each additional slot filled with `value`.
+    /// If `new_len` is less than `len`, the vector is simply truncated.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::new();
+    /// {
+    ///     let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
+    ///     vec.resize_zeroed(5);
+    ///     assert_eq!(vec, [1, 2, 3, 0, 0]);
+    /// }
+    ///
+    /// {
+    ///    let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
+    ///    vec.resize_zeroed(2);
+    ///    assert_eq!(vec, [1, 2]);
+    /// }
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    #[cfg(feature = "zerocopy")]
+    pub fn resize_zeroed(&mut self, new_len: usize)
+    where
+        T: zerocopy::FromZeros,
+    {
+        panic_on_error(self.generic_resize_zeroed(new_len));
+    }
+
+    /// Resizes this vector in-place so that `len` is equal to `new_len`.
+    ///
+    /// If `new_len` is greater than `len`, the vector is extended by the
+    /// difference, with each additional slot filled with `value`.
+    /// If `new_len` is less than `len`, the vector is simply truncated.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// {
+    ///     let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
+    ///     vec.try_resize_zeroed(5)?;
+    ///     assert_eq!(vec, [1, 2, 3, 0, 0]);
+    /// }
+    ///
+    /// {
+    ///    let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
+    ///    vec.try_resize_zeroed(2)?;
+    ///    assert_eq!(vec, [1, 2]);
+    /// }
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "zerocopy")]
+    pub fn try_resize_zeroed(&mut self, new_len: usize) -> Result<(), AllocError>
+    where
+        T: zerocopy::FromZeros,
+    {
+        self.generic_resize_zeroed(new_len)
+    }
+
+    #[inline]
+    #[cfg(feature = "zerocopy")]
+    pub(crate) fn generic_resize_zeroed<E: ErrorBehavior>(&mut self, new_len: usize) -> Result<(), E>
+    where
+        T: zerocopy::FromZeros,
+    {
+        let len = self.len();
+
+        if new_len > len {
+            self.generic_extend_zeroed(new_len - len)
+        } else {
+            self.truncate(new_len);
+            Ok(())
+        }
+    }
+
+    /// Moves all the elements of `other` into `self`, leaving `other` empty.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # let mut bump: Bump = Bump::new();
+    /// # let bump2: Bump = Bump::new();
+    /// let mut vec = MutBumpVec::new_in(&mut bump);
+    ///
+    /// // append by value
+    /// vec.append([1, 2]);
+    /// vec.append(vec![3, 4]);
+    /// vec.append(bump2.alloc_iter(5..=6));
+    ///
+    /// // append by mutable reference
+    /// let mut other = vec![7, 8];
+    /// vec.append(&mut other);
+    ///
+    /// assert_eq!(other, []);
+    /// assert_eq!(vec, [1, 2, 3, 4, 5, 6, 7, 8]);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn append(&mut self, other: impl OwnedSlice<Item = T>) {
+        panic_on_error(self.generic_append(other));
+    }
+
+    /// Moves all the elements of `other` into `self`, leaving `other` empty.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # let mut bump: Bump = Bump::new();
+    /// # let bump2: Bump = Bump::new();
+    /// let mut vec = MutBumpVec::new_in(&mut bump);
+    ///
+    /// // append by value
+    /// vec.try_append([1, 2])?;
+    /// vec.try_append(vec![3, 4])?;
+    /// vec.try_append(bump2.alloc_iter(5..=6))?;
+    ///
+    /// // append by mutable reference
+    /// let mut other = vec![7, 8];
+    /// vec.try_append(&mut other)?;
+    ///
+    /// assert_eq!(other, []);
+    /// assert_eq!(vec, [1, 2, 3, 4, 5, 6, 7, 8]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_append(&mut self, other: impl OwnedSlice<Item = T>) -> Result<(), AllocError> {
+        self.generic_append(other)
+    }
+
+    #[inline]
+    pub(crate) fn generic_append<E: ErrorBehavior>(&mut self, other: impl OwnedSlice<Item = T>) -> Result<(), E> {
+        unsafe {
+            let mut owned_slice = other.into_take_owned_slice();
+
+            let slice = NonNull::from(owned_slice.owned_slice_ref());
             self.generic_reserve(slice.len())?;
 
-            unsafe {
-                let mut ptr = self.as_mut_ptr().add(self.len());
+            let src = slice.cast::<T>().as_ptr();
+            let dst = self.as_mut_ptr().add(self.len());
+            ptr::copy_nonoverlapping(src, dst, slice.len());
 
-                for value in slice {
-                    pointer::write_with(ptr, || value.clone());
-                    ptr = ptr.add(1);
-                    self.inc_len(1);
-                }
-            }
-
+            owned_slice.take_owned_slice();
+            self.inc_len(slice.len());
             Ok(())
-        }
-
-        /// Appends all elements in an array to the `MutBumpVec`.
-        ///
-        /// Iterates over the `array`, copies each element, and then appends
-        /// it to this `MutBumpVec`. The `array` is traversed in-order.
-        ///
-        /// Note that this function is same as [`extend`] except that it is
-        /// specialized to work with arrays instead.
-        ///
-        /// [`extend`]: Self::extend
-        #[allow(clippy::needless_pass_by_value)]
-        impl
-        #[deprecated = "use `append` instead"]
-        for fn extend_from_array
-        #[deprecated = "use `append` instead"]
-        for fn try_extend_from_array
-        #[inline]
-        use fn generic_extend_from_array<{const N: usize}>(&mut self, array: [T; N]) {
-            unsafe { self.extend_by_copy_nonoverlapping(&array) }
-        }
-
-        /// Copies elements from `src` range to the end of the vector.
-        do panics
-        /// Panics if the starting point is greater than the end point or if
-        /// the end point is greater than the length of the vector.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in &mut bump; 0, 1, 2, 3, 4];
-        ///
-        /// vec.extend_from_within_copy(2..);
-        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
-        ///
-        /// vec.extend_from_within_copy(..2);
-        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1]);
-        ///
-        /// vec.extend_from_within_copy(4..8);
-        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
-        /// ```
-        for fn extend_from_within_copy
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in &mut bump; 0, 1, 2, 3, 4]?;
-        ///
-        /// vec.try_extend_from_within_copy(2..)?;
-        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
-        ///
-        /// vec.try_extend_from_within_copy(..2)?;
-        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1]);
-        ///
-        /// vec.try_extend_from_within_copy(4..8)?;
-        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_extend_from_within_copy
-        #[inline]
-        use fn generic_extend_from_within_copy<{R}>(&mut self, src: R)
-        where {
-            T: Copy,
-            R: RangeBounds<usize>,
-        } in {
-            let range = slice::range(src, ..self.len());
-            let count = range.len();
-
-            self.generic_reserve(count)?;
-
-            // SAFETY:
-            // - `slice::range` guarantees that the given range is valid for indexing self
-            unsafe {
-                let ptr = self.as_mut_ptr();
-
-                let src = ptr.add(range.start);
-                let dst = ptr.add(self.len());
-                ptr::copy_nonoverlapping(src, dst, count);
-
-                self.inc_len(count);
-                Ok(())
-            }
-        }
-
-        /// Clones elements from `src` range to the end of the vector.
-        ///
-        /// # Panics
-        ///
-        /// Panics if the starting point is greater than the end point or if
-        /// the end point is greater than the length of the vector.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in &mut bump; 0, 1, 2, 3, 4];
-        ///
-        /// vec.extend_from_within_clone(2..);
-        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
-        ///
-        /// vec.extend_from_within_clone(..2);
-        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1]);
-        ///
-        /// vec.extend_from_within_clone(4..8);
-        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
-        /// ```
-        for fn extend_from_within_clone
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in &mut bump; 0, 1, 2, 3, 4]?;
-        ///
-        /// vec.try_extend_from_within_clone(2..)?;
-        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
-        ///
-        /// vec.try_extend_from_within_clone(..2)?;
-        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1]);
-        ///
-        /// vec.try_extend_from_within_clone(4..8)?;
-        /// assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_extend_from_within_clone
-        #[inline]
-        use fn generic_extend_from_within_clone<{R}>(&mut self, src: R)
-        where {
-            T: Clone,
-            R: RangeBounds<usize>,
-        } in {
-            let range = slice::range(src, ..self.len());
-            let count = range.len();
-
-            self.generic_reserve(count)?;
-
-            if T::IS_ZST {
-                unsafe {
-                    // We can materialize ZST's from nothing.
-                    #[allow(clippy::uninit_assumed_init)]
-                    let fake = ManuallyDrop::new(MaybeUninit::<T>::uninit().assume_init());
-
-                    for _ in 0..count {
-                        self.push_unchecked((*fake).clone());
-                    }
-
-                    return Ok(());
-                }
-            }
-
-            // SAFETY:
-            // - `slice::range` guarantees that the given range is valid for indexing self
-            unsafe {
-                let ptr = self.as_mut_ptr();
-
-                let mut src = ptr.add(range.start);
-                let mut dst = ptr.add(self.len());
-
-                let src_end = src.add(count);
-
-                while src != src_end {
-                    dst.write((*src).clone());
-
-                    src = src.add(1);
-                    dst = dst.add(1);
-                    self.inc_len(1);
-                }
-            }
-
-            Ok(())
-        }
-
-        #[cfg(feature = "zerocopy")]
-        /// Extends this vector by pushing `additional` new items onto the end.
-        /// The new items are initialized with zeroes.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
-        /// vec.extend_zeroed(2);
-        /// assert_eq!(vec, [1, 2, 3, 0, 0]);
-        /// ```
-        for fn extend_zeroed
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
-        /// vec.try_extend_zeroed(2)?;
-        /// assert_eq!(vec, [1, 2, 3, 0, 0]);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_extend_zeroed
-        #[inline]
-        use fn generic_extend_zeroed(&mut self, additional: usize)
-        where {
-            T: zerocopy::FromZeros
-        } in {
-            self.generic_reserve(additional)?;
-
-            unsafe {
-                let ptr = self.as_mut_ptr();
-                let len = self.len();
-
-                ptr.add(len).write_bytes(0, additional);
-                self.set_len(len + additional);
-            }
-
-            Ok(())
-        }
-
-        /// Reserves capacity for at least `additional` more elements to be inserted
-        /// in the given `MutBumpVec<T>`. The collection may reserve more space to
-        /// speculatively avoid frequent reallocations. After calling `reserve`,
-        /// capacity will be greater than or equal to `self.len() + additional`.
-        /// Does nothing if capacity is already sufficient.
-        do panics
-        /// Panics if the new capacity exceeds `isize::MAX` bytes.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in &mut bump; 1];
-        /// vec.reserve(10);
-        /// assert!(vec.capacity() >= 11);
-        /// ```
-        for fn reserve
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in &mut bump; 1]?;
-        /// vec.try_reserve(10)?;
-        /// assert!(vec.capacity() >= 11);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_reserve
-        #[inline]
-        use fn generic_reserve(&mut self, additional: usize) {
-            if additional > (self.capacity() - self.len()) {
-                self.generic_grow_amortized(additional)?;
-            }
-
-            Ok(())
-        }
-
-        /// Reserves the minimum capacity for at least `additional` more elements to
-        /// be inserted in the given `MutBumpVec<T>`. Unlike [`reserve`], this will not
-        /// deliberately over-allocate to speculatively avoid frequent allocations.
-        /// After calling `reserve_exact`, capacity will be greater than or equal to
-        /// `self.len() + additional`. Does nothing if the capacity is already
-        /// sufficient.
-        ///
-        /// Note that the allocator may give the collection more space than it
-        /// requests. Therefore, capacity can not be relied upon to be precisely
-        /// minimal. Prefer [`reserve`] if future insertions are expected.
-        ///
-        /// [`reserve`]: Self::reserve
-        do panics
-        /// Panics if the new capacity exceeds `isize::MAX` bytes.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in &mut bump; 1];
-        /// vec.reserve_exact(10);
-        /// assert!(vec.capacity() >= 11);
-        /// ```
-        for fn reserve_exact
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in &mut bump; 1]?;
-        /// vec.try_reserve_exact(10)?;
-        /// assert!(vec.capacity() >= 11);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_reserve_exact
-        #[inline]
-        use fn generic_reserve_exact(&mut self, additional: usize) {
-            if additional > (self.capacity() - self.len()) {
-                self.generic_grow_exact(additional)?;
-            }
-
-            Ok(())
-        }
-
-        /// Resizes the `MutBumpVec` in-place so that `len` is equal to `new_len`.
-        ///
-        /// If `new_len` is greater than `len`, the `MutBumpVec` is extended by the
-        /// difference, with each additional slot filled with `value`.
-        /// If `new_len` is less than `len`, the `MutBumpVec` is simply truncated.
-        ///
-        /// This method requires `T` to implement [`Clone`],
-        /// in order to be able to clone the passed value.
-        /// If you need more flexibility (or want to rely on [`Default`] instead of
-        /// [`Clone`]), use [`resize_with`].
-        /// If you only need to resize to a smaller size, use [`truncate`].
-        ///
-        /// [`resize_with`]: Self::resize_with
-        /// [`truncate`]: Self::truncate
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in &mut bump; "hello"];
-        /// vec.resize(3, "world");
-        /// assert_eq!(vec, ["hello", "world", "world"]);
-        /// drop(vec);
-        ///
-        /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4];
-        /// vec.resize(2, 0);
-        /// assert_eq!(vec, [1, 2]);
-        /// ```
-        for fn resize
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in &mut bump; "hello"]?;
-        /// vec.try_resize(3, "world")?;
-        /// assert_eq!(vec, ["hello", "world", "world"]);
-        /// drop(vec);
-        ///
-        /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3, 4]?;
-        /// vec.try_resize(2, 0)?;
-        /// assert_eq!(vec, [1, 2]);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_resize
-        #[inline]
-        use fn generic_resize(&mut self, new_len: usize, value: T)
-        where { T: Clone } in
-        {
-            let len = self.len();
-
-            if new_len > len {
-                self.extend_with(new_len - len, value)
-            } else {
-                self.truncate(new_len);
-                Ok(())
-            }
-        }
-
-        /// Resizes the `MutBumpVec` in-place so that `len` is equal to `new_len`.
-        ///
-        /// If `new_len` is greater than `len`, the `MutBumpVec` is extended by the
-        /// difference, with each additional slot filled with the result of
-        /// calling the closure `f`. The return values from `f` will end up
-        /// in the `MutBumpVec` in the order they have been generated.
-        ///
-        /// If `new_len` is less than `len`, the `MutBumpVec` is simply truncated.
-        ///
-        /// This method uses a closure to create new values on every push. If
-        /// you'd rather [`Clone`] a given value, use [`MutBumpVec::resize`]. If you
-        /// want to use the [`Default`] trait to generate values, you can
-        /// pass [`Default::default`] as the second argument.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
-        /// vec.resize_with(5, Default::default);
-        /// assert_eq!(vec, [1, 2, 3, 0, 0]);
-        /// drop(vec);
-        ///
-        /// let mut vec = mut_bump_vec![in &mut bump];
-        /// let mut p = 1;
-        /// vec.resize_with(4, || { p *= 2; p });
-        /// assert_eq!(vec, [2, 4, 8, 16]);
-        /// ```
-        for fn resize_with
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
-        /// vec.try_resize_with(5, Default::default)?;
-        /// assert_eq!(vec, [1, 2, 3, 0, 0]);
-        /// drop(vec);
-        ///
-        /// let mut vec = mut_bump_vec![try in &mut bump]?;
-        /// let mut p = 1;
-        /// vec.try_resize_with(4, || { p *= 2; p })?;
-        /// assert_eq!(vec, [2, 4, 8, 16]);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_resize_with
-        #[inline]
-        use fn generic_resize_with<{F}>(&mut self, new_len: usize, f: F)
-        where {
-            F: FnMut() -> T,
-        } in {
-            let len = self.len();
-            if new_len > len {
-                unsafe { self.extend_trusted(iter::repeat_with(f).take(new_len - len)) }
-            } else {
-                self.truncate(new_len);
-                Ok(())
-            }
-        }
-
-        #[cfg(feature = "zerocopy")]
-        /// Resizes this vector in-place so that `len` is equal to `new_len`.
-        ///
-        /// If `new_len` is greater than `len`, the vector is extended by the
-        /// difference, with each additional slot filled with `value`.
-        /// If `new_len` is less than `len`, the vector is simply truncated.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::new();
-        /// {
-        ///     let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
-        ///     vec.resize_zeroed(5);
-        ///     assert_eq!(vec, [1, 2, 3, 0, 0]);
-        /// }
-        ///
-        /// {
-        ///    let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
-        ///    vec.resize_zeroed(2);
-        ///    assert_eq!(vec, [1, 2]);
-        /// }
-        /// ```
-        for fn resize_zeroed
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, mut_bump_vec };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// {
-        ///     let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
-        ///     vec.try_resize_zeroed(5)?;
-        ///     assert_eq!(vec, [1, 2, 3, 0, 0]);
-        /// }
-        ///
-        /// {
-        ///    let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
-        ///    vec.try_resize_zeroed(2)?;
-        ///    assert_eq!(vec, [1, 2]);
-        /// }
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_resize_zeroed
-        #[inline]
-        use fn generic_resize_zeroed(&mut self, new_len: usize)
-        where {
-            T: zerocopy::FromZeros
-        } in {
-            let len = self.len();
-
-            if new_len > len {
-                self.generic_extend_zeroed(new_len - len)
-            } else {
-                self.truncate(new_len);
-                Ok(())
-            }
-        }
-
-        /// Moves all the elements of `other` into `self`, leaving `other` empty.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpVec };
-        /// # let mut bump: Bump = Bump::new();
-        /// # let bump2: Bump = Bump::new();
-        /// let mut vec = MutBumpVec::new_in(&mut bump);
-        ///
-        /// // append by value
-        /// vec.append([1, 2]);
-        /// vec.append(vec![3, 4]);
-        /// vec.append(bump2.alloc_iter(5..=6));
-        ///
-        /// // append by mutable reference
-        /// let mut other = vec![7, 8];
-        /// vec.append(&mut other);
-        ///
-        /// assert_eq!(other, []);
-        /// assert_eq!(vec, [1, 2, 3, 4, 5, 6, 7, 8]);
-        /// ```
-        for fn append
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpVec };
-        /// # let mut bump: Bump = Bump::new();
-        /// # let bump2: Bump = Bump::new();
-        /// let mut vec = MutBumpVec::new_in(&mut bump);
-        ///
-        /// // append by value
-        /// vec.try_append([1, 2])?;
-        /// vec.try_append(vec![3, 4])?;
-        /// vec.try_append(bump2.alloc_iter(5..=6))?;
-        ///
-        /// // append by mutable reference
-        /// let mut other = vec![7, 8];
-        /// vec.try_append(&mut other)?;
-        ///
-        /// assert_eq!(other, []);
-        /// assert_eq!(vec, [1, 2, 3, 4, 5, 6, 7, 8]);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_append
-        #[inline]
-        use fn generic_append(&mut self, other: impl OwnedSlice<Item = T>) {
-            unsafe {
-                let mut owned_slice = other.into_take_owned_slice();
-
-                let slice = NonNull::from(owned_slice.owned_slice_ref());
-                self.generic_reserve(slice.len())?;
-
-                let src = slice.cast::<T>().as_ptr();
-                let dst = self.as_mut_ptr().add(self.len());
-                ptr::copy_nonoverlapping(src, dst, slice.len());
-
-                owned_slice.take_owned_slice();
-                self.inc_len(slice.len());
-                Ok(())
-            }
         }
     }
 
