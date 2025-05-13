@@ -3,9 +3,12 @@ use core::mem::MaybeUninit;
 use zerocopy::FromZeros;
 
 use crate::{
-    define_alloc_methods, error_behavior::ErrorBehavior, BaseAllocator, Bump, BumpBox, BumpScope, MinimumAlignment,
+    alloc::AllocError, error_behavior::ErrorBehavior, BaseAllocator, Bump, BumpBox, BumpScope, MinimumAlignment,
     SupportedMinimumAlignment,
 };
+
+#[cfg(feature = "panic-on-alloc")]
+use crate::panic_on_error;
 
 impl<'a, T: FromZeros> BumpBox<'a, MaybeUninit<T>> {
     /// Initializes `self` by filling it with zero.
@@ -50,20 +53,39 @@ impl<'a, T: FromZeros> BumpBox<'a, [MaybeUninit<T>]> {
     }
 }
 
-define_alloc_methods! {
-    macro alloc_zeroed_methods
-
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+    Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
     /// Allocate a zeroed object.
-    impl
-    do examples
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
     /// ```
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
     /// let zero = bump.alloc_zeroed::<i32>();
     /// assert_eq!(*zero, 0);
     /// ```
-    for fn alloc_zeroed
-    do examples
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn alloc_zeroed<T>(&self) -> BumpBox<T>
+    where
+        T: FromZeros,
+    {
+        self.as_scope().alloc_zeroed()
+    }
+
+    /// Allocate a zeroed object.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
     /// ```
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::try_new()?;
@@ -71,23 +93,41 @@ define_alloc_methods! {
     /// assert_eq!(*zero, 0);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
-    for fn try_alloc_zeroed
-    use fn generic_alloc_zeroed<{T}>(&self) -> BumpBox<T> | BumpBox<'a, T>
-    where {
-        T: FromZeros
-    };
+    #[inline(always)]
+    pub fn try_alloc_zeroed<T>(&self) -> Result<BumpBox<T>, AllocError>
+    where
+        T: FromZeros,
+    {
+        self.as_scope().try_alloc_zeroed()
+    }
 
     /// Allocate a zeroed object slice.
-    impl
-    do examples
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
     /// ```
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
     /// let zeroes = bump.alloc_zeroed_slice::<i32>(3);
     /// assert_eq!(*zeroes, [0; 3]);
     /// ```
-    for fn alloc_zeroed_slice
-    do examples
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn alloc_zeroed_slice<T>(&self, len: usize) -> BumpBox<[T]>
+    where
+        T: FromZeros,
+    {
+        self.as_scope().alloc_zeroed_slice(len)
+    }
+
+    /// Allocate a zeroed object slice.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
     /// ```
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::try_new()?;
@@ -95,11 +135,13 @@ define_alloc_methods! {
     /// assert_eq!(*zeroes, [0; 3]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
-    for fn try_alloc_zeroed_slice
-    use fn generic_alloc_zeroed_slice<{T}>(&self, len: usize) -> BumpBox<[T]> | BumpBox<'a, [T]>
-    where {
-        T: FromZeros
-    };
+    #[inline(always)]
+    pub fn try_alloc_zeroed_slice<T>(&self, len: usize) -> Result<BumpBox<[T]>, AllocError>
+    where
+        T: FromZeros,
+    {
+        self.as_scope().try_alloc_zeroed_slice(len)
+    }
 }
 
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
@@ -108,16 +150,89 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
-    alloc_zeroed_methods!(BumpScope);
-}
+    /// Allocate a zeroed object.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let mut bump: Bump = Bump::new();
+    /// let zero = bump.alloc_zeroed::<i32>();
+    /// assert_eq!(*zero, 0);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn alloc_zeroed<T>(&self) -> BumpBox<'a, T>
+    where
+        T: FromZeros,
+    {
+        panic_on_error(self.generic_alloc_zeroed())
+    }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-    alloc_zeroed_methods!(Bump);
+    /// Allocate a zeroed object.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let zero = bump.try_alloc_zeroed::<i32>()?;
+    /// assert_eq!(*zero, 0);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_alloc_zeroed<T>(&self) -> Result<BumpBox<'a, T>, AllocError>
+    where
+        T: FromZeros,
+    {
+        self.generic_alloc_zeroed()
+    }
+
+    /// Allocate a zeroed object slice.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let mut bump: Bump = Bump::new();
+    /// let zeroes = bump.alloc_zeroed_slice::<i32>(3);
+    /// assert_eq!(*zeroes, [0; 3]);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn alloc_zeroed_slice<T>(&self, len: usize) -> BumpBox<'a, [T]>
+    where
+        T: FromZeros,
+    {
+        panic_on_error(self.generic_alloc_zeroed_slice(len))
+    }
+
+    /// Allocate a zeroed object slice.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let zeroes = bump.try_alloc_zeroed_slice::<i32>(3)?;
+    /// assert_eq!(*zeroes, [0; 3]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_alloc_zeroed_slice<T>(&self, len: usize) -> Result<BumpBox<'a, [T]>, AllocError>
+    where
+        T: FromZeros,
+    {
+        self.generic_alloc_zeroed_slice(len)
+    }
 }
 
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
