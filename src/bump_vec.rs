@@ -1327,7 +1327,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     #[cfg(feature = "panic-on-alloc")]
     pub fn extend_from_within_clone<R>(&mut self, src: R)
     where
-        T: Copy,
+        T: Clone,
         R: RangeBounds<usize>,
     {
         panic_on_error(self.generic_extend_from_within_clone(src))
@@ -1361,7 +1361,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     #[inline(always)]
     pub fn try_extend_from_within_clone<R>(&mut self, src: R) -> Result<(), AllocError>
     where
-        T: Copy,
+        T: Clone,
         R: RangeBounds<usize>,
     {
         self.generic_extend_from_within_clone(src)
@@ -1370,7 +1370,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     #[inline]
     pub(crate) fn generic_extend_from_within_clone<E: ErrorBehavior, R>(&mut self, src: R) -> Result<(), E>
     where
-        T: Copy,
+        T: Clone,
         R: RangeBounds<usize>,
     {
         let range = slice::range(src, ..self.len());
