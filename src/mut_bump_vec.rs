@@ -645,8 +645,6 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// This is behaviorally identical to [`FromIterator::from_iter`].
     ///
-    /// If you have an `impl ExactSizeIterator` then you can use [`from_iter_exact_in`](Self::from_iter_exact_in) instead for better performance.
-    ///
     /// # Panics
     /// Panics if the allocation fails.
     ///
@@ -670,8 +668,6 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     /// Create a new [`MutBumpVec`] whose elements are taken from an iterator and allocated in the given `bump`.
     ///
     /// This is behaviorally identical to [`FromIterator::from_iter`].
-    ///
-    /// If you have an `impl ExactSizeIterator` then you can use [`from_iter_exact_in`](Self::from_iter_exact_in) instead for better performance.
     ///
     /// # Errors
     /// Errors if the allocation fails.
