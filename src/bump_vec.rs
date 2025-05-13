@@ -1166,49 +1166,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         Ok(())
     }
 
-    /// Appends all elements in an array to the `BumpVec`.
-    ///
-    /// Iterates over the `array`, copies each element, and then appends
-    /// it to this `BumpVec`. The `array` is traversed in-order.
-    ///
-    /// Note that this function is same as [`extend`] except that it is
-    /// specialized to work with arrays instead.
-    ///
-    /// [`extend`]: Self::extend
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    #[deprecated = "use `append` instead"]
-    pub fn extend_from_array<const N: usize>(&mut self, array: [T; N]) {
-        panic_on_error(self.generic_extend_from_array(array));
-    }
-
-    /// Appends all elements in an array to the `BumpVec`.
-    ///
-    /// Iterates over the `array`, copies each element, and then appends
-    /// it to this `BumpVec`. The `array` is traversed in-order.
-    ///
-    /// Note that this function is same as [`extend`] except that it is
-    /// specialized to work with arrays instead.
-    ///
-    /// [`extend`]: Self::extend
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    #[inline(always)]
-    #[deprecated = "use `append` instead"]
-    pub fn try_extend_from_array<const N: usize>(&mut self, array: [T; N]) -> Result<(), AllocError> {
-        self.generic_extend_from_array(array)
-    }
-
-    #[inline]
-    #[allow(clippy::needless_pass_by_value)]
-    pub(crate) fn generic_extend_from_array<E: ErrorBehavior, const N: usize>(&mut self, array: [T; N]) -> Result<(), E> {
-        unsafe { self.extend_by_copy_nonoverlapping(&array) }
-    }
-
     /// Copies elements from `src` range to the end of the vector.
     ///
     /// # Panics

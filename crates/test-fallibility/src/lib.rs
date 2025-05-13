@@ -1,5 +1,5 @@
 #![no_std]
-#![allow(non_snake_case, clippy::missing_safety_doc, deprecated)]
+#![allow(non_snake_case, clippy::missing_safety_doc)]
 extern crate alloc;
 
 use core::{alloc::Layout, ffi::CStr, fmt, mem::MaybeUninit, ptr::NonNull};
@@ -223,8 +223,8 @@ up_and_down! {
         bump.scope_guard()
     }
 
-    pub fn MutBumpVec_try_extend_from_array(vec: &mut MutBumpVec<u32>, array: [u32; 24]) -> Result {
-        vec.try_extend_from_array(array)
+    pub fn MutBumpVec_try_append(vec: &mut MutBumpVec<u32>, array: [u32; 24]) -> Result {
+        vec.try_append(array)
     }
 
     pub fn MutBumpVec_try_extend_from_slice_clone(vec: &mut MutBumpVec<u32>, slice: &[u32]) -> Result {
@@ -279,8 +279,8 @@ up_and_down! {
         MutBumpVec::try_with_capacity_in(capacity, bump)
     }
 
-    pub fn MutBumpVecRev_try_extend_from_array(vec: &mut MutBumpVecRev<u32>, array: [u32; 24]) -> Result {
-        vec.try_extend_from_array(array)
+    pub fn MutBumpVecRev_try_append(vec: &mut MutBumpVecRev<u32>, array: [u32; 24]) -> Result {
+        vec.try_append(array)
     }
 
     pub fn MutBumpVecRev_try_extend_from_slice_clone(vec: &mut MutBumpVecRev<u32>, slice: &[u32]) -> Result {
@@ -359,8 +359,8 @@ up_and_down! {
         string.try_into_cstr()
     }
 
-    pub fn BumpVec_try_extend_from_array(vec: &mut BumpVec<u32>, array: [u32; 24]) -> Result {
-        vec.try_extend_from_array(array)
+    pub fn BumpVec_try_append(vec: &mut BumpVec<u32>, array: [u32; 24]) -> Result {
+        vec.try_append(array)
     }
 
     pub fn BumpVec_try_extend_from_slice_clone(vec: &mut BumpVec<u32>, slice: &[u32]) -> Result {
@@ -463,8 +463,8 @@ up_and_down! {
         FixedBumpVec::try_from_iter_in(iter.copied(), bump)
     }
 
-    pub fn FixedBumpVec_try_extend_from_array(vec: &mut FixedBumpVec<u32>, array: [u32; 24]) -> Result {
-        vec.try_extend_from_array(array)
+    pub fn FixedBumpVec_try_append(vec: &mut FixedBumpVec<u32>, array: [u32; 24]) -> Result {
+        vec.try_append(array)
     }
 
     pub fn FixedBumpVec_try_extend_from_slice_clone(vec: &mut FixedBumpVec<u32>, slice: &[u32]) -> Result {

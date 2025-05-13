@@ -7,6 +7,7 @@
   - the "nightly-allocator-api" feature will make bump allocators implement the nightly `Allocator` trait from `core`
   - each allocator api feature comes with a compatibility wrapper type in `bump_scope::alloc::compat` to make their `Allocator` implementor implement this crate's `Allocator` and vice versa
 - **breaking:** the `zerocopy` feature has been renamed to `zerocopy-08`. All methods that this feature added are no longer inherent methods but are provided via extension traits from `bump_scope::zerocopy_08`.
+- **breaking:** removed deprecated methods `(try_)extend_from_array`
 - **fix:** `serde` to compile without `alloc` feature
 
 ### Migration Guide
