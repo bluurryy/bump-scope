@@ -80,7 +80,7 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///   [`init_fill_iter`](Self::init_fill_iter),
 ///   [`init_copy`](Self::init_copy),
 ///   [`init_clone`](Self::init_clone) and
-///   [`init_zeroed`](Self::init_zeroed).
+///   [`init_zeroed`](crate::zerocopy::InitZeroed::init_zeroed).
 ///
 /// ## No pinning
 ///

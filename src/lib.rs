@@ -375,6 +375,12 @@ use set_len_on_drop::SetLenOnDrop;
 pub use stats::Stats;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
+#[cfg(feature = "zerocopy")]
+/// Contains extension traits.
+pub mod zerocopy {
+    pub use crate::features::zerocopy::{AllocZeroed, AllocZeroedInScope, InitZeroed};
+}
+
 // This must be kept in sync with ChunkHeaders `repr(align(16))`.
 const CHUNK_ALIGN_MIN: usize = 16;
 
