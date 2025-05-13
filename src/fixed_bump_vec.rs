@@ -11,7 +11,6 @@ use core::{
 
 use crate::{
     alloc::AllocError,
-    error_behavior_generic_methods_allocation_failure,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     polyfill::{self, nonnull, pointer, slice},
     BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, NoDrop, SizedTypeProperties,
@@ -59,69 +58,127 @@ impl<'a, T> FixedBumpVec<'a, T> {
         capacity: if T::IS_ZST { usize::MAX } else { 0 },
     };
 
-    error_behavior_generic_methods_allocation_failure! {
-        /// Create a new [`FixedBumpVec`] whose elements are taken from an iterator and allocated in the given `bump`.
-        ///
-        /// This is behaviorally identical to [`FromIterator::from_iter`].
-        ///
-        /// If you have an `impl ExactSizeIterator` then you can use [`from_iter_exact_in`](Self::from_iter_exact_in) instead for better performance.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, FixedBumpVec };
-        /// # let bump: Bump = Bump::new();
-        /// let vec = FixedBumpVec::from_iter_in([1, 2, 3], &bump);
-        /// assert_eq!(vec, [1, 2, 3]);
-        /// ```
-        for fn from_iter_in
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, FixedBumpVec };
-        /// # let bump: Bump = Bump::try_new()?;
-        /// let vec = FixedBumpVec::try_from_iter_in([1, 2, 3], &bump)?;
-        /// assert_eq!(vec, [1, 2, 3]);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_from_iter_in
-        #[inline]
-        use fn generic_from_iter_in<{I, A}>(iter: I, allocator: A) -> Self
-        where {
-            I: IntoIterator<Item = T>,
-            A: BumpAllocatorScope<'a>,
-        } in {
-            Ok(BumpVec::generic_from_iter_in(iter, allocator)?.into_fixed_vec())
-        }
+    /// Create a new [`FixedBumpVec`] whose elements are taken from an iterator and allocated in the given `bump`.
+    ///
+    /// This is behaviorally identical to [`FromIterator::from_iter`].
+    ///
+    /// If you have an `impl ExactSizeIterator` then you can use [`from_iter_exact_in`](Self::from_iter_exact_in) instead for better performance.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let vec = FixedBumpVec::from_iter_in([1, 2, 3], &bump);
+    /// assert_eq!(vec, [1, 2, 3]);
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn from_iter_in<I, A>(iter: I, allocator: A) -> Self
+    where
+        I: IntoIterator<Item = T>,
+        A: BumpAllocatorScope<'a>,
+    {
+        panic_on_error(Self::generic_from_iter_in(iter, allocator))
+    }
 
-        /// Create a new [`FixedBumpVec`] whose elements are taken from an iterator and allocated in the given `bump`.
-        ///
-        /// This is just like [`from_iter_in`](Self::from_iter_in) but optimized for an [`ExactSizeIterator`].
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, FixedBumpVec };
-        /// # let bump: Bump = Bump::new();
-        /// let vec = FixedBumpVec::from_iter_exact_in([1, 2, 3], &bump);
-        /// assert_eq!(vec, [1, 2, 3]);
-        /// ```
-        for fn from_iter_exact_in
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, FixedBumpVec };
-        /// # let bump: Bump = Bump::try_new()?;
-        /// let vec = FixedBumpVec::try_from_iter_exact_in([1, 2, 3], &bump)?;
-        /// assert_eq!(vec, [1, 2, 3]);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_from_iter_exact_in
-        #[inline]
-        use fn generic_from_iter_exact_in<{I, A}>(iter: I, allocator: A) -> Self
-        where {
-            I: IntoIterator<Item = T>,
-            I::IntoIter: ExactSizeIterator,
-            A: BumpAllocatorScope<'a>,
-        } in {
-            Ok(BumpVec::generic_from_iter_exact_in(iter, allocator)?.into_fixed_vec())
-        }
+    /// Create a new [`FixedBumpVec`] whose elements are taken from an iterator and allocated in the given `bump`.
+    ///
+    /// This is behaviorally identical to [`FromIterator::from_iter`].
+    ///
+    /// If you have an `impl ExactSizeIterator` then you can use [`from_iter_exact_in`](Self::from_iter_exact_in) instead for better performance.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpVec };
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let vec = FixedBumpVec::try_from_iter_in([1, 2, 3], &bump)?;
+    /// assert_eq!(vec, [1, 2, 3]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_from_iter_in<I, A>(iter: I, allocator: A) -> Result<Self, AllocError>
+    where
+        I: IntoIterator<Item = T>,
+        A: BumpAllocatorScope<'a>,
+    {
+        Self::generic_from_iter_in(iter, allocator)
+    }
+
+    #[inline]
+    pub(crate) fn generic_from_iter_in<E: ErrorBehavior, I, A>(iter: I, allocator: A) -> Result<Self, E>
+    where
+        I: IntoIterator<Item = T>,
+        A: BumpAllocatorScope<'a>,
+    {
+        Ok(BumpVec::generic_from_iter_in(iter, allocator)?.into_fixed_vec())
+    }
+
+    /// Create a new [`FixedBumpVec`] whose elements are taken from an iterator and allocated in the given `bump`.
+    ///
+    /// This is just like [`from_iter_in`](Self::from_iter_in) but optimized for an [`ExactSizeIterator`].
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let vec = FixedBumpVec::from_iter_exact_in([1, 2, 3], &bump);
+    /// assert_eq!(vec, [1, 2, 3]);
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn from_iter_exact_in<I, A>(iter: I, allocator: A) -> Self
+    where
+        I: IntoIterator<Item = T>,
+        I::IntoIter: ExactSizeIterator,
+        A: BumpAllocatorScope<'a>,
+    {
+        panic_on_error(Self::generic_from_iter_exact_in(iter, allocator))
+    }
+
+    /// Create a new [`FixedBumpVec`] whose elements are taken from an iterator and allocated in the given `bump`.
+    ///
+    /// This is just like [`from_iter_in`](Self::from_iter_in) but optimized for an [`ExactSizeIterator`].
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpVec };
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let vec = FixedBumpVec::try_from_iter_exact_in([1, 2, 3], &bump)?;
+    /// assert_eq!(vec, [1, 2, 3]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_from_iter_exact_in<I, A>(iter: I, allocator: A) -> Result<Self, AllocError>
+    where
+        I: IntoIterator<Item = T>,
+        I::IntoIter: ExactSizeIterator,
+        A: BumpAllocatorScope<'a>,
+    {
+        Self::generic_from_iter_exact_in(iter, allocator)
+    }
+
+    #[inline]
+    pub(crate) fn generic_from_iter_exact_in<E: ErrorBehavior, I, A>(iter: I, allocator: A) -> Result<Self, E>
+    where
+        I: IntoIterator<Item = T>,
+        I::IntoIter: ExactSizeIterator,
+        A: BumpAllocatorScope<'a>,
+    {
+        Ok(BumpVec::generic_from_iter_exact_in(iter, allocator)?.into_fixed_vec())
     }
 
     /// Turns a `BumpBox<[T]>` into a full `FixedBumpVec<T>`.
