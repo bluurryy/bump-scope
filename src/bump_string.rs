@@ -1226,7 +1226,10 @@ impl<A: BumpAllocator> BumpString<A> {
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn extend_from_within<R: RangeBounds<usize>>(&mut self, src: R) {
+    pub fn extend_from_within<R>(&mut self, src: R)
+    where
+        R: RangeBounds<usize>,
+    {
         panic_on_error(self.generic_extend_from_within(src))
     }
 
@@ -1256,7 +1259,10 @@ impl<A: BumpAllocator> BumpString<A> {
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_extend_from_within<R: RangeBounds<usize>>(&mut self, src: R) -> Result<(), AllocError> {
+    pub fn try_extend_from_within<R>(&mut self, src: R) -> Result<(), AllocError>
+    where
+        R: RangeBounds<usize>,
+    {
         self.generic_extend_from_within(src)
     }
 
@@ -1349,7 +1355,10 @@ impl<A: BumpAllocator> BumpString<A> {
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn replace_range<R: RangeBounds<usize>>(&mut self, range: R, replace_with: &str) {
+    pub fn replace_range<R>(&mut self, range: R, replace_with: &str)
+    where
+        R: RangeBounds<usize>,
+    {
         panic_on_error(self.generic_replace_range(range, replace_with))
     }
 
@@ -1377,7 +1386,10 @@ impl<A: BumpAllocator> BumpString<A> {
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_replace_range<R: RangeBounds<usize>>(&mut self, range: R, replace_with: &str) -> Result<(), AllocError> {
+    pub fn try_replace_range<R>(&mut self, range: R, replace_with: &str) -> Result<(), AllocError>
+    where
+        R: RangeBounds<usize>,
+    {
         self.generic_replace_range(range, replace_with)
     }
 
