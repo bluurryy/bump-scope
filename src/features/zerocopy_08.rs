@@ -1,6 +1,6 @@
 use core::mem::MaybeUninit;
 
-use zerocopy::FromZeros;
+use zerocopy_08::FromZeros;
 
 use crate::{
     alloc::AllocError, error_behavior::ErrorBehavior, BaseAllocator, Bump, BumpBox, BumpScope, MinimumAlignment,

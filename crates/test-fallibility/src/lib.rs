@@ -8,6 +8,7 @@ use alloc::boxed::Box;
 
 use bump_scope::{
     alloc::{AllocError, Allocator, Global},
+    zerocopy_08::{BumpExt, VecExt},
     BumpBox, FixedBumpString, FixedBumpVec,
 };
 

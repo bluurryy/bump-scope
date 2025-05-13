@@ -31,13 +31,13 @@ check-fmt:
 check-clippy:
   # TODO: add "allocator-api2-03" once it got a new release that makes its "alloc" feature msrv compliant
   cargo +1.64.0 check --no-default-features
-  cargo +1.64.0 check --features serde,zerocopy,allocator-api2-02
+  cargo +1.64.0 check --features serde,zerocopy-08,allocator-api2-02
 
   cargo +stable clippy --tests --no-default-features
-  cargo +stable clippy --tests --features serde,zerocopy,allocator-api2-02,allocator-api2-03
+  cargo +stable clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03
 
   cargo +nightly clippy --tests --no-default-features
-  cargo +nightly clippy --tests --features serde,zerocopy,allocator-api2-02,allocator-api2-03
+  cargo +nightly clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03
   cargo +nightly clippy --tests --all-features
 
   cd crates/fuzzing-support; cargo clippy --tests
