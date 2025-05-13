@@ -32,8 +32,9 @@ pub trait VecExt: vec_ext::Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec, zerocopy_08::VecExt };
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{ Bump, bump_vec, zerocopy_08::VecExt };
+    /// let bump: Bump = Bump::new();
+    ///
     /// let mut vec = bump_vec![in &bump; 1, 2, 3];
     /// vec.extend_zeroed(2);
     /// assert_eq!(vec, [1, 2, 3, 0, 0]);
@@ -51,8 +52,9 @@ pub trait VecExt: vec_ext::Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec, zerocopy_08::VecExt };
-    /// # let bump: Bump = Bump::try_new()?;
+    /// use bump_scope::{ Bump, bump_vec, zerocopy_08::VecExt };
+    /// let bump: Bump = Bump::try_new()?;
+    ///
     /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
     /// vec.try_extend_zeroed(2)?;
     /// assert_eq!(vec, [1, 2, 3, 0, 0]);
@@ -73,8 +75,9 @@ pub trait VecExt: vec_ext::Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec, zerocopy_08::VecExt };
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{ Bump, bump_vec, zerocopy_08::VecExt };
+    /// let bump: Bump = Bump::new();
+    ///
     /// let mut vec = bump_vec![in &bump; 1, 2, 3];
     /// vec.resize_zeroed(5);
     /// assert_eq!(vec, [1, 2, 3, 0, 0]);
@@ -99,8 +102,9 @@ pub trait VecExt: vec_ext::Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec, zerocopy_08::VecExt };
-    /// # let bump: Bump = Bump::try_new()?;
+    /// use bump_scope::{ Bump, bump_vec, zerocopy_08::VecExt };
+    /// let bump: Bump = Bump::try_new()?;
+    ///
     /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
     /// vec.try_resize_zeroed(5)?;
     /// assert_eq!(vec, [1, 2, 3, 0, 0]);
@@ -126,8 +130,9 @@ impl<T> VecExt for FixedBumpVec<'_, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{Bump, zerocopy_08::VecExt};
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, zerocopy_08::VecExt};
+    /// let bump: Bump = Bump::new();
+    ///
     /// let mut vec = bump.alloc_fixed_vec(5);
     /// vec.extend_from_slice_copy(&[1, 2, 3]);
     /// vec.extend_zeroed(2);
@@ -150,8 +155,9 @@ impl<T> VecExt for FixedBumpVec<'_, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{Bump, zerocopy_08::VecExt};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// use bump_scope::{Bump, zerocopy_08::VecExt};
+    /// let bump: Bump = Bump::try_new()?;
+    ///
     /// let mut vec = bump.try_alloc_fixed_vec(5)?;
     /// vec.try_extend_from_slice_copy(&[1, 2, 3])?;
     /// vec.try_extend_zeroed(2)?;
@@ -177,8 +183,9 @@ impl<T> VecExt for FixedBumpVec<'_, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{Bump, zerocopy_08::VecExt};
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, zerocopy_08::VecExt};
+    /// let bump: Bump = Bump::new();
+    ///
     /// let mut vec = bump.alloc_fixed_vec(5);
     /// vec.extend_from_slice_copy(&[1, 2, 3]);
     /// vec.resize_zeroed(5);
@@ -209,8 +216,9 @@ impl<T> VecExt for FixedBumpVec<'_, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{Bump, zerocopy_08::VecExt};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// use bump_scope::{Bump, zerocopy_08::VecExt};
+    /// let bump: Bump = Bump::try_new()?;
+    ///
     /// let mut vec = bump.try_alloc_fixed_vec(5)?;
     /// vec.try_extend_from_slice_copy(&[1, 2, 3])?;
     /// vec.try_resize_zeroed(5)?;
@@ -242,8 +250,9 @@ impl<T, A: BumpAllocator> VecExt for BumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec, zerocopy_08::VecExt };
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{ Bump, bump_vec, zerocopy_08::VecExt };
+    /// let bump: Bump = Bump::new();
+    ///
     /// let mut vec = bump_vec![in &bump; 1, 2, 3];
     /// vec.extend_zeroed(2);
     /// assert_eq!(vec, [1, 2, 3, 0, 0]);
@@ -265,8 +274,9 @@ impl<T, A: BumpAllocator> VecExt for BumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec, zerocopy_08::VecExt };
-    /// # let bump: Bump = Bump::try_new()?;
+    /// use bump_scope::{ Bump, bump_vec, zerocopy_08::VecExt };
+    /// let bump: Bump = Bump::try_new()?;
+    ///
     /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
     /// vec.try_extend_zeroed(2)?;
     /// assert_eq!(vec, [1, 2, 3, 0, 0]);
@@ -291,8 +301,9 @@ impl<T, A: BumpAllocator> VecExt for BumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec, zerocopy_08::VecExt };
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{ Bump, bump_vec, zerocopy_08::VecExt };
+    /// let bump: Bump = Bump::new();
+    ///
     /// let mut vec = bump_vec![in &bump; 1, 2, 3];
     /// vec.resize_zeroed(5);
     /// assert_eq!(vec, [1, 2, 3, 0, 0]);
@@ -321,8 +332,9 @@ impl<T, A: BumpAllocator> VecExt for BumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec, zerocopy_08::VecExt };
-    /// # let bump: Bump = Bump::try_new()?;
+    /// use bump_scope::{ Bump, bump_vec, zerocopy_08::VecExt };
+    /// let bump: Bump = Bump::try_new()?;
+    ///
     /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
     /// vec.try_resize_zeroed(5)?;
     /// assert_eq!(vec, [1, 2, 3, 0, 0]);
@@ -352,8 +364,9 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec, zerocopy_08::VecExt };
-    /// # let mut bump: Bump = Bump::new();
+    /// use bump_scope::{ Bump, mut_bump_vec, zerocopy_08::VecExt };
+    /// let mut bump: Bump = Bump::new();
+    ///
     /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
     /// vec.extend_zeroed(2);
     /// assert_eq!(vec, [1, 2, 3, 0, 0]);
@@ -375,8 +388,9 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec, zerocopy_08::VecExt };
-    /// # let mut bump: Bump = Bump::try_new()?;
+    /// use bump_scope::{ Bump, mut_bump_vec, zerocopy_08::VecExt };
+    /// let mut bump: Bump = Bump::try_new()?;
+    ///
     /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
     /// vec.try_extend_zeroed(2)?;
     /// assert_eq!(vec, [1, 2, 3, 0, 0]);
@@ -401,8 +415,9 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec, zerocopy_08::VecExt };
-    /// # let mut bump: Bump = Bump::new();
+    /// use bump_scope::{ Bump, mut_bump_vec, zerocopy_08::VecExt };
+    /// let mut bump: Bump = Bump::new();
+    ///
     /// {
     ///     let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
     ///     vec.resize_zeroed(5);
@@ -435,8 +450,9 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec, zerocopy_08::VecExt };
-    /// # let mut bump: Bump = Bump::try_new()?;
+    /// use bump_scope::{ Bump, mut_bump_vec, zerocopy_08::VecExt };
+    /// let mut bump: Bump = Bump::try_new()?;
+    ///
     /// {
     ///     let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
     ///     vec.try_resize_zeroed(5)?;
@@ -470,8 +486,9 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVecRev<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec_rev, zerocopy_08::VecExt };
-    /// # let mut bump: Bump = Bump::new();
+    /// use bump_scope::{ Bump, mut_bump_vec_rev, zerocopy_08::VecExt };
+    /// let mut bump: Bump = Bump::new();
+    ///
     /// let mut vec = mut_bump_vec_rev![in &mut bump; 1, 2, 3];
     /// vec.extend_zeroed(2);
     /// assert_eq!(vec, [0, 0, 1, 2, 3]);
@@ -493,8 +510,9 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVecRev<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec_rev, zerocopy_08::VecExt };
-    /// # let mut bump: Bump = Bump::try_new()?;
+    /// use bump_scope::{ Bump, mut_bump_vec_rev, zerocopy_08::VecExt };
+    /// let mut bump: Bump = Bump::try_new()?;
+    ///
     /// let mut vec = mut_bump_vec_rev![try in bump; 1, 2, 3]?;
     /// vec.try_extend_zeroed(2)?;
     /// assert_eq!(vec, [0, 0, 1, 2, 3]);
@@ -519,8 +537,9 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVecRev<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec_rev, zerocopy_08::VecExt };
-    /// # let mut bump: Bump = Bump::new();
+    /// use bump_scope::{ Bump, mut_bump_vec_rev, zerocopy_08::VecExt };
+    /// let mut bump: Bump = Bump::new();
+    ///
     /// {
     ///     let mut vec = mut_bump_vec_rev![in &mut bump; 1, 2, 3];
     ///     vec.resize_zeroed(5);
@@ -553,8 +572,9 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVecRev<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec_rev, zerocopy_08::VecExt };
-    /// # let mut bump: Bump = Bump::try_new()?;
+    /// use bump_scope::{ Bump, mut_bump_vec_rev, zerocopy_08::VecExt };
+    /// let mut bump: Bump = Bump::try_new()?;
+    ///
     /// {
     ///     let mut vec = mut_bump_vec_rev![try in &mut bump; 1, 2, 3]?;
     ///     vec.try_resize_zeroed(5)?;
