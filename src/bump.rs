@@ -12,7 +12,6 @@ use crate::{
     alloc::AllocError,
     bump_common_methods,
     chunk_size::ChunkSize,
-    error_behavior_generic_methods_allocation_failure,
     polyfill::{pointer, transmute_mut, transmute_ref},
     unallocated_chunk_header, BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior,
     FixedBumpString, FixedBumpVec, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment,
@@ -299,112 +298,162 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED> + Default,
 {
-    error_behavior_generic_methods_allocation_failure! {
-        /// Constructs a new `Bump` with a default size hint for the first chunk.
-        ///
-        impl
-        /// This is equivalent to <code>[with_size](Bump::with_size)(512)</code>.
-        #[must_use]
-        do examples
-        /// ```
-        /// use bump_scope::Bump;
-        ///
-        /// let bump: Bump = Bump::new();
-        /// ```
-        for fn new
-        /// This is equivalent to <code>[try_with_size](Bump::try_with_size)(512)</code>.
-        do examples
-        /// ```
-        /// use bump_scope::Bump;
-        ///
-        /// let bump: Bump = Bump::try_new()?;
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_new
-        #[inline]
-        use fn generic_new() -> Self {
-            Self::generic_new_in(Default::default())
-        }
+    /// Constructs a new `Bump` with a default size hint for the first chunk.
+    ///
+    /// This is equivalent to <code>[with_size](Bump::with_size)(512)</code>.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::Bump;
+    ///
+    /// let bump: Bump = Bump::new();
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn new() -> Self {
+        panic_on_error(Self::generic_new())
+    }
 
-        /// Constructs a new `Bump` with a size hint for the first chunk.
-        ///
-        impl
-        #[must_use]
-        /// If you want to ensure a specific capacity, use [`with_capacity`](Self::with_capacity) instead.
-        ///
-        /// An effort is made to ensure the size requested from the base allocator is friendly to an allocator that uses size classes and stores metadata alongside allocations.
-        /// To achieve this, the requested size is rounded up to either the next power of two or the next multiple of `0x1000`, whichever is smaller.
-        /// After that, the size of `[usize; 2]` is subtracted.
-        ///
-        /// If the base allocator returns a memory block that is larger than requested, then the chunk will use the extra space.
-        ///
-        /// **Disclaimer:** The way in which the chunk layout is calculated might change.
-        /// Such a change is not considered semver breaking.
-        do examples
-        /// ```
-        /// use bump_scope::Bump;
-        ///
-        /// // `Bump` with a roughly 1 Mebibyte sized chunk
-        /// let bump_1mib: Bump = Bump::with_size(1024 * 1024);
-        /// ```
-        for fn with_size
-        /// If you want to ensure a specific capacity, use [`try_with_capacity`](Self::try_with_capacity) instead.
-        ///
-        /// An effort is made to ensure the size requested from the base allocator is friendly to an allocator that uses size classes and stores metadata alongside allocations.
-        /// To achieve this, the requested size is rounded up to either the next power of two or the next multiple of `0x1000`, whichever is smaller.
-        /// After that, the size of `[usize; 2]` is subtracted.
-        ///
-        /// If the base allocator returns a memory block that is larger than requested, then the chunk will use the extra space.
-        ///
-        /// **Disclaimer:** The way in which the chunk layout is calculated might change.
-        /// Such a change is not considered semver breaking.
-        do examples
-        /// ```
-        /// use bump_scope::Bump;
-        ///
-        /// // `Bump` with a roughly 1 Mebibyte sized chunk
-        /// let bump_1mib: Bump = Bump::try_with_size(1024 * 1024)?;
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_with_size
-        #[inline]
-        use fn generic_with_size(size: usize) -> Self {
-            Self::generic_with_size_in(size, Default::default())
-        }
+    /// Constructs a new `Bump` with a default size hint for the first chunk.
+    ///
+    /// This is equivalent to <code>[try_with_size](Bump::try_with_size)(512)</code>.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::Bump;
+    ///
+    /// let bump: Bump = Bump::try_new()?;
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_new() -> Result<Self, AllocError> {
+        Self::generic_new()
+    }
 
-        impl
-        #[must_use]
-        /// Constructs a new `Bump` with at least enough space for `layout`.
-        ///
-        /// To construct a `Bump` with a size hint use <code>[with_size](Bump::with_size)</code> instead.
-        do examples
-        /// ```
-        /// use bump_scope::Bump;
-        /// use core::alloc::Layout;
-        ///
-        /// let layout = Layout::array::<u8>(1234).unwrap();
-        /// let bump: Bump = Bump::with_capacity(layout);
-        /// assert!(bump.stats().capacity() >= layout.size());
-        /// ```
-        for fn with_capacity
-        /// Constructs a new `Bump` with at least enough space for `layout`.
-        ///
-        /// To construct a `Bump` with a size hint use <code>[try_with_size](Bump::try_with_size)</code> instead.
-        do examples
-        /// ```
-        /// use bump_scope::Bump;
-        /// use core::alloc::Layout;
-        ///
-        /// let layout = Layout::array::<u8>(1234).unwrap();
-        /// let bump: Bump = Bump::try_with_capacity(layout)?;
-        /// assert!(bump.stats().capacity() >= layout.size());
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_with_capacity
-        #[inline]
-        use fn generic_with_capacity(layout: Layout) -> Self {
-            Self::generic_with_capacity_in(layout, Default::default())
-        }
+    #[inline]
+    pub(crate) fn generic_new<E: ErrorBehavior>() -> Result<Self, E> {
+        Self::generic_new_in(Default::default())
+    }
+
+    /// Constructs a new `Bump` with a size hint for the first chunk.
+    ///
+    /// If you want to ensure a specific capacity, use [`with_capacity`](Self::with_capacity) instead.
+    ///
+    /// An effort is made to ensure the size requested from the base allocator is friendly to an allocator that uses size classes and stores metadata alongside allocations.
+    /// To achieve this, the requested size is rounded up to either the next power of two or the next multiple of `0x1000`, whichever is smaller.
+    /// After that, the size of `[usize; 2]` is subtracted.
+    ///
+    /// If the base allocator returns a memory block that is larger than requested, then the chunk will use the extra space.
+    ///
+    /// **Disclaimer:** The way in which the chunk layout is calculated might change.
+    /// Such a change is not considered semver breaking.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::Bump;
+    ///
+    /// // `Bump` with a roughly 1 Mebibyte sized chunk
+    /// let bump_1mib: Bump = Bump::with_size(1024 * 1024);
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn with_size(size: usize) -> Self {
+        panic_on_error(Self::generic_with_size(size))
+    }
+
+    /// Constructs a new `Bump` with a size hint for the first chunk.
+    ///
+    /// If you want to ensure a specific capacity, use [`try_with_capacity`](Self::try_with_capacity) instead.
+    ///
+    /// An effort is made to ensure the size requested from the base allocator is friendly to an allocator that uses size classes and stores metadata alongside allocations.
+    /// To achieve this, the requested size is rounded up to either the next power of two or the next multiple of `0x1000`, whichever is smaller.
+    /// After that, the size of `[usize; 2]` is subtracted.
+    ///
+    /// If the base allocator returns a memory block that is larger than requested, then the chunk will use the extra space.
+    ///
+    /// **Disclaimer:** The way in which the chunk layout is calculated might change.
+    /// Such a change is not considered semver breaking.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::Bump;
+    ///
+    /// // `Bump` with a roughly 1 Mebibyte sized chunk
+    /// let bump_1mib: Bump = Bump::try_with_size(1024 * 1024)?;
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_with_size(size: usize) -> Result<Self, AllocError> {
+        Self::generic_with_size(size)
+    }
+
+    #[inline]
+    pub(crate) fn generic_with_size<E: ErrorBehavior>(size: usize) -> Result<Self, E> {
+        Self::generic_with_size_in(size, Default::default())
+    }
+
+    /// Constructs a new `Bump` with at least enough space for `layout`.
+    ///
+    /// To construct a `Bump` with a size hint use <code>[with_size](Bump::with_size)</code> instead.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::Bump;
+    /// use core::alloc::Layout;
+    ///
+    /// let layout = Layout::array::<u8>(1234).unwrap();
+    /// let bump: Bump = Bump::with_capacity(layout);
+    /// assert!(bump.stats().capacity() >= layout.size());
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn with_capacity(layout: Layout) -> Self {
+        panic_on_error(Self::generic_with_capacity(layout))
+    }
+
+    /// Constructs a new `Bump` with at least enough space for `layout`.
+    ///
+    /// To construct a `Bump` with a size hint use <code>[try_with_size](Bump::try_with_size)</code> instead.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::Bump;
+    /// use core::alloc::Layout;
+    ///
+    /// let layout = Layout::array::<u8>(1234).unwrap();
+    /// let bump: Bump = Bump::try_with_capacity(layout)?;
+    /// assert!(bump.stats().capacity() >= layout.size());
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_with_capacity(layout: Layout) -> Result<Self, AllocError> {
+        Self::generic_with_capacity(layout)
+    }
+
+    #[inline]
+    pub(crate) fn generic_with_capacity<E: ErrorBehavior>(layout: Layout) -> Result<Self, E> {
+        Self::generic_with_capacity_in(layout, Default::default())
     }
 }
 
@@ -652,134 +701,183 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
-    error_behavior_generic_methods_allocation_failure! {
-        /// Constructs a new `Bump` with a default size hint for the first chunk.
-        ///
-        impl
-        /// This is equivalent to <code>[with_size_in](Bump::with_size_in)(512, allocator)</code>.
-        do examples
-        /// ```
-        /// use bump_scope::Bump;
-        /// use bump_scope::alloc::Global;
-        ///
-        /// let bump: Bump = Bump::new_in(Global);
-        /// ```
-        for fn new_in
-        /// This is equivalent to <code>[try_with_size_in](Bump::try_with_size_in)(512, allocator)</code>.
-        do examples
-        /// ```
-        /// use bump_scope::Bump;
-        /// use bump_scope::alloc::Global;
-        ///
-        /// let bump: Bump = Bump::try_new_in(Global)?;
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_new_in
-        #[inline]
-        use fn generic_new_in(allocator: A) -> Self {
-            Ok(Self {
-                chunk: Cell::new(RawChunk::new_in(
-                    ChunkSize::DEFAULT_START,
-                    None,
-                    allocator,
-                )?),
-            })
-        }
+    /// Constructs a new `Bump` with a default size hint for the first chunk.
+    ///
+    /// This is equivalent to <code>[with_size_in](Bump::with_size_in)(512, allocator)</code>.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::Bump;
+    /// use bump_scope::alloc::Global;
+    ///
+    /// let bump: Bump = Bump::new_in(Global);
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn new_in(allocator: A) -> Self {
+        panic_on_error(Self::generic_new_in(allocator))
+    }
 
-        /// Constructs a new `Bump` with a size hint for the first chunk.
-        ///
-        impl
-        /// If you want to ensure a specific capacity, use [`with_capacity_in`](Self::with_capacity_in) instead.
-        ///
-        /// An effort is made to ensure the size requested from the base allocator is friendly to an allocator that uses size classes and stores metadata alongside allocations.
-        /// To achieve this, the requested size is rounded up to either the next power of two or the next multiple of `0x1000`, whichever is smaller.
-        /// After that, the size of `[usize; 2]` is subtracted.
-        ///
-        /// If the base allocator returns a memory block that is larger than requested, then the chunk will use the extra space.
-        ///
-        /// **Disclaimer:** The way in which the chunk layout is calculated might change.
-        /// Such a change is not considered semver breaking.
-        do examples
-        /// ```
-        /// use bump_scope::Bump;
-        /// use bump_scope::alloc::Global;
-        ///
-        /// // `Bump` with a roughly 1 Mebibyte sized chunk
-        /// let bump_1mib: Bump = Bump::with_size_in(1024 * 1024, Global);
-        /// ```
-        for fn with_size_in
-        /// If you want to ensure a specific capacity, use [`try_with_capacity`](Self::try_with_capacity) instead.
-        ///
-        /// An effort is made to ensure the size requested from the base allocator is friendly to an allocator that uses size classes and stores metadata alongside allocations.
-        /// To achieve this, the requested size is rounded up to either the next power of two or the next multiple of `0x1000`, whichever is smaller.
-        /// After that, the size of `[usize; 2]` is subtracted.
-        ///
-        /// If the base allocator returns a memory block that is larger than requested, then the chunk will use the extra space.
-        ///
-        /// **Disclaimer:** The way in which the chunk layout is calculated might change.
-        /// Such a change is not considered semver breaking.
-        do examples
-        /// ```
-        /// use bump_scope::Bump;
-        /// use bump_scope::alloc::Global;
-        ///
-        /// // `Bump` with a roughly 1 Mebibyte sized chunk
-        /// let bump_1mib: Bump = Bump::try_with_size_in(1024 * 1024, Global)?;
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_with_size_in
-        #[inline]
-        use fn generic_with_size_in(size: usize, allocator: A) -> Self {
-            Ok(Self {
-                chunk: Cell::new(RawChunk::new_in(
-                    ChunkSize::new(size).ok_or_else(B::capacity_overflow)?,
-                    None,
-                    allocator,
-                )?),
-            })
-        }
+    /// Constructs a new `Bump` with a default size hint for the first chunk.
+    ///
+    /// This is equivalent to <code>[try_with_size_in](Bump::try_with_size_in)(512, allocator)</code>.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::Bump;
+    /// use bump_scope::alloc::Global;
+    ///
+    /// let bump: Bump = Bump::try_new_in(Global)?;
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_new_in(allocator: A) -> Result<Self, AllocError> {
+        Self::generic_new_in(allocator)
+    }
 
-        impl
-        /// Constructs a new `Bump` with at least enough space for `layout`.
-        ///
-        /// To construct a `Bump` with a size hint use <code>[with_size_in](Bump::with_size_in)</code> instead.
-        do examples
-        /// ```
-        /// use bump_scope::Bump;
-        /// use bump_scope::alloc::Global;
-        /// use core::alloc::Layout;
-        ///
-        /// let layout = Layout::array::<u8>(1234).unwrap();
-        /// let bump: Bump = Bump::with_capacity_in(layout, Global);
-        /// assert!(bump.stats().capacity() >= layout.size());
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn with_capacity_in
-        /// Constructs a new `Bump` with at least enough space for `layout`.
-        ///
-        /// To construct a `Bump` with a size hint use <code>[try_with_size_in](Bump::try_with_size_in)</code> instead.
-        do examples
-        /// ```
-        /// use bump_scope::Bump;
-        /// use bump_scope::alloc::Global;
-        /// use core::alloc::Layout;
-        ///
-        /// let layout = Layout::array::<u8>(1234).unwrap();
-        /// let bump: Bump = Bump::try_with_capacity_in(layout, Global)?;
-        /// assert!(bump.stats().capacity() >= layout.size());
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_with_capacity_in
-        #[inline]
-        use fn generic_with_capacity_in(layout: Layout, allocator: A) -> Self {
-            Ok(Self {
-                chunk: Cell::new(RawChunk::new_in(
-                    ChunkSize::for_capacity(layout).ok_or_else(B::capacity_overflow)?,
-                    None,
-                    allocator,
-                )?),
-            })
-        }
+    #[inline]
+    pub(crate) fn generic_new_in<E: ErrorBehavior>(allocator: A) -> Result<Self, E> {
+        Ok(Self {
+            chunk: Cell::new(RawChunk::new_in(ChunkSize::DEFAULT_START, None, allocator)?),
+        })
+    }
+
+    /// Constructs a new `Bump` with a size hint for the first chunk.
+    ///
+    /// If you want to ensure a specific capacity, use [`with_capacity_in`](Self::with_capacity_in) instead.
+    ///
+    /// An effort is made to ensure the size requested from the base allocator is friendly to an allocator that uses size classes and stores metadata alongside allocations.
+    /// To achieve this, the requested size is rounded up to either the next power of two or the next multiple of `0x1000`, whichever is smaller.
+    /// After that, the size of `[usize; 2]` is subtracted.
+    ///
+    /// If the base allocator returns a memory block that is larger than requested, then the chunk will use the extra space.
+    ///
+    /// **Disclaimer:** The way in which the chunk layout is calculated might change.
+    /// Such a change is not considered semver breaking.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::Bump;
+    /// use bump_scope::alloc::Global;
+    ///
+    /// // `Bump` with a roughly 1 Mebibyte sized chunk
+    /// let bump_1mib: Bump = Bump::with_size_in(1024 * 1024, Global);
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn with_size_in(size: usize, allocator: A) -> Self {
+        panic_on_error(Self::generic_with_size_in(size, allocator))
+    }
+
+    /// Constructs a new `Bump` with a size hint for the first chunk.
+    ///
+    /// If you want to ensure a specific capacity, use [`try_with_capacity`](Self::try_with_capacity) instead.
+    ///
+    /// An effort is made to ensure the size requested from the base allocator is friendly to an allocator that uses size classes and stores metadata alongside allocations.
+    /// To achieve this, the requested size is rounded up to either the next power of two or the next multiple of `0x1000`, whichever is smaller.
+    /// After that, the size of `[usize; 2]` is subtracted.
+    ///
+    /// If the base allocator returns a memory block that is larger than requested, then the chunk will use the extra space.
+    ///
+    /// **Disclaimer:** The way in which the chunk layout is calculated might change.
+    /// Such a change is not considered semver breaking.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::Bump;
+    /// use bump_scope::alloc::Global;
+    ///
+    /// // `Bump` with a roughly 1 Mebibyte sized chunk
+    /// let bump_1mib: Bump = Bump::try_with_size_in(1024 * 1024, Global)?;
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_with_size_in(size: usize, allocator: A) -> Result<Self, AllocError> {
+        Self::generic_with_size_in(size, allocator)
+    }
+
+    #[inline]
+    pub(crate) fn generic_with_size_in<E: ErrorBehavior>(size: usize, allocator: A) -> Result<Self, E> {
+        Ok(Self {
+            chunk: Cell::new(RawChunk::new_in(
+                ChunkSize::new(size).ok_or_else(E::capacity_overflow)?,
+                None,
+                allocator,
+            )?),
+        })
+    }
+
+    /// Constructs a new `Bump` with at least enough space for `layout`.
+    ///
+    /// To construct a `Bump` with a size hint use <code>[with_size_in](Bump::with_size_in)</code> instead.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::Bump;
+    /// use bump_scope::alloc::Global;
+    /// use core::alloc::Layout;
+    ///
+    /// let layout = Layout::array::<u8>(1234).unwrap();
+    /// let bump: Bump = Bump::with_capacity_in(layout, Global);
+    /// assert!(bump.stats().capacity() >= layout.size());
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn with_capacity_in(layout: Layout, allocator: A) -> Self {
+        panic_on_error(Self::generic_with_capacity_in(layout, allocator))
+    }
+
+    /// Constructs a new `Bump` with at least enough space for `layout`.
+    ///
+    /// To construct a `Bump` with a size hint use <code>[try_with_size_in](Bump::try_with_size_in)</code> instead.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::Bump;
+    /// use bump_scope::alloc::Global;
+    /// use core::alloc::Layout;
+    ///
+    /// let layout = Layout::array::<u8>(1234).unwrap();
+    /// let bump: Bump = Bump::try_with_capacity_in(layout, Global)?;
+    /// assert!(bump.stats().capacity() >= layout.size());
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_with_capacity_in(layout: Layout, allocator: A) -> Result<Self, AllocError> {
+        Self::generic_with_capacity_in(layout, allocator)
+    }
+
+    #[inline]
+    pub(crate) fn generic_with_capacity_in<E: ErrorBehavior>(layout: Layout, allocator: A) -> Result<Self, E> {
+        Ok(Self {
+            chunk: Cell::new(RawChunk::new_in(
+                ChunkSize::for_capacity(layout).ok_or_else(E::capacity_overflow)?,
+                None,
+                allocator,
+            )?),
+        })
     }
 
     // This needs `&mut self` to make sure that no allocations are alive.
