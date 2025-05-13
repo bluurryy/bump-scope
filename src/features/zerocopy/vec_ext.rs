@@ -8,8 +8,19 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
+mod vec_ext {
+    use super::*;
+
+    pub trait Sealed {}
+
+    impl<T> Sealed for FixedBumpVec<'_, T> {}
+    impl<T, A: BumpAllocator> Sealed for BumpVec<T, A> {}
+    impl<T, A: MutBumpAllocator> Sealed for MutBumpVec<T, A> {}
+    impl<T, A: MutBumpAllocator> Sealed for MutBumpVecRev<T, A> {}
+}
+
 /// Extension trait for this crate's vector types.
-pub trait VecExt {
+pub trait VecExt: vec_ext::Sealed {
     /// The element type of this vector.
     type T;
 
@@ -23,7 +34,6 @@ pub trait VecExt {
     /// ```
     /// # use bump_scope::{ Bump, bump_vec, zerocopy::VecExt };
     /// # let bump: Bump = Bump::new();
-    ///
     /// let mut vec = bump_vec![in &bump; 1, 2, 3];
     /// vec.extend_zeroed(2);
     /// assert_eq!(vec, [1, 2, 3, 0, 0]);
