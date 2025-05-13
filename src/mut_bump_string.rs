@@ -10,7 +10,7 @@ use core::{
 
 use crate::{
     alloc::AllocError,
-    error_behavior_generic_methods_allocation_failure, mut_collection_method_allocator_stats, owned_str,
+    mut_collection_method_allocator_stats, owned_str,
     polyfill::{self, transmute_mut, transmute_value},
     raw_fixed_bump_string::RawFixedBumpString,
     BumpBox, ErrorBehavior, FromUtf16Error, FromUtf8Error, MutBumpAllocator, MutBumpAllocatorScope, MutBumpVec, Stats,
@@ -530,765 +530,1076 @@ impl<A> MutBumpString<A> {
 }
 
 impl<A: MutBumpAllocator> MutBumpString<A> {
-    error_behavior_generic_methods_allocation_failure! {
-        /// Constructs a new empty `MutBumpString` with at least the specified capacity
-        /// with the provided bump allocator.
-        ///
-        /// The string will be able to hold at least `capacity` bytes without
-        /// reallocating. This method allocates for as much elements as the< current chunk can hold.
-        /// If `capacity` is 0, the string will not allocate.
-        impl
-        for fn with_capacity_in
-        for fn try_with_capacity_in
-        #[inline]
-        use fn generic_with_capacity_in(capacity: usize, allocator: A) -> Self {
-            let mut allocator = allocator;
+    /// Constructs a new empty `MutBumpString` with at least the specified capacity
+    /// in the provided bump allocator.
+    ///
+    /// The string will be able to hold at least `capacity` bytes without reallocating.
+    /// This method allocates for as much elements as the current chunk can hold.
+    /// If `capacity` is 0, the string will not allocate.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn with_capacity_in(capacity: usize, allocator: A) -> Self {
+        panic_on_error(Self::generic_with_capacity_in(capacity, allocator))
+    }
 
-            if capacity == 0 {
-                return Ok(Self {
-                    fixed: RawFixedBumpString::EMPTY,
-                    allocator,
-                });
-            }
+    /// Constructs a new empty `MutBumpString` with at least the specified capacity
+    /// in the provided bump allocator.
+    ///
+    /// The string will be able to hold at least `capacity` bytes without reallocating.
+    /// This method allocates for as much elements as the current chunk can hold.
+    /// If `capacity` is 0, the string will not allocate.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    #[inline(always)]
+    pub fn try_with_capacity_in(capacity: usize, allocator: A) -> Result<Self, AllocError> {
+        Self::generic_with_capacity_in(capacity, allocator)
+    }
 
-            Ok(Self {
-                fixed: unsafe { RawFixedBumpString::prepare_allocation(&mut allocator, capacity)? },
+    #[inline]
+    pub(crate) fn generic_with_capacity_in<E: ErrorBehavior>(capacity: usize, allocator: A) -> Result<Self, E> {
+        let mut allocator = allocator;
+
+        if capacity == 0 {
+            return Ok(Self {
+                fixed: RawFixedBumpString::EMPTY,
                 allocator,
-            })
+            });
         }
 
-        /// Constructs a new `MutBumpString` from a `&str`.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::new();
-        /// let string = MutBumpString::from_str_in("Hello!", &mut bump);
-        /// assert_eq!(string, "Hello!");
-        /// ```
-        for fn from_str_in
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let string = MutBumpString::try_from_str_in("Hello!", &mut bump)?;
-        /// assert_eq!(string, "Hello!");
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_from_str_in
-        #[inline]
-        use fn generic_from_str_in(string: &str, allocator: A) -> Self {
-            let mut this = Self::generic_with_capacity_in(string.len(), allocator)?;
+        Ok(Self {
+            fixed: unsafe { RawFixedBumpString::prepare_allocation(&mut allocator, capacity)? },
+            allocator,
+        })
+    }
 
-            unsafe {
-                ptr::copy_nonoverlapping(string.as_ptr(), this.fixed.as_mut_ptr(), string.len());
-                this.as_mut_vec().set_len(string.len());
+    /// Constructs a new `MutBumpString` from a `&str`.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let string = MutBumpString::from_str_in("Hello!", &mut bump);
+    /// assert_eq!(string, "Hello!");
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn from_str_in(string: &str, allocator: A) -> Self {
+        panic_on_error(Self::generic_from_str_in(string, allocator))
+    }
+
+    /// Constructs a new `MutBumpString` from a `&str`.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let string = MutBumpString::try_from_str_in("Hello!", &mut bump)?;
+    /// assert_eq!(string, "Hello!");
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_from_str_in(string: &str, allocator: A) -> Result<Self, AllocError> {
+        Self::generic_from_str_in(string, allocator)
+    }
+
+    #[inline]
+    pub(crate) fn generic_from_str_in<E: ErrorBehavior>(string: &str, allocator: A) -> Result<Self, E> {
+        let mut this = Self::generic_with_capacity_in(string.len(), allocator)?;
+
+        unsafe {
+            ptr::copy_nonoverlapping(string.as_ptr(), this.fixed.as_mut_ptr(), string.len());
+            this.as_mut_vec().set_len(string.len());
+        }
+
+        Ok(this)
+    }
+
+    /// Converts a slice of bytes to a string, including invalid characters.
+    ///
+    /// Strings are made of bytes ([`u8`]), and a slice of bytes
+    /// ([`&[u8]`][byteslice]) is made of bytes, so this function converts
+    /// between the two. Not all byte slices are valid strings, however: strings
+    /// are required to be valid UTF-8. During this conversion,
+    /// `from_utf8_lossy()` will replace any invalid UTF-8 sequences with
+    /// [`U+FFFD REPLACEMENT CHARACTER`][U+FFFD], which looks like this: �
+    ///
+    /// [byteslice]: prim@slice
+    /// [U+FFFD]: core::char::REPLACEMENT_CHARACTER
+    ///
+    /// If you are sure that the byte slice is valid UTF-8, and you don't want
+    /// to incur the overhead of the conversion, there is an unsafe version
+    /// of this function, [`from_utf8_unchecked`], which has the same behavior
+    /// but skips the checks.
+    ///
+    /// [`from_utf8_unchecked`]: Self::from_utf8_unchecked
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// // some bytes, in a vector
+    /// let sparkle_heart = [240, 159, 146, 150];
+    ///
+    /// let sparkle_heart = MutBumpString::from_utf8_lossy_in(&sparkle_heart, &mut bump);
+    ///
+    /// assert_eq!("💖", sparkle_heart);
+    /// ```
+    ///
+    /// Incorrect bytes:
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// // some invalid bytes
+    /// let input = b"Hello \xF0\x90\x80World";
+    /// let output = MutBumpString::from_utf8_lossy_in(input, &mut bump);
+    ///
+    /// assert_eq!("Hello �World", output);
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn from_utf8_lossy_in(v: &[u8], allocator: A) -> Self {
+        panic_on_error(Self::generic_from_utf8_lossy_in(v, allocator))
+    }
+
+    /// Converts a slice of bytes to a string, including invalid characters.
+    ///
+    /// Strings are made of bytes ([`u8`]), and a slice of bytes
+    /// ([`&[u8]`][byteslice]) is made of bytes, so this function converts
+    /// between the two. Not all byte slices are valid strings, however: strings
+    /// are required to be valid UTF-8. During this conversion,
+    /// `from_utf8_lossy()` will replace any invalid UTF-8 sequences with
+    /// [`U+FFFD REPLACEMENT CHARACTER`][U+FFFD], which looks like this: �
+    ///
+    /// [byteslice]: prim@slice
+    /// [U+FFFD]: core::char::REPLACEMENT_CHARACTER
+    ///
+    /// If you are sure that the byte slice is valid UTF-8, and you don't want
+    /// to incur the overhead of the conversion, there is an unsafe version
+    /// of this function, [`from_utf8_unchecked`], which has the same behavior
+    /// but skips the checks.
+    ///
+    /// [`from_utf8_unchecked`]: Self::from_utf8_unchecked
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// // some bytes, in a vector
+    /// let sparkle_heart = [240, 159, 146, 150];
+    ///
+    /// let sparkle_heart = MutBumpString::try_from_utf8_lossy_in(&sparkle_heart, &mut bump)?;
+    ///
+    /// assert_eq!("💖", sparkle_heart);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    ///
+    /// Incorrect bytes:
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// // some invalid bytes
+    /// let input = b"Hello \xF0\x90\x80World";
+    /// let output = MutBumpString::try_from_utf8_lossy_in(input, &mut bump)?;
+    ///
+    /// assert_eq!("Hello �World", output);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_from_utf8_lossy_in(v: &[u8], allocator: A) -> Result<Self, AllocError> {
+        Self::generic_from_utf8_lossy_in(v, allocator)
+    }
+
+    pub(crate) fn generic_from_utf8_lossy_in<E: ErrorBehavior>(v: &[u8], allocator: A) -> Result<Self, E> {
+        let mut iter = crate::polyfill::str::lossy::utf8_chunks(v);
+
+        let first_valid = if let Some(chunk) = iter.next() {
+            let valid = chunk.valid();
+            if chunk.invalid().is_empty() {
+                debug_assert_eq!(valid.len(), v.len());
+                return Self::generic_from_str_in(valid, allocator);
             }
+            valid
+        } else {
+            return Ok(Self::new_in(allocator));
+        };
 
-            Ok(this)
+        const REPLACEMENT: &str = "\u{FFFD}";
+
+        let mut res = Self::generic_with_capacity_in(v.len(), allocator)?;
+        res.generic_push_str(first_valid)?;
+        res.generic_push_str(REPLACEMENT)?;
+
+        for chunk in iter {
+            res.generic_push_str(chunk.valid())?;
+            if !chunk.invalid().is_empty() {
+                res.generic_push_str(REPLACEMENT)?;
+            }
         }
 
-        /// Converts a slice of bytes to a string, including invalid characters.
-        ///
-        /// Strings are made of bytes ([`u8`]), and a slice of bytes
-        /// ([`&[u8]`][byteslice]) is made of bytes, so this function converts
-        /// between the two. Not all byte slices are valid strings, however: strings
-        /// are required to be valid UTF-8. During this conversion,
-        /// `from_utf8_lossy()` will replace any invalid UTF-8 sequences with
-        /// [`U+FFFD REPLACEMENT CHARACTER`][U+FFFD], which looks like this: �
-        ///
-        /// [byteslice]: prim@slice
-        /// [U+FFFD]: core::char::REPLACEMENT_CHARACTER
-        ///
-        /// If you are sure that the byte slice is valid UTF-8, and you don't want
-        /// to incur the overhead of the conversion, there is an unsafe version
-        /// of this function, [`from_utf8_unchecked`], which has the same behavior
-        /// but skips the checks.
-        ///
-        /// [`from_utf8_unchecked`]: Self::from_utf8_unchecked
-        impl
-        #[must_use]
-        do examples
-        /// Basic usage:
-        ///
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::new();
-        /// // some bytes, in a vector
-        /// let sparkle_heart = [240, 159, 146, 150];
-        ///
-        /// let sparkle_heart = MutBumpString::from_utf8_lossy_in(&sparkle_heart, &mut bump);
-        ///
-        /// assert_eq!("💖", sparkle_heart);
-        /// ```
-        ///
-        /// Incorrect bytes:
-        ///
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::new();
-        /// // some invalid bytes
-        /// let input = b"Hello \xF0\x90\x80World";
-        /// let output = MutBumpString::from_utf8_lossy_in(input, &mut bump);
-        ///
-        /// assert_eq!("Hello �World", output);
-        /// ```
-        for fn from_utf8_lossy_in
-        do examples
-        /// Basic usage:
-        ///
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// // some bytes, in a vector
-        /// let sparkle_heart = [240, 159, 146, 150];
-        ///
-        /// let sparkle_heart = MutBumpString::try_from_utf8_lossy_in(&sparkle_heart, &mut bump)?;
-        ///
-        /// assert_eq!("💖", sparkle_heart);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        ///
-        /// Incorrect bytes:
-        ///
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// // some invalid bytes
-        /// let input = b"Hello \xF0\x90\x80World";
-        /// let output = MutBumpString::try_from_utf8_lossy_in(input, &mut bump)?;
-        ///
-        /// assert_eq!("Hello �World", output);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_from_utf8_lossy_in
-        use fn generic_from_utf8_lossy_in(v: &[u8], allocator: A) -> Self {
-            let mut iter = crate::polyfill::str::lossy::utf8_chunks(v);
+        Ok(res)
+    }
 
-            let first_valid = if let Some(chunk) = iter.next() {
-                let valid = chunk.valid();
-                if chunk.invalid().is_empty() {
-                    debug_assert_eq!(valid.len(), v.len());
-                    return Self::generic_from_str_in(valid, allocator);
-                }
-                valid
+    /// Decode a UTF-16–encoded vector `v` into a `MutBumpString`, returning [`Err`]
+    /// if `v` contains any invalid data.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump1: Bump = Bump::new();
+    /// # let mut bump2: Bump = Bump::new();
+    /// // 𝄞music
+    /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
+    ///           0x0073, 0x0069, 0x0063];
+    /// assert_eq!(MutBumpString::from_str_in("𝄞music", &mut bump1),
+    ///            MutBumpString::from_utf16_in(v, &mut bump2).unwrap());
+    ///
+    /// // 𝄞mu<invalid>ic
+    /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
+    ///           0xD800, 0x0069, 0x0063];
+    /// assert!(MutBumpString::from_utf16_in(v, &mut bump2).is_err());
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    #[allow(clippy::missing_errors_doc)]
+    pub fn from_utf16_in(v: &[u16], allocator: A) -> Result<Self, FromUtf16Error> {
+        panic_on_error(Self::generic_from_utf16_in(v, allocator))
+    }
+
+    /// Decode a UTF-16–encoded vector `v` into a `MutBumpString`, returning [`Err`]
+    /// if `v` contains any invalid data.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump1: Bump = Bump::try_new()?;
+    /// # let mut bump2: Bump = Bump::try_new()?;
+    /// // 𝄞music
+    /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
+    ///           0x0073, 0x0069, 0x0063];
+    /// assert_eq!(MutBumpString::try_from_str_in("𝄞music", &mut bump1)?,
+    ///            MutBumpString::try_from_utf16_in(v, &mut bump2)?.unwrap());
+    ///
+    /// // 𝄞mu<invalid>ic
+    /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
+    ///           0xD800, 0x0069, 0x0063];
+    /// assert!(MutBumpString::try_from_utf16_in(v, &mut bump2)?.is_err());
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_from_utf16_in(v: &[u16], allocator: A) -> Result<Result<Self, FromUtf16Error>, AllocError> {
+        Self::generic_from_utf16_in(v, allocator)
+    }
+
+    pub(crate) fn generic_from_utf16_in<E: ErrorBehavior>(
+        v: &[u16],
+        allocator: A,
+    ) -> Result<Result<Self, FromUtf16Error>, E> {
+        // This isn't done via collect::<Result<_, _>>() for performance reasons.
+        // STD-FIXME: the function can be simplified again when #48994 is closed.
+        let mut ret = Self::generic_with_capacity_in(v.len(), allocator)?;
+
+        for c in char::decode_utf16(v.iter().copied()) {
+            if let Ok(c) = c {
+                ret.generic_push(c)?;
             } else {
-                return Ok(Self::new_in(allocator));
-            };
-
-            const REPLACEMENT: &str = "\u{FFFD}";
-
-            let mut res = Self::generic_with_capacity_in(v.len(), allocator)?;
-            res.generic_push_str(first_valid)?;
-            res.generic_push_str(REPLACEMENT)?;
-
-            for chunk in iter {
-                res.generic_push_str(chunk.valid())?;
-                if !chunk.invalid().is_empty() {
-                    res.generic_push_str(REPLACEMENT)?;
-                }
-            }
-
-            Ok(res)
-        }
-
-        /// Decode a UTF-16–encoded vector `v` into a `MutBumpString`, returning [`Err`]
-        /// if `v` contains any invalid data.
-        impl
-        #[allow(clippy::missing_errors_doc)]
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump1: Bump = Bump::new();
-        /// # let mut bump2: Bump = Bump::new();
-        /// // 𝄞music
-        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
-        ///           0x0073, 0x0069, 0x0063];
-        /// assert_eq!(MutBumpString::from_str_in("𝄞music", &mut bump1),
-        ///            MutBumpString::from_utf16_in(v, &mut bump2).unwrap());
-        ///
-        /// // 𝄞mu<invalid>ic
-        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
-        ///           0xD800, 0x0069, 0x0063];
-        /// assert!(MutBumpString::from_utf16_in(v, &mut bump2).is_err());
-        /// ```
-        for fn from_utf16_in
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump1: Bump = Bump::try_new()?;
-        /// # let mut bump2: Bump = Bump::try_new()?;
-        /// // 𝄞music
-        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
-        ///           0x0073, 0x0069, 0x0063];
-        /// assert_eq!(MutBumpString::try_from_str_in("𝄞music", &mut bump1)?,
-        ///            MutBumpString::try_from_utf16_in(v, &mut bump2)?.unwrap());
-        ///
-        /// // 𝄞mu<invalid>ic
-        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
-        ///           0xD800, 0x0069, 0x0063];
-        /// assert!(MutBumpString::try_from_utf16_in(v, &mut bump2)?.is_err());
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_from_utf16_in
-        use fn generic_from_utf16_in(v: &[u16], allocator: A) -> Result<Self, FromUtf16Error> {
-            // This isn't done via collect::<Result<_, _>>() for performance reasons.
-            // STD-FIXME: the function can be simplified again when #48994 is closed.
-            let mut ret = Self::generic_with_capacity_in(v.len(), allocator)?;
-
-            for c in char::decode_utf16(v.iter().copied()) {
-                if let Ok(c) = c {
-                    ret.generic_push(c)?;
-                } else {
-                    return Ok(Err(FromUtf16Error(())));
-                }
-            }
-
-            Ok(Ok(ret))
-        }
-
-        /// Decode a UTF-16–encoded slice `v` into a `MutBumpString`, replacing
-        /// invalid data with [the replacement character (`U+FFFD`)][U+FFFD].
-        ///
-        /// [U+FFFD]: core::char::REPLACEMENT_CHARACTER
-        impl
-        #[must_use]
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump1: Bump = Bump::new();
-        /// # let mut bump2: Bump = Bump::new();
-        /// // 𝄞mus<invalid>ic<invalid>
-        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
-        ///           0x0073, 0xDD1E, 0x0069, 0x0063,
-        ///           0xD834];
-        ///
-        /// assert_eq!(MutBumpString::from_str_in("𝄞mus\u{FFFD}ic\u{FFFD}", &mut bump1),
-        ///            MutBumpString::from_utf16_lossy_in(v, &mut bump2));
-        /// ```
-        for fn from_utf16_lossy_in
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump1: Bump = Bump::try_new()?;
-        /// # let mut bump2: Bump = Bump::try_new()?;
-        /// // 𝄞mus<invalid>ic<invalid>
-        /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
-        ///           0x0073, 0xDD1E, 0x0069, 0x0063,
-        ///           0xD834];
-        ///
-        /// assert_eq!(MutBumpString::try_from_str_in("𝄞mus\u{FFFD}ic\u{FFFD}", &mut bump1)?,
-        ///            MutBumpString::try_from_utf16_lossy_in(v, &mut bump2)?);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_from_utf16_lossy_in
-        #[inline]
-        use fn generic_from_utf16_lossy_in(v: &[u16], allocator: A) -> Self {
-            let iter = char::decode_utf16(v.iter().copied());
-            let capacity = iter.size_hint().0;
-            let mut string = Self::generic_with_capacity_in(capacity, allocator)?;
-
-            for r in iter {
-                string.generic_push(r.unwrap_or(char::REPLACEMENT_CHARACTER))?;
-            }
-
-            Ok(string)
-        }
-
-        /// Appends the given [`char`] to the end of this string.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut s = MutBumpString::from_str_in("abc", &mut bump);
-        ///
-        /// s.push('1');
-        /// s.push('2');
-        /// s.push('3');
-        ///
-        /// assert_eq!(s, "abc123");
-        /// ```
-        for fn push
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut s = MutBumpString::try_from_str_in("abc", &mut bump)?;
-        ///
-        /// s.try_push('1')?;
-        /// s.try_push('2')?;
-        /// s.try_push('3')?;
-        ///
-        /// assert_eq!(s, "abc123");
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_push
-        #[inline]
-        use fn generic_push(&mut self, ch: char) {
-            let vec = unsafe { self.as_mut_vec() };
-
-            match ch.len_utf8() {
-                1 => vec.generic_push(ch as u8),
-                _ => vec.generic_extend_from_slice_copy(ch.encode_utf8(&mut [0; 4]).as_bytes()),
+                return Ok(Err(FromUtf16Error(())));
             }
         }
 
-        /// Appends a given string slice onto the end of this string.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut s = MutBumpString::from_str_in("foo", &mut bump);
-        ///
-        /// s.push_str("bar");
-        ///
-        /// assert_eq!(s, "foobar");
-        /// ```
-        for fn push_str
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut s = MutBumpString::try_from_str_in("foo", &mut bump)?;
-        ///
-        /// s.try_push_str("bar")?;
-        ///
-        /// assert_eq!(s, "foobar");
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_push_str
-        #[inline]
-        use fn generic_push_str(&mut self, string: &str) {
-            let vec = unsafe { self.as_mut_vec() };
-            vec.generic_extend_from_slice_copy(string.as_bytes())
+        Ok(Ok(ret))
+    }
+
+    /// Decode a UTF-16–encoded slice `v` into a `MutBumpString`, replacing
+    /// invalid data with [the replacement character (`U+FFFD`)][U+FFFD].
+    ///
+    /// [U+FFFD]: core::char::REPLACEMENT_CHARACTER
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump1: Bump = Bump::new();
+    /// # let mut bump2: Bump = Bump::new();
+    /// // 𝄞mus<invalid>ic<invalid>
+    /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
+    ///           0x0073, 0xDD1E, 0x0069, 0x0063,
+    ///           0xD834];
+    ///
+    /// assert_eq!(MutBumpString::from_str_in("𝄞mus\u{FFFD}ic\u{FFFD}", &mut bump1),
+    ///            MutBumpString::from_utf16_lossy_in(v, &mut bump2));
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn from_utf16_lossy_in(v: &[u16], allocator: A) -> Self {
+        panic_on_error(Self::generic_from_utf16_lossy_in(v, allocator))
+    }
+
+    /// Decode a UTF-16–encoded slice `v` into a `MutBumpString`, replacing
+    /// invalid data with [the replacement character (`U+FFFD`)][U+FFFD].
+    ///
+    /// [U+FFFD]: core::char::REPLACEMENT_CHARACTER
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump1: Bump = Bump::try_new()?;
+    /// # let mut bump2: Bump = Bump::try_new()?;
+    /// // 𝄞mus<invalid>ic<invalid>
+    /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
+    ///           0x0073, 0xDD1E, 0x0069, 0x0063,
+    ///           0xD834];
+    ///
+    /// assert_eq!(MutBumpString::try_from_str_in("𝄞mus\u{FFFD}ic\u{FFFD}", &mut bump1)?,
+    ///            MutBumpString::try_from_utf16_lossy_in(v, &mut bump2)?);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_from_utf16_lossy_in(v: &[u16], allocator: A) -> Result<Self, AllocError> {
+        Self::generic_from_utf16_lossy_in(v, allocator)
+    }
+
+    pub(crate) fn generic_from_utf16_lossy_in<E: ErrorBehavior>(v: &[u16], allocator: A) -> Result<Self, E> {
+        let iter = char::decode_utf16(v.iter().copied());
+        let capacity = iter.size_hint().0;
+        let mut string = Self::generic_with_capacity_in(capacity, allocator)?;
+
+        for r in iter {
+            string.generic_push(r.unwrap_or(char::REPLACEMENT_CHARACTER))?;
         }
 
-        /// Inserts a character into this string at a byte position.
-        ///
-        /// This is an *O*(*n*) operation as it requires copying every element in the
-        /// buffer.
-        do panics
-        /// Panics if `idx` is larger than the string's length, or if it does not
-        /// lie on a [`char`] boundary.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut s = MutBumpString::with_capacity_in(3, &mut bump);
-        ///
-        /// s.insert(0, 'f');
-        /// s.insert(1, 'o');
-        /// s.insert(2, 'o');
-        ///
-        /// assert_eq!("foo", s);
-        /// ```
-        for fn insert
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut s = MutBumpString::try_with_capacity_in(3, &mut bump)?;
-        ///
-        /// s.try_insert(0, 'f')?;
-        /// s.try_insert(1, 'o')?;
-        /// s.try_insert(2, 'o')?;
-        ///
-        /// assert_eq!("foo", s);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_insert
-        #[inline]
-        use fn generic_insert(&mut self, idx: usize, ch: char) {
-            assert!(self.is_char_boundary(idx));
-            let mut bits = [0; 4];
-            let bits = ch.encode_utf8(&mut bits).as_bytes();
+        Ok(string)
+    }
 
+    /// Appends the given [`char`] to the end of this string.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut s = MutBumpString::from_str_in("abc", &mut bump);
+    ///
+    /// s.push('1');
+    /// s.push('2');
+    /// s.push('3');
+    ///
+    /// assert_eq!(s, "abc123");
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn push(&mut self, ch: char) {
+        panic_on_error(self.generic_push(ch));
+    }
+
+    /// Appends the given [`char`] to the end of this string.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut s = MutBumpString::try_from_str_in("abc", &mut bump)?;
+    ///
+    /// s.try_push('1')?;
+    /// s.try_push('2')?;
+    /// s.try_push('3')?;
+    ///
+    /// assert_eq!(s, "abc123");
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_push(&mut self, ch: char) -> Result<(), AllocError> {
+        self.generic_push(ch)
+    }
+
+    #[inline]
+    pub(crate) fn generic_push<E: ErrorBehavior>(&mut self, ch: char) -> Result<(), E> {
+        let vec = unsafe { self.as_mut_vec() };
+
+        match ch.len_utf8() {
+            1 => vec.generic_push(ch as u8),
+            _ => vec.generic_extend_from_slice_copy(ch.encode_utf8(&mut [0; 4]).as_bytes()),
+        }
+    }
+
+    /// Appends a given string slice onto the end of this string.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut s = MutBumpString::from_str_in("foo", &mut bump);
+    ///
+    /// s.push_str("bar");
+    ///
+    /// assert_eq!(s, "foobar");
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn push_str(&mut self, string: &str) {
+        panic_on_error(self.generic_push_str(string));
+    }
+
+    /// Appends a given string slice onto the end of this string.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut s = MutBumpString::try_from_str_in("foo", &mut bump)?;
+    ///
+    /// s.try_push_str("bar")?;
+    ///
+    /// assert_eq!(s, "foobar");
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_push_str(&mut self, string: &str) -> Result<(), AllocError> {
+        self.generic_push_str(string)
+    }
+
+    #[inline]
+    pub(crate) fn generic_push_str<E: ErrorBehavior>(&mut self, string: &str) -> Result<(), E> {
+        let vec = unsafe { self.as_mut_vec() };
+        vec.generic_extend_from_slice_copy(string.as_bytes())
+    }
+
+    /// Inserts a character into this string at a byte position.
+    ///
+    /// This is an *O*(*n*) operation as it requires copying every element in the
+    /// buffer.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// Panics if `idx` is larger than the string's length, or if it does not
+    /// lie on a [`char`] boundary.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut s = MutBumpString::with_capacity_in(3, &mut bump);
+    ///
+    /// s.insert(0, 'f');
+    /// s.insert(1, 'o');
+    /// s.insert(2, 'o');
+    ///
+    /// assert_eq!("foo", s);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn insert(&mut self, idx: usize, ch: char) {
+        panic_on_error(self.generic_insert(idx, ch));
+    }
+
+    /// Inserts a character into this string at a byte position.
+    ///
+    /// This is an *O*(*n*) operation as it requires copying every element in the
+    /// buffer.
+    ///
+    /// # Panics
+    /// Panics if `idx` is larger than the string's length, or if it does not
+    /// lie on a [`char`] boundary.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut s = MutBumpString::try_with_capacity_in(3, &mut bump)?;
+    ///
+    /// s.try_insert(0, 'f')?;
+    /// s.try_insert(1, 'o')?;
+    /// s.try_insert(2, 'o')?;
+    ///
+    /// assert_eq!("foo", s);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_insert(&mut self, idx: usize, ch: char) -> Result<(), AllocError> {
+        self.generic_insert(idx, ch)
+    }
+
+    #[inline]
+    pub(crate) fn generic_insert<E: ErrorBehavior>(&mut self, idx: usize, ch: char) -> Result<(), E> {
+        assert!(self.is_char_boundary(idx));
+        let mut bits = [0; 4];
+        let bits = ch.encode_utf8(&mut bits).as_bytes();
+
+        unsafe { self.insert_bytes(idx, bits) }
+    }
+
+    /// Inserts a string slice into this string at a byte position.
+    ///
+    /// This is an *O*(*n*) operation as it requires copying every element in the
+    /// buffer.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// Panics if `idx` is larger than the string's length, or if it does not
+    /// lie on a [`char`] boundary.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut s = MutBumpString::from_str_in("bar", &mut bump);
+    ///
+    /// s.insert_str(0, "foo");
+    ///
+    /// assert_eq!("foobar", s);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn insert_str(&mut self, idx: usize, string: &str) {
+        panic_on_error(self.generic_insert_str(idx, string));
+    }
+
+    /// Inserts a string slice into this string at a byte position.
+    ///
+    /// This is an *O*(*n*) operation as it requires copying every element in the
+    /// buffer.
+    ///
+    /// # Panics
+    /// Panics if `idx` is larger than the string's length, or if it does not
+    /// lie on a [`char`] boundary.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut s = MutBumpString::try_from_str_in("bar", &mut bump)?;
+    ///
+    /// s.try_insert_str(0, "foo")?;
+    ///
+    /// assert_eq!("foobar", s);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_insert_str(&mut self, idx: usize, string: &str) -> Result<(), AllocError> {
+        self.generic_insert_str(idx, string)
+    }
+
+    #[inline]
+    pub(crate) fn generic_insert_str<E: ErrorBehavior>(&mut self, idx: usize, string: &str) -> Result<(), E> {
+        assert!(self.is_char_boundary(idx));
+
+        unsafe { self.insert_bytes(idx, string.as_bytes()) }
+    }
+
+    /// Copies elements from `src` range to the end of the string.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// Panics if the starting point or end point do not lie on a [`char`]
+    /// boundary, or if they're out of bounds.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut string = MutBumpString::from_str_in("abcde", &mut bump);
+    ///
+    /// string.extend_from_within(2..);
+    /// assert_eq!(string, "abcdecde");
+    ///
+    /// string.extend_from_within(..2);
+    /// assert_eq!(string, "abcdecdeab");
+    ///
+    /// string.extend_from_within(4..8);
+    /// assert_eq!(string, "abcdecdeabecde");
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn extend_from_within<R>(&mut self, src: R)
+    where
+        R: RangeBounds<usize>,
+    {
+        panic_on_error(self.generic_extend_from_within(src));
+    }
+
+    /// Copies elements from `src` range to the end of the string.
+    ///
+    /// # Panics
+    /// Panics if the starting point or end point do not lie on a [`char`]
+    /// boundary, or if they're out of bounds.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut string = MutBumpString::try_from_str_in("abcde", &mut bump)?;
+    ///
+    /// string.try_extend_from_within(2..)?;
+    /// assert_eq!(string, "abcdecde");
+    ///
+    /// string.try_extend_from_within(..2)?;
+    /// assert_eq!(string, "abcdecdeab");
+    ///
+    /// string.try_extend_from_within(4..8)?;
+    /// assert_eq!(string, "abcdecdeabecde");
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_extend_from_within<R>(&mut self, src: R) -> Result<(), AllocError>
+    where
+        R: RangeBounds<usize>,
+    {
+        self.generic_extend_from_within(src)
+    }
+
+    #[inline]
+    pub(crate) fn generic_extend_from_within<E: ErrorBehavior, R: RangeBounds<usize>>(&mut self, src: R) -> Result<(), E> {
+        let src @ Range { start, end } = polyfill::slice::range(src, ..self.len());
+
+        assert!(self.is_char_boundary(start));
+        assert!(self.is_char_boundary(end));
+
+        let vec = unsafe { self.as_mut_vec() };
+        vec.generic_extend_from_within_copy(src)
+    }
+
+    /// Extends this string by pushing `additional` new zero bytes.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut string = MutBumpString::from_str_in("What?", &mut bump);
+    /// string.extend_zeroed(3);
+    /// assert_eq!(string, "What?\0\0\0");
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn extend_zeroed(&mut self, additional: usize) {
+        panic_on_error(self.generic_extend_zeroed(additional));
+    }
+
+    /// Extends this string by pushing `additional` new zero bytes.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut string = MutBumpString::try_from_str_in("What?", &mut bump)?;
+    /// string.try_extend_zeroed(3)?;
+    /// assert_eq!(string, "What?\0\0\0");
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_extend_zeroed(&mut self, additional: usize) -> Result<(), AllocError> {
+        self.generic_extend_zeroed(additional)
+    }
+
+    #[inline]
+    pub(crate) fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
+        let vec = unsafe { self.as_mut_vec() };
+
+        vec.generic_reserve(additional)?;
+
+        unsafe {
+            let ptr = vec.as_mut_ptr();
+            let len = vec.len();
+
+            ptr.add(len).write_bytes(0, additional);
+            vec.set_len(len + additional);
+        }
+
+        Ok(())
+    }
+
+    /// Removes the specified range in the string,
+    /// and replaces it with the given string.
+    /// The given string doesn't need to be the same length as the range.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// Panics if the starting point or end point do not lie on a [`char`]
+    /// boundary, or if they're out of bounds.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut s = MutBumpString::from_str_in("α is alpha, β is beta", &mut bump);
+    /// let beta_offset = s.find('β').unwrap_or(s.len());
+    ///
+    /// // Replace the range up until the β from the string
+    /// s.replace_range(..beta_offset, "Α is capital alpha; ");
+    /// assert_eq!(s, "Α is capital alpha; β is beta");
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn replace_range<R>(&mut self, range: R, replace_with: &str)
+    where
+        R: RangeBounds<usize>,
+    {
+        panic_on_error(self.generic_replace_range(range, replace_with));
+    }
+
+    /// Removes the specified range in the string,
+    /// and replaces it with the given string.
+    /// The given string doesn't need to be the same length as the range.
+    ///
+    /// # Panics
+    /// Panics if the starting point or end point do not lie on a [`char`]
+    /// boundary, or if they're out of bounds.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut s = MutBumpString::try_from_str_in("α is alpha, β is beta", &mut bump)?;
+    /// let beta_offset = s.find('β').unwrap_or(s.len());
+    ///
+    /// // Replace the range up until the β from the string
+    /// s.try_replace_range(..beta_offset, "Α is capital alpha; ")?;
+    /// assert_eq!(s, "Α is capital alpha; β is beta");
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_replace_range<R>(&mut self, range: R, replace_with: &str) -> Result<(), AllocError>
+    where
+        R: RangeBounds<usize>,
+    {
+        self.generic_replace_range(range, replace_with)
+    }
+
+    #[inline]
+    pub(crate) fn generic_replace_range<E: ErrorBehavior, R: RangeBounds<usize>>(
+        &mut self,
+        range: R,
+        replace_with: &str,
+    ) -> Result<(), E> {
+        let Range { start, end } = polyfill::slice::range(range, ..self.len());
+
+        self.assert_char_boundary(start);
+        self.assert_char_boundary(end);
+
+        let range_len = end - start;
+        let given_len = replace_with.len();
+
+        let additional_len = given_len.saturating_sub(range_len);
+        self.generic_reserve(additional_len)?;
+
+        // move the tail
+        if range_len != given_len {
             unsafe {
-                self.insert_bytes(idx, bits)
+                let src = self.as_ptr().add(end);
+                let dst = self.as_mut_ptr().add(start + given_len);
+                let len = self.len() - end;
+                src.copy_to(dst, len);
             }
         }
 
-        /// Inserts a string slice into this string at a byte position.
-        ///
-        /// This is an *O*(*n*) operation as it requires copying every element in the
-        /// buffer.
-        do panics
-        /// Panics if `idx` is larger than the string's length, or if it does not
-        /// lie on a [`char`] boundary.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut s = MutBumpString::from_str_in("bar", &mut bump);
-        ///
-        /// s.insert_str(0, "foo");
-        ///
-        /// assert_eq!("foobar", s);
-        /// ```
-        for fn insert_str
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut s = MutBumpString::try_from_str_in("bar", &mut bump)?;
-        ///
-        /// s.try_insert_str(0, "foo")?;
-        ///
-        /// assert_eq!("foobar", s);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_insert_str
-        #[inline]
-        use fn generic_insert_str(&mut self, idx: usize, string: &str) {
-            assert!(self.is_char_boundary(idx));
-
-            unsafe {
-                self.insert_bytes(idx, string.as_bytes())
-            }
+        // fill with given string
+        unsafe {
+            let src = replace_with.as_ptr();
+            let dst = self.as_mut_ptr().add(start);
+            let len = replace_with.len();
+            src.copy_to_nonoverlapping(dst, len);
         }
 
-        /// Copies elements from `src` range to the end of the string.
-        do panics
-        /// Panics if the starting point or end point do not lie on a [`char`]
-        /// boundary, or if they're out of bounds.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut string = MutBumpString::from_str_in("abcde", &mut bump);
-        ///
-        /// string.extend_from_within(2..);
-        /// assert_eq!(string, "abcdecde");
-        ///
-        /// string.extend_from_within(..2);
-        /// assert_eq!(string, "abcdecdeab");
-        ///
-        /// string.extend_from_within(4..8);
-        /// assert_eq!(string, "abcdecdeabecde");
-        /// ```
-        for fn extend_from_within
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut string = MutBumpString::try_from_str_in("abcde", &mut bump)?;
-        ///
-        /// string.try_extend_from_within(2..)?;
-        /// assert_eq!(string, "abcdecde");
-        ///
-        /// string.try_extend_from_within(..2)?;
-        /// assert_eq!(string, "abcdecdeab");
-        ///
-        /// string.try_extend_from_within(4..8)?;
-        /// assert_eq!(string, "abcdecdeabecde");
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_extend_from_within
-        #[inline]
-        use fn generic_extend_from_within<{R}>(&mut self, src: R)
-        where {
-            R: RangeBounds<usize>,
-        } in {
-            let src @ Range { start, end } = polyfill::slice::range(src, ..self.len());
-
-            assert!(self.is_char_boundary(start));
-            assert!(self.is_char_boundary(end));
-
-            let vec = unsafe { self.as_mut_vec() };
-            vec.generic_extend_from_within_copy(src)
+        // update len
+        #[allow(clippy::cast_sign_loss, clippy::cast_possible_wrap)]
+        unsafe {
+            // Casting to `isize` is fine because per `Layout`'s rules all the `*len`s must be
+            // less than isize::MAX. Subtracting two positive `isize`s can't overflow.
+            let len_diff = given_len as isize - range_len as isize;
+            self.set_len((self.len() as isize + len_diff) as usize);
         }
 
-        /// Extends this string by pushing `additional` new zero bytes.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut string = MutBumpString::from_str_in("What?", &mut bump);
-        /// string.extend_zeroed(3);
-        /// assert_eq!(string, "What?\0\0\0");
-        /// ```
-        for fn extend_zeroed
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut string = MutBumpString::try_from_str_in("What?", &mut bump)?;
-        /// string.try_extend_zeroed(3)?;
-        /// assert_eq!(string, "What?\0\0\0");
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_extend_zeroed
-        #[inline]
-        use fn generic_extend_zeroed(&mut self, additional: usize) {
-            let vec = unsafe { self.as_mut_vec() };
+        Ok(())
+    }
 
-            vec.generic_reserve(additional)?;
+    /// Reserves capacity for at least `additional` bytes more than the
+    /// current length. The allocator may reserve more space to speculatively
+    /// avoid frequent allocations. After calling `reserve`,
+    /// capacity will be greater than or equal to `self.len() + additional`.
+    /// Does nothing if capacity is already sufficient.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// Panics if the new capacity exceeds `isize::MAX` bytes.
+    ///
+    /// # Examples
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut s = MutBumpString::new_in(&mut bump);
+    ///
+    /// s.reserve(10);
+    ///
+    /// assert!(s.capacity() >= 10);
+    /// ```
+    ///
+    /// This might not actually increase the capacity:
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut s = MutBumpString::with_capacity_in(10, &mut bump);
+    /// s.push('a');
+    /// s.push('b');
+    ///
+    /// // s now has a length of 2 and a capacity of at least 10
+    /// let capacity = s.capacity();
+    /// assert_eq!(2, s.len());
+    /// assert!(capacity >= 10);
+    ///
+    /// // Since we already have at least an extra 8 capacity, calling this...
+    /// s.reserve(8);
+    ///
+    /// // ... doesn't actually increase.
+    /// assert_eq!(capacity, s.capacity());
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn reserve(&mut self, additional: usize) {
+        panic_on_error(self.generic_reserve(additional));
+    }
 
-            unsafe {
-                let ptr = vec.as_mut_ptr();
-                let len = vec.len();
+    /// Reserves capacity for at least `additional` bytes more than the
+    /// current length. The allocator may reserve more space to speculatively
+    /// avoid frequent allocations. After calling `reserve`,
+    /// capacity will be greater than or equal to `self.len() + additional`.
+    /// Does nothing if capacity is already sufficient.
+    ///
+    /// # Panics
+    /// Panics if the new capacity exceeds `isize::MAX` bytes.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut s = MutBumpString::new_in(&mut bump);
+    ///
+    /// s.try_reserve(10)?;
+    ///
+    /// assert!(s.capacity() >= 10);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    ///
+    /// This might not actually increase the capacity:
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut s = MutBumpString::try_with_capacity_in(10, &mut bump)?;
+    /// s.push('a');
+    /// s.push('b');
+    ///
+    /// // s now has a length of 2 and a capacity of at least 10
+    /// let capacity = s.capacity();
+    /// assert_eq!(2, s.len());
+    /// assert!(capacity >= 10);
+    ///
+    /// // Since we already have at least an extra 8 capacity, calling this...
+    /// s.try_reserve(8)?;
+    ///
+    /// // ... doesn't actually increase.
+    /// assert_eq!(capacity, s.capacity());
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_reserve(&mut self, additional: usize) -> Result<(), AllocError> {
+        self.generic_reserve(additional)
+    }
 
-                ptr.add(len).write_bytes(0, additional);
-                vec.set_len(len + additional);
-            }
+    #[inline]
+    pub(crate) fn generic_reserve<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
+        let vec = unsafe { self.as_mut_vec() };
+        vec.generic_reserve(additional)
+    }
 
-            Ok(())
-        }
+    /// Reserves the minimum capacity for at least `additional` bytes more than
+    /// the current length. Unlike [`reserve`], this will not
+    /// deliberately over-allocate to speculatively avoid frequent allocations.
+    /// After calling `reserve_exact`, capacity will be greater than or equal to
+    /// `self.len() + additional`. Does nothing if the capacity is already
+    /// sufficient.
+    ///
+    /// [`reserve`]: Self::reserve
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// Panics if the new capacity exceeds `isize::MAX` bytes.
+    ///
+    /// # Examples
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut s = MutBumpString::new_in(&mut bump);
+    ///
+    /// s.reserve_exact(10);
+    ///
+    /// assert!(s.capacity() >= 10);
+    /// ```
+    ///
+    /// This might not actually increase the capacity:
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut s = MutBumpString::with_capacity_in(10, &mut bump);
+    /// s.push('a');
+    /// s.push('b');
+    ///
+    /// // s now has a length of 2 and a capacity of at least 10
+    /// let capacity = s.capacity();
+    /// assert_eq!(2, s.len());
+    /// assert!(capacity >= 10);
+    ///
+    /// // Since we already have at least an extra 8 capacity, calling this...
+    /// s.reserve_exact(8);
+    ///
+    /// // ... doesn't actually increase.
+    /// assert_eq!(capacity, s.capacity());
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn reserve_exact(&mut self, additional: usize) {
+        panic_on_error(self.generic_reserve_exact(additional));
+    }
 
-                /// Removes the specified range in the string,
-        /// and replaces it with the given string.
-        /// The given string doesn't need to be the same length as the range.
-        do panics
-        /// Panics if the starting point or end point do not lie on a [`char`]
-        /// boundary, or if they're out of bounds.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut s = MutBumpString::from_str_in("α is alpha, β is beta", &mut bump);
-        /// let beta_offset = s.find('β').unwrap_or(s.len());
-        ///
-        /// // Replace the range up until the β from the string
-        /// s.replace_range(..beta_offset, "Α is capital alpha; ");
-        /// assert_eq!(s, "Α is capital alpha; β is beta");
-        /// ```
-        for fn replace_range
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut s = MutBumpString::try_from_str_in("α is alpha, β is beta", &mut bump)?;
-        /// let beta_offset = s.find('β').unwrap_or(s.len());
-        ///
-        /// // Replace the range up until the β from the string
-        /// s.try_replace_range(..beta_offset, "Α is capital alpha; ")?;
-        /// assert_eq!(s, "Α is capital alpha; β is beta");
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_replace_range
-        #[inline]
-        use fn generic_replace_range<{R}>(&mut self, range: R, replace_with: &str)
-        where {
-            R: RangeBounds<usize>,
-        } in {
-            let Range { start, end } = polyfill::slice::range(range, ..self.len());
+    /// Reserves the minimum capacity for at least `additional` bytes more than
+    /// the current length. Unlike [`reserve`], this will not
+    /// deliberately over-allocate to speculatively avoid frequent allocations.
+    /// After calling `reserve_exact`, capacity will be greater than or equal to
+    /// `self.len() + additional`. Does nothing if the capacity is already
+    /// sufficient.
+    ///
+    /// [`reserve`]: Self::reserve
+    ///
+    /// # Panics
+    /// Panics if the new capacity exceeds `isize::MAX` bytes.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut s = MutBumpString::new_in(&mut bump);
+    ///
+    /// s.try_reserve_exact(10)?;
+    ///
+    /// assert!(s.capacity() >= 10);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    ///
+    /// This might not actually increase the capacity:
+    ///
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut s = MutBumpString::try_with_capacity_in(10, &mut bump)?;
+    /// s.push('a');
+    /// s.push('b');
+    ///
+    /// // s now has a length of 2 and a capacity of at least 10
+    /// let capacity = s.capacity();
+    /// assert_eq!(2, s.len());
+    /// assert!(capacity >= 10);
+    ///
+    /// // Since we already have at least an extra 8 capacity, calling this...
+    /// s.try_reserve_exact(8)?;
+    ///
+    /// // ... doesn't actually increase.
+    /// assert_eq!(capacity, s.capacity());
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), AllocError> {
+        self.generic_reserve_exact(additional)
+    }
 
-            self.assert_char_boundary(start);
-            self.assert_char_boundary(end);
-
-            let range_len = end - start;
-            let given_len = replace_with.len();
-
-            let additional_len = given_len.saturating_sub(range_len);
-            self.generic_reserve(additional_len)?;
-
-            // move the tail
-            if range_len != given_len {
-                unsafe {
-                    let src = self.as_ptr().add(end);
-                    let dst = self.as_mut_ptr().add(start + given_len);
-                    let len = self.len() - end;
-                    src.copy_to(dst, len);
-                }
-            }
-
-            // fill with given string
-            unsafe {
-                let src = replace_with.as_ptr();
-                let dst = self.as_mut_ptr().add(start);
-                let len = replace_with.len();
-                src.copy_to_nonoverlapping(dst, len);
-            }
-
-            // update len
-            #[allow(clippy::cast_sign_loss, clippy::cast_possible_wrap)]
-            unsafe {
-                // Casting to `isize` is fine because per `Layout`'s rules all the `*len`s must be
-                // less than isize::MAX. Subtracting two positive `isize`s can't overflow.
-                let len_diff = given_len as isize - range_len as isize;
-                self.set_len((self.len() as isize + len_diff) as usize);
-            }
-
-            Ok(())
-        }
-
-        /// Reserves capacity for at least `additional` bytes more than the
-        /// current length. The allocator may reserve more space to speculatively
-        /// avoid frequent allocations. After calling `reserve`,
-        /// capacity will be greater than or equal to `self.len() + additional`.
-        /// Does nothing if capacity is already sufficient.
-        do panics
-        /// Panics if the new capacity exceeds `isize::MAX` bytes.
-        impl
-        do examples
-        /// Basic usage:
-        ///
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut s = MutBumpString::new_in(&mut bump);
-        ///
-        /// s.reserve(10);
-        ///
-        /// assert!(s.capacity() >= 10);
-        /// ```
-        ///
-        /// This might not actually increase the capacity:
-        ///
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::new();
-        /// let mut s = MutBumpString::with_capacity_in(10, &mut bump);
-        /// s.push('a');
-        /// s.push('b');
-        ///
-        /// // s now has a length of 2 and a capacity of at least 10
-        /// let capacity = s.capacity();
-        /// assert_eq!(2, s.len());
-        /// assert!(capacity >= 10);
-        ///
-        /// // Since we already have at least an extra 8 capacity, calling this...
-        /// s.reserve(8);
-        ///
-        /// // ... doesn't actually increase.
-        /// assert_eq!(capacity, s.capacity());
-        /// ```
-        for fn reserve
-        do examples
-        /// Basic usage:
-        ///
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut s = MutBumpString::new_in(&mut bump);
-        ///
-        /// s.try_reserve(10)?;
-        ///
-        /// assert!(s.capacity() >= 10);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        ///
-        /// This might not actually increase the capacity:
-        ///
-        /// ```
-        /// # use bump_scope::{ Bump, MutBumpString };
-        /// # let mut bump: Bump = Bump::try_new()?;
-        /// let mut s = MutBumpString::try_with_capacity_in(10, &mut bump)?;
-        /// s.push('a');
-        /// s.push('b');
-        ///
-        /// // s now has a length of 2 and a capacity of at least 10
-        /// let capacity = s.capacity();
-        /// assert_eq!(2, s.len());
-        /// assert!(capacity >= 10);
-        ///
-        /// // Since we already have at least an extra 8 capacity, calling this...
-        /// s.try_reserve(8)?;
-        ///
-        /// // ... doesn't actually increase.
-        /// assert_eq!(capacity, s.capacity());
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_reserve
-        #[inline]
-        use fn generic_reserve(&mut self, additional: usize) {
-            let vec = unsafe { self.as_mut_vec() };
-            vec.generic_reserve(additional)
-        }
-
-        /// Reserves the minimum capacity for at least `additional` bytes more than
-        /// the current length. Unlike [`reserve`], this will not
-        /// deliberately over-allocate to speculatively avoid frequent allocations.
-        /// After calling `reserve_exact`, capacity will be greater than or equal to
-        /// `self.len() + additional`. Does nothing if the capacity is already
-        /// sufficient.
-        ///
-        /// [`reserve`]: Self::reserve
-        do panics
-        /// Panics if the new capacity exceeds `isize::MAX` bytes.
-        impl
-        do examples
-        /// Basic usage:
-        ///
-        /// ```
-        /// # use bump_scope::{ Bump, BumpString };
-        /// # let bump: Bump = Bump::new();
-        /// let mut s = BumpString::new_in(&bump);
-        ///
-        /// s.reserve_exact(10);
-        ///
-        /// assert!(s.capacity() >= 10);
-        /// ```
-        ///
-        /// This might not actually increase the capacity:
-        ///
-        /// ```
-        /// # use bump_scope::{ Bump, BumpString };
-        /// # let bump: Bump = Bump::new();
-        /// let mut s = BumpString::with_capacity_in(10, &bump);
-        /// s.push('a');
-        /// s.push('b');
-        ///
-        /// // s now has a length of 2 and a capacity of at least 10
-        /// let capacity = s.capacity();
-        /// assert_eq!(2, s.len());
-        /// assert!(capacity >= 10);
-        ///
-        /// // Since we already have at least an extra 8 capacity, calling this...
-        /// s.reserve_exact(8);
-        ///
-        /// // ... doesn't actually increase.
-        /// assert_eq!(capacity, s.capacity());
-        /// ```
-        for fn reserve_exact
-        do examples
-        /// Basic usage:
-        ///
-        /// ```
-        /// # use bump_scope::{ Bump, BumpString };
-        /// # let bump: Bump = Bump::try_new()?;
-        /// let mut s = BumpString::new_in(&bump);
-        ///
-        /// s.try_reserve_exact(10)?;
-        ///
-        /// assert!(s.capacity() >= 10);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        ///
-        /// This might not actually increase the capacity:
-        ///
-        /// ```
-        /// # use bump_scope::{ Bump, BumpString };
-        /// # let bump: Bump = Bump::try_new()?;
-        /// let mut s = BumpString::try_with_capacity_in(10, &bump)?;
-        /// s.push('a');
-        /// s.push('b');
-        ///
-        /// // s now has a length of 2 and a capacity of at least 10
-        /// let capacity = s.capacity();
-        /// assert_eq!(2, s.len());
-        /// assert!(capacity >= 10);
-        ///
-        /// // Since we already have at least an extra 8 capacity, calling this...
-        /// s.try_reserve_exact(8)?;
-        ///
-        /// // ... doesn't actually increase.
-        /// assert_eq!(capacity, s.capacity());
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_reserve_exact
-        #[inline]
-        use fn generic_reserve_exact(&mut self, additional: usize) {
-            let vec = unsafe { self.as_mut_vec() };
-            vec.generic_reserve_exact(additional)
-        }
+    #[inline]
+    pub(crate) fn generic_reserve_exact<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
+        let vec = unsafe { self.as_mut_vec() };
+        vec.generic_reserve_exact(additional)
     }
 
     unsafe fn insert_bytes<B: ErrorBehavior>(&mut self, idx: usize, bytes: &[u8]) -> Result<(), B> {
@@ -1378,7 +1689,7 @@ impl<'a, A: MutBumpAllocatorScope<'a>> MutBumpString<A> {
         panic_on_error(self.generic_into_cstr())
     }
 
-    /// Converts this `BumpString` into `&CStr` that is live for this bump scope.
+    /// Converts this `MutBumpString` into `&CStr` that is live for this bump scope.
     ///
     /// If the string contains a `'\0'` then the `CStr` will stop there.
     ///

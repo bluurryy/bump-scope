@@ -9,10 +9,14 @@ use core::{
 };
 
 use crate::{
-    error_behavior_generic_methods_if, owned_str,
+    alloc::AllocError,
+    owned_str,
     polyfill::{self, nonnull, transmute_mut},
     BumpAllocatorScope, BumpBox, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop,
 };
+
+#[cfg(feature = "panic-on-alloc")]
+use crate::panic_on_error;
 
 /// A type like [`BumpString`](crate::BumpString) but with a fixed capacity.
 ///
@@ -633,7 +637,7 @@ impl<'a> FixedBumpString<'a> {
     #[must_use]
     #[inline(always)]
     pub unsafe fn as_mut_vec(&mut self) -> &mut FixedBumpVec<'a, u8> {
-        // SAFETY: `BumpVec<u8>` and `BumpString` have the same representation;
+        // SAFETY: `FixedBumpVec<u8>` and `FixedBumpString` have the same representation;
         // only the invariant that the bytes are utf8 is different.
         transmute_mut(self)
     }
@@ -670,356 +674,519 @@ impl<'a> FixedBumpString<'a> {
 }
 
 impl FixedBumpString<'_> {
-    error_behavior_generic_methods_if! {
-        if "the string is full"
+    /// Appends the given [`char`] to the end of this string.
+    ///
+    /// # Panics
+    /// Panics if the string is full.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_fixed_string(3);
+    ///
+    /// s.push('a');
+    /// s.push('b');
+    /// s.push('c');
+    ///
+    /// assert_eq!(s, "abc");
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn push(&mut self, ch: char) {
+        panic_on_error(self.generic_push(ch));
+    }
 
-        /// Appends the given [`char`] to the end of this string.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::Bump;
-        /// # let bump: Bump = Bump::new();
-        /// let mut s = bump.alloc_fixed_string(3);
-        ///
-        /// s.push('a');
-        /// s.push('b');
-        /// s.push('c');
-        ///
-        /// assert_eq!(s, "abc");
-        /// ```
-        for fn push
-        do examples
-        /// ```
-        /// # use bump_scope::Bump;
-        /// # let bump: Bump = Bump::try_new()?;
-        /// let mut s = bump.try_alloc_fixed_string(3)?;
-        ///
-        /// s.try_push('a')?;
-        /// s.try_push('b')?;
-        /// s.try_push('c')?;
-        ///
-        /// assert_eq!(s, "abc");
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_push
-        #[inline]
-        use fn generic_push(&mut self, ch: char) {
-            let vec = unsafe { self.as_mut_vec() };
+    /// Appends the given [`char`] to the end of this string.
+    ///
+    /// # Errors
+    /// Errors if the string is full.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let mut s = bump.try_alloc_fixed_string(3)?;
+    ///
+    /// s.try_push('a')?;
+    /// s.try_push('b')?;
+    /// s.try_push('c')?;
+    ///
+    /// assert_eq!(s, "abc");
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_push(&mut self, ch: char) -> Result<(), AllocError> {
+        self.generic_push(ch)
+    }
 
-            match ch.len_utf8() {
-                1 => vec.generic_push(ch as u8),
-                _ => vec.generic_extend_from_slice_copy(ch.encode_utf8(&mut [0; 4]).as_bytes()),
-            }
+    #[inline]
+    pub(crate) fn generic_push<E: ErrorBehavior>(&mut self, ch: char) -> Result<(), E> {
+        let vec = unsafe { self.as_mut_vec() };
+
+        match ch.len_utf8() {
+            1 => vec.generic_push(ch as u8),
+            _ => vec.generic_extend_from_slice_copy(ch.encode_utf8(&mut [0; 4]).as_bytes()),
+        }
+    }
+
+    /// Appends a given string slice onto the end of this string.
+    ///
+    /// # Panics
+    /// Panics if the string is full.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_fixed_string(6);
+    ///
+    /// s.push_str("foo");
+    /// s.push_str("bar");
+    ///
+    /// assert_eq!(s, "foobar");
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn push_str(&mut self, string: &str) {
+        panic_on_error(self.generic_push_str(string));
+    }
+
+    /// Appends a given string slice onto the end of this string.
+    ///
+    /// # Errors
+    /// Errors if the string is full.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let mut s = bump.try_alloc_fixed_string(6)?;
+    ///
+    /// s.try_push_str("foo")?;
+    /// s.try_push_str("bar")?;
+    ///
+    /// assert_eq!(s, "foobar");
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_push_str(&mut self, string: &str) -> Result<(), AllocError> {
+        self.generic_push_str(string)
+    }
+
+    #[inline]
+    pub(crate) fn generic_push_str<E: ErrorBehavior>(&mut self, string: &str) -> Result<(), E> {
+        let vec = unsafe { self.as_mut_vec() };
+        vec.generic_extend_from_slice_copy(string.as_bytes())
+    }
+
+    /// Inserts a character into this string at a byte position.
+    ///
+    /// This is an *O*(*n*) operation as it requires copying every element in the
+    /// buffer.
+    ///
+    /// # Panics
+    /// Panics if the string is full.
+    ///
+    /// Panics if `idx` is larger than the string's length, or if it does not
+    /// lie on a [`char`] boundary.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_fixed_string(3);
+    ///
+    /// s.insert(0, 'f');
+    /// s.insert(1, 'o');
+    /// s.insert(2, 'o');
+    ///
+    /// assert_eq!("foo", s);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn insert(&mut self, idx: usize, ch: char) {
+        panic_on_error(self.generic_insert(idx, ch));
+    }
+
+    /// Inserts a character into this string at a byte position.
+    ///
+    /// This is an *O*(*n*) operation as it requires copying every element in the
+    /// buffer.
+    ///
+    /// # Panics
+    /// Panics if `idx` is larger than the string's length, or if it does not
+    /// lie on a [`char`] boundary.
+    ///
+    /// # Errors
+    /// Errors if the string is full.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let mut s = bump.try_alloc_fixed_string(3)?;
+    ///
+    /// s.try_insert(0, 'f')?;
+    /// s.try_insert(1, 'o')?;
+    /// s.try_insert(2, 'o')?;
+    ///
+    /// assert_eq!("foo", s);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_insert(&mut self, idx: usize, ch: char) -> Result<(), AllocError> {
+        self.generic_insert(idx, ch)
+    }
+
+    #[inline]
+    pub(crate) fn generic_insert<E: ErrorBehavior>(&mut self, idx: usize, ch: char) -> Result<(), E> {
+        assert!(self.is_char_boundary(idx));
+        let mut bits = [0; 4];
+        let bits = ch.encode_utf8(&mut bits).as_bytes();
+
+        unsafe { self.insert_bytes(idx, bits) }
+    }
+
+    /// Inserts a string slice into this string at a byte position.
+    ///
+    /// This is an *O*(*n*) operation as it requires copying every element in the
+    /// buffer.
+    ///
+    /// # Panics
+    /// Panics if the string is full.
+    ///
+    /// Panics if `idx` is larger than the string's length, or if it does not
+    /// lie on a [`char`] boundary.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_fixed_string(6);
+    /// s.push_str("bar");
+    ///
+    /// s.insert_str(0, "foo");
+    ///
+    /// assert_eq!("foobar", s);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn insert_str(&mut self, idx: usize, string: &str) {
+        panic_on_error(self.generic_insert_str(idx, string));
+    }
+
+    /// Inserts a string slice into this string at a byte position.
+    ///
+    /// This is an *O*(*n*) operation as it requires copying every element in the
+    /// buffer.
+    ///
+    /// # Panics
+    /// Panics if `idx` is larger than the string's length, or if it does not
+    /// lie on a [`char`] boundary.
+    ///
+    /// # Errors
+    /// Errors if the string is full.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let mut s = bump.try_alloc_fixed_string(6)?;
+    /// s.try_push_str("bar")?;
+    ///
+    /// s.try_insert_str(0, "foo")?;
+    ///
+    /// assert_eq!("foobar", s);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_insert_str(&mut self, idx: usize, string: &str) -> Result<(), AllocError> {
+        self.generic_insert_str(idx, string)
+    }
+
+    #[inline]
+    pub(crate) fn generic_insert_str<E: ErrorBehavior>(&mut self, idx: usize, string: &str) -> Result<(), E> {
+        assert!(self.is_char_boundary(idx));
+
+        unsafe { self.insert_bytes(idx, string.as_bytes()) }
+    }
+
+    /// Copies elements from `src` range to the end of the string.
+    ///
+    /// # Panics
+    /// Panics if the string is full.
+    ///
+    /// Panics if the starting point or end point do not lie on a [`char`]
+    /// boundary, or if they're out of bounds.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # let bump: Bump = Bump::new();
+    /// let mut string = bump.alloc_fixed_string(14);
+    /// string.push_str("abcde");
+    ///
+    /// string.extend_from_within(2..);
+    /// assert_eq!(string, "abcdecde");
+    ///
+    /// string.extend_from_within(..2);
+    /// assert_eq!(string, "abcdecdeab");
+    ///
+    /// string.extend_from_within(4..8);
+    /// assert_eq!(string, "abcdecdeabecde");
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn extend_from_within<R>(&mut self, src: R)
+    where
+        R: RangeBounds<usize>,
+    {
+        panic_on_error(self.generic_extend_from_within(src));
+    }
+
+    /// Copies elements from `src` range to the end of the string.
+    ///
+    /// # Panics
+    /// Panics if the starting point or end point do not lie on a [`char`]
+    /// boundary, or if they're out of bounds.
+    ///
+    /// # Errors
+    /// Errors if the string is full.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let mut string = bump.try_alloc_fixed_string(14)?;
+    /// string.try_push_str("abcde")?;
+    ///
+    /// string.try_extend_from_within(2..)?;
+    /// assert_eq!(string, "abcdecde");
+    ///
+    /// string.try_extend_from_within(..2)?;
+    /// assert_eq!(string, "abcdecdeab");
+    ///
+    /// string.try_extend_from_within(4..8)?;
+    /// assert_eq!(string, "abcdecdeabecde");
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_extend_from_within<R>(&mut self, src: R) -> Result<(), AllocError>
+    where
+        R: RangeBounds<usize>,
+    {
+        self.generic_extend_from_within(src)
+    }
+
+    #[inline]
+    pub(crate) fn generic_extend_from_within<E: ErrorBehavior, R: RangeBounds<usize>>(&mut self, src: R) -> Result<(), E> {
+        let src @ Range { start, end } = polyfill::slice::range(src, ..self.len());
+
+        assert!(self.is_char_boundary(start));
+        assert!(self.is_char_boundary(end));
+
+        let vec = unsafe { self.as_mut_vec() };
+        vec.generic_extend_from_within_copy(src)
+    }
+
+    /// Extends this string by pushing `additional` new zero bytes.
+    ///
+    /// # Panics
+    /// Panics if the string is full.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # let bump: Bump = Bump::new();
+    /// let mut string = bump.alloc_fixed_string(8);
+    /// string.push_str("What?");
+    /// string.extend_zeroed(3);
+    /// assert_eq!(string, "What?\0\0\0");
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn extend_zeroed(&mut self, additional: usize) {
+        panic_on_error(self.generic_extend_zeroed(additional));
+    }
+
+    /// Extends this string by pushing `additional` new zero bytes.
+    ///
+    /// # Errors
+    /// Errors if the string is full.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let mut string = bump.try_alloc_fixed_string(8)?;
+    /// string.try_push_str("What?")?;
+    /// string.try_extend_zeroed(3)?;
+    /// assert_eq!(string, "What?\0\0\0");
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_extend_zeroed(&mut self, additional: usize) -> Result<(), AllocError> {
+        self.generic_extend_zeroed(additional)
+    }
+
+    #[inline]
+    pub(crate) fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
+        let vec = unsafe { self.as_mut_vec() };
+
+        vec.generic_reserve(additional)?;
+
+        unsafe {
+            let ptr = vec.as_mut_ptr();
+            let len = vec.len();
+
+            ptr.add(len).write_bytes(0, additional);
+            vec.set_len(len + additional);
         }
 
-        /// Appends a given string slice onto the end of this string.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::Bump;
-        /// # let bump: Bump = Bump::new();
-        /// let mut s = bump.alloc_fixed_string(6);
-        ///
-        /// s.push_str("foo");
-        /// s.push_str("bar");
-        ///
-        /// assert_eq!(s, "foobar");
-        /// ```
-        for fn push_str
-        do examples
-        /// ```
-        /// # use bump_scope::Bump;
-        /// # let bump: Bump = Bump::try_new()?;
-        /// let mut s = bump.try_alloc_fixed_string(6)?;
-        ///
-        /// s.try_push_str("foo")?;
-        /// s.try_push_str("bar")?;
-        ///
-        /// assert_eq!(s, "foobar");
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_push_str
-        #[inline]
-        use fn generic_push_str(&mut self, string: &str) {
-            let vec = unsafe { self.as_mut_vec() };
-            vec.generic_extend_from_slice_copy(string.as_bytes())
-        }
+        Ok(())
+    }
 
-        /// Inserts a character into this string at a byte position.
-        ///
-        /// This is an *O*(*n*) operation as it requires copying every element in the
-        /// buffer.
-        do panics
-        /// Panics if `idx` is larger than the string's length, or if it does not
-        /// lie on a [`char`] boundary.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, FixedBumpString };
-        /// # let bump: Bump = Bump::new();
-        /// let mut s = bump.alloc_fixed_string(3);
-        ///
-        /// s.insert(0, 'f');
-        /// s.insert(1, 'o');
-        /// s.insert(2, 'o');
-        ///
-        /// assert_eq!("foo", s);
-        /// ```
-        for fn insert
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, FixedBumpString };
-        /// # let bump: Bump = Bump::try_new()?;
-        /// let mut s = bump.try_alloc_fixed_string(3)?;
-        ///
-        /// s.try_insert(0, 'f')?;
-        /// s.try_insert(1, 'o')?;
-        /// s.try_insert(2, 'o')?;
-        ///
-        /// assert_eq!("foo", s);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_insert
-        #[inline]
-        use fn generic_insert(&mut self, idx: usize, ch: char) {
-            assert!(self.is_char_boundary(idx));
-            let mut bits = [0; 4];
-            let bits = ch.encode_utf8(&mut bits).as_bytes();
+    /// Removes the specified range in the string,
+    /// and replaces it with the given string.
+    /// The given string doesn't need to be the same length as the range.
+    ///
+    /// # Panics
+    /// Panics if the string is full.
+    ///
+    /// Panics if the starting point or end point do not lie on a [`char`]
+    /// boundary, or if they're out of bounds.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = bump.alloc_fixed_string(50);
+    /// s.push_str("α is alpha, β is beta");
+    /// let beta_offset = s.find('β').unwrap_or(s.len());
+    ///
+    /// // Replace the range up until the β from the string
+    /// s.replace_range(..beta_offset, "Α is capital alpha; ");
+    /// assert_eq!(s, "Α is capital alpha; β is beta");
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn replace_range<R>(&mut self, range: R, replace_with: &str)
+    where
+        R: RangeBounds<usize>,
+    {
+        panic_on_error(self.generic_replace_range(range, replace_with));
+    }
 
+    /// Removes the specified range in the string,
+    /// and replaces it with the given string.
+    /// The given string doesn't need to be the same length as the range.
+    ///
+    /// # Panics
+    /// Panics if the starting point or end point do not lie on a [`char`]
+    /// boundary, or if they're out of bounds.
+    ///
+    /// # Errors
+    /// Errors if the string is full.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let mut s = bump.try_alloc_fixed_string(50)?;
+    /// s.push_str("α is alpha, β is beta");
+    /// let beta_offset = s.find('β').unwrap_or(s.len());
+    ///
+    /// // Replace the range up until the β from the string
+    /// s.try_replace_range(..beta_offset, "Α is capital alpha; ")?;
+    /// assert_eq!(s, "Α is capital alpha; β is beta");
+    ///
+    /// // An error will be returned when the capacity does not suffice
+    /// let mut s = bump.try_alloc_fixed_string(5)?;
+    /// s.push_str("hello");
+    /// assert!(s.try_replace_range(4..=4, " n").is_err());
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_replace_range<R>(&mut self, range: R, replace_with: &str) -> Result<(), AllocError>
+    where
+        R: RangeBounds<usize>,
+    {
+        self.generic_replace_range(range, replace_with)
+    }
+
+    #[inline]
+    pub(crate) fn generic_replace_range<E: ErrorBehavior, R: RangeBounds<usize>>(
+        &mut self,
+        range: R,
+        replace_with: &str,
+    ) -> Result<(), E> {
+        let Range { start, end } = polyfill::slice::range(range, ..self.len());
+
+        self.assert_char_boundary(start);
+        self.assert_char_boundary(end);
+
+        let range_len = end - start;
+        let given_len = replace_with.len();
+
+        let additional_len = given_len.saturating_sub(range_len);
+        self.generic_reserve(additional_len)?;
+
+        // move the tail
+        if range_len != given_len {
             unsafe {
-                self.insert_bytes(idx, bits)
+                let src = self.as_ptr().add(end);
+                let dst = self.as_mut_ptr().add(start + given_len);
+                let len = self.len() - end;
+                src.copy_to(dst, len);
             }
         }
 
-        /// Inserts a string slice into this string at a byte position.
-        ///
-        /// This is an *O*(*n*) operation as it requires copying every element in the
-        /// buffer.
-        do panics
-        /// Panics if `idx` is larger than the string's length, or if it does not
-        /// lie on a [`char`] boundary.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, FixedBumpString };
-        /// # let bump: Bump = Bump::new();
-        /// let mut s = bump.alloc_fixed_string(6);
-        /// s.push_str("bar");
-        ///
-        /// s.insert_str(0, "foo");
-        ///
-        /// assert_eq!("foobar", s);
-        /// ```
-        for fn insert_str
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, FixedBumpString };
-        /// # let bump: Bump = Bump::try_new()?;
-        /// let mut s = bump.try_alloc_fixed_string(6)?;
-        /// s.try_push_str("bar")?;
-        ///
-        /// s.try_insert_str(0, "foo")?;
-        ///
-        /// assert_eq!("foobar", s);
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_insert_str
-        #[inline]
-        use fn generic_insert_str(&mut self, idx: usize, string: &str) {
-            assert!(self.is_char_boundary(idx));
-
-            unsafe {
-                self.insert_bytes(idx, string.as_bytes())
-            }
+        // fill with given string
+        unsafe {
+            let src = replace_with.as_ptr();
+            let dst = self.as_mut_ptr().add(start);
+            let len = replace_with.len();
+            src.copy_to_nonoverlapping(dst, len);
         }
 
-        /// Copies elements from `src` range to the end of the string.
-        do panics
-        /// Panics if the starting point or end point do not lie on a [`char`]
-        /// boundary, or if they're out of bounds.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, FixedBumpString };
-        /// # let bump: Bump = Bump::new();
-        /// let mut string = bump.alloc_fixed_string(14);
-        /// string.push_str("abcde");
-        ///
-        /// string.extend_from_within(2..);
-        /// assert_eq!(string, "abcdecde");
-        ///
-        /// string.extend_from_within(..2);
-        /// assert_eq!(string, "abcdecdeab");
-        ///
-        /// string.extend_from_within(4..8);
-        /// assert_eq!(string, "abcdecdeabecde");
-        /// ```
-        for fn extend_from_within
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, FixedBumpString };
-        /// # let bump: Bump = Bump::try_new()?;
-        /// let mut string = bump.try_alloc_fixed_string(14)?;
-        /// string.try_push_str("abcde")?;
-        ///
-        /// string.try_extend_from_within(2..)?;
-        /// assert_eq!(string, "abcdecde");
-        ///
-        /// string.try_extend_from_within(..2)?;
-        /// assert_eq!(string, "abcdecdeab");
-        ///
-        /// string.try_extend_from_within(4..8)?;
-        /// assert_eq!(string, "abcdecdeabecde");
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_extend_from_within
-        #[inline]
-        use fn generic_extend_from_within<{R}>(&mut self, src: R)
-        where {
-            R: RangeBounds<usize>,
-        } in {
-            let src @ Range { start, end } = polyfill::slice::range(src, ..self.len());
-
-            assert!(self.is_char_boundary(start));
-            assert!(self.is_char_boundary(end));
-
-            let vec = unsafe { self.as_mut_vec() };
-            vec.generic_extend_from_within_copy(src)
+        // update len
+        #[allow(clippy::cast_sign_loss, clippy::cast_possible_wrap)]
+        unsafe {
+            // Casting to `isize` is fine because per `Layout`'s rules all the `*len`s must be
+            // less than isize::MAX. Subtracting two positive `isize`s can't overflow.
+            let len_diff = given_len as isize - range_len as isize;
+            self.set_len((self.len() as isize + len_diff) as usize);
         }
 
-        /// Extends this string by pushing `additional` new zero bytes.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, FixedBumpString };
-        /// # let bump: Bump = Bump::new();
-        /// let mut string = bump.alloc_fixed_string(8);
-        /// string.push_str("What?");
-        /// string.extend_zeroed(3);
-        /// assert_eq!(string, "What?\0\0\0");
-        /// ```
-        for fn extend_zeroed
-        do examples
-        /// ```
-        /// # use bump_scope::{ Bump, FixedBumpString };
-        /// # let bump: Bump = Bump::try_new()?;
-        /// let mut string = bump.try_alloc_fixed_string(8)?;
-        /// string.try_push_str("What?")?;
-        /// string.try_extend_zeroed(3)?;
-        /// assert_eq!(string, "What?\0\0\0");
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_extend_zeroed
-        #[inline]
-        use fn generic_extend_zeroed(&mut self, additional: usize) {
-            let vec = unsafe { self.as_mut_vec() };
-            vec.generic_reserve(additional)?;
+        Ok(())
+    }
 
-            unsafe {
-                let ptr = vec.as_mut_ptr();
-                let len = vec.len();
+    /// Checks if at least `additional` more bytes can be inserted
+    /// in the given `FixedBumpString` due to capacity.
+    ///
+    /// # Panics
+    /// Panics if the string is full.
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn reserve(&mut self, additional: usize) {
+        panic_on_error(self.generic_reserve(additional));
+    }
 
-                ptr.add(len).write_bytes(0, additional);
-                vec.set_len(len + additional);
-            }
+    /// Checks if at least `additional` more bytes can be inserted
+    /// in the given `FixedBumpString` due to capacity.
+    ///
+    /// # Errors
+    /// Errors if the string is full.
+    #[inline(always)]
+    pub fn try_reserve(&mut self, additional: usize) -> Result<(), AllocError> {
+        self.generic_reserve(additional)
+    }
 
-            Ok(())
-        }
-
-        /// Removes the specified range in the string,
-        /// and replaces it with the given string.
-        /// The given string doesn't need to be the same length as the range.
-        do panics
-        /// Panics if the starting point or end point do not lie on a [`char`]
-        /// boundary, or if they're out of bounds.
-        impl
-        do examples
-        /// ```
-        /// # use bump_scope::Bump;
-        /// # let bump: Bump = Bump::new();
-        /// let mut s = bump.alloc_fixed_string(50);
-        /// s.push_str("α is alpha, β is beta");
-        /// let beta_offset = s.find('β').unwrap_or(s.len());
-        ///
-        /// // Replace the range up until the β from the string
-        /// s.replace_range(..beta_offset, "Α is capital alpha; ");
-        /// assert_eq!(s, "Α is capital alpha; β is beta");
-        /// ```
-        for fn replace_range
-        do examples
-        /// ```
-        /// # use bump_scope::Bump;
-        /// # let bump: Bump = Bump::try_new()?;
-        /// let mut s = bump.try_alloc_fixed_string(50)?;
-        /// s.push_str("α is alpha, β is beta");
-        /// let beta_offset = s.find('β').unwrap_or(s.len());
-        ///
-        /// // Replace the range up until the β from the string
-        /// s.try_replace_range(..beta_offset, "Α is capital alpha; ")?;
-        /// assert_eq!(s, "Α is capital alpha; β is beta");
-        ///
-        /// // An error will be returned when the capacity does not suffice
-        /// let mut s = bump.try_alloc_fixed_string(5)?;
-        /// s.push_str("hello");
-        /// assert!(s.try_replace_range(4..=4, " n").is_err());
-        /// # Ok::<(), bump_scope::alloc::AllocError>(())
-        /// ```
-        for fn try_replace_range
-        #[inline]
-        use fn generic_replace_range<{R}>(&mut self, range: R, replace_with: &str)
-        where {
-            R: RangeBounds<usize>,
-        } in {
-            let Range { start, end } = polyfill::slice::range(range, ..self.len());
-
-            self.assert_char_boundary(start);
-            self.assert_char_boundary(end);
-
-            let range_len = end - start;
-            let given_len = replace_with.len();
-
-            let additional_len = given_len.saturating_sub(range_len);
-            self.generic_reserve(additional_len)?;
-
-            // move the tail
-            if range_len != given_len {
-                unsafe {
-                    let src = self.as_ptr().add(end);
-                    let dst = self.as_mut_ptr().add(start + given_len);
-                    let len = self.len() - end;
-                    src.copy_to(dst, len);
-                }
-            }
-
-            // fill with given string
-            unsafe {
-                let src = replace_with.as_ptr();
-                let dst = self.as_mut_ptr().add(start);
-                let len = replace_with.len();
-                src.copy_to_nonoverlapping(dst, len);
-            }
-
-            // update len
-            #[allow(clippy::cast_sign_loss, clippy::cast_possible_wrap)]
-            unsafe {
-                // Casting to `isize` is fine because per `Layout`'s rules all the `*len`s must be
-                // less than isize::MAX. Subtracting two positive `isize`s can't overflow.
-                let len_diff = given_len as isize - range_len as isize;
-                self.set_len((self.len() as isize + len_diff) as usize);
-            }
-
-            Ok(())
-        }
-
-        /// Checks if at least `additional` more bytes can be inserted
-        /// in the given `FixedBumpString` due to capacity.
-        impl
-        for fn reserve
-        for fn try_reserve
-        #[inline]
-        use fn generic_reserve(&mut self, additional: usize) {
-            unsafe { self.as_mut_vec() }.generic_reserve(additional)
-        }
+    #[inline]
+    pub(crate) fn generic_reserve<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
+        let vec = unsafe { self.as_mut_vec() };
+        vec.generic_reserve(additional)
     }
 
     unsafe fn insert_bytes<B: ErrorBehavior>(&mut self, idx: usize, bytes: &[u8]) -> Result<(), B> {

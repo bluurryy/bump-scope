@@ -6,10 +6,10 @@ use std::{
     vec::Vec,
 };
 
-use crate::{
-    error_behavior_generic_methods_allocation_failure, BaseAllocator, Bump, BumpScope, MinimumAlignment,
-    SupportedMinimumAlignment,
-};
+use crate::{alloc::AllocError, BaseAllocator, Bump, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment};
+
+#[cfg(feature = "panic-on-alloc")]
+use crate::panic_on_error;
 
 macro_rules! bump_pool_declaration {
     ($($allocator_parameter:tt)*) => {
@@ -140,84 +140,133 @@ where
         self.bumps.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    error_behavior_generic_methods_allocation_failure! {
-        /// Borrows a bump allocator from the pool.
-        /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
-        impl
-        ///
-        /// If this needs to create a new `Bump`, it will be constructed by calling <code>Bump::[new]\()</code>.
-        ///
-        /// [new]: Bump::new
-        #[must_use]
-        for fn get
-        ///
-        /// If this needs to create a new `Bump`, it will be constructed by calling <code>Bump::[try_new]\()</code>.
-        ///
-        /// [try_new]: Bump::try_new
-        for fn try_get
-        use fn generic_get(&self,) -> BumpPoolGuard<A, MIN_ALIGN, UP> {
-            let bump = match self.lock().pop() {
-                Some(bump) => bump,
-                None => Bump::generic_new_in(self.allocator.clone())?,
-            };
+    /// Borrows a bump allocator from the pool.
+    /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
+    ///
+    /// If this needs to create a new `Bump`, it will be constructed by calling <code>Bump::[new]\()</code>.
+    ///
+    /// [new]: Bump::new
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn get(&self) -> BumpPoolGuard<A, MIN_ALIGN, UP> {
+        panic_on_error(self.generic_get())
+    }
 
-            Ok(BumpPoolGuard {
-                pool: self,
-                bump: ManuallyDrop::new(bump),
-            })
-        }
+    /// Borrows a bump allocator from the pool.
+    /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
+    ///
+    /// If this needs to create a new `Bump`, it will be constructed by calling <code>Bump::[try_new]\()</code>.
+    ///
+    /// [try_new]: Bump::try_new
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    #[inline(always)]
+    pub fn try_get(&self) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP>, AllocError> {
+        self.generic_get()
+    }
 
-        /// Borrows a bump allocator from the pool.
-        /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
-        impl
-        ///
-        /// If this needs to create a new `Bump`, it will be constructed by calling <code>Bump::[with_size]\(size)</code>.
-        ///
-        /// [with_size]: Bump::with_size
-        #[must_use]
-        for fn get_with_size
-        ///
-        ///  If this needs to create a new `Bump`, it will be constructed by calling <code>Bump::[try_with_size]\(size)</code>.
-        ///
-        /// [try_with_size]: Bump::try_with_size
-        for fn try_get_with_size
-        use fn generic_get_with_size(&self, size: usize) -> BumpPoolGuard<A, MIN_ALIGN, UP> {
-            let bump = match self.lock().pop() {
-                Some(bump) => bump,
-                None => Bump::generic_with_size_in(size, self.allocator.clone())?,
-            };
+    pub(crate) fn generic_get<E: ErrorBehavior>(&self) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP>, E> {
+        let bump = match self.lock().pop() {
+            Some(bump) => bump,
+            None => Bump::generic_new_in(self.allocator.clone())?,
+        };
 
-            Ok(BumpPoolGuard {
-                pool: self,
-                bump: ManuallyDrop::new(bump),
-            })
-        }
+        Ok(BumpPoolGuard {
+            pool: self,
+            bump: ManuallyDrop::new(bump),
+        })
+    }
 
-        /// Borrows a bump allocator from the pool.
-        /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
-        impl
-        ///
-        /// If this needs to create a new `Bump`, it will be constructed by calling <code>Bump::[with_capacity]\(layout)</code>.
-        ///
-        /// [with_capacity]: Bump::with_capacity
-        #[must_use]
-        for fn get_with_capacity
-        ///
-        ///  If this needs to create a new `Bump`, it will be constructed by calling <code>Bump::[try_with_capacity]\(layout)</code>.
-        ///
-        /// [try_with_capacity]: Bump::try_with_capacity
-        for fn try_get_with_capacity
-        use fn generic_get_with_capacity(&self, layout: Layout) -> BumpPoolGuard<A, MIN_ALIGN, UP> {
-            let bump = match self.lock().pop() {
-                Some(bump) => bump,
-                None => Bump::generic_with_capacity_in(layout, self.allocator.clone())?,
-            };
+    /// Borrows a bump allocator from the pool.
+    /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
+    ///
+    ///  If this needs to create a new `Bump`, it will be constructed by calling <code>Bump::[with_size]\(size)</code>.
+    ///
+    /// [with_size]: Bump::with_size
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn get_with_size(&self, size: usize) -> BumpPoolGuard<A, MIN_ALIGN, UP> {
+        panic_on_error(self.generic_get_with_size(size))
+    }
 
-            Ok(BumpPoolGuard {
-                pool: self,
-                bump: ManuallyDrop::new(bump),
-            })
-        }
+    /// Borrows a bump allocator from the pool.
+    /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
+    ///
+    ///  If this needs to create a new `Bump`, it will be constructed by calling <code>Bump::[try_with_size]\(size)</code>.
+    ///
+    /// [try_with_size]: Bump::try_with_size
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    #[inline(always)]
+    pub fn try_get_with_size(&self, size: usize) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP>, AllocError> {
+        self.generic_get_with_size(size)
+    }
+
+    pub(crate) fn generic_get_with_size<E: ErrorBehavior>(&self, size: usize) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP>, E> {
+        let bump = match self.lock().pop() {
+            Some(bump) => bump,
+            None => Bump::generic_with_size_in(size, self.allocator.clone())?,
+        };
+
+        Ok(BumpPoolGuard {
+            pool: self,
+            bump: ManuallyDrop::new(bump),
+        })
+    }
+
+    /// Borrows a bump allocator from the pool.
+    /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
+    ///
+    /// If this needs to create a new `Bump`, it will be constructed by calling <code>Bump::[with_capacity]\(layout)</code>.
+    ///
+    /// [with_capacity]: Bump::with_capacity
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn get_with_capacity(&self, layout: Layout) -> BumpPoolGuard<A, MIN_ALIGN, UP> {
+        panic_on_error(self.generic_get_with_capacity(layout))
+    }
+
+    /// Borrows a bump allocator from the pool.
+    /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
+    ///
+    ///  If this needs to create a new `Bump`, it will be constructed by calling <code>Bump::[try_with_capacity]\(layout)</code>.
+    ///
+    /// [try_with_capacity]: Bump::try_with_capacity
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    #[inline(always)]
+    pub fn try_get_with_capacity(&self, layout: Layout) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP>, AllocError> {
+        self.generic_get_with_capacity(layout)
+    }
+
+    pub(crate) fn generic_get_with_capacity<E: ErrorBehavior>(
+        &self,
+        layout: Layout,
+    ) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP>, E> {
+        let bump = match self.lock().pop() {
+            Some(bump) => bump,
+            None => Bump::generic_with_capacity_in(layout, self.allocator.clone())?,
+        };
+
+        Ok(BumpPoolGuard {
+            pool: self,
+            bump: ManuallyDrop::new(bump),
+        })
     }
 }
 
