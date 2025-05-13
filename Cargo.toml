@@ -15,9 +15,9 @@ exclude = ["*.nu", "justfile", "tests", ".vscode", ".github"]
 [dependencies]
 allocator-api2-02 = { package = "allocator-api2", version = "0.2.21", default-features = false, optional = true }
 allocator-api2-03 = { package = "allocator-api2", version = "0.3.0", default-features = false, optional = true }
+zerocopy-08 = { package = "zerocopy", version = "0.8.14", default-features = false, optional = true }
 sptr = "0.3.2"
 serde = { version = "1.0.217", optional = true }
-zerocopy = { version = "0.8.14", default-features = false, optional = true }
 rustversion = "1.0.19"
 
 [features]
@@ -37,8 +37,9 @@ panic-on-alloc = []
 ## Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors. 
 serde = ["dep:serde"]
 
-## Adds `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` and `extend_zeroed`. 
-zerocopy = ["dep:zerocopy"]
+## Adds `zerocopy_08::*` extension traits for `alloc_zeroed(_slice)`, `BumpBox::init_zeroed` and 
+## `resize_zeroed` and `extend_zeroed` for vector types. 
+zerocopy-08 = ["dep:zerocopy-08"]
 
 ## Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and
 ## makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via

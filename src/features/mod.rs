@@ -10,5 +10,5 @@ pub mod allocator_api2_02;
 #[cfg(feature = "allocator-api2-03")]
 pub mod allocator_api2_03;
 
-#[cfg(feature = "zerocopy")]
-mod zerocopy;
+#[cfg(feature = "zerocopy-08")]
+pub mod zerocopy_08;

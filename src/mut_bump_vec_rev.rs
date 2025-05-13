@@ -145,8 +145,8 @@ macro_rules! mut_bump_vec_rev {
 pub struct MutBumpVecRev<T, A> {
     /// This points at the end of the slice (`ptr` + `len`).
     /// When `T` is a ZST this is always `NonNull::<T>::dangling()`.
-    end: NonNull<T>,
-    len: usize,
+    pub(crate) end: NonNull<T>,
+    pub(crate) len: usize,
 
     /// When `T` is a ZST this is always `usize::MAX`.
     cap: usize,
@@ -1301,71 +1301,6 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
         Ok(())
     }
 
-    /// Extends this vector by pushing `additional` new items onto the end.
-    /// The new items are initialized with zeroes.
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec_rev };
-    /// # let mut bump: Bump = Bump::new();
-    /// let mut vec = mut_bump_vec_rev![in &mut bump; 1, 2, 3];
-    /// vec.extend_zeroed(2);
-    /// assert_eq!(vec, [0, 0, 1, 2, 3]);
-    /// ```
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    #[cfg(feature = "zerocopy")]
-    pub fn extend_zeroed(&mut self, additional: usize)
-    where
-        T: zerocopy::FromZeros,
-    {
-        panic_on_error(self.generic_extend_zeroed(additional));
-    }
-
-    /// Extends this vector by pushing `additional` new items onto the end.
-    /// The new items are initialized with zeroes.
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec_rev };
-    /// # let mut bump: Bump = Bump::try_new()?;
-    /// let mut vec = mut_bump_vec_rev![try in bump; 1, 2, 3]?;
-    /// vec.try_extend_zeroed(2)?;
-    /// assert_eq!(vec, [0, 0, 1, 2, 3]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
-    /// ```
-    #[inline(always)]
-    #[cfg(feature = "zerocopy")]
-    pub fn try_extend_zeroed(&mut self, additional: usize) -> Result<(), AllocError>
-    where
-        T: zerocopy::FromZeros,
-    {
-        self.generic_extend_zeroed(additional)
-    }
-
-    #[inline]
-    #[cfg(feature = "zerocopy")]
-    pub(crate) fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E>
-    where
-        T: zerocopy::FromZeros,
-    {
-        self.generic_reserve(additional)?;
-
-        unsafe {
-            let new_len = self.len() + additional;
-            nonnull::sub(self.end, new_len).as_ptr().write_bytes(0, additional);
-            self.set_len(new_len);
-        }
-
-        Ok(())
-    }
-
     /// Reserves capacity for at least `additional` more elements to be inserted
     /// in the given `MutBumpVecRev<T>`. The collection may reserve more space to
     /// speculatively avoid frequent reallocations. After calling `reserve`,
@@ -1683,92 +1618,6 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
         let len = self.len();
         if new_len > len {
             unsafe { self.extend_trusted(iter::repeat_with(f).take(new_len - len)) }
-        } else {
-            self.truncate(new_len);
-            Ok(())
-        }
-    }
-
-    /// Resizes this vector in-place so that `len` is equal to `new_len`.
-    ///
-    /// If `new_len` is greater than `len`, the vector is extended by the
-    /// difference, with each additional slot filled with `value`.
-    /// If `new_len` is less than `len`, the vector is simply truncated.
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec_rev };
-    /// # let mut bump: Bump = Bump::new();
-    /// {
-    ///     let mut vec = mut_bump_vec_rev![in &mut bump; 1, 2, 3];
-    ///     vec.resize_zeroed(5);
-    ///     assert_eq!(vec, [0, 0, 1, 2, 3]);
-    /// }
-    ///
-    /// {
-    ///     let mut vec = mut_bump_vec_rev![in &mut bump; 1, 2, 3];
-    ///     vec.resize_zeroed(2);
-    ///     assert_eq!(vec, [2, 3]);
-    /// }
-    /// ```
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    #[cfg(feature = "zerocopy")]
-    pub fn resize_zeroed(&mut self, new_len: usize)
-    where
-        T: zerocopy::FromZeros,
-    {
-        panic_on_error(self.generic_resize_zeroed(new_len));
-    }
-
-    /// Resizes this vector in-place so that `len` is equal to `new_len`.
-    ///
-    /// If `new_len` is greater than `len`, the vector is extended by the
-    /// difference, with each additional slot filled with `value`.
-    /// If `new_len` is less than `len`, the vector is simply truncated.
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec_rev };
-    /// # let mut bump: Bump = Bump::try_new()?;
-    /// {
-    ///     let mut vec = mut_bump_vec_rev![try in &mut bump; 1, 2, 3]?;
-    ///     vec.try_resize_zeroed(5)?;
-    ///     assert_eq!(vec, [0, 0, 1, 2, 3]);
-    /// }
-    ///
-    /// {
-    ///     let mut vec = mut_bump_vec_rev![try in &mut bump; 1, 2, 3]?;
-    ///     vec.try_resize_zeroed(2)?;
-    ///     assert_eq!(vec, [2, 3]);
-    /// }
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
-    /// ```
-    #[inline(always)]
-    #[cfg(feature = "zerocopy")]
-    pub fn try_resize_zeroed(&mut self, new_len: usize) -> Result<(), AllocError>
-    where
-        T: zerocopy::FromZeros,
-    {
-        self.generic_resize_zeroed(new_len)
-    }
-
-    #[inline]
-    #[cfg(feature = "zerocopy")]
-    pub(crate) fn generic_resize_zeroed<E: ErrorBehavior>(&mut self, new_len: usize) -> Result<(), E>
-    where
-        T: zerocopy::FromZeros,
-    {
-        let len = self.len();
-
-        if new_len > len {
-            self.generic_extend_zeroed(new_len - len)
         } else {
             self.truncate(new_len);
             Ok(())
