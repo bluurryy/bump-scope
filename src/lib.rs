@@ -741,17 +741,6 @@ macro_rules! map {
 
 pub(crate) use map;
 
-macro_rules! last {
-    ($self:ident) => {
-        $self
-    };
-    ($mut:ident $self:ident) => {
-        $self
-    };
-}
-
-pub(crate) use last;
-
 mod supported_base_allocator {
     pub trait Sealed<const GUARANTEED_ALLOCATED: bool> {
         #[doc(hidden)]
