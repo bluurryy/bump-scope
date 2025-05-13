@@ -1,5 +1,6 @@
 #[cfg(feature = "alloc")]
-pub fn assert_unchecked(b: bool) {
-    // TODO
-    _ = b;
+pub unsafe fn assert_unchecked(b: bool) {
+    if !b {
+        unsafe { core::hint::unreachable_unchecked() }
+    }
 }
