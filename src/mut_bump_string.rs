@@ -793,7 +793,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         panic_on_error(Self::generic_from_utf16_in(v, allocator))
     }
 
-    /// Decode a UTF-16–encoded vector `v` into a `BumpString`, returning [`Err`]
+    /// Decode a UTF-16–encoded vector `v` into a `MutBumpString`, returning [`Err`]
     /// if `v` contains any invalid data.
     ///
     /// # Errors
@@ -868,7 +868,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
         panic_on_error(Self::generic_from_utf16_lossy_in(v, allocator))
     }
 
-    /// Decode a UTF-16–encoded slice `v` into a `BumpString`, replacing
+    /// Decode a UTF-16–encoded slice `v` into a `MutBumpString`, replacing
     /// invalid data with [the replacement character (`U+FFFD`)][U+FFFD].
     ///
     /// [U+FFFD]: core::char::REPLACEMENT_CHARACTER
@@ -1506,9 +1506,9 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     /// Basic usage:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
-    /// # let bump: Bump = Bump::new();
-    /// let mut s = BumpString::new_in(&bump);
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut s = MutBumpString::new_in(&mut bump);
     ///
     /// s.reserve_exact(10);
     ///
@@ -1518,9 +1518,9 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     /// This might not actually increase the capacity:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
-    /// # let bump: Bump = Bump::new();
-    /// let mut s = BumpString::with_capacity_in(10, &bump);
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut s = MutBumpString::with_capacity_in(10, &mut bump);
     /// s.push('a');
     /// s.push('b');
     ///
@@ -1560,9 +1560,9 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     /// Basic usage:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
-    /// # let bump: Bump = Bump::try_new()?;
-    /// let mut s = BumpString::new_in(&bump);
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut s = MutBumpString::new_in(&mut bump);
     ///
     /// s.try_reserve_exact(10)?;
     ///
@@ -1573,9 +1573,9 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     /// This might not actually increase the capacity:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
-    /// # let bump: Bump = Bump::try_new()?;
-    /// let mut s = BumpString::try_with_capacity_in(10, &bump)?;
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let mut s = MutBumpString::try_with_capacity_in(10, &mut bump)?;
     /// s.push('a');
     /// s.push('b');
     ///
@@ -1689,7 +1689,7 @@ impl<'a, A: MutBumpAllocatorScope<'a>> MutBumpString<A> {
         panic_on_error(self.generic_into_cstr())
     }
 
-    /// Converts this `BumpString` into `&CStr` that is live for this bump scope.
+    /// Converts this `MutBumpString` into `&CStr` that is live for this bump scope.
     ///
     /// If the string contains a `'\0'` then the `CStr` will stop there.
     ///
