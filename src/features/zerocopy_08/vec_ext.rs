@@ -8,7 +8,8 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
-mod vec_ext {
+mod private {
+    #[allow(clippy::wildcard_imports)]
     use super::*;
 
     pub trait Sealed {}
@@ -20,7 +21,7 @@ mod vec_ext {
 }
 
 /// Extension trait for this crate's vector types.
-pub trait VecExt: vec_ext::Sealed {
+pub trait VecExt: private::Sealed {
     /// The element type of this vector.
     type T;
 

@@ -15,12 +15,13 @@ mod vec_ext;
 pub use vec_ext::VecExt;
 
 mod init_zeroed {
+    #[allow(clippy::wildcard_imports)]
     use super::*;
 
     pub trait Sealed {}
 
-    impl<'a, T: FromZeros> Sealed for BumpBox<'a, MaybeUninit<T>> {}
-    impl<'a, T: FromZeros> Sealed for BumpBox<'a, [MaybeUninit<T>]> {}
+    impl<T: FromZeros> Sealed for BumpBox<'_, MaybeUninit<T>> {}
+    impl<T: FromZeros> Sealed for BumpBox<'_, [MaybeUninit<T>]> {}
 }
 
 /// Extension trait for [`BumpBox`] that adds the `init_zeroed` method.
@@ -76,6 +77,7 @@ impl<'a, T: FromZeros> InitZeroed<'a> for BumpBox<'a, [MaybeUninit<T>]> {
 }
 
 mod bump_ext {
+    #[allow(clippy::wildcard_imports)]
     use super::*;
 
     pub trait Sealed {}
@@ -90,12 +92,13 @@ mod bump_ext {
 }
 
 mod bump_scope_ext {
+    #[allow(clippy::wildcard_imports)]
     use super::*;
 
     pub trait Sealed {}
 
-    impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Sealed
-        for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Sealed
+        for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
         A: BaseAllocator<GUARANTEED_ALLOCATED>,

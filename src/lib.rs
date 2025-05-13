@@ -14,7 +14,7 @@
 #![cfg_attr(feature = "nightly-trusted-len", feature(trusted_len))]
 #![cfg_attr(feature = "nightly-fn-traits", feature(fn_traits, tuple_trait, unboxed_closures))]
 #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
-#![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg_hide), doc(cfg_hide(feature = "panic-on-alloc")))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg_hide), doc(cfg_hide(feature = "panic-on-alloc")))] // too noisy
 #![warn(
     clippy::pedantic,
     clippy::cargo,
@@ -36,7 +36,6 @@
     clippy::missing_transmute_annotations,
     clippy::manual_assert,
     clippy::range_plus_one,
-    clippy::literal_string_with_formatting_args, // TODO: this gets triggered, but clippy fails to point out the source location, ...
     rustdoc::redundant_explicit_links, // for cargo-rdme
     unknown_lints, // for `private_bounds` in msrv
     unused_unsafe, // only triggered in old rust versions, like msrv
