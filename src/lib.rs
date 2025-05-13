@@ -378,7 +378,7 @@ pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 #[cfg(feature = "zerocopy")]
 /// Contains extension traits.
 pub mod zerocopy {
-    pub use crate::features::zerocopy::{AllocZeroed, AllocZeroedInScope, InitZeroed};
+    pub use crate::features::zerocopy::{AllocZeroed, AllocZeroedInScope, InitZeroed, VecExt};
 }
 
 // This must be kept in sync with ChunkHeaders `repr(align(16))`.

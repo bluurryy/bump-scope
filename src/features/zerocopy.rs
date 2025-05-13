@@ -10,6 +10,10 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
+mod vec_ext;
+
+pub use vec_ext::VecExt;
+
 mod init_zeroed {
     use super::*;
 
@@ -29,7 +33,7 @@ pub trait InitZeroed<'a>: init_zeroed::Sealed {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, zerocopy::InitZeroed};
     /// # let mut bump: Bump = Bump::new();
     /// // single value
     /// let uninit = bump.alloc_uninit::<i32>();
@@ -178,7 +182,7 @@ pub trait AllocZeroedInScope<'a>: alloc_zeroed_scoped::Sealed {
     ///
     /// # Examples
     /// ```
-    /// use bump_scope::{Bump, zerocopy::ScopeAllocZeroed};
+    /// use bump_scope::{Bump, zerocopy::AllocZeroedInScope};
     /// let mut bump: Bump = Bump::new();
     ///
     /// bump.scoped(|bump| {
@@ -198,7 +202,7 @@ pub trait AllocZeroedInScope<'a>: alloc_zeroed_scoped::Sealed {
     ///
     /// # Examples
     /// ```
-    /// use bump_scope::{Bump, alloc::AllocError, zerocopy::ScopeAllocZeroed};
+    /// use bump_scope::{Bump, alloc::AllocError, zerocopy::AllocZeroedInScope};
     /// let mut bump: Bump = Bump::try_new()?;
     ///
     /// bump.scoped(|bump| -> Result<(), AllocError> {
@@ -219,7 +223,7 @@ pub trait AllocZeroedInScope<'a>: alloc_zeroed_scoped::Sealed {
     ///
     /// # Examples
     /// ```
-    /// use bump_scope::{Bump, zerocopy::ScopeAllocZeroed};
+    /// use bump_scope::{Bump, zerocopy::AllocZeroedInScope};
     /// let mut bump: Bump = Bump::new();
     ///
     /// bump.scoped(|bump| {
@@ -239,7 +243,7 @@ pub trait AllocZeroedInScope<'a>: alloc_zeroed_scoped::Sealed {
     ///
     /// # Examples
     /// ```
-    /// use bump_scope::{Bump, alloc::AllocError, zerocopy::ScopeAllocZeroed};
+    /// use bump_scope::{Bump, alloc::AllocError, zerocopy::AllocZeroedInScope};
     /// let mut bump: Bump = Bump::try_new()?;
     ///
     /// bump.scoped(|bump| -> Result<(), AllocError>  {
