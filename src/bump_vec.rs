@@ -237,7 +237,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// The vector will not allocate until elements are pushed onto it.
     ///
     /// # Examples
-    ///
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::new();
@@ -270,6 +269,15 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// # #[allow(unused_mut)]
+    /// let mut vec = BumpVec::<i32, _>::with_capacity_in(10, &bump);
+    /// assert!(vec.capacity() >= 10);
+    /// ```
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -295,6 +303,16 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// # Errors
     /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::try_new()?;
+    /// # #[allow(unused_mut)]
+    /// let mut vec = BumpVec::<i32, _>::try_with_capacity_in(10, &bump)?;
+    /// assert!(vec.capacity() >= 10);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
     pub fn try_with_capacity_in(capacity: usize, allocator: A) -> Result<Self, AllocError> {
         Self::generic_with_capacity_in(capacity, allocator)

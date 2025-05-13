@@ -559,6 +559,15 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpVecRev };
+    /// # let mut bump: Bump = Bump::new();
+    /// # #[allow(unused_mut)]
+    /// let mut vec = MutBumpVecRev::<i32, _>::with_capacity_in(10, &mut bump);
+    /// assert!(vec.capacity() >= 10);
+    /// ```
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -584,6 +593,16 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     ///
     /// # Errors
     /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpVecRev };
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// # #[allow(unused_mut)]
+    /// let mut vec = MutBumpVecRev::<i32, _>::try_with_capacity_in(10, &mut bump)?;
+    /// assert!(vec.capacity() >= 10);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
     pub fn try_with_capacity_in(capacity: usize, allocator: A) -> Result<Self, AllocError> {
         Self::generic_with_capacity_in(capacity, allocator)
