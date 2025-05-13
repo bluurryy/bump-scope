@@ -2,12 +2,17 @@
 
 ## Unreleased
 - **breaking:** `bump-scope` no longer uses the types and traits from `allocator-api2` but defines its own `Allocator`, `AllocError` and `Global`.
-  - added the "allocator-api2-02" feature that makes bump allocators implement the `Allocator` trait from `allocator-api2` version `0.2`
-  - added the "allocator-api2-03" feature that makes bump allocators implement the `Allocator` trait from `allocator-api2` version `0.3` 
-  - bump allocators will additionally implement the nightly `Allocator` trait when you enable the `nightly-allocator-api` feature
-  - to use base allocator that implements a foreign `Allocator` trait, you can use the wrapper types in the new `compat` module
-  - to be able to allocate `hashbrown` hash maps you will either need to enable the `allocator-api2-02` feature or enable both `bump-scope`'s "nightly-allocator-api" and `hashbrown`'s "nightly" feature.  
-- **fix:** allow `serde` without `alloc` feature
+  - the "allocator-api2-02" feature will make bump allocators implement the `Allocator` trait from `allocator-api2` version `0.2`
+  - the "allocator-api2-03" feature will make bump allocators implement the `Allocator` trait from `allocator-api2` version `0.3` 
+  - the "nightly-allocator-api" feature will make bump allocators implement the nightly `Allocator` trait from `core`
+  - each allocator api feature comes with a compatibility wrapper type in `bump_scope::alloc::compat` to make their `Allocator` implementor implement this crate's `Allocator` and vice versa
+- **breaking:** the `zerocopy` feature has been renamed to `zerocopy-08`. All methods that this feature added are no longer inherent methods but are provided via extension traits from `bump_scope::zerocopy_08`.
+- **fix:** `serde` to compile without `alloc` feature
+
+### Migration Guide
+- If you are bump allocating `hashbrown` types you have to enable the `allocator-api2-02` feature unless you are using `hashbrown`'s `nightly` feature then you only need the `nightly-allocator-api` feature.
+- If you are using the methods `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` or `extend_zeroed` you now have to enable the `zerocopy-08` feature (instead of `zerocopy`) and import the respective extension traits from `bump_scope::zerocopy_08`.
+- If you were using a custom base allocator you now have to make it implement this crate's `Allocator` trait. You can safely do that using a wrapper type from the `bump_scope::alloc::compat` module.
 
 ## 0.16.5 (2025-05-09)
 - **added:** `pop_if` method to vector types
