@@ -786,9 +786,9 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     ///           0xD800, 0x0069, 0x0063];
     /// assert!(MutBumpString::from_utf16_in(v, &mut bump2).is_err());
     /// ```
-    #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
+    #[allow(clippy::missing_errors_doc)]
     pub fn from_utf16_in(v: &[u16], allocator: A) -> Result<Self, FromUtf16Error> {
         panic_on_error(Self::generic_from_utf16_in(v, allocator))
     }
@@ -927,7 +927,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn push(&mut self, ch: char) {
-        panic_on_error(self.generic_push(ch))
+        panic_on_error(self.generic_push(ch));
     }
 
     /// Appends the given [`char`] to the end of this string.
@@ -981,7 +981,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn push_str(&mut self, string: &str) {
-        panic_on_error(self.generic_push_str(string))
+        panic_on_error(self.generic_push_str(string));
     }
 
     /// Appends a given string slice onto the end of this string.
@@ -1037,7 +1037,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn insert(&mut self, idx: usize, ch: char) {
-        panic_on_error(self.generic_insert(idx, ch))
+        panic_on_error(self.generic_insert(idx, ch));
     }
 
     /// Inserts a character into this string at a byte position.
@@ -1103,7 +1103,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn insert_str(&mut self, idx: usize, string: &str) {
-        panic_on_error(self.generic_insert_str(idx, string))
+        panic_on_error(self.generic_insert_str(idx, string));
     }
 
     /// Inserts a string slice into this string at a byte position.
@@ -1170,7 +1170,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     where
         R: RangeBounds<usize>,
     {
-        panic_on_error(self.generic_extend_from_within(src))
+        panic_on_error(self.generic_extend_from_within(src));
     }
 
     /// Copies elements from `src` range to the end of the string.
@@ -1233,7 +1233,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn extend_zeroed(&mut self, additional: usize) {
-        panic_on_error(self.generic_extend_zeroed(additional))
+        panic_on_error(self.generic_extend_zeroed(additional));
     }
 
     /// Extends this string by pushing `additional` new zero bytes.
@@ -1299,7 +1299,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     where
         R: RangeBounds<usize>,
     {
-        panic_on_error(self.generic_replace_range(range, replace_with))
+        panic_on_error(self.generic_replace_range(range, replace_with));
     }
 
     /// Removes the specified range in the string,
@@ -1427,7 +1427,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn reserve(&mut self, additional: usize) {
-        panic_on_error(self.generic_reserve(additional))
+        panic_on_error(self.generic_reserve(additional));
     }
 
     /// Reserves capacity for at least `additional` bytes more than the
@@ -1538,7 +1538,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn reserve_exact(&mut self, additional: usize) {
-        panic_on_error(self.generic_reserve_exact(additional))
+        panic_on_error(self.generic_reserve_exact(additional));
     }
 
     /// Reserves the minimum capacity for at least `additional` bytes more than
@@ -1593,7 +1593,7 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     /// ```
     #[inline(always)]
     pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), AllocError> {
-        self.generic_extend_zeroed(additional)
+        self.generic_reserve_exact(additional)
     }
 
     #[inline]

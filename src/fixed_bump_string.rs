@@ -694,7 +694,7 @@ impl FixedBumpString<'_> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn push(&mut self, ch: char) {
-        panic_on_error(self.generic_push(ch))
+        panic_on_error(self.generic_push(ch));
     }
 
     /// Appends the given [`char`] to the end of this string.
@@ -749,7 +749,7 @@ impl FixedBumpString<'_> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn push_str(&mut self, string: &str) {
-        panic_on_error(self.generic_push_str(string))
+        panic_on_error(self.generic_push_str(string));
     }
 
     /// Appends a given string slice onto the end of this string.
@@ -806,7 +806,7 @@ impl FixedBumpString<'_> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn insert(&mut self, idx: usize, ch: char) {
-        panic_on_error(self.generic_insert(idx, ch))
+        panic_on_error(self.generic_insert(idx, ch));
     }
 
     /// Inserts a character into this string at a byte position.
@@ -873,7 +873,7 @@ impl FixedBumpString<'_> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn insert_str(&mut self, idx: usize, string: &str) {
-        panic_on_error(self.generic_insert_str(idx, string))
+        panic_on_error(self.generic_insert_str(idx, string));
     }
 
     /// Inserts a string slice into this string at a byte position.
@@ -942,7 +942,7 @@ impl FixedBumpString<'_> {
     where
         R: RangeBounds<usize>,
     {
-        panic_on_error(self.generic_extend_from_within(src))
+        panic_on_error(self.generic_extend_from_within(src));
     }
 
     /// Copies elements from `src` range to the end of the string.
@@ -1007,7 +1007,7 @@ impl FixedBumpString<'_> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn extend_zeroed(&mut self, additional: usize) {
-        panic_on_error(self.generic_extend_zeroed(additional))
+        panic_on_error(self.generic_extend_zeroed(additional));
     }
 
     /// Extends this string by pushing `additional` new zero bytes.
@@ -1075,7 +1075,7 @@ impl FixedBumpString<'_> {
     where
         R: RangeBounds<usize>,
     {
-        panic_on_error(self.generic_replace_range(range, replace_with))
+        panic_on_error(self.generic_replace_range(range, replace_with));
     }
 
     /// Removes the specified range in the string,
@@ -1170,7 +1170,7 @@ impl FixedBumpString<'_> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn reserve(&mut self, additional: usize) {
-        panic_on_error(self.generic_reserve(additional))
+        panic_on_error(self.generic_reserve(additional));
     }
 
     /// Checks if at least `additional` more bytes can be inserted

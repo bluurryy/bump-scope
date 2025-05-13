@@ -924,7 +924,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn push(&mut self, value: T) {
-        panic_on_error(self.generic_push(value))
+        panic_on_error(self.generic_push(value));
     }
 
     /// Appends an element to the back of a collection.
@@ -958,7 +958,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn push_with(&mut self, f: impl FnOnce() -> T) {
-        panic_on_error(self.generic_push_with(f))
+        panic_on_error(self.generic_push_with(f));
     }
 
     /// Appends an element to the back of a collection.
@@ -999,7 +999,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn insert(&mut self, index: usize, element: T) {
-        panic_on_error(self.generic_insert(index, element))
+        panic_on_error(self.generic_insert(index, element));
     }
 
     /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.
@@ -1074,7 +1074,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     where
         T: Copy,
     {
-        panic_on_error(self.generic_extend_from_slice_copy(slice))
+        panic_on_error(self.generic_extend_from_slice_copy(slice));
     }
 
     /// Copies and appends all elements in a slice to the `BumpVec`.
@@ -1123,7 +1123,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     where
         T: Clone,
     {
-        panic_on_error(self.generic_extend_from_slice_clone(slice))
+        panic_on_error(self.generic_extend_from_slice_clone(slice));
     }
 
     /// Clones and appends all elements in a slice to the `BumpVec`.
@@ -1182,7 +1182,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     #[cfg(feature = "panic-on-alloc")]
     #[deprecated = "use `append` instead"]
     pub fn extend_from_array<const N: usize>(&mut self, array: [T; N]) {
-        panic_on_error(self.generic_extend_from_array(array))
+        panic_on_error(self.generic_extend_from_array(array));
     }
 
     /// Appends all elements in an array to the `BumpVec`.
@@ -1204,6 +1204,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     }
 
     #[inline]
+    #[allow(clippy::needless_pass_by_value)]
     pub(crate) fn generic_extend_from_array<E: ErrorBehavior, const N: usize>(&mut self, array: [T; N]) -> Result<(), E> {
         unsafe { self.extend_by_copy_nonoverlapping(&array) }
     }
@@ -1238,7 +1239,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         T: Copy,
         R: RangeBounds<usize>,
     {
-        panic_on_error(self.generic_extend_from_within_copy(src))
+        panic_on_error(self.generic_extend_from_within_copy(src));
     }
 
     /// Copies elements from `src` range to the end of the vector.
@@ -1330,7 +1331,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         T: Clone,
         R: RangeBounds<usize>,
     {
-        panic_on_error(self.generic_extend_from_within_clone(src))
+        panic_on_error(self.generic_extend_from_within_clone(src));
     }
 
     /// Clones elements from `src` range to the end of the vector.
@@ -1435,7 +1436,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     where
         T: zerocopy::FromZeros,
     {
-        panic_on_error(self.generic_extend_zeroed(additional))
+        panic_on_error(self.generic_extend_zeroed(additional));
     }
 
     /// Extends this vector by pushing `additional` new items onto the end.
@@ -1503,7 +1504,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn reserve(&mut self, additional: usize) {
-        panic_on_error(self.generic_reserve(additional))
+        panic_on_error(self.generic_reserve(additional));
     }
 
     /// Reserves capacity for at least `additional` more elements to be inserted
@@ -1528,7 +1529,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-
     pub fn try_reserve(&mut self, additional: usize) -> Result<(), AllocError> {
         self.generic_reserve(additional)
     }
@@ -1571,7 +1571,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn reserve_exact(&mut self, additional: usize) {
-        panic_on_error(self.generic_reserve_exact(additional))
+        panic_on_error(self.generic_reserve_exact(additional));
     }
 
     /// Reserves the minimum capacity for at least `additional` more elements to
@@ -1603,7 +1603,6 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-
     pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), AllocError> {
         self.generic_reserve_exact(additional)
     }
@@ -1654,7 +1653,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     where
         T: Clone,
     {
-        panic_on_error(self.generic_resize(new_len, value))
+        panic_on_error(self.generic_resize(new_len, value));
     }
 
     /// Resizes the `BumpVec` in-place so that `len` is equal to `new_len`.
@@ -1749,7 +1748,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     where
         F: FnMut() -> T,
     {
-        panic_on_error(self.generic_resize_with(new_len, f))
+        panic_on_error(self.generic_resize_with(new_len, f));
     }
 
     /// Resizes the `BumpVec` in-place so that `len` is equal to `new_len`.
@@ -1834,7 +1833,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     where
         T: zerocopy::FromZeros,
     {
-        panic_on_error(self.generic_resize_zeroed(new_len))
+        panic_on_error(self.generic_resize_zeroed(new_len));
     }
 
     /// Resizes this vector in-place so that `len` is equal to `new_len`.
@@ -1910,7 +1909,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn append(&mut self, other: impl OwnedSlice<Item = T>) {
-        panic_on_error(self.generic_append(other))
+        panic_on_error(self.generic_append(other));
     }
 
     /// Moves all the elements of `other` into `self`, leaving `other` empty.
