@@ -112,7 +112,7 @@ macro_rules! bump_declaration {
         /// [`alloc`]: Self::alloc
         /// [`alloc_with`]: Self::alloc_with
         /// [`alloc_default`]: Self::alloc_default
-        /// [`alloc_zeroed`]: crate::zerocopy::AllocZeroed::alloc_zeroed
+        /// [`alloc_zeroed`]: crate::zerocopy::BumpExt::alloc_zeroed
         ///
         /// [`alloc_str`]: Self::alloc_str
         /// [`alloc_fmt`]: Self::alloc_fmt
@@ -127,7 +127,7 @@ macro_rules! bump_declaration {
         /// [`alloc_slice_copy`]: Self::alloc_slice_copy
         /// [`alloc_slice_fill`]: Self::alloc_slice_fill
         /// [`alloc_slice_fill_with`]: Self::alloc_slice_fill_with
-        /// [`alloc_zeroed_slice`]: crate::zerocopy::AllocZeroed::alloc_zeroed_slice
+        /// [`alloc_zeroed_slice`]: crate::zerocopy::BumpExt::alloc_zeroed_slice
         ///
         /// [`alloc_iter`]: Self::alloc_iter
         /// [`alloc_iter_exact`]: Self::alloc_iter_exact

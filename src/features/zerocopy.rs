@@ -74,7 +74,7 @@ impl<'a, T: FromZeros> InitZeroed<'a> for BumpBox<'a, [MaybeUninit<T>]> {
     }
 }
 
-mod alloc_zeroed {
+mod bump_ext {
     use super::*;
 
     pub trait Sealed {}
@@ -88,7 +88,7 @@ mod alloc_zeroed {
     }
 }
 
-mod alloc_zeroed_scoped {
+mod bump_scope_ext {
     use super::*;
 
     pub trait Sealed {}
@@ -103,7 +103,7 @@ mod alloc_zeroed_scoped {
 }
 
 /// Extension trait for [`Bump`] that adds the `(try_)alloc_zeroed(_slice)` methods.
-pub trait AllocZeroed: alloc_zeroed::Sealed {
+pub trait BumpExt: bump_ext::Sealed {
     /// Allocate a zeroed object.
     ///
     /// # Panics
@@ -111,7 +111,7 @@ pub trait AllocZeroed: alloc_zeroed::Sealed {
     ///
     /// # Examples
     /// ```
-    /// use bump_scope::{Bump, zerocopy::AllocZeroed};
+    /// use bump_scope::{Bump, zerocopy::BumpExt};
     /// let bump: Bump = Bump::new();
     /// let zero = bump.alloc_zeroed::<i32>();
     /// assert_eq!(*zero, 0);
@@ -128,7 +128,7 @@ pub trait AllocZeroed: alloc_zeroed::Sealed {
     ///
     /// # Examples
     /// ```
-    /// use bump_scope::{Bump, zerocopy::AllocZeroed};
+    /// use bump_scope::{Bump, zerocopy::BumpExt};
     /// let bump: Bump = Bump::try_new()?;
     /// let zero = bump.try_alloc_zeroed::<i32>()?;
     /// assert_eq!(*zero, 0);
@@ -145,7 +145,7 @@ pub trait AllocZeroed: alloc_zeroed::Sealed {
     ///
     /// # Examples
     /// ```
-    /// use bump_scope::{Bump, zerocopy::AllocZeroed};
+    /// use bump_scope::{Bump, zerocopy::BumpExt};
     /// let bump: Bump = Bump::new();
     /// let zeroes = bump.alloc_zeroed_slice::<i32>(3);
     /// assert_eq!(*zeroes, [0; 3]);
@@ -162,7 +162,7 @@ pub trait AllocZeroed: alloc_zeroed::Sealed {
     ///
     /// # Examples
     /// ```
-    /// use bump_scope::{Bump, zerocopy::AllocZeroed};
+    /// use bump_scope::{Bump, zerocopy::BumpExt};
     /// let bump: Bump = Bump::try_new()?;
     /// let zeroes = bump.try_alloc_zeroed_slice::<i32>(3)?;
     /// assert_eq!(*zeroes, [0; 3]);
@@ -174,7 +174,7 @@ pub trait AllocZeroed: alloc_zeroed::Sealed {
 }
 
 /// Extension trait for [`BumpScope`] that adds the `(try_)alloc_zeroed(_slice)` methods.
-pub trait AllocZeroedInScope<'a>: alloc_zeroed_scoped::Sealed {
+pub trait BumpScopeExt<'a>: bump_scope_ext::Sealed {
     /// Allocate a zeroed object.
     ///
     /// # Panics
@@ -182,7 +182,7 @@ pub trait AllocZeroedInScope<'a>: alloc_zeroed_scoped::Sealed {
     ///
     /// # Examples
     /// ```
-    /// use bump_scope::{Bump, zerocopy::AllocZeroedInScope};
+    /// use bump_scope::{Bump, zerocopy::BumpScopeExt};
     /// let mut bump: Bump = Bump::new();
     ///
     /// bump.scoped(|bump| {
@@ -202,7 +202,7 @@ pub trait AllocZeroedInScope<'a>: alloc_zeroed_scoped::Sealed {
     ///
     /// # Examples
     /// ```
-    /// use bump_scope::{Bump, alloc::AllocError, zerocopy::AllocZeroedInScope};
+    /// use bump_scope::{Bump, alloc::AllocError, zerocopy::BumpScopeExt};
     /// let mut bump: Bump = Bump::try_new()?;
     ///
     /// bump.scoped(|bump| -> Result<(), AllocError> {
@@ -223,7 +223,7 @@ pub trait AllocZeroedInScope<'a>: alloc_zeroed_scoped::Sealed {
     ///
     /// # Examples
     /// ```
-    /// use bump_scope::{Bump, zerocopy::AllocZeroedInScope};
+    /// use bump_scope::{Bump, zerocopy::BumpScopeExt};
     /// let mut bump: Bump = Bump::new();
     ///
     /// bump.scoped(|bump| {
@@ -243,7 +243,7 @@ pub trait AllocZeroedInScope<'a>: alloc_zeroed_scoped::Sealed {
     ///
     /// # Examples
     /// ```
-    /// use bump_scope::{Bump, alloc::AllocError, zerocopy::AllocZeroedInScope};
+    /// use bump_scope::{Bump, alloc::AllocError, zerocopy::BumpScopeExt};
     /// let mut bump: Bump = Bump::try_new()?;
     ///
     /// bump.scoped(|bump| -> Result<(), AllocError>  {
@@ -258,7 +258,7 @@ pub trait AllocZeroedInScope<'a>: alloc_zeroed_scoped::Sealed {
         T: FromZeros;
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> AllocZeroed
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpExt
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -299,7 +299,7 @@ where
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> AllocZeroedInScope<'a>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpScopeExt<'a>
     for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
