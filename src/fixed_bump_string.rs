@@ -637,7 +637,7 @@ impl<'a> FixedBumpString<'a> {
     #[must_use]
     #[inline(always)]
     pub unsafe fn as_mut_vec(&mut self) -> &mut FixedBumpVec<'a, u8> {
-        // SAFETY: `BumpVec<u8>` and `BumpString` have the same representation;
+        // SAFETY: `FixedBumpVec<u8>` and `FixedBumpString` have the same representation;
         // only the invariant that the bytes are utf8 is different.
         transmute_mut(self)
     }

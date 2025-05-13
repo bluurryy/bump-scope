@@ -1506,9 +1506,9 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
 
     /// Resizes the `MutBumpVecRev` in-place so that `len` is equal to `new_len`.
     ///
-    /// If `new_len` is greater than `len`, the `BumpVec` is extended by the
+    /// If `new_len` is greater than `len`, the `MutBumpVecRev` is extended by the
     /// difference, with each additional slot filled with `value`.
-    /// If `new_len` is less than `len`, the `BumpVec` is simply truncated.
+    /// If `new_len` is less than `len`, the `MutBumpVecRev` is simply truncated.
     ///
     /// This method requires `T` to implement [`Clone`],
     /// in order to be able to clone the passed value.
@@ -1546,9 +1546,9 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
 
     /// Resizes the `MutBumpVecRev` in-place so that `len` is equal to `new_len`.
     ///
-    /// If `new_len` is greater than `len`, the `BumpVec` is extended by the
+    /// If `new_len` is greater than `len`, the `MutBumpVecRev` is extended by the
     /// difference, with each additional slot filled with `value`.
-    /// If `new_len` is less than `len`, the `BumpVec` is simply truncated.
+    /// If `new_len` is less than `len`, the `MutBumpVecRev` is simply truncated.
     ///
     /// This method requires `T` to implement [`Clone`],
     /// in order to be able to clone the passed value.

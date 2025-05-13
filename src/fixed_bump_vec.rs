@@ -1579,7 +1579,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpVec };
+    /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// let mut vec = bump.alloc_fixed_vec(8);
     ///
@@ -1608,7 +1608,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpVec };
+    /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// let mut vec = bump.try_alloc_fixed_vec(8)?;
     ///
