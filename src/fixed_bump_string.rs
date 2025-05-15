@@ -51,11 +51,157 @@ unsafe impl Send for FixedBumpString<'_> {}
 unsafe impl Sync for FixedBumpString<'_> {}
 
 impl<'a> FixedBumpString<'a> {
+    #[doc(hidden)]
+    #[deprecated = "use `FixedBumpString::new()` instead"]
     /// Empty fixed string.
     pub const EMPTY: Self = Self {
         initialized: BumpBox::EMPTY_STR,
         capacity: 0,
     };
+
+    /// Constructs a new empty `FixedBumpString`.
+    ///
+    /// This will not allocate.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::FixedBumpString;
+    /// let string = FixedBumpString::new();
+    /// assert_eq!(string.len(), 0);
+    /// assert_eq!(string.capacity(), 0);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            initialized: BumpBox::EMPTY_STR,
+            capacity: 0,
+        }
+    }
+
+    /// Constructs a new empty `FixedBumpString` with the specified capacity
+    /// in the provided bump allocator.
+    ///
+    /// The string will be able to hold `capacity` bytes without
+    /// reallocating. If `capacity` is 0, the string will not allocate.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = FixedBumpString::with_capacity_in(10, &bump);
+    ///
+    /// // The String contains no chars, even though it has capacity for more
+    /// assert_eq!(s.len(), 0);
+    ///
+    /// // The string has capacity for 10 bytes...
+    /// let cap = s.capacity();
+    /// for _ in 0..10 {
+    ///     s.push('a');
+    /// }
+    ///
+    /// assert_eq!(s.capacity(), cap);
+    ///
+    /// // ...but another byte may not fit
+    /// _ = s.try_push('a');
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn with_capacity_in(capacity: usize, allocator: impl BumpAllocatorScope<'a>) -> Self {
+        panic_on_error(Self::generic_with_capacity_in(capacity, allocator))
+    }
+
+    /// Constructs a new empty `FixedBumpString` with the specified capacity
+    /// in the provided bump allocator.
+    ///
+    /// The string will be able to hold `capacity` bytes without
+    /// reallocating. If `capacity` is 0, the string will not allocate.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = FixedBumpString::try_with_capacity_in(10, &bump)?;
+    ///
+    /// // The String contains no chars, even though it has capacity for more
+    /// assert_eq!(s.len(), 0);
+    ///
+    /// // The string has capacity for 10 bytes...
+    /// let cap = s.capacity();
+    /// for _ in 0..10 {
+    ///     s.push('a');
+    /// }
+    ///
+    /// assert_eq!(s.capacity(), cap);
+    ///
+    /// // ...but another byte may not fit
+    /// _ = s.try_push('a');
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_with_capacity_in(capacity: usize, allocator: impl BumpAllocatorScope<'a>) -> Result<Self, AllocError> {
+        Self::generic_with_capacity_in(capacity, allocator)
+    }
+
+    #[inline]
+    pub(crate) fn generic_with_capacity_in<E: ErrorBehavior>(
+        capacity: usize,
+        allocator: impl BumpAllocatorScope<'a>,
+    ) -> Result<Self, E> {
+        Ok(BumpString::generic_with_capacity_in(capacity, allocator)?.into_fixed_string())
+    }
+
+    /// Constructs a new `BumpString` from a `&str`.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # let bump: Bump = Bump::new();
+    /// let string = FixedBumpString::from_str_in("Hello!", &bump);
+    /// assert_eq!(string, "Hello!");
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn from_str_in(string: &str, allocator: impl BumpAllocatorScope<'a>) -> Self {
+        panic_on_error(Self::generic_from_str_in(string, allocator))
+    }
+
+    /// Constructs a new `BumpString` from a `&str`.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpString };
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let string = FixedBumpString::try_from_str_in("Hello!", &bump)?;
+    /// assert_eq!(string, "Hello!");
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_from_str_in(string: &str, allocator: impl BumpAllocatorScope<'a>) -> Result<Self, AllocError> {
+        Self::generic_from_str_in(string, allocator)
+    }
+
+    #[inline]
+    pub(crate) fn generic_from_str_in<E: ErrorBehavior>(
+        string: &str,
+        allocator: impl BumpAllocatorScope<'a>,
+    ) -> Result<Self, E> {
+        Ok(BumpString::generic_from_str_in(string, allocator)?.into_fixed_string())
+    }
 
     /// Turns a `BumpBox<str>` into a full `FixedBumpString`.
     #[must_use]
@@ -356,7 +502,7 @@ impl<'a> FixedBumpString<'a> {
             }
 
             if start == end {
-                return FixedBumpString::EMPTY;
+                return FixedBumpString::new();
             }
 
             self.assert_char_boundary(start);
@@ -1230,7 +1376,7 @@ impl Display for FixedBumpString<'_> {
 
 impl Default for FixedBumpString<'_> {
     fn default() -> Self {
-        Self::EMPTY
+        Self::new()
     }
 }
 

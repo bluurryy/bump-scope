@@ -73,6 +73,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// assert_eq!(vec.capacity(), 0);
     /// ```
     #[inline]
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             initialized: BumpBox::EMPTY,
