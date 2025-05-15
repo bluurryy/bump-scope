@@ -132,7 +132,23 @@ impl<A: BumpAllocator + RefUnwindSafe> RefUnwindSafe for BumpString<A> {}
 impl<A: BumpAllocator> BumpString<A> {
     /// Constructs a new empty `BumpString`.
     ///
-    /// The vector will not allocate until elements are pushed onto it.
+    /// Given that the `BumpString` is empty, this will not allocate any initial
+    /// buffer. While that means that this initial operation is very
+    /// inexpensive, it may cause excessive allocation later when you add
+    /// data. If you have an idea of how much data the `BumpString` will hold,
+    /// consider the [`with_capacity_in`] method to prevent excessive
+    /// re-allocation.
+    ///
+    /// [`with_capacity_in`]: Self::with_capacity_in
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, BumpString };
+    /// # let bump: Bump = Bump::new();
+    /// let string = BumpString::<_>::new_in(&bump);
+    /// assert_eq!(string.len(), 0);
+    /// assert_eq!(string.capacity(), 0);
+    /// ```
     #[inline]
     pub fn new_in(allocator: A) -> Self {
         Self {

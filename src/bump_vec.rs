@@ -240,8 +240,9 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::new();
-    /// # #[allow(unused_mut)]
-    /// let mut vec = BumpVec::<i32, _>::new_in(&bump);
+    /// let vec = BumpVec::<i32, _>::new_in(&bump);
+    /// assert_eq!(vec.len(), 0);
+    /// assert_eq!(vec.capacity(), 0);
     /// ```
     #[inline]
     pub const fn new_in(allocator: A) -> Self {

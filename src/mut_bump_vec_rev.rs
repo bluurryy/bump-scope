@@ -166,13 +166,12 @@ impl<T, A> MutBumpVecRev<T, A> {
     /// The vector will not allocate until elements are pushed onto it.
     ///
     /// # Examples
-    ///
     /// ```
     /// # use bump_scope::{ Bump, MutBumpVecRev };
     /// # let mut bump: Bump = Bump::new();
-    /// # #[allow(unused_mut)]
-    /// let mut vec = MutBumpVecRev::<i32, _>::new_in(&mut bump);
-    /// # let _ = vec;
+    /// let vec = MutBumpVecRev::<i32, _>::new_in(&mut bump);
+    /// assert_eq!(vec.len(), 0);
+    /// assert_eq!(vec.capacity(), 0);
     /// ```
     #[inline]
     pub fn new_in(allocator: A) -> Self {
