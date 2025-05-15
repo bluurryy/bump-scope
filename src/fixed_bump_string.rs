@@ -98,12 +98,9 @@ impl<'a> FixedBumpString<'a> {
     /// assert_eq!(s.len(), 0);
     ///
     /// // The string has capacity for 10 bytes...
-    /// let cap = s.capacity();
     /// for _ in 0..10 {
     ///     s.push('a');
     /// }
-    ///
-    /// assert_eq!(s.capacity(), cap);
     ///
     /// // ...but another byte may not fit
     /// _ = s.try_push('a');
@@ -134,12 +131,9 @@ impl<'a> FixedBumpString<'a> {
     /// assert_eq!(s.len(), 0);
     ///
     /// // The string has capacity for 10 bytes...
-    /// let cap = s.capacity();
     /// for _ in 0..10 {
     ///     s.push('a');
     /// }
-    ///
-    /// assert_eq!(s.capacity(), cap);
     ///
     /// // ...but another byte may not fit
     /// _ = s.try_push('a');

@@ -110,15 +110,15 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// assert_eq!(vec.len(), 0);
     /// assert!(vec.capacity() >= 10);
     ///
-    /// // The vector has space for all these items...
+    /// // The vector has space for 10 items...
     /// for i in 0..10 {
     ///     vec.push(i);
     /// }
     /// assert_eq!(vec.len(), 10);
     /// assert!(vec.capacity() >= 10);
     ///
-    /// // ...but one more will not fit
-    /// vec.try_push(11).unwrap_err();
+    /// // ...but one more may not fit
+    /// _ = vec.try_push(11);
     ///
     /// // A vector of a zero-sized type will always over-allocate, since no
     /// // allocation is necessary
@@ -161,15 +161,15 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// assert_eq!(vec.len(), 0);
     /// assert!(vec.capacity() >= 10);
     ///
-    /// // The vector has space for all these items...
+    /// // The vector has space for 10 items...
     /// for i in 0..10 {
     ///     vec.push(i);
     /// }
     /// assert_eq!(vec.len(), 10);
     /// assert!(vec.capacity() >= 10);
     ///
-    /// // ...but one more will not fit
-    /// vec.try_push(11).unwrap_err();
+    /// // ...but one more may not fit
+    /// _ = vec.try_push(11);
     ///
     /// // A vector of a zero-sized type will always over-allocate, since no
     /// // allocation is necessary
