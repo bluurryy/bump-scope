@@ -237,12 +237,12 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// The vector will not allocate until elements are pushed onto it.
     ///
     /// # Examples
-    ///
     /// ```
     /// # use bump_scope::{ Bump, BumpVec };
     /// # let bump: Bump = Bump::new();
-    /// # #[allow(unused_mut)]
-    /// let mut vec = BumpVec::<i32, _>::new_in(&bump);
+    /// let vec = BumpVec::<i32, _>::new_in(&bump);
+    /// assert_eq!(vec.len(), 0);
+    /// assert_eq!(vec.capacity(), 0);
     /// ```
     #[inline]
     pub const fn new_in(allocator: A) -> Self {
@@ -270,6 +270,34 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = BumpVec::<i32, _>::with_capacity_in(10, &bump);
+    ///
+    /// // The vector contains no items, even though it has capacity for more
+    /// assert_eq!(vec.len(), 0);
+    /// assert!(vec.capacity() >= 10);
+    ///
+    /// // These are all done without reallocating...
+    /// for i in 0..10 {
+    ///     vec.push(i);
+    /// }
+    /// assert_eq!(vec.len(), 10);
+    /// assert!(vec.capacity() >= 10);
+    ///
+    /// // ...but this may make the vector reallocate
+    /// vec.push(11);
+    /// assert_eq!(vec.len(), 11);
+    /// assert!(vec.capacity() >= 11);
+    ///
+    /// // A vector of a zero-sized type will always over-allocate, since no
+    /// // allocation is necessary
+    /// let vec_units = BumpVec::<(), _>::with_capacity_in(10, &bump);
+    /// assert_eq!(vec_units.capacity(), usize::MAX);
+    /// ```
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -295,6 +323,35 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// # Errors
     /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let mut vec = BumpVec::<i32, _>::try_with_capacity_in(10, &bump)?;
+    ///
+    /// // The vector contains no items, even though it has capacity for more
+    /// assert_eq!(vec.len(), 0);
+    /// assert!(vec.capacity() >= 10);
+    ///
+    /// // These are all done without reallocating...
+    /// for i in 0..10 {
+    ///     vec.push(i);
+    /// }
+    /// assert_eq!(vec.len(), 10);
+    /// assert!(vec.capacity() >= 10);
+    ///
+    /// // ...but this may make the vector reallocate
+    /// vec.push(11);
+    /// assert_eq!(vec.len(), 11);
+    /// assert!(vec.capacity() >= 11);
+    ///
+    /// // A vector of a zero-sized type will always over-allocate, since no
+    /// // allocation is necessary
+    /// let vec_units = BumpVec::<(), _>::try_with_capacity_in(10, &bump)?;
+    /// assert_eq!(vec_units.capacity(), usize::MAX);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
     pub fn try_with_capacity_in(capacity: usize, allocator: A) -> Result<Self, AllocError> {
         Self::generic_with_capacity_in(capacity, allocator)
@@ -326,6 +383,14 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, BumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let vec = BumpVec::from_elem_in("ho", 3, &bump);
+    /// assert_eq!(vec, ["ho", "ho", "ho"]);
+    /// ```
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -340,6 +405,15 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// # Errors
     /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, BumpVec};
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let vec = BumpVec::try_from_elem_in("ho", 3, &bump)?;
+    /// assert_eq!(vec, ["ho", "ho", "ho"]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
     pub fn try_from_elem_in(value: T, count: usize, allocator: A) -> Result<Self, AllocError>
     where
@@ -580,6 +654,14 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
 
     /// Returns the number of elements in the vector, also referred to
     /// as its 'length'.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, bump_vec };
+    /// # let bump: Bump = Bump::new();
+    /// let a = bump_vec![in bump; 1, 2, 3];
+    /// assert_eq!(a.len(), 3);
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn len(&self) -> usize {
@@ -587,6 +669,17 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     }
 
     /// Returns `true` if the vector contains no elements.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut v = BumpVec::new_in(&bump);
+    /// assert!(v.is_empty());
+    ///
+    /// v.push(1);
+    /// assert!(!v.is_empty());
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
@@ -662,6 +755,18 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
 
     /// Removes the last element from a vector and returns it, or [`None`] if it
     /// is empty.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, bump_vec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = bump_vec![in &bump; 1, 2, 3];
+    /// assert_eq!(vec.pop(), Some(3));
+    /// assert_eq!(vec, [1, 2]);
+    /// ```
+    ///
+    /// # Time complexity
+    /// Takes *O*(1) time.
     #[inline(always)]
     pub fn pop(&mut self) -> Option<T> {
         unsafe { self.fixed.cook_mut() }.pop()

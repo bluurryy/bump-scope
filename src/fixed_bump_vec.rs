@@ -268,6 +268,19 @@ impl<'a, T> FixedBumpVec<'a, T> {
 
     /// Removes the last element from a vector and returns it, or [`None`] if it
     /// is empty.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = bump.alloc_fixed_vec(3);
+    /// vec.append([1, 2, 3]);
+    /// assert_eq!(vec.pop(), Some(3));
+    /// assert_eq!(vec, [1, 2]);
+    /// ```
+    ///
+    /// # Time complexity
+    /// Takes *O*(1) time.
     #[inline(always)]
     pub fn pop(&mut self) -> Option<T> {
         self.initialized.pop()
@@ -280,7 +293,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec };
+    /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// let mut vec = bump.alloc_fixed_vec::<i32>(4);
     /// vec.append([1, 2, 3, 4]);

@@ -131,7 +131,24 @@ impl<A: RefUnwindSafe> RefUnwindSafe for MutBumpString<A> {}
 impl<A> MutBumpString<A> {
     /// Constructs a new empty `MutBumpString`.
     ///
-    /// The vector will not allocate until elements are pushed onto it.
+    /// Given that the `MutBumpString` is empty, this will not allocate any initial
+    /// buffer. While that means that this initial operation is very
+    /// inexpensive, it may cause excessive allocation later when you add
+    /// data. If you have an idea of how much data the `MutBumpString` will hold,
+    /// consider the [`with_capacity_in`] method to prevent excessive
+    /// re-allocation.
+    ///
+    /// [`with_capacity_in`]: Self::with_capacity_in
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let string = MutBumpString::<_>::new_in(&mut bump);
+    /// assert_eq!(string.len(), 0);
+    /// assert_eq!(string.capacity(), 0);
+    /// ```
+    #[inline]
     pub fn new_in(allocator: A) -> Self {
         Self {
             fixed: RawFixedBumpString::EMPTY,
@@ -246,6 +263,18 @@ impl<A> MutBumpString<A> {
     /// Returns the length of this string, in bytes, not [`char`]s or
     /// graphemes. In other words, it might not be what a human considers the
     /// length of the string.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let a = MutBumpString::from_str_in("foo", &mut bump);
+    /// assert_eq!(a.len(), 3);
+    ///
+    /// let fancy_f = MutBumpString::from_str_in("ƒoo", &mut bump);
+    /// assert_eq!(fancy_f.len(), 4);
+    /// assert_eq!(fancy_f.chars().count(), 3);
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn len(&self) -> usize {
@@ -253,6 +282,17 @@ impl<A> MutBumpString<A> {
     }
 
     /// Returns `true` if this string has a length of zero, and `false` otherwise.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut v = MutBumpString::new_in(&mut bump);
+    /// assert!(v.is_empty());
+    ///
+    /// v.push('a');
+    /// assert!(!v.is_empty());
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
@@ -539,6 +579,27 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut s = MutBumpString::<_>::with_capacity_in(10, &mut bump);
+    ///
+    /// // The String contains no chars, even though it has capacity for more
+    /// assert_eq!(s.len(), 0);
+    ///
+    /// // These are all done without reallocating...
+    /// let cap = s.capacity();
+    /// for _ in 0..10 {
+    ///     s.push('a');
+    /// }
+    ///
+    /// assert_eq!(s.capacity(), cap);
+    ///
+    /// // ...but this may make the string reallocate
+    /// s.push('a');
+    /// ```
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -555,6 +616,28 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     ///
     /// # Errors
     /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut s = MutBumpString::<_>::try_with_capacity_in(10, &mut bump)?;
+    ///
+    /// // The String contains no chars, even though it has capacity for more
+    /// assert_eq!(s.len(), 0);
+    ///
+    /// // These are all done without reallocating...
+    /// let cap = s.capacity();
+    /// for _ in 0..10 {
+    ///     s.push('a');
+    /// }
+    ///
+    /// assert_eq!(s.capacity(), cap);
+    ///
+    /// // ...but this may make the string reallocate
+    /// s.push('a');
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
     pub fn try_with_capacity_in(capacity: usize, allocator: A) -> Result<Self, AllocError> {
         Self::generic_with_capacity_in(capacity, allocator)
