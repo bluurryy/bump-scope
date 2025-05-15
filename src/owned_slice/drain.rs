@@ -27,7 +27,7 @@ use super::TakeOwnedSlice;
 /// # Example
 ///
 /// ```
-/// use bump_scope::{ Bump, owned_slice::Drain };
+/// use bump_scope::{Bump, owned_slice::Drain};
 /// let bump: Bump = Bump::new();
 ///
 /// let mut v = bump.alloc_slice_copy(&[0, 1, 2]);
@@ -82,7 +82,7 @@ impl<'a, T> Drain<'a, T> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec };
+    /// # use bump_scope::{Bump, bump_vec};
     /// # let bump: Bump = Bump::new();
     /// let mut vec = bump_vec![in &bump; 'a', 'b', 'c'];
     /// let mut drain = vec.drain(..);
@@ -100,7 +100,7 @@ impl<'a, T> Drain<'a, T> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec };
+    /// # use bump_scope::{Bump, bump_vec};
     /// # let bump: Bump = Bump::new();
     /// let mut vec = bump_vec![in &bump; 'a', 'b', 'c'];
     /// let mut drain = vec.drain(..);

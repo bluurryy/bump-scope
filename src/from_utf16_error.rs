@@ -8,7 +8,7 @@ use core::fmt;
 /// # Examples
 ///
 /// ```
-/// # use bump_scope::{ Bump, BumpString };
+/// # use bump_scope::{Bump, BumpString};
 /// # let bump: Bump = Bump::new();
 ///
 /// // 𝄞mu<invalid>ic

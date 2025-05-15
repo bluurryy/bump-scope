@@ -51,7 +51,7 @@ impl Drain<'_> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump };
+    /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();    ///
     /// let mut s = bump.alloc_str("abc");
     /// let mut drain = s.drain(..);

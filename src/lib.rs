@@ -205,7 +205,7 @@
 //! ```
 //! # #[cfg(feature = "allocator-api2-03")]
 //! # {
-//! use bump_scope::{ Bump, WithoutDealloc };
+//! use bump_scope::{Bump, WithoutDealloc};
 //! use allocator_api2_03::boxed::Box;
 //!
 //! let bump: Bump = Bump::new();

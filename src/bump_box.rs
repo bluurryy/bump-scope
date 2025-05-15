@@ -96,8 +96,8 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 /// Here the memory `Foo(1)` is allocated at is reused by `Foo(2)` without dropping `Foo(1)` first which violates the drop guarantee.
 ///
 /// ```
-/// # use bump_scope::{ Bump, BumpBox };
-/// # use std::{ mem, task::{ Context, Poll }, pin::Pin, future::Future };
+/// # use bump_scope::{Bump, BumpBox};
+/// # use std::{mem, task::{Context, Poll}, pin::Pin, future::Future};
 /// #
 /// # #[must_use = "futures do nothing unless you `.await` or poll them"]
 /// # struct YieldNow(bool);
@@ -189,7 +189,7 @@ pub struct BumpBox<'a, T: ?Sized> {
 ///
 /// # Examples
 /// ```
-/// use bump_scope::{ Bump, BumpBox, unsize_bump_box };
+/// use bump_scope::{Bump, BumpBox, unsize_bump_box};
 /// use core::any::Any;
 ///
 /// let bump: Bump = Bump::new();
@@ -206,7 +206,7 @@ pub struct BumpBox<'a, T: ?Sized> {
 /// On nightly with the feature "nightly-coerce-unsized":
 #[cfg_attr(feature = "nightly-coerce-unsized", doc = "```")]
 #[cfg_attr(not(feature = "nightly-coerce-unsized"), doc = "```ignore")]
-/// use bump_scope::{ Bump, BumpBox };
+/// use bump_scope::{Bump, BumpBox};
 /// use core::any::Any;
 ///
 /// let bump: Bump = Bump::new();
@@ -339,7 +339,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpBox };
+    /// # use bump_scope::{Bump, BumpBox};
     /// # let bump: Bump = Bump::new();
     /// #
     /// let boxed_slice_of_slices: BumpBox<[&mut [i32]]> = bump.alloc_iter_exact((0..3).map(|_| {
@@ -369,7 +369,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// # Examples
     /// Manually dropping `T`:
     /// ```
-    /// use bump_scope::{ Bump, BumpBox };
+    /// use bump_scope::{Bump, BumpBox};
     /// let bump: Bump = Bump::new();
     /// let x = bump.alloc(String::from("Hello"));
     /// let p = BumpBox::into_raw(x);
@@ -396,7 +396,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// Recreate a `BumpBox` which was previously converted to a raw pointer
     /// using [`BumpBox::into_raw`]:
     /// ```
-    /// use bump_scope::{ Bump, BumpBox };
+    /// use bump_scope::{Bump, BumpBox};
     /// use core::ptr::NonNull;
     ///
     /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, bump: &'a Bump) -> BumpBox<'a, T> {
@@ -412,7 +412,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// ```
     /// Manually create a `BumpBox` from scratch by using the bump allocator:
     /// ```
-    /// use bump_scope::{ Bump, BumpBox };
+    /// use bump_scope::{Bump, BumpBox};
     /// use core::alloc::Layout;
     /// use core::ptr::NonNull;
     ///
@@ -508,7 +508,7 @@ impl<'a> BumpBox<'a, str> {
     ///
     /// Basic usage:
     /// ```
-    /// # use bump_scope::{ Bump, BumpBox };
+    /// # use bump_scope::{Bump, BumpBox};
     /// # let bump: Bump = Bump::new();
     /// // some bytes, in a vector
     /// let sparkle_heart = bump.alloc_slice_copy(&[240, 159, 146, 150]);
@@ -521,7 +521,7 @@ impl<'a> BumpBox<'a, str> {
     ///
     /// Incorrect bytes:
     /// ```
-    /// # use bump_scope::{ Bump, BumpBox };
+    /// # use bump_scope::{Bump, BumpBox};
     /// # let bump: Bump = Bump::new();
     /// // some invalid bytes, in a vector
     /// let sparkle_heart = bump.alloc_slice_copy(&[0, 159, 146, 150]);
@@ -553,7 +553,7 @@ impl<'a> BumpBox<'a, str> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpBox };
+    /// # use bump_scope::{Bump, BumpBox};
     /// # let bump: Bump = Bump::new();
     /// // some bytes, in a vector
     /// let sparkle_heart = bump.alloc_slice_copy(&[240, 159, 146, 150]);
@@ -798,7 +798,7 @@ impl<'a> BumpBox<'a, str> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let bump: Bump = Bump::new();
     /// let mut str = bump.alloc_str("hello");
     /// str.clear();
@@ -1344,7 +1344,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let bump: Bump = Bump::new();
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3]);
     /// slice.clear();
@@ -1382,7 +1382,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// Truncating a five element vector to two elements:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5]);
@@ -1394,7 +1394,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// length:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3]);
@@ -1406,7 +1406,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// method.
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3]);
@@ -1527,7 +1527,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut v = bump.alloc_slice_copy(&[1, 2, 3]);
     /// assert_eq!(v.remove(1), 2);
@@ -1854,7 +1854,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump };
+    /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// #
     /// let x = bump.alloc_slice_copy(&[0, 1, 2]);
@@ -1892,7 +1892,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump };
+    /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// #
     /// let x = bump.alloc_slice_copy(&[0, 1, 2]);
@@ -2421,7 +2421,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// # Examples
     /// Mapping to a type with an equal alignment and size:
     /// ```
-    /// # use bump_scope::{ Bump };
+    /// # use bump_scope::{Bump};
     /// # use core::num::NonZero;
     /// # let bump: Bump = Bump::new();
     /// let a = bump.alloc_slice_copy(&[0, 1, 2]);
@@ -2431,7 +2431,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     ///
     /// Mapping to a type with a smaller alignment and size:
     /// ```
-    /// # use bump_scope::{ Bump, BumpBox };
+    /// # use bump_scope::{Bump, BumpBox};
     /// # let bump: Bump = Bump::new();
     /// let a: BumpBox<[u32]> = bump.alloc_slice_copy(&[0, 1, 2]);
     /// let b: BumpBox<[u16]> = a.map_in_place(|i| i as u16);
@@ -2440,7 +2440,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     ///
     /// Mapping to a type with a higher alignment or size won't compile:
     /// ```compile_fail,E0080
-    /// # use bump_scope::{ Bump, BumpBox };
+    /// # use bump_scope::{Bump, BumpBox};
     /// # let bump: Bump = Bump::new();
     /// let a: BumpBox<[u16]> = bump.alloc_slice_copy(&[0, 1, 2]);
     /// let b: BumpBox<[u32]> = a.map_in_place(|i| i as u32);

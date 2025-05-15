@@ -49,7 +49,7 @@ impl<T, A: BumpAllocator> IntoIter<T, A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec };
+    /// # use bump_scope::{Bump, bump_vec};
     /// # let bump: Bump = Bump::new();
     /// let vec = bump_vec![in &bump; 1, 2, 3];
     /// let mut into_iter = vec.into_iter();
@@ -69,7 +69,7 @@ impl<T, A: BumpAllocator> IntoIter<T, A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec };
+    /// # use bump_scope::{Bump, bump_vec};
     /// # let bump: Bump = Bump::new();
     /// let vec = bump_vec![in &bump; 'a', 'b', 'c'];
     /// let mut into_iter = vec.into_iter();

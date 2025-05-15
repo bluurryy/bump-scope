@@ -42,7 +42,7 @@ pub use into_iter::IntoIter;
 ///
 /// - Create an empty [`MutBumpVec`]:
 /// ```
-/// # use bump_scope::{ mut_bump_vec, Bump, MutBumpVec };
+/// # use bump_scope::{Bump, mut_bump_vec, MutBumpVec};
 /// # let mut bump: Bump = Bump::new();
 /// let vec: MutBumpVec<i32, _> = mut_bump_vec![in &mut bump];
 /// assert!(vec.is_empty());
@@ -51,7 +51,7 @@ pub use into_iter::IntoIter;
 /// - Create a [`MutBumpVec`] containing a given list of elements:
 ///
 /// ```
-/// # use bump_scope::{ mut_bump_vec, Bump };
+/// # use bump_scope::{Bump, mut_bump_vec};
 /// # let mut bump: Bump = Bump::new();
 /// let vec = mut_bump_vec![in &mut bump; 1, 2, 3];
 /// assert_eq!(vec[0], 1);
@@ -62,7 +62,7 @@ pub use into_iter::IntoIter;
 /// - Create a [`MutBumpVec`] from a given element and size:
 ///
 /// ```
-/// # use bump_scope::{ mut_bump_vec, Bump };
+/// # use bump_scope::{Bump, mut_bump_vec};
 /// # let mut bump: Bump = Bump::new();
 /// let vec = mut_bump_vec![in &mut bump; 1; 3];
 /// assert_eq!(vec, [1, 1, 1]);
@@ -112,7 +112,7 @@ macro_rules! mut_bump_vec {
 ///
 /// This type can be used to allocate a slice, when `alloc_*` methods are too limiting:
 /// ```
-/// # use bump_scope::{ Bump, MutBumpVec };
+/// # use bump_scope::{Bump, MutBumpVec};
 /// # let mut bump: Bump = Bump::new();
 /// let mut vec = MutBumpVec::new_in(&mut bump);
 ///
@@ -168,7 +168,7 @@ impl<T, A> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # use bump_scope::{Bump, MutBumpVec};
     /// # let mut bump: Bump = Bump::new();
     /// let vec = MutBumpVec::<i32, _>::new_in(&mut bump);
     /// assert_eq!(vec.len(), 0);
@@ -188,7 +188,7 @@ impl<T, A> MutBumpVec<T, A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # use bump_scope::{Bump, MutBumpVec};
     /// # let mut bump: Bump = Bump::new();
     /// let vec = MutBumpVec::<i32, _>::with_capacity_in(2048, &mut bump);
     /// assert!(vec.capacity() >= 2048);
@@ -204,7 +204,7 @@ impl<T, A> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let a = mut_bump_vec![in &mut bump; 1, 2, 3];
     /// assert_eq!(a.len(), 3);
@@ -219,7 +219,7 @@ impl<T, A> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # use bump_scope::{Bump, MutBumpVec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut v = MutBumpVec::new_in(&mut bump);
     /// assert!(v.is_empty());
@@ -259,7 +259,7 @@ impl<T, A> MutBumpVec<T, A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4];
     /// let pred = |x: &mut i32| *x % 2 == 0;
@@ -281,7 +281,7 @@ impl<T, A> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
     /// vec.clear();
@@ -309,7 +309,7 @@ impl<T, A> MutBumpVec<T, A> {
     /// Truncating a five element vector to two elements:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4, 5];
@@ -321,7 +321,7 @@ impl<T, A> MutBumpVec<T, A> {
     /// length:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
@@ -333,7 +333,7 @@ impl<T, A> MutBumpVec<T, A> {
     /// method.
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
@@ -361,7 +361,7 @@ impl<T, A> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut v = mut_bump_vec![in &mut bump; 1, 2, 3];
     /// assert_eq!(v.remove(1), 2);
@@ -385,7 +385,7 @@ impl<T, A> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut v = mut_bump_vec![in &mut bump; "foo", "bar", "baz", "qux"];
@@ -519,7 +519,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # use bump_scope::{Bump, MutBumpVec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut vec = MutBumpVec::<i32, _>::with_capacity_in(10, &mut bump);
     ///
@@ -572,7 +572,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # use bump_scope::{Bump, MutBumpVec};
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let mut vec = MutBumpVec::<i32, _>::try_with_capacity_in(10, &mut bump)?;
     ///
@@ -754,7 +754,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # use bump_scope::{Bump, MutBumpVec};
     /// # let mut bump: Bump = Bump::new();
     /// let vec = MutBumpVec::from_iter_in([1, 2, 3], &mut bump);
     /// assert_eq!(vec, [1, 2, 3]);
@@ -778,7 +778,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # use bump_scope::{Bump, MutBumpVec};
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let vec = MutBumpVec::try_from_iter_in([1, 2, 3], &mut bump)?;
     /// assert_eq!(vec, [1, 2, 3]);
@@ -816,7 +816,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut vec = mut_bump_vec![in &mut bump; 1, 2];
     /// vec.push(3);
@@ -835,7 +835,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2]?;
     /// vec.try_push(3)?;
@@ -889,7 +889,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
     /// vec.insert(1, 4);
@@ -913,7 +913,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
     /// vec.try_insert(1, 4)?;
@@ -1077,7 +1077,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut vec = mut_bump_vec![in &mut bump; 0, 1, 2, 3, 4];
     ///
@@ -1111,7 +1111,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let mut vec = mut_bump_vec![try in &mut bump; 0, 1, 2, 3, 4]?;
     ///
@@ -1169,7 +1169,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut vec = mut_bump_vec![in &mut bump; 0, 1, 2, 3, 4];
     ///
@@ -1203,7 +1203,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let mut vec = mut_bump_vec![try in &mut bump; 0, 1, 2, 3, 4]?;
     ///
@@ -1286,7 +1286,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut vec = mut_bump_vec![in &mut bump; 1];
     /// vec.reserve(10);
@@ -1312,7 +1312,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let mut vec = mut_bump_vec![try in &mut bump; 1]?;
     /// vec.try_reserve(10)?;
@@ -1353,7 +1353,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut vec = mut_bump_vec![in &mut bump; 1];
     /// vec.reserve_exact(10);
@@ -1386,7 +1386,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let mut vec = mut_bump_vec![try in &mut bump; 1]?;
     /// vec.try_reserve_exact(10)?;
@@ -1427,7 +1427,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut vec = mut_bump_vec![in &mut bump; "hello"];
     /// vec.resize(3, "world");
@@ -1467,7 +1467,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let mut vec = mut_bump_vec![try in &mut bump; "hello"]?;
     /// vec.try_resize(3, "world")?;
@@ -1521,7 +1521,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
     /// vec.resize_with(5, Default::default);
@@ -1561,7 +1561,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
     /// vec.try_resize_with(5, Default::default)?;
@@ -1603,7 +1603,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # use bump_scope::{Bump, MutBumpVec};
     /// # let mut bump: Bump = Bump::new();
     /// # let bump2: Bump = Bump::new();
     /// let mut vec = MutBumpVec::new_in(&mut bump);
@@ -1633,7 +1633,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # use bump_scope::{Bump, MutBumpVec};
     /// # let mut bump: Bump = Bump::new();
     /// # let bump2: Bump = Bump::new();
     /// let mut vec = MutBumpVec::new_in(&mut bump);
@@ -1681,7 +1681,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     /// # Examples
     /// Mapping to a type with an equal alignment and size:
     /// ```
-    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # use bump_scope::{Bump, MutBumpVec};
     /// # use core::num::NonZero;
     /// # let mut bump: Bump = Bump::new();
     /// let a = MutBumpVec::from_iter_in([0, 1, 2], &mut bump);
@@ -1691,7 +1691,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// Mapping to a type with a smaller alignment and size:
     /// ```
-    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # use bump_scope::{Bump, MutBumpVec};
     /// # let mut bump: Bump = Bump::new();
     /// let a: MutBumpVec<u32, _> = MutBumpVec::from_iter_in([0, 1, 2], &mut bump);
     /// let a_capacity = a.capacity();
@@ -1704,7 +1704,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// Mapping to a type with a higher alignment or size won't compile:
     /// ```compile_fail,E0080
-    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # use bump_scope::{Bump, MutBumpVec};
     /// # let mut bump: Bump = Bump::new();
     /// let a: MutBumpVec<u16, _> = MutBumpVec::from_iter_in([0, 1, 2], &mut bump);
     /// let b: MutBumpVec<u32, _> = a.map_in_place(|i| i as u32);
@@ -1868,7 +1868,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4];
@@ -1911,7 +1911,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump1: Bump = Bump::new();
     /// # let bump2: Bump = Bump::new();
     /// #
@@ -1944,7 +1944,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     /// Using this method is equivalent to the following code:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let some_predicate = |x: &mut i32| { *x == 2 || *x == 3 || *x == 6 };
     /// # let mut bump: Bump = Bump::new();
     /// # let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4, 5, 6];
@@ -1973,7 +1973,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     /// Splitting an array into evens and odds, reusing the original allocation:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut numbers = mut_bump_vec![in &mut bump; 1, 2, 3, 4, 5, 6, 8, 9, 11, 13, 14, 15];
     ///
@@ -2000,7 +2000,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 2, 3, 2];
     ///
@@ -2024,7 +2024,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut vec = mut_bump_vec![in &mut bump; 10, 20, 21, 30, 20];
     ///
@@ -2053,7 +2053,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut vec = mut_bump_vec![in &mut bump; "foo", "bar", "Bar", "baz", "bar"];
     ///
@@ -2080,7 +2080,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # use bump_scope::{Bump, MutBumpVec};
     /// # let mut bump: Bump = Bump::new();
     /// // Allocate vector big enough for 10 elements.
     /// let mut v = MutBumpVec::with_capacity_in(10, &mut bump);
@@ -2201,7 +2201,7 @@ impl<T, const N: usize, A> MutBumpVec<[T; N], A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut vec = mut_bump_vec![in &mut bump; [1, 2, 3], [4, 5, 6], [7, 8, 9]];

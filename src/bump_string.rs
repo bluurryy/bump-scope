@@ -36,7 +36,7 @@ use crate::{panic_on_error, polyfill::nonnull, PanicsOnAlloc};
 /// # Examples
 ///
 /// ```
-/// # use bump_scope::{ Bump, bump_format };
+/// # use bump_scope::{Bump, bump_format};
 /// # let bump: Bump = Bump::new();
 /// #
 /// let greeting = "Hello";
@@ -80,7 +80,7 @@ macro_rules! bump_format {
 /// [`into_str`]: BumpString::into_str
 ///
 /// ```
-/// # use bump_scope::{ Bump, BumpString };
+/// # use bump_scope::{Bump, BumpString};
 /// # let bump: Bump = Bump::new();
 /// let hello = BumpString::from_str_in("Hello, world!", &bump);
 /// ```
@@ -89,7 +89,7 @@ macro_rules! bump_format {
 /// append a [`&str`] with the [`push_str`] method:
 ///
 /// ```
-/// # use bump_scope::{ Bump, BumpString };
+/// # use bump_scope::{Bump, BumpString};
 /// # let bump: Bump = Bump::new();
 /// let mut hello = BumpString::from_str_in("Hello, ", &bump);
 ///
@@ -106,7 +106,7 @@ macro_rules! bump_format {
 /// the [`from_utf8`] method:
 ///
 /// ```
-/// # use bump_scope::{ Bump, BumpString, bump_vec };
+/// # use bump_scope::{Bump, BumpString, bump_vec};
 /// # let bump: Bump = Bump::new();
 /// // some bytes, in a vector
 /// let sparkle_heart = bump_vec![in &bump; 240, 159, 146, 150];
@@ -143,7 +143,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let string = BumpString::<_>::new_in(&bump);
     /// assert_eq!(string.len(), 0);
@@ -187,7 +187,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// Basic usage:
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec, BumpString };
+    /// # use bump_scope::{Bump, bump_vec, BumpString};
     /// # let bump: Bump = Bump::new();
     /// // some bytes, in a vector
     /// let sparkle_heart = bump_vec![in &bump; 240, 159, 146, 150];
@@ -200,7 +200,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// Incorrect bytes:
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec, BumpString };
+    /// # use bump_scope::{Bump, bump_vec, BumpString};
     /// # let bump: Bump = Bump::new();
     /// // some invalid bytes, in a vector
     /// let sparkle_heart = bump_vec![in &bump; 0, 159, 146, 150];
@@ -234,7 +234,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, bump_vec, BumpString };
+    /// # use bump_scope::{Bump, bump_vec, BumpString};
     /// # let bump: Bump = Bump::new();
     /// // some bytes, in a vector
     /// let sparkle_heart = bump_vec![in &bump; 240, 159, 146, 150];
@@ -267,7 +267,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let a = BumpString::from_str_in("foo", &bump);
     /// assert_eq!(a.len(), 3);
@@ -286,7 +286,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut v = BumpString::new_in(&bump);
     /// assert!(v.is_empty());
@@ -307,7 +307,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::new_in(&bump);
     /// s.push_str("hello");
@@ -338,7 +338,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// so the original string keeps its capacity.
     /// If you rather want that behavior then you can write this instead:
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// # let mut string = BumpString::from_str_in("abcde", &bump);
     /// # let start = 1;
@@ -362,7 +362,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut string = BumpString::with_capacity_in(10, &bump);
     /// string.push_str("foobarbazqux");
@@ -404,7 +404,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::from_str_in("abč", &bump);
     ///
@@ -427,7 +427,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// #
     /// let mut s = BumpString::from_str_in("foo", &bump);
@@ -458,7 +458,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::from_str_in("hello", &bump);
     ///
@@ -484,7 +484,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// #
     /// let mut s = BumpString::from_str_in("abç", &bump);
@@ -507,7 +507,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::from_str_in("f_o_ob_ar", &bump);
     ///
@@ -520,7 +520,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// external state may be used to decide which elements to keep.
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::from_str_in("abcde", &bump);    ///
     /// let keep = [false, true, true, false, true];
@@ -559,7 +559,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// Basic usage:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::from_str_in("α is alpha, β is beta", &bump);
     /// let beta_offset = s.find('β').unwrap_or(s.len());
@@ -648,7 +648,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::<_>::with_capacity_in(10, &bump);
     ///
@@ -684,7 +684,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::<_>::try_with_capacity_in(10, &bump)?;
     ///
@@ -730,7 +730,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let string = BumpString::from_str_in("Hello!", &bump);
     /// assert_eq!(string, "Hello!");
@@ -749,7 +749,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// let string = BumpString::try_from_str_in("Hello!", &bump)?;
     /// assert_eq!(string, "Hello!");
@@ -798,7 +798,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// Basic usage:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// // some bytes, in a vector
     /// let sparkle_heart = [240, 159, 146, 150];
@@ -811,7 +811,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// Incorrect bytes:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// // some invalid bytes
     /// let input = b"Hello \xF0\x90\x80World";
@@ -852,7 +852,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// Basic usage:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// // some bytes, in a vector
     /// let sparkle_heart = [240, 159, 146, 150];
@@ -866,7 +866,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// Incorrect bytes:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// // some invalid bytes
     /// let input = b"Hello \xF0\x90\x80World";
@@ -918,7 +918,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// // 𝄞music
     /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
@@ -946,7 +946,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// // 𝄞music
     /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
@@ -994,7 +994,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// // 𝄞mus<invalid>ic<invalid>
     /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
@@ -1021,7 +1021,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// // 𝄞mus<invalid>ic<invalid>
     /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
@@ -1056,7 +1056,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::from_str_in("abc", &bump);
     ///
@@ -1079,7 +1079,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut s = BumpString::try_from_str_in("abc", &bump)?;
     ///
@@ -1112,7 +1112,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::from_str_in("foo", &bump);
     ///
@@ -1133,7 +1133,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut s = BumpString::try_from_str_in("foo", &bump)?;
     ///
@@ -1166,7 +1166,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::with_capacity_in(3, &bump);
     ///
@@ -1196,7 +1196,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut s = BumpString::try_with_capacity_in(3, &bump)?;
     ///
@@ -1234,7 +1234,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::from_str_in("bar", &bump);
     ///
@@ -1262,7 +1262,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut s = BumpString::try_from_str_in("bar", &bump)?;
     ///
@@ -1293,7 +1293,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut string = BumpString::from_str_in("abcde", &bump);
     ///
@@ -1326,7 +1326,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut string = BumpString::try_from_str_in("abcde", &bump)?;
     ///
@@ -1366,7 +1366,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut string = BumpString::from_str_in("What?", &bump);
     /// string.extend_zeroed(3);
@@ -1385,7 +1385,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut string = BumpString::try_from_str_in("What?", &bump)?;
     /// string.try_extend_zeroed(3)?;
@@ -1426,7 +1426,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::from_str_in("α is alpha, β is beta", &bump);
     /// let beta_offset = s.find('β').unwrap_or(s.len());
@@ -1457,7 +1457,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut s = BumpString::try_from_str_in("α is alpha, β is beta", &bump)?;
     /// let beta_offset = s.find('β').unwrap_or(s.len());
@@ -1537,7 +1537,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// Basic usage:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::new_in(&bump);
     ///
@@ -1549,7 +1549,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// This might not actually increase the capacity:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::with_capacity_in(10, &bump);
     /// s.push('a');
@@ -1588,7 +1588,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// Basic usage:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut s = BumpString::new_in(&bump);
     ///
@@ -1601,7 +1601,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// This might not actually increase the capacity:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut s = BumpString::try_with_capacity_in(10, &bump)?;
     /// s.push('a');
@@ -1648,7 +1648,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// Basic usage:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::new_in(&bump);
     ///
@@ -1660,7 +1660,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// This might not actually increase the capacity:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::with_capacity_in(10, &bump);
     /// s.push('a');
@@ -1702,7 +1702,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// Basic usage:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut s = BumpString::new_in(&bump);
     ///
@@ -1715,7 +1715,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// This might not actually increase the capacity:
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut s = BumpString::try_with_capacity_in(10, &bump)?;
     /// s.push('a');
@@ -1764,7 +1764,7 @@ impl<A: BumpAllocator> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut string = BumpString::with_capacity_in(10, &bump);
     /// string.push_str("123");
@@ -1847,7 +1847,7 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let hello = BumpString::from_str_in("Hello, world!", &bump);
     /// assert_eq!(hello.into_cstr(), c"Hello, world!");
@@ -1871,7 +1871,7 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
     /// let hello = BumpString::try_from_str_in("Hello, world!", &bump)?;    ///
     /// assert_eq!(hello.try_into_cstr()?, c"Hello, world!");
@@ -1901,7 +1901,7 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
     /// The provided `bump` does not have to be the one the `fixed_string` was allocated in.
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString, FixedBumpString };
+    /// # use bump_scope::{Bump, BumpString, FixedBumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut fixed_string = FixedBumpString::with_capacity_in(3, &bump);
     /// fixed_string.push('a');
@@ -1924,7 +1924,7 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
     /// Turns this `BumpString` into its parts.
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
     /// let mut string = BumpString::new_in(&bump);
     /// string.reserve(10);
@@ -2163,7 +2163,7 @@ impl<A: BumpAllocator> From<BumpString<A>> for alloc_crate::string::String {
 /// Concatenating two `BumpString`s takes the first by value and borrows the second:
 ///
 /// ```
-/// # use bump_scope::{ Bump, BumpString };
+/// # use bump_scope::{Bump, BumpString};
 /// # let bump: Bump = Bump::new();
 /// let a = BumpString::from_str_in("hello", &bump);
 /// let b = BumpString::from_str_in(" world", &bump);
@@ -2174,7 +2174,7 @@ impl<A: BumpAllocator> From<BumpString<A>> for alloc_crate::string::String {
 /// If you want to keep using the first `BumpString`, you can clone it and append to the clone instead:
 ///
 /// ```
-/// # use bump_scope::{ Bump, BumpString };
+/// # use bump_scope::{Bump, BumpString};
 /// # let bump: Bump = Bump::new();
 /// let a = BumpString::from_str_in("hello", &bump);
 /// let b = BumpString::from_str_in(" world", &bump);
@@ -2185,7 +2185,7 @@ impl<A: BumpAllocator> From<BumpString<A>> for alloc_crate::string::String {
 /// Concatenating `&str` slices can be done by converting the first to a `BumpString`:
 ///
 /// ```
-/// # use bump_scope::{ Bump, BumpString };
+/// # use bump_scope::{Bump, BumpString};
 /// # let bump: Bump = Bump::new();
 /// let a = "hello";
 /// let b = " world";

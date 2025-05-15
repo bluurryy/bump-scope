@@ -85,7 +85,7 @@ impl<T, A> IntoIter<T, A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let vec = mut_bump_vec![in &mut bump; 1, 2, 3];
     /// let mut into_iter = vec.into_iter();
@@ -105,7 +105,7 @@ impl<T, A> IntoIter<T, A> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let vec = mut_bump_vec![in &mut bump; 'a', 'b', 'c'];
     /// let mut into_iter = vec.into_iter();

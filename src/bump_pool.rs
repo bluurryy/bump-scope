@@ -22,7 +22,7 @@ macro_rules! bump_pool_declaration {
         /// Using `BumpPool` with parallel iterators from [`rayon`](https://docs.rs/rayon):
         /// ```
         /// # use bump_scope::BumpPool;
-        /// # use rayon::prelude::{ ParallelIterator, IntoParallelIterator };
+        /// # use rayon::prelude::{ParallelIterator, IntoParallelIterator};
         /// # if cfg!(miri) { return } // rayon violates strict-provenance :(
         /// #
         /// let mut pool: BumpPool = BumpPool::new();

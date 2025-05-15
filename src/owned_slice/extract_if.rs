@@ -15,7 +15,7 @@ use crate::{polyfill::nonnull, BumpBox};
 /// # Example
 ///
 /// ```
-/// use bump_scope::{ Bump, owned_slice::ExtractIf };
+/// use bump_scope::{Bump, owned_slice::ExtractIf};
 /// let bump: Bump = Bump::new();
 ///
 /// let mut v = bump.alloc_slice_copy(&[0, 1, 2]);

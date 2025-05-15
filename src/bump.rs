@@ -58,7 +58,7 @@ macro_rules! bump_declaration {
         /// ## Collections
         /// A `Bump` (and [`BumpScope`]) can be used to allocate collections of this crate...
         /// ```
-        /// use bump_scope::{ Bump, BumpString };
+        /// use bump_scope::{Bump, BumpString};
         /// let bump: Bump = Bump::new();
         ///
         /// let mut string = BumpString::new_in(&bump);
@@ -94,7 +94,7 @@ macro_rules! bump_declaration {
         /// # */
         /// # #[cfg(feature = "nightly-allocator-api")] fn main() {
         /// use bump_scope::Bump;
-        /// use std::collections::{ VecDeque, BTreeMap, LinkedList };
+        /// use std::collections::{VecDeque, BTreeMap, LinkedList};
         ///
         /// let bump: Bump = Bump::new();
         /// let vec = Vec::new_in(&bump);
@@ -491,7 +491,7 @@ where
     #[cfg_attr(feature = "nightly-tests", doc = "```")]
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # #![feature(pointer_is_aligned_to)]
-    /// # use bump_scope::{ Bump, Stats };
+    /// # use bump_scope::{Bump, Stats};
     /// let mut bump: Bump = Bump::new();
     ///
     /// // bump starts off by being aligned to 16
@@ -581,7 +581,7 @@ where
     #[cfg_attr(feature = "nightly-tests", doc = "```")]
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # #![feature(pointer_is_aligned_to)]
-    /// # use bump_scope::{ Bump, alloc::Global };
+    /// # use bump_scope::{Bump, alloc::Global};
     /// let mut bump: Bump<Global, 8> = Bump::new();
     /// let bump = bump.as_mut_scope();
     ///
@@ -2416,7 +2416,7 @@ where
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump };
+    /// # use bump_scope::{Bump};
     /// let bump: Bump = Bump::new();
     /// assert!(bump.stats().capacity() < 4096);
     ///
@@ -2439,7 +2439,7 @@ where
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{ Bump };
+    /// # use bump_scope::Bump;
     /// let bump: Bump = Bump::try_new()?;
     /// assert!(bump.stats().capacity() < 4096);
     ///
@@ -2475,7 +2475,7 @@ where
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
-    /// # use bump_scope::{ Bump };
+    /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// let result = bump.alloc_try_with(|| -> Result<i32, i32> { Ok(123) });
     /// assert_eq!(result.unwrap(), 123);
@@ -2483,7 +2483,7 @@ where
     /// ```
     #[cfg_attr(feature = "nightly-tests", doc = "```")]
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// # use bump_scope::{ Bump };
+    /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// let result = bump.alloc_try_with(|| -> Result<i32, i32> { Err(123) });
     /// assert_eq!(result.unwrap_err(), 123);
@@ -2545,7 +2545,7 @@ where
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
-    /// # use bump_scope::{ Bump };
+    /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
     /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) });
     /// assert_eq!(result.unwrap(), 123);
@@ -2553,7 +2553,7 @@ where
     /// ```
     #[cfg_attr(feature = "nightly-tests", doc = "```")]
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// # use bump_scope::{ Bump };
+    /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
     /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) });
     /// assert_eq!(result.unwrap_err(), 123);

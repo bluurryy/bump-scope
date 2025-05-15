@@ -14,7 +14,7 @@ use super::Drain;
 /// # Example
 ///
 /// ```
-/// # use bump_scope::{ Bump, bump_vec };
+/// # use bump_scope::{Bump, bump_vec};
 /// # let bump: Bump = Bump::new();
 /// let mut v = bump_vec![in &bump; 0, 1, 2];
 /// let new = [7, 8];
