@@ -18,6 +18,54 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
+/// This is like [`format!`](alloc_crate::format) but allocates inside a bump allocator, returning a [`FixedBumpString`].
+///
+/// If you don't need to modify the string after creation you can also use [`Bump::alloc_fmt`](crate::Bump::alloc_fmt).
+///
+/// # Panics
+/// If used without `try`, panics on allocation failure or if a formatting trait implementation returns an error.
+///
+/// # Errors
+/// If used with `try`, errors on allocation failure or if a formatting trait implementation returns an error.
+///
+/// # Examples
+///
+/// ```
+/// # use bump_scope::{ Bump, fixed_bump_format };
+/// # let bump: Bump = Bump::new();
+/// #
+/// let greeting = "Hello";
+/// let mut string = fixed_bump_format!(in &bump, "{greeting}, world!");
+/// string.replace_range(..5, "Howdy");
+///
+/// assert_eq!(string, "Howdy, world!");
+/// ```
+#[macro_export]
+macro_rules! fixed_bump_format {
+    (in $bump:expr) => {{
+        let _ = $bump;
+        $crate::FixedBumpString::new()
+    }};
+    (in $bump:expr, $($arg:tt)*) => {{
+        let mut string = $crate::private::PanicsOnAlloc($crate::BumpString::new_in($bump.as_scope()));
+        match $crate::private::core::fmt::Write::write_fmt(&mut string, $crate::private::core::format_args!($($arg)*)) {
+            $crate::private::core::result::Result::Ok(_) => string.0.into_fixed_string(),
+            $crate::private::core::result::Result::Err(_) => $crate::private::format_trait_error(),
+        }
+    }};
+    (try in $bump:expr) => {{
+        let _ = $bump;
+        Ok::<_, $crate::alloc::AllocError>($crate::FixedBumpString::new())
+    }};
+    (try in $bump:expr, $($arg:tt)*) => {{
+        let mut string = $crate::BumpString::new_in($bump.as_scope());
+        match $crate::private::core::fmt::Write::write_fmt(&mut string, $crate::private::core::format_args!($($arg)*)) {
+            $crate::private::core::result::Result::Ok(_) => $crate::private::core::result::Result::Ok(string.into_fixed_string()),
+            $crate::private::core::result::Result::Err(_) => $crate::private::core::result::Result::Err($crate::alloc::AllocError),
+        }
+    }};
+}
+
 /// A type like [`BumpString`](crate::BumpString) but with a fixed capacity.
 ///
 /// It can be constructed with [`alloc_fixed_string`] or from a `BumpBox` via [`from_init`] or [`from_uninit`].
