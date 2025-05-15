@@ -773,7 +773,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// ```
     /// # use bump_scope::{Bump, BumpVec};
     /// # let bump: Bump = Bump::new();
-    /// # let mut vec = BumpVec::from_array_in(['a', 'b', 'c', 'd', 'e'], &bump);
+    /// # let mut vec = BumpVec::from_owned_slice_in(['a', 'b', 'c', 'd', 'e'], &bump);
     /// # let start = 1;
     /// # let end = 4;
     /// let mut other = BumpVec::new_in(*vec.allocator());

@@ -431,7 +431,7 @@ fn test_retain_maybeuninits() {
     // This test aimed to be run under miri.
     use core::mem::MaybeUninit;
     let mut vec: Vec<_> =
-        Vec::from_array_in([1i32, 2, 3, 4].map(|v| MaybeUninit::new(vec![v])), Bump::new());
+        Vec::from_owned_slice_in([1i32, 2, 3, 4].map(|v| MaybeUninit::new(vec![v])), Bump::new());
     vec.retain(|x| {
         // SAFETY: Retain must visit every element of Vec in original order and exactly once.
         // Our values is initialized at creation of Vec.

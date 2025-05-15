@@ -33,7 +33,7 @@ fn test_unsized_to_string() {}
 fn test_from_utf8() {
     let bump: Bump = Bump::new();
 
-    let xs = Vec::from_array_in(*b"hello", &bump);
+    let xs = Vec::from_owned_slice_in(*b"hello", &bump);
     assert_eq!(String::from_utf8(xs).unwrap(), String::from_str_in("hello", &bump));
 
     let mut xs = Vec::new_in(&bump);
@@ -41,11 +41,11 @@ fn test_from_utf8() {
 
     assert_eq!(String::from_utf8(xs).unwrap(), String::from_str_in("ศไทย中华Việt Nam", &bump));
 
-    let xs = Vec::from_array_in(*b"hello\xFF", &bump);
+    let xs = Vec::from_owned_slice_in(*b"hello\xFF", &bump);
     let err = String::from_utf8(xs).unwrap_err();
     assert_eq!(err.as_bytes(), b"hello\xff");
     assert_eq!(err.utf8_error().valid_up_to(), 5);
-    assert_eq!(err.into_bytes(), Vec::from_array_in(*b"hello\xff", &bump));
+    assert_eq!(err.into_bytes(), Vec::from_owned_slice_in(*b"hello\xff", &bump));
 }
 
 #[test]
