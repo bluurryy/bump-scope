@@ -52,11 +52,228 @@ unsafe impl<T: Send> Send for FixedBumpVec<'_, T> {}
 unsafe impl<T: Sync> Sync for FixedBumpVec<'_, T> {}
 
 impl<'a, T> FixedBumpVec<'a, T> {
+    #[doc(hidden)]
+    #[deprecated = "use `FixedBumpVec::new()` instead"]
     /// Empty fixed vector.
     pub const EMPTY: Self = Self {
         initialized: BumpBox::EMPTY,
         capacity: if T::IS_ZST { usize::MAX } else { 0 },
     };
+
+    /// Constructs a new empty `FixedBumpVec<T>`.
+    ///
+    /// This will not allocate.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let vec = FixedBumpVec::<i32>::new();
+    /// assert_eq!(vec.len(), 0);
+    /// assert_eq!(vec.capacity(), 0);
+    /// ```
+    #[inline]
+    pub const fn new() -> Self {
+        Self {
+            initialized: BumpBox::EMPTY,
+            capacity: if T::IS_ZST { usize::MAX } else { 0 },
+        }
+    }
+
+    /// Constructs a new empty vector with at least the specified capacity
+    /// in the provided bump allocator.
+    ///
+    /// The vector will be able to hold `capacity` elements.
+    /// If `capacity` is 0, the vector will not allocate.
+    ///
+    /// It is important to note that although the returned vector has the
+    /// minimum *capacity* specified, the vector will have a zero *length*. For
+    /// an explanation of the difference between length and capacity, see
+    /// *[Capacity and reallocation]*.
+    ///
+    /// When `T` is a zero-sized type, there will be no allocation
+    /// and the capacity will always be `usize::MAX`.
+    ///
+    /// [Capacity and reallocation]: alloc_crate::vec::Vec#capacity-and-reallocation
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::<i32>::with_capacity_in(10, &bump);
+    ///
+    /// // The vector contains no items, even though it has capacity for more
+    /// assert_eq!(vec.len(), 0);
+    /// assert!(vec.capacity() >= 10);
+    ///
+    /// // The vector has space for all these items...
+    /// for i in 0..10 {
+    ///     vec.push(i);
+    /// }
+    /// assert_eq!(vec.len(), 10);
+    /// assert!(vec.capacity() >= 10);
+    ///
+    /// // ...but one more will not fit
+    /// vec.try_push(11).unwrap_err();
+    ///
+    /// // A vector of a zero-sized type will always over-allocate, since no
+    /// // allocation is necessary
+    /// let vec_units = FixedBumpVec::<()>::with_capacity_in(10, &bump);
+    /// assert_eq!(vec_units.capacity(), usize::MAX);
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn with_capacity_in(capacity: usize, allocator: impl BumpAllocatorScope<'a>) -> Self {
+        panic_on_error(Self::generic_with_capacity_in(capacity, allocator))
+    }
+
+    /// Constructs a new empty vector with at least the specified capacity
+    /// in the provided bump allocator.
+    ///
+    /// The vector will be able to hold `capacity` elements without
+    /// reallocating. If `capacity` is 0, the vector will not allocate.
+    ///
+    /// It is important to note that although the returned vector has the
+    /// minimum *capacity* specified, the vector will have a zero *length*. For
+    /// an explanation of the difference between length and capacity, see
+    /// *[Capacity and reallocation]*.
+    ///
+    /// When `T` is a zero-sized type, there will be no allocation
+    /// and the capacity will always be `usize::MAX`.
+    ///
+    /// [Capacity and reallocation]: alloc_crate::vec::Vec#capacity-and-reallocation
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::<i32>::try_with_capacity_in(10, &bump)?;
+    ///
+    /// // The vector contains no items, even though it has capacity for more
+    /// assert_eq!(vec.len(), 0);
+    /// assert!(vec.capacity() >= 10);
+    ///
+    /// // The vector has space for all these items...
+    /// for i in 0..10 {
+    ///     vec.push(i);
+    /// }
+    /// assert_eq!(vec.len(), 10);
+    /// assert!(vec.capacity() >= 10);
+    ///
+    /// // ...but one more will not fit
+    /// vec.try_push(11).unwrap_err();
+    ///
+    /// // A vector of a zero-sized type will always over-allocate, since no
+    /// // allocation is necessary
+    /// let vec_units = FixedBumpVec::<()>::try_with_capacity_in(10, &bump)?;
+    /// assert_eq!(vec_units.capacity(), usize::MAX);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_with_capacity_in(capacity: usize, allocator: impl BumpAllocatorScope<'a>) -> Result<Self, AllocError> {
+        Self::generic_with_capacity_in(capacity, allocator)
+    }
+
+    #[inline]
+    pub(crate) fn generic_with_capacity_in<E: ErrorBehavior>(
+        capacity: usize,
+        allocator: impl BumpAllocatorScope<'a>,
+    ) -> Result<Self, E> {
+        Ok(BumpVec::generic_with_capacity_in(capacity, allocator)?.into_fixed_vec())
+    }
+
+    /// Constructs a new `FixedBumpVec<T>` and pushes `value` `count` times.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let vec = FixedBumpVec::from_elem_in("ho", 3, &bump);
+    /// assert_eq!(vec, ["ho", "ho", "ho"]);
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn from_elem_in(value: T, count: usize, allocator: impl BumpAllocatorScope<'a>) -> Self
+    where
+        T: Clone,
+    {
+        panic_on_error(Self::generic_from_elem_in(value, count, allocator))
+    }
+
+    /// Constructs a new `FixedBumpVec<T>` and pushes `value` `count` times.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let vec = FixedBumpVec::try_from_elem_in("ho", 3, &bump)?;
+    /// assert_eq!(vec, ["ho", "ho", "ho"]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_from_elem_in(value: T, count: usize, allocator: impl BumpAllocatorScope<'a>) -> Result<Self, AllocError>
+    where
+        T: Clone,
+    {
+        Self::generic_from_elem_in(value, count, allocator)
+    }
+
+    #[inline]
+    pub(crate) fn generic_from_elem_in<E: ErrorBehavior>(
+        value: T,
+        count: usize,
+        allocator: impl BumpAllocatorScope<'a>,
+    ) -> Result<Self, E>
+    where
+        T: Clone,
+    {
+        Ok(BumpVec::generic_from_elem_in(value, count, allocator)?.into_fixed_vec())
+    }
+
+    /// Constructs a new `FixedBumpVec<T>` from a `[T; N]`.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn from_array_in<const N: usize>(array: [T; N], allocator: impl BumpAllocatorScope<'a>) -> Self {
+        panic_on_error(Self::generic_from_array_in(array, allocator))
+    }
+
+    /// Constructs a new `FixedBumpVec<T>` from a `[T; N]`.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    #[inline(always)]
+    pub fn try_from_array_in<const N: usize>(
+        array: [T; N],
+        allocator: impl BumpAllocatorScope<'a>,
+    ) -> Result<Self, AllocError> {
+        Self::generic_from_array_in(array, allocator)
+    }
+
+    #[inline]
+    pub(crate) fn generic_from_array_in<E: ErrorBehavior, const N: usize>(
+        array: [T; N],
+        allocator: impl BumpAllocatorScope<'a>,
+    ) -> Result<Self, E> {
+        Ok(BumpVec::generic_from_array_in(array, allocator)?.into_fixed_vec())
+    }
 
     /// Create a new [`FixedBumpVec`] whose elements are taken from an iterator and allocated in the given `bump`.
     ///
@@ -639,7 +856,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
             }
 
             if start == end {
-                return FixedBumpVec::EMPTY;
+                return FixedBumpVec::new();
             }
 
             let head_len = start;
@@ -1950,7 +2167,7 @@ where
 
 impl<T> Default for FixedBumpVec<'_, T> {
     fn default() -> Self {
-        Self::EMPTY
+        Self::new()
     }
 }
 
