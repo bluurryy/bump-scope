@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     alloc::{Allocator, Global},
-    Bump, BumpVec, MutBumpVec,
+    Bump, BumpVec, FixedBumpVec, MutBumpVec,
 };
 
 use super::limited_allocator::Limited;
@@ -63,7 +63,7 @@ fn io_write_mut_vec() {
 #[test]
 fn io_write_fixed_vec() {
     let bump: Bump = Bump::new();
-    let mut vec = bump.alloc_fixed_vec(1024);
+    let mut vec = FixedBumpVec::with_capacity_in(1024, &bump);
     assert!(matches!(vec.write(&[1, 2, 3]), Ok(3)));
     assert!(matches!(
         vec.write_vectored(&[IoSlice::new(&[4, 5]), IoSlice::new(&[6, 7, 8]),]),

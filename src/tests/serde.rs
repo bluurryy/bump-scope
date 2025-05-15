@@ -2,7 +2,7 @@ use std::vec;
 
 use ::serde::{de::DeserializeSeed, Serialize};
 
-use crate::{bump_format, bump_vec};
+use crate::{bump_format, bump_vec, FixedBumpString, FixedBumpVec};
 
 use super::*;
 
@@ -23,7 +23,7 @@ fn ser() {
     }
 
     {
-        let mut a = bump.alloc_fixed_vec(5);
+        let mut a = FixedBumpVec::with_capacity_in(5, &bump);
         a.extend_from_slice_copy(&[1, 2, 3]);
         let b = vec![1, 2, 3];
         assert_same(&a, &b);
@@ -78,9 +78,9 @@ fn de() {
     let mut bump_dst: Bump = Bump::new();
 
     {
-        let mut src = bump_src.alloc_fixed_vec(3);
+        let mut src = FixedBumpVec::with_capacity_in(3, &bump_src);
         src.extend_from_slice_copy(&[1, 2, 3]);
-        let mut dst = bump_dst.alloc_fixed_vec(3);
+        let mut dst = FixedBumpVec::with_capacity_in(3, &bump_dst);
         roundtrip(&src, &mut dst);
     }
 
@@ -109,9 +109,9 @@ fn de() {
     }
 
     {
-        let mut src = bump_src.alloc_fixed_string(15);
+        let mut src = FixedBumpString::with_capacity_in(15, &bump_src);
         src.push_str("Hello, World!");
-        let mut dst = bump_dst.alloc_fixed_string(15);
+        let mut dst = FixedBumpString::with_capacity_in(15, &bump_dst);
         roundtrip(&src, &mut dst);
     }
 

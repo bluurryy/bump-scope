@@ -456,7 +456,7 @@ up_and_down! {
     }
 
     pub fn FixedBumpVec__new(capacity: usize, bump: &Bump) -> Result<FixedBumpVec<u32>> {
-        bump.try_alloc_fixed_vec(capacity)
+        FixedBumpVec::try_with_capacity_in(capacity, bump)
     }
 
     pub fn FixedBumpVec_try_from_iter_in<'a>(iter: core::slice::Iter<u32>, bump: &'a Bump) -> Result<FixedBumpVec<'a, u32>> {
@@ -496,7 +496,7 @@ up_and_down! {
     }
 
     pub fn FixedBumpString__new(capacity: usize, bump: &Bump) -> Result<FixedBumpString> {
-        bump.try_alloc_fixed_string(capacity)
+        FixedBumpString::try_with_capacity_in(capacity, bump)
     }
 
     pub fn FixedBumpString_try_push(string: &mut FixedBumpString, value: char) -> Result {

@@ -4,7 +4,7 @@ use std::{
     vec::Vec,
 };
 
-use crate::{Bump, BumpVec, MutBumpVec, MutBumpVecRev};
+use crate::{Bump, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev};
 
 fn items() -> impl Iterator<Item = [String; 3]> {
     // would use `array_chunks`, but it's not stable
@@ -30,7 +30,7 @@ fn boxed() {
 #[test]
 fn fixed_vec() {
     let bump: Bump = Bump::new();
-    let mut vec = bump.alloc_fixed_vec(4);
+    let mut vec = FixedBumpVec::with_capacity_in(4, &bump);
     vec.extend(items());
     assert_eq!(format!("{vec:?}"), r#"[["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"]]"#);
     let vec = vec.into_flattened();
