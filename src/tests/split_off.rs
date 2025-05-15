@@ -355,7 +355,7 @@ fn vec_alternative_using_drain() {
     let end = 4;
 
     {
-        let mut vec = BumpVec::from_array_in(['a', 'b', 'c', 'd', 'e'], &bump);
+        let mut vec = BumpVec::from_owned_slice_in(['a', 'b', 'c', 'd', 'e'], &bump);
         let allocator = *vec.allocator();
         let other = BumpVec::from_iter_in(vec.drain(start..end), allocator);
         assert_eq!(vec, ['a', 'e']);
@@ -363,7 +363,7 @@ fn vec_alternative_using_drain() {
     }
 
     {
-        let mut vec = BumpVec::from_array_in(['a', 'b', 'c', 'd', 'e'], &bump);
+        let mut vec = BumpVec::from_owned_slice_in(['a', 'b', 'c', 'd', 'e'], &bump);
         let mut other = BumpVec::new_in(*vec.allocator());
         other.append(vec.drain(start..end));
         assert_eq!(vec, ['a', 'e']);

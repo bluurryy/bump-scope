@@ -243,8 +243,8 @@ up_and_down! {
         MutBumpVec::try_from_iter_in(iter.copied(), bump)
     }
 
-    pub fn MutBumpVec__try_from_array_in(array: [u32; 24], bump: &mut Bump) -> Result<MutBumpVec<u32>> {
-        MutBumpVec::try_from_array_in(array, bump)
+    pub fn MutBumpVec__try_from_owned_slice_in(array: [u32; 24], bump: &mut Bump) -> Result<MutBumpVec<u32>> {
+        MutBumpVec::try_from_owned_slice_in(array, bump)
     }
 
     pub fn MutBumpVec__try_from_elem_in(value: u32, count: usize, bump: &mut Bump) -> Result<MutBumpVec<u32>> {
@@ -295,8 +295,8 @@ up_and_down! {
         MutBumpVecRev::try_from_iter_in(iter.copied(), bump)
     }
 
-    pub fn MutBumpVecRev__try_from_array_in(array: [u32; 24], bump: &mut Bump) -> Result<MutBumpVecRev<u32>> {
-        MutBumpVecRev::try_from_array_in(array, bump)
+    pub fn MutBumpVecRev__try_from_owned_slice_in(array: [u32; 24], bump: &mut Bump) -> Result<MutBumpVecRev<u32>> {
+        MutBumpVecRev::try_from_owned_slice_in(array, bump)
     }
 
     pub fn MutBumpVecRev__try_from_elem_in(value: u32, count: usize, bump: &mut Bump) -> Result<MutBumpVecRev<u32>> {
@@ -383,8 +383,8 @@ up_and_down! {
         BumpVec::try_from_iter_exact_in(iter.copied(), bump)
     }
 
-    pub fn BumpVec__try_from_array_in(array: [u32; 24], bump: &Bump) -> Result<BumpVec<u32>> {
-        BumpVec::try_from_array_in(array, bump)
+    pub fn BumpVec__try_from_owned_slice_in(array: [u32; 24], bump: &Bump) -> Result<BumpVec<u32>> {
+        BumpVec::try_from_owned_slice_in(array, bump)
     }
 
     pub fn BumpVec__try_from_elem_in(value: u32, count: usize, bump: &Bump) -> Result<BumpVec<u32>> {

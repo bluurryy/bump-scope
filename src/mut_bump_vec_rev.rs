@@ -86,7 +86,7 @@ macro_rules! mut_bump_vec_rev {
         $crate::MutBumpVecRev::new_in($bump)
     };
     [in $bump:expr; $($values:expr),* $(,)?] => {
-        $crate::MutBumpVecRev::from_array_in([$($values),*], $bump)
+        $crate::MutBumpVecRev::from_owned_slice_in([$($values),*], $bump)
     };
     [in $bump:expr; $value:expr; $count:expr] => {
         $crate::MutBumpVecRev::from_elem_in($value, $count, $bump)
@@ -95,7 +95,7 @@ macro_rules! mut_bump_vec_rev {
         Ok::<_, $crate::alloc::AllocError>($crate::MutBumpVecRev::new_in($bump))
     };
     [try in $bump:expr; $($values:expr),* $(,)?] => {
-        $crate::MutBumpVecRev::try_from_array_in([$($values),*], $bump)
+        $crate::MutBumpVecRev::try_from_owned_slice_in([$($values),*], $bump)
     };
     [try in $bump:expr; $value:expr; $count:expr] => {
         $crate::MutBumpVecRev::try_from_elem_in($value, $count, $bump)
@@ -861,6 +861,8 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    #[doc(hidden)]
+    #[deprecated = "use `from_owned_slice_in` instead"]
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -872,6 +874,8 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     ///
     /// # Errors
     /// Errors if the allocation fails.
+    #[doc(hidden)]
+    #[deprecated = "use `try_from_owned_slice_in` instead"]
     #[inline(always)]
     pub fn try_from_array_in<const N: usize>(array: [T; N], allocator: A) -> Result<Self, AllocError> {
         Self::generic_from_array_in(array, allocator)

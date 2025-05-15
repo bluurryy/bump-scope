@@ -99,7 +99,7 @@ macro_rules! bump_vec {
         $crate::BumpVec::new_in($bump)
     };
     [in $bump:expr; $($values:expr),* $(,)?] => {
-        $crate::BumpVec::from_array_in([$($values),*], $bump)
+        $crate::BumpVec::from_owned_slice_in([$($values),*], $bump)
     };
     [in $bump:expr; $value:expr; $count:expr] => {
         $crate::BumpVec::from_elem_in($value, $count, $bump)
@@ -108,7 +108,7 @@ macro_rules! bump_vec {
         Ok::<_, $crate::alloc::AllocError>($crate::BumpVec::new_in($bump))
     };
     [try in $bump:expr; $($values:expr),* $(,)?] => {
-        $crate::BumpVec::try_from_array_in([$($values),*], $bump)
+        $crate::BumpVec::try_from_owned_slice_in([$($values),*], $bump)
     };
     [try in $bump:expr; $value:expr; $count:expr] => {
         $crate::BumpVec::try_from_elem_in($value, $count, $bump)
@@ -517,6 +517,8 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    #[doc(hidden)]
+    #[deprecated = "use `from_owned_slice_in` instead"]
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -528,6 +530,8 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// # Errors
     /// Errors if the allocation fails.
+    #[doc(hidden)]
+    #[deprecated = "use `try_from_owned_slice_in` instead"]
     #[inline(always)]
     pub fn try_from_array_in<const N: usize>(array: [T; N], allocator: A) -> Result<Self, AllocError> {
         Self::generic_from_array_in(array, allocator)

@@ -111,19 +111,19 @@ fn append_fixed_vec() {
 
     {
         let vec = FixedBumpVec::with_capacity_in(10, &bump);
-        let other: BumpVec<String, _> = BumpVec::from_array_in(test_strings(), &other_bump);
+        let other: BumpVec<String, _> = BumpVec::from_owned_slice_in(test_strings(), &other_bump);
         test_append(vec, other);
     }
 
     {
         let vec = FixedBumpVec::with_capacity_in(10, &bump);
-        let other: MutBumpVec<String, _> = MutBumpVec::from_array_in(test_strings(), &mut other_bump);
+        let other: MutBumpVec<String, _> = MutBumpVec::from_owned_slice_in(test_strings(), &mut other_bump);
         test_append(vec, other);
     }
 
     {
         let vec = FixedBumpVec::with_capacity_in(10, &bump);
-        let other: MutBumpVecRev<String, _> = MutBumpVecRev::from_array_in(test_strings(), &mut other_bump);
+        let other: MutBumpVecRev<String, _> = MutBumpVecRev::from_owned_slice_in(test_strings(), &mut other_bump);
         test_append(vec, other);
     }
 
@@ -210,19 +210,19 @@ fn append_vec() {
 
     {
         let vec = BumpVec::new_in(&bump);
-        let other: BumpVec<String, _> = BumpVec::from_array_in(test_strings(), &other_bump);
+        let other: BumpVec<String, _> = BumpVec::from_owned_slice_in(test_strings(), &other_bump);
         test_append(vec, other);
     }
 
     {
         let vec = BumpVec::new_in(&bump);
-        let other: MutBumpVec<String, _> = MutBumpVec::from_array_in(test_strings(), &mut other_bump);
+        let other: MutBumpVec<String, _> = MutBumpVec::from_owned_slice_in(test_strings(), &mut other_bump);
         test_append(vec, other);
     }
 
     {
         let vec = BumpVec::new_in(&bump);
-        let other: MutBumpVecRev<String, _> = MutBumpVecRev::from_array_in(test_strings(), &mut other_bump);
+        let other: MutBumpVecRev<String, _> = MutBumpVecRev::from_owned_slice_in(test_strings(), &mut other_bump);
         test_append(vec, other);
     }
 
@@ -309,19 +309,19 @@ fn append_mut_vec() {
 
     {
         let vec = MutBumpVec::new_in(&mut bump);
-        let other: BumpVec<String, _> = BumpVec::from_array_in(test_strings(), &other_bump);
+        let other: BumpVec<String, _> = BumpVec::from_owned_slice_in(test_strings(), &other_bump);
         test_append(vec, other);
     }
 
     {
         let vec = MutBumpVec::new_in(&mut bump);
-        let other: MutBumpVec<String, _> = MutBumpVec::from_array_in(test_strings(), &mut other_bump);
+        let other: MutBumpVec<String, _> = MutBumpVec::from_owned_slice_in(test_strings(), &mut other_bump);
         test_append(vec, other);
     }
 
     {
         let vec = MutBumpVec::new_in(&mut bump);
-        let other: MutBumpVecRev<String, _> = MutBumpVecRev::from_array_in(test_strings(), &mut other_bump);
+        let other: MutBumpVecRev<String, _> = MutBumpVecRev::from_owned_slice_in(test_strings(), &mut other_bump);
         test_append(vec, other);
     }
 
@@ -408,19 +408,19 @@ fn append_mut_vec_rev() {
 
     {
         let vec = MutBumpVecRev::new_in(&mut bump);
-        let other: BumpVec<String, _> = BumpVec::from_array_in(test_strings(), &other_bump);
+        let other: BumpVec<String, _> = BumpVec::from_owned_slice_in(test_strings(), &other_bump);
         test_append(vec, other);
     }
 
     {
         let vec = MutBumpVecRev::new_in(&mut bump);
-        let other: MutBumpVecRev<String, _> = MutBumpVecRev::from_array_in(test_strings(), &mut other_bump);
+        let other: MutBumpVecRev<String, _> = MutBumpVecRev::from_owned_slice_in(test_strings(), &mut other_bump);
         test_append(vec, other);
     }
 
     {
         let vec = MutBumpVecRev::new_in(&mut bump);
-        let other: MutBumpVecRev<String, _> = MutBumpVecRev::from_array_in(test_strings(), &mut other_bump);
+        let other: MutBumpVecRev<String, _> = MutBumpVecRev::from_owned_slice_in(test_strings(), &mut other_bump);
         test_append(vec, other);
     }
 

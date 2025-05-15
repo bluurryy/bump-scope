@@ -683,7 +683,7 @@ fn vec_of_strings() {
 fn bump_vec_shrink_can<const UP: bool>() {
     let bump = Bump::<Global, 1, UP>::with_size(64);
 
-    let mut vec = BumpVec::<i32, _>::from_array_in([1, 2, 3], &bump);
+    let mut vec = BumpVec::<i32, _>::from_owned_slice_in([1, 2, 3], &bump);
     let addr = vec.as_ptr().addr();
     assert_eq!(vec.capacity(), 3);
     vec.shrink_to_fit();
@@ -705,7 +705,7 @@ fn bump_vec_shrink_can<const UP: bool>() {
 fn bump_vec_shrink_cant<const UP: bool>() {
     let bump = Bump::<Global, 1, UP>::with_size(64);
 
-    let mut vec = BumpVec::<i32, _>::from_array_in([1, 2, 3], &bump);
+    let mut vec = BumpVec::<i32, _>::from_owned_slice_in([1, 2, 3], &bump);
     let addr = vec.as_ptr().addr();
     assert_eq!(vec.capacity(), 3);
     bump.alloc_str("now you can't shrink haha");
