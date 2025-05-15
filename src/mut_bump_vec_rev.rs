@@ -261,6 +261,18 @@ impl<T, A> MutBumpVecRev<T, A> {
 
     /// Removes the first element from a vector and returns it, or [`None`] if it
     /// is empty.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, mut_bump_vec_rev};
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec_rev![in &mut bump; 1, 2, 3];
+    /// assert_eq!(vec.pop(), Some(1));
+    /// assert_eq!(vec, [2, 3]);
+    /// ```
+    ///
+    /// # Time complexity
+    /// Takes *O*(1) time.
     #[inline(always)]
     pub fn pop(&mut self) -> Option<T> {
         if self.len == 0 {

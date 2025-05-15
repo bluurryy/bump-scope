@@ -235,6 +235,18 @@ impl<T, A> MutBumpVec<T, A> {
 
     /// Removes the last element from a vector and returns it, or [`None`] if it
     /// is empty.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
+    /// assert_eq!(vec.pop(), Some(3));
+    /// assert_eq!(vec, [1, 2]);
+    /// ```
+    ///
+    /// # Time complexity
+    /// Takes *O*(1) time.
     #[inline(always)]
     pub fn pop(&mut self) -> Option<T> {
         unsafe { self.fixed.cook_mut() }.pop()
