@@ -383,6 +383,14 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, BumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let vec = BumpVec::from_elem_in("ho", 3, &bump);
+    /// assert_eq!(vec, ["ho", "ho", "ho"]);
+    /// ```
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -397,6 +405,15 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// # Errors
     /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, BumpVec};
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let vec = BumpVec::try_from_elem_in("ho", 3, &bump)?;
+    /// assert_eq!(vec, ["ho", "ho", "ho"]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
     pub fn try_from_elem_in(value: T, count: usize, allocator: A) -> Result<Self, AllocError>
     where

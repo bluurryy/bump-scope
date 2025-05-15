@@ -600,6 +600,14 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, MutBumpVec};
+    /// # let mut bump: Bump = Bump::new();
+    /// let vec = MutBumpVec::from_elem_in("ho", 3, &mut bump);
+    /// assert_eq!(vec, ["ho", "ho", "ho"]);
+    /// ```
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -614,6 +622,15 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     ///
     /// # Errors
     /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, MutBumpVec};
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let vec = MutBumpVec::try_from_elem_in("ho", 3, &mut bump)?;
+    /// assert_eq!(vec, ["ho", "ho", "ho"]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
     pub fn try_from_elem_in(value: T, count: usize, allocator: A) -> Result<Self, AllocError>
     where
