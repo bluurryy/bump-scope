@@ -201,6 +201,14 @@ impl<T, A> MutBumpVec<T, A> {
 
     /// Returns the number of elements in the vector, also referred to
     /// as its 'length'.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, mut_bump_vec };
+    /// # let mut bump: Bump = Bump::new();
+    /// let a = mut_bump_vec![in &mut bump; 1, 2, 3];
+    /// assert_eq!(a.len(), 3);
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn len(&self) -> usize {
@@ -208,6 +216,17 @@ impl<T, A> MutBumpVec<T, A> {
     }
 
     /// Returns `true` if the vector contains no elements.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpVec };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut v = MutBumpVec::new_in(&mut bump);
+    /// assert!(v.is_empty());
+    ///
+    /// v.push(1);
+    /// assert!(!v.is_empty());
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {

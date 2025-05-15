@@ -654,6 +654,14 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
 
     /// Returns the number of elements in the vector, also referred to
     /// as its 'length'.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, bump_vec };
+    /// # let bump: Bump = Bump::new();
+    /// let a = bump_vec![in bump; 1, 2, 3];
+    /// assert_eq!(a.len(), 3);
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn len(&self) -> usize {
@@ -661,6 +669,17 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     }
 
     /// Returns `true` if the vector contains no elements.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, BumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut v = BumpVec::new_in(&bump);
+    /// assert!(v.is_empty());
+    ///
+    /// v.push(1);
+    /// assert!(!v.is_empty());
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {

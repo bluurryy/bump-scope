@@ -264,6 +264,18 @@ impl<A: BumpAllocator> BumpString<A> {
     /// Returns the length of this string, in bytes, not [`char`]s or
     /// graphemes. In other words, it might not be what a human considers the
     /// length of the string.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, BumpString };
+    /// # let bump: Bump = Bump::new();
+    /// let a = BumpString::from_str_in("foo", &bump);
+    /// assert_eq!(a.len(), 3);
+    ///
+    /// let fancy_f = BumpString::from_str_in("ƒoo", &bump);
+    /// assert_eq!(fancy_f.len(), 4);
+    /// assert_eq!(fancy_f.chars().count(), 3);
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn len(&self) -> usize {
@@ -271,6 +283,17 @@ impl<A: BumpAllocator> BumpString<A> {
     }
 
     /// Returns `true` if this string has a length of zero, and `false` otherwise.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, BumpString };
+    /// # let bump: Bump = Bump::new();
+    /// let mut v = BumpString::new_in(&bump);
+    /// assert!(v.is_empty());
+    ///
+    /// v.push('a');
+    /// assert!(!v.is_empty());
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {

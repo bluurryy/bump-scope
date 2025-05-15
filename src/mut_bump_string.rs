@@ -263,6 +263,18 @@ impl<A> MutBumpString<A> {
     /// Returns the length of this string, in bytes, not [`char`]s or
     /// graphemes. In other words, it might not be what a human considers the
     /// length of the string.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let a = MutBumpString::from_str_in("foo", &mut bump);
+    /// assert_eq!(a.len(), 3);
+    ///
+    /// let fancy_f = MutBumpString::from_str_in("ƒoo", &mut bump);
+    /// assert_eq!(fancy_f.len(), 4);
+    /// assert_eq!(fancy_f.chars().count(), 3);
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn len(&self) -> usize {
@@ -270,6 +282,17 @@ impl<A> MutBumpString<A> {
     }
 
     /// Returns `true` if this string has a length of zero, and `false` otherwise.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, MutBumpString };
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut v = MutBumpString::new_in(&mut bump);
+    /// assert!(v.is_empty());
+    ///
+    /// v.push('a');
+    /// assert!(!v.is_empty());
+    /// ```
     #[must_use]
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
