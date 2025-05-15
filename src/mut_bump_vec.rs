@@ -765,7 +765,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         allocator: A,
     ) -> Result<Self, E> {
         let owned_slice = owned_slice.into_take_owned_slice();
-        let mut this = Self::with_capacity_in(owned_slice.owned_slice_ref().len(), allocator);
+        let mut this = Self::generic_with_capacity_in(owned_slice.owned_slice_ref().len(), allocator)?;
         this.generic_append(owned_slice)?;
         Ok(this)
     }
