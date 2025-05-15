@@ -11,7 +11,7 @@
 - **deprecated:** `FixedBumpVec::EMPTY`, use `FixedBumpVec::new()` instead
 - **deprecated:** `alloc_fixed_vec`, use `FixedBumpVec::with_capacity_in` instead
 - **deprecated:** `alloc_fixed_string`, use `FixedBumpString::with_capacity_in` instead
-- **added:** `FixedBumpVec::{ new, from_capacity_in, from_elem_in, from_array_in}`
+- **added:** `FixedBumpVec::{new, from_capacity_in}`
 - **fix:** `serde` to compile without `alloc` feature
 
 ### Migration Guide
