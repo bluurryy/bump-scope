@@ -442,6 +442,77 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         Ok(vec)
     }
 
+    /// Constructs a new `BumpVec<T>` from an [`OwnedSlice`].
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, BumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// // by value
+    /// let a = BumpVec::from_owned_slice_in([1, 2], &bump);
+    /// let b = BumpVec::from_owned_slice_in(vec![3, 4], &bump);
+    /// let c = BumpVec::from_owned_slice_in(bump.alloc_iter(5..=6), &bump);
+    ///
+    /// // by mutable reference
+    /// let mut other = vec![7, 8];
+    /// let d = BumpVec::from_owned_slice_in(&mut other, &bump);
+    /// assert!(other.is_empty());
+    ///
+    /// assert_eq!(a, [1, 2]);
+    /// assert_eq!(b, [3, 4]);
+    /// assert_eq!(c, [5, 6]);
+    /// assert_eq!(d, [7, 8]);
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn from_owned_slice_in(owned_slice: impl OwnedSlice<Item = T>, allocator: A) -> Self {
+        panic_on_error(Self::generic_from_owned_slice_in(owned_slice, allocator))
+    }
+
+    /// Constructs a new `BumpVec<T>` from an [`OwnedSlice`].
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, BumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// // by value
+    /// let a = BumpVec::try_from_owned_slice_in([1, 2], &bump)?;
+    /// let b = BumpVec::try_from_owned_slice_in(vec![3, 4], &bump)?;
+    /// let c = BumpVec::try_from_owned_slice_in(bump.alloc_iter(5..=6), &bump)?;
+    ///
+    /// // by mutable reference
+    /// let mut other = vec![7, 8];
+    /// let d = BumpVec::try_from_owned_slice_in(&mut other, &bump)?;
+    /// assert!(other.is_empty());
+    ///
+    /// assert_eq!(a, [1, 2]);
+    /// assert_eq!(b, [3, 4]);
+    /// assert_eq!(c, [5, 6]);
+    /// assert_eq!(d, [7, 8]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_from_owned_slice_in(owned_slice: impl OwnedSlice<Item = T>, allocator: A) -> Result<Self, AllocError> {
+        Self::generic_from_owned_slice_in(owned_slice, allocator)
+    }
+
+    #[inline]
+    pub(crate) fn generic_from_owned_slice_in<E: ErrorBehavior>(
+        owned_slice: impl OwnedSlice<Item = T>,
+        allocator: A,
+    ) -> Result<Self, E> {
+        let mut this = Self::new_in(allocator);
+        this.generic_append(owned_slice)?;
+        Ok(this)
+    }
+
     /// Constructs a new `BumpVec<T>` from a `[T; N]`.
     ///
     /// # Panics

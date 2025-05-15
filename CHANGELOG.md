@@ -13,6 +13,7 @@
 - **deprecated:** `alloc_fixed_vec`, use `FixedBumpVec::with_capacity_in` instead
 - **deprecated:** `alloc_fixed_string`, use `FixedBumpString::with_capacity_in` instead
 - **added:** `FixedBumpVec::{new, from_capacity_in}`
+- **added:** `{BumpVec, MutBumpVec, MutBumpVecRev}::from_owned_slice_in`
 - **fix:** `serde` to compile without `alloc` feature
 
 ### Migration Guide
