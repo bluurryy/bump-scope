@@ -2265,6 +2265,8 @@ where
     /// values.push(3);
     /// assert_eq!(values, [1, 2, 3])
     /// ```
+    #[doc(hidden)]
+    #[deprecated = "use `FixedBumpVec::with_capacity_in()` instead"]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_fixed_vec<T>(&self, capacity: usize) -> FixedBumpVec<'a, T> {
@@ -2287,6 +2289,8 @@ where
     /// assert_eq!(values, [1, 2, 3]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
+    #[doc(hidden)]
+    #[deprecated = "use `FixedBumpVec::try_with_capacity_in()` instead"]
     #[inline(always)]
     pub fn try_alloc_fixed_vec<T>(&self, capacity: usize) -> Result<FixedBumpVec<'a, T>, AllocError> {
         self.generic_alloc_fixed_vec(capacity)
@@ -2304,13 +2308,15 @@ where
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpString};
     /// # let bump: Bump = Bump::new();
-    /// let mut string = bump.alloc_fixed_string(13);
+    /// let mut string = FixedBumpString::with_capacity_in(13, &bump);
     /// string.push_str("Hello,");
     /// string.push_str(" world!");
     /// assert_eq!(string, "Hello, world!");
     /// ```
+    #[doc(hidden)]
+    #[deprecated = "use `FixedBumpString::with_capacity_in()` instead"]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_fixed_string(&self, capacity: usize) -> FixedBumpString<'a> {
@@ -2332,6 +2338,8 @@ where
     /// assert_eq!(string, "Hello, world!");
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
+    #[doc(hidden)]
+    #[deprecated = "use `FixedBumpString::try_with_capacity_in()` instead"]
     #[inline(always)]
     pub fn try_alloc_fixed_string(&self, capacity: usize) -> Result<FixedBumpString<'a>, AllocError> {
         self.generic_alloc_fixed_string(capacity)

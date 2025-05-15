@@ -274,7 +274,7 @@ unsafe impl<T> TakeOwnedSlice for Drain<'_, T> {
 mod tests {
     use std::{string::ToString, vec::Vec};
 
-    use crate::{tests::TestWrap, Bump};
+    use crate::{tests::TestWrap, Bump, FixedBumpVec};
 
     #[test]
     fn owned_slice() {
@@ -290,7 +290,7 @@ mod tests {
                 TestWrap::expect().drops(5).clones(5).run(|| {
                     let mut slice_clone = bump.alloc_slice_clone(&slice);
 
-                    let mut vec = bump.alloc_fixed_vec(10);
+                    let mut vec = FixedBumpVec::with_capacity_in(10, &bump);
                     vec.append(slice_clone.drain(start..end));
 
                     assert_eq!(vec, slice[start..end]);
@@ -317,7 +317,7 @@ mod tests {
             for end in start..slice.len() {
                 TestWrap::expect().drops(5).clones(5).run(|| {
                     let mut slice_clone = bump.alloc_slice_clone(&slice);
-                    let mut vec = bump.alloc_fixed_vec(10);
+                    let mut vec = FixedBumpVec::with_capacity_in(10, &bump);
                     vec.append(slice_clone.drain(start..end));
 
                     assert_eq!(vec.len(), end - start);

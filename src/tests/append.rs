@@ -61,93 +61,93 @@ fn append_fixed_vec() {
     let mut other_bump: Bump = Bump::new();
 
     {
-        let vec = bump.alloc_fixed_vec(10);
+        let vec = FixedBumpVec::with_capacity_in(10, &bump);
         let mut other = test_strings().into_take_owned_slice();
         let other: &mut dyn TakeOwnedSlice<Item = String> = &mut other;
         test_append(vec, other);
     }
 
     {
-        let vec = bump.alloc_fixed_vec(10);
+        let vec = FixedBumpVec::with_capacity_in(10, &bump);
         let other: [String; 3] = test_strings();
         test_append(vec, other);
     }
 
     {
-        let vec = bump.alloc_fixed_vec(10);
+        let vec = FixedBumpVec::with_capacity_in(10, &bump);
         let other: Box<[String; 3]> = Box::new(test_strings());
         test_append(vec, other);
     }
 
     {
-        let vec = bump.alloc_fixed_vec(10);
+        let vec = FixedBumpVec::with_capacity_in(10, &bump);
         let other: Box<[String]> = Box::new(test_strings());
         test_append(vec, other);
     }
 
     {
-        let vec = bump.alloc_fixed_vec(10);
+        let vec = FixedBumpVec::with_capacity_in(10, &bump);
         let other: Vec<String> = Box::new(test_strings()).to_vec();
         test_append(vec, other);
     }
 
     {
-        let vec = bump.alloc_fixed_vec(10);
+        let vec = FixedBumpVec::with_capacity_in(10, &bump);
         let other: BumpBox<[String; 3]> = other_bump.alloc(test_strings());
         test_append(vec, other);
     }
 
     {
-        let vec = bump.alloc_fixed_vec(10);
+        let vec = FixedBumpVec::with_capacity_in(10, &bump);
         let other: BumpBox<[String]> = other_bump.alloc(test_strings()).into_unsized();
         test_append(vec, other);
     }
 
     {
-        let vec = bump.alloc_fixed_vec(10);
+        let vec = FixedBumpVec::with_capacity_in(10, &bump);
         let other: FixedBumpVec<String> = FixedBumpVec::from_iter_in(test_strings(), &other_bump);
         test_append(vec, other);
     }
 
     {
-        let vec = bump.alloc_fixed_vec(10);
+        let vec = FixedBumpVec::with_capacity_in(10, &bump);
         let other: BumpVec<String, _> = BumpVec::from_array_in(test_strings(), &other_bump);
         test_append(vec, other);
     }
 
     {
-        let vec = bump.alloc_fixed_vec(10);
+        let vec = FixedBumpVec::with_capacity_in(10, &bump);
         let other: MutBumpVec<String, _> = MutBumpVec::from_array_in(test_strings(), &mut other_bump);
         test_append(vec, other);
     }
 
     {
-        let vec = bump.alloc_fixed_vec(10);
+        let vec = FixedBumpVec::with_capacity_in(10, &bump);
         let other: MutBumpVecRev<String, _> = MutBumpVecRev::from_array_in(test_strings(), &mut other_bump);
         test_append(vec, other);
     }
 
     {
-        let vec = bump.alloc_fixed_vec(10);
+        let vec = FixedBumpVec::with_capacity_in(10, &bump);
         let other: owned_slice::IntoIter<String> = other_bump.alloc(test_strings()).into_unsized().into_iter();
         test_append(vec, other);
     }
 
     {
-        let vec = bump.alloc_fixed_vec(10);
+        let vec = FixedBumpVec::with_capacity_in(10, &bump);
         let mut other: BumpBox<[String]> = other_bump.alloc(test_strings_5()).into_unsized();
         let other: owned_slice::Drain<String> = other.drain(1..4);
         test_append(vec, other);
     }
 
     {
-        let vec = bump.alloc_fixed_vec(10);
+        let vec = FixedBumpVec::with_capacity_in(10, &bump);
         let other: vec::IntoIter<String> = Box::new(test_strings()).to_vec().into_iter();
         test_append(vec, other);
     }
 
     {
-        let vec = bump.alloc_fixed_vec(10);
+        let vec = FixedBumpVec::with_capacity_in(10, &bump);
         let mut other: Vec<String> = Box::new(test_strings_5()).to_vec();
         let other: vec::Drain<String> = other.drain(1..4);
         test_append(vec, other);

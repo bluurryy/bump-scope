@@ -1901,9 +1901,9 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
     /// The provided `bump` does not have to be the one the `fixed_string` was allocated in.
     ///
     /// ```
-    /// # use bump_scope::{ Bump, BumpString };
+    /// # use bump_scope::{ Bump, BumpString, FixedBumpString };
     /// # let bump: Bump = Bump::new();
-    /// let mut fixed_string = bump.alloc_fixed_string(3);
+    /// let mut fixed_string = FixedBumpString::with_capacity_in(3, &bump);
     /// fixed_string.push('a');
     /// fixed_string.push('b');
     /// fixed_string.push('c');
