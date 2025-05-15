@@ -564,9 +564,30 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     /// ```
     /// # use bump_scope::{ Bump, MutBumpVecRev };
     /// # let mut bump: Bump = Bump::new();
-    /// # #[allow(unused_mut)]
     /// let mut vec = MutBumpVecRev::<i32, _>::with_capacity_in(10, &mut bump);
+    ///
+    /// // The vector contains no items, even though it has capacity for more
+    /// assert_eq!(vec.len(), 0);
     /// assert!(vec.capacity() >= 10);
+    ///
+    /// // These are all done without reallocating...
+    /// for i in 0..10 {
+    ///     vec.push(i);
+    /// }
+    /// assert_eq!(vec.len(), 10);
+    /// assert!(vec.capacity() >= 10);
+    ///
+    /// // ...but this may make the vector reallocate
+    /// vec.push(11);
+    /// assert_eq!(vec.len(), 11);
+    /// assert!(vec.capacity() >= 11);
+    ///
+    /// drop(vec);
+    ///
+    /// // A vector of a zero-sized type will always over-allocate, since no
+    /// // allocation is necessary
+    /// let vec_units = MutBumpVecRev::<(), _>::with_capacity_in(10, &mut bump);
+    /// assert_eq!(vec_units.capacity(), usize::MAX);
     /// ```
     #[must_use]
     #[inline(always)]
@@ -598,9 +619,30 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     /// ```
     /// # use bump_scope::{ Bump, MutBumpVecRev };
     /// # let mut bump: Bump = Bump::try_new()?;
-    /// # #[allow(unused_mut)]
     /// let mut vec = MutBumpVecRev::<i32, _>::try_with_capacity_in(10, &mut bump)?;
+    ///
+    /// // The vector contains no items, even though it has capacity for more
+    /// assert_eq!(vec.len(), 0);
     /// assert!(vec.capacity() >= 10);
+    ///
+    /// // These are all done without reallocating...
+    /// for i in 0..10 {
+    ///     vec.push(i);
+    /// }
+    /// assert_eq!(vec.len(), 10);
+    /// assert!(vec.capacity() >= 10);
+    ///
+    /// // ...but this may make the vector reallocate
+    /// vec.push(11);
+    /// assert_eq!(vec.len(), 11);
+    /// assert!(vec.capacity() >= 11);
+    ///
+    /// drop(vec);
+    ///
+    /// // A vector of a zero-sized type will always over-allocate, since no
+    /// // allocation is necessary
+    /// let vec_units = MutBumpVecRev::<(), _>::try_with_capacity_in(10, &mut bump)?;
+    /// assert_eq!(vec_units.capacity(), usize::MAX);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]

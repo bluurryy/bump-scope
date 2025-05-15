@@ -611,9 +611,21 @@ impl<A: BumpAllocator> BumpString<A> {
     /// ```
     /// # use bump_scope::{ Bump, BumpString };
     /// # let bump: Bump = Bump::new();
-    /// # #[allow(unused_mut)]
-    /// let mut string = BumpString::<_>::with_capacity_in(10, &bump);
-    /// assert!(string.capacity() >= 10);
+    /// let mut s = BumpString::<_>::with_capacity_in(10, &bump);
+    ///
+    /// // The String contains no chars, even though it has capacity for more
+    /// assert_eq!(s.len(), 0);
+    ///
+    /// // These are all done without reallocating...
+    /// let cap = s.capacity();
+    /// for _ in 0..10 {
+    ///     s.push('a');
+    /// }
+    ///
+    /// assert_eq!(s.capacity(), cap);
+    ///
+    /// // ...but this may make the string reallocate
+    /// s.push('a');
     /// ```
     #[must_use]
     #[inline(always)]
@@ -634,10 +646,22 @@ impl<A: BumpAllocator> BumpString<A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{ Bump, BumpString };
-    /// # let bump: Bump = Bump::try_new()?;
-    /// # #[allow(unused_mut)]
-    /// let mut string = BumpString::<_>::try_with_capacity_in(10, &bump)?;
-    /// assert!(string.capacity() >= 10);
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = BumpString::<_>::try_with_capacity_in(10, &bump)?;
+    ///
+    /// // The String contains no chars, even though it has capacity for more
+    /// assert_eq!(s.len(), 0);
+    ///
+    /// // These are all done without reallocating...
+    /// let cap = s.capacity();
+    /// for _ in 0..10 {
+    ///     s.push('a');
+    /// }
+    ///
+    /// assert_eq!(s.capacity(), cap);
+    ///
+    /// // ...but this may make the string reallocate
+    /// s.push('a');
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
