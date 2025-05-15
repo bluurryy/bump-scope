@@ -9,6 +9,7 @@
 - **breaking:** the `zerocopy` feature has been renamed to `zerocopy-08`. All methods that this feature added are no longer inherent methods but are provided via extension traits from `bump_scope::zerocopy_08`.
 - **breaking:** removed deprecated methods `(try_)extend_from_array`
 - **deprecated:** `FixedBumpVec::EMPTY`, use `FixedBumpVec::new()` instead
+- **deprecated:** `FixedBumpString::EMPTY`, use `FixedBumpString::new()` instead
 - **deprecated:** `alloc_fixed_vec`, use `FixedBumpVec::with_capacity_in` instead
 - **deprecated:** `alloc_fixed_string`, use `FixedBumpString::with_capacity_in` instead
 - **added:** `FixedBumpVec::{new, from_capacity_in}`
