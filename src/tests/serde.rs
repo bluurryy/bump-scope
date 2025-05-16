@@ -116,8 +116,8 @@ fn de() {
     }
 
     {
-        let src = bump_format!(in bump_src, "Hello, World!");
-        let mut dst = bump_format!(in bump_dst);
+        let src = bump_format!(in &bump_src, "Hello, World!");
+        let mut dst = bump_format!(in &bump_dst);
         roundtrip(&src, &mut dst);
     }
 

@@ -48,20 +48,20 @@ use crate::{panic_on_error, polyfill::nonnull, PanicsOnAlloc};
 #[macro_export]
 macro_rules! bump_format {
     (in $bump:expr) => {{
-        $crate::BumpString::new_in($bump.as_scope())
+        $crate::BumpString::new_in($bump)
     }};
     (in $bump:expr, $($arg:tt)*) => {{
-        let mut string = $crate::private::PanicsOnAlloc($crate::BumpString::new_in($bump.as_scope()));
+        let mut string = $crate::private::PanicsOnAlloc($crate::BumpString::new_in($bump));
         match $crate::private::core::fmt::Write::write_fmt(&mut string, $crate::private::core::format_args!($($arg)*)) {
             $crate::private::core::result::Result::Ok(_) => string.0,
             $crate::private::core::result::Result::Err(_) => $crate::private::format_trait_error(),
         }
     }};
     (try in $bump:expr) => {{
-        Ok::<_, $crate::alloc::AllocError>($crate::BumpString::new_in($bump.as_scope()))
+        Ok::<_, $crate::alloc::AllocError>($crate::BumpString::new_in($bump))
     }};
     (try in $bump:expr, $($arg:tt)*) => {{
-        let mut string = $crate::BumpString::new_in($bump.as_scope());
+        let mut string = $crate::BumpString::new_in($bump);
         match $crate::private::core::fmt::Write::write_fmt(&mut string, $crate::private::core::format_args!($($arg)*)) {
             $crate::private::core::result::Result::Ok(_) => $crate::private::core::result::Result::Ok(string),
             $crate::private::core::result::Result::Err(_) => $crate::private::core::result::Result::Err($crate::alloc::AllocError),
