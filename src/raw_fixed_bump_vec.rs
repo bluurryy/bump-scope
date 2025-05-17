@@ -124,6 +124,8 @@ impl<T> RawFixedBumpVec<T> {
         self.initialized.as_non_null().cast()
     }
 
+    #[doc(hidden)]
+    #[deprecated = "too niche; compute this yourself if needed"]
     #[must_use]
     #[inline(always)]
     #[allow(dead_code)]

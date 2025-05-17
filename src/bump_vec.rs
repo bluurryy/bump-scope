@@ -1103,9 +1103,12 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
     /// valid for zero sized reads.
+    #[doc(hidden)]
+    #[deprecated = "too niche; compute this yourself if needed"]
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
+        #[allow(deprecated)]
         self.fixed.as_non_null_slice()
     }
 

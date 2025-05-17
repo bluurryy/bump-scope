@@ -508,6 +508,8 @@ impl<T, A> MutBumpVecRev<T, A> {
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
     /// valid for zero sized reads.
+    #[doc(hidden)]
+    #[deprecated = "too niche; compute this yourself if needed"]
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
@@ -2444,7 +2446,8 @@ impl<T, A> Drop for MutBumpVecRev<T, A> {
         // Chunk allocations are supposed to be very rare, so this wouldn't be worth it.
 
         unsafe {
-            self.as_non_null_slice().as_ptr().drop_in_place();
+            let to_drop = nonnull::slice_from_raw_parts(self.as_non_null(), self.len);
+            to_drop.as_ptr().drop_in_place();
         }
     }
 }
