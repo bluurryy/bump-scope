@@ -834,7 +834,7 @@ impl FixedBumpString<'_> {
     /// Appends the given [`char`] to the end of this string.
     ///
     /// # Panics
-    /// Panics if the string is full.
+    /// Panics if the string does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -857,7 +857,7 @@ impl FixedBumpString<'_> {
     /// Appends the given [`char`] to the end of this string.
     ///
     /// # Errors
-    /// Errors if the string is full.
+    /// Errors if the string does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -890,7 +890,7 @@ impl FixedBumpString<'_> {
     /// Appends a given string slice onto the end of this string.
     ///
     /// # Panics
-    /// Panics if the string is full.
+    /// Panics if the string does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -912,7 +912,7 @@ impl FixedBumpString<'_> {
     /// Appends a given string slice onto the end of this string.
     ///
     /// # Errors
-    /// Errors if the string is full.
+    /// Errors if the string does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -943,7 +943,7 @@ impl FixedBumpString<'_> {
     /// buffer.
     ///
     /// # Panics
-    /// Panics if the string is full.
+    /// Panics if the string does not have enough capacity.
     ///
     /// Panics if `idx` is larger than the string's length, or if it does not
     /// lie on a [`char`] boundary.
@@ -976,7 +976,7 @@ impl FixedBumpString<'_> {
     /// lie on a [`char`] boundary.
     ///
     /// # Errors
-    /// Errors if the string is full.
+    /// Errors if the string does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -1011,7 +1011,7 @@ impl FixedBumpString<'_> {
     /// buffer.
     ///
     /// # Panics
-    /// Panics if the string is full.
+    /// Panics if the string does not have enough capacity.
     ///
     /// Panics if `idx` is larger than the string's length, or if it does not
     /// lie on a [`char`] boundary.
@@ -1043,7 +1043,7 @@ impl FixedBumpString<'_> {
     /// lie on a [`char`] boundary.
     ///
     /// # Errors
-    /// Errors if the string is full.
+    /// Errors if the string does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -1072,7 +1072,7 @@ impl FixedBumpString<'_> {
     /// Copies elements from `src` range to the end of the string.
     ///
     /// # Panics
-    /// Panics if the string is full.
+    /// Panics if the string does not have enough capacity.
     ///
     /// Panics if the starting point or end point do not lie on a [`char`]
     /// boundary, or if they're out of bounds.
@@ -1109,7 +1109,7 @@ impl FixedBumpString<'_> {
     /// boundary, or if they're out of bounds.
     ///
     /// # Errors
-    /// Errors if the string is full.
+    /// Errors if the string does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -1150,7 +1150,7 @@ impl FixedBumpString<'_> {
     /// Extends this string by pushing `additional` new zero bytes.
     ///
     /// # Panics
-    /// Panics if the string is full.
+    /// Panics if the string does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -1170,7 +1170,7 @@ impl FixedBumpString<'_> {
     /// Extends this string by pushing `additional` new zero bytes.
     ///
     /// # Errors
-    /// Errors if the string is full.
+    /// Errors if the string does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -1209,7 +1209,7 @@ impl FixedBumpString<'_> {
     /// The given string doesn't need to be the same length as the range.
     ///
     /// # Panics
-    /// Panics if the string is full.
+    /// Panics if the string does not have enough capacity.
     ///
     /// Panics if the starting point or end point do not lie on a [`char`]
     /// boundary, or if they're out of bounds.
@@ -1244,7 +1244,7 @@ impl FixedBumpString<'_> {
     /// boundary, or if they're out of bounds.
     ///
     /// # Errors
-    /// Errors if the string is full.
+    /// Errors if the string does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -1323,7 +1323,7 @@ impl FixedBumpString<'_> {
     /// in the given `FixedBumpString` due to capacity.
     ///
     /// # Panics
-    /// Panics if the string is full.
+    /// Panics if the string does not have enough capacity.
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn reserve(&mut self, additional: usize) {
@@ -1334,7 +1334,7 @@ impl FixedBumpString<'_> {
     /// in the given `FixedBumpString` due to capacity.
     ///
     /// # Errors
-    /// Errors if the string is full.
+    /// Errors if the string does not have enough capacity.
     #[inline(always)]
     pub fn try_reserve(&mut self, additional: usize) -> Result<(), AllocError> {
         self.generic_reserve(additional)

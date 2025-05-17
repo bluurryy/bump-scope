@@ -127,7 +127,7 @@ impl<T> VecExt for FixedBumpVec<'_, T> {
     /// The new items are initialized with zeroes.
     ///
     /// # Panics
-    /// Panics if the vector is full.
+    /// Panics if the vector does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -152,7 +152,7 @@ impl<T> VecExt for FixedBumpVec<'_, T> {
     /// The new items are initialized with zeroes.
     ///
     /// # Errors
-    /// Errors if the vector is full.
+    /// Errors if the vector does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -180,7 +180,7 @@ impl<T> VecExt for FixedBumpVec<'_, T> {
     /// If `new_len` is less than `len`, the vector is simply truncated.
     ///
     /// # Panics
-    /// Panics if the vector is full.
+    /// Panics if the vector does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -213,7 +213,7 @@ impl<T> VecExt for FixedBumpVec<'_, T> {
     /// If `new_len` is less than `len`, the vector is simply truncated.
     ///
     /// # Errors
-    /// Errors if the vector is full.
+    /// Errors if the vector does not have enough capacity.
     ///
     /// # Examples
     /// ```

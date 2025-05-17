@@ -896,7 +896,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Appends an element to the back of a collection.
     ///
     /// # Panics
-    /// Panics if the vector is full.
+    /// Panics if the vector does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -916,7 +916,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Appends an element to the back of a collection.
     ///
     /// # Errors
-    /// Errors if the vector is full.
+    /// Errors if the vector does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -941,7 +941,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Appends an element to the back of a collection.
     ///
     /// # Panics
-    /// Panics if the vector is full.
+    /// Panics if the vector does not have enough capacity.
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn push_with(&mut self, f: impl FnOnce() -> T) {
@@ -951,7 +951,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Appends an element to the back of a collection.
     ///
     /// # Errors
-    /// Errors if the vector is full.
+    /// Errors if the vector does not have enough capacity.
     #[inline(always)]
     pub fn try_push_with(&mut self, f: impl FnOnce() -> T) -> Result<(), AllocError> {
         self.generic_push_with(f)
@@ -969,7 +969,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.
     ///
     /// # Panics
-    /// Panics if the vector is full.
+    /// Panics if the vector does not have enough capacity.
     ///
     /// Panics if `index > len`.
     ///
@@ -996,7 +996,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Panics if `index > len`.
     ///
     /// # Errors
-    /// Errors if the vector is full.
+    /// Errors if the vector does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -1056,7 +1056,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// [`extend`]: Self::extend
     ///
     /// # Panics
-    /// Panics if the vector is full.
+    /// Panics if the vector does not have enough capacity.
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn extend_from_slice_copy(&mut self, slice: &[T])
@@ -1077,7 +1077,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// [`extend`]: Self::extend
     ///
     /// # Errors
-    /// Errors if the vector is full.
+    /// Errors if the vector does not have enough capacity.
     #[inline(always)]
     pub fn try_extend_from_slice_copy(&mut self, slice: &[T]) -> Result<(), AllocError>
     where
@@ -1105,7 +1105,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// [`extend`]: Self::extend
     ///
     /// # Panics
-    /// Panics if the vector is full.
+    /// Panics if the vector does not have enough capacity.
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn extend_from_slice_clone(&mut self, slice: &[T])
@@ -1126,7 +1126,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// [`extend`]: Self::extend
     ///
     /// # Errors
-    /// Errors if the vector is full.
+    /// Errors if the vector does not have enough capacity.
     #[inline(always)]
     pub fn try_extend_from_slice_clone(&mut self, slice: &[T]) -> Result<(), AllocError>
     where
@@ -1158,7 +1158,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Copies elements from `src` range to the end of the vector.
     ///
     /// # Panics
-    /// Panics if the vector is full.
+    /// Panics if the vector does not have enough capacity.
     ///
     /// Panics if the starting point is greater than the end point or if
     /// the end point is greater than the length of the vector.
@@ -1196,7 +1196,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// the end point is greater than the length of the vector.
     ///
     /// # Errors
-    /// Errors if the vector is full.
+    /// Errors if the vector does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -1252,7 +1252,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Clones elements from `src` range to the end of the vector.
     ///
     /// # Panics
-    /// Panics if the vector is full.
+    /// Panics if the vector does not have enough capacity.
     ///
     /// Panics if the starting point is greater than the end point or if
     /// the end point is greater than the length of the vector.
@@ -1290,7 +1290,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// the end point is greater than the length of the vector.
     ///
     /// # Errors
-    /// Errors if the vector is full.
+    /// Errors if the vector does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -1369,7 +1369,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// in the given `FixedBumpVec<T>` due to capacity.
     ///
     /// # Panics
-    /// Panics if the vector is full.
+    /// Panics if the vector does not have enough capacity.
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn reserve(&mut self, additional: usize) {
@@ -1380,7 +1380,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// in the given `FixedBumpVec<T>` due to capacity.
     ///
     /// # Errors
-    /// Errors if the vector is full.
+    /// Errors if the vector does not have enough capacity.
     #[inline(always)]
     pub fn try_reserve(&mut self, additional: usize) -> Result<(), AllocError> {
         self.generic_reserve(additional)
@@ -1411,7 +1411,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// [`truncate`]: Self::truncate
     ///
     /// # Panics
-    /// Panics if the vector is full.
+    /// Panics if the vector does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -1453,7 +1453,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// [`truncate`]: Self::truncate
     ///
     /// # Errors
-    /// Errors if the vector is full.
+    /// Errors if the vector does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -1509,7 +1509,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// pass [`Default::default`] as the second argument.
     ///
     /// # Panics
-    /// Panics if the vector is full.
+    /// Panics if the vector does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -1550,7 +1550,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// pass [`Default::default`] as the second argument.
     ///
     /// # Errors
-    /// Errors if the vector is full.
+    /// Errors if the vector does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -1593,7 +1593,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Moves all the elements of `other` into `self`, leaving `other` empty.
     ///
     /// # Panics
-    /// Panics if the vector is full.
+    /// Panics if the vector does not have enough capacity.
     ///
     /// # Examples
     /// ```
@@ -1622,7 +1622,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Moves all the elements of `other` into `self`, leaving `other` empty.
     ///
     /// # Errors
-    /// Errors if the vector is full.
+    /// Errors if the vector does not have enough capacity.
     ///
     /// # Examples
     /// ```
