@@ -118,6 +118,7 @@ impl<T> RawFixedBumpVec<T> {
         self.initialized.as_mut_ptr().cast()
     }
 
+    #[must_use]
     #[inline(always)]
     pub const fn as_non_null(&self) -> NonNull<T> {
         self.initialized.as_non_null().cast()

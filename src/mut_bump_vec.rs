@@ -492,6 +492,7 @@ impl<T, A> MutBumpVec<T, A> {
     /// [`as_mut_ptr`]: Self::as_mut_ptr
     /// [`as_ptr`]: Self::as_ptr
     /// [`as_non_null`]: Self::as_non_null
+    #[must_use]
     #[inline(always)]
     pub const fn as_non_null(&self) -> NonNull<T> {
         self.fixed.as_non_null()
