@@ -5,7 +5,8 @@ use core::{
     hash::Hash,
     ops::{Deref, DerefMut, Range, RangeBounds},
     panic::{RefUnwindSafe, UnwindSafe},
-    ptr, str,
+    ptr::{self, NonNull},
+    str,
 };
 
 use crate::{
@@ -561,6 +562,68 @@ impl<A> MutBumpString<A> {
     #[inline]
     pub fn as_mut_ptr(&mut self) -> *mut u8 {
         self.fixed.as_mut_ptr()
+    }
+
+    /// Returns a `NonNull` pointer to the string's buffer, or a dangling
+    /// `NonNull` pointer valid for zero sized reads if the string didn't allocate.
+    ///
+    /// The caller must ensure that the string outlives the pointer this
+    /// function returns, or else it will end up dangling.
+    /// Modifying the string may cause its buffer to be reallocated,
+    /// which would also make any pointers to it invalid.
+    ///
+    /// This method guarantees that for the purpose of the aliasing model, this method
+    /// does not materialize a reference to the underlying slice, and thus the returned pointer
+    /// will remain valid when mixed with other calls to [`as_ptr`], [`as_mut_ptr`],
+    /// and [`as_non_null`].
+    /// Note that calling other methods that materialize references to the slice,
+    /// or references to specific elements you are planning on accessing through this pointer,
+    /// may still invalidate this pointer.
+    /// See the second example below for how this guarantee can be used.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{Bump, MutBumpString};
+    /// # let mut bump: Bump = Bump::new();
+    /// // Allocate vector big enough for 4 elements.
+    /// let size = 4;
+    /// let mut x = MutBumpString::with_capacity_in(size, &mut bump);
+    /// let x_ptr = x.as_non_null();
+    ///
+    /// // Initialize elements via raw pointer writes, then set length.
+    /// unsafe {
+    ///     for i in 0..size {
+    ///         x_ptr.add(i).write(i as u8 + b'a');
+    ///     }
+    ///     x.as_mut_vec().set_len(size);
+    /// }
+    /// assert_eq!(&*x, "abcd");
+    /// ```
+    ///
+    /// Due to the aliasing guarantee, the following code is legal:
+    ///
+    /// ```
+    /// # use bump_scope::{Bump, mut_bump_format};
+    /// # let mut bump: Bump = Bump::new();
+    /// unsafe {
+    ///     let v = mut_bump_format!(in &mut bump, "a");
+    ///     let ptr1 = v.as_non_null();
+    ///     ptr1.write(b'b');
+    ///     let ptr2 = v.as_non_null();
+    ///     ptr2.write(b'c');
+    ///     // Notably, the write to `ptr2` did *not* invalidate `ptr1`:
+    ///     ptr1.write(b'd');
+    /// }
+    /// ```
+    ///
+    /// [`as_mut_ptr`]: Self::as_mut_ptr
+    /// [`as_ptr`]: Self::as_ptr
+    /// [`as_non_null`]: Self::as_non_null
+    #[must_use]
+    #[inline(always)]
+    pub const fn as_non_null(&self) -> NonNull<u8> {
+        self.fixed.as_non_null()
     }
 
     #[inline(always)]

@@ -830,6 +830,50 @@ impl<'a> BumpBox<'a, str> {
         self.ptr.as_ptr().cast()
     }
 
+    /// Returns a `NonNull` pointer to the string's buffer, or a dangling
+    /// `NonNull` pointer valid for zero sized reads if the vector didn't allocate.
+    ///
+    /// The caller must ensure that the string outlives the pointer this
+    /// function returns, or else it will end up dangling.
+    /// Modifying the string may cause its buffer to be reallocated,
+    /// which would also make any pointers to it invalid.
+    ///
+    /// This method guarantees that for the purpose of the aliasing model, this method
+    /// does not materialize a reference to the underlying slice, and thus the returned pointer
+    /// will remain valid when mixed with other calls to [`as_ptr`], [`as_mut_ptr`],
+    /// and [`as_non_null`].
+    /// Note that calling other methods that materialize references to the slice,
+    /// or references to specific elements you are planning on accessing through this pointer,
+    /// may still invalidate this pointer.
+    /// See the example below for how this guarantee can be used.
+    ///
+    /// # Examples
+    ///
+    /// Due to the aliasing guarantee, the following code is legal:
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// unsafe {
+    ///     let v = bump.alloc_str("a");
+    ///     let ptr1 = v.as_non_null();
+    ///     ptr1.write(b'b');
+    ///     let ptr2 = v.as_non_null();
+    ///     ptr2.write(b'c');
+    ///     // Notably, the write to `ptr2` did *not* invalidate `ptr1`:
+    ///     ptr1.write(b'd');
+    /// }
+    /// ```
+    ///
+    /// [`as_mut_ptr`]: Self::as_mut_ptr
+    /// [`as_ptr`]: Self::as_ptr
+    /// [`as_non_null`]: Self::as_non_null
+    #[must_use]
+    #[inline(always)]
+    pub const fn as_non_null(&self) -> NonNull<u8> {
+        self.ptr.cast()
+    }
+
     #[inline(always)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<u8>) {
         self.ptr = nonnull::str_from_utf8(nonnull::slice_from_raw_parts(new_ptr, self.len()));

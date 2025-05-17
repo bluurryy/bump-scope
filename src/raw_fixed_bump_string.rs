@@ -93,6 +93,12 @@ impl RawFixedBumpString {
 
     #[must_use]
     #[inline(always)]
+    pub const fn as_non_null(&self) -> NonNull<u8> {
+        self.initialized.as_non_null().cast()
+    }
+
+    #[must_use]
+    #[inline(always)]
     #[allow(dead_code)]
     pub fn as_non_null_ptr(&self) -> NonNull<u8> {
         self.initialized.as_non_null().cast()
