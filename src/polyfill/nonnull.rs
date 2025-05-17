@@ -27,7 +27,7 @@ where
 
 /// See `pointer::sub` for semantics and safety requirements.
 #[inline(always)]
-pub(crate) unsafe fn sub<T>(ptr: NonNull<T>, delta: usize) -> NonNull<T>
+pub(crate) const unsafe fn sub<T>(ptr: NonNull<T>, delta: usize) -> NonNull<T>
 where
     T: Sized,
 {

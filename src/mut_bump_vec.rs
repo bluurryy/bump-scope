@@ -436,19 +436,86 @@ impl<T, A> MutBumpVec<T, A> {
         self.fixed.as_mut_ptr()
     }
 
-    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
-    /// valid for zero sized reads.
+    /// Returns a `NonNull` pointer to the vector's buffer, or a dangling
+    /// `NonNull` pointer valid for zero sized reads if the vector didn't allocate.
+    ///
+    /// The caller must ensure that the vector outlives the pointer this
+    /// function returns, or else it will end up dangling.
+    /// Modifying the vector may cause its buffer to be reallocated,
+    /// which would also make any pointers to it invalid.
+    ///
+    /// This method guarantees that for the purpose of the aliasing model, this method
+    /// does not materialize a reference to the underlying slice, and thus the returned pointer
+    /// will remain valid when mixed with other calls to [`as_ptr`], [`as_mut_ptr`],
+    /// and [`as_non_null`].
+    /// Note that calling other methods that materialize references to the slice,
+    /// or references to specific elements you are planning on accessing through this pointer,
+    /// may still invalidate this pointer.
+    /// See the second example below for how this guarantee can be used.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{Bump, MutBumpVec};
+    /// # let mut bump: Bump = Bump::new();
+    /// // Allocate vector big enough for 4 elements.
+    /// let size = 4;
+    /// let mut x: MutBumpVec<i32, _> = MutBumpVec::with_capacity_in(size, &mut bump);
+    /// let x_ptr = x.as_non_null();
+    ///
+    /// // Initialize elements via raw pointer writes, then set length.
+    /// unsafe {
+    ///     for i in 0..size {
+    ///         x_ptr.add(i).write(i as i32);
+    ///     }
+    ///     x.set_len(size);
+    /// }
+    /// assert_eq!(&*x, &[0, 1, 2, 3]);
+    /// ```
+    ///
+    /// Due to the aliasing guarantee, the following code is legal:
+    ///
+    /// ```
+    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # let mut bump: Bump = Bump::new();
+    /// unsafe {
+    ///     let v = mut_bump_vec![in &mut bump; 0];
+    ///     let ptr1 = v.as_non_null();
+    ///     ptr1.write(1);
+    ///     let ptr2 = v.as_non_null();
+    ///     ptr2.write(2);
+    ///     // Notably, the write to `ptr2` did *not* invalidate `ptr1`:
+    ///     ptr1.write(3);
+    /// }
+    /// ```
+    ///
+    /// [`as_mut_ptr`]: Self::as_mut_ptr
+    /// [`as_ptr`]: Self::as_ptr
+    /// [`as_non_null`]: Self::as_non_null
     #[must_use]
     #[inline(always)]
-    pub fn as_non_null_ptr(&self) -> NonNull<T> {
-        self.fixed.as_non_null_ptr()
+    pub const fn as_non_null(&self) -> NonNull<T> {
+        self.fixed.as_non_null()
     }
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
     /// valid for zero sized reads.
+    #[doc(hidden)]
+    #[deprecated = "renamed to `as_non_null`"]
+    #[must_use]
+    #[inline(always)]
+    pub fn as_non_null_ptr(&self) -> NonNull<T> {
+        self.fixed.as_non_null()
+    }
+
+    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
+    /// valid for zero sized reads.
+    #[doc(hidden)]
+    #[deprecated = "too niche; compute this yourself if needed"]
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
+        #[allow(deprecated)]
         self.fixed.as_non_null_slice()
     }
 
@@ -1892,11 +1959,11 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
 
             if this.capacity() == 0 {
                 // We didn't touch the allocator, so no need to do anything.
-                debug_assert_eq!(this.as_non_null_ptr(), NonNull::<T>::dangling());
+                debug_assert_eq!(this.as_non_null(), NonNull::<T>::dangling());
                 return nonnull::slice_from_raw_parts(NonNull::<T>::dangling(), 0);
             }
 
-            let ptr = this.as_non_null_ptr();
+            let ptr = this.as_non_null();
             let len = this.len();
             let cap = this.capacity();
 

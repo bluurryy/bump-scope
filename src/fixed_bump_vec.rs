@@ -576,19 +576,86 @@ impl<'a, T> FixedBumpVec<'a, T> {
         self.initialized.as_mut_ptr()
     }
 
-    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
-    /// valid for zero sized reads.
+    /// Returns a `NonNull` pointer to the vector's buffer, or a dangling
+    /// `NonNull` pointer valid for zero sized reads if the vector didn't allocate.
+    ///
+    /// The caller must ensure that the vector outlives the pointer this
+    /// function returns, or else it will end up dangling.
+    /// Modifying the vector may cause its buffer to be reallocated,
+    /// which would also make any pointers to it invalid.
+    ///
+    /// This method guarantees that for the purpose of the aliasing model, this method
+    /// does not materialize a reference to the underlying slice, and thus the returned pointer
+    /// will remain valid when mixed with other calls to [`as_ptr`], [`as_mut_ptr`],
+    /// and [`as_non_null`].
+    /// Note that calling other methods that materialize references to the slice,
+    /// or references to specific elements you are planning on accessing through this pointer,
+    /// may still invalidate this pointer.
+    /// See the second example below for how this guarantee can be used.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// // Allocate vector big enough for 4 elements.
+    /// let size = 4;
+    /// let mut x: FixedBumpVec<i32> = FixedBumpVec::with_capacity_in(size, &bump);
+    /// let x_ptr = x.as_non_null();
+    ///
+    /// // Initialize elements via raw pointer writes, then set length.
+    /// unsafe {
+    ///     for i in 0..size {
+    ///         x_ptr.add(i).write(i as i32);
+    ///     }
+    ///     x.set_len(size);
+    /// }
+    /// assert_eq!(&*x, &[0, 1, 2, 3]);
+    /// ```
+    ///
+    /// Due to the aliasing guarantee, the following code is legal:
+    ///
+    /// ```
+    /// # use bump_scope::{Bump, bump_vec};
+    /// # let bump: Bump = Bump::new();
+    /// unsafe {
+    ///     let v = bump_vec![in &bump; 0].into_fixed_vec();
+    ///     let ptr1 = v.as_non_null();
+    ///     ptr1.write(1);
+    ///     let ptr2 = v.as_non_null();
+    ///     ptr2.write(2);
+    ///     // Notably, the write to `ptr2` did *not* invalidate `ptr1`:
+    ///     ptr1.write(3);
+    /// }
+    /// ```
+    ///
+    /// [`as_mut_ptr`]: Self::as_mut_ptr
+    /// [`as_ptr`]: Self::as_ptr
+    /// [`as_non_null`]: Self::as_non_null
     #[must_use]
     #[inline(always)]
-    pub fn as_non_null_ptr(&self) -> NonNull<T> {
-        self.initialized.as_non_null_ptr()
+    pub const fn as_non_null(&self) -> NonNull<T> {
+        self.initialized.as_non_null()
     }
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
     /// valid for zero sized reads.
+    #[doc(hidden)]
+    #[deprecated = "renamed to `as_non_null`"]
+    #[must_use]
+    #[inline(always)]
+    pub fn as_non_null_ptr(&self) -> NonNull<T> {
+        self.initialized.as_non_null()
+    }
+
+    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
+    /// valid for zero sized reads.
+    #[doc(hidden)]
+    #[deprecated = "too niche; compute this yourself if needed"]
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
+        #[allow(deprecated)]
         self.initialized.as_non_null_slice()
     }
 
@@ -715,7 +782,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self {
         let len = self.len();
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
-        let ptr = self.initialized.as_non_null_ptr();
+        let ptr = self.initialized.as_non_null();
 
         unsafe {
             if T::IS_ZST {
@@ -1937,7 +2004,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     pub fn split_at_spare(self) -> (BumpBox<'a, [T]>, BumpBox<'a, [MaybeUninit<T>]>) {
         unsafe {
             let uninitialized_ptr =
-                nonnull::add(self.initialized.as_non_null_ptr(), self.initialized.len()).cast::<MaybeUninit<T>>();
+                nonnull::add(self.initialized.as_non_null(), self.initialized.len()).cast::<MaybeUninit<T>>();
             let uninitialized_len = self.capacity - self.len();
             let uninitialized = BumpBox::from_raw(nonnull::slice_from_raw_parts(uninitialized_ptr, uninitialized_len));
             (self.initialized, uninitialized)

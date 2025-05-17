@@ -195,7 +195,7 @@ impl<T, A: BumpAllocator> Drop for BumpVec<T, A> {
                 // - `layout.size()` will be `0` which will make it have no effect in the allocator
                 // - calling deallocate with a pointer not owned by this allocator is explicitly allowed; see `BumpAllocator`
                 unsafe {
-                    let ptr = self.0.fixed.as_non_null_ptr().cast();
+                    let ptr = self.0.fixed.as_non_null().cast();
                     let layout = Layout::from_size_align_unchecked(self.0.fixed.capacity() * T::SIZE, T::ALIGN);
                     self.0.allocator.deallocate(ptr, layout);
                 }
@@ -1029,19 +1029,86 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         self.fixed.as_mut_ptr()
     }
 
-    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
-    /// valid for zero sized reads.
+    /// Returns a `NonNull` pointer to the vector's buffer, or a dangling
+    /// `NonNull` pointer valid for zero sized reads if the vector didn't allocate.
+    ///
+    /// The caller must ensure that the vector outlives the pointer this
+    /// function returns, or else it will end up dangling.
+    /// Modifying the vector may cause its buffer to be reallocated,
+    /// which would also make any pointers to it invalid.
+    ///
+    /// This method guarantees that for the purpose of the aliasing model, this method
+    /// does not materialize a reference to the underlying slice, and thus the returned pointer
+    /// will remain valid when mixed with other calls to [`as_ptr`], [`as_mut_ptr`],
+    /// and [`as_non_null`].
+    /// Note that calling other methods that materialize references to the slice,
+    /// or references to specific elements you are planning on accessing through this pointer,
+    /// may still invalidate this pointer.
+    /// See the second example below for how this guarantee can be used.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{Bump, BumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// // Allocate vector big enough for 4 elements.
+    /// let size = 4;
+    /// let mut x: BumpVec<i32, _> = BumpVec::with_capacity_in(size, &bump);
+    /// let x_ptr = x.as_non_null();
+    ///
+    /// // Initialize elements via raw pointer writes, then set length.
+    /// unsafe {
+    ///     for i in 0..size {
+    ///         x_ptr.add(i).write(i as i32);
+    ///     }
+    ///     x.set_len(size);
+    /// }
+    /// assert_eq!(&*x, &[0, 1, 2, 3]);
+    /// ```
+    ///
+    /// Due to the aliasing guarantee, the following code is legal:
+    ///
+    /// ```
+    /// # use bump_scope::{Bump, bump_vec};
+    /// # let bump: Bump = Bump::new();
+    /// unsafe {
+    ///     let v = bump_vec![in &bump; 0];
+    ///     let ptr1 = v.as_non_null();
+    ///     ptr1.write(1);
+    ///     let ptr2 = v.as_non_null();
+    ///     ptr2.write(2);
+    ///     // Notably, the write to `ptr2` did *not* invalidate `ptr1`:
+    ///     ptr1.write(3);
+    /// }
+    /// ```
+    ///
+    /// [`as_mut_ptr`]: Self::as_mut_ptr
+    /// [`as_ptr`]: Self::as_ptr
+    /// [`as_non_null`]: Self::as_non_null
     #[must_use]
     #[inline(always)]
-    pub fn as_non_null_ptr(&self) -> NonNull<T> {
-        self.fixed.as_non_null_ptr()
+    pub const fn as_non_null(&self) -> NonNull<T> {
+        self.fixed.as_non_null()
     }
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
     /// valid for zero sized reads.
+    #[doc(hidden)]
+    #[deprecated = "renamed to `as_non_null`"]
+    #[must_use]
+    #[inline(always)]
+    pub fn as_non_null_ptr(&self) -> NonNull<T> {
+        self.fixed.as_non_null()
+    }
+
+    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
+    /// valid for zero sized reads.
+    #[doc(hidden)]
+    #[deprecated = "too niche; compute this yourself if needed"]
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
+        #[allow(deprecated)]
         self.fixed.as_non_null_slice()
     }
 
@@ -2206,7 +2273,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         }
 
         let guard = DropGuard::<T, _> {
-            ptr: fixed.as_non_null_ptr(),
+            ptr: fixed.as_non_null(),
             cap: fixed.capacity(),
             allocator,
         };
@@ -2424,7 +2491,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
             return Ok(());
         }
 
-        let old_ptr = self.as_non_null_ptr().cast();
+        let old_ptr = self.as_non_null().cast();
 
         let old_size = self.capacity() * T::SIZE; // we already allocated that amount so this can't overflow
         let new_size = new_cap.checked_mul(T::SIZE).ok_or_else(|| E::capacity_overflow())?;
@@ -2465,7 +2532,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     pub fn shrink_to_fit(&mut self) {
         let Self { fixed, allocator } = self;
 
-        let old_ptr = fixed.as_non_null_ptr();
+        let old_ptr = fixed.as_non_null();
         let old_len = fixed.capacity();
         let new_len = fixed.len();
 
