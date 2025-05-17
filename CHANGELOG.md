@@ -15,8 +15,11 @@
 - **deprecated:** `alloc_fixed_string`, use `FixedBumpString::with_capacity_in` instead
 - **deprecated:** `alloc_fixed_string`, use `FixedBumpString::with_capacity_in` instead
 - **deprecated:** `from_array_in`, use `from_owned_slice_in` instead
+- **deprecated:** renamed `as_non_null_ptr` to `as_non_null`
+- **deprecated:** `as_non_null_slice`, too niche of an api
 - **added:** `FixedBumpVec::{new, from_capacity_in}`
 - **added:** `{BumpVec, MutBumpVec, MutBumpVecRev}::from_owned_slice_in`
+- **added:** `as_non_null` to boxed str and string types
 - **fix:** `serde` to compile without `alloc` feature
 
 ### Migration Guide
