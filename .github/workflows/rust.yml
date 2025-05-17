@@ -56,13 +56,13 @@ jobs:
         with:
           components: miri
       - run: cargo test --all-features
-      - run: cargo miri test --all-features
+      - run: cargo miri test --lib --all-features
       - run: cd crates/test-hashbrown; cargo test
       - run: cd crates/test-hashbrown; cargo test --all-features
-      - run: cd crates/test-hashbrown; cargo miri test
-      - run: cd crates/test-hashbrown; cargo miri test --all-features
+      - run: cd crates/test-hashbrown; cargo miri test --lib
+      - run: cd crates/test-hashbrown; cargo miri test --lib --all-features
       - run: cd crates/tests-from-std && cargo test
-      - run: cd crates/tests-from-std && cargo miri test
+      - run: cd crates/tests-from-std && cargo miri test --lib
   test-stable:
     runs-on: ubuntu-latest
     steps:
