@@ -2067,7 +2067,7 @@ impl<A: BumpAllocator> Drop for BumpString<A> {
         // may be at is 16. The bump allocator handles deallocate requests
         // from pointers outside its bound just fine by ignoring them.
         unsafe {
-            let ptr = self.fixed.as_non_null_ptr().cast();
+            let ptr = self.fixed.as_non_null().cast();
             let layout = Layout::from_size_align_unchecked(self.fixed.capacity(), 1);
             self.allocator.deallocate(ptr, layout);
         }
