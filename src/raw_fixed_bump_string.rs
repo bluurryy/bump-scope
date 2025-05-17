@@ -97,13 +97,6 @@ impl RawFixedBumpString {
         self.initialized.as_non_null().cast()
     }
 
-    #[must_use]
-    #[inline(always)]
-    #[allow(dead_code)]
-    pub fn as_non_null_str(&self) -> NonNull<str> {
-        self.initialized.as_non_null()
-    }
-
     #[allow(dead_code)]
     #[inline(always)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<u8>) {
