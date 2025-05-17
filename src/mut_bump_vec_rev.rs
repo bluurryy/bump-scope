@@ -1536,8 +1536,6 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     /// # Panics
     /// Panics if the allocation fails.
     ///
-    /// Panics if the new capacity exceeds `isize::MAX` bytes.
-    ///
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, mut_bump_vec_rev};
@@ -1557,9 +1555,6 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     /// speculatively avoid frequent reallocations. After calling `reserve`,
     /// capacity will be greater than or equal to `self.len() + additional`.
     /// Does nothing if capacity is already sufficient.
-    ///
-    /// # Panics
-    /// Panics if the new capacity exceeds `isize::MAX` bytes.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1603,8 +1598,6 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     /// # Panics
     /// Panics if the allocation fails.
     ///
-    /// Panics if the new capacity exceeds `isize::MAX` bytes.
-    ///
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, mut_bump_vec_rev};
@@ -1631,9 +1624,6 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     /// minimal. Prefer [`reserve`] if future insertions are expected.
     ///
     /// [`reserve`]: Self::reserve
-    ///
-    /// # Panics
-    /// Panics if the new capacity exceeds `isize::MAX` bytes.
     ///
     /// # Errors
     /// Errors if the allocation fails.

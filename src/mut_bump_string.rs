@@ -1535,8 +1535,6 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     /// # Panics
     /// Panics if the allocation fails.
     ///
-    /// Panics if the new capacity exceeds `isize::MAX` bytes.
-    ///
     /// # Examples
     /// Basic usage:
     ///
@@ -1581,9 +1579,6 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     /// avoid frequent allocations. After calling `reserve`,
     /// capacity will be greater than or equal to `self.len() + additional`.
     /// Does nothing if capacity is already sufficient.
-    ///
-    /// # Panics
-    /// Panics if the new capacity exceeds `isize::MAX` bytes.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1646,8 +1641,6 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     /// # Panics
     /// Panics if the allocation fails.
     ///
-    /// Panics if the new capacity exceeds `isize::MAX` bytes.
-    ///
     /// # Examples
     /// Basic usage:
     ///
@@ -1695,9 +1688,6 @@ impl<A: MutBumpAllocator> MutBumpString<A> {
     /// sufficient.
     ///
     /// [`reserve`]: Self::reserve
-    ///
-    /// # Panics
-    /// Panics if the new capacity exceeds `isize::MAX` bytes.
     ///
     /// # Errors
     /// Errors if the allocation fails.
