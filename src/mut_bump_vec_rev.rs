@@ -998,6 +998,8 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     ///
     /// This is behaviorally identical to [`FromIterator::from_iter`].
     ///
+    /// If you have an `impl ExactSizeIterator` then you can use [`from_iter_exact_in`](Self::from_iter_exact_in) instead for better performance.
+    ///
     /// # Panics
     /// Panics if the allocation fails.
     ///
@@ -1021,6 +1023,8 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     /// Create a new [`MutBumpVecRev`] whose elements are taken from an iterator and allocated in the given `bump`.
     ///
     /// This is behaviorally identical to [`FromIterator::from_iter`].
+    ///
+    /// If you have an `impl ExactSizeIterator` then you can use [`try_from_iter_exact_in`](Self::try_from_iter_exact_in) instead for better performance.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1053,6 +1057,77 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
 
         for value in iter {
             vec.generic_push(value)?;
+        }
+
+        Ok(vec)
+    }
+
+    /// Create a new [`MutBumpVecRev`] whose elements are taken from an iterator and allocated in the given `bump`.
+    ///
+    /// This is just like [`from_iter_in`](Self::from_iter_in) but optimized for an [`ExactSizeIterator`].
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, MutBumpVecRev};
+    /// # let mut bump: Bump = Bump::new();
+    /// let vec = MutBumpVecRev::from_iter_exact_in([1, 2, 3], &mut bump);
+    /// assert_eq!(vec, [3, 2, 1]);
+    /// ```
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn from_iter_exact_in<I>(iter: I, allocator: A) -> Self
+    where
+        I: IntoIterator<Item = T>,
+        I::IntoIter: ExactSizeIterator,
+    {
+        panic_on_error(Self::generic_from_iter_exact_in(iter, allocator))
+    }
+
+    /// Create a new [`MutBumpVecRev`] whose elements are taken from an iterator and allocated in the given `bump`.
+    ///
+    /// This is just like [`from_iter_in`](Self::from_iter_in) but optimized for an [`ExactSizeIterator`].
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, MutBumpVecRev};
+    /// # let mut bump: Bump = Bump::try_new()?;
+    /// let vec = MutBumpVecRev::try_from_iter_exact_in([1, 2, 3], &mut bump)?;
+    /// assert_eq!(vec, [3, 2, 1]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_from_iter_exact_in<I>(iter: I, allocator: A) -> Result<Self, AllocError>
+    where
+        I: IntoIterator<Item = T>,
+        I::IntoIter: ExactSizeIterator,
+    {
+        Self::generic_from_iter_exact_in(iter, allocator)
+    }
+
+    #[inline]
+    pub(crate) fn generic_from_iter_exact_in<E: ErrorBehavior, I>(iter: I, allocator: A) -> Result<Self, E>
+    where
+        I: IntoIterator<Item = T>,
+        I::IntoIter: ExactSizeIterator,
+    {
+        let mut iter = iter.into_iter();
+        let len = iter.len();
+
+        let mut vec = Self::generic_with_capacity_in(len, allocator)?;
+
+        while vec.len() != vec.capacity() {
+            match iter.next() {
+                // SAFETY: we checked above that `len != capacity`, so there is space
+                Some(value) => unsafe { vec.push_unchecked(value) },
+                None => break,
+            }
         }
 
         Ok(vec)

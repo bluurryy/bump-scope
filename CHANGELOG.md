@@ -19,6 +19,7 @@
 - **deprecated:** `as_non_null_slice`, too niche of an api
 - **added:** `FixedBumpVec::{new, from_capacity_in}`
 - **added:** `{BumpVec, MutBumpVec, MutBumpVecRev}::from_owned_slice_in`
+- **added:** `{MutBumpVec, MutBumpVecRev}::from_iter_exact_in`
 - **added:** `as_non_null` to boxed str and string types
 - **fix:** `serde` to compile without `alloc` feature
 
