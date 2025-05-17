@@ -195,7 +195,7 @@ impl<T, A: BumpAllocator> Drop for BumpVec<T, A> {
                 // - `layout.size()` will be `0` which will make it have no effect in the allocator
                 // - calling deallocate with a pointer not owned by this allocator is explicitly allowed; see `BumpAllocator`
                 unsafe {
-                    let ptr = self.0.fixed.as_non_null_ptr().cast();
+                    let ptr = self.0.fixed.as_non_null().cast();
                     let layout = Layout::from_size_align_unchecked(self.0.fixed.capacity() * T::SIZE, T::ALIGN);
                     self.0.allocator.deallocate(ptr, layout);
                 }
@@ -1093,10 +1093,12 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
     /// valid for zero sized reads.
+    #[doc(hidden)]
+    #[deprecated = "renamed to `as_non_null`"]
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_ptr(&self) -> NonNull<T> {
-        self.fixed.as_non_null_ptr()
+        self.fixed.as_non_null()
     }
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
@@ -2268,7 +2270,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         }
 
         let guard = DropGuard::<T, _> {
-            ptr: fixed.as_non_null_ptr(),
+            ptr: fixed.as_non_null(),
             cap: fixed.capacity(),
             allocator,
         };
@@ -2486,7 +2488,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
             return Ok(());
         }
 
-        let old_ptr = self.as_non_null_ptr().cast();
+        let old_ptr = self.as_non_null().cast();
 
         let old_size = self.capacity() * T::SIZE; // we already allocated that amount so this can't overflow
         let new_size = new_cap.checked_mul(T::SIZE).ok_or_else(|| E::capacity_overflow())?;
@@ -2527,7 +2529,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     pub fn shrink_to_fit(&mut self) {
         let Self { fixed, allocator } = self;
 
-        let old_ptr = fixed.as_non_null_ptr();
+        let old_ptr = fixed.as_non_null();
         let old_len = fixed.capacity();
         let new_len = fixed.len();
 

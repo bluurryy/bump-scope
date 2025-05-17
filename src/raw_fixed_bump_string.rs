@@ -72,7 +72,7 @@ impl RawFixedBumpString {
 
     #[inline(always)]
     pub(crate) const fn len(&self) -> usize {
-        nonnull::str_bytes(self.initialized.as_non_null_ptr()).len()
+        nonnull::str_bytes(self.initialized.as_non_null()).len()
     }
 
     #[inline(always)]
@@ -83,26 +83,26 @@ impl RawFixedBumpString {
     #[allow(dead_code)]
     #[inline(always)]
     pub(crate) fn as_ptr(&self) -> *const u8 {
-        self.initialized.as_non_null_ptr().as_ptr().cast()
+        self.initialized.as_non_null().as_ptr().cast()
     }
 
     #[inline(always)]
     pub(crate) fn as_mut_ptr(&mut self) -> *mut u8 {
-        self.initialized.as_non_null_ptr().as_ptr().cast()
+        self.initialized.as_non_null().as_ptr().cast()
     }
 
     #[must_use]
     #[inline(always)]
     #[allow(dead_code)]
     pub fn as_non_null_ptr(&self) -> NonNull<u8> {
-        self.initialized.as_non_null_ptr().cast()
+        self.initialized.as_non_null().cast()
     }
 
     #[must_use]
     #[inline(always)]
     #[allow(dead_code)]
     pub fn as_non_null_str(&self) -> NonNull<str> {
-        self.initialized.as_non_null_ptr()
+        self.initialized.as_non_null()
     }
 
     #[allow(dead_code)]

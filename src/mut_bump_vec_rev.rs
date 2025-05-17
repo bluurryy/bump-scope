@@ -395,7 +395,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     pub fn as_ptr(&self) -> *const T {
         // We shadow the slice method of the same name to avoid going through
         // `deref`, which creates an intermediate reference.
-        self.as_non_null_ptr().as_ptr()
+        self.as_non_null().as_ptr()
     }
 
     /// Returns an unsafe mutable pointer to the vector's buffer, or a dangling
@@ -430,7 +430,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     pub fn as_mut_ptr(&mut self) -> *mut T {
         // We shadow the slice method of the same name to avoid going through
         // `deref_mut`, which creates an intermediate reference.
-        self.as_non_null_ptr().as_ptr()
+        self.as_non_null().as_ptr()
     }
 
     /// Returns a `NonNull` pointer to the vector's buffer, or a dangling
@@ -498,6 +498,8 @@ impl<T, A> MutBumpVecRev<T, A> {
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
     /// valid for zero sized reads.
+    #[doc(hidden)]
+    #[deprecated = "renamed to `as_non_null`"]
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_ptr(&self) -> NonNull<T> {
@@ -509,7 +511,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        nonnull::slice_from_raw_parts(self.as_non_null_ptr(), self.len)
+        nonnull::slice_from_raw_parts(self.as_non_null(), self.len)
     }
 
     /// Shortens the vector, keeping the first `len` elements and dropping

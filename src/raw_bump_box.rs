@@ -87,12 +87,6 @@ impl<T: ?Sized> RawBumpBox<T> {
     pub const fn as_non_null(&self) -> NonNull<T> {
         self.ptr
     }
-
-    #[must_use]
-    #[inline(always)]
-    pub(crate) const fn as_non_null_ptr(&self) -> NonNull<T> {
-        self.ptr
-    }
 }
 
 impl<T> RawBumpBox<[T]> {

@@ -643,7 +643,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_ptr(&self) -> NonNull<T> {
-        self.initialized.as_non_null_ptr()
+        self.initialized.as_non_null()
     }
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
@@ -777,7 +777,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self {
         let len = self.len();
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
-        let ptr = self.initialized.as_non_null_ptr();
+        let ptr = self.initialized.as_non_null();
 
         unsafe {
             if T::IS_ZST {
@@ -1999,7 +1999,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     pub fn split_at_spare(self) -> (BumpBox<'a, [T]>, BumpBox<'a, [MaybeUninit<T>]>) {
         unsafe {
             let uninitialized_ptr =
-                nonnull::add(self.initialized.as_non_null_ptr(), self.initialized.len()).cast::<MaybeUninit<T>>();
+                nonnull::add(self.initialized.as_non_null(), self.initialized.len()).cast::<MaybeUninit<T>>();
             let uninitialized_len = self.capacity - self.len();
             let uninitialized = BumpBox::from_raw(nonnull::slice_from_raw_parts(uninitialized_ptr, uninitialized_len));
             (self.initialized, uninitialized)

@@ -1503,6 +1503,8 @@ impl<'a, T> BumpBox<'a, [T]> {
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
     /// valid for zero sized reads.
+    #[doc(hidden)]
+    #[deprecated = "renamed to `as_non_null`"]
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_ptr(&self) -> NonNull<T> {

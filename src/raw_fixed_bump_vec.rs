@@ -127,15 +127,8 @@ impl<T> RawFixedBumpVec<T> {
     #[must_use]
     #[inline(always)]
     #[allow(dead_code)]
-    pub fn as_non_null_ptr(&self) -> NonNull<T> {
-        self.initialized.as_non_null_ptr().cast()
-    }
-
-    #[must_use]
-    #[inline(always)]
-    #[allow(dead_code)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        self.initialized.as_non_null_ptr()
+        self.initialized.as_non_null()
     }
 
     #[allow(dead_code)]

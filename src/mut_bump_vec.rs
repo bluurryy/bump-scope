@@ -500,10 +500,12 @@ impl<T, A> MutBumpVec<T, A> {
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
     /// valid for zero sized reads.
+    #[doc(hidden)]
+    #[deprecated = "renamed to `as_non_null`"]
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_ptr(&self) -> NonNull<T> {
-        self.fixed.as_non_null_ptr()
+        self.fixed.as_non_null()
     }
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
@@ -1954,11 +1956,11 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
 
             if this.capacity() == 0 {
                 // We didn't touch the allocator, so no need to do anything.
-                debug_assert_eq!(this.as_non_null_ptr(), NonNull::<T>::dangling());
+                debug_assert_eq!(this.as_non_null(), NonNull::<T>::dangling());
                 return nonnull::slice_from_raw_parts(NonNull::<T>::dangling(), 0);
             }
 
-            let ptr = this.as_non_null_ptr();
+            let ptr = this.as_non_null();
             let len = this.len();
             let cap = this.capacity();
 
