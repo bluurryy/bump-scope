@@ -207,24 +207,22 @@ pub(crate) fn bump_down(
 
     debug_assert!(start <= end);
 
-    // These are expected to be evaluated at compile time.
-    let does_not_need_align_for_min_align_due_to_align =
-        size_is_multiple_of_align && align_is_const && layout.align() >= min_align;
-    let does_not_need_align_for_min_align_due_to_size = size_is_const && (layout.size() % min_align == 0);
-    let does_not_need_align_for_min_align =
-        does_not_need_align_for_min_align_due_to_align || does_not_need_align_for_min_align_due_to_size;
+    // The `needs_aligning` variables are meant to be computed at compile time.
+    let needs_aligning_for_min_align = {
+        let due_to_align = !size_is_multiple_of_align || !align_is_const || layout.align() < min_align;
+        let due_to_size = !size_is_const || (layout.size() % min_align != 0);
+        due_to_align || due_to_size
+    };
 
-    let does_not_need_align_for_layout = size_is_multiple_of_align && align_is_const && layout.align() <= min_align;
-
-    let does_not_need_align = does_not_need_align_for_min_align && does_not_need_align_for_layout;
-    let needs_align = !does_not_need_align;
+    let needs_aligning_for_layout = !size_is_multiple_of_align || !align_is_const || layout.align() > min_align;
+    let needs_aligning = needs_aligning_for_layout || needs_aligning_for_min_align;
 
     if size_is_const && layout.size() <= MIN_CHUNK_ALIGN {
         // When `size <= MIN_CHUNK_ALIGN` subtracting it from `end` can't overflow, as the lowest value for `end` would be `start` which is aligned to `MIN_CHUNK_ALIGN`,
         // thus its address can't be smaller than it.
         end -= layout.size();
 
-        if needs_align {
+        if needs_aligning {
             // At this point layout's align is const, because we assume `size_is_const` implies `align_is_const`.
             // That means `max` is evaluated at compile time, so we don't bother having different cases for either alignment.
             end = down_align(end, layout.align().max(min_align));
@@ -244,7 +242,7 @@ pub(crate) fn bump_down(
         // Doesn't overflow because of the check above.
         end -= layout.size();
 
-        if needs_align {
+        if needs_aligning {
             // Down aligning an address `>= range.start` with an alignment `<= MIN_CHUNK_ALIGN` (which `layout.align()` is)
             // can't exceed `range.start`, and thus also can't overflow.
             end = down_align(end, layout.align().max(min_align));
