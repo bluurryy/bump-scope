@@ -1086,7 +1086,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// [`as_ptr`]: Self::as_ptr
     /// [`as_non_null`]: Self::as_non_null
     #[inline(always)]
-    pub fn as_non_null(&self) -> NonNull<T> {
+    pub const fn as_non_null(&self) -> NonNull<T> {
         self.fixed.as_non_null()
     }
 
