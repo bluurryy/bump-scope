@@ -171,9 +171,9 @@ either_way! {
 
     call_zst_creation_closures
 
-    deallocate_in_ltr
+    dealloc_ltr
 
-    deallocate_in_rtl
+    dealloc_rtl
 
     default_chunk_size
 
@@ -949,7 +949,7 @@ fn call_zst_creation_closures<const UP: bool>() {
     }
 }
 
-fn deallocate_in_ltr<const UP: bool>() {
+fn dealloc_ltr<const UP: bool>() {
     let bump = Bump::<Global, 1, UP>::new();
     let slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]);
     let (lhs, rhs) = slice.split_at(3);
@@ -958,7 +958,7 @@ fn deallocate_in_ltr<const UP: bool>() {
     assert_eq!(rhs, [4, 5, 6]);
     assert_eq!(bump.stats().allocated(), 6 * 4);
 
-    lhs.deallocate_in(&bump);
+    bump.dealloc(lhs);
 
     if UP {
         assert_eq!(bump.stats().allocated(), 6 * 4);
@@ -966,7 +966,7 @@ fn deallocate_in_ltr<const UP: bool>() {
         assert_eq!(bump.stats().allocated(), 3 * 4);
     }
 
-    rhs.deallocate_in(&bump);
+    bump.dealloc(rhs);
 
     if UP {
         assert_eq!(bump.stats().allocated(), 3 * 4);
@@ -975,7 +975,7 @@ fn deallocate_in_ltr<const UP: bool>() {
     }
 }
 
-fn deallocate_in_rtl<const UP: bool>() {
+fn dealloc_rtl<const UP: bool>() {
     let bump = Bump::<Global, 1, UP>::new();
     let slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]);
     let (lhs, rhs) = slice.split_at(3);
@@ -984,7 +984,7 @@ fn deallocate_in_rtl<const UP: bool>() {
     assert_eq!(rhs, [4, 5, 6]);
     assert_eq!(bump.stats().allocated(), 6 * 4);
 
-    rhs.deallocate_in(&bump);
+    bump.dealloc(rhs);
 
     if UP {
         assert_eq!(bump.stats().allocated(), 3 * 4);
@@ -992,7 +992,7 @@ fn deallocate_in_rtl<const UP: bool>() {
         assert_eq!(bump.stats().allocated(), 6 * 4);
     }
 
-    lhs.deallocate_in(&bump);
+    bump.dealloc(lhs);
 
     if UP {
         assert_eq!(bump.stats().allocated(), 0);

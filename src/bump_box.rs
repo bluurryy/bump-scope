@@ -1,5 +1,4 @@
 use core::{
-    alloc::Layout,
     any::Any,
     borrow::{Borrow, BorrowMut},
     cmp::Ordering,
@@ -14,7 +13,7 @@ use core::{
 };
 
 #[cfg(feature = "nightly-fn-traits")]
-use core::marker::Tuple;
+use core::{alloc::Layout, marker::Tuple};
 
 #[cfg(feature = "std")]
 use alloc_crate::{string::String, vec::Vec};
@@ -27,7 +26,7 @@ use crate::{
     owned_slice, owned_str,
     polyfill::{self, nonnull, pointer, transmute_mut},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BumpAllocator, FromUtf8Error, NoDrop, SizedTypeProperties,
+    FromUtf8Error, NoDrop, SizedTypeProperties,
 };
 
 #[cfg(feature = "alloc")]
@@ -41,8 +40,10 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///
 /// You can turn a `BumpBox` into a reference with [`into_ref`] and [`into_mut`] and into a [`Box`] with [`into_box`].
 ///
-/// Unlike `Box`, `BumpBox` can not implement `Clone` or free the allocated space as it does not store its allocator.
-/// It's essentially just an owned reference.
+/// Unlike `Box`, `BumpBox` can not implement `Clone` or free the allocated space on drop,
+/// as it does not store its allocator. It's essentially just an owned reference.
+///
+/// A `BumpBox` can be deallocated using [`Bump(Scope)::dealloc`](crate::Bump::dealloc).
 ///
 /// ## `BumpBox` has a lot of methods
 /// - `BumpBox<[T]>` provides methods from `Vec<T>` like
@@ -81,6 +82,19 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///   [`init_copy`](Self::init_copy),
 ///   [`init_clone`](Self::init_clone) and
 ///   [`init_zeroed`](crate::zerocopy_08::InitZeroed::init_zeroed).
+///
+/// ## Api differences
+///
+/// `BumpBox<[T]>` and `BumpBox<str>` mirror the api of vectors and strings respectively.
+/// As such, methods like `as_ptr` and `as_mut_ptr` return a pointer to the start of the slice
+/// instead of a slice pointer. To get a pointer to the boxed content `T` of `BumpBox<T>`,
+/// use [`as_raw`](Self::as_raw) instead.
+///
+/// Unlike `Box<T>`, `BumpBox<T>` has some methods that are implemented for all `T`.
+/// Care is taken to not overwrite methods of `T` by only adding methods that start with
+/// `into_`. By convention `into_*` methods consume the type, so if `T` has an `into_*`
+/// method, then that method would not be callable through on `BumpBox<T>` but would
+/// require you to call [`into_inner`](Self::into_inner) first.
 ///
 /// ## No pinning
 ///
@@ -312,25 +326,6 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
         unsafe { B::from_raw_in(ptr, allocator) }
     }
 
-    /// Drops this box and frees its memory iff it is the last allocation:
-    /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let boxed = bump.alloc(3i32);
-    /// assert_eq!(bump.stats().allocated(), 4);
-    /// boxed.deallocate_in(&bump);
-    /// assert_eq!(bump.stats().allocated(), 0);
-    /// ```
-    pub fn deallocate_in<A: BumpAllocator>(self, bump: A) {
-        let layout = Layout::for_value::<T>(&self);
-        let ptr = self.into_raw();
-
-        unsafe {
-            nonnull::drop_in_place(ptr);
-            bump.deallocate(ptr.cast(), layout);
-        }
-    }
-
     /// Turns this `BumpBox<T>` into `&mut T` that is live for this bump scope.
     /// `T` won't be dropped which may leak resources.
     ///
@@ -391,6 +386,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// [`as_raw`]: Self::as_raw
     /// [`into_raw`]: Self::into_raw
     #[inline]
+    #[must_use]
     pub const fn as_raw(b: &Self) -> NonNull<T> {
         b.ptr
     }

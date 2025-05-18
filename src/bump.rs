@@ -2468,6 +2468,24 @@ where
         self.as_scope().try_alloc_layout(layout)
     }
 
+    /// Drops an allocated value and attempts to free its memory.
+    ///
+    /// The memory can only be freed if this is the last allocation.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let boxed = bump.alloc(3i32);
+    /// assert_eq!(bump.stats().allocated(), 4);
+    /// bump.dealloc(boxed);
+    /// assert_eq!(bump.stats().allocated(), 0);
+    /// ```
+    #[inline(always)]
+    pub fn dealloc<T: ?Sized>(&self, boxed: BumpBox<T>) {
+        self.as_scope().dealloc(boxed);
+    }
+
     /// Reserves capacity for at least `additional` more bytes to be bump allocated.
     /// The bump allocator may reserve more space to avoid frequent reallocations.
     /// After calling `reserve_bytes`, <code>self.[stats](Self::stats)().[remaining](Stats::remaining)()</code> will be greater than or equal to
