@@ -15,13 +15,24 @@ mod any;
 
 pub use any::{AnyChunk, AnyChunkNextIter, AnyChunkPrevIter, AnyStats};
 
-/// Provides statistics about the memory usage of the bump allocator.
-///
-/// This is returned from the `stats` method of `Bump`, `BumpScope`, `BumpScopeGuard`, `BumpVec`, ...
-pub struct Stats<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool = false> {
-    header: NonNull<ChunkHeader<A>>,
-    marker: PhantomData<&'a ()>,
+macro_rules! declaration {
+    ($($allocator_parameter:tt)*) => {
+        /// Provides statistics about the memory usage of the bump allocator.
+        ///
+        /// This is returned from the `stats` method of `Bump`, `BumpScope`, `BumpScopeGuard`, `BumpVec`, ...
+        pub struct Stats<
+            'a,
+            $($allocator_parameter)*,
+            const UP: bool = true,
+            const GUARANTEED_ALLOCATED: bool = true,
+        > {
+            header: NonNull<ChunkHeader<A>>,
+            marker: PhantomData<&'a ()>,
+        }
+    };
 }
+
+crate::maybe_default_allocator!(declaration);
 
 impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Clone for Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
     fn clone(&self) -> Self {
@@ -173,7 +184,7 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
     /// Turns this `Stats` into a `Stats` where `GUARANTEED_ALLOCATED = true`.
     #[inline]
     #[must_use]
-    pub fn guaranteed_allocated(self) -> Option<Stats<'a, A, true>> {
+    pub fn guaranteed_allocated(self) -> Option<Stats<'a, A, UP, true>> {
         if GUARANTEED_ALLOCATED {
             return Some(unsafe { Stats::from_header_unchecked(self.header) });
         }
@@ -188,7 +199,7 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
     /// Turns this `Stats` into a `Stats` where `GUARANTEED_ALLOCATED = false`.
     #[inline]
     #[must_use]
-    pub fn not_guaranteed_allocated(self) -> Stats<'a, A, false> {
+    pub fn not_guaranteed_allocated(self) -> Stats<'a, A, UP, false> {
         unsafe { Stats::from_header_unchecked(self.header) }
     }
 

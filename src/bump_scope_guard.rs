@@ -94,7 +94,7 @@ where
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'a, A, UP, true> {
+    pub fn stats(&self) -> Stats<'a, A, UP> {
         let header = self.chunk.header_ptr().cast();
         // SAFETY: `header` points to a valid chunk header which is guaranteed allocated
         unsafe { Stats::from_header_unchecked(header) }
