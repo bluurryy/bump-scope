@@ -105,8 +105,8 @@ macro_rules! mut_bump_vec {
 
 /// A type like [`BumpVec`](crate::BumpVec), optimized for a mutable bump allocator.
 ///
-/// It has the advantage that it can assume the entire remaining chunk space as its capacity.
-/// It also only needs to update the bump pointer when calling [`into_slice`](Self::into_slice) or [`into_boxed_slice`](Self::into_boxed_slice).
+/// It has the advantage that it can assume the entire remaining chunk space as its capacity and
+/// only needs to update the bump pointer when calling [`into_slice`](Self::into_slice) or [`into_boxed_slice`](Self::into_boxed_slice).
 ///
 /// # Examples
 ///
