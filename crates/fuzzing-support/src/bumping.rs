@@ -117,7 +117,10 @@ impl Range {
     fn new_slice<T>(value: *const [T]) -> Self {
         unsafe {
             let ptr = value.cast::<T>();
-            let len = (*value).len();
+
+            // if we followed clippy's advice, check would instead complain about `dangerous_implicit_autorefs`
+            #[allow(clippy::needless_borrow)]
+            let len = (&(*value)).len();
 
             let start = ptr as usize;
             let end = ptr.add(len) as usize;

@@ -23,10 +23,14 @@ pub(crate) const fn as_mut_ptr<T>(ptr: *mut [T]) -> *mut T {
     ptr.cast()
 }
 
+/// # Safety
+/// `ptr` must be valid to be turned into a reference.
 #[must_use]
 #[inline(always)]
 pub(crate) unsafe fn len<T>(ptr: *const [T]) -> usize {
-    (*ptr).len()
+    // if we followed clippy's advice, check would instead complain about `dangerous_implicit_autorefs`
+    #[allow(clippy::needless_borrow)]
+    (&(*ptr)).len()
 }
 
 /// Calculates the distance between two pointers within the same allocation, *where it's known that
