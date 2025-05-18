@@ -20,9 +20,10 @@ use crate::{
     const_param_assert, down_align_usize,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::{nonnull, pointer, transmute_mut, transmute_ref},
+    stats::Stats,
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
     FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk,
-    SizedTypeProperties, Stats, SupportedMinimumAlignment,
+    SizedTypeProperties, SupportedMinimumAlignment,
 };
 
 #[cfg(feature = "panic-on-alloc")]

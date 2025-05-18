@@ -13,8 +13,9 @@ use crate::{
     bump_common_methods,
     chunk_size::ChunkSize,
     polyfill::{pointer, transmute_mut, transmute_ref},
+    stats::Stats,
     unallocated_chunk_header, BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior,
-    FixedBumpString, FixedBumpVec, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment,
+    FixedBumpString, FixedBumpVec, MinimumAlignment, RawChunk, SupportedMinimumAlignment,
 };
 
 #[cfg(feature = "panic-on-alloc")]

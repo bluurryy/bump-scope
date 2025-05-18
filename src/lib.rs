@@ -371,8 +371,6 @@ pub use no_drop::NoDrop;
 use private::{capacity_overflow, format_trait_error, PanicsOnAlloc};
 use raw_chunk::RawChunk;
 use set_len_on_drop::SetLenOnDrop;
-#[doc(inline)]
-pub use stats::Stats;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
 #[cfg(feature = "zerocopy-08")]

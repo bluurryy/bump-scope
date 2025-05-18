@@ -1,7 +1,7 @@
 use core::{fmt::Debug, marker::PhantomData, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    chunk_header::ChunkHeader, polyfill::nonnull, BaseAllocator, Bump, BumpScope, MinimumAlignment, RawChunk, Stats,
+    chunk_header::ChunkHeader, polyfill::nonnull, stats::Stats, BaseAllocator, Bump, BumpScope, MinimumAlignment, RawChunk,
     SupportedMinimumAlignment,
 };
 
