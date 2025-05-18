@@ -340,8 +340,7 @@ where
     #[inline]
     pub unsafe fn reset_to(&self, checkpoint: Checkpoint) {
         debug_assert!(self.stats().big_to_small().any(|chunk| {
-            chunk.header == checkpoint.chunk.cast()
-                && crate::stats::raw!(chunk.contains_addr_or_end(checkpoint.address.get()))
+            chunk.header == checkpoint.chunk.cast() && chunk.contains_addr_or_end(checkpoint.address.get())
         }));
 
         checkpoint.reset_within_chunk();

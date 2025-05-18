@@ -12,8 +12,8 @@ pub struct AnyStats<'a> {
     chunk: Option<AnyChunk<'a>>,
 }
 
-impl<A, const GUARANTEED_ALLOCATED: bool> From<Stats<'_, A, GUARANTEED_ALLOCATED>> for AnyStats<'_> {
-    fn from(value: Stats<'_, A, GUARANTEED_ALLOCATED>) -> Self {
+impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> From<Stats<'_, A, UP, GUARANTEED_ALLOCATED>> for AnyStats<'_> {
+    fn from(value: Stats<'_, A, UP, GUARANTEED_ALLOCATED>) -> Self {
         Self {
             chunk: value.get_current_chunk().map(Into::into),
         }
@@ -162,8 +162,8 @@ pub struct AnyChunk<'a> {
     marker: PhantomData<&'a ()>,
 }
 
-impl<A> From<Chunk<'_, A>> for AnyChunk<'_> {
-    fn from(value: Chunk<'_, A>) -> Self {
+impl<A, const UP: bool> From<Chunk<'_, A, UP>> for AnyChunk<'_> {
+    fn from(value: Chunk<'_, A, UP>) -> Self {
         Self {
             header: value.header.cast(),
             header_size: mem::size_of::<ChunkHeader<A>>(),

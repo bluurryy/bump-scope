@@ -589,7 +589,7 @@ macro_rules! bump_common_methods {
                 /// Returns a type which provides statistics about the memory usage of the bump allocator.
                 #[must_use]
                 #[inline(always)]
-                pub fn stats(&self) -> Stats<'a, A, GUARANTEED_ALLOCATED> {
+                pub fn stats(&self) -> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
                     let header = self.chunk.get().header_ptr().cast();
                     unsafe { Stats::from_header_unchecked(header) }
                 }
@@ -597,7 +597,7 @@ macro_rules! bump_common_methods {
                 /// Returns a type which provides statistics about the memory usage of the bump allocator.
                 #[must_use]
                 #[inline(always)]
-                pub fn stats(&self) -> Stats<A, GUARANTEED_ALLOCATED> {
+                pub fn stats(&self) -> Stats<A, UP, GUARANTEED_ALLOCATED> {
                     let header = self.chunk.get().header_ptr().cast();
                     unsafe { Stats::from_header_unchecked(header) }
                 }

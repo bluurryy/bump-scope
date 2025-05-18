@@ -18,34 +18,34 @@ pub use any::{AnyChunk, AnyChunkNextIter, AnyChunkPrevIter, AnyStats};
 /// Provides statistics about the memory usage of the bump allocator.
 ///
 /// This is returned from the `stats` method of `Bump`, `BumpScope`, `BumpScopeGuard`, `BumpVec`, ...
-pub struct Stats<'a, A, const GUARANTEED_ALLOCATED: bool = false> {
+pub struct Stats<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool = false> {
     header: NonNull<ChunkHeader<A>>,
     marker: PhantomData<&'a ()>,
 }
 
-impl<A, const GUARANTEED_ALLOCATED: bool> Clone for Stats<'_, A, GUARANTEED_ALLOCATED> {
+impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Clone for Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, const GUARANTEED_ALLOCATED: bool> Copy for Stats<'_, A, GUARANTEED_ALLOCATED> {}
+impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Copy for Stats<'_, A, UP, GUARANTEED_ALLOCATED> {}
 
-impl<A, const GUARANTEED_ALLOCATED: bool> PartialEq for Stats<'_, A, GUARANTEED_ALLOCATED> {
+impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> PartialEq for Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
     fn eq(&self, other: &Self) -> bool {
         self.header == other.header
     }
 }
 
-impl<A, const GUARANTEED_ALLOCATED: bool> Eq for Stats<'_, A, GUARANTEED_ALLOCATED> {}
+impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Eq for Stats<'_, A, UP, GUARANTEED_ALLOCATED> {}
 
-impl<A, const GUARANTEED_ALLOCATED: bool> Debug for Stats<'_, A, GUARANTEED_ALLOCATED> {
+impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Debug for Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.debug_format("Stats", f)
     }
 }
 
-impl<'a, A, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, GUARANTEED_ALLOCATED> {
+impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
     /// Returns the number of chunks.
     #[must_use]
     pub fn count(self) -> usize {
@@ -123,7 +123,7 @@ impl<'a, A, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, GUARANTEED_ALLOCATED>
 
     /// Returns an iterator from smallest to biggest chunk.
     #[must_use]
-    pub fn small_to_big(self) -> ChunkNextIter<'a, A> {
+    pub fn small_to_big(self) -> ChunkNextIter<'a, A, UP> {
         let mut start = match self.get_current_chunk() {
             Some(start) => start,
             None => return ChunkNextIter { chunk: None },
@@ -138,7 +138,7 @@ impl<'a, A, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, GUARANTEED_ALLOCATED>
 
     /// Returns an iterator from biggest to smallest chunk.
     #[must_use]
-    pub fn big_to_small(self) -> ChunkPrevIter<'a, A> {
+    pub fn big_to_small(self) -> ChunkPrevIter<'a, A, UP> {
         let mut start = match self.get_current_chunk() {
             Some(start) => start,
             None => return ChunkPrevIter { chunk: None },
@@ -192,23 +192,23 @@ impl<'a, A, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, GUARANTEED_ALLOCATED>
         unsafe { Stats::from_header_unchecked(self.header) }
     }
 
-    fn get_current_chunk(self) -> Option<Chunk<'a, A>> {
+    fn get_current_chunk(self) -> Option<Chunk<'a, A, UP>> {
         unsafe { Chunk::from_header(self.header) }
     }
 }
 
-impl<'a, A> Stats<'a, A, true> {
+impl<'a, A, const UP: bool> Stats<'a, A, UP, true> {
     /// This is the chunk we are currently allocating on.
     #[must_use]
-    pub fn current_chunk(self) -> Chunk<'a, A> {
+    pub fn current_chunk(self) -> Chunk<'a, A, UP> {
         unsafe { Chunk::from_header_unchecked(self.header) }
     }
 }
 
-impl<'a, A> Stats<'a, A, false> {
+impl<'a, A, const UP: bool> Stats<'a, A, UP, false> {
     /// This is the chunk we are currently allocating on.
     #[must_use]
-    pub fn current_chunk(self) -> Option<Chunk<'a, A>> {
+    pub fn current_chunk(self) -> Option<Chunk<'a, A, UP>> {
         unsafe { Chunk::from_header(self.header) }
     }
 
@@ -217,13 +217,15 @@ impl<'a, A> Stats<'a, A, false> {
     }
 }
 
-impl<'a, A, const GUARANTEED_ALLOCATED: bool> From<Chunk<'a, A>> for Stats<'a, A, GUARANTEED_ALLOCATED> {
-    fn from(chunk: Chunk<'a, A>) -> Self {
+impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> From<Chunk<'a, A, UP>>
+    for Stats<'a, A, UP, GUARANTEED_ALLOCATED>
+{
+    fn from(chunk: Chunk<'a, A, UP>) -> Self {
         unsafe { Stats::from_header_unchecked(chunk.header) }
     }
 }
 
-impl<A> Default for Stats<'_, A, false> {
+impl<A, const UP: bool> Default for Stats<'_, A, UP, false> {
     fn default() -> Self {
         Self::unallocated()
     }
@@ -233,28 +235,28 @@ impl<A> Default for Stats<'_, A, false> {
 ///
 /// See [`Stats`].
 #[repr(transparent)]
-pub struct Chunk<'a, A> {
+pub struct Chunk<'a, A, const UP: bool> {
     pub(crate) header: NonNull<ChunkHeader<A>>,
     marker: PhantomData<&'a ()>,
 }
 
-impl<A> Clone for Chunk<'_, A> {
+impl<A, const UP: bool> Clone for Chunk<'_, A, UP> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A> Copy for Chunk<'_, A> {}
+impl<A, const UP: bool> Copy for Chunk<'_, A, UP> {}
 
-impl<A> PartialEq for Chunk<'_, A> {
+impl<A, const UP: bool> PartialEq for Chunk<'_, A, UP> {
     fn eq(&self, other: &Self) -> bool {
         self.header == other.header
     }
 }
 
-impl<A> Eq for Chunk<'_, A> {}
+impl<A, const UP: bool> Eq for Chunk<'_, A, UP> {}
 
-impl<A> Debug for Chunk<'_, A> {
+impl<A, const UP: bool> Debug for Chunk<'_, A, UP> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Chunk")
             .field("allocated", &self.allocated())
@@ -263,7 +265,7 @@ impl<A> Debug for Chunk<'_, A> {
     }
 }
 
-impl<'a, A> Chunk<'a, A> {
+impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
     #[inline]
     pub(crate) unsafe fn from_header(header: NonNull<ChunkHeader<A>>) -> Option<Self> {
         if header.cast() == unallocated_chunk_header() {
@@ -289,8 +291,8 @@ impl<'a, A> Chunk<'a, A> {
         end > header
     }
 
-    pub(crate) fn raw<const UP: bool>(self) -> RawChunk<UP, A> {
-        assert_eq!(UP, self.is_upwards_allocating());
+    pub(crate) fn raw(self) -> RawChunk<UP, A> {
+        debug_assert_eq!(UP, self.is_upwards_allocating());
         unsafe { RawChunk::from_header(self.header) }
     }
 
@@ -321,14 +323,14 @@ impl<'a, A> Chunk<'a, A> {
     /// Returns an iterator over all previous (smaller) chunks.
     #[must_use]
     #[inline(always)]
-    pub fn iter_prev(self) -> ChunkPrevIter<'a, A> {
+    pub fn iter_prev(self) -> ChunkPrevIter<'a, A, UP> {
         ChunkPrevIter { chunk: self.prev() }
     }
 
     /// Returns an iterator over all next (bigger) chunks.
     #[must_use]
     #[inline(always)]
-    pub fn iter_next(self) -> ChunkNextIter<'a, A> {
+    pub fn iter_next(self) -> ChunkNextIter<'a, A, UP> {
         ChunkNextIter { chunk: self.next() }
     }
 
@@ -336,14 +338,14 @@ impl<'a, A> Chunk<'a, A> {
     #[must_use]
     #[inline]
     pub fn size(self) -> usize {
-        raw!(self.size().get())
+        self.raw().size().get()
     }
 
     /// Returns the capacity of this chunk in bytes.
     #[must_use]
     #[inline]
     pub fn capacity(self) -> usize {
-        raw!(self.capacity())
+        self.raw().capacity()
     }
 
     /// Returns the amount of allocated bytes.
@@ -355,7 +357,7 @@ impl<'a, A> Chunk<'a, A> {
     #[must_use]
     #[inline]
     pub fn allocated(self) -> usize {
-        raw!(self.allocated())
+        self.raw().allocated()
     }
 
     /// Returns the remaining capacity.
@@ -366,35 +368,35 @@ impl<'a, A> Chunk<'a, A> {
     #[must_use]
     #[inline]
     pub fn remaining(self) -> usize {
-        raw!(self.remaining())
+        self.raw().remaining()
     }
 
     /// Returns a pointer to the start of the chunk.
     #[must_use]
     #[inline]
     pub fn chunk_start(self) -> NonNull<u8> {
-        raw!(self.chunk_start())
+        self.raw().chunk_start()
     }
 
     /// Returns a pointer to the end of the chunk.
     #[must_use]
     #[inline]
     pub fn chunk_end(self) -> NonNull<u8> {
-        raw!(self.chunk_end())
+        self.raw().chunk_end()
     }
 
     /// Returns a pointer to the start of the chunk's content.
     #[must_use]
     #[inline]
     pub fn content_start(self) -> NonNull<u8> {
-        raw!(self.content_start())
+        self.raw().content_start()
     }
 
     /// Returns a pointer to the end of the chunk's content.
     #[must_use]
     #[inline]
     pub fn content_end(self) -> NonNull<u8> {
-        raw!(self.content_end())
+        self.raw().content_end()
     }
 
     /// Returns the bump pointer. It lies within the chunk's content range.
@@ -404,40 +406,45 @@ impl<'a, A> Chunk<'a, A> {
     #[must_use]
     #[inline]
     pub fn bump_position(self) -> NonNull<u8> {
-        raw!(self.pos())
+        self.raw().pos()
+    }
+
+    #[inline(always)]
+    pub(crate) fn contains_addr_or_end(self, addr: usize) -> bool {
+        self.raw().contains_addr_or_end(addr)
     }
 }
 
 /// Iterator that iterates over previous chunks by continuously calling [`Chunk::prev`].
-pub struct ChunkPrevIter<'a, A> {
+pub struct ChunkPrevIter<'a, A, const UP: bool> {
     #[allow(missing_docs)]
-    pub chunk: Option<Chunk<'a, A>>,
+    pub chunk: Option<Chunk<'a, A, UP>>,
 }
 
-impl<A> Clone for ChunkPrevIter<'_, A> {
+impl<A, const UP: bool> Clone for ChunkPrevIter<'_, A, UP> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A> Copy for ChunkPrevIter<'_, A> {}
+impl<A, const UP: bool> Copy for ChunkPrevIter<'_, A, UP> {}
 
-impl<A> PartialEq for ChunkPrevIter<'_, A> {
+impl<A, const UP: bool> PartialEq for ChunkPrevIter<'_, A, UP> {
     fn eq(&self, other: &Self) -> bool {
         self.chunk == other.chunk
     }
 }
 
-impl<A> Eq for ChunkPrevIter<'_, A> {}
+impl<A, const UP: bool> Eq for ChunkPrevIter<'_, A, UP> {}
 
-impl<A> Default for ChunkPrevIter<'_, A> {
+impl<A, const UP: bool> Default for ChunkPrevIter<'_, A, UP> {
     fn default() -> Self {
         Self { chunk: None }
     }
 }
 
-impl<'a, A> Iterator for ChunkPrevIter<'a, A> {
-    type Item = Chunk<'a, A>;
+impl<'a, A, const UP: bool> Iterator for ChunkPrevIter<'a, A, UP> {
+    type Item = Chunk<'a, A, UP>;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -447,44 +454,44 @@ impl<'a, A> Iterator for ChunkPrevIter<'a, A> {
     }
 }
 
-impl<A> FusedIterator for ChunkPrevIter<'_, A> {}
+impl<A, const UP: bool> FusedIterator for ChunkPrevIter<'_, A, UP> {}
 
-impl<A> Debug for ChunkPrevIter<'_, A> {
+impl<A, const UP: bool> Debug for ChunkPrevIter<'_, A, UP> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_list().entries(*self).finish()
     }
 }
 
 /// Iterator that iterates over next chunks by continuously calling [`Chunk::next`].
-pub struct ChunkNextIter<'a, A> {
+pub struct ChunkNextIter<'a, A, const UP: bool> {
     #[allow(missing_docs)]
-    pub chunk: Option<Chunk<'a, A>>,
+    pub chunk: Option<Chunk<'a, A, UP>>,
 }
 
-impl<A> Clone for ChunkNextIter<'_, A> {
+impl<A, const UP: bool> Clone for ChunkNextIter<'_, A, UP> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A> Copy for ChunkNextIter<'_, A> {}
+impl<A, const UP: bool> Copy for ChunkNextIter<'_, A, UP> {}
 
-impl<A> PartialEq for ChunkNextIter<'_, A> {
+impl<A, const UP: bool> PartialEq for ChunkNextIter<'_, A, UP> {
     fn eq(&self, other: &Self) -> bool {
         self.chunk == other.chunk
     }
 }
 
-impl<A> Eq for ChunkNextIter<'_, A> {}
+impl<A, const UP: bool> Eq for ChunkNextIter<'_, A, UP> {}
 
-impl<A> Default for ChunkNextIter<'_, A> {
+impl<A, const UP: bool> Default for ChunkNextIter<'_, A, UP> {
     fn default() -> Self {
         Self { chunk: None }
     }
 }
 
-impl<'a, A> Iterator for ChunkNextIter<'a, A> {
-    type Item = Chunk<'a, A>;
+impl<'a, A, const UP: bool> Iterator for ChunkNextIter<'a, A, UP> {
+    type Item = Chunk<'a, A, UP>;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -494,22 +501,10 @@ impl<'a, A> Iterator for ChunkNextIter<'a, A> {
     }
 }
 
-impl<A> FusedIterator for ChunkNextIter<'_, A> {}
+impl<A, const UP: bool> FusedIterator for ChunkNextIter<'_, A, UP> {}
 
-impl<A> Debug for ChunkNextIter<'_, A> {
+impl<A, const UP: bool> Debug for ChunkNextIter<'_, A, UP> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_list().entries(self.map(Chunk::size)).finish()
     }
 }
-
-macro_rules! raw {
-    ($self:ident $($tt:tt)*) => {
-        if $self.is_upwards_allocating() {
-            $self.raw::<true>() $($tt)*
-        } else {
-            $self.raw::<false>() $($tt)*
-        }
-    };
-}
-
-pub(crate) use raw;
