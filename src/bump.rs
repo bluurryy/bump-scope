@@ -12,6 +12,7 @@ use crate::{
     alloc::AllocError,
     bump_common_methods,
     chunk_size::ChunkSize,
+    owned_slice::OwnedSlice,
     polyfill::{pointer, transmute_mut, transmute_ref},
     stats::{AnyStats, Stats},
     unallocated_chunk_header, BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior,
@@ -1368,6 +1369,42 @@ where
     #[inline(always)]
     pub fn try_alloc_default<T: Default>(&self) -> Result<BumpBox<T>, AllocError> {
         self.as_scope().try_alloc_default()
+    }
+
+    /// Allocate a slice and `Copy` elements from an existing slice.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let allocated = bump.alloc_slice_move([1, 2, 3]);
+    /// assert_eq!(allocated, [1, 2, 3]);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn alloc_slice_move<T>(&self, slice: impl OwnedSlice<Item = T>) -> BumpBox<[T]> {
+        self.as_scope().alloc_slice_move(slice)
+    }
+
+    /// Allocate a slice and `Copy` elements from an existing slice.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let allocated = bump.try_alloc_slice_move([1, 2, 3])?;
+    /// assert_eq!(allocated, [1, 2, 3]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_alloc_slice_move<T>(&self, slice: impl OwnedSlice<Item = T>) -> Result<BumpBox<[T]>, AllocError> {
+        self.as_scope().try_alloc_slice_move(slice)
     }
 
     /// Allocate a slice and `Copy` elements from an existing slice.
