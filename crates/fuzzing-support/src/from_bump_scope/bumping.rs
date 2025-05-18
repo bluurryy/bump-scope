@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
-//! Make sure you sync this file with `crates/fuzzing-support/src/from_bump_scope/bumping.rs`.
+#![allow(clippy::needless_pass_by_value)]
+//! Make sure you sync this file `src/bumping.rs`
+//! with `crates/fuzzing-support/src/from_bump_scope/bumping.rs`.
 //!
 //! This file intentionally doesn't import anything other than `core`
 //! to make it easy to fuzz (see above) and debug.
@@ -59,30 +61,80 @@ macro_rules! debug_assert_le {
     };
 }
 
-/// Arguments for the [`bump_up`], [`bump_down`], [`bump_prepare_up`] and [`bump_prepare_down`].
-///
-/// The fields `min_align`, `align_is_const`, `size_is_const`, `size_is_multiple_of_align` are expected to be constants.
-/// `bump_up` and `bump_down` are optimized for that case.
-///
-/// Choosing `false` for `align_is_const`, `size_is_const`, `size_is_multiple_of_align` is always valid.
+/// Arguments for [`bump_up`], [`bump_down`], [`bump_prepare_up`] and [`bump_prepare_down`].
 pub(crate) struct BumpProps {
+    /// The start of the remaining free allocation region.
+    ///
+    /// This must not be zero.
+    /// This must be less than or equal to [`end`](Self::end).
     pub(crate) start: usize,
+
+    /// The end of the remaining free allocation region.
+    ///
+    /// This must not be zero.
+    /// This must be greater or equal to [`start`](Self::start).
     pub(crate) end: usize,
-    pub(crate) layout: Layout,
+
+    /// The minimum alignment of the bump allocator.
+    ///
+    /// This must be less or equal to [`MIN_CHUNK_ALIGN`].
     pub(crate) min_align: usize,
+
+    /// The allocation layout.
+    pub(crate) layout: Layout,
+
+    /// Whether the allocation layout's alignment is known at compile time.
+    ///
+    /// This is an optimization hint. `false` is always valid.
     pub(crate) align_is_const: bool,
+
+    /// Whether the allocation layout's size is known at compile time.
+    ///
+    /// This is an optimization hint. `false` is always valid.
     pub(crate) size_is_const: bool,
+
+    /// Whether the allocation layout's size is a multiple of its alignment and that is known at compile time.
+    ///
+    /// This is an optimization hint. `false` is always valid.
+    ///
+    /// This must only be true if `layout.size() % layout.align()` is also true.
     pub(crate) size_is_multiple_of_align: bool,
 }
 
+impl BumpProps {
+    #[inline(always)]
+    fn debug_assert_valid(&self) {
+        debug_assert_ne!(self.start, 0);
+        debug_assert_ne!(self.end, 0);
+
+        debug_assert!(self.min_align.is_power_of_two());
+        debug_assert!(self.min_align <= MIN_CHUNK_ALIGN);
+
+        if self.size_is_multiple_of_align {
+            debug_assert_eq!(self.layout.size() % self.layout.align(), 0);
+        }
+
+        debug_assert_le!(self.start, self.end);
+    }
+}
+
+/// A successful upwards bump allocation. Returned from [`bump_up`].
 pub(crate) struct BumpUp {
+    /// The new position of the bump allocator (the next [`BumpProps::start`]).
     pub(crate) new_pos: usize,
+
+    /// The address of the allocation's pointer.
     pub(crate) ptr: usize,
 }
 
+/// Does upwards bump allocation.
+///
+/// - `end` must be a multiple of [`MIN_CHUNK_ALIGN`]
 #[inline(always)]
-pub(crate) fn bump_up(
-    BumpProps {
+pub(crate) fn bump_up(props: BumpProps) -> Option<BumpUp> {
+    props.debug_assert_valid();
+
+    let BumpProps {
         mut start,
         end,
         layout,
@@ -90,23 +142,12 @@ pub(crate) fn bump_up(
         align_is_const,
         size_is_const,
         size_is_multiple_of_align,
-    }: BumpProps,
-) -> Option<BumpUp> {
-    // Used for assertions only.
-    let original_start = start;
+    } = props;
 
-    debug_assert_ne!(start, 0);
-    debug_assert_ne!(end, 0);
-
-    debug_assert!(min_align.is_power_of_two());
-    debug_assert!(min_align <= MIN_CHUNK_ALIGN);
-
-    if size_is_multiple_of_align {
-        debug_assert_eq!(layout.size() % layout.align(), 0);
-    }
-
-    debug_assert!(start <= end);
     debug_assert_eq!(end % MIN_CHUNK_ALIGN, 0);
+
+    // Used for assertion at the end of the function.
+    let original_start = start;
 
     let mut new_pos;
 
@@ -154,7 +195,7 @@ pub(crate) fn bump_up(
 
         // Doesn't exceed `end` because `aligned_down + align + size` didn't.
         start = aligned_down + layout.align();
-    };
+    }
 
     if (align_is_const && size_is_multiple_of_align && layout.align() >= min_align)
         || (size_is_const && (layout.size() % min_align == 0))
@@ -180,9 +221,12 @@ pub(crate) fn bump_up(
     Some(BumpUp { new_pos, ptr: start })
 }
 
+/// Does downwards bump allocation.
 #[inline(always)]
-pub(crate) fn bump_down(
-    BumpProps {
+pub(crate) fn bump_down(props: BumpProps) -> Option<usize> {
+    props.debug_assert_valid();
+
+    let BumpProps {
         start,
         mut end,
         layout,
@@ -190,41 +234,27 @@ pub(crate) fn bump_down(
         align_is_const,
         size_is_const,
         size_is_multiple_of_align,
-    }: BumpProps,
-) -> Option<usize> {
+    } = props;
+
     // Used for assertions only.
     let original_end = end;
 
-    debug_assert_ne!(start, 0);
-    debug_assert_ne!(end, 0);
+    // The `needs_aligning` variables are meant to be computed at compile time.
+    let needs_aligning_for_min_align = {
+        let due_to_align = !size_is_multiple_of_align || !align_is_const || layout.align() < min_align;
+        let due_to_size = !size_is_const || (layout.size() % min_align != 0);
+        due_to_align || due_to_size
+    };
 
-    debug_assert!(min_align.is_power_of_two());
-    debug_assert!(min_align <= MIN_CHUNK_ALIGN);
-
-    if size_is_multiple_of_align {
-        debug_assert_eq!(layout.size() % layout.align(), 0);
-    }
-
-    debug_assert!(start <= end);
-
-    // These are expected to be evaluated at compile time.
-    let does_not_need_align_for_min_align_due_to_align =
-        size_is_multiple_of_align && align_is_const && layout.align() >= min_align;
-    let does_not_need_align_for_min_align_due_to_size = size_is_const && (layout.size() % min_align == 0);
-    let does_not_need_align_for_min_align =
-        does_not_need_align_for_min_align_due_to_align || does_not_need_align_for_min_align_due_to_size;
-
-    let does_not_need_align_for_layout = size_is_multiple_of_align && align_is_const && layout.align() <= min_align;
-
-    let does_not_need_align = does_not_need_align_for_min_align && does_not_need_align_for_layout;
-    let needs_align = !does_not_need_align;
+    let needs_aligning_for_layout = !size_is_multiple_of_align || !align_is_const || layout.align() > min_align;
+    let needs_aligning = needs_aligning_for_layout || needs_aligning_for_min_align;
 
     if size_is_const && layout.size() <= MIN_CHUNK_ALIGN {
         // When `size <= MIN_CHUNK_ALIGN` subtracting it from `end` can't overflow, as the lowest value for `end` would be `start` which is aligned to `MIN_CHUNK_ALIGN`,
         // thus its address can't be smaller than it.
         end -= layout.size();
 
-        if needs_align {
+        if needs_aligning {
             // At this point layout's align is const, because we assume `size_is_const` implies `align_is_const`.
             // That means `max` is evaluated at compile time, so we don't bother having different cases for either alignment.
             end = down_align(end, layout.align().max(min_align));
@@ -244,7 +274,7 @@ pub(crate) fn bump_down(
         // Doesn't overflow because of the check above.
         end -= layout.size();
 
-        if needs_align {
+        if needs_aligning {
             // Down aligning an address `>= range.start` with an alignment `<= MIN_CHUNK_ALIGN` (which `layout.align()` is)
             // can't exceed `range.start`, and thus also can't overflow.
             end = down_align(end, layout.align().max(min_align));
@@ -263,7 +293,7 @@ pub(crate) fn bump_down(
         if end < start {
             return None;
         }
-    };
+    }
 
     debug_assert_aligned!(end, layout.align());
     debug_assert_aligned!(end, min_align);
@@ -274,21 +304,26 @@ pub(crate) fn bump_down(
     Some(end)
 }
 
+/// Prepares a slice allocation by returning the start and end address for a maximally sized region
+/// where both start and end are aligned to `layout.align()`.
+///
+/// - `end` must be a multiple of [`MIN_CHUNK_ALIGN`]
 #[inline(always)]
-pub(crate) fn bump_prepare_up(
-    BumpProps {
+pub(crate) fn bump_prepare_up(props: BumpProps) -> Option<Range<usize>> {
+    props.debug_assert_valid();
+
+    let BumpProps {
         mut start,
         end,
         layout,
         min_align,
         align_is_const,
         size_is_const: _,
-        size_is_multiple_of_align: _,
-    }: BumpProps,
-) -> Option<Range<usize>> {
-    debug_assert!(layout.size() % layout.align() == 0);
-    debug_assert!(start <= end);
-    debug_assert!(end % MIN_CHUNK_ALIGN == 0);
+        size_is_multiple_of_align,
+    } = props;
+
+    debug_assert!(size_is_multiple_of_align);
+    debug_assert_eq!(end % MIN_CHUNK_ALIGN, 0);
 
     if align_is_const && layout.align() <= min_align {
         // Alignment is already sufficient.
@@ -330,20 +365,23 @@ pub(crate) fn bump_prepare_up(
     Some(start..end)
 }
 
+/// Prepares a slice allocation by returning the start and end address for a maximally sized region
+/// where both start and end are aligned to `layout.align()`.
 #[inline(always)]
-pub(crate) fn bump_prepare_down(
-    BumpProps {
+pub(crate) fn bump_prepare_down(props: BumpProps) -> Option<Range<usize>> {
+    props.debug_assert_valid();
+
+    let BumpProps {
         start,
         mut end,
         layout,
         min_align,
         align_is_const,
         size_is_const: _,
-        size_is_multiple_of_align: _,
-    }: BumpProps,
-) -> Option<Range<usize>> {
-    debug_assert!(layout.size() % layout.align() == 0);
-    debug_assert!(start <= end);
+        size_is_multiple_of_align,
+    } = props;
+
+    debug_assert!(size_is_multiple_of_align);
 
     if align_is_const && layout.align() <= min_align {
         // Alignment is already sufficient.
