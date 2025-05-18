@@ -132,7 +132,7 @@ where
     #[cfg_attr(feature = "nightly-tests", doc = "```")]
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # #![feature(pointer_is_aligned_to)]
-    /// # use bump_scope::{Bump, Stats};
+    /// # use bump_scope::Bump;
     /// let mut bump: Bump = Bump::new();
     ///
     /// // bump starts off by being aligned to 16

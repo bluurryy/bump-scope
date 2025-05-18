@@ -415,7 +415,9 @@ impl fmt::Debug for AnyChunkNextIter<'_> {
 
 #[test]
 fn check_from_impls() {
-    use crate::{BaseAllocator, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
+    #![allow(dead_code, clippy::needless_lifetimes, clippy::elidable_lifetime_names)]
+
+    use crate::{BaseAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
 
     fn accepting_any_stats(_: AnyStats) {}
     fn accepting_any_chunk(_: AnyChunk) {}
@@ -434,7 +436,4 @@ fn check_from_impls() {
         accepting_any_chunk_next_iter(stats.small_to_big().into());
         accepting_any_chunk_prev_iter(stats.big_to_small().into());
     }
-
-    let bump: Bump = Bump::new();
-    generic_bump(bump.as_scope());
 }
