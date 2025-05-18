@@ -46,7 +46,17 @@ jobs:
       - run: cargo clippy --tests --no-default-features
       - run: cargo clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03
       - run: cargo clippy --tests --benches --all-features
-  test:
+      - run: cd crates/test-hashbrown && cargo clippy
+      - run: cd crates/test-hashbrown && cargo clippy --all-features
+      - run: cd crates/tests-from-std && cargo clippy
+      - run: cd crates/test-fallibility && cargo clippy
+  test-stable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03
+  test-nightly:
     runs-on: ubuntu-latest
     env:
       MIRIFLAGS: "-Zmiri-strict-provenance"
@@ -57,19 +67,12 @@ jobs:
           components: miri
       - run: cargo test --all-features
       - run: cargo miri test --all-features
-      - run: cd crates/test-hashbrown; cargo test
-      - run: cd crates/test-hashbrown; cargo test --all-features
-      - run: cd crates/test-hashbrown; cargo miri test
-      - run: cd crates/test-hashbrown; cargo miri test --all-features
+      - run: cd crates/test-hashbrown && cargo test
+      - run: cd crates/test-hashbrown && cargo test --all-features
+      - run: cd crates/test-hashbrown && cargo miri test
+      - run: cd crates/test-hashbrown && cargo miri test --all-features
       - run: cd crates/tests-from-std && cargo test
       - run: cd crates/tests-from-std && cargo miri test
-  test-stable:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo clippy --tests --no-default-features
-      - run: cargo clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03
   minimal-versions:
     runs-on: ubuntu-latest
     steps:
