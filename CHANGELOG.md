@@ -9,7 +9,7 @@
 - **breaking:** the `zerocopy` feature has been renamed to `zerocopy-08`. All methods that this feature added are no longer inherent methods but are provided via extension traits from `bump_scope::zerocopy_08`.
 - **breaking:** removed deprecated methods `(try_)extend_from_array`
 - **breaking:** changed `bump_format!` implementation to not call `$bump.as_scope()` but use `$bump` as is. This is what `mut_bump_format!` and the `bump_vec` macros are already doing.
-- **breaking:** added `UP` generic parameter to `Stats`, `Chunk` and associated types
+- **breaking:** added `A` and `UP` generic parameters to `Stats`, `Chunk` and associated types
 - **breaking:** the `stats` method of `BumpAllocator`, strings and vectors return `AnyStats` now instead of `Stats`
 - **deprecated:** `FixedBumpVec::EMPTY`, use `FixedBumpVec::new()` instead
 - **deprecated:** `FixedBumpString::EMPTY`, use `FixedBumpString::new()` instead
