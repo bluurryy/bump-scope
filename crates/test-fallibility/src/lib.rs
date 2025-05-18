@@ -163,12 +163,16 @@ up_and_down! {
         bump.try_alloc_layout(layout)
     }
 
-    pub fn Bump_try_alloc_slice_clone<'a>(bump: &'a Bump, value: &[u32]) -> Result<BumpBox<'a, [u32]>> {
-        bump.try_alloc_slice_copy(value)
+    pub fn Bump_try_alloc_slice_move<'a>(bump: &'a Bump, value: &[u32]) -> Result<BumpBox<'a, [u32]>> {
+        bump.try_alloc_slice_move(value)
     }
 
     pub fn Bump_try_alloc_slice_copy<'a>(bump: &'a Bump, value: &[u32]) -> Result<BumpBox<'a, [u32]>> {
         bump.try_alloc_slice_copy(value)
+    }
+
+    pub fn Bump_try_alloc_slice_clone<'a>(bump: &'a Bump, value: &[u32]) -> Result<BumpBox<'a, [u32]>> {
+        bump.try_alloc_slice_clone(value)
     }
 
     pub fn Bump_try_alloc_slice_fill(bump: &Bump, len: usize, value: u32) -> Result<BumpBox<[u32]>> {

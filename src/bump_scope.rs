@@ -19,6 +19,7 @@ use crate::{
     chunk_size::ChunkSize,
     const_param_assert, down_align_usize,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
+    owned_slice::OwnedSlice,
     polyfill::{nonnull, pointer, transmute_mut, transmute_ref},
     stats::{AnyStats, Stats},
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
@@ -1071,6 +1072,74 @@ where
     #[inline(always)]
     pub(crate) fn generic_alloc_default<B: ErrorBehavior, T: Default>(&self) -> Result<BumpBox<'a, T>, B> {
         self.generic_alloc_with(Default::default)
+    }
+
+    /// Allocate a slice and move elements from an existing slice.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// // by value
+    /// let a = bump.alloc_slice_move([1, 2]);
+    /// let b = bump.alloc_slice_move(vec![3, 4]);
+    /// let c = bump.alloc_slice_move(bump.alloc_iter(5..=6));
+    ///
+    /// // by mutable reference
+    /// let mut other = vec![7, 8];
+    /// let d = bump.alloc_slice_move(&mut other);
+    /// assert!(other.is_empty());
+    ///
+    /// assert_eq!(a, [1, 2]);
+    /// assert_eq!(b, [3, 4]);
+    /// assert_eq!(c, [5, 6]);
+    /// assert_eq!(d, [7, 8]);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn alloc_slice_move<T>(&self, slice: impl OwnedSlice<Item = T>) -> BumpBox<'a, [T]> {
+        panic_on_error(self.generic_alloc_slice_move(slice))
+    }
+
+    /// Allocate a slice and move elements from an existing slice.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::try_new()?;
+    /// // by value
+    /// let a = bump.try_alloc_slice_move([1, 2])?;
+    /// let b = bump.try_alloc_slice_move(vec![3, 4])?;
+    /// let c = bump.try_alloc_slice_move(bump.alloc_iter(5..=6))?;
+    ///
+    /// // by mutable reference
+    /// let mut other = vec![7, 8];
+    /// let d = bump.try_alloc_slice_move(&mut other)?;
+    /// assert!(other.is_empty());
+    ///
+    /// assert_eq!(a, [1, 2]);
+    /// assert_eq!(b, [3, 4]);
+    /// assert_eq!(c, [5, 6]);
+    /// assert_eq!(d, [7, 8]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_alloc_slice_move<T>(&self, slice: impl OwnedSlice<Item = T>) -> Result<BumpBox<'a, [T]>, AllocError> {
+        self.generic_alloc_slice_move(slice)
+    }
+
+    #[inline(always)]
+    pub(crate) fn generic_alloc_slice_move<B: ErrorBehavior, T>(
+        &self,
+        slice: impl OwnedSlice<Item = T>,
+    ) -> Result<BumpBox<'a, [T]>, B> {
+        Ok(BumpVec::generic_from_owned_slice_in(slice, self)?.into_boxed_slice())
     }
 
     /// Allocate a slice and `Copy` elements from an existing slice.

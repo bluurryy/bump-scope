@@ -25,6 +25,7 @@
 - **added:** `{MutBumpVec, MutBumpVecRev}::from_iter_exact_in`
 - **added:** `as_non_null` to boxed str and string types
 - **added:** `AnyStats`, `AnyChunk` and associated types as type erased versions of their non-`Any*` variants
+- **added:** `Bump(Scope)::alloc_slice_move` to allocate `impl OwnedSlice`s (arrays, `Vec<T>`, `Box<[T]>` and so on)
 - **fixed:** `serde` compiles without `alloc` feature
 - **fixed:** `Stats` and `Chunk` not reporting accurate sizes and pointers if the base allocator is not zero sized
 
