@@ -2,7 +2,7 @@ use core::{fmt, iter::FusedIterator, marker::PhantomData, mem, ptr::NonNull};
 
 use crate::{polyfill::nonnull, ChunkHeader};
 
-use super::{Chunk, Stats};
+use super::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
 
 /// Provides statistics about the memory usage of the bump allocator.
 ///
@@ -352,6 +352,14 @@ pub struct AnyChunkPrevIter<'a> {
     pub chunk: Option<AnyChunk<'a>>,
 }
 
+impl<A, const UP: bool> From<ChunkPrevIter<'_, A, UP>> for AnyChunkPrevIter<'_> {
+    fn from(value: ChunkPrevIter<'_, A, UP>) -> Self {
+        Self {
+            chunk: value.chunk.map(Into::into),
+        }
+    }
+}
+
 impl<'a> Iterator for AnyChunkPrevIter<'a> {
     type Item = AnyChunk<'a>;
 
@@ -378,6 +386,14 @@ pub struct AnyChunkNextIter<'a> {
     pub chunk: Option<AnyChunk<'a>>,
 }
 
+impl<A, const UP: bool> From<ChunkNextIter<'_, A, UP>> for AnyChunkNextIter<'_> {
+    fn from(value: ChunkNextIter<'_, A, UP>) -> Self {
+        Self {
+            chunk: value.chunk.map(Into::into),
+        }
+    }
+}
+
 impl<'a> Iterator for AnyChunkNextIter<'a> {
     type Item = AnyChunk<'a>;
 
@@ -395,4 +411,30 @@ impl fmt::Debug for AnyChunkNextIter<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list().entries(self.map(AnyChunk::size)).finish()
     }
+}
+
+#[test]
+fn check_from_impls() {
+    use crate::{BaseAllocator, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
+
+    fn accepting_any_stats(_: AnyStats) {}
+    fn accepting_any_chunk(_: AnyChunk) {}
+    fn accepting_any_chunk_prev_iter(_: AnyChunkPrevIter) {}
+    fn accepting_any_chunk_next_iter(_: AnyChunkNextIter) {}
+
+    fn generic_bump<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
+        bump: &BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+    ) where
+        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    {
+        let stats = bump.stats();
+        accepting_any_stats(stats.into());
+        accepting_any_chunk(stats.not_guaranteed_allocated().current_chunk().unwrap().into());
+        accepting_any_chunk_next_iter(stats.small_to_big().into());
+        accepting_any_chunk_prev_iter(stats.big_to_small().into());
+    }
+
+    let bump: Bump = Bump::new();
+    generic_bump(bump.as_scope());
 }
