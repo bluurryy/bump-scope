@@ -1,7 +1,7 @@
 //! Contains types for inspecting memory usage in bump allocators.
 //!
 //! This module defines both generic types like [`Stats`] and type-erased counterparts prefixed
-//! with `Any*` (e.g., [`AnyStats`]). The generic types are slightly more efficient to use.
+//! with `Any*` (like [`AnyStats`]). The generic types are slightly more efficient to use.
 //! You can turn the generic types into their `Any*` variants using `from` and `into`.
 //!
 //! The `Any*` types are returned by the [`BumpAllocator`](crate::BumpAllocator) trait
