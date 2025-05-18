@@ -22,7 +22,7 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> From<Stats<'_, A, UP, 
 
 impl fmt::Debug for AnyStats<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.debug_format("Stats", f)
+        self.debug_format("AnyStats", f)
     }
 }
 

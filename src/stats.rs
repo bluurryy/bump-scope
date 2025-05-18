@@ -61,7 +61,7 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Eq for Stats<'_, A, UP
 
 impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Debug for Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.debug_format("Stats", f)
+        AnyStats::from(*self).debug_format("Stats", f)
     }
 }
 
@@ -169,13 +169,6 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
         }
 
         ChunkPrevIter { chunk: Some(start) }
-    }
-
-    pub(crate) fn debug_format(self, name: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct(name)
-            .field("allocated", &self.allocated())
-            .field("capacity", &self.capacity())
-            .finish()
     }
 
     #[inline]

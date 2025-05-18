@@ -13,7 +13,7 @@ use crate::{
     bump_common_methods,
     chunk_size::ChunkSize,
     polyfill::{pointer, transmute_mut, transmute_ref},
-    stats::Stats,
+    stats::{AnyStats, Stats},
     unallocated_chunk_header, BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior,
     FixedBumpString, FixedBumpVec, MinimumAlignment, RawChunk, SupportedMinimumAlignment,
 };
@@ -245,7 +245,7 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.stats().debug_format("Bump", f)
+        AnyStats::from(self.stats()).debug_format("Bump", f)
     }
 }
 

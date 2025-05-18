@@ -1,8 +1,10 @@
 use core::{fmt::Debug, marker::PhantomData, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    chunk_header::ChunkHeader, polyfill::nonnull, stats::Stats, BaseAllocator, Bump, BumpScope, MinimumAlignment, RawChunk,
-    SupportedMinimumAlignment,
+    chunk_header::ChunkHeader,
+    polyfill::nonnull,
+    stats::{AnyStats, Stats},
+    BaseAllocator, Bump, BumpScope, MinimumAlignment, RawChunk, SupportedMinimumAlignment,
 };
 
 /// This is returned from [`checkpoint`](Bump::checkpoint) and used for [`reset_to`](Bump::reset_to).
@@ -42,7 +44,7 @@ where
     A: BaseAllocator,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.stats().debug_format("BumpScopeGuard", f)
+        AnyStats::from(self.stats()).debug_format("BumpScopeGuard", f)
     }
 }
 
@@ -130,7 +132,7 @@ where
     A: BaseAllocator,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.stats().debug_format("BumpScopeGuardRoot", f)
+        AnyStats::from(self.stats()).debug_format("BumpScopeGuardRoot", f)
     }
 }
 

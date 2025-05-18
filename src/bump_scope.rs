@@ -20,7 +20,7 @@ use crate::{
     const_param_assert, down_align_usize,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::{nonnull, pointer, transmute_mut, transmute_ref},
-    stats::Stats,
+    stats::{AnyStats, Stats},
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
     FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk,
     SizedTypeProperties, SupportedMinimumAlignment,
@@ -93,7 +93,7 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.stats().debug_format("BumpScope", f)
+        AnyStats::from(self.stats()).debug_format("BumpScope", f)
     }
 }
 
