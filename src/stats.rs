@@ -1,3 +1,12 @@
+//! Contains types for inspecting memory usage in bump allocators.
+//!
+//! This module defines both generic types like [`Stats`] and type-erased counterparts prefixed
+//! with `Any*` (e.g., [`AnyStats`]). The generic types are slightly more efficient to use.
+//! You can turn the generic types into their `Any*` variants using `from` and `into`.
+//!
+//! The `Any*` types are returned by the [`BumpAllocator`](crate::BumpAllocator) trait
+//! and the `allocator_stats` method of collections whereas `Stats` is returned from [`Bump`](crate::Bump) and [`BumpScope`](crate::BumpScope).
+
 use core::{
     fmt::{self, Debug},
     iter::FusedIterator,
@@ -19,7 +28,7 @@ macro_rules! declaration {
     ($($allocator_parameter:tt)*) => {
         /// Provides statistics about the memory usage of the bump allocator.
         ///
-        /// This is returned from the `stats` method of `Bump`, `BumpScope`, `BumpScopeGuard`, `BumpVec`, ...
+        /// This is returned from the `stats` method of [`Bump`](crate::Bump) and [`BumpScope`](crate::BumpScope).
         pub struct Stats<
             'a,
             $($allocator_parameter)*,

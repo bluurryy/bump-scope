@@ -333,7 +333,6 @@ mod raw_fixed_bump_string;
 mod raw_fixed_bump_vec;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
-/// Types that provide statistics about the memory usage of the bump allocator.
 pub mod stats;
 mod without_dealloc;
 

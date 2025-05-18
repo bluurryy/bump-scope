@@ -154,7 +154,7 @@ impl<'a> From<AnyChunk<'a>> for AnyStats<'a> {
 
 /// Refers to a chunk of memory that was allocated by the bump allocator.
 ///
-/// See [`Stats`].
+/// See [`AnyStats`].
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct AnyChunk<'a> {
     header: NonNull<ChunkHeader>,
@@ -345,7 +345,7 @@ impl<'a> AnyChunk<'a> {
     }
 }
 
-/// Iterator that iterates over previous chunks by continuously calling [`Chunk::prev`].
+/// Iterator that iterates over previous chunks by continuously calling [`AnyChunk::prev`].
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub struct AnyChunkPrevIter<'a> {
     #[allow(missing_docs)]
@@ -371,7 +371,7 @@ impl fmt::Debug for AnyChunkPrevIter<'_> {
     }
 }
 
-/// Iterator that iterates over next chunks by continuously calling [`Chunk::next`].
+/// Iterator that iterates over next chunks by continuously calling [`AnyChunk::next`].
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub struct AnyChunkNextIter<'a> {
     #[allow(missing_docs)]
