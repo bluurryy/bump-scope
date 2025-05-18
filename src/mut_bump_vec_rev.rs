@@ -19,7 +19,7 @@ use crate::{
     mut_collection_method_allocator_stats,
     owned_slice::{OwnedSlice, TakeOwnedSlice},
     polyfill::{self, nonnull, pointer},
-    BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SetLenOnDrop, SizedTypeProperties, Stats,
+    BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SetLenOnDrop, SizedTypeProperties,
 };
 
 #[cfg(feature = "panic-on-alloc")]

@@ -16,7 +16,7 @@ use crate::{
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     polyfill::{nonnull, pointer, slice},
     raw_fixed_bump_vec::RawFixedBumpVec,
-    BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SizedTypeProperties, Stats,
+    BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SizedTypeProperties,
 };
 
 #[cfg(feature = "panic-on-alloc")]

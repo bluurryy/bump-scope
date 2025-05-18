@@ -14,7 +14,7 @@ use crate::{
     mut_collection_method_allocator_stats, owned_str,
     polyfill::{self, transmute_mut, transmute_value},
     raw_fixed_bump_string::RawFixedBumpString,
-    BumpBox, ErrorBehavior, FromUtf16Error, FromUtf8Error, MutBumpAllocator, MutBumpAllocatorScope, MutBumpVec, Stats,
+    BumpBox, ErrorBehavior, FromUtf16Error, FromUtf8Error, MutBumpAllocator, MutBumpAllocatorScope, MutBumpVec,
 };
 
 #[cfg(feature = "panic-on-alloc")]

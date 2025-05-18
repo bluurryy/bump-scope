@@ -20,9 +20,10 @@ use crate::{
     const_param_assert, down_align_usize,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::{nonnull, pointer, transmute_mut, transmute_ref},
+    stats::{AnyStats, Stats},
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
     FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk,
-    SizedTypeProperties, Stats, SupportedMinimumAlignment,
+    SizedTypeProperties, SupportedMinimumAlignment,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -92,7 +93,7 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.stats().debug_format("BumpScope", f)
+        AnyStats::from(self.stats()).debug_format("BumpScope", f)
     }
 }
 
@@ -131,7 +132,7 @@ where
     #[cfg_attr(feature = "nightly-tests", doc = "```")]
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # #![feature(pointer_is_aligned_to)]
-    /// # use bump_scope::{Bump, Stats};
+    /// # use bump_scope::Bump;
     /// let mut bump: Bump = Bump::new();
     ///
     /// // bump starts off by being aligned to 16
@@ -340,8 +341,7 @@ where
     #[inline]
     pub unsafe fn reset_to(&self, checkpoint: Checkpoint) {
         debug_assert!(self.stats().big_to_small().any(|chunk| {
-            chunk.header == checkpoint.chunk.cast()
-                && crate::stats::raw!(chunk.contains_addr_or_end(checkpoint.address.get()))
+            chunk.header == checkpoint.chunk.cast() && chunk.contains_addr_or_end(checkpoint.address.get())
         }));
 
         checkpoint.reset_within_chunk();

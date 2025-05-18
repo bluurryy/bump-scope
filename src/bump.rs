@@ -13,8 +13,9 @@ use crate::{
     bump_common_methods,
     chunk_size::ChunkSize,
     polyfill::{pointer, transmute_mut, transmute_ref},
+    stats::{AnyStats, Stats},
     unallocated_chunk_header, BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior,
-    FixedBumpString, FixedBumpVec, MinimumAlignment, RawChunk, Stats, SupportedMinimumAlignment,
+    FixedBumpString, FixedBumpVec, MinimumAlignment, RawChunk, SupportedMinimumAlignment,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -244,7 +245,7 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.stats().debug_format("Bump", f)
+        AnyStats::from(self.stats()).debug_format("Bump", f)
     }
 }
 
@@ -491,7 +492,7 @@ where
     #[cfg_attr(feature = "nightly-tests", doc = "```")]
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # #![feature(pointer_is_aligned_to)]
-    /// # use bump_scope::{Bump, Stats};
+    /// # use bump_scope::Bump;
     /// let mut bump: Bump = Bump::new();
     ///
     /// // bump starts off by being aligned to 16

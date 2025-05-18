@@ -9,6 +9,9 @@
 - **breaking:** the `zerocopy` feature has been renamed to `zerocopy-08`. All methods that this feature added are no longer inherent methods but are provided via extension traits from `bump_scope::zerocopy_08`.
 - **breaking:** removed deprecated methods `(try_)extend_from_array`
 - **breaking:** changed `bump_format!` implementation to not call `$bump.as_scope()` but use `$bump` as is. This is what `mut_bump_format!` and the `bump_vec` macros are already doing.
+- **breaking:** added `A` and `UP` generic parameters to `Stats`, `Chunk` and associated types
+- **breaking:** the `stats` method of `BumpAllocator`, strings and vectors return `AnyStats` now instead of `Stats`
+- **breaking:** `Stats` is no longer re-exported at the crate level, you can import it from `bump_scope::stats::Stats`
 - **deprecated:** `FixedBumpVec::EMPTY`, use `FixedBumpVec::new()` instead
 - **deprecated:** `FixedBumpString::EMPTY`, use `FixedBumpString::new()` instead
 - **deprecated:** `alloc_fixed_vec`, use `FixedBumpVec::with_capacity_in` instead
@@ -21,12 +24,16 @@
 - **added:** `{BumpVec, MutBumpVec, MutBumpVecRev}::from_owned_slice_in`
 - **added:** `{MutBumpVec, MutBumpVecRev}::from_iter_exact_in`
 - **added:** `as_non_null` to boxed str and string types
-- **fix:** `serde` to compile without `alloc` feature
+- **added:** `AnyStats`, `AnyChunk` and associated types as type erased versions of their non-`Any*` variants
+- **fixed:** `serde` compiles without `alloc` feature
+- **fixed:** `Stats` and `Chunk` not reporting accurate sizes and pointers if the base allocator is not zero sized
 
 ### Migration Guide
 - If you are bump allocating `hashbrown` types you have to enable the `allocator-api2-02` feature unless you are using `hashbrown`'s `nightly` feature then you only need the `nightly-allocator-api` feature.
 - If you are using the methods `alloc_zeroed(_slice)`, `init_zeroed`, `resize_zeroed` or `extend_zeroed` you now have to enable the `zerocopy-08` feature (instead of `zerocopy`) and import the respective extension traits from `bump_scope::zerocopy_08`.
 - If you were using a custom base allocator you now have to make it implement this crate's `Allocator` trait. You can safely do that using a wrapper type from the `bump_scope::alloc::compat` module.
+- Uses of `bump_format!(in bump, ...` where `bump` is not a reference now have to write `bump_format!(in &bump, ...` for the same behavior
+- There are other less impactful breaking changes that you might encounter. You can read about them above.
 
 ## 0.16.5 (2025-05-09)
 - **added:** `pop_if` method to vector types
