@@ -357,6 +357,44 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
         unsafe { BumpBox::into_raw(boxed).as_mut() }
     }
 
+    /// Returns a `NonNull` pointer to the `BumpBox`'s contents.
+    ///
+    /// The caller must ensure that the `BumpBox` outlives the pointer this
+    /// function returns, or else it will end up dangling.
+    ///
+    /// This method guarantees that for the purpose of the aliasing model, this method
+    /// does not materialize a reference to the underlying memory, and thus the returned pointer
+    /// will remain valid when mixed with other calls to [`as_raw`] and [`into_raw`].
+    /// Note that calling other methods that materialize references to the memory
+    /// may still invalidate this pointer.
+    /// See the example below for how this guarantee can be used.
+    ///
+    /// # Examples
+    ///
+    /// Due to the aliasing guarantee, the following code is legal:
+    ///
+    /// ```rust
+    /// # use bump_scope::{Bump, BumpBox};
+    /// # let bump: Bump = Bump::new();
+    ///
+    /// unsafe {
+    ///     let b = bump.alloc(0);
+    ///     let ptr1 = BumpBox::as_raw(&b);
+    ///     ptr1.write(1);
+    ///     let ptr2 = BumpBox::as_raw(&b);
+    ///     ptr2.write(2);
+    ///     // Notably, the write to `ptr2` did *not* invalidate `ptr1`:
+    ///     ptr1.write(3);
+    /// }
+    /// ```
+    ///
+    /// [`as_raw`]: Self::as_raw
+    /// [`into_raw`]: Self::into_raw
+    #[inline]
+    pub const fn as_raw(b: &Self) -> NonNull<T> {
+        b.ptr
+    }
+
     /// Consumes the `BumpBox`, returning a wrapped raw pointer.
     ///
     /// The pointer will be properly aligned and non-null. It is only valid for the lifetime `'a`.
