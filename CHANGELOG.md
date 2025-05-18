@@ -9,6 +9,8 @@
 - **breaking:** the `zerocopy` feature has been renamed to `zerocopy-08`. All methods that this feature added are no longer inherent methods but are provided via extension traits from `bump_scope::zerocopy_08`.
 - **breaking:** removed deprecated methods `(try_)extend_from_array`
 - **breaking:** changed `bump_format!` implementation to not call `$bump.as_scope()` but use `$bump` as is. This is what `mut_bump_format!` and the `bump_vec` macros are already doing.
+- **breaking:** added `UP` generic parameter to `Stats`, `Chunk` and associated types
+- **breaking:** the `stats` method of `BumpAllocator`, strings and vectors return `AnyStats` now instead of `Stats`
 - **deprecated:** `FixedBumpVec::EMPTY`, use `FixedBumpVec::new()` instead
 - **deprecated:** `FixedBumpString::EMPTY`, use `FixedBumpString::new()` instead
 - **deprecated:** `alloc_fixed_vec`, use `FixedBumpVec::with_capacity_in` instead
@@ -21,7 +23,9 @@
 - **added:** `{BumpVec, MutBumpVec, MutBumpVecRev}::from_owned_slice_in`
 - **added:** `{MutBumpVec, MutBumpVecRev}::from_iter_exact_in`
 - **added:** `as_non_null` to boxed str and string types
-- **fix:** `serde` to compile without `alloc` feature
+- **added:** `AnyStats`, `AnyChunk` and associated types as type erased versions of their non-`Any*` variants
+- **fixed:** `serde` compiles without `alloc` feature
+- **fixed:** `Stats` and `Chunk` not reporting accurate sizes and pointers if the base allocator is not zero sized
 
 ### Migration Guide
 - If you are bump allocating `hashbrown` types you have to enable the `allocator-api2-02` feature unless you are using `hashbrown`'s `nightly` feature then you only need the `nightly-allocator-api` feature.
