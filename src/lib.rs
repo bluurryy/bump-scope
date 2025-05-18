@@ -589,7 +589,7 @@ macro_rules! bump_common_methods {
                 /// Returns a type which provides statistics about the memory usage of the bump allocator.
                 #[must_use]
                 #[inline(always)]
-                pub fn stats(&self) -> Stats<'a, GUARANTEED_ALLOCATED> {
+                pub fn stats(&self) -> Stats<'a, A, GUARANTEED_ALLOCATED> {
                     let header = self.chunk.get().header_ptr().cast();
                     unsafe { Stats::from_header_unchecked(header) }
                 }
@@ -597,7 +597,7 @@ macro_rules! bump_common_methods {
                 /// Returns a type which provides statistics about the memory usage of the bump allocator.
                 #[must_use]
                 #[inline(always)]
-                pub fn stats(&self) -> Stats<GUARANTEED_ALLOCATED> {
+                pub fn stats(&self) -> Stats<A, GUARANTEED_ALLOCATED> {
                     let header = self.chunk.get().header_ptr().cast();
                     unsafe { Stats::from_header_unchecked(header) }
                 }
@@ -697,7 +697,7 @@ macro_rules! collection_method_allocator_stats {
         /// This merely exists for api parity with `Mut*` collections which can't have a `allocator` method.
         #[must_use]
         #[inline(always)]
-        pub fn allocator_stats(&self) -> Stats {
+        pub fn allocator_stats(&self) -> $crate::stats::AnyStats {
             self.allocator.stats()
         }
     };
@@ -712,7 +712,7 @@ macro_rules! mut_collection_method_allocator_stats {
         /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
         #[must_use]
         #[inline(always)]
-        pub fn allocator_stats(&self) -> Stats {
+        pub fn allocator_stats(&self) -> $crate::stats::AnyStats {
             self.allocator.stats()
         }
     };

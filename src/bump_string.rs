@@ -17,7 +17,6 @@ use crate::{
     owned_str,
     polyfill::{self, transmute_mut, transmute_value},
     raw_fixed_bump_string::RawFixedBumpString,
-    stats::Stats,
     BumpAllocator, BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, FixedBumpString, FromUtf16Error, FromUtf8Error,
 };
 

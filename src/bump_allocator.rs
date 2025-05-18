@@ -4,7 +4,8 @@ use crate::{
     alloc::{AllocError, Allocator},
     bump_down,
     polyfill::nonnull,
-    up_align_usize_unchecked, BaseAllocator, Bump, BumpScope, MinimumAlignment, SizedTypeProperties, Stats,
+    stats::AnyStats,
+    up_align_usize_unchecked, BaseAllocator, Bump, BumpScope, MinimumAlignment, SizedTypeProperties,
     SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 
@@ -41,8 +42,8 @@ use crate::{handle_alloc_error, panic_on_error};
 #[allow(clippy::missing_errors_doc)]
 pub unsafe trait BumpAllocator: Allocator {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
-    fn stats(&self) -> Stats<'_> {
-        Stats::unallocated()
+    fn stats(&self) -> AnyStats<'_> {
+        AnyStats::default()
     }
 
     /// A specialized version of [`allocate`](Allocator::allocate).
@@ -169,7 +170,7 @@ pub unsafe trait BumpAllocator: Allocator {
 
 unsafe impl<A: BumpAllocator> BumpAllocator for &A {
     #[inline(always)]
-    fn stats(&self) -> Stats<'_> {
+    fn stats(&self) -> AnyStats<'_> {
         A::stats(self)
     }
 
@@ -226,7 +227,7 @@ unsafe impl<A: BumpAllocator> BumpAllocator for &A {
 
 unsafe impl<A: BumpAllocator> BumpAllocator for WithoutDealloc<A> {
     #[inline(always)]
-    fn stats(&self) -> Stats<'_> {
+    fn stats(&self) -> AnyStats<'_> {
         A::stats(&self.0)
     }
 
@@ -283,7 +284,7 @@ unsafe impl<A: BumpAllocator> BumpAllocator for WithoutDealloc<A> {
 
 unsafe impl<A: BumpAllocator> BumpAllocator for WithoutShrink<A> {
     #[inline(always)]
-    fn stats(&self) -> Stats<'_> {
+    fn stats(&self) -> AnyStats<'_> {
         A::stats(&self.0)
     }
 
@@ -345,8 +346,8 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
-    fn stats(&self) -> Stats<'_> {
-        BumpScope::stats(self).not_guaranteed_allocated()
+    fn stats(&self) -> AnyStats<'_> {
+        BumpScope::stats(self).into()
     }
 
     #[inline(always)]
@@ -452,8 +453,8 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
-    fn stats(&self) -> Stats<'_> {
-        Bump::stats(self).not_guaranteed_allocated()
+    fn stats(&self) -> AnyStats<'_> {
+        Bump::stats(self).into()
     }
 
     #[inline(always)]
@@ -517,8 +518,8 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
-    fn stats(&self) -> Stats<'_> {
-        BumpScope::stats(self).not_guaranteed_allocated()
+    fn stats(&self) -> AnyStats<'_> {
+        BumpScope::stats(self).into()
     }
 
     #[inline(always)]
@@ -579,8 +580,8 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
-    fn stats(&self) -> Stats<'_> {
-        Bump::stats(self).not_guaranteed_allocated()
+    fn stats(&self) -> AnyStats<'_> {
+        Bump::stats(self).into()
     }
 
     #[inline(always)]
