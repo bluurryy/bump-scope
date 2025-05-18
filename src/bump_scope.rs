@@ -12,7 +12,7 @@ use core::{
 };
 
 use crate::{
-    alloc::AllocError,
+    alloc::{AllocError, Allocator},
     bump_align_guard::BumpAlignGuard,
     bump_common_methods,
     bumping::{bump_down, bump_up, BumpUp},
@@ -2443,6 +2443,30 @@ where
         match self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, CustomLayout(layout)) {
             Some(ptr) => Ok(ptr),
             None => self.alloc_in_another_chunk(layout),
+        }
+    }
+
+    /// Drops an allocated value and attempts to free its memory.
+    ///
+    /// The memory can only be freed if this is the last allocation.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let boxed = bump.alloc(3i32);
+    /// assert_eq!(bump.stats().allocated(), 4);
+    /// bump.dealloc(boxed);
+    /// assert_eq!(bump.stats().allocated(), 0);
+    /// ```
+    #[inline(always)]
+    pub fn dealloc<T: ?Sized>(&self, boxed: BumpBox<T>) {
+        let layout = Layout::for_value::<T>(&boxed);
+        let ptr = boxed.into_raw();
+
+        unsafe {
+            nonnull::drop_in_place(ptr);
+            self.deallocate(ptr.cast(), layout);
         }
     }
 

@@ -12,6 +12,7 @@
 - **breaking:** added `A` and `UP` generic parameters to `Stats`, `Chunk` and associated types
 - **breaking:** the `stats` method of `BumpAllocator`, strings and vectors return `AnyStats` now instead of `Stats`
 - **breaking:** `Stats` is no longer re-exported at the crate level, you can import it from `bump_scope::stats::Stats`
+- **breaking:** removed `BumpBox::deallocate_in`, use `Bump(Scope)::dealloc` instead
 - **deprecated:** `FixedBumpVec::EMPTY`, use `FixedBumpVec::new()` instead
 - **deprecated:** `FixedBumpString::EMPTY`, use `FixedBumpString::new()` instead
 - **deprecated:** `alloc_fixed_vec`, use `FixedBumpVec::with_capacity_in` instead

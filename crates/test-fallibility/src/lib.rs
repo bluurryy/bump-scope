@@ -163,7 +163,7 @@ up_and_down! {
         bump.try_alloc_layout(layout)
     }
 
-    pub fn Bump_try_alloc_slice_move<'a>(bump: &'a Bump, value: &[u32]) -> Result<BumpBox<'a, [u32]>> {
+    pub fn Bump_try_alloc_slice_move<'a>(bump: &'a Bump, value: [u32; 4]) -> Result<BumpBox<'a, [u32]>> {
         bump.try_alloc_slice_move(value)
     }
 
