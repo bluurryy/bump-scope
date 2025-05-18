@@ -4,7 +4,7 @@ use crate::{
     alloc::{AllocError, Allocator},
     bumping::{bump_down, bump_prepare_down, bump_prepare_up, bump_up, BumpProps, BumpUp},
     down_align_usize,
-    layout::LayoutProps,
+    layout::{ArrayLayout, LayoutProps},
     polyfill::{const_unwrap, nonnull, pointer},
     unallocated_chunk_header, up_align_usize_unchecked, ChunkHeader, ChunkSize, ErrorBehavior, MinimumAlignment,
     SupportedMinimumAlignment, CHUNK_ALIGN_MIN,
@@ -263,10 +263,9 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// [`MutBumpVec`]: crate::MutBumpVec
     /// [`into_slice`]: crate::MutBumpVec::into_slice
     #[inline(always)]
-    pub(crate) fn prepare_allocation_range<M, L>(self, minimum_alignment: M, layout: L) -> Option<Range<NonNull<u8>>>
+    pub(crate) fn prepare_allocation_range<M>(self, minimum_alignment: M, layout: ArrayLayout) -> Option<Range<NonNull<u8>>>
     where
         M: SupportedMinimumAlignment,
-        L: LayoutProps,
     {
         debug_assert_ne!(layout.size(), 0);
         let props = self.bump_props(minimum_alignment, layout);

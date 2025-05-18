@@ -18,7 +18,7 @@ use crate::{
     bumping::{bump_down, bump_up, BumpUp},
     chunk_size::ChunkSize,
     const_param_assert, down_align_usize,
-    layout::{ArrayLayout, CustomLayout, SizedLayout},
+    layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::{nonnull, pointer, transmute_mut, transmute_ref},
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
     FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk,
@@ -469,11 +469,11 @@ where
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        let layout = Layout::new::<T>();
+        let layout = CustomLayout(Layout::new::<T>());
 
         unsafe {
             self.in_another_chunk(layout, |chunk, layout| {
-                chunk.prepare_allocation(MinimumAlignment::<MIN_ALIGN>, CustomLayout(layout))
+                chunk.prepare_allocation(MinimumAlignment::<MIN_ALIGN>, layout)
             })
         }
     }
@@ -521,7 +521,7 @@ where
             .prepare_allocation_range(MinimumAlignment::<MIN_ALIGN>, layout)
         {
             Some(ptr) => ptr,
-            None => self.prepare_allocation_range_in_another_chunk(*layout)?,
+            None => self.prepare_allocation_range_in_another_chunk(layout)?,
         };
 
         Ok(range.start.cast::<T>()..range.end.cast::<T>())
@@ -531,11 +531,11 @@ where
     #[inline(never)]
     pub(crate) fn prepare_allocation_range_in_another_chunk<E: ErrorBehavior>(
         &self,
-        layout: Layout,
+        layout: ArrayLayout,
     ) -> Result<Range<NonNull<u8>>, E> {
         unsafe {
             self.in_another_chunk(layout, |chunk, layout| {
-                chunk.prepare_allocation_range(MinimumAlignment::<MIN_ALIGN>, CustomLayout(layout))
+                chunk.prepare_allocation_range(MinimumAlignment::<MIN_ALIGN>, layout)
             })
         }
     }
@@ -551,8 +551,8 @@ where
     #[inline(never)]
     pub(crate) fn alloc_in_another_chunk<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
         unsafe {
-            self.in_another_chunk(layout, |chunk, layout| {
-                chunk.alloc(MinimumAlignment::<MIN_ALIGN>, CustomLayout(layout))
+            self.in_another_chunk(CustomLayout(layout), |chunk, layout| {
+                chunk.alloc(MinimumAlignment::<MIN_ALIGN>, layout)
             })
         }
     }
@@ -641,10 +641,10 @@ where
     ///
     /// `f` on the new chunk created by `RawChunk::append_for` with the layout `layout` must return `Some`.
     #[inline(always)]
-    pub(crate) unsafe fn in_another_chunk<B: ErrorBehavior, R>(
+    pub(crate) unsafe fn in_another_chunk<B: ErrorBehavior, R, L: LayoutProps>(
         &self,
-        layout: Layout,
-        mut f: impl FnMut(RawChunk<UP, A>, Layout) -> Option<R>,
+        layout: L,
+        mut f: impl FnMut(RawChunk<UP, A>, L) -> Option<R>,
     ) -> Result<R, B> {
         let new_chunk = if self.is_unallocated() {
             // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
@@ -652,7 +652,7 @@ where
             let allocator = A::default_or_panic();
 
             RawChunk::new_in(
-                ChunkSize::for_capacity(layout).ok_or_else(B::capacity_overflow)?,
+                ChunkSize::for_capacity(*layout).ok_or_else(B::capacity_overflow)?,
                 None,
                 allocator,
             )
@@ -669,7 +669,7 @@ where
             }
 
             // there is no chunk that fits, we need a new chunk
-            self.chunk.get().append_for(layout)
+            self.chunk.get().append_for(*layout)
         }?;
 
         self.chunk.set(new_chunk);
