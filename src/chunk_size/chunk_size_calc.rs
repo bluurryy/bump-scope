@@ -1,0 +1,154 @@
+use core::alloc::Layout;
+
+use crate::tests::either_way;
+
+const ASSUMED_PAGE_SIZE: usize = 0x1000;
+
+#[derive(Clone, Copy)]
+pub struct ChunkSizeConfig {
+    pub up: bool,
+    pub assumed_malloc_overhead_layout: Layout,
+    pub chunk_header_layout: Layout,
+}
+
+macro_rules! attempt {
+    ($expr:expr) => {
+        match $expr {
+            Some(some) => some,
+            None => return None,
+        }
+    };
+}
+
+impl ChunkSizeConfig {
+    #[inline(always)]
+    pub const fn calculate_for_size_hint(self, size_hint: usize) -> Option<usize> {
+        let Self {
+            assumed_malloc_overhead_layout,
+            chunk_header_layout,
+            ..
+        } = self;
+
+        let min = {
+            let mut offset = 0;
+            offset = attempt!(offset_add_layout(offset, assumed_malloc_overhead_layout));
+            offset = attempt!(offset_add_layout(offset, chunk_header_layout));
+            offset
+        };
+
+        let size_step = max(ASSUMED_PAGE_SIZE, chunk_header_layout.align());
+        let size_hint = max(size_hint, min);
+
+        let size = attempt!(if size_hint < size_step {
+            // the name is misleading, this will return `size` if it is already a power of two
+            size_hint.checked_next_power_of_two()
+        } else {
+            up_align(size_hint, size_step)
+        });
+
+        let size_for_layout = size - assumed_malloc_overhead_layout.size();
+        let align_for_layout = chunk_header_layout.align();
+
+        // lets make sure we can create a layout from this size
+        // so later on we can create a layout without checking
+        if Layout::from_size_align(size_for_layout, align_for_layout).is_err() {
+            return None;
+        }
+
+        assert!(size % chunk_header_layout.align() == 0);
+        assert!(size >= min);
+
+        assert!(if size < size_step {
+            size.is_power_of_two()
+        } else {
+            size % size_step == 0
+        });
+
+        Some(size)
+    }
+
+    #[inline(always)]
+    pub const fn calculate_for_capacity(self, layout: Layout) -> Option<usize> {
+        let Self { chunk_header_layout, .. } = self;
+
+        let maximum_required_padding = layout.align().saturating_sub(chunk_header_layout.align());
+        let required_size = attempt!(layout.size().checked_add(maximum_required_padding));
+        self.calculate_for_capacity_bytes(required_size)
+    }
+
+    #[inline(always)]
+    pub const fn calculate_for_capacity_bytes(self, bytes: usize) -> Option<usize> {
+        let Self {
+            up,
+            assumed_malloc_overhead_layout,
+            chunk_header_layout,
+            ..
+        } = self;
+
+        let mut size = 0;
+
+        if up {
+            size = attempt!(offset_add_layout(size, assumed_malloc_overhead_layout));
+            size = attempt!(offset_add_layout(size, chunk_header_layout));
+            size = attempt!(size.checked_add(bytes));
+        } else {
+            size = attempt!(offset_add_layout(size, assumed_malloc_overhead_layout));
+            size = attempt!(size.checked_add(bytes));
+            size = attempt!(offset_add_layout(size, chunk_header_layout));
+        }
+
+        self.calculate_for_size_hint(size)
+    }
+}
+
+const fn max(lhs: usize, rhs: usize) -> usize {
+    if lhs > rhs {
+        lhs
+    } else {
+        rhs
+    }
+}
+
+const fn offset_add_layout(mut offset: usize, layout: Layout) -> Option<usize> {
+    offset = match up_align(offset, layout.align()) {
+        Some(some) => some,
+        None => return None,
+    };
+
+    offset = match offset.checked_add(layout.size()) {
+        Some(some) => some,
+        None => return None,
+    };
+
+    Some(offset)
+}
+
+#[inline(always)]
+const fn up_align(addr: usize, align: usize) -> Option<usize> {
+    debug_assert!(align.is_power_of_two());
+    let mask = align - 1;
+
+    let addr_plus_mask = match addr.checked_add(mask) {
+        Some(some) => some,
+        None => return None,
+    };
+
+    let aligned = addr_plus_mask & !mask;
+    Some(aligned)
+}
+
+either_way! {
+    debug
+}
+
+fn debug<const UP: bool>() {
+    use super::ChunkSize;
+
+    type Size = ChunkSize<true, ()>;
+
+    for i in 0..5000 {
+        let old = Size::new(i).unwrap().0.get();
+        let new = Size::CONFIG.calculate_for_size_hint(i).unwrap();
+        assert_eq!(old, new);
+    }
+}

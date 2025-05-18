@@ -6,11 +6,15 @@ use core::{
     num::NonZeroUsize,
 };
 
+use chunk_size_calc::ChunkSizeConfig;
+
 use crate::{
     down_align_usize,
     polyfill::{const_unwrap, nonzero},
     up_align_nonzero, ChunkHeader, CHUNK_ALIGN_MIN,
 };
+
+mod chunk_size_calc;
 
 /// We leave some space per allocation for the base allocator.
 pub(crate) type AssumedMallocOverhead = [*const u8; 2];
@@ -24,7 +28,7 @@ pub(crate) const ASSUMED_PAGE_SIZE: NonZeroUsize = const_unwrap(NonZeroUsize::ne
 /// - is at least [`Self::MIN`]
 /// - if smaller than [`Self::SIZE_STEP`] it is a power of two
 /// - if larger than [`Self::SIZE_STEP`] it is a multiple of [`Self::SIZE_STEP`]
-pub(crate) struct ChunkSize<const UP: bool, A>(NonZeroUsize, PhantomData<*const A>);
+pub(crate) struct ChunkSize<const UP: bool, A>(pub(crate) NonZeroUsize, PhantomData<*const A>);
 
 impl<const UP: bool, A> Debug for ChunkSize<UP, A> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
@@ -54,6 +58,12 @@ impl<const UP: bool, A> ChunkSize<UP, A> {
     );
 
     pub(crate) const SIZE_STEP: NonZeroUsize = nonzero::max(ASSUMED_PAGE_SIZE, align_of::<ChunkHeader<A>>());
+
+    const CONFIG: ChunkSizeConfig = ChunkSizeConfig {
+        up: UP,
+        assumed_malloc_overhead_layout: Layout::new::<AssumedMallocOverhead>(),
+        chunk_header_layout: Layout::new::<ChunkHeader<A>>(),
+    };
 
     #[inline]
     pub(crate) const fn new(size: usize) -> Option<Self> {
