@@ -1074,7 +1074,7 @@ where
         self.generic_alloc_with(Default::default)
     }
 
-    /// Allocate a slice and `Copy` elements from an existing slice.
+    /// Allocate a slice and move elements from an existing slice.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1083,8 +1083,20 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.alloc_slice_move([1, 2, 3]);
-    /// assert_eq!(allocated, [1, 2, 3]);
+    /// // by value
+    /// let a = bump.alloc_slice_move([1, 2]);
+    /// let b = bump.alloc_slice_move(vec![3, 4]);
+    /// let c = bump.alloc_slice_move(bump.alloc_iter(5..=6));
+    ///
+    /// // by mutable reference
+    /// let mut other = vec![7, 8];
+    /// let d = bump.alloc_slice_move(&mut other);
+    /// assert!(other.is_empty());
+    ///
+    /// assert_eq!(a, [1, 2]);
+    /// assert_eq!(b, [3, 4]);
+    /// assert_eq!(c, [5, 6]);
+    /// assert_eq!(d, [7, 8]);
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -1092,7 +1104,7 @@ where
         panic_on_error(self.generic_alloc_slice_move(slice))
     }
 
-    /// Allocate a slice and `Copy` elements from an existing slice.
+    /// Allocate a slice and move elements from an existing slice.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1101,8 +1113,20 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
-    /// let allocated = bump.try_alloc_slice_move([1, 2, 3])?;
-    /// assert_eq!(allocated, [1, 2, 3]);
+    /// // by value
+    /// let a = bump.try_alloc_slice_move([1, 2])?;
+    /// let b = bump.try_alloc_slice_move(vec![3, 4])?;
+    /// let c = bump.try_alloc_slice_move(bump.alloc_iter(5..=6))?;
+    ///
+    /// // by mutable reference
+    /// let mut other = vec![7, 8];
+    /// let d = bump.try_alloc_slice_move(&mut other)?;
+    /// assert!(other.is_empty());
+    ///
+    /// assert_eq!(a, [1, 2]);
+    /// assert_eq!(b, [3, 4]);
+    /// assert_eq!(c, [5, 6]);
+    /// assert_eq!(d, [7, 8]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
