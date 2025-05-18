@@ -55,7 +55,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test --no-default-features
       - run: cargo test --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03
   test-nightly:
     runs-on: ubuntu-latest
