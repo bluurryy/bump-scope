@@ -19,6 +19,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "chunk_size"
+path = "fuzz_targets/chunk_size.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "allocator"
 path = "fuzz_targets/allocator.rs"
 test = false

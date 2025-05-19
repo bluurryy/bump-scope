@@ -7,3 +7,6 @@
 
 #[allow(dead_code)]
 pub(crate) mod bumping;
+
+#[allow(dead_code)]
+pub(crate) mod chunk_size_config;
