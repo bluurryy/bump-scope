@@ -377,11 +377,6 @@ pub mod zerocopy_08 {
     pub use crate::features::zerocopy_08::{BumpExt, BumpScopeExt, InitZeroed, VecExt};
 }
 
-// This must be kept in sync with ChunkHeaders `repr(align(16))`.
-const CHUNK_ALIGN_MIN: usize = 16;
-
-const _: () = assert!(CHUNK_ALIGN_MIN == bumping::MIN_CHUNK_ALIGN);
-
 /// Specifies the current minimum alignment of a bump allocator.
 #[derive(Clone, Copy)]
 pub struct MinimumAlignment<const ALIGNMENT: usize>;

@@ -6,6 +6,8 @@ use crate::{polyfill::const_unwrap, ChunkHeader};
 
 mod chunk_size_calc;
 
+const _: () = assert!(chunk_size_calc::MIN_CHUNK_ALIGN == crate::bumping::MIN_CHUNK_ALIGN);
+
 /// We leave some space per allocation for the base allocator.
 pub(crate) type AssumedMallocOverhead = [*const u8; 2];
 
@@ -48,6 +50,11 @@ impl<A, const UP: bool> ChunkSize<A, UP> {
 
     pub const fn from_capacity(layout: Layout) -> Option<Self> {
         attempt!(ChunkSizeHint::from_capacity(layout)).calc_size()
+    }
+
+    /// See [`chunk_size_calc::ChunkSizeConfig::align_size`].
+    pub const fn align_allocation_len(self, size: usize) -> usize {
+        config::<A, UP>().align_size(size)
     }
 
     pub const fn layout(self) -> Option<Layout> {

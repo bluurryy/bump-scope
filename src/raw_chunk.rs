@@ -2,13 +2,13 @@ use core::{alloc::Layout, cell::Cell, mem::align_of, num::NonZeroUsize, ops::Ran
 
 use crate::{
     alloc::{AllocError, Allocator},
-    bumping::{bump_down, bump_prepare_down, bump_prepare_up, bump_up, BumpProps, BumpUp},
+    bumping::{bump_down, bump_prepare_down, bump_prepare_up, bump_up, BumpProps, BumpUp, MIN_CHUNK_ALIGN},
     chunk_size::{ChunkSize, ChunkSizeHint},
     down_align_usize,
     layout::{ArrayLayout, LayoutProps},
     polyfill::{nonnull, pointer},
     unallocated_chunk_header, up_align_usize_unchecked, ChunkHeader, ErrorBehavior, MinimumAlignment,
-    SupportedMinimumAlignment, CHUNK_ALIGN_MIN,
+    SupportedMinimumAlignment,
 };
 
 /// Represents an allocated chunk.
@@ -61,29 +61,24 @@ impl<const UP: bool, A> RawChunk<UP, A> {
             Err(AllocError) => return Err(E::allocation(layout)),
         };
 
-        // The size must always be a multiple of `CHUNK_ALIGN_MIN`.
-        // We use optimizations in `alloc` that make use of this.
-        //
-        // If `!UP`, the size must also be an aligned to `ChunkHeader<_>`
-        // so the header can live at the end.
-        let downwards_align = if UP {
-            CHUNK_ALIGN_MIN
-        } else {
-            CHUNK_ALIGN_MIN.max(align_of::<ChunkHeader<A>>())
-        };
+        let ptr = nonnull::as_non_null_ptr(allocation);
+        let len = allocation.len();
 
-        // This truncation can not result in a size smaller than the layout's size because
-        // we truncated the layout's size in the same way (see ChunkSize::layout).
+        // Note that the allocation's size may be larger than
+        // the requested layout's size.
         //
-        // NB: The size must not be smaller than layout's size, so it still [fits] the
-        // memory block so we can deallocate with that size.
+        // We could be ignoring the allocation's size and just use
+        // our layout's size, but then we would be wasting
+        // the extra space the allocator might have given us.
         //
-        // [fits]: https://doc.rust-lang.org/std/alloc/trait.Allocator.html#memory-fitting
-        let size = down_align_usize(allocation.len(), downwards_align);
-        debug_assert!(size >= layout.size());
-        debug_assert!(size % CHUNK_ALIGN_MIN == 0);
+        // This returned size does not satisfy our invariants though
+        // so we need to align it first.
+        //
+        // Follow this method for details.
+        let len = size.align_allocation_len(len);
 
-        let ptr = allocation.cast::<u8>();
+        debug_assert!(len >= layout.size());
+        debug_assert!(len % MIN_CHUNK_ALIGN == 0);
 
         let prev = prev.map(|c| c.header);
         let next = Cell::new(None);
@@ -94,7 +89,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
                 header.as_ptr().write(ChunkHeader {
                     pos: Cell::new(nonnull::add(header, 1).cast()),
-                    end: nonnull::add(ptr, size),
+                    end: nonnull::add(ptr, len),
                     prev,
                     next,
                     allocator,
@@ -102,7 +97,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
                 header
             } else {
-                let header = nonnull::sub(nonnull::add(ptr, size).cast::<ChunkHeader<A>>(), 1);
+                let header = nonnull::sub(nonnull::add(ptr, len).cast::<ChunkHeader<A>>(), 1);
 
                 header.as_ptr().write(ChunkHeader {
                     pos: Cell::new(header.cast()),

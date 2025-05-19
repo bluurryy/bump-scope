@@ -1,7 +1,7 @@
 use core::{alloc::Layout, num::NonZeroUsize};
 
-const ASSUMED_PAGE_SIZE: usize = 0x1000;
-const MIN_CHUNK_ALIGN: usize = 16;
+pub const ASSUMED_PAGE_SIZE: usize = 0x1000;
+pub const MIN_CHUNK_ALIGN: usize = 16;
 
 #[derive(Clone, Copy)]
 pub struct ChunkSizeConfig {
@@ -20,12 +20,46 @@ macro_rules! attempt {
 }
 
 impl ChunkSizeConfig {
+    /// This function must be called to align the size of the allocation returned
+    /// by the allocator.
+    ///
+    /// # Context
+    /// The final chunk size must always be a multiple of `MIN_CHUNK_ALIGN`.
+    /// We use optimizations in `alloc` that make use of that property.
+    ///
+    /// When downwards allocating the final chunk size must also be aligned to the chunk header
+    /// alignment so we can put the header at `end.cast::<ChunkHeader<A>>().sub(1)`.
+    ///
+    /// This downwards alignment can not result in a size smaller than the size of the layout
+    /// that was used to do this allocation because that layout's size was already
+    /// downward aligned with this function in `calc_size_from_hint` and a downwards alignment
+    /// of a size greater or equal than the original one (which this one is) can not
+    /// result in a smaller size.
+    ///
+    /// This downwards alignment must not result in a smaller size because we need `size`
+    /// to be a size that [fits] the allocated memory block. That means the size must be between
+    /// the original requested size and the size the allocator actually gave us.
+    #[inline(always)]
+    pub const fn align_size(self, size: usize) -> usize {
+        let Self {
+            up, chunk_header_layout, ..
+        } = self;
+
+        down_align(
+            size,
+            if up {
+                MIN_CHUNK_ALIGN
+            } else {
+                max(MIN_CHUNK_ALIGN, chunk_header_layout.align())
+            },
+        )
+    }
+
     #[inline(always)]
     pub const fn calc_size_from_hint(self, size_hint: usize) -> Option<NonZeroUsize> {
         let Self {
             assumed_malloc_overhead_layout,
             chunk_header_layout,
-            up,
             ..
         } = self;
 
@@ -56,15 +90,9 @@ impl ChunkSizeConfig {
         });
 
         let size_without_overhead = size - assumed_malloc_overhead_layout.size();
+        let aligned_size = self.align_size(size_without_overhead);
 
-        let downwards_align = if up {
-            MIN_CHUNK_ALIGN
-        } else {
-            max(MIN_CHUNK_ALIGN, chunk_header_layout.align())
-        };
-
-        let size_for_layout = down_align(size_without_overhead, downwards_align);
-        NonZeroUsize::new(size_for_layout)
+        NonZeroUsize::new(aligned_size)
     }
 
     #[inline(always)]
