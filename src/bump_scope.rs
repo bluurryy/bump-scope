@@ -381,7 +381,7 @@ where
         debug_assert!(self.chunk.get().is_unallocated());
 
         let allocator = A::default_or_panic();
-        let chunk = RawChunk::new_in(ChunkSize::DEFAULT_START, None, allocator)?;
+        let chunk = RawChunk::new_in(ChunkSize::DEFAULT, None, allocator)?;
 
         self.chunk.set(chunk);
 
@@ -653,7 +653,7 @@ where
             let allocator = A::default_or_panic();
 
             RawChunk::new_in(
-                ChunkSize::for_capacity(*layout).ok_or_else(B::capacity_overflow)?,
+                ChunkSize::from_capacity(*layout).ok_or_else(B::capacity_overflow)?,
                 None,
                 allocator,
             )
@@ -2526,7 +2526,7 @@ where
         if self.is_unallocated() {
             let allocator = A::default_or_panic();
             let new_chunk = RawChunk::new_in(
-                ChunkSize::for_capacity(layout).ok_or_else(B::capacity_overflow)?,
+                ChunkSize::from_capacity(layout).ok_or_else(B::capacity_overflow)?,
                 None,
                 allocator,
             )?;

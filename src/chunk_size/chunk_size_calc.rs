@@ -4,7 +4,7 @@ const ASSUMED_PAGE_SIZE: usize = 0x1000;
 const MIN_CHUNK_ALIGN: usize = 16;
 
 #[derive(Clone, Copy)]
-pub struct ChunkLayoutConfig {
+pub struct ChunkSizeConfig {
     pub up: bool,
     pub assumed_malloc_overhead_layout: Layout,
     pub chunk_header_layout: Layout,
@@ -19,9 +19,9 @@ macro_rules! attempt {
     };
 }
 
-impl ChunkLayoutConfig {
+impl ChunkSizeConfig {
     #[inline(always)]
-    pub const fn calculate_for_size_hint(self, size_hint: usize) -> Option<NonZeroUsize> {
+    pub const fn calc_size_from_hint(self, size_hint: usize) -> Option<NonZeroUsize> {
         let Self {
             assumed_malloc_overhead_layout,
             chunk_header_layout,
@@ -68,16 +68,16 @@ impl ChunkLayoutConfig {
     }
 
     #[inline(always)]
-    pub const fn calculate_for_capacity(self, layout: Layout) -> Option<NonZeroUsize> {
+    pub const fn calc_hint_from_capacity(self, layout: Layout) -> Option<usize> {
         let Self { chunk_header_layout, .. } = self;
 
         let maximum_required_padding = layout.align().saturating_sub(chunk_header_layout.align());
         let required_size = attempt!(layout.size().checked_add(maximum_required_padding));
-        self.calculate_for_capacity_bytes(required_size)
+        self.calc_hint_from_capacity_bytes(required_size)
     }
 
     #[inline(always)]
-    pub const fn calculate_for_capacity_bytes(self, bytes: usize) -> Option<NonZeroUsize> {
+    pub const fn calc_hint_from_capacity_bytes(self, bytes: usize) -> Option<usize> {
         let Self {
             up,
             assumed_malloc_overhead_layout,
@@ -97,7 +97,7 @@ impl ChunkLayoutConfig {
             size = attempt!(offset_add_layout(size, chunk_header_layout));
         }
 
-        self.calculate_for_size_hint(size)
+        Some(size)
     }
 }
 
