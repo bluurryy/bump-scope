@@ -1,7 +1,5 @@
 use core::alloc::Layout;
 
-use crate::tests::either_way;
-
 const ASSUMED_PAGE_SIZE: usize = 0x1000;
 
 #[derive(Clone, Copy)]
@@ -55,10 +53,10 @@ impl ChunkSizeConfig {
             return None;
         }
 
-        assert!(size % chunk_header_layout.align() == 0);
-        assert!(size >= min);
+        debug_assert!(size % chunk_header_layout.align() == 0);
+        debug_assert!(size >= min);
 
-        assert!(if size < size_step {
+        debug_assert!(if size < size_step {
             size.is_power_of_two()
         } else {
             size % size_step == 0
@@ -137,18 +135,24 @@ const fn up_align(addr: usize, align: usize) -> Option<usize> {
     Some(aligned)
 }
 
-either_way! {
-    debug
-}
+#[cfg(test)]
+#[cfg(feature = "std")]
+mod tests {
 
-fn debug<const UP: bool>() {
-    use super::ChunkSize;
+    use super::super::ChunkSize;
+    use crate::tests::either_way;
 
-    type Size = ChunkSize<true, ()>;
+    either_way! {
+        debug
+    }
 
-    for i in 0..5000 {
-        let old = Size::new(i).unwrap().0.get();
-        let new = Size::CONFIG.calculate_for_size_hint(i).unwrap();
-        assert_eq!(old, new);
+    fn debug<const UP: bool>() {
+        type Size = ChunkSize<true, ()>;
+
+        for i in 0..5000 {
+            let old = Size::new(i).unwrap().0.get();
+            let new = Size::CONFIG.calculate_for_size_hint(i).unwrap();
+            assert_eq!(old, new);
+        }
     }
 }

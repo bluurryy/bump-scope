@@ -1,14 +1,5 @@
 use core::num::NonZeroUsize;
 
-use super::const_unwrap;
-
-#[inline(always)]
-pub(crate) const fn max(lhs: NonZeroUsize, rhs: usize) -> NonZeroUsize {
-    let max = if lhs.get() > rhs { lhs.get() } else { rhs };
-    // Panic can not happen and is optimized away.
-    const_unwrap(NonZeroUsize::new(max))
-}
-
 #[inline(always)]
 #[allow(dead_code)]
 pub(crate) fn prev_power_of_two(value: NonZeroUsize) -> NonZeroUsize {
