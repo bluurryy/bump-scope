@@ -1,43 +1,21 @@
-use core::{
-    alloc::Layout,
-    fmt::{Debug, Formatter},
-    marker::PhantomData,
-    mem::{align_of, size_of},
-    num::NonZeroUsize,
-};
+use core::{alloc::Layout, marker::PhantomData, num::NonZeroUsize};
 
-use chunk_size_calc::ChunkSizeConfig;
+use chunk_size_calc::ChunkLayoutConfig;
 
-use crate::{down_align_usize, polyfill::const_unwrap, ChunkHeader, CHUNK_ALIGN_MIN};
+use crate::{polyfill::const_unwrap, ChunkHeader};
 
 mod chunk_size_calc;
 
 /// We leave some space per allocation for the base allocator.
 pub(crate) type AssumedMallocOverhead = [*const u8; 2];
 
-/// The actual size used for allocation (see [`layout`](Self::layout)) is this size minus <code>size_of::<[AssumedMallocOverhead]>()</code>.
-///
-/// Invariants:
-/// - is never zero
-/// - is a multiple of <code>align_of::<[`ChunkHeader<A>`](ChunkHeader)>()</code>.
-/// - is at least [`Self::MIN`]
-/// - if smaller than [`Self::SIZE_STEP`] it is a power of two
-/// - if larger than [`Self::SIZE_STEP`] it is a multiple of [`Self::SIZE_STEP`]
-pub(crate) struct ChunkSize<const UP: bool, A>(pub(crate) NonZeroUsize, PhantomData<*const A>);
-
-impl<const UP: bool, A> Debug for ChunkSize<UP, A> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        Debug::fmt(&self.0.get(), f)
+pub const fn config<A, const UP: bool>() -> ChunkLayoutConfig {
+    ChunkLayoutConfig {
+        up: UP,
+        assumed_malloc_overhead_layout: Layout::new::<AssumedMallocOverhead>(),
+        chunk_header_layout: Layout::new::<ChunkHeader<A>>(),
     }
 }
-
-impl<const UP: bool, A> Clone for ChunkSize<UP, A> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<const UP: bool, A> Copy for ChunkSize<UP, A> {}
 
 macro_rules! attempt {
     ($expr:expr) => {
@@ -48,50 +26,47 @@ macro_rules! attempt {
     };
 }
 
-impl<const UP: bool, A> ChunkSize<UP, A> {
-    pub(crate) const DEFAULT_START: Self = const_unwrap(Self::new(512));
+pub struct ChunkSize<A, const UP: bool> {
+    size: NonZeroUsize,
+    marker: PhantomData<*const A>,
+}
 
-    const CONFIG: ChunkSizeConfig = ChunkSizeConfig {
-        up: UP,
-        assumed_malloc_overhead_layout: Layout::new::<AssumedMallocOverhead>(),
-        chunk_header_layout: Layout::new::<ChunkHeader<A>>(),
-    };
+impl<A, const UP: bool> Clone for ChunkSize<A, UP> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
 
-    #[inline]
-    pub(crate) const fn new(size_hint: usize) -> Option<Self> {
-        let size = attempt!(Self::CONFIG.calculate_for_size_hint(size_hint));
-        let size = attempt!(NonZeroUsize::new(size));
-        Some(Self(size, PhantomData))
+impl<A, const UP: bool> Copy for ChunkSize<A, UP> {}
+
+impl<A, const UP: bool> ChunkSize<A, UP> {
+    pub const DEFAULT_START: Self = const_unwrap(Self::for_size_hint(512));
+
+    pub const fn for_size_hint(size_hint: usize) -> Option<Self> {
+        Some(Self {
+            size: attempt!(config::<A, UP>().calculate_for_size_hint(size_hint)),
+            marker: PhantomData,
+        })
     }
 
-    #[inline]
-    pub(crate) fn for_capacity(layout: Layout) -> Option<Self> {
-        let size = attempt!(Self::CONFIG.calculate_for_capacity(layout));
-        let size = attempt!(NonZeroUsize::new(size));
-        Some(Self(size, PhantomData))
+    pub const fn for_capacity(layout: Layout) -> Option<Self> {
+        Some(Self {
+            size: attempt!(config::<A, UP>().calculate_for_capacity(layout)),
+            marker: PhantomData,
+        })
     }
 
-    #[inline(always)]
-    pub(crate) fn layout(self) -> Layout {
-        // we checked in `new` that we can create a layout from this size
-
-        let size_without_overhead = self.0.get() - size_of::<AssumedMallocOverhead>();
-
-        let downwards_align = if UP {
-            CHUNK_ALIGN_MIN
-        } else {
-            CHUNK_ALIGN_MIN.max(align_of::<ChunkHeader<A>>())
-        };
-
-        let size_for_layout = down_align_usize(size_without_overhead, downwards_align);
-        let align = align_of::<ChunkHeader<A>>();
-
-        unsafe { Layout::from_size_align_unchecked(size_for_layout, align) }
+    pub const fn layout(self) -> Option<Layout> {
+        let size = self.size.get();
+        let align = core::mem::align_of::<ChunkHeader<A>>();
+        match Layout::from_size_align(size, align) {
+            Ok(ok) => Some(ok),
+            Err(_) => None,
+        }
     }
 
-    #[inline]
-    pub(crate) const fn max(self, other: Self) -> Self {
-        if self.0.get() > other.0.get() {
+    pub const fn max(self, other: Self) -> Self {
+        if self.size.get() > other.size.get() {
             self
         } else {
             other

@@ -3,10 +3,11 @@ use core::{alloc::Layout, cell::Cell, mem::align_of, num::NonZeroUsize, ops::Ran
 use crate::{
     alloc::{AllocError, Allocator},
     bumping::{bump_down, bump_prepare_down, bump_prepare_up, bump_up, BumpProps, BumpUp},
+    chunk_size::ChunkSize,
     down_align_usize,
     layout::{ArrayLayout, LayoutProps},
     polyfill::{const_unwrap, nonnull, pointer},
-    unallocated_chunk_header, up_align_usize_unchecked, ChunkHeader, ChunkSize, ErrorBehavior, MinimumAlignment,
+    unallocated_chunk_header, up_align_usize_unchecked, ChunkHeader, ErrorBehavior, MinimumAlignment,
     SupportedMinimumAlignment, CHUNK_ALIGN_MIN,
 };
 
@@ -48,12 +49,12 @@ impl<const UP: bool, A> PartialEq for RawChunk<UP, A> {
 impl<const UP: bool, A> Eq for RawChunk<UP, A> {}
 
 impl<const UP: bool, A> RawChunk<UP, A> {
-    pub(crate) fn new_in<E: ErrorBehavior>(size: ChunkSize<UP, A>, prev: Option<Self>, allocator: A) -> Result<Self, E>
+    pub(crate) fn new_in<E: ErrorBehavior>(size: ChunkSize<A, UP>, prev: Option<Self>, allocator: A) -> Result<Self, E>
     where
         A: Allocator,
         for<'a> &'a A: Allocator,
     {
-        let layout = size.layout();
+        let layout = size.layout().ok_or_else(E::capacity_overflow)?;
 
         let allocation = match allocator.allocate(layout) {
             Ok(ok) => ok,
@@ -458,13 +459,13 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSize<UP, A>, B> {
+    fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSize<A, UP>, B> {
         const TWO: NonZeroUsize = const_unwrap(NonZeroUsize::new(2));
         let size = match self.size().checked_mul(TWO) {
             Some(size) => size,
             None => return Err(B::capacity_overflow()),
         };
-        ChunkSize::<UP, A>::new(size.get()).ok_or_else(B::capacity_overflow)
+        ChunkSize::<A, UP>::for_size_hint(size.get()).ok_or_else(B::capacity_overflow)
     }
 
     /// # Panic

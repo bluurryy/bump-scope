@@ -816,7 +816,7 @@ where
     pub(crate) fn generic_with_size_in<E: ErrorBehavior>(size: usize, allocator: A) -> Result<Self, E> {
         Ok(Self {
             chunk: Cell::new(RawChunk::new_in(
-                ChunkSize::new(size).ok_or_else(E::capacity_overflow)?,
+                ChunkSize::for_size_hint(size).ok_or_else(E::capacity_overflow)?,
                 None,
                 allocator,
             )?),

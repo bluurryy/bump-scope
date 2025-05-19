@@ -349,7 +349,6 @@ pub use bump_string::BumpString;
 #[doc(inline)]
 pub use bump_vec::BumpVec;
 use chunk_header::{unallocated_chunk_header, ChunkHeader};
-use chunk_size::ChunkSize;
 #[cfg(feature = "panic-on-alloc")]
 use core::convert::Infallible;
 use core::{mem, num::NonZeroUsize, ptr::NonNull};

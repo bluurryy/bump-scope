@@ -1,9 +1,10 @@
-use core::alloc::Layout;
+use core::{alloc::Layout, num::NonZeroUsize};
 
 const ASSUMED_PAGE_SIZE: usize = 0x1000;
+const MIN_CHUNK_ALIGN: usize = 16;
 
 #[derive(Clone, Copy)]
-pub struct ChunkSizeConfig {
+pub struct ChunkLayoutConfig {
     pub up: bool,
     pub assumed_malloc_overhead_layout: Layout,
     pub chunk_header_layout: Layout,
@@ -18,12 +19,13 @@ macro_rules! attempt {
     };
 }
 
-impl ChunkSizeConfig {
+impl ChunkLayoutConfig {
     #[inline(always)]
-    pub const fn calculate_for_size_hint(self, size_hint: usize) -> Option<usize> {
+    pub const fn calculate_for_size_hint(self, size_hint: usize) -> Option<NonZeroUsize> {
         let Self {
             assumed_malloc_overhead_layout,
             chunk_header_layout,
+            up,
             ..
         } = self;
 
@@ -44,15 +46,6 @@ impl ChunkSizeConfig {
             up_align(size_hint, size_step)
         });
 
-        let size_for_layout = size - assumed_malloc_overhead_layout.size();
-        let align_for_layout = chunk_header_layout.align();
-
-        // lets make sure we can create a layout from this size
-        // so later on we can create a layout without checking
-        if Layout::from_size_align(size_for_layout, align_for_layout).is_err() {
-            return None;
-        }
-
         debug_assert!(size % chunk_header_layout.align() == 0);
         debug_assert!(size >= min);
 
@@ -62,11 +55,20 @@ impl ChunkSizeConfig {
             size % size_step == 0
         });
 
-        Some(size)
+        let size_without_overhead = size - assumed_malloc_overhead_layout.size();
+
+        let downwards_align = if up {
+            MIN_CHUNK_ALIGN
+        } else {
+            max(MIN_CHUNK_ALIGN, chunk_header_layout.align())
+        };
+
+        let size_for_layout = down_align(size_without_overhead, downwards_align);
+        NonZeroUsize::new(size_for_layout)
     }
 
     #[inline(always)]
-    pub const fn calculate_for_capacity(self, layout: Layout) -> Option<usize> {
+    pub const fn calculate_for_capacity(self, layout: Layout) -> Option<NonZeroUsize> {
         let Self { chunk_header_layout, .. } = self;
 
         let maximum_required_padding = layout.align().saturating_sub(chunk_header_layout.align());
@@ -75,7 +77,7 @@ impl ChunkSizeConfig {
     }
 
     #[inline(always)]
-    pub const fn calculate_for_capacity_bytes(self, bytes: usize) -> Option<usize> {
+    pub const fn calculate_for_capacity_bytes(self, bytes: usize) -> Option<NonZeroUsize> {
         let Self {
             up,
             assumed_malloc_overhead_layout,
@@ -135,24 +137,21 @@ const fn up_align(addr: usize, align: usize) -> Option<usize> {
     Some(aligned)
 }
 
+#[inline(always)]
+const fn down_align(addr: usize, align: usize) -> usize {
+    debug_assert!(align.is_power_of_two());
+    let mask = align - 1;
+    addr & !mask
+}
+
 #[cfg(test)]
 #[cfg(feature = "std")]
 mod tests {
-
-    use super::super::ChunkSize;
     use crate::tests::either_way;
 
     either_way! {
         debug
     }
 
-    fn debug<const UP: bool>() {
-        type Size = ChunkSize<true, ()>;
-
-        for i in 0..5000 {
-            let old = Size::new(i).unwrap().0.get();
-            let new = Size::CONFIG.calculate_for_size_hint(i).unwrap();
-            assert_eq!(old, new);
-        }
-    }
+    fn debug<const UP: bool>() {}
 }

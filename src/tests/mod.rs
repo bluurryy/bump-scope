@@ -62,11 +62,11 @@ const OVERHEAD: usize = MALLOC_OVERHEAD + size_of::<ChunkHeader<Global>>();
 
 use crate::{
     alloc::{AllocError, Allocator, Global as System, Global},
-    chunk_size::AssumedMallocOverhead,
+    chunk_size::{AssumedMallocOverhead, ChunkSize},
     mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice, panic_on_error,
     stats::Chunk,
-    Bump, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, ChunkSize, MinimumAlignment, MutBumpString, MutBumpVec,
-    MutBumpVecRev, SizedTypeProperties, SupportedMinimumAlignment,
+    Bump, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev,
+    SizedTypeProperties, SupportedMinimumAlignment,
 };
 
 pub(crate) use test_wrap::TestWrap;
