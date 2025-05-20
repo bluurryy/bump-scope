@@ -349,7 +349,6 @@ pub use bump_string::BumpString;
 #[doc(inline)]
 pub use bump_vec::BumpVec;
 use chunk_header::{unallocated_chunk_header, ChunkHeader};
-use chunk_size::ChunkSize;
 #[cfg(feature = "panic-on-alloc")]
 use core::convert::Infallible;
 use core::{mem, num::NonZeroUsize, ptr::NonNull};
@@ -377,11 +376,6 @@ pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 pub mod zerocopy_08 {
     pub use crate::features::zerocopy_08::{BumpExt, BumpScopeExt, InitZeroed, VecExt};
 }
-
-// This must be kept in sync with ChunkHeaders `repr(align(16))`.
-const CHUNK_ALIGN_MIN: usize = 16;
-
-const _: () = assert!(CHUNK_ALIGN_MIN == bumping::MIN_CHUNK_ALIGN);
 
 /// Specifies the current minimum alignment of a bump allocator.
 #[derive(Clone, Copy)]
@@ -431,18 +425,6 @@ fn up_align_usize_unchecked(addr: usize, align: usize) -> usize {
     debug_assert!(align.is_power_of_two());
     let mask = align - 1;
     (addr + mask) & !mask
-}
-
-#[inline(always)]
-const fn up_align_nonzero(addr: NonZeroUsize, align: usize) -> Option<NonZeroUsize> {
-    debug_assert!(align.is_power_of_two());
-    let mask = align - 1;
-    let addr_plus_mask = match addr.checked_add(mask) {
-        Some(addr_plus_mask) => addr_plus_mask,
-        None => return None,
-    };
-    let aligned = addr_plus_mask.get() & !mask;
-    NonZeroUsize::new(aligned)
 }
 
 #[inline(always)]

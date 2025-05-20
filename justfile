@@ -59,12 +59,14 @@ test-non-miri:
   cd crates/tests-from-std; cargo test
   cd crates/test-hashbrown; cargo test
   cd crates/test-hashbrown; cargo test --all-features
+  cd crates/fuzzing-support; cargo test
 
 test-miri:
   cargo miri test --all-features
   cd crates/tests-from-std; cargo miri test
   cd crates/test-hashbrown; cargo miri test
   cd crates/test-hashbrown; cargo miri test --all-features
+  cd crates/fuzzing-support; cargo miri test
 
 fmt:
   cargo fmt

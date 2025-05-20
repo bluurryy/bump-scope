@@ -1,4 +1,4 @@
-#![feature(pointer_is_aligned_to, allocator_api)]
+#![feature(pointer_is_aligned_to, allocator_api, alloc_layout_extra)]
 #![allow(clippy::cargo_common_metadata)]
 
 use std::{alloc::Layout, cell::Cell, mem::swap, ops::Deref, ptr::NonNull, rc::Rc};
@@ -14,6 +14,7 @@ pub mod bump_prepare_down;
 pub mod bump_prepare_up;
 pub mod bump_up;
 pub mod bumping;
+pub mod chunk_size;
 mod from_bump_scope;
 pub mod many_vecs;
 

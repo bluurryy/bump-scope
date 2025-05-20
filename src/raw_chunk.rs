@@ -2,12 +2,13 @@ use core::{alloc::Layout, cell::Cell, mem::align_of, num::NonZeroUsize, ops::Ran
 
 use crate::{
     alloc::{AllocError, Allocator},
-    bumping::{bump_down, bump_prepare_down, bump_prepare_up, bump_up, BumpProps, BumpUp},
+    bumping::{bump_down, bump_prepare_down, bump_prepare_up, bump_up, BumpProps, BumpUp, MIN_CHUNK_ALIGN},
+    chunk_size::{ChunkSize, ChunkSizeHint},
     down_align_usize,
     layout::{ArrayLayout, LayoutProps},
-    polyfill::{const_unwrap, nonnull, pointer},
-    unallocated_chunk_header, up_align_usize_unchecked, ChunkHeader, ChunkSize, ErrorBehavior, MinimumAlignment,
-    SupportedMinimumAlignment, CHUNK_ALIGN_MIN,
+    polyfill::{nonnull, pointer},
+    unallocated_chunk_header, up_align_usize_unchecked, ChunkHeader, ErrorBehavior, MinimumAlignment,
+    SupportedMinimumAlignment,
 };
 
 /// Represents an allocated chunk.
@@ -48,41 +49,36 @@ impl<const UP: bool, A> PartialEq for RawChunk<UP, A> {
 impl<const UP: bool, A> Eq for RawChunk<UP, A> {}
 
 impl<const UP: bool, A> RawChunk<UP, A> {
-    pub(crate) fn new_in<E: ErrorBehavior>(size: ChunkSize<UP, A>, prev: Option<Self>, allocator: A) -> Result<Self, E>
+    pub(crate) fn new_in<E: ErrorBehavior>(chunk_size: ChunkSize<A, UP>, prev: Option<Self>, allocator: A) -> Result<Self, E>
     where
         A: Allocator,
         for<'a> &'a A: Allocator,
     {
-        let layout = size.layout();
+        let layout = chunk_size.layout().ok_or_else(E::capacity_overflow)?;
 
         let allocation = match allocator.allocate(layout) {
             Ok(ok) => ok,
             Err(AllocError) => return Err(E::allocation(layout)),
         };
 
-        // The size must always be a multiple of `CHUNK_ALIGN_MIN`.
-        // We use optimizations in `alloc` that make use of this.
-        //
-        // If `!UP`, the size must also be an aligned to `ChunkHeader<_>`
-        // so the header can live at the end.
-        let downwards_align = if UP {
-            CHUNK_ALIGN_MIN
-        } else {
-            CHUNK_ALIGN_MIN.max(align_of::<ChunkHeader<A>>())
-        };
+        let ptr = nonnull::as_non_null_ptr(allocation);
+        let size = allocation.len();
 
-        // This truncation can not result in a size smaller than the layout's size because
-        // we truncated the layout's size in the same way (see ChunkSize::layout).
+        // Note that the allocation's size may be larger than
+        // the requested layout's size.
         //
-        // NB: The size must not be smaller than layout's size, so it still [fits] the
-        // memory block so we can deallocate with that size.
+        // We could be ignoring the allocation's size and just use
+        // our layout's size, but then we would be wasting
+        // the extra space the allocator might have given us.
         //
-        // [fits]: https://doc.rust-lang.org/std/alloc/trait.Allocator.html#memory-fitting
-        let size = down_align_usize(allocation.len(), downwards_align);
+        // This returned size does not satisfy our invariants though
+        // so we need to align it first.
+        //
+        // Follow this method for details.
+        let size = chunk_size.align_allocation_size(size);
+
         debug_assert!(size >= layout.size());
-        debug_assert!(size % CHUNK_ALIGN_MIN == 0);
-
-        let ptr = allocation.cast::<u8>();
+        debug_assert!(size % MIN_CHUNK_ALIGN == 0);
 
         let prev = prev.map(|c| c.header);
         let next = Cell::new(None);
@@ -458,13 +454,12 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSize<UP, A>, B> {
-        const TWO: NonZeroUsize = const_unwrap(NonZeroUsize::new(2));
-        let size = match self.size().checked_mul(TWO) {
+    fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSizeHint<A, UP>, B> {
+        let size = match self.size().get().checked_mul(2) {
             Some(size) => size,
             None => return Err(B::capacity_overflow()),
         };
-        ChunkSize::<UP, A>::new(size.get()).ok_or_else(B::capacity_overflow)
+        Ok(ChunkSizeHint::<A, UP>::new(size))
     }
 
     /// # Panic
@@ -476,9 +471,9 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     {
         debug_assert!(self.next().is_none());
 
-        let required_size = ChunkSize::for_capacity(layout).ok_or_else(B::capacity_overflow)?;
+        let required_size = ChunkSizeHint::for_capacity(layout).ok_or_else(B::capacity_overflow)?;
         let grown_size = self.grow_size()?;
-        let size = required_size.max(grown_size);
+        let size = required_size.max(grown_size).calc_size().ok_or_else(B::capacity_overflow)?;
 
         let allocator = unsafe { self.header.as_ref().allocator.clone() };
         let new_chunk = RawChunk::new_in::<B>(size, Some(self), allocator)?;
