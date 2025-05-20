@@ -18,7 +18,7 @@ use crate::{
     destructure::destructure,
     min_non_zero_cap,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
-    polyfill::{nonnull, pointer, slice},
+    polyfill::{non_null, pointer, slice},
     raw_fixed_bump_vec::RawFixedBumpVec,
     BumpAllocator, BumpAllocatorScope, BumpBox, ErrorBehavior, FixedBumpVec, NoDrop, SizedTypeProperties,
 };
@@ -222,7 +222,7 @@ impl<T: Clone, A: BumpAllocator + Clone> Clone for BumpVec<T, A> {
     fn clone(&self) -> Self {
         let allocator = self.allocator.clone();
         let ptr = allocator.allocate_slice::<MaybeUninit<T>>(self.len());
-        let slice = nonnull::slice_from_raw_parts(ptr, self.len());
+        let slice = non_null::slice_from_raw_parts(ptr, self.len());
         let boxed = unsafe { BumpBox::from_raw(slice) };
         let boxed = boxed.init_clone(self);
         let fixed = FixedBumpVec::from_init(boxed);
@@ -2187,7 +2187,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
                 let new_cap = (cap * T::SIZE) / U::SIZE;
 
                 Ok(BumpVec {
-                    fixed: RawFixedBumpVec::from_raw_parts(nonnull::slice_from_raw_parts(ptr.cast(), len), new_cap),
+                    fixed: RawFixedBumpVec::from_raw_parts(non_null::slice_from_raw_parts(ptr.cast(), len), new_cap),
                     allocator,
                 })
             }
@@ -3046,9 +3046,9 @@ impl<T, A: BumpAllocator> IntoIterator for BumpVec<T, A> {
             let begin = slice.cast::<T>();
 
             let end = if T::IS_ZST {
-                nonnull::wrapping_byte_add(begin, slice.len())
+                non_null::wrapping_byte_add(begin, slice.len())
             } else {
-                nonnull::add(begin, slice.len())
+                non_null::add(begin, slice.len())
             };
 
             IntoIter {

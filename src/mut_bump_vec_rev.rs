@@ -18,7 +18,7 @@ use crate::{
     mut_bump_vec::IntoIter,
     mut_collection_method_allocator_stats,
     owned_slice::{OwnedSlice, TakeOwnedSlice},
-    polyfill::{self, nonnull, pointer},
+    polyfill::{self, non_null, pointer},
     BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SetLenOnDrop, SizedTypeProperties,
 };
 
@@ -252,8 +252,8 @@ impl<T, A> MutBumpVecRev<T, A> {
     pub unsafe fn push_with_unchecked(&mut self, f: impl FnOnce() -> T) {
         debug_assert!(self.len < self.cap);
 
-        let ptr = nonnull::sub(self.end, self.len + 1);
-        nonnull::write_with(ptr, f);
+        let ptr = non_null::sub(self.end, self.len + 1);
+        non_null::write_with(ptr, f);
 
         // We set the len here so when `f` panics, `self.len` doesn't change.
         self.len += 1;
@@ -493,7 +493,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     #[inline(always)]
     pub const fn as_non_null(&self) -> NonNull<T> {
         // SAFETY: The start pointer is never null.
-        unsafe { nonnull::sub(self.end, self.len) }
+        unsafe { non_null::sub(self.end, self.len) }
     }
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
@@ -503,7 +503,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_ptr(&self) -> NonNull<T> {
-        unsafe { nonnull::sub(self.end, self.len) }
+        unsafe { non_null::sub(self.end, self.len) }
     }
 
     /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
@@ -513,7 +513,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        nonnull::slice_from_raw_parts(self.as_non_null(), self.len)
+        non_null::slice_from_raw_parts(self.as_non_null(), self.len)
     }
 
     /// Shortens the vector, keeping the first `len` elements and dropping
@@ -1383,11 +1383,11 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
 
         unsafe {
             // Addition doesn't overflow because `reserve` checked for that.
-            let mut ptr = nonnull::sub(self.end, self.len);
+            let mut ptr = non_null::sub(self.end, self.len);
 
             for value in slice.iter().rev() {
-                ptr = nonnull::sub(ptr, 1);
-                nonnull::write_with(ptr, || value.clone());
+                ptr = non_null::sub(ptr, 1);
+                non_null::write_with(ptr, || value.clone());
                 self.len += 1;
             }
         }
@@ -2216,13 +2216,13 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
         let mut this = ManuallyDrop::new(self);
 
         if T::IS_ZST {
-            return nonnull::slice_from_raw_parts(NonNull::dangling(), this.len());
+            return non_null::slice_from_raw_parts(NonNull::dangling(), this.len());
         }
 
         if this.cap == 0 {
             // We didn't touch the bump, so no need to do anything.
             debug_assert_eq!(this.end, NonNull::<T>::dangling());
-            return nonnull::slice_from_raw_parts(NonNull::<T>::dangling(), 0);
+            return non_null::slice_from_raw_parts(NonNull::<T>::dangling(), 0);
         }
 
         let end = this.end;
@@ -2511,7 +2511,7 @@ impl<T, A> Drop for MutBumpVecRev<T, A> {
         // Chunk allocations are supposed to be very rare, so this wouldn't be worth it.
 
         unsafe {
-            let to_drop = nonnull::slice_from_raw_parts(self.as_non_null(), self.len);
+            let to_drop = non_null::slice_from_raw_parts(self.as_non_null(), self.len);
             to_drop.as_ptr().drop_in_place();
         }
     }
@@ -2542,8 +2542,8 @@ impl<T, A> IntoIterator for MutBumpVecRev<T, A> {
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
         let (end, len, _cap, allocator) = self.into_raw_parts();
-        let start = unsafe { nonnull::sub(end, len) };
-        let slice = nonnull::slice_from_raw_parts(start, len);
+        let start = unsafe { non_null::sub(end, len) };
+        let slice = non_null::slice_from_raw_parts(start, len);
         unsafe { IntoIter::new(slice, allocator) }
     }
 }

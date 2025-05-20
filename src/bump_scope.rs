@@ -20,7 +20,7 @@ use crate::{
     const_param_assert, down_align_usize,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     owned_slice::OwnedSlice,
-    polyfill::{nonnull, pointer, transmute_mut, transmute_ref},
+    polyfill::{non_null, pointer, transmute_mut, transmute_ref},
     stats::{AnyStats, Stats},
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
     FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk,
@@ -395,22 +395,22 @@ where
         len: usize,
         cap: usize,
     ) -> NonNull<[T]> {
-        let end = nonnull::add(start, len);
+        let end = non_null::add(start, len);
 
         if UP {
-            self.set_pos(nonnull::addr(end), T::ALIGN);
-            nonnull::slice_from_raw_parts(start, len)
+            self.set_pos(non_null::addr(end), T::ALIGN);
+            non_null::slice_from_raw_parts(start, len)
         } else {
             {
-                let dst_end = nonnull::add(start, cap);
-                let dst = nonnull::sub(dst_end, len);
+                let dst_end = non_null::add(start, cap);
+                let dst = non_null::sub(dst_end, len);
 
-                nonnull::copy(start, dst, len);
+                non_null::copy(start, dst, len);
                 start = dst;
             }
 
-            self.set_pos(nonnull::addr(start), T::ALIGN);
-            nonnull::slice_from_raw_parts(start, len)
+            self.set_pos(non_null::addr(start), T::ALIGN);
+            non_null::slice_from_raw_parts(start, len)
         }
     }
 
@@ -421,23 +421,23 @@ where
         len: usize,
         cap: usize,
     ) -> NonNull<[T]> {
-        let mut start = nonnull::sub(end, len);
+        let mut start = non_null::sub(end, len);
 
         if UP {
             {
-                let dst = nonnull::sub(end, cap);
-                let dst_end = nonnull::add(dst, len);
+                let dst = non_null::sub(end, cap);
+                let dst_end = non_null::add(dst, len);
 
-                nonnull::copy(start, dst, len);
+                non_null::copy(start, dst, len);
                 start = dst;
                 end = dst_end;
             }
 
-            self.set_pos(nonnull::addr(end), T::ALIGN);
-            nonnull::slice_from_raw_parts(start, len)
+            self.set_pos(non_null::addr(end), T::ALIGN);
+            non_null::slice_from_raw_parts(start, len)
         } else {
-            self.set_pos(nonnull::addr(start), T::ALIGN);
-            nonnull::slice_from_raw_parts(start, len)
+            self.set_pos(non_null::addr(start), T::ALIGN);
+            non_null::slice_from_raw_parts(start, len)
         }
     }
 
@@ -487,7 +487,7 @@ where
         let Range { start, end } = self.prepare_allocation_range::<B, T>(cap)?;
 
         // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-        let capacity = unsafe { nonnull::byte_offset_from_unsigned(end, start) } / T::SIZE;
+        let capacity = unsafe { non_null::byte_offset_from_unsigned(end, start) } / T::SIZE;
 
         Ok((start, capacity))
     }
@@ -500,7 +500,7 @@ where
         let Range { start, end } = self.prepare_allocation_range::<B, T>(cap)?;
 
         // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-        let capacity = unsafe { nonnull::byte_offset_from_unsigned(end, start) } / T::SIZE;
+        let capacity = unsafe { non_null::byte_offset_from_unsigned(end, start) } / T::SIZE;
 
         Ok((end, capacity))
     }
@@ -1022,7 +1022,7 @@ where
 
             let ptr = ptr.cast::<T>();
 
-            nonnull::write_with(ptr, f);
+            non_null::write_with(ptr, f);
             Ok(BumpBox::from_raw(ptr))
         }
     }
@@ -1188,7 +1188,7 @@ where
 
         unsafe {
             core::ptr::copy_nonoverlapping(src, dst.as_ptr(), len);
-            Ok(BumpBox::from_raw(nonnull::slice_from_raw_parts(dst, len)))
+            Ok(BumpBox::from_raw(non_null::slice_from_raw_parts(dst, len)))
         }
     }
 
@@ -2237,7 +2237,7 @@ where
         let ptr = self.do_alloc_slice::<B, T>(len)?.cast::<MaybeUninit<T>>();
 
         unsafe {
-            let ptr = nonnull::slice_from_raw_parts(ptr, len);
+            let ptr = non_null::slice_from_raw_parts(ptr, len);
             Ok(BumpBox::from_raw(ptr))
         }
     }
@@ -2312,7 +2312,7 @@ where
         let ptr = self.do_alloc_slice_for::<B, T>(slice)?.cast::<MaybeUninit<T>>();
 
         unsafe {
-            let ptr = nonnull::slice_from_raw_parts(ptr, slice.len());
+            let ptr = non_null::slice_from_raw_parts(ptr, slice.len());
             Ok(BumpBox::from_raw(ptr))
         }
     }
@@ -2463,7 +2463,7 @@ where
         let ptr = boxed.into_raw();
 
         unsafe {
-            nonnull::drop_in_place(ptr);
+            non_null::drop_in_place(ptr);
             self.deallocate(ptr.cast(), layout);
         }
     }
@@ -2655,19 +2655,19 @@ where
         let pos = if UP { self.chunk.get().pos() } else { ptr.cast() };
 
         Ok(unsafe {
-            nonnull::write_with(ptr, f);
+            non_null::write_with(ptr, f);
 
             // If `f` made allocations on this bump allocator we can't shrink the allocation.
             let can_shrink = pos == self.chunk.get().pos();
 
-            match nonnull::result(ptr) {
+            match non_null::result(ptr) {
                 Ok(value) => Ok({
                     if can_shrink {
                         let new_pos = if UP {
-                            let pos = nonnull::addr(nonnull::add(value, 1)).get();
+                            let pos = non_null::addr(non_null::add(value, 1)).get();
                             up_align_usize_unchecked(pos, MIN_ALIGN)
                         } else {
-                            let pos = nonnull::addr(value).get();
+                            let pos = non_null::addr(value).get();
                             down_align_usize(pos, MIN_ALIGN)
                         };
 
@@ -2778,17 +2778,17 @@ where
         let ptr = self.generic_prepare_allocation::<B, Result<T, E>>()?;
 
         Ok(unsafe {
-            nonnull::write_with(ptr, f);
+            non_null::write_with(ptr, f);
 
             // There is no need for `can_shrink` checks, because we have a mutable reference
             // so there's no way anyone else has allocated in `f`.
-            match nonnull::result(ptr) {
+            match non_null::result(ptr) {
                 Ok(value) => Ok({
                     let new_pos = if UP {
-                        let pos = nonnull::addr(nonnull::add(value, 1)).get();
+                        let pos = non_null::addr(non_null::add(value, 1)).get();
                         up_align_usize_unchecked(pos, MIN_ALIGN)
                     } else {
-                        let pos = nonnull::addr(value).get();
+                        let pos = non_null::addr(value).get();
                         down_align_usize(pos, MIN_ALIGN)
                     };
 

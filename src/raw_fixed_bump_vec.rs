@@ -5,7 +5,7 @@ use core::{
 
 use crate::{
     error_behavior::ErrorBehavior,
-    polyfill::{nonnull, transmute_mut, transmute_ref},
+    polyfill::{non_null, transmute_mut, transmute_ref},
     raw_bump_box::RawBumpBox,
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
     BumpAllocator, FixedBumpVec, MutBumpAllocator, SizedTypeProperties,
@@ -28,7 +28,7 @@ impl<T> RawFixedBumpVec<T> {
         assert!(T::IS_ZST);
 
         RawFixedBumpVec {
-            initialized: unsafe { RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(NonNull::dangling(), len)) },
+            initialized: unsafe { RawBumpBox::from_ptr(non_null::slice_from_raw_parts(NonNull::dangling(), len)) },
             capacity: usize::MAX,
         }
     }
@@ -60,7 +60,7 @@ impl<T> RawFixedBumpVec<T> {
         let ptr = B::allocate_slice::<T>(allocator, len)?;
 
         Ok(Self {
-            initialized: RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(ptr, 0)),
+            initialized: RawBumpBox::from_ptr(non_null::slice_from_raw_parts(ptr, 0)),
             capacity: len,
         })
     }
@@ -73,7 +73,7 @@ impl<T> RawFixedBumpVec<T> {
         let allocation = B::prepare_slice_allocation::<T>(allocator, len)?;
 
         Ok(Self {
-            initialized: RawBumpBox::from_ptr(nonnull::slice_from_raw_parts(nonnull::as_non_null_ptr(allocation), 0)),
+            initialized: RawBumpBox::from_ptr(non_null::slice_from_raw_parts(non_null::as_non_null_ptr(allocation), 0)),
             capacity: allocation.len(),
         })
     }

@@ -1,6 +1,6 @@
 use core::ptr::NonNull;
 
-use crate::{polyfill::nonnull, BumpBox};
+use crate::{polyfill::non_null, BumpBox};
 
 /// An iterator which uses a closure to determine if an element should be removed.
 ///
@@ -49,7 +49,7 @@ where
         let ptr = unsafe { boxed.mut_ptr() };
         let len = ptr.len();
 
-        nonnull::set_len(ptr, 0);
+        non_null::set_len(ptr, 0);
 
         Self {
             ptr,
@@ -70,8 +70,8 @@ where
     fn next(&mut self) -> Option<T> {
         unsafe {
             while self.index < self.original_len {
-                let start_ptr = nonnull::as_non_null_ptr(*self.ptr);
-                let mut value_ptr = nonnull::add(start_ptr, self.index);
+                let start_ptr = non_null::as_non_null_ptr(*self.ptr);
+                let mut value_ptr = non_null::add(start_ptr, self.index);
 
                 let drained = (self.filter)(value_ptr.as_mut());
 
@@ -85,8 +85,8 @@ where
                     return Some(value_ptr.as_ptr().read());
                 } else if self.drained_count > 0 {
                     let src = value_ptr;
-                    let dst = nonnull::sub(value_ptr, self.drained_count);
-                    nonnull::copy_nonoverlapping(src, dst, 1);
+                    let dst = non_null::sub(value_ptr, self.drained_count);
+                    non_null::copy_nonoverlapping(src, dst, 1);
                 }
             }
             None
@@ -112,14 +112,14 @@ where
                 // elements and tell the vec that they still exist. The backshift
                 // is required to prevent a double-drop of the last successfully
                 // drained item prior to a panic in the predicate.
-                let ptr = nonnull::as_non_null_ptr(*self.ptr);
-                let src = nonnull::add(ptr, self.index);
-                let dst = nonnull::sub(src, self.drained_count);
+                let ptr = non_null::as_non_null_ptr(*self.ptr);
+                let src = non_null::add(ptr, self.index);
+                let dst = non_null::sub(src, self.drained_count);
                 let tail_len = self.original_len - self.index;
-                nonnull::copy(src, dst, tail_len);
+                non_null::copy(src, dst, tail_len);
             }
 
-            nonnull::set_len(self.ptr, self.original_len - self.drained_count);
+            non_null::set_len(self.ptr, self.original_len - self.drained_count);
         }
     }
 }

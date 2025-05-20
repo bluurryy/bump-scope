@@ -7,7 +7,7 @@ use core::{
     slice,
 };
 
-use crate::{polyfill::nonnull, BumpAllocator, SizedTypeProperties};
+use crate::{polyfill::non_null, BumpAllocator, SizedTypeProperties};
 
 /// An iterator that moves out of a vector.
 ///
@@ -43,13 +43,13 @@ impl<T, A> IntoIter<T, A> {
         if T::IS_ZST {
             IntoIter {
                 ptr: NonNull::dangling(),
-                end: unsafe { nonnull::wrapping_byte_add(NonNull::dangling(), slice.len()) },
+                end: unsafe { non_null::wrapping_byte_add(NonNull::dangling(), slice.len()) },
                 allocator,
                 marker: PhantomData,
             }
         } else {
-            let start = nonnull::as_non_null_ptr(slice);
-            let end = nonnull::add(start, slice.len());
+            let start = non_null::as_non_null_ptr(slice);
+            let end = non_null::add(start, slice.len());
 
             IntoIter {
                 ptr: start,
@@ -67,9 +67,9 @@ impl<T, A> IntoIter<T, A> {
         #![allow(clippy::cast_sign_loss)]
 
         if T::IS_ZST {
-            nonnull::addr(self.end).get().wrapping_sub(nonnull::addr(self.ptr).get())
+            non_null::addr(self.end).get().wrapping_sub(non_null::addr(self.ptr).get())
         } else {
-            unsafe { nonnull::offset_from_unsigned(self.end, self.ptr) }
+            unsafe { non_null::offset_from_unsigned(self.end, self.ptr) }
         }
     }
 
@@ -142,13 +142,13 @@ impl<T, A> Iterator for IntoIter<T, A> {
         } else if T::IS_ZST {
             // `ptr` has to stay where it is to remain aligned, so we reduce the length by 1 by
             // reducing the `end`.
-            self.end = unsafe { nonnull::wrapping_byte_sub(self.end, 1) };
+            self.end = unsafe { non_null::wrapping_byte_sub(self.end, 1) };
 
             // Make up a value of this ZST.
             Some(unsafe { mem::zeroed() })
         } else {
             let old = self.ptr;
-            self.ptr = unsafe { nonnull::add(self.ptr, 1) };
+            self.ptr = unsafe { non_null::add(self.ptr, 1) };
 
             Some(unsafe { old.as_ptr().read() })
         }
@@ -173,12 +173,12 @@ impl<T, A> DoubleEndedIterator for IntoIter<T, A> {
             None
         } else if T::IS_ZST {
             // See above for why 'ptr.offset' isn't used
-            self.end = unsafe { nonnull::wrapping_byte_sub(self.end, 1) };
+            self.end = unsafe { non_null::wrapping_byte_sub(self.end, 1) };
 
             // Make up a value of this ZST.
             Some(unsafe { mem::zeroed() })
         } else {
-            self.end = unsafe { nonnull::sub(self.end, 1) };
+            self.end = unsafe { non_null::sub(self.end, 1) };
 
             Some(unsafe { self.end.as_ptr().read() })
         }
@@ -195,7 +195,7 @@ impl<T, A> Drop for IntoIter<T, A> {
     #[inline]
     fn drop(&mut self) {
         unsafe {
-            nonnull::slice_from_raw_parts(self.ptr, self.len()).as_ptr().drop_in_place();
+            non_null::slice_from_raw_parts(self.ptr, self.len()).as_ptr().drop_in_place();
         }
     }
 }

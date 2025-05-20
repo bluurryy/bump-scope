@@ -6,7 +6,7 @@
 pub(crate) mod hint;
 pub(crate) mod iter;
 pub(crate) mod layout;
-pub(crate) mod nonnull;
+pub(crate) mod non_null;
 pub(crate) mod nonzero;
 pub(crate) mod option;
 pub(crate) mod pointer;

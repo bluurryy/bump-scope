@@ -14,7 +14,7 @@ use crate::{
     alloc::AllocError,
     min_non_zero_cap, mut_collection_method_allocator_stats,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
-    polyfill::{nonnull, pointer, slice},
+    polyfill::{non_null, pointer, slice},
     raw_fixed_bump_vec::RawFixedBumpVec,
     BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SizedTypeProperties,
 };
@@ -2019,13 +2019,13 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
 
         unsafe {
             if T::IS_ZST {
-                return nonnull::slice_from_raw_parts(NonNull::dangling(), this.len());
+                return non_null::slice_from_raw_parts(NonNull::dangling(), this.len());
             }
 
             if this.capacity() == 0 {
                 // We didn't touch the allocator, so no need to do anything.
                 debug_assert_eq!(this.as_non_null(), NonNull::<T>::dangling());
-                return nonnull::slice_from_raw_parts(NonNull::<T>::dangling(), 0);
+                return non_null::slice_from_raw_parts(NonNull::<T>::dangling(), 0);
             }
 
             let ptr = this.as_non_null();

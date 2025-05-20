@@ -2,7 +2,7 @@ use core::{alloc::Layout, ptr::NonNull};
 
 use crate::{
     alloc::{AllocError, Allocator},
-    polyfill::nonnull,
+    polyfill::non_null,
     BumpAllocator,
 };
 
@@ -115,12 +115,12 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
             new_layout: Layout,
         ) -> Result<NonNull<[u8]>, AllocError> {
             let new_ptr = this.0.allocate(new_layout)?.cast::<u8>();
-            nonnull::copy_nonoverlapping(ptr, new_ptr, old_layout.size());
-            Ok(nonnull::slice_from_raw_parts(new_ptr, new_layout.size()))
+            non_null::copy_nonoverlapping(ptr, new_ptr, old_layout.size());
+            Ok(non_null::slice_from_raw_parts(new_ptr, new_layout.size()))
         }
 
-        if nonnull::is_aligned_to(ptr, new_layout.align()) {
-            Ok(nonnull::slice_from_raw_parts(ptr, new_layout.size()))
+        if non_null::is_aligned_to(ptr, new_layout.align()) {
+            Ok(non_null::slice_from_raw_parts(ptr, new_layout.size()))
         } else {
             // expected to virtually never occur
             shrink_unfit(self, ptr, old_layout, new_layout)

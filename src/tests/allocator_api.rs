@@ -2,7 +2,7 @@ use std::{alloc::Layout, ptr::NonNull};
 
 use crate::{
     alloc::{Allocator, Global},
-    polyfill::nonnull,
+    polyfill::non_null,
     Bump,
 };
 
@@ -21,7 +21,7 @@ fn layout(size: usize) -> Layout {
 }
 
 fn assert_aligned_to(ptr: NonNull<[u8]>) {
-    assert!(nonnull::addr(ptr.cast::<u8>()).get() % 4 == 0);
+    assert!(non_null::addr(ptr.cast::<u8>()).get() % 4 == 0);
 }
 
 fn grow<const UP: bool>() {

@@ -5,7 +5,7 @@ use core::{
 };
 
 use crate::{
-    polyfill::{nonnull, pointer},
+    polyfill::{non_null, pointer},
     BumpBox, SizedTypeProperties,
 };
 
@@ -26,7 +26,7 @@ impl<T> Drop for BumpBoxSliceInitializer<'_, T> {
     fn drop(&mut self) {
         unsafe {
             let to_drop_len = self.init_len();
-            let to_drop = nonnull::slice_from_raw_parts(self.start, to_drop_len);
+            let to_drop = non_null::slice_from_raw_parts(self.start, to_drop_len);
             to_drop.as_ptr().drop_in_place();
         }
     }
@@ -37,7 +37,7 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
     pub(crate) fn new(slice: BumpBox<'a, [MaybeUninit<T>]>) -> Self {
         if T::IS_ZST {
             let start = NonNull::dangling();
-            let end = unsafe { nonnull::wrapping_byte_add(start, slice.len()) };
+            let end = unsafe { non_null::wrapping_byte_add(start, slice.len()) };
 
             return Self {
                 pos: start,
@@ -52,7 +52,7 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
 
         unsafe {
             let start = slice.cast::<T>();
-            let end = nonnull::add(start, len);
+            let end = non_null::add(start, len);
 
             Self {
                 pos: start,
@@ -66,18 +66,18 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
     #[inline(always)]
     fn init_len(&self) -> usize {
         if T::IS_ZST {
-            nonnull::addr(self.pos).get().wrapping_sub(nonnull::addr(self.start).get())
+            non_null::addr(self.pos).get().wrapping_sub(non_null::addr(self.start).get())
         } else {
-            unsafe { nonnull::offset_from_unsigned(self.pos, self.start) }
+            unsafe { non_null::offset_from_unsigned(self.pos, self.start) }
         }
     }
 
     #[inline(always)]
     fn len(&self) -> usize {
         if T::IS_ZST {
-            nonnull::addr(self.end).get().wrapping_sub(nonnull::addr(self.start).get())
+            non_null::addr(self.end).get().wrapping_sub(non_null::addr(self.start).get())
         } else {
-            unsafe { nonnull::offset_from_unsigned(self.end, self.start) }
+            unsafe { non_null::offset_from_unsigned(self.end, self.start) }
         }
     }
 
@@ -108,10 +108,10 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
 
         if T::IS_ZST {
             mem::forget(f());
-            self.pos = nonnull::wrapping_byte_add(self.pos, 1);
+            self.pos = non_null::wrapping_byte_add(self.pos, 1);
         } else {
             pointer::write_with(self.pos.as_ptr(), f);
-            self.pos = nonnull::add(self.pos, 1);
+            self.pos = non_null::add(self.pos, 1);
         }
     }
 
@@ -126,7 +126,7 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
         let this = ManuallyDrop::new(self);
         debug_assert!(this.is_full());
         let len = this.len();
-        let slice = nonnull::slice_from_raw_parts(this.start, len);
+        let slice = non_null::slice_from_raw_parts(this.start, len);
         BumpBox::from_raw(slice)
     }
 }

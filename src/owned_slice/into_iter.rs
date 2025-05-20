@@ -8,7 +8,7 @@ use core::{
     slice,
 };
 
-use crate::{polyfill::nonnull, BumpBox, SizedTypeProperties};
+use crate::{polyfill::non_null, BumpBox, SizedTypeProperties};
 
 use super::TakeOwnedSlice;
 
@@ -58,7 +58,7 @@ impl<'a, T> IntoIter<'a, T> {
             Self::new_zst(slice.len())
         } else {
             let start = slice.cast::<T>();
-            let end = nonnull::add(start, slice.len());
+            let end = non_null::add(start, slice.len());
             Self::new_range(start..end)
         }
     }
@@ -68,9 +68,9 @@ impl<'a, T> IntoIter<'a, T> {
         if T::IS_ZST {
             Self::new_zst(range.end - range.start)
         } else {
-            let ptr = nonnull::as_non_null_ptr(ptr);
-            let start = nonnull::add(ptr, range.start);
-            let end = nonnull::add(ptr, range.end);
+            let ptr = non_null::as_non_null_ptr(ptr);
+            let start = non_null::add(ptr, range.start);
+            let end = non_null::add(ptr, range.end);
             Self::new_range(start..end)
         }
     }
@@ -81,7 +81,7 @@ impl<'a, T> IntoIter<'a, T> {
 
         Self {
             ptr: NonNull::dangling(),
-            end: unsafe { nonnull::wrapping_byte_add(NonNull::dangling(), len) },
+            end: unsafe { non_null::wrapping_byte_add(NonNull::dangling(), len) },
             marker: PhantomData,
         }
     }
@@ -104,9 +104,9 @@ impl<'a, T> IntoIter<'a, T> {
         #![allow(clippy::cast_sign_loss)]
 
         if T::IS_ZST {
-            nonnull::addr(self.end).get().wrapping_sub(nonnull::addr(self.ptr).get())
+            non_null::addr(self.end).get().wrapping_sub(non_null::addr(self.ptr).get())
         } else {
-            unsafe { nonnull::offset_from_unsigned(self.end, self.ptr) }
+            unsafe { non_null::offset_from_unsigned(self.end, self.ptr) }
         }
     }
 
@@ -142,7 +142,7 @@ impl<'a, T> IntoIter<'a, T> {
         let this = ManuallyDrop::new(self);
 
         unsafe {
-            let slice = nonnull::slice_from_raw_parts(this.ptr, this.len());
+            let slice = non_null::slice_from_raw_parts(this.ptr, this.len());
             BumpBox::from_raw(slice)
         }
     }
@@ -159,14 +159,14 @@ impl<T> Iterator for IntoIter<'_, T> {
             // `ptr` has to stay aligned, so we decrement the length
 
             // SAFETY: self.ptr < self.end; subtracting 1 won't overflow
-            self.end = unsafe { nonnull::wrapping_byte_sub(self.end, 1) };
+            self.end = unsafe { non_null::wrapping_byte_sub(self.end, 1) };
 
             // SAFETY: its a ZST
             Some(unsafe { mem::zeroed() })
         } else {
             unsafe {
                 let old = self.ptr;
-                self.ptr = nonnull::add(self.ptr, 1);
+                self.ptr = non_null::add(self.ptr, 1);
                 Some(old.as_ptr().read())
             }
         }
@@ -193,13 +193,13 @@ impl<T> DoubleEndedIterator for IntoIter<'_, T> {
             // `ptr` has to stay aligned, so we decrement the length
 
             // SAFETY: self.ptr < self.end; subtracting 1 won't overflow
-            self.end = unsafe { nonnull::wrapping_byte_sub(self.end, 1) };
+            self.end = unsafe { non_null::wrapping_byte_sub(self.end, 1) };
 
             // SAFETY: its a ZST
             Some(unsafe { mem::zeroed() })
         } else {
             unsafe {
-                self.end = nonnull::sub(self.end, 1);
+                self.end = non_null::sub(self.end, 1);
                 Some(self.end.as_ptr().read())
             }
         }
@@ -219,7 +219,7 @@ impl<T> Drop for IntoIter<'_, T> {
     #[inline]
     fn drop(&mut self) {
         unsafe {
-            nonnull::slice_from_raw_parts(self.ptr, self.len()).as_ptr().drop_in_place();
+            non_null::slice_from_raw_parts(self.ptr, self.len()).as_ptr().drop_in_place();
         }
     }
 }

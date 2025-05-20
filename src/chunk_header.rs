@@ -1,6 +1,6 @@
 use core::{cell::Cell, ptr::NonNull};
 
-use crate::polyfill::nonnull;
+use crate::polyfill::non_null;
 
 #[repr(C, align(16))]
 pub(crate) struct ChunkHeader<A = ()> {
@@ -29,5 +29,5 @@ static UNALLOCATED_CHUNK_HEADER: UnallocatedChunkHeader = UnallocatedChunkHeader
 
 #[rustversion::attr(since(1.83), const)]
 pub(crate) fn unallocated_chunk_header() -> NonNull<ChunkHeader> {
-    nonnull::from_ref(&UNALLOCATED_CHUNK_HEADER.0)
+    non_null::from_ref(&UNALLOCATED_CHUNK_HEADER.0)
 }
