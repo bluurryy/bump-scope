@@ -1,6 +1,6 @@
 use core::{mem, ptr};
 
-use crate::assume_unchecked;
+use crate::polyfill;
 
 /// See [`std::ptr::from_ref`].
 #[must_use]
@@ -43,7 +43,7 @@ pub(crate) unsafe fn len<T>(ptr: *const [T]) -> usize {
 #[allow(clippy::cast_sign_loss)]
 #[allow(clippy::checked_conversions)]
 pub(crate) unsafe fn offset_from_unsigned<T>(lhs: *const T, rhs: *const T) -> usize {
-    assume_unchecked(lhs >= rhs);
+    polyfill::hint::assert_unchecked(lhs >= rhs);
     let pointee_size = mem::size_of::<T>();
     assert!(0 < pointee_size && pointee_size <= isize::MAX as usize);
     lhs.offset_from(rhs) as usize

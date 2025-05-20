@@ -444,13 +444,6 @@ fn bump_down(addr: NonZeroUsize, size: usize, align: usize) -> usize {
     down_align_usize(subtracted, align)
 }
 
-#[inline(always)]
-const unsafe fn assume_unchecked(condition: bool) {
-    if !condition {
-        core::hint::unreachable_unchecked();
-    }
-}
-
 mod chunk_header;
 #[cfg(test)]
 mod tests;
