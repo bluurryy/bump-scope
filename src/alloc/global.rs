@@ -25,7 +25,10 @@ impl Global {
     #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
     fn alloc_impl(&self, layout: Layout, zeroed: bool) -> Result<NonNull<[u8]>, AllocError> {
         match layout.size() {
-            0 => Ok(polyfill::non_null::slice_from_raw_parts(polyfill::layout::dangling(layout), 0)),
+            0 => Ok(polyfill::non_null::slice_from_raw_parts(
+                polyfill::layout::dangling(layout),
+                0,
+            )),
             // SAFETY: `layout` is non-zero in size,
             size => unsafe {
                 let raw_ptr = if zeroed { alloc_zeroed(layout) } else { alloc(layout) };
