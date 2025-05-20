@@ -35,17 +35,17 @@ impl ChunkSizeConfig {
     /// We use optimizations in `alloc` that make use of that property.
     ///
     /// When downwards allocating the final chunk size must also be aligned to the chunk header
-    /// alignment so we can put the header at `end.cast::<ChunkHeader<A>>().sub(1)`.
+    /// alignment so we can put the header at `ptr.byte_add(size).cast::<ChunkHeader<A>>().sub(1)`.
     ///
-    /// This downwards alignment can not result in a size smaller than the size of the layout
-    /// that was used to do this allocation because that layout's size was already
-    /// downward aligned with this function in `calc_size_from_hint` and a downwards alignment
-    /// of a size greater or equal than the original one (which this one is) can not
-    /// result in a smaller size.
+    /// This downwards alignment must not result in a size smaller than the layout's size
+    /// because we need `size` to be a size that [fits] the allocated memory block.
+    /// (The size must be between the original requested size and the size the allocator actually gave us.)
     ///
-    /// This downwards alignment must not result in a smaller size because we need `size`
-    /// to be a size that [fits] the allocated memory block. That means the size must be between
-    /// the original requested size and the size the allocator actually gave us.
+    /// This is ensured by already having `align_size`'d the layout's size in `calc_size_from_hint`.
+    /// A downwards alignment of a size greater or equal than the layout's size, which
+    /// the allocation's size is, can not result in a size smaller than the layout's.
+    ///
+    /// [fits]: https://doc.rust-lang.org/std/alloc/trait.Allocator.html#memory-fitting
     #[inline(always)]
     pub const fn align_size(self, size: usize) -> usize {
         let Self {

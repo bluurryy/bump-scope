@@ -49,12 +49,12 @@ impl<const UP: bool, A> PartialEq for RawChunk<UP, A> {
 impl<const UP: bool, A> Eq for RawChunk<UP, A> {}
 
 impl<const UP: bool, A> RawChunk<UP, A> {
-    pub(crate) fn new_in<E: ErrorBehavior>(size: ChunkSize<A, UP>, prev: Option<Self>, allocator: A) -> Result<Self, E>
+    pub(crate) fn new_in<E: ErrorBehavior>(chunk_size: ChunkSize<A, UP>, prev: Option<Self>, allocator: A) -> Result<Self, E>
     where
         A: Allocator,
         for<'a> &'a A: Allocator,
     {
-        let layout = size.layout().ok_or_else(E::capacity_overflow)?;
+        let layout = chunk_size.layout().ok_or_else(E::capacity_overflow)?;
 
         let allocation = match allocator.allocate(layout) {
             Ok(ok) => ok,
@@ -62,7 +62,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         };
 
         let ptr = nonnull::as_non_null_ptr(allocation);
-        let len = allocation.len();
+        let size = allocation.len();
 
         // Note that the allocation's size may be larger than
         // the requested layout's size.
@@ -75,10 +75,10 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         // so we need to align it first.
         //
         // Follow this method for details.
-        let len = size.align_allocation_len(len);
+        let size = chunk_size.align_allocation_size(size);
 
-        debug_assert!(len >= layout.size());
-        debug_assert!(len % MIN_CHUNK_ALIGN == 0);
+        debug_assert!(size >= layout.size());
+        debug_assert!(size % MIN_CHUNK_ALIGN == 0);
 
         let prev = prev.map(|c| c.header);
         let next = Cell::new(None);
@@ -89,7 +89,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
                 header.as_ptr().write(ChunkHeader {
                     pos: Cell::new(nonnull::add(header, 1).cast()),
-                    end: nonnull::add(ptr, len),
+                    end: nonnull::add(ptr, size),
                     prev,
                     next,
                     allocator,
@@ -97,7 +97,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
                 header
             } else {
-                let header = nonnull::sub(nonnull::add(ptr, len).cast::<ChunkHeader<A>>(), 1);
+                let header = nonnull::sub(nonnull::add(ptr, size).cast::<ChunkHeader<A>>(), 1);
 
                 header.as_ptr().write(ChunkHeader {
                     pos: Cell::new(header.cast()),

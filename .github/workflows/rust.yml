@@ -73,6 +73,8 @@ jobs:
       - run: cd crates/test-hashbrown && cargo miri test --all-features
       - run: cd crates/tests-from-std && cargo test
       - run: cd crates/tests-from-std && cargo miri test
+      - run: cd crates/fuzzing-support && cargo test
+      - run: cd crates/fuzzing-support && cargo miri test
   minimal-versions:
     runs-on: ubuntu-latest
     steps:
