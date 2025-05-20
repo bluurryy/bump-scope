@@ -2,7 +2,7 @@ use core::{alloc::Layout, marker::PhantomData, num::NonZeroUsize};
 
 use chunk_size_config::ChunkSizeConfig;
 
-use crate::{polyfill::const_unwrap, ChunkHeader};
+use crate::{polyfill::option::const_unwrap, ChunkHeader};
 
 mod chunk_size_config;
 

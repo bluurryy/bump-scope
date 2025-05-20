@@ -6,20 +6,13 @@ pub(crate) mod iter;
 pub(crate) mod layout;
 pub(crate) mod nonnull;
 pub(crate) mod nonzero;
+pub(crate) mod option;
 pub(crate) mod pointer;
 pub(crate) mod slice;
 pub(crate) mod str;
 pub(crate) mod usize;
 
 use core::mem::{size_of, ManuallyDrop};
-
-#[inline(always)]
-pub(crate) const fn const_unwrap<T: Copy>(option: Option<T>) -> T {
-    match option {
-        Some(value) => value,
-        None => panic!("expected Some"),
-    }
-}
 
 pub(crate) unsafe fn transmute_value<A, B>(a: A) -> B {
     assert!(size_of::<A>() == size_of::<B>());
