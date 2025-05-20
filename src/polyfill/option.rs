@@ -1,3 +1,4 @@
+/// Not part of std.
 #[inline(always)]
 pub(crate) const fn const_unwrap<T: Copy>(option: Option<T>) -> T {
     match option {
