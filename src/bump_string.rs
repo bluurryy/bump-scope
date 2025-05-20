@@ -21,7 +21,7 @@ use crate::{
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{panic_on_error, polyfill::nonnull, PanicsOnAlloc};
+use crate::{panic_on_error, polyfill::non_null, PanicsOnAlloc};
 
 /// This is like [`format!`](alloc_crate::format) but allocates inside a bump allocator, returning a [`BumpString`].
 ///
@@ -2079,7 +2079,7 @@ impl<A: BumpAllocator + Clone> Clone for BumpString<A> {
         unsafe {
             self.as_ptr().copy_to_nonoverlapping(ptr.as_ptr(), len);
 
-            let slice = nonnull::str_from_utf8(nonnull::slice_from_raw_parts(ptr, len));
+            let slice = non_null::str_from_utf8(non_null::slice_from_raw_parts(ptr, len));
             let fixed = RawFixedBumpString::from_raw_parts(slice, len);
 
             Self { fixed, allocator }

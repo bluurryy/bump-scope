@@ -11,7 +11,7 @@ use core::{
 use crate::{
     alloc::AllocError,
     owned_str,
-    polyfill::{self, nonnull, transmute_mut},
+    polyfill::{self, non_null, transmute_mut},
     BumpAllocatorScope, BumpBox, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop,
 };
 
@@ -165,8 +165,8 @@ impl<'a> FixedBumpString<'a> {
         let uninitialized = uninitialized.into_raw();
         let capacity = uninitialized.len();
 
-        let ptr = nonnull::as_non_null_ptr(uninitialized).cast::<u8>();
-        let initialized = unsafe { BumpBox::from_raw(nonnull::str_from_utf8(nonnull::slice_from_raw_parts(ptr, 0))) };
+        let ptr = non_null::as_non_null_ptr(uninitialized).cast::<u8>();
+        let initialized = unsafe { BumpBox::from_raw(non_null::str_from_utf8(non_null::slice_from_raw_parts(ptr, 0))) };
 
         Self { initialized, capacity }
     }
@@ -403,14 +403,14 @@ impl<'a> FixedBumpString<'a> {
     pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self {
         let len = self.len();
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
-        let ptr = nonnull::as_non_null_ptr(nonnull::str_bytes(self.initialized.ptr()));
+        let ptr = non_null::as_non_null_ptr(non_null::str_bytes(self.initialized.ptr()));
 
         unsafe {
             if end == len {
                 self.assert_char_boundary(start);
 
                 let lhs = ptr;
-                let rhs = nonnull::add(ptr, start);
+                let rhs = non_null::add(ptr, start);
 
                 let lhs_len = start;
                 let rhs_len = len - start;
@@ -423,7 +423,7 @@ impl<'a> FixedBumpString<'a> {
                 self.set_cap(lhs_cap);
 
                 return FixedBumpString {
-                    initialized: BumpBox::from_raw(nonnull::str_from_utf8(nonnull::slice_from_raw_parts(rhs, rhs_len))),
+                    initialized: BumpBox::from_raw(non_null::str_from_utf8(non_null::slice_from_raw_parts(rhs, rhs_len))),
                     capacity: rhs_cap,
                 };
             }
@@ -432,7 +432,7 @@ impl<'a> FixedBumpString<'a> {
                 self.assert_char_boundary(end);
 
                 let lhs = ptr;
-                let rhs = nonnull::add(ptr, end);
+                let rhs = non_null::add(ptr, end);
 
                 let lhs_len = end;
                 let rhs_len = len - end;
@@ -445,7 +445,7 @@ impl<'a> FixedBumpString<'a> {
                 self.set_cap(rhs_cap);
 
                 return FixedBumpString {
-                    initialized: BumpBox::from_raw(nonnull::str_from_utf8(nonnull::slice_from_raw_parts(lhs, lhs_len))),
+                    initialized: BumpBox::from_raw(non_null::str_from_utf8(non_null::slice_from_raw_parts(lhs, lhs_len))),
                     capacity: lhs_cap,
                 };
             }
@@ -468,7 +468,7 @@ impl<'a> FixedBumpString<'a> {
                 self.as_mut_vec().get_unchecked_mut(..end).rotate_right(range_len);
 
                 let lhs = ptr;
-                let rhs = nonnull::add(ptr, range_len);
+                let rhs = non_null::add(ptr, range_len);
 
                 let lhs_len = range_len;
                 let rhs_len = remaining_len;
@@ -481,7 +481,7 @@ impl<'a> FixedBumpString<'a> {
                 self.set_cap(rhs_cap);
 
                 FixedBumpString {
-                    initialized: BumpBox::from_raw(nonnull::str_from_utf8(nonnull::slice_from_raw_parts(lhs, lhs_len))),
+                    initialized: BumpBox::from_raw(non_null::str_from_utf8(non_null::slice_from_raw_parts(lhs, lhs_len))),
                     capacity: lhs_cap,
                 }
             } else {
@@ -489,7 +489,7 @@ impl<'a> FixedBumpString<'a> {
                 self.as_mut_vec().get_unchecked_mut(start..).rotate_left(range_len);
 
                 let lhs = ptr;
-                let rhs = nonnull::add(ptr, remaining_len);
+                let rhs = non_null::add(ptr, remaining_len);
 
                 let lhs_len = remaining_len;
                 let rhs_len = range_len;
@@ -502,7 +502,7 @@ impl<'a> FixedBumpString<'a> {
                 self.set_cap(lhs_cap);
 
                 FixedBumpString {
-                    initialized: BumpBox::from_raw(nonnull::str_from_utf8(nonnull::slice_from_raw_parts(rhs, rhs_len))),
+                    initialized: BumpBox::from_raw(non_null::str_from_utf8(non_null::slice_from_raw_parts(rhs, rhs_len))),
                     capacity: rhs_cap,
                 }
             }

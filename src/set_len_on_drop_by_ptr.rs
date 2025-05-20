@@ -1,6 +1,6 @@
 use core::ptr::NonNull;
 
-use crate::polyfill::nonnull;
+use crate::polyfill::non_null;
 
 // Set the length of the vec when the `SetLenOnDropByPtr` value goes out of scope.
 //
@@ -35,6 +35,6 @@ impl<'a, T> SetLenOnDropByPtr<'a, T> {
 impl<T> Drop for SetLenOnDropByPtr<'_, T> {
     #[inline]
     fn drop(&mut self) {
-        nonnull::set_len(self.slice, self.local_len);
+        non_null::set_len(self.slice, self.local_len);
     }
 }

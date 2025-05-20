@@ -24,7 +24,7 @@ use core::{
     ptr::{self, NonNull},
 };
 
-use crate::polyfill::nonnull;
+use crate::polyfill::non_null;
 
 #[cfg(feature = "alloc")]
 pub use global::Global;
@@ -163,7 +163,7 @@ pub unsafe trait Allocator {
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         let ptr = self.allocate(layout)?;
         // SAFETY: `alloc` returns a valid memory block
-        unsafe { nonnull::as_non_null_ptr(ptr).as_ptr().write_bytes(0, ptr.len()) }
+        unsafe { non_null::as_non_null_ptr(ptr).as_ptr().write_bytes(0, ptr.len()) }
         Ok(ptr)
     }
 
@@ -230,7 +230,7 @@ pub unsafe trait Allocator {
         // deallocated, it cannot overlap `new_ptr`. Thus, the call to `copy_nonoverlapping` is
         // safe. The safety contract for `dealloc` must be upheld by the caller.
         unsafe {
-            ptr::copy_nonoverlapping(ptr.as_ptr(), nonnull::as_mut_ptr(new_ptr), old_layout.size());
+            ptr::copy_nonoverlapping(ptr.as_ptr(), non_null::as_mut_ptr(new_ptr), old_layout.size());
             self.deallocate(ptr, old_layout);
         }
 
@@ -293,7 +293,7 @@ pub unsafe trait Allocator {
         // deallocated, it cannot overlap `new_ptr`. Thus, the call to `copy_nonoverlapping` is
         // safe. The safety contract for `dealloc` must be upheld by the caller.
         unsafe {
-            ptr::copy_nonoverlapping(ptr.as_ptr(), nonnull::as_mut_ptr(new_ptr), old_layout.size());
+            ptr::copy_nonoverlapping(ptr.as_ptr(), non_null::as_mut_ptr(new_ptr), old_layout.size());
             self.deallocate(ptr, old_layout);
         }
 
@@ -352,7 +352,7 @@ pub unsafe trait Allocator {
         // deallocated, it cannot overlap `new_ptr`. Thus, the call to `copy_nonoverlapping` is
         // safe. The safety contract for `dealloc` must be upheld by the caller.
         unsafe {
-            ptr::copy_nonoverlapping(ptr.as_ptr(), nonnull::as_mut_ptr(new_ptr), new_layout.size());
+            ptr::copy_nonoverlapping(ptr.as_ptr(), non_null::as_mut_ptr(new_ptr), new_layout.size());
             self.deallocate(ptr, old_layout);
         }
 

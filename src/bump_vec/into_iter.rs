@@ -11,7 +11,7 @@ use core::{
 #[cfg(feature = "panic-on-alloc")]
 use core::mem::MaybeUninit;
 
-use crate::{polyfill::nonnull, BumpAllocator, SizedTypeProperties};
+use crate::{polyfill::non_null, BumpAllocator, SizedTypeProperties};
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::{raw_fixed_bump_vec::RawFixedBumpVec, BumpBox, BumpVec, FixedBumpVec};
@@ -113,13 +113,13 @@ impl<T, A: BumpAllocator> Iterator for IntoIter<T, A> {
         } else if T::IS_ZST {
             // `ptr` has to stay where it is to remain aligned, so we reduce the length by 1 by
             // reducing the `end`.
-            self.end = unsafe { nonnull::wrapping_byte_sub(self.end, 1) };
+            self.end = unsafe { non_null::wrapping_byte_sub(self.end, 1) };
 
             // Make up a value of this ZST.
             Some(unsafe { mem::zeroed() })
         } else {
             let old = self.ptr;
-            self.ptr = unsafe { nonnull::add(self.ptr, 1) };
+            self.ptr = unsafe { non_null::add(self.ptr, 1) };
 
             Some(unsafe { old.as_ptr().read() })
         }
@@ -128,9 +128,9 @@ impl<T, A: BumpAllocator> Iterator for IntoIter<T, A> {
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         let exact = if T::IS_ZST {
-            nonnull::addr(self.end).get().wrapping_sub(nonnull::addr(self.ptr).get())
+            non_null::addr(self.end).get().wrapping_sub(non_null::addr(self.ptr).get())
         } else {
-            unsafe { nonnull::offset_from_unsigned(self.end, self.ptr) }
+            unsafe { non_null::offset_from_unsigned(self.end, self.ptr) }
         };
         (exact, Some(exact))
     }
@@ -148,12 +148,12 @@ impl<T, A: BumpAllocator> DoubleEndedIterator for IntoIter<T, A> {
             None
         } else if T::IS_ZST {
             // See above for why 'ptr.offset' isn't used
-            self.end = unsafe { nonnull::wrapping_byte_sub(self.end, 1) };
+            self.end = unsafe { non_null::wrapping_byte_sub(self.end, 1) };
 
             // Make up a value of this ZST.
             Some(unsafe { mem::zeroed() })
         } else {
-            self.end = unsafe { nonnull::sub(self.end, 1) };
+            self.end = unsafe { non_null::sub(self.end, 1) };
 
             Some(unsafe { self.end.as_ptr().read() })
         }
@@ -171,7 +171,7 @@ impl<T: Clone, A: BumpAllocator + Clone> Clone for IntoIter<T, A> {
     fn clone(&self) -> Self {
         let allocator = self.allocator.clone();
         let ptr = self.allocator.allocate_slice::<MaybeUninit<T>>(self.len());
-        let slice = nonnull::slice_from_raw_parts(ptr, self.len());
+        let slice = non_null::slice_from_raw_parts(ptr, self.len());
         let boxed = unsafe { BumpBox::from_raw(slice) };
         let boxed = boxed.init_clone(self.as_slice());
         let fixed = FixedBumpVec::from_init(boxed);

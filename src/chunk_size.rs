@@ -2,7 +2,7 @@ use core::{alloc::Layout, marker::PhantomData, num::NonZeroUsize};
 
 use chunk_size_config::ChunkSizeConfig;
 
-use crate::{polyfill::const_unwrap, ChunkHeader};
+use crate::{polyfill::option::const_unwrap, ChunkHeader};
 
 mod chunk_size_config;
 
@@ -52,8 +52,9 @@ impl<A, const UP: bool> ChunkSize<A, UP> {
         attempt!(ChunkSizeHint::for_capacity(layout)).calc_size()
     }
 
-    /// See [`chunk_size_calc::ChunkSizeConfig::align_size`].
+    /// See [`chunk_size_config::ChunkSizeConfig::align_size`].
     pub const fn align_allocation_size(self, size: usize) -> usize {
+        _ = self;
         config::<A, UP>().align_size(size)
     }
 

@@ -1,28 +1,32 @@
 use core::{mem, ptr};
 
-use crate::assume_unchecked;
+use crate::polyfill;
 
+/// See [`std::ptr::from_ref`].
 #[must_use]
 #[inline(always)]
 pub(crate) fn from_ref<T: ?Sized>(r: &T) -> *const T {
     r
 }
 
+/// See [`std::ptr::from_mut`].
 #[must_use]
 #[inline(always)]
 pub(crate) fn from_mut<T: ?Sized>(r: &mut T) -> *mut T {
     r
 }
 
-/// Returns a raw pointer to the slice's buffer.
-///
-/// This is equivalent to casting `self` to `*mut T`, but more type-safe.
+/// See [`pointer::as_mut_ptr`].
 #[inline(always)]
 #[allow(dead_code)]
 pub(crate) const fn as_mut_ptr<T>(ptr: *mut [T]) -> *mut T {
     ptr.cast()
 }
 
+/// See [`pointer::len`].
+///
+/// This implementation has an additional safety invariant though.
+///
 /// # Safety
 /// `ptr` must be valid to be turned into a reference.
 #[must_use]
@@ -33,85 +37,28 @@ pub(crate) unsafe fn len<T>(ptr: *const [T]) -> usize {
     (&(*ptr)).len()
 }
 
-/// Calculates the distance between two pointers within the same allocation, *where it's known that
-/// `self` is equal to or greater than `origin`*. The returned value is in
-/// units of T: the distance in bytes is divided by `size_of::<T>()`.
-///
-/// This computes the same value that [`offset_from`](#method.offset_from)
-/// would compute, but with the added precondition that the offset is
-/// guaranteed to be non-negative.  This method is equivalent to
-/// `usize::try_from(self.offset_from(origin)).unwrap_unchecked()`,
-/// but it provides slightly more information to the optimizer, which can
-/// sometimes allow it to optimize slightly better with some backends.
-///
-/// This method can be thought of as recovering the `count` that was passed
-/// to [`add`](#method.add) (or, with the parameters in the other order,
-/// to [`sub`](#method.sub)).  The following are all equivalent, assuming
-/// that their safety preconditions are met:
-/// ```ignore
-/// # unsafe fn blah(ptr: *const i32, origin: *const i32, count: usize) -> bool { unsafe {
-/// ptr.offset_from_unsigned(origin) == count
-/// # &&
-/// origin.add(count) == ptr
-/// # &&
-/// ptr.sub(count) == origin
-/// # } }
-/// ```
-///
-/// # Safety
-///
-/// - The distance between the pointers must be non-negative (`self >= origin`)
-///
-/// - *All* the safety conditions of [`offset_from`](#method.offset_from)
-///   apply to this method as well; see it for the full details.
-///
-/// Importantly, despite the return type of this method being able to represent
-/// a larger offset, it's still *not permitted* to pass pointers which differ
-/// by more than `isize::MAX` *bytes*.  As such, the result of this method will
-/// always be less than or equal to `isize::MAX as usize`.
-///
-/// # Panics
-///
-/// This function panics if `T` is a Zero-Sized Type ("ZST").
-///
-/// # Examples
-///
-/// ```ignore
-/// let a = [0; 5];
-/// let ptr1: *const i32 = &a[1];
-/// let ptr2: *const i32 = &a[3];
-/// unsafe {
-///     assert_eq!(ptr2.offset_from_unsigned(ptr1), 2);
-///     assert_eq!(ptr1.add(2), ptr2);
-///     assert_eq!(ptr2.sub(2), ptr1);
-///     assert_eq!(ptr2.offset_from_unsigned(ptr2), 0);
-/// }
-///
-/// // This would be incorrect, as the pointers are not correctly ordered:
-/// // ptr1.offset_from_unsigned(ptr2)
-/// ```
+/// See [`pointer::offset_from_unsigned`].
 #[inline]
 #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
 #[allow(clippy::cast_sign_loss)]
 #[allow(clippy::checked_conversions)]
-pub(crate) unsafe fn offset_from_unsigned<T>(lhs: *const T, rhs: *const T) -> usize {
-    assume_unchecked(lhs >= rhs);
+pub(crate) unsafe fn offset_from_unsigned<T>(this: *const T, origin: *const T) -> usize {
+    polyfill::hint::assert_unchecked(this >= origin);
     let pointee_size = mem::size_of::<T>();
     assert!(0 < pointee_size && pointee_size <= isize::MAX as usize);
-    lhs.offset_from(rhs) as usize
+    this.offset_from(origin) as usize
 }
 
-// Putting the expression in a function helps llvm to realize that it can initialize the value
-// at this pointer instead of allocating it on the stack and then copying it over.
+/// Not part of std.
+///
+/// Putting the expression in a function helps llvm to realize that it can initialize the value
+/// at this pointer instead of allocating it on the stack and then copying it over.
 #[inline(always)]
 pub(crate) unsafe fn write_with<T>(ptr: *mut T, f: impl FnOnce() -> T) {
     ptr::write(ptr, f());
 }
 
-/// Changes constness without changing the type.
-///
-/// This is a bit safer than `as` because it wouldn't silently change the type if the code is
-/// refactored.
+/// See [`pointer::cast_mut`].
 #[inline(always)]
 pub(crate) const fn cast_mut<T: ?Sized>(ptr: *const T) -> *mut T {
     ptr as _

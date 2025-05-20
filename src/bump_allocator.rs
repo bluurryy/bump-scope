@@ -3,7 +3,7 @@ use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 use crate::{
     alloc::{AllocError, Allocator},
     bump_down,
-    polyfill::nonnull,
+    polyfill::non_null,
     stats::AnyStats,
     up_align_usize_unchecked, BaseAllocator, Bump, BumpScope, MinimumAlignment, SizedTypeProperties,
     SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
@@ -415,7 +415,7 @@ where
             }
 
             if UP {
-                let end = nonnull::addr(old_ptr).get() + new_size;
+                let end = non_null::addr(old_ptr).get() + new_size;
 
                 // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
                 let new_pos = up_align_usize_unchecked(end, MIN_ALIGN);
@@ -423,20 +423,20 @@ where
                 self.chunk.get().set_pos_addr(new_pos);
                 Some(old_ptr.cast())
             } else {
-                let old_addr = nonnull::addr(old_ptr);
+                let old_addr = non_null::addr(old_ptr);
                 let old_addr_old_end = NonZeroUsize::new_unchecked(old_addr.get() + old_size);
 
                 let new_addr = bump_down(old_addr_old_end, new_size, T::ALIGN.max(MIN_ALIGN));
                 let new_addr = NonZeroUsize::new_unchecked(new_addr);
                 let old_addr_new_end = NonZeroUsize::new_unchecked(old_addr.get() + new_size);
 
-                let new_ptr = nonnull::with_addr(old_ptr, new_addr);
+                let new_ptr = non_null::with_addr(old_ptr, new_addr);
                 let overlaps = old_addr_new_end > new_addr;
 
                 if overlaps {
-                    nonnull::copy(old_ptr, new_ptr, new_size);
+                    non_null::copy(old_ptr, new_ptr, new_size);
                 } else {
-                    nonnull::copy_nonoverlapping(old_ptr, new_ptr, new_size);
+                    non_null::copy_nonoverlapping(old_ptr, new_ptr, new_size);
                 }
 
                 self.chunk.get().set_pos(new_ptr);

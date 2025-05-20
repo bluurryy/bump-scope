@@ -8,7 +8,7 @@ use core::{
 
 use crate::{
     owned_slice,
-    polyfill::{nonnull, slice},
+    polyfill::{non_null, slice},
     BumpBox, SizedTypeProperties,
 };
 
@@ -131,7 +131,7 @@ impl<'a, T> Drain<'a, T> {
         let mut this = ManuallyDrop::new(self);
 
         unsafe {
-            let slice_ptr = nonnull::as_non_null_ptr(*this.slice).as_ptr();
+            let slice_ptr = non_null::as_non_null_ptr(*this.slice).as_ptr();
 
             let start = this.slice.len();
             let tail = this.tail_start;
@@ -160,7 +160,7 @@ impl<'a, T> Drain<'a, T> {
             }
 
             let new_len = start + unyielded_len + this.tail_len;
-            nonnull::set_len(this.slice, new_len);
+            non_null::set_len(this.slice, new_len);
         }
     }
 }
@@ -205,7 +205,7 @@ impl<T> Drop for Drain<'_, T> {
                 if self.0.tail_len > 0 {
                     unsafe {
                         // memmove back untouched tail, update to new length
-                        let slice_ptr = nonnull::as_non_null_ptr(*self.0.slice).as_ptr();
+                        let slice_ptr = non_null::as_non_null_ptr(*self.0.slice).as_ptr();
 
                         let start = self.0.slice.len();
                         let tail = self.0.tail_start;
@@ -216,7 +216,7 @@ impl<T> Drop for Drain<'_, T> {
                             ptr::copy(src, dst, self.0.tail_len);
                         }
 
-                        nonnull::set_len(self.0.slice, start + self.0.tail_len);
+                        non_null::set_len(self.0.slice, start + self.0.tail_len);
                     }
                 }
             }
@@ -229,8 +229,8 @@ impl<T> Drop for Drain<'_, T> {
             // this can be achieved by manipulating the slice length instead of moving values out from `iter`.
             unsafe {
                 let old_len = self.slice.len();
-                nonnull::set_len(self.slice, old_len + iter.len() + self.tail_len);
-                nonnull::truncate(self.slice, old_len + self.tail_len);
+                non_null::set_len(self.slice, old_len + iter.len() + self.tail_len);
+                non_null::truncate(self.slice, old_len + self.tail_len);
             }
 
             return;

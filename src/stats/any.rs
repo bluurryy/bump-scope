@@ -1,6 +1,6 @@
 use core::{fmt, iter::FusedIterator, marker::PhantomData, mem, ptr::NonNull};
 
-use crate::{polyfill::nonnull, ChunkHeader};
+use crate::{polyfill::non_null, ChunkHeader};
 
 use super::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
 
@@ -184,8 +184,8 @@ impl fmt::Debug for AnyChunk<'_> {
 impl<'a> AnyChunk<'a> {
     #[inline]
     pub(crate) fn is_upwards_allocating(self) -> bool {
-        let header = nonnull::addr(self.header);
-        let end = nonnull::addr(unsafe { self.header.as_ref().end });
+        let header = non_null::addr(self.header);
+        let end = non_null::addr(unsafe { self.header.as_ref().end });
         end > header
     }
 
@@ -235,7 +235,7 @@ impl<'a> AnyChunk<'a> {
     pub fn size(self) -> usize {
         let start = self.chunk_start();
         let end = self.chunk_end();
-        nonnull::addr(end).get() - nonnull::addr(start).get()
+        non_null::addr(end).get() - non_null::addr(start).get()
     }
 
     /// Returns the capacity of this chunk in bytes.
@@ -244,7 +244,7 @@ impl<'a> AnyChunk<'a> {
     pub fn capacity(self) -> usize {
         let start = self.content_start();
         let end = self.content_end();
-        nonnull::addr(end).get() - nonnull::addr(start).get()
+        non_null::addr(end).get() - non_null::addr(start).get()
     }
 
     /// Returns the amount of allocated bytes.
@@ -259,11 +259,11 @@ impl<'a> AnyChunk<'a> {
         if self.is_upwards_allocating() {
             let start = self.content_start();
             let end = self.bump_position();
-            nonnull::addr(end).get() - nonnull::addr(start).get()
+            non_null::addr(end).get() - non_null::addr(start).get()
         } else {
             let start = self.bump_position();
             let end = self.content_end();
-            nonnull::addr(end).get() - nonnull::addr(start).get()
+            non_null::addr(end).get() - non_null::addr(start).get()
         }
     }
 
@@ -278,11 +278,11 @@ impl<'a> AnyChunk<'a> {
         if self.is_upwards_allocating() {
             let start = self.bump_position();
             let end = self.content_end();
-            nonnull::addr(end).get() - nonnull::addr(start).get()
+            non_null::addr(end).get() - non_null::addr(start).get()
         } else {
             let start = self.content_start();
             let end = self.bump_position();
-            nonnull::addr(end).get() - nonnull::addr(start).get()
+            non_null::addr(end).get() - non_null::addr(start).get()
         }
     }
 
@@ -341,7 +341,7 @@ impl<'a> AnyChunk<'a> {
     }
 
     fn after_header(self) -> NonNull<u8> {
-        unsafe { nonnull::byte_add(self.header, self.header_size).cast() }
+        unsafe { non_null::byte_add(self.header, self.header_size).cast() }
     }
 }
 

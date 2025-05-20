@@ -2,12 +2,12 @@ use core::{mem::transmute, ptr::NonNull};
 
 use crate::{
     error_behavior::ErrorBehavior,
-    polyfill::{nonnull, transmute_mut, transmute_ref},
+    polyfill::{non_null, transmute_mut, transmute_ref},
     raw_bump_box::RawBumpBox,
     BumpAllocator, FixedBumpString, MutBumpAllocator,
 };
 
-/// Like [`FixedBumpVec`] but without its lifetime.
+/// Like [`FixedBumpVec`](crate::FixedBumpVec) but without its lifetime.
 #[repr(C)]
 pub struct RawFixedBumpString {
     initialized: RawBumpBox<str>,
@@ -46,7 +46,7 @@ impl RawFixedBumpString {
     #[inline(always)]
     pub(crate) unsafe fn allocate<B: ErrorBehavior>(allocator: &impl BumpAllocator, len: usize) -> Result<Self, B> {
         let ptr = B::allocate_slice::<u8>(allocator, len)?;
-        let initialized = RawBumpBox::from_ptr(nonnull::str_from_utf8(nonnull::slice_from_raw_parts(ptr, 0)));
+        let initialized = RawBumpBox::from_ptr(non_null::str_from_utf8(non_null::slice_from_raw_parts(ptr, 0)));
         Ok(Self {
             initialized,
             capacity: len,
@@ -59,8 +59,8 @@ impl RawFixedBumpString {
         len: usize,
     ) -> Result<Self, B> {
         let allocation = B::prepare_slice_allocation::<u8>(allocator, len)?;
-        let initialized = RawBumpBox::from_ptr(nonnull::str_from_utf8(nonnull::slice_from_raw_parts(
-            nonnull::as_non_null_ptr(allocation),
+        let initialized = RawBumpBox::from_ptr(non_null::str_from_utf8(non_null::slice_from_raw_parts(
+            non_null::as_non_null_ptr(allocation),
             0,
         )));
 
@@ -72,7 +72,7 @@ impl RawFixedBumpString {
 
     #[inline(always)]
     pub(crate) const fn len(&self) -> usize {
-        nonnull::str_bytes(self.initialized.as_non_null()).len()
+        non_null::str_bytes(self.initialized.as_non_null()).len()
     }
 
     #[inline(always)]

@@ -58,7 +58,7 @@ unsafe impl Allocator for System {
             // SAFETY: conditions must be upheld by the caller
             0 => unsafe {
                 Allocator::deallocate(self, ptr, old_layout);
-                Ok(polyfill::nonnull::slice_from_raw_parts(
+                Ok(polyfill::non_null::slice_from_raw_parts(
                     polyfill::layout::dangling(new_layout),
                     0,
                 ))
@@ -71,7 +71,7 @@ unsafe impl Allocator for System {
 
                 let raw_ptr = GlobalAlloc::realloc(self, ptr.as_ptr(), old_layout, new_size);
                 let ptr = NonNull::new(raw_ptr).ok_or(AllocError)?;
-                Ok(polyfill::nonnull::slice_from_raw_parts(ptr, new_size))
+                Ok(polyfill::non_null::slice_from_raw_parts(ptr, new_size))
             },
 
             // SAFETY: because `new_size` must be smaller than or equal to `old_layout.size()`,
@@ -81,7 +81,7 @@ unsafe impl Allocator for System {
             // for `dealloc` must be upheld by the caller.
             new_size => unsafe {
                 let new_ptr = Allocator::allocate(self, new_layout)?;
-                ptr::copy_nonoverlapping(ptr.as_ptr(), polyfill::nonnull::as_mut_ptr(new_ptr), new_size);
+                ptr::copy_nonoverlapping(ptr.as_ptr(), polyfill::non_null::as_mut_ptr(new_ptr), new_size);
                 Allocator::deallocate(self, ptr, old_layout);
                 Ok(new_ptr)
             },
@@ -92,7 +92,10 @@ unsafe impl Allocator for System {
 #[inline]
 fn alloc_impl(layout: Layout, zeroed: bool) -> Result<NonNull<[u8]>, AllocError> {
     match layout.size() {
-        0 => Ok(polyfill::nonnull::slice_from_raw_parts(polyfill::layout::dangling(layout), 0)),
+        0 => Ok(polyfill::non_null::slice_from_raw_parts(
+            polyfill::layout::dangling(layout),
+            0,
+        )),
         // SAFETY: `layout` is non-zero in size,
         size => unsafe {
             let raw_ptr = if zeroed {
@@ -101,7 +104,7 @@ fn alloc_impl(layout: Layout, zeroed: bool) -> Result<NonNull<[u8]>, AllocError>
                 GlobalAlloc::alloc(&System, layout)
             };
             let ptr = NonNull::new(raw_ptr).ok_or(AllocError)?;
-            Ok(polyfill::nonnull::slice_from_raw_parts(ptr, size))
+            Ok(polyfill::non_null::slice_from_raw_parts(ptr, size))
         },
     }
 }
@@ -136,7 +139,7 @@ unsafe fn grow_impl(
             if zeroed {
                 raw_ptr.add(old_size).write_bytes(0, new_size - old_size);
             }
-            Ok(polyfill::nonnull::slice_from_raw_parts(ptr, new_size))
+            Ok(polyfill::non_null::slice_from_raw_parts(ptr, new_size))
         },
 
         // SAFETY: because `new_layout.size()` must be greater than or equal to `old_size`,
@@ -146,7 +149,7 @@ unsafe fn grow_impl(
         // for `dealloc` must be upheld by the caller.
         old_size => unsafe {
             let new_ptr = alloc_impl(new_layout, zeroed)?;
-            ptr::copy_nonoverlapping(ptr.as_ptr(), polyfill::nonnull::as_mut_ptr(new_ptr), old_size);
+            ptr::copy_nonoverlapping(ptr.as_ptr(), polyfill::non_null::as_mut_ptr(new_ptr), old_size);
             Allocator::deallocate(&System, ptr, old_layout);
             Ok(new_ptr)
         },

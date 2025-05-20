@@ -6,7 +6,7 @@ use crate::{
     chunk_size::{ChunkSize, ChunkSizeHint},
     down_align_usize,
     layout::{ArrayLayout, LayoutProps},
-    polyfill::{nonnull, pointer},
+    polyfill::{non_null, pointer},
     unallocated_chunk_header, up_align_usize_unchecked, ChunkHeader, ErrorBehavior, MinimumAlignment,
     SupportedMinimumAlignment,
 };
@@ -61,7 +61,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
             Err(AllocError) => return Err(E::allocation(layout)),
         };
 
-        let ptr = nonnull::as_non_null_ptr(allocation);
+        let ptr = non_null::as_non_null_ptr(allocation);
         let size = allocation.len();
 
         // Note that the allocation's size may be larger than
@@ -88,8 +88,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                 let header = ptr.cast::<ChunkHeader<A>>();
 
                 header.as_ptr().write(ChunkHeader {
-                    pos: Cell::new(nonnull::add(header, 1).cast()),
-                    end: nonnull::add(ptr, size),
+                    pos: Cell::new(non_null::add(header, 1).cast()),
+                    end: non_null::add(ptr, size),
                     prev,
                     next,
                     allocator,
@@ -97,7 +97,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
                 header
             } else {
-                let header = nonnull::sub(nonnull::add(ptr, size).cast::<ChunkHeader<A>>(), 1);
+                let header = non_null::sub(non_null::add(ptr, size).cast::<ChunkHeader<A>>(), 1);
 
                 header.as_ptr().write(ChunkHeader {
                     pos: Cell::new(header.cast()),
@@ -230,12 +230,12 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         M: SupportedMinimumAlignment,
         L: LayoutProps,
     {
-        debug_assert!(nonnull::is_aligned_to(self.pos(), M::MIN_ALIGN));
+        debug_assert!(non_null::is_aligned_to(self.pos(), M::MIN_ALIGN));
         let remaining = self.remaining_range();
 
         BumpProps {
-            start: nonnull::addr(remaining.start).get(),
-            end: nonnull::addr(remaining.end).get(),
+            start: non_null::addr(remaining.start).get(),
+            end: non_null::addr(remaining.end).get(),
             layout: *layout,
             min_align: M::MIN_ALIGN,
             align_is_const: L::ALIGN_IS_CONST,
@@ -282,7 +282,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     where
         MinimumAlignment<ALIGN>: SupportedMinimumAlignment,
     {
-        let mut pos = nonnull::addr(self.pos()).get();
+        let mut pos = non_null::addr(self.pos()).get();
 
         if UP {
             // Aligning an address that is `<= range.end` with an alignment
@@ -298,7 +298,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
     #[inline(always)]
     fn after_header(self) -> NonNull<u8> {
-        unsafe { nonnull::add(self.header, 1).cast() }
+        unsafe { non_null::add(self.header, 1).cast() }
     }
 
     #[inline(always)]
@@ -350,7 +350,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
     #[inline(always)]
     pub(crate) unsafe fn set_pos(self, ptr: NonNull<u8>) {
-        self.set_pos_addr(nonnull::addr(ptr).get());
+        self.set_pos_addr(non_null::addr(ptr).get());
     }
 
     /// # Safety
@@ -368,7 +368,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         debug_assert!(self.contains_addr_or_end(addr));
         let ptr = self.header.cast();
         let addr = NonZeroUsize::new_unchecked(addr);
-        nonnull::with_addr(ptr, addr)
+        non_null::with_addr(ptr, addr)
     }
 
     #[inline(always)]
@@ -381,8 +381,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
     #[inline(always)]
     pub(crate) fn contains_addr_or_end(self, addr: usize) -> bool {
-        let start = nonnull::addr(self.content_start()).get();
-        let end = nonnull::addr(self.content_end()).get();
+        let start = non_null::addr(self.content_start()).get();
+        let end = non_null::addr(self.content_end()).get();
         addr >= start && addr <= end
     }
 
@@ -398,8 +398,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
     #[inline(always)]
     pub(crate) fn capacity(self) -> usize {
-        let start = nonnull::addr(self.content_start()).get();
-        let end = nonnull::addr(self.content_end()).get();
+        let start = non_null::addr(self.content_start()).get();
+        let end = non_null::addr(self.content_end()).get();
         end - start
     }
 
@@ -415,16 +415,16 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     #[inline(always)]
     pub(crate) fn allocated(self) -> usize {
         let range = self.allocated_range();
-        let start = nonnull::addr(range.start).get();
-        let end = nonnull::addr(range.end).get();
+        let start = non_null::addr(range.start).get();
+        let end = non_null::addr(range.end).get();
         end - start
     }
 
     #[inline(always)]
     pub(crate) fn remaining(self) -> usize {
         let range = self.remaining_range();
-        let start = nonnull::addr(range.start).get();
-        let end = nonnull::addr(range.end).get();
+        let start = non_null::addr(range.start).get();
+        let end = non_null::addr(range.end).get();
         end - start
     }
 
@@ -442,8 +442,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
     #[inline(always)]
     pub(crate) fn size(self) -> NonZeroUsize {
-        let start = nonnull::addr(self.chunk_start()).get();
-        let end = nonnull::addr(self.chunk_end()).get();
+        let start = non_null::addr(self.chunk_start()).get();
+        let end = non_null::addr(self.chunk_end()).get();
         unsafe { NonZeroUsize::new_unchecked(end - start) }
     }
 

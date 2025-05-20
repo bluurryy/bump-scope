@@ -14,7 +14,11 @@
 #![cfg_attr(feature = "nightly-trusted-len", feature(trusted_len))]
 #![cfg_attr(feature = "nightly-fn-traits", feature(fn_traits, tuple_trait, unboxed_closures))]
 #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
-#![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg_hide), doc(cfg_hide(feature = "panic-on-alloc")))] // too noisy
+#![cfg_attr(
+    docsrs,
+    feature(doc_auto_cfg, doc_cfg_hide, intra_doc_pointers),
+    doc(cfg_hide(feature = "panic-on-alloc"))
+)] // too noisy
 #![warn(
     clippy::pedantic,
     clippy::cargo,
@@ -438,13 +442,6 @@ fn down_align_usize(addr: usize, align: usize) -> usize {
 fn bump_down(addr: NonZeroUsize, size: usize, align: usize) -> usize {
     let subtracted = addr.get().saturating_sub(size);
     down_align_usize(subtracted, align)
-}
-
-#[inline(always)]
-const unsafe fn assume_unchecked(condition: bool) {
-    if !condition {
-        core::hint::unreachable_unchecked();
-    }
 }
 
 mod chunk_header;

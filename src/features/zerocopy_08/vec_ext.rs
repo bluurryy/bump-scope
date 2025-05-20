@@ -1,8 +1,8 @@
 use zerocopy_08::FromZeros;
 
 use crate::{
-    alloc::AllocError, polyfill::nonnull, BumpAllocator, BumpVec, ErrorBehavior, FixedBumpVec, MutBumpAllocator, MutBumpVec,
-    MutBumpVecRev,
+    alloc::AllocError, polyfill::non_null, BumpAllocator, BumpVec, ErrorBehavior, FixedBumpVec, MutBumpAllocator,
+    MutBumpVec, MutBumpVecRev,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -713,7 +713,7 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
 
         unsafe {
             let new_len = self.len() + additional;
-            nonnull::sub(self.end, new_len).as_ptr().write_bytes(0, additional);
+            non_null::sub(self.end, new_len).as_ptr().write_bytes(0, additional);
             self.set_len(new_len);
         }
 
