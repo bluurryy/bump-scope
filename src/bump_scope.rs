@@ -704,11 +704,10 @@ where
     /// **This can not decrease the alignment.** Trying to decrease alignment will result in a compile error.
     /// You can use [`aligned`](Self::aligned) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment.
     ///
-    /// To decrease alignment we need to ensure that we return to our original alignment.
-    /// That can only be guaranteed by a function taking a closure like the ones mentioned above.
+    /// When decreasing the alignment we need to make sure that the bump position is realigned to the original alignment.
+    /// That can only be ensured by having a function that takes a closure, like the methods mentioned above do.
     ///
-    /// <details>
-    /// <summary>This mustn't decrease alignment because otherwise you could do this:</summary>
+    /// If this was allowed to decrease the alignment it would break minimum alignment:
     ///
     /// ```ignore
     /// # // We can't `compile_fail,E0080` this doc test because it does not do the compile step
@@ -728,7 +727,6 @@ where
     /// }
     ///
     /// ```
-    /// </details>
     #[inline(always)]
     pub fn into_aligned<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
     where
@@ -741,10 +739,10 @@ where
     /// Mutably borrows `BumpScope` with a new minimum alignment.
     ///
     /// **This can not decrease the alignment.** Trying to decrease alignment will result in a compile error.
-    /// You can use [`aligned`](Self::aligned) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment."
+    /// You can use [`aligned`](Self::aligned) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment.
     ///
-    /// To decrease alignment we need to ensure that we return to our original alignment.
-    /// That can only be guaranteed by a function taking a closure like the ones mentioned above.
+    /// When decreasing the alignment we need to make sure that the bump position is realigned to the original alignment.
+    /// That can only be ensured by having a function that takes a closure, like the methods mentioned above do.
     #[inline(always)]
     pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(
         &mut self,
