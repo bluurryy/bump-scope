@@ -1,4 +1,4 @@
-//! Stuff that is not part of the msrv's std.
+//! Stuff that is missing from the msrv's std.
 //!
 //! This module also includes utility functions
 //! that are not from the standard library.
