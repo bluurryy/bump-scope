@@ -5,15 +5,6 @@ use core::{
 
 use crate::polyfill::pointer;
 
-/// Not part of std.
-///
-/// Putting the expression in a function helps llvm to realize that it can initialize the value
-/// at this pointer instead of allocating it on the stack and then copying it over.
-#[inline(always)]
-pub(crate) unsafe fn write_with<T>(ptr: NonNull<T>, f: impl FnOnce() -> T) {
-    ptr::write(ptr.as_ptr(), f());
-}
-
 /// See [`std::ptr::NonNull::add`].
 #[inline(always)]
 pub(crate) unsafe fn add<T>(ptr: NonNull<T>, delta: usize) -> NonNull<T>
@@ -58,18 +49,6 @@ pub(crate) unsafe fn byte_sub<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
     sub(ptr.cast::<u8>(), count).cast()
 }
 
-/// Not part of std, but for context see [`pointer::wrapping_add`].
-#[inline(always)]
-pub(crate) unsafe fn wrapping_byte_add<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
-    NonNull::new_unchecked(ptr.as_ptr().cast::<u8>().wrapping_add(count).cast())
-}
-
-/// Not part of std, but for context see [`pointer::wrapping_sub`].
-#[inline(always)]
-pub(crate) unsafe fn wrapping_byte_sub<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
-    NonNull::new_unchecked(ptr.as_ptr().cast::<u8>().wrapping_sub(count).cast())
-}
-
 /// See [`std::ptr::NonNull::addr`].
 #[inline(always)]
 pub(crate) fn addr<T>(ptr: NonNull<T>) -> NonZeroUsize {
@@ -108,27 +87,6 @@ pub(crate) const fn slice_from_raw_parts<T>(data: NonNull<T>, len: usize) -> Non
     unsafe { NonNull::new_unchecked(pointer::cast_mut(ptr::slice_from_raw_parts(data.as_ptr(), len))) }
 }
 
-/// Not part of std.
-#[must_use]
-#[inline(always)]
-pub(crate) const fn str_from_utf8(bytes: NonNull<[u8]>) -> NonNull<str> {
-    unsafe { NonNull::new_unchecked(bytes.as_ptr() as *mut str) }
-}
-
-/// Not part of std.
-#[must_use]
-#[inline(always)]
-pub(crate) const fn str_bytes(str: NonNull<str>) -> NonNull<[u8]> {
-    unsafe { NonNull::new_unchecked(str.as_ptr() as *mut [u8]) }
-}
-
-/// Not part of std.
-#[must_use]
-#[inline(always)]
-pub(crate) const fn str_len(str: NonNull<str>) -> usize {
-    str_bytes(str).len()
-}
-
 /// See [`std::ptr::copy`].
 #[inline(always)]
 pub(crate) unsafe fn copy<T>(src: NonNull<T>, dst: NonNull<T>, count: usize) {
@@ -139,15 +97,6 @@ pub(crate) unsafe fn copy<T>(src: NonNull<T>, dst: NonNull<T>, count: usize) {
 #[inline(always)]
 pub(crate) unsafe fn copy_nonoverlapping<T>(src: NonNull<T>, dst: NonNull<T>, count: usize) {
     ptr::copy_nonoverlapping(src.as_ptr(), dst.as_ptr(), count);
-}
-
-/// Not part of std.
-#[inline(always)]
-pub(crate) unsafe fn result<T, E>(mut ptr: NonNull<Result<T, E>>) -> Result<NonNull<T>, NonNull<E>> {
-    match ptr.as_mut() {
-        Ok(ok) => Ok(ok.into()),
-        Err(err) => Err(err.into()),
-    }
 }
 
 /// See [`std::ptr::NonNull::is_aligned_to`].
@@ -163,24 +112,33 @@ pub(crate) const fn as_non_null_ptr<T>(ptr: NonNull<[T]>) -> NonNull<T> {
     ptr.cast()
 }
 
-/// Not part of std.
-#[inline(always)]
-pub(crate) fn set_ptr<T>(ptr: &mut NonNull<[T]>, new_ptr: NonNull<T>) {
-    let len = ptr.len();
-    *ptr = slice_from_raw_parts(new_ptr, len);
-}
-
-/// Not part of std.
-#[inline(always)]
-pub(crate) fn set_len<T>(ptr: &mut NonNull<[T]>, new_len: usize) {
-    let elem_ptr = as_non_null_ptr(*ptr);
-    *ptr = slice_from_raw_parts(elem_ptr, new_len);
-}
-
 /// See [`std::ptr::NonNull::drop_in_place`].
 #[inline(always)]
 pub(crate) unsafe fn drop_in_place<T: ?Sized>(ptr: NonNull<T>) {
     ptr.as_ptr().drop_in_place();
+}
+
+/// See [`std::ptr::NonNull::from_ref`].
+pub(crate) const fn from_ref<T>(r: &T) -> NonNull<T> {
+    unsafe { NonNull::new_unchecked(r as *const T as *mut T) }
+}
+
+/// See [`std::ptr::NonNull::as_mut_ptr`].
+#[inline]
+#[must_use]
+pub const fn as_mut_ptr<T>(p: NonNull<[T]>) -> *mut T {
+    as_non_null_ptr(p).as_ptr()
+}
+
+/// See [`std::ptr::NonNull::without_provenance`].
+#[must_use]
+#[inline]
+#[cfg(feature = "alloc")]
+pub const fn without_provenance<T>(addr: NonZeroUsize) -> NonNull<T> {
+    let pointer = sptr::invalid_mut(addr.get());
+
+    // SAFETY: we know `addr` is non-zero.
+    unsafe { NonNull::new_unchecked(pointer) }
 }
 
 /// Not part of std, but for context see [`std::vec::Vec::truncate`].
@@ -213,25 +171,67 @@ pub(crate) unsafe fn truncate<T>(slice: &mut NonNull<[T]>, len: usize) {
     drop_in_place(to_drop);
 }
 
-/// See [`std::ptr::NonNull::from_ref`].
-pub(crate) const fn from_ref<T>(r: &T) -> NonNull<T> {
-    unsafe { NonNull::new_unchecked(r as *const T as *mut T) }
+/// Not part of std, but for context see [`pointer::wrapping_add`].
+#[inline(always)]
+pub(crate) unsafe fn wrapping_byte_add<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
+    NonNull::new_unchecked(ptr.as_ptr().cast::<u8>().wrapping_add(count).cast())
 }
 
-/// See [`std::ptr::NonNull::as_mut_ptr`].
-#[inline]
-#[must_use]
-pub const fn as_mut_ptr<T>(p: NonNull<[T]>) -> *mut T {
-    as_non_null_ptr(p).as_ptr()
+/// Not part of std, but for context see [`pointer::wrapping_sub`].
+#[inline(always)]
+pub(crate) unsafe fn wrapping_byte_sub<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
+    NonNull::new_unchecked(ptr.as_ptr().cast::<u8>().wrapping_sub(count).cast())
 }
 
-/// See [`std::ptr::NonNull::without_provenance`].
-#[must_use]
-#[inline]
-#[cfg(feature = "alloc")]
-pub const fn without_provenance<T>(addr: NonZeroUsize) -> NonNull<T> {
-    let pointer = sptr::invalid_mut(addr.get());
+/// Not part of std.
+#[inline(always)]
+pub(crate) fn set_ptr<T>(ptr: &mut NonNull<[T]>, new_ptr: NonNull<T>) {
+    let len = ptr.len();
+    *ptr = slice_from_raw_parts(new_ptr, len);
+}
 
-    // SAFETY: we know `addr` is non-zero.
-    unsafe { NonNull::new_unchecked(pointer) }
+/// Not part of std.
+#[inline(always)]
+pub(crate) fn set_len<T>(ptr: &mut NonNull<[T]>, new_len: usize) {
+    let elem_ptr = as_non_null_ptr(*ptr);
+    *ptr = slice_from_raw_parts(elem_ptr, new_len);
+}
+
+/// Not part of std.
+#[inline(always)]
+pub(crate) unsafe fn result<T, E>(mut ptr: NonNull<Result<T, E>>) -> Result<NonNull<T>, NonNull<E>> {
+    match ptr.as_mut() {
+        Ok(ok) => Ok(ok.into()),
+        Err(err) => Err(err.into()),
+    }
+}
+
+/// Not part of std.
+#[must_use]
+#[inline(always)]
+pub(crate) const fn str_from_utf8(bytes: NonNull<[u8]>) -> NonNull<str> {
+    unsafe { NonNull::new_unchecked(bytes.as_ptr() as *mut str) }
+}
+
+/// Not part of std.
+#[must_use]
+#[inline(always)]
+pub(crate) const fn str_bytes(str: NonNull<str>) -> NonNull<[u8]> {
+    unsafe { NonNull::new_unchecked(str.as_ptr() as *mut [u8]) }
+}
+
+/// Not part of std.
+#[must_use]
+#[inline(always)]
+pub(crate) const fn str_len(str: NonNull<str>) -> usize {
+    str_bytes(str).len()
+}
+
+/// Not part of std.
+///
+/// Putting the expression in a function helps llvm to realize that it can initialize the value
+/// at this pointer instead of allocating it on the stack and then copying it over.
+#[inline(always)]
+pub(crate) unsafe fn write_with<T>(ptr: NonNull<T>, f: impl FnOnce() -> T) {
+    ptr::write(ptr.as_ptr(), f());
 }
