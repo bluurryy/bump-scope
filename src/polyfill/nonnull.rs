@@ -3,7 +3,7 @@ use core::{
     ptr::{self, NonNull},
 };
 
-use crate::{polyfill::pointer, SizedTypeProperties};
+use crate::polyfill::pointer;
 
 // Putting the expression in a function helps llvm to realize that it can initialize the value
 // at this pointer instead of allocating it on the stack and then copying it over.
@@ -87,16 +87,15 @@ pub(crate) fn with_addr<T>(ptr: NonNull<T>, addr: NonZeroUsize) -> NonNull<T> {
 /// See [`std::ptr::NonNull::offset_from_unsigned`].
 #[must_use]
 #[inline(always)]
-pub(crate) unsafe fn offset_from_unsigned<T>(lhs: NonNull<T>, rhs: NonNull<T>) -> usize {
-    debug_assert!((addr(lhs).get() - addr(rhs).get()) % T::SIZE == 0);
-    pointer::offset_from_unsigned(lhs.as_ptr(), rhs.as_ptr())
+pub(crate) unsafe fn offset_from_unsigned<T>(this: NonNull<T>, origin: NonNull<T>) -> usize {
+    pointer::offset_from_unsigned(this.as_ptr(), origin.as_ptr())
 }
 
 /// See [`std::ptr::NonNull::byte_offset_from_unsigned`].
 #[must_use]
 #[inline(always)]
-pub(crate) unsafe fn byte_offset_from_unsigned<T>(lhs: NonNull<T>, rhs: NonNull<T>) -> usize {
-    offset_from_unsigned::<u8>(lhs.cast(), rhs.cast())
+pub(crate) unsafe fn byte_offset_from_unsigned<T>(this: NonNull<T>, origin: NonNull<T>) -> usize {
+    offset_from_unsigned::<u8>(this.cast(), origin.cast())
 }
 
 /// See [`std::ptr::NonNull::slice_from_raw_parts`].

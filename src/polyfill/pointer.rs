@@ -42,11 +42,11 @@ pub(crate) unsafe fn len<T>(ptr: *const [T]) -> usize {
 #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
 #[allow(clippy::cast_sign_loss)]
 #[allow(clippy::checked_conversions)]
-pub(crate) unsafe fn offset_from_unsigned<T>(lhs: *const T, rhs: *const T) -> usize {
-    polyfill::hint::assert_unchecked(lhs >= rhs);
+pub(crate) unsafe fn offset_from_unsigned<T>(this: *const T, origin: *const T) -> usize {
+    polyfill::hint::assert_unchecked(this >= origin);
     let pointee_size = mem::size_of::<T>();
     assert!(0 < pointee_size && pointee_size <= isize::MAX as usize);
-    lhs.offset_from(rhs) as usize
+    this.offset_from(origin) as usize
 }
 
 /// Not part of std.
