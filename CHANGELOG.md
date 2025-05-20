@@ -29,7 +29,7 @@
 - **added:** `Bump(Scope)::alloc_slice_move` to allocate `impl OwnedSlice`s (arrays, `Vec<T>`, `Box<[T]>` and so on)
 - **added:** `BumpBox::as_raw`, returns a pointer to its contents
 - **added:** `Bump(Scope)::dealloc` to deallocate `BumpBox`es
-- **fixed:** `serde` compiles without `alloc` feature
+- **fixed:** failing to compile with `serde` feature but without `alloc` feature
 - **fixed:** `Stats` and `Chunk` not reporting accurate sizes and pointers if the base allocator is not zero sized
 
 ### Migration Guide
