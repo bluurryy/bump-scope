@@ -49,7 +49,7 @@ impl<A, const UP: bool> ChunkSize<A, UP> {
     }
 
     pub const fn from_capacity(layout: Layout) -> Option<Self> {
-        attempt!(ChunkSizeHint::from_capacity(layout)).calc_size()
+        attempt!(ChunkSizeHint::for_capacity(layout)).calc_size()
     }
 
     /// See [`chunk_size_calc::ChunkSizeConfig::align_size`].
@@ -83,7 +83,7 @@ impl<A, const UP: bool> ChunkSizeHint<A, UP> {
         Self(size_hint, PhantomData)
     }
 
-    pub const fn from_capacity(layout: Layout) -> Option<Self> {
+    pub const fn for_capacity(layout: Layout) -> Option<Self> {
         Some(Self(attempt!(config::<A, UP>().calc_hint_from_capacity(layout)), PhantomData))
     }
 

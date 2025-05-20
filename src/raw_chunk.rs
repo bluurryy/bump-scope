@@ -471,7 +471,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     {
         debug_assert!(self.next().is_none());
 
-        let required_size = ChunkSizeHint::from_capacity(layout).ok_or_else(B::capacity_overflow)?;
+        let required_size = ChunkSizeHint::for_capacity(layout).ok_or_else(B::capacity_overflow)?;
         let grown_size = self.grow_size()?;
         let size = required_size.max(grown_size).calc_size().ok_or_else(B::capacity_overflow)?;
 
