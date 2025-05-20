@@ -1,5 +1,6 @@
 use core::num::NonZeroUsize;
 
+/// Not part of std.
 #[inline(always)]
 #[allow(dead_code)]
 pub(crate) fn prev_power_of_two(value: NonZeroUsize) -> NonZeroUsize {
@@ -7,6 +8,7 @@ pub(crate) fn prev_power_of_two(value: NonZeroUsize) -> NonZeroUsize {
     unsafe { NonZeroUsize::new_unchecked(1 << highest_bit) }
 }
 
+/// Not part of std.
 #[inline(always)]
 #[allow(dead_code)]
 pub(crate) fn down_align(addr: NonZeroUsize, align: NonZeroUsize) -> usize {

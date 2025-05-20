@@ -171,7 +171,7 @@ impl fmt::Debug for Debug<'_> {
 /// }
 /// ```
 ///
-/// [`String::from_utf8_lossy`]: alloc::string::String::from_utf8_lossy
+/// [`String::from_utf8_lossy`]: std::string::String::from_utf8_lossy
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone)]
 pub struct Utf8Chunks<'a> {
