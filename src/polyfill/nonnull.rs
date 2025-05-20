@@ -5,8 +5,10 @@ use core::{
 
 use crate::polyfill::pointer;
 
-// Putting the expression in a function helps llvm to realize that it can initialize the value
-// at this pointer instead of allocating it on the stack and then copying it over.
+/// Not part of std.
+///
+/// Putting the expression in a function helps llvm to realize that it can initialize the value
+/// at this pointer instead of allocating it on the stack and then copying it over.
 #[inline(always)]
 pub(crate) unsafe fn write_with<T>(ptr: NonNull<T>, f: impl FnOnce() -> T) {
     ptr::write(ptr.as_ptr(), f());
