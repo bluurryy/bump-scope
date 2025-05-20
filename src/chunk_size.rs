@@ -52,7 +52,7 @@ impl<A, const UP: bool> ChunkSize<A, UP> {
         attempt!(ChunkSizeHint::for_capacity(layout)).calc_size()
     }
 
-    /// See [`chunk_size_calc::ChunkSizeConfig::align_size`].
+    /// See [`chunk_size_config::ChunkSizeConfig::align_size`].
     pub const fn align_allocation_size(self, size: usize) -> usize {
         config::<A, UP>().align_size(size)
     }

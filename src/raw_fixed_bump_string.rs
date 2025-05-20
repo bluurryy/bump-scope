@@ -7,7 +7,7 @@ use crate::{
     BumpAllocator, FixedBumpString, MutBumpAllocator,
 };
 
-/// Like [`FixedBumpVec`] but without its lifetime.
+/// Like [`FixedBumpVec`](crate::FixedBumpVec) but without its lifetime.
 #[repr(C)]
 pub struct RawFixedBumpString {
     initialized: RawBumpBox<str>,
