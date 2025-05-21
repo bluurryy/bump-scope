@@ -86,7 +86,6 @@ impl TestZstExpect {
         self
     }
 
-    #[allow(dead_code)]
     pub(crate) fn defaults(mut self, amount: usize) -> Self {
         self.defaults = amount;
         self

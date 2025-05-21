@@ -128,12 +128,10 @@ impl<T> RawFixedBumpVec<T> {
     #[deprecated = "too niche; compute this yourself if needed"]
     #[must_use]
     #[inline(always)]
-    #[allow(dead_code)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
         self.initialized.as_non_null()
     }
 
-    #[allow(dead_code)]
     #[inline(always)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<T>) {
         self.initialized.set_ptr(new_ptr);

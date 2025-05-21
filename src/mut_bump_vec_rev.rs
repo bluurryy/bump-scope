@@ -624,7 +624,6 @@ impl<T, A> MutBumpVecRev<T, A> {
         (end, len, cap, allocator)
     }
 
-    #[allow(dead_code)]
     #[inline(always)]
     unsafe fn from_raw_parts(end: NonNull<T>, len: usize, cap: usize, allocator: A) -> Self {
         Self {
@@ -2431,13 +2430,7 @@ impl<T, A, const N: usize> MutBumpVecRev<[T; N], A> {
             unsafe { (polyfill::usize::unchecked_mul(len, N), polyfill::usize::unchecked_mul(cap, N)) }
         };
 
-        MutBumpVecRev {
-            end: end.cast(),
-            len: new_len,
-            cap: new_cap,
-            allocator,
-            marker: PhantomData,
-        }
+        unsafe { MutBumpVecRev::from_raw_parts(end.cast(), new_len, new_cap, allocator) }
     }
 }
 

@@ -95,7 +95,6 @@ impl<T> RawBumpBox<[T]> {
         marker: PhantomData,
     };
 
-    #[allow(dead_code)]
     #[inline(always)]
     pub(crate) const fn len(&self) -> usize {
         self.ptr.len()
@@ -119,11 +118,13 @@ impl RawBumpBox<str> {
     };
 
     #[inline(always)]
+    #[allow(dead_code)]
     pub(crate) const fn len(&self) -> usize {
         non_null::str_bytes(self.ptr).len()
     }
 
     #[inline(always)]
+    #[allow(dead_code)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<u8>) {
         let len = self.len();
         self.ptr = non_null::str_from_utf8(non_null::slice_from_raw_parts(new_ptr, len));

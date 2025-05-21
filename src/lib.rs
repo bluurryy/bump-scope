@@ -535,7 +535,6 @@ macro_rules! const_param_assert {
     ) => {{
             struct ConstParamAssert<$(const $param_ident: $param_ty),+> {}
             impl<$(const $param_ident: $param_ty),+> ConstParamAssert<$($param_ident),+> {
-                #[allow(dead_code)]
                 const CONST_PARAM_ASSERT: () = assert!($($assert_args)*);
             }
             #[allow(unused_variables)]

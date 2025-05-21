@@ -201,7 +201,6 @@ macro_rules! assert_chunk_sizes {
     };
 }
 
-#[allow(dead_code)]
 fn assert_send<const UP: bool>() {
     fn must_be_send<T: Send>(_: &T) {}
     let bump = Bump::<Global, 1, UP>::default();

@@ -80,7 +80,6 @@ impl RawFixedBumpString {
         self.capacity
     }
 
-    #[allow(dead_code)]
     #[inline(always)]
     pub(crate) fn as_ptr(&self) -> *const u8 {
         self.initialized.as_non_null().as_ptr().cast()
@@ -104,7 +103,6 @@ impl RawFixedBumpString {
     }
 
     #[inline(always)]
-    #[allow(dead_code)]
     pub(crate) unsafe fn set_len(&mut self, new_len: usize) {
         self.initialized.set_len(new_len);
     }
@@ -123,7 +121,7 @@ impl RawFixedBumpString {
     }
 
     #[inline(always)]
-    #[allow(dead_code)]
+    #[cfg(feature = "panic-on-alloc")]
     pub(crate) unsafe fn from_raw_parts(slice: NonNull<str>, capacity: usize) -> Self {
         Self {
             initialized: RawBumpBox::from_ptr(slice),

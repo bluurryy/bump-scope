@@ -34,19 +34,9 @@ where
 /// See [`std::ptr::NonNull::byte_add`].
 #[must_use]
 #[inline(always)]
-#[allow(dead_code)]
 #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
 pub(crate) unsafe fn byte_add<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
     add(ptr.cast::<u8>(), count).cast()
-}
-
-/// See [`std::ptr::NonNull::byte_sub`].
-#[must_use]
-#[inline(always)]
-#[allow(dead_code)]
-#[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
-pub(crate) unsafe fn byte_sub<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
-    sub(ptr.cast::<u8>(), count).cast()
 }
 
 /// See [`std::ptr::NonNull::addr`].

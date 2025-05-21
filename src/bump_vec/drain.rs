@@ -5,7 +5,7 @@
 use core::{
     fmt::{self, Debug},
     iter::FusedIterator,
-    mem::{self, ManuallyDrop},
+    mem,
     ptr::{self, NonNull},
     slice::{self},
 };
@@ -55,84 +55,6 @@ impl<T, A: BumpAllocator> Drain<'_, T, A> {
     #[inline(always)]
     pub fn as_slice(&self) -> &[T] {
         self.iter.as_slice()
-    }
-
-    /// Returns a reference to the underlying allocator.
-    #[must_use]
-    #[inline(always)]
-    #[allow(dead_code)]
-    pub fn allocator(&self) -> &A {
-        unsafe { self.vec.as_ref().allocator() }
-    }
-
-    /// Keep unyielded elements in the source vector.
-    ///
-    /// # Examples
-    ///
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// #![feature(drain_keep_rest)]
-    ///
-    /// let mut vec = vec!['a', 'b', 'c'];
-    /// let mut drain = vec.drain(..);
-    ///
-    /// assert_eq!(drain.next().unwrap(), 'a');
-    ///
-    /// // This call keeps 'b' and 'c' in the vec.
-    /// drain.keep_rest();
-    ///
-    /// // If we wouldn't call `keep_rest()`,
-    /// // `vec` would be empty.
-    /// assert_eq!(vec, ['b', 'c']);
-    /// ```
-    #[allow(dead_code)]
-    pub fn keep_rest(self) {
-        // At this moment layout looks like this:
-        //
-        // [head] [yielded by next] [unyielded] [yielded by next_back] [tail]
-        //        ^-- start         \_________/-- unyielded_len        \____/-- self.tail_len
-        //                          ^-- unyielded_ptr                  ^-- tail
-        //
-        // Normally `Drop` impl would drop [unyielded] and then move [tail] to the `start`.
-        // Here we want to
-        // 1. Move [unyielded] to `start`
-        // 2. Move [tail] to a new start at `start + len(unyielded)`
-        // 3. Update length of the original vec to `len(head) + len(unyielded) + len(tail)`
-        //    a. In case of ZST, this is the only thing we want to do
-        // 4. Do *not* drop self, as everything is put in a consistent state already, there is nothing to do
-        let mut this = ManuallyDrop::new(self);
-
-        unsafe {
-            let source_vec = this.vec.as_mut();
-
-            let start = source_vec.len();
-            let tail = this.tail_start;
-
-            let unyielded_len = this.iter.len();
-            let unyielded_ptr = this.iter.as_slice().as_ptr();
-
-            // ZSTs have no identity, so we don't need to move them around.
-            if !T::IS_ZST {
-                let start_ptr = source_vec.as_mut_ptr().add(start);
-
-                // memmove back unyielded elements
-                if unyielded_ptr != start_ptr {
-                    let src = unyielded_ptr;
-                    let dst = start_ptr;
-
-                    ptr::copy(src, dst, unyielded_len);
-                }
-
-                // memmove back untouched tail
-                if tail != (start + unyielded_len) {
-                    let src = source_vec.as_ptr().add(tail);
-                    let dst = start_ptr.add(unyielded_len);
-                    ptr::copy(src, dst, this.tail_len);
-                }
-            }
-
-            source_vec.set_len(start + unyielded_len + this.tail_len);
-        }
     }
 }
 
