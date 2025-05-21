@@ -6,7 +6,7 @@ use crate::{
     chunk_size::{ChunkSize, ChunkSizeHint},
     down_align_usize,
     layout::{ArrayLayout, LayoutProps},
-    polyfill::{non_null, pointer},
+    polyfill::{self, non_null},
     unallocated_chunk_header, up_align_usize_unchecked, ChunkHeader, ErrorBehavior, MinimumAlignment,
     SupportedMinimumAlignment,
 };
@@ -501,7 +501,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     {
         let ptr = self.chunk_start();
         let layout = self.layout();
-        let allocator_ptr = pointer::from_ref(&self.header.as_ref().allocator);
+        let allocator_ptr = polyfill::ptr::from_ref(&self.header.as_ref().allocator);
         let allocator = allocator_ptr.read();
 
         allocator.deallocate(ptr, layout);

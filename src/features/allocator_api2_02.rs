@@ -109,12 +109,12 @@ pub struct AllocatorApi2V02Compat<A: ?Sized>(pub A);
 impl<A: ?Sized> AllocatorApi2V02Compat<A> {
     #[allow(missing_docs)]
     pub fn from_ref(allocator: &A) -> &Self {
-        unsafe { &*(polyfill::pointer::from_ref(allocator) as *const Self) }
+        unsafe { &*(polyfill::ptr::from_ref(allocator) as *const Self) }
     }
 
     #[allow(missing_docs)]
     pub fn from_mut(allocator: &mut A) -> &mut Self {
-        unsafe { &mut *(polyfill::pointer::from_mut(allocator) as *mut Self) }
+        unsafe { &mut *(polyfill::ptr::from_mut(allocator) as *mut Self) }
     }
 }
 

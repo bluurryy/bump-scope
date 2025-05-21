@@ -13,7 +13,7 @@ use crate::{
     bump_common_methods,
     chunk_size::ChunkSize,
     owned_slice::OwnedSlice,
-    polyfill::{pointer, transmute_mut, transmute_ref},
+    polyfill::{self, transmute_mut, transmute_ref},
     stats::{AnyStats, Stats},
     unallocated_chunk_header, BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior,
     FixedBumpString, FixedBumpVec, MinimumAlignment, RawChunk, SupportedMinimumAlignment,
@@ -932,7 +932,7 @@ where
     pub fn as_scope(&self) -> &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
         // SAFETY: `Bump` and `BumpScope` both have the layout of `Cell<RawChunk>`
         //         `BumpScope`'s api is a subset of `Bump`'s
-        unsafe { &*pointer::from_ref(self).cast() }
+        unsafe { &*polyfill::ptr::from_ref(self).cast() }
     }
 
     /// Returns this `&mut Bump` as a `&mut BumpScope`.
@@ -940,7 +940,7 @@ where
     pub fn as_mut_scope(&mut self) -> &mut BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
         // SAFETY: `Bump` and `BumpScope` both have the layout of `Cell<RawChunk>`
         //         `BumpScope`'s api is a subset of `Bump`'s
-        unsafe { &mut *pointer::from_mut(self).cast() }
+        unsafe { &mut *polyfill::ptr::from_mut(self).cast() }
     }
 
     /// Converts this `Bump` into a `Bump` with a new minimum alignment.
@@ -987,7 +987,7 @@ where
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        &mut *pointer::from_mut(self).cast::<Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>()
+        &mut *polyfill::ptr::from_mut(self).cast::<Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>()
     }
 
     /// Converts this `Bump` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.

@@ -2,20 +2,6 @@ use core::{mem, ptr};
 
 use crate::polyfill;
 
-/// See [`std::ptr::from_ref`].
-#[must_use]
-#[inline(always)]
-pub(crate) fn from_ref<T: ?Sized>(r: &T) -> *const T {
-    r
-}
-
-/// See [`std::ptr::from_mut`].
-#[must_use]
-#[inline(always)]
-pub(crate) fn from_mut<T: ?Sized>(r: &mut T) -> *mut T {
-    r
-}
-
 /// See [`pointer::as_mut_ptr`].
 #[inline(always)]
 #[allow(dead_code)]
