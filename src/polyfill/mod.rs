@@ -4,7 +4,7 @@
 //! that are not from the standard library.
 #![allow(
     // it's not the same in terms of strict provenance
-    clippy::transmutes_expressible_as_ptr_casts, 
+    clippy::transmutes_expressible_as_ptr_casts,
     // it's not the same in terms of strict provenance
     clippy::useless_transmute,
 )]
