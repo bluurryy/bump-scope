@@ -2,13 +2,6 @@ use core::{mem, ptr};
 
 use crate::polyfill;
 
-/// See `<*mut T>::as_mut_ptr`.
-#[inline(always)]
-#[allow(dead_code)]
-pub(crate) const fn as_mut_ptr<T>(ptr: *mut [T]) -> *mut T {
-    ptr.cast()
-}
-
 /// See `<*const T>::len`.
 ///
 /// This implementation has an additional safety invariant though.
