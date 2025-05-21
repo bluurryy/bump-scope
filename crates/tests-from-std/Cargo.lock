@@ -21,7 +21,6 @@ dependencies = [
  "allocator-api2 0.2.21",
  "allocator-api2 0.3.0",
  "rustversion",
- "sptr",
 ]
 
 [[package]]
@@ -29,12 +28,6 @@ name = "rustversion"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eded382c5f5f786b989652c49544c4877d9f015cc22e145a5ea8ea66c2921cd2"
-
-[[package]]
-name = "sptr"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b9b39299b249ad65f3b7e96443bad61c02ca5cd3589f46cb6d610a0fd6c0d6a"
 
 [[package]]
 name = "tests-from-std"
