@@ -49,7 +49,7 @@ macro_rules! bump_declaration {
         /// - sized values: [`alloc`], [`alloc_with`], [`alloc_default`], [`alloc_zeroed`]
         /// - strings: [`alloc_str`], [`alloc_fmt`], [`alloc_fmt_mut`]
         /// - c strings: [`alloc_cstr`], [`alloc_cstr_from_str`] [`alloc_cstr_fmt`], [`alloc_cstr_fmt_mut`]
-        /// - slices: [`alloc_slice_clone`], [`alloc_slice_copy`], [`alloc_slice_fill`], [`alloc_slice_fill_with`], [`alloc_zeroed_slice`]
+        /// - slices: [`alloc_slice_copy`], [`alloc_slice_clone`], [`alloc_slice_move`], [`alloc_slice_fill`], [`alloc_slice_fill_with`], [`alloc_zeroed_slice`]
         /// - slices from an iterator: [`alloc_iter`], [`alloc_iter_exact`], [`alloc_iter_mut`], [`alloc_iter_mut_rev`]
         /// - uninitialized values: [`alloc_uninit`], [`alloc_uninit_slice`], [`alloc_uninit_slice_for`]
         ///
@@ -125,8 +125,9 @@ macro_rules! bump_declaration {
         /// [`alloc_cstr_fmt`]: Self::alloc_cstr_fmt
         /// [`alloc_cstr_fmt_mut`]: Self::alloc_cstr_fmt_mut
         ///
-        /// [`alloc_slice_clone`]: Self::alloc_slice_clone
         /// [`alloc_slice_copy`]: Self::alloc_slice_copy
+        /// [`alloc_slice_clone`]: Self::alloc_slice_clone
+        /// [`alloc_slice_move`]: Self::alloc_slice_move
         /// [`alloc_slice_fill`]: Self::alloc_slice_fill
         /// [`alloc_slice_fill_with`]: Self::alloc_slice_fill_with
         /// [`alloc_zeroed_slice`]: crate::zerocopy_08::BumpExt::alloc_zeroed_slice
