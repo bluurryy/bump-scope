@@ -2473,6 +2473,9 @@ where
     /// After calling `reserve_bytes`, <code>self.[stats](Self::stats)().[remaining](Stats::remaining)()</code> will be greater than or equal to
     /// `additional`. Does nothing if the capacity is already sufficient.
     ///
+    /// Note that these additional bytes are not necessarily in one contiguous region but
+    /// might be spread out among many chunks.
+    ///
     /// # Panics
     /// Panics if the allocation fails.
     ///
