@@ -16,7 +16,6 @@ exclude = ["*.nu", "justfile", "tests", ".vscode", ".github"]
 allocator-api2-02 = { package = "allocator-api2", version = "0.2.21", default-features = false, optional = true }
 allocator-api2-03 = { package = "allocator-api2", version = "0.3.0", default-features = false, optional = true }
 zerocopy-08 = { package = "zerocopy", version = "0.8.14", default-features = false, optional = true }
-sptr = "0.3.2"
 serde = { version = "1.0.217", optional = true }
 rustversion = "1.0.19"
 

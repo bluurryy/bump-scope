@@ -3,7 +3,7 @@ use core::{
     ptr::{self, NonNull},
 };
 
-use crate::polyfill::pointer;
+use crate::polyfill::{self, pointer};
 
 /// See [`std::ptr::NonNull::add`].
 #[inline(always)]
@@ -54,15 +54,16 @@ pub(crate) unsafe fn byte_sub<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
 pub(crate) fn addr<T>(ptr: NonNull<T>) -> NonZeroUsize {
     // SAFETY: The pointer is guaranteed by the type to be non-null,
     // meaning that the address will be non-zero.
-    unsafe { NonZeroUsize::new_unchecked(sptr::Strict::addr(ptr.as_ptr())) }
+    unsafe { NonZeroUsize::new_unchecked(polyfill::pointer::addr(ptr.as_ptr())) }
 }
 
 /// See [`std::ptr::NonNull::with_addr`].
 #[must_use]
 #[inline(always)]
+#[allow(clippy::ptr_as_ptr)]
 pub(crate) fn with_addr<T>(ptr: NonNull<T>, addr: NonZeroUsize) -> NonNull<T> {
     // SAFETY: The result of `ptr::from::with_addr` is non-null because `addr` is guaranteed to be non-zero.
-    unsafe { NonNull::new_unchecked(sptr::Strict::with_addr(ptr.as_ptr(), addr.get())) }
+    unsafe { NonNull::new_unchecked(polyfill::pointer_mut::with_addr(ptr.as_ptr(), addr.get()) as *mut _) }
 }
 
 /// See [`std::ptr::NonNull::offset_from_unsigned`].
@@ -135,8 +136,7 @@ pub const fn as_mut_ptr<T>(p: NonNull<[T]>) -> *mut T {
 #[inline]
 #[cfg(feature = "alloc")]
 pub const fn without_provenance<T>(addr: NonZeroUsize) -> NonNull<T> {
-    let pointer = sptr::invalid_mut(addr.get());
-
+    let pointer = polyfill::ptr::without_provenance_mut(addr.get());
     // SAFETY: we know `addr` is non-zero.
     unsafe { NonNull::new_unchecked(pointer) }
 }

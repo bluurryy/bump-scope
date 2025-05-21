@@ -55,7 +55,6 @@ dependencies = [
  "rustversion",
  "serde",
  "serde_json",
- "sptr",
  "trybuild",
  "zerocopy",
 ]
@@ -509,12 +508,6 @@ checksum = "87607cb1398ed59d48732e575a4c28a7a8ebf2454b964fe3f224f2afc07909e1"
 dependencies = [
  "serde",
 ]
-
-[[package]]
-name = "sptr"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b9b39299b249ad65f3b7e96443bad61c02ca5cd3589f46cb6d610a0fd6c0d6a"
 
 [[package]]
 name = "syn"
