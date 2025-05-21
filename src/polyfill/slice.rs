@@ -68,7 +68,7 @@ where
 /// See [`slice::split_at_unchecked`].
 #[inline]
 #[must_use]
-pub unsafe fn split_at_unchecked<T>(slice: &[T], mid: usize) -> (&[T], &[T]) {
+pub(crate) unsafe fn split_at_unchecked<T>(slice: &[T], mid: usize) -> (&[T], &[T]) {
     // STD-FIXME(const-hack): the const function `from_raw_parts` is used to make this
     // function const; previously the implementation used
     // `(self.get_unchecked(..mid), self.get_unchecked(mid..))`

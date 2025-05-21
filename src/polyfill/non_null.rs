@@ -135,7 +135,7 @@ pub const fn as_mut_ptr<T>(p: NonNull<[T]>) -> *mut T {
 #[must_use]
 #[inline]
 #[cfg(feature = "alloc")]
-pub const fn without_provenance<T>(addr: NonZeroUsize) -> NonNull<T> {
+pub(crate) const fn without_provenance<T>(addr: NonZeroUsize) -> NonNull<T> {
     let pointer = polyfill::ptr::without_provenance_mut(addr.get());
     // SAFETY: we know `addr` is non-zero.
     unsafe { NonNull::new_unchecked(pointer) }

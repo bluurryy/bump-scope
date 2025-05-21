@@ -3,7 +3,7 @@ use core::mem;
 /// See [`pointer::addr`].
 #[must_use]
 #[inline(always)]
-pub fn addr<T>(ptr: *mut T) -> usize {
+pub(crate) fn addr<T>(ptr: *mut T) -> usize {
     // A pointer-to-integer transmute currently has exactly the right semantics: it returns the
     // address without exposing the provenance. Note that this is *not* a stable guarantee about
     // transmute semantics, it relies on sysroot crates having special status.
@@ -16,7 +16,7 @@ pub fn addr<T>(ptr: *mut T) -> usize {
 #[inline]
 #[must_use]
 #[allow(clippy::cast_possible_wrap)]
-pub fn with_addr<T>(ptr: *mut T, addr: usize) -> *mut T {
+pub(crate) fn with_addr<T>(ptr: *mut T, addr: usize) -> *mut T {
     // This should probably be an intrinsic to avoid doing any sort of arithmetic, but
     // meanwhile, we can implement it with `wrapping_offset`, which preserves the pointer's
     // provenance.
@@ -29,6 +29,6 @@ pub fn with_addr<T>(ptr: *mut T, addr: usize) -> *mut T {
 /// See [`pointer::wrapping_byte_offset`].
 #[must_use]
 #[inline(always)]
-pub const fn wrapping_byte_offset<T>(ptr: *mut T, count: isize) -> *mut T {
+pub(crate) const fn wrapping_byte_offset<T>(ptr: *mut T, count: isize) -> *mut T {
     ptr.cast::<u8>().wrapping_offset(count).cast()
 }
