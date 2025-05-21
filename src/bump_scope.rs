@@ -2057,9 +2057,9 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let five = bump.alloc_uninit();
+    /// let uninit = bump.alloc_uninit();
     ///
-    /// let five = five.init(5);
+    /// let five = uninit.init(5);
     ///
     /// assert_eq!(*five, 5)
     /// ```
@@ -2068,11 +2068,11 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
-    /// let mut five = bump.alloc_uninit();
+    /// let mut uninit = bump.alloc_uninit();
     ///
     /// let five = unsafe {
-    ///     five.write(5);
-    ///     five.assume_init()
+    ///     uninit.write(5);
+    ///     uninit.assume_init()
     /// };
     ///
     /// assert_eq!(*five, 5)
@@ -2095,9 +2095,9 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let five = bump.try_alloc_uninit()?;
+    /// let uninit = bump.try_alloc_uninit()?;
     ///
-    /// let five = five.init(5);
+    /// let five = uninit.init(5);
     ///
     /// assert_eq!(*five, 5);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -2107,11 +2107,11 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::try_new()?;
-    /// let mut five = bump.try_alloc_uninit()?;
+    /// let mut uninit = bump.try_alloc_uninit()?;
     ///
     /// let five = unsafe {
-    ///     five.write(5);
-    ///     five.assume_init()
+    ///     uninit.write(5);
+    ///     uninit.assume_init()
     /// };
     ///
     /// assert_eq!(*five, 5);
@@ -2149,9 +2149,9 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let values = bump.alloc_uninit_slice(3);
+    /// let uninit = bump.alloc_uninit_slice(3);
     ///
-    /// let values = values.init_copy(&[1, 2, 3]);
+    /// let values = uninit.init_copy(&[1, 2, 3]);
     ///
     /// assert_eq!(values, [1, 2, 3])
     /// ```
@@ -2160,14 +2160,14 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let mut values = bump.alloc_uninit_slice(3);
+    /// let mut uninit = bump.alloc_uninit_slice(3);
     ///
     /// let values = unsafe {
-    ///     values[0].write(1);
-    ///     values[1].write(2);
-    ///     values[2].write(3);
+    ///     uninit[0].write(1);
+    ///     uninit[1].write(2);
+    ///     uninit[2].write(3);
     ///
-    ///     values.assume_init()
+    ///     uninit.assume_init()
     /// };
     ///
     /// assert_eq!(values, [1, 2, 3]);
@@ -2195,9 +2195,9 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let values = bump.try_alloc_uninit_slice(3)?;
+    /// let uninit = bump.try_alloc_uninit_slice(3)?;
     ///
-    /// let values = values.init_copy(&[1, 2, 3]);
+    /// let values = uninit.init_copy(&[1, 2, 3]);
     ///
     /// assert_eq!(values, [1, 2, 3]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -2207,14 +2207,14 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
-    /// let mut values = bump.try_alloc_uninit_slice(3)?;
+    /// let mut uninit = bump.try_alloc_uninit_slice(3)?;
     ///
     /// let values = unsafe {
-    ///     values[0].write(1);
-    ///     values[1].write(2);
-    ///     values[2].write(3);
+    ///     uninit[0].write(1);
+    ///     uninit[1].write(2);
+    ///     uninit[2].write(3);
     ///
-    ///     values.assume_init()
+    ///     uninit.assume_init()
     /// };
     ///
     /// assert_eq!(values, [1, 2, 3]);
@@ -2262,8 +2262,8 @@ where
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
     /// let slice = &[1, 2, 3];
-    /// let other_slice = bump.alloc_uninit_slice_for(slice);
-    /// assert_eq!(other_slice.len(), 3);
+    /// let uninit_slice = bump.alloc_uninit_slice_for(slice);
+    /// assert_eq!(uninit_slice.len(), 3);
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -2291,8 +2291,8 @@ where
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::try_new()?;
     /// let slice = &[1, 2, 3];
-    /// let other_slice = bump.try_alloc_uninit_slice_for(slice)?;
-    /// assert_eq!(other_slice.len(), 3);
+    /// let uninit_slice = bump.try_alloc_uninit_slice_for(slice)?;
+    /// assert_eq!(uninit_slice.len(), 3);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]

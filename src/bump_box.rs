@@ -1173,9 +1173,9 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     /// ```
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
-    /// let buf = bump.alloc_uninit_slice(10);
-    /// let buf = buf.init_fill(1);
-    /// assert_eq!(buf, [1; 10]);
+    /// let uninit = bump.alloc_uninit_slice(10);
+    /// let init = uninit.init_fill(1);
+    /// assert_eq!(init, [1; 10]);
     /// ```
     #[must_use]
     #[inline(always)]
@@ -1213,9 +1213,9 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     /// ```
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
-    /// let buf = bump.alloc_uninit_slice(10);
-    /// let buf = buf.init_fill_with(Default::default);
-    /// assert_eq!(buf, [0; 10]);
+    /// let uninit = bump.alloc_uninit_slice(10);
+    /// let init = uninit.init_fill_with(Default::default);
+    /// assert_eq!(init, [0; 10]);
     /// ```
     #[must_use]
     #[inline]
@@ -1240,9 +1240,9 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     /// ```
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
-    /// let buf = bump.alloc_uninit_slice(5);
-    /// let buf = buf.init_fill_iter(['a', 'b'].iter().copied().cycle());
-    /// assert_eq!(buf, ['a', 'b', 'a', 'b', 'a']);
+    /// let uninit = bump.alloc_uninit_slice(5);
+    /// let init = uninit.init_fill_iter(['a', 'b'].iter().copied().cycle());
+    /// assert_eq!(init, ['a', 'b', 'a', 'b', 'a']);
     /// ```
     #[must_use]
     #[inline]
