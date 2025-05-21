@@ -63,3 +63,15 @@ pub(crate) unsafe fn write_with<T>(ptr: *mut T, f: impl FnOnce() -> T) {
 pub(crate) const fn cast_mut<T: ?Sized>(ptr: *const T) -> *mut T {
     ptr as _
 }
+
+/// See [`pointer::addr`].
+#[must_use]
+#[inline(always)]
+pub fn addr<T>(ptr: *const T) -> usize {
+    // A pointer-to-integer transmute currently has exactly the right semantics: it returns the
+    // address without exposing the provenance. Note that this is *not* a stable guarantee about
+    // transmute semantics, it relies on sysroot crates having special status.
+    // SAFETY: Pointer-to-integer transmutes are valid (if you are okay with losing the
+    // provenance).
+    unsafe { mem::transmute(ptr.cast::<()>()) }
+}

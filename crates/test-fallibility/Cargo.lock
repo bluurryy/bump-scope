@@ -21,7 +21,6 @@ dependencies = [
  "allocator-api2 0.2.21",
  "allocator-api2 0.3.0",
  "rustversion",
- "sptr",
  "zerocopy",
 ]
 
@@ -48,12 +47,6 @@ name = "rustversion"
 version = "1.0.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7c45b9784283f1b2e7fb61b42047c2fd678ef0960d4f6f1eba131594cc369d4"
-
-[[package]]
-name = "sptr"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b9b39299b249ad65f3b7e96443bad61c02ca5cd3589f46cb6d610a0fd6c0d6a"
 
 [[package]]
 name = "syn"
