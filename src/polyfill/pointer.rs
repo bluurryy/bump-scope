@@ -2,28 +2,7 @@ use core::{mem, ptr};
 
 use crate::polyfill;
 
-/// See [`std::ptr::from_ref`].
-#[must_use]
-#[inline(always)]
-pub(crate) fn from_ref<T: ?Sized>(r: &T) -> *const T {
-    r
-}
-
-/// See [`std::ptr::from_mut`].
-#[must_use]
-#[inline(always)]
-pub(crate) fn from_mut<T: ?Sized>(r: &mut T) -> *mut T {
-    r
-}
-
-/// See [`pointer::as_mut_ptr`].
-#[inline(always)]
-#[allow(dead_code)]
-pub(crate) const fn as_mut_ptr<T>(ptr: *mut [T]) -> *mut T {
-    ptr.cast()
-}
-
-/// See [`pointer::len`].
+/// See `<*const T>::len`.
 ///
 /// This implementation has an additional safety invariant though.
 ///
@@ -37,7 +16,7 @@ pub(crate) unsafe fn len<T>(ptr: *const [T]) -> usize {
     (&(*ptr)).len()
 }
 
-/// See [`pointer::offset_from_unsigned`].
+/// See `<*const T>::offset_from_unsigned`.
 #[inline]
 #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
 #[allow(clippy::cast_sign_loss)]
@@ -58,16 +37,16 @@ pub(crate) unsafe fn write_with<T>(ptr: *mut T, f: impl FnOnce() -> T) {
     ptr::write(ptr, f());
 }
 
-/// See [`pointer::cast_mut`].
+/// See `<*const T>::cast_mut`.
 #[inline(always)]
 pub(crate) const fn cast_mut<T: ?Sized>(ptr: *const T) -> *mut T {
     ptr as _
 }
 
-/// See [`pointer::addr`].
+/// See `<*const T>::addr`.
 #[must_use]
 #[inline(always)]
-pub fn addr<T>(ptr: *const T) -> usize {
+pub(crate) fn addr<T>(ptr: *const T) -> usize {
     // A pointer-to-integer transmute currently has exactly the right semantics: it returns the
     // address without exposing the provenance. Note that this is *not* a stable guarantee about
     // transmute semantics, it relies on sysroot crates having special status.

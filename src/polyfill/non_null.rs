@@ -135,7 +135,7 @@ pub const fn as_mut_ptr<T>(p: NonNull<[T]>) -> *mut T {
 #[must_use]
 #[inline]
 #[cfg(feature = "alloc")]
-pub const fn without_provenance<T>(addr: NonZeroUsize) -> NonNull<T> {
+pub(crate) const fn without_provenance<T>(addr: NonZeroUsize) -> NonNull<T> {
     let pointer = polyfill::ptr::without_provenance_mut(addr.get());
     // SAFETY: we know `addr` is non-zero.
     unsafe { NonNull::new_unchecked(pointer) }
@@ -171,13 +171,13 @@ pub(crate) unsafe fn truncate<T>(slice: &mut NonNull<[T]>, len: usize) {
     drop_in_place(to_drop);
 }
 
-/// Not part of std, but for context see [`pointer::wrapping_add`].
+/// Not part of std, but for context see `<*mut T>::wrapping_add`.
 #[inline(always)]
 pub(crate) unsafe fn wrapping_byte_add<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
     NonNull::new_unchecked(ptr.as_ptr().cast::<u8>().wrapping_add(count).cast())
 }
 
-/// Not part of std, but for context see [`pointer::wrapping_sub`].
+/// Not part of std, but for context see `<*mut T>::wrapping_sub`.
 #[inline(always)]
 pub(crate) unsafe fn wrapping_byte_sub<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
     NonNull::new_unchecked(ptr.as_ptr().cast::<u8>().wrapping_sub(count).cast())
