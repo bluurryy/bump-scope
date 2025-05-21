@@ -2138,7 +2138,8 @@ where
     /// [`init_fill`](BumpBox::init_fill),
     /// [`init_fill_with`](BumpBox::init_fill_with),
     /// [`init_copy`](BumpBox::init_copy),
-    /// [`init_clone`](BumpBox::init_clone) or unsafely with
+    /// [`init_clone`](BumpBox::init_clone),
+    /// [`init_zeroed`](crate::zerocopy_08::InitZeroed::init_zeroed) or unsafely with
     /// [`assume_init`](BumpBox::assume_init).
     ///
     /// # Panics
@@ -2184,7 +2185,8 @@ where
     /// [`init_fill`](BumpBox::init_fill),
     /// [`init_fill_with`](BumpBox::init_fill_with),
     /// [`init_copy`](BumpBox::init_copy),
-    /// [`init_clone`](BumpBox::init_clone) or unsafely with
+    /// [`init_clone`](BumpBox::init_clone),
+    /// [`init_zeroed`](crate::zerocopy_08::InitZeroed::init_zeroed) or unsafely with
     /// [`assume_init`](BumpBox::assume_init).
     ///
     /// # Errors
@@ -2248,7 +2250,8 @@ where
     /// [`init_fill`](BumpBox::init_fill),
     /// [`init_fill_with`](BumpBox::init_fill_with),
     /// [`init_copy`](BumpBox::init_copy),
-    /// [`init_clone`](BumpBox::init_clone) or unsafely with
+    /// [`init_clone`](BumpBox::init_clone),
+    /// [`init_zeroed`](crate::zerocopy_08::InitZeroed::init_zeroed) or unsafely with
     /// [`assume_init`](BumpBox::assume_init).
     ///
     /// This is just like [`alloc_uninit_slice`](Self::alloc_uninit_slice) but uses a `slice` to provide the `len`.
@@ -2277,7 +2280,8 @@ where
     /// [`init_fill`](BumpBox::init_fill),
     /// [`init_fill_with`](BumpBox::init_fill_with),
     /// [`init_copy`](BumpBox::init_copy),
-    /// [`init_clone`](BumpBox::init_clone) or unsafely with
+    /// [`init_clone`](BumpBox::init_clone),
+    /// [`init_zeroed`](crate::zerocopy_08::InitZeroed::init_zeroed) or unsafely with
     /// [`assume_init`](BumpBox::assume_init).
     ///
     /// This is just like [`try_alloc_uninit_slice`](Self::try_alloc_uninit_slice) but uses a `slice` to provide the `len`.
