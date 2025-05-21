@@ -258,7 +258,7 @@ unsafe impl<T> TakeOwnedSlice for Box<[T]> {
 
     #[inline]
     fn take_owned_slice(&mut self) {
-        // we must not drop the elements but we must deallocate the slice itself
+        // We must not drop the elements but we must deallocate the slice itself.
         let ptr = Box::into_raw(mem::take(self));
         let forget_elements_box = unsafe { Box::<[ManuallyDrop<T>]>::from_raw(ptr as *mut [ManuallyDrop<T>]) };
         drop(forget_elements_box);

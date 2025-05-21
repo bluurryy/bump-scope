@@ -2051,7 +2051,7 @@ impl<A: BumpAllocator> DerefMut for BumpString<A> {
 impl<A: BumpAllocator> Drop for BumpString<A> {
     fn drop(&mut self) {
         // SAFETY:
-        // The dangling pointer can not be a valid ptr into a chunk; because
+        // The dangling pointer cannot be a valid ptr into a chunk; because
         // of the minimum chunk alignment of 16 the smallest address the chunk
         // may be at is 16. The bump allocator handles deallocate requests
         // from pointers outside its bound just fine by ignoring them.

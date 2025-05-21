@@ -701,7 +701,7 @@ where
 
     /// Converts this `BumpScope` into a `BumpScope` with a new minimum alignment.
     ///
-    /// **This can not decrease the alignment.** Trying to decrease alignment will result in a compile error.
+    /// **This cannot decrease the alignment.** Trying to decrease alignment will result in a compile error.
     /// You can use [`aligned`](Self::aligned) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment.
     ///
     /// When decreasing the alignment we need to make sure that the bump position is realigned to the original alignment.
@@ -738,7 +738,7 @@ where
 
     /// Mutably borrows `BumpScope` with a new minimum alignment.
     ///
-    /// **This can not decrease the alignment.** Trying to decrease alignment will result in a compile error.
+    /// **This cannot decrease the alignment.** Trying to decrease alignment will result in a compile error.
     /// You can use [`aligned`](Self::aligned) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment.
     ///
     /// When decreasing the alignment we need to make sure that the bump position is realigned to the original alignment.

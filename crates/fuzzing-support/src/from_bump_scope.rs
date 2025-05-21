@@ -3,7 +3,7 @@
 //! #[path = "../../../src/bumping.rs"]
 //! mod bumping;
 //! ```
-//! But rust analyzer can not handle it, so we copy the file verbatim.
+//! But rust analyzer cannot handle it, so we copy the file verbatim.
 
 #[allow(dead_code)]
 pub(crate) mod bumping;

@@ -956,7 +956,7 @@ where
 
     /// Mutably borrows `Bump` with a new minimum alignment.
     ///
-    /// **This can not decrease the alignment.** Trying to decrease alignment will result in a compile error.
+    /// **This cannot decrease the alignment.** Trying to decrease alignment will result in a compile error.
     /// You can use [`aligned`](Self::aligned) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment.
     ///
     /// When decreasing the alignment we need to make sure that the bump position is realigned to the original alignment.
@@ -2128,7 +2128,7 @@ where
         self.as_mut_scope().try_alloc_iter_mut_rev(iter)
     }
 
-    /// Allocate an unitialized object.
+    /// Allocate an uninitialized object.
     ///
     /// You can safely initialize the object with [`init`](BumpBox::init) or unsafely with [`assume_init`](BumpBox::assume_init).
     ///
@@ -2166,7 +2166,7 @@ where
         self.as_scope().alloc_uninit()
     }
 
-    /// Allocate an unitialized object.
+    /// Allocate an uninitialized object.
     ///
     /// You can safely initialize the object with [`init`](BumpBox::init) or unsafely with [`assume_init`](BumpBox::assume_init).
     ///
@@ -2205,7 +2205,7 @@ where
         self.as_scope().try_alloc_uninit()
     }
 
-    /// Allocate an unitialized object slice.
+    /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with
     /// [`init_fill`](BumpBox::init_fill),
@@ -2252,7 +2252,7 @@ where
         self.as_scope().alloc_uninit_slice(len)
     }
 
-    /// Allocate an unitialized object slice.
+    /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with
     /// [`init_fill`](BumpBox::init_fill),
@@ -2300,7 +2300,7 @@ where
         self.as_scope().try_alloc_uninit_slice(len)
     }
 
-    /// Allocate an unitialized object slice.
+    /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with
     /// [`init_fill`](BumpBox::init_fill),
@@ -2330,7 +2330,7 @@ where
         self.as_scope().alloc_uninit_slice_for(slice)
     }
 
-    /// Allocate an unitialized object slice.
+    /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with
     /// [`init_fill`](BumpBox::init_fill),

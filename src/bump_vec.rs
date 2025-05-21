@@ -1091,8 +1091,8 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         self.fixed.as_non_null()
     }
 
-    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
-    /// valid for zero sized reads.
+    /// Returns a `NonNull` pointer to the vector's buffer, or a dangling
+    /// `NonNull` pointer valid for zero sized reads if the vector didn't allocate.
     #[doc(hidden)]
     #[deprecated = "renamed to `as_non_null`"]
     #[must_use]
@@ -1101,8 +1101,8 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         self.fixed.as_non_null()
     }
 
-    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
-    /// valid for zero sized reads.
+    /// Returns a `NonNull` pointer to the vector's buffer, or a dangling
+    /// `NonNull` pointer valid for zero sized reads if the vector didn't allocate.
     #[doc(hidden)]
     #[deprecated = "too niche; compute this yourself if needed"]
     #[must_use]
@@ -1683,7 +1683,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// sufficient.
     ///
     /// Note that the allocator may give the collection more space than it
-    /// requests. Therefore, capacity can not be relied upon to be precisely
+    /// requests. Therefore, capacity cannot be relied upon to be precisely
     /// minimal. Prefer [`reserve`] if future insertions are expected.
     ///
     /// [`reserve`]: Self::reserve
@@ -1713,7 +1713,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// sufficient.
     ///
     /// Note that the allocator may give the collection more space than it
-    /// requests. Therefore, capacity can not be relied upon to be precisely
+    /// requests. Therefore, capacity cannot be relied upon to be precisely
     /// minimal. Prefer [`reserve`] if future insertions are expected.
     ///
     /// [`reserve`]: Self::reserve
@@ -2505,7 +2505,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
 
     /// Shrinks the capacity of the vector as much as possible.
     ///
-    /// This will also free space for future bump allocations iff this is the most recent allocation.
+    /// This will also free space for future bump allocations if and only if this is the most recent allocation.
     ///
     /// # Examples
     /// ```
@@ -2848,7 +2848,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         let ptr = self.as_mut_ptr();
 
         // SAFETY:
-        // - `ptr` is [guaranteed allocated]o be valid for `self.len` elements
+        // - `ptr` is guaranteed to be valid for `self.len` elements
         // - but the allocation extends out to `self.buf.capacity()` elements, possibly
         // uninitialized
         let spare_ptr = unsafe { ptr.add(self.len()) };
@@ -2856,7 +2856,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         let spare_len = self.capacity() - self.len();
 
         // SAFETY:
-        // - `ptr` is [guaranteed allocated]o be valid for `self.len` elements
+        // - `ptr` is guaranteed to be valid for `self.len` elements
         // - `spare_ptr` is pointing one element past the buffer, so it doesn't overlap with `initialized`
         unsafe {
             let initialized = slice::from_raw_parts_mut(ptr, self.len());

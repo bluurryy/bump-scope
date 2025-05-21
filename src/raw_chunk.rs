@@ -286,8 +286,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
         if UP {
             // Aligning an address that is `<= range.end` with an alignment
-            // that is `<= CHUNK_ALIGN_MIN` can not exceed `range.end` and
-            // can not overflow as `range.end` is always aligned to `CHUNK_ALIGN_MIN`.
+            // that is `<= CHUNK_ALIGN_MIN` cannot exceed `range.end` and
+            // cannot overflow as `range.end` is always aligned to `CHUNK_ALIGN_MIN`.
             pos = up_align_usize_unchecked(pos, ALIGN);
         } else {
             pos = down_align_usize(pos, ALIGN);

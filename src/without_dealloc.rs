@@ -6,7 +6,7 @@ use crate::{
     BumpAllocator,
 };
 
-/// Wraps an bump allocator and does nothing on [`deallocate`](Allocator::deallocate).
+/// Wraps a bump allocator and does nothing on [`deallocate`](Allocator::deallocate).
 ///
 /// This type only implements [`Allocator`] for wrapped types that implement [`BumpAllocator`], so you don't accidentally leak memory.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -58,7 +58,7 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
     }
 }
 
-/// Wraps an bump allocator and does nothing on [`shrink`](Allocator::shrink).
+/// Wraps a bump allocator and does nothing on [`shrink`](Allocator::shrink).
 ///
 /// This type only implements [`Allocator`] for wrapped types that implement [`BumpAllocator`], so you don't accidentally leak memory.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

@@ -43,7 +43,7 @@ impl ChunkSizeConfig {
     ///
     /// This is ensured by already having `align_size`'d the layout's size in `calc_size_from_hint`.
     /// A downwards alignment of a size greater or equal than the layout's size, which
-    /// the allocation's size is, can not result in a size smaller than the layout's.
+    /// the allocation's size is, cannot result in a size smaller than the layout's.
     ///
     /// [fits]: https://doc.rust-lang.org/std/alloc/trait.Allocator.html#memory-fitting
     #[inline(always)]

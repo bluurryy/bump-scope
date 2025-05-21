@@ -97,7 +97,7 @@
 //!
 //! # Allocator Methods
 //!
-//! The bump allocator provides many methods to conveniently allocate values, strings and slices.
+//! The bump allocator provides many methods to conveniently allocate values, strings, and slices.
 //! Have a look at the documentation of [`Bump`](crate::Bump) for a method overview.
 //!
 //! # Scopes and Checkpoints
@@ -174,13 +174,13 @@
 //! - [`Fixed*`](crate::FixedBumpVec) for fixed capacity collections
 //! - [`Mut*`](crate::MutBumpVec) for collections optimized for a mutable bump allocator
 //!
-//! #### Api changes
+//! #### API changes
 //! The collections are designed to have a similar api to their std counterparts but they do make some breaking changes:
 //! - [`split_off`](BumpVec::split_off) —  splits the collection in place without allocation; the parameter is a range instead of a single index
 //! - [`retain`](BumpVec::retain) —  takes a closure with a `&mut T` parameter like [`Vec::retain_mut`](alloc_crate::vec::Vec::retain_mut)
 //!
 //! #### New features
-//! - [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `Drain<T>` etc
+//! - [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `Drain<T>` etc.
 //! - [`map`](BumpVec::map) —  maps the elements, potentially reusing the existing allocation
 //! - [`map_in_place`](BumpVec::map_in_place) —  maps the elements without allocation
 //! - conversions between the regular collections, their `Fixed*` variants and `BumpBox<[T]>` / `BumpBox<str>`
@@ -261,7 +261,7 @@
 //! Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
 //! This benefits collections as well as <code>[alloc_iter](crate::Bump::alloc_iter)([_mut](crate::Bump::alloc_iter_mut))</code> and <code>[alloc_fmt](crate::Bump::alloc_fmt)([_mut](crate::Bump::alloc_fmt_mut))</code>
 //! with the exception of [`MutBumpVecRev`](crate::MutBumpVecRev) and [`alloc_iter_mut_rev`](crate::Bump::alloc_iter_mut_rev).
-//! [`MutBumpVecRev`](crate::MutBumpVecRev) can be grown and shrunk in place iff bumping downwards.
+//! [`MutBumpVecRev`](crate::MutBumpVecRev) can be grown and shrunk in place if and only if bumping downwards.
 //!
 //! Bumping downwards shaves off a few non-branch instructions per allocation.
 //!
@@ -506,7 +506,7 @@ fn handle_alloc_error(_layout: Layout) -> ! {
     panic!("allocation failed")
 }
 
-// this is just `Result::into_ok` but with a name to match our use case
+// This is just `Result::into_ok` but with a name to match our use case.
 #[inline(always)]
 #[cfg(feature = "panic-on-alloc")]
 #[allow(unreachable_patterns)] // msrv 1.64.0 does not allow omitting the `Err` arm

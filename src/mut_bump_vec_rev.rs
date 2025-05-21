@@ -496,8 +496,8 @@ impl<T, A> MutBumpVecRev<T, A> {
         unsafe { non_null::sub(self.end, self.len) }
     }
 
-    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
-    /// valid for zero sized reads.
+    /// Returns a `NonNull` pointer to the vector's buffer, or a dangling
+    /// `NonNull` pointer valid for zero sized reads if the vector didn't allocate.
     #[doc(hidden)]
     #[deprecated = "renamed to `as_non_null`"]
     #[must_use]
@@ -506,8 +506,8 @@ impl<T, A> MutBumpVecRev<T, A> {
         unsafe { non_null::sub(self.end, self.len) }
     }
 
-    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
-    /// valid for zero sized reads.
+    /// Returns a `NonNull` pointer to the vector's buffer, or a dangling
+    /// `NonNull` pointer valid for zero sized reads if the vector didn't allocate.
     #[doc(hidden)]
     #[deprecated = "too niche; compute this yourself if needed"]
     #[must_use]
@@ -1664,7 +1664,7 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     /// sufficient.
     ///
     /// Note that the allocator may give the collection more space than it
-    /// requests. Therefore, capacity can not be relied upon to be precisely
+    /// requests. Therefore, capacity cannot be relied upon to be precisely
     /// minimal. Prefer [`reserve`] if future insertions are expected.
     ///
     /// [`reserve`]: Self::reserve
@@ -1694,7 +1694,7 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     /// sufficient.
     ///
     /// Note that the allocator may give the collection more space than it
-    /// requests. Therefore, capacity can not be relied upon to be precisely
+    /// requests. Therefore, capacity cannot be relied upon to be precisely
     /// minimal. Prefer [`reserve`] if future insertions are expected.
     ///
     /// [`reserve`]: Self::reserve

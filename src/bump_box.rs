@@ -40,7 +40,7 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///
 /// You can turn a `BumpBox` into a reference with [`into_ref`] and [`into_mut`] and into a [`Box`] with [`into_box`].
 ///
-/// Unlike `Box`, `BumpBox` can not implement `Clone` or free the allocated space on drop,
+/// Unlike `Box`, `BumpBox` cannot implement `Clone` or free the allocated space on drop,
 /// as it does not store its allocator. It's essentially just an owned reference.
 ///
 /// A `BumpBox` can be deallocated using [`Bump(Scope)::dealloc`](crate::Bump::dealloc).
