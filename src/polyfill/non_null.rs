@@ -171,13 +171,13 @@ pub(crate) unsafe fn truncate<T>(slice: &mut NonNull<[T]>, len: usize) {
     drop_in_place(to_drop);
 }
 
-/// Not part of std, but for context see [`pointer::wrapping_add`].
+/// Not part of std, but for context see `<*mut T>::wrapping_add`.
 #[inline(always)]
 pub(crate) unsafe fn wrapping_byte_add<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
     NonNull::new_unchecked(ptr.as_ptr().cast::<u8>().wrapping_add(count).cast())
 }
 
-/// Not part of std, but for context see [`pointer::wrapping_sub`].
+/// Not part of std, but for context see `<*mut T>::wrapping_sub`.
 #[inline(always)]
 pub(crate) unsafe fn wrapping_byte_sub<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
     NonNull::new_unchecked(ptr.as_ptr().cast::<u8>().wrapping_sub(count).cast())

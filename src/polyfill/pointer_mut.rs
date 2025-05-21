@@ -1,6 +1,6 @@
 use core::mem;
 
-/// See [`pointer::addr`].
+/// See `<*mut T>::addr`.
 #[must_use]
 #[inline(always)]
 pub(crate) fn addr<T>(ptr: *mut T) -> usize {
@@ -12,7 +12,7 @@ pub(crate) fn addr<T>(ptr: *mut T) -> usize {
     unsafe { mem::transmute(ptr.cast::<()>()) }
 }
 
-/// See [`pointer::with_addr`].
+/// See `<*mut T>::with_addr`.
 #[inline]
 #[must_use]
 #[allow(clippy::cast_possible_wrap)]
@@ -26,7 +26,7 @@ pub(crate) fn with_addr<T>(ptr: *mut T, addr: usize) -> *mut T {
     wrapping_byte_offset(ptr, offset)
 }
 
-/// See [`pointer::wrapping_byte_offset`].
+/// See `<*mut T>::wrapping_byte_offset`.
 #[must_use]
 #[inline(always)]
 pub(crate) const fn wrapping_byte_offset<T>(ptr: *mut T, count: isize) -> *mut T {

@@ -2,14 +2,14 @@ use core::{mem, ptr};
 
 use crate::polyfill;
 
-/// See [`pointer::as_mut_ptr`].
+/// See `<*mut T>::as_mut_ptr`.
 #[inline(always)]
 #[allow(dead_code)]
 pub(crate) const fn as_mut_ptr<T>(ptr: *mut [T]) -> *mut T {
     ptr.cast()
 }
 
-/// See [`pointer::len`].
+/// See `<*const T>::len`.
 ///
 /// This implementation has an additional safety invariant though.
 ///
@@ -23,7 +23,7 @@ pub(crate) unsafe fn len<T>(ptr: *const [T]) -> usize {
     (&(*ptr)).len()
 }
 
-/// See [`pointer::offset_from_unsigned`].
+/// See `<*const T>::offset_from_unsigned`.
 #[inline]
 #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
 #[allow(clippy::cast_sign_loss)]
@@ -44,13 +44,13 @@ pub(crate) unsafe fn write_with<T>(ptr: *mut T, f: impl FnOnce() -> T) {
     ptr::write(ptr, f());
 }
 
-/// See [`pointer::cast_mut`].
+/// See `<*const T>::cast_mut`.
 #[inline(always)]
 pub(crate) const fn cast_mut<T: ?Sized>(ptr: *const T) -> *mut T {
     ptr as _
 }
 
-/// See [`pointer::addr`].
+/// See `<*const T>::addr`.
 #[must_use]
 #[inline(always)]
 pub(crate) fn addr<T>(ptr: *const T) -> usize {
