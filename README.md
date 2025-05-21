@@ -162,7 +162,7 @@ A bump allocator does not require `deallocate` or `shrink` to free memory.
 After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
 You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using `WithoutDealloc` and `WithoutShrink`.
 ```rust
-use bump_scope::{ Bump, WithoutDealloc };
+use bump_scope::{Bump, WithoutDealloc};
 use allocator_api2_03::boxed::Box;
 
 let bump: Bump = Bump::new();
