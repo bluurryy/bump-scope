@@ -144,6 +144,7 @@ pub(crate) fn bump_up(props: BumpProps) -> Option<BumpUp> {
         size_is_multiple_of_align,
     } = props;
 
+    debug_assert_eq!(start % min_align, 0);
     debug_assert_eq!(end % MIN_CHUNK_ALIGN, 0);
 
     // Used for assertion at the end of the function.
@@ -236,18 +237,40 @@ pub(crate) fn bump_down(props: BumpProps) -> Option<usize> {
         size_is_multiple_of_align,
     } = props;
 
+    debug_assert_eq!(start % MIN_CHUNK_ALIGN, 0);
+    debug_assert_eq!(end % min_align, 0);
+
     // Used for assertions only.
     let original_end = end;
 
-    // The `needs_aligning` variables are meant to be computed at compile time.
-    let needs_aligning_for_min_align = {
-        let due_to_align = !size_is_multiple_of_align || !align_is_const || layout.align() < min_align;
-        let due_to_size = !size_is_const || (layout.size() % min_align != 0);
-        due_to_align || due_to_size
-    };
+    // This variables is meant to be computed at compile time.
+    let needs_aligning = {
+        // The bump pointer must end up aligned to the layout's alignment.
+        //
+        // Manual alignment for the layout's alignment can be elided
+        // if the layout's size is a multiple of its alignment
+        // and its alignment is less or equal to the minimum alignment.
+        let can_elide_aligning_for_layout = size_is_multiple_of_align && align_is_const && layout.align() <= min_align;
 
-    let needs_aligning_for_layout = !size_is_multiple_of_align || !align_is_const || layout.align() > min_align;
-    let needs_aligning = needs_aligning_for_layout || needs_aligning_for_min_align;
+        // The bump pointer must end up aligned to the minimum alignment again.
+        //
+        // Manual alignment for the minimum alignment can be elided if:
+        // - the layout's alignment is a multiple of its alignment
+        //   and its alignment is greater or equal to the minimum alignment
+        // - the layout's size is a multiple of the minimum alignment
+        //
+        // In either case the bump pointer will end up inherently aligned when the pointer
+        // is bumped downwards by the layout's size.
+        let can_elide_aligning_for_min_align = {
+            let due_to_layout_align = size_is_multiple_of_align && align_is_const && layout.align() >= min_align;
+            let due_to_layout_size = size_is_const && (layout.size() % min_align == 0);
+            due_to_layout_align || due_to_layout_size
+        };
+
+        let can_elide_aligning = can_elide_aligning_for_layout && can_elide_aligning_for_min_align;
+
+        !can_elide_aligning
+    };
 
     if size_is_const && layout.size() <= MIN_CHUNK_ALIGN {
         // When `size <= MIN_CHUNK_ALIGN` subtracting it from `end` can't overflow, as the lowest value for `end` would be `start` which is aligned to `MIN_CHUNK_ALIGN`,
