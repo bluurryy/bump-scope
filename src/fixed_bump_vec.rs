@@ -938,20 +938,54 @@ impl<'a, T> FixedBumpVec<'a, T> {
         self.generic_push_with(|| value)
     }
 
-    /// Appends an element to the back of a collection.
+    /// Reserves space for one more element, then calls `f`
+    /// to produce the value that is appended.
+    ///
+    /// In some cases this could be more performant than `push(f())` because it
+    /// permits the compiler to directly place `T` in the vector instead of
+    /// constructing it on the stack and copying it over.
     ///
     /// # Panics
     /// Panics if the vector does not have enough capacity.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::with_capacity_in(3, &bump);
+    /// vec.append([1, 2]);
+    /// vec.push_with(|| 3);
+    /// assert_eq!(vec, [1, 2, 3]);
+    /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn push_with(&mut self, f: impl FnOnce() -> T) {
         panic_on_error(self.generic_push_with(f));
     }
 
-    /// Appends an element to the back of a collection.
+    /// Reserves space for one more element, then calls `f`
+    /// to produce the value that is appended.
+    ///
+    /// In some cases this could be more performant than `push(f())` because it
+    /// permits the compiler to directly place `T` in the vector instead of
+    /// constructing it on the stack and copying it over.
     ///
     /// # Errors
     /// Errors if the vector does not have enough capacity.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::try_with_capacity_in(3, &bump)?;
+    /// vec.try_append([1, 2])?;
+    /// vec.try_push_with(|| 3)?;
+    /// assert_eq!(vec, [1, 2, 3]);
+    ///
+    /// let push_result = vec.try_push_with(|| unreachable!());
+    /// assert!(push_result.is_err());
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
     pub fn try_push_with(&mut self, f: impl FnOnce() -> T) -> Result<(), AllocError> {
         self.generic_push_with(f)

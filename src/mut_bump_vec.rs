@@ -1078,20 +1078,49 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
         self.generic_push_with(|| value)
     }
 
-    /// Appends an element to the back of a collection.
+    /// Reserves space for one more element, then calls `f`
+    /// to produce the value that is appended.
+    ///
+    /// In some cases this could be more performant than `push(f())` because it
+    /// permits the compiler to directly place `T` in the vector instead of
+    /// constructing it on the stack and copying it over.
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec![in &mut bump; 1, 2];
+    /// vec.push_with(|| 3);
+    /// assert_eq!(vec, [1, 2, 3]);
+    /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn push_with(&mut self, f: impl FnOnce() -> T) {
         panic_on_error(self.generic_push_with(f));
     }
 
-    /// Appends an element to the back of a collection.
+    /// Reserves space for one more element, then calls `f`
+    /// to produce the value that is appended.
+    ///
+    /// In some cases this could be more performant than `push(f())` because it
+    /// permits the compiler to directly place `T` in the vector instead of
+    /// constructing it on the stack and copying it over.
     ///
     /// # Errors
     /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec![in &mut bump; 1, 2];
+    /// vec.try_push_with(|| 3);
+    /// assert_eq!(vec, [1, 2, 3]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
     pub fn try_push_with(&mut self, f: impl FnOnce() -> T) -> Result<(), AllocError> {
         self.generic_push_with(f)
