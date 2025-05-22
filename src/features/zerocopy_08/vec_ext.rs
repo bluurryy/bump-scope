@@ -143,7 +143,7 @@ impl<T> VecExt for FixedBumpVec<'_, T> {
     #[cfg(feature = "panic-on-alloc")]
     fn extend_zeroed(&mut self, additional: usize)
     where
-        Self::T: zerocopy_08::FromZeros,
+        Self::T: FromZeros,
     {
         panic_on_error(self.generic_extend_zeroed(additional));
     }
@@ -168,7 +168,7 @@ impl<T> VecExt for FixedBumpVec<'_, T> {
     #[inline(always)]
     fn try_extend_zeroed(&mut self, additional: usize) -> Result<(), AllocError>
     where
-        Self::T: zerocopy_08::FromZeros,
+        Self::T: FromZeros,
     {
         self.generic_extend_zeroed(additional)
     }
@@ -201,7 +201,7 @@ impl<T> VecExt for FixedBumpVec<'_, T> {
     #[cfg(feature = "panic-on-alloc")]
     fn resize_zeroed(&mut self, new_len: usize)
     where
-        T: zerocopy_08::FromZeros,
+        T: FromZeros,
     {
         panic_on_error(self.generic_resize_zeroed(new_len));
     }
@@ -234,7 +234,7 @@ impl<T> VecExt for FixedBumpVec<'_, T> {
     #[inline(always)]
     fn try_resize_zeroed(&mut self, new_len: usize) -> Result<(), AllocError>
     where
-        Self::T: zerocopy_08::FromZeros,
+        Self::T: FromZeros,
     {
         self.generic_resize_zeroed(new_len)
     }
@@ -348,7 +348,7 @@ impl<T, A: BumpAllocator> VecExt for BumpVec<T, A> {
     #[inline(always)]
     fn try_resize_zeroed(&mut self, new_len: usize) -> Result<(), AllocError>
     where
-        T: zerocopy_08::FromZeros,
+        T: FromZeros,
     {
         self.generic_resize_zeroed(new_len)
     }
@@ -376,7 +376,7 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVec<T, A> {
     #[cfg(feature = "panic-on-alloc")]
     fn extend_zeroed(&mut self, additional: usize)
     where
-        Self::T: zerocopy_08::FromZeros,
+        Self::T: FromZeros,
     {
         panic_on_error(self.generic_extend_zeroed(additional));
     }
@@ -400,7 +400,7 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVec<T, A> {
     #[inline(always)]
     fn try_extend_zeroed(&mut self, additional: usize) -> Result<(), AllocError>
     where
-        Self::T: zerocopy_08::FromZeros,
+        Self::T: FromZeros,
     {
         self.generic_extend_zeroed(additional)
     }
@@ -435,7 +435,7 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVec<T, A> {
     #[cfg(feature = "panic-on-alloc")]
     fn resize_zeroed(&mut self, new_len: usize)
     where
-        Self::T: zerocopy_08::FromZeros,
+        Self::T: FromZeros,
     {
         panic_on_error(self.generic_resize_zeroed(new_len));
     }
@@ -470,7 +470,7 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVec<T, A> {
     #[inline(always)]
     fn try_resize_zeroed(&mut self, new_len: usize) -> Result<(), AllocError>
     where
-        Self::T: zerocopy_08::FromZeros,
+        Self::T: FromZeros,
     {
         self.generic_resize_zeroed(new_len)
     }
@@ -498,7 +498,7 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVecRev<T, A> {
     #[cfg(feature = "panic-on-alloc")]
     fn extend_zeroed(&mut self, additional: usize)
     where
-        T: zerocopy_08::FromZeros,
+        T: FromZeros,
     {
         panic_on_error(self.generic_extend_zeroed(additional));
     }
@@ -522,7 +522,7 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVecRev<T, A> {
     #[inline(always)]
     fn try_extend_zeroed(&mut self, additional: usize) -> Result<(), AllocError>
     where
-        T: zerocopy_08::FromZeros,
+        T: FromZeros,
     {
         self.generic_extend_zeroed(additional)
     }
@@ -557,7 +557,7 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVecRev<T, A> {
     #[cfg(feature = "panic-on-alloc")]
     fn resize_zeroed(&mut self, new_len: usize)
     where
-        T: zerocopy_08::FromZeros,
+        T: FromZeros,
     {
         panic_on_error(self.generic_resize_zeroed(new_len));
     }
@@ -592,13 +592,76 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVecRev<T, A> {
     #[inline(always)]
     fn try_resize_zeroed(&mut self, new_len: usize) -> Result<(), AllocError>
     where
-        T: zerocopy_08::FromZeros,
+        T: FromZeros,
     {
         self.generic_resize_zeroed(new_len)
     }
 }
 
-impl<T> FixedBumpVec<'_, T> {
+trait PrivateVecExt {
+    fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E>;
+    fn generic_resize_zeroed<E: ErrorBehavior>(&mut self, new_len: usize) -> Result<(), E>;
+}
+
+impl<T: FromZeros> PrivateVecExt for FixedBumpVec<'_, T> {
+    #[inline]
+    fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
+        self.generic_reserve(additional)?;
+
+        unsafe {
+            let ptr = self.as_mut_ptr();
+            let len = self.len();
+
+            ptr.add(len).write_bytes(0, additional);
+            self.set_len(len + additional);
+        }
+
+        Ok(())
+    }
+
+    #[inline]
+    fn generic_resize_zeroed<E: ErrorBehavior>(&mut self, new_len: usize) -> Result<(), E> {
+        let len = self.len();
+
+        if new_len > len {
+            self.generic_extend_zeroed(new_len - len)
+        } else {
+            self.truncate(new_len);
+            Ok(())
+        }
+    }
+}
+
+impl<T: FromZeros, A: BumpAllocator> PrivateVecExt for BumpVec<T, A> {
+    #[inline]
+    fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
+        self.generic_reserve(additional)?;
+
+        unsafe {
+            let ptr = self.as_mut_ptr();
+            let len = self.len();
+
+            ptr.add(len).write_bytes(0, additional);
+            self.set_len(len + additional);
+        }
+
+        Ok(())
+    }
+
+    #[inline]
+    fn generic_resize_zeroed<E: ErrorBehavior>(&mut self, new_len: usize) -> Result<(), E> {
+        let len = self.len();
+
+        if new_len > len {
+            self.generic_extend_zeroed(new_len - len)
+        } else {
+            self.truncate(new_len);
+            Ok(())
+        }
+    }
+}
+
+impl<T: FromZeros, A: MutBumpAllocator> PrivateVecExt for MutBumpVec<T, A> {
     #[inline]
     fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E>
     where
@@ -633,82 +696,9 @@ impl<T> FixedBumpVec<'_, T> {
     }
 }
 
-impl<T, A: BumpAllocator> BumpVec<T, A> {
+impl<T: FromZeros, A: MutBumpAllocator> PrivateVecExt for MutBumpVecRev<T, A> {
     #[inline]
-    fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E>
-    where
-        T: FromZeros,
-    {
-        self.generic_reserve(additional)?;
-
-        unsafe {
-            let ptr = self.as_mut_ptr();
-            let len = self.len();
-
-            ptr.add(len).write_bytes(0, additional);
-            self.set_len(len + additional);
-        }
-
-        Ok(())
-    }
-
-    #[inline]
-    pub(crate) fn generic_resize_zeroed<E: ErrorBehavior>(&mut self, new_len: usize) -> Result<(), E>
-    where
-        T: FromZeros,
-    {
-        let len = self.len();
-
-        if new_len > len {
-            self.generic_extend_zeroed(new_len - len)
-        } else {
-            self.truncate(new_len);
-            Ok(())
-        }
-    }
-}
-
-impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
-    #[inline]
-    fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E>
-    where
-        T: zerocopy_08::FromZeros,
-    {
-        self.generic_reserve(additional)?;
-
-        unsafe {
-            let ptr = self.as_mut_ptr();
-            let len = self.len();
-
-            ptr.add(len).write_bytes(0, additional);
-            self.set_len(len + additional);
-        }
-
-        Ok(())
-    }
-
-    #[inline]
-    fn generic_resize_zeroed<E: ErrorBehavior>(&mut self, new_len: usize) -> Result<(), E>
-    where
-        T: zerocopy_08::FromZeros,
-    {
-        let len = self.len();
-
-        if new_len > len {
-            self.generic_extend_zeroed(new_len - len)
-        } else {
-            self.truncate(new_len);
-            Ok(())
-        }
-    }
-}
-
-impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
-    #[inline]
-    fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E>
-    where
-        T: zerocopy_08::FromZeros,
-    {
+    fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
         self.generic_reserve(additional)?;
 
         unsafe {
@@ -721,10 +711,7 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     }
 
     #[inline]
-    fn generic_resize_zeroed<E: ErrorBehavior>(&mut self, new_len: usize) -> Result<(), E>
-    where
-        T: zerocopy_08::FromZeros,
-    {
+    fn generic_resize_zeroed<E: ErrorBehavior>(&mut self, new_len: usize) -> Result<(), E> {
         let len = self.len();
 
         if new_len > len {
