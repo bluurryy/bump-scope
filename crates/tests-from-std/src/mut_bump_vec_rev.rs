@@ -31,7 +31,7 @@ impl<T> VecNew for Vec<T> {
     }
 
     fn try_with_capacity(n: usize) -> Result<Self, AllocError> {
-        Vec::try_with_capacity_in(n, Default::default()).map_err(Into::into)
+        Vec::try_with_capacity_in(n, Default::default())
     }
 }
 

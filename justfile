@@ -42,6 +42,7 @@ check-clippy:
 
   cd crates/fuzzing-support; cargo clippy --tests
   cd crates/test-fallibility; cargo clippy --tests
+  cd crates/tests-from-std; cargo clippy --tests
   cd fuzz; cargo clippy
 
 check-nostd:
