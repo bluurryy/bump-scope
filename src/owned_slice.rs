@@ -9,7 +9,7 @@ use alloc_crate::{
     vec::{self, Vec},
 };
 
-use crate::{BumpAllocator, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev};
+use crate::{unsize_bump_box, BumpAllocator, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev};
 
 mod drain;
 mod extract_if;
@@ -62,7 +62,7 @@ impl<'a, T, const N: usize> OwnedSlice for BumpBox<'a, [T; N]> {
     type Take = BumpBox<'a, [T]>;
 
     fn into_take_owned_slice(self) -> Self::Take {
-        self.into_unsized()
+        unsize_bump_box!(self)
     }
 }
 

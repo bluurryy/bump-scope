@@ -54,7 +54,7 @@ Unlike `bumpalo`, this crate...
 
 ## Allocator Methods
 
-The bump allocator provides many methods to conveniently allocate values, strings and slices.
+The bump allocator provides many methods to conveniently allocate values, strings, and slices.
 Have a look at the documentation of `Bump` for a method overview.
 
 ## Scopes and Checkpoints
@@ -130,13 +130,13 @@ They are also available in the following variants:
 - `Fixed*` for fixed capacity collections
 - `Mut*` for collections optimized for a mutable bump allocator
 
-##### Api changes
+##### API changes
 The collections are designed to have a similar api to their std counterparts but they do make some breaking changes:
 - [`split_off`](BumpVec::split_off) —  splits the collection in place without allocation; the parameter is a range instead of a single index
 - [`retain`](BumpVec::retain) —  takes a closure with a `&mut T` parameter like [`Vec::retain_mut`](alloc_crate::vec::Vec::retain_mut)
 
 ##### New features
-- [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `Drain<T>` etc
+- [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `Drain<T>` etc.
 - [`map`](BumpVec::map) —  maps the elements, potentially reusing the existing allocation
 - [`map_in_place`](BumpVec::map_in_place) —  maps the elements without allocation
 - conversions between the regular collections, their `Fixed*` variants and `BumpBox<[T]>` / `BumpBox<str>`
@@ -214,7 +214,7 @@ Bump direction is controlled by the generic parameter `const UP: bool`. By defau
 Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
 This benefits collections as well as <code>alloc_iter(_mut)</code> and <code>alloc_fmt(_mut)</code>
 with the exception of `MutBumpVecRev` and `alloc_iter_mut_rev`.
-`MutBumpVecRev` can be grown and shrunk in place iff bumping downwards.
+`MutBumpVecRev` can be grown and shrunk in place if and only if bumping downwards.
 
 Bumping downwards shaves off a few non-branch instructions per allocation.
 

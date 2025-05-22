@@ -2640,6 +2640,8 @@ impl<'a, T, const N: usize> BumpBox<'a, [T; N]> {
     /// let slice: BumpBox<[i32]> = array.into_unsized();
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
+    #[doc(hidden)]
+    #[deprecated = "use `unsize_bump_box!` instead"]
     #[must_use]
     #[inline(always)]
     pub fn into_unsized(self) -> BumpBox<'a, [T]> {

@@ -43,6 +43,7 @@ _If you are upgrading: please see [`UPGRADING.md#Unreleased`](UPGRADING.md#Unrel
 - Deprecate `from_array_in`, use `from_owned_slice_in` instead.
 - Deprecate renamed `as_non_null_ptr` to `as_non_null`.
 - Deprecate `as_non_null_slice`, too niche of an api.
+- Deprecate `BumpBox::into_unsized`, use `unsize_bump_box!` instead.
   
 ### Removed
 
