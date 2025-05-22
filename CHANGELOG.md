@@ -19,6 +19,7 @@ _If you are upgrading: please see [`UPGRADING.md#Unreleased`](UPGRADING.md#Unrel
 - Add `Bump(Scope)::alloc_slice_move` to allocate `impl OwnedSlice`s (arrays, `Vec<T>`, `Box<[T]>` and so on).
 - Add `BumpBox::as_raw` which returns a pointer to its contents.
 - Add `Bump(Scope)::dealloc` to deallocate `BumpBox`es.
+- Add "bytemuck" feature that adds extension traits just like "zerocopy-08" does.
 
 ### Changed
 

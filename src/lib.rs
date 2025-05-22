@@ -374,6 +374,12 @@ use raw_chunk::RawChunk;
 use set_len_on_drop::SetLenOnDrop;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
+#[cfg(feature = "bytemuck")]
+/// Contains extension traits.
+pub mod bytemuck {
+    pub use crate::features::bytemuck::{BumpExt, BumpScopeExt, InitZeroed, VecExt};
+}
+
 #[cfg(feature = "zerocopy-08")]
 /// Contains extension traits.
 pub mod zerocopy_08 {
