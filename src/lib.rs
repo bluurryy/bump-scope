@@ -232,6 +232,8 @@
 //!   Without this feature, allocation failures cannot cause panics, and only
 //!   `try_`-prefixed allocation methods will be available.
 //! * **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
+//! * **`bytemuck`** —  Adds `bytemuck::*` extension traits for `alloc_zeroed(_slice)`, `BumpBox::init_zeroed` and
+//!   `resize_zeroed` and `extend_zeroed` for vector types.
 //! * **`zerocopy-08`** —  Adds `zerocopy_08::*` extension traits for `alloc_zeroed(_slice)`, `BumpBox::init_zeroed` and
 //!   `resize_zeroed` and `extend_zeroed` for vector types.
 //! * **`allocator-api2-02`** —  Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and
@@ -373,6 +375,12 @@ use private::{capacity_overflow, format_trait_error, PanicsOnAlloc};
 use raw_chunk::RawChunk;
 use set_len_on_drop::SetLenOnDrop;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
+
+#[cfg(feature = "bytemuck")]
+/// Contains extension traits.
+pub mod bytemuck {
+    pub use crate::features::bytemuck::{BumpExt, BumpScopeExt, InitZeroed, VecExt};
+}
 
 #[cfg(feature = "zerocopy-08")]
 /// Contains extension traits.

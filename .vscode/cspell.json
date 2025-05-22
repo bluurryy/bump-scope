@@ -19,6 +19,7 @@
     "bufs",
     "bumpalo",
     "bumpbox",
+    "bytemuck",
     "byteslice",
     "cfgs",
     "clippy",
@@ -124,6 +125,7 @@
     "Vec's",
     "Vecs",
     "vtable",
+    "Zeroable",
     "zerocopy",
     "Zmiri"
   ]
