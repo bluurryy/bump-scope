@@ -1294,8 +1294,12 @@ where
         self.as_scope().try_alloc(value)
     }
 
-    /// Pre-allocate space for an object. Once space is allocated `f` will be called to create the value to be put at that place.
-    /// In some situations this can help the compiler realize that `T` can be constructed at the allocated space instead of having to copy it over.
+    /// Allocates space for an object, then calls `f` to produce the
+    /// value to be put in that place.
+    ///
+    /// In some cases this could be more performant than `alloc(f())` because it
+    /// permits the compiler to directly place `T` in the allocated memory instead of
+    /// constructing it on the stack and copying it over.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1313,8 +1317,12 @@ where
         self.as_scope().alloc_with(f)
     }
 
-    /// Pre-allocate space for an object. Once space is allocated `f` will be called to create the value to be put at that place.
-    /// In some situations this can help the compiler realize that `T` can be constructed at the allocated space instead of having to copy it over.
+    /// Allocates space for an object, then calls `f` to produce the
+    /// value to be put in that place.
+    ///
+    /// In some cases this could be more performant than `try_alloc(f())` because it
+    /// permits the compiler to directly place `T` in the allocated memory instead of
+    /// constructing it on the stack and copying it over.
     ///
     /// # Errors
     /// Errors if the allocation fails.
