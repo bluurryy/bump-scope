@@ -242,10 +242,6 @@ At the same time `Bump`s that have already allocated a chunk don't suffer runtim
 
 <!-- cargo-rdme end -->
 
-## Testing
-
-Running `cargo test` requires a nightly compiler. 
-
 ## License
 
 Licensed under either of:
