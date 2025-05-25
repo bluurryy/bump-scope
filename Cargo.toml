@@ -57,6 +57,16 @@ allocator-api2-03 = ["dep:allocator-api2-03"]
 
 #! ### Nightly features
 
+## Enables all other nightly feature flags.
+nightly = [
+    "nightly-allocator-api",
+    "nightly-coerce-unsized",
+    "nightly-exact-size-is-empty",
+    "nightly-trusted-len",
+    "nightly-fn-traits",
+    "nightly-tests",
+]
+
 ## Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
 ## allows using an `alloc::alloc::Allocator` as a base allocator via
 ## [`AllocatorNightlyCompat`](crate::alloc::compat::AllocatorNightlyCompat).

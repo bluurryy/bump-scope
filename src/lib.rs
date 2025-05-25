@@ -244,6 +244,7 @@
 //!   [`AllocatorApiV03Compat`](crate::alloc::compat::AllocatorApi2V03Compat).
 //!
 //!  ### Nightly features
+//! * **`nightly`** —  Enables all other nightly feature flags.
 //! * **`nightly-allocator-api`** —  Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
 //!   allows using an `alloc::alloc::Allocator` as a base allocator via
 //!   [`AllocatorNightlyCompat`](crate::alloc::compat::AllocatorNightlyCompat).
