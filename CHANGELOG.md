@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_This release clears out all the blockers that were standing in the way of a 1.0 release. Unless something unexpected comes up 1.0 will be released in a month or so. If you've got thoughts, concerns, or suggestions let me know. Feedback is very welcome._
+_This release clears out all the blockers that were standing in the way of a 1.0 release. Unless something unexpected comes up 1.0 will be released in the next month. If you've got thoughts, concerns, or suggestions let me know. Feedback is always welcome._
 
 _If you are upgrading: please see [`UPGRADING.md#Unreleased`](UPGRADING.md#Unreleased)._
 
