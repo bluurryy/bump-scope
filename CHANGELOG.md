@@ -20,6 +20,7 @@ _If you are upgrading: please see [`UPGRADING.md#Unreleased`](UPGRADING.md#Unrel
 - Add `BumpBox::as_raw` which returns a pointer to its contents.
 - Add `Bump(Scope)::dealloc` to deallocate `BumpBox`es.
 - Add "bytemuck" feature that adds extension traits just like "zerocopy-08" does.
+- Add "nightly" feature that enables all other "nightly-*" features
 
 ### Changed
 
