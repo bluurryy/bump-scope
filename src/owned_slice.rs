@@ -21,9 +21,15 @@ pub use into_iter::IntoIter;
 
 /// A type that owns a slice of elements.
 ///
-/// The whole point of this trait is as a parameter of the `append` method available on this crate's vector types.
+/// For example `[T; N]`, `Vec<T>`, `Box<[T]>` and `Drain<T>`.
+///
+/// This trait is used for the parameter of [`alloc_slice_move`], [`append`] and [`from_owned_slice_in`].
 ///
 /// Any implementor of `TakeOwnedSlice` automatically implements this trait.
+///
+/// [`append`]: crate::BumpVec::append
+/// [`alloc_slice_move`]: crate::Bump::alloc_slice_move
+/// [`from_owned_slice_in`]: crate::BumpVec::from_owned_slice_in
 pub trait OwnedSlice {
     /// The type of an element of this owned slice.
     type Item;
@@ -78,8 +84,6 @@ impl<T, const N: usize> OwnedSlice for Box<[T; N]> {
 }
 
 /// A type which owns a slice and can relinquish its ownership of all its elements at once.
-///
-/// This trait is used for the `append` method of this crate's vector types via the [`OwnedSlice`] trait.
 ///
 /// Implementors of this trait must behave like a `Vec<T>` in the sense that they manage a slice they own.
 /// When the slice is "taken" using `take_owned_slice`, the implementor
