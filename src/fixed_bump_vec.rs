@@ -12,7 +12,7 @@ use core::{
 use crate::{
     alloc::AllocError,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
-    polyfill::{self, non_null, pointer, slice},
+    polyfill::{self, hint::likely, non_null, pointer, slice},
     BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, NoDrop, SizedTypeProperties,
 };
 
@@ -1221,12 +1221,12 @@ impl<'a, T> FixedBumpVec<'a, T> {
         self.generic_reserve(slice.len())?;
 
         unsafe {
-            let mut ptr = self.as_mut_ptr().add(self.len());
+            let mut pos = 0usize;
 
-            for value in slice {
-                pointer::write_with(ptr, || value.clone());
-                ptr = ptr.add(1);
-                self.inc_len(1);
+            while likely(pos != slice.len()) {
+                let elem = slice.get_unchecked(pos);
+                self.push_unchecked(elem.clone());
+                pos += 1;
             }
         }
 

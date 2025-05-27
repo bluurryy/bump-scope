@@ -18,7 +18,7 @@ use crate::{
     mut_bump_vec::IntoIter,
     mut_collection_method_allocator_stats,
     owned_slice::{OwnedSlice, TakeOwnedSlice},
-    polyfill::{self, non_null, pointer},
+    polyfill::{self, hint::likely, non_null, pointer},
     BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SetLenOnDrop, SizedTypeProperties,
 };
 
@@ -1450,13 +1450,13 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
         self.generic_reserve(slice.len())?;
 
         unsafe {
-            // Addition doesn't overflow because `reserve` checked for that.
-            let mut ptr = non_null::sub(self.end, self.len);
+            let src = slice.as_ptr().add(slice.len());
+            let mut pos = 0usize;
 
-            for value in slice.iter().rev() {
-                ptr = non_null::sub(ptr, 1);
-                non_null::write_with(ptr, || value.clone());
-                self.len += 1;
+            while likely(pos != slice.len()) {
+                let elem = &*src.sub(pos + 1);
+                self.push_unchecked(elem.clone());
+                pos += 1;
             }
         }
 
