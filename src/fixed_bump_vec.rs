@@ -1091,6 +1091,16 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Panics
     /// Panics if the vector does not have enough capacity.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::with_capacity_in(4, &bump);
+    /// vec.push(1);
+    /// vec.extend_from_slice_copy(&[2, 3, 4]);
+    /// assert_eq!(vec, [1, 2, 3, 4]);
+    /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn extend_from_slice_copy(&mut self, slice: &[T])
@@ -1112,6 +1122,17 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Errors
     /// Errors if the vector does not have enough capacity.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, FixedBumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::try_with_capacity_in(4, &bump)?;
+    /// vec.try_push(1)?;
+    /// vec.try_extend_from_slice_copy(&[2, 3, 4])?;
+    /// assert_eq!(vec, [1, 2, 3, 4]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
     pub fn try_extend_from_slice_copy(&mut self, slice: &[T]) -> Result<(), AllocError>
     where
@@ -1140,6 +1161,17 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Panics
     /// Panics if the vector does not have enough capacity.
+    ///
+    /// # Examples
+    /// ```
+    /// # use std::string::String;
+    /// # use bump_scope::{ Bump, FixedBumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::with_capacity_in(3, &bump);
+    /// vec.push(String::from("a"));
+    /// vec.extend_from_slice_clone(&[String::from("b"), String::from("c")]);
+    /// assert_eq!(vec, ["a", "b", "c"]);
+    /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn extend_from_slice_clone(&mut self, slice: &[T])
@@ -1161,6 +1193,18 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Errors
     /// Errors if the vector does not have enough capacity.
+    ///
+    /// # Examples
+    /// ```
+    /// # use std::string::String;
+    /// # use bump_scope::{ Bump, FixedBumpVec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::try_with_capacity_in(3, &bump)?;
+    /// vec.try_push(String::from("a"))?;
+    /// vec.try_extend_from_slice_clone(&[String::from("b"), String::from("c")])?;
+    /// assert_eq!(vec, ["a", "b", "c"]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
     pub fn try_extend_from_slice_clone(&mut self, slice: &[T]) -> Result<(), AllocError>
     where

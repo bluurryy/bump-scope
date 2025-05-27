@@ -1345,6 +1345,15 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, bump_vec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = bump_vec![in &bump; 1];
+    /// vec.extend_from_slice_copy(&[2, 3, 4]);
+    /// assert_eq!(vec, [1, 2, 3, 4]);
+    /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn extend_from_slice_copy(&mut self, slice: &[T])
@@ -1366,6 +1375,16 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// # Errors
     /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{ Bump, bump_vec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = bump_vec![try in &bump; 1]?;
+    /// vec.try_extend_from_slice_copy(&[2, 3, 4])?;
+    /// assert_eq!(vec, [1, 2, 3, 4]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
     pub fn try_extend_from_slice_copy(&mut self, slice: &[T]) -> Result<(), AllocError>
     where
@@ -1394,6 +1413,16 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// # Panics
     /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use std::string::String;
+    /// # use bump_scope::{ Bump, bump_vec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = bump_vec![in &bump; String::from("a")];
+    /// vec.extend_from_slice_clone(&[String::from("b"), String::from("c")]);
+    /// assert_eq!(vec, ["a", "b", "c"]);
+    /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn extend_from_slice_clone(&mut self, slice: &[T])
@@ -1415,6 +1444,17 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// # Errors
     /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use std::string::String;
+    /// # use bump_scope::{ Bump, bump_vec };
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = bump_vec![try in &bump; String::from("a")]?;
+    /// vec.try_extend_from_slice_clone(&[String::from("b"), String::from("c")])?;
+    /// assert_eq!(vec, ["a", "b", "c"]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
     pub fn try_extend_from_slice_clone(&mut self, slice: &[T]) -> Result<(), AllocError>
     where
