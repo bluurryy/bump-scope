@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Improve performance of `extend_from_slice_clone`. ([#69])
 - Improve documentation.
 
 ## [0.17.0] - 2025-05-25
@@ -657,6 +658,7 @@ _If you are upgrading: please see [`UPGRADING.md#0.17.0`](UPGRADING.md#0.17.0)._
 
 ## [0.0.0] - 2024-03-26
 
+[#69]: https://github.com/bluurryy/bump-scope/pull/69
 [#48]: https://github.com/bluurryy/bump-scope/pull/48
 [#34]: https://github.com/bluurryy/bump-scope/pull/34
 [#32]: https://github.com/bluurryy/bump-scope/issues/32

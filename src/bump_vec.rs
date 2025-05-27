@@ -18,7 +18,7 @@ use crate::{
     destructure::destructure,
     min_non_zero_cap,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
-    polyfill::{non_null, pointer, slice},
+    polyfill::{hint::likely, non_null, pointer, slice},
     raw_fixed_bump_vec::RawFixedBumpVec,
     BumpAllocator, BumpAllocatorScope, BumpBox, ErrorBehavior, FixedBumpVec, NoDrop, SizedTypeProperties,
 };
@@ -1471,12 +1471,12 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
         self.generic_reserve(slice.len())?;
 
         unsafe {
-            let mut ptr = self.as_mut_ptr().add(self.len());
+            let mut pos = 0usize;
 
-            for value in slice {
-                pointer::write_with(ptr, || value.clone());
-                ptr = ptr.add(1);
-                self.inc_len(1);
+            while likely(pos != slice.len()) {
+                let elem = slice.get_unchecked(pos);
+                self.push_unchecked(elem.clone());
+                pos += 1;
             }
         }
 
