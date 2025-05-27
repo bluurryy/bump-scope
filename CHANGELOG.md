@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Improve performance of `extend_from_slice_clone`. 
 - Improve documentation.
 
 ## [0.17.0] - 2025-05-25
