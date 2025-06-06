@@ -42,6 +42,7 @@ mod grow_vec;
 mod into_flattened;
 mod io_write;
 mod limited_allocator;
+mod may_dangle;
 mod mut_bump_vec_doc;
 mod mut_bump_vec_rev_doc;
 mod mut_collections_do_not_waste_space;

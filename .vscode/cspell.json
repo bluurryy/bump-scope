@@ -43,6 +43,7 @@
     "docsrs",
     "doesnt",
     "dont",
+    "dropck",
     "dtolnay",
     "dvec",
     "ệfoobar",
@@ -51,6 +52,7 @@
     "elidable",
     "emscripten",
     "expl",
+    "eyepatch",
     "factly",
     "FFFD",
     "foobarbaz",
@@ -125,6 +127,7 @@
     "Vec's",
     "Vecs",
     "vtable",
+    "Yandros",
     "Zeroable",
     "zerocopy",
     "Zmiri"

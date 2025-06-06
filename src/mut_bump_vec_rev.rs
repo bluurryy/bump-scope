@@ -2561,9 +2561,13 @@ impl<U, A: MutBumpAllocator> Extend<U> for MutBumpVecRev<U, A> {
     }
 }
 
-impl<T, A> Drop for MutBumpVecRev<T, A> {
-    #[inline(always)]
-    fn drop(&mut self) {
+impl<T, A> MutBumpVecRev<T, A> {
+    /// # Safety
+    ///
+    /// Must only be called from the drop implementation and a call to this function
+    /// must be the only thing in that drop implementation.
+    #[inline]
+    unsafe fn drop_inner(&mut self) {
         // MutBumpVecRev never actually moves a bump pointer.
         // It may force allocation of a new chunk, but it does not move the pointer within.
         // So we don't need to move the bump pointer when dropping.
@@ -2576,6 +2580,22 @@ impl<T, A> Drop for MutBumpVecRev<T, A> {
             let to_drop = non_null::slice_from_raw_parts(self.as_non_null(), self.len);
             to_drop.as_ptr().drop_in_place();
         }
+    }
+}
+
+#[cfg(feature = "nightly-dropck-eyepatch")]
+unsafe impl<#[may_dangle] T, A> Drop for MutBumpVecRev<T, A> {
+    #[inline(always)]
+    fn drop(&mut self) {
+        unsafe { self.drop_inner() }
+    }
+}
+
+#[cfg(not(feature = "nightly-dropck-eyepatch"))]
+impl<T, A> Drop for MutBumpVecRev<T, A> {
+    #[inline(always)]
+    fn drop(&mut self) {
+        unsafe { self.drop_inner() }
     }
 }
 

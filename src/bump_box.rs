@@ -2797,6 +2797,15 @@ where
 {
 }
 
+#[cfg(feature = "nightly-dropck-eyepatch")]
+unsafe impl<#[may_dangle] T: ?Sized> Drop for BumpBox<'_, T> {
+    #[inline(always)]
+    fn drop(&mut self) {
+        unsafe { self.ptr.as_ptr().drop_in_place() }
+    }
+}
+
+#[cfg(not(feature = "nightly-dropck-eyepatch"))]
 impl<T: ?Sized> Drop for BumpBox<'_, T> {
     #[inline(always)]
     fn drop(&mut self) {
