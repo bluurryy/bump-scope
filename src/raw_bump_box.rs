@@ -21,6 +21,15 @@ pub struct RawBumpBox<T: ?Sized> {
 unsafe impl<T: ?Sized + Send> Send for RawBumpBox<T> {}
 unsafe impl<T: ?Sized + Sync> Sync for RawBumpBox<T> {}
 
+#[cfg(feature = "nightly-dropck-eyepatch")]
+unsafe impl<#[may_dangle] T: ?Sized> Drop for RawBumpBox<T> {
+    #[inline(always)]
+    fn drop(&mut self) {
+        unsafe { self.ptr.as_ptr().drop_in_place() }
+    }
+}
+
+#[cfg(not(feature = "nightly-dropck-eyepatch"))]
 impl<T: ?Sized> Drop for RawBumpBox<T> {
     #[inline(always)]
     fn drop(&mut self) {

@@ -65,6 +65,7 @@ nightly = [
     "nightly-trusted-len",
     "nightly-fn-traits",
     "nightly-tests",
+    "nightly-dropck-eyepatch",
 ]
 
 ## Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
@@ -90,6 +91,11 @@ nightly-fn-traits = []
 
 ## Enables some tests that require a nightly compiler.
 nightly-tests = []
+
+## Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
+## This makes it so references don't have to strictly outlive the container.
+## (That's how std's `Box` and `Vec` work.)
+nightly-dropck-eyepatch = []
 
 [dev-dependencies]
 trybuild = "1.0.90"

@@ -14,6 +14,7 @@
 #![cfg_attr(feature = "nightly-trusted-len", feature(trusted_len))]
 #![cfg_attr(feature = "nightly-fn-traits", feature(fn_traits, tuple_trait, unboxed_closures))]
 #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
+#![cfg_attr(feature = "nightly-dropck-eyepatch", feature(dropck_eyepatch))]
 #![cfg_attr(docsrs,
     feature(doc_auto_cfg, doc_cfg_hide),
     doc(cfg_hide(feature = "panic-on-alloc")) // too noisy
@@ -257,6 +258,9 @@
 //! * **`nightly-trusted-len`** —  Implements `TrustedLen` for some iterators.
 //! * **`nightly-fn-traits`** —  Implements `Fn*` traits for `BumpBox<T>`. Makes `BumpBox<T: FnOnce + ?Sized>` callable. Requires alloc crate.
 //! * **`nightly-tests`** —  Enables some tests that require a nightly compiler.
+//! * **`nightly-dropck-eyepatch`** —  Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
+//!   This makes it so references don't have to strictly outlive the container.
+//!   (That's how std's `Box` and `Vec` work.)
 //!
 //! # Bumping upwards or downwards?
 //! Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.

@@ -184,8 +184,13 @@ impl<T, A: BumpAllocator> DerefMut for BumpVec<T, A> {
     }
 }
 
-impl<T, A: BumpAllocator> Drop for BumpVec<T, A> {
-    fn drop(&mut self) {
+impl<T, A: BumpAllocator> BumpVec<T, A> {
+    /// # Safety
+    ///
+    /// Must only be called from the drop implementation and a call to this function
+    /// must be the only thing in that drop implementation.
+    #[inline]
+    unsafe fn drop_inner(&mut self) {
         struct DropGuard<'a, T, A: BumpAllocator>(&'a mut BumpVec<T, A>);
 
         impl<T, A: BumpAllocator> Drop for DropGuard<'_, T, A> {
@@ -208,6 +213,22 @@ impl<T, A: BumpAllocator> Drop for BumpVec<T, A> {
         guard.0.clear();
 
         // now `guard` will be dropped and deallocate the memory
+    }
+}
+
+#[cfg(feature = "nightly-dropck-eyepatch")]
+unsafe impl<#[may_dangle] T, A: BumpAllocator> Drop for BumpVec<T, A> {
+    #[inline]
+    fn drop(&mut self) {
+        unsafe { self.drop_inner() }
+    }
+}
+
+#[cfg(not(feature = "nightly-dropck-eyepatch"))]
+impl<T, A: BumpAllocator> Drop for BumpVec<T, A> {
+    #[inline]
+    fn drop(&mut self) {
+        unsafe { self.drop_inner() }
     }
 }
 

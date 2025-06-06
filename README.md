@@ -210,6 +210,9 @@ assert_eq!(bump.stats().allocated(), 4);
 * **`nightly-trusted-len`** —  Implements `TrustedLen` for some iterators.
 * **`nightly-fn-traits`** —  Implements `Fn*` traits for `BumpBox<T>`. Makes `BumpBox<T: FnOnce + ?Sized>` callable. Requires alloc crate.
 * **`nightly-tests`** —  Enables some tests that require a nightly compiler.
+* **`nightly-dropck-eyepatch`** —  Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
+  This makes it so references don't have to strictly outlive the container.
+  (That's how std's `Box` and `Vec` work.)
 
 ## Bumping upwards or downwards?
 Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
