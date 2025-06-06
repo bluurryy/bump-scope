@@ -255,7 +255,7 @@ pub(crate) fn bump_down(props: BumpProps) -> Option<usize> {
         // The bump pointer must end up aligned to the minimum alignment again.
         //
         // Manual alignment for the minimum alignment can be elided if:
-        // - the layout's alignment is a multiple of its alignment
+        // - the layout's size is a multiple of its alignment
         //   and its alignment is greater or equal to the minimum alignment
         // - the layout's size is a multiple of the minimum alignment
         //
