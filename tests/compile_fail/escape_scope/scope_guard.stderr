@@ -1,5 +1,5 @@
 error[E0597]: `guard` does not live long enough
-  --> tests/compile_fail/escape_guard.rs:9:21
+  --> tests/compile_fail/escape_scope/scope_guard.rs:9:21
    |
 8  |         let mut guard = bump.scope_guard();
    |             --------- binding `guard` declared here

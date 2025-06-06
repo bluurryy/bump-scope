@@ -1,5 +1,5 @@
 error[E0521]: borrowed data escapes outside of closure
- --> tests/compile_fail/escape_closure.rs:7:9
+ --> tests/compile_fail/escape_scope/scoped_scope.rs:7:9
   |
 4 |     let mut escapee = None;
   |         ----------- `escapee` declared here, outside of the closure body
