@@ -1,0 +1,20 @@
+[package]
+name = "calliper-test"
+edition = "2024"
+
+[[bench]]
+name = "benches"
+harness = false
+
+[dev-dependencies]
+allocator-api2 = "0.2"
+blink-alloc = "0.3.1"
+bump-scope = { version = "0.17.0", features = ["allocator-api2-02"] }
+bumpalo = { version = "3.18.1", features = ["allocator-api2"] }
+calliper = "0.1.4"
+indexmap = "2.9.0"
+markdown-tables = "0.1.0"
+paste = "1.0.15"
+
+[patch.crates-io]
+calliper = { git = "https://github.com/bluurryy/calliper", branch = "dev" }
