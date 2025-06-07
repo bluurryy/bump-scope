@@ -56,6 +56,8 @@ allocator-api2-02 = ["dep:allocator-api2-02"]
 allocator-api2-03 = ["dep:allocator-api2-03"]
 
 #! ### Nightly features
+#! These nightly features are not subject to the same semver guarantees as the rest of the library. 
+#! Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
 
 ## Enables all other nightly feature flags.
 nightly = [

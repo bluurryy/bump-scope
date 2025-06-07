@@ -196,6 +196,8 @@ assert_eq!(bump.stats().allocated(), 4);
   `AllocatorApiV03Compat`.
 
  #### Nightly features
+ These nightly features are not subject to the same semver guarantees as the rest of the library.
+ Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
 * **`nightly`** —  Enables all other nightly feature flags.
 * **`nightly-allocator-api`** —  Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
   allows using an `alloc::alloc::Allocator` as a base allocator via
