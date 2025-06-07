@@ -1,5 +1,5 @@
 [package]
-name = "calliper-test"
+name = "callgrind-benches"
 edition = "2024"
 
 [[bench]]

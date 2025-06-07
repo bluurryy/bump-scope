@@ -80,19 +80,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "calliper"
-version = "0.1.4"
-source = "git+https://github.com/bluurryy/calliper?branch=dev#70e1675725dd1a1a241f06a48b33e08c2e1ed138"
-dependencies = [
- "backtrace",
- "crabgrind",
- "rustversion",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "calliper-test"
+name = "callgrind-benches"
 version = "0.0.0"
 dependencies = [
  "allocator-api2 0.2.21",
@@ -103,6 +91,18 @@ dependencies = [
  "indexmap",
  "markdown-tables",
  "paste",
+]
+
+[[package]]
+name = "calliper"
+version = "0.1.4"
+source = "git+https://github.com/bluurryy/calliper?branch=dev#70e1675725dd1a1a241f06a48b33e08c2e1ed138"
+dependencies = [
+ "backtrace",
+ "crabgrind",
+ "rustversion",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]

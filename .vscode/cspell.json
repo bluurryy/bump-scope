@@ -21,6 +21,7 @@
     "bumpbox",
     "bytemuck",
     "byteslice",
+    "callgrind",
     "cfgs",
     "clippy",
     "codegen",
