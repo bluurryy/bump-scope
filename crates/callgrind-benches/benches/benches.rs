@@ -307,12 +307,22 @@ bench_impls! {
         }
     }
 
-    alloc_u32_try {
+    try_alloc_u32 {
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump, 42);
         }
         run(bump: &Bump, value: u32) -> Option<&u32> {
+            bump.try_alloc(value)
+        }
+    }
+
+    try_alloc_u32_aligned {
+        wrap(run) {
+            let bump = Bump::<4>::with_capacity(1024);
+            run(&bump, 42);
+        }
+        run(bump: &Bump::<4>, value: u32) -> Option<&u32> {
             bump.try_alloc(value)
         }
     }
