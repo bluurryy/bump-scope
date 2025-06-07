@@ -50,7 +50,6 @@ Unlike `bumpalo`, this crate...
 - No built-in allocation limit. You can provide an allocator that enforces an allocation limit (see `tests/limit_memory_usage.rs`).
 - Allocations are a tiny bit more optimized. (see [`bump-scope-inspect-asm/out/x86-64`](https://github.com/bluurryy/bump-scope-inspect-asm/tree/main/out/x86-64) and [benchmarks](https://bluurryy.github.io/bump-scope/criterion/report/))
 - [You can choose the bump direction.](#bumping-upwards-or-downwards) Bumps upwards by default.
-- [You can choose the minimum alignment.](#minimum-alignment) `1` by default.
 
 ## Allocator Methods
 
