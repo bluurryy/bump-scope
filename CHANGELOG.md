@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added "nightly-dropck-eyepatch" feature to allow box and vectors to store types that don't outlive it.
+- Added "nightly-dropck-eyepatch" feature to allow box and vectors to store types that don't outlive it. ([#70])
 - Improve performance of `extend_from_slice_clone`. ([#69])
 - Improve documentation.
 
@@ -659,6 +659,7 @@ _If you are upgrading: please see [`UPGRADING.md#0.17.0`](UPGRADING.md#0.17.0)._
 
 ## [0.0.0] - 2024-03-26
 
+[#70]: https://github.com/bluurryy/bump-scope/pull/70
 [#69]: https://github.com/bluurryy/bump-scope/pull/69
 [#48]: https://github.com/bluurryy/bump-scope/pull/48
 [#34]: https://github.com/bluurryy/bump-scope/pull/34
