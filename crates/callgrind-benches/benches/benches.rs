@@ -470,7 +470,8 @@ impl fmt::Display for BenchResult {
 
         f.write_fmt(format_args!("{instructions} / {branches}"))?;
 
-        for footnote in &self.footnotes {
+        for &(mut footnote) in &self.footnotes {
+            footnote += 1;
             f.write_fmt(format_args!(" [^{footnote}]"))?;
         }
 
@@ -527,7 +528,8 @@ impl Report {
         if !self.footnotes.is_empty() {
             markdown.push('\n');
 
-            for (i, footnote) in self.footnotes.iter().enumerate() {
+            for (mut i, footnote) in self.footnotes.iter().enumerate() {
+                i += 1;
                 markdown.write_fmt(format_args!("[^{i}]: {footnote}")).unwrap();
             }
         }
