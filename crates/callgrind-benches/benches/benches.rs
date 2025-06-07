@@ -1,6 +1,5 @@
 use core::fmt;
-use std::alloc::Layout;
-use std::ptr::NonNull;
+use std::{alloc::Layout, ptr::NonNull};
 
 use calliper::{Report, Runner, Scenario, ScenarioConfig};
 
@@ -8,121 +7,146 @@ use allocator_api2::alloc::{AllocError, Allocator};
 use indexmap::IndexMap;
 use markdown_tables::MarkdownTableRow;
 
-trait CommonBehavior {
-    fn new() -> Self;
-    fn with_capacity(capacity: usize) -> Self;
-    fn alloc<T>(&self, value: T) -> &T;
-    fn try_alloc<T>(&self, value: T) -> Option<&T>;
-    fn as_allocator(&self) -> impl Allocator;
-    fn reset(&mut self);
-}
+// We're using duck typing instead of a trait to be generic over bump allocators
+// because I couldn't figure out how to make the current macro setup with `MIN_ALIGN` work with traits.
+mod wrapper {
+    pub(crate) mod bump_scope {
+        use ::allocator_api2::alloc::Allocator;
+        use ::bump_scope::{MinimumAlignment, SupportedMinimumAlignment};
 
-impl CommonBehavior for bump_scope::Bump {
-    #[inline(always)]
-    fn new() -> Self {
-        bump_scope::Bump::new()
-    }
+        #[repr(transparent)]
+        pub struct Bump<const MIN_ALIGN: usize>(bump_scope::Bump<bump_scope::alloc::Global, MIN_ALIGN>)
+        where
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment;
 
-    #[inline(always)]
-    fn with_capacity(capacity: usize) -> Self {
-        bump_scope::Bump::with_size(capacity)
-    }
+        impl<const MIN_ALIGN: usize> Bump<MIN_ALIGN>
+        where
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        {
+            #[inline(always)]
+            pub(crate) fn new() -> Self {
+                Self(::bump_scope::Bump::new())
+            }
 
-    #[inline(always)]
-    fn alloc<T>(&self, value: T) -> &T {
-        bump_scope::BumpBox::leak(self.alloc(value))
-    }
+            #[inline(always)]
+            pub(crate) fn with_capacity(capacity: usize) -> Self {
+                Self(::bump_scope::Bump::with_size(capacity))
+            }
 
-    #[inline(always)]
-    fn try_alloc<T>(&self, value: T) -> Option<&T> {
-        match self.try_alloc(value) {
-            Ok(value) => Some(bump_scope::BumpBox::leak(value)),
-            Err(_) => None,
+            #[inline(always)]
+            pub(crate) fn alloc<T>(&self, value: T) -> &T {
+                ::bump_scope::BumpBox::leak(self.0.alloc(value))
+            }
+
+            #[inline(always)]
+            pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&T> {
+                match self.0.try_alloc(value) {
+                    Ok(value) => Some(bump_scope::BumpBox::leak(value)),
+                    Err(_) => None,
+                }
+            }
+
+            #[inline(always)]
+            pub(crate) fn as_allocator(&self) -> impl Allocator {
+                &self.0
+            }
+
+            #[inline(always)]
+            pub(crate) fn reset(&mut self) {
+                self.0.reset();
+            }
         }
     }
 
-    #[inline(always)]
-    fn as_allocator(&self) -> impl Allocator {
-        self
-    }
+    pub(crate) mod bumpalo {
+        use ::allocator_api2::alloc::Allocator;
 
-    #[inline(always)]
-    fn reset(&mut self) {
-        self.reset();
-    }
-}
+        #[repr(transparent)]
+        pub struct Bump<const MIN_ALIGN: usize>(bumpalo::Bump<MIN_ALIGN>);
 
-impl CommonBehavior for bumpalo::Bump {
-    #[inline(always)]
-    fn new() -> Self {
-        bumpalo::Bump::new()
-    }
+        impl<const MIN_ALIGN: usize> Bump<MIN_ALIGN> {
+            #[inline(always)]
+            pub(crate) fn new() -> Self {
+                // NOTE: `with_min_align` is faster than `new`
+                Self(::bumpalo::Bump::with_min_align())
+            }
 
-    #[inline(always)]
-    fn with_capacity(capacity: usize) -> Self {
-        bumpalo::Bump::with_capacity(capacity)
-    }
+            #[inline(always)]
+            pub(crate) fn with_capacity(capacity: usize) -> Self {
+                Self(::bumpalo::Bump::with_min_align_and_capacity(capacity))
+            }
 
-    #[inline(always)]
-    fn alloc<T>(&self, value: T) -> &T {
-        self.alloc(value)
-    }
+            #[inline(always)]
+            pub(crate) fn alloc<T>(&self, value: T) -> &T {
+                self.0.alloc(value)
+            }
 
-    #[inline(always)]
-    fn try_alloc<T>(&self, value: T) -> Option<&T> {
-        match self.try_alloc(value) {
-            Ok(value) => Some(value),
-            Err(_) => None,
+            #[inline(always)]
+            pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&T> {
+                match self.0.try_alloc(value) {
+                    Ok(value) => Some(value),
+                    Err(_) => None,
+                }
+            }
+
+            #[inline(always)]
+            pub(crate) fn as_allocator(&self) -> impl Allocator {
+                &self.0
+            }
+
+            #[inline(always)]
+            pub(crate) fn reset(&mut self) {
+                self.0.reset();
+            }
         }
     }
 
-    #[inline(always)]
-    fn as_allocator(&self) -> impl Allocator {
-        self
-    }
+    pub(crate) mod blink_alloc {
+        use core::alloc::Layout;
 
-    #[inline(always)]
-    fn reset(&mut self) {
-        self.reset();
-    }
-}
+        use ::allocator_api2::alloc::Allocator;
 
-impl CommonBehavior for blink_alloc::Blink {
-    #[inline(always)]
-    fn new() -> Self {
-        blink_alloc::Blink::new()
-    }
+        #[repr(transparent)]
+        pub struct Bump<const MIN_ALIGN: usize>(blink_alloc::Blink);
 
-    #[inline(always)]
-    fn with_capacity(capacity: usize) -> Self {
-        let this = blink_alloc::Blink::with_chunk_size(capacity);
-        // Blink does not allocate a chunk on creation.
-        // We allocate here to make sure a chunk is allocated to make it fair.
-        _ = this.allocator().allocate(Layout::new::<[u64; 2]>()).ok();
-        this
-    }
+        impl<const MIN_ALIGN: usize> Bump<MIN_ALIGN> {
+            #[inline(always)]
+            pub(crate) fn new() -> Self {
+                Self(::blink_alloc::Blink::new())
+            }
 
-    #[inline(always)]
-    fn alloc<T>(&self, value: T) -> &T {
-        self.put_no_drop(value)
-    }
+            #[inline(always)]
+            pub(crate) fn with_capacity(capacity: usize) -> Self {
+                let this = blink_alloc::Blink::with_chunk_size(capacity);
+                // Blink does not allocate a chunk on creation.
+                // We allocate here to make sure a chunk is allocated to make it fair.
+                _ = this.allocator().allocate(Layout::new::<[u64; 2]>()).ok();
+                Self(this)
+            }
 
-    #[inline(always)]
-    fn try_alloc<T>(&self, value: T) -> Option<&T> {
-        match self.emplace_no_drop().try_value(value) {
-            Ok(value) => Some(value),
-            Err(_) => None,
+            #[inline(always)]
+            pub(crate) fn alloc<T>(&self, value: T) -> &T {
+                self.0.put_no_drop(value)
+            }
+
+            #[inline(always)]
+            pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&T> {
+                match self.0.emplace_no_drop().try_value(value) {
+                    Ok(value) => Some(value),
+                    Err(_) => None,
+                }
+            }
+
+            #[inline(always)]
+            pub(crate) fn as_allocator(&self) -> impl Allocator {
+                self.0.allocator()
+            }
+
+            #[inline(always)]
+            pub(crate) fn reset(&mut self) {
+                self.0.reset();
+            }
         }
-    }
-
-    #[inline(always)]
-    fn as_allocator(&self) -> impl Allocator {
-        self.allocator()
-    }
-
-    #[inline(always)]
-    fn reset(&mut self) {
-        self.reset();
     }
 }
 
@@ -138,20 +162,35 @@ macro_rules! library {
     (
         bench: $bench:ident,
         library: $library:ident,
-        implementor: $implementor:ty,
         params: ($($param:ident: $param_ty:ty),*) $(-> $ret:ty)?,
+        wrap: { $($wrap:tt)* }
+        run: { $($run:tt)* }
+        run_f: $run_f:ident,
     ) => {
         paste::paste! {
             pub mod $library {
                 #[allow(unused_imports)]
                 use crate::*;
 
-                type Bump = $implementor;
+                type Bump<const MIN_ALIGN: usize = 1> = crate::wrapper::$library::Bump<MIN_ALIGN>;
+
+                #[inline(always)]
+                fn generic_wrapper(
+                    $run_f: fn($($param_ty),*),
+                )  {
+                    $($wrap)*
+                }
+
+                #[inline(always)]
+                fn generic_run($($param: $param_ty),*) $(-> $ret)? {
+                    $($run)*
+                }
+
 
                 #[inline(never)]
                 #[unsafe(no_mangle)]
                 pub fn [<wrapper_ $bench _ $library>]() {
-                    super::generic_wrapper::<Bump>(|$($param: $param_ty),*| {
+                    generic_wrapper(|$($param: $param_ty),*| {
                         _ = std::hint::black_box([<$bench _ $library>]($(std::hint::black_box($param)),*));
                     });
                 }
@@ -159,7 +198,7 @@ macro_rules! library {
                 #[inline(never)]
                 #[unsafe(no_mangle)]
                 pub fn [<$bench _ $library>]($($param: $param_ty),*) $(-> $ret)? {
-                    super::generic_run::<Bump>($($param),*)
+                    generic_run($($param),*)
                 }
             }
         }
@@ -188,37 +227,31 @@ macro_rules! bench_impls {
                         #[allow(unused_imports)]
                         use crate::*;
 
-                        #[inline(always)]
-                        fn generic_wrapper<Bump: crate::CommonBehavior>(
-                            $run_f: fn($($param_ty),*),
-                        )  {
-                            $($wrap)*
-                        }
-
-                        #[inline(always)]
-                        fn generic_run<Bump: crate::CommonBehavior>($($param: $param_ty),*) $(-> $ret)? {
-                            $($run)*
-                        }
-
                         crate::library! {
                             bench: $name,
                             library: bump_scope,
-                            implementor: bump_scope::Bump,
                             params: ($($param: $param_ty),*) $(-> $ret)?,
+                            wrap: { $($wrap)* }
+                            run: { $($run)* }
+                            run_f: $run_f,
                         }
 
                         crate::library! {
                             bench: $name,
                             library: bumpalo,
-                            implementor: bumpalo::Bump,
                             params: ($($param: $param_ty),*) $(-> $ret)?,
+                            wrap: { $($wrap)* }
+                            run: { $($run)* }
+                            run_f: $run_f,
                         }
 
                         crate::library! {
                             bench: $name,
                             library: blink_alloc,
-                            implementor: blink_alloc::Blink,
                             params: ($($param: $param_ty),*) $(-> $ret)?,
+                            wrap: { $($wrap)* }
+                            run: { $($run)* }
+                            run_f: $run_f,
                         }
                     }
                 )*
@@ -260,6 +293,16 @@ bench_impls! {
             run(&bump, 42);
         }
         run(bump: &Bump, value: u32) -> &u32 {
+            bump.alloc(value)
+        }
+    }
+
+    alloc_u32_aligned {
+        wrap(run) {
+            let bump = Bump::<4>::with_capacity(1024);
+            run(&bump, 42);
+        }
+        run(bump: &Bump::<4>, value: u32) -> &u32 {
             bump.alloc(value)
         }
     }
@@ -384,9 +427,7 @@ bench_impls! {
 }
 
 fn scenario(f: fn(), name: &str) -> Scenario {
-    Scenario::new(f)
-        .name(name)
-        .config(ScenarioConfig::default().filters([name]))
+    Scenario::new(f).name(name).config(ScenarioConfig::default().filters([name]))
 }
 
 #[derive(Clone, Copy)]
