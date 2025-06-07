@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added "nightly-dropck-eyepatch" feature to allow box and vectors to store types that don't outlive it. ([#70])
+- Add "nightly-dropck-eyepatch" feature to allow box and vectors to store types that don't outlive it. ([#70])
 - Improve performance of `extend_from_slice_clone`. ([#69])
 - Improve documentation.
 
