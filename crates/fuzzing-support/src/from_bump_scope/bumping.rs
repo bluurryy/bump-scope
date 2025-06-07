@@ -8,6 +8,21 @@
 
 use core::{alloc::Layout, num::NonZeroUsize, ops::Range};
 
+#[cold]
+#[inline(always)]
+pub(crate) fn cold() {}
+
+#[inline(always)]
+pub(crate) fn unlikely(condition: bool) -> bool {
+    if condition {
+        cold();
+    } else {
+        // ...
+    }
+
+    condition
+}
+
 pub(crate) const MIN_CHUNK_ALIGN: usize = 16;
 
 macro_rules! debug_assert_aligned {
@@ -168,7 +183,7 @@ pub(crate) fn bump_up(props: BumpProps) -> Option<BumpUp> {
 
         let remaining = end - start;
 
-        if layout.size() > remaining {
+        if unlikely(layout.size() > remaining) {
             return None;
         }
 
@@ -190,7 +205,7 @@ pub(crate) fn bump_up(props: BumpProps) -> Option<BumpUp> {
         // Note that `new_pos` being `usize::MAX` is an invalid value for `new_pos` and we MUST return None.
         // Due to `end` being always aligned to `MIN_CHUNK_ALIGN`, it can't be `usize::MAX`.
         // Thus when `new_pos` is `usize::MAX` this will always return None.
-        if new_pos > end {
+        if unlikely(new_pos > end) {
             return None;
         }
 
@@ -283,14 +298,14 @@ pub(crate) fn bump_down(props: BumpProps) -> Option<usize> {
             end = down_align(end, layout.align().max(min_align));
         }
 
-        if end < start {
+        if unlikely(end < start) {
             return None;
         }
     } else if align_is_const && layout.align() <= MIN_CHUNK_ALIGN {
         // Constant, small alignment fast path!
         let remaining = end - start;
 
-        if layout.size() > remaining {
+        if unlikely(layout.size() > remaining) {
             return None;
         }
 
@@ -313,7 +328,7 @@ pub(crate) fn bump_down(props: BumpProps) -> Option<usize> {
         // Note that `end` being `0` is an invalid value for `end` and we MUST return None.
         // Due to `start` being `NonNull`, it can't be `0`.
         // Thus when `end` is `0` this will always return None.
-        if end < start {
+        if unlikely(end < start) {
             return None;
         }
     }
@@ -360,7 +375,7 @@ pub(crate) fn bump_prepare_up(props: BumpProps) -> Option<Range<usize>> {
         } else {
             start = up_align(start, layout.align())?.get();
 
-            if start > end {
+            if unlikely(start > end) {
                 return None;
             }
         }
@@ -368,7 +383,7 @@ pub(crate) fn bump_prepare_up(props: BumpProps) -> Option<Range<usize>> {
 
     let remaining = end - start;
 
-    if layout.size() > remaining {
+    if unlikely(layout.size() > remaining) {
         return None;
     }
 
@@ -415,7 +430,7 @@ pub(crate) fn bump_prepare_down(props: BumpProps) -> Option<Range<usize>> {
             // End is valid.
         } else {
             // End could be less than start at this point.
-            if end < start {
+            if unlikely(end < start) {
                 return None;
             }
         }
@@ -423,7 +438,7 @@ pub(crate) fn bump_prepare_down(props: BumpProps) -> Option<Range<usize>> {
 
     let remaining = end - start;
 
-    if layout.size() > remaining {
+    if unlikely(layout.size() > remaining) {
         return None;
     }
 
