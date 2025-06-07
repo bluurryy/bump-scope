@@ -1,7 +1,7 @@
 use core::fmt;
-use std::{alloc::Layout, ptr::NonNull};
+use std::{alloc::Layout, fmt::Write, ptr::NonNull};
 
-use calliper::{Report, Runner, Scenario, ScenarioConfig};
+use calliper::{Runner, Scenario, ScenarioConfig};
 
 use allocator_api2::alloc::{AllocError, Allocator};
 use indexmap::IndexMap;
@@ -440,22 +440,24 @@ fn scenario(f: fn(), name: &str) -> Scenario {
     Scenario::new(f).name(name).config(ScenarioConfig::default().filters([name]))
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct BenchResult {
     instructions: u64,
     branches: u64,
     #[expect(dead_code)]
     branch_misses: u64,
+    footnotes: Vec<usize>,
 }
 
 impl BenchResult {
-    fn new(report: &Report) -> Self {
+    fn new(report: &calliper::Report) -> Self {
         let parsed = report.parse();
 
         BenchResult {
             instructions: parsed.instruction_reads.unwrap(),
             branches: parsed.branches.unwrap_or(0),
             branch_misses: parsed.branch_misses.unwrap_or(0),
+            footnotes: vec![],
         }
     }
 }
@@ -463,40 +465,23 @@ impl BenchResult {
 impl fmt::Display for BenchResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let Self {
-            instructions,
-            branches,
-            branch_misses: _,
+            instructions, branches, ..
         } = self;
-        f.write_fmt(format_args!("{instructions} / {branches}"))
+
+        f.write_fmt(format_args!("{instructions} / {branches}"))?;
+
+        for footnote in &self.footnotes {
+            f.write_fmt(format_args!(" [^{footnote}]"))?;
+        }
+
+        Ok(())
     }
 }
 
-struct Row {
-    name: String,
-    bump_scope: BenchResult,
-    bumpalo: BenchResult,
-    blink_alloc: BenchResult,
-}
-
-impl MarkdownTableRow for Row {
-    fn column_names() -> Vec<&'static str> {
-        vec!["name", "bump-scope", "bumpalo", "blink-alloc"]
-    }
-
-    fn column_values(&self) -> Vec<String> {
-        vec![
-            self.name.to_string(),
-            self.bump_scope.to_string(),
-            self.bumpalo.to_string(),
-            self.blink_alloc.to_string(),
-        ]
-    }
-}
+const LIBRARY_NAMES: &[&str] = &["bump_scope", "bumpalo", "blink_alloc"];
 
 fn split_name(name: &str) -> [&str; 2] {
-    let library_names = ["bump_scope", "bumpalo", "blink_alloc"];
-
-    for library_name in library_names {
+    for library_name in LIBRARY_NAMES {
         if name.ends_with(library_name) {
             let mid = name.len() - library_name.len();
             return [&name[..mid - 1], &name[mid..]];
@@ -506,7 +491,58 @@ fn split_name(name: &str) -> [&str; 2] {
     panic!("bench function did not end with a library name suffix")
 }
 
-fn main() {
+struct Report {
+    map: IndexMap<String, IndexMap<String, BenchResult>>,
+    footnotes: Vec<String>,
+}
+
+impl Report {
+    fn to_markdown(&self) -> String {
+        struct Row(Vec<String>);
+
+        impl MarkdownTableRow for Row {
+            fn column_names() -> Vec<&'static str> {
+                vec!["name", "bump-scope", "bumpalo", "blink-alloc"]
+            }
+
+            fn column_values(&self) -> Vec<String> {
+                self.0.clone()
+            }
+        }
+
+        let mut rows = vec![];
+
+        for (name, libraries) in &self.map {
+            let mut row = vec![name.to_string()];
+
+            for &library_name in LIBRARY_NAMES {
+                row.push(libraries[&library_name.to_string()].to_string());
+            }
+
+            rows.push(Row(row));
+        }
+
+        let mut markdown = markdown_tables::as_table(&rows);
+
+        if !self.footnotes.is_empty() {
+            markdown.push('\n');
+
+            for (i, footnote) in self.footnotes.iter().enumerate() {
+                markdown.write_fmt(format_args!("[^{i}]: {footnote}")).unwrap();
+            }
+        }
+
+        markdown
+    }
+
+    fn register_footnote(&mut self, footnote: &str) -> usize {
+        let index = self.footnotes.len();
+        self.footnotes.push(footnote.into());
+        index
+    }
+}
+
+fn run_benches() -> Report {
     let runner = Runner::default().config(ScenarioConfig::default().branch_sim(true));
     let scenarios = bench_impls::scenarios();
 
@@ -528,17 +564,26 @@ fn main() {
         map.entry(name).or_default().insert(library, result);
     }
 
-    let mut rows = vec![];
+    Report {
+        map,
+        footnotes: Default::default(),
+    }
+}
 
-    for (name, libraries) in map {
-        rows.push(Row {
-            name,
-            bump_scope: libraries["bump_scope"],
-            bumpalo: libraries["bumpalo"],
-            blink_alloc: libraries["blink_alloc"],
-        })
+fn main() {
+    let mut report = run_benches();
+
+    let blink_alloc_does_not_support_min_align =
+        report.register_footnote("`blink_alloc` does not support setting a minimum alignment");
+
+    for (bench, libraries) in &mut report.map {
+        if bench.ends_with("_aligned") {
+            libraries["blink_alloc"]
+                .footnotes
+                .push(blink_alloc_does_not_support_min_align);
+        }
     }
 
-    let table = markdown_tables::as_table(&rows);
+    let table = report.to_markdown();
     println!("{table}");
 }
