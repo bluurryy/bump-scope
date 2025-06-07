@@ -25,7 +25,7 @@ instructions / branches
 In case of manual installation, you can set the path to the `Valgrind` headers location through the `DEP_VALGRIND` environment variable. For example:
 
 ```bash
-DEP_VALGRIND=/home/linuxbrew/.linuxbrew/include cargo build --benches
+DEP_VALGRIND=/home/linuxbrew/.linuxbrew/include cargo build --benches --release
 ```
 
 Now just write
