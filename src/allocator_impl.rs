@@ -329,6 +329,10 @@ where
     Ok(new_ptr)
 }
 
+/// This shrink implementation always tries to reuse old memory if it can.
+///
+/// That's different to bumpalo's shrink implementation, which only shrinks if it can do so with `copy_nonoverlapping`
+/// and doesn't attempt to recover memory if the alignment doesn't fit.
 #[inline(always)]
 unsafe fn shrink<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
     bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
@@ -341,8 +345,6 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     /// Called when `new_layout` doesn't fit alignment.
-    /// Does ANY consumer cause this?
-    /// Bumpalo just errors in this case..
     #[cold]
     #[inline(never)]
     unsafe fn shrink_unfit<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
