@@ -5,7 +5,8 @@ default:
   cargo clippy --all
 
 save-asm:
-  @ mkdir out
+  @ if not ("out" | path exists) { mkdir out }
+  @ if not ("out/.gitignore" | path exists) { "*" | save -f out/.gitignore }
   @ cargo asm --everything --simplify | lines | filter { $in != "" } | str join "\n" | save -f out/everything.asm
 
 test: save-asm

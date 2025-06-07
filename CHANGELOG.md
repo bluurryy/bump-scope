@@ -5,11 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.17.1] - 2025-06-07
 
 ### Added
 
-- Added "nightly-dropck-eyepatch" feature to allow box and vectors to store types that don't outlive it.
+- Add "nightly-dropck-eyepatch" feature to allow box and vectors to store types that don't outlive it. ([#70])
 - Improve performance of `extend_from_slice_clone`. ([#69])
 - Improve documentation.
 
@@ -659,6 +659,7 @@ _If you are upgrading: please see [`UPGRADING.md#0.17.0`](UPGRADING.md#0.17.0)._
 
 ## [0.0.0] - 2024-03-26
 
+[#70]: https://github.com/bluurryy/bump-scope/pull/70
 [#69]: https://github.com/bluurryy/bump-scope/pull/69
 [#48]: https://github.com/bluurryy/bump-scope/pull/48
 [#34]: https://github.com/bluurryy/bump-scope/pull/34
@@ -668,7 +669,7 @@ _If you are upgrading: please see [`UPGRADING.md#0.17.0`](UPGRADING.md#0.17.0)._
 [#12]: https://github.com/bluurryy/bump-scope/issues/12
 [#3]: https://github.com/bluurryy/bump-scope/issues/3
 
-[Unreleased]: https://github.com/bluurryy/bump-scope/compare/v0.17.0...HEAD
+[0.17.1]: https://github.com/bluurryy/bump-scope/releases/tag/v0.17.1
 [0.17.0]: https://github.com/bluurryy/bump-scope/releases/tag/v0.17.0
 [0.16.5]: https://github.com/bluurryy/bump-scope/releases/tag/v0.16.5
 [0.16.4]: https://github.com/bluurryy/bump-scope/releases/tag/v0.16.4
