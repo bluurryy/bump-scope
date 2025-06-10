@@ -27,8 +27,8 @@ doc = false
 bench = false
 
 [[bin]]
-name = "allocator"
-path = "fuzz_targets/allocator.rs"
+name = "allocator_api"
+path = "fuzz_targets/allocator_api.rs"
 test = false
 doc = false
 bench = false
