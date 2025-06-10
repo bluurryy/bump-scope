@@ -6,9 +6,10 @@ use bump_scope::{
     Bump, MinimumAlignment, SupportedMinimumAlignment,
 };
 use core::fmt::Debug;
+use log::debug;
 use rangemap::RangeSet;
 
-use crate::{dbg, eprintln, MaybeFailingAllocator, MinAlign, RcAllocator};
+use crate::{debug_dbg, MaybeFailingAllocator, MinAlign, RcAllocator};
 
 #[derive(Debug, Arbitrary)]
 pub struct Fuzz {
@@ -41,8 +42,8 @@ impl Fuzz {
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        dbg!(UP);
-        dbg!(MIN_ALIGN);
+        debug_dbg!(UP);
+        debug_dbg!(MIN_ALIGN);
 
         // We use rc to also check that allocator cloning works.
         let allocator = RcAllocator::new(Rc::new(MaybeFailingAllocator::new(Global)));
@@ -53,11 +54,11 @@ impl Fuzz {
 
         #[allow(clippy::unused_enumerate_index)]
         for (_operation_i, &operation) in self.operations.iter().enumerate() {
-            eprintln!("======================================");
-            eprintln!("OPERATION {_operation_i}");
-            dbg!(&allocations);
-            dbg!(&used_ranges);
-            dbg!(&bump);
+            debug!("======================================");
+            debug!("OPERATION {_operation_i}");
+            debug_dbg!(&allocations);
+            debug_dbg!(&used_ranges);
+            debug_dbg!(&bump);
 
             match operation {
                 Operation::Allocate { layout, zero, fails } => unsafe {
@@ -71,9 +72,9 @@ impl Fuzz {
                         bump.allocate(layout)
                     };
 
-                    eprintln!("ALLOCATE");
-                    dbg!(layout);
-                    dbg!(&ptr);
+                    debug!("ALLOCATE");
+                    debug_dbg!(layout);
+                    debug_dbg!(&ptr);
 
                     if let Ok(ptr) = ptr {
                         assert_eq!(ptr.len(), layout.size());
@@ -98,9 +99,9 @@ impl Fuzz {
                     let i = index % allocations.len();
                     let Allocation { ptr, layout } = allocations.swap_remove(i);
 
-                    eprintln!("DEALLOCATE");
-                    dbg!(layout);
-                    dbg!(&ptr);
+                    debug!("DEALLOCATE");
+                    debug_dbg!(layout);
+                    debug_dbg!(&ptr);
 
                     assert_eq!(ptr.len(), layout.size());
                     assert!(ptr.is_aligned_to(layout.align()));
@@ -119,27 +120,27 @@ impl Fuzz {
                 } => unsafe {
                     let mut new_layout = new_layout.0;
 
-                    eprintln!("REALLOCATE");
-                    dbg!(new_layout);
-                    dbg!(index);
+                    debug!("REALLOCATE");
+                    debug_dbg!(new_layout);
+                    debug_dbg!(index);
 
                     if allocations.is_empty() {
-                        eprintln!("CANCELLED: NO ALLOCATIONS");
+                        debug!("CANCELLED: NO ALLOCATIONS");
                         continue;
                     }
 
                     bump.allocator().fails.set(fails);
 
                     let i = index % allocations.len();
-                    dbg!(i);
+                    debug_dbg!(i);
 
                     let Allocation {
                         ptr: old_ptr,
                         layout: old_layout,
                     } = allocations[i];
 
-                    dbg!(old_layout);
-                    dbg!(old_ptr);
+                    debug_dbg!(old_layout);
+                    debug_dbg!(old_ptr);
 
                     assert_eq!(old_ptr.len(), old_layout.size());
                     assert!(old_ptr.is_aligned_to(old_layout.align()));
@@ -155,7 +156,7 @@ impl Fuzz {
                         bump.shrink(old_ptr.cast(), old_layout, new_layout)
                     };
 
-                    dbg!(&new_ptr);
+                    debug_dbg!(&new_ptr);
 
                     if let Ok(new_ptr) = new_ptr {
                         #[allow(ambiguous_wide_pointer_comparisons)]
@@ -193,15 +194,15 @@ impl Fuzz {
             }
         }
 
-        eprintln!("====================================");
-        eprintln!("DONE WITH ALL OPERATIONS");
-        eprintln!("DROPPING REMAINING ALLOCATIONS");
-        eprintln!("====================================");
+        debug!("====================================");
+        debug!("DONE WITH ALL OPERATIONS");
+        debug!("DROPPING REMAINING ALLOCATIONS");
+        debug!("====================================");
 
         unsafe {
             for Allocation { ptr, layout } in allocations {
-                dbg!(layout);
-                dbg!(ptr);
+                debug_dbg!(layout);
+                debug_dbg!(ptr);
                 used_ranges.remove(ptr);
                 assert_initialized(ptr);
                 deinitialize(ptr);
@@ -221,7 +222,7 @@ impl Debug for UsedRanges {
         let mut list = f.debug_list();
 
         for range in self.used.iter() {
-            list.entry(&HexRange(range));
+            list.entry(&DebugPointerRange(range));
         }
 
         list.finish()
@@ -229,6 +230,11 @@ impl Debug for UsedRanges {
 }
 
 impl UsedRanges {
+    /// Marks a pointer range as used.
+    ///
+    /// # Panics
+    ///
+    /// Panics if this pointer range overlaps with with any used range.
     fn insert(&mut self, ptr: NonNull<[u8]>) {
         let range = addr_range(ptr);
 
@@ -236,13 +242,18 @@ impl UsedRanges {
             assert!(
                 !self.used.overlaps(&range),
                 "insert failed: range={:?} used={:?}",
-                HexRange(&range),
+                DebugPointerRange(&range),
                 self.used
             );
             self.used.insert(range);
         }
     }
 
+    /// Marks a pointer range as unused.
+    ///
+    /// # Panics
+    ///
+    /// Panics if this pointer range overlaps with any unused range.
     fn remove(&mut self, ptr: NonNull<[u8]>) {
         let range = addr_range(ptr);
 
@@ -251,7 +262,7 @@ impl UsedRanges {
                 self.used.gaps(&range).map(|r| r.len()).sum::<usize>(),
                 0,
                 "remove failed: range={:?} used={:?}",
-                HexRange(&range),
+                DebugPointerRange(&range),
                 self.used
             );
             self.used.remove(range);
@@ -259,9 +270,10 @@ impl UsedRanges {
     }
 }
 
-struct HexRange<'a>(&'a Range<usize>);
+/// Wrapper for a prettier `Debug` impl for `Range<usize>` in the context of pointer ranges.
+struct DebugPointerRange<'a>(&'a Range<usize>);
 
-impl Debug for HexRange<'_> {
+impl Debug for DebugPointerRange<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let Range { start, end } = self.0.clone();
         let len = end - start;
@@ -289,27 +301,28 @@ fn addr_range(ptr: NonNull<[u8]>) -> Range<usize> {
     addr..addr + ptr.len()
 }
 
+/// Writes a pattern that can later be asserted to still be the same using [`assert_initialized`].
 unsafe fn initialize(ptr: NonNull<[u8]>) {
     for i in 0..ptr.len() {
         ptr.cast::<u8>().as_ptr().add(i).write(i as u8);
     }
 }
 
-unsafe fn deinitialize(ptr: NonNull<[u8]>) {
-    // write some garbage that can't be mistaken for initialized or zeroed memory
-    ptr.as_ptr().cast::<u8>().write_bytes(0xFA, ptr.len())
-}
-
+/// Asserts that the bytes still have the same pattern as when it was set using [`initialize`].
 unsafe fn assert_initialized(ptr: NonNull<[u8]>) {
     for i in 0..ptr.len() {
         assert_eq!(ptr.cast::<u8>().as_ptr().add(i).read(), i as u8);
     }
 }
 
+// Writes a new pattern to the bytes that can't be mistaken for initialized or zeroed bytes.
+unsafe fn deinitialize(ptr: NonNull<[u8]>) {
+    ptr.as_ptr().cast::<u8>().write_bytes(0xFA, ptr.len())
+}
+
+// Asserts that all bytes are zero.
 unsafe fn assert_zeroed(ptr: NonNull<[u8]>) {
-    for i in 0..ptr.len() {
-        assert_eq!(ptr.cast::<u8>().as_ptr().add(i).read(), 0);
-    }
+    ptr.as_ptr().cast::<u8>().write_bytes(0, ptr.len())
 }
 
 #[derive(Debug)]
