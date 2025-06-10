@@ -10,6 +10,7 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 fuzzing-support = { path = "../crates/fuzzing-support" }
+env_logger = { version = "0.11.8", default-features = false }
 
 [[bin]]
 name = "bumping"
