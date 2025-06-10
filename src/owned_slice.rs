@@ -21,7 +21,7 @@ pub use into_iter::IntoIter;
 
 /// A type that owns a slice of elements.
 ///
-/// For example `[T; N]`, `Vec<T>`, `Box<[T]>` and `Drain<T>`.
+/// For example `[T; N]`, `Vec<T>`, `Box<[T]>` and `vec::Drain<T>`.
 ///
 /// This trait is used for the parameter of [`alloc_slice_move`], [`append`] and [`from_owned_slice_in`].
 ///

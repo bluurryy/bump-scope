@@ -153,7 +153,8 @@
 //!
 //! assert_eq!(bump.stats().allocated(), 0);
 //! ```
-//! You can also use the unsafe [`checkpoint`](crate::Bump::checkpoint) api to reset the bump pointer to a previous location.
+//! You can also use the unsafe [`checkpoint`](crate::Bump::checkpoint) api
+//! to reset the bump pointer to a previous position.
 //! ```
 //! # use bump_scope::Bump;
 //! let mut bump: Bump = Bump::new();
@@ -175,12 +176,12 @@
 //! - [`Mut*`](crate::MutBumpVec) for collections optimized for a mutable bump allocator
 //!
 //! #### API changes
-//! The collections are designed to have a similar api to their std counterparts but they do make some breaking changes:
+//! The collections are designed to have the same api as their std counterparts with these exceptions:
 //! - [`split_off`](BumpVec::split_off) —  splits the collection in place without allocation; the parameter is a range instead of a single index
 //! - [`retain`](BumpVec::retain) —  takes a closure with a `&mut T` parameter like [`Vec::retain_mut`](alloc_crate::vec::Vec::retain_mut)
 //!
 //! #### New features
-//! - [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `Drain<T>` etc.
+//! - [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `vec::Drain<T>` etc.
 //! - [`map`](BumpVec::map) —  maps the elements, potentially reusing the existing allocation
 //! - [`map_in_place`](BumpVec::map_in_place) —  maps the elements without allocation
 //! - conversions between the regular collections, their `Fixed*` variants and `BumpBox<[T]>` / `BumpBox<str>`
@@ -191,11 +192,11 @@
 //! To bump allocate in parallel you can use a [`BumpPool`](crate::BumpPool).
 //!
 //! # Allocator API
-//! `Bump` and `BumpScope` implement either the `Allocator` trait from
-//! [`allocator_api2`](https://docs.rs/allocator-api2/0.3.0/allocator_api2/alloc/trait.Allocator.html)
-//! or from [`alloc`](https://doc.rust-lang.org/nightly/alloc/alloc/trait.Allocator.html)
-//! with the "nightly-allocator-api" feature.
-//! They can be used to [allocate collections](crate::Bump#collections).
+//! `Bump` and `BumpScope` implement `bump-scope`'s own `Allocator` trait and with the
+//! respective [feature flags](#feature-flags) also implement `allocator_api2@0.2`, `allocator_api2@0.3` and nightly's `Allocator` trait.
+//! All of these traits mirror the nightly `Allocator` trait at the time of writing.
+//!
+//! This allows you to [bump allocate collections](crate::Bump#collections).
 //!
 //! A bump allocator can grow, shrink and deallocate the most recent allocation.
 //! When bumping upwards it can even do so in place.
