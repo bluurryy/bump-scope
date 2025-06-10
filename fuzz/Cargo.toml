@@ -48,15 +48,15 @@ doc = false
 bench = false
 
 [[bin]]
-name = "bump_greedy_up"
-path = "fuzz_targets/bump_greedy_up.rs"
+name = "bump_prepare_up"
+path = "fuzz_targets/bump_prepare_up.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "bump_greedy_down"
-path = "fuzz_targets/bump_greedy_down.rs"
+name = "bump_prepare_down"
+path = "fuzz_targets/bump_prepare_down.rs"
 test = false
 doc = false
 bench = false
