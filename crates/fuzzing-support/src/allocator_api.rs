@@ -6,9 +6,10 @@ use bump_scope::{
     Bump, MinimumAlignment, SupportedMinimumAlignment,
 };
 use core::fmt::Debug;
+use log::debug;
 use rangemap::RangeSet;
 
-use crate::{log, log_dbg, MaybeFailingAllocator, MinAlign, RcAllocator};
+use crate::{debug_dbg, MaybeFailingAllocator, MinAlign, RcAllocator};
 
 #[derive(Debug, Arbitrary)]
 pub struct Fuzz {
@@ -41,8 +42,8 @@ impl Fuzz {
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        log_dbg!(UP);
-        log_dbg!(MIN_ALIGN);
+        debug_dbg!(UP);
+        debug_dbg!(MIN_ALIGN);
 
         // We use rc to also check that allocator cloning works.
         let allocator = RcAllocator::new(Rc::new(MaybeFailingAllocator::new(Global)));
@@ -53,11 +54,11 @@ impl Fuzz {
 
         #[allow(clippy::unused_enumerate_index)]
         for (_operation_i, &operation) in self.operations.iter().enumerate() {
-            log!("======================================");
-            log!("OPERATION {_operation_i}");
-            log_dbg!(&allocations);
-            log_dbg!(&used_ranges);
-            log_dbg!(&bump);
+            debug!("======================================");
+            debug!("OPERATION {_operation_i}");
+            debug_dbg!(&allocations);
+            debug_dbg!(&used_ranges);
+            debug_dbg!(&bump);
 
             match operation {
                 Operation::Allocate { layout, zero, fails } => unsafe {
@@ -71,9 +72,9 @@ impl Fuzz {
                         bump.allocate(layout)
                     };
 
-                    log!("ALLOCATE");
-                    log_dbg!(layout);
-                    log_dbg!(&ptr);
+                    debug!("ALLOCATE");
+                    debug_dbg!(layout);
+                    debug_dbg!(&ptr);
 
                     if let Ok(ptr) = ptr {
                         assert_eq!(ptr.len(), layout.size());
@@ -98,9 +99,9 @@ impl Fuzz {
                     let i = index % allocations.len();
                     let Allocation { ptr, layout } = allocations.swap_remove(i);
 
-                    log!("DEALLOCATE");
-                    log_dbg!(layout);
-                    log_dbg!(&ptr);
+                    debug!("DEALLOCATE");
+                    debug_dbg!(layout);
+                    debug_dbg!(&ptr);
 
                     assert_eq!(ptr.len(), layout.size());
                     assert!(ptr.is_aligned_to(layout.align()));
@@ -119,27 +120,27 @@ impl Fuzz {
                 } => unsafe {
                     let mut new_layout = new_layout.0;
 
-                    log!("REALLOCATE");
-                    log_dbg!(new_layout);
-                    log_dbg!(index);
+                    debug!("REALLOCATE");
+                    debug_dbg!(new_layout);
+                    debug_dbg!(index);
 
                     if allocations.is_empty() {
-                        log!("CANCELLED: NO ALLOCATIONS");
+                        debug!("CANCELLED: NO ALLOCATIONS");
                         continue;
                     }
 
                     bump.allocator().fails.set(fails);
 
                     let i = index % allocations.len();
-                    log_dbg!(i);
+                    debug_dbg!(i);
 
                     let Allocation {
                         ptr: old_ptr,
                         layout: old_layout,
                     } = allocations[i];
 
-                    log_dbg!(old_layout);
-                    log_dbg!(old_ptr);
+                    debug_dbg!(old_layout);
+                    debug_dbg!(old_ptr);
 
                     assert_eq!(old_ptr.len(), old_layout.size());
                     assert!(old_ptr.is_aligned_to(old_layout.align()));
@@ -155,7 +156,7 @@ impl Fuzz {
                         bump.shrink(old_ptr.cast(), old_layout, new_layout)
                     };
 
-                    log_dbg!(&new_ptr);
+                    debug_dbg!(&new_ptr);
 
                     if let Ok(new_ptr) = new_ptr {
                         #[allow(ambiguous_wide_pointer_comparisons)]
@@ -193,15 +194,15 @@ impl Fuzz {
             }
         }
 
-        log!("====================================");
-        log!("DONE WITH ALL OPERATIONS");
-        log!("DROPPING REMAINING ALLOCATIONS");
-        log!("====================================");
+        debug!("====================================");
+        debug!("DONE WITH ALL OPERATIONS");
+        debug!("DROPPING REMAINING ALLOCATIONS");
+        debug!("====================================");
 
         unsafe {
             for Allocation { ptr, layout } in allocations {
-                log_dbg!(layout);
-                log_dbg!(ptr);
+                debug_dbg!(layout);
+                debug_dbg!(ptr);
                 used_ranges.remove(ptr);
                 assert_initialized(ptr);
                 deinitialize(ptr);
