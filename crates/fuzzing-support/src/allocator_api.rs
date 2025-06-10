@@ -222,7 +222,7 @@ impl Debug for UsedRanges {
         let mut list = f.debug_list();
 
         for range in self.used.iter() {
-            list.entry(&HexRange(range));
+            list.entry(&DebugPointerRange(range));
         }
 
         list.finish()
@@ -230,6 +230,11 @@ impl Debug for UsedRanges {
 }
 
 impl UsedRanges {
+    /// Marks a pointer range as used.
+    ///
+    /// # Panics
+    ///
+    /// Panics if this pointer range overlaps with with any used range.
     fn insert(&mut self, ptr: NonNull<[u8]>) {
         let range = addr_range(ptr);
 
@@ -237,13 +242,18 @@ impl UsedRanges {
             assert!(
                 !self.used.overlaps(&range),
                 "insert failed: range={:?} used={:?}",
-                HexRange(&range),
+                DebugPointerRange(&range),
                 self.used
             );
             self.used.insert(range);
         }
     }
 
+    /// Marks a pointer range as unused.
+    ///
+    /// # Panics
+    ///
+    /// Panics if this pointer range overlaps with any unused range.
     fn remove(&mut self, ptr: NonNull<[u8]>) {
         let range = addr_range(ptr);
 
@@ -252,7 +262,7 @@ impl UsedRanges {
                 self.used.gaps(&range).map(|r| r.len()).sum::<usize>(),
                 0,
                 "remove failed: range={:?} used={:?}",
-                HexRange(&range),
+                DebugPointerRange(&range),
                 self.used
             );
             self.used.remove(range);
@@ -260,9 +270,10 @@ impl UsedRanges {
     }
 }
 
-struct HexRange<'a>(&'a Range<usize>);
+/// Wrapper for a prettier `Debug` impl for `Range<usize>` in the context of pointer ranges.
+struct DebugPointerRange<'a>(&'a Range<usize>);
 
-impl Debug for HexRange<'_> {
+impl Debug for DebugPointerRange<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let Range { start, end } = self.0.clone();
         let len = end - start;
@@ -290,27 +301,28 @@ fn addr_range(ptr: NonNull<[u8]>) -> Range<usize> {
     addr..addr + ptr.len()
 }
 
+/// Writes a pattern that can later be asserted to still be the same using [`assert_initialized`].
 unsafe fn initialize(ptr: NonNull<[u8]>) {
     for i in 0..ptr.len() {
         ptr.cast::<u8>().as_ptr().add(i).write(i as u8);
     }
 }
 
-unsafe fn deinitialize(ptr: NonNull<[u8]>) {
-    // write some garbage that can't be mistaken for initialized or zeroed memory
-    ptr.as_ptr().cast::<u8>().write_bytes(0xFA, ptr.len())
-}
-
+/// Asserts that the bytes still have the same pattern as when it was set using [`initialize`].
 unsafe fn assert_initialized(ptr: NonNull<[u8]>) {
     for i in 0..ptr.len() {
         assert_eq!(ptr.cast::<u8>().as_ptr().add(i).read(), i as u8);
     }
 }
 
+// Writes a new pattern to the bytes that can't be mistaken for initialized or zeroed bytes.
+unsafe fn deinitialize(ptr: NonNull<[u8]>) {
+    ptr.as_ptr().cast::<u8>().write_bytes(0xFA, ptr.len())
+}
+
+// Asserts that all bytes are zero.
 unsafe fn assert_zeroed(ptr: NonNull<[u8]>) {
-    for i in 0..ptr.len() {
-        assert_eq!(ptr.cast::<u8>().as_ptr().add(i).read(), 0);
-    }
+    ptr.as_ptr().cast::<u8>().write_bytes(0, ptr.len())
 }
 
 #[derive(Debug)]
