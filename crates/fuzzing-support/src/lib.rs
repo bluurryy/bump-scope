@@ -8,12 +8,12 @@ use bump_scope::alloc::{AllocError, Allocator};
 
 pub use arbitrary;
 pub use bump_scope;
+pub mod alloc_static_layout;
 pub mod allocator_api;
 pub mod bump_down;
 pub mod bump_prepare_down;
 pub mod bump_prepare_up;
 pub mod bump_up;
-pub mod bumping;
 pub mod chunk_size;
 mod from_bump_scope;
 pub mod many_vecs;

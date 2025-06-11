@@ -13,8 +13,8 @@ fuzzing-support = { path = "../crates/fuzzing-support" }
 env_logger = { version = "0.11.8", default-features = false }
 
 [[bin]]
-name = "bumping"
-path = "fuzz_targets/bumping.rs"
+name = "alloc_static_layout"
+path = "fuzz_targets/alloc_static_layout.rs"
 test = false
 doc = false
 bench = false
