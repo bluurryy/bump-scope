@@ -20,22 +20,8 @@ doc = false
 bench = false
 
 [[bin]]
-name = "chunk_size"
-path = "fuzz_targets/chunk_size.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
 name = "allocator_api"
 path = "fuzz_targets/allocator_api.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
-name = "bump_up"
-path = "fuzz_targets/bump_up.rs"
 test = false
 doc = false
 bench = false
@@ -48,13 +34,6 @@ doc = false
 bench = false
 
 [[bin]]
-name = "bump_prepare_up"
-path = "fuzz_targets/bump_prepare_up.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
 name = "bump_prepare_down"
 path = "fuzz_targets/bump_prepare_down.rs"
 test = false
@@ -62,8 +41,29 @@ doc = false
 bench = false
 
 [[bin]]
+name = "bump_prepare_up"
+path = "fuzz_targets/bump_prepare_up.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bump_up"
+path = "fuzz_targets/bump_up.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "bump_vec"
 path = "fuzz_targets/bump_vec.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "chunk_size"
+path = "fuzz_targets/chunk_size.rs"
 test = false
 doc = false
 bench = false
