@@ -1,6 +1,6 @@
 # Benchmarks
 
-Here are micro-benchmarks to compare `bump-scope`'s up- and downwards allocator with other bump allocator crates and keep track of regressions. Take these benchmarks with a big grain of salt. A smaller number does not necessarily mean better performance. I've opted to benchmark instructions and branches instead of wall-clock time because I could get neither precision nor consistency with regular time based benchmarks.
+This crate contains micro-benchmarks to compare `bump-scope`'s up- and downwards allocator with other bump allocator crates and keep track of regressions. Take these benchmarks with a big grain of salt. A smaller number does not necessarily mean better performance. I've opted to benchmark instructions and branches instead of wall-clock time because I could get neither precision nor consistency with regular time based benchmarks.
 
 ## Results
 
@@ -26,7 +26,7 @@ The following cases are tested:
 <!-- table start -->
 
 | name                  | bump-scope (up) | bump-scope (down) | bumpalo  | blink-alloc |
-|-----------------------|-----------------|-------------------|----------|-------------|
+| --------------------- | --------------- | ----------------- | -------- | ----------- |
 | alloc_u8              | 10 / 1          | 10 / 1            | 11 / 2   | 16 / 4      |
 | alloc_u32             | 14 / 1          | 11 / 1            | 15 / 3   | 18 / 4      |
 | alloc_u32_aligned     | 12 / 1          | 10 / 1            | 13 / 2   | — [^1]      |
