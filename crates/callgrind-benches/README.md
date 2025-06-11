@@ -1,11 +1,32 @@
 # Benchmarks
 
-instructions / branches
+Here are micro-benchmarks to compare `bump-scope`'s up- and downwards allocator with other bump allocator crates and keep track of regressions. Take these benchmarks with a big grain of salt. A smaller number does not necessarily mean better performance. I've opted to benchmark instructions and branches instead of wall-clock time because I could get neither precision nor consistency with regular time based benchmarks.
+
+## Results
+
+The benchmarks results in the table below are shown in the format "instruction count / branch count".
+
+The following cases are tested:
+- **`alloc_u8`** —  allocate a `u8`
+- **`alloc_u32`** —  allocate a `u32`
+- **`alloc_u32_aligned`** —  allocate a `u32` with a minimum alignment of `4` (blink-alloc does not support setting a minimum alignment)
+- **`try_alloc_u32`** —  fallibly allocate a `u32`
+- **`try_alloc_u32_aligned`** —  fallibly allocate a `u32` with a minimum alignment of `4` (blink-alloc does not support setting a minimum alignment)
+- **`allocate_u32`** —  use the `Allocator` trait to allocate space for a `u32`
+- **`allocate`** —  allocate space for the `Layout` of an `u32` (the layout is not statically known, which inhibits optimizations `allocate_u32` was able to do)
+- **`grow_same_align`** —  grow an allocation to the same alignment
+- **`grow_smaller_align`** —  grow an allocation to a smaller alignment
+- **`grow_larger_align`** —  grow an allocation to a larger alignment
+- **`shrink_same_align`** —  shrink an allocation to the same alignment
+- **`shrink_smaller_align`** —  shrink an allocation to a smaller alignment
+- **`shrink_larger_align`** —  shrink an allocation to a larger alignment
+- **`warm_up`** —  construct a bump allocator and allocate a `u32`
+- **`reset`** —  reset the bump allocator after allocating a `u32`
 
 <!-- table start -->
 
 | name                  | bump-scope (up) | bump-scope (down) | bumpalo  | blink-alloc |
-|-----------------------|-----------------|-------------------|----------|-------------|
+| --------------------- | --------------- | ----------------- | -------- | ----------- |
 | alloc_u8              | 10 / 1          | 10 / 1            | 11 / 2   | 16 / 4      |
 | alloc_u32             | 14 / 1          | 11 / 1            | 15 / 3   | 18 / 4      |
 | alloc_u32_aligned     | 12 / 1          | 10 / 1            | 13 / 2   | 0 / 0       |
@@ -24,7 +45,7 @@ instructions / branches
 
 <!-- table end -->
 
-# Reproducing
+## Reproducing
 
 Install [Valgrind](https://iai-callgrind.github.io/iai-callgrind/latest/html/installation/prerequisites.html) and [iai-callgrind-runner](https://iai-callgrind.github.io/iai-callgrind/latest/html/installation/iai_callgrind.html).
 
