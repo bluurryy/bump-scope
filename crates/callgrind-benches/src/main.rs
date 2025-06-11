@@ -106,10 +106,13 @@ fn main() {
 
         for &library in LIBRARY_NAMES {
             let path = format!("target/iai/{PACKAGE_NAME}/{BENCH_NAME}/{group}/{library}/summary.json");
-
             let Report { instructions, branches } = read_summary(path.as_ref());
 
-            row.push(format!("{instructions} / {branches}"));
+            if instructions == 0 && branches == 0 {
+                row.push("-".to_string());
+            } else {
+                row.push(format!("{instructions} / {branches}"));
+            }
         }
 
         rows.push(Row(row));
