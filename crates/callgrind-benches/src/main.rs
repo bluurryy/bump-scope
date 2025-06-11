@@ -84,10 +84,16 @@ const GROUP_NAMES: &[&str] = &[
 
 const LIBRARY_NAMES: &[&str] = &["bump_scope_up", "bump_scope_down", "bumpalo", "blink_alloc"];
 
-const FOOTNOTES: &[(&[&str], &str)] = &[(
-    &["alloc_u32_aligned/blink_alloc", "try_alloc_u32_aligned/blink_alloc"],
-    "`blink-alloc` does not support setting a minimum alignment",
-)];
+const FOOTNOTES: &[(&[&str], &str)] = &[
+    (
+        &["alloc_u32_aligned/blink_alloc", "try_alloc_u32_aligned/blink_alloc"],
+        "`blink-alloc` does not support setting a minimum alignment",
+    ),
+    (
+        &["shrink_same_align", "shrink_smaller_align", "shrink_larger_align"],
+        "the shrink implementations differ a lot, `bump-scope` always tries to shrink the allocation, `bumpalo` only shrinks if it can do so with a `copy_nonoverlapping` and `blink-alloc` does not shrink allocations unless required due to alignment",
+    ),
+];
 
 fn patch_readme(table: &str) {
     let readme = std::fs::read_to_string("README.md").unwrap();
@@ -108,8 +114,18 @@ fn patch_readme(table: &str) {
 fn main() {
     let mut rows = vec![];
 
-    for group in GROUP_NAMES {
-        let mut row = vec![group.to_string()];
+    for &group in GROUP_NAMES {
+        let mut group_label = group.to_string();
+
+        for (&(targets, _note), i) in FOOTNOTES.iter().zip(1..) {
+            for &target in targets {
+                if target == group {
+                    group_label.write_fmt(format_args!(" [^{i}]")).unwrap();
+                }
+            }
+        }
+
+        let mut row = vec![group_label];
 
         for &library in LIBRARY_NAMES {
             let path = format!("target/iai/{PACKAGE_NAME}/{BENCH_NAME}/{group}/{library}/summary.json");
