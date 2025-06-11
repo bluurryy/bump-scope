@@ -14,9 +14,9 @@ pub mod bump_down;
 pub mod bump_prepare_down;
 pub mod bump_prepare_up;
 pub mod bump_up;
+pub mod bump_vec;
 pub mod chunk_size;
 mod from_bump_scope;
-pub mod many_vecs;
 
 #[derive(Debug, Clone)]
 struct RcAllocator<A> {

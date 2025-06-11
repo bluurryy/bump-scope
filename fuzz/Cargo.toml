@@ -62,8 +62,8 @@ doc = false
 bench = false
 
 [[bin]]
-name = "many_vecs"
-path = "fuzz_targets/many_vecs.rs"
+name = "bump_vec"
+path = "fuzz_targets/bump_vec.rs"
 test = false
 doc = false
 bench = false
