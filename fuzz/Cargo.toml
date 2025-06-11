@@ -10,31 +10,18 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 fuzzing-support = { path = "../crates/fuzzing-support" }
+env_logger = { version = "0.11.8", default-features = false }
 
 [[bin]]
-name = "bumping"
-path = "fuzz_targets/bumping.rs"
+name = "alloc_static_layout"
+path = "fuzz_targets/alloc_static_layout.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "chunk_size"
-path = "fuzz_targets/chunk_size.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
-name = "allocator"
-path = "fuzz_targets/allocator.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
-name = "bump_up"
-path = "fuzz_targets/bump_up.rs"
+name = "allocator_api"
+path = "fuzz_targets/allocator_api.rs"
 test = false
 doc = false
 bench = false
@@ -47,22 +34,36 @@ doc = false
 bench = false
 
 [[bin]]
-name = "bump_greedy_up"
-path = "fuzz_targets/bump_greedy_up.rs"
+name = "bump_prepare_down"
+path = "fuzz_targets/bump_prepare_down.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "bump_greedy_down"
-path = "fuzz_targets/bump_greedy_down.rs"
+name = "bump_prepare_up"
+path = "fuzz_targets/bump_prepare_up.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "many_vecs"
-path = "fuzz_targets/many_vecs.rs"
+name = "bump_up"
+path = "fuzz_targets/bump_up.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bump_vec"
+path = "fuzz_targets/bump_vec.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "chunk_size"
+path = "fuzz_targets/chunk_size.rs"
 test = false
 doc = false
 bench = false

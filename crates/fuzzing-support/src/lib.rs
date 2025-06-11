@@ -8,15 +8,15 @@ use bump_scope::alloc::{AllocError, Allocator};
 
 pub use arbitrary;
 pub use bump_scope;
+pub mod alloc_static_layout;
 pub mod allocator_api;
 pub mod bump_down;
 pub mod bump_prepare_down;
 pub mod bump_prepare_up;
 pub mod bump_up;
-pub mod bumping;
+pub mod bump_vec;
 pub mod chunk_size;
 mod from_bump_scope;
-pub mod many_vecs;
 
 #[derive(Debug, Clone)]
 struct RcAllocator<A> {
@@ -140,76 +140,103 @@ where
     }
 }
 
-#[cfg(fuzzing_repro)]
-pub use std::{dbg, eprint, eprintln};
-
-#[cfg(not(fuzzing_repro))]
-#[macro_export]
-macro_rules! dbg {
-    ($($tt:tt)*) => {};
+// modified from std
+macro_rules! debug_dbg {
+    // NOTE: We cannot use `concat!` to make a static string as a format argument
+    // of `eprintln!` because `file!` could contain a `{` or
+    // `$val` expression could be a block (`{ .. }`), in which case the `eprintln!`
+    // will be malformed.
+    () => {
+        ::log::debug!("[{}:{}:{}]", file!(), line!(), column!())
+    };
+    ($val:expr $(,)?) => {
+        // Use of `match` here is intentional because it affects the lifetimes
+        // of temporaries - https://stackoverflow.com/a/48732525/1063961
+        match $val {
+            tmp => {
+                ::log::debug!("[{}:{}:{}] {} = {:#?}",
+                    file!(), line!(), column!(), stringify!($val), &tmp);
+                tmp
+            }
+        }
+    };
+    ($($val:expr),+ $(,)?) => {
+        ($($crate::dbg!($val)),+,)
+    };
 }
 
-#[cfg(not(fuzzing_repro))]
-#[macro_export]
-macro_rules! eprint {
-    ($($tt:tt)*) => {};
+pub(crate) use debug_dbg;
+
+#[derive(Debug, Clone, Copy)]
+struct FuzzBumpPropsRange {
+    start: usize,
+    end: usize,
 }
 
-#[cfg(not(fuzzing_repro))]
-#[macro_export]
-macro_rules! eprintln {
-    ($($tt:tt)*) => {};
+impl<'a> Arbitrary<'a> for FuzzBumpPropsRange {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        let [mut start, mut end] = u.arbitrary()?;
+
+        if end < start {
+            swap(&mut start, &mut end);
+        }
+
+        start = align(start);
+        end = align(end);
+
+        Ok(Self { start, end })
+    }
+
+    fn size_hint(depth: usize) -> (usize, Option<usize>) {
+        <[usize; 2]>::size_hint(depth)
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
+struct FuzzBumpPropsLayout(Layout);
+
+impl<'a> Arbitrary<'a> for FuzzBumpPropsLayout {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        let size: usize = u.arbitrary()?;
+        let align_pow2: usize = u.int_in_range::<u8>(0..=10)?.into();
+
+        let align = 1 << align_pow2;
+
+        Layout::from_size_align(size, align)
+            .map(Self)
+            .map_err(|_| arbitrary::Error::IncorrectFormat)
+    }
+
+    fn size_hint(depth: usize) -> (usize, Option<usize>) {
+        <(usize, u8)>::size_hint(depth)
+    }
+}
+
+#[derive(Arbitrary, Debug, Clone, Copy)]
 pub(crate) struct FuzzBumpProps {
-    pub(crate) start: usize,
-    pub(crate) end: usize,
-    pub(crate) layout: Layout,
-    pub(crate) min_align: usize,
+    pub(crate) range: FuzzBumpPropsRange,
+    pub(crate) layout: FuzzBumpPropsLayout,
+    pub(crate) min_align: MinAlign,
     pub(crate) align_is_const: bool,
     pub(crate) size_is_const: bool,
 }
 
-impl<'a> Arbitrary<'a> for FuzzBumpProps {
-    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-        let (mut start, mut end) = u.arbitrary()?;
-
-        if end < start {
-            swap(&mut start, &mut end);
-        }
-
-        start = align(start);
-        end = align(end);
-
-        let layout = {
-            let size = u.arbitrary()?;
-            let align_pow2 = u.int_in_range(0..=10)?;
-            let align = 1 << align_pow2;
-            Layout::from_size_align(size, align).map_err(|_| arbitrary::Error::IncorrectFormat)?
-        };
-
-        let min_align = *u.choose(&[1, 2, 4, 8, 16])?;
-
-        Ok(Self {
-            start,
-            end,
-            layout,
-            min_align,
-            align_is_const: u.arbitrary()?,
-            size_is_const: u.arbitrary()?,
-        })
-    }
-}
-
 impl FuzzBumpProps {
     fn for_up(mut self) -> Self {
-        self.start = down_align(self.start, self.min_align);
+        self.range.start = down_align(self.range.start, self.min_align as usize);
         self
     }
 
     fn for_down(mut self) -> Self {
-        self.end = down_align(self.end, self.min_align);
+        self.range.end = down_align(self.range.end, self.min_align as usize);
+        self
+    }
+
+    fn for_prepare(mut self) -> Self {
+        // prepare requires size to be a multiple of align
+        let size = self.layout.0.size();
+        let align = self.layout.0.align();
+        self.layout.0 = Layout::from_size_align(down_align(size, align), align).unwrap();
         self
     }
 }
@@ -217,9 +244,8 @@ impl FuzzBumpProps {
 impl FuzzBumpProps {
     fn to(self) -> from_bump_scope::bumping::BumpProps {
         let Self {
-            start,
-            end,
-            layout,
+            range: FuzzBumpPropsRange { start, end },
+            layout: FuzzBumpPropsLayout(layout),
             min_align,
             align_is_const,
             size_is_const,
@@ -229,84 +255,10 @@ impl FuzzBumpProps {
             start,
             end,
             layout,
-            min_align,
+            min_align: min_align as usize,
             align_is_const,
             size_is_const,
             size_is_multiple_of_align: layout.size() % layout.align() == 0,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub(crate) struct FuzzBumpPrepareProps {
-    pub(crate) start: usize,
-    pub(crate) end: usize,
-    pub(crate) layout: Layout,
-    pub(crate) min_align: usize,
-    pub(crate) align_is_const: bool,
-}
-
-impl<'a> Arbitrary<'a> for FuzzBumpPrepareProps {
-    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-        let (mut start, mut end) = u.arbitrary()?;
-
-        if end < start {
-            swap(&mut start, &mut end);
-        }
-
-        start = align(start);
-        end = align(end);
-
-        let layout = {
-            let size: usize = u.arbitrary()?;
-            let align_pow2 = u.int_in_range(0..=10)?;
-            let align = 1 << align_pow2;
-            Layout::from_size_align(size.checked_mul(align).ok_or(arbitrary::Error::IncorrectFormat)?, align)
-                .map_err(|_| arbitrary::Error::IncorrectFormat)?
-        };
-
-        let min_align = *u.choose(&[1, 2, 4, 8, 16])?;
-
-        Ok(Self {
-            start,
-            end,
-            layout,
-            min_align,
-            align_is_const: u.arbitrary()?,
-        })
-    }
-}
-
-impl FuzzBumpPrepareProps {
-    fn for_up(mut self) -> Self {
-        self.start = down_align(self.start, self.min_align);
-        self
-    }
-
-    fn for_down(mut self) -> Self {
-        self.end = down_align(self.end, self.min_align);
-        self
-    }
-}
-
-impl FuzzBumpPrepareProps {
-    fn to(self) -> from_bump_scope::bumping::BumpProps {
-        let Self {
-            start,
-            end,
-            layout,
-            min_align,
-            align_is_const,
-        } = self;
-
-        from_bump_scope::bumping::BumpProps {
-            start,
-            end,
-            layout,
-            min_align,
-            align_is_const,
-            size_is_const: false,             // unused
-            size_is_multiple_of_align: false, // unused
         }
     }
 }

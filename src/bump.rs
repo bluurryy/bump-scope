@@ -68,9 +68,9 @@ macro_rules! bump_declaration {
         /// string.push_str(" world!");
         /// ```
         ///
-        /// ... and collections from crates that use `allocator_api2`'s [`Allocator`](allocator_api2_02::alloc::Allocator) like [hashbrown](https://docs.rs/hashbrown)'s [`HashMap`](https://docs.rs/hashbrown/latest/hashbrown/struct.HashMap.html):
+        /// ... and collections from crates that use `allocator_api2`'s `Allocator` like [hashbrown](https://docs.rs/hashbrown)'s [`HashMap`](https://docs.rs/hashbrown/latest/hashbrown/struct.HashMap.html):
         ///
-        /// *(This requires the `allocator_api2_02` feature for the latest hashbrown version (0.15) as of writing.)*
+        /// *This requires the `allocator_api2_02` feature OR the `nightly-allocator-api` feature along with hashbrown's `nightly` feature.*
         // NOTE: This code is tested in `crates/test-hashbrown/lib.rs`.
         // It's not tested here because using hashbrown requires us to either have both the crate features for a nightly allocator api in bump-scope and hashbrown or neither.
         // This could be solved by making bump-scope's "nightly-allocator-api" depend on "hashbrown/nightly" but that currently breaks tools like cargo-hack and cargo-minimal-versions.
