@@ -84,16 +84,8 @@ const GROUP_NAMES: &[&str] = &[
 
 const LIBRARY_NAMES: &[&str] = &["bump_scope_up", "bump_scope_down", "bumpalo", "blink_alloc"];
 
-const FOOTNOTES: &[(&[&str], &str)] = &[
-    (
-        &["alloc_u32_aligned/blink_alloc", "try_alloc_u32_aligned/blink_alloc"],
-        "`blink-alloc` does not support setting a minimum alignment",
-    ),
-    (
-        &["shrink_same_align", "shrink_smaller_align", "shrink_larger_align"],
-        "the shrink implementations differ a lot, `bump-scope` always tries to shrink the allocation, `bumpalo` only shrinks if it can do so with a `copy_nonoverlapping` and `blink-alloc` does not shrink allocations unless required due to alignment",
-    ),
-];
+const FOOTNOTES_GROUP: &[(&str, usize)] = &[("shrink_*", 2)];
+const FOOTNOTES_LIBRARY: &[(&str, usize)] = &[("*_aligned/blink_alloc", 1)];
 
 fn patch_readme(table: &str) {
     let readme = std::fs::read_to_string("README.md").unwrap();
@@ -117,11 +109,9 @@ fn main() {
     for &group in GROUP_NAMES {
         let mut group_label = group.to_string();
 
-        for (&(targets, _note), i) in FOOTNOTES.iter().zip(1..) {
-            for &target in targets {
-                if target == group {
-                    group_label.write_fmt(format_args!(" [^{i}]")).unwrap();
-                }
+        for (glob, i) in FOOTNOTES_GROUP {
+            if glob_match::glob_match(glob, group) {
+                group_label.write_fmt(format_args!(" [^{i}]")).unwrap();
             }
         }
 
@@ -130,34 +120,28 @@ fn main() {
         for &library in LIBRARY_NAMES {
             let path = format!("target/iai/{PACKAGE_NAME}/{BENCH_NAME}/{group}/{library}/summary.json");
             let Report { instructions, branches } = read_summary(path.as_ref());
-            let mut cell_data = if instructions == 0 && branches == 0 {
+
+            let mut cell = if instructions == 0 && branches == 0 {
                 "—".to_string()
             } else {
                 format!("{instructions} / {branches}")
             };
 
             let group_and_library = format!("{group}/{library}");
-            for (&(targets, _note), i) in FOOTNOTES.iter().zip(1..) {
-                for &target in targets {
-                    if target == group_and_library {
-                        cell_data.write_fmt(format_args!(" [^{i}]")).unwrap();
-                    }
+
+            for (glob, i) in FOOTNOTES_LIBRARY {
+                if glob_match::glob_match(glob, &group_and_library) {
+                    cell.write_fmt(format_args!(" [^{i}]")).unwrap();
                 }
             }
 
-            row.push(cell_data);
+            row.push(cell);
         }
 
         rows.push(Row(row));
     }
 
-    let mut table = markdown_tables::as_table(&rows);
-
-    for (&(_, note), i) in FOOTNOTES.iter().zip(1..) {
-        table.push('\n');
-        table.write_fmt(format_args!("[^{i}]: {note}")).unwrap();
-    }
-
+    let table = markdown_tables::as_table(&rows);
     println!("{table}");
     patch_readme(&table);
 }
