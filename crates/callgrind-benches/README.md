@@ -9,9 +9,9 @@ The benchmarks results in the table below are shown in the format "instruction c
 The following cases are tested:
 - **`alloc_u8`** —  allocate a `u8`
 - **`alloc_u32`** —  allocate a `u32`
-- **`alloc_u32_aligned`** —  allocate a `u32` with a minimum alignment of `4` (blink-alloc does not support setting a minimum alignment)
+- **`alloc_u32_aligned`** —  allocate a `u32` with a minimum alignment of `4`
 - **`try_alloc_u32`** —  fallibly allocate a `u32`
-- **`try_alloc_u32_aligned`** —  fallibly allocate a `u32` with a minimum alignment of `4` (blink-alloc does not support setting a minimum alignment)
+- **`try_alloc_u32_aligned`** —  fallibly allocate a `u32` with a minimum alignment of `4`
 - **`allocate_u32`** —  use the `Allocator` trait to allocate space for a `u32`
 - **`allocate`** —  allocate space for the `Layout` of an `u32` (the layout is not statically known, which inhibits optimizations `allocate_u32` was able to do)
 - **`grow_same_align`** —  grow an allocation to the same alignment
@@ -29,9 +29,9 @@ The following cases are tested:
 |-----------------------|-----------------|-------------------|----------|-------------|
 | alloc_u8              | 10 / 1          | 10 / 1            | 11 / 2   | 16 / 4      |
 | alloc_u32             | 14 / 1          | 11 / 1            | 15 / 3   | 18 / 4      |
-| alloc_u32_aligned     | 12 / 1          | 10 / 1            | 13 / 2   | -           |
+| alloc_u32_aligned     | 12 / 1          | 10 / 1            | 13 / 2   | — [^1]      |
 | try_alloc_u32         | 14 / 1          | 11 / 1            | 15 / 3   | 18 / 4      |
-| try_alloc_u32_aligned | 12 / 1          | 10 / 1            | 13 / 2   | -           |
+| try_alloc_u32_aligned | 12 / 1          | 10 / 1            | 13 / 2   | — [^1]      |
 | allocate_u32          | 14 / 2          | 13 / 2            | 13 / 3   | 16 / 4      |
 | allocate              | 16 / 2          | 14 / 2            | 26 / 5   | 23 / 4      |
 | grow_same_align       | 19 / 2          | 18 / 2            | 51 / 4   | 18 / 4      |
@@ -42,6 +42,8 @@ The following cases are tested:
 | shrink_larger_align   | 11 / 2          | 17 / 2            | 5 / 1    | 20 / 4      |
 | warm_up               | 227 / 31        | 233 / 32          | 358 / 43 | 284 / 38    |
 | reset                 | 26 / 2          | 25 / 2            | 23 / 2   | 26 / 3      |
+
+[^1]: `blink-alloc` does not support setting a minimum alignment
 
 <!-- table end -->
 

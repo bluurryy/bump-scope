@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{fmt::Write, path::Path};
 
 use markdown_tables::MarkdownTableRow;
 
@@ -82,6 +82,11 @@ const GROUP_NAMES: &[&str] = &[
 
 const LIBRARY_NAMES: &[&str] = &["bump_scope_up", "bump_scope_down", "bumpalo", "blink_alloc"];
 
+const FOOTNOTES: &[(&[&str], &str)] = &[(
+    &["alloc_u32_aligned/blink_alloc", "try_alloc_u32_aligned/blink_alloc"],
+    "`blink-alloc` does not support setting a minimum alignment",
+)];
+
 fn patch_readme(table: &str) {
     let readme = std::fs::read_to_string("README.md").unwrap();
 
@@ -94,7 +99,7 @@ fn patch_readme(table: &str) {
     let before = &readme[..start_index];
     let after = &readme[end_index..];
 
-    let new_readme = format!("{before}\n\n{table}\n{after}");
+    let new_readme = format!("{before}\n\n{table}\n\n{after}");
     std::fs::write("README.md", new_readme).unwrap();
 }
 
@@ -107,18 +112,34 @@ fn main() {
         for &library in LIBRARY_NAMES {
             let path = format!("target/iai/{PACKAGE_NAME}/{BENCH_NAME}/{group}/{library}/summary.json");
             let Report { instructions, branches } = read_summary(path.as_ref());
-
-            if instructions == 0 && branches == 0 {
-                row.push("-".to_string());
+            let mut cell_data = if instructions == 0 && branches == 0 {
+                "—".to_string()
             } else {
-                row.push(format!("{instructions} / {branches}"));
+                format!("{instructions} / {branches}")
+            };
+
+            let group_and_library = format!("{group}/{library}");
+            for (&(targets, _note), i) in FOOTNOTES.iter().zip(1..) {
+                for &target in targets {
+                    if target == group_and_library {
+                        cell_data.write_fmt(format_args!(" [^{i}]")).unwrap();
+                    }
+                }
             }
+
+            row.push(cell_data);
         }
 
         rows.push(Row(row));
     }
 
-    let table = markdown_tables::as_table(&rows);
+    let mut table = markdown_tables::as_table(&rows);
+
+    for (&(_, note), i) in FOOTNOTES.iter().zip(1..) {
+        table.push('\n');
+        table.write_fmt(format_args!("[^{i}]: {note}")).unwrap();
+    }
+
     println!("{table}");
     patch_readme(&table);
 }
