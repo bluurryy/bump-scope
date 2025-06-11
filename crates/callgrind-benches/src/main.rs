@@ -54,7 +54,7 @@ struct Row(Vec<String>);
 
 impl MarkdownTableRow for Row {
     fn column_names() -> Vec<&'static str> {
-        vec!["name", "bump-scope", "bumpalo", "blink-alloc"]
+        vec!["name", "bump-scope (up)", "bump-scope (down)", "bumpalo", "blink-alloc"]
     }
 
     fn column_values(&self) -> Vec<String> {
@@ -80,7 +80,7 @@ const GROUP_NAMES: &[&str] = &[
     "reset",
 ];
 
-const LIBRARY_NAMES: &[&str] = &["bump_scope", "bumpalo", "blink_alloc"];
+const LIBRARY_NAMES: &[&str] = &["bump_scope_up", "bump_scope_down", "bumpalo", "blink_alloc"];
 
 fn patch_readme(table: &str) {
     let readme = std::fs::read_to_string("README.md").unwrap();

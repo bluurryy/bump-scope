@@ -5,12 +5,60 @@ use allocator_api2::alloc::{AllocError, Allocator};
 // We're using duck typing instead of a trait to be generic over bump allocators
 // because I couldn't figure out how to make the current macro setup with `MIN_ALIGN` work with traits.
 mod wrapper {
-    pub(crate) mod bump_scope {
+    pub(crate) mod bump_scope_up {
         use ::allocator_api2::alloc::Allocator;
         use ::bump_scope::{MinimumAlignment, SupportedMinimumAlignment};
 
         #[repr(transparent)]
-        pub struct Bump<const MIN_ALIGN: usize = 1>(bump_scope::Bump<bump_scope::alloc::Global, MIN_ALIGN>)
+        pub struct Bump<const MIN_ALIGN: usize = 1>(bump_scope::Bump<bump_scope::alloc::Global, MIN_ALIGN, true>)
+        where
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment;
+
+        impl<const MIN_ALIGN: usize> Bump<MIN_ALIGN>
+        where
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        {
+            #[inline(always)]
+            pub(crate) fn new() -> Self {
+                Self(::bump_scope::Bump::new())
+            }
+
+            #[inline(always)]
+            pub(crate) fn with_capacity(capacity: usize) -> Self {
+                Self(::bump_scope::Bump::with_size(capacity))
+            }
+
+            #[inline(always)]
+            pub(crate) fn alloc<T>(&self, value: T) -> &T {
+                ::bump_scope::BumpBox::leak(self.0.alloc(value))
+            }
+
+            #[inline(always)]
+            pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&T> {
+                match self.0.try_alloc(value) {
+                    Ok(value) => Some(bump_scope::BumpBox::leak(value)),
+                    Err(_) => None,
+                }
+            }
+
+            #[inline(always)]
+            pub(crate) fn as_allocator(&self) -> impl Allocator {
+                &self.0
+            }
+
+            #[inline(always)]
+            pub(crate) fn reset(&mut self) {
+                self.0.reset();
+            }
+        }
+    }
+
+    pub(crate) mod bump_scope_down {
+        use ::allocator_api2::alloc::Allocator;
+        use ::bump_scope::{MinimumAlignment, SupportedMinimumAlignment};
+
+        #[repr(transparent)]
+        pub struct Bump<const MIN_ALIGN: usize = 1>(bump_scope::Bump<bump_scope::alloc::Global, MIN_ALIGN, false>)
         where
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment;
 
@@ -205,7 +253,11 @@ macro_rules! benches {
             $(
                 pub mod [<bench_ $name>] {
                     benches_library! {
-                        bump_scope $name { $($content)* }
+                        bump_scope_up $name { $($content)* }
+                    }
+
+                    benches_library! {
+                        bump_scope_down $name { $($content)* }
                     }
 
                     benches_library! {
@@ -219,7 +271,8 @@ macro_rules! benches {
                     ::iai_callgrind::library_benchmark_group!(
                         name = $name;
                         benchmarks =
-                            bump_scope,
+                            bump_scope_up,
+                            bump_scope_down,
                             bumpalo,
                             blink_alloc,
                     );
