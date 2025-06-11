@@ -426,6 +426,29 @@ benches! {
         }
     }
 
+    deallocate {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
+            run(&bump, ptr);
+        }
+        run(bump: &Bump, ptr: NonNull<u8>) {
+            unsafe { bump.as_allocator().deallocate(ptr, Layout::new::<u32>()) }
+        }
+    }
+
+    deallocate_fail {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
+            bump.as_allocator().allocate(Layout::new::<u32>()).unwrap();
+            run(&bump, ptr);
+        }
+        run(bump: &Bump, ptr: NonNull<u8>) {
+            unsafe { bump.as_allocator().deallocate(ptr, Layout::new::<u32>()) }
+        }
+    }
+
     warm_up {
         wrap(run) {
             run();
