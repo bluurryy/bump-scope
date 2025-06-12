@@ -76,7 +76,7 @@ Then run the benchmark with
 ```bash
 cargo bench --bench bench -- --save-summary=json
 ```
-and update the table above with
+and update the tables above with
 ```bash
 cargo run
 ```
