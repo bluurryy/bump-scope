@@ -6,7 +6,7 @@ This crate contains micro-benchmarks to compare `bump-scope`'s up- and downwards
 
 ## Results
 
-The benchmarks results in the table below are shown in the format "instruction count / branch count".
+The benchmarks results in the tables below are shown in the format "instruction count / branch count".
 
 ### Allocation
 
@@ -17,7 +17,7 @@ The `*_aligned` cases use a bump allocator with a sufficient minimum alignment f
 <!-- alloc table start -->
 
 | name                  | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
-|-----------------------|-----------------|-------------------|---------|-------------|
+| --------------------- | --------------- | ----------------- | ------- | ----------- |
 | alloc_u8              | 10 / 1          | 10 / 1            | 11 / 2  | 16 / 4      |
 | alloc_u32             | 14 / 1          | 11 / 1            | 15 / 3  | 18 / 4      |
 | alloc_u32_aligned     | 12 / 1          | 10 / 1            | 13 / 2  | 18 / 4 [^1] |
@@ -36,7 +36,7 @@ TODO: test allocator api with black boxed layout
 <!-- allocator_api table start -->
 
 | name                      | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
-|---------------------------|-----------------|-------------------|---------|-------------|
+| ------------------------- | --------------- | ----------------- | ------- | ----------- |
 | allocate                  | 15 / 2          | 13 / 2            | 13 / 3  | 16 / 4      |
 | grow_same_align           | 19 / 2          | 19 / 2            | 53 / 4  | 18 / 4      |
 | grow_smaller_align        | 19 / 2          | 18 / 2            | 53 / 4  | 18 / 4      |
@@ -58,7 +58,7 @@ TODO: test allocator api with black boxed layout
 <!-- misc table start -->
 
 | name    | bump-scope (up) | bump-scope (down) | bumpalo  | blink-alloc |
-|---------|-----------------|-------------------|----------|-------------|
+| ------- | --------------- | ----------------- | -------- | ----------- |
 | warm_up | 227 / 31        | 233 / 32          | 357 / 43 | 284 / 38    |
 | reset   | 26 / 2          | 25 / 2            | 23 / 2   | 26 / 3      |
 
