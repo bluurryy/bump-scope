@@ -69,7 +69,6 @@ const GROUP_NAMES: &[&str] = &[
     "alloc_u32_aligned",
     "try_alloc_u32",
     "try_alloc_u32_aligned",
-    "allocate_u32",
     "allocate",
     "grow_same_align",
     "grow_smaller_align",

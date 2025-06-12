@@ -340,23 +340,13 @@ benches! {
         }
     }
 
-    allocate_u32 {
+    allocate {
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump);
         }
         run(bump: &Bump) -> Result<NonNull<[u8]>, AllocError> {
             bump.as_allocator().allocate(Layout::new::<u32>())
-        }
-    }
-
-    allocate {
-        wrap(run) {
-            let bump = Bump::with_capacity(1024);
-            run(&bump, Layout::new::<u32>());
-        }
-        run(bump: &Bump, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-            bump.as_allocator().allocate(layout)
         }
     }
 

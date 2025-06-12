@@ -31,24 +31,21 @@ The `*_aligned` cases use a bump allocator with a sufficient minimum alignment f
 
 The following cases benchmark the `Allocator` trait implementations. 
 
-For these benchmarks the `Layout` is put through a [`std::hint::black_box`](https://doc.rust-lang.org/std/hint/fn.black_box.html) to inhibit optimizations that could be done on a statically known layout.
-
-TODO: show results without black box
+TODO: test allocator api with black boxed layout
 
 <!-- allocator_api table start -->
 
 | name                      | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
 |---------------------------|-----------------|-------------------|---------|-------------|
-| allocate_u32              | 15 / 2          | 13 / 2            | 13 / 3  | 16 / 4      |
-| allocate                  | 16 / 2          | 14 / 2            | 26 / 5  | 23 / 4      |
+| allocate                  | 15 / 2          | 13 / 2            | 13 / 3  | 16 / 4      |
 | grow_same_align           | 19 / 2          | 19 / 2            | 53 / 4  | 18 / 4      |
-| grow_smaller_align        | 19 / 2          | 19 / 2            | 53 / 4  | 18 / 4      |
+| grow_smaller_align        | 19 / 2          | 18 / 2            | 53 / 4  | 18 / 4      |
 | grow_larger_align         | 19 / 2          | 19 / 2            | 17 / 3  | 20 / 4      |
 | shrink_same_align [^2]    | 11 / 2          | 17 / 2            | 12 / 1  | 5 / 1       |
-| shrink_smaller_align [^2] | 11 / 2          | 17 / 2            | 10 / 1  | 5 / 1       |
-| shrink_larger_align [^2]  | 11 / 2          | 17 / 2            | 5 / 1   | 20 / 4      |
+| shrink_smaller_align [^2] | 11 / 2          | 17 / 2            | 12 / 1  | 5 / 1       |
+| shrink_larger_align [^2]  | 11 / 2          | 17 / 2            | 4 / 1   | 20 / 4      |
 | deallocate                | 6 / 1           | 6 / 1             | 7 / 1   | 6 / 2       |
-| deallocate_non_last       | 5 / 1           | 4 / 1             | 5 / 1   | 6 / 2       |
+| deallocate_non_last       | 4 / 1           | 4 / 1             | 5 / 1   | 6 / 2       |
 
 
 <!-- allocator_api table end -->
@@ -62,7 +59,7 @@ TODO: show results without black box
 
 | name    | bump-scope (up) | bump-scope (down) | bumpalo  | blink-alloc |
 |---------|-----------------|-------------------|----------|-------------|
-| warm_up | 227 / 31        | 233 / 32          | 358 / 43 | 284 / 38    |
+| warm_up | 227 / 31        | 233 / 32          | 357 / 43 | 284 / 38    |
 | reset   | 26 / 2          | 25 / 2            | 23 / 2   | 26 / 3      |
 
 
