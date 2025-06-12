@@ -1,5 +1,6 @@
 use std::{fmt::Write, path::Path};
 
+use glob_match::glob_match;
 use markdown_tables::MarkdownTableRow;
 
 use crate::schema::{BenchmarkSummary, EitherOrBothForUint64};
@@ -87,14 +88,20 @@ const LIBRARY_NAMES: &[&str] = &["bump_scope_up", "bump_scope_down", "bumpalo", 
 const FOOTNOTES_GROUP: &[(&str, usize)] = &[("shrink_*", 2)];
 const FOOTNOTES_LIBRARY: &[(&str, usize)] = &[("*_aligned/blink_alloc", 1)];
 
-fn patch_readme(table: &str) {
+const SECTIONS: &[(&str, &[&str])] = &[
+    ("alloc", &["*alloc_*"]),
+    ("allocator_api", &["allocate*", "grow*", "shrink*", "deallocate*"]),
+    ("misc", &["warm_up", "reset"]),
+];
+
+fn patch_readme(section: &str, table: &str) {
     let readme = std::fs::read_to_string("README.md").unwrap();
 
-    let start_marker = "<!-- table start -->";
-    let end_marker = "<!-- table end -->";
+    let start_marker = format!("<!-- {section} table start -->");
+    let end_marker = format!("<!-- {section} table end -->");
 
-    let start_index = readme.find(start_marker).unwrap() + start_marker.len();
-    let end_index = readme[start_index..].find(end_marker).unwrap() + start_index;
+    let start_index = readme.find(&start_marker).unwrap() + start_marker.len();
+    let end_index = readme[start_index..].find(&end_marker).unwrap() + start_index;
 
     let before = &readme[..start_index];
     let after = &readme[end_index..];
@@ -103,14 +110,14 @@ fn patch_readme(table: &str) {
     std::fs::write("README.md", new_readme).unwrap();
 }
 
-fn main() {
+fn rows() -> Vec<Vec<String>> {
     let mut rows = vec![];
 
     for &group in GROUP_NAMES {
         let mut group_label = group.to_string();
 
         for (glob, i) in FOOTNOTES_GROUP {
-            if glob_match::glob_match(glob, group) {
+            if glob_match(glob, group) {
                 group_label.write_fmt(format_args!(" [^{i}]")).unwrap();
             }
         }
@@ -130,7 +137,7 @@ fn main() {
             let group_and_library = format!("{group}/{library}");
 
             for (glob, i) in FOOTNOTES_LIBRARY {
-                if glob_match::glob_match(glob, &group_and_library) {
+                if glob_match(glob, &group_and_library) {
                     cell.write_fmt(format_args!(" [^{i}]")).unwrap();
                 }
             }
@@ -138,10 +145,36 @@ fn main() {
             row.push(cell);
         }
 
-        rows.push(Row(row));
+        rows.push(row);
     }
 
-    let table = markdown_tables::as_table(&rows);
-    println!("{table}");
-    patch_readme(&table);
+    rows
+}
+
+fn globs_match(globs: &[&str], path: &str) -> bool {
+    for glob in globs {
+        if glob_match(glob, path) {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn main() {
+    let all_rows = rows();
+
+    for (section, section_globs) in SECTIONS {
+        let mut rows = vec![];
+
+        for row in &all_rows {
+            if globs_match(section_globs, &row[0]) {
+                rows.push(Row(row.clone()));
+            }
+        }
+
+        let table = markdown_tables::as_table(&rows);
+        println!("{section}: {table}");
+        patch_readme(section, &table);
+    }
 }
