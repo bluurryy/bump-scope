@@ -437,7 +437,7 @@ benches! {
         }
     }
 
-    deallocate_fail {
+    deallocate_non_last {
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();

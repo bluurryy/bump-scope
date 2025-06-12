@@ -33,6 +33,8 @@ The following cases benchmark the `Allocator` trait implementations.
 
 For these benchmarks the `Layout` is put through a [`std::hint::black_box`](https://doc.rust-lang.org/std/hint/fn.black_box.html) to inhibit optimizations that could be done on a statically known layout.
 
+TODO: show results without black box
+
 <!-- allocator_api table start -->
 
 | name                      | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
@@ -43,10 +45,10 @@ For these benchmarks the `Layout` is put through a [`std::hint::black_box`](http
 | grow_smaller_align        | 19 / 2          | 19 / 2            | 53 / 4  | 18 / 4      |
 | grow_larger_align         | 19 / 2          | 19 / 2            | 17 / 3  | 20 / 4      |
 | shrink_same_align [^2]    | 11 / 2          | 17 / 2            | 12 / 1  | 5 / 1       |
-| shrink_smaller_align [^2] | 11 / 2          | 17 / 2            | 12 / 1  | 5 / 1       |
+| shrink_smaller_align [^2] | 11 / 2          | 17 / 2            | 10 / 1  | 5 / 1       |
 | shrink_larger_align [^2]  | 11 / 2          | 17 / 2            | 5 / 1   | 20 / 4      |
-| deallocate                | 5 / 1           | 6 / 1             | 7 / 1   | 6 / 2       |
-| deallocate_fail           | 5 / 1           | 4 / 1             | 4 / 1   | 6 / 2       |
+| deallocate                | 6 / 1           | 6 / 1             | 7 / 1   | 6 / 2       |
+| deallocate_non_last       | 5 / 1           | 4 / 1             | 5 / 1   | 6 / 2       |
 
 
 <!-- allocator_api table end -->

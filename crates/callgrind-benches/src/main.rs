@@ -78,7 +78,7 @@ const GROUP_NAMES: &[&str] = &[
     "shrink_smaller_align",
     "shrink_larger_align",
     "deallocate",
-    "deallocate_fail",
+    "deallocate_non_last",
     "warm_up",
     "reset",
 ];
