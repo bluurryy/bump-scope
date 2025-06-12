@@ -274,15 +274,15 @@ where
         Ok(non_null::slice_from_raw_parts(old_ptr, new_layout.size()))
     } else {
         let old_addr = non_null::addr(old_ptr);
-        let old_addr_old_end = NonZeroUsize::new_unchecked(old_addr.get() + old_layout.size());
+        let old_end_addr = NonZeroUsize::new_unchecked(old_addr.get() + old_layout.size());
 
-        let new_addr = bump_down(old_addr_old_end, new_layout.size(), new_layout.align().max(MIN_ALIGN));
+        let new_addr = bump_down(old_end_addr, new_layout.size(), new_layout.align().max(MIN_ALIGN));
         let new_addr = NonZeroUsize::new_unchecked(new_addr);
-        let old_addr_new_end = NonZeroUsize::new_unchecked(old_addr.get() + new_layout.size());
-
         let new_ptr = non_null::with_addr(old_ptr, new_addr);
 
-        let overlaps = old_addr_new_end > new_addr;
+        let copy_src_end = NonZeroUsize::new_unchecked(old_addr.get() + new_layout.size());
+        let copy_dst_start = new_addr;
+        let overlaps = copy_src_end > copy_dst_start;
 
         if overlaps {
             non_null::copy(old_ptr, new_ptr, new_layout.size());
