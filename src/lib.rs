@@ -92,7 +92,7 @@
 //! - `Bump`'s base allocator is generic.
 //! - Won't try to allocate a smaller chunk if allocation failed.
 //! - No built-in allocation limit. You can provide an allocator that enforces an allocation limit (see `tests/limit_memory_usage.rs`).
-//! - Allocations are a tiny bit more optimized. (see [`bump-scope-inspect-asm/out/x86-64`](https://github.com/bluurryy/bump-scope-inspect-asm/tree/main/out/x86-64) and [benchmarks](https://bluurryy.github.io/bump-scope/criterion/report/))
+//! - Allocations are a tiny bit more optimized. See [./crates/callgrind-benches/README.md](https://github.com/bluurryy/bump-scope/tree/callgrind-benches/crates/callgrind-benches).
 //! - [You can choose the bump direction.](#bumping-upwards-or-downwards) Bumps upwards by default.
 //!
 //! # Allocator Methods
