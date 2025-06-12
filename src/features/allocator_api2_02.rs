@@ -23,18 +23,22 @@ use crate::BaseAllocator;
 #[cfg(feature = "alloc")]
 #[cfg(not(feature = "nightly-allocator-api"))]
 unsafe impl CrateAllocator for Global {
+    #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, CrateAllocError> {
         <Self as Allocator>::allocate(self, layout).map_err(Into::into)
     }
 
+    #[inline(always)]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
         <Self as Allocator>::deallocate(self, ptr, layout);
     }
 
+    #[inline(always)]
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, CrateAllocError> {
         <Self as Allocator>::allocate_zeroed(self, layout).map_err(Into::into)
     }
 
+    #[inline(always)]
     unsafe fn grow(
         &self,
         ptr: NonNull<u8>,
@@ -44,6 +48,7 @@ unsafe impl CrateAllocator for Global {
         <Self as Allocator>::grow(self, ptr, old_layout, new_layout).map_err(Into::into)
     }
 
+    #[inline(always)]
     unsafe fn grow_zeroed(
         &self,
         ptr: NonNull<u8>,
@@ -53,6 +58,7 @@ unsafe impl CrateAllocator for Global {
         <Self as Allocator>::grow_zeroed(self, ptr, old_layout, new_layout).map_err(Into::into)
     }
 
+    #[inline(always)]
     unsafe fn shrink(
         &self,
         ptr: NonNull<u8>,
@@ -62,6 +68,7 @@ unsafe impl CrateAllocator for Global {
         <Self as Allocator>::shrink(self, ptr, old_layout, new_layout).map_err(Into::into)
     }
 
+    #[inline(always)]
     fn by_ref(&self) -> &Self
     where
         Self: Sized,
@@ -107,11 +114,13 @@ unsafe impl CrateAllocator for Global {
 pub struct AllocatorApi2V02Compat<A: ?Sized>(pub A);
 
 impl<A: ?Sized> AllocatorApi2V02Compat<A> {
+    #[inline(always)]
     #[allow(missing_docs)]
     pub fn from_ref(allocator: &A) -> &Self {
         unsafe { &*(polyfill::ptr::from_ref(allocator) as *const Self) }
     }
 
+    #[inline(always)]
     #[allow(missing_docs)]
     pub fn from_mut(allocator: &mut A) -> &mut Self {
         unsafe { &mut *(polyfill::ptr::from_mut(allocator) as *mut Self) }
@@ -119,18 +128,22 @@ impl<A: ?Sized> AllocatorApi2V02Compat<A> {
 }
 
 unsafe impl<A: ?Sized + Allocator> CrateAllocator for AllocatorApi2V02Compat<A> {
+    #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, CrateAllocError> {
         <A as Allocator>::allocate(&self.0, layout).map_err(Into::into)
     }
 
+    #[inline(always)]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
         <A as Allocator>::deallocate(&self.0, ptr, layout);
     }
 
+    #[inline(always)]
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, CrateAllocError> {
         <A as Allocator>::allocate_zeroed(&self.0, layout).map_err(Into::into)
     }
 
+    #[inline(always)]
     unsafe fn grow(
         &self,
         ptr: NonNull<u8>,
@@ -140,6 +153,7 @@ unsafe impl<A: ?Sized + Allocator> CrateAllocator for AllocatorApi2V02Compat<A> 
         <A as Allocator>::grow(&self.0, ptr, old_layout, new_layout).map_err(Into::into)
     }
 
+    #[inline(always)]
     unsafe fn grow_zeroed(
         &self,
         ptr: NonNull<u8>,
@@ -149,6 +163,7 @@ unsafe impl<A: ?Sized + Allocator> CrateAllocator for AllocatorApi2V02Compat<A> 
         <A as Allocator>::grow_zeroed(&self.0, ptr, old_layout, new_layout).map_err(Into::into)
     }
 
+    #[inline(always)]
     unsafe fn shrink(
         &self,
         ptr: NonNull<u8>,
@@ -158,6 +173,7 @@ unsafe impl<A: ?Sized + Allocator> CrateAllocator for AllocatorApi2V02Compat<A> 
         <A as Allocator>::shrink(&self.0, ptr, old_layout, new_layout).map_err(Into::into)
     }
 
+    #[inline(always)]
     fn by_ref(&self) -> &Self
     where
         Self: Sized,
@@ -167,22 +183,27 @@ unsafe impl<A: ?Sized + Allocator> CrateAllocator for AllocatorApi2V02Compat<A> 
 }
 
 unsafe impl<A: ?Sized + CrateAllocator> Allocator for AllocatorApi2V02Compat<A> {
+    #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         <A as CrateAllocator>::allocate(&self.0, layout).map_err(Into::into)
     }
 
+    #[inline(always)]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
         <A as CrateAllocator>::deallocate(&self.0, ptr, layout);
     }
 
+    #[inline(always)]
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         <A as CrateAllocator>::allocate_zeroed(&self.0, layout).map_err(Into::into)
     }
 
+    #[inline(always)]
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         <A as CrateAllocator>::grow(&self.0, ptr, old_layout, new_layout).map_err(Into::into)
     }
 
+    #[inline(always)]
     unsafe fn grow_zeroed(
         &self,
         ptr: NonNull<u8>,
@@ -192,10 +213,12 @@ unsafe impl<A: ?Sized + CrateAllocator> Allocator for AllocatorApi2V02Compat<A> 
         <A as CrateAllocator>::grow_zeroed(&self.0, ptr, old_layout, new_layout).map_err(Into::into)
     }
 
+    #[inline(always)]
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         <A as CrateAllocator>::shrink(&self.0, ptr, old_layout, new_layout).map_err(Into::into)
     }
 
+    #[inline(always)]
     fn by_ref(&self) -> &Self
     where
         Self: Sized,
@@ -206,6 +229,7 @@ unsafe impl<A: ?Sized + CrateAllocator> Allocator for AllocatorApi2V02Compat<A> 
 
 #[cfg(not(feature = "nightly-allocator-api"))]
 impl From<AllocError> for CrateAllocError {
+    #[inline(always)]
     fn from(_: AllocError) -> Self {
         CrateAllocError
     }
@@ -213,6 +237,7 @@ impl From<AllocError> for CrateAllocError {
 
 #[cfg(not(feature = "nightly-allocator-api"))]
 impl From<CrateAllocError> for AllocError {
+    #[inline(always)]
     fn from(_: CrateAllocError) -> Self {
         AllocError
     }

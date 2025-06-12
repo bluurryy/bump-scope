@@ -9,7 +9,7 @@ use core::{
 };
 
 use crate::{
-    alloc::AllocError,
+    alloc::{AllocError, Allocator},
     bump_common_methods,
     chunk_size::ChunkSize,
     owned_slice::OwnedSlice,
@@ -261,6 +261,80 @@ where
     #[inline(always)]
     fn default() -> Self {
         Self::new_in(Default::default())
+    }
+}
+
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
+    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+    #[inline(always)]
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        self.as_scope().allocate(layout)
+    }
+
+    #[inline(always)]
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        self.as_scope().deallocate(ptr, layout);
+    }
+
+    #[inline(always)]
+    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        self.as_scope().grow(ptr, old_layout, new_layout)
+    }
+
+    #[inline(always)]
+    unsafe fn grow_zeroed(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> {
+        self.as_scope().grow_zeroed(ptr, old_layout, new_layout)
+    }
+
+    #[inline(always)]
+    unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        self.as_scope().shrink(ptr, old_layout, new_layout)
+    }
+}
+
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
+    for &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+    #[inline(always)]
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        Bump::allocate(self, layout)
+    }
+
+    #[inline(always)]
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        Bump::deallocate(self, ptr, layout);
+    }
+
+    #[inline(always)]
+    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        Bump::grow(self, ptr, old_layout, new_layout)
+    }
+
+    #[inline(always)]
+    unsafe fn grow_zeroed(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> {
+        Bump::grow_zeroed(self, ptr, old_layout, new_layout)
+    }
+
+    #[inline(always)]
+    unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        Bump::shrink(self, ptr, old_layout, new_layout)
     }
 }
 
