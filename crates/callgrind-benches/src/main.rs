@@ -167,7 +167,7 @@ fn merge_try_prefixed(rows: &mut Vec<Vec<String>>) {
             && let Some(unprefixed_i) = rows.iter().position(|row| row[0] == unprefixed_name)
             && rows[i][1..].iter().eq(&rows[unprefixed_i][1..])
         {
-            rows[unprefixed_i][0] = format!("(try_){unprefixed_name}");
+            rows[unprefixed_i][0] = format!("(try_) {unprefixed_name}");
             rows.remove(i);
         }
     }

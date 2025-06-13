@@ -16,11 +16,11 @@ The `*_aligned` cases use a bump allocator with a sufficient minimum alignment f
 
 <!-- alloc table start -->
 
-| name                    | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
-|-------------------------|-----------------|-------------------|---------|-------------|
-| alloc_u8                | 10 / 1          | 10 / 1            | 11 / 2  | 16 / 4      |
-| (try_)alloc_u32         | 14 / 1          | 11 / 1            | 15 / 3  | 18 / 4      |
-| (try_)alloc_u32_aligned | 12 / 1          | 10 / 1            | 13 / 2  | 18 / 4 [^1] |
+| name                     | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
+|--------------------------|-----------------|-------------------|---------|-------------|
+| alloc_u8                 | 10 / 1          | 10 / 1            | 11 / 2  | 16 / 4      |
+| (try_) alloc_u32         | 14 / 1          | 11 / 1            | 15 / 3  | 18 / 4      |
+| (try_) alloc_u32_aligned | 12 / 1          | 10 / 1            | 13 / 2  | 18 / 4 [^1] |
 
 
 <!-- alloc table end -->
