@@ -21,6 +21,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
 
 [[package]]
+name = "benches-lib"
+version = "0.0.0"
+dependencies = [
+ "allocator-api2 0.2.21",
+ "blink-alloc",
+ "bump-scope",
+ "bumpalo",
+ "paste",
+]
+
+[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -63,6 +74,7 @@ name = "callgrind-benches"
 version = "0.0.0"
 dependencies = [
  "allocator-api2 0.2.21",
+ "benches-lib",
  "blink-alloc",
  "bump-scope",
  "bumpalo",
