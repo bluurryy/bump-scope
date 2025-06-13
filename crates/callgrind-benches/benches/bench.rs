@@ -8,7 +8,7 @@ macro_rules! benches_library {
 
             )]
             pub fn $library() {
-                benches_lib::[<bench_ $name _ $library>]();
+                benches_lib::[<bench_ $name _ $library>](benches_lib::[<entry_bench_ $name _ $library>]);
             }
         }
     };

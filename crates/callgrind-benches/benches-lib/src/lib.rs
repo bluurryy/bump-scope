@@ -215,33 +215,33 @@ macro_rules! benches_library {
 
                 #[inline(never)]
                 #[unsafe(no_mangle)]
-                pub fn [<entry_bench_ $name _ $library>]($($param: $param_ty),*)  $(-> $ret)? {
+                pub fn [<entry_bench_ $name _ $library>]($($param: $param_ty),*) $(-> $ret)? {
                     $($run)*
                 }
 
                 #[inline(never)]
                 pub(crate) fn wrap(
-                    $run_f: fn($($param_ty),*)
+                    $run_f: impl Fn($($param_ty),*)
                 ) {
                     $($wrap)*
                 }
+
+                #[inline(never)]
+                #[unsafe(no_mangle)]
+                pub fn [<bench_ $name _ $library>](f: fn($($param_ty),*) $(-> $ret)?) {
+                    #[allow(unused_imports)]
+                    use crate::wrapper::$library::Bump;
+                    #[allow(unused_imports)]
+                    use crate::*;
+
+                    [<$name _ $library _impl>]::wrap(|$($param: $param_ty),*| {
+                        _ = std::hint::black_box(f($(std::hint::black_box($param)),*));
+                    });
+                }
             }
 
-            #[doc(inline)]
             pub use [<$name _ $library _impl>]::[<entry_bench_ $name _ $library>];
-
-            #[inline(never)]
-            #[unsafe(no_mangle)]
-            pub fn [<bench_ $name _ $library>]() {
-                #[allow(unused_imports)]
-                use crate::wrapper::$library::Bump;
-                #[allow(unused_imports)]
-                use crate::*;
-
-                [<$name _ $library _impl>]::wrap(|$($param: $param_ty),*| {
-                    _ = std::hint::black_box([<entry_bench_ $name _ $library>]($(std::hint::black_box($param)),*));
-                });
-            }
+            pub use [<$name _ $library _impl>]::[<bench_ $name _ $library>];
         }
     };
 }
