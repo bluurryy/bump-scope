@@ -2,9 +2,6 @@
 name = "benches-lib"
 edition = "2024"
 
-[lib]
-crate-type = ["dylib"]
-
 [dependencies]
 allocator-api2 = "0.2"
 blink-alloc = "0.3.1"
