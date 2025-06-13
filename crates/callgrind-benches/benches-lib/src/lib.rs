@@ -249,6 +249,9 @@ macro_rules! benches {
     ($($name:ident { $($content:tt)* })*) => {
         paste::paste! {
             $(
+                // just for language server coloring
+                mod $name {}
+
                 benches_library! {
                     bump_scope_up $name { $($content)* }
                 }
