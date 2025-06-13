@@ -439,6 +439,105 @@ benches! {
         }
     }
 
+    black_box_allocate {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            run(&bump, Layout::new::<u32>());
+        }
+        run(bump: &Bump, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+            bump.as_allocator().allocate(layout)
+        }
+    }
+
+    black_box_grow_same_align {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
+            run(&bump, ptr, Layout::new::<u32>(), Layout::new::<[u32; 2]>());
+        }
+        run(bump: &Bump, ptr: NonNull<u8>, old: Layout, new: Layout) ->  Result<NonNull<[u8]>, AllocError> {
+            unsafe { bump.as_allocator().grow(ptr, old, new) }
+        }
+    }
+
+    black_box_grow_smaller_align {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
+            run(&bump, ptr, Layout::new::<u32>(), Layout::new::<[u16; 4]>());
+        }
+        run(bump: &Bump, ptr: NonNull<u8>, old: Layout, new: Layout) ->  Result<NonNull<[u8]>, AllocError> {
+            unsafe { bump.as_allocator().grow(ptr, old, new) }
+        }
+    }
+
+    black_box_grow_larger_align {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
+            run(&bump, ptr, Layout::new::<u32>(), Layout::new::<u64>());
+        }
+        run(bump: &Bump, ptr: NonNull<u8>, old: Layout, new: Layout) ->  Result<NonNull<[u8]>, AllocError> {
+            unsafe { bump.as_allocator().grow(ptr, old, new) }
+        }
+    }
+
+    black_box_shrink_same_align {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            let ptr = bump.as_allocator().allocate(Layout::new::<[u32; 2]>()).unwrap().cast::<u8>();
+            run(&bump, ptr, Layout::new::<[u32; 2]>(), Layout::new::<u32>());
+        }
+        run(bump: &Bump, ptr: NonNull<u8>, old: Layout, new: Layout) ->  Result<NonNull<[u8]>, AllocError> {
+            unsafe { bump.as_allocator().shrink(ptr, old, new) }
+        }
+    }
+
+    black_box_shrink_smaller_align {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
+            run(&bump, ptr, Layout::new::<u32>(), Layout::new::<u16>());
+        }
+        run(bump: &Bump, ptr: NonNull<u8>, old: Layout, new: Layout) ->  Result<NonNull<[u8]>, AllocError> {
+            unsafe { bump.as_allocator().shrink(ptr, old, new) }
+        }
+    }
+
+    black_box_shrink_larger_align {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            let ptr = bump.as_allocator().allocate(Layout::new::<[u16; 4]>()).unwrap().cast::<u8>();
+            run(&bump, ptr, Layout::new::<[u16; 4]>(), Layout::new::<u32>());
+        }
+        run(bump: &Bump, ptr: NonNull<u8>, old: Layout, new: Layout) ->  Result<NonNull<[u8]>, AllocError> {
+            unsafe { bump.as_allocator().shrink(ptr, old, new) }
+        }
+    }
+
+    black_box_deallocate {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
+            run(&bump, ptr, Layout::new::<u32>());
+        }
+        run(bump: &Bump, ptr: NonNull<u8>, layout: Layout) {
+            unsafe { bump.as_allocator().deallocate(ptr, layout) }
+        }
+    }
+
+    black_box_deallocate_non_last {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
+            bump.as_allocator().allocate(Layout::new::<u32>()).unwrap();
+            run(&bump, ptr, Layout::new::<u32>());
+        }
+        run(bump: &Bump, ptr: NonNull<u8>, layout: Layout) {
+            unsafe { bump.as_allocator().deallocate(ptr, layout) }
+        }
+    }
+
     warm_up {
         wrap(run) {
             run();

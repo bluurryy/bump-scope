@@ -78,6 +78,15 @@ const GROUP_NAMES: &[&str] = &[
     "shrink_larger_align",
     "deallocate",
     "deallocate_non_last",
+    "black_box_allocate",
+    "black_box_grow_same_align",
+    "black_box_grow_smaller_align",
+    "black_box_grow_larger_align",
+    "black_box_shrink_same_align",
+    "black_box_shrink_smaller_align",
+    "black_box_shrink_larger_align",
+    "black_box_deallocate",
+    "black_box_deallocate_non_last",
     "warm_up",
     "reset",
 ];
@@ -90,6 +99,15 @@ const FOOTNOTES_LIBRARY: &[(&str, usize)] = &[("*_aligned/blink_alloc", 1)];
 const SECTIONS: &[(&str, &[&str])] = &[
     ("alloc", &["*alloc_*"]),
     ("allocator_api", &["allocate*", "grow*", "shrink*", "deallocate*"]),
+    (
+        "black_box_allocator_api",
+        &[
+            "black_box_allocate*",
+            "black_box_grow*",
+            "black_box_shrink*",
+            "black_box_deallocate*",
+        ],
+    ),
     ("misc", &["warm_up", "reset"]),
 ];
 

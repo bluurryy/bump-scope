@@ -37,16 +37,33 @@ TODO: test allocator api with black boxed layout
 |---------------------------|-----------------|-------------------|---------|-------------|
 | allocate                  | 15 / 2          | 13 / 2            | 13 / 3  | 16 / 4      |
 | grow_same_align           | 19 / 2          | 19 / 2            | 53 / 4  | 18 / 4      |
-| grow_smaller_align        | 19 / 2          | 18 / 2            | 53 / 4  | 18 / 4      |
+| grow_smaller_align        | 19 / 2          | 19 / 2            | 53 / 4  | 18 / 4      |
 | grow_larger_align         | 19 / 2          | 19 / 2            | 17 / 3  | 20 / 4      |
 | shrink_same_align [^2]    | 11 / 2          | 17 / 2            | 12 / 1  | 5 / 1       |
 | shrink_smaller_align [^2] | 11 / 2          | 17 / 2            | 12 / 1  | 5 / 1       |
-| shrink_larger_align [^2]  | 11 / 2          | 17 / 2            | 4 / 1   | 20 / 4      |
+| shrink_larger_align [^2]  | 11 / 2          | 17 / 2            | 5 / 1   | 20 / 4      |
 | deallocate                | 6 / 1           | 6 / 1             | 7 / 1   | 6 / 2       |
-| deallocate_non_last       | 4 / 1           | 4 / 1             | 5 / 1   | 6 / 2       |
+| deallocate_non_last       | 4 / 1           | 4 / 1             | 5 / 1   | —           |
 
 
 <!-- allocator_api table end -->
+
+<!-- black_box_allocator_api table start -->
+
+| name                           | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
+|--------------------------------|-----------------|-------------------|---------|-------------|
+| black_box_allocate             | 16 / 2          | 14 / 2            | 26 / 5  | 23 / 4      |
+| black_box_grow_same_align      | 25 / 2          | 53 / 7            | 99 / 11 | 31 / 6      |
+| black_box_grow_smaller_align   | —               | 53 / 7            | 99 / 11 | —           |
+| black_box_grow_larger_align    | 25 / 2          | 53 / 7            | 63 / 10 | —           |
+| black_box_shrink_same_align    | 13 / 2          | 47 / 7            | 45 / 7  | 23 / 3      |
+| black_box_shrink_smaller_align | —               | 50 / 9            | 48 / 9  | 23 / 3      |
+| black_box_shrink_larger_align  | 13 / 2          | 47 / 7            | 15 / 2  | —           |
+| black_box_deallocate           | 6 / 1           | 6 / 1             | 7 / 1   | 6 / 2       |
+| black_box_deallocate_non_last  | 5 / 1           | 4 / 1             | 4 / 1   | —           |
+
+
+<!-- black_box_allocator_api table end -->
 
 ### Miscellaneous
 
@@ -57,7 +74,7 @@ TODO: test allocator api with black boxed layout
 
 | name    | bump-scope (up) | bump-scope (down) | bumpalo  | blink-alloc |
 |---------|-----------------|-------------------|----------|-------------|
-| warm_up | 227 / 31        | 233 / 32          | 357 / 43 | 284 / 38    |
+| warm_up | 227 / 31        | 233 / 32          | 357 / 43 | 283 / 38    |
 | reset   | 26 / 2          | 25 / 2            | 23 / 2   | 26 / 3      |
 
 
