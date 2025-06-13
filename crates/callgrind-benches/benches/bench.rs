@@ -66,10 +66,16 @@ macro_rules! benches {
 
 benches! {
     alloc_u8
+
     alloc_u32
     alloc_u32_aligned
     try_alloc_u32
     try_alloc_u32_aligned
+
+    alloc_big_struct
+    alloc_big_struct_aligned
+    try_alloc_big_struct
+    try_alloc_big_struct_aligned
 
     allocate
     grow_same_align

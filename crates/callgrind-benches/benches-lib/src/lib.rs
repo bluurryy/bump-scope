@@ -272,6 +272,14 @@ macro_rules! benches {
     };
 }
 
+pub struct BigStruct(#[expect(dead_code)] [u64; 7]);
+
+impl BigStruct {
+    fn new() -> Self {
+        Self([0; 7])
+    }
+}
+
 benches! {
     alloc_u8 {
         wrap(run) {
@@ -319,6 +327,46 @@ benches! {
             run(&bump, 42);
         }
         run(bump: &Bump::<4>, value: u32) -> Option<&u32> {
+            bump.try_alloc(value)
+        }
+    }
+
+    alloc_big_struct {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            run(&bump, BigStruct::new());
+        }
+        run(bump: &Bump, value: BigStruct) -> &BigStruct {
+            bump.alloc(value)
+        }
+    }
+
+    alloc_big_struct_aligned {
+        wrap(run) {
+            let bump = Bump::<8>::with_capacity(1024);
+            run(&bump, BigStruct::new());
+        }
+        run(bump: &Bump::<8>, value: BigStruct) -> &BigStruct {
+            bump.alloc(value)
+        }
+    }
+
+    try_alloc_big_struct {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            run(&bump, BigStruct::new());
+        }
+        run(bump: &Bump, value: BigStruct) -> Option<&BigStruct> {
+            bump.try_alloc(value)
+        }
+    }
+
+    try_alloc_big_struct_aligned {
+        wrap(run) {
+            let bump = Bump::<8>::with_capacity(1024);
+            run(&bump, BigStruct::new());
+        }
+        run(bump: &Bump::<8>, value: BigStruct) -> Option<&BigStruct> {
             bump.try_alloc(value)
         }
     }

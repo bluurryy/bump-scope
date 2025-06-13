@@ -65,10 +65,17 @@ impl MarkdownTableRow for Row {
 
 const GROUP_NAMES: &[&str] = &[
     "alloc_u8",
+    //
     "alloc_u32",
     "alloc_u32_aligned",
     "try_alloc_u32",
     "try_alloc_u32_aligned",
+    //
+    "alloc_big_struct",
+    "alloc_big_struct_aligned",
+    "try_alloc_big_struct",
+    "try_alloc_big_struct_aligned",
+    //
     "allocate",
     "grow_same_align",
     "grow_smaller_align",
@@ -78,6 +85,7 @@ const GROUP_NAMES: &[&str] = &[
     "shrink_larger_align",
     "deallocate",
     "deallocate_non_last",
+    //
     "black_box_allocate",
     "black_box_grow_same_align",
     "black_box_grow_smaller_align",
@@ -87,6 +95,7 @@ const GROUP_NAMES: &[&str] = &[
     "black_box_shrink_larger_align",
     "black_box_deallocate",
     "black_box_deallocate_non_last",
+    //
     "warm_up",
     "reset",
 ];

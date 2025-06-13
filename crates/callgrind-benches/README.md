@@ -16,11 +16,13 @@ The `*_aligned` cases use a bump allocator with a sufficient minimum alignment f
 
 <!-- alloc table start -->
 
-| name                     | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
-|--------------------------|-----------------|-------------------|---------|-------------|
-| alloc_u8                 | 10 / 1          | 10 / 1            | 11 / 2  | 16 / 4      |
-| (try_) alloc_u32         | 14 / 1          | 11 / 1            | 15 / 3  | 18 / 4      |
-| (try_) alloc_u32_aligned | 12 / 1          | 10 / 1            | 13 / 2  | 18 / 4 [^1] |
+| name                            | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
+|---------------------------------|-----------------|-------------------|---------|-------------|
+| alloc_u8                        | 10 / 1          | 10 / 1            | 11 / 2  | 16 / 4      |
+| (try_) alloc_u32                | 14 / 1          | 11 / 1            | 15 / 3  | 18 / 4      |
+| (try_) alloc_u32_aligned        | 12 / 1          | 10 / 1            | 13 / 2  | — [^1]      |
+| (try_) alloc_big_struct         | 21 / 1          | 20 / 1            | 22 / 3  | 25 / 4      |
+| (try_) alloc_big_struct_aligned | 19 / 1          | 19 / 1            | 20 / 2  | — [^1]      |
 
 
 <!-- alloc table end -->
@@ -57,7 +59,7 @@ allocator api function call is not inlined then the result looks like this:
 |-------------------------------------|-----------------|-------------------|---------|-------------|
 | black_box_allocate                  | 16 / 2          | 14 / 2            | 26 / 5  | 23 / 4      |
 | black_box_grow_same_align           | 25 / 2          | 53 / 7            | 99 / 11 | 31 / 6      |
-| black_box_grow_smaller_align        | 25 / 2          | 53 / 7            | 99 / 11 | 31 / 6      |
+| black_box_grow_smaller_align        | 25 / 2          | 53 / 7            | 99 / 11 | —           |
 | black_box_grow_larger_align         | 25 / 2          | 53 / 7            | 63 / 10 | 57 / 9      |
 | black_box_shrink_same_align [^2]    | 13 / 2          | 47 / 7            | 45 / 7  | 23 / 3      |
 | black_box_shrink_smaller_align [^2] | 13 / 2          | 50 / 9            | 48 / 9  | 23 / 3      |
