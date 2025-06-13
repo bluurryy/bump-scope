@@ -137,7 +137,7 @@ fn patch_readme(section: &str, table: &str) {
     let before = &readme[..start_index];
     let after = &readme[end_index..];
 
-    let new_readme = format!("{before}\n\n{table}\n\n{after}");
+    let new_readme = format!("{before}\n\n{table}\n{after}");
     std::fs::write("README.md", new_readme).unwrap();
 }
 
