@@ -53,7 +53,7 @@ The following cases benchmark the `Allocator` trait implementations.
 <!-- allocator_api table end -->
 
 The allocator api benchmarks above use a statically known `Layout`. If the layout is not statically known for instance if the
-allocator api function call is not inlined then the result looks like this:
+allocator api function call is not inlined then the compiler can do less optimizations:
 
 <!-- black_box_allocator_api table start -->
 
