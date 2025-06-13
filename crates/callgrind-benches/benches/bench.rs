@@ -3,7 +3,7 @@ macro_rules! benches_library {
         paste::paste! {
              #[::iai_callgrind::library_benchmark(
                 config = ::iai_callgrind::LibraryBenchmarkConfig::default()
-                    .entry_point(concat!("benches_lib::bench_", stringify!($name), "::", stringify!($library), "_impl::run").to_owned())
+                    .entry_point(concat!("bench_", stringify!($name), "_", stringify!($library)).to_owned())
                     .callgrind_args(["branch-sim=yes"])
 
             )]

@@ -214,7 +214,8 @@ macro_rules! benches_library {
                 use crate::*;
 
                 #[inline(never)]
-                pub fn run($($param: $param_ty),*)  $(-> $ret)? {
+                #[unsafe(no_mangle)]
+                pub fn [<bench_ $name _ $library>]($($param: $param_ty),*)  $(-> $ret)? {
                     $($run)*
                 }
 
@@ -233,7 +234,7 @@ macro_rules! benches_library {
                 use crate::*;
 
                 [<$library _impl>]::wrap(|$($param: $param_ty),*| {
-                    _ = std::hint::black_box([<$library _impl>]::run($(std::hint::black_box($param)),*));
+                    _ = std::hint::black_box([<$library _impl>]::[<bench_ $name _ $library>]($(std::hint::black_box($param)),*));
                 });
             }
         }
