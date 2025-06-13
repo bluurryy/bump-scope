@@ -207,7 +207,7 @@ macro_rules! benches_library {
         }
     ) => {
         paste::paste! {
-            pub mod [<$library _impl>] {
+            mod [<$name _ $library _impl>] {
                 #[allow(unused_imports)]
                 use crate::wrapper::$library::Bump;
                 #[allow(unused_imports)]
@@ -215,26 +215,31 @@ macro_rules! benches_library {
 
                 #[inline(never)]
                 #[unsafe(no_mangle)]
-                pub fn [<bench_ $name _ $library>]($($param: $param_ty),*)  $(-> $ret)? {
+                pub fn [<entry_bench_ $name _ $library>]($($param: $param_ty),*)  $(-> $ret)? {
                     $($run)*
                 }
 
                 #[inline(never)]
-                pub fn wrap(
+                pub(crate) fn wrap(
                     $run_f: fn($($param_ty),*)
                 ) {
                     $($wrap)*
                 }
             }
 
-            pub fn $library() {
+            #[doc(inline)]
+            pub use [<$name _ $library _impl>]::[<entry_bench_ $name _ $library>];
+
+            #[inline(never)]
+            #[unsafe(no_mangle)]
+            pub fn [<bench_ $name _ $library>]() {
                 #[allow(unused_imports)]
                 use crate::wrapper::$library::Bump;
                 #[allow(unused_imports)]
                 use crate::*;
 
-                [<$library _impl>]::wrap(|$($param: $param_ty),*| {
-                    _ = std::hint::black_box([<$library _impl>]::[<bench_ $name _ $library>]($(std::hint::black_box($param)),*));
+                [<$name _ $library _impl>]::wrap(|$($param: $param_ty),*| {
+                    _ = std::hint::black_box([<entry_bench_ $name _ $library>]($(std::hint::black_box($param)),*));
                 });
             }
         }
@@ -245,28 +250,22 @@ macro_rules! benches {
     ($($name:ident { $($content:tt)* })*) => {
         paste::paste! {
             $(
-                pub mod [<bench_ $name>] {
-                    benches_library! {
-                        bump_scope_up $name { $($content)* }
-                    }
+                benches_library! {
+                    bump_scope_up $name { $($content)* }
+                }
 
-                    benches_library! {
-                        bump_scope_down $name { $($content)* }
-                    }
+                benches_library! {
+                    bump_scope_down $name { $($content)* }
+                }
 
-                    benches_library! {
-                        bumpalo $name { $($content)* }
-                    }
+                benches_library! {
+                    bumpalo $name { $($content)* }
+                }
 
-                    benches_library! {
-                        blink_alloc $name { $($content)* }
-                    }
+                benches_library! {
+                    blink_alloc $name { $($content)* }
                 }
             )*
-
-            // $(
-            //     use [<bench_ $name>]::$name;
-            // )*
         }
     };
 }
