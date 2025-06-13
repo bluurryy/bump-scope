@@ -76,6 +76,11 @@ const GROUP_NAMES: &[&str] = &[
     "try_alloc_big_struct",
     "try_alloc_big_struct_aligned",
     //
+    "alloc_slice",
+    "alloc_slice_aligned",
+    "try_alloc_slice",
+    "try_alloc_slice_aligned",
+    //
     "allocate",
     "grow_same_align",
     "grow_smaller_align",

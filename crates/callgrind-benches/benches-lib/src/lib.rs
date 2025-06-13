@@ -34,6 +34,19 @@ mod wrapper {
             }
 
             #[inline(always)]
+            pub(crate) fn alloc_slice_copy<T: Copy>(&self, value: &[T]) -> &mut [T] {
+                self.0.alloc_slice_copy(value).into_mut()
+            }
+
+            #[inline(always)]
+            pub(crate) fn try_alloc_slice_copy<T: Copy>(&self, value: &[T]) -> Option<&mut [T]> {
+                match self.0.try_alloc_slice_copy(value) {
+                    Ok(value) => Some(value.into_mut()),
+                    Err(_) => None,
+                }
+            }
+
+            #[inline(always)]
             pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&T> {
                 match self.0.try_alloc(value) {
                     Ok(value) => Some(bump_scope::BumpBox::leak(value)),
@@ -90,6 +103,19 @@ mod wrapper {
             }
 
             #[inline(always)]
+            pub(crate) fn alloc_slice_copy<T: Copy>(&self, value: &[T]) -> &mut [T] {
+                self.0.alloc_slice_copy(value).into_mut()
+            }
+
+            #[inline(always)]
+            pub(crate) fn try_alloc_slice_copy<T: Copy>(&self, value: &[T]) -> Option<&mut [T]> {
+                match self.0.try_alloc_slice_copy(value) {
+                    Ok(value) => Some(value.into_mut()),
+                    Err(_) => None,
+                }
+            }
+
+            #[inline(always)]
             pub(crate) fn as_allocator(&self) -> impl Allocator {
                 &self.0
             }
@@ -130,6 +156,16 @@ mod wrapper {
                     Ok(value) => Some(value),
                     Err(_) => None,
                 }
+            }
+
+            #[inline(always)]
+            pub(crate) fn alloc_slice_copy<T: Copy>(&self, value: &[T]) -> &mut [T] {
+                self.0.alloc_slice_copy(value)
+            }
+
+            #[inline(always)]
+            pub(crate) fn try_alloc_slice_copy<T: Copy>(&self, value: &[T]) -> Option<&mut [T]> {
+                self.0.try_alloc_slice_copy(value).ok()
             }
 
             #[inline(always)]
@@ -181,6 +217,16 @@ mod wrapper {
             }
 
             #[inline(always)]
+            pub(crate) fn alloc_slice_copy<T: Copy>(&self, value: &[T]) -> &mut [T] {
+                self.0.copy_slice(value)
+            }
+
+            #[inline(always)]
+            pub(crate) fn try_alloc_slice_copy<T: Copy>(&self, value: &[T]) -> Option<&mut [T]> {
+                self.0.try_copy_slice(value)
+            }
+
+            #[inline(always)]
             pub(crate) fn as_allocator(&self) -> impl Allocator {
                 self.0.allocator()
             }
@@ -201,7 +247,7 @@ macro_rules! benches_library {
             wrap($run_f:ident) {
                 $($wrap:tt)*
             }
-            run($($param:ident: $param_ty:ty),*) $(-> $ret:ty)? {
+            $run_label:ident $({$($generics:tt)+})? ($($param:ident: $param_ty:ty),*) $(-> $ret:ty)? {
                 $($run:tt)*
             }
         }
@@ -213,29 +259,24 @@ macro_rules! benches_library {
                 #[allow(unused_imports)]
                 use crate::*;
 
+                const _: () = {
+                    // just for language server coloring
+                    fn $run_label() {}
+                };
+
                 #[inline(never)]
                 #[unsafe(no_mangle)]
-                pub fn [<entry_bench_ $name _ $library>]($($param: $param_ty),*) $(-> $ret)? {
+                pub fn [<entry_bench_ $name _ $library>]$(<$($generics)*>)?($($param: $param_ty),*) $(-> $ret)? {
                     $($run)*
                 }
 
                 #[inline(never)]
-                pub(crate) fn wrap(
-                    $run_f: impl Fn($($param_ty),*)
-                ) {
-                    $($wrap)*
-                }
-
-                #[inline(never)]
-                pub fn [<bench_ $name _ $library>](f: fn($($param_ty),*) $(-> $ret)?) {
-                    #[allow(unused_imports)]
-                    use crate::wrapper::$library::Bump;
-                    #[allow(unused_imports)]
-                    use crate::*;
-
-                    [<$name _ $library _impl>]::wrap(|$($param: $param_ty),*| {
+                pub fn [<bench_ $name _ $library>](f: $(for<$($generics)*>)? fn($($param_ty),*) $(-> $ret)?) {
+                    let $run_f = |$($param),*| {
                         _ = std::hint::black_box(f($(std::hint::black_box($param)),*));
-                    });
+                    };
+
+                    $($wrap)*
                 }
             }
 
@@ -273,6 +314,7 @@ macro_rules! benches {
 }
 
 pub struct BigStruct(#[expect(dead_code)] [u64; 7]);
+const U32_SLICE: &[u32] = &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 
 impl BigStruct {
     fn new() -> Self {
@@ -368,6 +410,46 @@ benches! {
         }
         run(bump: &Bump::<8>, value: BigStruct) -> Option<&BigStruct> {
             bump.try_alloc(value)
+        }
+    }
+
+    alloc_slice {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            run(&bump, U32_SLICE);
+        }
+        run {'a} (bump: &'a Bump, value: &[u32]) -> &'a mut [u32] {
+            bump.alloc_slice_copy(value)
+        }
+    }
+
+    alloc_slice_aligned {
+        wrap(run) {
+            let bump = Bump::<4>::with_capacity(1024);
+            run(&bump, U32_SLICE);
+        }
+        run {'a} (bump: &'a Bump::<4>, value: &[u32]) -> &'a mut [u32] {
+            bump.alloc_slice_copy(value)
+        }
+    }
+
+    try_alloc_slice {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            run(&bump, U32_SLICE);
+        }
+        run {'a} (bump: &'a Bump, value: &[u32]) -> Option<&'a mut [u32]> {
+            bump.try_alloc_slice_copy(value)
+        }
+    }
+
+    try_alloc_slice_aligned {
+        wrap(run) {
+            let bump = Bump::<4>::with_capacity(1024);
+            run(&bump, U32_SLICE);
+        }
+        run {'a} (bump: &'a Bump::<4>, value: &[u32]) -> Option<&'a mut [u32]> {
+            bump.try_alloc_slice_copy(value)
         }
     }
 
