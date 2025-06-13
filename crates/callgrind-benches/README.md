@@ -2,7 +2,7 @@
 
 TODO: mention `bump-scope-inspect-asm` and criterion benches
 
-This crate contains micro-benchmarks to compare `bump-scope`'s up- and downwards allocator with other bump allocator crates and to keep track of regressions. Take these benchmarks with a grain of salt. A smaller number does not necessarily mean better performance. We benchmark instructions and branches instead of wall-clock time because I couldn't get consistent results with regular time based benchmarks.
+This crate contains micro-benchmarks to compare `bump-scope`'s up- and downwards allocator with other bump allocator crates and to keep track of regressions. Take these benchmarks with a grain of salt. A smaller number does not necessarily mean better performance. We benchmark instructions and branches instead of wall-clock time to get more consistent results.
 
 ## Results
 
