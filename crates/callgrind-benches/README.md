@@ -54,11 +54,11 @@ TODO: test allocator api with black boxed layout
 |--------------------------------|-----------------|-------------------|---------|-------------|
 | black_box_allocate             | 16 / 2          | 14 / 2            | 26 / 5  | 23 / 4      |
 | black_box_grow_same_align      | 25 / 2          | 53 / 7            | 99 / 11 | 31 / 6      |
-| black_box_grow_smaller_align   | 25 / 2          | 53 / 7            | 99 / 11 | —           |
-| black_box_grow_larger_align    | 25 / 2          | 53 / 7            | 63 / 10 | 57 / 9      |
+| black_box_grow_smaller_align   | 25 / 2          | 53 / 7            | 99 / 11 | 31 / 6      |
+| black_box_grow_larger_align    | 25 / 2          | 53 / 7            | 63 / 10 | —           |
 | black_box_shrink_same_align    | 13 / 2          | 47 / 7            | 45 / 7  | 23 / 3      |
-| black_box_shrink_smaller_align | 13 / 2          | 50 / 9            | 48 / 9  | —           |
-| black_box_shrink_larger_align  | 13 / 2          | 47 / 7            | 15 / 2  | —           |
+| black_box_shrink_smaller_align | 13 / 2          | 50 / 9            | 48 / 9  | 23 / 3      |
+| black_box_shrink_larger_align  | 13 / 2          | 47 / 7            | 15 / 2  | 57 / 9      |
 | black_box_deallocate           | 6 / 1           | 6 / 1             | 7 / 1   | 6 / 2       |
 | black_box_deallocate_non_last  | 5 / 1           | 4 / 1             | 5 / 1   | 6 / 2       |
 
