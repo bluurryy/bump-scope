@@ -93,7 +93,7 @@ const GROUP_NAMES: &[&str] = &[
 
 const LIBRARY_NAMES: &[&str] = &["bump_scope_up", "bump_scope_down", "bumpalo", "blink_alloc"];
 
-const FOOTNOTES_GROUP: &[(&str, usize)] = &[("shrink_*", 2)];
+const FOOTNOTES_GROUP: &[(&str, usize)] = &[("*shrink*", 2)];
 const FOOTNOTES_LIBRARY: &[(&str, usize)] = &[("*_aligned/blink_alloc", 1)];
 
 const SECTIONS: &[(&str, &[&str])] = &[
