@@ -2,7 +2,7 @@ use std::{alloc::Layout, ptr::NonNull};
 
 use allocator_api2::alloc::{AllocError, Allocator};
 
-// We're using duck typing instead of a trait to be generic over bump allocators
+// We use duck typing instead of a trait for being generic over bump allocators
 // to make it easier to work with the const generic `MIN_ALIGN`.
 mod wrapper {
     pub(crate) mod bump_scope_up {
