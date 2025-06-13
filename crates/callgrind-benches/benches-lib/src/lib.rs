@@ -227,7 +227,6 @@ macro_rules! benches_library {
                 }
 
                 #[inline(never)]
-                #[unsafe(no_mangle)]
                 pub fn [<bench_ $name _ $library>](f: fn($($param_ty),*) $(-> $ret)?) {
                     #[allow(unused_imports)]
                     use crate::wrapper::$library::Bump;
