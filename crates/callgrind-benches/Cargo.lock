@@ -15,6 +15,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78200ac3468a57d333cd0ea5dd398e25111194dcacd49208afca95c629a6311d"
 
 [[package]]
+name = "arrayvec"
+version = "0.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
+
+[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -60,7 +66,7 @@ dependencies = [
  "blink-alloc",
  "bump-scope",
  "bumpalo",
- "glob-match",
+ "fast-glob",
  "iai-callgrind",
  "markdown-tables",
  "paste",
@@ -89,10 +95,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "glob-match"
-version = "0.2.1"
+name = "fast-glob"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9985c9503b412198aa4197559e9a318524ebc4519c229bfa05a535828c950b9d"
+checksum = "39ea3f6bbcf4dbe2076b372186fc7aeecd5f6f84754582e56ee7db262b15a6f0"
+dependencies = [
+ "arrayvec",
+]
 
 [[package]]
 name = "iai-callgrind"

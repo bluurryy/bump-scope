@@ -1,6 +1,6 @@
 use std::{fmt::Write, path::Path};
 
-use glob_match::glob_match;
+use fast_glob::glob_match;
 use markdown_tables::MarkdownTableRow;
 
 use crate::schema::{BenchmarkSummary, EitherOrBothForUint64};
