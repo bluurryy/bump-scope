@@ -77,10 +77,10 @@ benches! {
     try_alloc_big_struct
     try_alloc_big_struct_aligned
 
-    alloc_slice
-    alloc_slice_aligned
-    try_alloc_slice
-    try_alloc_slice_aligned
+    alloc_slice_copy
+    alloc_slice_copy_aligned
+    try_alloc_slice_copy
+    try_alloc_slice_copy_aligned
 
     allocate
     grow_same_align

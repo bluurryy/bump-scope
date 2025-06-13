@@ -413,7 +413,7 @@ benches! {
         }
     }
 
-    alloc_slice {
+    alloc_slice_copy {
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump, U32_SLICE);
@@ -423,7 +423,7 @@ benches! {
         }
     }
 
-    alloc_slice_aligned {
+    alloc_slice_copy_aligned {
         wrap(run) {
             let bump = Bump::<4>::with_capacity(1024);
             run(&bump, U32_SLICE);
@@ -433,7 +433,7 @@ benches! {
         }
     }
 
-    try_alloc_slice {
+    try_alloc_slice_copy {
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump, U32_SLICE);
@@ -443,7 +443,7 @@ benches! {
         }
     }
 
-    try_alloc_slice_aligned {
+    try_alloc_slice_copy_aligned {
         wrap(run) {
             let bump = Bump::<4>::with_capacity(1024);
             run(&bump, U32_SLICE);
