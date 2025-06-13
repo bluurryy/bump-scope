@@ -3,7 +3,7 @@ use std::{alloc::Layout, ptr::NonNull};
 use allocator_api2::alloc::{AllocError, Allocator};
 
 // We're using duck typing instead of a trait to be generic over bump allocators
-// because I couldn't figure out how to make the current macro setup with `MIN_ALIGN` work with traits.
+// to make it easier to work with the const generic `MIN_ALIGN`.
 mod wrapper {
     pub(crate) mod bump_scope_up {
         use ::allocator_api2::alloc::Allocator;
