@@ -19,6 +19,8 @@ jobs:
       - run: cd crates/fuzzing-support && cargo fmt --all -- --check
       - run: cd crates/test-fallibility && cargo fmt --all -- --check
       - run: cd crates/tests-from-std && cargo fmt --all -- --check
+      - run: cd crates/callgrind-benches && cargo fmt --all -- --check
+      - run: cd crates/criterion-benches && cargo fmt --all -- --check
       - run: cd fuzz && cargo fmt --all -- --check
   check-msrv:
     runs-on: ubuntu-latest
@@ -45,12 +47,13 @@ jobs:
           components: clippy
       - run: cargo clippy --tests --no-default-features
       - run: cargo clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03
-      - run: cargo clippy --tests --benches --all-features
+      - run: cargo clippy --tests --all-features
       - run: cd crates/test-hashbrown && cargo clippy
       - run: cd crates/test-hashbrown && cargo clippy --all-features
-      - run: cd crates/tests-from-std && cargo clippy
+      - run: cd crates/tests-from-std && cargo clippy --tests
       - run: cd crates/test-fallibility && cargo clippy
-      - run: cd crates/callgrind-benches && cargo clippy
+      - run: cd crates/callgrind-benches && cargo clippy --tests --benches --workspace
+      - run: cd crates/criterion-benches && cargo clippy --tests --benches
   test-stable:
     runs-on: ubuntu-latest
     steps:
