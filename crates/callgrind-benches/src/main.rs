@@ -107,7 +107,12 @@ const GROUP_NAMES: &[&str] = &[
 
 const LIBRARY_NAMES: &[&str] = &["bump_scope_up", "bump_scope_down", "bumpalo", "blink_alloc"];
 
-const INVALID: &[&str] = &["*_aligned/blink_alloc"];
+const INVALID: &[&str] = &[
+    // These particular cases generally result in a `0` instruction count anyway due to function deduplication i assume.
+    // However the `alloc_u32_aligned` for some reason didn't which messed with the `try_` prefix merging.
+    // The results of these cases is not interesting anyway because it's the as for the non-`_aligned` cases.
+    "*_aligned/blink_alloc",
+];
 
 const FOOTNOTES_GROUP: &[(&str, usize)] = &[("*shrink*", 2)];
 const FOOTNOTES_LIBRARY: &[(&str, usize)] = &[("*_aligned/blink_alloc", 1)];
