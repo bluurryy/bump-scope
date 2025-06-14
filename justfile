@@ -27,6 +27,7 @@ check-fmt:
   cd crates/fuzzing-support; cargo fmt --check
   cd crates/test-fallibility; cargo fmt --check
   cd crates/callgrind-benches; cargo fmt --check
+  cd crates/criterion-benches; cargo fmt --check
   cd fuzz; cargo fmt --check
 
 check-clippy:
@@ -45,6 +46,7 @@ check-clippy:
   cd crates/test-fallibility; cargo clippy --tests
   cd crates/tests-from-std; cargo clippy --tests
   cd crates/callgrind-benches; cargo clippy --tests --benches --workspace
+  cd crates/criterion-benches; cargo clippy --tests --benches --workspace
   cd fuzz; cargo clippy
 
 check-nostd:
