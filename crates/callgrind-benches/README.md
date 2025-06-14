@@ -8,7 +8,7 @@ There are also criterion benchmarks at [../../benches](../../benches) and we kee
 
 The benchmarks results in the tables below are shown in the format "instruction count / branch count".
 
-The last benchmark run was using <!-- version start -->`rustc 1.89.0-nightly (777d37277 2025-05-17)` on `x86_64-unknown-linux-gnu` using `LLVM version 20.1.4`<!-- version end -->.
+The last benchmark run was using <!-- version start -->`rustc 1.89.0-nightly (8da623945 2025-06-13)` on `x86_64-unknown-linux-gnu` using `LLVM version 20.1.5`<!-- version end -->.
 
 ### Allocation
 
@@ -22,7 +22,8 @@ The `*_aligned` cases use a bump allocator with a sufficient minimum alignment f
 |---------------------------------|-----------------|-------------------|---------|-------------|
 | alloc_u8                        | 10 / 1          | 10 / 1            | 11 / 2  | 16 / 4      |
 | (try_) alloc_u32                | 14 / 1          | 11 / 1            | 15 / 3  | 18 / 4      |
-| (try_) alloc_u32_aligned        | 12 / 1          | 10 / 1            | 13 / 2  | — [^1]      |
+| alloc_u32_aligned               | 12 / 1          | 10 / 1            | 13 / 2  | 18 / 4 [^1] |
+| try_alloc_u32_aligned           | 12 / 1          | 10 / 1            | 13 / 2  | — [^1]      |
 | (try_) alloc_big_struct         | 21 / 1          | 20 / 1            | 22 / 3  | 25 / 4      |
 | (try_) alloc_big_struct_aligned | 19 / 1          | 19 / 1            | 20 / 2  | — [^1]      |
 | alloc_slice_copy                | 45 / 6          | 44 / 6            | 46 / 8  | 57 / 9      |
@@ -41,8 +42,8 @@ The following cases benchmark the `Allocator` trait implementations.
 | name                      | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
 |---------------------------|-----------------|-------------------|---------|-------------|
 | allocate                  | 15 / 2          | 13 / 2            | 13 / 3  | 16 / 4      |
-| grow_same_align           | 19 / 2          | 19 / 2            | 53 / 4  | 18 / 4      |
-| grow_smaller_align        | 19 / 2          | 19 / 2            | 53 / 4  | 18 / 4      |
+| grow_same_align           | 19 / 2          | 19 / 2            | 50 / 4  | 18 / 4      |
+| grow_smaller_align        | 19 / 2          | 19 / 2            | 50 / 4  | 18 / 4      |
 | grow_larger_align         | 19 / 2          | 19 / 2            | 17 / 3  | 20 / 4      |
 | shrink_same_align [^2]    | 11 / 2          | 17 / 2            | 12 / 1  | 5 / 1       |
 | shrink_smaller_align [^2] | 11 / 2          | 17 / 2            | 12 / 1  | 5 / 1       |
@@ -60,8 +61,8 @@ allocator api function call is not inlined then the compiler can do less optimiz
 | name                                | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
 |-------------------------------------|-----------------|-------------------|---------|-------------|
 | black_box_allocate                  | 16 / 2          | 14 / 2            | 26 / 5  | 23 / 4      |
-| black_box_grow_same_align           | 25 / 2          | 53 / 7            | 99 / 11 | 31 / 6      |
-| black_box_grow_smaller_align        | 25 / 2          | 53 / 7            | 99 / 11 | 31 / 6      |
+| black_box_grow_same_align           | 25 / 2          | 53 / 7            | 96 / 11 | 31 / 6      |
+| black_box_grow_smaller_align        | 25 / 2          | 53 / 7            | 96 / 11 | 31 / 6      |
 | black_box_grow_larger_align         | 25 / 2          | 53 / 7            | 63 / 10 | 57 / 9      |
 | black_box_shrink_same_align [^2]    | 13 / 2          | 47 / 7            | 45 / 7  | 23 / 3      |
 | black_box_shrink_smaller_align [^2] | 13 / 2          | 50 / 9            | 48 / 9  | 23 / 3      |
@@ -80,7 +81,7 @@ allocator api function call is not inlined then the compiler can do less optimiz
 
 | name    | bump-scope (up) | bump-scope (down) | bumpalo  | blink-alloc |
 |---------|-----------------|-------------------|----------|-------------|
-| warm_up | 227 / 31        | 233 / 32          | 358 / 43 | 284 / 38    |
+| warm_up | 224 / 31        | 230 / 32          | 355 / 43 | 284 / 38    |
 | reset   | 26 / 2          | 25 / 2            | 23 / 2   | 26 / 3      |
 
 <!-- misc table end -->
