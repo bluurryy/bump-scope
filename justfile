@@ -79,7 +79,7 @@ fmt:
 
 spellcheck:
   # https://www.npmjs.com/package/cspell
-  cspell lint --gitignore "**/*.{rs,md,toml}" --exclude crates/tests-from-std
+  cspell lint --gitignore "**/*.{rs,md,toml}" --exclude crates/tests-from-std --exclude crates/callgrind-benches/src/schema.rs
 
 doc *args:
   cargo test --package bump-scope --lib --all-features -- insert_feature_docs --exact --ignored
