@@ -137,17 +137,7 @@ impl ::std::convert::From<BaselineName> for BaselineKind {
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
-#[derive(
-    :: serde :: Deserialize,
-    :: serde :: Serialize,
-    Clone,
-    Debug,
-    Eq,
-    Hash,
-    Ord,
-    PartialEq,
-    PartialOrd,
-)]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[serde(transparent)]
 pub struct BaselineName(pub ::std::string::String);
 impl ::std::ops::Deref for BaselineName {
@@ -204,18 +194,7 @@ impl ::std::fmt::Display for BaselineName {
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
-#[derive(
-    :: serde :: Deserialize,
-    :: serde :: Serialize,
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    Hash,
-    Ord,
-    PartialEq,
-    PartialOrd,
-)]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum BenchmarkKind {
     #[doc = "A library benchmark"]
     LibraryBenchmark,
@@ -253,17 +232,13 @@ impl ::std::convert::TryFrom<&str> for BenchmarkKind {
 }
 impl ::std::convert::TryFrom<&::std::string::String> for BenchmarkKind {
     type Error = self::error::ConversionError;
-    fn try_from(
-        value: &::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+    fn try_from(value: &::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
     }
 }
 impl ::std::convert::TryFrom<::std::string::String> for BenchmarkKind {
     type Error = self::error::ConversionError;
-    fn try_from(
-        value: ::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
     }
 }
@@ -1089,18 +1064,7 @@ impl ::std::convert::From<(u64, u64)> for EitherOrBothForUint64 {
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
-#[derive(
-    :: serde :: Deserialize,
-    :: serde :: Serialize,
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    Hash,
-    Ord,
-    PartialEq,
-    PartialOrd,
-)]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum EventKind {
     #[doc = "The default event. I cache reads (which equals the number of instructions executed)"]
     Ir,
@@ -1247,17 +1211,13 @@ impl ::std::convert::TryFrom<&str> for EventKind {
 }
 impl ::std::convert::TryFrom<&::std::string::String> for EventKind {
     type Error = self::error::ConversionError;
-    fn try_from(
-        value: &::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+    fn try_from(value: &::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
     }
 }
 impl ::std::convert::TryFrom<::std::string::String> for EventKind {
     type Error = self::error::ConversionError;
-    fn try_from(
-        value: ::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
     }
 }
@@ -1399,9 +1359,7 @@ impl MetricsDiff {
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 #[serde(transparent)]
-pub struct MetricsSummaryForDhatMetricKind(
-    pub ::std::collections::HashMap<::std::string::String, MetricsDiff>,
-);
+pub struct MetricsSummaryForDhatMetricKind(pub ::std::collections::HashMap<::std::string::String, MetricsDiff>);
 impl ::std::ops::Deref for MetricsSummaryForDhatMetricKind {
     type Target = ::std::collections::HashMap<::std::string::String, MetricsDiff>;
     fn deref(&self) -> &::std::collections::HashMap<::std::string::String, MetricsDiff> {
@@ -1443,9 +1401,7 @@ impl ::std::convert::From<::std::collections::HashMap<::std::string::String, Met
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 #[serde(transparent)]
-pub struct MetricsSummaryForErrorMetricKind(
-    pub ::std::collections::HashMap<::std::string::String, MetricsDiff>,
-);
+pub struct MetricsSummaryForErrorMetricKind(pub ::std::collections::HashMap<::std::string::String, MetricsDiff>);
 impl ::std::ops::Deref for MetricsSummaryForErrorMetricKind {
     type Target = ::std::collections::HashMap<::std::string::String, MetricsDiff>;
     fn deref(&self) -> &::std::collections::HashMap<::std::string::String, MetricsDiff> {
@@ -1487,18 +1443,14 @@ impl ::std::convert::From<::std::collections::HashMap<::std::string::String, Met
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 #[serde(transparent)]
-pub struct MetricsSummaryForEventKind(
-    pub ::std::collections::HashMap<::std::string::String, MetricsDiff>,
-);
+pub struct MetricsSummaryForEventKind(pub ::std::collections::HashMap<::std::string::String, MetricsDiff>);
 impl ::std::ops::Deref for MetricsSummaryForEventKind {
     type Target = ::std::collections::HashMap<::std::string::String, MetricsDiff>;
     fn deref(&self) -> &::std::collections::HashMap<::std::string::String, MetricsDiff> {
         &self.0
     }
 }
-impl ::std::convert::From<MetricsSummaryForEventKind>
-    for ::std::collections::HashMap<::std::string::String, MetricsDiff>
-{
+impl ::std::convert::From<MetricsSummaryForEventKind> for ::std::collections::HashMap<::std::string::String, MetricsDiff> {
     fn from(value: MetricsSummaryForEventKind) -> Self {
         value.0
     }
@@ -1508,9 +1460,7 @@ impl ::std::convert::From<&MetricsSummaryForEventKind> for MetricsSummaryForEven
         value.clone()
     }
 }
-impl ::std::convert::From<::std::collections::HashMap<::std::string::String, MetricsDiff>>
-    for MetricsSummaryForEventKind
-{
+impl ::std::convert::From<::std::collections::HashMap<::std::string::String, MetricsDiff>> for MetricsSummaryForEventKind {
     fn from(value: ::std::collections::HashMap<::std::string::String, MetricsDiff>) -> Self {
         Self(value)
     }
@@ -1632,18 +1582,7 @@ impl SegmentDetails {
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
-#[derive(
-    :: serde :: Deserialize,
-    :: serde :: Serialize,
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    Hash,
-    Ord,
-    PartialEq,
-    PartialOrd,
-)]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum SummaryFormat {
     #[doc = "The format in a space optimal json representation without newlines"]
     Json,
@@ -1681,17 +1620,13 @@ impl ::std::convert::TryFrom<&str> for SummaryFormat {
 }
 impl ::std::convert::TryFrom<&::std::string::String> for SummaryFormat {
     type Error = self::error::ConversionError;
-    fn try_from(
-        value: &::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+    fn try_from(value: &::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
     }
 }
 impl ::std::convert::TryFrom<::std::string::String> for SummaryFormat {
     type Error = self::error::ConversionError;
-    fn try_from(
-        value: ::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
     }
 }
@@ -2017,18 +1952,7 @@ impl ToolSummary {
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
-#[derive(
-    :: serde :: Deserialize,
-    :: serde :: Serialize,
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    Hash,
-    Ord,
-    PartialEq,
-    PartialOrd,
-)]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum ValgrindTool {
     Callgrind,
     Memcheck,
@@ -2082,17 +2006,13 @@ impl ::std::convert::TryFrom<&str> for ValgrindTool {
 }
 impl ::std::convert::TryFrom<&::std::string::String> for ValgrindTool {
     type Error = self::error::ConversionError;
-    fn try_from(
-        value: &::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+    fn try_from(value: &::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
     }
 }
 impl ::std::convert::TryFrom<::std::string::String> for ValgrindTool {
     type Error = self::error::ConversionError;
-    fn try_from(
-        value: ::std::string::String,
-    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
     }
 }
@@ -2154,29 +2074,16 @@ pub mod builder {
     pub struct BenchmarkSummary {
         benchmark_exe: ::std::result::Result<::std::string::String, ::std::string::String>,
         benchmark_file: ::std::result::Result<::std::string::String, ::std::string::String>,
-        callgrind_summary: ::std::result::Result<
-            ::std::option::Option<super::CallgrindSummary>,
-            ::std::string::String,
-        >,
-        details: ::std::result::Result<
-            ::std::option::Option<::std::string::String>,
-            ::std::string::String,
-        >,
+        callgrind_summary: ::std::result::Result<::std::option::Option<super::CallgrindSummary>, ::std::string::String>,
+        details: ::std::result::Result<::std::option::Option<::std::string::String>, ::std::string::String>,
         function_name: ::std::result::Result<::std::string::String, ::std::string::String>,
-        id: ::std::result::Result<
-            ::std::option::Option<::std::string::String>,
-            ::std::string::String,
-        >,
+        id: ::std::result::Result<::std::option::Option<::std::string::String>, ::std::string::String>,
         kind: ::std::result::Result<super::BenchmarkKind, ::std::string::String>,
         module_path: ::std::result::Result<::std::string::String, ::std::string::String>,
         package_dir: ::std::result::Result<::std::string::String, ::std::string::String>,
         project_root: ::std::result::Result<::std::string::String, ::std::string::String>,
-        summary_output: ::std::result::Result<
-            ::std::option::Option<super::SummaryOutput>,
-            ::std::string::String,
-        >,
-        tool_summaries:
-            ::std::result::Result<::std::vec::Vec<super::ToolSummary>, ::std::string::String>,
+        summary_output: ::std::result::Result<::std::option::Option<super::SummaryOutput>, ::std::string::String>,
+        tool_summaries: ::std::result::Result<::std::vec::Vec<super::ToolSummary>, ::std::string::String>,
         version: ::std::result::Result<::std::string::String, ::std::string::String>,
     }
     impl ::std::default::Default for BenchmarkSummary {
@@ -2224,12 +2131,9 @@ pub mod builder {
             T: ::std::convert::TryInto<::std::option::Option<super::CallgrindSummary>>,
             T::Error: ::std::fmt::Display,
         {
-            self.callgrind_summary = value.try_into().map_err(|e| {
-                format!(
-                    "error converting supplied value for callgrind_summary: {}",
-                    e
-                )
-            });
+            self.callgrind_summary = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for callgrind_summary: {}", e));
             self
         }
         pub fn details<T>(mut self, value: T) -> Self
@@ -2335,9 +2239,7 @@ pub mod builder {
     }
     impl ::std::convert::TryFrom<BenchmarkSummary> for super::BenchmarkSummary {
         type Error = super::error::ConversionError;
-        fn try_from(
-            value: BenchmarkSummary,
-        ) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(value: BenchmarkSummary) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
                 benchmark_exe: value.benchmark_exe?,
                 benchmark_file: value.benchmark_file?,
@@ -2447,9 +2349,7 @@ pub mod builder {
     }
     impl ::std::convert::TryFrom<CallgrindRegression> for super::CallgrindRegression {
         type Error = super::error::ConversionError;
-        fn try_from(
-            value: CallgrindRegression,
-        ) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(value: CallgrindRegression) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
                 diff_pct: value.diff_pct?,
                 event_kind: value.event_kind?,
@@ -2472,10 +2372,7 @@ pub mod builder {
     }
     #[derive(Clone, Debug)]
     pub struct CallgrindRun {
-        segments: ::std::result::Result<
-            ::std::vec::Vec<super::CallgrindRunSegment>,
-            ::std::string::String,
-        >,
+        segments: ::std::result::Result<::std::vec::Vec<super::CallgrindRunSegment>, ::std::string::String>,
         total: ::std::result::Result<super::CallgrindTotal, ::std::string::String>,
     }
     impl ::std::default::Default for CallgrindRun {
@@ -2510,9 +2407,7 @@ pub mod builder {
     }
     impl ::std::convert::TryFrom<CallgrindRun> for super::CallgrindRun {
         type Error = super::error::ConversionError;
-        fn try_from(
-            value: CallgrindRun,
-        ) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(value: CallgrindRun) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
                 segments: value.segments?,
                 total: value.total?,
@@ -2529,14 +2424,10 @@ pub mod builder {
     }
     #[derive(Clone, Debug)]
     pub struct CallgrindRunSegment {
-        baseline:
-            ::std::result::Result<::std::option::Option<super::Baseline>, ::std::string::String>,
+        baseline: ::std::result::Result<::std::option::Option<super::Baseline>, ::std::string::String>,
         command: ::std::result::Result<::std::string::String, ::std::string::String>,
         events: ::std::result::Result<super::MetricsSummaryForEventKind, ::std::string::String>,
-        regressions: ::std::result::Result<
-            ::std::vec::Vec<super::CallgrindRegression>,
-            ::std::string::String,
-        >,
+        regressions: ::std::result::Result<::std::vec::Vec<super::CallgrindRegression>, ::std::string::String>,
     }
     impl ::std::default::Default for CallgrindRunSegment {
         fn default() -> Self {
@@ -2592,9 +2483,7 @@ pub mod builder {
     }
     impl ::std::convert::TryFrom<CallgrindRunSegment> for super::CallgrindRunSegment {
         type Error = super::error::ConversionError;
-        fn try_from(
-            value: CallgrindRunSegment,
-        ) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(value: CallgrindRunSegment) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
                 baseline: value.baseline?,
                 command: value.command?,
@@ -2616,12 +2505,9 @@ pub mod builder {
     #[derive(Clone, Debug)]
     pub struct CallgrindSummary {
         callgrind_run: ::std::result::Result<super::CallgrindRun, ::std::string::String>,
-        flamegraphs:
-            ::std::result::Result<::std::vec::Vec<super::FlamegraphSummary>, ::std::string::String>,
-        log_paths:
-            ::std::result::Result<::std::vec::Vec<::std::string::String>, ::std::string::String>,
-        out_paths:
-            ::std::result::Result<::std::vec::Vec<::std::string::String>, ::std::string::String>,
+        flamegraphs: ::std::result::Result<::std::vec::Vec<super::FlamegraphSummary>, ::std::string::String>,
+        log_paths: ::std::result::Result<::std::vec::Vec<::std::string::String>, ::std::string::String>,
+        out_paths: ::std::result::Result<::std::vec::Vec<::std::string::String>, ::std::string::String>,
     }
     impl ::std::default::Default for CallgrindSummary {
         fn default() -> Self {
@@ -2677,9 +2563,7 @@ pub mod builder {
     }
     impl ::std::convert::TryFrom<CallgrindSummary> for super::CallgrindSummary {
         type Error = super::error::ConversionError;
-        fn try_from(
-            value: CallgrindSummary,
-        ) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(value: CallgrindSummary) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
                 callgrind_run: value.callgrind_run?,
                 flamegraphs: value.flamegraphs?,
@@ -2700,10 +2584,7 @@ pub mod builder {
     }
     #[derive(Clone, Debug)]
     pub struct CallgrindTotal {
-        regressions: ::std::result::Result<
-            ::std::vec::Vec<super::CallgrindRegression>,
-            ::std::string::String,
-        >,
+        regressions: ::std::result::Result<::std::vec::Vec<super::CallgrindRegression>, ::std::string::String>,
         summary: ::std::result::Result<super::MetricsSummaryForEventKind, ::std::string::String>,
     }
     impl ::std::default::Default for CallgrindTotal {
@@ -2738,9 +2619,7 @@ pub mod builder {
     }
     impl ::std::convert::TryFrom<CallgrindTotal> for super::CallgrindTotal {
         type Error = super::error::ConversionError;
-        fn try_from(
-            value: CallgrindTotal,
-        ) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(value: CallgrindTotal) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
                 regressions: value.regressions?,
                 summary: value.summary?,
@@ -2809,19 +2688,10 @@ pub mod builder {
     }
     #[derive(Clone, Debug)]
     pub struct FlamegraphSummary {
-        base_path: ::std::result::Result<
-            ::std::option::Option<::std::string::String>,
-            ::std::string::String,
-        >,
-        diff_path: ::std::result::Result<
-            ::std::option::Option<::std::string::String>,
-            ::std::string::String,
-        >,
+        base_path: ::std::result::Result<::std::option::Option<::std::string::String>, ::std::string::String>,
+        diff_path: ::std::result::Result<::std::option::Option<::std::string::String>, ::std::string::String>,
         event_kind: ::std::result::Result<super::EventKind, ::std::string::String>,
-        regular_path: ::std::result::Result<
-            ::std::option::Option<::std::string::String>,
-            ::std::string::String,
-        >,
+        regular_path: ::std::result::Result<::std::option::Option<::std::string::String>, ::std::string::String>,
     }
     impl ::std::default::Default for FlamegraphSummary {
         fn default() -> Self {
@@ -2877,9 +2747,7 @@ pub mod builder {
     }
     impl ::std::convert::TryFrom<FlamegraphSummary> for super::FlamegraphSummary {
         type Error = super::error::ConversionError;
-        fn try_from(
-            value: FlamegraphSummary,
-        ) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(value: FlamegraphSummary) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
                 base_path: value.base_path?,
                 diff_path: value.diff_path?,
@@ -2935,9 +2803,7 @@ pub mod builder {
     }
     impl ::std::convert::TryFrom<MetricsDiff> for super::MetricsDiff {
         type Error = super::error::ConversionError;
-        fn try_from(
-            value: MetricsDiff,
-        ) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(value: MetricsDiff) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
                 diffs: value.diffs?,
                 metrics: value.metrics?,
@@ -2955,10 +2821,7 @@ pub mod builder {
     #[derive(Clone, Debug)]
     pub struct SegmentDetails {
         command: ::std::result::Result<::std::string::String, ::std::string::String>,
-        details: ::std::result::Result<
-            ::std::option::Option<::std::string::String>,
-            ::std::string::String,
-        >,
+        details: ::std::result::Result<::std::option::Option<::std::string::String>, ::std::string::String>,
         parent_pid: ::std::result::Result<::std::option::Option<i32>, ::std::string::String>,
         part: ::std::result::Result<::std::option::Option<u64>, ::std::string::String>,
         path: ::std::result::Result<::std::string::String, ::std::string::String>,
@@ -3052,9 +2915,7 @@ pub mod builder {
     }
     impl ::std::convert::TryFrom<SegmentDetails> for super::SegmentDetails {
         type Error = super::error::ConversionError;
-        fn try_from(
-            value: SegmentDetails,
-        ) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(value: SegmentDetails) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
                 command: value.command?,
                 details: value.details?,
@@ -3116,9 +2977,7 @@ pub mod builder {
     }
     impl ::std::convert::TryFrom<SummaryOutput> for super::SummaryOutput {
         type Error = super::error::ConversionError;
-        fn try_from(
-            value: SummaryOutput,
-        ) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(value: SummaryOutput) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
                 format: value.format?,
                 path: value.path?,
@@ -3135,8 +2994,7 @@ pub mod builder {
     }
     #[derive(Clone, Debug)]
     pub struct ToolRun {
-        segments:
-            ::std::result::Result<::std::vec::Vec<super::ToolRunSegment>, ::std::string::String>,
+        segments: ::std::result::Result<::std::vec::Vec<super::ToolRunSegment>, ::std::string::String>,
         total: ::std::result::Result<super::ToolMetricSummary, ::std::string::String>,
     }
     impl ::std::default::Default for ToolRun {
@@ -3223,9 +3081,7 @@ pub mod builder {
     }
     impl ::std::convert::TryFrom<ToolRunSegment> for super::ToolRunSegment {
         type Error = super::error::ConversionError;
-        fn try_from(
-            value: ToolRunSegment,
-        ) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(value: ToolRunSegment) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
                 details: value.details?,
                 metrics_summary: value.metrics_summary?,
@@ -3242,10 +3098,8 @@ pub mod builder {
     }
     #[derive(Clone, Debug)]
     pub struct ToolSummary {
-        log_paths:
-            ::std::result::Result<::std::vec::Vec<::std::string::String>, ::std::string::String>,
-        out_paths:
-            ::std::result::Result<::std::vec::Vec<::std::string::String>, ::std::string::String>,
+        log_paths: ::std::result::Result<::std::vec::Vec<::std::string::String>, ::std::string::String>,
+        out_paths: ::std::result::Result<::std::vec::Vec<::std::string::String>, ::std::string::String>,
         summaries: ::std::result::Result<super::ToolRun, ::std::string::String>,
         tool: ::std::result::Result<super::ValgrindTool, ::std::string::String>,
     }
@@ -3303,9 +3157,7 @@ pub mod builder {
     }
     impl ::std::convert::TryFrom<ToolSummary> for super::ToolSummary {
         type Error = super::error::ConversionError;
-        fn try_from(
-            value: ToolSummary,
-        ) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(value: ToolSummary) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
                 log_paths: value.log_paths?,
                 out_paths: value.out_paths?,
