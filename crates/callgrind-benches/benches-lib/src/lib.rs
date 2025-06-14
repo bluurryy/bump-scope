@@ -261,6 +261,7 @@ macro_rules! benches_library {
 
                 const _: () = {
                     // just for language server coloring
+                    #[allow(dead_code)]
                     fn $run_label() {}
                 };
 
