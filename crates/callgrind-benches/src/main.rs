@@ -191,13 +191,15 @@ fn globs_match(globs: &[&str], path: &str) -> bool {
 
 // merge `try_`-prefix cases with non-prefixed if the result is the same
 fn merge_try_prefixed(rows: &mut Vec<Vec<String>>) {
+    #![allow(clippy::collapsible_if)]
     for i in (0..rows.len()).rev() {
-        if let Some(unprefixed_name) = rows[i][0].strip_prefix("try_")
-            && let Some(unprefixed_i) = rows.iter().position(|row| row[0] == unprefixed_name)
-            && rows[i][1..].iter().eq(&rows[unprefixed_i][1..])
-        {
-            rows[unprefixed_i][0] = format!("(try_) {unprefixed_name}");
-            rows.remove(i);
+        if let Some(unprefixed_name) = rows[i][0].strip_prefix("try_") {
+            if let Some(unprefixed_i) = rows.iter().position(|row| row[0] == unprefixed_name) {
+                if rows[i][1..].iter().eq(&rows[unprefixed_i][1..]) {
+                    rows[unprefixed_i][0] = format!("(try_) {unprefixed_name}");
+                    rows.remove(i);
+                }
+            }
         }
     }
 }
