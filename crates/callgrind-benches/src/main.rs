@@ -1,4 +1,4 @@
-use std::{fmt::Write, path::Path};
+use std::{collections::HashMap, env, ffi::OsString, fmt::Write, path::Path, process::Command};
 
 use fast_glob::glob_match;
 use markdown_tables::MarkdownTableRow;
@@ -202,6 +202,50 @@ fn merge_try_prefixed(rows: &mut Vec<Vec<String>>) {
     }
 }
 
+// code from https://github.com/djc/rustc-version-rs
+fn rustc_version() -> HashMap<String, String> {
+    let rustc = env::var_os("RUSTC").unwrap_or_else(|| OsString::from("rustc"));
+
+    let mut cmd = if let Some(wrapper) = env::var_os("RUSTC_WRAPPER").filter(|w| !w.is_empty()) {
+        let mut cmd = Command::new(wrapper);
+        cmd.arg(rustc);
+        cmd
+    } else {
+        Command::new(rustc)
+    };
+
+    let out = cmd.arg("-vV").output().expect("failed to execute `rustc -vV`");
+
+    if !out.status.success() {
+        let stdout = String::from_utf8_lossy(&out.stdout);
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        panic!("`rustc -vV` failed, stdout={stdout} stderr={stderr}");
+    }
+
+    let verbose_version_string = str::from_utf8(&out.stdout).expect("`rustc -vV` did not return utf8");
+
+    let mut map = HashMap::new();
+
+    for (i, line) in verbose_version_string.lines().enumerate() {
+        if i == 0 {
+            map.insert("short".to_string(), line.to_string());
+            continue;
+        }
+
+        let mut parts = line.splitn(2, ": ");
+        let key = match parts.next() {
+            Some(key) => key,
+            None => continue,
+        };
+
+        if let Some(value) = parts.next() {
+            map.insert(key.to_string(), value.to_string());
+        }
+    }
+
+    map
+}
+
 fn main() {
     let mut readme = std::fs::read_to_string("README.md").unwrap();
 
@@ -224,10 +268,10 @@ fn main() {
 
     // update compiler info
     {
-        let version = rustc_version::version_meta().expect("can't get rustc version");
-        let rustc = &version.short_version_string;
-        let host = &version.host;
-        let llvm = &version.llvm_version;
+        let version = rustc_version();
+        let rustc = &version["short"];
+        let host = &version["host"];
+        let llvm = version.get("LLVM version");
 
         let mut s = String::new();
         write!(s, "`{rustc}` on `{host}`").unwrap();
