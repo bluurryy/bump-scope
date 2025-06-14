@@ -1,0 +1,5 @@
+[package]
+name = "criterion-benches"
+edition = "2024"
+
+[dependencies]
