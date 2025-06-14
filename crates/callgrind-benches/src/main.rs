@@ -232,13 +232,7 @@ fn rustc_version() -> HashMap<String, String> {
             continue;
         }
 
-        let mut parts = line.splitn(2, ": ");
-        let key = match parts.next() {
-            Some(key) => key,
-            None => continue,
-        };
-
-        if let Some(value) = parts.next() {
+        if let Some((key, value)) = line.split_once(": ") {
             map.insert(key.to_string(), value.to_string());
         }
     }
