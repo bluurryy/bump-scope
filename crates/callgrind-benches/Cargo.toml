@@ -1,0 +1,28 @@
+[package]
+name = "callgrind-benches"
+edition = "2024"
+
+[[bench]]
+name = "bench"
+harness = false
+
+[dependencies]
+fast-glob = "0.4.5"
+markdown-tables = "0.1.0"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+
+[dev-dependencies]
+allocator-api2 = "0.2"
+benches-lib = { path = "benches-lib" }
+blink-alloc = "0.3.1"
+bump-scope = { version = "0.17.1", features = ["allocator-api2-02"] }
+bumpalo = { version = "3.18.1", features = ["allocator-api2"] }
+iai-callgrind = "0.14.2"
+paste = "1.0.15"
+
+[profile.bench]
+debug = true
+
+[workspace]
+members = ["benches-lib"]
