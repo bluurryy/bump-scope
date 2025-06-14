@@ -107,6 +107,8 @@ const GROUP_NAMES: &[&str] = &[
 
 const LIBRARY_NAMES: &[&str] = &["bump_scope_up", "bump_scope_down", "bumpalo", "blink_alloc"];
 
+const INVALID: &[&str] = &["*_aligned/blink_alloc"];
+
 const FOOTNOTES_GROUP: &[(&str, usize)] = &[("*shrink*", 2)];
 const FOOTNOTES_LIBRARY: &[(&str, usize)] = &[("*_aligned/blink_alloc", 1)];
 
@@ -156,13 +158,13 @@ fn rows() -> Vec<Vec<String>> {
             let path = format!("target/iai/{PACKAGE_NAME}/{BENCH_NAME}/{group}/{library}/summary.json");
             let Report { instructions, branches } = read_summary(path.as_ref());
 
-            let mut cell = if instructions == 0 && branches == 0 {
+            let group_and_library = format!("{group}/{library}");
+
+            let mut cell = if (instructions == 0 && branches == 0) || globs_match(INVALID, &group_and_library) {
                 "—".to_string()
             } else {
                 format!("{instructions} / {branches}")
             };
-
-            let group_and_library = format!("{group}/{library}");
 
             for (glob, i) in FOOTNOTES_LIBRARY {
                 if glob_match(glob, &group_and_library) {

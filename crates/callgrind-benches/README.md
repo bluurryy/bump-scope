@@ -22,8 +22,7 @@ The `*_aligned` cases use a bump allocator with a sufficient minimum alignment f
 |---------------------------------|-----------------|-------------------|---------|-------------|
 | alloc_u8                        | 10 / 1          | 10 / 1            | 11 / 2  | 16 / 4      |
 | (try_) alloc_u32                | 14 / 1          | 11 / 1            | 15 / 3  | 18 / 4      |
-| alloc_u32_aligned               | 12 / 1          | 10 / 1            | 13 / 2  | 18 / 4 [^1] |
-| try_alloc_u32_aligned           | 12 / 1          | 10 / 1            | 13 / 2  | — [^1]      |
+| (try_) alloc_u32_aligned        | 12 / 1          | 10 / 1            | 13 / 2  | — [^1]      |
 | (try_) alloc_big_struct         | 21 / 1          | 20 / 1            | 22 / 3  | 25 / 4      |
 | (try_) alloc_big_struct_aligned | 19 / 1          | 19 / 1            | 20 / 2  | — [^1]      |
 | alloc_slice_copy                | 45 / 6          | 44 / 6            | 46 / 8  | 57 / 9      |
