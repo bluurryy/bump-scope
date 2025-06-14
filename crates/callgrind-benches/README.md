@@ -8,6 +8,8 @@ There are also criterion benchmarks at [../../benches](../../benches) and we kee
 
 The benchmarks results in the tables below are shown in the format "instruction count / branch count".
 
+The last benchmark run was using <!-- version start -->`rustc 1.89.0-nightly (777d37277 2025-05-17)` on `x86_64-unknown-linux-gnu` using `LLVM version 20.1`<!-- version end -->.
+
 ### Allocation
 
 The following cases benchmark allocating a value or a slice of values (not necessarily using the `Allocator` api).

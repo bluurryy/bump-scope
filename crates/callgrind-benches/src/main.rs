@@ -135,7 +135,7 @@ fn replace_section(readme: &str, section_name: &str, new_content: &str) -> Strin
     let before = &readme[..start_index];
     let after = &readme[end_index..];
 
-    format!("{before}\n\n{new_content}\n{after}")
+    format!("{before}{new_content}{after}")
 }
 
 fn rows() -> Vec<Vec<String>> {
@@ -202,6 +202,34 @@ fn merge_try_prefixed(rows: &mut Vec<Vec<String>>) {
     }
 }
 
+// like `rustc -V`
+fn fmt_rustc_version(version: &rustc_version::VersionMeta) -> String {
+    let mut s = String::new();
+
+    write!(s, "rustc {}", version.semver).unwrap();
+
+    if version.commit_hash.is_some() || version.commit_date.is_some() {
+        write!(s, " (").unwrap();
+
+        if let Some(commit_hash) = &version.commit_hash {
+            let commit_hash = &commit_hash[..9];
+            write!(s, "{commit_hash}").unwrap();
+        }
+
+        if let Some(commit_date) = &version.commit_date {
+            if version.commit_hash.is_some() {
+                write!(s, " ").unwrap();
+            }
+
+            write!(s, "{commit_date}").unwrap();
+        }
+
+        write!(s, ")").unwrap();
+    }
+
+    s
+}
+
 fn main() {
     let mut readme = std::fs::read_to_string("README.md").unwrap();
 
@@ -219,7 +247,24 @@ fn main() {
 
         merge_try_prefixed(&mut rows);
         let table = markdown_tables::as_table(&rows.into_iter().map(Row).collect::<Vec<_>>());
-        readme = replace_section(&readme, &format!("{section} table"), &table);
+        readme = replace_section(&readme, &format!("{section} table"), &format!("\n\n{table}\n"));
+    }
+
+    // update compiler info
+    {
+        let version = rustc_version::version_meta().expect("can't get rustc version");
+        let rustc = fmt_rustc_version(&version);
+        let host = &version.host;
+        let llvm = &version.llvm_version;
+
+        let mut s = String::new();
+        write!(s, "`{rustc}` on `{host}`").unwrap();
+
+        if let Some(llvm) = llvm {
+            write!(s, " using `LLVM version {llvm}`").unwrap();
+        }
+
+        readme = replace_section(&readme, "version", &s);
     }
 
     std::fs::write("README.md", readme).unwrap();
