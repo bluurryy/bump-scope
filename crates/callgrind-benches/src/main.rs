@@ -110,7 +110,7 @@ const LIBRARY_NAMES: &[&str] = &["bump_scope_up", "bump_scope_down", "bumpalo", 
 const FOOTNOTES_GROUP: &[(&str, usize)] = &[("*shrink*", 2)];
 const FOOTNOTES_LIBRARY: &[(&str, usize)] = &[("*_aligned/blink_alloc", 1)];
 
-const SECTIONS: &[(&str, &[&str])] = &[
+const TABLE_SECTIONS: &[(&str, &[&str])] = &[
     ("alloc", &["*alloc_*"]),
     ("allocator_api", &["allocate*", "grow*", "shrink*", "deallocate*"]),
     (
@@ -125,11 +125,9 @@ const SECTIONS: &[(&str, &[&str])] = &[
     ("misc", &["warm_up", "reset"]),
 ];
 
-fn patch_readme(section: &str, table: &str) {
-    let readme = std::fs::read_to_string("README.md").unwrap();
-
-    let start_marker = format!("<!-- {section} table start -->");
-    let end_marker = format!("<!-- {section} table end -->");
+fn replace_section(readme: &str, section_name: &str, new_content: &str) -> String {
+    let start_marker = format!("<!-- {section_name} start -->");
+    let end_marker = format!("<!-- {section_name} end -->");
 
     let start_index = readme.find(&start_marker).unwrap() + start_marker.len();
     let end_index = readme[start_index..].find(&end_marker).unwrap() + start_index;
@@ -137,8 +135,7 @@ fn patch_readme(section: &str, table: &str) {
     let before = &readme[..start_index];
     let after = &readme[end_index..];
 
-    let new_readme = format!("{before}\n\n{table}\n{after}");
-    std::fs::write("README.md", new_readme).unwrap();
+    format!("{before}\n\n{new_content}\n{after}")
 }
 
 fn rows() -> Vec<Vec<String>> {
@@ -206,10 +203,12 @@ fn merge_try_prefixed(rows: &mut Vec<Vec<String>>) {
 }
 
 fn main() {
+    let mut readme = std::fs::read_to_string("README.md").unwrap();
+
     let mut all_rows = rows();
     merge_try_prefixed(&mut all_rows);
 
-    for (section, section_globs) in SECTIONS {
+    for (section, section_globs) in TABLE_SECTIONS {
         let mut rows = vec![];
 
         for row in &all_rows {
@@ -220,7 +219,8 @@ fn main() {
 
         merge_try_prefixed(&mut rows);
         let table = markdown_tables::as_table(&rows.into_iter().map(Row).collect::<Vec<_>>());
-        println!("{section}: {table}");
-        patch_readme(section, &table);
+        readme = replace_section(&readme, &format!("{section} table"), &table);
     }
+
+    std::fs::write("README.md", readme).unwrap();
 }
