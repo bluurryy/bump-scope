@@ -1,0 +1,10 @@
+[package]
+name = "benches-lib"
+edition = "2024"
+
+[dependencies]
+allocator-api2 = "0.2"
+blink-alloc = "0.3.1"
+bump-scope = { version = "0.17.1", features = ["allocator-api2-02"] }
+bumpalo = { version = "3.18.1", features = ["allocator-api2"] }
+paste = "1.0.15"

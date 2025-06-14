@@ -50,6 +50,7 @@ jobs:
       - run: cd crates/test-hashbrown && cargo clippy --all-features
       - run: cd crates/tests-from-std && cargo clippy
       - run: cd crates/test-fallibility && cargo clippy
+      - run: cd crates/callgrind-benches && cargo clippy
   test-stable:
     runs-on: ubuntu-latest
     steps:
