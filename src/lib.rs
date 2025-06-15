@@ -293,7 +293,7 @@
 //! The point of this is so `Bump`s can be created without allocating memory and even `const` constructed since rust version 1.83.
 //! At the same time `Bump`s that have already allocated a chunk don't suffer runtime checks for entering scopes and creating checkpoints.
 //!
-//! [benches]: https://github.com/bluurryy/bump-scope/tree/callgrind-benches/crates/callgrind-benches
+//! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
 
 #[cfg(any(feature = "std", test))]
 extern crate std;
