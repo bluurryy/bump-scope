@@ -3,7 +3,7 @@ name = "criterion-benches"
 edition = "2024"
 
 [[bench]]
-name = "benches"
+name = "bench"
 harness = false
 
 [dev-dependencies]

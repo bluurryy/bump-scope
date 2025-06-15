@@ -3,8 +3,8 @@
 use core::alloc::Layout;
 
 use bump_scope::{
-    alloc::{AllocError, Global},
     Bump, BumpBox, MinimumAlignment, SupportedMinimumAlignment,
+    alloc::{AllocError, Global},
 };
 
 trait Bumper {
