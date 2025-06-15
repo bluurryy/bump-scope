@@ -2,7 +2,7 @@
 
 This crate contains micro-benchmarks to compare `bump-scope`'s up- and downwards allocator with other bump allocator crates and to keep track of regressions. Take these benchmarks with a grain of salt. A smaller number of instructions or branches does not necessarily mean better performance for your application. We benchmark instructions and branches instead of wall-clock time to get consistent results and to get results faster.
 
-There are also criterion benchmarks at [../../benches](../../benches) and we keep track of the generated assembly at [bluurryy/bump-scope-inspect-asm](https://github.com/bluurryy/bump-scope-inspect-asm).
+There are also criterion benchmarks at [../criterion-benches](../criterion-benches) and we keep track of the generated assembly at [bluurryy/bump-scope-inspect-asm](https://github.com/bluurryy/bump-scope-inspect-asm).
 
 ## Results
 
