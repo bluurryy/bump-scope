@@ -124,7 +124,3 @@ pre-release-replacements = [
     { file = "UPGRADING.md", search = "\\[Unreleased\\]: .*", replace = "[{{version}}]: CHANGELOG.md#{{version}}", min = 0 },
     { file = "UPGRADING.md", search = "#Unreleased", replace = "#{{version}}", min = 0 },
 ]
-
-[[bench]]
-name = "benches"
-harness = false
