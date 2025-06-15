@@ -539,9 +539,6 @@ trait SizedTypeProperties: Sized {
     const ALIGN: usize = mem::align_of::<Self>();
 
     const IS_ZST: bool = mem::size_of::<Self>() == 0;
-
-    #[cfg(test)]
-    const NEEDS_DROP: bool = mem::needs_drop::<Self>();
 }
 
 impl<T> SizedTypeProperties for T {}
@@ -588,7 +585,7 @@ macro_rules! bump_common_methods {
                 /// Returns a type which provides statistics about the memory usage of the bump allocator.
                 #[must_use]
                 #[inline(always)]
-                pub fn stats(&self) -> Stats<A, UP, GUARANTEED_ALLOCATED> {
+                pub fn stats(&self) -> Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
                     let header = self.chunk.get().header_ptr().cast();
                     unsafe { Stats::from_header_unchecked(header) }
                 }
@@ -688,7 +685,7 @@ macro_rules! collection_method_allocator_stats {
         /// This merely exists for api parity with `Mut*` collections which can't have a `allocator` method.
         #[must_use]
         #[inline(always)]
-        pub fn allocator_stats(&self) -> $crate::stats::AnyStats {
+        pub fn allocator_stats(&self) -> $crate::stats::AnyStats<'_> {
             self.allocator.stats()
         }
     };
@@ -703,7 +700,7 @@ macro_rules! mut_collection_method_allocator_stats {
         /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
         #[must_use]
         #[inline(always)]
-        pub fn allocator_stats(&self) -> $crate::stats::AnyStats {
+        pub fn allocator_stats(&self) -> $crate::stats::AnyStats<'_> {
             self.allocator.stats()
         }
     };

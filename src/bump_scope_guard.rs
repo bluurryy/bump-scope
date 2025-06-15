@@ -81,7 +81,7 @@ where
 
     /// Returns a new `BumpScope`.
     #[inline(always)]
-    pub fn scope(&mut self) -> BumpScope<A, MIN_ALIGN, UP> {
+    pub fn scope(&mut self) -> BumpScope<'_, A, MIN_ALIGN, UP> {
         unsafe { BumpScope::new_unchecked(self.chunk) }
     }
 
@@ -168,7 +168,7 @@ where
 
     /// Returns a new `BumpScope`.
     #[inline(always)]
-    pub fn scope(&mut self) -> BumpScope<A, MIN_ALIGN, UP> {
+    pub fn scope(&mut self) -> BumpScope<'_, A, MIN_ALIGN, UP> {
         unsafe { BumpScope::new_unchecked(self.chunk) }
     }
 
@@ -181,7 +181,7 @@ where
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<A, UP> {
+    pub fn stats(&self) -> Stats<'_, A, UP> {
         let header = self.chunk.header_ptr().cast();
         // SAFETY: `header` points to a valid chunk header which is guaranteed allocated
         unsafe { Stats::from_header_unchecked(header) }

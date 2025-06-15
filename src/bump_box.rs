@@ -1634,7 +1634,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn set_len_on_drop(&mut self) -> SetLenOnDropByPtr<T> {
+    pub(crate) unsafe fn set_len_on_drop(&mut self) -> SetLenOnDropByPtr<'_, T> {
         SetLenOnDropByPtr::new(&mut self.ptr)
     }
 
@@ -2332,7 +2332,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// ```
     ///
     /// [`retain`]: Self::retain
-    pub fn extract_if<F>(&mut self, filter: F) -> owned_slice::ExtractIf<T, F>
+    pub fn extract_if<F>(&mut self, filter: F) -> owned_slice::ExtractIf<'_, T, F>
     where
         F: FnMut(&mut T) -> bool,
     {

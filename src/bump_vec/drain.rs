@@ -1,3 +1,4 @@
+#![cfg(feature = "panic-on-alloc")]
 //! This is not part of public api.
 //!
 //! This exists solely for the implementation of [`Splice`](crate::bump_vec::Splice).

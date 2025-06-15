@@ -1989,7 +1989,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// ```
     ///
     /// [`retain`]: Self::retain
-    pub fn extract_if<F>(&mut self, filter: F) -> owned_slice::ExtractIf<T, F>
+    pub fn extract_if<F>(&mut self, filter: F) -> owned_slice::ExtractIf<'_, T, F>
     where
         F: FnMut(&mut T) -> bool,
     {

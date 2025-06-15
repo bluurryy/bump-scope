@@ -274,7 +274,7 @@ where
 {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    fn alloc_zeroed<T>(&self) -> BumpBox<T>
+    fn alloc_zeroed<T>(&self) -> BumpBox<'_, T>
     where
         T: FromZeros,
     {
@@ -282,7 +282,7 @@ where
     }
 
     #[inline(always)]
-    fn try_alloc_zeroed<T>(&self) -> Result<BumpBox<T>, AllocError>
+    fn try_alloc_zeroed<T>(&self) -> Result<BumpBox<'_, T>, AllocError>
     where
         T: FromZeros,
     {
@@ -291,7 +291,7 @@ where
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    fn alloc_zeroed_slice<T>(&self, len: usize) -> BumpBox<[T]>
+    fn alloc_zeroed_slice<T>(&self, len: usize) -> BumpBox<'_, [T]>
     where
         T: FromZeros,
     {
@@ -299,7 +299,7 @@ where
     }
 
     #[inline(always)]
-    fn try_alloc_zeroed_slice<T>(&self, len: usize) -> Result<BumpBox<[T]>, AllocError>
+    fn try_alloc_zeroed_slice<T>(&self, len: usize) -> Result<BumpBox<'_, [T]>, AllocError>
     where
         T: FromZeros,
     {

@@ -8,6 +8,7 @@ use crate::{capacity_overflow, format_trait_error, handle_alloc_error, Infallibl
 use layout::LayoutProps;
 
 pub(crate) trait ErrorBehavior: Sized {
+    #[cfg(feature = "panic-on-alloc")]
     const PANICS_ON_ALLOC: bool;
 
     fn allocation(layout: Layout) -> Self;
@@ -46,6 +47,7 @@ pub(crate) trait ErrorBehavior: Sized {
 
 #[cfg(feature = "panic-on-alloc")]
 impl ErrorBehavior for Infallible {
+    #[cfg(feature = "panic-on-alloc")]
     const PANICS_ON_ALLOC: bool = true;
 
     #[inline(always)]
@@ -123,6 +125,7 @@ impl ErrorBehavior for Infallible {
 }
 
 impl ErrorBehavior for AllocError {
+    #[cfg(feature = "panic-on-alloc")]
     const PANICS_ON_ALLOC: bool = false;
 
     #[inline(always)]

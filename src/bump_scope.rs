@@ -365,7 +365,7 @@ where
     /// ```
     #[must_use]
     #[inline(always)]
-    pub fn scope_guard(&mut self) -> BumpScopeGuard<A, MIN_ALIGN, UP> {
+    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, A, MIN_ALIGN, UP> {
         BumpScopeGuard::new(self)
     }
 

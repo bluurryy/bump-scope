@@ -152,7 +152,7 @@ where
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn get(&self) -> BumpPoolGuard<A, MIN_ALIGN, UP> {
+    pub fn get(&self) -> BumpPoolGuard<'_, A, MIN_ALIGN, UP> {
         panic_on_error(self.generic_get())
     }
 
@@ -166,11 +166,11 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     #[inline(always)]
-    pub fn try_get(&self) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP>, AllocError> {
+    pub fn try_get(&self) -> Result<BumpPoolGuard<'_, A, MIN_ALIGN, UP>, AllocError> {
         self.generic_get()
     }
 
-    pub(crate) fn generic_get<E: ErrorBehavior>(&self) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP>, E> {
+    pub(crate) fn generic_get<E: ErrorBehavior>(&self) -> Result<BumpPoolGuard<'_, A, MIN_ALIGN, UP>, E> {
         let bump = match self.lock().pop() {
             Some(bump) => bump,
             None => Bump::generic_new_in(self.allocator.clone())?,
@@ -194,7 +194,7 @@ where
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn get_with_size(&self, size: usize) -> BumpPoolGuard<A, MIN_ALIGN, UP> {
+    pub fn get_with_size(&self, size: usize) -> BumpPoolGuard<'_, A, MIN_ALIGN, UP> {
         panic_on_error(self.generic_get_with_size(size))
     }
 
@@ -208,11 +208,14 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     #[inline(always)]
-    pub fn try_get_with_size(&self, size: usize) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP>, AllocError> {
+    pub fn try_get_with_size(&self, size: usize) -> Result<BumpPoolGuard<'_, A, MIN_ALIGN, UP>, AllocError> {
         self.generic_get_with_size(size)
     }
 
-    pub(crate) fn generic_get_with_size<E: ErrorBehavior>(&self, size: usize) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP>, E> {
+    pub(crate) fn generic_get_with_size<E: ErrorBehavior>(
+        &self,
+        size: usize,
+    ) -> Result<BumpPoolGuard<'_, A, MIN_ALIGN, UP>, E> {
         let bump = match self.lock().pop() {
             Some(bump) => bump,
             None => Bump::generic_with_size_in(size, self.allocator.clone())?,
@@ -236,7 +239,7 @@ where
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn get_with_capacity(&self, layout: Layout) -> BumpPoolGuard<A, MIN_ALIGN, UP> {
+    pub fn get_with_capacity(&self, layout: Layout) -> BumpPoolGuard<'_, A, MIN_ALIGN, UP> {
         panic_on_error(self.generic_get_with_capacity(layout))
     }
 
@@ -250,14 +253,14 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     #[inline(always)]
-    pub fn try_get_with_capacity(&self, layout: Layout) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP>, AllocError> {
+    pub fn try_get_with_capacity(&self, layout: Layout) -> Result<BumpPoolGuard<'_, A, MIN_ALIGN, UP>, AllocError> {
         self.generic_get_with_capacity(layout)
     }
 
     pub(crate) fn generic_get_with_capacity<E: ErrorBehavior>(
         &self,
         layout: Layout,
-    ) -> Result<BumpPoolGuard<A, MIN_ALIGN, UP>, E> {
+    ) -> Result<BumpPoolGuard<'_, A, MIN_ALIGN, UP>, E> {
         let bump = match self.lock().pop() {
             Some(bump) => bump,
             None => Bump::generic_with_capacity_in(layout, self.allocator.clone())?,

@@ -717,7 +717,7 @@ where
     /// ```
     #[must_use]
     #[inline(always)]
-    pub fn scope_guard(&mut self) -> BumpScopeGuardRoot<A, MIN_ALIGN, UP> {
+    pub fn scope_guard(&mut self) -> BumpScopeGuardRoot<'_, A, MIN_ALIGN, UP> {
         BumpScopeGuardRoot::new(self)
     }
 
@@ -1004,7 +1004,7 @@ where
 
     /// Returns this `&Bump` as a `&BumpScope`.
     #[inline(always)]
-    pub fn as_scope(&self) -> &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
+    pub fn as_scope(&self) -> &BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
         // SAFETY: `Bump` and `BumpScope` both have the layout of `Cell<RawChunk>`
         //         `BumpScope`'s api is a subset of `Bump`'s
         unsafe { &*polyfill::ptr::from_ref(self).cast() }
@@ -1012,7 +1012,7 @@ where
 
     /// Returns this `&mut Bump` as a `&mut BumpScope`.
     #[inline(always)]
-    pub fn as_mut_scope(&mut self) -> &mut BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
+    pub fn as_mut_scope(&mut self) -> &mut BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
         // SAFETY: `Bump` and `BumpScope` both have the layout of `Cell<RawChunk>`
         //         `BumpScope`'s api is a subset of `Bump`'s
         unsafe { &mut *polyfill::ptr::from_mut(self).cast() }
@@ -1346,7 +1346,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc<T>(&self, value: T) -> BumpBox<T> {
+    pub fn alloc<T>(&self, value: T) -> BumpBox<'_, T> {
         self.as_scope().alloc(value)
     }
 
@@ -1364,7 +1364,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc<T>(&self, value: T) -> Result<BumpBox<T>, AllocError> {
+    pub fn try_alloc<T>(&self, value: T) -> Result<BumpBox<'_, T>, AllocError> {
         self.as_scope().try_alloc(value)
     }
 
@@ -1387,7 +1387,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_with<T>(&self, f: impl FnOnce() -> T) -> BumpBox<T> {
+    pub fn alloc_with<T>(&self, f: impl FnOnce() -> T) -> BumpBox<'_, T> {
         self.as_scope().alloc_with(f)
     }
 
@@ -1410,7 +1410,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_with<T>(&self, f: impl FnOnce() -> T) -> Result<BumpBox<T>, AllocError> {
+    pub fn try_alloc_with<T>(&self, f: impl FnOnce() -> T) -> Result<BumpBox<'_, T>, AllocError> {
         self.as_scope().try_alloc_with(f)
     }
 
@@ -1430,7 +1430,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_default<T: Default>(&self) -> BumpBox<T> {
+    pub fn alloc_default<T: Default>(&self) -> BumpBox<'_, T> {
         self.as_scope().alloc_default()
     }
 
@@ -1450,7 +1450,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_default<T: Default>(&self) -> Result<BumpBox<T>, AllocError> {
+    pub fn try_alloc_default<T: Default>(&self) -> Result<BumpBox<'_, T>, AllocError> {
         self.as_scope().try_alloc_default()
     }
 
@@ -1480,7 +1480,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_slice_move<T>(&self, slice: impl OwnedSlice<Item = T>) -> BumpBox<[T]> {
+    pub fn alloc_slice_move<T>(&self, slice: impl OwnedSlice<Item = T>) -> BumpBox<'_, [T]> {
         self.as_scope().alloc_slice_move(slice)
     }
 
@@ -1510,7 +1510,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_slice_move<T>(&self, slice: impl OwnedSlice<Item = T>) -> Result<BumpBox<[T]>, AllocError> {
+    pub fn try_alloc_slice_move<T>(&self, slice: impl OwnedSlice<Item = T>) -> Result<BumpBox<'_, [T]>, AllocError> {
         self.as_scope().try_alloc_slice_move(slice)
     }
 
@@ -1528,7 +1528,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_slice_copy<T: Copy>(&self, slice: &[T]) -> BumpBox<[T]> {
+    pub fn alloc_slice_copy<T: Copy>(&self, slice: &[T]) -> BumpBox<'_, [T]> {
         self.as_scope().alloc_slice_copy(slice)
     }
 
@@ -1546,7 +1546,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_slice_copy<T: Copy>(&self, slice: &[T]) -> Result<BumpBox<[T]>, AllocError> {
+    pub fn try_alloc_slice_copy<T: Copy>(&self, slice: &[T]) -> Result<BumpBox<'_, [T]>, AllocError> {
         self.as_scope().try_alloc_slice_copy(slice)
     }
 
@@ -1564,7 +1564,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_slice_clone<T: Clone>(&self, slice: &[T]) -> BumpBox<[T]> {
+    pub fn alloc_slice_clone<T: Clone>(&self, slice: &[T]) -> BumpBox<'_, [T]> {
         self.as_scope().alloc_slice_clone(slice)
     }
 
@@ -1582,7 +1582,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_slice_clone<T: Clone>(&self, slice: &[T]) -> Result<BumpBox<[T]>, AllocError> {
+    pub fn try_alloc_slice_clone<T: Clone>(&self, slice: &[T]) -> Result<BumpBox<'_, [T]>, AllocError> {
         self.as_scope().try_alloc_slice_clone(slice)
     }
 
@@ -1600,7 +1600,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_slice_fill<T: Clone>(&self, len: usize, value: T) -> BumpBox<[T]> {
+    pub fn alloc_slice_fill<T: Clone>(&self, len: usize, value: T) -> BumpBox<'_, [T]> {
         self.as_scope().alloc_slice_fill(len, value)
     }
 
@@ -1618,7 +1618,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_slice_fill<T: Clone>(&self, len: usize, value: T) -> Result<BumpBox<[T]>, AllocError> {
+    pub fn try_alloc_slice_fill<T: Clone>(&self, len: usize, value: T) -> Result<BumpBox<'_, [T]>, AllocError> {
         self.as_scope().try_alloc_slice_fill(len, value)
     }
 
@@ -1641,7 +1641,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_slice_fill_with<T>(&self, len: usize, f: impl FnMut() -> T) -> BumpBox<[T]> {
+    pub fn alloc_slice_fill_with<T>(&self, len: usize, f: impl FnMut() -> T) -> BumpBox<'_, [T]> {
         self.as_scope().alloc_slice_fill_with(len, f)
     }
 
@@ -1664,7 +1664,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_slice_fill_with<T>(&self, len: usize, f: impl FnMut() -> T) -> Result<BumpBox<[T]>, AllocError> {
+    pub fn try_alloc_slice_fill_with<T>(&self, len: usize, f: impl FnMut() -> T) -> Result<BumpBox<'_, [T]>, AllocError> {
         self.as_scope().try_alloc_slice_fill_with(len, f)
     }
 
@@ -1682,7 +1682,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_str(&self, src: &str) -> BumpBox<str> {
+    pub fn alloc_str(&self, src: &str) -> BumpBox<'_, str> {
         self.as_scope().alloc_str(src)
     }
 
@@ -1700,7 +1700,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_str(&self, src: &str) -> Result<BumpBox<str>, AllocError> {
+    pub fn try_alloc_str(&self, src: &str) -> Result<BumpBox<'_, str>, AllocError> {
         self.as_scope().try_alloc_str(src)
     }
 
@@ -1726,7 +1726,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_fmt(&self, args: fmt::Arguments) -> BumpBox<str> {
+    pub fn alloc_fmt(&self, args: fmt::Arguments) -> BumpBox<'_, str> {
         self.as_scope().alloc_fmt(args)
     }
 
@@ -1752,7 +1752,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_fmt(&self, args: fmt::Arguments) -> Result<BumpBox<str>, AllocError> {
+    pub fn try_alloc_fmt(&self, args: fmt::Arguments) -> Result<BumpBox<'_, str>, AllocError> {
         self.as_scope().try_alloc_fmt(args)
     }
 
@@ -1779,7 +1779,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_fmt_mut(&mut self, args: fmt::Arguments) -> BumpBox<str> {
+    pub fn alloc_fmt_mut(&mut self, args: fmt::Arguments) -> BumpBox<'_, str> {
         self.as_mut_scope().alloc_fmt_mut(args)
     }
 
@@ -1806,7 +1806,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_fmt_mut(&mut self, args: fmt::Arguments) -> Result<BumpBox<str>, AllocError> {
+    pub fn try_alloc_fmt_mut(&mut self, args: fmt::Arguments) -> Result<BumpBox<'_, str>, AllocError> {
         self.as_mut_scope().try_alloc_fmt_mut(args)
     }
 
@@ -2034,7 +2034,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> {
+    pub fn alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<'_, [T]> {
         self.as_scope().alloc_iter(iter)
     }
 
@@ -2059,7 +2059,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<[T]>, AllocError> {
+    pub fn try_alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<'_, [T]>, AllocError> {
         self.as_scope().try_alloc_iter(iter)
     }
 
@@ -2077,7 +2077,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_iter_exact<T, I>(&self, iter: impl IntoIterator<Item = T, IntoIter = I>) -> BumpBox<[T]>
+    pub fn alloc_iter_exact<T, I>(&self, iter: impl IntoIterator<Item = T, IntoIter = I>) -> BumpBox<'_, [T]>
     where
         I: ExactSizeIterator<Item = T>,
     {
@@ -2101,7 +2101,7 @@ where
     pub fn try_alloc_iter_exact<T, I>(
         &self,
         iter: impl IntoIterator<Item = T, IntoIter = I>,
-    ) -> Result<BumpBox<[T]>, AllocError>
+    ) -> Result<BumpBox<'_, [T]>, AllocError>
     where
         I: ExactSizeIterator<Item = T>,
     {
@@ -2128,7 +2128,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_iter_mut<T>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> {
+    pub fn alloc_iter_mut<T>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<'_, [T]> {
         self.as_mut_scope().alloc_iter_mut(iter)
     }
 
@@ -2152,7 +2152,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_iter_mut<T>(&mut self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<[T]>, AllocError> {
+    pub fn try_alloc_iter_mut<T>(&mut self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<'_, [T]>, AllocError> {
         self.as_mut_scope().try_alloc_iter_mut(iter)
     }
 
@@ -2179,7 +2179,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_iter_mut_rev<T>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<[T]> {
+    pub fn alloc_iter_mut_rev<T>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<'_, [T]> {
         self.as_mut_scope().alloc_iter_mut_rev(iter)
     }
 
@@ -2206,7 +2206,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_iter_mut_rev<T>(&mut self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<[T]>, AllocError> {
+    pub fn try_alloc_iter_mut_rev<T>(&mut self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<'_, [T]>, AllocError> {
         self.as_mut_scope().try_alloc_iter_mut_rev(iter)
     }
 
@@ -2244,7 +2244,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_uninit<T>(&self) -> BumpBox<MaybeUninit<T>> {
+    pub fn alloc_uninit<T>(&self) -> BumpBox<'_, MaybeUninit<T>> {
         self.as_scope().alloc_uninit()
     }
 
@@ -2283,7 +2283,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_uninit<T>(&self) -> Result<BumpBox<MaybeUninit<T>>, AllocError> {
+    pub fn try_alloc_uninit<T>(&self) -> Result<BumpBox<'_, MaybeUninit<T>>, AllocError> {
         self.as_scope().try_alloc_uninit()
     }
 
@@ -2330,7 +2330,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_uninit_slice<T>(&self, len: usize) -> BumpBox<[MaybeUninit<T>]> {
+    pub fn alloc_uninit_slice<T>(&self, len: usize) -> BumpBox<'_, [MaybeUninit<T>]> {
         self.as_scope().alloc_uninit_slice(len)
     }
 
@@ -2378,7 +2378,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_uninit_slice<T>(&self, len: usize) -> Result<BumpBox<[MaybeUninit<T>]>, AllocError> {
+    pub fn try_alloc_uninit_slice<T>(&self, len: usize) -> Result<BumpBox<'_, [MaybeUninit<T>]>, AllocError> {
         self.as_scope().try_alloc_uninit_slice(len)
     }
 
@@ -2408,7 +2408,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_uninit_slice_for<T>(&self, slice: &[T]) -> BumpBox<[MaybeUninit<T>]> {
+    pub fn alloc_uninit_slice_for<T>(&self, slice: &[T]) -> BumpBox<'_, [MaybeUninit<T>]> {
         self.as_scope().alloc_uninit_slice_for(slice)
     }
 
@@ -2438,7 +2438,7 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_uninit_slice_for<T>(&self, slice: &[T]) -> Result<BumpBox<[MaybeUninit<T>]>, AllocError> {
+    pub fn try_alloc_uninit_slice_for<T>(&self, slice: &[T]) -> Result<BumpBox<'_, [MaybeUninit<T>]>, AllocError> {
         self.as_scope().try_alloc_uninit_slice_for(slice)
     }
 
@@ -2461,7 +2461,7 @@ where
     #[deprecated = "use `FixedBumpVec::with_capacity_in()` instead"]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_fixed_vec<T>(&self, capacity: usize) -> FixedBumpVec<T> {
+    pub fn alloc_fixed_vec<T>(&self, capacity: usize) -> FixedBumpVec<'_, T> {
         #[allow(deprecated)]
         self.as_scope().alloc_fixed_vec(capacity)
     }
@@ -2485,7 +2485,7 @@ where
     #[doc(hidden)]
     #[deprecated = "use `FixedBumpVec::try_with_capacity_in()` instead"]
     #[inline(always)]
-    pub fn try_alloc_fixed_vec<T>(&self, capacity: usize) -> Result<FixedBumpVec<T>, AllocError> {
+    pub fn try_alloc_fixed_vec<T>(&self, capacity: usize) -> Result<FixedBumpVec<'_, T>, AllocError> {
         #[allow(deprecated)]
         self.as_scope().try_alloc_fixed_vec(capacity)
     }
@@ -2508,7 +2508,7 @@ where
     #[deprecated = "use `FixedBumpString::with_capacity_in()` instead"]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_fixed_string(&self, capacity: usize) -> FixedBumpString {
+    pub fn alloc_fixed_string(&self, capacity: usize) -> FixedBumpString<'_> {
         #[allow(deprecated)]
         self.as_scope().alloc_fixed_string(capacity)
     }
@@ -2531,7 +2531,7 @@ where
     #[doc(hidden)]
     #[deprecated = "use `FixedBumpString::try_with_capacity_in()` instead"]
     #[inline(always)]
-    pub fn try_alloc_fixed_string(&self, capacity: usize) -> Result<FixedBumpString, AllocError> {
+    pub fn try_alloc_fixed_string(&self, capacity: usize) -> Result<FixedBumpString<'_>, AllocError> {
         #[allow(deprecated)]
         self.as_scope().try_alloc_fixed_string(capacity)
     }
@@ -2662,7 +2662,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     #[allow(clippy::missing_errors_doc)]
-    pub fn alloc_try_with<T, E>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> {
+    pub fn alloc_try_with<T, E>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<'_, T>, E> {
         self.as_scope().alloc_try_with(f)
     }
 
@@ -2697,7 +2697,10 @@ where
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_alloc_try_with<T, E>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<Result<BumpBox<T>, E>, AllocError> {
+    pub fn try_alloc_try_with<T, E>(
+        &self,
+        f: impl FnOnce() -> Result<T, E>,
+    ) -> Result<Result<BumpBox<'_, T>, E>, AllocError> {
         self.as_scope().try_alloc_try_with(f)
     }
 
@@ -2732,7 +2735,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     #[allow(clippy::missing_errors_doc)]
-    pub fn alloc_try_with_mut<T, E>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<T>, E> {
+    pub fn alloc_try_with_mut<T, E>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<'_, T>, E> {
         self.as_mut_scope().alloc_try_with_mut(f)
     }
 
@@ -2770,7 +2773,7 @@ where
     pub fn try_alloc_try_with_mut<T, E>(
         &mut self,
         f: impl FnOnce() -> Result<T, E>,
-    ) -> Result<Result<BumpBox<T>, E>, AllocError> {
+    ) -> Result<Result<BumpBox<'_, T>, E>, AllocError> {
         self.as_mut_scope().try_alloc_try_with_mut(f)
     }
 }

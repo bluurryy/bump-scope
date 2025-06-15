@@ -148,7 +148,7 @@ impl<T> RawFixedBumpVec<T> {
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn set_len_on_drop(&mut self) -> SetLenOnDropByPtr<T> {
+    pub(crate) unsafe fn set_len_on_drop(&mut self) -> SetLenOnDropByPtr<'_, T> {
         SetLenOnDropByPtr::new(&mut self.initialized.ptr)
     }
 

@@ -1,5 +1,5 @@
 #![no_std]
-#![allow(non_snake_case, clippy::missing_safety_doc)]
+#![allow(non_snake_case, mismatched_lifetime_syntaxes, clippy::missing_safety_doc)]
 extern crate alloc;
 
 use core::{alloc::Layout, ffi::CStr, fmt, mem::MaybeUninit, ptr::NonNull};
