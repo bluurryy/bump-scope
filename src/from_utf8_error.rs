@@ -2,7 +2,7 @@ use core::{fmt, ops::Deref, str::Utf8Error};
 
 /// A possible error value when converting a string from a UTF-8 byte vector.
 ///
-/// This type is the error type for the [`BumpString::from_utf8`](crate::BumpString::from_utf8), [`MutBumpString::from_utf8`](crate::MutBumpString::from_utf8) and [`BumpBox<str>::from_utf8`](crate::BumpBox::from_utf8). It
+/// This type is the error type for [`BumpString::from_utf8`](crate::BumpString::from_utf8), [`MutBumpString::from_utf8`](crate::MutBumpString::from_utf8) and [`BumpBox<str>::from_utf8`](crate::BumpBox::from_utf8). It
 /// is designed in such a way to carefully avoid reallocations: the
 /// [`into_bytes`](FromUtf8Error::into_bytes) method will give back the byte vector that was used in the
 /// conversion attempt.
