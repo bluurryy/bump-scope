@@ -92,7 +92,7 @@
 //! - `Bump`'s base allocator is generic.
 //! - Won't try to allocate a smaller chunk if allocation failed.
 //! - No built-in allocation limit. You can provide an allocator that enforces an allocation limit (see `tests/limit_memory_usage.rs`).
-//! - Allocations are a tiny bit more optimized. See [./crates/callgrind-benches/README.md][benches].
+//! - Allocations are a tiny bit more optimized. See [./crates/callgrind-benches][benches].
 //! - [You can choose the bump direction.](#bumping-upwards-or-downwards) Bumps upwards by default.
 //!
 //! # Allocator Methods
@@ -272,7 +272,7 @@
 //! with the exception of [`MutBumpVecRev`](crate::MutBumpVecRev) and [`alloc_iter_mut_rev`](crate::Bump::alloc_iter_mut_rev).
 //! [`MutBumpVecRev`](crate::MutBumpVecRev) can be grown and shrunk in place if and only if bumping downwards.
 //!
-//! For the performance impact see [./crates/callgrind-benches/README.md][benches].
+//! For the performance impact see [./crates/callgrind-benches][benches].
 //!
 //! # Minimum alignment?
 //! The minimum alignment is controlled by the generic parameter `const MIN_ALIGN: usize`. By default, `MIN_ALIGN` is `1`.
@@ -280,7 +280,7 @@
 //! For example changing the minimum alignment to `4` makes it so allocations with the alignment of `4` don't need to align the bump pointer anymore.
 //! This will penalize allocations whose sizes are not a multiple of `4` as their size now needs to be rounded up the next multiple of `4`.
 //!
-//! For the performance impact see [./crates/callgrind-benches/README.md][benches].
+//! For the performance impact see [./crates/callgrind-benches][benches].
 //!
 //! # `GUARANTEED_ALLOCATED` parameter?
 //! If `GUARANTEED_ALLOCATED` is `true` then the bump allocator is guaranteed to have at least one allocated chunk.
