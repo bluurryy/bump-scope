@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Improve documentation.
+- Improve documentation regarding allocator api, hashbrown, benchmarks and `BumpAllocator(Scope)`.
 
 ## [0.17.1] - 2025-06-07
 
