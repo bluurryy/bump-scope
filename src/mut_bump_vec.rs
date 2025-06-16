@@ -674,14 +674,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     pub(crate) fn generic_with_capacity_in<E: ErrorBehavior>(capacity: usize, allocator: A) -> Result<Self, E> {
         let mut allocator = allocator;
 
-        if T::IS_ZST {
-            return Ok(Self {
-                fixed: RawFixedBumpVec::EMPTY,
-                allocator,
-            });
-        }
-
-        if capacity == 0 {
+        if T::IS_ZST || capacity == 0 {
             return Ok(Self {
                 fixed: RawFixedBumpVec::EMPTY,
                 allocator,
