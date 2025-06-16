@@ -14,7 +14,7 @@ use crate::{handle_alloc_error, panic_on_error};
 
 /// A bump allocator.
 ///
-/// A bump allocator is much more relaxed in what memory block parameters it allows.
+/// This is an [`Allocator`] which has additional capabilities.
 ///
 /// Notably:
 /// - You can call `grow*`, `shrink` and `deallocate` with pointers that did not come from this allocator. In this case:

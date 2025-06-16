@@ -3,7 +3,10 @@ use crate::{
     WithoutShrink,
 };
 
-/// An allocator that makes allocations with a lifetime of `'a`.
+/// A bump allocator scope.
+///
+/// This is a [`BumpAllocator`] which can make allocations that outlive itself.
+/// Specifically, its allocations live for the lifetime `'a`.
 ///
 /// # Safety
 ///
