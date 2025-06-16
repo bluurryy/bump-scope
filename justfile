@@ -1,6 +1,3 @@
-# This was written for nushell version 0.100.0
-set shell := ["nu", "-c"]
-
 export RUST_BACKTRACE := "1"
 export MIRIFLAGS := "-Zmiri-strict-provenance"
 
@@ -24,10 +21,10 @@ check:
 
 check-fmt:
   cargo fmt --check
-  cd crates/fuzzing-support; cargo fmt --check
-  cd crates/test-fallibility; cargo fmt --check
-  cd crates/callgrind-benches; cargo fmt --check
-  cd crates/criterion-benches; cargo fmt --check
+  cd crates/fuzzing-support && cargo fmt --check
+  cd crates/test-fallibility && cargo fmt --check
+  cd crates/callgrind-benches && cargo fmt --check
+  cd crates/criterion-benches && cargo fmt --check
   cd fuzz; cargo fmt --check
 
 check-clippy:
@@ -42,18 +39,18 @@ check-clippy:
   cargo +nightly clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03
   cargo +nightly clippy --tests --all-features
 
-  cd crates/fuzzing-support; cargo clippy --tests
-  cd crates/test-fallibility; cargo clippy --tests
-  cd crates/tests-from-std; cargo clippy --tests
-  cd crates/callgrind-benches; cargo clippy --tests --benches --workspace
-  cd crates/criterion-benches; cargo clippy --tests --benches --workspace
-  cd fuzz; cargo clippy
+  cd crates/fuzzing-support && cargo clippy --tests
+  cd crates/test-fallibility && cargo clippy --tests
+  cd crates/tests-from-std && cargo clippy --tests
+  cd crates/callgrind-benches && cargo clippy --tests --benches --workspace
+  cd crates/criterion-benches && cargo clippy --tests --benches --workspace
+  cd fuzz && cargo clippy
 
 check-nostd:
-  cd crates/test-fallibility; cargo check
+  cd crates/test-fallibility && cargo check
 
 check-fallibility:
-  @ just crates/test-fallibility/test
+  cd crates/test-fallibility && nu assert-no-panics.nu
 
 test:
   just test-non-miri
@@ -61,23 +58,23 @@ test:
 
 test-non-miri: 
   cargo test --all-features
-  cd crates/tests-from-std; cargo test
-  cd crates/test-hashbrown; cargo test
-  cd crates/test-hashbrown; cargo test --all-features
-  cd crates/fuzzing-support; cargo test
+  cd crates/tests-from-std && cargo test
+  cd crates/test-hashbrown && cargo test
+  cd crates/test-hashbrown && cargo test --all-features
+  cd crates/fuzzing-support && cargo test
 
 test-miri:
   cargo miri test --all-features
-  cd crates/tests-from-std; cargo miri test
-  cd crates/test-hashbrown; cargo miri test
-  cd crates/test-hashbrown; cargo miri test --all-features
-  cd crates/fuzzing-support; cargo miri test
+  cd crates/tests-from-std && cargo miri test
+  cd crates/test-hashbrown && cargo miri test
+  cd crates/test-hashbrown && cargo miri test --all-features
+  cd crates/fuzzing-support && cargo miri test
 
 fmt:
   cargo fmt
-  cd crates/fuzzing-support; cargo fmt
-  cd crates/test-fallibility; cargo fmt
-  cd fuzz; cargo fmt
+  cd crates/fuzzing-support && cargo fmt
+  cd crates/test-fallibility && cargo fmt
+  cd fuzz && cargo fmt
 
 spellcheck:
   # https://www.npmjs.com/package/cspell
