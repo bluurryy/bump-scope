@@ -66,7 +66,7 @@ where
 {
     #[inline(always)]
     #[allow(clippy::needless_pass_by_ref_mut)]
-    pub(crate) fn new<'parent>(bump: &'a mut BumpScope<'parent, A, MIN_ALIGN, UP>) -> Self {
+    pub(crate) fn new(bump: &'a mut BumpScope<'_, A, MIN_ALIGN, UP>) -> Self {
         unsafe { Self::new_unchecked(bump.chunk.get()) }
     }
 
