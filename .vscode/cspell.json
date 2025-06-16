@@ -68,6 +68,7 @@
     "indexmap",
     "inplace",
     "insertable",
+    "intralinks",
     "jemalloc",
     "justfile",
     "kenobi",

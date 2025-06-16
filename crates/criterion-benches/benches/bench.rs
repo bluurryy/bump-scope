@@ -52,9 +52,9 @@ where
     }
 }
 
-impl Bumper for bumpalo::Bump {
+impl<const MIN_ALIGN: usize> Bumper for bumpalo::Bump<MIN_ALIGN> {
     fn with_capacity(layout: Layout) -> Self {
-        bumpalo::Bump::with_capacity(layout.size())
+        bumpalo::Bump::with_min_align_and_capacity(layout.size())
     }
 
     fn alloc<T>(&self, value: T) -> &mut T {
@@ -89,6 +89,7 @@ impl Bumper for bumpalo::Bump {
 }
 
 use criterion::*;
+use std::hint::black_box;
 
 type Small = u8;
 type Big = [usize; 32];
@@ -214,6 +215,8 @@ fn bench_alloc<T: Default>(c: &mut Criterion, name: &str) {
     let mut group = c.benchmark_group(name);
     group.throughput(Throughput::Elements(ALLOCATIONS as u64));
     group.bench_function("bumpalo", func(alloc_with::<bumpalo::Bump, T>));
+    group.bench_function("bumpalo_aligned", func(alloc_with::<bumpalo::Bump::<4>, T>));
+    group.bench_function("bumpalo_overaligned", func(alloc_with::<bumpalo::Bump::<16>, T>));
     group.bench_function("up", func(alloc_with::<Bump<Global, 1, true>, T>));
     group.bench_function("up_aligned", func(alloc_with::<Bump<Global, 4, true>, T>));
     group.bench_function("up_overaligned", func(alloc_with::<Bump<Global, 16, true>, T>));
@@ -227,6 +230,8 @@ fn bench_alloc_try<T: Default>(c: &mut Criterion, name: &str) {
     let mut group = c.benchmark_group(name);
     group.throughput(Throughput::Elements(ALLOCATIONS as u64));
     group.bench_function("bumpalo", func(try_alloc_with::<bumpalo::Bump, T>));
+    group.bench_function("bumpalo_aligned", func(try_alloc_with::<bumpalo::Bump<4>, T>));
+    group.bench_function("bumpalo_overaligned", func(try_alloc_with::<bumpalo::Bump<16>, T>));
     group.bench_function("up", func(try_alloc_with::<Bump<Global, 1, true>, T>));
     group.bench_function("up_aligned", func(try_alloc_with::<Bump<Global, 4, true>, T>));
     group.bench_function("up_overaligned", func(try_alloc_with::<Bump<Global, 16, true>, T>));

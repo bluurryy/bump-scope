@@ -7,8 +7,8 @@ name = "bench"
 harness = false
 
 [dev-dependencies]
-allocator-api2 = "0.2"
+allocator-api2 = "0.2.21"
 bump-scope = { version = "0.17.1", features = ["allocator-api2-02"] }
 bumpalo = { version = "3.18.1", features = ["allocator-api2"] }
 paste = "1.0.15"
-criterion = { version = "0.5.1", features = ["html_reports"] }
+criterion = { version = "0.6.0", features = ["html_reports"] }
