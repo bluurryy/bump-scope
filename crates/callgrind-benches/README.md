@@ -30,6 +30,8 @@ The `*_overaligned` cases use a bump allocator with a minimum alignment greater 
 | alloc_big_struct             | 21 / 1          | 20 / 1            | 22 / 3  | 25 / 4      |
 | alloc_big_struct_aligned     | 19 / 1          | 19 / 1            | 20 / 2  | — [^1]      |
 | alloc_big_struct_overaligned | 20 / 1          | 20 / 1            | 20 / 2  | — [^1]      |
+| alloc_u8_slice               | 32 / 3          | 32 / 3            | 32 / 4  | 36 / 6      |
+| alloc_u8_slice_overaligned   | 34 / 3          | 33 / 3            | 36 / 5  | — [^1]      |
 | alloc_u32_slice              | 45 / 6          | 44 / 6            | 46 / 8  | 57 / 9      |
 | alloc_u32_slice_aligned      | 43 / 6          | 43 / 6            | 44 / 7  | — [^1]      |
 | alloc_u32_slice_overaligned  | 45 / 6          | 44 / 6            | 46 / 7  | — [^1]      |
@@ -53,6 +55,8 @@ The benchmark cases above use the infallible api, panicking if allocating a new 
 | try_alloc_big_struct             | 21 / 1          | 20 / 1            | 22 / 3  | 25 / 4      |
 | try_alloc_big_struct_aligned     | 19 / 1          | 19 / 1            | 20 / 2  | — [^1]      |
 | try_alloc_big_struct_overaligned | 20 / 1          | 20 / 1            | 20 / 2  | — [^1]      |
+| try_alloc_u8_slice               | 32 / 3          | 33 / 4            | 33 / 4  | 36 / 6      |
+| try_alloc_u8_slice_overaligned   | 34 / 3          | 34 / 4            | 37 / 5  | — [^1]      |
 | try_alloc_u32_slice              | 47 / 7          | 45 / 7            | 46 / 8  | 53 / 9      |
 | try_alloc_u32_slice_aligned      | 43 / 6          | 44 / 7            | 44 / 7  | — [^1]      |
 | try_alloc_u32_slice_overaligned  | 45 / 6          | 45 / 7            | 46 / 7  | — [^1]      |
@@ -94,7 +98,7 @@ allocator api function call is not inlined then the compiler can do less optimiz
 | black_box_grow_larger_align         | 25 / 2          | 53 / 7            | 63 / 10 | 57 / 9      |
 | black_box_shrink_same_align [^2]    | 13 / 2          | 47 / 7            | 45 / 7  | 23 / 3      |
 | black_box_shrink_smaller_align [^2] | 13 / 2          | 50 / 9            | 48 / 9  | 23 / 3      |
-| black_box_shrink_larger_align [^2]  | 13 / 2          | 47 / 7            | 15 / 2  | —           |
+| black_box_shrink_larger_align [^2]  | 13 / 2          | 47 / 7            | 15 / 2  | 57 / 9      |
 | black_box_deallocate                | 6 / 1           | 6 / 1             | 7 / 1   | 6 / 2       |
 | black_box_deallocate_non_last       | 5 / 1           | 4 / 1             | 5 / 1   | 6 / 2       |
 

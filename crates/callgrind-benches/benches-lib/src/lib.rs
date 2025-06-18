@@ -317,6 +317,8 @@ macro_rules! benches {
 }
 
 pub struct BigStruct(#[expect(dead_code)] [u64; 7]);
+
+const U8_SLICE: &[u8] = &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 const U32_SLICE: &[u32] = &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 
 impl BigStruct {
@@ -542,6 +544,46 @@ benches! {
             run(&bump, U32_SLICE);
         }
         run {'a} (bump: &'a Bump::<8>, value: &[u32]) -> Option<&'a mut [u32]> {
+            bump.try_alloc_slice_copy(value)
+        }
+    }
+
+    alloc_u8_slice {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            run(&bump, U8_SLICE);
+        }
+        run {'a} (bump: &'a Bump, value: &[u8]) -> &'a mut [u8] {
+            bump.alloc_slice_copy(value)
+        }
+    }
+
+    alloc_u8_slice_overaligned {
+        wrap(run) {
+            let bump = Bump::<8>::with_capacity(1024);
+            run(&bump, U8_SLICE);
+        }
+        run {'a} (bump: &'a Bump::<8>, value: &[u8]) -> &'a mut [u8] {
+            bump.alloc_slice_copy(value)
+        }
+    }
+
+    try_alloc_u8_slice {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            run(&bump, U8_SLICE);
+        }
+        run {'a} (bump: &'a Bump, value: &[u8]) -> Option<&'a mut [u8]> {
+            bump.try_alloc_slice_copy(value)
+        }
+    }
+
+    try_alloc_u8_slice_overaligned {
+        wrap(run) {
+            let bump = Bump::<8>::with_capacity(1024);
+            run(&bump, U8_SLICE);
+        }
+        run {'a} (bump: &'a Bump::<8>, value: &[u8]) -> Option<&'a mut [u8]> {
             bump.try_alloc_slice_copy(value)
         }
     }

@@ -84,6 +84,11 @@ benches! {
     try_alloc_big_struct_aligned
     try_alloc_big_struct_overaligned
 
+    alloc_u8_slice
+    alloc_u8_slice_overaligned
+    try_alloc_u8_slice
+    try_alloc_u8_slice_overaligned
+
     alloc_u32_slice
     alloc_u32_slice_aligned
     alloc_u32_slice_overaligned
