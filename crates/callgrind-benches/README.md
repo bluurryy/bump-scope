@@ -18,23 +18,37 @@ The `*_aligned` cases use a bump allocator with a sufficient minimum alignment f
 
 <!-- alloc table start -->
 
+| name                     | bump-scope (up) | bump-scope (down) | bumpalo    | blink-alloc |
+|--------------------------|-----------------|-------------------|------------|-------------|
+| alloc_u8                 | 10 / 1 / 0      | 10 / 1 / 0        | 11 / 2 / 1 | 16 / 4 / 0  |
+| alloc_u32                | 14 / 1 / 0      | 11 / 1 / 0        | 15 / 3 / 0 | 18 / 4 / 0  |
+| alloc_u32_aligned        | 12 / 1 / 0      | 10 / 1 / 0        | 13 / 2 / 0 | — [^1]      |
+| alloc_big_struct         | 21 / 1 / 0      | 20 / 1 / 0        | 22 / 3 / 0 | 25 / 4 / 1  |
+| alloc_big_struct_aligned | 19 / 1 / 0      | 19 / 1 / 0        | 20 / 2 / 0 | — [^1]      |
+| alloc_slice_copy         | 45 / 6 / 2      | 44 / 6 / 1        | 46 / 8 / 2 | 57 / 9 / 2  |
+| alloc_slice_copy_aligned | 43 / 6 / 1      | 43 / 6 / 1        | 44 / 7 / 2 | — [^1]      |
+
+<!-- alloc table end -->
+
+The benchmark cases above use the infallible api, panicking if allocating a new chunk from the base allocator were to fail.
+
+<details>
+<summary>Expand this section to see the benchmarks for the fallible api.</summary>
+
+<!-- try alloc table start -->
+
 | name                         | bump-scope (up) | bump-scope (down) | bumpalo    | blink-alloc |
 |------------------------------|-----------------|-------------------|------------|-------------|
-| alloc_u8                     | 10 / 1 / 0      | 10 / 1 / 0        | 11 / 2 / 1 | 16 / 4 / 0  |
-| alloc_u32                    | 14 / 1 / 0      | 11 / 1 / 0        | 15 / 3 / 0 | 18 / 4 / 0  |
-| alloc_u32_aligned            | 12 / 1 / 0      | 10 / 1 / 0        | 13 / 2 / 0 | — [^1]      |
 | try_alloc_u32                | 14 / 1 / 0      | 11 / 1 / 1        | 15 / 3 / 1 | 18 / 4 / 0  |
 | try_alloc_u32_aligned        | 12 / 1 / 0      | 10 / 1 / 0        | 13 / 2 / 0 | — [^1]      |
-| alloc_big_struct             | 21 / 1 / 0      | 20 / 1 / 0        | 22 / 3 / 0 | 25 / 4 / 1  |
-| alloc_big_struct_aligned     | 19 / 1 / 0      | 19 / 1 / 0        | 20 / 2 / 0 | — [^1]      |
 | try_alloc_big_struct         | 21 / 1 / 0      | 20 / 1 / 0        | 22 / 3 / 0 | 25 / 4 / 0  |
 | try_alloc_big_struct_aligned | 19 / 1 / 0      | 19 / 1 / 0        | 20 / 2 / 0 | — [^1]      |
-| alloc_slice_copy             | 45 / 6 / 2      | 44 / 6 / 1        | 46 / 8 / 2 | 57 / 9 / 2  |
-| alloc_slice_copy_aligned     | 43 / 6 / 1      | 43 / 6 / 1        | 44 / 7 / 2 | — [^1]      |
 | try_alloc_slice_copy         | 47 / 7 / 2      | 45 / 7 / 2        | 46 / 8 / 2 | 53 / 9 / 2  |
 | try_alloc_slice_copy_aligned | 43 / 6 / 1      | 44 / 7 / 2        | 44 / 7 / 2 | — [^1]      |
 
-<!-- alloc table end -->
+<!-- try alloc table end -->
+
+</details>
 
 ### Allocator API
 

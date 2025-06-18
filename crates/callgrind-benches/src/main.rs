@@ -124,7 +124,8 @@ const FOOTNOTES_GROUP: &[(&str, usize)] = &[("*shrink*", 2)];
 const FOOTNOTES_LIBRARY: &[(&str, usize)] = &[("*_aligned/blink_alloc", 1)];
 
 const TABLE_SECTIONS: &[(&str, &[&str])] = &[
-    ("alloc", &["*alloc_*"]),
+    ("alloc", &["alloc_*"]),
+    ("try alloc", &["try_alloc_*"]),
     ("allocator_api", &["allocate*", "grow*", "shrink*", "deallocate*"]),
     (
         "black_box_allocator_api",
