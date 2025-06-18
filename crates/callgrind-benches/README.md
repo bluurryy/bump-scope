@@ -6,7 +6,7 @@ There are also criterion benchmarks at [../criterion-benches](../criterion-bench
 
 ## Results
 
-The benchmarks results in the tables below are shown in the format "instruction count / branch count".
+The benchmarks results in the tables below are shown in the format "instructions executed / branches executed / branch predictor misses".
 
 These are the results of a benchmark run with <!-- version start -->`rustc 1.87.0 (17067e9ac 2025-05-09)` on `x86_64-unknown-linux-gnu` using `LLVM version 20.1.1`<!-- version end -->.
 
@@ -18,17 +18,19 @@ The `*_aligned` cases use a bump allocator with a sufficient minimum alignment f
 
 <!-- alloc table start -->
 
-| name                            | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
-|---------------------------------|-----------------|-------------------|---------|-------------|
-| alloc_u8                        | 10 / 1          | 10 / 1            | 11 / 2  | 16 / 4      |
-| (try_) alloc_u32                | 14 / 1          | 11 / 1            | 15 / 3  | 18 / 4      |
-| (try_) alloc_u32_aligned        | 12 / 1          | 10 / 1            | 13 / 2  | — [^1]      |
-| (try_) alloc_big_struct         | 21 / 1          | 20 / 1            | 22 / 3  | 25 / 4      |
-| (try_) alloc_big_struct_aligned | 19 / 1          | 19 / 1            | 20 / 2  | — [^1]      |
-| alloc_slice_copy                | 45 / 6          | 44 / 6            | 46 / 8  | 57 / 9      |
-| alloc_slice_copy_aligned        | 43 / 6          | 43 / 6            | 44 / 7  | — [^1]      |
-| try_alloc_slice_copy            | 47 / 7          | 45 / 7            | 46 / 8  | 53 / 9      |
-| try_alloc_slice_copy_aligned    | 43 / 6          | 44 / 7            | 44 / 7  | — [^1]      |
+| name                            | bump-scope (up) | bump-scope (down) | bumpalo    | blink-alloc |
+|---------------------------------|-----------------|-------------------|------------|-------------|
+| alloc_u8                        | 10 / 1 / 0      | 10 / 1 / 0        | 11 / 2 / 1 | 16 / 4 / 0  |
+| alloc_u32                       | 14 / 1 / 0      | 11 / 1 / 0        | 15 / 3 / 0 | 18 / 4 / 0  |
+| (try_) alloc_u32_aligned        | 12 / 1 / 0      | 10 / 1 / 0        | 13 / 2 / 0 | — [^1]      |
+| try_alloc_u32                   | 14 / 1 / 0      | 11 / 1 / 1        | 15 / 3 / 1 | 18 / 4 / 0  |
+| alloc_big_struct                | 21 / 1 / 0      | 20 / 1 / 0        | 22 / 3 / 0 | 25 / 4 / 1  |
+| (try_) alloc_big_struct_aligned | 19 / 1 / 0      | 19 / 1 / 0        | 20 / 2 / 0 | — [^1]      |
+| try_alloc_big_struct            | 21 / 1 / 0      | 20 / 1 / 0        | 22 / 3 / 0 | 25 / 4 / 0  |
+| alloc_slice_copy                | 45 / 6 / 2      | 44 / 6 / 1        | 46 / 8 / 2 | 57 / 9 / 2  |
+| alloc_slice_copy_aligned        | 43 / 6 / 1      | 43 / 6 / 1        | 44 / 7 / 2 | — [^1]      |
+| try_alloc_slice_copy            | 47 / 7 / 2      | 45 / 7 / 2        | 46 / 8 / 2 | 53 / 9 / 2  |
+| try_alloc_slice_copy_aligned    | 43 / 6 / 1      | 44 / 7 / 2        | 44 / 7 / 2 | — [^1]      |
 
 <!-- alloc table end -->
 
@@ -38,17 +40,17 @@ The following cases benchmark the `Allocator` trait implementations.
 
 <!-- allocator_api table start -->
 
-| name                      | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
-|---------------------------|-----------------|-------------------|---------|-------------|
-| allocate                  | 15 / 2          | 13 / 2            | 13 / 3  | 16 / 4      |
-| grow_same_align           | 19 / 2          | 19 / 2            | 53 / 4  | 18 / 4      |
-| grow_smaller_align        | 19 / 2          | 19 / 2            | 53 / 4  | 18 / 4      |
-| grow_larger_align         | 19 / 2          | 19 / 2            | 17 / 3  | 20 / 4      |
-| shrink_same_align [^2]    | 11 / 2          | 17 / 2            | 12 / 1  | 5 / 1       |
-| shrink_smaller_align [^2] | 11 / 2          | 17 / 2            | 12 / 1  | 5 / 1       |
-| shrink_larger_align [^2]  | 11 / 2          | 17 / 2            | 5 / 1   | 20 / 4      |
-| deallocate                | 6 / 1           | 6 / 1             | 7 / 1   | 6 / 2       |
-| deallocate_non_last       | 5 / 1           | 4 / 1             | 5 / 1   | 6 / 2       |
+| name                      | bump-scope (up) | bump-scope (down) | bumpalo    | blink-alloc |
+|---------------------------|-----------------|-------------------|------------|-------------|
+| allocate                  | 15 / 2 / 0      | 13 / 2 / 0        | 13 / 3 / 0 | 16 / 4 / 1  |
+| grow_same_align           | 19 / 2 / 0      | 19 / 2 / 1        | 53 / 4 / 3 | 18 / 4 / 1  |
+| grow_smaller_align        | 19 / 2 / 0      | 19 / 2 / 1        | 53 / 4 / 3 | 18 / 4 / 1  |
+| grow_larger_align         | 19 / 2 / 0      | 19 / 2 / 1        | 17 / 3 / 0 | 20 / 4 / 1  |
+| shrink_same_align [^2]    | 11 / 2 / 1      | 17 / 2 / 1        | 12 / 1 / 1 | 5 / 1 / 0   |
+| shrink_smaller_align [^2] | 11 / 2 / 1      | 17 / 2 / 1        | 12 / 1 / 1 | 5 / 1 / 0   |
+| shrink_larger_align [^2]  | 11 / 2 / 1      | 17 / 2 / 1        | 5 / 1 / 1  | 20 / 4 / 0  |
+| deallocate                | 6 / 1 / 1       | 6 / 1 / 1         | 7 / 1 / 1  | 6 / 2 / 1   |
+| deallocate_non_last       | 5 / 1 / 0       | 4 / 1 / 0         | 5 / 1 / 0  | 6 / 2 / 0   |
 
 <!-- allocator_api table end -->
 
@@ -57,17 +59,17 @@ allocator api function call is not inlined then the compiler can do less optimiz
 
 <!-- black_box_allocator_api table start -->
 
-| name                                | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
-|-------------------------------------|-----------------|-------------------|---------|-------------|
-| black_box_allocate                  | 16 / 2          | 14 / 2            | 26 / 5  | 23 / 4      |
-| black_box_grow_same_align           | 25 / 2          | 53 / 7            | 99 / 11 | 31 / 6      |
-| black_box_grow_smaller_align        | 25 / 2          | 53 / 7            | 99 / 11 | 31 / 6      |
-| black_box_grow_larger_align         | 25 / 2          | 53 / 7            | 63 / 10 | 57 / 9      |
-| black_box_shrink_same_align [^2]    | 13 / 2          | 47 / 7            | 45 / 7  | 23 / 3      |
-| black_box_shrink_smaller_align [^2] | 13 / 2          | 50 / 9            | 48 / 9  | 23 / 3      |
-| black_box_shrink_larger_align [^2]  | 13 / 2          | 47 / 7            | 15 / 2  | 57 / 9      |
-| black_box_deallocate                | 6 / 1           | 6 / 1             | 7 / 1   | 6 / 2       |
-| black_box_deallocate_non_last       | 5 / 1           | 4 / 1             | 5 / 1   | 6 / 2       |
+| name                                | bump-scope (up) | bump-scope (down) | bumpalo     | blink-alloc |
+|-------------------------------------|-----------------|-------------------|-------------|-------------|
+| black_box_allocate                  | 16 / 2 / 0      | 14 / 2 / 0        | 26 / 5 / 1  | 23 / 4 / 0  |
+| black_box_grow_same_align           | 25 / 2 / 0      | 53 / 7 / 4        | 99 / 11 / 4 | 31 / 6 / 1  |
+| black_box_grow_smaller_align        | 25 / 2 / 0      | 53 / 7 / 4        | 99 / 11 / 4 | 31 / 6 / 1  |
+| black_box_grow_larger_align         | 25 / 2 / 1      | 53 / 7 / 4        | 63 / 10 / 4 | 57 / 9 / 4  |
+| black_box_shrink_same_align [^2]    | 13 / 2 / 1      | 47 / 7 / 4        | 45 / 7 / 2  | 23 / 3 / 0  |
+| black_box_shrink_smaller_align [^2] | 13 / 2 / 1      | 50 / 9 / 4        | 48 / 9 / 1  | 23 / 3 / 1  |
+| black_box_shrink_larger_align [^2]  | 13 / 2 / 1      | 47 / 7 / 4        | 15 / 2 / 1  | 57 / 9 / 4  |
+| black_box_deallocate                | 6 / 1 / 1       | 6 / 1 / 1         | 7 / 1 / 1   | 6 / 2 / 0   |
+| black_box_deallocate_non_last       | 5 / 1 / 0       | 4 / 1 / 0         | 5 / 1 / 0   | 6 / 2 / 1   |
 
 <!-- black_box_allocator_api table end -->
 
@@ -78,10 +80,10 @@ allocator api function call is not inlined then the compiler can do less optimiz
 
 <!-- misc table start -->
 
-| name    | bump-scope (up) | bump-scope (down) | bumpalo  | blink-alloc |
-|---------|-----------------|-------------------|----------|-------------|
-| warm_up | 227 / 31        | 233 / 32          | 358 / 43 | 284 / 38    |
-| reset   | 26 / 2          | 25 / 2            | 23 / 2   | 26 / 3      |
+| name    | bump-scope (up) | bump-scope (down) | bumpalo       | blink-alloc   |
+|---------|-----------------|-------------------|---------------|---------------|
+| warm_up | 227 / 31 / 10   | 233 / 32 / 11     | 358 / 43 / 15 | 284 / 38 / 14 |
+| reset   | 26 / 2 / 2      | 25 / 2 / 2        | 23 / 2 / 1    | 26 / 3 / 2    |
 
 <!-- misc table end -->
 
