@@ -22,7 +22,6 @@ fn left(metric: &EitherOrBothForUint64) -> Option<u64> {
 struct Report {
     instructions: u64,
     branches: u64,
-    branch_predictor_misses: u64,
 }
 
 fn read_summary(path: &Path) -> Report {
@@ -33,7 +32,6 @@ fn read_summary(path: &Path) -> Report {
 
     let mut ir = None;
     let mut bc = None;
-    let mut bcm = None;
 
     for (kind, diff) in &total.0 {
         match kind.as_str() {
@@ -43,9 +41,6 @@ fn read_summary(path: &Path) -> Report {
             "Bc" => {
                 bc = left(&diff.metrics);
             }
-            "Bcm" => {
-                bcm = left(&diff.metrics);
-            }
             _ => (),
         }
     }
@@ -53,7 +48,6 @@ fn read_summary(path: &Path) -> Report {
     Report {
         instructions: ir.unwrap_or(u64::MAX),
         branches: bc.unwrap_or(u64::MAX),
-        branch_predictor_misses: bcm.unwrap_or(u64::MAX),
     }
 }
 
@@ -168,18 +162,14 @@ fn rows() -> Vec<Vec<String>> {
 
         for &library in LIBRARY_NAMES {
             let path = format!("target/iai/{PACKAGE_NAME}/{BENCH_NAME}/{group}/{library}/summary.json");
-            let Report {
-                instructions,
-                branches,
-                branch_predictor_misses,
-            } = read_summary(path.as_ref());
+            let Report { instructions, branches } = read_summary(path.as_ref());
 
             let group_and_library = format!("{group}/{library}");
 
             let mut cell = if (instructions == 0 && branches == 0) || globs_match(INVALID, &group_and_library) {
                 "—".to_string()
             } else {
-                format!("{instructions} / {branches} / {branch_predictor_misses}")
+                format!("{instructions} / {branches}")
             };
 
             for (glob, i) in FOOTNOTES_LIBRARY {
