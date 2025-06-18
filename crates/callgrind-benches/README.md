@@ -1,6 +1,6 @@
 # Benchmarks
 
-This crate contains micro-benchmarks to compare `bump-scope`'s up- and downwards allocator with other bump allocator crates and to keep track of regressions. Take these benchmarks with a grain of salt. A smaller number of instructions or branches does not necessarily mean better performance for your application. We benchmark instructions and branches instead of wall-clock time to get consistent, precise and faster results.
+This crate contains micro-benchmarks to compare `bump-scope`'s up- and downwards allocator and other bump allocator crates. Take these benchmarks with a grain of salt. A smaller number of instructions or branches does not necessarily mean better performance for your application. We benchmark instructions and branches instead of wall-clock time to get consistent, precise and faster results.
 
 There are also criterion benchmarks at [../criterion-benches](../criterion-benches) and we keep track of the generated assembly at [bluurryy/bump-scope-inspect-asm](https://github.com/bluurryy/bump-scope-inspect-asm).
 
@@ -8,7 +8,7 @@ There are also criterion benchmarks at [../criterion-benches](../criterion-bench
 
 The benchmarks results in the tables below are shown in the format "instruction count / branch count".
 
-The last benchmark run was using <!-- version start -->`rustc 1.87.0 (17067e9ac 2025-05-09)` on `x86_64-unknown-linux-gnu` using `LLVM version 20.1.1`<!-- version end -->.
+These are the results of a benchmark run with <!-- version start -->`rustc 1.87.0 (17067e9ac 2025-05-09)` on `x86_64-unknown-linux-gnu` using `LLVM version 20.1.1`<!-- version end -->.
 
 ### Allocation
 
