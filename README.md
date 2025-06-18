@@ -12,7 +12,7 @@ A fast bump allocator that supports allocation scopes / checkpoints. Aka an aren
 
 ## What is bump allocation?
 A bump allocator owns a big chunk of memory. It has a pointer that starts at one end of that chunk.
-When an allocation is made that pointer gets aligned and bumped towards the other end of the chunk by the allocation's size.
+When an allocation is made that pointer gets aligned and bumped towards the other end of the chunk.
 When its chunk is full, this allocator allocates another chunk with twice the size.
 
 This makes allocations very fast. The drawback is that you can't reclaim memory like you do with a more general allocator.
