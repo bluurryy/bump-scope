@@ -252,8 +252,7 @@ fn rustc_version() -> HashMap<String, String> {
 fn main() {
     let mut readme = std::fs::read_to_string("README.md").unwrap();
 
-    let mut all_rows = rows();
-    merge_try_prefixed(&mut all_rows);
+    let all_rows = rows();
 
     for (section, section_globs) in TABLE_SECTIONS {
         let mut rows = vec![];
