@@ -206,6 +206,7 @@ fn globs_match(globs: &[&str], path: &str) -> bool {
     false
 }
 
+#[expect(dead_code)]
 // merge `try_`-prefix cases with non-prefixed if the result is the same
 fn merge_try_prefixed(rows: &mut Vec<Vec<String>>) {
     #![allow(clippy::collapsible_if)]
@@ -273,7 +274,7 @@ fn main() {
             }
         }
 
-        merge_try_prefixed(&mut rows);
+        // merge_try_prefixed(&mut rows);
         let table = markdown_tables::as_table(&rows.into_iter().map(Row).collect::<Vec<_>>());
         readme = replace_section(&readme, &format!("{section} table"), &format!("\n\n{table}\n"));
     }
