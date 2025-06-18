@@ -1,4 +1,5 @@
 # This was written for nushell version 0.100.0
+# and `cargo-show-asm` version 0.2.43
 
 if not ("out" | path exists) { 
     mkdir out 
