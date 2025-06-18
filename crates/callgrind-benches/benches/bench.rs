@@ -66,22 +66,30 @@ macro_rules! benches {
 
 benches! {
     alloc_u8
+    alloc_u8_overaligned
     try_alloc_u8
+    try_alloc_u8_overaligned
 
     alloc_u32
     alloc_u32_aligned
+    alloc_u32_overaligned
     try_alloc_u32
     try_alloc_u32_aligned
+    try_alloc_u32_overaligned
 
     alloc_big_struct
     alloc_big_struct_aligned
+    alloc_big_struct_overaligned
     try_alloc_big_struct
     try_alloc_big_struct_aligned
+    try_alloc_big_struct_overaligned
 
     alloc_u32_slice
     alloc_u32_slice_aligned
+    alloc_u32_slice_overaligned
     try_alloc_u32_slice
     try_alloc_u32_slice_aligned
+    try_alloc_u32_slice_overaligned
 
     allocate
     grow_same_align

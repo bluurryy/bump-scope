@@ -14,19 +14,25 @@ These are the results of a benchmark run with <!-- version start -->`rustc 1.87.
 
 The following cases benchmark allocating a value or a slice of values (not necessarily using the `Allocator` api).
 
-The `*_aligned` cases use a bump allocator with a sufficient minimum alignment for the allocated type (if supported).
+The `*_aligned` cases use a bump allocator with a sufficient minimum alignment for the allocated type, eliminating the need to align the bump pointer for the allocation.
+
+The `*_overaligned` cases use a bump allocator with a minimum alignment greater than the alignment of type being allocated. This requires rounding up the bump pointer to keep it aligned.
 
 <!-- alloc table start -->
 
-| name                     | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
-|--------------------------|-----------------|-------------------|---------|-------------|
-| alloc_u8                 | 10 / 1          | 10 / 1            | 11 / 2  | 16 / 4      |
-| alloc_u32                | 14 / 1          | 11 / 1            | 15 / 3  | 18 / 4      |
-| alloc_u32_aligned        | 12 / 1          | 10 / 1            | 13 / 2  | — [^1]      |
-| alloc_big_struct         | 21 / 1          | 20 / 1            | 22 / 3  | 25 / 4      |
-| alloc_big_struct_aligned | 19 / 1          | 19 / 1            | 20 / 2  | — [^1]      |
-| alloc_u32_slice          | 45 / 6          | 44 / 6            | 46 / 8  | 57 / 9      |
-| alloc_u32_slice_aligned  | 43 / 6          | 43 / 6            | 44 / 7  | — [^1]      |
+| name                         | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
+|------------------------------|-----------------|-------------------|---------|-------------|
+| alloc_u8                     | 10 / 1          | 10 / 1            | 11 / 2  | 16 / 4      |
+| alloc_u8_overaligned         | 12 / 1          | 11 / 1            | 13 / 2  | — [^1]      |
+| alloc_u32                    | 14 / 1          | 11 / 1            | 15 / 3  | 18 / 4      |
+| alloc_u32_aligned            | 12 / 1          | 10 / 1            | 13 / 2  | — [^1]      |
+| alloc_u32_overaligned        | 13 / 1          | 11 / 1            | 13 / 2  | — [^1]      |
+| alloc_big_struct             | 21 / 1          | 20 / 1            | 22 / 3  | 25 / 4      |
+| alloc_big_struct_aligned     | 19 / 1          | 19 / 1            | 20 / 2  | — [^1]      |
+| alloc_big_struct_overaligned | 20 / 1          | 20 / 1            | 20 / 2  | — [^1]      |
+| alloc_u32_slice              | 45 / 6          | 44 / 6            | 46 / 8  | 57 / 9      |
+| alloc_u32_slice_aligned      | 43 / 6          | 43 / 6            | 44 / 7  | — [^1]      |
+| alloc_u32_slice_overaligned  | 45 / 6          | 44 / 6            | 46 / 7  | — [^1]      |
 
 <!-- alloc table end -->
 
@@ -37,15 +43,19 @@ The benchmark cases above use the infallible api, panicking if allocating a new 
 
 <!-- try alloc table start -->
 
-| name                         | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
-|------------------------------|-----------------|-------------------|---------|-------------|
-| try_alloc_u8                 | 10 / 1          | 10 / 1            | 11 / 2  | 16 / 4      |
-| try_alloc_u32                | 14 / 1          | 11 / 1            | 15 / 3  | 18 / 4      |
-| try_alloc_u32_aligned        | 12 / 1          | 10 / 1            | 13 / 2  | — [^1]      |
-| try_alloc_big_struct         | 21 / 1          | 20 / 1            | 22 / 3  | 25 / 4      |
-| try_alloc_big_struct_aligned | 19 / 1          | 19 / 1            | 20 / 2  | — [^1]      |
-| try_alloc_u32_slice          | 47 / 7          | 45 / 7            | 46 / 8  | 53 / 9      |
-| try_alloc_u32_slice_aligned  | 43 / 6          | 44 / 7            | 44 / 7  | — [^1]      |
+| name                             | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
+|----------------------------------|-----------------|-------------------|---------|-------------|
+| try_alloc_u8                     | 10 / 1          | 10 / 1            | 11 / 2  | 16 / 4      |
+| try_alloc_u8_overaligned         | 12 / 1          | 11 / 1            | 13 / 2  | — [^1]      |
+| try_alloc_u32                    | 14 / 1          | 11 / 1            | 15 / 3  | 18 / 4      |
+| try_alloc_u32_aligned            | 12 / 1          | 10 / 1            | 13 / 2  | — [^1]      |
+| try_alloc_u32_overaligned        | 13 / 1          | 11 / 1            | 13 / 2  | — [^1]      |
+| try_alloc_big_struct             | 21 / 1          | 20 / 1            | 22 / 3  | 25 / 4      |
+| try_alloc_big_struct_aligned     | 19 / 1          | 19 / 1            | 20 / 2  | — [^1]      |
+| try_alloc_big_struct_overaligned | 20 / 1          | 20 / 1            | 20 / 2  | — [^1]      |
+| try_alloc_u32_slice              | 47 / 7          | 45 / 7            | 46 / 8  | 53 / 9      |
+| try_alloc_u32_slice_aligned      | 43 / 6          | 44 / 7            | 44 / 7  | — [^1]      |
+| try_alloc_u32_slice_overaligned  | 45 / 6          | 45 / 7            | 46 / 7  | — [^1]      |
 
 <!-- try alloc table end -->
 
@@ -84,7 +94,7 @@ allocator api function call is not inlined then the compiler can do less optimiz
 | black_box_grow_larger_align         | 25 / 2          | 53 / 7            | 63 / 10 | 57 / 9      |
 | black_box_shrink_same_align [^2]    | 13 / 2          | 47 / 7            | 45 / 7  | 23 / 3      |
 | black_box_shrink_smaller_align [^2] | 13 / 2          | 50 / 9            | 48 / 9  | 23 / 3      |
-| black_box_shrink_larger_align [^2]  | 13 / 2          | 47 / 7            | 15 / 2  | 57 / 9      |
+| black_box_shrink_larger_align [^2]  | 13 / 2          | 47 / 7            | 15 / 2  | —           |
 | black_box_deallocate                | 6 / 1           | 6 / 1             | 7 / 1   | 6 / 2       |
 | black_box_deallocate_non_last       | 5 / 1           | 4 / 1             | 5 / 1   | 6 / 2       |
 

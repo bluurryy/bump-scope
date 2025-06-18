@@ -336,12 +336,32 @@ benches! {
         }
     }
 
+    alloc_u8_overaligned {
+        wrap(run) {
+            let bump = Bump::<8>::with_capacity(1024);
+            run(&bump, 42);
+        }
+        run(bump: &Bump<8>, value: u8) -> &u8 {
+            bump.alloc(value)
+        }
+    }
+
     try_alloc_u8 {
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump, 42);
         }
         run(bump: &Bump, value: u8) -> Option<&u8> {
+            bump.try_alloc(value)
+        }
+    }
+
+    try_alloc_u8_overaligned {
+        wrap(run) {
+            let bump = Bump::<8>::with_capacity(1024);
+            run(&bump, 42);
+        }
+        run(bump: &Bump<8>, value: u8) -> Option<&u8> {
             bump.try_alloc(value)
         }
     }
@@ -366,6 +386,16 @@ benches! {
         }
     }
 
+    alloc_u32_overaligned {
+        wrap(run) {
+            let bump = Bump::<8>::with_capacity(1024);
+            run(&bump, 42);
+        }
+        run(bump: &Bump::<8>, value: u32) -> &u32 {
+            bump.alloc(value)
+        }
+    }
+
     try_alloc_u32 {
         wrap(run) {
             let bump = Bump::with_capacity(1024);
@@ -382,6 +412,16 @@ benches! {
             run(&bump, 42);
         }
         run(bump: &Bump::<4>, value: u32) -> Option<&u32> {
+            bump.try_alloc(value)
+        }
+    }
+
+    try_alloc_u32_overaligned {
+        wrap(run) {
+            let bump = Bump::<8>::with_capacity(1024);
+            run(&bump, 42);
+        }
+        run(bump: &Bump::<8>, value: u32) -> Option<&u32> {
             bump.try_alloc(value)
         }
     }
@@ -406,6 +446,16 @@ benches! {
         }
     }
 
+    alloc_big_struct_overaligned {
+        wrap(run) {
+            let bump = Bump::<16>::with_capacity(1024);
+            run(&bump, BigStruct::new());
+        }
+        run(bump: &Bump::<16>, value: BigStruct) -> &BigStruct {
+            bump.alloc(value)
+        }
+    }
+
     try_alloc_big_struct {
         wrap(run) {
             let bump = Bump::with_capacity(1024);
@@ -422,6 +472,16 @@ benches! {
             run(&bump, BigStruct::new());
         }
         run(bump: &Bump::<8>, value: BigStruct) -> Option<&BigStruct> {
+            bump.try_alloc(value)
+        }
+    }
+
+    try_alloc_big_struct_overaligned {
+        wrap(run) {
+            let bump = Bump::<16>::with_capacity(1024);
+            run(&bump, BigStruct::new());
+        }
+        run(bump: &Bump::<16>, value: BigStruct) -> Option<&BigStruct> {
             bump.try_alloc(value)
         }
     }
@@ -446,6 +506,16 @@ benches! {
         }
     }
 
+    alloc_u32_slice_overaligned {
+        wrap(run) {
+            let bump = Bump::<8>::with_capacity(1024);
+            run(&bump, U32_SLICE);
+        }
+        run {'a} (bump: &'a Bump::<8>, value: &[u32]) -> &'a mut [u32] {
+            bump.alloc_slice_copy(value)
+        }
+    }
+
     try_alloc_u32_slice {
         wrap(run) {
             let bump = Bump::with_capacity(1024);
@@ -462,6 +532,16 @@ benches! {
             run(&bump, U32_SLICE);
         }
         run {'a} (bump: &'a Bump::<4>, value: &[u32]) -> Option<&'a mut [u32]> {
+            bump.try_alloc_slice_copy(value)
+        }
+    }
+
+    try_alloc_u32_slice_overaligned {
+        wrap(run) {
+            let bump = Bump::<8>::with_capacity(1024);
+            run(&bump, U32_SLICE);
+        }
+        run {'a} (bump: &'a Bump::<8>, value: &[u32]) -> Option<&'a mut [u32]> {
             bump.try_alloc_slice_copy(value)
         }
     }

@@ -65,22 +65,30 @@ impl MarkdownTableRow for Row {
 
 const GROUP_NAMES: &[&str] = &[
     "alloc_u8",
+    "alloc_u8_overaligned",
     "try_alloc_u8",
+    "try_alloc_u8_overaligned",
     //
     "alloc_u32",
     "alloc_u32_aligned",
+    "alloc_u32_overaligned",
     "try_alloc_u32",
     "try_alloc_u32_aligned",
+    "try_alloc_u32_overaligned",
     //
     "alloc_big_struct",
     "alloc_big_struct_aligned",
+    "alloc_big_struct_overaligned",
     "try_alloc_big_struct",
     "try_alloc_big_struct_aligned",
+    "try_alloc_big_struct_overaligned",
     //
     "alloc_u32_slice",
     "alloc_u32_slice_aligned",
+    "alloc_u32_slice_overaligned",
     "try_alloc_u32_slice",
     "try_alloc_u32_slice_aligned",
+    "try_alloc_u32_slice_overaligned",
     //
     "allocate",
     "grow_same_align",
@@ -112,11 +120,11 @@ const INVALID: &[&str] = &[
     // These particular cases generally result in a `0` instruction count anyway due to function deduplication i assume.
     // However the `alloc_u32_aligned` for some reason didn't which messed with the `try_` prefix merging.
     // The results of these cases is not interesting anyway because it's the as for the non-`_aligned` cases.
-    "*_aligned/blink_alloc",
+    "*aligned/blink_alloc",
 ];
 
 const FOOTNOTES_GROUP: &[(&str, usize)] = &[("*shrink*", 2)];
-const FOOTNOTES_LIBRARY: &[(&str, usize)] = &[("*_aligned/blink_alloc", 1)];
+const FOOTNOTES_LIBRARY: &[(&str, usize)] = &[("*aligned/blink_alloc", 1)];
 
 const TABLE_SECTIONS: &[(&str, &[&str])] = &[
     ("alloc", &["alloc_*"]),
