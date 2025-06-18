@@ -66,6 +66,7 @@ macro_rules! benches {
 
 benches! {
     alloc_u8
+    try_alloc_u8
 
     alloc_u32
     alloc_u32_aligned

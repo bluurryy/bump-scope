@@ -336,6 +336,16 @@ benches! {
         }
     }
 
+    try_alloc_u8 {
+        wrap(run) {
+            let bump = Bump::with_capacity(1024);
+            run(&bump, 42);
+        }
+        run(bump: &Bump, value: u8) -> Option<&u8> {
+            bump.try_alloc(value)
+        }
+    }
+
     alloc_u32 {
         wrap(run) {
             let bump = Bump::with_capacity(1024);
