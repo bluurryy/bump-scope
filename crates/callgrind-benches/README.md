@@ -85,8 +85,9 @@ The following cases benchmark the `Allocator` trait implementations.
 
 <!-- allocator_api table end -->
 
-The allocator api benchmarks above use a statically known `Layout`. If the layout is not statically known for instance if the
-allocator api function call is not inlined then the compiler can do less optimizations:
+The allocator api benchmarks above use a statically known `Layout`. Consumers of allocators don't necessarily use their allocator in a way that makes the `Layout` or even just the alignment statically known to the `allocate` function. For instance `Vec::push` doesn't[^3].
+
+If the layout is not statically known then the compiler can not do as many optimizations:
 
 <!-- black_box_allocator_api table start -->
 
@@ -120,6 +121,7 @@ allocator api function call is not inlined then the compiler can do less optimiz
 
 [^1]: `blink-alloc` does not support setting a minimum alignment
 [^2]: the shrink implementations differ a lot, `bump-scope` always tries to shrink the allocation, `bumpalo` only shrinks if it can do so with a `copy_nonoverlapping` and `blink-alloc` does not shrink allocations unless required due to alignment
+[^3]: tested here: <https://github.com/bluurryy/is-layout-statically-known-to-allocator>
 
 ## Reproducing
 
