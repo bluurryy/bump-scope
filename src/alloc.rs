@@ -29,7 +29,8 @@ use crate::polyfill::non_null;
 #[cfg(feature = "alloc")]
 pub use global::Global;
 
-/// Contains wrappers that makes implementors of foreign `Allocator` traits implement this crate's [`Allocator`].
+/// Contains wrappers that makes implementors of foreign `Allocator` traits
+/// implement this crate's [`Allocator`] and vice versa.
 ///
 /// Note that the bump allocator itself already implements foreign `Allocator` traits, so you
 /// generally only need this for a base allocator.
