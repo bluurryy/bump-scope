@@ -38,7 +38,7 @@ The `*_overaligned` cases use a bump allocator with a minimum alignment greater 
 
 <!-- alloc table end -->
 
-The benchmark cases above use the infallible api, panicking if allocating a new chunk from the base allocator were to fail.
+The benchmark cases above use the infallible api, panicking if allocating a new chunk from the base allocator fails.
 
 <details>
 <summary>Expand this section to see the benchmarks for the fallible api.</summary>
