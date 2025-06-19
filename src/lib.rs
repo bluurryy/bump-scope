@@ -192,7 +192,7 @@
 //! To bump allocate in parallel you can use a [`BumpPool`](crate::BumpPool).
 //!
 //! # Allocator API
-//! `Bump` and `BumpScope` implement `bump-scope`'s own `Allocator` trait and with the
+//! `Bump` and `BumpScope` implement `bump-scope`'s own [`Allocator`](crate::alloc::Allocator) trait and with the
 //! respective [feature flags](#feature-flags) also implement `allocator_api2@0.2`, `allocator_api2@0.3` and nightly's `Allocator` trait.
 //! All of these traits mirror the nightly `Allocator` trait at the time of writing.
 //!
