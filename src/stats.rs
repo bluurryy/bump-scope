@@ -111,8 +111,8 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
     /// Returns the amount of allocated bytes.
     /// This includes padding and wasted space due to reallocations.
     ///
-    /// This is not the same as the sum of the chunks' `allocated` property!
-    /// Instead this is the `allocated` of the current chunk plus the total `capacity` of all previous chunks.
+    /// This is equal to the `allocated` bytes of the current chunk
+    /// plus the `capacity` of all previous chunks.
     #[must_use]
     pub fn allocated(self) -> usize {
         let current = match self.get_current_chunk() {
@@ -127,8 +127,8 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
 
     /// Returns the remaining capacity in bytes.
     ///
-    /// This is not the same as the sum of the chunks' `remaining` property!
-    /// Instead this is the `remaining` of the current chunk plus the total `capacity` of all next chunks.
+    /// This is equal to the `remaining` capacity of the current chunk
+    /// plus the `capacity` of all following chunks.
     #[must_use]
     pub fn remaining(self) -> usize {
         let current = match self.get_current_chunk() {
