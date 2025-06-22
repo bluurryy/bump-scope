@@ -1146,9 +1146,14 @@ where
 
     /// Borrows `Bump` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
+    /// Unlike [`guaranteed_allocated_mut`] this method is usually not very useful, since an ***immutable***
+    /// guaranteed allocated `Bump` does not provide any new api.
+    ///
     /// # Panics
     ///
     /// Panics if the allocation fails.
+    ///
+    /// [`guaranteed_allocated_mut`]: Self::guaranteed_allocated_mut
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn guaranteed_allocated_ref(&self) -> &Bump<A, MIN_ALIGN, UP> {
@@ -1157,8 +1162,13 @@ where
 
     /// Borrows `Bump` as an [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
+    /// Unlike [`try_guaranteed_allocated_mut`] this method is usually not very useful, since an ***immutable***
+    /// guaranteed allocated `Bump` does not provide any new api.
+    ///
     /// # Errors
     /// Errors if the allocation fails.
+    ///
+    /// [`try_guaranteed_allocated_mut`]: Self::try_guaranteed_allocated_mut
     #[inline(always)]
     pub fn try_guaranteed_allocated_ref(&self) -> Result<&Bump<A, MIN_ALIGN, UP>, AllocError> {
         self.generic_guaranteed_allocated_ref()
