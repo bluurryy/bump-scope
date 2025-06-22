@@ -1155,7 +1155,7 @@ where
         self.generic_alloc_with(Default::default)
     }
 
-    /// Allocate a slice and move elements from an existing slice.
+    /// Allocate a slice and fill it by moving elements from an existing slice.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1185,7 +1185,7 @@ where
         panic_on_error(self.generic_alloc_slice_move(slice))
     }
 
-    /// Allocate a slice and move elements from an existing slice.
+    /// Allocate a slice and fill it by moving elements from an existing slice.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1223,7 +1223,7 @@ where
         Ok(BumpVec::generic_from_owned_slice_in(slice, self)?.into_boxed_slice())
     }
 
-    /// Allocate a slice and `Copy` elements from an existing slice.
+    /// Allocate a slice and fill it by `Copy`ing elements from an existing slice.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1241,7 +1241,7 @@ where
         panic_on_error(self.generic_alloc_slice_copy(slice))
     }
 
-    /// Allocate a slice and `Copy` elements from an existing slice.
+    /// Allocate a slice and fill it by `Copy`ing elements from an existing slice.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1275,7 +1275,7 @@ where
         }
     }
 
-    /// Allocate a slice and `Clone` elements from an existing slice.
+    /// Allocate a slice and fill it by `Clone`ing elements from an existing slice.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1293,7 +1293,7 @@ where
         panic_on_error(self.generic_alloc_slice_clone(slice))
     }
 
-    /// Allocate a slice and `Clone` elements from an existing slice.
+    /// Allocate a slice and fill it by `Clone`ing elements from an existing slice.
     ///
     /// # Errors
     /// Errors if the allocation fails.

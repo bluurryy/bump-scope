@@ -1465,7 +1465,7 @@ where
         self.as_scope().try_alloc_default()
     }
 
-    /// Allocate a slice and move elements from an existing slice.
+    /// Allocate a slice and fill it by moving elements from an existing slice.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1495,7 +1495,7 @@ where
         self.as_scope().alloc_slice_move(slice)
     }
 
-    /// Allocate a slice and move elements from an existing slice.
+    /// Allocate a slice and fill it by moving elements from an existing slice.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1525,7 +1525,7 @@ where
         self.as_scope().try_alloc_slice_move(slice)
     }
 
-    /// Allocate a slice and `Copy` elements from an existing slice.
+    /// Allocate a slice and fill it by `Copy`ing elements from an existing slice.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1543,7 +1543,7 @@ where
         self.as_scope().alloc_slice_copy(slice)
     }
 
-    /// Allocate a slice and `Copy` elements from an existing slice.
+    /// Allocate a slice and fill it by `Copy`ing elements from an existing slice.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1561,7 +1561,7 @@ where
         self.as_scope().try_alloc_slice_copy(slice)
     }
 
-    /// Allocate a slice and `Clone` elements from an existing slice.
+    /// Allocate a slice and fill it by `Clone`ing elements from an existing slice.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1579,7 +1579,7 @@ where
         self.as_scope().alloc_slice_clone(slice)
     }
 
-    /// Allocate a slice and `Clone` elements from an existing slice.
+    /// Allocate a slice and fill it by `Clone`ing elements from an existing slice.
     ///
     /// # Errors
     /// Errors if the allocation fails.
