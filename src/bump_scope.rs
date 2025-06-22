@@ -1539,7 +1539,7 @@ where
     ///
     /// This function is designed as a performance improvement over [`alloc_fmt`](Self::alloc_fmt).
     /// By taking `self` as `&mut`, it can use the entire remaining chunk space as the capacity
-    /// for the temporary string buffer used for its creation. As a result, that string buffer rarely needs to grow.
+    /// for the temporary string buffer used for the allocation. As a result, that string buffer rarely needs to grow.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1566,7 +1566,7 @@ where
     ///
     /// This function is designed as a performance improvement over [`try_alloc_fmt`](Self::try_alloc_fmt).
     /// By taking `self` as `&mut`, it can use the entire remaining chunk space as the capacity
-    /// for the temporary string buffer used for its creation. As a result, that string buffer rarely needs to grow.
+    /// for the temporary string buffer used for the allocation. As a result, that string buffer rarely needs to grow.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1789,7 +1789,7 @@ where
     ///
     /// This function is designed as a performance improvement over [`alloc_cstr_fmt`](Self::alloc_cstr_fmt).
     /// By taking `self` as `&mut`, it can use the entire remaining chunk space as the capacity
-    /// for the temporary string buffer used for its creation. As a result, that string buffer rarely needs to grow.
+    /// for the temporary string buffer used for the allocation. As a result, that string buffer rarely needs to grow.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1820,7 +1820,7 @@ where
     ///
     /// This function is designed as a performance improvement over [`try_alloc_cstr_fmt`](Self::try_alloc_cstr_fmt).
     /// By taking `self` as `&mut`, it can use the entire remaining chunk space as the capacity
-    /// for the temporary string buffer used for its creation. As a result, that string buffer rarely needs to grow.
+    /// for the temporary string buffer used for the allocation. As a result, that string buffer rarely needs to grow.
     ///
     /// # Errors
     /// Errors if the allocation fails.
