@@ -269,8 +269,8 @@
 //!
 //! Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
 //! This benefits collections as well as <code>[alloc_iter](crate::Bump::alloc_iter)([_mut](crate::Bump::alloc_iter_mut))</code> and <code>[alloc_fmt](crate::Bump::alloc_fmt)([_mut](crate::Bump::alloc_fmt_mut))</code>
-//! with the exception of [`MutBumpVecRev`](crate::MutBumpVecRev) and [`alloc_iter_mut_rev`](crate::Bump::alloc_iter_mut_rev).
-//! [`MutBumpVecRev`](crate::MutBumpVecRev) can be grown and shrunk in place if and only if bumping downwards.
+//! with the exception of [`MutBumpVecRev`](crate::MutBumpVecRev) and [`alloc_iter_mut_rev`](crate::Bump::alloc_iter_mut_rev) which
+//! can be grown and shrunk in place if and only if bumping downwards.
 //!
 //! Bumping downwards on the other hand can be done in less operations.
 //!
