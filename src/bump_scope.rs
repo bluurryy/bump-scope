@@ -1996,7 +1996,7 @@ where
     ///
     /// This function is designed as a performance improvement over [`alloc_iter`](Self::alloc_iter).
     /// By taking `self` as `&mut`, it can use the entire remaining chunk space as the capacity
-    /// for its vector. As a result, the vector rarely needs to grow.
+    /// for the temporary vector used for the allocation. As a result, that vector rarely needs to grow.
     ///
     /// When bumping downwards, prefer [`alloc_iter_mut_rev`](Self::alloc_iter_mut_rev) instead.
     ///
@@ -2020,7 +2020,7 @@ where
     ///
     /// This function is designed as a performance improvement over [`try_alloc_iter`](Self::try_alloc_iter).
     /// By taking `self` as `&mut`, it can use the entire remaining chunk space as the capacity
-    /// for its vector. As a result, the vector rarely needs to grow.
+    /// for the temporary vector used for the allocation. As a result, that vector rarely needs to grow.
     ///
     /// When bumping downwards, prefer [`alloc_iter_mut_rev`](Self::alloc_iter_mut_rev) instead.
     ///
