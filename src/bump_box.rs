@@ -8,8 +8,7 @@ use core::{
     mem::{self, ManuallyDrop, MaybeUninit},
     ops::{self, Deref, DerefMut, Index, IndexMut, Range, RangeBounds},
     ptr::{self, NonNull},
-    slice::{self, SliceIndex},
-    str,
+    slice, str,
 };
 
 #[cfg(feature = "nightly-fn-traits")]
@@ -3131,19 +3130,19 @@ impl<'b, T> IntoIterator for &'b mut BumpBox<'_, [T]> {
     }
 }
 
-impl<T, I: SliceIndex<[T]>> Index<I> for BumpBox<'_, [T]> {
-    type Output = I::Output;
+impl<I, T: Index<I>> Index<I> for BumpBox<'_, T> {
+    type Output = <T as Index<I>>::Output;
 
     #[inline]
     fn index(&self, index: I) -> &Self::Output {
-        <[T]>::index(self, index)
+        <T as Index<I>>::index(self, index)
     }
 }
 
-impl<T, I: SliceIndex<[T]>> IndexMut<I> for BumpBox<'_, [T]> {
+impl<I, T: IndexMut<I>> IndexMut<I> for BumpBox<'_, T> {
     #[inline]
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
-        <[T]>::index_mut(self, index)
+        <T as IndexMut<I>>::index_mut(self, index)
     }
 }
 
