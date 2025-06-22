@@ -42,7 +42,7 @@ macro_rules! bump_scope_declaration {
         /// For a method overview and examples, have a look at the [`Bump` docs][`Bump`].
         ///
         /// This type is provided as a parameter to the closure of [`Bump::scoped`], [`BumpScope::scoped`] or created
-        /// by [`BumpScopeGuard::scope`] and [`BumpScopeGuardRoot::scope`]. A [`Bump`] can also turned into a `BumpScope` using
+        /// by [`BumpScopeGuard::scope`] and [`BumpScopeGuardRoot::scope`]. A [`Bump`] can also be turned into a `BumpScope` using
         /// [`as_scope`], [`as_mut_scope`] or [`into`].
         ///
         /// [`Bump::scoped`]: crate::Bump::scoped
