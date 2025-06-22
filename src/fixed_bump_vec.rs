@@ -25,9 +25,9 @@ use crate::panic_on_error;
 ///
 /// # Examples
 /// ```
-/// # use bump_scope::Bump;
+/// # use bump_scope::{Bump, FixedBumpVec};
 /// # let mut bump: Bump = Bump::new();
-/// let mut vec = bump.alloc_fixed_vec(3);
+/// let mut vec = FixedBumpVec::with_capacity_in(3, &bump);
 ///
 /// vec.push(1);
 /// vec.push(2);
@@ -339,7 +339,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// ```
     /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let mut bump: Bump = Bump::new();
-    /// let vec = bump.alloc_fixed_vec::<i32>(2048);
+    /// let vec = FixedBumpVec::<i32>::with_capacity_in(2048, &bump);
     /// assert_eq!(vec.capacity(), 2048);
     /// ```
     #[must_use]
@@ -403,9 +403,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec(3);
+    /// let mut vec = FixedBumpVec::with_capacity_in(3, &bump);
     /// vec.append([1, 2, 3]);
     /// assert_eq!(vec.pop(), Some(3));
     /// assert_eq!(vec, [1, 2]);
@@ -425,9 +425,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec::<i32>(4);
+    /// let mut vec = FixedBumpVec::<i32>::with_capacity_in(4, &bump);
     /// vec.append([1, 2, 3, 4]);
     /// let pred = |x: &mut i32| *x % 2 == 0;
     ///
@@ -448,9 +448,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec(10);
+    /// let mut vec = FixedBumpVec::with_capacity_in(10, &bump);
     /// vec.extend_from_slice_copy(&[1, 2, 3]);
     /// vec.clear();
     /// assert!(vec.is_empty());
@@ -477,10 +477,10 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Truncating a five element vector to two elements:
     ///
     /// ```
-    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let mut vec = bump.alloc_fixed_vec(10);
+    /// let mut vec = FixedBumpVec::with_capacity_in(10, &bump);
     /// vec.extend_from_slice_copy(&[1, 2, 3, 4, 5]);
     /// vec.truncate(2);
     /// assert_eq!(vec, [1, 2]);
@@ -490,10 +490,10 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// length:
     ///
     /// ```
-    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let mut vec = bump.alloc_fixed_vec(10);
+    /// let mut vec = FixedBumpVec::with_capacity_in(10, &bump);
     /// vec.extend_from_slice_copy(&[1, 2, 3]);
     /// vec.truncate(8);
     /// assert_eq!(vec, [1, 2, 3]);
@@ -503,10 +503,10 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// method.
     ///
     /// ```
-    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let mut bump: Bump = Bump::new();
     /// #
-    /// let mut vec = bump.alloc_fixed_vec(10);
+    /// let mut vec = FixedBumpVec::with_capacity_in(10, &bump);
     /// vec.extend_from_slice_copy(&[1, 2, 3]);
     /// vec.truncate(0);
     /// assert_eq!(vec, []);
@@ -532,8 +532,8 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{Bump, mut_bump_vec};
-    /// # let mut bump: Bump = Bump::new();
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
     /// let mut v = bump.alloc_slice_copy(&[1, 2, 3]);
     /// assert_eq!(v.remove(1), 2);
     /// assert_eq!(v, [1, 3]);
@@ -732,13 +732,13 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// so the original vector keeps its capacity.
     /// If you rather want that behavior then you can write this instead:
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
-    /// # let mut vec = bump.alloc_fixed_vec(5);
+    /// # let mut vec = FixedBumpVec::with_capacity_in(5, &bump);
     /// # vec.append([1, 2, 3, 4, 5]);
     /// # let start = 1;
     /// # let end = 4;
-    /// let mut other = bump.alloc_fixed_vec(end - start);
+    /// let mut other = FixedBumpVec::with_capacity_in(end - start, &bump);
     /// other.append(vec.drain(start..end));
     /// # assert_eq!(vec, [1, 5]);
     /// # assert_eq!(other, [2, 3, 4]);
@@ -756,9 +756,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec(10);
+    /// let mut vec = FixedBumpVec::with_capacity_in(10, &bump);
     /// vec.append([1, 2, 3, 4, 5, 6, 7, 8]);
     ///
     /// let front = vec.split_off(..2);
@@ -900,9 +900,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{mut_bump_vec, Bump};
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let mut bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec(3);
+    /// let mut vec = FixedBumpVec::with_capacity_in(3, &bump);
     /// vec.extend_from_slice_copy(&[1, 2]);
     /// vec.push(3);
     /// assert_eq!(vec, [1, 2, 3]);
@@ -920,9 +920,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{mut_bump_vec, Bump};
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let mut bump: Bump = Bump::try_new()?;
-    /// let mut vec = bump.try_alloc_fixed_vec(3)?;
+    /// let mut vec = FixedBumpVec::try_with_capacity_in(3, &bump)?;
     /// vec.try_extend_from_slice_copy(&[1, 2])?;
     /// vec.try_push(3)?;
     /// assert_eq!(vec, [1, 2, 3]);
@@ -1009,9 +1009,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{mut_bump_vec, Bump, FixedBumpVec};
-    /// # let mut bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec(5);
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::with_capacity_in(5, &bump);
     /// vec.extend_from_slice_copy(&[1, 2, 3]);
     /// vec.insert(1, 4);
     /// assert_eq!(vec, [1, 4, 2, 3]);
@@ -1034,9 +1034,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{mut_bump_vec, Bump, FixedBumpVec};
-    /// # let mut bump: Bump = Bump::try_new()?;
-    /// let mut vec = bump.try_alloc_fixed_vec(5)?;
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let mut vec = FixedBumpVec::try_with_capacity_in(5, &bump)?;
     /// vec.try_extend_from_slice_copy(&[1, 2, 3])?;
     /// vec.try_insert(1, 4)?;
     /// assert_eq!(vec, [1, 4, 2, 3]);
@@ -1243,9 +1243,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec(100);
+    /// let mut vec = FixedBumpVec::with_capacity_in(100, &bump);
     /// vec.extend_from_slice_copy(&[0, 1, 2, 3, 4]);
     ///
     /// vec.extend_from_within_copy(2..);
@@ -1278,9 +1278,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let mut bump: Bump = Bump::try_new()?;
-    /// let mut vec = bump.try_alloc_fixed_vec(100)?;
+    /// let mut vec = FixedBumpVec::try_with_capacity_in(100, &bump)?;
     /// vec.try_extend_from_slice_copy(&[0, 1, 2, 3, 4])?;
     ///
     /// vec.try_extend_from_within_copy(2..)?;
@@ -1337,9 +1337,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec(14);
+    /// let mut vec = FixedBumpVec::with_capacity_in(14, &bump);
     /// vec.extend_from_slice_copy(&[0, 1, 2, 3, 4]);
     ///
     /// vec.extend_from_within_clone(2..);
@@ -1372,9 +1372,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::try_new()?;
-    /// let mut vec = bump.try_alloc_fixed_vec(14)?;
+    /// let mut vec = FixedBumpVec::try_with_capacity_in(14, &bump)?;
     /// vec.try_extend_from_slice_copy(&[0, 1, 2, 3, 4])?;
     ///
     /// vec.try_extend_from_within_clone(2..)?;
@@ -1493,15 +1493,15 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let mut bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec(10);
+    /// let mut vec = FixedBumpVec::with_capacity_in(10, &bump);
     /// vec.extend_from_slice_copy(&["hello"]);
     /// vec.resize(3, "world");
     /// assert_eq!(vec, ["hello", "world", "world"]);
     /// drop(vec);
     ///
-    /// let mut vec = bump.alloc_fixed_vec(10);
+    /// let mut vec = FixedBumpVec::with_capacity_in(10, &bump);
     /// vec.extend_from_slice_copy(&[1, 2, 3, 4]);
     /// vec.resize(2, 0);
     /// assert_eq!(vec, [1, 2]);
@@ -1535,15 +1535,15 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{Bump, mut_bump_vec};
-    /// # let mut bump: Bump = Bump::try_new()?;
-    /// let mut vec = bump.try_alloc_fixed_vec(10)?;
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::try_new()?;
+    /// let mut vec = FixedBumpVec::try_with_capacity_in(10, &bump)?;
     /// vec.try_extend_from_slice_copy(&["hello"])?;
     /// vec.try_resize(3, "world")?;
     /// assert_eq!(vec, ["hello", "world", "world"]);
     /// drop(vec);
     ///
-    /// let mut vec = bump.try_alloc_fixed_vec(10)?;
+    /// let mut vec = FixedBumpVec::try_with_capacity_in(10, &bump)?;
     /// vec.try_extend_from_slice_copy(&[1, 2, 3, 4])?;
     /// vec.try_resize(2, 0)?;
     /// assert_eq!(vec, [1, 2]);
@@ -1591,15 +1591,15 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec(5);
+    /// let mut vec = FixedBumpVec::with_capacity_in(5, &bump);
     /// vec.extend_from_slice_copy(&[1, 2, 3]);
     /// vec.resize_with(5, Default::default);
     /// assert_eq!(vec, [1, 2, 3, 0, 0]);
     /// drop(vec);
     ///
-    /// let mut vec = bump.alloc_fixed_vec(4);
+    /// let mut vec = FixedBumpVec::with_capacity_in(4, &bump);
     /// let mut p = 1;
     /// vec.resize_with(4, || { p *= 2; p });
     /// assert_eq!(vec, [2, 4, 8, 16]);
@@ -1632,15 +1632,15 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::try_new()?;
-    /// let mut vec = bump.try_alloc_fixed_vec(5)?;
+    /// let mut vec = FixedBumpVec::try_with_capacity_in(5, &bump)?;
     /// vec.try_extend_from_slice_copy(&[1, 2, 3])?;
     /// vec.try_resize_with(5, Default::default)?;
     /// assert_eq!(vec, [1, 2, 3, 0, 0]);
     /// drop(vec);
     ///
-    /// let mut vec = bump.try_alloc_fixed_vec(4)?;
+    /// let mut vec = FixedBumpVec::try_with_capacity_in(4, &bump)?;
     /// let mut p = 1;
     /// vec.try_resize_with(4, || { p *= 2; p })?;
     /// assert_eq!(vec, [2, 4, 8, 16]);
@@ -1675,9 +1675,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec(8);
+    /// let mut vec = FixedBumpVec::with_capacity_in(8, &bump);
     ///
     /// // append by value
     /// vec.append([1, 2]);
@@ -1704,9 +1704,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = bump.try_alloc_fixed_vec(8)?;
+    /// let mut vec = FixedBumpVec::try_with_capacity_in(8, &bump)?;
     ///
     /// // append by value
     /// vec.try_append([1, 2])?;
@@ -1870,10 +1870,10 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
     /// #
-    /// let mut vec = bump.alloc_fixed_vec(4);
+    /// let mut vec = FixedBumpVec::with_capacity_in(4, &bump);
     /// vec.extend_from_slice_copy(&[1, 2, 3, 4]);
     ///
     /// vec.retain(|x| if *x <= 3 {
@@ -1914,10 +1914,10 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
     /// #
-    /// let mut v = bump.alloc_fixed_vec(3);
+    /// let mut v = FixedBumpVec::with_capacity_in(3, &bump);
     /// v.extend_from_slice_copy(&[1, 2, 3]);
     /// let u = bump.alloc_iter(v.drain(1..));
     /// assert_eq!(v, [1]);
@@ -1948,9 +1948,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// ```
     /// # let some_predicate = |x: &mut i32| { *x == 2 || *x == 3 || *x == 6 };
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
-    /// # let mut vec = bump.alloc_fixed_vec(6);
+    /// # let mut vec = FixedBumpVec::with_capacity_in(6, &bump);
     /// # vec.extend_from_slice_copy(&[1, 2, 3, 4, 5, 6]);
     /// let mut i = 0;
     /// while i < vec.len() {
@@ -1976,9 +1976,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Splitting an array into evens and odds, reusing the original allocation:
     ///
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
-    /// let mut numbers = bump.alloc_fixed_vec(16);
+    /// let mut numbers = FixedBumpVec::with_capacity_in(16, &bump);
     /// numbers.extend_from_slice_copy(&[1, 2, 3, 4, 5, 6, 8, 9, 11, 13, 14, 15]);
     ///
     /// let evens = bump.alloc_iter(numbers.extract_if(|x| *x % 2 == 0));
@@ -2004,9 +2004,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec(5);
+    /// let mut vec = FixedBumpVec::with_capacity_in(5, &bump);
     /// vec.extend_from_slice_copy(&[1, 2, 2, 3, 2]);
     ///
     /// vec.dedup();
@@ -2029,9 +2029,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec(5);
+    /// let mut vec = FixedBumpVec::with_capacity_in(5, &bump);
     /// vec.extend_from_slice_copy(&[10, 20, 21, 30, 20]);
     ///
     /// vec.dedup_by_key(|i| *i / 10);
@@ -2059,9 +2059,9 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = bump.alloc_fixed_vec(5);
+    /// let mut vec = FixedBumpVec::with_capacity_in(5, &bump);
     /// vec.extend_from_slice_copy(&["foo", "bar", "Bar", "baz", "bar"]);
     ///
     /// vec.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
@@ -2175,10 +2175,10 @@ impl<'a, T, const N: usize> FixedBumpVec<'a, [T; N]> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
     /// #
-    /// let mut vec = bump.alloc_fixed_vec(3);
+    /// let mut vec = FixedBumpVec::with_capacity_in(3, &bump);
     /// vec.append([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
     /// assert_eq!(vec.pop(), Some([7, 8, 9]));
     ///

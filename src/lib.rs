@@ -47,7 +47,7 @@
     rustdoc::invalid_rust_codeblocks, // for our current workaround to conditionally enable doc tests in macro
 )]
 #![doc(test(
-    attr(warn(dead_code, unused_imports)),
+    attr(deny(dead_code, unused_imports, deprecated)),
     attr(cfg_attr(feature = "nightly-allocator-api", feature(allocator_api, btreemap_alloc))),
 ))]
 //! A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.

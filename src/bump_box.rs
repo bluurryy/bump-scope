@@ -151,6 +151,7 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///
 /// fn use_pinned(_foo: Pin<&mut Foo>) {}
 ///
+/// # #[allow(dead_code)]
 /// fn violate_drop_guarantee(cx: &mut Context) {
 ///     let mut bump: Bump = Bump::new();
 ///
@@ -832,7 +833,7 @@ impl<'a> BumpBox<'a, str> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// let mut str = bump.alloc_str("hello");
     /// str.clear();
@@ -1422,7 +1423,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3]);
     /// slice.clear();
@@ -1460,7 +1461,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// Truncating a five element vector to two elements:
     ///
     /// ```
-    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5]);
@@ -1472,7 +1473,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// length:
     ///
     /// ```
-    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
     /// #
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3]);
@@ -1484,8 +1485,8 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// method.
     ///
     /// ```
-    /// # use bump_scope::{Bump, mut_bump_vec};
-    /// # let mut bump: Bump = Bump::new();
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
     /// #
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3]);
     /// slice.truncate(0);
@@ -1653,8 +1654,8 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{Bump, mut_bump_vec};
-    /// # let mut bump: Bump = Bump::new();
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
     /// let mut v = bump.alloc_slice_copy(&[1, 2, 3]);
     /// assert_eq!(v.remove(1), 2);
     /// assert_eq!(v, [1, 3]);
@@ -2637,6 +2638,7 @@ impl<'a, T, const N: usize> BumpBox<'a, [T; N]> {
     /// # let bump: Bump = Bump::new();
     /// // explicit types are just for demonstration
     /// let array: BumpBox<[i32; 3]> = bump.alloc([1, 2, 3]);
+    /// # #[allow(deprecated)]
     /// let slice: BumpBox<[i32]> = array.into_unsized();
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
