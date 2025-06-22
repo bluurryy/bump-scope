@@ -29,8 +29,16 @@ mod wrapper {
             }
 
             #[inline(always)]
-            pub(crate) fn alloc<T>(&self, value: T) -> &T {
+            pub(crate) fn alloc<T>(&self, value: T) -> &mut T {
                 ::bump_scope::BumpBox::leak(self.0.alloc(value))
+            }
+
+            #[inline(always)]
+            pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&mut T> {
+                match self.0.try_alloc(value) {
+                    Ok(value) => Some(bump_scope::BumpBox::leak(value)),
+                    Err(_) => None,
+                }
             }
 
             #[inline(always)]
@@ -42,14 +50,6 @@ mod wrapper {
             pub(crate) fn try_alloc_slice_copy<T: Copy>(&self, value: &[T]) -> Option<&mut [T]> {
                 match self.0.try_alloc_slice_copy(value) {
                     Ok(value) => Some(value.into_mut()),
-                    Err(_) => None,
-                }
-            }
-
-            #[inline(always)]
-            pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&T> {
-                match self.0.try_alloc(value) {
-                    Ok(value) => Some(bump_scope::BumpBox::leak(value)),
                     Err(_) => None,
                 }
             }
@@ -90,12 +90,12 @@ mod wrapper {
             }
 
             #[inline(always)]
-            pub(crate) fn alloc<T>(&self, value: T) -> &T {
+            pub(crate) fn alloc<T>(&self, value: T) -> &mut T {
                 ::bump_scope::BumpBox::leak(self.0.alloc(value))
             }
 
             #[inline(always)]
-            pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&T> {
+            pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&mut T> {
                 match self.0.try_alloc(value) {
                     Ok(value) => Some(bump_scope::BumpBox::leak(value)),
                     Err(_) => None,
@@ -146,16 +146,13 @@ mod wrapper {
             }
 
             #[inline(always)]
-            pub(crate) fn alloc<T>(&self, value: T) -> &T {
+            pub(crate) fn alloc<T>(&self, value: T) -> &mut T {
                 self.0.alloc(value)
             }
 
             #[inline(always)]
-            pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&T> {
-                match self.0.try_alloc(value) {
-                    Ok(value) => Some(value),
-                    Err(_) => None,
-                }
+            pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&mut T> {
+                self.0.try_alloc(value).ok()
             }
 
             #[inline(always)]
@@ -204,16 +201,13 @@ mod wrapper {
             }
 
             #[inline(always)]
-            pub(crate) fn alloc<T>(&self, value: T) -> &T {
+            pub(crate) fn alloc<T>(&self, value: T) -> &mut T {
                 self.0.put_no_drop(value)
             }
 
             #[inline(always)]
-            pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&T> {
-                match self.0.emplace_no_drop().try_value(value) {
-                    Ok(value) => Some(value),
-                    Err(_) => None,
-                }
+            pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&mut T> {
+                self.0.emplace_no_drop().try_value(value).ok()
             }
 
             #[inline(always)]
@@ -353,7 +347,7 @@ benches! {
             let bump = Bump::with_capacity(1024);
             run(&bump, 42);
         }
-        run(bump: &Bump, value: u8) -> Option<&u8> {
+        run(bump: &Bump, value: u8) -> Option<&mut u8> {
             bump.try_alloc(value)
         }
     }
@@ -363,7 +357,7 @@ benches! {
             let bump = Bump::<8>::with_capacity(1024);
             run(&bump, 42);
         }
-        run(bump: &Bump<8>, value: u8) -> Option<&u8> {
+        run(bump: &Bump<8>, value: u8) -> Option<&mut u8> {
             bump.try_alloc(value)
         }
     }
@@ -383,7 +377,7 @@ benches! {
             let bump = Bump::<4>::with_capacity(1024);
             run(&bump, 42);
         }
-        run(bump: &Bump::<4>, value: u32) -> &u32 {
+        run(bump: &Bump::<4>, value: u32) -> &mut u32 {
             bump.alloc(value)
         }
     }
@@ -393,7 +387,7 @@ benches! {
             let bump = Bump::<8>::with_capacity(1024);
             run(&bump, 42);
         }
-        run(bump: &Bump::<8>, value: u32) -> &u32 {
+        run(bump: &Bump::<8>, value: u32) -> &mut u32 {
             bump.alloc(value)
         }
     }
@@ -403,7 +397,7 @@ benches! {
             let bump = Bump::with_capacity(1024);
             run(&bump, 42);
         }
-        run(bump: &Bump, value: u32) -> Option<&u32> {
+        run(bump: &Bump, value: u32) -> Option<&mut u32> {
             bump.try_alloc(value)
         }
     }
@@ -413,7 +407,7 @@ benches! {
             let bump = Bump::<4>::with_capacity(1024);
             run(&bump, 42);
         }
-        run(bump: &Bump::<4>, value: u32) -> Option<&u32> {
+        run(bump: &Bump::<4>, value: u32) -> Option<&mut u32> {
             bump.try_alloc(value)
         }
     }
@@ -423,7 +417,7 @@ benches! {
             let bump = Bump::<8>::with_capacity(1024);
             run(&bump, 42);
         }
-        run(bump: &Bump::<8>, value: u32) -> Option<&u32> {
+        run(bump: &Bump::<8>, value: u32) -> Option<&mut u32> {
             bump.try_alloc(value)
         }
     }
@@ -433,7 +427,7 @@ benches! {
             let bump = Bump::with_capacity(1024);
             run(&bump, BigStruct::new());
         }
-        run(bump: &Bump, value: BigStruct) -> &BigStruct {
+        run(bump: &Bump, value: BigStruct) -> &mut BigStruct {
             bump.alloc(value)
         }
     }
@@ -443,7 +437,7 @@ benches! {
             let bump = Bump::<8>::with_capacity(1024);
             run(&bump, BigStruct::new());
         }
-        run(bump: &Bump::<8>, value: BigStruct) -> &BigStruct {
+        run(bump: &Bump::<8>, value: BigStruct) -> &mut BigStruct {
             bump.alloc(value)
         }
     }
@@ -453,7 +447,7 @@ benches! {
             let bump = Bump::<16>::with_capacity(1024);
             run(&bump, BigStruct::new());
         }
-        run(bump: &Bump::<16>, value: BigStruct) -> &BigStruct {
+        run(bump: &Bump::<16>, value: BigStruct) -> &mut BigStruct {
             bump.alloc(value)
         }
     }
@@ -463,7 +457,7 @@ benches! {
             let bump = Bump::with_capacity(1024);
             run(&bump, BigStruct::new());
         }
-        run(bump: &Bump, value: BigStruct) -> Option<&BigStruct> {
+        run(bump: &Bump, value: BigStruct) -> Option<&mut BigStruct> {
             bump.try_alloc(value)
         }
     }
@@ -473,7 +467,7 @@ benches! {
             let bump = Bump::<8>::with_capacity(1024);
             run(&bump, BigStruct::new());
         }
-        run(bump: &Bump::<8>, value: BigStruct) -> Option<&BigStruct> {
+        run(bump: &Bump::<8>, value: BigStruct) -> Option<&mut BigStruct> {
             bump.try_alloc(value)
         }
     }
@@ -483,7 +477,7 @@ benches! {
             let bump = Bump::<16>::with_capacity(1024);
             run(&bump, BigStruct::new());
         }
-        run(bump: &Bump::<16>, value: BigStruct) -> Option<&BigStruct> {
+        run(bump: &Bump::<16>, value: BigStruct) -> Option<&mut BigStruct> {
             bump.try_alloc(value)
         }
     }
