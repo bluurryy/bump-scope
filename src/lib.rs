@@ -272,6 +272,8 @@
 //! with the exception of [`MutBumpVecRev`](crate::MutBumpVecRev) and [`alloc_iter_mut_rev`](crate::Bump::alloc_iter_mut_rev).
 //! [`MutBumpVecRev`](crate::MutBumpVecRev) can be grown and shrunk in place if and only if bumping downwards.
 //!
+//! Bumping downwards on the other hand can be done in less operations.
+//!
 //! For the performance impact see [./crates/callgrind-benches][benches].
 //!
 //! # Minimum alignment?

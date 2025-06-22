@@ -224,6 +224,8 @@ This benefits collections as well as <code>alloc_iter(_mut)</code> and <code>all
 with the exception of `MutBumpVecRev` and `alloc_iter_mut_rev`.
 `MutBumpVecRev` can be grown and shrunk in place if and only if bumping downwards.
 
+Bumping downwards on the other hand can be done in less operations.
+
 For the performance impact see [./crates/callgrind-benches][benches].
 
 ## Minimum alignment?
