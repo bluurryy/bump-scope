@@ -4,9 +4,10 @@ use core::{
     ffi::CStr,
     fmt::{self, Debug, Display},
     hash::Hash,
-    ops::{Deref, DerefMut, Range, RangeBounds},
+    ops::{Deref, DerefMut, Index, IndexMut, Range, RangeBounds},
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::{self, NonNull},
+    slice::SliceIndex,
     str,
 };
 
@@ -2045,6 +2046,20 @@ impl<A: BumpAllocator> DerefMut for BumpString<A> {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut_str()
+    }
+}
+
+impl<A: BumpAllocator, I: SliceIndex<str>> Index<I> for BumpString<A> {
+    type Output = I::Output;
+
+    fn index(&self, index: I) -> &Self::Output {
+        &self.as_str()[index]
+    }
+}
+
+impl<A: BumpAllocator, I: SliceIndex<str>> IndexMut<I> for BumpString<A> {
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
+        &mut self.as_mut_str()[index]
     }
 }
 
