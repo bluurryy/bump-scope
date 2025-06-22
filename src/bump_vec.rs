@@ -1279,7 +1279,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{bump_vec, Bump, BumpVec};
+    /// # use bump_scope::{Bump, bump_vec};
     /// # let bump: Bump = Bump::new();
     /// let mut vec = bump_vec![in &bump; 1, 2, 3];
     /// vec.insert(1, 4);
@@ -1303,7 +1303,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{bump_vec, Bump, BumpVec};
+    /// # use bump_scope::{Bump, bump_vec};
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
     /// vec.try_insert(1, 4)?;
@@ -2996,9 +2996,9 @@ impl<'a, T, A: BumpAllocatorScope<'a>> BumpVec<T, A> {
     /// The provided `bump` does not have to be the one the `fixed_vec` was allocated in.
     ///
     /// ```
-    /// # use bump_scope::{Bump, BumpVec};
+    /// # use bump_scope::{Bump, FixedBumpVec, BumpVec};
     /// # let bump: Bump = Bump::new();
-    /// let mut fixed_vec = bump.alloc_fixed_vec(3);
+    /// let mut fixed_vec = FixedBumpVec::with_capacity_in(3, &bump);
     /// fixed_vec.push(1);
     /// fixed_vec.push(2);
     /// fixed_vec.push(3);

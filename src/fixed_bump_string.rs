@@ -201,10 +201,10 @@ impl<'a> FixedBumpString<'a> {
     ///
     /// Basic usage:
     /// ```
-    /// # use bump_scope::{Bump, FixedBumpString};
+    /// # use bump_scope::{Bump, FixedBumpVec, FixedBumpString};
     /// # let bump: Bump = Bump::new();
     /// // some bytes, in a vector
-    /// let mut sparkle_heart = bump.alloc_fixed_vec(4);
+    /// let mut sparkle_heart = FixedBumpVec::with_capacity_in(4, &bump);
     /// sparkle_heart.extend_from_slice_copy(&[240, 159, 146, 150]);
     ///
     /// // We know these bytes are valid, so we'll use `unwrap()`.
@@ -215,10 +215,10 @@ impl<'a> FixedBumpString<'a> {
     ///
     /// Incorrect bytes:
     /// ```
-    /// # use bump_scope::{Bump, FixedBumpString};
+    /// # use bump_scope::{Bump, FixedBumpVec, FixedBumpString};
     /// # let bump: Bump = Bump::new();
     /// // some invalid bytes, in a vector
-    /// let mut sparkle_heart = bump.alloc_fixed_vec(4);
+    /// let mut sparkle_heart = FixedBumpVec::with_capacity_in(4, &bump);
     /// sparkle_heart.extend_from_slice_copy(&[0, 159, 146, 150]);
     ///
     /// assert!(FixedBumpString::from_utf8(sparkle_heart).is_err());
@@ -249,11 +249,11 @@ impl<'a> FixedBumpString<'a> {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{Bump, FixedBumpString};
+    /// # use bump_scope::{Bump, FixedBumpVec, FixedBumpString};
     /// # let bump: Bump = Bump::new();
     ///
     /// // some bytes, in a vector
-    /// let mut sparkle_heart = bump.alloc_fixed_vec(4);
+    /// let mut sparkle_heart = FixedBumpVec::with_capacity_in(4, &bump);
     /// sparkle_heart.extend_from_slice_copy(&[240, 159, 146, 150]);
     ///
     /// let sparkle_heart = unsafe {
@@ -358,7 +358,7 @@ impl<'a> FixedBumpString<'a> {
     /// # string.push_str("abcde");
     /// # let start = 1;
     /// # let end = 4;
-    /// let mut other = bump.alloc_fixed_string(end - start);
+    /// let mut other = FixedBumpString::with_capacity_in(end - start, &bump);
     /// other.push_str(&string[start..end]);
     /// string.drain(start..end);
     /// # assert_eq!(string, "ae");
@@ -861,9 +861,9 @@ impl FixedBumpString<'_> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpString};
     /// # let bump: Bump = Bump::try_new()?;
-    /// let mut s = bump.try_alloc_fixed_string(3)?;
+    /// let mut s = FixedBumpString::try_with_capacity_in(3, &bump)?;
     ///
     /// s.try_push('a')?;
     /// s.try_push('b')?;
@@ -916,9 +916,9 @@ impl FixedBumpString<'_> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpString};
     /// # let bump: Bump = Bump::try_new()?;
-    /// let mut s = bump.try_alloc_fixed_string(6)?;
+    /// let mut s = FixedBumpString::try_with_capacity_in(6, &bump)?;
     ///
     /// s.try_push_str("foo")?;
     /// s.try_push_str("bar")?;
@@ -982,7 +982,7 @@ impl FixedBumpString<'_> {
     /// ```
     /// # use bump_scope::{Bump, FixedBumpString};
     /// # let bump: Bump = Bump::try_new()?;
-    /// let mut s = bump.try_alloc_fixed_string(3)?;
+    /// let mut s = FixedBumpString::try_with_capacity_in(3, &bump)?;
     ///
     /// s.try_insert(0, 'f')?;
     /// s.try_insert(1, 'o')?;
@@ -1049,7 +1049,7 @@ impl FixedBumpString<'_> {
     /// ```
     /// # use bump_scope::{Bump, FixedBumpString};
     /// # let bump: Bump = Bump::try_new()?;
-    /// let mut s = bump.try_alloc_fixed_string(6)?;
+    /// let mut s = FixedBumpString::try_with_capacity_in(6, &bump)?;
     /// s.try_push_str("bar")?;
     ///
     /// s.try_insert_str(0, "foo")?;
@@ -1115,7 +1115,7 @@ impl FixedBumpString<'_> {
     /// ```
     /// # use bump_scope::{Bump, FixedBumpString};
     /// # let bump: Bump = Bump::try_new()?;
-    /// let mut string = bump.try_alloc_fixed_string(14)?;
+    /// let mut string = FixedBumpString::try_with_capacity_in(14, &bump)?;
     /// string.try_push_str("abcde")?;
     ///
     /// string.try_extend_from_within(2..)?;
@@ -1176,7 +1176,7 @@ impl FixedBumpString<'_> {
     /// ```
     /// # use bump_scope::{Bump, FixedBumpString};
     /// # let bump: Bump = Bump::try_new()?;
-    /// let mut string = bump.try_alloc_fixed_string(8)?;
+    /// let mut string = FixedBumpString::try_with_capacity_in(8, &bump)?;
     /// string.try_push_str("What?")?;
     /// string.try_extend_zeroed(3)?;
     /// assert_eq!(string, "What?\0\0\0");
@@ -1248,9 +1248,9 @@ impl FixedBumpString<'_> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
+    /// # use bump_scope::{Bump, FixedBumpString};
     /// # let bump: Bump = Bump::try_new()?;
-    /// let mut s = bump.try_alloc_fixed_string(50)?;
+    /// let mut s = FixedBumpString::try_with_capacity_in(50, &bump)?;
     /// s.push_str("α is alpha, β is beta");
     /// let beta_offset = s.find('β').unwrap_or(s.len());
     ///
@@ -1259,7 +1259,7 @@ impl FixedBumpString<'_> {
     /// assert_eq!(s, "Α is capital alpha; β is beta");
     ///
     /// // An error will be returned when the capacity does not suffice
-    /// let mut s = bump.try_alloc_fixed_string(5)?;
+    /// let mut s = FixedBumpString::try_with_capacity_in(5, &bump)?;
     /// s.push_str("hello");
     /// assert!(s.try_replace_range(4..=4, " n").is_err());
     /// # Ok::<(), bump_scope::alloc::AllocError>(())

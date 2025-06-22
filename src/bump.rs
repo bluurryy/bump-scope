@@ -2451,6 +2451,7 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
+    /// # #[allow(deprecated)]
     /// let mut values = bump.alloc_fixed_vec(3);
     /// values.push(1);
     /// values.push(2);
@@ -2475,6 +2476,7 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
+    /// # #[allow(deprecated)]
     /// let mut values = bump.try_alloc_fixed_vec(3)?;
     /// values.push(1);
     /// values.push(2);
@@ -2497,9 +2499,10 @@ where
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{Bump, FixedBumpString};
+    /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let mut string = FixedBumpString::with_capacity_in(13, &bump);
+    /// # #[allow(deprecated)]
+    /// let mut string = bump.alloc_fixed_string(13);
     /// string.push_str("Hello,");
     /// string.push_str(" world!");
     /// assert_eq!(string, "Hello, world!");
@@ -2522,6 +2525,7 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
+    /// # #[allow(deprecated)]
     /// let mut string = bump.try_alloc_fixed_string(13)?;
     /// string.push_str("Hello,");
     /// string.push_str(" world!");
