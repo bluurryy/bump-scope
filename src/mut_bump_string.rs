@@ -1803,7 +1803,7 @@ impl<'a, A: MutBumpAllocatorScope<'a>> MutBumpString<A> {
 
     /// Converts this `MutBumpString` into `&CStr` that is live for this bump scope.
     ///
-    /// If the string contains a `'\0'` then the `CStr` will stop there.
+    /// If the string contains a `'\0'` then the `CStr` will stop at the first `'\0'`.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1827,7 +1827,7 @@ impl<'a, A: MutBumpAllocatorScope<'a>> MutBumpString<A> {
 
     /// Converts this `MutBumpString` into `&CStr` that is live for this bump scope.
     ///
-    /// If the string contains a `'\0'` then the `CStr` will stop there.
+    /// If the string contains a `'\0'` then the `CStr` will stop at the first `'\0'`.
     ///
     /// # Errors
     /// Errors if the allocation fails.

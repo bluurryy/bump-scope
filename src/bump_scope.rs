@@ -1646,7 +1646,7 @@ where
 
     /// Allocate a `CStr` from a `str`.
     ///
-    /// If `src` contains a `'\0'` then the `CStr` will stop there.
+    /// If `src` contains a `'\0'` then the `CStr` will stop at the first `'\0'`.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1669,7 +1669,7 @@ where
 
     /// Allocate a `CStr` from a `str`.
     ///
-    /// If `src` contains a `'\0'` then the `CStr` will stop there.
+    /// If `src` contains a `'\0'` then the `CStr` will stop at the first `'\0'`.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1714,7 +1714,7 @@ where
 
     /// Allocate a `CStr` from format arguments.
     ///
-    /// If the string contains a `'\0'` then the `CStr` will stop there.
+    /// If the string contains a `'\0'` then the `CStr` will stop at the first `'\0'`.
     ///
     /// If you have a `&mut self` you can use [`alloc_cstr_fmt_mut`](Self::alloc_cstr_fmt_mut)
     /// instead for better performance.
@@ -1744,7 +1744,7 @@ where
 
     /// Allocate a `CStr` from format arguments.
     ///
-    /// If the string contains a `'\0'` then the `CStr` will stop there.
+    /// If the string contains a `'\0'` then the `CStr` will stop at the first `'\0'`.
     ///
     /// If you have a `&mut self` you can use [`try_alloc_cstr_fmt_mut`](Self::try_alloc_cstr_fmt_mut)
     /// instead for better performance.
@@ -1785,7 +1785,7 @@ where
 
     /// Allocate a `CStr` from format arguments.
     ///
-    /// If the string contains a `'\0'` then the `CStr` will stop there.
+    /// If the string contains a `'\0'` then the `CStr` will stop at the first `'\0'`.
     ///
     /// This function is designed as a performance improvement over [`alloc_cstr_fmt`](Self::alloc_cstr_fmt).
     /// By taking `self` as `&mut`, it can use the entire remaining chunk space as the capacity
@@ -1816,7 +1816,7 @@ where
 
     /// Allocate a `CStr` from format arguments.
     ///
-    /// If the string contains a `'\0'` then the `CStr` will stop there.
+    /// If the string contains a `'\0'` then the `CStr` will stop at the first `'\0'`.
     ///
     /// This function is designed as a performance improvement over [`try_alloc_cstr_fmt`](Self::try_alloc_cstr_fmt).
     /// By taking `self` as `&mut`, it can use the entire remaining chunk space as the capacity
