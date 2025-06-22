@@ -147,10 +147,13 @@ macro_rules! bump_declaration {
         ///
         /// See [Scopes and Checkpoints](crate#scopes-and-checkpoints).
         ///
-        /// # Gotchas
+        /// # Gotcha
         ///
-        /// Allocating directly on a `Bump` is not compatible with entering bump scopes at the same time:
+        /// Having live allocations and entering bump scopes at the same time requires a `BumpScope`.
+        /// This is due to the way lifetimes work, since `Bump` returns allocations with the lifetime
+        /// of its own borrow instead of a separate lifetime like `BumpScope` does.
         ///
+        /// So you can't do this:
         /// ```compile_fail,E0502
         /// # use bump_scope::Bump;
         /// let mut bump: Bump = Bump::new();
@@ -161,7 +164,7 @@ macro_rules! bump_declaration {
         ///     // whatever
         /// });
         /// ```
-        /// Instead convert it to a [`BumpScope`] first:
+        /// But you can make the code work by converting the `Bump` it to a [`BumpScope`] first using [`as_mut_scope`]:
         /// ```
         /// # use bump_scope::Bump;
         /// let mut bump: Bump = Bump::new();
@@ -173,6 +176,8 @@ macro_rules! bump_declaration {
         ///     // whatever
         /// });
         /// ```
+        ///
+        /// [`as_mut_scope`]: Self::as_mut_scope
         #[repr(transparent)]
         pub struct Bump<
             $($allocator_parameter)*,
