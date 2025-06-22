@@ -54,7 +54,6 @@ macro_rules! bump_declaration {
         /// - uninitialized values: [`alloc_uninit`], [`alloc_uninit_slice`], [`alloc_uninit_slice_for`]
         ///
         ///   which can then be conveniently initialized by the [`init*` methods of `BumpBox`](crate::BumpBox#bumpbox-has-a-lot-of-methods).
-        /// - fixed collections: [`alloc_fixed_vec`], [`alloc_fixed_string`]
         /// - results: [`alloc_try_with`], [`alloc_try_with_mut`]
         ///
         /// ## Collections
@@ -140,9 +139,6 @@ macro_rules! bump_declaration {
         /// [`alloc_uninit`]: Self::alloc_uninit
         /// [`alloc_uninit_slice`]: Self::alloc_uninit_slice
         /// [`alloc_uninit_slice_for`]: Self::alloc_uninit_slice_for
-        ///
-        /// [`alloc_fixed_vec`]: Self::alloc_fixed_vec
-        /// [`alloc_fixed_string`]: Self::alloc_fixed_string
         ///
         /// [`alloc_try_with`]: Self::alloc_try_with
         /// [`alloc_try_with_mut`]: Self::alloc_try_with_mut

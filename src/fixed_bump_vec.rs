@@ -21,7 +21,7 @@ use crate::panic_on_error;
 
 /// A type like [`BumpVec`] but with a fixed capacity.
 ///
-/// It can be constructed with [`alloc_fixed_vec`] or from a `BumpBox` via [`from_init`] or [`from_uninit`].
+/// It can be constructed with [`with_capacity_in`] or from a `BumpBox` via [`from_init`] or [`from_uninit`].
 ///
 /// # Examples
 /// ```
@@ -38,7 +38,7 @@ use crate::panic_on_error;
 /// assert_eq!(slice, [1, 2, 3]);
 /// ```
 ///
-/// [`alloc_fixed_vec`]: crate::Bump::alloc_fixed_vec
+/// [`with_capacity_in`]: Self::with_capacity_in
 /// [`from_uninit`]: Self::from_uninit
 /// [`from_init`]: Self::from_init
 // `FixedBumpString` and `FixedBumpVec<u8>` have the same repr.
