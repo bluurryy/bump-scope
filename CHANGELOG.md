@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Implement `Index(Mut)` for string types ([#78])
+- Implement `Index(Mut)` for `BumpBox<T>` where `T: Index(Mut)` ([#79])
 - Improve documentation.
 
 ## [0.17.2] - 2025-06-16
@@ -672,6 +673,7 @@ _If you are upgrading: please see [`UPGRADING.md#0.17.0`](UPGRADING.md#0.17.0)._
 
 ## [0.0.0] - 2024-03-26
 
+[#79]: https://github.com/bluurryy/bump-scope/pull/79
 [#78]: https://github.com/bluurryy/bump-scope/pull/78
 [#70]: https://github.com/bluurryy/bump-scope/pull/70
 [#69]: https://github.com/bluurryy/bump-scope/pull/69
