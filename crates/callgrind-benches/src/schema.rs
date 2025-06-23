@@ -1,5 +1,5 @@
 //! Generated using [cargo-typify](https://github.com/oxidecomputer/typify/tree/main/cargo-typify)
-//! from [summary.v3.schema.json](https://github.com/iai-callgrind/iai-callgrind/blob/1c6c01c877cd96a140f7f022e8b61da66a103071/iai-callgrind-runner/schemas/summary.v3.schema.json).
+//! from [summary.v4.schema.json](https://github.com/iai-callgrind/iai-callgrind/blob/85845bbb16726ca7f9d0603388b2ec8f1ac8a357/iai-callgrind-runner/schemas/summary.v4.schema.json).
 #![allow(dead_code)]
 #![allow(clippy::uninlined_format_args)]
 #![allow(clippy::wrong_self_convention)]
@@ -34,144 +34,6 @@ pub mod error {
         }
     }
 }
-#[doc = "A `Baseline` depending on the [`BaselineKind`] which points to the corresponding path\n\n This baseline is used for comparisons with the new output of valgrind tools."]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"description\": \"A `Baseline` depending on the [`BaselineKind`] which points to the corresponding path\\n\\n This baseline is used for comparisons with the new output of valgrind tools.\","]
-#[doc = "  \"type\": \"object\","]
-#[doc = "  \"required\": ["]
-#[doc = "    \"kind\","]
-#[doc = "    \"path\""]
-#[doc = "  ],"]
-#[doc = "  \"properties\": {"]
-#[doc = "    \"kind\": {"]
-#[doc = "      \"description\": \"The kind of the `Baseline`\","]
-#[doc = "      \"allOf\": ["]
-#[doc = "        {"]
-#[doc = "          \"$ref\": \"#/definitions/BaselineKind\""]
-#[doc = "        }"]
-#[doc = "      ]"]
-#[doc = "    },"]
-#[doc = "    \"path\": {"]
-#[doc = "      \"description\": \"The path to the file which is used to compare against the new output\","]
-#[doc = "      \"type\": \"string\""]
-#[doc = "    }"]
-#[doc = "  }"]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
-pub struct Baseline {
-    #[doc = "The kind of the `Baseline`"]
-    pub kind: BaselineKind,
-    #[doc = "The path to the file which is used to compare against the new output"]
-    pub path: ::std::string::String,
-}
-impl ::std::convert::From<&Baseline> for Baseline {
-    fn from(value: &Baseline) -> Self {
-        value.clone()
-    }
-}
-impl Baseline {
-    pub fn builder() -> builder::Baseline {
-        Default::default()
-    }
-}
-#[doc = "The `BaselineKind` describing the baseline"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"description\": \"The `BaselineKind` describing the baseline\","]
-#[doc = "  \"oneOf\": ["]
-#[doc = "    {"]
-#[doc = "      \"description\": \"Compare new against `*.old` output files\","]
-#[doc = "      \"type\": \"string\","]
-#[doc = "      \"const\": \"Old\""]
-#[doc = "    },"]
-#[doc = "    {"]
-#[doc = "      \"description\": \"Compare new against a named baseline\","]
-#[doc = "      \"type\": \"object\","]
-#[doc = "      \"required\": ["]
-#[doc = "        \"Name\""]
-#[doc = "      ],"]
-#[doc = "      \"properties\": {"]
-#[doc = "        \"Name\": {"]
-#[doc = "          \"$ref\": \"#/definitions/BaselineName\""]
-#[doc = "        }"]
-#[doc = "      },"]
-#[doc = "      \"additionalProperties\": false"]
-#[doc = "    }"]
-#[doc = "  ]"]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
-pub enum BaselineKind {
-    #[doc = "Compare new against `*.old` output files"]
-    Old,
-    #[doc = "Compare new against a named baseline"]
-    Name(BaselineName),
-}
-impl ::std::convert::From<&Self> for BaselineKind {
-    fn from(value: &BaselineKind) -> Self {
-        value.clone()
-    }
-}
-impl ::std::convert::From<BaselineName> for BaselineKind {
-    fn from(value: BaselineName) -> Self {
-        Self::Name(value)
-    }
-}
-#[doc = "`BaselineName`"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"type\": \"string\""]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[serde(transparent)]
-pub struct BaselineName(pub ::std::string::String);
-impl ::std::ops::Deref for BaselineName {
-    type Target = ::std::string::String;
-    fn deref(&self) -> &::std::string::String {
-        &self.0
-    }
-}
-impl ::std::convert::From<BaselineName> for ::std::string::String {
-    fn from(value: BaselineName) -> Self {
-        value.0
-    }
-}
-impl ::std::convert::From<&BaselineName> for BaselineName {
-    fn from(value: &BaselineName) -> Self {
-        value.clone()
-    }
-}
-impl ::std::convert::From<::std::string::String> for BaselineName {
-    fn from(value: ::std::string::String) -> Self {
-        Self(value)
-    }
-}
-impl ::std::str::FromStr for BaselineName {
-    type Err = ::std::convert::Infallible;
-    fn from_str(value: &str) -> ::std::result::Result<Self, Self::Err> {
-        Ok(Self(value.to_string()))
-    }
-}
-impl ::std::fmt::Display for BaselineName {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
 #[doc = "The `BenchmarkKind`, differentiating between library and binary benchmarks"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -194,7 +56,18 @@ impl ::std::fmt::Display for BaselineName {
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
-#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
 pub enum BenchmarkKind {
     #[doc = "A library benchmark"]
     LibraryBenchmark,
@@ -232,55 +105,69 @@ impl ::std::convert::TryFrom<&str> for BenchmarkKind {
 }
 impl ::std::convert::TryFrom<&::std::string::String> for BenchmarkKind {
     type Error = self::error::ConversionError;
-    fn try_from(value: &::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
     }
 }
 impl ::std::convert::TryFrom<::std::string::String> for BenchmarkKind {
     type Error = self::error::ConversionError;
-    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
     }
 }
-#[doc = "The `BenchmarkSummary` containing all the information of a single benchmark run\n\n This includes produced files, recorded callgrind events, performance regressions ..."]
+#[doc = "The `BenchmarkSummary` containing all the information of a single benchmark run\n\nThis includes produced files, recorded callgrind events, performance regressions ..."]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
 #[doc = "  \"title\": \"BenchmarkSummary\","]
-#[doc = "  \"description\": \"The `BenchmarkSummary` containing all the information of a single benchmark run\\n\\n This includes produced files, recorded callgrind events, performance regressions ...\","]
+#[doc = "  \"description\": \"The `BenchmarkSummary` containing all the information of a single benchmark run\\n\\nThis includes produced files, recorded callgrind events, performance regressions ...\","]
 #[doc = "  \"type\": \"object\","]
 #[doc = "  \"required\": ["]
+#[doc = "    \"baselines\","]
 #[doc = "    \"benchmark_exe\","]
 #[doc = "    \"benchmark_file\","]
 #[doc = "    \"function_name\","]
 #[doc = "    \"kind\","]
 #[doc = "    \"module_path\","]
 #[doc = "    \"package_dir\","]
+#[doc = "    \"profiles\","]
 #[doc = "    \"project_root\","]
-#[doc = "    \"tool_summaries\","]
 #[doc = "    \"version\""]
 #[doc = "  ],"]
 #[doc = "  \"properties\": {"]
+#[doc = "    \"baselines\": {"]
+#[doc = "      \"description\": \"The baselines if any. An absent first baseline indicates that new output was produced. An\\nabsent second baseline indicates the usage of the usual \\\"*.old\\\" output.\","]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": ["]
+#[doc = "            \"string\","]
+#[doc = "            \"null\""]
+#[doc = "          ]"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": ["]
+#[doc = "            \"string\","]
+#[doc = "            \"null\""]
+#[doc = "          ]"]
+#[doc = "        }"]
+#[doc = "      ],"]
+#[doc = "      \"maxItems\": 2,"]
+#[doc = "      \"minItems\": 2"]
+#[doc = "    },"]
 #[doc = "    \"benchmark_exe\": {"]
-#[doc = "      \"description\": \"The path to the binary which is executed by valgrind. In case of a library benchmark this\\n is the compiled benchmark file. In case of a binary benchmark this is the path to the\\n command.\","]
+#[doc = "      \"description\": \"The path to the binary which is executed by valgrind. In case of a library benchmark this\\nis the compiled benchmark file. In case of a binary benchmark this is the path to the\\ncommand.\","]
 #[doc = "      \"type\": \"string\""]
 #[doc = "    },"]
 #[doc = "    \"benchmark_file\": {"]
 #[doc = "      \"description\": \"The path to the benchmark file\","]
 #[doc = "      \"type\": \"string\""]
-#[doc = "    },"]
-#[doc = "    \"callgrind_summary\": {"]
-#[doc = "      \"description\": \"The summary of the callgrind run\","]
-#[doc = "      \"anyOf\": ["]
-#[doc = "        {"]
-#[doc = "          \"$ref\": \"#/definitions/CallgrindSummary\""]
-#[doc = "        },"]
-#[doc = "        {"]
-#[doc = "          \"type\": \"null\""]
-#[doc = "        }"]
-#[doc = "      ]"]
 #[doc = "    },"]
 #[doc = "    \"details\": {"]
 #[doc = "      \"description\": \"More details describing this benchmark run\","]
@@ -316,6 +203,14 @@ impl ::std::convert::TryFrom<::std::string::String> for BenchmarkKind {
 #[doc = "      \"description\": \"The directory of the package\","]
 #[doc = "      \"type\": \"string\""]
 #[doc = "    },"]
+#[doc = "    \"profiles\": {"]
+#[doc = "      \"description\": \"The summary of other valgrind tool runs\","]
+#[doc = "      \"allOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/definitions/Profiles\""]
+#[doc = "        }"]
+#[doc = "      ]"]
+#[doc = "    },"]
 #[doc = "    \"project_root\": {"]
 #[doc = "      \"description\": \"The project's root directory\","]
 #[doc = "      \"type\": \"string\""]
@@ -331,15 +226,8 @@ impl ::std::convert::TryFrom<::std::string::String> for BenchmarkKind {
 #[doc = "        }"]
 #[doc = "      ]"]
 #[doc = "    },"]
-#[doc = "    \"tool_summaries\": {"]
-#[doc = "      \"description\": \"The summary of other valgrind tool runs\","]
-#[doc = "      \"type\": \"array\","]
-#[doc = "      \"items\": {"]
-#[doc = "        \"$ref\": \"#/definitions/ToolSummary\""]
-#[doc = "      }"]
-#[doc = "    },"]
 #[doc = "    \"version\": {"]
-#[doc = "      \"description\": \"The version of this format. Only backwards incompatible changes cause an increase of the\\n version\","]
+#[doc = "      \"description\": \"The version of this format. Only backwards incompatible changes cause an increase of the\\nversion\","]
 #[doc = "      \"type\": \"string\""]
 #[doc = "    }"]
 #[doc = "  }"]
@@ -348,13 +236,15 @@ impl ::std::convert::TryFrom<::std::string::String> for BenchmarkKind {
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 pub struct BenchmarkSummary {
-    #[doc = "The path to the binary which is executed by valgrind. In case of a library benchmark this\n is the compiled benchmark file. In case of a binary benchmark this is the path to the\n command."]
+    #[doc = "The baselines if any. An absent first baseline indicates that new output was produced. An\nabsent second baseline indicates the usage of the usual \"*.old\" output."]
+    pub baselines: (
+        ::std::option::Option<::std::string::String>,
+        ::std::option::Option<::std::string::String>,
+    ),
+    #[doc = "The path to the binary which is executed by valgrind. In case of a library benchmark this\nis the compiled benchmark file. In case of a binary benchmark this is the path to the\ncommand."]
     pub benchmark_exe: ::std::string::String,
     #[doc = "The path to the benchmark file"]
     pub benchmark_file: ::std::string::String,
-    #[doc = "The summary of the callgrind run"]
-    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
-    pub callgrind_summary: ::std::option::Option<CallgrindSummary>,
     #[doc = "More details describing this benchmark run"]
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub details: ::std::option::Option<::std::string::String>,
@@ -369,14 +259,14 @@ pub struct BenchmarkSummary {
     pub module_path: ::std::string::String,
     #[doc = "The directory of the package"]
     pub package_dir: ::std::string::String,
+    #[doc = "The summary of other valgrind tool runs"]
+    pub profiles: Profiles,
     #[doc = "The project's root directory"]
     pub project_root: ::std::string::String,
     #[doc = "The destination and kind of the summary file"]
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub summary_output: ::std::option::Option<SummaryOutput>,
-    #[doc = "The summary of other valgrind tool runs"]
-    pub tool_summaries: ::std::vec::Vec<ToolSummary>,
-    #[doc = "The version of this format. Only backwards incompatible changes cause an increase of the\n version"]
+    #[doc = "The version of this format. Only backwards incompatible changes cause an increase of the\nversion"]
     pub version: ::std::string::String,
 }
 impl ::std::convert::From<&BenchmarkSummary> for BenchmarkSummary {
@@ -389,312 +279,400 @@ impl BenchmarkSummary {
         Default::default()
     }
 }
-#[doc = "The `CallgrindRegression` describing a single event based performance regression"]
+#[doc = "All metrics which cachegrind produces and additionally some derived events\n\nDepending on the options passed to Cachegrind, these are the events that Cachegrind can produce.\nSee the [Cachegrind\ndocumentation](https://valgrind.org/docs/manual/cg-manual.html#cg-manual.cgopts) for details."]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"description\": \"The `CallgrindRegression` describing a single event based performance regression\","]
-#[doc = "  \"type\": \"object\","]
-#[doc = "  \"required\": ["]
-#[doc = "    \"diff_pct\","]
-#[doc = "    \"event_kind\","]
-#[doc = "    \"limit\","]
-#[doc = "    \"new\","]
-#[doc = "    \"old\""]
-#[doc = "  ],"]
-#[doc = "  \"properties\": {"]
-#[doc = "    \"diff_pct\": {"]
-#[doc = "      \"description\": \"The difference between new and old in percent. Serialized as string to preserve infinity\\n values and avoid null in json.\","]
-#[doc = "      \"type\": \"string\""]
+#[doc = "  \"description\": \"All metrics which cachegrind produces and additionally some derived events\\n\\nDepending on the options passed to Cachegrind, these are the events that Cachegrind can produce.\\nSee the [Cachegrind\\ndocumentation](https://valgrind.org/docs/manual/cg-manual.html#cg-manual.cgopts) for details.\","]
+#[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"description\": \"The default event. I cache reads (which equals the number of instructions executed)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"Ir\""]
 #[doc = "    },"]
-#[doc = "    \"event_kind\": {"]
-#[doc = "      \"description\": \"The [`EventKind`] which is affected by a performance regression\","]
-#[doc = "      \"allOf\": ["]
-#[doc = "        {"]
-#[doc = "          \"$ref\": \"#/definitions/EventKind\""]
-#[doc = "        }"]
-#[doc = "      ]"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"D Cache reads (which equals the number of memory reads) (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"Dr\""]
 #[doc = "    },"]
-#[doc = "    \"limit\": {"]
-#[doc = "      \"description\": \"The value of the limit which was exceeded to cause a performance regression. Serialized as\\n string to preserve infinity values and avoid null in json.\","]
-#[doc = "      \"type\": \"string\""]
+#[doc = "    {"]
+#[doc = "      \"description\": \"D Cache writes (which equals the number of memory writes) (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"Dw\""]
 #[doc = "    },"]
-#[doc = "    \"new\": {"]
-#[doc = "      \"description\": \"The value of the new benchmark run\","]
-#[doc = "      \"type\": \"integer\","]
-#[doc = "      \"format\": \"uint64\","]
-#[doc = "      \"minimum\": 0.0"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"I1 cache read misses (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"I1mr\""]
 #[doc = "    },"]
-#[doc = "    \"old\": {"]
-#[doc = "      \"description\": \"The value of the old benchmark run\","]
-#[doc = "      \"type\": \"integer\","]
-#[doc = "      \"format\": \"uint64\","]
-#[doc = "      \"minimum\": 0.0"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"D1 cache read misses (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"D1mr\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"D1 cache write misses (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"D1mw\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"LL cache instruction read misses (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"ILmr\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"LL cache data read misses (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"DLmr\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"LL cache data write misses (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"DLmw\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"Derived event showing the L1 hits (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"L1hits\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"Derived event showing the LL hits (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"LLhits\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"Derived event showing the RAM hits (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"RamHits\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"Derived event showing the total amount of cache reads and writes (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"TotalRW\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"Derived event showing estimated CPU cycles (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"EstimatedCycles\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"Conditional branches executed (--branch-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"Bc\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"Conditional branches mispredicted (--branch-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"Bcm\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"Indirect branches executed (--branch-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"Bi\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"Indirect branches mispredicted (--branch-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"Bim\""]
 #[doc = "    }"]
-#[doc = "  }"]
+#[doc = "  ]"]
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
-#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
-pub struct CallgrindRegression {
-    #[doc = "The difference between new and old in percent. Serialized as string to preserve infinity\n values and avoid null in json."]
-    pub diff_pct: ::std::string::String,
-    #[doc = "The [`EventKind`] which is affected by a performance regression"]
-    pub event_kind: EventKind,
-    #[doc = "The value of the limit which was exceeded to cause a performance regression. Serialized as\n string to preserve infinity values and avoid null in json."]
-    pub limit: ::std::string::String,
-    #[doc = "The value of the new benchmark run"]
-    pub new: u64,
-    #[doc = "The value of the old benchmark run"]
-    pub old: u64,
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum CachegrindMetric {
+    #[doc = "The default event. I cache reads (which equals the number of instructions executed)"]
+    Ir,
+    #[doc = "D Cache reads (which equals the number of memory reads) (--cache-sim=yes)"]
+    Dr,
+    #[doc = "D Cache writes (which equals the number of memory writes) (--cache-sim=yes)"]
+    Dw,
+    #[doc = "I1 cache read misses (--cache-sim=yes)"]
+    I1mr,
+    #[doc = "D1 cache read misses (--cache-sim=yes)"]
+    D1mr,
+    #[doc = "D1 cache write misses (--cache-sim=yes)"]
+    D1mw,
+    #[doc = "LL cache instruction read misses (--cache-sim=yes)"]
+    ILmr,
+    #[doc = "LL cache data read misses (--cache-sim=yes)"]
+    DLmr,
+    #[doc = "LL cache data write misses (--cache-sim=yes)"]
+    DLmw,
+    #[doc = "Derived event showing the L1 hits (--cache-sim=yes)"]
+    L1hits,
+    #[doc = "Derived event showing the LL hits (--cache-sim=yes)"]
+    LLhits,
+    #[doc = "Derived event showing the RAM hits (--cache-sim=yes)"]
+    RamHits,
+    #[doc = "Derived event showing the total amount of cache reads and writes (--cache-sim=yes)"]
+    #[serde(rename = "TotalRW")]
+    TotalRw,
+    #[doc = "Derived event showing estimated CPU cycles (--cache-sim=yes)"]
+    EstimatedCycles,
+    #[doc = "Conditional branches executed (--branch-sim=yes)"]
+    Bc,
+    #[doc = "Conditional branches mispredicted (--branch-sim=yes)"]
+    Bcm,
+    #[doc = "Indirect branches executed (--branch-sim=yes)"]
+    Bi,
+    #[doc = "Indirect branches mispredicted (--branch-sim=yes)"]
+    Bim,
 }
-impl ::std::convert::From<&CallgrindRegression> for CallgrindRegression {
-    fn from(value: &CallgrindRegression) -> Self {
+impl ::std::convert::From<&Self> for CachegrindMetric {
+    fn from(value: &CachegrindMetric) -> Self {
         value.clone()
     }
 }
-impl CallgrindRegression {
-    pub fn builder() -> builder::CallgrindRegression {
-        Default::default()
+impl ::std::fmt::Display for CachegrindMetric {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Ir => write!(f, "Ir"),
+            Self::Dr => write!(f, "Dr"),
+            Self::Dw => write!(f, "Dw"),
+            Self::I1mr => write!(f, "I1mr"),
+            Self::D1mr => write!(f, "D1mr"),
+            Self::D1mw => write!(f, "D1mw"),
+            Self::ILmr => write!(f, "ILmr"),
+            Self::DLmr => write!(f, "DLmr"),
+            Self::DLmw => write!(f, "DLmw"),
+            Self::L1hits => write!(f, "L1hits"),
+            Self::LLhits => write!(f, "LLhits"),
+            Self::RamHits => write!(f, "RamHits"),
+            Self::TotalRw => write!(f, "TotalRW"),
+            Self::EstimatedCycles => write!(f, "EstimatedCycles"),
+            Self::Bc => write!(f, "Bc"),
+            Self::Bcm => write!(f, "Bcm"),
+            Self::Bi => write!(f, "Bi"),
+            Self::Bim => write!(f, "Bim"),
+        }
     }
 }
-#[doc = "The `CallgrindRun` contains all `CallgrindRunSegments` and their total costs in a\n `CallgrindTotal`."]
+impl ::std::str::FromStr for CachegrindMetric {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "Ir" => Ok(Self::Ir),
+            "Dr" => Ok(Self::Dr),
+            "Dw" => Ok(Self::Dw),
+            "I1mr" => Ok(Self::I1mr),
+            "D1mr" => Ok(Self::D1mr),
+            "D1mw" => Ok(Self::D1mw),
+            "ILmr" => Ok(Self::ILmr),
+            "DLmr" => Ok(Self::DLmr),
+            "DLmw" => Ok(Self::DLmw),
+            "L1hits" => Ok(Self::L1hits),
+            "LLhits" => Ok(Self::LLhits),
+            "RamHits" => Ok(Self::RamHits),
+            "TotalRW" => Ok(Self::TotalRw),
+            "EstimatedCycles" => Ok(Self::EstimatedCycles),
+            "Bc" => Ok(Self::Bc),
+            "Bcm" => Ok(Self::Bcm),
+            "Bi" => Ok(Self::Bi),
+            "Bim" => Ok(Self::Bim),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for CachegrindMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CachegrindMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CachegrindMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "The metrics collected by DHAT"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"description\": \"The `CallgrindRun` contains all `CallgrindRunSegments` and their total costs in a\\n `CallgrindTotal`.\","]
-#[doc = "  \"type\": \"object\","]
-#[doc = "  \"required\": ["]
-#[doc = "    \"segments\","]
-#[doc = "    \"total\""]
-#[doc = "  ],"]
-#[doc = "  \"properties\": {"]
-#[doc = "    \"segments\": {"]
-#[doc = "      \"description\": \"All `CallgrindRunSummary`s\","]
-#[doc = "      \"type\": \"array\","]
-#[doc = "      \"items\": {"]
-#[doc = "        \"$ref\": \"#/definitions/CallgrindRunSegment\""]
-#[doc = "      }"]
+#[doc = "  \"description\": \"The metrics collected by DHAT\","]
+#[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"description\": \"Total bytes allocated over the entire execution\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"TotalBytes\""]
 #[doc = "    },"]
-#[doc = "    \"total\": {"]
-#[doc = "      \"description\": \"The total costs of all `CallgrindRunSummary`s in this `CallgrindRunSummaries`\","]
-#[doc = "      \"allOf\": ["]
-#[doc = "        {"]
-#[doc = "          \"$ref\": \"#/definitions/CallgrindTotal\""]
-#[doc = "        }"]
-#[doc = "      ]"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"Total heap blocks allocated over the entire execution\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"TotalBlocks\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"The bytes alive at t-gmax, the time when the heap size reached its global maximum\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"AtTGmaxBytes\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"The blocks alive at t-gmax\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"AtTGmaxBlocks\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"The amount of bytes at the end of the execution.\\n\\nThis is the amount of bytes which were not explicitly freed.\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"AtTEndBytes\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"The amount of blocks at the end of the execution.\\n\\nThis is the amount of heap blocks which were not explicitly freed.\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"AtTEndBlocks\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"The amount of bytes read during the entire execution\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"ReadsBytes\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"The amount of bytes written during the entire execution\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"WritesBytes\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"The total lifetimes of all heap blocks allocated\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"TotalLifetimes\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"The maximum amount of bytes\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"MaximumBytes\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"The maximum amount of heap blocks\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"MaximumBlocks\""]
 #[doc = "    }"]
-#[doc = "  }"]
+#[doc = "  ]"]
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
-#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
-pub struct CallgrindRun {
-    #[doc = "All `CallgrindRunSummary`s"]
-    pub segments: ::std::vec::Vec<CallgrindRunSegment>,
-    #[doc = "The total costs of all `CallgrindRunSummary`s in this `CallgrindRunSummaries`"]
-    pub total: CallgrindTotal,
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum DhatMetric {
+    #[doc = "Total bytes allocated over the entire execution"]
+    TotalBytes,
+    #[doc = "Total heap blocks allocated over the entire execution"]
+    TotalBlocks,
+    #[doc = "The bytes alive at t-gmax, the time when the heap size reached its global maximum"]
+    AtTGmaxBytes,
+    #[doc = "The blocks alive at t-gmax"]
+    AtTGmaxBlocks,
+    #[doc = "The amount of bytes at the end of the execution.\n\nThis is the amount of bytes which were not explicitly freed."]
+    AtTEndBytes,
+    #[doc = "The amount of blocks at the end of the execution.\n\nThis is the amount of heap blocks which were not explicitly freed."]
+    AtTEndBlocks,
+    #[doc = "The amount of bytes read during the entire execution"]
+    ReadsBytes,
+    #[doc = "The amount of bytes written during the entire execution"]
+    WritesBytes,
+    #[doc = "The total lifetimes of all heap blocks allocated"]
+    TotalLifetimes,
+    #[doc = "The maximum amount of bytes"]
+    MaximumBytes,
+    #[doc = "The maximum amount of heap blocks"]
+    MaximumBlocks,
 }
-impl ::std::convert::From<&CallgrindRun> for CallgrindRun {
-    fn from(value: &CallgrindRun) -> Self {
+impl ::std::convert::From<&Self> for DhatMetric {
+    fn from(value: &DhatMetric) -> Self {
         value.clone()
     }
 }
-impl CallgrindRun {
-    pub fn builder() -> builder::CallgrindRun {
-        Default::default()
+impl ::std::fmt::Display for DhatMetric {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::TotalBytes => write!(f, "TotalBytes"),
+            Self::TotalBlocks => write!(f, "TotalBlocks"),
+            Self::AtTGmaxBytes => write!(f, "AtTGmaxBytes"),
+            Self::AtTGmaxBlocks => write!(f, "AtTGmaxBlocks"),
+            Self::AtTEndBytes => write!(f, "AtTEndBytes"),
+            Self::AtTEndBlocks => write!(f, "AtTEndBlocks"),
+            Self::ReadsBytes => write!(f, "ReadsBytes"),
+            Self::WritesBytes => write!(f, "WritesBytes"),
+            Self::TotalLifetimes => write!(f, "TotalLifetimes"),
+            Self::MaximumBytes => write!(f, "MaximumBytes"),
+            Self::MaximumBlocks => write!(f, "MaximumBlocks"),
+        }
     }
 }
-#[doc = "The `CallgrindRunSegment` containing the metric differences, performance regressions of a\n callgrind run segment.\n\n A segment can be a part (caused by options like `--dump-every-bb=xxx`), a thread (caused by\n `--separate-threads`) or a pid (possibly caused by `--trace-children`). A segment is a summary\n over a single file which contains the costs of that part, thread and/or pid."]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"description\": \"The `CallgrindRunSegment` containing the metric differences, performance regressions of a\\n callgrind run segment.\\n\\n A segment can be a part (caused by options like `--dump-every-bb=xxx`), a thread (caused by\\n `--separate-threads`) or a pid (possibly caused by `--trace-children`). A segment is a summary\\n over a single file which contains the costs of that part, thread and/or pid.\","]
-#[doc = "  \"type\": \"object\","]
-#[doc = "  \"required\": ["]
-#[doc = "    \"command\","]
-#[doc = "    \"events\","]
-#[doc = "    \"regressions\""]
-#[doc = "  ],"]
-#[doc = "  \"properties\": {"]
-#[doc = "    \"baseline\": {"]
-#[doc = "      \"description\": \"If present, the `Baseline` used to compare the new with the old output\","]
-#[doc = "      \"anyOf\": ["]
-#[doc = "        {"]
-#[doc = "          \"$ref\": \"#/definitions/Baseline\""]
-#[doc = "        },"]
-#[doc = "        {"]
-#[doc = "          \"type\": \"null\""]
-#[doc = "        }"]
-#[doc = "      ]"]
-#[doc = "    },"]
-#[doc = "    \"command\": {"]
-#[doc = "      \"description\": \"The executed command extracted from Valgrind output\","]
-#[doc = "      \"type\": \"string\""]
-#[doc = "    },"]
-#[doc = "    \"events\": {"]
-#[doc = "      \"description\": \"All recorded metrics for the `EventKinds`\","]
-#[doc = "      \"allOf\": ["]
-#[doc = "        {"]
-#[doc = "          \"$ref\": \"#/definitions/MetricsSummary_for_EventKind\""]
-#[doc = "        }"]
-#[doc = "      ]"]
-#[doc = "    },"]
-#[doc = "    \"regressions\": {"]
-#[doc = "      \"description\": \"All detected performance regressions per callgrind run\","]
-#[doc = "      \"type\": \"array\","]
-#[doc = "      \"items\": {"]
-#[doc = "        \"$ref\": \"#/definitions/CallgrindRegression\""]
-#[doc = "      }"]
-#[doc = "    }"]
-#[doc = "  }"]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
-pub struct CallgrindRunSegment {
-    #[doc = "If present, the `Baseline` used to compare the new with the old output"]
-    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
-    pub baseline: ::std::option::Option<Baseline>,
-    #[doc = "The executed command extracted from Valgrind output"]
-    pub command: ::std::string::String,
-    #[doc = "All recorded metrics for the `EventKinds`"]
-    pub events: MetricsSummaryForEventKind,
-    #[doc = "All detected performance regressions per callgrind run"]
-    pub regressions: ::std::vec::Vec<CallgrindRegression>,
-}
-impl ::std::convert::From<&CallgrindRunSegment> for CallgrindRunSegment {
-    fn from(value: &CallgrindRunSegment) -> Self {
-        value.clone()
+impl ::std::str::FromStr for DhatMetric {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "TotalBytes" => Ok(Self::TotalBytes),
+            "TotalBlocks" => Ok(Self::TotalBlocks),
+            "AtTGmaxBytes" => Ok(Self::AtTGmaxBytes),
+            "AtTGmaxBlocks" => Ok(Self::AtTGmaxBlocks),
+            "AtTEndBytes" => Ok(Self::AtTEndBytes),
+            "AtTEndBlocks" => Ok(Self::AtTEndBlocks),
+            "ReadsBytes" => Ok(Self::ReadsBytes),
+            "WritesBytes" => Ok(Self::WritesBytes),
+            "TotalLifetimes" => Ok(Self::TotalLifetimes),
+            "MaximumBytes" => Ok(Self::MaximumBytes),
+            "MaximumBlocks" => Ok(Self::MaximumBlocks),
+            _ => Err("invalid value".into()),
+        }
     }
 }
-impl CallgrindRunSegment {
-    pub fn builder() -> builder::CallgrindRunSegment {
-        Default::default()
+impl ::std::convert::TryFrom<&str> for DhatMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
     }
 }
-#[doc = "The `CallgrindSummary` contains the callgrind run, flamegraph paths and other paths to the\n segments of the callgrind run."]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"description\": \"The `CallgrindSummary` contains the callgrind run, flamegraph paths and other paths to the\\n segments of the callgrind run.\","]
-#[doc = "  \"type\": \"object\","]
-#[doc = "  \"required\": ["]
-#[doc = "    \"callgrind_run\","]
-#[doc = "    \"flamegraphs\","]
-#[doc = "    \"log_paths\","]
-#[doc = "    \"out_paths\""]
-#[doc = "  ],"]
-#[doc = "  \"properties\": {"]
-#[doc = "    \"callgrind_run\": {"]
-#[doc = "      \"description\": \"The summary of all callgrind segments is a `CallgrindRun`\","]
-#[doc = "      \"allOf\": ["]
-#[doc = "        {"]
-#[doc = "          \"$ref\": \"#/definitions/CallgrindRun\""]
-#[doc = "        }"]
-#[doc = "      ]"]
-#[doc = "    },"]
-#[doc = "    \"flamegraphs\": {"]
-#[doc = "      \"description\": \"The summaries of possibly created flamegraphs\","]
-#[doc = "      \"type\": \"array\","]
-#[doc = "      \"items\": {"]
-#[doc = "        \"$ref\": \"#/definitions/FlamegraphSummary\""]
-#[doc = "      }"]
-#[doc = "    },"]
-#[doc = "    \"log_paths\": {"]
-#[doc = "      \"description\": \"The paths to the `*.log` files\","]
-#[doc = "      \"type\": \"array\","]
-#[doc = "      \"items\": {"]
-#[doc = "        \"type\": \"string\""]
-#[doc = "      }"]
-#[doc = "    },"]
-#[doc = "    \"out_paths\": {"]
-#[doc = "      \"description\": \"The paths to the `*.out` files\","]
-#[doc = "      \"type\": \"array\","]
-#[doc = "      \"items\": {"]
-#[doc = "        \"type\": \"string\""]
-#[doc = "      }"]
-#[doc = "    }"]
-#[doc = "  }"]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
-pub struct CallgrindSummary {
-    #[doc = "The summary of all callgrind segments is a `CallgrindRun`"]
-    pub callgrind_run: CallgrindRun,
-    #[doc = "The summaries of possibly created flamegraphs"]
-    pub flamegraphs: ::std::vec::Vec<FlamegraphSummary>,
-    #[doc = "The paths to the `*.log` files"]
-    pub log_paths: ::std::vec::Vec<::std::string::String>,
-    #[doc = "The paths to the `*.out` files"]
-    pub out_paths: ::std::vec::Vec<::std::string::String>,
-}
-impl ::std::convert::From<&CallgrindSummary> for CallgrindSummary {
-    fn from(value: &CallgrindSummary) -> Self {
-        value.clone()
+impl ::std::convert::TryFrom<&::std::string::String> for DhatMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
     }
 }
-impl CallgrindSummary {
-    pub fn builder() -> builder::CallgrindSummary {
-        Default::default()
-    }
-}
-#[doc = "The total callgrind costs over the `CallgrindRunSegments` and all detected regressions for the\n total"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"description\": \"The total callgrind costs over the `CallgrindRunSegments` and all detected regressions for the\\n total\","]
-#[doc = "  \"type\": \"object\","]
-#[doc = "  \"required\": ["]
-#[doc = "    \"regressions\","]
-#[doc = "    \"summary\""]
-#[doc = "  ],"]
-#[doc = "  \"properties\": {"]
-#[doc = "    \"regressions\": {"]
-#[doc = "      \"description\": \"All detected regressions for the total metrics\","]
-#[doc = "      \"type\": \"array\","]
-#[doc = "      \"items\": {"]
-#[doc = "        \"$ref\": \"#/definitions/CallgrindRegression\""]
-#[doc = "      }"]
-#[doc = "    },"]
-#[doc = "    \"summary\": {"]
-#[doc = "      \"description\": \"The total over the segment metrics\","]
-#[doc = "      \"allOf\": ["]
-#[doc = "        {"]
-#[doc = "          \"$ref\": \"#/definitions/MetricsSummary_for_EventKind\""]
-#[doc = "        }"]
-#[doc = "      ]"]
-#[doc = "    }"]
-#[doc = "  }"]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
-pub struct CallgrindTotal {
-    #[doc = "All detected regressions for the total metrics"]
-    pub regressions: ::std::vec::Vec<CallgrindRegression>,
-    #[doc = "The total over the segment metrics"]
-    pub summary: MetricsSummaryForEventKind,
-}
-impl ::std::convert::From<&CallgrindTotal> for CallgrindTotal {
-    fn from(value: &CallgrindTotal) -> Self {
-        value.clone()
-    }
-}
-impl CallgrindTotal {
-    pub fn builder() -> builder::CallgrindTotal {
-        Default::default()
+impl ::std::convert::TryFrom<::std::string::String> for DhatMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
     }
 }
 #[doc = "The differences between two `Metrics` as percentage and factor"]
@@ -711,11 +689,11 @@ impl CallgrindTotal {
 #[doc = "  ],"]
 #[doc = "  \"properties\": {"]
 #[doc = "    \"diff_pct\": {"]
-#[doc = "      \"description\": \"The percentage of the difference between two `Metrics` serialized as string to preserve\\n infinity values and avoid `null` in json\","]
+#[doc = "      \"description\": \"The percentage of the difference between two `Metrics` serialized as string to preserve\\ninfinity values and avoid `null` in json\","]
 #[doc = "      \"type\": \"string\""]
 #[doc = "    },"]
 #[doc = "    \"factor\": {"]
-#[doc = "      \"description\": \"The factor of the difference between two `Metrics` serialized as string to preserve\\n infinity values and void `null` in json\","]
+#[doc = "      \"description\": \"The factor of the difference between two `Metrics` serialized as string to preserve\\ninfinity values and void `null` in json\","]
 #[doc = "      \"type\": \"string\""]
 #[doc = "    }"]
 #[doc = "  }"]
@@ -724,9 +702,9 @@ impl CallgrindTotal {
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 pub struct Diffs {
-    #[doc = "The percentage of the difference between two `Metrics` serialized as string to preserve\n infinity values and avoid `null` in json"]
+    #[doc = "The percentage of the difference between two `Metrics` serialized as string to preserve\ninfinity values and avoid `null` in json"]
     pub diff_pct: ::std::string::String,
-    #[doc = "The factor of the difference between two `Metrics` serialized as string to preserve\n infinity values and void `null` in json"]
+    #[doc = "The factor of the difference between two `Metrics` serialized as string to preserve\ninfinity values and void `null` in json"]
     pub factor: ::std::string::String,
 }
 impl ::std::convert::From<&Diffs> for Diffs {
@@ -739,13 +717,13 @@ impl Diffs {
         Default::default()
     }
 }
-#[doc = "Either left or right or both can be present\n\n Most of the time, this enum is used to store (new, old) output, metrics, etc. Per convention\n left is `new` and right is `old`."]
+#[doc = "Either left or right or both can be present\n\nMost of the time, this enum is used to store (new, old) output, metrics, etc. Per convention\nleft is `new` and right is `old`."]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"description\": \"Either left or right or both can be present\\n\\n Most of the time, this enum is used to store (new, old) output, metrics, etc. Per convention\\n left is `new` and right is `old`.\","]
+#[doc = "  \"description\": \"Either left or right or both can be present\\n\\nMost of the time, this enum is used to store (new, old) output, metrics, etc. Per convention\\nleft is `new` and right is `old`.\","]
 #[doc = "  \"oneOf\": ["]
 #[doc = "    {"]
 #[doc = "      \"description\": \"The left or `new` value\","]
@@ -755,7 +733,7 @@ impl Diffs {
 #[doc = "      ],"]
 #[doc = "      \"properties\": {"]
 #[doc = "        \"Left\": {"]
-#[doc = "          \"$ref\": \"#/definitions/SegmentDetails\""]
+#[doc = "          \"$ref\": \"#/definitions/ProfileInfo\""]
 #[doc = "        }"]
 #[doc = "      },"]
 #[doc = "      \"additionalProperties\": false"]
@@ -768,7 +746,7 @@ impl Diffs {
 #[doc = "      ],"]
 #[doc = "      \"properties\": {"]
 #[doc = "        \"Right\": {"]
-#[doc = "          \"$ref\": \"#/definitions/SegmentDetails\""]
+#[doc = "          \"$ref\": \"#/definitions/ProfileInfo\""]
 #[doc = "        }"]
 #[doc = "      },"]
 #[doc = "      \"additionalProperties\": false"]
@@ -784,10 +762,10 @@ impl Diffs {
 #[doc = "          \"type\": \"array\","]
 #[doc = "          \"items\": ["]
 #[doc = "            {"]
-#[doc = "              \"$ref\": \"#/definitions/SegmentDetails\""]
+#[doc = "              \"$ref\": \"#/definitions/ProfileInfo\""]
 #[doc = "            },"]
 #[doc = "            {"]
-#[doc = "              \"$ref\": \"#/definitions/SegmentDetails\""]
+#[doc = "              \"$ref\": \"#/definitions/ProfileInfo\""]
 #[doc = "            }"]
 #[doc = "          ],"]
 #[doc = "          \"maxItems\": 2,"]
@@ -801,31 +779,31 @@ impl Diffs {
 #[doc = r" ```"]
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
-pub enum EitherOrBothForSegmentDetails {
+pub enum EitherOrBoth {
     #[doc = "The left or `new` value"]
-    Left(SegmentDetails),
+    Left(ProfileInfo),
     #[doc = "The right or `old` value"]
-    Right(SegmentDetails),
+    Right(ProfileInfo),
     #[doc = "Both values (`new` and `old`) are present"]
-    Both(SegmentDetails, SegmentDetails),
+    Both(ProfileInfo, ProfileInfo),
 }
-impl ::std::convert::From<&Self> for EitherOrBothForSegmentDetails {
-    fn from(value: &EitherOrBothForSegmentDetails) -> Self {
+impl ::std::convert::From<&Self> for EitherOrBoth {
+    fn from(value: &EitherOrBoth) -> Self {
         value.clone()
     }
 }
-impl ::std::convert::From<(SegmentDetails, SegmentDetails)> for EitherOrBothForSegmentDetails {
-    fn from(value: (SegmentDetails, SegmentDetails)) -> Self {
+impl ::std::convert::From<(ProfileInfo, ProfileInfo)> for EitherOrBoth {
+    fn from(value: (ProfileInfo, ProfileInfo)) -> Self {
         Self::Both(value.0, value.1)
     }
 }
-#[doc = "Either left or right or both can be present\n\n Most of the time, this enum is used to store (new, old) output, metrics, etc. Per convention\n left is `new` and right is `old`."]
+#[doc = "Either left or right or both can be present\n\nMost of the time, this enum is used to store (new, old) output, metrics, etc. Per convention\nleft is `new` and right is `old`."]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"description\": \"Either left or right or both can be present\\n\\n Most of the time, this enum is used to store (new, old) output, metrics, etc. Per convention\\n left is `new` and right is `old`.\","]
+#[doc = "  \"description\": \"Either left or right or both can be present\\n\\nMost of the time, this enum is used to store (new, old) output, metrics, etc. Per convention\\nleft is `new` and right is `old`.\","]
 #[doc = "  \"oneOf\": ["]
 #[doc = "    {"]
 #[doc = "      \"description\": \"The left or `new` value\","]
@@ -889,7 +867,7 @@ impl ::std::convert::From<(SegmentDetails, SegmentDetails)> for EitherOrBothForS
 #[doc = r" ```"]
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
-pub enum EitherOrBothForUint64 {
+pub enum EitherOrBoth2 {
     #[doc = "The left or `new` value"]
     Left(u64),
     #[doc = "The right or `old` value"]
@@ -897,23 +875,126 @@ pub enum EitherOrBothForUint64 {
     #[doc = "Both values (`new` and `old`) are present"]
     Both(u64, u64),
 }
-impl ::std::convert::From<&Self> for EitherOrBothForUint64 {
-    fn from(value: &EitherOrBothForUint64) -> Self {
+impl ::std::convert::From<&Self> for EitherOrBoth2 {
+    fn from(value: &EitherOrBoth2) -> Self {
         value.clone()
     }
 }
-impl ::std::convert::From<(u64, u64)> for EitherOrBothForUint64 {
+impl ::std::convert::From<(u64, u64)> for EitherOrBoth2 {
     fn from(value: (u64, u64)) -> Self {
         Self::Both(value.0, value.1)
     }
 }
-#[doc = "All `EventKind`s callgrind produces and additionally some derived events\n\n Depending on the options passed to Callgrind, these are the events that Callgrind can produce.\n See the [Callgrind\n documentation](https://valgrind.org/docs/manual/cl-manual.html#cl-manual.options) for details."]
+#[doc = "The error metrics from a tool which reports errors\n\nThe tools which report only errors are `helgrind`, `drd` and `memcheck`. The order in which the\nvariants are defined in this enum determines the order of the metrics in the benchmark terminal\noutput."]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"description\": \"All `EventKind`s callgrind produces and additionally some derived events\\n\\n Depending on the options passed to Callgrind, these are the events that Callgrind can produce.\\n See the [Callgrind\\n documentation](https://valgrind.org/docs/manual/cl-manual.html#cl-manual.options) for details.\","]
+#[doc = "  \"description\": \"The error metrics from a tool which reports errors\\n\\nThe tools which report only errors are `helgrind`, `drd` and `memcheck`. The order in which the\\nvariants are defined in this enum determines the order of the metrics in the benchmark terminal\\noutput.\","]
+#[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"description\": \"The amount of detected unsuppressed errors\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"Errors\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"The amount of detected unsuppressed error contexts\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"Contexts\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"The amount of suppressed errors\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"SuppressedErrors\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"The amount of suppressed error contexts\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"SuppressedContexts\""]
+#[doc = "    }"]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ErrorMetric {
+    #[doc = "The amount of detected unsuppressed errors"]
+    Errors,
+    #[doc = "The amount of detected unsuppressed error contexts"]
+    Contexts,
+    #[doc = "The amount of suppressed errors"]
+    SuppressedErrors,
+    #[doc = "The amount of suppressed error contexts"]
+    SuppressedContexts,
+}
+impl ::std::convert::From<&Self> for ErrorMetric {
+    fn from(value: &ErrorMetric) -> Self {
+        value.clone()
+    }
+}
+impl ::std::fmt::Display for ErrorMetric {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Errors => write!(f, "Errors"),
+            Self::Contexts => write!(f, "Contexts"),
+            Self::SuppressedErrors => write!(f, "SuppressedErrors"),
+            Self::SuppressedContexts => write!(f, "SuppressedContexts"),
+        }
+    }
+}
+impl ::std::str::FromStr for ErrorMetric {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "Errors" => Ok(Self::Errors),
+            "Contexts" => Ok(Self::Contexts),
+            "SuppressedErrors" => Ok(Self::SuppressedErrors),
+            "SuppressedContexts" => Ok(Self::SuppressedContexts),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ErrorMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ErrorMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ErrorMetric {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[doc = "All `EventKind`s callgrind produces and additionally some derived events\n\nDepending on the options passed to Callgrind, these are the events that Callgrind can produce.\nSee the [Callgrind\ndocumentation](https://valgrind.org/docs/manual/cl-manual.html#cl-manual.options) for details."]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"description\": \"All `EventKind`s callgrind produces and additionally some derived events\\n\\nDepending on the options passed to Callgrind, these are the events that Callgrind can produce.\\nSee the [Callgrind\\ndocumentation](https://valgrind.org/docs/manual/cl-manual.html#cl-manual.options) for details.\","]
 #[doc = "  \"oneOf\": ["]
 #[doc = "    {"]
 #[doc = "      \"description\": \"The default event. I cache reads (which equals the number of instructions executed)\","]
@@ -1064,7 +1145,18 @@ impl ::std::convert::From<(u64, u64)> for EitherOrBothForUint64 {
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
-#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
 pub enum EventKind {
     #[doc = "The default event. I cache reads (which equals the number of instructions executed)"]
     Ir,
@@ -1211,23 +1303,27 @@ impl ::std::convert::TryFrom<&str> for EventKind {
 }
 impl ::std::convert::TryFrom<&::std::string::String> for EventKind {
     type Error = self::error::ConversionError;
-    fn try_from(value: &::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
     }
 }
 impl ::std::convert::TryFrom<::std::string::String> for EventKind {
     type Error = self::error::ConversionError;
-    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
     }
 }
-#[doc = "The callgrind `FlamegraphSummary` records all created paths for an [`EventKind`] specific\n flamegraph\n\n Either the `regular_path`, `old_path` or the `diff_path` are present. Never can all of them be\n absent."]
+#[doc = "The callgrind `FlamegraphSummary` records all created paths for an [`EventKind`] specific\nflamegraph\n\nEither the `regular_path`, `old_path` or the `diff_path` are present. Never can all of them be\nabsent."]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"description\": \"The callgrind `FlamegraphSummary` records all created paths for an [`EventKind`] specific\\n flamegraph\\n\\n Either the `regular_path`, `old_path` or the `diff_path` are present. Never can all of them be\\n absent.\","]
+#[doc = "  \"description\": \"The callgrind `FlamegraphSummary` records all created paths for an [`EventKind`] specific\\nflamegraph\\n\\nEither the `regular_path`, `old_path` or the `diff_path` are present. Never can all of them be\\nabsent.\","]
 #[doc = "  \"type\": \"object\","]
 #[doc = "  \"required\": ["]
 #[doc = "    \"event_kind\""]
@@ -1290,13 +1386,134 @@ impl FlamegraphSummary {
         Default::default()
     }
 }
-#[doc = "The `MetricsDiff` describes the difference between a `new` and `old` metric as percentage and\n factor.\n\n Only if both metrics are present there is also a `Diffs` present. Otherwise, it just stores the\n `new` or `old` metric."]
+#[doc = "The different metrics distinguished by tool and if it is an error checking tool as `ErrorMetric`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"description\": \"The `MetricsDiff` describes the difference between a `new` and `old` metric as percentage and\\n factor.\\n\\n Only if both metrics are present there is also a `Diffs` present. Otherwise, it just stores the\\n `new` or `old` metric.\","]
+#[doc = "  \"description\": \"The different metrics distinguished by tool and if it is an error checking tool as `ErrorMetric`\","]
+#[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"enum\": ["]
+#[doc = "        \"None\""]
+#[doc = "      ]"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"Callgrind\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"Callgrind\": {"]
+#[doc = "          \"$ref\": \"#/definitions/EventKind\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"Cachegrind\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"Cachegrind\": {"]
+#[doc = "          \"$ref\": \"#/definitions/CachegrindMetric\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"Dhat\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"Dhat\": {"]
+#[doc = "          \"$ref\": \"#/definitions/DhatMetric\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"Memcheck\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"Memcheck\": {"]
+#[doc = "          \"$ref\": \"#/definitions/ErrorMetric\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"Helgrind\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"Helgrind\": {"]
+#[doc = "          \"$ref\": \"#/definitions/ErrorMetric\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"DRD\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"DRD\": {"]
+#[doc = "          \"$ref\": \"#/definitions/ErrorMetric\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    }"]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+pub enum MetricKind {
+    None,
+    Callgrind(EventKind),
+    Cachegrind(CachegrindMetric),
+    Dhat(DhatMetric),
+    Memcheck(ErrorMetric),
+    Helgrind(ErrorMetric),
+    #[serde(rename = "DRD")]
+    Drd(ErrorMetric),
+}
+impl ::std::convert::From<&Self> for MetricKind {
+    fn from(value: &MetricKind) -> Self {
+        value.clone()
+    }
+}
+impl ::std::convert::From<EventKind> for MetricKind {
+    fn from(value: EventKind) -> Self {
+        Self::Callgrind(value)
+    }
+}
+impl ::std::convert::From<CachegrindMetric> for MetricKind {
+    fn from(value: CachegrindMetric) -> Self {
+        Self::Cachegrind(value)
+    }
+}
+impl ::std::convert::From<DhatMetric> for MetricKind {
+    fn from(value: DhatMetric) -> Self {
+        Self::Dhat(value)
+    }
+}
+#[doc = "The `MetricsDiff` describes the difference between a `new` and `old` metric as percentage and\nfactor.\n\nOnly if both metrics are present there is also a `Diffs` present. Otherwise, it just stores the\n`new` or `old` metric."]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"description\": \"The `MetricsDiff` describes the difference between a `new` and `old` metric as percentage and\\nfactor.\\n\\nOnly if both metrics are present there is also a `Diffs` present. Otherwise, it just stores the\\n`new` or `old` metric.\","]
 #[doc = "  \"type\": \"object\","]
 #[doc = "  \"required\": ["]
 #[doc = "    \"metrics\""]
@@ -1317,7 +1534,7 @@ impl FlamegraphSummary {
 #[doc = "      \"description\": \"Either the `new`, `old` or both metrics\","]
 #[doc = "      \"allOf\": ["]
 #[doc = "        {"]
-#[doc = "          \"$ref\": \"#/definitions/EitherOrBoth_for_uint64\""]
+#[doc = "          \"$ref\": \"#/definitions/EitherOrBoth2\""]
 #[doc = "        }"]
 #[doc = "      ]"]
 #[doc = "    }"]
@@ -1331,7 +1548,7 @@ pub struct MetricsDiff {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub diffs: ::std::option::Option<Diffs>,
     #[doc = "Either the `new`, `old` or both metrics"]
-    pub metrics: EitherOrBothForUint64,
+    pub metrics: EitherOrBoth2,
 }
 impl ::std::convert::From<&MetricsDiff> for MetricsDiff {
     fn from(value: &MetricsDiff) -> Self {
@@ -1359,27 +1576,27 @@ impl MetricsDiff {
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 #[serde(transparent)]
-pub struct MetricsSummaryForDhatMetricKind(pub ::std::collections::HashMap<::std::string::String, MetricsDiff>);
-impl ::std::ops::Deref for MetricsSummaryForDhatMetricKind {
+pub struct MetricsSummary(pub ::std::collections::HashMap<::std::string::String, MetricsDiff>);
+impl ::std::ops::Deref for MetricsSummary {
     type Target = ::std::collections::HashMap<::std::string::String, MetricsDiff>;
     fn deref(&self) -> &::std::collections::HashMap<::std::string::String, MetricsDiff> {
         &self.0
     }
 }
-impl ::std::convert::From<MetricsSummaryForDhatMetricKind>
+impl ::std::convert::From<MetricsSummary>
     for ::std::collections::HashMap<::std::string::String, MetricsDiff>
 {
-    fn from(value: MetricsSummaryForDhatMetricKind) -> Self {
+    fn from(value: MetricsSummary) -> Self {
         value.0
     }
 }
-impl ::std::convert::From<&MetricsSummaryForDhatMetricKind> for MetricsSummaryForDhatMetricKind {
-    fn from(value: &MetricsSummaryForDhatMetricKind) -> Self {
+impl ::std::convert::From<&MetricsSummary> for MetricsSummary {
+    fn from(value: &MetricsSummary) -> Self {
         value.clone()
     }
 }
 impl ::std::convert::From<::std::collections::HashMap<::std::string::String, MetricsDiff>>
-    for MetricsSummaryForDhatMetricKind
+    for MetricsSummary
 {
     fn from(value: ::std::collections::HashMap<::std::string::String, MetricsDiff>) -> Self {
         Self(value)
@@ -1401,27 +1618,27 @@ impl ::std::convert::From<::std::collections::HashMap<::std::string::String, Met
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 #[serde(transparent)]
-pub struct MetricsSummaryForErrorMetricKind(pub ::std::collections::HashMap<::std::string::String, MetricsDiff>);
-impl ::std::ops::Deref for MetricsSummaryForErrorMetricKind {
+pub struct MetricsSummary2(pub ::std::collections::HashMap<::std::string::String, MetricsDiff>);
+impl ::std::ops::Deref for MetricsSummary2 {
     type Target = ::std::collections::HashMap<::std::string::String, MetricsDiff>;
     fn deref(&self) -> &::std::collections::HashMap<::std::string::String, MetricsDiff> {
         &self.0
     }
 }
-impl ::std::convert::From<MetricsSummaryForErrorMetricKind>
+impl ::std::convert::From<MetricsSummary2>
     for ::std::collections::HashMap<::std::string::String, MetricsDiff>
 {
-    fn from(value: MetricsSummaryForErrorMetricKind) -> Self {
+    fn from(value: MetricsSummary2) -> Self {
         value.0
     }
 }
-impl ::std::convert::From<&MetricsSummaryForErrorMetricKind> for MetricsSummaryForErrorMetricKind {
-    fn from(value: &MetricsSummaryForErrorMetricKind) -> Self {
+impl ::std::convert::From<&MetricsSummary2> for MetricsSummary2 {
+    fn from(value: &MetricsSummary2) -> Self {
         value.clone()
     }
 }
 impl ::std::convert::From<::std::collections::HashMap<::std::string::String, MetricsDiff>>
-    for MetricsSummaryForErrorMetricKind
+    for MetricsSummary2
 {
     fn from(value: ::std::collections::HashMap<::std::string::String, MetricsDiff>) -> Self {
         Self(value)
@@ -1443,26 +1660,201 @@ impl ::std::convert::From<::std::collections::HashMap<::std::string::String, Met
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 #[serde(transparent)]
-pub struct MetricsSummaryForEventKind(pub ::std::collections::HashMap<::std::string::String, MetricsDiff>);
-impl ::std::ops::Deref for MetricsSummaryForEventKind {
+pub struct MetricsSummary3(pub ::std::collections::HashMap<::std::string::String, MetricsDiff>);
+impl ::std::ops::Deref for MetricsSummary3 {
     type Target = ::std::collections::HashMap<::std::string::String, MetricsDiff>;
     fn deref(&self) -> &::std::collections::HashMap<::std::string::String, MetricsDiff> {
         &self.0
     }
 }
-impl ::std::convert::From<MetricsSummaryForEventKind> for ::std::collections::HashMap<::std::string::String, MetricsDiff> {
-    fn from(value: MetricsSummaryForEventKind) -> Self {
+impl ::std::convert::From<MetricsSummary3>
+    for ::std::collections::HashMap<::std::string::String, MetricsDiff>
+{
+    fn from(value: MetricsSummary3) -> Self {
         value.0
     }
 }
-impl ::std::convert::From<&MetricsSummaryForEventKind> for MetricsSummaryForEventKind {
-    fn from(value: &MetricsSummaryForEventKind) -> Self {
+impl ::std::convert::From<&MetricsSummary3> for MetricsSummary3 {
+    fn from(value: &MetricsSummary3) -> Self {
         value.clone()
     }
 }
-impl ::std::convert::From<::std::collections::HashMap<::std::string::String, MetricsDiff>> for MetricsSummaryForEventKind {
+impl ::std::convert::From<::std::collections::HashMap<::std::string::String, MetricsDiff>>
+    for MetricsSummary3
+{
     fn from(value: ::std::collections::HashMap<::std::string::String, MetricsDiff>) -> Self {
         Self(value)
+    }
+}
+#[doc = "The `MetricsSummary` contains all differences between two tool run segments"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"description\": \"The `MetricsSummary` contains all differences between two tool run segments\","]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"additionalProperties\": {"]
+#[doc = "    \"$ref\": \"#/definitions/MetricsDiff\""]
+#[doc = "  }"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(transparent)]
+pub struct MetricsSummary4(pub ::std::collections::HashMap<::std::string::String, MetricsDiff>);
+impl ::std::ops::Deref for MetricsSummary4 {
+    type Target = ::std::collections::HashMap<::std::string::String, MetricsDiff>;
+    fn deref(&self) -> &::std::collections::HashMap<::std::string::String, MetricsDiff> {
+        &self.0
+    }
+}
+impl ::std::convert::From<MetricsSummary4>
+    for ::std::collections::HashMap<::std::string::String, MetricsDiff>
+{
+    fn from(value: MetricsSummary4) -> Self {
+        value.0
+    }
+}
+impl ::std::convert::From<&MetricsSummary4> for MetricsSummary4 {
+    fn from(value: &MetricsSummary4) -> Self {
+        value.clone()
+    }
+}
+impl ::std::convert::From<::std::collections::HashMap<::std::string::String, MetricsDiff>>
+    for MetricsSummary4
+{
+    fn from(value: ::std::collections::HashMap<::std::string::String, MetricsDiff>) -> Self {
+        Self(value)
+    }
+}
+#[doc = "The `ToolSummary` containing all information about a valgrind tool run"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"description\": \"The `ToolSummary` containing all information about a valgrind tool run\","]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"flamegraphs\","]
+#[doc = "    \"log_paths\","]
+#[doc = "    \"out_paths\","]
+#[doc = "    \"summaries\","]
+#[doc = "    \"tool\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"flamegraphs\": {"]
+#[doc = "      \"description\": \"Details and information about the created flamegraphs if any\","]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"$ref\": \"#/definitions/FlamegraphSummary\""]
+#[doc = "      }"]
+#[doc = "    },"]
+#[doc = "    \"log_paths\": {"]
+#[doc = "      \"description\": \"The paths to the `*.log` files. All tools produce at least one log file\","]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"string\""]
+#[doc = "      }"]
+#[doc = "    },"]
+#[doc = "    \"out_paths\": {"]
+#[doc = "      \"description\": \"The paths to the `*.out` files. Not all tools produce an output in addition to the log\\nfiles\","]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"type\": \"string\""]
+#[doc = "      }"]
+#[doc = "    },"]
+#[doc = "    \"summaries\": {"]
+#[doc = "      \"description\": \"The metrics and details about the tool run\","]
+#[doc = "      \"allOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/definitions/ProfileData\""]
+#[doc = "        }"]
+#[doc = "      ]"]
+#[doc = "    },"]
+#[doc = "    \"tool\": {"]
+#[doc = "      \"description\": \"The Valgrind tool like `DHAT`, `Memcheck` etc.\","]
+#[doc = "      \"allOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/definitions/ValgrindTool\""]
+#[doc = "        }"]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  }"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+pub struct Profile {
+    #[doc = "Details and information about the created flamegraphs if any"]
+    pub flamegraphs: ::std::vec::Vec<FlamegraphSummary>,
+    #[doc = "The paths to the `*.log` files. All tools produce at least one log file"]
+    pub log_paths: ::std::vec::Vec<::std::string::String>,
+    #[doc = "The paths to the `*.out` files. Not all tools produce an output in addition to the log\nfiles"]
+    pub out_paths: ::std::vec::Vec<::std::string::String>,
+    #[doc = "The metrics and details about the tool run"]
+    pub summaries: ProfileData,
+    #[doc = "The Valgrind tool like `DHAT`, `Memcheck` etc."]
+    pub tool: ValgrindTool,
+}
+impl ::std::convert::From<&Profile> for Profile {
+    fn from(value: &Profile) -> Self {
+        value.clone()
+    }
+}
+impl Profile {
+    pub fn builder() -> builder::Profile {
+        Default::default()
+    }
+}
+#[doc = "The `ToolRun` contains all information about a single tool run with possibly multiple segments\n\nThe total is always present and summarizes all tool run segments. In the special case of a\nsingle tool run segment, the total equals the metrics of this segment."]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"description\": \"The `ToolRun` contains all information about a single tool run with possibly multiple segments\\n\\nThe total is always present and summarizes all tool run segments. In the special case of a\\nsingle tool run segment, the total equals the metrics of this segment.\","]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"parts\","]
+#[doc = "    \"total\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"parts\": {"]
+#[doc = "      \"description\": \"All [`ProfilePart`]s\","]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"$ref\": \"#/definitions/ProfilePart\""]
+#[doc = "      }"]
+#[doc = "    },"]
+#[doc = "    \"total\": {"]
+#[doc = "      \"description\": \"The total over the [`ProfilePart`]s\","]
+#[doc = "      \"allOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/definitions/ProfileTotal\""]
+#[doc = "        }"]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  }"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+pub struct ProfileData {
+    #[doc = "All [`ProfilePart`]s"]
+    pub parts: ::std::vec::Vec<ProfilePart>,
+    #[doc = "The total over the [`ProfilePart`]s"]
+    pub total: ProfileTotal,
+}
+impl ::std::convert::From<&ProfileData> for ProfileData {
+    fn from(value: &ProfileData) -> Self {
+        value.clone()
+    }
+}
+impl ProfileData {
+    pub fn builder() -> builder::ProfileData {
+        Default::default()
     }
 }
 #[doc = "Some additional and necessary information about the tool run segment"]
@@ -1530,7 +1922,7 @@ impl ::std::convert::From<::std::collections::HashMap<::std::string::String, Met
 #[doc = r" ```"]
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
-pub struct SegmentDetails {
+pub struct ProfileInfo {
     #[doc = "The executed command extracted from Valgrind output"]
     pub command: ::std::string::String,
     #[doc = "More details for example from the logging output of the tool run"]
@@ -1550,14 +1942,143 @@ pub struct SegmentDetails {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub thread: ::std::option::Option<u32>,
 }
-impl ::std::convert::From<&SegmentDetails> for SegmentDetails {
-    fn from(value: &SegmentDetails) -> Self {
+impl ::std::convert::From<&ProfileInfo> for ProfileInfo {
+    fn from(value: &ProfileInfo) -> Self {
         value.clone()
     }
 }
-impl SegmentDetails {
-    pub fn builder() -> builder::SegmentDetails {
+impl ProfileInfo {
+    pub fn builder() -> builder::ProfileInfo {
         Default::default()
+    }
+}
+#[doc = "A single segment of a tool run and if present the comparison with the \"old\" segment\n\nA tool run can produce multiple segments, for example for each process and subprocess with\n(--trace-children)."]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"description\": \"A single segment of a tool run and if present the comparison with the \\\"old\\\" segment\\n\\nA tool run can produce multiple segments, for example for each process and subprocess with\\n(--trace-children).\","]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"details\","]
+#[doc = "    \"metrics_summary\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"details\": {"]
+#[doc = "      \"description\": \"Details like command, pid, ppid, thread number etc. (see [`ProfileInfo`])\","]
+#[doc = "      \"allOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/definitions/EitherOrBoth\""]
+#[doc = "        }"]
+#[doc = "      ]"]
+#[doc = "    },"]
+#[doc = "    \"metrics_summary\": {"]
+#[doc = "      \"description\": \"The [`ToolMetricSummary`]\","]
+#[doc = "      \"allOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/definitions/ToolMetricSummary\""]
+#[doc = "        }"]
+#[doc = "      ]"]
+#[doc = "    }"]
+#[doc = "  }"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+pub struct ProfilePart {
+    #[doc = "Details like command, pid, ppid, thread number etc. (see [`ProfileInfo`])"]
+    pub details: EitherOrBoth,
+    #[doc = "The [`ToolMetricSummary`]"]
+    pub metrics_summary: ToolMetricSummary,
+}
+impl ::std::convert::From<&ProfilePart> for ProfilePart {
+    fn from(value: &ProfilePart) -> Self {
+        value.clone()
+    }
+}
+impl ProfilePart {
+    pub fn builder() -> builder::ProfilePart {
+        Default::default()
+    }
+}
+#[doc = "The total metrics over all [`ProfilePart`]s and if detected any [`ToolRegression`]"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"description\": \"The total metrics over all [`ProfilePart`]s and if detected any [`ToolRegression`]\","]
+#[doc = "  \"type\": \"object\","]
+#[doc = "  \"required\": ["]
+#[doc = "    \"regressions\","]
+#[doc = "    \"summary\""]
+#[doc = "  ],"]
+#[doc = "  \"properties\": {"]
+#[doc = "    \"regressions\": {"]
+#[doc = "      \"type\": \"array\","]
+#[doc = "      \"items\": {"]
+#[doc = "        \"$ref\": \"#/definitions/ToolRegression\""]
+#[doc = "      }"]
+#[doc = "    },"]
+#[doc = "    \"summary\": {"]
+#[doc = "      \"$ref\": \"#/definitions/ToolMetricSummary\""]
+#[doc = "    }"]
+#[doc = "  }"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+pub struct ProfileTotal {
+    pub regressions: ::std::vec::Vec<ToolRegression>,
+    pub summary: ToolMetricSummary,
+}
+impl ::std::convert::From<&ProfileTotal> for ProfileTotal {
+    fn from(value: &ProfileTotal) -> Self {
+        value.clone()
+    }
+}
+impl ProfileTotal {
+    pub fn builder() -> builder::ProfileTotal {
+        Default::default()
+    }
+}
+#[doc = "The collection of all generated [`Profile`]s"]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"description\": \"The collection of all generated [`Profile`]s\","]
+#[doc = "  \"type\": \"array\","]
+#[doc = "  \"items\": {"]
+#[doc = "    \"$ref\": \"#/definitions/Profile\""]
+#[doc = "  }"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(transparent)]
+pub struct Profiles(pub ::std::vec::Vec<Profile>);
+impl ::std::ops::Deref for Profiles {
+    type Target = ::std::vec::Vec<Profile>;
+    fn deref(&self) -> &::std::vec::Vec<Profile> {
+        &self.0
+    }
+}
+impl ::std::convert::From<Profiles> for ::std::vec::Vec<Profile> {
+    fn from(value: Profiles) -> Self {
+        value.0
+    }
+}
+impl ::std::convert::From<&Profiles> for Profiles {
+    fn from(value: &Profiles) -> Self {
+        value.clone()
+    }
+}
+impl ::std::convert::From<::std::vec::Vec<Profile>> for Profiles {
+    fn from(value: ::std::vec::Vec<Profile>) -> Self {
+        Self(value)
     }
 }
 #[doc = "The format (json, ...) in which the summary file should be saved or printed"]
@@ -1582,7 +2103,18 @@ impl SegmentDetails {
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
-#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
 pub enum SummaryFormat {
     #[doc = "The format in a space optimal json representation without newlines"]
     Json,
@@ -1620,13 +2152,17 @@ impl ::std::convert::TryFrom<&str> for SummaryFormat {
 }
 impl ::std::convert::TryFrom<&::std::string::String> for SummaryFormat {
     type Error = self::error::ConversionError;
-    fn try_from(value: &::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
     }
 }
 impl ::std::convert::TryFrom<::std::string::String> for SummaryFormat {
     type Error = self::error::ConversionError;
-    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
     }
 }
@@ -1693,11 +2229,11 @@ impl SummaryOutput {
 #[doc = "      \"description\": \"The error summary of tools which reports errors (memcheck, helgrind, drd)\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
-#[doc = "        \"ErrorSummary\""]
+#[doc = "        \"ErrorTool\""]
 #[doc = "      ],"]
 #[doc = "      \"properties\": {"]
-#[doc = "        \"ErrorSummary\": {"]
-#[doc = "          \"$ref\": \"#/definitions/MetricsSummary_for_ErrorMetricKind\""]
+#[doc = "        \"ErrorTool\": {"]
+#[doc = "          \"$ref\": \"#/definitions/MetricsSummary\""]
 #[doc = "        }"]
 #[doc = "      },"]
 #[doc = "      \"additionalProperties\": false"]
@@ -1706,11 +2242,11 @@ impl SummaryOutput {
 #[doc = "      \"description\": \"The dhat summary\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
-#[doc = "        \"DhatSummary\""]
+#[doc = "        \"Dhat\""]
 #[doc = "      ],"]
 #[doc = "      \"properties\": {"]
-#[doc = "        \"DhatSummary\": {"]
-#[doc = "          \"$ref\": \"#/definitions/MetricsSummary_for_DhatMetricKind\""]
+#[doc = "        \"Dhat\": {"]
+#[doc = "          \"$ref\": \"#/definitions/MetricsSummary2\""]
 #[doc = "        }"]
 #[doc = "      },"]
 #[doc = "      \"additionalProperties\": false"]
@@ -1719,11 +2255,24 @@ impl SummaryOutput {
 #[doc = "      \"description\": \"The callgrind summary\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
-#[doc = "        \"CallgrindSummary\""]
+#[doc = "        \"Callgrind\""]
 #[doc = "      ],"]
 #[doc = "      \"properties\": {"]
-#[doc = "        \"CallgrindSummary\": {"]
-#[doc = "          \"$ref\": \"#/definitions/MetricsSummary_for_EventKind\""]
+#[doc = "        \"Callgrind\": {"]
+#[doc = "          \"$ref\": \"#/definitions/MetricsSummary3\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"The cachegrind summary\","]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"Cachegrind\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"Cachegrind\": {"]
+#[doc = "          \"$ref\": \"#/definitions/MetricsSummary4\""]
 #[doc = "        }"]
 #[doc = "      },"]
 #[doc = "      \"additionalProperties\": false"]
@@ -1737,231 +2286,185 @@ pub enum ToolMetricSummary {
     #[doc = "If there are no metrics extracted (currently massif, bbv)"]
     None,
     #[doc = "The error summary of tools which reports errors (memcheck, helgrind, drd)"]
-    ErrorSummary(MetricsSummaryForErrorMetricKind),
+    ErrorTool(MetricsSummary),
     #[doc = "The dhat summary"]
-    DhatSummary(MetricsSummaryForDhatMetricKind),
+    Dhat(MetricsSummary2),
     #[doc = "The callgrind summary"]
-    CallgrindSummary(MetricsSummaryForEventKind),
+    Callgrind(MetricsSummary3),
+    #[doc = "The cachegrind summary"]
+    Cachegrind(MetricsSummary4),
 }
 impl ::std::convert::From<&Self> for ToolMetricSummary {
     fn from(value: &ToolMetricSummary) -> Self {
         value.clone()
     }
 }
-impl ::std::convert::From<MetricsSummaryForErrorMetricKind> for ToolMetricSummary {
-    fn from(value: MetricsSummaryForErrorMetricKind) -> Self {
-        Self::ErrorSummary(value)
+impl ::std::convert::From<MetricsSummary> for ToolMetricSummary {
+    fn from(value: MetricsSummary) -> Self {
+        Self::ErrorTool(value)
     }
 }
-impl ::std::convert::From<MetricsSummaryForDhatMetricKind> for ToolMetricSummary {
-    fn from(value: MetricsSummaryForDhatMetricKind) -> Self {
-        Self::DhatSummary(value)
+impl ::std::convert::From<MetricsSummary2> for ToolMetricSummary {
+    fn from(value: MetricsSummary2) -> Self {
+        Self::Dhat(value)
     }
 }
-impl ::std::convert::From<MetricsSummaryForEventKind> for ToolMetricSummary {
-    fn from(value: MetricsSummaryForEventKind) -> Self {
-        Self::CallgrindSummary(value)
+impl ::std::convert::From<MetricsSummary3> for ToolMetricSummary {
+    fn from(value: MetricsSummary3) -> Self {
+        Self::Callgrind(value)
     }
 }
-#[doc = "The `ToolRun` contains all information about a single tool run with possibly multiple segments\n\n The total is always present and summarizes all tool run segments. In the special case of a\n single tool run segment, the total equals the metrics of this segment."]
+impl ::std::convert::From<MetricsSummary4> for ToolMetricSummary {
+    fn from(value: MetricsSummary4) -> Self {
+        Self::Cachegrind(value)
+    }
+}
+#[doc = "`ToolRegression`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"description\": \"The `ToolRun` contains all information about a single tool run with possibly multiple segments\\n\\n The total is always present and summarizes all tool run segments. In the special case of a\\n single tool run segment, the total equals the metrics of this segment.\","]
 #[doc = "  \"type\": \"object\","]
 #[doc = "  \"required\": ["]
-#[doc = "    \"segments\","]
-#[doc = "    \"total\""]
+#[doc = "    \"diff_pct\","]
+#[doc = "    \"limit\","]
+#[doc = "    \"metric\","]
+#[doc = "    \"new\","]
+#[doc = "    \"old\""]
 #[doc = "  ],"]
 #[doc = "  \"properties\": {"]
-#[doc = "    \"segments\": {"]
-#[doc = "      \"description\": \"All `ToolRunSegment`s\","]
-#[doc = "      \"type\": \"array\","]
-#[doc = "      \"items\": {"]
-#[doc = "        \"$ref\": \"#/definitions/ToolRunSegment\""]
-#[doc = "      }"]
+#[doc = "    \"diff_pct\": {"]
+#[doc = "      \"description\": \"The difference between new and old in percent. Serialized as string to preserve infinity\\nvalues and avoid null in json.\","]
+#[doc = "      \"type\": \"string\""]
 #[doc = "    },"]
-#[doc = "    \"total\": {"]
-#[doc = "      \"description\": \"The total over the `ToolRunSegment`s\","]
-#[doc = "      \"allOf\": ["]
-#[doc = "        {"]
-#[doc = "          \"$ref\": \"#/definitions/ToolMetricSummary\""]
-#[doc = "        }"]
-#[doc = "      ]"]
+#[doc = "    \"limit\": {"]
+#[doc = "      \"description\": \"The value of the limit which was exceeded to cause a performance regression. Serialized as\\nstring to preserve infinity values and avoid null in json.\","]
+#[doc = "      \"type\": \"string\""]
+#[doc = "    },"]
+#[doc = "    \"metric\": {"]
+#[doc = "      \"$ref\": \"#/definitions/MetricKind\""]
+#[doc = "    },"]
+#[doc = "    \"new\": {"]
+#[doc = "      \"description\": \"The value of the new benchmark run\","]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"format\": \"uint64\","]
+#[doc = "      \"minimum\": 0.0"]
+#[doc = "    },"]
+#[doc = "    \"old\": {"]
+#[doc = "      \"description\": \"The value of the old benchmark run\","]
+#[doc = "      \"type\": \"integer\","]
+#[doc = "      \"format\": \"uint64\","]
+#[doc = "      \"minimum\": 0.0"]
 #[doc = "    }"]
 #[doc = "  }"]
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
-pub struct ToolRun {
-    #[doc = "All `ToolRunSegment`s"]
-    pub segments: ::std::vec::Vec<ToolRunSegment>,
-    #[doc = "The total over the `ToolRunSegment`s"]
-    pub total: ToolMetricSummary,
+pub struct ToolRegression {
+    #[doc = "The difference between new and old in percent. Serialized as string to preserve infinity\nvalues and avoid null in json."]
+    pub diff_pct: ::std::string::String,
+    #[doc = "The value of the limit which was exceeded to cause a performance regression. Serialized as\nstring to preserve infinity values and avoid null in json."]
+    pub limit: ::std::string::String,
+    pub metric: MetricKind,
+    #[doc = "The value of the new benchmark run"]
+    pub new: u64,
+    #[doc = "The value of the old benchmark run"]
+    pub old: u64,
 }
-impl ::std::convert::From<&ToolRun> for ToolRun {
-    fn from(value: &ToolRun) -> Self {
+impl ::std::convert::From<&ToolRegression> for ToolRegression {
+    fn from(value: &ToolRegression) -> Self {
         value.clone()
     }
 }
-impl ToolRun {
-    pub fn builder() -> builder::ToolRun {
+impl ToolRegression {
+    pub fn builder() -> builder::ToolRegression {
         Default::default()
     }
 }
-#[doc = "A single segment of a tool run and if present the comparison with the \"old\" segment\n\n A tool run can produce multiple segments, for example for each process and subprocess with\n (--trace-children)."]
+#[doc = "The valgrind tools which can be run\n\nNote the default changes from `Callgrind` to `Cachegrind` if the `cachegrind` feature is\nselected."]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"description\": \"A single segment of a tool run and if present the comparison with the \\\"old\\\" segment\\n\\n A tool run can produce multiple segments, for example for each process and subprocess with\\n (--trace-children).\","]
-#[doc = "  \"type\": \"object\","]
-#[doc = "  \"required\": ["]
-#[doc = "    \"details\","]
-#[doc = "    \"metrics_summary\""]
-#[doc = "  ],"]
-#[doc = "  \"properties\": {"]
-#[doc = "    \"details\": {"]
-#[doc = "      \"description\": \"The details (like command, thread number etc.) about the segment(s)\","]
-#[doc = "      \"allOf\": ["]
-#[doc = "        {"]
-#[doc = "          \"$ref\": \"#/definitions/EitherOrBoth_for_SegmentDetails\""]
-#[doc = "        }"]
-#[doc = "      ]"]
+#[doc = "  \"description\": \"The valgrind tools which can be run\\n\\nNote the default changes from `Callgrind` to `Cachegrind` if the `cachegrind` feature is\\nselected.\","]
+#[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"description\": \"[Callgrind: a call-graph generating cache and branch prediction profiler](https://valgrind.org/docs/manual/cl-manual.html)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"Callgrind\""]
 #[doc = "    },"]
-#[doc = "    \"metrics_summary\": {"]
-#[doc = "      \"description\": \"The `ToolMetricSummary`\","]
-#[doc = "      \"allOf\": ["]
-#[doc = "        {"]
-#[doc = "          \"$ref\": \"#/definitions/ToolMetricSummary\""]
-#[doc = "        }"]
-#[doc = "      ]"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"[Cachegrind: a high-precision tracing profiler](https://valgrind.org/docs/manual/cg-manual.html)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"Cachegrind\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"[DHAT: a dynamic heap analysis tool](https://valgrind.org/docs/manual/dh-manual.html)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"DHAT\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"[Memcheck: a memory error detector](https://valgrind.org/docs/manual/mc-manual.html)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"Memcheck\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"[Helgrind: a thread error detector](https://valgrind.org/docs/manual/hg-manual.html)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"Helgrind\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"[DRD: a thread error detector](https://valgrind.org/docs/manual/drd-manual.html)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"DRD\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"[Massif: a heap profiler](https://valgrind.org/docs/manual/ms-manual.html)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"Massif\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"[BBV: an experimental basic block vector generation tool](https://valgrind.org/docs/manual/bbv-manual.html)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"BBV\""]
 #[doc = "    }"]
-#[doc = "  }"]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
-pub struct ToolRunSegment {
-    #[doc = "The details (like command, thread number etc.) about the segment(s)"]
-    pub details: EitherOrBothForSegmentDetails,
-    #[doc = "The `ToolMetricSummary`"]
-    pub metrics_summary: ToolMetricSummary,
-}
-impl ::std::convert::From<&ToolRunSegment> for ToolRunSegment {
-    fn from(value: &ToolRunSegment) -> Self {
-        value.clone()
-    }
-}
-impl ToolRunSegment {
-    pub fn builder() -> builder::ToolRunSegment {
-        Default::default()
-    }
-}
-#[doc = "The `ToolSummary` containing all information about a valgrind tool run"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"description\": \"The `ToolSummary` containing all information about a valgrind tool run\","]
-#[doc = "  \"type\": \"object\","]
-#[doc = "  \"required\": ["]
-#[doc = "    \"log_paths\","]
-#[doc = "    \"out_paths\","]
-#[doc = "    \"summaries\","]
-#[doc = "    \"tool\""]
-#[doc = "  ],"]
-#[doc = "  \"properties\": {"]
-#[doc = "    \"log_paths\": {"]
-#[doc = "      \"description\": \"The paths to the `*.log` files. All tools produce at least one log file\","]
-#[doc = "      \"type\": \"array\","]
-#[doc = "      \"items\": {"]
-#[doc = "        \"type\": \"string\""]
-#[doc = "      }"]
-#[doc = "    },"]
-#[doc = "    \"out_paths\": {"]
-#[doc = "      \"description\": \"The paths to the `*.out` files. Not all tools produce an output in addition to the log\\n files\","]
-#[doc = "      \"type\": \"array\","]
-#[doc = "      \"items\": {"]
-#[doc = "        \"type\": \"string\""]
-#[doc = "      }"]
-#[doc = "    },"]
-#[doc = "    \"summaries\": {"]
-#[doc = "      \"description\": \"The metrics and details about the tool run\","]
-#[doc = "      \"allOf\": ["]
-#[doc = "        {"]
-#[doc = "          \"$ref\": \"#/definitions/ToolRun\""]
-#[doc = "        }"]
-#[doc = "      ]"]
-#[doc = "    },"]
-#[doc = "    \"tool\": {"]
-#[doc = "      \"description\": \"The Valgrind tool like `DHAT`, `Memcheck` etc.\","]
-#[doc = "      \"allOf\": ["]
-#[doc = "        {"]
-#[doc = "          \"$ref\": \"#/definitions/ValgrindTool\""]
-#[doc = "        }"]
-#[doc = "      ]"]
-#[doc = "    }"]
-#[doc = "  }"]
-#[doc = "}"]
-#[doc = r" ```"]
-#[doc = r" </details>"]
-#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
-pub struct ToolSummary {
-    #[doc = "The paths to the `*.log` files. All tools produce at least one log file"]
-    pub log_paths: ::std::vec::Vec<::std::string::String>,
-    #[doc = "The paths to the `*.out` files. Not all tools produce an output in addition to the log\n files"]
-    pub out_paths: ::std::vec::Vec<::std::string::String>,
-    #[doc = "The metrics and details about the tool run"]
-    pub summaries: ToolRun,
-    #[doc = "The Valgrind tool like `DHAT`, `Memcheck` etc."]
-    pub tool: ValgrindTool,
-}
-impl ::std::convert::From<&ToolSummary> for ToolSummary {
-    fn from(value: &ToolSummary) -> Self {
-        value.clone()
-    }
-}
-impl ToolSummary {
-    pub fn builder() -> builder::ToolSummary {
-        Default::default()
-    }
-}
-#[doc = "All currently available valgrind tools"]
-#[doc = r""]
-#[doc = r" <details><summary>JSON schema</summary>"]
-#[doc = r""]
-#[doc = r" ```json"]
-#[doc = "{"]
-#[doc = "  \"description\": \"All currently available valgrind tools\","]
-#[doc = "  \"type\": \"string\","]
-#[doc = "  \"enum\": ["]
-#[doc = "    \"Callgrind\","]
-#[doc = "    \"Memcheck\","]
-#[doc = "    \"Helgrind\","]
-#[doc = "    \"DRD\","]
-#[doc = "    \"Massif\","]
-#[doc = "    \"DHAT\","]
-#[doc = "    \"BBV\""]
 #[doc = "  ]"]
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
-#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(
+    :: serde :: Deserialize,
+    :: serde :: Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
 pub enum ValgrindTool {
+    #[doc = "[Callgrind: a call-graph generating cache and branch prediction profiler](https://valgrind.org/docs/manual/cl-manual.html)"]
     Callgrind,
-    Memcheck,
-    Helgrind,
-    #[serde(rename = "DRD")]
-    Drd,
-    Massif,
+    #[doc = "[Cachegrind: a high-precision tracing profiler](https://valgrind.org/docs/manual/cg-manual.html)"]
+    Cachegrind,
+    #[doc = "[DHAT: a dynamic heap analysis tool](https://valgrind.org/docs/manual/dh-manual.html)"]
     #[serde(rename = "DHAT")]
     Dhat,
+    #[doc = "[Memcheck: a memory error detector](https://valgrind.org/docs/manual/mc-manual.html)"]
+    Memcheck,
+    #[doc = "[Helgrind: a thread error detector](https://valgrind.org/docs/manual/hg-manual.html)"]
+    Helgrind,
+    #[doc = "[DRD: a thread error detector](https://valgrind.org/docs/manual/drd-manual.html)"]
+    #[serde(rename = "DRD")]
+    Drd,
+    #[doc = "[Massif: a heap profiler](https://valgrind.org/docs/manual/ms-manual.html)"]
+    Massif,
+    #[doc = "[BBV: an experimental basic block vector generation tool](https://valgrind.org/docs/manual/bbv-manual.html)"]
     #[serde(rename = "BBV")]
     Bbv,
 }
@@ -1974,11 +2477,12 @@ impl ::std::fmt::Display for ValgrindTool {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         match *self {
             Self::Callgrind => write!(f, "Callgrind"),
+            Self::Cachegrind => write!(f, "Cachegrind"),
+            Self::Dhat => write!(f, "DHAT"),
             Self::Memcheck => write!(f, "Memcheck"),
             Self::Helgrind => write!(f, "Helgrind"),
             Self::Drd => write!(f, "DRD"),
             Self::Massif => write!(f, "Massif"),
-            Self::Dhat => write!(f, "DHAT"),
             Self::Bbv => write!(f, "BBV"),
         }
     }
@@ -1988,11 +2492,12 @@ impl ::std::str::FromStr for ValgrindTool {
     fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
         match value {
             "Callgrind" => Ok(Self::Callgrind),
+            "Cachegrind" => Ok(Self::Cachegrind),
+            "DHAT" => Ok(Self::Dhat),
             "Memcheck" => Ok(Self::Memcheck),
             "Helgrind" => Ok(Self::Helgrind),
             "DRD" => Ok(Self::Drd),
             "Massif" => Ok(Self::Massif),
-            "DHAT" => Ok(Self::Dhat),
             "BBV" => Ok(Self::Bbv),
             _ => Err("invalid value".into()),
         }
@@ -2006,106 +2511,86 @@ impl ::std::convert::TryFrom<&str> for ValgrindTool {
 }
 impl ::std::convert::TryFrom<&::std::string::String> for ValgrindTool {
     type Error = self::error::ConversionError;
-    fn try_from(value: &::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
     }
 }
 impl ::std::convert::TryFrom<::std::string::String> for ValgrindTool {
     type Error = self::error::ConversionError;
-    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
         value.parse()
     }
 }
 #[doc = r" Types for composing complex structures."]
 pub mod builder {
     #[derive(Clone, Debug)]
-    pub struct Baseline {
-        kind: ::std::result::Result<super::BaselineKind, ::std::string::String>,
-        path: ::std::result::Result<::std::string::String, ::std::string::String>,
-    }
-    impl ::std::default::Default for Baseline {
-        fn default() -> Self {
-            Self {
-                kind: Err("no value supplied for kind".to_string()),
-                path: Err("no value supplied for path".to_string()),
-            }
-        }
-    }
-    impl Baseline {
-        pub fn kind<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<super::BaselineKind>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.kind = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for kind: {}", e));
-            self
-        }
-        pub fn path<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::string::String>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.path = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for path: {}", e));
-            self
-        }
-    }
-    impl ::std::convert::TryFrom<Baseline> for super::Baseline {
-        type Error = super::error::ConversionError;
-        fn try_from(value: Baseline) -> ::std::result::Result<Self, super::error::ConversionError> {
-            Ok(Self {
-                kind: value.kind?,
-                path: value.path?,
-            })
-        }
-    }
-    impl ::std::convert::From<super::Baseline> for Baseline {
-        fn from(value: super::Baseline) -> Self {
-            Self {
-                kind: Ok(value.kind),
-                path: Ok(value.path),
-            }
-        }
-    }
-    #[derive(Clone, Debug)]
     pub struct BenchmarkSummary {
+        baselines: ::std::result::Result<
+            (
+                ::std::option::Option<::std::string::String>,
+                ::std::option::Option<::std::string::String>,
+            ),
+            ::std::string::String,
+        >,
         benchmark_exe: ::std::result::Result<::std::string::String, ::std::string::String>,
         benchmark_file: ::std::result::Result<::std::string::String, ::std::string::String>,
-        callgrind_summary: ::std::result::Result<::std::option::Option<super::CallgrindSummary>, ::std::string::String>,
-        details: ::std::result::Result<::std::option::Option<::std::string::String>, ::std::string::String>,
+        details: ::std::result::Result<
+            ::std::option::Option<::std::string::String>,
+            ::std::string::String,
+        >,
         function_name: ::std::result::Result<::std::string::String, ::std::string::String>,
-        id: ::std::result::Result<::std::option::Option<::std::string::String>, ::std::string::String>,
+        id: ::std::result::Result<
+            ::std::option::Option<::std::string::String>,
+            ::std::string::String,
+        >,
         kind: ::std::result::Result<super::BenchmarkKind, ::std::string::String>,
         module_path: ::std::result::Result<::std::string::String, ::std::string::String>,
         package_dir: ::std::result::Result<::std::string::String, ::std::string::String>,
+        profiles: ::std::result::Result<super::Profiles, ::std::string::String>,
         project_root: ::std::result::Result<::std::string::String, ::std::string::String>,
-        summary_output: ::std::result::Result<::std::option::Option<super::SummaryOutput>, ::std::string::String>,
-        tool_summaries: ::std::result::Result<::std::vec::Vec<super::ToolSummary>, ::std::string::String>,
+        summary_output: ::std::result::Result<
+            ::std::option::Option<super::SummaryOutput>,
+            ::std::string::String,
+        >,
         version: ::std::result::Result<::std::string::String, ::std::string::String>,
     }
     impl ::std::default::Default for BenchmarkSummary {
         fn default() -> Self {
             Self {
+                baselines: Err("no value supplied for baselines".to_string()),
                 benchmark_exe: Err("no value supplied for benchmark_exe".to_string()),
                 benchmark_file: Err("no value supplied for benchmark_file".to_string()),
-                callgrind_summary: Ok(Default::default()),
                 details: Ok(Default::default()),
                 function_name: Err("no value supplied for function_name".to_string()),
                 id: Ok(Default::default()),
                 kind: Err("no value supplied for kind".to_string()),
                 module_path: Err("no value supplied for module_path".to_string()),
                 package_dir: Err("no value supplied for package_dir".to_string()),
+                profiles: Err("no value supplied for profiles".to_string()),
                 project_root: Err("no value supplied for project_root".to_string()),
                 summary_output: Ok(Default::default()),
-                tool_summaries: Err("no value supplied for tool_summaries".to_string()),
                 version: Err("no value supplied for version".to_string()),
             }
         }
     }
     impl BenchmarkSummary {
+        pub fn baselines<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<(
+                ::std::option::Option<::std::string::String>,
+                ::std::option::Option<::std::string::String>,
+            )>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.baselines = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for baselines: {}", e));
+            self
+        }
         pub fn benchmark_exe<T>(mut self, value: T) -> Self
         where
             T: ::std::convert::TryInto<::std::string::String>,
@@ -2124,16 +2609,6 @@ pub mod builder {
             self.benchmark_file = value
                 .try_into()
                 .map_err(|e| format!("error converting supplied value for benchmark_file: {}", e));
-            self
-        }
-        pub fn callgrind_summary<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::option::Option<super::CallgrindSummary>>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.callgrind_summary = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for callgrind_summary: {}", e));
             self
         }
         pub fn details<T>(mut self, value: T) -> Self
@@ -2196,6 +2671,16 @@ pub mod builder {
                 .map_err(|e| format!("error converting supplied value for package_dir: {}", e));
             self
         }
+        pub fn profiles<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<super::Profiles>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.profiles = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for profiles: {}", e));
+            self
+        }
         pub fn project_root<T>(mut self, value: T) -> Self
         where
             T: ::std::convert::TryInto<::std::string::String>,
@@ -2216,16 +2701,6 @@ pub mod builder {
                 .map_err(|e| format!("error converting supplied value for summary_output: {}", e));
             self
         }
-        pub fn tool_summaries<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::vec::Vec<super::ToolSummary>>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.tool_summaries = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for tool_summaries: {}", e));
-            self
-        }
         pub fn version<T>(mut self, value: T) -> Self
         where
             T: ::std::convert::TryInto<::std::string::String>,
@@ -2239,20 +2714,22 @@ pub mod builder {
     }
     impl ::std::convert::TryFrom<BenchmarkSummary> for super::BenchmarkSummary {
         type Error = super::error::ConversionError;
-        fn try_from(value: BenchmarkSummary) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(
+            value: BenchmarkSummary,
+        ) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
+                baselines: value.baselines?,
                 benchmark_exe: value.benchmark_exe?,
                 benchmark_file: value.benchmark_file?,
-                callgrind_summary: value.callgrind_summary?,
                 details: value.details?,
                 function_name: value.function_name?,
                 id: value.id?,
                 kind: value.kind?,
                 module_path: value.module_path?,
                 package_dir: value.package_dir?,
+                profiles: value.profiles?,
                 project_root: value.project_root?,
                 summary_output: value.summary_output?,
-                tool_summaries: value.tool_summaries?,
                 version: value.version?,
             })
         }
@@ -2260,377 +2737,19 @@ pub mod builder {
     impl ::std::convert::From<super::BenchmarkSummary> for BenchmarkSummary {
         fn from(value: super::BenchmarkSummary) -> Self {
             Self {
+                baselines: Ok(value.baselines),
                 benchmark_exe: Ok(value.benchmark_exe),
                 benchmark_file: Ok(value.benchmark_file),
-                callgrind_summary: Ok(value.callgrind_summary),
                 details: Ok(value.details),
                 function_name: Ok(value.function_name),
                 id: Ok(value.id),
                 kind: Ok(value.kind),
                 module_path: Ok(value.module_path),
                 package_dir: Ok(value.package_dir),
+                profiles: Ok(value.profiles),
                 project_root: Ok(value.project_root),
                 summary_output: Ok(value.summary_output),
-                tool_summaries: Ok(value.tool_summaries),
                 version: Ok(value.version),
-            }
-        }
-    }
-    #[derive(Clone, Debug)]
-    pub struct CallgrindRegression {
-        diff_pct: ::std::result::Result<::std::string::String, ::std::string::String>,
-        event_kind: ::std::result::Result<super::EventKind, ::std::string::String>,
-        limit: ::std::result::Result<::std::string::String, ::std::string::String>,
-        new: ::std::result::Result<u64, ::std::string::String>,
-        old: ::std::result::Result<u64, ::std::string::String>,
-    }
-    impl ::std::default::Default for CallgrindRegression {
-        fn default() -> Self {
-            Self {
-                diff_pct: Err("no value supplied for diff_pct".to_string()),
-                event_kind: Err("no value supplied for event_kind".to_string()),
-                limit: Err("no value supplied for limit".to_string()),
-                new: Err("no value supplied for new".to_string()),
-                old: Err("no value supplied for old".to_string()),
-            }
-        }
-    }
-    impl CallgrindRegression {
-        pub fn diff_pct<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::string::String>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.diff_pct = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for diff_pct: {}", e));
-            self
-        }
-        pub fn event_kind<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<super::EventKind>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.event_kind = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for event_kind: {}", e));
-            self
-        }
-        pub fn limit<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::string::String>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.limit = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for limit: {}", e));
-            self
-        }
-        pub fn new<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<u64>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.new = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for new: {}", e));
-            self
-        }
-        pub fn old<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<u64>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.old = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for old: {}", e));
-            self
-        }
-    }
-    impl ::std::convert::TryFrom<CallgrindRegression> for super::CallgrindRegression {
-        type Error = super::error::ConversionError;
-        fn try_from(value: CallgrindRegression) -> ::std::result::Result<Self, super::error::ConversionError> {
-            Ok(Self {
-                diff_pct: value.diff_pct?,
-                event_kind: value.event_kind?,
-                limit: value.limit?,
-                new: value.new?,
-                old: value.old?,
-            })
-        }
-    }
-    impl ::std::convert::From<super::CallgrindRegression> for CallgrindRegression {
-        fn from(value: super::CallgrindRegression) -> Self {
-            Self {
-                diff_pct: Ok(value.diff_pct),
-                event_kind: Ok(value.event_kind),
-                limit: Ok(value.limit),
-                new: Ok(value.new),
-                old: Ok(value.old),
-            }
-        }
-    }
-    #[derive(Clone, Debug)]
-    pub struct CallgrindRun {
-        segments: ::std::result::Result<::std::vec::Vec<super::CallgrindRunSegment>, ::std::string::String>,
-        total: ::std::result::Result<super::CallgrindTotal, ::std::string::String>,
-    }
-    impl ::std::default::Default for CallgrindRun {
-        fn default() -> Self {
-            Self {
-                segments: Err("no value supplied for segments".to_string()),
-                total: Err("no value supplied for total".to_string()),
-            }
-        }
-    }
-    impl CallgrindRun {
-        pub fn segments<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::vec::Vec<super::CallgrindRunSegment>>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.segments = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for segments: {}", e));
-            self
-        }
-        pub fn total<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<super::CallgrindTotal>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.total = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for total: {}", e));
-            self
-        }
-    }
-    impl ::std::convert::TryFrom<CallgrindRun> for super::CallgrindRun {
-        type Error = super::error::ConversionError;
-        fn try_from(value: CallgrindRun) -> ::std::result::Result<Self, super::error::ConversionError> {
-            Ok(Self {
-                segments: value.segments?,
-                total: value.total?,
-            })
-        }
-    }
-    impl ::std::convert::From<super::CallgrindRun> for CallgrindRun {
-        fn from(value: super::CallgrindRun) -> Self {
-            Self {
-                segments: Ok(value.segments),
-                total: Ok(value.total),
-            }
-        }
-    }
-    #[derive(Clone, Debug)]
-    pub struct CallgrindRunSegment {
-        baseline: ::std::result::Result<::std::option::Option<super::Baseline>, ::std::string::String>,
-        command: ::std::result::Result<::std::string::String, ::std::string::String>,
-        events: ::std::result::Result<super::MetricsSummaryForEventKind, ::std::string::String>,
-        regressions: ::std::result::Result<::std::vec::Vec<super::CallgrindRegression>, ::std::string::String>,
-    }
-    impl ::std::default::Default for CallgrindRunSegment {
-        fn default() -> Self {
-            Self {
-                baseline: Ok(Default::default()),
-                command: Err("no value supplied for command".to_string()),
-                events: Err("no value supplied for events".to_string()),
-                regressions: Err("no value supplied for regressions".to_string()),
-            }
-        }
-    }
-    impl CallgrindRunSegment {
-        pub fn baseline<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::option::Option<super::Baseline>>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.baseline = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for baseline: {}", e));
-            self
-        }
-        pub fn command<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::string::String>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.command = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for command: {}", e));
-            self
-        }
-        pub fn events<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<super::MetricsSummaryForEventKind>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.events = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for events: {}", e));
-            self
-        }
-        pub fn regressions<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::vec::Vec<super::CallgrindRegression>>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.regressions = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for regressions: {}", e));
-            self
-        }
-    }
-    impl ::std::convert::TryFrom<CallgrindRunSegment> for super::CallgrindRunSegment {
-        type Error = super::error::ConversionError;
-        fn try_from(value: CallgrindRunSegment) -> ::std::result::Result<Self, super::error::ConversionError> {
-            Ok(Self {
-                baseline: value.baseline?,
-                command: value.command?,
-                events: value.events?,
-                regressions: value.regressions?,
-            })
-        }
-    }
-    impl ::std::convert::From<super::CallgrindRunSegment> for CallgrindRunSegment {
-        fn from(value: super::CallgrindRunSegment) -> Self {
-            Self {
-                baseline: Ok(value.baseline),
-                command: Ok(value.command),
-                events: Ok(value.events),
-                regressions: Ok(value.regressions),
-            }
-        }
-    }
-    #[derive(Clone, Debug)]
-    pub struct CallgrindSummary {
-        callgrind_run: ::std::result::Result<super::CallgrindRun, ::std::string::String>,
-        flamegraphs: ::std::result::Result<::std::vec::Vec<super::FlamegraphSummary>, ::std::string::String>,
-        log_paths: ::std::result::Result<::std::vec::Vec<::std::string::String>, ::std::string::String>,
-        out_paths: ::std::result::Result<::std::vec::Vec<::std::string::String>, ::std::string::String>,
-    }
-    impl ::std::default::Default for CallgrindSummary {
-        fn default() -> Self {
-            Self {
-                callgrind_run: Err("no value supplied for callgrind_run".to_string()),
-                flamegraphs: Err("no value supplied for flamegraphs".to_string()),
-                log_paths: Err("no value supplied for log_paths".to_string()),
-                out_paths: Err("no value supplied for out_paths".to_string()),
-            }
-        }
-    }
-    impl CallgrindSummary {
-        pub fn callgrind_run<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<super::CallgrindRun>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.callgrind_run = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for callgrind_run: {}", e));
-            self
-        }
-        pub fn flamegraphs<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::vec::Vec<super::FlamegraphSummary>>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.flamegraphs = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for flamegraphs: {}", e));
-            self
-        }
-        pub fn log_paths<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::vec::Vec<::std::string::String>>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.log_paths = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for log_paths: {}", e));
-            self
-        }
-        pub fn out_paths<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::vec::Vec<::std::string::String>>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.out_paths = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for out_paths: {}", e));
-            self
-        }
-    }
-    impl ::std::convert::TryFrom<CallgrindSummary> for super::CallgrindSummary {
-        type Error = super::error::ConversionError;
-        fn try_from(value: CallgrindSummary) -> ::std::result::Result<Self, super::error::ConversionError> {
-            Ok(Self {
-                callgrind_run: value.callgrind_run?,
-                flamegraphs: value.flamegraphs?,
-                log_paths: value.log_paths?,
-                out_paths: value.out_paths?,
-            })
-        }
-    }
-    impl ::std::convert::From<super::CallgrindSummary> for CallgrindSummary {
-        fn from(value: super::CallgrindSummary) -> Self {
-            Self {
-                callgrind_run: Ok(value.callgrind_run),
-                flamegraphs: Ok(value.flamegraphs),
-                log_paths: Ok(value.log_paths),
-                out_paths: Ok(value.out_paths),
-            }
-        }
-    }
-    #[derive(Clone, Debug)]
-    pub struct CallgrindTotal {
-        regressions: ::std::result::Result<::std::vec::Vec<super::CallgrindRegression>, ::std::string::String>,
-        summary: ::std::result::Result<super::MetricsSummaryForEventKind, ::std::string::String>,
-    }
-    impl ::std::default::Default for CallgrindTotal {
-        fn default() -> Self {
-            Self {
-                regressions: Err("no value supplied for regressions".to_string()),
-                summary: Err("no value supplied for summary".to_string()),
-            }
-        }
-    }
-    impl CallgrindTotal {
-        pub fn regressions<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::vec::Vec<super::CallgrindRegression>>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.regressions = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for regressions: {}", e));
-            self
-        }
-        pub fn summary<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<super::MetricsSummaryForEventKind>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.summary = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for summary: {}", e));
-            self
-        }
-    }
-    impl ::std::convert::TryFrom<CallgrindTotal> for super::CallgrindTotal {
-        type Error = super::error::ConversionError;
-        fn try_from(value: CallgrindTotal) -> ::std::result::Result<Self, super::error::ConversionError> {
-            Ok(Self {
-                regressions: value.regressions?,
-                summary: value.summary?,
-            })
-        }
-    }
-    impl ::std::convert::From<super::CallgrindTotal> for CallgrindTotal {
-        fn from(value: super::CallgrindTotal) -> Self {
-            Self {
-                regressions: Ok(value.regressions),
-                summary: Ok(value.summary),
             }
         }
     }
@@ -2688,10 +2807,19 @@ pub mod builder {
     }
     #[derive(Clone, Debug)]
     pub struct FlamegraphSummary {
-        base_path: ::std::result::Result<::std::option::Option<::std::string::String>, ::std::string::String>,
-        diff_path: ::std::result::Result<::std::option::Option<::std::string::String>, ::std::string::String>,
+        base_path: ::std::result::Result<
+            ::std::option::Option<::std::string::String>,
+            ::std::string::String,
+        >,
+        diff_path: ::std::result::Result<
+            ::std::option::Option<::std::string::String>,
+            ::std::string::String,
+        >,
         event_kind: ::std::result::Result<super::EventKind, ::std::string::String>,
-        regular_path: ::std::result::Result<::std::option::Option<::std::string::String>, ::std::string::String>,
+        regular_path: ::std::result::Result<
+            ::std::option::Option<::std::string::String>,
+            ::std::string::String,
+        >,
     }
     impl ::std::default::Default for FlamegraphSummary {
         fn default() -> Self {
@@ -2747,7 +2875,9 @@ pub mod builder {
     }
     impl ::std::convert::TryFrom<FlamegraphSummary> for super::FlamegraphSummary {
         type Error = super::error::ConversionError;
-        fn try_from(value: FlamegraphSummary) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(
+            value: FlamegraphSummary,
+        ) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
                 base_path: value.base_path?,
                 diff_path: value.diff_path?,
@@ -2769,7 +2899,7 @@ pub mod builder {
     #[derive(Clone, Debug)]
     pub struct MetricsDiff {
         diffs: ::std::result::Result<::std::option::Option<super::Diffs>, ::std::string::String>,
-        metrics: ::std::result::Result<super::EitherOrBothForUint64, ::std::string::String>,
+        metrics: ::std::result::Result<super::EitherOrBoth2, ::std::string::String>,
     }
     impl ::std::default::Default for MetricsDiff {
         fn default() -> Self {
@@ -2792,7 +2922,7 @@ pub mod builder {
         }
         pub fn metrics<T>(mut self, value: T) -> Self
         where
-            T: ::std::convert::TryInto<super::EitherOrBothForUint64>,
+            T: ::std::convert::TryInto<super::EitherOrBoth2>,
             T::Error: ::std::fmt::Display,
         {
             self.metrics = value
@@ -2803,7 +2933,9 @@ pub mod builder {
     }
     impl ::std::convert::TryFrom<MetricsDiff> for super::MetricsDiff {
         type Error = super::error::ConversionError;
-        fn try_from(value: MetricsDiff) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(
+            value: MetricsDiff,
+        ) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
                 diffs: value.diffs?,
                 metrics: value.metrics?,
@@ -2819,16 +2951,170 @@ pub mod builder {
         }
     }
     #[derive(Clone, Debug)]
-    pub struct SegmentDetails {
+    pub struct Profile {
+        flamegraphs:
+            ::std::result::Result<::std::vec::Vec<super::FlamegraphSummary>, ::std::string::String>,
+        log_paths:
+            ::std::result::Result<::std::vec::Vec<::std::string::String>, ::std::string::String>,
+        out_paths:
+            ::std::result::Result<::std::vec::Vec<::std::string::String>, ::std::string::String>,
+        summaries: ::std::result::Result<super::ProfileData, ::std::string::String>,
+        tool: ::std::result::Result<super::ValgrindTool, ::std::string::String>,
+    }
+    impl ::std::default::Default for Profile {
+        fn default() -> Self {
+            Self {
+                flamegraphs: Err("no value supplied for flamegraphs".to_string()),
+                log_paths: Err("no value supplied for log_paths".to_string()),
+                out_paths: Err("no value supplied for out_paths".to_string()),
+                summaries: Err("no value supplied for summaries".to_string()),
+                tool: Err("no value supplied for tool".to_string()),
+            }
+        }
+    }
+    impl Profile {
+        pub fn flamegraphs<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<::std::vec::Vec<super::FlamegraphSummary>>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.flamegraphs = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for flamegraphs: {}", e));
+            self
+        }
+        pub fn log_paths<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<::std::vec::Vec<::std::string::String>>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.log_paths = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for log_paths: {}", e));
+            self
+        }
+        pub fn out_paths<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<::std::vec::Vec<::std::string::String>>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.out_paths = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for out_paths: {}", e));
+            self
+        }
+        pub fn summaries<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<super::ProfileData>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.summaries = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for summaries: {}", e));
+            self
+        }
+        pub fn tool<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<super::ValgrindTool>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.tool = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for tool: {}", e));
+            self
+        }
+    }
+    impl ::std::convert::TryFrom<Profile> for super::Profile {
+        type Error = super::error::ConversionError;
+        fn try_from(value: Profile) -> ::std::result::Result<Self, super::error::ConversionError> {
+            Ok(Self {
+                flamegraphs: value.flamegraphs?,
+                log_paths: value.log_paths?,
+                out_paths: value.out_paths?,
+                summaries: value.summaries?,
+                tool: value.tool?,
+            })
+        }
+    }
+    impl ::std::convert::From<super::Profile> for Profile {
+        fn from(value: super::Profile) -> Self {
+            Self {
+                flamegraphs: Ok(value.flamegraphs),
+                log_paths: Ok(value.log_paths),
+                out_paths: Ok(value.out_paths),
+                summaries: Ok(value.summaries),
+                tool: Ok(value.tool),
+            }
+        }
+    }
+    #[derive(Clone, Debug)]
+    pub struct ProfileData {
+        parts: ::std::result::Result<::std::vec::Vec<super::ProfilePart>, ::std::string::String>,
+        total: ::std::result::Result<super::ProfileTotal, ::std::string::String>,
+    }
+    impl ::std::default::Default for ProfileData {
+        fn default() -> Self {
+            Self {
+                parts: Err("no value supplied for parts".to_string()),
+                total: Err("no value supplied for total".to_string()),
+            }
+        }
+    }
+    impl ProfileData {
+        pub fn parts<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<::std::vec::Vec<super::ProfilePart>>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.parts = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for parts: {}", e));
+            self
+        }
+        pub fn total<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<super::ProfileTotal>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.total = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for total: {}", e));
+            self
+        }
+    }
+    impl ::std::convert::TryFrom<ProfileData> for super::ProfileData {
+        type Error = super::error::ConversionError;
+        fn try_from(
+            value: ProfileData,
+        ) -> ::std::result::Result<Self, super::error::ConversionError> {
+            Ok(Self {
+                parts: value.parts?,
+                total: value.total?,
+            })
+        }
+    }
+    impl ::std::convert::From<super::ProfileData> for ProfileData {
+        fn from(value: super::ProfileData) -> Self {
+            Self {
+                parts: Ok(value.parts),
+                total: Ok(value.total),
+            }
+        }
+    }
+    #[derive(Clone, Debug)]
+    pub struct ProfileInfo {
         command: ::std::result::Result<::std::string::String, ::std::string::String>,
-        details: ::std::result::Result<::std::option::Option<::std::string::String>, ::std::string::String>,
+        details: ::std::result::Result<
+            ::std::option::Option<::std::string::String>,
+            ::std::string::String,
+        >,
         parent_pid: ::std::result::Result<::std::option::Option<i32>, ::std::string::String>,
         part: ::std::result::Result<::std::option::Option<u64>, ::std::string::String>,
         path: ::std::result::Result<::std::string::String, ::std::string::String>,
         pid: ::std::result::Result<i32, ::std::string::String>,
         thread: ::std::result::Result<::std::option::Option<u32>, ::std::string::String>,
     }
-    impl ::std::default::Default for SegmentDetails {
+    impl ::std::default::Default for ProfileInfo {
         fn default() -> Self {
             Self {
                 command: Err("no value supplied for command".to_string()),
@@ -2841,7 +3127,7 @@ pub mod builder {
             }
         }
     }
-    impl SegmentDetails {
+    impl ProfileInfo {
         pub fn command<T>(mut self, value: T) -> Self
         where
             T: ::std::convert::TryInto<::std::string::String>,
@@ -2913,9 +3199,11 @@ pub mod builder {
             self
         }
     }
-    impl ::std::convert::TryFrom<SegmentDetails> for super::SegmentDetails {
+    impl ::std::convert::TryFrom<ProfileInfo> for super::ProfileInfo {
         type Error = super::error::ConversionError;
-        fn try_from(value: SegmentDetails) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(
+            value: ProfileInfo,
+        ) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
                 command: value.command?,
                 details: value.details?,
@@ -2927,8 +3215,8 @@ pub mod builder {
             })
         }
     }
-    impl ::std::convert::From<super::SegmentDetails> for SegmentDetails {
-        fn from(value: super::SegmentDetails) -> Self {
+    impl ::std::convert::From<super::ProfileInfo> for ProfileInfo {
+        fn from(value: super::ProfileInfo) -> Self {
             Self {
                 command: Ok(value.command),
                 details: Ok(value.details),
@@ -2937,6 +3225,115 @@ pub mod builder {
                 path: Ok(value.path),
                 pid: Ok(value.pid),
                 thread: Ok(value.thread),
+            }
+        }
+    }
+    #[derive(Clone, Debug)]
+    pub struct ProfilePart {
+        details: ::std::result::Result<super::EitherOrBoth, ::std::string::String>,
+        metrics_summary: ::std::result::Result<super::ToolMetricSummary, ::std::string::String>,
+    }
+    impl ::std::default::Default for ProfilePart {
+        fn default() -> Self {
+            Self {
+                details: Err("no value supplied for details".to_string()),
+                metrics_summary: Err("no value supplied for metrics_summary".to_string()),
+            }
+        }
+    }
+    impl ProfilePart {
+        pub fn details<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<super::EitherOrBoth>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.details = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for details: {}", e));
+            self
+        }
+        pub fn metrics_summary<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<super::ToolMetricSummary>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.metrics_summary = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for metrics_summary: {}", e));
+            self
+        }
+    }
+    impl ::std::convert::TryFrom<ProfilePart> for super::ProfilePart {
+        type Error = super::error::ConversionError;
+        fn try_from(
+            value: ProfilePart,
+        ) -> ::std::result::Result<Self, super::error::ConversionError> {
+            Ok(Self {
+                details: value.details?,
+                metrics_summary: value.metrics_summary?,
+            })
+        }
+    }
+    impl ::std::convert::From<super::ProfilePart> for ProfilePart {
+        fn from(value: super::ProfilePart) -> Self {
+            Self {
+                details: Ok(value.details),
+                metrics_summary: Ok(value.metrics_summary),
+            }
+        }
+    }
+    #[derive(Clone, Debug)]
+    pub struct ProfileTotal {
+        regressions:
+            ::std::result::Result<::std::vec::Vec<super::ToolRegression>, ::std::string::String>,
+        summary: ::std::result::Result<super::ToolMetricSummary, ::std::string::String>,
+    }
+    impl ::std::default::Default for ProfileTotal {
+        fn default() -> Self {
+            Self {
+                regressions: Err("no value supplied for regressions".to_string()),
+                summary: Err("no value supplied for summary".to_string()),
+            }
+        }
+    }
+    impl ProfileTotal {
+        pub fn regressions<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<::std::vec::Vec<super::ToolRegression>>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.regressions = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for regressions: {}", e));
+            self
+        }
+        pub fn summary<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<super::ToolMetricSummary>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.summary = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for summary: {}", e));
+            self
+        }
+    }
+    impl ::std::convert::TryFrom<ProfileTotal> for super::ProfileTotal {
+        type Error = super::error::ConversionError;
+        fn try_from(
+            value: ProfileTotal,
+        ) -> ::std::result::Result<Self, super::error::ConversionError> {
+            Ok(Self {
+                regressions: value.regressions?,
+                summary: value.summary?,
+            })
+        }
+    }
+    impl ::std::convert::From<super::ProfileTotal> for ProfileTotal {
+        fn from(value: super::ProfileTotal) -> Self {
+            Self {
+                regressions: Ok(value.regressions),
+                summary: Ok(value.summary),
             }
         }
     }
@@ -2977,7 +3374,9 @@ pub mod builder {
     }
     impl ::std::convert::TryFrom<SummaryOutput> for super::SummaryOutput {
         type Error = super::error::ConversionError;
-        fn try_from(value: SummaryOutput) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(
+            value: SummaryOutput,
+        ) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
                 format: value.format?,
                 path: value.path?,
@@ -2993,186 +3392,98 @@ pub mod builder {
         }
     }
     #[derive(Clone, Debug)]
-    pub struct ToolRun {
-        segments: ::std::result::Result<::std::vec::Vec<super::ToolRunSegment>, ::std::string::String>,
-        total: ::std::result::Result<super::ToolMetricSummary, ::std::string::String>,
+    pub struct ToolRegression {
+        diff_pct: ::std::result::Result<::std::string::String, ::std::string::String>,
+        limit: ::std::result::Result<::std::string::String, ::std::string::String>,
+        metric: ::std::result::Result<super::MetricKind, ::std::string::String>,
+        new: ::std::result::Result<u64, ::std::string::String>,
+        old: ::std::result::Result<u64, ::std::string::String>,
     }
-    impl ::std::default::Default for ToolRun {
+    impl ::std::default::Default for ToolRegression {
         fn default() -> Self {
             Self {
-                segments: Err("no value supplied for segments".to_string()),
-                total: Err("no value supplied for total".to_string()),
+                diff_pct: Err("no value supplied for diff_pct".to_string()),
+                limit: Err("no value supplied for limit".to_string()),
+                metric: Err("no value supplied for metric".to_string()),
+                new: Err("no value supplied for new".to_string()),
+                old: Err("no value supplied for old".to_string()),
             }
         }
     }
-    impl ToolRun {
-        pub fn segments<T>(mut self, value: T) -> Self
+    impl ToolRegression {
+        pub fn diff_pct<T>(mut self, value: T) -> Self
         where
-            T: ::std::convert::TryInto<::std::vec::Vec<super::ToolRunSegment>>,
+            T: ::std::convert::TryInto<::std::string::String>,
             T::Error: ::std::fmt::Display,
         {
-            self.segments = value
+            self.diff_pct = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for segments: {}", e));
+                .map_err(|e| format!("error converting supplied value for diff_pct: {}", e));
             self
         }
-        pub fn total<T>(mut self, value: T) -> Self
+        pub fn limit<T>(mut self, value: T) -> Self
         where
-            T: ::std::convert::TryInto<super::ToolMetricSummary>,
+            T: ::std::convert::TryInto<::std::string::String>,
             T::Error: ::std::fmt::Display,
         {
-            self.total = value
+            self.limit = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for total: {}", e));
+                .map_err(|e| format!("error converting supplied value for limit: {}", e));
+            self
+        }
+        pub fn metric<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<super::MetricKind>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.metric = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for metric: {}", e));
+            self
+        }
+        pub fn new<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<u64>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.new = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for new: {}", e));
+            self
+        }
+        pub fn old<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<u64>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.old = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for old: {}", e));
             self
         }
     }
-    impl ::std::convert::TryFrom<ToolRun> for super::ToolRun {
+    impl ::std::convert::TryFrom<ToolRegression> for super::ToolRegression {
         type Error = super::error::ConversionError;
-        fn try_from(value: ToolRun) -> ::std::result::Result<Self, super::error::ConversionError> {
+        fn try_from(
+            value: ToolRegression,
+        ) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
-                segments: value.segments?,
-                total: value.total?,
+                diff_pct: value.diff_pct?,
+                limit: value.limit?,
+                metric: value.metric?,
+                new: value.new?,
+                old: value.old?,
             })
         }
     }
-    impl ::std::convert::From<super::ToolRun> for ToolRun {
-        fn from(value: super::ToolRun) -> Self {
+    impl ::std::convert::From<super::ToolRegression> for ToolRegression {
+        fn from(value: super::ToolRegression) -> Self {
             Self {
-                segments: Ok(value.segments),
-                total: Ok(value.total),
-            }
-        }
-    }
-    #[derive(Clone, Debug)]
-    pub struct ToolRunSegment {
-        details: ::std::result::Result<super::EitherOrBothForSegmentDetails, ::std::string::String>,
-        metrics_summary: ::std::result::Result<super::ToolMetricSummary, ::std::string::String>,
-    }
-    impl ::std::default::Default for ToolRunSegment {
-        fn default() -> Self {
-            Self {
-                details: Err("no value supplied for details".to_string()),
-                metrics_summary: Err("no value supplied for metrics_summary".to_string()),
-            }
-        }
-    }
-    impl ToolRunSegment {
-        pub fn details<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<super::EitherOrBothForSegmentDetails>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.details = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for details: {}", e));
-            self
-        }
-        pub fn metrics_summary<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<super::ToolMetricSummary>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.metrics_summary = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for metrics_summary: {}", e));
-            self
-        }
-    }
-    impl ::std::convert::TryFrom<ToolRunSegment> for super::ToolRunSegment {
-        type Error = super::error::ConversionError;
-        fn try_from(value: ToolRunSegment) -> ::std::result::Result<Self, super::error::ConversionError> {
-            Ok(Self {
-                details: value.details?,
-                metrics_summary: value.metrics_summary?,
-            })
-        }
-    }
-    impl ::std::convert::From<super::ToolRunSegment> for ToolRunSegment {
-        fn from(value: super::ToolRunSegment) -> Self {
-            Self {
-                details: Ok(value.details),
-                metrics_summary: Ok(value.metrics_summary),
-            }
-        }
-    }
-    #[derive(Clone, Debug)]
-    pub struct ToolSummary {
-        log_paths: ::std::result::Result<::std::vec::Vec<::std::string::String>, ::std::string::String>,
-        out_paths: ::std::result::Result<::std::vec::Vec<::std::string::String>, ::std::string::String>,
-        summaries: ::std::result::Result<super::ToolRun, ::std::string::String>,
-        tool: ::std::result::Result<super::ValgrindTool, ::std::string::String>,
-    }
-    impl ::std::default::Default for ToolSummary {
-        fn default() -> Self {
-            Self {
-                log_paths: Err("no value supplied for log_paths".to_string()),
-                out_paths: Err("no value supplied for out_paths".to_string()),
-                summaries: Err("no value supplied for summaries".to_string()),
-                tool: Err("no value supplied for tool".to_string()),
-            }
-        }
-    }
-    impl ToolSummary {
-        pub fn log_paths<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::vec::Vec<::std::string::String>>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.log_paths = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for log_paths: {}", e));
-            self
-        }
-        pub fn out_paths<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::vec::Vec<::std::string::String>>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.out_paths = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for out_paths: {}", e));
-            self
-        }
-        pub fn summaries<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<super::ToolRun>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.summaries = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for summaries: {}", e));
-            self
-        }
-        pub fn tool<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<super::ValgrindTool>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.tool = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for tool: {}", e));
-            self
-        }
-    }
-    impl ::std::convert::TryFrom<ToolSummary> for super::ToolSummary {
-        type Error = super::error::ConversionError;
-        fn try_from(value: ToolSummary) -> ::std::result::Result<Self, super::error::ConversionError> {
-            Ok(Self {
-                log_paths: value.log_paths?,
-                out_paths: value.out_paths?,
-                summaries: value.summaries?,
-                tool: value.tool?,
-            })
-        }
-    }
-    impl ::std::convert::From<super::ToolSummary> for ToolSummary {
-        fn from(value: super::ToolSummary) -> Self {
-            Self {
-                log_paths: Ok(value.log_paths),
-                out_paths: Ok(value.out_paths),
-                summaries: Ok(value.summaries),
-                tool: Ok(value.tool),
+                diff_pct: Ok(value.diff_pct),
+                limit: Ok(value.limit),
+                metric: Ok(value.metric),
+                new: Ok(value.new),
+                old: Ok(value.old),
             }
         }
     }

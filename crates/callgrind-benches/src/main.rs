@@ -3,18 +3,18 @@ use std::{collections::HashMap, env, ffi::OsString, fmt::Write, path::Path, proc
 use fast_glob::glob_match;
 use markdown_tables::MarkdownTableRow;
 
-use crate::schema::{BenchmarkSummary, EitherOrBothForUint64};
+use crate::schema::{BenchmarkSummary, EitherOrBoth2, ToolMetricSummary, ValgrindTool};
 
 mod schema;
 
 const BENCH_NAME: &str = "bench";
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 
-fn left(metric: &EitherOrBothForUint64) -> Option<u64> {
+fn left(metric: &EitherOrBoth2) -> Option<u64> {
     match *metric {
-        EitherOrBothForUint64::Left(left) => Some(left),
-        EitherOrBothForUint64::Both(left, _) => Some(left),
-        EitherOrBothForUint64::Right(_) => None,
+        EitherOrBoth2::Left(left) => Some(left),
+        EitherOrBoth2::Both(left, _) => Some(left),
+        EitherOrBoth2::Right(_) => None,
     }
 }
 
@@ -27,13 +27,25 @@ struct Report {
 fn read_summary(path: &Path) -> Report {
     let summary = std::fs::read_to_string(path).expect("missing summary.json");
     let summary = serde_json::from_str::<BenchmarkSummary>(&summary).expect("failed to parse summary.json");
+    let summary = summary
+        .profiles
+        .0
+        .into_iter()
+        .find(|p| p.tool == ValgrindTool::Callgrind)
+        .expect("callgrind summary missing")
+        .summaries
+        .total
+        .summary;
 
-    let total = summary.callgrind_summary.unwrap().callgrind_run.total.summary;
+    let summary = match summary {
+        ToolMetricSummary::Callgrind(summary) => summary.0,
+        _ => unreachable!("callgrind summary has no callgrind summary"),
+    };
 
     let mut ir = None;
     let mut bc = None;
 
-    for (kind, diff) in &total.0 {
+    for (kind, diff) in summary {
         match kind.as_str() {
             "Ir" => {
                 ir = left(&diff.metrics);

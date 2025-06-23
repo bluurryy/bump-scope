@@ -11,8 +11,10 @@ macro_rules! benches_library {
         paste::paste! {
              #[::iai_callgrind::library_benchmark(
                 config = ::iai_callgrind::LibraryBenchmarkConfig::default()
-                    .entry_point(concat!("entry_bench_", stringify!($name), "_", stringify!($library)).to_owned())
-                    .callgrind_args(["branch-sim=yes"])
+                    .tool(::iai_callgrind::Callgrind::default()
+                        .entry_point(::iai_callgrind::EntryPoint::Custom(concat!("entry_bench_", stringify!($name), "_", stringify!($library)).to_owned()))
+                        .args(["branch-sim=yes"])
+                    )
 
             )]
             pub fn $library() {
