@@ -140,7 +140,7 @@ def item-url [id: number] {
             }
             "impl" | "use" => ""
             _ => {
-                error make { msg: $"path_segment not yet implemented for '($kind)' \(key ($id)\)" }
+                error make { msg: $"path segment not yet implemented for '($kind)' \(key ($id)\)" }
                 []
             }
         }
@@ -185,7 +185,7 @@ let docs = $json.index
             if ($it.reference | str length) != 0 {
                 # `[foo][bar]`
                 # We ignore those for now.
-                $"($it.verbatim)($it.outer_link)"
+                return $"($it.verbatim)($it.outer_link)"
             }
 
             let link = if ($it.inline | str length) != 0 {
