@@ -1,9 +1,9 @@
-# Written for nushell version 100 and rustdoc json format version 46.
+# Written for nushell version 0.105 and rustdoc json format version 46.
 
 let json = open target/doc/bump_scope.json
 let package_names = open --raw Cargo.lock | from toml | get package.name
 
-def children [id: number] {
+def children [id: int] {
     let item = $json.index | get ($id | into string)
 
     match $item.inner {
@@ -11,7 +11,7 @@ def children [id: number] {
         {use: $use} => ([$use.id] | each {}),
         {union: $union} => ($union.fields ++ $union.impls),
         {struct: $struct} => ($struct.impls ++ match $struct.kind {
-            "unit" => {}
+            "unit" => []
             {tuple: $tuple} => ($tuple | each {})
             {plain: $plain} => $plain.fields,
         }),
@@ -37,12 +37,12 @@ def values [] {
 }
 
 def table-into-record [key_column: cell-path, value_column: cell-path] {
-    group-by $key_column | update cells { get 0 | get $value_column } | get 0
+    reduce --fold {} { |it, acc| $acc | upsert ($it | get $key_column) ($it | get $value_column) }
 }
 
 let parents = $json.index | keys | each { into int } | reduce --fold {} { |parent, acc| (children $parent | reduce --fold $acc { |child, acc| $acc | upsert $"($child)" $parent } ) }
 
-def package-name [crate:string] {
+def package-name [crate: string] {
     $package_names | where { ($in | str replace --all '-' '_' ) == $crate } | get 0
 }
 
@@ -56,7 +56,7 @@ def todo [why?: string] {
     error make { msg: $msg }
 }
 
-def item [id: number] {
+def item [id: int] {
     let id_s = $id | into string
     let item = $json.index | get -i $id_s
     
@@ -81,14 +81,14 @@ def item [id: number] {
     panic $"can't resolve item ($id)"
 }
 
-def item-path [id: number] {
+def item-path [id: int] {
     mut id = $id
     mut item_path = []
 
     loop {
         let item = item $id
 
-        $item_path ++= $item | select name kind
+        $item_path ++= [($item | select name kind)]
 
         match $item.parent {
             {id: $parent_id} => {
@@ -102,7 +102,7 @@ def item-path [id: number] {
                     let name = $path | last
                     let kind = $found | get -i kind | default module
 
-                    $item_path ++= {name: $name, kind: $kind}
+                    $item_path ++= [{name: $name, kind: $kind}]
                     $path = $path | take (($path | length) - 1)
 
                     if ($path | length) < 1 {
@@ -122,8 +122,8 @@ def item-path [id: number] {
 
 def replace-range [range: range, values: list] {
     let list = $in
-    let lhs = $list | range ..(($range | first) - 1)
-    let rhs = $list | range (($range | last) + 1)..
+    let lhs = $list | slice ..(($range | first) - 1)
+    let rhs = $list | slice (($range | last) + 1)..
     $lhs ++ $values ++ $rhs
 }
 
@@ -170,7 +170,7 @@ def item-url [id: number] {
     | str join
 }
 
-def replace-section [section_name: string, new_content: string] {
+def replace-section [section_name: string, new_content: string]: string -> string {
     let readme = $in
 
     let start_marker = $"<!-- ($section_name) start -->"
@@ -186,7 +186,7 @@ def replace-section [section_name: string, new_content: string] {
 }
 
 # quasi-polyfill of `str replace --regex --all` with a closure parameter.
-def replace [regex: string, get_replacement: closure] string -> string {
+def replace [regex: string, get_replacement: closure]: string -> string {
     parse --regex ('(?<__before>[\s\S]*?)(?<__matched>' ++ $regex ++  '|$)')
     | each { |it|
         if $it.__matched == "" { return $it.__before }

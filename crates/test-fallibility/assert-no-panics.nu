@@ -1,5 +1,4 @@
-# This was written for nushell version 0.100.0
-# and `cargo-show-asm` version 0.2.43
+# Written for nushell version 0.105 and cargo-show-asm version 0.2.43.
 
 if not ("out" | path exists) { 
     mkdir out 
@@ -18,7 +17,7 @@ let allowed_panics = [
 
 let panics = open --raw out/everything.asm 
 | find panic 
-| filter { ($in | ansi strip) not-in $allowed_panics }; 
+| where { ($in | ansi strip) not-in $allowed_panics }; 
 
 let message = if ($panics | length) == 0 { 
     "OK" 

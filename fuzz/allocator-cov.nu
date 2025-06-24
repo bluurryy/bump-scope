@@ -1,3 +1,5 @@
+# Written for nushell version 0.105.
+
 def main [
     format?: string,
 ] {

@@ -255,7 +255,7 @@
 //!   This will also enable `allocator-api2` version `0.2`'s `nightly` feature.
 //! * **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
 //!   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
-//!   You can unsize a `BumpBox` in stable without this feature using [`unsize_bump_box`].
+//!   You can unsize a `BumpBox` in stable without this feature using [`unsize_bump_box`](crate::unsize_bump_box).
 //! * **`nightly-exact-size-is-empty`** —  Implements `is_empty` manually for some iterators.
 //! * **`nightly-trusted-len`** —  Implements `TrustedLen` for some iterators.
 //! * **`nightly-fn-traits`** —  Implements `Fn*` traits for `BumpBox<T>`. Makes `BumpBox<T: FnOnce + ?Sized>` callable. Requires alloc crate.
