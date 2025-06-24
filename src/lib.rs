@@ -85,9 +85,9 @@
 //!
 //! Unlike `bumpalo`, this crate...
 //! - Supports [scopes and checkpoints](#scopes-and-checkpoints).
-//! - Drop is always called for allocated values unless explicitly [leaked](crate::BumpBox::leak) or [forgotten](::core::mem::forget).
-//!   - `alloc*` methods return a [`BumpBox<T>`](crate::BumpBox) which owns and drops `T`. Types that don't need dropping can be turned into references with [`into_ref`](crate::BumpBox::into_ref) and [`into_mut`](crate::BumpBox::into_mut).
-//! - You can allocate a slice from *any* `Iterator` with [`alloc_iter`](crate::Bump::alloc_iter).
+//! - Drop is always called for allocated values unless explicitly [leaked](BumpBox::leak) or [forgotten](core::mem::forget).
+//!   - `alloc*` methods return a [`BumpBox<T>`](BumpBox) which owns and drops `T`. Types that don't need dropping can be turned into references with [`into_ref`](BumpBox::into_ref) and [`into_mut`](BumpBox::into_mut).
+//! - You can allocate a slice from *any* `Iterator` with [`alloc_iter`](Bump::alloc_iter).
 //! - Every method that panics on allocation failure has a fallible `try_*` counterpart.
 //! - `Bump`'s base allocator is generic.
 //! - Won't try to allocate a smaller chunk if allocation failed.
@@ -98,14 +98,14 @@
 //! # Allocator Methods
 //!
 //! The bump allocator provides many methods to conveniently allocate values, strings, and slices.
-//! Have a look at the documentation of [`Bump`](crate::Bump) for a method overview.
+//! Have a look at the documentation of [`Bump`](Bump) for a method overview.
 //!
 //! # Scopes and Checkpoints
 //!
 //! You can create scopes to make allocations that live only for a part of its parent scope.
 //! Entering and exiting scopes is virtually free. Allocating within a scope has no overhead.
 //!
-//! You can create a new scope either with a [`scoped`](crate::Bump::scoped) closure or with a [`scope_guard`](crate::Bump::scope_guard):
+//! You can create a new scope either with a [`scoped`](Bump::scoped) closure or with a [`scope_guard`](Bump::scope_guard):
 //! ```
 //! use bump_scope::Bump;
 //!
@@ -153,7 +153,7 @@
 //!
 //! assert_eq!(bump.stats().allocated(), 0);
 //! ```
-//! You can also use the unsafe [`checkpoint`](crate::Bump::checkpoint) api
+//! You can also use the unsafe [`checkpoint`](Bump::checkpoint) api
 //! to reset the bump pointer to a previous position.
 //! ```
 //! # use bump_scope::Bump;
@@ -170,7 +170,7 @@
 //! ```
 //!
 //! # Collections
-//! `bump-scope` provides bump allocated variants of `Vec` and `String` called [`BumpVec`](crate::BumpVec) and [`BumpString`](crate::BumpString).
+//! `bump-scope` provides bump allocated variants of `Vec` and `String` called [`BumpVec`](BumpVec) and [`BumpString`](BumpString).
 //! They are also available in the following variants:
 //! - [`Fixed*`](crate::FixedBumpVec) for fixed capacity collections
 //! - [`Mut*`](crate::MutBumpVec) for collections optimized for a mutable bump allocator
@@ -187,12 +187,12 @@
 //! - conversions between the regular collections, their `Fixed*` variants and `BumpBox<[T]>` / `BumpBox<str>`
 //!
 //! # Parallel Allocation
-//! [`Bump`](crate::Bump) is `!Sync` which means it can't be shared between threads.
+//! [`Bump`](Bump) is `!Sync` which means it can't be shared between threads.
 //!
-//! To bump allocate in parallel you can use a [`BumpPool`](crate::BumpPool).
+//! To bump allocate in parallel you can use a [`BumpPool`](BumpPool).
 //!
 //! # Allocator API
-//! `Bump` and `BumpScope` implement `bump-scope`'s own [`Allocator`](crate::alloc::Allocator) trait and with the
+//! `Bump` and `BumpScope` implement `bump-scope`'s own [`Allocator`](alloc::Allocator) trait and with the
 //! respective [feature flags](#feature-flags) also implement `allocator_api2@0.2`, `allocator_api2@0.3` and nightly's `Allocator` trait.
 //! All of these traits mirror the nightly `Allocator` trait at the time of writing.
 //!
@@ -205,7 +205,7 @@
 //!
 //! A bump allocator does not require `deallocate` or `shrink` to free memory.
 //! After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
-//! You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using [`WithoutDealloc`](crate::WithoutDealloc) and [`WithoutShrink`](crate::WithoutShrink).
+//! You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using [`WithoutDealloc`](WithoutDealloc) and [`WithoutShrink`](WithoutShrink).
 //! ```
 //! # #[cfg(feature = "allocator-api2-03")]
 //! # {
@@ -268,8 +268,8 @@
 //! Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
 //!
 //! Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
-//! This benefits collections as well as <code>[alloc_iter](crate::Bump::alloc_iter)([_mut](crate::Bump::alloc_iter_mut))</code> and <code>[alloc_fmt](crate::Bump::alloc_fmt)([_mut](crate::Bump::alloc_fmt_mut))</code>
-//! with the exception of [`MutBumpVecRev`](crate::MutBumpVecRev) and [`alloc_iter_mut_rev`](crate::Bump::alloc_iter_mut_rev) which
+//! This benefits collections as well as <code>[alloc_iter](Bump::alloc_iter)([_mut](Bump::alloc_iter_mut))</code> and <code>[alloc_fmt](Bump::alloc_fmt)([_mut](Bump::alloc_fmt_mut))</code>
+//! with the exception of [`MutBumpVecRev`](MutBumpVecRev) and [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) which
 //! can be grown and shrunk in place if and only if bumping downwards.
 //!
 //! Bumping downwards on the other hand can be done in less operations.
@@ -286,7 +286,7 @@
 //!
 //! # `GUARANTEED_ALLOCATED` parameter?
 //! If `GUARANTEED_ALLOCATED` is `true` then the bump allocator is guaranteed to have at least one allocated chunk.
-//! This is usually the case unless it was created with [`Bump::unallocated`](crate::Bump::unallocated).
+//! This is usually the case unless it was created with [`Bump::unallocated`](Bump::unallocated).
 //!
 //! You need a guaranteed allocated `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
 //! You can make a `Bump(Scope)` guaranteed allocated using
