@@ -198,9 +198,11 @@ let docs = $json.index
         
             if $link in ($links | transpose k v | get k) {
                 let url = $links | get $link
-    
+                let hash = $link | split row '#' | skip 1 | each { prepend '#' | str join } | str join
+                let url_with_hash = $"($url)($hash)"
+
                 if $url != null {
-                    $"($it.verbatim)[($it.text)]\(($url)\)"
+                    $"($it.verbatim)[($it.text)]\(($url_with_hash)\)"
                 } else {
                     $"($it.verbatim)($it.text)"
                 }

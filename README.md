@@ -151,7 +151,7 @@ To bump allocate in parallel you can use a [`BumpPool`](https://docs.rs/bump-sco
 respective [feature flags](#feature-flags) also implement `allocator_api2@0.2`, `allocator_api2@0.3` and nightly's `Allocator` trait.
 All of these traits mirror the nightly `Allocator` trait at the time of writing.
 
-This allows you to [bump allocate collections](https://docs.rs/bump-scope/latest/bump_scope/struct.Bump.html).
+This allows you to [bump allocate collections](https://docs.rs/bump-scope/latest/bump_scope/struct.Bump.html#collections).
 
 A bump allocator can grow, shrink and deallocate the most recent allocation.
 When bumping upwards it can even do so in place.
