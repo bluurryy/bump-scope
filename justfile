@@ -84,9 +84,8 @@ doc *args:
   cargo test --package bump-scope --lib --all-features -- insert_feature_docs --exact --ignored
   cargo fmt
   @ just doc-rustdoc {{args}}
-  @# https://github.com/orium/cargo-rdme
-  @# TODO(blocked): stop stripping links when <https://github.com/orium/cargo-rdme/pull/236> is merged
-  cargo rdme --force --intralinks-strip-links
+  @ cargo rustdoc --all-features -- --cfg docsrs -Z unstable-options --output-format json
+  nu insert-docs-into-readme.nu
 
 doc-rustdoc *args:
   cargo rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition
