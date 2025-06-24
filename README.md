@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/crates/l/bump_scope)](#license)
 [![Build Status](https://github.com/bluurryy/bump-scope/workflows/Rust/badge.svg)](https://github.com/bluurryy/bump-scope/actions/workflows/rust.yml)
 
-<!-- cargo-rdme start -->
+<!-- crate docs start -->
 
 A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
 
@@ -249,7 +249,7 @@ At the same time `Bump`s that have already allocated a chunk don't suffer runtim
 
 [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
 
-<!-- cargo-rdme end -->
+<!-- crate docs end -->
 
 ## License
 

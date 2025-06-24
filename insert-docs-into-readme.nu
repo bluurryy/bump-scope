@@ -229,5 +229,5 @@ let docs = $json.index
 | str join
 
 open README.md
-| replace-section cargo-rdme $"\n\n($docs)\n\n"
+| replace-section "crate docs" $"\n\n($docs)\n\n"
 | save -f README.md
