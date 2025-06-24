@@ -4,25 +4,50 @@ let json = open target/doc/bump_scope.json
 let package_names = open --raw Cargo.lock | from toml | get package.name
 
 def children [id: number] {
-    let value = $json.index | get ($id | into string)
+    let item = $json.index | get ($id | into string)
 
-    match $value.inner {
+    match $item.inner {
         {module: $module} => $module.items,
-        {struct: $struct} => $struct.impls,
+        {use: $use} => ([$use.id] | each {}),
+        {union: $union} => ($union.fields ++ $union.impls),
+        {struct: $struct} => ($struct.impls ++ match $struct.kind {
+            "unit" => {}
+            {tuple: $tuple} => ($tuple | each {})
+            {plain: $plain} => $plain.fields,
+        }),
+        {enum: $enum} => ($enum.variants ++ $enum.impls),
+        {variant: $variant} => (match $variant.kind {
+            "unit" => {}
+            {tuple: $tuple} => ($tuple | each {})
+            {struct: $struct} => $struct.fields,
+        }),
+        {trait: $trait} => ($trait.items ++ $trait.implementations),
         {impl: $impl} => $impl.items,
-        {use: $use} => [$use.id],
-        {function: _} => [],
-        _ => {
-            # error make { msg: $"'($value.inner | transpose key value | get key.0)' children not yet implemented \(key ($id)\)" }
-            []
-        }
+        {primitive: $primitive} => $primitive.impls,
+        _ => []
     }
 }
 
-let parents = $json.index | transpose id _ | get id | each { into int } | reduce --fold {} { |parent, acc| (children $parent | reduce --fold $acc { |child, acc| $acc | upsert $"($child)" $parent } ) }
+def keys [] {
+    transpose key value | get key
+}
+
+def values [] {
+    transpose key value | get value
+}
+
+def table-into-record [key_column: cell-path, value_column: cell-path] {
+    group-by $key_column | update cells { get 0 | get $value_column } | get 0
+}
+
+let parents = $json.index | keys | each { into int } | reduce --fold {} { |parent, acc| (children $parent | reduce --fold $acc { |child, acc| $acc | upsert $"($child)" $parent } ) }
 
 def package-name [crate:string] {
     $package_names | where { ($in | str replace --all '-' '_' ) == $crate } | get 0
+}
+
+def panic [msg: string] {
+    error make { msg: $msg }
 }
 
 def todo [why?: string] {
@@ -37,7 +62,7 @@ def item [id: number] {
     
     if $item != null {
         let name = $item.name
-        let kind = $item.inner | transpose k v | get 0.k
+        let kind = $item.inner | keys | get 0
         let parent_id = $parents | get -i $id_s
         let parent = if $parent_id != null { $parent_id | wrap id } else { null }
         return {name: $name, kind: $kind, parent: $parent}
@@ -53,9 +78,7 @@ def item [id: number] {
         return {name: $name, kind: $kind, parent: $parent}
     }
 
-    error make {
-        msg: $"can't resolve item ($id)"
-    }
+    panic $"can't resolve item ($id)"
 }
 
 def item-path [id: number] {
@@ -71,11 +94,11 @@ def item-path [id: number] {
             {id: $parent_id} => {
                 $id = $parent_id
             }
-            {path: $path} => {
-                mut $path = $path
+            {path: $parent_path} => {
+                mut $path = $parent_path
 
                 loop {
-                    let found = $json.paths | transpose k v | where { |x| $x.v.path == $path } | get -i 0.v
+                    let found = $json.paths | values | where { |it| $it.path == $path } | get -i 0
                     let name = $path | last
                     let kind = $found | get -i kind | default module
 
@@ -97,7 +120,7 @@ def item-path [id: number] {
     $item_path
 }
 
-def replace-range [range:range, values:list] {
+def replace-range [range: range, values: list] {
     let list = $in
     let lhs = $list | range ..(($range | first) - 1)
     let rhs = $list | range (($range | last) + 1)..
@@ -140,15 +163,14 @@ def item-url [id: number] {
             }
             "impl" | "use" => ""
             _ => {
-                error make { msg: $"path segment not yet implemented for '($kind)' \(key ($id)\)" }
-                []
+                todo $"path segment for '($kind)' \(key ($id)\)"
             }
         }
     }
     | str join
 }
 
-def replace-section [section_name:string, new_content:string] {
+def replace-section [section_name: string, new_content: string] {
     let readme = $in
 
     let start_marker = $"<!-- ($section_name) start -->"
@@ -163,12 +185,24 @@ def replace-section [section_name:string, new_content:string] {
     $before ++ $new_content ++ $after
 }
 
+# quasi-polyfill of `str replace --regex --all` with a closure parameter.
+def replace [regex: string, get_replacement: closure] string -> string {
+    parse --regex ('(?<__before>[\s\S]*?)(?<__matched>' ++ $regex ++  '|$)')
+    | each { |it|
+        if $it.__matched == "" { return $it.__before }
+        let captures = ($it | reject __before __matched | insert "0" $it.__matched )
+        let replacement = (do $get_replacement $captures)
+        $"($it.__before)($replacement)"
+    }
+    | str join
+}
+
 let links = $json.index 
 | get ($json.root | into string) 
 | get links
 | transpose link id
 | insert url { |it| try { item-url $it.id } catch { null } } 
-| group-by link | update cells { get 0.url } | get 0
+| table-into-record link url
 
 let docs = $json.index 
 | get ($json.root | into string)
@@ -176,55 +210,49 @@ let docs = $json.index
 | parse --regex '(?<prose>[\s\S]*?)(?<outer_code>```(?<code>[\s\S]*?)```|$)'
 | each { |it| 
     let new_prose = $it.prose 
-    | parse --regex '(?<verbatim>[\s\S]*?)(?<outer_link>\[(?<text>[^\]]*)\](?:\((?<inline>[^\)]*)\)|(\[(?<reference>[^\]]*)\]))?|$)'
-    | each { |it| 
-        # We can't check if a capture group participated in the match
-        # so we check if an outer group which is guaranteed not to be empty when 
-        # participating, is indeed not empty.
-        if ($it.outer_link | str length) != 0 {
-            if ($it.reference | str length) != 0 {
-                # `[foo][bar]`
-                # We ignore those for now.
-                return $"($it.verbatim)($it.outer_link)"
-            }
-
-            let link = if ($it.inline | str length) != 0 {
-                # `[foo](bar)`
-                $it.inline
-            } else {
-                # `[foo]`
-                $it.text
-            }
-        
-            if $link in ($links | transpose k v | get k) {
-                let url = $links | get $link
-                let hash = $link | split row '#' | skip 1 | each { prepend '#' | str join } | str join
-                let url_with_hash = $"($url)($hash)"
-
-                if $url != null {
-                    $"($it.verbatim)[($it.text)]\(($url_with_hash)\)"
-                } else {
-                    $"($it.verbatim)($it.text)"
-                }
-            } else {
-                $"($it.verbatim)($it.outer_link)"
-            }
-        } else {
-            $it.verbatim
+    | replace '\[(?<text>[^\]]*)\](?:\((?<inline>[^\)]*)\)|\[(?<reference>[^\]]*)\])?' { |it| 
+        if $it.reference != "" {
+            # `[foo][bar]`
+            # We ignore those for now.
+            return $it."0"
         }
+
+        let link = if $it.inline != "" {
+            # `[foo](bar)`
+            $it.inline
+        } else {
+            # `[foo]`
+            $it.text
+        }
+
+        if $link not-in ($links | keys) {
+            # Link is not something rustdoc related. Return it as is.
+            return $it."0"
+        }
+    
+        let url = $links | get $link
+        
+        if $url == null {
+            # A rustdoc link that could not be resolved. 
+            # Lets remove the link and just retain the text.
+            print -e $"Could not resolve doc link for `($link)`."
+            return $it.text
+        }
+            
+        let hash = $link | split row '#' | skip 1 | each { prepend '#' | str join } | str join
+        let url_with_hash = $"($url)($hash)"
+
+        $"[($it.text)]\(($url_with_hash)\)"
     }
     | str join
     | str replace --all --regex '(?m:^#)' '##'
 
-    # We can't check if a capture group participated in the match
-    # so we check if an outer group which is guaranteed not to be empty when 
-    # participating, is indeed not empty.
-    if ($it.outer_code | str length) != 0 {
-        let code = $it.code | str replace --all --regex '(?m:^ *#.*\n)' ''
-        $'($new_prose)```rust($code)```'
-    } else {
-        $new_prose
+    if $it.outer_code == "" {
+        return $new_prose
     }
+
+    let new_code = $it.code | str replace --all --regex '(?m:^ *#.*\n)' ''
+    $'($new_prose)```rust($new_code)```'
 }
 | str join
 
