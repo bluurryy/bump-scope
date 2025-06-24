@@ -98,7 +98,7 @@
 //! # Allocator Methods
 //!
 //! The bump allocator provides many methods to conveniently allocate values, strings, and slices.
-//! Have a look at the documentation of [`Bump`](Bump) for a method overview.
+//! Have a look at the documentation of [`Bump`] for a method overview.
 //!
 //! # Scopes and Checkpoints
 //!
@@ -170,10 +170,10 @@
 //! ```
 //!
 //! # Collections
-//! `bump-scope` provides bump allocated variants of `Vec` and `String` called [`BumpVec`](BumpVec) and [`BumpString`](BumpString).
+//! `bump-scope` provides bump allocated variants of `Vec` and `String` called [`BumpVec`] and [`BumpString`].
 //! They are also available in the following variants:
-//! - [`Fixed*`](crate::FixedBumpVec) for fixed capacity collections
-//! - [`Mut*`](crate::MutBumpVec) for collections optimized for a mutable bump allocator
+//! - [`Fixed*`](FixedBumpVec) for fixed capacity collections
+//! - [`Mut*`](MutBumpVec) for collections optimized for a mutable bump allocator
 //!
 //! #### API changes
 //! The collections are designed to have the same api as their std counterparts with these exceptions:
@@ -187,12 +187,12 @@
 //! - conversions between the regular collections, their `Fixed*` variants and `BumpBox<[T]>` / `BumpBox<str>`
 //!
 //! # Parallel Allocation
-//! [`Bump`](Bump) is `!Sync` which means it can't be shared between threads.
+//! [`Bump`] is `!Sync` which means it can't be shared between threads.
 //!
-//! To bump allocate in parallel you can use a [`BumpPool`](BumpPool).
+//! To bump allocate in parallel you can use a [`BumpPool`].
 //!
 //! # Allocator API
-//! `Bump` and `BumpScope` implement `bump-scope`'s own [`Allocator`](alloc::Allocator) trait and with the
+//! `Bump` and `BumpScope` implement `bump-scope`'s own [`Allocator`] trait and with the
 //! respective [feature flags](#feature-flags) also implement `allocator_api2@0.2`, `allocator_api2@0.3` and nightly's `Allocator` trait.
 //! All of these traits mirror the nightly `Allocator` trait at the time of writing.
 //!
@@ -205,7 +205,7 @@
 //!
 //! A bump allocator does not require `deallocate` or `shrink` to free memory.
 //! After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
-//! You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using [`WithoutDealloc`](WithoutDealloc) and [`WithoutShrink`](WithoutShrink).
+//! You can wrap a bump allocator in a type that makes `deallocate` and `shrink` a no-op using [`WithoutDealloc`] and [`WithoutShrink`].
 //! ```
 //! # #[cfg(feature = "allocator-api2-03")]
 //! # {
@@ -255,7 +255,7 @@
 //!   This will also enable `allocator-api2` version `0.2`'s `nightly` feature.
 //! * **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
 //!   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
-//!   You can unsize a `BumpBox` in stable without this feature using [`unsize_bump_box`](crate::unsize_bump_box).
+//!   You can unsize a `BumpBox` in stable without this feature using [`unsize_bump_box`].
 //! * **`nightly-exact-size-is-empty`** —  Implements `is_empty` manually for some iterators.
 //! * **`nightly-trusted-len`** —  Implements `TrustedLen` for some iterators.
 //! * **`nightly-fn-traits`** —  Implements `Fn*` traits for `BumpBox<T>`. Makes `BumpBox<T: FnOnce + ?Sized>` callable. Requires alloc crate.
@@ -269,7 +269,7 @@
 //!
 //! Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
 //! This benefits collections as well as <code>[alloc_iter](Bump::alloc_iter)([_mut](Bump::alloc_iter_mut))</code> and <code>[alloc_fmt](Bump::alloc_fmt)([_mut](Bump::alloc_fmt_mut))</code>
-//! with the exception of [`MutBumpVecRev`](MutBumpVecRev) and [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) which
+//! with the exception of [`MutBumpVecRev`] and [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) which
 //! can be grown and shrunk in place if and only if bumping downwards.
 //!
 //! Bumping downwards on the other hand can be done in less operations.
@@ -286,7 +286,7 @@
 //!
 //! # `GUARANTEED_ALLOCATED` parameter?
 //! If `GUARANTEED_ALLOCATED` is `true` then the bump allocator is guaranteed to have at least one allocated chunk.
-//! This is usually the case unless it was created with [`Bump::unallocated`](Bump::unallocated).
+//! This is usually the case unless it was created with [`Bump::unallocated`].
 //!
 //! You need a guaranteed allocated `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
 //! You can make a `Bump(Scope)` guaranteed allocated using

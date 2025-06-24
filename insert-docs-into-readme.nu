@@ -176,14 +176,28 @@ let docs = $json.index
 | parse --regex '(?<prose>[\s\S]*?)(?<outer_code>```(?<code>[\s\S]*?)```|$)'
 | each { |it| 
     let new_prose = $it.prose 
-    | parse --regex '(?<verbatim>[\s\S]*?)(?<outer_link>(?:\[(?<text>[^\]]*)\]|$)\((?<link>[^\)]*)\)|$)'
+    | parse --regex '(?<verbatim>[\s\S]*?)(?<outer_link>\[(?<text>[^\]]*)\](?:\((?<inline>[^\)]*)\)|(\[(?<reference>[^\]]*)\]))?|$)'
     | each { |it| 
         # We can't check if a capture group participated in the match
         # so we check if an outer group which is guaranteed not to be empty when 
         # participating, is indeed not empty.
         if ($it.outer_link | str length) != 0 {
-            if $it.link in ($links | transpose k v | get k) {
-                let url = $links | get $it.link
+            if ($it.reference | str length) != 0 {
+                # `[foo][bar]`
+                # We ignore those for now.
+                $"($it.verbatim)($it.outer_link)"
+            }
+
+            let link = if ($it.inline | str length) != 0 {
+                # `[foo](bar)`
+                $it.inline
+            } else {
+                # `[foo]`
+                $it.text
+            }
+        
+            if $link in ($links | transpose k v | get k) {
+                let url = $links | get $link
     
                 if $url != null {
                     $"($it.verbatim)[($it.text)]\(($url)\)"
@@ -191,7 +205,7 @@ let docs = $json.index
                     $"($it.verbatim)($it.text)"
                 }
             } else {
-                $"($it.verbatim)[($it.text)]\(($it.link)\)"
+                $"($it.verbatim)($it.outer_link)"
             }
         } else {
             $it.verbatim
