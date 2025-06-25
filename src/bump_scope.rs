@@ -1480,7 +1480,9 @@ where
     /// # Panics
     /// Panics if the allocation fails.
     ///
-    /// Panics if a formatting trait implementation returned an error.
+    /// This technically also panics if the `fmt()` implementation returned an Error,
+    /// but since [`fmt()` implementors should only error when writing to the stream fails](core::fmt::Error),
+    /// that should be equivalent to an allocation failure.
     ///
     /// # Examples
     /// ```
@@ -1506,7 +1508,9 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     ///
-    /// Errors if a formatting trait implementation returned an error.
+    /// This technically also panics if the `fmt()` implementation returned an Error,
+    /// but since [`fmt()` implementors should only error when writing to the stream fails](core::fmt::Error),
+    /// that should be equivalent to an allocation failure.
     ///
     /// # Examples
     /// ```
@@ -1544,7 +1548,9 @@ where
     /// # Panics
     /// Panics if the allocation fails.
     ///
-    /// Panics if a formatting trait implementation returned an error.
+    /// This technically also panics if the `fmt()` implementation returned an Error,
+    /// but since [`fmt()` implementors should only error when writing to the stream fails](core::fmt::Error),
+    /// that should be equivalent to an allocation failure.
     ///
     /// # Examples
     /// ```
@@ -1571,7 +1577,9 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     ///
-    /// Errors if a formatting trait implementation returned an error.
+    /// This technically also panics if the `fmt()` implementation returned an Error,
+    /// but since [`fmt()` implementors should only error when writing to the stream fails](core::fmt::Error),
+    /// that should be equivalent to an allocation failure.
     ///
     /// # Examples
     /// ```
@@ -1722,7 +1730,9 @@ where
     /// # Panics
     /// Panics if the allocation fails.
     ///
-    /// Panics if a formatting trait implementation returned an error.
+    /// This technically also panics if the `fmt()` implementation returned an Error,
+    /// but since [`fmt()` implementors should only error when writing to the stream fails](core::fmt::Error),
+    /// that should be equivalent to an allocation failure.
     ///
     /// # Examples
     /// ```
@@ -1752,7 +1762,9 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     ///
-    /// Errors if a formatting trait implementation returned an error.
+    /// This technically also panics if the `fmt()` implementation returned an Error,
+    /// but since [`fmt()` implementors should only error when writing to the stream fails](core::fmt::Error),
+    /// that should be equivalent to an allocation failure.
     ///
     /// # Examples
     /// ```
@@ -1794,7 +1806,9 @@ where
     /// # Panics
     /// Panics if the allocation fails.
     ///
-    /// Panics if a formatting trait implementation returned an error.
+    /// This technically also panics if the `fmt()` implementation returned an Error,
+    /// but since [`fmt()` implementors should only error when writing to the stream fails](core::fmt::Error),
+    /// that should be equivalent to an allocation failure.
     ///
     /// # Examples
     /// ```
@@ -1825,7 +1839,9 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     ///
-    /// Errors if a formatting trait implementation returned an error.
+    /// This technically also panics if the `fmt()` implementation returned an Error,
+    /// but since [`fmt()` implementors should only error when writing to the stream fails](core::fmt::Error),
+    /// that should be equivalent to an allocation failure.
     ///
     /// # Examples
     /// ```
