@@ -125,20 +125,20 @@ assert_eq!(bump.stats().allocated(), 0);
 ```
 
 ## Collections
-`bump-scope` provides bump allocated variants of `Vec` and `String` called [`BumpVec`](https://docs.rs/bump-scope/latest/bump_scope/bump_vec/struct.BumpVec.html) and [`BumpString`](https://docs.rs/bump-scope/latest/bump_scope/struct.BumpString.html).
+`bump-scope` provides bump allocated variants of `Vec` and `String` called [`BumpVec`](https://docs.rs/bump-scope/latest/bump_scope/struct.BumpVec.html) and [`BumpString`](https://docs.rs/bump-scope/latest/bump_scope/struct.BumpString.html).
 They are also available in the following variants:
 - [`Fixed*`](https://docs.rs/bump-scope/latest/bump_scope/struct.FixedBumpVec.html) for fixed capacity collections
 - [`Mut*`](https://docs.rs/bump-scope/latest/bump_scope/struct.MutBumpVec.html) for collections optimized for a mutable bump allocator
 
 ##### API changes
 The collections are designed to have the same api as their std counterparts with these exceptions:
-- [`split_off`](https://docs.rs/bump-scope/latest/bump_scope/bump_vec/struct.BumpVec.html#method.split_off) —  splits the collection in place without allocation; the parameter is a range instead of a single index
-- [`retain`](https://docs.rs/bump-scope/latest/bump_scope/bump_vec/struct.BumpVec.html#method.retain) —  takes a closure with a `&mut T` parameter like `Vec::retain_mut`
+- [`split_off`](https://docs.rs/bump-scope/latest/bump_scope/struct.BumpVec.html#method.split_off) —  splits the collection in place without allocation; the parameter is a range instead of a single index
+- [`retain`](https://docs.rs/bump-scope/latest/bump_scope/struct.BumpVec.html#method.retain) —  takes a closure with a `&mut T` parameter like `Vec::retain_mut`
 
 ##### New features
-- [`append`](https://docs.rs/bump-scope/latest/bump_scope/bump_vec/struct.BumpVec.html#method.append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `vec::Drain<T>` etc.
-- [`map`](https://docs.rs/bump-scope/latest/bump_scope/bump_vec/struct.BumpVec.html#method.map) —  maps the elements, potentially reusing the existing allocation
-- [`map_in_place`](https://docs.rs/bump-scope/latest/bump_scope/bump_vec/struct.BumpVec.html#method.map_in_place) —  maps the elements without allocation
+- [`append`](https://docs.rs/bump-scope/latest/bump_scope/struct.BumpVec.html#method.append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `vec::Drain<T>` etc.
+- [`map`](https://docs.rs/bump-scope/latest/bump_scope/struct.BumpVec.html#method.map) —  maps the elements, potentially reusing the existing allocation
+- [`map_in_place`](https://docs.rs/bump-scope/latest/bump_scope/struct.BumpVec.html#method.map_in_place) —  maps the elements without allocation
 - conversions between the regular collections, their `Fixed*` variants and `BumpBox<[T]>` / `BumpBox<str>`
 
 ## Parallel Allocation
