@@ -1,6 +1,9 @@
 /// This trait marks types that don't need dropping.
 ///
-/// This trait is a best effort for modeling such a constraint. It is not implemented for all types that don't need dropping.
+/// This trait is a best effort for modeling such a constraint.
+/// It is not implemented for all types that don't need dropping.
+///
+/// Specifically `&mut T` types don't implement `NoDrop` but definitely would if it were possible.
 ///
 /// Every `T where T: Copy` and every `[T] where T: NoDrop` automatically implements `NoDrop`.
 ///
