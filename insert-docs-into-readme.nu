@@ -3,22 +3,27 @@
 let json = open target/doc/bump_scope.json
 let package_names = open --raw Cargo.lock | from toml | get package.name
 
-def children [id: int] {
+def remove-null []: list -> list {
+    each {}
+}
+
+def children [id: int]: nothing -> list<int> {
     let item = $json.index | get ($id | into string)
 
+    # `each` is like `filter_map`. It is used here to
     match $item.inner {
         {module: $module} => $module.items,
-        {use: $use} => ([$use.id] | each {}),
+        {use: $use} => ([$use.id] | remove-null),
         {union: $union} => ($union.fields ++ $union.impls),
         {struct: $struct} => ($struct.impls ++ match $struct.kind {
             "unit" => []
-            {tuple: $tuple} => ($tuple | each {})
+            {tuple: $tuple} => ($tuple | remove-null)
             {plain: $plain} => $plain.fields,
         }),
         {enum: $enum} => ($enum.variants ++ $enum.impls),
         {variant: $variant} => (match $variant.kind {
             "unit" => {}
-            {tuple: $tuple} => ($tuple | each {})
+            {tuple: $tuple} => ($tuple | remove-null)
             {struct: $struct} => $struct.fields,
         }),
         {trait: $trait} => ($trait.items ++ $trait.implementations),
@@ -28,21 +33,21 @@ def children [id: int] {
     }
 }
 
-def keys [] {
+def keys []: record -> list<string> {
     transpose key value | get key
 }
 
-def values [] {
+def values []: record -> list {
     transpose key value | get value
 }
 
-def table-into-record [key_column: cell-path, value_column: cell-path] {
+def table-into-record [key_column: cell-path, value_column: cell-path]: table -> record {
     reduce --fold {} { |it, acc| $acc | upsert ($it | get $key_column) ($it | get $value_column) }
 }
 
-let parents = $json.index | keys | each { into int } | reduce --fold {} { |parent, acc| (children $parent | reduce --fold $acc { |child, acc| $acc | upsert $"($child)" $parent } ) }
+let parents = $json.index | keys | into int | reduce --fold {} { |parent, acc| (children $parent | reduce --fold $acc { |child, acc| $acc | upsert $"($child)" $parent } ) }
 
-def package-name [crate: string] {
+def package-name [crate: string]: nothing -> string {
     $package_names | where { ($in | str replace --all '-' '_' ) == $crate } | get 0
 }
 
@@ -56,7 +61,7 @@ def todo [why?: string] {
     error make { msg: $msg }
 }
 
-def item [id: int] {
+def item [id: int]: nothing -> record {
     let id_s = $id | into string
     let item = $json.index | get -i $id_s
     
@@ -64,7 +69,7 @@ def item [id: int] {
         let name = $item.name
         let kind = $item.inner | keys | get 0
         let parent_id = $parents | get -i $id_s
-        let parent = if $parent_id != null { $parent_id | wrap id } else { null }
+        let parent = if $parent_id == null { null } else { {id: $parent_id} }
         return {name: $name, kind: $kind, parent: $parent}
     }
 
@@ -74,14 +79,14 @@ def item [id: int] {
         let name = $item_summary.path | last
         let kind = $item_summary.kind
         let parent_path = $item_summary.path | take (($item_summary.path | length) - 1)
-        let parent = if ($parent_path | length) < 1 { null } else  { {path: $parent_path} }
+        let parent = if $parent_path == [] { null } else { {path: $parent_path} }
         return {name: $name, kind: $kind, parent: $parent}
     }
 
     panic $"can't resolve item ($id)"
 }
 
-def item-path [id: int] {
+def item-path [id: int]: nothing -> list<record> {
     mut id = $id
     mut item_path = []
 
@@ -105,7 +110,7 @@ def item-path [id: int] {
                     $item_path ++= [{name: $name, kind: $kind}]
                     $path = $path | take (($path | length) - 1)
 
-                    if ($path | length) < 1 {
+                    if $path == [] {
                         break
                     }
                 }
@@ -120,22 +125,21 @@ def item-path [id: int] {
     $item_path
 }
 
-def replace-range [range: range, values: list] {
-    let list = $in
-    let lhs = $list | slice ..(($range | first) - 1)
-    let rhs = $list | slice (($range | last) + 1)..
+def replace-range [range: range, values: list]: list -> list {
+    let lhs = $in | slice ..(($range | first) - 1)
+    let rhs = $in | slice (($range | last) + 1)..
     $lhs ++ $values ++ $rhs
 }
 
-def fuse-impl-function-to-method [] {
+def fuse-impl-function-to-method []: list -> list {
     let path = $in
     let index = $path | get kind | window 2 | enumerate | where item == [impl function] | get -i 0.index
     if $index == null { return $path }
     let name = $path | get ($index + 1) | get name
-     $path | replace-range $index..($index + 1) [{name: $name, kind: method}]
+    $path | replace-range $index..($index + 1) [{name: $name, kind: method}]
 }
 
-def item-url [id: number] {
+def item-url [id: number]: nothing -> string {
     item-path $id
     | reverse
     | fuse-impl-function-to-method
@@ -163,7 +167,7 @@ def item-url [id: number] {
             }
             "impl" | "use" => ""
             _ => {
-                todo $"path segment for '($kind)' \(key ($id)\)"
+                todo $"path segment for '($kind)' \(($name)\)"
             }
         }
     }
@@ -190,7 +194,7 @@ def replace [regex: string, get_replacement: closure]: string -> string {
     parse --regex ('(?<__before>[\s\S]*?)(?<__matched>' ++ $regex ++  '|$)')
     | each { |it|
         if $it.__matched == "" { return $it.__before }
-        let captures = ($it | reject __before __matched | insert "0" $it.__matched )
+        let captures = $it | reject __before __matched | insert all $it.__matched
         let replacement = (do $get_replacement $captures)
         $"($it.__before)($replacement)"
     }
@@ -207,14 +211,16 @@ let links = $json.index
 let docs = $json.index 
 | get ($json.root | into string)
 | get docs
+# Separate code sections from the rest to process them independently.
 | parse --regex '(?<prose>[\s\S]*?)(?<outer_code>```(?<code>[\s\S]*?)```|$)'
 | each { |it| 
     let new_prose = $it.prose 
+    # Replace rustdoc links with the url.
     | replace '\[(?<text>[^\]]*)\](?:\((?<inline>[^\)]*)\)|\[(?<reference>[^\]]*)\])?' { |it| 
         if $it.reference != "" {
             # `[foo][bar]`
             # We ignore those for now.
-            return $it."0"
+            return $it.all
         }
 
         let link = if $it.inline != "" {
@@ -227,7 +233,7 @@ let docs = $json.index
 
         if $link not-in ($links | keys) {
             # Link is not something rustdoc related. Return it as is.
-            return $it."0"
+            return $it.all
         }
     
         let url = $links | get $link
@@ -238,19 +244,21 @@ let docs = $json.index
             print -e $"Could not resolve doc link for `($link)`."
             return $it.text
         }
-            
-        let hash = $link | split row '#' | skip 1 | each { prepend '#' | str join } | str join
-        let url_with_hash = $"($url)($hash)"
+        
+        # The url does not yet contain the hash part of the link so lets append it.
+        let hash = $link | split row -n 2 '#' | skip 1 | each { prepend '#' | str join } | str join
 
-        $"[($it.text)]\(($url_with_hash)\)"
+        $"[($it.text)]\(($url ++ $hash)\)"
     }
     | str join
+    # Add another hash to the markdown headers given that the readme wants to reserve h1 for the title.
     | str replace --all --regex '(?m:^#)' '##'
 
     if $it.outer_code == "" {
         return $new_prose
     }
 
+    # Remove hidden (`#` prefixed) lines from doc tests.
     let new_code = $it.code | str replace --all --regex '(?m:^ *#.*\n)' ''
     $'($new_prose)```rust($new_code)```'
 }
