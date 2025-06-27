@@ -16,7 +16,7 @@ The following cases benchmark allocating a value or a slice of values (not neces
 
 The `*_aligned` cases use a bump allocator with a sufficient minimum alignment for the allocated type, eliminating the need to align the bump pointer for the allocation.
 
-The `*_overaligned` cases use a bump allocator with a minimum alignment greater than the alignment of the type being allocated. This requires rounding up the allocation size to keep the bump pointer aligned.
+The `*_overaligned` cases use a bump allocator with a minimum alignment greater than the alignment of the type being allocated, eliminating the need to align the bump pointer for the allocation but also requiring to round up the allocation size to keep the bump pointer aligned.
 
 <!-- alloc table start -->
 
@@ -85,7 +85,7 @@ The following cases benchmark the `Allocator` trait implementations.
 
 <!-- allocator_api table end -->
 
-The allocator api benchmarks above use a statically known `Layout`. Consumers of allocators don't necessarily use their allocator in a way that makes the `Layout` or even just the alignment statically known to the `allocate` function. For instance `Vec::push` doesn't[^3].
+The allocator api benchmarks above use a statically known `Layout`. Consumers of allocators don't necessarily use their allocator in a way that makes the `Layout` or even just the alignment statically known to the `Allocator` methods. For instance `Vec::push` doesn't[^3].
 
 If the layout is not statically known then the compiler can not do as many optimizations:
 
@@ -125,7 +125,7 @@ If the layout is not statically known then the compiler can not do as many optim
 
 ## Reproducing
 
-Install [Valgrind](https://iai-callgrind.github.io/iai-callgrind/latest/html/installation/prerequisites.html) and [iai-callgrind-runner](https://iai-callgrind.github.io/iai-callgrind/latest/html/installation/iai_callgrind.html).
+Install [Valgrind] and [iai-callgrind-runner].
 
 Then run the benchmark with
 ```bash
@@ -135,3 +135,6 @@ and update the tables above with
 ```bash
 cargo run
 ```
+
+[Valgrind]: https://iai-callgrind.github.io/iai-callgrind/latest/html/installation/prerequisites.html
+[iai-callgrind-runner]: https://iai-callgrind.github.io/iai-callgrind/latest/html/installation/iai_callgrind.html
