@@ -245,8 +245,7 @@ mod helper {
     fn catch<F: FnOnce() -> R + UnwindSafe, R>(f: F) -> Result<R, String> {
         let hook = std::panic::take_hook();
 
-        #[cfg(any())]
-        std::panic::set_hook(Box::new(|_| {
+        std::panic::set_hook(std::boxed::Box::new(|_| {
             // be quiet
         }));
 
@@ -266,6 +265,7 @@ mod helper {
         };
 
         std::panic::set_hook(hook);
+
         result
     }
 }
