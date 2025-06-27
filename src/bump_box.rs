@@ -2564,12 +2564,21 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// assert_eq!(b, [0, 1, 2]);
     /// ```
     ///
-    /// Mapping to a type with a higher alignment or size won't compile:
+    /// Mapping to a type with a greater alignment won't compile:
     /// ```compile_fail,E0080
     /// # use bump_scope::{Bump, BumpBox};
     /// # let bump: Bump = Bump::new();
-    /// let a: BumpBox<[u16]> = bump.alloc_slice_copy(&[0, 1, 2]);
-    /// let b: BumpBox<[u32]> = a.map_in_place(|i| i as u32);
+    /// let a: BumpBox<[[u8; 4]]> = bump.alloc_slice_copy(&[[0, 1, 2, 3]]);
+    /// let b: BumpBox<[u32]> = a.map_in_place(u32::from_le_bytes);
+    /// # _ = b;
+    /// ```
+    ///
+    /// Mapping to a type with a greater size won't compile:
+    /// ```compile_fail,E0080
+    /// # use bump_scope::{Bump, BumpBox};
+    /// # let bump: Bump = Bump::new();
+    /// let a: BumpBox<[u32]> = bump.alloc_slice_copy(&[42]);
+    /// let b: BumpBox<[[u32; 2]]> = a.map_in_place(|i| [i; 2]);
     /// # _ = b;
     /// ```
     pub fn map_in_place<U>(self, mut f: impl FnMut(T) -> U) -> BumpBox<'a, [U]> {

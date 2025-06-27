@@ -2309,12 +2309,21 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// assert_eq!(b, [0, 1, 2]);
     /// ```
     ///
-    /// Mapping to a type with a higher alignment or size won't compile:
+    /// Mapping to a type with a greater alignment or size won't compile:
     /// ```compile_fail,E0080
     /// # use bump_scope::{Bump, BumpVec};
     /// # let bump: Bump = Bump::new();
     /// let a: BumpVec<u16, _> = BumpVec::from_iter_exact_in([0, 1, 2], &bump);
     /// let b: BumpVec<u32, _> = a.map_in_place(|i| i as u32);
+    /// # _ = b;
+    /// ```
+    ///
+    /// Mapping to a type with a greater size won't compile:
+    /// ```compile_fail,E0080
+    /// # use bump_scope::{Bump, BumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let a: BumpVec<u32, _> = BumpVec::from_iter_exact_in([42], &bump);
+    /// let b: BumpVec<[u32; 2], _> = a.map_in_place(|i| [i; 2]);
     /// # _ = b;
     /// ```
     pub fn map_in_place<U>(self, f: impl FnMut(T) -> U) -> BumpVec<U, A> {

@@ -1772,12 +1772,21 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// assert_eq!(b, [0, 1, 2]);
     /// ```
     ///
-    /// Mapping to a type with a higher alignment or size won't compile:
+    /// Mapping to a type with a greater alignment won't compile:
     /// ```compile_fail,E0080
     /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
-    /// let a: FixedBumpVec<u16> = FixedBumpVec::from_iter_exact_in([0, 1, 2], &bump);
-    /// let b: FixedBumpVec<u32> = a.map_in_place(|i| i as u32);
+    /// let a: FixedBumpVec<[u8; 4]> = FixedBumpVec::from_iter_exact_in([[0, 1, 2, 3]], &bump);
+    /// let b: FixedBumpVec<u32> = a.map_in_place(u32::from_le_bytes);
+    /// # _ = b;
+    /// ```
+    ///
+    /// Mapping to a type with a greater size won't compile:
+    /// ```compile_fail,E0080
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let a: FixedBumpVec<u32> = FixedBumpVec::from_iter_exact_in([42], &bump);
+    /// let b: FixedBumpVec<[u32; 2]> = a.map_in_place(|i| [i; 2]);
     /// # _ = b;
     /// ```
     pub fn map_in_place<U>(self, f: impl FnMut(T) -> U) -> FixedBumpVec<'a, U> {

@@ -1065,40 +1065,6 @@ fn min_non_zero_cap() {
     }
 }
 
-// This must fail to compile.
-//
-// Can't have a trybuild (or doc tests) test for this because trybuild just `check`s
-// whereas the compile error we trigger `E0080` only gets triggered when building.
-#[cfg(any())]
-#[test]
-fn map_in_place_compile_fail_due_to_align() {
-    pub fn u32_from_le(bump: BumpBox<[[u8; 4]]>) -> BumpBox<[u32]> {
-        bump.map_in_place(u32::from_le_bytes)
-    }
-
-    let bump: Bump = Bump::new();
-    let bytes = bump.alloc_slice_copy(&[[1, 2, 3, 4]]);
-    let int = u32_from_le(bytes);
-    dbg!(int);
-}
-
-// This must fail to compile.
-//
-// Can't have a trybuild (or doc tests) test for this because trybuild just `check`s
-// whereas the compile error we trigger `E0080` only gets triggered when building.
-#[cfg(any())]
-#[test]
-fn map_in_place_compile_fail_due_to_size() {
-    pub fn lengthen(bump: BumpBox<[u32]>) -> BumpBox<[u64]> {
-        bump.map_in_place(u64::from)
-    }
-
-    let bump: Bump = Bump::new();
-    let ints = bump.alloc_slice_copy(&[1, 2, 3, 4]);
-    let long_ints = lengthen(ints);
-    dbg!(long_ints);
-}
-
 // test claim in crate docs that layout equals `Cell<NonNull<()>>`
 // make sure to also check that niches are the same
 mod doc_layout_claim {

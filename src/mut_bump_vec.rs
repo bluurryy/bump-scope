@@ -1980,12 +1980,21 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     /// assert_eq!(b, [0, 1, 2]);
     /// ```
     ///
-    /// Mapping to a type with a higher alignment or size won't compile:
+    /// Mapping to a type with a greater alignment won't compile:
     /// ```compile_fail,E0080
     /// # use bump_scope::{Bump, MutBumpVec};
     /// # let mut bump: Bump = Bump::new();
     /// let a: MutBumpVec<u16, _> = MutBumpVec::from_iter_in([0, 1, 2], &mut bump);
     /// let b: MutBumpVec<u32, _> = a.map_in_place(|i| i as u32);
+    /// # _ = b;
+    /// ```
+    ///
+    /// Mapping to a type with a greater size won't compile:
+    /// ```compile_fail,E0080
+    /// # use bump_scope::{Bump, MutBumpVec};
+    /// # let mut bump: Bump = Bump::new();
+    /// let a: MutBumpVec<u32, _> = MutBumpVec::from_iter_exact_in([42], &mut bump);
+    /// let b: MutBumpVec<[u32; 2], _> = a.map_in_place(|i| [i; 2]);
     /// # _ = b;
     /// ```
     pub fn map_in_place<U>(self, f: impl FnMut(T) -> U) -> MutBumpVec<U, A> {
