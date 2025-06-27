@@ -227,7 +227,7 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     fn drop(&mut self) {
-        if self.is_unallocated() {
+        if self.as_scope().is_unallocated() {
             return;
         }
 
@@ -1000,24 +1000,18 @@ where
         self.chunk.set(chunk);
     }
 
-    #[inline(always)]
-    pub(crate) fn is_unallocated(&self) -> bool {
-        !GUARANTEED_ALLOCATED && self.chunk.get().is_unallocated()
-    }
-
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
-        let header = self.chunk.get().header_ptr().cast();
-        unsafe { Stats::from_header_unchecked(header) }
+        self.as_scope().stats()
     }
 
     /// Returns a reference to the base allocator.
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
-        unsafe { self.chunk.get().allocator().as_ref() }
+        self.as_scope().allocator()
     }
 
     /// Returns this `&Bump` as a `&BumpScope`.
