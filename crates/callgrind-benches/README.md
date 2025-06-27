@@ -8,7 +8,7 @@ There are also criterion benchmarks at [../criterion-benches](../criterion-bench
 
 The benchmarks results in the tables below are shown in the format "instructions executed / branches executed".
 
-These are the results of a benchmark run with <!-- version start -->`rustc 1.87.0 (17067e9ac 2025-05-09)` on `x86_64-unknown-linux-gnu` using `LLVM version 20.1.1`<!-- version end -->.
+These are the results of a benchmark run with <!-- version start -->`rustc 1.88.0 (6b00bc388 2025-06-23)` on `x86_64-unknown-linux-gnu` using `LLVM version 20.1.5`<!-- version end -->.
 
 ### Allocation
 
