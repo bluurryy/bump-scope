@@ -10,7 +10,6 @@ use core::{
 
 use crate::{
     alloc::{AllocError, Allocator},
-    bump_common_methods,
     chunk_size::ChunkSize,
     owned_slice::OwnedSlice,
     polyfill::{self, transmute_mut, transmute_ref},
@@ -1001,7 +1000,25 @@ where
         self.chunk.set(chunk);
     }
 
-    bump_common_methods!(false);
+    #[inline(always)]
+    pub(crate) fn is_unallocated(&self) -> bool {
+        !GUARANTEED_ALLOCATED && self.chunk.get().is_unallocated()
+    }
+
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
+    #[must_use]
+    #[inline(always)]
+    pub fn stats(&self) -> Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
+        let header = self.chunk.get().header_ptr().cast();
+        unsafe { Stats::from_header_unchecked(header) }
+    }
+
+    /// Returns a reference to the base allocator.
+    #[must_use]
+    #[inline(always)]
+    pub fn allocator(&self) -> &A {
+        unsafe { self.chunk.get().allocator().as_ref() }
+    }
 
     /// Returns this `&Bump` as a `&BumpScope`.
     #[inline(always)]

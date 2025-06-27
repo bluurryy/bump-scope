@@ -560,51 +560,6 @@ macro_rules! const_param_assert {
 
 pub(crate) use const_param_assert;
 
-macro_rules! condition {
-    (if true { $($then:tt)* } else { $($else:tt)* }) => { $($then)* };
-    (if false { $($then:tt)* } else { $($else:tt)* }) => { $($else)* };
-}
-
-pub(crate) use condition;
-
-macro_rules! bump_common_methods {
-    ($is_scope:ident) => {
-        #[inline(always)]
-        pub(crate) fn is_unallocated(&self) -> bool {
-            !GUARANTEED_ALLOCATED && self.chunk.get().is_unallocated()
-        }
-
-        $crate::condition! {
-            if $is_scope {
-                /// Returns a type which provides statistics about the memory usage of the bump allocator.
-                #[must_use]
-                #[inline(always)]
-                pub fn stats(&self) -> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
-                    let header = self.chunk.get().header_ptr().cast();
-                    unsafe { Stats::from_header_unchecked(header) }
-                }
-            } else {
-                /// Returns a type which provides statistics about the memory usage of the bump allocator.
-                #[must_use]
-                #[inline(always)]
-                pub fn stats(&self) -> Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
-                    let header = self.chunk.get().header_ptr().cast();
-                    unsafe { Stats::from_header_unchecked(header) }
-                }
-            }
-        }
-
-        /// Returns a reference to the base allocator.
-        #[must_use]
-        #[inline(always)]
-        pub fn allocator(&self) -> &A {
-            unsafe { self.chunk.get().allocator().as_ref() }
-        }
-    };
-}
-
-pub(crate) use bump_common_methods;
-
 mod supported_base_allocator {
     pub trait Sealed<const GUARANTEED_ALLOCATED: bool> {
         #[doc(hidden)]

@@ -15,7 +15,6 @@ use crate::{
     alloc::{AllocError, Allocator},
     allocator_impl,
     bump_align_guard::BumpAlignGuard,
-    bump_common_methods,
     bumping::{bump_down, bump_up, BumpUp},
     chunk_size::ChunkSize,
     const_param_assert, down_align_usize,
@@ -760,7 +759,25 @@ where
         }
     }
 
-    bump_common_methods!(true);
+    #[inline(always)]
+    pub(crate) fn is_unallocated(&self) -> bool {
+        !GUARANTEED_ALLOCATED && self.chunk.get().is_unallocated()
+    }
+
+    /// "Returns a type which provides statistics about the memory usage of the bump allocator.
+    #[must_use]
+    #[inline(always)]
+    pub fn stats(&self) -> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
+        let header = self.chunk.get().header_ptr().cast();
+        unsafe { Stats::from_header_unchecked(header) }
+    }
+
+    /// Returns a reference to the base allocator.
+    #[must_use]
+    #[inline(always)]
+    pub fn allocator(&self) -> &A {
+        unsafe { self.chunk.get().allocator().as_ref() }
+    }
 
     /// Returns `&self` as is. This is useful for macros that support both `Bump` and `BumpScope`.
     #[inline(always)]
