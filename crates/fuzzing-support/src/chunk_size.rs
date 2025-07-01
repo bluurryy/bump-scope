@@ -5,6 +5,22 @@ use arbitrary::Arbitrary;
 
 use crate::from_bump_scope::chunk_size_config::{ChunkSizeConfig, MIN_CHUNK_ALIGN};
 
+macro_rules! assert_le {
+    ($lhs:expr, $rhs:expr $(, $($msg:tt)*)?) => {
+        let lhs = $lhs;
+        let rhs = $rhs;
+
+        assert!(
+            lhs <= rhs,
+            concat!("expected `{}` ({}) to be less or equal to `{}` ({})" $(, $($msg)*)?),
+            stringify!($lhs),
+            lhs,
+            stringify!($rhs),
+            rhs,
+        )
+    };
+}
+
 macro_rules! assert_ge {
     ($lhs:expr, $rhs:expr $(, $($msg:tt)*)?) => {
         let lhs = $lhs;
@@ -43,7 +59,7 @@ impl Fuzz {
         let config = ChunkSizeConfig {
             up,
             assumed_malloc_overhead_layout: assumed_malloc_overhead_layout(pointer_width),
-            chunk_header_layout: match chunk_header_layout(pointer_width, base_allocator_layout.0) {
+            chunk_header_layout: match chunk_header_layout(pointer_width, base_allocator_layout.get()) {
                 Some(some) => some,
                 None => {
                     // This calculation can fail if the if the base allocator layout is great enough that adding
@@ -56,7 +72,7 @@ impl Fuzz {
 
         let size_hint = match size_hint_or_capacity {
             SizeHintOrCapacity::SizeHint(size_hint) => Some(size_hint),
-            SizeHintOrCapacity::Capacity(layout) => config.calc_hint_from_capacity(layout.0),
+            SizeHintOrCapacity::Capacity(layout) => config.calc_hint_from_capacity(layout.get()),
         };
 
         let Some(size_hint) = size_hint else { return };
@@ -73,6 +89,8 @@ impl Fuzz {
             assert!(size % config.chunk_header_layout.align() == 0);
         }
 
+        assert_ge!(size, config.chunk_header_layout.size());
+
         let Ok(chunk_layout) = Layout::from_size_align(size, config.chunk_header_layout.align()) else {
             return;
         };
@@ -88,9 +106,10 @@ impl Fuzz {
         let address = address.get();
         let size = config.align_size(unaligned_size);
 
+        assert_ge!(size, config.chunk_header_layout.size());
         assert!(address % chunk_layout.align() == 0);
-        assert!(size <= unaligned_size);
-        assert!(size >= chunk_layout.size());
+        assert_le!(size, unaligned_size);
+        assert_ge!(size, chunk_layout.size());
         assert!(size % MIN_CHUNK_ALIGN == 0);
 
         if !up {
@@ -112,10 +131,10 @@ impl Fuzz {
                 content_end = (address + size) - config.chunk_header_layout.size();
             }
 
-            let aligned_start = up_align(content_start, required_capacity_layout.0.align()).unwrap();
+            let aligned_start = up_align(content_start, required_capacity_layout.align).unwrap();
             let true_capacity = content_end - aligned_start;
 
-            if true_capacity < required_capacity_layout.0.size() {
+            if true_capacity < required_capacity_layout.size {
                 dbg!(
                     chunk_layout,
                     address,
@@ -126,10 +145,10 @@ impl Fuzz {
                     aligned_start,
                     content_end - content_start,
                     true_capacity,
-                    required_capacity_layout.0
+                    required_capacity_layout.get()
                 );
 
-                assert_ge!(true_capacity, required_capacity_layout.0.size());
+                assert_ge!(true_capacity, required_capacity_layout.size);
             }
         }
     }
@@ -161,10 +180,19 @@ struct PseudoAllocation {
     size: usize,
 }
 
-#[derive(Debug, Arbitrary, Clone, Copy)]
+#[derive(Arbitrary, Clone, Copy)]
 enum SizeHintOrCapacity {
     SizeHint(usize),
     Capacity(ArbitraryLayout),
+}
+
+impl fmt::Debug for SizeHintOrCapacity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::SizeHint(arg0) => f.debug_tuple("SizeHintOrCapacity::SizeHint").field(arg0).finish(),
+            Self::Capacity(arg0) => f.debug_tuple("SizeHintOrCapacity::Capacity").field(arg0).finish(),
+        }
+    }
 }
 
 // All `target_pointer_width` that rust currently supports.
@@ -203,7 +231,11 @@ impl PointerWidth {
 
 impl fmt::Debug for PointerWidth {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        fmt::Debug::fmt(&self.in_bits(), f)
+        f.write_str(match self {
+            PointerWidth::Bits16 => "PointerWidth::Bits16",
+            PointerWidth::Bits32 => "PointerWidth::Bits32",
+            PointerWidth::Bits64 => "PointerWidth::Bits64",
+        })
     }
 }
 
@@ -214,7 +246,21 @@ impl fmt::Display for PointerWidth {
 }
 
 #[derive(Debug, Clone, Copy)]
-struct ArbitraryLayout(Layout);
+struct ArbitraryLayout {
+    size: usize,
+    align: usize,
+}
+
+impl ArbitraryLayout {
+    fn get(self) -> Layout {
+        let Self { size, align } = self;
+
+        match Layout::from_size_align(size, align) {
+            Ok(ok) => ok,
+            Err(_) => panic!("Layout {{ size: {size}, align: {align} }} does not represent a valid layout"),
+        }
+    }
+}
 
 impl<'a> Arbitrary<'a> for ArbitraryLayout {
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
@@ -228,12 +274,11 @@ impl<'a> Arbitrary<'a> for ArbitraryLayout {
 
         assert!(align.is_power_of_two());
 
-        let layout = match Layout::from_size_align(size, align) {
-            Ok(ok) => ok,
-            Err(_) => unreachable!("Layout {{ size: {size}, align: {align} }} does not represent a valid layout"),
+        if Layout::from_size_align(size, align).is_err() {
+            unreachable!("Layout {{ size: {size}, align: {align} }} does not represent a valid layout")
         };
 
-        Ok(ArbitraryLayout(layout))
+        Ok(Self { size, align })
     }
 
     fn size_hint(depth: usize) -> (usize, Option<usize>) {
