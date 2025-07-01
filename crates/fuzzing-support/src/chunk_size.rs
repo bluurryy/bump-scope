@@ -3,18 +3,31 @@ use std::{alloc::Layout, num::NonZeroUsize};
 
 use arbitrary::Arbitrary;
 
-use crate::{
-    from_bump_scope::chunk_size_config::{ChunkSizeConfig, MIN_CHUNK_ALIGN},
-    UpTo,
-};
+use crate::from_bump_scope::chunk_size_config::{ChunkSizeConfig, MIN_CHUNK_ALIGN};
+
+macro_rules! assert_ge {
+    ($lhs:expr, $rhs:expr $(, $($msg:tt)*)?) => {
+        let lhs = $lhs;
+        let rhs = $rhs;
+
+        assert!(
+            lhs >= rhs,
+            concat!("expected `{}` ({}) to be greater or equal to `{}` ({})" $(, $($msg)*)?),
+            stringify!($lhs),
+            lhs,
+            stringify!($rhs),
+            rhs,
+        )
+    };
+}
 
 #[derive(Debug, Arbitrary)]
 pub struct Fuzz {
     up: bool,
     pointer_width: PointerWidth,
-    base_allocator: BaseAllocator,
-    input: SizeHintOrCapacity,
-    allocator: PseudoAllocator,
+    base_allocator_layout: ArbitraryLayout,
+    base_allocator: PseudoAllocator,
+    size_hint_or_capacity: SizeHintOrCapacity,
 }
 
 impl Fuzz {
@@ -22,19 +35,27 @@ impl Fuzz {
         let Self {
             up,
             pointer_width,
+            base_allocator_layout,
             base_allocator,
-            input,
-            allocator,
+            size_hint_or_capacity,
         } = self;
 
         let config = ChunkSizeConfig {
             up,
             assumed_malloc_overhead_layout: assumed_malloc_overhead_layout(pointer_width),
-            chunk_header_layout: chunk_header_layout(pointer_width, base_allocator.layout),
+            chunk_header_layout: match chunk_header_layout(pointer_width, base_allocator_layout.0) {
+                Some(some) => some,
+                None => {
+                    // This calculation can fail if the if the base allocator layout is great enough that adding
+                    // the size of the rest of the chunk header fields results in an invalid layout size.
+                    // In practice, this would be a compile time error saying `values of the type `ChunkHeader<A>` are too big`.
+                    return;
+                }
+            },
         };
 
-        let size_hint = match input {
-            SizeHintOrCapacity::SizeHint(size_hint) => Some(size_hint.0),
+        let size_hint = match size_hint_or_capacity {
+            SizeHintOrCapacity::SizeHint(size_hint) => Some(size_hint),
             SizeHintOrCapacity::Capacity(layout) => config.calc_hint_from_capacity(layout.0),
         };
 
@@ -52,17 +73,24 @@ impl Fuzz {
             assert!(size % config.chunk_header_layout.align() == 0);
         }
 
-        let layout = Layout::from_size_align(size, config.chunk_header_layout.align()).unwrap();
-
-        let Some(allocation) = allocator.allocate(layout) else {
+        let Ok(chunk_layout) = Layout::from_size_align(size, config.chunk_header_layout.align()) else {
             return;
         };
 
-        let size = config.align_size(allocation.size);
+        let Some(PseudoAllocation {
+            address,
+            size: unaligned_size,
+        }) = base_allocator.allocate(chunk_layout)
+        else {
+            return;
+        };
 
-        assert!(allocation.address.get() % layout.align() == 0);
-        assert!(size <= allocation.size);
-        assert!(size >= layout.size());
+        let address = address.get();
+        let size = config.align_size(unaligned_size);
+
+        assert!(address % chunk_layout.align() == 0);
+        assert!(size <= unaligned_size);
+        assert!(size >= chunk_layout.size());
         assert!(size % MIN_CHUNK_ALIGN == 0);
 
         if !up {
@@ -70,6 +98,39 @@ impl Fuzz {
             // chunk header alignment, so the header can be written to
             // `ptr.byte_add(size).cast::<ChunkHeader<A>>().sub(1)`
             assert!(size % config.chunk_header_layout.align() == 0);
+        }
+
+        if let SizeHintOrCapacity::Capacity(required_capacity_layout) = size_hint_or_capacity {
+            let content_start: usize;
+            let content_end: usize;
+
+            if up {
+                content_start = address + config.chunk_header_layout.align();
+                content_end = address + size;
+            } else {
+                content_start = address;
+                content_end = (address + size) - config.chunk_header_layout.size();
+            }
+
+            let aligned_start = up_align(content_start, required_capacity_layout.0.align()).unwrap();
+            let true_capacity = content_end - aligned_start;
+
+            if true_capacity < required_capacity_layout.0.size() {
+                dbg!(
+                    chunk_layout,
+                    address,
+                    unaligned_size,
+                    size,
+                    content_start,
+                    content_end,
+                    aligned_start,
+                    content_end - content_start,
+                    true_capacity,
+                    required_capacity_layout.0
+                );
+
+                assert_ge!(true_capacity, required_capacity_layout.0.size());
+            }
         }
     }
 }
@@ -100,34 +161,43 @@ struct PseudoAllocation {
     size: usize,
 }
 
-#[derive(Debug, Arbitrary)]
+#[derive(Debug, Arbitrary, Clone, Copy)]
 enum SizeHintOrCapacity {
-    SizeHint(UpTo<8192>),
-    Capacity(FuzzLayout),
+    SizeHint(usize),
+    Capacity(ArbitraryLayout),
 }
 
+// All `target_pointer_width` that rust currently supports.
 #[derive(Arbitrary, Clone, Copy)]
-struct PointerWidth(UpTo<4>);
+enum PointerWidth {
+    Bits16 = 16,
+    Bits32 = 32,
+    Bits64 = 64,
+}
 
 impl PointerWidth {
     #[cfg(test)]
     fn from_bits(bits: usize) -> Self {
-        assert!(bits % 8 == 0);
-        Self::from_bytes(bits / 8)
+        match bits {
+            16 => PointerWidth::Bits16,
+            32 => PointerWidth::Bits32,
+            64 => PointerWidth::Bits64,
+            _ => panic!("pointer width not supported: {bits}"),
+        }
     }
 
     #[cfg(test)]
+    #[expect(dead_code)]
     fn from_bytes(bytes: usize) -> Self {
-        assert!(bytes.is_power_of_two());
-        Self(UpTo(bytes.trailing_zeros() as usize))
+        PointerWidth::from_bits(bytes * 8)
     }
 
     fn in_bytes(self) -> usize {
-        1 << self.0 .0
+        self.in_bits() / 8
     }
 
     fn in_bits(self) -> usize {
-        8 << self.0 .0
+        self as usize
     }
 }
 
@@ -137,35 +207,33 @@ impl fmt::Debug for PointerWidth {
     }
 }
 
-#[derive(Debug)]
-struct BaseAllocator {
-    layout: Layout,
-}
-
-impl<'a> Arbitrary<'a> for BaseAllocator {
-    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-        let align_pow2 = u.int_in_range(0..=14)?;
-        let size_repeat_align = u.int_in_range(0..=16)?;
-
-        let align = 1usize << align_pow2;
-        let layout = Layout::from_size_align(align * size_repeat_align, align).unwrap();
-
-        Ok(Self { layout })
-    }
-
-    fn size_hint(depth: usize) -> (usize, Option<usize>) {
-        <[usize; 2] as Arbitrary>::size_hint(depth)
+impl fmt::Display for PointerWidth {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fmt::Display::fmt(&self.in_bits(), f)
     }
 }
 
 #[derive(Debug, Clone, Copy)]
-struct FuzzLayout(Layout);
+struct ArbitraryLayout(Layout);
 
-impl<'a> Arbitrary<'a> for FuzzLayout {
+impl<'a> Arbitrary<'a> for ArbitraryLayout {
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-        let size = u.int_in_range(0..=512)?;
-        let align = 1 << u.int_in_range(0..=14)?;
-        Ok(FuzzLayout(Layout::from_size_align(size, align).unwrap()))
+        // let align_max = checked_prev_power_of_two(isize::MAX as usize).unwrap();
+        let align_max = isize::MAX as usize + 1;
+        let align: usize = u.int_in_range(1..=align_max)?;
+        let align = checked_prev_power_of_two(align).unwrap();
+
+        let size_max = (isize::MAX as usize) + 1 - align;
+        let size: usize = u.int_in_range(0..=size_max)?;
+
+        assert!(align.is_power_of_two());
+
+        let layout = match Layout::from_size_align(size, align) {
+            Ok(ok) => ok,
+            Err(_) => unreachable!("Layout {{ size: {size}, align: {align} }} does not represent a valid layout"),
+        };
+
+        Ok(ArbitraryLayout(layout))
     }
 
     fn size_hint(depth: usize) -> (usize, Option<usize>) {
@@ -186,47 +254,92 @@ fn assumed_malloc_overhead_layout(pointer_width: PointerWidth) -> Layout {
     pointer_layout.repeat(2).unwrap().0
 }
 
-fn chunk_header_layout(pointer_width: PointerWidth, base_allocator_layout: Layout) -> Layout {
+fn chunk_header_layout(pointer_width: PointerWidth, base_allocator_layout: Layout) -> Option<Layout> {
     let pointer_width_bytes = pointer_width.in_bytes();
     let pointer_layout = Layout::from_size_align(pointer_width_bytes, pointer_width_bytes).unwrap();
 
-    pointer_layout
-        .repeat(4)
-        .unwrap()
-        .0
-        .extend(base_allocator_layout)
-        .unwrap()
-        .0
-        .align_to(MIN_CHUNK_ALIGN)
-        .unwrap()
-        .pad_to_align()
+    Some(
+        pointer_layout
+            .repeat(4)
+            .unwrap()
+            .0
+            .extend(base_allocator_layout)
+            .ok()?
+            .0
+            .align_to(MIN_CHUNK_ALIGN)
+            .ok()?
+            .pad_to_align(),
+    )
+}
+
+#[inline(always)]
+const fn up_align(addr: usize, align: usize) -> Option<usize> {
+    debug_assert!(align.is_power_of_two());
+    let mask = align - 1;
+
+    let addr_plus_mask = match addr.checked_add(mask) {
+        Some(some) => some,
+        None => return None,
+    };
+
+    let aligned = addr_plus_mask & !mask;
+    Some(aligned)
+}
+
+pub const fn bit_width(value: usize) -> u32 {
+    if value == 0 {
+        0
+    } else {
+        usize::BITS - value.leading_zeros()
+    }
+}
+
+/// Returns the largest power-of-2 less than or equal to the input, or `None` if `self == 0`.
+pub const fn checked_prev_power_of_two(value: usize) -> Option<usize> {
+    if value == 0 {
+        None
+    } else {
+        Some(1 << (bit_width(value) - 1))
+    }
 }
 
 #[test]
 fn test_chunk_header_layout() {
-    for bits in [8, 16, 32, 64] {
-        assert_eq!(
-            chunk_header_layout(PointerWidth::from_bits(bits), Layout::new::<()>()),
-            Layout::from_size_align((bits / 2).max(16), 16).unwrap()
-        );
-    }
-
-    assert_eq!(
-        chunk_header_layout(PointerWidth::from_bits(64), Layout::new::<u64>()),
-        Layout::from_size_align(48, 16).unwrap()
-    );
-
-    assert_eq!(
-        chunk_header_layout(PointerWidth::from_bits(64), Layout::new::<u8>()),
-        Layout::from_size_align(48, 16).unwrap()
-    );
-
     #[repr(align(1024))]
     #[allow(dead_code)]
     struct Big([u8; 1024]);
 
-    assert_eq!(
-        chunk_header_layout(PointerWidth::from_bits(64), Layout::new::<Big>()),
-        Layout::from_size_align(2048, 1024).unwrap()
-    );
+    for bits in [16, 32, 64] {
+        // ZST allocator
+        assert_eq!(
+            chunk_header_layout(PointerWidth::from_bits(bits), Layout::new::<()>()).unwrap(),
+            Layout::from_size_align(((bits / 8) * 4).max(16), 16).unwrap()
+        );
+
+        // Byte-sized allocator
+        assert_eq!(
+            chunk_header_layout(
+                PointerWidth::from_bits(bits),
+                Layout::from_size_align(bits / 8, bits / 8).unwrap()
+            )
+            .unwrap(),
+            Layout::from_size_align(up_align((bits / 8) * 4 + 1, 16).unwrap().max(16), 16).unwrap()
+        );
+
+        // Pointer-sized allocator
+        assert_eq!(
+            chunk_header_layout(
+                PointerWidth::from_bits(bits),
+                Layout::from_size_align(bits / 8, bits / 8).unwrap()
+            )
+            .unwrap(),
+            Layout::from_size_align(up_align((bits / 8) * 5, 16).unwrap().max(16), 16).unwrap()
+        );
+
+        // Unreasonably large allocator
+        assert_eq!(
+            chunk_header_layout(PointerWidth::from_bits(bits), Layout::new::<Big>()).unwrap(),
+            Layout::from_size_align(2048, 1024).unwrap()
+        );
+    }
 }
