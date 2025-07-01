@@ -121,7 +121,7 @@ pub trait BumpExt: bump_ext::Sealed {
     /// assert_eq!(*zero, 0);
     /// ```
     #[cfg(feature = "panic-on-alloc")]
-    fn alloc_zeroed<T>(&self) -> BumpBox<T>
+    fn alloc_zeroed<T>(&self) -> BumpBox<'_, T>
     where
         T: Zeroable;
 
@@ -139,7 +139,7 @@ pub trait BumpExt: bump_ext::Sealed {
     /// assert_eq!(*zero, 0);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
-    fn try_alloc_zeroed<T>(&self) -> Result<BumpBox<T>, AllocError>
+    fn try_alloc_zeroed<T>(&self) -> Result<BumpBox<'_, T>, AllocError>
     where
         T: Zeroable;
 
@@ -157,7 +157,7 @@ pub trait BumpExt: bump_ext::Sealed {
     /// assert_eq!(*zeroes, [0; 3]);
     /// ```
     #[cfg(feature = "panic-on-alloc")]
-    fn alloc_zeroed_slice<T>(&self, len: usize) -> BumpBox<[T]>
+    fn alloc_zeroed_slice<T>(&self, len: usize) -> BumpBox<'_, [T]>
     where
         T: Zeroable;
 
@@ -175,7 +175,7 @@ pub trait BumpExt: bump_ext::Sealed {
     /// assert_eq!(*zeroes, [0; 3]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
-    fn try_alloc_zeroed_slice<T>(&self, len: usize) -> Result<BumpBox<[T]>, AllocError>
+    fn try_alloc_zeroed_slice<T>(&self, len: usize) -> Result<BumpBox<'_, [T]>, AllocError>
     where
         T: Zeroable;
 }
