@@ -80,7 +80,7 @@ impl ChunkSizeConfig {
         let size_step = max(ASSUMED_PAGE_SIZE, chunk_header_layout.align());
         let size_hint = max(size_hint, min);
 
-        let size = attempt!(if size_hint < size_step {
+        let mut size = attempt!(if size_hint < size_step {
             // the name is misleading, this will return `size` if it is already a power of two
             size_hint.checked_next_power_of_two()
         } else {
@@ -96,10 +96,18 @@ impl ChunkSizeConfig {
             size % size_step == 0
         });
 
-        let size_without_overhead = size - assumed_malloc_overhead_layout.size();
-        let aligned_size = self.align_size(size_without_overhead);
+        // When downwards allocating with a base allocator that has a higher alignment than 16
+        // we don't subtract an assumed malloc overhead.
+        //
+        // Since we also need to align the size after subtraction we could end up with a size of `0`,
+        // which would be illegal since the chunk header would not fit, or we could end up with a
+        // size that would no longer have enough space for the given capacity (`calc_hint_from_capacity`).
+        if self.up || self.chunk_header_layout.align() <= MIN_CHUNK_ALIGN {
+            let size_without_overhead = size - assumed_malloc_overhead_layout.size();
+            size = self.align_size(size_without_overhead);
+        }
 
-        NonZeroUsize::new(aligned_size)
+        NonZeroUsize::new(size)
     }
 
     #[inline(always)]
@@ -131,6 +139,11 @@ impl ChunkSizeConfig {
             size = attempt!(size.checked_add(bytes));
             size = attempt!(offset_add_layout(size, chunk_header_layout));
         }
+
+        // The final size will be aligned to `MIN_CHUNK_ALIGN = 16`.
+        // To make sure aligning the size downwards does not result in
+        // a size that does not have space for `bytes` we add `MIN_CHUNK_ALIGN` here.
+        size = attempt!(size.checked_add(MIN_CHUNK_ALIGN));
 
         Some(size)
     }

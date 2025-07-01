@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implement `Index(Mut)` for `BumpBox<T>` where `T: Index(Mut)` ([#79])
 - Improve documentation.
 
+### Fixed
+
+- Fix bad chunk size calculation with base allocators of a high alignment or on platforms with a pointer size of 16, potentially leading to UB
+
 ## [0.17.2] - 2025-06-16
 
 ### Added

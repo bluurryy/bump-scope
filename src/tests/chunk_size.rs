@@ -1,8 +1,12 @@
+//! Some sanity checks for chunk size calculation.
+//! Chunk size also has a fuzz target called `chunk_size`.
+
 use core::{alloc::Layout, ptr::NonNull};
 use std::convert::Infallible;
 
 use crate::{
     alloc::{AllocError, Allocator, Global},
+    chunk_size::AssumedMallocOverhead,
     Bump,
 };
 
@@ -38,6 +42,37 @@ macro_rules! create_mock_allocator {
 either_way! {
     aligned_allocator_issue_32
     giant_base_allocator
+    zst
+}
+
+const OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
+
+fn zst<const UP: bool>() {
+    // four pointers, + overhead, next power of two, minus overhead
+    let bump = <Bump<Global, 1, UP>>::with_size(0);
+    assert_eq!(bump.stats().size(), size_of::<[usize; 8]>() - OVERHEAD);
+
+    let bump = <Bump<Global, 1, UP>>::with_size(512 - 1);
+    assert_eq!(bump.stats().size(), 512 - OVERHEAD);
+
+    let bump = <Bump<Global, 1, UP>>::with_size(512);
+    assert_eq!(bump.stats().size(), 512 - OVERHEAD);
+
+    let bump = <Bump<Global, 1, UP>>::with_size(0x1000 - 1);
+    assert_eq!(bump.stats().size(), 0x1000 - OVERHEAD);
+
+    let bump = <Bump<Global, 1, UP>>::with_size(0x1000);
+    assert_eq!(bump.stats().size(), 0x1000 - OVERHEAD);
+
+    let bump = <Bump<Global, 1, UP>>::with_size(0x2000 - 1);
+    assert_eq!(bump.stats().size(), 0x2000 - OVERHEAD);
+
+    let bump = <Bump<Global, 1, UP>>::with_size(0x2000);
+    assert_eq!(bump.stats().size(), 0x2000 - OVERHEAD);
+
+    // same as `with_size(0)`
+    let bump = <Bump<Global, 1, UP>>::with_capacity(Layout::array::<u8>(0).unwrap());
+    assert_eq!(bump.stats().size(), size_of::<[usize; 8]>() - OVERHEAD);
 }
 
 fn aligned_allocator_issue_32<const UP: bool>() {
