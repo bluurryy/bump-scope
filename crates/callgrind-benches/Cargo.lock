@@ -51,9 +51,7 @@ dependencies = [
 
 [[package]]
 name = "bump-scope"
-version = "0.17.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3738e0aaf7d82bbd985d79f48bd00d0568205acfa353135f78be89bad7913cdf"
+version = "0.17.2"
 dependencies = [
  "allocator-api2 0.2.21",
  "allocator-api2 0.3.0",
@@ -73,11 +71,7 @@ dependencies = [
 name = "callgrind-benches"
 version = "0.0.0"
 dependencies = [
- "allocator-api2 0.2.21",
  "benches-lib",
- "blink-alloc",
- "bump-scope",
- "bumpalo",
  "fast-glob",
  "iai-callgrind",
  "markdown-tables",
