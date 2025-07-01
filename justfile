@@ -12,6 +12,7 @@ pre-release:
   cargo +stable semver-checks
 
 check: 
+  just assert-fuzz-modules-synced
   just check-fmt
   just check-clippy
   just check-nostd
@@ -51,6 +52,13 @@ check-nostd:
 
 check-fallibility:
   cd crates/test-fallibility && nu assert-no-panics.nu
+
+assert-fuzz-modules-synced:
+  just assert-files-equal src/bumping.rs crates/fuzzing-support/src/from_bump_scope/bumping.rs
+  just assert-files-equal src/chunk_size/chunk_size_config.rs crates/fuzzing-support/src/from_bump_scope/chunk_size_config.rs
+
+assert-files-equal a b:
+  @ a=`cat {{a}}`; b=`cat {{b}}`; [ "$a" = "$b" ]
 
 test:
   just test-non-miri
