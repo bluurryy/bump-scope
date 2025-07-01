@@ -1,4 +1,5 @@
 #![cfg(test)]
+#![allow(clippy::approx_constant)]
 
 use bump_scope::Bump;
 use hashbrown::HashMap;
