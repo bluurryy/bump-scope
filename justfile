@@ -40,11 +40,12 @@ check-clippy:
   cargo +nightly clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03
   cargo +nightly clippy --tests --all-features
 
-  cd crates/fuzzing-support && cargo clippy --tests
-  cd crates/test-fallibility && cargo clippy --tests
-  cd crates/tests-from-std && cargo clippy --tests
   cd crates/callgrind-benches && cargo clippy --tests --benches --workspace
   cd crates/criterion-benches && cargo clippy --tests --benches --workspace
+  cd crates/fuzzing-support && cargo clippy --tests
+  cd crates/test-fallibility && cargo clippy --tests
+  cd crates/test-hashbrown && cargo clippy --tests
+  cd crates/tests-from-std && cargo clippy --tests
   cd fuzz && cargo clippy
 
 check-nostd:
