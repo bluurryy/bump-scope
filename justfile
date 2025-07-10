@@ -90,10 +90,8 @@ spellcheck:
   cspell lint --gitignore "**/*.{rs,md,toml}" --exclude crates/tests-from-std --exclude crates/callgrind-benches/src/schema.rs
 
 doc *args:
-  cargo test --package bump-scope --lib --all-features -- insert_feature_docs --exact --ignored
   cargo fmt
-  @ cargo rustdoc --all-features -- --cfg docsrs -Z unstable-options --output-format json
-  nu insert-docs-into-readme.nu
+  cargo insert-docs
   @ just doc-rustdoc {{args}}
 
 doc-rustdoc *args:

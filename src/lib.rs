@@ -227,42 +227,45 @@
 //! ```
 //!
 //! # Feature Flags
-//! * **`std`** *(enabled by default)* —  Adds `BumpPool` and implementations of `std::io` traits.
-//! * **`alloc`** *(enabled by default)* —  Adds `Global` as the default base allocator and some interactions with `alloc` collections.
-//! * **`panic-on-alloc`** *(enabled by default)* —  Adds functions and traits that will panic when the allocation fails.
+//! <!-- feature documentation start -->
+//! - **`std`** *(enabled by default)* — Adds `BumpPool` and implementations of `std::io` traits.
+//! - **`alloc`** *(enabled by default)* — Adds `Global` as the default base allocator and some interactions with `alloc` collections.
+//! - **`panic-on-alloc`** *(enabled by default)* — Adds functions and traits that will panic when the allocation fails.
 //!   Without this feature, allocation failures cannot cause panics, and only
 //!   `try_`-prefixed allocation methods will be available.
-//! * **`serde`** —  Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
-//! * **`bytemuck`** —  Adds `bytemuck::*` extension traits for `alloc_zeroed(_slice)`, `BumpBox::init_zeroed` and
+//! - **`serde`** — Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
+//! - **`bytemuck`** — Adds `bytemuck::*` extension traits for `alloc_zeroed(_slice)`, `BumpBox::init_zeroed` and
 //!   `resize_zeroed` and `extend_zeroed` for vector types.
-//! * **`zerocopy-08`** —  Adds `zerocopy_08::*` extension traits for `alloc_zeroed(_slice)`, `BumpBox::init_zeroed` and
+//! - **`zerocopy-08`** — Adds `zerocopy_08::*` extension traits for `alloc_zeroed(_slice)`, `BumpBox::init_zeroed` and
 //!   `resize_zeroed` and `extend_zeroed` for vector types.
-//! * **`allocator-api2-02`** —  Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and
+//! - **`allocator-api2-02`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and
 //!   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
 //!   [`AllocatorApiV02Compat`](crate::alloc::compat::AllocatorApi2V02Compat).
-//! * **`allocator-api2-03`** —  Makes `Bump(Scope)` implement `allocator_api2` version `0.3`'s `Allocator` and
+//! - **`allocator-api2-03`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.3`'s `Allocator` and
 //!   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
 //!   [`AllocatorApiV03Compat`](crate::alloc::compat::AllocatorApi2V03Compat).
 //!
-//!  ### Nightly features
-//!  These nightly features are not subject to the same semver guarantees as the rest of the library.
-//!  Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
-//! * **`nightly`** —  Enables all other nightly feature flags.
-//! * **`nightly-allocator-api`** —  Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
+//! ### Nightly features
+//! These nightly features are not subject to the same semver guarantees as the rest of the library.
+//! Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
+//!
+//! - **`nightly`** — Enables all other nightly feature flags.
+//! - **`nightly-allocator-api`** — Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
 //!   allows using an `alloc::alloc::Allocator` as a base allocator via
 //!   [`AllocatorNightlyCompat`](crate::alloc::compat::AllocatorNightlyCompat).
-//!  
+//!
 //!   This will also enable `allocator-api2` version `0.2`'s `nightly` feature.
-//! * **`nightly-coerce-unsized`** —  Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
+//! - **`nightly-coerce-unsized`** — Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
 //!   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
 //!   You can unsize a `BumpBox` in stable without this feature using [`unsize_bump_box`](crate::unsize_bump_box).
-//! * **`nightly-exact-size-is-empty`** —  Implements `is_empty` manually for some iterators.
-//! * **`nightly-trusted-len`** —  Implements `TrustedLen` for some iterators.
-//! * **`nightly-fn-traits`** —  Implements `Fn*` traits for `BumpBox<T>`. Makes `BumpBox<T: FnOnce + ?Sized>` callable. Requires alloc crate.
-//! * **`nightly-tests`** —  Enables some tests that require a nightly compiler.
-//! * **`nightly-dropck-eyepatch`** —  Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
+//! - **`nightly-exact-size-is-empty`** — Implements `is_empty` manually for some iterators.
+//! - **`nightly-trusted-len`** — Implements `TrustedLen` for some iterators.
+//! - **`nightly-fn-traits`** — Implements `Fn*` traits for `BumpBox<T>`. Makes `BumpBox<T: FnOnce + ?Sized>` callable. Requires alloc crate.
+//! - **`nightly-tests`** — Enables some tests that require a nightly compiler.
+//! - **`nightly-dropck-eyepatch`** — Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
 //!   This makes it so references don't have to strictly outlive the container.
 //!   (That's how std's `Box` and `Vec` work.)
+//! <!-- feature documentation end -->
 //!
 //! # Bumping upwards or downwards?
 //! Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
@@ -664,32 +667,3 @@ macro_rules! mut_collection_method_allocator_stats {
 }
 
 pub(crate) use mut_collection_method_allocator_stats;
-
-/// We don't use `document-features` the usual way because then we can't have our features
-/// be copied into the `README.md` via [`cargo-rdme`](https://github.com/orium/cargo-rdme).
-#[test]
-#[ignore = "this is not a real test, it's just to insert documentation"]
-#[cfg(feature = "alloc")]
-fn insert_feature_docs() {
-    use alloc_crate::{format, vec::Vec};
-
-    let lib_rs = std::fs::read_to_string("src/lib.rs").unwrap();
-
-    let start_marker = "//! # Feature Flags";
-    let end_marker = "//! # ";
-
-    let start_index = lib_rs.find(start_marker).unwrap() + start_marker.len();
-    let end_index = lib_rs[start_index..].find(end_marker).unwrap() + start_index;
-
-    let before = &lib_rs[..start_index];
-    let after = &lib_rs[end_index..];
-
-    let features = document_features::document_features!()
-        .lines()
-        .map(|line| format!("//! {line}"))
-        .collect::<Vec<_>>()
-        .join("\n");
-
-    let new_lib_rs = format!("{before}\n{features}\n//!\n{after}");
-    std::fs::write("src/lib.rs", new_lib_rs).unwrap();
-}
