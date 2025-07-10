@@ -4,7 +4,7 @@
 [![Documentation](https://img.shields.io/docsrs/bump-scope)](https://docs.rs/bump-scope)
 [![Rust](https://img.shields.io/crates/msrv/bump-scope)](#)
 [![License](https://img.shields.io/crates/l/bump_scope)](#license)
-[![Build Status](https://github.com/bluurryy/bump-scope/workflows/Rust/badge.svg)](https://github.com/bluurryy/bump-scope/actions/workflows/rust.yml)
+[![Build Status](https://github.com/bluurryy/bump-scope/workflows/CI/badge.svg)](https://github.com/bluurryy/bump-scope/actions/workflows/ci.yml)
 
 <!-- crate documentation start -->
 A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
