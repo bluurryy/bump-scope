@@ -19,7 +19,7 @@ pub use drain::Drain;
 pub use extract_if::ExtractIf;
 pub use into_iter::IntoIter;
 
-/// A type that owns a slice of elements.
+/// A trait for objects that own a slice of elements.
 ///
 /// For example `[T; N]`, `Vec<T>`, `Box<[T]>` and `vec::Drain<T>`.
 ///
@@ -34,7 +34,7 @@ pub trait OwnedSlice {
     /// The type of an element of this owned slice.
     type Item;
 
-    /// A type can convert into that implements `TakeOwnedSlice`.
+    /// A type that `Self` can convert into that implements `TakeOwnedSlice`.
     type Take: TakeOwnedSlice<Item = Self::Item>;
 
     /// Converts this type into one that implements `TakeOwnedSlice`.
@@ -83,7 +83,7 @@ impl<T, const N: usize> OwnedSlice for Box<[T; N]> {
     }
 }
 
-/// A type which owns a slice and can relinquish its ownership of all its elements at once.
+/// A trait for objects which own a slice and can relinquish their ownership of all its elements at once.
 ///
 /// Implementors of this trait must behave like a `Vec<T>` in the sense that they manage a slice they own.
 /// When the slice is "taken" using `take_owned_slice`, the implementor
