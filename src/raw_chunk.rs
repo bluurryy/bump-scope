@@ -80,7 +80,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         debug_assert!(size >= layout.size());
         debug_assert!(size % MIN_CHUNK_ALIGN == 0);
 
-        let prev = prev.map(|c| c.header);
+        let prev = Cell::new(prev.map(|c| c.header));
         let next = Cell::new(None);
 
         let header = unsafe {
@@ -388,7 +388,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
     #[inline(always)]
     pub(crate) fn prev(self) -> Option<Self> {
-        unsafe { Some(Self::from_header(self.header.as_ref().prev?)) }
+        unsafe { Some(Self::from_header(self.header.as_ref().prev.get()?)) }
     }
 
     #[inline(always)]
@@ -508,9 +508,9 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     #[inline(always)]
-    pub(crate) fn set_prev(mut self, value: Option<Self>) {
+    pub(crate) fn set_prev(self, value: Option<Self>) {
         unsafe {
-            self.header.as_mut().prev = value.map(|c| c.header);
+            self.header.as_ref().prev.set(value.map(|c| c.header));
         }
     }
 

@@ -315,7 +315,7 @@ impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
     pub fn prev(self) -> Option<Self> {
         unsafe {
             Some(Chunk {
-                header: self.header.as_ref().prev?,
+                header: self.header.as_ref().prev.get()?,
                 marker: PhantomData,
             })
         }

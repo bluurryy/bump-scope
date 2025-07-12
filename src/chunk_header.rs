@@ -2,12 +2,17 @@ use core::{cell::Cell, ptr::NonNull};
 
 use crate::polyfill::non_null;
 
+/// The chunk header that lives at
+/// - the start of the allocation when upwards bumping
+/// - the end of the allocation when downwards bumping
+///
+/// All non-`Cell` fields are immutable.
 #[repr(C, align(16))]
 pub(crate) struct ChunkHeader<A = ()> {
     pub(crate) pos: Cell<NonNull<u8>>,
     pub(crate) end: NonNull<u8>,
 
-    pub(crate) prev: Option<NonNull<Self>>,
+    pub(crate) prev: Cell<Option<NonNull<Self>>>,
     pub(crate) next: Cell<Option<NonNull<Self>>>,
 
     pub(crate) allocator: A,
@@ -22,7 +27,7 @@ unsafe impl Sync for UnallocatedChunkHeader {}
 static UNALLOCATED_CHUNK_HEADER: UnallocatedChunkHeader = UnallocatedChunkHeader(ChunkHeader {
     pos: Cell::new(NonNull::<UnallocatedChunkHeader>::dangling().cast()),
     end: NonNull::<UnallocatedChunkHeader>::dangling().cast(),
-    prev: None,
+    prev: Cell::new(None),
     next: Cell::new(None),
     allocator: (),
 });

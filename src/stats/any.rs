@@ -195,7 +195,7 @@ impl<'a> AnyChunk<'a> {
     pub fn prev(self) -> Option<Self> {
         unsafe {
             Some(AnyChunk {
-                header: self.header.as_ref().prev?,
+                header: self.header.as_ref().prev.get()?,
                 header_size: self.header_size,
                 marker: PhantomData,
             })
