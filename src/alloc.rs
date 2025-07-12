@@ -428,4 +428,8 @@ pub(crate) mod box_like {
 /// A type that behaves like [`Box`](alloc_crate::boxed::Box).
 ///
 /// This is used for <code>BumpBox::[into_box](crate::BumpBox::into_box)</code>.
+///
+/// **Note:** This trait is also implemented for `allocator_api2` version 0.2's [`Box`](allocator_api2_02::boxed::Box)
+/// but it won't show up in the implementations below because the documentation is built with the `nightly-allocator-api`
+/// feature which makes `allocator_api2` version 0.2's `Box` become nightly's `Box`.
 pub trait BoxLike: box_like::Sealed {}

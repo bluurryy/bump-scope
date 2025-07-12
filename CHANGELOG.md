@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- next-header -->
 ## [Unreleased]
 
+### Added
+
+- Removed `#[cfg(feature = "alloc")]` bound on `BumpBox::into_box`
+
 ### Fixed
 
 - Make `allocator-api2-*` features compile without `alloc` feature

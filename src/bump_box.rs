@@ -22,14 +22,12 @@ use alloc_crate::{string::String, vec::Vec};
 use alloc_crate::boxed::Box;
 
 use crate::{
+    alloc::BoxLike,
     owned_slice, owned_str,
     polyfill::{self, non_null, pointer, transmute_mut},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    FromUtf8Error, NoDrop, SizedTypeProperties,
+    BumpAllocatorScope, FromUtf8Error, NoDrop, SizedTypeProperties,
 };
-
-#[cfg(feature = "alloc")]
-use crate::{alloc::BoxLike, BumpAllocatorScope};
 
 mod slice_initializer;
 
@@ -312,7 +310,6 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// ```
     #[must_use]
     #[inline(always)]
-    #[cfg(feature = "alloc")]
     pub fn into_box<A, B>(self, allocator: A) -> B
     where
         A: BumpAllocatorScope<'a>,
