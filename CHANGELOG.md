@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- next-header -->
 ## [Unreleased]
 
+### Fixed
+
+- Make `allocator-api2-*` features compile without `alloc` feature
+
 ## [0.17.3] - 2025-07-01
 
 ### Added

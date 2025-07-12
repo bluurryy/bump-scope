@@ -12,10 +12,11 @@ use crate::{
 };
 
 #[cfg(not(feature = "nightly-allocator-api"))]
-use crate::{
-    alloc::{box_like, BoxLike},
-    Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
-};
+use crate::{Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink};
+
+#[cfg(feature = "alloc")]
+#[cfg(not(feature = "nightly-allocator-api"))]
+use crate::alloc::{box_like, BoxLike};
 
 #[cfg(any(test, not(feature = "nightly-allocator-api")))]
 use crate::BaseAllocator;
@@ -461,6 +462,7 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
     }
 }
 
+#[cfg(feature = "alloc")]
 #[cfg(not(feature = "nightly-allocator-api"))]
 impl<T: ?Sized, A: Allocator> box_like::Sealed for Box<T, A> {
     type T = T;
@@ -471,6 +473,7 @@ impl<T: ?Sized, A: Allocator> box_like::Sealed for Box<T, A> {
     }
 }
 
+#[cfg(feature = "alloc")]
 #[cfg(not(feature = "nightly-allocator-api"))]
 impl<T: ?Sized, A: Allocator> BoxLike for Box<T, A> {}
 

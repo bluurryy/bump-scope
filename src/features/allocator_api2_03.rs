@@ -6,10 +6,13 @@ use allocator_api2_03::alloc::{AllocError, Allocator};
 use allocator_api2_03::{alloc::Global, boxed::Box};
 
 use crate::{
-    alloc::{box_like, AllocError as CrateAllocError, Allocator as CrateAllocator, BoxLike},
+    alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator},
     polyfill, BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc,
     WithoutShrink,
 };
+
+#[cfg(feature = "alloc")]
+use crate::alloc::{box_like, BoxLike};
 
 #[cfg(feature = "alloc")]
 unsafe impl CrateAllocator for Global {
@@ -443,6 +446,7 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<T: ?Sized, A: Allocator> box_like::Sealed for Box<T, A> {
     type T = T;
     type A = A;
@@ -453,6 +457,7 @@ impl<T: ?Sized, A: Allocator> box_like::Sealed for Box<T, A> {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<T: ?Sized, A: Allocator> BoxLike for Box<T, A> {}
 
 #[test]
