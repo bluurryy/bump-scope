@@ -17,6 +17,7 @@ pub struct ChunkSizeConfig {
     pub chunk_header_layout: Layout,
 }
 
+/// Alternative to using the `?` operator that works in const functions.
 macro_rules! attempt {
     ($expr:expr) => {
         match $expr {
@@ -158,16 +159,8 @@ const fn max(lhs: usize, rhs: usize) -> usize {
 }
 
 const fn offset_add_layout(mut offset: usize, layout: Layout) -> Option<usize> {
-    offset = match up_align(offset, layout.align()) {
-        Some(some) => some,
-        None => return None,
-    };
-
-    offset = match offset.checked_add(layout.size()) {
-        Some(some) => some,
-        None => return None,
-    };
-
+    offset = attempt!(up_align(offset, layout.align()));
+    offset = attempt!(offset.checked_add(layout.size()));
     Some(offset)
 }
 
@@ -175,12 +168,7 @@ const fn offset_add_layout(mut offset: usize, layout: Layout) -> Option<usize> {
 const fn up_align(addr: usize, align: usize) -> Option<usize> {
     debug_assert!(align.is_power_of_two());
     let mask = align - 1;
-
-    let addr_plus_mask = match addr.checked_add(mask) {
-        Some(some) => some,
-        None => return None,
-    };
-
+    let addr_plus_mask = attempt!(addr.checked_add(mask));
     let aligned = addr_plus_mask & !mask;
     Some(aligned)
 }

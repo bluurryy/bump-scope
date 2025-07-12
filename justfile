@@ -54,6 +54,10 @@ check-nostd:
 check-fallibility:
   cd crates/test-fallibility && nu assert-no-panics.nu
 
+sync-fuzz:
+  cp -u src/bumping.rs crates/fuzzing-support/src/from_bump_scope/bumping.rs
+  cp -u src/chunk_size/chunk_size_config.rs crates/fuzzing-support/src/from_bump_scope/chunk_size_config.rs
+
 assert-fuzz-modules-synced:
   just assert-files-equal src/bumping.rs crates/fuzzing-support/src/from_bump_scope/bumping.rs
   just assert-files-equal src/chunk_size/chunk_size_config.rs crates/fuzzing-support/src/from_bump_scope/chunk_size_config.rs
