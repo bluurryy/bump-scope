@@ -448,7 +448,7 @@ where
     ///
     /// // `Bump` with a roughly 1 Mebibyte sized chunk
     /// let bump_1mib: Bump = Bump::with_size(1024 * 1024);
-    /// # _ = bump;
+    /// # _ = bump_1mib;
     /// ```
     #[must_use]
     #[inline(always)]
@@ -894,7 +894,7 @@ where
     ///
     /// // `Bump` with a roughly 1 Mebibyte sized chunk
     /// let bump_1mib: Bump = Bump::try_with_size_in(1024 * 1024, Global)?;
-    /// # _ = bump;
+    /// # _ = bump_1mib;
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
