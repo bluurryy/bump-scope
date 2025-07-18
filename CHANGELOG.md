@@ -8,12 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- next-header -->
 ## [Unreleased]
 
+### Added
+
+- Improve `Fixed*` collection documentation.
+
 ## [0.17.4] - 2025-07-12
 
 ### Added
 
 - Remove `#[cfg(feature = "alloc")]` bound on `BumpBox::into_box`.
-- Improve `Fixed*` collection documentation.
 
 ### Fixed
 
