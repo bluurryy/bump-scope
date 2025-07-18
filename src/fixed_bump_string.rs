@@ -22,12 +22,14 @@ use crate::panic_on_error;
 ///
 /// It can be constructed using [`with_capacity_in`] or from a `BumpBox` via [`from_init`] or [`from_uninit`].
 ///
-/// This type is also useful when you want a growing `BumpString` without having to carry around a reference to
-/// a `Bump(Scope)`. To make changes, first convert it to a `BumpString` using [`BumpString::from_parts`] and then turn
-/// it back into a `FixedBumpString` with [`BumpString::into_fixed_string`].
+/// ## Using it like `BumpString`
 ///
-/// By not having a `Bump(Scope)` reference stored in the `String` itself, you can still use the bump allocator to
-/// create scopes and use other methods that require a `&mut` bump allocator. See the second example.
+/// This type is also useful when you want a growing `BumpString` but don't want to carry around a reference to
+/// the `Bump(Scope)`. You can use it this way by first converting it to a `BumpString` using [`BumpString::from_parts`],
+/// making your changes and then turning it back into a `FixedBumpString` with [`BumpString::into_fixed_string`].
+///
+/// Not storing the `Bump(Scope)` allows you to call bump allocator methods that require `&mut`,
+/// like [`scoped`](crate::Bump::scoped).
 ///
 /// # Examples
 /// ```
@@ -44,7 +46,7 @@ use crate::panic_on_error;
 /// assert_eq!(str, "foobarbaz");
 /// ```
 ///
-/// Using it like a `BumpString`:
+/// Growing it via `BumpString`:
 ///
 /// ```
 /// # use bump_scope::{Bump, BumpScope, BumpString, FixedBumpString};

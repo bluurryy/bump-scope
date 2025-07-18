@@ -23,12 +23,14 @@ use crate::panic_on_error;
 ///
 /// It can be constructed using [`with_capacity_in`] or from a `BumpBox` via [`from_init`] or [`from_uninit`].
 ///
-/// This type is also useful when you want a growing `BumpVec` without having to carry around a reference to
-/// a `Bump(Scope)`. To make changes, first convert it to a `BumpVec` using [`BumpVec::from_parts`] and then turn
-/// it back into a `FixedBumpVec` with [`BumpVec::into_fixed_vec`].
+/// ## Using it like `BumpVec`
 ///
-/// By not having a `Bump(Scope)` reference stored in the `Vec` itself, you can still use the bump allocator to
-/// create scopes and use other methods that require a `&mut` bump allocator. See the second example.
+/// This type is also useful when you want a growing `BumpVec` but don't want to carry around a reference to
+/// the `Bump(Scope)`. You can use it this way by first converting it to a `BumpVec` using [`BumpVec::from_parts`],
+/// making your changes and then turning it back into a `FixedBumpVec` with [`BumpVec::into_fixed_vec`].
+///
+/// Not storing the `Bump(Scope)` allows you to call bump allocator methods that require `&mut`,
+/// like [`scoped`](crate::Bump::scoped).
 ///
 /// # Examples
 /// ```
@@ -45,7 +47,7 @@ use crate::panic_on_error;
 /// assert_eq!(slice, [1, 2, 3]);
 /// ```
 ///
-/// Using it like a `BumpVec`:
+/// Growing it via `BumpVec`:
 ///
 /// ```
 /// # use bump_scope::{Bump, BumpScope, BumpVec, FixedBumpVec};
