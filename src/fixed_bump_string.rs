@@ -20,7 +20,7 @@ use crate::panic_on_error;
 
 /// A type like [`BumpString`](crate::BumpString) but with a fixed capacity.
 ///
-/// It can be constructed with [`alloc_fixed_string`] or from a `BumpBox` via [`from_init`] or [`from_uninit`].
+/// It can be constructed using [`with_capacity_in`] or from a `BumpBox` via [`from_init`] or [`from_uninit`].
 ///
 /// This type is also useful when you want a growing `BumpString` without having to carry around a reference to
 /// a `Bump(Scope)`. To make changes, first convert it to a `BumpString` using [`BumpString::from_parts`] and then turn
@@ -32,7 +32,7 @@ use crate::panic_on_error;
 /// # Examples
 /// ```
 /// # use bump_scope::{Bump, FixedBumpString};
-/// # let mut bump: Bump = Bump::new();
+/// # let bump: Bump = Bump::new();
 /// let mut string = FixedBumpString::with_capacity_in(9, &bump);
 ///
 /// string.push_str("foo");
@@ -73,7 +73,7 @@ use crate::panic_on_error;
 /// assert_eq!(builder.string, "hello");
 /// ```
 ///
-/// [`alloc_fixed_string`]: crate::Bump::alloc_fixed_string
+/// [`with_capacity_in`]: Self::with_capacity_in
 /// [`from_uninit`]: Self::from_uninit
 /// [`from_init`]: Self::from_init
 // `FixedBumpString` and `FixedBumpVec<u8>` have the same repr.

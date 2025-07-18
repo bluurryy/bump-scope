@@ -21,7 +21,7 @@ use crate::panic_on_error;
 
 /// A type like [`BumpVec`] but with a fixed capacity.
 ///
-/// It can be constructed with [`with_capacity_in`] or from a `BumpBox` via [`from_init`] or [`from_uninit`].
+/// It can be constructed using [`with_capacity_in`] or from a `BumpBox` via [`from_init`] or [`from_uninit`].
 ///
 /// This type is also useful when you want a growing `BumpVec` without having to carry around a reference to
 /// a `Bump(Scope)`. To make changes, first convert it to a `BumpVec` using [`BumpVec::from_parts`] and then turn
@@ -33,7 +33,7 @@ use crate::panic_on_error;
 /// # Examples
 /// ```
 /// # use bump_scope::{Bump, FixedBumpVec};
-/// # let mut bump: Bump = Bump::new();
+/// # let bump: Bump = Bump::new();
 /// let mut vec = FixedBumpVec::with_capacity_in(3, &bump);
 ///
 /// vec.push(1);
