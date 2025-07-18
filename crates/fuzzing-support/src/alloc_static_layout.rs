@@ -47,7 +47,7 @@ impl Fuzz {
             let curr = allocation.allocate(&bump);
 
             let align = allocation.align() as usize;
-            assert!(curr.start % align == 0);
+            assert!(curr.start.is_multiple_of(align));
 
             prev.assert_no_overlap(curr);
             prev = curr;

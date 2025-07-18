@@ -10,7 +10,8 @@
     clippy::op_ref,
     clippy::redundant_slicing,
     clippy::reversed_empty_ranges,
-    clippy::uninlined_format_args
+    clippy::uninlined_format_args,
+    clippy::manual_is_multiple_of
 )]
 
 mod bump_string;

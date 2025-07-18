@@ -258,7 +258,7 @@ impl FuzzBumpProps {
             min_align: min_align as usize,
             align_is_const,
             size_is_const,
-            size_is_multiple_of_align: layout.size() % layout.align() == 0,
+            size_is_multiple_of_align: layout.size().is_multiple_of(layout.align()),
         }
     }
 }

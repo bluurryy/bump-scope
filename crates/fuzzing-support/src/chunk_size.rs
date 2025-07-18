@@ -83,10 +83,10 @@ impl Fuzz {
 
         let size = size.get();
 
-        assert!(size % MIN_CHUNK_ALIGN == 0);
+        assert!(size.is_multiple_of(MIN_CHUNK_ALIGN));
 
         if !up {
-            assert!(size % config.chunk_header_layout.align() == 0);
+            assert!(size.is_multiple_of(config.chunk_header_layout.align()));
         }
 
         assert_ge!(size, config.chunk_header_layout.size());
@@ -107,16 +107,16 @@ impl Fuzz {
         let size = config.align_size(unaligned_size);
 
         assert_ge!(size, config.chunk_header_layout.size());
-        assert!(address % chunk_layout.align() == 0);
+        assert!(address.is_multiple_of(chunk_layout.align()));
         assert_le!(size, unaligned_size);
         assert_ge!(size, chunk_layout.size());
-        assert!(size % MIN_CHUNK_ALIGN == 0);
+        assert!(size.is_multiple_of(MIN_CHUNK_ALIGN));
 
         if !up {
             // when downwards allocating the chunk size must also be aligned to the
             // chunk header alignment, so the header can be written to
             // `ptr.byte_add(size).cast::<ChunkHeader<A>>().sub(1)`
-            assert!(size % config.chunk_header_layout.align() == 0);
+            assert!(size.is_multiple_of(config.chunk_header_layout.align()));
         }
 
         if let SizeHintOrCapacity::Capacity(required_capacity_layout) = size_hint_or_capacity {
