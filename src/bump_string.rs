@@ -84,6 +84,7 @@ macro_rules! bump_format {
 /// # use bump_scope::{Bump, BumpString};
 /// # let bump: Bump = Bump::new();
 /// let hello = BumpString::from_str_in("Hello, world!", &bump);
+/// # _ = hello;
 /// ```
 ///
 /// You can append a [`char`] to a string with the [`push`] method, and
@@ -523,7 +524,7 @@ impl<A: BumpAllocator> BumpString<A> {
     /// ```
     /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
-    /// let mut s = BumpString::from_str_in("abcde", &bump);    ///
+    /// let mut s = BumpString::from_str_in("abcde", &bump);
     /// let keep = [false, true, true, false, true];
     /// let mut iter = keep.iter();
     /// s.retain(|_| *iter.next().unwrap());
@@ -1926,7 +1927,7 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
     /// ```
     /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::try_new()?;
-    /// let hello = BumpString::try_from_str_in("Hello, world!", &bump)?;    ///
+    /// let hello = BumpString::try_from_str_in("Hello, world!", &bump)?;
     /// assert_eq!(hello.try_into_cstr()?, c"Hello, world!");
     ///
     /// let abc0def = BumpString::try_from_str_in("abc\0def", &bump)?;
@@ -1982,7 +1983,7 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
     /// let mut string = BumpString::new_in(&bump);
     /// string.reserve(10);
     /// string.push('a');
-    /// let mut fixed_string = string.into_parts().0;
+    /// let fixed_string = string.into_parts().0;
     /// assert_eq!(fixed_string.capacity(), 10);
     /// assert_eq!(fixed_string, "a");
     /// ```
@@ -2235,6 +2236,7 @@ impl<A: BumpAllocator> From<BumpString<A>> for alloc_crate::string::String {
 /// let a = BumpString::from_str_in("hello", &bump);
 /// let b = BumpString::from_str_in(" world", &bump);
 /// let c = a + &b;
+/// # _ = c;
 /// // `a` is moved and can no longer be used here.
 /// ```
 ///
@@ -2247,6 +2249,7 @@ impl<A: BumpAllocator> From<BumpString<A>> for alloc_crate::string::String {
 /// let b = BumpString::from_str_in(" world", &bump);
 /// let c = a.clone() + &b;
 /// // `a` is still valid here.
+/// # _ = c;
 /// ```
 ///
 /// Concatenating `&str` slices can be done by converting the first to a `BumpString`:
@@ -2257,6 +2260,7 @@ impl<A: BumpAllocator> From<BumpString<A>> for alloc_crate::string::String {
 /// let a = "hello";
 /// let b = " world";
 /// let c = BumpString::from_str_in(a, &bump) + b;
+/// # _ = c;
 /// ```
 #[cfg(feature = "panic-on-alloc")]
 impl<A: BumpAllocator> core::ops::Add<&str> for BumpString<A> {

@@ -52,7 +52,7 @@ impl Drain<'_> {
     ///
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();    ///
+    /// # let bump: Bump = Bump::new();
     /// let mut s = bump.alloc_str("abc");
     /// let mut drain = s.drain(..);
     /// assert_eq!(drain.as_str(), "abc");

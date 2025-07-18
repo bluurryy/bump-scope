@@ -20,6 +20,7 @@ use crate::{polyfill::non_null, BumpBox};
 ///
 /// let mut v = bump.alloc_slice_copy(&[0, 1, 2]);
 /// let iter: ExtractIf<'_, _, _> = v.extract_if(|x| *x % 2 == 0);
+/// # _ = iter;
 /// ```
 #[derive(Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]

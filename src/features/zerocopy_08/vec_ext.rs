@@ -514,7 +514,7 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVecRev<T, A> {
     /// use bump_scope::{Bump, mut_bump_vec_rev, zerocopy_08::VecExt};
     /// let mut bump: Bump = Bump::try_new()?;
     ///
-    /// let mut vec = mut_bump_vec_rev![try in bump; 1, 2, 3]?;
+    /// let mut vec = mut_bump_vec_rev![try in &mut bump; 1, 2, 3]?;
     /// vec.try_extend_zeroed(2)?;
     /// assert_eq!(vec, [0, 0, 1, 2, 3]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())

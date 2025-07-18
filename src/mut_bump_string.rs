@@ -1837,7 +1837,7 @@ impl<'a, A: MutBumpAllocatorScope<'a>> MutBumpString<A> {
     /// ```
     /// # use bump_scope::{Bump, MutBumpString};
     /// # let mut bump: Bump = Bump::try_new()?;
-    /// let hello = MutBumpString::from_str_in("Hello, world!", &mut bump);    ///
+    /// let hello = MutBumpString::from_str_in("Hello, world!", &mut bump);
     /// assert_eq!(hello.into_cstr(), c"Hello, world!");
     ///
     /// let abc0def = MutBumpString::try_from_str_in("abc\0def", &mut bump)?;
