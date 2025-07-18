@@ -23,6 +23,13 @@ use crate::panic_on_error;
 ///
 /// It can be constructed with [`with_capacity_in`] or from a `BumpBox` via [`from_init`] or [`from_uninit`].
 ///
+/// This type is also useful when you want a growing `BumpVec` without having to carry around a reference to
+/// a `Bump(Scope)`. To make changes, first convert it to a `BumpVec` using [`BumpVec::from_parts`] and then turn
+/// it back into a `FixedBumpVec` with [`BumpVec::into_fixed_vec`].
+///
+/// By not having a `Bump(Scope)` reference stored in the `Vec` itself, you can still use the bump allocator to
+/// create scopes and use other methods that require a `&mut` bump allocator. See the second example.
+///
 /// # Examples
 /// ```
 /// # use bump_scope::{Bump, FixedBumpVec};
@@ -36,6 +43,36 @@ use crate::panic_on_error;
 /// let slice: &[i32] = vec.into_slice();
 ///
 /// assert_eq!(slice, [1, 2, 3]);
+/// ```
+///
+/// Using it like a `BumpVec`:
+///
+/// ```
+/// # use bump_scope::{Bump, BumpScope, BumpVec, FixedBumpVec};
+/// # type T = i32;
+/// struct MyBuilder<'a, 'b> {
+///     bump: &'b mut BumpScope<'a>,
+///     vec: FixedBumpVec<'a, T>,
+/// }
+///
+/// impl<'a, 'b> MyBuilder<'a, 'b> {
+///     fn push(&mut self, value: T) {
+///         let fixed_vec = core::mem::take(&mut self.vec);
+///         let mut vec = BumpVec::from_parts(fixed_vec, &mut *self.bump);
+///         vec.push(value);
+///         self.vec = vec.into_fixed_vec();
+///     }
+/// }
+///
+/// let mut bump: Bump = Bump::new();
+///
+/// let mut builder = MyBuilder {
+///     bump: bump.as_mut_scope(),
+///     vec: FixedBumpVec::new(),
+/// };
+///
+/// builder.push(1);
+/// assert_eq!(builder.vec, [1]);
 /// ```
 ///
 /// [`with_capacity_in`]: Self::with_capacity_in
