@@ -157,12 +157,13 @@
 //! to reset the bump pointer to a previous position.
 //! ```
 //! # use bump_scope::Bump;
-//! let mut bump: Bump = Bump::new();
+//! let bump: Bump = Bump::new();
 //! let checkpoint = bump.checkpoint();
 //!
 //! {
 //!     let hello = bump.alloc_str("hello");
 //!     assert_eq!(bump.stats().allocated(), 5);
+//!     # _ = hello;
 //! }
 //!
 //! unsafe { bump.reset_to(checkpoint); }

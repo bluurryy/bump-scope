@@ -34,7 +34,7 @@ pub trait InitZeroed<'a>: init_zeroed::Sealed {
     ///
     /// ```
     /// use bump_scope::{Bump, bytemuck::InitZeroed};
-    /// let mut bump: Bump = Bump::new();
+    /// let bump: Bump = Bump::new();
     ///
     /// // single value
     /// let uninit = bump.alloc_uninit::<i32>();

@@ -342,6 +342,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// // (the blanket implementation `impl<T: Copy> NoDrop for T {}` prevents us from implementing it)
     /// // so we need to use `leak`
     /// let slice_of_slices: &mut [&mut [i32]] = BumpBox::leak(boxed_slice_of_slices);
+    /// # _ = slice_of_slices;
     /// ```
     #[inline(always)]
     #[allow(clippy::must_use_candidate)]
@@ -430,7 +431,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// use bump_scope::{Bump, BumpBox};
     /// use core::ptr::NonNull;
     ///
-    /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, bump: &'a Bump) -> BumpBox<'a, T> {
+    /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, _bump: &'a Bump) -> BumpBox<'a, T> {
     ///     BumpBox::from_raw(ptr)
     /// }
     ///
@@ -447,7 +448,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// use core::alloc::Layout;
     /// use core::ptr::NonNull;
     ///
-    /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, bump: &'a Bump) -> BumpBox<'a, T> {
+    /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, _bump: &'a Bump) -> BumpBox<'a, T> {
     ///     BumpBox::from_raw(ptr)
     /// }
     ///
@@ -1127,7 +1128,7 @@ impl<'a, T: Sized> BumpBox<'a, MaybeUninit<T>> {
     ///
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let uninit = bump.alloc_uninit();
     /// let init = uninit.init(1);
     /// assert_eq!(*init, 1);
@@ -1169,7 +1170,7 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     ///
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let uninit = bump.alloc_uninit_slice(10);
     /// let init = uninit.init_fill(1);
     /// assert_eq!(init, [1; 10]);
@@ -1209,7 +1210,7 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     ///
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let uninit = bump.alloc_uninit_slice(10);
     /// let init = uninit.init_fill_with(Default::default);
     /// assert_eq!(init, [0; 10]);
@@ -1236,7 +1237,7 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     ///
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let uninit = bump.alloc_uninit_slice(5);
     /// let init = uninit.init_fill_iter(['a', 'b'].iter().copied().cycle());
     /// assert_eq!(init, ['a', 'b', 'a', 'b', 'a']);
@@ -1458,8 +1459,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     ///
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
-    /// #
+    /// # let bump: Bump = Bump::new();
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5]);
     /// slice.truncate(2);
     /// assert_eq!(slice, [1, 2]);
@@ -1470,8 +1470,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     ///
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
-    /// #
+    /// # let bump: Bump = Bump::new();
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3]);
     /// slice.truncate(8);
     /// assert_eq!(slice, [1, 2, 3]);
@@ -1483,7 +1482,6 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// #
     /// let mut slice = bump.alloc_slice_copy(&[1, 2, 3]);
     /// slice.truncate(0);
     /// assert_eq!(slice, []);
@@ -1557,7 +1555,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// unsafe {
-    ///     let mut v = bump.alloc_slice_copy(&[0]);
+    ///     let v = bump.alloc_slice_copy(&[0]);
     ///     let ptr1 = v.as_non_null();
     ///     ptr1.write(1);
     ///     let ptr2 = v.as_non_null();
@@ -1704,8 +1702,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     ///
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
-    /// #
+    /// # let bump: Bump = Bump::new();
     /// let mut v = bump.alloc_slice_copy(&["foo", "bar", "baz", "qux"]);
     ///
     /// assert_eq!(v.swap_remove(1), "bar");
@@ -2298,6 +2295,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     ///     if some_predicate(&mut slice[i]) {
     ///         let val = slice.remove(i);
     ///         // your code here
+    ///         # _ = val;
     ///     } else {
     ///         i += 1;
     ///     }

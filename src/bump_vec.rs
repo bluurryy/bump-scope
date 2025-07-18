@@ -139,6 +139,7 @@ macro_rules! bump_vec {
 ///
 /// bump.scoped(|bump| {
 ///     // allocate more things
+///     # _ = bump;
 /// });
 ///
 /// assert_eq!(slice, [1, 2, 3]);
@@ -749,7 +750,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// ```
     /// # use bump_scope::{Bump, bump_vec};
     /// # let bump: Bump = Bump::new();
-    /// let a = bump_vec![in bump; 1, 2, 3];
+    /// let a = bump_vec![in &bump; 1, 2, 3];
     /// assert_eq!(a.len(), 3);
     /// ```
     #[must_use]
@@ -1199,7 +1200,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// # use bump_scope::{bump_vec, Bump};
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut vec = bump_vec![try in &bump; 1, 2]?;
-    /// vec.try_push(3);
+    /// vec.try_push(3)?;
     /// assert_eq!(vec, [1, 2, 3]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
@@ -1252,7 +1253,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// # use bump_scope::{Bump, bump_vec};
     /// # let bump: Bump = Bump::new();
     /// let mut vec = bump_vec![in &bump; 1, 2];
-    /// vec.try_push_with(|| 3);
+    /// vec.try_push_with(|| 3)?;
     /// assert_eq!(vec, [1, 2, 3]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
@@ -1984,7 +1985,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// # use bump_scope::{Bump, bump_vec};
     /// # let bump: Bump = Bump::try_new()?;
     /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
-    /// vec.try_resize_with(5, Default::default);
+    /// vec.try_resize_with(5, Default::default)?;
     /// assert_eq!(vec, [1, 2, 3, 0, 0]);
     /// drop(vec);
     ///
@@ -2757,6 +2758,7 @@ impl<T, A: BumpAllocator> BumpVec<T, A> {
     ///     if some_predicate(&mut vec[i]) {
     ///         let val = vec.remove(i);
     ///         // your code here
+    ///         # _ = val;
     ///     } else {
     ///         i += 1;
     ///     }
@@ -3032,7 +3034,7 @@ impl<'a, T, A: BumpAllocatorScope<'a>> BumpVec<T, A> {
     /// let mut vec = BumpVec::new_in(&bump);
     /// vec.reserve(10);
     /// vec.push(1);
-    /// let mut fixed_vec = vec.into_parts().0;
+    /// let fixed_vec = vec.into_parts().0;
     /// assert_eq!(fixed_vec.capacity(), 10);
     /// assert_eq!(fixed_vec, [1]);
     /// ```

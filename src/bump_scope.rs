@@ -374,12 +374,13 @@ where
     ///
     /// ```
     /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::new();
+    /// let bump: Bump = Bump::new();
     /// let checkpoint = bump.checkpoint();
     ///
     /// {
     ///     let hello = bump.alloc_str("hello");
     ///     assert_eq!(bump.stats().allocated(), 5);
+    ///     # _ = hello;
     /// }
     ///
     /// unsafe { bump.reset_to(checkpoint); }
@@ -402,12 +403,13 @@ where
     ///
     /// ```
     /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::new();
+    /// let bump: Bump = Bump::new();
     /// let checkpoint = bump.checkpoint();
     ///
     /// {
     ///     let hello = bump.alloc_str("hello");
     ///     assert_eq!(bump.stats().allocated(), 5);
+    ///     # _ = hello;
     /// }
     ///
     /// unsafe { bump.reset_to(checkpoint); }
@@ -2183,7 +2185,7 @@ where
     /// Unsafely:
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let mut uninit = bump.alloc_uninit();
     ///
     /// let five = unsafe {
@@ -2222,7 +2224,7 @@ where
     /// Unsafely:
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::try_new()?;
     /// let mut uninit = bump.try_alloc_uninit()?;
     ///
     /// let five = unsafe {
@@ -2379,7 +2381,7 @@ where
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let slice = &[1, 2, 3];
     /// let uninit_slice = bump.alloc_uninit_slice_for(slice);
     /// assert_eq!(uninit_slice.len(), 3);
@@ -2409,7 +2411,7 @@ where
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::try_new()?;
     /// let slice = &[1, 2, 3];
     /// let uninit_slice = bump.try_alloc_uninit_slice_for(slice)?;
     /// assert_eq!(uninit_slice.len(), 3);

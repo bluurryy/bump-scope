@@ -32,6 +32,7 @@ use super::TakeOwnedSlice;
 ///
 /// let mut v = bump.alloc_slice_copy(&[0, 1, 2]);
 /// let iter: Drain<'_, _> = v.drain(..);
+/// # _ = iter;
 /// ```
 pub struct Drain<'a, T: 'a> {
     /// Index of tail to preserve

@@ -161,7 +161,9 @@ macro_rules! bump_declaration {
         ///
         /// bump.scoped(|bump| {
         ///     // whatever
+        ///     # _ = bump;
         /// });
+        /// # _ = one;
         /// ```
         /// But you can make the code work by converting the `Bump` it to a [`BumpScope`] first using [`as_mut_scope`]:
         /// ```
@@ -173,7 +175,9 @@ macro_rules! bump_declaration {
         ///
         /// bump.scoped(|bump| {
         ///     // whatever
+        ///     # _ = bump;
         /// });
+        /// # _ = one;
         /// ```
         ///
         /// [`as_mut_scope`]: Self::as_mut_scope
@@ -359,6 +363,7 @@ where
     /// use bump_scope::alloc::Global;
     ///
     /// let bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    /// # _ = bump;
     /// ```
     #[must_use]
     #[rustversion::attr(since(1.83), const)]
@@ -387,6 +392,7 @@ where
     /// use bump_scope::Bump;
     ///
     /// let bump: Bump = Bump::new();
+    /// # _ = bump;
     /// ```
     #[must_use]
     #[inline(always)]
@@ -407,6 +413,7 @@ where
     /// use bump_scope::Bump;
     ///
     /// let bump: Bump = Bump::try_new()?;
+    /// # _ = bump;
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
@@ -441,6 +448,7 @@ where
     ///
     /// // `Bump` with a roughly 1 Mebibyte sized chunk
     /// let bump_1mib: Bump = Bump::with_size(1024 * 1024);
+    /// # _ = bump;
     /// ```
     #[must_use]
     #[inline(always)]
@@ -471,6 +479,7 @@ where
     ///
     /// // `Bump` with a roughly 1 Mebibyte sized chunk
     /// let bump_1mib: Bump = Bump::try_with_size(1024 * 1024)?;
+    /// # _ = bump_1mib;
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
@@ -727,12 +736,13 @@ where
     ///
     /// ```
     /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::new();
+    /// let bump: Bump = Bump::new();
     /// let checkpoint = bump.checkpoint();
     ///
     /// {
     ///     let hello = bump.alloc_str("hello");
     ///     assert_eq!(bump.stats().allocated(), 5);
+    ///     # _ = hello;
     /// }
     ///
     /// unsafe { bump.reset_to(checkpoint); }
@@ -755,12 +765,13 @@ where
     ///
     /// ```
     /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::new();
+    /// let bump: Bump = Bump::new();
     /// let checkpoint = bump.checkpoint();
     ///
     /// {
     ///     let hello = bump.alloc_str("hello");
     ///     assert_eq!(bump.stats().allocated(), 5);
+    ///     # _ = hello;
     /// }
     ///
     /// unsafe { bump.reset_to(checkpoint); }
@@ -791,6 +802,7 @@ where
     /// use bump_scope::alloc::Global;
     ///
     /// let bump: Bump = Bump::new_in(Global);
+    /// # _ = bump;
     /// ```
     #[must_use]
     #[inline(always)]
@@ -812,6 +824,7 @@ where
     /// use bump_scope::alloc::Global;
     ///
     /// let bump: Bump = Bump::try_new_in(Global)?;
+    /// # _ = bump;
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
@@ -849,6 +862,7 @@ where
     ///
     /// // `Bump` with a roughly 1 Mebibyte sized chunk
     /// let bump_1mib: Bump = Bump::with_size_in(1024 * 1024, Global);
+    /// # _ = bump_1mib;
     /// ```
     #[must_use]
     #[inline(always)]
@@ -880,6 +894,7 @@ where
     ///
     /// // `Bump` with a roughly 1 Mebibyte sized chunk
     /// let bump_1mib: Bump = Bump::try_with_size_in(1024 * 1024, Global)?;
+    /// # _ = bump;
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
@@ -1092,7 +1107,8 @@ where
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
     /// bump.scoped(|bump| {
-    ///    // ...
+    ///     // ...
+    ///     # _ = bump;
     /// });
     /// ```
     ///
@@ -1104,7 +1120,8 @@ where
     /// let mut bump = bump.guaranteed_allocated();
     ///
     /// bump.scoped(|bump| {
-    ///    // ...
+    ///     // ...
+    ///     # _ = bump;
     /// });
     /// ```
     #[inline(always)]
@@ -1128,7 +1145,8 @@ where
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
     /// bump.scoped(|bump| {
-    ///    // ...
+    ///     // ...
+    ///     # _ = bump;
     /// });
     /// ```
     ///
@@ -1140,7 +1158,8 @@ where
     /// let mut bump = bump.try_guaranteed_allocated()?;
     ///
     /// bump.scoped(|bump| {
-    ///    // ...
+    ///     // ...
+    ///     # _ = bump;
     /// });
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
@@ -1206,7 +1225,8 @@ where
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
     /// bump.scoped(|bump| {
-    ///    // ...
+    ///     // ...
+    ///     # _ = bump;
     /// });
     /// ```
     ///
@@ -1217,7 +1237,8 @@ where
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
     /// bump.guaranteed_allocated_mut().scoped(|bump| {
-    ///    // ...
+    ///     // ...
+    ///     # _ = bump;
     /// });
     /// ```
     #[inline(always)]
@@ -1241,7 +1262,8 @@ where
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
     /// bump.scoped(|bump| {
-    ///    // ...
+    ///     // ...
+    ///     # _ = bump;
     /// });
     /// ```
     ///
@@ -1252,7 +1274,8 @@ where
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
     /// bump.try_guaranteed_allocated_mut()?.scoped(|bump| {
-    ///    // ...
+    ///     // ...
+    ///     # _ = bump;
     /// });
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
@@ -2270,7 +2293,7 @@ where
     /// Unsafely:
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let mut uninit = bump.alloc_uninit();
     ///
     /// let five = unsafe {
@@ -2309,7 +2332,7 @@ where
     /// Unsafely:
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::try_new()?;
     /// let mut uninit = bump.try_alloc_uninit()?;
     ///
     /// let five = unsafe {
@@ -2439,7 +2462,7 @@ where
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let slice = &[1, 2, 3];
     /// let uninit_slice = bump.alloc_uninit_slice_for(slice);
     /// assert_eq!(uninit_slice.len(), 3);
@@ -2469,7 +2492,7 @@ where
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::try_new()?;
     /// let slice = &[1, 2, 3];
     /// let uninit_slice = bump.try_alloc_uninit_slice_for(slice)?;
     /// assert_eq!(uninit_slice.len(), 3);

@@ -105,8 +105,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{Bump, FixedBumpVec};
-    /// # let bump: Bump = Bump::new();
+    /// # use bump_scope::FixedBumpVec;
     /// let vec = FixedBumpVec::<i32>::new();
     /// assert_eq!(vec.len(), 0);
     /// assert_eq!(vec.capacity(), 0);
@@ -364,7 +363,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// ```
     /// # use bump_scope::{Bump, FixedBumpVec};
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let vec = FixedBumpVec::<i32>::with_capacity_in(2048, &bump);
     /// assert_eq!(vec.capacity(), 2048);
     /// ```
@@ -504,8 +503,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// ```
     /// # use bump_scope::{Bump, FixedBumpVec};
-    /// # let mut bump: Bump = Bump::new();
-    /// #
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = FixedBumpVec::with_capacity_in(10, &bump);
     /// vec.extend_from_slice_copy(&[1, 2, 3, 4, 5]);
     /// vec.truncate(2);
@@ -517,8 +515,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// ```
     /// # use bump_scope::{Bump, FixedBumpVec};
-    /// # let mut bump: Bump = Bump::new();
-    /// #
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = FixedBumpVec::with_capacity_in(10, &bump);
     /// vec.extend_from_slice_copy(&[1, 2, 3]);
     /// vec.truncate(8);
@@ -530,8 +527,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// ```
     /// # use bump_scope::{Bump, FixedBumpVec};
-    /// # let mut bump: Bump = Bump::new();
-    /// #
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = FixedBumpVec::with_capacity_in(10, &bump);
     /// vec.extend_from_slice_copy(&[1, 2, 3]);
     /// vec.truncate(0);
@@ -734,7 +730,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// #
     /// let mut v = bump.alloc_slice_copy(&["foo", "bar", "baz", "qux"]);
     ///
@@ -927,7 +923,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, FixedBumpVec};
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = FixedBumpVec::with_capacity_in(3, &bump);
     /// vec.extend_from_slice_copy(&[1, 2]);
     /// vec.push(3);
@@ -947,7 +943,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, FixedBumpVec};
-    /// # let mut bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::try_new()?;
     /// let mut vec = FixedBumpVec::try_with_capacity_in(3, &bump)?;
     /// vec.try_extend_from_slice_copy(&[1, 2])?;
     /// vec.try_push(3)?;
@@ -1305,7 +1301,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, FixedBumpVec};
-    /// # let mut bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::try_new()?;
     /// let mut vec = FixedBumpVec::try_with_capacity_in(100, &bump)?;
     /// vec.try_extend_from_slice_copy(&[0, 1, 2, 3, 4])?;
     ///
@@ -1520,7 +1516,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, FixedBumpVec};
-    /// # let mut bump: Bump = Bump::new();
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = FixedBumpVec::with_capacity_in(10, &bump);
     /// vec.extend_from_slice_copy(&["hello"]);
     /// vec.resize(3, "world");
@@ -1992,6 +1988,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///     if some_predicate(&mut vec[i]) {
     ///         let val = vec.remove(i);
     ///         // your code here
+    ///         # _ = val;
     ///     } else {
     ///         i += 1;
     ///     }

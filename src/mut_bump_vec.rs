@@ -1110,7 +1110,7 @@ impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     /// # use bump_scope::{Bump, mut_bump_vec};
     /// # let mut bump: Bump = Bump::new();
     /// let mut vec = mut_bump_vec![in &mut bump; 1, 2];
-    /// vec.try_push_with(|| 3);
+    /// vec.try_push_with(|| 3)?;
     /// assert_eq!(vec, [1, 2, 3]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
