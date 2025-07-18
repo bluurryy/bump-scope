@@ -81,21 +81,14 @@ impl<'a, T> FixedBumpVec<'a, T> {
         }
     }
 
-    /// Constructs a new empty vector with at least the specified capacity
+    /// Constructs a new empty vector with the specified capacity
     /// in the provided bump allocator.
     ///
     /// The vector will be able to hold `capacity` elements.
     /// If `capacity` is 0, the vector will not allocate.
     ///
-    /// It is important to note that although the returned vector has the
-    /// minimum *capacity* specified, the vector will have a zero *length*. For
-    /// an explanation of the difference between length and capacity, see
-    /// *[Capacity and reallocation]*.
-    ///
     /// When `T` is a zero-sized type, there will be no allocation
     /// and the capacity will always be `usize::MAX`.
-    ///
-    /// [Capacity and reallocation]: alloc_crate::vec::Vec#capacity-and-reallocation
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -108,17 +101,18 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// // The vector contains no items, even though it has capacity for more
     /// assert_eq!(vec.len(), 0);
-    /// assert!(vec.capacity() >= 10);
+    /// assert!(vec.capacity() == 10);
     ///
     /// // The vector has space for 10 items...
     /// for i in 0..10 {
     ///     vec.push(i);
     /// }
-    /// assert_eq!(vec.len(), 10);
-    /// assert!(vec.capacity() >= 10);
     ///
-    /// // ...but one more may not fit
-    /// _ = vec.try_push(11);
+    /// assert_eq!(vec.len(), 10);
+    /// assert!(vec.capacity() == 10);
+    ///
+    /// // ...but one more will not fit
+    /// assert!(vec.try_push(11).is_err());
     ///
     /// // A vector of a zero-sized type will always over-allocate, since no
     /// // allocation is necessary
@@ -132,21 +126,14 @@ impl<'a, T> FixedBumpVec<'a, T> {
         panic_on_error(Self::generic_with_capacity_in(capacity, allocator))
     }
 
-    /// Constructs a new empty vector with at least the specified capacity
+    /// Constructs a new empty vector with the specified capacity
     /// in the provided bump allocator.
     ///
-    /// The vector will be able to hold `capacity` elements without
-    /// reallocating. If `capacity` is 0, the vector will not allocate.
-    ///
-    /// It is important to note that although the returned vector has the
-    /// minimum *capacity* specified, the vector will have a zero *length*. For
-    /// an explanation of the difference between length and capacity, see
-    /// *[Capacity and reallocation]*.
+    /// The vector will be able to hold `capacity` elements.
+    /// If `capacity` is 0, the vector will not allocate.
     ///
     /// When `T` is a zero-sized type, there will be no allocation
     /// and the capacity will always be `usize::MAX`.
-    ///
-    /// [Capacity and reallocation]: alloc_crate::vec::Vec#capacity-and-reallocation
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -159,17 +146,17 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// // The vector contains no items, even though it has capacity for more
     /// assert_eq!(vec.len(), 0);
-    /// assert!(vec.capacity() >= 10);
+    /// assert!(vec.capacity() == 10);
     ///
     /// // The vector has space for 10 items...
     /// for i in 0..10 {
     ///     vec.push(i);
     /// }
     /// assert_eq!(vec.len(), 10);
-    /// assert!(vec.capacity() >= 10);
+    /// assert!(vec.capacity() == 10);
     ///
-    /// // ...but one more may not fit
-    /// _ = vec.try_push(11);
+    /// // ...but one more will not fit
+    /// assert!(vec.try_push(11).is_err());
     ///
     /// // A vector of a zero-sized type will always over-allocate, since no
     /// // allocation is necessary

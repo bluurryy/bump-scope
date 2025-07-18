@@ -82,8 +82,8 @@ impl<'a> FixedBumpString<'a> {
     /// Constructs a new empty `FixedBumpString` with the specified capacity
     /// in the provided bump allocator.
     ///
-    /// The string will be able to hold `capacity` bytes without
-    /// reallocating. If `capacity` is 0, the string will not allocate.
+    /// The string will be able to hold `capacity` bytes.
+    /// If `capacity` is 0, the string will not allocate.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -102,8 +102,8 @@ impl<'a> FixedBumpString<'a> {
     ///     s.push('a');
     /// }
     ///
-    /// // ...but another byte may not fit
-    /// _ = s.try_push('a');
+    /// // ...but another byte will not fit
+    /// assert!(s.try_push('a').is_err());
     /// ```
     #[must_use]
     #[inline(always)]
@@ -115,8 +115,8 @@ impl<'a> FixedBumpString<'a> {
     /// Constructs a new empty `FixedBumpString` with the specified capacity
     /// in the provided bump allocator.
     ///
-    /// The string will be able to hold `capacity` bytes without
-    /// reallocating. If `capacity` is 0, the string will not allocate.
+    /// The string will be able to hold `capacity` bytes.
+    /// If `capacity` is 0, the string will not allocate.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -135,8 +135,8 @@ impl<'a> FixedBumpString<'a> {
     ///     s.push('a');
     /// }
     ///
-    /// // ...but another byte may not fit
-    /// _ = s.try_push('a');
+    /// // ...but another byte will not fit
+    /// assert!(s.try_push('a').is_err());
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
