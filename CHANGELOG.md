@@ -12,23 +12,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Removed `#[cfg(feature = "alloc")]` bound on `BumpBox::into_box`
+- Remove `#[cfg(feature = "alloc")]` bound on `BumpBox::into_box`.
+- Improve `Fixed*` collection documentation.
 
 ### Fixed
 
-- Make `allocator-api2-*` features compile without `alloc` feature
+- Make `allocator-api2-*` features compile without `alloc` feature.
 
 ## [0.17.3] - 2025-07-01
 
 ### Added
 
-- Implement `Index(Mut)` for string types ([#78])
-- Implement `Index(Mut)` for `BumpBox<T>` where `T: Index(Mut)` ([#79])
+- Implement `Index(Mut)` for string types ([#78]).
+- Implement `Index(Mut)` for `BumpBox<T>` where `T: Index(Mut)` ([#79]).
 - Improve documentation.
 
 ### Fixed
 
-- Fix bad chunk size calculation with base allocators of a high alignment or on platforms with a pointer size of 16, potentially leading to UB
+- Fix bad chunk size calculation with base allocators of a high alignment or on platforms with a pointer size of 16, potentially leading to UB.
 
 ## [0.17.2] - 2025-06-16
 
