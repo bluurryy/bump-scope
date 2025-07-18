@@ -111,7 +111,7 @@ assert_eq!(bump.stats().allocated(), 0);
 You can also use the unsafe [`checkpoint`](https://docs.rs/bump-scope/0.17.4/bump_scope/struct.Bump.html#method.checkpoint) api
 to reset the bump pointer to a previous position.
 ```rust
-let mut bump: Bump = Bump::new();
+let bump: Bump = Bump::new();
 let checkpoint = bump.checkpoint();
 
 {
