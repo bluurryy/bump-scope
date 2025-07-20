@@ -499,6 +499,7 @@ where
     ) -> NonNull<[T]> {
         let mut start = non_null::sub(end, len);
 
+        // TODO: refactor like `BumpAllocator::allocate_prepared_rev`
         if UP {
             {
                 let dst = non_null::sub(end, cap);
@@ -518,7 +519,7 @@ where
     }
 
     #[inline(always)]
-    fn set_pos(&self, pos: NonZeroUsize, current_align: usize) {
+    pub(crate) fn set_pos(&self, pos: NonZeroUsize, current_align: usize) {
         let chunk = self.chunk.get();
         debug_assert_eq!(pos.get() % current_align, 0);
 
@@ -527,6 +528,14 @@ where
         if current_align < MIN_ALIGN {
             chunk.align_pos_to::<MIN_ALIGN>();
         }
+    }
+
+    // TODO: rename
+    #[inline(always)]
+    pub(crate) unsafe fn set_pos2(&self, pos: NonZeroUsize) {
+        let chunk = self.chunk.get();
+        chunk.set_pos_addr(pos.get());
+        chunk.align_pos_to::<MIN_ALIGN>();
     }
 
     #[inline(always)]
@@ -555,38 +564,12 @@ where
         }
     }
 
-    #[inline(always)]
-    pub(crate) fn generic_prepare_slice_allocation<B: ErrorBehavior, T>(
-        &mut self,
-        cap: usize,
-    ) -> Result<(NonNull<T>, usize), B> {
-        let Range { start, end } = self.prepare_allocation_range::<B, T>(cap)?;
-
-        // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-        let capacity = unsafe { non_null::byte_offset_from_unsigned(end, start) } / T::SIZE;
-
-        Ok((start, capacity))
-    }
-
-    #[inline(always)]
-    pub(crate) fn generic_prepare_slice_allocation_rev<B: ErrorBehavior, T>(
-        &mut self,
-        cap: usize,
-    ) -> Result<(NonNull<T>, usize), B> {
-        let Range { start, end } = self.prepare_allocation_range::<B, T>(cap)?;
-
-        // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-        let capacity = unsafe { non_null::byte_offset_from_unsigned(end, start) } / T::SIZE;
-
-        Ok((end, capacity))
-    }
-
     /// Returns a pointer range.
     /// The start and end pointers are aligned.
     /// But `end - start` is *not* a multiple of `size_of::<T>()`.
     /// So `end.offset_from_unsigned(start)` may not be used!
     #[inline(always)]
-    fn prepare_allocation_range<B: ErrorBehavior, T>(&mut self, cap: usize) -> Result<Range<NonNull<T>>, B> {
+    pub(crate) fn prepare_allocation_range<B: ErrorBehavior, T>(&mut self, cap: usize) -> Result<Range<NonNull<T>>, B> {
         let layout = match ArrayLayout::array::<T>(cap) {
             Ok(ok) => ok,
             Err(_) => return Err(B::capacity_overflow()),

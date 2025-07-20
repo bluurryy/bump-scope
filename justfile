@@ -14,6 +14,7 @@ pre-release:
 check: 
   just assert-fuzz-modules-synced
   just check-fmt
+  just check-semver
   just check-clippy
   just check-nostd
   just check-fallibility
@@ -28,11 +29,12 @@ check-fmt:
   cd crates/criterion-benches && cargo fmt --check
   cd fuzz; cargo fmt --check
 
-check-clippy:
+check-semver:
   # TODO: add "allocator-api2-03" once it got a new release that makes its "alloc" feature msrv compliant
-  cargo +1.64.0 check --no-default-features
-  cargo +1.64.0 check --features serde,zerocopy-08,allocator-api2-02
+  cargo +1.65.0 check --no-default-features
+  cargo +1.65.0 check --features serde,zerocopy-08,allocator-api2-02
 
+check-clippy:
   cargo +stable clippy --tests --no-default-features
   cargo +stable clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03
 

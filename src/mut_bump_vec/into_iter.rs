@@ -7,7 +7,7 @@ use core::{
     slice,
 };
 
-use crate::{polyfill::non_null, BumpAllocator, SizedTypeProperties};
+use crate::{polyfill::non_null, BumpAllocatorExt, SizedTypeProperties};
 
 /// An iterator that moves out of a vector.
 ///
@@ -32,7 +32,7 @@ pub struct IntoIter<T, A> {
 unsafe impl<T: Send, A: Send> Send for IntoIter<T, A> {}
 unsafe impl<T: Sync, A: Sync> Sync for IntoIter<T, A> {}
 
-impl<T: Debug, A: BumpAllocator> Debug for IntoIter<T, A> {
+impl<T: Debug, A: BumpAllocatorExt> Debug for IntoIter<T, A> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_tuple("IntoIter").field(&self.as_slice()).finish()
     }

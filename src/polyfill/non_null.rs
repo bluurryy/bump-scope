@@ -1,5 +1,6 @@
 use core::{
     num::NonZeroUsize,
+    ops::Range,
     ptr::{self, NonNull},
 };
 
@@ -194,6 +195,11 @@ pub(crate) unsafe fn result<T, E>(mut ptr: NonNull<Result<T, E>>) -> Result<NonN
         Ok(ok) => Ok(ok.into()),
         Err(err) => Err(err.into()),
     }
+}
+
+#[inline(always)]
+pub(crate) unsafe fn cast_range<T, U>(ptr: Range<NonNull<T>>) -> Range<NonNull<U>> {
+    ptr.start.cast()..ptr.end.cast()
 }
 
 /// Not part of std.

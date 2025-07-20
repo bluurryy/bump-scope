@@ -3,7 +3,7 @@ use std::{
     vec::Vec,
 };
 
-use crate::{Bump, BumpAllocator, BumpVec, MutBumpAllocator, MutBumpVec};
+use crate::{Bump, BumpAllocatorExt, BumpVec, MutBumpAllocatorExt, MutBumpVec};
 
 fn number_strings(numbers: impl IntoIterator<Item = i32>) -> impl Iterator<Item = String> {
     numbers.into_iter().map(|i| i.to_string())
@@ -11,12 +11,12 @@ fn number_strings(numbers: impl IntoIterator<Item = i32>) -> impl Iterator<Item 
 
 #[test]
 fn smoke_test() {
-    fn test<A: BumpAllocator>(a: A) {
+    fn test<A: BumpAllocatorExt>(a: A) {
         let mut vec = BumpVec::from_iter_in(number_strings(1..=5), a);
         vec.extend(number_strings(6..=9));
     }
 
-    fn mut_test<A: MutBumpAllocator>(a: A) {
+    fn mut_test<A: MutBumpAllocatorExt>(a: A) {
         let mut vec = MutBumpVec::from_iter_in(number_strings(1..=5), a);
         vec.extend(number_strings(6..=9));
     }

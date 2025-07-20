@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.64.0
+      - uses: dtolnay/rust-toolchain@1.65.0
       - run: cargo check --no-default-features
       - run: cargo check --features serde,zerocopy-08,allocator-api2-02
   check-stable:

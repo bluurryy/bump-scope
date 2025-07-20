@@ -18,7 +18,8 @@ use crate::{
     owned_str,
     polyfill::{self, transmute_mut, transmute_value},
     raw_fixed_bump_string::RawFixedBumpString,
-    BumpAllocator, BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, FixedBumpString, FromUtf16Error, FromUtf8Error,
+    BumpAllocatorExt, BumpAllocatorScopeExt, BumpBox, BumpVec, ErrorBehavior, FixedBumpString, FromUtf16Error,
+    FromUtf8Error,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -123,15 +124,15 @@ macro_rules! bump_format {
 /// [`from_utf8`]: BumpString::from_utf8
 // `BumpString` and `BumpVec<u8>` have the same repr.
 #[repr(C)]
-pub struct BumpString<A: BumpAllocator> {
+pub struct BumpString<A: BumpAllocatorExt> {
     fixed: RawFixedBumpString,
     allocator: A,
 }
 
-impl<A: BumpAllocator + UnwindSafe> UnwindSafe for BumpString<A> {}
-impl<A: BumpAllocator + RefUnwindSafe> RefUnwindSafe for BumpString<A> {}
+impl<A: BumpAllocatorExt + UnwindSafe> UnwindSafe for BumpString<A> {}
+impl<A: BumpAllocatorExt + RefUnwindSafe> RefUnwindSafe for BumpString<A> {}
 
-impl<A: BumpAllocator> BumpString<A> {
+impl<A: BumpAllocatorExt> BumpString<A> {
     /// Constructs a new empty `BumpString`.
     ///
     /// Given that the `BumpString` is empty, this will not allocate any initial
@@ -1867,7 +1868,7 @@ impl<A: BumpAllocator> BumpString<A> {
     }
 }
 
-impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
+impl<'a, A: BumpAllocatorScopeExt<'a>> BumpString<A> {
     /// Converts this `BumpString` into `&str` that is live for this bump scope.
     #[must_use]
     #[inline(always)]
@@ -1995,7 +1996,7 @@ impl<'a, A: BumpAllocatorScope<'a>> BumpString<A> {
     }
 }
 
-impl<A: BumpAllocator> fmt::Write for BumpString<A> {
+impl<A: BumpAllocatorExt> fmt::Write for BumpString<A> {
     #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.try_push_str(s).map_err(|_| fmt::Error)
@@ -2008,7 +2009,7 @@ impl<A: BumpAllocator> fmt::Write for BumpString<A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<A: BumpAllocator> fmt::Write for PanicsOnAlloc<BumpString<A>> {
+impl<A: BumpAllocatorExt> fmt::Write for PanicsOnAlloc<BumpString<A>> {
     #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.0.push_str(s);
@@ -2022,19 +2023,19 @@ impl<A: BumpAllocator> fmt::Write for PanicsOnAlloc<BumpString<A>> {
     }
 }
 
-impl<A: BumpAllocator> Debug for BumpString<A> {
+impl<A: BumpAllocatorExt> Debug for BumpString<A> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Debug::fmt(self.as_str(), f)
     }
 }
 
-impl<A: BumpAllocator> Display for BumpString<A> {
+impl<A: BumpAllocatorExt> Display for BumpString<A> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Display::fmt(self.as_str(), f)
     }
 }
 
-impl<A: BumpAllocator> Deref for BumpString<A> {
+impl<A: BumpAllocatorExt> Deref for BumpString<A> {
     type Target = str;
 
     #[inline]
@@ -2043,14 +2044,14 @@ impl<A: BumpAllocator> Deref for BumpString<A> {
     }
 }
 
-impl<A: BumpAllocator> DerefMut for BumpString<A> {
+impl<A: BumpAllocatorExt> DerefMut for BumpString<A> {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut_str()
     }
 }
 
-impl<A: BumpAllocator, I: SliceIndex<str>> Index<I> for BumpString<A> {
+impl<A: BumpAllocatorExt, I: SliceIndex<str>> Index<I> for BumpString<A> {
     type Output = I::Output;
 
     fn index(&self, index: I) -> &Self::Output {
@@ -2058,13 +2059,13 @@ impl<A: BumpAllocator, I: SliceIndex<str>> Index<I> for BumpString<A> {
     }
 }
 
-impl<A: BumpAllocator, I: SliceIndex<str>> IndexMut<I> for BumpString<A> {
+impl<A: BumpAllocatorExt, I: SliceIndex<str>> IndexMut<I> for BumpString<A> {
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
         &mut self.as_mut_str()[index]
     }
 }
 
-impl<A: BumpAllocator> Drop for BumpString<A> {
+impl<A: BumpAllocatorExt> Drop for BumpString<A> {
     fn drop(&mut self) {
         // SAFETY:
         // The dangling pointer cannot be a valid ptr into a chunk; because
@@ -2079,14 +2080,14 @@ impl<A: BumpAllocator> Drop for BumpString<A> {
     }
 }
 
-impl<A: BumpAllocator + Default> Default for BumpString<A> {
+impl<A: BumpAllocatorExt + Default> Default for BumpString<A> {
     fn default() -> Self {
         Self::new_in(A::default())
     }
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<A: BumpAllocator + Clone> Clone for BumpString<A> {
+impl<A: BumpAllocatorExt + Clone> Clone for BumpString<A> {
     fn clone(&self) -> Self {
         let len = self.len();
         let allocator = self.allocator.clone();
@@ -2104,44 +2105,44 @@ impl<A: BumpAllocator + Clone> Clone for BumpString<A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<A: BumpAllocator> core::ops::AddAssign<&str> for BumpString<A> {
+impl<A: BumpAllocatorExt> core::ops::AddAssign<&str> for BumpString<A> {
     #[inline]
     fn add_assign(&mut self, rhs: &str) {
         self.push_str(rhs);
     }
 }
 
-impl<A: BumpAllocator> AsRef<str> for BumpString<A> {
+impl<A: BumpAllocatorExt> AsRef<str> for BumpString<A> {
     #[inline]
     fn as_ref(&self) -> &str {
         self.as_str()
     }
 }
 
-impl<A: BumpAllocator> AsMut<str> for BumpString<A> {
+impl<A: BumpAllocatorExt> AsMut<str> for BumpString<A> {
     #[inline]
     fn as_mut(&mut self) -> &mut str {
         self.as_mut_str()
     }
 }
 
-impl<A: BumpAllocator> Borrow<str> for BumpString<A> {
+impl<A: BumpAllocatorExt> Borrow<str> for BumpString<A> {
     #[inline]
     fn borrow(&self) -> &str {
         self.as_str()
     }
 }
 
-impl<A: BumpAllocator> BorrowMut<str> for BumpString<A> {
+impl<A: BumpAllocatorExt> BorrowMut<str> for BumpString<A> {
     #[inline]
     fn borrow_mut(&mut self) -> &mut str {
         self.as_mut_str()
     }
 }
 
-impl<A: BumpAllocator> Eq for BumpString<A> {}
+impl<A: BumpAllocatorExt> Eq for BumpString<A> {}
 
-impl<A: BumpAllocator> PartialOrd for BumpString<A> {
+impl<A: BumpAllocatorExt> PartialOrd for BumpString<A> {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(self.cmp(other))
@@ -2168,13 +2169,13 @@ impl<A: BumpAllocator> PartialOrd for BumpString<A> {
     }
 }
 
-impl<A: BumpAllocator> Ord for BumpString<A> {
+impl<A: BumpAllocatorExt> Ord for BumpString<A> {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         <str as Ord>::cmp(self, other)
     }
 }
 
-impl<A: BumpAllocator> Hash for BumpString<A> {
+impl<A: BumpAllocatorExt> Hash for BumpString<A> {
     #[inline]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.as_str().hash(state);
@@ -2182,7 +2183,7 @@ impl<A: BumpAllocator> Hash for BumpString<A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<'s, A: BumpAllocator> Extend<&'s str> for BumpString<A> {
+impl<'s, A: BumpAllocatorExt> Extend<&'s str> for BumpString<A> {
     #[inline]
     fn extend<T: IntoIterator<Item = &'s str>>(&mut self, iter: T) {
         for str in iter {
@@ -2192,7 +2193,7 @@ impl<'s, A: BumpAllocator> Extend<&'s str> for BumpString<A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<A: BumpAllocator> Extend<char> for BumpString<A> {
+impl<A: BumpAllocatorExt> Extend<char> for BumpString<A> {
     fn extend<I: IntoIterator<Item = char>>(&mut self, iter: I) {
         let iterator = iter.into_iter();
         let (lower_bound, _) = iterator.size_hint();
@@ -2202,14 +2203,14 @@ impl<A: BumpAllocator> Extend<char> for BumpString<A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<'s, A: BumpAllocator> Extend<&'s char> for BumpString<A> {
+impl<'s, A: BumpAllocatorExt> Extend<&'s char> for BumpString<A> {
     fn extend<I: IntoIterator<Item = &'s char>>(&mut self, iter: I) {
         self.extend(iter.into_iter().copied());
     }
 }
 
 #[cfg(feature = "alloc")]
-impl<A: BumpAllocator> From<BumpString<A>> for alloc_crate::string::String {
+impl<A: BumpAllocatorExt> From<BumpString<A>> for alloc_crate::string::String {
     #[inline]
     fn from(value: BumpString<A>) -> Self {
         value.as_str().into()
@@ -2263,7 +2264,7 @@ impl<A: BumpAllocator> From<BumpString<A>> for alloc_crate::string::String {
 /// # _ = c;
 /// ```
 #[cfg(feature = "panic-on-alloc")]
-impl<A: BumpAllocator> core::ops::Add<&str> for BumpString<A> {
+impl<A: BumpAllocatorExt> core::ops::Add<&str> for BumpString<A> {
     type Output = Self;
 
     #[inline]

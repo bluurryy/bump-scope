@@ -315,9 +315,9 @@ fn mut_bump_vec_drop<const UP: bool>() {
     let mut vec: MutBumpVec<u8, _> = mut_bump_vec![in &mut bump];
     vec.reserve(33);
 
-    assert_eq!(vec.allocator_stats().current_chunk().unwrap().size(), 128 - MALLOC_OVERHEAD);
+    assert_eq!(vec.allocator_stats().current_chunk().size(), 128 - MALLOC_OVERHEAD);
     assert_eq!(
-        vec.allocator_stats().current_chunk().unwrap().prev().unwrap().size(),
+        vec.allocator_stats().current_chunk().prev().unwrap().size(),
         64 - MALLOC_OVERHEAD
     );
     assert_eq!(vec.allocator_stats().size(), 64 + 128 - MALLOC_OVERHEAD * 2);

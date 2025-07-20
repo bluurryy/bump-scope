@@ -12,7 +12,7 @@ use crate::{
     alloc::AllocError,
     owned_str,
     polyfill::{self, non_null, transmute_mut},
-    BumpAllocatorScope, BumpBox, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop,
+    BumpAllocatorScopeExt, BumpBox, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -146,7 +146,7 @@ impl<'a> FixedBumpString<'a> {
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn with_capacity_in(capacity: usize, allocator: impl BumpAllocatorScope<'a>) -> Self {
+    pub fn with_capacity_in(capacity: usize, allocator: impl BumpAllocatorScopeExt<'a>) -> Self {
         panic_on_error(Self::generic_with_capacity_in(capacity, allocator))
     }
 
@@ -178,14 +178,14 @@ impl<'a> FixedBumpString<'a> {
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_with_capacity_in(capacity: usize, allocator: impl BumpAllocatorScope<'a>) -> Result<Self, AllocError> {
+    pub fn try_with_capacity_in(capacity: usize, allocator: impl BumpAllocatorScopeExt<'a>) -> Result<Self, AllocError> {
         Self::generic_with_capacity_in(capacity, allocator)
     }
 
     #[inline]
     pub(crate) fn generic_with_capacity_in<E: ErrorBehavior>(
         capacity: usize,
-        allocator: impl BumpAllocatorScope<'a>,
+        allocator: impl BumpAllocatorScopeExt<'a>,
     ) -> Result<Self, E> {
         Ok(BumpString::generic_with_capacity_in(capacity, allocator)?.into_fixed_string())
     }
@@ -348,7 +348,7 @@ impl<'a> FixedBumpString<'a> {
     /// Turns this `FixedBumpString` into a `BumpString`.
     #[must_use]
     #[inline(always)]
-    pub fn into_string<A: BumpAllocatorScope<'a>>(self, allocator: A) -> BumpString<A> {
+    pub fn into_string<A: BumpAllocatorScopeExt<'a>>(self, allocator: A) -> BumpString<A> {
         BumpString::from_parts(self, allocator)
     }
 

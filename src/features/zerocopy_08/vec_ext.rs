@@ -1,8 +1,8 @@
 use zerocopy_08::FromZeros;
 
 use crate::{
-    alloc::AllocError, polyfill::non_null, BumpAllocator, BumpVec, ErrorBehavior, FixedBumpVec, MutBumpAllocator,
-    MutBumpVec, MutBumpVecRev,
+    alloc::AllocError, polyfill::non_null, BumpAllocatorExt, BumpVec, ErrorBehavior, FixedBumpVec,
+    MutBumpAllocatorExt, MutBumpVec, MutBumpVecRev,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -15,9 +15,9 @@ mod private {
     pub trait Sealed {}
 
     impl<T> Sealed for FixedBumpVec<'_, T> {}
-    impl<T, A: BumpAllocator> Sealed for BumpVec<T, A> {}
-    impl<T, A: MutBumpAllocator> Sealed for MutBumpVec<T, A> {}
-    impl<T, A: MutBumpAllocator> Sealed for MutBumpVecRev<T, A> {}
+    impl<T, A: BumpAllocatorExt> Sealed for BumpVec<T, A> {}
+    impl<T, A: MutBumpAllocatorExt> Sealed for MutBumpVec<T, A> {}
+    impl<T, A: MutBumpAllocatorExt> Sealed for MutBumpVecRev<T, A> {}
 }
 
 /// Extension trait for this crate's vector types.
@@ -240,7 +240,7 @@ impl<T> VecExt for FixedBumpVec<'_, T> {
     }
 }
 
-impl<T, A: BumpAllocator> VecExt for BumpVec<T, A> {
+impl<T, A: BumpAllocatorExt> VecExt for BumpVec<T, A> {
     type T = T;
 
     /// Extends this vector by pushing `additional` new items onto the end.
@@ -354,7 +354,7 @@ impl<T, A: BumpAllocator> VecExt for BumpVec<T, A> {
     }
 }
 
-impl<T, A: MutBumpAllocator> VecExt for MutBumpVec<T, A> {
+impl<T, A: MutBumpAllocatorExt> VecExt for MutBumpVec<T, A> {
     type T = T;
 
     /// Extends this vector by pushing `additional` new items onto the end.
@@ -476,7 +476,7 @@ impl<T, A: MutBumpAllocator> VecExt for MutBumpVec<T, A> {
     }
 }
 
-impl<T, A: MutBumpAllocator> VecExt for MutBumpVecRev<T, A> {
+impl<T, A: MutBumpAllocatorExt> VecExt for MutBumpVecRev<T, A> {
     type T = T;
 
     /// Extends this vector by pushing `additional` new items onto the end.
@@ -632,7 +632,7 @@ impl<T: FromZeros> PrivateVecExt for FixedBumpVec<'_, T> {
     }
 }
 
-impl<T: FromZeros, A: BumpAllocator> PrivateVecExt for BumpVec<T, A> {
+impl<T: FromZeros, A: BumpAllocatorExt> PrivateVecExt for BumpVec<T, A> {
     #[inline]
     fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
         self.generic_reserve(additional)?;
@@ -661,7 +661,7 @@ impl<T: FromZeros, A: BumpAllocator> PrivateVecExt for BumpVec<T, A> {
     }
 }
 
-impl<T: FromZeros, A: MutBumpAllocator> PrivateVecExt for MutBumpVec<T, A> {
+impl<T: FromZeros, A: MutBumpAllocatorExt> PrivateVecExt for MutBumpVec<T, A> {
     #[inline]
     fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E>
     where
@@ -696,7 +696,7 @@ impl<T: FromZeros, A: MutBumpAllocator> PrivateVecExt for MutBumpVec<T, A> {
     }
 }
 
-impl<T: FromZeros, A: MutBumpAllocator> PrivateVecExt for MutBumpVecRev<T, A> {
+impl<T: FromZeros, A: MutBumpAllocatorExt> PrivateVecExt for MutBumpVecRev<T, A> {
     #[inline]
     fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
         self.generic_reserve(additional)?;

@@ -5,7 +5,7 @@ use crate::{
     bumping::{bump_down, bump_prepare_down, bump_prepare_up, bump_up, BumpProps, BumpUp, MIN_CHUNK_ALIGN},
     chunk_size::{ChunkSize, ChunkSizeHint},
     down_align_usize,
-    layout::{ArrayLayout, LayoutProps},
+    layout::LayoutProps,
     polyfill::{self, non_null},
     unallocated_chunk_header, up_align_usize_unchecked, ChunkHeader, ErrorBehavior, MinimumAlignment,
     SupportedMinimumAlignment,
@@ -177,6 +177,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         }
     }
 
+    // TODO: change naming not to confuse it with `prepare_allocation_range`
     /// Attempts to reserve a block of memory.
     ///
     /// On success, returns a [`NonNull<u8>`] meeting the size and alignment guarantees of `layout`.
@@ -259,10 +260,11 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// [`MutBumpVec`]: crate::MutBumpVec
     /// [`into_slice`]: crate::MutBumpVec::into_slice
     #[inline(always)]
-    pub(crate) fn prepare_allocation_range<M>(self, minimum_alignment: M, layout: ArrayLayout) -> Option<Range<NonNull<u8>>>
-    where
-        M: SupportedMinimumAlignment,
-    {
+    pub(crate) fn prepare_allocation_range(
+        self,
+        minimum_alignment: impl SupportedMinimumAlignment,
+        layout: impl LayoutProps,
+    ) -> Option<Range<NonNull<u8>>> {
         debug_assert_ne!(layout.size(), 0);
         let props = self.bump_props(minimum_alignment, layout);
 

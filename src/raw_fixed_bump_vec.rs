@@ -8,7 +8,7 @@ use crate::{
     polyfill::{non_null, transmute_mut, transmute_ref},
     raw_bump_box::RawBumpBox,
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BumpAllocator, FixedBumpVec, MutBumpAllocator, SizedTypeProperties,
+    BumpAllocatorExt, FixedBumpVec, MutBumpAllocatorExt, SizedTypeProperties,
 };
 
 /// Like [`FixedBumpVec`] but without its lifetime.
@@ -56,7 +56,7 @@ impl<T> RawFixedBumpVec<T> {
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn allocate<B: ErrorBehavior>(allocator: &impl BumpAllocator, len: usize) -> Result<Self, B> {
+    pub(crate) unsafe fn allocate<B: ErrorBehavior>(allocator: &impl BumpAllocatorExt, len: usize) -> Result<Self, B> {
         let ptr = B::allocate_slice::<T>(allocator, len)?;
 
         Ok(Self {
@@ -67,7 +67,7 @@ impl<T> RawFixedBumpVec<T> {
 
     #[inline(always)]
     pub(crate) unsafe fn prepare_allocation<B: ErrorBehavior>(
-        allocator: &mut impl MutBumpAllocator,
+        allocator: &mut impl MutBumpAllocatorExt,
         len: usize,
     ) -> Result<Self, B> {
         let allocation = B::prepare_slice_allocation::<T>(allocator, len)?;
@@ -81,7 +81,7 @@ impl<T> RawFixedBumpVec<T> {
     /// `new_cap` must be greater than `self.capacity`
     pub(crate) unsafe fn grow_prepared_allocation<B: ErrorBehavior>(
         &mut self,
-        allocator: &mut impl MutBumpAllocator,
+        allocator: &mut impl MutBumpAllocatorExt,
         minimum_new_cap: usize,
     ) -> Result<(), B> {
         debug_assert!(minimum_new_cap > self.capacity);

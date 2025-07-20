@@ -21,6 +21,11 @@ impl Checkpoint {
         Checkpoint { chunk, address }
     }
 
+    pub(crate) unsafe fn from_header(chunk: NonNull<ChunkHeader>) -> Self {
+        let address = non_null::addr(chunk.as_ref().pos.get());
+        Checkpoint { chunk, address }
+    }
+
     pub(crate) unsafe fn reset_within_chunk(self) {
         let ptr = non_null::with_addr(self.chunk.cast::<u8>(), self.address);
         self.chunk.as_ref().pos.set(ptr);

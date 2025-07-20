@@ -416,6 +416,18 @@ where
     }
 }
 
+// Used for static assertions.
+#[derive(Clone)]
+pub(crate) struct NoopAllocator;
+
+unsafe impl Allocator for NoopAllocator {
+    fn allocate(&self, _layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        Err(AllocError)
+    }
+
+    unsafe fn deallocate(&self, _ptr: NonNull<u8>, _layout: Layout) {}
+}
+
 pub(crate) mod box_like {
     pub trait Sealed {
         type T: ?Sized;

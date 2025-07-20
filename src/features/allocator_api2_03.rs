@@ -7,7 +7,7 @@ use allocator_api2_03::{alloc::Global, boxed::Box};
 
 use crate::{
     alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator},
-    polyfill, BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc,
+    polyfill, BaseAllocator, Bump, BumpAllocatorExt, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc,
     WithoutShrink,
 };
 
@@ -382,7 +382,7 @@ where
     }
 }
 
-unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
+unsafe impl<A: BumpAllocatorExt> Allocator for WithoutShrink<A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         <Self as CrateAllocator>::allocate(self, layout).map_err(Into::into)
@@ -414,7 +414,7 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
     }
 }
 
-unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
+unsafe impl<A: BumpAllocatorExt> Allocator for WithoutDealloc<A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         <Self as CrateAllocator>::allocate(self, layout).map_err(Into::into)
