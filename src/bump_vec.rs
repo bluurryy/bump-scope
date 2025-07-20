@@ -40,7 +40,7 @@ pub use splice::Splice;
 
 /// This is like [`vec!`](alloc_crate::vec!) but allocates inside a bump allocator, returning a [`BumpVec`].
 ///
-/// `$bump` can be any type that implements [`BumpAllocator`].
+/// `$bump` can be any type that implements [`BumpAllocatorExt`].
 ///
 /// # Panics
 /// If used without `try`, panics on allocation failure.

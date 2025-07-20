@@ -28,7 +28,7 @@ pub use into_iter::IntoIter;
 
 /// This is like [`vec!`](alloc_crate::vec!) but allocates inside a bump allocator, returning a [`MutBumpVec`].
 ///
-/// `$bump` can be any type that implements [`MutBumpAllocator`].
+/// `$bump` can be any type that implements [`MutBumpAllocatorExt`].
 ///
 /// # Panics
 /// If used without `try`, panics on allocation failure.

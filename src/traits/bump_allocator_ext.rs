@@ -32,20 +32,23 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// # Examples
     ///
     /// ```
+    /// # extern crate alloc;
     /// # use bump_scope::{ Bump, BumpAllocatorExt};
+    /// # use alloc::alloc::Layout;
     /// fn test(bump: impl BumpAllocatorExt) {
     ///     let checkpoint = bump.checkpoint();
     ///
     ///     {
-    ///         let hello = bump.alloc_str("hello");
-    ///         assert_eq!(bump.stats().allocated(), 5);
+    ///         let hello = bump.allocate_layout(Layout::new::<[u8;5]>());
+    ///         assert_eq!(bump.stats().into().allocated(), 5);
+    ///         # _ = hello;
     ///     }
     ///
     ///     unsafe { bump.reset_to(checkpoint); }
-    ///     assert_eq!(bump.stats().allocated(), 0);
+    ///     assert_eq!(bump.stats().into().allocated(), 0);
     /// }
     ///
-    /// test(Bump::new());
+    /// test(<Bump>::new());
     /// ```
     #[inline(always)]
     fn checkpoint(&self) -> Checkpoint {
@@ -63,20 +66,23 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// # Examples
     ///
     /// ```
+    /// # extern crate alloc;
     /// # use bump_scope::{Bump, BumpAllocatorExt};
+    /// # use alloc::alloc::Layout;
     /// fn test(bump: impl BumpAllocatorExt) {
     ///     let checkpoint = bump.checkpoint();
     ///     
     ///     {
-    ///         let hello = bump.alloc_str("hello");
-    ///         assert_eq!(bump.stats().allocated(), 5);
+    ///         let hello = bump.allocate_layout(Layout::new::<[u8;5]>());
+    ///         assert_eq!(bump.stats().into().allocated(), 5);
+    ///         # _ = hello;
     ///     }
     ///     
     ///     unsafe { bump.reset_to(checkpoint); }
-    ///     assert_eq!(bump.stats().allocated(), 0);
+    ///     assert_eq!(bump.stats().into().allocated(), 0);
     /// }
     ///
-    /// test(Bump::new());
+    /// test(<Bump>::new());
     /// ```
     #[inline(always)]
     unsafe fn reset_to(&self, checkpoint: Checkpoint) {
@@ -94,14 +100,18 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     ///
     /// Panics if the allocation fails.
     #[cfg(feature = "panic-on-alloc")]
-    fn allocate_layout(&self, layout: Layout) -> NonNull<u8>;
+    fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
+        allocate_layout(self, layout)
+    }
 
     /// A specialized version of [`allocate`](Allocator::allocate).
     ///
     /// # Errors
     ///
     /// Errors if the allocation fails.
-    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError>;
+    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
+        try_allocate_layout(self, layout)
+    }
 
     /// A specialized version of [`allocate`](Allocator::allocate).
     ///
@@ -109,14 +119,18 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     ///
     /// Panics if the allocation fails.
     #[cfg(feature = "panic-on-alloc")]
-    fn allocate_sized<T>(&self) -> NonNull<T>;
+    fn allocate_sized<T>(&self) -> NonNull<T> {
+        allocate_sized(self)
+    }
 
     /// A specialized version of [`allocate`](Allocator::allocate).
     ///
     /// # Errors
     ///
     /// Errors if the allocation fails.
-    fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>;
+    fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError> {
+        try_allocate_sized(self)
+    }
 
     /// A specialized version of [`allocate`](Allocator::allocate).
     ///
@@ -124,14 +138,18 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     ///
     /// Panics if the allocation fails.
     #[cfg(feature = "panic-on-alloc")]
-    fn allocate_slice<T>(&self, len: usize) -> NonNull<T>;
+    fn allocate_slice<T>(&self, len: usize) -> NonNull<T> {
+        allocate_slice(self, len)
+    }
 
     /// A specialized version of [`allocate`](Allocator::allocate).
     ///
     /// # Errors
     ///
     /// Errors if the allocation fails.
-    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError>;
+    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError> {
+        try_allocate_slice(self, len)
+    }
 
     /// A specialized version of [`shrink`](Allocator::shrink).
     ///
@@ -140,7 +158,9 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// # Safety
     ///
     /// `new_len` must be less than `old_len`
-    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>;
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
+        shrink_slice(self, ptr, old_len, new_len)
+    }
 }
 
 assert_implements! {

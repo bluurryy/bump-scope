@@ -1,5 +1,5 @@
 use arbitrary::Arbitrary;
-use bump_scope::{alloc::Global, Bump, BumpAllocator, BumpVec, MinimumAlignment, SupportedMinimumAlignment};
+use bump_scope::{alloc::Global, Bump, BumpAllocatorExt, BumpVec, MinimumAlignment, SupportedMinimumAlignment};
 use zerocopy::{FromBytes, Immutable, IntoBytes};
 
 use crate::MinAlign;
@@ -129,7 +129,7 @@ impl<'a> VecObj<'a> {
 
 impl<T, A> VecTrait for BumpVec<T, A>
 where
-    A: BumpAllocator,
+    A: BumpAllocatorExt,
     T: Default + FromBytes + IntoBytes + Immutable,
 {
     fn push(&mut self, bit_pattern: u8) {

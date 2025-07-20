@@ -1,6 +1,4 @@
-#[cfg(feature = "panic-on-alloc")]
-use core::ops::Range;
-use core::{alloc::Layout, ptr::NonNull};
+use core::{alloc::Layout, ops::Range, ptr::NonNull};
 
 use crate::{
     alloc::{AllocError, Allocator},
@@ -19,7 +17,6 @@ pub unsafe trait MutBumpAllocatorExt: MutBumpAllocator + BumpAllocatorExt {
     /// # Panics
     ///
     /// Panics if the allocation fails.
-    #[doc(hidden)]
     #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> Range<NonNull<T>>;
 
@@ -28,7 +25,6 @@ pub unsafe trait MutBumpAllocatorExt: MutBumpAllocator + BumpAllocatorExt {
     /// # Errors
     ///
     /// Errors if the allocation fails.
-    #[doc(hidden)]
     fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<Range<NonNull<T>>, AllocError>;
 
     /// Allocate part of a valid free slice returned by `(try_)prepare_slice_allocation`.
@@ -38,7 +34,6 @@ pub unsafe trait MutBumpAllocatorExt: MutBumpAllocator + BumpAllocatorExt {
     /// - `ptr + cap` must be a slice returned by `(try_)prepare_slice_allocation`. No allocation,
     ///   grow, shrink or deallocate must have been called since then.
     /// - `len` must be less than or equal to `cap`
-    #[doc(hidden)]
     unsafe fn allocate_prepared_slice<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
 
     /// Allocate part of a valid free slice returned by `(try_)prepare_slice_allocation`.
@@ -48,15 +43,17 @@ pub unsafe trait MutBumpAllocatorExt: MutBumpAllocator + BumpAllocatorExt {
     /// - `ptr + cap` must be a slice returned by `(try_)prepare_slice_allocation`. No allocation,
     ///   grow, shrink or deallocate must have been called since then.
     /// - `len` must be less than or equal to `cap`
-    #[doc(hidden)]
     unsafe fn allocate_prepared_slice_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
 }
 
 unsafe impl MutBumpAllocatorExt for dyn MutBumpAllocator + '_ {
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> Range<NonNull<T>> {
         self.try_prepare_slice_allocation(len).unwrap()
     }
 
+    #[inline(always)]
     fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
         match self.prepare_allocation(Layout::array::<T>(len).unwrap()) {
             Ok(range) => Ok(range.start.cast()..range.end.cast()),
@@ -64,6 +61,7 @@ unsafe impl MutBumpAllocatorExt for dyn MutBumpAllocator + '_ {
         }
     }
 
+    #[inline(always)]
     unsafe fn allocate_prepared_slice<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         let range = non_null::cast_range(ptr..non_null::add(ptr, cap));
         let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);
@@ -71,6 +69,7 @@ unsafe impl MutBumpAllocatorExt for dyn MutBumpAllocator + '_ {
         non_null::slice_from_raw_parts(data, len)
     }
 
+    #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         let range = non_null::cast_range(non_null::sub(ptr, cap)..ptr);
         let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);

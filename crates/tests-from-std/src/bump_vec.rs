@@ -14,7 +14,8 @@ use std::rc::Rc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use bump_scope::alloc::{AllocError, Allocator};
-use bump_scope::{Bump, BumpAllocator};
+use bump_scope::stats::AnyStats;
+use bump_scope::{Bump, BumpAllocator, BumpAllocatorExt, BumpAllocatorPtr};
 
 type Vec<T, A = bump_scope::Bump> = bump_scope::BumpVec<T, A>;
 
@@ -1178,7 +1179,49 @@ fn test_into_iter_drop_allocator() {
         }
     }
 
-    unsafe impl BumpAllocator for ReferenceCountedAllocator<'_> {}
+    unsafe impl BumpAllocator for ReferenceCountedAllocator<'_> {
+        fn ptr(&self) -> &BumpAllocatorPtr {
+            self.bump.ptr()
+        }
+
+        fn chunk_header_size(&self) -> usize {
+            self.bump.chunk_header_size()
+        }
+
+        fn prepare_allocation(
+            &self,
+            layout: Layout,
+        ) -> Result<std::ops::Range<NonNull<u8>>, AllocError> {
+            self.bump.prepare_allocation(layout)
+        }
+
+        unsafe fn allocate_prepared(
+            &self,
+            layout: Layout,
+            range: std::ops::Range<NonNull<u8>>,
+        ) -> NonNull<u8> {
+            unsafe { self.bump.allocate_prepared(layout, range) }
+        }
+
+        unsafe fn allocate_prepared_rev(
+            &self,
+            layout: Layout,
+            range: std::ops::Range<NonNull<u8>>,
+        ) -> NonNull<u8> {
+            unsafe { self.bump.allocate_prepared_rev(layout, range) }
+        }
+    }
+
+    unsafe impl BumpAllocatorExt for ReferenceCountedAllocator<'_> {
+        type Stats<'b>
+            = AnyStats<'b>
+        where
+            Self: 'b;
+
+        fn stats(&self) -> Self::Stats<'_> {
+            self.bump.stats().into()
+        }
+    }
 
     let mut drop_count = 0;
 

@@ -27,7 +27,7 @@ use crate::panic_on_error;
 
 /// This is like [`vec!`](alloc_crate::vec!) but allocates inside a bump allocator, returning a [`MutBumpVecRev`].
 ///
-/// `$bump` can be any type that implements [`MutBumpAllocator`].
+/// `$bump` can be any type that implements [`MutBumpAllocatorExt`].
 ///
 /// # Panics
 /// If used without `try`, panics on allocation failure.
