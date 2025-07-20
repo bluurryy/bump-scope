@@ -1,8 +1,8 @@
 use zerocopy_08::FromZeros;
 
 use crate::{
-    alloc::AllocError, polyfill::non_null, BumpAllocatorExt, BumpVec, ErrorBehavior, FixedBumpVec,
-    MutBumpAllocatorExt, MutBumpVec, MutBumpVecRev,
+    alloc::AllocError, polyfill::non_null, BumpAllocatorExt, BumpVec, ErrorBehavior, FixedBumpVec, MutBumpAllocatorExt,
+    MutBumpVec, MutBumpVecRev,
 };
 
 #[cfg(feature = "panic-on-alloc")]

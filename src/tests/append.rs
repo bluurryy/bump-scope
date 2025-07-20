@@ -11,8 +11,7 @@ use std::{
 
 use crate::{
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
-    unsize_bump_box, Bump, BumpAllocatorExt, BumpBox, BumpVec, FixedBumpVec, MutBumpAllocatorExt, MutBumpVec,
-    MutBumpVecRev,
+    unsize_bump_box, Bump, BumpAllocatorExt, BumpBox, BumpVec, FixedBumpVec, MutBumpAllocatorExt, MutBumpVec, MutBumpVecRev,
 };
 
 trait Append<T>: Deref<Target = [T]> {
