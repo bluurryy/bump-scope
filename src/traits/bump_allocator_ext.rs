@@ -16,12 +16,13 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::{handle_alloc_error, panic_on_error};
 
-// FIXME: #[cfg(feature = "panic-on-alloc")]
 pub unsafe trait BumpAllocatorExt: BumpAllocator {
+    /// The type returned by the [stats](BumpAllocatorExt::stats) method.
     type Stats<'b>: Into<AnyStats<'b>>
     where
         Self: 'b;
 
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
     fn stats(&self) -> Self::Stats<'_>;
 
     // FIXME: as_scope method?
