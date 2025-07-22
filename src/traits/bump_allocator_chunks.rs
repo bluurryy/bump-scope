@@ -24,6 +24,7 @@ impl BumpAllocatorChunks {
     /// - `self` must be allocated, see [`is_allocated`]
     /// - the checkpoint must have been created when self was allocated, see [`is_allocated`]
     ///
+    /// [`Bump::reset_to`]: crate::Bump::reset_to
     /// [`is_allocated`]: Self::is_allocated
     pub unsafe fn reset_to(&self, checkpoint: Checkpoint) {
         let ptr = non_null::with_addr(checkpoint.chunk.cast(), checkpoint.address);
@@ -31,18 +32,21 @@ impl BumpAllocatorChunks {
         self.0.set(checkpoint.chunk.cast());
     }
 
-    /// You need to provide the correct [`chunk_header_size`](BumpAllocator::chunk_header_size) for this bump allocator
+    /// You need to provide the correct [`chunk_header_size`] for this bump allocator
     /// or else the sizes returned by the methods of [`AnyStats`] and [`AnyChunk`] will
     /// be incorrect.
     ///
+    /// [`chunk_header_size`]: BumpAllocator::chunk_header_size
     /// [`AnyChunk`]: crate::stats::AnyChunk
     pub fn stats(&self, chunk_header_size: usize) -> AnyStats<'_> {
         unsafe { AnyStats::from_header_unchecked(self.0.get(), chunk_header_size) }
     }
 
-    /// Returns `true` when the bump allocator has no allocated chunk.
+    /// Returns `true` when the bump allocator has an allocated chunk.
     ///
-    /// This can only happen when the bump allocator is not [`GUARANTEED_ALLOCATED`](crate#guaranteed_allocated-parameter).
+    /// This can only return `false` when the bump allocator is not [`GUARANTEED_ALLOCATED`].
+    ///
+    /// [`GUARANTEED_ALLOCATED`]: crate#guaranteed_allocated-parameter
     pub fn is_allocated(&self) -> bool {
         self.0.get() != unallocated_chunk_header()
     }
