@@ -16,6 +16,20 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::{handle_alloc_error, panic_on_error};
 
+/// An extension trait for [`BumpAllocator`]s.
+///
+/// Its main purpose is to provide methods that are optimized for a certain `T` and error behavior.
+///
+/// It also provides [`stats`] to get a `Bump` specific `Stats` object, [`checkpoint`] and [`reset_to`] methods.
+///
+/// **Note:** This trait is not automatically implemented for all `BumpAllocator`s.
+/// By the nature of its purpose of providing specialized methods and types, it can not have a
+/// blanket implementation for all `BumpAllocators`, at least until some form of specialization
+/// becomes stabilized.
+///
+/// [`stats`]: BumpAllocatorExt::stats
+/// [`checkpoint`]: BumpAllocatorExt::checkpoint
+/// [`reset_to`]: BumpAllocatorExt::reset_to
 pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// The type returned by the [stats](BumpAllocatorExt::stats) method.
     type Stats<'b>: Into<AnyStats<'b>>
