@@ -27,42 +27,29 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
 
     // FIXME: as_scope method?
 
-    // FIXME: document that this requires guaranteed allocated bump
     /// Creates a checkpoint of the current bump position.
     ///
-    /// # Examples
+    /// The bump position can be reset to this checkpoint with [`reset_to`].
     ///
-    /// ```
-    /// # extern crate alloc;
-    /// # use bump_scope::{ Bump, BumpAllocatorExt};
-    /// # use alloc::alloc::Layout;
-    /// fn test(bump: impl BumpAllocatorExt) {
-    ///     let checkpoint = bump.checkpoint();
-    ///
-    ///     {
-    ///         let hello = bump.allocate_layout(Layout::new::<[u8;5]>());
-    ///         assert_eq!(bump.stats().into().allocated(), 5);
-    ///         # _ = hello;
-    ///     }
-    ///
-    ///     unsafe { bump.reset_to(checkpoint); }
-    ///     assert_eq!(bump.stats().into().allocated(), 0);
-    /// }
-    ///
-    /// test(<Bump>::new());
-    /// ```
+    /// [`reset_to`]: BumpAllocatorExt::reset_to
     #[inline(always)]
     fn checkpoint(&self) -> Checkpoint {
         self.chunks().checkpoint()
     }
 
-    /// Resets the bump position to a previously created checkpoint. The memory that has been allocated since then will be reused by future allocations.
+    /// Resets the bump position to a previously created checkpoint.
+    /// The memory that has been allocated since then will be reused by future allocations.
     ///
     /// # Safety
     ///
     /// - the checkpoint must have been created by this bump allocator
-    /// - the bump allocator must not have been [`reset`](crate::Bump::reset) since creation of this checkpoint
+    /// - the bump allocator must not have been [`reset`] since creation of this checkpoint
     /// - there must be no references to allocations made since creation of this checkpoint
+    /// - `self` must be allocated, see [`is_allocated`]
+    /// - the checkpoint must have been created when self was allocated, see [`is_allocated`]
+    ///
+    /// [`is_allocated`]: crate::BumpAllocatorChunks::is_allocated
+    /// [`reset`]: crate::Bump::reset
     ///
     /// # Examples
     ///

@@ -732,6 +732,10 @@ where
 
     /// Creates a checkpoint of the current bump position.
     ///
+    /// The bump position can be reset to this checkpoint with [`reset_to`].
+    ///
+    /// [`reset_to`]: Self::reset_to
+    ///
     /// # Examples
     ///
     /// ```
@@ -753,7 +757,8 @@ where
         Checkpoint::new(self.chunk.get())
     }
 
-    /// Resets the bump position to a previously created checkpoint. The memory that has been allocated since then will be reused by future allocations.
+    /// Resets the bump position to a previously created checkpoint.
+    /// The memory that has been allocated since then will be reused by future allocations.
     ///
     /// # Safety
     ///

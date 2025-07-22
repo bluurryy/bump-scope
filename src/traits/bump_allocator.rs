@@ -38,7 +38,21 @@ use crate::{
 /// [`BumpVec`]: crate::BumpVec
 // FIXME: SEAL ME
 pub unsafe trait BumpAllocator: Allocator {
+    /// Returns a type that can be used to [create checkpoints], [reset to them],
+    /// [get an `AnyStats` object] and check if the bump allocator [has an allocated chunk].
+    ///
+    /// [create checkpoints]: BumpAllocatorChunks::checkpoint
+    /// [reset to them]: BumpAllocatorChunks::reset_to
+    /// [get an `AnyStats` object]: BumpAllocatorChunks::stats
+    /// [has an allocated chunk]: BumpAllocatorChunks::is_allocated
     fn chunks(&self) -> &BumpAllocatorChunks;
+
+    /// Returns the size of the chunk header. This value is needed to create an `AnyStats` object via
+    /// <code>self.[chunks]\().[stats]\(self.[chunk_header_size]\())</code>.
+    ///
+    /// [chunks]: BumpAllocator::chunks
+    /// [stats]: BumpAllocatorChunks::stats
+    /// [chunk_header_size]: BumpAllocator::chunk_header_size
     fn chunk_header_size(&self) -> usize;
 
     fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError>;
