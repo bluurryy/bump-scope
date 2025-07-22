@@ -140,11 +140,28 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
 
     /// A specialized version of [`shrink`](Allocator::shrink).
     ///
-    /// Returns `Some` if a shrink was performed, `None` if not.
+    /// Behaves similar to the following code except that it
+    /// returns `None` when the allocation remains unchanged and the pointer stays valid.
+    /// ```
+    /// # use core::{alloc::Layout, ptr::NonNull};
+    /// # type T = i32;
+    /// # #[allow(dead_code)]
+    /// # trait MyExt: bump_scope::BumpAllocator {
+    /// #     unsafe fn my_ext_fn(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> NonNull<T> {
+    /// self.shrink(ptr.cast(),
+    ///     Layout::array::<T>(old_len).unwrap_unchecked(),
+    ///     Layout::array::<T>(new_len).unwrap_unchecked(),
+    /// ).unwrap_unchecked().cast()
+    /// #     }
+    /// # }
+    /// ```
     ///
     /// # Safety
     ///
-    /// `new_len` must be less than `old_len`
+    /// Same safety conditions as for the code above apply.
+    ///
+    /// [shrink]: Allocator::shrink
+    /// [array]: Layout::array
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
         shrink_slice(self, ptr, old_len, new_len)
     }
