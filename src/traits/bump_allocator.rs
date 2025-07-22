@@ -12,9 +12,9 @@ use crate::{
 
 /// A bump allocator.
 ///
-/// This is an [`Allocator`] which has additional capabilities.
+/// This trait provides additional methods and guarantees on top of an [`Allocator`].
 ///
-/// Notably:
+/// A `BumpAllocator` has laxer safety conditions when using `Allocator` methods:
 /// - You can call `grow*`, `shrink` and `deallocate` with pointers that did not come from this allocator. In this case:
 ///   - `grow*` will always allocate a new memory block.
 ///   - `deallocate` will do nothing
@@ -23,19 +23,19 @@ use crate::{
 /// - `deallocate` can be called with any pointer or alignment when the size is `0`.
 ///
 /// Examples:
-/// - Handling of foreign pointers is necessary for implementing [`BumpVec::from_parts`][from_parts] and [`BumpBox::into_box`][into_box].
-/// - Memory block splitting is necessary for [`split_off`][split_off] and [`split_at`][split_at].
-/// - Deallocate with a size of `0` is used in the drop implementation of [`BumpVec`][BumpVec].
+/// - Handling of foreign pointers is necessary for implementing [`BumpVec::from_parts`] and [`BumpBox::into_box`].
+/// - Memory block splitting is necessary for [`split_off`] and [`split_at`].
+/// - Deallocate with a size of `0` is used in the drop implementation of [`BumpVec`].
 ///
 /// # Safety
 ///
 /// An implementor must support the conditions described above.
 ///
-/// [into_box]: crate::BumpBox::into_box
-/// [from_parts]: crate::BumpVec::from_parts
-/// [split_off]: crate::BumpVec::split_off
-/// [split_at]: crate::BumpBox::split_at
-/// [BumpVec]: crate::BumpVec
+/// [`BumpVec::from_parts`]: crate::BumpVec::from_parts
+/// [`BumpBox::into_box`]: crate::BumpBox::into_box
+/// [`split_off`]: crate::BumpVec::split_off
+/// [`split_at`]: crate::BumpBox::split_at
+/// [`BumpVec`]: crate::BumpVec
 // FIXME: SEAL ME
 pub unsafe trait BumpAllocator: Allocator {
     fn chunks(&self) -> &BumpAllocatorChunks;
