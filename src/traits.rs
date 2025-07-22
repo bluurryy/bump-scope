@@ -13,7 +13,7 @@ pub(crate) mod mut_bump_allocator_ext;
 mod mut_bump_allocator_scope;
 pub(crate) mod mut_bump_allocator_scope_ext;
 
-pub use bump_allocator::{BumpAllocator, BumpAllocatorPtr};
+pub use bump_allocator::{BumpAllocator, BumpAllocatorChunks};
 pub use bump_allocator_ext::BumpAllocatorExt;
 pub use bump_allocator_scope::BumpAllocatorScope;
 pub use bump_allocator_scope_ext::BumpAllocatorScopeExt;

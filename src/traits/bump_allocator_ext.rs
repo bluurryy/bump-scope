@@ -52,7 +52,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// ```
     #[inline(always)]
     fn checkpoint(&self) -> Checkpoint {
-        self.ptr().checkpoint()
+        self.chunks().checkpoint()
     }
 
     /// Resets the bump position to a previously created checkpoint. The memory that has been allocated since then will be reused by future allocations.
@@ -92,7 +92,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
             .big_to_small()
             .any(|chunk| { chunk.header() == checkpoint.chunk && chunk.contains_addr_or_end(checkpoint.address.get()) }));
 
-        self.ptr().reset_to(checkpoint);
+        self.chunks().reset_to(checkpoint);
     }
 
     /// A specialized version of [`allocate`](Allocator::allocate).
@@ -192,7 +192,7 @@ unsafe impl BumpAllocatorExt for dyn BumpAllocator + '_ {
 
     #[inline(always)]
     fn stats(&self) -> AnyStats<'_> {
-        self.ptr().stats(self.chunk_header_size())
+        self.chunks().stats(self.chunk_header_size())
     }
 
     #[inline(always)]
@@ -242,7 +242,7 @@ unsafe impl BumpAllocatorExt for dyn MutBumpAllocator + '_ {
 
     #[inline(always)]
     fn stats(&self) -> AnyStats<'_> {
-        self.ptr().stats(self.chunk_header_size())
+        self.chunks().stats(self.chunk_header_size())
     }
 
     #[inline(always)]
@@ -292,7 +292,7 @@ unsafe impl BumpAllocatorExt for dyn BumpAllocatorScope<'_> + '_ {
 
     #[inline(always)]
     fn stats(&self) -> AnyStats<'_> {
-        self.ptr().stats(self.chunk_header_size())
+        self.chunks().stats(self.chunk_header_size())
     }
 
     #[inline(always)]
@@ -342,7 +342,7 @@ unsafe impl BumpAllocatorExt for dyn MutBumpAllocatorScope<'_> + '_ {
 
     #[inline(always)]
     fn stats(&self) -> AnyStats<'_> {
-        self.ptr().stats(self.chunk_header_size())
+        self.chunks().stats(self.chunk_header_size())
     }
 
     #[inline(always)]

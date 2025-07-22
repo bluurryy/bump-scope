@@ -39,7 +39,7 @@ use crate::{
 /// [BumpVec]: crate::BumpVec
 // FIXME: SEAL ME
 pub unsafe trait BumpAllocator: Allocator {
-    fn ptr(&self) -> &BumpAllocatorPtr;
+    fn chunks(&self) -> &BumpAllocatorChunks;
     fn chunk_header_size(&self) -> usize;
 
     fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError>;
@@ -136,8 +136,8 @@ unsafe impl Allocator for &mut (dyn BumpAllocator + '_) {
 
 unsafe impl<B: BumpAllocator + ?Sized> BumpAllocator for &B {
     #[inline(always)]
-    fn ptr(&self) -> &BumpAllocatorPtr {
-        B::ptr(self)
+    fn chunks(&self) -> &BumpAllocatorChunks {
+        B::chunks(self)
     }
 
     #[inline(always)]
@@ -166,8 +166,8 @@ where
     for<'b> &'b mut B: Allocator,
 {
     #[inline(always)]
-    fn ptr(&self) -> &BumpAllocatorPtr {
-        B::ptr(self)
+    fn chunks(&self) -> &BumpAllocatorChunks {
+        B::chunks(self)
     }
 
     #[inline(always)]
@@ -193,8 +193,8 @@ where
 
 unsafe impl<B: BumpAllocator> BumpAllocator for WithoutDealloc<B> {
     #[inline(always)]
-    fn ptr(&self) -> &BumpAllocatorPtr {
-        B::ptr(&self.0)
+    fn chunks(&self) -> &BumpAllocatorChunks {
+        B::chunks(&self.0)
     }
 
     #[inline(always)]
@@ -220,8 +220,8 @@ unsafe impl<B: BumpAllocator> BumpAllocator for WithoutDealloc<B> {
 
 unsafe impl<B: BumpAllocator> BumpAllocator for WithoutShrink<B> {
     #[inline(always)]
-    fn ptr(&self) -> &BumpAllocatorPtr {
-        B::ptr(&self.0)
+    fn chunks(&self) -> &BumpAllocatorChunks {
+        B::chunks(&self.0)
     }
 
     #[inline(always)]
@@ -252,7 +252,7 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
-    fn ptr(&self) -> &BumpAllocatorPtr {
+    fn chunks(&self) -> &BumpAllocatorChunks {
         unsafe { polyfill::transmute_ref(&self.chunk) }
     }
 
@@ -284,7 +284,7 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
-    fn ptr(&self) -> &BumpAllocatorPtr {
+    fn chunks(&self) -> &BumpAllocatorChunks {
         unsafe { polyfill::transmute_ref(&self.chunk) }
     }
 
@@ -379,9 +379,9 @@ where
 }
 
 #[repr(transparent)]
-pub struct BumpAllocatorPtr(pub(crate) Cell<NonNull<ChunkHeader>>);
+pub struct BumpAllocatorChunks(pub(crate) Cell<NonNull<ChunkHeader>>);
 
-impl BumpAllocatorPtr {
+impl BumpAllocatorChunks {
     /// See [`Bump::checkpoint`].
     pub fn checkpoint(&self) -> Checkpoint {
         unsafe { Checkpoint::from_header(self.0.get().cast()) }
