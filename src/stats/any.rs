@@ -197,6 +197,16 @@ impl fmt::Debug for AnyChunk<'_> {
 }
 
 impl<'a> AnyChunk<'a> {
+    pub(crate) fn header(&self) -> NonNull<ChunkHeader> {
+        self.header
+    }
+
+    pub(crate) fn contains_addr_or_end(self, addr: usize) -> bool {
+        let start = non_null::addr(self.content_start()).get();
+        let end = non_null::addr(self.content_end()).get();
+        addr >= start && addr <= end
+    }
+
     #[inline]
     pub(crate) fn is_upwards_allocating(self) -> bool {
         let header = non_null::addr(self.header);

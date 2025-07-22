@@ -86,10 +86,11 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// ```
     #[inline(always)]
     unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        // FIXME: re-add
-        // debug_assert!(self.stats().big_to_small().any(|chunk| {
-        //     chunk.header == checkpoint.chunk.cast() && chunk.contains_addr_or_end(checkpoint.address.get())
-        // }));
+        debug_assert!(self
+            .stats()
+            .into()
+            .big_to_small()
+            .any(|chunk| { chunk.header() == checkpoint.chunk && chunk.contains_addr_or_end(checkpoint.address.get()) }));
 
         self.ptr().reset_to(checkpoint);
     }
