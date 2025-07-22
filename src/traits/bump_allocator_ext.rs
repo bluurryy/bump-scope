@@ -25,8 +25,6 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     fn stats(&self) -> Self::Stats<'_>;
 
-    // FIXME: as_scope method?
-
     /// Creates a checkpoint of the current bump position.
     ///
     /// The bump position can be reset to this checkpoint with [`reset_to`].
