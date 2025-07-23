@@ -55,9 +55,33 @@ pub unsafe trait BumpAllocator: Allocator {
     /// [chunk_header_size]: BumpAllocator::chunk_header_size
     fn chunk_header_size(&self) -> usize;
 
+    /// Returns a pointer range of free space in the bump allocator with a size of at least `layout.size()`.
+    ///
+    /// Both the start and the end of the range is aligned to `layout.align()`.
+    ///
+    /// The pointer range takes up as much of the free space of the chunk as possible while satisfying the other conditions.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
     fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError>;
 
+    /// Allocate part of the free space returned from a [`prepare_allocation`] call.
+    ///
+    /// # Safety
+    /// - `range` must have been returned by a call to [`prepare_allocation`]
+    /// - no allocations or resets must have been done since that call
+    ///
+    /// [`prepare_allocation`]: BumpAllocator::prepare_allocation
     unsafe fn allocate_prepared(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8>;
+
+    /// Allocate part of the free space returned from a [`prepare_allocation`] call starting at the end.
+    ///
+    /// # Safety
+    /// - `range` must have been returned by a call to [`prepare_allocation`]
+    /// - no allocations or resets must have been done since that call
+    ///
+    /// [`prepare_allocation`]: BumpAllocator::prepare_allocation
+    /// [`allocate_prepared`]: BumpAllocator::allocate_prepared
     unsafe fn allocate_prepared_rev(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8>;
 }
 

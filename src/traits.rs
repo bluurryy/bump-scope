@@ -1,5 +1,3 @@
-#![allow(clippy::missing_safety_doc, missing_docs, clippy::missing_errors_doc)]
-
 use core::ptr::NonNull;
 
 use crate::{alloc::Allocator, BaseAllocator, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
