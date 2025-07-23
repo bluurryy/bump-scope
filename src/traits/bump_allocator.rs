@@ -475,10 +475,8 @@ where
     // TODO: test
     #[inline(always)]
     unsafe fn allocate_prepared(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8> {
-        debug_assert_eq!(
-            (non_null::addr(range.end).get() - non_null::addr(range.start).get()) % layout.align(),
-            0
-        );
+        debug_assert_eq!(non_null::addr(range.start).get() % layout.align(), 0);
+        debug_assert_eq!(non_null::addr(range.end).get() % layout.align(), 0);
         debug_assert_eq!(layout.size() % layout.align(), 0);
 
         if UP {
