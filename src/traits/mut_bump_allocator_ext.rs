@@ -74,7 +74,7 @@ impl MutBumpAllocatorExt for dyn MutBumpAllocator + '_ {
 
     #[inline(always)]
     fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
-        match self.prepare_allocation(Layout::array::<T>(len).unwrap()) {
+        match unsafe { self.prepare_allocation(Layout::array::<T>(len).unwrap()) } {
             Ok(range) => Ok(range.start.cast()..range.end.cast()),
             Err(err) => Err(err),
         }

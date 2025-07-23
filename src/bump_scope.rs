@@ -504,7 +504,7 @@ where
     ) -> NonNull<[T]> {
         let mut start = non_null::sub(end, len);
 
-        // TODO: refactor like `BumpAllocator::allocate_prepared_rev`
+        // FIXME: refactor like `BumpAllocator::allocate_prepared_rev`
         if UP {
             {
                 let dst = non_null::sub(end, cap);
