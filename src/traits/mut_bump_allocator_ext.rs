@@ -2,11 +2,11 @@ use core::{alloc::Layout, ops::Range, ptr::NonNull};
 
 use crate::{
     alloc::AllocError, polyfill::non_null, BaseAllocator, Bump, BumpAllocatorExt, BumpScope, MinimumAlignment,
-    MutBumpAllocator, SizedTypeProperties, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    MutBumpAllocator, MutBumpAllocatorScope, SizedTypeProperties, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::panic_on_error;
+use crate::{handle_alloc_error, panic_on_error, private::capacity_overflow};
 
 /// An extension trait for [`MutBumpAllocator`]s.
 ///
@@ -67,35 +67,97 @@ impl MutBumpAllocatorExt for dyn MutBumpAllocator + '_ {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> Range<NonNull<T>> {
-        self.try_prepare_slice_allocation(len).unwrap()
+        prepare_slice_allocation(self, len)
     }
 
     #[inline(always)]
     fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
-        match unsafe { self.prepare_allocation(Layout::array::<T>(len).unwrap()) } {
-            Ok(range) => Ok(range.start.cast()..range.end.cast()),
-            Err(err) => Err(err),
-        }
+        try_prepare_slice_allocation(self, len)
     }
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        let range = non_null::cast_range(ptr..non_null::add(ptr, cap));
-        let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);
-        let data = self.allocate_prepared(layout, range).cast();
-        non_null::slice_from_raw_parts(data, len)
+        allocate_prepared_slice(self, ptr, len, cap)
     }
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        let range = non_null::cast_range(non_null::sub(ptr, cap)..ptr);
-        let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);
-        let data = self.allocate_prepared_rev(layout, range).cast();
-        non_null::slice_from_raw_parts(data, len)
+        allocate_prepared_slice_rev(self, ptr, len, cap)
     }
 }
 
-impl<A: MutBumpAllocatorExt> MutBumpAllocatorExt for &mut A {
+impl MutBumpAllocatorExt for dyn MutBumpAllocatorScope<'_> + '_ {
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn prepare_slice_allocation<T>(&mut self, len: usize) -> Range<NonNull<T>> {
+        prepare_slice_allocation(self, len)
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
+        try_prepare_slice_allocation(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn allocate_prepared_slice<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+        allocate_prepared_slice(self, ptr, len, cap)
+    }
+
+    #[inline(always)]
+    unsafe fn allocate_prepared_slice_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+        allocate_prepared_slice_rev(self, ptr, len, cap)
+    }
+}
+
+#[inline(always)]
+#[cfg(feature = "panic-on-alloc")]
+fn prepare_slice_allocation<T>(bump: impl MutBumpAllocator, len: usize) -> Range<NonNull<T>> {
+    let layout = match Layout::array::<T>(len) {
+        Ok(ok) => ok,
+        Err(_) => capacity_overflow(),
+    };
+
+    match unsafe { bump.prepare_allocation(layout) } {
+        Ok(range) => range.start.cast()..range.end.cast(),
+        Err(AllocError) => handle_alloc_error(layout),
+    }
+}
+
+#[inline(always)]
+fn try_prepare_slice_allocation<T>(bump: impl MutBumpAllocator, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
+    let layout = match Layout::array::<T>(len) {
+        Ok(ok) => ok,
+        Err(_) => return Err(AllocError),
+    };
+
+    match unsafe { bump.prepare_allocation(layout) } {
+        Ok(range) => Ok(range.start.cast()..range.end.cast()),
+        Err(err) => Err(err),
+    }
+}
+
+#[inline(always)]
+unsafe fn allocate_prepared_slice<T>(bump: impl MutBumpAllocator, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+    let range = non_null::cast_range(ptr..non_null::add(ptr, cap));
+    let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);
+    let data = bump.allocate_prepared(layout, range).cast();
+    non_null::slice_from_raw_parts(data, len)
+}
+
+#[inline(always)]
+unsafe fn allocate_prepared_slice_rev<T>(
+    bump: impl MutBumpAllocator,
+    ptr: NonNull<T>,
+    len: usize,
+    cap: usize,
+) -> NonNull<[T]> {
+    let range = non_null::cast_range(non_null::sub(ptr, cap)..ptr);
+    let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);
+    let data = bump.allocate_prepared_rev(layout, range).cast();
+    non_null::slice_from_raw_parts(data, len)
+}
+
+impl<A: MutBumpAllocatorExt + ?Sized> MutBumpAllocatorExt for &mut A {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> Range<NonNull<T>> {

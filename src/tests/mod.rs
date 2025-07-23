@@ -51,6 +51,7 @@ mod pool;
 #[cfg(feature = "serde")]
 mod serde;
 mod split_off;
+mod test_mut_bump_vec;
 mod test_wrap;
 mod unaligned_collection;
 mod unallocated;
