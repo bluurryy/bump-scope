@@ -171,8 +171,7 @@ assert_implements! {
 
     dyn MutBumpAllocatorScope
     &dyn MutBumpAllocatorScope
-    // TODO:
-    // &mut dyn MutBumpAllocatorScope
+    &mut dyn MutBumpAllocatorScope
 }
 
 unsafe impl Allocator for &mut (dyn BumpAllocator + '_) {
