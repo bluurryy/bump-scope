@@ -4,15 +4,15 @@ use core::alloc::Layout;
 use core::num::NonZero;
 use core::ptr::NonNull;
 use core::{assert_eq, assert_ne};
+use std::cell::Cell;
 use std::fmt::Debug;
 use std::hint;
 use std::mem::swap;
 use std::panic::catch_unwind;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use bump_scope::alloc::{AllocError, Allocator};
-use bump_scope::stats::AnyStats;
-use bump_scope::{Bump, BumpAllocator, BumpAllocatorExt, Checkpoint};
+use bump_scope::Bump;
+use bump_scope::alloc::{AllocError, Allocator, Global};
 
 type Vec<T, A = bump_scope::Bump> = bump_scope::MutBumpVecRev<T, A>;
 
@@ -52,6 +52,17 @@ struct DropCounter<'a> {
 impl Drop for DropCounter<'_> {
     fn drop(&mut self) {
         *self.count += 1;
+    }
+}
+
+#[derive(Clone)]
+struct DropCounterCell<'a> {
+    count: &'a Cell<u32>,
+}
+
+impl Drop for DropCounterCell<'_> {
+    fn drop(&mut self) {
+        self.count.set(self.count.get() + 1);
     }
 }
 
@@ -727,86 +738,31 @@ fn test_into_iter_advance_by() {
 
 #[test]
 fn test_into_iter_drop_allocator() {
-    struct ReferenceCountedAllocator<'a> {
-        bump: Bump,
+    #[derive(Clone)]
+    pub struct ReferenceCountedAllocator<'a> {
         #[allow(dead_code)]
-        counter: DropCounter<'a>,
+        counter: DropCounterCell<'a>,
     }
 
     unsafe impl Allocator for ReferenceCountedAllocator<'_> {
         fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-            self.bump.allocate(layout)
+            Global.allocate(layout)
         }
 
         unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
             // Safety: Invariants passed to caller.
-            unsafe { self.bump.deallocate(ptr, layout) }
+            unsafe { Global.deallocate(ptr, layout) }
         }
     }
 
-    unsafe impl BumpAllocator for ReferenceCountedAllocator<'_> {
-        fn any_stats(&self) -> AnyStats<'_> {
-            self.bump.any_stats()
-        }
+    let drop_count = Cell::new(0);
+    let allocator = ReferenceCountedAllocator { counter: DropCounterCell { count: &drop_count } };
+    let _ = Vec::<u32, _>::new_in(Bump::<_>::new_in(allocator));
+    assert_eq!(drop_count.get(), 1);
 
-        fn checkpoint(&self) -> Checkpoint {
-            self.bump.checkpoint()
-        }
-
-        unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-            unsafe { self.bump.reset_to(checkpoint) };
-        }
-
-        fn prepare_allocation(
-            &self,
-            layout: Layout,
-        ) -> Result<std::ops::Range<NonNull<u8>>, AllocError> {
-            self.bump.prepare_allocation(layout)
-        }
-
-        unsafe fn allocate_prepared(
-            &self,
-            layout: Layout,
-            range: std::ops::Range<NonNull<u8>>,
-        ) -> NonNull<u8> {
-            unsafe { self.bump.allocate_prepared(layout, range) }
-        }
-
-        unsafe fn allocate_prepared_rev(
-            &self,
-            layout: Layout,
-            range: std::ops::Range<NonNull<u8>>,
-        ) -> NonNull<u8> {
-            unsafe { self.bump.allocate_prepared_rev(layout, range) }
-        }
-    }
-
-    unsafe impl BumpAllocatorExt for ReferenceCountedAllocator<'_> {
-        type Stats<'b>
-            = AnyStats<'b>
-        where
-            Self: 'b;
-
-        fn stats(&self) -> Self::Stats<'_> {
-            self.bump.stats().into()
-        }
-    }
-
-    let mut drop_count = 0;
-
-    let allocator = ReferenceCountedAllocator {
-        bump: Bump::new(),
-        counter: DropCounter { count: &mut drop_count },
-    };
-    let _ = Vec::<u32, _>::new_in(allocator);
-    assert_eq!(drop_count, 1);
-
-    let allocator = ReferenceCountedAllocator {
-        bump: Bump::new(),
-        counter: DropCounter { count: &mut drop_count },
-    };
-    let _ = Vec::<u32, _>::new_in(allocator).into_iter();
-    assert_eq!(drop_count, 2);
+    let allocator = ReferenceCountedAllocator { counter: DropCounterCell { count: &drop_count } };
+    let _ = Vec::<u32, _>::new_in(Bump::<_>::new_in(allocator)).into_iter();
+    assert_eq!(drop_count.get(), 2);
 }
 
 #[test]

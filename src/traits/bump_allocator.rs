@@ -12,6 +12,29 @@ use crate::{
     MutBumpAllocatorScope, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 
+pub trait Sealed {}
+
+impl<B: Sealed + ?Sized> Sealed for &B {}
+impl<B: Sealed + ?Sized> Sealed for &mut B {}
+impl<B: Sealed> Sealed for WithoutDealloc<B> {}
+impl<B: Sealed> Sealed for WithoutShrink<B> {}
+
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Sealed
+    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+}
+
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Sealed
+    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
+}
+
 /// A bump allocator.
 ///
 /// This trait provides additional methods and guarantees on top of an [`Allocator`].
@@ -38,8 +61,7 @@ use crate::{
 /// [`split_off`]: crate::BumpVec::split_off
 /// [`split_at`]: crate::BumpBox::split_at
 /// [`BumpVec`]: crate::BumpVec
-// FIXME: SEAL ME
-pub unsafe trait BumpAllocator: Allocator {
+pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     fn any_stats(&self) -> AnyStats<'_>;
 
