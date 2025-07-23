@@ -1,6 +1,6 @@
 use crate::{traits::assert_implements, BumpAllocatorExt, BumpAllocatorScope, MutBumpAllocatorScope};
 
-/// A trait as a shorthand for <code>[BumpAllocatorScope] + [BumpAllocatorExt]<'a></code>
+/// A trait as a shorthand for <code>[BumpAllocatorScope]<'a> + [BumpAllocatorExt]</code>
 pub trait BumpAllocatorScopeExt<'a>: BumpAllocatorScope<'a> + BumpAllocatorExt {}
 
 impl<'a, B> BumpAllocatorScopeExt<'a> for B where B: ?Sized + BumpAllocatorScope<'a> + BumpAllocatorExt {}
