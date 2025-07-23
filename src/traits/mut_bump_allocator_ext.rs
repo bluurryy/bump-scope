@@ -10,8 +10,15 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
-/// A trait that adds specialized methods for [`MutBumpAllocator`]s.
-pub unsafe trait MutBumpAllocatorExt: MutBumpAllocator + BumpAllocatorExt {
+/// An extension trait for [`MutBumpAllocator`]s.
+///
+/// Its purpose is to provide methods that are optimized for a certain `T` and error behavior.
+///
+/// **Note:** This trait is not automatically implemented for all `BumpAllocator`s.
+/// By the nature of its purpose of providing specialized methods and types, it can not have a
+/// blanket implementation for all `BumpAllocators`, at least until some form of specialization
+/// becomes stabilized.
+pub trait MutBumpAllocatorExt: MutBumpAllocator + BumpAllocatorExt {
     /// Does not allocate, just returns a slice of `T` that are currently available.
     ///
     /// # Panics
@@ -46,7 +53,7 @@ pub unsafe trait MutBumpAllocatorExt: MutBumpAllocator + BumpAllocatorExt {
     unsafe fn allocate_prepared_slice_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
 }
 
-unsafe impl MutBumpAllocatorExt for dyn MutBumpAllocator + '_ {
+impl MutBumpAllocatorExt for dyn MutBumpAllocator + '_ {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> Range<NonNull<T>> {
@@ -78,7 +85,7 @@ unsafe impl MutBumpAllocatorExt for dyn MutBumpAllocator + '_ {
     }
 }
 
-unsafe impl<A: MutBumpAllocatorExt> MutBumpAllocatorExt for &mut A
+impl<A: MutBumpAllocatorExt> MutBumpAllocatorExt for &mut A
 where
     for<'a> &'a mut A: Allocator,
 {
@@ -104,29 +111,7 @@ where
     }
 }
 
-unsafe impl<A: MutBumpAllocatorExt> MutBumpAllocatorExt for WithoutDealloc<A> {
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation<T>(&mut self, len: usize) -> Range<NonNull<T>> {
-        A::prepare_slice_allocation(&mut self.0, len)
-    }
-
-    #[inline(always)]
-    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
-        A::try_prepare_slice_allocation(&mut self.0, len)
-    }
-
-    #[inline(always)]
-    unsafe fn allocate_prepared_slice<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        A::allocate_prepared_slice(&mut self.0, ptr, len, cap)
-    }
-
-    #[inline(always)]
-    unsafe fn allocate_prepared_slice_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        A::allocate_prepared_slice_rev(&mut self.0, ptr, len, cap)
-    }
-}
-unsafe impl<A: MutBumpAllocatorExt> MutBumpAllocatorExt for WithoutShrink<A> {
+impl<A: MutBumpAllocatorExt> MutBumpAllocatorExt for WithoutDealloc<A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> Range<NonNull<T>> {
@@ -149,7 +134,30 @@ unsafe impl<A: MutBumpAllocatorExt> MutBumpAllocatorExt for WithoutShrink<A> {
     }
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> MutBumpAllocatorExt
+impl<A: MutBumpAllocatorExt> MutBumpAllocatorExt for WithoutShrink<A> {
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn prepare_slice_allocation<T>(&mut self, len: usize) -> Range<NonNull<T>> {
+        A::prepare_slice_allocation(&mut self.0, len)
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
+        A::try_prepare_slice_allocation(&mut self.0, len)
+    }
+
+    #[inline(always)]
+    unsafe fn allocate_prepared_slice<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+        A::allocate_prepared_slice(&mut self.0, ptr, len, cap)
+    }
+
+    #[inline(always)]
+    unsafe fn allocate_prepared_slice_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+        A::allocate_prepared_slice_rev(&mut self.0, ptr, len, cap)
+    }
+}
+
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> MutBumpAllocatorExt
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -177,7 +185,7 @@ where
     }
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> MutBumpAllocatorExt
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> MutBumpAllocatorExt
     for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
