@@ -6,6 +6,10 @@ use crate::{
 };
 
 /// A marker trait for [`BumpAllocator`]s who have exclusive access to allocation.
+///
+/// # Safety
+///
+/// Implementors must have exclusive access to to the bump allocator.
 pub unsafe trait MutBumpAllocator: BumpAllocator {}
 
 assert_implements! {
