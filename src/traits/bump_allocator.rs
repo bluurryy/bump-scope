@@ -71,7 +71,7 @@ pub unsafe trait BumpAllocator: Allocator {
     /// # use bump_scope::{Bump, BumpAllocator};
     /// # use alloc::alloc::Layout;
     /// fn test(bump: impl BumpAllocator) {
-    ///     let checkpoint = bump.chunks().checkpoint();
+    ///     let checkpoint = bump.checkpoint();
     ///     
     ///     {
     ///         let hello = bump.allocate(Layout::new::<[u8;5]>()).unwrap();
@@ -79,7 +79,7 @@ pub unsafe trait BumpAllocator: Allocator {
     ///         # _ = hello;
     ///     }
     ///     
-    ///     unsafe { bump.chunks().reset_to(checkpoint); }
+    ///     unsafe { bump.reset_to(checkpoint); }
     ///     assert_eq!(bump.any_stats().allocated(), 0);
     /// }
     ///
