@@ -6,7 +6,7 @@ use crate::{
 };
 
 /// A trait as a shorthand for <code>[MutBumpAllocator] + [BumpAllocatorScope]<'a></code>
-pub unsafe trait MutBumpAllocatorScope<'a>: MutBumpAllocator + BumpAllocatorScope<'a> {}
+pub trait MutBumpAllocatorScope<'a>: MutBumpAllocator + BumpAllocatorScope<'a> {}
 
 unsafe impl Allocator for &mut (dyn MutBumpAllocatorScope<'_> + '_) {
     #[inline(always)]
@@ -63,13 +63,12 @@ unsafe impl Allocator for &mut (dyn MutBumpAllocatorScope<'_> + '_) {
     }
 }
 
-unsafe impl<'a, B: MutBumpAllocatorScope<'a> + ?Sized> MutBumpAllocatorScope<'a> for &mut B where for<'b> &'b mut B: Allocator
-{}
+impl<'a, B: MutBumpAllocatorScope<'a> + ?Sized> MutBumpAllocatorScope<'a> for &mut B where for<'b> &'b mut B: Allocator {}
 
-unsafe impl<'a, B: MutBumpAllocatorScope<'a>> MutBumpAllocatorScope<'a> for WithoutDealloc<B> {}
-unsafe impl<'a, B: MutBumpAllocatorScope<'a>> MutBumpAllocatorScope<'a> for WithoutShrink<B> {}
+impl<'a, B: MutBumpAllocatorScope<'a>> MutBumpAllocatorScope<'a> for WithoutDealloc<B> {}
+impl<'a, B: MutBumpAllocatorScope<'a>> MutBumpAllocatorScope<'a> for WithoutShrink<B> {}
 
-unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> MutBumpAllocatorScope<'a>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> MutBumpAllocatorScope<'a>
     for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -77,7 +76,7 @@ where
 {
 }
 
-unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> MutBumpAllocatorScope<'a>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> MutBumpAllocatorScope<'a>
     for &'a mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
