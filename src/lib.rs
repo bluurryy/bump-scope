@@ -385,8 +385,8 @@ use private::{capacity_overflow, format_trait_error, PanicsOnAlloc};
 use raw_chunk::RawChunk;
 use set_len_on_drop::SetLenOnDrop;
 pub use traits::{
-    BumpAllocator, BumpAllocatorChunks, BumpAllocatorExt, BumpAllocatorScope, BumpAllocatorScopeExt, MutBumpAllocator,
-    MutBumpAllocatorExt, MutBumpAllocatorScope, MutBumpAllocatorScopeExt,
+    BumpAllocator, BumpAllocatorExt, BumpAllocatorScope, BumpAllocatorScopeExt, MutBumpAllocator, MutBumpAllocatorExt,
+    MutBumpAllocatorScope, MutBumpAllocatorScopeExt,
 };
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 

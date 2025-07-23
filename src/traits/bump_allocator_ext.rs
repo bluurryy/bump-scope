@@ -8,9 +8,8 @@ use crate::{
     polyfill::non_null,
     stats::{AnyStats, Stats},
     traits::assert_implements,
-    up_align_usize_unchecked, BaseAllocator, Bump, BumpAllocator, BumpAllocatorScope, BumpScope, Checkpoint,
-    MinimumAlignment, MutBumpAllocator, MutBumpAllocatorScope, SizedTypeProperties, SupportedMinimumAlignment,
-    WithoutDealloc, WithoutShrink,
+    up_align_usize_unchecked, BaseAllocator, Bump, BumpAllocator, BumpAllocatorScope, BumpScope, MinimumAlignment,
+    MutBumpAllocator, MutBumpAllocatorScope, SizedTypeProperties, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -20,7 +19,7 @@ use crate::{handle_alloc_error, panic_on_error};
 ///
 /// Its main purpose is to provide methods that are optimized for a certain `T` and error behavior.
 ///
-/// It also provides [`stats`] to get a `Bump` specific `Stats` object, [`checkpoint`] and [`reset_to`] methods.
+/// It also provides [`stats`] to get a `Bump` specific `Stats` object.
 ///
 /// **Note:** This trait is not automatically implemented for all `BumpAllocator`s.
 /// By the nature of its purpose of providing specialized methods and types, it can not have a
@@ -28,8 +27,6 @@ use crate::{handle_alloc_error, panic_on_error};
 /// becomes stabilized.
 ///
 /// [`stats`]: BumpAllocatorExt::stats
-/// [`checkpoint`]: BumpAllocatorExt::checkpoint
-/// [`reset_to`]: BumpAllocatorExt::reset_to
 pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// The type returned by the [stats](BumpAllocatorExt::stats) method.
     type Stats<'b>: Into<AnyStats<'b>>
@@ -38,62 +35,6 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
 
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     fn stats(&self) -> Self::Stats<'_>;
-
-    /// Creates a checkpoint of the current bump position.
-    ///
-    /// The bump position can be reset to this checkpoint with [`reset_to`].
-    ///
-    /// [`reset_to`]: BumpAllocatorExt::reset_to
-    #[inline(always)]
-    fn checkpoint(&self) -> Checkpoint {
-        self.chunks().checkpoint()
-    }
-
-    /// Resets the bump position to a previously created checkpoint.
-    /// The memory that has been allocated since then will be reused by future allocations.
-    ///
-    /// # Safety
-    ///
-    /// - the checkpoint must have been created by this bump allocator
-    /// - the bump allocator must not have been [`reset`] since creation of this checkpoint
-    /// - there must be no references to allocations made since creation of this checkpoint
-    /// - `self` must be allocated, see [`is_allocated`]
-    /// - the checkpoint must have been created when self was allocated, see [`is_allocated`]
-    ///
-    /// [`is_allocated`]: crate::BumpAllocatorChunks::is_allocated
-    /// [`reset`]: crate::Bump::reset
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate alloc;
-    /// # use bump_scope::{Bump, BumpAllocatorExt};
-    /// # use alloc::alloc::Layout;
-    /// fn test(bump: impl BumpAllocatorExt) {
-    ///     let checkpoint = bump.checkpoint();
-    ///     
-    ///     {
-    ///         let hello = bump.allocate_layout(Layout::new::<[u8;5]>());
-    ///         assert_eq!(bump.stats().into().allocated(), 5);
-    ///         # _ = hello;
-    ///     }
-    ///     
-    ///     unsafe { bump.reset_to(checkpoint); }
-    ///     assert_eq!(bump.stats().into().allocated(), 0);
-    /// }
-    ///
-    /// test(<Bump>::new());
-    /// ```
-    #[inline(always)]
-    unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        debug_assert!(self
-            .stats()
-            .into()
-            .big_to_small()
-            .any(|chunk| { chunk.header() == checkpoint.chunk && chunk.contains_addr_or_end(checkpoint.address.get()) }));
-
-        self.chunks().reset_to(checkpoint);
-    }
 
     /// A specialized version of [`allocate`](Allocator::allocate).
     ///
@@ -209,7 +150,7 @@ unsafe impl BumpAllocatorExt for dyn BumpAllocator + '_ {
 
     #[inline(always)]
     fn stats(&self) -> AnyStats<'_> {
-        self.chunks().stats(self.chunk_header_size())
+        self.any_stats()
     }
 
     #[inline(always)]
@@ -259,7 +200,7 @@ unsafe impl BumpAllocatorExt for dyn MutBumpAllocator + '_ {
 
     #[inline(always)]
     fn stats(&self) -> AnyStats<'_> {
-        self.chunks().stats(self.chunk_header_size())
+        self.any_stats()
     }
 
     #[inline(always)]
@@ -309,7 +250,7 @@ unsafe impl BumpAllocatorExt for dyn BumpAllocatorScope<'_> + '_ {
 
     #[inline(always)]
     fn stats(&self) -> AnyStats<'_> {
-        self.chunks().stats(self.chunk_header_size())
+        self.any_stats()
     }
 
     #[inline(always)]
@@ -359,7 +300,7 @@ unsafe impl BumpAllocatorExt for dyn MutBumpAllocatorScope<'_> + '_ {
 
     #[inline(always)]
     fn stats(&self) -> AnyStats<'_> {
-        self.chunks().stats(self.chunk_header_size())
+        self.any_stats()
     }
 
     #[inline(always)]

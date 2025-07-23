@@ -1,12 +1,13 @@
-use core::{alloc::Layout, mem, ops::Range, ptr::NonNull};
+use core::{alloc::Layout, ops::Range, ptr::NonNull};
 
 use crate::{
     alloc::{AllocError, Allocator},
-    chunk_header::ChunkHeader,
     layout::CustomLayout,
-    polyfill::{self, non_null},
+    polyfill::non_null,
+    raw_chunk::RawChunk,
+    stats::AnyStats,
     traits::{assert_dyn_compatible, assert_implements},
-    BaseAllocator, Bump, BumpAllocatorChunks, BumpAllocatorScope, BumpScope, MinimumAlignment, MutBumpAllocator,
+    BaseAllocator, Bump, BumpAllocatorScope, BumpScope, Checkpoint, MinimumAlignment, MutBumpAllocator,
     MutBumpAllocatorScope, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 
@@ -38,22 +39,53 @@ use crate::{
 /// [`BumpVec`]: crate::BumpVec
 // FIXME: SEAL ME
 pub unsafe trait BumpAllocator: Allocator {
-    /// Returns a type that can be used to [create checkpoints], [reset to them],
-    /// [get an `AnyStats` object] and check if the bump allocator [has an allocated chunk].
-    ///
-    /// [create checkpoints]: BumpAllocatorChunks::checkpoint
-    /// [reset to them]: BumpAllocatorChunks::reset_to
-    /// [get an `AnyStats` object]: BumpAllocatorChunks::stats
-    /// [has an allocated chunk]: BumpAllocatorChunks::is_allocated
-    fn chunks(&self) -> &BumpAllocatorChunks;
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
+    fn any_stats(&self) -> AnyStats<'_>;
 
-    /// Returns the size of the chunk header. This value is needed to create an `AnyStats` object via
-    /// <code>self.[chunks]\().[stats]\(self.[chunk_header_size]\())</code>.
+    /// Creates a checkpoint of the current bump position.
     ///
-    /// [chunks]: BumpAllocator::chunks
-    /// [stats]: BumpAllocatorChunks::stats
-    /// [chunk_header_size]: BumpAllocator::chunk_header_size
-    fn chunk_header_size(&self) -> usize;
+    /// The bump position can be reset to this checkpoint with [`reset_to`].
+    ///
+    /// [`reset_to`]: BumpAllocator::reset_to
+    fn checkpoint(&self) -> Checkpoint;
+
+    /// Resets the bump position to a previously created checkpoint.
+    /// The memory that has been allocated since then will be reused by future allocations.
+    ///
+    /// # Safety
+    ///
+    /// - the checkpoint must have been created by this bump allocator
+    /// - the bump allocator must not have been [`reset`] since creation of this checkpoint
+    /// - there must be no references to allocations made since creation of this checkpoint
+    /// - `self` must be allocated, see <code>self.[any_stats]\().[current_chunk]\().is_some()</code>
+    /// - the checkpoint must have been created when self was allocated
+    ///
+    /// [`reset`]: crate::Bump::reset
+    /// [any_stats]: crate::BumpAllocator::any_stats
+    /// [current_chunk]: AnyStats::current_chunk
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate alloc;
+    /// # use bump_scope::{Bump, BumpAllocator};
+    /// # use alloc::alloc::Layout;
+    /// fn test(bump: impl BumpAllocator) {
+    ///     let checkpoint = bump.chunks().checkpoint();
+    ///     
+    ///     {
+    ///         let hello = bump.allocate(Layout::new::<[u8;5]>()).unwrap();
+    ///         assert_eq!(bump.any_stats().allocated(), 5);
+    ///         # _ = hello;
+    ///     }
+    ///     
+    ///     unsafe { bump.chunks().reset_to(checkpoint); }
+    ///     assert_eq!(bump.any_stats().allocated(), 0);
+    /// }
+    ///
+    /// test(<Bump>::new());
+    /// ```
+    unsafe fn reset_to(&self, checkpoint: Checkpoint);
 
     /// Returns a pointer range of free space in the bump allocator with a size of at least `layout.size()`.
     ///
@@ -173,13 +205,18 @@ unsafe impl Allocator for &mut (dyn BumpAllocator + '_) {
 
 unsafe impl<B: BumpAllocator + ?Sized> BumpAllocator for &B {
     #[inline(always)]
-    fn chunks(&self) -> &BumpAllocatorChunks {
-        B::chunks(self)
+    fn any_stats(&self) -> AnyStats<'_> {
+        B::any_stats(self)
     }
 
     #[inline(always)]
-    fn chunk_header_size(&self) -> usize {
-        B::chunk_header_size(self)
+    fn checkpoint(&self) -> Checkpoint {
+        B::checkpoint(self)
+    }
+
+    #[inline(always)]
+    unsafe fn reset_to(&self, checkpoint: Checkpoint) {
+        B::reset_to(self, checkpoint);
     }
 
     #[inline(always)]
@@ -203,13 +240,18 @@ where
     for<'b> &'b mut B: Allocator,
 {
     #[inline(always)]
-    fn chunks(&self) -> &BumpAllocatorChunks {
-        B::chunks(self)
+    fn any_stats(&self) -> AnyStats<'_> {
+        B::any_stats(self)
     }
 
     #[inline(always)]
-    fn chunk_header_size(&self) -> usize {
-        B::chunk_header_size(self)
+    fn checkpoint(&self) -> Checkpoint {
+        B::checkpoint(self)
+    }
+
+    #[inline(always)]
+    unsafe fn reset_to(&self, checkpoint: Checkpoint) {
+        B::reset_to(self, checkpoint);
     }
 
     #[inline(always)]
@@ -230,13 +272,18 @@ where
 
 unsafe impl<B: BumpAllocator> BumpAllocator for WithoutDealloc<B> {
     #[inline(always)]
-    fn chunks(&self) -> &BumpAllocatorChunks {
-        B::chunks(&self.0)
+    fn any_stats(&self) -> AnyStats<'_> {
+        B::any_stats(&self.0)
     }
 
     #[inline(always)]
-    fn chunk_header_size(&self) -> usize {
-        B::chunk_header_size(&self.0)
+    fn checkpoint(&self) -> Checkpoint {
+        B::checkpoint(&self.0)
+    }
+
+    #[inline(always)]
+    unsafe fn reset_to(&self, checkpoint: Checkpoint) {
+        B::reset_to(&self.0, checkpoint);
     }
 
     #[inline(always)]
@@ -257,13 +304,18 @@ unsafe impl<B: BumpAllocator> BumpAllocator for WithoutDealloc<B> {
 
 unsafe impl<B: BumpAllocator> BumpAllocator for WithoutShrink<B> {
     #[inline(always)]
-    fn chunks(&self) -> &BumpAllocatorChunks {
-        B::chunks(&self.0)
+    fn any_stats(&self) -> AnyStats<'_> {
+        B::any_stats(&self.0)
     }
 
     #[inline(always)]
-    fn chunk_header_size(&self) -> usize {
-        B::chunk_header_size(&self.0)
+    fn checkpoint(&self) -> Checkpoint {
+        B::checkpoint(&self.0)
+    }
+
+    #[inline(always)]
+    unsafe fn reset_to(&self, checkpoint: Checkpoint) {
+        B::reset_to(&self.0, checkpoint);
     }
 
     #[inline(always)]
@@ -289,13 +341,18 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
-    fn chunks(&self) -> &BumpAllocatorChunks {
-        unsafe { polyfill::transmute_ref(&self.chunk) }
+    fn any_stats(&self) -> AnyStats<'_> {
+        self.as_scope().any_stats()
     }
 
     #[inline(always)]
-    fn chunk_header_size(&self) -> usize {
-        mem::size_of::<ChunkHeader<A>>()
+    fn checkpoint(&self) -> Checkpoint {
+        self.as_scope().checkpoint()
+    }
+
+    #[inline(always)]
+    unsafe fn reset_to(&self, checkpoint: Checkpoint) {
+        self.as_scope().reset_to(checkpoint);
     }
 
     #[inline(always)]
@@ -321,13 +378,24 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
-    fn chunks(&self) -> &BumpAllocatorChunks {
-        unsafe { polyfill::transmute_ref(&self.chunk) }
+    fn any_stats(&self) -> AnyStats<'_> {
+        self.stats().into()
     }
 
     #[inline(always)]
-    fn chunk_header_size(&self) -> usize {
-        mem::size_of::<ChunkHeader<A>>()
+    fn checkpoint(&self) -> Checkpoint {
+        Checkpoint::new(self.chunk.get())
+    }
+
+    #[inline(always)]
+    unsafe fn reset_to(&self, checkpoint: Checkpoint) {
+        debug_assert!(self.stats().big_to_small().any(|chunk| {
+            chunk.header == checkpoint.chunk.cast() && chunk.contains_addr_or_end(checkpoint.address.get())
+        }));
+
+        checkpoint.reset_within_chunk();
+        let chunk = RawChunk::from_header(checkpoint.chunk.cast());
+        self.chunk.set(chunk);
     }
 
     #[inline(always)]

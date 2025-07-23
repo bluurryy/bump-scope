@@ -3,7 +3,6 @@ use core::ptr::NonNull;
 use crate::{alloc::Allocator, BaseAllocator, Bump, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
 
 mod bump_allocator;
-mod bump_allocator_chunks;
 pub(crate) mod bump_allocator_ext;
 mod bump_allocator_scope;
 pub(crate) mod bump_allocator_scope_ext;
@@ -13,7 +12,6 @@ mod mut_bump_allocator_scope;
 pub(crate) mod mut_bump_allocator_scope_ext;
 
 pub use bump_allocator::BumpAllocator;
-pub use bump_allocator_chunks::BumpAllocatorChunks;
 pub use bump_allocator_ext::BumpAllocatorExt;
 pub use bump_allocator_scope::BumpAllocatorScope;
 pub use bump_allocator_scope_ext::BumpAllocatorScopeExt;

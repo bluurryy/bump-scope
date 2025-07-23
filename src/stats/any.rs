@@ -1,6 +1,6 @@
 use core::{fmt, iter::FusedIterator, marker::PhantomData, mem, ptr::NonNull};
 
-use crate::{chunk_header::unallocated_chunk_header, polyfill::non_null, ChunkHeader};
+use crate::{polyfill::non_null, ChunkHeader};
 
 use super::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
 
@@ -27,21 +27,6 @@ impl fmt::Debug for AnyStats<'_> {
 }
 
 impl<'a> AnyStats<'a> {
-    #[inline]
-    pub(crate) unsafe fn from_header_unchecked(header: NonNull<ChunkHeader>, header_size: usize) -> Self {
-        if header == unallocated_chunk_header() {
-            return Self { chunk: None };
-        }
-
-        Self {
-            chunk: Some(AnyChunk {
-                header,
-                header_size,
-                marker: PhantomData,
-            }),
-        }
-    }
-
     /// Returns the number of chunks.
     #[must_use]
     pub fn count(self) -> usize {
@@ -197,16 +182,6 @@ impl fmt::Debug for AnyChunk<'_> {
 }
 
 impl<'a> AnyChunk<'a> {
-    pub(crate) fn header(&self) -> NonNull<ChunkHeader> {
-        self.header
-    }
-
-    pub(crate) fn contains_addr_or_end(self, addr: usize) -> bool {
-        let start = non_null::addr(self.content_start()).get();
-        let end = non_null::addr(self.content_end()).get();
-        addr >= start && addr <= end
-    }
-
     #[inline]
     pub(crate) fn is_upwards_allocating(self) -> bool {
         let header = non_null::addr(self.header);

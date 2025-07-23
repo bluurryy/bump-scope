@@ -15,7 +15,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use bump_scope::alloc::{AllocError, Allocator};
 use bump_scope::stats::AnyStats;
-use bump_scope::{Bump, BumpAllocator, BumpAllocatorChunks, BumpAllocatorExt};
+use bump_scope::{Bump, BumpAllocator, BumpAllocatorExt, Checkpoint};
 
 type Vec<T, A = bump_scope::Bump> = bump_scope::MutBumpVec<T, A>;
 
@@ -1071,12 +1071,16 @@ fn test_into_iter_drop_allocator() {
     }
 
     unsafe impl BumpAllocator for ReferenceCountedAllocator<'_> {
-        fn chunks(&self) -> &BumpAllocatorChunks {
-            self.bump.chunks()
+        fn any_stats(&self) -> AnyStats<'_> {
+            self.bump.any_stats()
         }
 
-        fn chunk_header_size(&self) -> usize {
-            self.bump.chunk_header_size()
+        fn checkpoint(&self) -> Checkpoint {
+            self.bump.checkpoint()
+        }
+
+        unsafe fn reset_to(&self, checkpoint: Checkpoint) {
+            unsafe { self.bump.reset_to(checkpoint) };
         }
 
         fn prepare_allocation(
