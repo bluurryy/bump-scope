@@ -1,10 +1,8 @@
 use core::{alloc::Layout, ops::Range, ptr::NonNull};
 
 use crate::{
-    alloc::{AllocError, Allocator},
-    polyfill::non_null,
-    BaseAllocator, Bump, BumpAllocatorExt, BumpScope, MinimumAlignment, MutBumpAllocator, SizedTypeProperties,
-    SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    alloc::AllocError, polyfill::non_null, BaseAllocator, Bump, BumpAllocatorExt, BumpScope, MinimumAlignment,
+    MutBumpAllocator, SizedTypeProperties, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -97,10 +95,7 @@ impl MutBumpAllocatorExt for dyn MutBumpAllocator + '_ {
     }
 }
 
-impl<A: MutBumpAllocatorExt> MutBumpAllocatorExt for &mut A
-where
-    for<'a> &'a mut A: Allocator,
-{
+impl<A: MutBumpAllocatorExt> MutBumpAllocatorExt for &mut A {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> Range<NonNull<T>> {

@@ -1,5 +1,3 @@
-use core::ptr::NonNull;
-
 use crate::{
     alloc::Allocator,
     traits::{assert_dyn_compatible, assert_implements},
@@ -50,61 +48,6 @@ assert_implements! {
     dyn MutBumpAllocatorScope
     &dyn MutBumpAllocatorScope
     &mut dyn MutBumpAllocatorScope
-}
-
-unsafe impl Allocator for &mut (dyn BumpAllocatorScope<'_> + '_) {
-    #[inline(always)]
-    fn allocate(&self, layout: core::alloc::Layout) -> Result<NonNull<[u8]>, crate::alloc::AllocError> {
-        (**self).allocate(layout)
-    }
-
-    #[inline(always)]
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: core::alloc::Layout) {
-        (**self).deallocate(ptr, layout);
-    }
-
-    #[inline(always)]
-    fn allocate_zeroed(&self, layout: core::alloc::Layout) -> Result<NonNull<[u8]>, crate::alloc::AllocError> {
-        (**self).allocate_zeroed(layout)
-    }
-
-    #[inline(always)]
-    unsafe fn grow(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: core::alloc::Layout,
-        new_layout: core::alloc::Layout,
-    ) -> Result<NonNull<[u8]>, crate::alloc::AllocError> {
-        (**self).grow(ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    unsafe fn grow_zeroed(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: core::alloc::Layout,
-        new_layout: core::alloc::Layout,
-    ) -> Result<NonNull<[u8]>, crate::alloc::AllocError> {
-        (**self).grow_zeroed(ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    unsafe fn shrink(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: core::alloc::Layout,
-        new_layout: core::alloc::Layout,
-    ) -> Result<NonNull<[u8]>, crate::alloc::AllocError> {
-        (**self).shrink(ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    fn by_ref(&self) -> &Self
-    where
-        Self: Sized,
-    {
-        self
-    }
 }
 
 unsafe impl<'a, B: BumpAllocatorScope<'a> + ?Sized> BumpAllocatorScope<'a> for &B {}

@@ -178,61 +178,6 @@ assert_implements! {
     &mut dyn MutBumpAllocatorScope
 }
 
-unsafe impl Allocator for &mut (dyn BumpAllocator + '_) {
-    #[inline(always)]
-    fn allocate(&self, layout: core::alloc::Layout) -> Result<NonNull<[u8]>, crate::alloc::AllocError> {
-        (**self).allocate(layout)
-    }
-
-    #[inline(always)]
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: core::alloc::Layout) {
-        (**self).deallocate(ptr, layout);
-    }
-
-    #[inline(always)]
-    fn allocate_zeroed(&self, layout: core::alloc::Layout) -> Result<NonNull<[u8]>, crate::alloc::AllocError> {
-        (**self).allocate_zeroed(layout)
-    }
-
-    #[inline(always)]
-    unsafe fn grow(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: core::alloc::Layout,
-        new_layout: core::alloc::Layout,
-    ) -> Result<NonNull<[u8]>, crate::alloc::AllocError> {
-        (**self).grow(ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    unsafe fn grow_zeroed(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: core::alloc::Layout,
-        new_layout: core::alloc::Layout,
-    ) -> Result<NonNull<[u8]>, crate::alloc::AllocError> {
-        (**self).grow_zeroed(ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    unsafe fn shrink(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: core::alloc::Layout,
-        new_layout: core::alloc::Layout,
-    ) -> Result<NonNull<[u8]>, crate::alloc::AllocError> {
-        (**self).shrink(ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    fn by_ref(&self) -> &Self
-    where
-        Self: Sized,
-    {
-        self
-    }
-}
-
 unsafe impl<B: BumpAllocator + ?Sized> BumpAllocator for &B {
     #[inline(always)]
     fn any_stats(&self) -> AnyStats<'_> {

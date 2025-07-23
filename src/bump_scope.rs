@@ -135,43 +135,6 @@ where
     }
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
-    for &mut BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-    #[inline(always)]
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        BumpScope::allocate(self, layout)
-    }
-
-    #[inline(always)]
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        BumpScope::deallocate(self, ptr, layout);
-    }
-
-    #[inline(always)]
-    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        BumpScope::grow(self, ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    unsafe fn grow_zeroed(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: Layout,
-        new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocError> {
-        BumpScope::grow_zeroed(self, ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        BumpScope::shrink(self, ptr, old_layout, new_layout)
-    }
-}
-
 /// These functions are only available if the `BumpScope` is [guaranteed allocated](crate#guaranteed_allocated-parameter).
 #[allow(clippy::needless_lifetimes)]
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
