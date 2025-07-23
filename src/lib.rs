@@ -40,8 +40,8 @@
     clippy::missing_transmute_annotations,
     clippy::manual_assert,
     clippy::range_plus_one,
-    clippy::manual_let_else, // TODO: remove, its just here to keep the diff clean
-    clippy::ptr_cast_constness, // TODO: remove, its just here to keep the diff clean
+    clippy::manual_let_else, // FIXME: remove
+    clippy::ptr_cast_constness, // FIXME: remove
     rustdoc::redundant_explicit_links, // for cargo-rdme
     unknown_lints, // for `private_bounds` in msrv
     unused_unsafe, // only triggered in old rust versions, like msrv
