@@ -531,7 +531,6 @@ fn handle_alloc_error(_layout: Layout) -> ! {
 // This is just `Result::into_ok` but with a name to match our use case.
 #[inline(always)]
 #[cfg(feature = "panic-on-alloc")]
-// TODO: check comment again
 #[allow(unreachable_patterns)] // msrv 1.65.0 does not allow omitting the `Err` arm
 fn panic_on_error<T>(result: Result<T, Infallible>) -> T {
     match result {
