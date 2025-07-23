@@ -30,7 +30,7 @@ check-fmt:
   cd fuzz; cargo fmt --check
 
 check-semver:
-  # TODO: add "allocator-api2-03" once it got a new release that makes its "alloc" feature msrv compliant
+  # FIXME: add "allocator-api2-03" once it got a new release that makes its "alloc" feature msrv compliant
   cargo +1.65.0 check --no-default-features
   cargo +1.65.0 check --features serde,zerocopy-08,allocator-api2-02
 

@@ -177,7 +177,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         }
     }
 
-    // TODO: change naming not to confuse it with `prepare_allocation_range`
+    // FIXME: change naming not to confuse it with `prepare_allocation_range`
     /// Attempts to reserve a block of memory.
     ///
     /// On success, returns a [`NonNull<u8>`] meeting the size and alignment guarantees of `layout`.
