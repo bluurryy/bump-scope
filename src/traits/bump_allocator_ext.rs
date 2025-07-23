@@ -406,10 +406,17 @@ fn try_allocate_slice<T>(bump: impl BumpAllocator, len: usize) -> Result<NonNull
 }
 
 #[inline]
+#[allow(clippy::unnecessary_wraps)]
 unsafe fn shrink_slice<T>(bump: impl BumpAllocator, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-    // FIXME: do shrink
-    _ = (bump, ptr, old_len, new_len);
-    None
+    Some(
+        bump.shrink(
+            ptr.cast(),
+            Layout::array::<T>(old_len).unwrap_unchecked(),
+            Layout::array::<T>(new_len).unwrap_unchecked(),
+        )
+        .unwrap_unchecked()
+        .cast(),
+    )
 }
 
 unsafe impl<B: BumpAllocatorExt + ?Sized> BumpAllocatorExt for &B {
