@@ -479,14 +479,14 @@ where
 
         if UP {
             let end = non_null::add(range.start, layout.size());
-            self.set_pos2(non_null::addr(end));
+            self.set_pos(non_null::addr(end));
             range.start
         } else {
             let src = range.start;
             let dst_end = range.end;
             let dst = non_null::sub(dst_end, layout.size());
             non_null::copy(src, dst, layout.size());
-            self.set_pos2(non_null::addr(dst));
+            self.set_pos(non_null::addr(dst));
             dst
         }
     }
@@ -509,13 +509,13 @@ where
 
             non_null::copy(src, dst, layout.size());
 
-            self.set_pos2(non_null::addr(dst_end));
+            self.set_pos(non_null::addr(dst_end));
 
             dst
         } else {
             let dst_end = range.end;
             let dst = non_null::sub(dst_end, layout.size());
-            self.set_pos2(non_null::addr(dst));
+            self.set_pos(non_null::addr(dst));
             dst
         }
     }

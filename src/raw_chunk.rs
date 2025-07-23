@@ -279,6 +279,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         }
     }
 
+    // FIXME: ensure this is a noop for ALIGN = 1
     #[inline(always)]
     pub(crate) fn align_pos_to<const ALIGN: usize>(self)
     where

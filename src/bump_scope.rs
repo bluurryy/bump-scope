@@ -479,7 +479,7 @@ where
         let end = non_null::add(start, len);
 
         if UP {
-            self.set_pos(non_null::addr(end), T::ALIGN);
+            self.set_aligned_pos(non_null::addr(end), T::ALIGN);
             non_null::slice_from_raw_parts(start, len)
         } else {
             {
@@ -490,7 +490,7 @@ where
                 start = dst;
             }
 
-            self.set_pos(non_null::addr(start), T::ALIGN);
+            self.set_aligned_pos(non_null::addr(start), T::ALIGN);
             non_null::slice_from_raw_parts(start, len)
         }
     }
@@ -515,29 +515,26 @@ where
                 end = dst_end;
             }
 
-            self.set_pos(non_null::addr(end), T::ALIGN);
+            self.set_aligned_pos(non_null::addr(end), T::ALIGN);
             non_null::slice_from_raw_parts(start, len)
         } else {
-            self.set_pos(non_null::addr(start), T::ALIGN);
+            self.set_aligned_pos(non_null::addr(start), T::ALIGN);
             non_null::slice_from_raw_parts(start, len)
         }
     }
 
     #[inline(always)]
-    pub(crate) fn set_pos(&self, pos: NonZeroUsize, current_align: usize) {
+    pub(crate) fn set_aligned_pos(&self, pos: NonZeroUsize, pos_align: usize) {
         let chunk = self.chunk.get();
-        debug_assert_eq!(pos.get() % current_align, 0);
-
+        debug_assert_eq!(pos.get() % pos_align, 0);
         unsafe { chunk.set_pos_addr(pos.get()) }
-
-        if current_align < MIN_ALIGN {
+        if pos_align < MIN_ALIGN {
             chunk.align_pos_to::<MIN_ALIGN>();
         }
     }
 
-    // TODO: rename
     #[inline(always)]
-    pub(crate) unsafe fn set_pos2(&self, pos: NonZeroUsize) {
+    pub(crate) unsafe fn set_pos(&self, pos: NonZeroUsize) {
         let chunk = self.chunk.get();
         chunk.set_pos_addr(pos.get());
         chunk.align_pos_to::<MIN_ALIGN>();
