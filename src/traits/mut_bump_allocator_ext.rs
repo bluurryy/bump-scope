@@ -27,7 +27,7 @@ pub trait MutBumpAllocatorExt: MutBumpAllocator + BumpAllocatorExt {
     ///
     /// Panics if the allocation fails.
     #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation<T>(&mut self, len: usize) -> Range<NonNull<T>>;
+    fn prepare_slice_allocation<T>(&mut self, cap: usize) -> Range<NonNull<T>>;
 
     /// A specialized version of [`prepare_allocation`].
     ///
@@ -36,7 +36,7 @@ pub trait MutBumpAllocatorExt: MutBumpAllocator + BumpAllocatorExt {
     /// # Errors
     ///
     /// Errors if the allocation fails.
-    fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<Range<NonNull<T>>, AllocError>;
+    fn try_prepare_slice_allocation<T>(&mut self, cap: usize) -> Result<Range<NonNull<T>>, AllocError>;
 
     /// A specialized version of [`allocate_prepared`].
     ///
@@ -44,8 +44,10 @@ pub trait MutBumpAllocatorExt: MutBumpAllocator + BumpAllocatorExt {
     ///
     /// # Safety
     ///
-    /// - `ptr + cap` must be a slice returned by `(try_)prepare_slice_allocation`. No allocation,
-    ///   grow, shrink or deallocate must have been called since then.
+    /// - `ptr..ptr + cap` must be the pointer range returned by
+    ///   <code>([try_](MutBumpAllocatorExt::try_prepare_slice_allocation))[prepare_slice_allocation](MutBumpAllocatorExt::prepare_slice_allocation)</code>.
+    /// - no allocation, grow, shrink or deallocate must have taken place since then
+    /// - no resets must have taken place since then
     /// - `len` must be less than or equal to `cap`
     unsafe fn allocate_prepared_slice<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
 
@@ -55,8 +57,10 @@ pub trait MutBumpAllocatorExt: MutBumpAllocator + BumpAllocatorExt {
     ///
     /// # Safety
     ///
-    /// - `ptr + cap` must be a slice returned by `(try_)prepare_slice_allocation`. No allocation,
-    ///   grow, shrink or deallocate must have been called since then.
+    /// - `ptr - cap..ptr` must be the pointer range returned by
+    ///   <code>([try_](MutBumpAllocatorExt::try_prepare_slice_allocation))[prepare_slice_allocation](MutBumpAllocatorExt::prepare_slice_allocation)</code>.
+    /// - no allocation, grow, shrink or deallocate must have taken place since then
+    /// - no resets must have taken place since then
     /// - `len` must be less than or equal to `cap`
     unsafe fn allocate_prepared_slice_rev<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
 }

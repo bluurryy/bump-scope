@@ -99,8 +99,11 @@ pub unsafe trait BumpAllocator: Allocator {
     /// Allocate part of the free space returned from a [`prepare_allocation`] call.
     ///
     /// # Safety
-    /// - `range` must have been returned by a call to [`prepare_allocation`]
-    /// - no allocations or resets must have been done since that call
+    /// - `range` must have been returned from a call to [`prepare_allocation`]
+    /// - no allocation, grow, shrink or deallocate must have taken place since then
+    /// - no resets must have taken place since then
+    /// - `layout` must be less than or equal to the `layout` used when calling
+    ///   [`prepare_allocation`], both in size and alignment
     ///
     /// [`prepare_allocation`]: BumpAllocator::prepare_allocation
     unsafe fn allocate_prepared(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8>;
@@ -108,8 +111,11 @@ pub unsafe trait BumpAllocator: Allocator {
     /// Allocate part of the free space returned from a [`prepare_allocation`] call starting at the end.
     ///
     /// # Safety
-    /// - `range` must have been returned by a call to [`prepare_allocation`]
-    /// - no allocations or resets must have been done since that call
+    /// - `range` must have been returned from a call to [`prepare_allocation`]
+    /// - no allocation, grow, shrink or deallocate must have taken place since then
+    /// - no resets must have taken place since then
+    /// - `layout` must be less than or equal to the `layout` used when calling
+    ///   [`prepare_allocation`], both in size and alignment
     ///
     /// [`prepare_allocation`]: BumpAllocator::prepare_allocation
     /// [`allocate_prepared`]: BumpAllocator::allocate_prepared
