@@ -2,6 +2,7 @@ use core::{alloc::Layout, ops::Range, ptr::NonNull};
 
 use crate::{
     alloc::{AllocError, Allocator},
+    chunk_header::unallocated_chunk_header,
     layout::CustomLayout,
     polyfill::non_null,
     raw_chunk::RawChunk,
@@ -57,18 +58,15 @@ pub unsafe trait BumpAllocator: Allocator {
     /// - the checkpoint must have been created by this bump allocator
     /// - the bump allocator must not have been [`reset`] since creation of this checkpoint
     /// - there must be no references to allocations made since creation of this checkpoint
-    /// - `self` must be allocated, see <code>self.[any_stats]\().[current_chunk]\().is_some()</code>
-    /// - the checkpoint must have been created when self was allocated
+    /// - the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
     ///
     /// [`reset`]: crate::Bump::reset
-    /// [any_stats]: crate::BumpAllocator::any_stats
-    /// [current_chunk]: AnyStats::current_chunk
     ///
     /// # Examples
     ///
     /// ```
     /// # extern crate alloc;
-    /// # use bump_scope::{Bump, BumpAllocator};
+    /// # use bump_scope::{Bump, BumpAllocator, alloc::Global};
     /// # use alloc::alloc::Layout;
     /// fn test(bump: impl BumpAllocator) {
     ///     let checkpoint = bump.checkpoint();
@@ -84,6 +82,7 @@ pub unsafe trait BumpAllocator: Allocator {
     /// }
     ///
     /// test(<Bump>::new());
+    /// test(Bump::<Global, 1, true, false>::unallocated());
     /// ```
     unsafe fn reset_to(&self, checkpoint: Checkpoint);
 
@@ -387,15 +386,27 @@ where
         Checkpoint::new(self.chunk.get())
     }
 
+    // FIXME: make `Bump(Scope)`'s `reset_to` work this way too?
     #[inline(always)]
     unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        debug_assert!(self.stats().big_to_small().any(|chunk| {
-            chunk.header == checkpoint.chunk.cast() && chunk.contains_addr_or_end(checkpoint.address.get())
-        }));
+        if !GUARANTEED_ALLOCATED && checkpoint.chunk == unallocated_chunk_header() {
+            let mut chunk = self.chunk.get();
 
-        checkpoint.reset_within_chunk();
-        let chunk = RawChunk::from_header(checkpoint.chunk.cast());
-        self.chunk.set(chunk);
+            while let Some(prev) = chunk.prev() {
+                chunk = prev;
+            }
+
+            chunk.reset();
+            self.chunk.set(chunk);
+        } else {
+            debug_assert!(self.stats().big_to_small().any(|chunk| {
+                chunk.header == checkpoint.chunk.cast() && chunk.contains_addr_or_end(checkpoint.address.get())
+            }));
+
+            checkpoint.reset_within_chunk();
+            let chunk = RawChunk::from_header(checkpoint.chunk.cast());
+            self.chunk.set(chunk);
+        }
     }
 
     #[inline(always)]
