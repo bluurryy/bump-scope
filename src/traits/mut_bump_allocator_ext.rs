@@ -19,7 +19,9 @@ use crate::panic_on_error;
 /// blanket implementation for all `BumpAllocators`, at least until some form of specialization
 /// becomes stabilized.
 pub trait MutBumpAllocatorExt: MutBumpAllocator + BumpAllocatorExt {
-    /// Does not allocate, just returns a slice of `T` that are currently available.
+    /// A specialized version of [`prepare_allocation`].
+    ///
+    /// [`prepare_allocation`]: crate::BumpAllocator::prepare_allocation
     ///
     /// # Panics
     ///
@@ -27,14 +29,18 @@ pub trait MutBumpAllocatorExt: MutBumpAllocator + BumpAllocatorExt {
     #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&mut self, len: usize) -> Range<NonNull<T>>;
 
-    /// Does not allocate, just returns a slice of `T` that are currently available.
+    /// A specialized version of [`prepare_allocation`].
+    ///
+    /// [`prepare_allocation`]: crate::BumpAllocator::prepare_allocation
     ///
     /// # Errors
     ///
     /// Errors if the allocation fails.
     fn try_prepare_slice_allocation<T>(&mut self, len: usize) -> Result<Range<NonNull<T>>, AllocError>;
 
-    /// Allocate part of a valid free slice returned by `(try_)prepare_slice_allocation`.
+    /// A specialized version of [`allocate_prepared`].
+    ///
+    /// [`allocate_prepared`]: crate::BumpAllocator::allocate_prepared
     ///
     /// # Safety
     ///
@@ -43,7 +49,9 @@ pub trait MutBumpAllocatorExt: MutBumpAllocator + BumpAllocatorExt {
     /// - `len` must be less than or equal to `cap`
     unsafe fn allocate_prepared_slice<T>(&mut self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
 
-    /// Allocate part of a valid free slice returned by `(try_)prepare_slice_allocation`.
+    /// A specialized version of [`allocate_prepared_rev`].
+    ///
+    /// [`allocate_prepared_rev`]: crate::BumpAllocator::allocate_prepared_rev
     ///
     /// # Safety
     ///
