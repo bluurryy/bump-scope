@@ -7,6 +7,9 @@ use crate::{
     Checkpoint,
 };
 
+/// Returned from [`BumpAllocator::chunks`].
+///
+/// [`BumpAllocator::chunks`]: crate::BumpAllocator::chunks
 #[repr(transparent)]
 pub struct BumpAllocatorChunks(pub(crate) Cell<NonNull<ChunkHeader>>);
 
