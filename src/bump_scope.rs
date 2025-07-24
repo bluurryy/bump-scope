@@ -2548,7 +2548,7 @@ where
         let ptr = boxed.into_raw();
 
         unsafe {
-            non_null::drop_in_place(ptr);
+            ptr.drop_in_place();
             self.deallocate(ptr.cast(), layout);
         }
     }

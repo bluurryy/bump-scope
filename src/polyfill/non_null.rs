@@ -45,12 +45,6 @@ pub(crate) const fn as_non_null_ptr<T>(ptr: NonNull<[T]>) -> NonNull<T> {
     ptr.cast()
 }
 
-/// See [`std::ptr::NonNull::drop_in_place`].
-#[inline(always)]
-pub(crate) unsafe fn drop_in_place<T: ?Sized>(ptr: NonNull<T>) {
-    ptr.as_ptr().drop_in_place();
-}
-
 /// See [`std::ptr::NonNull::from_ref`].
 pub(crate) const fn from_ref<T>(r: &T) -> NonNull<T> {
     unsafe { NonNull::new_unchecked(r as *const T as *mut T) }
@@ -100,7 +94,7 @@ pub(crate) unsafe fn truncate<T>(slice: &mut NonNull<[T]>, len: usize) {
     let to_drop = NonNull::slice_from_raw_parts(to_drop_start, remaining_len);
 
     set_len::<T>(slice, len);
-    drop_in_place(to_drop);
+    to_drop.drop_in_place();
 }
 
 /// Not part of std, but for context see `<*mut T>::wrapping_add`.
