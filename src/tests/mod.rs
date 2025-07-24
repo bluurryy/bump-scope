@@ -52,6 +52,7 @@ mod pool;
 mod serde;
 mod split_off;
 mod test_mut_bump_vec;
+mod test_mut_bump_vec_rev;
 mod test_wrap;
 mod unaligned_collection;
 mod unallocated;
