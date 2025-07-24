@@ -18,7 +18,6 @@ pub(crate) mod option;
 pub(crate) mod pointer;
 pub(crate) mod ptr;
 pub(crate) mod slice;
-pub(crate) mod str;
 pub(crate) mod usize;
 
 use core::mem::{size_of, ManuallyDrop};

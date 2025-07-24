@@ -884,7 +884,7 @@ impl<A: MutBumpAllocatorExt> MutBumpString<A> {
     }
 
     pub(crate) fn generic_from_utf8_lossy_in<E: ErrorBehavior>(v: &[u8], allocator: A) -> Result<Self, E> {
-        let mut iter = crate::polyfill::str::lossy::utf8_chunks(v);
+        let mut iter = v.utf8_chunks();
 
         let first_valid = if let Some(chunk) = iter.next() {
             let valid = chunk.valid();

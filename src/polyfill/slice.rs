@@ -2,8 +2,6 @@ use core::ops;
 
 pub(crate) use core::slice::*;
 
-use crate::polyfill::usize::unchecked_sub;
-
 #[cold]
 #[inline(never)]
 #[track_caller]
@@ -63,29 +61,4 @@ where
     }
 
     ops::Range { start, end }
-}
-
-/// See [`slice::split_at_unchecked`].
-#[inline]
-#[must_use]
-pub(crate) unsafe fn split_at_unchecked<T>(slice: &[T], mid: usize) -> (&[T], &[T]) {
-    // STD-FIXME(const-hack): the const function `from_raw_parts` is used to make this
-    // function const; previously the implementation used
-    // `(self.get_unchecked(..mid), self.get_unchecked(mid..))`
-
-    let len = slice.len();
-    let ptr = slice.as_ptr();
-
-    debug_assert!(
-        mid <= len,
-        "slice::split_at_unchecked requires the index to be within the slice"
-    );
-
-    // SAFETY: Caller has to check that `0 <= mid <= self.len()`
-    unsafe {
-        (
-            from_raw_parts(ptr, mid),
-            from_raw_parts(ptr.add(mid), unchecked_sub(len, mid)),
-        )
-    }
 }
