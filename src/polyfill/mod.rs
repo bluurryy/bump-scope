@@ -15,7 +15,6 @@ pub(crate) mod iter;
 pub(crate) mod layout;
 pub(crate) mod non_null;
 pub(crate) mod pointer;
-pub(crate) mod ptr;
 pub(crate) mod slice;
 pub(crate) mod usize;
 

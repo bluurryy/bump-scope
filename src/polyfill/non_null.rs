@@ -4,7 +4,7 @@ use core::{
     ptr::{self, NonNull},
 };
 
-use crate::polyfill::{self, pointer};
+use crate::polyfill::pointer;
 
 /// See [`std::ptr::NonNull::offset_from_unsigned`].
 #[must_use]
@@ -68,7 +68,7 @@ pub const fn as_mut_ptr<T>(p: NonNull<[T]>) -> *mut T {
 #[inline]
 #[cfg(feature = "alloc")]
 pub(crate) const fn without_provenance<T>(addr: NonZeroUsize) -> NonNull<T> {
-    let pointer = polyfill::ptr::without_provenance_mut(addr.get());
+    let pointer = ptr::without_provenance_mut(addr.get());
     // SAFETY: we know `addr` is non-zero.
     unsafe { NonNull::new_unchecked(pointer) }
 }
