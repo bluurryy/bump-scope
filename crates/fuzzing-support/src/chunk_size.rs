@@ -332,20 +332,12 @@ const fn up_align(addr: usize, align: usize) -> Option<usize> {
 }
 
 pub const fn bit_width(value: usize) -> u32 {
-    if value == 0 {
-        0
-    } else {
-        usize::BITS - value.leading_zeros()
-    }
+    if value == 0 { 0 } else { usize::BITS - value.leading_zeros() }
 }
 
 /// Returns the largest power-of-2 less than or equal to the input, or `None` if `self == 0`.
 pub const fn checked_prev_power_of_two(value: usize) -> Option<usize> {
-    if value == 0 {
-        None
-    } else {
-        Some(1 << (bit_width(value) - 1))
-    }
+    if value == 0 { None } else { Some(1 << (bit_width(value) - 1)) }
 }
 
 #[test]

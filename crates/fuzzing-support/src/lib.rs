@@ -274,11 +274,7 @@ fn down_align(addr: usize, align: usize) -> usize {
 fn align(addr: usize) -> usize {
     let addr = down_align(addr, 16);
 
-    if addr == 0 {
-        16
-    } else {
-        addr
-    }
+    if addr == 0 { 16 } else { addr }
 }
 
 #[derive(Debug, Clone, Copy, Arbitrary)]
