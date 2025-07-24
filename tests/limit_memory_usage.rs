@@ -104,7 +104,16 @@ fn main() {
 
     let bump = Bump::<_, 1, true>::with_size_in(1024, &allocator);
 
-    // limit is reached, trying to allocate any new chunk will fail
-    // note that a bump `with_size` of 1024 results in a capacity of (1024 - SOME_HEADER_DATA_SIZE)
-    bump.try_reserve_bytes(1024).unwrap_err();
+    // allocate the entire remaining capacity
+    let remaining = bump.stats().remaining();
+    bump.alloc_uninit_slice::<u8>(remaining);
+
+    // now there is no space remaining
+    assert_eq!(bump.stats().remaining(), 0);
+
+    // When doing an allocation now, the bump allocator will try to allocate a new chunk
+    // with a size of about 2048 bytes from the base allocator.
+    //
+    // Our base allocator will error due to the limit we imposed.
+    bump.try_alloc_uninit::<u8>().unwrap_err();
 }
