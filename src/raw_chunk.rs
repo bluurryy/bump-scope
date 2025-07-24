@@ -52,7 +52,6 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     pub(crate) fn new_in<E: ErrorBehavior>(chunk_size: ChunkSize<A, UP>, prev: Option<Self>, allocator: A) -> Result<Self, E>
     where
         A: Allocator,
-        for<'a> &'a A: Allocator,
     {
         let layout = chunk_size.layout().ok_or_else(E::capacity_overflow)?;
 
