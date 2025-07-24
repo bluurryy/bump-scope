@@ -42,6 +42,9 @@
     clippy::range_plus_one,
     clippy::manual_let_else, // FIXME: remove
     clippy::ptr_cast_constness, // FIXME: remove
+    clippy::borrow_as_ptr, // FIXME: remove
+    clippy::ref_as_ptr, // FIXME: remove
+    clippy::manual_repeat_n, // FIXME: remove
     rustdoc::redundant_explicit_links, // for cargo-rdme
     unknown_lints, // for `private_bounds` in msrv
     unused_unsafe, // only triggered in old rust versions, like msrv
@@ -531,11 +534,9 @@ fn handle_alloc_error(_layout: Layout) -> ! {
 // This is just `Result::into_ok` but with a name to match our use case.
 #[inline(always)]
 #[cfg(feature = "panic-on-alloc")]
-#[allow(unreachable_patterns)] // msrv 1.65.0 does not allow omitting the `Err` arm
 fn panic_on_error<T>(result: Result<T, Infallible>) -> T {
     match result {
         Ok(value) => value,
-        Err(_) => unreachable!(),
     }
 }
 
