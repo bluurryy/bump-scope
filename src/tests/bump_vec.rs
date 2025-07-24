@@ -1,5 +1,6 @@
 #![allow(clippy::manual_assert)]
 
+use core::ops::Range;
 use std::{
     boxed::Box,
     dbg, format,
@@ -7,7 +8,10 @@ use std::{
     string::{String, ToString},
 };
 
-use crate::{alloc::Global, bump_vec, tests::expect_no_panic, Bump, BumpVec};
+use crate::{
+    alloc::Global, bump_vec, tests::expect_no_panic, Bump, BumpAllocator, BumpAllocatorExt, BumpAllocatorScope, BumpScope,
+    BumpVec, MutBumpAllocator, MutBumpAllocatorScope,
+};
 
 use super::either_way;
 
@@ -26,6 +30,7 @@ either_way! {
     map_in_place_smaller_layout
     map_in_place_to_zst
     map_in_place_from_zst_to_zst
+    test_dyn_allocator
 }
 
 fn shrinks<const UP: bool>() {
@@ -467,3 +472,69 @@ fn map_in_place_from_zst_to_zst<const UP: bool>() {
 #[repr(align(1024))]
 #[derive(Debug)]
 struct AlignedZst;
+
+fn test_dyn_allocator<const UP: bool>() {
+    fn numbers(range: Range<i32>) -> impl ExactSizeIterator<Item = String> {
+        range.map(|i| i.to_string())
+    }
+
+    fn test<B: BumpAllocatorExt>(bump: B) {
+        const ITEM_SIZE: usize = size_of::<String>();
+        assert_eq!(bump.any_stats().allocated(), 0);
+        let mut vec = BumpVec::from_iter_in(numbers(1..4), &bump);
+        assert_eq!(vec, ["1", "2", "3"]);
+        assert_eq!(vec.len(), 3);
+        assert_eq!(vec.capacity(), 3);
+        assert_eq!(bump.any_stats().allocated(), 3 * ITEM_SIZE);
+        vec.reserve_exact(4);
+        assert_eq!(vec, ["1", "2", "3"]);
+        assert_eq!(vec.len(), 3);
+        assert_eq!(vec.capacity(), 7);
+        assert_eq!(bump.any_stats().allocated(), 7 * ITEM_SIZE);
+        vec.shrink_to_fit();
+        assert_eq!(vec, ["1", "2", "3"]);
+        assert_eq!(vec.len(), 3);
+        assert_eq!(vec.capacity(), 3);
+        assert_eq!(bump.any_stats().allocated(), 3 * ITEM_SIZE);
+        vec.truncate(2);
+        assert_eq!(vec, ["1", "2"]);
+        assert_eq!(vec.len(), 2);
+        assert_eq!(vec.capacity(), 3);
+        assert_eq!(bump.any_stats().allocated(), 3 * ITEM_SIZE);
+        vec.shrink_to_fit();
+        assert_eq!(vec, ["1", "2"]);
+        assert_eq!(vec.len(), 2);
+        assert_eq!(vec.capacity(), 2);
+        assert_eq!(bump.any_stats().allocated(), 2 * ITEM_SIZE);
+        vec.clear();
+        vec.shrink_to_fit();
+        assert_eq!(vec.len(), 0);
+        assert_eq!(vec.capacity(), 0);
+        assert_eq!(bump.any_stats().allocated(), 0);
+        drop(vec);
+        let vec = BumpVec::from_iter_exact_in(numbers(1..2), &bump);
+        assert_eq!(vec, ["1"]);
+        assert_eq!(vec.len(), 1);
+        assert_eq!(vec.capacity(), 1);
+        assert_eq!(bump.any_stats().allocated(), ITEM_SIZE);
+        drop(vec);
+        assert_eq!(bump.any_stats().allocated(), 0);
+    }
+
+    test::<Bump>(Bump::new());
+    test::<&Bump>(&Bump::new());
+    test::<&mut Bump>(&mut Bump::new());
+
+    Bump::new().scoped(|bump| test::<BumpScope>(bump));
+    Bump::new().scoped(|bump| test::<&BumpScope>(&bump));
+    Bump::new().scoped(|mut bump| test::<&mut BumpScope>(&mut bump));
+
+    test::<&dyn BumpAllocator>(&<Bump>::new());
+    test::<&mut dyn BumpAllocator>(&mut <Bump>::new());
+    test::<&dyn MutBumpAllocator>(&<Bump>::new());
+    test::<&mut dyn MutBumpAllocator>(&mut <Bump>::new());
+    test::<&dyn BumpAllocatorScope>(<Bump>::new().as_scope());
+    test::<&mut dyn BumpAllocatorScope>(<Bump>::new().as_mut_scope());
+    test::<&dyn MutBumpAllocatorScope>(<Bump>::new().as_scope());
+    test::<&mut dyn MutBumpAllocatorScope>(<Bump>::new().as_mut_scope());
+}

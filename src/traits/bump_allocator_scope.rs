@@ -1,6 +1,7 @@
 use crate::{
-    BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc,
-    WithoutShrink,
+    traits::{assert_dyn_compatible, assert_implements},
+    BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment, MutBumpAllocatorScope, SupportedMinimumAlignment,
+    WithoutDealloc, WithoutShrink,
 };
 
 /// A bump allocator scope.
@@ -24,13 +25,35 @@ use crate::{
 ///     unsafe { ptr.as_ref() }
 /// }
 /// ```
-pub unsafe trait BumpAllocatorScope<'a>: BumpAllocator {
-    // TODO: implement `stats` that live for `'a`?
+pub unsafe trait BumpAllocatorScope<'a>: BumpAllocator {}
+
+assert_dyn_compatible!(BumpAllocatorScope<'_>);
+
+assert_implements! {
+    [BumpAllocatorScope<'a> + ?Sized]
+
+    BumpScope
+
+    &Bump
+    &BumpScope
+
+    &mut Bump
+    &mut BumpScope
+
+    dyn BumpAllocatorScope
+    &dyn BumpAllocatorScope
+    &mut dyn BumpAllocatorScope
+
+    dyn MutBumpAllocatorScope
+    &dyn MutBumpAllocatorScope
+    &mut dyn MutBumpAllocatorScope
 }
 
-unsafe impl<'a, A: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for &A {}
-unsafe impl<'a, A: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for WithoutDealloc<A> {}
-unsafe impl<'a, A: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for WithoutShrink<A> {}
+unsafe impl<'a, B: BumpAllocatorScope<'a> + ?Sized> BumpAllocatorScope<'a> for &B {}
+unsafe impl<'a, B: BumpAllocatorScope<'a> + ?Sized> BumpAllocatorScope<'a> for &mut B {}
+
+unsafe impl<'a, B: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for WithoutDealloc<B> {}
+unsafe impl<'a, B: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for WithoutShrink<B> {}
 
 unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorScope<'a>
     for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
@@ -42,14 +65,6 @@ where
 
 unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorScope<'a>
     for &'a Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-}
-
-unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocatorScope<'a>
-    for &mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,

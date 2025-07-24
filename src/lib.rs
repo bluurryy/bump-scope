@@ -40,6 +40,8 @@
     clippy::missing_transmute_annotations,
     clippy::manual_assert,
     clippy::range_plus_one,
+    clippy::manual_let_else, // FIXME: remove
+    clippy::ptr_cast_constness, // FIXME: remove
     rustdoc::redundant_explicit_links, // for cargo-rdme
     unknown_lints, // for `private_bounds` in msrv
     unused_unsafe, // only triggered in old rust versions, like msrv
@@ -311,8 +313,6 @@ pub mod alloc;
 mod allocator_impl;
 mod bump;
 mod bump_align_guard;
-mod bump_allocator;
-mod bump_allocator_scope;
 /// Contains [`BumpBox`] and associated types.
 mod bump_box;
 #[cfg(feature = "std")]
@@ -333,8 +333,6 @@ mod fixed_bump_vec;
 mod from_utf16_error;
 mod from_utf8_error;
 mod layout;
-mod mut_bump_allocator;
-mod mut_bump_allocator_scope;
 mod mut_bump_string;
 /// Contains [`MutBumpVec`] and associated types.
 pub mod mut_bump_vec;
@@ -354,12 +352,11 @@ mod raw_fixed_bump_vec;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
 pub mod stats;
+mod traits;
 mod without_dealloc;
 
 use alloc::Allocator;
 pub use bump::Bump;
-pub use bump_allocator::BumpAllocator;
-pub use bump_allocator_scope::BumpAllocatorScope;
 pub use bump_box::BumpBox;
 #[cfg(feature = "std")]
 pub use bump_pool::{BumpPool, BumpPoolGuard};
@@ -378,8 +375,6 @@ pub use fixed_bump_vec::FixedBumpVec;
 pub use from_utf16_error::FromUtf16Error;
 pub use from_utf8_error::FromUtf8Error;
 use layout::ArrayLayout;
-pub use mut_bump_allocator::MutBumpAllocator;
-pub use mut_bump_allocator_scope::MutBumpAllocatorScope;
 pub use mut_bump_string::MutBumpString;
 #[doc(inline)]
 pub use mut_bump_vec::MutBumpVec;
@@ -389,6 +384,10 @@ pub use no_drop::NoDrop;
 use private::{capacity_overflow, format_trait_error, PanicsOnAlloc};
 use raw_chunk::RawChunk;
 use set_len_on_drop::SetLenOnDrop;
+pub use traits::{
+    BumpAllocator, BumpAllocatorExt, BumpAllocatorScope, BumpAllocatorScopeExt, MutBumpAllocator, MutBumpAllocatorExt,
+    MutBumpAllocatorScope, MutBumpAllocatorScopeExt,
+};
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
 #[cfg(feature = "bytemuck")]
@@ -532,7 +531,7 @@ fn handle_alloc_error(_layout: Layout) -> ! {
 // This is just `Result::into_ok` but with a name to match our use case.
 #[inline(always)]
 #[cfg(feature = "panic-on-alloc")]
-#[allow(unreachable_patterns)] // msrv 1.64.0 does not allow omitting the `Err` arm
+#[allow(unreachable_patterns)] // msrv 1.65.0 does not allow omitting the `Err` arm
 fn panic_on_error<T>(result: Result<T, Infallible>) -> T {
     match result {
         Ok(value) => value,
@@ -646,7 +645,7 @@ macro_rules! collection_method_allocator_stats {
         /// This merely exists for api parity with `Mut*` collections which can't have a `allocator` method.
         #[must_use]
         #[inline(always)]
-        pub fn allocator_stats(&self) -> $crate::stats::AnyStats<'_> {
+        pub fn allocator_stats(&self) -> A::Stats<'_> {
             self.allocator.stats()
         }
     };
@@ -661,7 +660,7 @@ macro_rules! mut_collection_method_allocator_stats {
         /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
         #[must_use]
         #[inline(always)]
-        pub fn allocator_stats(&self) -> $crate::stats::AnyStats<'_> {
+        pub fn allocator_stats(&self) -> A::Stats<'_> {
             self.allocator.stats()
         }
     };

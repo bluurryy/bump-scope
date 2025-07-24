@@ -9,7 +9,7 @@ use alloc_crate::{
     vec::{self, Vec},
 };
 
-use crate::{unsize_bump_box, BumpAllocator, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev};
+use crate::{unsize_bump_box, BumpAllocatorExt, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev};
 
 mod drain;
 mod extract_if;
@@ -209,7 +209,7 @@ unsafe impl<T> TakeOwnedSlice for FixedBumpVec<'_, T> {
     }
 }
 
-unsafe impl<T, A: BumpAllocator> TakeOwnedSlice for BumpVec<T, A> {
+unsafe impl<T, A: BumpAllocatorExt> TakeOwnedSlice for BumpVec<T, A> {
     type Item = T;
 
     #[inline]

@@ -1,6 +1,6 @@
 [package]
 name = "bump-scope"
-version = "0.17.4"
+version = "1.0.0-dev"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types."
@@ -8,7 +8,7 @@ categories = ["memory-management", "no-std", "no-std::no-alloc"]
 keywords = ["allocator", "arena", "no-std", "bump", "allocation"]
 documentation = "https://docs.rs/bump-scope"
 repository = "https://github.com/bluurryy/bump-scope"
-rust-version = "1.64.0"
+rust-version = "1.65.0"
 readme = "README.md"
 exclude = ["*.nu", "justfile", "tests", ".vscode", ".github"]
 

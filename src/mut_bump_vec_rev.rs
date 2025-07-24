@@ -19,7 +19,7 @@ use crate::{
     mut_collection_method_allocator_stats,
     owned_slice::{OwnedSlice, TakeOwnedSlice},
     polyfill::{self, hint::likely, non_null, pointer},
-    BumpBox, ErrorBehavior, MutBumpAllocator, MutBumpAllocatorScope, NoDrop, SetLenOnDrop, SizedTypeProperties,
+    BumpBox, ErrorBehavior, MutBumpAllocatorExt, MutBumpAllocatorScopeExt, NoDrop, SetLenOnDrop, SizedTypeProperties,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -27,7 +27,7 @@ use crate::panic_on_error;
 
 /// This is like [`vec!`](alloc_crate::vec!) but allocates inside a bump allocator, returning a [`MutBumpVecRev`].
 ///
-/// `$bump` can be any type that implements [`MutBumpAllocator`].
+/// `$bump` can be any type that implements [`MutBumpAllocatorExt`].
 ///
 /// # Panics
 /// If used without `try`, panics on allocation failure.
@@ -636,7 +636,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     }
 }
 
-impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
+impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
     /// Constructs a new empty vector with at least the specified capacity
     /// in the provided bump allocator.
     ///
@@ -2281,7 +2281,7 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     #[must_use]
     #[inline]
     fn into_slice_ptr(self) -> NonNull<[T]> {
-        let mut this = ManuallyDrop::new(self);
+        let this = ManuallyDrop::new(self);
 
         if T::IS_ZST {
             return non_null::slice_from_raw_parts(NonNull::dangling(), this.len());
@@ -2296,7 +2296,7 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
         let end = this.end;
         let len = this.len;
         let cap = this.cap;
-        unsafe { this.allocator.use_prepared_slice_allocation_rev(end, len, cap) }
+        unsafe { this.allocator.allocate_prepared_slice_rev(end, len, cap) }
     }
 
     /// # Safety
@@ -2432,7 +2432,7 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
     mut_collection_method_allocator_stats!();
 }
 
-impl<'a, T, A: MutBumpAllocatorScope<'a>> MutBumpVecRev<T, A> {
+impl<'a, T, A: MutBumpAllocatorScopeExt<'a>> MutBumpVecRev<T, A> {
     /// Turns this `MutBumpVecRev<T>` into a `BumpBox<[T]>`.
     ///
     /// Unused capacity does not take up space.<br/>
@@ -2548,7 +2548,7 @@ impl<T, A, I: SliceIndex<[T]>> IndexMut<I> for MutBumpVecRev<T, A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<U, A: MutBumpAllocator> Extend<U> for MutBumpVecRev<U, A> {
+impl<U, A: MutBumpAllocatorExt> Extend<U> for MutBumpVecRev<U, A> {
     #[inline]
     fn extend<T: IntoIterator<Item = U>>(&mut self, iter: T) {
         let iter = iter.into_iter();
@@ -2600,7 +2600,7 @@ impl<T, A> Drop for MutBumpVecRev<T, A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<'t, T: Clone + 't, A: MutBumpAllocator> Extend<&'t T> for MutBumpVecRev<T, A> {
+impl<'t, T: Clone + 't, A: MutBumpAllocatorExt> Extend<&'t T> for MutBumpVecRev<T, A> {
     #[inline]
     fn extend<I: IntoIterator<Item = &'t T>>(&mut self, iter: I) {
         let iter = iter.into_iter();
@@ -2700,7 +2700,7 @@ impl<T: Hash, A> Hash for MutBumpVecRev<T, A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<T, A: MutBumpAllocator + Default> FromIterator<T> for MutBumpVecRev<T, A> {
+impl<T, A: MutBumpAllocatorExt + Default> FromIterator<T> for MutBumpVecRev<T, A> {
     #[inline]
     #[track_caller]
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {

@@ -13,7 +13,7 @@ use crate::{
     alloc::AllocError,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     polyfill::{self, hint::likely, non_null, pointer, slice},
-    BumpAllocatorScope, BumpBox, BumpVec, ErrorBehavior, NoDrop, SizedTypeProperties,
+    BumpAllocatorScopeExt, BumpBox, BumpVec, ErrorBehavior, NoDrop, SizedTypeProperties,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -160,7 +160,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn with_capacity_in(capacity: usize, allocator: impl BumpAllocatorScope<'a>) -> Self {
+    pub fn with_capacity_in(capacity: usize, allocator: impl BumpAllocatorScopeExt<'a>) -> Self {
         panic_on_error(Self::generic_with_capacity_in(capacity, allocator))
     }
 
@@ -203,14 +203,14 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    pub fn try_with_capacity_in(capacity: usize, allocator: impl BumpAllocatorScope<'a>) -> Result<Self, AllocError> {
+    pub fn try_with_capacity_in(capacity: usize, allocator: impl BumpAllocatorScopeExt<'a>) -> Result<Self, AllocError> {
         Self::generic_with_capacity_in(capacity, allocator)
     }
 
     #[inline]
     pub(crate) fn generic_with_capacity_in<E: ErrorBehavior>(
         capacity: usize,
-        allocator: impl BumpAllocatorScope<'a>,
+        allocator: impl BumpAllocatorScopeExt<'a>,
     ) -> Result<Self, E> {
         Ok(BumpVec::generic_with_capacity_in(capacity, allocator)?.into_fixed_vec())
     }
@@ -237,7 +237,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     pub fn from_iter_in<I, A>(iter: I, allocator: A) -> Self
     where
         I: IntoIterator<Item = T>,
-        A: BumpAllocatorScope<'a>,
+        A: BumpAllocatorScopeExt<'a>,
     {
         panic_on_error(Self::generic_from_iter_in(iter, allocator))
     }
@@ -263,7 +263,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     pub fn try_from_iter_in<I, A>(iter: I, allocator: A) -> Result<Self, AllocError>
     where
         I: IntoIterator<Item = T>,
-        A: BumpAllocatorScope<'a>,
+        A: BumpAllocatorScopeExt<'a>,
     {
         Self::generic_from_iter_in(iter, allocator)
     }
@@ -272,7 +272,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     pub(crate) fn generic_from_iter_in<E: ErrorBehavior, I, A>(iter: I, allocator: A) -> Result<Self, E>
     where
         I: IntoIterator<Item = T>,
-        A: BumpAllocatorScope<'a>,
+        A: BumpAllocatorScopeExt<'a>,
     {
         Ok(BumpVec::generic_from_iter_in(iter, allocator)?.into_fixed_vec())
     }
@@ -298,7 +298,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     where
         I: IntoIterator<Item = T>,
         I::IntoIter: ExactSizeIterator,
-        A: BumpAllocatorScope<'a>,
+        A: BumpAllocatorScopeExt<'a>,
     {
         panic_on_error(Self::generic_from_iter_exact_in(iter, allocator))
     }
@@ -323,7 +323,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     where
         I: IntoIterator<Item = T>,
         I::IntoIter: ExactSizeIterator,
-        A: BumpAllocatorScope<'a>,
+        A: BumpAllocatorScopeExt<'a>,
     {
         Self::generic_from_iter_exact_in(iter, allocator)
     }
@@ -333,7 +333,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     where
         I: IntoIterator<Item = T>,
         I::IntoIter: ExactSizeIterator,
-        A: BumpAllocatorScope<'a>,
+        A: BumpAllocatorScopeExt<'a>,
     {
         Ok(BumpVec::generic_from_iter_exact_in(iter, allocator)?.into_fixed_vec())
     }
@@ -419,7 +419,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// Turns this `FixedBumpVec<T>` into a `BumpVec<T>`.
     #[must_use]
     #[inline(always)]
-    pub fn into_vec<A: BumpAllocatorScope<'a>>(self, allocator: A) -> BumpVec<T, A> {
+    pub fn into_vec<A: BumpAllocatorScopeExt<'a>>(self, allocator: A) -> BumpVec<T, A> {
         BumpVec::from_parts(self, allocator)
     }
 

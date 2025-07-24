@@ -135,43 +135,6 @@ where
     }
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
-    for &mut BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-    #[inline(always)]
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        BumpScope::allocate(self, layout)
-    }
-
-    #[inline(always)]
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        BumpScope::deallocate(self, ptr, layout);
-    }
-
-    #[inline(always)]
-    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        BumpScope::grow(self, ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    unsafe fn grow_zeroed(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: Layout,
-        new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocError> {
-        BumpScope::grow_zeroed(self, ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        BumpScope::shrink(self, ptr, old_layout, new_layout)
-    }
-}
-
 /// These functions are only available if the `BumpScope` is [guaranteed allocated](crate#guaranteed_allocated-parameter).
 #[allow(clippy::needless_lifetimes)]
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
@@ -370,6 +333,10 @@ where
 
     /// Creates a checkpoint of the current bump position.
     ///
+    /// The bump position can be reset to this checkpoint with [`reset_to`].
+    ///
+    /// [`reset_to`]: Self::reset_to
+    ///
     /// # Examples
     ///
     /// ```
@@ -391,7 +358,8 @@ where
         Checkpoint::new(self.chunk.get())
     }
 
-    /// Resets the bump position to a previously created checkpoint. The memory that has been allocated since then will be reused by future allocations.
+    /// Resets the bump position to a previously created checkpoint.
+    /// The memory that has been allocated since then will be reused by future allocations.
     ///
     /// # Safety
     ///
@@ -465,28 +433,18 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn use_prepared_slice_allocation<T>(
-        &mut self,
-        mut start: NonNull<T>,
-        len: usize,
-        cap: usize,
-    ) -> NonNull<[T]> {
+    pub(crate) unsafe fn use_prepared_slice_allocation<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         let end = non_null::add(start, len);
 
         if UP {
-            self.set_pos(non_null::addr(end), T::ALIGN);
+            self.set_aligned_pos(non_null::addr(end), T::ALIGN);
             non_null::slice_from_raw_parts(start, len)
         } else {
-            {
-                let dst_end = non_null::add(start, cap);
-                let dst = non_null::sub(dst_end, len);
-
-                non_null::copy(start, dst, len);
-                start = dst;
-            }
-
-            self.set_pos(non_null::addr(start), T::ALIGN);
-            non_null::slice_from_raw_parts(start, len)
+            let dst_end = non_null::add(start, cap);
+            let dst = non_null::sub(dst_end, len);
+            non_null::copy(start, dst, len);
+            self.set_aligned_pos(non_null::addr(dst), T::ALIGN);
+            non_null::slice_from_raw_parts(dst, len)
         }
     }
 
@@ -499,6 +457,7 @@ where
     ) -> NonNull<[T]> {
         let mut start = non_null::sub(end, len);
 
+        // FIXME: refactor like `BumpAllocator::allocate_prepared_rev`
         if UP {
             {
                 let dst = non_null::sub(end, cap);
@@ -509,24 +468,29 @@ where
                 end = dst_end;
             }
 
-            self.set_pos(non_null::addr(end), T::ALIGN);
+            self.set_aligned_pos(non_null::addr(end), T::ALIGN);
             non_null::slice_from_raw_parts(start, len)
         } else {
-            self.set_pos(non_null::addr(start), T::ALIGN);
+            self.set_aligned_pos(non_null::addr(start), T::ALIGN);
             non_null::slice_from_raw_parts(start, len)
         }
     }
 
     #[inline(always)]
-    fn set_pos(&self, pos: NonZeroUsize, current_align: usize) {
+    pub(crate) fn set_aligned_pos(&self, pos: NonZeroUsize, pos_align: usize) {
         let chunk = self.chunk.get();
-        debug_assert_eq!(pos.get() % current_align, 0);
-
+        debug_assert_eq!(pos.get() % pos_align, 0);
         unsafe { chunk.set_pos_addr(pos.get()) }
-
-        if current_align < MIN_ALIGN {
+        if pos_align < MIN_ALIGN {
             chunk.align_pos_to::<MIN_ALIGN>();
         }
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn set_pos(&self, pos: NonZeroUsize) {
+        let chunk = self.chunk.get();
+        chunk.set_pos_addr(pos.get());
+        chunk.align_pos_to::<MIN_ALIGN>();
     }
 
     #[inline(always)]
@@ -555,38 +519,12 @@ where
         }
     }
 
-    #[inline(always)]
-    pub(crate) fn generic_prepare_slice_allocation<B: ErrorBehavior, T>(
-        &mut self,
-        cap: usize,
-    ) -> Result<(NonNull<T>, usize), B> {
-        let Range { start, end } = self.prepare_allocation_range::<B, T>(cap)?;
-
-        // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-        let capacity = unsafe { non_null::byte_offset_from_unsigned(end, start) } / T::SIZE;
-
-        Ok((start, capacity))
-    }
-
-    #[inline(always)]
-    pub(crate) fn generic_prepare_slice_allocation_rev<B: ErrorBehavior, T>(
-        &mut self,
-        cap: usize,
-    ) -> Result<(NonNull<T>, usize), B> {
-        let Range { start, end } = self.prepare_allocation_range::<B, T>(cap)?;
-
-        // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-        let capacity = unsafe { non_null::byte_offset_from_unsigned(end, start) } / T::SIZE;
-
-        Ok((end, capacity))
-    }
-
     /// Returns a pointer range.
     /// The start and end pointers are aligned.
     /// But `end - start` is *not* a multiple of `size_of::<T>()`.
     /// So `end.offset_from_unsigned(start)` may not be used!
     #[inline(always)]
-    fn prepare_allocation_range<B: ErrorBehavior, T>(&mut self, cap: usize) -> Result<Range<NonNull<T>>, B> {
+    pub(crate) fn prepare_allocation_range<B: ErrorBehavior, T>(&self, cap: usize) -> Result<Range<NonNull<T>>, B> {
         let layout = match ArrayLayout::array::<T>(cap) {
             Ok(ok) => ok,
             Err(_) => return Err(B::capacity_overflow()),

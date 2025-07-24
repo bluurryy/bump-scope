@@ -11,7 +11,7 @@ use std::{
 
 use crate::{
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
-    unsize_bump_box, Bump, BumpAllocator, BumpBox, BumpVec, FixedBumpVec, MutBumpAllocator, MutBumpVec, MutBumpVecRev,
+    unsize_bump_box, Bump, BumpAllocatorExt, BumpBox, BumpVec, FixedBumpVec, MutBumpAllocatorExt, MutBumpVec, MutBumpVecRev,
 };
 
 trait Append<T>: Deref<Target = [T]> {
@@ -24,19 +24,19 @@ impl<T> Append<T> for FixedBumpVec<'_, T> {
     }
 }
 
-impl<T, A: BumpAllocator> Append<T> for BumpVec<T, A> {
+impl<T, A: BumpAllocatorExt> Append<T> for BumpVec<T, A> {
     fn append(&mut self, other: impl OwnedSlice<Item = T>) {
         BumpVec::append(self, other);
     }
 }
 
-impl<T, A: MutBumpAllocator> Append<T> for MutBumpVec<T, A> {
+impl<T, A: MutBumpAllocatorExt> Append<T> for MutBumpVec<T, A> {
     fn append(&mut self, other: impl OwnedSlice<Item = T>) {
         MutBumpVec::append(self, other);
     }
 }
 
-impl<T, A: MutBumpAllocator> Append<T> for MutBumpVecRev<T, A> {
+impl<T, A: MutBumpAllocatorExt> Append<T> for MutBumpVecRev<T, A> {
     fn append(&mut self, other: impl OwnedSlice<Item = T>) {
         MutBumpVecRev::append(self, other);
     }

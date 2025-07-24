@@ -305,43 +305,6 @@ where
     }
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
-    for &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-    #[inline(always)]
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        Bump::allocate(self, layout)
-    }
-
-    #[inline(always)]
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        Bump::deallocate(self, ptr, layout);
-    }
-
-    #[inline(always)]
-    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        Bump::grow(self, ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    unsafe fn grow_zeroed(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: Layout,
-        new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocError> {
-        Bump::grow_zeroed(self, ptr, old_layout, new_layout)
-    }
-
-    #[inline(always)]
-    unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        Bump::shrink(self, ptr, old_layout, new_layout)
-    }
-}
-
 impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP, false>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -732,6 +695,10 @@ where
 
     /// Creates a checkpoint of the current bump position.
     ///
+    /// The bump position can be reset to this checkpoint with [`reset_to`].
+    ///
+    /// [`reset_to`]: Self::reset_to
+    ///
     /// # Examples
     ///
     /// ```
@@ -753,7 +720,8 @@ where
         Checkpoint::new(self.chunk.get())
     }
 
-    /// Resets the bump position to a previously created checkpoint. The memory that has been allocated since then will be reused by future allocations.
+    /// Resets the bump position to a previously created checkpoint.
+    /// The memory that has been allocated since then will be reused by future allocations.
     ///
     /// # Safety
     ///

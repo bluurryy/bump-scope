@@ -26,7 +26,7 @@ use crate::{
     owned_slice, owned_str,
     polyfill::{self, non_null, pointer, transmute_mut},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BumpAllocatorScope, FromUtf8Error, NoDrop, SizedTypeProperties,
+    BumpAllocatorScopeExt, FromUtf8Error, NoDrop, SizedTypeProperties,
 };
 
 mod slice_initializer;
@@ -312,7 +312,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     #[inline(always)]
     pub fn into_box<A, B>(self, allocator: A) -> B
     where
-        A: BumpAllocatorScope<'a>,
+        A: BumpAllocatorScopeExt<'a>,
         B: BoxLike<T = T, A = A>,
     {
         let ptr = BumpBox::into_raw(self).as_ptr();

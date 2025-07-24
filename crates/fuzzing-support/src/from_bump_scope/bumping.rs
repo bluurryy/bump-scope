@@ -357,10 +357,10 @@ pub(crate) fn bump_prepare_up(props: BumpProps) -> Option<Range<usize>> {
         min_align,
         align_is_const,
         size_is_const: _,
-        size_is_multiple_of_align,
+        size_is_multiple_of_align: _,
     } = props;
 
-    debug_assert!(size_is_multiple_of_align);
+    debug_assert_eq!(layout.size() % layout.align(), 0);
     debug_assert_eq!(end % MIN_CHUNK_ALIGN, 0);
 
     if align_is_const && layout.align() <= min_align {
@@ -416,10 +416,10 @@ pub(crate) fn bump_prepare_down(props: BumpProps) -> Option<Range<usize>> {
         min_align,
         align_is_const,
         size_is_const: _,
-        size_is_multiple_of_align,
+        size_is_multiple_of_align: _,
     } = props;
 
-    debug_assert!(size_is_multiple_of_align);
+    debug_assert_eq!(layout.size() % layout.align(), 0);
 
     if align_is_const && layout.align() <= min_align {
         // Alignment is already sufficient.
