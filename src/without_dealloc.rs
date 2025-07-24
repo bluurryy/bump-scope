@@ -12,15 +12,6 @@ use crate::{
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct WithoutDealloc<A>(pub A);
 
-impl<A> WithoutDealloc<A> {
-    /// Wraps `self` in [`WithoutShrink`] so that [`shrink`] becomes a no-op.
-    ///
-    /// [`shrink`]: Allocator::shrink
-    pub fn without_shrink(self) -> WithoutShrink<Self> {
-        WithoutShrink(self)
-    }
-}
-
 unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -63,15 +54,6 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
 /// This type only implements [`Allocator`] for wrapped types that implement [`BumpAllocator`], so you don't accidentally leak memory.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct WithoutShrink<A>(pub A);
-
-impl<A> WithoutShrink<A> {
-    /// Wraps `self` in [`WithoutDealloc`] so that [`deallocate`] becomes a no-op.
-    ///
-    /// [`deallocate`]: Allocator::deallocate
-    pub fn without_dealloc(self) -> WithoutDealloc<Self> {
-        WithoutDealloc(self)
-    }
-}
 
 unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
     #[inline(always)]
