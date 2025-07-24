@@ -417,7 +417,6 @@ where
         }
     }
 
-    // TODO: test
     #[inline(always)]
     unsafe fn allocate_prepared(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8> {
         debug_assert_eq!(non_null::addr(range.start).get() % layout.align(), 0);
@@ -438,7 +437,6 @@ where
         }
     }
 
-    // TODO: test
     #[inline(always)]
     unsafe fn allocate_prepared_rev(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8> {
         debug_assert_eq!(non_null::addr(range.start).get() % layout.align(), 0);
