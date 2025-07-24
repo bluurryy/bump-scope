@@ -103,7 +103,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
                 header
             } else {
-                let header = non_null::sub(ptr.add(size).cast::<ChunkHeader<A>>(), 1);
+                let header = ptr.add(size).cast::<ChunkHeader<A>>().sub(1);
 
                 header.as_ptr().write(ChunkHeader {
                     pos: Cell::new(header.cast()),

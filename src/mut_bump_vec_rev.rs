@@ -253,7 +253,7 @@ impl<T, A> MutBumpVecRev<T, A> {
         debug_assert!(self.len < self.cap);
 
         unsafe {
-            let ptr = non_null::sub(self.end, self.len + 1);
+            let ptr = self.end.sub(self.len + 1);
             non_null::write_with(ptr, f);
         }
 
@@ -495,7 +495,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     #[inline(always)]
     pub const fn as_non_null(&self) -> NonNull<T> {
         // SAFETY: The start pointer is never null.
-        unsafe { non_null::sub(self.end, self.len) }
+        unsafe { self.end.sub(self.len) }
     }
 
     /// Returns a `NonNull` pointer to the vector's buffer, or a dangling
@@ -505,7 +505,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_ptr(&self) -> NonNull<T> {
-        unsafe { non_null::sub(self.end, self.len) }
+        unsafe { self.end.sub(self.len) }
     }
 
     /// Returns a `NonNull` pointer to the vector's buffer, or a dangling
@@ -2639,7 +2639,7 @@ impl<T, A> IntoIterator for MutBumpVecRev<T, A> {
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
         let (end, len, _cap, allocator) = self.into_raw_parts();
-        let start = unsafe { non_null::sub(end, len) };
+        let start = unsafe { end.sub(len) };
         let slice = non_null::slice_from_raw_parts(start, len);
         unsafe { IntoIter::new(slice, allocator) }
     }

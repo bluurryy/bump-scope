@@ -435,7 +435,7 @@ where
             } else {
                 let src = range.start;
                 let dst_end = range.end;
-                let dst = non_null::sub(dst_end, layout.size());
+                let dst = dst_end.sub(layout.size());
                 non_null::copy(src, dst, layout.size());
                 self.set_pos(dst.addr());
                 dst
@@ -455,7 +455,7 @@ where
                 let dst_end = dst.add(layout.size());
 
                 let src_end = range.end;
-                let src = non_null::sub(src_end, layout.size());
+                let src = src_end.sub(layout.size());
 
                 non_null::copy(src, dst, layout.size());
 
@@ -464,7 +464,7 @@ where
                 dst
             } else {
                 let dst_end = range.end;
-                let dst = non_null::sub(dst_end, layout.size());
+                let dst = dst_end.sub(layout.size());
                 self.set_pos(dst.addr());
                 dst
             }

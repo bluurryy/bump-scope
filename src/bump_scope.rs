@@ -444,7 +444,7 @@ where
                 non_null::slice_from_raw_parts(start, len)
             } else {
                 let dst_end = start.add(cap);
-                let dst = non_null::sub(dst_end, len);
+                let dst = dst_end.sub(len);
                 non_null::copy(start, dst, len);
                 self.set_aligned_pos(dst.addr(), T::ALIGN);
                 non_null::slice_from_raw_parts(dst, len)
@@ -460,12 +460,12 @@ where
         cap: usize,
     ) -> NonNull<[T]> {
         unsafe {
-            let mut start = non_null::sub(end, len);
+            let mut start = end.sub(len);
 
             // FIXME: refactor like `BumpAllocator::allocate_prepared_rev`
             if UP {
                 {
-                    let dst = non_null::sub(end, cap);
+                    let dst = end.sub(cap);
                     let dst_end = dst.add(len);
 
                     non_null::copy(start, dst, len);
@@ -533,11 +533,7 @@ where
         // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
         let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
 
-        let ptr = if UP {
-            range.start
-        } else {
-            unsafe { non_null::sub(range.end, cap) }
-        };
+        let ptr = if UP { range.start } else { unsafe { range.end.sub(cap) } };
 
         Ok(non_null::slice_from_raw_parts(ptr, cap))
     }

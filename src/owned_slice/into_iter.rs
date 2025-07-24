@@ -203,7 +203,7 @@ impl<T> DoubleEndedIterator for IntoIter<'_, T> {
             Some(unsafe { mem::zeroed() })
         } else {
             unsafe {
-                self.end = non_null::sub(self.end, 1);
+                self.end = self.end.sub(1);
                 Some(self.end.as_ptr().read())
             }
         }

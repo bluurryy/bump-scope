@@ -178,7 +178,7 @@ impl<T, A> DoubleEndedIterator for IntoIter<T, A> {
             // Make up a value of this ZST.
             Some(unsafe { mem::zeroed() })
         } else {
-            self.end = unsafe { non_null::sub(self.end, 1) };
+            self.end = unsafe { self.end.sub(1) };
 
             Some(unsafe { self.end.as_ptr().read() })
         }

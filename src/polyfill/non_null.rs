@@ -6,19 +6,6 @@ use core::{
 
 use crate::polyfill::{self, pointer};
 
-/// See [`std::ptr::NonNull::sub`].
-#[inline(always)]
-pub(crate) const unsafe fn sub<T>(ptr: NonNull<T>, delta: usize) -> NonNull<T>
-where
-    T: Sized,
-{
-    // SAFETY: We require that the delta stays in-bounds of the object, and
-    // thus it cannot become null, as no legal objects can be allocated
-    // in such as way that the null address is part of them.
-    // And the caller promised the `delta` is sound to subtract.
-    NonNull::new_unchecked(ptr.as_ptr().sub(delta))
-}
-
 /// See [`std::ptr::NonNull::byte_add`].
 #[must_use]
 #[inline(always)]

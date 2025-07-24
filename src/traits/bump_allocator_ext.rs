@@ -571,7 +571,7 @@ fn prepare_slice_allocation<T>(bump: impl BumpAllocator, min_cap: usize) -> NonN
             let ptr = if is_upwards_allocating(&bump) {
                 range.start.cast::<T>()
             } else {
-                unsafe { non_null::sub(range.end.cast::<T>(), cap) }
+                unsafe { range.end.cast::<T>().sub(cap) }
             };
 
             non_null::slice_from_raw_parts(ptr.cast(), cap)
@@ -595,7 +595,7 @@ fn try_prepare_slice_allocation<T>(bump: impl BumpAllocator, len: usize) -> Resu
             let ptr = if is_upwards_allocating(&bump) {
                 range.start.cast::<T>()
             } else {
-                unsafe { non_null::sub(range.end.cast::<T>(), cap) }
+                unsafe { range.end.cast::<T>().sub(cap) }
             };
 
             Ok(non_null::slice_from_raw_parts(ptr.cast(), cap))
@@ -619,7 +619,7 @@ unsafe fn allocate_prepared_slice<T>(bump: impl BumpAllocator, ptr: NonNull<T>, 
 #[allow(clippy::needless_pass_by_value)]
 unsafe fn allocate_prepared_slice_rev<T>(bump: impl BumpAllocator, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
     unsafe {
-        let range = non_null::cast_range(non_null::sub(ptr, cap)..ptr);
+        let range = non_null::cast_range(ptr.sub(cap)..ptr);
         let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);
         let data = bump.allocate_prepared_rev(layout, range).cast();
         non_null::slice_from_raw_parts(data, len)

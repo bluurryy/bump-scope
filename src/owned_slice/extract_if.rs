@@ -86,7 +86,7 @@ where
                     return Some(value_ptr.as_ptr().read());
                 } else if self.drained_count > 0 {
                     let src = value_ptr;
-                    let dst = non_null::sub(value_ptr, self.drained_count);
+                    let dst = value_ptr.sub(self.drained_count);
                     non_null::copy_nonoverlapping(src, dst, 1);
                 }
             }
@@ -115,7 +115,7 @@ where
                 // drained item prior to a panic in the predicate.
                 let ptr = non_null::as_non_null_ptr(*self.ptr);
                 let src = ptr.add(self.index);
-                let dst = non_null::sub(src, self.drained_count);
+                let dst = src.sub(self.drained_count);
                 let tail_len = self.original_len - self.index;
                 non_null::copy(src, dst, tail_len);
             }

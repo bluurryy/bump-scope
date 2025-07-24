@@ -1,8 +1,8 @@
 use ::bytemuck::Zeroable;
 
 use crate::{
-    alloc::AllocError, polyfill::non_null, BumpAllocatorExt, BumpVec, ErrorBehavior, FixedBumpVec, MutBumpAllocatorExt,
-    MutBumpVec, MutBumpVecRev,
+    alloc::AllocError, BumpAllocatorExt, BumpVec, ErrorBehavior, FixedBumpVec, MutBumpAllocatorExt, MutBumpVec,
+    MutBumpVecRev,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -703,7 +703,7 @@ impl<T: Zeroable, A: MutBumpAllocatorExt> PrivateVecExt for MutBumpVecRev<T, A> 
 
         unsafe {
             let new_len = self.len() + additional;
-            non_null::sub(self.end, new_len).as_ptr().write_bytes(0, additional);
+            self.end.sub(new_len).as_ptr().write_bytes(0, additional);
             self.set_len(new_len);
         }
 
