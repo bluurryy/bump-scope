@@ -1,8 +1,10 @@
 use core::{
-    num::NonZeroUsize,
     ops::Range,
     ptr::{self, NonNull},
 };
+
+#[cfg(feature = "alloc")]
+use core::num::NonZeroUsize;
 
 use crate::polyfill::pointer;
 

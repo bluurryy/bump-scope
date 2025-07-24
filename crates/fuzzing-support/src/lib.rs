@@ -46,7 +46,7 @@ where
     }
 
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        self.inner.deallocate(ptr, layout)
+        unsafe { self.inner.deallocate(ptr, layout) };
     }
 
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -54,7 +54,7 @@ where
     }
 
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.grow(ptr, old_layout, new_layout)
+        unsafe { self.inner.grow(ptr, old_layout, new_layout) }
     }
 
     unsafe fn grow_zeroed(
@@ -63,11 +63,11 @@ where
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.grow_zeroed(ptr, old_layout, new_layout)
+        unsafe { self.inner.grow_zeroed(ptr, old_layout, new_layout) }
     }
 
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.inner.shrink(ptr, old_layout, new_layout)
+        unsafe { self.inner.shrink(ptr, old_layout, new_layout) }
     }
 }
 
@@ -99,7 +99,7 @@ where
     }
 
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        self.inner.deallocate(ptr, layout)
+        unsafe { self.inner.deallocate(ptr, layout) };
     }
 
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -115,7 +115,7 @@ where
             return Err(AllocError);
         }
 
-        self.inner.grow(ptr, old_layout, new_layout)
+        unsafe { self.inner.grow(ptr, old_layout, new_layout) }
     }
 
     unsafe fn grow_zeroed(
@@ -128,7 +128,7 @@ where
             return Err(AllocError);
         }
 
-        self.inner.grow_zeroed(ptr, old_layout, new_layout)
+        unsafe { self.inner.grow_zeroed(ptr, old_layout, new_layout) }
     }
 
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -136,7 +136,7 @@ where
             return Err(AllocError);
         }
 
-        self.inner.shrink(ptr, old_layout, new_layout)
+        unsafe { self.inner.shrink(ptr, old_layout, new_layout) }
     }
 }
 
