@@ -3,7 +3,7 @@
 //! This crate's [`Allocator`], [`AllocError`] and [`Global`] resemble the types and traits from
 //! the nightly allocator api of the standard library (3528a5b 2025-05-11).
 //!
-//! `bump-scope` provides compatibility with the allocator api's of
+//! `bump-scope` provides compatibility with the allocator apis of:
 //! - the nightly standard library via the feature `nightly-allocator-api`
 //! - `allocator_api2` version 0.2 via the feature `allocator-api2-02`
 //! - `allocator_api2` version 0.3 via the feature `allocator-api2-03`
