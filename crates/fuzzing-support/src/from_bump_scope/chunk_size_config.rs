@@ -151,11 +151,7 @@ impl ChunkSizeConfig {
 }
 
 const fn max(lhs: usize, rhs: usize) -> usize {
-    if lhs > rhs {
-        lhs
-    } else {
-        rhs
-    }
+    if lhs > rhs { lhs } else { rhs }
 }
 
 const fn offset_add_layout(mut offset: usize, layout: Layout) -> Option<usize> {
