@@ -377,7 +377,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
             debug_assert!(self.contains_addr_or_end(addr));
             let ptr = self.header.cast();
             let addr = NonZeroUsize::new_unchecked(addr);
-            non_null::with_addr(ptr, addr)
+            ptr.with_addr(addr)
         }
     }
 

@@ -6,15 +6,6 @@ use core::{
 
 use crate::polyfill::{self, pointer};
 
-/// See [`std::ptr::NonNull::with_addr`].
-#[must_use]
-#[inline(always)]
-#[allow(clippy::ptr_as_ptr)]
-pub(crate) fn with_addr<T>(ptr: NonNull<T>, addr: NonZeroUsize) -> NonNull<T> {
-    // SAFETY: The result of `ptr::from::with_addr` is non-null because `addr` is guaranteed to be non-zero.
-    unsafe { NonNull::new_unchecked(ptr.as_ptr().with_addr(addr.get()) as *mut _) }
-}
-
 /// See [`std::ptr::NonNull::offset_from_unsigned`].
 #[must_use]
 #[inline(always)]

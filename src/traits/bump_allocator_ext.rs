@@ -997,7 +997,7 @@ where
                 let new_addr = NonZeroUsize::new_unchecked(new_addr);
                 let old_addr_new_end = NonZeroUsize::new_unchecked(old_addr.get() + new_size);
 
-                let new_ptr = non_null::with_addr(old_ptr, new_addr);
+                let new_ptr = old_ptr.with_addr(new_addr);
                 let overlaps = old_addr_new_end > new_addr;
 
                 if overlaps {

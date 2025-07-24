@@ -52,7 +52,7 @@ unsafe fn deallocate_assume_last<const MIN_ALIGN: usize, const UP: bool, const G
             addr += layout.size();
             addr = up_align_usize_unchecked(addr, MIN_ALIGN);
 
-            let pos = non_null::with_addr(ptr, NonZeroUsize::new_unchecked(addr));
+            let pos = ptr.with_addr(NonZeroUsize::new_unchecked(addr));
             bump.chunk.get().set_pos(pos);
         }
     }
@@ -139,7 +139,7 @@ where
                     let new_addr = NonZeroUsize::new_unchecked(new_addr);
                     let new_addr_end = new_addr.get() + new_layout.size();
 
-                    let new_ptr = non_null::with_addr(old_ptr, new_addr);
+                    let new_ptr = old_ptr.with_addr(new_addr);
 
                     // Check if the regions don't overlap so we may use the faster `copy_nonoverlapping`.
                     if new_addr_end < old_addr.get() {
@@ -289,7 +289,7 @@ where
 
             let new_addr = bump_down(old_end_addr, new_layout.size(), new_layout.align().max(MIN_ALIGN));
             let new_addr = NonZeroUsize::new_unchecked(new_addr);
-            let new_ptr = non_null::with_addr(old_ptr, new_addr);
+            let new_ptr = old_ptr.with_addr(new_addr);
 
             let copy_src_end = NonZeroUsize::new_unchecked(old_addr.get() + new_layout.size());
             let copy_dst_start = new_addr;

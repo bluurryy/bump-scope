@@ -2,7 +2,6 @@ use core::{fmt::Debug, marker::PhantomData, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
     chunk_header::ChunkHeader,
-    polyfill::non_null,
     stats::{AnyStats, Stats},
     BaseAllocator, Bump, BumpScope, MinimumAlignment, RawChunk, SupportedMinimumAlignment,
 };
@@ -23,7 +22,7 @@ impl Checkpoint {
 
     pub(crate) unsafe fn reset_within_chunk(self) {
         unsafe {
-            let ptr = non_null::with_addr(self.chunk.cast::<u8>(), self.address);
+            let ptr = self.chunk.cast::<u8>().with_addr(self.address);
             self.chunk.as_ref().pos.set(ptr);
         }
     }
