@@ -14,7 +14,7 @@ use crate::{
     alloc::AllocError,
     min_non_zero_cap, mut_collection_method_allocator_stats,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
-    polyfill::{hint::likely, non_null, pointer, slice},
+    polyfill::{hint::likely, non_null, slice},
     raw_fixed_bump_vec::RawFixedBumpVec,
     BumpBox, ErrorBehavior, MutBumpAllocatorExt, MutBumpAllocatorScopeExt, NoDrop, SizedTypeProperties,
 };
@@ -2022,7 +2022,7 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVec<T, A> {
     #[inline(always)]
     unsafe fn extend_by_copy_nonoverlapping<E: ErrorBehavior>(&mut self, other: *const [T]) -> Result<(), E> {
         unsafe {
-            let len = pointer::len(other);
+            let len = other.len();
             self.generic_reserve(len)?;
 
             let src = other.cast::<T>();

@@ -2141,7 +2141,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     #[inline(always)]
     unsafe fn extend_by_copy_nonoverlapping<B: ErrorBehavior>(&mut self, other: *const [T]) -> Result<(), B> {
         unsafe {
-            let len = pointer::len(other);
+            let len = other.len();
             self.generic_reserve(len)?;
 
             let src = other.cast::<T>();

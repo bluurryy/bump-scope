@@ -2106,7 +2106,7 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
     #[inline(always)]
     unsafe fn extend_by_copy_nonoverlapping<E: ErrorBehavior>(&mut self, other: *const [T]) -> Result<(), E> {
         unsafe {
-            let len = pointer::len(other);
+            let len = other.len();
             self.generic_reserve(len)?;
 
             let src = other.cast::<T>();

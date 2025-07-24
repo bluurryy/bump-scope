@@ -2,20 +2,6 @@ use core::{mem, ptr};
 
 use crate::polyfill;
 
-/// See `<*const T>::len`.
-///
-/// This implementation has an additional safety invariant though.
-///
-/// # Safety
-/// `ptr` must be valid to be turned into a reference.
-#[must_use]
-#[inline(always)]
-pub(crate) unsafe fn len<T>(ptr: *const [T]) -> usize {
-    // if we followed clippy's advice, check would instead complain about `dangerous_implicit_autorefs`
-    #[allow(clippy::needless_borrow)]
-    (&(*ptr)).len()
-}
-
 /// See `<*const T>::offset_from_unsigned`.
 #[inline]
 #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
