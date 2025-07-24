@@ -1,3 +1,4 @@
+use core::ptr;
 use std::{cell::Cell, convert::Infallible, fmt, thread_local};
 
 thread_local! {
@@ -43,7 +44,7 @@ impl<T> Drop for TestWrap<T> {
 
 impl<T> TestWrap<T> {
     pub(crate) fn peel_slice(this: &[TestWrap<T>]) -> &[T] {
-        unsafe { &*(this as *const [TestWrap<T>] as *const [T]) }
+        unsafe { &*(ptr::from_ref(this) as *const [T]) }
     }
 }
 

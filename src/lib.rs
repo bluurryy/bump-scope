@@ -38,13 +38,8 @@
     clippy::collapsible_else_if,
     clippy::items_after_statements,
     clippy::missing_transmute_annotations,
-    clippy::manual_assert,
     clippy::range_plus_one,
-    clippy::manual_let_else, // FIXME: remove
-    clippy::ptr_cast_constness, // FIXME: remove
     rustdoc::redundant_explicit_links, // for cargo-rdme
-    unknown_lints, // for `private_bounds` in msrv
-    unused_unsafe, // only triggered in old rust versions, like msrv
     clippy::multiple_crate_versions, // we have allocator-api2 version 0.2 and 0.3
     rustdoc::invalid_rust_codeblocks, // for our current workaround to conditionally enable doc tests in macro
 )]
@@ -487,7 +482,7 @@ pub mod private {
     #[cfg(feature = "panic-on-alloc")]
     impl<T: ?Sized> PanicsOnAlloc<T> {
         pub(crate) fn from_mut(value: &mut T) -> &mut PanicsOnAlloc<T> {
-            unsafe { &mut *(value as *mut T as *mut Self) }
+            unsafe { &mut *(core::ptr::from_mut::<T>(value) as *mut Self) }
         }
     }
 
@@ -514,7 +509,7 @@ pub mod private {
     #[must_use]
     #[allow(clippy::needless_lifetimes, clippy::elidable_lifetime_names)]
     pub unsafe fn bump_box_from_raw_with_lifetime<'a, T: ?Sized>(ptr: NonNull<T>, _lifetime: &'a ()) -> BumpBox<'a, T> {
-        BumpBox::from_raw(ptr)
+        unsafe { BumpBox::from_raw(ptr) }
     }
 }
 
@@ -531,11 +526,9 @@ fn handle_alloc_error(_layout: Layout) -> ! {
 // This is just `Result::into_ok` but with a name to match our use case.
 #[inline(always)]
 #[cfg(feature = "panic-on-alloc")]
-#[allow(unreachable_patterns)] // msrv 1.65.0 does not allow omitting the `Err` arm
 fn panic_on_error<T>(result: Result<T, Infallible>) -> T {
     match result {
         Ok(value) => value,
-        Err(_) => unreachable!(),
     }
 }
 

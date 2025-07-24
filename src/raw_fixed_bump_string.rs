@@ -22,31 +22,31 @@ impl RawFixedBumpString {
 
     #[inline(always)]
     pub(crate) const unsafe fn cook<'a>(self) -> FixedBumpString<'a> {
-        transmute(self)
+        unsafe { transmute(self) }
     }
 
     #[inline(always)]
     pub(crate) const unsafe fn cook_ref<'a>(&self) -> &FixedBumpString<'a> {
-        transmute_ref(self)
+        unsafe { transmute_ref(self) }
     }
 
     #[inline(always)]
     pub(crate) unsafe fn cook_mut<'a>(&mut self) -> &mut FixedBumpString<'a> {
-        transmute_mut(self)
+        unsafe { transmute_mut(self) }
     }
 
     #[inline(always)]
     pub(crate) unsafe fn from_cooked(cooked: FixedBumpString<'_>) -> Self {
         let capacity = cooked.capacity();
         let initialized = cooked.into_boxed_str();
-        let initialized = RawBumpBox::from_cooked(initialized);
+        let initialized = unsafe { RawBumpBox::from_cooked(initialized) };
         Self { initialized, capacity }
     }
 
     #[inline(always)]
     pub(crate) unsafe fn allocate<B: ErrorBehavior>(allocator: &impl BumpAllocatorExt, len: usize) -> Result<Self, B> {
         let ptr = B::allocate_slice::<u8>(allocator, len)?;
-        let initialized = RawBumpBox::from_ptr(non_null::str_from_utf8(non_null::slice_from_raw_parts(ptr, 0)));
+        let initialized = unsafe { RawBumpBox::from_ptr(non_null::str_from_utf8(NonNull::slice_from_raw_parts(ptr, 0))) };
         Ok(Self {
             initialized,
             capacity: len,
@@ -59,7 +59,7 @@ impl RawFixedBumpString {
         len: usize,
     ) -> Result<Self, B> {
         let allocation = B::prepare_slice_allocation::<u8>(allocator, len)?;
-        let initialized = RawBumpBox::from_ptr(non_null::str_from_utf8(non_null::slice_from_raw_parts(
+        let initialized = RawBumpBox::from_ptr(non_null::str_from_utf8(NonNull::slice_from_raw_parts(
             non_null::as_non_null_ptr(allocation),
             0,
         )));
@@ -99,12 +99,12 @@ impl RawFixedBumpString {
     #[allow(dead_code)]
     #[inline(always)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<u8>) {
-        self.initialized.set_ptr(new_ptr);
+        unsafe { self.initialized.set_ptr(new_ptr) };
     }
 
     #[inline(always)]
     pub(crate) unsafe fn set_len(&mut self, new_len: usize) {
-        self.initialized.set_len(new_len);
+        unsafe { self.initialized.set_len(new_len) };
     }
 
     #[inline(always)]
@@ -124,7 +124,7 @@ impl RawFixedBumpString {
     #[cfg(feature = "panic-on-alloc")]
     pub(crate) unsafe fn from_raw_parts(slice: NonNull<str>, capacity: usize) -> Self {
         Self {
-            initialized: RawBumpBox::from_ptr(slice),
+            initialized: unsafe { RawBumpBox::from_ptr(slice) },
             capacity,
         }
     }

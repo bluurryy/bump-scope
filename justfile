@@ -31,8 +31,8 @@ check-fmt:
 
 check-semver:
   # FIXME: add "allocator-api2-03" once it got a new release that makes its "alloc" feature msrv compliant
-  cargo +1.65.0 check --no-default-features
-  cargo +1.65.0 check --features serde,zerocopy-08,allocator-api2-02
+  cargo +1.85.1 check --no-default-features
+  cargo +1.85.1 check --features serde,zerocopy-08,allocator-api2-02
 
 check-clippy:
   cargo +stable clippy --tests --no-default-features

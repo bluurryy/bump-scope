@@ -28,31 +28,33 @@ impl<T> RawFixedBumpVec<T> {
         assert!(T::IS_ZST);
 
         RawFixedBumpVec {
-            initialized: unsafe { RawBumpBox::from_ptr(non_null::slice_from_raw_parts(NonNull::dangling(), len)) },
+            initialized: unsafe { RawBumpBox::from_ptr(NonNull::slice_from_raw_parts(NonNull::dangling(), len)) },
             capacity: usize::MAX,
         }
     }
 
     #[inline(always)]
     pub(crate) const unsafe fn cook<'a>(self) -> FixedBumpVec<'a, T> {
-        transmute(self)
+        unsafe { transmute(self) }
     }
 
     #[inline(always)]
     pub(crate) const unsafe fn cook_ref<'a>(&self) -> &FixedBumpVec<'a, T> {
-        transmute_ref(self)
+        unsafe { transmute_ref(self) }
     }
 
     #[inline(always)]
     pub(crate) unsafe fn cook_mut<'a>(&mut self) -> &mut FixedBumpVec<'a, T> {
-        transmute_mut(self)
+        unsafe { transmute_mut(self) }
     }
 
     #[inline(always)]
     pub(crate) unsafe fn from_cooked(cooked: FixedBumpVec<'_, T>) -> Self {
-        let (initialized, capacity) = cooked.into_raw_parts();
-        let initialized = RawBumpBox::from_cooked(initialized);
-        Self { initialized, capacity }
+        unsafe {
+            let (initialized, capacity) = cooked.into_raw_parts();
+            let initialized = RawBumpBox::from_cooked(initialized);
+            Self { initialized, capacity }
+        }
     }
 
     #[inline(always)]
@@ -60,7 +62,7 @@ impl<T> RawFixedBumpVec<T> {
         let ptr = B::allocate_slice::<T>(allocator, len)?;
 
         Ok(Self {
-            initialized: RawBumpBox::from_ptr(non_null::slice_from_raw_parts(ptr, 0)),
+            initialized: unsafe { RawBumpBox::from_ptr(NonNull::slice_from_raw_parts(ptr, 0)) },
             capacity: len,
         })
     }
@@ -73,7 +75,9 @@ impl<T> RawFixedBumpVec<T> {
         let allocation = B::prepare_slice_allocation::<T>(allocator, len)?;
 
         Ok(Self {
-            initialized: RawBumpBox::from_ptr(non_null::slice_from_raw_parts(non_null::as_non_null_ptr(allocation), 0)),
+            initialized: unsafe {
+                RawBumpBox::from_ptr(NonNull::slice_from_raw_parts(non_null::as_non_null_ptr(allocation), 0))
+            },
             capacity: allocation.len(),
         })
     }
@@ -134,12 +138,12 @@ impl<T> RawFixedBumpVec<T> {
 
     #[inline(always)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<T>) {
-        self.initialized.set_ptr(new_ptr);
+        unsafe { self.initialized.set_ptr(new_ptr) };
     }
 
     #[inline(always)]
     pub(crate) unsafe fn set_len(&mut self, new_len: usize) {
-        self.initialized.set_len(new_len);
+        unsafe { self.initialized.set_len(new_len) };
     }
 
     #[inline(always)]
@@ -161,7 +165,7 @@ impl<T> RawFixedBumpVec<T> {
     #[inline(always)]
     pub(crate) unsafe fn from_raw_parts(slice: NonNull<[T]>, capacity: usize) -> Self {
         Self {
-            initialized: RawBumpBox::from_ptr(slice),
+            initialized: unsafe { RawBumpBox::from_ptr(slice) },
             capacity,
         }
     }

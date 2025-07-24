@@ -8,7 +8,7 @@ use core::{
     num::NonZeroUsize,
     ops::Range,
     panic::{RefUnwindSafe, UnwindSafe},
-    ptr::NonNull,
+    ptr::{self, NonNull},
 };
 
 use crate::{
@@ -20,7 +20,7 @@ use crate::{
     const_param_assert, down_align_usize,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     owned_slice::OwnedSlice,
-    polyfill::{self, non_null, transmute_mut, transmute_ref},
+    polyfill::{non_null, transmute_mut, transmute_ref},
     stats::{AnyStats, Stats},
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
     FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk,
@@ -111,12 +111,12 @@ where
 
     #[inline(always)]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        allocator_impl::deallocate(self, ptr, layout);
+        unsafe { allocator_impl::deallocate(self, ptr, layout) };
     }
 
     #[inline(always)]
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        allocator_impl::grow(self, ptr, old_layout, new_layout)
+        unsafe { allocator_impl::grow(self, ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
@@ -126,12 +126,12 @@ where
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        allocator_impl::grow_zeroed(self, ptr, old_layout, new_layout)
+        unsafe { allocator_impl::grow_zeroed(self, ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        allocator_impl::shrink(self, ptr, old_layout, new_layout)
+        unsafe { allocator_impl::shrink(self, ptr, old_layout, new_layout) }
     }
 }
 
@@ -389,9 +389,11 @@ where
             chunk.header == checkpoint.chunk.cast() && chunk.contains_addr_or_end(checkpoint.address.get())
         }));
 
-        checkpoint.reset_within_chunk();
-        let chunk = RawChunk::from_header(checkpoint.chunk.cast());
-        self.chunk.set(chunk);
+        unsafe {
+            checkpoint.reset_within_chunk();
+            let chunk = RawChunk::from_header(checkpoint.chunk.cast());
+            self.chunk.set(chunk);
+        }
     }
 }
 
@@ -434,17 +436,19 @@ where
 
     #[inline(always)]
     pub(crate) unsafe fn use_prepared_slice_allocation<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        let end = non_null::add(start, len);
+        unsafe {
+            let end = start.add(len);
 
-        if UP {
-            self.set_aligned_pos(non_null::addr(end), T::ALIGN);
-            non_null::slice_from_raw_parts(start, len)
-        } else {
-            let dst_end = non_null::add(start, cap);
-            let dst = non_null::sub(dst_end, len);
-            non_null::copy(start, dst, len);
-            self.set_aligned_pos(non_null::addr(dst), T::ALIGN);
-            non_null::slice_from_raw_parts(dst, len)
+            if UP {
+                self.set_aligned_pos(end.addr(), T::ALIGN);
+                NonNull::slice_from_raw_parts(start, len)
+            } else {
+                let dst_end = start.add(cap);
+                let dst = dst_end.sub(len);
+                start.copy_to(dst, len);
+                self.set_aligned_pos(dst.addr(), T::ALIGN);
+                NonNull::slice_from_raw_parts(dst, len)
+            }
         }
     }
 
@@ -455,24 +459,26 @@ where
         len: usize,
         cap: usize,
     ) -> NonNull<[T]> {
-        let mut start = non_null::sub(end, len);
+        unsafe {
+            let mut start = end.sub(len);
 
-        // FIXME: refactor like `BumpAllocator::allocate_prepared_rev`
-        if UP {
-            {
-                let dst = non_null::sub(end, cap);
-                let dst_end = non_null::add(dst, len);
+            // FIXME: refactor like `BumpAllocator::allocate_prepared_rev`
+            if UP {
+                {
+                    let dst = end.sub(cap);
+                    let dst_end = dst.add(len);
 
-                non_null::copy(start, dst, len);
-                start = dst;
-                end = dst_end;
+                    start.copy_to(dst, len);
+                    start = dst;
+                    end = dst_end;
+                }
+
+                self.set_aligned_pos(end.addr(), T::ALIGN);
+                NonNull::slice_from_raw_parts(start, len)
+            } else {
+                self.set_aligned_pos(start.addr(), T::ALIGN);
+                NonNull::slice_from_raw_parts(start, len)
             }
-
-            self.set_aligned_pos(non_null::addr(end), T::ALIGN);
-            non_null::slice_from_raw_parts(start, len)
-        } else {
-            self.set_aligned_pos(non_null::addr(start), T::ALIGN);
-            non_null::slice_from_raw_parts(start, len)
         }
     }
 
@@ -488,9 +494,11 @@ where
 
     #[inline(always)]
     pub(crate) unsafe fn set_pos(&self, pos: NonZeroUsize) {
-        let chunk = self.chunk.get();
-        chunk.set_pos_addr(pos.get());
-        chunk.align_pos_to::<MIN_ALIGN>();
+        unsafe {
+            let chunk = self.chunk.get();
+            chunk.set_pos_addr(pos.get());
+            chunk.align_pos_to::<MIN_ALIGN>();
+        }
     }
 
     #[inline(always)]
@@ -525,13 +533,9 @@ where
         // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
         let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
 
-        let ptr = if UP {
-            range.start
-        } else {
-            unsafe { non_null::sub(range.end, cap) }
-        };
+        let ptr = if UP { range.start } else { unsafe { range.end.sub(cap) } };
 
-        Ok(non_null::slice_from_raw_parts(ptr, cap))
+        Ok(NonNull::slice_from_raw_parts(ptr, cap))
     }
 
     /// Returns a pointer range.
@@ -540,9 +544,8 @@ where
     /// So `end.offset_from_unsigned(start)` may not be used!
     #[inline(always)]
     pub(crate) fn prepare_allocation_range<B: ErrorBehavior, T>(&self, cap: usize) -> Result<Range<NonNull<T>>, B> {
-        let layout = match ArrayLayout::array::<T>(cap) {
-            Ok(ok) => ok,
-            Err(_) => return Err(B::capacity_overflow()),
+        let Ok(layout) = ArrayLayout::array::<T>(cap) else {
+            return Err(B::capacity_overflow());
         };
 
         let range = match self
@@ -609,9 +612,8 @@ where
 
     #[inline(always)]
     pub(crate) fn do_alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
-        let layout = match ArrayLayout::array::<T>(len) {
-            Ok(layout) => layout,
-            Err(_) => return Err(E::capacity_overflow()),
+        let Ok(layout) = ArrayLayout::array::<T>(len) else {
+            return Err(E::capacity_overflow());
         };
 
         E::alloc_or_else(self.chunk.get(), MinimumAlignment::<MIN_ALIGN>, layout, || unsafe {
@@ -636,9 +638,8 @@ where
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        let layout = match Layout::array::<T>(len) {
-            Ok(layout) => layout,
-            Err(_) => return Err(E::capacity_overflow()),
+        let Ok(layout) = Layout::array::<T>(len) else {
+            return Err(E::capacity_overflow());
         };
 
         self.alloc_in_another_chunk(layout)
@@ -676,41 +677,44 @@ where
         layout: L,
         mut f: impl FnMut(RawChunk<UP, A>, L) -> Option<R>,
     ) -> Result<R, B> {
-        let new_chunk = if self.is_unallocated() {
-            // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
-            // `default_or_panic` will not panic.
-            let allocator = A::default_or_panic();
+        unsafe {
+            let new_chunk = if self.is_unallocated() {
+                // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
+                // `default_or_panic` will not panic.
+                let allocator = A::default_or_panic();
 
-            RawChunk::new_in(
-                ChunkSize::from_capacity(*layout).ok_or_else(B::capacity_overflow)?,
-                None,
-                allocator,
-            )
-        } else {
-            while let Some(chunk) = self.chunk.get().next() {
-                // We don't reset the chunk position when we leave a scope, so we need to do it here.
-                chunk.reset();
+                RawChunk::new_in(
+                    ChunkSize::from_capacity(*layout).ok_or_else(B::capacity_overflow)?,
+                    None,
+                    allocator,
+                )
+            } else {
+                while let Some(chunk) = self.chunk.get().next() {
+                    // We don't reset the chunk position when we leave a scope, so we need to do it here.
+                    chunk.reset();
 
-                self.chunk.set(chunk);
+                    self.chunk.set(chunk);
 
-                if let Some(ptr) = f(chunk, layout) {
-                    return Ok(ptr);
+                    if let Some(ptr) = f(chunk, layout) {
+                        return Ok(ptr);
+                    }
+                }
+
+                // there is no chunk that fits, we need a new chunk
+                self.chunk.get().append_for(*layout)
+            }?;
+
+            self.chunk.set(new_chunk);
+
+            match f(new_chunk, layout) {
+                Some(ptr) => Ok(ptr),
+                _ => {
+                    // SAFETY: We just appended a chunk for that specific layout, it must have enough space.
+                    // We don't panic here so we don't produce any panic code when using `try_` apis.
+                    // We check for that in `test-fallibility`.
+                    core::hint::unreachable_unchecked()
                 }
             }
-
-            // there is no chunk that fits, we need a new chunk
-            self.chunk.get().append_for(*layout)
-        }?;
-
-        self.chunk.set(new_chunk);
-
-        if let Some(ptr) = f(new_chunk, layout) {
-            Ok(ptr)
-        } else {
-            // SAFETY: We just appended a chunk for that specific layout, it must have enough space.
-            // We don't panic here so we don't produce any panic code when using `try_` apis.
-            // We check for that in `test-fallibility`.
-            core::hint::unreachable_unchecked()
         }
     }
 
@@ -821,7 +825,7 @@ where
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        &mut *polyfill::ptr::from_mut(self).cast::<BumpScope<'a, A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>()
+        unsafe { &mut *ptr::from_mut(self).cast::<BumpScope<'a, A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>() }
     }
 
     /// Converts this `BumpScope` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
@@ -922,7 +926,7 @@ where
     /// - `self` must not be used until this clone is gone
     #[inline(always)]
     pub(crate) unsafe fn clone_unchecked(&self) -> BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
-        BumpScope::new_unchecked(self.chunk.get())
+        unsafe { BumpScope::new_unchecked(self.chunk.get()) }
     }
 
     /// Converts this `BumpScope` into a raw pointer.
@@ -944,10 +948,12 @@ where
     #[inline]
     #[must_use]
     pub unsafe fn from_raw(ptr: NonNull<()>) -> Self {
-        let chunk = Cell::new(RawChunk::from_header(ptr.cast()));
-        Self {
-            chunk,
-            marker: PhantomData,
+        unsafe {
+            let chunk = Cell::new(RawChunk::from_header(ptr.cast()));
+            Self {
+                chunk,
+                marker: PhantomData,
+            }
         }
     }
 }
@@ -1243,7 +1249,7 @@ where
 
         unsafe {
             core::ptr::copy_nonoverlapping(src, dst.as_ptr(), len);
-            Ok(BumpBox::from_raw(non_null::slice_from_raw_parts(dst, len)))
+            Ok(BumpBox::from_raw(NonNull::slice_from_raw_parts(dst, len)))
         }
     }
 
@@ -2310,7 +2316,7 @@ where
         let ptr = self.do_alloc_slice::<B, T>(len)?.cast::<MaybeUninit<T>>();
 
         unsafe {
-            let ptr = non_null::slice_from_raw_parts(ptr, len);
+            let ptr = NonNull::slice_from_raw_parts(ptr, len);
             Ok(BumpBox::from_raw(ptr))
         }
     }
@@ -2387,7 +2393,7 @@ where
         let ptr = self.do_alloc_slice_for::<B, T>(slice)?.cast::<MaybeUninit<T>>();
 
         unsafe {
-            let ptr = non_null::slice_from_raw_parts(ptr, slice.len());
+            let ptr = NonNull::slice_from_raw_parts(ptr, slice.len());
             Ok(BumpBox::from_raw(ptr))
         }
     }
@@ -2542,7 +2548,7 @@ where
         let ptr = boxed.into_raw();
 
         unsafe {
-            non_null::drop_in_place(ptr);
+            ptr.drop_in_place();
             self.deallocate(ptr.cast(), layout);
         }
     }
@@ -2598,9 +2604,8 @@ where
 
     #[inline(always)]
     pub(crate) fn generic_reserve_bytes<B: ErrorBehavior>(&self, additional: usize) -> Result<(), B> {
-        let layout = match Layout::from_size_align(additional, 1) {
-            Ok(ok) => ok,
-            Err(_) => return Err(B::capacity_overflow()),
+        let Ok(layout) = Layout::from_size_align(additional, 1) else {
+            return Err(B::capacity_overflow());
         };
 
         if self.is_unallocated() {
@@ -2746,10 +2751,10 @@ where
                 Ok(value) => Ok({
                     if can_shrink {
                         let new_pos = if UP {
-                            let pos = non_null::addr(non_null::add(value, 1)).get();
+                            let pos = value.add(1).addr().get();
                             up_align_usize_unchecked(pos, MIN_ALIGN)
                         } else {
-                            let pos = non_null::addr(value).get();
+                            let pos = value.addr().get();
                             down_align_usize(pos, MIN_ALIGN)
                         };
 
@@ -2867,10 +2872,10 @@ where
             match non_null::result(ptr) {
                 Ok(value) => Ok({
                     let new_pos = if UP {
-                        let pos = non_null::addr(non_null::add(value, 1)).get();
+                        let pos = value.add(1).addr().get();
                         up_align_usize_unchecked(pos, MIN_ALIGN)
                     } else {
-                        let pos = non_null::addr(value).get();
+                        let pos = value.addr().get();
                         down_align_usize(pos, MIN_ALIGN)
                     };
 

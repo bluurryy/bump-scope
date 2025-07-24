@@ -7,18 +7,15 @@
     clippy::transmutes_expressible_as_ptr_casts,
     // it's not the same in terms of strict provenance
     clippy::useless_transmute,
+    clippy::pedantic,
 )]
 
 pub(crate) mod hint;
 pub(crate) mod iter;
 pub(crate) mod layout;
 pub(crate) mod non_null;
-pub(crate) mod option;
 pub(crate) mod pointer;
-pub(crate) mod pointer_mut;
-pub(crate) mod ptr;
 pub(crate) mod slice;
-pub(crate) mod str;
 pub(crate) mod usize;
 
 use core::mem::{size_of, ManuallyDrop};

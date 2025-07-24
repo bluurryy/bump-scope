@@ -241,7 +241,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     /// Vector must not be full.
     #[inline(always)]
     pub unsafe fn push_unchecked(&mut self, value: T) {
-        self.push_with_unchecked(|| value);
+        unsafe { self.push_with_unchecked(|| value) };
     }
 
     /// Appends an element to the back of the collection.
@@ -252,8 +252,10 @@ impl<T, A> MutBumpVecRev<T, A> {
     pub unsafe fn push_with_unchecked(&mut self, f: impl FnOnce() -> T) {
         debug_assert!(self.len < self.cap);
 
-        let ptr = non_null::sub(self.end, self.len + 1);
-        non_null::write_with(ptr, f);
+        unsafe {
+            let ptr = self.end.sub(self.len + 1);
+            non_null::write_with(ptr, f);
+        }
 
         // We set the len here so when `f` panics, `self.len` doesn't change.
         self.len += 1;
@@ -493,7 +495,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     #[inline(always)]
     pub const fn as_non_null(&self) -> NonNull<T> {
         // SAFETY: The start pointer is never null.
-        unsafe { non_null::sub(self.end, self.len) }
+        unsafe { self.end.sub(self.len) }
     }
 
     /// Returns a `NonNull` pointer to the vector's buffer, or a dangling
@@ -503,7 +505,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_ptr(&self) -> NonNull<T> {
-        unsafe { non_null::sub(self.end, self.len) }
+        unsafe { self.end.sub(self.len) }
     }
 
     /// Returns a `NonNull` pointer to the vector's buffer, or a dangling
@@ -513,7 +515,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        non_null::slice_from_raw_parts(self.as_non_null(), self.len)
+        NonNull::slice_from_raw_parts(self.as_non_null(), self.len)
     }
 
     /// Shortens the vector, keeping the first `len` elements and dropping
@@ -772,7 +774,7 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
 
         let slice = unsafe { E::prepare_slice_allocation::<T>(&mut allocator, capacity)? };
         let cap = slice.len();
-        let end = unsafe { non_null::add(non_null::as_non_null_ptr(slice), cap) };
+        let end = unsafe { non_null::as_non_null_ptr(slice).add(cap) };
 
         Ok(Self {
             end,
@@ -980,7 +982,7 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
 
         let slice = unsafe { E::prepare_slice_allocation::<T>(&mut allocator, N)? };
         let cap = slice.len();
-        let end = unsafe { non_null::add(non_null::as_non_null_ptr(slice), cap) };
+        let end = unsafe { non_null::as_non_null_ptr(slice).add(cap) };
 
         let src = array.as_ptr();
 
@@ -2103,16 +2105,18 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
 
     #[inline(always)]
     unsafe fn extend_by_copy_nonoverlapping<E: ErrorBehavior>(&mut self, other: *const [T]) -> Result<(), E> {
-        let len = pointer::len(other);
-        self.generic_reserve(len)?;
+        unsafe {
+            let len = other.len();
+            self.generic_reserve(len)?;
 
-        let src = other.cast::<T>();
-        self.len += len;
-        let dst = self.as_mut_ptr();
+            let src = other.cast::<T>();
+            self.len += len;
+            let dst = self.as_mut_ptr();
 
-        ptr::copy_nonoverlapping(src, dst, len);
+            ptr::copy_nonoverlapping(src, dst, len);
 
-        Ok(())
+            Ok(())
+        }
     }
 
     #[inline]
@@ -2133,9 +2137,8 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
             return Err(E::capacity_overflow());
         }
 
-        let required_cap = match self.len().checked_add(additional) {
-            Some(required_cap) => required_cap,
-            None => return Err(E::capacity_overflow())?,
+        let Some(required_cap) = self.len().checked_add(additional) else {
+            return Err(E::capacity_overflow())?;
         };
 
         // This guarantees exponential growth. The doubling cannot overflow
@@ -2154,9 +2157,8 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
             return Err(E::capacity_overflow());
         }
 
-        let required_cap = match self.len().checked_add(additional) {
-            Some(required_cap) => required_cap,
-            None => return Err(E::capacity_overflow())?,
+        let Some(required_cap) = self.len().checked_add(additional) else {
+            return Err(E::capacity_overflow());
         };
 
         unsafe { self.generic_grow_to(required_cap) }
@@ -2166,18 +2168,20 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
     ///
     /// `new_capacity` must be greater than the current capacity.
     unsafe fn generic_grow_to<E: ErrorBehavior>(&mut self, new_capacity: usize) -> Result<(), E> {
-        let slice = unsafe { E::prepare_slice_allocation::<T>(&mut self.allocator, new_capacity)? };
-        let cap = slice.len();
-        let end = unsafe { non_null::add(non_null::as_non_null_ptr(slice), cap) };
+        unsafe {
+            let slice = E::prepare_slice_allocation::<T>(&mut self.allocator, new_capacity)?;
+            let cap = slice.len();
+            let end = non_null::as_non_null_ptr(slice).add(cap);
 
-        let src = self.as_mut_ptr();
-        let dst = end.as_ptr().sub(self.len);
-        ptr::copy_nonoverlapping(src, dst, self.len);
+            let src = self.as_mut_ptr();
+            let dst = end.as_ptr().sub(self.len);
+            ptr::copy_nonoverlapping(src, dst, self.len);
 
-        self.end = end;
-        self.cap = cap;
+            self.end = end;
+            self.cap = cap;
 
-        Ok(())
+            Ok(())
+        }
     }
 
     /// Removes and returns the element at position `index` within the vector,
@@ -2291,13 +2295,13 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
         let this = ManuallyDrop::new(self);
 
         if T::IS_ZST {
-            return non_null::slice_from_raw_parts(NonNull::dangling(), this.len());
+            return NonNull::slice_from_raw_parts(NonNull::dangling(), this.len());
         }
 
         if this.cap == 0 {
             // We didn't touch the bump, so no need to do anything.
             debug_assert_eq!(this.end, NonNull::<T>::dangling());
-            return non_null::slice_from_raw_parts(NonNull::<T>::dangling(), 0);
+            return NonNull::slice_from_raw_parts(NonNull::<T>::dangling(), 0);
         }
 
         let end = this.end;
@@ -2312,38 +2316,40 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
     // specific extend for `TrustedLen` iterators, called both by the specializations
     // and internal places where resolving specialization makes compilation slower
     unsafe fn extend_trusted<B: ErrorBehavior>(&mut self, iterator: impl Iterator<Item = T>) -> Result<(), B> {
-        let (low, high) = iterator.size_hint();
-        if let Some(additional) = high {
-            debug_assert_eq!(
-                low,
-                additional,
-                "TrustedLen iterator's size hint is not exact: {:?}",
-                (low, high)
-            );
+        unsafe {
+            let (low, high) = iterator.size_hint();
+            if let Some(additional) = high {
+                debug_assert_eq!(
+                    low,
+                    additional,
+                    "TrustedLen iterator's size hint is not exact: {:?}",
+                    (low, high)
+                );
 
-            self.generic_reserve(additional)?;
+                self.generic_reserve(additional)?;
 
-            let ptr = self.end.as_ptr();
-            let mut local_len = SetLenOnDrop::new(&mut self.len);
+                let ptr = self.end.as_ptr();
+                let mut local_len = SetLenOnDrop::new(&mut self.len);
 
-            iterator.for_each(move |element| {
-                let dst = ptr.sub(local_len.current_len() + 1);
+                iterator.for_each(move |element| {
+                    let dst = ptr.sub(local_len.current_len() + 1);
 
-                ptr::write(dst, element);
-                // Since the loop executes user code which can panic we have to update
-                // the length every step to correctly drop what we've written.
-                // NB can't overflow since we would have had to alloc the address space
-                local_len.increment_len(1);
-            });
+                    ptr::write(dst, element);
+                    // Since the loop executes user code which can panic we have to update
+                    // the length every step to correctly drop what we've written.
+                    // NB can't overflow since we would have had to alloc the address space
+                    local_len.increment_len(1);
+                });
 
-            Ok(())
-        } else {
-            // Per TrustedLen contract a `None` upper bound means that the iterator length
-            // truly exceeds usize::MAX, which would eventually lead to a capacity overflow anyway.
-            // Since the other branch already panics eagerly (via `reserve()`) we do the same here.
-            // This avoids additional codegen for a fallback code path which would eventually
-            // panic anyway.
-            Err(B::capacity_overflow())
+                Ok(())
+            } else {
+                // Per TrustedLen contract a `None` upper bound means that the iterator length
+                // truly exceeds usize::MAX, which would eventually lead to a capacity overflow anyway.
+                // Since the other branch already panics eagerly (via `reserve()`) we do the same here.
+                // This avoids additional codegen for a fallback code path which would eventually
+                // panic anyway.
+                Err(B::capacity_overflow())
+            }
         }
     }
 
@@ -2424,16 +2430,18 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
     ///
     /// This method provides unique access to all vec parts at once in `extend_from_within_clone`.
     unsafe fn split_at_spare_mut_with_len(&mut self) -> (&mut [T], &mut [MaybeUninit<T>], &mut usize) {
-        let end = self.end.as_ptr();
+        unsafe {
+            let end = self.end.as_ptr();
 
-        let spare_ptr = end.sub(self.cap);
-        let spare_ptr = spare_ptr.cast::<MaybeUninit<T>>();
-        let spare_len = self.cap - self.len;
+            let spare_ptr = end.sub(self.cap);
+            let spare_ptr = spare_ptr.cast::<MaybeUninit<T>>();
+            let spare_len = self.cap - self.len;
 
-        let initialized = slice::from_raw_parts_mut(self.as_mut_ptr(), self.len);
-        let spare = slice::from_raw_parts_mut(spare_ptr, spare_len);
+            let initialized = slice::from_raw_parts_mut(self.as_mut_ptr(), self.len);
+            let spare = slice::from_raw_parts_mut(spare_ptr, spare_len);
 
-        (initialized, spare, &mut self.len)
+            (initialized, spare, &mut self.len)
+        }
     }
 
     mut_collection_method_allocator_stats!();
@@ -2584,7 +2592,7 @@ impl<T, A> MutBumpVecRev<T, A> {
         // Chunk allocations are supposed to be very rare, so this wouldn't be worth it.
 
         unsafe {
-            let to_drop = non_null::slice_from_raw_parts(self.as_non_null(), self.len);
+            let to_drop = NonNull::slice_from_raw_parts(self.as_non_null(), self.len);
             to_drop.as_ptr().drop_in_place();
         }
     }
@@ -2631,8 +2639,8 @@ impl<T, A> IntoIterator for MutBumpVecRev<T, A> {
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
         let (end, len, _cap, allocator) = self.into_raw_parts();
-        let start = unsafe { non_null::sub(end, len) };
-        let slice = non_null::slice_from_raw_parts(start, len);
+        let start = unsafe { end.sub(len) };
+        let slice = NonNull::slice_from_raw_parts(start, len);
         unsafe { IntoIter::new(slice, allocator) }
     }
 }

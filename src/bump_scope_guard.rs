@@ -2,7 +2,6 @@ use core::{fmt::Debug, marker::PhantomData, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
     chunk_header::ChunkHeader,
-    polyfill::non_null,
     stats::{AnyStats, Stats},
     BaseAllocator, Bump, BumpScope, MinimumAlignment, RawChunk, SupportedMinimumAlignment,
 };
@@ -16,14 +15,16 @@ pub struct Checkpoint {
 
 impl Checkpoint {
     pub(crate) fn new<const UP: bool, A>(chunk: RawChunk<UP, A>) -> Self {
-        let address = non_null::addr(chunk.pos());
+        let address = chunk.pos().addr();
         let chunk = chunk.header_ptr().cast();
         Checkpoint { chunk, address }
     }
 
     pub(crate) unsafe fn reset_within_chunk(self) {
-        let ptr = non_null::with_addr(self.chunk.cast::<u8>(), self.address);
-        self.chunk.as_ref().pos.set(ptr);
+        unsafe {
+            let ptr = self.chunk.cast::<u8>().with_addr(self.address);
+            self.chunk.as_ref().pos.set(ptr);
+        }
     }
 }
 
@@ -74,7 +75,7 @@ where
     pub(crate) unsafe fn new_unchecked(chunk: RawChunk<UP, A>) -> Self {
         Self {
             chunk,
-            address: non_null::addr(chunk.pos()).get(),
+            address: chunk.pos().addr().get(),
             marker: PhantomData,
         }
     }

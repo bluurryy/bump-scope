@@ -54,24 +54,28 @@ impl<'a, T> IntoIter<'a, T> {
 
     #[inline(always)]
     pub(crate) unsafe fn new(slice: NonNull<[T]>) -> Self {
-        if T::IS_ZST {
-            Self::new_zst(slice.len())
-        } else {
-            let start = slice.cast::<T>();
-            let end = non_null::add(start, slice.len());
-            Self::new_range(start..end)
+        unsafe {
+            if T::IS_ZST {
+                Self::new_zst(slice.len())
+            } else {
+                let start = slice.cast::<T>();
+                let end = start.add(slice.len());
+                Self::new_range(start..end)
+            }
         }
     }
 
     #[inline(always)]
     pub(crate) unsafe fn new_ranged(ptr: NonNull<[T]>, range: Range<usize>) -> Self {
-        if T::IS_ZST {
-            Self::new_zst(range.end - range.start)
-        } else {
-            let ptr = non_null::as_non_null_ptr(ptr);
-            let start = non_null::add(ptr, range.start);
-            let end = non_null::add(ptr, range.end);
-            Self::new_range(start..end)
+        unsafe {
+            if T::IS_ZST {
+                Self::new_zst(range.end - range.start)
+            } else {
+                let ptr = non_null::as_non_null_ptr(ptr);
+                let start = ptr.add(range.start);
+                let end = ptr.add(range.end);
+                Self::new_range(start..end)
+            }
         }
     }
 
@@ -104,7 +108,7 @@ impl<'a, T> IntoIter<'a, T> {
         #![allow(clippy::cast_sign_loss)]
 
         if T::IS_ZST {
-            non_null::addr(self.end).get().wrapping_sub(non_null::addr(self.ptr).get())
+            self.end.addr().get().wrapping_sub(self.ptr.addr().get())
         } else {
             unsafe { non_null::offset_from_unsigned(self.end, self.ptr) }
         }
@@ -142,7 +146,7 @@ impl<'a, T> IntoIter<'a, T> {
         let this = ManuallyDrop::new(self);
 
         unsafe {
-            let slice = non_null::slice_from_raw_parts(this.ptr, this.len());
+            let slice = NonNull::slice_from_raw_parts(this.ptr, this.len());
             BumpBox::from_raw(slice)
         }
     }
@@ -166,7 +170,7 @@ impl<T> Iterator for IntoIter<'_, T> {
         } else {
             unsafe {
                 let old = self.ptr;
-                self.ptr = non_null::add(self.ptr, 1);
+                self.ptr = self.ptr.add(1);
                 Some(old.as_ptr().read())
             }
         }
@@ -199,7 +203,7 @@ impl<T> DoubleEndedIterator for IntoIter<'_, T> {
             Some(unsafe { mem::zeroed() })
         } else {
             unsafe {
-                self.end = non_null::sub(self.end, 1);
+                self.end = self.end.sub(1);
                 Some(self.end.as_ptr().read())
             }
         }
@@ -219,7 +223,7 @@ impl<T> Drop for IntoIter<'_, T> {
     #[inline]
     fn drop(&mut self) {
         unsafe {
-            non_null::slice_from_raw_parts(self.ptr, self.len()).as_ptr().drop_in_place();
+            NonNull::slice_from_raw_parts(self.ptr, self.len()).as_ptr().drop_in_place();
         }
     }
 }

@@ -1,4 +1,4 @@
-use core::{alloc::Layout, ptr::NonNull};
+use core::{alloc::Layout, ptr, ptr::NonNull};
 
 use core::alloc::{AllocError, Allocator};
 
@@ -7,7 +7,7 @@ use alloc_crate::{alloc::Global, boxed::Box};
 
 use crate::{
     alloc::{box_like, AllocError as CrateAllocError, Allocator as CrateAllocator, BoxLike},
-    polyfill, BaseAllocator, Bump, BumpAllocatorExt, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc,
+    BaseAllocator, Bump, BumpAllocatorExt, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc,
     WithoutShrink,
 };
 
@@ -107,13 +107,13 @@ impl<A: ?Sized> AllocatorNightlyCompat<A> {
     #[inline(always)]
     #[allow(missing_docs)]
     pub fn from_ref(allocator: &A) -> &Self {
-        unsafe { &*(polyfill::ptr::from_ref(allocator) as *const Self) }
+        unsafe { &*(ptr::from_ref(allocator) as *const Self) }
     }
 
     #[inline(always)]
     #[allow(missing_docs)]
     pub fn from_mut(allocator: &mut A) -> &mut Self {
-        unsafe { &mut *(polyfill::ptr::from_mut(allocator) as *mut Self) }
+        unsafe { &mut *(ptr::from_mut(allocator) as *mut Self) }
     }
 }
 

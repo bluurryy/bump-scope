@@ -49,7 +49,7 @@ impl<T, A> IntoIter<T, A> {
             }
         } else {
             let start = non_null::as_non_null_ptr(slice);
-            let end = non_null::add(start, slice.len());
+            let end = start.add(slice.len());
 
             IntoIter {
                 ptr: start,
@@ -67,7 +67,7 @@ impl<T, A> IntoIter<T, A> {
         #![allow(clippy::cast_sign_loss)]
 
         if T::IS_ZST {
-            non_null::addr(self.end).get().wrapping_sub(non_null::addr(self.ptr).get())
+            self.end.addr().get().wrapping_sub(self.ptr.addr().get())
         } else {
             unsafe { non_null::offset_from_unsigned(self.end, self.ptr) }
         }
@@ -148,7 +148,7 @@ impl<T, A> Iterator for IntoIter<T, A> {
             Some(unsafe { mem::zeroed() })
         } else {
             let old = self.ptr;
-            self.ptr = unsafe { non_null::add(self.ptr, 1) };
+            self.ptr = unsafe { self.ptr.add(1) };
 
             Some(unsafe { old.as_ptr().read() })
         }
@@ -178,7 +178,7 @@ impl<T, A> DoubleEndedIterator for IntoIter<T, A> {
             // Make up a value of this ZST.
             Some(unsafe { mem::zeroed() })
         } else {
-            self.end = unsafe { non_null::sub(self.end, 1) };
+            self.end = unsafe { self.end.sub(1) };
 
             Some(unsafe { self.end.as_ptr().read() })
         }
@@ -195,7 +195,7 @@ impl<T, A> Drop for IntoIter<T, A> {
     #[inline]
     fn drop(&mut self) {
         unsafe {
-            non_null::slice_from_raw_parts(self.ptr, self.len()).as_ptr().drop_in_place();
+            NonNull::slice_from_raw_parts(self.ptr, self.len()).as_ptr().drop_in_place();
         }
     }
 }

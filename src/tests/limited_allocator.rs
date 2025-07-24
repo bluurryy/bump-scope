@@ -21,9 +21,8 @@ impl<A> Limited<A> {
     }
 
     fn add(&self, size: usize) -> Result<usize, AllocError> {
-        let new = match self.current.get().checked_add(size) {
-            Some(some) => some,
-            None => return Err(AllocError),
+        let Some(new) = self.current.get().checked_add(size) else {
+            return Err(AllocError);
         };
 
         if new > self.limit {
@@ -50,8 +49,10 @@ where
     }
 
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        self.sub(layout.size());
-        self.allocator.deallocate(ptr, layout);
+        unsafe {
+            self.sub(layout.size());
+            self.allocator.deallocate(ptr, layout);
+        }
     }
 
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -62,10 +63,12 @@ where
     }
 
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        let new = self.add(new_layout.size() - old_layout.size())?;
-        let ptr = self.allocator.grow(ptr, old_layout, new_layout)?;
-        self.current.set(new);
-        Ok(ptr)
+        unsafe {
+            let new = self.add(new_layout.size() - old_layout.size())?;
+            let ptr = self.allocator.grow(ptr, old_layout, new_layout)?;
+            self.current.set(new);
+            Ok(ptr)
+        }
     }
 
     unsafe fn grow_zeroed(
@@ -74,15 +77,19 @@ where
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        let new = self.add(new_layout.size() - old_layout.size())?;
-        let ptr = self.allocator.grow_zeroed(ptr, old_layout, new_layout)?;
-        self.current.set(new);
-        Ok(ptr)
+        unsafe {
+            let new = self.add(new_layout.size() - old_layout.size())?;
+            let ptr = self.allocator.grow_zeroed(ptr, old_layout, new_layout)?;
+            self.current.set(new);
+            Ok(ptr)
+        }
     }
 
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        let ptr = self.allocator.shrink(ptr, old_layout, new_layout)?;
-        self.sub(old_layout.size() - new_layout.size());
-        Ok(ptr)
+        unsafe {
+            let ptr = self.allocator.shrink(ptr, old_layout, new_layout)?;
+            self.sub(old_layout.size() - new_layout.size());
+            Ok(ptr)
+        }
     }
 }

@@ -1,4 +1,7 @@
-use core::{alloc::Layout, ptr::NonNull};
+use core::{
+    alloc::Layout,
+    ptr::{self, NonNull},
+};
 
 use allocator_api2_02::alloc::{AllocError, Allocator};
 
@@ -6,10 +9,7 @@ use allocator_api2_02::alloc::{AllocError, Allocator};
 #[cfg(not(feature = "nightly-allocator-api"))]
 use allocator_api2_02::{alloc::Global, boxed::Box};
 
-use crate::{
-    alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator},
-    polyfill,
-};
+use crate::alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator};
 
 #[cfg(not(feature = "nightly-allocator-api"))]
 use crate::{Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink};
@@ -118,13 +118,13 @@ impl<A: ?Sized> AllocatorApi2V02Compat<A> {
     #[inline(always)]
     #[allow(missing_docs)]
     pub fn from_ref(allocator: &A) -> &Self {
-        unsafe { &*(polyfill::ptr::from_ref(allocator) as *const Self) }
+        unsafe { &*(ptr::from_ref(allocator) as *const Self) }
     }
 
     #[inline(always)]
     #[allow(missing_docs)]
     pub fn from_mut(allocator: &mut A) -> &mut Self {
-        unsafe { &mut *(polyfill::ptr::from_mut(allocator) as *mut Self) }
+        unsafe { &mut *(ptr::from_mut(allocator) as *mut Self) }
     }
 }
 

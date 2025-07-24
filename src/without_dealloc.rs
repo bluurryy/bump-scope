@@ -30,7 +30,7 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
 
     #[inline(always)]
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.0.grow(ptr, old_layout, new_layout)
+        unsafe { self.0.grow(ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
@@ -40,12 +40,12 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        self.0.grow_zeroed(ptr, old_layout, new_layout)
+        unsafe { self.0.grow_zeroed(ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.0.shrink(ptr, old_layout, new_layout)
+        unsafe { self.0.shrink(ptr, old_layout, new_layout) }
     }
 }
 
@@ -68,12 +68,12 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
 
     #[inline(always)]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        self.0.deallocate(ptr, layout);
+        unsafe { self.0.deallocate(ptr, layout) };
     }
 
     #[inline(always)]
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.0.grow(ptr, old_layout, new_layout)
+        unsafe { self.0.grow(ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
@@ -83,7 +83,7 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        self.0.grow_zeroed(ptr, old_layout, new_layout)
+        unsafe { self.0.grow_zeroed(ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
@@ -97,12 +97,12 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
             new_layout: Layout,
         ) -> Result<NonNull<[u8]>, AllocError> {
             let new_ptr = this.0.allocate(new_layout)?.cast::<u8>();
-            non_null::copy_nonoverlapping(ptr, new_ptr, old_layout.size());
-            Ok(non_null::slice_from_raw_parts(new_ptr, new_layout.size()))
+            unsafe { ptr.copy_to_nonoverlapping(new_ptr, old_layout.size()) };
+            Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
         }
 
         if non_null::is_aligned_to(ptr, new_layout.align()) {
-            Ok(non_null::slice_from_raw_parts(ptr, new_layout.size()))
+            Ok(NonNull::slice_from_raw_parts(ptr, new_layout.size()))
         } else {
             // expected to virtually never occur
             shrink_unfit(self, ptr, old_layout, new_layout)

@@ -500,7 +500,7 @@ impl<'a, T> BumpBox<'a, T> {
     pub fn into_boxed_slice(self) -> BumpBox<'a, [T]> {
         unsafe {
             let ptr = self.into_raw();
-            let ptr = non_null::slice_from_raw_parts(ptr, 1);
+            let ptr = NonNull::slice_from_raw_parts(ptr, 1);
             BumpBox::from_raw(ptr)
         }
     }
@@ -602,7 +602,7 @@ impl<'a> BumpBox<'a, str> {
 
         // SAFETY: `BumpBox<[u8]>` and `BumpBox<str>` have the same representation;
         // only the invariant that the bytes are utf8 is different.
-        mem::transmute(bytes)
+        unsafe { mem::transmute(bytes) }
     }
 
     /// Converts a `BumpBox<str>` into a `BumpBox<[u8]>`.
@@ -626,9 +626,11 @@ impl<'a> BumpBox<'a, str> {
     #[must_use]
     #[inline(always)]
     pub unsafe fn as_mut_bytes(&mut self) -> &mut BumpBox<'a, [u8]> {
-        // SAFETY: `BumpBox<[u8]>` and `BumpBox<str>` have the same representation;
-        // only the invariant that the bytes are utf8 is different.
-        transmute_mut(self)
+        unsafe {
+            // SAFETY: `BumpBox<[u8]>` and `BumpBox<str>` have the same representation;
+            // only the invariant that the bytes are utf8 is different.
+            transmute_mut(self)
+        }
     }
 
     /// Returns the number of bytes in the string, also referred to
@@ -706,8 +708,8 @@ impl<'a> BumpBox<'a, str> {
         if end == len {
             self.assert_char_boundary(start);
 
-            let lhs = non_null::slice_from_raw_parts(ptr, start);
-            let rhs = non_null::slice_from_raw_parts(unsafe { non_null::add(ptr, start) }, len - start);
+            let lhs = NonNull::slice_from_raw_parts(ptr, start);
+            let rhs = NonNull::slice_from_raw_parts(unsafe { ptr.add(start) }, len - start);
 
             self.ptr = non_null::str_from_utf8(lhs);
             return unsafe { BumpBox::from_raw(non_null::str_from_utf8(rhs)) };
@@ -716,8 +718,8 @@ impl<'a> BumpBox<'a, str> {
         if start == 0 {
             self.assert_char_boundary(end);
 
-            let lhs = non_null::slice_from_raw_parts(ptr, end);
-            let rhs = non_null::slice_from_raw_parts(unsafe { non_null::add(ptr, end) }, len - end);
+            let lhs = NonNull::slice_from_raw_parts(ptr, end);
+            let rhs = NonNull::slice_from_raw_parts(unsafe { ptr.add(end) }, len - end);
 
             self.ptr = non_null::str_from_utf8(rhs);
             return unsafe { BumpBox::from_raw(non_null::str_from_utf8(lhs)) };
@@ -741,8 +743,8 @@ impl<'a> BumpBox<'a, str> {
                 // move the range of elements to split off to the start
                 self.as_mut_bytes().get_unchecked_mut(..end).rotate_right(range_len);
 
-                let lhs = non_null::slice_from_raw_parts(ptr, range_len);
-                let rhs = non_null::slice_from_raw_parts(non_null::add(ptr, range_len), remaining_len);
+                let lhs = NonNull::slice_from_raw_parts(ptr, range_len);
+                let rhs = NonNull::slice_from_raw_parts(ptr.add(range_len), remaining_len);
 
                 let lhs = non_null::str_from_utf8(lhs);
                 let rhs = non_null::str_from_utf8(rhs);
@@ -754,8 +756,8 @@ impl<'a> BumpBox<'a, str> {
                 // move the range of elements to split off to the end
                 self.as_mut_bytes().get_unchecked_mut(start..).rotate_left(range_len);
 
-                let lhs = non_null::slice_from_raw_parts(ptr, remaining_len);
-                let rhs = non_null::slice_from_raw_parts(non_null::add(ptr, remaining_len), range_len);
+                let lhs = NonNull::slice_from_raw_parts(ptr, remaining_len);
+                let rhs = NonNull::slice_from_raw_parts(ptr.add(remaining_len), range_len);
 
                 let lhs = non_null::str_from_utf8(lhs);
                 let rhs = non_null::str_from_utf8(rhs);
@@ -908,7 +910,7 @@ impl<'a> BumpBox<'a, str> {
 
     #[inline(always)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<u8>) {
-        self.ptr = non_null::str_from_utf8(non_null::slice_from_raw_parts(new_ptr, self.len()));
+        self.ptr = non_null::str_from_utf8(NonNull::slice_from_raw_parts(new_ptr, self.len()));
     }
 
     /// Forces the length of the string to `new_len`.
@@ -929,7 +931,7 @@ impl<'a> BumpBox<'a, str> {
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: usize) {
         let ptr = self.ptr.cast::<u8>();
-        let bytes = non_null::slice_from_raw_parts(ptr, new_len);
+        let bytes = NonNull::slice_from_raw_parts(ptr, new_len);
         self.ptr = non_null::str_from_utf8(bytes);
     }
 
@@ -956,9 +958,8 @@ impl<'a> BumpBox<'a, str> {
     /// ```
     #[inline]
     pub fn remove(&mut self, idx: usize) -> char {
-        let ch = match self[idx..].chars().next() {
-            Some(ch) => ch,
-            None => panic!("cannot remove a char from the end of a string"),
+        let Some(ch) = self[idx..].chars().next() else {
+            panic!("cannot remove a char from the end of a string");
         };
 
         let next = idx + ch.len_utf8();
@@ -1108,7 +1109,7 @@ impl<'a> BumpBox<'a, str> {
 
         // Take out two simultaneous borrows. The &mut String won't be accessed
         // until iteration is over, in Drop.
-        let self_ptr = unsafe { NonNull::new_unchecked(self as *mut _) };
+        let self_ptr = unsafe { NonNull::new_unchecked(core::ptr::from_mut(self)) };
         // SAFETY: `slice::range` and `is_char_boundary` do the appropriate bounds checks.
         let chars_iter = unsafe { self.get_unchecked(start..end) }.chars();
 
@@ -1148,8 +1149,10 @@ impl<'a, T: Sized> BumpBox<'a, MaybeUninit<T>> {
     #[must_use]
     #[inline(always)]
     pub unsafe fn assume_init(self) -> BumpBox<'a, T> {
-        let ptr = BumpBox::into_raw(self);
-        BumpBox::from_raw(ptr.cast())
+        unsafe {
+            let ptr = BumpBox::into_raw(self);
+            BumpBox::from_raw(ptr.cast())
+        }
     }
 }
 
@@ -1159,7 +1162,7 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     pub(crate) fn uninit_zst_slice(len: usize) -> Self {
         assert!(T::IS_ZST);
         Self {
-            ptr: non_null::slice_from_raw_parts(NonNull::dangling(), len),
+            ptr: NonNull::slice_from_raw_parts(NonNull::dangling(), len),
             marker: PhantomData,
         }
     }
@@ -1325,15 +1328,18 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     #[inline(always)]
     pub unsafe fn assume_init(self) -> BumpBox<'a, [T]> {
         let ptr = BumpBox::into_raw(self);
-        let ptr = NonNull::new_unchecked(ptr.as_ptr() as _);
-        BumpBox::from_raw(ptr)
+
+        unsafe {
+            let ptr = NonNull::new_unchecked(ptr.as_ptr() as _);
+            BumpBox::from_raw(ptr)
+        }
     }
 }
 
 impl<'a, T> BumpBox<'a, [T]> {
     /// Empty slice.
     pub const EMPTY: Self = Self {
-        ptr: non_null::slice_from_raw_parts(NonNull::dangling(), 0),
+        ptr: NonNull::slice_from_raw_parts(NonNull::dangling(), 0),
         marker: PhantomData,
     };
 
@@ -1380,7 +1386,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     pub(crate) unsafe fn zst_slice_from_len(len: usize) -> Self {
         assert!(T::IS_ZST);
         Self {
-            ptr: non_null::slice_from_raw_parts(NonNull::dangling(), len),
+            ptr: NonNull::slice_from_raw_parts(NonNull::dangling(), len),
             marker: PhantomData,
         }
     }
@@ -1499,7 +1505,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     #[must_use]
     #[inline(always)]
     pub const fn as_slice(&self) -> &[T] {
-        unsafe { &*(self.ptr.as_ptr() as *const _) }
+        unsafe { &*self.ptr.as_ptr().cast_const() }
     }
 
     /// Extracts a mutable slice containing the entire boxed slice.
@@ -1620,12 +1626,12 @@ impl<'a, T> BumpBox<'a, [T]> {
 
     #[inline]
     pub(crate) unsafe fn inc_len(&mut self, amount: usize) {
-        self.set_len(self.len() + amount);
+        unsafe { self.set_len(self.len() + amount) };
     }
 
     #[inline]
     pub(crate) unsafe fn dec_len(&mut self, amount: usize) {
-        self.set_len(self.len() - amount);
+        unsafe { self.set_len(self.len() - amount) };
     }
 
     #[inline(always)]
@@ -1792,16 +1798,16 @@ impl<'a, T> BumpBox<'a, [T]> {
         }
 
         if end == len {
-            let lhs = non_null::slice_from_raw_parts(ptr, start);
-            let rhs = non_null::slice_from_raw_parts(unsafe { non_null::add(ptr, start) }, len - start);
+            let lhs = NonNull::slice_from_raw_parts(ptr, start);
+            let rhs = NonNull::slice_from_raw_parts(unsafe { ptr.add(start) }, len - start);
 
             self.ptr = lhs;
             return unsafe { BumpBox::from_raw(rhs) };
         }
 
         if start == 0 {
-            let lhs = non_null::slice_from_raw_parts(ptr, end);
-            let rhs = non_null::slice_from_raw_parts(unsafe { non_null::add(ptr, end) }, len - end);
+            let lhs = NonNull::slice_from_raw_parts(ptr, end);
+            let rhs = NonNull::slice_from_raw_parts(unsafe { ptr.add(end) }, len - end);
 
             self.ptr = rhs;
             return unsafe { BumpBox::from_raw(lhs) };
@@ -1822,8 +1828,8 @@ impl<'a, T> BumpBox<'a, [T]> {
                 // move the range of elements to split off to the start
                 self.as_mut_slice().get_unchecked_mut(..end).rotate_right(range_len);
 
-                let lhs = non_null::slice_from_raw_parts(ptr, range_len);
-                let rhs = non_null::slice_from_raw_parts(unsafe { non_null::add(ptr, range_len) }, remaining_len);
+                let lhs = NonNull::slice_from_raw_parts(ptr, range_len);
+                let rhs = NonNull::slice_from_raw_parts(ptr.add(range_len), remaining_len);
 
                 self.ptr = rhs;
 
@@ -1832,8 +1838,8 @@ impl<'a, T> BumpBox<'a, [T]> {
                 // move the range of elements to split off to the end
                 self.as_mut_slice().get_unchecked_mut(start..).rotate_left(range_len);
 
-                let lhs = non_null::slice_from_raw_parts(ptr, remaining_len);
-                let rhs = non_null::slice_from_raw_parts(unsafe { non_null::add(ptr, remaining_len) }, range_len);
+                let lhs = NonNull::slice_from_raw_parts(ptr, remaining_len);
+                let rhs = NonNull::slice_from_raw_parts(ptr.add(remaining_len), range_len);
 
                 self.ptr = lhs;
 
@@ -1951,20 +1957,22 @@ impl<'a, T> BumpBox<'a, [T]> {
     #[inline]
     #[must_use]
     pub unsafe fn split_at_unchecked(self, mid: usize) -> (Self, Self) {
-        let this = ManuallyDrop::new(self);
+        unsafe {
+            let this = ManuallyDrop::new(self);
 
-        let len = this.len();
-        let ptr = this.ptr.cast::<T>();
+            let len = this.len();
+            let ptr = this.ptr.cast::<T>();
 
-        debug_assert!(
-            mid <= len,
-            "slice::split_at_unchecked requires the index to be within the slice"
-        );
+            debug_assert!(
+                mid <= len,
+                "slice::split_at_unchecked requires the index to be within the slice"
+            );
 
-        (
-            Self::from_raw(non_null::slice_from_raw_parts(ptr, mid)),
-            Self::from_raw(non_null::slice_from_raw_parts(non_null::add(ptr, mid), len - mid)),
-        )
+            (
+                Self::from_raw(NonNull::slice_from_raw_parts(ptr, mid)),
+                Self::from_raw(NonNull::slice_from_raw_parts(ptr.add(mid), len - mid)),
+            )
+        }
     }
 
     /// Returns the first and all the rest of the elements of the slice, or `None` if it is empty.
@@ -2000,7 +2008,7 @@ impl<'a, T> BumpBox<'a, [T]> {
 
             Some((
                 BumpBox::from_raw(ptr),
-                BumpBox::from_raw(non_null::slice_from_raw_parts(non_null::add(ptr, 1), len - 1)),
+                BumpBox::from_raw(NonNull::slice_from_raw_parts(ptr.add(1), len - 1)),
             ))
         }
     }
@@ -2037,8 +2045,8 @@ impl<'a, T> BumpBox<'a, [T]> {
             let len_minus_one = this.len() - 1;
 
             Some((
-                BumpBox::from_raw(non_null::add(ptr, len_minus_one)),
-                BumpBox::from_raw(non_null::slice_from_raw_parts(ptr, len_minus_one)),
+                BumpBox::from_raw(ptr.add(len_minus_one)),
+                BumpBox::from_raw(NonNull::slice_from_raw_parts(ptr, len_minus_one)),
             ))
         }
     }
@@ -2084,9 +2092,8 @@ impl<'a, T> BumpBox<'a, [T]> {
         }
 
         if T::IS_ZST {
-            let len = match self.len().checked_add(other.len()) {
-                Some(len) => len,
-                None => assert_failed_zst(),
+            let Some(len) = self.len().checked_add(other.len()) else {
+                assert_failed_zst()
             };
 
             let _ = self.into_raw();
@@ -2108,7 +2115,7 @@ impl<'a, T> BumpBox<'a, [T]> {
             // - The size of a chunk is representable as `usize`.
             let len = lhs.len() + rhs.len();
 
-            let slice = non_null::slice_from_raw_parts(ptr, len);
+            let slice = NonNull::slice_from_raw_parts(ptr, len);
 
             unsafe { Self::from_raw(slice) }
         }
@@ -2628,7 +2635,7 @@ impl<'a, T> BumpBox<'a, [T]> {
 
             mem::forget(guard);
 
-            BumpBox::from_raw(non_null::slice_from_raw_parts(ptr.cast(), len))
+            BumpBox::from_raw(NonNull::slice_from_raw_parts(ptr.cast(), len))
         }
     }
 }
@@ -2651,7 +2658,7 @@ impl<'a, T, const N: usize> BumpBox<'a, [T; N]> {
     #[inline(always)]
     pub fn into_unsized(self) -> BumpBox<'a, [T]> {
         let ptr = non_null::as_non_null_ptr(self.into_raw());
-        let slice = non_null::slice_from_raw_parts(ptr, N);
+        let slice = NonNull::slice_from_raw_parts(ptr, N);
         unsafe { BumpBox::from_raw(slice) }
     }
 }
@@ -2695,7 +2702,7 @@ impl<'a, T, const N: usize> BumpBox<'a, [[T; N]]> {
             unsafe { polyfill::usize::unchecked_mul(len, N) }
         };
 
-        unsafe { BumpBox::from_raw(non_null::slice_from_raw_parts(ptr.cast(), new_len)) }
+        unsafe { BumpBox::from_raw(NonNull::slice_from_raw_parts(ptr.cast(), new_len)) }
     }
 }
 
@@ -2725,7 +2732,7 @@ impl<'a> BumpBox<'a, dyn Any> {
     #[inline(always)]
     pub unsafe fn downcast_unchecked<T: Any>(self) -> BumpBox<'a, T> {
         debug_assert!(self.is::<T>());
-        BumpBox::from_raw(BumpBox::into_raw(self).cast())
+        unsafe { BumpBox::from_raw(BumpBox::into_raw(self).cast()) }
     }
 }
 
@@ -2755,7 +2762,7 @@ impl<'a> BumpBox<'a, dyn Any + Send> {
     #[inline(always)]
     pub unsafe fn downcast_unchecked<T: Any>(self) -> BumpBox<'a, T> {
         debug_assert!(self.is::<T>());
-        BumpBox::from_raw(BumpBox::into_raw(self).cast())
+        unsafe { BumpBox::from_raw(BumpBox::into_raw(self).cast()) }
     }
 }
 
@@ -2785,7 +2792,7 @@ impl<'a> BumpBox<'a, dyn Any + Send + Sync> {
     #[inline(always)]
     pub unsafe fn downcast_unchecked<T: Any>(self) -> BumpBox<'a, T> {
         debug_assert!(self.is::<T>());
-        BumpBox::from_raw(BumpBox::into_raw(self).cast())
+        unsafe { BumpBox::from_raw(BumpBox::into_raw(self).cast()) }
     }
 }
 
@@ -3296,7 +3303,7 @@ impl<Args: Tuple, F: Fn<Args> + ?Sized> Fn<Args> for BumpBox<'_, F> {
 
 #[inline(always)]
 fn as_uninit_slice<T>(slice: &[T]) -> &[MaybeUninit<T>] {
-    unsafe { &*(slice as *const _ as *const [MaybeUninit<T>]) }
+    unsafe { &*(core::ptr::from_ref(slice) as *const [MaybeUninit<T>]) }
 }
 
 macro_rules! assert_in_place_mappable {

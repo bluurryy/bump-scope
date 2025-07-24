@@ -16,7 +16,6 @@ use core::{
 
 use crate::{
     chunk_header::{unallocated_chunk_header, ChunkHeader},
-    polyfill::non_null,
     RawChunk,
 };
 
@@ -69,10 +68,7 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
     /// Returns the number of chunks.
     #[must_use]
     pub fn count(self) -> usize {
-        let current = match self.get_current_chunk() {
-            Some(current) => current,
-            None => return 0,
-        };
+        let Some(current) = self.get_current_chunk() else { return 0 };
 
         let mut sum = 1;
         current.iter_prev().for_each(|_| sum += 1);
@@ -83,10 +79,7 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
     /// Returns the total size of all chunks.
     #[must_use]
     pub fn size(self) -> usize {
-        let current = match self.get_current_chunk() {
-            Some(current) => current,
-            None => return 0,
-        };
+        let Some(current) = self.get_current_chunk() else { return 0 };
 
         let mut sum = current.size();
         current.iter_prev().for_each(|chunk| sum += chunk.size());
@@ -97,10 +90,7 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
     /// Returns the total capacity of all chunks.
     #[must_use]
     pub fn capacity(self) -> usize {
-        let current = match self.get_current_chunk() {
-            Some(current) => current,
-            None => return 0,
-        };
+        let Some(current) = self.get_current_chunk() else { return 0 };
 
         let mut sum = current.capacity();
         current.iter_prev().for_each(|chunk| sum += chunk.capacity());
@@ -115,10 +105,7 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
     /// plus the `capacity` of all previous chunks.
     #[must_use]
     pub fn allocated(self) -> usize {
-        let current = match self.get_current_chunk() {
-            Some(current) => current,
-            None => return 0,
-        };
+        let Some(current) = self.get_current_chunk() else { return 0 };
 
         let mut sum = current.allocated();
         current.iter_prev().for_each(|chunk| sum += chunk.capacity());
@@ -131,10 +118,7 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
     /// plus the `capacity` of all following chunks.
     #[must_use]
     pub fn remaining(self) -> usize {
-        let current = match self.get_current_chunk() {
-            Some(current) => current,
-            None => return 0,
-        };
+        let Some(current) = self.get_current_chunk() else { return 0 };
 
         let mut sum = current.remaining();
         current.iter_next().for_each(|chunk| sum += chunk.capacity());
@@ -144,9 +128,8 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
     /// Returns an iterator from smallest to biggest chunk.
     #[must_use]
     pub fn small_to_big(self) -> ChunkNextIter<'a, A, UP> {
-        let mut start = match self.get_current_chunk() {
-            Some(start) => start,
-            None => return ChunkNextIter { chunk: None },
+        let Some(mut start) = self.get_current_chunk() else {
+            return ChunkNextIter { chunk: None };
         };
 
         while let Some(chunk) = start.prev() {
@@ -159,9 +142,8 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
     /// Returns an iterator from biggest to smallest chunk.
     #[must_use]
     pub fn big_to_small(self) -> ChunkPrevIter<'a, A, UP> {
-        let mut start = match self.get_current_chunk() {
-            Some(start) => start,
-            None => return ChunkPrevIter { chunk: None },
+        let Some(mut start) = self.get_current_chunk() else {
+            return ChunkPrevIter { chunk: None };
         };
 
         while let Some(chunk) = start.next() {
@@ -299,8 +281,8 @@ impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
 
     #[inline]
     pub(crate) fn is_upwards_allocating(self) -> bool {
-        let header = non_null::addr(self.header);
-        let end = non_null::addr(unsafe { self.header.as_ref().end });
+        let header = self.header.addr();
+        let end = unsafe { self.header.as_ref() }.end.addr();
         end > header
     }
 

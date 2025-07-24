@@ -1,4 +1,11 @@
-use core::{alloc::Layout, cell::Cell, mem::align_of, num::NonZeroUsize, ops::Range, ptr::NonNull};
+use core::{
+    alloc::Layout,
+    cell::Cell,
+    mem::align_of,
+    num::NonZeroUsize,
+    ops::Range,
+    ptr::{self, NonNull},
+};
 
 use crate::{
     alloc::{AllocError, Allocator},
@@ -6,7 +13,7 @@ use crate::{
     chunk_size::{ChunkSize, ChunkSizeHint},
     down_align_usize,
     layout::LayoutProps,
-    polyfill::{self, non_null},
+    polyfill::non_null,
     unallocated_chunk_header, up_align_usize_unchecked, ChunkHeader, ErrorBehavior, MinimumAlignment,
     SupportedMinimumAlignment,
 };
@@ -87,8 +94,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                 let header = ptr.cast::<ChunkHeader<A>>();
 
                 header.as_ptr().write(ChunkHeader {
-                    pos: Cell::new(non_null::add(header, 1).cast()),
-                    end: non_null::add(ptr, size),
+                    pos: Cell::new(header.add(1).cast()),
+                    end: ptr.add(size),
                     prev,
                     next,
                     allocator,
@@ -96,7 +103,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
                 header
             } else {
-                let header = non_null::sub(non_null::add(ptr, size).cast::<ChunkHeader<A>>(), 1);
+                let header = ptr.add(size).cast::<ChunkHeader<A>>().sub(1);
 
                 header.as_ptr().write(ChunkHeader {
                     pos: Cell::new(header.cast()),
@@ -234,8 +241,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         let remaining = self.remaining_range();
 
         BumpProps {
-            start: non_null::addr(remaining.start).get(),
-            end: non_null::addr(remaining.end).get(),
+            start: remaining.start.addr().get(),
+            end: remaining.end.addr().get(),
             layout: *layout,
             min_align: M::MIN_ALIGN,
             align_is_const: L::ALIGN_IS_CONST,
@@ -284,7 +291,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     where
         MinimumAlignment<ALIGN>: SupportedMinimumAlignment,
     {
-        let mut pos = non_null::addr(self.pos()).get();
+        let mut pos = self.pos().addr().get();
 
         if UP {
             // Aligning an address that is `<= range.end` with an alignment
@@ -300,7 +307,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
     #[inline(always)]
     fn after_header(self) -> NonNull<u8> {
-        unsafe { non_null::add(self.header, 1).cast() }
+        unsafe { self.header.add(1).cast() }
     }
 
     #[inline(always)]
@@ -352,39 +359,42 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
     #[inline(always)]
     pub(crate) unsafe fn set_pos(self, ptr: NonNull<u8>) {
-        self.set_pos_addr(non_null::addr(ptr).get());
+        unsafe { self.set_pos_addr(ptr.addr().get()) };
     }
 
     /// # Safety
     /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
     #[inline(always)]
     pub(crate) unsafe fn set_pos_addr(self, addr: usize) {
-        let ptr = self.with_addr(addr);
-        self.header.as_ref().pos.set(ptr);
+        unsafe { self.header.as_ref().pos.set(self.with_addr(addr)) };
     }
 
     /// # Safety
     /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
     #[inline(always)]
     pub(crate) unsafe fn with_addr(self, addr: usize) -> NonNull<u8> {
-        debug_assert!(self.contains_addr_or_end(addr));
-        let ptr = self.header.cast();
-        let addr = NonZeroUsize::new_unchecked(addr);
-        non_null::with_addr(ptr, addr)
+        unsafe {
+            debug_assert!(self.contains_addr_or_end(addr));
+            let ptr = self.header.cast();
+            let addr = NonZeroUsize::new_unchecked(addr);
+            ptr.with_addr(addr)
+        }
     }
 
     #[inline(always)]
     pub(crate) unsafe fn with_addr_range(self, range: Range<usize>) -> Range<NonNull<u8>> {
-        debug_assert!(range.start <= range.end);
-        let start = self.with_addr(range.start);
-        let end = self.with_addr(range.end);
-        start..end
+        unsafe {
+            debug_assert!(range.start <= range.end);
+            let start = self.with_addr(range.start);
+            let end = self.with_addr(range.end);
+            start..end
+        }
     }
 
     #[inline(always)]
     pub(crate) fn contains_addr_or_end(self, addr: usize) -> bool {
-        let start = non_null::addr(self.content_start()).get();
-        let end = non_null::addr(self.content_end()).get();
+        let start = self.content_start().addr().get();
+        let end = self.content_end().addr().get();
         addr >= start && addr <= end
     }
 
@@ -400,8 +410,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
     #[inline(always)]
     pub(crate) fn capacity(self) -> usize {
-        let start = non_null::addr(self.content_start()).get();
-        let end = non_null::addr(self.content_end()).get();
+        let start = self.content_start().addr().get();
+        let end = self.content_end().addr().get();
         end - start
     }
 
@@ -417,16 +427,16 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     #[inline(always)]
     pub(crate) fn allocated(self) -> usize {
         let range = self.allocated_range();
-        let start = non_null::addr(range.start).get();
-        let end = non_null::addr(range.end).get();
+        let start = range.start.addr().get();
+        let end = range.end.addr().get();
         end - start
     }
 
     #[inline(always)]
     pub(crate) fn remaining(self) -> usize {
         let range = self.remaining_range();
-        let start = non_null::addr(range.start).get();
-        let end = non_null::addr(range.end).get();
+        let start = range.start.addr().get();
+        let end = range.end.addr().get();
         end - start
     }
 
@@ -444,8 +454,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
     #[inline(always)]
     pub(crate) fn size(self) -> NonZeroUsize {
-        let start = non_null::addr(self.chunk_start()).get();
-        let end = non_null::addr(self.chunk_end()).get();
+        let start = self.chunk_start().addr().get();
+        let end = self.chunk_end().addr().get();
         unsafe { NonZeroUsize::new_unchecked(end - start) }
     }
 
@@ -457,10 +467,10 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
     #[inline(always)]
     fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSizeHint<A, UP>, B> {
-        let size = match self.size().get().checked_mul(2) {
-            Some(size) => size,
-            None => return Err(B::capacity_overflow()),
+        let Some(size) = self.size().get().checked_mul(2) else {
+            return Err(B::capacity_overflow());
         };
+
         Ok(ChunkSizeHint::<A, UP>::new(size))
     }
 
@@ -503,10 +513,12 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     {
         let ptr = self.chunk_start();
         let layout = self.layout();
-        let allocator_ptr = polyfill::ptr::from_ref(&self.header.as_ref().allocator);
-        let allocator = allocator_ptr.read();
+        let allocator_ptr = ptr::from_ref(&self.header.as_ref().allocator);
 
-        allocator.deallocate(ptr, layout);
+        unsafe {
+            let allocator = allocator_ptr.read();
+            allocator.deallocate(ptr, layout);
+        }
     }
 
     #[inline(always)]

@@ -4,6 +4,7 @@
 use alloc_crate::alloc::{alloc, alloc_zeroed, dealloc, realloc};
 use core::{
     alloc::Layout,
+    hint,
     ptr::{self, NonNull},
 };
 
@@ -25,15 +26,12 @@ impl Global {
     #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
     fn alloc_impl(&self, layout: Layout, zeroed: bool) -> Result<NonNull<[u8]>, AllocError> {
         match layout.size() {
-            0 => Ok(polyfill::non_null::slice_from_raw_parts(
-                polyfill::layout::dangling(layout),
-                0,
-            )),
+            0 => Ok(NonNull::slice_from_raw_parts(polyfill::layout::dangling(layout), 0)),
             // SAFETY: `layout` is non-zero in size,
             size => unsafe {
                 let raw_ptr = if zeroed { alloc_zeroed(layout) } else { alloc(layout) };
                 let ptr = NonNull::new(raw_ptr).ok_or(AllocError)?;
-                Ok(polyfill::non_null::slice_from_raw_parts(ptr, size))
+                Ok(NonNull::slice_from_raw_parts(ptr, size))
             },
         }
     }
@@ -62,14 +60,14 @@ impl Global {
                 let new_size = new_layout.size();
 
                 // `realloc` probably checks for `new_size >= old_layout.size()` or something similar.
-                polyfill::hint::assert_unchecked(new_size >= old_layout.size());
+                hint::assert_unchecked(new_size >= old_layout.size());
 
                 let raw_ptr = realloc(ptr.as_ptr(), old_layout, new_size);
                 let ptr = NonNull::new(raw_ptr).ok_or(AllocError)?;
                 if zeroed {
                     raw_ptr.add(old_size).write_bytes(0, new_size - old_size);
                 }
-                Ok(polyfill::non_null::slice_from_raw_parts(ptr, new_size))
+                Ok(NonNull::slice_from_raw_parts(ptr, new_size))
             },
 
             // SAFETY: because `new_layout.size()` must be greater than or equal to `old_size`,
@@ -147,20 +145,17 @@ unsafe impl Allocator for Global {
             // SAFETY: conditions must be upheld by the caller
             0 => unsafe {
                 self.deallocate(ptr, old_layout);
-                Ok(polyfill::non_null::slice_from_raw_parts(
-                    polyfill::layout::dangling(new_layout),
-                    0,
-                ))
+                Ok(NonNull::slice_from_raw_parts(polyfill::layout::dangling(new_layout), 0))
             },
 
             // SAFETY: `new_size` is non-zero. Other conditions must be upheld by the caller
             new_size if old_layout.align() == new_layout.align() => unsafe {
                 // `realloc` probably checks for `new_size <= old_layout.size()` or something similar.
-                polyfill::hint::assert_unchecked(new_size <= old_layout.size());
+                hint::assert_unchecked(new_size <= old_layout.size());
 
                 let raw_ptr = realloc(ptr.as_ptr(), old_layout, new_size);
                 let ptr = NonNull::new(raw_ptr).ok_or(AllocError)?;
-                Ok(polyfill::non_null::slice_from_raw_parts(ptr, new_size))
+                Ok(NonNull::slice_from_raw_parts(ptr, new_size))
             },
 
             // SAFETY: because `new_size` must be smaller than or equal to `old_layout.size()`,

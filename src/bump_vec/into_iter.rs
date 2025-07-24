@@ -119,7 +119,7 @@ impl<T, A: BumpAllocatorExt> Iterator for IntoIter<T, A> {
             Some(unsafe { mem::zeroed() })
         } else {
             let old = self.ptr;
-            self.ptr = unsafe { non_null::add(self.ptr, 1) };
+            self.ptr = unsafe { self.ptr.add(1) };
 
             Some(unsafe { old.as_ptr().read() })
         }
@@ -128,7 +128,7 @@ impl<T, A: BumpAllocatorExt> Iterator for IntoIter<T, A> {
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         let exact = if T::IS_ZST {
-            non_null::addr(self.end).get().wrapping_sub(non_null::addr(self.ptr).get())
+            self.end.addr().get().wrapping_sub(self.ptr.addr().get())
         } else {
             unsafe { non_null::offset_from_unsigned(self.end, self.ptr) }
         };
@@ -153,7 +153,7 @@ impl<T, A: BumpAllocatorExt> DoubleEndedIterator for IntoIter<T, A> {
             // Make up a value of this ZST.
             Some(unsafe { mem::zeroed() })
         } else {
-            self.end = unsafe { non_null::sub(self.end, 1) };
+            self.end = unsafe { self.end.sub(1) };
 
             Some(unsafe { self.end.as_ptr().read() })
         }
@@ -171,7 +171,7 @@ impl<T: Clone, A: BumpAllocatorExt + Clone> Clone for IntoIter<T, A> {
     fn clone(&self) -> Self {
         let allocator = self.allocator.clone();
         let ptr = self.allocator.allocate_slice::<MaybeUninit<T>>(self.len());
-        let slice = non_null::slice_from_raw_parts(ptr, self.len());
+        let slice = NonNull::slice_from_raw_parts(ptr, self.len());
         let boxed = unsafe { BumpBox::from_raw(slice) };
         let boxed = boxed.init_clone(self.as_slice());
         let fixed = FixedBumpVec::from_init(boxed);

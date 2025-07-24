@@ -250,11 +250,13 @@ impl<A: BumpAllocatorExt> BumpString<A> {
     /// ```
     #[must_use]
     pub unsafe fn from_utf8_unchecked(vec: BumpVec<u8, A>) -> Self {
-        debug_assert!(str::from_utf8(vec.as_slice()).is_ok());
+        unsafe {
+            debug_assert!(str::from_utf8(vec.as_slice()).is_ok());
 
-        // SAFETY: `BumpVec<u8>` and `BumpString` have the same representation;
-        // only the invariant that the bytes are utf8 is different.
-        transmute_value(vec)
+            // SAFETY: `BumpVec<u8>` and `BumpString` have the same representation;
+            // only the invariant that the bytes are utf8 is different.
+            transmute_value(vec)
+        }
     }
 
     /// Returns this string's capacity, in bytes.
@@ -617,7 +619,7 @@ impl<A: BumpAllocatorExt> BumpString<A> {
     pub unsafe fn as_mut_vec(&mut self) -> &mut BumpVec<u8, A> {
         // SAFETY: `BumpVec<u8>` and `BumpString` have the same representation;
         // only the invariant that the bytes are utf8 is different.
-        transmute_mut(self)
+        unsafe { transmute_mut(self) }
     }
 
     /// Returns a raw pointer to the slice, or a dangling raw pointer
@@ -699,7 +701,7 @@ impl<A: BumpAllocatorExt> BumpString<A> {
 
     #[inline(always)]
     pub(crate) unsafe fn set_len(&mut self, new_len: usize) {
-        self.fixed.set_len(new_len);
+        unsafe { self.fixed.set_len(new_len) };
     }
 
     /// Constructs a new empty `BumpString` with the specified capacity
@@ -946,7 +948,7 @@ impl<A: BumpAllocatorExt> BumpString<A> {
     }
 
     pub(crate) fn generic_from_utf8_lossy_in<E: ErrorBehavior>(v: &[u8], allocator: A) -> Result<Self, E> {
-        let mut iter = crate::polyfill::str::lossy::utf8_chunks(v);
+        let mut iter = v.utf8_chunks();
 
         let first_valid = if let Some(chunk) = iter.next() {
             let valid = chunk.valid();
@@ -1800,17 +1802,19 @@ impl<A: BumpAllocatorExt> BumpString<A> {
     }
 
     unsafe fn insert_bytes<B: ErrorBehavior>(&mut self, idx: usize, bytes: &[u8]) -> Result<(), B> {
-        let vec = self.as_mut_vec();
+        unsafe {
+            let vec = self.as_mut_vec();
 
-        let len = vec.len();
-        let amt = bytes.len();
-        vec.generic_reserve(amt)?;
+            let len = vec.len();
+            let amt = bytes.len();
+            vec.generic_reserve(amt)?;
 
-        ptr::copy(vec.as_ptr().add(idx), vec.as_mut_ptr().add(idx + amt), len - idx);
-        ptr::copy_nonoverlapping(bytes.as_ptr(), vec.as_mut_ptr().add(idx), amt);
-        vec.set_len(len + amt);
+            ptr::copy(vec.as_ptr().add(idx), vec.as_mut_ptr().add(idx + amt), len - idx);
+            ptr::copy_nonoverlapping(bytes.as_ptr(), vec.as_mut_ptr().add(idx), amt);
+            vec.set_len(len + amt);
 
-        Ok(())
+            Ok(())
+        }
     }
 
     /// Shrinks the capacity of the string as much as possible.
@@ -2096,7 +2100,7 @@ impl<A: BumpAllocatorExt + Clone> Clone for BumpString<A> {
         unsafe {
             self.as_ptr().copy_to_nonoverlapping(ptr.as_ptr(), len);
 
-            let slice = non_null::str_from_utf8(non_null::slice_from_raw_parts(ptr, len));
+            let slice = non_null::str_from_utf8(NonNull::slice_from_raw_parts(ptr, len));
             let fixed = RawFixedBumpString::from_raw_parts(slice, len);
 
             Self { fixed, allocator }

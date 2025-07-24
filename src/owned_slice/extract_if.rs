@@ -72,7 +72,7 @@ where
         unsafe {
             while self.index < self.original_len {
                 let start_ptr = non_null::as_non_null_ptr(*self.ptr);
-                let mut value_ptr = non_null::add(start_ptr, self.index);
+                let mut value_ptr = start_ptr.add(self.index);
 
                 let drained = (self.filter)(value_ptr.as_mut());
 
@@ -86,8 +86,8 @@ where
                     return Some(value_ptr.as_ptr().read());
                 } else if self.drained_count > 0 {
                     let src = value_ptr;
-                    let dst = non_null::sub(value_ptr, self.drained_count);
-                    non_null::copy_nonoverlapping(src, dst, 1);
+                    let dst = value_ptr.sub(self.drained_count);
+                    src.copy_to_nonoverlapping(dst, 1);
                 }
             }
             None
@@ -114,10 +114,10 @@ where
                 // is required to prevent a double-drop of the last successfully
                 // drained item prior to a panic in the predicate.
                 let ptr = non_null::as_non_null_ptr(*self.ptr);
-                let src = non_null::add(ptr, self.index);
-                let dst = non_null::sub(src, self.drained_count);
+                let src = ptr.add(self.index);
+                let dst = src.sub(self.drained_count);
                 let tail_len = self.original_len - self.index;
-                non_null::copy(src, dst, tail_len);
+                src.copy_to(dst, tail_len);
             }
 
             non_null::set_len(self.ptr, self.original_len - self.drained_count);
