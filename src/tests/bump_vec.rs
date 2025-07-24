@@ -30,6 +30,7 @@ either_way! {
     map_in_place_smaller_layout
     map_in_place_to_zst
     map_in_place_from_zst_to_zst
+    test_dyn_allocator
 }
 
 fn shrinks<const UP: bool>() {
@@ -472,8 +473,7 @@ fn map_in_place_from_zst_to_zst<const UP: bool>() {
 #[derive(Debug)]
 struct AlignedZst;
 
-#[test]
-fn dyn_allocator() {
+fn test_dyn_allocator<const UP: bool>() {
     fn numbers(range: Range<i32>) -> impl ExactSizeIterator<Item = String> {
         range.map(|i| i.to_string())
     }

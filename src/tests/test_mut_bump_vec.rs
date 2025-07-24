@@ -11,10 +11,10 @@ use crate::{
 };
 
 either_way! {
-    dyn_allocator
+    test_dyn_allocator
 }
 
-fn dyn_allocator<const UP: bool>() {
+fn test_dyn_allocator<const UP: bool>() {
     fn numbers(range: Range<i32>) -> impl ExactSizeIterator<Item = String> {
         range.map(|i| i.to_string())
     }
