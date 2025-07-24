@@ -602,7 +602,7 @@ impl<'a> BumpBox<'a, str> {
 
         // SAFETY: `BumpBox<[u8]>` and `BumpBox<str>` have the same representation;
         // only the invariant that the bytes are utf8 is different.
-        mem::transmute(bytes)
+        unsafe { mem::transmute(bytes) }
     }
 
     /// Converts a `BumpBox<str>` into a `BumpBox<[u8]>`.
@@ -626,9 +626,11 @@ impl<'a> BumpBox<'a, str> {
     #[must_use]
     #[inline(always)]
     pub unsafe fn as_mut_bytes(&mut self) -> &mut BumpBox<'a, [u8]> {
-        // SAFETY: `BumpBox<[u8]>` and `BumpBox<str>` have the same representation;
-        // only the invariant that the bytes are utf8 is different.
-        transmute_mut(self)
+        unsafe {
+            // SAFETY: `BumpBox<[u8]>` and `BumpBox<str>` have the same representation;
+            // only the invariant that the bytes are utf8 is different.
+            transmute_mut(self)
+        }
     }
 
     /// Returns the number of bytes in the string, also referred to
@@ -1148,8 +1150,10 @@ impl<'a, T: Sized> BumpBox<'a, MaybeUninit<T>> {
     #[must_use]
     #[inline(always)]
     pub unsafe fn assume_init(self) -> BumpBox<'a, T> {
-        let ptr = BumpBox::into_raw(self);
-        BumpBox::from_raw(ptr.cast())
+        unsafe {
+            let ptr = BumpBox::into_raw(self);
+            BumpBox::from_raw(ptr.cast())
+        }
     }
 }
 
@@ -1325,8 +1329,11 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     #[inline(always)]
     pub unsafe fn assume_init(self) -> BumpBox<'a, [T]> {
         let ptr = BumpBox::into_raw(self);
-        let ptr = NonNull::new_unchecked(ptr.as_ptr() as _);
-        BumpBox::from_raw(ptr)
+
+        unsafe {
+            let ptr = NonNull::new_unchecked(ptr.as_ptr() as _);
+            BumpBox::from_raw(ptr)
+        }
     }
 }
 
@@ -1620,12 +1627,12 @@ impl<'a, T> BumpBox<'a, [T]> {
 
     #[inline]
     pub(crate) unsafe fn inc_len(&mut self, amount: usize) {
-        self.set_len(self.len() + amount);
+        unsafe { self.set_len(self.len() + amount) };
     }
 
     #[inline]
     pub(crate) unsafe fn dec_len(&mut self, amount: usize) {
-        self.set_len(self.len() - amount);
+        unsafe { self.set_len(self.len() - amount) };
     }
 
     #[inline(always)]
@@ -1951,20 +1958,22 @@ impl<'a, T> BumpBox<'a, [T]> {
     #[inline]
     #[must_use]
     pub unsafe fn split_at_unchecked(self, mid: usize) -> (Self, Self) {
-        let this = ManuallyDrop::new(self);
+        unsafe {
+            let this = ManuallyDrop::new(self);
 
-        let len = this.len();
-        let ptr = this.ptr.cast::<T>();
+            let len = this.len();
+            let ptr = this.ptr.cast::<T>();
 
-        debug_assert!(
-            mid <= len,
-            "slice::split_at_unchecked requires the index to be within the slice"
-        );
+            debug_assert!(
+                mid <= len,
+                "slice::split_at_unchecked requires the index to be within the slice"
+            );
 
-        (
-            Self::from_raw(non_null::slice_from_raw_parts(ptr, mid)),
-            Self::from_raw(non_null::slice_from_raw_parts(non_null::add(ptr, mid), len - mid)),
-        )
+            (
+                Self::from_raw(non_null::slice_from_raw_parts(ptr, mid)),
+                Self::from_raw(non_null::slice_from_raw_parts(non_null::add(ptr, mid), len - mid)),
+            )
+        }
     }
 
     /// Returns the first and all the rest of the elements of the slice, or `None` if it is empty.
@@ -2725,7 +2734,7 @@ impl<'a> BumpBox<'a, dyn Any> {
     #[inline(always)]
     pub unsafe fn downcast_unchecked<T: Any>(self) -> BumpBox<'a, T> {
         debug_assert!(self.is::<T>());
-        BumpBox::from_raw(BumpBox::into_raw(self).cast())
+        unsafe { BumpBox::from_raw(BumpBox::into_raw(self).cast()) }
     }
 }
 
@@ -2755,7 +2764,7 @@ impl<'a> BumpBox<'a, dyn Any + Send> {
     #[inline(always)]
     pub unsafe fn downcast_unchecked<T: Any>(self) -> BumpBox<'a, T> {
         debug_assert!(self.is::<T>());
-        BumpBox::from_raw(BumpBox::into_raw(self).cast())
+        unsafe { BumpBox::from_raw(BumpBox::into_raw(self).cast()) }
     }
 }
 
@@ -2785,7 +2794,7 @@ impl<'a> BumpBox<'a, dyn Any + Send + Sync> {
     #[inline(always)]
     pub unsafe fn downcast_unchecked<T: Any>(self) -> BumpBox<'a, T> {
         debug_assert!(self.is::<T>());
-        BumpBox::from_raw(BumpBox::into_raw(self).cast())
+        unsafe { BumpBox::from_raw(BumpBox::into_raw(self).cast()) }
     }
 }
 

@@ -352,33 +352,36 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
     #[inline(always)]
     pub(crate) unsafe fn set_pos(self, ptr: NonNull<u8>) {
-        self.set_pos_addr(non_null::addr(ptr).get());
+        unsafe { self.set_pos_addr(non_null::addr(ptr).get()) };
     }
 
     /// # Safety
     /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
     #[inline(always)]
     pub(crate) unsafe fn set_pos_addr(self, addr: usize) {
-        let ptr = self.with_addr(addr);
-        self.header.as_ref().pos.set(ptr);
+        unsafe { self.header.as_ref().pos.set(self.with_addr(addr)) };
     }
 
     /// # Safety
     /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
     #[inline(always)]
     pub(crate) unsafe fn with_addr(self, addr: usize) -> NonNull<u8> {
-        debug_assert!(self.contains_addr_or_end(addr));
-        let ptr = self.header.cast();
-        let addr = NonZeroUsize::new_unchecked(addr);
-        non_null::with_addr(ptr, addr)
+        unsafe {
+            debug_assert!(self.contains_addr_or_end(addr));
+            let ptr = self.header.cast();
+            let addr = NonZeroUsize::new_unchecked(addr);
+            non_null::with_addr(ptr, addr)
+        }
     }
 
     #[inline(always)]
     pub(crate) unsafe fn with_addr_range(self, range: Range<usize>) -> Range<NonNull<u8>> {
-        debug_assert!(range.start <= range.end);
-        let start = self.with_addr(range.start);
-        let end = self.with_addr(range.end);
-        start..end
+        unsafe {
+            debug_assert!(range.start <= range.end);
+            let start = self.with_addr(range.start);
+            let end = self.with_addr(range.end);
+            start..end
+        }
     }
 
     #[inline(always)]
@@ -504,9 +507,11 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         let ptr = self.chunk_start();
         let layout = self.layout();
         let allocator_ptr = polyfill::ptr::from_ref(&self.header.as_ref().allocator);
-        let allocator = allocator_ptr.read();
 
-        allocator.deallocate(ptr, layout);
+        unsafe {
+            let allocator = allocator_ptr.read();
+            allocator.deallocate(ptr, layout);
+        }
     }
 
     #[inline(always)]

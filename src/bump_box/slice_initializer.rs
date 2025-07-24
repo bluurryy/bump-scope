@@ -99,19 +99,21 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
 
     #[inline(always)]
     pub(crate) unsafe fn push_unchecked(&mut self, value: T) {
-        self.push_with_unchecked(|| value);
+        unsafe { self.push_with_unchecked(|| value) };
     }
 
     #[inline(always)]
     pub(crate) unsafe fn push_with_unchecked(&mut self, f: impl FnOnce() -> T) {
         debug_assert!(!self.is_full());
 
-        if T::IS_ZST {
-            mem::forget(f());
-            self.pos = non_null::wrapping_byte_add(self.pos, 1);
-        } else {
-            pointer::write_with(self.pos.as_ptr(), f);
-            self.pos = non_null::add(self.pos, 1);
+        unsafe {
+            if T::IS_ZST {
+                mem::forget(f());
+                self.pos = non_null::wrapping_byte_add(self.pos, 1);
+            } else {
+                pointer::write_with(self.pos.as_ptr(), f);
+                self.pos = non_null::add(self.pos, 1);
+            }
         }
     }
 
@@ -123,10 +125,12 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
 
     #[inline(always)]
     pub(crate) unsafe fn into_init_unchecked(self) -> BumpBox<'a, [T]> {
-        let this = ManuallyDrop::new(self);
-        debug_assert!(this.is_full());
-        let len = this.len();
-        let slice = non_null::slice_from_raw_parts(this.start, len);
-        BumpBox::from_raw(slice)
+        unsafe {
+            let this = ManuallyDrop::new(self);
+            debug_assert!(this.is_full());
+            let len = this.len();
+            let slice = non_null::slice_from_raw_parts(this.start, len);
+            BumpBox::from_raw(slice)
+        }
     }
 }

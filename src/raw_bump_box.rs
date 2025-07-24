@@ -41,19 +41,19 @@ impl<T: ?Sized> RawBumpBox<T> {
     #[allow(dead_code)]
     #[inline(always)]
     pub(crate) unsafe fn cook<'a>(self) -> BumpBox<'a, T> {
-        transmute(self)
+        unsafe { transmute(self) }
     }
 
     #[allow(dead_code)]
     #[inline(always)]
     pub(crate) unsafe fn cook_ref<'a>(&self) -> &BumpBox<'a, T> {
-        transmute_ref(self)
+        unsafe { transmute_ref(self) }
     }
 
     #[allow(dead_code)]
     #[inline(always)]
     pub(crate) unsafe fn cook_mut<'a>(&mut self) -> &mut BumpBox<'a, T> {
-        transmute_mut(self)
+        unsafe { transmute_mut(self) }
     }
 
     #[inline(always)]

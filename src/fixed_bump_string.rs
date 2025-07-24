@@ -303,9 +303,10 @@ impl<'a> FixedBumpString<'a> {
     #[must_use]
     pub unsafe fn from_utf8_unchecked(vec: FixedBumpVec<'a, u8>) -> Self {
         debug_assert!(str::from_utf8(vec.as_slice()).is_ok());
+
         // SAFETY: `FixedBumpVec<u8>` and `FixedBumpString` have the same representation;
         // only the invariant that the bytes are utf8 is different.
-        mem::transmute(vec)
+        unsafe { mem::transmute(vec) }
     }
 
     /// Returns this string's capacity, in bytes.
@@ -832,9 +833,11 @@ impl<'a> FixedBumpString<'a> {
     #[must_use]
     #[inline(always)]
     pub unsafe fn as_mut_vec(&mut self) -> &mut FixedBumpVec<'a, u8> {
-        // SAFETY: `FixedBumpVec<u8>` and `FixedBumpString` have the same representation;
-        // only the invariant that the bytes are utf8 is different.
-        transmute_mut(self)
+        unsafe {
+            // SAFETY: `FixedBumpVec<u8>` and `FixedBumpString` have the same representation;
+            // only the invariant that the bytes are utf8 is different.
+            transmute_mut(self)
+        }
     }
 
     /// Returns a raw pointer to the slice, or a dangling raw pointer
@@ -854,12 +857,12 @@ impl<'a> FixedBumpString<'a> {
 
     #[inline(always)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<u8>) {
-        self.initialized.set_ptr(new_ptr);
+        unsafe { self.initialized.set_ptr(new_ptr) };
     }
 
     #[inline(always)]
     pub(crate) unsafe fn set_len(&mut self, new_len: usize) {
-        self.initialized.set_len(new_len);
+        unsafe { self.initialized.set_len(new_len) };
     }
 
     #[inline(always)]
@@ -1385,17 +1388,19 @@ impl FixedBumpString<'_> {
     }
 
     unsafe fn insert_bytes<B: ErrorBehavior>(&mut self, idx: usize, bytes: &[u8]) -> Result<(), B> {
-        let vec = self.as_mut_vec();
+        unsafe {
+            let vec = self.as_mut_vec();
 
-        let len = vec.len();
-        let amt = bytes.len();
-        vec.generic_reserve(amt)?;
+            let len = vec.len();
+            let amt = bytes.len();
+            vec.generic_reserve(amt)?;
 
-        ptr::copy(vec.as_ptr().add(idx), vec.as_mut_ptr().add(idx + amt), len - idx);
-        ptr::copy_nonoverlapping(bytes.as_ptr(), vec.as_mut_ptr().add(idx), amt);
-        vec.set_len(len + amt);
+            ptr::copy(vec.as_ptr().add(idx), vec.as_mut_ptr().add(idx + amt), len - idx);
+            ptr::copy_nonoverlapping(bytes.as_ptr(), vec.as_mut_ptr().add(idx), amt);
+            vec.set_len(len + amt);
 
-        Ok(())
+            Ok(())
+        }
     }
 }
 

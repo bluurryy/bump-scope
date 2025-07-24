@@ -281,12 +281,12 @@ where
 
     #[inline(always)]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        self.as_scope().deallocate(ptr, layout);
+        unsafe { self.as_scope().deallocate(ptr, layout) };
     }
 
     #[inline(always)]
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.as_scope().grow(ptr, old_layout, new_layout)
+        unsafe { self.as_scope().grow(ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
@@ -296,12 +296,12 @@ where
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        self.as_scope().grow_zeroed(ptr, old_layout, new_layout)
+        unsafe { self.as_scope().grow_zeroed(ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.as_scope().shrink(ptr, old_layout, new_layout)
+        unsafe { self.as_scope().shrink(ptr, old_layout, new_layout) }
     }
 }
 
@@ -747,7 +747,7 @@ where
     /// ```
     #[inline]
     pub unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        self.as_scope().reset_to(checkpoint);
+        unsafe { self.as_scope().reset_to(checkpoint) };
     }
 }
 
@@ -1057,7 +1057,7 @@ where
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        &mut *polyfill::ptr::from_mut(self).cast::<Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>()
+        unsafe { &mut *polyfill::ptr::from_mut(self).cast::<Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>() }
     }
 
     /// Converts this `Bump` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
@@ -1308,8 +1308,10 @@ where
     #[inline]
     #[must_use]
     pub unsafe fn from_raw(ptr: NonNull<()>) -> Self {
-        let chunk = Cell::new(RawChunk::from_header(ptr.cast()));
-        Self { chunk }
+        unsafe {
+            let chunk = Cell::new(RawChunk::from_header(ptr.cast()));
+            Self { chunk }
+        }
     }
 }
 

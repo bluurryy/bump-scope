@@ -22,8 +22,10 @@ impl Checkpoint {
     }
 
     pub(crate) unsafe fn reset_within_chunk(self) {
-        let ptr = non_null::with_addr(self.chunk.cast::<u8>(), self.address);
-        self.chunk.as_ref().pos.set(ptr);
+        unsafe {
+            let ptr = non_null::with_addr(self.chunk.cast::<u8>(), self.address);
+            self.chunk.as_ref().pos.set(ptr);
+        }
     }
 }
 

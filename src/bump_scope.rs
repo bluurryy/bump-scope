@@ -111,12 +111,12 @@ where
 
     #[inline(always)]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        allocator_impl::deallocate(self, ptr, layout);
+        unsafe { allocator_impl::deallocate(self, ptr, layout) };
     }
 
     #[inline(always)]
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        allocator_impl::grow(self, ptr, old_layout, new_layout)
+        unsafe { allocator_impl::grow(self, ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
@@ -126,12 +126,12 @@ where
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        allocator_impl::grow_zeroed(self, ptr, old_layout, new_layout)
+        unsafe { allocator_impl::grow_zeroed(self, ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        allocator_impl::shrink(self, ptr, old_layout, new_layout)
+        unsafe { allocator_impl::shrink(self, ptr, old_layout, new_layout) }
     }
 }
 
@@ -389,9 +389,11 @@ where
             chunk.header == checkpoint.chunk.cast() && chunk.contains_addr_or_end(checkpoint.address.get())
         }));
 
-        checkpoint.reset_within_chunk();
-        let chunk = RawChunk::from_header(checkpoint.chunk.cast());
-        self.chunk.set(chunk);
+        unsafe {
+            checkpoint.reset_within_chunk();
+            let chunk = RawChunk::from_header(checkpoint.chunk.cast());
+            self.chunk.set(chunk);
+        }
     }
 }
 
@@ -434,17 +436,19 @@ where
 
     #[inline(always)]
     pub(crate) unsafe fn use_prepared_slice_allocation<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        let end = non_null::add(start, len);
+        unsafe {
+            let end = non_null::add(start, len);
 
-        if UP {
-            self.set_aligned_pos(non_null::addr(end), T::ALIGN);
-            non_null::slice_from_raw_parts(start, len)
-        } else {
-            let dst_end = non_null::add(start, cap);
-            let dst = non_null::sub(dst_end, len);
-            non_null::copy(start, dst, len);
-            self.set_aligned_pos(non_null::addr(dst), T::ALIGN);
-            non_null::slice_from_raw_parts(dst, len)
+            if UP {
+                self.set_aligned_pos(non_null::addr(end), T::ALIGN);
+                non_null::slice_from_raw_parts(start, len)
+            } else {
+                let dst_end = non_null::add(start, cap);
+                let dst = non_null::sub(dst_end, len);
+                non_null::copy(start, dst, len);
+                self.set_aligned_pos(non_null::addr(dst), T::ALIGN);
+                non_null::slice_from_raw_parts(dst, len)
+            }
         }
     }
 
@@ -455,24 +459,26 @@ where
         len: usize,
         cap: usize,
     ) -> NonNull<[T]> {
-        let mut start = non_null::sub(end, len);
+        unsafe {
+            let mut start = non_null::sub(end, len);
 
-        // FIXME: refactor like `BumpAllocator::allocate_prepared_rev`
-        if UP {
-            {
-                let dst = non_null::sub(end, cap);
-                let dst_end = non_null::add(dst, len);
+            // FIXME: refactor like `BumpAllocator::allocate_prepared_rev`
+            if UP {
+                {
+                    let dst = non_null::sub(end, cap);
+                    let dst_end = non_null::add(dst, len);
 
-                non_null::copy(start, dst, len);
-                start = dst;
-                end = dst_end;
+                    non_null::copy(start, dst, len);
+                    start = dst;
+                    end = dst_end;
+                }
+
+                self.set_aligned_pos(non_null::addr(end), T::ALIGN);
+                non_null::slice_from_raw_parts(start, len)
+            } else {
+                self.set_aligned_pos(non_null::addr(start), T::ALIGN);
+                non_null::slice_from_raw_parts(start, len)
             }
-
-            self.set_aligned_pos(non_null::addr(end), T::ALIGN);
-            non_null::slice_from_raw_parts(start, len)
-        } else {
-            self.set_aligned_pos(non_null::addr(start), T::ALIGN);
-            non_null::slice_from_raw_parts(start, len)
         }
     }
 
@@ -488,9 +494,11 @@ where
 
     #[inline(always)]
     pub(crate) unsafe fn set_pos(&self, pos: NonZeroUsize) {
-        let chunk = self.chunk.get();
-        chunk.set_pos_addr(pos.get());
-        chunk.align_pos_to::<MIN_ALIGN>();
+        unsafe {
+            let chunk = self.chunk.get();
+            chunk.set_pos_addr(pos.get());
+            chunk.align_pos_to::<MIN_ALIGN>();
+        }
     }
 
     #[inline(always)]
@@ -676,41 +684,44 @@ where
         layout: L,
         mut f: impl FnMut(RawChunk<UP, A>, L) -> Option<R>,
     ) -> Result<R, B> {
-        let new_chunk = if self.is_unallocated() {
-            // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
-            // `default_or_panic` will not panic.
-            let allocator = A::default_or_panic();
+        unsafe {
+            let new_chunk = if self.is_unallocated() {
+                // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
+                // `default_or_panic` will not panic.
+                let allocator = A::default_or_panic();
 
-            RawChunk::new_in(
-                ChunkSize::from_capacity(*layout).ok_or_else(B::capacity_overflow)?,
-                None,
-                allocator,
-            )
-        } else {
-            while let Some(chunk) = self.chunk.get().next() {
-                // We don't reset the chunk position when we leave a scope, so we need to do it here.
-                chunk.reset();
+                RawChunk::new_in(
+                    ChunkSize::from_capacity(*layout).ok_or_else(B::capacity_overflow)?,
+                    None,
+                    allocator,
+                )
+            } else {
+                while let Some(chunk) = self.chunk.get().next() {
+                    // We don't reset the chunk position when we leave a scope, so we need to do it here.
+                    chunk.reset();
 
-                self.chunk.set(chunk);
+                    self.chunk.set(chunk);
 
-                if let Some(ptr) = f(chunk, layout) {
-                    return Ok(ptr);
+                    if let Some(ptr) = f(chunk, layout) {
+                        return Ok(ptr);
+                    }
+                }
+
+                // there is no chunk that fits, we need a new chunk
+                self.chunk.get().append_for(*layout)
+            }?;
+
+            self.chunk.set(new_chunk);
+
+            match f(new_chunk, layout) {
+                Some(ptr) => Ok(ptr),
+                _ => {
+                    // SAFETY: We just appended a chunk for that specific layout, it must have enough space.
+                    // We don't panic here so we don't produce any panic code when using `try_` apis.
+                    // We check for that in `test-fallibility`.
+                    core::hint::unreachable_unchecked()
                 }
             }
-
-            // there is no chunk that fits, we need a new chunk
-            self.chunk.get().append_for(*layout)
-        }?;
-
-        self.chunk.set(new_chunk);
-
-        if let Some(ptr) = f(new_chunk, layout) {
-            Ok(ptr)
-        } else {
-            // SAFETY: We just appended a chunk for that specific layout, it must have enough space.
-            // We don't panic here so we don't produce any panic code when using `try_` apis.
-            // We check for that in `test-fallibility`.
-            core::hint::unreachable_unchecked()
         }
     }
 
@@ -821,7 +832,7 @@ where
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        &mut *polyfill::ptr::from_mut(self).cast::<BumpScope<'a, A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>()
+        unsafe { &mut *polyfill::ptr::from_mut(self).cast::<BumpScope<'a, A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>() }
     }
 
     /// Converts this `BumpScope` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
@@ -922,7 +933,7 @@ where
     /// - `self` must not be used until this clone is gone
     #[inline(always)]
     pub(crate) unsafe fn clone_unchecked(&self) -> BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
-        BumpScope::new_unchecked(self.chunk.get())
+        unsafe { BumpScope::new_unchecked(self.chunk.get()) }
     }
 
     /// Converts this `BumpScope` into a raw pointer.
@@ -944,10 +955,12 @@ where
     #[inline]
     #[must_use]
     pub unsafe fn from_raw(ptr: NonNull<()>) -> Self {
-        let chunk = Cell::new(RawChunk::from_header(ptr.cast()));
-        Self {
-            chunk,
-            marker: PhantomData,
+        unsafe {
+            let chunk = Cell::new(RawChunk::from_header(ptr.cast()));
+            Self {
+                chunk,
+                marker: PhantomData,
+            }
         }
     }
 }

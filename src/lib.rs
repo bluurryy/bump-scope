@@ -40,11 +40,6 @@
     clippy::missing_transmute_annotations,
     clippy::manual_assert,
     clippy::range_plus_one,
-    clippy::manual_let_else, // FIXME: remove
-    clippy::ptr_cast_constness, // FIXME: remove
-    clippy::borrow_as_ptr, // FIXME: remove
-    clippy::ref_as_ptr, // FIXME: remove
-    clippy::manual_repeat_n, // FIXME: remove
     rustdoc::redundant_explicit_links, // for cargo-rdme
     unknown_lints, // for `private_bounds` in msrv
     unused_unsafe, // only triggered in old rust versions, like msrv
@@ -517,7 +512,7 @@ pub mod private {
     #[must_use]
     #[allow(clippy::needless_lifetimes, clippy::elidable_lifetime_names)]
     pub unsafe fn bump_box_from_raw_with_lifetime<'a, T: ?Sized>(ptr: NonNull<T>, _lifetime: &'a ()) -> BumpBox<'a, T> {
-        BumpBox::from_raw(ptr)
+        unsafe { BumpBox::from_raw(ptr) }
     }
 }
 

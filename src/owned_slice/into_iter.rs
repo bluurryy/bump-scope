@@ -54,24 +54,28 @@ impl<'a, T> IntoIter<'a, T> {
 
     #[inline(always)]
     pub(crate) unsafe fn new(slice: NonNull<[T]>) -> Self {
-        if T::IS_ZST {
-            Self::new_zst(slice.len())
-        } else {
-            let start = slice.cast::<T>();
-            let end = non_null::add(start, slice.len());
-            Self::new_range(start..end)
+        unsafe {
+            if T::IS_ZST {
+                Self::new_zst(slice.len())
+            } else {
+                let start = slice.cast::<T>();
+                let end = non_null::add(start, slice.len());
+                Self::new_range(start..end)
+            }
         }
     }
 
     #[inline(always)]
     pub(crate) unsafe fn new_ranged(ptr: NonNull<[T]>, range: Range<usize>) -> Self {
-        if T::IS_ZST {
-            Self::new_zst(range.end - range.start)
-        } else {
-            let ptr = non_null::as_non_null_ptr(ptr);
-            let start = non_null::add(ptr, range.start);
-            let end = non_null::add(ptr, range.end);
-            Self::new_range(start..end)
+        unsafe {
+            if T::IS_ZST {
+                Self::new_zst(range.end - range.start)
+            } else {
+                let ptr = non_null::as_non_null_ptr(ptr);
+                let start = non_null::add(ptr, range.start);
+                let end = non_null::add(ptr, range.end);
+                Self::new_range(start..end)
+            }
         }
     }
 

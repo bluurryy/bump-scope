@@ -525,7 +525,9 @@ impl<T, A> MutBumpVec<T, A> {
     /// Vector must not be full.
     #[inline(always)]
     pub unsafe fn push_unchecked(&mut self, value: T) {
-        unsafe { self.fixed.cook_mut() }.push_unchecked(value);
+        unsafe {
+            unsafe { self.fixed.cook_mut() }.push_unchecked(value);
+        }
     }
 
     /// Appends an element to the back of the collection.
@@ -534,7 +536,9 @@ impl<T, A> MutBumpVec<T, A> {
     /// Vector must not be full.
     #[inline(always)]
     pub unsafe fn push_with_unchecked(&mut self, f: impl FnOnce() -> T) {
-        unsafe { self.fixed.cook_mut() }.push_with_unchecked(f);
+        unsafe {
+            unsafe { self.fixed.cook_mut() }.push_with_unchecked(f);
+        }
     }
 
     /// Forces the length of the vector to `new_len`.
@@ -555,12 +559,12 @@ impl<T, A> MutBumpVec<T, A> {
     /// [`capacity`]: Self::capacity
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: usize) {
-        self.fixed.set_len(new_len);
+        unsafe { self.fixed.set_len(new_len) };
     }
 
     #[inline]
     pub(crate) unsafe fn inc_len(&mut self, amount: usize) {
-        unsafe { self.fixed.cook_mut() }.inc_len(amount);
+        unsafe { unsafe { self.fixed.cook_mut() }.inc_len(amount) };
     }
 }
 
@@ -2017,15 +2021,17 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVec<T, A> {
 
     #[inline(always)]
     unsafe fn extend_by_copy_nonoverlapping<E: ErrorBehavior>(&mut self, other: *const [T]) -> Result<(), E> {
-        let len = pointer::len(other);
-        self.generic_reserve(len)?;
+        unsafe {
+            let len = pointer::len(other);
+            self.generic_reserve(len)?;
 
-        let src = other.cast::<T>();
-        let dst = self.as_mut_ptr().add(self.len());
-        ptr::copy_nonoverlapping(src, dst, len);
+            let src = other.cast::<T>();
+            let dst = self.as_mut_ptr().add(self.len());
+            ptr::copy_nonoverlapping(src, dst, len);
 
-        self.inc_len(len);
-        Ok(())
+            self.inc_len(len);
+            Ok(())
+        }
     }
 
     #[inline]
@@ -2080,7 +2086,7 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVec<T, A> {
     /// `new_capacity` must be greater than the current capacity.
     unsafe fn generic_grow_to<E: ErrorBehavior>(&mut self, new_capacity: usize) -> Result<(), E> {
         let Self { fixed, allocator } = self;
-        fixed.grow_prepared_allocation(allocator, new_capacity)
+        unsafe { fixed.grow_prepared_allocation(allocator, new_capacity) }
     }
 
     #[must_use]
@@ -2111,38 +2117,40 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVec<T, A> {
     ///
     /// `iterator` must satisfy the invariants of nightly's `TrustedLen`.
     unsafe fn extend_trusted<B: ErrorBehavior>(&mut self, iterator: impl Iterator<Item = T>) -> Result<(), B> {
-        let (low, high) = iterator.size_hint();
-        if let Some(additional) = high {
-            debug_assert_eq!(
-                low,
-                additional,
-                "TrustedLen iterator's size hint is not exact: {:?}",
-                (low, high)
-            );
+        unsafe {
+            let (low, high) = iterator.size_hint();
+            if let Some(additional) = high {
+                debug_assert_eq!(
+                    low,
+                    additional,
+                    "TrustedLen iterator's size hint is not exact: {:?}",
+                    (low, high)
+                );
 
-            self.generic_reserve(additional)?;
+                self.generic_reserve(additional)?;
 
-            let ptr = self.as_mut_ptr();
-            let mut local_len = self.fixed.set_len_on_drop();
+                let ptr = self.as_mut_ptr();
+                let mut local_len = self.fixed.set_len_on_drop();
 
-            iterator.for_each(move |element| {
-                let dst = ptr.add(local_len.current_len());
+                iterator.for_each(move |element| {
+                    let dst = ptr.add(local_len.current_len());
 
-                ptr::write(dst, element);
-                // Since the loop executes user code which can panic we have to update
-                // the length every step to correctly drop what we've written.
-                // NB can't overflow since we would have had to alloc the address space
-                local_len.increment_len(1);
-            });
+                    ptr::write(dst, element);
+                    // Since the loop executes user code which can panic we have to update
+                    // the length every step to correctly drop what we've written.
+                    // NB can't overflow since we would have had to alloc the address space
+                    local_len.increment_len(1);
+                });
 
-            Ok(())
-        } else {
-            // Per TrustedLen contract a `None` upper bound means that the iterator length
-            // truly exceeds usize::MAX, which would eventually lead to a capacity overflow anyway.
-            // Since the other branch already panics eagerly (via `reserve()`) we do the same here.
-            // This avoids additional codegen for a fallback code path which would eventually
-            // panic anyway.
-            Err(B::capacity_overflow())
+                Ok(())
+            } else {
+                // Per TrustedLen contract a `None` upper bound means that the iterator length
+                // truly exceeds usize::MAX, which would eventually lead to a capacity overflow anyway.
+                // Since the other branch already panics eagerly (via `reserve()`) we do the same here.
+                // This avoids additional codegen for a fallback code path which would eventually
+                // panic anyway.
+                Err(B::capacity_overflow())
+            }
         }
     }
 

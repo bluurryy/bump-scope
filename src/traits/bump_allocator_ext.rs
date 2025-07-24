@@ -118,7 +118,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// [shrink]: Allocator::shrink
     /// [array]: Layout::array
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        shrink_slice(self, ptr, old_len, new_len)
+        unsafe { shrink_slice(self, ptr, old_len, new_len) }
     }
 
     /// A specialized version of [`prepare_allocation`].
@@ -233,7 +233,7 @@ unsafe impl BumpAllocatorExt for dyn BumpAllocator + '_ {
 
     #[inline(always)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        shrink_slice(self, ptr, old_len, new_len)
+        unsafe { shrink_slice(self, ptr, old_len, new_len) }
     }
 
     #[inline(always)]
@@ -249,12 +249,12 @@ unsafe impl BumpAllocatorExt for dyn BumpAllocator + '_ {
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        allocate_prepared_slice(self, ptr, len, cap)
+        unsafe { allocate_prepared_slice(self, ptr, len, cap) }
     }
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        allocate_prepared_slice_rev(self, ptr, len, cap)
+        unsafe { allocate_prepared_slice_rev(self, ptr, len, cap) }
     }
 }
 
@@ -304,7 +304,7 @@ unsafe impl BumpAllocatorExt for dyn MutBumpAllocator + '_ {
 
     #[inline(always)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        shrink_slice(self, ptr, old_len, new_len)
+        unsafe { shrink_slice(self, ptr, old_len, new_len) }
     }
 
     #[inline(always)]
@@ -320,12 +320,12 @@ unsafe impl BumpAllocatorExt for dyn MutBumpAllocator + '_ {
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        allocate_prepared_slice(self, ptr, len, cap)
+        unsafe { allocate_prepared_slice(self, ptr, len, cap) }
     }
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        allocate_prepared_slice_rev(self, ptr, len, cap)
+        unsafe { allocate_prepared_slice_rev(self, ptr, len, cap) }
     }
 }
 
@@ -375,7 +375,7 @@ unsafe impl BumpAllocatorExt for dyn BumpAllocatorScope<'_> + '_ {
 
     #[inline(always)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        shrink_slice(self, ptr, old_len, new_len)
+        unsafe { shrink_slice(self, ptr, old_len, new_len) }
     }
 
     #[inline(always)]
@@ -391,12 +391,12 @@ unsafe impl BumpAllocatorExt for dyn BumpAllocatorScope<'_> + '_ {
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        allocate_prepared_slice(self, ptr, len, cap)
+        unsafe { allocate_prepared_slice(self, ptr, len, cap) }
     }
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        allocate_prepared_slice_rev(self, ptr, len, cap)
+        unsafe { allocate_prepared_slice_rev(self, ptr, len, cap) }
     }
 }
 
@@ -446,7 +446,7 @@ unsafe impl BumpAllocatorExt for dyn MutBumpAllocatorScope<'_> + '_ {
 
     #[inline(always)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        shrink_slice(self, ptr, old_len, new_len)
+        unsafe { shrink_slice(self, ptr, old_len, new_len) }
     }
 
     #[inline(always)]
@@ -462,12 +462,12 @@ unsafe impl BumpAllocatorExt for dyn MutBumpAllocatorScope<'_> + '_ {
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        allocate_prepared_slice(self, ptr, len, cap)
+        unsafe { allocate_prepared_slice(self, ptr, len, cap) }
     }
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        allocate_prepared_slice_rev(self, ptr, len, cap)
+        unsafe { allocate_prepared_slice_rev(self, ptr, len, cap) }
     }
 }
 
@@ -537,15 +537,17 @@ fn try_allocate_slice<T>(bump: impl BumpAllocator, len: usize) -> Result<NonNull
 #[inline]
 #[allow(clippy::unnecessary_wraps)]
 unsafe fn shrink_slice<T>(bump: impl BumpAllocator, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-    Some(
-        bump.shrink(
-            ptr.cast(),
-            Layout::array::<T>(old_len).unwrap_unchecked(),
-            Layout::array::<T>(new_len).unwrap_unchecked(),
+    unsafe {
+        Some(
+            bump.shrink(
+                ptr.cast(),
+                Layout::array::<T>(old_len).unwrap_unchecked(),
+                Layout::array::<T>(new_len).unwrap_unchecked(),
+            )
+            .unwrap_unchecked()
+            .cast(),
         )
-        .unwrap_unchecked()
-        .cast(),
-    )
+    }
 }
 
 fn is_upwards_allocating(bump: &impl BumpAllocator) -> bool {
@@ -609,19 +611,23 @@ fn try_prepare_slice_allocation<T>(bump: impl BumpAllocator, len: usize) -> Resu
 #[inline(always)]
 #[allow(clippy::needless_pass_by_value)]
 unsafe fn allocate_prepared_slice<T>(bump: impl BumpAllocator, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-    let range = non_null::cast_range(ptr..non_null::add(ptr, cap));
-    let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);
-    let data = bump.allocate_prepared(layout, range).cast();
-    non_null::slice_from_raw_parts(data, len)
+    unsafe {
+        let range = non_null::cast_range(ptr..non_null::add(ptr, cap));
+        let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);
+        let data = bump.allocate_prepared(layout, range).cast();
+        non_null::slice_from_raw_parts(data, len)
+    }
 }
 
 #[inline(always)]
 #[allow(clippy::needless_pass_by_value)]
 unsafe fn allocate_prepared_slice_rev<T>(bump: impl BumpAllocator, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-    let range = non_null::cast_range(non_null::sub(ptr, cap)..ptr);
-    let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);
-    let data = bump.allocate_prepared_rev(layout, range).cast();
-    non_null::slice_from_raw_parts(data, len)
+    unsafe {
+        let range = non_null::cast_range(non_null::sub(ptr, cap)..ptr);
+        let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);
+        let data = bump.allocate_prepared_rev(layout, range).cast();
+        non_null::slice_from_raw_parts(data, len)
+    }
 }
 
 unsafe impl<B: BumpAllocatorExt + ?Sized> BumpAllocatorExt for &B {
@@ -670,7 +676,7 @@ unsafe impl<B: BumpAllocatorExt + ?Sized> BumpAllocatorExt for &B {
 
     #[inline(always)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        B::shrink_slice(self, ptr, old_len, new_len)
+        unsafe { B::shrink_slice(self, ptr, old_len, new_len) }
     }
 
     #[inline(always)]
@@ -686,12 +692,12 @@ unsafe impl<B: BumpAllocatorExt + ?Sized> BumpAllocatorExt for &B {
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        B::allocate_prepared_slice(self, ptr, len, cap)
+        unsafe { B::allocate_prepared_slice(self, ptr, len, cap) }
     }
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        B::allocate_prepared_slice_rev(self, ptr, len, cap)
+        unsafe { B::allocate_prepared_slice_rev(self, ptr, len, cap) }
     }
 }
 
@@ -744,7 +750,7 @@ where
 
     #[inline(always)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        B::shrink_slice(self, ptr, old_len, new_len)
+        unsafe { B::shrink_slice(self, ptr, old_len, new_len) }
     }
 
     #[inline(always)]
@@ -760,12 +766,12 @@ where
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        B::allocate_prepared_slice(self, ptr, len, cap)
+        unsafe { B::allocate_prepared_slice(self, ptr, len, cap) }
     }
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        B::allocate_prepared_slice_rev(self, ptr, len, cap)
+        unsafe { B::allocate_prepared_slice_rev(self, ptr, len, cap) }
     }
 }
 
@@ -815,7 +821,7 @@ unsafe impl<B: BumpAllocatorExt> BumpAllocatorExt for WithoutDealloc<B> {
 
     #[inline(always)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        B::shrink_slice(&self.0, ptr, old_len, new_len)
+        unsafe { B::shrink_slice(&self.0, ptr, old_len, new_len) }
     }
 
     #[inline(always)]
@@ -831,12 +837,12 @@ unsafe impl<B: BumpAllocatorExt> BumpAllocatorExt for WithoutDealloc<B> {
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        B::allocate_prepared_slice(&self.0, ptr, len, cap)
+        unsafe { B::allocate_prepared_slice(&self.0, ptr, len, cap) }
     }
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        B::allocate_prepared_slice_rev(&self.0, ptr, len, cap)
+        unsafe { B::allocate_prepared_slice_rev(&self.0, ptr, len, cap) }
     }
 }
 
@@ -886,7 +892,7 @@ unsafe impl<B: BumpAllocatorExt> BumpAllocatorExt for WithoutShrink<B> {
 
     #[inline(always)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        B::shrink_slice(&self.0, ptr, old_len, new_len)
+        unsafe { B::shrink_slice(&self.0, ptr, old_len, new_len) }
     }
 
     #[inline(always)]
@@ -902,12 +908,12 @@ unsafe impl<B: BumpAllocatorExt> BumpAllocatorExt for WithoutShrink<B> {
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        B::allocate_prepared_slice(&self.0, ptr, len, cap)
+        unsafe { B::allocate_prepared_slice(&self.0, ptr, len, cap) }
     }
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        B::allocate_prepared_slice_rev(&self.0, ptr, len, cap)
+        unsafe { B::allocate_prepared_slice_rev(&self.0, ptr, len, cap) }
     }
 }
 
@@ -1023,12 +1029,12 @@ where
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        BumpScope::use_prepared_slice_allocation(self, ptr, len, cap)
+        unsafe { BumpScope::use_prepared_slice_allocation(self, ptr, len, cap) }
     }
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        BumpScope::use_prepared_slice_allocation_rev(self, ptr, len, cap)
+        unsafe { BumpScope::use_prepared_slice_allocation_rev(self, ptr, len, cap) }
     }
 }
 
@@ -1083,7 +1089,7 @@ where
 
     #[inline(always)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        self.as_scope().shrink_slice(ptr, old_len, new_len)
+        unsafe { self.as_scope().shrink_slice(ptr, old_len, new_len) }
     }
 
     #[inline(always)]
@@ -1099,12 +1105,12 @@ where
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        self.as_scope().use_prepared_slice_allocation(ptr, len, cap)
+        unsafe { self.as_scope().use_prepared_slice_allocation(ptr, len, cap) }
     }
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        self.as_scope().use_prepared_slice_allocation_rev(ptr, len, cap)
+        unsafe { self.as_scope().use_prepared_slice_allocation_rev(ptr, len, cap) }
     }
 }
 

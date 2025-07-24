@@ -33,7 +33,7 @@ macro_rules! create_mock_allocator {
             }
 
             unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-                Global.deallocate(ptr, layout);
+                unsafe { Global.deallocate(ptr, layout) };
             }
         }
     };
