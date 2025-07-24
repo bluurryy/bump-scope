@@ -1,4 +1,4 @@
-#![allow(unused_imports, clippy::incompatible_msrv)]
+#![allow(unused_imports, clippy::incompatible_msrv, clippy::manual_assert)]
 #![cfg(feature = "std")]
 
 use core::iter;

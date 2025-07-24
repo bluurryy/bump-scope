@@ -38,7 +38,6 @@
     clippy::collapsible_else_if,
     clippy::items_after_statements,
     clippy::missing_transmute_annotations,
-    clippy::manual_assert,
     clippy::range_plus_one,
     rustdoc::redundant_explicit_links, // for cargo-rdme
     clippy::multiple_crate_versions, // we have allocator-api2 version 0.2 and 0.3
