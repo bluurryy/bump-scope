@@ -1109,7 +1109,7 @@ impl<'a> BumpBox<'a, str> {
 
         // Take out two simultaneous borrows. The &mut String won't be accessed
         // until iteration is over, in Drop.
-        let self_ptr = unsafe { NonNull::new_unchecked(core::ptr::from_mut(self)) };
+        let self_ptr = unsafe { NonNull::new_unchecked(ptr::from_mut(self)) };
         // SAFETY: `slice::range` and `is_char_boundary` do the appropriate bounds checks.
         let chars_iter = unsafe { self.get_unchecked(start..end) }.chars();
 
@@ -3303,7 +3303,7 @@ impl<Args: Tuple, F: Fn<Args> + ?Sized> Fn<Args> for BumpBox<'_, F> {
 
 #[inline(always)]
 fn as_uninit_slice<T>(slice: &[T]) -> &[MaybeUninit<T>] {
-    unsafe { &*(core::ptr::from_ref(slice) as *const [MaybeUninit<T>]) }
+    unsafe { &*(ptr::from_ref(slice) as *const [MaybeUninit<T>]) }
 }
 
 macro_rules! assert_in_place_mappable {

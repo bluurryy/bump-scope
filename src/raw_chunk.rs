@@ -1,11 +1,4 @@
-use core::{
-    alloc::Layout,
-    cell::Cell,
-    mem::align_of,
-    num::NonZeroUsize,
-    ops::Range,
-    ptr::{self, NonNull},
-};
+use core::{alloc::Layout, cell::Cell, mem::align_of, num::NonZeroUsize, ops::Range, ptr::NonNull};
 
 use crate::{
     ChunkHeader, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment,
@@ -494,7 +487,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         unsafe {
             let ptr = self.chunk_start();
             let layout = self.layout();
-            let allocator_ptr = ptr::from_ref(&self.header.as_ref().allocator);
+            let allocator_ptr = &raw const (*self.header.as_ptr()).allocator;
 
             let allocator = allocator_ptr.read();
             allocator.deallocate(ptr, layout);
