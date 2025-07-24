@@ -1,6 +1,4 @@
-use core::{mem, ptr};
-
-use crate::polyfill;
+use core::{hint, mem, ptr};
 
 /// See `<*const T>::offset_from_unsigned`.
 #[inline]
@@ -8,7 +6,7 @@ use crate::polyfill;
 #[allow(clippy::cast_sign_loss)]
 #[allow(clippy::checked_conversions)]
 pub(crate) unsafe fn offset_from_unsigned<T>(this: *const T, origin: *const T) -> usize {
-    polyfill::hint::assert_unchecked(this >= origin);
+    hint::assert_unchecked(this >= origin);
     let pointee_size = mem::size_of::<T>();
     assert!(0 < pointee_size && pointee_size <= isize::MAX as usize);
     this.offset_from(origin) as usize

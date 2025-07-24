@@ -1,10 +1,3 @@
-/// See [`std::hint::assert_unchecked`].
-pub(crate) unsafe fn assert_unchecked(condition: bool) {
-    if !condition {
-        unsafe { core::hint::unreachable_unchecked() }
-    }
-}
-
 /// Not part of std.
 #[cold]
 #[inline(always)]
