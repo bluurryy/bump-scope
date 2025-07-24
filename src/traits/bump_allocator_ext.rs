@@ -608,7 +608,7 @@ fn try_prepare_slice_allocation<T>(bump: impl BumpAllocator, len: usize) -> Resu
 #[allow(clippy::needless_pass_by_value)]
 unsafe fn allocate_prepared_slice<T>(bump: impl BumpAllocator, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
     unsafe {
-        let range = non_null::cast_range(ptr..non_null::add(ptr, cap));
+        let range = non_null::cast_range(ptr..ptr.add(cap));
         let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);
         let data = bump.allocate_prepared(layout, range).cast();
         non_null::slice_from_raw_parts(data, len)

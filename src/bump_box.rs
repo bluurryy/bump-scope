@@ -709,7 +709,7 @@ impl<'a> BumpBox<'a, str> {
             self.assert_char_boundary(start);
 
             let lhs = non_null::slice_from_raw_parts(ptr, start);
-            let rhs = non_null::slice_from_raw_parts(unsafe { non_null::add(ptr, start) }, len - start);
+            let rhs = non_null::slice_from_raw_parts(unsafe { ptr.add(start) }, len - start);
 
             self.ptr = non_null::str_from_utf8(lhs);
             return unsafe { BumpBox::from_raw(non_null::str_from_utf8(rhs)) };
@@ -719,7 +719,7 @@ impl<'a> BumpBox<'a, str> {
             self.assert_char_boundary(end);
 
             let lhs = non_null::slice_from_raw_parts(ptr, end);
-            let rhs = non_null::slice_from_raw_parts(unsafe { non_null::add(ptr, end) }, len - end);
+            let rhs = non_null::slice_from_raw_parts(unsafe { ptr.add(end) }, len - end);
 
             self.ptr = non_null::str_from_utf8(rhs);
             return unsafe { BumpBox::from_raw(non_null::str_from_utf8(lhs)) };
@@ -744,7 +744,7 @@ impl<'a> BumpBox<'a, str> {
                 self.as_mut_bytes().get_unchecked_mut(..end).rotate_right(range_len);
 
                 let lhs = non_null::slice_from_raw_parts(ptr, range_len);
-                let rhs = non_null::slice_from_raw_parts(non_null::add(ptr, range_len), remaining_len);
+                let rhs = non_null::slice_from_raw_parts(ptr.add(range_len), remaining_len);
 
                 let lhs = non_null::str_from_utf8(lhs);
                 let rhs = non_null::str_from_utf8(rhs);
@@ -757,7 +757,7 @@ impl<'a> BumpBox<'a, str> {
                 self.as_mut_bytes().get_unchecked_mut(start..).rotate_left(range_len);
 
                 let lhs = non_null::slice_from_raw_parts(ptr, remaining_len);
-                let rhs = non_null::slice_from_raw_parts(non_null::add(ptr, remaining_len), range_len);
+                let rhs = non_null::slice_from_raw_parts(ptr.add(remaining_len), range_len);
 
                 let lhs = non_null::str_from_utf8(lhs);
                 let rhs = non_null::str_from_utf8(rhs);
@@ -1799,7 +1799,7 @@ impl<'a, T> BumpBox<'a, [T]> {
 
         if end == len {
             let lhs = non_null::slice_from_raw_parts(ptr, start);
-            let rhs = non_null::slice_from_raw_parts(unsafe { non_null::add(ptr, start) }, len - start);
+            let rhs = non_null::slice_from_raw_parts(unsafe { ptr.add(start) }, len - start);
 
             self.ptr = lhs;
             return unsafe { BumpBox::from_raw(rhs) };
@@ -1807,7 +1807,7 @@ impl<'a, T> BumpBox<'a, [T]> {
 
         if start == 0 {
             let lhs = non_null::slice_from_raw_parts(ptr, end);
-            let rhs = non_null::slice_from_raw_parts(unsafe { non_null::add(ptr, end) }, len - end);
+            let rhs = non_null::slice_from_raw_parts(unsafe { ptr.add(end) }, len - end);
 
             self.ptr = rhs;
             return unsafe { BumpBox::from_raw(lhs) };
@@ -1829,7 +1829,7 @@ impl<'a, T> BumpBox<'a, [T]> {
                 self.as_mut_slice().get_unchecked_mut(..end).rotate_right(range_len);
 
                 let lhs = non_null::slice_from_raw_parts(ptr, range_len);
-                let rhs = non_null::slice_from_raw_parts(unsafe { non_null::add(ptr, range_len) }, remaining_len);
+                let rhs = non_null::slice_from_raw_parts(unsafe { ptr.add(range_len) }, remaining_len);
 
                 self.ptr = rhs;
 
@@ -1839,7 +1839,7 @@ impl<'a, T> BumpBox<'a, [T]> {
                 self.as_mut_slice().get_unchecked_mut(start..).rotate_left(range_len);
 
                 let lhs = non_null::slice_from_raw_parts(ptr, remaining_len);
-                let rhs = non_null::slice_from_raw_parts(unsafe { non_null::add(ptr, remaining_len) }, range_len);
+                let rhs = non_null::slice_from_raw_parts(unsafe { ptr.add(remaining_len) }, range_len);
 
                 self.ptr = lhs;
 
@@ -1970,7 +1970,7 @@ impl<'a, T> BumpBox<'a, [T]> {
 
             (
                 Self::from_raw(non_null::slice_from_raw_parts(ptr, mid)),
-                Self::from_raw(non_null::slice_from_raw_parts(non_null::add(ptr, mid), len - mid)),
+                Self::from_raw(non_null::slice_from_raw_parts(ptr.add(mid), len - mid)),
             )
         }
     }
@@ -2008,7 +2008,7 @@ impl<'a, T> BumpBox<'a, [T]> {
 
             Some((
                 BumpBox::from_raw(ptr),
-                BumpBox::from_raw(non_null::slice_from_raw_parts(non_null::add(ptr, 1), len - 1)),
+                BumpBox::from_raw(non_null::slice_from_raw_parts(ptr.add(1), len - 1)),
             ))
         }
     }
@@ -2045,7 +2045,7 @@ impl<'a, T> BumpBox<'a, [T]> {
             let len_minus_one = this.len() - 1;
 
             Some((
-                BumpBox::from_raw(non_null::add(ptr, len_minus_one)),
+                BumpBox::from_raw(ptr.add(len_minus_one)),
                 BumpBox::from_raw(non_null::slice_from_raw_parts(ptr, len_minus_one)),
             ))
         }

@@ -429,7 +429,7 @@ where
 
         unsafe {
             if UP {
-                let end = non_null::add(range.start, layout.size());
+                let end = range.start.add(layout.size());
                 self.set_pos(end.addr());
                 range.start
             } else {
@@ -452,7 +452,7 @@ where
         unsafe {
             if UP {
                 let dst = range.start;
-                let dst_end = non_null::add(dst, layout.size());
+                let dst_end = dst.add(layout.size());
 
                 let src_end = range.end;
                 let src = non_null::sub(src_end, layout.size());

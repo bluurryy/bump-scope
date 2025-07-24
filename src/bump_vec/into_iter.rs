@@ -119,7 +119,7 @@ impl<T, A: BumpAllocatorExt> Iterator for IntoIter<T, A> {
             Some(unsafe { mem::zeroed() })
         } else {
             let old = self.ptr;
-            self.ptr = unsafe { non_null::add(self.ptr, 1) };
+            self.ptr = unsafe { self.ptr.add(1) };
 
             Some(unsafe { old.as_ptr().read() })
         }

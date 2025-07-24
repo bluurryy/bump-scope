@@ -49,7 +49,7 @@ impl<T, A> IntoIter<T, A> {
             }
         } else {
             let start = non_null::as_non_null_ptr(slice);
-            let end = non_null::add(start, slice.len());
+            let end = start.add(slice.len());
 
             IntoIter {
                 ptr: start,
@@ -148,7 +148,7 @@ impl<T, A> Iterator for IntoIter<T, A> {
             Some(unsafe { mem::zeroed() })
         } else {
             let old = self.ptr;
-            self.ptr = unsafe { non_null::add(self.ptr, 1) };
+            self.ptr = unsafe { self.ptr.add(1) };
 
             Some(unsafe { old.as_ptr().read() })
         }

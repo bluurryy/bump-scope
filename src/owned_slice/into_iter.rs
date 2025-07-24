@@ -59,7 +59,7 @@ impl<'a, T> IntoIter<'a, T> {
                 Self::new_zst(slice.len())
             } else {
                 let start = slice.cast::<T>();
-                let end = non_null::add(start, slice.len());
+                let end = start.add(slice.len());
                 Self::new_range(start..end)
             }
         }
@@ -72,8 +72,8 @@ impl<'a, T> IntoIter<'a, T> {
                 Self::new_zst(range.end - range.start)
             } else {
                 let ptr = non_null::as_non_null_ptr(ptr);
-                let start = non_null::add(ptr, range.start);
-                let end = non_null::add(ptr, range.end);
+                let start = ptr.add(range.start);
+                let end = ptr.add(range.end);
                 Self::new_range(start..end)
             }
         }
@@ -170,7 +170,7 @@ impl<T> Iterator for IntoIter<'_, T> {
         } else {
             unsafe {
                 let old = self.ptr;
-                self.ptr = non_null::add(self.ptr, 1);
+                self.ptr = self.ptr.add(1);
                 Some(old.as_ptr().read())
             }
         }

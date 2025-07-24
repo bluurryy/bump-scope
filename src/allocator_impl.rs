@@ -226,10 +226,10 @@ where
                 if let Some(in_chunk) = bump.alloc_in_current_chunk(new_layout) {
                     new_ptr = in_chunk;
                     overlaps = if UP {
-                        let old_ptr_end = non_null::add(old_ptr, new_layout.size());
+                        let old_ptr_end = old_ptr.add(new_layout.size());
                         old_ptr_end > new_ptr
                     } else {
-                        let new_ptr_end = non_null::add(new_ptr, new_layout.size());
+                        let new_ptr_end = new_ptr.add(new_layout.size());
                         new_ptr_end > old_ptr
                     }
                 } else {

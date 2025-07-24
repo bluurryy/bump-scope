@@ -774,7 +774,7 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
 
         let slice = unsafe { E::prepare_slice_allocation::<T>(&mut allocator, capacity)? };
         let cap = slice.len();
-        let end = unsafe { non_null::add(non_null::as_non_null_ptr(slice), cap) };
+        let end = unsafe { non_null::as_non_null_ptr(slice).add(cap) };
 
         Ok(Self {
             end,
@@ -982,7 +982,7 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
 
         let slice = unsafe { E::prepare_slice_allocation::<T>(&mut allocator, N)? };
         let cap = slice.len();
-        let end = unsafe { non_null::add(non_null::as_non_null_ptr(slice), cap) };
+        let end = unsafe { non_null::as_non_null_ptr(slice).add(cap) };
 
         let src = array.as_ptr();
 
@@ -2171,7 +2171,7 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
         unsafe {
             let slice = E::prepare_slice_allocation::<T>(&mut self.allocator, new_capacity)?;
             let cap = slice.len();
-            let end = non_null::add(non_null::as_non_null_ptr(slice), cap);
+            let end = non_null::as_non_null_ptr(slice).add(cap);
 
             let src = self.as_mut_ptr();
             let dst = end.as_ptr().sub(self.len);

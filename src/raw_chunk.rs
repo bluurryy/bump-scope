@@ -94,8 +94,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                 let header = ptr.cast::<ChunkHeader<A>>();
 
                 header.as_ptr().write(ChunkHeader {
-                    pos: Cell::new(non_null::add(header, 1).cast()),
-                    end: non_null::add(ptr, size),
+                    pos: Cell::new(header.add(1).cast()),
+                    end: ptr.add(size),
                     prev,
                     next,
                     allocator,
@@ -103,7 +103,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
                 header
             } else {
-                let header = non_null::sub(non_null::add(ptr, size).cast::<ChunkHeader<A>>(), 1);
+                let header = non_null::sub(ptr.add(size).cast::<ChunkHeader<A>>(), 1);
 
                 header.as_ptr().write(ChunkHeader {
                     pos: Cell::new(header.cast()),
@@ -307,7 +307,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
     #[inline(always)]
     fn after_header(self) -> NonNull<u8> {
-        unsafe { non_null::add(self.header, 1).cast() }
+        unsafe { self.header.add(1).cast() }
     }
 
     #[inline(always)]

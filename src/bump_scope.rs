@@ -437,13 +437,13 @@ where
     #[inline(always)]
     pub(crate) unsafe fn use_prepared_slice_allocation<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe {
-            let end = non_null::add(start, len);
+            let end = start.add(len);
 
             if UP {
                 self.set_aligned_pos(end.addr(), T::ALIGN);
                 non_null::slice_from_raw_parts(start, len)
             } else {
-                let dst_end = non_null::add(start, cap);
+                let dst_end = start.add(cap);
                 let dst = non_null::sub(dst_end, len);
                 non_null::copy(start, dst, len);
                 self.set_aligned_pos(dst.addr(), T::ALIGN);
@@ -466,7 +466,7 @@ where
             if UP {
                 {
                     let dst = non_null::sub(end, cap);
-                    let dst_end = non_null::add(dst, len);
+                    let dst_end = dst.add(len);
 
                     non_null::copy(start, dst, len);
                     start = dst;
@@ -2755,7 +2755,7 @@ where
                 Ok(value) => Ok({
                     if can_shrink {
                         let new_pos = if UP {
-                            let pos = non_null::add(value, 1).addr().get();
+                            let pos = value.add(1).addr().get();
                             up_align_usize_unchecked(pos, MIN_ALIGN)
                         } else {
                             let pos = value.addr().get();
@@ -2876,7 +2876,7 @@ where
             match non_null::result(ptr) {
                 Ok(value) => Ok({
                     let new_pos = if UP {
-                        let pos = non_null::add(value, 1).addr().get();
+                        let pos = value.add(1).addr().get();
                         up_align_usize_unchecked(pos, MIN_ALIGN)
                     } else {
                         let pos = value.addr().get();

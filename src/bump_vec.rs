@@ -3150,7 +3150,7 @@ impl<T, A: BumpAllocatorExt> IntoIterator for BumpVec<T, A> {
             let end = if T::IS_ZST {
                 non_null::wrapping_byte_add(begin, slice.len())
             } else {
-                non_null::add(begin, slice.len())
+                begin.add(slice.len())
             };
 
             IntoIter {

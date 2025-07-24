@@ -823,7 +823,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
 
             if end == len {
                 let lhs = ptr;
-                let rhs = non_null::add(ptr, start);
+                let rhs = ptr.add(start);
 
                 let lhs_len = start;
                 let rhs_len = len - start;
@@ -843,7 +843,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
 
             if start == 0 {
                 let lhs = ptr;
-                let rhs = non_null::add(ptr, end);
+                let rhs = ptr.add(end);
 
                 let lhs_len = end;
                 let rhs_len = len - end;
@@ -876,7 +876,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
                 self.as_mut_slice().get_unchecked_mut(..end).rotate_right(range_len);
 
                 let lhs = ptr;
-                let rhs = non_null::add(ptr, range_len);
+                let rhs = ptr.add(range_len);
 
                 let lhs_len = range_len;
                 let rhs_len = remaining_len;
@@ -897,7 +897,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
                 self.as_mut_slice().get_unchecked_mut(start..).rotate_left(range_len);
 
                 let lhs = ptr;
-                let rhs = non_null::add(ptr, remaining_len);
+                let rhs = ptr.add(remaining_len);
 
                 let lhs_len = remaining_len;
                 let rhs_len = range_len;
@@ -2120,8 +2120,11 @@ impl<'a, T> FixedBumpVec<'a, T> {
     #[must_use]
     pub fn split_at_spare(self) -> (BumpBox<'a, [T]>, BumpBox<'a, [MaybeUninit<T>]>) {
         unsafe {
-            let uninitialized_ptr =
-                non_null::add(self.initialized.as_non_null(), self.initialized.len()).cast::<MaybeUninit<T>>();
+            let uninitialized_ptr = self
+                .initialized
+                .as_non_null()
+                .add(self.initialized.len())
+                .cast::<MaybeUninit<T>>();
             let uninitialized_len = self.capacity - self.len();
             let uninitialized = BumpBox::from_raw(non_null::slice_from_raw_parts(uninitialized_ptr, uninitialized_len));
             (self.initialized, uninitialized)

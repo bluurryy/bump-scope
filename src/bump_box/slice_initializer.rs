@@ -52,7 +52,7 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
 
         unsafe {
             let start = slice.cast::<T>();
-            let end = non_null::add(start, len);
+            let end = start.add(len);
 
             Self {
                 pos: start,
@@ -112,7 +112,7 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
                 self.pos = non_null::wrapping_byte_add(self.pos, 1);
             } else {
                 pointer::write_with(self.pos.as_ptr(), f);
-                self.pos = non_null::add(self.pos, 1);
+                self.pos = self.pos.add(1);
             }
         }
     }

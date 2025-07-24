@@ -6,19 +6,6 @@ use core::{
 
 use crate::polyfill::{self, pointer};
 
-/// See [`std::ptr::NonNull::add`].
-#[inline(always)]
-pub(crate) unsafe fn add<T>(ptr: NonNull<T>, delta: usize) -> NonNull<T>
-where
-    T: Sized,
-{
-    // SAFETY: We require that the delta stays in-bounds of the object, and
-    // thus it cannot become null, as that would require wrapping the
-    // address space, which no legal objects are allowed to do.
-    // And the caller promised the `delta` is sound to add.
-    NonNull::new_unchecked(ptr.as_ptr().add(delta))
-}
-
 /// See [`std::ptr::NonNull::sub`].
 #[inline(always)]
 pub(crate) const unsafe fn sub<T>(ptr: NonNull<T>, delta: usize) -> NonNull<T>
@@ -37,7 +24,7 @@ where
 #[inline(always)]
 #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
 pub(crate) unsafe fn byte_add<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
-    add(ptr.cast::<u8>(), count).cast()
+    ptr.cast::<u8>().add(count).cast()
 }
 
 /// See [`std::ptr::NonNull::with_addr`].
@@ -147,7 +134,7 @@ pub(crate) unsafe fn truncate<T>(slice: &mut NonNull<[T]>, len: usize) {
 
     let remaining_len = slice.len() - len;
 
-    let to_drop_start = add(as_non_null_ptr(*slice), len);
+    let to_drop_start = as_non_null_ptr(*slice).add(len);
     let to_drop = slice_from_raw_parts(to_drop_start, remaining_len);
 
     set_len::<T>(slice, len);

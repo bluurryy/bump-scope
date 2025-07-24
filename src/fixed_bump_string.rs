@@ -449,7 +449,7 @@ impl<'a> FixedBumpString<'a> {
                 self.assert_char_boundary(start);
 
                 let lhs = ptr;
-                let rhs = non_null::add(ptr, start);
+                let rhs = ptr.add(start);
 
                 let lhs_len = start;
                 let rhs_len = len - start;
@@ -471,7 +471,7 @@ impl<'a> FixedBumpString<'a> {
                 self.assert_char_boundary(end);
 
                 let lhs = ptr;
-                let rhs = non_null::add(ptr, end);
+                let rhs = ptr.add(end);
 
                 let lhs_len = end;
                 let rhs_len = len - end;
@@ -507,7 +507,7 @@ impl<'a> FixedBumpString<'a> {
                 self.as_mut_vec().get_unchecked_mut(..end).rotate_right(range_len);
 
                 let lhs = ptr;
-                let rhs = non_null::add(ptr, range_len);
+                let rhs = ptr.add(range_len);
 
                 let lhs_len = range_len;
                 let rhs_len = remaining_len;
@@ -528,7 +528,7 @@ impl<'a> FixedBumpString<'a> {
                 self.as_mut_vec().get_unchecked_mut(start..).rotate_left(range_len);
 
                 let lhs = ptr;
-                let rhs = non_null::add(ptr, remaining_len);
+                let rhs = ptr.add(remaining_len);
 
                 let lhs_len = remaining_len;
                 let rhs_len = range_len;
