@@ -100,7 +100,7 @@ impl<T: ?Sized> RawBumpBox<T> {
 
 impl<T> RawBumpBox<[T]> {
     pub(crate) const EMPTY: Self = Self {
-        ptr: non_null::slice_from_raw_parts(NonNull::dangling(), 0),
+        ptr: NonNull::slice_from_raw_parts(NonNull::dangling(), 0),
         marker: PhantomData,
     };
 
@@ -122,7 +122,7 @@ impl<T> RawBumpBox<[T]> {
 
 impl RawBumpBox<str> {
     pub(crate) const EMPTY_STR: Self = Self {
-        ptr: non_null::str_from_utf8(non_null::slice_from_raw_parts(NonNull::dangling(), 0)),
+        ptr: non_null::str_from_utf8(NonNull::slice_from_raw_parts(NonNull::dangling(), 0)),
         marker: PhantomData,
     };
 
@@ -136,12 +136,12 @@ impl RawBumpBox<str> {
     #[allow(dead_code)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<u8>) {
         let len = self.len();
-        self.ptr = non_null::str_from_utf8(non_null::slice_from_raw_parts(new_ptr, len));
+        self.ptr = non_null::str_from_utf8(NonNull::slice_from_raw_parts(new_ptr, len));
     }
 
     #[inline(always)]
     pub(crate) unsafe fn set_len(&mut self, new_len: usize) {
         let ptr = self.ptr.cast::<u8>();
-        self.ptr = non_null::str_from_utf8(non_null::slice_from_raw_parts(ptr, new_len));
+        self.ptr = non_null::str_from_utf8(NonNull::slice_from_raw_parts(ptr, new_len));
     }
 }

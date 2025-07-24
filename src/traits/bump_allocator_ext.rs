@@ -574,7 +574,7 @@ fn prepare_slice_allocation<T>(bump: impl BumpAllocator, min_cap: usize) -> NonN
                 unsafe { range.end.cast::<T>().sub(cap) }
             };
 
-            non_null::slice_from_raw_parts(ptr.cast(), cap)
+            NonNull::slice_from_raw_parts(ptr.cast(), cap)
         }
         Err(AllocError) => handle_alloc_error(layout),
     }
@@ -598,7 +598,7 @@ fn try_prepare_slice_allocation<T>(bump: impl BumpAllocator, len: usize) -> Resu
                 unsafe { range.end.cast::<T>().sub(cap) }
             };
 
-            Ok(non_null::slice_from_raw_parts(ptr.cast(), cap))
+            Ok(NonNull::slice_from_raw_parts(ptr.cast(), cap))
         }
         Err(err) => Err(err),
     }
@@ -611,7 +611,7 @@ unsafe fn allocate_prepared_slice<T>(bump: impl BumpAllocator, ptr: NonNull<T>, 
         let range = non_null::cast_range(ptr..ptr.add(cap));
         let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);
         let data = bump.allocate_prepared(layout, range).cast();
-        non_null::slice_from_raw_parts(data, len)
+        NonNull::slice_from_raw_parts(data, len)
     }
 }
 
@@ -622,7 +622,7 @@ unsafe fn allocate_prepared_slice_rev<T>(bump: impl BumpAllocator, ptr: NonNull<
         let range = non_null::cast_range(ptr.sub(cap)..ptr);
         let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);
         let data = bump.allocate_prepared_rev(layout, range).cast();
-        non_null::slice_from_raw_parts(data, len)
+        NonNull::slice_from_raw_parts(data, len)
     }
 }
 

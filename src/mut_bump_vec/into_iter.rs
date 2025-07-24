@@ -195,7 +195,7 @@ impl<T, A> Drop for IntoIter<T, A> {
     #[inline]
     fn drop(&mut self) {
         unsafe {
-            non_null::slice_from_raw_parts(self.ptr, self.len()).as_ptr().drop_in_place();
+            NonNull::slice_from_raw_parts(self.ptr, self.len()).as_ptr().drop_in_place();
         }
     }
 }

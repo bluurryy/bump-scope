@@ -20,14 +20,6 @@ pub(crate) unsafe fn byte_offset_from_unsigned<T>(this: NonNull<T>, origin: NonN
     offset_from_unsigned::<u8>(this.cast(), origin.cast())
 }
 
-/// See [`std::ptr::NonNull::slice_from_raw_parts`].
-#[must_use]
-#[inline(always)]
-pub(crate) const fn slice_from_raw_parts<T>(data: NonNull<T>, len: usize) -> NonNull<[T]> {
-    // SAFETY: `data` is a `NonNull` pointer which is necessarily non-null
-    unsafe { NonNull::new_unchecked(ptr::slice_from_raw_parts(data.as_ptr(), len).cast_mut()) }
-}
-
 /// See [`std::ptr::copy`].
 #[inline(always)]
 pub(crate) unsafe fn copy<T>(src: NonNull<T>, dst: NonNull<T>, count: usize) {
@@ -105,7 +97,7 @@ pub(crate) unsafe fn truncate<T>(slice: &mut NonNull<[T]>, len: usize) {
     let remaining_len = slice.len() - len;
 
     let to_drop_start = as_non_null_ptr(*slice).add(len);
-    let to_drop = slice_from_raw_parts(to_drop_start, remaining_len);
+    let to_drop = NonNull::slice_from_raw_parts(to_drop_start, remaining_len);
 
     set_len::<T>(slice, len);
     drop_in_place(to_drop);
@@ -127,14 +119,14 @@ pub(crate) unsafe fn wrapping_byte_sub<T>(ptr: NonNull<T>, count: usize) -> NonN
 #[inline(always)]
 pub(crate) fn set_ptr<T>(ptr: &mut NonNull<[T]>, new_ptr: NonNull<T>) {
     let len = ptr.len();
-    *ptr = slice_from_raw_parts(new_ptr, len);
+    *ptr = NonNull::slice_from_raw_parts(new_ptr, len);
 }
 
 /// Not part of std.
 #[inline(always)]
 pub(crate) fn set_len<T>(ptr: &mut NonNull<[T]>, new_len: usize) {
     let elem_ptr = as_non_null_ptr(*ptr);
-    *ptr = slice_from_raw_parts(elem_ptr, new_len);
+    *ptr = NonNull::slice_from_raw_parts(elem_ptr, new_len);
 }
 
 /// Not part of std.

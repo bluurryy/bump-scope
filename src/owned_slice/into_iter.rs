@@ -146,7 +146,7 @@ impl<'a, T> IntoIter<'a, T> {
         let this = ManuallyDrop::new(self);
 
         unsafe {
-            let slice = non_null::slice_from_raw_parts(this.ptr, this.len());
+            let slice = NonNull::slice_from_raw_parts(this.ptr, this.len());
             BumpBox::from_raw(slice)
         }
     }
@@ -223,7 +223,7 @@ impl<T> Drop for IntoIter<'_, T> {
     #[inline]
     fn drop(&mut self) {
         unsafe {
-            non_null::slice_from_raw_parts(self.ptr, self.len()).as_ptr().drop_in_place();
+            NonNull::slice_from_raw_parts(self.ptr, self.len()).as_ptr().drop_in_place();
         }
     }
 }

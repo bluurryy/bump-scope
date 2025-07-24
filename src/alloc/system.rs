@@ -59,10 +59,7 @@ unsafe impl Allocator for System {
             // SAFETY: conditions must be upheld by the caller
             0 => unsafe {
                 Allocator::deallocate(self, ptr, old_layout);
-                Ok(polyfill::non_null::slice_from_raw_parts(
-                    polyfill::layout::dangling(new_layout),
-                    0,
-                ))
+                Ok(NonNull::slice_from_raw_parts(polyfill::layout::dangling(new_layout), 0))
             },
 
             // SAFETY: `new_size` is non-zero. Other conditions must be upheld by the caller
@@ -72,7 +69,7 @@ unsafe impl Allocator for System {
 
                 let raw_ptr = GlobalAlloc::realloc(self, ptr.as_ptr(), old_layout, new_size);
                 let ptr = NonNull::new(raw_ptr).ok_or(AllocError)?;
-                Ok(polyfill::non_null::slice_from_raw_parts(ptr, new_size))
+                Ok(NonNull::slice_from_raw_parts(ptr, new_size))
             },
 
             // SAFETY: because `new_size` must be smaller than or equal to `old_layout.size()`,
@@ -93,10 +90,7 @@ unsafe impl Allocator for System {
 #[inline]
 fn alloc_impl(layout: Layout, zeroed: bool) -> Result<NonNull<[u8]>, AllocError> {
     match layout.size() {
-        0 => Ok(polyfill::non_null::slice_from_raw_parts(
-            polyfill::layout::dangling(layout),
-            0,
-        )),
+        0 => Ok(NonNull::slice_from_raw_parts(polyfill::layout::dangling(layout), 0)),
         // SAFETY: `layout` is non-zero in size,
         size => unsafe {
             let raw_ptr = if zeroed {
@@ -105,7 +99,7 @@ fn alloc_impl(layout: Layout, zeroed: bool) -> Result<NonNull<[u8]>, AllocError>
                 GlobalAlloc::alloc(&System, layout)
             };
             let ptr = NonNull::new(raw_ptr).ok_or(AllocError)?;
-            Ok(polyfill::non_null::slice_from_raw_parts(ptr, size))
+            Ok(NonNull::slice_from_raw_parts(ptr, size))
         },
     }
 }
@@ -140,7 +134,7 @@ unsafe fn grow_impl(
             if zeroed {
                 raw_ptr.add(old_size).write_bytes(0, new_size - old_size);
             }
-            Ok(polyfill::non_null::slice_from_raw_parts(ptr, new_size))
+            Ok(NonNull::slice_from_raw_parts(ptr, new_size))
         },
 
         // SAFETY: because `new_layout.size()` must be greater than or equal to `old_size`,

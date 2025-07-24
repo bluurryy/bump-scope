@@ -441,13 +441,13 @@ where
 
             if UP {
                 self.set_aligned_pos(end.addr(), T::ALIGN);
-                non_null::slice_from_raw_parts(start, len)
+                NonNull::slice_from_raw_parts(start, len)
             } else {
                 let dst_end = start.add(cap);
                 let dst = dst_end.sub(len);
                 non_null::copy(start, dst, len);
                 self.set_aligned_pos(dst.addr(), T::ALIGN);
-                non_null::slice_from_raw_parts(dst, len)
+                NonNull::slice_from_raw_parts(dst, len)
             }
         }
     }
@@ -474,10 +474,10 @@ where
                 }
 
                 self.set_aligned_pos(end.addr(), T::ALIGN);
-                non_null::slice_from_raw_parts(start, len)
+                NonNull::slice_from_raw_parts(start, len)
             } else {
                 self.set_aligned_pos(start.addr(), T::ALIGN);
-                non_null::slice_from_raw_parts(start, len)
+                NonNull::slice_from_raw_parts(start, len)
             }
         }
     }
@@ -535,7 +535,7 @@ where
 
         let ptr = if UP { range.start } else { unsafe { range.end.sub(cap) } };
 
-        Ok(non_null::slice_from_raw_parts(ptr, cap))
+        Ok(NonNull::slice_from_raw_parts(ptr, cap))
     }
 
     /// Returns a pointer range.
@@ -1249,7 +1249,7 @@ where
 
         unsafe {
             core::ptr::copy_nonoverlapping(src, dst.as_ptr(), len);
-            Ok(BumpBox::from_raw(non_null::slice_from_raw_parts(dst, len)))
+            Ok(BumpBox::from_raw(NonNull::slice_from_raw_parts(dst, len)))
         }
     }
 
@@ -2316,7 +2316,7 @@ where
         let ptr = self.do_alloc_slice::<B, T>(len)?.cast::<MaybeUninit<T>>();
 
         unsafe {
-            let ptr = non_null::slice_from_raw_parts(ptr, len);
+            let ptr = NonNull::slice_from_raw_parts(ptr, len);
             Ok(BumpBox::from_raw(ptr))
         }
     }
@@ -2393,7 +2393,7 @@ where
         let ptr = self.do_alloc_slice_for::<B, T>(slice)?.cast::<MaybeUninit<T>>();
 
         unsafe {
-            let ptr = non_null::slice_from_raw_parts(ptr, slice.len());
+            let ptr = NonNull::slice_from_raw_parts(ptr, slice.len());
             Ok(BumpBox::from_raw(ptr))
         }
     }

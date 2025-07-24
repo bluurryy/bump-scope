@@ -46,7 +46,7 @@ impl RawFixedBumpString {
     #[inline(always)]
     pub(crate) unsafe fn allocate<B: ErrorBehavior>(allocator: &impl BumpAllocatorExt, len: usize) -> Result<Self, B> {
         let ptr = B::allocate_slice::<u8>(allocator, len)?;
-        let initialized = unsafe { RawBumpBox::from_ptr(non_null::str_from_utf8(non_null::slice_from_raw_parts(ptr, 0))) };
+        let initialized = unsafe { RawBumpBox::from_ptr(non_null::str_from_utf8(NonNull::slice_from_raw_parts(ptr, 0))) };
         Ok(Self {
             initialized,
             capacity: len,
@@ -59,7 +59,7 @@ impl RawFixedBumpString {
         len: usize,
     ) -> Result<Self, B> {
         let allocation = B::prepare_slice_allocation::<u8>(allocator, len)?;
-        let initialized = RawBumpBox::from_ptr(non_null::str_from_utf8(non_null::slice_from_raw_parts(
+        let initialized = RawBumpBox::from_ptr(non_null::str_from_utf8(NonNull::slice_from_raw_parts(
             non_null::as_non_null_ptr(allocation),
             0,
         )));

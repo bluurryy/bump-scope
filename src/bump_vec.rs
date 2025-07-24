@@ -244,7 +244,7 @@ impl<T: Clone, A: BumpAllocatorExt + Clone> Clone for BumpVec<T, A> {
     fn clone(&self) -> Self {
         let allocator = self.allocator.clone();
         let ptr = allocator.allocate_slice::<MaybeUninit<T>>(self.len());
-        let slice = non_null::slice_from_raw_parts(ptr, self.len());
+        let slice = NonNull::slice_from_raw_parts(ptr, self.len());
         let boxed = unsafe { BumpBox::from_raw(slice) };
         let boxed = boxed.init_clone(self);
         let fixed = FixedBumpVec::from_init(boxed);
@@ -2275,7 +2275,7 @@ impl<T, A: BumpAllocatorExt> BumpVec<T, A> {
                 let new_cap = (cap * T::SIZE) / U::SIZE;
 
                 Ok(BumpVec {
-                    fixed: RawFixedBumpVec::from_raw_parts(non_null::slice_from_raw_parts(ptr.cast(), len), new_cap),
+                    fixed: RawFixedBumpVec::from_raw_parts(NonNull::slice_from_raw_parts(ptr.cast(), len), new_cap),
                     allocator,
                 })
             }

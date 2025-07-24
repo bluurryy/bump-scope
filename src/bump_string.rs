@@ -2100,7 +2100,7 @@ impl<A: BumpAllocatorExt + Clone> Clone for BumpString<A> {
         unsafe {
             self.as_ptr().copy_to_nonoverlapping(ptr.as_ptr(), len);
 
-            let slice = non_null::str_from_utf8(non_null::slice_from_raw_parts(ptr, len));
+            let slice = non_null::str_from_utf8(NonNull::slice_from_raw_parts(ptr, len));
             let fixed = RawFixedBumpString::from_raw_parts(slice, len);
 
             Self { fixed, allocator }

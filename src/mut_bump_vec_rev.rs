@@ -515,7 +515,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        non_null::slice_from_raw_parts(self.as_non_null(), self.len)
+        NonNull::slice_from_raw_parts(self.as_non_null(), self.len)
     }
 
     /// Shortens the vector, keeping the first `len` elements and dropping
@@ -2295,13 +2295,13 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
         let this = ManuallyDrop::new(self);
 
         if T::IS_ZST {
-            return non_null::slice_from_raw_parts(NonNull::dangling(), this.len());
+            return NonNull::slice_from_raw_parts(NonNull::dangling(), this.len());
         }
 
         if this.cap == 0 {
             // We didn't touch the bump, so no need to do anything.
             debug_assert_eq!(this.end, NonNull::<T>::dangling());
-            return non_null::slice_from_raw_parts(NonNull::<T>::dangling(), 0);
+            return NonNull::slice_from_raw_parts(NonNull::<T>::dangling(), 0);
         }
 
         let end = this.end;
@@ -2592,7 +2592,7 @@ impl<T, A> MutBumpVecRev<T, A> {
         // Chunk allocations are supposed to be very rare, so this wouldn't be worth it.
 
         unsafe {
-            let to_drop = non_null::slice_from_raw_parts(self.as_non_null(), self.len);
+            let to_drop = NonNull::slice_from_raw_parts(self.as_non_null(), self.len);
             to_drop.as_ptr().drop_in_place();
         }
     }
@@ -2640,7 +2640,7 @@ impl<T, A> IntoIterator for MutBumpVecRev<T, A> {
     fn into_iter(self) -> Self::IntoIter {
         let (end, len, _cap, allocator) = self.into_raw_parts();
         let start = unsafe { end.sub(len) };
-        let slice = non_null::slice_from_raw_parts(start, len);
+        let slice = NonNull::slice_from_raw_parts(start, len);
         unsafe { IntoIter::new(slice, allocator) }
     }
 }

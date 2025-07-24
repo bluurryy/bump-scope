@@ -204,7 +204,7 @@ impl<'a> FixedBumpString<'a> {
         let capacity = uninitialized.len();
 
         let ptr = non_null::as_non_null_ptr(uninitialized).cast::<u8>();
-        let initialized = unsafe { BumpBox::from_raw(non_null::str_from_utf8(non_null::slice_from_raw_parts(ptr, 0))) };
+        let initialized = unsafe { BumpBox::from_raw(non_null::str_from_utf8(NonNull::slice_from_raw_parts(ptr, 0))) };
 
         Self { initialized, capacity }
     }
@@ -462,7 +462,7 @@ impl<'a> FixedBumpString<'a> {
                 self.set_cap(lhs_cap);
 
                 return FixedBumpString {
-                    initialized: BumpBox::from_raw(non_null::str_from_utf8(non_null::slice_from_raw_parts(rhs, rhs_len))),
+                    initialized: BumpBox::from_raw(non_null::str_from_utf8(NonNull::slice_from_raw_parts(rhs, rhs_len))),
                     capacity: rhs_cap,
                 };
             }
@@ -484,7 +484,7 @@ impl<'a> FixedBumpString<'a> {
                 self.set_cap(rhs_cap);
 
                 return FixedBumpString {
-                    initialized: BumpBox::from_raw(non_null::str_from_utf8(non_null::slice_from_raw_parts(lhs, lhs_len))),
+                    initialized: BumpBox::from_raw(non_null::str_from_utf8(NonNull::slice_from_raw_parts(lhs, lhs_len))),
                     capacity: lhs_cap,
                 };
             }
@@ -520,7 +520,7 @@ impl<'a> FixedBumpString<'a> {
                 self.set_cap(rhs_cap);
 
                 FixedBumpString {
-                    initialized: BumpBox::from_raw(non_null::str_from_utf8(non_null::slice_from_raw_parts(lhs, lhs_len))),
+                    initialized: BumpBox::from_raw(non_null::str_from_utf8(NonNull::slice_from_raw_parts(lhs, lhs_len))),
                     capacity: lhs_cap,
                 }
             } else {
@@ -541,7 +541,7 @@ impl<'a> FixedBumpString<'a> {
                 self.set_cap(lhs_cap);
 
                 FixedBumpString {
-                    initialized: BumpBox::from_raw(non_null::str_from_utf8(non_null::slice_from_raw_parts(rhs, rhs_len))),
+                    initialized: BumpBox::from_raw(non_null::str_from_utf8(NonNull::slice_from_raw_parts(rhs, rhs_len))),
                     capacity: rhs_cap,
                 }
             }

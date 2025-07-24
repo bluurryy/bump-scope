@@ -17,7 +17,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
-    Ok(non_null::slice_from_raw_parts(bump.try_alloc_layout(layout)?, layout.size()))
+    Ok(NonNull::slice_from_raw_parts(bump.try_alloc_layout(layout)?, layout.size()))
 }
 
 #[inline(always)]
@@ -110,18 +110,18 @@ where
 
                     bump.chunk.get().set_pos_addr(new_pos);
 
-                    Ok(non_null::slice_from_raw_parts(old_ptr, new_layout.size()))
+                    Ok(NonNull::slice_from_raw_parts(old_ptr, new_layout.size()))
                 } else {
                     // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
                     let new_ptr = bump.alloc_in_another_chunk::<AllocError>(new_layout)?;
                     non_null::copy_nonoverlapping(old_ptr, new_ptr, old_layout.size());
-                    Ok(non_null::slice_from_raw_parts(new_ptr, new_layout.size()))
+                    Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
                 }
             } else {
                 // We can't grow in place. We have to make a new allocation.
                 let new_ptr = bump.try_alloc_layout(new_layout)?;
                 non_null::copy_nonoverlapping(old_ptr, new_ptr, old_layout.size());
-                Ok(non_null::slice_from_raw_parts(new_ptr, new_layout.size()))
+                Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
         } else {
             if is_last(bump, old_ptr, old_layout) {
@@ -149,18 +149,18 @@ where
                     }
 
                     bump.chunk.get().set_pos_addr(new_addr.get());
-                    Ok(non_null::slice_from_raw_parts(new_ptr, new_layout.size()))
+                    Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
                 } else {
                     // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
                     let new_ptr = bump.alloc_in_another_chunk::<AllocError>(new_layout)?;
                     non_null::copy_nonoverlapping(old_ptr, new_ptr, old_layout.size());
-                    Ok(non_null::slice_from_raw_parts(new_ptr, new_layout.size()))
+                    Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
                 }
             } else {
                 // We can't reuse the allocated space. We have to make a new allocation.
                 let new_ptr = bump.try_alloc_layout(new_layout)?;
                 non_null::copy_nonoverlapping(old_ptr, new_ptr, old_layout.size());
-                Ok(non_null::slice_from_raw_parts(new_ptr, new_layout.size()))
+                Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
         }
     }
@@ -250,11 +250,11 @@ where
                     non_null::copy_nonoverlapping(old_ptr, new_ptr, new_layout.size());
                 }
 
-                Ok(non_null::slice_from_raw_parts(new_ptr, new_layout.size()))
+                Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             } else {
                 let new_ptr = bump.try_alloc_layout(new_layout)?;
                 non_null::copy_nonoverlapping(old_ptr, new_ptr, new_layout.size());
-                Ok(non_null::slice_from_raw_parts(new_ptr, new_layout.size()))
+                Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
         }
     }
@@ -272,7 +272,7 @@ where
         // if that's not the last allocation, there is nothing we can do
         if !is_last(bump, old_ptr, old_layout) {
             // we return the size of the old layout
-            return Ok(non_null::slice_from_raw_parts(old_ptr, old_layout.size()));
+            return Ok(NonNull::slice_from_raw_parts(old_ptr, old_layout.size()));
         }
 
         if UP {
@@ -282,7 +282,7 @@ where
             let new_pos = up_align_usize_unchecked(end, MIN_ALIGN);
 
             bump.chunk.get().set_pos_addr(new_pos);
-            Ok(non_null::slice_from_raw_parts(old_ptr, new_layout.size()))
+            Ok(NonNull::slice_from_raw_parts(old_ptr, new_layout.size()))
         } else {
             let old_addr = old_ptr.addr();
             let old_end_addr = NonZeroUsize::new_unchecked(old_addr.get() + old_layout.size());
@@ -302,7 +302,7 @@ where
             }
 
             bump.chunk.get().set_pos(new_ptr);
-            Ok(non_null::slice_from_raw_parts(new_ptr, new_layout.size()))
+            Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
         }
     }
 }

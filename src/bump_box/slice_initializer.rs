@@ -26,7 +26,7 @@ impl<T> Drop for BumpBoxSliceInitializer<'_, T> {
     fn drop(&mut self) {
         unsafe {
             let to_drop_len = self.init_len();
-            let to_drop = non_null::slice_from_raw_parts(self.start, to_drop_len);
+            let to_drop = NonNull::slice_from_raw_parts(self.start, to_drop_len);
             to_drop.as_ptr().drop_in_place();
         }
     }
@@ -129,7 +129,7 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
             let this = ManuallyDrop::new(self);
             debug_assert!(this.is_full());
             let len = this.len();
-            let slice = non_null::slice_from_raw_parts(this.start, len);
+            let slice = NonNull::slice_from_raw_parts(this.start, len);
             BumpBox::from_raw(slice)
         }
     }

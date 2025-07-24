@@ -28,7 +28,7 @@ impl<T> RawFixedBumpVec<T> {
         assert!(T::IS_ZST);
 
         RawFixedBumpVec {
-            initialized: unsafe { RawBumpBox::from_ptr(non_null::slice_from_raw_parts(NonNull::dangling(), len)) },
+            initialized: unsafe { RawBumpBox::from_ptr(NonNull::slice_from_raw_parts(NonNull::dangling(), len)) },
             capacity: usize::MAX,
         }
     }
@@ -62,7 +62,7 @@ impl<T> RawFixedBumpVec<T> {
         let ptr = B::allocate_slice::<T>(allocator, len)?;
 
         Ok(Self {
-            initialized: unsafe { RawBumpBox::from_ptr(non_null::slice_from_raw_parts(ptr, 0)) },
+            initialized: unsafe { RawBumpBox::from_ptr(NonNull::slice_from_raw_parts(ptr, 0)) },
             capacity: len,
         })
     }
@@ -76,7 +76,7 @@ impl<T> RawFixedBumpVec<T> {
 
         Ok(Self {
             initialized: unsafe {
-                RawBumpBox::from_ptr(non_null::slice_from_raw_parts(non_null::as_non_null_ptr(allocation), 0))
+                RawBumpBox::from_ptr(NonNull::slice_from_raw_parts(non_null::as_non_null_ptr(allocation), 0))
             },
             capacity: allocation.len(),
         })

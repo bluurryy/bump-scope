@@ -352,7 +352,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         let capacity = if T::IS_ZST { usize::MAX } else { uninitialized.len() };
 
         let ptr = non_null::as_non_null_ptr(uninitialized).cast::<T>();
-        let initialized = unsafe { BumpBox::from_raw(non_null::slice_from_raw_parts(ptr, 0)) };
+        let initialized = unsafe { BumpBox::from_raw(NonNull::slice_from_raw_parts(ptr, 0)) };
 
         Self { initialized, capacity }
     }
@@ -836,7 +836,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
                 self.set_cap(lhs_cap);
 
                 return FixedBumpVec {
-                    initialized: BumpBox::from_raw(non_null::slice_from_raw_parts(rhs, rhs_len)),
+                    initialized: BumpBox::from_raw(NonNull::slice_from_raw_parts(rhs, rhs_len)),
                     capacity: rhs_cap,
                 };
             }
@@ -856,7 +856,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
                 self.set_cap(rhs_cap);
 
                 return FixedBumpVec {
-                    initialized: BumpBox::from_raw(non_null::slice_from_raw_parts(lhs, lhs_len)),
+                    initialized: BumpBox::from_raw(NonNull::slice_from_raw_parts(lhs, lhs_len)),
                     capacity: lhs_cap,
                 };
             }
@@ -889,7 +889,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
                 self.set_cap(rhs_cap);
 
                 FixedBumpVec {
-                    initialized: BumpBox::from_raw(non_null::slice_from_raw_parts(lhs, lhs_len)),
+                    initialized: BumpBox::from_raw(NonNull::slice_from_raw_parts(lhs, lhs_len)),
                     capacity: lhs_cap,
                 }
             } else {
@@ -910,7 +910,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
                 self.set_cap(lhs_cap);
 
                 FixedBumpVec {
-                    initialized: BumpBox::from_raw(non_null::slice_from_raw_parts(rhs, rhs_len)),
+                    initialized: BumpBox::from_raw(NonNull::slice_from_raw_parts(rhs, rhs_len)),
                     capacity: rhs_cap,
                 }
             }
@@ -2126,7 +2126,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
                 .add(self.initialized.len())
                 .cast::<MaybeUninit<T>>();
             let uninitialized_len = self.capacity - self.len();
-            let uninitialized = BumpBox::from_raw(non_null::slice_from_raw_parts(uninitialized_ptr, uninitialized_len));
+            let uninitialized = BumpBox::from_raw(NonNull::slice_from_raw_parts(uninitialized_ptr, uninitialized_len));
             (self.initialized, uninitialized)
         }
     }
@@ -2255,7 +2255,7 @@ impl<'a, T, const N: usize> FixedBumpVec<'a, [T; N]> {
         // `new_cap * size_of::<T>()` == `cap * size_of::<[T; N]>()`
         // - `len` <= `cap`, so `len * N` <= `cap * N`.
         unsafe {
-            let slice = non_null::slice_from_raw_parts(ptr.cast(), new_len);
+            let slice = NonNull::slice_from_raw_parts(ptr.cast(), new_len);
             let initialized = BumpBox::from_raw(slice);
             FixedBumpVec::from_raw_parts(initialized, new_cap)
         }

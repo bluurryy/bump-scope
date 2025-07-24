@@ -171,7 +171,7 @@ impl<T: Clone, A: BumpAllocatorExt + Clone> Clone for IntoIter<T, A> {
     fn clone(&self) -> Self {
         let allocator = self.allocator.clone();
         let ptr = self.allocator.allocate_slice::<MaybeUninit<T>>(self.len());
-        let slice = non_null::slice_from_raw_parts(ptr, self.len());
+        let slice = NonNull::slice_from_raw_parts(ptr, self.len());
         let boxed = unsafe { BumpBox::from_raw(slice) };
         let boxed = boxed.init_clone(self.as_slice());
         let fixed = FixedBumpVec::from_init(boxed);
