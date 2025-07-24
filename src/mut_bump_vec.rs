@@ -525,9 +525,7 @@ impl<T, A> MutBumpVec<T, A> {
     /// Vector must not be full.
     #[inline(always)]
     pub unsafe fn push_unchecked(&mut self, value: T) {
-        unsafe {
-            unsafe { self.fixed.cook_mut() }.push_unchecked(value);
-        }
+        unsafe { self.fixed.cook_mut().push_unchecked(value) };
     }
 
     /// Appends an element to the back of the collection.
@@ -536,9 +534,7 @@ impl<T, A> MutBumpVec<T, A> {
     /// Vector must not be full.
     #[inline(always)]
     pub unsafe fn push_with_unchecked(&mut self, f: impl FnOnce() -> T) {
-        unsafe {
-            unsafe { self.fixed.cook_mut() }.push_with_unchecked(f);
-        }
+        unsafe { self.fixed.cook_mut().push_with_unchecked(f) };
     }
 
     /// Forces the length of the vector to `new_len`.
@@ -564,7 +560,7 @@ impl<T, A> MutBumpVec<T, A> {
 
     #[inline]
     pub(crate) unsafe fn inc_len(&mut self, amount: usize) {
-        unsafe { unsafe { self.fixed.cook_mut() }.inc_len(amount) };
+        unsafe { self.fixed.cook_mut().inc_len(amount) };
     }
 }
 

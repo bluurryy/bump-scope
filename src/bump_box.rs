@@ -1829,7 +1829,7 @@ impl<'a, T> BumpBox<'a, [T]> {
                 self.as_mut_slice().get_unchecked_mut(..end).rotate_right(range_len);
 
                 let lhs = NonNull::slice_from_raw_parts(ptr, range_len);
-                let rhs = NonNull::slice_from_raw_parts(unsafe { ptr.add(range_len) }, remaining_len);
+                let rhs = NonNull::slice_from_raw_parts(ptr.add(range_len), remaining_len);
 
                 self.ptr = rhs;
 
@@ -1839,7 +1839,7 @@ impl<'a, T> BumpBox<'a, [T]> {
                 self.as_mut_slice().get_unchecked_mut(start..).rotate_left(range_len);
 
                 let lhs = NonNull::slice_from_raw_parts(ptr, remaining_len);
-                let rhs = NonNull::slice_from_raw_parts(unsafe { ptr.add(remaining_len) }, range_len);
+                let rhs = NonNull::slice_from_raw_parts(ptr.add(remaining_len), range_len);
 
                 self.ptr = lhs;
 

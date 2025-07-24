@@ -12,6 +12,7 @@ macro_rules! destructure {
         const _: () = assert!(!$crate::destructure::has_duplicates(&[$(stringify!($field)),*]), "you can't destructure a field twice");
 
         $(
+            #[allow(unused_unsafe)]
             let $crate::destructure::or!($($field_alias)? $field) = unsafe { ::core::ptr::read(&value.$field) };
         )*
     };

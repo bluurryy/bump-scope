@@ -1163,16 +1163,12 @@ impl<T, A: BumpAllocatorExt> BumpVec<T, A> {
     /// [`capacity`]: Self::capacity
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: usize) {
-        unsafe {
-            self.fixed.set_len(new_len);
-        }
+        unsafe { self.fixed.set_len(new_len) };
     }
 
     #[inline]
     pub(crate) unsafe fn inc_len(&mut self, amount: usize) {
-        unsafe {
-            unsafe { self.fixed.cook_mut() }.inc_len(amount);
-        }
+        unsafe { self.fixed.cook_mut().inc_len(amount) };
     }
 
     /// Appends an element to the back of a collection.
