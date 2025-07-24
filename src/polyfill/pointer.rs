@@ -23,12 +23,6 @@ pub(crate) unsafe fn write_with<T>(ptr: *mut T, f: impl FnOnce() -> T) {
     ptr::write(ptr, f());
 }
 
-/// See `<*const T>::cast_mut`.
-#[inline(always)]
-pub(crate) const fn cast_mut<T: ?Sized>(ptr: *const T) -> *mut T {
-    ptr as _
-}
-
 /// See `<*const T>::addr`.
 #[must_use]
 #[inline(always)]

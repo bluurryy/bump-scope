@@ -76,7 +76,7 @@ pub(crate) unsafe fn byte_offset_from_unsigned<T>(this: NonNull<T>, origin: NonN
 #[inline(always)]
 pub(crate) const fn slice_from_raw_parts<T>(data: NonNull<T>, len: usize) -> NonNull<[T]> {
     // SAFETY: `data` is a `NonNull` pointer which is necessarily non-null
-    unsafe { NonNull::new_unchecked(pointer::cast_mut(ptr::slice_from_raw_parts(data.as_ptr(), len))) }
+    unsafe { NonNull::new_unchecked(ptr::slice_from_raw_parts(data.as_ptr(), len).cast_mut()) }
 }
 
 /// See [`std::ptr::copy`].
