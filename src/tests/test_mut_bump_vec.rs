@@ -19,7 +19,6 @@ fn test_dyn_allocator<const UP: bool>() {
         range.map(|i| i.to_string())
     }
 
-    // TODO: this should work without a `Scope`
     fn test<'a, const UP: bool, B: MutBumpAllocatorScopeExt<'a>>(mut bump: B) {
         const ITEM_SIZE: usize = size_of::<String>();
         assert_eq!(bump.any_stats().allocated(), 0);
