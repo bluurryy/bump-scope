@@ -4,9 +4,7 @@ use crate::{
     BaseAllocator, Bump, BumpAllocatorScope, BumpScope, Checkpoint, MinimumAlignment, MutBumpAllocator,
     MutBumpAllocatorScope, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
     alloc::{AllocError, Allocator},
-    chunk_header::unallocated_chunk_header,
     layout::CustomLayout,
-    raw_chunk::RawChunk,
     stats::AnyStats,
     traits::{assert_dyn_compatible, assert_implements},
 };
@@ -356,59 +354,14 @@ where
         self.stats().into()
     }
 
-    #[inline(always)]
+    #[inline]
     fn checkpoint(&self) -> Checkpoint {
-        Checkpoint::new(self.chunk.get())
+        Self::checkpoint(self)
     }
 
-    // FIXME: make `Bump(Scope)`'s `reset_to` work this way too?
-    #[inline(always)]
+    #[inline]
     unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        unsafe {
-            // If the checkpoint was created when the bump allocator had no allocated chunk
-            // then the chunk pointer will point to the unallocated chunk header.
-            //
-            // In such cases we reset the bump pointer to the very start of the very first chunk.
-            //
-            // We don't check if the chunk pointer points to the unallocated chunk header
-            // if the bump allocator is `GUARANTEED_ALLOCATED`. We are allowed to not do this check
-            // because of this safety condition of `reset_to`:
-            // > the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
-            if !GUARANTEED_ALLOCATED && checkpoint.chunk == unallocated_chunk_header() {
-                let mut chunk = self.chunk.get();
-
-                while let Some(prev) = chunk.prev() {
-                    chunk = prev;
-                }
-
-                chunk.reset();
-                self.chunk.set(chunk);
-            } else {
-                debug_assert_ne!(
-                    checkpoint.chunk,
-                    unallocated_chunk_header(),
-                    "the safety conditions state that \"the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`\""
-                );
-
-                #[cfg(debug_assertions)]
-                {
-                    let chunk = self
-                        .stats()
-                        .small_to_big()
-                        .find(|chunk| chunk.header == checkpoint.chunk.cast())
-                        .expect("this checkpoint does not refer to any chunk of this bump allocator");
-
-                    assert!(
-                        chunk.contains_addr_or_end(checkpoint.address.get()),
-                        "checkpoint address does not point within its chunk"
-                    );
-                }
-
-                checkpoint.reset_within_chunk();
-                let chunk = RawChunk::from_header(checkpoint.chunk.cast());
-                self.chunk.set(chunk);
-            }
-        }
+        unsafe { Self::reset_to(self, checkpoint) }
     }
 
     #[inline(always)]

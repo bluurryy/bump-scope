@@ -690,7 +690,14 @@ where
     pub fn scope_guard(&mut self) -> BumpScopeGuardRoot<'_, A, MIN_ALIGN, UP> {
         BumpScopeGuardRoot::new(self)
     }
+}
 
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
+    Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+{
     /// Creates a checkpoint of the current bump position.
     ///
     /// The bump position can be reset to this checkpoint with [`reset_to`].
@@ -724,8 +731,11 @@ where
     /// # Safety
     ///
     /// - the checkpoint must have been created by this bump allocator
-    /// - the bump allocator must not have been [`reset`](crate::Bump::reset) since creation of this checkpoint
+    /// - the bump allocator must not have been [`reset`] since creation of this checkpoint
     /// - there must be no references to allocations made since creation of this checkpoint
+    /// - the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
+    ///
+    /// [`reset`]: crate::Bump::reset
     ///
     /// # Examples
     ///
@@ -747,14 +757,7 @@ where
     pub unsafe fn reset_to(&self, checkpoint: Checkpoint) {
         unsafe { self.as_scope().reset_to(checkpoint) };
     }
-}
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
     /// This is equivalent to <code>[with_size_in](Bump::with_size_in)(512, allocator)</code>.

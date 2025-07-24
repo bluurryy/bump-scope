@@ -565,6 +565,7 @@ _If you are upgrading: please see [`UPGRADING.md#0.17.0`](UPGRADING.md#0.17.0)._
 
 - Any allocator that implements `Default` can now be used as a base allocator (before it was just `Global`).
 - Add `bump` method to `BumpVec` and `BumpString` which returns the bump allocator.
+- Add `checkpoint` and `reset_to` to non-`GUARANTEED_ALLOCATED` bump allocators, adds a safety condition to `reset_to`
 
 ### Changed
 
