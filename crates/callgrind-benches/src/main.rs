@@ -3,18 +3,25 @@ use std::{collections::HashMap, env, ffi::OsString, fmt::Write, path::Path, proc
 use fast_glob::glob_match;
 use markdown_tables::MarkdownTableRow;
 
-use crate::schema::{BenchmarkSummary, EitherOrBoth2, ToolMetricSummary, ValgrindTool};
+use crate::schema::{BenchmarkSummary, EitherOrBoth2, Metric, ToolMetricSummary, ValgrindTool};
 
 mod schema;
 
 const BENCH_NAME: &str = "bench";
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 
-fn left(metric: &EitherOrBoth2) -> Option<u64> {
-    match *metric {
+fn left(metric: &EitherOrBoth2) -> Option<&Metric> {
+    match metric {
         EitherOrBoth2::Left(left) => Some(left),
         EitherOrBoth2::Both(left, _) => Some(left),
         EitherOrBoth2::Right(_) => None,
+    }
+}
+
+fn unwrap_int(metric: &Metric) -> u64 {
+    match *metric {
+        Metric::Int(i) => i,
+        Metric::Float(_) => unreachable!(),
     }
 }
 
@@ -48,10 +55,10 @@ fn read_summary(path: &Path) -> Report {
     for (kind, diff) in summary {
         match kind.as_str() {
             "Ir" => {
-                ir = left(&diff.metrics);
+                ir = left(&diff.metrics).map(unwrap_int);
             }
             "Bc" => {
-                bc = left(&diff.metrics);
+                bc = left(&diff.metrics).map(unwrap_int);
             }
             _ => (),
         }

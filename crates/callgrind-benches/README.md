@@ -128,11 +128,11 @@ If the layout is not statically known then the compiler can not do as many optim
 Install [Valgrind] and [iai-callgrind-runner].
 
 Then run the benchmark with
-```bash
+```sh
 cargo bench --bench bench -- --save-summary=json
 ```
 and update the tables above with
-```bash
+```sh
 cargo run
 ```
 

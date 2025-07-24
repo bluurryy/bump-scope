@@ -318,6 +318,31 @@ impl BenchmarkSummary {
 #[doc = "      \"const\": \"DLmw\""]
 #[doc = "    },"]
 #[doc = "    {"]
+#[doc = "      \"description\": \"I1 cache miss rate (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"I1MissRate\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"LL/L2 instructions cache miss rate (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"LLiMissRate\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"D1 cache miss rate (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"D1MissRate\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"LL/L2 data cache miss rate (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"LLdMissRate\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"LL/L2 cache miss rate (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"LLMissRate\""]
+#[doc = "    },"]
+#[doc = "    {"]
 #[doc = "      \"description\": \"Derived event showing the L1 hits (--cache-sim=yes)\","]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"const\": \"L1hits\""]
@@ -331,6 +356,21 @@ impl BenchmarkSummary {
 #[doc = "      \"description\": \"Derived event showing the RAM hits (--cache-sim=yes)\","]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"const\": \"RamHits\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"L1 cache hit rate (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"L1HitRate\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"LL/L2 cache hit rate (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"LLHitRate\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"RAM hit rate (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"RamHitRate\""]
 #[doc = "    },"]
 #[doc = "    {"]
 #[doc = "      \"description\": \"Derived event showing the total amount of cache reads and writes (--cache-sim=yes)\","]
@@ -386,12 +426,30 @@ pub enum CachegrindMetric {
     DLmr,
     #[doc = "LL cache data write misses (--cache-sim=yes)"]
     DLmw,
+    #[doc = "I1 cache miss rate (--cache-sim=yes)"]
+    I1MissRate,
+    #[doc = "LL/L2 instructions cache miss rate (--cache-sim=yes)"]
+    LLiMissRate,
+    #[doc = "D1 cache miss rate (--cache-sim=yes)"]
+    D1MissRate,
+    #[doc = "LL/L2 data cache miss rate (--cache-sim=yes)"]
+    LLdMissRate,
+    #[doc = "LL/L2 cache miss rate (--cache-sim=yes)"]
+    #[serde(rename = "LLMissRate")]
+    LlMissRate,
     #[doc = "Derived event showing the L1 hits (--cache-sim=yes)"]
     L1hits,
     #[doc = "Derived event showing the LL hits (--cache-sim=yes)"]
     LLhits,
     #[doc = "Derived event showing the RAM hits (--cache-sim=yes)"]
     RamHits,
+    #[doc = "L1 cache hit rate (--cache-sim=yes)"]
+    L1HitRate,
+    #[doc = "LL/L2 cache hit rate (--cache-sim=yes)"]
+    #[serde(rename = "LLHitRate")]
+    LlHitRate,
+    #[doc = "RAM hit rate (--cache-sim=yes)"]
+    RamHitRate,
     #[doc = "Derived event showing the total amount of cache reads and writes (--cache-sim=yes)"]
     #[serde(rename = "TotalRW")]
     TotalRw,
@@ -423,9 +481,17 @@ impl ::std::fmt::Display for CachegrindMetric {
             Self::ILmr => write!(f, "ILmr"),
             Self::DLmr => write!(f, "DLmr"),
             Self::DLmw => write!(f, "DLmw"),
+            Self::I1MissRate => write!(f, "I1MissRate"),
+            Self::LLiMissRate => write!(f, "LLiMissRate"),
+            Self::D1MissRate => write!(f, "D1MissRate"),
+            Self::LLdMissRate => write!(f, "LLdMissRate"),
+            Self::LlMissRate => write!(f, "LLMissRate"),
             Self::L1hits => write!(f, "L1hits"),
             Self::LLhits => write!(f, "LLhits"),
             Self::RamHits => write!(f, "RamHits"),
+            Self::L1HitRate => write!(f, "L1HitRate"),
+            Self::LlHitRate => write!(f, "LLHitRate"),
+            Self::RamHitRate => write!(f, "RamHitRate"),
             Self::TotalRw => write!(f, "TotalRW"),
             Self::EstimatedCycles => write!(f, "EstimatedCycles"),
             Self::Bc => write!(f, "Bc"),
@@ -448,9 +514,17 @@ impl ::std::str::FromStr for CachegrindMetric {
             "ILmr" => Ok(Self::ILmr),
             "DLmr" => Ok(Self::DLmr),
             "DLmw" => Ok(Self::DLmw),
+            "I1MissRate" => Ok(Self::I1MissRate),
+            "LLiMissRate" => Ok(Self::LLiMissRate),
+            "D1MissRate" => Ok(Self::D1MissRate),
+            "LLdMissRate" => Ok(Self::LLdMissRate),
+            "LLMissRate" => Ok(Self::LlMissRate),
             "L1hits" => Ok(Self::L1hits),
             "LLhits" => Ok(Self::LLhits),
             "RamHits" => Ok(Self::RamHits),
+            "L1HitRate" => Ok(Self::L1HitRate),
+            "LLHitRate" => Ok(Self::LlHitRate),
+            "RamHitRate" => Ok(Self::RamHitRate),
             "TotalRW" => Ok(Self::TotalRw),
             "EstimatedCycles" => Ok(Self::EstimatedCycles),
             "Bc" => Ok(Self::Bc),
@@ -487,6 +561,16 @@ impl ::std::convert::TryFrom<::std::string::String> for CachegrindMetric {
 #[doc = "{"]
 #[doc = "  \"description\": \"The metrics collected by DHAT\","]
 #[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"description\": \"In ad-hoc mode, Total units measured over the entire execution\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"TotalUnits\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"Total ad-hoc events over the entire execution\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"TotalEvents\""]
+#[doc = "    },"]
 #[doc = "    {"]
 #[doc = "      \"description\": \"Total bytes allocated over the entire execution\","]
 #[doc = "      \"type\": \"string\","]
@@ -548,6 +632,10 @@ impl ::std::convert::TryFrom<::std::string::String> for CachegrindMetric {
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum DhatMetric {
+    #[doc = "In ad-hoc mode, Total units measured over the entire execution"]
+    TotalUnits,
+    #[doc = "Total ad-hoc events over the entire execution"]
+    TotalEvents,
     #[doc = "Total bytes allocated over the entire execution"]
     TotalBytes,
     #[doc = "Total heap blocks allocated over the entire execution"]
@@ -579,6 +667,8 @@ impl ::std::convert::From<&Self> for DhatMetric {
 impl ::std::fmt::Display for DhatMetric {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         match *self {
+            Self::TotalUnits => write!(f, "TotalUnits"),
+            Self::TotalEvents => write!(f, "TotalEvents"),
             Self::TotalBytes => write!(f, "TotalBytes"),
             Self::TotalBlocks => write!(f, "TotalBlocks"),
             Self::AtTGmaxBytes => write!(f, "AtTGmaxBytes"),
@@ -597,6 +687,8 @@ impl ::std::str::FromStr for DhatMetric {
     type Err = self::error::ConversionError;
     fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
         match value {
+            "TotalUnits" => Ok(Self::TotalUnits),
+            "TotalEvents" => Ok(Self::TotalEvents),
             "TotalBytes" => Ok(Self::TotalBytes),
             "TotalBlocks" => Ok(Self::TotalBlocks),
             "AtTGmaxBytes" => Ok(Self::AtTGmaxBytes),
@@ -681,6 +773,29 @@ impl Diffs {
 #[doc = "  \"description\": \"Either left or right or both can be present\\n\\nMost of the time, this enum is used to store (new, old) output, metrics, etc. Per convention\\nleft is `new` and right is `old`.\","]
 #[doc = "  \"oneOf\": ["]
 #[doc = "    {"]
+#[doc = "      \"description\": \"Both values (`new` and `old`) are present\","]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"Both\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"Both\": {"]
+#[doc = "          \"type\": \"array\","]
+#[doc = "          \"items\": ["]
+#[doc = "            {"]
+#[doc = "              \"$ref\": \"#/definitions/ProfileInfo\""]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"$ref\": \"#/definitions/ProfileInfo\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"maxItems\": 2,"]
+#[doc = "          \"minItems\": 2"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
 #[doc = "      \"description\": \"The left or `new` value\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
@@ -705,29 +820,6 @@ impl Diffs {
 #[doc = "        }"]
 #[doc = "      },"]
 #[doc = "      \"additionalProperties\": false"]
-#[doc = "    },"]
-#[doc = "    {"]
-#[doc = "      \"description\": \"Both values (`new` and `old`) are present\","]
-#[doc = "      \"type\": \"object\","]
-#[doc = "      \"required\": ["]
-#[doc = "        \"Both\""]
-#[doc = "      ],"]
-#[doc = "      \"properties\": {"]
-#[doc = "        \"Both\": {"]
-#[doc = "          \"type\": \"array\","]
-#[doc = "          \"items\": ["]
-#[doc = "            {"]
-#[doc = "              \"$ref\": \"#/definitions/ProfileInfo\""]
-#[doc = "            },"]
-#[doc = "            {"]
-#[doc = "              \"$ref\": \"#/definitions/ProfileInfo\""]
-#[doc = "            }"]
-#[doc = "          ],"]
-#[doc = "          \"maxItems\": 2,"]
-#[doc = "          \"minItems\": 2"]
-#[doc = "        }"]
-#[doc = "      },"]
-#[doc = "      \"additionalProperties\": false"]
 #[doc = "    }"]
 #[doc = "  ]"]
 #[doc = "}"]
@@ -735,12 +827,12 @@ impl Diffs {
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 pub enum EitherOrBoth {
+    #[doc = "Both values (`new` and `old`) are present"]
+    Both(ProfileInfo, ProfileInfo),
     #[doc = "The left or `new` value"]
     Left(ProfileInfo),
     #[doc = "The right or `old` value"]
     Right(ProfileInfo),
-    #[doc = "Both values (`new` and `old`) are present"]
-    Both(ProfileInfo, ProfileInfo),
 }
 impl ::std::convert::From<&Self> for EitherOrBoth {
     fn from(value: &EitherOrBoth) -> Self {
@@ -761,6 +853,29 @@ impl ::std::convert::From<(ProfileInfo, ProfileInfo)> for EitherOrBoth {
 #[doc = "  \"description\": \"Either left or right or both can be present\\n\\nMost of the time, this enum is used to store (new, old) output, metrics, etc. Per convention\\nleft is `new` and right is `old`.\","]
 #[doc = "  \"oneOf\": ["]
 #[doc = "    {"]
+#[doc = "      \"description\": \"Both values (`new` and `old`) are present\","]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"Both\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"Both\": {"]
+#[doc = "          \"type\": \"array\","]
+#[doc = "          \"items\": ["]
+#[doc = "            {"]
+#[doc = "              \"$ref\": \"#/definitions/Metric\""]
+#[doc = "            },"]
+#[doc = "            {"]
+#[doc = "              \"$ref\": \"#/definitions/Metric\""]
+#[doc = "            }"]
+#[doc = "          ],"]
+#[doc = "          \"maxItems\": 2,"]
+#[doc = "          \"minItems\": 2"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
 #[doc = "      \"description\": \"The left or `new` value\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
@@ -768,9 +883,7 @@ impl ::std::convert::From<(ProfileInfo, ProfileInfo)> for EitherOrBoth {
 #[doc = "      ],"]
 #[doc = "      \"properties\": {"]
 #[doc = "        \"Left\": {"]
-#[doc = "          \"type\": \"integer\","]
-#[doc = "          \"format\": \"uint64\","]
-#[doc = "          \"minimum\": 0.0"]
+#[doc = "          \"$ref\": \"#/definitions/Metric\""]
 #[doc = "        }"]
 #[doc = "      },"]
 #[doc = "      \"additionalProperties\": false"]
@@ -783,36 +896,7 @@ impl ::std::convert::From<(ProfileInfo, ProfileInfo)> for EitherOrBoth {
 #[doc = "      ],"]
 #[doc = "      \"properties\": {"]
 #[doc = "        \"Right\": {"]
-#[doc = "          \"type\": \"integer\","]
-#[doc = "          \"format\": \"uint64\","]
-#[doc = "          \"minimum\": 0.0"]
-#[doc = "        }"]
-#[doc = "      },"]
-#[doc = "      \"additionalProperties\": false"]
-#[doc = "    },"]
-#[doc = "    {"]
-#[doc = "      \"description\": \"Both values (`new` and `old`) are present\","]
-#[doc = "      \"type\": \"object\","]
-#[doc = "      \"required\": ["]
-#[doc = "        \"Both\""]
-#[doc = "      ],"]
-#[doc = "      \"properties\": {"]
-#[doc = "        \"Both\": {"]
-#[doc = "          \"type\": \"array\","]
-#[doc = "          \"items\": ["]
-#[doc = "            {"]
-#[doc = "              \"type\": \"integer\","]
-#[doc = "              \"format\": \"uint64\","]
-#[doc = "              \"minimum\": 0.0"]
-#[doc = "            },"]
-#[doc = "            {"]
-#[doc = "              \"type\": \"integer\","]
-#[doc = "              \"format\": \"uint64\","]
-#[doc = "              \"minimum\": 0.0"]
-#[doc = "            }"]
-#[doc = "          ],"]
-#[doc = "          \"maxItems\": 2,"]
-#[doc = "          \"minItems\": 2"]
+#[doc = "          \"$ref\": \"#/definitions/Metric\""]
 #[doc = "        }"]
 #[doc = "      },"]
 #[doc = "      \"additionalProperties\": false"]
@@ -823,20 +907,20 @@ impl ::std::convert::From<(ProfileInfo, ProfileInfo)> for EitherOrBoth {
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 pub enum EitherOrBoth2 {
-    #[doc = "The left or `new` value"]
-    Left(u64),
-    #[doc = "The right or `old` value"]
-    Right(u64),
     #[doc = "Both values (`new` and `old`) are present"]
-    Both(u64, u64),
+    Both(Metric, Metric),
+    #[doc = "The left or `new` value"]
+    Left(Metric),
+    #[doc = "The right or `old` value"]
+    Right(Metric),
 }
 impl ::std::convert::From<&Self> for EitherOrBoth2 {
     fn from(value: &EitherOrBoth2) -> Self {
         value.clone()
     }
 }
-impl ::std::convert::From<(u64, u64)> for EitherOrBoth2 {
-    fn from(value: (u64, u64)) -> Self {
+impl ::std::convert::From<(Metric, Metric)> for EitherOrBoth2 {
+    fn from(value: (Metric, Metric)) -> Self {
         Self::Both(value.0, value.1)
     }
 }
@@ -982,6 +1066,31 @@ impl ::std::convert::TryFrom<::std::string::String> for ErrorMetric {
 #[doc = "      \"const\": \"DLmw\""]
 #[doc = "    },"]
 #[doc = "    {"]
+#[doc = "      \"description\": \"I1 cache miss rate (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"I1MissRate\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"LL/L2 instructions cache miss rate (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"LLiMissRate\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"D1 cache miss rate (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"D1MissRate\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"LL/L2 data cache miss rate (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"LLdMissRate\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"LL/L2 cache miss rate (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"LLMissRate\""]
+#[doc = "    },"]
+#[doc = "    {"]
 #[doc = "      \"description\": \"Derived event showing the L1 hits (--cache-sim=yes)\","]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"const\": \"L1hits\""]
@@ -995,6 +1104,21 @@ impl ::std::convert::TryFrom<::std::string::String> for ErrorMetric {
 #[doc = "      \"description\": \"Derived event showing the RAM hits (--cache-sim=yes)\","]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"const\": \"RamHits\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"L1 cache hit rate (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"L1HitRate\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"LL/L2 cache hit rate (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"LLHitRate\""]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"RAM hit rate (--cache-sim=yes)\","]
+#[doc = "      \"type\": \"string\","]
+#[doc = "      \"const\": \"RamHitRate\""]
 #[doc = "    },"]
 #[doc = "    {"]
 #[doc = "      \"description\": \"Derived event showing the total amount of cache reads and writes (--cache-sim=yes)\","]
@@ -1105,12 +1229,30 @@ pub enum EventKind {
     DLmr,
     #[doc = "LL cache data write misses (--cache-sim=yes)"]
     DLmw,
+    #[doc = "I1 cache miss rate (--cache-sim=yes)"]
+    I1MissRate,
+    #[doc = "LL/L2 instructions cache miss rate (--cache-sim=yes)"]
+    LLiMissRate,
+    #[doc = "D1 cache miss rate (--cache-sim=yes)"]
+    D1MissRate,
+    #[doc = "LL/L2 data cache miss rate (--cache-sim=yes)"]
+    LLdMissRate,
+    #[doc = "LL/L2 cache miss rate (--cache-sim=yes)"]
+    #[serde(rename = "LLMissRate")]
+    LlMissRate,
     #[doc = "Derived event showing the L1 hits (--cache-sim=yes)"]
     L1hits,
     #[doc = "Derived event showing the LL hits (--cache-sim=yes)"]
     LLhits,
     #[doc = "Derived event showing the RAM hits (--cache-sim=yes)"]
     RamHits,
+    #[doc = "L1 cache hit rate (--cache-sim=yes)"]
+    L1HitRate,
+    #[doc = "LL/L2 cache hit rate (--cache-sim=yes)"]
+    #[serde(rename = "LLHitRate")]
+    LlHitRate,
+    #[doc = "RAM hit rate (--cache-sim=yes)"]
+    RamHitRate,
     #[doc = "Derived event showing the total amount of cache reads and writes (--cache-sim=yes)"]
     #[serde(rename = "TotalRW")]
     TotalRw,
@@ -1164,9 +1306,17 @@ impl ::std::fmt::Display for EventKind {
             Self::ILmr => write!(f, "ILmr"),
             Self::DLmr => write!(f, "DLmr"),
             Self::DLmw => write!(f, "DLmw"),
+            Self::I1MissRate => write!(f, "I1MissRate"),
+            Self::LLiMissRate => write!(f, "LLiMissRate"),
+            Self::D1MissRate => write!(f, "D1MissRate"),
+            Self::LLdMissRate => write!(f, "LLdMissRate"),
+            Self::LlMissRate => write!(f, "LLMissRate"),
             Self::L1hits => write!(f, "L1hits"),
             Self::LLhits => write!(f, "LLhits"),
             Self::RamHits => write!(f, "RamHits"),
+            Self::L1HitRate => write!(f, "L1HitRate"),
+            Self::LlHitRate => write!(f, "LLHitRate"),
+            Self::RamHitRate => write!(f, "RamHitRate"),
             Self::TotalRw => write!(f, "TotalRW"),
             Self::EstimatedCycles => write!(f, "EstimatedCycles"),
             Self::SysCount => write!(f, "SysCount"),
@@ -1200,9 +1350,17 @@ impl ::std::str::FromStr for EventKind {
             "ILmr" => Ok(Self::ILmr),
             "DLmr" => Ok(Self::DLmr),
             "DLmw" => Ok(Self::DLmw),
+            "I1MissRate" => Ok(Self::I1MissRate),
+            "LLiMissRate" => Ok(Self::LLiMissRate),
+            "D1MissRate" => Ok(Self::D1MissRate),
+            "LLdMissRate" => Ok(Self::LLdMissRate),
+            "LLMissRate" => Ok(Self::LlMissRate),
             "L1hits" => Ok(Self::L1hits),
             "LLhits" => Ok(Self::LLhits),
             "RamHits" => Ok(Self::RamHits),
+            "L1HitRate" => Ok(Self::L1HitRate),
+            "LLHitRate" => Ok(Self::LlHitRate),
+            "RamHitRate" => Ok(Self::RamHitRate),
             "TotalRW" => Ok(Self::TotalRw),
             "EstimatedCycles" => Ok(Self::EstimatedCycles),
             "SysCount" => Ok(Self::SysCount),
@@ -1311,6 +1469,69 @@ impl FlamegraphSummary {
         Default::default()
     }
 }
+#[doc = "The metric measured by valgrind or derived from one or more other metrics\n\nThe valgrind metrics measured by any of its tools are `u64`. However, to be able to represent\nderived metrics like cache miss/hit rates it is inevitable to have a type which can store a\n`u64` or a `f64`. When doing math with metrics, the original type should be preserved as far as\npossible by using `u64` operations. A float metric should be a last resort.\n\nFloat operations with a `Metric` that stores a `u64` introduce a precision loss and are to be\navoided. Especially comparison between a `u64` metric and `f64` metric are not exact because the\n`u64` has to be converted to a `f64`. Also, if adding/multiplying two `u64` metrics would result\nin an overflow the metric saturates at `u64::MAX`. This choice was made to preserve precision\nand the original type (instead of for example adding the two `u64` by converting both of them to\n`f64`)."]
+#[doc = r""]
+#[doc = r" <details><summary>JSON schema</summary>"]
+#[doc = r""]
+#[doc = r" ```json"]
+#[doc = "{"]
+#[doc = "  \"description\": \"The metric measured by valgrind or derived from one or more other metrics\\n\\nThe valgrind metrics measured by any of its tools are `u64`. However, to be able to represent\\nderived metrics like cache miss/hit rates it is inevitable to have a type which can store a\\n`u64` or a `f64`. When doing math with metrics, the original type should be preserved as far as\\npossible by using `u64` operations. A float metric should be a last resort.\\n\\nFloat operations with a `Metric` that stores a `u64` introduce a precision loss and are to be\\navoided. Especially comparison between a `u64` metric and `f64` metric are not exact because the\\n`u64` has to be converted to a `f64`. Also, if adding/multiplying two `u64` metrics would result\\nin an overflow the metric saturates at `u64::MAX`. This choice was made to preserve precision\\nand the original type (instead of for example adding the two `u64` by converting both of them to\\n`f64`).\","]
+#[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"description\": \"An integer `Metric`\","]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"Int\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"Int\": {"]
+#[doc = "          \"type\": \"integer\","]
+#[doc = "          \"format\": \"uint64\","]
+#[doc = "          \"minimum\": 0.0"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"A float `Metric`\","]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"Float\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"Float\": {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"format\": \"double\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    }"]
+#[doc = "  ]"]
+#[doc = "}"]
+#[doc = r" ```"]
+#[doc = r" </details>"]
+#[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+pub enum Metric {
+    #[doc = "An integer `Metric`"]
+    Int(u64),
+    #[doc = "A float `Metric`"]
+    Float(f64),
+}
+impl ::std::convert::From<&Self> for Metric {
+    fn from(value: &Metric) -> Self {
+        value.clone()
+    }
+}
+impl ::std::convert::From<u64> for Metric {
+    fn from(value: u64) -> Self {
+        Self::Int(value)
+    }
+}
+impl ::std::convert::From<f64> for Metric {
+    fn from(value: f64) -> Self {
+        Self::Float(value)
+    }
+}
 #[doc = "The different metrics distinguished by tool and if it is an error checking tool as `ErrorMetric`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -1320,12 +1541,12 @@ impl FlamegraphSummary {
 #[doc = "  \"description\": \"The different metrics distinguished by tool and if it is an error checking tool as `ErrorMetric`\","]
 #[doc = "  \"oneOf\": ["]
 #[doc = "    {"]
+#[doc = "      \"description\": \"The `None` kind if there are no metrics for a tool\","]
 #[doc = "      \"type\": \"string\","]
-#[doc = "      \"enum\": ["]
-#[doc = "        \"None\""]
-#[doc = "      ]"]
+#[doc = "      \"const\": \"None\""]
 #[doc = "    },"]
 #[doc = "    {"]
+#[doc = "      \"description\": \"The Callgrind metric kind\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
 #[doc = "        \"Callgrind\""]
@@ -1338,6 +1559,7 @@ impl FlamegraphSummary {
 #[doc = "      \"additionalProperties\": false"]
 #[doc = "    },"]
 #[doc = "    {"]
+#[doc = "      \"description\": \"The Cachegrind metric kind\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
 #[doc = "        \"Cachegrind\""]
@@ -1350,6 +1572,7 @@ impl FlamegraphSummary {
 #[doc = "      \"additionalProperties\": false"]
 #[doc = "    },"]
 #[doc = "    {"]
+#[doc = "      \"description\": \"The DHAT metric kind\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
 #[doc = "        \"Dhat\""]
@@ -1362,6 +1585,7 @@ impl FlamegraphSummary {
 #[doc = "      \"additionalProperties\": false"]
 #[doc = "    },"]
 #[doc = "    {"]
+#[doc = "      \"description\": \"The Memcheck metric kind\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
 #[doc = "        \"Memcheck\""]
@@ -1374,6 +1598,7 @@ impl FlamegraphSummary {
 #[doc = "      \"additionalProperties\": false"]
 #[doc = "    },"]
 #[doc = "    {"]
+#[doc = "      \"description\": \"The Helgrind metric kind\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
 #[doc = "        \"Helgrind\""]
@@ -1386,6 +1611,7 @@ impl FlamegraphSummary {
 #[doc = "      \"additionalProperties\": false"]
 #[doc = "    },"]
 #[doc = "    {"]
+#[doc = "      \"description\": \"The DRD metric kind\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
 #[doc = "        \"DRD\""]
@@ -1403,12 +1629,19 @@ impl FlamegraphSummary {
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 pub enum MetricKind {
+    #[doc = "The `None` kind if there are no metrics for a tool"]
     None,
+    #[doc = "The Callgrind metric kind"]
     Callgrind(EventKind),
+    #[doc = "The Cachegrind metric kind"]
     Cachegrind(CachegrindMetric),
+    #[doc = "The DHAT metric kind"]
     Dhat(DhatMetric),
+    #[doc = "The Memcheck metric kind"]
     Memcheck(ErrorMetric),
+    #[doc = "The Helgrind metric kind"]
     Helgrind(ErrorMetric),
+    #[doc = "The DRD metric kind"]
     #[serde(rename = "DRD")]
     Drd(ErrorMetric),
 }
@@ -1925,13 +2158,19 @@ impl ProfilePart {
 #[doc = "  ],"]
 #[doc = "  \"properties\": {"]
 #[doc = "    \"regressions\": {"]
+#[doc = "      \"description\": \"The detected regressions if any\","]
 #[doc = "      \"type\": \"array\","]
 #[doc = "      \"items\": {"]
 #[doc = "        \"$ref\": \"#/definitions/ToolRegression\""]
 #[doc = "      }"]
 #[doc = "    },"]
 #[doc = "    \"summary\": {"]
-#[doc = "      \"$ref\": \"#/definitions/ToolMetricSummary\""]
+#[doc = "      \"description\": \"The summary of metrics of the tool\","]
+#[doc = "      \"allOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"$ref\": \"#/definitions/ToolMetricSummary\""]
+#[doc = "        }"]
+#[doc = "      ]"]
 #[doc = "    }"]
 #[doc = "  }"]
 #[doc = "}"]
@@ -1939,7 +2178,9 @@ impl ProfilePart {
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 pub struct ProfileTotal {
+    #[doc = "The detected regressions if any"]
     pub regressions: ::std::vec::Vec<ToolRegression>,
+    #[doc = "The summary of metrics of the tool"]
     pub summary: ToolMetricSummary,
 }
 impl ::std::convert::From<&ProfileTotal> for ProfileTotal {
@@ -2213,68 +2454,155 @@ impl ::std::convert::From<MetricsSummary4> for ToolMetricSummary {
         Self::Cachegrind(value)
     }
 }
-#[doc = "`ToolRegression`"]
+#[doc = "A detected performance regression depending on the limit either `Soft` or `Hard`"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"type\": \"object\","]
-#[doc = "  \"required\": ["]
-#[doc = "    \"diff_pct\","]
-#[doc = "    \"limit\","]
-#[doc = "    \"metric\","]
-#[doc = "    \"new\","]
-#[doc = "    \"old\""]
-#[doc = "  ],"]
-#[doc = "  \"properties\": {"]
-#[doc = "    \"diff_pct\": {"]
-#[doc = "      \"description\": \"The difference between new and old in percent. Serialized as string to preserve infinity\\nvalues and avoid null in json.\","]
-#[doc = "      \"type\": \"string\""]
+#[doc = "  \"description\": \"A detected performance regression depending on the limit either `Soft` or `Hard`\","]
+#[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"description\": \"A performance regression triggered by a soft limit\","]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"Soft\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"Soft\": {"]
+#[doc = "          \"type\": \"object\","]
+#[doc = "          \"required\": ["]
+#[doc = "            \"diff_pct\","]
+#[doc = "            \"limit\","]
+#[doc = "            \"metric\","]
+#[doc = "            \"new\","]
+#[doc = "            \"old\""]
+#[doc = "          ],"]
+#[doc = "          \"properties\": {"]
+#[doc = "            \"diff_pct\": {"]
+#[doc = "              \"description\": \"The difference between new and old in percent. Serialized as string to preserve\\ninfinity values and avoid null in json.\","]
+#[doc = "              \"type\": \"string\""]
+#[doc = "            },"]
+#[doc = "            \"limit\": {"]
+#[doc = "              \"description\": \"The value of the limit which was exceeded to cause a performance regression. Serialized\\nas string to preserve infinity values and avoid null in json.\","]
+#[doc = "              \"type\": \"string\""]
+#[doc = "            },"]
+#[doc = "            \"metric\": {"]
+#[doc = "              \"description\": \"The metric kind per tool\","]
+#[doc = "              \"allOf\": ["]
+#[doc = "                {"]
+#[doc = "                  \"$ref\": \"#/definitions/MetricKind\""]
+#[doc = "                }"]
+#[doc = "              ]"]
+#[doc = "            },"]
+#[doc = "            \"new\": {"]
+#[doc = "              \"description\": \"The value of the new benchmark run\","]
+#[doc = "              \"allOf\": ["]
+#[doc = "                {"]
+#[doc = "                  \"$ref\": \"#/definitions/Metric\""]
+#[doc = "                }"]
+#[doc = "              ]"]
+#[doc = "            },"]
+#[doc = "            \"old\": {"]
+#[doc = "              \"description\": \"The value of the old benchmark run\","]
+#[doc = "              \"allOf\": ["]
+#[doc = "                {"]
+#[doc = "                  \"$ref\": \"#/definitions/Metric\""]
+#[doc = "                }"]
+#[doc = "              ]"]
+#[doc = "            }"]
+#[doc = "          }"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
 #[doc = "    },"]
-#[doc = "    \"limit\": {"]
-#[doc = "      \"description\": \"The value of the limit which was exceeded to cause a performance regression. Serialized as\\nstring to preserve infinity values and avoid null in json.\","]
-#[doc = "      \"type\": \"string\""]
-#[doc = "    },"]
-#[doc = "    \"metric\": {"]
-#[doc = "      \"$ref\": \"#/definitions/MetricKind\""]
-#[doc = "    },"]
-#[doc = "    \"new\": {"]
-#[doc = "      \"description\": \"The value of the new benchmark run\","]
-#[doc = "      \"type\": \"integer\","]
-#[doc = "      \"format\": \"uint64\","]
-#[doc = "      \"minimum\": 0.0"]
-#[doc = "    },"]
-#[doc = "    \"old\": {"]
-#[doc = "      \"description\": \"The value of the old benchmark run\","]
-#[doc = "      \"type\": \"integer\","]
-#[doc = "      \"format\": \"uint64\","]
-#[doc = "      \"minimum\": 0.0"]
+#[doc = "    {"]
+#[doc = "      \"description\": \"A performance regression triggered by a hard limit\","]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"Hard\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"Hard\": {"]
+#[doc = "          \"type\": \"object\","]
+#[doc = "          \"required\": ["]
+#[doc = "            \"diff\","]
+#[doc = "            \"limit\","]
+#[doc = "            \"metric\","]
+#[doc = "            \"new\""]
+#[doc = "          ],"]
+#[doc = "          \"properties\": {"]
+#[doc = "            \"diff\": {"]
+#[doc = "              \"description\": \"The difference between new and the limit\","]
+#[doc = "              \"allOf\": ["]
+#[doc = "                {"]
+#[doc = "                  \"$ref\": \"#/definitions/Metric\""]
+#[doc = "                }"]
+#[doc = "              ]"]
+#[doc = "            },"]
+#[doc = "            \"limit\": {"]
+#[doc = "              \"description\": \"The limit\","]
+#[doc = "              \"allOf\": ["]
+#[doc = "                {"]
+#[doc = "                  \"$ref\": \"#/definitions/Metric\""]
+#[doc = "                }"]
+#[doc = "              ]"]
+#[doc = "            },"]
+#[doc = "            \"metric\": {"]
+#[doc = "              \"description\": \"The metric kind per tool\","]
+#[doc = "              \"allOf\": ["]
+#[doc = "                {"]
+#[doc = "                  \"$ref\": \"#/definitions/MetricKind\""]
+#[doc = "                }"]
+#[doc = "              ]"]
+#[doc = "            },"]
+#[doc = "            \"new\": {"]
+#[doc = "              \"description\": \"The value of the benchmark run\","]
+#[doc = "              \"allOf\": ["]
+#[doc = "                {"]
+#[doc = "                  \"$ref\": \"#/definitions/Metric\""]
+#[doc = "                }"]
+#[doc = "              ]"]
+#[doc = "            }"]
+#[doc = "          }"]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
 #[doc = "    }"]
-#[doc = "  }"]
+#[doc = "  ]"]
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
-pub struct ToolRegression {
-    #[doc = "The difference between new and old in percent. Serialized as string to preserve infinity\nvalues and avoid null in json."]
-    pub diff_pct: ::std::string::String,
-    #[doc = "The value of the limit which was exceeded to cause a performance regression. Serialized as\nstring to preserve infinity values and avoid null in json."]
-    pub limit: ::std::string::String,
-    pub metric: MetricKind,
-    #[doc = "The value of the new benchmark run"]
-    pub new: u64,
-    #[doc = "The value of the old benchmark run"]
-    pub old: u64,
+pub enum ToolRegression {
+    #[doc = "A performance regression triggered by a soft limit"]
+    Soft {
+        #[doc = "The difference between new and old in percent. Serialized as string to preserve\ninfinity values and avoid null in json."]
+        diff_pct: ::std::string::String,
+        #[doc = "The value of the limit which was exceeded to cause a performance regression. Serialized\nas string to preserve infinity values and avoid null in json."]
+        limit: ::std::string::String,
+        #[doc = "The metric kind per tool"]
+        metric: MetricKind,
+        #[doc = "The value of the new benchmark run"]
+        new: Metric,
+        #[doc = "The value of the old benchmark run"]
+        old: Metric,
+    },
+    #[doc = "A performance regression triggered by a hard limit"]
+    Hard {
+        #[doc = "The difference between new and the limit"]
+        diff: Metric,
+        #[doc = "The limit"]
+        limit: Metric,
+        #[doc = "The metric kind per tool"]
+        metric: MetricKind,
+        #[doc = "The value of the benchmark run"]
+        new: Metric,
+    },
 }
-impl ::std::convert::From<&ToolRegression> for ToolRegression {
+impl ::std::convert::From<&Self> for ToolRegression {
     fn from(value: &ToolRegression) -> Self {
         value.clone()
-    }
-}
-impl ToolRegression {
-    pub fn builder() -> builder::ToolRegression {
-        Default::default()
     }
 }
 #[doc = "The valgrind tools which can be run\n\nNote the default changes from `Callgrind` to `Cachegrind` if the `cachegrind` feature is\nselected."]
@@ -3226,100 +3554,6 @@ pub mod builder {
             Self {
                 format: Ok(value.format),
                 path: Ok(value.path),
-            }
-        }
-    }
-    #[derive(Clone, Debug)]
-    pub struct ToolRegression {
-        diff_pct: ::std::result::Result<::std::string::String, ::std::string::String>,
-        limit: ::std::result::Result<::std::string::String, ::std::string::String>,
-        metric: ::std::result::Result<super::MetricKind, ::std::string::String>,
-        new: ::std::result::Result<u64, ::std::string::String>,
-        old: ::std::result::Result<u64, ::std::string::String>,
-    }
-    impl ::std::default::Default for ToolRegression {
-        fn default() -> Self {
-            Self {
-                diff_pct: Err("no value supplied for diff_pct".to_string()),
-                limit: Err("no value supplied for limit".to_string()),
-                metric: Err("no value supplied for metric".to_string()),
-                new: Err("no value supplied for new".to_string()),
-                old: Err("no value supplied for old".to_string()),
-            }
-        }
-    }
-    impl ToolRegression {
-        pub fn diff_pct<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::string::String>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.diff_pct = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for diff_pct: {}", e));
-            self
-        }
-        pub fn limit<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<::std::string::String>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.limit = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for limit: {}", e));
-            self
-        }
-        pub fn metric<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<super::MetricKind>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.metric = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for metric: {}", e));
-            self
-        }
-        pub fn new<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<u64>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.new = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for new: {}", e));
-            self
-        }
-        pub fn old<T>(mut self, value: T) -> Self
-        where
-            T: ::std::convert::TryInto<u64>,
-            T::Error: ::std::fmt::Display,
-        {
-            self.old = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for old: {}", e));
-            self
-        }
-    }
-    impl ::std::convert::TryFrom<ToolRegression> for super::ToolRegression {
-        type Error = super::error::ConversionError;
-        fn try_from(value: ToolRegression) -> ::std::result::Result<Self, super::error::ConversionError> {
-            Ok(Self {
-                diff_pct: value.diff_pct?,
-                limit: value.limit?,
-                metric: value.metric?,
-                new: value.new?,
-                old: value.old?,
-            })
-        }
-    }
-    impl ::std::convert::From<super::ToolRegression> for ToolRegression {
-        fn from(value: super::ToolRegression) -> Self {
-            Self {
-                diff_pct: Ok(value.diff_pct),
-                limit: Ok(value.limit),
-                metric: Ok(value.metric),
-                new: Ok(value.new),
-                old: Ok(value.old),
             }
         }
     }
