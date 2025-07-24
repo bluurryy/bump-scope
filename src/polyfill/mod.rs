@@ -16,7 +16,6 @@ pub(crate) mod layout;
 pub(crate) mod non_null;
 pub(crate) mod option;
 pub(crate) mod pointer;
-pub(crate) mod pointer_mut;
 pub(crate) mod ptr;
 pub(crate) mod slice;
 pub(crate) mod str;
