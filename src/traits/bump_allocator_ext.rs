@@ -147,7 +147,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// # Safety
     ///
     /// - `ptr..ptr + cap` must be the pointer range returned by
-    ///   <code>([try_](MutBumpAllocatorExt::try_prepare_slice_allocation))[prepare_slice_allocation](MutBumpAllocatorExt::prepare_slice_allocation)</code>.
+    ///   <code>([try_](BumpAllocatorExt::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorExt::prepare_slice_allocation)</code>.
     /// - no allocation, grow, shrink or deallocate must have taken place since then
     /// - no resets must have taken place since then
     /// - `len` must be less than or equal to `cap`
@@ -160,7 +160,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// # Safety
     ///
     /// - `ptr - cap..ptr` must be the pointer range returned by
-    ///   <code>([try_](MutBumpAllocatorExt::try_prepare_slice_allocation))[prepare_slice_allocation](MutBumpAllocatorExt::prepare_slice_allocation)</code>.
+    ///   <code>([try_](BumpAllocatorExt::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorExt::prepare_slice_allocation)</code>.
     /// - no allocation, grow, shrink or deallocate must have taken place since then
     /// - no resets must have taken place since then
     /// - `len` must be less than or equal to `cap`
