@@ -11,12 +11,12 @@ use core::{
 };
 
 use crate::{
+    BumpBox, ErrorBehavior, MutBumpAllocatorExt, MutBumpAllocatorScopeExt, NoDrop, SizedTypeProperties,
     alloc::AllocError,
     min_non_zero_cap, mut_collection_method_allocator_stats,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     polyfill::{hint::likely, slice},
     raw_fixed_bump_vec::RawFixedBumpVec,
-    BumpBox, ErrorBehavior, MutBumpAllocatorExt, MutBumpAllocatorScopeExt, NoDrop, SizedTypeProperties,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -270,11 +270,7 @@ impl<T, A> MutBumpVec<T, A> {
     /// ```
     pub fn pop_if(&mut self, predicate: impl FnOnce(&mut T) -> bool) -> Option<T> {
         let last = self.last_mut()?;
-        if predicate(last) {
-            self.pop()
-        } else {
-            None
-        }
+        if predicate(last) { self.pop() } else { None }
     }
 
     /// Clears the vector, removing all values.

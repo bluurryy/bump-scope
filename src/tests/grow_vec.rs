@@ -53,10 +53,11 @@ fn grow_mut_vec_rev() {
         vec.push(numbers.next().unwrap());
     }
 
-    assert!(vec
-        .iter()
-        .cloned()
-        .eq(number_strings().take(vec.len()).collect::<Vec<_>>().into_iter().rev()));
+    assert!(
+        vec.iter()
+            .cloned()
+            .eq(number_strings().take(vec.len()).collect::<Vec<_>>().into_iter().rev())
+    );
 }
 
 fn number_strings() -> impl Iterator<Item = String> {

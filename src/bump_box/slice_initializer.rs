@@ -5,8 +5,8 @@ use core::{
 };
 
 use crate::{
-    polyfill::{non_null, pointer},
     BumpBox, SizedTypeProperties,
+    polyfill::{non_null, pointer},
 };
 
 /// Allows for initializing a `BumpBox<[MaybeUninit<T>]>` by pushing values.

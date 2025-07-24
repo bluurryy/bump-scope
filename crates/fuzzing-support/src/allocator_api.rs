@@ -2,14 +2,14 @@ use std::{alloc::Layout, ops::Range, ptr::NonNull, rc::Rc};
 
 use arbitrary::{Arbitrary, Unstructured};
 use bump_scope::{
-    alloc::{Allocator, Global},
     Bump, MinimumAlignment, SupportedMinimumAlignment,
+    alloc::{Allocator, Global},
 };
 use core::fmt::Debug;
 use log::debug;
 use rangemap::RangeSet;
 
-use crate::{debug_dbg, MaybeFailingAllocator, MinAlign, RcAllocator};
+use crate::{MaybeFailingAllocator, MinAlign, RcAllocator, debug_dbg};
 
 #[derive(Debug, Arbitrary)]
 pub struct Fuzz {
@@ -304,25 +304,25 @@ fn addr_range(ptr: NonNull<[u8]>) -> Range<usize> {
 /// Writes a pattern that can later be asserted to still be the same using [`assert_initialized`].
 unsafe fn initialize(ptr: NonNull<[u8]>) {
     for i in 0..ptr.len() {
-        ptr.cast::<u8>().as_ptr().add(i).write(i as u8);
+        unsafe { ptr.cast::<u8>().as_ptr().add(i).write(i as u8) };
     }
 }
 
 /// Asserts that the bytes still have the same pattern as when it was set using [`initialize`].
 unsafe fn assert_initialized(ptr: NonNull<[u8]>) {
     for i in 0..ptr.len() {
-        assert_eq!(ptr.cast::<u8>().as_ptr().add(i).read(), i as u8);
+        unsafe { assert_eq!(ptr.cast::<u8>().as_ptr().add(i).read(), i as u8) };
     }
 }
 
 // Writes a new pattern to the bytes that can't be mistaken for initialized or zeroed bytes.
 unsafe fn deinitialize(ptr: NonNull<[u8]>) {
-    ptr.as_ptr().cast::<u8>().write_bytes(0xFA, ptr.len())
+    unsafe { ptr.as_ptr().cast::<u8>().write_bytes(0xFA, ptr.len()) }
 }
 
 // Asserts that all bytes are zero.
 unsafe fn assert_zeroed(ptr: NonNull<[u8]>) {
-    ptr.as_ptr().cast::<u8>().write_bytes(0, ptr.len())
+    unsafe { ptr.as_ptr().cast::<u8>().write_bytes(0, ptr.len()) }
 }
 
 #[derive(Debug)]

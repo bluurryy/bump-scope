@@ -6,7 +6,7 @@ use std::{
     vec::Vec,
 };
 
-use crate::{alloc::AllocError, BaseAllocator, Bump, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment};
+use crate::{BaseAllocator, Bump, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment, alloc::AllocError};
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;

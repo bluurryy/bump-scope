@@ -4,8 +4,8 @@
 use std::{alloc::Layout, cell::Cell, ptr::NonNull};
 
 use bump_scope::{
-    alloc::{AllocError, Allocator, Global},
     Bump,
+    alloc::{AllocError, Allocator, Global},
 };
 
 struct Limited<A> {

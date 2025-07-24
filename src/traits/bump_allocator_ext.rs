@@ -3,13 +3,14 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
+    BaseAllocator, Bump, BumpAllocator, BumpAllocatorScope, BumpScope, MinimumAlignment, MutBumpAllocator,
+    MutBumpAllocatorScope, SizedTypeProperties, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
     alloc::{AllocError, Allocator},
     bump_down,
     polyfill::non_null,
     stats::{AnyStats, Stats},
     traits::assert_implements,
-    up_align_usize_unchecked, BaseAllocator, Bump, BumpAllocator, BumpAllocatorScope, BumpScope, MinimumAlignment,
-    MutBumpAllocator, MutBumpAllocatorScope, SizedTypeProperties, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    up_align_usize_unchecked,
 };
 
 #[cfg(feature = "panic-on-alloc")]

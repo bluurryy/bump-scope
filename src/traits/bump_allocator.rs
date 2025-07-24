@@ -1,14 +1,14 @@
 use core::{alloc::Layout, ops::Range, ptr::NonNull};
 
 use crate::{
+    BaseAllocator, Bump, BumpAllocatorScope, BumpScope, Checkpoint, MinimumAlignment, MutBumpAllocator,
+    MutBumpAllocatorScope, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
     alloc::{AllocError, Allocator},
     chunk_header::unallocated_chunk_header,
     layout::CustomLayout,
     raw_chunk::RawChunk,
     stats::AnyStats,
     traits::{assert_dyn_compatible, assert_implements},
-    BaseAllocator, Bump, BumpAllocatorScope, BumpScope, Checkpoint, MinimumAlignment, MutBumpAllocator,
-    MutBumpAllocatorScope, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
 };
 
 pub trait Sealed {}

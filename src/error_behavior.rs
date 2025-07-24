@@ -1,11 +1,11 @@
 use core::alloc::Layout;
 
 use crate::{
-    alloc::AllocError, layout, BumpAllocatorExt, MutBumpAllocatorExt, NonNull, RawChunk, SupportedMinimumAlignment,
+    BumpAllocatorExt, MutBumpAllocatorExt, NonNull, RawChunk, SupportedMinimumAlignment, alloc::AllocError, layout,
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{capacity_overflow, format_trait_error, handle_alloc_error, Infallible};
+use crate::{Infallible, capacity_overflow, format_trait_error, handle_alloc_error};
 
 use layout::LayoutProps;
 

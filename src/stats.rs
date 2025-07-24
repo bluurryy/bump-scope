@@ -15,8 +15,8 @@ use core::{
 };
 
 use crate::{
-    chunk_header::{unallocated_chunk_header, ChunkHeader},
     RawChunk,
+    chunk_header::{ChunkHeader, unallocated_chunk_header},
 };
 
 mod any;

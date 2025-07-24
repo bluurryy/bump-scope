@@ -13,6 +13,7 @@ use core::{
 };
 
 use crate::{
+    BumpAllocatorExt, BumpAllocatorScopeExt, BumpBox, ErrorBehavior, FixedBumpVec, NoDrop, SizedTypeProperties,
     alloc::AllocError,
     collection_method_allocator_stats,
     destructure::destructure,
@@ -20,7 +21,6 @@ use crate::{
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     polyfill::{hint::likely, non_null, pointer, slice},
     raw_fixed_bump_vec::RawFixedBumpVec,
-    BumpAllocatorExt, BumpAllocatorScopeExt, BumpBox, ErrorBehavior, FixedBumpVec, NoDrop, SizedTypeProperties,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -881,11 +881,7 @@ impl<T, A: BumpAllocatorExt> BumpVec<T, A> {
     /// ```
     pub fn pop_if(&mut self, predicate: impl FnOnce(&mut T) -> bool) -> Option<T> {
         let last = self.last_mut()?;
-        if predicate(last) {
-            self.pop()
-        } else {
-            None
-        }
+        if predicate(last) { self.pop() } else { None }
     }
 
     /// Clears the vector, removing all values.
@@ -2568,34 +2564,36 @@ impl<T, A: BumpAllocatorExt> BumpVec<T, A> {
     ///
     /// `new_capacity` must be greater than the current capacity.
     unsafe fn generic_grow_to<E: ErrorBehavior>(&mut self, new_capacity: usize) -> Result<(), E> {
-        let new_cap = new_capacity;
+        unsafe {
+            let new_cap = new_capacity;
 
-        if self.capacity() == 0 {
-            self.fixed = RawFixedBumpVec::allocate(&self.allocator, new_cap)?;
-            return Ok(());
+            if self.capacity() == 0 {
+                self.fixed = RawFixedBumpVec::allocate(&self.allocator, new_cap)?;
+                return Ok(());
+            }
+
+            let old_ptr = self.as_non_null().cast();
+
+            let old_size = self.capacity() * T::SIZE; // we already allocated that amount so this can't overflow
+            let Some(new_size) = new_cap.checked_mul(T::SIZE) else {
+                return Err(E::capacity_overflow());
+            };
+
+            let old_layout = Layout::from_size_align_unchecked(old_size, T::ALIGN);
+            let Ok(new_layout) = Layout::from_size_align(new_size, T::ALIGN) else {
+                return Err(E::capacity_overflow());
+            };
+
+            let new_ptr = match self.allocator.grow(old_ptr, old_layout, new_layout) {
+                Ok(ok) => ok.cast(),
+                Err(_) => return Err(E::allocation(new_layout)),
+            };
+
+            self.fixed.set_ptr(new_ptr);
+            self.fixed.set_cap(new_cap);
+
+            Ok(())
         }
-
-        let old_ptr = self.as_non_null().cast();
-
-        let old_size = self.capacity() * T::SIZE; // we already allocated that amount so this can't overflow
-        let Some(new_size) = new_cap.checked_mul(T::SIZE) else {
-            return Err(E::capacity_overflow());
-        };
-
-        let old_layout = Layout::from_size_align_unchecked(old_size, T::ALIGN);
-        let Ok(new_layout) = Layout::from_size_align(new_size, T::ALIGN) else {
-            return Err(E::capacity_overflow());
-        };
-
-        let new_ptr = match self.allocator.grow(old_ptr, old_layout, new_layout) {
-            Ok(ok) => ok.cast(),
-            Err(_) => return Err(E::allocation(new_layout)),
-        };
-
-        self.fixed.set_ptr(new_ptr);
-        self.fixed.set_cap(new_cap);
-
-        Ok(())
     }
 
     /// Shrinks the capacity of the vector as much as possible.

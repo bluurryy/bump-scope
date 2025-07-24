@@ -8,8 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- next-header -->
 ## [Unreleased]
 
-
-
 ### Added
 
 - **Breaking:** `BumpAllocator` trait family has been reworked:
@@ -23,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Breaking:** Raise minimum supported rust version to 1.85.1
 - **Breaking:** Remove `without_shrink` and `without_dealloc` methods
+- Switch to rust edition 2024
 
 ### Fixed
 

@@ -1,13 +1,13 @@
 use core::fmt::{self, Display};
 
 use serde::{
-    de::{self, DeserializeSeed, Expected, Visitor},
     Deserialize, Serialize,
+    de::{self, DeserializeSeed, Expected, Visitor},
 };
 
 use crate::{
-    alloc::AllocError, BumpAllocatorExt, BumpBox, BumpString, BumpVec, FixedBumpString, FixedBumpVec, MutBumpAllocatorExt,
-    MutBumpString, MutBumpVec, MutBumpVecRev,
+    BumpAllocatorExt, BumpBox, BumpString, BumpVec, FixedBumpString, FixedBumpVec, MutBumpAllocatorExt, MutBumpString,
+    MutBumpVec, MutBumpVecRev, alloc::AllocError,
 };
 
 impl<T: Serialize + ?Sized> Serialize for BumpBox<'_, T> {

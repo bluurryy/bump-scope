@@ -22,11 +22,11 @@ use alloc_crate::{string::String, vec::Vec};
 use alloc_crate::boxed::Box;
 
 use crate::{
+    BumpAllocatorScopeExt, FromUtf8Error, NoDrop, SizedTypeProperties,
     alloc::BoxLike,
     owned_slice, owned_str,
     polyfill::{self, non_null, pointer, transmute_mut},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BumpAllocatorScopeExt, FromUtf8Error, NoDrop, SizedTypeProperties,
 };
 
 mod slice_initializer;

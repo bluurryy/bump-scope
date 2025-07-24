@@ -3,7 +3,7 @@ use std::{
     mem::{self, offset_of},
 };
 
-use crate::{alloc::Global, Bump};
+use crate::{Bump, alloc::Global};
 
 use super::either_way;
 

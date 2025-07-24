@@ -15,8 +15,8 @@ use std::{
     ptr::NonNull,
     string::{String, ToString},
     sync::{
-        atomic::{AtomicUsize, Ordering},
         Arc, Mutex, PoisonError,
+        atomic::{AtomicUsize, Ordering},
     },
     thread_local,
     vec::Vec,
@@ -65,12 +65,12 @@ const MALLOC_OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
 const OVERHEAD: usize = MALLOC_OVERHEAD + size_of::<ChunkHeader<Global>>();
 
 use crate::{
+    Bump, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev,
+    SizedTypeProperties, SupportedMinimumAlignment,
     alloc::{AllocError, Allocator, Global as System, Global},
     chunk_size::{AssumedMallocOverhead, ChunkSize},
     mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice, panic_on_error,
     stats::Chunk,
-    Bump, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev,
-    SizedTypeProperties, SupportedMinimumAlignment,
 };
 
 pub(crate) use test_wrap::TestWrap;
@@ -1072,7 +1072,7 @@ fn min_non_zero_cap() {
 // make sure to also check that niches are the same
 mod doc_layout_claim {
     #![allow(dead_code)]
-    use crate::{alloc::Global, SizedTypeProperties};
+    use crate::{SizedTypeProperties, alloc::Global};
     use core::{cell::Cell, ptr::NonNull};
     type Bump = crate::Bump<Global, 1, true, true>;
     type BumpScope = crate::BumpScope<'static, Global, 1, true, true>;

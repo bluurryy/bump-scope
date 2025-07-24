@@ -3,19 +3,20 @@ use core::{
     cell::Cell,
     ffi::CStr,
     fmt::{self, Debug},
-    mem::{self, transmute, ManuallyDrop, MaybeUninit},
+    mem::{self, ManuallyDrop, MaybeUninit, transmute},
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::{self, NonNull},
 };
 
 use crate::{
+    BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, FixedBumpString, FixedBumpVec,
+    MinimumAlignment, RawChunk, SupportedMinimumAlignment,
     alloc::{AllocError, Allocator},
     chunk_size::ChunkSize,
     owned_slice::OwnedSlice,
     polyfill::{transmute_mut, transmute_ref},
     stats::{AnyStats, Stats},
-    unallocated_chunk_header, BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior,
-    FixedBumpString, FixedBumpVec, MinimumAlignment, RawChunk, SupportedMinimumAlignment,
+    unallocated_chunk_header,
 };
 
 #[cfg(feature = "panic-on-alloc")]

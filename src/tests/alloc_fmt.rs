@@ -5,8 +5,9 @@ use std::{
 };
 
 use crate::{
+    Bump,
     alloc::{AllocError, Allocator, Global},
-    bump_format, mut_bump_format, Bump,
+    bump_format, mut_bump_format,
 };
 
 use super::either_way;

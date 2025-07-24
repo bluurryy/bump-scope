@@ -1,6 +1,6 @@
 use core::fmt;
 
-use crate::{alloc::Global, Bump};
+use crate::{Bump, alloc::Global};
 
 use super::either_way;
 

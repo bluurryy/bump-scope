@@ -3,7 +3,7 @@ use core::mem::MaybeUninit;
 use ::bytemuck::Zeroable;
 
 use crate::{
-    alloc::AllocError, BaseAllocator, Bump, BumpBox, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment,
+    BaseAllocator, Bump, BumpBox, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment, alloc::AllocError,
 };
 
 #[cfg(feature = "panic-on-alloc")]

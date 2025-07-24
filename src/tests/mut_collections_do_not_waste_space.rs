@@ -1,6 +1,6 @@
 use core::iter;
 
-use crate::{alloc::Global, Bump, MutBumpVec, MutBumpVecRev};
+use crate::{Bump, MutBumpVec, MutBumpVecRev, alloc::Global};
 
 use super::either_way;
 

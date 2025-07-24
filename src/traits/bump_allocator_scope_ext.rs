@@ -1,4 +1,4 @@
-use crate::{traits::assert_implements, BumpAllocatorExt, BumpAllocatorScope, MutBumpAllocatorScope};
+use crate::{BumpAllocatorExt, BumpAllocatorScope, MutBumpAllocatorScope, traits::assert_implements};
 
 /// A shorthand for <code>[BumpAllocatorScope]<'a> + [BumpAllocatorExt]</code>
 pub trait BumpAllocatorScopeExt<'a>: BumpAllocatorScope<'a> + BumpAllocatorExt {}

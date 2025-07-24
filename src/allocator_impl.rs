@@ -4,8 +4,8 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    alloc::AllocError, bump_down, polyfill::non_null, up_align_usize_unchecked, BaseAllocator, BumpScope, MinimumAlignment,
-    SupportedMinimumAlignment,
+    BaseAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, alloc::AllocError, bump_down, polyfill::non_null,
+    up_align_usize_unchecked,
 };
 
 #[inline(always)]
@@ -28,9 +28,11 @@ pub(crate) unsafe fn deallocate<const MIN_ALIGN: usize, const UP: bool, const GU
 ) where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
-    // free allocated space if this is the last allocation
-    if is_last(bump, ptr, layout) {
-        unsafe { deallocate_assume_last(bump, ptr, layout) };
+    unsafe {
+        // free allocated space if this is the last allocation
+        if is_last(bump, ptr, layout) {
+            deallocate_assume_last(bump, ptr, layout);
+        }
     }
 }
 
@@ -42,9 +44,9 @@ unsafe fn deallocate_assume_last<const MIN_ALIGN: usize, const UP: bool, const G
 ) where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
-    debug_assert!(is_last(bump, ptr, layout));
-
     unsafe {
+        debug_assert!(is_last(bump, ptr, layout));
+
         if UP {
             bump.chunk.get().set_pos(ptr);
         } else {

@@ -1,7 +1,7 @@
 [package]
 name = "bump-scope"
 version = "1.0.0-dev"
-edition = "2021"
+edition = "2024"
 license = "MIT OR Apache-2.0"
 description = "A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types."
 categories = ["memory-management", "no-std", "no-std::no-alloc"]

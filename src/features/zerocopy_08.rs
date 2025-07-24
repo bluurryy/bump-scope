@@ -3,8 +3,8 @@ use core::mem::MaybeUninit;
 use zerocopy_08::FromZeros;
 
 use crate::{
-    alloc::AllocError, error_behavior::ErrorBehavior, BaseAllocator, Bump, BumpBox, BumpScope, MinimumAlignment,
-    SupportedMinimumAlignment,
+    BaseAllocator, Bump, BumpBox, BumpScope, MinimumAlignment, SupportedMinimumAlignment, alloc::AllocError,
+    error_behavior::ErrorBehavior,
 };
 
 #[cfg(feature = "panic-on-alloc")]

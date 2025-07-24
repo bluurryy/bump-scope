@@ -1,9 +1,9 @@
 use core::{alloc::Layout, ptr::NonNull};
 
 use crate::{
+    BumpAllocator,
     alloc::{AllocError, Allocator},
     polyfill::non_null,
-    BumpAllocator,
 };
 
 /// Wraps a bump allocator and does nothing on [`deallocate`](Allocator::deallocate).
@@ -101,11 +101,13 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
             Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
         }
 
-        if non_null::is_aligned_to(ptr, new_layout.align()) {
-            Ok(NonNull::slice_from_raw_parts(ptr, new_layout.size()))
-        } else {
-            // expected to virtually never occur
-            shrink_unfit(self, ptr, old_layout, new_layout)
+        unsafe {
+            if non_null::is_aligned_to(ptr, new_layout.align()) {
+                Ok(NonNull::slice_from_raw_parts(ptr, new_layout.size()))
+            } else {
+                // expected to virtually never occur
+                shrink_unfit(self, ptr, old_layout, new_layout)
+            }
         }
     }
 }

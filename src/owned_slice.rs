@@ -9,7 +9,7 @@ use alloc_crate::{
     vec::{self, Vec},
 };
 
-use crate::{unsize_bump_box, BumpAllocatorExt, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev};
+use crate::{BumpAllocatorExt, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev, unsize_bump_box};
 
 mod drain;
 mod extract_if;

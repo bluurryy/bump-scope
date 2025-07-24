@@ -8,14 +8,14 @@ use core::{
 };
 
 use crate::{
+    ChunkHeader, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment,
     alloc::{AllocError, Allocator},
-    bumping::{bump_down, bump_prepare_down, bump_prepare_up, bump_up, BumpProps, BumpUp, MIN_CHUNK_ALIGN},
+    bumping::{BumpProps, BumpUp, MIN_CHUNK_ALIGN, bump_down, bump_prepare_down, bump_prepare_up, bump_up},
     chunk_size::{ChunkSize, ChunkSizeHint},
     down_align_usize,
     layout::LayoutProps,
     polyfill::non_null,
-    unallocated_chunk_header, up_align_usize_unchecked, ChunkHeader, ErrorBehavior, MinimumAlignment,
-    SupportedMinimumAlignment,
+    unallocated_chunk_header, up_align_usize_unchecked,
 };
 
 /// Represents an allocated chunk.
@@ -312,42 +312,22 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
     #[inline(always)]
     pub(crate) fn chunk_start(self) -> NonNull<u8> {
-        unsafe {
-            if UP {
-                self.header.cast()
-            } else {
-                self.header.as_ref().end
-            }
-        }
+        unsafe { if UP { self.header.cast() } else { self.header.as_ref().end } }
     }
 
     #[inline(always)]
     pub(crate) fn chunk_end(self) -> NonNull<u8> {
-        unsafe {
-            if UP {
-                self.header.as_ref().end
-            } else {
-                self.after_header()
-            }
-        }
+        unsafe { if UP { self.header.as_ref().end } else { self.after_header() } }
     }
 
     #[inline(always)]
     pub(crate) fn content_start(self) -> NonNull<u8> {
-        if UP {
-            self.after_header()
-        } else {
-            self.chunk_start()
-        }
+        if UP { self.after_header() } else { self.chunk_start() }
     }
 
     #[inline(always)]
     pub(crate) fn content_end(self) -> NonNull<u8> {
-        if UP {
-            self.chunk_end()
-        } else {
-            self.header.cast()
-        }
+        if UP { self.chunk_end() } else { self.header.cast() }
     }
 
     #[inline(always)]
@@ -511,11 +491,11 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     where
         A: Allocator,
     {
-        let ptr = self.chunk_start();
-        let layout = self.layout();
-        let allocator_ptr = ptr::from_ref(&self.header.as_ref().allocator);
-
         unsafe {
+            let ptr = self.chunk_start();
+            let layout = self.layout();
+            let allocator_ptr = ptr::from_ref(&self.header.as_ref().allocator);
+
             let allocator = allocator_ptr.read();
             allocator.deallocate(ptr, layout);
         }

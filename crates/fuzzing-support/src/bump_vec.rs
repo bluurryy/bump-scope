@@ -1,5 +1,5 @@
 use arbitrary::Arbitrary;
-use bump_scope::{alloc::Global, Bump, BumpAllocatorExt, BumpVec, MinimumAlignment, SupportedMinimumAlignment};
+use bump_scope::{Bump, BumpAllocatorExt, BumpVec, MinimumAlignment, SupportedMinimumAlignment, alloc::Global};
 use zerocopy::{FromBytes, Immutable, IntoBytes};
 
 use crate::MinAlign;

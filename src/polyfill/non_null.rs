@@ -1,8 +1,10 @@
 use core::{
-    num::NonZeroUsize,
     ops::Range,
     ptr::{self, NonNull},
 };
+
+#[cfg(feature = "alloc")]
+use core::num::NonZeroUsize;
 
 use crate::polyfill::pointer;
 
@@ -10,14 +12,14 @@ use crate::polyfill::pointer;
 #[must_use]
 #[inline(always)]
 pub(crate) unsafe fn offset_from_unsigned<T>(this: NonNull<T>, origin: NonNull<T>) -> usize {
-    pointer::offset_from_unsigned(this.as_ptr(), origin.as_ptr())
+    unsafe { pointer::offset_from_unsigned(this.as_ptr(), origin.as_ptr()) }
 }
 
 /// See [`std::ptr::NonNull::byte_offset_from_unsigned`].
 #[must_use]
 #[inline(always)]
 pub(crate) unsafe fn byte_offset_from_unsigned<T>(this: NonNull<T>, origin: NonNull<T>) -> usize {
-    offset_from_unsigned::<u8>(this.cast(), origin.cast())
+    unsafe { offset_from_unsigned::<u8>(this.cast(), origin.cast()) }
 }
 
 /// See [`std::ptr::NonNull::is_aligned_to`].
@@ -61,40 +63,42 @@ pub(crate) const fn without_provenance<T>(addr: NonZeroUsize) -> NonNull<T> {
 ///
 /// `ptr` must point to a valid slice.
 pub(crate) unsafe fn truncate<T>(slice: &mut NonNull<[T]>, len: usize) {
-    // This is safe because:
-    //
-    // * the slice passed to `drop_in_place` is valid; the `len > self.len`
-    //   case avoids creating an invalid slice, and
-    // * the `len` of the slice is shrunk before calling `drop_in_place`,
-    //   such that no value will be dropped twice in case `drop_in_place`
-    //   were to panic once (if it panics twice, the program aborts).
+    unsafe {
+        // This is safe because:
+        //
+        // * the slice passed to `drop_in_place` is valid; the `len > self.len`
+        //   case avoids creating an invalid slice, and
+        // * the `len` of the slice is shrunk before calling `drop_in_place`,
+        //   such that no value will be dropped twice in case `drop_in_place`
+        //   were to panic once (if it panics twice, the program aborts).
 
-    // Unlike std this is `>=`. Std uses `>` because when a call is inlined with `len` of `0` that optimizes better.
-    // But this was likely only motivated because `clear` used to be implemented as `truncate(0)`.
-    // See <https://github.com/rust-lang/rust/issues/76089#issuecomment-1889416842>.
-    if len >= slice.len() {
-        return;
+        // Unlike std this is `>=`. Std uses `>` because when a call is inlined with `len` of `0` that optimizes better.
+        // But this was likely only motivated because `clear` used to be implemented as `truncate(0)`.
+        // See <https://github.com/rust-lang/rust/issues/76089#issuecomment-1889416842>.
+        if len >= slice.len() {
+            return;
+        }
+
+        let remaining_len = slice.len() - len;
+
+        let to_drop_start = as_non_null_ptr(*slice).add(len);
+        let to_drop = NonNull::slice_from_raw_parts(to_drop_start, remaining_len);
+
+        set_len::<T>(slice, len);
+        to_drop.drop_in_place();
     }
-
-    let remaining_len = slice.len() - len;
-
-    let to_drop_start = as_non_null_ptr(*slice).add(len);
-    let to_drop = NonNull::slice_from_raw_parts(to_drop_start, remaining_len);
-
-    set_len::<T>(slice, len);
-    to_drop.drop_in_place();
 }
 
 /// Not part of std, but for context see `<*mut T>::wrapping_add`.
 #[inline(always)]
 pub(crate) unsafe fn wrapping_byte_add<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
-    NonNull::new_unchecked(ptr.as_ptr().cast::<u8>().wrapping_add(count).cast())
+    unsafe { NonNull::new_unchecked(ptr.as_ptr().cast::<u8>().wrapping_add(count).cast()) }
 }
 
 /// Not part of std, but for context see `<*mut T>::wrapping_sub`.
 #[inline(always)]
 pub(crate) unsafe fn wrapping_byte_sub<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
-    NonNull::new_unchecked(ptr.as_ptr().cast::<u8>().wrapping_sub(count).cast())
+    unsafe { NonNull::new_unchecked(ptr.as_ptr().cast::<u8>().wrapping_sub(count).cast()) }
 }
 
 /// Not part of std.
@@ -114,9 +118,11 @@ pub(crate) fn set_len<T>(ptr: &mut NonNull<[T]>, new_len: usize) {
 /// Not part of std.
 #[inline(always)]
 pub(crate) unsafe fn result<T, E>(mut ptr: NonNull<Result<T, E>>) -> Result<NonNull<T>, NonNull<E>> {
-    match ptr.as_mut() {
-        Ok(ok) => Ok(ok.into()),
-        Err(err) => Err(err.into()),
+    unsafe {
+        match ptr.as_mut() {
+            Ok(ok) => Ok(ok.into()),
+            Err(err) => Err(err.into()),
+        }
     }
 }
 
@@ -152,5 +158,5 @@ pub(crate) const fn str_len(str: NonNull<str>) -> usize {
 /// at this pointer instead of allocating it on the stack and then copying it over.
 #[inline(always)]
 pub(crate) unsafe fn write_with<T>(ptr: NonNull<T>, f: impl FnOnce() -> T) {
-    ptr::write(ptr.as_ptr(), f());
+    unsafe { ptr::write(ptr.as_ptr(), f()) };
 }
