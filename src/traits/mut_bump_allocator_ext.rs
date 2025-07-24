@@ -111,6 +111,7 @@ impl MutBumpAllocatorExt for dyn MutBumpAllocatorScope<'_> + '_ {
 
 #[inline(always)]
 #[cfg(feature = "panic-on-alloc")]
+#[allow(clippy::needless_pass_by_value)]
 fn prepare_slice_allocation<T>(bump: impl MutBumpAllocator, len: usize) -> Range<NonNull<T>> {
     let layout = match Layout::array::<T>(len) {
         Ok(ok) => ok,
@@ -124,6 +125,7 @@ fn prepare_slice_allocation<T>(bump: impl MutBumpAllocator, len: usize) -> Range
 }
 
 #[inline(always)]
+#[allow(clippy::needless_pass_by_value)]
 fn try_prepare_slice_allocation<T>(bump: impl MutBumpAllocator, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
     let layout = match Layout::array::<T>(len) {
         Ok(ok) => ok,
@@ -137,6 +139,7 @@ fn try_prepare_slice_allocation<T>(bump: impl MutBumpAllocator, len: usize) -> R
 }
 
 #[inline(always)]
+#[allow(clippy::needless_pass_by_value)]
 unsafe fn allocate_prepared_slice<T>(bump: impl MutBumpAllocator, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
     let range = non_null::cast_range(ptr..non_null::add(ptr, cap));
     let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);
@@ -145,6 +148,7 @@ unsafe fn allocate_prepared_slice<T>(bump: impl MutBumpAllocator, ptr: NonNull<T
 }
 
 #[inline(always)]
+#[allow(clippy::needless_pass_by_value)]
 unsafe fn allocate_prepared_slice_rev<T>(
     bump: impl MutBumpAllocator,
     ptr: NonNull<T>,
