@@ -20,12 +20,6 @@ pub(crate) unsafe fn byte_offset_from_unsigned<T>(this: NonNull<T>, origin: NonN
     offset_from_unsigned::<u8>(this.cast(), origin.cast())
 }
 
-/// See [`std::ptr::copy_nonoverlapping`].
-#[inline(always)]
-pub(crate) unsafe fn copy_nonoverlapping<T>(src: NonNull<T>, dst: NonNull<T>, count: usize) {
-    ptr::copy_nonoverlapping(src.as_ptr(), dst.as_ptr(), count);
-}
-
 /// See [`std::ptr::NonNull::is_aligned_to`].
 #[inline(always)]
 pub(crate) fn is_aligned_to(ptr: NonNull<u8>, align: usize) -> bool {

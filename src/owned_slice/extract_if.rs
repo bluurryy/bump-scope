@@ -87,7 +87,7 @@ where
                 } else if self.drained_count > 0 {
                     let src = value_ptr;
                     let dst = value_ptr.sub(self.drained_count);
-                    non_null::copy_nonoverlapping(src, dst, 1);
+                    src.copy_to_nonoverlapping(dst, 1);
                 }
             }
             None

@@ -1003,7 +1003,7 @@ where
                 if overlaps {
                     old_ptr.copy_to(new_ptr, new_size);
                 } else {
-                    non_null::copy_nonoverlapping(old_ptr, new_ptr, new_size);
+                    old_ptr.copy_to_nonoverlapping(new_ptr, new_size);
                 }
 
                 self.chunk.get().set_pos(new_ptr);

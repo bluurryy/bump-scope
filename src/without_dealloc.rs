@@ -97,7 +97,7 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
             new_layout: Layout,
         ) -> Result<NonNull<[u8]>, AllocError> {
             let new_ptr = this.0.allocate(new_layout)?.cast::<u8>();
-            unsafe { non_null::copy_nonoverlapping(ptr, new_ptr, old_layout.size()) };
+            unsafe { ptr.copy_to_nonoverlapping(new_ptr, old_layout.size()) };
             Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
         }
 
