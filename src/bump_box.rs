@@ -958,9 +958,8 @@ impl<'a> BumpBox<'a, str> {
     /// ```
     #[inline]
     pub fn remove(&mut self, idx: usize) -> char {
-        let ch = match self[idx..].chars().next() {
-            Some(ch) => ch,
-            None => panic!("cannot remove a char from the end of a string"),
+        let Some(ch) = self[idx..].chars().next() else {
+            panic!("cannot remove a char from the end of a string");
         };
 
         let next = idx + ch.len_utf8();
@@ -2093,9 +2092,8 @@ impl<'a, T> BumpBox<'a, [T]> {
         }
 
         if T::IS_ZST {
-            let len = match self.len().checked_add(other.len()) {
-                Some(len) => len,
-                None => assert_failed_zst(),
+            let Some(len) = self.len().checked_add(other.len()) else {
+                assert_failed_zst()
             };
 
             let _ = self.into_raw();

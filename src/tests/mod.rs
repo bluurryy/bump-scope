@@ -1,6 +1,7 @@
 #![allow(unused_imports, clippy::incompatible_msrv)]
 #![cfg(feature = "std")]
 
+use core::iter;
 use std::{
     alloc::Layout,
     any::Any,
@@ -217,7 +218,7 @@ fn mut_bump_vec<const UP: bool>() {
         let mut bump = Bump::<Global, 1, UP>::with_size(size);
         let mut vec = MutBumpVec::new_in(&mut bump);
         assert_eq!(vec.allocator_stats().count(), 1);
-        vec.extend(core::iter::repeat(3).take(TIMES));
+        vec.extend(iter::repeat_n(3, TIMES));
         assert_eq!(vec.allocator_stats().count(), count);
         let _ = vec.into_boxed_slice();
         dbg!(bump.stats());

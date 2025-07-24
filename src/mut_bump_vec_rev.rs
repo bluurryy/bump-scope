@@ -2137,9 +2137,8 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
             return Err(E::capacity_overflow());
         }
 
-        let required_cap = match self.len().checked_add(additional) {
-            Some(required_cap) => required_cap,
-            None => return Err(E::capacity_overflow())?,
+        let Some(required_cap) = self.len().checked_add(additional) else {
+            return Err(E::capacity_overflow())?;
         };
 
         // This guarantees exponential growth. The doubling cannot overflow
@@ -2158,9 +2157,8 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
             return Err(E::capacity_overflow());
         }
 
-        let required_cap = match self.len().checked_add(additional) {
-            Some(required_cap) => required_cap,
-            None => return Err(E::capacity_overflow())?,
+        let Some(required_cap) = self.len().checked_add(additional) else {
+            return Err(E::capacity_overflow());
         };
 
         unsafe { self.generic_grow_to(required_cap) }

@@ -548,9 +548,8 @@ where
     /// So `end.offset_from_unsigned(start)` may not be used!
     #[inline(always)]
     pub(crate) fn prepare_allocation_range<B: ErrorBehavior, T>(&self, cap: usize) -> Result<Range<NonNull<T>>, B> {
-        let layout = match ArrayLayout::array::<T>(cap) {
-            Ok(ok) => ok,
-            Err(_) => return Err(B::capacity_overflow()),
+        let Ok(layout) = ArrayLayout::array::<T>(cap) else {
+            return Err(B::capacity_overflow());
         };
 
         let range = match self
@@ -617,9 +616,8 @@ where
 
     #[inline(always)]
     pub(crate) fn do_alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
-        let layout = match ArrayLayout::array::<T>(len) {
-            Ok(layout) => layout,
-            Err(_) => return Err(E::capacity_overflow()),
+        let Ok(layout) = ArrayLayout::array::<T>(len) else {
+            return Err(E::capacity_overflow());
         };
 
         E::alloc_or_else(self.chunk.get(), MinimumAlignment::<MIN_ALIGN>, layout, || unsafe {
@@ -644,9 +642,8 @@ where
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        let layout = match Layout::array::<T>(len) {
-            Ok(layout) => layout,
-            Err(_) => return Err(E::capacity_overflow()),
+        let Ok(layout) = Layout::array::<T>(len) else {
+            return Err(E::capacity_overflow());
         };
 
         self.alloc_in_another_chunk(layout)
@@ -2611,9 +2608,8 @@ where
 
     #[inline(always)]
     pub(crate) fn generic_reserve_bytes<B: ErrorBehavior>(&self, additional: usize) -> Result<(), B> {
-        let layout = match Layout::from_size_align(additional, 1) {
-            Ok(ok) => ok,
-            Err(_) => return Err(B::capacity_overflow()),
+        let Ok(layout) = Layout::from_size_align(additional, 1) else {
+            return Err(B::capacity_overflow());
         };
 
         if self.is_unallocated() {

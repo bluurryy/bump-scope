@@ -477,9 +477,8 @@ const fn up_align_unchecked(addr: usize, align: usize) -> usize {
 const fn up_align(addr: usize, align: usize) -> Option<NonZeroUsize> {
     debug_assert!(align.is_power_of_two());
     let mask = align - 1;
-    let addr_plus_mask = match addr.checked_add(mask) {
-        Some(addr_plus_mask) => addr_plus_mask,
-        None => return None,
+    let Some(addr_plus_mask) = addr.checked_add(mask) else {
+        return None;
     };
     NonZeroUsize::new(addr_plus_mask & !mask)
 }

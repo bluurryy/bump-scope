@@ -7,6 +7,7 @@
     clippy::transmutes_expressible_as_ptr_casts,
     // it's not the same in terms of strict provenance
     clippy::useless_transmute,
+    clippy::pedantic,
 )]
 
 pub(crate) mod hint;

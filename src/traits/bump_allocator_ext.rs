@@ -510,9 +510,8 @@ fn try_allocate_sized<T>(bump: impl BumpAllocator) -> Result<NonNull<T>, AllocEr
 #[inline]
 #[cfg(feature = "panic-on-alloc")]
 fn allocate_slice<T>(bump: impl BumpAllocator, len: usize) -> NonNull<T> {
-    let layout = match Layout::array::<T>(len) {
-        Ok(layout) => layout,
-        Err(_) => invalid_slice_layout(),
+    let Ok(layout) = Layout::array::<T>(len) else {
+        invalid_slice_layout()
     };
 
     match bump.allocate(layout) {
@@ -523,9 +522,8 @@ fn allocate_slice<T>(bump: impl BumpAllocator, len: usize) -> NonNull<T> {
 
 #[inline]
 fn try_allocate_slice<T>(bump: impl BumpAllocator, len: usize) -> Result<NonNull<T>, AllocError> {
-    let layout = match Layout::array::<T>(len) {
-        Ok(layout) => layout,
-        Err(_) => return Err(AllocError),
+    let Ok(layout) = Layout::array::<T>(len) else {
+        return Err(AllocError);
     };
 
     match bump.allocate(layout) {
@@ -561,9 +559,8 @@ fn is_upwards_allocating(bump: &impl BumpAllocator) -> bool {
 #[cfg(feature = "panic-on-alloc")]
 #[allow(clippy::needless_pass_by_value)]
 fn prepare_slice_allocation<T>(bump: impl BumpAllocator, min_cap: usize) -> NonNull<[T]> {
-    let layout = match Layout::array::<T>(min_cap) {
-        Ok(ok) => ok,
-        Err(_) => capacity_overflow(),
+    let Ok(layout) = Layout::array::<T>(min_cap) else {
+        capacity_overflow()
     };
 
     match unsafe { bump.prepare_allocation(layout) } {
@@ -586,9 +583,8 @@ fn prepare_slice_allocation<T>(bump: impl BumpAllocator, min_cap: usize) -> NonN
 #[inline(always)]
 #[allow(clippy::needless_pass_by_value)]
 fn try_prepare_slice_allocation<T>(bump: impl BumpAllocator, len: usize) -> Result<NonNull<[T]>, AllocError> {
-    let layout = match Layout::array::<T>(len) {
-        Ok(ok) => ok,
-        Err(_) => return Err(AllocError),
+    let Ok(layout) = Layout::array::<T>(len) else {
+        return Err(AllocError);
     };
 
     match unsafe { bump.prepare_allocation(layout) } {

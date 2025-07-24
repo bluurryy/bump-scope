@@ -83,7 +83,9 @@ impl<T, A: BumpAllocatorExt> Iterator for Drain<'_, T, A> {
 impl<T, A: BumpAllocatorExt> DoubleEndedIterator for Drain<'_, T, A> {
     #[inline(always)]
     fn next_back(&mut self) -> Option<T> {
-        self.iter.next_back().map(|elt| unsafe { ptr::read(core::ptr::from_ref(elt)) })
+        self.iter
+            .next_back()
+            .map(|elt| unsafe { ptr::read(core::ptr::from_ref(elt)) })
     }
 }
 

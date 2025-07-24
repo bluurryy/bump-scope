@@ -460,10 +460,10 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
     #[inline(always)]
     fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSizeHint<A, UP>, B> {
-        let size = match self.size().get().checked_mul(2) {
-            Some(size) => size,
-            None => return Err(B::capacity_overflow()),
+        let Some(size) = self.size().get().checked_mul(2) else {
+            return Err(B::capacity_overflow());
         };
+
         Ok(ChunkSizeHint::<A, UP>::new(size))
     }
 

@@ -2511,9 +2511,8 @@ impl<T, A: BumpAllocatorExt> BumpVec<T, A> {
             return Err(E::capacity_overflow());
         }
 
-        let required_cap = match self.len().checked_add(additional) {
-            Some(required_cap) => required_cap,
-            None => return Err(E::capacity_overflow())?,
+        let Some(required_cap) = self.len().checked_add(additional) else {
+            return Err(E::capacity_overflow())?;
         };
 
         let new_cap = self.capacity().checked_mul(2).unwrap_or(required_cap).max(required_cap);
@@ -2542,9 +2541,8 @@ impl<T, A: BumpAllocatorExt> BumpVec<T, A> {
             return Err(E::capacity_overflow());
         }
 
-        let required_cap = match len.checked_add(additional) {
-            Some(required_cap) => required_cap,
-            None => return Err(E::capacity_overflow())?,
+        let Some(required_cap) = len.checked_add(additional) else {
+            return Err(E::capacity_overflow())?;
         };
 
         // This guarantees exponential growth. The doubling cannot overflow
@@ -2563,9 +2561,8 @@ impl<T, A: BumpAllocatorExt> BumpVec<T, A> {
             return Err(E::capacity_overflow());
         }
 
-        let required_cap = match self.len().checked_add(additional) {
-            Some(required_cap) => required_cap,
-            None => return Err(E::capacity_overflow())?,
+        let Some(required_cap) = self.len().checked_add(additional) else {
+            return Err(E::capacity_overflow())?;
         };
 
         unsafe { self.generic_grow_to(required_cap) }
@@ -2585,12 +2582,13 @@ impl<T, A: BumpAllocatorExt> BumpVec<T, A> {
         let old_ptr = self.as_non_null().cast();
 
         let old_size = self.capacity() * T::SIZE; // we already allocated that amount so this can't overflow
-        let new_size = new_cap.checked_mul(T::SIZE).ok_or_else(|| E::capacity_overflow())?;
+        let Some(new_size) = new_cap.checked_mul(T::SIZE) else {
+            return Err(E::capacity_overflow());
+        };
 
         let old_layout = Layout::from_size_align_unchecked(old_size, T::ALIGN);
-        let new_layout = match Layout::from_size_align(new_size, T::ALIGN) {
-            Ok(ok) => ok,
-            Err(_) => return Err(E::capacity_overflow()),
+        let Ok(new_layout) = Layout::from_size_align(new_size, T::ALIGN) else {
+            return Err(E::capacity_overflow());
         };
 
         let new_ptr = match self.allocator.grow(old_ptr, old_layout, new_layout) {

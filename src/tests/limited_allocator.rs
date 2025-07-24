@@ -21,9 +21,8 @@ impl<A> Limited<A> {
     }
 
     fn add(&self, size: usize) -> Result<usize, AllocError> {
-        let new = match self.current.get().checked_add(size) {
-            Some(some) => some,
-            None => return Err(AllocError),
+        let Some(new) = self.current.get().checked_add(size) else {
+            return Err(AllocError);
         };
 
         if new > self.limit {
