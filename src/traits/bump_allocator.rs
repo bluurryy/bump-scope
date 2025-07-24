@@ -365,6 +365,15 @@ where
     #[inline(always)]
     unsafe fn reset_to(&self, checkpoint: Checkpoint) {
         unsafe {
+            // If the checkpoint was created when the bump allocator had no allocated chunk
+            // then the chunk pointer will point to the unallocated chunk header.
+            //
+            // In such cases we reset the bump pointer to the very start of the very first chunk.
+            //
+            // We don't check if the chunk pointer points to the unallocated chunk header
+            // if the bump allocator is `GUARANTEED_ALLOCATED`. We are allowed to not do this check
+            // because of this safety condition of `reset_to`:
+            // > the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
             if !GUARANTEED_ALLOCATED && checkpoint.chunk == unallocated_chunk_header() {
                 let mut chunk = self.chunk.get();
 
