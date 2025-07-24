@@ -435,7 +435,7 @@ where
     #[inline(always)]
     pub(crate) unsafe fn use_prepared_slice_allocation<T>(
         &mut self,
-        mut start: NonNull<T>,
+        start: NonNull<T>,
         len: usize,
         cap: usize,
     ) -> NonNull<[T]> {
@@ -445,16 +445,11 @@ where
             self.set_aligned_pos(non_null::addr(end), T::ALIGN);
             non_null::slice_from_raw_parts(start, len)
         } else {
-            {
-                let dst_end = non_null::add(start, cap);
-                let dst = non_null::sub(dst_end, len);
-
-                non_null::copy(start, dst, len);
-                start = dst;
-            }
-
-            self.set_aligned_pos(non_null::addr(start), T::ALIGN);
-            non_null::slice_from_raw_parts(start, len)
+            let dst_end = non_null::add(start, cap);
+            let dst = non_null::sub(dst_end, len);
+            non_null::copy(start, dst, len);
+            self.set_aligned_pos(non_null::addr(dst), T::ALIGN);
+            non_null::slice_from_raw_parts(dst, len)
         }
     }
 
