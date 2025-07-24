@@ -145,7 +145,7 @@ where
                     if new_addr_end < old_addr.get() {
                         non_null::copy_nonoverlapping(old_ptr, new_ptr, old_layout.size());
                     } else {
-                        non_null::copy(old_ptr, new_ptr, old_layout.size());
+                        old_ptr.copy_to(new_ptr, old_layout.size());
                     }
 
                     bump.chunk.get().set_pos_addr(new_addr.get());
@@ -245,7 +245,7 @@ where
                 }
 
                 if overlaps {
-                    non_null::copy(old_ptr, new_ptr, new_layout.size());
+                    old_ptr.copy_to(new_ptr, new_layout.size());
                 } else {
                     non_null::copy_nonoverlapping(old_ptr, new_ptr, new_layout.size());
                 }
@@ -296,7 +296,7 @@ where
             let overlaps = copy_src_end > copy_dst_start;
 
             if overlaps {
-                non_null::copy(old_ptr, new_ptr, new_layout.size());
+                old_ptr.copy_to(new_ptr, new_layout.size());
             } else {
                 non_null::copy_nonoverlapping(old_ptr, new_ptr, new_layout.size());
             }

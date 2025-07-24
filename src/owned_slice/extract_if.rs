@@ -117,7 +117,7 @@ where
                 let src = ptr.add(self.index);
                 let dst = src.sub(self.drained_count);
                 let tail_len = self.original_len - self.index;
-                non_null::copy(src, dst, tail_len);
+                src.copy_to(dst, tail_len);
             }
 
             non_null::set_len(self.ptr, self.original_len - self.drained_count);

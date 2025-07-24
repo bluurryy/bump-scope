@@ -4,7 +4,6 @@ use crate::{
     alloc::{AllocError, Allocator},
     chunk_header::unallocated_chunk_header,
     layout::CustomLayout,
-    polyfill::non_null,
     raw_chunk::RawChunk,
     stats::AnyStats,
     traits::{assert_dyn_compatible, assert_implements},
@@ -436,7 +435,7 @@ where
                 let src = range.start;
                 let dst_end = range.end;
                 let dst = dst_end.sub(layout.size());
-                non_null::copy(src, dst, layout.size());
+                src.copy_to(dst, layout.size());
                 self.set_pos(dst.addr());
                 dst
             }
@@ -457,7 +456,7 @@ where
                 let src_end = range.end;
                 let src = src_end.sub(layout.size());
 
-                non_null::copy(src, dst, layout.size());
+                src.copy_to(dst, layout.size());
 
                 self.set_pos(dst_end.addr());
 

@@ -1001,7 +1001,7 @@ where
                 let overlaps = old_addr_new_end > new_addr;
 
                 if overlaps {
-                    non_null::copy(old_ptr, new_ptr, new_size);
+                    old_ptr.copy_to(new_ptr, new_size);
                 } else {
                     non_null::copy_nonoverlapping(old_ptr, new_ptr, new_size);
                 }

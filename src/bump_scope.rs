@@ -445,7 +445,7 @@ where
             } else {
                 let dst_end = start.add(cap);
                 let dst = dst_end.sub(len);
-                non_null::copy(start, dst, len);
+                start.copy_to(dst, len);
                 self.set_aligned_pos(dst.addr(), T::ALIGN);
                 NonNull::slice_from_raw_parts(dst, len)
             }
@@ -468,7 +468,7 @@ where
                     let dst = end.sub(cap);
                     let dst_end = dst.add(len);
 
-                    non_null::copy(start, dst, len);
+                    start.copy_to(dst, len);
                     start = dst;
                     end = dst_end;
                 }
