@@ -3,7 +3,7 @@ use crate::{
     WithoutDealloc, WithoutShrink,
 };
 
-/// A trait as a shorthand for <code>[MutBumpAllocator] + [BumpAllocatorScope]<'a></code>
+/// A shorthand for <code>[MutBumpAllocator] + [BumpAllocatorScope]<'a></code>
 pub trait MutBumpAllocatorScope<'a>: MutBumpAllocator + BumpAllocatorScope<'a> {}
 
 impl<'a, B: MutBumpAllocatorScope<'a> + ?Sized> MutBumpAllocatorScope<'a> for &mut B {}
