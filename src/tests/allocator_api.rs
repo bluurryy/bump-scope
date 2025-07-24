@@ -1,9 +1,9 @@
 use std::{alloc::Layout, ptr::NonNull};
 
 use crate::{
+    Bump,
     alloc::{Allocator, Global},
     polyfill::non_null,
-    Bump,
 };
 
 use super::either_way;

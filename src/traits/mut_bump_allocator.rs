@@ -1,6 +1,6 @@
 use crate::{
-    traits::assert_implements, BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment,
-    WithoutDealloc, WithoutShrink,
+    BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc,
+    WithoutShrink, traits::assert_implements,
 };
 
 /// A marker trait for [`BumpAllocator`]s who have exclusive access to allocation.

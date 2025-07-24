@@ -6,9 +6,9 @@ use core::alloc::{AllocError, Allocator};
 use alloc_crate::{alloc::Global, boxed::Box};
 
 use crate::{
-    alloc::{box_like, AllocError as CrateAllocError, Allocator as CrateAllocator, BoxLike},
     BaseAllocator, Bump, BumpAllocatorExt, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc,
     WithoutShrink,
+    alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator, BoxLike, box_like},
 };
 
 #[cfg(feature = "alloc")]

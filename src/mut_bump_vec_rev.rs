@@ -12,6 +12,7 @@ use core::{
 };
 
 use crate::{
+    BumpBox, ErrorBehavior, MutBumpAllocatorExt, MutBumpAllocatorScopeExt, NoDrop, SetLenOnDrop, SizedTypeProperties,
     alloc::AllocError,
     destructure::destructure,
     min_non_zero_cap,
@@ -19,7 +20,6 @@ use crate::{
     mut_collection_method_allocator_stats,
     owned_slice::{OwnedSlice, TakeOwnedSlice},
     polyfill::{self, hint::likely, non_null, pointer},
-    BumpBox, ErrorBehavior, MutBumpAllocatorExt, MutBumpAllocatorScopeExt, NoDrop, SetLenOnDrop, SizedTypeProperties,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -306,11 +306,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     /// ```
     pub fn pop_if(&mut self, predicate: impl FnOnce(&mut T) -> bool) -> Option<T> {
         let last = self.first_mut()?;
-        if predicate(last) {
-            self.pop()
-        } else {
-            None
-        }
+        if predicate(last) { self.pop() } else { None }
     }
 
     /// Clears the vector, removing all values.

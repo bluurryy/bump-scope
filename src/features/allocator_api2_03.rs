@@ -9,13 +9,13 @@ use allocator_api2_03::alloc::{AllocError, Allocator};
 use allocator_api2_03::{alloc::Global, boxed::Box};
 
 use crate::{
-    alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator},
     BaseAllocator, Bump, BumpAllocatorExt, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc,
     WithoutShrink,
+    alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator},
 };
 
 #[cfg(feature = "alloc")]
-use crate::alloc::{box_like, BoxLike};
+use crate::alloc::{BoxLike, box_like};
 
 #[cfg(feature = "alloc")]
 unsafe impl CrateAllocator for Global {

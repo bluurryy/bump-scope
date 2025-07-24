@@ -9,8 +9,8 @@ use std::{
 };
 
 use crate::{
-    alloc::Global, bump_vec, tests::expect_no_panic, Bump, BumpAllocator, BumpAllocatorExt, BumpAllocatorScope, BumpScope,
-    BumpVec, MutBumpAllocator, MutBumpAllocatorScope,
+    Bump, BumpAllocator, BumpAllocatorExt, BumpAllocatorScope, BumpScope, BumpVec, MutBumpAllocator, MutBumpAllocatorScope,
+    alloc::Global, bump_vec, tests::expect_no_panic,
 };
 
 use super::either_way;

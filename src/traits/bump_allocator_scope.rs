@@ -1,7 +1,7 @@
 use crate::{
-    traits::{assert_dyn_compatible, assert_implements},
     BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment, MutBumpAllocatorScope, SupportedMinimumAlignment,
     WithoutDealloc, WithoutShrink,
+    traits::{assert_dyn_compatible, assert_implements},
 };
 
 /// A bump allocator scope.

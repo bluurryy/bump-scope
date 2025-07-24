@@ -4,11 +4,11 @@ use core::{
 };
 
 use crate::{
+    BumpAllocatorExt, FixedBumpVec, MutBumpAllocatorExt, SizedTypeProperties,
     error_behavior::ErrorBehavior,
     polyfill::{non_null, transmute_mut, transmute_ref},
     raw_bump_box::RawBumpBox,
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    BumpAllocatorExt, FixedBumpVec, MutBumpAllocatorExt, SizedTypeProperties,
 };
 
 /// Like [`FixedBumpVec`] but without its lifetime.

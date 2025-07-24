@@ -1,9 +1,9 @@
 use core::{alloc::Layout, ptr::NonNull};
 
 use crate::{
+    BumpAllocator,
     alloc::{AllocError, Allocator},
     polyfill::non_null,
-    BumpAllocator,
 };
 
 /// Wraps a bump allocator and does nothing on [`deallocate`](Allocator::deallocate).

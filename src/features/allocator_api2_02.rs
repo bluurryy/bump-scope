@@ -16,7 +16,7 @@ use crate::{Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAl
 
 #[cfg(feature = "alloc")]
 #[cfg(not(feature = "nightly-allocator-api"))]
-use crate::alloc::{box_like, BoxLike};
+use crate::alloc::{BoxLike, box_like};
 
 #[cfg(any(test, not(feature = "nightly-allocator-api")))]
 use crate::BaseAllocator;

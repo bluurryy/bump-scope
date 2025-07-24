@@ -4,7 +4,7 @@ use core::{
     ffi::CStr,
     fmt::{self, Debug},
     marker::PhantomData,
-    mem::{transmute, ManuallyDrop, MaybeUninit},
+    mem::{ManuallyDrop, MaybeUninit, transmute},
     num::NonZeroUsize,
     ops::Range,
     panic::{RefUnwindSafe, UnwindSafe},
@@ -12,19 +12,20 @@ use core::{
 };
 
 use crate::{
+    BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior, FixedBumpString, FixedBumpVec,
+    MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk, SizedTypeProperties,
+    SupportedMinimumAlignment,
     alloc::{AllocError, Allocator},
     allocator_impl,
     bump_align_guard::BumpAlignGuard,
-    bumping::{bump_down, bump_up, BumpUp},
+    bumping::{BumpUp, bump_down, bump_up},
     chunk_size::ChunkSize,
     const_param_assert, down_align_usize,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     owned_slice::OwnedSlice,
     polyfill::{non_null, transmute_mut, transmute_ref},
     stats::{AnyStats, Stats},
-    up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
-    FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk,
-    SizedTypeProperties, SupportedMinimumAlignment,
+    up_align_usize_unchecked,
 };
 
 #[cfg(feature = "panic-on-alloc")]

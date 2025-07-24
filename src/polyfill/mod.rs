@@ -18,7 +18,7 @@ pub(crate) mod pointer;
 pub(crate) mod slice;
 pub(crate) mod usize;
 
-use core::mem::{size_of, ManuallyDrop};
+use core::mem::{ManuallyDrop, size_of};
 
 /// Not part of std.
 ///

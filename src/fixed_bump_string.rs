@@ -9,10 +9,10 @@ use core::{
 };
 
 use crate::{
+    BumpAllocatorScopeExt, BumpBox, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop,
     alloc::AllocError,
     owned_str,
     polyfill::{self, non_null, transmute_mut},
-    BumpAllocatorScopeExt, BumpBox, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop,
 };
 
 #[cfg(feature = "panic-on-alloc")]

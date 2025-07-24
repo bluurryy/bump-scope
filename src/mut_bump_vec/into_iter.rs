@@ -7,7 +7,7 @@ use core::{
     slice,
 };
 
-use crate::{polyfill::non_null, BumpAllocatorExt, SizedTypeProperties};
+use crate::{BumpAllocatorExt, SizedTypeProperties, polyfill::non_null};
 
 /// An iterator that moves out of a vector.
 ///

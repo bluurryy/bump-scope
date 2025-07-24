@@ -1,10 +1,10 @@
 use core::{mem::transmute, ptr::NonNull};
 
 use crate::{
+    BumpAllocatorExt, FixedBumpString, MutBumpAllocatorExt,
     error_behavior::ErrorBehavior,
     polyfill::{non_null, transmute_mut, transmute_ref},
     raw_bump_box::RawBumpBox,
-    BumpAllocatorExt, FixedBumpString, MutBumpAllocatorExt,
 };
 
 /// Like [`FixedBumpVec`](crate::FixedBumpVec) but without its lifetime.

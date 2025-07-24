@@ -12,18 +12,18 @@ use core::{
 };
 
 use crate::{
+    BumpAllocatorExt, BumpAllocatorScopeExt, BumpBox, BumpVec, ErrorBehavior, FixedBumpString, FromUtf8Error,
+    FromUtf16Error,
     alloc::AllocError,
     collection_method_allocator_stats,
     destructure::destructure,
     owned_str,
     polyfill::{self, transmute_mut, transmute_value},
     raw_fixed_bump_string::RawFixedBumpString,
-    BumpAllocatorExt, BumpAllocatorScopeExt, BumpBox, BumpVec, ErrorBehavior, FixedBumpString, FromUtf16Error,
-    FromUtf8Error,
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{panic_on_error, polyfill::non_null, PanicsOnAlloc};
+use crate::{PanicsOnAlloc, panic_on_error, polyfill::non_null};
 
 /// This is like [`format!`](alloc_crate::format) but allocates inside a bump allocator, returning a [`BumpString`].
 ///

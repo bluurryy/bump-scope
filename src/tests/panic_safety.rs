@@ -2,13 +2,13 @@ use std::{
     cell::Cell,
     hint::black_box,
     mem::ManuallyDrop,
-    panic::{catch_unwind, RefUnwindSafe, UnwindSafe},
+    panic::{RefUnwindSafe, UnwindSafe, catch_unwind},
     string::String,
     sync::{Mutex, PoisonError},
     thread_local,
 };
 
-use crate::{bump_vec, mut_bump_vec, mut_bump_vec_rev, Bump, BumpVec, MutBumpVec, MutBumpVecRev};
+use crate::{Bump, BumpVec, MutBumpVec, MutBumpVecRev, bump_vec, mut_bump_vec, mut_bump_vec_rev};
 
 macro_rules! zst_or_not {
     (
@@ -138,7 +138,7 @@ fn mut_bump_vec_rev_extend_from_slice<T: Testable>() {
     assert_initialized(vec);
 }
 
-use helper::{assert_initialized, expected_drops, Testable};
+use helper::{Testable, assert_initialized, expected_drops};
 
 mod helper {
     use std::{

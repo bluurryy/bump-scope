@@ -10,10 +10,10 @@ use core::{
 };
 
 use crate::{
+    BumpAllocatorScopeExt, BumpBox, BumpVec, ErrorBehavior, NoDrop, SizedTypeProperties,
     alloc::AllocError,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     polyfill::{self, hint::likely, non_null, pointer, slice},
-    BumpAllocatorScopeExt, BumpBox, BumpVec, ErrorBehavior, NoDrop, SizedTypeProperties,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -462,11 +462,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// ```
     pub fn pop_if(&mut self, predicate: impl FnOnce(&mut T) -> bool) -> Option<T> {
         let last = self.last_mut()?;
-        if predicate(last) {
-            self.pop()
-        } else {
-            None
-        }
+        if predicate(last) { self.pop() } else { None }
     }
 
     /// Clears the vector, removing all values.

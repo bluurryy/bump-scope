@@ -6,8 +6,8 @@ use std::{
 };
 
 use crate::{
-    alloc::{Allocator, Global},
     Bump, BumpVec, FixedBumpVec, MutBumpVec,
+    alloc::{Allocator, Global},
 };
 
 use super::limited_allocator::Limited;

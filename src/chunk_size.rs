@@ -96,10 +96,6 @@ impl<A, const UP: bool> ChunkSizeHint<A, UP> {
     }
 
     pub const fn max(self, other: Self) -> Self {
-        if self.0 > other.0 {
-            self
-        } else {
-            other
-        }
+        if self.0 > other.0 { self } else { other }
     }
 }

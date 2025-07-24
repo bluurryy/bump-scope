@@ -2,7 +2,7 @@
 
 use core::{ptr, slice};
 
-use crate::{destructure::destructure, BumpAllocatorExt, BumpVec};
+use crate::{BumpAllocatorExt, BumpVec, destructure::destructure};
 
 use super::Drain;
 

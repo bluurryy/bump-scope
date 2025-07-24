@@ -1,8 +1,8 @@
 use std::vec;
 
-use ::serde::{de::DeserializeSeed, Serialize};
+use ::serde::{Serialize, de::DeserializeSeed};
 
-use crate::{bump_format, bump_vec, FixedBumpString, FixedBumpVec};
+use crate::{FixedBumpString, FixedBumpVec, bump_format, bump_vec};
 
 use super::*;
 

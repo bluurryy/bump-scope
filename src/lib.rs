@@ -360,15 +360,15 @@ pub use bump_scope_guard::{BumpScopeGuard, BumpScopeGuardRoot, Checkpoint};
 pub use bump_string::BumpString;
 #[doc(inline)]
 pub use bump_vec::BumpVec;
-use chunk_header::{unallocated_chunk_header, ChunkHeader};
+use chunk_header::{ChunkHeader, unallocated_chunk_header};
 #[cfg(feature = "panic-on-alloc")]
 use core::convert::Infallible;
 use core::{mem, num::NonZeroUsize, ptr::NonNull};
 use error_behavior::ErrorBehavior;
 pub use fixed_bump_string::FixedBumpString;
 pub use fixed_bump_vec::FixedBumpVec;
-pub use from_utf16_error::FromUtf16Error;
 pub use from_utf8_error::FromUtf8Error;
+pub use from_utf16_error::FromUtf16Error;
 use layout::ArrayLayout;
 pub use mut_bump_string::MutBumpString;
 #[doc(inline)]
@@ -376,7 +376,7 @@ pub use mut_bump_vec::MutBumpVec;
 pub use mut_bump_vec_rev::MutBumpVecRev;
 pub use no_drop::NoDrop;
 #[cfg(feature = "panic-on-alloc")]
-use private::{capacity_overflow, format_trait_error, PanicsOnAlloc};
+use private::{PanicsOnAlloc, capacity_overflow, format_trait_error};
 use raw_chunk::RawChunk;
 use set_len_on_drop::SetLenOnDrop;
 pub use traits::{

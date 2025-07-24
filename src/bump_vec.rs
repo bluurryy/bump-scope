@@ -13,6 +13,7 @@ use core::{
 };
 
 use crate::{
+    BumpAllocatorExt, BumpAllocatorScopeExt, BumpBox, ErrorBehavior, FixedBumpVec, NoDrop, SizedTypeProperties,
     alloc::AllocError,
     collection_method_allocator_stats,
     destructure::destructure,
@@ -20,7 +21,6 @@ use crate::{
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     polyfill::{hint::likely, non_null, pointer, slice},
     raw_fixed_bump_vec::RawFixedBumpVec,
-    BumpAllocatorExt, BumpAllocatorScopeExt, BumpBox, ErrorBehavior, FixedBumpVec, NoDrop, SizedTypeProperties,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -881,11 +881,7 @@ impl<T, A: BumpAllocatorExt> BumpVec<T, A> {
     /// ```
     pub fn pop_if(&mut self, predicate: impl FnOnce(&mut T) -> bool) -> Option<T> {
         let last = self.last_mut()?;
-        if predicate(last) {
-            self.pop()
-        } else {
-            None
-        }
+        if predicate(last) { self.pop() } else { None }
     }
 
     /// Clears the vector, removing all values.

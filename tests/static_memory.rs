@@ -10,8 +10,8 @@ use core::{
 use std::sync::{Mutex, PoisonError};
 
 use bump_scope::{
-    alloc::{AllocError, Allocator},
     Bump,
+    alloc::{AllocError, Allocator},
 };
 
 #[repr(C, align(16))]
@@ -39,11 +39,7 @@ impl<const SIZE: usize> StaticAllocator<SIZE> {
     fn check_layout(&self, layout: Layout) -> Result<(), AllocError> {
         self.check_align(layout.align())?;
 
-        if layout.size() <= SIZE {
-            Ok(())
-        } else {
-            Err(AllocError)
-        }
+        if layout.size() <= SIZE { Ok(()) } else { Err(AllocError) }
     }
 
     fn memory_ptr(&self) -> NonNull<[u8]> {

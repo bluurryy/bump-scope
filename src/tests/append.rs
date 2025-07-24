@@ -10,8 +10,9 @@ use std::{
 };
 
 use crate::{
+    Bump, BumpAllocatorExt, BumpBox, BumpVec, FixedBumpVec, MutBumpAllocatorExt, MutBumpVec, MutBumpVecRev,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
-    unsize_bump_box, Bump, BumpAllocatorExt, BumpBox, BumpVec, FixedBumpVec, MutBumpAllocatorExt, MutBumpVec, MutBumpVecRev,
+    unsize_bump_box,
 };
 
 trait Append<T>: Deref<Target = [T]> {

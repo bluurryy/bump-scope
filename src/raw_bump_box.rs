@@ -5,8 +5,8 @@ use core::{
 };
 
 use crate::{
-    polyfill::{non_null, transmute_mut, transmute_ref},
     BumpBox,
+    polyfill::{non_null, transmute_mut, transmute_ref},
 };
 
 /// Like [`BumpBox`] but without its lifetime.

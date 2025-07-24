@@ -1,6 +1,6 @@
 //! doc tests but for up and down
 
-use crate::{alloc::Global, mut_bump_vec_rev, Bump, MutBumpVecRev};
+use crate::{Bump, MutBumpVecRev, alloc::Global, mut_bump_vec_rev};
 
 use super::either_way;
 

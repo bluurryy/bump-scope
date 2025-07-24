@@ -11,10 +11,10 @@ use core::{
 #[cfg(feature = "panic-on-alloc")]
 use core::mem::MaybeUninit;
 
-use crate::{polyfill::non_null, BumpAllocatorExt, SizedTypeProperties};
+use crate::{BumpAllocatorExt, SizedTypeProperties, polyfill::non_null};
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{raw_fixed_bump_vec::RawFixedBumpVec, BumpBox, BumpVec, FixedBumpVec};
+use crate::{BumpBox, BumpVec, FixedBumpVec, raw_fixed_bump_vec::RawFixedBumpVec};
 
 /// An iterator that moves out of a vector.
 ///

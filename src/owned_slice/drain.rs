@@ -7,9 +7,8 @@ use core::{
 };
 
 use crate::{
-    owned_slice,
+    BumpBox, SizedTypeProperties, owned_slice,
     polyfill::{non_null, slice},
-    BumpBox, SizedTypeProperties,
 };
 
 use super::TakeOwnedSlice;
@@ -275,7 +274,7 @@ unsafe impl<T> TakeOwnedSlice for Drain<'_, T> {
 mod tests {
     use std::{string::ToString, vec::Vec};
 
-    use crate::{tests::TestWrap, Bump, FixedBumpVec};
+    use crate::{Bump, FixedBumpVec, tests::TestWrap};
 
     #[test]
     fn owned_slice() {

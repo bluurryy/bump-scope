@@ -2,7 +2,7 @@
 
 use std::{string::String, vec};
 
-use crate::{bump_vec, Bump, BumpString, BumpVec};
+use crate::{Bump, BumpString, BumpVec, bump_vec};
 
 use super::TestWrap;
 

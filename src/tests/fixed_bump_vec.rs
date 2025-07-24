@@ -8,7 +8,7 @@ use std::{
     vec::Vec,
 };
 
-use crate::{alloc::Global, bump_vec, tests::expect_no_panic, Bump, FixedBumpVec};
+use crate::{Bump, FixedBumpVec, alloc::Global, bump_vec, tests::expect_no_panic};
 
 use super::either_way;
 

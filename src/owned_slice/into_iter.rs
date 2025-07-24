@@ -8,7 +8,7 @@ use core::{
     slice,
 };
 
-use crate::{polyfill::non_null, BumpBox, SizedTypeProperties};
+use crate::{BumpBox, SizedTypeProperties, polyfill::non_null};
 
 use super::TakeOwnedSlice;
 

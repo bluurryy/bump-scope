@@ -4,8 +4,8 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    alloc::AllocError, bump_down, polyfill::non_null, up_align_usize_unchecked, BaseAllocator, BumpScope, MinimumAlignment,
-    SupportedMinimumAlignment,
+    BaseAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, alloc::AllocError, bump_down, polyfill::non_null,
+    up_align_usize_unchecked,
 };
 
 #[inline(always)]
