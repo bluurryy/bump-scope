@@ -1,10 +1,10 @@
-/// Not part of std.
+/// See [`std::hint::cold_path`].
 #[cold]
 #[inline(always)]
 #[allow(dead_code)]
 pub(crate) fn cold() {}
 
-/// Not part of std.
+/// See [`std::hint::likely`].
 #[inline(always)]
 #[allow(dead_code)]
 pub(crate) fn likely(condition: bool) -> bool {
@@ -17,7 +17,7 @@ pub(crate) fn likely(condition: bool) -> bool {
     condition
 }
 
-/// Not part of std.
+/// See [`std::hint::unlikely`].
 #[inline(always)]
 #[allow(dead_code)]
 pub(crate) fn unlikely(condition: bool) -> bool {
