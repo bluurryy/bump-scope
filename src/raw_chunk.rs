@@ -1,4 +1,11 @@
-use core::{alloc::Layout, cell::Cell, mem::align_of, num::NonZeroUsize, ops::Range, ptr::NonNull};
+use core::{
+    alloc::Layout,
+    cell::Cell,
+    mem::align_of,
+    num::NonZeroUsize,
+    ops::Range,
+    ptr::{self, NonNull},
+};
 
 use crate::{
     alloc::{AllocError, Allocator},
@@ -6,7 +13,7 @@ use crate::{
     chunk_size::{ChunkSize, ChunkSizeHint},
     down_align_usize,
     layout::LayoutProps,
-    polyfill::{self, non_null},
+    polyfill::non_null,
     unallocated_chunk_header, up_align_usize_unchecked, ChunkHeader, ErrorBehavior, MinimumAlignment,
     SupportedMinimumAlignment,
 };
@@ -506,7 +513,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     {
         let ptr = self.chunk_start();
         let layout = self.layout();
-        let allocator_ptr = polyfill::ptr::from_ref(&self.header.as_ref().allocator);
+        let allocator_ptr = ptr::from_ref(&self.header.as_ref().allocator);
 
         unsafe {
             let allocator = allocator_ptr.read();

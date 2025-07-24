@@ -1,17 +1,3 @@
-/// See [`std::ptr::from_ref`].
-#[must_use]
-#[inline(always)]
-pub(crate) fn from_ref<T: ?Sized>(r: &T) -> *const T {
-    r
-}
-
-/// See [`std::ptr::from_mut`].
-#[must_use]
-#[inline(always)]
-pub(crate) fn from_mut<T: ?Sized>(r: &mut T) -> *mut T {
-    r
-}
-
 /// See [`std::ptr::without_provenance_mut`].
 #[must_use]
 #[inline(always)]

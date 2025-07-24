@@ -8,7 +8,7 @@ use core::{
     num::NonZeroUsize,
     ops::Range,
     panic::{RefUnwindSafe, UnwindSafe},
-    ptr::NonNull,
+    ptr::{self, NonNull},
 };
 
 use crate::{
@@ -20,7 +20,7 @@ use crate::{
     const_param_assert, down_align_usize,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     owned_slice::OwnedSlice,
-    polyfill::{self, non_null, transmute_mut, transmute_ref},
+    polyfill::{non_null, transmute_mut, transmute_ref},
     stats::{AnyStats, Stats},
     up_align_usize_unchecked, BaseAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
     FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk,
@@ -829,7 +829,7 @@ where
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        unsafe { &mut *polyfill::ptr::from_mut(self).cast::<BumpScope<'a, A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>() }
+        unsafe { &mut *ptr::from_mut(self).cast::<BumpScope<'a, A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>() }
     }
 
     /// Converts this `BumpScope` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
