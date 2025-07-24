@@ -1,8 +1,7 @@
-use core::{alloc::Layout, ops::Range};
+use core::alloc::Layout;
 
 use crate::{
-    alloc::AllocError, layout, polyfill::non_null, BumpAllocatorExt, MutBumpAllocatorExt, NonNull, RawChunk,
-    SizedTypeProperties, SupportedMinimumAlignment,
+    alloc::AllocError, layout, BumpAllocatorExt, MutBumpAllocatorExt, NonNull, RawChunk, SupportedMinimumAlignment,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -45,10 +44,6 @@ pub(crate) trait ErrorBehavior: Sized {
         allocator: &mut impl MutBumpAllocatorExt,
         len: usize,
     ) -> Result<NonNull<[T]>, Self>;
-    unsafe fn prepare_slice_allocation_rev<T>(
-        allocator: &mut impl MutBumpAllocatorExt,
-        len: usize,
-    ) -> Result<(NonNull<T>, usize), Self>;
 }
 
 #[cfg(feature = "panic-on-alloc")]
@@ -121,25 +116,7 @@ impl ErrorBehavior for Infallible {
         allocator: &mut impl MutBumpAllocatorExt,
         len: usize,
     ) -> Result<NonNull<[T]>, Self> {
-        let Range { start, end } = allocator.prepare_slice_allocation::<T>(len);
-
-        // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-        let capacity = unsafe { non_null::byte_offset_from_unsigned(end, start) } / T::SIZE;
-
-        Ok(non_null::slice_from_raw_parts(start, capacity))
-    }
-
-    #[inline(always)]
-    unsafe fn prepare_slice_allocation_rev<T>(
-        allocator: &mut impl MutBumpAllocatorExt,
-        len: usize,
-    ) -> Result<(NonNull<T>, usize), Self> {
-        let Range { start, end } = allocator.prepare_slice_allocation::<T>(len);
-
-        // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-        let capacity = unsafe { non_null::byte_offset_from_unsigned(end, start) } / T::SIZE;
-
-        Ok((end, capacity))
+        Ok(allocator.prepare_slice_allocation::<T>(len))
     }
 }
 
@@ -219,25 +196,7 @@ impl ErrorBehavior for AllocError {
         allocator: &mut impl MutBumpAllocatorExt,
         len: usize,
     ) -> Result<NonNull<[T]>, Self> {
-        let Range { start, end } = allocator.try_prepare_slice_allocation::<T>(len)?;
-
-        // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-        let capacity = unsafe { non_null::byte_offset_from_unsigned(end, start) } / T::SIZE;
-
-        Ok(non_null::slice_from_raw_parts(start, capacity))
-    }
-
-    #[inline(always)]
-    unsafe fn prepare_slice_allocation_rev<T>(
-        allocator: &mut impl MutBumpAllocatorExt,
-        len: usize,
-    ) -> Result<(NonNull<T>, usize), Self> {
-        let Range { start, end } = allocator.try_prepare_slice_allocation::<T>(len)?;
-
-        // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-        let capacity = unsafe { non_null::byte_offset_from_unsigned(end, start) } / T::SIZE;
-
-        Ok((end, capacity))
+        allocator.try_prepare_slice_allocation::<T>(len)
     }
 }
 

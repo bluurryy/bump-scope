@@ -519,6 +519,21 @@ where
         }
     }
 
+    pub(crate) fn generic_prepare_slice_allocation<B: ErrorBehavior, T>(&self, min_cap: usize) -> Result<NonNull<[T]>, B> {
+        let range = self.prepare_allocation_range::<B, T>(min_cap)?;
+
+        // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
+        let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
+
+        let ptr = if UP {
+            range.start
+        } else {
+            unsafe { non_null::sub(range.end, cap) }
+        };
+
+        Ok(non_null::slice_from_raw_parts(ptr, cap))
+    }
+
     /// Returns a pointer range.
     /// The start and end pointers are aligned.
     /// But `end - start` is *not* a multiple of `size_of::<T>()`.

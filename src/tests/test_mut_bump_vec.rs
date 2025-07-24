@@ -29,10 +29,7 @@ fn test_dyn_allocator<const UP: bool>() {
         assert_eq!(vec.allocator_stats().into().allocated(), 0); // mut collections are special like that
         let slice = vec.into_boxed_slice();
         assert_eq!(&*slice, ["1", "2", "3"]);
-        // FIXME: make this work for downwards allocating we need to compute the start ptr as `range.end - cap`
-        if UP {
-            assert_eq!(bump.any_stats().allocated(), 3 * ITEM_SIZE);
-        }
+        assert_eq!(bump.any_stats().allocated(), 3 * ITEM_SIZE);
     }
 
     <Bump<Global, 1, UP>>::new().scoped(|bump| test::<UP, BumpScope<Global, 1, UP>>(bump));

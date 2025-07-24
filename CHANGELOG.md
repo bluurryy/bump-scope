@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Breaking:** Raise minimum supported rust version to 1.65.0
 
+### Fixed
+
+- Fix small amount of wasted space when allocating `Mut*` collections on a downwards bumping allocator
+
 ## [0.17.4] - 2025-07-12
 
 ### Added

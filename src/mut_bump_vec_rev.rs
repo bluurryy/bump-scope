@@ -770,7 +770,9 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
             });
         }
 
-        let (end, cap) = unsafe { E::prepare_slice_allocation_rev(&mut allocator, capacity)? };
+        let slice = unsafe { E::prepare_slice_allocation::<T>(&mut allocator, capacity)? };
+        let cap = slice.len();
+        let end = unsafe { non_null::add(non_null::as_non_null_ptr(slice), cap) };
 
         Ok(Self {
             end,
@@ -976,7 +978,10 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
             });
         }
 
-        let (end, cap) = unsafe { E::prepare_slice_allocation_rev::<T>(&mut allocator, N)? };
+        let slice = unsafe { E::prepare_slice_allocation::<T>(&mut allocator, N)? };
+        let cap = slice.len();
+        let end = unsafe { non_null::add(non_null::as_non_null_ptr(slice), cap) };
+
         let src = array.as_ptr();
 
         unsafe {
@@ -2161,7 +2166,9 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
     ///
     /// `new_capacity` must be greater than the current capacity.
     unsafe fn generic_grow_to<E: ErrorBehavior>(&mut self, new_capacity: usize) -> Result<(), E> {
-        let (end, cap) = E::prepare_slice_allocation_rev::<T>(&mut self.allocator, new_capacity)?;
+        let slice = unsafe { E::prepare_slice_allocation::<T>(&mut self.allocator, new_capacity)? };
+        let cap = slice.len();
+        let end = unsafe { non_null::add(non_null::as_non_null_ptr(slice), cap) };
 
         let src = self.as_mut_ptr();
         let dst = end.as_ptr().sub(self.len);

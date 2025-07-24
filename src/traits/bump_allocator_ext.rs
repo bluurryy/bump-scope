@@ -1,6 +1,6 @@
 #![allow(clippy::missing_safety_doc)]
 
-use core::{alloc::Layout, num::NonZeroUsize, ops::Range, ptr::NonNull};
+use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
     alloc::{AllocError, Allocator},
@@ -129,7 +129,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     ///
     /// Panics if the allocation fails.
     #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation<T>(&self, cap: usize) -> Range<NonNull<T>>;
+    fn prepare_slice_allocation<T>(&self, cap: usize) -> NonNull<[T]>;
 
     /// A specialized version of [`prepare_allocation`].
     ///
@@ -138,7 +138,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// # Errors
     ///
     /// Errors if the allocation fails.
-    fn try_prepare_slice_allocation<T>(&self, cap: usize) -> Result<Range<NonNull<T>>, AllocError>;
+    fn try_prepare_slice_allocation<T>(&self, cap: usize) -> Result<NonNull<[T]>, AllocError>;
 
     /// A specialized version of [`allocate_prepared`].
     ///
@@ -238,12 +238,12 @@ unsafe impl BumpAllocatorExt for dyn BumpAllocator + '_ {
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation<T>(&self, len: usize) -> Range<NonNull<T>> {
+    fn prepare_slice_allocation<T>(&self, len: usize) -> NonNull<[T]> {
         prepare_slice_allocation(self, len)
     }
 
     #[inline(always)]
-    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
+    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<NonNull<[T]>, AllocError> {
         try_prepare_slice_allocation(self, len)
     }
 
@@ -309,12 +309,12 @@ unsafe impl BumpAllocatorExt for dyn MutBumpAllocator + '_ {
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation<T>(&self, len: usize) -> Range<NonNull<T>> {
+    fn prepare_slice_allocation<T>(&self, len: usize) -> NonNull<[T]> {
         prepare_slice_allocation(self, len)
     }
 
     #[inline(always)]
-    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
+    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<NonNull<[T]>, AllocError> {
         try_prepare_slice_allocation(self, len)
     }
 
@@ -380,12 +380,12 @@ unsafe impl BumpAllocatorExt for dyn BumpAllocatorScope<'_> + '_ {
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation<T>(&self, len: usize) -> Range<NonNull<T>> {
+    fn prepare_slice_allocation<T>(&self, len: usize) -> NonNull<[T]> {
         prepare_slice_allocation(self, len)
     }
 
     #[inline(always)]
-    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
+    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<NonNull<[T]>, AllocError> {
         try_prepare_slice_allocation(self, len)
     }
 
@@ -451,12 +451,12 @@ unsafe impl BumpAllocatorExt for dyn MutBumpAllocatorScope<'_> + '_ {
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation<T>(&self, len: usize) -> Range<NonNull<T>> {
+    fn prepare_slice_allocation<T>(&self, len: usize) -> NonNull<[T]> {
         prepare_slice_allocation(self, len)
     }
 
     #[inline(always)]
-    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
+    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<NonNull<[T]>, AllocError> {
         try_prepare_slice_allocation(self, len)
     }
 
@@ -548,31 +548,60 @@ unsafe fn shrink_slice<T>(bump: impl BumpAllocator, ptr: NonNull<T>, old_len: us
     )
 }
 
+fn is_upwards_allocating(bump: &impl BumpAllocator) -> bool {
+    let chunk = bump.checkpoint().chunk;
+    let header = non_null::addr(chunk);
+    let end = non_null::addr(unsafe { chunk.as_ref().end });
+    end > header
+}
+
 #[inline(always)]
 #[cfg(feature = "panic-on-alloc")]
 #[allow(clippy::needless_pass_by_value)]
-fn prepare_slice_allocation<T>(bump: impl BumpAllocator, len: usize) -> Range<NonNull<T>> {
-    let layout = match Layout::array::<T>(len) {
+fn prepare_slice_allocation<T>(bump: impl BumpAllocator, min_cap: usize) -> NonNull<[T]> {
+    let layout = match Layout::array::<T>(min_cap) {
         Ok(ok) => ok,
         Err(_) => capacity_overflow(),
     };
 
     match unsafe { bump.prepare_allocation(layout) } {
-        Ok(range) => range.start.cast()..range.end.cast(),
+        Ok(range) => {
+            // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
+            let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
+
+            let ptr = if is_upwards_allocating(&bump) {
+                range.start.cast::<T>()
+            } else {
+                unsafe { non_null::sub(range.end.cast::<T>(), cap) }
+            };
+
+            non_null::slice_from_raw_parts(ptr.cast(), cap)
+        }
         Err(AllocError) => handle_alloc_error(layout),
     }
 }
 
 #[inline(always)]
 #[allow(clippy::needless_pass_by_value)]
-fn try_prepare_slice_allocation<T>(bump: impl BumpAllocator, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
+fn try_prepare_slice_allocation<T>(bump: impl BumpAllocator, len: usize) -> Result<NonNull<[T]>, AllocError> {
     let layout = match Layout::array::<T>(len) {
         Ok(ok) => ok,
         Err(_) => return Err(AllocError),
     };
 
     match unsafe { bump.prepare_allocation(layout) } {
-        Ok(range) => Ok(range.start.cast()..range.end.cast()),
+        Ok(range) => {
+            // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
+            let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
+
+            let ptr = if is_upwards_allocating(&bump) {
+                range.start.cast::<T>()
+            } else {
+                unsafe { non_null::sub(range.end.cast::<T>(), cap) }
+            };
+
+            Ok(non_null::slice_from_raw_parts(ptr.cast(), cap))
+        }
         Err(err) => Err(err),
     }
 }
@@ -646,12 +675,12 @@ unsafe impl<B: BumpAllocatorExt + ?Sized> BumpAllocatorExt for &B {
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation<T>(&self, len: usize) -> Range<NonNull<T>> {
+    fn prepare_slice_allocation<T>(&self, len: usize) -> NonNull<[T]> {
         B::prepare_slice_allocation(self, len)
     }
 
     #[inline(always)]
-    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
+    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<NonNull<[T]>, AllocError> {
         B::try_prepare_slice_allocation(self, len)
     }
 
@@ -720,12 +749,12 @@ where
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation<T>(&self, len: usize) -> Range<NonNull<T>> {
+    fn prepare_slice_allocation<T>(&self, len: usize) -> NonNull<[T]> {
         B::prepare_slice_allocation(self, len)
     }
 
     #[inline(always)]
-    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
+    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<NonNull<[T]>, AllocError> {
         B::try_prepare_slice_allocation(self, len)
     }
 
@@ -791,12 +820,12 @@ unsafe impl<B: BumpAllocatorExt> BumpAllocatorExt for WithoutDealloc<B> {
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation<T>(&self, len: usize) -> Range<NonNull<T>> {
+    fn prepare_slice_allocation<T>(&self, len: usize) -> NonNull<[T]> {
         B::prepare_slice_allocation(&self.0, len)
     }
 
     #[inline(always)]
-    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
+    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<NonNull<[T]>, AllocError> {
         B::try_prepare_slice_allocation(&self.0, len)
     }
 
@@ -862,12 +891,12 @@ unsafe impl<B: BumpAllocatorExt> BumpAllocatorExt for WithoutShrink<B> {
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation<T>(&self, len: usize) -> Range<NonNull<T>> {
+    fn prepare_slice_allocation<T>(&self, len: usize) -> NonNull<[T]> {
         B::prepare_slice_allocation(&self.0, len)
     }
 
     #[inline(always)]
-    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
+    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<NonNull<[T]>, AllocError> {
         B::try_prepare_slice_allocation(&self.0, len)
     }
 
@@ -983,13 +1012,13 @@ where
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation<T>(&self, len: usize) -> Range<NonNull<T>> {
-        panic_on_error(BumpScope::prepare_allocation_range::<_, T>(self, len))
+    fn prepare_slice_allocation<T>(&self, len: usize) -> NonNull<[T]> {
+        panic_on_error(BumpScope::generic_prepare_slice_allocation::<_, T>(self, len))
     }
 
     #[inline(always)]
-    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
-        BumpScope::prepare_allocation_range::<_, T>(self, len)
+    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<NonNull<[T]>, AllocError> {
+        BumpScope::generic_prepare_slice_allocation::<_, T>(self, len)
     }
 
     #[inline(always)]
@@ -1059,12 +1088,12 @@ where
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    fn prepare_slice_allocation<T>(&self, len: usize) -> Range<NonNull<T>> {
+    fn prepare_slice_allocation<T>(&self, len: usize) -> NonNull<[T]> {
         self.as_scope().prepare_slice_allocation(len)
     }
 
     #[inline(always)]
-    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<Range<NonNull<T>>, AllocError> {
+    fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<NonNull<[T]>, AllocError> {
         self.as_scope().try_prepare_slice_allocation(len)
     }
 
