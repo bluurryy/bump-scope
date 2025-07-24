@@ -238,10 +238,10 @@
 //!   `resize_zeroed` and `extend_zeroed` for vector types.
 //! - **`allocator-api2-02`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and
 //!   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-//!   [`AllocatorApiV02Compat`](crate::alloc::compat::AllocatorApi2V02Compat).
+//!   [`AllocatorApi2V02Compat`](crate::alloc::compat::AllocatorApi2V02Compat).
 //! - **`allocator-api2-03`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.3`'s `Allocator` and
 //!   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-//!   [`AllocatorApiV03Compat`](crate::alloc::compat::AllocatorApi2V03Compat).
+//!   [`AllocatorApi2V03Compat`](crate::alloc::compat::AllocatorApi2V03Compat).
 //!
 //! ### Nightly features
 //! These nightly features are not subject to the same semver guarantees as the rest of the library.

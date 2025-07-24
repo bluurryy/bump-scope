@@ -191,10 +191,10 @@ assert_eq!(bump.stats().allocated(), 4);
   `resize_zeroed` and `extend_zeroed` for vector types.
 - **`allocator-api2-02`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and
   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-  [`AllocatorApiV02Compat`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/alloc/compat/struct.AllocatorApi2V02Compat.html).
+  [`AllocatorApi2V02Compat`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/alloc/compat/struct.AllocatorApi2V02Compat.html).
 - **`allocator-api2-03`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.3`'s `Allocator` and
   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-  [`AllocatorApiV03Compat`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/alloc/compat/struct.AllocatorApi2V03Compat.html).
+  [`AllocatorApi2V03Compat`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/alloc/compat/struct.AllocatorApi2V03Compat.html).
 
 #### Nightly features
 These nightly features are not subject to the same semver guarantees as the rest of the library.
