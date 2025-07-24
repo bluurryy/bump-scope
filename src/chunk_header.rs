@@ -32,6 +32,6 @@ static UNALLOCATED_CHUNK_HEADER: UnallocatedChunkHeader = UnallocatedChunkHeader
     allocator: (),
 });
 
-pub(crate) const fn unallocated_chunk_header() -> NonNull<ChunkHeader> {
-    non_null::from_ref(&UNALLOCATED_CHUNK_HEADER.0)
+impl ChunkHeader {
+    pub(crate) const UNALLOCATED: NonNull<ChunkHeader> = non_null::from_ref(&UNALLOCATED_CHUNK_HEADER.0);
 }

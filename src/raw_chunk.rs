@@ -8,7 +8,7 @@ use crate::{
     down_align_usize,
     layout::LayoutProps,
     polyfill::non_null,
-    unallocated_chunk_header, up_align_usize_unchecked,
+    up_align_usize_unchecked,
 };
 
 /// Represents an allocated chunk.
@@ -122,7 +122,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     pub(crate) fn is_unallocated(self) -> bool {
-        self.header.cast() == unallocated_chunk_header()
+        self.header.cast() == ChunkHeader::UNALLOCATED
     }
 
     /// Attempts to allocate a block of memory.

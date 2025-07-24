@@ -19,7 +19,7 @@ use crate::{
     allocator_impl,
     bump_align_guard::BumpAlignGuard,
     bumping::{BumpUp, bump_down, bump_up},
-    chunk_header::unallocated_chunk_header,
+    chunk_header::ChunkHeader,
     chunk_size::ChunkSize,
     const_param_assert, down_align_usize,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
@@ -408,7 +408,7 @@ where
             // if the bump allocator is `GUARANTEED_ALLOCATED`. We are allowed to not do this check
             // because of this safety condition of `reset_to`:
             // > the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
-            if !GUARANTEED_ALLOCATED && checkpoint.chunk == unallocated_chunk_header() {
+            if !GUARANTEED_ALLOCATED && checkpoint.chunk == ChunkHeader::UNALLOCATED {
                 let mut chunk = self.chunk.get();
 
                 while let Some(prev) = chunk.prev() {
@@ -420,7 +420,7 @@ where
             } else {
                 debug_assert_ne!(
                     checkpoint.chunk,
-                    unallocated_chunk_header(),
+                    ChunkHeader::UNALLOCATED,
                     "the safety conditions state that \"the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`\""
                 );
 

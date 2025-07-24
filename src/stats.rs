@@ -14,10 +14,7 @@ use core::{
     ptr::NonNull,
 };
 
-use crate::{
-    RawChunk,
-    chunk_header::{ChunkHeader, unallocated_chunk_header},
-};
+use crate::{RawChunk, chunk_header::ChunkHeader};
 
 mod any;
 
@@ -156,7 +153,7 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
     #[inline]
     pub(crate) unsafe fn from_header_unchecked(header: NonNull<ChunkHeader<A>>) -> Self {
         if GUARANTEED_ALLOCATED {
-            debug_assert_ne!(header.cast(), unallocated_chunk_header());
+            debug_assert_ne!(header.cast(), ChunkHeader::UNALLOCATED);
         }
 
         Self {
@@ -173,7 +170,7 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
             return Some(unsafe { Stats::from_header_unchecked(self.header) });
         }
 
-        if self.header.cast() == unallocated_chunk_header() {
+        if self.header.cast() == ChunkHeader::UNALLOCATED {
             return None;
         }
 
@@ -208,7 +205,7 @@ impl<'a, A, const UP: bool> Stats<'a, A, UP, false> {
     }
 
     pub(crate) fn unallocated() -> Self {
-        unsafe { Self::from_header_unchecked(unallocated_chunk_header().cast()) }
+        unsafe { Self::from_header_unchecked(ChunkHeader::UNALLOCATED.cast()) }
     }
 }
 
@@ -263,7 +260,7 @@ impl<A, const UP: bool> Debug for Chunk<'_, A, UP> {
 impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
     #[inline]
     pub(crate) unsafe fn from_header(header: NonNull<ChunkHeader<A>>) -> Option<Self> {
-        if header.cast() == unallocated_chunk_header() {
+        if header.cast() == ChunkHeader::UNALLOCATED {
             None
         } else {
             Some(unsafe { Self::from_header_unchecked(header) })
@@ -272,7 +269,7 @@ impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
 
     #[inline]
     pub(crate) unsafe fn from_header_unchecked(header: NonNull<ChunkHeader<A>>) -> Self {
-        debug_assert_ne!(header.cast(), unallocated_chunk_header());
+        debug_assert_ne!(header.cast(), ChunkHeader::UNALLOCATED);
         Self {
             header,
             marker: PhantomData,

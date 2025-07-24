@@ -360,7 +360,7 @@ pub use bump_scope_guard::{BumpScopeGuard, BumpScopeGuardRoot, Checkpoint};
 pub use bump_string::BumpString;
 #[doc(inline)]
 pub use bump_vec::BumpVec;
-use chunk_header::{ChunkHeader, unallocated_chunk_header};
+use chunk_header::ChunkHeader;
 #[cfg(feature = "panic-on-alloc")]
 use core::convert::Infallible;
 use core::{mem, num::NonZeroUsize, ptr::NonNull};
