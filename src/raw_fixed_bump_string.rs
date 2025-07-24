@@ -58,16 +58,18 @@ impl RawFixedBumpString {
         allocator: &mut impl MutBumpAllocatorExt,
         len: usize,
     ) -> Result<Self, B> {
-        let allocation = B::prepare_slice_allocation::<u8>(allocator, len)?;
-        let initialized = RawBumpBox::from_ptr(non_null::str_from_utf8(NonNull::slice_from_raw_parts(
-            non_null::as_non_null_ptr(allocation),
-            0,
-        )));
+        unsafe {
+            let allocation = B::prepare_slice_allocation::<u8>(allocator, len)?;
+            let initialized = RawBumpBox::from_ptr(non_null::str_from_utf8(NonNull::slice_from_raw_parts(
+                non_null::as_non_null_ptr(allocation),
+                0,
+            )));
 
-        Ok(Self {
-            initialized,
-            capacity: allocation.len(),
-        })
+            Ok(Self {
+                initialized,
+                capacity: allocation.len(),
+            })
+        }
     }
 
     #[inline(always)]

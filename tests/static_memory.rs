@@ -84,7 +84,7 @@ unsafe impl<const SIZE: usize> Allocator for StaticAllocator<SIZE> {
     ) -> Result<NonNull<[u8]>, AllocError> {
         self.check_layout(new_layout)?;
 
-        let zero_ptr = ptr.as_ptr().add(old_layout.size());
+        let zero_ptr = unsafe { ptr.as_ptr().add(old_layout.size()) };
         let zero_len = new_layout.size() - old_layout.size();
 
         unsafe {

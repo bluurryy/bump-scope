@@ -491,11 +491,11 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     where
         A: Allocator,
     {
-        let ptr = self.chunk_start();
-        let layout = self.layout();
-        let allocator_ptr = ptr::from_ref(&self.header.as_ref().allocator);
-
         unsafe {
+            let ptr = self.chunk_start();
+            let layout = self.layout();
+            let allocator_ptr = ptr::from_ref(&self.header.as_ref().allocator);
+
             let allocator = allocator_ptr.read();
             allocator.deallocate(ptr, layout);
         }

@@ -40,22 +40,24 @@ impl<T: Debug, A: BumpAllocatorExt> Debug for IntoIter<T, A> {
 
 impl<T, A> IntoIter<T, A> {
     pub(crate) unsafe fn new(slice: NonNull<[T]>, allocator: A) -> Self {
-        if T::IS_ZST {
-            IntoIter {
-                ptr: NonNull::dangling(),
-                end: unsafe { non_null::wrapping_byte_add(NonNull::dangling(), slice.len()) },
-                allocator,
-                marker: PhantomData,
-            }
-        } else {
-            let start = non_null::as_non_null_ptr(slice);
-            let end = start.add(slice.len());
+        unsafe {
+            if T::IS_ZST {
+                IntoIter {
+                    ptr: NonNull::dangling(),
+                    end: non_null::wrapping_byte_add(NonNull::dangling(), slice.len()),
+                    allocator,
+                    marker: PhantomData,
+                }
+            } else {
+                let start = non_null::as_non_null_ptr(slice);
+                let end = start.add(slice.len());
 
-            IntoIter {
-                ptr: start,
-                end,
-                allocator,
-                marker: PhantomData,
+                IntoIter {
+                    ptr: start,
+                    end,
+                    allocator,
+                    marker: PhantomData,
+                }
             }
         }
     }

@@ -72,14 +72,14 @@ impl<T> RawFixedBumpVec<T> {
         allocator: &mut impl MutBumpAllocatorExt,
         len: usize,
     ) -> Result<Self, B> {
-        let allocation = B::prepare_slice_allocation::<T>(allocator, len)?;
+        unsafe {
+            let allocation = B::prepare_slice_allocation::<T>(allocator, len)?;
 
-        Ok(Self {
-            initialized: unsafe {
-                RawBumpBox::from_ptr(NonNull::slice_from_raw_parts(non_null::as_non_null_ptr(allocation), 0))
-            },
-            capacity: allocation.len(),
-        })
+            Ok(Self {
+                initialized: RawBumpBox::from_ptr(NonNull::slice_from_raw_parts(non_null::as_non_null_ptr(allocation), 0)),
+                capacity: allocation.len(),
+            })
+        }
     }
 
     /// `new_cap` must be greater than `self.capacity`
@@ -88,18 +88,20 @@ impl<T> RawFixedBumpVec<T> {
         allocator: &mut impl MutBumpAllocatorExt,
         minimum_new_cap: usize,
     ) -> Result<(), B> {
-        debug_assert!(minimum_new_cap > self.capacity);
-        let allocation = B::prepare_slice_allocation::<T>(allocator, minimum_new_cap)?;
+        unsafe {
+            debug_assert!(minimum_new_cap > self.capacity);
+            let allocation = B::prepare_slice_allocation::<T>(allocator, minimum_new_cap)?;
 
-        let new_ptr = allocation.cast::<T>();
-        let new_cap = allocation.len();
+            let new_ptr = allocation.cast::<T>();
+            let new_cap = allocation.len();
 
-        ptr::copy_nonoverlapping(self.as_ptr(), new_ptr.as_ptr(), self.len());
+            ptr::copy_nonoverlapping(self.as_ptr(), new_ptr.as_ptr(), self.len());
 
-        self.initialized.set_ptr(new_ptr);
-        self.capacity = new_cap;
+            self.initialized.set_ptr(new_ptr);
+            self.capacity = new_cap;
 
-        Ok(())
+            Ok(())
+        }
     }
 
     #[inline(always)]
