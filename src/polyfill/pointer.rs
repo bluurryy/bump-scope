@@ -22,15 +22,3 @@ pub(crate) unsafe fn offset_from_unsigned<T>(this: *const T, origin: *const T) -
 pub(crate) unsafe fn write_with<T>(ptr: *mut T, f: impl FnOnce() -> T) {
     ptr::write(ptr, f());
 }
-
-/// See `<*const T>::addr`.
-#[must_use]
-#[inline(always)]
-pub(crate) fn addr<T>(ptr: *const T) -> usize {
-    // A pointer-to-integer transmute currently has exactly the right semantics: it returns the
-    // address without exposing the provenance. Note that this is *not* a stable guarantee about
-    // transmute semantics, it relies on sysroot crates having special status.
-    // SAFETY: Pointer-to-integer transmutes are valid (if you are okay with losing the
-    // provenance).
-    unsafe { mem::transmute(ptr.cast::<()>()) }
-}

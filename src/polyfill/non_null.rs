@@ -45,7 +45,7 @@ pub(crate) unsafe fn byte_add<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
 pub(crate) fn addr<T>(ptr: NonNull<T>) -> NonZeroUsize {
     // SAFETY: The pointer is guaranteed by the type to be non-null,
     // meaning that the address will be non-zero.
-    unsafe { NonZeroUsize::new_unchecked(polyfill::pointer::addr(ptr.as_ptr())) }
+    unsafe { NonZeroUsize::new_unchecked(ptr.as_ptr().addr()) }
 }
 
 /// See [`std::ptr::NonNull::with_addr`].
