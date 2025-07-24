@@ -440,13 +440,13 @@ where
             let end = non_null::add(start, len);
 
             if UP {
-                self.set_aligned_pos(non_null::addr(end), T::ALIGN);
+                self.set_aligned_pos(end.addr(), T::ALIGN);
                 non_null::slice_from_raw_parts(start, len)
             } else {
                 let dst_end = non_null::add(start, cap);
                 let dst = non_null::sub(dst_end, len);
                 non_null::copy(start, dst, len);
-                self.set_aligned_pos(non_null::addr(dst), T::ALIGN);
+                self.set_aligned_pos(dst.addr(), T::ALIGN);
                 non_null::slice_from_raw_parts(dst, len)
             }
         }
@@ -473,10 +473,10 @@ where
                     end = dst_end;
                 }
 
-                self.set_aligned_pos(non_null::addr(end), T::ALIGN);
+                self.set_aligned_pos(end.addr(), T::ALIGN);
                 non_null::slice_from_raw_parts(start, len)
             } else {
-                self.set_aligned_pos(non_null::addr(start), T::ALIGN);
+                self.set_aligned_pos(start.addr(), T::ALIGN);
                 non_null::slice_from_raw_parts(start, len)
             }
         }
@@ -2755,10 +2755,10 @@ where
                 Ok(value) => Ok({
                     if can_shrink {
                         let new_pos = if UP {
-                            let pos = non_null::addr(non_null::add(value, 1)).get();
+                            let pos = non_null::add(value, 1).addr().get();
                             up_align_usize_unchecked(pos, MIN_ALIGN)
                         } else {
-                            let pos = non_null::addr(value).get();
+                            let pos = value.addr().get();
                             down_align_usize(pos, MIN_ALIGN)
                         };
 
@@ -2876,10 +2876,10 @@ where
             match non_null::result(ptr) {
                 Ok(value) => Ok({
                     let new_pos = if UP {
-                        let pos = non_null::addr(non_null::add(value, 1)).get();
+                        let pos = non_null::add(value, 1).addr().get();
                         up_align_usize_unchecked(pos, MIN_ALIGN)
                     } else {
-                        let pos = non_null::addr(value).get();
+                        let pos = value.addr().get();
                         down_align_usize(pos, MIN_ALIGN)
                     };
 

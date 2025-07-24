@@ -16,7 +16,6 @@ use core::{
 
 use crate::{
     chunk_header::{unallocated_chunk_header, ChunkHeader},
-    polyfill::non_null,
     RawChunk,
 };
 
@@ -282,8 +281,8 @@ impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
 
     #[inline]
     pub(crate) fn is_upwards_allocating(self) -> bool {
-        let header = non_null::addr(self.header);
-        let end = non_null::addr(unsafe { self.header.as_ref().end });
+        let header = self.header.addr();
+        let end = unsafe { self.header.as_ref() }.end.addr();
         end > header
     }
 

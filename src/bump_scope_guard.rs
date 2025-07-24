@@ -16,7 +16,7 @@ pub struct Checkpoint {
 
 impl Checkpoint {
     pub(crate) fn new<const UP: bool, A>(chunk: RawChunk<UP, A>) -> Self {
-        let address = non_null::addr(chunk.pos());
+        let address = chunk.pos().addr();
         let chunk = chunk.header_ptr().cast();
         Checkpoint { chunk, address }
     }
@@ -76,7 +76,7 @@ where
     pub(crate) unsafe fn new_unchecked(chunk: RawChunk<UP, A>) -> Self {
         Self {
             chunk,
-            address: non_null::addr(chunk.pos()).get(),
+            address: chunk.pos().addr().get(),
             marker: PhantomData,
         }
     }

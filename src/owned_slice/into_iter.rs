@@ -108,7 +108,7 @@ impl<'a, T> IntoIter<'a, T> {
         #![allow(clippy::cast_sign_loss)]
 
         if T::IS_ZST {
-            non_null::addr(self.end).get().wrapping_sub(non_null::addr(self.ptr).get())
+            self.end.addr().get().wrapping_sub(self.ptr.addr().get())
         } else {
             unsafe { non_null::offset_from_unsigned(self.end, self.ptr) }
         }

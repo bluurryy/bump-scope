@@ -423,21 +423,21 @@ where
 
     #[inline(always)]
     unsafe fn allocate_prepared(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8> {
-        debug_assert_eq!(non_null::addr(range.start).get() % layout.align(), 0);
-        debug_assert_eq!(non_null::addr(range.end).get() % layout.align(), 0);
+        debug_assert_eq!(range.start.addr().get() % layout.align(), 0);
+        debug_assert_eq!(range.end.addr().get() % layout.align(), 0);
         debug_assert_eq!(layout.size() % layout.align(), 0);
 
         unsafe {
             if UP {
                 let end = non_null::add(range.start, layout.size());
-                self.set_pos(non_null::addr(end));
+                self.set_pos(end.addr());
                 range.start
             } else {
                 let src = range.start;
                 let dst_end = range.end;
                 let dst = non_null::sub(dst_end, layout.size());
                 non_null::copy(src, dst, layout.size());
-                self.set_pos(non_null::addr(dst));
+                self.set_pos(dst.addr());
                 dst
             }
         }
@@ -445,8 +445,8 @@ where
 
     #[inline(always)]
     unsafe fn allocate_prepared_rev(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8> {
-        debug_assert_eq!(non_null::addr(range.start).get() % layout.align(), 0);
-        debug_assert_eq!(non_null::addr(range.end).get() % layout.align(), 0);
+        debug_assert_eq!(range.start.addr().get() % layout.align(), 0);
+        debug_assert_eq!(range.end.addr().get() % layout.align(), 0);
         debug_assert_eq!(layout.size() % layout.align(), 0);
 
         unsafe {
@@ -459,13 +459,13 @@ where
 
                 non_null::copy(src, dst, layout.size());
 
-                self.set_pos(non_null::addr(dst_end));
+                self.set_pos(dst_end.addr());
 
                 dst
             } else {
                 let dst_end = range.end;
                 let dst = non_null::sub(dst_end, layout.size());
-                self.set_pos(non_null::addr(dst));
+                self.set_pos(dst.addr());
                 dst
             }
         }

@@ -48,7 +48,7 @@ unsafe fn deallocate_assume_last<const MIN_ALIGN: usize, const UP: bool, const G
         if UP {
             bump.chunk.get().set_pos(ptr);
         } else {
-            let mut addr = non_null::addr(ptr).get();
+            let mut addr = ptr.addr().get();
             addr += layout.size();
             addr = up_align_usize_unchecked(addr, MIN_ALIGN);
 
@@ -98,12 +98,12 @@ where
                 // We may be able to grow in place! Just need to check if there is enough space.
 
                 let chunk_end = bump.chunk.get().content_end();
-                let remaining = non_null::addr(chunk_end).get() - non_null::addr(old_ptr).get();
+                let remaining = chunk_end.addr().get() - old_ptr.addr().get();
 
                 if new_layout.size() <= remaining {
                     // There is enough space! We will grow in place. Just need to update the bump pointer.
 
-                    let old_addr = non_null::addr(old_ptr);
+                    let old_addr = old_ptr.addr();
 
                     // Up-aligning a pointer inside a chunks content by `MIN_ALIGN` never overflows.
                     let new_pos = up_align_usize_unchecked(old_addr.get() + new_layout.size(), MIN_ALIGN);
@@ -128,10 +128,10 @@ where
                 // We may be able to reuse the currently allocated space. Just need to check if the current chunk has enough space for that.
                 let additional_size = new_layout.size() - old_layout.size();
 
-                let old_addr = non_null::addr(old_ptr);
+                let old_addr = old_ptr.addr();
                 let new_addr = bump_down(old_addr, additional_size, new_layout.align().max(MIN_ALIGN));
 
-                let very_start = non_null::addr(bump.chunk.get().content_start());
+                let very_start = bump.chunk.get().content_start().addr();
 
                 if new_addr >= very_start.get() {
                     // There is enough space in the current chunk! We will reuse the allocated space.
@@ -276,7 +276,7 @@ where
         }
 
         if UP {
-            let end = non_null::addr(old_ptr).get() + new_layout.size();
+            let end = old_ptr.addr().get() + new_layout.size();
 
             // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
             let new_pos = up_align_usize_unchecked(end, MIN_ALIGN);
@@ -284,7 +284,7 @@ where
             bump.chunk.get().set_pos_addr(new_pos);
             Ok(non_null::slice_from_raw_parts(old_ptr, new_layout.size()))
         } else {
-            let old_addr = non_null::addr(old_ptr);
+            let old_addr = old_ptr.addr();
             let old_end_addr = NonZeroUsize::new_unchecked(old_addr.get() + old_layout.size());
 
             let new_addr = bump_down(old_end_addr, new_layout.size(), new_layout.align().max(MIN_ALIGN));

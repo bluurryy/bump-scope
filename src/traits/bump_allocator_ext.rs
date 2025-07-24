@@ -550,8 +550,8 @@ unsafe fn shrink_slice<T>(bump: impl BumpAllocator, ptr: NonNull<T>, old_len: us
 
 fn is_upwards_allocating(bump: &impl BumpAllocator) -> bool {
     let chunk = bump.checkpoint().chunk;
-    let header = non_null::addr(chunk);
-    let end = non_null::addr(unsafe { chunk.as_ref().end });
+    let header = chunk.addr();
+    let end = unsafe { chunk.as_ref() }.end.addr();
     end > header
 }
 
@@ -982,7 +982,7 @@ where
             }
 
             if UP {
-                let end = non_null::addr(old_ptr).get() + new_size;
+                let end = old_ptr.addr().get() + new_size;
 
                 // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
                 let new_pos = up_align_usize_unchecked(end, MIN_ALIGN);
@@ -990,7 +990,7 @@ where
                 self.chunk.get().set_pos_addr(new_pos);
                 Some(old_ptr.cast())
             } else {
-                let old_addr = non_null::addr(old_ptr);
+                let old_addr = old_ptr.addr();
                 let old_addr_old_end = NonZeroUsize::new_unchecked(old_addr.get() + old_size);
 
                 let new_addr = bump_down(old_addr_old_end, new_size, T::ALIGN.max(MIN_ALIGN));

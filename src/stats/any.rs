@@ -167,8 +167,8 @@ impl fmt::Debug for AnyChunk<'_> {
 impl<'a> AnyChunk<'a> {
     #[inline]
     pub(crate) fn is_upwards_allocating(self) -> bool {
-        let header = non_null::addr(self.header);
-        let end = non_null::addr(unsafe { self.header.as_ref().end });
+        let header = self.header.addr();
+        let end = unsafe { self.header.as_ref() }.end.addr();
         end > header
     }
 
@@ -218,7 +218,7 @@ impl<'a> AnyChunk<'a> {
     pub fn size(self) -> usize {
         let start = self.chunk_start();
         let end = self.chunk_end();
-        non_null::addr(end).get() - non_null::addr(start).get()
+        end.addr().get() - start.addr().get()
     }
 
     /// Returns the capacity of this chunk in bytes.
@@ -227,7 +227,7 @@ impl<'a> AnyChunk<'a> {
     pub fn capacity(self) -> usize {
         let start = self.content_start();
         let end = self.content_end();
-        non_null::addr(end).get() - non_null::addr(start).get()
+        end.addr().get() - start.addr().get()
     }
 
     /// Returns the amount of allocated bytes.
@@ -242,11 +242,11 @@ impl<'a> AnyChunk<'a> {
         if self.is_upwards_allocating() {
             let start = self.content_start();
             let end = self.bump_position();
-            non_null::addr(end).get() - non_null::addr(start).get()
+            end.addr().get() - start.addr().get()
         } else {
             let start = self.bump_position();
             let end = self.content_end();
-            non_null::addr(end).get() - non_null::addr(start).get()
+            end.addr().get() - start.addr().get()
         }
     }
 
@@ -261,11 +261,11 @@ impl<'a> AnyChunk<'a> {
         if self.is_upwards_allocating() {
             let start = self.bump_position();
             let end = self.content_end();
-            non_null::addr(end).get() - non_null::addr(start).get()
+            end.addr().get() - start.addr().get()
         } else {
             let start = self.content_start();
             let end = self.bump_position();
-            non_null::addr(end).get() - non_null::addr(start).get()
+            end.addr().get() - start.addr().get()
         }
     }
 

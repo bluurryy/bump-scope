@@ -66,7 +66,7 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
     #[inline(always)]
     fn init_len(&self) -> usize {
         if T::IS_ZST {
-            non_null::addr(self.pos).get().wrapping_sub(non_null::addr(self.start).get())
+            self.pos.addr().get().wrapping_sub(self.start.addr().get())
         } else {
             unsafe { non_null::offset_from_unsigned(self.pos, self.start) }
         }
@@ -75,7 +75,7 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
     #[inline(always)]
     fn len(&self) -> usize {
         if T::IS_ZST {
-            non_null::addr(self.end).get().wrapping_sub(non_null::addr(self.start).get())
+            self.end.addr().get().wrapping_sub(self.start.addr().get())
         } else {
             unsafe { non_null::offset_from_unsigned(self.end, self.start) }
         }

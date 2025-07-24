@@ -241,8 +241,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         let remaining = self.remaining_range();
 
         BumpProps {
-            start: non_null::addr(remaining.start).get(),
-            end: non_null::addr(remaining.end).get(),
+            start: remaining.start.addr().get(),
+            end: remaining.end.addr().get(),
             layout: *layout,
             min_align: M::MIN_ALIGN,
             align_is_const: L::ALIGN_IS_CONST,
@@ -291,7 +291,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     where
         MinimumAlignment<ALIGN>: SupportedMinimumAlignment,
     {
-        let mut pos = non_null::addr(self.pos()).get();
+        let mut pos = self.pos().addr().get();
 
         if UP {
             // Aligning an address that is `<= range.end` with an alignment
@@ -359,7 +359,7 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
     #[inline(always)]
     pub(crate) unsafe fn set_pos(self, ptr: NonNull<u8>) {
-        unsafe { self.set_pos_addr(non_null::addr(ptr).get()) };
+        unsafe { self.set_pos_addr(ptr.addr().get()) };
     }
 
     /// # Safety
@@ -393,8 +393,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
     #[inline(always)]
     pub(crate) fn contains_addr_or_end(self, addr: usize) -> bool {
-        let start = non_null::addr(self.content_start()).get();
-        let end = non_null::addr(self.content_end()).get();
+        let start = self.content_start().addr().get();
+        let end = self.content_end().addr().get();
         addr >= start && addr <= end
     }
 
@@ -410,8 +410,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
     #[inline(always)]
     pub(crate) fn capacity(self) -> usize {
-        let start = non_null::addr(self.content_start()).get();
-        let end = non_null::addr(self.content_end()).get();
+        let start = self.content_start().addr().get();
+        let end = self.content_end().addr().get();
         end - start
     }
 
@@ -427,16 +427,16 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     #[inline(always)]
     pub(crate) fn allocated(self) -> usize {
         let range = self.allocated_range();
-        let start = non_null::addr(range.start).get();
-        let end = non_null::addr(range.end).get();
+        let start = range.start.addr().get();
+        let end = range.end.addr().get();
         end - start
     }
 
     #[inline(always)]
     pub(crate) fn remaining(self) -> usize {
         let range = self.remaining_range();
-        let start = non_null::addr(range.start).get();
-        let end = non_null::addr(range.end).get();
+        let start = range.start.addr().get();
+        let end = range.end.addr().get();
         end - start
     }
 
@@ -454,8 +454,8 @@ impl<const UP: bool, A> RawChunk<UP, A> {
 
     #[inline(always)]
     pub(crate) fn size(self) -> NonZeroUsize {
-        let start = non_null::addr(self.chunk_start()).get();
-        let end = non_null::addr(self.chunk_end()).get();
+        let start = self.chunk_start().addr().get();
+        let end = self.chunk_end().addr().get();
         unsafe { NonZeroUsize::new_unchecked(end - start) }
     }
 

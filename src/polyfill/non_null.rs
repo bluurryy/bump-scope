@@ -40,14 +40,6 @@ pub(crate) unsafe fn byte_add<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
     add(ptr.cast::<u8>(), count).cast()
 }
 
-/// See [`std::ptr::NonNull::addr`].
-#[inline(always)]
-pub(crate) fn addr<T>(ptr: NonNull<T>) -> NonZeroUsize {
-    // SAFETY: The pointer is guaranteed by the type to be non-null,
-    // meaning that the address will be non-zero.
-    unsafe { NonZeroUsize::new_unchecked(ptr.as_ptr().addr()) }
-}
-
 /// See [`std::ptr::NonNull::with_addr`].
 #[must_use]
 #[inline(always)]
@@ -95,7 +87,7 @@ pub(crate) unsafe fn copy_nonoverlapping<T>(src: NonNull<T>, dst: NonNull<T>, co
 #[inline(always)]
 pub(crate) fn is_aligned_to(ptr: NonNull<u8>, align: usize) -> bool {
     debug_assert!(align.is_power_of_two());
-    addr(ptr).get() & (align - 1) == 0
+    ptr.addr().get() & (align - 1) == 0
 }
 
 /// See [`core::ptr::NonNull::as_non_null_ptr`].

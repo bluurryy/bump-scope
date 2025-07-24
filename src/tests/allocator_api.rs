@@ -21,7 +21,7 @@ fn layout(size: usize) -> Layout {
 }
 
 fn assert_aligned_to(ptr: NonNull<[u8]>) {
-    assert!(non_null::addr(ptr.cast::<u8>()).get() % 4 == 0);
+    assert!(ptr.cast::<u8>().addr().get() % 4 == 0);
 }
 
 fn grow<const UP: bool>() {
