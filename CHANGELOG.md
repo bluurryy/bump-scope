@@ -8,8 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- next-header -->
 ## [Unreleased]
 
+
+
 ### Added
 
+- **Breaking:** `BumpAllocator` trait family has been reworked:
+  - what was `BumpAllocator` is now generally `BumpAllocatorExt`, etc.
+  - trait methods become public api
+  - `BumpAllocator` becomes a sealed trait
+  - `&dyn BumpAllocator` can be used for collections
 - Improve `Fixed*` collection documentation.
 
 ### Changed
