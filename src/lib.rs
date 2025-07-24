@@ -485,7 +485,7 @@ pub mod private {
     #[cfg(feature = "panic-on-alloc")]
     impl<T: ?Sized> PanicsOnAlloc<T> {
         pub(crate) fn from_mut(value: &mut T) -> &mut PanicsOnAlloc<T> {
-            unsafe { &mut *(value as *mut T as *mut Self) }
+            unsafe { &mut *(core::ptr::from_mut::<T>(value) as *mut Self) }
         }
     }
 
