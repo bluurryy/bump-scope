@@ -318,8 +318,6 @@ where
     /// It has to first be converted into a guaranteed allocated `Bump` using
     /// <code>[guaranteed_allocated](Bump::guaranteed_allocated)([_ref](Bump::guaranteed_allocated_ref)/[_mut](Bump::guaranteed_allocated_mut))</code>.
     ///
-    /// **This function is `const` starting from rust version 1.83.**
-    ///
     /// # Examples
     ///
     /// ```
@@ -330,8 +328,7 @@ where
     /// # _ = bump;
     /// ```
     #[must_use]
-    #[rustversion::attr(since(1.83), const)]
-    pub fn unallocated() -> Self {
+    pub const fn unallocated() -> Self {
         Self {
             chunk: Cell::new(unsafe { RawChunk::from_header(unallocated_chunk_header().cast()) }),
         }

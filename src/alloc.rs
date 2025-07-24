@@ -20,6 +20,7 @@ mod system;
 
 use core::{
     alloc::Layout,
+    error::Error,
     fmt,
     ptr::{self, NonNull},
 };
@@ -50,12 +51,7 @@ pub mod compat {
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct AllocError;
 
-#[cfg(not(feature = "std"))]
-#[rustversion::since(1.81)]
-impl core::error::Error for AllocError {}
-
-#[cfg(feature = "std")]
-impl std::error::Error for AllocError {}
+impl Error for AllocError {}
 
 // (we need this for downstream impl of trait Error)
 impl fmt::Display for AllocError {

@@ -293,7 +293,7 @@
 //! You can make a `Bump(Scope)` guaranteed allocated using
 //! <code>[guaranteed_allocated](Bump::guaranteed_allocated)([_ref](Bump::guaranteed_allocated_ref)/[_mut](Bump::guaranteed_allocated_mut))</code>.
 //!
-//! The point of this is so `Bump`s can be created without allocating memory and even `const` constructed since rust version 1.83.
+//! The point of this is so `Bump`s can be `const` constructed without allocating memory.
 //! At the same time `Bump`s that have already allocated a chunk don't suffer runtime checks for entering scopes and creating checkpoints.
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches

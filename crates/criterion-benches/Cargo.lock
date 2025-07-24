@@ -47,7 +47,6 @@ version = "1.0.0-dev"
 dependencies = [
  "allocator-api2 0.2.21",
  "allocator-api2 0.3.0",
- "rustversion",
 ]
 
 [[package]]

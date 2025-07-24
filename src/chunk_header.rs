@@ -32,7 +32,6 @@ static UNALLOCATED_CHUNK_HEADER: UnallocatedChunkHeader = UnallocatedChunkHeader
     allocator: (),
 });
 
-#[rustversion::attr(since(1.83), const)]
-pub(crate) fn unallocated_chunk_header() -> NonNull<ChunkHeader> {
+pub(crate) const fn unallocated_chunk_header() -> NonNull<ChunkHeader> {
     non_null::from_ref(&UNALLOCATED_CHUNK_HEADER.0)
 }

@@ -1,4 +1,4 @@
-use core::fmt;
+use core::{error::Error, fmt};
 
 /// A possible error value when converting a string from a UTF-16 byte slice.
 ///
@@ -29,9 +29,4 @@ impl fmt::Display for FromUtf16Error {
     }
 }
 
-#[cfg(not(feature = "std"))]
-#[rustversion::since(1.81)]
-impl core::error::Error for FromUtf16Error {}
-
-#[cfg(feature = "std")]
-impl std::error::Error for FromUtf16Error {}
+impl Error for FromUtf16Error {}
