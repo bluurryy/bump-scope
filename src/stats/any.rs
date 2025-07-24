@@ -1,6 +1,6 @@
 use core::{fmt, iter::FusedIterator, marker::PhantomData, mem, ptr::NonNull};
 
-use crate::{polyfill::non_null, ChunkHeader};
+use crate::ChunkHeader;
 
 use super::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
 
@@ -324,7 +324,7 @@ impl<'a> AnyChunk<'a> {
     }
 
     fn after_header(self) -> NonNull<u8> {
-        unsafe { non_null::byte_add(self.header, self.header_size).cast() }
+        unsafe { self.header.byte_add(self.header_size).cast() }
     }
 }
 

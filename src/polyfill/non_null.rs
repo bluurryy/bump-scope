@@ -6,14 +6,6 @@ use core::{
 
 use crate::polyfill::{self, pointer};
 
-/// See [`std::ptr::NonNull::byte_add`].
-#[must_use]
-#[inline(always)]
-#[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
-pub(crate) unsafe fn byte_add<T>(ptr: NonNull<T>, count: usize) -> NonNull<T> {
-    ptr.cast::<u8>().add(count).cast()
-}
-
 /// See [`std::ptr::NonNull::with_addr`].
 #[must_use]
 #[inline(always)]
