@@ -384,9 +384,25 @@ where
                 chunk.reset();
                 self.chunk.set(chunk);
             } else {
-                debug_assert!(self.stats().big_to_small().any(|chunk| {
-                    chunk.header == checkpoint.chunk.cast() && chunk.contains_addr_or_end(checkpoint.address.get())
-                }));
+                debug_assert_ne!(
+                    checkpoint.chunk,
+                    unallocated_chunk_header(),
+                    "the safety conditions state that \"the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`\""
+                );
+
+                #[cfg(debug_assertions)]
+                {
+                    let chunk = self
+                        .stats()
+                        .small_to_big()
+                        .find(|chunk| chunk.header == checkpoint.chunk.cast())
+                        .expect("this checkpoint does not refer to any chunk of this bump allocator");
+
+                    assert!(
+                        chunk.contains_addr_or_end(checkpoint.address.get()),
+                        "checkpoint address does not point within its chunk"
+                    );
+                }
 
                 checkpoint.reset_within_chunk();
                 let chunk = RawChunk::from_header(checkpoint.chunk.cast());
