@@ -2,7 +2,7 @@ use core::{alloc::Layout, marker::PhantomData, num::NonZeroUsize};
 
 use chunk_size_config::ChunkSizeConfig;
 
-use crate::{polyfill::option::const_unwrap, ChunkHeader};
+use crate::ChunkHeader;
 
 mod chunk_size_config;
 
@@ -42,7 +42,7 @@ impl<A, const UP: bool> Clone for ChunkSize<A, UP> {
 impl<A, const UP: bool> Copy for ChunkSize<A, UP> {}
 
 impl<A, const UP: bool> ChunkSize<A, UP> {
-    pub const DEFAULT: Self = const_unwrap(ChunkSizeHint::DEFAULT.calc_size());
+    pub const DEFAULT: Self = ChunkSizeHint::DEFAULT.calc_size().unwrap();
 
     pub const fn from_hint(size_hint: usize) -> Option<Self> {
         ChunkSizeHint::new(size_hint).calc_size()
