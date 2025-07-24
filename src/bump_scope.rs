@@ -433,12 +433,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn use_prepared_slice_allocation<T>(
-        &mut self,
-        start: NonNull<T>,
-        len: usize,
-        cap: usize,
-    ) -> NonNull<[T]> {
+    pub(crate) unsafe fn use_prepared_slice_allocation<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         let end = non_null::add(start, len);
 
         if UP {
@@ -529,7 +524,7 @@ where
     /// But `end - start` is *not* a multiple of `size_of::<T>()`.
     /// So `end.offset_from_unsigned(start)` may not be used!
     #[inline(always)]
-    pub(crate) fn prepare_allocation_range<B: ErrorBehavior, T>(&mut self, cap: usize) -> Result<Range<NonNull<T>>, B> {
+    pub(crate) fn prepare_allocation_range<B: ErrorBehavior, T>(&self, cap: usize) -> Result<Range<NonNull<T>>, B> {
         let layout = match ArrayLayout::array::<T>(cap) {
             Ok(ok) => ok,
             Err(_) => return Err(B::capacity_overflow()),

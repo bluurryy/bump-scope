@@ -2086,7 +2086,7 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVec<T, A> {
     #[must_use]
     #[inline]
     fn into_slice_ptr(self) -> NonNull<[T]> {
-        let mut this = ManuallyDrop::new(self);
+        let this = ManuallyDrop::new(self);
 
         unsafe {
             if T::IS_ZST {

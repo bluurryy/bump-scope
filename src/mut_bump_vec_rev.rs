@@ -2281,7 +2281,7 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
     #[must_use]
     #[inline]
     fn into_slice_ptr(self) -> NonNull<[T]> {
-        let mut this = ManuallyDrop::new(self);
+        let this = ManuallyDrop::new(self);
 
         if T::IS_ZST {
             return non_null::slice_from_raw_parts(NonNull::dangling(), this.len());
