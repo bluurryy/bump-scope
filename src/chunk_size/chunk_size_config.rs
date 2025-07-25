@@ -33,14 +33,14 @@ impl ChunkSizeConfig {
     ///
     /// # Context
     /// The final chunk size must always be a multiple of `MIN_CHUNK_ALIGN`.
-    /// We use optimizations in `alloc` that make use of that property.
+    /// We use optimizations in `alloc` that make use of that invariant.
     ///
-    /// When downwards allocating the final chunk size must also be aligned to the chunk header
+    /// When downwards allocating, the final chunk size must also be aligned to the chunk header
     /// alignment so we can put the header at `ptr.byte_add(size).cast::<ChunkHeader<A>>().sub(1)`.
     ///
-    /// This downwards alignment must not result in a size smaller than the layout's size
+    /// This aligning must not result in a size smaller than the layout's size
     /// because we need `size` to be a size that [fits] the allocated memory block.
-    /// (The size must be between the original requested size and the size the allocator actually gave us.)
+    /// (The size must be between the original requested size and the size the allocator actually returned.)
     ///
     /// This is ensured by already having `align_size`'d the layout's size in `calc_size_from_hint`.
     /// A downwards alignment of a size greater or equal than the layout's size, which
