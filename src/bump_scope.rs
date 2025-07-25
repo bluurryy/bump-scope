@@ -524,23 +524,50 @@ where
         }
     }
 
+    /// Aligns a bump address to the `MIN_ALIGN`.
+    ///
+    /// This is a noop when `MIN_ALIGN` is `0`.
+    #[must_use]
     #[inline(always)]
-    pub(crate) fn set_aligned_pos(&self, pos: NonZeroUsize, pos_align: usize) {
-        let chunk = self.chunk.get();
-        debug_assert_eq!(pos.get() % pos_align, 0);
-        unsafe { chunk.set_pos_addr(pos.get()) }
-        if pos_align < MIN_ALIGN {
-            chunk.align_pos_to::<MIN_ALIGN>();
+    fn align_pos(pos: NonZeroUsize) -> usize {
+        if UP {
+            // Aligning an address that is `<= range.end` with an alignment
+            // that is `<= MIN_CHUNK_ALIGN` cannot exceed `range.end` and
+            // cannot overflow as `range.end` is always aligned to `MIN_CHUNK_ALIGN`.
+            up_align_usize_unchecked(pos.get(), MIN_ALIGN)
+        } else {
+            // The chunk start is non-null and is aligned to `MIN_CHUNK_ALIGN`
+            // `MIN_ALIGN <= MIN_CHUNK_ALIGN` will never pass the chunk start
+            // and stay non-zero.
+            down_align_usize(pos.get(), MIN_ALIGN)
         }
     }
 
+    /// Sets the bump position and aligns it to the required `MIN_ALIGN`.
     #[inline(always)]
     pub(crate) unsafe fn set_pos(&self, pos: NonZeroUsize) {
         unsafe {
-            let chunk = self.chunk.get();
-            chunk.set_pos_addr(pos.get());
-            chunk.align_pos_to::<MIN_ALIGN>();
+            let addr = Self::align_pos(pos);
+            self.chunk.get().set_pos_addr(addr);
         }
+    }
+
+    /// A version of [`set_pos`](Self::set_pos) that only aligns the pointer
+    /// if it the `pos_align` is smaller than the `MIN_ALIGN`.
+    ///
+    /// This should only be called when the `pos_align` is statically known so
+    /// the branch gets optimized out.
+    #[inline(always)]
+    pub(crate) unsafe fn set_aligned_pos(&self, pos: NonZeroUsize, pos_align: usize) {
+        debug_assert_eq!(pos.get() % pos_align, 0);
+
+        let addr = if pos_align < MIN_ALIGN {
+            Self::align_pos(pos)
+        } else {
+            pos.get()
+        };
+
+        unsafe { self.chunk.get().set_pos_addr(addr) };
     }
 
     #[inline(always)]
