@@ -15,7 +15,6 @@ use crate::{
     BumpAllocatorExt, BumpAllocatorScopeExt, BumpBox, BumpVec, ErrorBehavior, FixedBumpString, FromUtf8Error,
     FromUtf16Error,
     alloc::AllocError,
-    collection_method_allocator_stats,
     destructure::destructure,
     owned_str,
     polyfill::{self, transmute_mut, transmute_value},
@@ -1845,7 +1844,15 @@ impl<A: BumpAllocatorExt> BumpString<A> {
         &self.allocator
     }
 
-    collection_method_allocator_stats!();
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
+    ///
+    /// This is equivalent to calling `.allocator().stats()`.
+    /// This merely exists for api parity with `Mut*` collections which can't have a `allocator` method.
+    #[must_use]
+    #[inline(always)]
+    pub fn allocator_stats(&self) -> A::Stats<'_> {
+        self.allocator.stats()
+    }
 
     pub(crate) fn generic_write_fmt<B: ErrorBehavior>(&mut self, args: fmt::Arguments) -> Result<(), B> {
         #[cfg(feature = "panic-on-alloc")]

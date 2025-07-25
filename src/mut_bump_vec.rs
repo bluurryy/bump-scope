@@ -13,7 +13,7 @@ use core::{
 use crate::{
     BumpBox, ErrorBehavior, MutBumpAllocatorExt, MutBumpAllocatorScopeExt, NoDrop, SizedTypeProperties,
     alloc::AllocError,
-    min_non_zero_cap, mut_collection_method_allocator_stats,
+    min_non_zero_cap,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     polyfill::{hint::likely, slice},
     raw_fixed_bump_vec::RawFixedBumpVec,
@@ -2440,7 +2440,14 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVec<T, A> {
         }
     }
 
-    mut_collection_method_allocator_stats!();
+    /// Returns a type which provides statistics about the memory usage of the bump allocator.
+    ///
+    /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
+    #[must_use]
+    #[inline(always)]
+    pub fn allocator_stats(&self) -> A::Stats<'_> {
+        self.allocator.stats()
+    }
 }
 
 impl<'a, T, A: MutBumpAllocatorScopeExt<'a>> MutBumpVec<T, A> {
