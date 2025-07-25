@@ -336,14 +336,14 @@ where
     /// Returns a reference to the base allocator.
     #[must_use]
     #[inline(always)]
-    pub fn allocator(&self) -> &A {
+    pub fn allocator(&self) -> &'a A {
         self.stats().current_chunk().allocator()
     }
 }
 
 /// These functions are only available if the `BumpScope` is NOT [guaranteed allocated](crate#guaranteed_allocated-parameter).
 #[allow(clippy::needless_lifetimes)]
-impl<A, const MIN_ALIGN: usize, const UP: bool> BumpScope<'_, A, MIN_ALIGN, UP, false>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP, false>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<false>,
@@ -351,7 +351,7 @@ where
     /// Returns a reference to the base allocator.
     #[must_use]
     #[inline(always)]
-    pub fn allocator(&self) -> Option<&A> {
+    pub fn allocator(&self) -> Option<&'a A> {
         self.stats().current_chunk().map(|c| c.allocator())
     }
 }

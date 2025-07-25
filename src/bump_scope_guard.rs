@@ -105,7 +105,7 @@ where
     /// Returns a reference to the base allocator.
     #[must_use]
     #[inline(always)]
-    pub fn allocator(&self) -> &A {
+    pub fn allocator(&self) -> &'a A {
         self.stats().current_chunk().allocator()
     }
 }
@@ -181,7 +181,7 @@ where
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'_, A, UP> {
+    pub fn stats(&self) -> Stats<'a, A, UP> {
         const GUARANTEED_ALLOCATED: bool = true;
         unsafe { self.chunk.stats::<GUARANTEED_ALLOCATED>() }
     }
@@ -189,7 +189,7 @@ where
     /// Returns a reference to the base allocator.
     #[must_use]
     #[inline(always)]
-    pub fn allocator(&self) -> &A {
+    pub fn allocator(&self) -> &'a A {
         self.stats().current_chunk().allocator()
     }
 }

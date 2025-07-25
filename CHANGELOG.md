@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `BumpAllocator` becomes a sealed trait
   - `&dyn BumpAllocator` can be used for collections
 - Add `Chunk::allocator()` which returns the base allocator
+- Make `BumpScope(Guard)(Root)::allocator()` return an `&'a A` allocator instead of `&A`
+- Make `BumpScopeGuardRoot::stats()` return `Stats<'a, ...>` instead of `Stats<'_, ...>`
 - Improve `Fixed*` collection documentation.
 
 ### Changed
