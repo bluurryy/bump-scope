@@ -148,7 +148,7 @@ pub struct AnyChunk<'a> {
 impl<A, const UP: bool> From<Chunk<'_, A, UP>> for AnyChunk<'_> {
     fn from(value: Chunk<'_, A, UP>) -> Self {
         Self {
-            header: value.header.cast(),
+            header: value.chunk.header().cast(),
             header_size: mem::size_of::<ChunkHeader<A>>(),
             marker: PhantomData,
         }
@@ -165,10 +165,14 @@ impl fmt::Debug for AnyChunk<'_> {
 }
 
 impl<'a> AnyChunk<'a> {
+    fn header(&self) -> &ChunkHeader {
+        unsafe { self.header.as_ref() }
+    }
+
     #[inline]
     pub(crate) fn is_upwards_allocating(self) -> bool {
         let header = self.header.addr();
-        let end = unsafe { self.header.as_ref() }.end.addr();
+        let end = self.header().end.addr();
         end > header
     }
 
@@ -176,26 +180,22 @@ impl<'a> AnyChunk<'a> {
     #[must_use]
     #[inline(always)]
     pub fn prev(self) -> Option<Self> {
-        unsafe {
-            Some(AnyChunk {
-                header: self.header.as_ref().prev.get()?,
-                header_size: self.header_size,
-                marker: PhantomData,
-            })
-        }
+        Some(AnyChunk {
+            header: self.header().prev.get()?,
+            header_size: self.header_size,
+            marker: PhantomData,
+        })
     }
 
     /// Returns the next (bigger) chunk.
     #[must_use]
     #[inline(always)]
     pub fn next(self) -> Option<Self> {
-        unsafe {
-            Some(AnyChunk {
-                header: self.header.as_ref().next.get()?,
-                header_size: self.header_size,
-                marker: PhantomData,
-            })
-        }
+        Some(AnyChunk {
+            header: self.header().next.get()?,
+            header_size: self.header_size,
+            marker: PhantomData,
+        })
     }
 
     /// Returns an iterator over all previous (smaller) chunks.
@@ -276,7 +276,7 @@ impl<'a> AnyChunk<'a> {
         if self.is_upwards_allocating() {
             self.header.cast()
         } else {
-            unsafe { self.header.as_ref().end }
+            self.header().end
         }
     }
 
@@ -285,7 +285,7 @@ impl<'a> AnyChunk<'a> {
     #[inline]
     pub fn chunk_end(self) -> NonNull<u8> {
         if self.is_upwards_allocating() {
-            unsafe { self.header.as_ref().end }
+            self.header().end
         } else {
             self.after_header()
         }
@@ -320,7 +320,7 @@ impl<'a> AnyChunk<'a> {
     #[must_use]
     #[inline]
     pub fn bump_position(self) -> NonNull<u8> {
-        unsafe { self.header.as_ref().pos.get() }
+        self.header().pos.get()
     }
 
     fn after_header(self) -> NonNull<u8> {

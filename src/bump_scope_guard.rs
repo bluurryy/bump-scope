@@ -98,16 +98,15 @@ where
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, A, UP> {
-        let header = self.chunk.header().cast();
-        // SAFETY: `header` points to a valid chunk header which is guaranteed allocated
-        unsafe { Stats::from_header_unchecked(header) }
+        const GUARANTEED_ALLOCATED: bool = true;
+        unsafe { self.chunk.stats::<GUARANTEED_ALLOCATED>() }
     }
 
     /// Returns a reference to the base allocator.
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
-        unsafe { self.chunk.allocator().as_ref() }
+        self.chunk.allocator()
     }
 }
 
@@ -183,15 +182,14 @@ where
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'_, A, UP> {
-        let header = self.chunk.header().cast();
-        // SAFETY: `header` points to a valid chunk header which is guaranteed allocated
-        unsafe { Stats::from_header_unchecked(header) }
+        const GUARANTEED_ALLOCATED: bool = true;
+        unsafe { self.chunk.stats::<GUARANTEED_ALLOCATED>() }
     }
 
     /// Returns a reference to the base allocator.
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
-        unsafe { self.chunk.allocator().as_ref() }
+        self.chunk.allocator()
     }
 }

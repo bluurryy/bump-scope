@@ -12,7 +12,6 @@ use crate::{
     BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, FixedBumpString, FixedBumpVec,
     MinimumAlignment, RawChunk, SupportedMinimumAlignment,
     alloc::{AllocError, Allocator},
-    chunk_header::ChunkHeader,
     chunk_size::ChunkSize,
     owned_slice::OwnedSlice,
     polyfill::{transmute_mut, transmute_ref},
@@ -330,7 +329,7 @@ where
     #[must_use]
     pub const fn unallocated() -> Self {
         Self {
-            chunk: Cell::new(unsafe { RawChunk::from_header(ChunkHeader::UNALLOCATED.cast()) }),
+            chunk: Cell::new(RawChunk::UNALLOCATED),
         }
     }
 }

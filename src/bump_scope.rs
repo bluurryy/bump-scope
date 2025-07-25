@@ -428,7 +428,7 @@ where
                 let chunk = self
                     .stats()
                     .small_to_big()
-                    .find(|chunk| chunk.header == checkpoint.chunk.cast())
+                    .find(|chunk| chunk.header() == checkpoint.chunk.cast())
                     .expect("this checkpoint does not refer to any chunk of this bump allocator");
 
                 assert!(
@@ -466,7 +466,7 @@ where
     #[inline(never)]
     fn allocate_first_chunk<B: ErrorBehavior>(&self) -> Result<(), B> {
         // must only be called when we point to the empty chunk
-        debug_assert!(self.chunk.get().header().cast() == ChunkHeader::UNALLOCATED);
+        debug_assert_eq!(self.chunk.get(), RawChunk::UNALLOCATED);
 
         let allocator = A::default_or_panic();
         let chunk = RawChunk::new_in(ChunkSize::DEFAULT, None, allocator)?;
@@ -779,15 +779,14 @@ where
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
-        let header = self.chunk.get().header().cast();
-        unsafe { Stats::from_header_unchecked(header) }
+        unsafe { self.chunk.get().stats() }
     }
 
     /// Returns a reference to the base allocator.
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
-        unsafe { self.chunk.get().allocator().as_ref() }
+        self.chunk.get().allocator()
     }
 
     /// Returns `&self` as is. This is useful for macros that support both `Bump` and `BumpScope`.

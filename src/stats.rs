@@ -14,7 +14,7 @@ use core::{
     ptr::NonNull,
 };
 
-use crate::{RawChunk, chunk_header::ChunkHeader};
+use crate::{RawChunk, chunk_header::ChunkHeader, maybe_default_allocator};
 
 mod any;
 
@@ -31,13 +31,13 @@ macro_rules! declaration {
             const UP: bool = true,
             const GUARANTEED_ALLOCATED: bool = true,
         > {
-            header: NonNull<ChunkHeader<A>>,
+            chunk: RawChunk<UP, A>,
             marker: PhantomData<&'a ()>,
         }
     };
 }
 
-crate::maybe_default_allocator!(declaration);
+maybe_default_allocator!(declaration);
 
 impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Clone for Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
     fn clone(&self) -> Self {
@@ -49,7 +49,7 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Copy for Stats<'_, A, 
 
 impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> PartialEq for Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
     fn eq(&self, other: &Self) -> bool {
-        self.header == other.header
+        self.chunk == other.chunk
     }
 }
 
@@ -62,6 +62,18 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Debug for Stats<'_, A,
 }
 
 impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
+    #[inline]
+    pub(crate) unsafe fn from_raw_chunk(chunk: RawChunk<UP, A>) -> Self {
+        if GUARANTEED_ALLOCATED {
+            debug_assert_ne!(chunk, RawChunk::UNALLOCATED);
+        }
+
+        Self {
+            chunk,
+            marker: PhantomData,
+        }
+    }
+
     /// Returns the number of chunks.
     #[must_use]
     pub fn count(self) -> usize {
@@ -150,42 +162,39 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
         ChunkPrevIter { chunk: Some(start) }
     }
 
-    #[inline]
-    pub(crate) unsafe fn from_header_unchecked(header: NonNull<ChunkHeader<A>>) -> Self {
-        if GUARANTEED_ALLOCATED {
-            debug_assert_ne!(header.cast(), ChunkHeader::UNALLOCATED);
-        }
-
-        Self {
-            header,
-            marker: PhantomData,
-        }
-    }
-
     /// Turns this `Stats` into a `Stats` where `GUARANTEED_ALLOCATED = true`.
     #[inline]
     #[must_use]
     pub fn guaranteed_allocated(self) -> Option<Stats<'a, A, UP, true>> {
         if GUARANTEED_ALLOCATED {
-            return Some(unsafe { Stats::from_header_unchecked(self.header) });
+            return Some(unsafe { Stats::from_raw_chunk(self.chunk) });
         }
 
-        if self.header.cast() == ChunkHeader::UNALLOCATED {
+        if self.chunk.header().cast() == ChunkHeader::UNALLOCATED {
             return None;
         }
 
-        Some(unsafe { Stats::from_header_unchecked(self.header) })
+        Some(unsafe { Stats::from_raw_chunk(self.chunk) })
     }
 
     /// Turns this `Stats` into a `Stats` where `GUARANTEED_ALLOCATED = false`.
     #[inline]
     #[must_use]
     pub fn not_guaranteed_allocated(self) -> Stats<'a, A, UP, false> {
-        unsafe { Stats::from_header_unchecked(self.header) }
+        unsafe { Stats::from_raw_chunk(self.chunk) }
     }
 
     fn get_current_chunk(self) -> Option<Chunk<'a, A, UP>> {
-        unsafe { Chunk::from_header(self.header) }
+        if !GUARANTEED_ALLOCATED && self.chunk == RawChunk::UNALLOCATED {
+            None
+        } else {
+            debug_assert_ne!(self.chunk, RawChunk::UNALLOCATED);
+
+            Some(Chunk {
+                chunk: self.chunk,
+                marker: PhantomData,
+            })
+        }
     }
 }
 
@@ -193,7 +202,10 @@ impl<'a, A, const UP: bool> Stats<'a, A, UP, true> {
     /// This is the chunk we are currently allocating on.
     #[must_use]
     pub fn current_chunk(self) -> Chunk<'a, A, UP> {
-        unsafe { Chunk::from_header_unchecked(self.header) }
+        Chunk {
+            chunk: self.chunk,
+            marker: self.marker,
+        }
     }
 }
 
@@ -201,11 +213,21 @@ impl<'a, A, const UP: bool> Stats<'a, A, UP, false> {
     /// This is the chunk we are currently allocating on.
     #[must_use]
     pub fn current_chunk(self) -> Option<Chunk<'a, A, UP>> {
-        unsafe { Chunk::from_header(self.header) }
+        if self.chunk.header().cast() == ChunkHeader::UNALLOCATED {
+            return None;
+        }
+
+        Some(Chunk {
+            chunk: self.chunk,
+            marker: self.marker,
+        })
     }
 
     pub(crate) fn unallocated() -> Self {
-        unsafe { Self::from_header_unchecked(ChunkHeader::UNALLOCATED.cast()) }
+        Self {
+            chunk: RawChunk::UNALLOCATED,
+            marker: PhantomData,
+        }
     }
 }
 
@@ -213,7 +235,10 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> From<Chunk<'a, A, 
     for Stats<'a, A, UP, GUARANTEED_ALLOCATED>
 {
     fn from(chunk: Chunk<'a, A, UP>) -> Self {
-        unsafe { Stats::from_header_unchecked(chunk.header) }
+        Stats {
+            chunk: chunk.chunk,
+            marker: PhantomData,
+        }
     }
 }
 
@@ -228,7 +253,8 @@ impl<A, const UP: bool> Default for Stats<'_, A, UP, false> {
 /// See [`Stats`].
 #[repr(transparent)]
 pub struct Chunk<'a, A, const UP: bool> {
-    pub(crate) header: NonNull<ChunkHeader<A>>,
+    /// This chunk must not be the [`RawChunk::UNALLOCATED`].
+    chunk: RawChunk<UP, A>,
     marker: PhantomData<&'a ()>,
 }
 
@@ -242,7 +268,7 @@ impl<A, const UP: bool> Copy for Chunk<'_, A, UP> {}
 
 impl<A, const UP: bool> PartialEq for Chunk<'_, A, UP> {
     fn eq(&self, other: &Self) -> bool {
-        self.header == other.header
+        self.chunk == other.chunk
     }
 }
 
@@ -258,58 +284,28 @@ impl<A, const UP: bool> Debug for Chunk<'_, A, UP> {
 }
 
 impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
-    #[inline]
-    pub(crate) unsafe fn from_header(header: NonNull<ChunkHeader<A>>) -> Option<Self> {
-        if header.cast() == ChunkHeader::UNALLOCATED {
-            None
-        } else {
-            Some(unsafe { Self::from_header_unchecked(header) })
-        }
-    }
-
-    #[inline]
-    pub(crate) unsafe fn from_header_unchecked(header: NonNull<ChunkHeader<A>>) -> Self {
-        debug_assert_ne!(header.cast(), ChunkHeader::UNALLOCATED);
-        Self {
-            header,
-            marker: PhantomData,
-        }
-    }
-
-    #[inline]
-    pub(crate) fn is_upwards_allocating(self) -> bool {
-        let header = self.header.addr();
-        let end = unsafe { self.header.as_ref() }.end.addr();
-        end > header
-    }
-
-    pub(crate) fn raw(self) -> RawChunk<UP, A> {
-        debug_assert_eq!(UP, self.is_upwards_allocating());
-        unsafe { RawChunk::from_header(self.header) }
+    pub(crate) fn header(self) -> NonNull<ChunkHeader> {
+        self.chunk.header().cast()
     }
 
     /// Returns the previous (smaller) chunk.
     #[must_use]
     #[inline(always)]
     pub fn prev(self) -> Option<Self> {
-        unsafe {
-            Some(Chunk {
-                header: self.header.as_ref().prev.get()?,
-                marker: PhantomData,
-            })
-        }
+        Some(Chunk {
+            chunk: self.chunk.prev()?,
+            marker: PhantomData,
+        })
     }
 
     /// Returns the next (bigger) chunk.
     #[must_use]
     #[inline(always)]
     pub fn next(self) -> Option<Self> {
-        unsafe {
-            Some(Chunk {
-                header: self.header.as_ref().next.get()?,
-                marker: PhantomData,
-            })
-        }
+        Some(Chunk {
+            chunk: self.chunk.next()?,
+            marker: PhantomData,
+        })
     }
 
     /// Returns an iterator over all previous (smaller) chunks.
@@ -330,14 +326,14 @@ impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
     #[must_use]
     #[inline]
     pub fn size(self) -> usize {
-        self.raw().size().get()
+        self.chunk.size().get()
     }
 
     /// Returns the capacity of this chunk in bytes.
     #[must_use]
     #[inline]
     pub fn capacity(self) -> usize {
-        self.raw().capacity()
+        self.chunk.capacity()
     }
 
     /// Returns the amount of allocated bytes.
@@ -349,7 +345,7 @@ impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
     #[must_use]
     #[inline]
     pub fn allocated(self) -> usize {
-        self.raw().allocated()
+        self.chunk.allocated()
     }
 
     /// Returns the remaining capacity.
@@ -360,35 +356,35 @@ impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
     #[must_use]
     #[inline]
     pub fn remaining(self) -> usize {
-        self.raw().remaining()
+        self.chunk.remaining()
     }
 
     /// Returns a pointer to the start of the chunk.
     #[must_use]
     #[inline]
     pub fn chunk_start(self) -> NonNull<u8> {
-        self.raw().chunk_start()
+        self.chunk.chunk_start()
     }
 
     /// Returns a pointer to the end of the chunk.
     #[must_use]
     #[inline]
     pub fn chunk_end(self) -> NonNull<u8> {
-        self.raw().chunk_end()
+        self.chunk.chunk_end()
     }
 
     /// Returns a pointer to the start of the chunk's content.
     #[must_use]
     #[inline]
     pub fn content_start(self) -> NonNull<u8> {
-        self.raw().content_start()
+        self.chunk.content_start()
     }
 
     /// Returns a pointer to the end of the chunk's content.
     #[must_use]
     #[inline]
     pub fn content_end(self) -> NonNull<u8> {
-        self.raw().content_end()
+        self.chunk.content_end()
     }
 
     /// Returns the bump pointer. It lies within the chunk's content range.
@@ -398,12 +394,12 @@ impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
     #[must_use]
     #[inline]
     pub fn bump_position(self) -> NonNull<u8> {
-        self.raw().pos()
+        self.chunk.pos()
     }
 
     #[cfg(debug_assertions)]
     pub(crate) fn contains_addr_or_end(self, addr: usize) -> bool {
-        self.raw().contains_addr_or_end(addr)
+        self.chunk.contains_addr_or_end(addr)
     }
 }
 

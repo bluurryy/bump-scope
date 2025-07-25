@@ -1,4 +1,4 @@
-use core::{alloc::Layout, cell::Cell, mem::align_of, num::NonZeroUsize, ops::Range, ptr::NonNull};
+use core::{alloc::Layout, cell::Cell, fmt, mem::align_of, num::NonZeroUsize, ops::Range, ptr::NonNull};
 
 use crate::{
     ChunkHeader, ErrorBehavior, SupportedMinimumAlignment,
@@ -7,6 +7,7 @@ use crate::{
     chunk_size::{ChunkSize, ChunkSizeHint},
     layout::LayoutProps,
     polyfill::non_null,
+    stats::Stats,
 };
 
 /// Represents an allocated chunk.
@@ -46,7 +47,18 @@ impl<const UP: bool, A> PartialEq for RawChunk<UP, A> {
 
 impl<const UP: bool, A> Eq for RawChunk<UP, A> {}
 
+#[cfg(debug_assertions)]
+impl<const UP: bool, A> fmt::Debug for RawChunk<UP, A> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("RawChunk").field(&self.header.as_ptr().cast::<u8>()).finish()
+    }
+}
+
 impl<const UP: bool, A> RawChunk<UP, A> {
+    pub(crate) const UNALLOCATED: Self = Self {
+        header: ChunkHeader::UNALLOCATED.cast(),
+    };
+
     pub(crate) fn new_in<E: ErrorBehavior>(chunk_size: ChunkSize<A, UP>, prev: Option<Self>, allocator: A) -> Result<Self, E>
     where
         A: Allocator,
@@ -453,16 +465,19 @@ impl<const UP: bool, A> RawChunk<UP, A> {
     }
 
     /// # Safety
-    /// self must not be used after calling this.
+    /// - self must not be [`RawChunk::UNALLOCATED`]
+    /// - self must not be used after calling this.
     pub(crate) unsafe fn deallocate(self)
     where
         A: Allocator,
     {
-        unsafe {
-            let ptr = self.chunk_start();
-            let layout = self.layout();
-            let allocator_ptr = &raw const (*self.header.as_ptr()).allocator;
+        debug_assert_ne!(self, RawChunk::UNALLOCATED);
 
+        let ptr = self.chunk_start();
+        let layout = self.layout();
+
+        unsafe {
+            let allocator_ptr = &raw const (*self.header.as_ptr()).allocator;
             let allocator = allocator_ptr.read();
             allocator.deallocate(ptr, layout);
         }
@@ -502,8 +517,15 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         }
     }
 
+    /// This is only safe to read when `header()` is not `ChunkHeader::UNALLOCATED`.
     #[inline(always)]
-    pub(crate) fn allocator(self) -> NonNull<A> {
-        unsafe { NonNull::from(&self.header.as_ref().allocator) }
+    pub(crate) fn allocator<'a>(self) -> &'a A {
+        debug_assert_ne!(self, RawChunk::UNALLOCATED);
+        unsafe { &self.header.as_ref().allocator }
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn stats<'a, const GUARANTEED_ALLOCATED: bool>(self) -> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
+        unsafe { Stats::from_raw_chunk(self) }
     }
 }
