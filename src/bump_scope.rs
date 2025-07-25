@@ -142,7 +142,7 @@ where
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<true>,
+    A: BaseAllocator,
 {
     /// Calls `f` with a new child scope.
     ///
@@ -331,6 +331,28 @@ where
     #[inline(always)]
     pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, A, MIN_ALIGN, UP> {
         BumpScopeGuard::new(self)
+    }
+
+    /// Returns a reference to the base allocator.
+    #[must_use]
+    #[inline(always)]
+    pub fn allocator(&self) -> &A {
+        self.stats().current_chunk().allocator()
+    }
+}
+
+/// These functions are only available if the `BumpScope` is NOT [guaranteed allocated](crate#guaranteed_allocated-parameter).
+#[allow(clippy::needless_lifetimes)]
+impl<A, const MIN_ALIGN: usize, const UP: bool> BumpScope<'_, A, MIN_ALIGN, UP, false>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<false>,
+{
+    /// Returns a reference to the base allocator.
+    #[must_use]
+    #[inline(always)]
+    pub fn allocator(&self) -> Option<&A> {
+        self.stats().current_chunk().map(|c| c.allocator())
     }
 }
 
@@ -780,13 +802,6 @@ where
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
         unsafe { self.chunk.get().stats() }
-    }
-
-    /// Returns a reference to the base allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn allocator(&self) -> &A {
-        self.chunk.get().allocator()
     }
 
     /// Returns `&self` as is. This is useful for macros that support both `Bump` and `BumpScope`.

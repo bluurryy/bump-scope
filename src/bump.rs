@@ -332,6 +332,13 @@ where
             chunk: Cell::new(RawChunk::UNALLOCATED),
         }
     }
+
+    /// Returns a reference to the base allocator.
+    #[must_use]
+    #[inline(always)]
+    pub fn allocator(&self) -> Option<&A> {
+        self.as_scope().allocator()
+    }
 }
 
 impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
@@ -689,6 +696,13 @@ where
     pub fn scope_guard(&mut self) -> BumpScopeGuardRoot<'_, A, MIN_ALIGN, UP> {
         BumpScopeGuardRoot::new(self)
     }
+
+    /// Returns a reference to the base allocator.
+    #[must_use]
+    #[inline(always)]
+    pub fn allocator(&self) -> &A {
+        self.as_scope().allocator()
+    }
 }
 
 impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
@@ -988,13 +1002,6 @@ where
     #[inline(always)]
     pub fn stats(&self) -> Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
         self.as_scope().stats()
-    }
-
-    /// Returns a reference to the base allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn allocator(&self) -> &A {
-        self.as_scope().allocator()
     }
 
     /// Returns this `&Bump` as a `&BumpScope`.

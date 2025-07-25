@@ -517,9 +517,9 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         }
     }
 
-    /// This is only safe to read when `header()` is not `ChunkHeader::UNALLOCATED`.
+    /// This is only safe to read when `self` is not `RawChunk::UNALLOCATED`.
     #[inline(always)]
-    pub(crate) fn allocator<'a>(self) -> &'a A {
+    pub(crate) unsafe fn allocator<'a>(self) -> &'a A {
         debug_assert_ne!(self, RawChunk::UNALLOCATED);
         unsafe { &self.header.as_ref().allocator }
     }

@@ -397,6 +397,14 @@ impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
         self.chunk.pos()
     }
 
+    /// Returns a reference to the base allocator.
+    #[must_use]
+    #[inline(always)]
+    pub fn allocator(&self) -> &'a A {
+        // SAFETY: A `Chunk` is guaranteed not to be `RawChunk::UNALLOCATED`.
+        unsafe { self.chunk.allocator() }
+    }
+
     #[cfg(debug_assertions)]
     pub(crate) fn contains_addr_or_end(self, addr: usize) -> bool {
         self.chunk.contains_addr_or_end(addr)

@@ -106,7 +106,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
-        self.chunk.allocator()
+        self.stats().current_chunk().allocator()
     }
 }
 
@@ -190,6 +190,6 @@ where
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
-        self.chunk.allocator()
+        self.stats().current_chunk().allocator()
     }
 }

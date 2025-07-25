@@ -11,10 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Breaking:** `BumpAllocator` trait family has been reworked:
-  - what was `BumpAllocator` is now generally `BumpAllocatorExt`, etc.
+  - what was `BumpAllocator` is now `BumpAllocatorExt`, same with other traits that have an `*Ext` variant 
   - trait methods become public api
   - `BumpAllocator` becomes a sealed trait
   - `&dyn BumpAllocator` can be used for collections
+- Add `Chunk::allocator()` which returns the base allocator
 - Improve `Fixed*` collection documentation.
 
 ### Changed
@@ -26,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix small amount of wasted space when allocating `Mut*` collections on a downwards bumping allocator
+- Fix potential UB when calling `allocator()` on an unallocated `Bump(Scope)`, now `allocator()` returns `Option<&A>` for `!GUARANTEED_ALLOCATED` `Bump(Scope)`s
 
 ## [0.17.4] - 2025-07-12
 
