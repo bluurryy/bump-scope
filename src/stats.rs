@@ -20,7 +20,7 @@ mod any;
 
 pub use any::{AnyChunk, AnyChunkNextIter, AnyChunkPrevIter, AnyStats};
 
-macro_rules! declaration {
+macro_rules! make_type {
     ($($allocator_parameter:tt)*) => {
         /// Provides statistics about the memory usage of the bump allocator.
         ///
@@ -37,7 +37,7 @@ macro_rules! declaration {
     };
 }
 
-maybe_default_allocator!(declaration);
+maybe_default_allocator!(make_type);
 
 impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Clone for Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
     fn clone(&self) -> Self {

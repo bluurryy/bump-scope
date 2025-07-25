@@ -6,12 +6,15 @@ use std::{
     vec::Vec,
 };
 
-use crate::{BaseAllocator, Bump, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment, alloc::AllocError};
+use crate::{
+    BaseAllocator, Bump, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment, alloc::AllocError,
+    maybe_default_allocator,
+};
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
-macro_rules! bump_pool_declaration {
+macro_rules! make_type {
     ($($allocator_parameter:tt)*) => {
         /// A pool of bump allocators.
         ///
@@ -81,7 +84,7 @@ macro_rules! bump_pool_declaration {
     };
 }
 
-crate::maybe_default_allocator!(bump_pool_declaration);
+maybe_default_allocator!(make_type);
 
 impl<A, const MIN_ALIGN: usize, const UP: bool> Default for BumpPool<A, MIN_ALIGN, UP>
 where
@@ -273,7 +276,7 @@ where
     }
 }
 
-macro_rules! bump_pool_guard_declaration {
+macro_rules! make_type {
     ($($allocator_parameter:tt)*) => {
 
         /// This is a wrapper around [`Bump`] that mutably derefs to a [`BumpScope`] and returns its [`Bump`] back to the [`BumpPool`] on drop.
@@ -295,7 +298,7 @@ macro_rules! bump_pool_guard_declaration {
     };
 }
 
-crate::maybe_default_allocator!(bump_pool_guard_declaration);
+maybe_default_allocator!(make_type);
 
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Deref for BumpPoolGuard<'a, A, MIN_ALIGN, UP>
 where

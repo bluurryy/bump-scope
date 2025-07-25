@@ -13,6 +13,7 @@ use crate::{
     MinimumAlignment, RawChunk, SupportedMinimumAlignment,
     alloc::{AllocError, Allocator},
     chunk_size::ChunkSize,
+    maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{transmute_mut, transmute_ref},
     stats::{AnyStats, Stats},
@@ -21,7 +22,7 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
-macro_rules! bump_declaration {
+macro_rules! make_type {
     ($($allocator_parameter:tt)*) => {
         /// The bump allocator.
         ///
@@ -196,7 +197,7 @@ macro_rules! bump_declaration {
     };
 }
 
-crate::maybe_default_allocator!(bump_declaration);
+maybe_default_allocator!(make_type);
 
 // Sending Bumps when nothing is allocated is fine.
 // When something is allocated Bump is borrowed and sending is not possible.

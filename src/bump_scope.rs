@@ -23,6 +23,7 @@ use crate::{
     chunk_size::ChunkSize,
     const_param_assert, down_align_usize,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
+    maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{non_null, transmute_mut, transmute_ref},
     stats::{AnyStats, Stats},
@@ -32,7 +33,7 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
-macro_rules! bump_scope_declaration {
+macro_rules! make_type {
     ($($allocator_parameter:tt)*) => {
         /// A bump allocation scope.
         ///
@@ -71,7 +72,7 @@ macro_rules! bump_scope_declaration {
     };
 }
 
-crate::maybe_default_allocator!(bump_scope_declaration);
+maybe_default_allocator!(make_type);
 
 impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A> UnwindSafe
     for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
