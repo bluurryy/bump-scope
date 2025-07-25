@@ -37,7 +37,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     fn stats(&self) -> Self::Stats<'_>;
 
-    /// A specialized version of [`allocate`](Allocator::allocate).
+    /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
     ///
     /// # Panics
     ///
@@ -47,7 +47,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
         allocate_layout(self, layout)
     }
 
-    /// A specialized version of [`allocate`](Allocator::allocate).
+    /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
     ///
     /// # Errors
     ///
@@ -56,7 +56,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
         try_allocate_layout(self, layout)
     }
 
-    /// A specialized version of [`allocate`](Allocator::allocate).
+    /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
     ///
     /// # Panics
     ///
@@ -66,7 +66,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
         allocate_sized(self)
     }
 
-    /// A specialized version of [`allocate`](Allocator::allocate).
+    /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
     ///
     /// # Errors
     ///
@@ -75,7 +75,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
         try_allocate_sized(self)
     }
 
-    /// A specialized version of [`allocate`](Allocator::allocate).
+    /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
     ///
     /// # Panics
     ///
@@ -85,7 +85,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
         allocate_slice(self, len)
     }
 
-    /// A specialized version of [`allocate`](Allocator::allocate).
+    /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
     ///
     /// # Errors
     ///
@@ -94,7 +94,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
         try_allocate_slice(self, len)
     }
 
-    /// A specialized version of [`shrink`](Allocator::shrink).
+    /// A specialized version of [`shrink`](crate::alloc::Allocator::shrink).
     ///
     /// Behaves similar to the following code except that it
     /// returns `None` when the allocation remains unchanged and the pointer stays valid.
@@ -116,7 +116,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     ///
     /// Same safety conditions as for the code above apply.
     ///
-    /// [shrink]: Allocator::shrink
+    /// [shrink]: crate::alloc::Allocator::shrink
     /// [array]: Layout::array
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
         unsafe { shrink_slice(self, ptr, old_len, new_len) }
