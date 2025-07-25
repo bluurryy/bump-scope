@@ -660,3 +660,25 @@ macro_rules! mut_collection_method_allocator_stats {
 }
 
 pub(crate) use mut_collection_method_allocator_stats;
+
+/// Aligns a bump address to the `MIN_ALIGN`.
+///
+/// This is a noop when `MIN_ALIGN` is `0`.
+#[must_use]
+#[inline(always)]
+fn align_pos<const MIN_ALIGN: usize, const UP: bool>(pos: NonZeroUsize) -> usize
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+{
+    if UP {
+        // Aligning an address that is `<= range.end` with an alignment
+        // that is `<= MIN_CHUNK_ALIGN` cannot exceed `range.end` and
+        // cannot overflow as `range.end` is always aligned to `MIN_CHUNK_ALIGN`.
+        up_align_usize_unchecked(pos.get(), MIN_ALIGN)
+    } else {
+        // The chunk start is non-null and is aligned to `MIN_CHUNK_ALIGN`
+        // `MIN_ALIGN <= MIN_CHUNK_ALIGN` will never pass the chunk start
+        // and stay non-zero.
+        down_align_usize(pos.get(), MIN_ALIGN)
+    }
+}

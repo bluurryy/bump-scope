@@ -1,14 +1,12 @@
 use core::{alloc::Layout, cell::Cell, mem::align_of, num::NonZeroUsize, ops::Range, ptr::NonNull};
 
 use crate::{
-    ChunkHeader, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment,
+    ChunkHeader, ErrorBehavior, SupportedMinimumAlignment,
     alloc::{AllocError, Allocator},
     bumping::{BumpProps, BumpUp, MIN_CHUNK_ALIGN, bump_down, bump_prepare_down, bump_prepare_up, bump_up},
     chunk_size::{ChunkSize, ChunkSizeHint},
-    down_align_usize,
     layout::LayoutProps,
     polyfill::non_null,
-    up_align_usize_unchecked,
 };
 
 /// Represents an allocated chunk.
@@ -276,26 +274,6 @@ impl<const UP: bool, A> RawChunk<UP, A> {
                 Some(self.with_addr_range(range))
             }
         }
-    }
-
-    // FIXME: ensure this is a noop for ALIGN = 1
-    #[inline(always)]
-    pub(crate) fn align_pos_to<const ALIGN: usize>(self)
-    where
-        MinimumAlignment<ALIGN>: SupportedMinimumAlignment,
-    {
-        let mut pos = self.pos().addr().get();
-
-        if UP {
-            // Aligning an address that is `<= range.end` with an alignment
-            // that is `<= CHUNK_ALIGN_MIN` cannot exceed `range.end` and
-            // cannot overflow as `range.end` is always aligned to `CHUNK_ALIGN_MIN`.
-            pos = up_align_usize_unchecked(pos, ALIGN);
-        } else {
-            pos = down_align_usize(pos, ALIGN);
-        }
-
-        unsafe { self.set_pos_addr(pos) }
     }
 
     #[inline(always)]

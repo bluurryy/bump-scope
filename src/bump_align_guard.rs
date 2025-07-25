@@ -1,4 +1,4 @@
-use crate::{BaseAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
+use crate::{BaseAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, align_pos};
 
 /// Aligns the bump pointer on drop.
 ///
@@ -21,7 +21,9 @@ where
 {
     #[inline(always)]
     fn drop(&mut self) {
-        self.scope.chunk.get().align_pos_to::<MIN_ALIGN>();
+        let pos = self.scope.chunk.get().pos().addr();
+        let addr = align_pos::<MIN_ALIGN, UP>(pos);
+        unsafe { self.scope.chunk.get().set_pos_addr(addr) };
     }
 }
 
