@@ -207,10 +207,7 @@ unsafe impl<B: BumpAllocator + ?Sized> BumpAllocator for &B {
     }
 }
 
-unsafe impl<B: BumpAllocator + ?Sized> BumpAllocator for &mut B
-where
-    for<'b> &'b mut B: Allocator,
-{
+unsafe impl<B: BumpAllocator + ?Sized> BumpAllocator for &mut B {
     #[inline(always)]
     fn any_stats(&self) -> AnyStats<'_> {
         B::any_stats(self)

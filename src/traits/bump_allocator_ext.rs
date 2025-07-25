@@ -5,7 +5,7 @@ use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 use crate::{
     BaseAllocator, Bump, BumpAllocator, BumpAllocatorScope, BumpScope, MinimumAlignment, MutBumpAllocator,
     MutBumpAllocatorScope, SizedTypeProperties, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
-    alloc::{AllocError, Allocator},
+    alloc::AllocError,
     bump_down,
     polyfill::non_null,
     stats::{AnyStats, Stats},
@@ -698,10 +698,7 @@ unsafe impl<B: BumpAllocatorExt + ?Sized> BumpAllocatorExt for &B {
     }
 }
 
-unsafe impl<B: BumpAllocatorExt + ?Sized> BumpAllocatorExt for &mut B
-where
-    for<'b> &'b mut B: Allocator,
-{
+unsafe impl<B: BumpAllocatorExt + ?Sized> BumpAllocatorExt for &mut B {
     type Stats<'b>
         = B::Stats<'b>
     where
