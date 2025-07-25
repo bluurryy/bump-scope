@@ -1298,7 +1298,7 @@ where
     #[must_use]
     pub fn into_raw(self) -> NonNull<()> {
         let this = ManuallyDrop::new(self);
-        this.chunk.get().header_ptr().cast()
+        this.chunk.get().header().cast()
     }
 
     /// Converts the raw pointer that was created with [`into_raw`](Bump::into_raw) back into a `Bump`.
@@ -1309,9 +1309,8 @@ where
     #[inline]
     #[must_use]
     pub unsafe fn from_raw(ptr: NonNull<()>) -> Self {
-        unsafe {
-            let chunk = Cell::new(RawChunk::from_header(ptr.cast()));
-            Self { chunk }
+        Self {
+            chunk: Cell::new(unsafe { RawChunk::from_header(ptr.cast()) }),
         }
     }
 }

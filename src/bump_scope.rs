@@ -398,46 +398,46 @@ where
     #[inline]
     #[expect(clippy::missing_panics_doc)] // just debug assertions
     pub unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        unsafe {
-            // If the checkpoint was created when the bump allocator had no allocated chunk
-            // then the chunk pointer will point to the unallocated chunk header.
-            //
-            // In such cases we reset the bump pointer to the very start of the very first chunk.
-            //
-            // We don't check if the chunk pointer points to the unallocated chunk header
-            // if the bump allocator is `GUARANTEED_ALLOCATED`. We are allowed to not do this check
-            // because of this safety condition of `reset_to`:
-            // > the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
-            if !GUARANTEED_ALLOCATED && checkpoint.chunk == ChunkHeader::UNALLOCATED {
-                let mut chunk = self.chunk.get();
+        // If the checkpoint was created when the bump allocator had no allocated chunk
+        // then the chunk pointer will point to the unallocated chunk header.
+        //
+        // In such cases we reset the bump pointer to the very start of the very first chunk.
+        //
+        // We don't check if the chunk pointer points to the unallocated chunk header
+        // if the bump allocator is `GUARANTEED_ALLOCATED`. We are allowed to not do this check
+        // because of this safety condition of `reset_to`:
+        // > the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
+        if !GUARANTEED_ALLOCATED && checkpoint.chunk == ChunkHeader::UNALLOCATED {
+            let mut chunk = self.chunk.get();
 
-                while let Some(prev) = chunk.prev() {
-                    chunk = prev;
-                }
+            while let Some(prev) = chunk.prev() {
+                chunk = prev;
+            }
 
-                chunk.reset();
-                self.chunk.set(chunk);
-            } else {
-                debug_assert_ne!(
-                    checkpoint.chunk,
-                    ChunkHeader::UNALLOCATED,
-                    "the safety conditions state that \"the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`\""
+            chunk.reset();
+            self.chunk.set(chunk);
+        } else {
+            debug_assert_ne!(
+                checkpoint.chunk,
+                ChunkHeader::UNALLOCATED,
+                "the safety conditions state that \"the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`\""
+            );
+
+            #[cfg(debug_assertions)]
+            {
+                let chunk = self
+                    .stats()
+                    .small_to_big()
+                    .find(|chunk| chunk.header == checkpoint.chunk.cast())
+                    .expect("this checkpoint does not refer to any chunk of this bump allocator");
+
+                assert!(
+                    chunk.contains_addr_or_end(checkpoint.address.get()),
+                    "checkpoint address does not point within its chunk"
                 );
+            }
 
-                #[cfg(debug_assertions)]
-                {
-                    let chunk = self
-                        .stats()
-                        .small_to_big()
-                        .find(|chunk| chunk.header == checkpoint.chunk.cast())
-                        .expect("this checkpoint does not refer to any chunk of this bump allocator");
-
-                    assert!(
-                        chunk.contains_addr_or_end(checkpoint.address.get()),
-                        "checkpoint address does not point within its chunk"
-                    );
-                }
-
+            unsafe {
                 checkpoint.reset_within_chunk();
                 let chunk = RawChunk::from_header(checkpoint.chunk.cast());
                 self.chunk.set(chunk);
@@ -466,7 +466,7 @@ where
     #[inline(never)]
     fn allocate_first_chunk<B: ErrorBehavior>(&self) -> Result<(), B> {
         // must only be called when we point to the empty chunk
-        debug_assert!(self.chunk.get().is_unallocated());
+        debug_assert!(self.chunk.get().header().cast() == ChunkHeader::UNALLOCATED);
 
         let allocator = A::default_or_panic();
         let chunk = RawChunk::new_in(ChunkSize::DEFAULT, None, allocator)?;
@@ -772,14 +772,14 @@ where
 
     #[inline(always)]
     pub(crate) fn is_unallocated(&self) -> bool {
-        !GUARANTEED_ALLOCATED && self.chunk.get().is_unallocated()
+        !GUARANTEED_ALLOCATED && self.chunk.get().header().cast() == ChunkHeader::UNALLOCATED
     }
 
     /// "Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
-        let header = self.chunk.get().header_ptr().cast();
+        let header = self.chunk.get().header().cast();
         unsafe { Stats::from_header_unchecked(header) }
     }
 
@@ -986,7 +986,7 @@ where
     #[must_use]
     pub fn into_raw(self) -> NonNull<()> {
         let this = ManuallyDrop::new(self);
-        this.chunk.get().header_ptr().cast()
+        this.chunk.get().header().cast()
     }
 
     /// Converts the raw pointer that was created with [`into_raw`](Self::into_raw) back into a `BumpScope`.
@@ -1000,12 +1000,9 @@ where
     #[inline]
     #[must_use]
     pub unsafe fn from_raw(ptr: NonNull<()>) -> Self {
-        unsafe {
-            let chunk = Cell::new(RawChunk::from_header(ptr.cast()));
-            Self {
-                chunk,
-                marker: PhantomData,
-            }
+        Self {
+            chunk: Cell::new(unsafe { RawChunk::from_header(ptr.cast()) }),
+            marker: PhantomData,
         }
     }
 }

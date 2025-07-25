@@ -16,7 +16,7 @@ pub struct Checkpoint {
 impl Checkpoint {
     pub(crate) fn new<const UP: bool, A>(chunk: RawChunk<UP, A>) -> Self {
         let address = chunk.pos().addr();
-        let chunk = chunk.header_ptr().cast();
+        let chunk = chunk.header().cast();
         Checkpoint { chunk, address }
     }
 
@@ -98,7 +98,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, A, UP> {
-        let header = self.chunk.header_ptr().cast();
+        let header = self.chunk.header().cast();
         // SAFETY: `header` points to a valid chunk header which is guaranteed allocated
         unsafe { Stats::from_header_unchecked(header) }
     }
@@ -183,7 +183,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'_, A, UP> {
-        let header = self.chunk.header_ptr().cast();
+        let header = self.chunk.header().cast();
         // SAFETY: `header` points to a valid chunk header which is guaranteed allocated
         unsafe { Stats::from_header_unchecked(header) }
     }

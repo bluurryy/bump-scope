@@ -111,16 +111,12 @@ impl<const UP: bool, A> RawChunk<UP, A> {
         Ok(RawChunk { header })
     }
 
-    pub(crate) fn header_ptr(self) -> NonNull<ChunkHeader<A>> {
+    pub(crate) fn header(self) -> NonNull<ChunkHeader<A>> {
         self.header
     }
 
     pub(crate) const unsafe fn from_header(header: NonNull<ChunkHeader<A>>) -> Self {
         Self { header }
-    }
-
-    pub(crate) fn is_unallocated(self) -> bool {
-        self.header.cast() == ChunkHeader::UNALLOCATED
     }
 
     /// Attempts to allocate a block of memory.
