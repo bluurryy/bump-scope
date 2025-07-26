@@ -20,7 +20,7 @@ pub(crate) trait ErrorBehavior: Sized {
     fn format_trait_error() -> Self;
 
     /// For the infallible case we want to inline `f` but not for the fallible one. (Because it produces better code)
-    fn alloc_or_else<const UP: bool, A>(
+    fn alloc_or_else<A, const UP: bool>(
         chunk: RawChunk<A, UP>,
         minimum_alignment: impl SupportedMinimumAlignment,
         layout: impl LayoutProps,
@@ -28,7 +28,7 @@ pub(crate) trait ErrorBehavior: Sized {
     ) -> Result<NonNull<u8>, Self>;
 
     /// For the infallible case we want to inline `f` but not for the fallible one. (Because it produces better code)
-    fn prepare_allocation_or_else<const UP: bool, A>(
+    fn prepare_allocation_or_else<A, const UP: bool>(
         chunk: RawChunk<A, UP>,
         minimum_alignment: impl SupportedMinimumAlignment,
         layout: impl LayoutProps,
@@ -77,7 +77,7 @@ impl ErrorBehavior for Infallible {
     }
 
     #[inline(always)]
-    fn alloc_or_else<const UP: bool, A>(
+    fn alloc_or_else<A, const UP: bool>(
         chunk: RawChunk<A, UP>,
         minimum_alignment: impl SupportedMinimumAlignment,
         layout: impl LayoutProps,
@@ -87,7 +87,7 @@ impl ErrorBehavior for Infallible {
     }
 
     #[inline(always)]
-    fn prepare_allocation_or_else<const UP: bool, A>(
+    fn prepare_allocation_or_else<A, const UP: bool>(
         chunk: RawChunk<A, UP>,
         minimum_alignment: impl SupportedMinimumAlignment,
         layout: impl LayoutProps,
@@ -151,7 +151,7 @@ impl ErrorBehavior for AllocError {
     }
 
     #[inline(always)]
-    fn alloc_or_else<const UP: bool, A>(
+    fn alloc_or_else<A, const UP: bool>(
         chunk: RawChunk<A, UP>,
         minimum_alignment: impl SupportedMinimumAlignment,
         layout: impl LayoutProps,
@@ -164,7 +164,7 @@ impl ErrorBehavior for AllocError {
     }
 
     #[inline(always)]
-    fn prepare_allocation_or_else<const UP: bool, A>(
+    fn prepare_allocation_or_else<A, const UP: bool>(
         chunk: RawChunk<A, UP>,
         minimum_alignment: impl SupportedMinimumAlignment,
         layout: impl LayoutProps,

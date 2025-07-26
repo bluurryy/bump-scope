@@ -14,7 +14,7 @@ pub struct Checkpoint {
 }
 
 impl Checkpoint {
-    pub(crate) fn new<const UP: bool, A>(chunk: RawChunk<A, UP>) -> Self {
+    pub(crate) fn new<A, const UP: bool>(chunk: RawChunk<A, UP>) -> Self {
         let address = chunk.pos().addr();
         let chunk = chunk.header().cast();
         Checkpoint { chunk, address }
