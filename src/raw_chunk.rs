@@ -47,7 +47,6 @@ impl<A, const UP: bool> PartialEq for RawChunk<A, UP> {
 
 impl<A, const UP: bool> Eq for RawChunk<A, UP> {}
 
-#[cfg(debug_assertions)]
 impl<A, const UP: bool> fmt::Debug for RawChunk<A, UP> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("RawChunk").field(&self.header.as_ptr().cast::<u8>()).finish()

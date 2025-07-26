@@ -284,6 +284,7 @@ impl<A, const UP: bool> Debug for Chunk<'_, A, UP> {
 }
 
 impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
+    #[cfg(debug_assertions)]
     pub(crate) fn header(self) -> NonNull<ChunkHeader> {
         self.chunk.header().cast()
     }
