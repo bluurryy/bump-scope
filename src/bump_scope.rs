@@ -64,7 +64,7 @@ macro_rules! make_type {
             const UP: bool = true,
             const GUARANTEED_ALLOCATED: bool = true,
         > {
-            pub(crate) chunk: Cell<RawChunk<UP, A>>,
+            pub(crate) chunk: Cell<RawChunk<A, UP>>,
 
             /// Marks the lifetime of the mutably borrowed `BumpScopeGuard(Root)`.
             marker: PhantomData<&'a ()>,
@@ -469,7 +469,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<UP, A>) -> Self {
+    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, UP>) -> Self {
         Self {
             chunk: Cell::new(chunk),
             marker: PhantomData,
@@ -750,7 +750,7 @@ where
     pub(crate) unsafe fn in_another_chunk<B: ErrorBehavior, R, L: LayoutProps>(
         &self,
         layout: L,
-        mut f: impl FnMut(RawChunk<UP, A>, L) -> Option<R>,
+        mut f: impl FnMut(RawChunk<A, UP>, L) -> Option<R>,
     ) -> Result<R, B> {
         unsafe {
             let new_chunk = if self.is_unallocated() {

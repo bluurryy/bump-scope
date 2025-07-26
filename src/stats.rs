@@ -31,7 +31,7 @@ macro_rules! make_type {
             const UP: bool = true,
             const GUARANTEED_ALLOCATED: bool = true,
         > {
-            chunk: RawChunk<UP, A>,
+            chunk: RawChunk<A, UP>,
             marker: PhantomData<&'a ()>,
         }
     };
@@ -63,7 +63,7 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Debug for Stats<'_, A,
 
 impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
     #[inline]
-    pub(crate) unsafe fn from_raw_chunk(chunk: RawChunk<UP, A>) -> Self {
+    pub(crate) unsafe fn from_raw_chunk(chunk: RawChunk<A, UP>) -> Self {
         if GUARANTEED_ALLOCATED {
             debug_assert_ne!(chunk, RawChunk::UNALLOCATED);
         }
@@ -254,7 +254,7 @@ impl<A, const UP: bool> Default for Stats<'_, A, UP, false> {
 #[repr(transparent)]
 pub struct Chunk<'a, A, const UP: bool> {
     /// This chunk must not be the [`RawChunk::UNALLOCATED`].
-    chunk: RawChunk<UP, A>,
+    chunk: RawChunk<A, UP>,
     marker: PhantomData<&'a ()>,
 }
 

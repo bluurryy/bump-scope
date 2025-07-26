@@ -21,7 +21,7 @@ pub(crate) trait ErrorBehavior: Sized {
 
     /// For the infallible case we want to inline `f` but not for the fallible one. (Because it produces better code)
     fn alloc_or_else<const UP: bool, A>(
-        chunk: RawChunk<UP, A>,
+        chunk: RawChunk<A, UP>,
         minimum_alignment: impl SupportedMinimumAlignment,
         layout: impl LayoutProps,
         f: impl FnOnce() -> Result<NonNull<u8>, Self>,
@@ -29,7 +29,7 @@ pub(crate) trait ErrorBehavior: Sized {
 
     /// For the infallible case we want to inline `f` but not for the fallible one. (Because it produces better code)
     fn prepare_allocation_or_else<const UP: bool, A>(
-        chunk: RawChunk<UP, A>,
+        chunk: RawChunk<A, UP>,
         minimum_alignment: impl SupportedMinimumAlignment,
         layout: impl LayoutProps,
         f: impl FnOnce() -> Result<NonNull<u8>, Self>,
@@ -78,7 +78,7 @@ impl ErrorBehavior for Infallible {
 
     #[inline(always)]
     fn alloc_or_else<const UP: bool, A>(
-        chunk: RawChunk<UP, A>,
+        chunk: RawChunk<A, UP>,
         minimum_alignment: impl SupportedMinimumAlignment,
         layout: impl LayoutProps,
         f: impl FnOnce() -> Result<NonNull<u8>, Self>,
@@ -88,7 +88,7 @@ impl ErrorBehavior for Infallible {
 
     #[inline(always)]
     fn prepare_allocation_or_else<const UP: bool, A>(
-        chunk: RawChunk<UP, A>,
+        chunk: RawChunk<A, UP>,
         minimum_alignment: impl SupportedMinimumAlignment,
         layout: impl LayoutProps,
         f: impl FnOnce() -> Result<NonNull<u8>, Self>,
@@ -152,7 +152,7 @@ impl ErrorBehavior for AllocError {
 
     #[inline(always)]
     fn alloc_or_else<const UP: bool, A>(
-        chunk: RawChunk<UP, A>,
+        chunk: RawChunk<A, UP>,
         minimum_alignment: impl SupportedMinimumAlignment,
         layout: impl LayoutProps,
         f: impl FnOnce() -> Result<NonNull<u8>, Self>,
@@ -165,7 +165,7 @@ impl ErrorBehavior for AllocError {
 
     #[inline(always)]
     fn prepare_allocation_or_else<const UP: bool, A>(
-        chunk: RawChunk<UP, A>,
+        chunk: RawChunk<A, UP>,
         minimum_alignment: impl SupportedMinimumAlignment,
         layout: impl LayoutProps,
         f: impl FnOnce() -> Result<NonNull<u8>, Self>,

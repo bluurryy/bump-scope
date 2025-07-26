@@ -18,22 +18,22 @@ use crate::{
 /// So just the `deallocate` method is unsafe. You have to make sure the chunk is not used
 /// after calling that.
 #[repr(transparent)]
-pub(crate) struct RawChunk<const UP: bool, A> {
+pub(crate) struct RawChunk<A, const UP: bool> {
     /// This points to a valid [`ChunkHeader`].
     header: NonNull<ChunkHeader<A>>,
 }
 
-impl<const UP: bool, A> Copy for RawChunk<UP, A> {}
+impl<A, const UP: bool> Copy for RawChunk<A, UP> {}
 
 #[allow(clippy::expl_impl_clone_on_copy)]
-impl<const UP: bool, A> Clone for RawChunk<UP, A> {
+impl<A, const UP: bool> Clone for RawChunk<A, UP> {
     #[inline(always)]
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<const UP: bool, A> PartialEq for RawChunk<UP, A> {
+impl<A, const UP: bool> PartialEq for RawChunk<A, UP> {
     #[inline(always)]
     fn eq(&self, other: &Self) -> bool {
         self.header == other.header
@@ -45,15 +45,16 @@ impl<const UP: bool, A> PartialEq for RawChunk<UP, A> {
     }
 }
 
-impl<const UP: bool, A> Eq for RawChunk<UP, A> {}
+impl<A, const UP: bool> Eq for RawChunk<A, UP> {}
 
-impl<const UP: bool, A> fmt::Debug for RawChunk<UP, A> {
+#[cfg(debug_assertions)]
+impl<A, const UP: bool> fmt::Debug for RawChunk<A, UP> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("RawChunk").field(&self.header.as_ptr().cast::<u8>()).finish()
     }
 }
 
-impl<const UP: bool, A> RawChunk<UP, A> {
+impl<A, const UP: bool> RawChunk<A, UP> {
     pub(crate) const UNALLOCATED: Self = Self {
         header: ChunkHeader::UNALLOCATED.cast(),
     };

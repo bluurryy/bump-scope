@@ -14,7 +14,7 @@ pub struct Checkpoint {
 }
 
 impl Checkpoint {
-    pub(crate) fn new<const UP: bool, A>(chunk: RawChunk<UP, A>) -> Self {
+    pub(crate) fn new<const UP: bool, A>(chunk: RawChunk<A, UP>) -> Self {
         let address = chunk.pos().addr();
         let chunk = chunk.header().cast();
         Checkpoint { chunk, address }
@@ -34,7 +34,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator,
 {
-    pub(crate) chunk: RawChunk<UP, A>,
+    pub(crate) chunk: RawChunk<A, UP>,
     address: usize,
     marker: PhantomData<&'a mut ()>,
 }
@@ -72,7 +72,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<UP, A>) -> Self {
+    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, UP>) -> Self {
         Self {
             chunk,
             address: chunk.pos().addr().get(),
@@ -122,7 +122,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator,
 {
-    pub(crate) chunk: RawChunk<UP, A>,
+    pub(crate) chunk: RawChunk<A, UP>,
     marker: PhantomData<&'b mut ()>,
 }
 
@@ -159,7 +159,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<UP, A>) -> Self {
+    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, UP>) -> Self {
         Self {
             chunk,
             marker: PhantomData,
