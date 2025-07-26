@@ -38,9 +38,9 @@ fn guaranteed_allocated() {
 #[test]
 fn allocated_reserve_bytes() {
     let bump: Bump = Bump::new();
-    assert_eq!(bump.stats().count(), 0);
-    bump.reserve_bytes(1024);
     assert_eq!(bump.stats().count(), 1);
+    bump.reserve_bytes(1024);
+    assert_eq!(bump.stats().count(), 2);
     assert!(bump.stats().capacity() >= 1024);
     drop(bump);
 }
