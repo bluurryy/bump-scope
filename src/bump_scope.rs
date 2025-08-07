@@ -478,7 +478,7 @@ where
 
     #[inline(always)]
     pub(crate) fn ensure_allocated<E: ErrorBehavior>(&self) -> Result<(), E> {
-        if self.is_unallocated() {
+        if self.chunk.get().is_unallocated() {
             self.allocate_first_chunk()?;
         }
 
@@ -803,11 +803,6 @@ where
                 }
             }
         }
-    }
-
-    #[inline(always)]
-    pub(crate) fn is_unallocated(&self) -> bool {
-        !GUARANTEED_ALLOCATED && self.chunk.get().header().cast() == ChunkHeader::UNALLOCATED
     }
 
     /// "Returns a type which provides statistics about the memory usage of the bump allocator.
