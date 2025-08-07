@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Make `BumpScope(Guard)(Root)::allocator()` return an `&'a A` allocator instead of `&A`
 - Make `BumpScopeGuardRoot::stats()` return `Stats<'a, ...>` instead of `Stats<'_, ...>`
 - Improve `Fixed*` collection documentation.
+- **Breaking:** `guaranteed_allocated` conversion methods now take a closure parameter so you can initialize unallocated `Bump`s with a custom size or capacity
 
 ### Changed
 

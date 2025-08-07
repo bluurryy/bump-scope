@@ -1073,9 +1073,11 @@ where
 
     /// Converts this `Bump` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
+    /// If this `Bump` is not yet allocated, `f` will be called to allocate it.
+    ///
     /// # Panics
     ///
-    /// Panics if the allocation fails.
+    /// Panics if the closure panics.
     ///
     /// # Examples
     ///
@@ -1096,24 +1098,38 @@ where
     /// # use bump_scope::Bump;
     /// # use bump_scope::alloc::Global;
     /// let bump: Bump<Global, 1, true, false> = Bump::unallocated();
-    /// let mut bump = bump.into_guaranteed_allocated();
+    /// let mut bump = bump.into_guaranteed_allocated(Bump::new);
     ///
     /// bump.scoped(|bump| {
     ///     // ...
     ///     # _ = bump;
     /// });
     /// ```
+    ///
+    /// Initialize an unallocated `Bump` with a custom size or capacity:
+    /// ```
+    /// # use core::alloc::Layout;
+    /// # use bump_scope::{Bump, alloc::Global};
+    /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    /// let bump = bump.into_guaranteed_allocated(|| Bump::with_size(2048));
+    /// // or
+    /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    /// let bump = bump.into_guaranteed_allocated(|| Bump::with_capacity(Layout::new::<[i32; 1024]>()));
+    /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn into_guaranteed_allocated(self) -> Bump<A, MIN_ALIGN, UP> {
-        panic_on_error(self.generic_into_guaranteed_allocated())
+    pub fn into_guaranteed_allocated(self, f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP>) -> Bump<A, MIN_ALIGN, UP> {
+        self.as_scope().ensure_allocated(f);
+        unsafe { transmute(self) }
     }
 
     /// Converts this `Bump` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
+    /// If this `Bump` is not yet allocated, `f` will be called to allocate it.
+    ///
     /// # Errors
     ///
-    /// Errors if the allocation fails.
+    /// Errors if the closure fails.
     ///
     /// # Examples
     ///
@@ -1134,7 +1150,7 @@ where
     /// # use bump_scope::Bump;
     /// # use bump_scope::alloc::Global;
     /// let bump: Bump<Global, 1, true, false> = Bump::unallocated();
-    /// let mut bump = bump.try_into_guaranteed_allocated()?;
+    /// let mut bump = bump.try_into_guaranteed_allocated(Bump::try_new)?;
     ///
     /// bump.scoped(|bump| {
     ///     // ...
@@ -1142,58 +1158,98 @@ where
     /// });
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
+    ///
+    /// Initialize an unallocated `Bump` with a custom size or capacity:
+    /// ```
+    /// # use core::alloc::Layout;
+    /// # use bump_scope::{Bump, alloc::Global};
+    /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    /// let bump = bump.try_into_guaranteed_allocated(|| Bump::try_with_size(2048))?;
+    /// // or
+    /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    /// let bump = bump.try_into_guaranteed_allocated(|| Bump::try_with_capacity(Layout::new::<[i32; 1024]>()))?;
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
-    pub fn try_into_guaranteed_allocated(self) -> Result<Bump<A, MIN_ALIGN, UP>, AllocError> {
-        self.generic_into_guaranteed_allocated()
-    }
-
-    #[inline(always)]
-    fn generic_into_guaranteed_allocated<E: ErrorBehavior>(self) -> Result<Bump<A, MIN_ALIGN, UP>, E> {
-        self.as_scope().ensure_allocated()?;
+    pub fn try_into_guaranteed_allocated(
+        self,
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP>, AllocError>,
+    ) -> Result<Bump<A, MIN_ALIGN, UP>, AllocError> {
+        self.as_scope().try_ensure_allocated(f)?;
         Ok(unsafe { transmute(self) })
     }
 
     /// Borrows `Bump` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
-    /// Unlike [`as_mut_guaranteed_allocated`] this method is usually not very useful, since an ***immutable***
-    /// guaranteed allocated `Bump` does not provide any new api.
+    /// If this `Bump` is not yet allocated, `f` will be called to allocate it.
     ///
     /// # Panics
     ///
-    /// Panics if the allocation fails.
+    /// Panics if the closure panics.
     ///
     /// [`as_mut_guaranteed_allocated`]: Self::as_mut_guaranteed_allocated
+    ///
+    /// # Examples
+    ///
+    /// Initialize an unallocated `Bump` with a custom size or capacity:
+    /// ```
+    /// # use core::alloc::Layout;
+    /// # use bump_scope::{Bump, alloc::Global};
+    /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    /// let bump = bump.as_guaranteed_allocated(|| Bump::with_size(2048));
+    /// _ = bump;
+    /// // or
+    /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    /// let bump = bump.as_guaranteed_allocated(|| Bump::with_capacity(Layout::new::<[i32; 1024]>()));
+    /// _ = bump;
+    /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn as_guaranteed_allocated(&self) -> &Bump<A, MIN_ALIGN, UP> {
-        panic_on_error(self.generic_as_guaranteed_allocated())
+    pub fn as_guaranteed_allocated(&self, f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP>) -> &Bump<A, MIN_ALIGN, UP> {
+        self.as_scope().ensure_allocated(f);
+        unsafe { transmute_ref(self) }
     }
 
     /// Borrows `Bump` as an [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
-    /// Unlike [`try_as_mut_guaranteed_allocated`] this method is usually not very useful, since an ***immutable***
-    /// guaranteed allocated `Bump` does not provide any new api.
+    /// If this `Bump` is not yet allocated, `f` will be called to allocate it.
     ///
     /// # Errors
-    /// Errors if the allocation fails.
+    ///
+    /// Errors if the closure fails.
     ///
     /// [`try_as_mut_guaranteed_allocated`]: Self::try_as_mut_guaranteed_allocated
+    ///
+    /// # Examples
+    ///
+    /// Initialize an unallocated `Bump` with a custom size or capacity:
+    /// ```
+    /// # use core::alloc::Layout;
+    /// # use bump_scope::{Bump, alloc::Global};
+    /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    /// let bump = bump.try_as_guaranteed_allocated(|| Bump::try_with_size(2048))?;
+    /// _ = bump;
+    /// // or
+    /// let bump = bump.try_as_guaranteed_allocated(|| Bump::try_with_capacity(Layout::new::<[i32; 1024]>()))?;
+    /// _ = bump;
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
-    pub fn try_as_guaranteed_allocated(&self) -> Result<&Bump<A, MIN_ALIGN, UP>, AllocError> {
-        self.generic_as_guaranteed_allocated()
-    }
-
-    #[inline(always)]
-    fn generic_as_guaranteed_allocated<E: ErrorBehavior>(&self) -> Result<&Bump<A, MIN_ALIGN, UP>, E> {
-        self.as_scope().ensure_allocated()?;
+    pub fn try_as_guaranteed_allocated(
+        &self,
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP>, AllocError>,
+    ) -> Result<&Bump<A, MIN_ALIGN, UP>, AllocError> {
+        self.as_scope().try_ensure_allocated(f)?;
         Ok(unsafe { transmute_ref(self) })
     }
 
     /// Mutably borrows `Bump` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
+    /// If this `Bump` is not yet allocated, `f` will be called to allocate it.
+    ///
     /// # Panics
     ///
-    /// Panics if the allocation fails.
+    /// Panics if the closure panics.
     ///
     /// # Examples
     ///
@@ -1215,22 +1271,41 @@ where
     /// # use bump_scope::alloc::Global;
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
-    /// bump.as_mut_guaranteed_allocated().scoped(|bump| {
+    /// bump.as_mut_guaranteed_allocated(Bump::new).scoped(|bump| {
     ///     // ...
     ///     # _ = bump;
     /// });
     /// ```
+    ///
+    /// Initialize an unallocated `Bump` with a custom size or capacity:
+    /// ```
+    /// # use core::alloc::Layout;
+    /// # use bump_scope::{Bump, alloc::Global};
+    /// # let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    /// let bump = bump.as_mut_guaranteed_allocated(|| Bump::with_size(2048));
+    /// _ = bump;
+    /// // or
+    /// # let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    /// let bump = bump.as_mut_guaranteed_allocated(|| Bump::with_capacity(Layout::new::<[i32; 1024]>()));
+    /// _ = bump;
+    /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn as_mut_guaranteed_allocated(&mut self) -> &mut Bump<A, MIN_ALIGN, UP> {
-        panic_on_error(self.generic_as_mut_guaranteed_allocated())
+    pub fn as_mut_guaranteed_allocated(
+        &mut self,
+        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP>,
+    ) -> &mut Bump<A, MIN_ALIGN, UP> {
+        self.as_scope().ensure_allocated(f);
+        unsafe { transmute_mut(self) }
     }
 
     /// Mutably borrows `Bump` as an [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
     ///
+    /// If this `Bump` is not yet allocated, `f` will be called to allocate it.
+    ///
     /// # Errors
     ///
-    /// Errors if the allocation fails.
+    /// Errors if the closure fails.
     ///
     /// # Examples
     ///
@@ -1252,20 +1327,32 @@ where
     /// # use bump_scope::alloc::Global;
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
-    /// bump.try_as_mut_guaranteed_allocated()?.scoped(|bump| {
+    /// bump.try_as_mut_guaranteed_allocated(Bump::try_new)?.scoped(|bump| {
     ///     // ...
     ///     # _ = bump;
     /// });
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
+    ///
+    /// Initialize an unallocated `Bump` with a custom size or capacity:
+    /// ```
+    /// # use core::alloc::Layout;
+    /// # use bump_scope::{Bump, alloc::Global};
+    /// # let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    /// let bump = bump.try_as_mut_guaranteed_allocated(|| Bump::try_with_size(2048))?;
+    /// _ = bump;
+    /// // or
+    /// # let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    /// let bump = bump.try_as_mut_guaranteed_allocated(|| Bump::try_with_capacity(Layout::new::<[i32; 1024]>()))?;
+    /// _ = bump;
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
-    pub fn try_as_mut_guaranteed_allocated(&mut self) -> Result<&mut Bump<A, MIN_ALIGN, UP>, AllocError> {
-        self.generic_as_mut_guaranteed_allocated()
-    }
-
-    #[inline(always)]
-    fn generic_as_mut_guaranteed_allocated<E: ErrorBehavior>(&mut self) -> Result<&mut Bump<A, MIN_ALIGN, UP>, E> {
-        self.as_scope().ensure_allocated()?;
+    pub fn try_as_mut_guaranteed_allocated(
+        &mut self,
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP>, AllocError>,
+    ) -> Result<&mut Bump<A, MIN_ALIGN, UP>, AllocError> {
+        self.as_scope().try_ensure_allocated(f)?;
         Ok(unsafe { transmute_mut(self) })
     }
 

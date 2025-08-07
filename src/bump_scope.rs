@@ -12,9 +12,9 @@ use core::{
 };
 
 use crate::{
-    BaseAllocator, BumpAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior, FixedBumpString,
-    FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk, SizedTypeProperties,
-    SupportedMinimumAlignment, align_pos,
+    BaseAllocator, Bump, BumpAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
+    FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk,
+    SizedTypeProperties, SupportedMinimumAlignment, align_pos,
     alloc::{AllocError, Allocator},
     allocator_impl,
     bump_align_guard::BumpAlignGuard,
@@ -477,24 +477,25 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn ensure_allocated<E: ErrorBehavior>(&self) -> Result<(), E> {
+    #[cfg(feature = "panic-on-alloc")]
+    pub(crate) fn ensure_allocated(&self, f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP>) {
         if self.chunk.get().is_unallocated() {
-            self.allocate_first_chunk()?;
+            unsafe {
+                self.chunk.set(RawChunk::from_header(f().into_raw().cast()));
+            }
         }
-
-        Ok(())
     }
 
-    #[cold]
-    #[inline(never)]
-    fn allocate_first_chunk<B: ErrorBehavior>(&self) -> Result<(), B> {
-        // must only be called when we point to the empty chunk
-        debug_assert!(self.chunk.get().is_unallocated());
-
-        let allocator = A::default_or_panic();
-        let chunk = RawChunk::new_in(ChunkSize::DEFAULT, None, allocator)?;
-
-        self.chunk.set(chunk.coerce_guaranteed_allocated());
+    #[inline(always)]
+    pub(crate) fn try_ensure_allocated(
+        &self,
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP>, AllocError>,
+    ) -> Result<(), AllocError> {
+        if self.chunk.get().is_unallocated() {
+            unsafe {
+                self.chunk.set(RawChunk::from_header(f()?.into_raw().cast()));
+            }
+        }
 
         Ok(())
     }
@@ -905,75 +906,81 @@ where
     /// Converts this `BumpScope` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
     ///
     /// # Panics
-    /// Panics if the allocation fails.
+    ///
+    /// Panics if the closure panics.
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn into_guaranteed_allocated(self) -> BumpScope<'a, A, MIN_ALIGN, UP> {
-        panic_on_error(self.generic_into_guaranteed_allocated())
+    pub fn into_guaranteed_allocated(self, f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP>) -> BumpScope<'a, A, MIN_ALIGN, UP> {
+        self.ensure_allocated(f);
+        unsafe { transmute(self) }
     }
 
     /// Converts this `BumpScope` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
     ///
     /// # Errors
-    /// Errors if the allocation fails.
+    ///
+    /// Errors if the closure fails.
     #[inline(always)]
-    pub fn try_into_guaranteed_allocated(self) -> Result<BumpScope<'a, A, MIN_ALIGN, UP>, AllocError> {
-        self.generic_into_guaranteed_allocated()
-    }
-
-    #[inline(always)]
-    fn generic_into_guaranteed_allocated<E: ErrorBehavior>(self) -> Result<BumpScope<'a, A, MIN_ALIGN, UP>, E> {
-        self.as_scope().ensure_allocated()?;
+    pub fn try_into_guaranteed_allocated(
+        self,
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP>, AllocError>,
+    ) -> Result<BumpScope<'a, A, MIN_ALIGN, UP>, AllocError> {
+        self.try_ensure_allocated(f)?;
         Ok(unsafe { transmute(self) })
     }
 
     /// Borrows `BumpScope` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
     ///
     /// # Panics
-    /// Panics if the allocation fails.
+    ///
+    /// Panics if the closure panics.
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn as_guaranteed_allocated(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP> {
-        panic_on_error(self.generic_as_guaranteed_allocated())
+    pub fn as_guaranteed_allocated(&self, f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP>) -> &BumpScope<'a, A, MIN_ALIGN, UP> {
+        self.ensure_allocated(f);
+        unsafe { transmute_ref(self) }
     }
 
     /// Borrows `BumpScope` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
     ///
     /// # Errors
-    /// Errors if the allocation fails.
+    ///
+    /// Errors if the closure fails.
     #[inline(always)]
-    pub fn try_as_guaranteed_allocated(&self) -> Result<&BumpScope<'a, A, MIN_ALIGN, UP>, AllocError> {
-        self.generic_as_guaranteed_allocated()
-    }
-
-    #[inline(always)]
-    fn generic_as_guaranteed_allocated<E: ErrorBehavior>(&self) -> Result<&BumpScope<'a, A, MIN_ALIGN, UP>, E> {
-        self.as_scope().ensure_allocated()?;
+    pub fn try_as_guaranteed_allocated(
+        &self,
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP>, AllocError>,
+    ) -> Result<&BumpScope<'a, A, MIN_ALIGN, UP>, AllocError> {
+        self.try_ensure_allocated(f)?;
         Ok(unsafe { transmute_ref(self) })
     }
 
     /// Mutably borrows `BumpScope` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
     ///
     /// # Panics
-    /// Panics if the allocation fails.
+    ///
+    /// Panics if the closure panics.
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn as_mut_guaranteed_allocated(&mut self) -> &mut BumpScope<'a, A, MIN_ALIGN, UP> {
-        panic_on_error(self.generic_as_mut_guaranteed_allocated())
+    pub fn as_mut_guaranteed_allocated(
+        &mut self,
+        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP>,
+    ) -> &mut BumpScope<'a, A, MIN_ALIGN, UP> {
+        self.ensure_allocated(f);
+        unsafe { transmute_mut(self) }
     }
 
     /// Mutably borrows `BumpScope` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
     ///
     /// # Errors
-    /// Errors if the allocation fails.
+    ///
+    /// Errors if the closure fails.
     #[inline(always)]
-    pub fn try_as_mut_guaranteed_allocated(&mut self) -> Result<&mut BumpScope<'a, A, MIN_ALIGN, UP>, AllocError> {
-        self.generic_as_mut_guaranteed_allocated()
-    }
-
-    #[inline(always)]
-    fn generic_as_mut_guaranteed_allocated<E: ErrorBehavior>(&mut self) -> Result<&mut BumpScope<'a, A, MIN_ALIGN, UP>, E> {
-        self.as_scope().ensure_allocated()?;
+    pub fn try_as_mut_guaranteed_allocated(
+        &mut self,
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP>, AllocError>,
+    ) -> Result<&mut BumpScope<'a, A, MIN_ALIGN, UP>, AllocError> {
+        self.try_ensure_allocated(f)?;
         Ok(unsafe { transmute_mut(self) })
     }
 

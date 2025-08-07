@@ -37,7 +37,7 @@ fn unallocated_alloc<const UP: bool>() {
 fn guaranteed_allocated<const UP: bool>() {
     let bump = <Bump<Global, 1, UP, false>>::unallocated();
     assert_eq!(bump.stats().count(), 0);
-    let bump = bump.into_guaranteed_allocated();
+    let bump = bump.into_guaranteed_allocated(Bump::new);
     assert_eq!(bump.stats().count(), 1);
     drop(bump);
 }
