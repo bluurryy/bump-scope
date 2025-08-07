@@ -113,3 +113,15 @@ fn allocate_another_chunk(bump: &Bump, dummy_size: usize) {
     assert_eq!(bump.any_stats().count(), start_chunks + 1);
     assert_eq!(bump.any_stats().current_chunk().unwrap().allocated(), dummy_size);
 }
+
+#[test]
+fn allocate_zero_layout() {
+    let bump = Bump::unallocated();
+    bump.alloc_layout(Layout::new::<()>());
+}
+
+#[test]
+fn reset() {
+    let mut bump = Bump::unallocated();
+    bump.reset();
+}
