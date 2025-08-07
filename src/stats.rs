@@ -14,7 +14,10 @@ use core::{
     ptr::NonNull,
 };
 
-use crate::{RawChunk, chunk_header::ChunkHeader, maybe_default_allocator};
+use crate::{RawChunk, maybe_default_allocator};
+
+#[cfg(debug_assertions)]
+use crate::chunk_header::ChunkHeader;
 
 mod any;
 
