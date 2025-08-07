@@ -431,14 +431,14 @@ where
         // because of this safety condition of `reset_to`:
         // > the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
         if !GUARANTEED_ALLOCATED && checkpoint.chunk == ChunkHeader::UNALLOCATED {
-            let mut chunk = self.chunk.get();
+            if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
+                while let Some(prev) = chunk.prev() {
+                    chunk = prev;
+                }
 
-            while let Some(prev) = chunk.prev() {
-                chunk = prev;
+                chunk.reset();
+                self.chunk.set(chunk.coerce_guaranteed_allocated());
             }
-
-            chunk.reset();
-            self.chunk.set(chunk);
         } else {
             debug_assert_ne!(
                 checkpoint.chunk,

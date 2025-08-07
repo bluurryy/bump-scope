@@ -984,7 +984,9 @@ where
     /// ```
     #[inline(always)]
     pub fn reset(&mut self) {
-        let mut chunk = self.chunk.get();
+        let Some(mut chunk) = self.chunk.get().guaranteed_allocated() else {
+            return;
+        };
 
         unsafe {
             chunk.for_each_prev(|chunk| chunk.deallocate());
@@ -997,7 +999,7 @@ where
 
         chunk.set_prev(None);
         chunk.reset();
-        self.chunk.set(chunk);
+        self.chunk.set(chunk.coerce_guaranteed_allocated());
     }
 
     /// Returns a type which provides statistics about the memory usage of the bump allocator.

@@ -407,13 +407,15 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     }
 
     #[inline(always)]
-    pub(crate) fn prev(self) -> Option<Self> {
-        unsafe { Some(Self::from_header(self.header.as_ref().prev.get()?)) }
+    pub(crate) fn prev(self) -> Option<RawChunk<A, UP, true>> {
+        // SAFETY: the `UNALLOCATED` chunk header never has a `prev` so this must be an allocated chunk if some
+        unsafe { Some(RawChunk::from_header(self.header.as_ref().prev.get()?)) }
     }
 
     #[inline(always)]
-    pub(crate) fn next(self) -> Option<Self> {
-        unsafe { Some(Self::from_header(self.header.as_ref().next.get()?)) }
+    pub(crate) fn next(self) -> Option<RawChunk<A, UP, true>> {
+        // SAFETY: the `UNALLOCATED` chunk header never has a `next` so this must be an allocated chunk if some
+        unsafe { Some(RawChunk::from_header(self.header.as_ref().next.get()?)) }
     }
 
     #[inline(always)]
@@ -527,7 +529,7 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     }
 
     /// This resolves the next chunk before calling `f`. So calling [`deallocate`](RawChunk::deallocate) on the chunk parameter of `f` is fine.
-    pub(crate) fn for_each_prev(self, mut f: impl FnMut(Self)) {
+    pub(crate) fn for_each_prev(self, mut f: impl FnMut(RawChunk<A, UP, true>)) {
         let mut iter = self.prev();
 
         while let Some(chunk) = iter {
@@ -537,7 +539,7 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     }
 
     /// This resolves the next chunk before calling `f`. So calling [`deallocate`](RawChunk::deallocate) on the chunk parameter of `f` is fine.
-    pub(crate) fn for_each_next(self, mut f: impl FnMut(Self)) {
+    pub(crate) fn for_each_next(self, mut f: impl FnMut(RawChunk<A, UP, true>)) {
         let mut iter = self.next();
 
         while let Some(chunk) = iter {
