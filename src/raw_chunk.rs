@@ -18,22 +18,22 @@ use crate::{
 /// So just the `deallocate` method is unsafe. You have to make sure the chunk is not used
 /// after calling that.
 #[repr(transparent)]
-pub(crate) struct RawChunk<A, const UP: bool> {
+pub(crate) struct RawChunk<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> {
     /// This points to a valid [`ChunkHeader`].
     header: NonNull<ChunkHeader<A>>,
 }
 
-impl<A, const UP: bool> Copy for RawChunk<A, UP> {}
+impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Copy for RawChunk<A, UP, GUARANTEED_ALLOCATED> {}
 
 #[allow(clippy::expl_impl_clone_on_copy)]
-impl<A, const UP: bool> Clone for RawChunk<A, UP> {
+impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Clone for RawChunk<A, UP, GUARANTEED_ALLOCATED> {
     #[inline(always)]
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, const UP: bool> PartialEq for RawChunk<A, UP> {
+impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> PartialEq for RawChunk<A, UP, GUARANTEED_ALLOCATED> {
     #[inline(always)]
     fn eq(&self, other: &Self) -> bool {
         self.header == other.header
@@ -45,18 +45,48 @@ impl<A, const UP: bool> PartialEq for RawChunk<A, UP> {
     }
 }
 
-impl<A, const UP: bool> Eq for RawChunk<A, UP> {}
+impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Eq for RawChunk<A, UP, GUARANTEED_ALLOCATED> {}
 
-impl<A, const UP: bool> fmt::Debug for RawChunk<A, UP> {
+impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> fmt::Debug for RawChunk<A, UP, GUARANTEED_ALLOCATED> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("RawChunk").field(&self.header.as_ptr().cast::<u8>()).finish()
     }
 }
 
-impl<A, const UP: bool> RawChunk<A, UP> {
+impl<A, const UP: bool> RawChunk<A, UP, false> {
     pub(crate) const UNALLOCATED: Self = Self {
         header: ChunkHeader::UNALLOCATED.cast(),
     };
+}
+
+impl<A, const UP: bool> RawChunk<A, UP, true> {
+    pub(crate) fn change_guaranteed_allocated<const NEW_GUARANTEED_ALLOCATED: bool>(
+        &self,
+    ) -> RawChunk<A, UP, NEW_GUARANTEED_ALLOCATED> {
+        RawChunk { header: self.header }
+    }
+}
+
+impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARANTEED_ALLOCATED> {
+    pub(crate) fn is_allocated(&self) -> bool {
+        GUARANTEED_ALLOCATED || self.header.cast() != ChunkHeader::UNALLOCATED
+    }
+
+    pub(crate) fn is_unallocated(&self) -> bool {
+        !GUARANTEED_ALLOCATED && self.header.cast() == ChunkHeader::UNALLOCATED
+    }
+
+    pub(crate) fn guaranteed_allocated(&self) -> Option<RawChunk<A, UP, true>> {
+        if self.is_unallocated() {
+            return None;
+        }
+
+        Some(RawChunk { header: self.header })
+    }
+
+    pub(crate) fn not_guaranteed_allocated(&self) -> RawChunk<A, UP, false> {
+        RawChunk { header: self.header }
+    }
 
     pub(crate) fn new_in<E: ErrorBehavior>(chunk_size: ChunkSize<A, UP>, prev: Option<Self>, allocator: A) -> Result<Self, E>
     where
@@ -470,7 +500,7 @@ impl<A, const UP: bool> RawChunk<A, UP> {
     where
         A: Allocator,
     {
-        debug_assert_ne!(self, RawChunk::UNALLOCATED);
+        debug_assert!(self.is_allocated());
 
         let ptr = self.chunk_start();
         let layout = self.layout();
@@ -519,12 +549,12 @@ impl<A, const UP: bool> RawChunk<A, UP> {
     /// This is only safe to read when `self` is not `RawChunk::UNALLOCATED`.
     #[inline(always)]
     pub(crate) unsafe fn allocator<'a>(self) -> &'a A {
-        debug_assert_ne!(self, RawChunk::UNALLOCATED);
+        debug_assert!(self.is_allocated());
         unsafe { &self.header.as_ref().allocator }
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn stats<'a, const GUARANTEED_ALLOCATED: bool>(self) -> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
-        unsafe { Stats::from_raw_chunk(self) }
+    pub(crate) fn stats<'a>(self) -> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
+        Stats::from_raw_chunk(self)
     }
 }

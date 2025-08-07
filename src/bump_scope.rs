@@ -64,7 +64,7 @@ macro_rules! make_type {
             const UP: bool = true,
             const GUARANTEED_ALLOCATED: bool = true,
         > {
-            pub(crate) chunk: Cell<RawChunk<A, UP>>,
+            pub(crate) chunk: Cell<RawChunk<A, UP, GUARANTEED_ALLOCATED>>,
 
             /// Marks the lifetime of the mutably borrowed `BumpScopeGuard(Root)`.
             marker: PhantomData<&'a ()>,
@@ -469,7 +469,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, UP>) -> Self {
+    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, UP, GUARANTEED_ALLOCATED>) -> Self {
         Self {
             chunk: Cell::new(chunk),
             marker: PhantomData,
@@ -489,7 +489,7 @@ where
     #[inline(never)]
     fn allocate_first_chunk<B: ErrorBehavior>(&self) -> Result<(), B> {
         // must only be called when we point to the empty chunk
-        debug_assert_eq!(self.chunk.get(), RawChunk::UNALLOCATED);
+        debug_assert!(self.chunk.get().is_unallocated());
 
         let allocator = A::default_or_panic();
         let chunk = RawChunk::new_in(ChunkSize::DEFAULT, None, allocator)?;

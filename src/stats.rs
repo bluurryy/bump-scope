@@ -31,7 +31,7 @@ macro_rules! make_type {
             const UP: bool = true,
             const GUARANTEED_ALLOCATED: bool = true,
         > {
-            chunk: RawChunk<A, UP>,
+            chunk: RawChunk<A, UP, GUARANTEED_ALLOCATED>,
             marker: PhantomData<&'a ()>,
         }
     };
@@ -63,11 +63,7 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Debug for Stats<'_, A,
 
 impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
     #[inline]
-    pub(crate) unsafe fn from_raw_chunk(chunk: RawChunk<A, UP>) -> Self {
-        if GUARANTEED_ALLOCATED {
-            debug_assert_ne!(chunk, RawChunk::UNALLOCATED);
-        }
-
+    pub(crate) fn from_raw_chunk(chunk: RawChunk<A, UP, GUARANTEED_ALLOCATED>) -> Self {
         Self {
             chunk,
             marker: PhantomData,
@@ -166,35 +162,21 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
     #[inline]
     #[must_use]
     pub fn guaranteed_allocated(self) -> Option<Stats<'a, A, UP, true>> {
-        if GUARANTEED_ALLOCATED {
-            return Some(unsafe { Stats::from_raw_chunk(self.chunk) });
-        }
-
-        if self.chunk.header().cast() == ChunkHeader::UNALLOCATED {
-            return None;
-        }
-
-        Some(unsafe { Stats::from_raw_chunk(self.chunk) })
+        Some(self.chunk.guaranteed_allocated()?.stats())
     }
 
     /// Turns this `Stats` into a `Stats` where `GUARANTEED_ALLOCATED = false`.
     #[inline]
     #[must_use]
     pub fn not_guaranteed_allocated(self) -> Stats<'a, A, UP, false> {
-        unsafe { Stats::from_raw_chunk(self.chunk) }
+        self.chunk.not_guaranteed_allocated().stats()
     }
 
     fn get_current_chunk(self) -> Option<Chunk<'a, A, UP>> {
-        if !GUARANTEED_ALLOCATED && self.chunk == RawChunk::UNALLOCATED {
-            None
-        } else {
-            debug_assert_ne!(self.chunk, RawChunk::UNALLOCATED);
-
-            Some(Chunk {
-                chunk: self.chunk,
-                marker: PhantomData,
-            })
-        }
+        Some(Chunk {
+            chunk: self.chunk.guaranteed_allocated()?,
+            marker: PhantomData,
+        })
     }
 }
 
@@ -213,12 +195,8 @@ impl<'a, A, const UP: bool> Stats<'a, A, UP, false> {
     /// This is the chunk we are currently allocating on.
     #[must_use]
     pub fn current_chunk(self) -> Option<Chunk<'a, A, UP>> {
-        if self.chunk.header().cast() == ChunkHeader::UNALLOCATED {
-            return None;
-        }
-
         Some(Chunk {
-            chunk: self.chunk,
+            chunk: self.chunk.guaranteed_allocated()?,
             marker: self.marker,
         })
     }
@@ -236,7 +214,7 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> From<Chunk<'a, A, 
 {
     fn from(chunk: Chunk<'a, A, UP>) -> Self {
         Stats {
-            chunk: chunk.chunk,
+            chunk: chunk.chunk.change_guaranteed_allocated(),
             marker: PhantomData,
         }
     }
@@ -253,8 +231,7 @@ impl<A, const UP: bool> Default for Stats<'_, A, UP, false> {
 /// See [`Stats`].
 #[repr(transparent)]
 pub struct Chunk<'a, A, const UP: bool> {
-    /// This chunk must not be the [`RawChunk::UNALLOCATED`].
-    chunk: RawChunk<A, UP>,
+    chunk: RawChunk<A, UP, true>,
     marker: PhantomData<&'a ()>,
 }
 

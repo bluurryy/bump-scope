@@ -192,7 +192,7 @@ macro_rules! make_type {
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
             A: BaseAllocator<GUARANTEED_ALLOCATED>,
         {
-            pub(crate) chunk: Cell<RawChunk<A, UP>>,
+            pub(crate) chunk: Cell<RawChunk<A, UP, GUARANTEED_ALLOCATED>>,
         }
     };
 }
