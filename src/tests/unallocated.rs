@@ -107,10 +107,7 @@ fn checkpoint_multiple_chunks() {
 fn allocate_another_chunk(bump: &Bump, dummy_size: usize) {
     let start_chunks = bump.any_stats().count();
     let remaining = bump.any_stats().remaining();
-    // FIXME: this condition should not be necessary, this is a bug, see #91
-    if remaining != 0 {
-        bump.alloc_layout(Layout::from_size_align(remaining, 1).unwrap());
-    }
+    bump.alloc_layout(Layout::from_size_align(remaining, 1).unwrap());
     assert_eq!(bump.any_stats().count(), start_chunks);
     bump.alloc_layout(Layout::from_size_align(dummy_size, 1).unwrap());
     assert_eq!(bump.any_stats().count(), start_chunks + 1);
