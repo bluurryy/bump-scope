@@ -193,6 +193,22 @@ impl<A, const UP: bool> RawChunk<A, UP, true> {
             self.header.as_ref().next.set(value.map(|c| c.header));
         }
     }
+
+    /// # Safety
+    /// - self must not be used after calling this.
+    pub(crate) unsafe fn deallocate(self)
+    where
+        A: Allocator,
+    {
+        let ptr = self.chunk_start();
+        let layout = self.layout();
+
+        unsafe {
+            let allocator_ptr = &raw const (*self.header.as_ptr()).allocator;
+            let allocator = allocator_ptr.read();
+            allocator.deallocate(ptr, layout);
+        }
+    }
 }
 
 impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARANTEED_ALLOCATED> {
@@ -532,25 +548,6 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
         };
 
         Ok(ChunkSizeHint::<A, UP>::new(size))
-    }
-
-    /// # Safety
-    /// - self must not be [`RawChunk::UNALLOCATED`]
-    /// - self must not be used after calling this.
-    pub(crate) unsafe fn deallocate(self)
-    where
-        A: Allocator,
-    {
-        debug_assert!(self.is_allocated());
-
-        let ptr = self.chunk_start();
-        let layout = self.layout();
-
-        unsafe {
-            let allocator_ptr = &raw const (*self.header.as_ptr()).allocator;
-            let allocator = allocator_ptr.read();
-            allocator.deallocate(ptr, layout);
-        }
     }
 
     /// This resolves the next chunk before calling `f`. So calling [`deallocate`](RawChunk::deallocate) on the chunk parameter of `f` is fine.

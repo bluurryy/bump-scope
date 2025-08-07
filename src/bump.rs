@@ -232,12 +232,11 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     fn drop(&mut self) {
-        if self.as_scope().is_unallocated() {
+        let Some(chunk) = self.chunk.get().guaranteed_allocated() else {
             return;
-        }
+        };
 
         unsafe {
-            let chunk = self.chunk.get();
             chunk.for_each_prev(|chunk| chunk.deallocate());
             chunk.for_each_next(|chunk| chunk.deallocate());
             chunk.deallocate();
