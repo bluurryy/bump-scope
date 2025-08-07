@@ -113,11 +113,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Errors
     /// Errors if the allocation fails.
-    ///
-    /// # Safety
-    /// `layout.size()` must be a multiple of `layout.align()`
-    // FIXME: try to remove this safety invariant / document why it exists
-    unsafe fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError>;
+    fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError>;
 
     /// Allocate part of the free space returned from a [`prepare_allocation`] call.
     ///
@@ -192,8 +188,8 @@ unsafe impl<B: BumpAllocator + ?Sized> BumpAllocator for &B {
     }
 
     #[inline(always)]
-    unsafe fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
-        unsafe { B::prepare_allocation(self, layout) }
+    fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
+        B::prepare_allocation(self, layout)
     }
 
     #[inline(always)]
@@ -224,8 +220,8 @@ unsafe impl<B: BumpAllocator + ?Sized> BumpAllocator for &mut B {
     }
 
     #[inline(always)]
-    unsafe fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
-        unsafe { B::prepare_allocation(self, layout) }
+    fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
+        B::prepare_allocation(self, layout)
     }
 
     #[inline(always)]
@@ -256,8 +252,8 @@ unsafe impl<B: BumpAllocator> BumpAllocator for WithoutDealloc<B> {
     }
 
     #[inline(always)]
-    unsafe fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
-        unsafe { B::prepare_allocation(&self.0, layout) }
+    fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
+        B::prepare_allocation(&self.0, layout)
     }
 
     #[inline(always)]
@@ -288,8 +284,8 @@ unsafe impl<B: BumpAllocator> BumpAllocator for WithoutShrink<B> {
     }
 
     #[inline(always)]
-    unsafe fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
-        unsafe { B::prepare_allocation(&self.0, layout) }
+    fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
+        B::prepare_allocation(&self.0, layout)
     }
 
     #[inline(always)]
@@ -325,8 +321,8 @@ where
     }
 
     #[inline(always)]
-    unsafe fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
-        unsafe { self.as_scope().prepare_allocation(layout) }
+    fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
+        self.as_scope().prepare_allocation(layout)
     }
 
     #[inline(always)]
@@ -362,7 +358,7 @@ where
     }
 
     #[inline(always)]
-    unsafe fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
+    fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
         #[cold]
         #[inline(never)]
         unsafe fn prepare_allocation_in_another_chunk<

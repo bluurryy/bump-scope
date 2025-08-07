@@ -564,7 +564,7 @@ fn prepare_slice_allocation<T>(bump: impl BumpAllocator, min_cap: usize) -> NonN
         capacity_overflow()
     };
 
-    match unsafe { bump.prepare_allocation(layout) } {
+    match bump.prepare_allocation(layout) {
         Ok(range) => {
             // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
             let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
@@ -588,7 +588,7 @@ fn try_prepare_slice_allocation<T>(bump: impl BumpAllocator, len: usize) -> Resu
         return Err(AllocError);
     };
 
-    match unsafe { bump.prepare_allocation(layout) } {
+    match bump.prepare_allocation(layout) {
         Ok(range) => {
             // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
             let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;

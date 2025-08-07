@@ -232,11 +232,7 @@ impl FuzzBumpProps {
         self
     }
 
-    fn for_prepare(mut self) -> Self {
-        // prepare requires size to be a multiple of align
-        let size = self.layout.0.size();
-        let align = self.layout.0.align();
-        self.layout.0 = Layout::from_size_align(down_align(size, align), align).unwrap();
+    fn for_prepare(self) -> Self {
         self
     }
 }
