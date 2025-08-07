@@ -60,34 +60,6 @@ impl<A, const UP: bool> RawChunk<A, UP, false> {
 }
 
 impl<A, const UP: bool> RawChunk<A, UP, true> {
-    pub(crate) fn change_guaranteed_allocated<const NEW_GUARANTEED_ALLOCATED: bool>(
-        &self,
-    ) -> RawChunk<A, UP, NEW_GUARANTEED_ALLOCATED> {
-        RawChunk { header: self.header }
-    }
-}
-
-impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARANTEED_ALLOCATED> {
-    pub(crate) fn is_allocated(&self) -> bool {
-        GUARANTEED_ALLOCATED || self.header.cast() != ChunkHeader::UNALLOCATED
-    }
-
-    pub(crate) fn is_unallocated(&self) -> bool {
-        !GUARANTEED_ALLOCATED && self.header.cast() == ChunkHeader::UNALLOCATED
-    }
-
-    pub(crate) fn guaranteed_allocated(&self) -> Option<RawChunk<A, UP, true>> {
-        if self.is_unallocated() {
-            return None;
-        }
-
-        Some(RawChunk { header: self.header })
-    }
-
-    pub(crate) fn not_guaranteed_allocated(&self) -> RawChunk<A, UP, false> {
-        RawChunk { header: self.header }
-    }
-
     pub(crate) fn new_in<E: ErrorBehavior>(chunk_size: ChunkSize<A, UP>, prev: Option<Self>, allocator: A) -> Result<Self, E>
     where
         A: Allocator,
@@ -150,6 +122,54 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
         };
 
         Ok(RawChunk { header })
+    }
+
+    pub(crate) fn coerce_guaranteed_allocated<const NEW_GUARANTEED_ALLOCATED: bool>(
+        self,
+    ) -> RawChunk<A, UP, NEW_GUARANTEED_ALLOCATED> {
+        RawChunk { header: self.header }
+    }
+
+    /// # Panic
+    ///
+    /// [`self.next`](RawChunk::next) must return `None`
+    pub(crate) fn append_for<B: ErrorBehavior>(self, layout: Layout) -> Result<Self, B>
+    where
+        A: Allocator + Clone,
+    {
+        debug_assert!(self.next().is_none());
+
+        let required_size = ChunkSizeHint::for_capacity(layout).ok_or_else(B::capacity_overflow)?;
+        let grown_size = self.grow_size()?;
+        let size = required_size.max(grown_size).calc_size().ok_or_else(B::capacity_overflow)?;
+
+        let allocator = unsafe { self.header.as_ref().allocator.clone() };
+        let new_chunk = RawChunk::new_in::<B>(size, Some(self), allocator)?;
+
+        self.set_next(Some(new_chunk));
+        Ok(new_chunk)
+    }
+}
+
+impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARANTEED_ALLOCATED> {
+    pub(crate) fn is_allocated(self) -> bool {
+        GUARANTEED_ALLOCATED || self.header.cast() != ChunkHeader::UNALLOCATED
+    }
+
+    pub(crate) fn is_unallocated(self) -> bool {
+        !GUARANTEED_ALLOCATED && self.header.cast() == ChunkHeader::UNALLOCATED
+    }
+
+    pub(crate) fn guaranteed_allocated(self) -> Option<RawChunk<A, UP, true>> {
+        if self.is_unallocated() {
+            return None;
+        }
+
+        Some(RawChunk { header: self.header })
+    }
+
+    pub(crate) fn not_guaranteed_allocated(self) -> RawChunk<A, UP, false> {
+        RawChunk { header: self.header }
     }
 
     pub(crate) fn header(self) -> NonNull<ChunkHeader<A>> {
@@ -460,26 +480,6 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
         };
 
         Ok(ChunkSizeHint::<A, UP>::new(size))
-    }
-
-    /// # Panic
-    ///
-    /// [`self.next`](RawChunk::next) must return `None`
-    pub(crate) fn append_for<B: ErrorBehavior>(self, layout: Layout) -> Result<Self, B>
-    where
-        A: Allocator + Clone,
-    {
-        debug_assert!(self.next().is_none());
-
-        let required_size = ChunkSizeHint::for_capacity(layout).ok_or_else(B::capacity_overflow)?;
-        let grown_size = self.grow_size()?;
-        let size = required_size.max(grown_size).calc_size().ok_or_else(B::capacity_overflow)?;
-
-        let allocator = unsafe { self.header.as_ref().allocator.clone() };
-        let new_chunk = RawChunk::new_in::<B>(size, Some(self), allocator)?;
-
-        self.set_next(Some(new_chunk));
-        Ok(new_chunk)
     }
 
     #[inline(always)]

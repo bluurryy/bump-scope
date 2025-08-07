@@ -214,7 +214,7 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> From<Chunk<'a, A, 
 {
     fn from(chunk: Chunk<'a, A, UP>) -> Self {
         Stats {
-            chunk: chunk.chunk.change_guaranteed_allocated(),
+            chunk: chunk.chunk.coerce_guaranteed_allocated(),
             marker: PhantomData,
         }
     }

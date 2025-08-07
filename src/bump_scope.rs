@@ -494,7 +494,7 @@ where
         let allocator = A::default_or_panic();
         let chunk = RawChunk::new_in(ChunkSize::DEFAULT, None, allocator)?;
 
-        self.chunk.set(chunk);
+        self.chunk.set(chunk.coerce_guaranteed_allocated());
 
         Ok(())
     }
@@ -750,10 +750,24 @@ where
     pub(crate) unsafe fn in_another_chunk<B: ErrorBehavior, R, L: LayoutProps>(
         &self,
         layout: L,
-        mut f: impl FnMut(RawChunk<A, UP>, L) -> Option<R>,
+        mut f: impl FnMut(RawChunk<A, UP, true>, L) -> Option<R>,
     ) -> Result<R, B> {
         unsafe {
-            let new_chunk = if self.is_unallocated() {
+            let new_chunk: RawChunk<A, UP, true> = if let Some(chunk) = self.chunk.get().guaranteed_allocated() {
+                while let Some(chunk) = chunk.next() {
+                    // We don't reset the chunk position when we leave a scope, so we need to do it here.
+                    chunk.reset();
+
+                    self.chunk.set(chunk.coerce_guaranteed_allocated());
+
+                    if let Some(ptr) = f(chunk, layout) {
+                        return Ok(ptr);
+                    }
+                }
+
+                // there is no chunk that fits, we need a new chunk
+                chunk.append_for(*layout)
+            } else {
                 // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
                 // `default_or_panic` will not panic.
                 let allocator = A::default_or_panic();
@@ -763,23 +777,9 @@ where
                     None,
                     allocator,
                 )
-            } else {
-                while let Some(chunk) = self.chunk.get().next() {
-                    // We don't reset the chunk position when we leave a scope, so we need to do it here.
-                    chunk.reset();
-
-                    self.chunk.set(chunk);
-
-                    if let Some(ptr) = f(chunk, layout) {
-                        return Ok(ptr);
-                    }
-                }
-
-                // there is no chunk that fits, we need a new chunk
-                self.chunk.get().append_for(*layout)
             }?;
 
-            self.chunk.set(new_chunk);
+            self.chunk.set(new_chunk.coerce_guaranteed_allocated());
 
             match f(new_chunk, layout) {
                 Some(ptr) => Ok(ptr),
@@ -802,7 +802,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
-        unsafe { self.chunk.get().stats() }
+        self.chunk.get().stats()
     }
 
     /// Returns `&self` as is. This is useful for macros that support both `Bump` and `BumpScope`.
@@ -2672,35 +2672,34 @@ where
             return Err(B::capacity_overflow());
         };
 
-        if self.is_unallocated() {
+        if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
+            let mut additional = additional;
+
+            loop {
+                if let Some(rest) = additional.checked_sub(chunk.remaining()) {
+                    additional = rest;
+                } else {
+                    return Ok(());
+                }
+
+                if let Some(next) = chunk.next() {
+                    chunk = next;
+                } else {
+                    break;
+                }
+            }
+
+            chunk.append_for(layout).map(drop)
+        } else {
             let allocator = A::default_or_panic();
             let new_chunk = RawChunk::new_in(
                 ChunkSize::from_capacity(layout).ok_or_else(B::capacity_overflow)?,
                 None,
                 allocator,
             )?;
-            self.chunk.set(new_chunk);
-            return Ok(());
+            self.chunk.set(new_chunk.coerce_guaranteed_allocated());
+            Ok(())
         }
-
-        let mut additional = additional;
-        let mut chunk = self.chunk.get();
-
-        loop {
-            if let Some(rest) = additional.checked_sub(chunk.remaining()) {
-                additional = rest;
-            } else {
-                return Ok(());
-            }
-
-            if let Some(next) = chunk.next() {
-                chunk = next;
-            } else {
-                break;
-            }
-        }
-
-        chunk.append_for(layout).map(drop)
     }
 }
 

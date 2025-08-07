@@ -818,7 +818,7 @@ where
     #[inline]
     pub(crate) fn generic_new_in<E: ErrorBehavior>(allocator: A) -> Result<Self, E> {
         Ok(Self {
-            chunk: Cell::new(RawChunk::new_in(ChunkSize::DEFAULT, None, allocator)?),
+            chunk: Cell::new(RawChunk::new_in(ChunkSize::DEFAULT, None, allocator)?.coerce_guaranteed_allocated()),
         })
     }
 
@@ -888,11 +888,10 @@ where
     #[inline]
     pub(crate) fn generic_with_size_in<E: ErrorBehavior>(size: usize, allocator: A) -> Result<Self, E> {
         Ok(Self {
-            chunk: Cell::new(RawChunk::new_in(
-                ChunkSize::from_hint(size).ok_or_else(E::capacity_overflow)?,
-                None,
-                allocator,
-            )?),
+            chunk: Cell::new(
+                RawChunk::new_in(ChunkSize::from_hint(size).ok_or_else(E::capacity_overflow)?, None, allocator)?
+                    .coerce_guaranteed_allocated(),
+            ),
         })
     }
 
@@ -947,11 +946,14 @@ where
     #[inline]
     pub(crate) fn generic_with_capacity_in<E: ErrorBehavior>(layout: Layout, allocator: A) -> Result<Self, E> {
         Ok(Self {
-            chunk: Cell::new(RawChunk::new_in(
-                ChunkSize::from_capacity(layout).ok_or_else(E::capacity_overflow)?,
-                None,
-                allocator,
-            )?),
+            chunk: Cell::new(
+                RawChunk::new_in(
+                    ChunkSize::from_capacity(layout).ok_or_else(E::capacity_overflow)?,
+                    None,
+                    allocator,
+                )?
+                .coerce_guaranteed_allocated(),
+            ),
         })
     }
 

@@ -14,7 +14,9 @@ pub struct Checkpoint {
 }
 
 impl Checkpoint {
-    pub(crate) fn new<A, const UP: bool>(chunk: RawChunk<A, UP>) -> Self {
+    pub(crate) fn new<A, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
+        chunk: RawChunk<A, UP, GUARANTEED_ALLOCATED>,
+    ) -> Self {
         let address = chunk.pos().addr();
         let chunk = chunk.header().cast();
         Checkpoint { chunk, address }
@@ -34,7 +36,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator,
 {
-    pub(crate) chunk: RawChunk<A, UP>,
+    pub(crate) chunk: RawChunk<A, UP, true>,
     address: usize,
     marker: PhantomData<&'a mut ()>,
 }
@@ -72,7 +74,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, UP>) -> Self {
+    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, UP, true>) -> Self {
         Self {
             chunk,
             address: chunk.pos().addr().get(),
@@ -98,8 +100,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, A, UP> {
-        const GUARANTEED_ALLOCATED: bool = true;
-        unsafe { self.chunk.stats::<GUARANTEED_ALLOCATED>() }
+        self.chunk.stats()
     }
 
     /// Returns a reference to the base allocator.
@@ -122,7 +123,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator,
 {
-    pub(crate) chunk: RawChunk<A, UP>,
+    pub(crate) chunk: RawChunk<A, UP, true>,
     marker: PhantomData<&'b mut ()>,
 }
 
@@ -159,7 +160,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, UP>) -> Self {
+    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, UP, true>) -> Self {
         Self {
             chunk,
             marker: PhantomData,
@@ -182,8 +183,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, A, UP> {
-        const GUARANTEED_ALLOCATED: bool = true;
-        unsafe { self.chunk.stats::<GUARANTEED_ALLOCATED>() }
+        self.chunk.stats()
     }
 
     /// Returns a reference to the base allocator.
