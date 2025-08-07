@@ -27,10 +27,11 @@ pub(crate) unsafe fn deallocate<const MIN_ALIGN: usize, const UP: bool, const GU
     layout: Layout,
 ) where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     unsafe {
         // free allocated space if this is the last allocation
-        if is_last(bump, ptr, layout) {
+        if is_last_and_allocated(bump, ptr, layout) {
             deallocate_assume_last(bump, ptr, layout);
         }
     }
@@ -43,25 +44,23 @@ unsafe fn deallocate_assume_last<const MIN_ALIGN: usize, const UP: bool, const G
     layout: Layout,
 ) where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     unsafe {
-        debug_assert!(is_last(bump, ptr, layout));
+        debug_assert!(is_last_and_allocated(bump, ptr, layout));
 
         if UP {
-            bump.chunk.get().set_pos(ptr);
+            bump.set_pos(ptr.addr());
         } else {
             let mut addr = ptr.addr().get();
             addr += layout.size();
-            addr = up_align_usize_unchecked(addr, MIN_ALIGN);
-
-            let pos = ptr.with_addr(NonZeroUsize::new_unchecked(addr));
-            bump.chunk.get().set_pos(pos);
+            bump.set_pos(NonZeroUsize::new_unchecked(addr));
         }
     }
 }
 
 #[inline(always)]
-unsafe fn is_last<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>(
+unsafe fn is_last_and_allocated<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>(
     bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     ptr: NonNull<u8>,
     layout: Layout,
@@ -69,6 +68,10 @@ unsafe fn is_last<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOC
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
+    if bump.chunk.get().is_unallocated() {
+        return false;
+    }
+
     unsafe {
         if UP {
             ptr.as_ptr().add(layout.size()) == bump.chunk.get().pos().as_ptr()
@@ -96,10 +99,11 @@ where
 
     unsafe {
         if UP {
-            if is_last(bump, old_ptr, old_layout) & align_fits(old_ptr, old_layout, new_layout) {
+            if is_last_and_allocated(bump, old_ptr, old_layout) & align_fits(old_ptr, old_layout, new_layout) {
                 // We may be able to grow in place! Just need to check if there is enough space.
 
-                let chunk_end = bump.chunk.get().content_end();
+                let chunk = bump.chunk.get().guaranteed_allocated_unchecked();
+                let chunk_end = chunk.content_end();
                 let remaining = chunk_end.addr().get() - old_ptr.addr().get();
 
                 if new_layout.size() <= remaining {
@@ -110,7 +114,8 @@ where
                     // Up-aligning a pointer inside a chunks content by `MIN_ALIGN` never overflows.
                     let new_pos = up_align_usize_unchecked(old_addr.get() + new_layout.size(), MIN_ALIGN);
 
-                    bump.chunk.get().set_pos_addr(new_pos);
+                    // `is_last_and_allocated` returned true
+                    chunk.set_pos_addr(new_pos);
 
                     Ok(NonNull::slice_from_raw_parts(old_ptr, new_layout.size()))
                 } else {
@@ -126,14 +131,15 @@ where
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
         } else {
-            if is_last(bump, old_ptr, old_layout) {
+            if is_last_and_allocated(bump, old_ptr, old_layout) {
                 // We may be able to reuse the currently allocated space. Just need to check if the current chunk has enough space for that.
                 let additional_size = new_layout.size() - old_layout.size();
 
                 let old_addr = old_ptr.addr();
                 let new_addr = bump_down(old_addr, additional_size, new_layout.align().max(MIN_ALIGN));
 
-                let very_start = bump.chunk.get().content_start().addr();
+                let chunk = bump.chunk.get().guaranteed_allocated_unchecked();
+                let very_start = chunk.content_start().addr();
 
                 if new_addr >= very_start.get() {
                     // There is enough space in the current chunk! We will reuse the allocated space.
@@ -150,7 +156,9 @@ where
                         old_ptr.copy_to(new_ptr, old_layout.size());
                     }
 
-                    bump.chunk.get().set_pos_addr(new_addr.get());
+                    // `is_last_and_allocated` returned true
+                    chunk.set_pos_addr(new_addr.get());
+
                     Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
                 } else {
                     // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
@@ -218,7 +226,7 @@ where
         A: BaseAllocator<GUARANTEED_ALLOCATED>,
     {
         unsafe {
-            if is_last(bump, old_ptr, old_layout) {
+            if is_last_and_allocated(bump, old_ptr, old_layout) {
                 let old_pos = bump.chunk.get().pos();
                 deallocate_assume_last(bump, old_ptr, old_layout);
 
@@ -239,7 +247,9 @@ where
                         Ok(new_ptr) => new_ptr,
                         Err(error) => {
                             // Need to reset the bump pointer to the old position.
-                            bump.chunk.get().set_pos(old_pos);
+
+                            // `is_last_and_allocated` returned true
+                            bump.chunk.get().guaranteed_allocated_unchecked().set_pos(old_pos);
                             return Err(error);
                         }
                     };
@@ -272,7 +282,7 @@ where
         }
 
         // if that's not the last allocation, there is nothing we can do
-        if !is_last(bump, old_ptr, old_layout) {
+        if !is_last_and_allocated(bump, old_ptr, old_layout) {
             // we return the size of the old layout
             return Ok(NonNull::slice_from_raw_parts(old_ptr, old_layout.size()));
         }
@@ -283,7 +293,9 @@ where
             // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
             let new_pos = up_align_usize_unchecked(end, MIN_ALIGN);
 
-            bump.chunk.get().set_pos_addr(new_pos);
+            // `is_last_and_allocated` returned true
+            bump.chunk.get().guaranteed_allocated_unchecked().set_pos_addr(new_pos);
+
             Ok(NonNull::slice_from_raw_parts(old_ptr, new_layout.size()))
         } else {
             let old_addr = old_ptr.addr();
@@ -303,7 +315,9 @@ where
                 old_ptr.copy_to_nonoverlapping(new_ptr, new_layout.size());
             }
 
-            bump.chunk.get().set_pos(new_ptr);
+            // `is_last_and_allocated` returned true
+            bump.chunk.get().guaranteed_allocated_unchecked().set_pos(new_ptr);
+
             Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
         }
     }

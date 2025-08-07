@@ -96,7 +96,7 @@ spellcheck:
 
 doc *args:
   cargo fmt
-  cargo insert-docs --all-features --allow-dirty --strict
+  cargo insert-docs --all-features --allow-dirty
   @ just doc-rustdoc {{args}}
 
 doc-rustdoc *args:

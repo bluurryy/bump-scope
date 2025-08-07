@@ -1,10 +1,8 @@
 use core::{
+    num::NonZeroUsize,
     ops::Range,
     ptr::{self, NonNull},
 };
-
-#[cfg(feature = "alloc")]
-use core::num::NonZeroUsize;
 
 use crate::polyfill::pointer;
 
@@ -50,7 +48,6 @@ pub const fn as_mut_ptr<T>(p: NonNull<[T]>) -> *mut T {
 /// See [`std::ptr::NonNull::without_provenance`].
 #[must_use]
 #[inline]
-#[cfg(feature = "alloc")]
 pub(crate) const fn without_provenance<T>(addr: NonZeroUsize) -> NonNull<T> {
     let pointer = ptr::without_provenance_mut(addr.get());
     // SAFETY: we know `addr` is non-zero.

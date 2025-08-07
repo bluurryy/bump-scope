@@ -192,7 +192,7 @@ macro_rules! make_type {
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
             A: BaseAllocator<GUARANTEED_ALLOCATED>,
         {
-            pub(crate) chunk: Cell<RawChunk<A, UP>>,
+            pub(crate) chunk: Cell<RawChunk<A, UP, GUARANTEED_ALLOCATED>>,
         }
     };
 }
@@ -232,12 +232,11 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     fn drop(&mut self) {
-        if self.as_scope().is_unallocated() {
+        let Some(chunk) = self.chunk.get().guaranteed_allocated() else {
             return;
-        }
+        };
 
         unsafe {
-            let chunk = self.chunk.get();
             chunk.for_each_prev(|chunk| chunk.deallocate());
             chunk.for_each_next(|chunk| chunk.deallocate());
             chunk.deallocate();
@@ -818,7 +817,7 @@ where
     #[inline]
     pub(crate) fn generic_new_in<E: ErrorBehavior>(allocator: A) -> Result<Self, E> {
         Ok(Self {
-            chunk: Cell::new(RawChunk::new_in(ChunkSize::DEFAULT, None, allocator)?),
+            chunk: Cell::new(RawChunk::new_in(ChunkSize::DEFAULT, None, allocator)?.coerce_guaranteed_allocated()),
         })
     }
 
@@ -888,11 +887,10 @@ where
     #[inline]
     pub(crate) fn generic_with_size_in<E: ErrorBehavior>(size: usize, allocator: A) -> Result<Self, E> {
         Ok(Self {
-            chunk: Cell::new(RawChunk::new_in(
-                ChunkSize::from_hint(size).ok_or_else(E::capacity_overflow)?,
-                None,
-                allocator,
-            )?),
+            chunk: Cell::new(
+                RawChunk::new_in(ChunkSize::from_hint(size).ok_or_else(E::capacity_overflow)?, None, allocator)?
+                    .coerce_guaranteed_allocated(),
+            ),
         })
     }
 
@@ -947,11 +945,14 @@ where
     #[inline]
     pub(crate) fn generic_with_capacity_in<E: ErrorBehavior>(layout: Layout, allocator: A) -> Result<Self, E> {
         Ok(Self {
-            chunk: Cell::new(RawChunk::new_in(
-                ChunkSize::from_capacity(layout).ok_or_else(E::capacity_overflow)?,
-                None,
-                allocator,
-            )?),
+            chunk: Cell::new(
+                RawChunk::new_in(
+                    ChunkSize::from_capacity(layout).ok_or_else(E::capacity_overflow)?,
+                    None,
+                    allocator,
+                )?
+                .coerce_guaranteed_allocated(),
+            ),
         })
     }
 
@@ -982,7 +983,9 @@ where
     /// ```
     #[inline(always)]
     pub fn reset(&mut self) {
-        let mut chunk = self.chunk.get();
+        let Some(mut chunk) = self.chunk.get().guaranteed_allocated() else {
+            return;
+        };
 
         unsafe {
             chunk.for_each_prev(|chunk| chunk.deallocate());
@@ -995,7 +998,7 @@ where
 
         chunk.set_prev(None);
         chunk.reset();
-        self.chunk.set(chunk);
+        self.chunk.set(chunk.coerce_guaranteed_allocated());
     }
 
     /// Returns a type which provides statistics about the memory usage of the bump allocator.

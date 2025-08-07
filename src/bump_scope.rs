@@ -64,7 +64,7 @@ macro_rules! make_type {
             const UP: bool = true,
             const GUARANTEED_ALLOCATED: bool = true,
         > {
-            pub(crate) chunk: Cell<RawChunk<A, UP>>,
+            pub(crate) chunk: Cell<RawChunk<A, UP, GUARANTEED_ALLOCATED>>,
 
             /// Marks the lifetime of the mutably borrowed `BumpScopeGuard(Root)`.
             marker: PhantomData<&'a ()>,
@@ -431,14 +431,14 @@ where
         // because of this safety condition of `reset_to`:
         // > the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
         if !GUARANTEED_ALLOCATED && checkpoint.chunk == ChunkHeader::UNALLOCATED {
-            let mut chunk = self.chunk.get();
+            if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
+                while let Some(prev) = chunk.prev() {
+                    chunk = prev;
+                }
 
-            while let Some(prev) = chunk.prev() {
-                chunk = prev;
+                chunk.reset();
+                self.chunk.set(chunk.coerce_guaranteed_allocated());
             }
-
-            chunk.reset();
-            self.chunk.set(chunk);
         } else {
             debug_assert_ne!(
                 checkpoint.chunk,
@@ -469,7 +469,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, UP>) -> Self {
+    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, UP, GUARANTEED_ALLOCATED>) -> Self {
         Self {
             chunk: Cell::new(chunk),
             marker: PhantomData,
@@ -489,12 +489,12 @@ where
     #[inline(never)]
     fn allocate_first_chunk<B: ErrorBehavior>(&self) -> Result<(), B> {
         // must only be called when we point to the empty chunk
-        debug_assert_eq!(self.chunk.get(), RawChunk::UNALLOCATED);
+        debug_assert!(self.chunk.get().is_unallocated());
 
         let allocator = A::default_or_panic();
         let chunk = RawChunk::new_in(ChunkSize::DEFAULT, None, allocator)?;
 
-        self.chunk.set(chunk);
+        self.chunk.set(chunk.coerce_guaranteed_allocated());
 
         Ok(())
     }
@@ -548,11 +548,16 @@ where
     }
 
     /// Sets the bump position and aligns it to the required `MIN_ALIGN`.
+    ///
+    /// This does nothing if the current chunk is the UNALLOCATED one.
     #[inline(always)]
     pub(crate) unsafe fn set_pos(&self, pos: NonZeroUsize) {
         unsafe {
             let addr = align_pos::<MIN_ALIGN, UP>(pos);
-            self.chunk.get().set_pos_addr(addr);
+
+            if let Some(chunk) = self.chunk.get().guaranteed_allocated() {
+                chunk.set_pos_addr(addr);
+            }
         }
     }
 
@@ -561,6 +566,8 @@ where
     ///
     /// This should only be called when the `pos_align` is statically known so
     /// the branch gets optimized out.
+    ///
+    /// This does nothing if the current chunk is the UNALLOCATED one.
     #[inline(always)]
     pub(crate) unsafe fn set_aligned_pos(&self, pos: NonZeroUsize, pos_align: usize) {
         debug_assert_eq!(pos.get() % pos_align, 0);
@@ -571,7 +578,9 @@ where
             pos.get()
         };
 
-        unsafe { self.chunk.get().set_pos_addr(addr) };
+        if let Some(chunk) = self.chunk.get().guaranteed_allocated() {
+            unsafe { chunk.set_pos_addr(addr) };
+        }
     }
 
     #[inline(always)]
@@ -724,9 +733,12 @@ where
         MinimumAlignment<ALIGN>: SupportedMinimumAlignment,
     {
         if ALIGN > MIN_ALIGN {
-            let pos = self.chunk.get().pos().addr();
-            let addr = align_pos::<ALIGN, UP>(pos);
-            unsafe { self.chunk.get().set_pos_addr(addr) };
+            // The UNALLOCATED chunk is always aligned.
+            if let Some(chunk) = self.chunk.get().guaranteed_allocated() {
+                let pos = chunk.pos().addr();
+                let addr = align_pos::<ALIGN, UP>(pos);
+                unsafe { chunk.set_pos_addr(addr) };
+            }
         }
     }
 
@@ -750,10 +762,24 @@ where
     pub(crate) unsafe fn in_another_chunk<B: ErrorBehavior, R, L: LayoutProps>(
         &self,
         layout: L,
-        mut f: impl FnMut(RawChunk<A, UP>, L) -> Option<R>,
+        mut f: impl FnMut(RawChunk<A, UP, true>, L) -> Option<R>,
     ) -> Result<R, B> {
         unsafe {
-            let new_chunk = if self.is_unallocated() {
+            let new_chunk: RawChunk<A, UP, true> = if let Some(chunk) = self.chunk.get().guaranteed_allocated() {
+                while let Some(chunk) = chunk.next() {
+                    // We don't reset the chunk position when we leave a scope, so we need to do it here.
+                    chunk.reset();
+
+                    self.chunk.set(chunk.coerce_guaranteed_allocated());
+
+                    if let Some(ptr) = f(chunk, layout) {
+                        return Ok(ptr);
+                    }
+                }
+
+                // there is no chunk that fits, we need a new chunk
+                chunk.append_for(*layout)
+            } else {
                 // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
                 // `default_or_panic` will not panic.
                 let allocator = A::default_or_panic();
@@ -763,23 +789,9 @@ where
                     None,
                     allocator,
                 )
-            } else {
-                while let Some(chunk) = self.chunk.get().next() {
-                    // We don't reset the chunk position when we leave a scope, so we need to do it here.
-                    chunk.reset();
-
-                    self.chunk.set(chunk);
-
-                    if let Some(ptr) = f(chunk, layout) {
-                        return Ok(ptr);
-                    }
-                }
-
-                // there is no chunk that fits, we need a new chunk
-                self.chunk.get().append_for(*layout)
             }?;
 
-            self.chunk.set(new_chunk);
+            self.chunk.set(new_chunk.coerce_guaranteed_allocated());
 
             match f(new_chunk, layout) {
                 Some(ptr) => Ok(ptr),
@@ -802,7 +814,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
-        unsafe { self.chunk.get().stats() }
+        self.chunk.get().stats()
     }
 
     /// Returns `&self` as is. This is useful for macros that support both `Bump` and `BumpScope`.
@@ -1131,6 +1143,8 @@ where
         unsafe {
             let ptr = if UP {
                 if let Some(BumpUp { new_pos, ptr }) = bump_up(props) {
+                    // non zero sized allocations never succeed for the unallocated chunk
+                    let chunk = chunk.guaranteed_allocated_unchecked();
                     chunk.set_pos_addr(new_pos);
                     chunk.with_addr(ptr)
                 } else {
@@ -1138,6 +1152,8 @@ where
                 }
             } else {
                 if let Some(addr) = bump_down(props) {
+                    // non zero sized allocations never succeed for the unallocated chunk
+                    let chunk = chunk.guaranteed_allocated_unchecked();
                     chunk.set_pos_addr(addr);
                     chunk.with_addr(addr)
                 } else {
@@ -2672,35 +2688,34 @@ where
             return Err(B::capacity_overflow());
         };
 
-        if self.is_unallocated() {
+        if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
+            let mut additional = additional;
+
+            loop {
+                if let Some(rest) = additional.checked_sub(chunk.remaining()) {
+                    additional = rest;
+                } else {
+                    return Ok(());
+                }
+
+                if let Some(next) = chunk.next() {
+                    chunk = next;
+                } else {
+                    break;
+                }
+            }
+
+            chunk.append_for(layout).map(drop)
+        } else {
             let allocator = A::default_or_panic();
             let new_chunk = RawChunk::new_in(
                 ChunkSize::from_capacity(layout).ok_or_else(B::capacity_overflow)?,
                 None,
                 allocator,
             )?;
-            self.chunk.set(new_chunk);
-            return Ok(());
+            self.chunk.set(new_chunk.coerce_guaranteed_allocated());
+            Ok(())
         }
-
-        let mut additional = additional;
-        let mut chunk = self.chunk.get();
-
-        loop {
-            if let Some(rest) = additional.checked_sub(chunk.remaining()) {
-                additional = rest;
-            } else {
-                return Ok(());
-            }
-
-            if let Some(next) = chunk.next() {
-                chunk = next;
-            } else {
-                break;
-            }
-        }
-
-        chunk.append_for(layout).map(drop)
     }
 }
 
