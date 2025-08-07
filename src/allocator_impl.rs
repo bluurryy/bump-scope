@@ -102,7 +102,8 @@ where
             if is_last_and_allocated(bump, old_ptr, old_layout) & align_fits(old_ptr, old_layout, new_layout) {
                 // We may be able to grow in place! Just need to check if there is enough space.
 
-                let chunk_end = bump.chunk.get().content_end();
+                let chunk = bump.chunk.get().guaranteed_allocated_unchecked();
+                let chunk_end = chunk.content_end();
                 let remaining = chunk_end.addr().get() - old_ptr.addr().get();
 
                 if new_layout.size() <= remaining {
@@ -114,7 +115,7 @@ where
                     let new_pos = up_align_usize_unchecked(old_addr.get() + new_layout.size(), MIN_ALIGN);
 
                     // `is_last_and_allocated` returned true
-                    bump.chunk.get().guaranteed_allocated_unchecked().set_pos_addr(new_pos);
+                    chunk.set_pos_addr(new_pos);
 
                     Ok(NonNull::slice_from_raw_parts(old_ptr, new_layout.size()))
                 } else {
@@ -137,7 +138,8 @@ where
                 let old_addr = old_ptr.addr();
                 let new_addr = bump_down(old_addr, additional_size, new_layout.align().max(MIN_ALIGN));
 
-                let very_start = bump.chunk.get().content_start().addr();
+                let chunk = bump.chunk.get().guaranteed_allocated_unchecked();
+                let very_start = chunk.content_start().addr();
 
                 if new_addr >= very_start.get() {
                     // There is enough space in the current chunk! We will reuse the allocated space.
@@ -155,7 +157,7 @@ where
                     }
 
                     // `is_last_and_allocated` returned true
-                    bump.chunk.get().guaranteed_allocated_unchecked().set_pos_addr(new_addr.get());
+                    chunk.set_pos_addr(new_addr.get());
 
                     Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
                 } else {

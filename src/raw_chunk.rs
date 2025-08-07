@@ -209,6 +209,104 @@ impl<A, const UP: bool> RawChunk<A, UP, true> {
             allocator.deallocate(ptr, layout);
         }
     }
+
+    #[inline(always)]
+    fn after_header(self) -> NonNull<u8> {
+        unsafe { self.header.add(1).cast() }
+    }
+
+    #[inline(always)]
+    pub(crate) fn chunk_start(self) -> NonNull<u8> {
+        unsafe { if UP { self.header.cast() } else { self.header.as_ref().end } }
+    }
+
+    #[inline(always)]
+    pub(crate) fn chunk_end(self) -> NonNull<u8> {
+        unsafe { if UP { self.header.as_ref().end } else { self.after_header() } }
+    }
+
+    #[inline(always)]
+    pub(crate) fn content_start(self) -> NonNull<u8> {
+        if UP { self.after_header() } else { self.chunk_start() }
+    }
+
+    #[inline(always)]
+    pub(crate) fn content_end(self) -> NonNull<u8> {
+        if UP { self.chunk_end() } else { self.header.cast() }
+    }
+
+    #[inline(always)]
+    pub(crate) fn capacity(self) -> usize {
+        let start = self.content_start().addr().get();
+        let end = self.content_end().addr().get();
+        end - start
+    }
+
+    #[inline(always)]
+    fn allocated_range(self) -> Range<NonNull<u8>> {
+        if UP {
+            self.content_start()..self.pos()
+        } else {
+            self.pos()..self.content_end()
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn contains_addr_or_end(self, addr: usize) -> bool {
+        let start = self.content_start().addr().get();
+        let end = self.content_end().addr().get();
+        addr >= start && addr <= end
+    }
+
+    #[inline(always)]
+    pub(crate) fn allocated(self) -> usize {
+        let range = self.allocated_range();
+        let start = range.start.addr().get();
+        let end = range.end.addr().get();
+        end - start
+    }
+
+    #[inline(always)]
+    pub(crate) fn remaining(self) -> usize {
+        let range = self.remaining_range();
+        let start = range.start.addr().get();
+        let end = range.end.addr().get();
+        end - start
+    }
+
+    pub(crate) fn remaining_range(self) -> Range<NonNull<u8>> {
+        if UP {
+            let start = self.pos();
+            let end = self.content_end();
+            start..end
+        } else {
+            let start = self.content_start();
+            let end = self.pos();
+            start..end
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn size(self) -> NonZeroUsize {
+        let start = self.chunk_start().addr().get();
+        let end = self.chunk_end().addr().get();
+        unsafe { NonZeroUsize::new_unchecked(end - start) }
+    }
+
+    #[inline(always)]
+    pub(crate) fn layout(self) -> Layout {
+        // SAFETY: this layout fits the one we allocated, which means it must be valid
+        unsafe { Layout::from_size_align_unchecked(self.size().get(), align_of::<ChunkHeader<A>>()) }
+    }
+
+    #[inline(always)]
+    fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSizeHint<A, UP>, B> {
+        let Some(size) = self.size().get().checked_mul(2) else {
+            return Err(B::capacity_overflow());
+        };
+
+        Ok(ChunkSizeHint::<A, UP>::new(size))
+    }
 }
 
 impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARANTEED_ALLOCATED> {
@@ -243,6 +341,33 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
 
     pub(crate) const unsafe fn from_header(header: NonNull<ChunkHeader<A>>) -> Self {
         Self { header }
+    }
+
+    #[inline(always)]
+    pub(crate) fn bump_props<M, L>(self, _: M, layout: L) -> BumpProps
+    where
+        M: SupportedMinimumAlignment,
+        L: LayoutProps,
+    {
+        debug_assert!(non_null::is_aligned_to(self.pos(), M::MIN_ALIGN));
+
+        let pos = self.pos().addr().get();
+        let end = unsafe { self.header.as_ref() }.end.addr().get();
+
+        let start = if UP { pos } else { end };
+        let end = if UP { end } else { pos };
+
+        debug_assert!(if self.is_unallocated() { end - start == 0 } else { true });
+
+        BumpProps {
+            start,
+            end,
+            layout: *layout,
+            min_align: M::MIN_ALIGN,
+            align_is_const: L::ALIGN_IS_CONST,
+            size_is_const: L::SIZE_IS_CONST,
+            size_is_multiple_of_align: L::SIZE_IS_MULTIPLE_OF_ALIGN,
+        }
     }
 
     /// Attempts to allocate a block of memory.
@@ -359,26 +484,6 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
         }
     }
 
-    #[inline(always)]
-    pub(crate) fn bump_props<M, L>(self, _: M, layout: L) -> BumpProps
-    where
-        M: SupportedMinimumAlignment,
-        L: LayoutProps,
-    {
-        debug_assert!(non_null::is_aligned_to(self.pos(), M::MIN_ALIGN));
-        let remaining = self.remaining_range();
-
-        BumpProps {
-            start: remaining.start.addr().get(),
-            end: remaining.end.addr().get(),
-            layout: *layout,
-            min_align: M::MIN_ALIGN,
-            align_is_const: L::ALIGN_IS_CONST,
-            size_is_const: L::SIZE_IS_CONST,
-            size_is_multiple_of_align: L::SIZE_IS_MULTIPLE_OF_ALIGN,
-        }
-    }
-
     /// Returns the rest of the capacity of the chunk.
     /// This does not change the position within the chunk.
     ///
@@ -414,31 +519,6 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     }
 
     #[inline(always)]
-    fn after_header(self) -> NonNull<u8> {
-        unsafe { self.header.add(1).cast() }
-    }
-
-    #[inline(always)]
-    pub(crate) fn chunk_start(self) -> NonNull<u8> {
-        unsafe { if UP { self.header.cast() } else { self.header.as_ref().end } }
-    }
-
-    #[inline(always)]
-    pub(crate) fn chunk_end(self) -> NonNull<u8> {
-        unsafe { if UP { self.header.as_ref().end } else { self.after_header() } }
-    }
-
-    #[inline(always)]
-    pub(crate) fn content_start(self) -> NonNull<u8> {
-        if UP { self.after_header() } else { self.chunk_start() }
-    }
-
-    #[inline(always)]
-    pub(crate) fn content_end(self) -> NonNull<u8> {
-        if UP { self.chunk_end() } else { self.header.cast() }
-    }
-
-    #[inline(always)]
     pub(crate) fn pos(self) -> NonNull<u8> {
         unsafe { self.header.as_ref().pos.get() }
     }
@@ -448,7 +528,11 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     #[inline(always)]
     pub(crate) unsafe fn with_addr(self, addr: usize) -> NonNull<u8> {
         unsafe {
-            debug_assert!(self.contains_addr_or_end(addr));
+            debug_assert!(if let Some(chunk) = self.guaranteed_allocated() {
+                chunk.contains_addr_or_end(addr)
+            } else {
+                true // can't check
+            });
             let ptr = self.header.cast();
             let addr = NonZeroUsize::new_unchecked(addr);
             ptr.with_addr(addr)
@@ -466,13 +550,6 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     }
 
     #[inline(always)]
-    pub(crate) fn contains_addr_or_end(self, addr: usize) -> bool {
-        let start = self.content_start().addr().get();
-        let end = self.content_end().addr().get();
-        addr >= start && addr <= end
-    }
-
-    #[inline(always)]
     pub(crate) fn prev(self) -> Option<RawChunk<A, UP, true>> {
         // SAFETY: the `UNALLOCATED` chunk header never has a `prev` so this must be an allocated chunk if some
         unsafe { Some(RawChunk::from_header(self.header.as_ref().prev.get()?)) }
@@ -482,72 +559,6 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     pub(crate) fn next(self) -> Option<RawChunk<A, UP, true>> {
         // SAFETY: the `UNALLOCATED` chunk header never has a `next` so this must be an allocated chunk if some
         unsafe { Some(RawChunk::from_header(self.header.as_ref().next.get()?)) }
-    }
-
-    #[inline(always)]
-    pub(crate) fn capacity(self) -> usize {
-        let start = self.content_start().addr().get();
-        let end = self.content_end().addr().get();
-        end - start
-    }
-
-    #[inline(always)]
-    fn allocated_range(self) -> Range<NonNull<u8>> {
-        if UP {
-            self.content_start()..self.pos()
-        } else {
-            self.pos()..self.content_end()
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn allocated(self) -> usize {
-        let range = self.allocated_range();
-        let start = range.start.addr().get();
-        let end = range.end.addr().get();
-        end - start
-    }
-
-    #[inline(always)]
-    pub(crate) fn remaining(self) -> usize {
-        let range = self.remaining_range();
-        let start = range.start.addr().get();
-        let end = range.end.addr().get();
-        end - start
-    }
-
-    pub(crate) fn remaining_range(self) -> Range<NonNull<u8>> {
-        if UP {
-            let start = self.pos();
-            let end = self.content_end();
-            start..end
-        } else {
-            let start = self.content_start();
-            let end = self.pos();
-            start..end
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn size(self) -> NonZeroUsize {
-        let start = self.chunk_start().addr().get();
-        let end = self.chunk_end().addr().get();
-        unsafe { NonZeroUsize::new_unchecked(end - start) }
-    }
-
-    #[inline(always)]
-    pub(crate) fn layout(self) -> Layout {
-        // SAFETY: this layout fits the one we allocated, which means it must be valid
-        unsafe { Layout::from_size_align_unchecked(self.size().get(), align_of::<ChunkHeader<A>>()) }
-    }
-
-    #[inline(always)]
-    fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSizeHint<A, UP>, B> {
-        let Some(size) = self.size().get().checked_mul(2) else {
-            return Err(B::capacity_overflow());
-        };
-
-        Ok(ChunkSizeHint::<A, UP>::new(size))
     }
 
     /// This resolves the next chunk before calling `f`. So calling [`deallocate`](RawChunk::deallocate) on the chunk parameter of `f` is fine.
