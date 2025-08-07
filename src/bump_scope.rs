@@ -521,29 +521,25 @@ where
     #[inline(always)]
     pub(crate) unsafe fn use_prepared_slice_allocation_rev<T>(
         &self,
-        mut end: NonNull<T>,
+        end: NonNull<T>,
         len: usize,
         cap: usize,
     ) -> NonNull<[T]> {
         unsafe {
-            let mut start = end.sub(len);
-
-            // FIXME: refactor like `BumpAllocator::allocate_prepared_rev`
             if UP {
-                {
-                    let dst = end.sub(cap);
-                    let dst_end = dst.add(len);
+                let dst = end.sub(cap);
+                let dst_end = dst.add(len);
 
-                    start.copy_to(dst, len);
-                    start = dst;
-                    end = dst_end;
-                }
+                let src = end.sub(len);
 
-                self.set_aligned_pos(end.addr(), T::ALIGN);
-                NonNull::slice_from_raw_parts(start, len)
+                src.copy_to(dst, len);
+
+                self.set_aligned_pos(dst_end.addr(), T::ALIGN);
+                NonNull::slice_from_raw_parts(dst, len)
             } else {
-                self.set_aligned_pos(start.addr(), T::ALIGN);
-                NonNull::slice_from_raw_parts(start, len)
+                let dst = end.sub(len);
+                self.set_aligned_pos(dst.addr(), T::ALIGN);
+                NonNull::slice_from_raw_parts(dst, len)
             }
         }
     }
