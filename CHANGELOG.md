@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix small amount of wasted space when allocating `Mut*` collections on a downwards bumping allocator
 - Fix potential UB when calling `allocator()` on an unallocated `Bump(Scope)`, now `allocator()` returns `Option<&A>` for `!GUARANTEED_ALLOCATED` `Bump(Scope)`s
+- Fix allocating a layout of size zero on an unallocated `Bump` resulting in an assertion / potential UB
+- Fix resetting an unallocated `Bump` resulting in an assertion / potential UB
 
 ## [0.17.4] - 2025-07-12
 
