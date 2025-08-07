@@ -291,7 +291,7 @@
 //!
 //! You need a guaranteed allocated `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
 //! You can make a `Bump(Scope)` guaranteed allocated using
-//! <code>[guaranteed_allocated](Bump::guaranteed_allocated)([_ref](Bump::guaranteed_allocated_ref)/[_mut](Bump::guaranteed_allocated_mut))</code>.
+//! <code>[as_](Bump::as_guaranteed_allocated)([mut_](Bump::as_mut_guaranteed_allocated))</code> or <code>[into_](Bump::into_guaranteed_allocated)guaranteed_allocated</code>.
 //!
 //! The point of this is so `Bump`s can be `const` constructed without allocating memory.
 //! At the same time `Bump`s that have already allocated a chunk don't suffer runtime checks for entering scopes and creating checkpoints.

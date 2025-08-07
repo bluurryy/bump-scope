@@ -244,7 +244,7 @@ This is usually the case unless it was created with [`Bump::unallocated`](https:
 
 You need a guaranteed allocated `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
 You can make a `Bump(Scope)` guaranteed allocated using
-<code>[guaranteed_allocated](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.guaranteed_allocated)([_ref](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.guaranteed_allocated_ref)/[_mut](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.guaranteed_allocated_mut))</code>.
+<code>[as_](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.as_guaranteed_allocated)([mut_](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.as_mut_guaranteed_allocated))</code> or <code>[into_](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.into_guaranteed_allocated)guaranteed_allocated</code>.
 
 The point of this is so `Bump`s can be `const` constructed without allocating memory.
 At the same time `Bump`s that have already allocated a chunk don't suffer runtime checks for entering scopes and creating checkpoints.

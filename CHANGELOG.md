@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Breaking:** Raise minimum supported rust version to 1.85.1
 - **Breaking:** Remove `without_shrink` and `without_dealloc` methods
+- **Breaking:** Rename `guaranteed_allocated` to `into_guaranteed_allocated`
+- **Breaking:** Rename `guaranteed_allocated_ref` to `as_guaranteed_allocated`
+- **Breaking:** Rename `guaranteed_allocated_mut` to `as_mut_guaranteed_allocated`
+- **Breaking:** Rename `not_guaranteed_allocated` to `into_not_guaranteed_allocated`
+- **Breaking:** Rename `not_guaranteed_allocated_ref` to `as_not_guaranteed_allocated`
 - Switch to rust edition 2024
 
 ### Fixed
