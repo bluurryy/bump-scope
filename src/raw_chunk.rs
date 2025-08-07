@@ -6,7 +6,7 @@ use crate::{
     bumping::{BumpProps, BumpUp, MIN_CHUNK_ALIGN, bump_down, bump_prepare_down, bump_prepare_up, bump_up},
     chunk_size::{ChunkSize, ChunkSizeHint},
     layout::LayoutProps,
-    polyfill::non_null,
+    polyfill::{self, non_null},
     stats::Stats,
 };
 
@@ -149,6 +149,31 @@ impl<A, const UP: bool> RawChunk<A, UP, true> {
         self.set_next(Some(new_chunk));
         Ok(new_chunk)
     }
+
+    /// # Safety
+    /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
+    #[inline(always)]
+    pub(crate) unsafe fn set_pos(self, ptr: NonNull<u8>) {
+        unsafe { self.set_pos_addr(ptr.addr().get()) };
+    }
+
+    /// # Safety
+    /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
+    #[inline(always)]
+    pub(crate) unsafe fn set_pos_addr(self, addr: usize) {
+        unsafe { self.header.as_ref().pos.set(self.with_addr(addr)) };
+    }
+
+    #[inline(always)]
+    pub(crate) fn reset(self) {
+        unsafe {
+            if UP {
+                self.set_pos(self.content_start());
+            } else {
+                self.set_pos(self.content_end());
+            }
+        }
+    }
 }
 
 impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARANTEED_ALLOCATED> {
@@ -166,6 +191,11 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
         }
 
         Some(RawChunk { header: self.header })
+    }
+
+    pub(crate) unsafe fn guaranteed_allocated_unchecked(self) -> RawChunk<A, UP, true> {
+        debug_assert!(self.is_allocated());
+        RawChunk { header: self.header }
     }
 
     pub(crate) fn not_guaranteed_allocated(self) -> RawChunk<A, UP, false> {
@@ -207,22 +237,37 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
         L: LayoutProps,
         F: FnOnce() -> Result<NonNull<u8>, E>,
     {
+        // Zero sized allocations are a problem for non-GUARANTEED_ALLOCATED chunks
+        // since bump_up/bump_down will succeed and the UNALLOCATED chunk would
+        // be written to. The UNALLOCATED chunk must not be written to since that
+        // could cause a data-race (UB).
+        //
+        // In many cases, the layout size is statically known not to be zero
+        // and this "if" is optimized away.
+        if !GUARANTEED_ALLOCATED && layout.size() == 0 {
+            return Ok(polyfill::layout::dangling(*layout));
+        }
+
         let props = self.bump_props(minimum_alignment, layout);
 
         unsafe {
             if UP {
                 match bump_up(props) {
                     Some(BumpUp { new_pos, ptr }) => {
-                        self.set_pos_addr(new_pos);
-                        Ok(self.with_addr(ptr))
+                        // non zero sized allocations never succeed for the unallocated chunk
+                        let chunk = self.guaranteed_allocated_unchecked();
+                        chunk.set_pos_addr(new_pos);
+                        Ok(chunk.with_addr(ptr))
                     }
                     None => f(),
                 }
             } else {
                 match bump_down(props) {
                     Some(ptr) => {
-                        let ptr = self.with_addr(ptr);
-                        self.set_pos(ptr);
+                        // non zero sized allocations never succeed for the unallocated chunk
+                        let chunk = self.guaranteed_allocated_unchecked();
+                        let ptr = chunk.with_addr(ptr);
+                        chunk.set_pos(ptr);
                         Ok(ptr)
                     }
                     None => f(),
@@ -366,20 +411,6 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     /// # Safety
     /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
     #[inline(always)]
-    pub(crate) unsafe fn set_pos(self, ptr: NonNull<u8>) {
-        unsafe { self.set_pos_addr(ptr.addr().get()) };
-    }
-
-    /// # Safety
-    /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
-    #[inline(always)]
-    pub(crate) unsafe fn set_pos_addr(self, addr: usize) {
-        unsafe { self.header.as_ref().pos.set(self.with_addr(addr)) };
-    }
-
-    /// # Safety
-    /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
-    #[inline(always)]
     pub(crate) unsafe fn with_addr(self, addr: usize) -> NonNull<u8> {
         unsafe {
             debug_assert!(self.contains_addr_or_end(addr));
@@ -482,17 +513,6 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
         };
 
         Ok(ChunkSizeHint::<A, UP>::new(size))
-    }
-
-    #[inline(always)]
-    pub(crate) fn reset(self) {
-        unsafe {
-            if UP {
-                self.set_pos(self.content_start());
-            } else {
-                self.set_pos(self.content_end());
-            }
-        }
     }
 
     /// # Safety

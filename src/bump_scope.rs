@@ -548,11 +548,16 @@ where
     }
 
     /// Sets the bump position and aligns it to the required `MIN_ALIGN`.
+    ///
+    /// This does nothing if the current chunk is the UNALLOCATED one.
     #[inline(always)]
     pub(crate) unsafe fn set_pos(&self, pos: NonZeroUsize) {
         unsafe {
             let addr = align_pos::<MIN_ALIGN, UP>(pos);
-            self.chunk.get().set_pos_addr(addr);
+
+            if let Some(chunk) = self.chunk.get().guaranteed_allocated() {
+                chunk.set_pos_addr(addr);
+            }
         }
     }
 
@@ -561,6 +566,8 @@ where
     ///
     /// This should only be called when the `pos_align` is statically known so
     /// the branch gets optimized out.
+    ///
+    /// This does nothing if the current chunk is the UNALLOCATED one.
     #[inline(always)]
     pub(crate) unsafe fn set_aligned_pos(&self, pos: NonZeroUsize, pos_align: usize) {
         debug_assert_eq!(pos.get() % pos_align, 0);
@@ -571,7 +578,9 @@ where
             pos.get()
         };
 
-        unsafe { self.chunk.get().set_pos_addr(addr) };
+        if let Some(chunk) = self.chunk.get().guaranteed_allocated() {
+            unsafe { chunk.set_pos_addr(addr) };
+        }
     }
 
     #[inline(always)]
@@ -724,9 +733,12 @@ where
         MinimumAlignment<ALIGN>: SupportedMinimumAlignment,
     {
         if ALIGN > MIN_ALIGN {
-            let pos = self.chunk.get().pos().addr();
-            let addr = align_pos::<ALIGN, UP>(pos);
-            unsafe { self.chunk.get().set_pos_addr(addr) };
+            // The UNALLOCATED chunk is always aligned.
+            if let Some(chunk) = self.chunk.get().guaranteed_allocated() {
+                let pos = chunk.pos().addr();
+                let addr = align_pos::<ALIGN, UP>(pos);
+                unsafe { chunk.set_pos_addr(addr) };
+            }
         }
     }
 
@@ -1131,6 +1143,8 @@ where
         unsafe {
             let ptr = if UP {
                 if let Some(BumpUp { new_pos, ptr }) = bump_up(props) {
+                    // non zero sized allocations never succeed for the unallocated chunk
+                    let chunk = chunk.guaranteed_allocated_unchecked();
                     chunk.set_pos_addr(new_pos);
                     chunk.with_addr(ptr)
                 } else {
@@ -1138,6 +1152,8 @@ where
                 }
             } else {
                 if let Some(addr) = bump_down(props) {
+                    // non zero sized allocations never succeed for the unallocated chunk
+                    let chunk = chunk.guaranteed_allocated_unchecked();
                     chunk.set_pos_addr(addr);
                     chunk.with_addr(addr)
                 } else {

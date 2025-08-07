@@ -21,9 +21,11 @@ where
 {
     #[inline(always)]
     fn drop(&mut self) {
-        let pos = self.scope.chunk.get().pos().addr();
-        let addr = align_pos::<MIN_ALIGN, UP>(pos);
-        unsafe { self.scope.chunk.get().set_pos_addr(addr) };
+        if let Some(chunk) = self.scope.chunk.get().guaranteed_allocated() {
+            let pos = chunk.pos().addr();
+            let addr = align_pos::<MIN_ALIGN, UP>(pos);
+            unsafe { chunk.set_pos_addr(addr) };
+        }
     }
 }
 

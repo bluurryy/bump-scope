@@ -968,14 +968,15 @@ where
 
         // Adapted from `Allocator::shrink`.
         unsafe {
-            let is_last = if UP {
-                old_ptr.as_ptr().add(old_size) == self.chunk.get().pos().as_ptr()
-            } else {
-                old_ptr == self.chunk.get().pos()
-            };
+            let is_last_and_allocated = self.chunk.get().is_allocated()
+                && if UP {
+                    old_ptr.as_ptr().add(old_size) == self.chunk.get().pos().as_ptr()
+                } else {
+                    old_ptr == self.chunk.get().pos()
+                };
 
             // if that's not the last allocation, there is nothing we can do
-            if !is_last {
+            if !is_last_and_allocated {
                 return None;
             }
 
@@ -985,7 +986,7 @@ where
                 // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
                 let new_pos = up_align_usize_unchecked(end, MIN_ALIGN);
 
-                self.chunk.get().set_pos_addr(new_pos);
+                self.chunk.get().guaranteed_allocated_unchecked().set_pos_addr(new_pos);
                 Some(old_ptr.cast())
             } else {
                 let old_addr = old_ptr.addr();
@@ -1004,7 +1005,7 @@ where
                     old_ptr.copy_to_nonoverlapping(new_ptr, new_size);
                 }
 
-                self.chunk.get().set_pos(new_ptr);
+                self.chunk.get().guaranteed_allocated_unchecked().set_pos(new_ptr);
                 Some(new_ptr.cast())
             }
         }
