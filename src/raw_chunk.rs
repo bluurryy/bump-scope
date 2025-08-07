@@ -179,6 +179,20 @@ impl<A, const UP: bool> RawChunk<A, UP, true> {
     pub(crate) fn allocator<'a>(self) -> &'a A {
         unsafe { &self.header.as_ref().allocator }
     }
+
+    #[inline(always)]
+    pub(crate) fn set_prev(self, value: Option<Self>) {
+        unsafe {
+            self.header.as_ref().prev.set(value.map(|c| c.header));
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn set_next(self, value: Option<Self>) {
+        unsafe {
+            self.header.as_ref().next.set(value.map(|c| c.header));
+        }
+    }
 }
 
 impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARANTEED_ALLOCATED> {
@@ -536,20 +550,6 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
             let allocator_ptr = &raw const (*self.header.as_ptr()).allocator;
             let allocator = allocator_ptr.read();
             allocator.deallocate(ptr, layout);
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn set_prev(self, value: Option<Self>) {
-        unsafe {
-            self.header.as_ref().prev.set(value.map(|c| c.header));
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn set_next(self, value: Option<Self>) {
-        unsafe {
-            self.header.as_ref().next.set(value.map(|c| c.header));
         }
     }
 
