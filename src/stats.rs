@@ -382,8 +382,7 @@ impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &'a A {
-        // SAFETY: A `Chunk` is guaranteed not to be `RawChunk::UNALLOCATED`.
-        unsafe { self.chunk.allocator() }
+        self.chunk.allocator()
     }
 
     #[cfg(debug_assertions)]

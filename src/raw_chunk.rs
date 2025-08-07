@@ -174,6 +174,11 @@ impl<A, const UP: bool> RawChunk<A, UP, true> {
             }
         }
     }
+
+    #[inline(always)]
+    pub(crate) fn allocator<'a>(self) -> &'a A {
+        unsafe { &self.header.as_ref().allocator }
+    }
 }
 
 impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARANTEED_ALLOCATED> {
@@ -566,13 +571,6 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
             iter = chunk.next();
             f(chunk);
         }
-    }
-
-    /// This is only safe to read when `self` is not `RawChunk::UNALLOCATED`.
-    #[inline(always)]
-    pub(crate) unsafe fn allocator<'a>(self) -> &'a A {
-        debug_assert!(self.is_allocated());
-        unsafe { &self.header.as_ref().allocator }
     }
 
     #[inline(always)]
