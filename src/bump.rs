@@ -475,7 +475,7 @@ where
     }
 }
 
-/// Methods for a [*guaranteed allocated*](crate#guaranteed_allocated-parameter) `Bump`.
+/// Methods for a [*guaranteed allocated*](crate#what-does-guaranteed-allocated-mean) `Bump`.
 impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -670,18 +670,15 @@ where
     }
 }
 
-/// Methods for a **not** [*guaranteed allocated*](crate#guaranteed_allocated-parameter) `Bump`.
+/// Methods for a **not** [*guaranteed allocated*](crate#what-does-guaranteed-allocated-mean) `Bump`.
 impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP, false>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
 {
-    /// Constructs a new `Bump` without doing any allocations.
+    /// Constructs a new `Bump` without allocating a chunk.
     ///
-    /// The resulting `Bump` will have its [`GUARANTEED_ALLOCATED`](crate#guaranteed_allocated-parameter) parameter set to `false`.
-    /// Such a `Bump` is unable to create a scope with `scoped` or `scope_guard`.
-    /// It has to first be converted into a guaranteed allocated `Bump` using
-    /// <code>[as_](Bump::as_guaranteed_allocated)([mut_](Bump::as_mut_guaranteed_allocated))</code> or <code>[into_](Bump::into_guaranteed_allocated)guaranteed_allocated</code>.
+    /// See [*What does guaranteed allocated mean?*](crate#what-does-guaranteed-allocated-mean).
     ///
     /// # Examples
     ///
@@ -1074,7 +1071,7 @@ where
         unsafe { &mut *ptr::from_mut(self).cast::<Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>() }
     }
 
-    /// Converts this `Bump` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
+    /// Converts this `Bump` into a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `Bump`.
     ///
     /// If this `Bump` is not yet allocated, `f` will be called to allocate it.
     ///
@@ -1126,7 +1123,7 @@ where
         unsafe { transmute(self) }
     }
 
-    /// Converts this `Bump` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
+    /// Converts this `Bump` into a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `Bump`.
     ///
     /// If this `Bump` is not yet allocated, `f` will be called to allocate it.
     ///
@@ -1182,7 +1179,7 @@ where
         Ok(unsafe { transmute(self) })
     }
 
-    /// Borrows `Bump` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
+    /// Borrows `Bump` as a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `Bump`.
     ///
     /// If this `Bump` is not yet allocated, `f` will be called to allocate it.
     ///
@@ -1213,7 +1210,7 @@ where
         unsafe { transmute_ref(self) }
     }
 
-    /// Borrows `Bump` as an [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
+    /// Borrows `Bump` as an [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `Bump`.
     ///
     /// If this `Bump` is not yet allocated, `f` will be called to allocate it.
     ///
@@ -1246,7 +1243,7 @@ where
         Ok(unsafe { transmute_ref(self) })
     }
 
-    /// Mutably borrows `Bump` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
+    /// Mutably borrows `Bump` as a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `Bump`.
     ///
     /// If this `Bump` is not yet allocated, `f` will be called to allocate it.
     ///
@@ -1302,7 +1299,7 @@ where
         unsafe { transmute_mut(self) }
     }
 
-    /// Mutably borrows `Bump` as an [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
+    /// Mutably borrows `Bump` as an [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `Bump`.
     ///
     /// If this `Bump` is not yet allocated, `f` will be called to allocate it.
     ///
@@ -1359,7 +1356,7 @@ where
         Ok(unsafe { transmute_mut(self) })
     }
 
-    /// Converts this `BumpScope` into a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
+    /// Converts this `BumpScope` into a ***not*** [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `Bump`.
     #[inline(always)]
     pub fn into_not_guaranteed_allocated(self) -> Bump<A, MIN_ALIGN, UP, false>
     where
@@ -1369,7 +1366,7 @@ where
         unsafe { transmute(self) }
     }
 
-    /// Borrows `Bump` as a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) `Bump`.
+    /// Borrows `Bump` as a ***not*** [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `Bump`.
     ///
     /// Note that it's not possible to mutably borrow as a not guaranteed allocated bump allocator. That's because
     /// a user could `mem::swap` it with an actual unallocated bump allocator which in turn would make `&mut self`

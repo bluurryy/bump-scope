@@ -277,26 +277,50 @@
 //!
 //! For the performance impact see [./crates/callgrind-benches][benches].
 //!
-//! # Minimum alignment?
-//! The minimum alignment is controlled by the generic parameter `const MIN_ALIGN: usize`. By default, `MIN_ALIGN` is `1`.
+//! # What is minimum alignment?
+//! Minimum alignment is the alignment the bump pointer maintains when doing allocations.
+//!
+//! When allocating a type in a bump allocator with a sufficient minimum alignment,
+//! the bump pointer will not have to be aligned for the allocation but the allocation size
+//! will need to be rounded up to the next multiple of the minimum alignment.
 //!
 //! For example changing the minimum alignment to `4` makes it so allocations with the alignment of `4` don't need to align the bump pointer anymore.
 //! This will penalize allocations whose sizes are not a multiple of `4` as their size now needs to be rounded up the next multiple of `4`.
 //!
+//! The minimum alignment is controlled by the generic parameter `const MIN_ALIGN: usize`. By default, `MIN_ALIGN` is `1`.
+//!
 //! For the performance impact see [./crates/callgrind-benches][benches].
 //!
-//! # `GUARANTEED_ALLOCATED` parameter?
-//! If `GUARANTEED_ALLOCATED` is `true` then the bump allocator is guaranteed to have at least one allocated chunk.
-//! This is usually the case unless it was created with [`Bump::unallocated`].
+//! # What does *guaranteed allocated* mean?
 //!
-//! You need a guaranteed allocated `Bump(Scope)` to create scopes via `scoped` and `scope_guard`.
-//! You can make a `Bump(Scope)` guaranteed allocated using
-//! <code>[as_](Bump::as_guaranteed_allocated)([mut_](Bump::as_mut_guaranteed_allocated))</code> or <code>[into_](Bump::into_guaranteed_allocated)guaranteed_allocated</code>.
+//! A *guaranteed allocated* bump allocator will own at least one chunk that it has allocated
+//! from its base allocator.
 //!
-//! The point of this is so `Bump`s can be `const` constructed without allocating memory.
-//! At the same time `Bump`s that have already allocated a chunk don't suffer runtime checks for entering scopes and creating checkpoints.
+//! The creation methods [`new`], [`with_size`], [`with_capacity`] and their variants always allocate
+//! one chunk from the base allocator.
+//!
+//! The exception is the [`unallocated`] method which creates a `Bump` without allocating any
+//! chunks. Such a `Bump` will have the `GUARANTEED_ALLOCATED` generic parameter of `false`
+//! which will make the [`scoped`], [`scoped_aligned`], [`aligned`] and [`scope_guard`] methods unavailable.
+//!
+//! You can turn any non-`GUARANTEED_ALLOCATED` bump allocator into a guaranteed allocated one using
+//! [`as_guaranteed_allocated`], [`as_mut_guaranteed_allocated`] or [`into_guaranteed_allocated`].
+//!
+//! The point of this is so `Bump`s can be `const` constructed and constructed without allocating.
+//! At the same time `Bump`s that have already allocated a chunk don't suffer additional runtime checks.
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
+//! [`new`]: Bump::new
+//! [`with_size`]: Bump::with_size
+//! [`with_capacity`]: Bump::with_capacity
+//! [`unallocated`]: Bump::unallocated
+//! [`scoped`]: Bump::scoped
+//! [`scoped_aligned`]: Bump::scoped_aligned
+//! [`aligned`]: Bump::aligned
+//! [`scope_guard`]: Bump::scope_guard
+//! [`as_guaranteed_allocated`]: Bump::as_guaranteed_allocated
+//! [`as_mut_guaranteed_allocated`]: Bump::as_mut_guaranteed_allocated
+//! [`into_guaranteed_allocated`]: Bump::into_guaranteed_allocated
 
 #[cfg(any(feature = "std", test))]
 extern crate std;

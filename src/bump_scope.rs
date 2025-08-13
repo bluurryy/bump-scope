@@ -137,7 +137,7 @@ where
     }
 }
 
-/// Methods for a [*guaranteed allocated*](crate#guaranteed_allocated-parameter) `BumpScope`.
+/// Methods for a [*guaranteed allocated*](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
 #[allow(clippy::needless_lifetimes)]
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
 where
@@ -340,7 +340,7 @@ where
     }
 }
 
-/// Methods for a **not** [*guaranteed allocated*](crate#guaranteed_allocated-parameter) `BumpScope`.
+/// Methods for a **not** [*guaranteed allocated*](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
 #[allow(clippy::needless_lifetimes)]
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP, false>
 where
@@ -495,14 +495,14 @@ where
         }
     }
 
-    /// Converts this `BumpScope` into a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
+    /// Converts this `BumpScope` into a ***not*** [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
     #[inline(always)]
     pub fn into_not_guaranteed_allocated(self) -> BumpScope<'a, A, MIN_ALIGN, UP, false> {
         // SAFETY: it's always valid to interpret a guaranteed allocated as a non guaranteed allocated
         unsafe { transmute(self) }
     }
 
-    /// Borrows `BumpScope` as a ***not*** [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
+    /// Borrows `BumpScope` as a ***not*** [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
     ///
     /// Note that it's not possible to mutably borrow as a not guaranteed allocated bump allocator. That's because
     /// a user could `mem::swap` it with an actual unallocated bump allocator which in turn would make `&mut self`
@@ -737,7 +737,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
 {
-    /// Converts this `BumpScope` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
+    /// Converts this `BumpScope` into a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
     ///
     /// # Panics
     ///
@@ -749,7 +749,7 @@ where
         unsafe { transmute(self) }
     }
 
-    /// Converts this `BumpScope` into a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
+    /// Converts this `BumpScope` into a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
     ///
     /// # Errors
     ///
@@ -763,7 +763,7 @@ where
         Ok(unsafe { transmute(self) })
     }
 
-    /// Borrows `BumpScope` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
+    /// Borrows `BumpScope` as a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
     ///
     /// # Panics
     ///
@@ -775,7 +775,7 @@ where
         unsafe { transmute_ref(self) }
     }
 
-    /// Borrows `BumpScope` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
+    /// Borrows `BumpScope` as a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
     ///
     /// # Errors
     ///
@@ -789,7 +789,7 @@ where
         Ok(unsafe { transmute_ref(self) })
     }
 
-    /// Mutably borrows `BumpScope` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
+    /// Mutably borrows `BumpScope` as a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
     ///
     /// # Panics
     ///
@@ -804,7 +804,7 @@ where
         unsafe { transmute_mut(self) }
     }
 
-    /// Mutably borrows `BumpScope` as a [guaranteed allocated](crate#guaranteed_allocated-parameter) `BumpScope`.
+    /// Mutably borrows `BumpScope` as a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
     ///
     /// # Errors
     ///
