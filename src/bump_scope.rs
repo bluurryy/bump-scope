@@ -739,6 +739,8 @@ where
 {
     /// Converts this `BumpScope` into a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
     ///
+    /// See [`Bump::into_guaranteed_allocated`].
+    ///
     /// # Panics
     ///
     /// Panics if the closure panics.
@@ -750,6 +752,8 @@ where
     }
 
     /// Converts this `BumpScope` into a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
+    ///
+    /// See [`Bump::try_into_guaranteed_allocated`].
     ///
     /// # Errors
     ///
@@ -765,6 +769,8 @@ where
 
     /// Borrows `BumpScope` as a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
     ///
+    /// See [`Bump::as_guaranteed_allocated`].
+    ///
     /// # Panics
     ///
     /// Panics if the closure panics.
@@ -776,6 +782,8 @@ where
     }
 
     /// Borrows `BumpScope` as a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
+    ///
+    /// See [`Bump::try_as_guaranteed_allocated`].
     ///
     /// # Errors
     ///
@@ -791,6 +799,8 @@ where
 
     /// Mutably borrows `BumpScope` as a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
     ///
+    /// See [`Bump::as_mut_guaranteed_allocated`].
+    ///
     /// # Panics
     ///
     /// Panics if the closure panics.
@@ -805,6 +815,8 @@ where
     }
 
     /// Mutably borrows `BumpScope` as a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
+    ///
+    /// See [`Bump::try_as_mut_guaranteed_allocated`].
     ///
     /// # Errors
     ///

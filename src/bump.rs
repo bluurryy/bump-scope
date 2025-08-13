@@ -1111,10 +1111,16 @@ where
     /// # use core::alloc::Layout;
     /// # use bump_scope::{Bump, alloc::Global};
     /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
-    /// let bump = bump.into_guaranteed_allocated(|| Bump::with_size(2048));
+    /// let bump = bump.into_guaranteed_allocated(|| {
+    ///     Bump::with_size(2048)
+    /// });
+    ///
     /// // or
+    ///
     /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
-    /// let bump = bump.into_guaranteed_allocated(|| Bump::with_capacity(Layout::new::<[i32; 1024]>()));
+    /// let bump = bump.into_guaranteed_allocated(|| {
+    ///     Bump::with_capacity(Layout::new::<[i32; 1024]>())
+    /// });
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -1164,10 +1170,16 @@ where
     /// # use core::alloc::Layout;
     /// # use bump_scope::{Bump, alloc::Global};
     /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
-    /// let bump = bump.try_into_guaranteed_allocated(|| Bump::try_with_size(2048))?;
+    /// let bump = bump.try_into_guaranteed_allocated(|| {
+    ///     Bump::try_with_size(2048)
+    /// })?;
+    ///
     /// // or
+    ///
     /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
-    /// let bump = bump.try_into_guaranteed_allocated(|| Bump::try_with_capacity(Layout::new::<[i32; 1024]>()))?;
+    /// let bump = bump.try_into_guaranteed_allocated(|| {
+    ///     Bump::try_with_capacity(Layout::new::<[i32; 1024]>())
+    /// })?;
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
@@ -1187,8 +1199,6 @@ where
     ///
     /// Panics if the closure panics.
     ///
-    /// [`as_mut_guaranteed_allocated`]: Self::as_mut_guaranteed_allocated
-    ///
     /// # Examples
     ///
     /// Initialize an unallocated `Bump` with a custom size or capacity:
@@ -1196,11 +1206,17 @@ where
     /// # use core::alloc::Layout;
     /// # use bump_scope::{Bump, alloc::Global};
     /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
-    /// let bump = bump.as_guaranteed_allocated(|| Bump::with_size(2048));
+    /// let bump = bump.as_guaranteed_allocated(|| {
+    ///     Bump::with_size(2048)
+    /// });
     /// # _ = bump;
+    ///
     /// // or
+    ///
     /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
-    /// let bump = bump.as_guaranteed_allocated(|| Bump::with_capacity(Layout::new::<[i32; 1024]>()));
+    /// let bump = bump.as_guaranteed_allocated(|| {
+    ///     Bump::with_capacity(Layout::new::<[i32; 1024]>())
+    /// });
     /// # _ = bump;
     /// ```
     #[inline(always)]
@@ -1227,10 +1243,16 @@ where
     /// # use core::alloc::Layout;
     /// # use bump_scope::{Bump, alloc::Global};
     /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
-    /// let bump = bump.try_as_guaranteed_allocated(|| Bump::try_with_size(2048))?;
+    /// let bump = bump.try_as_guaranteed_allocated(|| {
+    ///     Bump::try_with_size(2048)
+    /// })?;
     /// # _ = bump;
+    ///
     /// // or
-    /// let bump = bump.try_as_guaranteed_allocated(|| Bump::try_with_capacity(Layout::new::<[i32; 1024]>()))?;
+    ///
+    /// let bump = bump.try_as_guaranteed_allocated(|| {
+    ///     Bump::try_with_capacity(Layout::new::<[i32; 1024]>())
+    /// })?;
     /// # _ = bump;
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
@@ -1282,11 +1304,17 @@ where
     /// # use core::alloc::Layout;
     /// # use bump_scope::{Bump, alloc::Global};
     /// # let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
-    /// let bump = bump.as_mut_guaranteed_allocated(|| Bump::with_size(2048));
+    /// let bump = bump.as_mut_guaranteed_allocated(|| {
+    ///     Bump::with_size(2048)
+    /// });
     /// # _ = bump;
+    ///
     /// // or
+    ///
     /// # let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
-    /// let bump = bump.as_mut_guaranteed_allocated(|| Bump::with_capacity(Layout::new::<[i32; 1024]>()));
+    /// let bump = bump.as_mut_guaranteed_allocated(|| {
+    ///     Bump::with_capacity(Layout::new::<[i32; 1024]>())
+    /// });
     /// # _ = bump;
     /// ```
     #[inline(always)]
@@ -1339,11 +1367,17 @@ where
     /// # use core::alloc::Layout;
     /// # use bump_scope::{Bump, alloc::Global};
     /// # let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
-    /// let bump = bump.try_as_mut_guaranteed_allocated(|| Bump::try_with_size(2048))?;
+    /// let bump = bump.try_as_mut_guaranteed_allocated(|| {
+    ///     Bump::try_with_size(2048)
+    /// })?;
     /// # _ = bump;
+    ///
     /// // or
+    ///
     /// # let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
-    /// let bump = bump.try_as_mut_guaranteed_allocated(|| Bump::try_with_capacity(Layout::new::<[i32; 1024]>()))?;
+    /// let bump = bump.try_as_mut_guaranteed_allocated(|| {
+    ///     Bump::try_with_capacity(Layout::new::<[i32; 1024]>())
+    /// })?;
     /// # _ = bump;
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
