@@ -1,7 +1,8 @@
 use core::{fmt::Debug, marker::PhantomData, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    BaseAllocator, Bump, BumpScope, MinimumAlignment, RawChunk, SupportedMinimumAlignment,
+    Bump, BumpScope, MinimumAlignment, RawChunk, SupportedMinimumAlignment,
+    alloc::Allocator,
     chunk_header::ChunkHeader,
     stats::{AnyStats, Stats},
 };
@@ -34,7 +35,6 @@ impl Checkpoint {
 pub struct BumpScopeGuard<'a, A, const MIN_ALIGN: usize = 1, const UP: bool = true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator,
 {
     pub(crate) chunk: RawChunk<A, UP, true>,
     address: usize,
@@ -44,7 +44,6 @@ where
 impl<A, const MIN_ALIGN: usize, const UP: bool> Debug for BumpScopeGuard<'_, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         AnyStats::from(self.stats()).debug_format("BumpScopeGuard", f)
@@ -54,7 +53,6 @@ where
 impl<A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpScopeGuard<'_, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator,
 {
     #[inline(always)]
     fn drop(&mut self) {
@@ -65,7 +63,6 @@ where
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScopeGuard<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator,
 {
     #[inline(always)]
     #[allow(clippy::needless_pass_by_ref_mut)]
@@ -121,7 +118,7 @@ where
 pub struct BumpScopeGuardRoot<'b, A, const MIN_ALIGN: usize = 1, const UP: bool = true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator,
+    A: Allocator,
 {
     pub(crate) chunk: RawChunk<A, UP, true>,
     marker: PhantomData<&'b mut ()>,
@@ -130,7 +127,7 @@ where
 impl<A, const MIN_ALIGN: usize, const UP: bool> Debug for BumpScopeGuardRoot<'_, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator,
+    A: Allocator,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         AnyStats::from(self.stats()).debug_format("BumpScopeGuardRoot", f)
@@ -140,7 +137,7 @@ where
 impl<A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpScopeGuardRoot<'_, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator,
+    A: Allocator,
 {
     #[inline(always)]
     fn drop(&mut self) {
@@ -151,7 +148,7 @@ where
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScopeGuardRoot<'a, A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator,
+    A: Allocator,
 {
     #[inline(always)]
     #[allow(clippy::needless_pass_by_ref_mut)]

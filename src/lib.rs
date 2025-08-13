@@ -578,7 +578,7 @@ mod supported_base_allocator {
     }
 }
 
-/// Trait that any allocator used as a base allocator of a bump allocator needs to implement.
+/// Trait that the base allocator of a `Bump` is required to implement to make allocations.
 ///
 /// Every [`Allocator`] that implements [`Clone`] automatically implements `BaseAllocator` when `GUARANTEED_ALLOCATED`.
 /// When not guaranteed allocated, allocators are additionally required to implement [`Default`].

@@ -7,7 +7,8 @@ use std::{
 };
 
 use crate::{
-    BaseAllocator, Bump, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment, alloc::AllocError,
+    Bump, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment,
+    alloc::{AllocError, Allocator},
     maybe_default_allocator,
 };
 
@@ -75,8 +76,8 @@ macro_rules! make_type {
             const MIN_ALIGN: usize = 1,
             const UP: bool = true,
         > where
-            A: BaseAllocator,
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+            A: Allocator,
         {
             bumps: Mutex<Vec<Bump<A, MIN_ALIGN, UP>>>,
             allocator: A,
@@ -88,8 +89,8 @@ maybe_default_allocator!(make_type);
 
 impl<A, const MIN_ALIGN: usize, const UP: bool> Default for BumpPool<A, MIN_ALIGN, UP>
 where
-    A: BaseAllocator + Default,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Default,
 {
     fn default() -> Self {
         Self {
@@ -101,8 +102,8 @@ where
 
 impl<A, const MIN_ALIGN: usize, const UP: bool> BumpPool<A, MIN_ALIGN, UP>
 where
-    A: BaseAllocator + Default,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Default,
 {
     /// Constructs a new `BumpPool`.
     #[inline]
@@ -114,8 +115,8 @@ where
 
 impl<A, const MIN_ALIGN: usize, const UP: bool> BumpPool<A, MIN_ALIGN, UP>
 where
-    A: BaseAllocator,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator,
 {
     /// Constructs a new `BumpPool` with the provided allocator.
     #[inline]
@@ -142,7 +143,13 @@ where
     fn lock(&self) -> MutexGuard<'_, Vec<Bump<A, MIN_ALIGN, UP>>> {
         self.bumps.lock().unwrap_or_else(PoisonError::into_inner)
     }
+}
 
+impl<A, const MIN_ALIGN: usize, const UP: bool> BumpPool<A, MIN_ALIGN, UP>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator + Clone,
+{
     /// Borrows a bump allocator from the pool.
     /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
     ///
@@ -287,8 +294,8 @@ macro_rules! make_type {
             const MIN_ALIGN: usize = 1,
             const UP: bool = true,
         > where
-            A: BaseAllocator,
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+            A: Allocator,
         {
             bump: ManuallyDrop<Bump<A, MIN_ALIGN, UP>>,
 
@@ -302,8 +309,8 @@ maybe_default_allocator!(make_type);
 
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Deref for BumpPoolGuard<'a, A, MIN_ALIGN, UP>
 where
-    A: BaseAllocator,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator,
 {
     type Target = BumpScope<'a, A, MIN_ALIGN, UP>;
 
@@ -315,8 +322,8 @@ where
 
 impl<A, const MIN_ALIGN: usize, const UP: bool> DerefMut for BumpPoolGuard<'_, A, MIN_ALIGN, UP>
 where
-    A: BaseAllocator,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator,
 {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
@@ -326,8 +333,8 @@ where
 
 impl<A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpPoolGuard<'_, A, MIN_ALIGN, UP>
 where
-    A: BaseAllocator,
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator,
 {
     fn drop(&mut self) {
         let bump = unsafe { ManuallyDrop::take(&mut self.bump) };
