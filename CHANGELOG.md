@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- next-header -->
 ## [Unreleased]
 
+## [1.0.0] - 2025-08-13
+
 ### Added
 
 - **Breaking:** `BumpAllocator` trait family has been reworked:
@@ -739,7 +741,8 @@ _If you are upgrading: please see [`UPGRADING.md#0.17.0`](UPGRADING.md#0.17.0)._
 [#3]: https://github.com/bluurryy/bump-scope/issues/3
 
 <!-- next-url -->
-[Unreleased]: https://github.com/bluurryy/cargo-insert-docs/compare/v0.17.4...HEAD
+[Unreleased]: https://github.com/bluurryy/cargo-insert-docs/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/bluurryy/bump-scope/releases/tag/v1.0.0
 [0.17.4]: https://github.com/bluurryy/bump-scope/releases/tag/v0.17.4
 [0.17.3]: https://github.com/bluurryy/bump-scope/releases/tag/v0.17.3
 [0.17.2]: https://github.com/bluurryy/bump-scope/releases/tag/v0.17.2
