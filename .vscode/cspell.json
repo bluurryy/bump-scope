@@ -110,6 +110,7 @@
     "rustfmt",
     "rustup",
     "rustversion",
+    "sceptical",
     "serde",
     "shrinknt",
     "sinkptr",
