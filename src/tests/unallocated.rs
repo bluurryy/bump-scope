@@ -1,6 +1,10 @@
 use core::alloc::Layout;
 
-use crate::{Bump, BumpAllocator, BumpAllocatorExt, alloc::Global, tests::either_way};
+use crate::{
+    Bump, BumpAllocator, BumpAllocatorExt,
+    alloc::{Allocator, Global},
+    tests::either_way,
+};
 
 either_way! {
     allocated
@@ -13,6 +17,7 @@ either_way! {
     checkpoint_multiple_chunks
     allocate_zero_layout
     reset
+    non_default_base_allocator
 }
 
 fn allocated<const UP: bool>() {
@@ -125,4 +130,31 @@ fn allocate_zero_layout<const UP: bool>() {
 fn reset<const UP: bool>() {
     let mut bump = <Bump<Global, 1, UP, false>>::unallocated();
     bump.reset();
+}
+
+fn non_default_base_allocator<const UP: bool>() {
+    #[derive(Clone)]
+    struct MyAllocator {}
+
+    unsafe impl Allocator for MyAllocator {
+        fn allocate(&self, layout: Layout) -> Result<core::ptr::NonNull<[u8]>, crate::alloc::AllocError> {
+            Global.allocate(layout)
+        }
+
+        unsafe fn deallocate(&self, ptr: core::ptr::NonNull<u8>, layout: Layout) {
+            unsafe { Global.deallocate(ptr, layout) };
+        }
+    }
+
+    let bump = <Bump<MyAllocator, 1, UP, false>>::unallocated();
+
+    #[cfg(false)] // method is not available
+    bump.alloc_str("test");
+
+    // but this works
+    let test = bump
+        .as_guaranteed_allocated(|| Bump::new_in(MyAllocator {}))
+        .alloc_str("test");
+
+    assert_eq!(test, "test");
 }
