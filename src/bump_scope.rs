@@ -12,9 +12,9 @@ use core::{
 };
 
 use crate::{
-    BaseAllocator, Bump, BumpAllocator, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior,
-    FixedBumpString, FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk,
-    SizedTypeProperties, SupportedMinimumAlignment, align_pos,
+    BaseAllocator, Bump, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior, FixedBumpString,
+    FixedBumpVec, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk, SizedTypeProperties,
+    SupportedMinimumAlignment, align_pos,
     alloc::{AllocError, Allocator},
     allocator_impl,
     bump_align_guard::BumpAlignGuard,
@@ -2727,14 +2727,7 @@ where
             Ok(())
         }
     }
-}
 
-/// Methods to allocate on a [*guaranteed allocated*](crate#guaranteed_allocated-parameter) `Bump`. Available as fallible or infallible.
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator,
-{
     /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
     ///
     /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
@@ -2845,7 +2838,9 @@ where
                             down_align_usize(pos, MIN_ALIGN)
                         };
 
-                        self.chunk.get().set_pos_addr(new_pos);
+                        // The allocation of a non-ZST was successful, so our chunk must be allocated.
+                        let chunk = self.chunk.get().guaranteed_allocated_unchecked();
+                        chunk.set_pos_addr(new_pos);
                     }
 
                     BumpBox::from_raw(value)
@@ -2966,7 +2961,10 @@ where
                         down_align_usize(pos, MIN_ALIGN)
                     };
 
-                    self.chunk.get().set_pos_addr(new_pos);
+                    // The allocation of a non-ZST was successful, so our chunk must be allocated.
+                    let chunk = self.chunk.get().guaranteed_allocated_unchecked();
+                    chunk.set_pos_addr(new_pos);
+
                     BumpBox::from_raw(value)
                 }),
                 Err(error) => Err({

@@ -2756,14 +2756,7 @@ where
     pub fn try_reserve_bytes(&self, additional: usize) -> Result<(), AllocError> {
         self.as_scope().try_reserve_bytes(additional)
     }
-}
 
-/// Methods to allocate on a [*guaranteed allocated*](crate#guaranteed_allocated-parameter) `Bump`. Available as fallible or infallible.
-impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator,
-{
     /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
     ///
     /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
