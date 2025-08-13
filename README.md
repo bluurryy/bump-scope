@@ -9,6 +9,19 @@
 <!-- crate documentation start -->
 A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
 
+## Table of Contents
+- [What is bump allocation?](#what-is-bump-allocation)
+- [Comparison to `bumpalo`](#comparison-to-bumpalo)
+- [Allocator Methods](#allocator-methods)
+- [Scopes and Checkpoints](#scopes-and-checkpoints)
+- [Collections](#collections)
+- [Parallel Allocation](#parallel-allocation)
+- [Allocator API](#allocator-api)
+- [Feature Flags](#feature-flags)
+- [Bumping upwards or downwards?](#bumping-upwards-or-downwards)
+- [What is minimum alignment?](#what-is-minimum-alignment)
+- [What does *guaranteed allocated* mean?](#what-does-guaranteed-allocated-mean)
+
 ## What is bump allocation?
 A bump allocator owns a big chunk of memory. It has a pointer that starts at one end of that chunk.
 When an allocation is made that pointer gets aligned and bumped towards the other end of the chunk.
