@@ -1197,11 +1197,11 @@ where
     /// # use bump_scope::{Bump, alloc::Global};
     /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
     /// let bump = bump.as_guaranteed_allocated(|| Bump::with_size(2048));
-    /// _ = bump;
+    /// # _ = bump;
     /// // or
     /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
     /// let bump = bump.as_guaranteed_allocated(|| Bump::with_capacity(Layout::new::<[i32; 1024]>()));
-    /// _ = bump;
+    /// # _ = bump;
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -1228,10 +1228,10 @@ where
     /// # use bump_scope::{Bump, alloc::Global};
     /// # let bump: Bump<Global, 1, true, false> = Bump::unallocated();
     /// let bump = bump.try_as_guaranteed_allocated(|| Bump::try_with_size(2048))?;
-    /// _ = bump;
+    /// # _ = bump;
     /// // or
     /// let bump = bump.try_as_guaranteed_allocated(|| Bump::try_with_capacity(Layout::new::<[i32; 1024]>()))?;
-    /// _ = bump;
+    /// # _ = bump;
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
@@ -1283,11 +1283,11 @@ where
     /// # use bump_scope::{Bump, alloc::Global};
     /// # let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     /// let bump = bump.as_mut_guaranteed_allocated(|| Bump::with_size(2048));
-    /// _ = bump;
+    /// # _ = bump;
     /// // or
     /// # let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     /// let bump = bump.as_mut_guaranteed_allocated(|| Bump::with_capacity(Layout::new::<[i32; 1024]>()));
-    /// _ = bump;
+    /// # _ = bump;
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -1340,11 +1340,11 @@ where
     /// # use bump_scope::{Bump, alloc::Global};
     /// # let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     /// let bump = bump.try_as_mut_guaranteed_allocated(|| Bump::try_with_size(2048))?;
-    /// _ = bump;
+    /// # _ = bump;
     /// // or
     /// # let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     /// let bump = bump.try_as_mut_guaranteed_allocated(|| Bump::try_with_capacity(Layout::new::<[i32; 1024]>()))?;
-    /// _ = bump;
+    /// # _ = bump;
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
