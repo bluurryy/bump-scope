@@ -18,10 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Chunk::allocator()` which returns the base allocator
 - Make `BumpScope(Guard)(Root)::allocator()` return an `&'a A` allocator instead of `&A`
 - Make `BumpScopeGuardRoot::stats()` return `Stats<'a, ...>` instead of `Stats<'_, ...>`
-- Improve `Fixed*` collection documentation.
 - Relax base allocator trait bounds on `Bump(Scope)` struct and methods
 - `alloc_try_with(_mut)` now works for non-GUARANTEED_ALLOCATED `Bump(Scope)`s
 - **Breaking:** `guaranteed_allocated` conversion methods now take a closure parameter so you can initialize unallocated `Bump`s with a custom size or capacity
+- Improve `Fixed*` collection documentation.
+- Improve crate documentation.
 
 ### Changed
 
