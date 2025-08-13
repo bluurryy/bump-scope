@@ -39,7 +39,6 @@
     clippy::items_after_statements,
     clippy::missing_transmute_annotations,
     clippy::range_plus_one,
-    rustdoc::redundant_explicit_links, // for cargo-rdme
     clippy::multiple_crate_versions, // we have allocator-api2 version 0.2 and 0.3
     rustdoc::invalid_rust_codeblocks, // for our current workaround to conditionally enable doc tests in macro
 )]
