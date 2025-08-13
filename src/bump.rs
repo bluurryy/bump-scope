@@ -190,7 +190,7 @@ macro_rules! make_type {
             const GUARANTEED_ALLOCATED: bool = true,
         > where
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-            A: BaseAllocator<GUARANTEED_ALLOCATED>,
+            A: Allocator,
         {
             pub(crate) chunk: Cell<RawChunk<A, UP, GUARANTEED_ALLOCATED>>,
         }
@@ -205,7 +205,7 @@ unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATE
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: Allocator,
 {
 }
 
@@ -213,7 +213,7 @@ impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED> + UnwindSafe,
+    A: Allocator + UnwindSafe,
 {
 }
 
@@ -221,7 +221,7 @@ impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED> + UnwindSafe,
+    A: Allocator + UnwindSafe,
 {
 }
 
@@ -229,7 +229,7 @@ impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: Allocator,
 {
     fn drop(&mut self) {
         let Some(chunk) = self.chunk.get().guaranteed_allocated() else {
@@ -248,7 +248,7 @@ impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: Allocator,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         AnyStats::from(self.stats()).debug_format("Bump", f)
@@ -260,7 +260,7 @@ impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool
     for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED> + Default,
+    A: Allocator + Default,
 {
     #[inline(always)]
     fn default() -> Self {
@@ -305,47 +305,12 @@ where
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP, false>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<false>,
-{
-    /// Constructs a new `Bump` without doing any allocations.
-    ///
-    /// The resulting `Bump` will have its [`GUARANTEED_ALLOCATED`](crate#guaranteed_allocated-parameter) parameter set to `false`.
-    /// Such a `Bump` is unable to create a scope with `scoped` or `scope_guard`.
-    /// It has to first be converted into a guaranteed allocated `Bump` using
-    /// <code>[as_](Bump::as_guaranteed_allocated)([mut_](Bump::as_mut_guaranteed_allocated))</code> or <code>[into_](Bump::into_guaranteed_allocated)guaranteed_allocated</code>.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bump_scope::Bump;
-    /// use bump_scope::alloc::Global;
-    ///
-    /// let bump: Bump<Global, 1, true, false> = Bump::unallocated();
-    /// # _ = bump;
-    /// ```
-    #[must_use]
-    pub const fn unallocated() -> Self {
-        Self {
-            chunk: Cell::new(RawChunk::UNALLOCATED),
-        }
-    }
-
-    /// Returns a reference to the base allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn allocator(&self) -> Option<&A> {
-        self.as_scope().allocator()
-    }
-}
-
+/// Methods for a `Bump` with a default base allocator.
 impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
     Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED> + Default,
+    A: Allocator + Default,
 {
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
@@ -510,11 +475,11 @@ where
     }
 }
 
-/// These functions are only available if the `Bump` is [guaranteed allocated](crate#guaranteed_allocated-parameter).
+/// Methods for a [*guaranteed allocated*](crate#guaranteed_allocated-parameter) `Bump`.
 impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator,
+    A: Allocator,
 {
     /// Calls `f` with a new child scope.
     ///
@@ -705,11 +670,49 @@ where
     }
 }
 
+/// Methods for a **not** [*guaranteed allocated*](crate#guaranteed_allocated-parameter) `Bump`.
+impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP, false>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator,
+{
+    /// Constructs a new `Bump` without doing any allocations.
+    ///
+    /// The resulting `Bump` will have its [`GUARANTEED_ALLOCATED`](crate#guaranteed_allocated-parameter) parameter set to `false`.
+    /// Such a `Bump` is unable to create a scope with `scoped` or `scope_guard`.
+    /// It has to first be converted into a guaranteed allocated `Bump` using
+    /// <code>[as_](Bump::as_guaranteed_allocated)([mut_](Bump::as_mut_guaranteed_allocated))</code> or <code>[into_](Bump::into_guaranteed_allocated)guaranteed_allocated</code>.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bump_scope::Bump;
+    /// use bump_scope::alloc::Global;
+    ///
+    /// let bump: Bump<Global, 1, true, false> = Bump::unallocated();
+    /// # _ = bump;
+    /// ```
+    #[must_use]
+    pub const fn unallocated() -> Self {
+        Self {
+            chunk: Cell::new(RawChunk::UNALLOCATED),
+        }
+    }
+
+    /// Returns a reference to the base allocator.
+    #[must_use]
+    #[inline(always)]
+    pub fn allocator(&self) -> Option<&A> {
+        self.as_scope().allocator()
+    }
+}
+
+/// Methods that are always available.
 impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
     Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: Allocator,
 {
     /// Creates a checkpoint of the current bump position.
     ///
@@ -1416,7 +1419,7 @@ impl<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: 
     From<&'b Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>> for &'b BumpScope<'b, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: Allocator,
 {
     #[inline(always)]
     fn from(value: &'b Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> Self {
@@ -1429,7 +1432,7 @@ impl<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: 
     for &'b mut BumpScope<'b, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: Allocator,
 {
     #[inline(always)]
     fn from(value: &'b mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> Self {
@@ -1437,7 +1440,7 @@ where
     }
 }
 
-/// Functions to allocate. Available as fallible or infallible.
+/// Methods to allocate. Available as fallible or infallible.
 impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
     Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
@@ -2755,9 +2758,7 @@ where
     }
 }
 
-/// Functions to allocate. Available as fallible or infallible.
-///
-/// These require a [guaranteed allocated](crate#guaranteed_allocated-parameter) bump allocator.
+/// Methods to allocate on a [*guaranteed allocated*](crate#guaranteed_allocated-parameter) `Bump`. Available as fallible or infallible.
 impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,

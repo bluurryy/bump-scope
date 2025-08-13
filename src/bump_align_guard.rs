@@ -1,4 +1,4 @@
-use crate::{BaseAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, align_pos};
+use crate::{BumpScope, MinimumAlignment, SupportedMinimumAlignment, align_pos};
 
 /// Aligns the bump pointer on drop.
 ///
@@ -8,7 +8,6 @@ use crate::{BaseAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignmen
 pub(crate) struct BumpAlignGuard<'b, 'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     pub(crate) scope: &'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
 }
@@ -17,7 +16,6 @@ impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool
     for BumpAlignGuard<'_, '_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
     fn drop(&mut self) {
@@ -33,7 +31,6 @@ impl<'b, 'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCAT
     BumpAlignGuard<'b, 'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     #[inline(always)]
     pub(crate) fn new(scope: &'b mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> Self {
