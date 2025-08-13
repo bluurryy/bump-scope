@@ -273,7 +273,7 @@
 //! with the exception of [`MutBumpVecRev`] and [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) which
 //! can be grown and shrunk in place if and only if bumping downwards.
 //!
-//! Bumping downwards on the other hand can be done in less operations.
+//! Bumping downwards can be done in less instructions.
 //!
 //! For the performance impact see [./crates/callgrind-benches][benches].
 //!
@@ -296,10 +296,10 @@
 //! A *guaranteed allocated* bump allocator will own at least one chunk that it has allocated
 //! from its base allocator.
 //!
-//! The creation methods [`new`], [`with_size`], [`with_capacity`] and their variants always allocate
+//! The constructors [`new`], [`with_size`], [`with_capacity`] and their variants always allocate
 //! one chunk from the base allocator.
 //!
-//! The exception is the [`unallocated`] method which creates a `Bump` without allocating any
+//! The exception is the [`unallocated`] constructor which creates a `Bump` without allocating any
 //! chunks. Such a `Bump` will have the `GUARANTEED_ALLOCATED` generic parameter of `false`
 //! which will make the [`scoped`], [`scoped_aligned`], [`aligned`] and [`scope_guard`] methods unavailable.
 //!

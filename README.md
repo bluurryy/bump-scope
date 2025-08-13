@@ -226,7 +226,7 @@ This benefits collections as well as <code>[alloc_iter](https://docs.rs/bump-sco
 with the exception of [`MutBumpVecRev`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.MutBumpVecRev.html) and [`alloc_iter_mut_rev`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.alloc_iter_mut_rev) which
 can be grown and shrunk in place if and only if bumping downwards.
 
-Bumping downwards on the other hand can be done in less operations.
+Bumping downwards can be done in less instructions.
 
 For the performance impact see [./crates/callgrind-benches][benches].
 
@@ -249,10 +249,10 @@ For the performance impact see [./crates/callgrind-benches][benches].
 A *guaranteed allocated* bump allocator will own at least one chunk that it has allocated
 from its base allocator.
 
-The creation methods [`new`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.new), [`with_size`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.with_size), [`with_capacity`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.with_capacity) and their variants always allocate
+The constructors [`new`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.new), [`with_size`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.with_size), [`with_capacity`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.with_capacity) and their variants always allocate
 one chunk from the base allocator.
 
-The exception is the [`unallocated`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.unallocated) method which creates a `Bump` without allocating any
+The exception is the [`unallocated`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.unallocated) constructor which creates a `Bump` without allocating any
 chunks. Such a `Bump` will have the `GUARANTEED_ALLOCATED` generic parameter of `false`
 which will make the [`scoped`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.scoped), [`scoped_aligned`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.scoped_aligned), [`aligned`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.aligned) and [`scope_guard`](https://docs.rs/bump-scope/1.0.0-dev/bump_scope/struct.Bump.html#method.scope_guard) methods unavailable.
 
