@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Document invariant that `shrink`ing a `BumpAllocator` will never error unless the alignment increases
+- Add changelog to the crate documentation
 
 ## [1.0.0] - 2025-08-13
 
