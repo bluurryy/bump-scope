@@ -15,6 +15,7 @@
 #![cfg_attr(feature = "nightly-fn-traits", feature(fn_traits, tuple_trait, unboxed_closures))]
 #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
 #![cfg_attr(feature = "nightly-dropck-eyepatch", feature(dropck_eyepatch))]
+#![cfg_attr(feature = "nightly-clone-to-uninit", feature(clone_to_uninit, ptr_metadata))]
 #![cfg_attr(docsrs,
     feature(doc_auto_cfg, doc_cfg_hide),
     doc(cfg_hide(feature = "panic-on-alloc")) // too noisy
@@ -269,6 +270,7 @@
 //! - **`nightly-dropck-eyepatch`** — Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
 //!   This makes it so references don't have to strictly outlive the container.
 //!   (That's how std's `Box` and `Vec` work.)
+//! - **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](Bump::alloc_clone) method to `Bump(Scope)`.
 //! <!-- feature documentation end -->
 //!
 //! # Bumping upwards or downwards?

@@ -22,6 +22,8 @@ use std::{
     vec::Vec,
 };
 
+#[cfg(feature = "nightly-clone-to-uninit")]
+mod alloc_clone;
 mod alloc_cstr;
 mod alloc_fmt;
 mod alloc_iter;

@@ -67,6 +67,7 @@ nightly = [
     "nightly-fn-traits",
     "nightly-tests",
     "nightly-dropck-eyepatch",
+    "nightly-clone-to-uninit",
 ]
 
 ## Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
@@ -97,6 +98,9 @@ nightly-tests = []
 ## This makes it so references don't have to strictly outlive the container.
 ## (That's how std's `Box` and `Vec` work.)
 nightly-dropck-eyepatch = []
+
+## Adds [`alloc_clone`](Bump::alloc_clone) method to `Bump(Scope)`.
+nightly-clone-to-uninit = []
 
 [dev-dependencies]
 trybuild = "1.0.90"
