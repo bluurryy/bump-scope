@@ -2,6 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/bump-scope.svg)](https://crates.io/crates/bump-scope)
 [![Documentation](https://img.shields.io/docsrs/bump-scope)](https://docs.rs/bump-scope)
+[![Changelog](https://img.shields.io/badge/Changelog-orange)](CHANGELOG.md)
 [![Rust](https://img.shields.io/crates/msrv/bump-scope)](#)
 [![License](https://img.shields.io/crates/l/bump_scope)](#license)
 [![Build Status](https://github.com/bluurryy/bump-scope/workflows/CI/badge.svg)](https://github.com/bluurryy/bump-scope/actions/workflows/ci.yml)
