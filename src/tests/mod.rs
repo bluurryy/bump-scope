@@ -1175,5 +1175,3 @@ fn test_drop_allocator() {
     drop(bump);
     assert_eq!(drop_count.get(), 3);
 }
-
-// FIXME: add vec/test_try_reserve kinds of test for `Bump`

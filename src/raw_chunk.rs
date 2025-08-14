@@ -436,7 +436,6 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
         }
     }
 
-    // FIXME: change naming not to confuse it with `prepare_allocation_range`
     /// Attempts to reserve a block of memory.
     ///
     /// On success, returns a [`NonNull<u8>`] meeting the size and alignment guarantees of `layout`.
