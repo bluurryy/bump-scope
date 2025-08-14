@@ -50,6 +50,10 @@
 //! A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
 //! <!-- crate documentation intro end -->
 //!
+//! **[Changelog][CHANGELOG] -**
+//! **[Cargo](https://crates.io/crates/bump-scope) -**
+//! **[Repository](https://github.com/bluurryy/bump-scope)**
+//!
 //! <!-- crate documentation rest start -->
 //! # What is bump allocation?
 //! A bump allocator owns a big chunk of memory. It has a pointer that starts at one end of that chunk.
@@ -411,6 +415,10 @@ pub use traits::{
     MutBumpAllocatorScope, MutBumpAllocatorScopeExt,
 };
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
+
+#[doc = include_str!("../CHANGELOG.md")]
+#[expect(non_snake_case)]
+pub mod CHANGELOG {}
 
 #[cfg(feature = "bytemuck")]
 /// Contains extension traits.
