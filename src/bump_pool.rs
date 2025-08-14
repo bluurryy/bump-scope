@@ -187,6 +187,7 @@ where
         };
 
         Ok(BumpPoolGuard {
+            #[expect(deprecated)]
             pool: self,
             bump: ManuallyDrop::new(bump),
         })
@@ -232,6 +233,7 @@ where
         };
 
         Ok(BumpPoolGuard {
+            #[expect(deprecated)]
             pool: self,
             bump: ManuallyDrop::new(bump),
         })
@@ -277,6 +279,7 @@ where
         };
 
         Ok(BumpPoolGuard {
+            #[expect(deprecated)]
             pool: self,
             bump: ManuallyDrop::new(bump),
         })
@@ -299,13 +302,26 @@ macro_rules! make_type {
         {
             bump: ManuallyDrop<Bump<A, MIN_ALIGN, UP>>,
 
-            /// The [`BumpPool`], this [`BumpPoolGuard`] was created from.
+            #[doc(hidden)]
+            #[deprecated = "Swapping the pool can lead to Undefined Behavior due to dangling pointers, use `pool()` instead!"]
             pub pool: &'a BumpPool<A, MIN_ALIGN, UP>,
         }
     };
 }
 
 maybe_default_allocator!(make_type);
+
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpPoolGuard<'a, A, MIN_ALIGN, UP>
+where
+    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    A: Allocator,
+{
+    /// The [`BumpPool`], this [`BumpPoolGuard`] was created from.
+    pub fn pool(&self) -> &'a BumpPool<A, MIN_ALIGN, UP> {
+        #[expect(deprecated)]
+        self.pool
+    }
+}
 
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Deref for BumpPoolGuard<'a, A, MIN_ALIGN, UP>
 where
@@ -338,6 +354,7 @@ where
 {
     fn drop(&mut self) {
         let bump = unsafe { ManuallyDrop::take(&mut self.bump) };
+        #[expect(deprecated)]
         self.pool.lock().push(bump);
     }
 }

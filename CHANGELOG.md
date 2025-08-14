@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Add `pool()` method to `BumpPoolGuard` to get the `BumpPool`
+
+### Deprecated
+
+- Deprecate `pool` field of `BumpPoolGuard`. Accessing it can lead to undefined behavior, use the new `pool()` method instead
+
+
 ## [1.1.0] - 2025-08-14
 
 ### Added
