@@ -46,8 +46,11 @@
     attr(deny(dead_code, unused_imports, deprecated)),
     attr(cfg_attr(feature = "nightly-allocator-api", feature(allocator_api, btreemap_alloc))),
 ))]
+//! <!-- crate documentation intro start -->
 //! A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
+//! <!-- crate documentation intro end -->
 //!
+//! <!-- crate documentation rest start -->
 //! # What is bump allocation?
 //! A bump allocator owns a big chunk of memory. It has a pointer that starts at one end of that chunk.
 //! When an allocation is made that pointer gets aligned and bumped towards the other end of the chunk.
@@ -320,6 +323,7 @@
 //! [`as_guaranteed_allocated`]: Bump::as_guaranteed_allocated
 //! [`as_mut_guaranteed_allocated`]: Bump::as_mut_guaranteed_allocated
 //! [`into_guaranteed_allocated`]: Bump::into_guaranteed_allocated
+//! <!-- crate documentation rest end -->
 
 #[cfg(any(feature = "std", test))]
 extern crate std;

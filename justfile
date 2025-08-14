@@ -6,8 +6,7 @@ default:
 
 pre-release:
   just spellcheck
-  # FIXME: use `just doc` again after figuring out how to handle table of contents
-  just doc-rustdoc
+  just doc
   just check
   just test
   cargo +stable semver-checks

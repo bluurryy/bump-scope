@@ -6,8 +6,9 @@
 [![License](https://img.shields.io/crates/l/bump_scope)](#license)
 [![Build Status](https://github.com/bluurryy/bump-scope/workflows/CI/badge.svg)](https://github.com/bluurryy/bump-scope/actions/workflows/ci.yml)
 
-<!-- crate documentation start -->
+<!-- crate documentation intro start -->
 A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
+<!-- crate documentation intro end -->
 
 ## Table of Contents
 - [What is bump allocation?](#what-is-bump-allocation)
@@ -23,6 +24,7 @@ A fast bump allocator that supports allocation scopes / checkpoints. Aka an aren
 - [What does *guaranteed allocated* mean?](#what-does-guaranteed-allocated-mean)
 - [Motivation and History](#motivation-and-history)
 
+<!-- crate documentation rest start -->
 ## What is bump allocation?
 A bump allocator owns a big chunk of memory. It has a pointer that starts at one end of that chunk.
 When an allocation is made that pointer gets aligned and bumped towards the other end of the chunk.
@@ -288,7 +290,7 @@ At the same time `Bump`s that have already allocated a chunk don't suffer additi
 [`as_guaranteed_allocated`]: Bump::as_guaranteed_allocated
 [`as_mut_guaranteed_allocated`]: Bump::as_mut_guaranteed_allocated
 [`into_guaranteed_allocated`]: Bump::into_guaranteed_allocated
-<!-- crate documentation end -->
+<!-- crate documentation rest end -->
 
 ## Motivation and History
 
