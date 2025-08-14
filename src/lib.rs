@@ -52,7 +52,7 @@
 //! <!-- crate documentation intro end -->
 //!
 //! **[Changelog][CHANGELOG] -**
-//! **[Cargo](https://crates.io/crates/bump-scope) -**
+//! **[Crates.io](https://crates.io/crates/bump-scope) -**
 //! **[Repository](https://github.com/bluurryy/bump-scope)**
 //!
 //! <!-- crate documentation rest start -->
