@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Document invariant that `shrink`ing a `BumpAllocator` will never error unless the alignment increases
 - Add changelog to the crate documentation
+- Add `Bump(Scope)::alloc_clone` to clone dynamically sized values into the bump allocator, requires the new "nightly-clone-to-uninit" feature
 
 ## [1.0.0] - 2025-08-13
 

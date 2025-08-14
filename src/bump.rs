@@ -8,6 +8,9 @@ use core::{
     ptr::{self, NonNull},
 };
 
+#[cfg(feature = "nightly-clone-to-uninit")]
+use core::clone::CloneToUninit;
+
 use crate::{
     BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, FixedBumpString, FixedBumpVec,
     MinimumAlignment, RawChunk, SupportedMinimumAlignment,
@@ -1598,6 +1601,134 @@ where
     #[inline(always)]
     pub fn try_alloc_default<T: Default>(&self) -> Result<BumpBox<'_, T>, AllocError> {
         self.as_scope().try_alloc_default()
+    }
+
+    /// Allocate an object by cloning it.
+    ///
+    /// Unlike `alloc(value.clone())` this method also works for dynamically-sized types.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    ///
+    /// Allocate a `slice`, `str`, `CStr`, `Path`:
+    #[cfg_attr(feature = "nightly-clone-to-uninit", doc = "```")]
+    #[cfg_attr(not(feature = "nightly-clone-to-uninit"), doc = "```ignore")]
+    /// #![feature(clone_to_uninit)]
+    ///
+    /// use std::path::Path;
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    ///
+    /// let cloned = bump.alloc_clone(&[1, 2, 3]);
+    /// assert_eq!(cloned, &[1, 2, 3]);
+    ///
+    /// let cloned = bump.alloc_clone("foo");
+    /// assert_eq!(cloned, "foo");
+    ///
+    /// let cloned = bump.alloc_clone(c"foo");
+    /// assert_eq!(cloned, c"foo");
+    ///
+    /// let cloned = bump.alloc_clone(Path::new("foo"));
+    /// assert_eq!(cloned, Path::new("foo"));
+    /// ```
+    ///
+    /// Allocate a trait object:
+    #[cfg_attr(feature = "nightly-clone-to-uninit", doc = "```")]
+    #[cfg_attr(not(feature = "nightly-clone-to-uninit"), doc = "```ignore")]
+    /// #![feature(clone_to_uninit)]
+    ///
+    /// use core::clone::CloneToUninit;
+    /// # use bump_scope::Bump;
+    ///
+    /// trait FnClone: Fn() -> String + CloneToUninit {}
+    /// impl<T: ?Sized + Fn() -> String + CloneToUninit> FnClone for T {}
+    ///
+    /// // the closure references a local variable
+    /// let reference = &String::from("Hello,");
+    ///
+    /// // and owns a string that it will have to clone
+    /// let value = String::from("world!");
+    ///
+    /// let closure = move || format!("{reference} {value}");
+    /// let object: &dyn FnClone = &closure;
+    ///
+    /// assert_eq!(object(), "Hello, world!");
+    ///
+    /// let bump: Bump = Bump::new();
+    /// let object_clone = bump.alloc_clone(object);
+    ///
+    /// assert_eq!(object_clone(), "Hello, world!");
+    /// ```    
+    #[cfg(feature = "nightly-clone-to-uninit")]
+    pub fn alloc_clone<T: CloneToUninit + ?Sized>(&self, value: &T) -> BumpBox<'_, T> {
+        self.as_scope().alloc_clone(value)
+    }
+
+    /// Allocate an object by cloning it.
+    ///
+    /// Unlike `alloc(value.clone())` this method also works for dynamically-sized types.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    ///
+    /// Allocate a `slice`, `str`, `CStr`, `Path`:
+    #[cfg_attr(feature = "nightly-clone-to-uninit", doc = "```")]
+    #[cfg_attr(not(feature = "nightly-clone-to-uninit"), doc = "```ignore")]
+    /// #![feature(clone_to_uninit)]
+    ///
+    /// use std::path::Path;
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::try_new()?;
+    ///
+    /// let cloned = bump.try_alloc_clone(&[1, 2, 3])?;
+    /// assert_eq!(cloned, &[1, 2, 3]);
+    ///
+    /// let cloned = bump.try_alloc_clone("foo")?;
+    /// assert_eq!(cloned, "foo");
+    ///
+    /// let cloned = bump.try_alloc_clone(c"foo")?;
+    /// assert_eq!(cloned, c"foo");
+    ///
+    /// let cloned = bump.try_alloc_clone(Path::new("foo"))?;
+    /// assert_eq!(cloned, Path::new("foo"));
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    ///
+    /// Allocate a trait object:
+    #[cfg_attr(feature = "nightly-clone-to-uninit", doc = "```")]
+    #[cfg_attr(not(feature = "nightly-clone-to-uninit"), doc = "```ignore")]
+    /// #![feature(clone_to_uninit)]
+    ///
+    /// use core::clone::CloneToUninit;
+    /// # use bump_scope::Bump;
+    ///
+    /// trait FnClone: Fn() -> String + CloneToUninit {}
+    /// impl<T: ?Sized + Fn() -> String + CloneToUninit> FnClone for T {}
+    ///
+    /// // the closure references a local variable
+    /// let reference = &String::from("Hello,");
+    ///
+    /// // and owns a string that it will have to clone
+    /// let value = String::from("world!");
+    ///
+    /// let closure = move || format!("{reference} {value}");
+    /// let object: &dyn FnClone = &closure;
+    ///
+    /// assert_eq!(object(), "Hello, world!");
+    ///
+    /// let bump: Bump = Bump::try_new()?;
+    /// let object_clone = bump.try_alloc_clone(object)?;
+    ///
+    /// assert_eq!(object_clone(), "Hello, world!");
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[cfg(feature = "nightly-clone-to-uninit")]
+    pub fn try_alloc_clone<T: CloneToUninit + ?Sized>(&self, value: &T) -> Result<BumpBox<'_, T>, AllocError> {
+        self.as_scope().try_alloc_clone(value)
     }
 
     /// Allocate a slice and fill it by moving elements from an existing slice.

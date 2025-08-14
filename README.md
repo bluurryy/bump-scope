@@ -233,6 +233,7 @@ Breaking changes to these features might be introduced in minor releases to keep
 - **`nightly-dropck-eyepatch`** — Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
   This makes it so references don't have to strictly outlive the container.
   (That's how std's `Box` and `Vec` work.)
+- **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](https://docs.rs/bump-scope/1.0.0/bump_scope/struct.Bump.html#method.alloc_clone) method to `Bump(Scope)`.
 <!-- feature documentation end -->
 
 ## Bumping upwards or downwards?
