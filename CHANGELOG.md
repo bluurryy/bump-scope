@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 
-- Deprecate `pool` field of `BumpPoolGuard`. Changing it can lead to undefined behavior, use the new `pool()` method instead
+- Deprecate `pool` field of `BumpPoolGuard`. Changing it can lead to undefined behavior! Use the new `pool()` method instead.
 
 
 ## [1.1.0] - 2025-08-14
