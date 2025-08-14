@@ -43,11 +43,13 @@ where
 ///   - `shrink` will either do nothing or allocate iff the alignment increases
 /// - Memory blocks can be split.
 /// - `deallocate` can be called with any pointer or alignment when the size is `0`.
+/// - `shrink` never errors unless the new alignment is greater
 ///
-/// Examples:
+/// Those invariants are used here:
 /// - Handling of foreign pointers is necessary for implementing [`BumpVec::from_parts`] and [`BumpBox::into_box`].
 /// - Memory block splitting is necessary for [`split_off`] and [`split_at`].
 /// - Deallocate with a size of `0` is used in the drop implementation of [`BumpVec`].
+/// - The non-erroring behavior of `shrink` is necessary for [`BumpAllocatorExt::shrink_slice`]
 ///
 /// # Safety
 ///
@@ -58,6 +60,7 @@ where
 /// [`split_off`]: crate::BumpVec::split_off
 /// [`split_at`]: crate::BumpBox::split_at
 /// [`BumpVec`]: crate::BumpVec
+/// [`BumpAllocatorExt::shrink_slice`]: crate::BumpAllocatorExt::shrink_slice
 pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     fn any_stats(&self) -> AnyStats<'_>;
