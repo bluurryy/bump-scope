@@ -16,7 +16,7 @@ The following cases benchmark allocating a value or a slice of values (not neces
 
 The `*_aligned` cases use a bump allocator with a sufficient minimum alignment for the allocated type, eliminating the need to align the bump pointer for the allocation.
 
-The `*_overaligned` cases use a bump allocator with a minimum alignment greater than the alignment of the type being allocated, eliminating the need to align the bump pointer for the allocation but also requiring to round up the allocation size to keep the bump pointer aligned.
+The `*_overaligned` cases use a bump allocator with a minimum alignment greater than the alignment of the type being allocated, eliminating the need to align the bump pointer for the allocation but requiring to round up the allocation size to keep the bump pointer aligned.
 
 <!-- alloc table start -->
 
