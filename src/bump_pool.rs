@@ -186,8 +186,8 @@ where
             None => Bump::generic_new_in(self.allocator.clone())?,
         };
 
+        #[expect(deprecated)]
         Ok(BumpPoolGuard {
-            #[expect(deprecated)]
             pool: self,
             bump: ManuallyDrop::new(bump),
         })
@@ -232,8 +232,8 @@ where
             None => Bump::generic_with_size_in(size, self.allocator.clone())?,
         };
 
+        #[expect(deprecated)]
         Ok(BumpPoolGuard {
-            #[expect(deprecated)]
             pool: self,
             bump: ManuallyDrop::new(bump),
         })
@@ -278,8 +278,8 @@ where
             None => Bump::generic_with_capacity_in(layout, self.allocator.clone())?,
         };
 
+        #[expect(deprecated)]
         Ok(BumpPoolGuard {
-            #[expect(deprecated)]
             pool: self,
             bump: ManuallyDrop::new(bump),
         })
