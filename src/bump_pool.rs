@@ -15,7 +15,7 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
-macro_rules! make_type {
+macro_rules! make_pool {
     ($($allocator_parameter:tt)*) => {
         /// A pool of bump allocators.
         ///
@@ -85,7 +85,7 @@ macro_rules! make_type {
     };
 }
 
-maybe_default_allocator!(make_type);
+maybe_default_allocator!(make_pool);
 
 impl<A, const MIN_ALIGN: usize, const UP: bool> Default for BumpPool<A, MIN_ALIGN, UP>
 where
@@ -286,7 +286,7 @@ where
     }
 }
 
-macro_rules! make_type {
+macro_rules! make_pool_guard {
     ($($allocator_parameter:tt)*) => {
 
         /// This is a wrapper around [`Bump`] that mutably derefs to a [`BumpScope`] and returns its [`Bump`] back to the [`BumpPool`] on drop.
@@ -309,7 +309,7 @@ macro_rules! make_type {
     };
 }
 
-maybe_default_allocator!(make_type);
+maybe_default_allocator!(make_pool_guard);
 
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpPoolGuard<'a, A, MIN_ALIGN, UP>
 where

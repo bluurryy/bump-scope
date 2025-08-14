@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add `pool()` method to `BumpPoolGuard` to get the `BumpPool`
+- Add `pool()` method to `BumpPoolGuard` to get its `BumpPool`
+
+### Fixed
+
+- Fix rust-analyzer not showing hints for `BumpPool`
 
 ### Deprecated
 
