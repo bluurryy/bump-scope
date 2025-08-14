@@ -145,8 +145,8 @@ const INVALID: &[&str] = &[
     "*aligned/blink_alloc",
 ];
 
-const FOOTNOTES_GROUP: &[(&str, usize)] = &[("*shrink*", 2)];
-const FOOTNOTES_LIBRARY: &[(&str, usize)] = &[("*aligned/blink_alloc", 1)];
+const FOOTNOTES_FOR_GROUP: &[(&str, usize)] = &[("*shrink*", 2)];
+const FOOTNOTES_FOR_LIBRARY: &[(&str, usize)] = &[("*aligned/blink_alloc", 1)];
 
 const TABLE_SECTIONS: &[(&str, &[&str])] = &[
     ("alloc", &["alloc_*"]),
@@ -183,7 +183,7 @@ fn rows() -> Vec<Vec<String>> {
     for &group in GROUP_NAMES {
         let mut group_label = group.to_string();
 
-        for (glob, i) in FOOTNOTES_GROUP {
+        for (glob, i) in FOOTNOTES_FOR_GROUP {
             if glob_match(glob, group) {
                 group_label.write_fmt(format_args!(" [^{i}]")).unwrap();
             }
@@ -203,7 +203,7 @@ fn rows() -> Vec<Vec<String>> {
                 format!("{instructions} / {branches}")
             };
 
-            for (glob, i) in FOOTNOTES_LIBRARY {
+            for (glob, i) in FOOTNOTES_FOR_LIBRARY {
                 if glob_match(glob, &group_and_library) {
                     cell.write_fmt(format_args!(" [^{i}]")).unwrap();
                 }
@@ -280,7 +280,6 @@ fn main() {
             }
         }
 
-        // merge_try_prefixed(&mut rows);
         let table = markdown_tables::as_table(&rows.into_iter().map(Row).collect::<Vec<_>>());
         readme = replace_section(&readme, &format!("{section} table"), &format!("\n\n{table}\n"));
     }
