@@ -57,10 +57,9 @@ fn scope<const UP: bool>() {
 }
 
 #[test]
-#[ignore = "fails miri"]
 #[cfg(miri)]
-#[should_panic = "pointer is dangling"]
-fn ill_eagle() {
+#[ignore = "fails miri"]
+fn dangling_pointer() {
     let long: BumpPool = <BumpPool>::new();
     let hello = long.get().alloc_str("hello");
 
