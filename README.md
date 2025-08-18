@@ -267,31 +267,42 @@ For the performance impact see [./crates/callgrind-benches][benches].
 A *guaranteed allocated* bump allocator will own at least one chunk that it has allocated
 from its base allocator.
 
-The constructors [`new`](https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.new), [`with_size`](https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.with_size), [`with_capacity`](https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.with_capacity) and their variants always allocate
+The constructors [`new`], [`with_size`], [`with_capacity`] and their variants always allocate
 one chunk from the base allocator.
 
-The exception is the [`unallocated`](https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.unallocated) constructor which creates a `Bump` without allocating any
+The exception is the [`unallocated`] constructor which creates a `Bump` without allocating any
 chunks. Such a `Bump` will have the `GUARANTEED_ALLOCATED` generic parameter of `false`
-which will make the [`scoped`](https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.scoped), [`scoped_aligned`](https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.scoped_aligned), [`aligned`](https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.aligned) and [`scope_guard`](https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.scope_guard) methods unavailable.
+which will make the [`scoped`], [`scoped_aligned`], [`aligned`] and [`scope_guard`] methods unavailable.
 
 You can turn any non-`GUARANTEED_ALLOCATED` bump allocator into a guaranteed allocated one using
-[`as_guaranteed_allocated`](https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.as_guaranteed_allocated), [`as_mut_guaranteed_allocated`](https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.as_mut_guaranteed_allocated) or [`into_guaranteed_allocated`](https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.into_guaranteed_allocated).
+[`as_guaranteed_allocated`], [`as_mut_guaranteed_allocated`] or [`into_guaranteed_allocated`].
 
 The point of this is so `Bump`s can be `const` constructed and constructed without allocating.
 At the same time `Bump`s that have already allocated a chunk don't suffer additional runtime checks.
 
 [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
-[`new`]: Bump::new
-[`with_size`]: Bump::with_size
-[`with_capacity`]: Bump::with_capacity
-[`unallocated`]: Bump::unallocated
-[`scoped`]: Bump::scoped
-[`scoped_aligned`]: Bump::scoped_aligned
-[`aligned`]: Bump::aligned
-[`scope_guard`]: Bump::scope_guard
-[`as_guaranteed_allocated`]: Bump::as_guaranteed_allocated
-[`as_mut_guaranteed_allocated`]: Bump::as_mut_guaranteed_allocated
-[`into_guaranteed_allocated`]: Bump::into_guaranteed_allocated
+[`new`]: https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.new
+
+[`with_size`]: https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.with_size
+
+[`with_capacity`]: https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.with_capacity
+
+[`unallocated`]: https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.unallocated
+
+[`scoped`]: https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.scoped
+
+[`scoped_aligned`]: https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.scoped_aligned
+
+[`aligned`]: https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.aligned
+
+[`scope_guard`]: https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.scope_guard
+
+[`as_guaranteed_allocated`]: https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.as_guaranteed_allocated
+
+[`as_mut_guaranteed_allocated`]: https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.as_mut_guaranteed_allocated
+
+[`into_guaranteed_allocated`]: https://docs.rs/bump-scope/1.2.0/bump_scope/struct.Bump.html#method.into_guaranteed_allocated
+
 <!-- crate documentation rest end -->
 
 ## Motivation and History
