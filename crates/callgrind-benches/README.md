@@ -8,7 +8,7 @@ There are also criterion benchmarks at [../criterion-benches](../criterion-bench
 
 The benchmarks results in the tables below are shown in the format "instructions executed / branches executed".
 
-These are the results of a benchmark run with <!-- version start -->`rustc 1.88.0 (6b00bc388 2025-06-23)` on `x86_64-unknown-linux-gnu` using `LLVM version 20.1.5`<!-- version end -->.
+These are the results of a benchmark run with <!-- version start -->`rustc 1.89.0 (29483883e 2025-08-04)` on `x86_64-unknown-linux-gnu` using `LLVM version 20.1.7`<!-- version end -->.
 
 ### Allocation
 
@@ -22,19 +22,19 @@ The `*_overaligned` cases use a bump allocator with a minimum alignment greater 
 
 | name                         | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
 |------------------------------|-----------------|-------------------|---------|-------------|
-| alloc_u8                     | 10 / 1          | 10 / 1            | 11 / 2  | 16 / 4      |
-| alloc_u8_overaligned         | 12 / 1          | 11 / 1            | 13 / 2  | — [^1]      |
-| alloc_u32                    | 14 / 1          | 11 / 1            | 15 / 3  | 18 / 4      |
-| alloc_u32_aligned            | 12 / 1          | 10 / 1            | 13 / 2  | — [^1]      |
-| alloc_u32_overaligned        | 13 / 1          | 11 / 1            | 13 / 2  | — [^1]      |
-| alloc_big_struct             | 21 / 1          | 20 / 1            | 22 / 3  | 25 / 4      |
-| alloc_big_struct_aligned     | 19 / 1          | 19 / 1            | 20 / 2  | — [^1]      |
-| alloc_big_struct_overaligned | 20 / 1          | 20 / 1            | 20 / 2  | — [^1]      |
-| alloc_u8_slice               | 32 / 3          | 32 / 3            | 32 / 4  | 36 / 6      |
-| alloc_u8_slice_overaligned   | 34 / 3          | 33 / 3            | 36 / 5  | — [^1]      |
-| alloc_u32_slice              | 45 / 6          | 44 / 6            | 46 / 8  | 57 / 9      |
-| alloc_u32_slice_aligned      | 43 / 6          | 43 / 6            | 44 / 7  | — [^1]      |
-| alloc_u32_slice_overaligned  | 45 / 6          | 44 / 6            | 46 / 7  | — [^1]      |
+| alloc_u8                     | 10 / 1          | 10 / 1            | 10 / 1  | 14 / 3      |
+| alloc_u8_overaligned         | 12 / 1          | 11 / 1            | 12 / 1  | — [^1]      |
+| alloc_u32                    | 14 / 1          | 11 / 1            | 14 / 2  | 16 / 3      |
+| alloc_u32_aligned            | 12 / 1          | 10 / 1            | 12 / 1  | — [^1]      |
+| alloc_u32_overaligned        | 13 / 1          | 11 / 1            | 12 / 1  | — [^1]      |
+| alloc_big_struct             | 21 / 1          | 20 / 1            | 21 / 2  | 23 / 3      |
+| alloc_big_struct_aligned     | 19 / 1          | 19 / 1            | 19 / 1  | — [^1]      |
+| alloc_big_struct_overaligned | 20 / 1          | 20 / 1            | 19 / 1  | — [^1]      |
+| alloc_u8_slice               | 32 / 3          | 32 / 3            | 31 / 3  | 34 / 5      |
+| alloc_u8_slice_overaligned   | 34 / 3          | 33 / 3            | 35 / 4  | — [^1]      |
+| alloc_u32_slice              | 45 / 6          | 44 / 6            | 45 / 7  | 55 / 8      |
+| alloc_u32_slice_aligned      | 43 / 6          | 43 / 6            | 43 / 6  | — [^1]      |
+| alloc_u32_slice_overaligned  | 45 / 6          | 44 / 6            | 45 / 6  | — [^1]      |
 
 <!-- alloc table end -->
 
@@ -47,19 +47,19 @@ The benchmark cases above use the infallible api, panicking if allocating a new 
 
 | name                             | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
 |----------------------------------|-----------------|-------------------|---------|-------------|
-| try_alloc_u8                     | 10 / 1          | 10 / 1            | 11 / 2  | 16 / 4      |
-| try_alloc_u8_overaligned         | 12 / 1          | 11 / 1            | 13 / 2  | — [^1]      |
-| try_alloc_u32                    | 14 / 1          | 11 / 1            | 15 / 3  | 18 / 4      |
-| try_alloc_u32_aligned            | 12 / 1          | 10 / 1            | 13 / 2  | — [^1]      |
-| try_alloc_u32_overaligned        | 13 / 1          | 11 / 1            | 13 / 2  | — [^1]      |
-| try_alloc_big_struct             | 21 / 1          | 20 / 1            | 22 / 3  | 25 / 4      |
-| try_alloc_big_struct_aligned     | 19 / 1          | 19 / 1            | 20 / 2  | — [^1]      |
-| try_alloc_big_struct_overaligned | 20 / 1          | 20 / 1            | 20 / 2  | — [^1]      |
-| try_alloc_u8_slice               | 32 / 3          | 33 / 4            | 33 / 4  | 36 / 6      |
-| try_alloc_u8_slice_overaligned   | 34 / 3          | 34 / 4            | 37 / 5  | — [^1]      |
-| try_alloc_u32_slice              | 47 / 7          | 45 / 7            | 46 / 8  | 53 / 9      |
-| try_alloc_u32_slice_aligned      | 43 / 6          | 44 / 7            | 44 / 7  | — [^1]      |
-| try_alloc_u32_slice_overaligned  | 45 / 6          | 45 / 7            | 46 / 7  | — [^1]      |
+| try_alloc_u8                     | 10 / 1          | 10 / 1            | 10 / 1  | 14 / 3      |
+| try_alloc_u8_overaligned         | 12 / 1          | 11 / 1            | 12 / 1  | — [^1]      |
+| try_alloc_u32                    | 14 / 1          | 11 / 1            | 14 / 2  | 16 / 3      |
+| try_alloc_u32_aligned            | 12 / 1          | 10 / 1            | 12 / 1  | — [^1]      |
+| try_alloc_u32_overaligned        | 13 / 1          | 11 / 1            | 12 / 1  | — [^1]      |
+| try_alloc_big_struct             | 21 / 1          | 20 / 1            | 21 / 2  | 23 / 3      |
+| try_alloc_big_struct_aligned     | 19 / 1          | 19 / 1            | 19 / 1  | — [^1]      |
+| try_alloc_big_struct_overaligned | 20 / 1          | 20 / 1            | 19 / 1  | — [^1]      |
+| try_alloc_u8_slice               | 32 / 3          | 32 / 3            | 32 / 3  | 34 / 5      |
+| try_alloc_u8_slice_overaligned   | 34 / 3          | 33 / 3            | 36 / 4  | — [^1]      |
+| try_alloc_u32_slice              | 45 / 6          | 44 / 6            | 45 / 7  | 51 / 8      |
+| try_alloc_u32_slice_aligned      | 43 / 6          | 43 / 6            | 43 / 6  | — [^1]      |
+| try_alloc_u32_slice_overaligned  | 45 / 6          | 44 / 6            | 45 / 6  | — [^1]      |
 
 <!-- try alloc table end -->
 
@@ -73,13 +73,13 @@ The following cases benchmark the `Allocator` trait implementations.
 
 | name                      | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
 |---------------------------|-----------------|-------------------|---------|-------------|
-| allocate                  | 15 / 2          | 13 / 2            | 13 / 3  | 16 / 4      |
-| grow_same_align           | 19 / 2          | 19 / 2            | 53 / 4  | 18 / 4      |
-| grow_smaller_align        | 19 / 2          | 19 / 2            | 53 / 4  | 18 / 4      |
-| grow_larger_align         | 19 / 2          | 19 / 2            | 17 / 3  | 20 / 4      |
+| allocate                  | 14 / 1          | 11 / 1            | 12 / 2  | 14 / 3      |
+| grow_same_align           | 19 / 2          | 18 / 2            | 46 / 3  | 18 / 4      |
+| grow_smaller_align        | 19 / 2          | 18 / 2            | 46 / 3  | 18 / 4      |
+| grow_larger_align         | 19 / 2          | 18 / 2            | 16 / 2  | 18 / 3      |
 | shrink_same_align [^2]    | 11 / 2          | 17 / 2            | 12 / 1  | 5 / 1       |
 | shrink_smaller_align [^2] | 11 / 2          | 17 / 2            | 12 / 1  | 5 / 1       |
-| shrink_larger_align [^2]  | 11 / 2          | 17 / 2            | 5 / 1   | 20 / 4      |
+| shrink_larger_align [^2]  | 11 / 2          | 17 / 2            | 5 / 1   | 18 / 3      |
 | deallocate                | 6 / 1           | 6 / 1             | 7 / 1   | 6 / 2       |
 | deallocate_non_last       | 5 / 1           | 4 / 1             | 5 / 1   | 6 / 2       |
 
@@ -93,13 +93,13 @@ If the layout is not statically known then the compiler can not do as many optim
 
 | name                                | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
 |-------------------------------------|-----------------|-------------------|---------|-------------|
-| black_box_allocate                  | 16 / 2          | 14 / 2            | 26 / 5  | 23 / 4      |
-| black_box_grow_same_align           | 25 / 2          | 53 / 7            | 99 / 11 | 31 / 6      |
-| black_box_grow_smaller_align        | 25 / 2          | 53 / 7            | 99 / 11 | 31 / 6      |
-| black_box_grow_larger_align         | 25 / 2          | 53 / 7            | 63 / 10 | 57 / 9      |
+| black_box_allocate                  | 15 / 1          | 12 / 1            | 25 / 4  | 21 / 3      |
+| black_box_grow_same_align           | 25 / 2          | 51 / 7            | 96 / 9  | 31 / 6      |
+| black_box_grow_smaller_align        | 25 / 2          | 51 / 7            | 96 / 9  | 31 / 6      |
+| black_box_grow_larger_align         | 25 / 2          | 51 / 7            | 70 / 9  | 55 / 8      |
 | black_box_shrink_same_align [^2]    | 13 / 2          | 47 / 7            | 45 / 7  | 23 / 3      |
 | black_box_shrink_smaller_align [^2] | 13 / 2          | 50 / 9            | 48 / 9  | 23 / 3      |
-| black_box_shrink_larger_align [^2]  | 13 / 2          | 47 / 7            | 15 / 2  | 57 / 9      |
+| black_box_shrink_larger_align [^2]  | 13 / 2          | 47 / 7            | 15 / 2  | 55 / 8      |
 | black_box_deallocate                | 6 / 1           | 6 / 1             | 7 / 1   | 6 / 2       |
 | black_box_deallocate_non_last       | 5 / 1           | 4 / 1             | 5 / 1   | 6 / 2       |
 
@@ -114,7 +114,7 @@ If the layout is not statically known then the compiler can not do as many optim
 
 | name    | bump-scope (up) | bump-scope (down) | bumpalo  | blink-alloc |
 |---------|-----------------|-------------------|----------|-------------|
-| warm_up | 227 / 31        | 233 / 32          | 358 / 43 | 284 / 38    |
+| warm_up | 224 / 31        | 230 / 32          | 355 / 43 | 284 / 38    |
 | reset   | 26 / 2          | 25 / 2            | 23 / 2   | 26 / 3      |
 
 <!-- misc table end -->
