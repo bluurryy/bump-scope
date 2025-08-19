@@ -865,13 +865,17 @@ where
 {
     #[inline(always)]
     pub(crate) fn generic_prepare_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
-        B::prepare_allocation_or_else(
-            self.chunk.get(),
-            MinimumAlignment::<MIN_ALIGN>,
-            SizedLayout::new::<T>(),
-            || self.prepare_allocation_in_another_chunk::<B, T>(),
-        )
-        .map(NonNull::cast)
+        match self
+            .chunk
+            .get()
+            .prepare_allocation(MinimumAlignment::<MIN_ALIGN>, SizedLayout::new::<T>())
+        {
+            Some(ptr) => Ok(ptr.cast()),
+            None => match self.prepare_allocation_in_another_chunk::<B, T>() {
+                Ok(ptr) => Ok(ptr.cast()),
+                Err(err) => Err(err),
+            },
+        }
     }
 
     #[cold]
@@ -954,13 +958,13 @@ where
 
     #[inline(always)]
     pub(crate) fn do_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
-        E::alloc_or_else(
-            self.chunk.get(),
-            MinimumAlignment::<MIN_ALIGN>,
-            SizedLayout::new::<T>(),
-            || self.do_alloc_sized_in_another_chunk::<E, T>(),
-        )
-        .map(NonNull::cast)
+        match self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, SizedLayout::new::<T>()) {
+            Some(ptr) => Ok(ptr.cast()),
+            None => match self.do_alloc_sized_in_another_chunk::<E, T>() {
+                Ok(ptr) => Ok(ptr.cast()),
+                Err(err) => Err(err),
+            },
+        }
     }
 
     #[cold]
@@ -978,25 +982,31 @@ where
             return Err(E::capacity_overflow());
         };
 
-        E::alloc_or_else(self.chunk.get(), MinimumAlignment::<MIN_ALIGN>, layout, || unsafe {
-            self.do_alloc_slice_in_another_chunk::<E, T>(len)
-        })
-        .map(NonNull::cast)
+        match self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, layout) {
+            Some(ptr) => Ok(ptr.cast()),
+            None => match self.do_alloc_slice_in_another_chunk::<E, T>(len) {
+                Ok(ptr) => Ok(ptr.cast()),
+                Err(err) => Err(err),
+            },
+        }
     }
 
     #[inline(always)]
     pub(crate) fn do_alloc_slice_for<E: ErrorBehavior, T>(&self, value: &[T]) -> Result<NonNull<T>, E> {
         let layout = ArrayLayout::for_value(value);
 
-        E::alloc_or_else(self.chunk.get(), MinimumAlignment::<MIN_ALIGN>, layout, || unsafe {
-            self.do_alloc_slice_in_another_chunk::<E, T>(value.len())
-        })
-        .map(NonNull::cast)
+        match self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, layout) {
+            Some(ptr) => Ok(ptr.cast()),
+            None => match self.do_alloc_slice_in_another_chunk::<E, T>(value.len()) {
+                Ok(ptr) => Ok(ptr.cast()),
+                Err(err) => Err(err),
+            },
+        }
     }
 
     #[cold]
     #[inline(never)]
-    pub(crate) unsafe fn do_alloc_slice_in_another_chunk<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<u8>, E>
+    pub(crate) fn do_alloc_slice_in_another_chunk<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<u8>, E>
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     {

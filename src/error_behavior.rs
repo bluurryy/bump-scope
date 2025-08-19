@@ -1,13 +1,9 @@
 use core::alloc::Layout;
 
-use crate::{
-    BumpAllocatorExt, MutBumpAllocatorExt, NonNull, RawChunk, SupportedMinimumAlignment, alloc::AllocError, layout,
-};
+use crate::{BumpAllocatorExt, MutBumpAllocatorExt, NonNull, alloc::AllocError};
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::{Infallible, capacity_overflow, format_trait_error, handle_alloc_error};
-
-use layout::LayoutProps;
 
 pub(crate) trait ErrorBehavior: Sized {
     #[cfg(feature = "panic-on-alloc")]
@@ -18,23 +14,6 @@ pub(crate) trait ErrorBehavior: Sized {
     fn fixed_size_vector_is_full() -> Self;
     fn fixed_size_vector_no_space(amount: usize) -> Self;
     fn format_trait_error() -> Self;
-
-    /// For the infallible case we want to inline `f` but not for the fallible one. (Because it produces better code)
-    fn alloc_or_else<A, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-        chunk: RawChunk<A, UP, GUARANTEED_ALLOCATED>,
-        minimum_alignment: impl SupportedMinimumAlignment,
-        layout: impl LayoutProps,
-        f: impl FnOnce() -> Result<NonNull<u8>, Self>,
-    ) -> Result<NonNull<u8>, Self>;
-
-    /// For the infallible case we want to inline `f` but not for the fallible one. (Because it produces better code)
-    fn prepare_allocation_or_else<A, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-        chunk: RawChunk<A, UP, GUARANTEED_ALLOCATED>,
-        minimum_alignment: impl SupportedMinimumAlignment,
-        layout: impl LayoutProps,
-        f: impl FnOnce() -> Result<NonNull<u8>, Self>,
-    ) -> Result<NonNull<u8>, Self>;
-
     #[allow(dead_code)]
     fn allocate_layout(allocator: &impl BumpAllocatorExt, layout: Layout) -> Result<NonNull<u8>, Self>;
     #[allow(dead_code)]
@@ -74,26 +53,6 @@ impl ErrorBehavior for Infallible {
     #[inline(always)]
     fn format_trait_error() -> Self {
         format_trait_error()
-    }
-
-    #[inline(always)]
-    fn alloc_or_else<A, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-        chunk: RawChunk<A, UP, GUARANTEED_ALLOCATED>,
-        minimum_alignment: impl SupportedMinimumAlignment,
-        layout: impl LayoutProps,
-        f: impl FnOnce() -> Result<NonNull<u8>, Self>,
-    ) -> Result<NonNull<u8>, Self> {
-        chunk.alloc_or_else(minimum_alignment, layout, f)
-    }
-
-    #[inline(always)]
-    fn prepare_allocation_or_else<A, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-        chunk: RawChunk<A, UP, GUARANTEED_ALLOCATED>,
-        minimum_alignment: impl SupportedMinimumAlignment,
-        layout: impl LayoutProps,
-        f: impl FnOnce() -> Result<NonNull<u8>, Self>,
-    ) -> Result<NonNull<u8>, Self> {
-        chunk.prepare_allocation_or_else(minimum_alignment, layout, f)
     }
 
     #[inline(always)]
@@ -148,32 +107,6 @@ impl ErrorBehavior for AllocError {
     #[inline(always)]
     fn format_trait_error() -> Self {
         Self
-    }
-
-    #[inline(always)]
-    fn alloc_or_else<A, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-        chunk: RawChunk<A, UP, GUARANTEED_ALLOCATED>,
-        minimum_alignment: impl SupportedMinimumAlignment,
-        layout: impl LayoutProps,
-        f: impl FnOnce() -> Result<NonNull<u8>, Self>,
-    ) -> Result<NonNull<u8>, Self> {
-        match chunk.alloc(minimum_alignment, layout) {
-            Some(ptr) => Ok(ptr),
-            None => f(),
-        }
-    }
-
-    #[inline(always)]
-    fn prepare_allocation_or_else<A, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-        chunk: RawChunk<A, UP, GUARANTEED_ALLOCATED>,
-        minimum_alignment: impl SupportedMinimumAlignment,
-        layout: impl LayoutProps,
-        f: impl FnOnce() -> Result<NonNull<u8>, Self>,
-    ) -> Result<NonNull<u8>, Self> {
-        match chunk.prepare_allocation(minimum_alignment, layout) {
-            Some(ptr) => Ok(ptr),
-            None => f(),
-        }
     }
 
     #[inline(always)]
