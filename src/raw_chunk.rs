@@ -379,24 +379,6 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
         M: SupportedMinimumAlignment,
         L: LayoutProps,
     {
-        self.alloc_or_else(minimum_alignment, layout, || Err(())).ok()
-    }
-
-    /// Attempts to allocate a block of memory.
-    /// If there is not enough space, `f` will be called and its result returned.
-    ///
-    /// We use a callback for the fallback case for performance reasons.
-    /// If we were to just expose an api like [`alloc`](Self::alloc) and matched over the `Option`, the compiler would
-    /// introduce an unnecessary conditional jump in the infallible code path.
-    ///
-    /// `rustc` used to be able to optimize this away (see issue #25)
-    #[inline(always)]
-    pub(crate) fn alloc_or_else<M, L, E, F>(self, minimum_alignment: M, layout: L, f: F) -> Result<NonNull<u8>, E>
-    where
-        M: SupportedMinimumAlignment,
-        L: LayoutProps,
-        F: FnOnce() -> Result<NonNull<u8>, E>,
-    {
         // Zero sized allocations are a problem for non-GUARANTEED_ALLOCATED chunks
         // since bump_up/bump_down will succeed and the UNALLOCATED chunk would
         // be written to. The UNALLOCATED chunk must not be written to since that
@@ -405,38 +387,32 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
         // In many cases, the layout size is statically known not to be zero
         // and this "if" is optimized away.
         if !GUARANTEED_ALLOCATED && layout.size() == 0 {
-            return Ok(polyfill::layout::dangling(*layout));
+            return Some(polyfill::layout::dangling(*layout));
         }
 
         let props = self.bump_props(minimum_alignment, layout);
 
         unsafe {
             if UP {
-                match bump_up(props) {
-                    Some(BumpUp { new_pos, ptr }) => {
-                        // non zero sized allocations never succeed for the unallocated chunk
-                        let chunk = self.guaranteed_allocated_unchecked();
-                        chunk.set_pos_addr(new_pos);
-                        Ok(chunk.with_addr(ptr))
-                    }
-                    None => f(),
-                }
+                let BumpUp { new_pos, ptr } = bump_up(props)?;
+
+                // non zero sized allocations never succeed for the unallocated chunk
+                let chunk = self.guaranteed_allocated_unchecked();
+                chunk.set_pos_addr(new_pos);
+                Some(chunk.with_addr(ptr))
             } else {
-                match bump_down(props) {
-                    Some(ptr) => {
-                        // non zero sized allocations never succeed for the unallocated chunk
-                        let chunk = self.guaranteed_allocated_unchecked();
-                        let ptr = chunk.with_addr(ptr);
-                        chunk.set_pos(ptr);
-                        Ok(ptr)
-                    }
-                    None => f(),
-                }
+                let ptr = bump_down(props)?;
+
+                // non zero sized allocations never succeed for the unallocated chunk
+                let chunk = self.guaranteed_allocated_unchecked();
+                let ptr = chunk.with_addr(ptr);
+                chunk.set_pos(ptr);
+                Some(ptr)
             }
         }
     }
 
-    /// Attempts to reserve a block of memory.
+    /// Prepares allocation for a block of memory.
     ///
     /// On success, returns a [`NonNull<u8>`] meeting the size and alignment guarantees of `layout`.
     ///
@@ -447,38 +423,15 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
         M: SupportedMinimumAlignment,
         L: LayoutProps,
     {
-        self.prepare_allocation_or_else(minimum_alignment, layout, || Err(())).ok()
-    }
-
-    /// Attempts to reserve a block of memory.
-    /// If there is not enough space, `f` will be called and its result returned.
-    ///
-    /// This is like [`alloc_or_else`](Self::alloc_or_else), except that it won't change the bump pointer.
-    #[inline(always)]
-    pub(crate) fn prepare_allocation_or_else<M, L, E, F>(
-        self,
-        minimum_alignment: M,
-        layout: L,
-        f: F,
-    ) -> Result<NonNull<u8>, E>
-    where
-        M: SupportedMinimumAlignment,
-        L: LayoutProps,
-        F: FnOnce() -> Result<NonNull<u8>, E>,
-    {
         let props = self.bump_props(minimum_alignment, layout);
 
         unsafe {
             if UP {
-                match bump_up(props) {
-                    Some(BumpUp { ptr, .. }) => Ok(self.with_addr(ptr)),
-                    None => f(),
-                }
+                let BumpUp { ptr, .. } = bump_up(props)?;
+                Some(self.with_addr(ptr))
             } else {
-                match bump_down(props) {
-                    Some(ptr) => Ok(self.with_addr(ptr)),
-                    None => f(),
-                }
+                let ptr = bump_down(props)?;
+                Some(self.with_addr(ptr))
             }
         }
     }

@@ -21,7 +21,6 @@ use crate::{
     alloc::{AllocError, Allocator},
     allocator_impl,
     bump_align_guard::BumpAlignGuard,
-    bumping::{BumpUp, bump_down, bump_up},
     chunk_header::ChunkHeader,
     chunk_size::ChunkSize,
     const_param_assert, down_align_usize,
@@ -866,13 +865,17 @@ where
 {
     #[inline(always)]
     pub(crate) fn generic_prepare_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
-        B::prepare_allocation_or_else(
-            self.chunk.get(),
-            MinimumAlignment::<MIN_ALIGN>,
-            SizedLayout::new::<T>(),
-            || self.prepare_allocation_in_another_chunk::<B, T>(),
-        )
-        .map(NonNull::cast)
+        match self
+            .chunk
+            .get()
+            .prepare_allocation(MinimumAlignment::<MIN_ALIGN>, SizedLayout::new::<T>())
+        {
+            Some(ptr) => Ok(ptr.cast()),
+            None => match self.prepare_allocation_in_another_chunk::<B, T>() {
+                Ok(ptr) => Ok(ptr.cast()),
+                Err(err) => Err(err),
+            },
+        }
     }
 
     #[cold]
@@ -955,13 +958,13 @@ where
 
     #[inline(always)]
     pub(crate) fn do_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
-        E::alloc_or_else(
-            self.chunk.get(),
-            MinimumAlignment::<MIN_ALIGN>,
-            SizedLayout::new::<T>(),
-            || self.do_alloc_sized_in_another_chunk::<E, T>(),
-        )
-        .map(NonNull::cast)
+        match self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, SizedLayout::new::<T>()) {
+            Some(ptr) => Ok(ptr.cast()),
+            None => match self.do_alloc_sized_in_another_chunk::<E, T>() {
+                Ok(ptr) => Ok(ptr.cast()),
+                Err(err) => Err(err),
+            },
+        }
     }
 
     #[cold]
@@ -979,25 +982,31 @@ where
             return Err(E::capacity_overflow());
         };
 
-        E::alloc_or_else(self.chunk.get(), MinimumAlignment::<MIN_ALIGN>, layout, || unsafe {
-            self.do_alloc_slice_in_another_chunk::<E, T>(len)
-        })
-        .map(NonNull::cast)
+        match self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, layout) {
+            Some(ptr) => Ok(ptr.cast()),
+            None => match self.do_alloc_slice_in_another_chunk::<E, T>(len) {
+                Ok(ptr) => Ok(ptr.cast()),
+                Err(err) => Err(err),
+            },
+        }
     }
 
     #[inline(always)]
     pub(crate) fn do_alloc_slice_for<E: ErrorBehavior, T>(&self, value: &[T]) -> Result<NonNull<T>, E> {
         let layout = ArrayLayout::for_value(value);
 
-        E::alloc_or_else(self.chunk.get(), MinimumAlignment::<MIN_ALIGN>, layout, || unsafe {
-            self.do_alloc_slice_in_another_chunk::<E, T>(value.len())
-        })
-        .map(NonNull::cast)
+        match self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, layout) {
+            Some(ptr) => Ok(ptr.cast()),
+            None => match self.do_alloc_slice_in_another_chunk::<E, T>(value.len()) {
+                Ok(ptr) => Ok(ptr.cast()),
+                Err(err) => Err(err),
+            },
+        }
     }
 
     #[cold]
     #[inline(never)]
-    pub(crate) unsafe fn do_alloc_slice_in_another_chunk<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<u8>, E>
+    pub(crate) fn do_alloc_slice_in_another_chunk<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<u8>, E>
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -1157,40 +1166,7 @@ where
 
     #[inline(always)]
     pub(crate) fn generic_alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<BumpBox<'a, T>, B> {
-        if T::IS_ZST {
-            let value = f();
-            return Ok(BumpBox::zst(value));
-        }
-
-        let chunk = self.chunk.get();
-        let props = chunk.bump_props(MinimumAlignment::<MIN_ALIGN>, crate::layout::SizedLayout::new::<T>());
-
-        unsafe {
-            let ptr = if UP {
-                if let Some(BumpUp { new_pos, ptr }) = bump_up(props) {
-                    // non zero sized allocations never succeed for the unallocated chunk
-                    let chunk = chunk.guaranteed_allocated_unchecked();
-                    chunk.set_pos_addr(new_pos);
-                    chunk.with_addr(ptr)
-                } else {
-                    self.do_alloc_sized_in_another_chunk::<B, T>()?
-                }
-            } else {
-                if let Some(addr) = bump_down(props) {
-                    // non zero sized allocations never succeed for the unallocated chunk
-                    let chunk = chunk.guaranteed_allocated_unchecked();
-                    chunk.set_pos_addr(addr);
-                    chunk.with_addr(addr)
-                } else {
-                    self.do_alloc_sized_in_another_chunk::<B, T>()?
-                }
-            };
-
-            let ptr = ptr.cast::<T>();
-
-            non_null::write_with(ptr, f);
-            Ok(BumpBox::from_raw(ptr))
-        }
+        Ok(self.generic_alloc_uninit()?.init(f()))
     }
 
     /// Allocate an object with its default value.
