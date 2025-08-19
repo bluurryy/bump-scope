@@ -21,7 +21,6 @@ use crate::{
     alloc::{AllocError, Allocator},
     allocator_impl,
     bump_align_guard::BumpAlignGuard,
-    bumping::{BumpUp, bump_down, bump_up},
     chunk_header::ChunkHeader,
     chunk_size::ChunkSize,
     const_param_assert, down_align_usize,
@@ -1157,40 +1156,7 @@ where
 
     #[inline(always)]
     pub(crate) fn generic_alloc_with<B: ErrorBehavior, T>(&self, f: impl FnOnce() -> T) -> Result<BumpBox<'a, T>, B> {
-        if T::IS_ZST {
-            let value = f();
-            return Ok(BumpBox::zst(value));
-        }
-
-        let chunk = self.chunk.get();
-        let props = chunk.bump_props(MinimumAlignment::<MIN_ALIGN>, crate::layout::SizedLayout::new::<T>());
-
-        unsafe {
-            let ptr = if UP {
-                if let Some(BumpUp { new_pos, ptr }) = bump_up(props) {
-                    // non zero sized allocations never succeed for the unallocated chunk
-                    let chunk = chunk.guaranteed_allocated_unchecked();
-                    chunk.set_pos_addr(new_pos);
-                    chunk.with_addr(ptr)
-                } else {
-                    self.do_alloc_sized_in_another_chunk::<B, T>()?
-                }
-            } else {
-                if let Some(addr) = bump_down(props) {
-                    // non zero sized allocations never succeed for the unallocated chunk
-                    let chunk = chunk.guaranteed_allocated_unchecked();
-                    chunk.set_pos_addr(addr);
-                    chunk.with_addr(addr)
-                } else {
-                    self.do_alloc_sized_in_another_chunk::<B, T>()?
-                }
-            };
-
-            let ptr = ptr.cast::<T>();
-
-            non_null::write_with(ptr, f);
-            Ok(BumpBox::from_raw(ptr))
-        }
+        Ok(self.generic_alloc_uninit()?.init(f()))
     }
 
     /// Allocate an object with its default value.
