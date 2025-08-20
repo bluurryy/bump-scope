@@ -154,7 +154,7 @@ The collections are designed to have the same api as their std counterparts with
 ##### New features
 - [`append`](https://docs.rs/bump-scope/1.2.0/bump_scope/struct.BumpVec.html#method.append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `vec::Drain<T>` etc.
 - [`map`](https://docs.rs/bump-scope/1.2.0/bump_scope/struct.BumpVec.html#method.map) —  maps the elements, potentially reusing the existing allocation
-- [`map_in_place`](https://docs.rs/bump-scope/1.2.0/bump_scope/struct.BumpVec.html#method.map_in_place) —  maps the elements without allocation
+- [`map_in_place`](https://docs.rs/bump-scope/1.2.0/bump_scope/struct.BumpVec.html#method.map_in_place) —  maps the elements without allocation, failing to compile if not possible
 - conversions between the regular collections, their `Fixed*` variants and `BumpBox<[T]>` / `BumpBox<str>`
 
 ## Parallel Allocation

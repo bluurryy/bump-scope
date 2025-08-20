@@ -188,7 +188,7 @@
 //! #### New features
 //! - [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `vec::Drain<T>` etc.
 //! - [`map`](BumpVec::map) —  maps the elements, potentially reusing the existing allocation
-//! - [`map_in_place`](BumpVec::map_in_place) —  maps the elements without allocation
+//! - [`map_in_place`](BumpVec::map_in_place) —  maps the elements without allocation, failing to compile if not possible
 //! - conversions between the regular collections, their `Fixed*` variants and `BumpBox<[T]>` / `BumpBox<str>`
 //!
 //! # Parallel Allocation
