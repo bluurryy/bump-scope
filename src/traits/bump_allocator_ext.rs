@@ -39,6 +39,17 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
 
     /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
     ///
+    /// Behaves like the following code:
+    /// ```
+    /// # use core::{alloc::Layout, ptr::NonNull};
+    /// # #[allow(dead_code)]
+    /// # trait MyExt: bump_scope::BumpAllocator {
+    /// #     unsafe fn my_ext_fn(&self, layout: Layout) -> NonNull<u8> {
+    /// self.allocate(layout).unwrap().cast()
+    /// #     }
+    /// # }
+    /// ```
+    ///
     /// # Panics
     ///
     /// Panics if the allocation fails.
@@ -47,12 +58,36 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
 
     /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
     ///
+    /// Behaves like the following code:
+    /// ```
+    /// # use core::{alloc::Layout, ptr::NonNull};
+    /// # use bump_scope::alloc::AllocError;
+    /// # #[allow(dead_code)]
+    /// # trait MyExt: bump_scope::BumpAllocator {
+    /// #     unsafe fn my_ext_fn(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
+    /// Ok(self.allocate(layout)?.cast())
+    /// #     }
+    /// # }
+    /// ```
+    ///
     /// # Errors
     ///
     /// Errors if the allocation fails.
     fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError>;
 
     /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
+    ///
+    /// Behaves like the following code:
+    /// ```
+    /// # use core::{alloc::Layout, ptr::NonNull};
+    /// # type T = i32;
+    /// # #[allow(dead_code)]
+    /// # trait MyExt: bump_scope::BumpAllocator {
+    /// #     unsafe fn my_ext_fn(&self) -> NonNull<T> {
+    /// self.allocate(Layout::new::<T>()).unwrap().cast()
+    /// #     }
+    /// # }
+    /// ```
     ///
     /// # Panics
     ///
@@ -62,12 +97,37 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
 
     /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
     ///
+    /// Behaves like the following code:
+    /// ```
+    /// # use core::{alloc::Layout, ptr::NonNull};
+    /// # use bump_scope::alloc::AllocError;
+    /// # type T = i32;
+    /// # #[allow(dead_code)]
+    /// # trait MyExt: bump_scope::BumpAllocator {
+    /// #     unsafe fn my_ext_fn(&self) -> Result<NonNull<T>, AllocError> {
+    /// Ok(self.allocate(Layout::new::<T>())?.cast())
+    /// #     }
+    /// # }
+    /// ```
+    ///
     /// # Errors
     ///
     /// Errors if the allocation fails.
     fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>;
 
     /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
+    ///
+    /// Behaves like the following code:
+    /// ```
+    /// # use core::{alloc::Layout, ptr::NonNull};
+    /// # type T = i32;
+    /// # #[allow(dead_code)]
+    /// # trait MyExt: bump_scope::BumpAllocator {
+    /// #     unsafe fn my_ext_fn(&self, len: usize) -> NonNull<T> {
+    /// self.allocate(Layout::array::<T>(len).unwrap()).unwrap().cast()
+    /// #     }
+    /// # }
+    /// ```
     ///
     /// # Panics
     ///
@@ -77,6 +137,19 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
 
     /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
     ///
+    /// Behaves like the following code:
+    /// ```
+    /// # use core::{alloc::Layout, ptr::NonNull};
+    /// # use bump_scope::alloc::AllocError;
+    /// # type T = i32;
+    /// # #[allow(dead_code)]
+    /// # trait MyExt: bump_scope::BumpAllocator {
+    /// #     unsafe fn my_ext_fn(&self, len: usize) -> Result<NonNull<T>, AllocError> {
+    /// Ok(self.allocate(Layout::array::<T>(len).map_err(|_| AllocError)?)?.cast())
+    /// #     }
+    /// # }
+    /// ```
+    ///
     /// # Errors
     ///
     /// Errors if the allocation fails.
@@ -84,18 +157,20 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
 
     /// A specialized version of [`shrink`](crate::alloc::Allocator::shrink).
     ///
-    /// Behaves similar to the following code except that it
-    /// returns `None` when the allocation remains unchanged and the pointer stays valid.
+    /// Behaves like the following code except that it returns `None`
+    /// when the allocation remains unchanged and the pointer stays valid.
     /// ```
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # type T = i32;
     /// # #[allow(dead_code)]
     /// # trait MyExt: bump_scope::BumpAllocator {
     /// #     unsafe fn my_ext_fn(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> NonNull<T> {
+    /// #         unsafe {
     /// self.shrink(ptr.cast(),
     ///     Layout::array::<T>(old_len).unwrap_unchecked(),
     ///     Layout::array::<T>(new_len).unwrap_unchecked(),
     /// ).unwrap_unchecked().cast()
+    /// #         }
     /// #     }
     /// # }
     /// ```
@@ -110,6 +185,8 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
 
     /// A specialized version of [`prepare_allocation`].
     ///
+    /// Returns a `[T]` of free space in the bump allocator.
+    ///
     /// [`prepare_allocation`]: crate::BumpAllocator::prepare_allocation
     ///
     /// # Panics
@@ -120,6 +197,8 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
 
     /// A specialized version of [`prepare_allocation`].
     ///
+    /// Returns a `[T]` of free space in the bump allocator.
+    ///
     /// [`prepare_allocation`]: crate::BumpAllocator::prepare_allocation
     ///
     /// # Errors
@@ -129,28 +208,34 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
 
     /// A specialized version of [`allocate_prepared`].
     ///
-    /// [`allocate_prepared`]: crate::BumpAllocator::allocate_prepared
+    /// Allocates part of the free space returned from a
+    /// <code>([try_](BumpAllocatorExt::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorExt::prepare_slice_allocation)</code>
+    /// call.
     ///
     /// # Safety
-    ///
-    /// - `ptr..ptr + cap` must be the pointer range returned by
+    /// - `ptr..ptr + cap` must be the pointer range returned from
     ///   <code>([try_](BumpAllocatorExt::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorExt::prepare_slice_allocation)</code>.
     /// - no allocation, grow, shrink or deallocate must have taken place since then
     /// - no resets must have taken place since then
     /// - `len` must be less than or equal to `cap`
+    ///
+    /// [`allocate_prepared`]: BumpAllocator::allocate_prepared
     unsafe fn allocate_prepared_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
 
     /// A specialized version of [`allocate_prepared_rev`].
     ///
-    /// [`allocate_prepared_rev`]: crate::BumpAllocator::allocate_prepared_rev
+    /// Allocates part of the free space returned from a
+    /// <code>([try_](BumpAllocatorExt::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorExt::prepare_slice_allocation)</code>
+    /// call.
     ///
     /// # Safety
-    ///
-    /// - `ptr - cap..ptr` must be the pointer range returned by
+    /// - `ptr - cap..ptr` must be the pointer range returned from
     ///   <code>([try_](BumpAllocatorExt::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorExt::prepare_slice_allocation)</code>.
     /// - no allocation, grow, shrink or deallocate must have taken place since then
     /// - no resets must have taken place since then
     /// - `len` must be less than or equal to `cap`
+    ///
+    /// [`allocate_prepared_rev`]: crate::BumpAllocator::allocate_prepared_rev
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
 }
 

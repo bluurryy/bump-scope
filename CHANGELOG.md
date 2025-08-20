@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Improve `BumpAllocatorExt` methods documentation
+
 ### Fixed
 
 - Don't shrink `BumpVec` / `BumpString` with a `WithoutShrink` allocator (fixed `BumpAllocator::shrink_slice` to do nothing)
