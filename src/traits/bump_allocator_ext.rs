@@ -43,18 +43,14 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     ///
     /// Panics if the allocation fails.
     #[cfg(feature = "panic-on-alloc")]
-    fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
-        allocate_layout(self, layout)
-    }
+    fn allocate_layout(&self, layout: Layout) -> NonNull<u8>;
 
     /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
     ///
     /// # Errors
     ///
     /// Errors if the allocation fails.
-    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
-        try_allocate_layout(self, layout)
-    }
+    fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError>;
 
     /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
     ///
@@ -62,18 +58,14 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     ///
     /// Panics if the allocation fails.
     #[cfg(feature = "panic-on-alloc")]
-    fn allocate_sized<T>(&self) -> NonNull<T> {
-        allocate_sized(self)
-    }
+    fn allocate_sized<T>(&self) -> NonNull<T>;
 
     /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
     ///
     /// # Errors
     ///
     /// Errors if the allocation fails.
-    fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError> {
-        try_allocate_sized(self)
-    }
+    fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>;
 
     /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
     ///
@@ -81,18 +73,14 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     ///
     /// Panics if the allocation fails.
     #[cfg(feature = "panic-on-alloc")]
-    fn allocate_slice<T>(&self, len: usize) -> NonNull<T> {
-        allocate_slice(self, len)
-    }
+    fn allocate_slice<T>(&self, len: usize) -> NonNull<T>;
 
     /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
     ///
     /// # Errors
     ///
     /// Errors if the allocation fails.
-    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError> {
-        try_allocate_slice(self, len)
-    }
+    fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError>;
 
     /// A specialized version of [`shrink`](crate::alloc::Allocator::shrink).
     ///
@@ -118,9 +106,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     ///
     /// [shrink]: crate::alloc::Allocator::shrink
     /// [array]: Layout::array
-    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        unsafe { shrink_slice(self, ptr, old_len, new_len) }
-    }
+    unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>;
 
     /// A specialized version of [`prepare_allocation`].
     ///
