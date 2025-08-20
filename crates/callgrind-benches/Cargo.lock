@@ -51,7 +51,7 @@ dependencies = [
 
 [[package]]
 name = "bump-scope"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "allocator-api2 0.2.21",
  "allocator-api2 0.3.0",
