@@ -23,7 +23,7 @@ use crate::{handle_alloc_error, panic_on_error, private::capacity_overflow};
 /// It also provides [`stats`] to get a `Bump` specific `Stats` object.
 ///
 /// **Note:** This trait is not automatically implemented for all `BumpAllocator`s
-/// because it is meant to provide spezialized methods and types for better performance.
+/// because it is meant to provide specialized methods and types for better performance.
 /// A blanket implementation for all `BumpAllocators` would defeat that purpose, at least
 /// until some form of specialization is stabilized.
 ///
