@@ -886,7 +886,8 @@ unsafe impl<B: BumpAllocatorExt> BumpAllocatorExt for WithoutShrink<B> {
 
     #[inline(always)]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        unsafe { B::shrink_slice(&self.0, ptr, old_len, new_len) }
+        _ = (ptr, old_len, new_len);
+        None
     }
 
     #[inline(always)]
