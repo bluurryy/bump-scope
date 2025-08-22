@@ -21,7 +21,7 @@ where
 }
 
 #[inline(always)]
-pub(crate) unsafe fn deallocate<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>(
+pub(crate) unsafe fn deallocate<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
     bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     ptr: NonNull<u8>,
     layout: Layout,
@@ -38,7 +38,7 @@ pub(crate) unsafe fn deallocate<const MIN_ALIGN: usize, const UP: bool, const GU
 }
 
 #[inline(always)]
-unsafe fn deallocate_assume_last<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>(
+unsafe fn deallocate_assume_last<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
     bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     ptr: NonNull<u8>,
     layout: Layout,
@@ -60,7 +60,7 @@ unsafe fn deallocate_assume_last<const MIN_ALIGN: usize, const UP: bool, const G
 }
 
 #[inline(always)]
-unsafe fn is_last_and_allocated<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, A>(
+unsafe fn is_last_and_allocated<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
     bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
     ptr: NonNull<u8>,
     layout: Layout,
