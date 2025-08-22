@@ -1068,7 +1068,10 @@ where
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool> NoDrop for BumpScope<'_, A, MIN_ALIGN, UP> {}
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> NoDrop
+    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+{
+}
 
 /// Methods to allocate. Available as fallible or infallible.
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
