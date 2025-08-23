@@ -3,7 +3,7 @@ use std::{
     vec::Vec,
 };
 
-use crate::{Bump, BumpVec, MutBumpVec, MutBumpVecRev};
+use crate::{BumpVec, MutBumpVec, MutBumpVecRev, tests::Bump};
 
 #[test]
 fn grow_vec() {

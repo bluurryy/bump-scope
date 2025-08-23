@@ -6,8 +6,10 @@ use std::ops::{Bound, RangeBounds};
 use std::string::String as StdString;
 use std::{panic, str};
 
-use bump_scope::{Bump, bump_format, bump_vec};
+use bump_scope::alloc::Global;
+use bump_scope::{bump_format, bump_vec};
 
+type Bump<A = Global> = bump_scope::Bump<A, 1, true, true>;
 type Vec<T, A = Bump> = bump_scope::BumpVec<T, A>;
 type String<A> = bump_scope::BumpString<A>;
 

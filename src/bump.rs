@@ -479,7 +479,7 @@ where
 }
 
 /// Methods for a [*guaranteed allocated*](crate#what-does-guaranteed-allocated-mean) `Bump`.
-impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP>
+impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP, true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
@@ -500,7 +500,7 @@ where
     /// assert_eq!(bump.stats().allocated(), 0);
     /// ```
     #[inline(always)]
-    pub fn scoped<R>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP>) -> R) -> R {
+    pub fn scoped<R>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, true>) -> R) -> R {
         let mut guard = self.scope_guard();
         f(guard.scope())
     }
@@ -549,7 +549,7 @@ where
     #[inline(always)]
     pub fn scoped_aligned<const NEW_MIN_ALIGN: usize, R>(
         &mut self,
-        f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP>) -> R,
+        f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP, true>) -> R,
     ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
@@ -632,7 +632,7 @@ where
     #[inline(always)]
     pub fn aligned<'a, const NEW_MIN_ALIGN: usize, R>(
         &'a mut self,
-        f: impl FnOnce(BumpScope<'a, A, NEW_MIN_ALIGN, UP>) -> R,
+        f: impl FnOnce(BumpScope<'a, A, NEW_MIN_ALIGN, UP, true>) -> R,
     ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
@@ -1127,7 +1127,10 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn into_guaranteed_allocated(self, f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP>) -> Bump<A, MIN_ALIGN, UP> {
+    pub fn into_guaranteed_allocated(
+        self,
+        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true>,
+    ) -> Bump<A, MIN_ALIGN, UP, true> {
         self.as_scope().ensure_allocated(f);
         unsafe { transmute(self) }
     }
@@ -1188,8 +1191,8 @@ where
     #[inline(always)]
     pub fn try_into_guaranteed_allocated(
         self,
-        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP>, AllocError>,
-    ) -> Result<Bump<A, MIN_ALIGN, UP>, AllocError> {
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true>, AllocError>,
+    ) -> Result<Bump<A, MIN_ALIGN, UP, true>, AllocError> {
         self.as_scope().try_ensure_allocated(f)?;
         Ok(unsafe { transmute(self) })
     }
@@ -1224,7 +1227,10 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn as_guaranteed_allocated(&self, f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP>) -> &Bump<A, MIN_ALIGN, UP> {
+    pub fn as_guaranteed_allocated(
+        &self,
+        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true>,
+    ) -> &Bump<A, MIN_ALIGN, UP, true> {
         self.as_scope().ensure_allocated(f);
         unsafe { transmute_ref(self) }
     }
@@ -1262,8 +1268,8 @@ where
     #[inline(always)]
     pub fn try_as_guaranteed_allocated(
         &self,
-        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP>, AllocError>,
-    ) -> Result<&Bump<A, MIN_ALIGN, UP>, AllocError> {
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true>, AllocError>,
+    ) -> Result<&Bump<A, MIN_ALIGN, UP, true>, AllocError> {
         self.as_scope().try_ensure_allocated(f)?;
         Ok(unsafe { transmute_ref(self) })
     }
@@ -1324,8 +1330,8 @@ where
     #[cfg(feature = "panic-on-alloc")]
     pub fn as_mut_guaranteed_allocated(
         &mut self,
-        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP>,
-    ) -> &mut Bump<A, MIN_ALIGN, UP> {
+        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true>,
+    ) -> &mut Bump<A, MIN_ALIGN, UP, true> {
         self.as_scope().ensure_allocated(f);
         unsafe { transmute_mut(self) }
     }
@@ -1387,8 +1393,8 @@ where
     #[inline(always)]
     pub fn try_as_mut_guaranteed_allocated(
         &mut self,
-        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP>, AllocError>,
-    ) -> Result<&mut Bump<A, MIN_ALIGN, UP>, AllocError> {
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true>, AllocError>,
+    ) -> Result<&mut Bump<A, MIN_ALIGN, UP, true>, AllocError> {
         self.as_scope().try_ensure_allocated(f)?;
         Ok(unsafe { transmute_mut(self) })
     }

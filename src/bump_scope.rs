@@ -141,7 +141,7 @@ where
 
 /// Methods for a [*guaranteed allocated*](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
 #[allow(clippy::needless_lifetimes)]
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpScope<'a, A, MIN_ALIGN, UP, true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -168,7 +168,7 @@ where
     /// assert_eq!(bump.stats().allocated(), 0);
     /// ```
     #[inline(always)]
-    pub fn scoped<R>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP>) -> R) -> R {
+    pub fn scoped<R>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, true>) -> R) -> R {
         let mut guard = self.scope_guard();
         f(guard.scope())
     }
@@ -217,7 +217,7 @@ where
     #[inline(always)]
     pub fn scoped_aligned<const NEW_MIN_ALIGN: usize, R>(
         &mut self,
-        f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP>) -> R,
+        f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP, true>) -> R,
     ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
@@ -302,7 +302,10 @@ where
     /// dbg!(foo, bar, baz);
     /// ```
     #[inline(always)]
-    pub fn aligned<const NEW_MIN_ALIGN: usize, R>(&mut self, f: impl FnOnce(BumpScope<'a, A, NEW_MIN_ALIGN, UP>) -> R) -> R
+    pub fn aligned<const NEW_MIN_ALIGN: usize, R>(
+        &mut self,
+        f: impl FnOnce(BumpScope<'a, A, NEW_MIN_ALIGN, UP, true>) -> R,
+    ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -748,7 +751,10 @@ where
     /// Panics if the closure panics.
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn into_guaranteed_allocated(self, f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP>) -> BumpScope<'a, A, MIN_ALIGN, UP> {
+    pub fn into_guaranteed_allocated(
+        self,
+        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true>,
+    ) -> BumpScope<'a, A, MIN_ALIGN, UP, true> {
         self.ensure_allocated(f);
         unsafe { transmute(self) }
     }
@@ -763,8 +769,8 @@ where
     #[inline(always)]
     pub fn try_into_guaranteed_allocated(
         self,
-        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP>, AllocError>,
-    ) -> Result<BumpScope<'a, A, MIN_ALIGN, UP>, AllocError> {
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true>, AllocError>,
+    ) -> Result<BumpScope<'a, A, MIN_ALIGN, UP, true>, AllocError> {
         self.try_ensure_allocated(f)?;
         Ok(unsafe { transmute(self) })
     }
@@ -778,7 +784,10 @@ where
     /// Panics if the closure panics.
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn as_guaranteed_allocated(&self, f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP>) -> &BumpScope<'a, A, MIN_ALIGN, UP> {
+    pub fn as_guaranteed_allocated(
+        &self,
+        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true>,
+    ) -> &BumpScope<'a, A, MIN_ALIGN, UP, true> {
         self.ensure_allocated(f);
         unsafe { transmute_ref(self) }
     }
@@ -793,8 +802,8 @@ where
     #[inline(always)]
     pub fn try_as_guaranteed_allocated(
         &self,
-        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP>, AllocError>,
-    ) -> Result<&BumpScope<'a, A, MIN_ALIGN, UP>, AllocError> {
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true>, AllocError>,
+    ) -> Result<&BumpScope<'a, A, MIN_ALIGN, UP, true>, AllocError> {
         self.try_ensure_allocated(f)?;
         Ok(unsafe { transmute_ref(self) })
     }
@@ -810,8 +819,8 @@ where
     #[cfg(feature = "panic-on-alloc")]
     pub fn as_mut_guaranteed_allocated(
         &mut self,
-        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP>,
-    ) -> &mut BumpScope<'a, A, MIN_ALIGN, UP> {
+        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true>,
+    ) -> &mut BumpScope<'a, A, MIN_ALIGN, UP, true> {
         self.ensure_allocated(f);
         unsafe { transmute_mut(self) }
     }
@@ -826,15 +835,15 @@ where
     #[inline(always)]
     pub fn try_as_mut_guaranteed_allocated(
         &mut self,
-        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP>, AllocError>,
-    ) -> Result<&mut BumpScope<'a, A, MIN_ALIGN, UP>, AllocError> {
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true>, AllocError>,
+    ) -> Result<&mut BumpScope<'a, A, MIN_ALIGN, UP, true>, AllocError> {
         self.try_ensure_allocated(f)?;
         Ok(unsafe { transmute_mut(self) })
     }
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub(crate) fn ensure_allocated(&self, f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP>) {
+    pub(crate) fn ensure_allocated(&self, f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true>) {
         if self.chunk.get().is_unallocated() {
             unsafe {
                 self.chunk.set(RawChunk::from_header(f().into_raw().cast()));
@@ -845,7 +854,7 @@ where
     #[inline(always)]
     pub(crate) fn try_ensure_allocated(
         &self,
-        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP>, AllocError>,
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true>, AllocError>,
     ) -> Result<(), AllocError> {
         if self.chunk.get().is_unallocated() {
             unsafe {

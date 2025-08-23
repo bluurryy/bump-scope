@@ -8,7 +8,7 @@
 
 use std::{string::String, vec};
 
-use crate::{Bump, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev, bump_vec};
+use crate::{BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev, bump_vec, tests::Bump};
 
 #[test]
 fn test_std() {

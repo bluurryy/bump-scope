@@ -4,7 +4,7 @@ use std::{
     vec::Vec,
 };
 
-use crate::{Bump, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev};
+use crate::{BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev, tests::Bump};
 
 fn items() -> impl Iterator<Item = [String; 3]> {
     // would use `array_chunks`, but it's not stable

@@ -66,7 +66,7 @@ where
 {
     #[inline(always)]
     #[allow(clippy::needless_pass_by_ref_mut)]
-    pub(crate) fn new(bump: &'a mut BumpScope<'_, A, MIN_ALIGN, UP>) -> Self {
+    pub(crate) fn new(bump: &'a mut BumpScope<'_, A, MIN_ALIGN, UP, true>) -> Self {
         unsafe { Self::new_unchecked(bump.chunk.get()) }
     }
 
@@ -81,7 +81,7 @@ where
 
     /// Returns a new `BumpScope`.
     #[inline(always)]
-    pub fn scope(&mut self) -> BumpScope<'_, A, MIN_ALIGN, UP> {
+    pub fn scope(&mut self) -> BumpScope<'_, A, MIN_ALIGN, UP, true> {
         unsafe { BumpScope::new_unchecked(self.chunk) }
     }
 
@@ -152,7 +152,7 @@ where
 {
     #[inline(always)]
     #[allow(clippy::needless_pass_by_ref_mut)]
-    pub(crate) fn new(bump: &'a mut Bump<A, MIN_ALIGN, UP>) -> Self {
+    pub(crate) fn new(bump: &'a mut Bump<A, MIN_ALIGN, UP, true>) -> Self {
         unsafe { Self::new_unchecked(bump.chunk.get()) }
     }
 
@@ -166,7 +166,7 @@ where
 
     /// Returns a new `BumpScope`.
     #[inline(always)]
-    pub fn scope(&mut self) -> BumpScope<'_, A, MIN_ALIGN, UP> {
+    pub fn scope(&mut self) -> BumpScope<'_, A, MIN_ALIGN, UP, true> {
         unsafe { BumpScope::new_unchecked(self.chunk) }
     }
 

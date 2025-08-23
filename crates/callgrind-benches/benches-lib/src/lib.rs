@@ -10,7 +10,7 @@ mod wrapper {
         use ::bump_scope::{MinimumAlignment, SupportedMinimumAlignment};
 
         #[repr(transparent)]
-        pub struct Bump<const MIN_ALIGN: usize = 1>(bump_scope::Bump<bump_scope::alloc::Global, MIN_ALIGN, true>)
+        pub struct Bump<const MIN_ALIGN: usize = 1>(bump_scope::Bump<bump_scope::alloc::Global, MIN_ALIGN, true, true>)
         where
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment;
 
@@ -71,7 +71,7 @@ mod wrapper {
         use ::bump_scope::{MinimumAlignment, SupportedMinimumAlignment};
 
         #[repr(transparent)]
-        pub struct Bump<const MIN_ALIGN: usize = 1>(bump_scope::Bump<bump_scope::alloc::Global, MIN_ALIGN, false>)
+        pub struct Bump<const MIN_ALIGN: usize = 1>(bump_scope::Bump<bump_scope::alloc::Global, MIN_ALIGN, false, true>)
         where
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment;
 

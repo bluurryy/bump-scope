@@ -9,10 +9,7 @@ use core::{
 };
 use std::sync::{Mutex, PoisonError};
 
-use bump_scope::{
-    Bump,
-    alloc::{AllocError, Allocator},
-};
+use bump_scope::alloc::{AllocError, Allocator};
 
 #[repr(C, align(16))]
 struct StaticAllocator<const SIZE: usize> {
@@ -105,10 +102,12 @@ unsafe impl<const SIZE: usize> Allocator for StaticAllocator<SIZE> {
     }
 }
 
+type Bump<A> = bump_scope::Bump<A, 1, true, true>;
+
 fn on_stack() {
     let memory = StaticAllocator::<1024>::new();
 
-    let bump = Bump::<_, 1, true>::new_in(&memory);
+    let bump = Bump::new_in(&memory);
     assert_eq!(bump.stats().size(), 1024);
 
     let str = bump.alloc_str("It works!");
@@ -122,7 +121,7 @@ fn on_static() {
     let guard = MEMORY.lock().unwrap_or_else(PoisonError::into_inner);
     let memory = &*guard;
 
-    let bump = Bump::<_, 1, true>::new_in(memory);
+    let bump = Bump::new_in(memory);
     assert_eq!(bump.stats().size(), 1024);
 
     let str = bump.alloc_str("It works!");

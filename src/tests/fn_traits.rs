@@ -1,6 +1,6 @@
 use std::{panic::catch_unwind, string::String};
 
-use crate::{Bump, BumpBox};
+use crate::{BumpBox, tests::Bump};
 
 #[test]
 fn fn_once() {

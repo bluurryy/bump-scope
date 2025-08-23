@@ -11,10 +11,10 @@ use std::mem::swap;
 use std::panic::catch_unwind;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use bump_scope::Bump;
 use bump_scope::alloc::{AllocError, Allocator, Global};
 
-type Vec<T, A = bump_scope::Bump> = bump_scope::MutBumpVecRev<T, A>;
+type Bump<A = Global> = bump_scope::Bump<A, 1, true, true>;
+type Vec<T, A = Bump> = bump_scope::MutBumpVecRev<T, A>;
 
 trait VecNew: Sized {
     fn new() -> Self;
@@ -41,7 +41,7 @@ macro_rules! vec {
         bump_scope::mut_bump_vec_rev![in $($tt)*]
     };
     ($($tt:tt)*) => {
-        bump_scope::mut_bump_vec_rev![in <bump_scope::Bump>::default(); $($tt)*]
+        bump_scope::mut_bump_vec_rev![in <Bump>::default(); $($tt)*]
     };
 }
 

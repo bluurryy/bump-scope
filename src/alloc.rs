@@ -457,9 +457,11 @@ where
 }
 
 // Used for static assertions.
+#[cfg(test)]
 #[derive(Clone)]
 pub(crate) struct NoopAllocator;
 
+#[cfg(test)]
 unsafe impl Allocator for NoopAllocator {
     fn allocate(&self, _layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         Err(AllocError)

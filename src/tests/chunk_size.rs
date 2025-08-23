@@ -5,9 +5,9 @@ use core::{alloc::Layout, ptr::NonNull};
 use std::convert::Infallible;
 
 use crate::{
-    Bump,
     alloc::{AllocError, Allocator, Global},
     chunk_size::AssumedMallocOverhead,
+    tests::Bump,
 };
 
 use super::either_way;

@@ -3,10 +3,7 @@
 
 use std::{alloc::Layout, cell::Cell, ptr::NonNull};
 
-use bump_scope::{
-    Bump,
-    alloc::{AllocError, Allocator, Global},
-};
+use bump_scope::alloc::{AllocError, Allocator, Global};
 
 struct Limited<A> {
     current: Cell<usize>,
@@ -98,11 +95,13 @@ where
     }
 }
 
+type Bump<A> = bump_scope::Bump<A, 1, true, true>;
+
 #[test]
 fn main() {
     let allocator = Limited::new_in(1024, Global);
 
-    let bump = Bump::<_, 1, true>::with_size_in(1024, &allocator);
+    let bump = Bump::with_size_in(1024, &allocator);
 
     // allocate the entire remaining capacity
     let remaining = bump.stats().remaining();

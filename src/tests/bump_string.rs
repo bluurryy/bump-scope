@@ -1,4 +1,4 @@
-use crate::{Bump, BumpString, BumpVec, alloc::Global};
+use crate::{BumpString, BumpVec, alloc::Global, tests::Bump};
 
 use super::either_way;
 

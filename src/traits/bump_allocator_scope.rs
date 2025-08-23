@@ -1,6 +1,6 @@
 use crate::{
-    BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment, MutBumpAllocatorScope, SupportedMinimumAlignment,
-    WithoutDealloc, WithoutShrink,
+    BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc,
+    WithoutShrink,
     traits::{assert_dyn_compatible, assert_implements},
 };
 

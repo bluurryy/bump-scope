@@ -1,6 +1,6 @@
 use std::{dbg, fmt::Debug, future::Future};
 
-use crate::{Bump, BumpBox};
+use crate::{BumpBox, tests::Bump};
 
 #[test]
 fn slice() {
