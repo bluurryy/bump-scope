@@ -9,8 +9,11 @@ use std::{
 };
 
 use crate::{
-    Bump, BumpAllocator, BumpAllocatorExt, BumpAllocatorScope, BumpScope, BumpVec, MutBumpAllocator, MutBumpAllocatorScope,
-    WithoutDealloc, WithoutShrink, alloc::Global, bump_vec, tests::expect_no_panic,
+    BumpAllocator, BumpAllocatorExt, BumpAllocatorScope, BumpVec, MutBumpAllocator, MutBumpAllocatorScope, WithoutDealloc,
+    WithoutShrink,
+    alloc::Global,
+    bump_vec,
+    tests::{Bump, BumpScope, expect_no_panic},
 };
 
 use super::either_way;

@@ -62,13 +62,28 @@ mod unaligned_collection;
 mod unallocated;
 mod vec;
 
+pub(crate) type Bump<
+    A = Global,
+    const MIN_ALIGN: usize = 1,
+    const UP: bool = true,
+    const GUARANTEED_ALLOCATED: bool = true,
+> = crate::Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>;
+
+pub(crate) type BumpScope<
+    'a,
+    A = Global,
+    const MIN_ALIGN: usize = 1,
+    const UP: bool = true,
+    const GUARANTEED_ALLOCATED: bool = true,
+> = crate::BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>;
+
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 
 const MALLOC_OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
 const OVERHEAD: usize = MALLOC_OVERHEAD + size_of::<ChunkHeader<Global>>();
 
 use crate::{
-    Bump, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev,
+    BumpBox, BumpString, BumpVec, ChunkHeader, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev,
     SizedTypeProperties, SupportedMinimumAlignment,
     alloc::{AllocError, Allocator, Global as System, Global},
     chunk_size::{AssumedMallocOverhead, ChunkSize},

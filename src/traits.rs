@@ -1,5 +1,3 @@
-use crate::alloc::Allocator;
-
 mod bump_allocator;
 pub(crate) mod bump_allocator_ext;
 mod bump_allocator_scope;
@@ -31,13 +29,24 @@ pub(crate) use assert_dyn_compatible;
 
 macro_rules! assert_implements {
     ([$($what:tt)*] $($ty:ty)*) => {
+        #[cfg(test)]
         const _: () = {
+            #[allow(unused_imports)]
+            use crate::{
+                alloc::Allocator,
+                traits::{
+                    BumpAllocatorScope,
+                    MutBumpAllocator,
+                    MutBumpAllocatorScope,
+                }
+            };
+
             #[allow(dead_code)]
             type A = crate::alloc::NoopAllocator;
             #[allow(dead_code)]
-            type Bump = crate::Bump<A>;
+            type Bump = crate::Bump<A, 1, true, true>;
             #[allow(dead_code)]
-            type BumpScope<'a> = crate::BumpScope<'a, A>;
+            type BumpScope<'a> = crate::BumpScope<'a, A, 1, true, true>;
             #[allow(clippy::extra_unused_lifetimes)]
             const fn implements<'a, What: $($what)*>() {}
             $(

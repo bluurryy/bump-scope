@@ -2,14 +2,14 @@ use std::{alloc::Layout, ops::Range, ptr::NonNull, rc::Rc};
 
 use arbitrary::{Arbitrary, Unstructured};
 use bump_scope::{
-    Bump, MinimumAlignment, SupportedMinimumAlignment,
+    MinimumAlignment, SupportedMinimumAlignment,
     alloc::{Allocator, Global},
 };
 use core::fmt::Debug;
 use log::debug;
 use rangemap::RangeSet;
 
-use crate::{MaybeFailingAllocator, MinAlign, RcAllocator, debug_dbg};
+use crate::{Bump, MaybeFailingAllocator, MinAlign, RcAllocator, debug_dbg};
 
 #[derive(Debug, Arbitrary)]
 pub struct Fuzz {

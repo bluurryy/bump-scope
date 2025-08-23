@@ -2,7 +2,7 @@
 
 use core::{mem, ops::Range};
 
-use fuzzing_support::bump_scope::Bump;
+use fuzzing_support::Bump;
 use libfuzzer_sys::{
     arbitrary::{Arbitrary, Unstructured},
     fuzz_target,

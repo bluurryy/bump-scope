@@ -8,7 +8,7 @@ use std::{
     thread_local,
 };
 
-use crate::{Bump, BumpVec, MutBumpVec, MutBumpVecRev, bump_vec, mut_bump_vec, mut_bump_vec_rev};
+use crate::{BumpVec, MutBumpVec, MutBumpVecRev, bump_vec, mut_bump_vec, mut_bump_vec_rev, tests::Bump};
 
 macro_rules! zst_or_not {
     (

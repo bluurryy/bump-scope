@@ -10,8 +10,9 @@ use std::{
 };
 
 use crate::{
-    Bump, BumpAllocatorExt, BumpBox, BumpVec, FixedBumpVec, MutBumpAllocatorExt, MutBumpVec, MutBumpVecRev,
+    BumpAllocatorExt, BumpBox, BumpVec, FixedBumpVec, MutBumpAllocatorExt, MutBumpVec, MutBumpVecRev,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
+    tests::Bump,
     unsize_bump_box,
 };
 

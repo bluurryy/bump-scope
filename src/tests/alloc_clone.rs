@@ -5,7 +5,7 @@ use std::{
     vec::Vec,
 };
 
-use crate::Bump;
+use crate::tests::Bump;
 
 #[test]
 fn test_slice() {

@@ -1,9 +1,8 @@
 use core::alloc::Layout;
 
 use crate::{
-    Bump,
     alloc::{Allocator, Global},
-    tests::either_way,
+    tests::{Bump, either_way},
 };
 
 either_way! {

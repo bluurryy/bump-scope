@@ -5,9 +5,9 @@ use std::{
 };
 
 use crate::{
-    Bump, BumpScope, MutBumpAllocator, MutBumpAllocatorExt, MutBumpAllocatorScope, MutBumpAllocatorScopeExt, MutBumpVec,
+    MutBumpAllocator, MutBumpAllocatorExt, MutBumpAllocatorScope, MutBumpAllocatorScopeExt, MutBumpVec,
     alloc::{Allocator, Global},
-    tests::either_way,
+    tests::{Bump, BumpScope, either_way},
 };
 
 either_way! {

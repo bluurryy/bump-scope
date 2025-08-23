@@ -3,9 +3,9 @@
 use std::{alloc::Layout, fmt::Debug, mem};
 
 use arbitrary::Arbitrary;
-use bump_scope::{Bump, MinimumAlignment, SupportedMinimumAlignment, alloc::Global};
+use bump_scope::{MinimumAlignment, SupportedMinimumAlignment, alloc::Global};
 
-use crate::{MinAlign, UpTo};
+use crate::{Bump, MinAlign, UpTo};
 
 #[derive(Debug, Arbitrary)]
 pub struct Fuzz {

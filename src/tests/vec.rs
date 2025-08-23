@@ -2,7 +2,7 @@
 
 use allocator_api2_02::{boxed::Box, vec::Vec};
 
-use crate::{Bump, alloc::Global};
+use crate::{alloc::Global, tests::Bump};
 
 use super::either_way;
 

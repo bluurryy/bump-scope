@@ -3,7 +3,7 @@ use std::{
     vec::Vec,
 };
 
-use crate::{Bump, BumpAllocatorExt, BumpVec, MutBumpAllocatorExt, MutBumpVec};
+use crate::{BumpAllocatorExt, BumpVec, MutBumpAllocatorExt, MutBumpVec, tests::Bump};
 
 fn number_strings(numbers: impl IntoIterator<Item = i32>) -> impl Iterator<Item = String> {
     numbers.into_iter().map(|i| i.to_string())

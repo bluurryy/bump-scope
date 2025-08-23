@@ -4,7 +4,7 @@
 use std::{alloc::Layout, cell::Cell, mem::swap, ops::Deref, ptr::NonNull, rc::Rc};
 
 use arbitrary::{Arbitrary, Unstructured};
-use bump_scope::alloc::{AllocError, Allocator};
+use bump_scope::alloc::{AllocError, Allocator, Global};
 
 pub use arbitrary;
 pub use bump_scope;
@@ -17,6 +17,8 @@ pub mod bump_up;
 pub mod bump_vec;
 pub mod chunk_size;
 mod from_bump_scope;
+
+pub type Bump<A = Global, const MIN_ALIGN: usize = 1, const UP: bool = true> = bump_scope::Bump<A, MIN_ALIGN, UP, true>;
 
 #[derive(Debug, Clone)]
 struct RcAllocator<A> {

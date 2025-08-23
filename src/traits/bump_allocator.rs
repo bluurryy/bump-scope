@@ -1,8 +1,7 @@
 use core::{alloc::Layout, ops::Range, ptr::NonNull};
 
 use crate::{
-    BaseAllocator, Bump, BumpAllocatorScope, BumpScope, Checkpoint, MinimumAlignment, MutBumpAllocator,
-    MutBumpAllocatorScope, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    BaseAllocator, Bump, BumpScope, Checkpoint, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
     alloc::{AllocError, Allocator},
     layout::CustomLayout,
     stats::AnyStats,
