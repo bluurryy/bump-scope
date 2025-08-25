@@ -11,10 +11,12 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  format:
+  fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all -- --check
       - run: cd crates/fuzzing-support && cargo fmt --all -- --check
       - run: cd crates/test-fallibility && cargo fmt --all -- --check
@@ -22,43 +24,52 @@ jobs:
       - run: cd crates/callgrind-benches && cargo fmt --all -- --check
       - run: cd crates/criterion-benches && cargo fmt --all -- --check
       - run: cd fuzz && cargo fmt --all -- --check
-  check-msrv:
+  clippy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.85.1
-      - run: cargo check --no-default-features
-      - run: cargo check --features serde,zerocopy-08,allocator-api2-02
-  check-stable:
-    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -Dwarnings
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with: 
           components: clippy
-      - run: cargo clippy --tests --no-default-features
-      - run: cargo clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03
-  check-nightly:
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy -Dwarnings --tests --all-features --no-default-features
+      - run: cargo clippy -Dwarnings --tests --all-features --features serde,bytemuck,zerocopy-08,allocator-api2-02,allocator-api2-03
+  clippy-nightly:
+    needs: clippy
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -Dwarnings
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
         with: 
           components: clippy
-      - run: cargo clippy --tests --no-default-features
-      - run: cargo clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03
-      - run: cargo clippy --tests --all-features
-      - run: cd crates/test-hashbrown && cargo clippy
-      - run: cd crates/test-hashbrown && cargo clippy --all-features
-      - run: cd crates/tests-from-std && cargo clippy --tests
-      - run: cd crates/test-fallibility && cargo clippy
-      - run: cd crates/callgrind-benches && cargo clippy --tests --benches --workspace
-      - run: cd crates/criterion-benches && cargo clippy --tests --benches
-  test-stable:
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --tests --no-default-features -- -Dwarnings
+      - run: cargo clippy --tests --features serde,bytemuck,zerocopy-08,allocator-api2-02,allocator-api2-03 -- -Dwarnings
+      - run: cargo clippy --tests --all-features -- -Dwarnings
+      - run: cd crates/test-hashbrown && cargo clippy -- -Dwarnings
+      - run: cd crates/test-hashbrown && cargo clippy --all-features -- -Dwarnings
+      - run: cd crates/tests-from-std && cargo clippy --tests -- -Dwarnings
+      - run: cd crates/test-fallibility && cargo clippy -- -Dwarnings
+      - run: cd crates/callgrind-benches && cargo clippy --tests --benches --workspace -- -Dwarnings
+      - run: cd crates/criterion-benches && cargo clippy --tests --benches -- -Dwarnings
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.85.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --no-default-features
+      - run: cargo check --features serde,zerocopy-08,allocator-api2-02
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - run: cargo test --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03
   test-nightly:
     runs-on: ubuntu-latest
@@ -69,6 +80,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: miri
+      - uses: Swatinem/rust-cache@v2
       - run: cargo test --all-features
       - run: cargo miri test --all-features
       - run: cd crates/test-hashbrown && cargo test
@@ -84,8 +96,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@cargo-hack
       - uses: taiki-e/install-action@cargo-minimal-versions
-      - uses: Swatinem/rust-cache@v2
       - run: cargo minimal-versions check
       - run: cargo minimal-versions check --all-features
