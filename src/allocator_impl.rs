@@ -68,6 +68,10 @@ unsafe fn deallocate_assume_last<
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
+    if !DEALLOCATES {
+        return;
+    }
+
     unsafe {
         debug_assert!(is_last_and_allocated(bump, ptr, layout));
 
@@ -278,7 +282,7 @@ where
         A: BaseAllocator<GUARANTEED_ALLOCATED>,
     {
         unsafe {
-            if is_last_and_allocated(bump, old_ptr, old_layout) {
+            if DEALLOCATES && is_last_and_allocated(bump, old_ptr, old_layout) {
                 let old_pos = bump.chunk.get().pos();
                 deallocate_assume_last(bump, old_ptr, old_layout);
 
