@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Better compile error message for macros when "panic-on-alloc" is disabled
+
 ### Fixed
 
 - Implement `NoDrop` for `BumpScope` regardless of `GUARANTEED_ALLOCATED`

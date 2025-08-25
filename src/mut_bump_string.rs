@@ -49,11 +49,7 @@ macro_rules! mut_bump_format {
         $crate::MutBumpString::new_in($bump)
     }};
     (in $bump:expr, $($arg:tt)*) => {{
-        let mut string = $crate::private::PanicsOnAlloc($crate::MutBumpString::new_in($bump));
-        match $crate::private::core::fmt::Write::write_fmt(&mut string, $crate::private::core::format_args!($($arg)*)) {
-            $crate::private::core::result::Result::Ok(_) => string.0,
-            $crate::private::core::result::Result::Err(_) => $crate::private::format_trait_error(),
-        }
+        $crate::__mut_bump_format_panic_on_alloc!(in $bump, $($arg)*)
     }};
     (try in $bump:expr) => {{
         Ok::<_, $crate::alloc::AllocError>($crate::MutBumpString::new_in($bump))
@@ -64,6 +60,36 @@ macro_rules! mut_bump_format {
             $crate::private::core::result::Result::Ok(_) => $crate::private::core::result::Result::Ok(string),
             $crate::private::core::result::Result::Err(_) => $crate::private::core::result::Result::Err($crate::alloc::AllocError),
         }
+    }};
+}
+
+#[doc(hidden)]
+#[macro_export]
+#[cfg(feature = "panic-on-alloc")]
+macro_rules! __mut_bump_format_panic_on_alloc {
+    (in $bump:expr, $($arg:tt)*) => {{
+        let mut string = $crate::private::PanicsOnAlloc($crate::MutBumpString::new_in($bump));
+        match $crate::private::core::fmt::Write::write_fmt(&mut string, $crate::private::core::format_args!($($arg)*)) {
+            $crate::private::core::result::Result::Ok(_) => string.0,
+            $crate::private::core::result::Result::Err(_) => $crate::private::format_trait_error(),
+        }
+    }};
+}
+
+#[doc(hidden)]
+#[macro_export]
+#[cfg(not(feature = "panic-on-alloc"))]
+macro_rules! __mut_bump_format_panic_on_alloc {
+    (in $bump:expr, $($arg:tt)*) => {{
+        compile_error!(
+            concat!("the potentially panicking api of `mut_bump_format!` is not available\n\
+            help: enable `bump-scope`'s \"panic-on-alloc\" feature or use `try`:\n\
+            `mut_bump_format!(try in ",
+            stringify!($bump),
+            ", ",
+            stringify!($($arg)*),
+            ")`"
+        ))
     }};
 }
 

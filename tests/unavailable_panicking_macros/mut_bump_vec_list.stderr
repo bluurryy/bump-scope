@@ -1,0 +1,9 @@
+error: the potentially panicking api of `mut_bump_vec!` is not available
+       help: enable `bump-scope`'s "panic-on-alloc" feature or use `try`:
+       `mut_bump_vec![try in bump; 1, two, 3]`
+ --> tests/unavailable_panicking_macros/mut_bump_vec_list.rs:4:5
+  |
+4 |     mut_bump_vec![in bump; 1, two, 3]
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `$crate::__mut_bump_vec_panic_on_alloc` which comes from the expansion of the macro `mut_bump_vec` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -19,6 +19,7 @@ check:
   just check-nostd
   just check-fallibility
   just check-mustnt_compile
+  just check-unavailable_panicking_macros
   # regression test making sure hashbrown compiles
   cargo check --tests --features nightly-allocator-api 
 
@@ -58,6 +59,9 @@ check-fallibility:
 
 check-mustnt_compile:
   cargo +stable test --test compile_fail -- --ignored
+  
+check-unavailable_panicking_macros:
+  cargo +stable test --no-default-features --test unavailable_panicking_macros -F alloc
 
 sync-fuzz:
   cp -u src/bumping.rs crates/fuzzing-support/src/from_bump_scope/bumping.rs

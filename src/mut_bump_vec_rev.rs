@@ -85,10 +85,10 @@ macro_rules! mut_bump_vec_rev {
         $crate::MutBumpVecRev::new_in($bump)
     };
     [in $bump:expr; $($values:expr),* $(,)?] => {
-        $crate::MutBumpVecRev::from_owned_slice_in([$($values),*], $bump)
+        $crate::__mut_bump_vec_rev_panic_on_alloc![in $bump; $($values),*]
     };
     [in $bump:expr; $value:expr; $count:expr] => {
-        $crate::MutBumpVecRev::from_elem_in($value, $count, $bump)
+        $crate::__mut_bump_vec_rev_panic_on_alloc![in $bump; $value; $count]
     };
     [try in $bump:expr] => {
         Ok::<_, $crate::alloc::AllocError>($crate::MutBumpVecRev::new_in($bump))
@@ -98,6 +98,48 @@ macro_rules! mut_bump_vec_rev {
     };
     [try in $bump:expr; $value:expr; $count:expr] => {
         $crate::MutBumpVecRev::try_from_elem_in($value, $count, $bump)
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+#[cfg(feature = "panic-on-alloc")]
+macro_rules! __mut_bump_vec_rev_panic_on_alloc {
+    [in $bump:expr; $($values:expr),* $(,)?] => {
+        $crate::MutBumpVecRev::from_owned_slice_in([$($values),*], $bump)
+    };
+    [in $bump:expr; $value:expr; $count:expr] => {
+        $crate::MutBumpVecRev::from_elem_in($value, $count, $bump)
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+#[cfg(not(feature = "panic-on-alloc"))]
+macro_rules! __mut_bump_vec_rev_panic_on_alloc {
+    [in $bump:expr; $($values:expr),* $(,)?] => {
+        compile_error!(
+            concat!("the potentially panicking api of `mut_bump_vec_rev!` is not available\n\
+            help: enable `bump-scope`'s \"panic-on-alloc\" feature or use `try`:\n\
+            `mut_bump_vec_rev![try in ",
+            stringify!($bump),
+            "; ",
+            stringify!($($values),*),
+            "]`"
+        ))
+    };
+    [in $bump:expr; $value:expr; $count:expr] => {
+        compile_error!(
+            concat!("the potentially panicking api of `mut_bump_vec_rev!` is not available\n\
+            help: enable `bump-scope`'s \"panic-on-alloc\" feature or use `try`:\n\
+            `mut_bump_vec_rev![try in ", // TODO: add 4 spaces
+            stringify!($bump),
+            "; ",
+            stringify!($value),
+            "; ",
+            stringify!($count),
+            "]`"
+        ))
     };
 }
 
