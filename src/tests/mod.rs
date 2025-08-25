@@ -67,7 +67,8 @@ pub(crate) type Bump<
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
     const GUARANTEED_ALLOCATED: bool = true,
-> = crate::Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>;
+    const DEALLOCATES: bool = true,
+> = crate::Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>;
 
 pub(crate) type BumpScope<
     'a,
@@ -75,7 +76,8 @@ pub(crate) type BumpScope<
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
     const GUARANTEED_ALLOCATED: bool = true,
-> = crate::BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>;
+    const DEALLOCATES: bool = true,
+> = crate::BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>;
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 
@@ -1092,8 +1094,8 @@ mod doc_layout_claim {
     #![allow(dead_code)]
     use crate::{SizedTypeProperties, alloc::Global};
     use core::{cell::Cell, ptr::NonNull};
-    type Bump = crate::Bump<Global, 1, true, true>;
-    type BumpScope = crate::BumpScope<'static, Global, 1, true, true>;
+    type Bump = crate::Bump<Global, 1, true, true, true>;
+    type BumpScope = crate::BumpScope<'static, Global, 1, true, true, true>;
     type Comparand = Cell<NonNull<()>>;
     const _: () = assert!(Bump::SIZE == Comparand::SIZE && Bump::ALIGN == Comparand::ALIGN);
     const _: () = assert!(BumpScope::SIZE == Comparand::SIZE && BumpScope::ALIGN == Comparand::ALIGN);

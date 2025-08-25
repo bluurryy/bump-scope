@@ -44,9 +44,9 @@ macro_rules! assert_implements {
             #[allow(dead_code)]
             type A = crate::alloc::NoopAllocator;
             #[allow(dead_code)]
-            type Bump = crate::Bump<A, 1, true, true>;
+            type Bump = crate::Bump<A, 1, true, true, true>;
             #[allow(dead_code)]
-            type BumpScope<'a> = crate::BumpScope<'a, A, 1, true, true>;
+            type BumpScope<'a> = crate::BumpScope<'a, A, 1, true, true, true>;
             #[allow(clippy::extra_unused_lifetimes)]
             const fn implements<'a, What: $($what)*>() {}
             $(

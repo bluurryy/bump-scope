@@ -9,8 +9,14 @@ use crate::{
 };
 
 #[inline(always)]
-pub(crate) fn allocate<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+pub(crate) fn allocate<
+    A,
+    const MIN_ALIGN: usize,
+    const UP: bool,
+    const GUARANTEED_ALLOCATED: bool,
+    const DEALLOCATES: bool,
+>(
+    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
     layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
@@ -21,8 +27,14 @@ where
 }
 
 #[inline(always)]
-pub(crate) unsafe fn deallocate<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+pub(crate) unsafe fn deallocate<
+    A,
+    const MIN_ALIGN: usize,
+    const UP: bool,
+    const GUARANTEED_ALLOCATED: bool,
+    const DEALLOCATES: bool,
+>(
+    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
     ptr: NonNull<u8>,
     layout: Layout,
 ) where
@@ -38,8 +50,14 @@ pub(crate) unsafe fn deallocate<A, const MIN_ALIGN: usize, const UP: bool, const
 }
 
 #[inline(always)]
-unsafe fn deallocate_assume_last<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+unsafe fn deallocate_assume_last<
+    A,
+    const MIN_ALIGN: usize,
+    const UP: bool,
+    const GUARANTEED_ALLOCATED: bool,
+    const DEALLOCATES: bool,
+>(
+    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
     ptr: NonNull<u8>,
     layout: Layout,
 ) where
@@ -60,8 +78,14 @@ unsafe fn deallocate_assume_last<A, const MIN_ALIGN: usize, const UP: bool, cons
 }
 
 #[inline(always)]
-unsafe fn is_last_and_allocated<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+unsafe fn is_last_and_allocated<
+    A,
+    const MIN_ALIGN: usize,
+    const UP: bool,
+    const GUARANTEED_ALLOCATED: bool,
+    const DEALLOCATES: bool,
+>(
+    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
     ptr: NonNull<u8>,
     layout: Layout,
 ) -> bool
@@ -82,8 +106,14 @@ where
 }
 
 #[inline(always)]
-pub(crate) unsafe fn grow<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+pub(crate) unsafe fn grow<
+    A,
+    const MIN_ALIGN: usize,
+    const UP: bool,
+    const GUARANTEED_ALLOCATED: bool,
+    const DEALLOCATES: bool,
+>(
+    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -177,8 +207,14 @@ where
 }
 
 #[inline(always)]
-pub(crate) unsafe fn grow_zeroed<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+pub(crate) unsafe fn grow_zeroed<
+    A,
+    const MIN_ALIGN: usize,
+    const UP: bool,
+    const GUARANTEED_ALLOCATED: bool,
+    const DEALLOCATES: bool,
+>(
+    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -202,8 +238,14 @@ where
 /// That's different to bumpalo's shrink implementation, which only shrinks if it can do so with `copy_nonoverlapping`
 /// and doesn't attempt to recover memory if the alignment doesn't fit.
 #[inline(always)]
-pub(crate) unsafe fn shrink<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+pub(crate) unsafe fn shrink<
+    A,
+    const MIN_ALIGN: usize,
+    const UP: bool,
+    const GUARANTEED_ALLOCATED: bool,
+    const DEALLOCATES: bool,
+>(
+    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -215,8 +257,14 @@ where
     /// Called when `new_layout` doesn't fit alignment.
     #[cold]
     #[inline(never)]
-    unsafe fn shrink_unfit<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-        bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+    unsafe fn shrink_unfit<
+        A,
+        const MIN_ALIGN: usize,
+        const UP: bool,
+        const GUARANTEED_ALLOCATED: bool,
+        const DEALLOCATES: bool,
+    >(
+        bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
         old_ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,

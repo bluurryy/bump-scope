@@ -102,7 +102,7 @@ unsafe impl<const SIZE: usize> Allocator for StaticAllocator<SIZE> {
     }
 }
 
-type Bump<A> = bump_scope::Bump<A, 1, true, true>;
+type Bump<A> = bump_scope::Bump<A, 1, true, true, true>;
 
 fn on_stack() {
     let memory = StaticAllocator::<1024>::new();

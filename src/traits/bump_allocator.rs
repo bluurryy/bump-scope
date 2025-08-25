@@ -15,16 +15,16 @@ impl<B: Sealed + ?Sized> Sealed for &mut B {}
 impl<B: Sealed> Sealed for WithoutDealloc<B> {}
 impl<B: Sealed> Sealed for WithoutShrink<B> {}
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Sealed
-    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Sealed
+    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Sealed
-    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Sealed
+    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -301,8 +301,8 @@ unsafe impl<B: BumpAllocator> BumpAllocator for WithoutShrink<B> {
     }
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
-    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
+    BumpAllocator for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -338,8 +338,8 @@ where
     }
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpAllocator
-    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
+    BumpAllocator for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -368,8 +368,9 @@ where
             const MIN_ALIGN: usize,
             const UP: bool,
             const GUARANTEED_ALLOCATED: bool,
+            const DEALLOCATES: bool,
         >(
-            this: &BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+            this: &BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
             layout: Layout,
         ) -> Result<Range<NonNull<u8>>, AllocError>
         where
