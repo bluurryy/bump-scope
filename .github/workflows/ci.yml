@@ -101,3 +101,21 @@ jobs:
       - uses: taiki-e/install-action@cargo-minimal-versions
       - run: cargo minimal-versions check
       - run: cargo minimal-versions check --all-features
+  sync-docs:
+    runs-on: ubuntu-latest
+    needs: fmt
+    steps:
+    - uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-insert-docs
+    - run: cargo insert-docs --all-features --check
+  doc: 
+    runs-on: ubuntu-latest
+    needs: sync-docs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@cargo-hack
+      - uses: taiki-e/install-action@cargo-minimal-versions
+      - run: cargo rustdoc --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition -Dwarnings
