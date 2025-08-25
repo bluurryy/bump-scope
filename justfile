@@ -34,20 +34,20 @@ check-msrv:
   cargo +1.85.1 check --features serde,zerocopy-08,allocator-api2-02
 
 check-clippy:
-  cargo +stable clippy --tests --no-default-features
-  cargo +stable clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03
+  cargo +stable clippy --tests --no-default-features -- -Dwarnings
+  cargo +stable clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03 -- -Dwarnings
 
-  cargo +nightly clippy --tests --no-default-features
-  cargo +nightly clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03
-  cargo +nightly clippy --tests --all-features
+  cargo +nightly clippy --tests --no-default-features -- -Dwarnings
+  cargo +nightly clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03 -- -Dwarnings
+  cargo +nightly clippy --tests --all-features -- -Dwarnings
 
-  cd crates/callgrind-benches && cargo clippy --tests --benches --workspace
-  cd crates/criterion-benches && cargo clippy --tests --benches --workspace
-  cd crates/fuzzing-support && cargo clippy --tests
-  cd crates/test-fallibility && cargo clippy --tests
-  cd crates/test-hashbrown && cargo clippy --tests
-  cd crates/tests-from-std && cargo clippy --tests
-  cd fuzz && cargo clippy
+  cd crates/callgrind-benches && cargo clippy --tests --benches --workspace -- -Dwarnings
+  cd crates/criterion-benches && cargo clippy --tests --benches --workspace -- -Dwarnings
+  cd crates/fuzzing-support && cargo clippy --tests -- -Dwarnings
+  cd crates/test-fallibility && cargo clippy --tests -- -Dwarnings
+  cd crates/test-hashbrown && cargo clippy --tests -- -Dwarnings
+  cd crates/tests-from-std && cargo clippy --tests -- -Dwarnings
+  cd fuzz && cargo clippy -- -Dwarnings
 
 check-nostd:
   cd crates/test-fallibility && cargo check
