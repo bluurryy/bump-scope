@@ -98,10 +98,10 @@ macro_rules! bump_vec {
         $crate::BumpVec::new_in($bump)
     };
     [in $bump:expr; $($values:expr),* $(,)?] => {
-        $crate::BumpVec::from_owned_slice_in([$($values),*], $bump)
+        $crate::__bump_vec_panic_on_alloc![in $bump; $($values),*]
     };
     [in $bump:expr; $value:expr; $count:expr] => {
-        $crate::BumpVec::from_elem_in($value, $count, $bump)
+        $crate::__bump_vec_panic_on_alloc![in $bump; $value; $count]
     };
     [try in $bump:expr] => {
         Ok::<_, $crate::alloc::AllocError>($crate::BumpVec::new_in($bump))
@@ -111,6 +111,48 @@ macro_rules! bump_vec {
     };
     [try in $bump:expr; $value:expr; $count:expr] => {
         $crate::BumpVec::try_from_elem_in($value, $count, $bump)
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+#[cfg(feature = "panic-on-alloc")]
+macro_rules! __bump_vec_panic_on_alloc {
+    [in $bump:expr; $($values:expr),* $(,)?] => {
+        $crate::BumpVec::from_owned_slice_in([$($values),*], $bump)
+    };
+    [in $bump:expr; $value:expr; $count:expr] => {
+        $crate::BumpVec::from_elem_in($value, $count, $bump)
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+#[cfg(not(feature = "panic-on-alloc"))]
+macro_rules! __bump_vec_panic_on_alloc {
+    [in $bump:expr; $($values:expr),* $(,)?] => {
+        compile_error!(
+            concat!("the potentially panicking api of `bump_vec!` is not available\n\
+            help: enable `bump-scope`'s \"panic-on-alloc\" feature or use `try`:\n\
+            `bump_vec![try in ",
+            stringify!($bump),
+            "; ",
+            stringify!($($values),*),
+            "]`"
+        ))
+    };
+    [in $bump:expr; $value:expr; $count:expr] => {
+        compile_error!(
+            concat!("the potentially panicking api of `bump_vec!` is not available\n\
+            help: enable `bump-scope`'s \"panic-on-alloc\" feature or use `try`:\n\
+            `bump_vec![try in ",
+            stringify!($bump),
+            "; ",
+            stringify!($value),
+            "; ",
+            stringify!($count),
+            "]`"
+        ))
     };
 }
 
