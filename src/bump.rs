@@ -16,6 +16,7 @@ use crate::{
     MinimumAlignment, RawChunk, SupportedMinimumAlignment,
     alloc::{AllocError, Allocator},
     chunk_size::ChunkSize,
+    destructure::destructure,
     maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{transmute_mut, transmute_ref},
@@ -1457,6 +1458,38 @@ where
         Self {
             chunk: Cell::new(unsafe { RawChunk::from_header(ptr.cast()) }),
         }
+    }
+
+    /// TODO
+    pub fn without_dealloc(self) -> Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
+        destructure!(let Self { chunk } = self);
+        Bump { chunk }
+    }
+
+    /// TODO
+    pub fn without_dealloc_ref(&self) -> &Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
+        unsafe { transmute_ref(self) }
+    }
+
+    /// TODO
+    pub fn without_dealloc_mut(&mut self) -> &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
+        unsafe { transmute_mut(self) }
+    }
+
+    /// TODO
+    pub fn with_dealloc(self) -> Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
+        destructure!(let Self { chunk } = self);
+        Bump { chunk }
+    }
+
+    /// TODO
+    pub fn with_dealloc_ref(&self) -> &Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
+        unsafe { transmute_ref(self) }
+    }
+
+    /// TODO
+    pub fn with_dealloc_mut(&mut self) -> &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
+        unsafe { transmute_mut(self) }
     }
 }
 

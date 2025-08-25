@@ -1034,6 +1034,10 @@ where
 
     #[inline]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
+        if !DEALLOCATES {
+            return None;
+        }
+
         let old_ptr = ptr.cast::<u8>();
         let old_size = old_len * T::SIZE; // we already allocated that amount so this can't overflow
         let new_size = new_len * T::SIZE; // its less than the capacity so this can't overflow

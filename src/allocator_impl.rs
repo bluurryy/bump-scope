@@ -41,6 +41,10 @@ pub(crate) unsafe fn deallocate<
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
+    if !DEALLOCATES {
+        return;
+    }
+
     unsafe {
         // free allocated space if this is the last allocation
         if is_last_and_allocated(bump, ptr, layout) {
@@ -330,7 +334,7 @@ where
         }
 
         // if that's not the last allocation, there is nothing we can do
-        if !is_last_and_allocated(bump, old_ptr, old_layout) {
+        if !DEALLOCATES || !is_last_and_allocated(bump, old_ptr, old_layout) {
             // we return the size of the old layout
             return Ok(NonNull::slice_from_raw_parts(old_ptr, old_layout.size()));
         }
