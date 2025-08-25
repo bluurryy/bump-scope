@@ -71,6 +71,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03
+      - run: cargo test --test compile_fail -- --ignored
   test-nightly:
     runs-on: ubuntu-latest
     env:

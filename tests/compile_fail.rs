@@ -1,6 +1,7 @@
-// this doesn't require nightly, but nightly can have a different error message
-#[cfg_attr(any(miri, not(feature = "nightly-tests")), ignore)]
 #[test]
+#[cfg(not(miri))]
+// so the diff doesn't change too often
+#[ignore = "make sure this runs on the stable channel"]
 fn mustnt_compile() {
     let t = trybuild::TestCases::new();
     t.compile_fail("tests/compile_fail/**/*.rs");

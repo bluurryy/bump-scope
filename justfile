@@ -18,6 +18,7 @@ check:
   just check-clippy
   just check-nostd
   just check-fallibility
+  just check-mustnt_compile
   # regression test making sure hashbrown compiles
   cargo check --tests --features nightly-allocator-api 
 
@@ -54,6 +55,9 @@ check-nostd:
 
 check-fallibility:
   cd crates/test-fallibility && nu assert-no-panics.nu
+
+check-mustnt_compile:
+  cargo +stable test --test compile_fail -- --ignored
 
 sync-fuzz:
   cp -u src/bumping.rs crates/fuzzing-support/src/from_bump_scope/bumping.rs
