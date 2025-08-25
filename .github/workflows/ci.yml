@@ -34,8 +34,8 @@ jobs:
         with: 
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy -Dwarnings --tests --all-features --no-default-features
-      - run: cargo clippy -Dwarnings --tests --all-features --features serde,bytemuck,zerocopy-08,allocator-api2-02,allocator-api2-03
+      - run: cargo clippy --tests --all-features --no-default-features --  -Dwarnings
+      - run: cargo clippy --tests --all-features --features serde,bytemuck,zerocopy-08,allocator-api2-02,allocator-api2-03 --  -Dwarnings
   clippy-nightly:
     needs: clippy
     runs-on: ubuntu-latest
