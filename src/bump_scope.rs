@@ -738,6 +738,36 @@ where
             unsafe { chunk.set_pos_addr(addr) };
         }
     }
+
+    /// Turns off deallocation and shrinking.
+    pub fn into_without_dealloc(self) -> BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
+        unsafe { transmute(self) }
+    }
+
+    /// Turns off deallocation and shrinking.
+    pub fn as_without_dealloc(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
+        unsafe { transmute_ref(self) }
+    }
+
+    /// Turns off deallocation and shrinking.
+    pub fn as_mut_without_dealloc(&mut self) -> &mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
+        unsafe { transmute_mut(self) }
+    }
+
+    /// Turns on deallocation and shrinking.
+    pub fn into_with_dealloc(self) -> BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
+        unsafe { transmute(self) }
+    }
+
+    /// Turns on deallocation and shrinking.
+    pub fn as_with_dealloc(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
+        unsafe { transmute_ref(self) }
+    }
+
+    /// Turns on deallocation and shrinking.
+    pub fn as_mut_with_dealloc(&mut self) -> &mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
+        unsafe { transmute_mut(self) }
+    }
 }
 
 /// Methods that are always available. (but with `A: Allocator`)
