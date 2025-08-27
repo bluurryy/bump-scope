@@ -64,7 +64,7 @@ fn shrinks<const UP: bool>() {
     bump.reset();
 
     // shouldn't shrink either
-    let mut vec = bump_vec![in bump.without_dealloc_ref(); 1, 2, 3, 4];
+    let mut vec = bump_vec![in bump.as_without_dealloc(); 1, 2, 3, 4];
     assert_eq!(bump.stats().allocated(), 4 * 4);
     vec.pop();
     vec.shrink_to_fit();
@@ -92,7 +92,7 @@ fn deallocates<const UP: bool>() {
     bump.reset();
 
     // shouldn't deallocate either
-    let vec = bump_vec![in bump.without_dealloc_ref(); 1, 2, 3];
+    let vec = bump_vec![in bump.as_without_dealloc(); 1, 2, 3];
     assert_eq!(bump.stats().allocated(), 3 * 4);
     drop(vec);
     assert_eq!(bump.stats().allocated(), 3 * 4);

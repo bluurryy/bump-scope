@@ -1461,34 +1461,34 @@ where
     }
 
     /// TODO
-    pub fn without_dealloc(self) -> Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
+    pub fn into_without_dealloc(self) -> Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
         destructure!(let Self { chunk } = self);
         Bump { chunk }
     }
 
     /// TODO
-    pub fn without_dealloc_ref(&self) -> &Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
+    pub fn as_without_dealloc(&self) -> &Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
         unsafe { transmute_ref(self) }
     }
 
     /// TODO
-    pub fn without_dealloc_mut(&mut self) -> &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
+    pub fn as_mut_without_dealloc(&mut self) -> &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
         unsafe { transmute_mut(self) }
     }
 
     /// TODO
-    pub fn with_dealloc(self) -> Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
+    pub fn into_with_dealloc(self) -> Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
         destructure!(let Self { chunk } = self);
         Bump { chunk }
     }
 
     /// TODO
-    pub fn with_dealloc_ref(&self) -> &Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
+    pub fn as_with_dealloc(&self) -> &Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
         unsafe { transmute_ref(self) }
     }
 
     /// TODO
-    pub fn with_dealloc_mut(&mut self) -> &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
+    pub fn as_mut_with_dealloc(&mut self) -> &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
         unsafe { transmute_mut(self) }
     }
 }
