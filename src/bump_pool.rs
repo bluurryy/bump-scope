@@ -79,7 +79,7 @@ macro_rules! make_pool {
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
             A: Allocator,
         {
-            bumps: Mutex<Vec<Bump<A, MIN_ALIGN, UP, true>>>,
+            bumps: Mutex<Vec<Bump<A, MIN_ALIGN, UP, true, true>>>,
             allocator: A,
         }
     };
@@ -136,11 +136,11 @@ where
     }
 
     /// Returns the vector of `Bump`s.
-    pub fn bumps(&mut self) -> &mut Vec<Bump<A, MIN_ALIGN, UP, true>> {
+    pub fn bumps(&mut self) -> &mut Vec<Bump<A, MIN_ALIGN, UP, true, true>> {
         self.bumps.get_mut().unwrap_or_else(PoisonError::into_inner)
     }
 
-    fn lock(&self) -> MutexGuard<'_, Vec<Bump<A, MIN_ALIGN, UP, true>>> {
+    fn lock(&self) -> MutexGuard<'_, Vec<Bump<A, MIN_ALIGN, UP, true, true>>> {
         self.bumps.lock().unwrap_or_else(PoisonError::into_inner)
     }
 }
@@ -300,7 +300,7 @@ macro_rules! make_pool_guard {
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
             A: Allocator,
         {
-            bump: ManuallyDrop<Bump<A, MIN_ALIGN, UP, true>>,
+            bump: ManuallyDrop<Bump<A, MIN_ALIGN, UP, true, true>>,
 
             #[doc(hidden)]
             #[deprecated = "Swapping the pool can lead to Undefined Behavior due to dangling pointers, use `pool()` instead!"]
@@ -328,7 +328,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
 {
-    type Target = BumpScope<'a, A, MIN_ALIGN, UP, true>;
+    type Target = BumpScope<'a, A, MIN_ALIGN, UP, true, true>;
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
@@ -362,15 +362,15 @@ where
 // This exists as a "safer" transmute that only transmutes the `'a` lifetime parameter.
 #[allow(clippy::needless_lifetimes, clippy::elidable_lifetime_names)]
 unsafe fn transmute_lifetime<'from, 'to, 'b, A, const MIN_ALIGN: usize, const UP: bool>(
-    scope: &'b BumpScope<'from, A, MIN_ALIGN, UP, true>,
-) -> &'b BumpScope<'to, A, MIN_ALIGN, UP, true> {
+    scope: &'b BumpScope<'from, A, MIN_ALIGN, UP, true, true>,
+) -> &'b BumpScope<'to, A, MIN_ALIGN, UP, true, true> {
     unsafe { mem::transmute(scope) }
 }
 
 // This exists as a "safer" transmute that only transmutes the `'a` lifetime parameter.
 #[allow(clippy::needless_lifetimes, clippy::elidable_lifetime_names)]
 unsafe fn transmute_lifetime_mut<'from, 'to, 'b, A, const MIN_ALIGN: usize, const UP: bool>(
-    scope: &'b mut BumpScope<'from, A, MIN_ALIGN, UP, true>,
-) -> &'b mut BumpScope<'to, A, MIN_ALIGN, UP, true> {
+    scope: &'b mut BumpScope<'from, A, MIN_ALIGN, UP, true, true>,
+) -> &'b mut BumpScope<'to, A, MIN_ALIGN, UP, true, true> {
     unsafe { mem::transmute(scope) }
 }

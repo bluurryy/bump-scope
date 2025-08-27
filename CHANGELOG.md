@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `DEALLOCATES` const parameter to toggle deallocation
 - Better compile error message for macros when "panic-on-alloc" is disabled
 
 ### Fixed

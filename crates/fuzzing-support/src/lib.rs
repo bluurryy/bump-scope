@@ -18,7 +18,8 @@ pub mod bump_vec;
 pub mod chunk_size;
 mod from_bump_scope;
 
-pub type Bump<A = Global, const MIN_ALIGN: usize = 1, const UP: bool = true> = bump_scope::Bump<A, MIN_ALIGN, UP, true>;
+pub type Bump<A = Global, const MIN_ALIGN: usize = 1, const UP: bool = true> =
+    bump_scope::Bump<A, MIN_ALIGN, UP, true, true>;
 
 #[derive(Debug, Clone)]
 struct RcAllocator<A> {

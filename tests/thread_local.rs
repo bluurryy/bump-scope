@@ -3,7 +3,7 @@
 
 use bump_scope::alloc::Global;
 
-type Bump = bump_scope::Bump<Global, 1, true, false>;
+type Bump = bump_scope::Bump<Global, 1, true, false, true>;
 
 thread_local! {
     static BUMP: Bump = const { Bump::unallocated() };

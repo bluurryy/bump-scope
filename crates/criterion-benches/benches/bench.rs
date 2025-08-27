@@ -7,7 +7,7 @@ use bump_scope::{
     alloc::{AllocError, Global},
 };
 
-type Bump<const MIN_ALIGN: usize, const UP: bool> = bump_scope::Bump<Global, MIN_ALIGN, UP, true>;
+type Bump<const MIN_ALIGN: usize, const UP: bool> = bump_scope::Bump<Global, MIN_ALIGN, UP, true, true>;
 
 trait Bumper {
     fn with_capacity(layout: Layout) -> Self;

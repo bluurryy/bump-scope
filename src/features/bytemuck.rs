@@ -81,8 +81,8 @@ mod bump_ext {
 
     pub trait Sealed {}
 
-    impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Sealed
-        for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Sealed
+        for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
         A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -96,8 +96,8 @@ mod bump_scope_ext {
 
     pub trait Sealed {}
 
-    impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Sealed
-        for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Sealed
+        for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
         A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -265,8 +265,8 @@ pub trait BumpScopeExt<'a>: bump_scope_ext::Sealed {
         T: Zeroable;
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpExt
-    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> BumpExt
+    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -306,8 +306,8 @@ where
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> BumpScopeExt<'a>
-    for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
+    BumpScopeExt<'a> for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -357,8 +357,8 @@ trait PrivateBumpScopeExt<'a> {
         T: Zeroable;
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> PrivateBumpScopeExt<'a>
-    for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
+    PrivateBumpScopeExt<'a> for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,

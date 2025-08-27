@@ -1,7 +1,7 @@
 use core::alloc::Layout;
 
 use crate::{
-    Bump, BumpAllocator, BumpAllocatorExt,
+    BumpAllocator, BumpAllocatorExt,
     alloc::{Allocator, Global},
     tests::either_way,
 };
@@ -20,19 +20,21 @@ either_way! {
     non_default_base_allocator
 }
 
+type Bump<const UP: bool, A = Global> = crate::Bump<A, 1, UP, false, true>;
+
 fn allocated<const UP: bool>() {
-    let bump = <Bump<Global, 1, UP, false>>::new();
+    let bump = <Bump<UP>>::new();
     drop(bump);
 }
 
 fn unallocated<const UP: bool>() {
-    let bump = <Bump<Global, 1, UP, false>>::unallocated();
+    let bump = <Bump<UP>>::unallocated();
     assert_eq!(bump.stats().count(), 0);
     drop(bump);
 }
 
 fn unallocated_alloc<const UP: bool>() {
-    let bump = <Bump<Global, 1, UP, false>>::unallocated();
+    let bump = <Bump<UP>>::unallocated();
     assert_eq!(bump.stats().count(), 0);
     bump.alloc_str("Hello, World!");
     assert_eq!(bump.stats().count(), 1);
@@ -40,15 +42,15 @@ fn unallocated_alloc<const UP: bool>() {
 }
 
 fn guaranteed_allocated<const UP: bool>() {
-    let bump = <Bump<Global, 1, UP, false>>::unallocated();
+    let bump = <Bump<UP>>::unallocated();
     assert_eq!(bump.stats().count(), 0);
-    let bump = bump.into_guaranteed_allocated(Bump::new);
+    let bump = bump.into_guaranteed_allocated(crate::Bump::new);
     assert_eq!(bump.stats().count(), 1);
     drop(bump);
 }
 
 fn allocated_reserve_bytes<const UP: bool>() {
-    let bump = <Bump<Global, 1, UP, false>>::new();
+    let bump = <Bump<UP>>::new();
     assert_eq!(bump.stats().count(), 1);
     bump.reserve_bytes(1024);
     assert_eq!(bump.stats().count(), 2);
@@ -57,7 +59,7 @@ fn allocated_reserve_bytes<const UP: bool>() {
 }
 
 fn unallocated_reserve_bytes<const UP: bool>() {
-    let bump = <Bump<Global, 1, UP, false>>::unallocated();
+    let bump = <Bump<UP>>::unallocated();
     assert_eq!(bump.stats().count(), 0);
     bump.reserve_bytes(1024);
     assert_eq!(bump.stats().count(), 1);
@@ -66,7 +68,7 @@ fn unallocated_reserve_bytes<const UP: bool>() {
 }
 
 fn checkpoint<const UP: bool>() {
-    let bump = <Bump<Global, 1, UP, false>>::unallocated();
+    let bump = <Bump<UP>>::unallocated();
 
     let checkpoint_unallocated = bump.checkpoint();
     assert_eq!(bump.stats().count(), 0);
@@ -91,7 +93,7 @@ fn checkpoint<const UP: bool>() {
 }
 
 fn checkpoint_multiple_chunks<const UP: bool>() {
-    let bump = <Bump<Global, 1, UP, false>>::unallocated();
+    let bump = <Bump<UP>>::unallocated();
 
     assert_eq!(bump.stats().count(), 0);
     let c0 = bump.checkpoint();
@@ -112,7 +114,7 @@ fn checkpoint_multiple_chunks<const UP: bool>() {
     std::dbg!(bump.stats());
 }
 
-fn allocate_another_chunk<const UP: bool>(bump: &Bump<Global, 1, UP, false>, dummy_size: usize) {
+fn allocate_another_chunk<const UP: bool>(bump: &Bump<UP>, dummy_size: usize) {
     let start_chunks = bump.any_stats().count();
     let remaining = bump.any_stats().remaining();
     bump.alloc_layout(Layout::from_size_align(remaining, 1).unwrap());
@@ -123,12 +125,12 @@ fn allocate_another_chunk<const UP: bool>(bump: &Bump<Global, 1, UP, false>, dum
 }
 
 fn allocate_zero_layout<const UP: bool>() {
-    let bump = <Bump<Global, 1, UP, false>>::unallocated();
+    let bump = <Bump<UP>>::unallocated();
     bump.alloc_layout(Layout::new::<()>());
 }
 
 fn reset<const UP: bool>() {
-    let mut bump = <Bump<Global, 1, UP, false>>::unallocated();
+    let mut bump = <Bump<UP>>::unallocated();
     bump.reset();
 }
 
@@ -146,14 +148,14 @@ fn non_default_base_allocator<const UP: bool>() {
         }
     }
 
-    let bump = <Bump<MyAllocator, 1, UP, false>>::unallocated();
+    let bump = <Bump<UP, MyAllocator>>::unallocated();
 
     #[cfg(false)] // method is not available
     bump.alloc_str("test");
 
     // but this works
     let test = bump
-        .as_guaranteed_allocated(|| Bump::new_in(MyAllocator {}))
+        .as_guaranteed_allocated(|| crate::Bump::new_in(MyAllocator {}))
         .alloc_str("test");
 
     assert_eq!(test, "test");
