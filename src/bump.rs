@@ -29,6 +29,13 @@ macro_rules! make_type {
     ($($allocator_parameter:tt)*) => {
         /// The bump allocator.
         ///
+        /// # Generic parameters
+        /// - **`A`** the base allocator, defaults to `Global` when the `alloc` feature is enabled
+        /// - **`MIN_ALIGN`** the alignment maintained for the bump pointer, see [What is minimum alignment?](crate#what-is-minimum-alignment)
+        /// - **`UP`** the bump direction, see [Bumping upwards or downwards?](crate#bumping-upwards-or-downwards)
+        /// - **`GUARANTEED_ALLOCATED`** see [What does *guaranteed allocated* mean?](crate#what-does-guaranteed-allocated-mean)
+        /// - **`DEALLOCATES`** toggles deallocation and shrinking for collections, [`alloc_iter`] and <code>[alloc_](Self::alloc_fmt)([cstr_](Self::alloc_cstr_fmt))[fmt](Self::alloc_fmt)</code>
+        ///
         /// # Overview
         /// All of the mentioned methods that do allocations panic if the base allocator returned an error.
         /// For every such panicking method, there is a corresponding `try_`-prefixed version that returns a `Result` instead.
@@ -135,8 +142,6 @@ macro_rules! make_type {
         /// [`alloc_zeroed`]: crate::zerocopy_08::BumpExt::alloc_zeroed
         ///
         /// [`alloc_str`]: Self::alloc_str
-        /// [`alloc_fmt`]: Self::alloc_fmt
-        /// [`alloc_fmt_mut`]: Self::alloc_fmt_mut
         ///
         /// [`alloc_cstr`]: Self::alloc_cstr
         /// [`alloc_cstr_from_str`]: Self::alloc_cstr_from_str
