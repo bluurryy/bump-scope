@@ -16,7 +16,6 @@ use crate::{
     MinimumAlignment, RawChunk, SupportedMinimumAlignment,
     alloc::{AllocError, Allocator},
     chunk_size::ChunkSize,
-    destructure::destructure,
     maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{transmute_mut, transmute_ref},
@@ -1462,8 +1461,7 @@ where
 
     /// TODO
     pub fn into_without_dealloc(self) -> Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
-        destructure!(let Self { chunk } = self);
-        Bump { chunk }
+        unsafe { transmute(self) }
     }
 
     /// TODO
@@ -1478,8 +1476,7 @@ where
 
     /// TODO
     pub fn into_with_dealloc(self) -> Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
-        destructure!(let Self { chunk } = self);
-        Bump { chunk }
+        unsafe { transmute(self) }
     }
 
     /// TODO
