@@ -1459,32 +1459,32 @@ where
         }
     }
 
-    /// TODO
+    /// Turns off deallocation and shrinking.
     pub fn into_without_dealloc(self) -> Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
         unsafe { transmute(self) }
     }
 
-    /// TODO
+    /// Turns off deallocation and shrinking.
     pub fn as_without_dealloc(&self) -> &Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
         unsafe { transmute_ref(self) }
     }
 
-    /// TODO
+    /// Turns off deallocation and shrinking.
     pub fn as_mut_without_dealloc(&mut self) -> &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
         unsafe { transmute_mut(self) }
     }
 
-    /// TODO
+    /// Turns on deallocation and shrinking.
     pub fn into_with_dealloc(self) -> Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
         unsafe { transmute(self) }
     }
 
-    /// TODO
+    /// Turns on deallocation and shrinking.
     pub fn as_with_dealloc(&self) -> &Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
         unsafe { transmute_ref(self) }
     }
 
-    /// TODO
+    /// Turns on deallocation and shrinking.
     pub fn as_mut_with_dealloc(&mut self) -> &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
         unsafe { transmute_mut(self) }
     }
