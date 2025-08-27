@@ -33,7 +33,7 @@ macro_rules! make_type {
         /// All of the mentioned methods that do allocations panic if the base allocator returned an error.
         /// For every such panicking method, there is a corresponding `try_`-prefixed version that returns a `Result` instead.
         ///
-        /// ## Create a `Bump` ...
+        /// #### Create a `Bump` ...
         /// - with a default size hint: <code>[new]\([_in][new_in])</code> / <code>[default]</code>
         /// - provide a size hint: <code>[with_size]\([_in][with_size_in])</code>
         /// - provide a minimum capacity: <code>[with_capacity]\([_in][with_capacity_in])</code>
@@ -48,16 +48,32 @@ macro_rules! make_type {
         /// [with_capacity_in]: Self::with_capacity_in
         /// [unallocated]: Self::unallocated
         ///
-        /// ## Allocate ...
+        /// #### Allocate ...
         /// - sized values: [`alloc`], [`alloc_with`], [`alloc_default`], [`alloc_zeroed`]
-        /// - strings: [`alloc_str`], [`alloc_fmt`], [`alloc_fmt_mut`]
-        /// - c strings: [`alloc_cstr`], [`alloc_cstr_from_str`] [`alloc_cstr_fmt`], [`alloc_cstr_fmt_mut`]
-        /// - slices: [`alloc_slice_copy`], [`alloc_slice_clone`], [`alloc_slice_move`], [`alloc_slice_fill`], [`alloc_slice_fill_with`], [`alloc_zeroed_slice`]
+        /// - strings: [`alloc_str`], <code>[alloc_fmt](Self::alloc_fmt)([_mut](Self::alloc_fmt_mut))</code>
+        /// - c strings: [`alloc_cstr`], [`alloc_cstr_from_str`], <code>[alloc_cstr_fmt](Self::alloc_cstr_fmt)([_mut](Self::alloc_cstr_fmt_mut))</code>
+        /// - slices: <code>alloc_slice_{[copy](Self::alloc_slice_copy), [clone](Self::alloc_slice_clone), [move](Self::alloc_slice_move), [fill](Self::alloc_slice_fill), [fill_with](Self::alloc_slice_fill_with)}</code>,
+        ///   [`alloc_zeroed_slice`]
         /// - slices from an iterator: [`alloc_iter`], [`alloc_iter_exact`], [`alloc_iter_mut`], [`alloc_iter_mut_rev`]
         /// - uninitialized values: [`alloc_uninit`], [`alloc_uninit_slice`], [`alloc_uninit_slice_for`]
         ///
         ///   which can then be conveniently initialized by the [`init*` methods of `BumpBox`](crate::BumpBox#bumpbox-has-a-lot-of-methods).
         /// - results: [`alloc_try_with`], [`alloc_try_with_mut`]
+        /// - via clone *(nightly only)*: [`alloc_clone`]
+        ///
+        /// #### Free memory using ...
+        /// - scopes: [`scoped`], [`scoped_aligned`], [`scope_guard`]
+        /// - checkpoints: [`checkpoint`], [`reset_to`]
+        /// - reset: [`reset`]
+        ///
+        /// #### Configure allocator settings ...
+        /// - guaranteed allocated:
+        ///   <code>{[as](Self::as_guaranteed_allocated), [as_mut](Self::as_mut_guaranteed_allocated), [into](Self::into_guaranteed_allocated)}_guaranteed_allocated</code>,
+        ///   <code>{[as](Self::as_not_guaranteed_allocated), [into](Self::into_not_guaranteed_allocated)}_not_guaranteed_allocated</code>
+        /// - minimum alignment: [`aligned`], [`as_aligned_mut`], [`into_aligned`]
+        /// - deallocation:
+        ///   <code>{[as](Self::as_with_dealloc), [as_mut](Self::as_mut_with_dealloc), [into](Self::into_with_dealloc)}_with_dealloc</code>
+        ///   <code>{[as](Self::as_without_dealloc), [as_mut](Self::as_mut_without_dealloc), [into](Self::into_without_dealloc)}_without_dealloc</code>
         ///
         /// ## Collections
         /// A `Bump` (and [`BumpScope`]) can be used to allocate collections of this crate...
@@ -72,7 +88,7 @@ macro_rules! make_type {
         ///
         /// ... and collections from crates that use `allocator_api2`'s `Allocator` like [hashbrown](https://docs.rs/hashbrown)'s [`HashMap`](https://docs.rs/hashbrown/latest/hashbrown/struct.HashMap.html):
         ///
-        /// *This requires the `allocator_api2_02` feature OR the `nightly-allocator-api` feature along with hashbrown's `nightly` feature.*
+        /// *This requires the `allocator-api2-02` feature OR the `nightly-allocator-api` feature along with hashbrown's `nightly` feature.*
         // NOTE: This code is tested in `crates/test-hashbrown/lib.rs`.
         // It's not tested here because using hashbrown requires us to either have both the crate features for a nightly allocator api in bump-scope and hashbrown or neither.
         // This could be solved by making bump-scope's "nightly-allocator-api" depend on "hashbrown/nightly" but that currently breaks tools like cargo-hack and cargo-minimal-versions.
@@ -88,7 +104,7 @@ macro_rules! make_type {
         /// # ()
         /// ```
         ///
-        /// On nightly and with the feature `"nightly-allocator-api"` you can also allocate collections from `std` that have an allocator parameter:
+        /// On nightly and with the feature `nightly-allocator-api` you can also allocate collections from `std` that have an allocator parameter:
         #[cfg_attr(feature = "nightly-allocator-api", doc = "```")]
         #[cfg_attr(not(feature = "nightly-allocator-api"), doc = "```no_run")]
         /// # /*
@@ -124,14 +140,7 @@ macro_rules! make_type {
         ///
         /// [`alloc_cstr`]: Self::alloc_cstr
         /// [`alloc_cstr_from_str`]: Self::alloc_cstr_from_str
-        /// [`alloc_cstr_fmt`]: Self::alloc_cstr_fmt
-        /// [`alloc_cstr_fmt_mut`]: Self::alloc_cstr_fmt_mut
         ///
-        /// [`alloc_slice_copy`]: Self::alloc_slice_copy
-        /// [`alloc_slice_clone`]: Self::alloc_slice_clone
-        /// [`alloc_slice_move`]: Self::alloc_slice_move
-        /// [`alloc_slice_fill`]: Self::alloc_slice_fill
-        /// [`alloc_slice_fill_with`]: Self::alloc_slice_fill_with
         /// [`alloc_zeroed_slice`]: crate::zerocopy_08::BumpExt::alloc_zeroed_slice
         ///
         /// [`alloc_iter`]: Self::alloc_iter
@@ -146,9 +155,28 @@ macro_rules! make_type {
         /// [`alloc_try_with`]: Self::alloc_try_with
         /// [`alloc_try_with_mut`]: Self::alloc_try_with_mut
         ///
-        /// ## Scopes and Checkpoints
+        /// [`alloc_clone`]: Self::alloc_clone
         ///
-        /// See [Scopes and Checkpoints](crate#scopes-and-checkpoints).
+        /// [`scoped`]: Self::scoped
+        /// [`scoped_aligned`]: Self::scoped_aligned
+        /// [`scope_guard`]: Self::scope_guard
+        ///
+        /// [`checkpoint`]: Self::checkpoint
+        /// [`reset_to`]: Self::reset_to
+        ///
+        /// [`reset`]: Self::reset
+        ///
+        /// [`aligned`]: Self::aligned
+        /// [`as_aligned_mut`]: Self::as_aligned_mut
+        /// [`into_aligned`]: Self::into_aligned
+        ///
+        /// [`into_with_dealloc`]: Self::into_with_dealloc
+        /// [`as_with_dealloc`]: Self::as_with_dealloc
+        /// [`as_mut_with_dealloc`]: Self::as_mut_with_dealloc
+        ///
+        /// [`into_without_dealloc`]: Self::into_without_dealloc
+        /// [`as_without_dealloc`]: Self::as_without_dealloc
+        /// [`as_mut_without_dealloc`]: Self::as_mut_without_dealloc
         ///
         /// # Gotcha
         ///
