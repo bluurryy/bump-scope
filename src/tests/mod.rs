@@ -551,13 +551,13 @@ fn as_aligned<const UP: bool>() {
     let mut bump: Bump = Bump::new();
 
     {
-        let bump = bump.as_aligned_mut::<8>();
+        let bump = bump.as_mut_aligned::<8>();
         assert_eq!(bump.stats().allocated(), 0);
     }
 
     {
         bump.alloc(1u8);
-        let bump = bump.as_aligned_mut::<8>();
+        let bump = bump.as_mut_aligned::<8>();
         assert_eq!(bump.stats().allocated(), 8);
         bump.alloc(2u16);
         assert_eq!(bump.stats().allocated(), 16);
@@ -753,12 +753,12 @@ fn realign<const UP: bool>() {
         assert!(bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
     }
 
-    // as_aligned_mut
+    // as_mut_aligned
     {
         let mut bump = Bump::<Global, 1, UP>::with_size(64);
         bump.alloc(0u8);
         assert!(!bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
-        let bump = bump.as_aligned_mut::<ALIGN>();
+        let bump = bump.as_mut_aligned::<ALIGN>();
         assert!(bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
     }
 
