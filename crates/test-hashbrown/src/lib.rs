@@ -4,7 +4,7 @@
 use bump_scope::alloc::Global;
 use hashbrown::HashMap;
 
-type Bump = bump_scope::Bump<Global, 1, true, true>;
+type Bump = bump_scope::Bump<Global, 1, true, true, true>;
 
 #[test]
 fn test() {

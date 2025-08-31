@@ -37,7 +37,7 @@ either_way! {
 }
 
 fn shrinks<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
 
     // should shrink
     let mut vec = bump_vec![in &bump; 1, 2, 3, 4];
@@ -48,6 +48,7 @@ fn shrinks<const UP: bool>() {
     vec.clear();
     vec.shrink_to_fit();
     assert_eq!(bump.stats().allocated(), 0);
+    drop(vec);
 
     // shouldn't shrink
     let mut vec = bump_vec![in WithoutShrink(&bump); 1, 2, 3, 4];
@@ -58,10 +59,23 @@ fn shrinks<const UP: bool>() {
     vec.clear();
     vec.shrink_to_fit();
     assert_eq!(bump.stats().allocated(), 4 * 4);
+    drop(vec);
+
+    bump.reset();
+
+    // shouldn't shrink either
+    let mut vec = bump_vec![in bump.as_without_dealloc(); 1, 2, 3, 4];
+    assert_eq!(bump.stats().allocated(), 4 * 4);
+    vec.pop();
+    vec.shrink_to_fit();
+    assert_eq!(bump.stats().allocated(), 4 * 4);
+    vec.clear();
+    vec.shrink_to_fit();
+    assert_eq!(bump.stats().allocated(), 4 * 4);
 }
 
 fn deallocates<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let mut bump: Bump<Global, 1, UP> = Bump::new();
 
     // should deallocate
     let vec = bump_vec![in &bump; 1, 2, 3];
@@ -71,6 +85,14 @@ fn deallocates<const UP: bool>() {
 
     // shouldn't deallocate
     let vec = bump_vec![in WithoutDealloc(&bump); 1, 2, 3];
+    assert_eq!(bump.stats().allocated(), 3 * 4);
+    drop(vec);
+    assert_eq!(bump.stats().allocated(), 3 * 4);
+
+    bump.reset();
+
+    // shouldn't deallocate either
+    let vec = bump_vec![in bump.as_without_dealloc(); 1, 2, 3];
     assert_eq!(bump.stats().allocated(), 3 * 4);
     drop(vec);
     assert_eq!(bump.stats().allocated(), 3 * 4);

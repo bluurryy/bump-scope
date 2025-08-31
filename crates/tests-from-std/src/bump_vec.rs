@@ -15,7 +15,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use bump_scope::alloc::{AllocError, Allocator, Global};
 
-type Bump<A = Global> = bump_scope::Bump<A, 1, true, true>;
+type Bump<A = Global> = bump_scope::Bump<A, 1, true, true, true>;
 type Vec<T, A = Bump> = bump_scope::BumpVec<T, A>;
 
 trait VecNew: Sized {

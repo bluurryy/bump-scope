@@ -29,11 +29,18 @@ macro_rules! make_type {
     ($($allocator_parameter:tt)*) => {
         /// The bump allocator.
         ///
+        /// # Generic parameters
+        /// - **`A`** the base allocator, defaults to `Global` when the `alloc` feature is enabled
+        /// - **`MIN_ALIGN`** the alignment maintained for the bump pointer, see [What is minimum alignment?](crate#what-is-minimum-alignment)
+        /// - **`UP`** the bump direction, see [Bumping upwards or downwards?](crate#bumping-upwards-or-downwards)
+        /// - **`GUARANTEED_ALLOCATED`** see [What does *guaranteed allocated* mean?](crate#what-does-guaranteed-allocated-mean)
+        /// - **`DEALLOCATES`** toggles deallocation and shrinking for collections, [`alloc_iter`] and <code>[alloc_](Self::alloc_fmt)([cstr_](Self::alloc_cstr_fmt))[fmt](Self::alloc_fmt)</code>
+        ///
         /// # Overview
         /// All of the mentioned methods that do allocations panic if the base allocator returned an error.
         /// For every such panicking method, there is a corresponding `try_`-prefixed version that returns a `Result` instead.
         ///
-        /// ## Create a `Bump` ...
+        /// #### Create a `Bump` ...
         /// - with a default size hint: <code>[new]\([_in][new_in])</code> / <code>[default]</code>
         /// - provide a size hint: <code>[with_size]\([_in][with_size_in])</code>
         /// - provide a minimum capacity: <code>[with_capacity]\([_in][with_capacity_in])</code>
@@ -48,16 +55,32 @@ macro_rules! make_type {
         /// [with_capacity_in]: Self::with_capacity_in
         /// [unallocated]: Self::unallocated
         ///
-        /// ## Allocate ...
+        /// #### Allocate ...
         /// - sized values: [`alloc`], [`alloc_with`], [`alloc_default`], [`alloc_zeroed`]
-        /// - strings: [`alloc_str`], [`alloc_fmt`], [`alloc_fmt_mut`]
-        /// - c strings: [`alloc_cstr`], [`alloc_cstr_from_str`] [`alloc_cstr_fmt`], [`alloc_cstr_fmt_mut`]
-        /// - slices: [`alloc_slice_copy`], [`alloc_slice_clone`], [`alloc_slice_move`], [`alloc_slice_fill`], [`alloc_slice_fill_with`], [`alloc_zeroed_slice`]
+        /// - strings: [`alloc_str`], <code>[alloc_fmt](Self::alloc_fmt)([_mut](Self::alloc_fmt_mut))</code>
+        /// - c strings: [`alloc_cstr`], [`alloc_cstr_from_str`], <code>[alloc_cstr_fmt](Self::alloc_cstr_fmt)([_mut](Self::alloc_cstr_fmt_mut))</code>
+        /// - slices: <code>alloc_slice_{[copy](Self::alloc_slice_copy), [clone](Self::alloc_slice_clone), [move](Self::alloc_slice_move), [fill](Self::alloc_slice_fill), [fill_with](Self::alloc_slice_fill_with)}</code>,
+        ///   [`alloc_zeroed_slice`]
         /// - slices from an iterator: [`alloc_iter`], [`alloc_iter_exact`], [`alloc_iter_mut`], [`alloc_iter_mut_rev`]
         /// - uninitialized values: [`alloc_uninit`], [`alloc_uninit_slice`], [`alloc_uninit_slice_for`]
         ///
         ///   which can then be conveniently initialized by the [`init*` methods of `BumpBox`](crate::BumpBox#bumpbox-has-a-lot-of-methods).
         /// - results: [`alloc_try_with`], [`alloc_try_with_mut`]
+        /// - via clone *(nightly only)*: [`alloc_clone`]
+        ///
+        /// #### Free memory using ...
+        /// - scopes: [`scoped`], [`scoped_aligned`], [`scope_guard`]
+        /// - checkpoints: [`checkpoint`], [`reset_to`]
+        /// - reset: [`reset`]
+        ///
+        /// #### Configure allocator settings ...
+        /// - guaranteed allocated:
+        ///   <code>{[as](Self::as_guaranteed_allocated), [as_mut](Self::as_mut_guaranteed_allocated), [into](Self::into_guaranteed_allocated)}_guaranteed_allocated</code>,
+        ///   <code>{[as](Self::as_not_guaranteed_allocated), [into](Self::into_not_guaranteed_allocated)}_not_guaranteed_allocated</code>
+        /// - minimum alignment: [`aligned`], [`as_aligned_mut`], [`into_aligned`]
+        /// - deallocation:
+        ///   <code>{[as](Self::as_with_dealloc), [as_mut](Self::as_mut_with_dealloc), [into](Self::into_with_dealloc)}_with_dealloc</code>
+        ///   <code>{[as](Self::as_without_dealloc), [as_mut](Self::as_mut_without_dealloc), [into](Self::into_without_dealloc)}_without_dealloc</code>
         ///
         /// ## Collections
         /// A `Bump` (and [`BumpScope`]) can be used to allocate collections of this crate...
@@ -72,7 +95,7 @@ macro_rules! make_type {
         ///
         /// ... and collections from crates that use `allocator_api2`'s `Allocator` like [hashbrown](https://docs.rs/hashbrown)'s [`HashMap`](https://docs.rs/hashbrown/latest/hashbrown/struct.HashMap.html):
         ///
-        /// *This requires the `allocator_api2_02` feature OR the `nightly-allocator-api` feature along with hashbrown's `nightly` feature.*
+        /// *This requires the `allocator-api2-02` feature OR the `nightly-allocator-api` feature along with hashbrown's `nightly` feature.*
         // NOTE: This code is tested in `crates/test-hashbrown/lib.rs`.
         // It's not tested here because using hashbrown requires us to either have both the crate features for a nightly allocator api in bump-scope and hashbrown or neither.
         // This could be solved by making bump-scope's "nightly-allocator-api" depend on "hashbrown/nightly" but that currently breaks tools like cargo-hack and cargo-minimal-versions.
@@ -88,7 +111,7 @@ macro_rules! make_type {
         /// # ()
         /// ```
         ///
-        /// On nightly and with the feature `"nightly-allocator-api"` you can also allocate collections from `std` that have an allocator parameter:
+        /// On nightly and with the feature `nightly-allocator-api` you can also allocate collections from `std` that have an allocator parameter:
         #[cfg_attr(feature = "nightly-allocator-api", doc = "```")]
         #[cfg_attr(not(feature = "nightly-allocator-api"), doc = "```no_run")]
         /// # /*
@@ -119,19 +142,10 @@ macro_rules! make_type {
         /// [`alloc_zeroed`]: crate::zerocopy_08::BumpExt::alloc_zeroed
         ///
         /// [`alloc_str`]: Self::alloc_str
-        /// [`alloc_fmt`]: Self::alloc_fmt
-        /// [`alloc_fmt_mut`]: Self::alloc_fmt_mut
         ///
         /// [`alloc_cstr`]: Self::alloc_cstr
         /// [`alloc_cstr_from_str`]: Self::alloc_cstr_from_str
-        /// [`alloc_cstr_fmt`]: Self::alloc_cstr_fmt
-        /// [`alloc_cstr_fmt_mut`]: Self::alloc_cstr_fmt_mut
         ///
-        /// [`alloc_slice_copy`]: Self::alloc_slice_copy
-        /// [`alloc_slice_clone`]: Self::alloc_slice_clone
-        /// [`alloc_slice_move`]: Self::alloc_slice_move
-        /// [`alloc_slice_fill`]: Self::alloc_slice_fill
-        /// [`alloc_slice_fill_with`]: Self::alloc_slice_fill_with
         /// [`alloc_zeroed_slice`]: crate::zerocopy_08::BumpExt::alloc_zeroed_slice
         ///
         /// [`alloc_iter`]: Self::alloc_iter
@@ -146,9 +160,28 @@ macro_rules! make_type {
         /// [`alloc_try_with`]: Self::alloc_try_with
         /// [`alloc_try_with_mut`]: Self::alloc_try_with_mut
         ///
-        /// ## Scopes and Checkpoints
+        /// [`alloc_clone`]: Self::alloc_clone
         ///
-        /// See [Scopes and Checkpoints](crate#scopes-and-checkpoints).
+        /// [`scoped`]: Self::scoped
+        /// [`scoped_aligned`]: Self::scoped_aligned
+        /// [`scope_guard`]: Self::scope_guard
+        ///
+        /// [`checkpoint`]: Self::checkpoint
+        /// [`reset_to`]: Self::reset_to
+        ///
+        /// [`reset`]: Self::reset
+        ///
+        /// [`aligned`]: Self::aligned
+        /// [`as_aligned_mut`]: Self::as_aligned_mut
+        /// [`into_aligned`]: Self::into_aligned
+        ///
+        /// [`into_with_dealloc`]: Self::into_with_dealloc
+        /// [`as_with_dealloc`]: Self::as_with_dealloc
+        /// [`as_mut_with_dealloc`]: Self::as_mut_with_dealloc
+        ///
+        /// [`into_without_dealloc`]: Self::into_without_dealloc
+        /// [`as_without_dealloc`]: Self::as_without_dealloc
+        /// [`as_mut_without_dealloc`]: Self::as_mut_without_dealloc
         ///
         /// # Gotcha
         ///
@@ -191,6 +224,7 @@ macro_rules! make_type {
             const MIN_ALIGN: usize = 1,
             const UP: bool = true,
             const GUARANTEED_ALLOCATED: bool = true,
+            const DEALLOCATES: bool = true,
         > where
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
             A: Allocator,
@@ -204,32 +238,32 @@ maybe_default_allocator!(make_type);
 
 // Sending Bumps when nothing is allocated is fine.
 // When something is allocated Bump is borrowed and sending is not possible.
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Send
-    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Send
+    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
 {
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> UnwindSafe
-    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> UnwindSafe
+    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + UnwindSafe,
 {
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> RefUnwindSafe
-    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> RefUnwindSafe
+    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + UnwindSafe,
 {
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Drop
-    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Drop
+    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
@@ -247,8 +281,8 @@ where
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Debug
-    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Debug
+    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
@@ -259,8 +293,8 @@ where
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Default
-    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Default
+    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Default,
@@ -271,8 +305,8 @@ where
     }
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool> Allocator
-    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Allocator
+    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -309,8 +343,8 @@ where
 }
 
 /// Methods for a `Bump` with a default base allocator.
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
+    Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Default,
@@ -479,7 +513,7 @@ where
 }
 
 /// Methods for a [*guaranteed allocated*](crate#what-does-guaranteed-allocated-mean) `Bump`.
-impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP, true>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool> Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
@@ -500,7 +534,7 @@ where
     /// assert_eq!(bump.stats().allocated(), 0);
     /// ```
     #[inline(always)]
-    pub fn scoped<R>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, true>) -> R) -> R {
+    pub fn scoped<R>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, true, DEALLOCATES>) -> R) -> R {
         let mut guard = self.scope_guard();
         f(guard.scope())
     }
@@ -549,7 +583,7 @@ where
     #[inline(always)]
     pub fn scoped_aligned<const NEW_MIN_ALIGN: usize, R>(
         &mut self,
-        f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP, true>) -> R,
+        f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP, true, DEALLOCATES>) -> R,
     ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
@@ -632,7 +666,7 @@ where
     #[inline(always)]
     pub fn aligned<'a, const NEW_MIN_ALIGN: usize, R>(
         &'a mut self,
-        f: impl FnOnce(BumpScope<'a, A, NEW_MIN_ALIGN, UP, true>) -> R,
+        f: impl FnOnce(BumpScope<'a, A, NEW_MIN_ALIGN, UP, true, DEALLOCATES>) -> R,
     ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
@@ -661,7 +695,7 @@ where
     /// ```
     #[must_use]
     #[inline(always)]
-    pub fn scope_guard(&mut self) -> BumpScopeGuardRoot<'_, A, MIN_ALIGN, UP> {
+    pub fn scope_guard(&mut self) -> BumpScopeGuardRoot<'_, A, MIN_ALIGN, UP, DEALLOCATES> {
         BumpScopeGuardRoot::new(self)
     }
 
@@ -674,7 +708,7 @@ where
 }
 
 /// Methods for a **not** [*guaranteed allocated*](crate#what-does-guaranteed-allocated-mean) `Bump`.
-impl<A, const MIN_ALIGN: usize, const UP: bool> Bump<A, MIN_ALIGN, UP, false>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool> Bump<A, MIN_ALIGN, UP, false, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
@@ -708,8 +742,8 @@ where
 }
 
 /// Methods that are always available.
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
+    Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
@@ -1013,7 +1047,7 @@ where
 
     /// Returns this `&Bump` as a `&BumpScope`.
     #[inline(always)]
-    pub fn as_scope(&self) -> &BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
+    pub fn as_scope(&self) -> &BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES> {
         // SAFETY: `Bump` and `BumpScope` both have the layout of `Cell<RawChunk>`
         //         `BumpScope`'s api is a subset of `Bump`'s
         unsafe { &*ptr::from_ref(self).cast() }
@@ -1021,7 +1055,7 @@ where
 
     /// Returns this `&mut Bump` as a `&mut BumpScope`.
     #[inline(always)]
-    pub fn as_mut_scope(&mut self) -> &mut BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED> {
+    pub fn as_mut_scope(&mut self) -> &mut BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES> {
         // SAFETY: `Bump` and `BumpScope` both have the layout of `Cell<RawChunk>`
         //         `BumpScope`'s api is a subset of `Bump`'s
         unsafe { &mut *ptr::from_mut(self).cast() }
@@ -1029,7 +1063,7 @@ where
 
     /// Converts this `Bump` into a `Bump` with a new minimum alignment.
     #[inline(always)]
-    pub fn into_aligned<const NEW_MIN_ALIGN: usize>(self) -> Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    pub fn into_aligned<const NEW_MIN_ALIGN: usize>(self) -> Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -1045,7 +1079,9 @@ where
     /// When decreasing the alignment we need to make sure that the bump position is realigned to the original alignment.
     /// That can only be ensured by having a function that takes a closure, like the methods mentioned above do.
     #[inline(always)]
-    pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(&mut self) -> &mut Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(
+        &mut self,
+    ) -> &mut Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -1054,7 +1090,9 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn cast_align<const NEW_MIN_ALIGN: usize>(self) -> Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    pub(crate) unsafe fn cast_align<const NEW_MIN_ALIGN: usize>(
+        self,
+    ) -> Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
@@ -1067,11 +1105,11 @@ where
     #[inline(always)]
     pub(crate) unsafe fn cast_align_mut<const NEW_MIN_ALIGN: usize>(
         &mut self,
-    ) -> &mut Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+    ) -> &mut Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        unsafe { &mut *ptr::from_mut(self).cast::<Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>() }
+        unsafe { &mut *ptr::from_mut(self).cast::<Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>>() }
     }
 
     /// Converts this `Bump` into a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `Bump`.
@@ -1129,8 +1167,8 @@ where
     #[cfg(feature = "panic-on-alloc")]
     pub fn into_guaranteed_allocated(
         self,
-        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true>,
-    ) -> Bump<A, MIN_ALIGN, UP, true> {
+        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>,
+    ) -> Bump<A, MIN_ALIGN, UP, true, DEALLOCATES> {
         self.as_scope().ensure_allocated(f);
         unsafe { transmute(self) }
     }
@@ -1191,8 +1229,8 @@ where
     #[inline(always)]
     pub fn try_into_guaranteed_allocated(
         self,
-        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true>, AllocError>,
-    ) -> Result<Bump<A, MIN_ALIGN, UP, true>, AllocError> {
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>, AllocError>,
+    ) -> Result<Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>, AllocError> {
         self.as_scope().try_ensure_allocated(f)?;
         Ok(unsafe { transmute(self) })
     }
@@ -1229,8 +1267,8 @@ where
     #[cfg(feature = "panic-on-alloc")]
     pub fn as_guaranteed_allocated(
         &self,
-        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true>,
-    ) -> &Bump<A, MIN_ALIGN, UP, true> {
+        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>,
+    ) -> &Bump<A, MIN_ALIGN, UP, true, DEALLOCATES> {
         self.as_scope().ensure_allocated(f);
         unsafe { transmute_ref(self) }
     }
@@ -1268,8 +1306,8 @@ where
     #[inline(always)]
     pub fn try_as_guaranteed_allocated(
         &self,
-        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true>, AllocError>,
-    ) -> Result<&Bump<A, MIN_ALIGN, UP, true>, AllocError> {
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>, AllocError>,
+    ) -> Result<&Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>, AllocError> {
         self.as_scope().try_ensure_allocated(f)?;
         Ok(unsafe { transmute_ref(self) })
     }
@@ -1330,8 +1368,8 @@ where
     #[cfg(feature = "panic-on-alloc")]
     pub fn as_mut_guaranteed_allocated(
         &mut self,
-        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true>,
-    ) -> &mut Bump<A, MIN_ALIGN, UP, true> {
+        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>,
+    ) -> &mut Bump<A, MIN_ALIGN, UP, true, DEALLOCATES> {
         self.as_scope().ensure_allocated(f);
         unsafe { transmute_mut(self) }
     }
@@ -1393,15 +1431,15 @@ where
     #[inline(always)]
     pub fn try_as_mut_guaranteed_allocated(
         &mut self,
-        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true>, AllocError>,
-    ) -> Result<&mut Bump<A, MIN_ALIGN, UP, true>, AllocError> {
+        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>, AllocError>,
+    ) -> Result<&mut Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>, AllocError> {
         self.as_scope().try_ensure_allocated(f)?;
         Ok(unsafe { transmute_mut(self) })
     }
 
     /// Converts this `BumpScope` into a ***not*** [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `Bump`.
     #[inline(always)]
-    pub fn into_not_guaranteed_allocated(self) -> Bump<A, MIN_ALIGN, UP, false>
+    pub fn into_not_guaranteed_allocated(self) -> Bump<A, MIN_ALIGN, UP, false, DEALLOCATES>
     where
         A: Default,
     {
@@ -1415,7 +1453,7 @@ where
     /// a user could `mem::swap` it with an actual unallocated bump allocator which in turn would make `&mut self`
     /// unallocated.
     #[inline(always)]
-    pub fn as_not_guaranteed_allocated(&self) -> &Bump<A, MIN_ALIGN, UP, false>
+    pub fn as_not_guaranteed_allocated(&self) -> &Bump<A, MIN_ALIGN, UP, false, DEALLOCATES>
     where
         A: Default,
     {
@@ -1453,36 +1491,67 @@ where
             chunk: Cell::new(unsafe { RawChunk::from_header(ptr.cast()) }),
         }
     }
+
+    /// Turns off deallocation and shrinking.
+    pub fn into_without_dealloc(self) -> Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
+        unsafe { transmute(self) }
+    }
+
+    /// Turns off deallocation and shrinking.
+    pub fn as_without_dealloc(&self) -> &Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
+        unsafe { transmute_ref(self) }
+    }
+
+    /// Turns off deallocation and shrinking.
+    pub fn as_mut_without_dealloc(&mut self) -> &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
+        unsafe { transmute_mut(self) }
+    }
+
+    /// Turns on deallocation and shrinking.
+    pub fn into_with_dealloc(self) -> Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
+        unsafe { transmute(self) }
+    }
+
+    /// Turns on deallocation and shrinking.
+    pub fn as_with_dealloc(&self) -> &Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
+        unsafe { transmute_ref(self) }
+    }
+
+    /// Turns on deallocation and shrinking.
+    pub fn as_mut_with_dealloc(&mut self) -> &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
+        unsafe { transmute_mut(self) }
+    }
 }
 
-impl<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    From<&'b Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>> for &'b BumpScope<'b, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
+    From<&'b Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>>
+    for &'b BumpScope<'b, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
 {
     #[inline(always)]
-    fn from(value: &'b Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> Self {
+    fn from(value: &'b Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>) -> Self {
         value.as_scope()
     }
 }
 
-impl<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    From<&'b mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>>
-    for &'b mut BumpScope<'b, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
+    From<&'b mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>>
+    for &'b mut BumpScope<'b, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
 {
     #[inline(always)]
-    fn from(value: &'b mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>) -> Self {
+    fn from(value: &'b mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>) -> Self {
         value.as_mut_scope()
     }
 }
 
 /// Methods to allocate. Available as fallible or infallible.
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>
-    Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>
+impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
+    Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,

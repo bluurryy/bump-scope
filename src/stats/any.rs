@@ -407,8 +407,15 @@ fn check_from_impls() {
     fn accepting_any_chunk_prev_iter(_: AnyChunkPrevIter) {}
     fn accepting_any_chunk_next_iter(_: AnyChunkNextIter) {}
 
-    fn generic_bump<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-        bump: &BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED>,
+    fn generic_bump<
+        'a,
+        A,
+        const MIN_ALIGN: usize,
+        const UP: bool,
+        const GUARANTEED_ALLOCATED: bool,
+        const DEALLOCATES: bool,
+    >(
+        bump: &BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
     ) where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
         A: BaseAllocator<GUARANTEED_ALLOCATED>,
