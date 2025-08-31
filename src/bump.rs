@@ -77,7 +77,7 @@ macro_rules! make_type {
         /// - guaranteed allocated:
         ///   <code>{[as](Self::as_guaranteed_allocated), [as_mut](Self::as_mut_guaranteed_allocated), [into](Self::into_guaranteed_allocated)}_guaranteed_allocated</code>,
         ///   <code>{[as](Self::as_not_guaranteed_allocated), [into](Self::into_not_guaranteed_allocated)}_not_guaranteed_allocated</code>
-        /// - minimum alignment: [`aligned`], [`as_aligned_mut`], [`into_aligned`]
+        /// - minimum alignment: [`aligned`], [`as_mut_aligned`], [`into_aligned`]
         /// - deallocation:
         ///   <code>{[as](Self::as_with_dealloc), [as_mut](Self::as_mut_with_dealloc), [into](Self::into_with_dealloc)}_with_dealloc</code>
         ///   <code>{[as](Self::as_without_dealloc), [as_mut](Self::as_mut_without_dealloc), [into](Self::into_without_dealloc)}_without_dealloc</code>
@@ -172,7 +172,7 @@ macro_rules! make_type {
         /// [`reset`]: Self::reset
         ///
         /// [`aligned`]: Self::aligned
-        /// [`as_aligned_mut`]: Self::as_aligned_mut
+        /// [`as_mut_aligned`]: Self::as_mut_aligned
         /// [`into_aligned`]: Self::into_aligned
         ///
         /// [`into_with_dealloc`]: Self::into_with_dealloc
@@ -1079,7 +1079,7 @@ where
     /// When decreasing the alignment we need to make sure that the bump position is realigned to the original alignment.
     /// That can only be ensured by having a function that takes a closure, like the methods mentioned above do.
     #[inline(always)]
-    pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(
+    pub fn as_mut_aligned<const NEW_MIN_ALIGN: usize>(
         &mut self,
     ) -> &mut Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
     where
@@ -1087,6 +1087,18 @@ where
     {
         self.as_scope().must_align_more::<NEW_MIN_ALIGN>();
         unsafe { self.cast_align_mut() }
+    }
+
+    #[doc(hidden)]
+    #[inline(always)]
+    #[deprecated = "renamed to `as_mut_aligned`"]
+    pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(
+        &mut self,
+    ) -> &mut Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    where
+        MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
+    {
+        self.as_mut_aligned()
     }
 
     #[inline(always)]

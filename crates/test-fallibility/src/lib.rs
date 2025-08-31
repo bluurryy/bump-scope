@@ -75,8 +75,8 @@ up_and_down! {
         bump.into_aligned()
     }
 
-    pub fn Bump_as_aligned_mut(bump: &mut Bump) -> &mut Bump<4> {
-        bump.as_aligned_mut()
+    pub fn Bump_as_mut_aligned(bump: &mut Bump) -> &mut Bump<4> {
+        bump.as_mut_aligned()
     }
 
     pub fn Bump_allocate(bump: &Bump, layout: Layout) -> Result<NonNull<[u8]>> {

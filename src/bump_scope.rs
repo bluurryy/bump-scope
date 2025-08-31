@@ -584,7 +584,7 @@ where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
         const_param_assert! {
-            (const MIN_ALIGN: usize, const NEW_MIN_ALIGN: usize) => NEW_MIN_ALIGN >= MIN_ALIGN, "`into_aligned` or `as_aligned_mut` can't decrease the minimum alignment"
+            (const MIN_ALIGN: usize, const NEW_MIN_ALIGN: usize) => NEW_MIN_ALIGN >= MIN_ALIGN, "`into_aligned` or `as_mut_aligned` can't decrease the minimum alignment"
         }
 
         self.align::<NEW_MIN_ALIGN>();
@@ -598,7 +598,7 @@ where
     /// When decreasing the alignment we need to make sure that the bump position is realigned to the original alignment.
     /// That can only be ensured by having a function that takes a closure, like the methods mentioned above do.
     #[inline(always)]
-    pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(
+    pub fn as_mut_aligned<const NEW_MIN_ALIGN: usize>(
         &mut self,
     ) -> &mut BumpScope<'a, A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
     where
@@ -606,6 +606,18 @@ where
     {
         self.must_align_more::<NEW_MIN_ALIGN>();
         unsafe { self.cast_align_mut() }
+    }
+
+    #[doc(hidden)]
+    #[inline(always)]
+    #[deprecated = "renamed to `as_mut_aligned`"]
+    pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(
+        &mut self,
+    ) -> &mut BumpScope<'a, A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    where
+        MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
+    {
+        self.as_mut_aligned()
     }
 
     /// Returns `&self` as is. This is useful for macros that support both `Bump` and `BumpScope`.
