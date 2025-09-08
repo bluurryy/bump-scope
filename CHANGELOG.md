@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `DEALLOCATES` const parameter to toggle deallocation and shrinking
 - Better compile error message for macros when "panic-on-alloc" is disabled
 
+### Changed
+
+- Rename `as_aligned_mut` to `as_mut_aligned`, deprecating the old naming
+
 ### Fixed
 
 - Implement `NoDrop` for `BumpScope` regardless of `GUARANTEED_ALLOCATED`
