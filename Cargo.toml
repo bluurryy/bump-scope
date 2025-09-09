@@ -10,7 +10,13 @@ documentation = "https://docs.rs/bump-scope"
 repository = "https://github.com/bluurryy/bump-scope"
 rust-version = "1.85.1"
 readme = "README.md"
-exclude = ["*.nu", "justfile", "tests", ".vscode", ".github"]
+include = [
+    "src/**/*",
+    "/LICENSE-*",
+    "/README.md",
+    "/CHANGELOG.md",
+    "!**/tests/**/*",
+]
 
 [dependencies]
 allocator-api2-02 = { package = "allocator-api2", version = "0.2.21", default-features = false, optional = true }
