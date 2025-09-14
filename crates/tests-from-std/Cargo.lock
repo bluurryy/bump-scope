@@ -16,7 +16,7 @@ checksum = "78200ac3468a57d333cd0ea5dd398e25111194dcacd49208afca95c629a6311d"
 
 [[package]]
 name = "bump-scope"
-version = "1.3.0"
+version = "1.3.1"
 dependencies = [
  "allocator-api2 0.2.21",
  "allocator-api2 0.3.0",
