@@ -792,7 +792,7 @@ _If you are upgrading: please see [`UPGRADING.md#0.17.0`](UPGRADING.md#0.17.0)._
 [#3]: https://github.com/bluurryy/bump-scope/issues/3
 
 <!-- next-url -->
-[Unreleased]: https://github.com/bluurryy/cargo-insert-docs/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/bluurryy/bump-scope/compare/v1.3.0...HEAD
 [1.3.0]: https://github.com/bluurryy/bump-scope/releases/tag/v1.3.0
 [1.2.1]: https://github.com/bluurryy/bump-scope/releases/tag/v1.2.1
 [1.2.0]: https://github.com/bluurryy/bump-scope/releases/tag/v1.2.0

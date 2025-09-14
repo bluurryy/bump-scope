@@ -133,7 +133,7 @@ pre-release-replacements = [
     { file = "CHANGELOG.md", search = "## \\[Unreleased\\]", replace = "## [{{version}}] - {{date}}", exactly = 1 },
     { file = "CHANGELOG.md", search = "\\[Unreleased\\]: .*", replace = "[{{version}}]: https://github.com/bluurryy/bump-scope/releases/tag/v{{version}}" },
     { file = "CHANGELOG.md", search = "#Unreleased", replace = "#{{version}}", min = 0 },
-    { file = "CHANGELOG.md", search = "<!-- next-url -->", replace = "<!-- next-url -->\n[Unreleased]: https://github.com/bluurryy/cargo-insert-docs/compare/{{tag_name}}...HEAD", exactly = 1 },
+    { file = "CHANGELOG.md", search = "<!-- next-url -->", replace = "<!-- next-url -->\n[Unreleased]: https://github.com/bluurryy/bump-scope/compare/{{tag_name}}...HEAD", exactly = 1 },
     { file = "UPGRADING.md", search = "## \\[Unreleased\\]", replace = "## [{{version}}] - {{date}}", min = 0 },
     { file = "UPGRADING.md", search = "\\[Unreleased\\]: .*", replace = "[{{version}}]: CHANGELOG.md#{{version}}", min = 0 },
     { file = "UPGRADING.md", search = "#Unreleased", replace = "#{{version}}", min = 0 },
