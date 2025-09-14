@@ -42,12 +42,18 @@ panic-on-alloc = []
 ## Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors. 
 serde = ["dep:serde"]
 
-## Adds `bytemuck::*` extension traits for `alloc_zeroed(_slice)`, `BumpBox::init_zeroed` and 
-## `resize_zeroed` and `extend_zeroed` for vector types. 
+## Adds `bytemuck::*` extension traits for 
+## <code>[alloc_zeroed](bytemuck::BumpExt::alloc_zeroed)([_slice](bytemuck::BumpExt::alloc_zeroed_slice))</code>, 
+## [`init_zeroed`](bytemuck::InitZeroed::init_zeroed),
+## [`extend_zeroed`](bytemuck::VecExt::extend_zeroed) and 
+## [`resize_zeroed`](bytemuck::VecExt::resize_zeroed).
 bytemuck = ["dep:bytemuck"]
 
-## Adds `zerocopy_08::*` extension traits for `alloc_zeroed(_slice)`, `BumpBox::init_zeroed` and 
-## `resize_zeroed` and `extend_zeroed` for vector types. 
+## Adds `zerocopy_08::*` extension traits for
+## <code>[alloc_zeroed](zerocopy_08::BumpExt::alloc_zeroed)([_slice](zerocopy_08::BumpExt::alloc_zeroed_slice))</code>, 
+## [`init_zeroed`](zerocopy_08::InitZeroed::init_zeroed),
+## [`extend_zeroed`](zerocopy_08::VecExt::extend_zeroed) and 
+## [`resize_zeroed`](zerocopy_08::VecExt::resize_zeroed).
 zerocopy-08 = ["dep:zerocopy-08"]
 
 ## Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and

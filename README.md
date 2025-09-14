@@ -203,10 +203,16 @@ assert_eq!(bump.stats().allocated(), 4);
   Without this feature, allocation failures cannot cause panics, and only
   `try_`-prefixed allocation methods will be available.
 - **`serde`** — Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
-- **`bytemuck`** — Adds `bytemuck::*` extension traits for `alloc_zeroed(_slice)`, `BumpBox::init_zeroed` and
-  `resize_zeroed` and `extend_zeroed` for vector types.
-- **`zerocopy-08`** — Adds `zerocopy_08::*` extension traits for `alloc_zeroed(_slice)`, `BumpBox::init_zeroed` and
-  `resize_zeroed` and `extend_zeroed` for vector types.
+- **`bytemuck`** — Adds `bytemuck::*` extension traits for
+  <code>[alloc_zeroed](https://docs.rs/bump-scope/1.3.0/bump_scope/bytemuck/trait.BumpExt.html#tymethod.alloc_zeroed)([_slice](https://docs.rs/bump-scope/1.3.0/bump_scope/bytemuck/trait.BumpExt.html#tymethod.alloc_zeroed_slice))</code>,
+  [`init_zeroed`](https://docs.rs/bump-scope/1.3.0/bump_scope/bytemuck/trait.InitZeroed.html#tymethod.init_zeroed),
+  [`extend_zeroed`](https://docs.rs/bump-scope/1.3.0/bump_scope/bytemuck/trait.VecExt.html#tymethod.extend_zeroed) and
+  [`resize_zeroed`](https://docs.rs/bump-scope/1.3.0/bump_scope/bytemuck/trait.VecExt.html#tymethod.resize_zeroed).
+- **`zerocopy-08`** — Adds `zerocopy_08::*` extension traits for
+  <code>[alloc_zeroed](https://docs.rs/bump-scope/1.3.0/bump_scope/zerocopy_08/trait.BumpExt.html#tymethod.alloc_zeroed)([_slice](https://docs.rs/bump-scope/1.3.0/bump_scope/zerocopy_08/trait.BumpExt.html#tymethod.alloc_zeroed_slice))</code>,
+  [`init_zeroed`](https://docs.rs/bump-scope/1.3.0/bump_scope/zerocopy_08/trait.InitZeroed.html#tymethod.init_zeroed),
+  [`extend_zeroed`](https://docs.rs/bump-scope/1.3.0/bump_scope/zerocopy_08/trait.VecExt.html#tymethod.extend_zeroed) and
+  [`resize_zeroed`](https://docs.rs/bump-scope/1.3.0/bump_scope/zerocopy_08/trait.VecExt.html#tymethod.resize_zeroed).
 - **`allocator-api2-02`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and
   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
   [`AllocatorApi2V02Compat`](https://docs.rs/bump-scope/1.3.0/bump_scope/alloc/compat/struct.AllocatorApi2V02Compat.html).
