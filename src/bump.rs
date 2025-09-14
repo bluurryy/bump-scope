@@ -72,6 +72,7 @@ macro_rules! make_type {
         /// - scopes: [`scoped`], [`scoped_aligned`], [`scope_guard`]
         /// - checkpoints: [`checkpoint`], [`reset_to`]
         /// - reset: [`reset`]
+        /// - dealloc: [`dealloc`]
         ///
         /// #### Configure allocator settings ...
         /// - guaranteed allocated:
@@ -170,6 +171,7 @@ macro_rules! make_type {
         /// [`reset_to`]: Self::reset_to
         ///
         /// [`reset`]: Self::reset
+        /// [`dealloc`]: Self::dealloc
         ///
         /// [`aligned`]: Self::aligned
         /// [`as_mut_aligned`]: Self::as_mut_aligned
