@@ -45,7 +45,7 @@ where
 /// - `shrink` never errors unless the new alignment is greater
 ///
 /// Those invariants are used here:
-/// - Handling of foreign pointers is necessary for implementing [`BumpVec::from_parts`] and [`BumpBox::into_box`].
+/// - Handling of foreign pointers is necessary for implementing [`BumpVec::from_parts`], [`BumpBox::into_box`] and [`Bump(Scope)::dealloc`][Bump::dealloc].
 /// - Memory block splitting is necessary for [`split_off`] and [`split_at`].
 /// - Deallocate with a size of `0` is used in the drop implementation of [`BumpVec`].
 /// - The non-erroring behavior of `shrink` is necessary for [`BumpAllocatorExt::shrink_slice`]
