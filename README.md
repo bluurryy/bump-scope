@@ -317,7 +317,7 @@ It surprised me to learn that bumpalo bumps downwards. I wasn't sure about bumpi
 
 To be able to allocate slices from arbitrary iterators or `fmt::Arguments` I had to implement my own `Vec` and `String`. (The `Vec` from `allocator_api2` would have worked, but the generated code wasn't great.) Comparing `alloc_iter` for an upwards and downwards bumping allocator is not really fair because of the different realloc behavior. So I implemented `alloc_iter_rev` and a `VecRev` that would push elements to the start instead of the end. A `VecRev` can be grown and shrunk in place when downwards bumping just as a `Vec` can be grown and shrunk in place when upwards allocating.
 
-The conclusion I've come to by writing this library is that bumping downwards and having a minimum alignment makes very little difference. Just look at [the benchmarks](crates/callgrind-benches/README.md). If you make any use of `alloc_iter`, `alloc_fmt` or growable collections then the more favorable realloc behavior of upwards bumping will likely save you more than the few instructions from bumping downwards.
+The conclusion I've come to by writing this library is that bumping downwards and having a minimum alignment makes very little difference. If you make any use of `alloc_iter`, `alloc_fmt` or growable collections then the more favorable realloc behavior of upwards bumping will likely save you more than the few instructions from bumping downwards.
 
 ## License
 
