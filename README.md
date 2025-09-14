@@ -262,9 +262,6 @@ When allocating a type in a bump allocator with a sufficient minimum alignment,
 the bump pointer will not have to be aligned for the allocation but the allocation size
 will need to be rounded up to the next multiple of the minimum alignment.
 
-For example changing the minimum alignment to `4` makes it so allocations with the alignment of `4` don't need to align the bump pointer anymore.
-This will penalize allocations whose sizes are not a multiple of `4` as their size now needs to be rounded up the next multiple of `4`.
-
 The minimum alignment is controlled by the generic parameter `const MIN_ALIGN: usize`. By default, `MIN_ALIGN` is `1`.
 
 For the performance impact see [./crates/callgrind-benches][benches].
