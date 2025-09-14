@@ -1770,7 +1770,7 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     ///
-    /// This technically also panics if the `fmt()` implementation returned an Error,
+    /// This technically also errors if the `fmt()` implementation returned an Error,
     /// but since [`fmt()` implementors should only error when writing to the stream fails](core::fmt::Error),
     /// that should be equivalent to an allocation failure.
     ///
@@ -1839,7 +1839,7 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     ///
-    /// This technically also panics if the `fmt()` implementation returned an Error,
+    /// This technically also errors if the `fmt()` implementation returned an Error,
     /// but since [`fmt()` implementors should only error when writing to the stream fails](core::fmt::Error),
     /// that should be equivalent to an allocation failure.
     ///
@@ -2024,7 +2024,7 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     ///
-    /// This technically also panics if the `fmt()` implementation returned an Error,
+    /// This technically also errors if the `fmt()` implementation returned an Error,
     /// but since [`fmt()` implementors should only error when writing to the stream fails](core::fmt::Error),
     /// that should be equivalent to an allocation failure.
     ///
@@ -2101,7 +2101,7 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     ///
-    /// This technically also panics if the `fmt()` implementation returned an Error,
+    /// This technically also errors if the `fmt()` implementation returned an Error,
     /// but since [`fmt()` implementors should only error when writing to the stream fails](core::fmt::Error),
     /// that should be equivalent to an allocation failure.
     ///
