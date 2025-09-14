@@ -108,7 +108,7 @@ nightly-tests = []
 
 ## Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
 ## This makes it so references don't have to strictly outlive the container.
-## (That's how std's `Box` and `Vec` work.)
+## (Just like with std's `Box` and `Vec`.)
 nightly-dropck-eyepatch = []
 
 ## Adds [`alloc_clone`](Bump::alloc_clone) method to `Bump(Scope)`.

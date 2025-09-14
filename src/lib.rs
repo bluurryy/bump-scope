@@ -276,7 +276,7 @@
 //! - **`nightly-tests`** — Enables some tests that require a nightly compiler.
 //! - **`nightly-dropck-eyepatch`** — Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
 //!   This makes it so references don't have to strictly outlive the container.
-//!   (That's how std's `Box` and `Vec` work.)
+//!   (Just like with std's `Box` and `Vec`.)
 //! - **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](Bump::alloc_clone) method to `Bump(Scope)`.
 //! <!-- feature documentation end -->
 //!
