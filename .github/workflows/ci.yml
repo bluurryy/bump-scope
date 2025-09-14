@@ -110,7 +110,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: taiki-e/install-action@v2
       with:
-        tool: cargo-insert-docs
+        tool: cargo-insert-docs@0.19.1
     - run: cargo insert-docs --all-features --check
   doc: 
     runs-on: ubuntu-latest
