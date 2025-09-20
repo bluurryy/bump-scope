@@ -673,7 +673,7 @@ impl<'a> BumpBox<'a, str> {
     /// # Complexity
     ///
     /// This operation takes `O(1)` time if either the range starts at 0, ends at `len`, or is empty.
-    /// Otherwise it takes `O(len())` time.
+    /// Otherwise it takes `O(min(end, len - start))` time.
     ///
     /// # Examples
     ///
@@ -1755,7 +1755,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// # Complexity
     ///
     /// This operation takes `O(1)` time if either the range starts at 0, ends at `len`, or is empty.
-    /// Otherwise it takes `O(len())` time.
+    /// Otherwise it takes `O(min(end, len - start))` time.
     ///
     /// # Examples
     ///
