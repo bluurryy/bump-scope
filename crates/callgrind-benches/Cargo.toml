@@ -14,7 +14,7 @@ serde_json = "1.0.140"
 
 [dev-dependencies]
 benches-lib = { path = "benches-lib" }
-iai-callgrind = "0.16.0"
+gungraun = "0.17.0"
 paste = "1.0.15"
 
 [profile.bench]

@@ -192,7 +192,7 @@ fn rows() -> Vec<Vec<String>> {
         let mut row = vec![group_label];
 
         for &library in LIBRARY_NAMES {
-            let path = format!("target/iai/{PACKAGE_NAME}/{BENCH_NAME}/{group}/{library}/summary.json");
+            let path = format!("target/gungraun/{PACKAGE_NAME}/{BENCH_NAME}/{group}/{group}_{library}/summary.json");
             let Report { instructions, branches } = read_summary(path.as_ref());
 
             let group_and_library = format!("{group}/{library}");

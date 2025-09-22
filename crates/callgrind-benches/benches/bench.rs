@@ -7,18 +7,28 @@
 //! the library to itself is so that the `entry_point` filter works properly.
 
 macro_rules! benches_library {
-    ($library:ident $name:ident) => {
+    ($name:ident for $($library:ident)*) => {
         paste::paste! {
-             #[::iai_callgrind::library_benchmark(
-                config = ::iai_callgrind::LibraryBenchmarkConfig::default()
-                    .tool(::iai_callgrind::Callgrind::default()
-                        .entry_point(::iai_callgrind::EntryPoint::Custom(concat!("entry_bench_", stringify!($name), "_", stringify!($library)).to_owned()))
-                        .args(["branch-sim=yes"])
-                    )
+            pub mod [<bench_ $name>] {
+                $(
+                    #[::gungraun::library_benchmark(
+                        config = ::gungraun::LibraryBenchmarkConfig::default()
+                            .tool(::gungraun::Callgrind::default()
+                                .entry_point(::gungraun::EntryPoint::Custom(concat!("entry_bench_", stringify!($name), "_", stringify!($library)).to_owned()))
+                                .args(["branch-sim=yes"])
+                            )
 
-            )]
-            pub fn $library() {
-                benches_lib::[<bench_ $name _ $library>](benches_lib::[<entry_bench_ $name _ $library>]);
+                    )]
+                    pub fn [<$name _ $library>]() {
+                        benches_lib::[<bench_ $name _ $library>](benches_lib::[<entry_bench_ $name _ $library>]);
+                    }
+                )*
+
+                ::gungraun::library_benchmark_group!(
+                    name = $name;
+                    benchmarks =
+                        $([<$name _ $library>]),*
+                );
             }
         }
     };
@@ -28,31 +38,13 @@ macro_rules! benches {
     ($($name:ident)*) => {
         paste::paste! {
             $(
-                pub mod [<bench_ $name>] {
-                    benches_library! {
-                        bump_scope_up $name
-                    }
+                benches_library! {
+                    $name for
 
-                    benches_library! {
-                        bump_scope_down $name
-                    }
-
-                    benches_library! {
-                        bumpalo $name
-                    }
-
-                    benches_library! {
-                        blink_alloc $name
-                    }
-
-                    ::iai_callgrind::library_benchmark_group!(
-                        name = $name;
-                        benchmarks =
-                            bump_scope_up,
-                            bump_scope_down,
-                            bumpalo,
-                            blink_alloc,
-                    );
+                    bump_scope_up
+                    bump_scope_down
+                    bumpalo
+                    blink_alloc
                 }
             )*
 
@@ -60,7 +52,7 @@ macro_rules! benches {
                 use [<bench_ $name>]::$name;
             )*
 
-            ::iai_callgrind::main!(library_benchmark_groups = $($name),*);
+            ::gungraun::main!(library_benchmark_groups = $($name),*);
         }
 
     };

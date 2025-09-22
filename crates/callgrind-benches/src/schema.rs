@@ -1,8 +1,6 @@
 //! Generated using [cargo-typify](https://github.com/oxidecomputer/typify/tree/main/cargo-typify)
-//! from [summary.v4.schema.json](https://github.com/iai-callgrind/iai-callgrind/blob/85845bbb16726ca7f9d0603388b2ec8f1ac8a357/iai-callgrind-runner/schemas/summary.v4.schema.json).
+//! from [summary.v6.schema.json](https://github.com/gungraun/gungraun/blob/893dd78dedca5301dba1defc59b7a26198bd63d8/gungraun-runner/schemas/summary.v6.schema.json).
 #![allow(dead_code)]
-#![allow(clippy::uninlined_format_args)]
-#![allow(clippy::wrong_self_convention)]
 #![allow(clippy::redundant_closure_call)]
 #![allow(clippy::needless_lifetimes)]
 #![allow(clippy::match_single_binding)]
@@ -71,8 +69,8 @@ impl ::std::convert::From<&Self> for BenchmarkKind {
 impl ::std::fmt::Display for BenchmarkKind {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         match *self {
-            Self::LibraryBenchmark => write!(f, "LibraryBenchmark"),
-            Self::BinaryBenchmark => write!(f, "BinaryBenchmark"),
+            Self::LibraryBenchmark => f.write_str("LibraryBenchmark"),
+            Self::BinaryBenchmark => f.write_str("BinaryBenchmark"),
         }
     }
 }
@@ -472,32 +470,32 @@ impl ::std::convert::From<&Self> for CachegrindMetric {
 impl ::std::fmt::Display for CachegrindMetric {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         match *self {
-            Self::Ir => write!(f, "Ir"),
-            Self::Dr => write!(f, "Dr"),
-            Self::Dw => write!(f, "Dw"),
-            Self::I1mr => write!(f, "I1mr"),
-            Self::D1mr => write!(f, "D1mr"),
-            Self::D1mw => write!(f, "D1mw"),
-            Self::ILmr => write!(f, "ILmr"),
-            Self::DLmr => write!(f, "DLmr"),
-            Self::DLmw => write!(f, "DLmw"),
-            Self::I1MissRate => write!(f, "I1MissRate"),
-            Self::LLiMissRate => write!(f, "LLiMissRate"),
-            Self::D1MissRate => write!(f, "D1MissRate"),
-            Self::LLdMissRate => write!(f, "LLdMissRate"),
-            Self::LlMissRate => write!(f, "LLMissRate"),
-            Self::L1hits => write!(f, "L1hits"),
-            Self::LLhits => write!(f, "LLhits"),
-            Self::RamHits => write!(f, "RamHits"),
-            Self::L1HitRate => write!(f, "L1HitRate"),
-            Self::LlHitRate => write!(f, "LLHitRate"),
-            Self::RamHitRate => write!(f, "RamHitRate"),
-            Self::TotalRw => write!(f, "TotalRW"),
-            Self::EstimatedCycles => write!(f, "EstimatedCycles"),
-            Self::Bc => write!(f, "Bc"),
-            Self::Bcm => write!(f, "Bcm"),
-            Self::Bi => write!(f, "Bi"),
-            Self::Bim => write!(f, "Bim"),
+            Self::Ir => f.write_str("Ir"),
+            Self::Dr => f.write_str("Dr"),
+            Self::Dw => f.write_str("Dw"),
+            Self::I1mr => f.write_str("I1mr"),
+            Self::D1mr => f.write_str("D1mr"),
+            Self::D1mw => f.write_str("D1mw"),
+            Self::ILmr => f.write_str("ILmr"),
+            Self::DLmr => f.write_str("DLmr"),
+            Self::DLmw => f.write_str("DLmw"),
+            Self::I1MissRate => f.write_str("I1MissRate"),
+            Self::LLiMissRate => f.write_str("LLiMissRate"),
+            Self::D1MissRate => f.write_str("D1MissRate"),
+            Self::LLdMissRate => f.write_str("LLdMissRate"),
+            Self::LlMissRate => f.write_str("LLMissRate"),
+            Self::L1hits => f.write_str("L1hits"),
+            Self::LLhits => f.write_str("LLhits"),
+            Self::RamHits => f.write_str("RamHits"),
+            Self::L1HitRate => f.write_str("L1HitRate"),
+            Self::LlHitRate => f.write_str("LLHitRate"),
+            Self::RamHitRate => f.write_str("RamHitRate"),
+            Self::TotalRw => f.write_str("TotalRW"),
+            Self::EstimatedCycles => f.write_str("EstimatedCycles"),
+            Self::Bc => f.write_str("Bc"),
+            Self::Bcm => f.write_str("Bcm"),
+            Self::Bi => f.write_str("Bi"),
+            Self::Bim => f.write_str("Bim"),
         }
     }
 }
@@ -667,19 +665,19 @@ impl ::std::convert::From<&Self> for DhatMetric {
 impl ::std::fmt::Display for DhatMetric {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         match *self {
-            Self::TotalUnits => write!(f, "TotalUnits"),
-            Self::TotalEvents => write!(f, "TotalEvents"),
-            Self::TotalBytes => write!(f, "TotalBytes"),
-            Self::TotalBlocks => write!(f, "TotalBlocks"),
-            Self::AtTGmaxBytes => write!(f, "AtTGmaxBytes"),
-            Self::AtTGmaxBlocks => write!(f, "AtTGmaxBlocks"),
-            Self::AtTEndBytes => write!(f, "AtTEndBytes"),
-            Self::AtTEndBlocks => write!(f, "AtTEndBlocks"),
-            Self::ReadsBytes => write!(f, "ReadsBytes"),
-            Self::WritesBytes => write!(f, "WritesBytes"),
-            Self::TotalLifetimes => write!(f, "TotalLifetimes"),
-            Self::MaximumBytes => write!(f, "MaximumBytes"),
-            Self::MaximumBlocks => write!(f, "MaximumBlocks"),
+            Self::TotalUnits => f.write_str("TotalUnits"),
+            Self::TotalEvents => f.write_str("TotalEvents"),
+            Self::TotalBytes => f.write_str("TotalBytes"),
+            Self::TotalBlocks => f.write_str("TotalBlocks"),
+            Self::AtTGmaxBytes => f.write_str("AtTGmaxBytes"),
+            Self::AtTGmaxBlocks => f.write_str("AtTGmaxBlocks"),
+            Self::AtTEndBytes => f.write_str("AtTEndBytes"),
+            Self::AtTEndBlocks => f.write_str("AtTEndBlocks"),
+            Self::ReadsBytes => f.write_str("ReadsBytes"),
+            Self::WritesBytes => f.write_str("WritesBytes"),
+            Self::TotalLifetimes => f.write_str("TotalLifetimes"),
+            Self::MaximumBytes => f.write_str("MaximumBytes"),
+            Self::MaximumBlocks => f.write_str("MaximumBlocks"),
         }
     }
 }
@@ -764,16 +762,16 @@ impl Diffs {
         Default::default()
     }
 }
-#[doc = "Either left or right or both can be present\n\nMost of the time, this enum is used to store (new, old) output, metrics, etc. Per convention\nleft is `new` and right is `old`."]
+#[doc = "Represent values that have either a `Left` or `Right` value or `Both` values"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"description\": \"Either left or right or both can be present\\n\\nMost of the time, this enum is used to store (new, old) output, metrics, etc. Per convention\\nleft is `new` and right is `old`.\","]
+#[doc = "  \"description\": \"Represent values that have either a `Left` or `Right` value or `Both` values\","]
 #[doc = "  \"oneOf\": ["]
 #[doc = "    {"]
-#[doc = "      \"description\": \"Both values (`new` and `old`) are present\","]
+#[doc = "      \"description\": \"Represents a value from both sides\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
 #[doc = "        \"Both\""]
@@ -796,7 +794,7 @@ impl Diffs {
 #[doc = "      \"additionalProperties\": false"]
 #[doc = "    },"]
 #[doc = "    {"]
-#[doc = "      \"description\": \"The left or `new` value\","]
+#[doc = "      \"description\": \"Represents a value from the left side\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
 #[doc = "        \"Left\""]
@@ -809,7 +807,7 @@ impl Diffs {
 #[doc = "      \"additionalProperties\": false"]
 #[doc = "    },"]
 #[doc = "    {"]
-#[doc = "      \"description\": \"The right or `old` value\","]
+#[doc = "      \"description\": \"Represents a value from the right side\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
 #[doc = "        \"Right\""]
@@ -827,11 +825,11 @@ impl Diffs {
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 pub enum EitherOrBoth {
-    #[doc = "Both values (`new` and `old`) are present"]
+    #[doc = "Represents a value from both sides"]
     Both(ProfileInfo, ProfileInfo),
-    #[doc = "The left or `new` value"]
+    #[doc = "Represents a value from the left side"]
     Left(ProfileInfo),
-    #[doc = "The right or `old` value"]
+    #[doc = "Represents a value from the right side"]
     Right(ProfileInfo),
 }
 impl ::std::convert::From<&Self> for EitherOrBoth {
@@ -844,16 +842,16 @@ impl ::std::convert::From<(ProfileInfo, ProfileInfo)> for EitherOrBoth {
         Self::Both(value.0, value.1)
     }
 }
-#[doc = "Either left or right or both can be present\n\nMost of the time, this enum is used to store (new, old) output, metrics, etc. Per convention\nleft is `new` and right is `old`."]
+#[doc = "Represent values that have either a `Left` or `Right` value or `Both` values"]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"description\": \"Either left or right or both can be present\\n\\nMost of the time, this enum is used to store (new, old) output, metrics, etc. Per convention\\nleft is `new` and right is `old`.\","]
+#[doc = "  \"description\": \"Represent values that have either a `Left` or `Right` value or `Both` values\","]
 #[doc = "  \"oneOf\": ["]
 #[doc = "    {"]
-#[doc = "      \"description\": \"Both values (`new` and `old`) are present\","]
+#[doc = "      \"description\": \"Represents a value from both sides\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
 #[doc = "        \"Both\""]
@@ -876,7 +874,7 @@ impl ::std::convert::From<(ProfileInfo, ProfileInfo)> for EitherOrBoth {
 #[doc = "      \"additionalProperties\": false"]
 #[doc = "    },"]
 #[doc = "    {"]
-#[doc = "      \"description\": \"The left or `new` value\","]
+#[doc = "      \"description\": \"Represents a value from the left side\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
 #[doc = "        \"Left\""]
@@ -889,7 +887,7 @@ impl ::std::convert::From<(ProfileInfo, ProfileInfo)> for EitherOrBoth {
 #[doc = "      \"additionalProperties\": false"]
 #[doc = "    },"]
 #[doc = "    {"]
-#[doc = "      \"description\": \"The right or `old` value\","]
+#[doc = "      \"description\": \"Represents a value from the right side\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
 #[doc = "        \"Right\""]
@@ -907,11 +905,11 @@ impl ::std::convert::From<(ProfileInfo, ProfileInfo)> for EitherOrBoth {
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 pub enum EitherOrBoth2 {
-    #[doc = "Both values (`new` and `old`) are present"]
+    #[doc = "Represents a value from both sides"]
     Both(Metric, Metric),
-    #[doc = "The left or `new` value"]
+    #[doc = "Represents a value from the left side"]
     Left(Metric),
-    #[doc = "The right or `old` value"]
+    #[doc = "Represents a value from the right side"]
     Right(Metric),
 }
 impl ::std::convert::From<&Self> for EitherOrBoth2 {
@@ -975,10 +973,10 @@ impl ::std::convert::From<&Self> for ErrorMetric {
 impl ::std::fmt::Display for ErrorMetric {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         match *self {
-            Self::Errors => write!(f, "Errors"),
-            Self::Contexts => write!(f, "Contexts"),
-            Self::SuppressedErrors => write!(f, "SuppressedErrors"),
-            Self::SuppressedContexts => write!(f, "SuppressedContexts"),
+            Self::Errors => f.write_str("Errors"),
+            Self::Contexts => f.write_str("Contexts"),
+            Self::SuppressedErrors => f.write_str("SuppressedErrors"),
+            Self::SuppressedContexts => f.write_str("SuppressedContexts"),
         }
     }
 }
@@ -1297,43 +1295,43 @@ impl ::std::convert::From<&Self> for EventKind {
 impl ::std::fmt::Display for EventKind {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         match *self {
-            Self::Ir => write!(f, "Ir"),
-            Self::Dr => write!(f, "Dr"),
-            Self::Dw => write!(f, "Dw"),
-            Self::I1mr => write!(f, "I1mr"),
-            Self::D1mr => write!(f, "D1mr"),
-            Self::D1mw => write!(f, "D1mw"),
-            Self::ILmr => write!(f, "ILmr"),
-            Self::DLmr => write!(f, "DLmr"),
-            Self::DLmw => write!(f, "DLmw"),
-            Self::I1MissRate => write!(f, "I1MissRate"),
-            Self::LLiMissRate => write!(f, "LLiMissRate"),
-            Self::D1MissRate => write!(f, "D1MissRate"),
-            Self::LLdMissRate => write!(f, "LLdMissRate"),
-            Self::LlMissRate => write!(f, "LLMissRate"),
-            Self::L1hits => write!(f, "L1hits"),
-            Self::LLhits => write!(f, "LLhits"),
-            Self::RamHits => write!(f, "RamHits"),
-            Self::L1HitRate => write!(f, "L1HitRate"),
-            Self::LlHitRate => write!(f, "LLHitRate"),
-            Self::RamHitRate => write!(f, "RamHitRate"),
-            Self::TotalRw => write!(f, "TotalRW"),
-            Self::EstimatedCycles => write!(f, "EstimatedCycles"),
-            Self::SysCount => write!(f, "SysCount"),
-            Self::SysTime => write!(f, "SysTime"),
-            Self::SysCpuTime => write!(f, "SysCpuTime"),
-            Self::Ge => write!(f, "Ge"),
-            Self::Bc => write!(f, "Bc"),
-            Self::Bcm => write!(f, "Bcm"),
-            Self::Bi => write!(f, "Bi"),
-            Self::Bim => write!(f, "Bim"),
-            Self::ILdmr => write!(f, "ILdmr"),
-            Self::DLdmr => write!(f, "DLdmr"),
-            Self::DLdmw => write!(f, "DLdmw"),
-            Self::AcCost1 => write!(f, "AcCost1"),
-            Self::AcCost2 => write!(f, "AcCost2"),
-            Self::SpLoss1 => write!(f, "SpLoss1"),
-            Self::SpLoss2 => write!(f, "SpLoss2"),
+            Self::Ir => f.write_str("Ir"),
+            Self::Dr => f.write_str("Dr"),
+            Self::Dw => f.write_str("Dw"),
+            Self::I1mr => f.write_str("I1mr"),
+            Self::D1mr => f.write_str("D1mr"),
+            Self::D1mw => f.write_str("D1mw"),
+            Self::ILmr => f.write_str("ILmr"),
+            Self::DLmr => f.write_str("DLmr"),
+            Self::DLmw => f.write_str("DLmw"),
+            Self::I1MissRate => f.write_str("I1MissRate"),
+            Self::LLiMissRate => f.write_str("LLiMissRate"),
+            Self::D1MissRate => f.write_str("D1MissRate"),
+            Self::LLdMissRate => f.write_str("LLdMissRate"),
+            Self::LlMissRate => f.write_str("LLMissRate"),
+            Self::L1hits => f.write_str("L1hits"),
+            Self::LLhits => f.write_str("LLhits"),
+            Self::RamHits => f.write_str("RamHits"),
+            Self::L1HitRate => f.write_str("L1HitRate"),
+            Self::LlHitRate => f.write_str("LLHitRate"),
+            Self::RamHitRate => f.write_str("RamHitRate"),
+            Self::TotalRw => f.write_str("TotalRW"),
+            Self::EstimatedCycles => f.write_str("EstimatedCycles"),
+            Self::SysCount => f.write_str("SysCount"),
+            Self::SysTime => f.write_str("SysTime"),
+            Self::SysCpuTime => f.write_str("SysCpuTime"),
+            Self::Ge => f.write_str("Ge"),
+            Self::Bc => f.write_str("Bc"),
+            Self::Bcm => f.write_str("Bcm"),
+            Self::Bi => f.write_str("Bi"),
+            Self::Bim => f.write_str("Bim"),
+            Self::ILdmr => f.write_str("ILdmr"),
+            Self::DLdmr => f.write_str("DLdmr"),
+            Self::DLdmw => f.write_str("DLdmw"),
+            Self::AcCost1 => f.write_str("AcCost1"),
+            Self::AcCost2 => f.write_str("AcCost2"),
+            Self::SpLoss1 => f.write_str("SpLoss1"),
+            Self::SpLoss2 => f.write_str("SpLoss2"),
         }
     }
 }
@@ -2268,8 +2266,8 @@ impl ::std::convert::From<&Self> for SummaryFormat {
 impl ::std::fmt::Display for SummaryFormat {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         match *self {
-            Self::Json => write!(f, "Json"),
-            Self::PrettyJson => write!(f, "PrettyJson"),
+            Self::Json => f.write_str("Json"),
+            Self::PrettyJson => f.write_str("PrettyJson"),
         }
     }
 }
@@ -2687,14 +2685,14 @@ impl ::std::convert::From<&Self> for ValgrindTool {
 impl ::std::fmt::Display for ValgrindTool {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         match *self {
-            Self::Callgrind => write!(f, "Callgrind"),
-            Self::Cachegrind => write!(f, "Cachegrind"),
-            Self::Dhat => write!(f, "DHAT"),
-            Self::Memcheck => write!(f, "Memcheck"),
-            Self::Helgrind => write!(f, "Helgrind"),
-            Self::Drd => write!(f, "DRD"),
-            Self::Massif => write!(f, "Massif"),
-            Self::Bbv => write!(f, "BBV"),
+            Self::Callgrind => f.write_str("Callgrind"),
+            Self::Cachegrind => f.write_str("Cachegrind"),
+            Self::Dhat => f.write_str("DHAT"),
+            Self::Memcheck => f.write_str("Memcheck"),
+            Self::Helgrind => f.write_str("Helgrind"),
+            Self::Drd => f.write_str("DRD"),
+            Self::Massif => f.write_str("Massif"),
+            Self::Bbv => f.write_str("BBV"),
         }
     }
 }

@@ -72,7 +72,7 @@ version = "0.0.0"
 dependencies = [
  "benches-lib",
  "fast-glob",
- "iai-callgrind",
+ "gungraun",
  "markdown-tables",
  "paste",
  "serde",
@@ -109,37 +109,38 @@ dependencies = [
 ]
 
 [[package]]
-name = "iai-callgrind"
-version = "0.16.0"
+name = "gungraun"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c358f67cf086a3a890a72c390dadc371e9151129b1e9b75acc705d30a77197f"
+checksum = "b247b47ec86130ed355045982783d4666f32045e397a4547bbb6793cd53e940f"
 dependencies = [
  "bincode",
  "derive_more",
- "iai-callgrind-macros",
- "iai-callgrind-runner",
+ "gungraun-macros",
+ "gungraun-runner",
 ]
 
 [[package]]
-name = "iai-callgrind-macros"
-version = "0.6.1"
+name = "gungraun-macros"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d03775318d3f9f01b39ac6612b01464006dc397a654a89dd57df2fd34fb68c3"
+checksum = "12b605e561ccca36d68ebacd387751f2d58cf65202b781bb4a9029951dd3a66d"
 dependencies = [
  "derive_more",
  "proc-macro-error2",
  "proc-macro2",
  "quote",
+ "rustc_version",
  "serde",
  "serde_json",
  "syn",
 ]
 
 [[package]]
-name = "iai-callgrind-runner"
-version = "0.16.0"
+name = "gungraun-runner"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6248b44a281f0c22ba57fe41b56f718a8c2cc682a99f270f667503819d758004"
+checksum = "0f0ae6c9fe670d3d77f5576be41568ebf1733e5873c6ca85ff3b85848a31ac76"
 dependencies = [
  "serde",
 ]
@@ -209,10 +210,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustc_version"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92"
+dependencies = [
+ "semver",
+]
+
+[[package]]
 name = "ryu"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28d3b2b1366ec20994f1fd18c3c594f05c5dd4bc44d8bb0c1c632c8d6829481f"
+
+[[package]]
+name = "semver"
+version = "1.0.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d767eb0aabc880b29956c35734170f26ed551a859dbd361d140cdbeca61ab1e2"
 
 [[package]]
 name = "serde"

@@ -125,7 +125,7 @@ If the layout is not statically known then the compiler can not do as many optim
 
 ## Reproducing
 
-Install [Valgrind] and [iai-callgrind-runner].
+Install [Valgrind] and [gungraun-runner].
 
 Then run the benchmark with
 ```sh
@@ -136,5 +136,5 @@ and update the tables above with
 cargo run
 ```
 
-[Valgrind]: https://iai-callgrind.github.io/iai-callgrind/latest/html/installation/prerequisites.html
-[iai-callgrind-runner]: https://iai-callgrind.github.io/iai-callgrind/latest/html/installation/iai_callgrind.html
+[Valgrind]: https://gungraun.github.io/gungraun/latest/html/installation/prerequisites.html
+[gungraun-runner]: https://gungraun.github.io/gungraun/latest/html/installation/gungraun.html#installation-of-the-benchmark-runner
