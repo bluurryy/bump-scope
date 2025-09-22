@@ -8,7 +8,7 @@ There are also criterion benchmarks at [../criterion-benches](../criterion-bench
 
 The benchmarks results in the tables below are shown in the format "instructions executed / branches executed".
 
-These are the results of a benchmark run with <!-- version start -->`rustc 1.89.0 (29483883e 2025-08-04)` on `x86_64-unknown-linux-gnu` using `LLVM version 20.1.7`<!-- version end -->.
+These are the results of a benchmark run with <!-- version start -->`rustc 1.90.0 (1159e78c4 2025-09-14)` on `x86_64-unknown-linux-gnu` using `LLVM version 20.1.8`<!-- version end -->.
 
 ### Allocation
 
@@ -101,7 +101,7 @@ If the layout is not statically known then the compiler can not do as many optim
 | black_box_shrink_smaller_align [^2] | 13 / 2          | 50 / 9            | 48 / 9  | 23 / 3      |
 | black_box_shrink_larger_align [^2]  | 13 / 2          | 47 / 7            | 15 / 2  | 55 / 8      |
 | black_box_deallocate                | 6 / 1           | 6 / 1             | 7 / 1   | 6 / 2       |
-| black_box_deallocate_non_last       | 5 / 1           | 4 / 1             | 5 / 1   | —           |
+| black_box_deallocate_non_last       | 5 / 1           | 4 / 1             | 5 / 1   | 6 / 2       |
 
 <!-- black_box_allocator_api table end -->
 
@@ -114,7 +114,7 @@ If the layout is not statically known then the compiler can not do as many optim
 
 | name    | bump-scope (up) | bump-scope (down) | bumpalo  | blink-alloc |
 |---------|-----------------|-------------------|----------|-------------|
-| warm_up | 224 / 31        | 230 / 32          | 355 / 43 | 283 / 38    |
+| warm_up | 224 / 31        | 230 / 32          | 355 / 43 | 284 / 38    |
 | reset   | 26 / 2          | 25 / 2            | 23 / 2   | 26 / 3      |
 
 <!-- misc table end -->
