@@ -1,7 +1,7 @@
 //! Callgrind benchmarks.
 //!
 //! The functions to benchmark are defined in `benches_lib`.
-//! This crate just uses `iai-callgrind` to call them.
+//! This crate just uses `gungraun` to call them.
 //!
 //! Putting the benchmark implementations into a separate library and passing function pointers of
 //! the library to itself is so that the `entry_point` filter works properly.
