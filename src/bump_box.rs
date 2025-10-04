@@ -74,12 +74,7 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 /// - `BumpBox<MaybeUninit<T>>` and `BumpBox<[MaybeUninit<T>]>` provide methods like
 ///   [`init`](Self::init),
 ///   [`assume_init`](Self::assume_init),
-///   [`init_fill`](Self::init_fill),
-///   [`init_fill_with`](Self::init_fill_with),
-///   [`init_fill_iter`](Self::init_fill_iter),
-///   [`init_copy`](Self::init_copy),
-///   [`init_clone`](Self::init_clone) and
-///   [`init_zeroed`](crate::zerocopy_08::InitZeroed::init_zeroed).
+///   <code>init_{[fill](Self::init_fill), [fill_with](Self::init_fill_with), [fill_iter](Self::init_fill_iter), [copy](Self::init_copy), [clone](Self::init_clone), [move](Self::init_move), [zeroed](crate::zerocopy_08::InitZeroed::init_zeroed)}</code>.
 ///
 /// ## Api differences
 ///
