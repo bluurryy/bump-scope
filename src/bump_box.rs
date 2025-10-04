@@ -24,7 +24,8 @@ use alloc_crate::boxed::Box;
 use crate::{
     BumpAllocatorScopeExt, FromUtf8Error, NoDrop, SizedTypeProperties,
     alloc::BoxLike,
-    owned_slice, owned_str,
+    owned_slice::{self, OwnedSlice, TakeOwnedSlice},
+    owned_str,
     polyfill::{self, non_null, pointer, transmute_mut},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
 };
@@ -1309,6 +1310,45 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
             }
 
             initializer.into_init_unchecked()
+        }
+    }
+
+    /// Initializes `self` by moving the elements from `slice` into `self`.
+    ///
+    /// The length of `slice` must be the same as `self`.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the two slices have different lengths.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let vec = [1, 2, 3].iter().map(|i| i.to_string()).collect::<Vec<_>>();
+    ///
+    /// let uninit = bump.alloc_uninit_slice(3);
+    /// let init = uninit.init_move(vec);
+    ///
+    /// assert_eq!(&*init, &["1", "2", "3"]);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn init_move(mut self, owned_slice: impl OwnedSlice<Item = T>) -> BumpBox<'a, [T]> {
+        let mut owned_slice = owned_slice.into_take_owned_slice();
+        let slice = NonNull::from(owned_slice.owned_slice_ref());
+
+        assert_eq!(slice.len(), self.len());
+
+        // SAFETY: we asserted that the lengths are the same
+        unsafe {
+            let src = slice.cast::<T>().as_ptr();
+            let dst = self.as_mut_ptr().cast::<T>();
+            ptr::copy_nonoverlapping(src, dst, slice.len());
+
+            owned_slice.take_owned_slice();
+            self.assume_init()
         }
     }
 
