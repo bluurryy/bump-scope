@@ -56,8 +56,9 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///   [`dedup`](Self::dedup),
 ///   slice methods but with owned semantics like
 ///   [`split_at`](Self::split_at),
-///   [`split_first`](Self::split_first),
-///   [`split_last`](Self::split_last) and additional methods like
+///   <code>[split_](Self::split_first)([off_](Self::split_off_first))[first](Self::split_first)</code>,
+///   <code>[split_](Self::split_last)([off_](Self::split_off_last))[last](Self::split_last)</code>
+///   and additional methods like
 ///   [`split_off`](Self::split_off),
 ///   [`partition`](Self::partition) and [`map_in_place`](Self::map_in_place).
 /// - `BumpBox<str>` provide methods from `String` like
@@ -1923,6 +1924,62 @@ impl<'a, T> BumpBox<'a, [T]> {
         }
     }
 
+    /// Removes the first element of the slice and returns it.
+    ///
+    /// Returns `None` if the slice is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut slice = bump.alloc_slice_move([
+    ///     String::from("foo"),
+    ///     String::from("bar"),
+    ///     String::from("baz"),
+    /// ]);
+    ///
+    /// let first = slice.split_off_first().unwrap();
+    ///
+    /// assert_eq!(&*first, "foo");
+    /// assert_eq!(&*slice, ["bar", "baz"]);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn split_off_first(&mut self) -> Option<BumpBox<'a, T>> {
+        let (first, rest) = mem::take(self).split_first()?;
+        *self = rest;
+        Some(first)
+    }
+
+    /// Removes the last element of the slice and returns it.
+    ///
+    /// Returns `None` if the slice is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let mut slice = bump.alloc_slice_move([
+    ///     String::from("foo"),
+    ///     String::from("bar"),
+    ///     String::from("baz"),
+    /// ]);
+    ///
+    /// let last = slice.split_off_last().unwrap();
+    ///
+    /// assert_eq!(&*last, "baz");
+    /// assert_eq!(&*slice, ["foo", "bar"]);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn split_off_last(&mut self) -> Option<BumpBox<'a, T>> {
+        let (last, rest) = mem::take(self).split_last()?;
+        *self = rest;
+        Some(last)
+    }
+
     /// Divides one slice into two at an index.
     ///
     /// The first will contain all indices from `[0, mid)` (excluding
@@ -2052,21 +2109,21 @@ impl<'a, T> BumpBox<'a, [T]> {
 
     /// Returns the first and all the rest of the elements of the slice, or `None` if it is empty.
     ///
-    /// This does consume the `BumpBox`. You can create a new empty one with [`BumpBox::default`](BumpBox::default).
-    ///
     /// # Examples
     ///
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// #
-    /// let x = bump.alloc_slice_copy(&[0, 1, 2]);
+    /// let x = bump.alloc_slice_move([
+    ///     String::from("foo"),
+    ///     String::from("bar"),
+    ///     String::from("baz"),
+    /// ]);
     ///
-    /// if let Some((first, elements)) = x.split_first() {
-    ///     assert_eq!(&*first, &0);
-    ///     assert_eq!(&*elements, &[1, 2]);
+    /// if let Some((first, rest)) = x.split_first() {
+    ///     assert_eq!(&*first, "foo");
+    ///     assert_eq!(&*rest, ["bar", "baz"]);
     /// }
-    /// # ; // load bearing semicolon
     /// ```
     #[inline]
     #[must_use]
@@ -2090,21 +2147,21 @@ impl<'a, T> BumpBox<'a, [T]> {
 
     /// Returns the last and all the rest of the elements of the slice, or `None` if it is empty.
     ///
-    /// This does consume the `BumpBox`. You can create a new empty one with [`BumpBox::default`](BumpBox::default).
-    ///
     /// # Examples
     ///
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// #
-    /// let x = bump.alloc_slice_copy(&[0, 1, 2]);
+    /// let x = bump.alloc_slice_move([
+    ///     String::from("foo"),
+    ///     String::from("bar"),
+    ///     String::from("baz"),
+    /// ]);
     ///
-    /// if let Some((last, elements)) = x.split_last() {
-    ///     assert_eq!(&*last, &2);
-    ///     assert_eq!(&*elements, &[0, 1]);
+    /// if let Some((last, rest)) = x.split_last() {
+    ///     assert_eq!(&*last, "baz");
+    ///     assert_eq!(&*rest, ["foo", "bar"]);
     /// }
-    /// # ; // load bearing semicolon
     /// ```
     #[inline]
     #[must_use]
