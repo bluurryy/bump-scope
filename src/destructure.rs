@@ -76,8 +76,6 @@ const fn str_eq(a: &str, b: &str) -> bool {
 mod tests {
     use std::string::String;
 
-    use super::*;
-
     #[test]
     fn example() {
         pub struct Foo {

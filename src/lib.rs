@@ -17,8 +17,8 @@
 #![cfg_attr(feature = "nightly-dropck-eyepatch", feature(dropck_eyepatch))]
 #![cfg_attr(feature = "nightly-clone-to-uninit", feature(clone_to_uninit, ptr_metadata))]
 #![cfg_attr(docsrs,
-    feature(doc_auto_cfg, doc_cfg_hide),
-    doc(cfg_hide(feature = "panic-on-alloc")) // too noisy
+    feature(doc_cfg),
+    doc(auto_cfg(hide(feature = "panic-on-alloc"))) // too noisy
 )]
 #![warn(
     clippy::pedantic,
