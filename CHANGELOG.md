@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add `init_move` to `BumpBox::<[MaybeUninit<T>]>` to initialize slices with an `OwnedSlice`
+- Add `init_move` to `BumpBox<[MaybeUninit<T>]>` to initialize slices with an `OwnedSlice`
 - Add `split_off_first` and `split_off_last` to `BumpBox<[T]>`
 - Improve documentation
 
