@@ -175,7 +175,7 @@
 //! ```
 //!
 //! # Collections
-//! `bump-scope` provides bump allocated variants of `Vec` and `String` called [`BumpVec`] and [`BumpString`].
+//! `bump-scope` provides bump allocated versions of `Vec` and `String` called [`BumpVec`] and [`BumpString`].
 //! They are also available in the following variants:
 //! - [`Fixed*`](FixedBumpVec) for fixed capacity collections
 //! - [`Mut*`](MutBumpVec) for collections optimized for a mutable bump allocator
