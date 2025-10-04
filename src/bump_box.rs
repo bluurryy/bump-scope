@@ -90,8 +90,7 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 /// Unlike `Box<T>`, `BumpBox<T>` has some methods that are implemented for all `T`.
 /// Care is taken to not overwrite methods of `T` by only adding methods that start with
 /// `into_`. By convention `into_*` methods consume the type, so if `T` has an `into_*`
-/// method, then that method would not be callable through on `BumpBox<T>` but would
-/// require you to call [`into_inner`](Self::into_inner) first.
+/// method, then that method would not be callable by dereferencing the `BumpBox<T>` anyway.
 ///
 /// ## No pinning
 ///
