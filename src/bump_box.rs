@@ -1275,6 +1275,24 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     /// # Panics
     ///
     /// This function will panic if the two slices have different lengths.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let uninit = bump.alloc_uninit_slice(3);
+    ///
+    /// let slice = &[
+    ///     "foo",
+    ///     "bar",
+    ///     "baz",
+    /// ];
+    ///
+    /// let init = uninit.init_copy(slice);
+    ///
+    /// assert_eq!(&*init, &["foo", "bar", "baz"]);
+    /// ```
     #[must_use]
     #[inline]
     pub fn init_copy(mut self, slice: &[T]) -> BumpBox<'a, [T]>
@@ -1292,6 +1310,24 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     /// # Panics
     ///
     /// This function will panic if the two slices have different lengths.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// # let bump: Bump = Bump::new();
+    /// let uninit = bump.alloc_uninit_slice(3);
+    ///
+    /// let slice = &[
+    ///     String::from("foo"),
+    ///     String::from("bar"),
+    ///     String::from("baz"),
+    /// ];
+    ///
+    /// let init = uninit.init_clone(slice);
+    ///
+    /// assert_eq!(&*init, &["foo", "bar", "baz"]);
+    /// ```
     #[must_use]
     #[inline]
     pub fn init_clone(self, slice: &[T]) -> BumpBox<'a, [T]>
