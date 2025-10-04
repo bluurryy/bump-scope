@@ -1321,12 +1321,17 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// let vec = [1, 2, 3].iter().map(|i| i.to_string()).collect::<Vec<_>>();
-    ///
     /// let uninit = bump.alloc_uninit_slice(3);
+    ///
+    /// let vec = vec![
+    ///     String::from("foo"),
+    ///     String::from("bar"),
+    ///     String::from("baz"),
+    /// ];
+    ///
     /// let init = uninit.init_move(vec);
     ///
-    /// assert_eq!(&*init, &["1", "2", "3"]);
+    /// assert_eq!(&*init, &["foo", "bar", "baz"]);
     /// ```
     #[inline]
     #[must_use]
