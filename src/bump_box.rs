@@ -18,7 +18,7 @@ use core::{alloc::Layout, marker::Tuple};
 use alloc_crate::{string::String, vec::Vec};
 
 #[cfg(feature = "alloc")]
-#[allow(unused_imports)]
+#[expect(unused_imports)]
 use alloc_crate::boxed::Box;
 
 use crate::{
@@ -144,7 +144,7 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///
 /// fn use_pinned(_foo: Pin<&mut Foo>) {}
 ///
-/// # #[allow(dead_code)]
+/// # #[expect(dead_code)]
 /// fn violate_drop_guarantee(cx: &mut Context) {
 ///     let mut bump: Bump = Bump::new();
 ///
@@ -341,7 +341,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// # _ = slice_of_slices;
     /// ```
     #[inline(always)]
-    #[allow(clippy::must_use_candidate)]
+    #[expect(clippy::must_use_candidate)]
     pub fn leak(boxed: Self) -> &'a mut T {
         unsafe { BumpBox::into_raw(boxed).as_mut() }
     }
@@ -405,7 +405,6 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// ```
     #[inline(always)]
     #[must_use = "use `leak` if you don't make use of the pointer"]
-    #[allow(clippy::needless_pass_by_value)]
     pub fn into_raw(self) -> NonNull<T> {
         ManuallyDrop::new(self).ptr
     }
@@ -695,7 +694,7 @@ impl<'a> BumpBox<'a, str> {
     /// assert_eq!(string, "");
     /// ```
     #[inline]
-    #[allow(clippy::return_self_not_must_use)]
+    #[expect(clippy::return_self_not_must_use)]
     pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self {
         let len = self.len();
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
@@ -1857,7 +1856,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// assert_eq!(slice, []);
     /// ```
     #[inline]
-    #[allow(clippy::return_self_not_must_use)]
+    #[expect(clippy::return_self_not_must_use)]
     pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self {
         let len = self.len();
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
@@ -2276,7 +2275,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     ///
     /// assert_eq!(slice, [2, 3, 4]);
     /// ```
-    #[allow(clippy::pedantic)]
+    #[expect(clippy::pedantic)]
     pub fn retain<F>(&mut self, mut f: F)
     where
         F: FnMut(&mut T) -> bool,
@@ -2780,7 +2779,7 @@ impl<'a, T, const N: usize> BumpBox<'a, [T; N]> {
     /// # let bump: Bump = Bump::new();
     /// // explicit types are just for demonstration
     /// let array: BumpBox<[i32; 3]> = bump.alloc([1, 2, 3]);
-    /// # #[allow(deprecated)]
+    /// # #[expect(deprecated)]
     /// let slice: BumpBox<[i32]> = array.into_unsized();
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
@@ -2841,7 +2840,7 @@ impl<'a, T, const N: usize> BumpBox<'a, [[T; N]]> {
 impl<'a> BumpBox<'a, dyn Any> {
     /// Attempt to downcast the box to a concrete type.
     #[inline(always)]
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc)]
     pub fn downcast<T: Any>(self) -> Result<BumpBox<'a, T>, Self> {
         if self.is::<T>() {
             Ok(unsafe { self.downcast_unchecked() })
@@ -2870,7 +2869,7 @@ impl<'a> BumpBox<'a, dyn Any> {
 
 impl<'a> BumpBox<'a, dyn Any + Send> {
     /// Attempt to downcast the box to a concrete type.
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc)]
     #[inline(always)]
     pub fn downcast<T: Any>(self) -> Result<BumpBox<'a, T>, Self> {
         if self.is::<T>() {
@@ -2900,7 +2899,7 @@ impl<'a> BumpBox<'a, dyn Any + Send> {
 
 impl<'a> BumpBox<'a, dyn Any + Send + Sync> {
     /// Attempt to downcast the box to a concrete type.
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc)]
     #[inline(always)]
     pub fn downcast<T: Any>(self) -> Result<BumpBox<'a, T>, Self> {
         if self.is::<T>() {
@@ -3440,15 +3439,14 @@ fn as_uninit_slice<T>(slice: &[T]) -> &[MaybeUninit<T>] {
 
 macro_rules! assert_in_place_mappable {
     ($src:ty, $dst:ty) => {
-        #[allow(unused_variables)]
         let _assert = AssertInPlaceMappable::<$src, $dst>::ASSERT;
     };
 }
 
 // False positive; i need `pub(self)` to forward declare it.
 // Useless attribute is needed for msrv clippy.
-#[allow(clippy::useless_attribute)]
-#[allow(clippy::needless_pub_self)]
+#[expect(clippy::useless_attribute)]
+#[expect(clippy::needless_pub_self)]
 pub(self) use assert_in_place_mappable;
 
 struct AssertInPlaceMappable<Src, Dst>(PhantomData<(Src, Dst)>);

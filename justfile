@@ -32,6 +32,7 @@ check-fmt:
   cd fuzz; cargo fmt --check
 
 check-msrv:
+  # msrv might print warnings that stable doesnt, we dont care
   cargo +1.85.1 check --no-default-features
   cargo +1.85.1 check --features serde,zerocopy-08,allocator-api2-02
 

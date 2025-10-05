@@ -252,14 +252,14 @@ macro_rules! benches_library {
     ) => {
         paste::paste! {
             mod [<$name _ $library _impl>] {
-                #[allow(unused_imports)]
                 use crate::wrapper::$library::Bump;
+
                 #[allow(unused_imports)]
                 use crate::*;
 
                 const _: () = {
                     // just for language server coloring
-                    #[allow(dead_code)]
+                    #[expect(dead_code)]
                     fn $run_label() {}
                 };
 

@@ -8,11 +8,10 @@ macro_rules! destructure {
         let value: $ty = $value;
         let value = ::core::mem::ManuallyDrop::new(value);
 
-        #[allow(dead_code)]
         const _: () = assert!(!$crate::destructure::has_duplicates(&[$(stringify!($field)),*]), "you can't destructure a field twice");
 
         $(
-            #[allow(unused_unsafe)]
+            #[allow(unused_unsafe)] // we might or might not already be in an unsafe context
             let $crate::destructure::or!($($field_alias)? $field) = unsafe { ::core::ptr::read(&value.$field) };
         )*
     };

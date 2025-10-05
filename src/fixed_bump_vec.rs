@@ -673,7 +673,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        #[allow(deprecated)]
+        #[expect(deprecated)]
         self.initialized.as_non_null_slice()
     }
 
@@ -798,7 +798,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// assert_eq!(vec, []);
     /// ```
     #[inline]
-    #[allow(clippy::return_self_not_must_use)]
+    #[expect(clippy::return_self_not_must_use)]
     pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self {
         let len = self.len();
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
@@ -1430,7 +1430,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         if T::IS_ZST {
             unsafe {
                 // We can materialize ZST's from nothing.
-                #[allow(clippy::uninit_assumed_init)]
+                #[expect(clippy::uninit_assumed_init)]
                 let fake = ManuallyDrop::new(MaybeUninit::<T>::uninit().assume_init());
 
                 for _ in 0..count {
@@ -1919,7 +1919,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// assert_eq!(vec, [2, 3, 4]);
     /// ```
-    #[allow(clippy::pedantic)]
+    #[expect(clippy::pedantic)]
     pub fn retain<F>(&mut self, f: F)
     where
         F: FnMut(&mut T) -> bool,

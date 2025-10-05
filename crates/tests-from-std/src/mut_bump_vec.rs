@@ -576,7 +576,7 @@ fn test_cmp() {
 #[test]
 fn test_vec_truncate_drop() {
     static mut DROPS: u32 = 0;
-    struct Elem(#[allow(dead_code)] i32);
+    struct Elem(#[expect(dead_code)] i32);
     impl Drop for Elem {
         fn drop(&mut self) {
             unsafe {
@@ -1065,7 +1065,7 @@ fn test_into_iter_advance_by() {
 fn test_into_iter_drop_allocator() {
     #[derive(Clone)]
     pub struct ReferenceCountedAllocator<'a> {
-        #[allow(dead_code)]
+        #[expect(dead_code)]
         counter: DropCounterCell<'a>,
     }
 
@@ -1157,7 +1157,7 @@ fn test_cow_from() {}
 fn test_from_cow() {}
 
 #[cfg(any())] // TODO: fix this
-#[allow(dead_code)]
+#[expect(dead_code)]
 fn assert_covariance() {
     fn drain<'new>(d: Drain<'static, &'static str>) -> Drain<'new, &'new str> {
         d
@@ -1950,7 +1950,7 @@ fn test_vec_dedup_multiple_ident() {
 #[test]
 fn test_vec_dedup_partialeq() {
     #[derive(Debug)]
-    struct Foo(i32, #[allow(dead_code)] i32);
+    struct Foo(i32, #[expect(dead_code)] i32);
 
     impl PartialEq for Foo {
         fn eq(&self, other: &Foo) -> bool {

@@ -2,13 +2,7 @@
 //!
 //! This module also includes utility functions
 //! that are not from the standard library.
-#![allow(
-    // it's not the same in terms of strict provenance
-    clippy::transmutes_expressible_as_ptr_casts,
-    // it's not the same in terms of strict provenance
-    clippy::useless_transmute,
-    clippy::pedantic,
-)]
+#![expect(clippy::pedantic)]
 
 pub(crate) mod hint;
 pub(crate) mod iter;

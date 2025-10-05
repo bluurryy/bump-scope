@@ -15,7 +15,7 @@ use crate::{
 /// For example this function must be sound:
 ///
 /// ```
-/// # #![allow(dead_code)]
+/// # #![expect(dead_code)]
 /// use bump_scope::BumpAllocatorScope;
 /// use core::alloc::Layout;
 ///

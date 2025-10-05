@@ -343,7 +343,7 @@ pub const fn checked_prev_power_of_two(value: usize) -> Option<usize> {
 #[test]
 fn test_chunk_header_layout() {
     #[repr(align(1024))]
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     struct Big([u8; 1024]);
 
     for bits in [16, 32, 64] {

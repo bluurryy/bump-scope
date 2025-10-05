@@ -1,5 +1,3 @@
-#![allow(non_camel_case_types)]
-
 use std::{alloc::Layout, fmt::Debug, mem};
 
 use arbitrary::Arbitrary;
@@ -57,33 +55,33 @@ impl Fuzz {
 
 #[repr(transparent)]
 #[derive(Clone, Default)]
-#[allow(dead_code)]
+#[expect(non_camel_case_types)]
 struct t1(u8);
 
 #[repr(transparent)]
 #[derive(Clone, Default)]
-#[allow(dead_code)]
+#[expect(non_camel_case_types)]
 struct t2(u16);
 
 #[repr(transparent)]
 #[derive(Clone, Default)]
-#[allow(dead_code)]
+#[expect(non_camel_case_types)]
 struct t3(u32);
 
 #[repr(transparent)]
 #[derive(Clone, Default)]
-#[allow(dead_code)]
+#[expect(non_camel_case_types)]
 struct t4(u64);
 
 #[derive(Clone, Default)]
-#[allow(dead_code)]
 #[repr(align(16))]
-struct t5([u8; 16]);
+#[expect(non_camel_case_types)]
+struct t5(#[expect(dead_code)] [u8; 16]);
 
 #[derive(Clone, Default)]
-#[allow(dead_code)]
 #[repr(align(32))]
-struct t6([u8; 32]);
+#[expect(non_camel_case_types)]
+struct t6(#[expect(dead_code)] [u8; 32]);
 
 macro_rules! impl_drop {
     ($($ident:ident)*) => {
@@ -119,7 +117,6 @@ impl Range {
             let ptr = value.cast::<T>();
 
             // if we followed clippy's advice, check would instead complain about `dangerous_implicit_autorefs`
-            #[allow(clippy::needless_borrow)]
             let len = (&(*value)).len();
 
             let start = ptr as usize;

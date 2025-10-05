@@ -1,4 +1,4 @@
-#![allow(unused_imports, clippy::incompatible_msrv, clippy::manual_assert)]
+#![expect(unused_imports, clippy::manual_assert)]
 #![cfg(feature = "std")]
 
 use core::iter;
@@ -95,7 +95,7 @@ use crate::{
 
 pub(crate) use test_wrap::TestWrap;
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 fn assert_covariant() {
     fn bump_box<'a, 'other>(x: BumpBox<'static, &'static str>) -> BumpBox<'a, &'other str> {
         x
@@ -388,7 +388,7 @@ fn reset_single_chunk<const UP: bool>() {
 }
 
 fn macro_syntax<const UP: bool>() {
-    #[allow(clippy::needless_pass_by_value)]
+    #[expect(clippy::needless_pass_by_value)]
     fn check<T: Debug + PartialEq, const UP: bool>(v: MutBumpVec<T, &mut Bump<Global, 1, UP>>, expected: &[T]) {
         dbg!(&v);
         assert_eq!(v, expected);
@@ -568,7 +568,7 @@ fn as_aligned<const UP: bool>() {
     }
 }
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 fn api_that_accepts_bump_or_bump_scope() {
     fn vec_from_mut_bump(bump: &mut Bump) -> MutBumpVec<i32, &mut Bump> {
         MutBumpVec::new_in(bump)
@@ -587,7 +587,7 @@ fn api_that_accepts_bump_or_bump_scope() {
     }
 }
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 fn bump_vec_macro() {
     fn new_in(bump: &mut Bump) -> MutBumpVec<u32, &mut Bump> {
         mut_bump_vec![in bump]
@@ -614,7 +614,7 @@ fn bump_vec_macro() {
     }
 }
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 fn bump_vec_rev_macro() {
     fn new_in(bump: &mut Bump) -> MutBumpVecRev<u32, &mut Bump> {
         mut_bump_vec_rev![in bump]
@@ -641,7 +641,7 @@ fn bump_vec_rev_macro() {
     }
 }
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 fn bump_format_macro() {
     fn infallible_new(bump: &mut Bump) -> MutBumpString<&mut Bump> {
         mut_bump_format!(in bump)
@@ -784,7 +784,7 @@ fn realign<const UP: bool>() {
 }
 
 // https://github.com/bluurryy/bump-scope/issues/6
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::too_many_lines)]
 fn alloc_zst<const UP: bool>() {
     thread_local! {
         static DROPS: Cell<usize> = const { Cell::new(0) };
@@ -1033,7 +1033,7 @@ fn min_non_zero_cap() {
         bump
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     struct Big([u8; 1025]);
 
     impl Default for Big {
@@ -1091,7 +1091,6 @@ fn min_non_zero_cap() {
 // test claim in crate docs that layout equals `Cell<NonNull<()>>`
 // make sure to also check that niches are the same
 mod doc_layout_claim {
-    #![allow(dead_code)]
     use crate::{SizedTypeProperties, alloc::Global};
     use core::{cell::Cell, ptr::NonNull};
     type Bump = crate::Bump<Global, 1, true, true, true>;
@@ -1113,7 +1112,7 @@ fn expect_no_panic<T>(result: Result<T, Box<dyn Any + Send>>) -> T {
     }
 }
 
-#[allow(clippy::match_wild_err_arm)]
+#[expect(clippy::match_wild_err_arm)]
 fn unexpected_panic(payload: Box<dyn Any + Send>) -> ! {
     match panic_payload_string(payload) {
         Ok(msg) => panic!("unexpected panic: {msg}"),
@@ -1165,7 +1164,7 @@ fn test_drop_allocator() {
         }
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     #[derive(Clone)]
     struct ReferenceCountedAllocator(DropCounterMutex);
 

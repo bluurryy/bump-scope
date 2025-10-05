@@ -25,7 +25,6 @@ pub(crate) struct RawChunk<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> 
 
 impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Copy for RawChunk<A, UP, GUARANTEED_ALLOCATED> {}
 
-#[allow(clippy::expl_impl_clone_on_copy)]
 impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Clone for RawChunk<A, UP, GUARANTEED_ALLOCATED> {
     #[inline(always)]
     fn clone(&self) -> Self {

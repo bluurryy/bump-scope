@@ -9,7 +9,6 @@ use crate::{
 use crate::panic_on_error;
 
 mod private {
-    #[allow(clippy::wildcard_imports)]
     use super::*;
 
     pub trait Sealed {}

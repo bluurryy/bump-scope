@@ -141,7 +141,6 @@ where
 }
 
 /// Methods for a [*guaranteed allocated*](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
-#[allow(clippy::needless_lifetimes)]
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool>
     BumpScope<'a, A, MIN_ALIGN, UP, true, DEALLOCATES>
 where
@@ -348,7 +347,6 @@ where
 }
 
 /// Methods for a **not** [*guaranteed allocated*](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
-#[allow(clippy::needless_lifetimes)]
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool>
     BumpScope<'a, A, MIN_ALIGN, UP, false, DEALLOCATES>
 where
@@ -2691,7 +2689,7 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// # #[allow(deprecated)]
+    /// # #[expect(deprecated)]
     /// let mut values = bump.alloc_fixed_vec(3);
     /// values.push(1);
     /// values.push(2);
@@ -2715,7 +2713,7 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
-    /// # #[allow(deprecated)]
+    /// # #[expect(deprecated)]
     /// let mut values = bump.try_alloc_fixed_vec(3)?;
     /// values.push(1);
     /// values.push(2);
@@ -2744,7 +2742,7 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// # #[allow(deprecated)]
+    /// # #[expect(deprecated)]
     /// let mut string = bump.alloc_fixed_string(13);
     /// string.push_str("Hello,");
     /// string.push_str(" world!");
@@ -2767,7 +2765,7 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
-    /// # #[allow(deprecated)]
+    /// # #[expect(deprecated)]
     /// let mut string = bump.try_alloc_fixed_string(13)?;
     /// string.push_str("Hello,");
     /// string.push_str(" world!");
@@ -2952,7 +2950,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc)]
     pub fn alloc_try_with<T, E>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<'a, T>, E> {
         panic_on_error(self.generic_alloc_try_with(f))
     }
@@ -3082,7 +3080,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc)]
     pub fn alloc_try_with_mut<T, E>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<'a, T>, E> {
         panic_on_error(self.generic_alloc_try_with_mut(f))
     }

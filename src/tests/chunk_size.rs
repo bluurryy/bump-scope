@@ -16,7 +16,7 @@ macro_rules! create_mock_allocator {
     (
         $ident:ident $size_and_align:literal
     ) => {
-        #[allow(dead_code)]
+        #[expect(dead_code)]
         #[repr(align($size_and_align))]
         #[derive(Clone)]
         struct $ident([u8; $size_and_align]);

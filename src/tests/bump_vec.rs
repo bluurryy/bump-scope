@@ -1,4 +1,4 @@
-#![allow(clippy::manual_assert)]
+#![expect(clippy::manual_assert)]
 
 use core::ops::Range;
 use std::{

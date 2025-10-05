@@ -15,7 +15,6 @@ mod vec_ext;
 pub use vec_ext::VecExt;
 
 mod init_zeroed {
-    #[allow(clippy::wildcard_imports)]
     use super::*;
 
     pub trait Sealed {}
@@ -77,7 +76,6 @@ impl<'a, T: FromZeros> InitZeroed<'a> for BumpBox<'a, [MaybeUninit<T>]> {
 }
 
 mod bump_ext {
-    #[allow(clippy::wildcard_imports)]
     use super::*;
 
     pub trait Sealed {}
@@ -92,7 +90,6 @@ mod bump_ext {
 }
 
 mod bump_scope_ext {
-    #[allow(clippy::wildcard_imports)]
     use super::*;
 
     pub trait Sealed {}

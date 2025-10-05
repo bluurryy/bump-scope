@@ -1,6 +1,6 @@
 use bump_scope::Bump;
 
-#[allow(unused_assignments)]
+#[expect(unused_assignments)]
 fn escape_closure(bump: &mut Bump) {
     let mut escapee = None;
 

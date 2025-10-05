@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-#![allow(clippy::needless_pass_by_value)]
+#![expect(clippy::needless_pass_by_value)]
 //! Make sure you sync this file `src/bumping.rs`
 //! with `crates/fuzzing-support/src/from_bump_scope/bumping.rs`.
 //!
