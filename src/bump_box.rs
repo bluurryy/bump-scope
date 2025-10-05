@@ -56,8 +56,8 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///   [`dedup`](Self::dedup),
 ///   slice methods but with owned semantics like
 ///   [`split_at`](Self::split_at),
-///   <code>[split_](Self::split_first)([off_](Self::split_off_first))[first](Self::split_first)</code>,
-///   <code>[split_](Self::split_last)([off_](Self::split_off_last))[last](Self::split_last)</code>
+///   <code>split_{[first](Self::split_first), [last](Self::split_last)}</code>
+///   <code>split_off_{[first](Self::split_off_first), [last](Self::split_off_last)}</code>
 ///   and additional methods like
 ///   [`split_off`](Self::split_off),
 ///   [`partition`](Self::partition) and [`map_in_place`](Self::map_in_place).
