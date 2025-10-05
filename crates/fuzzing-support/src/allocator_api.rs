@@ -52,7 +52,6 @@ impl Fuzz {
         let mut allocations = vec![];
         let mut used_ranges = UsedRanges::default();
 
-        #[allow(clippy::unused_enumerate_index)]
         for (_operation_i, &operation) in self.operations.iter().enumerate() {
             debug!("======================================");
             debug!("OPERATION {_operation_i}");
@@ -159,7 +158,7 @@ impl Fuzz {
                     debug_dbg!(&new_ptr);
 
                     if let Ok(new_ptr) = new_ptr {
-                        #[allow(ambiguous_wide_pointer_comparisons)]
+                        #[expect(ambiguous_wide_pointer_comparisons)]
                         if new_ptr == old_ptr {
                             assert_eq!(new_ptr.len(), old_layout.size());
                             new_layout = Layout::from_size_align(old_layout.size(), new_layout.align()).unwrap();

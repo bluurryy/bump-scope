@@ -1,5 +1,5 @@
-#![allow(clippy::pedantic)]
-#![allow(clippy::toplevel_ref_arg)]
+#![expect(clippy::pedantic)]
+#![expect(clippy::toplevel_ref_arg)]
 
 /// See [`std::iter::Iterator::partition_in_place`].
 pub(crate) fn partition_in_place<'a, T: 'a, P>(

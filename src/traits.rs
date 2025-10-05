@@ -19,7 +19,7 @@ pub use mut_bump_allocator_scope_ext::MutBumpAllocatorScopeExt;
 macro_rules! assert_dyn_compatible {
     ($($tt:tt)*) => {
         const _: () = {
-            #[allow(dead_code)]
+            #[expect(dead_code)]
             fn assert_dyn_compatible(_: &dyn $($tt)*) {}
         };
     };
@@ -31,7 +31,7 @@ macro_rules! assert_implements {
     ([$($what:tt)*] $($ty:ty)*) => {
         #[cfg(test)]
         const _: () = {
-            #[allow(unused_imports)]
+            #[expect(unused_imports)]
             use crate::{
                 alloc::Allocator,
                 traits::{

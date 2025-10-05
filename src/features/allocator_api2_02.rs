@@ -116,13 +116,13 @@ pub struct AllocatorApi2V02Compat<A: ?Sized>(pub A);
 
 impl<A: ?Sized> AllocatorApi2V02Compat<A> {
     #[inline(always)]
-    #[allow(missing_docs)]
+    #[expect(missing_docs)]
     pub fn from_ref(allocator: &A) -> &Self {
         unsafe { &*(ptr::from_ref(allocator) as *const Self) }
     }
 
     #[inline(always)]
-    #[allow(missing_docs)]
+    #[expect(missing_docs)]
     pub fn from_mut(allocator: &mut A) -> &mut Self {
         unsafe { &mut *(ptr::from_mut(allocator) as *mut Self) }
     }

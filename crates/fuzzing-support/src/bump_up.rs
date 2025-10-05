@@ -10,6 +10,8 @@ pub struct Fuzz {
 impl Fuzz {
     pub fn run(self) {
         let props = self.props.for_up().to();
-        from_bump_scope::bumping::bump_up(props);
+        if let Some(from_bump_scope::bumping::BumpUp { ptr, new_pos }) = from_bump_scope::bumping::bump_up(props) {
+            _ = (ptr, new_pos);
+        }
     }
 }

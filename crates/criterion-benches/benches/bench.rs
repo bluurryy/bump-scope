@@ -1,4 +1,4 @@
-#![allow(clippy::mut_from_ref)]
+#![expect(clippy::mut_from_ref)]
 
 use core::alloc::Layout;
 
@@ -11,11 +11,9 @@ type Bump<const MIN_ALIGN: usize, const UP: bool> = bump_scope::Bump<Global, MIN
 
 trait Bumper {
     fn with_capacity(layout: Layout) -> Self;
-    #[allow(dead_code)]
     fn alloc<T>(&self, value: T) -> &mut T;
     fn alloc_with<T>(&self, f: impl FnOnce() -> T) -> &mut T;
     fn alloc_try_with<T, E>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<&mut T, E>;
-    #[allow(dead_code)]
     fn try_alloc<T>(&self, value: T) -> Result<&mut T, AllocError>;
     fn try_alloc_with<T>(&self, f: impl FnOnce() -> T) -> Result<&mut T, AllocError>;
     fn try_alloc_try_with<T, E>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<Result<&mut T, E>, AllocError>;
@@ -96,7 +94,7 @@ use std::hint::black_box;
 type Small = u8;
 type Big = [usize; 32];
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 fn alloc<B: Bumper, T: Default>(n: usize) {
     let bump = B::with_capacity(Layout::array::<T>(n).unwrap());
 
@@ -137,7 +135,7 @@ fn alloc_try_with_err<B: Bumper, T, E: Default>(n: usize) {
     }
 }
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 fn try_alloc<B: Bumper, T: Default>(n: usize) {
     let bump = B::with_capacity(Layout::array::<T>(n).unwrap());
 
@@ -158,7 +156,7 @@ fn try_alloc_with<B: Bumper, T: Default>(n: usize) {
     }
 }
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 fn try_alloc_try_with_ok<B: Bumper, T: Default, E>(n: usize) {
     let bump = B::with_capacity(Layout::array::<Result<T, E>>(n).unwrap());
 
@@ -169,7 +167,7 @@ fn try_alloc_try_with_ok<B: Bumper, T: Default, E>(n: usize) {
     }
 }
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 fn try_alloc_try_with_err<B: Bumper, T, E: Default>(n: usize) {
     // Only enough capacity for one, since the allocation is undone.
     let bump = B::with_capacity(Layout::array::<Result<T, E>>(n).unwrap());

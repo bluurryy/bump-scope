@@ -1,4 +1,4 @@
-#![allow(unused_allocation, clippy::unnecessary_to_owned)]
+#![expect(unused_allocation)]
 
 use std::{
     array,

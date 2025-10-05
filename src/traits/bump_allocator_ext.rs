@@ -1,4 +1,4 @@
-#![allow(clippy::missing_safety_doc)]
+#![expect(clippy::missing_safety_doc)]
 
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
@@ -42,7 +42,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// Behaves like the following code:
     /// ```
     /// # use core::{alloc::Layout, ptr::NonNull};
-    /// # #[allow(dead_code)]
+    /// # #[expect(dead_code)]
     /// # trait MyExt: bump_scope::BumpAllocator {
     /// #     unsafe fn my_ext_fn(&self, layout: Layout) -> NonNull<u8> {
     /// self.allocate(layout).unwrap().cast()
@@ -62,7 +62,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// ```
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # use bump_scope::alloc::AllocError;
-    /// # #[allow(dead_code)]
+    /// # #[expect(dead_code)]
     /// # trait MyExt: bump_scope::BumpAllocator {
     /// #     unsafe fn my_ext_fn(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
     /// Ok(self.allocate(layout)?.cast())
@@ -81,7 +81,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// ```
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # type T = i32;
-    /// # #[allow(dead_code)]
+    /// # #[expect(dead_code)]
     /// # trait MyExt: bump_scope::BumpAllocator {
     /// #     unsafe fn my_ext_fn(&self) -> NonNull<T> {
     /// self.allocate(Layout::new::<T>()).unwrap().cast()
@@ -102,7 +102,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # use bump_scope::alloc::AllocError;
     /// # type T = i32;
-    /// # #[allow(dead_code)]
+    /// # #[expect(dead_code)]
     /// # trait MyExt: bump_scope::BumpAllocator {
     /// #     unsafe fn my_ext_fn(&self) -> Result<NonNull<T>, AllocError> {
     /// Ok(self.allocate(Layout::new::<T>())?.cast())
@@ -121,7 +121,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// ```
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # type T = i32;
-    /// # #[allow(dead_code)]
+    /// # #[expect(dead_code)]
     /// # trait MyExt: bump_scope::BumpAllocator {
     /// #     unsafe fn my_ext_fn(&self, len: usize) -> NonNull<T> {
     /// self.allocate(Layout::array::<T>(len).unwrap()).unwrap().cast()
@@ -142,7 +142,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # use bump_scope::alloc::AllocError;
     /// # type T = i32;
-    /// # #[allow(dead_code)]
+    /// # #[expect(dead_code)]
     /// # trait MyExt: bump_scope::BumpAllocator {
     /// #     unsafe fn my_ext_fn(&self, len: usize) -> Result<NonNull<T>, AllocError> {
     /// Ok(self.allocate(Layout::array::<T>(len).map_err(|_| AllocError)?)?.cast())
@@ -162,7 +162,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// ```
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # type T = i32;
-    /// # #[allow(dead_code)]
+    /// # #[expect(dead_code)]
     /// # trait MyExt: bump_scope::BumpAllocator {
     /// #     unsafe fn my_ext_fn(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> NonNull<T> {
     /// #         unsafe {
@@ -605,7 +605,7 @@ fn try_allocate_slice<T>(bump: impl BumpAllocator, len: usize) -> Result<NonNull
 }
 
 #[inline]
-#[allow(clippy::unnecessary_wraps)]
+#[expect(clippy::unnecessary_wraps)]
 unsafe fn shrink_slice<T>(bump: impl BumpAllocator, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
     unsafe {
         Some(
@@ -629,7 +629,6 @@ fn is_upwards_allocating(bump: &impl BumpAllocator) -> bool {
 
 #[inline(always)]
 #[cfg(feature = "panic-on-alloc")]
-#[allow(clippy::needless_pass_by_value)]
 fn prepare_slice_allocation<T>(bump: impl BumpAllocator, min_cap: usize) -> NonNull<[T]> {
     let Ok(layout) = Layout::array::<T>(min_cap) else {
         capacity_overflow()
@@ -653,7 +652,6 @@ fn prepare_slice_allocation<T>(bump: impl BumpAllocator, min_cap: usize) -> NonN
 }
 
 #[inline(always)]
-#[allow(clippy::needless_pass_by_value)]
 fn try_prepare_slice_allocation<T>(bump: impl BumpAllocator, len: usize) -> Result<NonNull<[T]>, AllocError> {
     let Ok(layout) = Layout::array::<T>(len) else {
         return Err(AllocError);
@@ -677,7 +675,6 @@ fn try_prepare_slice_allocation<T>(bump: impl BumpAllocator, len: usize) -> Resu
 }
 
 #[inline(always)]
-#[allow(clippy::needless_pass_by_value)]
 unsafe fn allocate_prepared_slice<T>(bump: impl BumpAllocator, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
     unsafe {
         let range = non_null::cast_range(ptr..ptr.add(cap));
@@ -688,7 +685,6 @@ unsafe fn allocate_prepared_slice<T>(bump: impl BumpAllocator, ptr: NonNull<T>, 
 }
 
 #[inline(always)]
-#[allow(clippy::needless_pass_by_value)]
 unsafe fn allocate_prepared_slice_rev<T>(bump: impl BumpAllocator, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
     unsafe {
         let range = non_null::cast_range(ptr.sub(cap)..ptr);

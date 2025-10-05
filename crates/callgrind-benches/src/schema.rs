@@ -1,10 +1,7 @@
 //! Generated using [cargo-typify](https://github.com/oxidecomputer/typify/tree/main/cargo-typify)
 //! from [summary.v6.schema.json](https://github.com/gungraun/gungraun/blob/893dd78dedca5301dba1defc59b7a26198bd63d8/gungraun-runner/schemas/summary.v6.schema.json).
-#![allow(dead_code)]
-#![allow(clippy::redundant_closure_call)]
-#![allow(clippy::needless_lifetimes)]
-#![allow(clippy::match_single_binding)]
-#![allow(clippy::clone_on_copy)]
+#![expect(dead_code)]
+#![expect(clippy::clone_on_copy)]
 
 #[doc = r" Error types."]
 pub mod error {

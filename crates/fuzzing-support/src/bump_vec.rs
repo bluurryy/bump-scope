@@ -151,30 +151,24 @@ fn from_bit_pattern<T: FromBytes + IntoBytes>(byte: u8) -> T {
 
 #[repr(transparent)]
 #[derive(Clone, Default, IntoBytes, FromBytes, Immutable)]
-#[allow(dead_code)]
 struct T1(u8);
 
 #[repr(transparent)]
 #[derive(Clone, Default, IntoBytes, FromBytes, Immutable)]
-#[allow(dead_code)]
 struct T2(u16);
 
 #[repr(transparent)]
 #[derive(Clone, Default, IntoBytes, FromBytes, Immutable)]
-#[allow(dead_code)]
 struct T3(u32);
 
 #[repr(transparent)]
 #[derive(Clone, Default, IntoBytes, FromBytes, Immutable)]
-#[allow(dead_code)]
 struct T4(u64);
 
 #[repr(transparent)]
 #[derive(Clone, Default, IntoBytes, FromBytes, Immutable)]
-#[allow(dead_code)]
 struct T5([u64; 2]);
 
 #[repr(transparent)]
 #[derive(Clone, Default, IntoBytes, FromBytes, Immutable)]
-#[allow(dead_code)]
 struct T6([u64; 3]);

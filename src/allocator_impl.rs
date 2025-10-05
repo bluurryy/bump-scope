@@ -1,5 +1,4 @@
 // FIXME: Figure out a way to make coverage report not suck because of `if UP { ... } else { ... }`.
-#![allow(clippy::unnecessary_wraps)]
 
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 

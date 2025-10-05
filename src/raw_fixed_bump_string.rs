@@ -98,7 +98,7 @@ impl RawFixedBumpString {
         self.initialized.as_non_null().cast()
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     #[inline(always)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<u8>) {
         unsafe { self.initialized.set_ptr(new_ptr) };
@@ -110,13 +110,13 @@ impl RawFixedBumpString {
     }
 
     #[inline(always)]
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub(crate) unsafe fn set_cap(&mut self, new_cap: usize) {
         self.capacity = new_cap;
     }
 
     #[inline(always)]
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub(crate) fn into_raw_parts(self) -> (NonNull<str>, usize) {
         let Self { initialized, capacity } = self;
         (initialized.into_ptr(), capacity)

@@ -241,7 +241,6 @@ impl<A: BumpAllocatorExt> BumpString<A> {
     /// [`&str`]: prim@str "&str"
     /// [`into_bytes`]: Self::into_bytes
     pub fn from_utf8(vec: BumpVec<u8, A>) -> Result<Self, FromUtf8Error<BumpVec<u8, A>>> {
-        #[allow(clippy::missing_transmute_annotations)]
         match str::from_utf8(vec.as_slice()) {
             // SAFETY: `BumpVec<u8>` and `BumpString` have the same representation;
             // only the invariant that the bytes are utf8 is different.
@@ -414,7 +413,7 @@ impl<A: BumpAllocatorExt> BumpString<A> {
     /// assert_eq!(string, "");
     /// ```
     #[inline]
-    #[allow(clippy::return_self_not_must_use)]
+    #[expect(clippy::return_self_not_must_use)]
     pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self
     where
         A: Clone,
@@ -1025,7 +1024,7 @@ impl<A: BumpAllocatorExt> BumpString<A> {
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc)]
     pub fn from_utf16_in(v: &[u16], allocator: A) -> Result<Self, FromUtf16Error> {
         panic_on_error(Self::generic_from_utf16_in(v, allocator))
     }
@@ -1603,7 +1602,7 @@ impl<A: BumpAllocatorExt> BumpString<A> {
         }
 
         // update len
-        #[allow(clippy::cast_sign_loss, clippy::cast_possible_wrap)]
+        #[expect(clippy::cast_sign_loss, clippy::cast_possible_wrap)]
         unsafe {
             // Casting to `isize` is fine because per `Layout`'s rules all the `*len`s must be
             // less than isize::MAX. Subtracting two positive `isize`s can't overflow.

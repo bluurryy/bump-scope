@@ -134,7 +134,6 @@ impl<T, const N: usize> OwnedSlice for Box<[T; N]> {
 /// [set_len]: alloc_crate::vec::Vec::set_len
 /// [`owned_slice_ref`]: TakeOwnedSlice::owned_slice_ref
 /// [`take_owned_slice`]: TakeOwnedSlice::take_owned_slice
-#[allow(clippy::len_without_is_empty)]
 pub unsafe trait TakeOwnedSlice {
     /// The element type of the slice.
     type Item;

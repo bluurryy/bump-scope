@@ -2833,7 +2833,7 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// # #[allow(deprecated)]
+    /// # #[expect(deprecated)]
     /// let mut values = bump.alloc_fixed_vec(3);
     /// values.push(1);
     /// values.push(2);
@@ -2845,7 +2845,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_fixed_vec<T>(&self, capacity: usize) -> FixedBumpVec<'_, T> {
-        #[allow(deprecated)]
+        #[expect(deprecated)]
         self.as_scope().alloc_fixed_vec(capacity)
     }
 
@@ -2858,7 +2858,7 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
-    /// # #[allow(deprecated)]
+    /// # #[expect(deprecated)]
     /// let mut values = bump.try_alloc_fixed_vec(3)?;
     /// values.push(1);
     /// values.push(2);
@@ -2870,7 +2870,7 @@ where
     #[deprecated = "use `FixedBumpVec::try_with_capacity_in()` instead"]
     #[inline(always)]
     pub fn try_alloc_fixed_vec<T>(&self, capacity: usize) -> Result<FixedBumpVec<'_, T>, AllocError> {
-        #[allow(deprecated)]
+        #[expect(deprecated)]
         self.as_scope().try_alloc_fixed_vec(capacity)
     }
 
@@ -2883,7 +2883,7 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
-    /// # #[allow(deprecated)]
+    /// # #[expect(deprecated)]
     /// let mut string = bump.alloc_fixed_string(13);
     /// string.push_str("Hello,");
     /// string.push_str(" world!");
@@ -2894,7 +2894,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_fixed_string(&self, capacity: usize) -> FixedBumpString<'_> {
-        #[allow(deprecated)]
+        #[expect(deprecated)]
         self.as_scope().alloc_fixed_string(capacity)
     }
 
@@ -2907,7 +2907,7 @@ where
     /// ```
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::try_new()?;
-    /// # #[allow(deprecated)]
+    /// # #[expect(deprecated)]
     /// let mut string = bump.try_alloc_fixed_string(13)?;
     /// string.push_str("Hello,");
     /// string.push_str(" world!");
@@ -2918,7 +2918,7 @@ where
     #[deprecated = "use `FixedBumpString::try_with_capacity_in()` instead"]
     #[inline(always)]
     pub fn try_alloc_fixed_string(&self, capacity: usize) -> Result<FixedBumpString<'_>, AllocError> {
-        #[allow(deprecated)]
+        #[expect(deprecated)]
         self.as_scope().try_alloc_fixed_string(capacity)
     }
 
@@ -3038,7 +3038,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc)]
     pub fn alloc_try_with<T, E>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<'_, T>, E> {
         self.as_scope().alloc_try_with(f)
     }
@@ -3111,7 +3111,7 @@ where
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc)]
     pub fn alloc_try_with_mut<T, E>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<'_, T>, E> {
         self.as_mut_scope().alloc_try_with_mut(f)
     }

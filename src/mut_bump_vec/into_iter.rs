@@ -21,7 +21,7 @@ pub struct IntoIter<T, A> {
     end: NonNull<T>, // if T is a ZST this is ptr + len
 
     // Just holding on to it so it doesn't drop.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     allocator: A,
 
     /// First field marks the lifetime in the form of the allocator.
@@ -66,8 +66,6 @@ impl<T, A> IntoIter<T, A> {
     #[must_use]
     #[inline(always)]
     pub fn len(&self) -> usize {
-        #![allow(clippy::cast_sign_loss)]
-
         if T::IS_ZST {
             self.end.addr().get().wrapping_sub(self.ptr.addr().get())
         } else {

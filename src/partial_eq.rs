@@ -93,7 +93,6 @@ impl_str_eq! { [A] &mut str, MutBumpString<A> }
 
 #[cfg(feature = "alloc")]
 mod alloc_impl {
-    #[allow(clippy::wildcard_imports)]
     use super::*;
 
     use alloc_crate::{borrow::Cow, string::String};

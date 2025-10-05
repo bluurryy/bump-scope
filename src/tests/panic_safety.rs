@@ -90,7 +90,7 @@ fn into_iter<T: Testable>() {
         let mut bump: Bump = Bump::new();
         let vec = mut_bump_vec![in &mut bump; T::default(); 5];
 
-        #[allow(clippy::manual_assert)]
+        #[expect(clippy::manual_assert)]
         for (i, _) in vec.into_iter().enumerate() {
             if i == 3 {
                 panic!("whoops");

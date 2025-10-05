@@ -94,7 +94,7 @@ impl<I: Iterator, A: BumpAllocatorExt> Drop for Splice<'_, I, A> {
             let mut collected = collected.cook().into_iter();
 
             // Now we have an exact count.
-            #[allow(clippy::len_zero)]
+            #[expect(clippy::len_zero)]
             if collected.len() > 0 {
                 self.drain.move_tail(collected.len());
                 let filled = self.drain.fill(&mut collected);

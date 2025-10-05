@@ -143,7 +143,7 @@ impl<T, A: BumpAllocatorExt> Drop for Drain<'_, T, A> {
         // is invalid even when it is zero-length
         let drop_ptr = iter.as_slice().as_ptr();
 
-        #[allow(clippy::cast_sign_loss)]
+        #[expect(clippy::cast_sign_loss)]
         unsafe {
             // drop_ptr comes from a slice::Iter which only gives us a &[T] but for drop_in_place
             // a pointer with mutable provenance is necessary. Therefore we must reconstruct

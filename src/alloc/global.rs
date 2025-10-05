@@ -1,5 +1,5 @@
 //! Memory allocation APIs
-#![allow(clippy::unused_self)]
+#![expect(clippy::unused_self)]
 
 use alloc_crate::alloc::{alloc, alloc_zeroed, dealloc, realloc};
 use core::{

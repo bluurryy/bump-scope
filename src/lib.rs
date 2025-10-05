@@ -30,18 +30,18 @@
     missing_docs,
     rustdoc::missing_crate_level_docs
 )]
-#![allow(
+#![expect(
     clippy::inline_always,
     clippy::module_name_repetitions,
     clippy::copy_iterator,
-    clippy::comparison_chain,
     clippy::partialeq_ne_impl,
     clippy::collapsible_else_if,
     clippy::items_after_statements,
     clippy::missing_transmute_annotations,
-    clippy::range_plus_one,
     clippy::multiple_crate_versions, // we have allocator-api2 version 0.2 and 0.3
-    rustdoc::invalid_rust_codeblocks, // for our current workaround to conditionally enable doc tests in macro
+)]
+#![allow(
+    clippy::wildcard_imports, // `expect` is broken for this lint
 )]
 #![doc(test(
     attr(deny(dead_code, unused_imports, deprecated)),
@@ -459,7 +459,6 @@ mod supported_minimum_alignment {
 ///
 /// This trait is *sealed*: the list of implementors below is total. Users do not have the ability to mark additional
 /// `MinimumAlignment<N>` values as supported. Only bump allocators with the supported minimum alignments are constructable.
-#[allow(private_bounds)]
 pub trait SupportedMinimumAlignment: supported_minimum_alignment::Sealed + Copy {}
 
 macro_rules! supported_alignments {
@@ -542,13 +541,13 @@ pub mod private {
     }
 
     #[must_use]
-    #[allow(clippy::needless_lifetimes, clippy::elidable_lifetime_names)]
+    #[expect(clippy::elidable_lifetime_names)]
     pub fn bump_box_into_raw_with_lifetime<'a, T: ?Sized>(boxed: BumpBox<'a, T>) -> (NonNull<T>, &'a ()) {
         (boxed.into_raw(), &())
     }
 
     #[must_use]
-    #[allow(clippy::needless_lifetimes, clippy::elidable_lifetime_names)]
+    #[expect(clippy::elidable_lifetime_names)]
     pub unsafe fn bump_box_from_raw_with_lifetime<'a, T: ?Sized>(ptr: NonNull<T>, _lifetime: &'a ()) -> BumpBox<'a, T> {
         unsafe { BumpBox::from_raw(ptr) }
     }
@@ -590,7 +589,7 @@ macro_rules! const_param_assert {
             impl<$(const $param_ident: $param_ty),+> ConstParamAssert<$($param_ident),+> {
                 const CONST_PARAM_ASSERT: () = assert!($($assert_args)*);
             }
-            #[allow(unused_variables)]
+            #[expect(unused_variables)]
             let assertion = ConstParamAssert::<$($param_ident),+>::CONST_PARAM_ASSERT;
     }};
 }

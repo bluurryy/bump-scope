@@ -14,9 +14,9 @@ pub(crate) trait ErrorBehavior: Sized {
     fn fixed_size_vector_is_full() -> Self;
     fn fixed_size_vector_no_space(amount: usize) -> Self;
     fn format_trait_error() -> Self;
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     fn allocate_layout(allocator: &impl BumpAllocatorExt, layout: Layout) -> Result<NonNull<u8>, Self>;
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     fn allocate_sized<T>(allocator: &impl BumpAllocatorExt) -> Result<NonNull<T>, Self>;
     fn allocate_slice<T>(allocator: &impl BumpAllocatorExt, len: usize) -> Result<NonNull<T>, Self>;
     unsafe fn prepare_slice_allocation<T>(

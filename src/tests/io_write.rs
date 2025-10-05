@@ -1,4 +1,4 @@
-#![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+#![expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 
 use std::{
     io::{ErrorKind, IoSlice, Write},

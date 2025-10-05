@@ -596,9 +596,6 @@ impl<T, A: BumpAllocatorExt> BumpVec<T, A> {
 
     #[inline]
     pub(crate) fn generic_from_array_in<E: ErrorBehavior, const N: usize>(array: [T; N], allocator: A) -> Result<Self, E> {
-        #![allow(clippy::needless_pass_by_value)]
-        #![allow(clippy::needless_pass_by_ref_mut)]
-
         let array = ManuallyDrop::new(array);
 
         if T::IS_ZST {
@@ -872,7 +869,7 @@ impl<T, A: BumpAllocatorExt> BumpVec<T, A> {
     /// assert_eq!(vec, []);
     /// ```
     #[inline]
-    #[allow(clippy::return_self_not_must_use)]
+    #[expect(clippy::return_self_not_must_use)]
     pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self
     where
         A: Clone,
@@ -1160,7 +1157,7 @@ impl<T, A: BumpAllocatorExt> BumpVec<T, A> {
     #[must_use]
     #[inline(always)]
     pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        #[allow(deprecated)]
+        #[expect(deprecated)]
         self.fixed.as_non_null_slice()
     }
 
@@ -1708,7 +1705,7 @@ impl<T, A: BumpAllocatorExt> BumpVec<T, A> {
         if T::IS_ZST {
             unsafe {
                 // We can materialize ZST's from nothing.
-                #[allow(clippy::uninit_assumed_init)]
+                #[expect(clippy::uninit_assumed_init)]
                 let fake = ManuallyDrop::new(MaybeUninit::<T>::uninit().assume_init());
 
                 for _ in 0..count {
@@ -2732,7 +2729,7 @@ impl<T, A: BumpAllocatorExt> BumpVec<T, A> {
     ///
     /// assert_eq!(vec, [2, 3, 4]);
     /// ```
-    #[allow(clippy::pedantic)]
+    #[expect(clippy::pedantic)]
     pub fn retain<F>(&mut self, f: F)
     where
         F: FnMut(&mut T) -> bool,

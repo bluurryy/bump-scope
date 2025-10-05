@@ -438,7 +438,7 @@ impl<'a> FixedBumpString<'a> {
     /// assert_eq!(string, "");
     /// ```
     #[inline]
-    #[allow(clippy::return_self_not_must_use)]
+    #[expect(clippy::return_self_not_must_use)]
     pub fn split_off(&mut self, range: impl RangeBounds<usize>) -> Self {
         let len = self.len();
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
@@ -1349,7 +1349,7 @@ impl FixedBumpString<'_> {
         }
 
         // update len
-        #[allow(clippy::cast_sign_loss, clippy::cast_possible_wrap)]
+        #[expect(clippy::cast_sign_loss, clippy::cast_possible_wrap)]
         unsafe {
             // Casting to `isize` is fine because per `Layout`'s rules all the `*len`s must be
             // less than isize::MAX. Subtracting two positive `isize`s can't overflow.

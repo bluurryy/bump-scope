@@ -105,8 +105,6 @@ impl<'a, T> IntoIter<'a, T> {
     #[must_use]
     #[inline(always)]
     pub fn len(&self) -> usize {
-        #![allow(clippy::cast_sign_loss)]
-
         if T::IS_ZST {
             self.end.addr().get().wrapping_sub(self.ptr.addr().get())
         } else {

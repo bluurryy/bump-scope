@@ -331,7 +331,7 @@ impl<'a> AnyChunk<'a> {
 /// Iterator that iterates over previous chunks by continuously calling [`AnyChunk::prev`].
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub struct AnyChunkPrevIter<'a> {
-    #[allow(missing_docs)]
+    #[expect(missing_docs)]
     pub chunk: Option<AnyChunk<'a>>,
 }
 
@@ -365,7 +365,7 @@ impl fmt::Debug for AnyChunkPrevIter<'_> {
 /// Iterator that iterates over next chunks by continuously calling [`AnyChunk::next`].
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub struct AnyChunkNextIter<'a> {
-    #[allow(missing_docs)]
+    #[expect(missing_docs)]
     pub chunk: Option<AnyChunk<'a>>,
 }
 
@@ -398,7 +398,7 @@ impl fmt::Debug for AnyChunkNextIter<'_> {
 
 #[test]
 fn check_from_impls() {
-    #![allow(dead_code, clippy::needless_lifetimes, clippy::elidable_lifetime_names)]
+    #![expect(dead_code, clippy::elidable_lifetime_names)]
 
     use crate::{BaseAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
 

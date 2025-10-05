@@ -18,12 +18,12 @@ fn fn_once() {
     let x: BumpBox<dyn FnOnce()> = bump.alloc(move || drop(string));
     drop(x);
 
-    #[allow(unused_variables)]
+    #[expect(unused_variables)]
     catch_unwind(|| {
         let string = String::from("hello world");
         let x: BumpBox<dyn FnOnce()> = bump.alloc(move || {
             panic!("a");
-            #[allow(unreachable_code)]
+            #[expect(unreachable_code)]
             drop(string);
         });
         (x)();

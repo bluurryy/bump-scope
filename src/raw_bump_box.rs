@@ -38,19 +38,19 @@ impl<T: ?Sized> Drop for RawBumpBox<T> {
 }
 
 impl<T: ?Sized> RawBumpBox<T> {
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     #[inline(always)]
     pub(crate) unsafe fn cook<'a>(self) -> BumpBox<'a, T> {
         unsafe { transmute(self) }
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     #[inline(always)]
     pub(crate) unsafe fn cook_ref<'a>(&self) -> &BumpBox<'a, T> {
         unsafe { transmute_ref(self) }
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     #[inline(always)]
     pub(crate) unsafe fn cook_mut<'a>(&mut self) -> &mut BumpBox<'a, T> {
         unsafe { transmute_mut(self) }
@@ -127,13 +127,11 @@ impl RawBumpBox<str> {
     };
 
     #[inline(always)]
-    #[allow(dead_code)]
     pub(crate) const fn len(&self) -> usize {
         non_null::str_bytes(self.ptr).len()
     }
 
     #[inline(always)]
-    #[allow(dead_code)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<u8>) {
         let len = self.len();
         self.ptr = non_null::str_from_utf8(NonNull::slice_from_raw_parts(new_ptr, len));

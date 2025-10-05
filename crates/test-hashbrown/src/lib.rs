@@ -1,5 +1,5 @@
 #![cfg(test)]
-#![allow(clippy::approx_constant)]
+#![expect(clippy::approx_constant)]
 
 use bump_scope::alloc::Global;
 use hashbrown::HashMap;

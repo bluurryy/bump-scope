@@ -393,7 +393,7 @@ impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
 
 /// Iterator that iterates over previous chunks by continuously calling [`Chunk::prev`].
 pub struct ChunkPrevIter<'a, A, const UP: bool> {
-    #[allow(missing_docs)]
+    #[expect(missing_docs)]
     pub chunk: Option<Chunk<'a, A, UP>>,
 }
 
@@ -440,7 +440,7 @@ impl<A, const UP: bool> Debug for ChunkPrevIter<'_, A, UP> {
 
 /// Iterator that iterates over next chunks by continuously calling [`Chunk::next`].
 pub struct ChunkNextIter<'a, A, const UP: bool> {
-    #[allow(missing_docs)]
+    #[expect(missing_docs)]
     pub chunk: Option<Chunk<'a, A, UP>>,
 }
 

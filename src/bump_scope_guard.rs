@@ -68,7 +68,6 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     #[inline(always)]
-    #[allow(clippy::needless_pass_by_ref_mut)]
     pub(crate) fn new(bump: &'a mut BumpScope<'_, A, MIN_ALIGN, UP, true, DEALLOCATES>) -> Self {
         unsafe { Self::new_unchecked(bump.chunk.get()) }
     }
@@ -157,7 +156,6 @@ where
     A: Allocator,
 {
     #[inline(always)]
-    #[allow(clippy::needless_pass_by_ref_mut)]
     pub(crate) fn new(bump: &'a mut Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>) -> Self {
         unsafe { Self::new_unchecked(bump.chunk.get()) }
     }

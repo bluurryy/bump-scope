@@ -991,9 +991,6 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
 
     #[inline]
     pub(crate) fn generic_from_array_in<E: ErrorBehavior, const N: usize>(array: [T; N], allocator: A) -> Result<Self, E> {
-        #![allow(clippy::needless_pass_by_value)]
-        #![allow(clippy::needless_pass_by_ref_mut)]
-
         let array = ManuallyDrop::new(array);
         let mut allocator = allocator;
 
@@ -1680,7 +1677,7 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
         if T::IS_ZST {
             unsafe {
                 // We can materialize ZST's from nothing.
-                #[allow(clippy::uninit_assumed_init)]
+                #[expect(clippy::uninit_assumed_init)]
                 let fake = ManuallyDrop::new(MaybeUninit::<T>::uninit().assume_init());
 
                 for _ in 0..count {
