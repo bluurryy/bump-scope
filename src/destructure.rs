@@ -2,13 +2,15 @@
 ///
 /// The drop implementation will not be called for `$ty` nor for any field that is not bound.
 macro_rules! destructure {
-    (let $ty:ty {
+    (let $ty:path {
         $($field:ident $(: $field_alias:ident)?),* $(,)?
     } = $value:expr) => {
         let value: $ty = $value;
-        let value = ::core::mem::ManuallyDrop::new(value);
 
-        const _: () = assert!(!$crate::destructure::has_duplicates(&[$(stringify!($field)),*]), "you can't destructure a field twice");
+        // errors if there are duplicates
+        let $ty { $($field: _,)* .. } = &value;
+
+        let value = ::core::mem::ManuallyDrop::new(value);
 
         $(
             #[allow(unused_unsafe)] // we might or might not already be in an unsafe context
@@ -29,47 +31,6 @@ macro_rules! or {
 }
 
 pub(crate) use or;
-
-pub(crate) const fn has_duplicates(strings: &[&str]) -> bool {
-    let mut x = 0;
-
-    while x < strings.len() {
-        let mut y = x + 1;
-
-        while y < strings.len() {
-            if str_eq(strings[x], strings[y]) {
-                return true;
-            }
-
-            y += 1;
-        }
-
-        x += 1;
-    }
-
-    false
-}
-
-const fn str_eq(a: &str, b: &str) -> bool {
-    let a = a.as_bytes();
-    let b = b.as_bytes();
-
-    if a.len() != b.len() {
-        return false;
-    }
-
-    let mut i = 0;
-
-    while i < a.len() {
-        if a[i] != b[i] {
-            return false;
-        }
-
-        i += 1;
-    }
-
-    true
-}
 
 #[cfg(test)]
 mod tests {
@@ -95,6 +56,9 @@ mod tests {
 
         // won't compile
         // let Foo { bar: qux, baz } = foo;
+
+        // won't compile
+        // destructure!(let Foo { bar, bar } = foo);
 
         destructure!(let Foo { bar: qux, baz } = foo);
 
