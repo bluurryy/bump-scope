@@ -11,6 +11,12 @@ pre-release:
   just test
   cargo +stable semver-checks
 
+# installs all tools used to run `pre-release`
+setup:
+  cargo binstall cargo-insert-docs@0.19.1 --locked
+  cargo binstall cargo-semver-checks@0.44.0 --locked
+  npm install -g cspell
+
 check: 
   just assert-fuzz-modules-synced
   just check-fmt
