@@ -23,12 +23,13 @@ pub use into_iter::IntoIter;
 ///
 /// For example `[T; N]`, `Vec<T>`, `Box<[T]>` and `vec::Drain<T>`.
 ///
-/// This trait is used for the parameter of [`alloc_slice_move`], [`append`] and [`from_owned_slice_in`].
+/// This trait is used for the parameter of [`alloc_slice_move`], [`init_move`], [`append`] and [`from_owned_slice_in`].
 ///
 /// Any implementor of `TakeOwnedSlice` automatically implements this trait.
 ///
-/// [`append`]: crate::BumpVec::append
 /// [`alloc_slice_move`]: crate::Bump::alloc_slice_move
+/// [`init_move`]: crate::BumpBox::init_move
+/// [`append`]: crate::BumpVec::append
 /// [`from_owned_slice_in`]: crate::BumpVec::from_owned_slice_in
 pub trait OwnedSlice {
     /// The type of an element of this owned slice.
@@ -146,7 +147,7 @@ pub unsafe trait TakeOwnedSlice {
     /// *Its elements* are the same elements referred to by [`owned_slice_ref`].
     /// The caller is now responsible for dropping those elements.
     ///
-    /// After calling this, `owned_slice_ref` will return a slice with a length of `0`.
+    /// After calling this, `owned_slice_ref` will return an empty slice.
     ///
     /// [`owned_slice_ref`]: Self::owned_slice_ref
     fn take_owned_slice(&mut self);
