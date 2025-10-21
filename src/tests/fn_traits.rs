@@ -18,7 +18,7 @@ fn fn_once() {
     let x: BumpBox<dyn FnOnce()> = bump.alloc(move || drop(string));
     drop(x);
 
-    #[expect(unused_variables)]
+    #[expect(unused_variables, unused_assignments)]
     catch_unwind(|| {
         let string = String::from("hello world");
         let x: BumpBox<dyn FnOnce()> = bump.alloc(move || {
