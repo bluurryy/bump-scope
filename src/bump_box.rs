@@ -817,7 +817,7 @@ impl<'a> BumpBox<'a, str> {
     #[inline]
     pub fn truncate(&mut self, new_len: usize) {
         if new_len <= self.len() {
-            assert!(self.is_char_boundary(new_len));
+            self.assert_char_boundary(new_len);
             unsafe { self.as_mut_bytes().truncate(new_len) }
         }
     }
@@ -1099,8 +1099,8 @@ impl<'a> BumpBox<'a, str> {
         // Because the range removal happens in Drop, if the Drain iterator is leaked,
         // the removal will not happen.
         let Range { start, end } = polyfill::slice::range(range, ..self.len());
-        assert!(self.is_char_boundary(start));
-        assert!(self.is_char_boundary(end));
+        self.assert_char_boundary(start);
+        self.assert_char_boundary(end);
 
         // Take out two simultaneous borrows. The &mut String won't be accessed
         // until iteration is over, in Drop.

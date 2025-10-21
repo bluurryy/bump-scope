@@ -1246,7 +1246,8 @@ impl<A: MutBumpAllocatorExt> MutBumpString<A> {
 
     #[inline]
     pub(crate) fn generic_insert<E: ErrorBehavior>(&mut self, idx: usize, ch: char) -> Result<(), E> {
-        assert!(self.is_char_boundary(idx));
+        self.assert_char_boundary(idx);
+
         let mut bits = [0; 4];
         let bits = ch.encode_utf8(&mut bits).as_bytes();
 
@@ -1310,8 +1311,7 @@ impl<A: MutBumpAllocatorExt> MutBumpString<A> {
 
     #[inline]
     pub(crate) fn generic_insert_str<E: ErrorBehavior>(&mut self, idx: usize, string: &str) -> Result<(), E> {
-        assert!(self.is_char_boundary(idx));
-
+        self.assert_char_boundary(idx);
         unsafe { self.insert_bytes(idx, string.as_bytes()) }
     }
 
@@ -1384,8 +1384,8 @@ impl<A: MutBumpAllocatorExt> MutBumpString<A> {
     pub(crate) fn generic_extend_from_within<E: ErrorBehavior, R: RangeBounds<usize>>(&mut self, src: R) -> Result<(), E> {
         let src @ Range { start, end } = polyfill::slice::range(src, ..self.len());
 
-        assert!(self.is_char_boundary(start));
-        assert!(self.is_char_boundary(end));
+        self.assert_char_boundary(start);
+        self.assert_char_boundary(end);
 
         let vec = unsafe { self.as_mut_vec() };
         vec.generic_extend_from_within_copy(src)
