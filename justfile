@@ -11,6 +11,12 @@ pre-release:
   just test
   cargo +stable semver-checks
 
+# installs all tools used to run `pre-release`
+setup:
+  cargo binstall cargo-insert-docs@0.19.1 --locked
+  cargo binstall cargo-semver-checks@0.44.0 --locked
+  npm install -g cspell
+
 check: 
   just assert-fuzz-modules-synced
   just check-fmt
@@ -21,7 +27,7 @@ check:
   just check-mustnt_compile
   just check-unavailable_panicking_macros
   # regression test making sure hashbrown compiles
-  cargo check --tests --features nightly-allocator-api 
+  cargo +nightly check --tests --features nightly-allocator-api 
 
 check-fmt:
   cargo fmt --check
@@ -44,13 +50,13 @@ check-clippy:
   cargo +nightly clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03 -- -Dwarnings
   cargo +nightly clippy --tests --all-features -- -Dwarnings
 
-  cd crates/callgrind-benches && cargo clippy --tests --benches --workspace -- -Dwarnings
-  cd crates/criterion-benches && cargo clippy --tests --benches --workspace -- -Dwarnings
-  cd crates/fuzzing-support && cargo clippy --tests -- -Dwarnings
-  cd crates/test-fallibility && cargo clippy --tests -- -Dwarnings
-  cd crates/test-hashbrown && cargo clippy --tests -- -Dwarnings
-  cd crates/tests-from-std && cargo clippy --tests -- -Dwarnings
-  cd fuzz && cargo clippy -- -Dwarnings
+  cd crates/callgrind-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
+  cd crates/criterion-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
+  cd crates/fuzzing-support && cargo +nightly clippy --tests -- -Dwarnings
+  cd crates/test-fallibility && cargo +nightly clippy --tests -- -Dwarnings
+  cd crates/test-hashbrown && cargo +nightly clippy --tests -- -Dwarnings
+  cd crates/tests-from-std && cargo +nightly clippy --tests -- -Dwarnings
+  cd fuzz && cargo +nightly clippy -- -Dwarnings
 
 check-nostd:
   cd crates/test-fallibility && cargo check
@@ -80,18 +86,18 @@ test:
   just test-miri
 
 test-non-miri: 
-  cargo test --all-features
-  cd crates/tests-from-std && cargo test
-  cd crates/test-hashbrown && cargo test
-  cd crates/test-hashbrown && cargo test --all-features
-  cd crates/fuzzing-support && cargo test
+  cargo +nightly test --all-features
+  cd crates/tests-from-std && cargo +nightly test
+  cd crates/test-hashbrown && cargo +nightly test
+  cd crates/test-hashbrown && cargo +nightly test --all-features
+  cd crates/fuzzing-support && cargo +nightly test
 
 test-miri:
-  cargo miri test --all-features
-  cd crates/tests-from-std && cargo miri test
-  cd crates/test-hashbrown && cargo miri test
-  cd crates/test-hashbrown && cargo miri test --all-features
-  cd crates/fuzzing-support && cargo miri test
+  cargo +nightly miri test --all-features
+  cd crates/tests-from-std && cargo +nightly miri test
+  cd crates/test-hashbrown && cargo +nightly miri test
+  cd crates/test-hashbrown && cargo +nightly miri test --all-features
+  cd crates/fuzzing-support && cargo +nightly miri test
 
 fmt:
   cargo fmt
@@ -109,7 +115,7 @@ doc *args:
   @ just doc-rustdoc {{args}}
 
 doc-rustdoc *args:
-  cargo rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition
+  cargo +nightly rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition
 
 doc-rustdoc-priv *args:
-  cargo rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition --document-private-items
+  cargo +nightly rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition --document-private-items -definition
