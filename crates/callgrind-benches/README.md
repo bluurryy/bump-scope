@@ -8,7 +8,7 @@ There are also criterion benchmarks at [../criterion-benches](../criterion-bench
 
 The benchmarks results in the tables below are shown in the format "instructions executed / branches executed".
 
-These are the results of a benchmark run with <!-- version start -->`rustc 1.90.0 (1159e78c4 2025-09-14)` on `x86_64-unknown-linux-gnu` using `LLVM version 20.1.8`<!-- version end -->.
+These are the results of a benchmark run with <!-- version start -->`rustc 1.91.0 (f8297e351 2025-10-28)` on `x86_64-unknown-linux-gnu` using `LLVM version 21.1.2`<!-- version end -->.
 
 ### Allocation
 
@@ -32,7 +32,7 @@ The `*_overaligned` cases use a bump allocator with a minimum alignment greater 
 | alloc_big_struct_overaligned | 20 / 1          | 20 / 1            | 19 / 1  | — [^1]      |
 | alloc_u8_slice               | 32 / 3          | 32 / 3            | 31 / 3  | 34 / 5      |
 | alloc_u8_slice_overaligned   | 34 / 3          | 33 / 3            | 35 / 4  | — [^1]      |
-| alloc_u32_slice              | 45 / 6          | 44 / 6            | 45 / 7  | 55 / 8      |
+| alloc_u32_slice              | 45 / 6          | 44 / 6            | 45 / 7  | 52 / 8      |
 | alloc_u32_slice_aligned      | 43 / 6          | 43 / 6            | 43 / 6  | — [^1]      |
 | alloc_u32_slice_overaligned  | 45 / 6          | 44 / 6            | 45 / 6  | — [^1]      |
 
@@ -57,7 +57,7 @@ The benchmark cases above use the infallible api, panicking if allocating a new 
 | try_alloc_big_struct_overaligned | 20 / 1          | 20 / 1            | 19 / 1  | — [^1]      |
 | try_alloc_u8_slice               | 32 / 3          | 32 / 3            | 32 / 3  | 34 / 5      |
 | try_alloc_u8_slice_overaligned   | 34 / 3          | 33 / 3            | 36 / 4  | — [^1]      |
-| try_alloc_u32_slice              | 45 / 6          | 44 / 6            | 45 / 7  | 51 / 8      |
+| try_alloc_u32_slice              | 45 / 6          | 44 / 6            | 45 / 7  | 48 / 8      |
 | try_alloc_u32_slice_aligned      | 43 / 6          | 43 / 6            | 43 / 6  | — [^1]      |
 | try_alloc_u32_slice_overaligned  | 45 / 6          | 44 / 6            | 45 / 6  | — [^1]      |
 
@@ -93,13 +93,13 @@ If the layout is not statically known then the compiler can not do as many optim
 
 | name                                | bump-scope (up) | bump-scope (down) | bumpalo | blink-alloc |
 |-------------------------------------|-----------------|-------------------|---------|-------------|
-| black_box_allocate                  | 15 / 1          | 12 / 1            | 25 / 4  | 21 / 3      |
-| black_box_grow_same_align           | 25 / 2          | 51 / 7            | 96 / 9  | 31 / 6      |
-| black_box_grow_smaller_align        | 25 / 2          | 51 / 7            | 96 / 9  | 31 / 6      |
-| black_box_grow_larger_align         | 25 / 2          | 51 / 7            | 70 / 9  | 55 / 8      |
+| black_box_allocate                  | 15 / 1          | 12 / 1            | 27 / 4  | 19 / 3      |
+| black_box_grow_same_align           | 25 / 2          | 51 / 7            | 99 / 9  | 31 / 6      |
+| black_box_grow_smaller_align        | 25 / 2          | 51 / 7            | 99 / 9  | 31 / 6      |
+| black_box_grow_larger_align         | 25 / 2          | 51 / 7            | 73 / 9  | 54 / 8      |
 | black_box_shrink_same_align [^2]    | 13 / 2          | 47 / 7            | 45 / 7  | 23 / 3      |
 | black_box_shrink_smaller_align [^2] | 13 / 2          | 50 / 9            | 48 / 9  | 23 / 3      |
-| black_box_shrink_larger_align [^2]  | 13 / 2          | 47 / 7            | 15 / 2  | 55 / 8      |
+| black_box_shrink_larger_align [^2]  | 13 / 2          | 47 / 7            | 15 / 2  | 54 / 8      |
 | black_box_deallocate                | 6 / 1           | 6 / 1             | 7 / 1   | 6 / 2       |
 | black_box_deallocate_non_last       | 5 / 1           | 4 / 1             | 5 / 1   | 6 / 2       |
 
@@ -114,7 +114,7 @@ If the layout is not statically known then the compiler can not do as many optim
 
 | name    | bump-scope (up) | bump-scope (down) | bumpalo  | blink-alloc |
 |---------|-----------------|-------------------|----------|-------------|
-| warm_up | 224 / 31        | 230 / 32          | 355 / 43 | 284 / 38    |
+| warm_up | 224 / 31        | 230 / 32          | 356 / 43 | 282 / 38    |
 | reset   | 26 / 2          | 25 / 2            | 23 / 2   | 26 / 3      |
 
 <!-- misc table end -->
