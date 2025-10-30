@@ -2241,7 +2241,7 @@ impl<'a, T, const N: usize> FixedBumpVec<'a, [T; N]> {
             // the address space.
             // - Each `[T; N]` has `N` valid elements, so there are `len * N`
             // valid elements in the allocation.
-            unsafe { (polyfill::usize::unchecked_mul(len, N), polyfill::usize::unchecked_mul(cap, N)) }
+            unsafe { (len.unchecked_mul(N), cap.unchecked_mul(N)) }
         };
 
         // SAFETY:
