@@ -2830,7 +2830,7 @@ impl<'a, T, const N: usize> BumpBox<'a, [[T; N]]> {
             // the address space.
             // - Each `[T; N]` has `N` valid elements, so there are `len * N`
             // valid elements in the allocation.
-            unsafe { polyfill::usize::unchecked_mul(len, N) }
+            unsafe { len.unchecked_mul(N) }
         };
 
         unsafe { BumpBox::from_raw(NonNull::slice_from_raw_parts(ptr.cast(), new_len)) }

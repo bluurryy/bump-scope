@@ -10,7 +10,6 @@ pub(crate) mod layout;
 pub(crate) mod non_null;
 pub(crate) mod pointer;
 pub(crate) mod slice;
-pub(crate) mod usize;
 
 use core::mem::{ManuallyDrop, size_of};
 
