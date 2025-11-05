@@ -321,7 +321,7 @@ pub(crate) fn bump_down(props: BumpProps) -> Option<usize> {
         // Alignment is `> MIN_CHUNK_ALIGN` or not const.
 
         // This could also be a `checked_sub`, but we use `saturating_sub` to save us a branch.
-        // The `if` below will return None if the addition saturated and returned `0`.
+        // The `if` below will return None if the subtraction saturated and returned `0`.
         end = end.saturating_sub(layout.size());
         end = down_align(end, layout.align().max(min_align));
 
