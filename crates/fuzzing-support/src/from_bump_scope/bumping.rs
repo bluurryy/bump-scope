@@ -372,7 +372,12 @@ pub(crate) fn bump_prepare_up(props: BumpProps) -> Option<Range<usize>> {
             // thus can't overflow.
             start = up_align_unchecked(start, layout.align());
         } else {
-            start = up_align(start, layout.align())?.get();
+            start = if let Some(some) = up_align(start, layout.align()) {
+                some.get()
+            } else {
+                cold();
+                return None;
+            };
 
             if unlikely(start > end) {
                 return None;
