@@ -30,12 +30,12 @@ check:
   cargo +nightly check --tests --features nightly-allocator-api 
 
 check-fmt:
-  cargo fmt --check
-  cd crates/fuzzing-support && cargo fmt --check
-  cd crates/test-fallibility && cargo fmt --check
-  cd crates/callgrind-benches && cargo fmt --check
-  cd crates/criterion-benches && cargo fmt --check
-  cd fuzz; cargo fmt --check
+  cargo +nightly fmt --check
+  cd crates/fuzzing-support && cargo +nightly fmt --check
+  cd crates/test-fallibility && cargo +nightly fmt --check
+  cd crates/callgrind-benches && cargo +nightly fmt --check
+  cd crates/criterion-benches && cargo +nightly fmt --check
+  cd fuzz; cargo +nightly fmt --check
 
 check-msrv:
   # msrv might print warnings that stable doesnt, we dont care
