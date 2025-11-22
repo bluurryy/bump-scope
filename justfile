@@ -100,17 +100,17 @@ test-miri:
   cd crates/fuzzing-support && cargo +nightly miri test
 
 fmt:
-  cargo fmt
-  cd crates/fuzzing-support && cargo fmt
-  cd crates/test-fallibility && cargo fmt
-  cd fuzz && cargo fmt
+  cargo +nightly fmt
+  cd crates/fuzzing-support && cargo +nightly fmt
+  cd crates/test-fallibility && cargo +nightly fmt
+  cd fuzz && cargo +nightly fmt
 
 spellcheck:
   # https://www.npmjs.com/package/cspell
   cspell lint --gitignore "**/*.{rs,md,toml}" --exclude crates/tests-from-std --exclude crates/callgrind-benches/src/schema.rs
 
 doc *args:
-  cargo fmt
+  cargo +nightly fmt
   cargo insert-docs --all-features --allow-dirty
   @ just doc-rustdoc {{args}}
 
