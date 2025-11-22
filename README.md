@@ -59,7 +59,7 @@ Unlike `bumpalo`, this crate...
 - Supports [scopes and checkpoints](#scopes-and-checkpoints).
 - Drop is always called for allocated values unless explicitly [leaked](https://docs.rs/bump-scope/1.4.0/bump_scope/struct.BumpBox.html#method.leak) or [forgotten](https://doc.rust-lang.org/core/mem/fn.forget.html).
   - `alloc*` methods return a [`BumpBox<T>`](https://docs.rs/bump-scope/1.4.0/bump_scope/struct.BumpBox.html) which owns and drops `T`. Types that don't need dropping can be turned into references with [`into_ref`](https://docs.rs/bump-scope/1.4.0/bump_scope/struct.BumpBox.html#method.into_ref) and [`into_mut`](https://docs.rs/bump-scope/1.4.0/bump_scope/struct.BumpBox.html#method.into_mut).
-- You can allocate a slice from *any* `Iterator` with [`alloc_iter`](https://docs.rs/bump-scope/1.4.0/bump_scope/struct.Bump.html#method.alloc_iter).
+- You can allocate a slice from any `Iterator` with [`alloc_iter`](https://docs.rs/bump-scope/1.4.0/bump_scope/struct.Bump.html#method.alloc_iter).
 - Every method that panics on allocation failure has a fallible `try_*` counterpart.
 - `Bump`'s base allocator is generic.
 - Won't try to allocate a smaller chunk if allocation failed.

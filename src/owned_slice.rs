@@ -142,12 +142,12 @@ pub unsafe trait TakeOwnedSlice {
     /// Returns a slice of its elements.
     fn owned_slice_ref(&self) -> &[Self::Item];
 
-    /// This will make the slice forget all of its elements.
+    /// Makes the slice forget all of its elements.
     ///
-    /// *Its elements* are the same elements referred to by [`owned_slice_ref`].
-    /// The caller is now responsible for dropping those elements.
+    /// *Its elements* are the elements referred to by [`owned_slice_ref`].
+    /// The caller is now responsible for dropping these elements.
     ///
-    /// After calling this, `owned_slice_ref` will return an empty slice.
+    /// After calling this method, `owned_slice_ref` will return an empty slice.
     ///
     /// [`owned_slice_ref`]: Self::owned_slice_ref
     fn take_owned_slice(&mut self);

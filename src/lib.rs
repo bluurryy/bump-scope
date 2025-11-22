@@ -91,7 +91,7 @@
 //! - Supports [scopes and checkpoints](#scopes-and-checkpoints).
 //! - Drop is always called for allocated values unless explicitly [leaked](BumpBox::leak) or [forgotten](core::mem::forget).
 //!   - `alloc*` methods return a [`BumpBox<T>`](BumpBox) which owns and drops `T`. Types that don't need dropping can be turned into references with [`into_ref`](BumpBox::into_ref) and [`into_mut`](BumpBox::into_mut).
-//! - You can allocate a slice from *any* `Iterator` with [`alloc_iter`](Bump::alloc_iter).
+//! - You can allocate a slice from any `Iterator` with [`alloc_iter`](Bump::alloc_iter).
 //! - Every method that panics on allocation failure has a fallible `try_*` counterpart.
 //! - `Bump`'s base allocator is generic.
 //! - Won't try to allocate a smaller chunk if allocation failed.
@@ -455,7 +455,7 @@ mod supported_minimum_alignment {
     }
 }
 
-/// Statically guarantees that a minimum alignment is marked as supported.
+/// Statically guarantees that a minimum alignment is supported.
 ///
 /// This trait is *sealed*: the list of implementors below is total. Users do not have the ability to mark additional
 /// `MinimumAlignment<N>` values as supported. Only bump allocators with the supported minimum alignments are constructable.
