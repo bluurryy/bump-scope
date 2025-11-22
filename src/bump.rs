@@ -44,7 +44,7 @@ macro_rules! make_type {
         /// - with a default size hint: <code>[new]\([_in][new_in])</code> / <code>[default]</code>
         /// - provide a size hint: <code>[with_size]\([_in][with_size_in])</code>
         /// - provide a minimum capacity: <code>[with_capacity]\([_in][with_capacity_in])</code>
-        /// - without allocation: <code>[unallocated]</code>
+        /// - const, without allocation: <code>[unallocated]</code>
         ///
         /// [new]: Self::new
         /// [new_in]: Self::new_in
