@@ -32,7 +32,7 @@ When an allocation is made that pointer gets aligned and bumped towards the othe
 When its chunk is full, this allocator allocates another chunk with twice the size.
 
 This makes allocations very fast. The drawback is that you can't reclaim memory like you do with a more general allocator.
-Memory for the most recent allocation *can* be reclaimed. You can also use [scopes, checkpoints](#scopes-and-checkpoints) and [`reset`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.reset) to reclaim memory.
+Memory for the most recent allocation *can* be reclaimed. You can also use [scopes, checkpoints](#scopes-and-checkpoints) and [`reset`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.reset) to reclaim memory.
 
 A bump allocator is great for *phase-oriented allocations* where you allocate objects in a loop and free them at the end of every iteration.
 ```rust
@@ -44,7 +44,7 @@ loop {
     bump.reset();
 }
 ```
-The fact that the bump allocator allocates ever larger chunks and [`reset`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.reset) only keeps around the largest one means that after a few iterations, every bump allocation
+The fact that the bump allocator allocates ever larger chunks and [`reset`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.reset) only keeps around the largest one means that after a few iterations, every bump allocation
 will be done on the same chunk and no more chunks need to be allocated.
 
 The introduction of scopes makes this bump allocator also great for temporary allocations and stack-like usage.
@@ -57,9 +57,9 @@ This crate was inspired by bumpalo and [Always Bump Downwards](https://fitzgeral
 
 Unlike `bumpalo`, this crate...
 - Supports [scopes and checkpoints](#scopes-and-checkpoints).
-- Drop is always called for allocated values unless explicitly [leaked](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.BumpBox.html#method.leak) or [forgotten](https://doc.rust-lang.org/core/mem/fn.forget.html).
-  - `alloc*` methods return a [`BumpBox<T>`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.BumpBox.html) which owns and drops `T`. Types that don't need dropping can be turned into references with [`into_ref`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.BumpBox.html#method.into_ref) and [`into_mut`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.BumpBox.html#method.into_mut).
-- You can allocate a slice from any `Iterator` with [`alloc_iter`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.alloc_iter).
+- Drop is always called for allocated values unless explicitly [leaked](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.BumpBox.html#method.leak) or [forgotten](https://doc.rust-lang.org/core/mem/fn.forget.html).
+  - `alloc*` methods return a [`BumpBox<T>`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.BumpBox.html) which owns and drops `T`. Types that don't need dropping can be turned into references with [`into_ref`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.BumpBox.html#method.into_ref) and [`into_mut`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.BumpBox.html#method.into_mut).
+- You can allocate a slice from any `Iterator` with [`alloc_iter`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.alloc_iter).
 - `Bump`'s base allocator is generic.
 - Won't try to allocate a smaller chunk if allocation failed.
 - No built-in allocation limit. You can provide an allocator that enforces an allocation limit (see `tests/limit_memory_usage.rs`).
@@ -76,7 +76,7 @@ Have a look at the documentation of [`Bump`] for a method overview.
 You can create scopes to make allocations that live only for a part of its parent scope.
 Entering and exiting scopes is virtually free. Allocating within a scope has no overhead.
 
-You can create a new scope either with a [`scoped`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.scoped) closure or with a [`scope_guard`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.scope_guard):
+You can create a new scope either with a [`scoped`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.scoped) closure or with a [`scope_guard`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.scope_guard):
 ```rust
 use bump_scope::Bump;
 
@@ -124,7 +124,7 @@ assert_eq!(bump.stats().allocated(), 0);
 
 assert_eq!(bump.stats().allocated(), 0);
 ```
-You can also use the unsafe [`checkpoint`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.checkpoint) api
+You can also use the unsafe [`checkpoint`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.checkpoint) api
 to reset the bump pointer to a previous position.
 ```rust
 let bump: Bump = Bump::new();
@@ -142,18 +142,18 @@ assert_eq!(bump.stats().allocated(), 0);
 ## Collections
 `bump-scope` provides bump allocated versions of `Vec` and `String` called [`BumpVec`] and [`BumpString`].
 They are also available in the following variants:
-- [`Fixed*`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.FixedBumpVec.html) for fixed capacity collections
-- [`Mut*`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.MutBumpVec.html) for collections optimized for a mutable bump allocator
+- [`Fixed*`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.FixedBumpVec.html) for fixed capacity collections
+- [`Mut*`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.MutBumpVec.html) for collections optimized for a mutable bump allocator
 
 ##### API changes
 The collections are designed to have the same api as their std counterparts with these exceptions:
-- [`split_off`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.BumpVec.html#method.split_off) —  splits the collection in place without allocation; the parameter is a range instead of a single index
-- [`retain`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.BumpVec.html#method.retain) —  takes a closure with a `&mut T` parameter like `Vec::retain_mut`
+- [`split_off`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.BumpVec.html#method.split_off) —  splits the collection in place without allocation; the parameter is a range instead of a single index
+- [`retain`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.BumpVec.html#method.retain) —  takes a closure with a `&mut T` parameter like `Vec::retain_mut`
 
 ##### New features
-- [`append`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.BumpVec.html#method.append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `vec::Drain<T>` etc.
-- [`map`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.BumpVec.html#method.map) —  maps the elements, potentially reusing the existing allocation
-- [`map_in_place`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.BumpVec.html#method.map_in_place) —  maps the elements without allocation, failing to compile if not possible
+- [`append`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.BumpVec.html#method.append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `vec::Drain<T>` etc.
+- [`map`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.BumpVec.html#method.map) —  maps the elements, potentially reusing the existing allocation
+- [`map_in_place`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.BumpVec.html#method.map_in_place) —  maps the elements without allocation, failing to compile if not possible
 - conversions between the regular collections, their `Fixed*` variants and `BumpBox<[T]>` / `BumpBox<str>`
 
 ## Parallel Allocation
@@ -166,7 +166,7 @@ To bump allocate in parallel you can use a [`BumpPool`].
 respective [feature flags](#feature-flags) also implement `allocator_api2@0.2`, `allocator_api2@0.3` and nightly's `Allocator` trait.
 All of these traits mirror the nightly `Allocator` trait at the time of writing.
 
-This allows you to [bump allocate collections](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#collections).
+This allows you to [bump allocate collections](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#collections).
 
 A bump allocator can grow, shrink and deallocate the most recent allocation.
 When bumping upwards it can even do so in place.
@@ -203,21 +203,21 @@ assert_eq!(bump.stats().allocated(), 4);
   `try_`-prefixed allocation methods will be available.
 - **`serde`** — Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 - **`bytemuck`** — Adds `bytemuck::*` extension traits for
-  <code>[alloc_zeroed](https://docs.rs/bump-scope/1.4.1/bump_scope/bytemuck/trait.BumpExt.html#tymethod.alloc_zeroed)([_slice](https://docs.rs/bump-scope/1.4.1/bump_scope/bytemuck/trait.BumpExt.html#tymethod.alloc_zeroed_slice))</code>,
-  [`init_zeroed`](https://docs.rs/bump-scope/1.4.1/bump_scope/bytemuck/trait.InitZeroed.html#tymethod.init_zeroed),
-  [`extend_zeroed`](https://docs.rs/bump-scope/1.4.1/bump_scope/bytemuck/trait.VecExt.html#tymethod.extend_zeroed) and
-  [`resize_zeroed`](https://docs.rs/bump-scope/1.4.1/bump_scope/bytemuck/trait.VecExt.html#tymethod.resize_zeroed).
+  <code>[alloc_zeroed](https://docs.rs/bump-scope/1.4.2/bump_scope/bytemuck/trait.BumpExt.html#tymethod.alloc_zeroed)([_slice](https://docs.rs/bump-scope/1.4.2/bump_scope/bytemuck/trait.BumpExt.html#tymethod.alloc_zeroed_slice))</code>,
+  [`init_zeroed`](https://docs.rs/bump-scope/1.4.2/bump_scope/bytemuck/trait.InitZeroed.html#tymethod.init_zeroed),
+  [`extend_zeroed`](https://docs.rs/bump-scope/1.4.2/bump_scope/bytemuck/trait.VecExt.html#tymethod.extend_zeroed) and
+  [`resize_zeroed`](https://docs.rs/bump-scope/1.4.2/bump_scope/bytemuck/trait.VecExt.html#tymethod.resize_zeroed).
 - **`zerocopy-08`** — Adds `zerocopy_08::*` extension traits for
-  <code>[alloc_zeroed](https://docs.rs/bump-scope/1.4.1/bump_scope/zerocopy_08/trait.BumpExt.html#tymethod.alloc_zeroed)([_slice](https://docs.rs/bump-scope/1.4.1/bump_scope/zerocopy_08/trait.BumpExt.html#tymethod.alloc_zeroed_slice))</code>,
-  [`init_zeroed`](https://docs.rs/bump-scope/1.4.1/bump_scope/zerocopy_08/trait.InitZeroed.html#tymethod.init_zeroed),
-  [`extend_zeroed`](https://docs.rs/bump-scope/1.4.1/bump_scope/zerocopy_08/trait.VecExt.html#tymethod.extend_zeroed) and
-  [`resize_zeroed`](https://docs.rs/bump-scope/1.4.1/bump_scope/zerocopy_08/trait.VecExt.html#tymethod.resize_zeroed).
+  <code>[alloc_zeroed](https://docs.rs/bump-scope/1.4.2/bump_scope/zerocopy_08/trait.BumpExt.html#tymethod.alloc_zeroed)([_slice](https://docs.rs/bump-scope/1.4.2/bump_scope/zerocopy_08/trait.BumpExt.html#tymethod.alloc_zeroed_slice))</code>,
+  [`init_zeroed`](https://docs.rs/bump-scope/1.4.2/bump_scope/zerocopy_08/trait.InitZeroed.html#tymethod.init_zeroed),
+  [`extend_zeroed`](https://docs.rs/bump-scope/1.4.2/bump_scope/zerocopy_08/trait.VecExt.html#tymethod.extend_zeroed) and
+  [`resize_zeroed`](https://docs.rs/bump-scope/1.4.2/bump_scope/zerocopy_08/trait.VecExt.html#tymethod.resize_zeroed).
 - **`allocator-api2-02`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and
   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-  [`AllocatorApi2V02Compat`](https://docs.rs/bump-scope/1.4.1/bump_scope/alloc/compat/struct.AllocatorApi2V02Compat.html).
+  [`AllocatorApi2V02Compat`](https://docs.rs/bump-scope/1.4.2/bump_scope/alloc/compat/struct.AllocatorApi2V02Compat.html).
 - **`allocator-api2-03`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.3`'s `Allocator` and
   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-  [`AllocatorApi2V03Compat`](https://docs.rs/bump-scope/1.4.1/bump_scope/alloc/compat/struct.AllocatorApi2V03Compat.html).
+  [`AllocatorApi2V03Compat`](https://docs.rs/bump-scope/1.4.2/bump_scope/alloc/compat/struct.AllocatorApi2V03Compat.html).
 
 #### Nightly features
 These nightly features are not subject to the same semver guarantees as the rest of the library.
@@ -226,7 +226,7 @@ Breaking changes to these features might be introduced in minor releases to keep
 - **`nightly`** — Enables all other nightly feature flags.
 - **`nightly-allocator-api`** — Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
   allows using an `alloc::alloc::Allocator` as a base allocator via
-  [`AllocatorNightlyCompat`](https://docs.rs/bump-scope/1.4.1/bump_scope/alloc/compat/struct.AllocatorNightlyCompat.html).
+  [`AllocatorNightlyCompat`](https://docs.rs/bump-scope/1.4.2/bump_scope/alloc/compat/struct.AllocatorNightlyCompat.html).
 
   This will also enable `allocator-api2` version `0.2`'s `nightly` feature.
 - **`nightly-coerce-unsized`** — Makes `BumpBox<T>` implement [`CoerceUnsized`](https://doc.rust-lang.org/core/ops/unsize/trait.CoerceUnsized.html).
@@ -239,15 +239,15 @@ Breaking changes to these features might be introduced in minor releases to keep
 - **`nightly-dropck-eyepatch`** — Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
   This makes it so references don't have to strictly outlive the container.
   (Just like with std's `Box` and `Vec`.)
-- **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.alloc_clone) method to `Bump(Scope)`.
+- **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.alloc_clone) method to `Bump(Scope)`.
 <!-- feature documentation end -->
 
 ## Bumping upwards or downwards?
 Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
 
 Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
-This benefits collections as well as <code>[alloc_iter](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.alloc_iter)([_mut](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.alloc_iter_mut))</code> and <code>[alloc_fmt](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.alloc_fmt)([_mut](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.alloc_fmt_mut))</code>
-with the exception of [`MutBumpVecRev`] and [`alloc_iter_mut_rev`](https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.alloc_iter_mut_rev) which
+This benefits collections as well as <code>[alloc_iter](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.alloc_iter)([_mut](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.alloc_iter_mut))</code> and <code>[alloc_fmt](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.alloc_fmt)([_mut](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.alloc_fmt_mut))</code>
+with the exception of [`MutBumpVecRev`] and [`alloc_iter_mut_rev`](https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.alloc_iter_mut_rev) which
 can be grown and shrunk in place if and only if bumping downwards.
 
 Bumping downwards can be done in less instructions.
@@ -284,27 +284,27 @@ The point of this is so `Bump`s can be `const` constructed and constructed witho
 At the same time `Bump`s that have already allocated a chunk don't suffer additional runtime checks.
 
 
-[`unsize_bump_box`]: https://docs.rs/bump-scope/1.4.1/bump_scope/macro.unsize_bump_box.html
-[`WithoutShrink`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.WithoutShrink.html
-[`WithoutDealloc`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.WithoutDealloc.html
-[`MutBumpVecRev`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.MutBumpVecRev.html
-[`Bump`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html
-[`BumpVec`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.BumpVec.html
-[`BumpString`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.BumpString.html
-[`BumpPool`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.BumpPool.html
-[`Allocator`]: https://docs.rs/bump-scope/1.4.1/bump_scope/alloc/trait.Allocator.html
-[CHANGELOG]: https://docs.rs/bump-scope/1.4.1/bump_scope/CHANGELOG/index.html
-[`into_guaranteed_allocated`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.into_guaranteed_allocated
-[`as_mut_guaranteed_allocated`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.as_mut_guaranteed_allocated
-[`as_guaranteed_allocated`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.as_guaranteed_allocated
-[`scope_guard`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.scope_guard
-[`aligned`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.aligned
-[`scoped_aligned`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.scoped_aligned
-[`scoped`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.scoped
-[`unallocated`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.unallocated
-[`with_capacity`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.with_capacity
-[`with_size`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.with_size
-[`new`]: https://docs.rs/bump-scope/1.4.1/bump_scope/struct.Bump.html#method.new
+[`unsize_bump_box`]: https://docs.rs/bump-scope/1.4.2/bump_scope/macro.unsize_bump_box.html
+[`WithoutShrink`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.WithoutShrink.html
+[`WithoutDealloc`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.WithoutDealloc.html
+[`MutBumpVecRev`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.MutBumpVecRev.html
+[`Bump`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html
+[`BumpVec`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.BumpVec.html
+[`BumpString`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.BumpString.html
+[`BumpPool`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.BumpPool.html
+[`Allocator`]: https://docs.rs/bump-scope/1.4.2/bump_scope/alloc/trait.Allocator.html
+[CHANGELOG]: https://docs.rs/bump-scope/1.4.2/bump_scope/CHANGELOG/index.html
+[`into_guaranteed_allocated`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.into_guaranteed_allocated
+[`as_mut_guaranteed_allocated`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.as_mut_guaranteed_allocated
+[`as_guaranteed_allocated`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.as_guaranteed_allocated
+[`scope_guard`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.scope_guard
+[`aligned`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.aligned
+[`scoped_aligned`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.scoped_aligned
+[`scoped`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.scoped
+[`unallocated`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.unallocated
+[`with_capacity`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.with_capacity
+[`with_size`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.with_size
+[`new`]: https://docs.rs/bump-scope/1.4.2/bump_scope/struct.Bump.html#method.new
 [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
 <!-- crate documentation rest end -->
 
