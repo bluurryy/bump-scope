@@ -8,7 +8,7 @@ There are also criterion benchmarks at [../criterion-benches](../criterion-bench
 
 The benchmarks results in the tables below are shown in the format "instructions executed / branches executed".
 
-These are the results of a benchmark run with <!-- version start -->`rustc 1.91.0 (f8297e351 2025-10-28)` on `x86_64-unknown-linux-gnu` using `LLVM version 21.1.2`<!-- version end -->.
+These are the results of a benchmark run with <!-- version start -->`rustc 1.92.0 (ded5c06cf 2025-12-08)` on `x86_64-unknown-linux-gnu` using `LLVM version 21.1.3`<!-- version end -->.
 
 ### Allocation
 
@@ -114,7 +114,7 @@ If the layout is not statically known then the compiler can not do as many optim
 
 | name    | bump-scope (up) | bump-scope (down) | bumpalo  | blink-alloc |
 |---------|-----------------|-------------------|----------|-------------|
-| warm_up | 224 / 31        | 230 / 32          | 356 / 43 | 282 / 38    |
+| warm_up | 224 / 31        | 230 / 32          | 355 / 44 | 283 / 38    |
 | reset   | 26 / 2          | 25 / 2            | 23 / 2   | 26 / 3      |
 
 <!-- misc table end -->
