@@ -7,6 +7,7 @@
 //! - the nightly standard library via the feature `nightly-allocator-api`
 //! - `allocator_api2` version 0.2 via the feature `allocator-api2-02`
 //! - `allocator_api2` version 0.3 via the feature `allocator-api2-03`
+//! - `allocator_api2` version 0.4 via the feature `allocator-api2-04`
 //!
 //! `Bump` and `Bump(Scope)` will implement those foreign `Allocator` traits when the respective feature is enabled.
 //! You can also use implementors of their `Allocator` trait as base allocators via the [compat] wrapper types.
@@ -40,6 +41,8 @@ pub mod compat {
     pub use crate::features::allocator_api2_02::AllocatorApi2V02Compat;
     #[cfg(feature = "allocator-api2-03")]
     pub use crate::features::allocator_api2_03::AllocatorApi2V03Compat;
+    #[cfg(feature = "allocator-api2-04")]
+    pub use crate::features::allocator_api2_04::AllocatorApi2V04Compat;
     #[cfg(all(feature = "alloc", feature = "nightly-allocator-api"))]
     pub use crate::features::nightly_allocator_api::AllocatorNightlyCompat;
 }

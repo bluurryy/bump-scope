@@ -22,6 +22,7 @@ include = [
 [dependencies]
 allocator-api2-02 = { package = "allocator-api2", version = "0.2.21", default-features = false, optional = true }
 allocator-api2-03 = { package = "allocator-api2", version = "0.3.0", default-features = false, optional = true }
+allocator-api2-04 = { package = "allocator-api2", version = "0.4.0", default-features = false, optional = true }
 bytemuck = { version = "1.23.0", default-features = false, optional = true }
 zerocopy-08 = { package = "zerocopy", version = "0.8.14", default-features = false, optional = true }
 serde = { version = "1.0.217", optional = true }
@@ -30,10 +31,10 @@ serde = { version = "1.0.217", optional = true }
 default = ["std", "alloc", "panic-on-alloc"]
 
 ## Adds `BumpPool` and implementations of `std::io` traits.
-std = ["alloc", "allocator-api2-02?/std", "allocator-api2-03?/std"]
+std = ["alloc", "allocator-api2-02?/std", "allocator-api2-03?/std", "allocator-api2-04?/std"]
 
 ## Adds `Global` as the default base allocator and some interactions with `alloc` collections.
-alloc = ["allocator-api2-02?/alloc", "allocator-api2-03?/alloc"]
+alloc = ["allocator-api2-02?/alloc", "allocator-api2-03?/alloc", "allocator-api2-04?/alloc"]
 
 ## Adds functions and traits that will panic when the allocation fails. 
 ## Without this feature, allocation failures cannot cause panics, and only 
@@ -66,6 +67,11 @@ allocator-api2-02 = ["dep:allocator-api2-02"]
 ## makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
 ## [`AllocatorApi2V03Compat`](crate::alloc::compat::AllocatorApi2V03Compat).
 allocator-api2-03 = ["dep:allocator-api2-03"]
+
+## Makes `Bump(Scope)` implement `allocator_api2` version `0.4`'s `Allocator` and
+## makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
+## [`AllocatorApi2V04Compat`](crate::alloc::compat::AllocatorApi2V04Compat).
+allocator-api2-04 = ["dep:allocator-api2-04"]
 
 #! ### Nightly features
 #! These nightly features are not subject to the same semver guarantees as the rest of the library. 

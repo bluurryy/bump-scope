@@ -292,10 +292,10 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// the allocator this box was allocated in.
     ///
     /// Unlike `BumpBox`, `Box` implements `Clone` and frees space iff it is the last allocation:
-    #[cfg_attr(feature = "allocator-api2-03", doc = "```")]
-    #[cfg_attr(not(feature = "allocator-api2-03"), doc = "```ignore")]
+    #[cfg_attr(feature = "allocator-api2-04", doc = "```")]
+    #[cfg_attr(not(feature = "allocator-api2-04"), doc = "```ignore")]
     /// # use bump_scope::Bump;
-    /// # use allocator_api2_03::boxed::Box;
+    /// # use allocator_api2_04::boxed::Box;
     /// # let bump: Bump = Bump::new();
     /// let a: Box<_, _> = bump.alloc(3i32).into_box(&bump);
     /// let b = a.clone();

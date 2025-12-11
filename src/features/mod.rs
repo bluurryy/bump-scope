@@ -10,6 +10,9 @@ pub mod allocator_api2_02;
 #[cfg(feature = "allocator-api2-03")]
 pub mod allocator_api2_03;
 
+#[cfg(feature = "allocator-api2-04")]
+pub mod allocator_api2_04;
+
 #[cfg(feature = "bytemuck")]
 pub mod bytemuck;
 

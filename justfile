@@ -40,14 +40,14 @@ check-fmt:
 check-msrv:
   # msrv might print warnings that stable doesnt, we dont care
   cargo +1.85.1 check --no-default-features
-  cargo +1.85.1 check --features serde,zerocopy-08,allocator-api2-02
+  cargo +1.85.1 check --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03,allocator-api2-04
 
 check-clippy:
   cargo +stable clippy --tests --no-default-features -- -Dwarnings
-  cargo +stable clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03 -- -Dwarnings
+  cargo +stable clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03,allocator-api2-04 -- -Dwarnings
 
   cargo +nightly clippy --tests --no-default-features -- -Dwarnings
-  cargo +nightly clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03 -- -Dwarnings
+  cargo +nightly clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03,allocator-api2-04 -- -Dwarnings
   cargo +nightly clippy --tests --all-features -- -Dwarnings
 
   cd crates/callgrind-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings

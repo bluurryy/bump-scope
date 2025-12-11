@@ -179,7 +179,7 @@ You can set the `DEALLOCATES` const parameter to `false` to make shrinking and d
 There are also the [`WithoutDealloc`] and [`WithoutShrink`] wrappers.
 ```rust
 use bump_scope::{Bump, WithoutDealloc};
-use allocator_api2_03::boxed::Box;
+use allocator_api2_04::boxed::Box;
 
 let bump: Bump = Bump::new();
 
@@ -218,6 +218,9 @@ assert_eq!(bump.stats().allocated(), 4);
 - **`allocator-api2-03`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.3`'s `Allocator` and
   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
   [`AllocatorApi2V03Compat`](https://docs.rs/bump-scope/1.4.2/bump_scope/alloc/compat/struct.AllocatorApi2V03Compat.html).
+- **`allocator-api2-04`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.4`'s `Allocator` and
+  makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
+  [`AllocatorApi2V04Compat`](https://docs.rs/bump-scope/1.4.2/bump_scope/alloc/compat/struct.AllocatorApi2V04Compat.html).
 
 #### Nightly features
 These nightly features are not subject to the same semver guarantees as the rest of the library.

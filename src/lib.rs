@@ -212,10 +212,10 @@
 //! You can set the `DEALLOCATES` const parameter to `false` to make shrinking and deallocating a no-op.
 //! There are also the [`WithoutDealloc`] and [`WithoutShrink`] wrappers.
 //! ```
-//! # #[cfg(feature = "allocator-api2-03")]
+//! # #[cfg(feature = "allocator-api2-04")]
 //! # {
 //! use bump_scope::{Bump, WithoutDealloc};
-//! use allocator_api2_03::boxed::Box;
+//! use allocator_api2_04::boxed::Box;
 //!
 //! let bump: Bump = Bump::new();
 //!
@@ -255,6 +255,9 @@
 //! - **`allocator-api2-03`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.3`'s `Allocator` and
 //!   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
 //!   [`AllocatorApi2V03Compat`](crate::alloc::compat::AllocatorApi2V03Compat).
+//! - **`allocator-api2-04`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.4`'s `Allocator` and
+//!   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
+//!   [`AllocatorApi2V04Compat`](crate::alloc::compat::AllocatorApi2V04Compat).
 //!
 //! ### Nightly features
 //! These nightly features are not subject to the same semver guarantees as the rest of the library.
