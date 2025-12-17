@@ -93,13 +93,12 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///
 /// There is no way to safely pin a `BumpBox` in the general case.
 /// The [*drop guarantee*] of `Pin` requires the value to be dropped before its memory is reused.
-/// Preventing reuse of memory is not an option as that's what this crate is all about.
-/// So we need to drop the pinned value.
+/// `Bump(Scope)` has api that frees memory so we'd need to drop the pinned value.
 /// But there is no way to ensure that a value is dropped in an async context.
 /// <details>
 /// <summary>Example of an unsound pin macro implementation.</summary>
 ///
-/// We define a `bump_box_pin` macro that turns a `BumpBox<T>` into a `Pin<&mut T>`. This is only sound in synchronous code.
+/// We define a `bump_box_pin` macro that turns a `BumpBox<T>` into a `Pin<&mut T>`. This is not sound in async code.
 /// Here the memory `Foo(1)` is allocated at is reused by `Foo(2)` without dropping `Foo(1)` first which violates the drop guarantee.
 ///
 /// ```
@@ -288,7 +287,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
         &mut self.ptr
     }
 
-    /// Turns this `BumpBox<T>` into `Box<T>`. The `bump` allocator is not required to be
+    /// Turns this `BumpBox<T>` into `Box<T>`. The bump `allocator` is not required to be
     /// the allocator this box was allocated in.
     ///
     /// Unlike `BumpBox`, `Box` implements `Clone` and frees space iff it is the last allocation:
@@ -334,8 +333,9 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     ///     bump.alloc_slice_fill_with(3, Default::default).into_mut()
     /// }));
     ///
-    /// // `&mut T` don't implement `NoDrop` even though they should
-    /// // (the blanket implementation `impl<T: Copy> NoDrop for T {}` prevents us from implementing it)
+    /// // `&mut T` don't implement `NoDrop` currently because a blanket implementation
+    /// // for `&mut T` would conflict with the blanket implementation for `T: Copy`
+    /// // (see https://github.com/rust-lang/rust/issues/149650)
     /// // so we need to use `leak`
     /// let slice_of_slices: &mut [&mut [i32]] = BumpBox::leak(boxed_slice_of_slices);
     /// # _ = slice_of_slices;

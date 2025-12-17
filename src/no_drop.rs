@@ -16,6 +16,7 @@ pub trait NoDrop {}
 
 impl NoDrop for str {}
 impl<T: Copy> NoDrop for T {}
+// impl<T> NoDrop for &mut T {} https://github.com/rust-lang/rust/issues/149650
 impl<T: NoDrop> NoDrop for [T] {}
 
 impl NoDrop for core::ffi::CStr {}
