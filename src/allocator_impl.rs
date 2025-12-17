@@ -105,7 +105,7 @@ where
 
     unsafe {
         if UP {
-            ptr.as_ptr().add(layout.size()) == bump.chunk.get().pos().as_ptr()
+            ptr.add(layout.size()) == bump.chunk.get().pos()
         } else {
             ptr == bump.chunk.get().pos()
         }
@@ -234,7 +234,7 @@ where
         let new_ptr = grow(bump, old_ptr, old_layout, new_layout)?;
 
         let delta = new_layout.size() - old_layout.size();
-        new_ptr.cast::<u8>().as_ptr().add(old_layout.size()).write_bytes(0, delta);
+        new_ptr.cast::<u8>().add(old_layout.size()).write_bytes(0, delta);
 
         Ok(new_ptr)
     }

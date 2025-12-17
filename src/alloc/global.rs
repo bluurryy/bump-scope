@@ -2,11 +2,7 @@
 #![expect(clippy::unused_self)]
 
 use alloc_crate::alloc::{alloc, alloc_zeroed, dealloc, realloc};
-use core::{
-    alloc::Layout,
-    hint,
-    ptr::{self, NonNull},
-};
+use core::{alloc::Layout, hint, ptr::NonNull};
 
 use crate::polyfill;
 
@@ -77,7 +73,7 @@ impl Global {
             // for `dealloc` must be upheld by the caller.
             old_size => unsafe {
                 let new_ptr = self.alloc_impl(new_layout, zeroed)?;
-                ptr::copy_nonoverlapping(ptr.as_ptr(), polyfill::non_null::as_mut_ptr(new_ptr), old_size);
+                ptr.copy_to_nonoverlapping(new_ptr.cast(), old_size);
                 self.deallocate(ptr, old_layout);
                 Ok(new_ptr)
             },
@@ -165,7 +161,7 @@ unsafe impl Allocator for Global {
             // for `dealloc` must be upheld by the caller.
             new_size => unsafe {
                 let new_ptr = self.allocate(new_layout)?;
-                ptr::copy_nonoverlapping(ptr.as_ptr(), polyfill::non_null::as_mut_ptr(new_ptr), new_size);
+                ptr.copy_to_nonoverlapping(new_ptr.cast(), new_size);
                 self.deallocate(ptr, old_layout);
                 Ok(new_ptr)
             },

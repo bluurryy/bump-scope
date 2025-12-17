@@ -107,7 +107,7 @@ struct Range {
 
 impl Range {
     fn new<T>(value: *const T) -> Self {
-        let start = value as usize;
+        let start = value.addr();
         let end = start + mem::size_of::<T>();
         Range { start, end }
     }
@@ -115,12 +115,10 @@ impl Range {
     fn new_slice<T>(value: *const [T]) -> Self {
         unsafe {
             let ptr = value.cast::<T>();
-
-            // if we followed clippy's advice, check would instead complain about `dangerous_implicit_autorefs`
             let len = (&(*value)).len();
 
-            let start = ptr as usize;
-            let end = ptr.add(len) as usize;
+            let start = ptr.addr();
+            let end = ptr.add(len).addr();
             Range { start, end }
         }
     }
@@ -155,7 +153,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     fn alloc_dynamic(&self, layout: Layout) -> Range {
-        let start = self.alloc_layout(layout).as_ptr() as usize;
+        let start = self.alloc_layout(layout).addr().get();
         Range {
             start,
             end: start + layout.size(),

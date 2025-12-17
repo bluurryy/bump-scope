@@ -121,7 +121,7 @@ impl<T, A: BumpAllocatorExt> Iterator for IntoIter<T, A> {
             let old = self.ptr;
             self.ptr = unsafe { self.ptr.add(1) };
 
-            Some(unsafe { old.as_ptr().read() })
+            Some(unsafe { old.read() })
         }
     }
 
@@ -155,7 +155,7 @@ impl<T, A: BumpAllocatorExt> DoubleEndedIterator for IntoIter<T, A> {
         } else {
             self.end = unsafe { self.end.sub(1) };
 
-            Some(unsafe { self.end.as_ptr().read() })
+            Some(unsafe { self.end.read() })
         }
     }
 }

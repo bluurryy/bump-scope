@@ -25,7 +25,7 @@ unsafe impl<T: ?Sized + Sync> Sync for RawBumpBox<T> {}
 unsafe impl<#[may_dangle] T: ?Sized> Drop for RawBumpBox<T> {
     #[inline(always)]
     fn drop(&mut self) {
-        unsafe { self.ptr.as_ptr().drop_in_place() }
+        unsafe { self.ptr.drop_in_place() }
     }
 }
 
@@ -33,7 +33,7 @@ unsafe impl<#[may_dangle] T: ?Sized> Drop for RawBumpBox<T> {
 impl<T: ?Sized> Drop for RawBumpBox<T> {
     #[inline(always)]
     fn drop(&mut self) {
-        unsafe { self.ptr.as_ptr().drop_in_place() }
+        unsafe { self.ptr.drop_in_place() }
     }
 }
 

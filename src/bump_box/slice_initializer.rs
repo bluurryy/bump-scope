@@ -27,7 +27,7 @@ impl<T> Drop for BumpBoxSliceInitializer<'_, T> {
         unsafe {
             let to_drop_len = self.init_len();
             let to_drop = NonNull::slice_from_raw_parts(self.start, to_drop_len);
-            to_drop.as_ptr().drop_in_place();
+            to_drop.drop_in_place();
         }
     }
 }

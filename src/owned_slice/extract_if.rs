@@ -83,7 +83,7 @@ where
 
                 if drained {
                     self.drained_count += 1;
-                    return Some(value_ptr.as_ptr().read());
+                    return Some(value_ptr.read());
                 } else if self.drained_count > 0 {
                     let src = value_ptr;
                     let dst = value_ptr.sub(self.drained_count);

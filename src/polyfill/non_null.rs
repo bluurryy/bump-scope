@@ -38,13 +38,6 @@ pub(crate) const fn from_ref<T>(r: &T) -> NonNull<T> {
     unsafe { NonNull::new_unchecked(r as *const T as *mut T) }
 }
 
-/// See [`std::ptr::NonNull::as_mut_ptr`].
-#[inline]
-#[must_use]
-pub const fn as_mut_ptr<T>(p: NonNull<[T]>) -> *mut T {
-    as_non_null_ptr(p).as_ptr()
-}
-
 /// See [`std::ptr::NonNull::without_provenance`].
 #[must_use]
 #[inline]
@@ -155,5 +148,5 @@ pub(crate) const fn str_len(str: NonNull<str>) -> usize {
 /// at this pointer instead of allocating it on the stack and then copying it over.
 #[inline(always)]
 pub(crate) unsafe fn write_with<T>(ptr: NonNull<T>, f: impl FnOnce() -> T) {
-    unsafe { ptr::write(ptr.as_ptr(), f()) };
+    unsafe { ptr.write(f()) };
 }

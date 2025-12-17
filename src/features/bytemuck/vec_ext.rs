@@ -702,7 +702,7 @@ impl<T: Zeroable, A: MutBumpAllocatorExt> PrivateVecExt for MutBumpVecRev<T, A> 
 
         unsafe {
             let new_len = self.len() + additional;
-            self.end.sub(new_len).as_ptr().write_bytes(0, additional);
+            self.end.sub(new_len).write_bytes(0, additional);
             self.set_len(new_len);
         }
 

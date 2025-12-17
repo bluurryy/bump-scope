@@ -48,7 +48,7 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Eq for RawChunk<A, UP,
 
 impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> fmt::Debug for RawChunk<A, UP, GUARANTEED_ALLOCATED> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("RawChunk").field(&self.header.as_ptr().cast::<u8>()).finish()
+        f.debug_tuple("RawChunk").field(&self.header.cast::<u8>()).finish()
     }
 }
 
@@ -96,7 +96,7 @@ impl<A, const UP: bool> RawChunk<A, UP, true> {
             if UP {
                 let header = ptr.cast::<ChunkHeader<A>>();
 
-                header.as_ptr().write(ChunkHeader {
+                header.write(ChunkHeader {
                     pos: Cell::new(header.add(1).cast()),
                     end: ptr.add(size),
                     prev,
@@ -108,7 +108,7 @@ impl<A, const UP: bool> RawChunk<A, UP, true> {
             } else {
                 let header = ptr.add(size).cast::<ChunkHeader<A>>().sub(1);
 
-                header.as_ptr().write(ChunkHeader {
+                header.write(ChunkHeader {
                     pos: Cell::new(header.cast()),
                     end: ptr,
                     prev,

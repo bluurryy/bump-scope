@@ -64,7 +64,7 @@ unsafe impl<const SIZE: usize> Allocator for StaticAllocator<SIZE> {
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         let ptr = self.allocate(layout)?;
         // SAFETY: `alloc` returns a valid memory block
-        unsafe { ptr.cast::<u8>().as_ptr().write_bytes(0, ptr.len()) }
+        unsafe { ptr.cast::<u8>().write_bytes(0, ptr.len()) }
         Ok(ptr)
     }
 
@@ -81,7 +81,7 @@ unsafe impl<const SIZE: usize> Allocator for StaticAllocator<SIZE> {
     ) -> Result<NonNull<[u8]>, AllocError> {
         self.check_layout(new_layout)?;
 
-        let zero_ptr = unsafe { ptr.as_ptr().add(old_layout.size()) };
+        let zero_ptr = unsafe { ptr.add(old_layout.size()) };
         let zero_len = new_layout.size() - old_layout.size();
 
         unsafe {

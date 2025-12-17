@@ -169,7 +169,7 @@ impl<T> Iterator for IntoIter<'_, T> {
             unsafe {
                 let old = self.ptr;
                 self.ptr = self.ptr.add(1);
-                Some(old.as_ptr().read())
+                Some(old.read())
             }
         }
     }
@@ -202,7 +202,7 @@ impl<T> DoubleEndedIterator for IntoIter<'_, T> {
         } else {
             unsafe {
                 self.end = self.end.sub(1);
-                Some(self.end.as_ptr().read())
+                Some(self.end.read())
             }
         }
     }
@@ -221,7 +221,7 @@ impl<T> Drop for IntoIter<'_, T> {
     #[inline]
     fn drop(&mut self) {
         unsafe {
-            NonNull::slice_from_raw_parts(self.ptr, self.len()).as_ptr().drop_in_place();
+            NonNull::slice_from_raw_parts(self.ptr, self.len()).drop_in_place();
         }
     }
 }

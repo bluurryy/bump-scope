@@ -1,7 +1,7 @@
 use core::{
     alloc::{GlobalAlloc, Layout},
     hint,
-    ptr::{self, NonNull},
+    ptr::NonNull,
 };
 use std::alloc::System;
 
@@ -79,7 +79,7 @@ unsafe impl Allocator for System {
             // for `dealloc` must be upheld by the caller.
             new_size => unsafe {
                 let new_ptr = Allocator::allocate(self, new_layout)?;
-                ptr::copy_nonoverlapping(ptr.as_ptr(), polyfill::non_null::as_mut_ptr(new_ptr), new_size);
+                ptr.copy_to_nonoverlapping(new_ptr.cast(), new_size);
                 Allocator::deallocate(self, ptr, old_layout);
                 Ok(new_ptr)
             },
@@ -144,7 +144,7 @@ unsafe fn grow_impl(
         // for `dealloc` must be upheld by the caller.
         old_size => unsafe {
             let new_ptr = alloc_impl(new_layout, zeroed)?;
-            ptr::copy_nonoverlapping(ptr.as_ptr(), polyfill::non_null::as_mut_ptr(new_ptr), old_size);
+            ptr.copy_to_nonoverlapping(new_ptr.cast(), old_size);
             Allocator::deallocate(&System, ptr, old_layout);
             Ok(new_ptr)
         },

@@ -296,32 +296,32 @@ fn split_slice(ptr: NonNull<[u8]>, mid: usize) -> [NonNull<[u8]>; 2] {
 }
 
 fn addr_range(ptr: NonNull<[u8]>) -> Range<usize> {
-    let addr = ptr.as_ptr().addr();
+    let addr = ptr.addr().get();
     addr..addr + ptr.len()
 }
 
 /// Writes a pattern that can later be asserted to still be the same using [`assert_initialized`].
 unsafe fn initialize(ptr: NonNull<[u8]>) {
     for i in 0..ptr.len() {
-        unsafe { ptr.cast::<u8>().as_ptr().add(i).write(i as u8) };
+        unsafe { ptr.cast::<u8>().add(i).write(i as u8) };
     }
 }
 
 /// Asserts that the bytes still have the same pattern as when it was set using [`initialize`].
 unsafe fn assert_initialized(ptr: NonNull<[u8]>) {
     for i in 0..ptr.len() {
-        unsafe { assert_eq!(ptr.cast::<u8>().as_ptr().add(i).read(), i as u8) };
+        unsafe { assert_eq!(ptr.cast::<u8>().add(i).read(), i as u8) };
     }
 }
 
 // Writes a new pattern to the bytes that can't be mistaken for initialized or zeroed bytes.
 unsafe fn deinitialize(ptr: NonNull<[u8]>) {
-    unsafe { ptr.as_ptr().cast::<u8>().write_bytes(0xFA, ptr.len()) }
+    unsafe { ptr.cast::<u8>().write_bytes(0xFA, ptr.len()) }
 }
 
 // Asserts that all bytes are zero.
 unsafe fn assert_zeroed(ptr: NonNull<[u8]>) {
-    unsafe { ptr.as_ptr().cast::<u8>().write_bytes(0, ptr.len()) }
+    unsafe { ptr.cast::<u8>().write_bytes(0, ptr.len()) }
 }
 
 #[derive(Debug)]

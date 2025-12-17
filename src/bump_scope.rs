@@ -3038,7 +3038,7 @@ where
                     BumpBox::from_raw(value)
                 }),
                 Err(error) => Err({
-                    let error = error.as_ptr().read();
+                    let error = error.read();
 
                     if can_shrink {
                         self.reset_to(checkpoint_before_alloc);
@@ -3160,7 +3160,7 @@ where
                     BumpBox::from_raw(value)
                 }),
                 Err(error) => Err({
-                    let error = error.as_ptr().read();
+                    let error = error.read();
                     self.reset_to(checkpoint);
                     error
                 }),

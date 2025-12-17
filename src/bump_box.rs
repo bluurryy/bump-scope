@@ -401,7 +401,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// let bump: Bump = Bump::new();
     /// let x = bump.alloc(String::from("Hello"));
     /// let p = BumpBox::into_raw(x);
-    /// unsafe { p.as_ptr().drop_in_place() }
+    /// unsafe { p.drop_in_place() }
     /// ```
     #[inline(always)]
     #[must_use = "use `leak` if you don't make use of the pointer"]
@@ -454,7 +454,7 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     ///     // In general .write is required to avoid attempting to destruct
     ///     // the (uninitialized) previous contents of `ptr`, though for this
     ///     // simple example `*ptr = 5` would have worked as well.
-    ///     ptr.as_ptr().write(5);
+    ///     ptr.write(5);
     ///     from_raw_in(ptr, &bump)
     /// };
     ///
@@ -484,7 +484,7 @@ impl<'a, T> BumpBox<'a, T> {
     #[must_use]
     #[inline(always)]
     pub fn into_inner(self) -> T {
-        unsafe { self.into_raw().as_ptr().read() }
+        unsafe { self.into_raw().read() }
     }
 
     /// Converts a `BumpBox<T>` into a `BumpBox<[T]>`
@@ -1509,7 +1509,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     /// ```
     #[inline(always)]
     pub fn clear(&mut self) {
-        let elems: *mut [T] = self.ptr.as_ptr();
+        let elems: NonNull<[T]> = self.ptr;
 
         // SAFETY:
         // - Setting `self.len` before calling `drop_in_place` means that,
@@ -1518,7 +1518,7 @@ impl<'a, T> BumpBox<'a, [T]> {
         //   some twice.
         unsafe {
             self.set_len(0);
-            ptr::drop_in_place(elems);
+            elems.drop_in_place();
         }
     }
 
@@ -2944,7 +2944,7 @@ where
 unsafe impl<#[may_dangle] T: ?Sized> Drop for BumpBox<'_, T> {
     #[inline(always)]
     fn drop(&mut self) {
-        unsafe { self.ptr.as_ptr().drop_in_place() }
+        unsafe { self.ptr.drop_in_place() }
     }
 }
 
@@ -2952,7 +2952,7 @@ unsafe impl<#[may_dangle] T: ?Sized> Drop for BumpBox<'_, T> {
 impl<T: ?Sized> Drop for BumpBox<'_, T> {
     #[inline(always)]
     fn drop(&mut self) {
-        unsafe { self.ptr.as_ptr().drop_in_place() }
+        unsafe { self.ptr.drop_in_place() }
     }
 }
 

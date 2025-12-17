@@ -40,20 +40,20 @@ impl Fuzz {
         let mut expected_remaining = vec[..self.range.start].to_vec();
         expected_remaining.extend(vec[self.range.end..].iter().copied());
 
-        let original_addr = vec.as_ptr() as usize;
+        let original_addr = vec.as_ptr().addr();
         let removed = vec.split_off(self.range);
 
         assert_eq!(&*expected_removed, &*removed);
         assert_eq!(&*vec, &*expected_remaining);
 
-        if vec.as_ptr() as usize == original_addr {
+        if vec.as_ptr().addr() == original_addr {
             if vec.len() < self.len {
                 assert_eq!(vec.capacity(), vec.len());
             }
 
             assert_eq!(removed.capacity(), 200 - vec.capacity());
         } else {
-            assert_eq!(removed.as_ptr() as usize, original_addr);
+            assert_eq!(removed.as_ptr().addr(), original_addr);
 
             if removed.len() < self.len {
                 assert_eq!(removed.capacity(), removed.len());

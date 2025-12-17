@@ -2634,7 +2634,7 @@ impl<T, A> MutBumpVecRev<T, A> {
 
         unsafe {
             let to_drop = NonNull::slice_from_raw_parts(self.as_non_null(), self.len);
-            to_drop.as_ptr().drop_in_place();
+            to_drop.drop_in_place();
         }
     }
 }
