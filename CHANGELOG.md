@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Improve documentation
 
+### Fixed
+
+- Fix infinite loop when allocating a new chunk if the current chunk is not the largest ([#127] @Grimeh)
+
 ## [1.5.0] - 2025-12-12
 
 ### Added
@@ -812,6 +816,7 @@ _If you are upgrading: please see [`UPGRADING.md#0.17.0`](UPGRADING.md#0.17.0)._
 
 ## [0.0.0] - 2024-03-26
 
+[#127]: https://github.com/bluurryy/bump-scope/pull/127
 [#79]: https://github.com/bluurryy/bump-scope/pull/79
 [#78]: https://github.com/bluurryy/bump-scope/pull/78
 [#70]: https://github.com/bluurryy/bump-scope/pull/70
