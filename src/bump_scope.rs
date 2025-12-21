@@ -1081,8 +1081,10 @@ where
         mut f: impl FnMut(RawChunk<A, UP, true>, L) -> Option<R>,
     ) -> Result<R, B> {
         unsafe {
-            let new_chunk: RawChunk<A, UP, true> = if let Some(chunk) = self.chunk.get().guaranteed_allocated() {
-                while let Some(chunk) = chunk.next() {
+            let new_chunk: RawChunk<A, UP, true> = if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
+                while let Some(next_chunk) = chunk.next() {
+                    chunk = next_chunk;
+
                     // We don't reset the chunk position when we leave a scope, so we need to do it here.
                     chunk.reset();
 
