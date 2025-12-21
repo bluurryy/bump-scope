@@ -44,7 +44,7 @@ fn smoke_test() {
     });
 }
 
-/// Checks that BumpScope correctly allocates bigger chunks when required
+/// Checks that a bigger chunk is correctly allocated when the current chunk is not largest one
 #[test]
 fn alloc_chunks() {
     let mut a: Bump = Bump::new();
