@@ -43,3 +43,19 @@ fn smoke_test() {
         mut_test(a);
     });
 }
+
+/// Checks that BumpScope correctly allocates bigger chunks when required
+#[test]
+fn alloc_chunks() {
+    let mut a: Bump = Bump::new();
+
+    a.scoped(|mut a| {
+        // alloc is large enough to require an additional chunk
+        let _: MutBumpVec<u8, &mut _> = MutBumpVec::with_capacity_in(1 << 9, &mut a);
+    });
+
+    a.scoped(|mut a| {
+        // alloc is larger than the existing chunks and requires a third chunk to be allocated
+        let _: MutBumpVec<u8, _> = MutBumpVec::with_capacity_in(1 << 10, &mut a);
+    });
+}
