@@ -197,8 +197,8 @@
 //!
 //! # Allocator API
 //! `Bump` and `BumpScope` implement `bump-scope`'s own [`Allocator`] trait and with the
-//! respective [feature flags](#feature-flags) also implement `allocator_api2@0.2`, `allocator_api2@0.3` and nightly's `Allocator` trait.
-//! All of these traits mirror the nightly `Allocator` trait at the time of writing.
+//! respective [feature flags](#feature-flags) also implement `allocator_api2@0.2`,
+//! `allocator_api2@0.3`, `allocator_api2@0.4` and nightly's `Allocator` trait.
 //!
 //! This allows you to [bump allocate collections](crate::Bump#collections).
 //!
