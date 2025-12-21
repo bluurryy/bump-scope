@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix infinite loop when allocating a new chunk if the current chunk is not the largest ([#127] @Grimeh)
+- Fix infinite loop when allocating a new chunk if the current chunk is not the largest by @Grimeh in [#127]
 
 ## [1.5.0] - 2025-12-12
 
