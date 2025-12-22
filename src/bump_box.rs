@@ -1655,26 +1655,6 @@ impl<'a, T> BumpBox<'a, [T]> {
         self.ptr.cast()
     }
 
-    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
-    /// valid for zero sized reads.
-    #[doc(hidden)]
-    #[deprecated = "renamed to `as_non_null`"]
-    #[must_use]
-    #[inline(always)]
-    pub fn as_non_null_ptr(&self) -> NonNull<T> {
-        self.ptr.cast()
-    }
-
-    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
-    /// valid for zero sized reads.
-    #[doc(hidden)]
-    #[deprecated = "too niche; compute this yourself if needed"]
-    #[must_use]
-    #[inline(always)]
-    pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        self.ptr
-    }
-
     #[inline(always)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<T>) {
         non_null::set_ptr(&mut self.ptr, new_ptr);
@@ -2768,29 +2748,6 @@ impl<'a, T> BumpBox<'a, [T]> {
 
             BumpBox::from_raw(NonNull::slice_from_raw_parts(ptr.cast(), len))
         }
-    }
-}
-
-impl<'a, T, const N: usize> BumpBox<'a, [T; N]> {
-    /// Converts this `BumpBox<[T; N]>` into a `BumpBox<[T]>`.
-    ///
-    /// ```
-    /// # use bump_scope::{Bump, BumpBox};
-    /// # let bump: Bump = Bump::new();
-    /// // explicit types are just for demonstration
-    /// let array: BumpBox<[i32; 3]> = bump.alloc([1, 2, 3]);
-    /// # #[expect(deprecated)]
-    /// let slice: BumpBox<[i32]> = array.into_unsized();
-    /// assert_eq!(slice, [1, 2, 3]);
-    /// ```
-    #[doc(hidden)]
-    #[deprecated = "use `unsize_bump_box!` instead"]
-    #[must_use]
-    #[inline(always)]
-    pub fn into_unsized(self) -> BumpBox<'a, [T]> {
-        let ptr = non_null::as_non_null_ptr(self.into_raw());
-        let slice = NonNull::slice_from_raw_parts(ptr, N);
-        unsafe { BumpBox::from_raw(slice) }
     }
 }
 
