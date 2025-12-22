@@ -119,3 +119,18 @@ doc-rustdoc *args:
 
 doc-rustdoc-priv *args:
   cargo +nightly rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition --document-private-items -definition
+
+fuzz seconds:
+  just fuzz-target {{seconds}} alloc_static_layout
+  just fuzz-target {{seconds}} allocator_api
+  just fuzz-target {{seconds}} bump_down
+  just fuzz-target {{seconds}} bump_prepare_down
+  just fuzz-target {{seconds}} bump_prepare_up
+  just fuzz-target {{seconds}} bump_up
+  just fuzz-target {{seconds}} bump_vec
+  just fuzz-target {{seconds}} chunk_size
+  just fuzz-target {{seconds}} slice_split_off
+  just fuzz-target {{seconds}} vec_split_off
+
+fuzz-target seconds target:
+  cargo +nightly fuzz run {{target}} -- -max_total_time={{seconds}}
