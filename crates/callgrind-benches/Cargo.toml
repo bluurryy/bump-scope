@@ -7,10 +7,10 @@ name = "bench"
 harness = false
 
 [dependencies]
-fast-glob = "0.4.5"
+fast-glob = "1.0.0"
 markdown-tables = "0.1.0"
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
 
 [dev-dependencies]
 benches-lib = { path = "benches-lib" }

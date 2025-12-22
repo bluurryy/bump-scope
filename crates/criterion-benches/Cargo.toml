@@ -9,6 +9,6 @@ harness = false
 [dev-dependencies]
 allocator-api2 = "0.2.21"
 bump-scope = { path = "../..", features = ["allocator-api2-02"] }
-bumpalo = { version = "3.18.1", features = ["allocator-api2"] }
+bumpalo = { version = "3.19.0", features = ["allocator-api2"] }
 paste = "1.0.15"
 criterion = { version = "0.6.0", features = ["html_reports"] }
