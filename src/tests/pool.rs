@@ -55,21 +55,3 @@ fn scope<const UP: bool>() {
         });
     });
 }
-
-#[test]
-#[cfg(miri)]
-#[ignore = "fails miri"]
-fn dangling_pointer() {
-    let long: BumpPool = <BumpPool>::new();
-    let hello = long.get().alloc_str("hello");
-
-    #[expect(deprecated)]
-    {
-        let short = <BumpPool>::new();
-        let mut guard = long.get();
-        guard.pool = &short;
-        drop(guard);
-    }
-
-    assert_eq!(hello, "hello");
-}

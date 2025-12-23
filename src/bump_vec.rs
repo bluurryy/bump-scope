@@ -570,61 +570,6 @@ impl<T, A: BumpAllocatorExt> BumpVec<T, A> {
         Ok(this)
     }
 
-    /// Constructs a new `BumpVec<T>` from a `[T; N]`.
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
-    #[doc(hidden)]
-    #[deprecated = "use `from_owned_slice_in` instead"]
-    #[must_use]
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    pub fn from_array_in<const N: usize>(array: [T; N], allocator: A) -> Self {
-        panic_on_error(Self::generic_from_array_in(array, allocator))
-    }
-
-    /// Constructs a new `BumpVec<T>` from a `[T; N]`.
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    #[doc(hidden)]
-    #[deprecated = "use `try_from_owned_slice_in` instead"]
-    #[inline(always)]
-    pub fn try_from_array_in<const N: usize>(array: [T; N], allocator: A) -> Result<Self, AllocError> {
-        Self::generic_from_array_in(array, allocator)
-    }
-
-    #[inline]
-    pub(crate) fn generic_from_array_in<E: ErrorBehavior, const N: usize>(array: [T; N], allocator: A) -> Result<Self, E> {
-        let array = ManuallyDrop::new(array);
-
-        if T::IS_ZST {
-            return Ok(Self {
-                fixed: unsafe { RawFixedBumpVec::new_zst(N) },
-                allocator,
-            });
-        }
-
-        if N == 0 {
-            return Ok(Self {
-                fixed: RawFixedBumpVec::EMPTY,
-                allocator,
-            });
-        }
-
-        let mut fixed = unsafe { RawFixedBumpVec::allocate(&allocator, N)? };
-
-        let src = array.as_ptr();
-        let dst = fixed.as_mut_ptr();
-
-        unsafe {
-            ptr::copy_nonoverlapping(src, dst, N);
-            fixed.set_len(N);
-        }
-
-        Ok(Self { fixed, allocator })
-    }
-
     /// Create a new [`BumpVec`] whose elements are taken from an iterator and allocated in the given `bump`.
     ///
     /// This is behaviorally identical to [`FromIterator::from_iter`].
@@ -1138,27 +1083,6 @@ impl<T, A: BumpAllocatorExt> BumpVec<T, A> {
     #[inline(always)]
     pub const fn as_non_null(&self) -> NonNull<T> {
         self.fixed.as_non_null()
-    }
-
-    /// Returns a `NonNull` pointer to the vector's buffer, or a dangling
-    /// `NonNull` pointer valid for zero sized reads if the vector didn't allocate.
-    #[doc(hidden)]
-    #[deprecated = "renamed to `as_non_null`"]
-    #[must_use]
-    #[inline(always)]
-    pub fn as_non_null_ptr(&self) -> NonNull<T> {
-        self.fixed.as_non_null()
-    }
-
-    /// Returns a `NonNull` pointer to the vector's buffer, or a dangling
-    /// `NonNull` pointer valid for zero sized reads if the vector didn't allocate.
-    #[doc(hidden)]
-    #[deprecated = "too niche; compute this yourself if needed"]
-    #[must_use]
-    #[inline(always)]
-    pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        #[expect(deprecated)]
-        self.fixed.as_non_null_slice()
     }
 
     /// Appends an element to the back of the collection.
