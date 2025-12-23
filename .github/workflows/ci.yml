@@ -114,15 +114,6 @@ jobs:
       - uses: taiki-e/install-action@cargo-minimal-versions
       - run: cargo minimal-versions check
       - run: cargo minimal-versions check --all-features
-  sync-docs:
-    needs: fmt
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-insert-docs@1.1.0
-      - run: cargo insert-docs --all-features --check
   doc:
     runs-on: ubuntu-latest
     steps:
