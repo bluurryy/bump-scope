@@ -2406,7 +2406,7 @@ where
         Ok(vec.into_boxed_slice())
     }
 
-    /// Allocate an unitialized object.
+    /// Allocate an uninitialized object.
     ///
     /// You can safely initialize the object with [`init`](BumpBox::init) or unsafely with [`assume_init`](BumpBox::assume_init).
     ///
@@ -2444,7 +2444,7 @@ where
         panic_on_error(self.generic_alloc_uninit())
     }
 
-    /// Allocate an unitialized object.
+    /// Allocate an uninitialized object.
     ///
     /// You can safely initialize the object with [`init`](BumpBox::init) or unsafely with [`assume_init`](BumpBox::assume_init).
     ///
@@ -2493,7 +2493,7 @@ where
         unsafe { Ok(BumpBox::from_raw(ptr)) }
     }
 
-    /// Allocate an unitialized object slice.
+    /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with
     /// [`init_fill`](BumpBox::init_fill),
@@ -2540,7 +2540,7 @@ where
         panic_on_error(self.generic_alloc_uninit_slice(len))
     }
 
-    /// Allocate an unitialized object slice.
+    /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with
     /// [`init_fill`](BumpBox::init_fill),
@@ -2605,7 +2605,7 @@ where
         }
     }
 
-    /// Allocate an unitialized object slice.
+    /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with
     /// [`init_fill`](BumpBox::init_fill),
@@ -2635,7 +2635,7 @@ where
         panic_on_error(self.generic_alloc_uninit_slice_for(slice))
     }
 
-    /// Allocate an unitialized object slice.
+    /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with
     /// [`init_fill`](BumpBox::init_fill),

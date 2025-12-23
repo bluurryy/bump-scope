@@ -1,0 +1,10 @@
+[files]
+extend-exclude = ["crates/tests-from-std"]
+
+[default]
+extend-ignore-re = [
+    # Intentionally doesn't include the first closing symbols, 
+    # so an explanation can be written in the html comment.
+    '(?s)<!-- spellchecker:off.*?\n\s*<!-- spellchecker:on -->',
+    '(?s)(#|//)\s*spellchecker:off.*?\n\s*(#|//)\s*spellchecker:on',
+]

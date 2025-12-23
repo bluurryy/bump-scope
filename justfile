@@ -5,7 +5,7 @@ default:
   @just --list
 
 pre-release:
-  just spellcheck
+  typos
   just doc
   just check
   just test
@@ -15,7 +15,7 @@ pre-release:
 setup:
   cargo binstall cargo-insert-docs@1.0.0 --locked
   cargo binstall cargo-semver-checks@0.44.0 --locked
-  npm install -g cspell
+  cargo binstall typos@1.40.0 --locked
 
 check: 
   just check-fmt
@@ -92,10 +92,6 @@ fmt:
   cd crates/fuzzing-support && cargo +nightly fmt
   cd crates/test-fallibility && cargo +nightly fmt
   cd fuzz && cargo +nightly fmt
-
-spellcheck:
-  # https://www.npmjs.com/package/cspell
-  cspell lint --gitignore "**/*.{rs,md,toml}" --exclude crates/tests-from-std --exclude crates/callgrind-benches/src/schema.rs
 
 doc *args:
   cargo +nightly fmt
