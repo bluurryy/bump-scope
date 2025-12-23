@@ -41,14 +41,14 @@ check-fmt:
 check-msrv:
   # msrv might print warnings that stable doesnt, we dont care
   cargo +1.85.1 check --no-default-features
-  cargo +1.85.1 check --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03,allocator-api2-04
+  cargo +1.85.1 check --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
 
 check-clippy:
   cargo +stable clippy --tests --no-default-features -- -Dwarnings
-  cargo +stable clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03,allocator-api2-04 -- -Dwarnings
+  cargo +stable clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde -- -Dwarnings
 
   cargo +nightly clippy --tests --no-default-features -- -Dwarnings
-  cargo +nightly clippy --tests --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03,allocator-api2-04 -- -Dwarnings
+  cargo +nightly clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde -- -Dwarnings
   cargo +nightly clippy --tests --all-features -- -Dwarnings
 
   cd crates/callgrind-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
@@ -56,6 +56,7 @@ check-clippy:
   cd crates/fuzzing-support && cargo +nightly clippy --tests -- -Dwarnings
   cd crates/test-fallibility && cargo +nightly clippy --tests -- -Dwarnings
   cd crates/test-hashbrown && cargo +nightly clippy --tests -- -Dwarnings
+  cd crates/test-hashbrown && cargo +nightly clippy --tests --all-features -- -Dwarnings
   cd crates/tests-from-std && cargo +nightly clippy --tests -- -Dwarnings
   cd fuzz && cargo +nightly clippy -- -Dwarnings
 

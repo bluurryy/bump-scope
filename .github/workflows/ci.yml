@@ -18,11 +18,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all -- --check
+      - run: cd crates/callgrind-benches && cargo fmt --all -- --check
+      - run: cd crates/criterion-benches && cargo fmt --all -- --check
       - run: cd crates/fuzzing-support && cargo fmt --all -- --check
       - run: cd crates/test-fallibility && cargo fmt --all -- --check
       - run: cd crates/tests-from-std && cargo fmt --all -- --check
-      - run: cd crates/callgrind-benches && cargo fmt --all -- --check
-      - run: cd crates/criterion-benches && cargo fmt --all -- --check
       - run: cd fuzz && cargo fmt --all -- --check
   clippy:
     runs-on: ubuntu-latest
@@ -34,8 +34,8 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --tests --no-default-features --  -Dwarnings
-      - run: cargo clippy --tests --features serde,bytemuck,zerocopy-08,allocator-api2-02,allocator-api2-03,allocator-api2-04 --  -Dwarnings
+      - run: cargo clippy --tests --no-default-features -- -Dwarnings
+      - run: cargo clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde --  -Dwarnings
   clippy-nightly:
     needs: clippy
     runs-on: ubuntu-latest
@@ -48,14 +48,15 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --tests --no-default-features -- -Dwarnings
-      - run: cargo clippy --tests --features serde,bytemuck,zerocopy-08,allocator-api2-02,allocator-api2-03,allocator-api2-04 -- -Dwarnings
+      - run: cargo clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde -- -Dwarnings
       - run: cargo clippy --tests --all-features -- -Dwarnings
+      - run: cd crates/callgrind-benches && cargo clippy --tests --benches --workspace -- -Dwarnings
+      - run: cd crates/criterion-benches && cargo clippy --tests --benches -- -Dwarnings
+      - run: cd crates/test-fallibility && cargo clippy -- -Dwarnings
       - run: cd crates/test-hashbrown && cargo clippy -- -Dwarnings
       - run: cd crates/test-hashbrown && cargo clippy --all-features -- -Dwarnings
       - run: cd crates/tests-from-std && cargo clippy --tests -- -Dwarnings
-      - run: cd crates/test-fallibility && cargo clippy -- -Dwarnings
-      - run: cd crates/callgrind-benches && cargo clippy --tests --benches --workspace -- -Dwarnings
-      - run: cd crates/criterion-benches && cargo clippy --tests --benches -- -Dwarnings
+      - run: cd fuzz && cargo clippy -- -Dwarnings
   msrv:
     runs-on: ubuntu-latest
     steps:
@@ -63,14 +64,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.85.1
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --no-default-features
-      - run: cargo check --features serde,zerocopy-08,allocator-api2-02
+      - run: cargo check --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo test --features serde,zerocopy-08,allocator-api2-02,allocator-api2-03,allocator-api2-04
+      - run: cargo test --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
       - run: cargo test --test compile_fail -- --ignored
       - run: cargo test --no-default-features --test unavailable_panicking_macros -F alloc
   test-nightly:
@@ -84,14 +85,14 @@ jobs:
           components: miri
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --all-features
-      - run: cargo miri test --all-features
+      - run: cd crates/tests-from-std && cargo test
       - run: cd crates/test-hashbrown && cargo test
       - run: cd crates/test-hashbrown && cargo test --all-features
+      - run: cd crates/fuzzing-support && cargo test
+      - run: cargo miri test --all-features
+      - run: cd crates/tests-from-std && cargo miri test
       - run: cd crates/test-hashbrown && cargo miri test
       - run: cd crates/test-hashbrown && cargo miri test --all-features
-      - run: cd crates/tests-from-std && cargo test
-      - run: cd crates/tests-from-std && cargo miri test
-      - run: cd crates/fuzzing-support && cargo test
       - run: cd crates/fuzzing-support && cargo miri test
   minimal-versions:
     runs-on: ubuntu-latest
@@ -104,8 +105,8 @@ jobs:
       - run: cargo minimal-versions check
       - run: cargo minimal-versions check --all-features
   sync-docs:
-    runs-on: ubuntu-latest
     needs: fmt
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@v2
@@ -114,7 +115,6 @@ jobs:
       - run: cargo insert-docs --all-features --check
   doc:
     runs-on: ubuntu-latest
-    needs: sync-docs
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
