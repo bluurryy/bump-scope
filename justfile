@@ -13,9 +13,9 @@ pre-release:
 
 # installs all tools used to run `pre-release`
 setup:
-  cargo binstall cargo-insert-docs@1.0.0 --locked
-  cargo binstall cargo-semver-checks@0.44.0 --locked
-  cargo binstall typos@1.40.0 --locked
+  cargo binstall cargo-insert-docs@1.1.0 --locked
+  cargo binstall cargo-semver-checks@0.45.0 --locked
+  cargo binstall typos-cli@1.40.0 --locked
 
 check: 
   just check-fmt
