@@ -18,7 +18,6 @@ setup:
   npm install -g cspell
 
 check: 
-  just assert-fuzz-modules-synced
   just check-fmt
   just check-msrv
   just check-clippy
@@ -69,17 +68,6 @@ check-mustnt_compile:
   
 check-unavailable_panicking_macros:
   cargo +stable test --no-default-features --test unavailable_panicking_macros -F alloc
-
-sync-fuzz:
-  cp -u src/bumping.rs crates/fuzzing-support/src/from_bump_scope/bumping.rs
-  cp -u src/chunk_size/chunk_size_config.rs crates/fuzzing-support/src/from_bump_scope/chunk_size_config.rs
-
-assert-fuzz-modules-synced:
-  just assert-files-equal src/bumping.rs crates/fuzzing-support/src/from_bump_scope/bumping.rs
-  just assert-files-equal src/chunk_size/chunk_size_config.rs crates/fuzzing-support/src/from_bump_scope/chunk_size_config.rs
-
-assert-files-equal a b:
-  @ a=`cat {{a}}`; b=`cat {{b}}`; [ "$a" = "$b" ]
 
 test:
   just test-non-miri

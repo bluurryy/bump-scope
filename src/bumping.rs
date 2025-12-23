@@ -1,10 +1,7 @@
 #![forbid(unsafe_code)]
 #![expect(clippy::needless_pass_by_value)]
-//! Make sure you sync this file `src/bumping.rs`
-//! with `crates/fuzzing-support/src/from_bump_scope/bumping.rs`.
-//!
 //! This file intentionally doesn't import anything other than `core`
-//! to make it easy to fuzz (see above) and debug.
+//! to make it easy to fuzz and debug.
 
 use core::{alloc::Layout, num::NonZeroUsize, ops::Range};
 
