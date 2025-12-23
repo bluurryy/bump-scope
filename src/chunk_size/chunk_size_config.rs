@@ -1,9 +1,6 @@
 #![forbid(unsafe_code)]
-//! Make sure you sync this file `src/chunk_size/chunk_size_config.rs`
-//! with `crates/fuzzing-support/src/from_bump_scope/chunk_size_config.rs`.
-//!
 //! This file intentionally doesn't import anything other than `core`
-//! to make it easy to fuzz (see above) and debug.
+//! to make it easy to fuzz and debug.
 
 use core::{alloc::Layout, num::NonZeroUsize};
 
