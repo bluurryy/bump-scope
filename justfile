@@ -9,13 +9,14 @@ pre-release:
   just doc
   just check
   just test
+  just test-miri
   cargo +stable semver-checks
 
 # installs all tools used to run `pre-release`
 setup:
+  cargo binstall typos-cli@1.40.0 --locked
   cargo binstall cargo-insert-docs@1.1.0 --locked
   cargo binstall cargo-semver-checks@0.45.0 --locked
-  cargo binstall typos-cli@1.40.0 --locked
 
 check: 
   just check-fmt
@@ -29,12 +30,13 @@ check:
   cargo +nightly check --tests --features nightly-allocator-api 
 
 check-fmt:
-  cargo +nightly fmt --check
-  cd crates/fuzzing-support && cargo +nightly fmt --check
-  cd crates/test-fallibility && cargo +nightly fmt --check
-  cd crates/callgrind-benches && cargo +nightly fmt --check
-  cd crates/criterion-benches && cargo +nightly fmt --check
-  cd fuzz; cargo +nightly fmt --check
+  cargo +stable fmt --check
+  cd crates/fuzzing-support && cargo +stable fmt --check
+  cd crates/test-fallibility && cargo +stable fmt --check
+  cd crates/tests-from-std && cargo +stable fmt --all -- --check
+  cd crates/callgrind-benches && cargo +stable fmt --check
+  cd crates/criterion-benches && cargo +stable fmt --check
+  cd fuzz; cargo +stable fmt --check
 
 check-msrv:
   # msrv might print warnings that stable doesnt, we dont care
@@ -69,11 +71,7 @@ check-mustnt_compile:
 check-unavailable_panicking_macros:
   cargo +stable test --no-default-features --test unavailable_panicking_macros -F alloc
 
-test:
-  just test-non-miri
-  just test-miri
-
-test-non-miri: 
+test: 
   cargo +nightly test --all-features
   cd crates/tests-from-std && cargo +nightly test
   cd crates/test-hashbrown && cargo +nightly test
@@ -89,8 +87,12 @@ test-miri:
 
 fmt:
   cargo +nightly fmt
+  cd crates/callgrind-benches && cargo +nightly fmt
+  cd crates/criterion-benches && cargo +nightly fmt
   cd crates/fuzzing-support && cargo +nightly fmt
   cd crates/test-fallibility && cargo +nightly fmt
+  cd crates/test-hashbrown && cargo +nightly fmt
+  cd crates/tests-from-std && cargo +nightly fmt
   cd fuzz && cargo +nightly fmt
 
 doc *args:
