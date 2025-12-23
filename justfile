@@ -61,7 +61,8 @@ check-clippy:
   cd fuzz && cargo +nightly clippy -- -Dwarnings
 
 check-nostd:
-  cd crates/test-fallibility && cargo check
+  # NOTE: serde feature is currently not nostd compatible, see #125
+  cargo check --target thumbv7em-none-eabihf --no-default-features -F allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,alloc
 
 check-fallibility:
   cd crates/test-fallibility && nu assert-no-panics.nu
