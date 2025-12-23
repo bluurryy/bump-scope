@@ -57,6 +57,16 @@ jobs:
       - run: cd crates/test-hashbrown && cargo clippy --all-features -- -Dwarnings
       - run: cd crates/tests-from-std && cargo clippy --tests -- -Dwarnings
       - run: cd fuzz && cargo clippy -- -Dwarnings
+  no-std:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: thumbv7em-none-eabihf
+      - uses: Swatinem/rust-cache@v2
+      # NOTE: serde feature is currently not nostd compatible, see #125
+      - run: cargo check --target thumbv7em-none-eabihf --no-default-features -F allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,alloc
   msrv:
     runs-on: ubuntu-latest
     steps:
