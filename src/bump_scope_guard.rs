@@ -32,7 +32,7 @@ impl Checkpoint {
 }
 
 /// Returned from [`MutBumpScope::scope_guard`].
-pub struct BumpScopeGuard<'a, A, const MIN_ALIGN: usize = 1, const UP: bool = true, const DEALLOCATES: bool = true>
+pub struct MutBumpScopeGuard<'a, A, const MIN_ALIGN: usize = 1, const UP: bool = true, const DEALLOCATES: bool = true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -42,17 +42,17 @@ where
 }
 
 impl<A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool> Debug
-    for BumpScopeGuard<'_, A, MIN_ALIGN, UP, DEALLOCATES>
+    for MutBumpScopeGuard<'_, A, MIN_ALIGN, UP, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        AnyStats::from(self.stats()).debug_format("BumpScopeGuard", f)
+        AnyStats::from(self.stats()).debug_format("MutBumpScopeGuard", f)
     }
 }
 
 impl<A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool> Drop
-    for BumpScopeGuard<'_, A, MIN_ALIGN, UP, DEALLOCATES>
+    for MutBumpScopeGuard<'_, A, MIN_ALIGN, UP, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -63,7 +63,7 @@ where
 }
 
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool>
-    BumpScopeGuard<'a, A, MIN_ALIGN, UP, DEALLOCATES>
+    MutBumpScopeGuard<'a, A, MIN_ALIGN, UP, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -112,12 +112,12 @@ where
 
 /// Returned from [`Bump::scope_guard`].
 ///
-/// This fulfills the same purpose as [`BumpScopeGuard`], but it does not need to store
+/// This fulfills the same purpose as [`MutBumpScopeGuard`], but it does not need to store
 /// the address which the bump pointer needs to be reset to. It simply resets the bump pointer to the very start.
 ///
 /// It is allowed to do so because it takes a `&mut Bump` to create this guard. This means that no
 /// allocations can be live when the guard is created.
-pub struct BumpScopeGuardRoot<'b, A, const MIN_ALIGN: usize = 1, const UP: bool = true, const DEALLOCATES: bool = true>
+pub struct MutBumpScopeGuardRoot<'b, A, const MIN_ALIGN: usize = 1, const UP: bool = true, const DEALLOCATES: bool = true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
@@ -127,18 +127,18 @@ where
 }
 
 impl<A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool> Debug
-    for BumpScopeGuardRoot<'_, A, MIN_ALIGN, UP, DEALLOCATES>
+    for MutBumpScopeGuardRoot<'_, A, MIN_ALIGN, UP, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        AnyStats::from(self.stats()).debug_format("BumpScopeGuardRoot", f)
+        AnyStats::from(self.stats()).debug_format("MutBumpScopeGuardRoot", f)
     }
 }
 
 impl<A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool> Drop
-    for BumpScopeGuardRoot<'_, A, MIN_ALIGN, UP, DEALLOCATES>
+    for MutBumpScopeGuardRoot<'_, A, MIN_ALIGN, UP, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
@@ -150,7 +150,7 @@ where
 }
 
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool>
-    BumpScopeGuardRoot<'a, A, MIN_ALIGN, UP, DEALLOCATES>
+    MutBumpScopeGuardRoot<'a, A, MIN_ALIGN, UP, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,

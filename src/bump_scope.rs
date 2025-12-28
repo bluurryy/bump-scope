@@ -15,7 +15,7 @@ use core::{
 use core::clone::CloneToUninit;
 
 use crate::{
-    BaseAllocator, Bump, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior, MinimumAlignment,
+    BaseAllocator, Bump, BumpBox, BumpString, BumpVec, Checkpoint, ErrorBehavior, MinimumAlignment, MutBumpScopeGuard,
     MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk, SizedTypeProperties, SupportedMinimumAlignment, align_pos,
     alloc::{AllocError, Allocator},
     allocator_impl,
@@ -38,19 +38,19 @@ macro_rules! make_type {
     ($($allocator_parameter:tt)*) => {
         /// A bump allocation scope.
         ///
-        /// A `MutBumpScope`'s allocations are live for `'a`, which is the lifetime of its associated `BumpScopeGuard(Root)` or `scoped` closure.
+        /// A `MutBumpScope`'s allocations are live for `'a`, which is the lifetime of its associated `MutBumpScopeGuard(Root)` or `scoped` closure.
         ///
         /// `MutBumpScope` has the same allocation api as `Bump`.
         /// The only thing that is missing is [`reset`] and methods that consume the `Bump`.
         /// For a method overview and examples, have a look at the [`Bump` docs][`Bump`].
         ///
         /// This type is provided as a parameter to the closure of [`Bump::scoped`], [`MutBumpScope::scoped`] or created
-        /// by [`BumpScopeGuard::scope`] and [`BumpScopeGuardRoot::scope`]. A [`Bump`] can also be turned into a `MutBumpScope` using
+        /// by [`MutBumpScopeGuard::scope`] and [`MutBumpScopeGuardRoot::scope`]. A [`Bump`] can also be turned into a `MutBumpScope` using
         /// [`as_scope`], [`as_mut_scope`] or [`into`].
         ///
         /// [`Bump::scoped`]: crate::Bump::scoped
-        /// [`BumpScopeGuard::scope`]: crate::BumpScopeGuard::scope
-        /// [`BumpScopeGuardRoot::scope`]: crate::BumpScopeGuardRoot::scope
+        /// [`MutBumpScopeGuard::scope`]: crate::MutBumpScopeGuard::scope
+        /// [`MutBumpScopeGuardRoot::scope`]: crate::MutBumpScopeGuardRoot::scope
         /// [`Bump`]: crate::Bump
         /// [`scoped`]: Self::scoped
         /// [`as_scope`]: crate::Bump::as_scope
@@ -68,7 +68,7 @@ macro_rules! make_type {
         > {
             pub(crate) chunk: Cell<RawChunk<A, UP, GUARANTEED_ALLOCATED>>,
 
-            /// Marks the lifetime of the mutably borrowed `BumpScopeGuard(Root)`.
+            /// Marks the lifetime of the mutably borrowed `MutBumpScopeGuard(Root)`.
             marker: PhantomData<&'a ()>,
         }
     };
@@ -319,7 +319,7 @@ where
         }
     }
 
-    /// Creates a new [`BumpScopeGuard`].
+    /// Creates a new [`MutBumpScopeGuard`].
     ///
     /// This allows for creation of child scopes.
     ///
@@ -340,8 +340,8 @@ where
     /// ```
     #[must_use]
     #[inline(always)]
-    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, A, MIN_ALIGN, UP, DEALLOCATES> {
-        BumpScopeGuard::new(self)
+    pub fn scope_guard(&mut self) -> MutBumpScopeGuard<'_, A, MIN_ALIGN, UP, DEALLOCATES> {
+        MutBumpScopeGuard::new(self)
     }
 }
 

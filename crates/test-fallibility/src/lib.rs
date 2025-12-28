@@ -18,8 +18,9 @@ macro_rules! type_definitions {
     ($up:literal) => {
         type Bump<const MIN_ALIGN: usize = 1> = bump_scope::Bump<Global, MIN_ALIGN, $up, true, true>;
         type MutBumpScope<'a, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpScope<'a, Global, MIN_ALIGN, $up, true, true>;
-        type BumpScopeGuard<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuard<'a, Global, MIN_ALIGN, $up>;
-        type BumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuardRoot<'a, Global, MIN_ALIGN, $up>;
+        type MutBumpScopeGuard<'a, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpScopeGuard<'a, Global, MIN_ALIGN, $up>;
+        type MutBumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> =
+            bump_scope::MutBumpScopeGuardRoot<'a, Global, MIN_ALIGN, $up>;
         type BumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<T, &'a Bump>;
         type BumpString<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<&'a Bump>;
         type MutBumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<T, &'a mut Bump<MIN_ALIGN>>;
@@ -67,7 +68,7 @@ up_and_down! {
         bump.aligned(f)
     }
 
-    pub fn Bump_scope_guard(bump: &mut Bump) -> BumpScopeGuardRoot {
+    pub fn Bump_scope_guard(bump: &mut Bump) -> MutBumpScopeGuardRoot {
         bump.scope_guard()
     }
 
@@ -223,7 +224,7 @@ up_and_down! {
         bump.try_reserve_bytes(additional)
     }
 
-    pub fn BumpScope__scope_guard<'b>(bump: &'b mut MutBumpScope) -> BumpScopeGuard<'b> {
+    pub fn BumpScope__scope_guard<'b>(bump: &'b mut MutBumpScope) -> MutBumpScopeGuard<'b> {
         bump.scope_guard()
     }
 

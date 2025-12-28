@@ -395,7 +395,7 @@ pub use bump_box::BumpBox;
 #[cfg(feature = "std")]
 pub use bump_pool::{BumpPool, BumpPoolGuard};
 pub use bump_scope::MutBumpScope;
-pub use bump_scope_guard::{BumpScopeGuard, BumpScopeGuardRoot, Checkpoint};
+pub use bump_scope_guard::{Checkpoint, MutBumpScopeGuard, MutBumpScopeGuardRoot};
 pub use bump_string::BumpString;
 #[doc(inline)]
 pub use bump_vec::BumpVec;

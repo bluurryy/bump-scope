@@ -12,7 +12,7 @@ use core::{
 use core::clone::CloneToUninit;
 
 use crate::{
-    BaseAllocator, BumpBox, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment, MutBumpScope, RawChunk,
+    BaseAllocator, BumpBox, Checkpoint, ErrorBehavior, MinimumAlignment, MutBumpScope, MutBumpScopeGuardRoot, RawChunk,
     SupportedMinimumAlignment,
     alloc::{AllocError, Allocator},
     chunk_size::ChunkSize,
@@ -676,7 +676,7 @@ where
         self.as_mut_scope().aligned(f)
     }
 
-    /// Creates a new [`BumpScopeGuardRoot`].
+    /// Creates a new [`MutBumpScopeGuardRoot`].
     ///
     /// This allows for creation of child scopes.
     ///
@@ -697,8 +697,8 @@ where
     /// ```
     #[must_use]
     #[inline(always)]
-    pub fn scope_guard(&mut self) -> BumpScopeGuardRoot<'_, A, MIN_ALIGN, UP, DEALLOCATES> {
-        BumpScopeGuardRoot::new(self)
+    pub fn scope_guard(&mut self) -> MutBumpScopeGuardRoot<'_, A, MIN_ALIGN, UP, DEALLOCATES> {
+        MutBumpScopeGuardRoot::new(self)
     }
 
     /// Returns a reference to the base allocator.
