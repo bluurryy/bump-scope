@@ -69,7 +69,7 @@ macro_rules! make_type {
         /// - via clone *(nightly only)*: [`alloc_clone`]
         ///
         /// #### Free memory using ...
-        /// - scopes: [`scoped`], [`scoped_aligned`], [`scope_guard`]
+        /// - scopes: [`scoped`], [`scoped_aligned`], [`scope_guard_mut`]
         /// - checkpoints: [`checkpoint`], [`reset_to`]
         /// - reset: [`reset`]
         /// - dealloc: [`dealloc`]
@@ -165,7 +165,7 @@ macro_rules! make_type {
         ///
         /// [`scoped`]: Self::scoped
         /// [`scoped_aligned`]: Self::scoped_aligned
-        /// [`scope_guard`]: Self::scope_guard
+        /// [`scope_guard_mut`]: Self::scope_guard_mut
         ///
         /// [`checkpoint`]: Self::checkpoint
         /// [`reset_to`]: Self::reset_to
@@ -537,7 +537,7 @@ where
     /// ```
     #[inline(always)]
     pub fn scoped<R>(&mut self, f: impl FnOnce(MutBumpScope<A, MIN_ALIGN, UP, true, DEALLOCATES>) -> R) -> R {
-        let mut guard = self.scope_guard();
+        let mut guard = self.scope_guard_mut();
         f(guard.scope())
     }
 
@@ -687,7 +687,7 @@ where
     /// let mut bump: Bump = Bump::new();
     ///
     /// {
-    ///     let mut guard = bump.scope_guard();
+    ///     let mut guard = bump.scope_guard_mut();
     ///     let bump = guard.scope();
     ///     bump.alloc_str("Hello, world!");
     ///     assert_eq!(bump.stats().allocated(), 13);
@@ -697,7 +697,7 @@ where
     /// ```
     #[must_use]
     #[inline(always)]
-    pub fn scope_guard(&mut self) -> MutBumpScopeGuardRoot<'_, A, MIN_ALIGN, UP, DEALLOCATES> {
+    pub fn scope_guard_mut(&mut self) -> MutBumpScopeGuardRoot<'_, A, MIN_ALIGN, UP, DEALLOCATES> {
         MutBumpScopeGuardRoot::new(self)
     }
 

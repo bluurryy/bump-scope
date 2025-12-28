@@ -76,7 +76,7 @@ Have a look at the documentation of [`Bump`] for a method overview.
 You can create scopes to make allocations that live only for a part of its parent scope.
 Entering and exiting scopes is virtually free. Allocating within a scope has no overhead.
 
-You can create a new scope either with a [`scoped`](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.scoped) closure or with a [`scope_guard`](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.scope_guard):
+You can create a new scope either with a [`scoped`](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.scoped) closure or with a [`scope_guard_mut`](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.scope_guard_mut):
 ```rust
 use bump_scope::Bump;
 
@@ -102,14 +102,14 @@ assert_eq!(bump.stats().allocated(), 0);
 
 // or you can use scope guards
 {
-    let mut guard = bump.scope_guard();
+    let mut guard = bump.scope_guard_mut();
     let mut bump = guard.scope();
 
     let hello = bump.alloc_str("hello");
     assert_eq!(bump.stats().allocated(), 5);
 
     {
-        let mut guard = bump.scope_guard();
+        let mut guard = bump.scope_guard_mut();
         let bump = guard.scope();
 
         let world = bump.alloc_str("world");
@@ -278,7 +278,7 @@ one chunk from the base allocator.
 
 The exception is the [`unallocated`] constructor which creates a `Bump` without allocating any
 chunks. Such a `Bump` will have the `GUARANTEED_ALLOCATED` generic parameter of `false`
-which will make the [`scoped`], [`scoped_aligned`], [`aligned`] and [`scope_guard`] methods unavailable.
+which will make the [`scoped`], [`scoped_aligned`], [`aligned`] and [`scope_guard_mut`] methods unavailable.
 
 You can turn any non-`GUARANTEED_ALLOCATED` bump allocator into a guaranteed allocated one using
 [`as_guaranteed_allocated`], [`as_mut_guaranteed_allocated`] or [`into_guaranteed_allocated`].
@@ -300,7 +300,7 @@ At the same time `Bump`s that have already allocated a chunk don't suffer additi
 [`into_guaranteed_allocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.into_guaranteed_allocated
 [`as_mut_guaranteed_allocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.as_mut_guaranteed_allocated
 [`as_guaranteed_allocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.as_guaranteed_allocated
-[`scope_guard`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.scope_guard
+[`scope_guard_mut`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.scope_guard_mut
 [`aligned`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.aligned
 [`scoped_aligned`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.scoped_aligned
 [`scoped`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.scoped

@@ -169,7 +169,7 @@ where
     /// ```
     #[inline(always)]
     pub fn scoped<R>(&mut self, f: impl FnOnce(MutBumpScope<A, MIN_ALIGN, UP, true, DEALLOCATES>) -> R) -> R {
-        let mut guard = self.scope_guard();
+        let mut guard = self.scope_guard_mut();
         f(guard.scope())
     }
 
@@ -223,7 +223,7 @@ where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
         // This guard will reset the bump pointer to the current position, which is aligned to `MIN_ALIGN`.
-        let mut guard = self.scope_guard();
+        let mut guard = self.scope_guard_mut();
         let scope = guard.scope();
         scope.align::<NEW_MIN_ALIGN>();
         f(unsafe { scope.cast_align() })
@@ -330,7 +330,7 @@ where
     /// let mut bump: Bump = Bump::new();
     ///
     /// {
-    ///     let mut guard = bump.scope_guard();
+    ///     let mut guard = bump.scope_guard_mut();
     ///     let bump = guard.scope();
     ///     bump.alloc_str("Hello, world!");
     ///     assert_eq!(bump.stats().allocated(), 13);
@@ -340,7 +340,7 @@ where
     /// ```
     #[must_use]
     #[inline(always)]
-    pub fn scope_guard(&mut self) -> MutBumpScopeGuard<'_, A, MIN_ALIGN, UP, DEALLOCATES> {
+    pub fn scope_guard_mut(&mut self) -> MutBumpScopeGuard<'_, A, MIN_ALIGN, UP, DEALLOCATES> {
         MutBumpScopeGuard::new(self)
     }
 }
@@ -634,7 +634,7 @@ where
     /// # // that triggers the error.
     /// # use bump_scope::{Bump, alloc::Global};
     /// let mut bump: Bump<Global, 8, true> = Bump::new();
-    /// let mut guard = bump.scope_guard();
+    /// let mut guard = bump.scope_guard_mut();
     ///
     /// {
     ///     let scope = guard.scope().into_aligned::<1>();

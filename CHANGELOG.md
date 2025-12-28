@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Rename `BumpScope` to `MutBumpScope`
 - Rename `BumpScopeGuard(Root)` to `MutBumpScopeGuard(Root)`
+- Rename `scope_guard` to `scope_guard_mut`
 
 ### Fixed
 

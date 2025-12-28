@@ -5,7 +5,7 @@ fn escape_closure(mut bump: MutBumpScope) {
     let mut escapee = None;
 
     {
-        let mut guard = bump.scope_guard();
+        let mut guard = bump.scope_guard_mut();
         let scope = guard.scope();
 
         escapee = Some(scope.alloc("escape?"));

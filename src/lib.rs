@@ -108,7 +108,7 @@
 //! You can create scopes to make allocations that live only for a part of its parent scope.
 //! Entering and exiting scopes is virtually free. Allocating within a scope has no overhead.
 //!
-//! You can create a new scope either with a [`scoped`](Bump::scoped) closure or with a [`scope_guard`](Bump::scope_guard):
+//! You can create a new scope either with a [`scoped`](Bump::scoped) closure or with a [`scope_guard_mut`](Bump::scope_guard_mut):
 //! ```
 //! use bump_scope::Bump;
 //!
@@ -134,14 +134,14 @@
 //!
 //! // or you can use scope guards
 //! {
-//!     let mut guard = bump.scope_guard();
+//!     let mut guard = bump.scope_guard_mut();
 //!     let mut bump = guard.scope();
 //!
 //!     let hello = bump.alloc_str("hello");
 //!     assert_eq!(bump.stats().allocated(), 5);
 //!
 //!     {
-//!         let mut guard = bump.scope_guard();
+//!         let mut guard = bump.scope_guard_mut();
 //!         let bump = guard.scope();
 //!
 //!         let world = bump.alloc_str("world");
@@ -315,7 +315,7 @@
 //!
 //! The exception is the [`unallocated`] constructor which creates a `Bump` without allocating any
 //! chunks. Such a `Bump` will have the `GUARANTEED_ALLOCATED` generic parameter of `false`
-//! which will make the [`scoped`], [`scoped_aligned`], [`aligned`] and [`scope_guard`] methods unavailable.
+//! which will make the [`scoped`], [`scoped_aligned`], [`aligned`] and [`scope_guard_mut`] methods unavailable.
 //!
 //! You can turn any non-`GUARANTEED_ALLOCATED` bump allocator into a guaranteed allocated one using
 //! [`as_guaranteed_allocated`], [`as_mut_guaranteed_allocated`] or [`into_guaranteed_allocated`].
@@ -331,7 +331,7 @@
 //! [`scoped`]: Bump::scoped
 //! [`scoped_aligned`]: Bump::scoped_aligned
 //! [`aligned`]: Bump::aligned
-//! [`scope_guard`]: Bump::scope_guard
+//! [`scope_guard_mut`]: Bump::scope_guard_mut
 //! [`as_guaranteed_allocated`]: Bump::as_guaranteed_allocated
 //! [`as_mut_guaranteed_allocated`]: Bump::as_mut_guaranteed_allocated
 //! [`into_guaranteed_allocated`]: Bump::into_guaranteed_allocated

@@ -68,8 +68,8 @@ up_and_down! {
         bump.aligned(f)
     }
 
-    pub fn Bump_scope_guard(bump: &mut Bump) -> MutBumpScopeGuardRoot {
-        bump.scope_guard()
+    pub fn Bump_scope_guard_mut(bump: &mut Bump) -> MutBumpScopeGuardRoot {
+        bump.scope_guard_mut()
     }
 
     pub fn Bump_into_aligned(bump: Bump) -> Bump<4> {
@@ -224,8 +224,8 @@ up_and_down! {
         bump.try_reserve_bytes(additional)
     }
 
-    pub fn BumpScope__scope_guard<'b>(bump: &'b mut MutBumpScope) -> MutBumpScopeGuard<'b> {
-        bump.scope_guard()
+    pub fn BumpScope__scope_guard_mut<'b>(bump: &'b mut MutBumpScope) -> MutBumpScopeGuard<'b> {
+        bump.scope_guard_mut()
     }
 
     pub fn MutBumpVec_try_append(vec: &mut MutBumpVec<u32>, array: [u32; 24]) -> Result {

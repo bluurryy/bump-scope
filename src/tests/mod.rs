@@ -462,14 +462,14 @@ fn scope_by_guards<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
 
     {
-        let mut child_guard = bump.scope_guard();
+        let mut child_guard = bump.scope_guard_mut();
         let mut child_scope = child_guard.scope();
 
         let child_0 = child_scope.alloc_str("child_0");
         let child_1 = child_scope.alloc_str("child_1");
 
         {
-            let mut grand_child_guard = child_scope.scope_guard();
+            let mut grand_child_guard = child_scope.scope_guard_mut();
             let grand_child_scope = grand_child_guard.scope();
 
             let grand_child_0 = grand_child_scope.alloc_str("grand_child_0");

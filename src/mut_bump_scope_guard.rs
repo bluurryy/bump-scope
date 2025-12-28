@@ -31,7 +31,7 @@ impl Checkpoint {
     }
 }
 
-/// Returned from [`MutBumpScope::scope_guard`].
+/// Returned from [`MutBumpScope::scope_guard_mut`].
 pub struct MutBumpScopeGuard<'a, A, const MIN_ALIGN: usize = 1, const UP: bool = true, const DEALLOCATES: bool = true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -110,7 +110,7 @@ where
     }
 }
 
-/// Returned from [`Bump::scope_guard`].
+/// Returned from [`Bump::scope_guard_mut`].
 ///
 /// This fulfills the same purpose as [`MutBumpScopeGuard`], but it does not need to store
 /// the address which the bump pointer needs to be reset to. It simply resets the bump pointer to the very start.
