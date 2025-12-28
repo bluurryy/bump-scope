@@ -35,13 +35,13 @@
     clippy::module_name_repetitions,
     clippy::copy_iterator,
     clippy::partialeq_ne_impl,
-    clippy::collapsible_else_if,
     clippy::items_after_statements,
     clippy::missing_transmute_annotations,
     clippy::multiple_crate_versions, // we have allocator-api2 version 0.2 and 0.3
 )]
 #![allow(
     clippy::wildcard_imports, // `expect` is broken for this lint
+    clippy::collapsible_else_if, // this is not `expect` because nightly as of 2025-12-28 doesn't warn about this for some reason
 )]
 #![doc(test(
     attr(deny(dead_code, unused_imports, deprecated)),
