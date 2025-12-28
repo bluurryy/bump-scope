@@ -69,7 +69,7 @@ macro_rules! make_type {
         /// - via clone *(nightly only)*: [`alloc_clone`]
         ///
         /// #### Free memory using ...
-        /// - scopes: [`scoped_mut`], [`scoped_aligned`], [`scope_guard_mut`]
+        /// - scopes: [`scoped_mut`], [`scoped_aligned_mut`], [`scope_guard_mut`]
         /// - checkpoints: [`checkpoint`], [`reset_to`]
         /// - reset: [`reset`]
         /// - dealloc: [`dealloc`]
@@ -164,7 +164,7 @@ macro_rules! make_type {
         /// [`alloc_clone`]: Self::alloc_clone
         ///
         /// [`scoped_mut`]: Self::scoped_mut
-        /// [`scoped_aligned`]: Self::scoped_aligned
+        /// [`scoped_aligned_mut`]: Self::scoped_aligned_mut
         /// [`scope_guard_mut`]: Self::scope_guard_mut
         ///
         /// [`checkpoint`]: Self::checkpoint
@@ -562,7 +562,7 @@ where
     /// assert!(bump.stats().current_chunk().bump_position().addr().get() % 2 == 1);
     /// assert_eq!(bump.stats().allocated(), 1);
     ///
-    /// bump.scoped_aligned::<8, ()>(|bump| {
+    /// bump.scoped_aligned_mut::<8, ()>(|bump| {
     ///    // in here, the bump will have the specified minimum alignment of 8
     ///    assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
     ///    assert_eq!(bump.stats().allocated(), 8);
@@ -583,14 +583,14 @@ where
     /// assert_eq!(bump.stats().allocated(), 1);
     /// ```
     #[inline(always)]
-    pub fn scoped_aligned<const NEW_MIN_ALIGN: usize, R>(
+    pub fn scoped_aligned_mut<const NEW_MIN_ALIGN: usize, R>(
         &mut self,
         f: impl FnOnce(MutBumpScope<A, NEW_MIN_ALIGN, UP, true, DEALLOCATES>) -> R,
     ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        self.as_mut_scope().scoped_aligned::<NEW_MIN_ALIGN, R>(f)
+        self.as_mut_scope().scoped_aligned_mut::<NEW_MIN_ALIGN, R>(f)
     }
 
     /// Calls `f` with this scope but with a new minimum alignment.
@@ -1076,7 +1076,7 @@ where
     /// Mutably borrows `Bump` with a new minimum alignment.
     ///
     /// **This cannot decrease the alignment.** Trying to decrease alignment will result in a compile error.
-    /// You can use [`aligned_mut`](Self::aligned_mut) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment.
+    /// You can use [`aligned_mut`](Self::aligned_mut) or [`scoped_aligned_mut`](Self::scoped_aligned_mut) to decrease the alignment.
     ///
     /// When decreasing the alignment we need to make sure that the bump position is realigned to the original alignment.
     /// That can only be ensured by having a function that takes a closure, like the methods mentioned above do.
