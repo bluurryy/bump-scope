@@ -351,8 +351,6 @@ mod bump_align_guard;
 mod bump_box;
 #[cfg(feature = "std")]
 mod bump_pool;
-mod bump_scope;
-mod bump_scope_guard;
 /// Contains [`BumpString`] and associated types.
 mod bump_string;
 /// Contains [`BumpVec`] and associated types.
@@ -367,6 +365,8 @@ mod fixed_bump_vec;
 mod from_utf16_error;
 mod from_utf8_error;
 mod layout;
+mod mut_bump_scope;
+mod mut_bump_scope_guard;
 mod mut_bump_string;
 /// Contains [`MutBumpVec`] and associated types.
 pub mod mut_bump_vec;
@@ -394,8 +394,6 @@ pub use bump::Bump;
 pub use bump_box::BumpBox;
 #[cfg(feature = "std")]
 pub use bump_pool::{BumpPool, BumpPoolGuard};
-pub use bump_scope::MutBumpScope;
-pub use bump_scope_guard::{Checkpoint, MutBumpScopeGuard, MutBumpScopeGuardRoot};
 pub use bump_string::BumpString;
 #[doc(inline)]
 pub use bump_vec::BumpVec;
@@ -409,6 +407,8 @@ pub use fixed_bump_vec::FixedBumpVec;
 pub use from_utf8_error::FromUtf8Error;
 pub use from_utf16_error::FromUtf16Error;
 use layout::ArrayLayout;
+pub use mut_bump_scope::MutBumpScope;
+pub use mut_bump_scope_guard::{Checkpoint, MutBumpScopeGuard, MutBumpScopeGuardRoot};
 pub use mut_bump_string::MutBumpString;
 #[doc(inline)]
 pub use mut_bump_vec::MutBumpVec;
