@@ -38,21 +38,21 @@ macro_rules! make_type {
     ($($allocator_parameter:tt)*) => {
         /// A bump allocation scope.
         ///
-        /// A `MutBumpScope`'s allocations are live for `'a`, which is the lifetime of its associated `MutBumpScopeGuard(Root)` or `scoped` closure.
+        /// A `MutBumpScope`'s allocations are live for `'a`, which is the lifetime of its associated `MutBumpScopeGuard(Root)` or `scoped_mut` closure.
         ///
         /// `MutBumpScope` has the same allocation api as `Bump`.
         /// The only thing that is missing is [`reset`] and methods that consume the `Bump`.
         /// For a method overview and examples, have a look at the [`Bump` docs][`Bump`].
         ///
-        /// This type is provided as a parameter to the closure of [`Bump::scoped`], [`MutBumpScope::scoped`] or created
+        /// This type is provided as a parameter to the closure of [`Bump::scoped_mut`], [`MutBumpScope::scoped_mut`] or created
         /// by [`MutBumpScopeGuard::scope`] and [`MutBumpScopeGuardRoot::scope`]. A [`Bump`] can also be turned into a `MutBumpScope` using
         /// [`as_scope`], [`as_mut_scope`] or [`into`].
         ///
-        /// [`Bump::scoped`]: crate::Bump::scoped
+        /// [`Bump::scoped_mut`]: crate::Bump::scoped_mut
         /// [`MutBumpScopeGuard::scope`]: crate::MutBumpScopeGuard::scope
         /// [`MutBumpScopeGuardRoot::scope`]: crate::MutBumpScopeGuardRoot::scope
         /// [`Bump`]: crate::Bump
-        /// [`scoped`]: Self::scoped
+        /// [`scoped_mut`]: Self::scoped_mut
         /// [`as_scope`]: crate::Bump::as_scope
         /// [`as_mut_scope`]: crate::Bump::as_mut_scope
         /// [`reset`]: crate::Bump::reset
@@ -160,7 +160,7 @@ where
     /// # use bump_scope::Bump;
     /// let mut bump: Bump = Bump::new();
     ///
-    /// bump.scoped(|bump| {
+    /// bump.scoped_mut(|bump| {
     ///     bump.alloc_str("Hello, world!");
     ///     assert_eq!(bump.stats().allocated(), 13);
     /// });
@@ -168,7 +168,7 @@ where
     /// assert_eq!(bump.stats().allocated(), 0);
     /// ```
     #[inline(always)]
-    pub fn scoped<R>(&mut self, f: impl FnOnce(MutBumpScope<A, MIN_ALIGN, UP, true, DEALLOCATES>) -> R) -> R {
+    pub fn scoped_mut<R>(&mut self, f: impl FnOnce(MutBumpScope<A, MIN_ALIGN, UP, true, DEALLOCATES>) -> R) -> R {
         let mut guard = self.scope_guard_mut();
         f(guard.scope())
     }

@@ -178,7 +178,7 @@ macro_rules! __bump_vec_panic_on_alloc {
 ///     vec.into_slice()
 /// };
 ///
-/// bump.scoped(|bump| {
+/// bump.scoped_mut(|bump| {
 ///     // allocate more things
 ///     # _ = bump;
 /// });

@@ -29,7 +29,7 @@ use crate::panic_on_error;
 /// making your changes and then turning it back into a `FixedBumpString` with [`BumpString::into_fixed_string`].
 ///
 /// Not storing the `Bump(Scope)` allows you to call bump allocator methods that require `&mut`,
-/// like [`scoped`](crate::Bump::scoped).
+/// like [`scoped_mut`](crate::Bump::scoped_mut).
 ///
 /// # Examples
 /// ```

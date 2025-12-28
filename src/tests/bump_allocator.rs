@@ -27,7 +27,7 @@ fn smoke_test() {
     test(a);
 
     let mut a: Bump = Bump::new();
-    a.scoped(|mut a| {
+    a.scoped_mut(|mut a| {
         test(&mut a);
         test(&a);
         test(a);
@@ -38,7 +38,7 @@ fn smoke_test() {
     mut_test(a);
 
     let mut a: Bump = Bump::new();
-    a.scoped(|mut a| {
+    a.scoped_mut(|mut a| {
         mut_test(&mut a);
         mut_test(a);
     });
@@ -49,12 +49,12 @@ fn smoke_test() {
 fn alloc_chunks() {
     let mut a: Bump = Bump::new();
 
-    a.scoped(|mut a| {
+    a.scoped_mut(|mut a| {
         // alloc is large enough to require an additional chunk
         let _: MutBumpVec<u8, &mut _> = MutBumpVec::with_capacity_in(1 << 9, &mut a);
     });
 
-    a.scoped(|mut a| {
+    a.scoped_mut(|mut a| {
         // alloc is larger than the existing chunks and requires a third chunk to be allocated
         let _: MutBumpVec<u8, _> = MutBumpVec::with_capacity_in(1 << 10, &mut a);
     });

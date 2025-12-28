@@ -57,7 +57,7 @@ up_and_down! {
     }
 
     pub fn Bump_scoped(bump: &mut Bump, f: Box<dyn FnOnce(MutBumpScope)>) {
-        bump.scoped(f)
+        bump.scoped_mut(f)
     }
 
     pub fn Bump_aligned_inc(bump: &mut Bump, f: Box<dyn FnOnce(MutBumpScope<8>)>) {

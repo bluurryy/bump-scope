@@ -32,7 +32,7 @@ fn test_dyn_allocator<const UP: bool>() {
         assert_eq!(bump.any_stats().allocated(), 3 * ITEM_SIZE);
     }
 
-    <Bump<Global, 1, UP>>::new().scoped(|bump| test::<UP, MutBumpScope<Global, 1, UP>>(bump));
-    <Bump<Global, 1, UP>>::new().scoped(|mut bump| test::<UP, &mut MutBumpScope<Global, 1, UP>>(&mut bump));
-    <Bump<Global, 1, UP>>::new().scoped(|mut bump| test::<UP, &mut dyn MutBumpAllocatorScope>(&mut bump));
+    <Bump<Global, 1, UP>>::new().scoped_mut(|bump| test::<UP, MutBumpScope<Global, 1, UP>>(bump));
+    <Bump<Global, 1, UP>>::new().scoped_mut(|mut bump| test::<UP, &mut MutBumpScope<Global, 1, UP>>(&mut bump));
+    <Bump<Global, 1, UP>>::new().scoped_mut(|mut bump| test::<UP, &mut dyn MutBumpAllocatorScope>(&mut bump));
 }

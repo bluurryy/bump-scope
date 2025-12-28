@@ -108,18 +108,18 @@
 //! You can create scopes to make allocations that live only for a part of its parent scope.
 //! Entering and exiting scopes is virtually free. Allocating within a scope has no overhead.
 //!
-//! You can create a new scope either with a [`scoped`](Bump::scoped) closure or with a [`scope_guard_mut`](Bump::scope_guard_mut):
+//! You can create a new scope either with a [`scoped_mut`](Bump::scoped_mut) closure or with a [`scope_guard_mut`](Bump::scope_guard_mut):
 //! ```
 //! use bump_scope::Bump;
 //!
 //! let mut bump: Bump = Bump::new();
 //!
 //! // you can use a closure
-//! bump.scoped(|mut bump| {
+//! bump.scoped_mut(|mut bump| {
 //!     let hello = bump.alloc_str("hello");
 //!     assert_eq!(bump.stats().allocated(), 5);
 //!
-//!     bump.scoped(|bump| {
+//!     bump.scoped_mut(|bump| {
 //!         let world = bump.alloc_str("world");
 //!
 //!         println!("{hello} and {world} are both live");
@@ -315,7 +315,7 @@
 //!
 //! The exception is the [`unallocated`] constructor which creates a `Bump` without allocating any
 //! chunks. Such a `Bump` will have the `GUARANTEED_ALLOCATED` generic parameter of `false`
-//! which will make the [`scoped`], [`scoped_aligned`], [`aligned`] and [`scope_guard_mut`] methods unavailable.
+//! which will make the [`scoped_mut`], [`scoped_aligned`], [`aligned`] and [`scope_guard_mut`] methods unavailable.
 //!
 //! You can turn any non-`GUARANTEED_ALLOCATED` bump allocator into a guaranteed allocated one using
 //! [`as_guaranteed_allocated`], [`as_mut_guaranteed_allocated`] or [`into_guaranteed_allocated`].
@@ -328,7 +328,7 @@
 //! [`with_size`]: Bump::with_size
 //! [`with_capacity`]: Bump::with_capacity
 //! [`unallocated`]: Bump::unallocated
-//! [`scoped`]: Bump::scoped
+//! [`scoped_mut`]: Bump::scoped_mut
 //! [`scoped_aligned`]: Bump::scoped_aligned
 //! [`aligned`]: Bump::aligned
 //! [`scope_guard_mut`]: Bump::scope_guard_mut

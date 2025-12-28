@@ -190,7 +190,7 @@ pub trait BumpScopeExt<'a>: bump_scope_ext::Sealed {
     /// use bump_scope::{Bump, zerocopy_08::BumpScopeExt};
     /// let mut bump: Bump = Bump::new();
     ///
-    /// bump.scoped(|bump| {
+    /// bump.scoped_mut(|bump| {
     ///     let zero = bump.alloc_zeroed::<i32>();
     ///     assert_eq!(*zero, 0);
     /// });
@@ -210,7 +210,7 @@ pub trait BumpScopeExt<'a>: bump_scope_ext::Sealed {
     /// use bump_scope::{Bump, alloc::AllocError, zerocopy_08::BumpScopeExt};
     /// let mut bump: Bump = Bump::try_new()?;
     ///
-    /// bump.scoped(|bump| -> Result<(), AllocError> {
+    /// bump.scoped_mut(|bump| -> Result<(), AllocError> {
     ///     let zero = bump.try_alloc_zeroed::<i32>()?;
     ///     assert_eq!(*zero, 0);
     ///     Ok(())
@@ -231,7 +231,7 @@ pub trait BumpScopeExt<'a>: bump_scope_ext::Sealed {
     /// use bump_scope::{Bump, zerocopy_08::BumpScopeExt};
     /// let mut bump: Bump = Bump::new();
     ///
-    /// bump.scoped(|bump| {
+    /// bump.scoped_mut(|bump| {
     ///     let zeroes = bump.alloc_zeroed_slice::<i32>(3);
     ///     assert_eq!(*zeroes, [0; 3]);
     /// });
@@ -251,7 +251,7 @@ pub trait BumpScopeExt<'a>: bump_scope_ext::Sealed {
     /// use bump_scope::{Bump, alloc::AllocError, zerocopy_08::BumpScopeExt};
     /// let mut bump: Bump = Bump::try_new()?;
     ///
-    /// bump.scoped(|bump| -> Result<(), AllocError>  {
+    /// bump.scoped_mut(|bump| -> Result<(), AllocError>  {
     ///     let zeroes = bump.try_alloc_zeroed_slice::<i32>(3)?;
     ///     assert_eq!(*zeroes, [0; 3]);
     ///     Ok(())

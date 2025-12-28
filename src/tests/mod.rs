@@ -420,7 +420,7 @@ fn force_alloc_new_chunk<const UP: bool>(bump: &MutBumpScope<Global, 1, UP>) {
 fn reset_first_chunk<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::with_size(64);
 
-    bump.scoped(|scope| {
+    bump.scoped_mut(|scope| {
         force_alloc_new_chunk(&scope);
         force_alloc_new_chunk(&scope);
     });
@@ -434,7 +434,7 @@ fn reset_middle_chunk<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::with_size(64);
     force_alloc_new_chunk(bump.as_scope());
 
-    bump.scoped(|scope| {
+    bump.scoped_mut(|scope| {
         force_alloc_new_chunk(&scope);
     });
 
@@ -496,11 +496,11 @@ fn scope_by_guards<const UP: bool>() {
 fn scope_by_closures<const UP: bool>() {
     let mut bump = Bump::<Global, 1, UP>::new();
 
-    bump.scoped(|mut child| {
+    bump.scoped_mut(|mut child| {
         let child_0 = child.alloc_str("child_0");
         let child_1 = child.alloc_str("child_1");
 
-        child.scoped(|grand_child| {
+        child.scoped_mut(|grand_child| {
             let grand_child_0 = grand_child.alloc_str("grand_child_0");
             let grand_child_1 = grand_child.alloc_str("grand_child_1");
 
@@ -532,7 +532,7 @@ fn reserve<const UP: bool>() {
 fn aligned<const UP: bool>() {
     let mut bump: Bump<Global, 8> = Bump::new();
 
-    bump.scoped(|mut bump| {
+    bump.scoped_mut(|mut bump| {
         bump.alloc(0xDEAD_BEEF_u64);
         assert_eq!(bump.stats().allocated(), 8);
         bump.aligned::<1, ()>(|bump| {

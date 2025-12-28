@@ -69,7 +69,7 @@ macro_rules! make_type {
         /// - via clone *(nightly only)*: [`alloc_clone`]
         ///
         /// #### Free memory using ...
-        /// - scopes: [`scoped`], [`scoped_aligned`], [`scope_guard_mut`]
+        /// - scopes: [`scoped_mut`], [`scoped_aligned`], [`scope_guard_mut`]
         /// - checkpoints: [`checkpoint`], [`reset_to`]
         /// - reset: [`reset`]
         /// - dealloc: [`dealloc`]
@@ -163,7 +163,7 @@ macro_rules! make_type {
         ///
         /// [`alloc_clone`]: Self::alloc_clone
         ///
-        /// [`scoped`]: Self::scoped
+        /// [`scoped_mut`]: Self::scoped_mut
         /// [`scoped_aligned`]: Self::scoped_aligned
         /// [`scope_guard_mut`]: Self::scope_guard_mut
         ///
@@ -198,7 +198,7 @@ macro_rules! make_type {
         ///
         /// let one = bump.alloc(1);
         ///
-        /// bump.scoped(|bump| {
+        /// bump.scoped_mut(|bump| {
         ///     // whatever
         ///     # _ = bump;
         /// });
@@ -212,7 +212,7 @@ macro_rules! make_type {
         ///
         /// let one = bump.alloc(1);
         ///
-        /// bump.scoped(|bump| {
+        /// bump.scoped_mut(|bump| {
         ///     // whatever
         ///     # _ = bump;
         /// });
@@ -528,7 +528,7 @@ where
     /// # use bump_scope::Bump;
     /// let mut bump: Bump = Bump::new();
     ///
-    /// bump.scoped(|bump| {
+    /// bump.scoped_mut(|bump| {
     ///     bump.alloc_str("Hello, world!");
     ///     assert_eq!(bump.stats().allocated(), 13);
     /// });
@@ -536,7 +536,7 @@ where
     /// assert_eq!(bump.stats().allocated(), 0);
     /// ```
     #[inline(always)]
-    pub fn scoped<R>(&mut self, f: impl FnOnce(MutBumpScope<A, MIN_ALIGN, UP, true, DEALLOCATES>) -> R) -> R {
+    pub fn scoped_mut<R>(&mut self, f: impl FnOnce(MutBumpScope<A, MIN_ALIGN, UP, true, DEALLOCATES>) -> R) -> R {
         let mut guard = self.scope_guard_mut();
         f(guard.scope())
     }
@@ -1130,7 +1130,7 @@ where
     /// # use bump_scope::alloc::Global;
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
-    /// bump.scoped(|bump| {
+    /// bump.scoped_mut(|bump| {
     ///     // ...
     ///     # _ = bump;
     /// });
@@ -1143,7 +1143,7 @@ where
     /// let bump: Bump<Global, 1, true, false> = Bump::unallocated();
     /// let mut bump = bump.into_guaranteed_allocated(Bump::new);
     ///
-    /// bump.scoped(|bump| {
+    /// bump.scoped_mut(|bump| {
     ///     // ...
     ///     # _ = bump;
     /// });
@@ -1191,7 +1191,7 @@ where
     /// # use bump_scope::alloc::Global;
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
-    /// bump.scoped(|bump| {
+    /// bump.scoped_mut(|bump| {
     ///     // ...
     ///     # _ = bump;
     /// });
@@ -1204,7 +1204,7 @@ where
     /// let bump: Bump<Global, 1, true, false> = Bump::unallocated();
     /// let mut bump = bump.try_into_guaranteed_allocated(Bump::try_new)?;
     ///
-    /// bump.scoped(|bump| {
+    /// bump.scoped_mut(|bump| {
     ///     // ...
     ///     # _ = bump;
     /// });
@@ -1330,7 +1330,7 @@ where
     /// # use bump_scope::alloc::Global;
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
-    /// bump.scoped(|bump| {
+    /// bump.scoped_mut(|bump| {
     ///     // ...
     ///     # _ = bump;
     /// });
@@ -1342,7 +1342,7 @@ where
     /// # use bump_scope::alloc::Global;
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
-    /// bump.as_mut_guaranteed_allocated(Bump::new).scoped(|bump| {
+    /// bump.as_mut_guaranteed_allocated(Bump::new).scoped_mut(|bump| {
     ///     // ...
     ///     # _ = bump;
     /// });
@@ -1392,7 +1392,7 @@ where
     /// # use bump_scope::alloc::Global;
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
-    /// bump.scoped(|bump| {
+    /// bump.scoped_mut(|bump| {
     ///     // ...
     ///     # _ = bump;
     /// });
@@ -1404,7 +1404,7 @@ where
     /// # use bump_scope::alloc::Global;
     /// let mut bump: Bump<Global, 1, true, false> = Bump::unallocated();
     ///
-    /// bump.try_as_mut_guaranteed_allocated(Bump::try_new)?.scoped(|bump| {
+    /// bump.try_as_mut_guaranteed_allocated(Bump::try_new)?.scoped_mut(|bump| {
     ///     // ...
     ///     # _ = bump;
     /// });
