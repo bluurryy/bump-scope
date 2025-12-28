@@ -60,12 +60,12 @@ up_and_down! {
         bump.scoped_mut(f)
     }
 
-    pub fn Bump_aligned_inc(bump: &mut Bump, f: Box<dyn FnOnce(MutBumpScope<8>)>) {
-        bump.aligned(f)
+    pub fn Bump_aligned_mut_inc(bump: &mut Bump, f: Box<dyn FnOnce(MutBumpScope<8>)>) {
+        bump.aligned_mut(f)
     }
 
-    pub fn Bump_aligned_dec(bump: &mut Bump<8>, f: Box<dyn FnOnce(MutBumpScope)>) {
-        bump.aligned(f)
+    pub fn Bump_aligned_mut_dec(bump: &mut Bump<8>, f: Box<dyn FnOnce(MutBumpScope)>) {
+        bump.aligned_mut(f)
     }
 
     pub fn Bump_scope_guard_mut(bump: &mut Bump) -> MutBumpScopeGuardRoot {

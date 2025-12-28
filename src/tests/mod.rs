@@ -185,7 +185,7 @@ either_way! {
 
     reserve
 
-    aligned
+    aligned_mut
 
     as_aligned
 
@@ -529,13 +529,13 @@ fn reserve<const UP: bool>() {
     assert!(bump.stats().remaining() > 256);
 }
 
-fn aligned<const UP: bool>() {
+fn aligned_mut<const UP: bool>() {
     let mut bump: Bump<Global, 8> = Bump::new();
 
     bump.scoped_mut(|mut bump| {
         bump.alloc(0xDEAD_BEEF_u64);
         assert_eq!(bump.stats().allocated(), 8);
-        bump.aligned::<1, ()>(|bump| {
+        bump.aligned_mut::<1, ()>(|bump| {
             bump.alloc(1u8);
             assert_eq!(bump.stats().allocated(), 9);
             bump.alloc(2u8);
@@ -767,7 +767,7 @@ fn realign<const UP: bool>() {
         let mut bump = Bump::<Global, 1, UP>::with_size(64);
         bump.alloc(0u8);
         assert!(!bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
-        bump.aligned::<ALIGN, ()>(|bump| {
+        bump.aligned_mut::<ALIGN, ()>(|bump| {
             assert!(bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
         });
     }

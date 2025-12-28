@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rename `BumpScopeGuard(Root)` to `MutBumpScopeGuard(Root)`
 - Rename `scope_guard` to `scope_guard_mut`
 - Rename `scoped` to `scoped_mut`
+- Rename `aligned` to `aligned_mut`
 
 ### Fixed
 

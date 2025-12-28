@@ -278,7 +278,7 @@ one chunk from the base allocator.
 
 The exception is the [`unallocated`] constructor which creates a `Bump` without allocating any
 chunks. Such a `Bump` will have the `GUARANTEED_ALLOCATED` generic parameter of `false`
-which will make the [`scoped_mut`], [`scoped_aligned`], [`aligned`] and [`scope_guard_mut`] methods unavailable.
+which will make the [`scoped_mut`], [`scoped_aligned`], [`aligned_mut`] and [`scope_guard_mut`] methods unavailable.
 
 You can turn any non-`GUARANTEED_ALLOCATED` bump allocator into a guaranteed allocated one using
 [`as_guaranteed_allocated`], [`as_mut_guaranteed_allocated`] or [`into_guaranteed_allocated`].
@@ -301,7 +301,7 @@ At the same time `Bump`s that have already allocated a chunk don't suffer additi
 [`as_mut_guaranteed_allocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.as_mut_guaranteed_allocated
 [`as_guaranteed_allocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.as_guaranteed_allocated
 [`scope_guard_mut`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.scope_guard_mut
-[`aligned`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.aligned
+[`aligned_mut`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.aligned_mut
 [`scoped_aligned`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.scoped_aligned
 [`scoped_mut`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.scoped_mut
 [`unallocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.unallocated

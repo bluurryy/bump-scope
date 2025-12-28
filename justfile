@@ -106,7 +106,7 @@ doc *args:
   @ just doc-rustdoc {{args}}
 
 doc-rustdoc *args:
-  cargo +nightly rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition
+  cargo +nightly rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition -Dwarnings
 
 doc-rustdoc-priv *args:
   cargo +nightly rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition --document-private-items -definition

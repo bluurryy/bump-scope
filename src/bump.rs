@@ -78,7 +78,7 @@ macro_rules! make_type {
         /// - guaranteed allocated:
         ///   <code>{[as](Self::as_guaranteed_allocated), [as_mut](Self::as_mut_guaranteed_allocated), [into](Self::into_guaranteed_allocated)}_guaranteed_allocated</code>,
         ///   <code>{[as](Self::as_not_guaranteed_allocated), [into](Self::into_not_guaranteed_allocated)}_not_guaranteed_allocated</code>
-        /// - minimum alignment: [`aligned`], [`as_mut_aligned`], [`into_aligned`]
+        /// - minimum alignment: [`aligned_mut`], [`as_mut_aligned`], [`into_aligned`]
         /// - deallocation:
         ///   <code>{[as](Self::as_with_dealloc), [as_mut](Self::as_mut_with_dealloc), [into](Self::into_with_dealloc)}_with_dealloc</code>
         ///   <code>{[as](Self::as_without_dealloc), [as_mut](Self::as_mut_without_dealloc), [into](Self::into_without_dealloc)}_without_dealloc</code>
@@ -173,7 +173,7 @@ macro_rules! make_type {
         /// [`reset`]: Self::reset
         /// [`dealloc`]: Self::dealloc
         ///
-        /// [`aligned`]: Self::aligned
+        /// [`aligned_mut`]: Self::aligned_mut
         /// [`as_mut_aligned`]: Self::as_mut_aligned
         /// [`into_aligned`]: Self::into_aligned
         ///
@@ -609,7 +609,7 @@ where
     /// let foo = bump.alloc_str("foo");
     /// assert_eq!(bump.stats().allocated(), 3);
     ///
-    /// let bar = bump.aligned::<8, _>(|bump| {
+    /// let bar = bump.aligned_mut::<8, _>(|bump| {
     ///     // in here the bump position has been aligned to `8`
     ///     assert_eq!(bump.stats().allocated(), 8);
     ///     assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
@@ -645,7 +645,7 @@ where
     /// // make some allocations that benefit from the `MIN_ALIGN` of `8`
     /// let foo = bump.alloc(0u64);
     ///
-    /// let bar = bump.aligned::<1, _>(|bump| {
+    /// let bar = bump.aligned_mut::<1, _>(|bump| {
     ///     // make some allocations that benefit from the lower `MIN_ALIGN` of `1`
     ///     let bar = bump.alloc(0u8);
     ///
@@ -655,7 +655,7 @@ where
     ///     bar
     /// });
     ///
-    /// // after `aligned()`, the bump position will be aligned to `8` again
+    /// // after `aligned_mut()`, the bump position will be aligned to `8` again
     /// // to satisfy our `MIN_ALIGN`
     /// assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
     /// assert_eq!(bump.stats().allocated(), 16);
@@ -666,14 +666,14 @@ where
     /// dbg!(foo, bar, baz);
     /// ```
     #[inline(always)]
-    pub fn aligned<'a, const NEW_MIN_ALIGN: usize, R>(
+    pub fn aligned_mut<'a, const NEW_MIN_ALIGN: usize, R>(
         &'a mut self,
         f: impl FnOnce(MutBumpScope<'a, A, NEW_MIN_ALIGN, UP, true, DEALLOCATES>) -> R,
     ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        self.as_mut_scope().aligned(f)
+        self.as_mut_scope().aligned_mut(f)
     }
 
     /// Creates a new [`MutBumpScopeGuardRoot`].
@@ -1076,7 +1076,7 @@ where
     /// Mutably borrows `Bump` with a new minimum alignment.
     ///
     /// **This cannot decrease the alignment.** Trying to decrease alignment will result in a compile error.
-    /// You can use [`aligned`](Self::aligned) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment.
+    /// You can use [`aligned_mut`](Self::aligned_mut) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment.
     ///
     /// When decreasing the alignment we need to make sure that the bump position is realigned to the original alignment.
     /// That can only be ensured by having a function that takes a closure, like the methods mentioned above do.

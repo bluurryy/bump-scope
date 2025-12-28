@@ -21,7 +21,7 @@ fn test_aligned_alloc<const UP: bool>() {
     let _three = bump.alloc([0u8; 3]);
     let five = bump.alloc([0u8; 5]);
 
-    bump.aligned::<8, ()>(|bump| {
+    bump.aligned_mut::<8, ()>(|bump| {
         bump.dealloc(five);
         // deallocation succeeds and the bump pointer is unaligned
         bump.alloc(0u64);
@@ -35,7 +35,7 @@ fn test_aligned_allocate<const UP: bool>() {
     let _three = bump.allocate(Layout::new::<[u8; 3]>()).unwrap();
     let five = bump.allocate(Layout::new::<[u8; 5]>()).unwrap();
 
-    bump.aligned::<8, ()>(|bump| {
+    bump.aligned_mut::<8, ()>(|bump| {
         unsafe { bump.deallocate(five.cast(), Layout::new::<[u8; 5]>()) };
         bump.alloc(0u64);
     });

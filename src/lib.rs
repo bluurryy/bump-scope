@@ -315,7 +315,7 @@
 //!
 //! The exception is the [`unallocated`] constructor which creates a `Bump` without allocating any
 //! chunks. Such a `Bump` will have the `GUARANTEED_ALLOCATED` generic parameter of `false`
-//! which will make the [`scoped_mut`], [`scoped_aligned`], [`aligned`] and [`scope_guard_mut`] methods unavailable.
+//! which will make the [`scoped_mut`], [`scoped_aligned`], [`aligned_mut`] and [`scope_guard_mut`] methods unavailable.
 //!
 //! You can turn any non-`GUARANTEED_ALLOCATED` bump allocator into a guaranteed allocated one using
 //! [`as_guaranteed_allocated`], [`as_mut_guaranteed_allocated`] or [`into_guaranteed_allocated`].
@@ -330,7 +330,7 @@
 //! [`unallocated`]: Bump::unallocated
 //! [`scoped_mut`]: Bump::scoped_mut
 //! [`scoped_aligned`]: Bump::scoped_aligned
-//! [`aligned`]: Bump::aligned
+//! [`aligned_mut`]: Bump::aligned_mut
 //! [`scope_guard_mut`]: Bump::scope_guard_mut
 //! [`as_guaranteed_allocated`]: Bump::as_guaranteed_allocated
 //! [`as_mut_guaranteed_allocated`]: Bump::as_mut_guaranteed_allocated
