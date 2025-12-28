@@ -49,9 +49,9 @@ use crate::panic_on_error;
 /// Growing it via `BumpString`:
 ///
 /// ```
-/// # use bump_scope::{Bump, BumpScope, BumpString, FixedBumpString};
+/// # use bump_scope::{Bump, MutBumpScope, BumpString, FixedBumpString};
 /// struct MyBuilder<'a, 'b> {
-///     bump: &'b mut BumpScope<'a>,
+///     bump: &'b mut MutBumpScope<'a>,
 ///     string: FixedBumpString<'a>,
 /// }
 ///

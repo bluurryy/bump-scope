@@ -400,7 +400,7 @@ impl fmt::Debug for AnyChunkNextIter<'_> {
 fn check_from_impls() {
     #![expect(dead_code, clippy::elidable_lifetime_names)]
 
-    use crate::{BaseAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
+    use crate::{BaseAllocator, MinimumAlignment, MutBumpScope, SupportedMinimumAlignment};
 
     fn accepting_any_stats(_: AnyStats) {}
     fn accepting_any_chunk(_: AnyChunk) {}
@@ -415,7 +415,7 @@ fn check_from_impls() {
         const GUARANTEED_ALLOCATED: bool,
         const DEALLOCATES: bool,
     >(
-        bump: &BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
+        bump: &MutBumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
     ) where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
         A: BaseAllocator<GUARANTEED_ALLOCATED>,

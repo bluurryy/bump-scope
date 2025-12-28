@@ -6,7 +6,7 @@ use core::alloc::{AllocError, Allocator};
 use alloc_crate::{alloc::Global, boxed::Box};
 
 use crate::{
-    BaseAllocator, Bump, BumpAllocatorExt, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc,
+    BaseAllocator, Bump, BumpAllocatorExt, MinimumAlignment, MutBumpScope, SupportedMinimumAlignment, WithoutDealloc,
     WithoutShrink,
     alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator, BoxLike, box_like},
 };
@@ -232,7 +232,7 @@ impl From<CrateAllocError> for AllocError {
 }
 
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Allocator
-    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    for MutBumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,

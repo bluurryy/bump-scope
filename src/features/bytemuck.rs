@@ -3,7 +3,8 @@ use core::mem::MaybeUninit;
 use ::bytemuck::Zeroable;
 
 use crate::{
-    BaseAllocator, Bump, BumpBox, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment, alloc::AllocError,
+    BaseAllocator, Bump, BumpBox, ErrorBehavior, MinimumAlignment, MutBumpScope, SupportedMinimumAlignment,
+    alloc::AllocError,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -94,7 +95,7 @@ mod bump_scope_ext {
     pub trait Sealed {}
 
     impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Sealed
-        for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+        for MutBumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
         A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -177,7 +178,7 @@ pub trait BumpExt: bump_ext::Sealed {
         T: Zeroable;
 }
 
-/// Extension trait for [`BumpScope`] that adds the `(try_)alloc_zeroed(_slice)` methods.
+/// Extension trait for [`MutBumpScope`] that adds the `(try_)alloc_zeroed(_slice)` methods.
 pub trait BumpScopeExt<'a>: bump_scope_ext::Sealed {
     /// Allocate a zeroed object.
     ///
@@ -304,7 +305,7 @@ where
 }
 
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpScopeExt<'a> for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    BumpScopeExt<'a> for MutBumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -355,7 +356,7 @@ trait PrivateBumpScopeExt<'a> {
 }
 
 impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    PrivateBumpScopeExt<'a> for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    PrivateBumpScopeExt<'a> for MutBumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,

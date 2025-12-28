@@ -13,7 +13,7 @@ use crate::{
     WithoutShrink,
     alloc::Global,
     bump_vec,
-    tests::{Bump, BumpScope, expect_no_panic},
+    tests::{Bump, MutBumpScope, expect_no_panic},
 };
 
 use super::either_way;
@@ -570,9 +570,9 @@ fn test_dyn_allocator<const UP: bool>() {
     test::<&Bump>(&Bump::new());
     test::<&mut Bump>(&mut Bump::new());
 
-    Bump::new().scoped(|bump| test::<BumpScope>(bump));
-    Bump::new().scoped(|bump| test::<&BumpScope>(&bump));
-    Bump::new().scoped(|mut bump| test::<&mut BumpScope>(&mut bump));
+    Bump::new().scoped(|bump| test::<MutBumpScope>(bump));
+    Bump::new().scoped(|bump| test::<&MutBumpScope>(&bump));
+    Bump::new().scoped(|mut bump| test::<&mut MutBumpScope>(&mut bump));
 
     test::<&dyn BumpAllocator>(&<Bump>::new());
     test::<&mut dyn BumpAllocator>(&mut <Bump>::new());

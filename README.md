@@ -162,7 +162,7 @@ The collections are designed to have the same api as their std counterparts with
 To bump allocate in parallel you can use a [`BumpPool`].
 
 ## Allocator API
-`Bump` and `BumpScope` implement `bump-scope`'s own [`Allocator`] trait and with the
+`Bump` and `MutBumpScope` implement `bump-scope`'s own [`Allocator`] trait and with the
 respective [feature flags](#feature-flags) also implement `allocator_api2@0.2`,
 `allocator_api2@0.3`, `allocator_api2@0.4` and nightly's `Allocator` trait.
 

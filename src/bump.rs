@@ -12,7 +12,7 @@ use core::{
 use core::clone::CloneToUninit;
 
 use crate::{
-    BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment, RawChunk,
+    BaseAllocator, BumpBox, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment, MutBumpScope, RawChunk,
     SupportedMinimumAlignment,
     alloc::{AllocError, Allocator},
     chunk_size::ChunkSize,
@@ -84,7 +84,7 @@ macro_rules! make_type {
         ///   <code>{[as](Self::as_without_dealloc), [as_mut](Self::as_mut_without_dealloc), [into](Self::into_without_dealloc)}_without_dealloc</code>
         ///
         /// ## Collections
-        /// A `Bump` (and [`BumpScope`]) can be used to allocate collections of this crate...
+        /// A `Bump` (and [`MutBumpScope`]) can be used to allocate collections of this crate...
         /// ```
         /// use bump_scope::{Bump, BumpString};
         /// let bump: Bump = Bump::new();
@@ -187,9 +187,9 @@ macro_rules! make_type {
         ///
         /// # Gotcha
         ///
-        /// Having live allocations and entering bump scopes at the same time requires a `BumpScope`.
+        /// Having live allocations and entering bump scopes at the same time requires a `MutBumpScope`.
         /// This is due to the way lifetimes work, since `Bump` returns allocations with the lifetime
-        /// of its own borrow instead of a separate lifetime like `BumpScope` does.
+        /// of its own borrow instead of a separate lifetime like `MutBumpScope` does.
         ///
         /// So you can't do this:
         /// ```compile_fail,E0502
@@ -204,7 +204,7 @@ macro_rules! make_type {
         /// });
         /// # _ = one;
         /// ```
-        /// But you can make the code work by converting the `Bump` it to a [`BumpScope`] first using [`as_mut_scope`]:
+        /// But you can make the code work by converting the `Bump` it to a [`MutBumpScope`] first using [`as_mut_scope`]:
         /// ```
         /// # use bump_scope::Bump;
         /// let mut bump: Bump = Bump::new();
@@ -536,7 +536,7 @@ where
     /// assert_eq!(bump.stats().allocated(), 0);
     /// ```
     #[inline(always)]
-    pub fn scoped<R>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, true, DEALLOCATES>) -> R) -> R {
+    pub fn scoped<R>(&mut self, f: impl FnOnce(MutBumpScope<A, MIN_ALIGN, UP, true, DEALLOCATES>) -> R) -> R {
         let mut guard = self.scope_guard();
         f(guard.scope())
     }
@@ -585,7 +585,7 @@ where
     #[inline(always)]
     pub fn scoped_aligned<const NEW_MIN_ALIGN: usize, R>(
         &mut self,
-        f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP, true, DEALLOCATES>) -> R,
+        f: impl FnOnce(MutBumpScope<A, NEW_MIN_ALIGN, UP, true, DEALLOCATES>) -> R,
     ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
@@ -668,7 +668,7 @@ where
     #[inline(always)]
     pub fn aligned<'a, const NEW_MIN_ALIGN: usize, R>(
         &'a mut self,
-        f: impl FnOnce(BumpScope<'a, A, NEW_MIN_ALIGN, UP, true, DEALLOCATES>) -> R,
+        f: impl FnOnce(MutBumpScope<'a, A, NEW_MIN_ALIGN, UP, true, DEALLOCATES>) -> R,
     ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
@@ -1047,19 +1047,19 @@ where
         self.as_scope().stats()
     }
 
-    /// Returns this `&Bump` as a `&BumpScope`.
+    /// Returns this `&Bump` as a `&MutBumpScope`.
     #[inline(always)]
-    pub fn as_scope(&self) -> &BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES> {
-        // SAFETY: `Bump` and `BumpScope` both have the layout of `Cell<RawChunk>`
-        //         `BumpScope`'s api is a subset of `Bump`'s
+    pub fn as_scope(&self) -> &MutBumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES> {
+        // SAFETY: `Bump` and `MutBumpScope` both have the layout of `Cell<RawChunk>`
+        //         `MutBumpScope`'s api is a subset of `Bump`'s
         unsafe { &*ptr::from_ref(self).cast() }
     }
 
-    /// Returns this `&mut Bump` as a `&mut BumpScope`.
+    /// Returns this `&mut Bump` as a `&mut MutBumpScope`.
     #[inline(always)]
-    pub fn as_mut_scope(&mut self) -> &mut BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES> {
-        // SAFETY: `Bump` and `BumpScope` both have the layout of `Cell<RawChunk>`
-        //         `BumpScope`'s api is a subset of `Bump`'s
+    pub fn as_mut_scope(&mut self) -> &mut MutBumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES> {
+        // SAFETY: `Bump` and `MutBumpScope` both have the layout of `Cell<RawChunk>`
+        //         `MutBumpScope`'s api is a subset of `Bump`'s
         unsafe { &mut *ptr::from_mut(self).cast() }
     }
 
@@ -1439,7 +1439,7 @@ where
         Ok(unsafe { transmute_mut(self) })
     }
 
-    /// Converts this `BumpScope` into a ***not*** [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `Bump`.
+    /// Converts this `MutBumpScope` into a ***not*** [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `Bump`.
     #[inline(always)]
     pub fn into_not_guaranteed_allocated(self) -> Bump<A, MIN_ALIGN, UP, false, DEALLOCATES>
     where
@@ -1527,7 +1527,7 @@ where
 
 impl<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
     From<&'b Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>>
-    for &'b BumpScope<'b, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    for &'b MutBumpScope<'b, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
@@ -1540,7 +1540,7 @@ where
 
 impl<'b, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
     From<&'b mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>>
-    for &'b mut BumpScope<'b, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    for &'b mut MutBumpScope<'b, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,

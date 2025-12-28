@@ -1,7 +1,8 @@
 use core::{alloc::Layout, ops::Range, ptr::NonNull};
 
 use crate::{
-    BaseAllocator, Bump, BumpScope, Checkpoint, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    BaseAllocator, Bump, Checkpoint, MinimumAlignment, MutBumpScope, SupportedMinimumAlignment, WithoutDealloc,
+    WithoutShrink,
     alloc::{AllocError, Allocator},
     layout::CustomLayout,
     stats::AnyStats,
@@ -24,7 +25,7 @@ where
 }
 
 impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Sealed
-    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    for MutBumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -152,9 +153,9 @@ assert_implements! {
     &Bump
     &mut Bump
 
-    BumpScope
-    &BumpScope
-    &mut BumpScope
+    MutBumpScope
+    &MutBumpScope
+    &mut MutBumpScope
 
     dyn BumpAllocator
     &dyn BumpAllocator
@@ -339,7 +340,7 @@ where
 }
 
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpAllocator for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    BumpAllocator for MutBumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -370,7 +371,7 @@ where
             const GUARANTEED_ALLOCATED: bool,
             const DEALLOCATES: bool,
         >(
-            this: &BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
+            this: &MutBumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
             layout: Layout,
         ) -> Result<Range<NonNull<u8>>, AllocError>
         where

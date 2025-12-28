@@ -12,7 +12,7 @@ use allocator_api2_02::{alloc::Global, boxed::Box};
 use crate::alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator};
 
 #[cfg(not(feature = "nightly-allocator-api"))]
-use crate::{Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink};
+use crate::{Bump, BumpAllocator, MinimumAlignment, MutBumpScope, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink};
 
 #[cfg(feature = "alloc")]
 #[cfg(not(feature = "nightly-allocator-api"))]
@@ -246,7 +246,7 @@ impl From<CrateAllocError> for AllocError {
 
 #[cfg(not(feature = "nightly-allocator-api"))]
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Allocator
-    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    for MutBumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -284,7 +284,7 @@ where
 
 #[cfg(not(feature = "nightly-allocator-api"))]
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Allocator
-    for &mut BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    for &mut MutBumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,

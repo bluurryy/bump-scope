@@ -9,10 +9,10 @@ assert_implements! {
     [BumpAllocatorScopeExt<'a> + ?Sized]
 
     &Bump
-    &BumpScope
+    &MutBumpScope
 
     &mut Bump
-    &mut BumpScope
+    &mut MutBumpScope
 
     dyn BumpAllocatorScope
     &dyn BumpAllocatorScope

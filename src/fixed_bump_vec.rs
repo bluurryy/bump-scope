@@ -50,10 +50,10 @@ use crate::panic_on_error;
 /// Growing it via `BumpVec`:
 ///
 /// ```
-/// # use bump_scope::{Bump, BumpScope, BumpVec, FixedBumpVec};
+/// # use bump_scope::{Bump, MutBumpScope, BumpVec, FixedBumpVec};
 /// # type T = i32;
 /// struct MyBuilder<'a, 'b> {
-///     bump: &'b mut BumpScope<'a>,
+///     bump: &'b mut MutBumpScope<'a>,
 ///     vec: FixedBumpVec<'a, T>,
 /// }
 ///

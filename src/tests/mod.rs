@@ -70,14 +70,14 @@ pub(crate) type Bump<
     const DEALLOCATES: bool = true,
 > = crate::Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>;
 
-pub(crate) type BumpScope<
+pub(crate) type MutBumpScope<
     'a,
     A = Global,
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
     const GUARANTEED_ALLOCATED: bool = true,
     const DEALLOCATES: bool = true,
-> = crate::BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>;
+> = crate::MutBumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>;
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 
@@ -411,7 +411,7 @@ fn debug_sizes<const UP: bool>(bump: &Bump<Global, 1, UP>) {
     eprintln!("sizes: {vec:?}");
 }
 
-fn force_alloc_new_chunk<const UP: bool>(bump: &BumpScope<Global, 1, UP>) {
+fn force_alloc_new_chunk<const UP: bool>(bump: &MutBumpScope<Global, 1, UP>) {
     let size = bump.stats().current_chunk().remaining() + 1;
     let layout = Layout::from_size_align(size, 1).unwrap();
     bump.alloc_layout(layout);
@@ -574,7 +574,7 @@ fn api_that_accepts_bump_or_bump_scope() {
         MutBumpVec::new_in(bump)
     }
 
-    fn vec_from_mut_bump_scope<'b, 'a>(bump: &'b mut BumpScope<'a>) -> MutBumpVec<i32, &'b mut BumpScope<'a>> {
+    fn vec_from_mut_bump_scope<'b, 'a>(bump: &'b mut MutBumpScope<'a>) -> MutBumpVec<i32, &'b mut MutBumpScope<'a>> {
         MutBumpVec::new_in(bump)
     }
 
@@ -582,7 +582,7 @@ fn api_that_accepts_bump_or_bump_scope() {
         MutBumpString::new_in(bump)
     }
 
-    fn string_from_mut_bump_scope<'b, 'a>(bump: &'b mut BumpScope<'a>) -> MutBumpString<&'b mut BumpScope<'a>> {
+    fn string_from_mut_bump_scope<'b, 'a>(bump: &'b mut MutBumpScope<'a>) -> MutBumpString<&'b mut MutBumpScope<'a>> {
         MutBumpString::new_in(bump)
     }
 }
@@ -1094,14 +1094,15 @@ mod doc_layout_claim {
     use crate::{SizedTypeProperties, alloc::Global};
     use core::{cell::Cell, ptr::NonNull};
     type Bump = crate::Bump<Global, 1, true, true, true>;
-    type BumpScope = crate::BumpScope<'static, Global, 1, true, true, true>;
+    type MutBumpScope = crate::MutBumpScope<'static, Global, 1, true, true, true>;
     type Comparand = Cell<NonNull<()>>;
     const _: () = assert!(Bump::SIZE == Comparand::SIZE && Bump::ALIGN == Comparand::ALIGN);
-    const _: () = assert!(BumpScope::SIZE == Comparand::SIZE && BumpScope::ALIGN == Comparand::ALIGN);
+    const _: () = assert!(MutBumpScope::SIZE == Comparand::SIZE && MutBumpScope::ALIGN == Comparand::ALIGN);
     const _: () =
         assert!(Option::<Bump>::SIZE == Option::<Comparand>::SIZE && Option::<Bump>::ALIGN == Option::<Comparand>::ALIGN);
     const _: () = assert!(
-        Option::<BumpScope>::SIZE == Option::<Comparand>::SIZE && Option::<BumpScope>::ALIGN == Option::<Comparand>::ALIGN
+        Option::<MutBumpScope>::SIZE == Option::<Comparand>::SIZE
+            && Option::<MutBumpScope>::ALIGN == Option::<Comparand>::ALIGN
     );
 }
 

@@ -46,7 +46,7 @@ macro_rules! assert_implements {
             #[allow(dead_code)]
             type Bump = crate::Bump<A, 1, true, true, true>;
             #[allow(dead_code)]
-            type BumpScope<'a> = crate::BumpScope<'a, A, 1, true, true, true>;
+            type MutBumpScope<'a> = crate::MutBumpScope<'a, A, 1, true, true, true>;
             #[allow(clippy::extra_unused_lifetimes)]
             const fn implements<'a, What: $($what)*>() {}
             $(
@@ -68,9 +68,9 @@ assert_implements! {
     &mut Bump
     &mut &mut Bump
 
-    BumpScope
-    &BumpScope
-    &&BumpScope
-    &mut BumpScope
-    &mut &mut BumpScope
+    MutBumpScope
+    &MutBumpScope
+    &&MutBumpScope
+    &mut MutBumpScope
+    &mut &mut MutBumpScope
 }

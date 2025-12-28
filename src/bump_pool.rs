@@ -7,7 +7,7 @@ use std::{
 };
 
 use crate::{
-    Bump, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment,
+    Bump, ErrorBehavior, MinimumAlignment, MutBumpScope, SupportedMinimumAlignment,
     alloc::{AllocError, Allocator},
     maybe_default_allocator,
 };
@@ -286,7 +286,7 @@ where
 macro_rules! make_pool_guard {
     ($($allocator_parameter:tt)*) => {
 
-        /// This is a wrapper around [`Bump`] that mutably derefs to a [`BumpScope`] and returns its [`Bump`] back to the [`BumpPool`] on drop.
+        /// This is a wrapper around [`Bump`] that mutably derefs to a [`MutBumpScope`] and returns its [`Bump`] back to the [`BumpPool`] on drop.
         #[derive(Debug)]
         pub struct BumpPoolGuard<
             'a,
@@ -321,7 +321,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
 {
-    type Target = BumpScope<'a, A, MIN_ALIGN, UP, true, true>;
+    type Target = MutBumpScope<'a, A, MIN_ALIGN, UP, true, true>;
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
@@ -354,15 +354,15 @@ where
 // This exists as a "safer" transmute that only transmutes the `'a` lifetime parameter.
 #[expect(clippy::elidable_lifetime_names)]
 unsafe fn transmute_lifetime<'from, 'to, 'b, A, const MIN_ALIGN: usize, const UP: bool>(
-    scope: &'b BumpScope<'from, A, MIN_ALIGN, UP, true, true>,
-) -> &'b BumpScope<'to, A, MIN_ALIGN, UP, true, true> {
+    scope: &'b MutBumpScope<'from, A, MIN_ALIGN, UP, true, true>,
+) -> &'b MutBumpScope<'to, A, MIN_ALIGN, UP, true, true> {
     unsafe { mem::transmute(scope) }
 }
 
 // This exists as a "safer" transmute that only transmutes the `'a` lifetime parameter.
 #[expect(clippy::elidable_lifetime_names)]
 unsafe fn transmute_lifetime_mut<'from, 'to, 'b, A, const MIN_ALIGN: usize, const UP: bool>(
-    scope: &'b mut BumpScope<'from, A, MIN_ALIGN, UP, true, true>,
-) -> &'b mut BumpScope<'to, A, MIN_ALIGN, UP, true, true> {
+    scope: &'b mut MutBumpScope<'from, A, MIN_ALIGN, UP, true, true>,
+) -> &'b mut MutBumpScope<'to, A, MIN_ALIGN, UP, true, true> {
     unsafe { mem::transmute(scope) }
 }

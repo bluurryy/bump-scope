@@ -196,7 +196,7 @@
 //! To bump allocate in parallel you can use a [`BumpPool`].
 //!
 //! # Allocator API
-//! `Bump` and `BumpScope` implement `bump-scope`'s own [`Allocator`] trait and with the
+//! `Bump` and `MutBumpScope` implement `bump-scope`'s own [`Allocator`] trait and with the
 //! respective [feature flags](#feature-flags) also implement `allocator_api2@0.2`,
 //! `allocator_api2@0.3`, `allocator_api2@0.4` and nightly's `Allocator` trait.
 //!
@@ -394,7 +394,7 @@ pub use bump::Bump;
 pub use bump_box::BumpBox;
 #[cfg(feature = "std")]
 pub use bump_pool::{BumpPool, BumpPoolGuard};
-pub use bump_scope::BumpScope;
+pub use bump_scope::MutBumpScope;
 pub use bump_scope_guard::{BumpScopeGuard, BumpScopeGuardRoot, Checkpoint};
 pub use bump_string::BumpString;
 #[doc(inline)]

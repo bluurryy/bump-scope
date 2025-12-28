@@ -3,8 +3,8 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    BaseAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, alloc::AllocError, bump_down, polyfill::non_null,
-    up_align_usize_unchecked,
+    BaseAllocator, MinimumAlignment, MutBumpScope, SupportedMinimumAlignment, alloc::AllocError, bump_down,
+    polyfill::non_null, up_align_usize_unchecked,
 };
 
 #[inline(always)]
@@ -15,7 +15,7 @@ pub(crate) fn allocate<
     const GUARANTEED_ALLOCATED: bool,
     const DEALLOCATES: bool,
 >(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
+    bump: &MutBumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
     layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
@@ -33,7 +33,7 @@ pub(crate) unsafe fn deallocate<
     const GUARANTEED_ALLOCATED: bool,
     const DEALLOCATES: bool,
 >(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
+    bump: &MutBumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
     ptr: NonNull<u8>,
     layout: Layout,
 ) where
@@ -60,7 +60,7 @@ unsafe fn deallocate_assume_last<
     const GUARANTEED_ALLOCATED: bool,
     const DEALLOCATES: bool,
 >(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
+    bump: &MutBumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
     ptr: NonNull<u8>,
     layout: Layout,
 ) where
@@ -92,7 +92,7 @@ unsafe fn is_last_and_allocated<
     const GUARANTEED_ALLOCATED: bool,
     const DEALLOCATES: bool,
 >(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
+    bump: &MutBumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
     ptr: NonNull<u8>,
     layout: Layout,
 ) -> bool
@@ -120,7 +120,7 @@ pub(crate) unsafe fn grow<
     const GUARANTEED_ALLOCATED: bool,
     const DEALLOCATES: bool,
 >(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
+    bump: &MutBumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -221,7 +221,7 @@ pub(crate) unsafe fn grow_zeroed<
     const GUARANTEED_ALLOCATED: bool,
     const DEALLOCATES: bool,
 >(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
+    bump: &MutBumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -252,7 +252,7 @@ pub(crate) unsafe fn shrink<
     const GUARANTEED_ALLOCATED: bool,
     const DEALLOCATES: bool,
 >(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
+    bump: &MutBumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -271,7 +271,7 @@ where
         const GUARANTEED_ALLOCATED: bool,
         const DEALLOCATES: bool,
     >(
-        bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
+        bump: &MutBumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
         old_ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,

@@ -1,7 +1,7 @@
-use bump_scope::BumpScope;
+use bump_scope::MutBumpScope;
 
 #[expect(unused_assignments)]
-fn escape_closure(mut bump: BumpScope) {
+fn escape_closure(mut bump: MutBumpScope) {
     let mut escapee = None;
 
     {

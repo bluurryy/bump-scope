@@ -3,8 +3,8 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    BaseAllocator, Bump, BumpAllocator, BumpAllocatorScope, BumpScope, MinimumAlignment, MutBumpAllocator,
-    MutBumpAllocatorScope, SizedTypeProperties, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    BaseAllocator, Bump, BumpAllocator, BumpAllocatorScope, MinimumAlignment, MutBumpAllocator, MutBumpAllocatorScope,
+    MutBumpScope, SizedTypeProperties, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
     alloc::AllocError,
     bump_down,
     polyfill::non_null,
@@ -980,7 +980,7 @@ unsafe impl<B: BumpAllocatorExt> BumpAllocatorExt for WithoutShrink<B> {
 }
 
 unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpAllocatorExt for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    BumpAllocatorExt for MutBumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
@@ -992,7 +992,7 @@ where
 
     #[inline(always)]
     fn stats(&self) -> Self::Stats<'_> {
-        BumpScope::stats(self)
+        MutBumpScope::stats(self)
     }
 
     #[inline(always)]
@@ -1086,22 +1086,22 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&self, len: usize) -> NonNull<[T]> {
-        panic_on_error(BumpScope::generic_prepare_slice_allocation::<_, T>(self, len))
+        panic_on_error(MutBumpScope::generic_prepare_slice_allocation::<_, T>(self, len))
     }
 
     #[inline(always)]
     fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<NonNull<[T]>, AllocError> {
-        BumpScope::generic_prepare_slice_allocation::<_, T>(self, len)
+        MutBumpScope::generic_prepare_slice_allocation::<_, T>(self, len)
     }
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        unsafe { BumpScope::use_prepared_slice_allocation(self, ptr, len, cap) }
+        unsafe { MutBumpScope::use_prepared_slice_allocation(self, ptr, len, cap) }
     }
 
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        unsafe { BumpScope::use_prepared_slice_allocation_rev(self, ptr, len, cap) }
+        unsafe { MutBumpScope::use_prepared_slice_allocation_rev(self, ptr, len, cap) }
     }
 }
 

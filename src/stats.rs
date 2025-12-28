@@ -5,7 +5,7 @@
 //! You can turn the generic types into their `Any*` variants using `from` and `into`.
 //!
 //! The `Any*` types are returned by the [`BumpAllocator`](crate::BumpAllocator) trait
-//! and the `allocator_stats` method of collections whereas `Stats` is returned from [`Bump`](crate::Bump) and [`BumpScope`](crate::BumpScope).
+//! and the `allocator_stats` method of collections whereas `Stats` is returned from [`Bump`](crate::Bump) and [`MutBumpScope`](crate::MutBumpScope).
 
 use core::{
     fmt::{self, Debug},
@@ -27,7 +27,7 @@ macro_rules! make_type {
     ($($allocator_parameter:tt)*) => {
         /// Provides statistics about the memory usage of the bump allocator.
         ///
-        /// This is returned from the `stats` method of [`Bump`](crate::Bump) and [`BumpScope`](crate::BumpScope).
+        /// This is returned from the `stats` method of [`Bump`](crate::Bump) and [`MutBumpScope`](crate::MutBumpScope).
         pub struct Stats<
             'a,
             $($allocator_parameter)*,

@@ -1,7 +1,7 @@
 use core::{fmt::Debug, marker::PhantomData, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    Bump, BumpScope, MinimumAlignment, RawChunk, SupportedMinimumAlignment,
+    Bump, MinimumAlignment, MutBumpScope, RawChunk, SupportedMinimumAlignment,
     alloc::Allocator,
     chunk_header::ChunkHeader,
     stats::{AnyStats, Stats},
@@ -31,7 +31,7 @@ impl Checkpoint {
     }
 }
 
-/// Returned from [`BumpScope::scope_guard`].
+/// Returned from [`MutBumpScope::scope_guard`].
 pub struct BumpScopeGuard<'a, A, const MIN_ALIGN: usize = 1, const UP: bool = true, const DEALLOCATES: bool = true>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
@@ -68,7 +68,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     #[inline(always)]
-    pub(crate) fn new(bump: &'a mut BumpScope<'_, A, MIN_ALIGN, UP, true, DEALLOCATES>) -> Self {
+    pub(crate) fn new(bump: &'a mut MutBumpScope<'_, A, MIN_ALIGN, UP, true, DEALLOCATES>) -> Self {
         unsafe { Self::new_unchecked(bump.chunk.get()) }
     }
 
@@ -81,10 +81,10 @@ where
         }
     }
 
-    /// Returns a new `BumpScope`.
+    /// Returns a new `MutBumpScope`.
     #[inline(always)]
-    pub fn scope(&mut self) -> BumpScope<'_, A, MIN_ALIGN, UP, true, DEALLOCATES> {
-        unsafe { BumpScope::new_unchecked(self.chunk) }
+    pub fn scope(&mut self) -> MutBumpScope<'_, A, MIN_ALIGN, UP, true, DEALLOCATES> {
+        unsafe { MutBumpScope::new_unchecked(self.chunk) }
     }
 
     /// Frees the memory taken up by allocations made since creation of this bump scope guard.
@@ -168,10 +168,10 @@ where
         }
     }
 
-    /// Returns a new `BumpScope`.
+    /// Returns a new `MutBumpScope`.
     #[inline(always)]
-    pub fn scope(&mut self) -> BumpScope<'_, A, MIN_ALIGN, UP, true, DEALLOCATES> {
-        unsafe { BumpScope::new_unchecked(self.chunk) }
+    pub fn scope(&mut self) -> MutBumpScope<'_, A, MIN_ALIGN, UP, true, DEALLOCATES> {
+        unsafe { MutBumpScope::new_unchecked(self.chunk) }
     }
 
     /// Frees the memory taken up by allocations made since creation of this bump scope guard.

@@ -1,8 +1,8 @@
-use bump_scope::{Bump, BumpScope};
+use bump_scope::{Bump, MutBumpScope};
 
 #[expect(unused_assignments)]
 fn multiple_scopes(bump: &mut Bump) {
-    fn use_scope(scope: BumpScope) -> &str {
+    fn use_scope(scope: MutBumpScope) -> &str {
         scope.alloc_str("foo").into_ref()
     }
 

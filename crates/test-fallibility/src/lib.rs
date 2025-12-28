@@ -17,7 +17,7 @@ type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 macro_rules! type_definitions {
     ($up:literal) => {
         type Bump<const MIN_ALIGN: usize = 1> = bump_scope::Bump<Global, MIN_ALIGN, $up, true, true>;
-        type BumpScope<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScope<'a, Global, MIN_ALIGN, $up, true, true>;
+        type MutBumpScope<'a, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpScope<'a, Global, MIN_ALIGN, $up, true, true>;
         type BumpScopeGuard<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuard<'a, Global, MIN_ALIGN, $up>;
         type BumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuardRoot<'a, Global, MIN_ALIGN, $up>;
         type BumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<T, &'a Bump>;
@@ -55,15 +55,15 @@ up_and_down! {
         bump.reset()
     }
 
-    pub fn Bump_scoped(bump: &mut Bump, f: Box<dyn FnOnce(BumpScope)>) {
+    pub fn Bump_scoped(bump: &mut Bump, f: Box<dyn FnOnce(MutBumpScope)>) {
         bump.scoped(f)
     }
 
-    pub fn Bump_aligned_inc(bump: &mut Bump, f: Box<dyn FnOnce(BumpScope<8>)>) {
+    pub fn Bump_aligned_inc(bump: &mut Bump, f: Box<dyn FnOnce(MutBumpScope<8>)>) {
         bump.aligned(f)
     }
 
-    pub fn Bump_aligned_dec(bump: &mut Bump<8>, f: Box<dyn FnOnce(BumpScope)>) {
+    pub fn Bump_aligned_dec(bump: &mut Bump<8>, f: Box<dyn FnOnce(MutBumpScope)>) {
         bump.aligned(f)
     }
 
@@ -223,7 +223,7 @@ up_and_down! {
         bump.try_reserve_bytes(additional)
     }
 
-    pub fn BumpScope__scope_guard<'b>(bump: &'b mut BumpScope) -> BumpScopeGuard<'b> {
+    pub fn BumpScope__scope_guard<'b>(bump: &'b mut MutBumpScope) -> BumpScopeGuard<'b> {
         bump.scope_guard()
     }
 

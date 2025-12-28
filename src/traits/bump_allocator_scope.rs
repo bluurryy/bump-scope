@@ -1,5 +1,5 @@
 use crate::{
-    BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc,
+    BaseAllocator, Bump, BumpAllocator, MinimumAlignment, MutBumpScope, SupportedMinimumAlignment, WithoutDealloc,
     WithoutShrink,
     traits::{assert_dyn_compatible, assert_implements},
 };
@@ -32,13 +32,13 @@ assert_dyn_compatible!(BumpAllocatorScope<'_>);
 assert_implements! {
     [BumpAllocatorScope<'a> + ?Sized]
 
-    BumpScope
+    MutBumpScope
 
     &Bump
-    &BumpScope
+    &MutBumpScope
 
     &mut Bump
-    &mut BumpScope
+    &mut MutBumpScope
 
     dyn BumpAllocatorScope
     &dyn BumpAllocatorScope
@@ -56,7 +56,7 @@ unsafe impl<'a, B: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for WithoutDea
 unsafe impl<'a, B: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for WithoutShrink<B> {}
 
 unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpAllocatorScope<'a> for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    BumpAllocatorScope<'a> for MutBumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: BaseAllocator<GUARANTEED_ALLOCATED>,

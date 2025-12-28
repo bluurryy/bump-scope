@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Improve documentation
 
+### Changed
+
+- Rename `BumpScope` to `MutBumpScope`
+
 ### Fixed
 
 - **Breaking:** Fix `no_std` builds with "serde" feature by depending on serde without default features
