@@ -46,7 +46,7 @@ impl<const SIZE: usize> StaticAllocator<SIZE> {
     }
 }
 
-unsafe impl<const SIZE: usize> Allocator for StaticAllocator<SIZE> {
+unsafe impl<const SIZE: usize> Allocator for &StaticAllocator<SIZE> {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         if self.taken.get() {
             return Err(AllocError);
