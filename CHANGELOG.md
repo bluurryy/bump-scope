@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Improve documentation
 
+### Fixed
+
+- **Breaking:** Fix `no_std` builds with "serde" feature by depending on serde without default features
+
+### Changed
+
+- Depend on `serde_core` instead of `serde`
+
 ### Removed
 
 - **Breaking:** Remove deprecated api
