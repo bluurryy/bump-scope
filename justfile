@@ -72,6 +72,10 @@ check-mustnt_compile:
 check-unavailable_panicking_macros:
   cargo +stable test --no-default-features --test unavailable_panicking_macros -F alloc
 
+trybuild-overwrite:
+  TRYBUILD=overwrite cargo +stable test --test compile_fail -- --ignored
+  TRYBUILD=overwrite cargo +stable test --no-default-features --test unavailable_panicking_macros -F alloc
+
 test: 
   cargo +nightly test --all-features
   cd crates/tests-from-std && cargo +nightly test
@@ -102,7 +106,7 @@ doc *args:
   @ just doc-rustdoc {{args}}
 
 doc-rustdoc *args:
-  cargo +nightly rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition
+  cargo +nightly rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition -Dwarnings
 
 doc-rustdoc-priv *args:
   cargo +nightly rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition --document-private-items -definition

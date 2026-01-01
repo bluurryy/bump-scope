@@ -309,12 +309,38 @@ impl<A, const UP: bool> RawChunk<A, UP, true> {
 }
 
 impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARANTEED_ALLOCATED> {
+    pub(crate) const DISABLED: Self = Self {
+        header: ChunkHeader::DISABLED.cast(),
+    };
+
+    #[cfg(debug_assertions)]
+    pub(crate) fn is_enabled(self) -> bool {
+        self.header.cast() != ChunkHeader::DISABLED
+    }
+
+    pub(crate) fn is_disabled(self) -> bool {
+        self.header.cast() == ChunkHeader::DISABLED
+    }
+
     pub(crate) fn is_allocated(self) -> bool {
         GUARANTEED_ALLOCATED || self.header.cast() != ChunkHeader::UNALLOCATED
     }
 
     pub(crate) fn is_unallocated(self) -> bool {
         !GUARANTEED_ALLOCATED && self.header.cast() == ChunkHeader::UNALLOCATED
+    }
+
+    pub(crate) fn is_unallocated_or_disabled(self) -> bool {
+        self.is_unallocated() || self.is_disabled()
+    }
+
+    #[must_use]
+    pub(crate) fn allocated_and_enabled(self) -> Option<RawChunk<A, UP, true>> {
+        if self.is_unallocated_or_disabled() {
+            return None;
+        }
+
+        Some(RawChunk { header: self.header })
     }
 
     pub(crate) fn guaranteed_allocated(self) -> Option<RawChunk<A, UP, true>> {
@@ -327,10 +353,6 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
 
     pub(crate) unsafe fn guaranteed_allocated_unchecked(self) -> RawChunk<A, UP, true> {
         debug_assert!(self.is_allocated());
-        RawChunk { header: self.header }
-    }
-
-    pub(crate) fn not_guaranteed_allocated(self) -> RawChunk<A, UP, false> {
         RawChunk { header: self.header }
     }
 
@@ -378,14 +400,12 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
         M: SupportedMinimumAlignment,
         L: LayoutProps,
     {
-        // Zero sized allocations are a problem for non-GUARANTEED_ALLOCATED chunks
-        // since bump_up/bump_down will succeed and the UNALLOCATED chunk would
-        // be written to. The UNALLOCATED chunk must not be written to since that
-        // could cause a data-race (UB).
+        // Zero sized allocations are a problem since bump_up/bump_down will succeed and the UNALLOCATED or DISABLED chunk would
+        // be written to. The UNALLOCATED/DISABLED chunk must not be written to since that could cause a data-race (UB).
         //
         // In many cases, the layout size is statically known not to be zero
         // and this "if" is optimized away.
-        if !GUARANTEED_ALLOCATED && layout.size() == 0 {
+        if layout.size() == 0 {
             return Some(polyfill::layout::dangling(*layout));
         }
 
@@ -479,7 +499,7 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     #[inline(always)]
     pub(crate) unsafe fn with_addr(self, addr: usize) -> NonNull<u8> {
         unsafe {
-            debug_assert!(if let Some(chunk) = self.guaranteed_allocated() {
+            debug_assert!(if let Some(chunk) = self.allocated_and_enabled() {
                 chunk.contains_addr_or_end(addr)
             } else {
                 true // can't check
@@ -533,7 +553,7 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     }
 
     #[inline(always)]
-    pub(crate) fn stats<'a>(self) -> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
+    pub(crate) fn stats<'a>(self) -> Stats<'a, A, UP> {
         Stats::from_raw_chunk(self)
     }
 }

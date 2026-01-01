@@ -187,7 +187,7 @@ pub trait BumpScopeExt<'a>: bump_scope_ext::Sealed {
     /// # Examples
     /// ```
     /// use bump_scope::{Bump, bytemuck::BumpScopeExt};
-    /// let mut bump: Bump = Bump::new();
+    /// let bump: Bump = Bump::new();
     ///
     /// bump.scoped(|bump| {
     ///     let zero = bump.alloc_zeroed::<i32>();
@@ -207,7 +207,7 @@ pub trait BumpScopeExt<'a>: bump_scope_ext::Sealed {
     /// # Examples
     /// ```
     /// use bump_scope::{Bump, alloc::AllocError, bytemuck::BumpScopeExt};
-    /// let mut bump: Bump = Bump::try_new()?;
+    /// let bump: Bump = Bump::try_new()?;
     ///
     /// bump.scoped(|bump| -> Result<(), AllocError> {
     ///     let zero = bump.try_alloc_zeroed::<i32>()?;
@@ -228,7 +228,7 @@ pub trait BumpScopeExt<'a>: bump_scope_ext::Sealed {
     /// # Examples
     /// ```
     /// use bump_scope::{Bump, bytemuck::BumpScopeExt};
-    /// let mut bump: Bump = Bump::new();
+    /// let bump: Bump = Bump::new();
     ///
     /// bump.scoped(|bump| {
     ///     let zeroes = bump.alloc_zeroed_slice::<i32>(3);
@@ -248,7 +248,7 @@ pub trait BumpScopeExt<'a>: bump_scope_ext::Sealed {
     /// # Examples
     /// ```
     /// use bump_scope::{Bump, alloc::AllocError, bytemuck::BumpScopeExt};
-    /// let mut bump: Bump = Bump::try_new()?;
+    /// let bump: Bump = Bump::try_new()?;
     ///
     /// bump.scoped(|bump| -> Result<(), AllocError>  {
     ///     let zeroes = bump.try_alloc_zeroed_slice::<i32>(3)?;

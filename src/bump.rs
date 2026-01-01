@@ -12,7 +12,7 @@ use core::{
 use core::clone::CloneToUninit;
 
 use crate::{
-    BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment, RawChunk,
+    BaseAllocator, BumpBox, BumpScope, BumpScopeGuard, Checkpoint, ErrorBehavior, MinimumAlignment, RawChunk,
     SupportedMinimumAlignment,
     alloc::{AllocError, Allocator},
     chunk_size::ChunkSize,
@@ -78,7 +78,7 @@ macro_rules! make_type {
         /// - guaranteed allocated:
         ///   <code>{[as](Self::as_guaranteed_allocated), [as_mut](Self::as_mut_guaranteed_allocated), [into](Self::into_guaranteed_allocated)}_guaranteed_allocated</code>,
         ///   <code>{[as](Self::as_not_guaranteed_allocated), [into](Self::into_not_guaranteed_allocated)}_not_guaranteed_allocated</code>
-        /// - minimum alignment: [`aligned`], [`as_mut_aligned`], [`into_aligned`]
+        /// - minimum alignment: [`into_aligned`]
         /// - deallocation:
         ///   <code>{[as](Self::as_with_dealloc), [as_mut](Self::as_mut_with_dealloc), [into](Self::into_with_dealloc)}_with_dealloc</code>
         ///   <code>{[as](Self::as_without_dealloc), [as_mut](Self::as_mut_without_dealloc), [into](Self::into_without_dealloc)}_without_dealloc</code>
@@ -173,8 +173,6 @@ macro_rules! make_type {
         /// [`reset`]: Self::reset
         /// [`dealloc`]: Self::dealloc
         ///
-        /// [`aligned`]: Self::aligned
-        /// [`as_mut_aligned`]: Self::as_mut_aligned
         /// [`into_aligned`]: Self::into_aligned
         ///
         /// [`into_with_dealloc`]: Self::into_with_dealloc
@@ -184,42 +182,6 @@ macro_rules! make_type {
         /// [`into_without_dealloc`]: Self::into_without_dealloc
         /// [`as_without_dealloc`]: Self::as_without_dealloc
         /// [`as_mut_without_dealloc`]: Self::as_mut_without_dealloc
-        ///
-        /// # Gotcha
-        ///
-        /// Having live allocations and entering bump scopes at the same time requires a `BumpScope`.
-        /// This is due to the way lifetimes work, since `Bump` returns allocations with the lifetime
-        /// of its own borrow instead of a separate lifetime like `BumpScope` does.
-        ///
-        /// So you can't do this:
-        /// ```compile_fail,E0502
-        /// # use bump_scope::Bump;
-        /// let mut bump: Bump = Bump::new();
-        ///
-        /// let one = bump.alloc(1);
-        ///
-        /// bump.scoped(|bump| {
-        ///     // whatever
-        ///     # _ = bump;
-        /// });
-        /// # _ = one;
-        /// ```
-        /// But you can make the code work by converting the `Bump` it to a [`BumpScope`] first using [`as_mut_scope`]:
-        /// ```
-        /// # use bump_scope::Bump;
-        /// let mut bump: Bump = Bump::new();
-        /// let bump = bump.as_mut_scope();
-        ///
-        /// let one = bump.alloc(1);
-        ///
-        /// bump.scoped(|bump| {
-        ///     // whatever
-        ///     # _ = bump;
-        /// });
-        /// # _ = one;
-        /// ```
-        ///
-        /// [`as_mut_scope`]: Self::as_mut_scope
         #[repr(transparent)]
         pub struct Bump<
             $($allocator_parameter)*,
@@ -271,7 +233,7 @@ where
     A: Allocator,
 {
     fn drop(&mut self) {
-        let Some(chunk) = self.chunk.get().guaranteed_allocated() else {
+        let Some(chunk) = self.chunk.get().allocated_and_enabled() else {
             return;
         };
 
@@ -522,11 +484,14 @@ where
 {
     /// Calls `f` with a new child scope.
     ///
+    /// **WARNING:** The parent scope must not be used in `f`.
+    /// Allocations will fail, `stats` and `allocator` will be empty.
+    ///
     /// # Examples
     ///
     /// ```
     /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::new();
+    /// let bump: Bump = Bump::new();
     ///
     /// bump.scoped(|bump| {
     ///     bump.alloc_str("Hello, world!");
@@ -536,12 +501,15 @@ where
     /// assert_eq!(bump.stats().allocated(), 0);
     /// ```
     #[inline(always)]
-    pub fn scoped<R>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, true, DEALLOCATES>) -> R) -> R {
+    pub fn scoped<R>(&self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, true, DEALLOCATES>) -> R) -> R {
         let mut guard = self.scope_guard();
         f(guard.scope())
     }
 
     /// Calls `f` with a new child scope of a new minimum alignment.
+    ///
+    /// **WARNING:** The parent scope must not be used in `f`.
+    /// Allocations will fail, `stats` and `allocator` will be empty.
     ///
     /// # Examples
     ///
@@ -549,34 +517,34 @@ where
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # #![feature(pointer_is_aligned_to)]
     /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::new();
+    /// let bump: Bump = Bump::new();
     ///
     /// // bump starts off by being aligned to 16
-    /// assert!(bump.stats().current_chunk().bump_position().is_aligned_to(16));
+    /// assert!(bump.stats().current_chunk().unwrap().bump_position().is_aligned_to(16));
     ///
     /// // allocate one byte
     /// bump.alloc(1u8);
     ///
     /// // now the bump is only aligned to 1
     /// // (if our `MIN_ALIGN` was higher, it would be that)
-    /// assert!(bump.stats().current_chunk().bump_position().addr().get() % 2 == 1);
+    /// assert!(bump.stats().current_chunk().unwrap().bump_position().addr().get() % 2 == 1);
     /// assert_eq!(bump.stats().allocated(), 1);
     ///
     /// bump.scoped_aligned::<8, ()>(|bump| {
     ///    // in here, the bump will have the specified minimum alignment of 8
-    ///    assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
+    ///    assert!(bump.stats().current_chunk().unwrap().bump_position().is_aligned_to(8));
     ///    assert_eq!(bump.stats().allocated(), 8);
     ///
     ///    // allocating a value with its size being a multiple of 8 will no longer have
     ///    // to align the bump pointer before allocation
     ///    bump.alloc(1u64);
-    ///    assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
+    ///    assert!(bump.stats().current_chunk().unwrap().bump_position().is_aligned_to(8));
     ///    assert_eq!(bump.stats().allocated(), 16);
     ///    
     ///    // allocating a value smaller than the minimum alignment must align the bump pointer
     ///    // after the allocation, resulting in some wasted space
     ///    bump.alloc(1u8);
-    ///    assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
+    ///    assert!(bump.stats().current_chunk().unwrap().bump_position().is_aligned_to(8));
     ///    assert_eq!(bump.stats().allocated(), 24);
     /// });
     ///
@@ -584,107 +552,27 @@ where
     /// ```
     #[inline(always)]
     pub fn scoped_aligned<const NEW_MIN_ALIGN: usize, R>(
-        &mut self,
+        &self,
         f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP, true, DEALLOCATES>) -> R,
     ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        self.as_mut_scope().scoped_aligned::<NEW_MIN_ALIGN, R>(f)
+        self.as_scope().scoped_aligned::<NEW_MIN_ALIGN, R>(f)
     }
 
-    /// Calls `f` with this scope but with a new minimum alignment.
-    ///
-    /// # Examples
-    ///
-    /// Increase the minimum alignment:
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// # #![feature(pointer_is_aligned_to)]
-    /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::new();
-    /// let bump = bump.as_mut_scope();
-    ///
-    /// // here we're allocating with a `MIN_ALIGN` of `1`
-    /// let foo = bump.alloc_str("foo");
-    /// assert_eq!(bump.stats().allocated(), 3);
-    ///
-    /// let bar = bump.aligned::<8, _>(|bump| {
-    ///     // in here the bump position has been aligned to `8`
-    ///     assert_eq!(bump.stats().allocated(), 8);
-    ///     assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
-    ///
-    ///     // make some allocations that benefit from the higher `MIN_ALIGN` of `8`
-    ///     let bar = bump.alloc(0u64);
-    ///     assert_eq!(bump.stats().allocated(), 16);
-    ///  
-    ///     // the bump position will stay aligned to `8`
-    ///     bump.alloc(0u8);
-    ///     assert_eq!(bump.stats().allocated(), 24);
-    ///
-    ///     bar
-    /// });
-    ///
-    /// assert_eq!(bump.stats().allocated(), 24);
-    ///
-    /// // continue making allocations with a `MIN_ALIGN` of `1`
-    /// let baz = bump.alloc_str("baz");
-    /// assert_eq!(bump.stats().allocated(), 24 + 3);
-    ///
-    /// dbg!(foo, bar, baz);
-    /// ```
-    ///
-    /// Decrease the minimum alignment:
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// # #![feature(pointer_is_aligned_to)]
-    /// # use bump_scope::{Bump, alloc::Global};
-    /// let mut bump: Bump<Global, 8> = Bump::new();
-    /// let bump = bump.as_mut_scope();
-    ///
-    /// // make some allocations that benefit from the `MIN_ALIGN` of `8`
-    /// let foo = bump.alloc(0u64);
-    ///
-    /// let bar = bump.aligned::<1, _>(|bump| {
-    ///     // make some allocations that benefit from the lower `MIN_ALIGN` of `1`
-    ///     let bar = bump.alloc(0u8);
-    ///
-    ///     // the bump position will not get aligned to `8` in here
-    ///     assert_eq!(bump.stats().allocated(), 8 + 1);
-    ///
-    ///     bar
-    /// });
-    ///
-    /// // after `aligned()`, the bump position will be aligned to `8` again
-    /// // to satisfy our `MIN_ALIGN`
-    /// assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
-    /// assert_eq!(bump.stats().allocated(), 16);
-    ///
-    /// // continue making allocations that benefit from the `MIN_ALIGN` of `8`
-    /// let baz = bump.alloc(0u64);
-    ///
-    /// dbg!(foo, bar, baz);
-    /// ```
-    #[inline(always)]
-    pub fn aligned<'a, const NEW_MIN_ALIGN: usize, R>(
-        &'a mut self,
-        f: impl FnOnce(BumpScope<'a, A, NEW_MIN_ALIGN, UP, true, DEALLOCATES>) -> R,
-    ) -> R
-    where
-        MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
-    {
-        self.as_mut_scope().aligned(f)
-    }
-
-    /// Creates a new [`BumpScopeGuardRoot`].
+    /// Creates a new [`BumpScopeGuard`].
     ///
     /// This allows for creation of child scopes.
     ///
+    /// **WARNING:** The parent scope must not be used until the scope guard is dropped.
+    /// Allocations will fail, `stats` and `allocator` will be empty.
+    ///
     /// # Examples
     ///
     /// ```
     /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::new();
+    /// let bump: Bump = Bump::new();
     ///
     /// {
     ///     let mut guard = bump.scope_guard();
@@ -697,14 +585,14 @@ where
     /// ```
     #[must_use]
     #[inline(always)]
-    pub fn scope_guard(&mut self) -> BumpScopeGuardRoot<'_, A, MIN_ALIGN, UP, DEALLOCATES> {
-        BumpScopeGuardRoot::new(self)
+    pub fn scope_guard(&self) -> BumpScopeGuard<'_, A, MIN_ALIGN, UP, DEALLOCATES> {
+        self.as_scope().scope_guard()
     }
 
     /// Returns a reference to the base allocator.
     #[must_use]
     #[inline(always)]
-    pub fn allocator(&self) -> &A {
+    pub fn allocator(&self) -> Option<&A> {
         self.as_scope().allocator()
     }
 }
@@ -1022,7 +910,7 @@ where
     /// ```
     #[inline(always)]
     pub fn reset(&mut self) {
-        let Some(mut chunk) = self.chunk.get().guaranteed_allocated() else {
+        let Some(mut chunk) = self.chunk.get().allocated_and_enabled() else {
             return;
         };
 
@@ -1043,7 +931,7 @@ where
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
+    pub fn stats(&self) -> Stats<'_, A, UP> {
         self.as_scope().stats()
     }
 
@@ -1073,24 +961,6 @@ where
         unsafe { self.cast_align() }
     }
 
-    /// Mutably borrows `Bump` with a new minimum alignment.
-    ///
-    /// **This cannot decrease the alignment.** Trying to decrease alignment will result in a compile error.
-    /// You can use [`aligned`](Self::aligned) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment.
-    ///
-    /// When decreasing the alignment we need to make sure that the bump position is realigned to the original alignment.
-    /// That can only be ensured by having a function that takes a closure, like the methods mentioned above do.
-    #[inline(always)]
-    pub fn as_mut_aligned<const NEW_MIN_ALIGN: usize>(
-        &mut self,
-    ) -> &mut Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
-    where
-        MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
-    {
-        self.as_scope().must_align_more::<NEW_MIN_ALIGN>();
-        unsafe { self.cast_align_mut() }
-    }
-
     #[inline(always)]
     pub(crate) unsafe fn cast_align<const NEW_MIN_ALIGN: usize>(
         self,
@@ -1102,16 +972,6 @@ where
         mem::forget(self);
 
         Bump { chunk: Cell::new(chunk) }
-    }
-
-    #[inline(always)]
-    pub(crate) unsafe fn cast_align_mut<const NEW_MIN_ALIGN: usize>(
-        &mut self,
-    ) -> &mut Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
-    where
-        MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
-    {
-        unsafe { &mut *ptr::from_mut(self).cast::<Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>>() }
     }
 
     /// Converts this `Bump` into a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `Bump`.
@@ -1141,7 +1001,7 @@ where
     /// # use bump_scope::Bump;
     /// # use bump_scope::alloc::Global;
     /// let bump: Bump<Global, 1, true, false> = Bump::unallocated();
-    /// let mut bump = bump.into_guaranteed_allocated(Bump::new);
+    /// let bump = bump.into_guaranteed_allocated(Bump::new);
     ///
     /// bump.scoped(|bump| {
     ///     // ...
@@ -1202,7 +1062,7 @@ where
     /// # use bump_scope::Bump;
     /// # use bump_scope::alloc::Global;
     /// let bump: Bump<Global, 1, true, false> = Bump::unallocated();
-    /// let mut bump = bump.try_into_guaranteed_allocated(Bump::try_new)?;
+    /// let bump = bump.try_into_guaranteed_allocated(Bump::try_new)?;
     ///
     /// bump.scoped(|bump| {
     ///     // ...

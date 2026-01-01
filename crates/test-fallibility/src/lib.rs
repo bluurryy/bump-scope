@@ -19,7 +19,6 @@ macro_rules! type_definitions {
         type Bump<const MIN_ALIGN: usize = 1> = bump_scope::Bump<Global, MIN_ALIGN, $up, true, true>;
         type BumpScope<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScope<'a, Global, MIN_ALIGN, $up, true, true>;
         type BumpScopeGuard<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuard<'a, Global, MIN_ALIGN, $up>;
-        type BumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuardRoot<'a, Global, MIN_ALIGN, $up>;
         type BumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<T, &'a Bump>;
         type BumpString<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<&'a Bump>;
         type MutBumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<T, &'a mut Bump<MIN_ALIGN>>;
@@ -55,28 +54,15 @@ up_and_down! {
         bump.reset()
     }
 
-    pub fn Bump_scoped(bump: &mut Bump, f: Box<dyn FnOnce(BumpScope)>) {
+    pub fn Bump_scoped(bump: &Bump, f: Box<dyn FnOnce(BumpScope)>) {
         bump.scoped(f)
     }
-
-    pub fn Bump_aligned_inc(bump: &mut Bump, f: Box<dyn FnOnce(BumpScope<8>)>) {
-        bump.aligned(f)
-    }
-
-    pub fn Bump_aligned_dec(bump: &mut Bump<8>, f: Box<dyn FnOnce(BumpScope)>) {
-        bump.aligned(f)
-    }
-
-    pub fn Bump_scope_guard(bump: &mut Bump) -> BumpScopeGuardRoot {
+    pub fn Bump_scope_guard(bump: &mut Bump) -> BumpScopeGuard {
         bump.scope_guard()
     }
 
     pub fn Bump_into_aligned(bump: Bump) -> Bump<4> {
         bump.into_aligned()
-    }
-
-    pub fn Bump_as_mut_aligned(bump: &mut Bump) -> &mut Bump<4> {
-        bump.as_mut_aligned()
     }
 
     pub fn Bump_allocate(bump: &Bump, layout: Layout) -> Result<NonNull<[u8]>> {

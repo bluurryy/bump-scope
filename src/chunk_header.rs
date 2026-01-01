@@ -20,18 +20,29 @@ pub(crate) struct ChunkHeader<A = ()> {
 
 /// Wraps a [`ChunkHeader`], making it Sync so it can be used as a static.
 /// The empty chunk is never mutated, so this is fine.
-struct UnallocatedChunkHeader(ChunkHeader);
+struct DummyChunkHeader(ChunkHeader);
 
-unsafe impl Sync for UnallocatedChunkHeader {}
+impl DummyChunkHeader {
+    const fn new() -> Self {
+        Self(ChunkHeader {
+            pos: Cell::new(NonNull::<DummyChunkHeader>::dangling().cast()),
+            end: NonNull::<DummyChunkHeader>::dangling().cast(),
+            prev: Cell::new(None),
+            next: Cell::new(None),
+            allocator: (),
+        })
+    }
+}
 
-static UNALLOCATED_CHUNK_HEADER: UnallocatedChunkHeader = UnallocatedChunkHeader(ChunkHeader {
-    pos: Cell::new(NonNull::<UnallocatedChunkHeader>::dangling().cast()),
-    end: NonNull::<UnallocatedChunkHeader>::dangling().cast(),
-    prev: Cell::new(None),
-    next: Cell::new(None),
-    allocator: (),
-});
+unsafe impl Sync for DummyChunkHeader {}
+
+static UNALLOCATED_CHUNK_HEADER: DummyChunkHeader = DummyChunkHeader::new();
+static DISABLED_CHUNK_HEADER: DummyChunkHeader = DummyChunkHeader::new();
 
 impl ChunkHeader {
+    /// Used to initialize an empty bump allocator.
     pub(crate) const UNALLOCATED: NonNull<ChunkHeader> = non_null::from_ref(&UNALLOCATED_CHUNK_HEADER.0);
+
+    /// Temporarily replaces a scope's chunk to make allocations error while a child scope is active.
+    pub(crate) const DISABLED: NonNull<ChunkHeader> = non_null::from_ref(&DISABLED_CHUNK_HEADER.0);
 }

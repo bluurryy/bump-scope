@@ -986,7 +986,7 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     type Stats<'b>
-        = Stats<'b, A, UP, GUARANTEED_ALLOCATED>
+        = Stats<'b, A, UP>
     where
         Self: 'b;
 
@@ -1112,7 +1112,7 @@ where
     A: BaseAllocator<GUARANTEED_ALLOCATED>,
 {
     type Stats<'b>
-        = Stats<'b, A, UP, GUARANTEED_ALLOCATED>
+        = Stats<'b, A, UP>
     where
         Self: 'b;
 

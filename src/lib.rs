@@ -44,7 +44,7 @@
     clippy::collapsible_else_if, // this is not `expect` because nightly as of 2025-12-28 doesn't warn about this for some reason
 )]
 #![doc(test(
-    attr(deny(dead_code, unused_imports, deprecated)),
+    attr(deny(dead_code, unused_imports, deprecated, unused_mut)),
     attr(cfg_attr(feature = "nightly-allocator-api", feature(allocator_api, btreemap_alloc))),
 ))]
 //! <!-- crate documentation intro start -->
@@ -112,10 +112,10 @@
 //! ```
 //! use bump_scope::Bump;
 //!
-//! let mut bump: Bump = Bump::new();
+//! let bump: Bump = Bump::new();
 //!
 //! // you can use a closure
-//! bump.scoped(|mut bump| {
+//! bump.scoped(|bump| {
 //!     let hello = bump.alloc_str("hello");
 //!     assert_eq!(bump.stats().allocated(), 5);
 //!
@@ -135,7 +135,7 @@
 //! // or you can use scope guards
 //! {
 //!     let mut guard = bump.scope_guard();
-//!     let mut bump = guard.scope();
+//!     let bump = guard.scope();
 //!
 //!     let hello = bump.alloc_str("hello");
 //!     assert_eq!(bump.stats().allocated(), 5);
@@ -315,7 +315,7 @@
 //!
 //! The exception is the [`unallocated`] constructor which creates a `Bump` without allocating any
 //! chunks. Such a `Bump` will have the `GUARANTEED_ALLOCATED` generic parameter of `false`
-//! which will make the [`scoped`], [`scoped_aligned`], [`aligned`] and [`scope_guard`] methods unavailable.
+//! which will make the [`scoped`], [`scoped_aligned`] and [`scope_guard`] methods unavailable.
 //!
 //! You can turn any non-`GUARANTEED_ALLOCATED` bump allocator into a guaranteed allocated one using
 //! [`as_guaranteed_allocated`], [`as_mut_guaranteed_allocated`] or [`into_guaranteed_allocated`].
@@ -330,7 +330,6 @@
 //! [`unallocated`]: Bump::unallocated
 //! [`scoped`]: Bump::scoped
 //! [`scoped_aligned`]: Bump::scoped_aligned
-//! [`aligned`]: Bump::aligned
 //! [`scope_guard`]: Bump::scope_guard
 //! [`as_guaranteed_allocated`]: Bump::as_guaranteed_allocated
 //! [`as_mut_guaranteed_allocated`]: Bump::as_mut_guaranteed_allocated
@@ -346,7 +345,6 @@ extern crate alloc as alloc_crate;
 pub mod alloc;
 mod allocator_impl;
 mod bump;
-mod bump_align_guard;
 /// Contains [`BumpBox`] and associated types.
 mod bump_box;
 #[cfg(feature = "std")]
@@ -395,7 +393,7 @@ pub use bump_box::BumpBox;
 #[cfg(feature = "std")]
 pub use bump_pool::{BumpPool, BumpPoolGuard};
 pub use bump_scope::BumpScope;
-pub use bump_scope_guard::{BumpScopeGuard, BumpScopeGuardRoot, Checkpoint};
+pub use bump_scope_guard::{BumpScopeGuard, Checkpoint};
 pub use bump_string::BumpString;
 #[doc(inline)]
 pub use bump_vec::BumpVec;
@@ -582,21 +580,6 @@ trait SizedTypeProperties: Sized {
 }
 
 impl<T> SizedTypeProperties for T {}
-
-macro_rules! const_param_assert {
-    (
-        ($(const $param_ident:ident: $param_ty:ident),+) => $($assert_args:tt)*
-    ) => {{
-            struct ConstParamAssert<$(const $param_ident: $param_ty),+> {}
-            impl<$(const $param_ident: $param_ty),+> ConstParamAssert<$($param_ident),+> {
-                const CONST_PARAM_ASSERT: () = assert!($($assert_args)*);
-            }
-            #[expect(unused_variables)]
-            let assertion = ConstParamAssert::<$($param_ident),+>::CONST_PARAM_ASSERT;
-    }};
-}
-
-pub(crate) use const_param_assert;
 
 mod supported_base_allocator {
     pub trait Sealed<const GUARANTEED_ALLOCATED: bool> {

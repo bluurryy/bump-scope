@@ -12,10 +12,10 @@ pub struct AnyStats<'a> {
     chunk: Option<AnyChunk<'a>>,
 }
 
-impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> From<Stats<'_, A, UP, GUARANTEED_ALLOCATED>> for AnyStats<'_> {
-    fn from(value: Stats<'_, A, UP, GUARANTEED_ALLOCATED>) -> Self {
+impl<A, const UP: bool> From<Stats<'_, A, UP>> for AnyStats<'_> {
+    fn from(value: Stats<'_, A, UP>) -> Self {
         Self {
-            chunk: value.get_current_chunk().map(Into::into),
+            chunk: value.chunk.map(Into::into),
         }
     }
 }
@@ -422,7 +422,7 @@ fn check_from_impls() {
     {
         let stats = bump.stats();
         accepting_any_stats(stats.into());
-        accepting_any_chunk(stats.not_guaranteed_allocated().current_chunk().unwrap().into());
+        accepting_any_chunk(stats.current_chunk().unwrap().into());
         accepting_any_chunk_next_iter(stats.small_to_big().into());
         accepting_any_chunk_prev_iter(stats.big_to_small().into());
     }
