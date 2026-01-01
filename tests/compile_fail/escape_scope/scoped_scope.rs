@@ -1,6 +1,6 @@
 use bump_scope::BumpScope;
 
-fn escape_closure(mut bump: BumpScope) {
+fn escape_closure(bump: BumpScope) {
     let mut escapee = None;
 
     bump.scoped(|scope| {

@@ -17,11 +17,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** Change `scoped`, `scoped_aligned` and `scope_guard` to only require a shared reference
+- **Breaking:** Change `Bump(Scope)::allocator` to always return `Option<&A>` instead of just `&A`
+- **Breaking:** Change `Stats::current_chunk` to return `Option<Chunk>` instead of just `Chunk`
+- **Breaking:** Remove `GUARANTEED_ALLOCATED` generic parameter from `Stats`
 - Depend on `serde_core` instead of `serde`
 
 ### Removed
 
 - **Breaking:** Remove deprecated api
+- **Breaking:** Remove `Bump(Scope)::aligned`
+- **Breaking:** Remove `Bump(Scope)::aligned_mut`
+- **Breaking:** Remove `BumpScope::into_aligned`
 
 ## [1.5.1] - 2025-12-21
 

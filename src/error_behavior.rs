@@ -23,6 +23,7 @@ pub(crate) trait ErrorBehavior: Sized {
         allocator: &mut impl MutBumpAllocatorExt,
         len: usize,
     ) -> Result<NonNull<[T]>, Self>;
+    fn trying_to_allocate_with_active_child_scope() -> Self;
 }
 
 #[cfg(feature = "panic-on-alloc")]
@@ -76,6 +77,10 @@ impl ErrorBehavior for Infallible {
         len: usize,
     ) -> Result<NonNull<[T]>, Self> {
         Ok(allocator.prepare_slice_allocation::<T>(len))
+    }
+
+    fn trying_to_allocate_with_active_child_scope() -> Self {
+        trying_to_allocate_with_active_child_scope()
     }
 }
 
@@ -131,6 +136,10 @@ impl ErrorBehavior for AllocError {
     ) -> Result<NonNull<[T]>, Self> {
         allocator.try_prepare_slice_allocation::<T>(len)
     }
+
+    fn trying_to_allocate_with_active_child_scope() -> Self {
+        Self
+    }
 }
 
 #[cold]
@@ -145,4 +154,11 @@ fn fixed_size_vector_is_full() -> ! {
 #[cfg(feature = "panic-on-alloc")]
 fn fixed_size_vector_no_space(amount: usize) -> ! {
     panic!("fixed size vector does not have space for {amount} more elements");
+}
+
+#[cold]
+#[inline(never)]
+#[cfg(feature = "panic-on-alloc")]
+fn trying_to_allocate_with_active_child_scope() -> ! {
+    panic!("tried to allocate on scope with an active child scope")
 }

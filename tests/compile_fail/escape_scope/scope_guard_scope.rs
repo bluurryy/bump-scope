@@ -1,7 +1,7 @@
 use bump_scope::BumpScope;
 
 #[expect(unused_assignments)]
-fn escape_closure(mut bump: BumpScope) {
+fn escape_closure(bump: BumpScope) {
     let mut escapee = None;
 
     {

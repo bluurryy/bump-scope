@@ -26,7 +26,7 @@ fn smoke_test() {
     test(&a);
     test(a);
 
-    let mut a: Bump = Bump::new();
+    let a: Bump = Bump::new();
     a.scoped(|mut a| {
         test(&mut a);
         test(&a);
@@ -37,7 +37,7 @@ fn smoke_test() {
     mut_test(&mut a);
     mut_test(a);
 
-    let mut a: Bump = Bump::new();
+    let a: Bump = Bump::new();
     a.scoped(|mut a| {
         mut_test(&mut a);
         mut_test(a);
@@ -47,7 +47,7 @@ fn smoke_test() {
 /// Checks that a bigger chunk is correctly allocated when the current chunk is not largest one
 #[test]
 fn alloc_chunks() {
-    let mut a: Bump = Bump::new();
+    let a: Bump = Bump::new();
 
     a.scoped(|mut a| {
         // alloc is large enough to require an additional chunk
