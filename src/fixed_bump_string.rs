@@ -89,14 +89,6 @@ unsafe impl Send for FixedBumpString<'_> {}
 unsafe impl Sync for FixedBumpString<'_> {}
 
 impl<'a> FixedBumpString<'a> {
-    #[doc(hidden)]
-    #[deprecated = "use `FixedBumpString::new()` instead"]
-    /// Empty fixed string.
-    pub const EMPTY: Self = Self {
-        initialized: BumpBox::EMPTY_STR,
-        capacity: 0,
-    };
-
     /// Constructs a new empty `FixedBumpString`.
     ///
     /// This will not allocate.

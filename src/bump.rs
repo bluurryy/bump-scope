@@ -12,8 +12,8 @@ use core::{
 use core::clone::CloneToUninit;
 
 use crate::{
-    BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, FixedBumpString, FixedBumpVec,
-    MinimumAlignment, RawChunk, SupportedMinimumAlignment,
+    BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, MinimumAlignment, RawChunk,
+    SupportedMinimumAlignment,
     alloc::{AllocError, Allocator},
     chunk_size::ChunkSize,
     maybe_default_allocator,
@@ -1089,18 +1089,6 @@ where
     {
         self.as_scope().must_align_more::<NEW_MIN_ALIGN>();
         unsafe { self.cast_align_mut() }
-    }
-
-    #[doc(hidden)]
-    #[inline(always)]
-    #[deprecated = "renamed to `as_mut_aligned`"]
-    pub fn as_aligned_mut<const NEW_MIN_ALIGN: usize>(
-        &mut self,
-    ) -> &mut Bump<A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
-    where
-        MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
-    {
-        self.as_mut_aligned()
     }
 
     #[inline(always)]
@@ -2822,104 +2810,6 @@ where
     #[inline(always)]
     pub fn try_alloc_uninit_slice_for<T>(&self, slice: &[T]) -> Result<BumpBox<'_, [MaybeUninit<T>]>, AllocError> {
         self.as_scope().try_alloc_uninit_slice_for(slice)
-    }
-
-    /// Allocate a [`FixedBumpVec`] with the given `capacity`.
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// # #[expect(deprecated)]
-    /// let mut values = bump.alloc_fixed_vec(3);
-    /// values.push(1);
-    /// values.push(2);
-    /// values.push(3);
-    /// assert_eq!(values, [1, 2, 3])
-    /// ```
-    #[doc(hidden)]
-    #[deprecated = "use `FixedBumpVec::with_capacity_in()` instead"]
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_fixed_vec<T>(&self, capacity: usize) -> FixedBumpVec<'_, T> {
-        #[expect(deprecated)]
-        self.as_scope().alloc_fixed_vec(capacity)
-    }
-
-    /// Allocate a [`FixedBumpVec`] with the given `capacity`.
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
-    /// # #[expect(deprecated)]
-    /// let mut values = bump.try_alloc_fixed_vec(3)?;
-    /// values.push(1);
-    /// values.push(2);
-    /// values.push(3);
-    /// assert_eq!(values, [1, 2, 3]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
-    /// ```
-    #[doc(hidden)]
-    #[deprecated = "use `FixedBumpVec::try_with_capacity_in()` instead"]
-    #[inline(always)]
-    pub fn try_alloc_fixed_vec<T>(&self, capacity: usize) -> Result<FixedBumpVec<'_, T>, AllocError> {
-        #[expect(deprecated)]
-        self.as_scope().try_alloc_fixed_vec(capacity)
-    }
-
-    /// Allocate a [`FixedBumpString`] with the given `capacity` in bytes.
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// # #[expect(deprecated)]
-    /// let mut string = bump.alloc_fixed_string(13);
-    /// string.push_str("Hello,");
-    /// string.push_str(" world!");
-    /// assert_eq!(string, "Hello, world!");
-    /// ```
-    #[doc(hidden)]
-    #[deprecated = "use `FixedBumpString::with_capacity_in()` instead"]
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_fixed_string(&self, capacity: usize) -> FixedBumpString<'_> {
-        #[expect(deprecated)]
-        self.as_scope().alloc_fixed_string(capacity)
-    }
-
-    /// Allocate a [`FixedBumpString`] with the given `capacity` in bytes.
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
-    /// # #[expect(deprecated)]
-    /// let mut string = bump.try_alloc_fixed_string(13)?;
-    /// string.push_str("Hello,");
-    /// string.push_str(" world!");
-    /// assert_eq!(string, "Hello, world!");
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
-    /// ```
-    #[doc(hidden)]
-    #[deprecated = "use `FixedBumpString::try_with_capacity_in()` instead"]
-    #[inline(always)]
-    pub fn try_alloc_fixed_string(&self, capacity: usize) -> Result<FixedBumpString<'_>, AllocError> {
-        #[expect(deprecated)]
-        self.as_scope().try_alloc_fixed_string(capacity)
     }
 
     /// Allocates memory as described by the given `Layout`.

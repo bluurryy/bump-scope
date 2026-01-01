@@ -186,7 +186,6 @@ where
             None => Bump::generic_new_in(self.allocator.clone())?,
         };
 
-        #[expect(deprecated)]
         Ok(BumpPoolGuard {
             pool: self,
             bump: ManuallyDrop::new(bump),
@@ -232,7 +231,6 @@ where
             None => Bump::generic_with_size_in(size, self.allocator.clone())?,
         };
 
-        #[expect(deprecated)]
         Ok(BumpPoolGuard {
             pool: self,
             bump: ManuallyDrop::new(bump),
@@ -278,7 +276,6 @@ where
             None => Bump::generic_with_capacity_in(layout, self.allocator.clone())?,
         };
 
-        #[expect(deprecated)]
         Ok(BumpPoolGuard {
             pool: self,
             bump: ManuallyDrop::new(bump),
@@ -301,10 +298,7 @@ macro_rules! make_pool_guard {
             A: Allocator,
         {
             bump: ManuallyDrop<Bump<A, MIN_ALIGN, UP, true, true>>,
-
-            #[doc(hidden)]
-            #[deprecated = "Swapping the pool can lead to Undefined Behavior due to dangling pointers, use `pool()` instead!"]
-            pub pool: &'a BumpPool<A, MIN_ALIGN, UP>,
+            pool: &'a BumpPool<A, MIN_ALIGN, UP>,
         }
     };
 }
@@ -318,7 +312,6 @@ where
 {
     /// The [`BumpPool`], this [`BumpPoolGuard`] was created from.
     pub fn pool(&self) -> &'a BumpPool<A, MIN_ALIGN, UP> {
-        #[expect(deprecated)]
         self.pool
     }
 }
@@ -354,7 +347,6 @@ where
 {
     fn drop(&mut self) {
         let bump = unsafe { ManuallyDrop::take(&mut self.bump) };
-        #[expect(deprecated)]
         self.pool.lock().push(bump);
     }
 }

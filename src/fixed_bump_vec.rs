@@ -91,14 +91,6 @@ unsafe impl<T: Send> Send for FixedBumpVec<'_, T> {}
 unsafe impl<T: Sync> Sync for FixedBumpVec<'_, T> {}
 
 impl<'a, T> FixedBumpVec<'a, T> {
-    #[doc(hidden)]
-    #[deprecated = "use `FixedBumpVec::new()` instead"]
-    /// Empty fixed vector.
-    pub const EMPTY: Self = Self {
-        initialized: BumpBox::EMPTY,
-        capacity: if T::IS_ZST { usize::MAX } else { 0 },
-    };
-
     /// Constructs a new empty `FixedBumpVec<T>`.
     ///
     /// This will not allocate.
@@ -654,27 +646,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
     #[inline(always)]
     pub const fn as_non_null(&self) -> NonNull<T> {
         self.initialized.as_non_null()
-    }
-
-    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
-    /// valid for zero sized reads.
-    #[doc(hidden)]
-    #[deprecated = "renamed to `as_non_null`"]
-    #[must_use]
-    #[inline(always)]
-    pub fn as_non_null_ptr(&self) -> NonNull<T> {
-        self.initialized.as_non_null()
-    }
-
-    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
-    /// valid for zero sized reads.
-    #[doc(hidden)]
-    #[deprecated = "too niche; compute this yourself if needed"]
-    #[must_use]
-    #[inline(always)]
-    pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        #[expect(deprecated)]
-        self.initialized.as_non_null_slice()
     }
 
     #[inline(always)]

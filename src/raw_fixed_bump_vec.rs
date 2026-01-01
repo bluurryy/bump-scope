@@ -24,15 +24,6 @@ impl<T> RawFixedBumpVec<T> {
         capacity: if T::IS_ZST { usize::MAX } else { 0 },
     };
 
-    pub(crate) const unsafe fn new_zst(len: usize) -> Self {
-        assert!(T::IS_ZST);
-
-        RawFixedBumpVec {
-            initialized: unsafe { RawBumpBox::from_ptr(NonNull::slice_from_raw_parts(NonNull::dangling(), len)) },
-            capacity: usize::MAX,
-        }
-    }
-
     #[inline(always)]
     pub(crate) const unsafe fn cook<'a>(self) -> FixedBumpVec<'a, T> {
         unsafe { transmute(self) }
@@ -128,14 +119,6 @@ impl<T> RawFixedBumpVec<T> {
     #[inline(always)]
     pub const fn as_non_null(&self) -> NonNull<T> {
         self.initialized.as_non_null().cast()
-    }
-
-    #[doc(hidden)]
-    #[deprecated = "too niche; compute this yourself if needed"]
-    #[must_use]
-    #[inline(always)]
-    pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        self.initialized.as_non_null()
     }
 
     #[inline(always)]
