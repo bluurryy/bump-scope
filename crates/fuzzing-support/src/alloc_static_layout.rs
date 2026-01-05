@@ -1,7 +1,10 @@
 use std::{alloc::Layout, fmt::Debug, mem};
 
 use arbitrary::Arbitrary;
-use bump_scope::{MinimumAlignment, SupportedMinimumAlignment, alloc::Global};
+use bump_scope::{
+    alloc::Global,
+    settings::{MinimumAlignment, SupportedMinimumAlignment},
+};
 
 use crate::{Bump, MinAlign, UpTo};
 

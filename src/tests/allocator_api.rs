@@ -3,6 +3,7 @@ use std::{alloc::Layout, ptr::NonNull};
 use crate::{
     alloc::{Allocator, Global},
     polyfill::non_null,
+    settings::BumpSettings,
     tests::Bump,
 };
 
@@ -25,7 +26,7 @@ fn assert_aligned_to(ptr: NonNull<[u8]>) {
 }
 
 fn grow<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
     let ptr = bump.allocate(layout(1)).unwrap();
     assert_aligned_to(ptr);
@@ -39,7 +40,7 @@ fn grow<const UP: bool>() {
 }
 
 fn grow_last_in_place<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
     unsafe {
         let ptr = bump.allocate(layout(1)).unwrap();
@@ -55,7 +56,7 @@ fn grow_last_in_place<const UP: bool>() {
 }
 
 fn grow_last_out_of_place<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
     unsafe {
         let ptr = bump.allocate(layout(1)).unwrap();

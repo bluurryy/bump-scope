@@ -1,9 +1,10 @@
 use core::{alloc::Layout, ops::Range, ptr::NonNull};
 
 use crate::{
-    BaseAllocator, Bump, BumpScope, Checkpoint, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    BaseAllocator, Bump, BumpScope, Checkpoint, WithoutDealloc, WithoutShrink,
     alloc::{AllocError, Allocator},
     layout::CustomLayout,
+    settings::BumpAllocatorSettings,
     stats::AnyStats,
     traits::{assert_dyn_compatible, assert_implements},
 };
@@ -15,19 +16,17 @@ impl<B: Sealed + ?Sized> Sealed for &mut B {}
 impl<B: Sealed> Sealed for WithoutDealloc<B> {}
 impl<B: Sealed> Sealed for WithoutShrink<B> {}
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Sealed
-    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+impl<A, S> Sealed for Bump<A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Sealed
-    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+impl<A, S> Sealed for BumpScope<'_, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
 }
 
@@ -87,8 +86,9 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// ```
     /// # extern crate alloc;
-    /// # use bump_scope::{Bump, BumpAllocator, alloc::Global};
+    /// use bump_scope::{Bump, BumpAllocator, alloc::Global, settings::{BumpSettings, BumpAllocatorSettings}};
     /// # use alloc::alloc::Layout;
+    ///
     /// fn test(bump: impl BumpAllocator) {
     ///     let checkpoint = bump.checkpoint();
     ///     
@@ -103,7 +103,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// }
     ///
     /// test(<Bump>::new());
-    /// test(Bump::<Global, 1, true, false>::unallocated());
+    /// test(Bump::<Global, <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<false>>::unallocated());
     /// ```
     unsafe fn reset_to(&self, checkpoint: Checkpoint);
 
@@ -301,11 +301,10 @@ unsafe impl<B: BumpAllocator> BumpAllocator for WithoutShrink<B> {
     }
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpAllocator for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+unsafe impl<A, S> BumpAllocator for Bump<A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn any_stats(&self) -> AnyStats<'_> {
@@ -338,11 +337,10 @@ where
     }
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpAllocator for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+unsafe impl<A, S> BumpAllocator for BumpScope<'_, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn any_stats(&self) -> AnyStats<'_> {
@@ -363,23 +361,17 @@ where
     fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
         #[cold]
         #[inline(never)]
-        unsafe fn prepare_allocation_in_another_chunk<
-            A,
-            const MIN_ALIGN: usize,
-            const UP: bool,
-            const GUARANTEED_ALLOCATED: bool,
-            const DEALLOCATES: bool,
-        >(
-            this: &BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
+        unsafe fn prepare_allocation_in_another_chunk<A, S>(
+            this: &BumpScope<'_, A, S>,
             layout: Layout,
         ) -> Result<Range<NonNull<u8>>, AllocError>
         where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-            A: BaseAllocator<GUARANTEED_ALLOCATED>,
+            A: BaseAllocator<S::GuaranteedAllocated>,
+            S: BumpAllocatorSettings,
         {
             unsafe {
                 this.in_another_chunk(CustomLayout(layout), |chunk, layout| {
-                    chunk.prepare_allocation_range(MinimumAlignment::<MIN_ALIGN>, layout)
+                    chunk.prepare_allocation_range::<S::MinimumAlignment>(layout)
                 })
             }
         }
@@ -387,7 +379,7 @@ where
         match self
             .chunk
             .get()
-            .prepare_allocation_range(MinimumAlignment::<MIN_ALIGN>, CustomLayout(layout))
+            .prepare_allocation_range::<S::MinimumAlignment>(CustomLayout(layout))
         {
             Some(ptr) => Ok(ptr),
             None => unsafe { prepare_allocation_in_another_chunk(self, layout) },
@@ -401,7 +393,7 @@ where
         debug_assert_eq!(layout.size() % layout.align(), 0);
 
         unsafe {
-            if UP {
+            if S::UP {
                 let end = range.start.add(layout.size());
                 self.set_pos(end.addr());
                 range.start
@@ -423,7 +415,7 @@ where
         debug_assert_eq!(layout.size() % layout.align(), 0);
 
         unsafe {
-            if UP {
+            if S::UP {
                 let dst = range.start;
                 let dst_end = dst.add(layout.size());
 

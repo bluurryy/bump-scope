@@ -1,6 +1,6 @@
 use crate::{
-    BaseAllocator, Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc,
-    WithoutShrink,
+    BaseAllocator, Bump, BumpAllocator, BumpScope, WithoutDealloc, WithoutShrink,
+    settings::BumpAllocatorSettings,
     traits::{assert_dyn_compatible, assert_implements},
 };
 
@@ -55,26 +55,23 @@ unsafe impl<'a, B: BumpAllocatorScope<'a> + ?Sized> BumpAllocatorScope<'a> for &
 unsafe impl<'a, B: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for WithoutDealloc<B> {}
 unsafe impl<'a, B: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for WithoutShrink<B> {}
 
-unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpAllocatorScope<'a> for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+unsafe impl<'a, A, S> BumpAllocatorScope<'a> for BumpScope<'a, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
 }
 
-unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpAllocatorScope<'a> for &'a Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+unsafe impl<'a, A, S> BumpAllocatorScope<'a> for &'a Bump<A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
 }
 
-unsafe impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpAllocatorScope<'a> for &'a mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+unsafe impl<'a, A, S> BumpAllocatorScope<'a> for &'a mut Bump<A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
 }

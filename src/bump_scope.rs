@@ -15,18 +15,19 @@ use core::{
 use core::clone::CloneToUninit;
 
 use crate::{
-    BaseAllocator, Bump, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior, MinimumAlignment,
-    MutBumpString, MutBumpVec, MutBumpVecRev, NoDrop, RawChunk, SizedTypeProperties, SupportedMinimumAlignment, align_pos,
+    BaseAllocator, Bump, BumpBox, BumpScopeGuard, BumpString, BumpVec, Checkpoint, ErrorBehavior, MutBumpString, MutBumpVec,
+    MutBumpVecRev, NoDrop, RawChunk, SizedTypeProperties, align_pos,
     alloc::{AllocError, Allocator},
     allocator_impl,
     bump_align_guard::BumpAlignGuard,
     chunk_header::ChunkHeader,
     chunk_size::ChunkSize,
-    const_param_assert, down_align_usize,
+    down_align_usize,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{non_null, transmute_mut, transmute_ref},
+    settings::{Boolean, BumpAllocatorSettings, BumpSettings, MinimumAlignment, SupportedMinimumAlignment, True},
     stats::{AnyStats, Stats},
     up_align_usize_unchecked,
 };
@@ -58,15 +59,11 @@ macro_rules! make_type {
         /// [`reset`]: crate::Bump::reset
         /// [`into`]: crate::Bump#impl-From<%26Bump<A,+MIN_ALIGN,+UP,+GUARANTEED_ALLOCATED>>-for-%26BumpScope<'b,+A,+MIN_ALIGN,+UP,+GUARANTEED_ALLOCATED>
         #[repr(transparent)]
-        pub struct BumpScope<
-            'a,
-            $($allocator_parameter)*,
-            const MIN_ALIGN: usize = 1,
-            const UP: bool = true,
-            const GUARANTEED_ALLOCATED: bool = true,
-            const DEALLOCATES: bool = true,
-        > {
-            pub(crate) chunk: Cell<RawChunk<A, UP, GUARANTEED_ALLOCATED>>,
+        pub struct BumpScope<'a, $($allocator_parameter)*, S = BumpSettings>
+        where
+            S: BumpAllocatorSettings,
+        {
+            pub(crate) chunk: Cell<RawChunk<A, S>>,
 
             /// Marks the lifetime of the mutably borrowed `BumpScopeGuard(Root)`.
             marker: PhantomData<&'a ()>,
@@ -76,37 +73,33 @@ macro_rules! make_type {
 
 maybe_default_allocator!(make_type);
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> UnwindSafe
-    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+impl<A, S> UnwindSafe for BumpScope<'_, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: UnwindSafe,
+    S: BumpAllocatorSettings,
 {
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> RefUnwindSafe
-    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+impl<A, S> RefUnwindSafe for BumpScope<'_, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: UnwindSafe,
+    S: BumpAllocatorSettings,
 {
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Debug
-    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+impl<A, S> Debug for BumpScope<'_, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    S: BumpAllocatorSettings,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         AnyStats::from(self.stats()).debug_format("BumpScope", f)
     }
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Allocator
-    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+unsafe impl<A, S> Allocator for BumpScope<'_, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -140,10 +133,9 @@ where
 }
 
 /// Methods for a [*guaranteed allocated*](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool>
-    BumpScope<'a, A, MIN_ALIGN, UP, true, DEALLOCATES>
+impl<'a, A, S> BumpScope<'a, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
 {
     /// Returns a reference to the base allocator.
     #[must_use]
@@ -168,7 +160,7 @@ where
     /// assert_eq!(bump.stats().allocated(), 0);
     /// ```
     #[inline(always)]
-    pub fn scoped<R>(&mut self, f: impl FnOnce(BumpScope<A, MIN_ALIGN, UP, true, DEALLOCATES>) -> R) -> R {
+    pub fn scoped<R>(&mut self, f: impl FnOnce(BumpScope<A, S>) -> R) -> R {
         let mut guard = self.scope_guard();
         f(guard.scope())
     }
@@ -217,7 +209,7 @@ where
     #[inline(always)]
     pub fn scoped_aligned<const NEW_MIN_ALIGN: usize, R>(
         &mut self,
-        f: impl FnOnce(BumpScope<A, NEW_MIN_ALIGN, UP, true, DEALLOCATES>) -> R,
+        f: impl FnOnce(BumpScope<A, S::WithMinimumAlignment<NEW_MIN_ALIGN>>) -> R,
     ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
@@ -226,7 +218,7 @@ where
         let mut guard = self.scope_guard();
         let scope = guard.scope();
         scope.align::<NEW_MIN_ALIGN>();
-        f(unsafe { scope.cast_align() })
+        f(unsafe { scope.cast() })
     }
 
     /// Calls `f` with this scope but with a new minimum alignment.
@@ -274,8 +266,10 @@ where
     #[cfg_attr(feature = "nightly-tests", doc = "```")]
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # #![feature(pointer_is_aligned_to)]
-    /// # use bump_scope::{Bump, alloc::Global};
-    /// let mut bump: Bump<Global, 8> = Bump::new();
+    /// # use bump_scope::{Bump, alloc::Global, settings::{BumpSettings, BumpAllocatorSettings}};
+    /// type Settings = <BumpSettings as BumpAllocatorSettings>::WithMinimumAlignment<8>;
+    ///
+    /// let mut bump: Bump<Global, Settings> = Bump::new();
     /// let bump = bump.as_mut_scope();
     ///
     /// // make some allocations that benefit from the `MIN_ALIGN` of `8`
@@ -304,18 +298,18 @@ where
     #[inline(always)]
     pub fn aligned<const NEW_MIN_ALIGN: usize, R>(
         &mut self,
-        f: impl FnOnce(BumpScope<'a, A, NEW_MIN_ALIGN, UP, true, DEALLOCATES>) -> R,
+        f: impl FnOnce(BumpScope<'a, A, S::WithMinimumAlignment<NEW_MIN_ALIGN>>) -> R,
     ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        if NEW_MIN_ALIGN < MIN_ALIGN {
+        if NEW_MIN_ALIGN < S::MIN_ALIGN {
             // This guard will align whatever the future bump position is back to `MIN_ALIGN`.
             let guard = BumpAlignGuard::new(self);
-            f(unsafe { guard.scope.clone_unchecked().cast_align() })
+            f(unsafe { guard.scope.clone_unchecked().cast() })
         } else {
             self.align::<NEW_MIN_ALIGN>();
-            f(unsafe { self.clone_unchecked().cast_align() })
+            f(unsafe { self.clone_unchecked().cast() })
         }
     }
 
@@ -340,37 +334,29 @@ where
     /// ```
     #[must_use]
     #[inline(always)]
-    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, A, MIN_ALIGN, UP, DEALLOCATES> {
+    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, A, S> {
         BumpScopeGuard::new(self)
     }
 }
 
-/// Methods for a **not** [*guaranteed allocated*](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool>
-    BumpScope<'a, A, MIN_ALIGN, UP, false, DEALLOCATES>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-{
-    /// Returns a reference to the base allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn allocator(&self) -> Option<&'a A> {
-        self.stats().current_chunk().map(|c| c.allocator())
-    }
-}
-
 /// Methods that are always available.
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+impl<'a, A, S> BumpScope<'a, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
-    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, UP, GUARANTEED_ALLOCATED>) -> Self {
+    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, S>) -> Self {
         Self {
             chunk: Cell::new(chunk),
             marker: PhantomData,
         }
+    }
+
+    /// Returns a reference to the base allocator.
+    #[must_use]
+    #[inline(always)]
+    pub fn get_allocator(&self) -> Option<&'a A> {
+        self.stats().get_current_chunk().map(|c| c.allocator())
     }
 
     /// Creates a checkpoint of the current bump position.
@@ -440,14 +426,16 @@ where
         // if the bump allocator is `GUARANTEED_ALLOCATED`. We are allowed to not do this check
         // because of this safety condition of `reset_to`:
         // > the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
-        if !GUARANTEED_ALLOCATED && checkpoint.chunk == ChunkHeader::UNALLOCATED {
+        if !<S::GuaranteedAllocated as Boolean>::VALUE && checkpoint.chunk == ChunkHeader::UNALLOCATED {
             if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
                 while let Some(prev) = chunk.prev() {
                     chunk = prev;
                 }
 
                 chunk.reset();
-                self.chunk.set(chunk.coerce_guaranteed_allocated());
+
+                // SAFETY: casting from guaranteed-allocated to non-guaranteed-allocated is safe
+                self.chunk.set(unsafe { chunk.cast() });
             }
         } else {
             debug_assert_ne!(
@@ -481,7 +469,7 @@ where
     /// "Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
+    pub fn stats(&self) -> Stats<'a, A, S> {
         self.chunk.get().stats()
     }
 
@@ -490,11 +478,11 @@ where
     where
         MinimumAlignment<ALIGN>: SupportedMinimumAlignment,
     {
-        if ALIGN > MIN_ALIGN {
+        if ALIGN > S::MIN_ALIGN {
             // The UNALLOCATED chunk is always aligned.
             if let Some(chunk) = self.chunk.get().guaranteed_allocated() {
                 let pos = chunk.pos().addr();
-                let addr = align_pos::<ALIGN, UP>(pos);
+                let addr = align_pos(S::UP, ALIGN, pos);
                 unsafe { chunk.set_pos_addr(addr) };
             }
         }
@@ -502,7 +490,7 @@ where
 
     /// Converts this `BumpScope` into a ***not*** [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
     #[inline(always)]
-    pub fn into_not_guaranteed_allocated(self) -> BumpScope<'a, A, MIN_ALIGN, UP, false, DEALLOCATES> {
+    pub fn into_not_guaranteed_allocated(self) -> BumpScope<'a, A, S::WithGuaranteedAllocated<false>> {
         // SAFETY: it's always valid to interpret a guaranteed allocated as a non guaranteed allocated
         unsafe { transmute(self) }
     }
@@ -513,7 +501,7 @@ where
     /// a user could `mem::swap` it with an actual unallocated bump allocator which in turn would make `&mut self`
     /// unallocated.
     #[inline(always)]
-    pub fn as_not_guaranteed_allocated(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP, false, DEALLOCATES> {
+    pub fn as_not_guaranteed_allocated(&self) -> &BumpScope<'a, A, S::WithGuaranteedAllocated<false>> {
         // SAFETY: it's always valid to interpret a guaranteed allocated as a non guaranteed allocated
         unsafe { transmute_ref(self) }
     }
@@ -522,7 +510,7 @@ where
     ///
     /// - `self` must not be used until this clone is gone
     #[inline(always)]
-    pub(crate) unsafe fn clone_unchecked(&self) -> BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES> {
+    pub(crate) unsafe fn clone_unchecked(&self) -> BumpScope<'a, A, S> {
         unsafe { BumpScope::new_unchecked(self.chunk.get()) }
     }
 
@@ -552,26 +540,22 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn cast_align<const NEW_MIN_ALIGN: usize>(
-        self,
-    ) -> BumpScope<'a, A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    pub(crate) unsafe fn cast<S2>(self) -> BumpScope<'a, A, S2>
     where
-        MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
+        S2: BumpAllocatorSettings,
     {
         BumpScope {
-            chunk: self.chunk,
+            chunk: Cell::new(unsafe { self.chunk.get().cast::<S2>() }),
             marker: PhantomData,
         }
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn cast_align_mut<const NEW_MIN_ALIGN: usize>(
-        &mut self,
-    ) -> &mut BumpScope<'a, A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    pub(crate) unsafe fn cast_mut<S2>(&mut self) -> &mut BumpScope<'a, A, S2>
     where
-        MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
+        S2: BumpAllocatorSettings,
     {
-        unsafe { &mut *ptr::from_mut(self).cast::<BumpScope<'a, A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>>() }
+        unsafe { &mut *ptr::from_mut(self).cast::<BumpScope<'a, A, S2>>() }
     }
 
     /// Will error at compile time if `NEW_MIN_ALIGN < MIN_ALIGN`.
@@ -580,8 +564,11 @@ where
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
-        const_param_assert! {
-            (const MIN_ALIGN: usize, const NEW_MIN_ALIGN: usize) => NEW_MIN_ALIGN >= MIN_ALIGN, "`into_aligned` or `as_mut_aligned` can't decrease the minimum alignment"
+        const {
+            assert!(
+                NEW_MIN_ALIGN >= S::MIN_ALIGN,
+                "`into_aligned` or `as_mut_aligned` can't decrease the minimum alignment"
+            );
         }
 
         self.align::<NEW_MIN_ALIGN>();
@@ -597,12 +584,12 @@ where
     #[inline(always)]
     pub fn as_mut_aligned<const NEW_MIN_ALIGN: usize>(
         &mut self,
-    ) -> &mut BumpScope<'a, A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    ) -> &mut BumpScope<'a, A, S::WithMinimumAlignment<NEW_MIN_ALIGN>>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
         self.must_align_more::<NEW_MIN_ALIGN>();
-        unsafe { self.cast_align_mut() }
+        unsafe { self.cast_mut() }
     }
 
     /// Returns `&self` as is. This is useful for macros that support both `Bump` and `BumpScope`.
@@ -646,14 +633,12 @@ where
     ///
     /// ```
     #[inline(always)]
-    pub fn into_aligned<const NEW_MIN_ALIGN: usize>(
-        self,
-    ) -> BumpScope<'a, A, NEW_MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    pub fn into_aligned<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, A, S::WithMinimumAlignment<NEW_MIN_ALIGN>>
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
         self.must_align_more::<NEW_MIN_ALIGN>();
-        unsafe { self.cast_align() }
+        unsafe { self.cast() }
     }
 
     #[inline(always)]
@@ -661,7 +646,7 @@ where
         unsafe {
             let end = start.add(len);
 
-            if UP {
+            if S::UP {
                 self.set_aligned_pos(end.addr(), T::ALIGN);
                 NonNull::slice_from_raw_parts(start, len)
             } else {
@@ -682,7 +667,7 @@ where
         cap: usize,
     ) -> NonNull<[T]> {
         unsafe {
-            if UP {
+            if S::UP {
                 let dst = end.sub(cap);
                 let dst_end = dst.add(len);
 
@@ -706,7 +691,7 @@ where
     #[inline(always)]
     pub(crate) unsafe fn set_pos(&self, pos: NonZeroUsize) {
         unsafe {
-            let addr = align_pos::<MIN_ALIGN, UP>(pos);
+            let addr = align_pos(S::UP, S::MIN_ALIGN, pos);
 
             if let Some(chunk) = self.chunk.get().guaranteed_allocated() {
                 chunk.set_pos_addr(addr);
@@ -725,8 +710,8 @@ where
     pub(crate) unsafe fn set_aligned_pos(&self, pos: NonZeroUsize, pos_align: usize) {
         debug_assert_eq!(pos.get() % pos_align, 0);
 
-        let addr = if pos_align < MIN_ALIGN {
-            align_pos::<MIN_ALIGN, UP>(pos)
+        let addr = if pos_align < S::MIN_ALIGN {
+            align_pos(S::UP, S::MIN_ALIGN, pos)
         } else {
             pos.get()
         };
@@ -737,42 +722,41 @@ where
     }
 
     /// Turns off deallocation and shrinking.
-    pub fn into_without_dealloc(self) -> BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
+    pub fn into_without_dealloc(self) -> BumpScope<'a, A, S::WithDeallocates<false>> {
         unsafe { transmute(self) }
     }
 
     /// Turns off deallocation and shrinking.
-    pub fn as_without_dealloc(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
+    pub fn as_without_dealloc(&self) -> &BumpScope<'a, A, S::WithDeallocates<false>> {
         unsafe { transmute_ref(self) }
     }
 
     /// Turns off deallocation and shrinking.
-    pub fn as_mut_without_dealloc(&mut self) -> &mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, false> {
+    pub fn as_mut_without_dealloc(&mut self) -> &mut BumpScope<'a, A, S::WithDeallocates<false>> {
         unsafe { transmute_mut(self) }
     }
 
     /// Turns on deallocation and shrinking.
-    pub fn into_with_dealloc(self) -> BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
+    pub fn into_with_dealloc(self) -> BumpScope<'a, A, S::WithDeallocates<true>> {
         unsafe { transmute(self) }
     }
 
     /// Turns on deallocation and shrinking.
-    pub fn as_with_dealloc(&self) -> &BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
+    pub fn as_with_dealloc(&self) -> &BumpScope<'a, A, S::WithDeallocates<true>> {
         unsafe { transmute_ref(self) }
     }
 
     /// Turns on deallocation and shrinking.
-    pub fn as_mut_with_dealloc(&mut self) -> &mut BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, true> {
+    pub fn as_mut_with_dealloc(&mut self) -> &mut BumpScope<'a, A, S::WithDeallocates<true>> {
         unsafe { transmute_mut(self) }
     }
 }
 
 /// Methods that are always available. (but with `A: Allocator`)
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+impl<'a, A, S> BumpScope<'a, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
+    S: BumpAllocatorSettings,
 {
     /// Converts this `BumpScope` into a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
     ///
@@ -785,8 +769,8 @@ where
     #[cfg(feature = "panic-on-alloc")]
     pub fn into_guaranteed_allocated(
         self,
-        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>,
-    ) -> BumpScope<'a, A, MIN_ALIGN, UP, true, DEALLOCATES> {
+        f: impl FnOnce() -> Bump<A, S::WithGuaranteedAllocated<true>>,
+    ) -> BumpScope<'a, A, S::WithGuaranteedAllocated<true>> {
         self.ensure_allocated(f);
         unsafe { transmute(self) }
     }
@@ -801,8 +785,8 @@ where
     #[inline(always)]
     pub fn try_into_guaranteed_allocated(
         self,
-        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>, AllocError>,
-    ) -> Result<BumpScope<'a, A, MIN_ALIGN, UP, true, DEALLOCATES>, AllocError> {
+        f: impl FnOnce() -> Result<Bump<A, S::WithGuaranteedAllocated<true>>, AllocError>,
+    ) -> Result<BumpScope<'a, A, S::WithGuaranteedAllocated<true>>, AllocError> {
         self.try_ensure_allocated(f)?;
         Ok(unsafe { transmute(self) })
     }
@@ -818,8 +802,8 @@ where
     #[cfg(feature = "panic-on-alloc")]
     pub fn as_guaranteed_allocated(
         &self,
-        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>,
-    ) -> &BumpScope<'a, A, MIN_ALIGN, UP, true, DEALLOCATES> {
+        f: impl FnOnce() -> Bump<A, S::WithGuaranteedAllocated<true>>,
+    ) -> &BumpScope<'a, A, S::WithGuaranteedAllocated<true>> {
         self.ensure_allocated(f);
         unsafe { transmute_ref(self) }
     }
@@ -834,8 +818,8 @@ where
     #[inline(always)]
     pub fn try_as_guaranteed_allocated(
         &self,
-        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>, AllocError>,
-    ) -> Result<&BumpScope<'a, A, MIN_ALIGN, UP, true, DEALLOCATES>, AllocError> {
+        f: impl FnOnce() -> Result<Bump<A, S::WithGuaranteedAllocated<true>>, AllocError>,
+    ) -> Result<&BumpScope<'a, A, S::WithGuaranteedAllocated<true>>, AllocError> {
         self.try_ensure_allocated(f)?;
         Ok(unsafe { transmute_ref(self) })
     }
@@ -851,8 +835,8 @@ where
     #[cfg(feature = "panic-on-alloc")]
     pub fn as_mut_guaranteed_allocated(
         &mut self,
-        f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>,
-    ) -> &mut BumpScope<'a, A, MIN_ALIGN, UP, true, DEALLOCATES> {
+        f: impl FnOnce() -> Bump<A, S::WithGuaranteedAllocated<true>>,
+    ) -> &mut BumpScope<'a, A, S::WithGuaranteedAllocated<true>> {
         self.ensure_allocated(f);
         unsafe { transmute_mut(self) }
     }
@@ -867,15 +851,15 @@ where
     #[inline(always)]
     pub fn try_as_mut_guaranteed_allocated(
         &mut self,
-        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>, AllocError>,
-    ) -> Result<&mut BumpScope<'a, A, MIN_ALIGN, UP, true, DEALLOCATES>, AllocError> {
+        f: impl FnOnce() -> Result<Bump<A, S::WithGuaranteedAllocated<true>>, AllocError>,
+    ) -> Result<&mut BumpScope<'a, A, S::WithGuaranteedAllocated<true>>, AllocError> {
         self.try_ensure_allocated(f)?;
         Ok(unsafe { transmute_mut(self) })
     }
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub(crate) fn ensure_allocated(&self, f: impl FnOnce() -> Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>) {
+    pub(crate) fn ensure_allocated(&self, f: impl FnOnce() -> Bump<A, S::WithGuaranteedAllocated<true>>) {
         if self.chunk.get().is_unallocated() {
             unsafe {
                 self.chunk.set(RawChunk::from_header(f().into_raw().cast()));
@@ -886,7 +870,7 @@ where
     #[inline(always)]
     pub(crate) fn try_ensure_allocated(
         &self,
-        f: impl FnOnce() -> Result<Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>, AllocError>,
+        f: impl FnOnce() -> Result<Bump<A, S::WithGuaranteedAllocated<true>>, AllocError>,
     ) -> Result<(), AllocError> {
         if self.chunk.get().is_unallocated() {
             unsafe {
@@ -898,18 +882,17 @@ where
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+impl<A, S> BumpScope<'_, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     pub(crate) fn generic_prepare_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
         match self
             .chunk
             .get()
-            .prepare_allocation(MinimumAlignment::<MIN_ALIGN>, SizedLayout::new::<T>())
+            .prepare_allocation::<S::MinimumAlignment>(SizedLayout::new::<T>())
         {
             Some(ptr) => Ok(ptr.cast()),
             None => match self.prepare_allocation_in_another_chunk::<B, T>() {
@@ -921,17 +904,10 @@ where
 
     #[cold]
     #[inline(never)]
-    pub(crate) fn prepare_allocation_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E>
-    where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    {
+    pub(crate) fn prepare_allocation_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E> {
         let layout = CustomLayout(Layout::new::<T>());
 
-        unsafe {
-            self.in_another_chunk(layout, |chunk, layout| {
-                chunk.prepare_allocation(MinimumAlignment::<MIN_ALIGN>, layout)
-            })
-        }
+        unsafe { self.in_another_chunk(layout, RawChunk::prepare_allocation::<S::MinimumAlignment>) }
     }
 
     pub(crate) fn generic_prepare_slice_allocation<B: ErrorBehavior, T>(&self, min_cap: usize) -> Result<NonNull<[T]>, B> {
@@ -940,7 +916,7 @@ where
         // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
         let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
 
-        let ptr = if UP { range.start } else { unsafe { range.end.sub(cap) } };
+        let ptr = if S::UP { range.start } else { unsafe { range.end.sub(cap) } };
 
         Ok(NonNull::slice_from_raw_parts(ptr, cap))
     }
@@ -955,11 +931,7 @@ where
             return Err(B::capacity_overflow());
         };
 
-        let range = match self
-            .chunk
-            .get()
-            .prepare_allocation_range(MinimumAlignment::<MIN_ALIGN>, layout)
-        {
+        let range = match self.chunk.get().prepare_allocation_range::<S::MinimumAlignment>(layout) {
             Some(ptr) => ptr,
             None => self.prepare_allocation_range_in_another_chunk(layout)?,
         };
@@ -973,16 +945,12 @@ where
         &self,
         layout: ArrayLayout,
     ) -> Result<Range<NonNull<u8>>, E> {
-        unsafe {
-            self.in_another_chunk(layout, |chunk, layout| {
-                chunk.prepare_allocation_range(MinimumAlignment::<MIN_ALIGN>, layout)
-            })
-        }
+        unsafe { self.in_another_chunk(layout, RawChunk::prepare_allocation_range::<S::MinimumAlignment>) }
     }
 
     #[inline(always)]
     pub(crate) fn alloc_in_current_chunk(&self, layout: Layout) -> Option<NonNull<u8>> {
-        self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, CustomLayout(layout))
+        self.chunk.get().alloc::<S::MinimumAlignment>(CustomLayout(layout))
     }
 
     /// Allocation slow path.
@@ -990,16 +958,12 @@ where
     #[cold]
     #[inline(never)]
     pub(crate) fn alloc_in_another_chunk<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
-        unsafe {
-            self.in_another_chunk(CustomLayout(layout), |chunk, layout| {
-                chunk.alloc(MinimumAlignment::<MIN_ALIGN>, layout)
-            })
-        }
+        unsafe { self.in_another_chunk(CustomLayout(layout), RawChunk::alloc::<S::MinimumAlignment>) }
     }
 
     #[inline(always)]
     pub(crate) fn do_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
-        match self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, SizedLayout::new::<T>()) {
+        match self.chunk.get().alloc::<S::MinimumAlignment>(SizedLayout::new::<T>()) {
             Some(ptr) => Ok(ptr.cast()),
             None => match self.do_alloc_sized_in_another_chunk::<E, T>() {
                 Ok(ptr) => Ok(ptr.cast()),
@@ -1010,10 +974,7 @@ where
 
     #[cold]
     #[inline(never)]
-    pub(crate) fn do_alloc_sized_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E>
-    where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    {
+    pub(crate) fn do_alloc_sized_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E> {
         self.alloc_in_another_chunk(Layout::new::<T>())
     }
 
@@ -1023,7 +984,7 @@ where
             return Err(E::capacity_overflow());
         };
 
-        match self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, layout) {
+        match self.chunk.get().alloc::<S::MinimumAlignment>(layout) {
             Some(ptr) => Ok(ptr.cast()),
             None => match self.do_alloc_slice_in_another_chunk::<E, T>(len) {
                 Ok(ptr) => Ok(ptr.cast()),
@@ -1036,7 +997,7 @@ where
     pub(crate) fn do_alloc_slice_for<E: ErrorBehavior, T>(&self, value: &[T]) -> Result<NonNull<T>, E> {
         let layout = ArrayLayout::for_value(value);
 
-        match self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, layout) {
+        match self.chunk.get().alloc::<S::MinimumAlignment>(layout) {
             Some(ptr) => Ok(ptr.cast()),
             None => match self.do_alloc_slice_in_another_chunk::<E, T>(value.len()) {
                 Ok(ptr) => Ok(ptr.cast()),
@@ -1047,10 +1008,7 @@ where
 
     #[cold]
     #[inline(never)]
-    pub(crate) fn do_alloc_slice_in_another_chunk<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<u8>, E>
-    where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    {
+    pub(crate) fn do_alloc_slice_in_another_chunk<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<u8>, E> {
         let Ok(layout) = Layout::array::<T>(len) else {
             return Err(E::capacity_overflow());
         };
@@ -1065,38 +1023,41 @@ where
     pub(crate) unsafe fn in_another_chunk<B: ErrorBehavior, R, L: LayoutProps>(
         &self,
         layout: L,
-        mut f: impl FnMut(RawChunk<A, UP, true>, L) -> Option<R>,
+        mut f: impl FnMut(RawChunk<A, S::WithGuaranteedAllocated<true>>, L) -> Option<R>,
     ) -> Result<R, B> {
         unsafe {
-            let new_chunk: RawChunk<A, UP, true> = if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
-                while let Some(next_chunk) = chunk.next() {
-                    chunk = next_chunk;
+            let new_chunk: RawChunk<A, S::WithGuaranteedAllocated<true>> =
+                if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
+                    while let Some(next_chunk) = chunk.next() {
+                        chunk = next_chunk;
 
-                    // We don't reset the chunk position when we leave a scope, so we need to do it here.
-                    chunk.reset();
+                        // We don't reset the chunk position when we leave a scope, so we need to do it here.
+                        chunk.reset();
 
-                    self.chunk.set(chunk.coerce_guaranteed_allocated());
+                        // SAFETY: casting from guaranteed-allocated to non-guaranteed-allocated is safe
+                        self.chunk.set(chunk.cast());
 
-                    if let Some(ptr) = f(chunk, layout) {
-                        return Ok(ptr);
+                        if let Some(ptr) = f(chunk, layout) {
+                            return Ok(ptr);
+                        }
                     }
-                }
 
-                // there is no chunk that fits, we need a new chunk
-                chunk.append_for(*layout)
-            } else {
-                // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
-                // `default_or_panic` will not panic.
-                let allocator = A::default_or_panic();
+                    // there is no chunk that fits, we need a new chunk
+                    chunk.append_for(*layout)
+                } else {
+                    // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
+                    // `default_or_panic` will not panic.
+                    let allocator = A::default_or_panic();
 
-                RawChunk::new_in(
-                    ChunkSize::from_capacity(*layout).ok_or_else(B::capacity_overflow)?,
-                    None,
-                    allocator,
-                )
-            }?;
+                    RawChunk::new_in(
+                        ChunkSize::from_capacity(*layout).ok_or_else(B::capacity_overflow)?,
+                        None,
+                        allocator,
+                    )
+                }?;
 
-            self.chunk.set(new_chunk.coerce_guaranteed_allocated());
+            // SAFETY: casting from guaranteed-allocated to non-guaranteed-allocated is safe
+            self.chunk.set(new_chunk.cast());
 
             match f(new_chunk, layout) {
                 Some(ptr) => Ok(ptr),
@@ -1111,17 +1072,13 @@ where
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> NoDrop
-    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
-{
-}
+impl<A, S> NoDrop for BumpScope<'_, A, S> where S: BumpAllocatorSettings {}
 
 /// Methods to allocate. Available as fallible or infallible.
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+impl<'a, A, S> BumpScope<'a, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     /// Allocate an object.
     ///
@@ -2690,7 +2647,7 @@ where
 
     #[inline(always)]
     pub(crate) fn generic_alloc_layout<B: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, B> {
-        match self.chunk.get().alloc(MinimumAlignment::<MIN_ALIGN>, CustomLayout(layout)) {
+        match self.chunk.get().alloc::<S::MinimumAlignment>(CustomLayout(layout)) {
             Some(ptr) => Ok(ptr),
             None => self.alloc_in_another_chunk(layout),
         }
@@ -2796,11 +2753,11 @@ where
         } else {
             let allocator = A::default_or_panic();
             let new_chunk = RawChunk::new_in(
-                ChunkSize::from_capacity(layout).ok_or_else(B::capacity_overflow)?,
+                ChunkSize::<A, S>::from_capacity(layout).ok_or_else(B::capacity_overflow)?,
                 None,
                 allocator,
             )?;
-            self.chunk.set(new_chunk.coerce_guaranteed_allocated());
+            self.chunk.set(new_chunk);
             Ok(())
         }
     }
@@ -2896,7 +2853,7 @@ where
 
         // When bumping downwards the chunk's position is the same as `ptr`.
         // Using `ptr` is faster so we use that.
-        let pos = if UP { self.chunk.get().pos() } else { ptr.cast() };
+        let pos = if S::UP { self.chunk.get().pos() } else { ptr.cast() };
 
         Ok(unsafe {
             non_null::write_with(ptr, f);
@@ -2907,12 +2864,12 @@ where
             match non_null::result(ptr) {
                 Ok(value) => Ok({
                     if can_shrink {
-                        let new_pos = if UP {
+                        let new_pos = if S::UP {
                             let pos = value.add(1).addr().get();
-                            up_align_usize_unchecked(pos, MIN_ALIGN)
+                            up_align_usize_unchecked(pos, S::MIN_ALIGN)
                         } else {
                             let pos = value.addr().get();
-                            down_align_usize(pos, MIN_ALIGN)
+                            down_align_usize(pos, S::MIN_ALIGN)
                         };
 
                         // The allocation of a non-ZST was successful, so our chunk must be allocated.
@@ -3030,12 +2987,12 @@ where
             // so there's no way anyone else has allocated in `f`.
             match non_null::result(ptr) {
                 Ok(value) => Ok({
-                    let new_pos = if UP {
+                    let new_pos = if S::UP {
                         let pos = value.add(1).addr().get();
-                        up_align_usize_unchecked(pos, MIN_ALIGN)
+                        up_align_usize_unchecked(pos, S::MIN_ALIGN)
                     } else {
                         let pos = value.addr().get();
-                        down_align_usize(pos, MIN_ALIGN)
+                        down_align_usize(pos, S::MIN_ALIGN)
                     };
 
                     // The allocation of a non-ZST was successful, so our chunk must be allocated.

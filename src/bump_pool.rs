@@ -7,9 +7,10 @@ use std::{
 };
 
 use crate::{
-    Bump, BumpScope, ErrorBehavior, MinimumAlignment, SupportedMinimumAlignment,
+    Bump, BumpScope, ErrorBehavior,
     alloc::{AllocError, Allocator},
     maybe_default_allocator,
+    settings::{BumpAllocatorSettings, BumpSettings},
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -71,15 +72,12 @@ macro_rules! make_pool {
         ///
         #[doc(alias = "Herd")]
         #[derive(Debug)]
-        pub struct BumpPool<
-            $($allocator_parameter)*,
-            const MIN_ALIGN: usize = 1,
-            const UP: bool = true,
-        > where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        pub struct BumpPool<$($allocator_parameter)*, S = BumpSettings>
+        where
             A: Allocator,
+            S: BumpAllocatorSettings,
         {
-            bumps: Mutex<Vec<Bump<A, MIN_ALIGN, UP, true, true>>>,
+            bumps: Mutex<Vec<Bump<A, S>>>,
             allocator: A,
         }
     };
@@ -87,10 +85,10 @@ macro_rules! make_pool {
 
 maybe_default_allocator!(make_pool);
 
-impl<A, const MIN_ALIGN: usize, const UP: bool> Default for BumpPool<A, MIN_ALIGN, UP>
+impl<A, S> Default for BumpPool<A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Default,
+    S: BumpAllocatorSettings,
 {
     fn default() -> Self {
         Self {
@@ -100,10 +98,10 @@ where
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool> BumpPool<A, MIN_ALIGN, UP>
+impl<A, S> BumpPool<A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Default,
+    S: BumpAllocatorSettings,
 {
     /// Constructs a new `BumpPool`.
     #[inline]
@@ -113,10 +111,10 @@ where
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool> BumpPool<A, MIN_ALIGN, UP>
+impl<A, S> BumpPool<A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
+    S: BumpAllocatorSettings,
 {
     /// Constructs a new `BumpPool` with the provided allocator.
     #[inline]
@@ -136,19 +134,19 @@ where
     }
 
     /// Returns the vector of `Bump`s.
-    pub fn bumps(&mut self) -> &mut Vec<Bump<A, MIN_ALIGN, UP, true, true>> {
+    pub fn bumps(&mut self) -> &mut Vec<Bump<A, S>> {
         self.bumps.get_mut().unwrap_or_else(PoisonError::into_inner)
     }
 
-    fn lock(&self) -> MutexGuard<'_, Vec<Bump<A, MIN_ALIGN, UP, true, true>>> {
+    fn lock(&self) -> MutexGuard<'_, Vec<Bump<A, S>>> {
         self.bumps.lock().unwrap_or_else(PoisonError::into_inner)
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool> BumpPool<A, MIN_ALIGN, UP>
+impl<A, S> BumpPool<A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator + Clone,
+    S: BumpAllocatorSettings,
 {
     /// Borrows a bump allocator from the pool.
     /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
@@ -162,7 +160,7 @@ where
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn get(&self) -> BumpPoolGuard<'_, A, MIN_ALIGN, UP> {
+    pub fn get(&self) -> BumpPoolGuard<'_, A, S> {
         panic_on_error(self.generic_get())
     }
 
@@ -176,11 +174,11 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     #[inline(always)]
-    pub fn try_get(&self) -> Result<BumpPoolGuard<'_, A, MIN_ALIGN, UP>, AllocError> {
+    pub fn try_get(&self) -> Result<BumpPoolGuard<'_, A, S>, AllocError> {
         self.generic_get()
     }
 
-    pub(crate) fn generic_get<E: ErrorBehavior>(&self) -> Result<BumpPoolGuard<'_, A, MIN_ALIGN, UP>, E> {
+    pub(crate) fn generic_get<E: ErrorBehavior>(&self) -> Result<BumpPoolGuard<'_, A, S>, E> {
         let bump = match self.lock().pop() {
             Some(bump) => bump,
             None => Bump::generic_new_in(self.allocator.clone())?,
@@ -204,7 +202,7 @@ where
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn get_with_size(&self, size: usize) -> BumpPoolGuard<'_, A, MIN_ALIGN, UP> {
+    pub fn get_with_size(&self, size: usize) -> BumpPoolGuard<'_, A, S> {
         panic_on_error(self.generic_get_with_size(size))
     }
 
@@ -218,14 +216,11 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     #[inline(always)]
-    pub fn try_get_with_size(&self, size: usize) -> Result<BumpPoolGuard<'_, A, MIN_ALIGN, UP>, AllocError> {
+    pub fn try_get_with_size(&self, size: usize) -> Result<BumpPoolGuard<'_, A, S>, AllocError> {
         self.generic_get_with_size(size)
     }
 
-    pub(crate) fn generic_get_with_size<E: ErrorBehavior>(
-        &self,
-        size: usize,
-    ) -> Result<BumpPoolGuard<'_, A, MIN_ALIGN, UP>, E> {
+    pub(crate) fn generic_get_with_size<E: ErrorBehavior>(&self, size: usize) -> Result<BumpPoolGuard<'_, A, S>, E> {
         let bump = match self.lock().pop() {
             Some(bump) => bump,
             None => Bump::generic_with_size_in(size, self.allocator.clone())?,
@@ -249,7 +244,7 @@ where
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn get_with_capacity(&self, layout: Layout) -> BumpPoolGuard<'_, A, MIN_ALIGN, UP> {
+    pub fn get_with_capacity(&self, layout: Layout) -> BumpPoolGuard<'_, A, S> {
         panic_on_error(self.generic_get_with_capacity(layout))
     }
 
@@ -263,14 +258,11 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     #[inline(always)]
-    pub fn try_get_with_capacity(&self, layout: Layout) -> Result<BumpPoolGuard<'_, A, MIN_ALIGN, UP>, AllocError> {
+    pub fn try_get_with_capacity(&self, layout: Layout) -> Result<BumpPoolGuard<'_, A, S>, AllocError> {
         self.generic_get_with_capacity(layout)
     }
 
-    pub(crate) fn generic_get_with_capacity<E: ErrorBehavior>(
-        &self,
-        layout: Layout,
-    ) -> Result<BumpPoolGuard<'_, A, MIN_ALIGN, UP>, E> {
+    pub(crate) fn generic_get_with_capacity<E: ErrorBehavior>(&self, layout: Layout) -> Result<BumpPoolGuard<'_, A, S>, E> {
         let bump = match self.lock().pop() {
             Some(bump) => bump,
             None => Bump::generic_with_capacity_in(layout, self.allocator.clone())?,
@@ -288,40 +280,36 @@ macro_rules! make_pool_guard {
 
         /// This is a wrapper around [`Bump`] that mutably derefs to a [`BumpScope`] and returns its [`Bump`] back to the [`BumpPool`] on drop.
         #[derive(Debug)]
-        pub struct BumpPoolGuard<
-            'a,
-            $($allocator_parameter)*,
-            const MIN_ALIGN: usize = 1,
-            const UP: bool = true,
-        > where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        pub struct BumpPoolGuard<'a, $($allocator_parameter)*, S = BumpSettings>
+        where
             A: Allocator,
+            S: BumpAllocatorSettings,
         {
-            bump: ManuallyDrop<Bump<A, MIN_ALIGN, UP, true, true>>,
-            pool: &'a BumpPool<A, MIN_ALIGN, UP>,
+            bump: ManuallyDrop<Bump<A, S>>,
+            pool: &'a BumpPool<A, S>,
         }
     };
 }
 
 maybe_default_allocator!(make_pool_guard);
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> BumpPoolGuard<'a, A, MIN_ALIGN, UP>
+impl<'a, A, S> BumpPoolGuard<'a, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
+    S: BumpAllocatorSettings,
 {
     /// The [`BumpPool`], this [`BumpPoolGuard`] was created from.
-    pub fn pool(&self) -> &'a BumpPool<A, MIN_ALIGN, UP> {
+    pub fn pool(&self) -> &'a BumpPool<A, S> {
         self.pool
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool> Deref for BumpPoolGuard<'a, A, MIN_ALIGN, UP>
+impl<'a, A, S> Deref for BumpPoolGuard<'a, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
+    S: BumpAllocatorSettings,
 {
-    type Target = BumpScope<'a, A, MIN_ALIGN, UP, true, true>;
+    type Target = BumpScope<'a, A, S>;
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
@@ -329,10 +317,10 @@ where
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool> DerefMut for BumpPoolGuard<'_, A, MIN_ALIGN, UP>
+impl<A, S> DerefMut for BumpPoolGuard<'_, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
@@ -340,10 +328,10 @@ where
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool> Drop for BumpPoolGuard<'_, A, MIN_ALIGN, UP>
+impl<A, S> Drop for BumpPoolGuard<'_, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
+    S: BumpAllocatorSettings,
 {
     fn drop(&mut self) {
         let bump = unsafe { ManuallyDrop::take(&mut self.bump) };
@@ -353,16 +341,18 @@ where
 
 // This exists as a "safer" transmute that only transmutes the `'a` lifetime parameter.
 #[expect(clippy::elidable_lifetime_names)]
-unsafe fn transmute_lifetime<'from, 'to, 'b, A, const MIN_ALIGN: usize, const UP: bool>(
-    scope: &'b BumpScope<'from, A, MIN_ALIGN, UP, true, true>,
-) -> &'b BumpScope<'to, A, MIN_ALIGN, UP, true, true> {
+unsafe fn transmute_lifetime<'from, 'to, 'b, A, S>(scope: &'b BumpScope<'from, A, S>) -> &'b BumpScope<'to, A, S>
+where
+    S: BumpAllocatorSettings,
+{
     unsafe { mem::transmute(scope) }
 }
 
 // This exists as a "safer" transmute that only transmutes the `'a` lifetime parameter.
 #[expect(clippy::elidable_lifetime_names)]
-unsafe fn transmute_lifetime_mut<'from, 'to, 'b, A, const MIN_ALIGN: usize, const UP: bool>(
-    scope: &'b mut BumpScope<'from, A, MIN_ALIGN, UP, true, true>,
-) -> &'b mut BumpScope<'to, A, MIN_ALIGN, UP, true, true> {
+unsafe fn transmute_lifetime_mut<'from, 'to, 'b, A, S>(scope: &'b mut BumpScope<'from, A, S>) -> &'b mut BumpScope<'to, A, S>
+where
+    S: BumpAllocatorSettings,
+{
     unsafe { mem::transmute(scope) }
 }

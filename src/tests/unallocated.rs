@@ -3,6 +3,7 @@ use core::alloc::Layout;
 use crate::{
     BumpAllocator, BumpAllocatorExt,
     alloc::{Allocator, Global},
+    settings::{BumpAllocatorSettings, BumpSettings},
     tests::either_way,
 };
 
@@ -20,7 +21,7 @@ either_way! {
     non_default_base_allocator
 }
 
-type Bump<const UP: bool, A = Global> = crate::Bump<A, 1, UP, false, true>;
+type Bump<const UP: bool, A = Global> = crate::Bump<A, BumpSettings<1, UP, false, true>>;
 
 fn allocated<const UP: bool>() {
     let bump = <Bump<UP>>::new();
@@ -105,11 +106,11 @@ fn checkpoint_multiple_chunks<const UP: bool>() {
     allocate_another_chunk(&bump, 3);
     allocate_another_chunk(&bump, 4);
 
-    assert_eq!(bump.stats().current_chunk().unwrap().iter_prev().count(), 3);
+    assert_eq!(bump.stats().get_current_chunk().unwrap().iter_prev().count(), 3);
     unsafe { bump.reset_to(c2) };
-    assert_eq!(bump.stats().current_chunk().unwrap().iter_prev().count(), 1);
+    assert_eq!(bump.stats().get_current_chunk().unwrap().iter_prev().count(), 1);
     unsafe { bump.reset_to(c0) };
-    assert_eq!(bump.stats().current_chunk().unwrap().iter_prev().count(), 0);
+    assert_eq!(bump.stats().get_current_chunk().unwrap().iter_prev().count(), 0);
     assert_eq!(bump.stats().count(), 4);
     std::dbg!(bump.stats());
 }

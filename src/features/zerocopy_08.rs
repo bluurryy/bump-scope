@@ -3,8 +3,8 @@ use core::mem::MaybeUninit;
 use zerocopy_08::FromZeros;
 
 use crate::{
-    BaseAllocator, Bump, BumpBox, BumpScope, MinimumAlignment, SupportedMinimumAlignment, alloc::AllocError,
-    error_behavior::ErrorBehavior,
+    BaseAllocator, Bump, BumpBox, BumpScope, alloc::AllocError, error_behavior::ErrorBehavior,
+    settings::BumpAllocatorSettings,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -80,11 +80,10 @@ mod bump_ext {
 
     pub trait Sealed {}
 
-    impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Sealed
-        for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    impl<A, S> Sealed for Bump<A, S>
     where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        A: BaseAllocator<GUARANTEED_ALLOCATED>,
+        A: BaseAllocator<S::GuaranteedAllocated>,
+        S: BumpAllocatorSettings,
     {
     }
 }
@@ -94,11 +93,10 @@ mod bump_scope_ext {
 
     pub trait Sealed {}
 
-    impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Sealed
-        for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    impl<A, S> Sealed for BumpScope<'_, A, S>
     where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        A: BaseAllocator<GUARANTEED_ALLOCATED>,
+        A: BaseAllocator<S::GuaranteedAllocated>,
+        S: BumpAllocatorSettings,
     {
     }
 }
@@ -263,11 +261,10 @@ pub trait BumpScopeExt<'a>: bump_scope_ext::Sealed {
         T: FromZeros;
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> BumpExt
-    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+impl<A, S> BumpExt for Bump<A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -304,11 +301,10 @@ where
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpScopeExt<'a> for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+impl<'a, A, S> BumpScopeExt<'a> for BumpScope<'a, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -355,11 +351,10 @@ trait PrivateBumpScopeExt<'a> {
         T: FromZeros;
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    PrivateBumpScopeExt<'a> for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+impl<'a, A, S> PrivateBumpScopeExt<'a> for BumpScope<'a, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn generic_alloc_zeroed<B: ErrorBehavior, T>(&self) -> Result<BumpBox<'a, T>, B>

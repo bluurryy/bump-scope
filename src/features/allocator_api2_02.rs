@@ -12,7 +12,7 @@ use allocator_api2_02::{alloc::Global, boxed::Box};
 use crate::alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator};
 
 #[cfg(not(feature = "nightly-allocator-api"))]
-use crate::{Bump, BumpAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink};
+use crate::{Bump, BumpAllocator, BumpScope, WithoutDealloc, WithoutShrink, settings::BumpAllocatorSettings};
 
 #[cfg(feature = "alloc")]
 #[cfg(not(feature = "nightly-allocator-api"))]
@@ -245,11 +245,10 @@ impl From<CrateAllocError> for AllocError {
 }
 
 #[cfg(not(feature = "nightly-allocator-api"))]
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Allocator
-    for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+unsafe impl<A, S> Allocator for BumpScope<'_, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -283,11 +282,10 @@ where
 }
 
 #[cfg(not(feature = "nightly-allocator-api"))]
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Allocator
-    for &mut BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+unsafe impl<A, S> Allocator for &mut BumpScope<'_, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -321,11 +319,10 @@ where
 }
 
 #[cfg(not(feature = "nightly-allocator-api"))]
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Allocator
-    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+unsafe impl<A, S> Allocator for Bump<A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -359,11 +356,10 @@ where
 }
 
 #[cfg(not(feature = "nightly-allocator-api"))]
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Allocator
-    for &mut Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+unsafe impl<A, S> Allocator for &mut Bump<A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -479,7 +475,9 @@ impl<T: ?Sized, A: Allocator> BoxLike for Box<T, A> {}
 
 #[test]
 fn test_compat() {
-    fn is_base_allocator<T: BaseAllocator>(_: T) {}
+    use crate::settings::True;
+
+    fn is_base_allocator<T: BaseAllocator<True>>(_: T) {}
 
     #[derive(Clone)]
     struct TestAllocator;

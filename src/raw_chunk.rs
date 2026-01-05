@@ -1,12 +1,15 @@
-use core::{alloc::Layout, cell::Cell, fmt, mem::align_of, num::NonZeroUsize, ops::Range, ptr::NonNull};
+use core::{
+    alloc::Layout, cell::Cell, fmt, marker::PhantomData, mem::align_of, num::NonZeroUsize, ops::Range, ptr::NonNull,
+};
 
 use crate::{
-    ChunkHeader, ErrorBehavior, SupportedMinimumAlignment,
+    ChunkHeader, ErrorBehavior,
     alloc::{AllocError, Allocator},
     bumping::{BumpProps, BumpUp, MIN_CHUNK_ALIGN, bump_down, bump_prepare_down, bump_prepare_up, bump_up},
     chunk_size::{ChunkSize, ChunkSizeHint},
     layout::LayoutProps,
     polyfill::{self, non_null},
+    settings::{Boolean, BumpAllocatorSettings, False, SupportedMinimumAlignment, True},
     stats::Stats,
 };
 
@@ -18,21 +21,28 @@ use crate::{
 /// So just the `deallocate` method is unsafe. You have to make sure the chunk is not used
 /// after calling that.
 #[repr(transparent)]
-pub(crate) struct RawChunk<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> {
+pub(crate) struct RawChunk<A, S: BumpAllocatorSettings> {
     /// This points to a valid [`ChunkHeader`].
     header: NonNull<ChunkHeader<A>>,
+    marker: PhantomData<fn() -> S>,
 }
 
-impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Copy for RawChunk<A, UP, GUARANTEED_ALLOCATED> {}
+impl<A, S> Copy for RawChunk<A, S> where S: BumpAllocatorSettings {}
 
-impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Clone for RawChunk<A, UP, GUARANTEED_ALLOCATED> {
+impl<A, S> Clone for RawChunk<A, S>
+where
+    S: BumpAllocatorSettings,
+{
     #[inline(always)]
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> PartialEq for RawChunk<A, UP, GUARANTEED_ALLOCATED> {
+impl<A, S> PartialEq for RawChunk<A, S>
+where
+    S: BumpAllocatorSettings,
+{
     #[inline(always)]
     fn eq(&self, other: &Self) -> bool {
         self.header == other.header
@@ -44,22 +54,32 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> PartialEq for RawChunk
     }
 }
 
-impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Eq for RawChunk<A, UP, GUARANTEED_ALLOCATED> {}
+impl<A, S> Eq for RawChunk<A, S> where S: BumpAllocatorSettings {}
 
-impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> fmt::Debug for RawChunk<A, UP, GUARANTEED_ALLOCATED> {
+impl<A, S> fmt::Debug for RawChunk<A, S>
+where
+    S: BumpAllocatorSettings,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("RawChunk").field(&self.header.cast::<u8>()).finish()
     }
 }
 
-impl<A, const UP: bool> RawChunk<A, UP, false> {
+impl<A, S> RawChunk<A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = False>,
+{
     pub(crate) const UNALLOCATED: Self = Self {
         header: ChunkHeader::UNALLOCATED.cast(),
+        marker: PhantomData,
     };
 }
 
-impl<A, const UP: bool> RawChunk<A, UP, true> {
-    pub(crate) fn new_in<E: ErrorBehavior>(chunk_size: ChunkSize<A, UP>, prev: Option<Self>, allocator: A) -> Result<Self, E>
+impl<A, S> RawChunk<A, S>
+where
+    S: BumpAllocatorSettings,
+{
+    pub(crate) fn new_in<E: ErrorBehavior>(chunk_size: ChunkSize<A, S>, prev: Option<Self>, allocator: A) -> Result<Self, E>
     where
         A: Allocator,
     {
@@ -93,7 +113,7 @@ impl<A, const UP: bool> RawChunk<A, UP, true> {
         let next = Cell::new(None);
 
         let header = unsafe {
-            if UP {
+            if S::UP {
                 let header = ptr.cast::<ChunkHeader<A>>();
 
                 header.write(ChunkHeader {
@@ -120,15 +140,17 @@ impl<A, const UP: bool> RawChunk<A, UP, true> {
             }
         };
 
-        Ok(RawChunk { header })
+        Ok(RawChunk {
+            header,
+            marker: PhantomData,
+        })
     }
+}
 
-    pub(crate) fn coerce_guaranteed_allocated<const NEW_GUARANTEED_ALLOCATED: bool>(
-        self,
-    ) -> RawChunk<A, UP, NEW_GUARANTEED_ALLOCATED> {
-        RawChunk { header: self.header }
-    }
-
+impl<A, S> RawChunk<A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
     /// # Panic
     ///
     /// [`self.next`](RawChunk::next) must return `None`
@@ -166,7 +188,7 @@ impl<A, const UP: bool> RawChunk<A, UP, true> {
     #[inline(always)]
     pub(crate) fn reset(self) {
         unsafe {
-            if UP {
+            if S::UP {
                 self.set_pos(self.content_start());
             } else {
                 self.set_pos(self.content_end());
@@ -216,22 +238,28 @@ impl<A, const UP: bool> RawChunk<A, UP, true> {
 
     #[inline(always)]
     pub(crate) fn chunk_start(self) -> NonNull<u8> {
-        unsafe { if UP { self.header.cast() } else { self.header.as_ref().end } }
+        unsafe { if S::UP { self.header.cast() } else { self.header.as_ref().end } }
     }
 
     #[inline(always)]
     pub(crate) fn chunk_end(self) -> NonNull<u8> {
-        unsafe { if UP { self.header.as_ref().end } else { self.after_header() } }
+        unsafe {
+            if S::UP {
+                self.header.as_ref().end
+            } else {
+                self.after_header()
+            }
+        }
     }
 
     #[inline(always)]
     pub(crate) fn content_start(self) -> NonNull<u8> {
-        if UP { self.after_header() } else { self.chunk_start() }
+        if S::UP { self.after_header() } else { self.chunk_start() }
     }
 
     #[inline(always)]
     pub(crate) fn content_end(self) -> NonNull<u8> {
-        if UP { self.chunk_end() } else { self.header.cast() }
+        if S::UP { self.chunk_end() } else { self.header.cast() }
     }
 
     #[inline(always)]
@@ -243,7 +271,7 @@ impl<A, const UP: bool> RawChunk<A, UP, true> {
 
     #[inline(always)]
     fn allocated_range(self) -> Range<NonNull<u8>> {
-        if UP {
+        if S::UP {
             self.content_start()..self.pos()
         } else {
             self.pos()..self.content_end()
@@ -274,7 +302,7 @@ impl<A, const UP: bool> RawChunk<A, UP, true> {
     }
 
     pub(crate) fn remaining_range(self) -> Range<NonNull<u8>> {
-        if UP {
+        if S::UP {
             let start = self.pos();
             let end = self.content_end();
             start..end
@@ -299,39 +327,61 @@ impl<A, const UP: bool> RawChunk<A, UP, true> {
     }
 
     #[inline(always)]
-    fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSizeHint<A, UP>, B> {
+    fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSizeHint<A, S>, B> {
         let Some(size) = self.size().get().checked_mul(2) else {
             return Err(B::capacity_overflow());
         };
 
-        Ok(ChunkSizeHint::<A, UP>::new(size))
+        Ok(ChunkSizeHint::<A, S>::new(size))
     }
 }
 
-impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARANTEED_ALLOCATED> {
+impl<A, S> RawChunk<A, S>
+where
+    S: BumpAllocatorSettings,
+{
+    pub(crate) unsafe fn cast<S2>(self) -> RawChunk<A, S2>
+    where
+        S2: BumpAllocatorSettings,
+    {
+        RawChunk {
+            header: self.header,
+            marker: PhantomData,
+        }
+    }
+
     pub(crate) fn is_allocated(self) -> bool {
-        GUARANTEED_ALLOCATED || self.header.cast() != ChunkHeader::UNALLOCATED
+        <S::GuaranteedAllocated as Boolean>::VALUE || self.header.cast() != ChunkHeader::UNALLOCATED
     }
 
     pub(crate) fn is_unallocated(self) -> bool {
-        !GUARANTEED_ALLOCATED && self.header.cast() == ChunkHeader::UNALLOCATED
+        !<S::GuaranteedAllocated as Boolean>::VALUE && self.header.cast() == ChunkHeader::UNALLOCATED
     }
 
-    pub(crate) fn guaranteed_allocated(self) -> Option<RawChunk<A, UP, true>> {
+    pub(crate) fn guaranteed_allocated(self) -> Option<RawChunk<A, S::WithGuaranteedAllocated<true>>> {
         if self.is_unallocated() {
             return None;
         }
 
-        Some(RawChunk { header: self.header })
+        Some(RawChunk {
+            header: self.header,
+            marker: PhantomData,
+        })
     }
 
-    pub(crate) unsafe fn guaranteed_allocated_unchecked(self) -> RawChunk<A, UP, true> {
+    pub(crate) unsafe fn guaranteed_allocated_unchecked(self) -> RawChunk<A, S::WithGuaranteedAllocated<true>> {
         debug_assert!(self.is_allocated());
-        RawChunk { header: self.header }
+        RawChunk {
+            header: self.header,
+            marker: PhantomData,
+        }
     }
 
-    pub(crate) fn not_guaranteed_allocated(self) -> RawChunk<A, UP, false> {
-        RawChunk { header: self.header }
+    pub(crate) fn not_guaranteed_allocated(self) -> RawChunk<A, S::WithGuaranteedAllocated<false>> {
+        RawChunk {
+            header: self.header,
+            marker: PhantomData,
+        }
     }
 
     pub(crate) fn header(self) -> NonNull<ChunkHeader<A>> {
@@ -339,22 +389,25 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     }
 
     pub(crate) const unsafe fn from_header(header: NonNull<ChunkHeader<A>>) -> Self {
-        Self { header }
+        Self {
+            header,
+            marker: PhantomData,
+        }
     }
 
     #[inline(always)]
-    pub(crate) fn bump_props<M, L>(self, _: M, layout: L) -> BumpProps
+    pub(crate) fn bump_props<M, L>(self, layout: L) -> BumpProps
     where
         M: SupportedMinimumAlignment,
         L: LayoutProps,
     {
-        debug_assert!(non_null::is_aligned_to(self.pos(), M::MIN_ALIGN));
+        debug_assert!(non_null::is_aligned_to(self.pos(), M::VALUE));
 
         let pos = self.pos().addr().get();
         let end = unsafe { self.header.as_ref() }.end.addr().get();
 
-        let start = if UP { pos } else { end };
-        let end = if UP { end } else { pos };
+        let start = if S::UP { pos } else { end };
+        let end = if S::UP { end } else { pos };
 
         debug_assert!(if self.is_unallocated() { end - start == 0 } else { true });
 
@@ -362,7 +415,7 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
             start,
             end,
             layout: *layout,
-            min_align: M::MIN_ALIGN,
+            min_align: M::VALUE,
             align_is_const: L::ALIGN_IS_CONST,
             size_is_const: L::SIZE_IS_CONST,
             size_is_multiple_of_align: L::SIZE_IS_MULTIPLE_OF_ALIGN,
@@ -373,10 +426,9 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     ///
     /// On success, returns a [`NonNull<u8>`] meeting the size and alignment guarantees of `layout`.
     #[inline(always)]
-    pub(crate) fn alloc<M, L>(self, minimum_alignment: M, layout: L) -> Option<NonNull<u8>>
+    pub(crate) fn alloc<M>(self, layout: impl LayoutProps) -> Option<NonNull<u8>>
     where
         M: SupportedMinimumAlignment,
-        L: LayoutProps,
     {
         // Zero sized allocations are a problem for non-GUARANTEED_ALLOCATED chunks
         // since bump_up/bump_down will succeed and the UNALLOCATED chunk would
@@ -385,14 +437,14 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
         //
         // In many cases, the layout size is statically known not to be zero
         // and this "if" is optimized away.
-        if !GUARANTEED_ALLOCATED && layout.size() == 0 {
+        if !<S::GuaranteedAllocated as Boolean>::VALUE && layout.size() == 0 {
             return Some(polyfill::layout::dangling(*layout));
         }
 
-        let props = self.bump_props(minimum_alignment, layout);
+        let props = self.bump_props::<M, _>(layout);
 
         unsafe {
-            if UP {
+            if S::UP {
                 let BumpUp { new_pos, ptr } = bump_up(props)?;
 
                 // non zero sized allocations never succeed for the unallocated chunk
@@ -417,15 +469,14 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     ///
     /// This is like [`alloc`](Self::alloc_or_else), except that it won't change the bump pointer.
     #[inline(always)]
-    pub(crate) fn prepare_allocation<M, L>(self, minimum_alignment: M, layout: L) -> Option<NonNull<u8>>
+    pub(crate) fn prepare_allocation<M>(self, layout: impl LayoutProps) -> Option<NonNull<u8>>
     where
         M: SupportedMinimumAlignment,
-        L: LayoutProps,
     {
-        let props = self.bump_props(minimum_alignment, layout);
+        let props = self.bump_props::<M, _>(layout);
 
         unsafe {
-            if UP {
+            if S::UP {
                 let BumpUp { ptr, .. } = bump_up(props)?;
                 Some(self.with_addr(ptr))
             } else {
@@ -450,16 +501,15 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     /// [`MutBumpVec`]: crate::MutBumpVec
     /// [`into_slice`]: crate::MutBumpVec::into_slice
     #[inline(always)]
-    pub(crate) fn prepare_allocation_range(
+    pub(crate) fn prepare_allocation_range<M: SupportedMinimumAlignment>(
         self,
-        minimum_alignment: impl SupportedMinimumAlignment,
         layout: impl LayoutProps,
     ) -> Option<Range<NonNull<u8>>> {
         debug_assert_ne!(layout.size(), 0);
-        let props = self.bump_props(minimum_alignment, layout);
+        let props = self.bump_props::<M, _>(layout);
 
         unsafe {
-            if UP {
+            if S::UP {
                 let range = bump_prepare_up(props)?;
                 Some(self.with_addr_range(range))
             } else {
@@ -501,19 +551,19 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     }
 
     #[inline(always)]
-    pub(crate) fn prev(self) -> Option<RawChunk<A, UP, true>> {
+    pub(crate) fn prev(self) -> Option<RawChunk<A, S>> {
         // SAFETY: the `UNALLOCATED` chunk header never has a `prev` so this must be an allocated chunk if some
         unsafe { Some(RawChunk::from_header(self.header.as_ref().prev.get()?)) }
     }
 
     #[inline(always)]
-    pub(crate) fn next(self) -> Option<RawChunk<A, UP, true>> {
+    pub(crate) fn next(self) -> Option<RawChunk<A, S>> {
         // SAFETY: the `UNALLOCATED` chunk header never has a `next` so this must be an allocated chunk if some
         unsafe { Some(RawChunk::from_header(self.header.as_ref().next.get()?)) }
     }
 
     /// This resolves the next chunk before calling `f`. So calling [`deallocate`](RawChunk::deallocate) on the chunk parameter of `f` is fine.
-    pub(crate) fn for_each_prev(self, mut f: impl FnMut(RawChunk<A, UP, true>)) {
+    pub(crate) fn for_each_prev(self, mut f: impl FnMut(RawChunk<A, S>)) {
         let mut iter = self.prev();
 
         while let Some(chunk) = iter {
@@ -523,7 +573,7 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     }
 
     /// This resolves the next chunk before calling `f`. So calling [`deallocate`](RawChunk::deallocate) on the chunk parameter of `f` is fine.
-    pub(crate) fn for_each_next(self, mut f: impl FnMut(RawChunk<A, UP, true>)) {
+    pub(crate) fn for_each_next(self, mut f: impl FnMut(RawChunk<A, S>)) {
         let mut iter = self.next();
 
         while let Some(chunk) = iter {
@@ -533,7 +583,7 @@ impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> RawChunk<A, UP, GUARAN
     }
 
     #[inline(always)]
-    pub(crate) fn stats<'a>(self) -> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
+    pub(crate) fn stats<'a>(self) -> Stats<'a, A, S> {
         Stats::from_raw_chunk(self)
     }
 }

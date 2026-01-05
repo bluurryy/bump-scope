@@ -2,7 +2,7 @@ use core::{alloc::Layout, marker::PhantomData, num::NonZeroUsize};
 
 use chunk_size_config::ChunkSizeConfig;
 
-use crate::ChunkHeader;
+use crate::{ChunkHeader, settings::BumpAllocatorSettings};
 
 mod chunk_size_config;
 
@@ -11,9 +11,12 @@ const _: () = assert!(chunk_size_config::MIN_CHUNK_ALIGN == crate::bumping::MIN_
 /// We leave some space per allocation for the base allocator.
 pub(crate) type AssumedMallocOverhead = [*const u8; 2];
 
-pub const fn config<A, const UP: bool>() -> ChunkSizeConfig {
+pub const fn config<A, S>() -> ChunkSizeConfig
+where
+    S: BumpAllocatorSettings,
+{
     ChunkSizeConfig {
-        up: UP,
+        up: S::UP,
         assumed_malloc_overhead_layout: Layout::new::<AssumedMallocOverhead>(),
         chunk_header_layout: Layout::new::<ChunkHeader<A>>(),
     }
@@ -28,20 +31,23 @@ macro_rules! attempt {
     };
 }
 
-pub struct ChunkSize<A, const UP: bool> {
+pub struct ChunkSize<A, S> {
     size: NonZeroUsize,
-    marker: PhantomData<*const A>,
+    marker: PhantomData<fn() -> (A, S)>,
 }
 
-impl<A, const UP: bool> Clone for ChunkSize<A, UP> {
+impl<A, S> Clone for ChunkSize<A, S> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, const UP: bool> Copy for ChunkSize<A, UP> {}
+impl<A, S> Copy for ChunkSize<A, S> {}
 
-impl<A, const UP: bool> ChunkSize<A, UP> {
+impl<A, S> ChunkSize<A, S>
+where
+    S: BumpAllocatorSettings,
+{
     pub const DEFAULT: Self = ChunkSizeHint::DEFAULT.calc_size().unwrap();
 
     pub const fn from_hint(size_hint: usize) -> Option<Self> {
@@ -55,7 +61,7 @@ impl<A, const UP: bool> ChunkSize<A, UP> {
     /// See [`chunk_size_config::ChunkSizeConfig::align_size`].
     pub const fn align_allocation_size(self, size: usize) -> usize {
         _ = self;
-        config::<A, UP>().align_size(size)
+        config::<A, S>().align_size(size)
     }
 
     pub const fn layout(self) -> Option<Layout> {
@@ -67,17 +73,20 @@ impl<A, const UP: bool> ChunkSize<A, UP> {
         }
     }
 }
-pub struct ChunkSizeHint<A, const UP: bool>(usize, PhantomData<*const A>);
+pub struct ChunkSizeHint<A, S>(usize, PhantomData<fn() -> (A, S)>);
 
-impl<A, const UP: bool> Clone for ChunkSizeHint<A, UP> {
+impl<A, S> Clone for ChunkSizeHint<A, S> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, const UP: bool> Copy for ChunkSizeHint<A, UP> {}
+impl<A, S> Copy for ChunkSizeHint<A, S> {}
 
-impl<A, const UP: bool> ChunkSizeHint<A, UP> {
+impl<A, S> ChunkSizeHint<A, S>
+where
+    S: BumpAllocatorSettings,
+{
     pub const DEFAULT: Self = Self::new(512);
 
     pub const fn new(size_hint: usize) -> Self {
@@ -85,12 +94,12 @@ impl<A, const UP: bool> ChunkSizeHint<A, UP> {
     }
 
     pub const fn for_capacity(layout: Layout) -> Option<Self> {
-        Some(Self(attempt!(config::<A, UP>().calc_hint_from_capacity(layout)), PhantomData))
+        Some(Self(attempt!(config::<A, S>().calc_hint_from_capacity(layout)), PhantomData))
     }
 
-    pub const fn calc_size(self) -> Option<ChunkSize<A, UP>> {
+    pub const fn calc_size(self) -> Option<ChunkSize<A, S>> {
         Some(ChunkSize {
-            size: attempt!(config::<A, UP>().calc_size_from_hint(self.0)),
+            size: attempt!(config::<A, S>().calc_size_from_hint(self.0)),
             marker: PhantomData,
         })
     }

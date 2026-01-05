@@ -3,44 +3,26 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    BaseAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment, alloc::AllocError, bump_down, polyfill::non_null,
+    BaseAllocator, BumpScope, alloc::AllocError, bump_down, polyfill::non_null, settings::BumpAllocatorSettings,
     up_align_usize_unchecked,
 };
 
 #[inline(always)]
-pub(crate) fn allocate<
-    A,
-    const MIN_ALIGN: usize,
-    const UP: bool,
-    const GUARANTEED_ALLOCATED: bool,
-    const DEALLOCATES: bool,
->(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
-    layout: Layout,
-) -> Result<NonNull<[u8]>, AllocError>
+pub(crate) fn allocate<A, S>(bump: &BumpScope<A, S>, layout: Layout) -> Result<NonNull<[u8]>, AllocError>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     Ok(NonNull::slice_from_raw_parts(bump.try_alloc_layout(layout)?, layout.size()))
 }
 
 #[inline(always)]
-pub(crate) unsafe fn deallocate<
-    A,
-    const MIN_ALIGN: usize,
-    const UP: bool,
-    const GUARANTEED_ALLOCATED: bool,
-    const DEALLOCATES: bool,
->(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
-    ptr: NonNull<u8>,
-    layout: Layout,
-) where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+pub(crate) unsafe fn deallocate<A, S>(bump: &BumpScope<A, S>, ptr: NonNull<u8>, layout: Layout)
+where
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
-    if !DEALLOCATES {
+    if !S::DEALLOCATES {
         return;
     }
 
@@ -53,28 +35,19 @@ pub(crate) unsafe fn deallocate<
 }
 
 #[inline(always)]
-unsafe fn deallocate_assume_last<
-    A,
-    const MIN_ALIGN: usize,
-    const UP: bool,
-    const GUARANTEED_ALLOCATED: bool,
-    const DEALLOCATES: bool,
->(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
-    ptr: NonNull<u8>,
-    layout: Layout,
-) where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+unsafe fn deallocate_assume_last<A, S>(bump: &BumpScope<A, S>, ptr: NonNull<u8>, layout: Layout)
+where
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
-    if !DEALLOCATES {
+    if !S::DEALLOCATES {
         return;
     }
 
     unsafe {
         debug_assert!(is_last_and_allocated(bump, ptr, layout));
 
-        if UP {
+        if S::UP {
             bump.set_pos(ptr.addr());
         } else {
             let mut addr = ptr.addr().get();
@@ -85,26 +58,16 @@ unsafe fn deallocate_assume_last<
 }
 
 #[inline(always)]
-unsafe fn is_last_and_allocated<
-    A,
-    const MIN_ALIGN: usize,
-    const UP: bool,
-    const GUARANTEED_ALLOCATED: bool,
-    const DEALLOCATES: bool,
->(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
-    ptr: NonNull<u8>,
-    layout: Layout,
-) -> bool
+unsafe fn is_last_and_allocated<A, S>(bump: &BumpScope<A, S>, ptr: NonNull<u8>, layout: Layout) -> bool
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    S: BumpAllocatorSettings,
 {
     if bump.chunk.get().is_unallocated() {
         return false;
     }
 
     unsafe {
-        if UP {
+        if S::UP {
             ptr.add(layout.size()) == bump.chunk.get().pos()
         } else {
             ptr == bump.chunk.get().pos()
@@ -113,21 +76,15 @@ where
 }
 
 #[inline(always)]
-pub(crate) unsafe fn grow<
-    A,
-    const MIN_ALIGN: usize,
-    const UP: bool,
-    const GUARANTEED_ALLOCATED: bool,
-    const DEALLOCATES: bool,
->(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
+pub(crate) unsafe fn grow<A, S>(
+    bump: &BumpScope<A, S>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     debug_assert!(
         new_layout.size() >= old_layout.size(),
@@ -135,7 +92,7 @@ where
     );
 
     unsafe {
-        if UP {
+        if S::UP {
             if is_last_and_allocated(bump, old_ptr, old_layout) & align_fits(old_ptr, old_layout, new_layout) {
                 // We may be able to grow in place! Just need to check if there is enough space.
 
@@ -149,7 +106,7 @@ where
                     let old_addr = old_ptr.addr();
 
                     // Up-aligning a pointer inside a chunks content by `MIN_ALIGN` never overflows.
-                    let new_pos = up_align_usize_unchecked(old_addr.get() + new_layout.size(), MIN_ALIGN);
+                    let new_pos = up_align_usize_unchecked(old_addr.get() + new_layout.size(), S::MIN_ALIGN);
 
                     // `is_last_and_allocated` returned true
                     chunk.set_pos_addr(new_pos);
@@ -173,7 +130,7 @@ where
                 let additional_size = new_layout.size() - old_layout.size();
 
                 let old_addr = old_ptr.addr();
-                let new_addr = bump_down(old_addr, additional_size, new_layout.align().max(MIN_ALIGN));
+                let new_addr = bump_down(old_addr, additional_size, new_layout.align().max(S::MIN_ALIGN));
 
                 let chunk = bump.chunk.get().guaranteed_allocated_unchecked();
                 let very_start = chunk.content_start().addr();
@@ -214,21 +171,15 @@ where
 }
 
 #[inline(always)]
-pub(crate) unsafe fn grow_zeroed<
-    A,
-    const MIN_ALIGN: usize,
-    const UP: bool,
-    const GUARANTEED_ALLOCATED: bool,
-    const DEALLOCATES: bool,
->(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
+pub(crate) unsafe fn grow_zeroed<A, S>(
+    bump: &BumpScope<A, S>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     unsafe {
         let new_ptr = grow(bump, old_ptr, old_layout, new_layout)?;
@@ -245,43 +196,31 @@ where
 /// That's different to bumpalo's shrink implementation, which only shrinks if it can do so with `copy_nonoverlapping`
 /// and doesn't attempt to recover memory if the alignment doesn't fit.
 #[inline(always)]
-pub(crate) unsafe fn shrink<
-    A,
-    const MIN_ALIGN: usize,
-    const UP: bool,
-    const GUARANTEED_ALLOCATED: bool,
-    const DEALLOCATES: bool,
->(
-    bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
+pub(crate) unsafe fn shrink<A, S>(
+    bump: &BumpScope<A, S>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     /// Called when `new_layout` doesn't fit alignment.
     #[cold]
     #[inline(never)]
-    unsafe fn shrink_unfit<
-        A,
-        const MIN_ALIGN: usize,
-        const UP: bool,
-        const GUARANTEED_ALLOCATED: bool,
-        const DEALLOCATES: bool,
-    >(
-        bump: &BumpScope<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
+    unsafe fn shrink_unfit<A, S>(
+        bump: &BumpScope<A, S>,
         old_ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError>
     where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        A: BaseAllocator<GUARANTEED_ALLOCATED>,
+        A: BaseAllocator<S::GuaranteedAllocated>,
+        S: BumpAllocatorSettings,
     {
         unsafe {
-            if DEALLOCATES && is_last_and_allocated(bump, old_ptr, old_layout) {
+            if S::DEALLOCATES && is_last_and_allocated(bump, old_ptr, old_layout) {
                 let old_pos = bump.chunk.get().pos();
                 deallocate_assume_last(bump, old_ptr, old_layout);
 
@@ -290,7 +229,7 @@ where
 
                 if let Some(in_chunk) = bump.alloc_in_current_chunk(new_layout) {
                     new_ptr = in_chunk;
-                    overlaps = if UP {
+                    overlaps = if S::UP {
                         let old_ptr_end = old_ptr.add(new_layout.size());
                         old_ptr_end > new_ptr
                     } else {
@@ -337,16 +276,16 @@ where
         }
 
         // if that's not the last allocation, there is nothing we can do
-        if !DEALLOCATES || !is_last_and_allocated(bump, old_ptr, old_layout) {
+        if !S::DEALLOCATES || !is_last_and_allocated(bump, old_ptr, old_layout) {
             // we return the size of the old layout
             return Ok(NonNull::slice_from_raw_parts(old_ptr, old_layout.size()));
         }
 
-        if UP {
+        if S::UP {
             let end = old_ptr.addr().get() + new_layout.size();
 
             // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
-            let new_pos = up_align_usize_unchecked(end, MIN_ALIGN);
+            let new_pos = up_align_usize_unchecked(end, S::MIN_ALIGN);
 
             // `is_last_and_allocated` returned true
             bump.chunk.get().guaranteed_allocated_unchecked().set_pos_addr(new_pos);
@@ -356,7 +295,7 @@ where
             let old_addr = old_ptr.addr();
             let old_end_addr = NonZeroUsize::new_unchecked(old_addr.get() + old_layout.size());
 
-            let new_addr = bump_down(old_end_addr, new_layout.size(), new_layout.align().max(MIN_ALIGN));
+            let new_addr = bump_down(old_end_addr, new_layout.size(), new_layout.align().max(S::MIN_ALIGN));
             let new_addr = NonZeroUsize::new_unchecked(new_addr);
             let new_ptr = old_ptr.with_addr(new_addr);
 

@@ -1,6 +1,9 @@
 use core::{fmt, iter::FusedIterator, marker::PhantomData, mem, ptr::NonNull};
 
-use crate::ChunkHeader;
+use crate::{
+    ChunkHeader,
+    settings::{BumpAllocatorSettings, True},
+};
 
 use super::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
 
@@ -12,8 +15,11 @@ pub struct AnyStats<'a> {
     chunk: Option<AnyChunk<'a>>,
 }
 
-impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> From<Stats<'_, A, UP, GUARANTEED_ALLOCATED>> for AnyStats<'_> {
-    fn from(value: Stats<'_, A, UP, GUARANTEED_ALLOCATED>) -> Self {
+impl<A, S> From<Stats<'_, A, S>> for AnyStats<'_>
+where
+    S: BumpAllocatorSettings,
+{
+    fn from(value: Stats<'_, A, S>) -> Self {
         Self {
             chunk: value.get_current_chunk().map(Into::into),
         }
@@ -145,8 +151,11 @@ pub struct AnyChunk<'a> {
     marker: PhantomData<&'a ()>,
 }
 
-impl<A, const UP: bool> From<Chunk<'_, A, UP>> for AnyChunk<'_> {
-    fn from(value: Chunk<'_, A, UP>) -> Self {
+impl<A, S> From<Chunk<'_, A, S>> for AnyChunk<'_>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
+    fn from(value: Chunk<'_, A, S>) -> Self {
         Self {
             header: value.chunk.header().cast(),
             header_size: mem::size_of::<ChunkHeader<A>>(),
@@ -335,8 +344,11 @@ pub struct AnyChunkPrevIter<'a> {
     pub chunk: Option<AnyChunk<'a>>,
 }
 
-impl<A, const UP: bool> From<ChunkPrevIter<'_, A, UP>> for AnyChunkPrevIter<'_> {
-    fn from(value: ChunkPrevIter<'_, A, UP>) -> Self {
+impl<A, S> From<ChunkPrevIter<'_, A, S>> for AnyChunkPrevIter<'_>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
+    fn from(value: ChunkPrevIter<'_, A, S>) -> Self {
         Self {
             chunk: value.chunk.map(Into::into),
         }
@@ -369,8 +381,11 @@ pub struct AnyChunkNextIter<'a> {
     pub chunk: Option<AnyChunk<'a>>,
 }
 
-impl<A, const UP: bool> From<ChunkNextIter<'_, A, UP>> for AnyChunkNextIter<'_> {
-    fn from(value: ChunkNextIter<'_, A, UP>) -> Self {
+impl<A, S> From<ChunkNextIter<'_, A, S>> for AnyChunkNextIter<'_>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
+    fn from(value: ChunkNextIter<'_, A, S>) -> Self {
         Self {
             chunk: value.chunk.map(Into::into),
         }
@@ -400,29 +415,21 @@ impl fmt::Debug for AnyChunkNextIter<'_> {
 fn check_from_impls() {
     #![expect(dead_code, clippy::elidable_lifetime_names)]
 
-    use crate::{BaseAllocator, BumpScope, MinimumAlignment, SupportedMinimumAlignment};
+    use crate::{BaseAllocator, BumpScope};
 
     fn accepting_any_stats(_: AnyStats) {}
     fn accepting_any_chunk(_: AnyChunk) {}
     fn accepting_any_chunk_prev_iter(_: AnyChunkPrevIter) {}
     fn accepting_any_chunk_next_iter(_: AnyChunkNextIter) {}
 
-    fn generic_bump<
-        'a,
-        A,
-        const MIN_ALIGN: usize,
-        const UP: bool,
-        const GUARANTEED_ALLOCATED: bool,
-        const DEALLOCATES: bool,
-    >(
-        bump: &BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>,
-    ) where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    fn generic_bump<'a, A, S>(bump: &BumpScope<'a, A, S>)
+    where
+        A: BaseAllocator<S::GuaranteedAllocated>,
+        S: BumpAllocatorSettings,
     {
         let stats = bump.stats();
         accepting_any_stats(stats.into());
-        accepting_any_chunk(stats.not_guaranteed_allocated().current_chunk().unwrap().into());
+        accepting_any_chunk(stats.get_current_chunk().unwrap().into());
         accepting_any_chunk_next_iter(stats.small_to_big().into());
         accepting_any_chunk_prev_iter(stats.big_to_small().into());
     }

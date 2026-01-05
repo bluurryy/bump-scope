@@ -14,7 +14,10 @@ use core::{
     ptr::NonNull,
 };
 
-use crate::{RawChunk, maybe_default_allocator};
+use crate::{
+    RawChunk, maybe_default_allocator,
+    settings::{BumpAllocatorSettings, BumpSettings, False, True},
+};
 
 #[cfg(debug_assertions)]
 use crate::chunk_header::ChunkHeader;
@@ -28,13 +31,11 @@ macro_rules! make_type {
         /// Provides statistics about the memory usage of the bump allocator.
         ///
         /// This is returned from the `stats` method of [`Bump`](crate::Bump) and [`BumpScope`](crate::BumpScope).
-        pub struct Stats<
-            'a,
-            $($allocator_parameter)*,
-            const UP: bool = true,
-            const GUARANTEED_ALLOCATED: bool = true,
-        > {
-            chunk: RawChunk<A, UP, GUARANTEED_ALLOCATED>,
+        pub struct Stats<'a, $($allocator_parameter)*, S = BumpSettings>
+        where
+            S: BumpAllocatorSettings
+        {
+            chunk: RawChunk<A, S>,
             marker: PhantomData<&'a ()>,
         }
     };
@@ -42,31 +43,43 @@ macro_rules! make_type {
 
 maybe_default_allocator!(make_type);
 
-impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Clone for Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
+impl<A, S> Clone for Stats<'_, A, S>
+where
+    S: BumpAllocatorSettings,
+{
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Copy for Stats<'_, A, UP, GUARANTEED_ALLOCATED> {}
+impl<A, S> Copy for Stats<'_, A, S> where S: BumpAllocatorSettings {}
 
-impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> PartialEq for Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
+impl<A, S> PartialEq for Stats<'_, A, S>
+where
+    S: BumpAllocatorSettings,
+{
     fn eq(&self, other: &Self) -> bool {
         self.chunk == other.chunk
     }
 }
 
-impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Eq for Stats<'_, A, UP, GUARANTEED_ALLOCATED> {}
+impl<A, S> Eq for Stats<'_, A, S> where S: BumpAllocatorSettings {}
 
-impl<A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Debug for Stats<'_, A, UP, GUARANTEED_ALLOCATED> {
+impl<A, S> Debug for Stats<'_, A, S>
+where
+    S: BumpAllocatorSettings,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         AnyStats::from(*self).debug_format("Stats", f)
     }
 }
 
-impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, GUARANTEED_ALLOCATED> {
+impl<'a, A, S> Stats<'a, A, S>
+where
+    S: BumpAllocatorSettings,
+{
     #[inline]
-    pub(crate) fn from_raw_chunk(chunk: RawChunk<A, UP, GUARANTEED_ALLOCATED>) -> Self {
+    pub(crate) fn from_raw_chunk(chunk: RawChunk<A, S>) -> Self {
         Self {
             chunk,
             marker: PhantomData,
@@ -135,7 +148,7 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
 
     /// Returns an iterator from smallest to biggest chunk.
     #[must_use]
-    pub fn small_to_big(self) -> ChunkNextIter<'a, A, UP> {
+    pub fn small_to_big(self) -> ChunkNextIter<'a, A, S::WithGuaranteedAllocated<true>> {
         let Some(mut start) = self.get_current_chunk() else {
             return ChunkNextIter { chunk: None };
         };
@@ -149,7 +162,7 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
 
     /// Returns an iterator from biggest to smallest chunk.
     #[must_use]
-    pub fn big_to_small(self) -> ChunkPrevIter<'a, A, UP> {
+    pub fn big_to_small(self) -> ChunkPrevIter<'a, A, S::WithGuaranteedAllocated<true>> {
         let Some(mut start) = self.get_current_chunk() else {
             return ChunkPrevIter { chunk: None };
         };
@@ -164,29 +177,34 @@ impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> Stats<'a, A, UP, G
     /// Turns this `Stats` into a `Stats` where `GUARANTEED_ALLOCATED = true`.
     #[inline]
     #[must_use]
-    pub fn guaranteed_allocated(self) -> Option<Stats<'a, A, UP, true>> {
+    pub fn guaranteed_allocated(self) -> Option<Stats<'a, A, S::WithGuaranteedAllocated<true>>> {
         Some(self.chunk.guaranteed_allocated()?.stats())
     }
 
     /// Turns this `Stats` into a `Stats` where `GUARANTEED_ALLOCATED = false`.
     #[inline]
     #[must_use]
-    pub fn not_guaranteed_allocated(self) -> Stats<'a, A, UP, false> {
+    pub fn not_guaranteed_allocated(self) -> Stats<'a, A, S::WithGuaranteedAllocated<false>> {
         self.chunk.not_guaranteed_allocated().stats()
     }
 
-    fn get_current_chunk(self) -> Option<Chunk<'a, A, UP>> {
+    /// This is the chunk we are currently allocating on.
+    #[must_use]
+    pub fn get_current_chunk(self) -> Option<Chunk<'a, A, S::WithGuaranteedAllocated<true>>> {
         Some(Chunk {
             chunk: self.chunk.guaranteed_allocated()?,
-            marker: PhantomData,
+            marker: self.marker,
         })
     }
 }
 
-impl<'a, A, const UP: bool> Stats<'a, A, UP, true> {
+impl<'a, A, S> Stats<'a, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
     /// This is the chunk we are currently allocating on.
     #[must_use]
-    pub fn current_chunk(self) -> Chunk<'a, A, UP> {
+    pub fn current_chunk(self) -> Chunk<'a, A, S> {
         Chunk {
             chunk: self.chunk,
             marker: self.marker,
@@ -194,16 +212,10 @@ impl<'a, A, const UP: bool> Stats<'a, A, UP, true> {
     }
 }
 
-impl<'a, A, const UP: bool> Stats<'a, A, UP, false> {
-    /// This is the chunk we are currently allocating on.
-    #[must_use]
-    pub fn current_chunk(self) -> Option<Chunk<'a, A, UP>> {
-        Some(Chunk {
-            chunk: self.chunk.guaranteed_allocated()?,
-            marker: self.marker,
-        })
-    }
-
+impl<A, S> Stats<'_, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = False>,
+{
     pub(crate) fn unallocated() -> Self {
         Self {
             chunk: RawChunk::UNALLOCATED,
@@ -212,18 +224,22 @@ impl<'a, A, const UP: bool> Stats<'a, A, UP, false> {
     }
 }
 
-impl<'a, A, const UP: bool, const GUARANTEED_ALLOCATED: bool> From<Chunk<'a, A, UP>>
-    for Stats<'a, A, UP, GUARANTEED_ALLOCATED>
+impl<'a, A, S> From<Chunk<'a, A, S>> for Stats<'a, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
 {
-    fn from(chunk: Chunk<'a, A, UP>) -> Self {
+    fn from(chunk: Chunk<'a, A, S>) -> Self {
         Stats {
-            chunk: chunk.chunk.coerce_guaranteed_allocated(),
+            chunk: chunk.chunk,
             marker: PhantomData,
         }
     }
 }
 
-impl<A, const UP: bool> Default for Stats<'_, A, UP, false> {
+impl<A, S> Default for Stats<'_, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = False>,
+{
     fn default() -> Self {
         Self::unallocated()
     }
@@ -233,28 +249,40 @@ impl<A, const UP: bool> Default for Stats<'_, A, UP, false> {
 ///
 /// See [`Stats`].
 #[repr(transparent)]
-pub struct Chunk<'a, A, const UP: bool> {
-    chunk: RawChunk<A, UP, true>,
+pub struct Chunk<'a, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
+    chunk: RawChunk<A, S>,
     marker: PhantomData<&'a ()>,
 }
 
-impl<A, const UP: bool> Clone for Chunk<'_, A, UP> {
+impl<A, S> Clone for Chunk<'_, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, const UP: bool> Copy for Chunk<'_, A, UP> {}
+impl<A, S> Copy for Chunk<'_, A, S> where S: BumpAllocatorSettings<GuaranteedAllocated = True> {}
 
-impl<A, const UP: bool> PartialEq for Chunk<'_, A, UP> {
+impl<A, S> PartialEq for Chunk<'_, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
     fn eq(&self, other: &Self) -> bool {
         self.chunk == other.chunk
     }
 }
 
-impl<A, const UP: bool> Eq for Chunk<'_, A, UP> {}
+impl<A, S> Eq for Chunk<'_, A, S> where S: BumpAllocatorSettings<GuaranteedAllocated = True> {}
 
-impl<A, const UP: bool> Debug for Chunk<'_, A, UP> {
+impl<A, S> Debug for Chunk<'_, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Chunk")
             .field("allocated", &self.allocated())
@@ -263,7 +291,10 @@ impl<A, const UP: bool> Debug for Chunk<'_, A, UP> {
     }
 }
 
-impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
+impl<'a, A, S> Chunk<'a, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
     #[cfg(debug_assertions)]
     pub(crate) fn header(self) -> NonNull<ChunkHeader> {
         self.chunk.header().cast()
@@ -292,14 +323,14 @@ impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
     /// Returns an iterator over all previous (smaller) chunks.
     #[must_use]
     #[inline(always)]
-    pub fn iter_prev(self) -> ChunkPrevIter<'a, A, UP> {
+    pub fn iter_prev(self) -> ChunkPrevIter<'a, A, S> {
         ChunkPrevIter { chunk: self.prev() }
     }
 
     /// Returns an iterator over all next (bigger) chunks.
     #[must_use]
     #[inline(always)]
-    pub fn iter_next(self) -> ChunkNextIter<'a, A, UP> {
+    pub fn iter_next(self) -> ChunkNextIter<'a, A, S> {
         ChunkNextIter { chunk: self.next() }
     }
 
@@ -392,35 +423,50 @@ impl<'a, A, const UP: bool> Chunk<'a, A, UP> {
 }
 
 /// Iterator that iterates over previous chunks by continuously calling [`Chunk::prev`].
-pub struct ChunkPrevIter<'a, A, const UP: bool> {
+pub struct ChunkPrevIter<'a, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
     #[expect(missing_docs)]
-    pub chunk: Option<Chunk<'a, A, UP>>,
+    pub chunk: Option<Chunk<'a, A, S>>,
 }
 
-impl<A, const UP: bool> Clone for ChunkPrevIter<'_, A, UP> {
+impl<A, S> Clone for ChunkPrevIter<'_, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, const UP: bool> Copy for ChunkPrevIter<'_, A, UP> {}
+impl<A, S> Copy for ChunkPrevIter<'_, A, S> where S: BumpAllocatorSettings<GuaranteedAllocated = True> {}
 
-impl<A, const UP: bool> PartialEq for ChunkPrevIter<'_, A, UP> {
+impl<A, S> PartialEq for ChunkPrevIter<'_, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
     fn eq(&self, other: &Self) -> bool {
         self.chunk == other.chunk
     }
 }
 
-impl<A, const UP: bool> Eq for ChunkPrevIter<'_, A, UP> {}
+impl<A, S> Eq for ChunkPrevIter<'_, A, S> where S: BumpAllocatorSettings<GuaranteedAllocated = True> {}
 
-impl<A, const UP: bool> Default for ChunkPrevIter<'_, A, UP> {
+impl<A, S> Default for ChunkPrevIter<'_, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
     fn default() -> Self {
         Self { chunk: None }
     }
 }
 
-impl<'a, A, const UP: bool> Iterator for ChunkPrevIter<'a, A, UP> {
-    type Item = Chunk<'a, A, UP>;
+impl<'a, A, S> Iterator for ChunkPrevIter<'a, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
+    type Item = Chunk<'a, A, S>;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -430,44 +476,62 @@ impl<'a, A, const UP: bool> Iterator for ChunkPrevIter<'a, A, UP> {
     }
 }
 
-impl<A, const UP: bool> FusedIterator for ChunkPrevIter<'_, A, UP> {}
+impl<A, S> FusedIterator for ChunkPrevIter<'_, A, S> where S: BumpAllocatorSettings<GuaranteedAllocated = True> {}
 
-impl<A, const UP: bool> Debug for ChunkPrevIter<'_, A, UP> {
+impl<A, S> Debug for ChunkPrevIter<'_, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_list().entries(*self).finish()
     }
 }
 
 /// Iterator that iterates over next chunks by continuously calling [`Chunk::next`].
-pub struct ChunkNextIter<'a, A, const UP: bool> {
+pub struct ChunkNextIter<'a, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
     #[expect(missing_docs)]
-    pub chunk: Option<Chunk<'a, A, UP>>,
+    pub chunk: Option<Chunk<'a, A, S>>,
 }
 
-impl<A, const UP: bool> Clone for ChunkNextIter<'_, A, UP> {
+impl<A, S> Clone for ChunkNextIter<'_, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, const UP: bool> Copy for ChunkNextIter<'_, A, UP> {}
+impl<A, S> Copy for ChunkNextIter<'_, A, S> where S: BumpAllocatorSettings<GuaranteedAllocated = True> {}
 
-impl<A, const UP: bool> PartialEq for ChunkNextIter<'_, A, UP> {
+impl<A, S> PartialEq for ChunkNextIter<'_, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
     fn eq(&self, other: &Self) -> bool {
         self.chunk == other.chunk
     }
 }
 
-impl<A, const UP: bool> Eq for ChunkNextIter<'_, A, UP> {}
+impl<A, S> Eq for ChunkNextIter<'_, A, S> where S: BumpAllocatorSettings<GuaranteedAllocated = True> {}
 
-impl<A, const UP: bool> Default for ChunkNextIter<'_, A, UP> {
+impl<A, S> Default for ChunkNextIter<'_, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
     fn default() -> Self {
         Self { chunk: None }
     }
 }
 
-impl<'a, A, const UP: bool> Iterator for ChunkNextIter<'a, A, UP> {
-    type Item = Chunk<'a, A, UP>;
+impl<'a, A, S> Iterator for ChunkNextIter<'a, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
+    type Item = Chunk<'a, A, S>;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -477,9 +541,12 @@ impl<'a, A, const UP: bool> Iterator for ChunkNextIter<'a, A, UP> {
     }
 }
 
-impl<A, const UP: bool> FusedIterator for ChunkNextIter<'_, A, UP> {}
+impl<A, S> FusedIterator for ChunkNextIter<'_, A, S> where S: BumpAllocatorSettings<GuaranteedAllocated = True> {}
 
-impl<A, const UP: bool> Debug for ChunkNextIter<'_, A, UP> {
+impl<A, S> Debug for ChunkNextIter<'_, A, S>
+where
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+{
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_list().entries(self.map(Chunk::size)).finish()
     }

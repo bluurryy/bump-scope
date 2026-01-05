@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** The generic const parameters have been consolidated into a single `Settings` parameter.
+- For non-guaranteed-allocated `Stats`, `current_chunk` has been renamed to `get_current_chunk`
+- For non-guaranteed-allocated `BumpScope`, `allocator` has been renamed to `get_allocator`
 - Depend on `serde_core` instead of `serde`
 
 ### Removed

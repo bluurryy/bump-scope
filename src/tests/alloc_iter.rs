@@ -1,9 +1,9 @@
-use crate::{alloc::Global, tests::Bump};
+use crate::{alloc::Global, settings::BumpSettings, tests::Bump};
 
 use super::either_way;
 
 fn zst<const UP: bool>() {
-    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
     bump.alloc_iter([[0u8; 0]; 10]);
     bump.alloc_iter([[0u16; 0]; 10]);
@@ -24,7 +24,7 @@ fn zst<const UP: bool>() {
 }
 
 fn empty<const UP: bool>() {
-    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
     bump.alloc_iter(core::iter::empty::<u8>());
     bump.alloc_iter(core::iter::empty::<u16>());
@@ -45,19 +45,19 @@ fn empty<const UP: bool>() {
 }
 
 fn three<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     bump.alloc_iter(SuppressHints([1, 2, 3].into_iter()));
     assert_eq!(bump.stats().allocated(), 3 * 4);
 }
 
 fn three_mut<const UP: bool>() {
-    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     bump.alloc_iter_mut(SuppressHints([1, 2, 3].into_iter()));
     assert_eq!(bump.stats().allocated(), 3 * 4);
 }
 
 fn three_mut_rev<const UP: bool>() {
-    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     bump.alloc_iter_mut_rev(SuppressHints([1, 2, 3].into_iter()));
     assert_eq!(bump.stats().allocated(), 3 * 4);
 }

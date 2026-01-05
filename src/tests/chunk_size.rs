@@ -7,6 +7,7 @@ use std::convert::Infallible;
 use crate::{
     alloc::{AllocError, Allocator, Global},
     chunk_size::AssumedMallocOverhead,
+    settings::BumpSettings,
     tests::Bump,
 };
 
@@ -49,38 +50,39 @@ const OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
 
 fn zst<const UP: bool>() {
     // four pointers, + overhead, next power of two, minus overhead
-    let bump = <Bump<Global, 1, UP>>::with_size(0);
+    let bump = <Bump<Global, BumpSettings<1, UP>>>::with_size(0);
     assert_eq!(bump.stats().size(), size_of::<[usize; 8]>() - OVERHEAD);
 
-    let bump = <Bump<Global, 1, UP>>::with_size(512 - 1);
+    let bump = <Bump<Global, BumpSettings<1, UP>>>::with_size(512 - 1);
     assert_eq!(bump.stats().size(), 512 - OVERHEAD);
 
-    let bump = <Bump<Global, 1, UP>>::with_size(512);
+    let bump = <Bump<Global, BumpSettings<1, UP>>>::with_size(512);
     assert_eq!(bump.stats().size(), 512 - OVERHEAD);
 
-    let bump = <Bump<Global, 1, UP>>::with_size(0x1000 - 1);
+    let bump = <Bump<Global, BumpSettings<1, UP>>>::with_size(0x1000 - 1);
     assert_eq!(bump.stats().size(), 0x1000 - OVERHEAD);
 
-    let bump = <Bump<Global, 1, UP>>::with_size(0x1000);
+    let bump = <Bump<Global, BumpSettings<1, UP>>>::with_size(0x1000);
     assert_eq!(bump.stats().size(), 0x1000 - OVERHEAD);
 
-    let bump = <Bump<Global, 1, UP>>::with_size(0x2000 - 1);
+    let bump = <Bump<Global, BumpSettings<1, UP>>>::with_size(0x2000 - 1);
     assert_eq!(bump.stats().size(), 0x2000 - OVERHEAD);
 
-    let bump = <Bump<Global, 1, UP>>::with_size(0x2000);
+    let bump = <Bump<Global, BumpSettings<1, UP>>>::with_size(0x2000);
     assert_eq!(bump.stats().size(), 0x2000 - OVERHEAD);
 
     // same as `with_size(0)`
-    let bump = <Bump<Global, 1, UP>>::with_capacity(Layout::array::<u8>(0).unwrap());
+    let bump = <Bump<Global, BumpSettings<1, UP>>>::with_capacity(Layout::array::<u8>(0).unwrap());
     assert_eq!(bump.stats().size(), size_of::<[usize; 8]>() - OVERHEAD);
 }
 
+// TODO: `UP` not used
 fn aligned_allocator_issue_32<const UP: bool>() {
     create_mock_allocator! {
         BigAllocator 32
     }
 
-    let _: Bump<_, 1, false> = Bump::with_size_in(0x2000, BigAllocator::new());
+    let _: Bump<_, BumpSettings<1, false>> = Bump::with_size_in(0x2000, BigAllocator::new());
 }
 
 fn giant_base_allocator<const UP: bool>() {
@@ -88,7 +90,7 @@ fn giant_base_allocator<const UP: bool>() {
         MyAllocator 4096
     }
 
-    let bump: Bump<_, 1, UP> = Bump::with_size_in(0x2000, MyAllocator::new());
+    let bump: Bump<_, BumpSettings<1, UP>> = Bump::with_size_in(0x2000, MyAllocator::new());
     assert_eq!(bump.stats().allocated(), 0);
     bump.alloc_str("hey");
     assert_eq!(bump.stats().allocated(), 3);

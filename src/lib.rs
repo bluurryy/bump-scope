@@ -385,6 +385,8 @@ mod raw_fixed_bump_string;
 mod raw_fixed_bump_vec;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
+/// Contains types to configure bump allocation.
+pub mod settings;
 pub mod stats;
 mod traits;
 mod without_dealloc;
@@ -439,47 +441,6 @@ pub mod bytemuck {
 pub mod zerocopy_08 {
     pub use crate::features::zerocopy_08::{BumpExt, BumpScopeExt, InitZeroed, VecExt};
 }
-
-/// Specifies the current minimum alignment of a bump allocator.
-#[derive(Clone, Copy)]
-pub struct MinimumAlignment<const ALIGNMENT: usize>;
-
-mod supported_minimum_alignment {
-    use crate::ArrayLayout;
-
-    pub trait Sealed {
-        /// We'd be fine with just an [`core::ptr::Alignment`], but that's not stable.
-        #[doc(hidden)]
-        const LAYOUT: ArrayLayout;
-
-        #[doc(hidden)]
-        const MIN_ALIGN: usize;
-    }
-}
-
-/// Statically guarantees that a minimum alignment is supported.
-///
-/// This trait is *sealed*: the list of implementors below is total. Users do not have the ability to mark additional
-/// `MinimumAlignment<N>` values as supported. Only bump allocators with the supported minimum alignments are constructable.
-pub trait SupportedMinimumAlignment: supported_minimum_alignment::Sealed + Copy {}
-
-macro_rules! supported_alignments {
-    ($($i:literal)*) => {
-        $(
-            impl supported_minimum_alignment::Sealed for MinimumAlignment<$i> {
-                const LAYOUT: ArrayLayout = match ArrayLayout::from_size_align(0, $i) {
-                    Ok(layout) => layout,
-                    Err(_) => unreachable!(),
-                };
-
-                const MIN_ALIGN: usize = $i;
-            }
-            impl SupportedMinimumAlignment for MinimumAlignment<$i> {}
-        )*
-    };
-}
-
-supported_alignments!(1 2 4 8 16);
 
 /// Does not check for overflow.
 #[inline(always)]
@@ -583,28 +544,15 @@ trait SizedTypeProperties: Sized {
 
 impl<T> SizedTypeProperties for T {}
 
-macro_rules! const_param_assert {
-    (
-        ($(const $param_ident:ident: $param_ty:ident),+) => $($assert_args:tt)*
-    ) => {{
-            struct ConstParamAssert<$(const $param_ident: $param_ty),+> {}
-            impl<$(const $param_ident: $param_ty),+> ConstParamAssert<$($param_ident),+> {
-                const CONST_PARAM_ASSERT: () = assert!($($assert_args)*);
-            }
-            #[expect(unused_variables)]
-            let assertion = ConstParamAssert::<$($param_ident),+>::CONST_PARAM_ASSERT;
-    }};
-}
-
-pub(crate) use const_param_assert;
-
 mod supported_base_allocator {
-    pub trait Sealed<const GUARANTEED_ALLOCATED: bool> {
+    use crate::settings::{Boolean, False, True};
+
+    pub trait Sealed<GuaranteedAllocated: Boolean> {
         #[doc(hidden)]
         fn default_or_panic() -> Self;
     }
 
-    impl<A> Sealed<false> for A
+    impl<A> Sealed<False> for A
     where
         A: Default,
     {
@@ -613,7 +561,7 @@ mod supported_base_allocator {
         }
     }
 
-    impl<A> Sealed<true> for A {
+    impl<A> Sealed<True> for A {
         fn default_or_panic() -> Self {
             unreachable!("default should not be required for `GUARANTEED_ALLOCATED` bump allocators");
         }
@@ -626,14 +574,14 @@ mod supported_base_allocator {
 /// When not guaranteed allocated, allocators are additionally required to implement [`Default`].
 ///
 /// This trait is *sealed*: the list of implementors below is total.
-pub trait BaseAllocator<const GUARANTEED_ALLOCATED: bool = true>:
-    Allocator + Clone + supported_base_allocator::Sealed<GUARANTEED_ALLOCATED>
+pub trait BaseAllocator<GuaranteedAllocated: Boolean>:
+    Allocator + Clone + supported_base_allocator::Sealed<GuaranteedAllocated>
 {
 }
 
-impl<A> BaseAllocator<false> for A where A: Allocator + Clone + Default {}
+impl<A> BaseAllocator<False> for A where A: Allocator + Clone + Default {}
 
-impl<A> BaseAllocator<true> for A where A: Allocator + Clone {}
+impl<A> BaseAllocator<True> for A where A: Allocator + Clone {}
 
 /// Call this with a macro that accepts tokens of either `A` or `A = $crate::alloc::Global`.
 ///
@@ -655,6 +603,8 @@ macro_rules! maybe_default_allocator {
 
 pub(crate) use maybe_default_allocator;
 
+use crate::settings::{Boolean, False, True};
+
 // (copied from rust standard library)
 //
 // Tiny Vecs are dumb. Skip to:
@@ -672,24 +622,21 @@ const fn min_non_zero_cap(size: usize) -> usize {
     }
 }
 
-/// Aligns a bump address to the `MIN_ALIGN`.
+/// Aligns a bump address to the `min_align`.
 ///
-/// This is a noop when `MIN_ALIGN` is `0`.
+/// This is a noop when `min_align` is `0`.
 #[must_use]
 #[inline(always)]
-fn align_pos<const MIN_ALIGN: usize, const UP: bool>(pos: NonZeroUsize) -> usize
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-{
-    if UP {
+fn align_pos(up: bool, min_align: usize, pos: NonZeroUsize) -> usize {
+    if up {
         // Aligning an address that is `<= range.end` with an alignment
         // that is `<= MIN_CHUNK_ALIGN` cannot exceed `range.end` and
         // cannot overflow as `range.end` is always aligned to `MIN_CHUNK_ALIGN`.
-        up_align_usize_unchecked(pos.get(), MIN_ALIGN)
+        up_align_usize_unchecked(pos.get(), min_align)
     } else {
         // The chunk start is non-null and is aligned to `MIN_CHUNK_ALIGN`
         // `MIN_ALIGN <= MIN_CHUNK_ALIGN` will never pass the chunk start
         // and stay non-zero.
-        down_align_usize(pos.get(), MIN_ALIGN)
+        down_align_usize(pos.get(), min_align)
     }
 }

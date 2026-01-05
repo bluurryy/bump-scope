@@ -3,11 +3,12 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    BaseAllocator, Bump, BumpAllocator, BumpAllocatorScope, BumpScope, MinimumAlignment, MutBumpAllocator,
-    MutBumpAllocatorScope, SizedTypeProperties, SupportedMinimumAlignment, WithoutDealloc, WithoutShrink,
+    BaseAllocator, Bump, BumpAllocator, BumpAllocatorScope, BumpScope, MutBumpAllocator, MutBumpAllocatorScope,
+    SizedTypeProperties, WithoutDealloc, WithoutShrink,
     alloc::AllocError,
     bump_down,
     polyfill::non_null,
+    settings::BumpAllocatorSettings,
     stats::{AnyStats, Stats},
     traits::assert_implements,
     up_align_usize_unchecked,
@@ -979,14 +980,13 @@ unsafe impl<B: BumpAllocatorExt> BumpAllocatorExt for WithoutShrink<B> {
     }
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpAllocatorExt for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+unsafe impl<A, S> BumpAllocatorExt for BumpScope<'_, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     type Stats<'b>
-        = Stats<'b, A, UP, GUARANTEED_ALLOCATED>
+        = Stats<'b, A, S>
     where
         Self: 'b;
 
@@ -1030,7 +1030,7 @@ where
 
     #[inline]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        if !DEALLOCATES {
+        if !S::DEALLOCATES {
             return None;
         }
 
@@ -1041,7 +1041,7 @@ where
         // Adapted from `Allocator::shrink`.
         unsafe {
             let is_last_and_allocated = self.chunk.get().is_allocated()
-                && if UP {
+                && if S::UP {
                     old_ptr.as_ptr().add(old_size) == self.chunk.get().pos().as_ptr()
                 } else {
                     old_ptr == self.chunk.get().pos()
@@ -1052,11 +1052,11 @@ where
                 return None;
             }
 
-            if UP {
+            if S::UP {
                 let end = old_ptr.addr().get() + new_size;
 
                 // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
-                let new_pos = up_align_usize_unchecked(end, MIN_ALIGN);
+                let new_pos = up_align_usize_unchecked(end, S::MIN_ALIGN);
 
                 self.chunk.get().guaranteed_allocated_unchecked().set_pos_addr(new_pos);
                 Some(old_ptr.cast())
@@ -1064,7 +1064,7 @@ where
                 let old_addr = old_ptr.addr();
                 let old_addr_old_end = NonZeroUsize::new_unchecked(old_addr.get() + old_size);
 
-                let new_addr = bump_down(old_addr_old_end, new_size, T::ALIGN.max(MIN_ALIGN));
+                let new_addr = bump_down(old_addr_old_end, new_size, T::ALIGN.max(S::MIN_ALIGN));
                 let new_addr = NonZeroUsize::new_unchecked(new_addr);
                 let old_addr_new_end = NonZeroUsize::new_unchecked(old_addr.get() + new_size);
 
@@ -1105,14 +1105,13 @@ where
     }
 }
 
-unsafe impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpAllocatorExt for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+unsafe impl<A, S> BumpAllocatorExt for Bump<A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     type Stats<'b>
-        = Stats<'b, A, UP, GUARANTEED_ALLOCATED>
+        = Stats<'b, A, S>
     where
         Self: 'b;
 

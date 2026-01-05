@@ -95,7 +95,7 @@ where
     }
 }
 
-type Bump<A> = bump_scope::Bump<A, 1, true, true, true>;
+type Bump<A> = bump_scope::Bump<A>;
 
 #[test]
 fn main() {

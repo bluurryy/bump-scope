@@ -62,34 +62,18 @@ mod unaligned_collection;
 mod unallocated;
 mod vec;
 
-pub(crate) type Bump<
-    A = Global,
-    const MIN_ALIGN: usize = 1,
-    const UP: bool = true,
-    const GUARANTEED_ALLOCATED: bool = true,
-    const DEALLOCATES: bool = true,
-> = crate::Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>;
-
-pub(crate) type BumpScope<
-    'a,
-    A = Global,
-    const MIN_ALIGN: usize = 1,
-    const UP: bool = true,
-    const GUARANTEED_ALLOCATED: bool = true,
-    const DEALLOCATES: bool = true,
-> = crate::BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>;
-
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 
 const MALLOC_OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
 const OVERHEAD: usize = MALLOC_OVERHEAD + size_of::<ChunkHeader<Global>>();
 
 use crate::{
-    BumpBox, BumpString, BumpVec, ChunkHeader, MinimumAlignment, MutBumpString, MutBumpVec, MutBumpVecRev,
-    SizedTypeProperties, SupportedMinimumAlignment,
+    Bump, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, MutBumpString, MutBumpVec, MutBumpVecRev,
+    SizedTypeProperties,
     alloc::{AllocError, Allocator, Global as System, Global},
     chunk_size::{AssumedMallocOverhead, ChunkSize},
     mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice, panic_on_error,
+    settings::{BumpSettings, MinimumAlignment, SupportedMinimumAlignment},
     stats::Chunk,
 };
 
@@ -227,7 +211,7 @@ macro_rules! assert_chunk_sizes {
 
 fn assert_send<const UP: bool>() {
     fn must_be_send<T: Send>(_: &T) {}
-    let bump = Bump::<Global, 1, UP>::default();
+    let bump = Bump::<Global, BumpSettings<1, UP>>::default();
     must_be_send(&bump);
 }
 
@@ -235,7 +219,7 @@ fn mut_bump_vec<const UP: bool>() {
     const TIMES: usize = 5;
 
     for (size, count) in [(0, 2), (512, 1)] {
-        let mut bump = Bump::<Global, 1, UP>::with_size(size);
+        let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(size);
         let mut vec = MutBumpVec::new_in(&mut bump);
         assert_eq!(vec.allocator_stats().count(), 1);
         vec.extend(iter::repeat_n(3, TIMES));
@@ -249,7 +233,7 @@ fn mut_bump_vec<const UP: bool>() {
 }
 
 fn mut_bump_vec_push_pop<const UP: bool>() {
-    let mut bump = Bump::<Global, 1, UP>::new();
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::new();
     let mut vec = mut_bump_vec![in &mut bump; 1, 2];
 
     vec.push(3);
@@ -265,7 +249,7 @@ fn mut_bump_vec_push_pop<const UP: bool>() {
 }
 
 fn mut_bump_vec_insert<const UP: bool>() {
-    let mut bump = Bump::<Global, 1, UP>::new();
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::new();
     let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
 
     vec.insert(1, 4);
@@ -279,7 +263,7 @@ fn mut_bump_vec_insert<const UP: bool>() {
 }
 
 fn mut_bump_vec_remove<const UP: bool>() {
-    let mut bump = Bump::<Global, 1, UP>::new();
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::new();
     let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4, 5];
 
     assert_eq!(vec.remove(1), 2);
@@ -293,7 +277,7 @@ fn mut_bump_vec_remove<const UP: bool>() {
 }
 
 fn mut_bump_vec_swap_remove<const UP: bool>() {
-    let mut bump = Bump::<Global, 1, UP>::new();
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::new();
     let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4, 5];
 
     assert_eq!(vec.swap_remove(1), 2);
@@ -307,7 +291,7 @@ fn mut_bump_vec_swap_remove<const UP: bool>() {
 }
 
 fn mut_bump_vec_extend<const UP: bool>() {
-    let mut bump = Bump::<Global, 1, UP>::new();
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::new();
     let mut vec = mut_bump_vec![in &mut bump];
 
     vec.extend([1, 2, 3]);
@@ -330,7 +314,7 @@ fn mut_bump_vec_drop<const UP: bool>() {
     const SIZE: usize = 32;
     assert_eq!(mem::size_of::<ChunkHeader<Global>>(), SIZE);
 
-    let mut bump = Bump::<Global, 1, UP>::with_size(64);
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
     assert_eq!(bump.stats().current_chunk().size(), 64 - MALLOC_OVERHEAD);
     assert_eq!(bump.stats().capacity(), 64 - OVERHEAD);
     assert_eq!(bump.stats().remaining(), 64 - OVERHEAD);
@@ -356,7 +340,7 @@ fn mut_bump_vec_drop<const UP: bool>() {
 fn mut_bump_vec_write<const UP: bool>() {
     use std::io::Write;
 
-    let mut bump = Bump::<Global, 1, UP>::new();
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::new();
     let mut vec: MutBumpVec<u8, _> = mut_bump_vec![in &mut bump];
 
     let _ = vec.write(&[0]).unwrap();
@@ -371,7 +355,7 @@ fn mut_bump_vec_write<const UP: bool>() {
 }
 
 fn alloc_iter<const UP: bool>() {
-    let bump = Bump::<Global, 1, UP>::with_size(64);
+    let bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
 
     let slice_0 = bump.alloc_iter([1, 2, 3]);
     let slice_1 = bump.alloc_iter([4, 5, 6]);
@@ -381,7 +365,7 @@ fn alloc_iter<const UP: bool>() {
 }
 
 fn reset_single_chunk<const UP: bool>() {
-    let mut bump = Bump::<Global, 1, UP>::with_size(64);
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
     assert_chunk_sizes!(bump, [], 64, []);
     bump.reset();
     assert_chunk_sizes!(bump, [], 64, []);
@@ -389,12 +373,15 @@ fn reset_single_chunk<const UP: bool>() {
 
 fn macro_syntax<const UP: bool>() {
     #[expect(clippy::needless_pass_by_value)]
-    fn check<T: Debug + PartialEq, const UP: bool>(v: MutBumpVec<T, &mut Bump<Global, 1, UP>>, expected: &[T]) {
+    fn check<T: Debug + PartialEq, const UP: bool>(
+        v: MutBumpVec<T, &mut Bump<Global, BumpSettings<1, UP>>>,
+        expected: &[T],
+    ) {
         dbg!(&v);
         assert_eq!(v, expected);
     }
 
-    let mut bump = Bump::<Global, 1, UP>::new();
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::new();
 
     check::<i32, UP>(mut_bump_vec![in &mut bump], &[]);
     check(mut_bump_vec![in &mut bump; 1, 2, 3], &[1, 2, 3]);
@@ -405,20 +392,20 @@ fn macro_syntax<const UP: bool>() {
     check(mut_bump_vec![in &mut bump; 5; 3], &[5, 5, 5]);
 }
 
-fn debug_sizes<const UP: bool>(bump: &Bump<Global, 1, UP>) {
+fn debug_sizes<const UP: bool>(bump: &Bump<Global, BumpSettings<1, UP>>) {
     let iter = bump.stats().small_to_big();
     let vec = iter.map(Chunk::size).collect::<Vec<_>>();
     eprintln!("sizes: {vec:?}");
 }
 
-fn force_alloc_new_chunk<const UP: bool>(bump: &BumpScope<Global, 1, UP>) {
+fn force_alloc_new_chunk<const UP: bool>(bump: &BumpScope<Global, BumpSettings<1, UP>>) {
     let size = bump.stats().current_chunk().remaining() + 1;
     let layout = Layout::from_size_align(size, 1).unwrap();
     bump.alloc_layout(layout);
 }
 
 fn reset_first_chunk<const UP: bool>() {
-    let mut bump = Bump::<Global, 1, UP>::with_size(64);
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
 
     bump.scoped(|scope| {
         force_alloc_new_chunk(&scope);
@@ -431,7 +418,7 @@ fn reset_first_chunk<const UP: bool>() {
 }
 
 fn reset_middle_chunk<const UP: bool>() {
-    let mut bump = Bump::<Global, 1, UP>::with_size(64);
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
     force_alloc_new_chunk(bump.as_scope());
 
     bump.scoped(|scope| {
@@ -444,7 +431,7 @@ fn reset_middle_chunk<const UP: bool>() {
 }
 
 fn reset_last_chunk<const UP: bool>() {
-    let mut bump = Bump::<Global, 1, UP>::with_size(64);
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
     force_alloc_new_chunk(bump.as_scope());
     force_alloc_new_chunk(bump.as_scope());
     assert_chunk_sizes!(bump, [128, 64], 256, []);
@@ -459,7 +446,7 @@ macro_rules! assert_eq_ident {
 }
 
 fn scope_by_guards<const UP: bool>() {
-    let mut bump = Bump::<Global, 1, UP>::new();
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::new();
 
     {
         let mut child_guard = bump.scope_guard();
@@ -494,7 +481,7 @@ fn scope_by_guards<const UP: bool>() {
 }
 
 fn scope_by_closures<const UP: bool>() {
-    let mut bump = Bump::<Global, 1, UP>::new();
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::new();
 
     bump.scoped(|mut child| {
         let child_0 = child.alloc_str("child_0");
@@ -523,14 +510,15 @@ fn scope_by_closures<const UP: bool>() {
 }
 
 fn reserve<const UP: bool>() {
-    let bump = Bump::<Global, 1, UP>::default();
+    let bump = Bump::<Global, BumpSettings<1, UP>>::default();
     dbg!(&bump);
     bump.reserve_bytes(256);
     assert!(bump.stats().remaining() > 256);
 }
 
+// TODO: these don't use `UP`... bug?
 fn aligned<const UP: bool>() {
-    let mut bump: Bump<Global, 8> = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<8>> = Bump::new();
 
     bump.scoped(|mut bump| {
         bump.alloc(0xDEAD_BEEF_u64);
@@ -674,7 +662,7 @@ fn bump_format_macro() {
 
 #[test]
 fn zero_capacity() {
-    let bump: Bump<Global, 1, false> = Bump::with_capacity(Layout::new::<[u8; 0]>());
+    let bump: Bump<Global, BumpSettings<1, false>> = Bump::with_capacity(Layout::new::<[u8; 0]>());
     dbg!(bump);
 }
 
@@ -704,7 +692,7 @@ fn vec_of_strings() {
 }
 
 fn bump_vec_shrink_can<const UP: bool>() {
-    let bump = Bump::<Global, 1, UP>::with_size(64);
+    let bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
 
     let mut vec = BumpVec::<i32, _>::from_owned_slice_in([1, 2, 3], &bump);
     let addr = vec.as_ptr().addr();
@@ -726,7 +714,7 @@ fn bump_vec_shrink_can<const UP: bool>() {
 }
 
 fn bump_vec_shrink_cant<const UP: bool>() {
-    let bump = Bump::<Global, 1, UP>::with_size(64);
+    let bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
 
     let mut vec = BumpVec::<i32, _>::from_owned_slice_in([1, 2, 3], &bump);
     let addr = vec.as_ptr().addr();
@@ -746,7 +734,7 @@ fn realign<const UP: bool>() {
 
     // into_aligned
     {
-        let bump = Bump::<Global, 1, UP>::with_size(64);
+        let bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
         bump.alloc(0u8);
         assert!(!bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
         let bump = bump.into_aligned::<ALIGN>();
@@ -755,7 +743,7 @@ fn realign<const UP: bool>() {
 
     // as_mut_aligned
     {
-        let mut bump = Bump::<Global, 1, UP>::with_size(64);
+        let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
         bump.alloc(0u8);
         assert!(!bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
         let bump = bump.as_mut_aligned::<ALIGN>();
@@ -764,7 +752,7 @@ fn realign<const UP: bool>() {
 
     // aligned
     {
-        let mut bump = Bump::<Global, 1, UP>::with_size(64);
+        let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
         bump.alloc(0u8);
         assert!(!bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
         bump.aligned::<ALIGN, ()>(|bump| {
@@ -774,7 +762,7 @@ fn realign<const UP: bool>() {
 
     // scoped_aligned
     {
-        let mut bump = Bump::<Global, 1, UP>::with_size(64);
+        let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
         bump.alloc(0u8);
         assert!(!bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
         bump.scoped_aligned::<ALIGN, ()>(|bump| {
@@ -814,7 +802,7 @@ fn alloc_zst<const UP: bool>() {
         }
     }
 
-    let mut bump = Bump::<Global, 1, UP>::new();
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::new();
 
     fn reset() {
         DROPS.set(0);
@@ -953,7 +941,7 @@ fn alloc_zst<const UP: bool>() {
 }
 
 fn call_zst_creation_closures<const UP: bool>() {
-    let bump = Bump::<Global, 1, UP>::new();
+    let bump = Bump::<Global, BumpSettings<1, UP>>::new();
 
     {
         let mut calls = 0;
@@ -973,7 +961,7 @@ fn call_zst_creation_closures<const UP: bool>() {
 }
 
 fn dealloc_ltr<const UP: bool>() {
-    let bump = Bump::<Global, 1, UP>::new();
+    let bump = Bump::<Global, BumpSettings<1, UP>>::new();
     let slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]);
     let (lhs, rhs) = slice.split_at(3);
 
@@ -999,7 +987,7 @@ fn dealloc_ltr<const UP: bool>() {
 }
 
 fn dealloc_rtl<const UP: bool>() {
-    let bump = Bump::<Global, 1, UP>::new();
+    let bump = Bump::<Global, BumpSettings<1, UP>>::new();
     let slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]);
     let (lhs, rhs) = slice.split_at(3);
 
@@ -1093,8 +1081,8 @@ fn min_non_zero_cap() {
 mod doc_layout_claim {
     use crate::{SizedTypeProperties, alloc::Global};
     use core::{cell::Cell, ptr::NonNull};
-    type Bump = crate::Bump<Global, 1, true, true, true>;
-    type BumpScope = crate::BumpScope<'static, Global, 1, true, true, true>;
+    type Bump = crate::Bump<Global>;
+    type BumpScope = crate::BumpScope<'static, Global>;
     type Comparand = Cell<NonNull<()>>;
     const _: () = assert!(Bump::SIZE == Comparand::SIZE && Bump::ALIGN == Comparand::ALIGN);
     const _: () = assert!(BumpScope::SIZE == Comparand::SIZE && BumpScope::ALIGN == Comparand::ALIGN);
@@ -1135,12 +1123,15 @@ fn panic_payload_string(payload: Box<dyn Any + Send>) -> Result<String, Box<dyn 
 }
 
 fn default_chunk_size<const UP: bool>() {
-    assert_eq!(Bump::<Global, 1, UP>::new().stats().size(), 512 - size_of::<[usize; 2]>());
+    assert_eq!(
+        Bump::<Global, BumpSettings<1, UP>>::new().stats().size(),
+        512 - size_of::<[usize; 2]>()
+    );
 }
 
 fn min_chunk_size<const UP: bool>() {
     assert_eq!(
-        Bump::<Global, 1, UP>::with_size(0).stats().size(),
+        Bump::<Global, BumpSettings<1, UP>>::with_size(0).stats().size(),
         64 - size_of::<[usize; 2]>()
     );
 }
@@ -1182,11 +1173,11 @@ fn test_drop_allocator() {
     let drop_count = DropCounterMutex::default();
 
     let allocator = ReferenceCountedAllocator(drop_count.clone());
-    let bump = Bump::<_, 1, true>::new_in(allocator.clone());
+    let bump = Bump::<_>::new_in(allocator.clone());
     drop(bump);
     assert_eq!(drop_count.get(), 1);
 
-    let bump = Bump::<_, 1, true>::new_in(allocator);
+    let bump = Bump::<_>::new_in(allocator);
     bump.reserve_bytes(1024);
     drop(bump);
     assert_eq!(drop_count.get(), 3);

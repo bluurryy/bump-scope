@@ -18,7 +18,7 @@ fn rayon<const UP: bool>() {
         return;
     }
 
-    let mut pool = BumpPool::<Global, 1, UP>::new();
+    let mut pool = BumpPool::<Global>::new();
 
     let ints: Vec<&mut usize> = (0..1000usize)
         .into_par_iter()
@@ -37,7 +37,7 @@ fn rayon<const UP: bool>() {
 }
 
 fn scope<const UP: bool>() {
-    let pool = BumpPool::<Global, 1, UP>::new();
+    let pool = BumpPool::<Global>::new();
     let (sender, receiver) = std::sync::mpsc::sync_channel(10);
 
     std::thread::scope(|s| {
