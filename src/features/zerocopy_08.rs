@@ -2,13 +2,7 @@ use core::mem::MaybeUninit;
 
 use zerocopy_08::FromZeros;
 
-use crate::{
-    BaseAllocator, Bump, BumpBox, BumpScope, alloc::AllocError, error_behavior::ErrorBehavior,
-    settings::BumpAllocatorSettings,
-};
-
-#[cfg(feature = "panic-on-alloc")]
-use crate::panic_on_error;
+use crate::{BaseAllocator, Bump, BumpBox, BumpScope, alloc::AllocError, settings::BumpAllocatorSettings};
 
 mod vec_ext;
 
@@ -312,7 +306,7 @@ where
     where
         T: FromZeros,
     {
-        panic_on_error(self.generic_alloc_zeroed())
+        self.alloc_uninit().init_zeroed()
     }
 
     #[inline(always)]
@@ -320,7 +314,7 @@ where
     where
         T: FromZeros,
     {
-        self.generic_alloc_zeroed()
+        Ok(self.try_alloc_uninit()?.init_zeroed())
     }
 
     #[inline(always)]
@@ -329,7 +323,7 @@ where
     where
         T: FromZeros,
     {
-        panic_on_error(self.generic_alloc_zeroed_slice(len))
+        self.alloc_uninit_slice(len).init_zeroed()
     }
 
     #[inline(always)]
@@ -337,38 +331,6 @@ where
     where
         T: FromZeros,
     {
-        self.generic_alloc_zeroed_slice(len)
-    }
-}
-
-trait PrivateBumpScopeExt<'a> {
-    fn generic_alloc_zeroed<B: ErrorBehavior, T>(&self) -> Result<BumpBox<'a, T>, B>
-    where
-        T: FromZeros;
-
-    fn generic_alloc_zeroed_slice<B: ErrorBehavior, T>(&self, len: usize) -> Result<BumpBox<'a, [T]>, B>
-    where
-        T: FromZeros;
-}
-
-impl<'a, A, S> PrivateBumpScopeExt<'a> for BumpScope<'a, A, S>
-where
-    A: BaseAllocator<S::GuaranteedAllocated>,
-    S: BumpAllocatorSettings,
-{
-    #[inline(always)]
-    fn generic_alloc_zeroed<B: ErrorBehavior, T>(&self) -> Result<BumpBox<'a, T>, B>
-    where
-        T: FromZeros,
-    {
-        Ok(self.generic_alloc_uninit::<B, T>()?.init_zeroed())
-    }
-
-    #[inline(always)]
-    fn generic_alloc_zeroed_slice<B: ErrorBehavior, T>(&self, len: usize) -> Result<BumpBox<'a, [T]>, B>
-    where
-        T: FromZeros,
-    {
-        Ok(self.generic_alloc_uninit_slice::<B, T>(len)?.init_zeroed())
+        Ok(self.try_alloc_uninit_slice(len)?.init_zeroed())
     }
 }

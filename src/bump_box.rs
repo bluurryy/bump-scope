@@ -439,18 +439,18 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// ```
     /// Manually create a `BumpBox` from scratch by using the bump allocator:
     /// ```
-    /// use bump_scope::{Bump, BumpBox};
+    /// use bump_scope::{Bump, BumpBox, alloc::Allocator};
     /// use core::alloc::Layout;
     /// use core::ptr::NonNull;
     ///
     /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, _bump: &'a Bump) -> BumpBox<'a, T> {
-    ///     BumpBox::from_raw(ptr)
+    ///     unsafe { BumpBox::from_raw(ptr) }
     /// }
     ///
     /// let bump: Bump = Bump::new();
     ///
     /// let five = unsafe {
-    ///     let ptr = bump.alloc_layout(Layout::new::<i32>());
+    ///     let ptr = bump.allocate(Layout::new::<i32>()).unwrap().cast::<i32>();
     ///     // In general .write is required to avoid attempting to destruct
     ///     // the (uninitialized) previous contents of `ptr`, though for this
     ///     // simple example `*ptr = 5` would have worked as well.

@@ -163,7 +163,7 @@ up_and_down! {
         bump.try_alloc_iter_mut_rev(value)
     }
 
-    pub fn Bump_try_alloc_layout(bump: &Bump, layout: Layout) -> Result<NonNull<u8>> {
+    pub fn Bump_try_alloc_layout(bump: &Bump, layout: Layout) -> Result<BumpBox<[MaybeUninit<u8>]>> {
         bump.try_alloc_layout(layout)
     }
 

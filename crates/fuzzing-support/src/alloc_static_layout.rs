@@ -2,6 +2,7 @@ use std::{alloc::Layout, fmt::Debug, mem};
 
 use arbitrary::Arbitrary;
 use bump_scope::{
+    BumpAllocatorExt,
     alloc::Global,
     settings::{MinimumAlignment, SupportedMinimumAlignment},
 };
@@ -156,7 +157,7 @@ where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     fn alloc_dynamic(&self, layout: Layout) -> Range {
-        let start = self.alloc_layout(layout).addr().get();
+        let start = self.allocate_layout(layout).addr().get();
         Range {
             start,
             end: start + layout.size(),

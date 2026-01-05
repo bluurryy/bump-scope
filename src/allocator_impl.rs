@@ -3,8 +3,8 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    BaseAllocator, BumpScope, alloc::AllocError, bump_down, polyfill::non_null, settings::BumpAllocatorSettings,
-    up_align_usize_unchecked,
+    BaseAllocator, BumpAllocatorExt as _, BumpScope, alloc::AllocError, bump_down, polyfill::non_null,
+    settings::BumpAllocatorSettings, up_align_usize_unchecked,
 };
 
 #[inline(always)]
@@ -13,7 +13,10 @@ where
     A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
-    Ok(NonNull::slice_from_raw_parts(bump.try_alloc_layout(layout)?, layout.size()))
+    Ok(NonNull::slice_from_raw_parts(
+        bump.try_allocate_layout(layout)?,
+        layout.size(),
+    ))
 }
 
 #[inline(always)]
@@ -120,7 +123,7 @@ where
                 }
             } else {
                 // We can't grow in place. We have to make a new allocation.
-                let new_ptr = bump.try_alloc_layout(new_layout)?;
+                let new_ptr = bump.try_allocate_layout(new_layout)?;
                 old_ptr.copy_to_nonoverlapping(new_ptr, old_layout.size());
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
@@ -162,7 +165,7 @@ where
                 }
             } else {
                 // We can't reuse the allocated space. We have to make a new allocation.
-                let new_ptr = bump.try_alloc_layout(new_layout)?;
+                let new_ptr = bump.try_allocate_layout(new_layout)?;
                 old_ptr.copy_to_nonoverlapping(new_ptr, old_layout.size());
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
@@ -258,7 +261,7 @@ where
 
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             } else {
-                let new_ptr = bump.try_alloc_layout(new_layout)?;
+                let new_ptr = bump.try_allocate_layout(new_layout)?;
                 old_ptr.copy_to_nonoverlapping(new_ptr, new_layout.size());
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }

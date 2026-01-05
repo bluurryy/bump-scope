@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `alloc*` methods are now available for the `(Mut)BumpAllocatorScopeExt` traits
 - Improve documentation
 
 ### Fixed
@@ -21,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For non-guaranteed-allocated `Stats`, `current_chunk` has been renamed to `get_current_chunk`
 - For non-guaranteed-allocated `BumpScope`, `allocator` has been renamed to `get_allocator`
 - Depend on `serde_core` instead of `serde`
+- **Breaking:** `alloc_layout` now returns `BumpBox<[MaybeUninit<u8>]>` instead of `NonNull<u8>`
 
 ### Removed
 
