@@ -45,8 +45,8 @@
 //! Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
 //!
 //! Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
-//! This benefits collections as well as <code>[alloc_iter](Bump::alloc_iter)([_mut](Bump::alloc_iter_mut))</code> and <code>[alloc_fmt](Bump::alloc_fmt)([_mut](Bump::alloc_fmt_mut))</code>
-//! with the exception of [`MutBumpVecRev`] and [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) which
+//! This benefits collections as well as <code>[alloc_iter](crate::Bump::alloc_iter)([_mut](crate::Bump::alloc_iter_mut))</code> and <code>[alloc_fmt](crate::Bump::alloc_fmt)([_mut](crate::Bump::alloc_fmt_mut))</code>
+//! with the exception of [`MutBumpVecRev`] and [`alloc_iter_mut_rev`](crate::Bump::alloc_iter_mut_rev) which
 //! can be grown and shrunk in place if and only if bumping downwards.
 //!
 //! Bumping downwards can be done in less instructions.
@@ -72,18 +72,19 @@
 //! At the same time `Bump`s that have already allocated a chunk don't suffer additional runtime checks.
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
-//! [`new`]: Bump::new
-//! [`with_size`]: Bump::with_size
-//! [`with_capacity`]: Bump::with_capacity
-//! [`unallocated`]: Bump::unallocated
-//! [`scoped`]: Bump::scoped
-//! [`scoped_aligned`]: Bump::scoped_aligned
-//! [`aligned`]: Bump::aligned
-//! [`scope_guard`]: Bump::scope_guard
-//! [`as_guaranteed_allocated`]: Bump::as_guaranteed_allocated
-//! [`as_mut_guaranteed_allocated`]: Bump::as_mut_guaranteed_allocated
-//! [`into_guaranteed_allocated`]: Bump::into_guaranteed_allocated
+//! [`new`]: crate::Bump::new
+//! [`with_size`]: crate::Bump::with_size
+//! [`with_capacity`]: crate::Bump::with_capacity
+//! [`unallocated`]: crate::Bump::unallocated
+//! [`scoped`]: crate::Bump::scoped
+//! [`scoped_aligned`]: crate::Bump::scoped_aligned
+//! [`aligned`]: crate::Bump::aligned
+//! [`scope_guard`]: crate::Bump::scope_guard
+//! [`as_guaranteed_allocated`]: crate::Bump::as_guaranteed_allocated
+//! [`as_mut_guaranteed_allocated`]: crate::Bump::as_mut_guaranteed_allocated
+//! [`into_guaranteed_allocated`]: crate::Bump::into_guaranteed_allocated
 //! [`BumpSettings`]: crate::settings::BumpSettings
+//! [`MutBumpVecRev`]: crate::MutBumpVecRev
 
 // This settings situation could be improved with the nightly features
 // [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560) and
