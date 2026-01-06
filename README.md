@@ -62,7 +62,7 @@ Unlike `bumpalo`, this crate...
 - You can allocate a slice from any `Iterator` with [`alloc_iter`](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.alloc_iter).
 - `Bump`'s base allocator is generic.
 - Won't try to allocate a smaller chunk if allocation failed.
-- No built-in allocation limit. You can provide an allocator that enforces an allocation limit (see `tests/limit_memory_usage.rs`).
+- No built-in allocation limit. You can provide an allocator that enforces an allocation limit (see `examples/limit_memory_usage.rs`).
 - Allocations are a tiny bit more optimized. See [./crates/callgrind-benches][benches].
 - [You can choose the bump direction.](#bumping-upwards-or-downwards) Bumps upwards by default.
 

@@ -133,7 +133,6 @@ fn on_static() {
     bump.try_allocate_layout(Layout::new::<[u8; 2048]>()).unwrap_err();
 }
 
-#[test]
 fn main() {
     on_stack();
     on_static();

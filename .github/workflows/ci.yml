@@ -81,6 +81,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
+      - run: cargo run --example limit_memory_usage
+      - run: cargo run --example stack_or_static_memory
+      - run: cargo run --example thread_local
       - run: cargo test --test compile_fail -- --ignored
       - run: cargo test --no-default-features --test unavailable_panicking_macros -F alloc
   test-nightly:
@@ -94,11 +97,17 @@ jobs:
           components: miri
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --all-features
+      - run: cargo run --example limit_memory_usage
+      - run: cargo run --example stack_or_static_memory
+      - run: cargo run --example thread_local
       - run: cd crates/tests-from-std && cargo test
       - run: cd crates/test-hashbrown && cargo test
       - run: cd crates/test-hashbrown && cargo test --all-features
       - run: cd crates/fuzzing-support && cargo test
       - run: cargo miri test --all-features
+      - run: cargo miri run --example limit_memory_usage
+      - run: cargo miri run --example stack_or_static_memory
+      - run: cargo miri run --example thread_local
       - run: cd crates/tests-from-std && cargo miri test
       - run: cd crates/test-hashbrown && cargo miri test
       - run: cd crates/test-hashbrown && cargo miri test --all-features

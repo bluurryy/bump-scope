@@ -1,4 +1,4 @@
-// copied from tests/limit_memory_usage.rs
+// copied from examples/limit_memory_usage.rs
 
 use std::{alloc::Layout, cell::Cell, ptr::NonNull};
 

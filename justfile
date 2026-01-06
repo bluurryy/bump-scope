@@ -74,6 +74,9 @@ check-unavailable_panicking_macros:
 
 test: 
   cargo +nightly test --all-features
+  cargo +nightly run --example limit_memory_usage
+  cargo +nightly run --example stack_or_static_memory
+  cargo +nightly run --example thread_local
   cd crates/tests-from-std && cargo +nightly test
   cd crates/test-hashbrown && cargo +nightly test
   cd crates/test-hashbrown && cargo +nightly test --all-features
@@ -81,6 +84,9 @@ test:
 
 test-miri:
   cargo +nightly miri test --all-features
+  cargo +nightly miri run --example limit_memory_usage
+  cargo +nightly miri run --example stack_or_static_memory
+  cargo +nightly miri run --example thread_local
   cd crates/tests-from-std && cargo +nightly miri test
   cd crates/test-hashbrown && cargo +nightly miri test
   cd crates/test-hashbrown && cargo +nightly miri test --all-features

@@ -12,7 +12,6 @@ thread_local! {
     static BUMP: Bump = const { Bump::unallocated() };
 }
 
-#[test]
 fn main() {
     BUMP.with(|bump| {
         let hello = bump.alloc_str("hello");
