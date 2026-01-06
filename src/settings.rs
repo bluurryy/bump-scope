@@ -1,14 +1,34 @@
-//! # Bumping upwards or downwards?
-//! Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
+//! Contains types to configure a bump allocation.
 //!
-//! Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
-//! This benefits collections as well as <code>[alloc_iter](Bump::alloc_iter)([_mut](Bump::alloc_iter_mut))</code> and <code>[alloc_fmt](Bump::alloc_fmt)([_mut](Bump::alloc_fmt_mut))</code>
-//! with the exception of [`MutBumpVecRev`] and [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) which
-//! can be grown and shrunk in place if and only if bumping downwards.
+//! You can configure various settings of the bump allocator:
+//! - **`MIN_ALIGN`** — see [What is minimum alignment?](#what-is-minimum-alignment)
+//! - **`UP`** — see [Bumping upwards or downwards?](#bumping-upwards-or-downwards)
+//! - **`GUARANTEED_ALLOCATED`** — see [When is a bump allocator *guaranteed allocated*?](#when-is-a-bump-allocator-guaranteed-allocated)
+//! - **`DEALLOCATES`** — toggles deallocation
+//! - **`SHRINKS`** — toggles shrinking, including for temporary collections used in [`alloc_iter`](crate::Bump::alloc_iter), [`alloc_fmt`](crate::Bump::alloc_fmt), etc.
 //!
-//! Bumping downwards can be done in less instructions.
+//! # Example
 //!
-//! For the performance impact see [./crates/callgrind-benches][benches].
+//! You can configure the allocator settings using [`BumpSettings`]:
+//! ```
+//! use bump_scope::{ Bump, alloc::Global, settings::BumpSettings };
+//!
+//! type MyBumpSettings = BumpSettings<
+//!     /* MIN_ALIGN */ 8,
+//!     /* UP */ false,
+//!     /* GUARANTEED_ALLOCATED */ false,
+//!     /* DEALLOCATES */ false,
+//!     /* SHRINKS */ false,
+//! >;
+//!
+//! type MyBump = Bump<Global, MyBumpSettings>;
+//!
+//! let bump = MyBump::unallocated();
+//!
+//! # let str =
+//! bump.alloc_str("Hello, world!");
+//! # assert_eq!(str, "Hello, world!");
+//! ```
 //!
 //! # What is minimum alignment?
 //! Minimum alignment is the alignment the bump pointer maintains when doing allocations.
@@ -19,9 +39,21 @@
 //!
 //! The minimum alignment is controlled by the generic parameter `const MIN_ALIGN: usize`. By default, `MIN_ALIGN` is `1`.
 //!
-//! For the performance impact see [./crates/callgrind-benches][benches].
+//! For the performance impact see [crates/callgrind-benches][benches].
 //!
-//! # What does *guaranteed allocated* mean?
+//! # Bumping upwards or downwards?
+//! Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
+//!
+//! Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
+//! This benefits collections as well as <code>[alloc_iter](Bump::alloc_iter)([_mut](Bump::alloc_iter_mut))</code> and <code>[alloc_fmt](Bump::alloc_fmt)([_mut](Bump::alloc_fmt_mut))</code>
+//! with the exception of [`MutBumpVecRev`] and [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) which
+//! can be grown and shrunk in place if and only if bumping downwards.
+//!
+//! Bumping downwards can be done in less instructions.
+//!
+//! For the performance impact see [crates/callgrind-benches][benches].
+//!
+//! # When is a bump allocator *guaranteed allocated*?
 //!
 //! A *guaranteed allocated* bump allocator will own at least one chunk that it has allocated
 //! from its base allocator.
@@ -30,13 +62,13 @@
 //! one chunk from the base allocator.
 //!
 //! The exception is the [`unallocated`] constructor which creates a `Bump` without allocating any
-//! chunks. Such a `Bump` will have the `GUARANTEED_ALLOCATED` generic parameter of `false`
+//! chunks. Such a `Bump` will have the `GUARANTEED_ALLOCATED` parameter set to `false`
 //! which will make the [`scoped`], [`scoped_aligned`], [`aligned`] and [`scope_guard`] methods unavailable.
 //!
 //! You can turn any non-`GUARANTEED_ALLOCATED` bump allocator into a guaranteed allocated one using
 //! [`as_guaranteed_allocated`], [`as_mut_guaranteed_allocated`] or [`into_guaranteed_allocated`].
 //!
-//! The point of this is so `Bump`s can be `const` constructed and constructed without allocating.
+//! The point of this parameter is that `Bump`s can be `const` constructed and constructed without allocating.
 //! At the same time `Bump`s that have already allocated a chunk don't suffer additional runtime checks.
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
@@ -51,6 +83,7 @@
 //! [`as_guaranteed_allocated`]: Bump::as_guaranteed_allocated
 //! [`as_mut_guaranteed_allocated`]: Bump::as_mut_guaranteed_allocated
 //! [`into_guaranteed_allocated`]: Bump::into_guaranteed_allocated
+//! [`BumpSettings`]: crate::settings::BumpSettings
 
 // This settings situation could be improved with the nightly features
 // [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560) and
@@ -154,13 +187,7 @@ pub trait BumpAllocatorSettings: Sealed {
 
 /// Implementor of [`BumpAllocatorSettings`].
 ///
-/// - **`MIN_ALIGN`** — the alignment maintained for the bump pointer, see [What is minimum alignment?](crate#what-is-minimum-alignment)
-/// - **`UP`** — the bump direction, see [Bumping upwards or downwards?](crate#bumping-upwards-or-downwards)
-/// - **`GUARANTEED_ALLOCATED`** — see [What does *guaranteed allocated* mean?](crate#what-does-guaranteed-allocated-mean)
-/// - **`DEALLOCATES`** — toggles deallocation for collections
-/// - **`SHRINKS`** — toggles shrinking for collections
-///   [`alloc_iter`](crate::Bump::alloc_iter) and
-///   <code>[alloc_](crate::Bump::alloc_fmt)([cstr_](crate::Bump::alloc_cstr_fmt))[fmt](crate::Bump::alloc_fmt)</code>
+/// See the [module documentation](crate::settings) for how to use this type.
 pub struct BumpSettings<
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,

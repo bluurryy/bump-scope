@@ -9,7 +9,7 @@ use super::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
 
 /// Provides statistics about the memory usage of the bump allocator.
 ///
-/// This is returned from the `stats` method of [`BumpAllocatorCore`](crate::traits::BumpAllocatorCore), strings and vectors.
+/// This is returned from [`BumpAllocatorCore::any_stats`](crate::traits::BumpAllocatorCore::any_stats).
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub struct AnyStats<'a> {
     chunk: Option<AnyChunk<'a>>,

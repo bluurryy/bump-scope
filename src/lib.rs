@@ -344,7 +344,6 @@ mod raw_fixed_bump_string;
 mod raw_fixed_bump_vec;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
-/// Contains types to configure bump allocation.
 pub mod settings;
 pub mod stats;
 /// Traits that provide ways to be generic over `Bump(Scope)`s.
@@ -526,7 +525,7 @@ mod supported_base_allocator {
 
 /// Trait that the base allocator of a `Bump` is required to implement to make allocations.
 ///
-/// Every [`Allocator`] that implements [`Clone`] automatically implements `BaseAllocator` when `GUARANTEED_ALLOCATED`.
+/// Every [`Allocator`] that implements [`Clone`] automatically implements `BaseAllocator` when `GuaranteedAllocated`.
 /// When not guaranteed allocated, allocators are additionally required to implement [`Default`].
 ///
 /// This trait is *sealed*: the list of implementors below is total.
