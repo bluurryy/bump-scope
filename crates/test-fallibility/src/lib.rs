@@ -9,8 +9,9 @@ use alloc::boxed::Box;
 use bump_scope::{
     alloc::{AllocError, Allocator, Global},
     settings::BumpSettings,
+    traits::BumpAllocatorTyped,
     zerocopy_08::{BumpExt, VecExt},
-    BumpAllocatorExt, BumpBox, FixedBumpString, FixedBumpVec,
+    BumpBox, FixedBumpString, FixedBumpVec,
 };
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;

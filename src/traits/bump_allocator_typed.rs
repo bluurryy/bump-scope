@@ -3,41 +3,42 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    BaseAllocator, Bump, BumpAllocator, BumpAllocatorScope, BumpBox, BumpScope, MutBumpAllocator, MutBumpAllocatorScope,
-    SizedTypeProperties, WithoutDealloc, WithoutShrink,
+    BaseAllocator, Bump, BumpBox, BumpScope, SizedTypeProperties, WithoutDealloc, WithoutShrink,
     alloc::AllocError,
     bump_down,
     layout::CustomLayout,
     polyfill::non_null,
     settings::BumpAllocatorSettings,
     stats::{AnyStats, Stats},
-    traits::assert_implements,
+    traits::{
+        BumpAllocatorCore, BumpAllocatorCoreScope, MutBumpAllocatorCore, MutBumpAllocatorCoreScope, assert_implements,
+    },
     up_align_usize_unchecked,
 };
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::{handle_alloc_error, panic_on_error, private::capacity_overflow};
 
-/// An extension trait for [`BumpAllocator`]s.
+/// An extension trait for [`BumpAllocatorCore`]s.
 ///
 /// Its main purpose is to provide methods that are optimized for a certain `T` and error behavior.
 ///
-/// It also provides [`stats`] to get a `Bump` specific `Stats` object.
+/// It also provides [`typed_stats`] to get a `Bump` specific `Stats` object.
 ///
-/// **Note:** This trait is not automatically implemented for all `BumpAllocator`s
+/// **Note:** This trait is not automatically implemented for all `BumpAllocatorCore`s
 /// because it is meant to provide specialized methods and types for better performance.
-/// A blanket implementation for all `BumpAllocators` would defeat that purpose, at least
+/// A blanket implementation for all `BumpAllocatorCore`s would defeat that purpose, at least
 /// until some form of specialization is stabilized.
 ///
-/// [`stats`]: BumpAllocatorExt::stats
-pub unsafe trait BumpAllocatorExt: BumpAllocator {
-    /// The type returned by the [stats](BumpAllocatorExt::stats) method.
-    type Stats<'b>: Into<AnyStats<'b>>
+/// [`typed_stats`]: BumpAllocatorTyped::typed_stats
+pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
+    /// The type returned by the [stats](BumpAllocatorTyped::typed_stats) method.
+    type TypedStats<'b>: Into<AnyStats<'b>>
     where
         Self: 'b;
 
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
-    fn stats(&self) -> Self::Stats<'_>;
+    fn typed_stats(&self) -> Self::TypedStats<'_>;
 
     /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
     ///
@@ -45,7 +46,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// ```
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocator {
+    /// # trait MyExt: bump_scope::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self, layout: Layout) -> NonNull<u8> {
     /// self.allocate(layout).unwrap().cast()
     /// #     }
@@ -65,7 +66,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # use bump_scope::alloc::AllocError;
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocator {
+    /// # trait MyExt: bump_scope::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
     /// Ok(self.allocate(layout)?.cast())
     /// #     }
@@ -84,7 +85,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # type T = i32;
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocator {
+    /// # trait MyExt: bump_scope::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self) -> NonNull<T> {
     /// self.allocate(Layout::new::<T>()).unwrap().cast()
     /// #     }
@@ -105,7 +106,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// # use bump_scope::alloc::AllocError;
     /// # type T = i32;
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocator {
+    /// # trait MyExt: bump_scope::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self) -> Result<NonNull<T>, AllocError> {
     /// Ok(self.allocate(Layout::new::<T>())?.cast())
     /// #     }
@@ -124,7 +125,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # type T = i32;
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocator {
+    /// # trait MyExt: bump_scope::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self, len: usize) -> NonNull<T> {
     /// self.allocate(Layout::array::<T>(len).unwrap()).unwrap().cast()
     /// #     }
@@ -145,7 +146,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// # use bump_scope::alloc::AllocError;
     /// # type T = i32;
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocator {
+    /// # trait MyExt: bump_scope::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self, len: usize) -> Result<NonNull<T>, AllocError> {
     /// Ok(self.allocate(Layout::array::<T>(len).map_err(|_| AllocError)?)?.cast())
     /// #     }
@@ -164,7 +165,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # type T = i32;
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocator {
+    /// # trait MyExt: bump_scope::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self, slice: &[T]) -> NonNull<T> {
     /// self.allocate(Layout::for_value(slice)).unwrap().cast()
     /// #     }
@@ -185,7 +186,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// # use bump_scope::alloc::AllocError;
     /// # type T = i32;
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocator {
+    /// # trait MyExt: bump_scope::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self, slice: &[T]) -> Result<NonNull<T>, AllocError> {
     /// Ok(self.allocate(Layout::for_value(slice))?.cast())
     /// #     }
@@ -205,7 +206,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # type T = i32;
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocator {
+    /// # trait MyExt: bump_scope::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> NonNull<T> {
     /// #         unsafe {
     /// self.shrink(ptr.cast(),
@@ -229,7 +230,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     ///
     /// Returns a `[T]` of free space in the bump allocator.
     ///
-    /// [`prepare_allocation`]: crate::BumpAllocator::prepare_allocation
+    /// [`prepare_allocation`]: crate::traits::BumpAllocatorCore::prepare_allocation
     ///
     /// # Panics
     ///
@@ -241,7 +242,7 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     ///
     /// Returns a `[T]` of free space in the bump allocator.
     ///
-    /// [`prepare_allocation`]: crate::BumpAllocator::prepare_allocation
+    /// [`prepare_allocation`]: crate::traits::BumpAllocatorCore::prepare_allocation
     ///
     /// # Errors
     ///
@@ -251,33 +252,33 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
     /// A specialized version of [`allocate_prepared`].
     ///
     /// Allocates part of the free space returned from a
-    /// <code>([try_](BumpAllocatorExt::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorExt::prepare_slice_allocation)</code>
+    /// <code>([try_](BumpAllocatorTyped::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorTyped::prepare_slice_allocation)</code>
     /// call.
     ///
     /// # Safety
     /// - `ptr..ptr + cap` must be the pointer range returned from
-    ///   <code>([try_](BumpAllocatorExt::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorExt::prepare_slice_allocation)</code>.
+    ///   <code>([try_](BumpAllocatorTyped::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorTyped::prepare_slice_allocation)</code>.
     /// - no allocation, grow, shrink or deallocate must have taken place since then
     /// - no resets must have taken place since then
     /// - `len` must be less than or equal to `cap`
     ///
-    /// [`allocate_prepared`]: BumpAllocator::allocate_prepared
+    /// [`allocate_prepared`]: BumpAllocatorCore::allocate_prepared
     unsafe fn allocate_prepared_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
 
     /// A specialized version of [`allocate_prepared_rev`].
     ///
     /// Allocates part of the free space returned from a
-    /// <code>([try_](BumpAllocatorExt::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorExt::prepare_slice_allocation)</code>
+    /// <code>([try_](BumpAllocatorTyped::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorTyped::prepare_slice_allocation)</code>
     /// call.
     ///
     /// # Safety
     /// - `ptr - cap..ptr` must be the pointer range returned from
-    ///   <code>([try_](BumpAllocatorExt::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorExt::prepare_slice_allocation)</code>.
+    ///   <code>([try_](BumpAllocatorTyped::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorTyped::prepare_slice_allocation)</code>.
     /// - no allocation, grow, shrink or deallocate must have taken place since then
     /// - no resets must have taken place since then
     /// - `len` must be less than or equal to `cap`
     ///
-    /// [`allocate_prepared_rev`]: crate::BumpAllocator::allocate_prepared_rev
+    /// [`allocate_prepared_rev`]: crate::traits::BumpAllocatorCore::allocate_prepared_rev
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
 
     /// Drops an allocated value and attempts to free its memory.
@@ -306,33 +307,33 @@ pub unsafe trait BumpAllocatorExt: BumpAllocator {
 }
 
 assert_implements! {
-    [BumpAllocatorExt + ?Sized]
+    [BumpAllocatorTyped + ?Sized]
 
-    dyn BumpAllocator
-    &dyn BumpAllocator
-    &mut dyn BumpAllocator
+    dyn BumpAllocatorCore
+    &dyn BumpAllocatorCore
+    &mut dyn BumpAllocatorCore
 
-    dyn BumpAllocatorScope
-    &dyn BumpAllocatorScope
-    &mut dyn BumpAllocatorScope
+    dyn BumpAllocatorCoreScope
+    &dyn BumpAllocatorCoreScope
+    &mut dyn BumpAllocatorCoreScope
 
-    dyn MutBumpAllocator
-    &dyn MutBumpAllocator
-    &mut dyn MutBumpAllocator
+    dyn MutBumpAllocatorCore
+    &dyn MutBumpAllocatorCore
+    &mut dyn MutBumpAllocatorCore
 
-    dyn MutBumpAllocatorScope
-    &dyn MutBumpAllocatorScope
-    &mut dyn MutBumpAllocatorScope
+    dyn MutBumpAllocatorCoreScope
+    &dyn MutBumpAllocatorCoreScope
+    &mut dyn MutBumpAllocatorCoreScope
 }
 
-unsafe impl BumpAllocatorExt for dyn BumpAllocator + '_ {
-    type Stats<'b>
+unsafe impl BumpAllocatorTyped for dyn BumpAllocatorCore + '_ {
+    type TypedStats<'b>
         = AnyStats<'b>
     where
         Self: 'b;
 
     #[inline(always)]
-    fn stats(&self) -> AnyStats<'_> {
+    fn typed_stats(&self) -> AnyStats<'_> {
         self.any_stats()
     }
 
@@ -407,14 +408,14 @@ unsafe impl BumpAllocatorExt for dyn BumpAllocator + '_ {
     }
 }
 
-unsafe impl BumpAllocatorExt for dyn MutBumpAllocator + '_ {
-    type Stats<'b>
+unsafe impl BumpAllocatorTyped for dyn MutBumpAllocatorCore + '_ {
+    type TypedStats<'b>
         = AnyStats<'b>
     where
         Self: 'b;
 
     #[inline(always)]
-    fn stats(&self) -> AnyStats<'_> {
+    fn typed_stats(&self) -> AnyStats<'_> {
         self.any_stats()
     }
 
@@ -489,14 +490,14 @@ unsafe impl BumpAllocatorExt for dyn MutBumpAllocator + '_ {
     }
 }
 
-unsafe impl BumpAllocatorExt for dyn BumpAllocatorScope<'_> + '_ {
-    type Stats<'b>
+unsafe impl BumpAllocatorTyped for dyn BumpAllocatorCoreScope<'_> + '_ {
+    type TypedStats<'b>
         = AnyStats<'b>
     where
         Self: 'b;
 
     #[inline(always)]
-    fn stats(&self) -> AnyStats<'_> {
+    fn typed_stats(&self) -> AnyStats<'_> {
         self.any_stats()
     }
 
@@ -571,14 +572,14 @@ unsafe impl BumpAllocatorExt for dyn BumpAllocatorScope<'_> + '_ {
     }
 }
 
-unsafe impl BumpAllocatorExt for dyn MutBumpAllocatorScope<'_> + '_ {
-    type Stats<'b>
+unsafe impl BumpAllocatorTyped for dyn MutBumpAllocatorCoreScope<'_> + '_ {
+    type TypedStats<'b>
         = AnyStats<'b>
     where
         Self: 'b;
 
     #[inline(always)]
-    fn stats(&self) -> AnyStats<'_> {
+    fn typed_stats(&self) -> AnyStats<'_> {
         self.any_stats()
     }
 
@@ -655,7 +656,7 @@ unsafe impl BumpAllocatorExt for dyn MutBumpAllocatorScope<'_> + '_ {
 
 #[inline]
 #[cfg(feature = "panic-on-alloc")]
-fn allocate_layout(bump: impl BumpAllocator, layout: Layout) -> NonNull<u8> {
+fn allocate_layout(bump: impl BumpAllocatorCore, layout: Layout) -> NonNull<u8> {
     match bump.allocate(layout) {
         Ok(ptr) => ptr.cast(),
         Err(AllocError) => handle_alloc_error(layout),
@@ -663,7 +664,7 @@ fn allocate_layout(bump: impl BumpAllocator, layout: Layout) -> NonNull<u8> {
 }
 
 #[inline]
-fn try_allocate_layout(bump: impl BumpAllocator, layout: Layout) -> Result<NonNull<u8>, AllocError> {
+fn try_allocate_layout(bump: impl BumpAllocatorCore, layout: Layout) -> Result<NonNull<u8>, AllocError> {
     match bump.allocate(layout) {
         Ok(ptr) => Ok(ptr.cast()),
         Err(err) => Err(err),
@@ -672,7 +673,7 @@ fn try_allocate_layout(bump: impl BumpAllocator, layout: Layout) -> Result<NonNu
 
 #[inline]
 #[cfg(feature = "panic-on-alloc")]
-fn allocate_sized<T>(bump: impl BumpAllocator) -> NonNull<T> {
+fn allocate_sized<T>(bump: impl BumpAllocatorCore) -> NonNull<T> {
     let layout = Layout::new::<T>();
 
     match bump.allocate(layout) {
@@ -682,7 +683,7 @@ fn allocate_sized<T>(bump: impl BumpAllocator) -> NonNull<T> {
 }
 
 #[inline]
-fn try_allocate_sized<T>(bump: impl BumpAllocator) -> Result<NonNull<T>, AllocError> {
+fn try_allocate_sized<T>(bump: impl BumpAllocatorCore) -> Result<NonNull<T>, AllocError> {
     match bump.allocate(Layout::new::<T>()) {
         Ok(ptr) => Ok(ptr.cast()),
         Err(err) => Err(err),
@@ -691,7 +692,7 @@ fn try_allocate_sized<T>(bump: impl BumpAllocator) -> Result<NonNull<T>, AllocEr
 
 #[inline]
 #[cfg(feature = "panic-on-alloc")]
-fn allocate_slice<T>(bump: impl BumpAllocator, len: usize) -> NonNull<T> {
+fn allocate_slice<T>(bump: impl BumpAllocatorCore, len: usize) -> NonNull<T> {
     let Ok(layout) = Layout::array::<T>(len) else {
         invalid_slice_layout()
     };
@@ -703,7 +704,7 @@ fn allocate_slice<T>(bump: impl BumpAllocator, len: usize) -> NonNull<T> {
 }
 
 #[inline]
-fn try_allocate_slice<T>(bump: impl BumpAllocator, len: usize) -> Result<NonNull<T>, AllocError> {
+fn try_allocate_slice<T>(bump: impl BumpAllocatorCore, len: usize) -> Result<NonNull<T>, AllocError> {
     let Ok(layout) = Layout::array::<T>(len) else {
         return Err(AllocError);
     };
@@ -716,7 +717,7 @@ fn try_allocate_slice<T>(bump: impl BumpAllocator, len: usize) -> Result<NonNull
 
 #[inline]
 #[cfg(feature = "panic-on-alloc")]
-fn allocate_slice_for<T>(bump: impl BumpAllocator, slice: &[T]) -> NonNull<T> {
+fn allocate_slice_for<T>(bump: impl BumpAllocatorCore, slice: &[T]) -> NonNull<T> {
     let layout = Layout::for_value(slice);
 
     match bump.allocate(layout) {
@@ -726,7 +727,7 @@ fn allocate_slice_for<T>(bump: impl BumpAllocator, slice: &[T]) -> NonNull<T> {
 }
 
 #[inline]
-fn try_allocate_slice_for<T>(bump: impl BumpAllocator, slice: &[T]) -> Result<NonNull<T>, AllocError> {
+fn try_allocate_slice_for<T>(bump: impl BumpAllocatorCore, slice: &[T]) -> Result<NonNull<T>, AllocError> {
     let layout = Layout::for_value(slice);
 
     match bump.allocate(layout) {
@@ -737,7 +738,12 @@ fn try_allocate_slice_for<T>(bump: impl BumpAllocator, slice: &[T]) -> Result<No
 
 #[inline]
 #[expect(clippy::unnecessary_wraps)]
-unsafe fn shrink_slice<T>(bump: impl BumpAllocator, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
+unsafe fn shrink_slice<T>(
+    bump: impl BumpAllocatorCore,
+    ptr: NonNull<T>,
+    old_len: usize,
+    new_len: usize,
+) -> Option<NonNull<T>> {
     unsafe {
         Some(
             bump.shrink(
@@ -751,7 +757,7 @@ unsafe fn shrink_slice<T>(bump: impl BumpAllocator, ptr: NonNull<T>, old_len: us
     }
 }
 
-fn is_upwards_allocating(bump: &impl BumpAllocator) -> bool {
+fn is_upwards_allocating(bump: &impl BumpAllocatorCore) -> bool {
     let chunk = bump.checkpoint().chunk;
     let header = chunk.addr();
     let end = unsafe { chunk.as_ref() }.end.addr();
@@ -760,7 +766,7 @@ fn is_upwards_allocating(bump: &impl BumpAllocator) -> bool {
 
 #[inline(always)]
 #[cfg(feature = "panic-on-alloc")]
-fn prepare_slice_allocation<T>(bump: impl BumpAllocator, min_cap: usize) -> NonNull<[T]> {
+fn prepare_slice_allocation<T>(bump: impl BumpAllocatorCore, min_cap: usize) -> NonNull<[T]> {
     let Ok(layout) = Layout::array::<T>(min_cap) else {
         capacity_overflow()
     };
@@ -783,7 +789,7 @@ fn prepare_slice_allocation<T>(bump: impl BumpAllocator, min_cap: usize) -> NonN
 }
 
 #[inline(always)]
-fn try_prepare_slice_allocation<T>(bump: impl BumpAllocator, len: usize) -> Result<NonNull<[T]>, AllocError> {
+fn try_prepare_slice_allocation<T>(bump: impl BumpAllocatorCore, len: usize) -> Result<NonNull<[T]>, AllocError> {
     let Ok(layout) = Layout::array::<T>(len) else {
         return Err(AllocError);
     };
@@ -806,7 +812,7 @@ fn try_prepare_slice_allocation<T>(bump: impl BumpAllocator, len: usize) -> Resu
 }
 
 #[inline(always)]
-unsafe fn allocate_prepared_slice<T>(bump: impl BumpAllocator, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+unsafe fn allocate_prepared_slice<T>(bump: impl BumpAllocatorCore, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
     unsafe {
         let range = non_null::cast_range(ptr..ptr.add(cap));
         let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);
@@ -816,7 +822,12 @@ unsafe fn allocate_prepared_slice<T>(bump: impl BumpAllocator, ptr: NonNull<T>, 
 }
 
 #[inline(always)]
-unsafe fn allocate_prepared_slice_rev<T>(bump: impl BumpAllocator, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+unsafe fn allocate_prepared_slice_rev<T>(
+    bump: impl BumpAllocatorCore,
+    ptr: NonNull<T>,
+    len: usize,
+    cap: usize,
+) -> NonNull<[T]> {
     unsafe {
         let range = non_null::cast_range(ptr.sub(cap)..ptr);
         let layout = Layout::from_size_align_unchecked(core::mem::size_of::<T>() * len, T::ALIGN);
@@ -825,15 +836,15 @@ unsafe fn allocate_prepared_slice_rev<T>(bump: impl BumpAllocator, ptr: NonNull<
     }
 }
 
-unsafe impl<B: BumpAllocatorExt + ?Sized> BumpAllocatorExt for &B {
-    type Stats<'b>
-        = B::Stats<'b>
+unsafe impl<B: BumpAllocatorTyped + ?Sized> BumpAllocatorTyped for &B {
+    type TypedStats<'b>
+        = B::TypedStats<'b>
     where
         Self: 'b;
 
     #[inline(always)]
-    fn stats(&self) -> Self::Stats<'_> {
-        B::stats(self)
+    fn typed_stats(&self) -> Self::TypedStats<'_> {
+        B::typed_stats(self)
     }
 
     #[inline(always)]
@@ -907,15 +918,15 @@ unsafe impl<B: BumpAllocatorExt + ?Sized> BumpAllocatorExt for &B {
     }
 }
 
-unsafe impl<B: BumpAllocatorExt + ?Sized> BumpAllocatorExt for &mut B {
-    type Stats<'b>
-        = B::Stats<'b>
+unsafe impl<B: BumpAllocatorTyped + ?Sized> BumpAllocatorTyped for &mut B {
+    type TypedStats<'b>
+        = B::TypedStats<'b>
     where
         Self: 'b;
 
     #[inline(always)]
-    fn stats(&self) -> Self::Stats<'_> {
-        B::stats(self)
+    fn typed_stats(&self) -> Self::TypedStats<'_> {
+        B::typed_stats(self)
     }
 
     #[inline(always)]
@@ -989,15 +1000,15 @@ unsafe impl<B: BumpAllocatorExt + ?Sized> BumpAllocatorExt for &mut B {
     }
 }
 
-unsafe impl<B: BumpAllocatorExt> BumpAllocatorExt for WithoutDealloc<B> {
-    type Stats<'b>
-        = B::Stats<'b>
+unsafe impl<B: BumpAllocatorTyped> BumpAllocatorTyped for WithoutDealloc<B> {
+    type TypedStats<'b>
+        = B::TypedStats<'b>
     where
         Self: 'b;
 
     #[inline(always)]
-    fn stats(&self) -> Self::Stats<'_> {
-        B::stats(&self.0)
+    fn typed_stats(&self) -> Self::TypedStats<'_> {
+        B::typed_stats(&self.0)
     }
 
     #[inline(always)]
@@ -1071,15 +1082,15 @@ unsafe impl<B: BumpAllocatorExt> BumpAllocatorExt for WithoutDealloc<B> {
     }
 }
 
-unsafe impl<B: BumpAllocatorExt> BumpAllocatorExt for WithoutShrink<B> {
-    type Stats<'b>
-        = B::Stats<'b>
+unsafe impl<B: BumpAllocatorTyped> BumpAllocatorTyped for WithoutShrink<B> {
+    type TypedStats<'b>
+        = B::TypedStats<'b>
     where
         Self: 'b;
 
     #[inline(always)]
-    fn stats(&self) -> Self::Stats<'_> {
-        B::stats(&self.0)
+    fn typed_stats(&self) -> Self::TypedStats<'_> {
+        B::typed_stats(&self.0)
     }
 
     #[inline(always)]
@@ -1154,18 +1165,18 @@ unsafe impl<B: BumpAllocatorExt> BumpAllocatorExt for WithoutShrink<B> {
     }
 }
 
-unsafe impl<A, S> BumpAllocatorExt for BumpScope<'_, A, S>
+unsafe impl<A, S> BumpAllocatorTyped for BumpScope<'_, A, S>
 where
     A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
-    type Stats<'b>
+    type TypedStats<'b>
         = Stats<'b, A, S>
     where
         Self: 'b;
 
     #[inline(always)]
-    fn stats(&self) -> Self::Stats<'_> {
+    fn typed_stats(&self) -> Self::TypedStats<'_> {
         BumpScope::stats(self)
     }
 
@@ -1296,18 +1307,18 @@ where
     }
 }
 
-unsafe impl<A, S> BumpAllocatorExt for Bump<A, S>
+unsafe impl<A, S> BumpAllocatorTyped for Bump<A, S>
 where
     A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
-    type Stats<'b>
+    type TypedStats<'b>
         = Stats<'b, A, S>
     where
         Self: 'b;
 
     #[inline(always)]
-    fn stats(&self) -> Self::Stats<'_> {
+    fn typed_stats(&self) -> Self::TypedStats<'_> {
         self.as_scope().stats()
     }
 

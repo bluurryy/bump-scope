@@ -1,8 +1,9 @@
 use ::bytemuck::Zeroable;
 
 use crate::{
-    BumpAllocatorExt, BumpVec, ErrorBehavior, FixedBumpVec, MutBumpAllocatorExt, MutBumpVec, MutBumpVecRev,
+    BumpVec, ErrorBehavior, FixedBumpVec, MutBumpVec, MutBumpVecRev,
     alloc::AllocError,
+    traits::{BumpAllocatorTyped, MutBumpAllocatorTyped},
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -14,9 +15,9 @@ mod private {
     pub trait Sealed {}
 
     impl<T> Sealed for FixedBumpVec<'_, T> {}
-    impl<T, A: BumpAllocatorExt> Sealed for BumpVec<T, A> {}
-    impl<T, A: MutBumpAllocatorExt> Sealed for MutBumpVec<T, A> {}
-    impl<T, A: MutBumpAllocatorExt> Sealed for MutBumpVecRev<T, A> {}
+    impl<T, A: BumpAllocatorTyped> Sealed for BumpVec<T, A> {}
+    impl<T, A: MutBumpAllocatorTyped> Sealed for MutBumpVec<T, A> {}
+    impl<T, A: MutBumpAllocatorTyped> Sealed for MutBumpVecRev<T, A> {}
 }
 
 /// Extension trait for this crate's vector types.
@@ -239,7 +240,7 @@ impl<T> VecExt for FixedBumpVec<'_, T> {
     }
 }
 
-impl<T, A: BumpAllocatorExt> VecExt for BumpVec<T, A> {
+impl<T, A: BumpAllocatorTyped> VecExt for BumpVec<T, A> {
     type T = T;
 
     /// Extends this vector by pushing `additional` new items onto the end.
@@ -353,7 +354,7 @@ impl<T, A: BumpAllocatorExt> VecExt for BumpVec<T, A> {
     }
 }
 
-impl<T, A: MutBumpAllocatorExt> VecExt for MutBumpVec<T, A> {
+impl<T, A: MutBumpAllocatorTyped> VecExt for MutBumpVec<T, A> {
     type T = T;
 
     /// Extends this vector by pushing `additional` new items onto the end.
@@ -475,7 +476,7 @@ impl<T, A: MutBumpAllocatorExt> VecExt for MutBumpVec<T, A> {
     }
 }
 
-impl<T, A: MutBumpAllocatorExt> VecExt for MutBumpVecRev<T, A> {
+impl<T, A: MutBumpAllocatorTyped> VecExt for MutBumpVecRev<T, A> {
     type T = T;
 
     /// Extends this vector by pushing `additional` new items onto the end.
@@ -631,7 +632,7 @@ impl<T: Zeroable> PrivateVecExt for FixedBumpVec<'_, T> {
     }
 }
 
-impl<T: Zeroable, A: BumpAllocatorExt> PrivateVecExt for BumpVec<T, A> {
+impl<T: Zeroable, A: BumpAllocatorTyped> PrivateVecExt for BumpVec<T, A> {
     #[inline]
     fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
         self.generic_reserve(additional)?;
@@ -660,7 +661,7 @@ impl<T: Zeroable, A: BumpAllocatorExt> PrivateVecExt for BumpVec<T, A> {
     }
 }
 
-impl<T: Zeroable, A: MutBumpAllocatorExt> PrivateVecExt for MutBumpVec<T, A> {
+impl<T: Zeroable, A: MutBumpAllocatorTyped> PrivateVecExt for MutBumpVec<T, A> {
     #[inline]
     fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E>
     where
@@ -695,7 +696,7 @@ impl<T: Zeroable, A: MutBumpAllocatorExt> PrivateVecExt for MutBumpVec<T, A> {
     }
 }
 
-impl<T: Zeroable, A: MutBumpAllocatorExt> PrivateVecExt for MutBumpVecRev<T, A> {
+impl<T: Zeroable, A: MutBumpAllocatorTyped> PrivateVecExt for MutBumpVecRev<T, A> {
     #[inline]
     fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
         self.generic_reserve(additional)?;

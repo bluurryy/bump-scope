@@ -1,20 +1,24 @@
 mod bump_allocator;
-pub(crate) mod bump_allocator_ext;
+mod bump_allocator_core;
+mod bump_allocator_core_scope;
 mod bump_allocator_scope;
-pub(crate) mod bump_allocator_scope_ext;
-mod mut_bump_allocator;
-pub(crate) mod mut_bump_allocator_ext;
-mod mut_bump_allocator_scope;
-pub(crate) mod mut_bump_allocator_scope_ext;
+pub(crate) mod bump_allocator_typed;
+pub(crate) mod bump_allocator_typed_scope;
+mod mut_bump_allocator_core;
+mod mut_bump_allocator_core_scope;
+pub(crate) mod mut_bump_allocator_typed;
+pub(crate) mod mut_bump_allocator_typed_scope;
 
 pub use bump_allocator::BumpAllocator;
-pub use bump_allocator_ext::BumpAllocatorExt;
+pub use bump_allocator_core::BumpAllocatorCore;
+pub use bump_allocator_core_scope::BumpAllocatorCoreScope;
 pub use bump_allocator_scope::BumpAllocatorScope;
-pub use bump_allocator_scope_ext::BumpAllocatorScopeExt;
-pub use mut_bump_allocator::MutBumpAllocator;
-pub use mut_bump_allocator_ext::MutBumpAllocatorExt;
-pub use mut_bump_allocator_scope::MutBumpAllocatorScope;
-pub use mut_bump_allocator_scope_ext::MutBumpAllocatorScopeExt;
+pub use bump_allocator_typed::BumpAllocatorTyped;
+pub use bump_allocator_typed_scope::BumpAllocatorTypedScope;
+pub use mut_bump_allocator_core::MutBumpAllocatorCore;
+pub use mut_bump_allocator_core_scope::MutBumpAllocatorCoreScope;
+pub use mut_bump_allocator_typed::MutBumpAllocatorTyped;
+pub use mut_bump_allocator_typed_scope::MutBumpAllocatorTypedScope;
 
 macro_rules! assert_dyn_compatible {
     ($($tt:tt)*) => {
@@ -35,9 +39,9 @@ macro_rules! assert_implements {
             use crate::{
                 alloc::Allocator,
                 traits::{
-                    BumpAllocatorScope,
-                    MutBumpAllocator,
-                    MutBumpAllocatorScope,
+                    BumpAllocatorCoreScope,
+                    MutBumpAllocatorCore,
+                    MutBumpAllocatorCoreScope,
                 }
             };
 

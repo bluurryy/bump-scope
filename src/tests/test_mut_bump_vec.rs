@@ -5,10 +5,11 @@ use std::{
 };
 
 use crate::{
-    MutBumpAllocator, MutBumpAllocatorExt, MutBumpAllocatorScope, MutBumpAllocatorScopeExt, MutBumpVec,
+    MutBumpVec,
     alloc::{Allocator, Global},
     settings::BumpSettings,
     tests::{Bump, BumpScope, either_way},
+    traits::{MutBumpAllocatorCore, MutBumpAllocatorCoreScope, MutBumpAllocatorTyped, MutBumpAllocatorTypedScope},
 };
 
 either_way! {
@@ -20,7 +21,7 @@ fn test_dyn_allocator<const UP: bool>() {
         range.map(|i| i.to_string())
     }
 
-    fn test<'a, const UP: bool, B: MutBumpAllocatorScopeExt<'a>>(mut bump: B) {
+    fn test<'a, const UP: bool, B: MutBumpAllocatorTypedScope<'a>>(mut bump: B) {
         const ITEM_SIZE: usize = size_of::<String>();
         assert_eq!(bump.any_stats().allocated(), 0);
         let vec = MutBumpVec::from_iter_in(numbers(1..4), &mut bump);
@@ -36,5 +37,5 @@ fn test_dyn_allocator<const UP: bool>() {
     <Bump<Global, BumpSettings<1, UP>>>::new().scoped(|bump| test::<UP, BumpScope<Global, BumpSettings<1, UP>>>(bump));
     <Bump<Global, BumpSettings<1, UP>>>::new()
         .scoped(|mut bump| test::<UP, &mut BumpScope<Global, BumpSettings<1, UP>>>(&mut bump));
-    <Bump<Global, BumpSettings<1, UP>>>::new().scoped(|mut bump| test::<UP, &mut dyn MutBumpAllocatorScope>(&mut bump));
+    <Bump<Global, BumpSettings<1, UP>>>::new().scoped(|mut bump| test::<UP, &mut dyn MutBumpAllocatorCoreScope>(&mut bump));
 }

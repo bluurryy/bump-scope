@@ -9,9 +9,10 @@ use allocator_api2_03::alloc::{AllocError, Allocator};
 use allocator_api2_03::{alloc::Global, boxed::Box};
 
 use crate::{
-    BaseAllocator, Bump, BumpAllocatorExt, BumpScope, WithoutDealloc, WithoutShrink,
+    BaseAllocator, Bump, BumpScope, WithoutDealloc, WithoutShrink,
     alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator},
     settings::BumpAllocatorSettings,
+    traits::BumpAllocatorTyped,
 };
 
 #[cfg(feature = "alloc")]
@@ -381,7 +382,7 @@ where
     }
 }
 
-unsafe impl<A: BumpAllocatorExt> Allocator for WithoutShrink<A> {
+unsafe impl<A: BumpAllocatorTyped> Allocator for WithoutShrink<A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         <Self as CrateAllocator>::allocate(self, layout).map_err(Into::into)
@@ -413,7 +414,7 @@ unsafe impl<A: BumpAllocatorExt> Allocator for WithoutShrink<A> {
     }
 }
 
-unsafe impl<A: BumpAllocatorExt> Allocator for WithoutDealloc<A> {
+unsafe impl<A: BumpAllocatorTyped> Allocator for WithoutDealloc<A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         <Self as CrateAllocator>::allocate(self, layout).map_err(Into::into)

@@ -22,12 +22,13 @@ use alloc_crate::{string::String, vec::Vec};
 use alloc_crate::boxed::Box;
 
 use crate::{
-    BumpAllocatorScopeExt, FromUtf8Error, NoDrop, SizedTypeProperties,
+    FromUtf8Error, NoDrop, SizedTypeProperties,
     alloc::BoxLike,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     owned_str,
     polyfill::{self, non_null, pointer, transmute_mut},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
+    traits::BumpAllocatorTypedScope,
 };
 
 mod slice_initializer;
@@ -307,13 +308,13 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     #[inline(always)]
     pub fn into_box<A, B>(self, allocator: A) -> B
     where
-        A: BumpAllocatorScopeExt<'a>,
+        A: BumpAllocatorTypedScope<'a>,
         B: BoxLike<T = T, A = A>,
     {
         let ptr = BumpBox::into_raw(self).as_ptr();
 
         // SAFETY: bump might not be the allocator self was allocated with;
-        // that's fine though because a `BumpAllocator` allows deallocate calls
+        // that's fine though because a `BumpAllocatorCore` allows deallocate calls
         // from allocations that don't belong to it
         unsafe { B::from_raw_in(ptr, allocator) }
     }

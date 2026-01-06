@@ -12,13 +12,14 @@ use core::{
 };
 
 use crate::{
-    BumpBox, ErrorBehavior, MutBumpAllocatorExt, MutBumpAllocatorScopeExt, NoDrop, SetLenOnDrop, SizedTypeProperties,
+    BumpBox, ErrorBehavior, NoDrop, SetLenOnDrop, SizedTypeProperties,
     alloc::AllocError,
     destructure::destructure,
     min_non_zero_cap,
     mut_bump_vec::IntoIter,
     owned_slice::{OwnedSlice, TakeOwnedSlice},
     polyfill::{self, hint::likely, non_null, pointer},
+    traits::{MutBumpAllocatorTyped, MutBumpAllocatorTypedScope},
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -26,7 +27,7 @@ use crate::panic_on_error;
 
 /// This is like [`vec!`](alloc_crate::vec!) but allocates inside a bump allocator, returning a [`MutBumpVecRev`].
 ///
-/// `$bump` can be any type that implements [`MutBumpAllocatorExt`].
+/// `$bump` can be any type that implements [`MutBumpAllocatorTyped`].
 ///
 /// # Panics
 /// If used without `try`, panics on allocation failure.
@@ -655,7 +656,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     }
 }
 
-impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
+impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// Constructs a new empty vector with at least the specified capacity
     /// in the provided bump allocator.
     ///
@@ -2394,12 +2395,12 @@ impl<T, A: MutBumpAllocatorExt> MutBumpVecRev<T, A> {
     /// This collection does not update the bump pointer, so it also doesn't contribute to the `remaining` and `allocated` stats.
     #[must_use]
     #[inline(always)]
-    pub fn allocator_stats(&self) -> A::Stats<'_> {
-        self.allocator.stats()
+    pub fn allocator_stats(&self) -> A::TypedStats<'_> {
+        self.allocator.typed_stats()
     }
 }
 
-impl<'a, T, A: MutBumpAllocatorScopeExt<'a>> MutBumpVecRev<T, A> {
+impl<'a, T, A: MutBumpAllocatorTypedScope<'a>> MutBumpVecRev<T, A> {
     /// Turns this `MutBumpVecRev<T>` into a `BumpBox<[T]>`.
     ///
     /// Unused capacity does not take up space.<br/>
@@ -2515,7 +2516,7 @@ impl<T, A, I: SliceIndex<[T]>> IndexMut<I> for MutBumpVecRev<T, A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<U, A: MutBumpAllocatorExt> Extend<U> for MutBumpVecRev<U, A> {
+impl<U, A: MutBumpAllocatorTyped> Extend<U> for MutBumpVecRev<U, A> {
     #[inline]
     fn extend<T: IntoIterator<Item = U>>(&mut self, iter: T) {
         let iter = iter.into_iter();
@@ -2567,7 +2568,7 @@ impl<T, A> Drop for MutBumpVecRev<T, A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<'t, T: Clone + 't, A: MutBumpAllocatorExt> Extend<&'t T> for MutBumpVecRev<T, A> {
+impl<'t, T: Clone + 't, A: MutBumpAllocatorTyped> Extend<&'t T> for MutBumpVecRev<T, A> {
     #[inline]
     fn extend<I: IntoIterator<Item = &'t T>>(&mut self, iter: I) {
         let iter = iter.into_iter();
@@ -2667,7 +2668,7 @@ impl<T: Hash, A> Hash for MutBumpVecRev<T, A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<T, A: MutBumpAllocatorExt + Default> FromIterator<T> for MutBumpVecRev<T, A> {
+impl<T, A: MutBumpAllocatorTyped + Default> FromIterator<T> for MutBumpVecRev<T, A> {
     #[inline]
     #[track_caller]
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {

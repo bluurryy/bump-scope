@@ -3,8 +3,8 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    BaseAllocator, BumpAllocatorExt as _, BumpScope, alloc::AllocError, bump_down, polyfill::non_null,
-    settings::BumpAllocatorSettings, up_align_usize_unchecked,
+    BaseAllocator, BumpScope, alloc::AllocError, bump_down, polyfill::non_null, settings::BumpAllocatorSettings,
+    traits::BumpAllocatorTyped as _, up_align_usize_unchecked,
 };
 
 #[inline(always)]

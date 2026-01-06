@@ -1,10 +1,10 @@
 use core::alloc::Layout;
 
 use crate::{
-    BumpAllocator, BumpAllocatorExt,
     alloc::{Allocator, Global},
     settings::{BumpAllocatorSettings, BumpSettings},
     tests::either_way,
+    traits::{BumpAllocatorCore, BumpAllocatorTyped},
 };
 
 either_way! {

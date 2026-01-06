@@ -1,18 +1,18 @@
 use core::{alloc::Layout, ptr::NonNull};
 
 use crate::{
-    BumpAllocator,
     alloc::{AllocError, Allocator},
     polyfill::non_null,
+    traits::BumpAllocatorCore,
 };
 
 /// Wraps a bump allocator and does nothing on [`deallocate`](Allocator::deallocate).
 ///
-/// This type only implements [`Allocator`] for wrapped types that implement [`BumpAllocator`], so you don't accidentally leak memory.
+/// This type only implements [`Allocator`] for wrapped types that implement [`BumpAllocatorCore`], so you don't accidentally leak memory.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct WithoutDealloc<A>(pub A);
 
-unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
+unsafe impl<A: BumpAllocatorCore> Allocator for WithoutDealloc<A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         self.0.allocate(layout)
@@ -51,11 +51,11 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
 
 /// Wraps a bump allocator and does nothing on [`shrink`](Allocator::shrink).
 ///
-/// This type only implements [`Allocator`] for wrapped types that implement [`BumpAllocator`], so you don't accidentally leak memory.
+/// This type only implements [`Allocator`] for wrapped types that implement [`BumpAllocatorCore`], so you don't accidentally leak memory.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct WithoutShrink<A>(pub A);
 
-unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
+unsafe impl<A: BumpAllocatorCore> Allocator for WithoutShrink<A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         self.0.allocate(layout)
@@ -90,7 +90,7 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         #[cold]
         #[inline(never)]
-        unsafe fn shrink_unfit<A: BumpAllocator>(
+        unsafe fn shrink_unfit<A: BumpAllocatorCore>(
             this: &WithoutShrink<A>,
             ptr: NonNull<u8>,
             old_layout: Layout,

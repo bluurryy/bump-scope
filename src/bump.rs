@@ -24,7 +24,7 @@ use crate::{
 
 // For docs.
 #[allow(unused_imports)]
-use crate::{BumpAllocatorExt, BumpAllocatorScopeExt, MutBumpAllocatorScopeExt};
+use crate::{traits::BumpAllocatorTyped, traits::BumpAllocatorTypedScope, traits::MutBumpAllocatorTypedScope};
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
@@ -222,9 +222,10 @@ macro_rules! make_type {
         ///
         /// [`as_mut_scope`]: Self::as_mut_scope
         #[repr(transparent)]
-        pub struct Bump<$($allocator_parameter)*, S: BumpAllocatorSettings = BumpSettings>
+        pub struct Bump<$($allocator_parameter)*, S = BumpSettings>
         where
             A: Allocator,
+            S: BumpAllocatorSettings,
         {
             pub(crate) chunk: Cell<RawChunk<A, S>>,
         }
@@ -1576,229 +1577,229 @@ where
     A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
-    /// Forwards to [`BumpAllocatorScopeExt::alloc`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc<T>(&self, value: T) -> BumpBox<'_, T> {
         self.as_scope().alloc(value)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc`].
     #[inline(always)]
     pub fn try_alloc<T>(&self, value: T) -> Result<BumpBox<'_, T>, AllocError> {
         self.as_scope().try_alloc(value)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_with`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_with`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_with<T>(&self, f: impl FnOnce() -> T) -> BumpBox<'_, T> {
         self.as_scope().alloc_with(f)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_with`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_with`].
     #[inline(always)]
     pub fn try_alloc_with<T>(&self, f: impl FnOnce() -> T) -> Result<BumpBox<'_, T>, AllocError> {
         self.as_scope().try_alloc_with(f)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_default`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_default`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_default<T: Default>(&self) -> BumpBox<'_, T> {
         self.as_scope().alloc_default()
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_default`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_default`].
     #[inline(always)]
     pub fn try_alloc_default<T: Default>(&self) -> Result<BumpBox<'_, T>, AllocError> {
         self.as_scope().try_alloc_default()
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_clone`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_clone`].
     #[inline(always)]
     #[cfg(feature = "nightly-clone-to-uninit")]
     pub fn alloc_clone<T: CloneToUninit + ?Sized>(&self, value: &T) -> BumpBox<'_, T> {
         self.as_scope().alloc_clone(value)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_clone`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_clone`].
     #[inline(always)]
     #[cfg(feature = "nightly-clone-to-uninit")]
     pub fn try_alloc_clone<T: CloneToUninit + ?Sized>(&self, value: &T) -> Result<BumpBox<'_, T>, AllocError> {
         self.as_scope().try_alloc_clone(value)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_slice_move`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_slice_move`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_slice_move<T>(&self, slice: impl OwnedSlice<Item = T>) -> BumpBox<'_, [T]> {
         self.as_scope().alloc_slice_move(slice)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_slice_move`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_slice_move`].
     #[inline(always)]
     pub fn try_alloc_slice_move<T>(&self, slice: impl OwnedSlice<Item = T>) -> Result<BumpBox<'_, [T]>, AllocError> {
         self.as_scope().try_alloc_slice_move(slice)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_slice_copy`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_slice_copy`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_slice_copy<T: Copy>(&self, slice: &[T]) -> BumpBox<'_, [T]> {
         self.as_scope().alloc_slice_copy(slice)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_slice_copy`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_slice_copy`].
     #[inline(always)]
     pub fn try_alloc_slice_copy<T: Copy>(&self, slice: &[T]) -> Result<BumpBox<'_, [T]>, AllocError> {
         self.as_scope().try_alloc_slice_copy(slice)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_slice_clone`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_slice_clone`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_slice_clone<T: Clone>(&self, slice: &[T]) -> BumpBox<'_, [T]> {
         self.as_scope().alloc_slice_clone(slice)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_slice_clone`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_slice_clone`].
     #[inline(always)]
     pub fn try_alloc_slice_clone<T: Clone>(&self, slice: &[T]) -> Result<BumpBox<'_, [T]>, AllocError> {
         self.as_scope().try_alloc_slice_clone(slice)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_slice_fill`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_slice_fill`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_slice_fill<T: Clone>(&self, len: usize, value: T) -> BumpBox<'_, [T]> {
         self.as_scope().alloc_slice_fill(len, value)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_slice_fill`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_slice_fill`].
     #[inline(always)]
     pub fn try_alloc_slice_fill<T: Clone>(&self, len: usize, value: T) -> Result<BumpBox<'_, [T]>, AllocError> {
         self.as_scope().try_alloc_slice_fill(len, value)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_slice_fill_with`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_slice_fill_with`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_slice_fill_with<T>(&self, len: usize, f: impl FnMut() -> T) -> BumpBox<'_, [T]> {
         self.as_scope().alloc_slice_fill_with(len, f)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_slice_fill_with`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_slice_fill_with`].
     #[inline(always)]
     pub fn try_alloc_slice_fill_with<T>(&self, len: usize, f: impl FnMut() -> T) -> Result<BumpBox<'_, [T]>, AllocError> {
         self.as_scope().try_alloc_slice_fill_with(len, f)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_str`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_str`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_str(&self, src: &str) -> BumpBox<'_, str> {
         self.as_scope().alloc_str(src)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_str`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_str`].
     #[inline(always)]
     pub fn try_alloc_str(&self, src: &str) -> Result<BumpBox<'_, str>, AllocError> {
         self.as_scope().try_alloc_str(src)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_fmt`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_fmt`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_fmt(&self, args: fmt::Arguments) -> BumpBox<'_, str> {
         self.as_scope().alloc_fmt(args)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_fmt`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_fmt`].
     #[inline(always)]
     pub fn try_alloc_fmt(&self, args: fmt::Arguments) -> Result<BumpBox<'_, str>, AllocError> {
         self.as_scope().try_alloc_fmt(args)
     }
 
-    /// Forwards to [`MutBumpAllocatorScopeExt::alloc_fmt_mut`].
+    /// Forwards to [`MutBumpAllocatorTypedScope::alloc_fmt_mut`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_fmt_mut(&mut self, args: fmt::Arguments) -> BumpBox<'_, str> {
         self.as_mut_scope().alloc_fmt_mut(args)
     }
 
-    /// Forwards to [`MutBumpAllocatorScopeExt::try_alloc_fmt_mut`].
+    /// Forwards to [`MutBumpAllocatorTypedScope::try_alloc_fmt_mut`].
     #[inline(always)]
     pub fn try_alloc_fmt_mut(&mut self, args: fmt::Arguments) -> Result<BumpBox<'_, str>, AllocError> {
         self.as_mut_scope().try_alloc_fmt_mut(args)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_cstr`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_cstr`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_cstr(&self, src: &CStr) -> &CStr {
         self.as_scope().alloc_cstr(src)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_cstr`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_cstr`].
     #[inline(always)]
     pub fn try_alloc_cstr(&self, src: &CStr) -> Result<&CStr, AllocError> {
         self.as_scope().try_alloc_cstr(src)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_cstr_from_str`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_cstr_from_str`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_cstr_from_str(&self, src: &str) -> &CStr {
         self.as_scope().alloc_cstr_from_str(src)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_cstr_from_str`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_cstr_from_str`].
     #[inline(always)]
     pub fn try_alloc_cstr_from_str(&self, src: &str) -> Result<&CStr, AllocError> {
         self.as_scope().try_alloc_cstr_from_str(src)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_cstr_fmt`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_cstr_fmt`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_cstr_fmt(&self, args: fmt::Arguments) -> &CStr {
         self.as_scope().alloc_cstr_fmt(args)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_cstr_fmt`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_cstr_fmt`].
     #[inline(always)]
     pub fn try_alloc_cstr_fmt(&self, args: fmt::Arguments) -> Result<&CStr, AllocError> {
         self.as_scope().try_alloc_cstr_fmt(args)
     }
 
-    /// Forwards to [`MutBumpAllocatorScopeExt::alloc_cstr_fmt_mut`].
+    /// Forwards to [`MutBumpAllocatorTypedScope::alloc_cstr_fmt_mut`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_cstr_fmt_mut(&mut self, args: fmt::Arguments) -> &CStr {
         self.as_mut_scope().alloc_cstr_fmt_mut(args)
     }
 
-    /// Forwards to [`MutBumpAllocatorScopeExt::try_alloc_cstr_fmt_mut`].
+    /// Forwards to [`MutBumpAllocatorTypedScope::try_alloc_cstr_fmt_mut`].
     #[inline(always)]
     pub fn try_alloc_cstr_fmt_mut(&mut self, args: fmt::Arguments) -> Result<&CStr, AllocError> {
         self.as_mut_scope().try_alloc_cstr_fmt_mut(args)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_iter`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_iter`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<'_, [T]> {
         self.as_scope().alloc_iter(iter)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_iter`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_iter`].
     #[inline(always)]
     pub fn try_alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<'_, [T]>, AllocError> {
         self.as_scope().try_alloc_iter(iter)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_iter_exact`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_iter_exact`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_iter_exact<T, I>(&self, iter: impl IntoIterator<Item = T, IntoIter = I>) -> BumpBox<'_, [T]>
@@ -1808,7 +1809,7 @@ where
         self.as_scope().alloc_iter_exact(iter)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_iter_exact`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_iter_exact`].
     #[inline(always)]
     pub fn try_alloc_iter_exact<T, I>(
         &self,
@@ -1820,72 +1821,72 @@ where
         self.as_scope().try_alloc_iter_exact(iter)
     }
 
-    /// Forwards to [`MutBumpAllocatorScopeExt::alloc_iter_mut`].
+    /// Forwards to [`MutBumpAllocatorTypedScope::alloc_iter_mut`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_iter_mut<T>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<'_, [T]> {
         self.as_mut_scope().alloc_iter_mut(iter)
     }
 
-    /// Forwards to [`MutBumpAllocatorScopeExt::try_alloc_iter_mut`].
+    /// Forwards to [`MutBumpAllocatorTypedScope::try_alloc_iter_mut`].
     #[inline(always)]
     pub fn try_alloc_iter_mut<T>(&mut self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<'_, [T]>, AllocError> {
         self.as_mut_scope().try_alloc_iter_mut(iter)
     }
 
-    /// Forwards to [`MutBumpAllocatorScopeExt::alloc_iter_mut_rev`].
+    /// Forwards to [`MutBumpAllocatorTypedScope::alloc_iter_mut_rev`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_iter_mut_rev<T>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<'_, [T]> {
         self.as_mut_scope().alloc_iter_mut_rev(iter)
     }
 
-    /// Forwards to [`MutBumpAllocatorScopeExt::try_alloc_iter_mut_rev`].
+    /// Forwards to [`MutBumpAllocatorTypedScope::try_alloc_iter_mut_rev`].
     #[inline(always)]
     pub fn try_alloc_iter_mut_rev<T>(&mut self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<'_, [T]>, AllocError> {
         self.as_mut_scope().try_alloc_iter_mut_rev(iter)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_uninit`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_uninit`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_uninit<T>(&self) -> BumpBox<'_, MaybeUninit<T>> {
         self.as_scope().alloc_uninit()
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_uninit`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_uninit`].
     #[inline(always)]
     pub fn try_alloc_uninit<T>(&self) -> Result<BumpBox<'_, MaybeUninit<T>>, AllocError> {
         self.as_scope().try_alloc_uninit()
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_uninit_slice`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_uninit_slice`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_uninit_slice<T>(&self, len: usize) -> BumpBox<'_, [MaybeUninit<T>]> {
         self.as_scope().alloc_uninit_slice(len)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_uninit_slice`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_uninit_slice`].
     #[inline(always)]
     pub fn try_alloc_uninit_slice<T>(&self, len: usize) -> Result<BumpBox<'_, [MaybeUninit<T>]>, AllocError> {
         self.as_scope().try_alloc_uninit_slice(len)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_uninit_slice_for`].
+    /// Forwards to [`BumpAllocatorTypedScope::alloc_uninit_slice_for`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_uninit_slice_for<T>(&self, slice: &[T]) -> BumpBox<'_, [MaybeUninit<T>]> {
         self.as_scope().alloc_uninit_slice_for(slice)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_uninit_slice_for`].
+    /// Forwards to [`BumpAllocatorTypedScope::try_alloc_uninit_slice_for`].
     #[inline(always)]
     pub fn try_alloc_uninit_slice_for<T>(&self, slice: &[T]) -> Result<BumpBox<'_, [MaybeUninit<T>]>, AllocError> {
         self.as_scope().try_alloc_uninit_slice_for(slice)
     }
 
-    /// Forwards to [`BumpAllocatorExt::dealloc`].
+    /// Forwards to [`BumpAllocatorTyped::dealloc`].
     #[inline(always)]
     pub fn dealloc<T: ?Sized>(&self, boxed: BumpBox<T>) {
         self.as_scope().dealloc(boxed);

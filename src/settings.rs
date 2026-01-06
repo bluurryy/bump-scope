@@ -46,18 +46,37 @@ pub trait BumpAllocatorSettings: Sealed {
     type Deallocates: Boolean;
 
     /// Changes the minimum alignment.
-    type WithMinimumAlignment<const NEW_MIN_ALIGN: usize>: BumpAllocatorSettings
+    type WithMinimumAlignment<const NEW_MIN_ALIGN: usize>: BumpAllocatorSettings<
+            Up = Self::Up,
+            GuaranteedAllocated = Self::GuaranteedAllocated,
+            Deallocates = Self::Deallocates,
+        >
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment;
 
     /// Changes the bump direction.
-    type WithUp<const VALUE: bool>: BumpAllocatorSettings<Up = Bool<VALUE>>;
+    type WithUp<const VALUE: bool>: BumpAllocatorSettings<
+            MinimumAlignment = Self::MinimumAlignment,
+            Up = Bool<VALUE>,
+            GuaranteedAllocated = Self::GuaranteedAllocated,
+            Deallocates = Self::Deallocates,
+        >;
 
     /// Changes whether the allocator is guaranteed to have a chunk allocated and thus is allowed to create scopes.
-    type WithGuaranteedAllocated<const VALUE: bool>: BumpAllocatorSettings<GuaranteedAllocated = Bool<VALUE>>;
+    type WithGuaranteedAllocated<const VALUE: bool>: BumpAllocatorSettings<
+            MinimumAlignment = Self::MinimumAlignment,
+            Up = Self::Up,
+            GuaranteedAllocated = Bool<VALUE>,
+            Deallocates = Self::Deallocates,
+        >;
 
     /// Changes whether the allocator tries to free allocations.
-    type WithDeallocates<const VALUE: bool>: BumpAllocatorSettings<Deallocates = Bool<VALUE>>;
+    type WithDeallocates<const VALUE: bool>: BumpAllocatorSettings<
+            MinimumAlignment = Self::MinimumAlignment,
+            Up = Self::Up,
+            GuaranteedAllocated = Self::GuaranteedAllocated,
+            Deallocates = Bool<VALUE>,
+        >;
 }
 
 /// Implementor of [`BumpAllocatorSettings`].

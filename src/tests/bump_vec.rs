@@ -9,12 +9,14 @@ use std::{
 };
 
 use crate::{
-    BumpAllocator, BumpAllocatorExt, BumpAllocatorScope, BumpVec, MutBumpAllocator, MutBumpAllocatorScope, WithoutDealloc,
-    WithoutShrink,
+    BumpVec, WithoutDealloc, WithoutShrink,
     alloc::Global,
     bump_vec,
     settings::BumpSettings,
     tests::{Bump, BumpScope, expect_no_panic},
+    traits::{
+        BumpAllocatorCore, BumpAllocatorCoreScope, BumpAllocatorTyped, MutBumpAllocatorCore, MutBumpAllocatorCoreScope,
+    },
 };
 
 use super::either_way;
@@ -524,7 +526,7 @@ fn test_dyn_allocator<const UP: bool>() {
         range.map(|i| i.to_string())
     }
 
-    fn test<B: BumpAllocatorExt>(bump: B) {
+    fn test<B: BumpAllocatorTyped>(bump: B) {
         const ITEM_SIZE: usize = size_of::<String>();
         assert_eq!(bump.any_stats().allocated(), 0);
         let mut vec = BumpVec::from_iter_in(numbers(1..4), &bump);
@@ -575,12 +577,12 @@ fn test_dyn_allocator<const UP: bool>() {
     Bump::new().scoped(|bump| test::<&BumpScope>(&bump));
     Bump::new().scoped(|mut bump| test::<&mut BumpScope>(&mut bump));
 
-    test::<&dyn BumpAllocator>(&<Bump>::new());
-    test::<&mut dyn BumpAllocator>(&mut <Bump>::new());
-    test::<&dyn MutBumpAllocator>(&<Bump>::new());
-    test::<&mut dyn MutBumpAllocator>(&mut <Bump>::new());
-    test::<&dyn BumpAllocatorScope>(<Bump>::new().as_scope());
-    test::<&mut dyn BumpAllocatorScope>(<Bump>::new().as_mut_scope());
-    test::<&dyn MutBumpAllocatorScope>(<Bump>::new().as_scope());
-    test::<&mut dyn MutBumpAllocatorScope>(<Bump>::new().as_mut_scope());
+    test::<&dyn BumpAllocatorCore>(&<Bump>::new());
+    test::<&mut dyn BumpAllocatorCore>(&mut <Bump>::new());
+    test::<&dyn MutBumpAllocatorCore>(&<Bump>::new());
+    test::<&mut dyn MutBumpAllocatorCore>(&mut <Bump>::new());
+    test::<&dyn BumpAllocatorCoreScope>(<Bump>::new().as_scope());
+    test::<&mut dyn BumpAllocatorCoreScope>(<Bump>::new().as_mut_scope());
+    test::<&dyn MutBumpAllocatorCoreScope>(<Bump>::new().as_scope());
+    test::<&mut dyn MutBumpAllocatorCoreScope>(<Bump>::new().as_mut_scope());
 }

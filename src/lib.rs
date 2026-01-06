@@ -388,7 +388,8 @@ mod set_len_on_drop_by_ptr;
 /// Contains types to configure bump allocation.
 pub mod settings;
 pub mod stats;
-mod traits;
+/// Traits that provide ways to be generic over `Bump(Scope)`s.
+pub mod traits;
 mod without_dealloc;
 
 use alloc::Allocator;
@@ -420,10 +421,6 @@ pub use no_drop::NoDrop;
 use private::{PanicsOnAlloc, capacity_overflow, format_trait_error};
 use raw_chunk::RawChunk;
 use set_len_on_drop::SetLenOnDrop;
-pub use traits::{
-    BumpAllocator, BumpAllocatorExt, BumpAllocatorScope, BumpAllocatorScopeExt, MutBumpAllocator, MutBumpAllocatorExt,
-    MutBumpAllocatorScope, MutBumpAllocatorScopeExt,
-};
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
 #[doc = include_str!("../CHANGELOG.md")]

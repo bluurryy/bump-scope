@@ -1,6 +1,10 @@
 use core::alloc::Layout;
 
-use crate::{BumpAllocatorExt, MutBumpAllocatorExt, NonNull, alloc::AllocError};
+use crate::{
+    NonNull,
+    alloc::AllocError,
+    traits::{BumpAllocatorTyped, MutBumpAllocatorTyped},
+};
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::{Infallible, capacity_overflow, format_trait_error, handle_alloc_error};
@@ -15,12 +19,12 @@ pub(crate) trait ErrorBehavior: Sized {
     fn fixed_size_vector_no_space(amount: usize) -> Self;
     fn format_trait_error() -> Self;
     #[expect(dead_code)]
-    fn allocate_layout(allocator: &impl BumpAllocatorExt, layout: Layout) -> Result<NonNull<u8>, Self>;
+    fn allocate_layout(allocator: &impl BumpAllocatorTyped, layout: Layout) -> Result<NonNull<u8>, Self>;
     #[expect(dead_code)]
-    fn allocate_sized<T>(allocator: &impl BumpAllocatorExt) -> Result<NonNull<T>, Self>;
-    fn allocate_slice<T>(allocator: &impl BumpAllocatorExt, len: usize) -> Result<NonNull<T>, Self>;
+    fn allocate_sized<T>(allocator: &impl BumpAllocatorTyped) -> Result<NonNull<T>, Self>;
+    fn allocate_slice<T>(allocator: &impl BumpAllocatorTyped, len: usize) -> Result<NonNull<T>, Self>;
     unsafe fn prepare_slice_allocation<T>(
-        allocator: &mut impl MutBumpAllocatorExt,
+        allocator: &mut impl MutBumpAllocatorTyped,
         len: usize,
     ) -> Result<NonNull<[T]>, Self>;
 }
@@ -56,23 +60,23 @@ impl ErrorBehavior for Infallible {
     }
 
     #[inline(always)]
-    fn allocate_layout(allocator: &impl BumpAllocatorExt, layout: Layout) -> Result<NonNull<u8>, Self> {
+    fn allocate_layout(allocator: &impl BumpAllocatorTyped, layout: Layout) -> Result<NonNull<u8>, Self> {
         Ok(allocator.allocate_layout(layout))
     }
 
     #[inline(always)]
-    fn allocate_sized<T>(allocator: &impl BumpAllocatorExt) -> Result<NonNull<T>, Self> {
+    fn allocate_sized<T>(allocator: &impl BumpAllocatorTyped) -> Result<NonNull<T>, Self> {
         Ok(allocator.allocate_sized::<T>())
     }
 
     #[inline(always)]
-    fn allocate_slice<T>(allocator: &impl BumpAllocatorExt, len: usize) -> Result<NonNull<T>, Self> {
+    fn allocate_slice<T>(allocator: &impl BumpAllocatorTyped, len: usize) -> Result<NonNull<T>, Self> {
         Ok(allocator.allocate_slice::<T>(len))
     }
 
     #[inline(always)]
     unsafe fn prepare_slice_allocation<T>(
-        allocator: &mut impl MutBumpAllocatorExt,
+        allocator: &mut impl MutBumpAllocatorTyped,
         len: usize,
     ) -> Result<NonNull<[T]>, Self> {
         Ok(allocator.prepare_slice_allocation::<T>(len))
@@ -110,23 +114,23 @@ impl ErrorBehavior for AllocError {
     }
 
     #[inline(always)]
-    fn allocate_layout(allocator: &impl BumpAllocatorExt, layout: Layout) -> Result<NonNull<u8>, Self> {
+    fn allocate_layout(allocator: &impl BumpAllocatorTyped, layout: Layout) -> Result<NonNull<u8>, Self> {
         allocator.try_allocate_layout(layout)
     }
 
     #[inline(always)]
-    fn allocate_sized<T>(allocator: &impl BumpAllocatorExt) -> Result<NonNull<T>, Self> {
+    fn allocate_sized<T>(allocator: &impl BumpAllocatorTyped) -> Result<NonNull<T>, Self> {
         allocator.try_allocate_sized::<T>()
     }
 
     #[inline(always)]
-    fn allocate_slice<T>(allocator: &impl BumpAllocatorExt, len: usize) -> Result<NonNull<T>, Self> {
+    fn allocate_slice<T>(allocator: &impl BumpAllocatorTyped, len: usize) -> Result<NonNull<T>, Self> {
         allocator.try_allocate_slice::<T>(len)
     }
 
     #[inline(always)]
     unsafe fn prepare_slice_allocation<T>(
-        allocator: &mut impl MutBumpAllocatorExt,
+        allocator: &mut impl MutBumpAllocatorTyped,
         len: usize,
     ) -> Result<NonNull<[T]>, Self> {
         allocator.try_prepare_slice_allocation::<T>(len)

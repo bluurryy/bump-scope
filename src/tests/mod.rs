@@ -68,13 +68,14 @@ const MALLOC_OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
 const OVERHEAD: usize = MALLOC_OVERHEAD + size_of::<ChunkHeader<Global>>();
 
 use crate::{
-    Bump, BumpAllocatorExt, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, MutBumpString, MutBumpVec, MutBumpVecRev,
+    Bump, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, MutBumpString, MutBumpVec, MutBumpVecRev,
     SizedTypeProperties,
     alloc::{AllocError, Allocator, Global as System, Global},
     chunk_size::{AssumedMallocOverhead, ChunkSize},
     mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice, panic_on_error,
-    settings::{BumpSettings, MinimumAlignment, SupportedMinimumAlignment},
+    settings::{BumpAllocatorSettings, BumpSettings, MinimumAlignment, SupportedMinimumAlignment, True},
     stats::Chunk,
+    traits::{BumpAllocator, BumpAllocatorTyped},
 };
 
 pub(crate) use test_wrap::TestWrap;
@@ -540,19 +541,19 @@ fn as_aligned<const UP: bool>() {
 
     {
         let bump = bump.as_mut_aligned::<8>();
-        assert_eq!(bump.stats().allocated(), 0);
+        assert_eq!(bump.typed_stats().allocated(), 0);
     }
 
     {
         bump.alloc(1u8);
         let bump = bump.as_mut_aligned::<8>();
-        assert_eq!(bump.stats().allocated(), 8);
+        assert_eq!(bump.typed_stats().allocated(), 8);
         bump.alloc(2u16);
-        assert_eq!(bump.stats().allocated(), 16);
+        assert_eq!(bump.typed_stats().allocated(), 16);
         bump.alloc(4u32);
-        assert_eq!(bump.stats().allocated(), 24);
+        assert_eq!(bump.typed_stats().allocated(), 24);
         bump.alloc(8u64);
-        assert_eq!(bump.stats().allocated(), 32);
+        assert_eq!(bump.typed_stats().allocated(), 32);
     }
 }
 
@@ -747,7 +748,13 @@ fn realign<const UP: bool>() {
         bump.alloc(0u8);
         assert!(!bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
         let bump = bump.as_mut_aligned::<ALIGN>();
-        assert!(bump.stats().current_chunk().bump_position().cast::<AlignT>().is_aligned());
+        assert!(
+            bump.typed_stats()
+                .current_chunk()
+                .bump_position()
+                .cast::<AlignT>()
+                .is_aligned()
+        );
     }
 
     // aligned
@@ -1181,4 +1188,29 @@ fn test_drop_allocator() {
     bump.reserve_bytes(1024);
     drop(bump);
     assert_eq!(drop_count.get(), 3);
+}
+
+#[test]
+fn generic_bump_scope() {
+    fn foo(mut bump: impl BumpAllocator<Settings: BumpAllocatorSettings<GuaranteedAllocated = True>>) {
+        assert_eq!(bump.as_scope().stats().allocated(), 0);
+        bump.scoped(|mut bump| {
+            bump.alloc_str("hello");
+            assert_eq!(bump.stats().allocated(), 5);
+            bump.scoped(|bump| {
+                bump.alloc_str("world");
+                assert_eq!(bump.stats().allocated(), 10);
+            });
+            assert_eq!(bump.stats().allocated(), 5);
+        });
+        assert_eq!(bump.as_scope().stats().allocated(), 0);
+    }
+
+    let bump: Bump = Bump::new();
+    foo(bump);
+
+    let mut bump: Bump = Bump::new();
+    bump.scoped(|bump| {
+        foo(bump);
+    });
 }

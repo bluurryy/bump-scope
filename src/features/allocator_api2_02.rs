@@ -12,7 +12,7 @@ use allocator_api2_02::{alloc::Global, boxed::Box};
 use crate::alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator};
 
 #[cfg(not(feature = "nightly-allocator-api"))]
-use crate::{Bump, BumpAllocator, BumpScope, WithoutDealloc, WithoutShrink, settings::BumpAllocatorSettings};
+use crate::{Bump, BumpScope, WithoutDealloc, WithoutShrink, settings::BumpAllocatorSettings, traits::BumpAllocatorCore};
 
 #[cfg(feature = "alloc")]
 #[cfg(not(feature = "nightly-allocator-api"))]
@@ -393,7 +393,7 @@ where
 }
 
 #[cfg(not(feature = "nightly-allocator-api"))]
-unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
+unsafe impl<A: BumpAllocatorCore> Allocator for WithoutShrink<A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         <Self as CrateAllocator>::allocate(self, layout).map_err(Into::into)
@@ -426,7 +426,7 @@ unsafe impl<A: BumpAllocator> Allocator for WithoutShrink<A> {
 }
 
 #[cfg(not(feature = "nightly-allocator-api"))]
-unsafe impl<A: BumpAllocator> Allocator for WithoutDealloc<A> {
+unsafe impl<A: BumpAllocatorCore> Allocator for WithoutDealloc<A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         <Self as CrateAllocator>::allocate(self, layout).map_err(Into::into)

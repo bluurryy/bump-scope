@@ -10,8 +10,8 @@ use core::{
 use std::sync::{Mutex, PoisonError};
 
 use bump_scope::{
-    BumpAllocatorExt,
     alloc::{AllocError, Allocator},
+    traits::BumpAllocatorTyped,
 };
 
 #[repr(C, align(16))]

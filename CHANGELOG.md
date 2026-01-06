@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `alloc*` methods are now available for the `(Mut)BumpAllocatorScopeExt` traits
+- Add new `BumpAllocator(Scope)` trait that allows you to be generic over `Bump` and `BumpScope`
 - Improve documentation
 
 ### Fixed
@@ -19,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Breaking:** The generic const parameters have been consolidated into a single `Settings` parameter.
+- **Breaking:** Bump allocator traits have been moved and renamed:
+  - `(Mut)BumpAllocator` -> `traits::(Mut)BumpAllocatorCore`
+  - `(Mut)BumpAllocatorScope` -> `traits::(Mut)BumpAllocatorCoreScope`
+  - `(Mut)BumpAllocatorExt` -> `traits::(Mut)BumpAllocatorTyped`
+  - `(Mut)BumpAllocatorScopeExt` -> `traits::(Mut)BumpAllocatorTypedScope`
 - For non-guaranteed-allocated `Stats`, `current_chunk` has been renamed to `get_current_chunk`
 - For non-guaranteed-allocated `BumpScope`, `allocator` has been renamed to `get_allocator`
 - Depend on `serde_core` instead of `serde`

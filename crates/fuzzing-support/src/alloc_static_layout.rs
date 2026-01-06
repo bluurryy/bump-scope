@@ -2,9 +2,9 @@ use std::{alloc::Layout, fmt::Debug, mem};
 
 use arbitrary::Arbitrary;
 use bump_scope::{
-    BumpAllocatorExt,
     alloc::Global,
     settings::{MinimumAlignment, SupportedMinimumAlignment},
+    traits::BumpAllocatorTyped,
 };
 
 use crate::{Bump, MinAlign, UpTo};
