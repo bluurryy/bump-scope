@@ -964,6 +964,10 @@ where
 
     #[inline(always)]
     pub(crate) fn do_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
+        if T::IS_ZST {
+            return Ok(NonNull::dangling());
+        }
+
         match self.chunk.get().alloc::<S::MinimumAlignment>(SizedLayout::new::<T>()) {
             Some(ptr) => Ok(ptr.cast()),
             None => match self.do_alloc_sized_in_another_chunk::<E, T>() {
@@ -981,6 +985,10 @@ where
 
     #[inline(always)]
     pub(crate) fn do_alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
+        if T::IS_ZST {
+            return Ok(NonNull::dangling());
+        }
+
         let Ok(layout) = ArrayLayout::array::<T>(len) else {
             return Err(E::capacity_overflow());
         };
@@ -996,6 +1004,10 @@ where
 
     #[inline(always)]
     pub(crate) fn do_alloc_slice_for<E: ErrorBehavior, T>(&self, value: &[T]) -> Result<NonNull<T>, E> {
+        if T::IS_ZST {
+            return Ok(NonNull::dangling());
+        }
+
         let layout = ArrayLayout::for_value(value);
 
         match self.chunk.get().alloc::<S::MinimumAlignment>(layout) {

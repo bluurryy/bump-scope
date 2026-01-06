@@ -316,11 +316,6 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_uninit<T>(&self) -> BumpBox<'a, MaybeUninit<T>> {
-        // TODO: can allocate_sized not just return a dangling ptr?
-        if T::IS_ZST {
-            return BumpBox::zst(MaybeUninit::uninit());
-        }
-
         let ptr = self.allocate_sized();
         unsafe { BumpBox::from_raw(ptr) }
     }
@@ -361,11 +356,6 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// ```
     #[inline(always)]
     fn try_alloc_uninit<T>(&self) -> Result<BumpBox<'a, MaybeUninit<T>>, AllocError> {
-        // TODO: can allocate_sized not just return a dangling ptr?
-        if T::IS_ZST {
-            return Ok(BumpBox::zst(MaybeUninit::uninit()));
-        }
-
         let ptr = self.try_allocate_sized()?;
         unsafe { Ok(BumpBox::from_raw(ptr)) }
     }
@@ -675,15 +665,11 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_uninit_slice<T>(&self, len: usize) -> BumpBox<'a, [MaybeUninit<T>]> {
-        if T::IS_ZST {
-            return BumpBox::uninit_zst_slice(len);
-        }
-
         let ptr = self.allocate_slice::<MaybeUninit<T>>(len);
 
         unsafe {
-            let ptr = NonNull::slice_from_raw_parts(ptr, len);
-            BumpBox::from_raw(ptr)
+            let slice_ptr = NonNull::slice_from_raw_parts(ptr, len);
+            BumpBox::from_raw(slice_ptr)
         }
     }
 
@@ -732,15 +718,11 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// ```
     #[inline(always)]
     fn try_alloc_uninit_slice<T>(&self, len: usize) -> Result<BumpBox<'a, [MaybeUninit<T>]>, AllocError> {
-        if T::IS_ZST {
-            return Ok(BumpBox::uninit_zst_slice(len));
-        }
-
         let ptr = self.try_allocate_slice::<MaybeUninit<T>>(len)?;
 
         unsafe {
-            let ptr = NonNull::slice_from_raw_parts(ptr, len);
-            Ok(BumpBox::from_raw(ptr))
+            let slice_ptr = NonNull::slice_from_raw_parts(ptr, len);
+            Ok(BumpBox::from_raw(slice_ptr))
         }
     }
 
@@ -771,15 +753,11 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_uninit_slice_for<T>(&self, slice: &[T]) -> BumpBox<'a, [MaybeUninit<T>]> {
-        if T::IS_ZST {
-            return BumpBox::uninit_zst_slice(slice.len());
-        }
-
         let ptr = self.allocate_slice_for(slice).cast::<MaybeUninit<T>>();
 
         unsafe {
-            let ptr = NonNull::slice_from_raw_parts(ptr, slice.len());
-            BumpBox::from_raw(ptr)
+            let slice_ptr = NonNull::slice_from_raw_parts(ptr, slice.len());
+            BumpBox::from_raw(slice_ptr)
         }
     }
 
@@ -810,15 +788,11 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// ```
     #[inline(always)]
     fn try_alloc_uninit_slice_for<T>(&self, slice: &[T]) -> Result<BumpBox<'a, [MaybeUninit<T>]>, AllocError> {
-        if T::IS_ZST {
-            return Ok(BumpBox::uninit_zst_slice(slice.len()));
-        }
-
         let ptr = self.try_allocate_slice_for(slice)?.cast::<MaybeUninit<T>>();
 
         unsafe {
-            let ptr = NonNull::slice_from_raw_parts(ptr, slice.len());
-            Ok(BumpBox::from_raw(ptr))
+            let slice_ptr = NonNull::slice_from_raw_parts(ptr, slice.len());
+            Ok(BumpBox::from_raw(slice_ptr))
         }
     }
 
