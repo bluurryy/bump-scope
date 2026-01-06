@@ -175,8 +175,8 @@ Shrinking or deallocating allocations other than the most recent one does nothin
 
 A bump allocator does not require `deallocate` or `shrink` to free memory.
 After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
-You can set the `DEALLOCATES` const parameter to `false` to make shrinking and deallocating a no-op.
-There are also the [`WithoutDealloc`] and [`WithoutShrink`] wrappers.
+You can set the `DEALLOCATES` and `SHRINKS` parameters to false or use the [`WithoutDealloc`] and [`WithoutShrink`] wrappers
+to make deallocating and shrinking a no-op.
 ```rust
 use bump_scope::{Bump, WithoutDealloc};
 use allocator_api2_04::boxed::Box;

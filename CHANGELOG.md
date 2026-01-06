@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `alloc*` methods are now available for the `(Mut)BumpAllocatorScopeExt` traits
 - Add new `BumpAllocator(Scope)` trait that allows you to be generic over `Bump` and `BumpScope`
+- Add `SHRINKS` generic parameter, to toggle shrinking for the allocation api, `DEALLOCATES` no longer affects shrinking
 - Improve documentation
 
 ### Fixed

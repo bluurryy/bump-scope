@@ -223,7 +223,7 @@ where
         S: BumpAllocatorSettings,
     {
         unsafe {
-            if S::DEALLOCATES && is_last_and_allocated(bump, old_ptr, old_layout) {
+            if S::SHRINKS && is_last_and_allocated(bump, old_ptr, old_layout) {
                 let old_pos = bump.chunk.get().pos();
                 deallocate_assume_last(bump, old_ptr, old_layout);
 
@@ -279,7 +279,7 @@ where
         }
 
         // if that's not the last allocation, there is nothing we can do
-        if !S::DEALLOCATES || !is_last_and_allocated(bump, old_ptr, old_layout) {
+        if !S::SHRINKS || !is_last_and_allocated(bump, old_ptr, old_layout) {
             // we return the size of the old layout
             return Ok(NonNull::slice_from_raw_parts(old_ptr, old_layout.size()));
         }

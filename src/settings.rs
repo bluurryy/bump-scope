@@ -33,6 +33,9 @@ pub trait BumpAllocatorSettings: Sealed {
     /// Whether the allocator tries to free allocations.
     const DEALLOCATES: bool = Self::Deallocates::VALUE;
 
+    /// Whether the allocator tries to shrink allocations.
+    const SHRINKS: bool = Self::Shrinks::VALUE;
+
     /// The minimum alignment.
     type MinimumAlignment: SupportedMinimumAlignment;
 
@@ -45,11 +48,15 @@ pub trait BumpAllocatorSettings: Sealed {
     /// Whether the allocator tries to free allocations.
     type Deallocates: Boolean;
 
+    /// Whether the allocator tries to shrink allocations.
+    type Shrinks: Boolean;
+
     /// Changes the minimum alignment.
     type WithMinimumAlignment<const NEW_MIN_ALIGN: usize>: BumpAllocatorSettings<
             Up = Self::Up,
             GuaranteedAllocated = Self::GuaranteedAllocated,
             Deallocates = Self::Deallocates,
+            Shrinks = Self::Shrinks,
         >
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment;
@@ -60,6 +67,7 @@ pub trait BumpAllocatorSettings: Sealed {
             Up = Bool<VALUE>,
             GuaranteedAllocated = Self::GuaranteedAllocated,
             Deallocates = Self::Deallocates,
+            Shrinks = Self::Shrinks,
         >;
 
     /// Changes whether the allocator is guaranteed to have a chunk allocated and thus is allowed to create scopes.
@@ -68,6 +76,7 @@ pub trait BumpAllocatorSettings: Sealed {
             Up = Self::Up,
             GuaranteedAllocated = Bool<VALUE>,
             Deallocates = Self::Deallocates,
+            Shrinks = Self::Shrinks,
         >;
 
     /// Changes whether the allocator tries to free allocations.
@@ -76,6 +85,16 @@ pub trait BumpAllocatorSettings: Sealed {
             Up = Self::Up,
             GuaranteedAllocated = Self::GuaranteedAllocated,
             Deallocates = Bool<VALUE>,
+            Shrinks = Self::Shrinks,
+        >;
+
+    /// Changes whether the allocator tries to shrink allocations.
+    type WithShrinks<const VALUE: bool>: BumpAllocatorSettings<
+            MinimumAlignment = Self::MinimumAlignment,
+            Up = Self::Up,
+            GuaranteedAllocated = Self::GuaranteedAllocated,
+            Deallocates = Self::Deallocates,
+            Shrinks = Bool<VALUE>,
         >;
 }
 
@@ -84,7 +103,8 @@ pub trait BumpAllocatorSettings: Sealed {
 /// - **`MIN_ALIGN`** — the alignment maintained for the bump pointer, see [What is minimum alignment?](crate#what-is-minimum-alignment)
 /// - **`UP`** — the bump direction, see [Bumping upwards or downwards?](crate#bumping-upwards-or-downwards)
 /// - **`GUARANTEED_ALLOCATED`** — see [What does *guaranteed allocated* mean?](crate#what-does-guaranteed-allocated-mean)
-/// - **`DEALLOCATES`** — toggles deallocation and shrinking for collections,
+/// - **`DEALLOCATES`** — toggles deallocation for collections
+/// - **`SHRINKS`** — toggles shrinking for collections
 ///   [`alloc_iter`](crate::Bump::alloc_iter) and
 ///   <code>[alloc_](crate::Bump::alloc_fmt)([cstr_](crate::Bump::alloc_cstr_fmt))[fmt](crate::Bump::alloc_fmt)</code>
 pub struct BumpSettings<
@@ -92,15 +112,16 @@ pub struct BumpSettings<
     const UP: bool = true,
     const GUARANTEED_ALLOCATED: bool = true,
     const DEALLOCATES: bool = true,
+    const SHRINKS: bool = true,
 >;
 
-impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Sealed
-    for BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool, const SHRINKS: bool>
+    Sealed for BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES, SHRINKS>
 {
 }
 
-impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> BumpAllocatorSettings
-    for BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool, const SHRINKS: bool>
+    BumpAllocatorSettings for BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES, SHRINKS>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
@@ -108,14 +129,16 @@ where
     type Up = Bool<UP>;
     type GuaranteedAllocated = Bool<GUARANTEED_ALLOCATED>;
     type Deallocates = Bool<DEALLOCATES>;
+    type Shrinks = Bool<SHRINKS>;
 
     type WithMinimumAlignment<const VALUE: usize>
-        = BumpSettings<VALUE, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+        = BumpSettings<VALUE, UP, GUARANTEED_ALLOCATED, DEALLOCATES, SHRINKS>
     where
         MinimumAlignment<VALUE>: SupportedMinimumAlignment;
-    type WithUp<const VALUE: bool> = BumpSettings<MIN_ALIGN, VALUE, GUARANTEED_ALLOCATED, DEALLOCATES>;
-    type WithGuaranteedAllocated<const VALUE: bool> = BumpSettings<MIN_ALIGN, UP, VALUE, DEALLOCATES>;
-    type WithDeallocates<const VALUE: bool> = BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, VALUE>;
+    type WithUp<const VALUE: bool> = BumpSettings<MIN_ALIGN, VALUE, GUARANTEED_ALLOCATED, DEALLOCATES, SHRINKS>;
+    type WithGuaranteedAllocated<const VALUE: bool> = BumpSettings<MIN_ALIGN, UP, VALUE, DEALLOCATES, SHRINKS>;
+    type WithDeallocates<const VALUE: bool> = BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, VALUE, SHRINKS>;
+    type WithShrinks<const VALUE: bool> = BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES, VALUE>;
 }
 
 /// Either [`True`] or [`False`].
