@@ -16,7 +16,6 @@ pub trait BumpAllocator: MutBumpAllocatorTyped {
     /// The bump allocator settings.
     type Settings: BumpAllocatorSettings;
 
-    // TODO: check that must_use on the trait method works, or if we have to add it to the impls
     /// Returns this bump allocator as a `&BumpScope`.
     #[must_use]
     fn as_scope(&self) -> &BumpScope<'_, Self::Allocator, Self::Settings>;
