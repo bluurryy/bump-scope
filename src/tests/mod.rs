@@ -517,9 +517,8 @@ fn reserve<const UP: bool>() {
     assert!(bump.stats().remaining() > 256);
 }
 
-// TODO: these don't use `UP`... bug?
 fn aligned<const UP: bool>() {
-    let mut bump: Bump<Global, BumpSettings<8>> = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<8, UP>> = Bump::new();
 
     bump.scoped(|mut bump| {
         bump.alloc(0xDEAD_BEEF_u64);
@@ -537,7 +536,7 @@ fn aligned<const UP: bool>() {
 }
 
 fn as_aligned<const UP: bool>() {
-    let mut bump: Bump = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
     {
         let bump = bump.as_mut_aligned::<8>();

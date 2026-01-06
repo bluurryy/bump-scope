@@ -76,13 +76,12 @@ fn zst<const UP: bool>() {
     assert_eq!(bump.stats().size(), size_of::<[usize; 8]>() - OVERHEAD);
 }
 
-// TODO: `UP` not used
 fn aligned_allocator_issue_32<const UP: bool>() {
     create_mock_allocator! {
         BigAllocator 32
     }
 
-    let _: Bump<_, BumpSettings<1, false>> = Bump::with_size_in(0x2000, BigAllocator::new());
+    let _: Bump<_, BumpSettings<1, UP>> = Bump::with_size_in(0x2000, BigAllocator::new());
 }
 
 fn giant_base_allocator<const UP: bool>() {
