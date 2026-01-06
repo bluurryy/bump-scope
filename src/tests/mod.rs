@@ -68,7 +68,7 @@ const MALLOC_OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
 const OVERHEAD: usize = MALLOC_OVERHEAD + size_of::<ChunkHeader<Global>>();
 
 use crate::{
-    Bump, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, MutBumpString, MutBumpVec, MutBumpVecRev,
+    Bump, BumpAllocatorExt, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, MutBumpString, MutBumpVec, MutBumpVecRev,
     SizedTypeProperties,
     alloc::{AllocError, Allocator, Global as System, Global},
     chunk_size::{AssumedMallocOverhead, ChunkSize},
@@ -401,7 +401,7 @@ fn debug_sizes<const UP: bool>(bump: &Bump<Global, BumpSettings<1, UP>>) {
 fn force_alloc_new_chunk<const UP: bool>(bump: &BumpScope<Global, BumpSettings<1, UP>>) {
     let size = bump.stats().current_chunk().remaining() + 1;
     let layout = Layout::from_size_align(size, 1).unwrap();
-    bump.alloc_layout(layout);
+    bump.allocate_layout(layout);
 }
 
 fn reset_first_chunk<const UP: bool>() {

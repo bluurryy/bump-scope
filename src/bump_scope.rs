@@ -1390,19 +1390,6 @@ where
         BumpAllocatorScopeExt::try_alloc_uninit_slice_for(self, slice)
     }
 
-    /// Forwards to [`BumpAllocatorScopeExt::alloc_layout`].
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_layout(&self, layout: Layout) -> BumpBox<'_, [MaybeUninit<u8>]> {
-        BumpAllocatorScopeExt::alloc_layout(self, layout)
-    }
-
-    /// Forwards to [`BumpAllocatorScopeExt::try_alloc_layout`].
-    #[inline(always)]
-    pub fn try_alloc_layout(&self, layout: Layout) -> Result<BumpBox<'_, [MaybeUninit<u8>]>, AllocError> {
-        BumpAllocatorScopeExt::try_alloc_layout(self, layout)
-    }
-
     /// Forwards to [`BumpAllocatorExt::dealloc`].
     #[inline(always)]
     pub fn dealloc<T: ?Sized>(&self, boxed: BumpBox<T>) {

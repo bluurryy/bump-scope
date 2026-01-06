@@ -118,16 +118,16 @@ fn checkpoint_multiple_chunks<const UP: bool>() {
 fn allocate_another_chunk<const UP: bool>(bump: &Bump<UP>, dummy_size: usize) {
     let start_chunks = bump.any_stats().count();
     let remaining = bump.any_stats().remaining();
-    bump.alloc_layout(Layout::from_size_align(remaining, 1).unwrap());
+    bump.allocate_layout(Layout::from_size_align(remaining, 1).unwrap());
     assert_eq!(bump.any_stats().count(), start_chunks);
-    bump.alloc_layout(Layout::from_size_align(dummy_size, 1).unwrap());
+    bump.allocate_layout(Layout::from_size_align(dummy_size, 1).unwrap());
     assert_eq!(bump.any_stats().count(), start_chunks + 1);
     assert_eq!(bump.any_stats().current_chunk().unwrap().allocated(), dummy_size);
 }
 
 fn allocate_zero_layout<const UP: bool>() {
     let bump = <Bump<UP>>::unallocated();
-    bump.alloc_layout(Layout::new::<()>());
+    bump.allocate_layout(Layout::new::<()>());
 }
 
 fn reset<const UP: bool>() {

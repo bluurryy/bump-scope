@@ -9,7 +9,10 @@ use core::{
 };
 use std::sync::{Mutex, PoisonError};
 
-use bump_scope::alloc::{AllocError, Allocator};
+use bump_scope::{
+    BumpAllocatorExt,
+    alloc::{AllocError, Allocator},
+};
 
 #[repr(C, align(16))]
 struct StaticAllocator<const SIZE: usize> {
@@ -113,7 +116,7 @@ fn on_stack() {
     let str = bump.alloc_str("It works!");
     println!("{str}");
 
-    bump.try_alloc_layout(Layout::new::<[u8; 2048]>()).unwrap_err();
+    bump.try_allocate_layout(Layout::new::<[u8; 2048]>()).unwrap_err();
 }
 
 fn on_static() {
@@ -127,7 +130,7 @@ fn on_static() {
     let str = bump.alloc_str("It works!");
     println!("{str}");
 
-    bump.try_alloc_layout(Layout::new::<[u8; 2048]>()).unwrap_err();
+    bump.try_allocate_layout(Layout::new::<[u8; 2048]>()).unwrap_err();
 }
 
 #[test]

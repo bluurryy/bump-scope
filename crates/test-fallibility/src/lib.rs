@@ -10,7 +10,7 @@ use bump_scope::{
     alloc::{AllocError, Allocator, Global},
     settings::BumpSettings,
     zerocopy_08::{BumpExt, VecExt},
-    BumpBox, FixedBumpString, FixedBumpVec,
+    BumpAllocatorExt, BumpBox, FixedBumpString, FixedBumpVec,
 };
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
@@ -163,8 +163,8 @@ up_and_down! {
         bump.try_alloc_iter_mut_rev(value)
     }
 
-    pub fn Bump_try_alloc_layout(bump: &Bump, layout: Layout) -> Result<BumpBox<[MaybeUninit<u8>]>> {
-        bump.try_alloc_layout(layout)
+    pub fn Bump_try_allocate_layout(bump: &Bump, layout: Layout) -> Result<NonNull<u8>> {
+        bump.try_allocate_layout(layout)
     }
 
     pub fn Bump_try_alloc_slice_move<'a>(bump: &'a Bump, value: [u32; 4]) -> Result<BumpBox<'a, [u32]>> {

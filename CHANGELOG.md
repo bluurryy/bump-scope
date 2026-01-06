@@ -22,10 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For non-guaranteed-allocated `Stats`, `current_chunk` has been renamed to `get_current_chunk`
 - For non-guaranteed-allocated `BumpScope`, `allocator` has been renamed to `get_allocator`
 - Depend on `serde_core` instead of `serde`
-- **Breaking:** `alloc_layout` now returns `BumpBox<[MaybeUninit<u8>]>` instead of `NonNull<u8>`
 
 ### Removed
 
+- **Breaking:** Remove `alloc_layout` (`allocate_layout` provides the same functionality)
 - **Breaking:** Remove deprecated api
 
 ## [1.5.1] - 2025-12-21

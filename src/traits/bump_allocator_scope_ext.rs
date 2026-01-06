@@ -1,7 +1,7 @@
-use core::{alloc::Layout, ffi::CStr, fmt, mem::MaybeUninit, ptr::NonNull};
+use core::{ffi::CStr, fmt, mem::MaybeUninit, ptr::NonNull};
 
 #[cfg(feature = "nightly-clone-to-uninit")]
-use core::{clone::CloneToUninit, ptr};
+use core::{alloc::Layout, clone::CloneToUninit, ptr};
 
 use crate::{
     BumpAllocatorExt, BumpAllocatorScope, BumpBox, BumpString, BumpVec, SizedTypeProperties, alloc::AllocError,
@@ -1265,36 +1265,6 @@ pub trait BumpAllocatorScopeExt<'a>: BumpAllocatorScope<'a> + BumpAllocatorExt {
         }
 
         Ok(vec.into_fixed_vec().into_boxed_slice())
-    }
-
-    // TODO: make this return BumpBox<[MaybeUninit<u8>]>
-    /// Allocates memory as described by the given `Layout`.
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    fn alloc_layout(&self, layout: Layout) -> BumpBox<'a, [MaybeUninit<u8>]> {
-        let ptr = self.allocate_layout(layout).cast::<MaybeUninit<u8>>();
-
-        unsafe {
-            let ptr = NonNull::slice_from_raw_parts(ptr, layout.size());
-            BumpBox::from_raw(ptr)
-        }
-    }
-
-    /// Allocates memory as described by the given `Layout`.
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    #[inline(always)]
-    fn try_alloc_layout(&self, layout: Layout) -> Result<BumpBox<'a, [MaybeUninit<u8>]>, AllocError> {
-        let ptr = self.try_allocate_layout(layout)?.cast::<MaybeUninit<u8>>();
-
-        unsafe {
-            let ptr = NonNull::slice_from_raw_parts(ptr, layout.size());
-            Ok(BumpBox::from_raw(ptr))
-        }
     }
 }
 
