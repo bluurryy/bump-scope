@@ -64,7 +64,7 @@ Unlike `bumpalo`, this crate...
 - Won't try to allocate a smaller chunk if allocation failed.
 - No built-in allocation limit. You can provide an allocator that enforces an allocation limit (see `examples/limit_memory_usage.rs`).
 - Allocations are a tiny bit more optimized. See [./crates/callgrind-benches][benches].
-- [You can choose the bump direction.](#bumping-upwards-or-downwards) Bumps upwards by default.
+- [You can choose the bump direction.](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/settings/index.html#bumping-upwards-or-downwards) Bumps upwards by default.
 
 ## Allocator Methods
 
@@ -245,52 +245,10 @@ Breaking changes to these features might be introduced in minor releases to keep
 - **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.alloc_clone) method to `Bump(Scope)`.
 <!-- feature documentation end -->
 
-## Bumping upwards or downwards?
-Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
-
-Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
-This benefits collections as well as <code>[alloc_iter](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.alloc_iter)([_mut](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.alloc_iter_mut))</code> and <code>[alloc_fmt](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.alloc_fmt)([_mut](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.alloc_fmt_mut))</code>
-with the exception of [`MutBumpVecRev`] and [`alloc_iter_mut_rev`](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.alloc_iter_mut_rev) which
-can be grown and shrunk in place if and only if bumping downwards.
-
-Bumping downwards can be done in less instructions.
-
-For the performance impact see [./crates/callgrind-benches][benches].
-
-## What is minimum alignment?
-Minimum alignment is the alignment the bump pointer maintains when doing allocations.
-
-When allocating a type in a bump allocator with a sufficient minimum alignment,
-the bump pointer will not have to be aligned for the allocation but the allocation size
-will need to be rounded up to the next multiple of the minimum alignment.
-
-The minimum alignment is controlled by the generic parameter `const MIN_ALIGN: usize`. By default, `MIN_ALIGN` is `1`.
-
-For the performance impact see [./crates/callgrind-benches][benches].
-
-## What does *guaranteed allocated* mean?
-
-A *guaranteed allocated* bump allocator will own at least one chunk that it has allocated
-from its base allocator.
-
-The constructors [`new`], [`with_size`], [`with_capacity`] and their variants always allocate
-one chunk from the base allocator.
-
-The exception is the [`unallocated`] constructor which creates a `Bump` without allocating any
-chunks. Such a `Bump` will have the `GUARANTEED_ALLOCATED` generic parameter of `false`
-which will make the [`scoped`], [`scoped_aligned`], [`aligned`] and [`scope_guard`] methods unavailable.
-
-You can turn any non-`GUARANTEED_ALLOCATED` bump allocator into a guaranteed allocated one using
-[`as_guaranteed_allocated`], [`as_mut_guaranteed_allocated`] or [`into_guaranteed_allocated`].
-
-The point of this is so `Bump`s can be `const` constructed and constructed without allocating.
-At the same time `Bump`s that have already allocated a chunk don't suffer additional runtime checks.
-
 
 [`unsize_bump_box`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/macro.unsize_bump_box.html
 [`WithoutShrink`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.WithoutShrink.html
 [`WithoutDealloc`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.WithoutDealloc.html
-[`MutBumpVecRev`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.MutBumpVecRev.html
 [`Bump`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html
 [`BumpVec`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.BumpVec.html
 [`BumpString`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.BumpString.html

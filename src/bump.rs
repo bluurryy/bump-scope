@@ -35,7 +35,7 @@ macro_rules! make_type {
         ///
         /// # Generic parameters
         /// - **`A`** — the base allocator, defaults to `Global` when the `alloc` feature is enabled
-        /// - **`S`** — the bump allocator settings
+        /// - **`S`** — the bump allocator settings, see [`settings`](crate::settings)
         ///
         /// # Overview
         /// All of the mentioned methods that do allocations panic if the base allocator returned an error.
