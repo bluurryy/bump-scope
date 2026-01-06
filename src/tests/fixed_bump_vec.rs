@@ -12,6 +12,7 @@ use crate::{
     FixedBumpVec,
     alloc::Global,
     bump_vec,
+    settings::BumpSettings,
     tests::{Bump, expect_no_panic},
 };
 
@@ -26,7 +27,7 @@ either_way! {
 
 fn map_in_place_same_layout<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, 1, UP> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -59,7 +60,7 @@ fn map_in_place_same_layout<const UP: bool>() {
 
 fn map_in_place_smaller_layout<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, 1, UP> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -92,7 +93,7 @@ fn map_in_place_smaller_layout<const UP: bool>() {
 
 fn map_in_place_to_zst<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, 1, UP> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -124,7 +125,7 @@ fn map_in_place_to_zst<const UP: bool>() {
 
 fn map_in_place_from_zst_to_zst<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, 1, UP> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;

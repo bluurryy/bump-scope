@@ -2,6 +2,7 @@ use core::alloc::Layout;
 
 use crate::{
     alloc::{Allocator, Global},
+    settings::BumpSettings,
     tests::{Bump, either_way},
 };
 
@@ -15,7 +16,7 @@ either_way! {
 }
 
 fn test_aligned_alloc<const UP: bool>() {
-    let mut bump = <Bump<Global, 1, UP>>::new();
+    let mut bump = <Bump<Global, BumpSettings<1, UP>>>::new();
     let bump = bump.as_mut_scope();
 
     let _three = bump.alloc([0u8; 3]);
@@ -29,7 +30,7 @@ fn test_aligned_alloc<const UP: bool>() {
 }
 
 fn test_aligned_allocate<const UP: bool>() {
-    let mut bump = <Bump<Global, 1, UP>>::new();
+    let mut bump = <Bump<Global, BumpSettings<1, UP>>>::new();
     let bump = bump.as_mut_scope();
 
     let _three = bump.allocate(Layout::new::<[u8; 3]>()).unwrap();
@@ -42,7 +43,7 @@ fn test_aligned_allocate<const UP: bool>() {
 }
 
 fn test_scoped_alloc<const UP: bool>() {
-    let mut bump = <Bump<Global, 1, UP>>::new();
+    let mut bump = <Bump<Global, BumpSettings<1, UP>>>::new();
     let bump = bump.as_mut_scope();
 
     let _three = bump.alloc([0u8; 3]);
@@ -56,7 +57,7 @@ fn test_scoped_alloc<const UP: bool>() {
 }
 
 fn test_scoped_allocate<const UP: bool>() {
-    let mut bump = <Bump<Global, 1, UP>>::new();
+    let mut bump = <Bump<Global, BumpSettings<1, UP>>>::new();
     let bump = bump.as_mut_scope();
 
     let _three = bump.allocate(Layout::new::<[u8; 3]>()).unwrap();
@@ -69,7 +70,7 @@ fn test_scoped_allocate<const UP: bool>() {
 }
 
 fn test_scoped_aligned_alloc<const UP: bool>() {
-    let mut bump = <Bump<Global, 1, UP>>::new();
+    let mut bump = <Bump<Global, BumpSettings<1, UP>>>::new();
     let bump = bump.as_mut_scope();
 
     let _three = bump.alloc([0u8; 3]);
@@ -83,7 +84,7 @@ fn test_scoped_aligned_alloc<const UP: bool>() {
 }
 
 fn test_scoped_aligned_allocate<const UP: bool>() {
-    let mut bump = <Bump<Global, 1, UP>>::new();
+    let mut bump = <Bump<Global, BumpSettings<1, UP>>>::new();
     let bump = bump.as_mut_scope();
 
     let _three = bump.allocate(Layout::new::<[u8; 3]>()).unwrap();

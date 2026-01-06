@@ -2,7 +2,7 @@
 
 use allocator_api2_02::{boxed::Box, vec::Vec};
 
-use crate::{alloc::Global, tests::Bump};
+use crate::{alloc::Global, settings::BumpSettings, tests::Bump};
 
 use super::either_way;
 
@@ -15,7 +15,7 @@ either_way! {
 }
 
 fn grow<const UP: bool>() {
-    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
     let mut vec = Vec::<i32, _>::new_in(&bump);
     assert_eq!(bump.stats().allocated(), 0);
@@ -40,7 +40,7 @@ fn grow<const UP: bool>() {
 }
 
 fn shrink<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
     let mut vec = Vec::<i32, _>::new_in(&bump);
     assert_eq!(bump.stats().allocated(), 0);
@@ -62,7 +62,7 @@ fn shrink<const UP: bool>() {
 }
 
 fn shrinknt<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
     let mut vec = Vec::<i32, _>::new_in(&bump);
     assert_eq!(bump.stats().allocated(), 0);

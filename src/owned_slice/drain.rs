@@ -274,10 +274,7 @@ unsafe impl<T> TakeOwnedSlice for Drain<'_, T> {
 mod tests {
     use std::{string::ToString, vec::Vec};
 
-    use crate::{
-        FixedBumpVec,
-        tests::{Bump, TestWrap},
-    };
+    use crate::{Bump, FixedBumpVec, tests::TestWrap};
 
     #[test]
     fn owned_slice() {

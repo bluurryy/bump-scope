@@ -1,4 +1,4 @@
-use crate::{BumpString, BumpVec, alloc::Global, tests::Bump};
+use crate::{BumpString, BumpVec, alloc::Global, settings::BumpSettings, tests::Bump};
 
 use super::either_way;
 
@@ -10,7 +10,7 @@ either_way! {
 }
 
 fn shrinks<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     let mut string = BumpString::from_str_in("1234", &bump);
     assert_eq!(bump.stats().allocated(), 4);
     string.pop();
@@ -22,7 +22,7 @@ fn shrinks<const UP: bool>() {
 }
 
 fn deallocates<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     let string = BumpString::from_str_in("123", &bump);
     assert_eq!(bump.stats().allocated(), 3);
     drop(string);
@@ -30,7 +30,7 @@ fn deallocates<const UP: bool>() {
 }
 
 fn into_str<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     let mut string = BumpString::from_str_in("12345", &bump);
     assert_eq!(bump.stats().allocated(), 5);
     string.truncate(3);
@@ -40,7 +40,7 @@ fn into_str<const UP: bool>() {
 }
 
 fn into_str_without_shrink<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     let mut string = BumpString::from_str_in("12345", &bump);
     assert_eq!(bump.stats().allocated(), 5);
     string.truncate(3);

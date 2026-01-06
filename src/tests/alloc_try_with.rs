@@ -5,7 +5,7 @@ use std::{
     mem::{self, offset_of},
 };
 
-use crate::{alloc::Global, tests::Bump};
+use crate::{alloc::Global, settings::BumpSettings, tests::Bump};
 
 use super::either_way;
 
@@ -38,7 +38,7 @@ type TestResult = Result<TestOk, TestErr>;
 
 #[cfg(feature = "nightly-tests")]
 fn basic_ok<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::with_size(SIZE);
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(SIZE);
     _ = bump.alloc_try_with(|| -> TestResult { Ok(zeroes()) });
 
     if UP {
@@ -52,7 +52,7 @@ fn basic_ok<const UP: bool>() {
 
 #[cfg(feature = "nightly-tests")]
 fn basic_ok_mut<const UP: bool>() {
-    let mut bump: Bump<Global, 1, UP> = Bump::with_size(SIZE);
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(SIZE);
     _ = bump.alloc_try_with_mut(|| -> TestResult { Ok(zeroes()) });
 
     if UP {
@@ -65,19 +65,19 @@ fn basic_ok_mut<const UP: bool>() {
 }
 
 fn basic_err<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::with_size(SIZE);
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(SIZE);
     _ = bump.alloc_try_with(|| -> Result<[u32; 32], [u32; 128]> { Err(zeroes()) });
     assert_eq!(bump.stats().allocated(), 0);
 }
 
 fn basic_err_mut<const UP: bool>() {
-    let mut bump: Bump<Global, 1, UP> = Bump::with_size(SIZE);
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(SIZE);
     _ = bump.alloc_try_with_mut(|| -> Result<[u32; 32], [u32; 128]> { Err(zeroes()) });
     assert_eq!(bump.stats().allocated(), 0);
 }
 
 fn alloc_in_closure_ok<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::with_size(SIZE);
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(SIZE);
 
     _ = bump.alloc_try_with(|| -> Result<[u32; 32], [u32; 128]> {
         bump.alloc(0u8);
@@ -89,7 +89,7 @@ fn alloc_in_closure_ok<const UP: bool>() {
 }
 
 fn alloc_in_closure_err<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::with_size(SIZE);
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(SIZE);
 
     _ = bump.alloc_try_with(|| -> Result<[u32; 32], [u32; 128]> {
         bump.alloc(0u8);
@@ -98,13 +98,6 @@ fn alloc_in_closure_err<const UP: bool>() {
 
     let expected = size_of::<TestResult>() + 1;
     assert_allocated!(bump, expected);
-}
-
-#[test]
-fn wat() {
-    let bump: Bump<Global, 1, false> = Bump::new();
-    bump.alloc(0u32);
-    dbg!(bump.stats().allocated());
 }
 
 either_way! {

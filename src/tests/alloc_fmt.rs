@@ -7,6 +7,7 @@ use std::{
 use crate::{
     alloc::{AllocError, Allocator, Global},
     bump_format, mut_bump_format,
+    settings::BumpSettings,
     tests::Bump,
 };
 
@@ -21,7 +22,7 @@ fn nothing<const UP: bool>() {
         }
     }
 
-    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
     bump.alloc_fmt(format_args!("{Nothing}"));
     bump.alloc_fmt_mut(format_args!("{Nothing}"));
@@ -30,14 +31,14 @@ fn nothing<const UP: bool>() {
 }
 
 fn nothing_extra<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     let string = bump.alloc_fmt(format_args!("ext{Nothing}ra"));
     assert_eq!(string, "extra");
     assert_eq!(bump.stats().allocated(), 5);
 }
 
 fn nothing_extra_mut<const UP: bool>() {
-    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     let string = bump.alloc_fmt_mut(format_args!("ext{Nothing}ra"));
     assert_eq!(string, "extra");
     drop(string);
@@ -53,13 +54,13 @@ impl Display for Nothing {
 }
 
 fn three<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     bump.alloc_fmt(format_args!("{}", 3.1));
     assert_eq!(bump.stats().allocated(), 3);
 }
 
 fn three_mut<const UP: bool>() {
-    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     bump.alloc_fmt_mut(format_args!("{}", 3.1));
     assert_eq!(bump.stats().allocated(), 3);
 }
@@ -73,22 +74,22 @@ impl Display for ErrorsOnFmt {
 }
 
 fn trait_panic<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     bump.alloc_fmt(format_args!("{ErrorsOnFmt}"));
 }
 
 fn trait_panic_mut<const UP: bool>() {
-    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     bump.alloc_fmt_mut(format_args!("{ErrorsOnFmt}"));
 }
 
 fn format_trait_panic<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     bump_format!(in &bump, "{ErrorsOnFmt}");
 }
 
 fn format_trait_panic_mut<const UP: bool>() {
-    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     mut_bump_format!(in &mut bump, "{ErrorsOnFmt}");
 }
 

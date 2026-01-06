@@ -1,9 +1,10 @@
 use core::{fmt::Debug, marker::PhantomData, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    Bump, BumpScope, MinimumAlignment, RawChunk, SupportedMinimumAlignment,
+    Bump, BumpScope, RawChunk,
     alloc::Allocator,
     chunk_header::ChunkHeader,
+    settings::{BumpAllocatorSettings, BumpSettings, True},
     stats::{AnyStats, Stats},
 };
 
@@ -15,9 +16,10 @@ pub struct Checkpoint {
 }
 
 impl Checkpoint {
-    pub(crate) fn new<A, const UP: bool, const GUARANTEED_ALLOCATED: bool>(
-        chunk: RawChunk<A, UP, GUARANTEED_ALLOCATED>,
-    ) -> Self {
+    pub(crate) fn new<A, S>(chunk: RawChunk<A, S>) -> Self
+    where
+        S: BumpAllocatorSettings,
+    {
         let address = chunk.pos().addr();
         let chunk = chunk.header().cast();
         Checkpoint { chunk, address }
@@ -32,29 +34,27 @@ impl Checkpoint {
 }
 
 /// Returned from [`BumpScope::scope_guard`].
-pub struct BumpScopeGuard<'a, A, const MIN_ALIGN: usize = 1, const UP: bool = true, const DEALLOCATES: bool = true>
+pub struct BumpScopeGuard<'a, A, S = BumpSettings>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
 {
-    pub(crate) chunk: RawChunk<A, UP, true>,
+    pub(crate) chunk: RawChunk<A, S>,
     address: usize,
     marker: PhantomData<&'a mut ()>,
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool> Debug
-    for BumpScopeGuard<'_, A, MIN_ALIGN, UP, DEALLOCATES>
+impl<A, S> Debug for BumpScopeGuard<'_, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         AnyStats::from(self.stats()).debug_format("BumpScopeGuard", f)
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool> Drop
-    for BumpScopeGuard<'_, A, MIN_ALIGN, UP, DEALLOCATES>
+impl<A, S> Drop for BumpScopeGuard<'_, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
 {
     #[inline(always)]
     fn drop(&mut self) {
@@ -62,18 +62,17 @@ where
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool>
-    BumpScopeGuard<'a, A, MIN_ALIGN, UP, DEALLOCATES>
+impl<'a, A, S> BumpScopeGuard<'a, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
 {
     #[inline(always)]
-    pub(crate) fn new(bump: &'a mut BumpScope<'_, A, MIN_ALIGN, UP, true, DEALLOCATES>) -> Self {
+    pub(crate) fn new(bump: &'a mut BumpScope<'_, A, S>) -> Self {
         unsafe { Self::new_unchecked(bump.chunk.get()) }
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, UP, true>) -> Self {
+    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, S>) -> Self {
         Self {
             chunk,
             address: chunk.pos().addr().get(),
@@ -83,7 +82,7 @@ where
 
     /// Returns a new `BumpScope`.
     #[inline(always)]
-    pub fn scope(&mut self) -> BumpScope<'_, A, MIN_ALIGN, UP, true, DEALLOCATES> {
+    pub fn scope(&mut self) -> BumpScope<'_, A, S> {
         unsafe { BumpScope::new_unchecked(self.chunk) }
     }
 
@@ -98,7 +97,7 @@ where
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'a, A, UP> {
+    pub fn stats(&self) -> Stats<'a, A, S> {
         self.chunk.stats()
     }
 
@@ -117,31 +116,29 @@ where
 ///
 /// It is allowed to do so because it takes a `&mut Bump` to create this guard. This means that no
 /// allocations can be live when the guard is created.
-pub struct BumpScopeGuardRoot<'b, A, const MIN_ALIGN: usize = 1, const UP: bool = true, const DEALLOCATES: bool = true>
+pub struct BumpScopeGuardRoot<'b, A, S = BumpSettings>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
 {
-    pub(crate) chunk: RawChunk<A, UP, true>,
+    pub(crate) chunk: RawChunk<A, S>,
     marker: PhantomData<&'b mut ()>,
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool> Debug
-    for BumpScopeGuardRoot<'_, A, MIN_ALIGN, UP, DEALLOCATES>
+impl<A, S> Debug for BumpScopeGuardRoot<'_, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         AnyStats::from(self.stats()).debug_format("BumpScopeGuardRoot", f)
     }
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool> Drop
-    for BumpScopeGuardRoot<'_, A, MIN_ALIGN, UP, DEALLOCATES>
+impl<A, S> Drop for BumpScopeGuardRoot<'_, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
 {
     #[inline(always)]
     fn drop(&mut self) {
@@ -149,19 +146,18 @@ where
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const DEALLOCATES: bool>
-    BumpScopeGuardRoot<'a, A, MIN_ALIGN, UP, DEALLOCATES>
+impl<'a, A, S> BumpScopeGuardRoot<'a, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     A: Allocator,
+    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
 {
     #[inline(always)]
-    pub(crate) fn new(bump: &'a mut Bump<A, MIN_ALIGN, UP, true, DEALLOCATES>) -> Self {
+    pub(crate) fn new(bump: &'a mut Bump<A, S>) -> Self {
         unsafe { Self::new_unchecked(bump.chunk.get()) }
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, UP, true>) -> Self {
+    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, S>) -> Self {
         Self {
             chunk,
             marker: PhantomData,
@@ -170,7 +166,7 @@ where
 
     /// Returns a new `BumpScope`.
     #[inline(always)]
-    pub fn scope(&mut self) -> BumpScope<'_, A, MIN_ALIGN, UP, true, DEALLOCATES> {
+    pub fn scope(&mut self) -> BumpScope<'_, A, S> {
         unsafe { BumpScope::new_unchecked(self.chunk) }
     }
 
@@ -183,7 +179,7 @@ where
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'a, A, UP> {
+    pub fn stats(&self) -> Stats<'a, A, S> {
         self.chunk.stats()
     }
 

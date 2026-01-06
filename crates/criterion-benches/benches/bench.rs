@@ -3,11 +3,12 @@
 use core::alloc::Layout;
 
 use bump_scope::{
-    BumpBox, MinimumAlignment, SupportedMinimumAlignment,
+    BumpBox,
     alloc::{AllocError, Global},
+    settings::{BumpSettings, MinimumAlignment, SupportedMinimumAlignment},
 };
 
-type Bump<const MIN_ALIGN: usize, const UP: bool> = bump_scope::Bump<Global, MIN_ALIGN, UP, true, true>;
+type Bump<const MIN_ALIGN: usize, const UP: bool> = bump_scope::Bump<Global, BumpSettings<MIN_ALIGN, UP>>;
 
 trait Bumper {
     fn with_capacity(layout: Layout) -> Self;

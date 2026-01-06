@@ -11,7 +11,7 @@ use core::{
     slice::{self},
 };
 
-use crate::{BumpAllocatorExt, BumpVec, SizedTypeProperties};
+use crate::{BumpVec, SizedTypeProperties, traits::BumpAllocatorTyped};
 
 /// A draining iterator for `BumpVec<T>`.
 ///
@@ -24,7 +24,7 @@ use crate::{BumpAllocatorExt, BumpVec, SizedTypeProperties};
 ///
 /// However just like the standard library we use a `Drain` implementation to implement
 /// `Splice`. For this particular case we *do* need a pointer to `BumpVec`.
-pub struct Drain<'a, T: 'a, A: BumpAllocatorExt> {
+pub struct Drain<'a, T: 'a, A: BumpAllocatorTyped> {
     /// Index of tail to preserve
     pub(super) tail_start: usize,
     /// Length of tail
@@ -34,13 +34,13 @@ pub struct Drain<'a, T: 'a, A: BumpAllocatorExt> {
     pub(super) vec: NonNull<BumpVec<T, A>>,
 }
 
-impl<T: Debug, A: BumpAllocatorExt> Debug for Drain<'_, T, A> {
+impl<T: Debug, A: BumpAllocatorTyped> Debug for Drain<'_, T, A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("Drain").field(&self.iter.as_slice()).finish()
     }
 }
 
-impl<T, A: BumpAllocatorExt> Drain<'_, T, A> {
+impl<T, A: BumpAllocatorTyped> Drain<'_, T, A> {
     /// Returns the remaining items of this iterator as a slice.
     ///
     /// # Examples
@@ -59,14 +59,14 @@ impl<T, A: BumpAllocatorExt> Drain<'_, T, A> {
     }
 }
 
-impl<T, A: BumpAllocatorExt> AsRef<[T]> for Drain<'_, T, A> {
+impl<T, A: BumpAllocatorTyped> AsRef<[T]> for Drain<'_, T, A> {
     #[inline(always)]
     fn as_ref(&self) -> &[T] {
         self.as_slice()
     }
 }
 
-impl<T, A: BumpAllocatorExt> Iterator for Drain<'_, T, A> {
+impl<T, A: BumpAllocatorTyped> Iterator for Drain<'_, T, A> {
     type Item = T;
 
     #[inline(always)]
@@ -80,20 +80,20 @@ impl<T, A: BumpAllocatorExt> Iterator for Drain<'_, T, A> {
     }
 }
 
-impl<T, A: BumpAllocatorExt> DoubleEndedIterator for Drain<'_, T, A> {
+impl<T, A: BumpAllocatorTyped> DoubleEndedIterator for Drain<'_, T, A> {
     #[inline(always)]
     fn next_back(&mut self) -> Option<T> {
         self.iter.next_back().map(|elt| unsafe { ptr::read(elt) })
     }
 }
 
-impl<T, A: BumpAllocatorExt> Drop for Drain<'_, T, A> {
+impl<T, A: BumpAllocatorTyped> Drop for Drain<'_, T, A> {
     #[inline]
     fn drop(&mut self) {
         /// Moves back the un-`Drain`ed elements to restore the original vector.
-        struct DropGuard<'r, 'a, T, A: BumpAllocatorExt>(&'r mut Drain<'a, T, A>);
+        struct DropGuard<'r, 'a, T, A: BumpAllocatorTyped>(&'r mut Drain<'a, T, A>);
 
-        impl<T, A: BumpAllocatorExt> Drop for DropGuard<'_, '_, T, A> {
+        impl<T, A: BumpAllocatorTyped> Drop for DropGuard<'_, '_, T, A> {
             fn drop(&mut self) {
                 if self.0.tail_len > 0 {
                     unsafe {
@@ -157,6 +157,6 @@ impl<T, A: BumpAllocatorExt> Drop for Drain<'_, T, A> {
     }
 }
 
-impl<T, A: BumpAllocatorExt> ExactSizeIterator for Drain<'_, T, A> {}
+impl<T, A: BumpAllocatorTyped> ExactSizeIterator for Drain<'_, T, A> {}
 
-impl<T, A: BumpAllocatorExt> FusedIterator for Drain<'_, T, A> {}
+impl<T, A: BumpAllocatorTyped> FusedIterator for Drain<'_, T, A> {}

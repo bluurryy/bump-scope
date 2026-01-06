@@ -9,7 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `alloc*` methods are now available for the `(Mut)BumpAllocatorScopeExt` traits
+- Add new `BumpAllocator(Scope)` trait that allows you to be generic over `Bump` and `BumpScope`
+- Add `SHRINKS` generic parameter, to toggle shrinking for the allocation api, `DEALLOCATES` no longer affects shrinking
 - Improve documentation
+
+### Fixed
+
+- **Breaking:** Fix `no_std` builds with "serde" feature by depending on serde without default features
+
+### Changed
+
+- **Breaking:** The generic const parameters have been consolidated into a single `Settings` parameter.
+- **Breaking:** Bump allocator traits have been moved and renamed:
+  - `(Mut)BumpAllocator` -> `traits::(Mut)BumpAllocatorCore`
+  - `(Mut)BumpAllocatorScope` -> `traits::(Mut)BumpAllocatorCoreScope`
+  - `(Mut)BumpAllocatorExt` -> `traits::(Mut)BumpAllocatorTyped`
+  - `(Mut)BumpAllocatorScopeExt` -> `traits::(Mut)BumpAllocatorTypedScope`
+- For non-guaranteed-allocated `Stats`, `current_chunk` has been renamed to `get_current_chunk`
+- For non-guaranteed-allocated `BumpScope`, `allocator` has been renamed to `get_allocator`
+- Depend on `serde_core` instead of `serde`
+
+### Removed
+
+- **Breaking:** Remove `alloc_layout` (`allocate_layout` provides the same functionality)
+- **Breaking:** Remove deprecated api
 
 ## [1.5.1] - 2025-12-21
 

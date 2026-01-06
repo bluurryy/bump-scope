@@ -2,13 +2,7 @@ use core::mem::MaybeUninit;
 
 use zerocopy_08::FromZeros;
 
-use crate::{
-    BaseAllocator, Bump, BumpBox, BumpScope, MinimumAlignment, SupportedMinimumAlignment, alloc::AllocError,
-    error_behavior::ErrorBehavior,
-};
-
-#[cfg(feature = "panic-on-alloc")]
-use crate::panic_on_error;
+use crate::{BaseAllocator, Bump, BumpBox, BumpScope, alloc::AllocError, settings::BumpAllocatorSettings};
 
 mod vec_ext;
 
@@ -80,11 +74,10 @@ mod bump_ext {
 
     pub trait Sealed {}
 
-    impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Sealed
-        for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    impl<A, S> Sealed for Bump<A, S>
     where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        A: BaseAllocator<GUARANTEED_ALLOCATED>,
+        A: BaseAllocator<S::GuaranteedAllocated>,
+        S: BumpAllocatorSettings,
     {
     }
 }
@@ -94,11 +87,10 @@ mod bump_scope_ext {
 
     pub trait Sealed {}
 
-    impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> Sealed
-        for BumpScope<'_, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+    impl<A, S> Sealed for BumpScope<'_, A, S>
     where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        A: BaseAllocator<GUARANTEED_ALLOCATED>,
+        A: BaseAllocator<S::GuaranteedAllocated>,
+        S: BumpAllocatorSettings,
     {
     }
 }
@@ -263,11 +255,10 @@ pub trait BumpScopeExt<'a>: bump_scope_ext::Sealed {
         T: FromZeros;
 }
 
-impl<A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool> BumpExt
-    for Bump<A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+impl<A, S> BumpExt for Bump<A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -304,11 +295,10 @@ where
     }
 }
 
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    BumpScopeExt<'a> for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
+impl<'a, A, S> BumpScopeExt<'a> for BumpScope<'a, A, S>
 where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -316,7 +306,7 @@ where
     where
         T: FromZeros,
     {
-        panic_on_error(self.generic_alloc_zeroed())
+        self.alloc_uninit().init_zeroed()
     }
 
     #[inline(always)]
@@ -324,7 +314,7 @@ where
     where
         T: FromZeros,
     {
-        self.generic_alloc_zeroed()
+        Ok(self.try_alloc_uninit()?.init_zeroed())
     }
 
     #[inline(always)]
@@ -333,7 +323,7 @@ where
     where
         T: FromZeros,
     {
-        panic_on_error(self.generic_alloc_zeroed_slice(len))
+        self.alloc_uninit_slice(len).init_zeroed()
     }
 
     #[inline(always)]
@@ -341,39 +331,6 @@ where
     where
         T: FromZeros,
     {
-        self.generic_alloc_zeroed_slice(len)
-    }
-}
-
-trait PrivateBumpScopeExt<'a> {
-    fn generic_alloc_zeroed<B: ErrorBehavior, T>(&self) -> Result<BumpBox<'a, T>, B>
-    where
-        T: FromZeros;
-
-    fn generic_alloc_zeroed_slice<B: ErrorBehavior, T>(&self, len: usize) -> Result<BumpBox<'a, [T]>, B>
-    where
-        T: FromZeros;
-}
-
-impl<'a, A, const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool>
-    PrivateBumpScopeExt<'a> for BumpScope<'a, A, MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    A: BaseAllocator<GUARANTEED_ALLOCATED>,
-{
-    #[inline(always)]
-    fn generic_alloc_zeroed<B: ErrorBehavior, T>(&self) -> Result<BumpBox<'a, T>, B>
-    where
-        T: FromZeros,
-    {
-        Ok(self.generic_alloc_uninit::<B, T>()?.init_zeroed())
-    }
-
-    #[inline(always)]
-    fn generic_alloc_zeroed_slice<B: ErrorBehavior, T>(&self, len: usize) -> Result<BumpBox<'a, [T]>, B>
-    where
-        T: FromZeros,
-    {
-        Ok(self.generic_alloc_uninit_slice::<B, T>(len)?.init_zeroed())
+        Ok(self.try_alloc_uninit_slice(len)?.init_zeroed())
     }
 }

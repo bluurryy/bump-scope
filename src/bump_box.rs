@@ -22,12 +22,13 @@ use alloc_crate::{string::String, vec::Vec};
 use alloc_crate::boxed::Box;
 
 use crate::{
-    BumpAllocatorScopeExt, FromUtf8Error, NoDrop, SizedTypeProperties,
+    FromUtf8Error, NoDrop, SizedTypeProperties,
     alloc::BoxLike,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     owned_str,
     polyfill::{self, non_null, pointer, transmute_mut},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
+    traits::BumpAllocatorTypedScope,
 };
 
 mod slice_initializer;
@@ -307,13 +308,13 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     #[inline(always)]
     pub fn into_box<A, B>(self, allocator: A) -> B
     where
-        A: BumpAllocatorScopeExt<'a>,
+        A: BumpAllocatorTypedScope<'a>,
         B: BoxLike<T = T, A = A>,
     {
         let ptr = BumpBox::into_raw(self).as_ptr();
 
         // SAFETY: bump might not be the allocator self was allocated with;
-        // that's fine though because a `BumpAllocator` allows deallocate calls
+        // that's fine though because a `BumpAllocatorCore` allows deallocate calls
         // from allocations that don't belong to it
         unsafe { B::from_raw_in(ptr, allocator) }
     }
@@ -439,18 +440,18 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// ```
     /// Manually create a `BumpBox` from scratch by using the bump allocator:
     /// ```
-    /// use bump_scope::{Bump, BumpBox};
+    /// use bump_scope::{Bump, BumpBox, alloc::Allocator};
     /// use core::alloc::Layout;
     /// use core::ptr::NonNull;
     ///
     /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, _bump: &'a Bump) -> BumpBox<'a, T> {
-    ///     BumpBox::from_raw(ptr)
+    ///     unsafe { BumpBox::from_raw(ptr) }
     /// }
     ///
     /// let bump: Bump = Bump::new();
     ///
     /// let five = unsafe {
-    ///     let ptr = bump.alloc_layout(Layout::new::<i32>());
+    ///     let ptr = bump.allocate(Layout::new::<i32>()).unwrap().cast::<i32>();
     ///     // In general .write is required to avoid attempting to destruct
     ///     // the (uninitialized) previous contents of `ptr`, though for this
     ///     // simple example `*ptr = 5` would have worked as well.
@@ -1655,26 +1656,6 @@ impl<'a, T> BumpBox<'a, [T]> {
         self.ptr.cast()
     }
 
-    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
-    /// valid for zero sized reads.
-    #[doc(hidden)]
-    #[deprecated = "renamed to `as_non_null`"]
-    #[must_use]
-    #[inline(always)]
-    pub fn as_non_null_ptr(&self) -> NonNull<T> {
-        self.ptr.cast()
-    }
-
-    /// Returns a raw nonnull pointer to the slice, or a dangling raw pointer
-    /// valid for zero sized reads.
-    #[doc(hidden)]
-    #[deprecated = "too niche; compute this yourself if needed"]
-    #[must_use]
-    #[inline(always)]
-    pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        self.ptr
-    }
-
     #[inline(always)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<T>) {
         non_null::set_ptr(&mut self.ptr, new_ptr);
@@ -2768,29 +2749,6 @@ impl<'a, T> BumpBox<'a, [T]> {
 
             BumpBox::from_raw(NonNull::slice_from_raw_parts(ptr.cast(), len))
         }
-    }
-}
-
-impl<'a, T, const N: usize> BumpBox<'a, [T; N]> {
-    /// Converts this `BumpBox<[T; N]>` into a `BumpBox<[T]>`.
-    ///
-    /// ```
-    /// # use bump_scope::{Bump, BumpBox};
-    /// # let bump: Bump = Bump::new();
-    /// // explicit types are just for demonstration
-    /// let array: BumpBox<[i32; 3]> = bump.alloc([1, 2, 3]);
-    /// # #[expect(deprecated)]
-    /// let slice: BumpBox<[i32]> = array.into_unsized();
-    /// assert_eq!(slice, [1, 2, 3]);
-    /// ```
-    #[doc(hidden)]
-    #[deprecated = "use `unsize_bump_box!` instead"]
-    #[must_use]
-    #[inline(always)]
-    pub fn into_unsized(self) -> BumpBox<'a, [T]> {
-        let ptr = non_null::as_non_null_ptr(self.into_raw());
-        let slice = NonNull::slice_from_raw_parts(ptr, N);
-        unsafe { BumpBox::from_raw(slice) }
     }
 }
 

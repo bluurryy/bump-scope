@@ -94,9 +94,9 @@
 //! - You can allocate a slice from any `Iterator` with [`alloc_iter`](Bump::alloc_iter).
 //! - `Bump`'s base allocator is generic.
 //! - Won't try to allocate a smaller chunk if allocation failed.
-//! - No built-in allocation limit. You can provide an allocator that enforces an allocation limit (see `tests/limit_memory_usage.rs`).
+//! - No built-in allocation limit. You can provide an allocator that enforces an allocation limit (see `examples/limit_memory_usage.rs`).
 //! - Allocations are a tiny bit more optimized. See [./crates/callgrind-benches][benches].
-//! - [You can choose the bump direction.](#bumping-upwards-or-downwards) Bumps upwards by default.
+//! - [You can choose the bump direction.](crate::settings#bumping-upwards-or-downwards) Bumps upwards by default.
 //!
 //! # Allocator Methods
 //!
@@ -209,8 +209,8 @@
 //!
 //! A bump allocator does not require `deallocate` or `shrink` to free memory.
 //! After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
-//! You can set the `DEALLOCATES` const parameter to `false` to make shrinking and deallocating a no-op.
-//! There are also the [`WithoutDealloc`] and [`WithoutShrink`] wrappers.
+//! You can set the `DEALLOCATES` and `SHRINKS` parameters to false or use the [`WithoutDealloc`] and [`WithoutShrink`] wrappers
+//! to make deallocating and shrinking a no-op.
 //! ```
 //! # #[cfg(feature = "allocator-api2-04")]
 //! # {
@@ -282,47 +282,6 @@
 //! - **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](Bump::alloc_clone) method to `Bump(Scope)`.
 //! <!-- feature documentation end -->
 //!
-//! # Bumping upwards or downwards?
-//! Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
-//!
-//! Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
-//! This benefits collections as well as <code>[alloc_iter](Bump::alloc_iter)([_mut](Bump::alloc_iter_mut))</code> and <code>[alloc_fmt](Bump::alloc_fmt)([_mut](Bump::alloc_fmt_mut))</code>
-//! with the exception of [`MutBumpVecRev`] and [`alloc_iter_mut_rev`](Bump::alloc_iter_mut_rev) which
-//! can be grown and shrunk in place if and only if bumping downwards.
-//!
-//! Bumping downwards can be done in less instructions.
-//!
-//! For the performance impact see [./crates/callgrind-benches][benches].
-//!
-//! # What is minimum alignment?
-//! Minimum alignment is the alignment the bump pointer maintains when doing allocations.
-//!
-//! When allocating a type in a bump allocator with a sufficient minimum alignment,
-//! the bump pointer will not have to be aligned for the allocation but the allocation size
-//! will need to be rounded up to the next multiple of the minimum alignment.
-//!
-//! The minimum alignment is controlled by the generic parameter `const MIN_ALIGN: usize`. By default, `MIN_ALIGN` is `1`.
-//!
-//! For the performance impact see [./crates/callgrind-benches][benches].
-//!
-//! # What does *guaranteed allocated* mean?
-//!
-//! A *guaranteed allocated* bump allocator will own at least one chunk that it has allocated
-//! from its base allocator.
-//!
-//! The constructors [`new`], [`with_size`], [`with_capacity`] and their variants always allocate
-//! one chunk from the base allocator.
-//!
-//! The exception is the [`unallocated`] constructor which creates a `Bump` without allocating any
-//! chunks. Such a `Bump` will have the `GUARANTEED_ALLOCATED` generic parameter of `false`
-//! which will make the [`scoped`], [`scoped_aligned`], [`aligned`] and [`scope_guard`] methods unavailable.
-//!
-//! You can turn any non-`GUARANTEED_ALLOCATED` bump allocator into a guaranteed allocated one using
-//! [`as_guaranteed_allocated`], [`as_mut_guaranteed_allocated`] or [`into_guaranteed_allocated`].
-//!
-//! The point of this is so `Bump`s can be `const` constructed and constructed without allocating.
-//! At the same time `Bump`s that have already allocated a chunk don't suffer additional runtime checks.
-//!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
 //! [`new`]: Bump::new
 //! [`with_size`]: Bump::with_size
@@ -385,8 +344,10 @@ mod raw_fixed_bump_string;
 mod raw_fixed_bump_vec;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
+pub mod settings;
 pub mod stats;
-mod traits;
+/// Traits that provide ways to be generic over `Bump(Scope)`s.
+pub mod traits;
 mod without_dealloc;
 
 use alloc::Allocator;
@@ -418,10 +379,6 @@ pub use no_drop::NoDrop;
 use private::{PanicsOnAlloc, capacity_overflow, format_trait_error};
 use raw_chunk::RawChunk;
 use set_len_on_drop::SetLenOnDrop;
-pub use traits::{
-    BumpAllocator, BumpAllocatorExt, BumpAllocatorScope, BumpAllocatorScopeExt, MutBumpAllocator, MutBumpAllocatorExt,
-    MutBumpAllocatorScope, MutBumpAllocatorScopeExt,
-};
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
 #[doc = include_str!("../CHANGELOG.md")]
@@ -439,47 +396,6 @@ pub mod bytemuck {
 pub mod zerocopy_08 {
     pub use crate::features::zerocopy_08::{BumpExt, BumpScopeExt, InitZeroed, VecExt};
 }
-
-/// Specifies the current minimum alignment of a bump allocator.
-#[derive(Clone, Copy)]
-pub struct MinimumAlignment<const ALIGNMENT: usize>;
-
-mod supported_minimum_alignment {
-    use crate::ArrayLayout;
-
-    pub trait Sealed {
-        /// We'd be fine with just an [`core::ptr::Alignment`], but that's not stable.
-        #[doc(hidden)]
-        const LAYOUT: ArrayLayout;
-
-        #[doc(hidden)]
-        const MIN_ALIGN: usize;
-    }
-}
-
-/// Statically guarantees that a minimum alignment is supported.
-///
-/// This trait is *sealed*: the list of implementors below is total. Users do not have the ability to mark additional
-/// `MinimumAlignment<N>` values as supported. Only bump allocators with the supported minimum alignments are constructable.
-pub trait SupportedMinimumAlignment: supported_minimum_alignment::Sealed + Copy {}
-
-macro_rules! supported_alignments {
-    ($($i:literal)*) => {
-        $(
-            impl supported_minimum_alignment::Sealed for MinimumAlignment<$i> {
-                const LAYOUT: ArrayLayout = match ArrayLayout::from_size_align(0, $i) {
-                    Ok(layout) => layout,
-                    Err(_) => unreachable!(),
-                };
-
-                const MIN_ALIGN: usize = $i;
-            }
-            impl SupportedMinimumAlignment for MinimumAlignment<$i> {}
-        )*
-    };
-}
-
-supported_alignments!(1 2 4 8 16);
 
 /// Does not check for overflow.
 #[inline(always)]
@@ -583,28 +499,15 @@ trait SizedTypeProperties: Sized {
 
 impl<T> SizedTypeProperties for T {}
 
-macro_rules! const_param_assert {
-    (
-        ($(const $param_ident:ident: $param_ty:ident),+) => $($assert_args:tt)*
-    ) => {{
-            struct ConstParamAssert<$(const $param_ident: $param_ty),+> {}
-            impl<$(const $param_ident: $param_ty),+> ConstParamAssert<$($param_ident),+> {
-                const CONST_PARAM_ASSERT: () = assert!($($assert_args)*);
-            }
-            #[expect(unused_variables)]
-            let assertion = ConstParamAssert::<$($param_ident),+>::CONST_PARAM_ASSERT;
-    }};
-}
-
-pub(crate) use const_param_assert;
-
 mod supported_base_allocator {
-    pub trait Sealed<const GUARANTEED_ALLOCATED: bool> {
+    use crate::settings::{Boolean, False, True};
+
+    pub trait Sealed<GuaranteedAllocated: Boolean> {
         #[doc(hidden)]
         fn default_or_panic() -> Self;
     }
 
-    impl<A> Sealed<false> for A
+    impl<A> Sealed<False> for A
     where
         A: Default,
     {
@@ -613,7 +516,7 @@ mod supported_base_allocator {
         }
     }
 
-    impl<A> Sealed<true> for A {
+    impl<A> Sealed<True> for A {
         fn default_or_panic() -> Self {
             unreachable!("default should not be required for `GUARANTEED_ALLOCATED` bump allocators");
         }
@@ -622,18 +525,18 @@ mod supported_base_allocator {
 
 /// Trait that the base allocator of a `Bump` is required to implement to make allocations.
 ///
-/// Every [`Allocator`] that implements [`Clone`] automatically implements `BaseAllocator` when `GUARANTEED_ALLOCATED`.
+/// Every [`Allocator`] that implements [`Clone`] automatically implements `BaseAllocator` when `GuaranteedAllocated`.
 /// When not guaranteed allocated, allocators are additionally required to implement [`Default`].
 ///
 /// This trait is *sealed*: the list of implementors below is total.
-pub trait BaseAllocator<const GUARANTEED_ALLOCATED: bool = true>:
-    Allocator + Clone + supported_base_allocator::Sealed<GUARANTEED_ALLOCATED>
+pub trait BaseAllocator<GuaranteedAllocated: Boolean>:
+    Allocator + Clone + supported_base_allocator::Sealed<GuaranteedAllocated>
 {
 }
 
-impl<A> BaseAllocator<false> for A where A: Allocator + Clone + Default {}
+impl<A> BaseAllocator<False> for A where A: Allocator + Clone + Default {}
 
-impl<A> BaseAllocator<true> for A where A: Allocator + Clone {}
+impl<A> BaseAllocator<True> for A where A: Allocator + Clone {}
 
 /// Call this with a macro that accepts tokens of either `A` or `A = $crate::alloc::Global`.
 ///
@@ -655,6 +558,8 @@ macro_rules! maybe_default_allocator {
 
 pub(crate) use maybe_default_allocator;
 
+use crate::settings::{Boolean, False, True};
+
 // (copied from rust standard library)
 //
 // Tiny Vecs are dumb. Skip to:
@@ -672,24 +577,21 @@ const fn min_non_zero_cap(size: usize) -> usize {
     }
 }
 
-/// Aligns a bump address to the `MIN_ALIGN`.
+/// Aligns a bump address to the `min_align`.
 ///
-/// This is a noop when `MIN_ALIGN` is `0`.
+/// This is a noop when `min_align` is `0`.
 #[must_use]
 #[inline(always)]
-fn align_pos<const MIN_ALIGN: usize, const UP: bool>(pos: NonZeroUsize) -> usize
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-{
-    if UP {
+fn align_pos(up: bool, min_align: usize, pos: NonZeroUsize) -> usize {
+    if up {
         // Aligning an address that is `<= range.end` with an alignment
         // that is `<= MIN_CHUNK_ALIGN` cannot exceed `range.end` and
         // cannot overflow as `range.end` is always aligned to `MIN_CHUNK_ALIGN`.
-        up_align_usize_unchecked(pos.get(), MIN_ALIGN)
+        up_align_usize_unchecked(pos.get(), min_align)
     } else {
         // The chunk start is non-null and is aligned to `MIN_CHUNK_ALIGN`
         // `MIN_ALIGN <= MIN_CHUNK_ALIGN` will never pass the chunk start
         // and stay non-zero.
-        down_align_usize(pos.get(), MIN_ALIGN)
+        down_align_usize(pos.get(), min_align)
     }
 }

@@ -9,11 +9,14 @@ use std::{
 };
 
 use crate::{
-    BumpAllocator, BumpAllocatorExt, BumpAllocatorScope, BumpVec, MutBumpAllocator, MutBumpAllocatorScope, WithoutDealloc,
-    WithoutShrink,
+    BumpVec, WithoutDealloc, WithoutShrink,
     alloc::Global,
     bump_vec,
+    settings::BumpSettings,
     tests::{Bump, BumpScope, expect_no_panic},
+    traits::{
+        BumpAllocatorCore, BumpAllocatorCoreScope, BumpAllocatorTyped, MutBumpAllocatorCore, MutBumpAllocatorCoreScope,
+    },
 };
 
 use super::either_way;
@@ -37,7 +40,7 @@ either_way! {
 }
 
 fn shrinks<const UP: bool>() {
-    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
     // should shrink
     let mut vec = bump_vec![in &bump; 1, 2, 3, 4];
@@ -75,7 +78,7 @@ fn shrinks<const UP: bool>() {
 }
 
 fn deallocates<const UP: bool>() {
-    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
     // should deallocate
     let vec = bump_vec![in &bump; 1, 2, 3];
@@ -99,7 +102,7 @@ fn deallocates<const UP: bool>() {
 }
 
 fn into_slice<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     let mut vec = bump_vec![in &bump; 1, 2, 3, 4, 5];
     assert_eq!(bump.stats().allocated(), 5 * 4);
     vec.truncate(3);
@@ -109,7 +112,7 @@ fn into_slice<const UP: bool>() {
 }
 
 fn into_slice_without_shrink<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     let mut vec = bump_vec![in &bump; 1, 2, 3, 4, 5];
     assert_eq!(bump.stats().allocated(), 5 * 4);
     vec.truncate(3);
@@ -141,7 +144,7 @@ fn buf_reserve() {
 
 fn map_same_layout<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, 1, UP> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -174,7 +177,7 @@ fn map_same_layout<const UP: bool>() {
 
 fn map_smaller_layout<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, 1, UP> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -229,7 +232,7 @@ fn map_smaller_layout<const UP: bool>() {
 
 fn map_bigger_layout<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, 1, UP> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -266,7 +269,7 @@ fn map_bigger_layout<const UP: bool>() {
 
 fn map_to_zst<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, 1, UP> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -297,7 +300,7 @@ fn map_to_zst<const UP: bool>() {
 
 fn map_from_zst<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, 1, UP> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -329,7 +332,7 @@ fn map_from_zst<const UP: bool>() {
 
 fn map_from_zst_to_zst<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, 1, UP> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -360,7 +363,7 @@ fn map_from_zst_to_zst<const UP: bool>() {
 
 fn map_in_place_same_layout<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, 1, UP> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -393,7 +396,7 @@ fn map_in_place_same_layout<const UP: bool>() {
 
 fn map_in_place_smaller_layout<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, 1, UP> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -448,7 +451,7 @@ fn map_in_place_smaller_layout<const UP: bool>() {
 
 fn map_in_place_to_zst<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, 1, UP> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -484,7 +487,7 @@ fn map_in_place_to_zst<const UP: bool>() {
 
 fn map_in_place_from_zst_to_zst<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, 1, UP> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -523,7 +526,7 @@ fn test_dyn_allocator<const UP: bool>() {
         range.map(|i| i.to_string())
     }
 
-    fn test<B: BumpAllocatorExt>(bump: B) {
+    fn test<B: BumpAllocatorTyped>(bump: B) {
         const ITEM_SIZE: usize = size_of::<String>();
         assert_eq!(bump.any_stats().allocated(), 0);
         let mut vec = BumpVec::from_iter_in(numbers(1..4), &bump);
@@ -574,12 +577,12 @@ fn test_dyn_allocator<const UP: bool>() {
     Bump::new().scoped(|bump| test::<&BumpScope>(&bump));
     Bump::new().scoped(|mut bump| test::<&mut BumpScope>(&mut bump));
 
-    test::<&dyn BumpAllocator>(&<Bump>::new());
-    test::<&mut dyn BumpAllocator>(&mut <Bump>::new());
-    test::<&dyn MutBumpAllocator>(&<Bump>::new());
-    test::<&mut dyn MutBumpAllocator>(&mut <Bump>::new());
-    test::<&dyn BumpAllocatorScope>(<Bump>::new().as_scope());
-    test::<&mut dyn BumpAllocatorScope>(<Bump>::new().as_mut_scope());
-    test::<&dyn MutBumpAllocatorScope>(<Bump>::new().as_scope());
-    test::<&mut dyn MutBumpAllocatorScope>(<Bump>::new().as_mut_scope());
+    test::<&dyn BumpAllocatorCore>(&<Bump>::new());
+    test::<&mut dyn BumpAllocatorCore>(&mut <Bump>::new());
+    test::<&dyn MutBumpAllocatorCore>(&<Bump>::new());
+    test::<&mut dyn MutBumpAllocatorCore>(&mut <Bump>::new());
+    test::<&dyn BumpAllocatorCoreScope>(<Bump>::new().as_scope());
+    test::<&mut dyn BumpAllocatorCoreScope>(<Bump>::new().as_mut_scope());
+    test::<&dyn MutBumpAllocatorCoreScope>(<Bump>::new().as_scope());
+    test::<&mut dyn MutBumpAllocatorCoreScope>(<Bump>::new().as_mut_scope());
 }

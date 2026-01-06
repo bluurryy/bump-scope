@@ -9,7 +9,10 @@ use core::{
 };
 use std::sync::{Mutex, PoisonError};
 
-use bump_scope::alloc::{AllocError, Allocator};
+use bump_scope::{
+    alloc::{AllocError, Allocator},
+    traits::BumpAllocatorTyped,
+};
 
 #[repr(C, align(16))]
 struct StaticAllocator<const SIZE: usize> {
@@ -102,7 +105,7 @@ unsafe impl<const SIZE: usize> Allocator for &StaticAllocator<SIZE> {
     }
 }
 
-type Bump<A> = bump_scope::Bump<A, 1, true, true, true>;
+type Bump<A> = bump_scope::Bump<A>;
 
 fn on_stack() {
     let memory = StaticAllocator::<1024>::new();
@@ -113,7 +116,7 @@ fn on_stack() {
     let str = bump.alloc_str("It works!");
     println!("{str}");
 
-    bump.try_alloc_layout(Layout::new::<[u8; 2048]>()).unwrap_err();
+    bump.try_allocate_layout(Layout::new::<[u8; 2048]>()).unwrap_err();
 }
 
 fn on_static() {
@@ -127,10 +130,9 @@ fn on_static() {
     let str = bump.alloc_str("It works!");
     println!("{str}");
 
-    bump.try_alloc_layout(Layout::new::<[u8; 2048]>()).unwrap_err();
+    bump.try_allocate_layout(Layout::new::<[u8; 2048]>()).unwrap_err();
 }
 
-#[test]
 fn main() {
     on_stack();
     on_static();

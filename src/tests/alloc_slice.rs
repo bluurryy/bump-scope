@@ -1,13 +1,13 @@
 use std::string::{String, ToString};
 
-use crate::{alloc::Global, tests::Bump};
+use crate::{alloc::Global, settings::BumpSettings, tests::Bump};
 
 use super::either_way;
 
 fn zst<const UP: bool>() {
     const ZST: [u64; 0] = [0u64; 0];
 
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
     bump.alloc_slice_copy(&[ZST; 10]);
     bump.alloc_slice_clone(&[ZST; 10]);
@@ -18,7 +18,7 @@ fn zst<const UP: bool>() {
 }
 
 fn empty<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
     bump.alloc_slice_copy::<u64>(&[]);
     bump.alloc_slice_clone::<String>(&[]);
@@ -31,7 +31,7 @@ fn empty<const UP: bool>() {
 }
 
 fn overflow<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     bump.alloc_slice_fill_with(usize::MAX, u64::default);
 }
 

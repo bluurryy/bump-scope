@@ -9,7 +9,7 @@ either_way! {
 }
 
 fn bump_vec<const UP: bool>() {
-    let bump = Bump::<Global, 1, UP>::new();
+    let bump = Bump::<Global, BumpSettings<1, UP>>::new();
 
     bump.alloc(8u8);
 
@@ -21,7 +21,7 @@ fn bump_vec<const UP: bool>() {
 }
 
 fn mut_bump_vec<const UP: bool>() {
-    let mut bump = Bump::<Global, 1, UP>::new();
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::new();
 
     bump.alloc(8u8);
 
@@ -33,7 +33,7 @@ fn mut_bump_vec<const UP: bool>() {
 }
 
 fn mut_bump_vec_rev<const UP: bool>() {
-    let mut bump = Bump::<Global, 1, UP>::new();
+    let mut bump = Bump::<Global, BumpSettings<1, UP>>::new();
 
     bump.alloc(8u8);
 

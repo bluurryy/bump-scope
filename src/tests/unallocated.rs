@@ -1,9 +1,10 @@
 use core::alloc::Layout;
 
 use crate::{
-    BumpAllocator, BumpAllocatorExt,
     alloc::{Allocator, Global},
+    settings::{BumpAllocatorSettings, BumpSettings},
     tests::either_way,
+    traits::{BumpAllocatorCore, BumpAllocatorTyped},
 };
 
 either_way! {
@@ -20,7 +21,7 @@ either_way! {
     non_default_base_allocator
 }
 
-type Bump<const UP: bool, A = Global> = crate::Bump<A, 1, UP, false, true>;
+type Bump<const UP: bool, A = Global> = crate::Bump<A, BumpSettings<1, UP, false, true>>;
 
 fn allocated<const UP: bool>() {
     let bump = <Bump<UP>>::new();
@@ -105,11 +106,11 @@ fn checkpoint_multiple_chunks<const UP: bool>() {
     allocate_another_chunk(&bump, 3);
     allocate_another_chunk(&bump, 4);
 
-    assert_eq!(bump.stats().current_chunk().unwrap().iter_prev().count(), 3);
+    assert_eq!(bump.stats().get_current_chunk().unwrap().iter_prev().count(), 3);
     unsafe { bump.reset_to(c2) };
-    assert_eq!(bump.stats().current_chunk().unwrap().iter_prev().count(), 1);
+    assert_eq!(bump.stats().get_current_chunk().unwrap().iter_prev().count(), 1);
     unsafe { bump.reset_to(c0) };
-    assert_eq!(bump.stats().current_chunk().unwrap().iter_prev().count(), 0);
+    assert_eq!(bump.stats().get_current_chunk().unwrap().iter_prev().count(), 0);
     assert_eq!(bump.stats().count(), 4);
     std::dbg!(bump.stats());
 }
@@ -117,16 +118,16 @@ fn checkpoint_multiple_chunks<const UP: bool>() {
 fn allocate_another_chunk<const UP: bool>(bump: &Bump<UP>, dummy_size: usize) {
     let start_chunks = bump.any_stats().count();
     let remaining = bump.any_stats().remaining();
-    bump.alloc_layout(Layout::from_size_align(remaining, 1).unwrap());
+    bump.allocate_layout(Layout::from_size_align(remaining, 1).unwrap());
     assert_eq!(bump.any_stats().count(), start_chunks);
-    bump.alloc_layout(Layout::from_size_align(dummy_size, 1).unwrap());
+    bump.allocate_layout(Layout::from_size_align(dummy_size, 1).unwrap());
     assert_eq!(bump.any_stats().count(), start_chunks + 1);
     assert_eq!(bump.any_stats().current_chunk().unwrap().allocated(), dummy_size);
 }
 
 fn allocate_zero_layout<const UP: bool>() {
     let bump = <Bump<UP>>::unallocated();
-    bump.alloc_layout(Layout::new::<()>());
+    bump.allocate_layout(Layout::new::<()>());
 }
 
 fn reset<const UP: bool>() {

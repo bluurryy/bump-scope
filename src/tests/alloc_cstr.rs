@@ -1,6 +1,6 @@
 use core::fmt;
 
-use crate::{alloc::Global, tests::Bump};
+use crate::{alloc::Global, settings::BumpSettings, tests::Bump};
 
 use super::either_way;
 
@@ -15,7 +15,7 @@ either_way! {
 }
 
 fn simple<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     let input = c"123456789";
     let allocated = bump.alloc_cstr(input);
     assert_eq!(allocated, input);
@@ -23,7 +23,7 @@ fn simple<const UP: bool>() {
 }
 
 fn from_str<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     let input = "123456789";
     let expected = c"123456789";
     let allocated = bump.alloc_cstr_from_str(input);
@@ -32,7 +32,7 @@ fn from_str<const UP: bool>() {
 }
 
 fn empty<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     let input = c"";
     let allocated = bump.alloc_cstr(input);
     assert_eq!(allocated, input);
@@ -40,14 +40,14 @@ fn empty<const UP: bool>() {
 }
 
 fn fmt<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     let allocated = bump.alloc_cstr_fmt(format_args!("1 + 2 = {}", 1 + 2));
     assert_eq!(allocated, c"1 + 2 = 3");
     assert_eq!(bump.stats().allocated(), 10);
 }
 
 fn interior_null_from_str<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     let input = "hello\0world";
     let allocated = bump.alloc_cstr_from_str(input);
     assert_eq!(allocated, c"hello");
@@ -55,7 +55,7 @@ fn interior_null_from_str<const UP: bool>() {
 }
 
 fn interior_null_fmt<const UP: bool>() {
-    let bump: Bump<Global, 1, UP> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     let hello = "hello";
     let world = "world";
     let allocated = bump.alloc_cstr_fmt(assert_multiple(format_args!("{hello}\0{world}")));
@@ -65,7 +65,7 @@ fn interior_null_fmt<const UP: bool>() {
 }
 
 fn interior_null_fmt_mut<const UP: bool>() {
-    let mut bump: Bump<Global, 1, UP> = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     let hello = "hello";
     let world = "world";
     let allocated = bump.alloc_cstr_fmt_mut(assert_multiple(format_args!("{hello}\0{world}")));

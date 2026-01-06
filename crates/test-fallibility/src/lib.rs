@@ -8,6 +8,8 @@ use alloc::boxed::Box;
 
 use bump_scope::{
     alloc::{AllocError, Allocator, Global},
+    settings::BumpSettings,
+    traits::BumpAllocatorTyped,
     zerocopy_08::{BumpExt, VecExt},
     BumpBox, FixedBumpString, FixedBumpVec,
 };
@@ -16,10 +18,13 @@ type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 
 macro_rules! type_definitions {
     ($up:literal) => {
-        type Bump<const MIN_ALIGN: usize = 1> = bump_scope::Bump<Global, MIN_ALIGN, $up, true, true>;
-        type BumpScope<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScope<'a, Global, MIN_ALIGN, $up, true, true>;
-        type BumpScopeGuard<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuard<'a, Global, MIN_ALIGN, $up>;
-        type BumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuardRoot<'a, Global, MIN_ALIGN, $up>;
+        type Bump<const MIN_ALIGN: usize = 1> = bump_scope::Bump<Global, BumpSettings<MIN_ALIGN, $up, true, true>>;
+        type BumpScope<'a, const MIN_ALIGN: usize = 1> =
+            bump_scope::BumpScope<'a, Global, BumpSettings<MIN_ALIGN, $up, true, true>>;
+        type BumpScopeGuard<'a, const MIN_ALIGN: usize = 1> =
+            bump_scope::BumpScopeGuard<'a, Global, BumpSettings<MIN_ALIGN, $up>>;
+        type BumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> =
+            bump_scope::BumpScopeGuardRoot<'a, Global, BumpSettings<MIN_ALIGN, $up>>;
         type BumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<T, &'a Bump>;
         type BumpString<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<&'a Bump>;
         type MutBumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<T, &'a mut Bump<MIN_ALIGN>>;
@@ -159,8 +164,8 @@ up_and_down! {
         bump.try_alloc_iter_mut_rev(value)
     }
 
-    pub fn Bump_try_alloc_layout(bump: &Bump, layout: Layout) -> Result<NonNull<u8>> {
-        bump.try_alloc_layout(layout)
+    pub fn Bump_try_allocate_layout(bump: &Bump, layout: Layout) -> Result<NonNull<u8>> {
+        bump.try_allocate_layout(layout)
     }
 
     pub fn Bump_try_alloc_slice_move<'a>(bump: &'a Bump, value: [u32; 4]) -> Result<BumpBox<'a, [u32]>> {

@@ -4,11 +4,12 @@ use core::{
 };
 
 use crate::{
-    BumpAllocatorExt, FixedBumpVec, MutBumpAllocatorExt, SizedTypeProperties,
+    FixedBumpVec, SizedTypeProperties,
     error_behavior::ErrorBehavior,
     polyfill::{non_null, transmute_mut, transmute_ref},
     raw_bump_box::RawBumpBox,
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
+    traits::{BumpAllocatorTyped, MutBumpAllocatorTyped},
 };
 
 /// Like [`FixedBumpVec`] but without its lifetime.
@@ -23,15 +24,6 @@ impl<T> RawFixedBumpVec<T> {
         initialized: RawBumpBox::EMPTY,
         capacity: if T::IS_ZST { usize::MAX } else { 0 },
     };
-
-    pub(crate) const unsafe fn new_zst(len: usize) -> Self {
-        assert!(T::IS_ZST);
-
-        RawFixedBumpVec {
-            initialized: unsafe { RawBumpBox::from_ptr(NonNull::slice_from_raw_parts(NonNull::dangling(), len)) },
-            capacity: usize::MAX,
-        }
-    }
 
     #[inline(always)]
     pub(crate) const unsafe fn cook<'a>(self) -> FixedBumpVec<'a, T> {
@@ -58,7 +50,7 @@ impl<T> RawFixedBumpVec<T> {
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn allocate<B: ErrorBehavior>(allocator: &impl BumpAllocatorExt, len: usize) -> Result<Self, B> {
+    pub(crate) unsafe fn allocate<B: ErrorBehavior>(allocator: &impl BumpAllocatorTyped, len: usize) -> Result<Self, B> {
         let ptr = B::allocate_slice::<T>(allocator, len)?;
 
         Ok(Self {
@@ -69,7 +61,7 @@ impl<T> RawFixedBumpVec<T> {
 
     #[inline(always)]
     pub(crate) unsafe fn prepare_allocation<B: ErrorBehavior>(
-        allocator: &mut impl MutBumpAllocatorExt,
+        allocator: &mut impl MutBumpAllocatorTyped,
         len: usize,
     ) -> Result<Self, B> {
         unsafe {
@@ -85,7 +77,7 @@ impl<T> RawFixedBumpVec<T> {
     /// `new_cap` must be greater than `self.capacity`
     pub(crate) unsafe fn grow_prepared_allocation<B: ErrorBehavior>(
         &mut self,
-        allocator: &mut impl MutBumpAllocatorExt,
+        allocator: &mut impl MutBumpAllocatorTyped,
         minimum_new_cap: usize,
     ) -> Result<(), B> {
         unsafe {
@@ -128,14 +120,6 @@ impl<T> RawFixedBumpVec<T> {
     #[inline(always)]
     pub const fn as_non_null(&self) -> NonNull<T> {
         self.initialized.as_non_null().cast()
-    }
-
-    #[doc(hidden)]
-    #[deprecated = "too niche; compute this yourself if needed"]
-    #[must_use]
-    #[inline(always)]
-    pub fn as_non_null_slice(&self) -> NonNull<[T]> {
-        self.initialized.as_non_null()
     }
 
     #[inline(always)]

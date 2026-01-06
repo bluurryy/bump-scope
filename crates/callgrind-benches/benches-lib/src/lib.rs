@@ -7,12 +7,10 @@ use allocator_api2::alloc::{AllocError, Allocator};
 mod wrapper {
     pub(crate) mod bump_scope_up {
         use ::allocator_api2::alloc::Allocator;
-        use ::bump_scope::{MinimumAlignment, SupportedMinimumAlignment};
+        use ::bump_scope::settings::{BumpSettings, MinimumAlignment, SupportedMinimumAlignment};
 
         #[repr(transparent)]
-        pub struct Bump<const MIN_ALIGN: usize = 1>(
-            bump_scope::Bump<bump_scope::alloc::Global, MIN_ALIGN, true, true, true>,
-        )
+        pub struct Bump<const MIN_ALIGN: usize = 1>(bump_scope::Bump<bump_scope::alloc::Global, BumpSettings<MIN_ALIGN>>)
         where
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment;
 
@@ -70,11 +68,11 @@ mod wrapper {
 
     pub(crate) mod bump_scope_down {
         use ::allocator_api2::alloc::Allocator;
-        use ::bump_scope::{MinimumAlignment, SupportedMinimumAlignment};
+        use ::bump_scope::settings::{BumpSettings, MinimumAlignment, SupportedMinimumAlignment};
 
         #[repr(transparent)]
         pub struct Bump<const MIN_ALIGN: usize = 1>(
-            bump_scope::Bump<bump_scope::alloc::Global, MIN_ALIGN, false, true, true>,
+            bump_scope::Bump<bump_scope::alloc::Global, BumpSettings<MIN_ALIGN, false>>,
         )
         where
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment;

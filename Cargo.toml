@@ -1,6 +1,6 @@
 [package]
 name = "bump-scope"
-version = "1.5.1"
+version = "2.0.0-dev"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 description = "A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types."
@@ -10,14 +10,7 @@ documentation = "https://docs.rs/bump-scope"
 repository = "https://github.com/bluurryy/bump-scope"
 rust-version = "1.85.1"
 readme = "README.md"
-include = [
-    "src/**/*",
-    "/LICENSE-*",
-    "/README.md",
-    "/CHANGELOG.md",
-    "/UPGRADING.md",
-    "!**/tests/**/*",
-]
+include = ["src/**/*", "/LICENSE-*", "/README.md", "/CHANGELOG.md", "/UPGRADING.md", "!**/tests/**/*"]
 
 [dependencies]
 allocator-api2-02 = { package = "allocator-api2", version = "0.2.21", default-features = false, optional = true }
@@ -25,7 +18,7 @@ allocator-api2-03 = { package = "allocator-api2", version = "0.3.0", default-fea
 allocator-api2-04 = { package = "allocator-api2", version = "0.4.0", default-features = false, optional = true }
 bytemuck = { version = "1.23.0", default-features = false, optional = true }
 zerocopy-08 = { package = "zerocopy", version = "0.8.14", default-features = false, optional = true }
-serde = { version = "1.0.217", optional = true }
+serde = { package = "serde_core", version = "1.0.228", default-features = false, optional = true }
 
 [features]
 default = ["std", "alloc", "panic-on-alloc"]
@@ -122,10 +115,10 @@ nightly-dropck-eyepatch = []
 nightly-clone-to-uninit = []
 
 [dev-dependencies]
-trybuild = "1.0.90"
-expect-test = "1.4.1"
-rayon = "1.10.0"
-serde_json = "1.0.115"
+trybuild = "1.0.114"
+expect-test = "1.5.1"
+rayon = "1.11.0"
+serde_json = "1.0.145"
 
 [package.metadata.docs.rs]
 all-features = true

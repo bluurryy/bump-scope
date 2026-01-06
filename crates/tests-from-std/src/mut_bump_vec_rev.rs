@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use bump_scope::alloc::{AllocError, Allocator, Global};
 
-type Bump<A = Global> = bump_scope::Bump<A, 1, true, true, true>;
+type Bump<A = Global> = bump_scope::Bump<A>;
 type Vec<T, A = Bump> = bump_scope::MutBumpVecRev<T, A>;
 
 trait VecNew: Sized {
@@ -1398,7 +1398,7 @@ fn test_into_flattened_size_overflow() {
     let _ = v.into_flattened();
 }
 
-#[cfg(any())] // not applicable, `BumpAllocator` has special behavior that must accept any zero sized deallocations
+#[cfg(any())] // not applicable, `BumpAllocatorCore` has special behavior that must accept any zero sized deallocations
 fn test_box_zero_allocator() {}
 
 #[cfg(any())] // not applicable

@@ -2,8 +2,8 @@ use std::{alloc::Layout, ops::Range, ptr::NonNull, rc::Rc};
 
 use arbitrary::{Arbitrary, Unstructured};
 use bump_scope::{
-    MinimumAlignment, SupportedMinimumAlignment,
     alloc::{Allocator, Global},
+    settings::{MinimumAlignment, SupportedMinimumAlignment},
 };
 use core::fmt::Debug;
 use log::debug;

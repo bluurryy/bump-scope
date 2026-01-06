@@ -9,7 +9,7 @@ use std::{panic, str};
 use bump_scope::alloc::Global;
 use bump_scope::{bump_format, bump_vec};
 
-type Bump<A = Global> = bump_scope::Bump<A, 1, true, true, true>;
+type Bump<A = Global> = bump_scope::Bump<A>;
 type Vec<T, A = Bump> = bump_scope::BumpVec<T, A>;
 type String<A> = bump_scope::BumpString<A>;
 
