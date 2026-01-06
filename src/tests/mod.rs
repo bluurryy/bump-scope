@@ -1193,16 +1193,18 @@ fn test_drop_allocator() {
 fn generic_bump_scope() {
     fn foo(mut bump: impl BumpAllocator<Settings: BumpAllocatorSettings<GuaranteedAllocated = True>>) {
         assert_eq!(bump.as_scope().stats().allocated(), 0);
+        bump.as_scope().alloc_str("good");
+        assert_eq!(bump.as_scope().stats().allocated(), 4);
         bump.scoped(|mut bump| {
-            bump.alloc_str("hello");
-            assert_eq!(bump.stats().allocated(), 5);
+            bump.alloc_str("day");
+            assert_eq!(bump.stats().allocated(), 7);
             bump.scoped(|bump| {
                 bump.alloc_str("world");
-                assert_eq!(bump.stats().allocated(), 10);
+                assert_eq!(bump.stats().allocated(), 12);
             });
-            assert_eq!(bump.stats().allocated(), 5);
+            assert_eq!(bump.stats().allocated(), 7);
         });
-        assert_eq!(bump.as_scope().stats().allocated(), 0);
+        assert_eq!(bump.as_scope().stats().allocated(), 4);
     }
 
     let bump: Bump = Bump::new();
