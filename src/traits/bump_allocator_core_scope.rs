@@ -16,7 +16,7 @@ use crate::{
 ///
 /// ```
 /// # #![expect(dead_code)]
-/// use bump_scope::BumpAllocatorCoreScope;
+/// use bump_scope::traits::BumpAllocatorCoreScope;
 /// use core::alloc::Layout;
 ///
 /// fn allocate_zeroed_bytes<'a>(allocator: impl BumpAllocatorCoreScope<'a>, len: usize) -> &'a [u8] {

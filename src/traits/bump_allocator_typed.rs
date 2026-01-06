@@ -46,7 +46,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// ```
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocatorCore {
+    /// # trait MyExt: bump_scope::traits::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self, layout: Layout) -> NonNull<u8> {
     /// self.allocate(layout).unwrap().cast()
     /// #     }
@@ -66,7 +66,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # use bump_scope::alloc::AllocError;
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocatorCore {
+    /// # trait MyExt: bump_scope::traits::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
     /// Ok(self.allocate(layout)?.cast())
     /// #     }
@@ -85,7 +85,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # type T = i32;
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocatorCore {
+    /// # trait MyExt: bump_scope::traits::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self) -> NonNull<T> {
     /// self.allocate(Layout::new::<T>()).unwrap().cast()
     /// #     }
@@ -106,7 +106,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// # use bump_scope::alloc::AllocError;
     /// # type T = i32;
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocatorCore {
+    /// # trait MyExt: bump_scope::traits::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self) -> Result<NonNull<T>, AllocError> {
     /// Ok(self.allocate(Layout::new::<T>())?.cast())
     /// #     }
@@ -125,7 +125,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # type T = i32;
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocatorCore {
+    /// # trait MyExt: bump_scope::traits::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self, len: usize) -> NonNull<T> {
     /// self.allocate(Layout::array::<T>(len).unwrap()).unwrap().cast()
     /// #     }
@@ -146,7 +146,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// # use bump_scope::alloc::AllocError;
     /// # type T = i32;
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocatorCore {
+    /// # trait MyExt: bump_scope::traits::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self, len: usize) -> Result<NonNull<T>, AllocError> {
     /// Ok(self.allocate(Layout::array::<T>(len).map_err(|_| AllocError)?)?.cast())
     /// #     }
@@ -165,7 +165,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # type T = i32;
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocatorCore {
+    /// # trait MyExt: bump_scope::traits::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self, slice: &[T]) -> NonNull<T> {
     /// self.allocate(Layout::for_value(slice)).unwrap().cast()
     /// #     }
@@ -186,7 +186,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// # use bump_scope::alloc::AllocError;
     /// # type T = i32;
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocatorCore {
+    /// # trait MyExt: bump_scope::traits::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self, slice: &[T]) -> Result<NonNull<T>, AllocError> {
     /// Ok(self.allocate(Layout::for_value(slice))?.cast())
     /// #     }
@@ -206,7 +206,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// # use core::{alloc::Layout, ptr::NonNull};
     /// # type T = i32;
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::BumpAllocatorCore {
+    /// # trait MyExt: bump_scope::traits::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> NonNull<T> {
     /// #         unsafe {
     /// self.shrink(ptr.cast(),

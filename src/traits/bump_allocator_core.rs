@@ -86,7 +86,12 @@ pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     ///
     /// ```
     /// # extern crate alloc;
-    /// use bump_scope::{Bump, BumpAllocatorCore, alloc::Global, settings::{BumpSettings, BumpAllocatorSettings}};
+    /// use bump_scope::{
+    ///     Bump,
+    ///     alloc::Global,
+    ///     settings::{BumpSettings, BumpAllocatorSettings},
+    ///     traits::BumpAllocatorCore,  
+    /// };
     /// # use alloc::alloc::Layout;
     ///
     /// fn test(bump: impl BumpAllocatorCore) {
