@@ -29,7 +29,7 @@ std = ["alloc", "allocator-api2-02?/std", "allocator-api2-03?/std", "allocator-a
 ## Adds `Global` as the default base allocator and some interactions with `alloc` collections.
 alloc = ["allocator-api2-02?/alloc", "allocator-api2-03?/alloc", "allocator-api2-04?/alloc"]
 
-## Adds functions and traits that will panic when the allocation fails. 
+## Adds functions and traits that will panic when allocations fail. 
 ## Without this feature, allocation failures cannot cause panics, and only 
 ## `try_`-prefixed allocation methods will be available.
 panic-on-alloc = []
@@ -83,7 +83,7 @@ nightly = [
 ]
 
 ## Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
-## allows using an `alloc::alloc::Allocator` as a base allocator via
+## allows using an `core::alloc::Allocator` as a base allocator via
 ## [`AllocatorNightlyCompat`](crate::alloc::compat::AllocatorNightlyCompat).
 ##
 ## This will also enable `allocator-api2` version `0.2`'s `nightly` feature.

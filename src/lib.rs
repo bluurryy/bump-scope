@@ -235,7 +235,7 @@
 //! <!-- feature documentation start -->
 //! - **`std`** *(enabled by default)* — Adds `BumpPool` and implementations of `std::io` traits.
 //! - **`alloc`** *(enabled by default)* — Adds `Global` as the default base allocator and some interactions with `alloc` collections.
-//! - **`panic-on-alloc`** *(enabled by default)* — Adds functions and traits that will panic when the allocation fails.
+//! - **`panic-on-alloc`** *(enabled by default)* — Adds functions and traits that will panic when allocations fail.
 //!   Without this feature, allocation failures cannot cause panics, and only
 //!   `try_`-prefixed allocation methods will be available.
 //! - **`serde`** — Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
@@ -265,7 +265,7 @@
 //!
 //! - **`nightly`** — Enables all other nightly feature flags.
 //! - **`nightly-allocator-api`** — Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
-//!   allows using an `alloc::alloc::Allocator` as a base allocator via
+//!   allows using an `core::alloc::Allocator` as a base allocator via
 //!   [`AllocatorNightlyCompat`](crate::alloc::compat::AllocatorNightlyCompat).
 //!
 //!   This will also enable `allocator-api2` version `0.2`'s `nightly` feature.
