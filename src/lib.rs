@@ -386,15 +386,15 @@ pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 pub mod CHANGELOG {}
 
 #[cfg(feature = "bytemuck")]
-/// Contains extension traits.
-pub mod bytemuck {
-    pub use crate::features::bytemuck::{BumpAllocatorTypedScopeExt, InitZeroed, VecExt};
+features::bytemuck_or_zerocopy! {
+    mod bytemuck
+    trait Zeroable
 }
 
 #[cfg(feature = "zerocopy-08")]
-/// Contains extension traits.
-pub mod zerocopy_08 {
-    pub use crate::features::zerocopy_08::{BumpAllocatorTypedScopeExt, InitZeroed, VecExt};
+features::bytemuck_or_zerocopy! {
+    mod zerocopy_08
+    trait FromZeros
 }
 
 /// Does not check for overflow.

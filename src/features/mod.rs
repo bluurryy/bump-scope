@@ -13,12 +13,6 @@ pub mod allocator_api2_03;
 #[cfg(feature = "allocator-api2-04")]
 pub mod allocator_api2_04;
 
-#[cfg(feature = "bytemuck")]
-pub mod bytemuck;
-
-#[cfg(feature = "zerocopy-08")]
-pub mod zerocopy_08;
-
 #[cfg(any(
     feature = "nightly-allocator-api",
     feature = "allocator-api2-02",
@@ -26,3 +20,9 @@ pub mod zerocopy_08;
     feature = "allocator-api2-04",
 ))]
 mod allocator_util;
+
+#[cfg(any(feature = "bytemuck", feature = "zerocopy-08"))]
+mod bytemuck_or_zerocopy;
+
+#[cfg(any(feature = "bytemuck", feature = "zerocopy-08"))]
+pub(crate) use bytemuck_or_zerocopy::bytemuck_or_zerocopy;
