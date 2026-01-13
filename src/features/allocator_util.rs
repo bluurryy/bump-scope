@@ -29,6 +29,33 @@ macro_rules! allocator_compat_wrapper {
             use {&self.0} for crate as $othr impl[A: ?Sized + $othr::alloc::Allocator] $struct<A>
             use {&self.0} for $othr as crate impl[A: ?Sized + crate::alloc::Allocator] $struct<A>
         }
+
+        #[test]
+        fn test_compat() {
+            use core::{alloc::Layout, ptr::NonNull};
+
+            use crate::{BaseAllocator, settings::True};
+
+            #[derive(Clone)]
+            struct OthrAllocator;
+
+            unsafe impl $othr::alloc::Allocator for OthrAllocator {
+                fn allocate(&self, _: Layout) -> Result<NonNull<[u8]>, $othr::alloc::AllocError> {
+                    unimplemented!()
+                }
+
+                unsafe fn deallocate(&self, _: NonNull<u8>, _: Layout) {
+                    unimplemented!()
+                }
+            }
+
+            fn is_base_allocator<T: BaseAllocator<True>>(_: T) {}
+
+            #[cfg(feature = "alloc")]
+            is_base_allocator(Global);
+            is_base_allocator($struct(OthrAllocator));
+            is_base_allocator($struct::from_ref(&OthrAllocator));
+        }
     };
 }
 // spellchecker:on

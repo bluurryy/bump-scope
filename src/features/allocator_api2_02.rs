@@ -3,7 +3,10 @@ use allocator_api2_02::alloc::{AllocError, Allocator};
 
 #[cfg(feature = "alloc")]
 #[cfg(not(feature = "nightly-allocator-api"))]
-use allocator_api2_02::{alloc::Global, boxed::Box};
+use allocator_api2_02::boxed::Box;
+
+#[cfg(any(test, all(feature = "alloc", not(feature = "nightly-allocator-api"))))]
+use allocator_api2_02::alloc::Global;
 
 #[cfg(not(feature = "nightly-allocator-api"))]
 use crate::{
@@ -15,7 +18,7 @@ use crate::{
 #[cfg(not(feature = "nightly-allocator-api"))]
 use crate::alloc::{BoxLike, box_like};
 
-#[cfg(any(test, not(feature = "nightly-allocator-api")))]
+#[cfg(not(feature = "nightly-allocator-api"))]
 use crate::BaseAllocator;
 
 use super::allocator_util::{allocator_compat_wrapper, impl_allocator_via_allocator};
@@ -121,36 +124,3 @@ impl<T: ?Sized, A: Allocator> box_like::Sealed for Box<T, A> {
 #[cfg(feature = "alloc")]
 #[cfg(not(feature = "nightly-allocator-api"))]
 impl<T: ?Sized, A: Allocator> BoxLike for Box<T, A> {}
-
-#[test]
-fn test_compat() {
-    use core::{alloc::Layout, ptr::NonNull};
-
-    use allocator_api2_02::alloc::AllocError;
-
-    #[cfg(feature = "nightly-allocator-api")]
-    use allocator_api2_02::alloc::Allocator;
-
-    use crate::settings::True;
-
-    fn is_base_allocator<T: BaseAllocator<True>>(_: T) {}
-
-    #[derive(Clone)]
-    struct TestAllocator;
-
-    unsafe impl Allocator for TestAllocator {
-        fn allocate(&self, _: Layout) -> Result<NonNull<[u8]>, AllocError> {
-            unimplemented!()
-        }
-
-        unsafe fn deallocate(&self, _: NonNull<u8>, _: Layout) {
-            unimplemented!()
-        }
-    }
-
-    #[cfg(feature = "alloc")]
-    #[cfg(not(feature = "nightly-allocator-api"))]
-    is_base_allocator(Global);
-    is_base_allocator(AllocatorApi2V02Compat(TestAllocator));
-    is_base_allocator(AllocatorApi2V02Compat::from_ref(&TestAllocator));
-}

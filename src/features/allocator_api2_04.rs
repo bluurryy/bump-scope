@@ -98,30 +98,3 @@ impl<T: ?Sized, A: Allocator> box_like::Sealed for Box<T, A> {
 
 #[cfg(feature = "alloc")]
 impl<T: ?Sized, A: Allocator> BoxLike for Box<T, A> {}
-
-#[test]
-fn test_compat() {
-    use core::{alloc::Layout, ptr::NonNull};
-
-    use crate::settings::True;
-
-    fn is_base_allocator<T: BaseAllocator<True>>(_: T) {}
-
-    #[derive(Clone)]
-    struct TestAllocator;
-
-    unsafe impl Allocator for TestAllocator {
-        fn allocate(&self, _: Layout) -> Result<NonNull<[u8]>, AllocError> {
-            unimplemented!()
-        }
-
-        unsafe fn deallocate(&self, _: NonNull<u8>, _: Layout) {
-            unimplemented!()
-        }
-    }
-
-    #[cfg(feature = "alloc")]
-    is_base_allocator(Global);
-    is_base_allocator(AllocatorApi2V04Compat(TestAllocator));
-    is_base_allocator(AllocatorApi2V04Compat::from_ref(&TestAllocator));
-}
