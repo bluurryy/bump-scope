@@ -193,7 +193,7 @@ pub struct BumpBox<'a, T: ?Sized> {
 ///
 /// This macro is required to unsize the pointee of a `BumpBox` on stable rust.
 ///
-/// On nightly and when the feature "nightly-coerce-unsized" is enabled, `BumpBox` implements `CoerceUnsized` so `T` will coerce just like with [`Box`](alloc_crate::boxed::Box).
+/// On nightly and when the feature "nightly-coerce-unsized" is enabled, `BumpBox` implements `CoerceUnsized` so `T` will coerce just like with [`Box`].
 ///
 /// # Examples
 /// ```

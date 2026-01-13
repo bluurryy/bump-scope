@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-#![expect(clippy::needless_pass_by_value)]
+#![expect(clippy::needless_pass_by_value, clippy::cast_possible_wrap)]
 //! This file intentionally doesn't import anything other than `core`
 //! to make it easy to fuzz and debug.
 
@@ -74,17 +74,16 @@ macro_rules! debug_assert_le {
 }
 
 /// Arguments for [`bump_up`], [`bump_down`], [`bump_prepare_up`] and [`bump_prepare_down`].
+#[derive(Debug)]
 pub(crate) struct BumpProps {
     /// The start of the remaining free allocation region.
     ///
     /// This must not be zero.
-    /// This must be less than or equal to [`end`](Self::end).
     pub(crate) start: usize,
 
     /// The end of the remaining free allocation region.
     ///
     /// This must not be zero.
-    /// This must be greater or equal to [`start`](Self::start).
     pub(crate) end: usize,
 
     /// The minimum alignment of the bump allocator.
@@ -115,7 +114,7 @@ pub(crate) struct BumpProps {
 
 impl BumpProps {
     #[inline(always)]
-    fn debug_assert_valid(&self) {
+    fn debug_assert_valid(&self, up: bool) {
         debug_assert_ne!(self.start, 0);
         debug_assert_ne!(self.end, 0);
 
@@ -126,11 +125,30 @@ impl BumpProps {
             debug_assert_eq!(self.layout.size() % self.layout.align(), 0);
         }
 
-        debug_assert_le!(self.start, self.end);
+        if up {
+            debug_assert_aligned!(self.start, self.min_align);
+            debug_assert_aligned!(self.end, MIN_CHUNK_ALIGN);
+        } else {
+            debug_assert_aligned!(self.start, MIN_CHUNK_ALIGN);
+            debug_assert_aligned!(self.end, self.min_align);
+        }
+
+        let is_dummy_chunk = self.end == MIN_CHUNK_ALIGN && self.start == MIN_CHUNK_ALIGN * 2;
+
+        if !is_dummy_chunk {
+            debug_assert_le!(self.start, self.end);
+
+            debug_assert!({
+                const MAX: i128 = isize::MAX as i128;
+                let size = self.end as i128 - self.start as i128;
+                (0..=MAX).contains(&size)
+            });
+        }
     }
 }
 
 /// A successful upwards bump allocation. Returned from [`bump_up`].
+#[derive(Debug)]
 pub(crate) struct BumpUp {
     /// The new position of the bump allocator (the next [`BumpProps::start`]).
     pub(crate) new_pos: usize,
@@ -144,7 +162,7 @@ pub(crate) struct BumpUp {
 /// - `end` must be a multiple of [`MIN_CHUNK_ALIGN`]
 #[inline(always)]
 pub(crate) fn bump_up(props: BumpProps) -> Option<BumpUp> {
-    props.debug_assert_valid();
+    props.debug_assert_valid(true);
 
     let BumpProps {
         mut start,
@@ -178,9 +196,9 @@ pub(crate) fn bump_up(props: BumpProps) -> Option<BumpUp> {
             start = up_align_unchecked(start, layout.align());
         }
 
-        let remaining = end - start;
+        let remaining = end.wrapping_sub(start) as isize;
 
-        if unlikely(layout.size() > remaining) {
+        if unlikely(layout.size() as isize > remaining) {
             return None;
         }
 
@@ -237,7 +255,7 @@ pub(crate) fn bump_up(props: BumpProps) -> Option<BumpUp> {
 /// Does downwards bump allocation.
 #[inline(always)]
 pub(crate) fn bump_down(props: BumpProps) -> Option<usize> {
-    props.debug_assert_valid();
+    props.debug_assert_valid(false);
 
     let BumpProps {
         start,
@@ -300,9 +318,9 @@ pub(crate) fn bump_down(props: BumpProps) -> Option<usize> {
         }
     } else if align_is_const && layout.align() <= MIN_CHUNK_ALIGN {
         // Constant, small alignment fast path!
-        let remaining = end - start;
+        let remaining = end.wrapping_sub(start) as isize;
 
-        if unlikely(layout.size() > remaining) {
+        if unlikely(layout.size() as isize > remaining) {
             return None;
         }
 
@@ -345,7 +363,7 @@ pub(crate) fn bump_down(props: BumpProps) -> Option<usize> {
 /// - `end` must be a multiple of [`MIN_CHUNK_ALIGN`]
 #[inline(always)]
 pub(crate) fn bump_prepare_up(props: BumpProps) -> Option<Range<usize>> {
-    props.debug_assert_valid();
+    props.debug_assert_valid(true);
 
     let BumpProps {
         mut start,
@@ -382,9 +400,9 @@ pub(crate) fn bump_prepare_up(props: BumpProps) -> Option<Range<usize>> {
         }
     }
 
-    let remaining = end - start;
+    let remaining = end.wrapping_sub(start) as isize;
 
-    if unlikely(layout.size() > remaining) {
+    if unlikely(layout.size() as isize > remaining) {
         return None;
     }
 
@@ -408,7 +426,7 @@ pub(crate) fn bump_prepare_up(props: BumpProps) -> Option<Range<usize>> {
 /// where both start and end are aligned to `layout.align()`.
 #[inline(always)]
 pub(crate) fn bump_prepare_down(props: BumpProps) -> Option<Range<usize>> {
-    props.debug_assert_valid();
+    props.debug_assert_valid(false);
 
     let BumpProps {
         start,
@@ -435,9 +453,9 @@ pub(crate) fn bump_prepare_down(props: BumpProps) -> Option<Range<usize>> {
         }
     }
 
-    let remaining = end - start;
+    let remaining = end.wrapping_sub(start) as isize;
 
-    if unlikely(layout.size() > remaining) {
+    if unlikely(layout.size() as isize > remaining) {
         return None;
     }
 

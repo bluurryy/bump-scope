@@ -19,7 +19,7 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
-/// A type like [`BumpString`](crate::BumpString) but with a fixed capacity.
+/// A type like [`BumpString`] but with a fixed capacity.
 ///
 /// It can be constructed using [`with_capacity_in`] or from a `BumpBox` via [`from_init`] or [`from_uninit`].
 ///

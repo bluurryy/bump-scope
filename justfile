@@ -111,7 +111,7 @@ doc-rustdoc *args:
   cargo +nightly rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition
 
 doc-rustdoc-priv *args:
-  cargo +nightly rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition --document-private-items -definition
+  cargo +nightly rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition --document-private-items
 
 fuzz seconds:
   just fuzz-target {{seconds}} alloc_static_layout

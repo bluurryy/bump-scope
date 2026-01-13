@@ -26,7 +26,7 @@ use crate::{
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     maybe_default_allocator,
     owned_slice::OwnedSlice,
-    polyfill::{non_null, transmute_mut, transmute_ref},
+    polyfill::{self, non_null, transmute_mut, transmute_ref},
     settings::{Boolean, BumpAllocatorSettings, BumpSettings, MinimumAlignment, SupportedMinimumAlignment, True},
     stats::{AnyStats, Stats},
     traits::{BumpAllocatorTyped, BumpAllocatorTypedScope, MutBumpAllocatorTypedScope},
@@ -427,7 +427,7 @@ where
         // if the bump allocator is `GUARANTEED_ALLOCATED`. We are allowed to not do this check
         // because of this safety condition of `reset_to`:
         // > the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
-        if !<S::GuaranteedAllocated as Boolean>::VALUE && checkpoint.chunk == ChunkHeader::UNALLOCATED {
+        if !<S::GuaranteedAllocated as Boolean>::VALUE && checkpoint.chunk == ChunkHeader::unallocated::<S>() {
             if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
                 while let Some(prev) = chunk.prev() {
                     chunk = prev;
@@ -441,7 +441,7 @@ where
         } else {
             debug_assert_ne!(
                 checkpoint.chunk,
-                ChunkHeader::UNALLOCATED,
+                ChunkHeader::unallocated::<S>(),
                 "the safety conditions state that \"the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`\""
             );
 
@@ -959,6 +959,12 @@ where
     #[cold]
     #[inline(never)]
     pub(crate) fn alloc_in_another_chunk<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
+        // An allocation of size 0 will fail if we currently use the "unallodated" dummy chunk.
+        // In this case we don't want to allocate a chunk, just return a dangling pointer.
+        if !S::GUARANTEED_ALLOCATED && layout.size() == 0 {
+            return Ok(polyfill::layout::dangling(layout));
+        }
+
         unsafe { self.in_another_chunk(CustomLayout(layout), RawChunk::alloc::<S::MinimumAlignment>) }
     }
 

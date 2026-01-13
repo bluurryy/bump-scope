@@ -1,4 +1,4 @@
-use core::alloc::Layout;
+use core::{alloc::Layout, ptr::NonNull};
 
 use crate::{
     alloc::{Allocator, Global},
@@ -16,9 +16,12 @@ either_way! {
     unallocated_reserve_bytes
     checkpoint
     checkpoint_multiple_chunks
+    allocate_zero_sized
+    allocate_zero_slice
     allocate_zero_layout
     reset
     non_default_base_allocator
+    potential_data_race
 }
 
 type Bump<const UP: bool, A = Global> = crate::Bump<A, BumpSettings<1, UP, false, true>>;
@@ -125,9 +128,28 @@ fn allocate_another_chunk<const UP: bool>(bump: &Bump<UP>, dummy_size: usize) {
     assert_eq!(bump.any_stats().current_chunk().unwrap().allocated(), dummy_size);
 }
 
+fn allocate_zero_sized<const UP: bool>() {
+    let bump = <Bump<UP>>::unallocated();
+    assert_eq!(bump.alloc(()).into_raw(), NonNull::<()>::dangling());
+    assert_eq!(bump.stats().count(), 0);
+}
+
+fn allocate_zero_slice<const UP: bool>() {
+    let bump = <Bump<UP>>::unallocated();
+    assert_eq!(
+        bump.alloc_uninit_slice::<i32>(0).into_raw().cast(),
+        NonNull::<i32>::dangling()
+    );
+    assert_eq!(bump.stats().count(), 0);
+}
+
 fn allocate_zero_layout<const UP: bool>() {
     let bump = <Bump<UP>>::unallocated();
-    bump.allocate_layout(Layout::new::<()>());
+    assert_eq!(
+        bump.allocate_layout(Layout::new::<[i32; 0]>()),
+        NonNull::<[i32; 0]>::dangling().cast()
+    );
+    assert_eq!(bump.stats().count(), 0);
 }
 
 fn reset<const UP: bool>() {
@@ -160,4 +182,16 @@ fn non_default_base_allocator<const UP: bool>() {
         .alloc_str("test");
 
     assert_eq!(test, "test");
+}
+
+// if allocating on the dummy chunk would bump it's position field, even by 0
+// then this cause a data race
+fn potential_data_race<const UP: bool>() {
+    fn create_bump_and_alloc<const UP: bool>() {
+        let bump = <Bump<UP>>::unallocated();
+        bump.allocate(Layout::new::<()>()).unwrap();
+    }
+
+    std::thread::spawn(create_bump_and_alloc::<UP>);
+    std::thread::spawn(create_bump_and_alloc::<UP>);
 }

@@ -1,7 +1,7 @@
 #![feature(pointer_is_aligned_to, allocator_api, alloc_layout_extra)]
 #![expect(clippy::cargo_common_metadata)]
 
-use std::{alloc::Layout, cell::Cell, mem::swap, ops::Deref, ptr::NonNull, rc::Rc};
+use std::{alloc::Layout, cell::Cell, ops::Deref, ptr::NonNull, rc::Rc};
 
 use arbitrary::{Arbitrary, Unstructured};
 use bump_scope::{
@@ -173,28 +173,45 @@ macro_rules! debug_dbg {
 
 pub(crate) use debug_dbg;
 
+use crate::from_bump_scope::bumping::{BumpProps, MIN_CHUNK_ALIGN};
+
 #[derive(Debug, Clone, Copy)]
 struct FuzzBumpPropsRange {
     start: usize,
     end: usize,
+    is_dummy_chunk: bool,
 }
 
 impl<'a> Arbitrary<'a> for FuzzBumpPropsRange {
     fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        let [mut start, mut end] = u.arbitrary()?;
+        let is_dummy_chunk = u.arbitrary::<bool>()?;
 
-        if end < start {
-            swap(&mut start, &mut end);
+        let start: usize;
+        let end: usize;
+
+        if is_dummy_chunk {
+            start = MIN_CHUNK_ALIGN * 2;
+            end = start - MIN_CHUNK_ALIGN;
+        } else {
+            start = u.int_in_range(MIN_CHUNK_ALIGN..=usize::MAX)?;
+
+            // an allocation can't be greater than `isize::MAX`
+            let max = start.saturating_add(isize::MAX as usize);
+
+            end = u.int_in_range(start..=max)?;
+
+            assert!(is_valid_size(start, end));
         }
 
-        start = align(start);
-        end = align(end);
-
-        Ok(Self { start, end })
+        Ok(Self {
+            start,
+            end,
+            is_dummy_chunk,
+        })
     }
 
     fn size_hint(depth: usize) -> (usize, Option<usize>) {
-        <[usize; 2]>::size_hint(depth)
+        (<bool>::size_hint(depth).0, <(bool, [usize; 2])>::size_hint(depth).1)
     }
 }
 
@@ -218,6 +235,58 @@ impl<'a> Arbitrary<'a> for FuzzBumpPropsLayout {
     }
 }
 
+#[derive(Debug)]
+struct FuzzBumpPropsUp(BumpProps);
+
+impl<'a> Arbitrary<'a> for FuzzBumpPropsUp {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self(u.arbitrary::<FuzzBumpProps>()?.for_up().to()?))
+    }
+
+    fn size_hint(depth: usize) -> (usize, Option<usize>) {
+        FuzzBumpProps::size_hint(depth)
+    }
+}
+
+#[derive(Debug)]
+struct FuzzBumpPropsDown(BumpProps);
+
+impl<'a> Arbitrary<'a> for FuzzBumpPropsDown {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self(u.arbitrary::<FuzzBumpProps>()?.for_down().to()?))
+    }
+
+    fn size_hint(depth: usize) -> (usize, Option<usize>) {
+        FuzzBumpProps::size_hint(depth)
+    }
+}
+
+#[derive(Debug)]
+struct FuzzBumpPropsPrepareUp(BumpProps);
+
+impl<'a> Arbitrary<'a> for FuzzBumpPropsPrepareUp {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self(u.arbitrary::<FuzzBumpProps>()?.for_prepare().for_up().to()?))
+    }
+
+    fn size_hint(depth: usize) -> (usize, Option<usize>) {
+        FuzzBumpProps::size_hint(depth)
+    }
+}
+
+#[derive(Debug)]
+struct FuzzBumpPropsPrepareDown(BumpProps);
+
+impl<'a> Arbitrary<'a> for FuzzBumpPropsPrepareDown {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self(u.arbitrary::<FuzzBumpProps>()?.for_prepare().for_down().to()?))
+    }
+
+    fn size_hint(depth: usize) -> (usize, Option<usize>) {
+        FuzzBumpProps::size_hint(depth)
+    }
+}
+
 #[derive(Arbitrary, Debug, Clone, Copy)]
 pub(crate) struct FuzzBumpProps {
     pub(crate) range: FuzzBumpPropsRange,
@@ -229,11 +298,16 @@ pub(crate) struct FuzzBumpProps {
 
 impl FuzzBumpProps {
     fn for_up(mut self) -> Self {
-        self.range.start = down_align(self.range.start, self.min_align as usize);
+        if !self.range.is_dummy_chunk {
+            self.range.start = down_align(self.range.start, self.min_align as usize);
+            self.range.end = down_align(self.range.end, MIN_CHUNK_ALIGN);
+        }
+
         self
     }
 
     fn for_down(mut self) -> Self {
+        self.range.start = down_align(self.range.start, MIN_CHUNK_ALIGN);
         self.range.end = down_align(self.range.end, self.min_align as usize);
         self
     }
@@ -244,16 +318,32 @@ impl FuzzBumpProps {
 }
 
 impl FuzzBumpProps {
-    fn to(self) -> from_bump_scope::bumping::BumpProps {
+    fn to(self) -> arbitrary::Result<from_bump_scope::bumping::BumpProps> {
         let Self {
-            range: FuzzBumpPropsRange { start, end },
+            range:
+                FuzzBumpPropsRange {
+                    start,
+                    end,
+                    is_dummy_chunk,
+                },
             layout: FuzzBumpPropsLayout(layout),
             min_align,
             align_is_const,
             size_is_const,
         } = self;
 
-        from_bump_scope::bumping::BumpProps {
+        if is_dummy_chunk {
+            assert_eq!(start, MIN_CHUNK_ALIGN * 2);
+            assert_eq!(end, MIN_CHUNK_ALIGN);
+        } else {
+            // the aligning in `for_up` and `for_down` may have caused the
+            // start and end to no longer represent a valid size
+            if !is_valid_size(start, end) {
+                return Err(arbitrary::Error::IncorrectFormat);
+            }
+        }
+
+        Ok(from_bump_scope::bumping::BumpProps {
             start,
             end,
             layout,
@@ -261,8 +351,14 @@ impl FuzzBumpProps {
             align_is_const,
             size_is_const,
             size_is_multiple_of_align: layout.size().is_multiple_of(layout.align()),
-        }
+        })
     }
+}
+
+fn is_valid_size(start: usize, end: usize) -> bool {
+    const MAX: i128 = isize::MAX as i128;
+    let size = end as i128 - start as i128;
+    (0..=MAX).contains(&size)
 }
 
 #[inline(always)]
@@ -270,13 +366,6 @@ fn down_align(addr: usize, align: usize) -> usize {
     debug_assert!(align.is_power_of_two());
     let mask = align - 1;
     addr & !mask
-}
-
-#[inline(always)]
-fn align(addr: usize) -> usize {
-    let addr = down_align(addr, 16);
-
-    if addr == 0 { 16 } else { addr }
 }
 
 #[derive(Debug, Clone, Copy, Arbitrary)]

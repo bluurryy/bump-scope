@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Implement `bytemuck` and `zerocopy` allocator extension traits for all `T: BumpAllocatorTypedScope` and name them `BumpAllocatorTypedScopeExt`
 - For non-guaranteed-allocated `Stats`, `current_chunk` has been renamed to `get_current_chunk`
 - For non-guaranteed-allocated `BumpScope`, `allocator` has been renamed to `get_allocator`
+- Remove branch when allocating on a non-guaranteed-allocated `Bump(Scope)`, checking for a layout of `0`
 - Depend on `serde_core` instead of `serde`
 
 ### Removed

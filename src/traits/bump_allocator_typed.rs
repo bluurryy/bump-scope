@@ -1108,6 +1108,7 @@ where
                 // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
                 let new_pos = up_align_usize_unchecked(end, S::MIN_ALIGN);
 
+                // SAFETY: We checked `is_allocated` above
                 self.chunk.get().guaranteed_allocated_unchecked().set_pos_addr(new_pos);
                 Some(old_ptr.cast())
             } else {
@@ -1127,6 +1128,7 @@ where
                     old_ptr.copy_to_nonoverlapping(new_ptr, new_size);
                 }
 
+                // SAFETY: We checked `is_allocated` above
                 self.chunk.get().guaranteed_allocated_unchecked().set_pos(new_ptr);
                 Some(new_ptr.cast())
             }
