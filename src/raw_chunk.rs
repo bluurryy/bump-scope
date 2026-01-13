@@ -199,15 +199,20 @@ where
         M: SupportedMinimumAlignment,
         L: LayoutProps,
     {
-        debug_assert!(non_null::is_aligned_to(self.pos(), M::VALUE));
-
         let pos = self.pos().addr().get();
         let end = unsafe { self.header.as_ref() }.end.addr().get();
+
+        debug_assert_eq!(pos % M::VALUE, 0);
+        debug_assert_eq!(end % MIN_CHUNK_ALIGN, 0);
 
         let start = if S::UP { pos } else { end };
         let end = if S::UP { end } else { pos };
 
-        debug_assert!(if self.is_unallocated() { end < start } else { true });
+        #[cfg(debug_assertions)]
+        if self.is_unallocated() {
+            assert_eq!(end, MIN_CHUNK_ALIGN);
+            assert_eq!(start, MIN_CHUNK_ALIGN * 2);
+        }
 
         BumpProps {
             start,
