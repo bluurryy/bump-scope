@@ -55,6 +55,23 @@ macro_rules! allocator_compat_wrapper {
             is_base_allocator(Global);
             is_base_allocator($struct(OthrAllocator));
             is_base_allocator($struct::from_ref(&OthrAllocator));
+
+            struct CrateAllocator;
+
+            unsafe impl $crate::alloc::Allocator for CrateAllocator {
+                fn allocate(&self, _: Layout) -> Result<NonNull<[u8]>, $crate::alloc::AllocError> {
+                    unimplemented!()
+                }
+
+                unsafe fn deallocate(&self, _: NonNull<u8>, _: Layout) {
+                    unimplemented!()
+                }
+            }
+
+            fn is_othr_allocator<T: $othr::alloc::Allocator>(_: T) {}
+
+            is_othr_allocator($struct(CrateAllocator));
+            is_othr_allocator($struct::from_ref(&CrateAllocator));
         }
     };
 }
