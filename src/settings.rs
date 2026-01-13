@@ -255,6 +255,7 @@ mod supported_minimum_alignment {
     pub trait Sealed {
         /// We'd be fine with just an [`core::ptr::Alignment`], but that's not stable.
         #[doc(hidden)]
+        #[expect(private_interfaces)]
         const LAYOUT: ArrayLayout;
     }
 }
@@ -272,6 +273,7 @@ macro_rules! supported_alignments {
     ($($i:literal)*) => {
         $(
             impl supported_minimum_alignment::Sealed for MinimumAlignment<$i> {
+                #[expect(private_interfaces)]
                 const LAYOUT: ArrayLayout = match ArrayLayout::from_size_align(0, $i) {
                     Ok(layout) => layout,
                     Err(_) => unreachable!(),
