@@ -178,68 +178,47 @@ assert_implements! {
     &mut dyn MutBumpAllocatorCoreScope
 }
 
-unsafe impl<B: BumpAllocatorCore + ?Sized> BumpAllocatorCore for &B {
-    #[inline(always)]
-    fn any_stats(&self) -> AnyStats<'_> {
-        B::any_stats(self)
-    }
+macro_rules! impl_for_ref {
+    ($($ty:ty)*) => {
+        $(
+            unsafe impl<B: BumpAllocatorCore + ?Sized> BumpAllocatorCore for $ty {
+                #[inline(always)]
+                fn any_stats(&self) -> AnyStats<'_> {
+                    B::any_stats(self)
+                }
 
-    #[inline(always)]
-    fn checkpoint(&self) -> Checkpoint {
-        B::checkpoint(self)
-    }
+                #[inline(always)]
+                fn checkpoint(&self) -> Checkpoint {
+                    B::checkpoint(self)
+                }
 
-    #[inline(always)]
-    unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        unsafe { B::reset_to(self, checkpoint) };
-    }
+                #[inline(always)]
+                unsafe fn reset_to(&self, checkpoint: Checkpoint) {
+                    unsafe { B::reset_to(self, checkpoint) };
+                }
 
-    #[inline(always)]
-    fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
-        B::prepare_allocation(self, layout)
-    }
+                #[inline(always)]
+                fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
+                    B::prepare_allocation(self, layout)
+                }
 
-    #[inline(always)]
-    unsafe fn allocate_prepared(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8> {
-        unsafe { B::allocate_prepared(self, layout, range) }
-    }
+                #[inline(always)]
+                unsafe fn allocate_prepared(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8> {
+                    unsafe { B::allocate_prepared(self, layout, range) }
+                }
 
-    #[inline(always)]
-    unsafe fn allocate_prepared_rev(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8> {
-        unsafe { B::allocate_prepared_rev(self, layout, range) }
-    }
+                #[inline(always)]
+                unsafe fn allocate_prepared_rev(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8> {
+                    unsafe { B::allocate_prepared_rev(self, layout, range) }
+                }
+            }
+        )*
+    };
 }
 
-unsafe impl<B: BumpAllocatorCore + ?Sized> BumpAllocatorCore for &mut B {
-    #[inline(always)]
-    fn any_stats(&self) -> AnyStats<'_> {
-        B::any_stats(self)
-    }
-
-    #[inline(always)]
-    fn checkpoint(&self) -> Checkpoint {
-        B::checkpoint(self)
-    }
-
-    #[inline(always)]
-    unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        unsafe { B::reset_to(self, checkpoint) };
-    }
-
-    #[inline(always)]
-    fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
-        B::prepare_allocation(self, layout)
-    }
-
-    #[inline(always)]
-    unsafe fn allocate_prepared(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8> {
-        unsafe { B::allocate_prepared(self, layout, range) }
-    }
-
-    #[inline(always)]
-    unsafe fn allocate_prepared_rev(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8> {
-        unsafe { B::allocate_prepared_rev(self, layout, range) }
-    }
+impl_for_ref! {
+    &B
+    &mut B
 }
 
 unsafe impl<B: BumpAllocatorCore> BumpAllocatorCore for WithoutDealloc<B> {
