@@ -1083,12 +1083,49 @@ where
             }
         }
     }
+
+    #[inline(always)]
+    pub(crate) fn generic_reserve_bytes<B: ErrorBehavior>(&self, additional: usize) -> Result<(), B> {
+        let Ok(layout) = Layout::from_size_align(additional, 1) else {
+            return Err(B::capacity_overflow());
+        };
+
+        if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
+            let mut additional = additional;
+
+            loop {
+                if let Some(rest) = additional.checked_sub(chunk.remaining()) {
+                    additional = rest;
+                } else {
+                    return Ok(());
+                }
+
+                if let Some(next) = chunk.next() {
+                    chunk = next;
+                } else {
+                    break;
+                }
+            }
+
+            chunk.append_for(layout).map(drop)
+        } else {
+            let allocator = A::default_or_panic();
+            let new_chunk = RawChunk::new_in(
+                ChunkSize::<A, S>::from_capacity(layout).ok_or_else(B::capacity_overflow)?,
+                None,
+                allocator,
+            )?;
+            self.chunk.set(new_chunk);
+            Ok(())
+        }
+    }
 }
 
 impl<A, S> NoDrop for BumpScope<'_, A, S> where S: BumpAllocatorSettings {}
 
-/// Methods to allocate. Available as fallible or infallible.
-#[allow(clippy::missing_errors_doc)] // error docs are in the trait
+/// Methods that forward to traits.
+// error docs can be found in the forwarded to method
+#[allow(clippy::missing_errors_doc)]
 impl<'a, A, S> BumpScope<'a, A, S>
 where
     A: BaseAllocator<S::GuaranteedAllocated>,
@@ -1409,89 +1446,17 @@ where
         BumpAllocatorTyped::dealloc(self, boxed);
     }
 
-    /// Reserves capacity for at least `additional` more bytes to be bump allocated.
-    /// The bump allocator may reserve more space to avoid frequent reallocations.
-    /// After calling `reserve_bytes`, <code>self.[stats](Self::stats)().[remaining](Stats::remaining)()</code> will be greater than or equal to
-    /// `additional`. Does nothing if the capacity is already sufficient.
-    ///
-    /// Note that these additional bytes are not necessarily in one contiguous region but
-    /// might be spread out among many chunks.
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::Bump;
-    /// let bump: Bump = Bump::new();
-    /// assert!(bump.stats().capacity() < 4096);
-    ///
-    /// bump.reserve_bytes(4096);
-    /// assert!(bump.stats().capacity() >= 4096);
-    /// ```
+    /// Forwards to [`BumpAllocatorTyped::reserve_bytes`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn reserve_bytes(&self, additional: usize) {
-        panic_on_error(self.generic_reserve_bytes(additional));
+        BumpAllocatorTyped::reserve_bytes(self, additional);
     }
 
-    /// Reserves capacity for at least `additional` more bytes to be bump allocated.
-    /// The bump allocator may reserve more space to avoid frequent reallocations.
-    /// After calling `reserve_bytes`, <code>self.[stats](Self::stats)().[remaining](Stats::remaining)()</code> will be greater than or equal to
-    /// `additional`. Does nothing if the capacity is already sufficient.
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::Bump;
-    /// let bump: Bump = Bump::try_new()?;
-    /// assert!(bump.stats().capacity() < 4096);
-    ///
-    /// bump.try_reserve_bytes(4096)?;
-    /// assert!(bump.stats().capacity() >= 4096);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
-    /// ```
+    /// Forwards to [`BumpAllocatorTyped::try_reserve_bytes`].
     #[inline(always)]
     pub fn try_reserve_bytes(&self, additional: usize) -> Result<(), AllocError> {
-        self.generic_reserve_bytes(additional)
-    }
-
-    #[inline(always)]
-    pub(crate) fn generic_reserve_bytes<B: ErrorBehavior>(&self, additional: usize) -> Result<(), B> {
-        let Ok(layout) = Layout::from_size_align(additional, 1) else {
-            return Err(B::capacity_overflow());
-        };
-
-        if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
-            let mut additional = additional;
-
-            loop {
-                if let Some(rest) = additional.checked_sub(chunk.remaining()) {
-                    additional = rest;
-                } else {
-                    return Ok(());
-                }
-
-                if let Some(next) = chunk.next() {
-                    chunk = next;
-                } else {
-                    break;
-                }
-            }
-
-            chunk.append_for(layout).map(drop)
-        } else {
-            let allocator = A::default_or_panic();
-            let new_chunk = RawChunk::new_in(
-                ChunkSize::<A, S>::from_capacity(layout).ok_or_else(B::capacity_overflow)?,
-                None,
-                allocator,
-            )?;
-            self.chunk.set(new_chunk);
-            Ok(())
-        }
+        BumpAllocatorTyped::try_reserve_bytes(self, additional)
     }
 
     /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.

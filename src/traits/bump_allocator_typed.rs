@@ -304,6 +304,55 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
             self.deallocate(ptr.cast(), layout);
         }
     }
+
+    /// Reserves capacity for at least `additional` more bytes to be bump allocated.
+    /// The bump allocator may reserve more space to avoid frequent reallocations.
+    /// After calling `reserve_bytes`, <code>self.[stats][]().[remaining][]()</code> will be greater than or equal to
+    /// `additional`. Does nothing if the capacity is already sufficient.
+    ///
+    /// Note that these additional bytes are not necessarily in one contiguous region but
+    /// might be spread out among many chunks.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// let bump: Bump = Bump::new();
+    /// assert!(bump.stats().capacity() < 4096);
+    ///
+    /// bump.reserve_bytes(4096);
+    /// assert!(bump.stats().capacity() >= 4096);
+    /// ```
+    ///
+    /// [stats]: crate::traits::BumpAllocatorScope::stats
+    /// [remaining]: Stats::remaining
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve_bytes(&self, additional: usize);
+
+    /// Reserves capacity for at least `additional` more bytes to be bump allocated.
+    /// The bump allocator may reserve more space to avoid frequent reallocations.
+    /// After calling `reserve_bytes`, <code>self.[stats][]().[remaining][]()</code> will be greater than or equal to
+    /// `additional`. Does nothing if the capacity is already sufficient.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// let bump: Bump = Bump::try_new()?;
+    /// assert!(bump.stats().capacity() < 4096);
+    ///
+    /// bump.try_reserve_bytes(4096)?;
+    /// assert!(bump.stats().capacity() >= 4096);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    ///
+    /// [stats]: crate::traits::BumpAllocatorScope::stats
+    /// [remaining]: Stats::remaining
+    fn try_reserve_bytes(&self, additional: usize) -> Result<(), AllocError>;
 }
 
 assert_implements! {
@@ -406,6 +455,17 @@ unsafe impl BumpAllocatorTyped for dyn BumpAllocatorCore + '_ {
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { allocate_prepared_slice_rev(self, ptr, len, cap) }
     }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve_bytes(&self, additional: usize) {
+        reserve_bytes(self, additional);
+    }
+
+    #[inline(always)]
+    fn try_reserve_bytes(&self, additional: usize) -> Result<(), AllocError> {
+        try_reserve_bytes(self, additional)
+    }
 }
 
 unsafe impl BumpAllocatorTyped for dyn MutBumpAllocatorCore + '_ {
@@ -487,6 +547,17 @@ unsafe impl BumpAllocatorTyped for dyn MutBumpAllocatorCore + '_ {
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { allocate_prepared_slice_rev(self, ptr, len, cap) }
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve_bytes(&self, additional: usize) {
+        reserve_bytes(self, additional);
+    }
+
+    #[inline(always)]
+    fn try_reserve_bytes(&self, additional: usize) -> Result<(), AllocError> {
+        try_reserve_bytes(self, additional)
     }
 }
 
@@ -570,6 +641,17 @@ unsafe impl BumpAllocatorTyped for dyn BumpAllocatorCoreScope<'_> + '_ {
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { allocate_prepared_slice_rev(self, ptr, len, cap) }
     }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve_bytes(&self, additional: usize) {
+        reserve_bytes(self, additional);
+    }
+
+    #[inline(always)]
+    fn try_reserve_bytes(&self, additional: usize) -> Result<(), AllocError> {
+        try_reserve_bytes(self, additional)
+    }
 }
 
 unsafe impl BumpAllocatorTyped for dyn MutBumpAllocatorCoreScope<'_> + '_ {
@@ -651,6 +733,17 @@ unsafe impl BumpAllocatorTyped for dyn MutBumpAllocatorCoreScope<'_> + '_ {
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { allocate_prepared_slice_rev(self, ptr, len, cap) }
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve_bytes(&self, additional: usize) {
+        reserve_bytes(self, additional);
+    }
+
+    #[inline(always)]
+    fn try_reserve_bytes(&self, additional: usize) -> Result<(), AllocError> {
+        try_reserve_bytes(self, additional)
     }
 }
 
@@ -860,6 +953,28 @@ unsafe fn allocate_prepared_slice_rev<T>(
     }
 }
 
+#[cfg(feature = "panic-on-alloc")]
+fn reserve_bytes(bump: impl BumpAllocatorCore, additional: usize) {
+    let Ok(layout) = Layout::array::<u8>(additional) else {
+        invalid_slice_layout();
+    };
+
+    if let Err(AllocError) = bump.prepare_allocation(layout) {
+        handle_alloc_error(layout);
+    }
+}
+
+fn try_reserve_bytes(bump: impl BumpAllocatorCore, additional: usize) -> Result<(), AllocError> {
+    let Ok(layout) = Layout::array::<u8>(additional) else {
+        return Err(AllocError);
+    };
+
+    match bump.prepare_allocation(layout) {
+        Ok(_) => Ok(()),
+        Err(err) => Err(err),
+    }
+}
+
 unsafe impl<B: BumpAllocatorTyped + ?Sized> BumpAllocatorTyped for &B {
     type TypedStats<'b>
         = B::TypedStats<'b>
@@ -939,6 +1054,17 @@ unsafe impl<B: BumpAllocatorTyped + ?Sized> BumpAllocatorTyped for &B {
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { B::allocate_prepared_slice_rev(self, ptr, len, cap) }
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve_bytes(&self, additional: usize) {
+        B::reserve_bytes(self, additional);
+    }
+
+    #[inline(always)]
+    fn try_reserve_bytes(&self, additional: usize) -> Result<(), AllocError> {
+        B::try_reserve_bytes(self, additional)
     }
 }
 
@@ -1022,6 +1148,17 @@ unsafe impl<B: BumpAllocatorTyped + ?Sized> BumpAllocatorTyped for &mut B {
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { B::allocate_prepared_slice_rev(self, ptr, len, cap) }
     }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve_bytes(&self, additional: usize) {
+        B::reserve_bytes(self, additional);
+    }
+
+    #[inline(always)]
+    fn try_reserve_bytes(&self, additional: usize) -> Result<(), AllocError> {
+        B::try_reserve_bytes(self, additional)
+    }
 }
 
 unsafe impl<B: BumpAllocatorTyped> BumpAllocatorTyped for WithoutDealloc<B> {
@@ -1103,6 +1240,17 @@ unsafe impl<B: BumpAllocatorTyped> BumpAllocatorTyped for WithoutDealloc<B> {
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { B::allocate_prepared_slice_rev(&self.0, ptr, len, cap) }
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve_bytes(&self, additional: usize) {
+        B::reserve_bytes(&self.0, additional);
+    }
+
+    #[inline(always)]
+    fn try_reserve_bytes(&self, additional: usize) -> Result<(), AllocError> {
+        B::try_reserve_bytes(&self.0, additional)
     }
 }
 
@@ -1186,6 +1334,17 @@ unsafe impl<B: BumpAllocatorTyped> BumpAllocatorTyped for WithoutShrink<B> {
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { B::allocate_prepared_slice_rev(&self.0, ptr, len, cap) }
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve_bytes(&self, additional: usize) {
+        B::reserve_bytes(&self.0, additional);
+    }
+
+    #[inline(always)]
+    fn try_reserve_bytes(&self, additional: usize) -> Result<(), AllocError> {
+        B::try_reserve_bytes(&self.0, additional)
     }
 }
 
@@ -1329,6 +1488,17 @@ where
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { BumpScope::use_prepared_slice_allocation_rev(self, ptr, len, cap) }
     }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve_bytes(&self, additional: usize) {
+        panic_on_error(self.generic_reserve_bytes(additional));
+    }
+
+    #[inline(always)]
+    fn try_reserve_bytes(&self, additional: usize) -> Result<(), AllocError> {
+        self.generic_reserve_bytes(additional)
+    }
 }
 
 unsafe impl<A, S> BumpAllocatorTyped for Bump<A, S>
@@ -1414,6 +1584,17 @@ where
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { self.as_scope().use_prepared_slice_allocation_rev(ptr, len, cap) }
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve_bytes(&self, additional: usize) {
+        self.as_scope().reserve_bytes(additional);
+    }
+
+    #[inline(always)]
+    fn try_reserve_bytes(&self, additional: usize) -> Result<(), AllocError> {
+        self.as_scope().try_reserve_bytes(additional)
     }
 }
 

@@ -1892,50 +1892,14 @@ where
         self.as_scope().dealloc(boxed);
     }
 
-    /// Reserves capacity for at least `additional` more bytes to be bump allocated.
-    /// The bump allocator may reserve more space to avoid frequent reallocations.
-    /// After calling `reserve_bytes`, <code>self.[stats](Self::stats)().[remaining](Stats::remaining)()</code> will be greater than or equal to
-    /// `additional`. Does nothing if the capacity is already sufficient.
-    ///
-    /// Note that these additional bytes are not necessarily in one contiguous region but
-    /// might be spread out among many chunks.
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::{Bump};
-    /// let bump: Bump = Bump::new();
-    /// assert!(bump.stats().capacity() < 4096);
-    ///
-    /// bump.reserve_bytes(4096);
-    /// assert!(bump.stats().capacity() >= 4096);
-    /// ```
+    /// Forwards to [`BumpAllocatorTyped::reserve_bytes`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn reserve_bytes(&self, additional: usize) {
         self.as_scope().reserve_bytes(additional);
     }
 
-    /// Reserves capacity for at least `additional` more bytes to be bump allocated.
-    /// The bump allocator may reserve more space to avoid frequent reallocations.
-    /// After calling `reserve_bytes`, <code>self.[stats](Self::stats)().[remaining](Stats::remaining)()</code> will be greater than or equal to
-    /// `additional`. Does nothing if the capacity is already sufficient.
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::Bump;
-    /// let bump: Bump = Bump::try_new()?;
-    /// assert!(bump.stats().capacity() < 4096);
-    ///
-    /// bump.try_reserve_bytes(4096)?;
-    /// assert!(bump.stats().capacity() >= 4096);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
-    /// ```
+    /// Forwards to [`BumpAllocatorTyped::try_reserve_bytes`].
     #[inline(always)]
     pub fn try_reserve_bytes(&self, additional: usize) -> Result<(), AllocError> {
         self.as_scope().try_reserve_bytes(additional)
