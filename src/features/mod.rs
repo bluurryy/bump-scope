@@ -18,3 +18,11 @@ pub mod bytemuck;
 
 #[cfg(feature = "zerocopy-08")]
 pub mod zerocopy_08;
+
+#[cfg(any(
+    feature = "nightly-allocator-api",
+    feature = "allocator-api2-02",
+    feature = "allocator-api2-03",
+    feature = "allocator-api2-04",
+))]
+mod allocator_util;
