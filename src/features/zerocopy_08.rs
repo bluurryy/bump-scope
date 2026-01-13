@@ -2,7 +2,7 @@ use core::mem::MaybeUninit;
 
 use zerocopy_08::FromZeros;
 
-use crate::{BaseAllocator, Bump, BumpBox, BumpScope, alloc::AllocError, settings::BumpAllocatorSettings};
+use crate::{BumpBox, alloc::AllocError, traits::BumpAllocatorTypedScope};
 
 mod vec_ext;
 
@@ -69,34 +69,8 @@ impl<'a, T: FromZeros> InitZeroed<'a> for BumpBox<'a, [MaybeUninit<T>]> {
     }
 }
 
-mod bump_ext {
-    use super::*;
-
-    pub trait Sealed {}
-
-    impl<A, S> Sealed for Bump<A, S>
-    where
-        A: BaseAllocator<S::GuaranteedAllocated>,
-        S: BumpAllocatorSettings,
-    {
-    }
-}
-
-mod bump_scope_ext {
-    use super::*;
-
-    pub trait Sealed {}
-
-    impl<A, S> Sealed for BumpScope<'_, A, S>
-    where
-        A: BaseAllocator<S::GuaranteedAllocated>,
-        S: BumpAllocatorSettings,
-    {
-    }
-}
-
-/// Extension trait for [`Bump`] that adds the `(try_)alloc_zeroed(_slice)` methods.
-pub trait BumpExt: bump_ext::Sealed {
+/// Extension trait for [`BumpAllocatorTypedScope`] that adds the `(try_)alloc_zeroed(_slice)` methods.
+pub trait BumpAllocatorTypedScopeExt<'a>: BumpAllocatorTypedScope<'a> {
     /// Allocate a zeroed object.
     ///
     /// # Panics
@@ -104,202 +78,12 @@ pub trait BumpExt: bump_ext::Sealed {
     ///
     /// # Examples
     /// ```
-    /// use bump_scope::{Bump, zerocopy_08::BumpExt};
+    /// use bump_scope::{Bump, zerocopy_08::BumpAllocatorTypedScopeExt};
     /// let bump: Bump = Bump::new();
     ///
-    /// let zero = bump.alloc_zeroed::<i32>();
+    /// let zero = bump.as_scope().alloc_zeroed::<i32>();
     /// assert_eq!(*zero, 0);
     /// ```
-    #[cfg(feature = "panic-on-alloc")]
-    fn alloc_zeroed<T>(&self) -> BumpBox<'_, T>
-    where
-        T: FromZeros;
-
-    /// Allocate a zeroed object.
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// use bump_scope::{Bump, zerocopy_08::BumpExt};
-    /// let bump: Bump = Bump::try_new()?;
-    ///
-    /// let zero = bump.try_alloc_zeroed::<i32>()?;
-    /// assert_eq!(*zero, 0);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
-    /// ```
-    fn try_alloc_zeroed<T>(&self) -> Result<BumpBox<'_, T>, AllocError>
-    where
-        T: FromZeros;
-
-    /// Allocate a zeroed object slice.
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// use bump_scope::{Bump, zerocopy_08::BumpExt};
-    /// let bump: Bump = Bump::new();
-    ///
-    /// let zeroes = bump.alloc_zeroed_slice::<i32>(3);
-    /// assert_eq!(*zeroes, [0; 3]);
-    /// ```
-    #[cfg(feature = "panic-on-alloc")]
-    fn alloc_zeroed_slice<T>(&self, len: usize) -> BumpBox<'_, [T]>
-    where
-        T: FromZeros;
-
-    /// Allocate a zeroed object slice.
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// use bump_scope::{Bump, zerocopy_08::BumpExt};
-    /// let bump: Bump = Bump::try_new()?;
-    ///
-    /// let zeroes = bump.try_alloc_zeroed_slice::<i32>(3)?;
-    /// assert_eq!(*zeroes, [0; 3]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
-    /// ```
-    fn try_alloc_zeroed_slice<T>(&self, len: usize) -> Result<BumpBox<'_, [T]>, AllocError>
-    where
-        T: FromZeros;
-}
-
-/// Extension trait for [`BumpScope`] that adds the `(try_)alloc_zeroed(_slice)` methods.
-pub trait BumpScopeExt<'a>: bump_scope_ext::Sealed {
-    /// Allocate a zeroed object.
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// use bump_scope::{Bump, zerocopy_08::BumpScopeExt};
-    /// let mut bump: Bump = Bump::new();
-    ///
-    /// bump.scoped(|bump| {
-    ///     let zero = bump.alloc_zeroed::<i32>();
-    ///     assert_eq!(*zero, 0);
-    /// });
-    /// ```
-    #[cfg(feature = "panic-on-alloc")]
-    fn alloc_zeroed<T>(&self) -> BumpBox<'a, T>
-    where
-        T: FromZeros;
-
-    /// Allocate a zeroed object.
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// use bump_scope::{Bump, alloc::AllocError, zerocopy_08::BumpScopeExt};
-    /// let mut bump: Bump = Bump::try_new()?;
-    ///
-    /// bump.scoped(|bump| -> Result<(), AllocError> {
-    ///     let zero = bump.try_alloc_zeroed::<i32>()?;
-    ///     assert_eq!(*zero, 0);
-    ///     Ok(())
-    /// })?;
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
-    /// ```
-    fn try_alloc_zeroed<T>(&self) -> Result<BumpBox<'a, T>, AllocError>
-    where
-        T: FromZeros;
-
-    /// Allocate a zeroed object slice.
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// use bump_scope::{Bump, zerocopy_08::BumpScopeExt};
-    /// let mut bump: Bump = Bump::new();
-    ///
-    /// bump.scoped(|bump| {
-    ///     let zeroes = bump.alloc_zeroed_slice::<i32>(3);
-    ///     assert_eq!(*zeroes, [0; 3]);
-    /// });
-    /// ```
-    #[cfg(feature = "panic-on-alloc")]
-    fn alloc_zeroed_slice<T>(&self, len: usize) -> BumpBox<'a, [T]>
-    where
-        T: FromZeros;
-
-    /// Allocate a zeroed object slice.
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// use bump_scope::{Bump, alloc::AllocError, zerocopy_08::BumpScopeExt};
-    /// let mut bump: Bump = Bump::try_new()?;
-    ///
-    /// bump.scoped(|bump| -> Result<(), AllocError>  {
-    ///     let zeroes = bump.try_alloc_zeroed_slice::<i32>(3)?;
-    ///     assert_eq!(*zeroes, [0; 3]);
-    ///     Ok(())
-    /// })?;
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
-    /// ```
-    fn try_alloc_zeroed_slice<T>(&self, len: usize) -> Result<BumpBox<'a, [T]>, AllocError>
-    where
-        T: FromZeros;
-}
-
-impl<A, S> BumpExt for Bump<A, S>
-where
-    A: BaseAllocator<S::GuaranteedAllocated>,
-    S: BumpAllocatorSettings,
-{
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    fn alloc_zeroed<T>(&self) -> BumpBox<'_, T>
-    where
-        T: FromZeros,
-    {
-        self.as_scope().alloc_zeroed()
-    }
-
-    #[inline(always)]
-    fn try_alloc_zeroed<T>(&self) -> Result<BumpBox<'_, T>, AllocError>
-    where
-        T: FromZeros,
-    {
-        self.as_scope().try_alloc_zeroed()
-    }
-
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    fn alloc_zeroed_slice<T>(&self, len: usize) -> BumpBox<'_, [T]>
-    where
-        T: FromZeros,
-    {
-        self.as_scope().alloc_zeroed_slice(len)
-    }
-
-    #[inline(always)]
-    fn try_alloc_zeroed_slice<T>(&self, len: usize) -> Result<BumpBox<'_, [T]>, AllocError>
-    where
-        T: FromZeros,
-    {
-        self.as_scope().try_alloc_zeroed_slice(len)
-    }
-}
-
-impl<'a, A, S> BumpScopeExt<'a> for BumpScope<'a, A, S>
-where
-    A: BaseAllocator<S::GuaranteedAllocated>,
-    S: BumpAllocatorSettings,
-{
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_zeroed<T>(&self) -> BumpBox<'a, T>
@@ -309,6 +93,20 @@ where
         self.alloc_uninit().init_zeroed()
     }
 
+    /// Allocate a zeroed object.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::{Bump, zerocopy_08::BumpAllocatorTypedScopeExt};
+    /// let bump: Bump = Bump::try_new()?;
+    ///
+    /// let zero = bump.as_scope().try_alloc_zeroed::<i32>()?;
+    /// assert_eq!(*zero, 0);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     #[inline(always)]
     fn try_alloc_zeroed<T>(&self) -> Result<BumpBox<'a, T>, AllocError>
     where
@@ -317,7 +115,19 @@ where
         Ok(self.try_alloc_uninit()?.init_zeroed())
     }
 
-    #[inline(always)]
+    /// Allocate a zeroed object slice.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::{Bump, zerocopy_08::BumpAllocatorTypedScopeExt};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let zeroes = bump.as_scope().alloc_zeroed_slice::<i32>(3);
+    /// assert_eq!(*zeroes, [0; 3]);
+    /// ```
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_zeroed_slice<T>(&self, len: usize) -> BumpBox<'a, [T]>
     where
@@ -326,7 +136,20 @@ where
         self.alloc_uninit_slice(len).init_zeroed()
     }
 
-    #[inline(always)]
+    /// Allocate a zeroed object slice.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::{Bump, zerocopy_08::BumpAllocatorTypedScopeExt};
+    /// let bump: Bump = Bump::try_new()?;
+    ///
+    /// let zeroes = bump.as_scope().try_alloc_zeroed_slice::<i32>(3)?;
+    /// assert_eq!(*zeroes, [0; 3]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
     fn try_alloc_zeroed_slice<T>(&self, len: usize) -> Result<BumpBox<'a, [T]>, AllocError>
     where
         T: FromZeros,
@@ -334,3 +157,5 @@ where
         Ok(self.try_alloc_uninit_slice(len)?.init_zeroed())
     }
 }
+
+impl<'a, T> BumpAllocatorTypedScopeExt<'a> for T where T: BumpAllocatorTypedScope<'a> {}

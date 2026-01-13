@@ -240,12 +240,12 @@
 //!   `try_`-prefixed allocation methods will be available.
 //! - **`serde`** — Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 //! - **`bytemuck`** — Adds `bytemuck::*` extension traits for
-//!   <code>[alloc_zeroed](bytemuck::BumpExt::alloc_zeroed)([_slice](bytemuck::BumpExt::alloc_zeroed_slice))</code>,
+//!   <code>[alloc_zeroed](bytemuck::BumpAllocatorTypedScopeExt::alloc_zeroed)([_slice](bytemuck::BumpAllocatorTypedScopeExt::alloc_zeroed_slice))</code>,
 //!   [`init_zeroed`](bytemuck::InitZeroed::init_zeroed),
 //!   [`extend_zeroed`](bytemuck::VecExt::extend_zeroed) and
 //!   [`resize_zeroed`](bytemuck::VecExt::resize_zeroed).
 //! - **`zerocopy-08`** — Adds `zerocopy_08::*` extension traits for
-//!   <code>[alloc_zeroed](zerocopy_08::BumpExt::alloc_zeroed)([_slice](zerocopy_08::BumpExt::alloc_zeroed_slice))</code>,
+//!   <code>[alloc_zeroed](zerocopy_08::BumpAllocatorTypedScopeExt::alloc_zeroed)([_slice](zerocopy_08::BumpAllocatorTypedScopeExt::alloc_zeroed_slice))</code>,
 //!   [`init_zeroed`](zerocopy_08::InitZeroed::init_zeroed),
 //!   [`extend_zeroed`](zerocopy_08::VecExt::extend_zeroed) and
 //!   [`resize_zeroed`](zerocopy_08::VecExt::resize_zeroed).
@@ -388,13 +388,13 @@ pub mod CHANGELOG {}
 #[cfg(feature = "bytemuck")]
 /// Contains extension traits.
 pub mod bytemuck {
-    pub use crate::features::bytemuck::{BumpExt, BumpScopeExt, InitZeroed, VecExt};
+    pub use crate::features::bytemuck::{BumpAllocatorTypedScopeExt, InitZeroed, VecExt};
 }
 
 #[cfg(feature = "zerocopy-08")]
 /// Contains extension traits.
 pub mod zerocopy_08 {
-    pub use crate::features::zerocopy_08::{BumpExt, BumpScopeExt, InitZeroed, VecExt};
+    pub use crate::features::zerocopy_08::{BumpAllocatorTypedScopeExt, InitZeroed, VecExt};
 }
 
 /// Does not check for overflow.

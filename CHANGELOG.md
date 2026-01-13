@@ -25,8 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Bump allocator traits have been moved and renamed:
   - `(Mut)BumpAllocator` -> `traits::(Mut)BumpAllocatorCore`
   - `(Mut)BumpAllocatorScope` -> `traits::(Mut)BumpAllocatorCoreScope`
-  - `(Mut)BumpAllocatorExt` -> `traits::(Mut)BumpAllocatorTyped`
+  - `(Mut)BumpAllocatorTypedScopeExt` -> `traits::(Mut)BumpAllocatorTyped`
   - `(Mut)BumpAllocatorScopeExt` -> `traits::(Mut)BumpAllocatorTypedScope`
+- **Breaking:** Implement `bytemuck` and `zerocopy` allocator extension traits for all `T: BumpAllocatorTypedScope` and name them `BumpAllocatorTypedScopeExt`
 - For non-guaranteed-allocated `Stats`, `current_chunk` has been renamed to `get_current_chunk`
 - For non-guaranteed-allocated `BumpScope`, `allocator` has been renamed to `get_allocator`
 - Depend on `serde_core` instead of `serde`
@@ -98,7 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Improve `BumpAllocatorExt` methods documentation
+- Improve `BumpAllocatorTypedScopeExt` methods documentation
 
 ### Fixed
 
@@ -132,7 +133,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Breaking:** `BumpAllocator` trait family has been reworked:
-  - what was `BumpAllocator` is now `BumpAllocatorExt`, same with other traits that have an `*Ext` variant 
+  - what was `BumpAllocator` is now `BumpAllocatorTypedScopeExt`, same with other traits that have an `*Ext` variant 
   - trait methods become public api
   - `BumpAllocator` becomes a sealed trait
   - `&dyn BumpAllocator` can be used for collections

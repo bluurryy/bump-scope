@@ -10,7 +10,7 @@ use bump_scope::{
     alloc::{AllocError, Allocator, Global},
     settings::BumpSettings,
     traits::BumpAllocatorTyped,
-    zerocopy_08::{BumpExt, VecExt},
+    zerocopy_08::{BumpAllocatorTypedScopeExt, VecExt},
     BumpBox, FixedBumpString, FixedBumpVec,
 };
 

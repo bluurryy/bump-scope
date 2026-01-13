@@ -203,12 +203,12 @@ assert_eq!(bump.stats().allocated(), 4);
   `try_`-prefixed allocation methods will be available.
 - **`serde`** — Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 - **`bytemuck`** — Adds `bytemuck::*` extension traits for
-  <code>[alloc_zeroed](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/bytemuck/trait.BumpExt.html#tymethod.alloc_zeroed)([_slice](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/bytemuck/trait.BumpExt.html#tymethod.alloc_zeroed_slice))</code>,
+  <code>[alloc_zeroed](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/bytemuck/trait.BumpAllocatorTypedScopeExt.html#tymethod.alloc_zeroed)([_slice](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/bytemuck/trait.BumpAllocatorTypedScopeExt.html#tymethod.alloc_zeroed_slice))</code>,
   [`init_zeroed`](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/bytemuck/trait.InitZeroed.html#tymethod.init_zeroed),
   [`extend_zeroed`](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/bytemuck/trait.VecExt.html#tymethod.extend_zeroed) and
   [`resize_zeroed`](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/bytemuck/trait.VecExt.html#tymethod.resize_zeroed).
 - **`zerocopy-08`** — Adds `zerocopy_08::*` extension traits for
-  <code>[alloc_zeroed](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/zerocopy_08/trait.BumpExt.html#tymethod.alloc_zeroed)([_slice](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/zerocopy_08/trait.BumpExt.html#tymethod.alloc_zeroed_slice))</code>,
+  <code>[alloc_zeroed](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/zerocopy_08/trait.BumpAllocatorTypedScopeExt.html#tymethod.alloc_zeroed)([_slice](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/zerocopy_08/trait.BumpAllocatorTypedScopeExt.html#tymethod.alloc_zeroed_slice))</code>,
   [`init_zeroed`](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/zerocopy_08/trait.InitZeroed.html#tymethod.init_zeroed),
   [`extend_zeroed`](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/zerocopy_08/trait.VecExt.html#tymethod.extend_zeroed) and
   [`resize_zeroed`](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/zerocopy_08/trait.VecExt.html#tymethod.resize_zeroed).

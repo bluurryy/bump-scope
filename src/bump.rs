@@ -141,14 +141,14 @@ macro_rules! make_type {
         /// [`alloc`]: Self::alloc
         /// [`alloc_with`]: Self::alloc_with
         /// [`alloc_default`]: Self::alloc_default
-        /// [`alloc_zeroed`]: crate::zerocopy_08::BumpExt::alloc_zeroed
+        /// [`alloc_zeroed`]: crate::zerocopy_08::BumpAllocatorTypedScopeExt::alloc_zeroed
         ///
         /// [`alloc_str`]: Self::alloc_str
         ///
         /// [`alloc_cstr`]: Self::alloc_cstr
         /// [`alloc_cstr_from_str`]: Self::alloc_cstr_from_str
         ///
-        /// [`alloc_zeroed_slice`]: crate::zerocopy_08::BumpExt::alloc_zeroed_slice
+        /// [`alloc_zeroed_slice`]: crate::zerocopy_08::BumpAllocatorTypedScopeExt::alloc_zeroed_slice
         ///
         /// [`alloc_iter`]: Self::alloc_iter
         /// [`alloc_iter_exact`]: Self::alloc_iter_exact
