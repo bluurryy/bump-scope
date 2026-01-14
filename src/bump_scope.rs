@@ -48,7 +48,7 @@ macro_rules! make_type {
         ///
         /// This type is provided as a parameter to the closure of [`Bump::scoped`], [`BumpScope::scoped`] or created
         /// by [`BumpScopeGuard::scope`] and [`BumpScopeGuardRoot::scope`]. A [`Bump`] can also be turned into a `BumpScope` using
-        /// [`as_scope`], [`as_mut_scope`] or [`into`].
+        /// [`as_scope`], [`as_mut_scope`] or `from` / `into`.
         ///
         /// [`Bump::scoped`]: crate::Bump::scoped
         /// [`BumpScopeGuard::scope`]: crate::BumpScopeGuard::scope
@@ -58,7 +58,6 @@ macro_rules! make_type {
         /// [`as_scope`]: crate::Bump::as_scope
         /// [`as_mut_scope`]: crate::Bump::as_mut_scope
         /// [`reset`]: crate::Bump::reset
-        /// [`into`]: crate::Bump#impl-From<%26Bump<A,+MIN_ALIGN,+UP,+GUARANTEED_ALLOCATED>>-for-%26BumpScope<'b,+A,+MIN_ALIGN,+UP,+GUARANTEED_ALLOCATED>
         #[repr(transparent)]
         pub struct BumpScope<'a, $($allocator_parameter)*, S = BumpSettings>
         where
