@@ -6,7 +6,6 @@ use crate::{
     BaseAllocator, Bump, BumpBox, BumpScope, SizedTypeProperties, WithoutDealloc, WithoutShrink,
     alloc::AllocError,
     bump_down,
-    layout::CustomLayout,
     polyfill::non_null,
     settings::BumpAllocatorSettings,
     stats::{AnyStats, Stats},
@@ -1031,51 +1030,45 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
-        match self.chunk.get().alloc(CustomLayout(layout)) {
-            Some(ptr) => ptr,
-            None => panic_on_error(self.alloc_in_another_chunk(layout)),
-        }
+        panic_on_error(self.generic_allocate_layout(layout))
     }
 
     #[inline(always)]
     fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
-        match self.chunk.get().alloc(CustomLayout(layout)) {
-            Some(ptr) => Ok(ptr),
-            None => self.alloc_in_another_chunk(layout),
-        }
+        self.generic_allocate_layout(layout)
     }
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn allocate_sized<T>(&self) -> NonNull<T> {
-        panic_on_error(self.do_alloc_sized())
+        panic_on_error(self.generic_allocate_sized())
     }
 
     #[inline(always)]
     fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError> {
-        self.do_alloc_sized()
+        self.generic_allocate_sized()
     }
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T> {
-        panic_on_error(self.do_alloc_slice(len))
+        panic_on_error(self.generic_allocate_slice(len))
     }
 
     #[inline(always)]
     fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError> {
-        self.do_alloc_slice(len)
+        self.generic_allocate_slice(len)
     }
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice_for<T>(&self, slice: &[T]) -> NonNull<T> {
-        panic_on_error(self.do_alloc_slice_for(slice))
+        panic_on_error(self.generic_allocate_slice_for(slice))
     }
 
     #[inline(always)]
     fn try_allocate_slice_for<T>(&self, slice: &[T]) -> Result<NonNull<T>, AllocError> {
-        self.do_alloc_slice_for(slice)
+        self.generic_allocate_slice_for(slice)
     }
 
     #[inline]

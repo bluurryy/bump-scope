@@ -842,6 +842,14 @@ where
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
+    pub(crate) fn generic_allocate_layout<B: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, B> {
+        match self.chunk.get().alloc(CustomLayout(layout)) {
+            Some(ptr) => Ok(ptr),
+            None => self.alloc_in_another_chunk(layout),
+        }
+    }
+
+    #[inline(always)]
     pub(crate) fn generic_prepare_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
         match self.chunk.get().prepare_allocation(SizedLayout::new::<T>()) {
             Some(ptr) => Ok(ptr.cast()),
@@ -918,14 +926,14 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
+    pub(crate) fn generic_allocate_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
         if T::IS_ZST {
             return Ok(NonNull::dangling());
         }
 
         match self.chunk.get().alloc(SizedLayout::new::<T>()) {
             Some(ptr) => Ok(ptr.cast()),
-            None => match self.do_alloc_sized_in_another_chunk::<E, T>() {
+            None => match self.allocate_sized_in_another_chunk::<E, T>() {
                 Ok(ptr) => Ok(ptr.cast()),
                 Err(err) => Err(err),
             },
@@ -934,12 +942,12 @@ where
 
     #[cold]
     #[inline(never)]
-    pub(crate) fn do_alloc_sized_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E> {
+    pub(crate) fn allocate_sized_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E> {
         self.alloc_in_another_chunk(Layout::new::<T>())
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
+    pub(crate) fn generic_allocate_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
         if T::IS_ZST {
             return Ok(NonNull::dangling());
         }
@@ -950,7 +958,7 @@ where
 
         match self.chunk.get().alloc(layout) {
             Some(ptr) => Ok(ptr.cast()),
-            None => match self.do_alloc_slice_in_another_chunk::<E, T>(len) {
+            None => match self.allocate_slice_in_another_chunk::<E, T>(len) {
                 Ok(ptr) => Ok(ptr.cast()),
                 Err(err) => Err(err),
             },
@@ -958,7 +966,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn do_alloc_slice_for<E: ErrorBehavior, T>(&self, value: &[T]) -> Result<NonNull<T>, E> {
+    pub(crate) fn generic_allocate_slice_for<E: ErrorBehavior, T>(&self, value: &[T]) -> Result<NonNull<T>, E> {
         if T::IS_ZST {
             return Ok(NonNull::dangling());
         }
@@ -967,7 +975,7 @@ where
 
         match self.chunk.get().alloc(layout) {
             Some(ptr) => Ok(ptr.cast()),
-            None => match self.do_alloc_slice_in_another_chunk::<E, T>(value.len()) {
+            None => match self.allocate_slice_in_another_chunk::<E, T>(value.len()) {
                 Ok(ptr) => Ok(ptr.cast()),
                 Err(err) => Err(err),
             },
@@ -976,7 +984,7 @@ where
 
     #[cold]
     #[inline(never)]
-    pub(crate) fn do_alloc_slice_in_another_chunk<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<u8>, E> {
+    pub(crate) fn allocate_slice_in_another_chunk<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<u8>, E> {
         let Ok(layout) = Layout::array::<T>(len) else {
             return Err(E::capacity_overflow());
         };
@@ -1354,7 +1362,7 @@ where
             return Ok(BumpBox::zst(MaybeUninit::uninit()));
         }
 
-        let ptr = self.do_alloc_sized::<B, T>()?.cast::<MaybeUninit<T>>();
+        let ptr = self.generic_allocate_sized::<B, T>()?.cast::<MaybeUninit<T>>();
         unsafe { Ok(BumpBox::from_raw(ptr)) }
     }
 }
