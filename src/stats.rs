@@ -15,7 +15,8 @@ use core::{
 };
 
 use crate::{
-    RawChunk, maybe_default_allocator,
+    chunk::RawChunk,
+    maybe_default_allocator,
     settings::{BumpAllocatorSettings, BumpSettings, False, True},
 };
 

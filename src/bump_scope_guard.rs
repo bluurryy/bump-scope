@@ -1,9 +1,9 @@
 use core::{fmt::Debug, marker::PhantomData, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    Bump, BumpScope, RawChunk,
+    Bump, BumpScope,
     alloc::Allocator,
-    chunk::ChunkHeader,
+    chunk::{ChunkHeader, RawChunk},
     settings::{BumpAllocatorSettings, BumpSettings, True},
     stats::{AnyStats, Stats},
 };

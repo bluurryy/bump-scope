@@ -338,7 +338,6 @@ pub mod owned_slice;
 pub mod owned_str;
 mod partial_eq;
 mod polyfill;
-mod raw_chunk;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
 pub mod settings;
@@ -373,7 +372,6 @@ pub use mut_bump_vec_rev::MutBumpVecRev;
 pub use no_drop::NoDrop;
 #[cfg(feature = "panic-on-alloc")]
 use private::{PanicsOnAlloc, capacity_overflow, format_trait_error};
-use raw_chunk::RawChunk;
 use set_len_on_drop::SetLenOnDrop;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 

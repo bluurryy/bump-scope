@@ -15,12 +15,11 @@ use core::{
 use core::clone::CloneToUninit;
 
 use crate::{
-    BaseAllocator, Bump, BumpBox, BumpScopeGuard, Checkpoint, ErrorBehavior, NoDrop, RawChunk, SizedTypeProperties,
-    align_pos,
+    BaseAllocator, Bump, BumpBox, BumpScopeGuard, Checkpoint, ErrorBehavior, NoDrop, SizedTypeProperties, align_pos,
     alloc::{AllocError, Allocator},
     allocator_impl,
     bump_align_guard::BumpAlignGuard,
-    chunk::{ChunkHeader, ChunkSize},
+    chunk::{ChunkHeader, ChunkSize, RawChunk},
     down_align_usize,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     maybe_default_allocator,

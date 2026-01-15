@@ -3,8 +3,8 @@ use core::{alloc::Layout, ops::Range, ptr::NonNull};
 use crate::{
     BaseAllocator, Bump, BumpScope, Checkpoint, WithoutDealloc, WithoutShrink,
     alloc::{AllocError, Allocator},
+    chunk::RawChunk,
     layout::CustomLayout,
-    raw_chunk::RawChunk,
     settings::BumpAllocatorSettings,
     stats::AnyStats,
     traits::{assert_dyn_compatible, assert_implements},

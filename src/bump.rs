@@ -12,9 +12,9 @@ use core::{
 use core::clone::CloneToUninit;
 
 use crate::{
-    BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, RawChunk,
+    BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior,
     alloc::{AllocError, Allocator},
-    chunk::ChunkSize,
+    chunk::{ChunkSize, RawChunk},
     maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{transmute_mut, transmute_ref},
