@@ -1,12 +1,11 @@
 use core::{alloc::Layout, marker::PhantomData, num::NonZeroUsize};
 
-use chunk_size_config::ChunkSizeConfig;
+use crate::{
+    chunk::{ChunkHeader, ChunkSizeConfig, MIN_CHUNK_ALIGN},
+    settings::BumpAllocatorSettings,
+};
 
-use crate::{chunk::ChunkHeader, settings::BumpAllocatorSettings};
-
-mod chunk_size_config;
-
-const _: () = assert!(chunk_size_config::MIN_CHUNK_ALIGN == crate::bumping::MIN_CHUNK_ALIGN);
+const _: () = assert!(MIN_CHUNK_ALIGN == crate::bumping::MIN_CHUNK_ALIGN);
 
 /// We leave some space per allocation for the base allocator.
 pub(crate) type AssumedMallocOverhead = [*const u8; 2];

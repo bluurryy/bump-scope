@@ -6,7 +6,7 @@ use std::convert::Infallible;
 
 use crate::{
     alloc::{AllocError, Allocator, Global},
-    chunk_size::AssumedMallocOverhead,
+    chunk::AssumedMallocOverhead,
     settings::BumpSettings,
     tests::Bump,
 };

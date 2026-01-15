@@ -14,7 +14,7 @@ use core::clone::CloneToUninit;
 use crate::{
     BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior, RawChunk,
     alloc::{AllocError, Allocator},
-    chunk_size::ChunkSize,
+    chunk::ChunkSize,
     maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{transmute_mut, transmute_ref},

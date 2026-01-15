@@ -1,1 +1,1 @@
-../../../../src/chunk_size/chunk_size_config.rs
+../../../../src/chunk/size_config.rs
