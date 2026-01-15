@@ -939,7 +939,7 @@ where
         } else {
             let allocator = A::default_or_panic();
             let new_chunk = RawChunk::new_in(
-                ChunkSize::<A, S>::from_capacity(layout).ok_or_else(B::capacity_overflow)?,
+                ChunkSize::<A, S::Up>::from_capacity(layout).ok_or_else(B::capacity_overflow)?,
                 None,
                 allocator,
             )?;

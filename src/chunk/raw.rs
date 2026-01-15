@@ -70,7 +70,11 @@ impl<A, S> RawChunk<A, S>
 where
     S: BumpAllocatorSettings,
 {
-    pub(crate) fn new_in<E: ErrorBehavior>(chunk_size: ChunkSize<A, S>, prev: Option<Self>, allocator: A) -> Result<Self, E>
+    pub(crate) fn new_in<E: ErrorBehavior>(
+        chunk_size: ChunkSize<A, S::Up>,
+        prev: Option<Self>,
+        allocator: A,
+    ) -> Result<Self, E>
     where
         A: Allocator,
     {
@@ -562,11 +566,11 @@ where
     }
 
     #[inline(always)]
-    fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSizeHint<A, S>, B> {
+    fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSizeHint<A, S::Up>, B> {
         let Some(size) = self.size().get().checked_mul(2) else {
             return Err(B::capacity_overflow());
         };
 
-        Ok(ChunkSizeHint::<A, S>::new(size))
+        Ok(ChunkSizeHint::new(size))
     }
 }
