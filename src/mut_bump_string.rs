@@ -13,9 +13,9 @@ use core::{
 use crate::{
     BumpBox, ErrorBehavior, FromUtf8Error, FromUtf16Error, MutBumpVec,
     alloc::AllocError,
+    fixed_bump_string::RawFixedBumpString,
     owned_str,
     polyfill::{self, transmute_mut, transmute_value},
-    raw_fixed_bump_string::RawFixedBumpString,
     traits::{MutBumpAllocatorTyped, MutBumpAllocatorTypedScope},
 };
 

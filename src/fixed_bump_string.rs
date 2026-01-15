@@ -19,6 +19,10 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
+mod raw;
+
+pub(crate) use raw::RawFixedBumpString;
+
 /// A type like [`BumpString`] but with a fixed capacity.
 ///
 /// It can be constructed using [`with_capacity_in`] or from a `BumpBox` via [`from_init`] or [`from_uninit`].

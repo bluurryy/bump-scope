@@ -15,9 +15,9 @@ use crate::{
     BumpBox, BumpVec, ErrorBehavior, FixedBumpString, FromUtf8Error, FromUtf16Error,
     alloc::AllocError,
     destructure::destructure,
+    fixed_bump_string::RawFixedBumpString,
     owned_str,
     polyfill::{self, transmute_mut, transmute_value},
-    raw_fixed_bump_string::RawFixedBumpString,
     traits::{BumpAllocatorTyped, BumpAllocatorTypedScope},
 };
 
