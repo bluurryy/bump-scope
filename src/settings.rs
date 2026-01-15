@@ -141,6 +141,7 @@ pub trait BumpAllocatorSettings: Sealed {
 
     /// Changes the minimum alignment.
     type WithMinimumAlignment<const NEW_MIN_ALIGN: usize>: BumpAllocatorSettings<
+            MinimumAlignment = MinimumAlignment<NEW_MIN_ALIGN>,
             Up = Self::Up,
             GuaranteedAllocated = Self::GuaranteedAllocated,
             Deallocates = Self::Deallocates,
