@@ -889,11 +889,7 @@ where
 {
     #[inline(always)]
     pub(crate) fn generic_prepare_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
-        match self
-            .chunk
-            .get()
-            .prepare_allocation::<S::MinimumAlignment>(SizedLayout::new::<T>())
-        {
+        match self.chunk.get().prepare_allocation(SizedLayout::new::<T>()) {
             Some(ptr) => Ok(ptr.cast()),
             None => match self.prepare_allocation_in_another_chunk::<B, T>() {
                 Ok(ptr) => Ok(ptr.cast()),
@@ -907,7 +903,7 @@ where
     pub(crate) fn prepare_allocation_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E> {
         let layout = CustomLayout(Layout::new::<T>());
 
-        unsafe { self.in_another_chunk(layout, RawChunk::prepare_allocation::<S::MinimumAlignment>) }
+        unsafe { self.in_another_chunk(layout, RawChunk::prepare_allocation) }
     }
 
     pub(crate) fn generic_prepare_slice_allocation<B: ErrorBehavior, T>(&self, min_cap: usize) -> Result<NonNull<[T]>, B> {
@@ -931,7 +927,7 @@ where
             return Err(B::capacity_overflow());
         };
 
-        let range = match self.chunk.get().prepare_allocation_range::<S::MinimumAlignment>(layout) {
+        let range = match self.chunk.get().prepare_allocation_range(layout) {
             Some(ptr) => ptr,
             None => self.prepare_allocation_range_in_another_chunk(layout)?,
         };
@@ -945,12 +941,12 @@ where
         &self,
         layout: ArrayLayout,
     ) -> Result<Range<NonNull<u8>>, E> {
-        unsafe { self.in_another_chunk(layout, RawChunk::prepare_allocation_range::<S::MinimumAlignment>) }
+        unsafe { self.in_another_chunk(layout, RawChunk::prepare_allocation_range) }
     }
 
     #[inline(always)]
     pub(crate) fn alloc_in_current_chunk(&self, layout: Layout) -> Option<NonNull<u8>> {
-        self.chunk.get().alloc::<S::MinimumAlignment>(CustomLayout(layout))
+        self.chunk.get().alloc(CustomLayout(layout))
     }
 
     /// Allocation slow path.
@@ -964,7 +960,7 @@ where
             return Ok(polyfill::layout::dangling(layout));
         }
 
-        unsafe { self.in_another_chunk(CustomLayout(layout), RawChunk::alloc::<S::MinimumAlignment>) }
+        unsafe { self.in_another_chunk(CustomLayout(layout), RawChunk::alloc) }
     }
 
     #[inline(always)]
@@ -973,7 +969,7 @@ where
             return Ok(NonNull::dangling());
         }
 
-        match self.chunk.get().alloc::<S::MinimumAlignment>(SizedLayout::new::<T>()) {
+        match self.chunk.get().alloc(SizedLayout::new::<T>()) {
             Some(ptr) => Ok(ptr.cast()),
             None => match self.do_alloc_sized_in_another_chunk::<E, T>() {
                 Ok(ptr) => Ok(ptr.cast()),
@@ -998,7 +994,7 @@ where
             return Err(E::capacity_overflow());
         };
 
-        match self.chunk.get().alloc::<S::MinimumAlignment>(layout) {
+        match self.chunk.get().alloc(layout) {
             Some(ptr) => Ok(ptr.cast()),
             None => match self.do_alloc_slice_in_another_chunk::<E, T>(len) {
                 Ok(ptr) => Ok(ptr.cast()),
@@ -1015,7 +1011,7 @@ where
 
         let layout = ArrayLayout::for_value(value);
 
-        match self.chunk.get().alloc::<S::MinimumAlignment>(layout) {
+        match self.chunk.get().alloc(layout) {
             Some(ptr) => Ok(ptr.cast()),
             None => match self.do_alloc_slice_in_another_chunk::<E, T>(value.len()) {
                 Ok(ptr) => Ok(ptr.cast()),

@@ -1031,7 +1031,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
-        match self.chunk.get().alloc::<S::MinimumAlignment>(CustomLayout(layout)) {
+        match self.chunk.get().alloc(CustomLayout(layout)) {
             Some(ptr) => ptr,
             None => panic_on_error(self.alloc_in_another_chunk(layout)),
         }
@@ -1039,7 +1039,7 @@ where
 
     #[inline(always)]
     fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
-        match self.chunk.get().alloc::<S::MinimumAlignment>(CustomLayout(layout)) {
+        match self.chunk.get().alloc(CustomLayout(layout)) {
             Some(ptr) => Ok(ptr),
             None => self.alloc_in_another_chunk(layout),
         }

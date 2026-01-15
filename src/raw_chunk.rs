@@ -9,7 +9,7 @@ use crate::{
     chunk_size::{ChunkSize, ChunkSizeHint},
     layout::LayoutProps,
     polyfill::non_null,
-    settings::{Boolean, BumpAllocatorSettings, False, SupportedMinimumAlignment, True},
+    settings::{Boolean, BumpAllocatorSettings, False, True},
     stats::Stats,
 };
 
@@ -194,15 +194,14 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn bump_props<M, L>(self, layout: L) -> BumpProps
+    pub(crate) fn bump_props<L>(self, layout: L) -> BumpProps
     where
-        M: SupportedMinimumAlignment,
         L: LayoutProps,
     {
         let pos = self.pos().addr().get();
         let end = unsafe { self.header.as_ref() }.end.addr().get();
 
-        debug_assert_eq!(pos % M::VALUE, 0);
+        debug_assert_eq!(pos % S::MIN_ALIGN, 0);
         debug_assert_eq!(end % MIN_CHUNK_ALIGN, 0);
 
         let start = if S::UP { pos } else { end };
@@ -218,7 +217,7 @@ where
             start,
             end,
             layout: *layout,
-            min_align: M::VALUE,
+            min_align: S::MIN_ALIGN,
             align_is_const: L::ALIGN_IS_CONST,
             size_is_const: L::SIZE_IS_CONST,
             size_is_multiple_of_align: L::SIZE_IS_MULTIPLE_OF_ALIGN,
@@ -229,11 +228,8 @@ where
     ///
     /// On success, returns a [`NonNull<u8>`] meeting the size and alignment guarantees of `layout`.
     #[inline(always)]
-    pub(crate) fn alloc<M>(self, layout: impl LayoutProps) -> Option<NonNull<u8>>
-    where
-        M: SupportedMinimumAlignment,
-    {
-        let props = self.bump_props::<M, _>(layout);
+    pub(crate) fn alloc(self, layout: impl LayoutProps) -> Option<NonNull<u8>> {
+        let props = self.bump_props(layout);
 
         unsafe {
             if S::UP {
@@ -261,11 +257,8 @@ where
     ///
     /// This is like [`alloc`](Self::alloc), except that it won't change the bump pointer.
     #[inline(always)]
-    pub(crate) fn prepare_allocation<M>(self, layout: impl LayoutProps) -> Option<NonNull<u8>>
-    where
-        M: SupportedMinimumAlignment,
-    {
-        let props = self.bump_props::<M, _>(layout);
+    pub(crate) fn prepare_allocation(self, layout: impl LayoutProps) -> Option<NonNull<u8>> {
+        let props = self.bump_props(layout);
 
         unsafe {
             if S::UP {
@@ -293,12 +286,9 @@ where
     /// [`MutBumpVec`]: crate::MutBumpVec
     /// [`into_slice`]: crate::MutBumpVec::into_slice
     #[inline(always)]
-    pub(crate) fn prepare_allocation_range<M: SupportedMinimumAlignment>(
-        self,
-        layout: impl LayoutProps,
-    ) -> Option<Range<NonNull<u8>>> {
+    pub(crate) fn prepare_allocation_range(self, layout: impl LayoutProps) -> Option<Range<NonNull<u8>>> {
         debug_assert_ne!(layout.size(), 0);
-        let props = self.bump_props::<M, _>(layout);
+        let props = self.bump_props(layout);
 
         unsafe {
             if S::UP {

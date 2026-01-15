@@ -4,6 +4,7 @@ use crate::{
     BaseAllocator, Bump, BumpScope, Checkpoint, WithoutDealloc, WithoutShrink,
     alloc::{AllocError, Allocator},
     layout::CustomLayout,
+    raw_chunk::RawChunk,
     settings::BumpAllocatorSettings,
     stats::AnyStats,
     traits::{assert_dyn_compatible, assert_implements},
@@ -353,18 +354,10 @@ where
             A: BaseAllocator<S::GuaranteedAllocated>,
             S: BumpAllocatorSettings,
         {
-            unsafe {
-                this.in_another_chunk(CustomLayout(layout), |chunk, layout| {
-                    chunk.prepare_allocation_range::<S::MinimumAlignment>(layout)
-                })
-            }
+            unsafe { this.in_another_chunk(CustomLayout(layout), RawChunk::prepare_allocation_range) }
         }
 
-        match self
-            .chunk
-            .get()
-            .prepare_allocation_range::<S::MinimumAlignment>(CustomLayout(layout))
-        {
+        match self.chunk.get().prepare_allocation_range(CustomLayout(layout)) {
             Some(ptr) => Ok(ptr),
             None => unsafe { prepare_allocation_in_another_chunk(self, layout) },
         }
