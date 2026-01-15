@@ -850,6 +850,105 @@ where
     }
 
     #[inline(always)]
+    pub(crate) fn generic_allocate_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
+        if T::IS_ZST {
+            return Ok(NonNull::dangling());
+        }
+
+        match self.chunk.get().alloc(SizedLayout::new::<T>()) {
+            Some(ptr) => Ok(ptr.cast()),
+            None => match self.allocate_sized_in_another_chunk::<E, T>() {
+                Ok(ptr) => Ok(ptr.cast()),
+                Err(err) => Err(err),
+            },
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn generic_allocate_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
+        if T::IS_ZST {
+            return Ok(NonNull::dangling());
+        }
+
+        let Ok(layout) = ArrayLayout::array::<T>(len) else {
+            return Err(E::capacity_overflow());
+        };
+
+        match self.chunk.get().alloc(layout) {
+            Some(ptr) => Ok(ptr.cast()),
+            None => match self.allocate_slice_in_another_chunk::<E, T>(len) {
+                Ok(ptr) => Ok(ptr.cast()),
+                Err(err) => Err(err),
+            },
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn generic_allocate_slice_for<E: ErrorBehavior, T>(&self, value: &[T]) -> Result<NonNull<T>, E> {
+        if T::IS_ZST {
+            return Ok(NonNull::dangling());
+        }
+
+        let layout = ArrayLayout::for_value(value);
+
+        match self.chunk.get().alloc(layout) {
+            Some(ptr) => Ok(ptr.cast()),
+            None => match self.allocate_slice_in_another_chunk::<E, T>(value.len()) {
+                Ok(ptr) => Ok(ptr.cast()),
+                Err(err) => Err(err),
+            },
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn generic_prepare_slice_allocation<B: ErrorBehavior, T>(&self, min_cap: usize) -> Result<NonNull<[T]>, B> {
+        let range = self.prepare_allocation_range::<B, T>(min_cap)?;
+
+        // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
+        let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
+
+        let ptr = if S::UP { range.start } else { unsafe { range.end.sub(cap) } };
+
+        Ok(NonNull::slice_from_raw_parts(ptr, cap))
+    }
+
+    #[inline(always)]
+    pub(crate) fn generic_reserve_bytes<B: ErrorBehavior>(&self, additional: usize) -> Result<(), B> {
+        let Ok(layout) = Layout::from_size_align(additional, 1) else {
+            return Err(B::capacity_overflow());
+        };
+
+        if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
+            let mut additional = additional;
+
+            loop {
+                if let Some(rest) = additional.checked_sub(chunk.remaining()) {
+                    additional = rest;
+                } else {
+                    return Ok(());
+                }
+
+                if let Some(next) = chunk.next() {
+                    chunk = next;
+                } else {
+                    break;
+                }
+            }
+
+            chunk.append_for(layout).map(drop)
+        } else {
+            let allocator = A::default_or_panic();
+            let new_chunk = RawChunk::new_in(
+                ChunkSize::<A, S>::from_capacity(layout).ok_or_else(B::capacity_overflow)?,
+                None,
+                allocator,
+            )?;
+            self.chunk.set(new_chunk);
+            Ok(())
+        }
+    }
+
+    #[inline(always)]
     pub(crate) fn generic_prepare_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
         match self.chunk.get().prepare_allocation(SizedLayout::new::<T>()) {
             Some(ptr) => Ok(ptr.cast()),
@@ -866,17 +965,6 @@ where
         let layout = CustomLayout(Layout::new::<T>());
 
         unsafe { self.in_another_chunk(layout, RawChunk::prepare_allocation) }
-    }
-
-    pub(crate) fn generic_prepare_slice_allocation<B: ErrorBehavior, T>(&self, min_cap: usize) -> Result<NonNull<[T]>, B> {
-        let range = self.prepare_allocation_range::<B, T>(min_cap)?;
-
-        // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-        let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
-
-        let ptr = if S::UP { range.start } else { unsafe { range.end.sub(cap) } };
-
-        Ok(NonNull::slice_from_raw_parts(ptr, cap))
     }
 
     /// Returns a pointer range.
@@ -925,61 +1013,10 @@ where
         unsafe { self.in_another_chunk(CustomLayout(layout), RawChunk::alloc) }
     }
 
-    #[inline(always)]
-    pub(crate) fn generic_allocate_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
-        if T::IS_ZST {
-            return Ok(NonNull::dangling());
-        }
-
-        match self.chunk.get().alloc(SizedLayout::new::<T>()) {
-            Some(ptr) => Ok(ptr.cast()),
-            None => match self.allocate_sized_in_another_chunk::<E, T>() {
-                Ok(ptr) => Ok(ptr.cast()),
-                Err(err) => Err(err),
-            },
-        }
-    }
-
     #[cold]
     #[inline(never)]
     pub(crate) fn allocate_sized_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E> {
         self.alloc_in_another_chunk(Layout::new::<T>())
-    }
-
-    #[inline(always)]
-    pub(crate) fn generic_allocate_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
-        if T::IS_ZST {
-            return Ok(NonNull::dangling());
-        }
-
-        let Ok(layout) = ArrayLayout::array::<T>(len) else {
-            return Err(E::capacity_overflow());
-        };
-
-        match self.chunk.get().alloc(layout) {
-            Some(ptr) => Ok(ptr.cast()),
-            None => match self.allocate_slice_in_another_chunk::<E, T>(len) {
-                Ok(ptr) => Ok(ptr.cast()),
-                Err(err) => Err(err),
-            },
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn generic_allocate_slice_for<E: ErrorBehavior, T>(&self, value: &[T]) -> Result<NonNull<T>, E> {
-        if T::IS_ZST {
-            return Ok(NonNull::dangling());
-        }
-
-        let layout = ArrayLayout::for_value(value);
-
-        match self.chunk.get().alloc(layout) {
-            Some(ptr) => Ok(ptr.cast()),
-            None => match self.allocate_slice_in_another_chunk::<E, T>(value.len()) {
-                Ok(ptr) => Ok(ptr.cast()),
-                Err(err) => Err(err),
-            },
-        }
     }
 
     #[cold]
@@ -1044,42 +1081,6 @@ where
                     core::hint::unreachable_unchecked()
                 }
             }
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn generic_reserve_bytes<B: ErrorBehavior>(&self, additional: usize) -> Result<(), B> {
-        let Ok(layout) = Layout::from_size_align(additional, 1) else {
-            return Err(B::capacity_overflow());
-        };
-
-        if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
-            let mut additional = additional;
-
-            loop {
-                if let Some(rest) = additional.checked_sub(chunk.remaining()) {
-                    additional = rest;
-                } else {
-                    return Ok(());
-                }
-
-                if let Some(next) = chunk.next() {
-                    chunk = next;
-                } else {
-                    break;
-                }
-            }
-
-            chunk.append_for(layout).map(drop)
-        } else {
-            let allocator = A::default_or_panic();
-            let new_chunk = RawChunk::new_in(
-                ChunkSize::<A, S>::from_capacity(layout).ok_or_else(B::capacity_overflow)?,
-                None,
-                allocator,
-            )?;
-            self.chunk.set(new_chunk);
-            Ok(())
         }
     }
 }
