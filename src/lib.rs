@@ -340,7 +340,6 @@ mod partial_eq;
 mod polyfill;
 mod raw_chunk;
 mod raw_fixed_bump_string;
-mod raw_fixed_bump_vec;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
 pub mod settings;

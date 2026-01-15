@@ -13,10 +13,10 @@ use core::{
 use crate::{
     BumpBox, ErrorBehavior, NoDrop, SizedTypeProperties,
     alloc::AllocError,
+    fixed_bump_vec::RawFixedBumpVec,
     min_non_zero_cap,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     polyfill::{hint::likely, slice},
-    raw_fixed_bump_vec::RawFixedBumpVec,
     traits::{MutBumpAllocatorTyped, MutBumpAllocatorTypedScope},
 };
 

@@ -16,10 +16,10 @@ use crate::{
     BumpBox, ErrorBehavior, FixedBumpVec, NoDrop, SizedTypeProperties,
     alloc::AllocError,
     destructure::destructure,
+    fixed_bump_vec::RawFixedBumpVec,
     min_non_zero_cap,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     polyfill::{hint::likely, non_null, pointer, slice},
-    raw_fixed_bump_vec::RawFixedBumpVec,
     traits::{BumpAllocatorTyped, BumpAllocatorTypedScope},
 };
 

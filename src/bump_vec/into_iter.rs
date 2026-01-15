@@ -14,7 +14,7 @@ use core::mem::MaybeUninit;
 use crate::{SizedTypeProperties, polyfill::non_null, traits::BumpAllocatorTyped};
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{BumpBox, BumpVec, FixedBumpVec, raw_fixed_bump_vec::RawFixedBumpVec};
+use crate::{BumpBox, BumpVec, FixedBumpVec, fixed_bump_vec::RawFixedBumpVec};
 
 /// An iterator that moves out of a vector.
 ///
