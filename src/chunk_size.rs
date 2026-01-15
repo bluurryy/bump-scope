@@ -2,7 +2,7 @@ use core::{alloc::Layout, marker::PhantomData, num::NonZeroUsize};
 
 use chunk_size_config::ChunkSizeConfig;
 
-use crate::{ChunkHeader, settings::BumpAllocatorSettings};
+use crate::{chunk::ChunkHeader, settings::BumpAllocatorSettings};
 
 mod chunk_size_config;
 

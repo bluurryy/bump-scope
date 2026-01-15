@@ -20,7 +20,7 @@ use crate::{
     alloc::{AllocError, Allocator},
     allocator_impl,
     bump_align_guard::BumpAlignGuard,
-    chunk_header::ChunkHeader,
+    chunk::ChunkHeader,
     chunk_size::ChunkSize,
     down_align_usize,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},

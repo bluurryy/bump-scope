@@ -1,7 +1,7 @@
 use core::{fmt, iter::FusedIterator, marker::PhantomData, mem, ptr::NonNull};
 
 use crate::{
-    ChunkHeader,
+    chunk::ChunkHeader,
     settings::{BumpAllocatorSettings, True},
 };
 

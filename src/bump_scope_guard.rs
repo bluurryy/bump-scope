@@ -3,7 +3,7 @@ use core::{fmt::Debug, marker::PhantomData, num::NonZeroUsize, ptr::NonNull};
 use crate::{
     Bump, BumpScope, RawChunk,
     alloc::Allocator,
-    chunk_header::ChunkHeader,
+    chunk::ChunkHeader,
     settings::{BumpAllocatorSettings, BumpSettings, True},
     stats::{AnyStats, Stats},
 };

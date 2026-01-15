@@ -20,7 +20,7 @@ use crate::{
 };
 
 #[cfg(debug_assertions)]
-use crate::chunk_header::ChunkHeader;
+use crate::chunk::ChunkHeader;
 
 mod any;
 

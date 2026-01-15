@@ -3,9 +3,10 @@ use core::{
 };
 
 use crate::{
-    ChunkHeader, ErrorBehavior,
+    ErrorBehavior,
     alloc::{AllocError, Allocator},
     bumping::{BumpProps, BumpUp, MIN_CHUNK_ALIGN, bump_down, bump_prepare_down, bump_prepare_up, bump_up},
+    chunk::ChunkHeader,
     chunk_size::{ChunkSize, ChunkSizeHint},
     layout::LayoutProps,
     polyfill::non_null,

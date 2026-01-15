@@ -317,6 +317,7 @@ mod bump_string;
 /// Contains [`BumpVec`] and associated types.
 pub mod bump_vec;
 mod bumping;
+mod chunk;
 mod chunk_size;
 mod destructure;
 mod error_behavior;
@@ -357,7 +358,6 @@ pub use bump_scope_guard::{BumpScopeGuard, BumpScopeGuardRoot, Checkpoint};
 pub use bump_string::BumpString;
 #[doc(inline)]
 pub use bump_vec::BumpVec;
-use chunk_header::ChunkHeader;
 #[cfg(feature = "panic-on-alloc")]
 use core::convert::Infallible;
 use core::{mem, num::NonZeroUsize, ptr::NonNull};
@@ -415,7 +415,6 @@ fn bump_down(addr: NonZeroUsize, size: usize, align: usize) -> usize {
     down_align_usize(subtracted, align)
 }
 
-mod chunk_header;
 #[cfg(test)]
 mod tests;
 

@@ -68,9 +68,9 @@ const MALLOC_OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
 const OVERHEAD: usize = MALLOC_OVERHEAD + size_of::<ChunkHeader<Global>>();
 
 use crate::{
-    Bump, BumpBox, BumpScope, BumpString, BumpVec, ChunkHeader, MutBumpString, MutBumpVec, MutBumpVecRev,
-    SizedTypeProperties,
+    Bump, BumpBox, BumpScope, BumpString, BumpVec, MutBumpString, MutBumpVec, MutBumpVecRev, SizedTypeProperties,
     alloc::{AllocError, Allocator, Global as System, Global},
+    chunk::ChunkHeader,
     chunk_size::{AssumedMallocOverhead, ChunkSize},
     mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice, panic_on_error,
     settings::{BumpAllocatorSettings, BumpSettings, MinimumAlignment, SupportedMinimumAlignment, True},
