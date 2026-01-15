@@ -639,50 +639,6 @@ where
         unsafe { self.cast() }
     }
 
-    #[inline(always)]
-    pub(crate) unsafe fn use_prepared_slice_allocation<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        unsafe {
-            let end = start.add(len);
-
-            if S::UP {
-                self.set_aligned_pos(end.addr(), T::ALIGN);
-                NonNull::slice_from_raw_parts(start, len)
-            } else {
-                let dst_end = start.add(cap);
-                let dst = dst_end.sub(len);
-                start.copy_to(dst, len);
-                self.set_aligned_pos(dst.addr(), T::ALIGN);
-                NonNull::slice_from_raw_parts(dst, len)
-            }
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) unsafe fn use_prepared_slice_allocation_rev<T>(
-        &self,
-        end: NonNull<T>,
-        len: usize,
-        cap: usize,
-    ) -> NonNull<[T]> {
-        unsafe {
-            if S::UP {
-                let dst = end.sub(cap);
-                let dst_end = dst.add(len);
-
-                let src = end.sub(len);
-
-                src.copy_to(dst, len);
-
-                self.set_aligned_pos(dst_end.addr(), T::ALIGN);
-                NonNull::slice_from_raw_parts(dst, len)
-            } else {
-                let dst = end.sub(len);
-                self.set_aligned_pos(dst.addr(), T::ALIGN);
-                NonNull::slice_from_raw_parts(dst, len)
-            }
-        }
-    }
-
     /// Sets the bump position and aligns it to the required `MIN_ALIGN`.
     ///
     /// This does nothing if the current chunk is the UNALLOCATED one.
