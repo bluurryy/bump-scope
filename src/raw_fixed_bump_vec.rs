@@ -5,9 +5,9 @@ use core::{
 
 use crate::{
     FixedBumpVec, SizedTypeProperties,
+    bump_box::RawBumpBox,
     error_behavior::ErrorBehavior,
     polyfill::{non_null, transmute_mut, transmute_ref},
-    raw_bump_box::RawBumpBox,
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
     traits::{BumpAllocatorTyped, MutBumpAllocatorTyped},
 };

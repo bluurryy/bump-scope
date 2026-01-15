@@ -2,9 +2,9 @@ use core::{mem::transmute, ptr::NonNull};
 
 use crate::{
     FixedBumpString,
+    bump_box::RawBumpBox,
     error_behavior::ErrorBehavior,
     polyfill::{non_null, transmute_mut, transmute_ref},
-    raw_bump_box::RawBumpBox,
     traits::{BumpAllocatorTyped, MutBumpAllocatorTyped},
 };
 

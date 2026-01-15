@@ -31,8 +31,10 @@ use crate::{
     traits::BumpAllocatorTypedScope,
 };
 
+mod raw;
 mod slice_initializer;
 
+pub(crate) use raw::RawBumpBox;
 pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 
 /// A pointer type that uniquely owns a bump allocation of type `T`. This type is returned whenever a bump allocation is made.

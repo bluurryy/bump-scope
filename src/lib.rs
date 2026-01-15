@@ -338,7 +338,6 @@ pub mod owned_slice;
 pub mod owned_str;
 mod partial_eq;
 mod polyfill;
-mod raw_bump_box;
 mod raw_chunk;
 mod raw_fixed_bump_string;
 mod raw_fixed_bump_vec;
