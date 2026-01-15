@@ -949,7 +949,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn generic_prepare_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
+    pub(crate) fn generic_prepare_sized_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
         match self.chunk.get().prepare_allocation(SizedLayout::new::<T>()) {
             Some(ptr) => Ok(ptr.cast()),
             None => match self.prepare_allocation_in_another_chunk::<B, T>() {
@@ -1325,7 +1325,7 @@ where
         }
 
         let checkpoint = self.checkpoint();
-        let ptr = self.generic_prepare_allocation::<B, Result<T, E>>()?;
+        let ptr = self.generic_prepare_sized_allocation::<B, Result<T, E>>()?;
 
         Ok(unsafe {
             non_null::write_with(ptr, f);
