@@ -1,6 +1,6 @@
-use core::{cell::Cell, num::NonZero, ptr::NonNull};
+use core::{cell::Cell, ptr::NonNull};
 
-use crate::{bumping::MIN_CHUNK_ALIGN, polyfill::non_null, settings::BumpAllocatorSettings};
+use crate::{polyfill::non_null, settings::BumpAllocatorSettings};
 
 /// The chunk header that lives at
 /// - the start of the allocation when upwards bumping
@@ -19,25 +19,35 @@ pub(crate) struct ChunkHeader<A = ()> {
 }
 
 /// Wraps a [`ChunkHeader`], making it Sync so it can be used as a static.
-/// The empty chunk is never mutated, so this is fine.
-struct UnallocatedChunkHeader(ChunkHeader);
+/// The dummy chunk is never mutated, so this is fine.
+struct DummyChunkHeader(ChunkHeader);
 
-unsafe impl Sync for UnallocatedChunkHeader {}
-
-const UNALLOCATED_START: NonNull<u8> = non_null::without_provenance(NonZero::new(MIN_CHUNK_ALIGN * 2).unwrap());
-const UNALLOCATED_END: NonNull<u8> = non_null::without_provenance(NonZero::new(MIN_CHUNK_ALIGN).unwrap());
-
-static UNALLOCATED_CHUNK_HEADER_UP: UnallocatedChunkHeader = UnallocatedChunkHeader(ChunkHeader {
-    pos: Cell::new(UNALLOCATED_START),
-    end: UNALLOCATED_END,
+unsafe impl Sync for DummyChunkHeader {}
+/// We create a dummy chunks with a negative capacity, so all allocations will fail.
+///
+/// The pointers used for `pos` and `end` are chosen to be pointers into the same static dummy chunk.
+///
+/// It's irrelevant where the pointers point to, they just need to:
+/// - be aligned to [`MIN_CHUNK_ALIGN`]
+/// - denote a negative capacity (currently guaranteed to be -16)
+/// - point to some existing object, not a dangling pointer since a dangling pointer could
+///   theoretically be a valid pointer to some other chunk
+static UNALLOCATED_CHUNK_HEADER_UP: DummyChunkHeader = DummyChunkHeader(ChunkHeader {
+    // SAFETY: Due to `align(16)`, `ChunkHeader`'s size is `>= 16`, so a `byte_add` of 16 is in bounds.
+    // We could also use `.add(1)` here, but we currently guarantee a capacity of -16
+    pos: Cell::new(unsafe { UNALLOCATED_UP.cast().byte_add(16) }),
+    end: UNALLOCATED_UP.cast(),
     prev: Cell::new(None),
     next: Cell::new(None),
     allocator: (),
 });
 
-static UNALLOCATED_CHUNK_HEADER_DOWN: UnallocatedChunkHeader = UnallocatedChunkHeader(ChunkHeader {
-    pos: Cell::new(UNALLOCATED_END),
-    end: UNALLOCATED_START,
+/// See [`UNALLOCATED_CHUNK_HEADER_UP`].
+static UNALLOCATED_CHUNK_HEADER_DOWN: DummyChunkHeader = DummyChunkHeader(ChunkHeader {
+    pos: Cell::new(UNALLOCATED_DOWN.cast()),
+    // SAFETY: Due to `align(16)`, `ChunkHeader`'s size is `>= 16`, so a `byte_add` of 16 is in bounds.
+    // We could also use `.add(1)` here, but we currently guarantee a capacity of -16
+    end: unsafe { UNALLOCATED_DOWN.cast().byte_add(16) },
     prev: Cell::new(None),
     next: Cell::new(None),
     allocator: (),

@@ -205,16 +205,12 @@ where
         let pos = self.pos().addr().get();
         let end = unsafe { self.header.as_ref() }.end.addr().get();
 
-        debug_assert_eq!(pos % S::MIN_ALIGN, 0);
-        debug_assert_eq!(end % MIN_CHUNK_ALIGN, 0);
-
         let start = if S::UP { pos } else { end };
         let end = if S::UP { end } else { pos };
 
         #[cfg(debug_assertions)]
         if self.is_unallocated() {
-            assert_eq!(end, MIN_CHUNK_ALIGN);
-            assert_eq!(start, MIN_CHUNK_ALIGN * 2);
+            assert!(start > end);
         }
 
         BumpProps {

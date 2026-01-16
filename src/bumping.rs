@@ -125,17 +125,13 @@ impl BumpProps {
             debug_assert_eq!(self.layout.size() % self.layout.align(), 0);
         }
 
-        if up {
-            debug_assert_aligned!(self.start, self.min_align);
+        let is_dummy_chunk = self.start > self.end;
+
+        if is_dummy_chunk {
+            debug_assert_eq!(self.start, self.end + 16);
+            debug_assert_aligned!(self.start, MIN_CHUNK_ALIGN);
             debug_assert_aligned!(self.end, MIN_CHUNK_ALIGN);
         } else {
-            debug_assert_aligned!(self.start, MIN_CHUNK_ALIGN);
-            debug_assert_aligned!(self.end, self.min_align);
-        }
-
-        let is_dummy_chunk = self.end == MIN_CHUNK_ALIGN && self.start == MIN_CHUNK_ALIGN * 2;
-
-        if !is_dummy_chunk {
             debug_assert_le!(self.start, self.end);
 
             debug_assert!({
@@ -143,6 +139,14 @@ impl BumpProps {
                 let size = self.end as i128 - self.start as i128;
                 (0..=MAX).contains(&size)
             });
+
+            if up {
+                debug_assert_aligned!(self.start, self.min_align);
+                debug_assert_aligned!(self.end, MIN_CHUNK_ALIGN);
+            } else {
+                debug_assert_aligned!(self.start, MIN_CHUNK_ALIGN);
+                debug_assert_aligned!(self.end, self.min_align);
+            }
         }
     }
 }
@@ -174,9 +178,6 @@ pub(crate) fn bump_up(props: BumpProps) -> Option<BumpUp> {
         size_is_multiple_of_align,
     } = props;
 
-    debug_assert_eq!(start % min_align, 0);
-    debug_assert_eq!(end % MIN_CHUNK_ALIGN, 0);
-
     // Used for assertion at the end of the function.
     let original_start = start;
 
@@ -191,11 +192,17 @@ pub(crate) fn bump_up(props: BumpProps) -> Option<BumpUp> {
         if align_is_const && layout.align() <= min_align {
             // Alignment is already sufficient.
         } else {
-            // Aligning an address that is `<= range.end` with an alignment `<= MIN_CHUNK_ALIGN`
+            // REGULAR_CHUNK: Aligning an address that is `<= range.end` with an alignment `<= MIN_CHUNK_ALIGN`
             // can't exceed `range.end` nor overflow as `range.end` is always aligned to `MIN_CHUNK_ALIGN`.
+            //
+            // DUMMY_CHUNK: `start` is always aligned to `MIN_CHUNK_ALIGN` so this does nothing.
             start = up_align_unchecked(start, layout.align());
         }
 
+        // REGULAR_CHUNK: `start` and `end` must be part of the same allocated object.
+        // Allocated objects can't have a size greater than `isize::MAX`, so this doesn't overflow.
+        //
+        // DUMMY_CHUNK: `end - start` will always return `-16`
         let remaining = end.wrapping_sub(start) as isize;
 
         if unlikely(layout.size() as isize > remaining) {
@@ -267,9 +274,6 @@ pub(crate) fn bump_down(props: BumpProps) -> Option<usize> {
         size_is_multiple_of_align,
     } = props;
 
-    debug_assert_eq!(start % MIN_CHUNK_ALIGN, 0);
-    debug_assert_eq!(end % min_align, 0);
-
     // Used for assertions only.
     let original_end = end;
 
@@ -318,6 +322,11 @@ pub(crate) fn bump_down(props: BumpProps) -> Option<usize> {
         }
     } else if align_is_const && layout.align() <= MIN_CHUNK_ALIGN {
         // Constant, small alignment fast path!
+
+        // REGULAR_CHUNK: `start` and `end` must be part of the same allocated object.
+        // Allocated objects can't have a size greater than `isize::MAX`, so this doesn't overflow.
+        //
+        // DUMMY_CHUNK: `end - start` will always return `-16`
         let remaining = end.wrapping_sub(start) as isize;
 
         if unlikely(layout.size() as isize > remaining) {
@@ -374,8 +383,6 @@ pub(crate) fn bump_prepare_up(props: BumpProps) -> Option<Range<usize>> {
         size_is_const: _,
         size_is_multiple_of_align: _,
     } = props;
-
-    debug_assert_eq!(end % MIN_CHUNK_ALIGN, 0);
 
     if align_is_const && layout.align() <= min_align {
         // Alignment is already sufficient.
@@ -453,6 +460,10 @@ pub(crate) fn bump_prepare_down(props: BumpProps) -> Option<Range<usize>> {
         }
     }
 
+    // REGULAR_CHUNK: `start` and `end` must be part of the same allocated object.
+    // Allocated objects can't have a size greater than `isize::MAX`, so this doesn't overflow.
+    //
+    // DUMMY_CHUNK: `end - start` will always return `-16`
     let remaining = end.wrapping_sub(start) as isize;
 
     if unlikely(layout.size() as isize > remaining) {

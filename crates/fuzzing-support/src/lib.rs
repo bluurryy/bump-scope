@@ -190,8 +190,8 @@ impl<'a> Arbitrary<'a> for FuzzBumpPropsRange {
         let end: usize;
 
         if is_dummy_chunk {
-            start = MIN_CHUNK_ALIGN * 2;
-            end = start - MIN_CHUNK_ALIGN;
+            end = down_align(u.int_in_range(MIN_CHUNK_ALIGN..=(usize::MAX - 16))?, MIN_CHUNK_ALIGN);
+            start = end + 16;
         } else {
             start = u.int_in_range(MIN_CHUNK_ALIGN..=usize::MAX)?;
 
@@ -211,7 +211,7 @@ impl<'a> Arbitrary<'a> for FuzzBumpPropsRange {
     }
 
     fn size_hint(depth: usize) -> (usize, Option<usize>) {
-        (<bool>::size_hint(depth).0, <(bool, [usize; 2])>::size_hint(depth).1)
+        arbitrary::size_hint::or(<(bool, usize)>::size_hint(depth), <(bool, [usize; 2])>::size_hint(depth))
     }
 }
 
@@ -307,8 +307,11 @@ impl FuzzBumpProps {
     }
 
     fn for_down(mut self) -> Self {
-        self.range.start = down_align(self.range.start, MIN_CHUNK_ALIGN);
-        self.range.end = down_align(self.range.end, self.min_align as usize);
+        if !self.range.is_dummy_chunk {
+            self.range.start = down_align(self.range.start, MIN_CHUNK_ALIGN);
+            self.range.end = down_align(self.range.end, self.min_align as usize);
+        }
+
         self
     }
 
@@ -333,8 +336,7 @@ impl FuzzBumpProps {
         } = self;
 
         if is_dummy_chunk {
-            assert_eq!(start, MIN_CHUNK_ALIGN * 2);
-            assert_eq!(end, MIN_CHUNK_ALIGN);
+            assert_eq!(start, end + 16);
         } else {
             // the aligning in `for_up` and `for_down` may have caused the
             // start and end to no longer represent a valid size
