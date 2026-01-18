@@ -1,0 +1,26 @@
+error[E0080]: evaluation panicked: can't change guaranteed-allocated property when mutably borrowing with new settings
+ --> src/bump_scope.rs
+  |
+  | /             assert!(
+  | |                 NewS::GUARANTEED_ALLOCATED == S::GUARANTEED_ALLOCATED,
+  | |                 "can't change guaranteed-allocated property when mutably borrowing with new settings"
+  | |             );
+  | |_____________^ evaluation of `bump_scope::BumpScope::<'_>::borrow_mut_with_settings::<bump_scope::settings::BumpSettings<1, true, false>>::{constant#0}` failed here
+
+note: erroneous constant encountered
+ --> src/bump_scope.rs
+  |
+  | /         const {
+  | |             assert!(NewS::UP == S::UP, "can't change `UP` setting");
+  | |
+  | |             assert!(
+... |
+  | |             );
+  | |         }
+  | |_________^
+
+note: the above error was encountered while instantiating `fn BumpScope::<'_>::borrow_mut_with_settings::<BumpSettings<1, true, false>>`
+  --> tests/trybuild/compile_fail/with_settings/bump_scope/borrow_mut/guaranteed_allocated_decrease.rs:11:5
+   |
+11 |     bump.borrow_mut_with_settings()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

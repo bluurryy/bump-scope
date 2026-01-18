@@ -67,13 +67,13 @@ check-fallibility:
   cd crates/test-fallibility && nu assert-no-panics.nu
 
 check-mustnt_compile:
-  cargo +stable test --test compile_fail -- --ignored
+  cargo +stable test --test trybuild -- --ignored
   
 check-unavailable_panicking_macros:
-  cargo +stable test --no-default-features --test unavailable_panicking_macros -F alloc
+  cargo +stable test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
 
 update-expect:
-  TRYBUILD=overwrite cargo +stable test --test compile_fail -- --ignored
+  TRYBUILD=overwrite cargo +stable test --test trybuild -- --ignored
 
 test: 
   cargo +nightly test --all-features

@@ -1,0 +1,23 @@
+error[E0080]: evaluation panicked: can't change `UP` setting
+ --> src/bump.rs
+  |
+  |             assert!(NewS::UP == S::UP, "can't change `UP` setting");
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::Bump::borrow_with_settings::<bump_scope::settings::BumpSettings<1, false>>::{constant#0}` failed here
+
+note: erroneous constant encountered
+ --> src/bump.rs
+  |
+  | /         const {
+  | |             assert!(NewS::UP == S::UP, "can't change `UP` setting");
+  | |
+  | |             assert!(
+... |
+  | |             );
+  | |         }
+  | |_________^
+
+note: the above error was encountered while instantiating `fn Bump::borrow_with_settings::<BumpSettings<1, false>>`
+  --> tests/trybuild/compile_fail/with_settings/bump/borrow/up_to_false.rs:11:5
+   |
+11 |     bump.borrow_with_settings()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^

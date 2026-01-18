@@ -1,0 +1,26 @@
+error[E0080]: evaluation panicked: can't change minimum alignment when borrowing with new settings
+ --> src/bump.rs
+  |
+  | /             assert!(
+  | |                 NewS::MIN_ALIGN == S::MIN_ALIGN,
+  | |                 "can't change minimum alignment when borrowing with new settings"
+  | |             );
+  | |_____________^ evaluation of `bump_scope::Bump::borrow_with_settings::<bump_scope::settings::BumpSettings<2>>::{constant#0}` failed here
+
+note: erroneous constant encountered
+ --> src/bump.rs
+  |
+  | /         const {
+  | |             assert!(NewS::UP == S::UP, "can't change `UP` setting");
+  | |
+  | |             assert!(
+... |
+  | |             );
+  | |         }
+  | |_________^
+
+note: the above error was encountered while instantiating `fn Bump::borrow_with_settings::<BumpSettings<2>>`
+  --> tests/trybuild/compile_fail/with_settings/bump/borrow/minimum_alignment_increase.rs:11:5
+   |
+11 |     bump.borrow_with_settings()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^

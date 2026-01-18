@@ -1,0 +1,9 @@
+error: lifetime may not live long enough
+ --> tests/trybuild/compile_fail/unsize_to_different_lifetime.rs:4:5
+  |
+3 | fn evil_unsize(boxed: BumpBox<[i32; 3]>) -> BumpBox<'static, [i32]> {
+  |                ----- has type `BumpBox<'1, [i32; 3]>`
+4 |     unsize_bump_box!(boxed)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^ returning this value requires that `'1` must outlive `'static`
+  |
+  = note: this error originates in the macro `unsize_bump_box` (in Nightly builds, run with -Z macro-backtrace for more info)

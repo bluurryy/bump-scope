@@ -1,0 +1,14 @@
+error[E0597]: `s` does not live long enough
+  --> tests/trybuild/compile_fail/may_dangle/bump_box.rs:22:27
+   |
+21 |     let s = String::from("hello");
+   |         - binding `s` declared here
+22 |     *b = Some(PrintOnDrop(&s));
+   |                           ^^ borrowed value does not live long enough
+23 | }
+   | -
+   | |
+   | `s` dropped here while still borrowed
+   | borrow might be used here, when `b` is dropped and runs the `Drop` code for type `BumpBox`
+   |
+   = note: values in a scope are dropped in the opposite order they are defined
