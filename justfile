@@ -72,6 +72,9 @@ check-mustnt_compile:
 check-unavailable_panicking_macros:
   cargo +stable test --no-default-features --test unavailable_panicking_macros -F alloc
 
+update-expect:
+  TRYBUILD=overwrite cargo +stable test --test compile_fail -- --ignored
+
 test: 
   cargo +nightly test --all-features
   cargo +nightly run --example limit_memory_usage

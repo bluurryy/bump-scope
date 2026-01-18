@@ -1,0 +1,23 @@
+error[E0080]: evaluation panicked: can't change `UP` setting
+ --> src/bump_scope.rs
+  |
+  |             assert!(NewS::UP == S::UP, "can't change `UP` setting");
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::BumpScope::<'_, bump_scope::alloc::Global, bump_scope::settings::BumpSettings<1, false>>::with_settings::<bump_scope::settings::BumpSettings>::{constant#0}` failed here
+
+note: erroneous constant encountered
+ --> src/bump_scope.rs
+  |
+  | /         const {
+  | |             assert!(NewS::UP == S::UP, "can't change `UP` setting");
+  | |
+  | |             assert!(
+... |
+  | |             );
+  | |         }
+  | |_________^
+
+note: the above error was encountered while instantiating `fn BumpScope::<'_, bump_scope::alloc::Global, BumpSettings<1, false>>::with_settings::<BumpSettings>`
+  --> tests/compile_fail/with_settings/bump_scope/into/up_to_true.rs:11:5
+   |
+11 |     bump.with_settings()
+   |     ^^^^^^^^^^^^^^^^^^^^

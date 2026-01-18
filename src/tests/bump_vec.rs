@@ -12,7 +12,7 @@ use crate::{
     BumpVec, WithoutDealloc, WithoutShrink,
     alloc::Global,
     bump_vec,
-    settings::BumpSettings,
+    settings::{BumpAllocatorSettings, BumpSettings},
     tests::{Bump, BumpScope, expect_no_panic},
     traits::{
         BumpAllocatorCore, BumpAllocatorCoreScope, BumpAllocatorTyped, MutBumpAllocatorCore, MutBumpAllocatorCoreScope,
@@ -67,7 +67,9 @@ fn shrinks<const UP: bool>() {
     bump.reset();
 
     // shouldn't shrink either
-    let mut vec = bump_vec![in bump.as_without_dealloc(); 1, 2, 3, 4];
+    // TODO: this uses deallocates instead of shrink in the setting?? this should actually shrink then
+    //       add a test that without deallocates still shrinks, change this to `WithShrinks` and figure out what went wrong
+    let mut vec = bump_vec![in bump.borrow_with_settings::<<BumpSettings<1, UP> as BumpAllocatorSettings>::WithDeallocates<false>>(); 1, 2, 3, 4];
     assert_eq!(bump.stats().allocated(), 4 * 4);
     vec.pop();
     vec.shrink_to_fit();
@@ -95,7 +97,7 @@ fn deallocates<const UP: bool>() {
     bump.reset();
 
     // shouldn't deallocate either
-    let vec = bump_vec![in bump.as_without_dealloc(); 1, 2, 3];
+    let vec = bump_vec![in bump.borrow_with_settings::<<BumpSettings<1, UP> as BumpAllocatorSettings>::WithDeallocates<false>>(); 1, 2, 3];
     assert_eq!(bump.stats().allocated(), 3 * 4);
     drop(vec);
     assert_eq!(bump.stats().allocated(), 3 * 4);

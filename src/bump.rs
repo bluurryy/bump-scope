@@ -3,7 +3,7 @@ use core::{
     cell::Cell,
     ffi::CStr,
     fmt::{self, Debug},
-    mem::{self, ManuallyDrop, MaybeUninit, transmute},
+    mem::{ManuallyDrop, MaybeUninit, transmute},
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::{self, NonNull},
 };
@@ -77,13 +77,8 @@ macro_rules! make_type {
         /// - dealloc: [`dealloc`]
         ///
         /// #### Configure allocator settings ...
-        /// - guaranteed allocated:
-        ///   <code>{[as](Self::as_guaranteed_allocated), [as_mut](Self::as_mut_guaranteed_allocated), [into](Self::into_guaranteed_allocated)}_guaranteed_allocated</code>,
-        ///   <code>{[as](Self::as_not_guaranteed_allocated), [into](Self::into_not_guaranteed_allocated)}_not_guaranteed_allocated</code>
-        /// - minimum alignment: [`aligned`], [`as_mut_aligned`], [`into_aligned`]
-        /// - deallocation:
-        ///   <code>{[as](Self::as_with_dealloc), [as_mut](Self::as_mut_with_dealloc), [into](Self::into_with_dealloc)}_with_dealloc</code>
-        ///   <code>{[as](Self::as_without_dealloc), [as_mut](Self::as_mut_without_dealloc), [into](Self::into_without_dealloc)}_without_dealloc</code>
+        /// - guaranteed allocated: <code>{[as](Self::as_guaranteed_allocated), [as_mut](Self::as_mut_guaranteed_allocated), [into](Self::into_guaranteed_allocated)}_guaranteed_allocated</code>
+        /// - other: [`with_settings`], [`borrow_with_settings`], [`borrow_mut_with_settings`]
         ///
         /// ## Collections
         /// A `Bump` (and [`BumpScope`]) can be used to allocate collections of this crate...
@@ -176,16 +171,10 @@ macro_rules! make_type {
         /// [`dealloc`]: Self::dealloc
         ///
         /// [`aligned`]: Self::aligned
-        /// [`as_mut_aligned`]: Self::as_mut_aligned
-        /// [`into_aligned`]: Self::into_aligned
         ///
-        /// [`into_with_dealloc`]: Self::into_with_dealloc
-        /// [`as_with_dealloc`]: Self::as_with_dealloc
-        /// [`as_mut_with_dealloc`]: Self::as_mut_with_dealloc
-        ///
-        /// [`into_without_dealloc`]: Self::into_without_dealloc
-        /// [`as_without_dealloc`]: Self::as_without_dealloc
-        /// [`as_mut_without_dealloc`]: Self::as_mut_without_dealloc
+        /// [`with_settings`]: Self::with_settings
+        /// [`borrow_with_settings`]: Self::borrow_with_settings
+        /// [`borrow_mut_with_settings`]: Self::borrow_with_settings
         ///
         /// # Gotcha
         ///
@@ -1058,49 +1047,88 @@ where
         unsafe { &mut *ptr::from_mut(self).cast() }
     }
 
-    /// Converts this `Bump` into a `Bump` with a new minimum alignment.
-    #[inline(always)]
-    pub fn into_aligned<const NEW_MIN_ALIGN: usize>(self) -> Bump<A, S::WithMinimumAlignment<NEW_MIN_ALIGN>>
-    where
-        MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
-    {
-        self.as_scope().align::<NEW_MIN_ALIGN>();
-        unsafe { self.cast() }
-    }
-
-    /// Mutably borrows `Bump` with a new minimum alignment.
+    /// Converts this `Bump` into a `Bump` with new settings.
     ///
-    /// **This cannot decrease the alignment.** Trying to decrease alignment will result in a compile error.
-    /// You can use [`aligned`](Self::aligned) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment.
+    /// Not every setting can be converted to. This function will fail to compile when:
+    /// - the bump direction differs
+    /// - the new setting is guaranteed-allocated when the old one isn't
+    ///   (use [`into_guaranteed_allocated`](Self::into_guaranteed_allocated) to do this conversion)
+    #[inline]
+    pub fn with_settings<NewS>(self) -> Bump<A, NewS>
+    where
+        NewS: BumpAllocatorSettings,
+    {
+        const {
+            assert!(NewS::UP == S::UP, "can't change `UP` setting");
+
+            assert!(
+                NewS::GUARANTEED_ALLOCATED <= S::GUARANTEED_ALLOCATED,
+                "can't turn a non-guaranteed-allocated bump allocator into a guaranteed-allocated one"
+            );
+        }
+
+        self.as_scope().align_to::<NewS::MinimumAlignment>();
+
+        unsafe { transmute(self) }
+    }
+
+    /// Borrows this `Bump` with new settings.
     ///
-    /// When decreasing the alignment we need to make sure that the bump position is realigned to the original alignment.
-    /// That can only be ensured by having a function that takes a closure, like the methods mentioned above do.
-    #[inline(always)]
-    pub fn as_mut_aligned<const NEW_MIN_ALIGN: usize>(&mut self) -> &mut Bump<A, S::WithMinimumAlignment<NEW_MIN_ALIGN>>
+    /// Not every settings can be converted to. This function will fail to compile when:
+    /// - the bump direction differs
+    /// - the new setting is guaranteed-allocated when the old one isn't
+    ///   (use [`as_guaranteed_allocated`](Self::as_guaranteed_allocated) to do this conversion)
+    /// - the minimum alignment differs
+    #[inline]
+    pub fn borrow_with_settings<NewS>(&self) -> &Bump<A, NewS>
     where
-        MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
+        NewS: BumpAllocatorSettings,
     {
-        self.as_scope().must_align_more::<NEW_MIN_ALIGN>();
-        unsafe { self.cast_mut() }
+        const {
+            assert!(NewS::UP == S::UP, "can't change `UP` setting");
+
+            assert!(
+                NewS::GUARANTEED_ALLOCATED <= S::GUARANTEED_ALLOCATED,
+                "can't turn a non-guaranteed-allocated bump allocator into a guaranteed-allocated one"
+            );
+
+            assert!(
+                NewS::MIN_ALIGN == S::MIN_ALIGN,
+                "can't change minimum alignment when borrowing with new settings"
+            );
+        }
+
+        unsafe { transmute_ref(self) }
     }
 
-    #[inline(always)]
-    pub(crate) unsafe fn cast<S2>(self) -> Bump<A, S2>
+    /// Borrows this `Bump` mutably with new settings.
+    ///
+    /// Not every settings can be converted to. This function will fail to compile when:
+    /// - the bump direction differs
+    /// - the guaranteed-allocated property differs
+    /// - the new minimum alignment is less than the old one
+    #[inline]
+    pub fn borrow_mut_with_settings<NewS>(&mut self) -> &mut Bump<A, NewS>
     where
-        S2: BumpAllocatorSettings,
+        NewS: BumpAllocatorSettings,
     {
-        let chunk = self.chunk.get();
-        mem::forget(self);
-        let chunk = unsafe { chunk.cast() };
-        Bump { chunk: Cell::new(chunk) }
-    }
+        const {
+            assert!(NewS::UP == S::UP, "can't change `UP` setting");
 
-    #[inline(always)]
-    pub(crate) unsafe fn cast_mut<S2>(&mut self) -> &mut Bump<A, S2>
-    where
-        S2: BumpAllocatorSettings,
-    {
-        unsafe { &mut *ptr::from_mut(self).cast::<Bump<A, S2>>() }
+            assert!(
+                NewS::GUARANTEED_ALLOCATED == S::GUARANTEED_ALLOCATED,
+                "can't change guaranteed-allocated property when mutably borrowing with new settings"
+            );
+
+            assert!(
+                NewS::MIN_ALIGN >= S::MIN_ALIGN,
+                "can't decrease minimum alignment when mutably borrowing with new settings"
+            );
+        }
+
+        self.as_scope().align_to::<NewS::MinimumAlignment>();
+
+        unsafe { transmute_mut(self) }
     }
 
     /// Converts this `Bump` into a [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `Bump`.
@@ -1463,30 +1491,6 @@ where
         Ok(unsafe { transmute_mut(self) })
     }
 
-    /// Converts this `BumpScope` into a ***not*** [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `Bump`.
-    #[inline(always)]
-    pub fn into_not_guaranteed_allocated(self) -> Bump<A, S::WithGuaranteedAllocated<false>>
-    where
-        A: Default,
-    {
-        // SAFETY: it's always valid to interpret a guaranteed allocated as a non guaranteed allocated
-        unsafe { transmute(self) }
-    }
-
-    /// Borrows `Bump` as a ***not*** [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `Bump`.
-    ///
-    /// Note that it's not possible to mutably borrow as a not guaranteed allocated bump allocator. That's because
-    /// a user could `mem::swap` it with an actual unallocated bump allocator which in turn would make `&mut self`
-    /// unallocated.
-    #[inline(always)]
-    pub fn as_not_guaranteed_allocated(&self) -> &Bump<A, S::WithGuaranteedAllocated<false>>
-    where
-        A: Default,
-    {
-        // SAFETY: it's always valid to interpret a guaranteed allocated as a non guaranteed allocated
-        unsafe { transmute_ref(self) }
-    }
-
     /// Converts this `Bump` into a raw pointer.
     ///
     /// ```
@@ -1516,36 +1520,6 @@ where
         Self {
             chunk: Cell::new(unsafe { RawChunk::from_header(ptr.cast()) }),
         }
-    }
-
-    /// Turns off deallocation and shrinking.
-    pub fn into_without_dealloc(self) -> Bump<A, S::WithDeallocates<false>> {
-        unsafe { transmute(self) }
-    }
-
-    /// Turns off deallocation and shrinking.
-    pub fn as_without_dealloc(&self) -> &Bump<A, S::WithDeallocates<false>> {
-        unsafe { transmute_ref(self) }
-    }
-
-    /// Turns off deallocation and shrinking.
-    pub fn as_mut_without_dealloc(&mut self) -> &mut Bump<A, S::WithDeallocates<false>> {
-        unsafe { transmute_mut(self) }
-    }
-
-    /// Turns on deallocation and shrinking.
-    pub fn into_with_dealloc(self) -> Bump<A, S::WithDeallocates<true>> {
-        unsafe { transmute(self) }
-    }
-
-    /// Turns on deallocation and shrinking.
-    pub fn as_with_dealloc(&self) -> &Bump<A, S::WithDeallocates<true>> {
-        unsafe { transmute_ref(self) }
-    }
-
-    /// Turns on deallocation and shrinking.
-    pub fn as_mut_with_dealloc(&mut self) -> &mut Bump<A, S::WithDeallocates<true>> {
-        unsafe { transmute_mut(self) }
     }
 }
 

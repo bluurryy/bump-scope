@@ -76,12 +76,12 @@ up_and_down! {
         bump.scope_guard()
     }
 
-    pub fn Bump_into_aligned(bump: Bump) -> Bump<4> {
-        bump.into_aligned()
+    pub fn Bump_with_align(bump: Bump) -> Bump<4> {
+        bump.with_settings()
     }
 
-    pub fn Bump_as_mut_aligned(bump: &mut Bump) -> &mut Bump<4> {
-        bump.as_mut_aligned()
+    pub fn Bump_borrow_mut_with_align(bump: &mut Bump) -> &mut Bump<4> {
+        bump.borrow_mut_with_settings()
     }
 
     pub fn Bump_allocate(bump: &Bump, layout: Layout) -> Result<NonNull<[u8]>> {

@@ -486,6 +486,21 @@ where
         }
     }
 
+    #[inline(always)]
+    pub(crate) fn align_to<MinimumAlignment>(&self)
+    where
+        MinimumAlignment: SupportedMinimumAlignment,
+    {
+        if MinimumAlignment::VALUE > S::MIN_ALIGN {
+            // The UNALLOCATED chunk is always aligned.
+            if let Some(chunk) = self.chunk.get().guaranteed_allocated() {
+                let pos = chunk.pos().addr();
+                let addr = align_pos(S::UP, MinimumAlignment::VALUE, pos);
+                unsafe { chunk.set_pos_addr(addr) };
+            }
+        }
+    }
+
     /// Converts this `BumpScope` into a ***not*** [guaranteed allocated](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
     #[inline(always)]
     pub fn into_not_guaranteed_allocated(self) -> BumpScope<'a, A, S::WithGuaranteedAllocated<false>> {
@@ -675,33 +690,87 @@ where
         }
     }
 
-    /// Turns off deallocation and shrinking.
-    pub fn into_without_dealloc(self) -> BumpScope<'a, A, S::WithDeallocates<false>> {
+    /// Converts this `BumpScope` into a `BumpScope` with new settings.
+    ///
+    /// Not all settings can be converted to. This function will fail to compile when:
+    /// - the bump direction differs
+    /// - the new setting is guaranteed-allocated when the old one isn't
+    ///   (use [`into_guaranteed_allocated`](Self::into_guaranteed_allocated) to do this conversion)
+    #[inline]
+    pub fn with_settings<NewS>(self) -> BumpScope<'a, A, NewS>
+    where
+        NewS: BumpAllocatorSettings,
+    {
+        const {
+            assert!(NewS::UP == S::UP, "can't change `UP` setting");
+
+            assert!(
+                NewS::GUARANTEED_ALLOCATED <= S::GUARANTEED_ALLOCATED,
+                "can't turn a non-guaranteed-allocated bump allocator into a guaranteed-allocated one"
+            );
+        }
+
+        self.as_scope().align_to::<NewS::MinimumAlignment>();
+
         unsafe { transmute(self) }
     }
 
-    /// Turns off deallocation and shrinking.
-    pub fn as_without_dealloc(&self) -> &BumpScope<'a, A, S::WithDeallocates<false>> {
+    /// Borrows this `BumpScope` with new settings.
+    ///
+    /// Not all settings can be converted to. This function will fail to compile when:
+    /// - the bump direction differs
+    /// - the new setting is guaranteed-allocated when the old one isn't
+    ///   (use [`as_guaranteed_allocated`](Self::as_guaranteed_allocated) to do this conversion)
+    /// - the minimum alignment differs
+    #[inline]
+    pub fn borrow_with_settings<NewS>(&self) -> &BumpScope<'a, A, NewS>
+    where
+        NewS: BumpAllocatorSettings,
+    {
+        const {
+            assert!(NewS::UP == S::UP, "can't change `UP` setting");
+
+            assert!(
+                NewS::GUARANTEED_ALLOCATED <= S::GUARANTEED_ALLOCATED,
+                "can't turn a non-guaranteed-allocated bump allocator into a guaranteed-allocated one"
+            );
+
+            assert!(
+                NewS::MIN_ALIGN == S::MIN_ALIGN,
+                "can't change minimum alignment when borrowing with new settings"
+            );
+        }
+
         unsafe { transmute_ref(self) }
     }
 
-    /// Turns off deallocation and shrinking.
-    pub fn as_mut_without_dealloc(&mut self) -> &mut BumpScope<'a, A, S::WithDeallocates<false>> {
-        unsafe { transmute_mut(self) }
-    }
+    /// Borrows this `BumpScope` mutably with new settings.
+    ///
+    /// Not all settings can be converted to. This function will fail to compile when:
+    /// - the bump direction differs
+    /// - the guaranteed-allocated property differs
+    /// - the new minimum alignment is less than the old one
+    #[inline]
+    pub fn borrow_mut_with_settings<NewS>(&mut self) -> &mut BumpScope<'a, A, NewS>
+    where
+        NewS: BumpAllocatorSettings,
+    {
+        const {
+            assert!(NewS::UP == S::UP, "can't change `UP` setting");
 
-    /// Turns on deallocation and shrinking.
-    pub fn into_with_dealloc(self) -> BumpScope<'a, A, S::WithDeallocates<true>> {
-        unsafe { transmute(self) }
-    }
+            assert!(
+                NewS::GUARANTEED_ALLOCATED == S::GUARANTEED_ALLOCATED,
+                "can't change guaranteed-allocated property when mutably borrowing with new settings"
+            );
 
-    /// Turns on deallocation and shrinking.
-    pub fn as_with_dealloc(&self) -> &BumpScope<'a, A, S::WithDeallocates<true>> {
-        unsafe { transmute_ref(self) }
-    }
+            assert!(
+                NewS::MIN_ALIGN >= S::MIN_ALIGN,
+                "can't decrease minimum alignment when mutably borrowing with new settings"
+            );
+        }
 
-    /// Turns on deallocation and shrinking.
-    pub fn as_mut_with_dealloc(&mut self) -> &mut BumpScope<'a, A, S::WithDeallocates<true>> {
+        self.as_scope().align_to::<NewS::MinimumAlignment>();
+
         unsafe { transmute_mut(self) }
     }
 }

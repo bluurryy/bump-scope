@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Breaking:** The generic const parameters have been consolidated into a single `Settings` parameter.
+- **Breaking:** Replaced allocator settings configuration methods with new `(borrow(_mut))_with_settings` methods
 - **Breaking:** Bump allocator traits have been moved and renamed:
   - `(Mut)BumpAllocator` -> `traits::(Mut)BumpAllocatorCore`
   - `(Mut)BumpAllocatorScope` -> `traits::(Mut)BumpAllocatorCoreScope`
