@@ -84,8 +84,8 @@ jobs:
       - run: cargo run --example limit_memory_usage
       - run: cargo run --example stack_or_static_memory
       - run: cargo run --example thread_local
-      - run: cargo test --test compile_fail -- --ignored
-      - run: cargo test --no-default-features --test unavailable_panicking_macros -F alloc
+      - run: cargo test --test trybuild -- --ignored
+      - run: cargo test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
   test-nightly:
     runs-on: ubuntu-latest
     env:
