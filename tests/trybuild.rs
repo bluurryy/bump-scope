@@ -9,7 +9,7 @@ fn mustnt_compile() {
     //
     // This is a workaround so trybuild uses `cargo build` instead of `cargo check`
     // which triggers const eval errors in `compile_fail`, like `const { panic!("OOF") }`,
-    // which we use in `settings_conversion`.
+    // which we need to test methods like `with_settings`.
     //
     // See <https://github.com/dtolnay/trybuild/issues/258>
     t.pass("tests/trybuild/force_build.rs");
