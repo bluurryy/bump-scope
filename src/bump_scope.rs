@@ -289,18 +289,6 @@ where
         unsafe { self.cast_mut() }
     }
 
-    /// Returns `&self` as is. This is useful for macros that support both `Bump` and `BumpScope`.
-    #[inline(always)]
-    pub fn as_scope(&self) -> &Self {
-        self
-    }
-
-    /// Returns `&mut self` as is. This is useful for macros that support both `Bump` and `BumpScope`.
-    #[inline(always)]
-    pub fn as_mut_scope(&mut self) -> &mut Self {
-        self
-    }
-
     /// Converts this `BumpScope` into a `BumpScope` with a new minimum alignment.
     ///
     /// **This cannot decrease the alignment.** Trying to decrease alignment will result in a compile error.
@@ -394,7 +382,7 @@ where
             );
         }
 
-        self.as_scope().align_to::<NewS::MinimumAlignment>();
+        self.align_to::<NewS::MinimumAlignment>();
 
         unsafe { transmute(self) }
     }
@@ -453,7 +441,7 @@ where
             );
         }
 
-        self.as_scope().align_to::<NewS::MinimumAlignment>();
+        self.align_to::<NewS::MinimumAlignment>();
 
         unsafe { transmute_mut(self) }
     }
