@@ -1,11 +1,11 @@
 error[E0080]: evaluation panicked: can't change `UP` setting
- --> src/bump.rs
+ --> src/bump_scope.rs
   |
   |             assert!(NewS::UP == S::UP, "can't change `UP` setting");
-  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::Bump::with_settings::<bump_scope::settings::BumpSettings<1, false>>::{constant#0}` failed here
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::BumpScope::<'_>::with_settings::<bump_scope::settings::BumpSettings<1, false>>::{constant#0}` failed here
 
 note: erroneous constant encountered
- --> src/bump.rs
+ --> src/bump_scope.rs
   |
   | /         const {
   | |             assert!(NewS::UP == S::UP, "can't change `UP` setting");
@@ -16,8 +16,8 @@ note: erroneous constant encountered
   | |         }
   | |_________^
 
-note: the above error was encountered while instantiating `fn Bump::with_settings::<BumpSettings<1, false>>`
-  --> tests/trybuild/compile_fail/with_settings/bump/into/up_to_false.rs:11:5
-   |
-11 |     bump.with_settings()
-   |     ^^^^^^^^^^^^^^^^^^^^
+note: the above error was encountered while instantiating `fn BumpScope::<'_>::with_settings::<BumpSettings<1, false>>`
+ --> src/bump.rs
+  |
+  |         self.as_mut_scope().claim_mut().with_settings::<NewS>();
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

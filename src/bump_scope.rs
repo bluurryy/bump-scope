@@ -350,6 +350,15 @@ where
         }
     }
 
+    /// Returns an bump scope from a mutable reference.
+    #[inline(always)]
+    pub(crate) fn claim_mut(&mut self) -> BumpScope<'_, A, S> {
+        BumpScope {
+            chunk: Cell::new(self.chunk.get()),
+            marker: PhantomData,
+        }
+    }
+
     /// Returns a reference to the base allocator.
     #[must_use]
     #[inline(always)]

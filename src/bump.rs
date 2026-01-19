@@ -994,21 +994,11 @@ where
     /// - the new setting is guaranteed-allocated when the old one isn't
     ///   (use [`into_guaranteed_allocated`](Self::into_guaranteed_allocated) to do this conversion)
     #[inline]
-    pub fn with_settings<NewS>(self) -> Bump<A, NewS>
+    pub fn with_settings<NewS>(mut self) -> Bump<A, NewS>
     where
         NewS: BumpAllocatorSettings,
     {
-        const {
-            assert!(NewS::UP == S::UP, "can't change `UP` setting");
-
-            assert!(
-                NewS::GUARANTEED_ALLOCATED <= S::GUARANTEED_ALLOCATED,
-                "can't turn a non-guaranteed-allocated bump allocator into a guaranteed-allocated one"
-            );
-        }
-
-        self.as_scope().align_to::<NewS::MinimumAlignment>();
-
+        self.as_mut_scope().claim_mut().with_settings::<NewS>();
         unsafe { transmute(self) }
     }
 
@@ -1024,20 +1014,7 @@ where
     where
         NewS: BumpAllocatorSettings,
     {
-        const {
-            assert!(NewS::UP == S::UP, "can't change `UP` setting");
-
-            assert!(
-                NewS::GUARANTEED_ALLOCATED <= S::GUARANTEED_ALLOCATED,
-                "can't turn a non-guaranteed-allocated bump allocator into a guaranteed-allocated one"
-            );
-
-            assert!(
-                NewS::MIN_ALIGN == S::MIN_ALIGN,
-                "can't change minimum alignment when borrowing with new settings"
-            );
-        }
-
+        self.as_scope().borrow_with_settings::<NewS>();
         unsafe { transmute_ref(self) }
     }
 
@@ -1052,22 +1029,7 @@ where
     where
         NewS: BumpAllocatorSettings,
     {
-        const {
-            assert!(NewS::UP == S::UP, "can't change `UP` setting");
-
-            assert!(
-                NewS::GUARANTEED_ALLOCATED == S::GUARANTEED_ALLOCATED,
-                "can't change guaranteed-allocated property when mutably borrowing with new settings"
-            );
-
-            assert!(
-                NewS::MIN_ALIGN >= S::MIN_ALIGN,
-                "can't decrease minimum alignment when mutably borrowing with new settings"
-            );
-        }
-
-        self.as_scope().align_to::<NewS::MinimumAlignment>();
-
+        self.as_mut_scope().borrow_mut_with_settings::<NewS>();
         unsafe { transmute_mut(self) }
     }
 

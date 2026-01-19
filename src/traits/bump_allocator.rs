@@ -8,7 +8,7 @@ use crate::{
 };
 
 /// A bump allocator, generic over [`Bump`] and [`BumpScope`].
-pub trait BumpAllocator: MutBumpAllocatorTyped {
+pub trait BumpAllocator: MutBumpAllocatorTyped + Sized {
     /// The base allocator.
     type Allocator: BaseAllocator<<Self::Settings as BumpAllocatorSettings>::GuaranteedAllocated>;
 
