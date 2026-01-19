@@ -47,20 +47,20 @@ macro_rules! make_type {
         /// - provide a minimum capacity: <code>[with_capacity]\([_in][with_capacity_in])</code>
         /// - const, without allocation: <code>[unallocated]</code>
         ///
-        /// [new]: Self::new
-        /// [new_in]: Self::new_in
-        /// [default]: Self::default
-        /// [with_size]: Self::with_size
-        /// [with_size_in]: Self::with_size_in
-        /// [with_capacity]: Self::with_capacity
-        /// [with_capacity_in]: Self::with_capacity_in
-        /// [unallocated]: Self::unallocated
+        /// [new]: Bump::new
+        /// [new_in]: Bump::new_in
+        /// [default]: Bump::default
+        /// [with_size]: Bump::with_size
+        /// [with_size_in]: Bump::with_size_in
+        /// [with_capacity]: Bump::with_capacity
+        /// [with_capacity_in]: Bump::with_capacity_in
+        /// [unallocated]: Bump::unallocated
         ///
         /// #### Allocate ...
         /// - sized values: [`alloc`], [`alloc_with`], [`alloc_default`], [`alloc_zeroed`]
-        /// - strings: [`alloc_str`], <code>[alloc_fmt](Self::alloc_fmt)([_mut](Self::alloc_fmt_mut))</code>
-        /// - c strings: [`alloc_cstr`], [`alloc_cstr_from_str`], <code>[alloc_cstr_fmt](Self::alloc_cstr_fmt)([_mut](Self::alloc_cstr_fmt_mut))</code>
-        /// - slices: <code>alloc_slice_{[copy](Self::alloc_slice_copy), [clone](Self::alloc_slice_clone), [move](Self::alloc_slice_move), [fill](Self::alloc_slice_fill), [fill_with](Self::alloc_slice_fill_with)}</code>,
+        /// - strings: [`alloc_str`], <code>[alloc_fmt](BumpAllocatorTypedScope::alloc_fmt)([_mut](MutBumpAllocatorTypedScope::alloc_fmt_mut))</code>
+        /// - c strings: [`alloc_cstr`], [`alloc_cstr_from_str`], <code>[alloc_cstr_fmt](BumpAllocatorTypedScope::alloc_cstr_fmt)([_mut](MutBumpAllocatorTypedScope::alloc_cstr_fmt_mut))</code>
+        /// - slices: <code>alloc_slice_{[copy](BumpAllocatorTypedScope::alloc_slice_copy), [clone](BumpAllocatorTypedScope::alloc_slice_clone), [move](BumpAllocatorTypedScope::alloc_slice_move), [fill](BumpAllocatorTypedScope::alloc_slice_fill), [fill_with](BumpAllocatorTypedScope::alloc_slice_fill_with)}</code>,
         ///   [`alloc_zeroed_slice`]
         /// - slices from an iterator: [`alloc_iter`], [`alloc_iter_exact`], [`alloc_iter_mut`], [`alloc_iter_mut_rev`]
         /// - uninitialized values: [`alloc_uninit`], [`alloc_uninit_slice`], [`alloc_uninit_slice_for`]
@@ -76,7 +76,7 @@ macro_rules! make_type {
         /// - dealloc: [`dealloc`]
         ///
         /// #### Configure allocator settings ...
-        /// - guaranteed allocated: <code>{[as](Self::as_guaranteed_allocated), [as_mut](Self::as_mut_guaranteed_allocated), [into](Self::into_guaranteed_allocated)}_guaranteed_allocated</code>
+        /// - guaranteed allocated: <code>{[as](Bump::as_guaranteed_allocated), [as_mut](Bump::as_mut_guaranteed_allocated), [into](Bump::into_guaranteed_allocated)}_guaranteed_allocated</code>
         /// - other: [`with_settings`], [`borrow_with_settings`], [`borrow_mut_with_settings`]
         ///
         /// ## Collections
@@ -209,7 +209,7 @@ macro_rules! make_type {
         /// # _ = one;
         /// ```
         ///
-        /// [`as_mut_scope`]: Self::as_mut_scope
+        /// [`as_mut_scope`]: Bump::as_mut_scope
         #[repr(transparent)]
         pub struct Bump<$($allocator_parameter)*, S = BumpSettings>
         where
