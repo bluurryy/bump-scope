@@ -844,7 +844,7 @@ where
     }
 }
 
-/// Additional `alloc` methods that are not from traits.
+/// Additional `alloc` methods that are not available in traits.
 impl<'a, A, S> BumpScope<'a, A, S>
 where
     A: BaseAllocator<S::GuaranteedAllocated>,

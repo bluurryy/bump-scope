@@ -133,47 +133,47 @@ macro_rules! make_type {
         /// # #[cfg(not(feature = "nightly-allocator-api"))] fn main() {}
         /// ```
         ///
-        /// [`alloc`]: Self::alloc
-        /// [`alloc_with`]: Self::alloc_with
-        /// [`alloc_default`]: Self::alloc_default
+        /// [`alloc`]: BumpAllocatorTypedScope::alloc
+        /// [`alloc_with`]: BumpAllocatorTypedScope::alloc_with
+        /// [`alloc_default`]: BumpAllocatorTypedScope::alloc_default
         /// [`alloc_zeroed`]: crate::zerocopy_08::BumpAllocatorTypedScopeExt::alloc_zeroed
         ///
-        /// [`alloc_str`]: Self::alloc_str
+        /// [`alloc_str`]: BumpAllocatorTypedScope::alloc_str
         ///
-        /// [`alloc_cstr`]: Self::alloc_cstr
-        /// [`alloc_cstr_from_str`]: Self::alloc_cstr_from_str
+        /// [`alloc_cstr`]: BumpAllocatorTypedScope::alloc_cstr
+        /// [`alloc_cstr_from_str`]: BumpAllocatorTypedScope::alloc_cstr_from_str
         ///
         /// [`alloc_zeroed_slice`]: crate::zerocopy_08::BumpAllocatorTypedScopeExt::alloc_zeroed_slice
         ///
-        /// [`alloc_iter`]: Self::alloc_iter
-        /// [`alloc_iter_exact`]: Self::alloc_iter_exact
-        /// [`alloc_iter_mut`]: Self::alloc_iter_mut
-        /// [`alloc_iter_mut_rev`]: Self::alloc_iter_mut_rev
+        /// [`alloc_iter`]: BumpAllocatorTypedScope::alloc_iter
+        /// [`alloc_iter_exact`]: BumpAllocatorTypedScope::alloc_iter_exact
+        /// [`alloc_iter_mut`]: MutBumpAllocatorTypedScope::alloc_iter_mut
+        /// [`alloc_iter_mut_rev`]: MutBumpAllocatorTypedScope::alloc_iter_mut_rev
         ///
-        /// [`alloc_uninit`]: Self::alloc_uninit
-        /// [`alloc_uninit_slice`]: Self::alloc_uninit_slice
-        /// [`alloc_uninit_slice_for`]: Self::alloc_uninit_slice_for
+        /// [`alloc_uninit`]: BumpAllocatorTypedScope::alloc_uninit
+        /// [`alloc_uninit_slice`]: BumpAllocatorTypedScope::alloc_uninit_slice
+        /// [`alloc_uninit_slice_for`]: BumpAllocatorTypedScope::alloc_uninit_slice_for
         ///
-        /// [`alloc_try_with`]: Self::alloc_try_with
-        /// [`alloc_try_with_mut`]: Self::alloc_try_with_mut
+        /// [`alloc_try_with`]: Bump::alloc_try_with
+        /// [`alloc_try_with_mut`]: Bump::alloc_try_with_mut
         ///
-        /// [`alloc_clone`]: Self::alloc_clone
+        /// [`alloc_clone`]: BumpAllocatorTypedScope::alloc_clone
         ///
-        /// [`scoped`]: Self::scoped
-        /// [`scoped_aligned`]: Self::scoped_aligned
-        /// [`scope_guard`]: Self::scope_guard
+        /// [`scoped`]: BumpAllocator::scoped
+        /// [`scoped_aligned`]: BumpAllocator::scoped_aligned
+        /// [`scope_guard`]: BumpAllocator::scope_guard
         ///
-        /// [`checkpoint`]: Self::checkpoint
-        /// [`reset_to`]: Self::reset_to
+        /// [`checkpoint`]: BumpAllocatorCore::checkpoint
+        /// [`reset_to`]: BumpAllocatorCore::reset_to
         ///
-        /// [`reset`]: Self::reset
-        /// [`dealloc`]: Self::dealloc
+        /// [`reset`]: Bump::reset
+        /// [`dealloc`]: BumpAllocatorTyped::dealloc
         ///
-        /// [`aligned`]: Self::aligned
+        /// [`aligned`]: BumpAllocatorScope::aligned
         ///
-        /// [`with_settings`]: Self::with_settings
-        /// [`borrow_with_settings`]: Self::borrow_with_settings
-        /// [`borrow_mut_with_settings`]: Self::borrow_with_settings
+        /// [`with_settings`]: Bump::with_settings
+        /// [`borrow_with_settings`]: Bump::borrow_with_settings
+        /// [`borrow_mut_with_settings`]: Bump::borrow_with_settings
         ///
         /// # Gotcha
         ///
@@ -1254,7 +1254,7 @@ where
     }
 }
 
-/// Additional `alloc` methods that are not from traits.
+/// Additional `alloc` methods that are not available in traits.
 impl<A, S> Bump<A, S>
 where
     A: BaseAllocator<S::GuaranteedAllocated>,
