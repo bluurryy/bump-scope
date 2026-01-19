@@ -247,7 +247,6 @@ impl<const VALUE: bool> Boolean for Bool<VALUE> {
 }
 
 /// Specifies the current minimum alignment of a bump allocator.
-#[derive(Clone, Copy)]
 pub struct MinimumAlignment<const ALIGNMENT: usize>;
 
 mod supported_minimum_alignment {
@@ -265,7 +264,7 @@ mod supported_minimum_alignment {
 ///
 /// This trait is *sealed*: the list of implementors below is total. Users do not have the ability to mark additional
 /// `MinimumAlignment<N>` values as supported. Only bump allocators with the supported minimum alignments are constructable.
-pub trait SupportedMinimumAlignment: supported_minimum_alignment::Sealed + Copy {
+pub trait SupportedMinimumAlignment: supported_minimum_alignment::Sealed {
     /// The minimum alignment in bytes.
     const VALUE: usize;
 }
