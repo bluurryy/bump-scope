@@ -2,7 +2,7 @@
 #[cfg(not(miri))]
 // so the diff doesn't change too often
 #[ignore = "make sure this runs on the stable channel"]
-fn mustnt_compile() {
+fn trybuild() {
     let t = trybuild::TestCases::new();
 
     // Here we add an empty test.

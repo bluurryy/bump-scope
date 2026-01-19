@@ -1,100 +1,29 @@
 export RUST_BACKTRACE := "1"
 export MIRIFLAGS := "-Zmiri-strict-provenance"
 
-default:
-  @just --list
+@default:
+  just --list
 
+# Runs checks before a release.
+[group('release')]
 pre-release:
   typos
   just doc
   just check
   just test
-  just test-miri
   cargo +stable semver-checks
 
-# installs all tools used to run `pre-release`
+# Installs all tools required for `pre-release` except for `nu`.
+[group('release')]
 setup:
-  cargo binstall typos-cli@1.40.0 --locked
-  cargo binstall cargo-insert-docs@1.1.0 --locked
+  cargo binstall typos-cli@1.42.0 --locked
+  cargo binstall cargo-insert-docs@1.3.0 --locked
   cargo binstall cargo-semver-checks@0.45.0 --locked
+  cargo binstall cargo-hack@0.6.41 --locked
+  cargo binstall cargo-minimal-versions@0.1.35 --locked
 
-check: 
-  just check-fmt
-  just check-msrv
-  just check-clippy
-  just check-nostd
-  just check-fallibility
-  just check-mustnt_compile
-  just check-unavailable_panicking_macros
-  # regression test making sure hashbrown compiles
-  cargo +nightly check --tests --features nightly-allocator-api 
-
-check-fmt:
-  cargo +stable fmt --check
-  cd crates/fuzzing-support && cargo +stable fmt --check
-  cd crates/test-fallibility && cargo +stable fmt --check
-  cd crates/tests-from-std && cargo +stable fmt --all -- --check
-  cd crates/callgrind-benches && cargo +stable fmt --check
-  cd crates/criterion-benches && cargo +stable fmt --check
-  cd fuzz; cargo +stable fmt --check
-
-check-msrv:
-  # msrv might print warnings that stable doesnt, we dont care
-  cargo +1.85.1 check --no-default-features
-  cargo +1.85.1 check --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
-
-check-clippy:
-  cargo +stable clippy --tests --no-default-features -- -Dwarnings
-  cargo +stable clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde -- -Dwarnings
-
-  cargo +nightly clippy --tests --no-default-features -- -Dwarnings
-  cargo +nightly clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde -- -Dwarnings
-  cargo +nightly clippy --tests --all-features -- -Dwarnings
-
-  cd crates/callgrind-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
-  cd crates/criterion-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
-  cd crates/fuzzing-support && cargo +nightly clippy --tests -- -Dwarnings
-  cd crates/test-fallibility && cargo +nightly clippy --tests -- -Dwarnings
-  cd crates/test-hashbrown && cargo +nightly clippy --tests -- -Dwarnings
-  cd crates/test-hashbrown && cargo +nightly clippy --tests --all-features -- -Dwarnings
-  cd crates/tests-from-std && cargo +nightly clippy --tests -- -Dwarnings
-  cd fuzz && cargo +nightly clippy -- -Dwarnings
-
-check-nostd:
-  cargo check --target thumbv7em-none-eabihf --no-default-features -F allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,alloc,serde
-
-check-fallibility:
-  cd crates/test-fallibility && nu assert-no-panics.nu
-
-check-mustnt_compile:
-  cargo +stable test --test trybuild -- --ignored
-  
-check-unavailable_panicking_macros:
-  cargo +stable test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
-
-update-expect:
-  TRYBUILD=overwrite cargo +stable test --test trybuild -- --ignored
-
-test: 
-  cargo +nightly test --all-features
-  cargo +nightly run --example limit_memory_usage
-  cargo +nightly run --example stack_or_static_memory
-  cargo +nightly run --example thread_local
-  cd crates/tests-from-std && cargo +nightly test
-  cd crates/test-hashbrown && cargo +nightly test
-  cd crates/test-hashbrown && cargo +nightly test --all-features
-  cd crates/fuzzing-support && cargo +nightly test
-
-test-miri:
-  cargo +nightly miri test --all-features
-  cargo +nightly miri run --example limit_memory_usage
-  cargo +nightly miri run --example stack_or_static_memory
-  cargo +nightly miri run --example thread_local
-  cd crates/tests-from-std && cargo +nightly miri test
-  cd crates/test-hashbrown && cargo +nightly miri test
-  cd crates/test-hashbrown && cargo +nightly miri test --all-features
-  cd crates/fuzzing-support && cargo +nightly miri test
-
+# Runs `cargo fmt` on everything.
+[group('fmt')]
 fmt:
   cargo +nightly fmt
   cd crates/callgrind-benches && cargo +nightly fmt
@@ -105,17 +34,112 @@ fmt:
   cd crates/tests-from-std && cargo +nightly fmt
   cd fuzz && cargo +nightly fmt
 
-doc *args:
-  cargo +nightly fmt
-  cargo insert-docs --all-features --allow-dirty
-  @ just doc-rustdoc {{args}}
+# Runs all `check-*`.
+[group('check')]
+check: 
+  just check-fmt
+  just check-clippy
+  just check-msrv
+  just check-nostd
+  just check-fallibility
 
-doc-rustdoc *args:
-  cargo +nightly rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition
+# Checks formatting.
+[group('check')]
+check-fmt:
+  cargo +stable fmt --all --check
+  cd crates/callgrind-benches && cargo +stable fmt --all --check
+  cd crates/criterion-benches && cargo +stable fmt --all --check
+  cd crates/fuzzing-support && cargo +stable fmt --all --check
+  cd crates/test-fallibility && cargo +stable fmt --all --check
+  cd crates/test-hashbrown && cargo +stable fmt --all --check
+  cd crates/tests-from-std && cargo +stable fmt --all -- --check
+  cd fuzz && cargo +stable fmt --all --check
 
-doc-rustdoc-priv *args:
-  cargo +nightly rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition --document-private-items
 
+# Runs all `check-clippy-*`.
+[group('check')]
+check-clippy:
+  just check-clippy-stable
+  just check-clippy-nightly
+
+# Runs clippy on the stable toolchain.
+[group('check')]
+check-clippy-stable:
+  cargo +stable clippy --tests --no-default-features -- -Dwarnings
+  cargo +stable clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde -- -Dwarnings
+
+# Runs clippy on the nightly toolchain.
+[group('check')]
+check-clippy-nightly:
+  cargo +nightly clippy --tests --no-default-features -- -Dwarnings
+  cargo +nightly clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde -- -Dwarnings
+  cargo +nightly clippy --tests --all-features -- -Dwarnings
+  cd crates/callgrind-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
+  cd crates/criterion-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
+  cd crates/fuzzing-support && cargo +nightly clippy --tests -- -Dwarnings
+  cd crates/test-fallibility && cargo +nightly clippy --tests -- -Dwarnings
+  cd crates/test-hashbrown && cargo +nightly clippy --tests -- -Dwarnings
+  cd crates/test-hashbrown && cargo +nightly clippy --tests --all-features -- -Dwarnings
+  cd crates/tests-from-std && cargo +nightly clippy --tests -- -Dwarnings
+  cd fuzz && cargo +nightly clippy -- -Dwarnings
+
+# Runs `cargo check` with the minimum supported rust version.
+[group('check')]
+check-msrv:
+  # msrv might print warnings that stable doesnt, we dont care
+  cargo +1.85.1 check --no-default-features
+  cargo +1.85.1 check --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
+
+[group('check')]
+check-minimal-versions:
+  cargo +stable minimal-versions check --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
+  cargo +nightly minimal-versions check --all-features
+
+# Runs `cargo check` on a target that has no `std` library.
+[group('check')]
+check-nostd:
+  cargo check --target thumbv7em-none-eabihf --no-default-features -F allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,alloc,serde
+
+# Asserts that api that shouldn't panic, doesn't.
+[group('check')]
+check-fallibility:
+  cd crates/test-fallibility && nu assert-no-panics.nu
+
+# Runs all `test-*`.
+[group('test')]
+test:
+  just test-nightly
+  just test-nightly miri
+
+# Runs tests on the stable toolchain.
+[group('test')]
+test-stable:
+  cargo +stable test --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
+  cargo +stable run --example limit_memory_usage
+  cargo +stable run --example stack_or_static_memory
+  cargo +stable run --example thread_local
+  cargo +stable test --test trybuild -- --ignored
+  cargo +stable test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
+
+# Runs tests on the nightly toolchain, optionally with miri.
+[group('test')] 
+test-nightly miri="": 
+  cargo +nightly {{miri}} test --all-features
+  cargo +nightly {{miri}} run --example limit_memory_usage
+  cargo +nightly {{miri}} run --example stack_or_static_memory
+  cargo +nightly {{miri}} run --example thread_local
+  cd crates/tests-from-std && cargo +nightly {{miri}} test
+  cd crates/test-hashbrown && cargo +nightly {{miri}} test
+  cd crates/test-hashbrown && cargo +nightly {{miri}} test --all-features
+  cd crates/fuzzing-support && cargo +nightly {{miri}} test
+
+# Update the expected compile errors of `trybuild` tests.
+[group('test')] 
+update-expect:
+  TRYBUILD=overwrite cargo +stable test --test trybuild -- --ignored
+
+# Fuzz for `seconds`.
+[group('fuzz')] 
 fuzz seconds:
   just fuzz-target {{seconds}} alloc_static_layout
   just fuzz-target {{seconds}} allocator_api
@@ -128,5 +152,24 @@ fuzz seconds:
   just fuzz-target {{seconds}} slice_split_off
   just fuzz-target {{seconds}} vec_split_off
 
+# Fuzz the chosen target for `seconds`.
+[group('fuzz')] 
 fuzz-target seconds target:
   cargo +nightly fuzz run {{target}} -- -max_total_time={{seconds}}
+
+# Sync documentation using `cargo insert-docs` and run `doc-rustdoc`.
+[group('doc')] 
+doc *args:
+  cargo +nightly fmt
+  cargo insert-docs --all-features --allow-dirty
+  @ just doc-rustdoc {{args}}
+
+# Run `rustdoc` like on `docs.rs`.
+[group('doc')] 
+doc-rustdoc *args:
+  cargo +nightly rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition -Dwarnings
+
+# Run `rustdoc` like on `docs.rs`, but with private items.
+[group('doc')] 
+doc-rustdoc-private *args:
+  cargo +nightly rustdoc {{args}} --all-features -- --cfg docsrs -Z unstable-options --generate-link-to-definition -Dwarnings --document-private-items
