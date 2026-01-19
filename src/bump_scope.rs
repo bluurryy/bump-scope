@@ -96,17 +96,10 @@ where
 }
 
 /// Methods for a [*guaranteed allocated*](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
-impl<'a, A, S> BumpScope<'a, A, S>
+impl<A, S> BumpScope<'_, A, S>
 where
     S: BumpAllocatorSettings<GuaranteedAllocated = True>,
 {
-    /// Returns a reference to the base allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn allocator(&self) -> &'a A {
-        self.stats().current_chunk().allocator()
-    }
-
     /// Creates a new [`BumpScopeGuard`].
     ///
     /// This allows for creation of child scopes.
@@ -153,13 +146,6 @@ where
             chunk: Cell::new(self.chunk.get()),
             marker: PhantomData,
         }
-    }
-
-    /// Returns a reference to the base allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn get_allocator(&self) -> Option<&'a A> {
-        self.stats().get_current_chunk().map(|c| c.allocator())
     }
 
     /// Returns a type which provides statistics about the memory usage of the bump allocator.

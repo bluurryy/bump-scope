@@ -485,13 +485,6 @@ where
     pub fn scope_guard(&mut self) -> BumpScopeGuardRoot<'_, A, S> {
         BumpScopeGuardRoot::new(self)
     }
-
-    /// Returns a reference to the base allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn allocator(&self) -> &A {
-        self.as_scope().allocator()
-    }
 }
 
 /// Methods for a **not** [*guaranteed allocated*](crate#what-does-guaranteed-allocated-mean) `Bump`.
@@ -532,13 +525,6 @@ where
     A: Allocator,
     S: BumpAllocatorSettings,
 {
-    /// Returns a reference to the base allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn get_allocator(&self) -> Option<&A> {
-        self.as_scope().get_allocator()
-    }
-
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
     /// This is equivalent to <code>[with_size_in](Bump::with_size_in)(512, allocator)</code>.

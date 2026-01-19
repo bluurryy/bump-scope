@@ -1,7 +1,7 @@
 use crate::{
     BaseAllocator, BumpScope,
     bump_align_guard::BumpAlignGuard,
-    settings::{BumpAllocatorSettings, MinimumAlignment, SupportedMinimumAlignment},
+    settings::{BumpAllocatorSettings, MinimumAlignment, SupportedMinimumAlignment, True},
     stats::Stats,
     traits::{BumpAllocator, MutBumpAllocatorCoreScope},
 };
@@ -108,6 +108,28 @@ pub trait BumpAllocatorScope<'a>: BumpAllocator + MutBumpAllocatorCoreScope<'a> 
     ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment;
+
+    /// Returns a reference to the base allocator.
+    ///
+    /// This is only available if the bump allocator is guaranteed-allocated.
+    /// You can always get a reference to the base allocator using [`get_allocator`].
+    ///
+    /// [`get_allocator`]: BumpAllocatorScope::get_allocator
+    #[must_use]
+    #[inline(always)]
+    fn allocator(&self) -> &'a Self::Allocator
+    where
+        Self::Settings: BumpAllocatorSettings<GuaranteedAllocated = True>,
+    {
+        self.stats().current_chunk().allocator()
+    }
+
+    /// Returns a reference to the base allocator.
+    #[must_use]
+    #[inline(always)]
+    fn get_allocator(&self) -> Option<&'a Self::Allocator> {
+        self.stats().get_current_chunk().map(|c| c.allocator())
+    }
 }
 
 impl<'a, A, S> BumpAllocatorScope<'a> for BumpScope<'a, A, S>
