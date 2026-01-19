@@ -58,8 +58,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-show-asm@0.2.55
       - uses: Swatinem/rust-cache@v2
-      - run: cd crates/test-no-panic && cargo run
+      - run: cd crates/test-no-panic && cargo +nightly run
   msrv:
     runs-on: ubuntu-latest
     steps:
