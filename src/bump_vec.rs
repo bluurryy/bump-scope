@@ -2561,19 +2561,31 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
 
     /// Shrinks the capacity of the vector as much as possible.
     ///
-    /// This will also free space for future bump allocations if and only if this is the most recent allocation.
+    /// Shrinking will only take place if this vector owns the last allocation.
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::{Bump, BumpVec};
+    /// # use bump_scope::{Bump, BumpVec, bump_vec};
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = BumpVec::with_capacity_in(10, &bump);
-    /// vec.extend([1, 2, 3]);
-    /// assert!(vec.capacity() == 10);
-    /// assert_eq!(bump.stats().allocated(), 10 * 4);
-    /// vec.shrink_to_fit();
+    /// let mut vec: BumpVec<u8, _> = bump_vec![in &bump; 1, 2, 3];
+    /// assert!(vec.len() == 3);
     /// assert!(vec.capacity() == 3);
-    /// assert_eq!(bump.stats().allocated(), 3 * 4);
+    /// assert_eq!(bump.stats().allocated(), 3);
+    ///
+    /// vec.pop();
+    /// vec.shrink_to_fit();
+    /// assert!(vec.len() == 2);
+    /// assert!(vec.capacity() == 2);
+    /// assert_eq!(bump.stats().allocated(), 2);
+    ///
+    /// // allocate something so the vec is no longer the last allocation
+    /// bump.alloc::<u8>(123);
+    ///
+    /// // now shrinking won't take place, capacity stays the same
+    /// vec.pop();
+    /// vec.shrink_to_fit();
+    /// assert!(vec.len() == 1);
+    /// assert!(vec.capacity() == 2);
     /// ```
     pub fn shrink_to_fit(&mut self) {
         let Self { fixed, allocator } = self;
