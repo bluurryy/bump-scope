@@ -14,14 +14,15 @@ pre-release:
   just test
   cargo +stable semver-checks
 
-# Installs all tools required for `pre-release` except for `nu`.
+# Installs all tools required for `pre-release`.
 [group('release')]
 setup:
-  cargo binstall typos-cli@1.42.0 --locked
-  cargo binstall cargo-insert-docs@1.3.0 --locked
-  cargo binstall cargo-semver-checks@0.45.0 --locked
-  cargo binstall cargo-hack@0.6.41 --locked
-  cargo binstall cargo-minimal-versions@0.1.35 --locked
+  cargo binstall --locked typos-cli@1.42.0
+  cargo binstall --locked cargo-insert-docs@1.3.0
+  cargo binstall --locked cargo-semver-checks@0.45.0
+  cargo binstall --locked cargo-hack@0.6.41
+  cargo binstall --locked cargo-minimal-versions@0.1.35
+  cargo binstall --locked cargo-show-asm@0.2.55
 
 # Runs `cargo fmt` on everything.
 [group('fmt')]
@@ -104,7 +105,7 @@ check-no-std:
 # Asserts that api that shouldn't panic, doesn't.
 [group('check')]
 check-no-panic:
-  cd crates/test-no-panic && nu assert-no-panics.nu
+  cd crates/test-no-panic && cargo run
 
 # Runs all `test-*`.
 [group('test')]

@@ -33,6 +33,24 @@ macro_rules! type_definitions {
     };
 }
 
+// Comment the line below to test that panic detection works.
+#[cfg(false)]
+pub mod checking_that_panik_detection_works {
+    pub fn panik() {
+        panic!("oh no");
+    }
+
+    #[allow(clippy::eq_op, clippy::assertions_on_constants)]
+    pub fn assert() {
+        assert!(1 != 1, "oh no");
+    }
+
+    #[allow(clippy::eq_op)]
+    pub fn assert_eq() {
+        assert_ne!(1, 1, "oh no");
+    }
+}
+
 macro_rules! up_and_down {
     (
         $($tt:tt)*
