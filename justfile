@@ -30,8 +30,8 @@ fmt:
   cd crates/callgrind-benches && cargo +nightly fmt
   cd crates/criterion-benches && cargo +nightly fmt
   cd crates/fuzzing-support && cargo +nightly fmt
-  cd crates/test-fallibility && cargo +nightly fmt
   cd crates/test-hashbrown && cargo +nightly fmt
+  cd crates/test-no-panic && cargo +nightly fmt
   cd crates/tests-from-std && cargo +nightly fmt
   cd fuzz && cargo +nightly fmt
 
@@ -41,8 +41,8 @@ check:
   just check-fmt
   just check-clippy
   just check-msrv
-  just check-nostd
-  just check-fallibility
+  just check-no-std
+  just check-no-panic
 
 # Checks formatting.
 [group('check')]
@@ -51,8 +51,8 @@ check-fmt:
   cd crates/callgrind-benches && cargo +stable fmt --all --check
   cd crates/criterion-benches && cargo +stable fmt --all --check
   cd crates/fuzzing-support && cargo +stable fmt --all --check
-  cd crates/test-fallibility && cargo +stable fmt --all --check
   cd crates/test-hashbrown && cargo +stable fmt --all --check
+  cd crates/test-no-panic && cargo +stable fmt --all --check
   cd crates/tests-from-std && cargo +stable fmt --all --check
   cd fuzz && cargo +stable fmt --all --check
 
@@ -77,9 +77,9 @@ check-clippy-nightly:
   cd crates/callgrind-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
   cd crates/criterion-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
   cd crates/fuzzing-support && cargo +nightly clippy --tests -- -Dwarnings
-  cd crates/test-fallibility && cargo +nightly clippy --tests -- -Dwarnings
   cd crates/test-hashbrown && cargo +nightly clippy --tests -- -Dwarnings
   cd crates/test-hashbrown && cargo +nightly clippy --tests --all-features -- -Dwarnings
+  cd crates/test-no-panic && cargo +nightly clippy --tests -- -Dwarnings
   cd crates/tests-from-std && cargo +nightly clippy --tests -- -Dwarnings
   cd fuzz && cargo +nightly clippy -- -Dwarnings
 
@@ -98,13 +98,13 @@ check-minimal-versions:
 
 # Runs `cargo check` on a target that has no `std` library.
 [group('check')]
-check-nostd:
+check-no-std:
   cargo check --target thumbv7em-none-eabihf --no-default-features -F allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,alloc,serde
 
 # Asserts that api that shouldn't panic, doesn't.
 [group('check')]
-check-fallibility:
-  cd crates/test-fallibility && nu assert-no-panics.nu
+check-no-panic:
+  cd crates/test-no-panic && nu assert-no-panics.nu
 
 # Runs all `test-*`.
 [group('test')]

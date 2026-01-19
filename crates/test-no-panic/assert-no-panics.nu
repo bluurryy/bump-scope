@@ -16,7 +16,7 @@ let allowed_panics = [
 ]
 
 let panics = open --raw out/everything.asm 
-| find panic 
+| find --regex '(?<!test_no_)panic'
 | where { ($in | ansi strip) not-in $allowed_panics }; 
 
 let message = if ($panics | length) == 0 { 

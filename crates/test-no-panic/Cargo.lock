@@ -60,7 +60,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "test-fallibility"
+name = "test-no-panic"
 version = "0.0.0"
 dependencies = [
  "bump-scope",

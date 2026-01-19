@@ -20,8 +20,8 @@ jobs:
       - run: cd crates/callgrind-benches && cargo +stable fmt --all --check
       - run: cd crates/criterion-benches && cargo +stable fmt --all --check
       - run: cd crates/fuzzing-support && cargo +stable fmt --all --check
-      - run: cd crates/test-fallibility && cargo +stable fmt --all --check
       - run: cd crates/test-hashbrown && cargo +stable fmt --all --check
+      - run: cd crates/test-no-panic && cargo +stable fmt --all --check
       - run: cd crates/tests-from-std && cargo +stable fmt --all --check
       - run: cd fuzz && cargo +stable fmt --all --check
   clippy-stable:
@@ -48,8 +48,8 @@ jobs:
       - run: cd crates/callgrind-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
       - run: cd crates/criterion-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
       - run: cd crates/fuzzing-support && cargo +nightly clippy --tests -- -Dwarnings
-      - run: cd crates/test-fallibility && cargo +nightly clippy --tests -- -Dwarnings
       - run: cd crates/test-hashbrown && cargo +nightly clippy --tests -- -Dwarnings
+      - run: cd crates/test-no-panic && cargo +nightly clippy --tests -- -Dwarnings
       - run: cd crates/test-hashbrown && cargo +nightly clippy --tests --all-features -- -Dwarnings
       - run: cd crates/tests-from-std && cargo +nightly clippy --tests -- -Dwarnings
       - run: cd fuzz && cargo +nightly clippy -- -Dwarnings

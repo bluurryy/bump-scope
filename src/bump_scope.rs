@@ -1146,7 +1146,7 @@ where
                 _ => {
                     // SAFETY: We just appended a chunk for that specific layout, it must have enough space.
                     // We don't panic here so we don't produce any panic code when using `try_` apis.
-                    // We check for that in `test-fallibility`.
+                    // We check for that in `test-no-panic`.
                     core::hint::unreachable_unchecked()
                 }
             }
