@@ -1,7 +1,7 @@
 error: the potentially panicking api of `bump_vec!` is not available
        help: enable `bump-scope`'s "panic-on-alloc" feature or use `try`:
        `bump_vec![try in bump; value; 3]`
- --> tests/unavailable_panicking_macros/bump_vec_from_elem.rs:4:5
+ --> tests/trybuild_unavailable_panicking_macros/bump_vec_from_elem.rs:4:5
   |
 4 |     bump_vec![in bump; value; 3]
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

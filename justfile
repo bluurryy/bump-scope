@@ -55,7 +55,6 @@ check-fmt:
   cd crates/tests-from-std && cargo +stable fmt --all --check
   cd fuzz && cargo +stable fmt --all --check
 
-
 # Runs all `check-clippy-*`.
 [group('check')]
 check-clippy:
@@ -135,8 +134,9 @@ test-nightly miri="":
 
 # Update the expected compile errors of `trybuild` tests.
 [group('test')] 
-update-expect:
+trybuild-overwrite:
   TRYBUILD=overwrite cargo +stable test --test trybuild -- --ignored
+  TRYBUILD=overwrite cargo +stable test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
 
 # Fuzz for `seconds`.
 [group('fuzz')] 
