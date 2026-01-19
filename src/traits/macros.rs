@@ -1,9 +1,10 @@
 /// Add trait methods as methods to the struct, so users don't have to import
-/// the traits to access the methods.
+/// the traits to access the methods
+/// and don't have to write `bump.as_scope().alloc(...)` or `(&bump).alloc(...)` to allocate on a `Bump`.
 ///
 /// Would be cool if there was a way to mark the trait impls in a way to make
-/// all the methods available for the struct without importing the trait.
-/// See <https://internals.rust-lang.org/t/fundamental-impl-trait-for-type/19201>.
+/// all the methods available for the struct without importing the trait,
+/// like <https://internals.rust-lang.org/t/fundamental-impl-trait-for-type/19201>.
 macro_rules! forward_alloc_methods {
     (
         self: $self:ident
