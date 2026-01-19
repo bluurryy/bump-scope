@@ -90,6 +90,7 @@ check-msrv:
   cargo +1.85.1 check --no-default-features
   cargo +1.85.1 check --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
 
+# Runs `cargo check` with mininmal dependency versions.
 [group('check')]
 check-minimal-versions:
   cargo +stable minimal-versions check --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
