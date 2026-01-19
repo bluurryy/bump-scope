@@ -1,6 +1,7 @@
 export RUST_BACKTRACE := "1"
 export MIRIFLAGS := "-Zmiri-strict-provenance"
 
+[private]
 @default:
   just --list
 
@@ -107,8 +108,9 @@ check-fallibility:
 # Runs all `test-*`.
 [group('test')]
 test:
+  just test-stable
   just test-nightly
-  just test-nightly miri
+  just test-nightly --miri
 
 # Runs tests on the stable toolchain.
 [group('test')]
@@ -121,7 +123,7 @@ test-stable:
   cargo +stable test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
 
 # Runs tests on the nightly toolchain, optionally with miri.
-[group('test')] 
+[group('test'), arg("miri", long="miri", value="miri")]
 test-nightly miri="": 
   cargo +nightly {{miri}} test --all-features
   cargo +nightly {{miri}} run --example limit_memory_usage
