@@ -17,7 +17,6 @@ use core::clone::CloneToUninit;
 use crate::{
     BaseAllocator, Bump, BumpBox, BumpScopeGuard, Checkpoint, ErrorBehavior, NoDrop, SizedTypeProperties, align_pos,
     alloc::{AllocError, Allocator},
-    allocator_impl,
     bump_align_guard::BumpAlignGuard,
     chunk::{ChunkSize, RawChunk},
     down_align_usize,
@@ -91,42 +90,6 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         AnyStats::from(self.stats()).debug_format("BumpScope", f)
-    }
-}
-
-unsafe impl<A, S> Allocator for BumpScope<'_, A, S>
-where
-    A: BaseAllocator<S::GuaranteedAllocated>,
-    S: BumpAllocatorSettings,
-{
-    #[inline(always)]
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        allocator_impl::allocate(self, layout)
-    }
-
-    #[inline(always)]
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        unsafe { allocator_impl::deallocate(self, ptr, layout) };
-    }
-
-    #[inline(always)]
-    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { allocator_impl::grow(self, ptr, old_layout, new_layout) }
-    }
-
-    #[inline(always)]
-    unsafe fn grow_zeroed(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: Layout,
-        new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { allocator_impl::grow_zeroed(self, ptr, old_layout, new_layout) }
-    }
-
-    #[inline(always)]
-    unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { allocator_impl::shrink(self, ptr, old_layout, new_layout) }
     }
 }
 
