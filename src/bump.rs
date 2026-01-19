@@ -20,7 +20,7 @@ use crate::{
     polyfill::{transmute_mut, transmute_ref},
     settings::{BumpAllocatorSettings, BumpSettings, False, MinimumAlignment, SupportedMinimumAlignment, True},
     stats::{AnyStats, Stats},
-    traits,
+    traits::{self, BumpAllocatorCore},
 };
 
 // For docs.
@@ -732,66 +732,6 @@ where
     #[inline(always)]
     pub fn get_allocator(&self) -> Option<&A> {
         self.as_scope().get_allocator()
-    }
-
-    /// Creates a checkpoint of the current bump position.
-    ///
-    /// The bump position can be reset to this checkpoint with [`reset_to`].
-    ///
-    /// [`reset_to`]: Self::reset_to
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use bump_scope::Bump;
-    /// let bump: Bump = Bump::new();
-    /// let checkpoint = bump.checkpoint();
-    ///
-    /// {
-    ///     let hello = bump.alloc_str("hello");
-    ///     assert_eq!(bump.stats().allocated(), 5);
-    ///     # _ = hello;
-    /// }
-    ///
-    /// unsafe { bump.reset_to(checkpoint); }
-    /// assert_eq!(bump.stats().allocated(), 0);
-    /// ```
-    #[inline]
-    pub fn checkpoint(&self) -> Checkpoint {
-        Checkpoint::new(self.chunk.get())
-    }
-
-    /// Resets the bump position to a previously created checkpoint.
-    /// The memory that has been allocated since then will be reused by future allocations.
-    ///
-    /// # Safety
-    ///
-    /// - the checkpoint must have been created by this bump allocator
-    /// - the bump allocator must not have been [`reset`] since creation of this checkpoint
-    /// - there must be no references to allocations made since creation of this checkpoint
-    /// - the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
-    ///
-    /// [`reset`]: crate::Bump::reset
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use bump_scope::Bump;
-    /// let bump: Bump = Bump::new();
-    /// let checkpoint = bump.checkpoint();
-    ///
-    /// {
-    ///     let hello = bump.alloc_str("hello");
-    ///     assert_eq!(bump.stats().allocated(), 5);
-    ///     # _ = hello;
-    /// }
-    ///
-    /// unsafe { bump.reset_to(checkpoint); }
-    /// assert_eq!(bump.stats().allocated(), 0);
-    /// ```
-    #[inline]
-    pub unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        unsafe { self.as_scope().reset_to(checkpoint) };
     }
 
     /// Constructs a new `Bump` with a default size hint for the first chunk.
@@ -1545,14 +1485,15 @@ where
     }
 }
 
-/// Methods to allocate. Available as fallible or infallible.
-#[allow(clippy::missing_errors_doc)] // error docs are in the trait
+/// Methods that forward to traits.
+// Documentation is in the forwarded to methods.
+#[allow(clippy::missing_errors_doc, clippy::missing_safety_doc)]
 impl<A, S> Bump<A, S>
 where
     A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
-    traits::forward_alloc_methods! {
+    traits::forward_methods! {
         self: self
         access: {self.as_scope()}
         access_mut: {self.as_mut_scope()}

@@ -16,7 +16,7 @@ pub use bump_allocator_core_scope::BumpAllocatorCoreScope;
 pub use bump_allocator_scope::BumpAllocatorScope;
 pub use bump_allocator_typed::BumpAllocatorTyped;
 pub use bump_allocator_typed_scope::BumpAllocatorTypedScope;
-pub(crate) use macros::forward_alloc_methods;
+pub(crate) use macros::forward_methods;
 pub use mut_bump_allocator_core::MutBumpAllocatorCore;
 pub use mut_bump_allocator_core_scope::MutBumpAllocatorCoreScope;
 pub use mut_bump_allocator_typed::MutBumpAllocatorTyped;

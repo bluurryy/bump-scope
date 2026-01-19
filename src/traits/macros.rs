@@ -1,17 +1,29 @@
 /// Add trait methods as methods to the struct, so users don't have to import
-/// the traits to access the methods
-/// and don't have to write `bump.as_scope().alloc(...)` or `(&bump).alloc(...)` to allocate on a `Bump`.
+/// the traits to access the methods and don't have to write `bump.as_scope().alloc(...)`
+/// or `(&bump).alloc(...)` to allocate on a `Bump`.
 ///
 /// Would be cool if there was a way to mark the trait impls in a way to make
 /// all the methods available for the struct without importing the trait,
 /// like <https://internals.rust-lang.org/t/fundamental-impl-trait-for-type/19201>.
-macro_rules! forward_alloc_methods {
+macro_rules! forward_methods {
     (
         self: $self:ident
         access: {$access:expr}
         access_mut: {$access_mut:expr}
         lifetime: $lifetime:lifetime
     ) => {
+        /// Forwards to [`BumpAllocatorCore::checkpoint`].
+        #[inline(always)]
+        pub fn checkpoint(&$self) -> Checkpoint {
+            BumpAllocatorCore::checkpoint($access)
+        }
+
+        /// Forwards to [`BumpAllocatorCore::reset_to`].
+        #[inline(always)]
+        pub unsafe fn reset_to(&$self, checkpoint: Checkpoint) {
+            unsafe { BumpAllocatorCore::reset_to($access, checkpoint) }
+        }
+
         /// Forwards to [`BumpAllocatorTypedScope::alloc`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
@@ -342,4 +354,4 @@ macro_rules! forward_alloc_methods {
     };
 }
 
-pub(crate) use forward_alloc_methods;
+pub(crate) use forward_methods;

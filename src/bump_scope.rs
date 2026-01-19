@@ -19,7 +19,7 @@ use crate::{
     alloc::{AllocError, Allocator},
     allocator_impl,
     bump_align_guard::BumpAlignGuard,
-    chunk::{ChunkHeader, ChunkSize, RawChunk},
+    chunk::{ChunkSize, RawChunk},
     down_align_usize,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     maybe_default_allocator,
@@ -27,7 +27,7 @@ use crate::{
     polyfill::{self, non_null, transmute_mut, transmute_ref},
     settings::{BumpAllocatorSettings, BumpSettings, MinimumAlignment, SupportedMinimumAlignment, True},
     stats::{AnyStats, Stats},
-    traits::{self, BumpAllocatorTyped, BumpAllocatorTypedScope, MutBumpAllocatorTypedScope},
+    traits::{self, BumpAllocatorCore, BumpAllocatorTyped, BumpAllocatorTypedScope, MutBumpAllocatorTypedScope},
     up_align_usize_unchecked,
 };
 
@@ -355,113 +355,6 @@ where
     #[inline(always)]
     pub fn get_allocator(&self) -> Option<&'a A> {
         self.stats().get_current_chunk().map(|c| c.allocator())
-    }
-
-    /// Creates a checkpoint of the current bump position.
-    ///
-    /// The bump position can be reset to this checkpoint with [`reset_to`].
-    ///
-    /// [`reset_to`]: Self::reset_to
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use bump_scope::Bump;
-    /// let bump: Bump = Bump::new();
-    /// let checkpoint = bump.checkpoint();
-    ///
-    /// {
-    ///     let hello = bump.alloc_str("hello");
-    ///     assert_eq!(bump.stats().allocated(), 5);
-    ///     # _ = hello;
-    /// }
-    ///
-    /// unsafe { bump.reset_to(checkpoint); }
-    /// assert_eq!(bump.stats().allocated(), 0);
-    /// ```
-    #[inline]
-    pub fn checkpoint(&self) -> Checkpoint {
-        Checkpoint::new(self.chunk.get())
-    }
-
-    /// Resets the bump position to a previously created checkpoint.
-    /// The memory that has been allocated since then will be reused by future allocations.
-    ///
-    /// # Safety
-    ///
-    /// - the checkpoint must have been created by this bump allocator
-    /// - the bump allocator must not have been [`reset`] since creation of this checkpoint
-    /// - there must be no references to allocations made since creation of this checkpoint
-    /// - the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
-    ///
-    /// [`reset`]: crate::Bump::reset
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use bump_scope::Bump;
-    /// let bump: Bump = Bump::new();
-    /// let checkpoint = bump.checkpoint();
-    ///
-    /// {
-    ///     let hello = bump.alloc_str("hello");
-    ///     assert_eq!(bump.stats().allocated(), 5);
-    ///     # _ = hello;
-    /// }
-    ///
-    /// unsafe { bump.reset_to(checkpoint); }
-    /// assert_eq!(bump.stats().allocated(), 0);
-    /// ```
-    #[inline]
-    #[expect(clippy::missing_panics_doc)] // just debug assertions
-    pub unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        // If the checkpoint was created when the bump allocator had no allocated chunk
-        // then the chunk pointer will point to the unallocated chunk header.
-        //
-        // In such cases we reset the bump pointer to the very start of the very first chunk.
-        //
-        // We don't check if the chunk pointer points to the unallocated chunk header
-        // if the bump allocator is `GUARANTEED_ALLOCATED`. We are allowed to not do this check
-        // because of this safety condition of `reset_to`:
-        // > the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
-        if !S::GUARANTEED_ALLOCATED && checkpoint.chunk == ChunkHeader::unallocated::<S>() {
-            if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
-                while let Some(prev) = chunk.prev() {
-                    chunk = prev;
-                }
-
-                chunk.reset();
-
-                // SAFETY: casting from guaranteed-allocated to non-guaranteed-allocated is safe
-                self.chunk.set(unsafe { chunk.cast() });
-            }
-        } else {
-            debug_assert_ne!(
-                checkpoint.chunk,
-                ChunkHeader::unallocated::<S>(),
-                "the safety conditions state that \"the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`\""
-            );
-
-            #[cfg(debug_assertions)]
-            {
-                let chunk = self
-                    .stats()
-                    .small_to_big()
-                    .find(|chunk| chunk.header() == checkpoint.chunk.cast())
-                    .expect("this checkpoint does not refer to any chunk of this bump allocator");
-
-                assert!(
-                    chunk.contains_addr_or_end(checkpoint.address.get()),
-                    "checkpoint address does not point within its chunk"
-                );
-            }
-
-            unsafe {
-                checkpoint.reset_within_chunk();
-                let chunk = RawChunk::from_header(checkpoint.chunk.cast());
-                self.chunk.set(chunk);
-            }
-        }
     }
 
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
@@ -1157,14 +1050,14 @@ where
 impl<A, S> NoDrop for BumpScope<'_, A, S> where S: BumpAllocatorSettings {}
 
 /// Methods that forward to traits.
-// error docs can be found in the forwarded-to method
-#[allow(clippy::missing_errors_doc)]
+// Documentation is in the forwarded to methods.
+#[allow(clippy::missing_errors_doc, clippy::missing_safety_doc)]
 impl<'a, A, S> BumpScope<'a, A, S>
 where
     A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
-    traits::forward_alloc_methods! {
+    traits::forward_methods! {
         self: self
         access: {self}
         access_mut: {self}
