@@ -52,7 +52,7 @@ check-fmt:
   cd crates/fuzzing-support && cargo +stable fmt --all --check
   cd crates/test-fallibility && cargo +stable fmt --all --check
   cd crates/test-hashbrown && cargo +stable fmt --all --check
-  cd crates/tests-from-std && cargo +stable fmt --all -- --check
+  cd crates/tests-from-std && cargo +stable fmt --all --check
   cd fuzz && cargo +stable fmt --all --check
 
 
