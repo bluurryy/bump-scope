@@ -26,7 +26,8 @@ use crate::{
     settings::{BumpAllocatorSettings, BumpSettings, MinimumAlignment, SupportedMinimumAlignment, True},
     stats::{AnyStats, Stats},
     traits::{
-        self, BumpAllocatorCore, BumpAllocatorScope, BumpAllocatorTyped, BumpAllocatorTypedScope, MutBumpAllocatorTypedScope,
+        self, BumpAllocator, BumpAllocatorCore, BumpAllocatorScope, BumpAllocatorTyped, BumpAllocatorTypedScope,
+        MutBumpAllocatorTypedScope,
     },
     up_align_usize_unchecked,
 };
@@ -104,83 +105,6 @@ where
     #[inline(always)]
     pub fn allocator(&self) -> &'a A {
         self.stats().current_chunk().allocator()
-    }
-
-    /// Calls `f` with a new child scope.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::new();
-    ///
-    /// bump.scoped(|bump| {
-    ///     bump.alloc_str("Hello, world!");
-    ///     assert_eq!(bump.stats().allocated(), 13);
-    /// });
-    ///
-    /// assert_eq!(bump.stats().allocated(), 0);
-    /// ```
-    #[inline(always)]
-    pub fn scoped<R>(&mut self, f: impl FnOnce(BumpScope<A, S>) -> R) -> R {
-        let mut guard = self.scope_guard();
-        f(guard.scope())
-    }
-
-    /// Calls `f` with a new child scope of a new minimum alignment.
-    ///
-    /// # Examples
-    ///
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// # #![feature(pointer_is_aligned_to)]
-    /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::new();
-    ///
-    /// // bump starts off by being aligned to 16
-    /// assert!(bump.stats().current_chunk().bump_position().is_aligned_to(16));
-    ///
-    /// // allocate one byte
-    /// bump.alloc(1u8);
-    ///
-    /// // now the bump is only aligned to 1
-    /// // (if our `MIN_ALIGN` was higher, it would be that)
-    /// assert!(bump.stats().current_chunk().bump_position().addr().get() % 2 == 1);
-    /// assert_eq!(bump.stats().allocated(), 1);
-    ///
-    /// bump.scoped_aligned::<8, ()>(|bump| {
-    ///    // in here, the bump will have the specified minimum alignment of 8
-    ///    assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
-    ///    assert_eq!(bump.stats().allocated(), 8);
-    ///
-    ///    // allocating a value with its size being a multiple of 8 will no longer have
-    ///    // to align the bump pointer before allocation
-    ///    bump.alloc(1u64);
-    ///    assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
-    ///    assert_eq!(bump.stats().allocated(), 16);
-    ///    
-    ///    // allocating a value smaller than the minimum alignment must align the bump pointer
-    ///    // after the allocation, resulting in some wasted space
-    ///    bump.alloc(1u8);
-    ///    assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
-    ///    assert_eq!(bump.stats().allocated(), 24);
-    /// });
-    ///
-    /// assert_eq!(bump.stats().allocated(), 1);
-    /// ```
-    #[inline(always)]
-    pub fn scoped_aligned<const NEW_MIN_ALIGN: usize, R>(
-        &mut self,
-        f: impl FnOnce(BumpScope<A, S::WithMinimumAlignment<NEW_MIN_ALIGN>>) -> R,
-    ) -> R
-    where
-        MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
-    {
-        // This guard will reset the bump pointer to the current position, which is aligned to `MIN_ALIGN`.
-        let mut guard = self.scope_guard();
-        let scope = guard.scope();
-        scope.align::<NEW_MIN_ALIGN>();
-        f(unsafe { scope.cast() })
     }
 
     /// Creates a new [`BumpScopeGuard`].
