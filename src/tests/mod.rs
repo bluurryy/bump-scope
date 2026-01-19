@@ -1214,7 +1214,7 @@ fn test_drop_allocator() {
 
 #[test]
 fn generic_bump_scope() {
-    fn foo(mut bump: impl BumpAllocator<Settings: BumpAllocatorSettings<GuaranteedAllocated = True>>) {
+    fn foo(mut bump: impl BumpAllocator<Settings: BumpAllocatorSettings<GuaranteedAllocated = True>>, is_scope: bool) {
         assert_eq!(bump.as_scope().stats().allocated(), 0);
         bump.as_scope().alloc_str("good");
         assert_eq!(bump.as_scope().stats().allocated(), 4);
@@ -1227,14 +1227,18 @@ fn generic_bump_scope() {
             });
             assert_eq!(bump.stats().allocated(), 7);
         });
-        assert_eq!(bump.as_scope().stats().allocated(), 4);
+
+        // `Bump::scoped` resets the bump pointer to the very start because it can.
+        // Unlike `BumpScope` the lifetime of its allocations is it's own lifetime,
+        // so when `scoped` takes a mutable reference, no allocations can be live.
+        assert_eq!(bump.as_scope().stats().allocated(), if is_scope { 4 } else { 0 });
     }
 
     let bump: Bump = Bump::new();
-    foo(bump);
+    foo(bump, false);
 
     let mut bump: Bump = Bump::new();
     bump.scoped(|bump| {
-        foo(bump);
+        foo(bump, true);
     });
 }
