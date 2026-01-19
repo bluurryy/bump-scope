@@ -9,7 +9,7 @@ use crate::{
     chunk::{ChunkHeader, ChunkSize, ChunkSizeHint},
     layout::LayoutProps,
     polyfill::non_null,
-    settings::{Boolean, BumpAllocatorSettings, False, True},
+    settings::{BumpAllocatorSettings, False, True},
     stats::Stats,
 };
 
@@ -153,11 +153,11 @@ where
     }
 
     pub(crate) fn is_allocated(self) -> bool {
-        <S::GuaranteedAllocated as Boolean>::VALUE || self.header.cast() != ChunkHeader::unallocated::<S>()
+        S::GUARANTEED_ALLOCATED || self.header.cast() != ChunkHeader::unallocated::<S>()
     }
 
     pub(crate) fn is_unallocated(self) -> bool {
-        !<S::GuaranteedAllocated as Boolean>::VALUE && self.header.cast() == ChunkHeader::unallocated::<S>()
+        !S::GUARANTEED_ALLOCATED && self.header.cast() == ChunkHeader::unallocated::<S>()
     }
 
     pub(crate) fn guaranteed_allocated(self) -> Option<RawChunk<A, S::WithGuaranteedAllocated<true>>> {

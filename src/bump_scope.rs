@@ -25,7 +25,7 @@ use crate::{
     maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{self, non_null, transmute_mut, transmute_ref},
-    settings::{Boolean, BumpAllocatorSettings, BumpSettings, MinimumAlignment, SupportedMinimumAlignment, True},
+    settings::{BumpAllocatorSettings, BumpSettings, MinimumAlignment, SupportedMinimumAlignment, True},
     stats::{AnyStats, Stats},
     traits::{self, BumpAllocatorTyped, BumpAllocatorTypedScope, MutBumpAllocatorTypedScope},
     up_align_usize_unchecked,
@@ -424,7 +424,7 @@ where
         // if the bump allocator is `GUARANTEED_ALLOCATED`. We are allowed to not do this check
         // because of this safety condition of `reset_to`:
         // > the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
-        if !<S::GuaranteedAllocated as Boolean>::VALUE && checkpoint.chunk == ChunkHeader::unallocated::<S>() {
+        if !S::GUARANTEED_ALLOCATED && checkpoint.chunk == ChunkHeader::unallocated::<S>() {
             if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
                 while let Some(prev) = chunk.prev() {
                     chunk = prev;
