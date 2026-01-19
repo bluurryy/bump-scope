@@ -53,6 +53,13 @@ jobs:
       - run: cd crates/test-hashbrown && cargo +nightly clippy --tests --all-features -- -Dwarnings
       - run: cd crates/tests-from-std && cargo +nightly clippy --tests -- -Dwarnings
       - run: cd fuzz && cargo +nightly clippy -- -Dwarnings
+  no-panic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - run: cd crates/test-no-panic && cargo run
   msrv:
     runs-on: ubuntu-latest
     steps:
