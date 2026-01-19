@@ -849,7 +849,7 @@ where
     /// # Examples
     ///
     /// Creating scopes with a non-`GUARANTEED_ALLOCATED` bump is not possible.
-    /// ```compile_fail,E0599
+    /// ```compile_fail,E0271
     /// # use bump_scope::Bump;
     /// # use bump_scope::alloc::Global;
     /// # use bump_scope::settings::{BumpSettings, BumpAllocatorSettings};
@@ -918,7 +918,7 @@ where
     /// # Examples
     ///
     /// Creating scopes with a non-`GUARANTEED_ALLOCATED` bump is not possible.
-    /// ```compile_fail,E0599
+    /// ```compile_fail,E0271
     /// # use bump_scope::Bump;
     /// # use bump_scope::alloc::Global;
     /// # use bump_scope::settings::{BumpSettings, BumpAllocatorSettings};
@@ -1068,7 +1068,7 @@ where
     /// # Examples
     ///
     /// Creating scopes with a non-`GUARANTEED_ALLOCATED` bump is not possible.
-    /// ```compile_fail,E0599
+    /// ```compile_fail,E0271
     /// # use bump_scope::Bump;
     /// # use bump_scope::alloc::Global;
     /// # use bump_scope::settings::{BumpSettings, BumpAllocatorSettings};
@@ -1138,7 +1138,7 @@ where
     /// # Examples
     ///
     /// Creating scopes with a non-`GUARANTEED_ALLOCATED` bump is not possible.
-    /// ```compile_fail,E0599
+    /// ```compile_fail,E0271
     /// # use bump_scope::Bump;
     /// # use bump_scope::alloc::Global;
     /// # use bump_scope::settings::{BumpSettings, BumpAllocatorSettings};
