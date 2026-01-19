@@ -1,4 +1,4 @@
-#![feature(pointer_is_aligned_to, allocator_api, alloc_layout_extra)]
+#![feature(pointer_is_aligned_to, allocator_api)]
 #![expect(clippy::cargo_common_metadata)]
 
 use std::{alloc::Layout, cell::Cell, ops::Deref, ptr::NonNull, rc::Rc};
