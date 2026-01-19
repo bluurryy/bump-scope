@@ -154,6 +154,35 @@ where
         // SAFETY: we shorten the lifetime that allocations will have which is sound
         unsafe { transmute_mut(self) }
     }
+
+    // Overwriting this implementation because `BumpScopeGuardRoot` is slightly more efficient.
+    #[inline(always)]
+    fn scoped<R>(&mut self, f: impl FnOnce(BumpScope<'_, Self::Allocator, Self::Settings>) -> R) -> R
+    where
+        Self::Settings: BumpAllocatorSettings<GuaranteedAllocated = True>,
+    {
+        let mut guard = self.scope_guard();
+        f(guard.scope())
+    }
+
+    // Overwriting this implementation because `BumpScopeGuardRoot` is slightly more efficient.
+    #[inline(always)]
+    fn scoped_aligned<const NEW_MIN_ALIGN: usize, R>(
+        &mut self,
+        f: impl FnOnce(
+            BumpScope<'_, Self::Allocator, <Self::Settings as BumpAllocatorSettings>::WithMinimumAlignment<NEW_MIN_ALIGN>>,
+        ) -> R,
+    ) -> R
+    where
+        Self::Settings: BumpAllocatorSettings<GuaranteedAllocated = True>,
+        MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
+    {
+        // This guard will reset the bump pointer to the current position, which is aligned to `MIN_ALIGN`.
+        let mut guard = self.scope_guard();
+        let scope = guard.scope();
+        scope.align::<NEW_MIN_ALIGN>();
+        f(unsafe { scope.cast() })
+    }
 }
 
 impl<A, S> BumpAllocator for BumpScope<'_, A, S>
