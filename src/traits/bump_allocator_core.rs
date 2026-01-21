@@ -80,8 +80,10 @@ pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     /// - the bump allocator must not have been [`reset`] since creation of this checkpoint
     /// - there must be no references to allocations made since creation of this checkpoint
     /// - the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
+    /// - the bump allocator must be [unclaimed] at the time the checkpoint is created and when this function is called
     ///
     /// [`reset`]: crate::Bump::reset
+    /// [unclaimed]: crate::traits::BumpAllocatorScope::claim
     ///
     /// # Examples
     ///
@@ -113,6 +115,11 @@ pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     /// ```
     unsafe fn reset_to(&self, checkpoint: Checkpoint);
 
+    /// Returns true if the bump allocator is currently [claimed].
+    ///
+    /// [claimed]: crate::traits::BumpAllocatorScope::claim
+    fn is_claimed(&self) -> bool;
+
     /// Returns a pointer range of free space in the bump allocator with a size of at least `layout.size()`.
     ///
     /// Both the start and the end of the range is aligned to `layout.align()`.
@@ -131,8 +138,10 @@ pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     /// - no resets must have taken place since then
     /// - `layout` must be less than or equal to the `layout` used when calling
     ///   [`prepare_allocation`], both in size and alignment
+    /// - the bump allocator must be [unclaimed] at the time [`prepare_allocation`] was called and when calling this function
     ///
     /// [`prepare_allocation`]: BumpAllocatorCore::prepare_allocation
+    /// [unclaimed]: crate::traits::BumpAllocatorScope::claim
     unsafe fn allocate_prepared(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8>;
 
     /// Allocate part of the free space returned from a [`prepare_allocation`] call starting at the end.
@@ -143,9 +152,11 @@ pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     /// - no resets must have taken place since then
     /// - `layout` must be less than or equal to the `layout` used when calling
     ///   [`prepare_allocation`], both in size and alignment
+    /// - the bump allocator must be [unclaimed] at the time [`prepare_allocation`] was called and when calling this function
     ///
     /// [`prepare_allocation`]: BumpAllocatorCore::prepare_allocation
     /// [`allocate_prepared`]: BumpAllocatorCore::allocate_prepared
+    /// [unclaimed]: crate::traits::BumpAllocatorScope::claim
     unsafe fn allocate_prepared_rev(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8>;
 }
 
@@ -199,6 +210,11 @@ macro_rules! impl_for_ref {
                 }
 
                 #[inline(always)]
+                fn is_claimed(&self) -> bool {
+                    B::is_claimed(self)
+                }
+
+                #[inline(always)]
                 fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
                     B::prepare_allocation(self, layout)
                 }
@@ -239,6 +255,11 @@ unsafe impl<B: BumpAllocatorCore> BumpAllocatorCore for WithoutDealloc<B> {
     }
 
     #[inline(always)]
+    fn is_claimed(&self) -> bool {
+        B::is_claimed(&self.0)
+    }
+
+    #[inline(always)]
     fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
         B::prepare_allocation(&self.0, layout)
     }
@@ -268,6 +289,11 @@ unsafe impl<B: BumpAllocatorCore> BumpAllocatorCore for WithoutShrink<B> {
     #[inline(always)]
     unsafe fn reset_to(&self, checkpoint: Checkpoint) {
         unsafe { B::reset_to(&self.0, checkpoint) };
+    }
+
+    #[inline(always)]
+    fn is_claimed(&self) -> bool {
+        B::is_claimed(&self.0)
     }
 
     #[inline(always)]
@@ -307,6 +333,11 @@ where
     }
 
     #[inline(always)]
+    fn is_claimed(&self) -> bool {
+        self.as_scope().is_claimed()
+    }
+
+    #[inline(always)]
     fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
         self.as_scope().prepare_allocation(layout)
     }
@@ -339,6 +370,8 @@ where
 
     #[inline]
     unsafe fn reset_to(&self, checkpoint: Checkpoint) {
+        debug_assert!(!self.is_claimed());
+
         // If the checkpoint was created when the bump allocator had no allocated chunk
         // then the chunk pointer will point to the unallocated chunk header.
         //
@@ -386,6 +419,11 @@ where
                 self.chunk.set(chunk);
             }
         }
+    }
+
+    #[inline(always)]
+    fn is_claimed(&self) -> bool {
+        self.chunk.get().is_claimed()
     }
 
     #[inline(always)]

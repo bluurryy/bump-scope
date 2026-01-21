@@ -8,7 +8,10 @@ use crate::{
     stats::{AnyStats, Stats},
 };
 
-/// This is returned from [`checkpoint`](Bump::checkpoint) and used for [`reset_to`](Bump::reset_to).
+/// This is returned from [`checkpoint`] and used for [`reset_to`].
+///
+/// [`checkpoint`]: crate::traits::BumpAllocatorCore::checkpoint
+/// [`reset_to`]: crate::traits::BumpAllocatorCore::reset_to
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Checkpoint {
     pub(crate) chunk: NonNull<ChunkHeader>,
@@ -33,7 +36,9 @@ impl Checkpoint {
     }
 }
 
-/// Returned from [`BumpScope::scope_guard`].
+/// Returned from [`BumpAllocator::scope_guard`].
+///
+/// [`BumpAllocator::scope_guard`]: crate::traits::BumpAllocator::scope_guard
 pub struct BumpScopeGuard<'a, A, S = BumpSettings>
 where
     S: BumpAllocatorSettings<GuaranteedAllocated = True>,

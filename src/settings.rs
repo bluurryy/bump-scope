@@ -4,6 +4,7 @@
 //! - **`MIN_ALIGN`** — see [What is minimum alignment?](#what-is-minimum-alignment)
 //! - **`UP`** — see [Bumping upwards or downwards?](#bumping-upwards-or-downwards)
 //! - **`GUARANTEED_ALLOCATED`** — see [When is a bump allocator *guaranteed allocated*?](#when-is-a-bump-allocator-guaranteed-allocated)
+//! - **`CLAIMABLE`** — see [`Bump::claim`](crate::Bump::claim)
 //! - **`DEALLOCATES`** — toggles deallocation
 //! - **`SHRINKS`** — toggles shrinking, including for temporary collections used in [`alloc_iter`](crate::Bump::alloc_iter), [`alloc_fmt`](crate::Bump::alloc_fmt), etc.
 //!
@@ -17,6 +18,7 @@
 //!     /* MIN_ALIGN */ 8,
 //!     /* UP */ false,
 //!     /* GUARANTEED_ALLOCATED */ false,
+//!     /* CLAIMABLE */ false,
 //!     /* DEALLOCATES */ false,
 //!     /* SHRINKS */ false,
 //! >;
@@ -86,10 +88,6 @@
 //! [`BumpSettings`]: crate::settings::BumpSettings
 //! [`MutBumpVecRev`]: crate::MutBumpVecRev
 
-// This settings situation could be improved with the nightly features
-// [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560) and
-// [`associated_const_equality`](https://github.com/rust-lang/rust/issues/92827).
-
 use crate::ArrayLayout;
 
 trait Sealed {}
@@ -102,11 +100,18 @@ trait Sealed {}
 /// ```ignore
 /// S: BumpAllocatorSettings<GuaranteedAllocated = True>
 /// ```
-/// doing the same with associated constants is not yet possible, see the nightly feature [`associated_const_equality`](https://github.com/rust-lang/rust/issues/92827).
+/// doing the same with associated constants is (yet) possible
 /// ```ignore,warn
 /// // not possible right now
 /// S: BumpAllocatorSettings<GUARANTEED_ALLOCATED = true>
 /// ```
+///
+/// In the future this trait could be simplified when the following features are stabilized:
+/// - [`generic_const_exprs`]
+/// - [`associated_const_equality`]
+///
+/// [`generic_const_exprs`]: https://github.com/rust-lang/rust/issues/76560
+/// [`associated_const_equality`]: https://github.com/rust-lang/rust/issues/92827
 #[expect(private_bounds)]
 pub trait BumpAllocatorSettings: Sealed {
     /// The minimum alignment.
@@ -117,6 +122,9 @@ pub trait BumpAllocatorSettings: Sealed {
 
     /// Whether the allocator is guaranteed to have a chunk allocated and thus is allowed to create scopes.
     const GUARANTEED_ALLOCATED: bool = Self::GuaranteedAllocated::VALUE;
+
+    /// Whether the allocator can be [claimed](crate::Bump::claim).
+    const CLAIMABLE: bool = Self::Claimable::VALUE;
 
     /// Whether the allocator tries to free allocations.
     const DEALLOCATES: bool = Self::Deallocates::VALUE;
@@ -133,6 +141,9 @@ pub trait BumpAllocatorSettings: Sealed {
     /// Whether the allocator is guaranteed to have a chunk allocated and thus is allowed to create scopes.
     type GuaranteedAllocated: Boolean;
 
+    /// Whether the allocator can be [claimed](crate::Bump::claim).
+    type Claimable: Boolean;
+
     /// Whether the allocator tries to free allocations.
     type Deallocates: Boolean;
 
@@ -144,6 +155,7 @@ pub trait BumpAllocatorSettings: Sealed {
             MinimumAlignment = MinimumAlignment<NEW_MIN_ALIGN>,
             Up = Self::Up,
             GuaranteedAllocated = Self::GuaranteedAllocated,
+            Claimable = Self::Claimable,
             Deallocates = Self::Deallocates,
             Shrinks = Self::Shrinks,
         >
@@ -155,6 +167,7 @@ pub trait BumpAllocatorSettings: Sealed {
             MinimumAlignment = Self::MinimumAlignment,
             Up = Bool<VALUE>,
             GuaranteedAllocated = Self::GuaranteedAllocated,
+            Claimable = Self::Claimable,
             Deallocates = Self::Deallocates,
             Shrinks = Self::Shrinks,
         >;
@@ -164,6 +177,17 @@ pub trait BumpAllocatorSettings: Sealed {
             MinimumAlignment = Self::MinimumAlignment,
             Up = Self::Up,
             GuaranteedAllocated = Bool<VALUE>,
+            Claimable = Self::Claimable,
+            Deallocates = Self::Deallocates,
+            Shrinks = Self::Shrinks,
+        >;
+
+    /// Changes whether the allocator can be [claimed](crate::Bump::claim).
+    type WithClaimable<const VALUE: bool>: BumpAllocatorSettings<
+            MinimumAlignment = Self::MinimumAlignment,
+            Up = Self::Up,
+            GuaranteedAllocated = Self::GuaranteedAllocated,
+            Claimable = Bool<VALUE>,
             Deallocates = Self::Deallocates,
             Shrinks = Self::Shrinks,
         >;
@@ -173,6 +197,7 @@ pub trait BumpAllocatorSettings: Sealed {
             MinimumAlignment = Self::MinimumAlignment,
             Up = Self::Up,
             GuaranteedAllocated = Self::GuaranteedAllocated,
+            Claimable = Self::Claimable,
             Deallocates = Bool<VALUE>,
             Shrinks = Self::Shrinks,
         >;
@@ -182,6 +207,7 @@ pub trait BumpAllocatorSettings: Sealed {
             MinimumAlignment = Self::MinimumAlignment,
             Up = Self::Up,
             GuaranteedAllocated = Self::GuaranteedAllocated,
+            Claimable = Self::Claimable,
             Deallocates = Self::Deallocates,
             Shrinks = Bool<VALUE>,
         >;
@@ -194,34 +220,49 @@ pub struct BumpSettings<
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
     const GUARANTEED_ALLOCATED: bool = true,
+    const CLAIMABLE: bool = true,
     const DEALLOCATES: bool = true,
     const SHRINKS: bool = true,
 >;
 
-impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool, const SHRINKS: bool>
-    Sealed for BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES, SHRINKS>
+impl<
+    const MIN_ALIGN: usize,
+    const UP: bool,
+    const GUARANTEED_ALLOCATED: bool,
+    const CLAIMABLE: bool,
+    const DEALLOCATES: bool,
+    const SHRINKS: bool,
+> Sealed for BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, CLAIMABLE, DEALLOCATES, SHRINKS>
 {
 }
 
-impl<const MIN_ALIGN: usize, const UP: bool, const GUARANTEED_ALLOCATED: bool, const DEALLOCATES: bool, const SHRINKS: bool>
-    BumpAllocatorSettings for BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES, SHRINKS>
+impl<
+    const MIN_ALIGN: usize,
+    const UP: bool,
+    const GUARANTEED_ALLOCATED: bool,
+    const CLAIMABLE: bool,
+    const DEALLOCATES: bool,
+    const SHRINKS: bool,
+> BumpAllocatorSettings for BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, CLAIMABLE, DEALLOCATES, SHRINKS>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
     type MinimumAlignment = MinimumAlignment<MIN_ALIGN>;
     type Up = Bool<UP>;
     type GuaranteedAllocated = Bool<GUARANTEED_ALLOCATED>;
+    type Claimable = Bool<CLAIMABLE>;
     type Deallocates = Bool<DEALLOCATES>;
     type Shrinks = Bool<SHRINKS>;
 
     type WithMinimumAlignment<const VALUE: usize>
-        = BumpSettings<VALUE, UP, GUARANTEED_ALLOCATED, DEALLOCATES, SHRINKS>
+        = BumpSettings<VALUE, UP, GUARANTEED_ALLOCATED, CLAIMABLE, DEALLOCATES, SHRINKS>
     where
         MinimumAlignment<VALUE>: SupportedMinimumAlignment;
-    type WithUp<const VALUE: bool> = BumpSettings<MIN_ALIGN, VALUE, GUARANTEED_ALLOCATED, DEALLOCATES, SHRINKS>;
-    type WithGuaranteedAllocated<const VALUE: bool> = BumpSettings<MIN_ALIGN, UP, VALUE, DEALLOCATES, SHRINKS>;
-    type WithDeallocates<const VALUE: bool> = BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, VALUE, SHRINKS>;
-    type WithShrinks<const VALUE: bool> = BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, DEALLOCATES, VALUE>;
+    type WithUp<const VALUE: bool> = BumpSettings<MIN_ALIGN, VALUE, GUARANTEED_ALLOCATED, CLAIMABLE, DEALLOCATES, SHRINKS>;
+    type WithGuaranteedAllocated<const VALUE: bool> = BumpSettings<MIN_ALIGN, UP, VALUE, CLAIMABLE, DEALLOCATES, SHRINKS>;
+    type WithClaimable<const VALUE: bool> = BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, VALUE, DEALLOCATES, SHRINKS>;
+    type WithDeallocates<const VALUE: bool> = BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, CLAIMABLE, VALUE, SHRINKS>;
+    type WithShrinks<const VALUE: bool> = BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, CLAIMABLE, DEALLOCATES, VALUE>;
 }
 
 /// Either [`True`] or [`False`].

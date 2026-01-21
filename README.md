@@ -138,6 +138,28 @@ let checkpoint = bump.checkpoint();
 unsafe { bump.reset_to(checkpoint); }
 assert_eq!(bump.stats().allocated(), 0);
 ```
+When using a `Bump(Scope)` as an allocator for collections you will find that you can no longer
+call `scoped` or `scope_guard` because those functions require `&mut self` which means no outstanding
+references to the allocator can exist.
+
+As a workaround you can use [`claim`] to essentially turn a `&Bump(Scope)` into a `&mut BumpScope`.
+The `claim` method works by temporarily replacing the allocator of the original `&Bump(Scope)` with
+a dummy allocator that will fail allocation requests, panics on `scoped` and will report an empty
+bump allocator from the `stats` api. The returned [`BumpClaimGuard`] will then have exclusive access to
+bump allocation and can mutably deref to `&mut BumpScope`:
+```rust
+let bump: Bump = Bump::new();
+let mut vec: Vec<u8, &Bump> = Vec::new_in(&bump);
+
+bump.claim().scoped(|bump| {
+    // allocating on the original bump will
+    // fail while the bump allocator is claimed
+    assert!(vec.try_reserve(123).is_err());
+});
+
+// now allocation on the original bump succeeds again
+vec.reserve(123);
+```
 
 ## Collections
 `bump-scope` provides bump allocated versions of `Vec` and `String` called [`BumpVec`] and [`BumpString`].
@@ -253,8 +275,10 @@ Breaking changes to these features might be introduced in minor releases to keep
 [`BumpVec`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.BumpVec.html
 [`BumpString`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.BumpString.html
 [`BumpPool`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.BumpPool.html
+[`BumpClaimGuard`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.BumpClaimGuard.html
 [`Allocator`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/alloc/trait.Allocator.html
 [CHANGELOG]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/CHANGELOG/index.html
+[`claim`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/traits/trait.BumpAllocatorScope.html#tymethod.claim
 [`into_guaranteed_allocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.into_guaranteed_allocated
 [`as_mut_guaranteed_allocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.as_mut_guaranteed_allocated
 [`as_guaranteed_allocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.as_guaranteed_allocated

@@ -172,6 +172,29 @@
 //! unsafe { bump.reset_to(checkpoint); }
 //! assert_eq!(bump.stats().allocated(), 0);
 //! ```
+//! When using a `Bump(Scope)` as an allocator for collections you will find that you can no longer
+//! call `scoped` or `scope_guard` because those functions require `&mut self` which means no outstanding
+//! references to the allocator can exist.
+//!
+//! As a workaround you can use [`claim`] to essentially turn a `&Bump(Scope)` into a `&mut BumpScope`.
+//! The `claim` method works by temporarily replacing the allocator of the original `&Bump(Scope)` with
+//! a dummy allocator that will fail allocation requests, panics on `scoped` and will report an empty
+//! bump allocator from the `stats` api. The returned [`BumpClaimGuard`] will then have exclusive access to
+//! bump allocation and can mutably deref to `&mut BumpScope`:
+//! ```
+//! # use bump_scope::{ Bump, BumpVec as Vec };
+//! let bump: Bump = Bump::new();
+//! let mut vec: Vec<u8, &Bump> = Vec::new_in(&bump);
+//!
+//! bump.claim().scoped(|bump| {
+//!     // allocating on the original bump will
+//!     // fail while the bump allocator is claimed
+//!     assert!(vec.try_reserve(123).is_err());
+//! });
+//!
+//! // now allocation on the original bump succeeds again
+//! vec.reserve(123);
+//! ```
 //!
 //! # Collections
 //! `bump-scope` provides bump allocated versions of `Vec` and `String` called [`BumpVec`] and [`BumpString`].
@@ -294,6 +317,7 @@
 //! [`as_guaranteed_allocated`]: Bump::as_guaranteed_allocated
 //! [`as_mut_guaranteed_allocated`]: Bump::as_mut_guaranteed_allocated
 //! [`into_guaranteed_allocated`]: Bump::into_guaranteed_allocated
+//! [`claim`]: crate::traits::BumpAllocatorScope::claim
 //! <!-- crate documentation rest end -->
 
 #[cfg(any(feature = "std", test))]
@@ -308,6 +332,7 @@ mod bump;
 mod bump_align_guard;
 /// Contains [`BumpBox`] and associated types.
 mod bump_box;
+mod bump_claim_guard;
 #[cfg(feature = "std")]
 mod bump_pool;
 mod bump_scope;
@@ -349,6 +374,7 @@ mod without_dealloc;
 use alloc::Allocator;
 pub use bump::Bump;
 pub use bump_box::BumpBox;
+pub use bump_claim_guard::BumpClaimGuard;
 #[cfg(feature = "std")]
 pub use bump_pool::{BumpPool, BumpPoolGuard};
 pub use bump_scope::BumpScope;

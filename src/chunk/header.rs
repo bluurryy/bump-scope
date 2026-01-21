@@ -23,6 +23,7 @@ pub(crate) struct ChunkHeader<A = ()> {
 struct DummyChunkHeader(ChunkHeader);
 
 unsafe impl Sync for DummyChunkHeader {}
+
 /// We create a dummy chunks with a negative capacity, so all allocations will fail.
 ///
 /// The pointers used for `pos` and `end` are chosen to be pointers into the same static dummy chunk.
@@ -32,32 +33,38 @@ unsafe impl Sync for DummyChunkHeader {}
 /// - denote a negative capacity (currently guaranteed to be -16)
 /// - point to some existing object, not a dangling pointer since a dangling pointer could
 ///   theoretically be a valid pointer to some other chunk
-static UNALLOCATED_CHUNK_HEADER_UP: DummyChunkHeader = DummyChunkHeader(ChunkHeader {
-    // SAFETY: Due to `align(16)`, `ChunkHeader`'s size is `>= 16`, so a `byte_add` of 16 is in bounds.
-    // We could also use `.add(1)` here, but we currently guarantee a capacity of -16
-    pos: Cell::new(unsafe { UNALLOCATED_UP.cast().byte_add(16) }),
-    end: UNALLOCATED_UP.cast(),
-    prev: Cell::new(None),
-    next: Cell::new(None),
-    allocator: (),
-});
+macro_rules! dummy_chunk {
+    ($name:ident) => {
+        pub(crate) const fn $name<S: BumpAllocatorSettings>() -> NonNull<ChunkHeader> {
+            static UP_CHUNK: DummyChunkHeader = DummyChunkHeader(ChunkHeader {
+                // SAFETY: Due to `align(16)`, `ChunkHeader`'s size is `>= 16`, so a `byte_add` of 16 is in bounds.
+                // We could also use `.add(1)` here, but we currently guarantee a capacity of -16
+                pos: Cell::new(unsafe { UP_CHUNK_PTR.cast().byte_add(16) }),
+                end: UP_CHUNK_PTR.cast(),
+                prev: Cell::new(None),
+                next: Cell::new(None),
+                allocator: (),
+            });
 
-/// See [`UNALLOCATED_CHUNK_HEADER_UP`].
-static UNALLOCATED_CHUNK_HEADER_DOWN: DummyChunkHeader = DummyChunkHeader(ChunkHeader {
-    pos: Cell::new(UNALLOCATED_DOWN.cast()),
-    // SAFETY: Due to `align(16)`, `ChunkHeader`'s size is `>= 16`, so a `byte_add` of 16 is in bounds.
-    // We could also use `.add(1)` here, but we currently guarantee a capacity of -16
-    end: unsafe { UNALLOCATED_DOWN.cast().byte_add(16) },
-    prev: Cell::new(None),
-    next: Cell::new(None),
-    allocator: (),
-});
+            static DOWN_CHUNK: DummyChunkHeader = DummyChunkHeader(ChunkHeader {
+                pos: Cell::new(DOWN_CHUNK_PTR.cast()),
+                // SAFETY: Due to `align(16)`, `ChunkHeader`'s size is `>= 16`, so a `byte_add` of 16 is in bounds.
+                // We could also use `.add(1)` here, but we currently guarantee a capacity of -16
+                end: unsafe { DOWN_CHUNK_PTR.cast().byte_add(16) },
+                prev: Cell::new(None),
+                next: Cell::new(None),
+                allocator: (),
+            });
 
-const UNALLOCATED_UP: NonNull<ChunkHeader> = non_null::from_ref(&UNALLOCATED_CHUNK_HEADER_UP.0);
-const UNALLOCATED_DOWN: NonNull<ChunkHeader> = non_null::from_ref(&UNALLOCATED_CHUNK_HEADER_DOWN.0);
+            const UP_CHUNK_PTR: NonNull<ChunkHeader> = non_null::from_ref(&UP_CHUNK.0);
+            const DOWN_CHUNK_PTR: NonNull<ChunkHeader> = non_null::from_ref(&DOWN_CHUNK.0);
+
+            if S::UP { UP_CHUNK_PTR } else { DOWN_CHUNK_PTR }
+        }
+    };
+}
 
 impl ChunkHeader {
-    pub(crate) const fn unallocated<S: BumpAllocatorSettings>() -> NonNull<ChunkHeader> {
-        if S::UP { UNALLOCATED_UP } else { UNALLOCATED_DOWN }
-    }
+    dummy_chunk!(unallocated);
+    dummy_chunk!(claimed);
 }

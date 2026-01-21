@@ -12,6 +12,21 @@ macro_rules! forward_methods {
         access_mut: {$access_mut:expr}
         lifetime: $lifetime:lifetime
     ) => {
+        /// Forwards to [`BumpAllocatorScope::claim`].
+        #[inline(always)]
+        pub fn claim(&$self) -> BumpClaimGuard<'_, $lifetime, A, S>
+        where
+            S: BumpAllocatorSettings<Claimable = True>,
+        {
+            BumpAllocatorScope::claim($access)
+        }
+
+        /// Forwards to [`BumpAllocatorCore::is_claimed`].
+        #[inline(always)]
+        pub fn is_claimed(&self) -> bool {
+            BumpAllocatorCore::is_claimed(self)
+        }
+
         /// Forwards to [`BumpAllocator::scoped`].
         #[inline(always)]
         pub fn scoped<R>(&mut $self, f: impl FnOnce(BumpScope<A, S>) -> R) -> R

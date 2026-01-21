@@ -1,5 +1,5 @@
 use crate::{
-    BaseAllocator, BumpScope,
+    BaseAllocator, BumpClaimGuard, BumpScope,
     bump_align_guard::BumpAlignGuard,
     polyfill::transmute_mut,
     settings::{BumpAllocatorSettings, MinimumAlignment, SupportedMinimumAlignment, True},
@@ -9,6 +9,38 @@ use crate::{
 
 /// A bump allocator scope.
 pub trait BumpAllocatorScope<'a>: BumpAllocator + MutBumpAllocatorCoreScope<'a> {
+    /// Claims exclusive access to the bump allocator from a shared reference.
+    ///
+    /// This makes it possible to enter scopes while a there are still outstanding
+    /// references to that bump allocator.
+    ///
+    /// The current reference to the bump allocator will be marked as claimed which
+    /// makes any allocation api fail, causes the scope api to panic and makes `stats`
+    /// return an object that reports that no chunks are allocated.
+    ///
+    /// # Panics
+    /// Panics if the bump allocator is already claimed.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::{Bump, BumpVec, bump_vec};
+    ///
+    /// let bump: Bump = Bump::new();
+    /// let vec1: BumpVec<u8, _> = bump_vec![in &bump; 1, 2, 3];
+    /// let vec2: BumpVec<u8, _> = bump_vec![in &bump; 4, 5, 6];
+    ///
+    /// bump.claim().scoped(|bump| {
+    ///     // ...
+    ///     # _ = bump;
+    /// });
+    ///
+    /// assert_eq!(vec1, [1, 2, 3]);
+    /// assert_eq!(vec2, [4, 5, 6]);
+    /// ```
+    fn claim(&self) -> BumpClaimGuard<'_, 'a, Self::Allocator, Self::Settings>
+    where
+        Self::Settings: BumpAllocatorSettings<Claimable = True>;
+
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     fn stats(&self) -> Stats<'a, Self::Allocator, Self::Settings>;
 
@@ -142,6 +174,24 @@ where
     A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
+    #[inline]
+    fn claim(&self) -> BumpClaimGuard<'_, 'a, Self::Allocator, Self::Settings>
+    where
+        Self::Settings: BumpAllocatorSettings<Claimable = True>,
+    {
+        #[cold]
+        #[inline(never)]
+        fn already_claimed() {
+            panic!("bump allocator is already claimed");
+        }
+
+        if self.chunk.get().is_claimed() {
+            already_claimed();
+        }
+
+        BumpClaimGuard::new(self)
+    }
+
     #[inline]
     fn stats(&self) -> Stats<'a, Self::Allocator, Self::Settings> {
         self.chunk.get().stats()

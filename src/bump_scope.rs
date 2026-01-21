@@ -15,7 +15,8 @@ use core::{
 use core::clone::CloneToUninit;
 
 use crate::{
-    BaseAllocator, Bump, BumpBox, BumpScopeGuard, Checkpoint, ErrorBehavior, NoDrop, SizedTypeProperties, align_pos,
+    BaseAllocator, Bump, BumpBox, BumpClaimGuard, BumpScopeGuard, Checkpoint, ErrorBehavior, NoDrop, SizedTypeProperties,
+    align_pos,
     alloc::{AllocError, Allocator},
     chunk::{ChunkSize, RawChunk},
     down_align_usize,
@@ -32,6 +33,10 @@ use crate::{
     up_align_usize_unchecked,
 };
 
+// For docs.
+#[allow(unused_imports)]
+use crate::traits::*;
+
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
@@ -41,19 +46,15 @@ macro_rules! make_type {
         ///
         /// A `BumpScope`'s allocations are live for `'a`, which is the lifetime of its associated `BumpScopeGuard(Root)` or `scoped` closure.
         ///
-        /// `BumpScope` has the same allocation api as `Bump`.
-        /// The only thing that is missing is [`reset`] and methods that consume the `Bump`.
-        /// For a method overview and examples, have a look at the [`Bump` docs][`Bump`].
+        /// `BumpScope` has mostly same api as [`Bump`].
         ///
-        /// This type is provided as a parameter to the closure of [`Bump::scoped`], [`BumpScope::scoped`] or created
-        /// by [`BumpScopeGuard::scope`] and [`BumpScopeGuardRoot::scope`]. A [`Bump`] can also be turned into a `BumpScope` using
+        /// This type is provided as a parameter to the closure of [`scoped`], or created
+        /// by [`BumpScopeGuard::scope`]. A [`Bump`] can also be turned into a `BumpScope` using
         /// [`as_scope`], [`as_mut_scope`] or `from` / `into`.
         ///
-        /// [`Bump::scoped`]: crate::Bump::scoped
+        /// [`scoped`]: crate::traits::BumpAllocator::scoped
         /// [`BumpScopeGuard::scope`]: crate::BumpScopeGuard::scope
-        /// [`BumpScopeGuardRoot::scope`]: crate::BumpScopeGuardRoot::scope
         /// [`Bump`]: crate::Bump
-        /// [`scoped`]: Self::scoped
         /// [`as_scope`]: crate::Bump::as_scope
         /// [`as_mut_scope`]: crate::Bump::as_mut_scope
         /// [`reset`]: crate::Bump::reset
@@ -135,15 +136,6 @@ where
     pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, S>) -> Self {
         Self {
             chunk: Cell::new(chunk),
-            marker: PhantomData,
-        }
-    }
-
-    /// Returns an bump scope from a mutable reference.
-    #[inline(always)]
-    pub(crate) fn claim_mut(&mut self) -> BumpScope<'_, A, S> {
-        BumpScope {
-            chunk: Cell::new(self.chunk.get()),
             marker: PhantomData,
         }
     }
@@ -360,6 +352,9 @@ where
     /// - the bump direction differs
     /// - the new setting is guaranteed-allocated when the old one isn't
     ///   (use [`into_guaranteed_allocated`](Self::into_guaranteed_allocated) to do this conversion)
+    ///
+    /// # Panics
+    /// Panics if the bump allocator is currently [claimed](BumpAllocatorScope::claim).
     #[inline]
     pub fn with_settings<NewS>(self) -> BumpScope<'a, A, NewS>
     where
@@ -647,6 +642,10 @@ where
 
     #[inline(always)]
     pub(crate) fn generic_reserve_bytes<B: ErrorBehavior>(&self, additional: usize) -> Result<(), B> {
+        if self.is_claimed() {
+            return Err(B::claimed());
+        }
+
         let Ok(layout) = Layout::from_size_align(additional, 1) else {
             return Err(B::capacity_overflow());
         };
@@ -706,6 +705,8 @@ where
     /// So `end.offset_from_unsigned(start)` may not be used!
     #[inline(always)]
     pub(crate) fn prepare_allocation_range<B: ErrorBehavior, T>(&self, cap: usize) -> Result<Range<NonNull<T>>, B> {
+        // TODO: ZST to return dangling ptrs?
+
         let Ok(layout) = ArrayLayout::array::<T>(cap) else {
             return Err(B::capacity_overflow());
         };
@@ -737,9 +738,10 @@ where
     #[cold]
     #[inline(never)]
     pub(crate) fn alloc_in_another_chunk<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
+        // A zero-sized allocation on a dummy chunk
         // An allocation of size 0 will fail if we currently use the "unallodated" dummy chunk.
         // In this case we don't want to allocate a chunk, just return a dangling pointer.
-        if !S::GUARANTEED_ALLOCATED && layout.size() == 0 {
+        if (S::CLAIMABLE || !S::GUARANTEED_ALLOCATED) && layout.size() == 0 {
             return Ok(polyfill::layout::dangling(layout));
         }
 
@@ -771,48 +773,50 @@ where
         layout: L,
         mut f: impl FnMut(RawChunk<A, S::WithGuaranteedAllocated<true>>, L) -> Option<R>,
     ) -> Result<R, B> {
-        unsafe {
-            let new_chunk: RawChunk<A, S::WithGuaranteedAllocated<true>> =
-                if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
-                    while let Some(next_chunk) = chunk.next() {
-                        chunk = next_chunk;
+        if self.chunk.get().is_claimed() {
+            return Err(B::claimed());
+        }
 
-                        // We don't reset the chunk position when we leave a scope, so we need to do it here.
-                        chunk.reset();
+        let new_chunk: RawChunk<A, S::WithGuaranteedAllocated<true>> =
+            if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
+                while let Some(next_chunk) = chunk.next() {
+                    chunk = next_chunk;
 
-                        // SAFETY: casting from guaranteed-allocated to non-guaranteed-allocated is safe
-                        self.chunk.set(chunk.cast());
+                    // We don't reset the chunk position when we leave a scope, so we need to do it here.
+                    chunk.reset();
 
-                        if let Some(ptr) = f(chunk, layout) {
-                            return Ok(ptr);
-                        }
+                    // SAFETY: casting from guaranteed-allocated to non-guaranteed-allocated is safe
+                    self.chunk.set(unsafe { chunk.cast() });
+
+                    if let Some(ptr) = f(chunk, layout) {
+                        return Ok(ptr);
                     }
-
-                    // there is no chunk that fits, we need a new chunk
-                    chunk.append_for(*layout)
-                } else {
-                    // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
-                    // `default_or_panic` will not panic.
-                    let allocator = A::default_or_panic();
-
-                    RawChunk::new_in(
-                        ChunkSize::from_capacity(*layout).ok_or_else(B::capacity_overflow)?,
-                        None,
-                        allocator,
-                    )
-                }?;
-
-            // SAFETY: casting from guaranteed-allocated to non-guaranteed-allocated is safe
-            self.chunk.set(new_chunk.cast());
-
-            match f(new_chunk, layout) {
-                Some(ptr) => Ok(ptr),
-                _ => {
-                    // SAFETY: We just appended a chunk for that specific layout, it must have enough space.
-                    // We don't panic here so we don't produce any panic code when using `try_` apis.
-                    // We check for that in `test-no-panic`.
-                    core::hint::unreachable_unchecked()
                 }
+
+                // there is no chunk that fits, we need a new chunk
+                chunk.append_for(*layout)
+            } else {
+                // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
+                // `default_or_panic` will not panic.
+                let allocator = A::default_or_panic();
+
+                RawChunk::new_in(
+                    ChunkSize::from_capacity(*layout).ok_or_else(B::capacity_overflow)?,
+                    None,
+                    allocator,
+                )
+            }?;
+
+        // SAFETY: casting from guaranteed-allocated to non-guaranteed-allocated is safe
+        self.chunk.set(unsafe { new_chunk.cast() });
+
+        match f(new_chunk, layout) {
+            Some(ptr) => Ok(ptr),
+            _ => {
+                // SAFETY: We just appended a chunk for that specific layout, it must have enough space.
+                // We don't panic here so we don't produce any panic code when using `try_` apis.
+                // We check for that in `test-no-panic`.
+                unsafe { core::hint::unreachable_unchecked() }
             }
         }
     }

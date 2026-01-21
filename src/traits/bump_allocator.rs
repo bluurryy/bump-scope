@@ -1,13 +1,20 @@
 use core::ptr;
 
 use crate::{
-    BaseAllocator, Bump, BumpScope, BumpScopeGuard,
+    BaseAllocator, Bump, BumpScope, BumpScopeGuard, error_behavior,
     polyfill::transmute_mut,
     settings::{BumpAllocatorSettings, MinimumAlignment, SupportedMinimumAlignment, True},
     traits::MutBumpAllocatorTyped,
 };
 
 /// A bump allocator, generic over [`Bump`] and [`BumpScope`].
+///
+/// Many useful methods are only available for a [`BumpAllocatorScope`].
+/// You can access them by converting to a `BumpScope` using [`as_scope`] and [`as_mut_scope`].
+///
+/// [`BumpAllocatorScope`]: crate::traits::BumpAllocatorScope
+/// [`as_scope`]: BumpAllocator::as_scope
+/// [`as_mut_scope`]: BumpAllocator::as_mut_scope
 pub trait BumpAllocator: MutBumpAllocatorTyped + Sized {
     /// The base allocator.
     type Allocator: BaseAllocator<<Self::Settings as BumpAllocatorSettings>::GuaranteedAllocated>;
@@ -27,6 +34,9 @@ pub trait BumpAllocator: MutBumpAllocatorTyped + Sized {
     ///
     /// This allows for creation of child scopes.
     ///
+    /// # Panics
+    /// Panics if the bump allocator is currently [claimed].
+    ///
     /// # Examples
     ///
     /// ```
@@ -42,11 +52,17 @@ pub trait BumpAllocator: MutBumpAllocatorTyped + Sized {
     ///
     /// assert_eq!(bump.stats().allocated(), 0);
     /// ```
+    ///
+    /// [claimed]: crate::traits::BumpAllocatorScope::claim
     #[must_use]
     fn scope_guard(&mut self) -> BumpScopeGuard<'_, Self::Allocator, Self::Settings>
     where
         Self::Settings: BumpAllocatorSettings<GuaranteedAllocated = True>,
     {
+        if self.is_claimed() {
+            error_behavior::panic::claimed();
+        }
+
         BumpScopeGuard::new(self.as_mut_scope())
     }
 

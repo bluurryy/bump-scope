@@ -15,6 +15,7 @@ pub(crate) trait ErrorBehavior: Sized {
 
     fn allocation(layout: Layout) -> Self;
     fn capacity_overflow() -> Self;
+    fn claimed() -> Self;
     fn fixed_size_vector_is_full() -> Self;
     fn fixed_size_vector_no_space(amount: usize) -> Self;
     fn format_trait_error() -> Self;
@@ -45,13 +46,18 @@ impl ErrorBehavior for Infallible {
     }
 
     #[inline(always)]
+    fn claimed() -> Self {
+        panic::claimed()
+    }
+
+    #[inline(always)]
     fn fixed_size_vector_is_full() -> Self {
-        fixed_size_vector_is_full()
+        panic::fixed_size_vector_is_full()
     }
 
     #[inline(always)]
     fn fixed_size_vector_no_space(amount: usize) -> Self {
-        fixed_size_vector_no_space(amount)
+        panic::fixed_size_vector_no_space(amount)
     }
 
     #[inline(always)]
@@ -98,6 +104,11 @@ impl ErrorBehavior for AllocError {
     }
 
     #[inline(always)]
+    fn claimed() -> Self {
+        Self
+    }
+
+    #[inline(always)]
     fn fixed_size_vector_is_full() -> Self {
         Self
     }
@@ -137,16 +148,24 @@ impl ErrorBehavior for AllocError {
     }
 }
 
-#[cold]
-#[inline(never)]
-#[cfg(feature = "panic-on-alloc")]
-fn fixed_size_vector_is_full() -> ! {
-    panic!("fixed size vector is full");
-}
+pub(crate) mod panic {
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn claimed() -> ! {
+        panic!("bump allocator is claimed");
+    }
 
-#[cold]
-#[inline(never)]
-#[cfg(feature = "panic-on-alloc")]
-fn fixed_size_vector_no_space(amount: usize) -> ! {
-    panic!("fixed size vector does not have space for {amount} more elements");
+    #[cold]
+    #[inline(never)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub(crate) fn fixed_size_vector_is_full() -> ! {
+        panic!("fixed size vector is full");
+    }
+
+    #[cold]
+    #[inline(never)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub(crate) fn fixed_size_vector_no_space(amount: usize) -> ! {
+        panic!("fixed size vector does not have space for {amount} more elements");
+    }
 }
