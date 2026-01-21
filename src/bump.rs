@@ -12,7 +12,7 @@ use core::{
 use core::clone::CloneToUninit;
 
 use crate::{
-    BaseAllocator, BumpBox, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior,
+    BaseAllocator, BumpBox, BumpClaimGuard, BumpScope, BumpScopeGuardRoot, Checkpoint, ErrorBehavior,
     alloc::{AllocError, Allocator},
     chunk::{ChunkSize, RawChunk},
     maybe_default_allocator,
@@ -252,6 +252,16 @@ where
     S: BumpAllocatorSettings,
 {
     fn drop(&mut self) {
+        #[cold]
+        #[inline(never)]
+        fn panic_claimed() -> ! {
+            panic!("tried to drop a `Bump` while it was still claimed")
+        }
+
+        if self.chunk.get().is_claimed() {
+            panic_claimed();
+        }
+
         let Some(chunk) = self.chunk.get().guaranteed_allocated() else {
             return;
         };
@@ -785,11 +795,12 @@ where
     /// - the new setting is guaranteed-allocated when the old one isn't
     ///   (use [`into_guaranteed_allocated`](Self::into_guaranteed_allocated) to do this conversion)
     #[inline]
-    pub fn with_settings<NewS>(mut self) -> Bump<A, NewS>
+    pub fn with_settings<NewS>(self) -> Bump<A, NewS>
     where
         NewS: BumpAllocatorSettings,
     {
-        self.as_mut_scope().claim_mut().with_settings::<NewS>();
+        // SAFETY: `with_settings` only calls `align_to`
+        unsafe { BumpScope::new_unchecked(self.chunk.get()).with_settings::<NewS>() };
         unsafe { transmute(self) }
     }
 

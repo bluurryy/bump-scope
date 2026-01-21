@@ -315,6 +315,8 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// # Panics
     /// Panics if the allocation fails.
     ///
+    /// Panics if the bump allocator is currently [claimed].
+    ///
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
@@ -327,6 +329,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     ///
     /// [stats]: crate::traits::BumpAllocatorScope::stats
     /// [remaining]: Stats::remaining
+    /// [claimed]: crate::traits::BumpAllocatorScope::claim
     #[cfg(feature = "panic-on-alloc")]
     fn reserve_bytes(&self, additional: usize);
 
@@ -337,6 +340,9 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     ///
     /// # Errors
     /// Errors if the allocation fails.
+    ///
+    /// # Panics
+    /// Panics if the bump allocator is currently [claimed].
     ///
     /// # Examples
     /// ```
@@ -351,6 +357,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     ///
     /// [stats]: crate::traits::BumpAllocatorScope::stats
     /// [remaining]: Stats::remaining
+    /// [claimed]: crate::traits::BumpAllocatorScope::claim
     fn try_reserve_bytes(&self, additional: usize) -> Result<(), AllocError>;
 }
 

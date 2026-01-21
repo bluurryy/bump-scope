@@ -18,13 +18,12 @@ type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 
 macro_rules! type_definitions {
     ($up:literal) => {
-        type Bump<const MIN_ALIGN: usize = 1> = bump_scope::Bump<Global, BumpSettings<MIN_ALIGN, $up, true, true>>;
-        type BumpScope<'a, const MIN_ALIGN: usize = 1> =
-            bump_scope::BumpScope<'a, Global, BumpSettings<MIN_ALIGN, $up, true, true>>;
-        type BumpScopeGuard<'a, const MIN_ALIGN: usize = 1> =
-            bump_scope::BumpScopeGuard<'a, Global, BumpSettings<MIN_ALIGN, $up>>;
+        type Settings<const MIN_ALIGN: usize> = BumpSettings<MIN_ALIGN, $up, true, false>;
+        type Bump<const MIN_ALIGN: usize = 1> = bump_scope::Bump<Global, Settings<MIN_ALIGN>>;
+        type BumpScope<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScope<'a, Global, Settings<MIN_ALIGN>>;
+        type BumpScopeGuard<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuard<'a, Global, Settings<MIN_ALIGN>>;
         type BumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> =
-            bump_scope::BumpScopeGuardRoot<'a, Global, BumpSettings<MIN_ALIGN, $up>>;
+            bump_scope::BumpScopeGuardRoot<'a, Global, Settings<MIN_ALIGN>>;
         type BumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<T, &'a Bump>;
         type BumpString<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<&'a Bump>;
         type MutBumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<T, &'a mut Bump<MIN_ALIGN>>;

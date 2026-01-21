@@ -152,6 +152,25 @@ where
         }
     }
 
+    #[expect(dead_code)]
+    pub(crate) fn is_dummy(self) -> bool {
+        if S::GUARANTEED_ALLOCATED && !S::CLAIMABLE {
+            return false;
+        }
+
+        let pos = self.pos().addr().get();
+        let end = unsafe { self.header.as_ref() }.end.addr().get();
+
+        let start = if S::UP { pos } else { end };
+        let end = if S::UP { end } else { pos };
+
+        start > end
+    }
+
+    pub(crate) fn is_claimed(self) -> bool {
+        S::CLAIMABLE && self.header.cast() == ChunkHeader::claimed::<S>()
+    }
+
     pub(crate) fn is_allocated(self) -> bool {
         S::GUARANTEED_ALLOCATED || self.header.cast() != ChunkHeader::unallocated::<S>()
     }
@@ -287,7 +306,6 @@ where
     /// [`into_slice`]: crate::MutBumpVec::into_slice
     #[inline(always)]
     pub(crate) fn prepare_allocation_range(self, layout: impl LayoutProps) -> Option<Range<NonNull<u8>>> {
-        debug_assert_ne!(layout.size(), 0);
         let props = self.bump_props(layout);
 
         unsafe {
@@ -368,6 +386,17 @@ where
     pub(crate) fn stats<'a>(self) -> Stats<'a, A, S> {
         Stats::from_raw_chunk(self)
     }
+}
+
+/// Methods available for a claimable chunk.
+impl<A, S> RawChunk<A, S>
+where
+    S: BumpAllocatorSettings<Claimable = True>,
+{
+    pub(crate) const CLAIMED: Self = Self {
+        header: ChunkHeader::claimed::<S>().cast(),
+        marker: PhantomData,
+    };
 }
 
 /// Methods available for a non-guaranteed-allocated chunk.

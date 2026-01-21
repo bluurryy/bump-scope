@@ -19,5 +19,5 @@ note: erroneous constant encountered
 note: the above error was encountered while instantiating `fn BumpScope::<'_, bump_scope::alloc::Global, BumpSettings<1, false>>::with_settings::<BumpSettings>`
  --> src/bump.rs
   |
-  |         self.as_mut_scope().claim_mut().with_settings::<NewS>();
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |         unsafe { BumpScope::new_unchecked(self.chunk.get()).with_settings::<NewS>() };
+  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
