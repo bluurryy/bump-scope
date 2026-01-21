@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `(Mut)BumpAllocatorTypedScopeExt` -> `traits::(Mut)BumpAllocatorTyped`
   - `(Mut)BumpAllocatorScopeExt` -> `traits::(Mut)BumpAllocatorTypedScope`
 - **Breaking:** Implement `bytemuck` and `zerocopy` allocator extension traits for all `T: BumpAllocatorTypedScope` and name them `BumpAllocatorTypedScopeExt`
+- **Breaking:** `aligned` now takes a closure with a `&mut BumpScope` instead of a `BumpScope`
 - For non-guaranteed-allocated `Stats`, `current_chunk` has been renamed to `get_current_chunk`
 - For non-guaranteed-allocated `BumpScope`, `allocator` has been renamed to `get_allocator`
 - Remove branch when allocating on a non-guaranteed-allocated `Bump(Scope)`, checking for a layout of `0`

@@ -203,14 +203,6 @@ where
         unsafe { transmute_ref(self) }
     }
 
-    /// # Safety
-    ///
-    /// - `self` must not be used until this clone is gone
-    #[inline(always)]
-    pub(crate) unsafe fn clone_unchecked(&self) -> BumpScope<'a, A, S> {
-        unsafe { BumpScope::new_unchecked(self.chunk.get()) }
-    }
-
     /// Converts this `BumpScope` into a raw pointer.
     #[inline]
     #[must_use]

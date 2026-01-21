@@ -38,12 +38,13 @@ macro_rules! forward_methods {
         #[inline(always)]
         pub fn aligned<const NEW_MIN_ALIGN: usize, R>(
             &mut $self,
-            f: impl FnOnce(BumpScope<$lifetime, A, S::WithMinimumAlignment<NEW_MIN_ALIGN>>) -> R,
+            f: impl FnOnce(&mut BumpScope<$lifetime, A, S::WithMinimumAlignment<NEW_MIN_ALIGN>>) -> R,
         ) -> R
         where
-            MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment {
-                BumpAllocatorScope::aligned($access_mut, f)
-            }
+            MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
+        {
+            BumpAllocatorScope::aligned($access_mut, f)
+        }
 
         /// Forwards to [`BumpAllocatorCore::checkpoint`].
         #[inline(always)]

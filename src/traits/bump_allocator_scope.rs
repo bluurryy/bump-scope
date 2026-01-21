@@ -1,6 +1,7 @@
 use crate::{
     BaseAllocator, BumpScope,
     bump_align_guard::BumpAlignGuard,
+    polyfill::transmute_mut,
     settings::{BumpAllocatorSettings, MinimumAlignment, SupportedMinimumAlignment, True},
     stats::Stats,
     traits::{BumpAllocator, MutBumpAllocatorCoreScope},
@@ -103,7 +104,11 @@ pub trait BumpAllocatorScope<'a>: BumpAllocator + MutBumpAllocatorCoreScope<'a> 
     fn aligned<const NEW_MIN_ALIGN: usize, R>(
         &mut self,
         f: impl FnOnce(
-            BumpScope<'a, Self::Allocator, <Self::Settings as BumpAllocatorSettings>::WithMinimumAlignment<NEW_MIN_ALIGN>>,
+            &mut BumpScope<
+                'a,
+                Self::Allocator,
+                <Self::Settings as BumpAllocatorSettings>::WithMinimumAlignment<NEW_MIN_ALIGN>,
+            >,
         ) -> R,
     ) -> R
     where
@@ -171,19 +176,31 @@ where
     fn aligned<const NEW_MIN_ALIGN: usize, R>(
         &mut self,
         f: impl FnOnce(
-            BumpScope<'a, Self::Allocator, <Self::Settings as BumpAllocatorSettings>::WithMinimumAlignment<NEW_MIN_ALIGN>>,
+            &mut BumpScope<
+                'a,
+                Self::Allocator,
+                <Self::Settings as BumpAllocatorSettings>::WithMinimumAlignment<NEW_MIN_ALIGN>,
+            >,
         ) -> R,
     ) -> R
     where
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
     {
         if NEW_MIN_ALIGN < S::MIN_ALIGN {
-            // This guard will align whatever the future bump position is back to `MIN_ALIGN`.
             let guard = BumpAlignGuard::new(self);
-            f(unsafe { guard.scope.clone_unchecked().cast() })
+
+            // SAFETY: bump is already aligned to `NEW_MIN_ALIGN` and the guard will ensure
+            // that the bump pointer will again be aligned to `MIN_ALIGN` once it drops
+            let bump = unsafe { transmute_mut(guard.scope) };
+
+            f(bump)
         } else {
             self.align::<NEW_MIN_ALIGN>();
-            f(unsafe { self.clone_unchecked().cast() })
+
+            // SAFETY: we aligned the bump pointer
+            let bump = unsafe { transmute_mut(self) };
+
+            f(bump)
         }
     }
 }
