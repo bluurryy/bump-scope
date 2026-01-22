@@ -111,7 +111,7 @@ nightly-tests = []
 ## (Just like with std's `Box` and `Vec`.)
 nightly-dropck-eyepatch = []
 
-## Adds [`alloc_clone`](Bump::alloc_clone) method to `Bump(Scope)`.
+## Adds [`alloc_clone`](crate::traits::BumpAllocatorTypedScope::alloc_clone) method.
 nightly-clone-to-uninit = []
 
 [dev-dependencies]

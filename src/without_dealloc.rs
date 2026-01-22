@@ -9,6 +9,28 @@ use crate::{
 /// Wraps a bump allocator and does nothing on [`deallocate`](Allocator::deallocate).
 ///
 /// This type only implements [`Allocator`] for wrapped types that implement [`BumpAllocatorCore`], so you don't accidentally leak memory.
+///
+/// # Examples
+///
+/// ```
+/// # #[cfg(feature = "allocator-api2-04")]
+/// # {
+/// use bump_scope::{Bump, WithoutDealloc};
+/// use allocator_api2_04::boxed::Box;
+///
+/// let bump: Bump = Bump::new();
+///
+/// let boxed = Box::new_in(5, &bump);
+/// assert_eq!(bump.stats().allocated(), 4);
+/// drop(boxed);
+/// assert_eq!(bump.stats().allocated(), 0);
+///
+/// let boxed = Box::new_in(5, WithoutDealloc(&bump));
+/// assert_eq!(bump.stats().allocated(), 4);
+/// drop(boxed);
+/// assert_eq!(bump.stats().allocated(), 4);
+/// # }
+/// ```
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct WithoutDealloc<A>(pub A);
 

@@ -220,8 +220,8 @@
 //!
 //! # Allocator API
 //! `Bump` and `BumpScope` implement `bump-scope`'s own [`Allocator`] trait and with the
-//! respective [feature flags](#feature-flags) also implement `allocator_api2@0.2`,
-//! `allocator_api2@0.3`, `allocator_api2@0.4` and nightly's `Allocator` trait.
+//! respective [feature flags](#feature-flags) also implement `allocator_api2` version `0.2`,
+//! `0.3`, `0.4` and nightly's `Allocator` trait.
 //!
 //! This allows you to [bump allocate collections](crate::Bump#collections).
 //!
@@ -234,25 +234,6 @@
 //! After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
 //! You can set the `DEALLOCATES` and `SHRINKS` parameters to false or use the [`WithoutDealloc`] and [`WithoutShrink`] wrappers
 //! to make deallocating and shrinking a no-op.
-//! ```
-//! # #[cfg(feature = "allocator-api2-04")]
-//! # {
-//! use bump_scope::{Bump, WithoutDealloc};
-//! use allocator_api2_04::boxed::Box;
-//!
-//! let bump: Bump = Bump::new();
-//!
-//! let boxed = Box::new_in(5, &bump);
-//! assert_eq!(bump.stats().allocated(), 4);
-//! drop(boxed);
-//! assert_eq!(bump.stats().allocated(), 0);
-//!
-//! let boxed = Box::new_in(5, WithoutDealloc(&bump));
-//! assert_eq!(bump.stats().allocated(), 4);
-//! drop(boxed);
-//! assert_eq!(bump.stats().allocated(), 4);
-//! # }
-//! ```
 //!
 //! # Feature Flags
 //! <!-- feature documentation start -->
@@ -302,7 +283,7 @@
 //! - **`nightly-dropck-eyepatch`** — Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
 //!   This makes it so references don't have to strictly outlive the container.
 //!   (Just like with std's `Box` and `Vec`.)
-//! - **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](Bump::alloc_clone) method to `Bump(Scope)`.
+//! - **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](crate::traits::BumpAllocatorTypedScope::alloc_clone) method.
 //! <!-- feature documentation end -->
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
@@ -310,10 +291,10 @@
 //! [`with_size`]: Bump::with_size
 //! [`with_capacity`]: Bump::with_capacity
 //! [`unallocated`]: Bump::unallocated
-//! [`scoped`]: Bump::scoped
-//! [`scoped_aligned`]: Bump::scoped_aligned
-//! [`aligned`]: Bump::aligned
-//! [`scope_guard`]: Bump::scope_guard
+//! [`scoped`]: crate::traits::BumpAllocator::scoped
+//! [`scoped_aligned`]: crate::traits::BumpAllocator::scoped_aligned
+//! [`aligned`]: crate::traits::BumpAllocatorScope::aligned
+//! [`scope_guard`]: crate::traits::BumpAllocator::scope_guard
 //! [`as_guaranteed_allocated`]: Bump::as_guaranteed_allocated
 //! [`as_mut_guaranteed_allocated`]: Bump::as_mut_guaranteed_allocated
 //! [`into_guaranteed_allocated`]: Bump::into_guaranteed_allocated

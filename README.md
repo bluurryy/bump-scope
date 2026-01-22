@@ -185,8 +185,8 @@ To bump allocate in parallel you can use a [`BumpPool`].
 
 ## Allocator API
 `Bump` and `BumpScope` implement `bump-scope`'s own [`Allocator`] trait and with the
-respective [feature flags](#feature-flags) also implement `allocator_api2@0.2`,
-`allocator_api2@0.3`, `allocator_api2@0.4` and nightly's `Allocator` trait.
+respective [feature flags](#feature-flags) also implement `allocator_api2` version `0.2`,
+`0.3`, `0.4` and nightly's `Allocator` trait.
 
 This allows you to [bump allocate collections](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#collections).
 
@@ -199,22 +199,6 @@ A bump allocator does not require `deallocate` or `shrink` to free memory.
 After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
 You can set the `DEALLOCATES` and `SHRINKS` parameters to false or use the [`WithoutDealloc`] and [`WithoutShrink`] wrappers
 to make deallocating and shrinking a no-op.
-```rust
-use bump_scope::{Bump, WithoutDealloc};
-use allocator_api2_04::boxed::Box;
-
-let bump: Bump = Bump::new();
-
-let boxed = Box::new_in(5, &bump);
-assert_eq!(bump.stats().allocated(), 4);
-drop(boxed);
-assert_eq!(bump.stats().allocated(), 0);
-
-let boxed = Box::new_in(5, WithoutDealloc(&bump));
-assert_eq!(bump.stats().allocated(), 4);
-drop(boxed);
-assert_eq!(bump.stats().allocated(), 4);
-```
 
 ## Feature Flags
 <!-- feature documentation start -->
@@ -264,7 +248,7 @@ Breaking changes to these features might be introduced in minor releases to keep
 - **`nightly-dropck-eyepatch`** — Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
   This makes it so references don't have to strictly outlive the container.
   (Just like with std's `Box` and `Vec`.)
-- **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.alloc_clone) method to `Bump(Scope)`.
+- **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/traits/trait.BumpAllocatorTypedScope.html#tymethod.alloc_clone) method.
 <!-- feature documentation end -->
 
 
@@ -282,10 +266,10 @@ Breaking changes to these features might be introduced in minor releases to keep
 [`into_guaranteed_allocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.into_guaranteed_allocated
 [`as_mut_guaranteed_allocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.as_mut_guaranteed_allocated
 [`as_guaranteed_allocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.as_guaranteed_allocated
-[`scope_guard`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.scope_guard
-[`aligned`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.aligned
-[`scoped_aligned`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.scoped_aligned
-[`scoped`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.scoped
+[`scope_guard`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/traits/trait.BumpAllocator.html#tymethod.scope_guard
+[`aligned`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/traits/trait.BumpAllocatorScope.html#tymethod.aligned
+[`scoped_aligned`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/traits/trait.BumpAllocator.html#tymethod.scoped_aligned
+[`scoped`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/traits/trait.BumpAllocator.html#tymethod.scoped
 [`unallocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.unallocated
 [`with_capacity`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.with_capacity
 [`with_size`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.with_size
