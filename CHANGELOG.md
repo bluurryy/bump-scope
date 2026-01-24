@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `reserve_bytes` method is now available for the `BumpAllocatorTyped` trait
 - Add new `BumpAllocator(Scope)` trait that allows you to be generic over `Bump` and `BumpScope`
 - Add `SHRINKS` generic parameter, to toggle shrinking for the allocation api, `DEALLOCATES` no longer affects shrinking
+- Made `scope_guard`, `scoped(_aligned)` available for non-guaranteed-allocated allocators
 - Improve documentation
 
 ### Fixed
@@ -31,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `(Mut)BumpAllocatorScopeExt` -> `traits::(Mut)BumpAllocatorTypedScope`
 - **Breaking:** Implement `bytemuck` and `zerocopy` allocator extension traits for all `T: BumpAllocatorTypedScope` and name them `BumpAllocatorTypedScopeExt`
 - **Breaking:** `aligned` now takes a closure with a `&mut BumpScope` instead of a `BumpScope`
+- **Breaking:** `scope_guard`, `scoped(_aligned)` is now only available with "panic-on-alloc" feature, `try_` variants are available
 - For non-guaranteed-allocated `Stats`, `current_chunk` has been renamed to `get_current_chunk`
 - For non-guaranteed-allocated `BumpScope`, `allocator` has been renamed to `get_allocator`
 - Remove branch when allocating on a non-guaranteed-allocated `Bump(Scope)`, checking for a layout of `0`

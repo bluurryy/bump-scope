@@ -96,37 +96,6 @@ where
     }
 }
 
-/// Methods for a [*guaranteed allocated*](crate#what-does-guaranteed-allocated-mean) `BumpScope`.
-impl<A, S> BumpScope<'_, A, S>
-where
-    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
-{
-    /// Creates a new [`BumpScopeGuard`].
-    ///
-    /// This allows for creation of child scopes.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::new();
-    ///
-    /// {
-    ///     let mut guard = bump.scope_guard();
-    ///     let bump = guard.scope();
-    ///     bump.alloc_str("Hello, world!");
-    ///     assert_eq!(bump.stats().allocated(), 13);
-    /// }
-    ///
-    /// assert_eq!(bump.stats().allocated(), 0);
-    /// ```
-    #[must_use]
-    #[inline(always)]
-    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, A, S> {
-        BumpScopeGuard::new(self)
-    }
-}
-
 /// Methods that are always available.
 impl<'a, A, S> BumpScope<'a, A, S>
 where
@@ -570,6 +539,24 @@ where
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
+    pub(crate) fn make_allocated<E: ErrorBehavior>(&self) -> Result<(), E> {
+        if self.is_claimed() {
+            return Err(E::claimed());
+        }
+
+        if self.chunk.get().is_unallocated() {
+            let new_chunk = RawChunk::new_in(ChunkSize::<A, S::Up>::DEFAULT, None, A::default_or_panic())?;
+            self.chunk.set(new_chunk);
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn generic_scope_guard<E: ErrorBehavior>(&mut self) -> Result<BumpScopeGuard<'_, A, S>, E> {
+        BumpScopeGuard::new(self)
+    }
+
+    #[inline(always)]
     pub(crate) fn generic_allocate_layout<B: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, B> {
         match self.chunk.get().alloc(CustomLayout(layout)) {
             Some(ptr) => Ok(ptr),
@@ -832,6 +819,20 @@ where
     A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
+    /// Forwards to [`BumpAllocator::scope_guard`].
+    #[must_use]
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, A, S> {
+        BumpAllocator::scope_guard(self)
+    }
+
+    /// Forwards to [`BumpAllocator::try_scope_guard`].
+    #[inline(always)]
+    pub fn try_scope_guard(&mut self) -> Result<BumpScopeGuard<'_, A, S>, AllocError> {
+        BumpAllocator::try_scope_guard(self)
+    }
+
     traits::forward_methods! {
         self: self
         access: {self}

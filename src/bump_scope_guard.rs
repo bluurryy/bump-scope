@@ -1,10 +1,10 @@
 use core::{fmt::Debug, marker::PhantomData, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    Bump, BumpScope,
-    alloc::Allocator,
+    BaseAllocator, Bump, BumpScope,
     chunk::{ChunkHeader, RawChunk},
-    settings::{BumpAllocatorSettings, BumpSettings, True},
+    error_behavior::ErrorBehavior,
+    settings::{BumpAllocatorSettings, BumpSettings},
     stats::{AnyStats, Stats},
 };
 
@@ -41,7 +41,8 @@ impl Checkpoint {
 /// [`BumpAllocator::scope_guard`]: crate::traits::BumpAllocator::scope_guard
 pub struct BumpScopeGuard<'a, A, S = BumpSettings>
 where
-    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     pub(crate) chunk: RawChunk<A, S>,
     address: usize,
@@ -50,7 +51,8 @@ where
 
 impl<A, S> Debug for BumpScopeGuard<'_, A, S>
 where
-    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         AnyStats::from(self.stats()).debug_format("BumpScopeGuard", f)
@@ -59,7 +61,8 @@ where
 
 impl<A, S> Drop for BumpScopeGuard<'_, A, S>
 where
-    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn drop(&mut self) {
@@ -69,20 +72,19 @@ where
 
 impl<'a, A, S> BumpScopeGuard<'a, A, S>
 where
-    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
-    pub(crate) fn new(bump: &'a mut BumpScope<'_, A, S>) -> Self {
-        unsafe { Self::new_unchecked(bump.chunk.get()) }
-    }
+    pub(crate) fn new<E: ErrorBehavior>(bump: &'a mut BumpScope<'_, A, S>) -> Result<Self, E> {
+        bump.make_allocated::<E>()?;
+        let chunk = bump.chunk.get();
 
-    #[inline(always)]
-    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, S>) -> Self {
-        Self {
+        Ok(Self {
             chunk,
             address: chunk.pos().addr().get(),
             marker: PhantomData,
-        }
+        })
     }
 
     /// Returns a new `BumpScope`.
@@ -94,9 +96,9 @@ where
     /// Frees the memory taken up by allocations made since creation of this bump scope guard.
     #[inline(always)]
     pub fn reset(&mut self) {
-        unsafe {
-            self.chunk.set_pos_addr(self.address);
-        }
+        // SAFETY: type can only be constructed with a guaranteed allocated chunk
+        let chunk = unsafe { self.chunk.guaranteed_allocated_unchecked() };
+        unsafe { chunk.set_pos_addr(self.address) };
     }
 
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
@@ -110,7 +112,9 @@ where
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &'a A {
-        self.stats().current_chunk().allocator()
+        // SAFETY: type can only be constructed with a guaranteed allocated chunk
+        let chunk = unsafe { self.chunk.guaranteed_allocated_unchecked() };
+        chunk.stats().current_chunk().allocator()
     }
 }
 
@@ -123,8 +127,8 @@ where
 /// allocations can be live when the guard is created.
 pub struct BumpScopeGuardRoot<'b, A, S = BumpSettings>
 where
-    A: Allocator,
-    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     pub(crate) chunk: RawChunk<A, S>,
     marker: PhantomData<&'b mut ()>,
@@ -132,8 +136,8 @@ where
 
 impl<A, S> Debug for BumpScopeGuardRoot<'_, A, S>
 where
-    A: Allocator,
-    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         AnyStats::from(self.stats()).debug_format("BumpScopeGuardRoot", f)
@@ -142,8 +146,8 @@ where
 
 impl<A, S> Drop for BumpScopeGuardRoot<'_, A, S>
 where
-    A: Allocator,
-    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn drop(&mut self) {
@@ -153,20 +157,18 @@ where
 
 impl<'a, A, S> BumpScopeGuardRoot<'a, A, S>
 where
-    A: Allocator,
-    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
-    pub(crate) fn new(bump: &'a mut Bump<A, S>) -> Self {
-        unsafe { Self::new_unchecked(bump.chunk.get()) }
-    }
+    pub(crate) fn new<E: ErrorBehavior>(bump: &'a mut Bump<A, S>) -> Result<Self, E> {
+        bump.as_mut_scope().make_allocated::<E>()?;
+        let chunk = bump.chunk.get();
 
-    #[inline(always)]
-    pub(crate) unsafe fn new_unchecked(chunk: RawChunk<A, S>) -> Self {
-        Self {
+        Ok(Self {
             chunk,
             marker: PhantomData,
-        }
+        })
     }
 
     /// Returns a new `BumpScope`.
@@ -178,7 +180,10 @@ where
     /// Frees the memory taken up by allocations made since creation of this bump scope guard.
     #[inline(always)]
     pub fn reset(&mut self) {
-        self.chunk.reset();
+        // SAFETY: type can only be constructed with a guaranteed allocated chunk
+        let chunk = unsafe { self.chunk.guaranteed_allocated_unchecked() };
+
+        chunk.reset();
     }
 
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
@@ -192,6 +197,9 @@ where
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &'a A {
-        self.stats().current_chunk().allocator()
+        // SAFETY: type can only be constructed with a guaranteed allocated chunk
+        let chunk = unsafe { self.chunk.guaranteed_allocated_unchecked() };
+
+        chunk.stats().current_chunk().allocator()
     }
 }

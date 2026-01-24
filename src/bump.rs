@@ -468,12 +468,18 @@ where
 /// Methods for a [*guaranteed allocated*](crate#what-does-guaranteed-allocated-mean) `Bump`.
 impl<A, S> Bump<A, S>
 where
-    A: Allocator,
-    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
 {
     /// Creates a new [`BumpScopeGuardRoot`].
     ///
     /// This allows for creation of child scopes.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    /// Allocation only occurs if the bump allocator has not yet allocated a chunk.
+    ///
+    /// Panics if the bump allocator is currently [claimed].
     ///
     /// # Examples
     ///
@@ -490,9 +496,46 @@ where
     ///
     /// assert_eq!(bump.stats().allocated(), 0);
     /// ```
+    ///
+    /// [claimed]: crate::traits::BumpAllocatorScope::claim
     #[must_use]
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     pub fn scope_guard(&mut self) -> BumpScopeGuardRoot<'_, A, S> {
+        panic_on_error(BumpScopeGuardRoot::new(self))
+    }
+
+    /// Creates a new [`BumpScopeGuardRoot`].
+    ///
+    /// This allows for creation of child scopes.
+    ///
+    /// # Panics
+    /// Panics if the bump allocator is currently [claimed].
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    /// Allocation only occurs if the bump allocator has not yet allocated a chunk.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// let mut bump: Bump = Bump::new();
+    ///
+    /// {
+    ///     let mut guard = bump.try_scope_guard()?;
+    ///     let bump = guard.scope();
+    ///     bump.alloc_str("Hello, world!");
+    ///     assert_eq!(bump.stats().allocated(), 13);
+    /// }
+    ///
+    /// assert_eq!(bump.stats().allocated(), 0);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    ///
+    /// [claimed]: crate::traits::BumpAllocatorScope::claim
+    #[inline(always)]
+    pub fn try_scope_guard(&mut self) -> Result<BumpScopeGuardRoot<'_, A, S>, AllocError> {
         BumpScopeGuardRoot::new(self)
     }
 }
@@ -845,37 +888,6 @@ where
     ///
     /// # Examples
     ///
-    /// Creating scopes with a non-`GUARANTEED_ALLOCATED` bump is not possible.
-    /// ```compile_fail,E0271
-    /// # use bump_scope::Bump;
-    /// # use bump_scope::alloc::Global;
-    /// # use bump_scope::settings::{BumpSettings, BumpAllocatorSettings};
-    /// type Settings = <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<false>;
-    ///
-    /// let mut bump: Bump<Global, Settings> = Bump::unallocated();
-    ///
-    /// bump.scoped(|bump| {
-    ///     // ...
-    ///     # _ = bump;
-    /// });
-    /// ```
-    ///
-    /// Using this function you can make a `Bump` guaranteed allocated and create scopes.
-    /// ```
-    /// # use bump_scope::Bump;
-    /// # use bump_scope::alloc::Global;
-    /// # use bump_scope::settings::{BumpSettings, BumpAllocatorSettings};
-    /// type Settings = <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<false>;
-    ///
-    /// let bump: Bump<Global, Settings> = Bump::unallocated();
-    /// let mut bump = bump.into_guaranteed_allocated(Bump::new);
-    ///
-    /// bump.scoped(|bump| {
-    ///     // ...
-    ///     # _ = bump;
-    /// });
-    /// ```
-    ///
     /// Initialize an unallocated `Bump` with a custom size or capacity:
     /// ```
     /// # use core::alloc::Layout;
@@ -913,37 +925,6 @@ where
     /// Errors if the closure fails.
     ///
     /// # Examples
-    ///
-    /// Creating scopes with a non-`GUARANTEED_ALLOCATED` bump is not possible.
-    /// ```compile_fail,E0271
-    /// # use bump_scope::Bump;
-    /// # use bump_scope::alloc::Global;
-    /// # use bump_scope::settings::{BumpSettings, BumpAllocatorSettings};
-    /// type Settings = <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<false>;
-    ///
-    /// let mut bump: Bump<Global, Settings> = Bump::unallocated();
-    ///
-    /// bump.scoped(|bump| {
-    ///     // ...
-    ///     # _ = bump;
-    /// });
-    /// ```
-    ///
-    /// Using this function you can make a `Bump` guaranteed allocated and create scopes.
-    /// ```
-    /// # use bump_scope::Bump;
-    /// # use bump_scope::alloc::Global;
-    /// # use bump_scope::settings::{BumpSettings, BumpAllocatorSettings};
-    /// type Settings = <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<false>;
-    /// let bump: Bump<Global, Settings> = Bump::unallocated();
-    /// let mut bump = bump.try_into_guaranteed_allocated(Bump::try_new)?;
-    ///
-    /// bump.scoped(|bump| {
-    ///     // ...
-    ///     # _ = bump;
-    /// });
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
-    /// ```
     ///
     /// Initialize an unallocated `Bump` with a custom size or capacity:
     /// ```
@@ -1064,36 +1045,6 @@ where
     ///
     /// # Examples
     ///
-    /// Creating scopes with a non-`GUARANTEED_ALLOCATED` bump is not possible.
-    /// ```compile_fail,E0271
-    /// # use bump_scope::Bump;
-    /// # use bump_scope::alloc::Global;
-    /// # use bump_scope::settings::{BumpSettings, BumpAllocatorSettings};
-    /// type Settings = <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<false>;
-    ///
-    /// let mut bump: Bump<Global, Settings> = Bump::unallocated();
-    ///
-    /// bump.scoped(|bump| {
-    ///     // ...
-    ///     # _ = bump;
-    /// });
-    /// ```
-    ///
-    /// Using this function you can make a `Bump` guaranteed allocated and create scopes.
-    /// ```
-    /// # use bump_scope::Bump;
-    /// # use bump_scope::alloc::Global;
-    /// # use bump_scope::settings::{BumpSettings, BumpAllocatorSettings};
-    /// type Settings = <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<false>;
-    ///
-    /// let mut bump: Bump<Global, Settings> = Bump::unallocated();
-    ///
-    /// bump.as_mut_guaranteed_allocated(Bump::new).scoped(|bump| {
-    ///     // ...
-    ///     # _ = bump;
-    /// });
-    /// ```
-    ///
     /// Initialize an unallocated `Bump` with a custom size or capacity:
     /// ```
     /// # use core::alloc::Layout;
@@ -1133,37 +1084,6 @@ where
     /// Errors if the closure fails.
     ///
     /// # Examples
-    ///
-    /// Creating scopes with a non-`GUARANTEED_ALLOCATED` bump is not possible.
-    /// ```compile_fail,E0271
-    /// # use bump_scope::Bump;
-    /// # use bump_scope::alloc::Global;
-    /// # use bump_scope::settings::{BumpSettings, BumpAllocatorSettings};
-    /// type Settings = <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<false>;
-    ///
-    /// let mut bump: Bump<Global, Settings> = Bump::unallocated();
-    ///
-    /// bump.scoped(|bump| {
-    ///     // ...
-    ///     # _ = bump;
-    /// });
-    /// ```
-    ///
-    /// Using this function you can make a `Bump` guaranteed allocated and create scopes.
-    /// ```
-    /// # use bump_scope::Bump;
-    /// # use bump_scope::alloc::Global;
-    /// # use bump_scope::settings::{BumpSettings, BumpAllocatorSettings};
-    /// type Settings = <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<false>;
-    ///
-    /// let mut bump: Bump<Global, Settings> = Bump::unallocated();
-    ///
-    /// bump.try_as_mut_guaranteed_allocated(Bump::try_new)?.scoped(|bump| {
-    ///     // ...
-    ///     # _ = bump;
-    /// });
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
-    /// ```
     ///
     /// Initialize an unallocated `Bump` with a custom size or capacity:
     /// ```

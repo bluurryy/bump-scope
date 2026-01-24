@@ -77,8 +77,8 @@ up_and_down! {
         bump.reset()
     }
 
-    pub fn Bump_scoped(bump: &mut Bump, f: Box<dyn FnOnce(BumpScope)>) {
-        bump.scoped(f)
+    pub fn Bump_try_scoped(bump: &mut Bump, f: Box<dyn FnOnce(BumpScope)>) -> Result<(), AllocError> {
+        bump.try_scoped(f)
     }
 
     pub fn Bump_aligned_inc(bump: &mut Bump, f: Box<dyn FnOnce(&mut BumpScope<8>)>) {
@@ -89,8 +89,8 @@ up_and_down! {
         bump.aligned(f)
     }
 
-    pub fn Bump_scope_guard(bump: &mut Bump) -> BumpScopeGuardRoot {
-        bump.scope_guard()
+    pub fn Bump_scope_guard(bump: &mut Bump) -> Result<BumpScopeGuardRoot, AllocError> {
+        bump.try_scope_guard()
     }
 
     pub fn Bump_with_align(bump: Bump) -> Bump<4> {
@@ -245,8 +245,8 @@ up_and_down! {
         bump.try_reserve_bytes(additional)
     }
 
-    pub fn BumpScope__scope_guard<'b>(bump: &'b mut BumpScope) -> BumpScopeGuard<'b> {
-        bump.scope_guard()
+    pub fn BumpScope__scope_guard<'b>(bump: &'b mut BumpScope) -> Result<BumpScopeGuard<'b>, AllocError> {
+        bump.try_scope_guard()
     }
 
     pub fn MutBumpVec_try_append(vec: &mut MutBumpVec<u32>, array: [u32; 24]) -> Result {
