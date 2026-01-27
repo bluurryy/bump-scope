@@ -17,7 +17,7 @@
 //! type MyBumpSettings = BumpSettings<
 //!     /* MIN_ALIGN */ 8,
 //!     /* UP */ false,
-//!     /* GUARANTEED_ALLOCATED */ false,
+//!     /* GUARANTEED_ALLOCATED */ true,
 //!     /* CLAIMABLE */ false,
 //!     /* DEALLOCATES */ false,
 //!     /* SHRINKS */ false,
@@ -25,7 +25,7 @@
 //!
 //! type MyBump = Bump<Global, MyBumpSettings>;
 //!
-//! let bump = MyBump::unallocated();
+//! let bump = MyBump::with_size(1024);
 //!
 //! # let str =
 //! bump.alloc_str("Hello, world!");
@@ -60,31 +60,26 @@
 //! A *guaranteed allocated* bump allocator will own at least one chunk that it has allocated
 //! from its base allocator.
 //!
-//! The constructors [`new`], [`with_size`], [`with_capacity`] and their variants always allocate
-//! one chunk from the base allocator.
+//! The constructors <code>[new]\([_in][new_in])</code> and <code>[default]</code> will create a bump allocator without allocating a chunk.
+//! They will only be available when `GUARANTEED_ALLOCATED` is `false`.
 //!
-//! The exception is the [`unallocated`] constructor which creates a `Bump` without allocating any
-//! chunks. Such a `Bump` will have the `GUARANTEED_ALLOCATED` parameter set to `false`
-//! which will make the [`scoped`], [`scoped_aligned`], [`aligned`] and [`scope_guard`] methods unavailable.
+//! The constructors <code>[with_size]\([_in][with_size_in])</code> and <code>[with_capacity]\([_in][with_capacity_in])</code>
+//! will allocate a chunk and are always available.
 //!
-//! You can turn any non-`GUARANTEED_ALLOCATED` bump allocator into a guaranteed allocated one using
-//! [`as_guaranteed_allocated`], [`as_mut_guaranteed_allocated`] or [`into_guaranteed_allocated`].
-//!
-//! The point of this parameter is that `Bump`s can be `const` constructed and constructed without allocating.
-//! At the same time `Bump`s that have already allocated a chunk don't suffer additional runtime checks.
+//! Setting `GUARANTEED_ALLOCATED` to `true` removes a check when exiting scopes.
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
-//! [`new`]: crate::Bump::new
-//! [`with_size`]: crate::Bump::with_size
-//! [`with_capacity`]: crate::Bump::with_capacity
-//! [`unallocated`]: crate::Bump::unallocated
+//! [new]: crate::Bump::new
+//! [new_in]: crate::Bump::new_in
+//! [default]: crate::Bump::default
+//! [with_size]: crate::Bump::with_size
+//! [with_size_in]: crate::Bump::with_size_in
+//! [with_capacity]: crate::Bump::with_capacity
+//! [with_capacity_in]: crate::Bump::with_capacity_in
 //! [`scoped`]: crate::Bump::scoped
 //! [`scoped_aligned`]: crate::Bump::scoped_aligned
 //! [`aligned`]: crate::Bump::aligned
 //! [`scope_guard`]: crate::Bump::scope_guard
-//! [`as_guaranteed_allocated`]: crate::Bump::as_guaranteed_allocated
-//! [`as_mut_guaranteed_allocated`]: crate::Bump::as_mut_guaranteed_allocated
-//! [`into_guaranteed_allocated`]: crate::Bump::into_guaranteed_allocated
 //! [`BumpSettings`]: crate::settings::BumpSettings
 //! [`MutBumpVecRev`]: crate::MutBumpVecRev
 
@@ -219,7 +214,7 @@ pub trait BumpAllocatorSettings: Sealed {
 pub struct BumpSettings<
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
-    const GUARANTEED_ALLOCATED: bool = true,
+    const GUARANTEED_ALLOCATED: bool = false,
     const CLAIMABLE: bool = true,
     const DEALLOCATES: bool = true,
     const SHRINKS: bool = true,

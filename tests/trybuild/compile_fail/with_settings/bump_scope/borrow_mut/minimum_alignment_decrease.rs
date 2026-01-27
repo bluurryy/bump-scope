@@ -12,10 +12,8 @@ fn convert<'a, 'b>(bump: &'b mut BumpScope<'a, Global, In>) -> &'b mut BumpScope
 }
 
 fn main() {
-    let mut input = Bump::<Global, In>::new();
+    let mut input = Bump::<Global, In>::with_size(512);
     let output = convert(input.as_mut_scope());
     let test = output.alloc_str("test");
     println!("{test}");
 }
-
-

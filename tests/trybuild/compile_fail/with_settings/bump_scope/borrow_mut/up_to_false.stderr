@@ -1,23 +1,23 @@
 error[E0080]: evaluation panicked: can't change `UP` setting
- --> src/bump_scope.rs
+ --> src/raw_bump.rs
   |
   |             assert!(NewS::UP == S::UP, "can't change `UP` setting");
-  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::BumpScope::<'_>::borrow_mut_with_settings::<bump_scope::settings::BumpSettings<1, false>>::{constant#0}` failed here
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::raw_bump::RawBump::<bump_scope::alloc::Global, bump_scope::settings::BumpSettings>::ensure_satisfies_settings_for_borrow_mut::<bump_scope::settings::BumpSettings<1, false>>::{constant#0}` failed here
 
 note: erroneous constant encountered
- --> src/bump_scope.rs
+ --> src/raw_bump.rs
   |
   | /         const {
   | |             assert!(NewS::UP == S::UP, "can't change `UP` setting");
   | |
   | |             assert!(
 ... |
-  | |             );
+  | |             assert!(NewS::CLAIMABLE == S::CLAIMABLE, "can't change claimability");
   | |         }
   | |_________^
 
-note: the above error was encountered while instantiating `fn BumpScope::<'_>::borrow_mut_with_settings::<BumpSettings<1, false>>`
-  --> tests/trybuild/compile_fail/with_settings/bump_scope/borrow_mut/up_to_false.rs:11:5
-   |
-11 |     bump.borrow_mut_with_settings()
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: the above error was encountered while instantiating `fn bump_scope::raw_bump::RawBump::<bump_scope::alloc::Global, BumpSettings>::ensure_satisfies_settings_for_borrow_mut::<BumpSettings<1, false>>`
+ --> src/bump_scope.rs
+  |
+  |         self.raw.ensure_satisfies_settings_for_borrow_mut::<NewS>();
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

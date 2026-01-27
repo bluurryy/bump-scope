@@ -1,5 +1,6 @@
 use crate::{
-    BaseAllocator, Bump, BumpScope, WithoutDealloc, WithoutShrink,
+    Bump, BumpScope, WithoutDealloc, WithoutShrink,
+    alloc::Allocator,
     settings::BumpAllocatorSettings,
     traits::{BumpAllocatorCore, assert_dyn_compatible, assert_implements},
 };
@@ -57,21 +58,21 @@ unsafe impl<'a, B: BumpAllocatorCoreScope<'a>> BumpAllocatorCoreScope<'a> for Wi
 
 unsafe impl<'a, A, S> BumpAllocatorCoreScope<'a> for BumpScope<'a, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
 }
 
 unsafe impl<'a, A, S> BumpAllocatorCoreScope<'a> for &'a Bump<A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
 }
 
 unsafe impl<'a, A, S> BumpAllocatorCoreScope<'a> for &'a mut Bump<A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
 }

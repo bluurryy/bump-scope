@@ -34,8 +34,6 @@ macro_rules! allocator_compat_wrapper {
         fn test_compat() {
             use core::{alloc::Layout, ptr::NonNull};
 
-            use crate::{BaseAllocator, settings::True};
-
             #[derive(Clone)]
             struct OthrAllocator;
 
@@ -49,7 +47,7 @@ macro_rules! allocator_compat_wrapper {
                 }
             }
 
-            fn is_base_allocator<T: BaseAllocator<True>>(_: T) {}
+            fn is_base_allocator<T: $crate::alloc::Allocator>(_: T) {}
 
             #[cfg(feature = "alloc")]
             is_base_allocator(Global);

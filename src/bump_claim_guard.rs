@@ -1,10 +1,12 @@
-use core::ops::{Deref, DerefMut};
+use core::{
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+};
 
 use crate::{
     BumpScope,
     alloc::Allocator,
-    chunk::RawChunk,
-    settings::{BumpAllocatorSettings, BumpSettings, True},
+    settings::{BumpAllocatorSettings, BumpSettings},
 };
 
 // For docs.
@@ -18,7 +20,7 @@ where
     S: BumpAllocatorSettings,
 {
     pub(crate) original: &'b BumpScope<'a, A, S>,
-    pub(crate) claimed: BumpScope<'a, A, S>,
+    pub(crate) claimant: BumpScope<'a, A, S>,
 }
 
 impl<'b, 'a, A, S> BumpClaimGuard<'b, 'a, A, S>
@@ -27,13 +29,15 @@ where
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
-    pub(crate) fn new(original: &'b BumpScope<'a, A, S>) -> Self
-    where
-        S: BumpAllocatorSettings<Claimable = True>,
-    {
-        let chunk = original.chunk.replace(RawChunk::<A, S>::CLAIMED);
-        let claimed = unsafe { BumpScope::from_raw(chunk.header().cast()) };
-        Self { original, claimed }
+    pub(crate) fn new(original: &'b BumpScope<'a, A, S>) -> Self {
+        let claimed = original.raw.claim();
+
+        let claimant = BumpScope {
+            raw: claimed,
+            marker: PhantomData,
+        };
+
+        Self { original, claimant }
     }
 }
 
@@ -46,7 +50,7 @@ where
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
-        &self.claimed
+        &self.claimant
     }
 }
 
@@ -57,7 +61,7 @@ where
 {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.claimed
+        &mut self.claimant
     }
 }
 
@@ -68,6 +72,6 @@ where
 {
     #[inline(always)]
     fn drop(&mut self) {
-        self.original.chunk.set(self.claimed.chunk.get());
+        self.original.raw.reclaim(&self.claimant.raw);
     }
 }

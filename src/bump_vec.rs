@@ -391,7 +391,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, BumpVec};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = BumpVec::<i32, _>::try_with_capacity_in(10, &bump)?;
     ///
     /// // The vector contains no items, even though it has capacity for more
@@ -466,7 +466,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, BumpVec};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let vec = BumpVec::try_from_elem_in("ho", 3, &bump)?;
     /// assert_eq!(vec, ["ho", "ho", "ho"]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -609,7 +609,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, BumpVec};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let vec = BumpVec::try_from_iter_in([1, 2, 3], &bump)?;
     /// assert_eq!(vec, [1, 2, 3]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -674,7 +674,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, BumpVec};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let vec = BumpVec::try_from_iter_exact_in([1, 2, 3], &bump)?;
     /// assert_eq!(vec, [1, 2, 3]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -1157,7 +1157,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{bump_vec, Bump};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = bump_vec![try in &bump; 1, 2]?;
     /// vec.try_push(3)?;
     /// assert_eq!(vec, [1, 2, 3]);
@@ -1264,7 +1264,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, bump_vec};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
     /// vec.try_insert(1, 4)?;
     /// assert_eq!(vec, [1, 4, 2, 3]);
@@ -1502,7 +1502,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, bump_vec};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = bump_vec![try in &bump; 0, 1, 2, 3, 4]?;
     ///
     /// vec.try_extend_from_within_copy(2..)?;
@@ -1594,7 +1594,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, bump_vec};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = bump_vec![try in &bump; 0, 1, 2, 3, 4]?;
     ///
     /// vec.try_extend_from_within_clone(2..)?;
@@ -1698,7 +1698,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, bump_vec};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = bump_vec![try in &bump; 1]?;
     /// vec.try_reserve(10)?;
     /// assert!(vec.capacity() >= 11);
@@ -1767,7 +1767,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, bump_vec};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = bump_vec![try in &bump; 1]?;
     /// vec.try_reserve_exact(10)?;
     /// assert!(vec.capacity() >= 11);
@@ -1848,7 +1848,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, bump_vec};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = bump_vec![try in &bump; "hello"]?;
     /// vec.try_resize(3, "world")?;
     /// assert_eq!(vec, ["hello", "world", "world"]);
@@ -1942,7 +1942,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, bump_vec};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
     /// vec.try_resize_with(5, Default::default)?;
     /// assert_eq!(vec, [1, 2, 3, 0, 0]);
@@ -2117,7 +2117,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     /// ```
     /// # use bump_scope::{Bump, BumpVec};
     /// # use core::num::NonZero;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let a = BumpVec::try_from_iter_exact_in([0, 1, 2], &bump)?;
     /// let b = a.try_map(NonZero::new)?;
     /// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2)]");
@@ -2127,7 +2127,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     /// Mapping to a type with a smaller alignment and size (no allocation, capacity may grow):
     /// ```
     /// # use bump_scope::{Bump, BumpVec};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let vec_a: BumpVec<u32, _> = BumpVec::try_from_iter_in([1, 2, 3, 4], &bump)?;
     /// assert_eq!(vec_a.capacity(), 4);
     /// assert_eq!(bump.stats().allocated(), 4 * 4);
@@ -2142,7 +2142,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     /// calling `try_from_iter_in(into_iter().map(f), ...)`:
     /// ```
     /// # use bump_scope::{Bump, BumpVec};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let vec_a: BumpVec<u16, _> = BumpVec::try_from_iter_in([1, 2, 3, 4], &bump)?;
     /// assert_eq!(vec_a.capacity(), 4);
     /// assert_eq!(bump.stats().allocated(), 4 * 2);

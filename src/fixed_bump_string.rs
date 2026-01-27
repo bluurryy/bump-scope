@@ -900,7 +900,7 @@ impl FixedBumpString<'_> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, FixedBumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut s = FixedBumpString::try_with_capacity_in(3, &bump)?;
     ///
     /// s.try_push('a')?;
@@ -955,7 +955,7 @@ impl FixedBumpString<'_> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, FixedBumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut s = FixedBumpString::try_with_capacity_in(6, &bump)?;
     ///
     /// s.try_push_str("foo")?;
@@ -1019,7 +1019,7 @@ impl FixedBumpString<'_> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, FixedBumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut s = FixedBumpString::try_with_capacity_in(3, &bump)?;
     ///
     /// s.try_insert(0, 'f')?;
@@ -1086,7 +1086,7 @@ impl FixedBumpString<'_> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, FixedBumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut s = FixedBumpString::try_with_capacity_in(6, &bump)?;
     /// s.try_push_str("bar")?;
     ///
@@ -1151,7 +1151,7 @@ impl FixedBumpString<'_> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, FixedBumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut string = FixedBumpString::try_with_capacity_in(14, &bump)?;
     /// string.try_push_str("abcde")?;
     ///
@@ -1212,7 +1212,7 @@ impl FixedBumpString<'_> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, FixedBumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut string = FixedBumpString::try_with_capacity_in(8, &bump)?;
     /// string.try_push_str("What?")?;
     /// string.try_extend_zeroed(3)?;
@@ -1286,7 +1286,7 @@ impl FixedBumpString<'_> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, FixedBumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut s = FixedBumpString::try_with_capacity_in(50, &bump)?;
     /// s.push_str("α is alpha, β is beta");
     /// let beta_offset = s.find('β').unwrap_or(s.len());

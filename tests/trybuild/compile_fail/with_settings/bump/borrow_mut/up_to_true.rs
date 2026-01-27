@@ -12,7 +12,7 @@ fn convert(bump: &mut Bump<Global, In>) -> &mut Bump<Global, Out> {
 }
 
 fn main() {
-    let mut input = Bump::<Global, In>::new();
+    let mut input = Bump::<Global, In>::with_size(512);
     let output = convert(&mut input);
     let test = output.alloc_str("test");
     println!("{test}");

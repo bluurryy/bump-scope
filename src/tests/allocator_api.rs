@@ -1,7 +1,6 @@
 use std::{alloc::Layout, eprintln, ptr::NonNull};
 
 use crate::{
-    BaseAllocator,
     alloc::{Allocator, Global},
     polyfill::non_null,
     settings::{BumpAllocatorSettings, BumpSettings},
@@ -76,7 +75,7 @@ fn grow_last_out_of_place<const UP: bool>() {
 }
 
 fn allocate_zst_returns_dangling<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
     let dangling_addr = NonNull::<()>::dangling().addr();
 
     // make sure there is no capacity left on its chunk
@@ -140,7 +139,7 @@ fn allocate_zst_returns_dangling<const UP: bool>() {
 }
 
 fn allocate_zst_returns_dangling_unallocated<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP, false>> = Bump::unallocated();
+    let bump: Bump<Global, BumpSettings<1, UP, false>> = Bump::new();
     let dangling_addr = NonNull::<()>::dangling().addr();
 
     macro_rules! must_dangle {

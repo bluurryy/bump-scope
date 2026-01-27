@@ -40,7 +40,7 @@ either_way! {
 }
 
 fn shrinks<const UP: bool>() {
-    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
 
     // should shrink
     let mut vec = bump_vec![in &bump; 1, 2, 3, 4];
@@ -67,9 +67,7 @@ fn shrinks<const UP: bool>() {
     bump.reset();
 
     // shouldn't shrink either
-    // TODO: this uses deallocates instead of shrink in the setting?? this should actually shrink then
-    //       add a test that without deallocates still shrinks, change this to `WithShrinks` and figure out what went wrong
-    let mut vec = bump_vec![in bump.borrow_with_settings::<<BumpSettings<1, UP> as BumpAllocatorSettings>::WithDeallocates<false>>(); 1, 2, 3, 4];
+    let mut vec = bump_vec![in bump.borrow_with_settings::<<BumpSettings<1, UP> as BumpAllocatorSettings>::WithShrinks<false>>(); 1, 2, 3, 4];
     assert_eq!(bump.stats().allocated(), 4 * 4);
     vec.pop();
     vec.shrink_to_fit();
@@ -234,7 +232,7 @@ fn map_smaller_layout<const UP: bool>() {
 
 fn map_bigger_layout<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -271,7 +269,7 @@ fn map_bigger_layout<const UP: bool>() {
 
 fn map_to_zst<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -302,7 +300,7 @@ fn map_to_zst<const UP: bool>() {
 
 fn map_from_zst<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -334,7 +332,7 @@ fn map_from_zst<const UP: bool>() {
 
 fn map_from_zst_to_zst<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -365,7 +363,7 @@ fn map_from_zst_to_zst<const UP: bool>() {
 
 fn map_in_place_same_layout<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -398,7 +396,7 @@ fn map_in_place_same_layout<const UP: bool>() {
 
 fn map_in_place_smaller_layout<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -489,7 +487,7 @@ fn map_in_place_to_zst<const UP: bool>() {
 
 fn map_in_place_from_zst_to_zst<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -575,9 +573,8 @@ fn test_dyn_allocator<const UP: bool>() {
     test::<&Bump>(&Bump::new());
     test::<&mut Bump>(&mut Bump::new());
 
-    Bump::new().scoped(|bump| test::<BumpScope>(bump));
-    Bump::new().scoped(|bump| test::<&BumpScope>(&bump));
-    Bump::new().scoped(|mut bump| test::<&mut BumpScope>(&mut bump));
+    Bump::new().scoped(|bump| test::<&BumpScope>(bump));
+    Bump::new().scoped(|bump| test::<&mut BumpScope>(bump));
 
     test::<&dyn BumpAllocatorCore>(&<Bump>::new());
     test::<&mut dyn BumpAllocatorCore>(&mut <Bump>::new());

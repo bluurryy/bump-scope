@@ -154,40 +154,18 @@ where
     /// If this needs to create a new `Bump`, it will be constructed by calling <code>Bump::[new]\()</code>.
     ///
     /// [new]: Bump::new
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
     #[must_use]
     #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
     pub fn get(&self) -> BumpPoolGuard<'_, A, S> {
-        panic_on_error(self.generic_get())
-    }
-
-    /// Borrows a bump allocator from the pool.
-    /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
-    ///
-    /// If this needs to create a new `Bump`, it will be constructed by calling <code>Bump::[try_new]\()</code>.
-    ///
-    /// [try_new]: Bump::try_new
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    #[inline(always)]
-    pub fn try_get(&self) -> Result<BumpPoolGuard<'_, A, S>, AllocError> {
-        self.generic_get()
-    }
-
-    pub(crate) fn generic_get<E: ErrorBehavior>(&self) -> Result<BumpPoolGuard<'_, A, S>, E> {
         let bump = match self.lock().pop() {
             Some(bump) => bump,
-            None => Bump::generic_new_in(self.allocator.clone())?,
+            None => Bump::new_in(self.allocator.clone()),
         };
 
-        Ok(BumpPoolGuard {
+        BumpPoolGuard {
             pool: self,
             bump: ManuallyDrop::new(bump),
-        })
+        }
     }
 
     /// Borrows a bump allocator from the pool.

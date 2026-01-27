@@ -4,8 +4,10 @@ use allocator_api2_04::alloc::{AllocError, Allocator};
 use allocator_api2_04::{alloc::Global, boxed::Box};
 
 use crate::{
-    BaseAllocator, Bump, BumpScope, WithoutDealloc, WithoutShrink, alloc::AllocError as CrateAllocError,
-    settings::BumpAllocatorSettings, traits::BumpAllocatorCore,
+    Bump, BumpScope, WithoutDealloc, WithoutShrink,
+    alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator},
+    settings::BumpAllocatorSettings,
+    traits::BumpAllocatorCore,
 };
 
 #[cfg(feature = "alloc")]
@@ -57,13 +59,13 @@ impl_allocator_via_allocator! {
 
     use {self} for allocator_api2_04 as crate impl[A, S] Bump<A, S>
     where [
-        A: BaseAllocator<S::GuaranteedAllocated>,
+        A: CrateAllocator,
         S: BumpAllocatorSettings,
     ]
 
     use {self} for allocator_api2_04 as crate impl[A, S] BumpScope<'_, A, S>
     where [
-        A: BaseAllocator<S::GuaranteedAllocated>,
+        A: CrateAllocator,
         S: BumpAllocatorSettings,
     ]
 

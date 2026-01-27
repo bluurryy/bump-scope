@@ -61,7 +61,7 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::try_new()?;
+    /// # let mut bump: Bump = Bump::new();
     /// let slice = bump.try_alloc_iter_mut([1, 2, 3])?;
     /// assert_eq!(slice, [1, 2, 3]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -134,7 +134,7 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::try_new()?;
+    /// # let mut bump: Bump = Bump::new();
     /// let slice = bump.try_alloc_iter_mut_rev([1, 2, 3])?;
     /// assert_eq!(slice, [3, 2, 1]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -208,7 +208,7 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::try_new()?;
+    /// # let mut bump: Bump = Bump::new();
     /// let one = 1;
     /// let two = 2;
     /// let string = bump.try_alloc_fmt_mut(format_args!("{one} + {two} = {}", one + two))?;
@@ -288,7 +288,7 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::try_new()?;
+    /// # let mut bump: Bump = Bump::new();
     /// let one = 1;
     /// let two = 2;
     /// let string = bump.try_alloc_cstr_fmt_mut(format_args!("{one} + {two} = {}", one + two))?;

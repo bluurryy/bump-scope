@@ -80,6 +80,11 @@ impl Deref for ArrayLayout {
     }
 }
 
+// Implements [`LayoutProps`] for a custom [`Layout`].
+//
+// Note that `LayoutProps` is intentionally not implemented for `Layout`
+// to make it explicit that a custom layout is used there instead of an
+// [`ArrayLayout`] or [`SizedLayout`].
 #[derive(Clone, Copy)]
 pub(crate) struct CustomLayout(pub(crate) Layout);
 
