@@ -1,10 +1,11 @@
 use core::{fmt::Debug, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    Bump, BumpScope,
+    BumpScope,
     alloc::Allocator,
     chunk::ChunkHeader,
-    raw_bump::RawChunk,
+    polyfill::transmute_mut,
+    raw_bump::{RawBump, RawChunk},
     settings::{BumpAllocatorSettings, BumpSettings},
     stats::AnyStats,
 };
@@ -42,7 +43,7 @@ where
     A: Allocator,
     S: BumpAllocatorSettings,
 {
-    bump: &'a mut Bump<A, S>,
+    bump: &'a mut RawBump<A, S>,
     checkpoint: Checkpoint,
 }
 
@@ -73,7 +74,7 @@ where
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
-    pub(crate) fn new(bump: &'a mut Bump<A, S>) -> Self {
+    pub(crate) fn new(bump: &'a mut RawBump<A, S>) -> Self {
         let checkpoint = bump.checkpoint();
         Self { bump, checkpoint }
     }
@@ -81,7 +82,7 @@ where
     /// Returns a new `BumpScope`.
     #[inline(always)]
     pub fn scope(&mut self) -> &mut BumpScope<'_, A, S> {
-        self.bump.as_mut_scope()
+        unsafe { transmute_mut(self.bump) }
     }
 
     /// Frees the memory taken up by allocations made since creation of this bump scope guard.

@@ -122,31 +122,6 @@ where
         unsafe { transmute_ref(self) }
     }
 
-    /// Returns this `&mut BumpScope` as a `&mut Bump`.
-    ///     
-    /// This method exists so you can have `&mut Bump` function parameters and
-    /// struct fields instead of `&mut BumpScope<'a>` that can still accept `BumpScope`'s.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::Bump;
-    /// fn my_fn(bump: &mut Bump) {
-    ///    // ...
-    ///    # _ = bump;
-    /// }
-    ///
-    /// let mut bump: Bump = Bump::new();
-    ///
-    /// bump.scoped(|bump_scope| {
-    ///     my_fn(bump_scope.as_mut_bump());
-    /// });
-    /// ```
-    #[must_use]
-    #[inline(always)]
-    pub fn as_mut_bump(&mut self) -> &mut Bump<A, S> {
-        unsafe { transmute_mut(self) }
-    }
-
     /// Returns this `&mut BumpScope` as a `BumpScope`.
     ///
     /// This requires allocating a chunk if none has been allocated yet.
