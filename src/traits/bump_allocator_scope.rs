@@ -1,8 +1,9 @@
 use crate::{
-    BaseAllocator, BumpClaimGuard, BumpScope,
+    BumpClaimGuard, BumpScope,
+    alloc::Allocator,
     bump_align_guard::BumpAlignGuard,
     polyfill::transmute_mut,
-    settings::{BumpAllocatorSettings, MinimumAlignment, SupportedMinimumAlignment, True},
+    settings::{BumpAllocatorSettings, MinimumAlignment, SupportedMinimumAlignment},
     stats::Stats,
     traits::{BumpAllocator, MutBumpAllocatorCoreScope},
 };
@@ -37,27 +38,10 @@ pub trait BumpAllocatorScope<'a>: BumpAllocator + MutBumpAllocatorCoreScope<'a> 
     /// assert_eq!(vec1, [1, 2, 3]);
     /// assert_eq!(vec2, [4, 5, 6]);
     /// ```
-    fn claim(&self) -> BumpClaimGuard<'_, 'a, Self::Allocator, Self::Settings>
-    where
-        Self::Settings: BumpAllocatorSettings<Claimable = True>;
+    fn claim(&self) -> BumpClaimGuard<'_, 'a, Self::Allocator, Self::Settings>;
 
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
-    fn stats(&self) -> Stats<'a, Self::Allocator, Self::Settings>;
-
-    /// Forwards to [`BumpScope::with_settings`].
-    fn with_settings<NewS>(self) -> BumpScope<'a, Self::Allocator, NewS>
-    where
-        NewS: BumpAllocatorSettings;
-
-    /// Forwards to [`BumpScope::borrow_with_settings`].
-    fn borrow_with_settings<NewS>(&self) -> &BumpScope<'a, Self::Allocator, NewS>
-    where
-        NewS: BumpAllocatorSettings;
-
-    /// Forwards to [`BumpScope::borrow_mut_with_settings`].
-    fn borrow_mut_with_settings<NewS>(&mut self) -> &mut BumpScope<'a, Self::Allocator, NewS>
-    where
-        NewS: BumpAllocatorSettings;
+    fn stats(&self) -> Stats<'a, Self::Settings>;
 
     /// Calls `f` with this scope but with a new minimum alignment.
     ///
@@ -78,7 +62,7 @@ pub trait BumpAllocatorScope<'a>: BumpAllocator + MutBumpAllocatorCoreScope<'a> 
     /// let bar = bump.aligned::<8, _>(|bump| {
     ///     // in here the bump position has been aligned to `8`
     ///     assert_eq!(bump.stats().allocated(), 8);
-    ///     assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
+    ///     assert!(bump.stats().get_current_chunk().unwrap().bump_position().is_aligned_to(8));
     ///
     ///     // make some allocations that benefit from the higher `MIN_ALIGN` of `8`
     ///     let bar = bump.alloc(0u64);
@@ -125,7 +109,7 @@ pub trait BumpAllocatorScope<'a>: BumpAllocator + MutBumpAllocatorCoreScope<'a> 
     ///
     /// // after `aligned()`, the bump position will be aligned to `8` again
     /// // to satisfy our `MIN_ALIGN`
-    /// assert!(bump.stats().current_chunk().bump_position().is_aligned_to(8));
+    /// assert!(bump.stats().get_current_chunk().unwrap().bump_position().is_aligned_to(8));
     /// assert_eq!(bump.stats().allocated(), 16);
     ///
     /// // continue making allocations that benefit from the `MIN_ALIGN` of `8`
@@ -147,79 +131,60 @@ pub trait BumpAllocatorScope<'a>: BumpAllocator + MutBumpAllocatorCoreScope<'a> 
         MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment;
 
     /// Returns a reference to the base allocator.
-    ///
-    /// This is only available if the bump allocator is guaranteed-allocated.
-    /// You can always get a reference to the base allocator using [`get_allocator`].
-    ///
-    /// [`get_allocator`]: BumpAllocatorScope::get_allocator
     #[must_use]
+    fn allocator(&self) -> &Self::Allocator;
+}
+
+impl<'a, B> BumpAllocatorScope<'a> for &mut B
+where
+    B: BumpAllocatorScope<'a>,
+{
     #[inline(always)]
-    fn allocator(&self) -> &'a Self::Allocator
-    where
-        Self::Settings: BumpAllocatorSettings<GuaranteedAllocated = True>,
-    {
-        self.stats().current_chunk().allocator()
+    fn claim(&self) -> BumpClaimGuard<'_, 'a, Self::Allocator, Self::Settings> {
+        B::claim(self)
     }
 
-    /// Returns a reference to the base allocator.
-    #[must_use]
     #[inline(always)]
-    fn get_allocator(&self) -> Option<&'a Self::Allocator> {
-        self.stats().get_current_chunk().map(|c| c.allocator())
+    fn stats(&self) -> Stats<'a, Self::Settings> {
+        B::stats(self)
+    }
+
+    #[inline(always)]
+    fn aligned<const NEW_MIN_ALIGN: usize, R>(
+        &mut self,
+        f: impl FnOnce(
+            &mut BumpScope<
+                'a,
+                Self::Allocator,
+                <Self::Settings as BumpAllocatorSettings>::WithMinimumAlignment<NEW_MIN_ALIGN>,
+            >,
+        ) -> R,
+    ) -> R
+    where
+        MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
+    {
+        B::aligned::<NEW_MIN_ALIGN, R>(self, f)
+    }
+
+    #[inline(always)]
+    fn allocator(&self) -> &Self::Allocator {
+        B::allocator(self)
     }
 }
 
 impl<'a, A, S> BumpAllocatorScope<'a> for BumpScope<'a, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     #[inline]
-    fn claim(&self) -> BumpClaimGuard<'_, 'a, Self::Allocator, Self::Settings>
-    where
-        Self::Settings: BumpAllocatorSettings<Claimable = True>,
-    {
-        #[cold]
-        #[inline(never)]
-        fn already_claimed() {
-            panic!("bump allocator is already claimed");
-        }
-
-        if self.chunk.get().is_claimed() {
-            already_claimed();
-        }
-
+    fn claim(&self) -> BumpClaimGuard<'_, 'a, Self::Allocator, Self::Settings> {
         BumpClaimGuard::new(self)
     }
 
     #[inline]
-    fn stats(&self) -> Stats<'a, Self::Allocator, Self::Settings> {
-        self.chunk.get().stats()
-    }
-
-    #[inline]
-    fn with_settings<NewS>(self) -> BumpScope<'a, Self::Allocator, NewS>
-    where
-        NewS: BumpAllocatorSettings,
-    {
-        BumpScope::with_settings(self)
-    }
-
-    #[inline]
-    fn borrow_with_settings<NewS>(&self) -> &BumpScope<'a, Self::Allocator, NewS>
-    where
-        NewS: BumpAllocatorSettings,
-    {
-        BumpScope::borrow_with_settings(self)
-    }
-
-    #[inline]
-    fn borrow_mut_with_settings<NewS>(&mut self) -> &mut BumpScope<'a, Self::Allocator, NewS>
-    where
-        NewS: BumpAllocatorSettings,
-        Self: Sized,
-    {
-        BumpScope::borrow_mut_with_settings(self)
+    fn stats(&self) -> Stats<'a, Self::Settings> {
+        BumpScope::stats(self)
     }
 
     #[inline]
@@ -252,5 +217,10 @@ where
 
             f(bump)
         }
+    }
+
+    #[inline(always)]
+    fn allocator(&self) -> &Self::Allocator {
+        &self.raw.allocator
     }
 }

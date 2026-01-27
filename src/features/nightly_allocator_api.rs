@@ -4,8 +4,8 @@ use core::alloc::{AllocError, Allocator};
 use alloc_crate::{alloc::Global, boxed::Box};
 
 use crate::{
-    BaseAllocator, Bump, BumpScope, WithoutDealloc, WithoutShrink,
-    alloc::{AllocError as CrateAllocError, BoxLike, box_like},
+    Bump, BumpScope, WithoutDealloc, WithoutShrink,
+    alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator, BoxLike, box_like},
     settings::BumpAllocatorSettings,
     traits::BumpAllocatorCore,
 };
@@ -56,13 +56,13 @@ impl_allocator_via_allocator! {
 
     use {self} for core as crate impl[A, S] Bump<A, S>
     where [
-        A: BaseAllocator<S::GuaranteedAllocated>,
+        A: CrateAllocator,
         S: BumpAllocatorSettings,
     ]
 
     use {self} for core as crate impl[A, S] BumpScope<'_, A, S>
     where [
-        A: BaseAllocator<S::GuaranteedAllocated>,
+        A: CrateAllocator,
         S: BumpAllocatorSettings,
     ]
 

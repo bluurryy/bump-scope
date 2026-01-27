@@ -12,7 +12,7 @@ fn convert(bump: Bump<Global, In>) -> Bump<Global, Out> {
 }
 
 fn main() {
-    let input = Bump::<Global, In>::new();
+    let input = Bump::<Global, In>::with_size(512);
     let output = convert(input);
     let test = output.alloc_str("test");
     println!("{test}");

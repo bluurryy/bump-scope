@@ -112,7 +112,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// # Examples
                 /// ```
                 #[doc = concat!("use bump_scope::{Bump, ", stringify!($mod), "::BumpAllocatorTypedScopeExt};")]
-                /// let bump: Bump = Bump::try_new()?;
+                /// let bump: Bump = Bump::new();
                 ///
                 /// let zero = bump.as_scope().try_alloc_zeroed::<i32>()?;
                 /// assert_eq!(*zero, 0);
@@ -155,7 +155,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// # Examples
                 /// ```
                 #[doc = concat!("use bump_scope::{Bump, ", stringify!($mod), "::BumpAllocatorTypedScopeExt};")]
-                /// let bump: Bump = Bump::try_new()?;
+                /// let bump: Bump = Bump::new();
                 ///
                 /// let zeroes = bump.as_scope().try_alloc_zeroed_slice::<i32>(3)?;
                 /// assert_eq!(*zeroes, [0; 3]);
@@ -218,7 +218,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// ```
                 #[doc = concat!("use bump_scope::{Bump, bump_vec, ", stringify!($mod), "::VecExt};")]
                 ///
-                /// let bump: Bump = Bump::try_new()?;
+                /// let bump: Bump = Bump::new();
                 ///
                 /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
                 /// vec.try_extend_zeroed(2)?;
@@ -270,7 +270,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// ```
                 #[doc = concat!("use bump_scope::{Bump, bump_vec, ", stringify!($mod), "::VecExt};")]
                 ///
-                /// let bump: Bump = Bump::try_new()?;
+                /// let bump: Bump = Bump::new();
                 ///
                 /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
                 /// vec.try_resize_zeroed(5)?;
@@ -325,7 +325,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// ```
                 #[doc = concat!("use bump_scope::{Bump, FixedBumpVec, ", stringify!($mod), "::VecExt};")]
                 ///
-                /// let bump: Bump = Bump::try_new()?;
+                /// let bump: Bump = Bump::new();
                 ///
                 /// let mut vec = FixedBumpVec::try_with_capacity_in(5, &bump)?;
                 /// vec.try_extend_from_slice_copy(&[1, 2, 3])?;
@@ -388,7 +388,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// ```
                 #[doc = concat!("use bump_scope::{Bump, FixedBumpVec, ", stringify!($mod), "::VecExt};")]
                 ///
-                /// let bump: Bump = Bump::try_new()?;
+                /// let bump: Bump = Bump::new();
                 ///
                 /// let mut vec = FixedBumpVec::try_with_capacity_in(5, &bump)?;
                 /// vec.try_extend_from_slice_copy(&[1, 2, 3])?;
@@ -448,7 +448,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// ```
                 #[doc = concat!("use bump_scope::{Bump, bump_vec, ", stringify!($mod), "::VecExt};")]
                 ///
-                /// let bump: Bump = Bump::try_new()?;
+                /// let bump: Bump = Bump::new();
                 ///
                 /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
                 /// vec.try_extend_zeroed(2)?;
@@ -508,7 +508,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// ```
                 #[doc = concat!("use bump_scope::{Bump, bump_vec, ", stringify!($mod), "::VecExt};")]
                 ///
-                /// let bump: Bump = Bump::try_new()?;
+                /// let bump: Bump = Bump::new();
                 ///
                 /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
                 /// vec.try_resize_zeroed(5)?;
@@ -566,7 +566,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// ```
                 #[doc = concat!("use bump_scope::{Bump, mut_bump_vec, ", stringify!($mod), "::VecExt};")]
                 ///
-                /// let mut bump: Bump = Bump::try_new()?;
+                /// let mut bump: Bump = Bump::new();
                 ///
                 /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
                 /// vec.try_extend_zeroed(2)?;
@@ -630,7 +630,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// ```
                 #[doc = concat!("use bump_scope::{Bump, mut_bump_vec, ", stringify!($mod), "::VecExt};")]
                 ///
-                /// let mut bump: Bump = Bump::try_new()?;
+                /// let mut bump: Bump = Bump::new();
                 ///
                 /// {
                 ///     let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
@@ -692,7 +692,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// ```
                 #[doc = concat!("use bump_scope::{Bump, mut_bump_vec_rev, ", stringify!($mod), "::VecExt};")]
                 ///
-                /// let mut bump: Bump = Bump::try_new()?;
+                /// let mut bump: Bump = Bump::new();
                 ///
                 /// let mut vec = mut_bump_vec_rev![try in &mut bump; 1, 2, 3]?;
                 /// vec.try_extend_zeroed(2)?;
@@ -756,7 +756,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// ```
                 #[doc = concat!("use bump_scope::{Bump, mut_bump_vec_rev, ", stringify!($mod), "::VecExt};")]
                 ///
-                /// let mut bump: Bump = Bump::try_new()?;
+                /// let mut bump: Bump = Bump::new();
                 ///
                 /// {
                 ///     let mut vec = mut_bump_vec_rev![try in &mut bump; 1, 2, 3]?;

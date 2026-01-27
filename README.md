@@ -260,19 +260,15 @@ Breaking changes to these features might be introduced in minor releases to keep
 [`BumpString`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.BumpString.html
 [`BumpPool`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.BumpPool.html
 [`BumpClaimGuard`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.BumpClaimGuard.html
-[`Allocator`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/alloc/trait.Allocator.html
 [CHANGELOG]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/CHANGELOG/index.html
 [`claim`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/traits/trait.BumpAllocatorScope.html#tymethod.claim
-[`into_guaranteed_allocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.into_guaranteed_allocated
-[`as_mut_guaranteed_allocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.as_mut_guaranteed_allocated
-[`as_guaranteed_allocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.as_guaranteed_allocated
 [`scope_guard`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/traits/trait.BumpAllocator.html#tymethod.scope_guard
 [`aligned`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/traits/trait.BumpAllocatorScope.html#tymethod.aligned
 [`scoped_aligned`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/traits/trait.BumpAllocator.html#tymethod.scoped_aligned
 [`scoped`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/traits/trait.BumpAllocator.html#tymethod.scoped
-[`unallocated`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.unallocated
 [`with_capacity`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.with_capacity
 [`with_size`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.with_size
+[`Allocator`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/alloc/trait.Allocator.html
 [`new`]: https://docs.rs/bump-scope/2.0.0-dev/bump_scope/struct.Bump.html#method.new
 [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
 <!-- crate documentation rest end -->

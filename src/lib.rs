@@ -288,16 +288,13 @@
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
 //! [`new`]: Bump::new
+//! [`Allocator`]: crate::alloc::Allocator
 //! [`with_size`]: Bump::with_size
 //! [`with_capacity`]: Bump::with_capacity
-//! [`unallocated`]: Bump::unallocated
 //! [`scoped`]: crate::traits::BumpAllocator::scoped
 //! [`scoped_aligned`]: crate::traits::BumpAllocator::scoped_aligned
 //! [`aligned`]: crate::traits::BumpAllocatorScope::aligned
 //! [`scope_guard`]: crate::traits::BumpAllocator::scope_guard
-//! [`as_guaranteed_allocated`]: Bump::as_guaranteed_allocated
-//! [`as_mut_guaranteed_allocated`]: Bump::as_mut_guaranteed_allocated
-//! [`into_guaranteed_allocated`]: Bump::into_guaranteed_allocated
 //! [`claim`]: crate::traits::BumpAllocatorScope::claim
 //! <!-- crate documentation rest end -->
 
@@ -344,6 +341,7 @@ pub mod owned_slice;
 pub mod owned_str;
 mod partial_eq;
 mod polyfill;
+mod raw_bump;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
 pub mod settings;
@@ -352,14 +350,13 @@ pub mod stats;
 pub mod traits;
 mod without_dealloc;
 
-use alloc::Allocator;
 pub use bump::Bump;
 pub use bump_box::BumpBox;
 pub use bump_claim_guard::BumpClaimGuard;
 #[cfg(feature = "std")]
 pub use bump_pool::{BumpPool, BumpPoolGuard};
 pub use bump_scope::BumpScope;
-pub use bump_scope_guard::{BumpScopeGuard, BumpScopeGuardRoot, Checkpoint};
+pub use bump_scope_guard::{BumpScopeGuard, Checkpoint};
 pub use bump_string::BumpString;
 #[doc(inline)]
 pub use bump_vec::BumpVec;
@@ -499,45 +496,6 @@ trait SizedTypeProperties: Sized {
 
 impl<T> SizedTypeProperties for T {}
 
-mod supported_base_allocator {
-    use crate::settings::{Boolean, False, True};
-
-    pub trait Sealed<GuaranteedAllocated: Boolean> {
-        #[doc(hidden)]
-        fn default_or_panic() -> Self;
-    }
-
-    impl<A> Sealed<False> for A
-    where
-        A: Default,
-    {
-        fn default_or_panic() -> Self {
-            A::default()
-        }
-    }
-
-    impl<A> Sealed<True> for A {
-        fn default_or_panic() -> Self {
-            unreachable!("default should not be required for `GUARANTEED_ALLOCATED` bump allocators");
-        }
-    }
-}
-
-/// Trait that the base allocator of a `Bump` is required to implement to make allocations.
-///
-/// Every [`Allocator`] that implements [`Clone`] automatically implements `BaseAllocator` when `GuaranteedAllocated`.
-/// When not guaranteed allocated, allocators are additionally required to implement [`Default`].
-///
-/// This trait is *sealed*: the list of implementors below is total.
-pub trait BaseAllocator<GuaranteedAllocated: Boolean>:
-    Allocator + Clone + supported_base_allocator::Sealed<GuaranteedAllocated>
-{
-}
-
-impl<A> BaseAllocator<False> for A where A: Allocator + Clone + Default {}
-
-impl<A> BaseAllocator<True> for A where A: Allocator + Clone {}
-
 /// Call this with a macro that accepts tokens of either `A` or `A = $crate::alloc::Global`.
 ///
 /// We do it this way instead of having a parameter like
@@ -557,8 +515,6 @@ macro_rules! maybe_default_allocator {
 }
 
 pub(crate) use maybe_default_allocator;
-
-use crate::settings::{Boolean, False, True};
 
 // (copied from rust standard library)
 //

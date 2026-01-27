@@ -18,12 +18,15 @@ type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 
 macro_rules! type_definitions {
     ($up:literal) => {
-        type Settings<const MIN_ALIGN: usize> = BumpSettings<MIN_ALIGN, $up, true, false>;
+        type Settings<const MIN_ALIGN: usize> = BumpSettings<
+            /* MIN_ALIGN */ MIN_ALIGN,
+            /* UP */ true,
+            /* GUARANTEED_ALLOCATED */ false,
+            /* CLAIMABLE */ false,
+        >;
         type Bump<const MIN_ALIGN: usize = 1> = bump_scope::Bump<Global, Settings<MIN_ALIGN>>;
         type BumpScope<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScope<'a, Global, Settings<MIN_ALIGN>>;
         type BumpScopeGuard<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuard<'a, Global, Settings<MIN_ALIGN>>;
-        type BumpScopeGuardRoot<'a, const MIN_ALIGN: usize = 1> =
-            bump_scope::BumpScopeGuardRoot<'a, Global, Settings<MIN_ALIGN>>;
         type BumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<T, &'a Bump>;
         type BumpString<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<&'a Bump>;
         type MutBumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<T, &'a mut Bump<MIN_ALIGN>>;
@@ -77,8 +80,8 @@ up_and_down! {
         bump.reset()
     }
 
-    pub fn Bump_try_scoped(bump: &mut Bump, f: Box<dyn FnOnce(BumpScope)>) -> Result<(), AllocError> {
-        bump.try_scoped(f)
+    pub fn Bump_scoped(bump: &mut Bump, f: Box<dyn FnOnce(&mut BumpScope)>) {
+        bump.scoped(f)
     }
 
     pub fn Bump_aligned_inc(bump: &mut Bump, f: Box<dyn FnOnce(&mut BumpScope<8>)>) {
@@ -89,8 +92,8 @@ up_and_down! {
         bump.aligned(f)
     }
 
-    pub fn Bump_scope_guard(bump: &mut Bump) -> Result<BumpScopeGuardRoot, AllocError> {
-        bump.try_scope_guard()
+    pub fn Bump_scope_guard(bump: &mut Bump) -> BumpScopeGuard {
+        bump.scope_guard()
     }
 
     pub fn Bump_with_align(bump: Bump) -> Bump<4> {
@@ -229,8 +232,8 @@ up_and_down! {
         bump.try_alloc_try_with_mut(f)
     }
 
-    pub fn Bump_try_new_in() -> Result<Bump> {
-        Bump::try_new_in(Global)
+    pub fn Bump_new_in() -> Bump {
+        Bump::new_in(Global)
     }
 
     pub fn Bump_try_with_size_in(size: usize) -> Result<Bump> {
@@ -243,10 +246,6 @@ up_and_down! {
 
     pub fn Bump_try_reserve_bytes(bump: &Bump, additional: usize) -> Result {
         bump.try_reserve_bytes(additional)
-    }
-
-    pub fn BumpScope__scope_guard<'b>(bump: &'b mut BumpScope) -> Result<BumpScopeGuard<'b>, AllocError> {
-        bump.try_scope_guard()
     }
 
     pub fn MutBumpVec_try_append(vec: &mut MutBumpVec<u32>, array: [u32; 24]) -> Result {

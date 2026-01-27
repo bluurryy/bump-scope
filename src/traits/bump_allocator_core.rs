@@ -1,10 +1,10 @@
 use core::{alloc::Layout, ops::Range, ptr::NonNull};
 
 use crate::{
-    BaseAllocator, Bump, BumpScope, Checkpoint, WithoutDealloc, WithoutShrink,
+    Bump, BumpScope, Checkpoint, WithoutDealloc, WithoutShrink,
     alloc::{AllocError, Allocator},
-    chunk::{ChunkHeader, RawChunk},
     layout::CustomLayout,
+    raw_bump::RawChunk,
     settings::BumpAllocatorSettings,
     stats::AnyStats,
     traits::{assert_dyn_compatible, assert_implements},
@@ -19,14 +19,14 @@ impl<B: Sealed> Sealed for WithoutShrink<B> {}
 
 impl<A, S> Sealed for Bump<A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
 }
 
 impl<A, S> Sealed for BumpScope<'_, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
 }
@@ -88,30 +88,18 @@ pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     /// # Examples
     ///
     /// ```
-    /// # extern crate alloc;
-    /// use bump_scope::{
-    ///     Bump,
-    ///     alloc::Global,
-    ///     settings::{BumpSettings, BumpAllocatorSettings},
-    ///     traits::BumpAllocatorCore,  
-    /// };
-    /// # use alloc::alloc::Layout;
+    /// # use bump_scope::Bump;
+    /// let bump: Bump = Bump::new();
+    /// let checkpoint = bump.checkpoint();
     ///
-    /// fn test(bump: impl BumpAllocatorCore) {
-    ///     let checkpoint = bump.checkpoint();
-    ///     
-    ///     {
-    ///         let hello = bump.allocate(Layout::new::<[u8;5]>()).unwrap();
-    ///         assert_eq!(bump.any_stats().allocated(), 5);
-    ///         # _ = hello;
-    ///     }
-    ///     
-    ///     unsafe { bump.reset_to(checkpoint); }
-    ///     assert_eq!(bump.any_stats().allocated(), 0);
+    /// {
+    ///     let hello = bump.alloc_str("hello");
+    ///     assert_eq!(bump.stats().allocated(), 5);
+    ///     # _ = hello;
     /// }
     ///
-    /// test(<Bump>::new());
-    /// test(Bump::<Global, <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<false>>::unallocated());
+    /// unsafe { bump.reset_to(checkpoint); }
+    /// assert_eq!(bump.stats().allocated(), 0);
     /// ```
     unsafe fn reset_to(&self, checkpoint: Checkpoint);
 
@@ -314,7 +302,7 @@ unsafe impl<B: BumpAllocatorCore> BumpAllocatorCore for WithoutShrink<B> {
 
 unsafe impl<A, S> BumpAllocatorCore for Bump<A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
@@ -355,7 +343,7 @@ where
 
 unsafe impl<A, S> BumpAllocatorCore for BumpScope<'_, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
@@ -365,65 +353,17 @@ where
 
     #[inline(always)]
     fn checkpoint(&self) -> Checkpoint {
-        Checkpoint::new(self.chunk.get())
+        self.raw.checkpoint()
     }
 
     #[inline]
     unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        debug_assert!(!self.is_claimed());
-
-        // If the checkpoint was created when the bump allocator had no allocated chunk
-        // then the chunk pointer will point to the unallocated chunk header.
-        //
-        // In such cases we reset the bump pointer to the very start of the very first chunk.
-        //
-        // We don't check if the chunk pointer points to the unallocated chunk header
-        // if the bump allocator is `GUARANTEED_ALLOCATED`. We are allowed to not do this check
-        // because of this safety condition of `reset_to`:
-        // > the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
-        if !S::GUARANTEED_ALLOCATED && checkpoint.chunk == ChunkHeader::unallocated::<S>() {
-            if let Some(mut chunk) = self.chunk.get().guaranteed_allocated() {
-                while let Some(prev) = chunk.prev() {
-                    chunk = prev;
-                }
-
-                chunk.reset();
-
-                // SAFETY: casting from guaranteed-allocated to non-guaranteed-allocated is safe
-                self.chunk.set(unsafe { chunk.cast() });
-            }
-        } else {
-            debug_assert_ne!(
-                checkpoint.chunk,
-                ChunkHeader::unallocated::<S>(),
-                "the safety conditions state that \"the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`\""
-            );
-
-            #[cfg(debug_assertions)]
-            {
-                let chunk = self
-                    .stats()
-                    .small_to_big()
-                    .find(|chunk| chunk.header() == checkpoint.chunk.cast())
-                    .expect("this checkpoint does not refer to any chunk of this bump allocator");
-
-                assert!(
-                    chunk.contains_addr_or_end(checkpoint.address.get()),
-                    "checkpoint address does not point within its chunk"
-                );
-            }
-
-            unsafe {
-                checkpoint.reset_within_chunk();
-                let chunk = RawChunk::from_header(checkpoint.chunk.cast());
-                self.chunk.set(chunk);
-            }
-        }
+        unsafe { self.raw.reset_to(checkpoint) }
     }
 
     #[inline(always)]
     fn is_claimed(&self) -> bool {
-        self.chunk.get().is_claimed()
+        self.raw.is_claimed()
     }
 
     #[inline(always)]
@@ -435,13 +375,16 @@ where
             layout: Layout,
         ) -> Result<Range<NonNull<u8>>, AllocError>
         where
-            A: BaseAllocator<S::GuaranteedAllocated>,
+            A: Allocator,
             S: BumpAllocatorSettings,
         {
-            unsafe { this.in_another_chunk(CustomLayout(layout), RawChunk::prepare_allocation_range) }
+            unsafe {
+                this.raw
+                    .in_another_chunk(CustomLayout(layout), RawChunk::prepare_allocation_range)
+            }
         }
 
-        match self.chunk.get().prepare_allocation_range(CustomLayout(layout)) {
+        match self.raw.chunk.get().prepare_allocation_range(CustomLayout(layout)) {
             Some(ptr) => Ok(ptr),
             None => unsafe { prepare_allocation_in_another_chunk(self, layout) },
         }

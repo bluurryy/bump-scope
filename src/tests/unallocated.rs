@@ -11,7 +11,6 @@ either_way! {
     allocated
     unallocated
     unallocated_alloc
-    guaranteed_allocated
     allocated_reserve_bytes
     unallocated_reserve_bytes
     checkpoint
@@ -20,7 +19,6 @@ either_way! {
     allocate_zero_slice
     allocate_zero_layout
     reset
-    non_default_base_allocator
     potential_data_race
 }
 
@@ -32,29 +30,21 @@ fn allocated<const UP: bool>() {
 }
 
 fn unallocated<const UP: bool>() {
-    let bump = <Bump<UP>>::unallocated();
+    let bump = <Bump<UP>>::new();
     assert_eq!(bump.stats().count(), 0);
     drop(bump);
 }
 
 fn unallocated_alloc<const UP: bool>() {
-    let bump = <Bump<UP>>::unallocated();
+    let bump = <Bump<UP>>::new();
     assert_eq!(bump.stats().count(), 0);
     bump.alloc_str("Hello, World!");
     assert_eq!(bump.stats().count(), 1);
     drop(bump);
 }
 
-fn guaranteed_allocated<const UP: bool>() {
-    let bump = <Bump<UP>>::unallocated();
-    assert_eq!(bump.stats().count(), 0);
-    let bump = bump.into_guaranteed_allocated(crate::Bump::new);
-    assert_eq!(bump.stats().count(), 1);
-    drop(bump);
-}
-
 fn allocated_reserve_bytes<const UP: bool>() {
-    let bump = <Bump<UP>>::new();
+    let bump = <Bump<UP>>::with_size(512);
     assert_eq!(bump.stats().count(), 1);
     bump.reserve_bytes(1024);
     assert_eq!(bump.stats().count(), 2);
@@ -63,7 +53,7 @@ fn allocated_reserve_bytes<const UP: bool>() {
 }
 
 fn unallocated_reserve_bytes<const UP: bool>() {
-    let bump = <Bump<UP>>::unallocated();
+    let bump = <Bump<UP>>::new();
     assert_eq!(bump.stats().count(), 0);
     bump.reserve_bytes(1024);
     assert_eq!(bump.stats().count(), 1);
@@ -72,7 +62,7 @@ fn unallocated_reserve_bytes<const UP: bool>() {
 }
 
 fn checkpoint<const UP: bool>() {
-    let bump = <Bump<UP>>::unallocated();
+    let bump = <Bump<UP>>::new();
 
     let checkpoint_unallocated = bump.checkpoint();
     assert_eq!(bump.stats().count(), 0);
@@ -97,7 +87,7 @@ fn checkpoint<const UP: bool>() {
 }
 
 fn checkpoint_multiple_chunks<const UP: bool>() {
-    let bump = <Bump<UP>>::unallocated();
+    let bump = <Bump<UP>>::new();
 
     assert_eq!(bump.stats().count(), 0);
     let c0 = bump.checkpoint();
@@ -129,13 +119,13 @@ fn allocate_another_chunk<const UP: bool>(bump: &Bump<UP>, dummy_size: usize) {
 }
 
 fn allocate_zero_sized<const UP: bool>() {
-    let bump = <Bump<UP>>::unallocated();
+    let bump = <Bump<UP>>::new();
     assert_eq!(bump.alloc(()).into_raw(), NonNull::<()>::dangling());
     assert_eq!(bump.stats().count(), 0);
 }
 
 fn allocate_zero_slice<const UP: bool>() {
-    let bump = <Bump<UP>>::unallocated();
+    let bump = <Bump<UP>>::new();
     assert_eq!(
         bump.alloc_uninit_slice::<i32>(0).into_raw().cast(),
         NonNull::<i32>::dangling()
@@ -144,7 +134,7 @@ fn allocate_zero_slice<const UP: bool>() {
 }
 
 fn allocate_zero_layout<const UP: bool>() {
-    let bump = <Bump<UP>>::unallocated();
+    let bump = <Bump<UP>>::new();
     assert_eq!(
         bump.allocate_layout(Layout::new::<[i32; 0]>()),
         NonNull::<[i32; 0]>::dangling().cast()
@@ -153,42 +143,15 @@ fn allocate_zero_layout<const UP: bool>() {
 }
 
 fn reset<const UP: bool>() {
-    let mut bump = <Bump<UP>>::unallocated();
+    let mut bump = <Bump<UP>>::new();
     bump.reset();
-}
-
-fn non_default_base_allocator<const UP: bool>() {
-    #[derive(Clone)]
-    struct MyAllocator {}
-
-    unsafe impl Allocator for MyAllocator {
-        fn allocate(&self, layout: Layout) -> Result<core::ptr::NonNull<[u8]>, crate::alloc::AllocError> {
-            Global.allocate(layout)
-        }
-
-        unsafe fn deallocate(&self, ptr: core::ptr::NonNull<u8>, layout: Layout) {
-            unsafe { Global.deallocate(ptr, layout) };
-        }
-    }
-
-    let bump = <Bump<UP, MyAllocator>>::unallocated();
-
-    #[cfg(false)] // method is not available
-    bump.alloc_str("test");
-
-    // but this works
-    let test = bump
-        .as_guaranteed_allocated(|| crate::Bump::new_in(MyAllocator {}))
-        .alloc_str("test");
-
-    assert_eq!(test, "test");
 }
 
 // if allocating on the dummy chunk would bump it's position field, even by 0
 // then this cause a data race
 fn potential_data_race<const UP: bool>() {
     fn create_bump_and_alloc<const UP: bool>() {
-        let bump = <Bump<UP>>::unallocated();
+        let bump = <Bump<UP>>::new();
         bump.allocate(Layout::new::<()>()).unwrap();
     }
 

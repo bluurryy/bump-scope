@@ -111,10 +111,12 @@ fn on_stack() {
     let memory = StaticAllocator::<1024>::new();
 
     let bump = Bump::new_in(&memory);
-    assert_eq!(bump.stats().size(), 1024);
 
     let str = bump.alloc_str("It works!");
     println!("{str}");
+
+    // The bump allocator will use the entire memory block returned by `allocate`.
+    assert_eq!(bump.stats().size(), 1024);
 
     bump.try_allocate_layout(Layout::new::<[u8; 2048]>()).unwrap_err();
 }
@@ -125,10 +127,12 @@ fn on_static() {
     let memory = &*guard;
 
     let bump = Bump::new_in(memory);
-    assert_eq!(bump.stats().size(), 1024);
 
     let str = bump.alloc_str("It works!");
     println!("{str}");
+
+    // The bump allocator will use the entire memory block returned by `allocate`.
+    assert_eq!(bump.stats().size(), 1024);
 
     bump.try_allocate_layout(Layout::new::<[u8; 2048]>()).unwrap_err();
 }

@@ -841,7 +841,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let string = BumpString::try_from_str_in("Hello!", &bump)?;
     /// assert_eq!(string, "Hello!");
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -944,7 +944,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     ///
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// // some bytes, in a vector
     /// let sparkle_heart = [240, 159, 146, 150];
     ///
@@ -958,7 +958,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     ///
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// // some invalid bytes
     /// let input = b"Hello \xF0\x90\x80World";
     /// let output = BumpString::try_from_utf8_lossy_in(input, &bump)?;
@@ -1038,7 +1038,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// // 𝄞music
     /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
     ///           0x0073, 0x0069, 0x0063];
@@ -1113,7 +1113,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// // 𝄞mus<invalid>ic<invalid>
     /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075,
     ///           0x0073, 0xDD1E, 0x0069, 0x0063,
@@ -1171,7 +1171,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::try_from_str_in("abc", &bump)?;
     ///
     /// s.try_push('1')?;
@@ -1225,7 +1225,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::try_from_str_in("foo", &bump)?;
     ///
     /// s.try_push_str("bar")?;
@@ -1288,7 +1288,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::try_with_capacity_in(3, &bump)?;
     ///
     /// s.try_insert(0, 'f')?;
@@ -1354,7 +1354,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::try_from_str_in("bar", &bump)?;
     ///
     /// s.try_insert_str(0, "foo")?;
@@ -1417,7 +1417,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut string = BumpString::try_from_str_in("abcde", &bump)?;
     ///
     /// string.try_extend_from_within(2..)?;
@@ -1476,7 +1476,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut string = BumpString::try_from_str_in("What?", &bump)?;
     /// string.try_extend_zeroed(3)?;
     /// assert_eq!(string, "What?\0\0\0");
@@ -1548,7 +1548,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::try_from_str_in("α is alpha, β is beta", &bump)?;
     /// let beta_offset = s.find('β').unwrap_or(s.len());
     ///
@@ -1674,7 +1674,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     ///
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::new_in(&bump);
     ///
     /// s.try_reserve(10)?;
@@ -1687,7 +1687,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     ///
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::try_with_capacity_in(10, &bump)?;
     /// s.push('a');
     /// s.push('b');
@@ -1783,7 +1783,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     ///
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::new_in(&bump);
     ///
     /// s.try_reserve_exact(10)?;
@@ -1796,7 +1796,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     ///
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut s = BumpString::try_with_capacity_in(10, &bump)?;
     /// s.push('a');
     /// s.push('b');
@@ -1962,7 +1962,7 @@ impl<'a, A: BumpAllocatorTypedScope<'a>> BumpString<A> {
     /// # Examples
     /// ```
     /// # use bump_scope::{Bump, BumpString};
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let hello = BumpString::try_from_str_in("Hello, world!", &bump)?;
     /// assert_eq!(hello.try_into_cstr()?, c"Hello, world!");
     ///

@@ -41,7 +41,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc(123)?;
     /// assert_eq!(allocated, 123);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -87,7 +87,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_with(|| 123)?;
     /// assert_eq!(allocated, 123);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -127,7 +127,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_default()?;
     /// assert_eq!(allocated, 0);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -224,7 +224,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     ///
     /// use std::path::Path;
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     ///
     /// let cloned = bump.try_alloc_clone(&[1, 2, 3])?;
     /// assert_eq!(cloned, &[1, 2, 3]);
@@ -262,7 +262,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     ///
     /// assert_eq!(object(), "Hello, world!");
     ///
-    /// let bump: Bump = Bump::try_new()?;
+    /// let bump: Bump = Bump::new();
     /// let object_clone = bump.try_alloc_clone(object)?;
     ///
     /// assert_eq!(object_clone(), "Hello, world!");
@@ -343,7 +343,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// Unsafely:
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut uninit = bump.try_alloc_uninit()?;
     ///
     /// let five = unsafe {
@@ -398,7 +398,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// // by value
     /// let a = bump.try_alloc_slice_move([1, 2])?;
     /// let b = bump.try_alloc_slice_move(vec![3, 4])?;
@@ -457,7 +457,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_slice_copy(&[1, 2, 3])?;
     /// assert_eq!(allocated, [1, 2, 3]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -508,7 +508,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_slice_clone(&[String::from("a"), String::from("b")])?;
     /// assert_eq!(allocated, [String::from("a"), String::from("b")]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -552,7 +552,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_slice_fill(3, "ho")?;
     /// assert_eq!(allocated, ["ho", "ho", "ho"]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -606,7 +606,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_slice_fill_with::<i32>(3, Default::default)?;
     /// assert_eq!(allocated, [0, 0, 0]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -702,7 +702,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// Unsafely:
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let mut uninit = bump.try_alloc_uninit_slice(3)?;
     ///
     /// let values = unsafe {
@@ -780,7 +780,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let slice = &[1, 2, 3];
     /// let uninit_slice = bump.try_alloc_uninit_slice_for(slice)?;
     /// assert_eq!(uninit_slice.len(), 3);
@@ -825,7 +825,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_str("Hello, world!")?;
     /// assert_eq!(allocated, "Hello, world!");
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -887,7 +887,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let one = 1;
     /// let two = 2;
     /// let string = bump.try_alloc_fmt(format_args!("{one} + {two} = {}", one + two))?;
@@ -935,7 +935,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_cstr(c"Hello, world!")?;
     /// assert_eq!(allocated, c"Hello, world!");
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -998,7 +998,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_cstr_from_str("Hello, world!")?;
     /// assert_eq!(allocated, c"Hello, world!");
     ///
@@ -1083,7 +1083,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let one = 1;
     /// let two = 2;
     /// let string = bump.try_alloc_cstr_fmt(format_args!("{one} + {two} = {}", one + two))?;
@@ -1150,7 +1150,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let slice = bump.try_alloc_iter([1, 2, 3])?;
     /// assert_eq!(slice, [1, 2, 3]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -1214,7 +1214,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::try_new()?;
+    /// # let bump: Bump = Bump::new();
     /// let slice = bump.try_alloc_iter_exact([1, 2, 3])?;
     /// assert_eq!(slice, [1, 2, 3]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())

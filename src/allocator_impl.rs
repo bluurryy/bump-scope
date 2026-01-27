@@ -3,33 +3,34 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    BaseAllocator, Bump, BumpScope,
+    Bump, BumpScope,
     alloc::{AllocError, Allocator},
     bump_down,
+    layout::CustomLayout,
     polyfill::non_null,
+    raw_bump::RawBump,
     settings::BumpAllocatorSettings,
-    traits::BumpAllocatorTyped as _,
     up_align_usize_unchecked,
 };
 
 unsafe impl<A, S> Allocator for Bump<A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        self.as_scope().allocate(layout)
+        allocate(&self.raw, layout)
     }
 
     #[inline(always)]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        unsafe { self.as_scope().deallocate(ptr, layout) };
+        unsafe { deallocate(&self.raw, ptr, layout) };
     }
 
     #[inline(always)]
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { self.as_scope().grow(ptr, old_layout, new_layout) }
+        unsafe { grow(&self.raw, ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
@@ -39,33 +40,33 @@ where
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { self.as_scope().grow_zeroed(ptr, old_layout, new_layout) }
+        unsafe { grow_zeroed(&self.raw, ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { self.as_scope().shrink(ptr, old_layout, new_layout) }
+        unsafe { shrink(&self.raw, ptr, old_layout, new_layout) }
     }
 }
 
 unsafe impl<A, S> Allocator for BumpScope<'_, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        allocate(self, layout)
+        allocate(&self.raw, layout)
     }
 
     #[inline(always)]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        unsafe { deallocate(self, ptr, layout) };
+        unsafe { deallocate(&self.raw, ptr, layout) };
     }
 
     #[inline(always)]
     unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { grow(self, ptr, old_layout, new_layout) }
+        unsafe { grow(&self.raw, ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
@@ -75,31 +76,31 @@ where
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { grow_zeroed(self, ptr, old_layout, new_layout) }
+        unsafe { grow_zeroed(&self.raw, ptr, old_layout, new_layout) }
     }
 
     #[inline(always)]
     unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { shrink(self, ptr, old_layout, new_layout) }
+        unsafe { shrink(&self.raw, ptr, old_layout, new_layout) }
     }
 }
 
 #[inline(always)]
-fn allocate<A, S>(bump: &BumpScope<A, S>, layout: Layout) -> Result<NonNull<[u8]>, AllocError>
+fn allocate<A, S>(bump: &RawBump<A, S>, layout: Layout) -> Result<NonNull<[u8]>, AllocError>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     Ok(NonNull::slice_from_raw_parts(
-        bump.try_allocate_layout(layout)?,
+        bump.alloc::<AllocError>(layout)?,
         layout.size(),
     ))
 }
 
 #[inline(always)]
-unsafe fn deallocate<A, S>(bump: &BumpScope<A, S>, ptr: NonNull<u8>, layout: Layout)
+unsafe fn deallocate<A, S>(bump: &RawBump<A, S>, ptr: NonNull<u8>, layout: Layout)
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     if !S::DEALLOCATES {
@@ -115,9 +116,9 @@ where
 }
 
 #[inline(always)]
-unsafe fn deallocate_assume_last<A, S>(bump: &BumpScope<A, S>, ptr: NonNull<u8>, layout: Layout)
+unsafe fn deallocate_assume_last<A, S>(bump: &RawBump<A, S>, ptr: NonNull<u8>, layout: Layout)
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     if !S::DEALLOCATES {
@@ -138,11 +139,12 @@ where
 }
 
 #[inline(always)]
-unsafe fn is_last_and_allocated<A, S>(bump: &BumpScope<A, S>, ptr: NonNull<u8>, layout: Layout) -> bool
+unsafe fn is_last_and_allocated<A, S>(bump: &RawBump<A, S>, ptr: NonNull<u8>, layout: Layout) -> bool
 where
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
-    if bump.chunk.get().is_unallocated() {
+    if bump.is_unallocated() {
         return false;
     }
 
@@ -157,13 +159,13 @@ where
 
 #[inline(always)]
 unsafe fn grow<A, S>(
-    bump: &BumpScope<A, S>,
+    bump: &RawBump<A, S>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     debug_assert!(
@@ -176,7 +178,7 @@ where
             if is_last_and_allocated(bump, old_ptr, old_layout) & align_fits(old_ptr, old_layout, new_layout) {
                 // We may be able to grow in place! Just need to check if there is enough space.
 
-                let chunk = bump.chunk.get().guaranteed_allocated_unchecked();
+                let chunk = bump.chunk.get().as_non_dummy_unchecked();
                 let chunk_end = chunk.content_end();
                 let remaining = chunk_end.addr().get() - old_ptr.addr().get();
 
@@ -200,7 +202,7 @@ where
                 }
             } else {
                 // We can't grow in place. We have to make a new allocation.
-                let new_ptr = bump.try_allocate_layout(new_layout)?;
+                let new_ptr = bump.alloc::<AllocError>(new_layout)?;
                 old_ptr.copy_to_nonoverlapping(new_ptr, old_layout.size());
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
@@ -212,7 +214,7 @@ where
                 let old_addr = old_ptr.addr();
                 let new_addr = bump_down(old_addr, additional_size, new_layout.align().max(S::MIN_ALIGN));
 
-                let chunk = bump.chunk.get().guaranteed_allocated_unchecked();
+                let chunk = bump.chunk.get().as_non_dummy_unchecked();
                 let very_start = chunk.content_start().addr();
 
                 if new_addr >= very_start.get() {
@@ -242,7 +244,7 @@ where
                 }
             } else {
                 // We can't reuse the allocated space. We have to make a new allocation.
-                let new_ptr = bump.try_allocate_layout(new_layout)?;
+                let new_ptr = bump.alloc::<AllocError>(new_layout)?;
                 old_ptr.copy_to_nonoverlapping(new_ptr, old_layout.size());
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
@@ -252,13 +254,13 @@ where
 
 #[inline(always)]
 unsafe fn grow_zeroed<A, S>(
-    bump: &BumpScope<A, S>,
+    bump: &RawBump<A, S>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     unsafe {
@@ -277,26 +279,26 @@ where
 /// and doesn't attempt to recover memory if the alignment doesn't fit.
 #[inline(always)]
 unsafe fn shrink<A, S>(
-    bump: &BumpScope<A, S>,
+    bump: &RawBump<A, S>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     /// Called when `new_layout` doesn't fit alignment.
     #[cold]
     #[inline(never)]
     unsafe fn shrink_unfit<A, S>(
-        bump: &BumpScope<A, S>,
+        bump: &RawBump<A, S>,
         old_ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError>
     where
-        A: BaseAllocator<S::GuaranteedAllocated>,
+        A: Allocator,
         S: BumpAllocatorSettings,
     {
         unsafe {
@@ -307,7 +309,7 @@ where
                 let overlaps;
                 let new_ptr;
 
-                if let Some(in_chunk) = bump.alloc_in_current_chunk(new_layout) {
+                if let Some(in_chunk) = bump.chunk.get().alloc(CustomLayout(new_layout)) {
                     new_ptr = in_chunk;
                     overlaps = if S::UP {
                         let old_ptr_end = old_ptr.add(new_layout.size());
@@ -323,7 +325,7 @@ where
                             // Need to reset the bump pointer to the old position.
 
                             // `is_last_and_allocated` returned true
-                            bump.chunk.get().guaranteed_allocated_unchecked().set_pos(old_pos);
+                            bump.chunk.get().as_non_dummy_unchecked().set_pos(old_pos);
                             return Err(error);
                         }
                     };
@@ -338,7 +340,7 @@ where
 
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             } else {
-                let new_ptr = bump.try_allocate_layout(new_layout)?;
+                let new_ptr = bump.alloc::<AllocError>(new_layout)?;
                 old_ptr.copy_to_nonoverlapping(new_ptr, new_layout.size());
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
@@ -368,7 +370,7 @@ where
             let new_pos = up_align_usize_unchecked(end, S::MIN_ALIGN);
 
             // `is_last_and_allocated` returned true
-            bump.chunk.get().guaranteed_allocated_unchecked().set_pos_addr(new_pos);
+            bump.chunk.get().as_non_dummy_unchecked().set_pos_addr(new_pos);
 
             Ok(NonNull::slice_from_raw_parts(old_ptr, new_layout.size()))
         } else {
@@ -390,7 +392,7 @@ where
             }
 
             // `is_last_and_allocated` returned true
-            bump.chunk.get().guaranteed_allocated_unchecked().set_pos(new_ptr);
+            bump.chunk.get().as_non_dummy_unchecked().set_pos(new_ptr);
 
             Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
         }

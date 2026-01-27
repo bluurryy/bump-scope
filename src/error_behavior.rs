@@ -151,7 +151,6 @@ impl ErrorBehavior for AllocError {
 pub(crate) mod panic {
     #[cold]
     #[inline(never)]
-    #[cfg(feature = "panic-on-alloc")]
     pub(crate) fn claimed() -> ! {
         panic!("bump allocator is claimed");
     }

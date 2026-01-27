@@ -10,16 +10,15 @@ use allocator_api2_02::alloc::Global;
 
 #[cfg(not(feature = "nightly-allocator-api"))]
 use crate::{
-    Bump, BumpScope, WithoutDealloc, WithoutShrink, alloc::AllocError as CrateAllocError, settings::BumpAllocatorSettings,
+    Bump, BumpScope, WithoutDealloc, WithoutShrink,
+    alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator},
+    settings::BumpAllocatorSettings,
     traits::BumpAllocatorCore,
 };
 
 #[cfg(feature = "alloc")]
 #[cfg(not(feature = "nightly-allocator-api"))]
 use crate::alloc::{BoxLike, box_like};
-
-#[cfg(not(feature = "nightly-allocator-api"))]
-use crate::BaseAllocator;
 
 use super::allocator_util::{allocator_compat_wrapper, impl_allocator_via_allocator};
 
@@ -68,25 +67,25 @@ impl_allocator_via_allocator! {
 
     use {self} for allocator_api2_02 as crate impl[A, S] Bump<A, S>
     where [
-        A: BaseAllocator<S::GuaranteedAllocated>,
+        A: CrateAllocator,
         S: BumpAllocatorSettings,
     ]
 
     use {self} for allocator_api2_02 as crate impl[A, S] BumpScope<'_, A, S>
     where [
-        A: BaseAllocator<S::GuaranteedAllocated>,
+        A: CrateAllocator,
         S: BumpAllocatorSettings,
     ]
 
     use {self} for allocator_api2_02 as crate impl[A, S] &mut Bump<A, S>
     where [
-        A: BaseAllocator<S::GuaranteedAllocated>,
+        A: CrateAllocator,
         S: BumpAllocatorSettings,
     ]
 
     use {self} for allocator_api2_02 as crate impl[A, S] &mut BumpScope<'_, A, S>
     where [
-        A: BaseAllocator<S::GuaranteedAllocated>,
+        A: CrateAllocator,
         S: BumpAllocatorSettings,
     ]
 

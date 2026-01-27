@@ -1,26 +1,26 @@
 error[E0080]: evaluation panicked: can't decrease minimum alignment when mutably borrowing with new settings
- --> src/bump_scope.rs
+ --> src/raw_bump.rs
   |
   | /             assert!(
   | |                 NewS::MIN_ALIGN >= S::MIN_ALIGN,
   | |                 "can't decrease minimum alignment when mutably borrowing with new settings"
   | |             );
-  | |_____________^ evaluation of `bump_scope::BumpScope::<'_, bump_scope::alloc::Global, bump_scope::settings::BumpSettings<2>>::borrow_mut_with_settings::<bump_scope::settings::BumpSettings>::{constant#0}` failed here
+  | |_____________^ evaluation of `bump_scope::raw_bump::RawBump::<bump_scope::alloc::Global, bump_scope::settings::BumpSettings<2>>::ensure_satisfies_settings_for_borrow_mut::<bump_scope::settings::BumpSettings>::{constant#0}` failed here
 
 note: erroneous constant encountered
- --> src/bump_scope.rs
+ --> src/raw_bump.rs
   |
   | /         const {
   | |             assert!(NewS::UP == S::UP, "can't change `UP` setting");
   | |
   | |             assert!(
 ... |
-  | |             );
+  | |             assert!(NewS::CLAIMABLE == S::CLAIMABLE, "can't change claimability");
   | |         }
   | |_________^
 
-note: the above error was encountered while instantiating `fn BumpScope::<'_, bump_scope::alloc::Global, BumpSettings<2>>::borrow_mut_with_settings::<BumpSettings>`
+note: the above error was encountered while instantiating `fn bump_scope::raw_bump::RawBump::<bump_scope::alloc::Global, BumpSettings<2>>::ensure_satisfies_settings_for_borrow_mut::<BumpSettings>`
  --> src/bump.rs
   |
-  |         self.as_mut_scope().borrow_mut_with_settings::<NewS>();
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |         self.raw.ensure_satisfies_settings_for_borrow_mut::<NewS>();
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -3,8 +3,8 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    BaseAllocator, Bump, BumpBox, BumpScope, SizedTypeProperties, WithoutDealloc, WithoutShrink,
-    alloc::AllocError,
+    Bump, BumpBox, BumpScope, SizedTypeProperties, WithoutDealloc, WithoutShrink,
+    alloc::{AllocError, Allocator},
     bump_down,
     polyfill::non_null,
     settings::BumpAllocatorSettings,
@@ -347,7 +347,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
-    /// let bump: Bump = Bump::try_new()?;
+    /// let bump: Bump = Bump::new();
     /// assert!(bump.stats().capacity() < 4096);
     ///
     /// bump.try_reserve_bytes(4096)?;
@@ -1021,11 +1021,11 @@ unsafe impl<B: BumpAllocatorTyped> BumpAllocatorTyped for WithoutShrink<B> {
 
 unsafe impl<A, S> BumpAllocatorTyped for BumpScope<'_, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     type TypedStats<'b>
-        = Stats<'b, A, S>
+        = Stats<'b, S>
     where
         Self: 'b;
 
@@ -1037,50 +1037,50 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
-        panic_on_error(self.generic_allocate_layout(layout))
+        panic_on_error(self.raw.alloc(layout))
     }
 
     #[inline(always)]
     fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
-        self.generic_allocate_layout(layout)
+        self.raw.alloc(layout)
     }
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn allocate_sized<T>(&self) -> NonNull<T> {
-        panic_on_error(self.generic_allocate_sized())
+        panic_on_error(self.raw.alloc_sized())
     }
 
     #[inline(always)]
     fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError> {
-        self.generic_allocate_sized()
+        self.raw.alloc_sized()
     }
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T> {
-        panic_on_error(self.generic_allocate_slice(len))
+        panic_on_error(self.raw.alloc_slice(len))
     }
 
     #[inline(always)]
     fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError> {
-        self.generic_allocate_slice(len)
+        self.raw.alloc_slice(len)
     }
 
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice_for<T>(&self, slice: &[T]) -> NonNull<T> {
-        panic_on_error(self.generic_allocate_slice_for(slice))
+        panic_on_error(self.raw.alloc_slice_for(slice))
     }
 
     #[inline(always)]
     fn try_allocate_slice_for<T>(&self, slice: &[T]) -> Result<NonNull<T>, AllocError> {
-        self.generic_allocate_slice_for(slice)
+        self.raw.alloc_slice_for(slice)
     }
 
     #[inline]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        if !S::DEALLOCATES {
+        if !S::SHRINKS {
             return None;
         }
 
@@ -1090,11 +1090,13 @@ where
 
         // Adapted from `Allocator::shrink`.
         unsafe {
-            let is_last_and_allocated = self.chunk.get().is_allocated()
+            // TODO: is the check for allocated still necessary?
+            // seems like a leftover from when dummy chunks were using dangling pointers
+            let is_last_and_allocated = !self.raw.chunk.get().is_dummy()
                 && if S::UP {
-                    old_ptr.as_ptr().add(old_size) == self.chunk.get().pos().as_ptr()
+                    old_ptr.as_ptr().add(old_size) == self.raw.chunk.get().pos().as_ptr()
                 } else {
-                    old_ptr == self.chunk.get().pos()
+                    old_ptr == self.raw.chunk.get().pos()
                 };
 
             // if that's not the last allocation, there is nothing we can do
@@ -1108,8 +1110,8 @@ where
                 // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
                 let new_pos = up_align_usize_unchecked(end, S::MIN_ALIGN);
 
-                // SAFETY: We checked `is_allocated` above
-                self.chunk.get().guaranteed_allocated_unchecked().set_pos_addr(new_pos);
+                // SAFETY: We checked `is_dummy` above
+                self.raw.chunk.get().as_non_dummy_unchecked().set_pos_addr(new_pos);
                 Some(old_ptr.cast())
             } else {
                 let old_addr = old_ptr.addr();
@@ -1128,8 +1130,8 @@ where
                     old_ptr.copy_to_nonoverlapping(new_ptr, new_size);
                 }
 
-                // SAFETY: We checked `is_allocated` above
-                self.chunk.get().guaranteed_allocated_unchecked().set_pos(new_ptr);
+                // SAFETY: We checked `is_dummy` above
+                self.raw.chunk.get().as_non_dummy_unchecked().set_pos(new_ptr);
                 Some(new_ptr.cast())
             }
         }
@@ -1138,12 +1140,12 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn prepare_slice_allocation<T>(&self, len: usize) -> NonNull<[T]> {
-        panic_on_error(BumpScope::generic_prepare_slice_allocation::<_, T>(self, len))
+        panic_on_error(self.raw.prepare_slice_allocation(len))
     }
 
     #[inline(always)]
     fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<NonNull<[T]>, AllocError> {
-        BumpScope::generic_prepare_slice_allocation::<_, T>(self, len)
+        self.raw.prepare_slice_allocation(len)
     }
 
     #[inline(always)]
@@ -1188,22 +1190,22 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn reserve_bytes(&self, additional: usize) {
-        panic_on_error(self.generic_reserve_bytes(additional));
+        panic_on_error(self.raw.reserve_bytes(additional));
     }
 
     #[inline(always)]
     fn try_reserve_bytes(&self, additional: usize) -> Result<(), AllocError> {
-        self.generic_reserve_bytes(additional)
+        self.raw.reserve_bytes(additional)
     }
 }
 
 unsafe impl<A, S> BumpAllocatorTyped for Bump<A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     type TypedStats<'b>
-        = Stats<'b, A, S>
+        = Stats<'b, S>
     where
         Self: 'b;
 

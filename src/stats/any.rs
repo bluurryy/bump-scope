@@ -1,9 +1,6 @@
-use core::{fmt, iter::FusedIterator, marker::PhantomData, mem, ptr::NonNull};
+use core::{fmt, iter::FusedIterator, marker::PhantomData, ptr::NonNull};
 
-use crate::{
-    chunk::ChunkHeader,
-    settings::{BumpAllocatorSettings, True},
-};
+use crate::{chunk::ChunkHeader, settings::BumpAllocatorSettings};
 
 use super::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
 
@@ -15,11 +12,11 @@ pub struct AnyStats<'a> {
     chunk: Option<AnyChunk<'a>>,
 }
 
-impl<A, S> From<Stats<'_, A, S>> for AnyStats<'_>
+impl<S> From<Stats<'_, S>> for AnyStats<'_>
 where
     S: BumpAllocatorSettings,
 {
-    fn from(value: Stats<'_, A, S>) -> Self {
+    fn from(value: Stats<'_, S>) -> Self {
         Self {
             chunk: value.get_current_chunk().map(Into::into),
         }
@@ -147,18 +144,16 @@ impl<'a> From<AnyChunk<'a>> for AnyStats<'a> {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct AnyChunk<'a> {
     header: NonNull<ChunkHeader>,
-    header_size: usize,
     marker: PhantomData<&'a ()>,
 }
 
-impl<A, S> From<Chunk<'_, A, S>> for AnyChunk<'_>
+impl<S> From<Chunk<'_, S>> for AnyChunk<'_>
 where
-    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+    S: BumpAllocatorSettings,
 {
-    fn from(value: Chunk<'_, A, S>) -> Self {
+    fn from(value: Chunk<'_, S>) -> Self {
         Self {
             header: value.chunk.header().cast(),
-            header_size: mem::size_of::<ChunkHeader<A>>(),
             marker: PhantomData,
         }
     }
@@ -191,7 +186,6 @@ impl<'a> AnyChunk<'a> {
     pub fn prev(self) -> Option<Self> {
         Some(AnyChunk {
             header: self.header().prev.get()?,
-            header_size: self.header_size,
             marker: PhantomData,
         })
     }
@@ -202,7 +196,6 @@ impl<'a> AnyChunk<'a> {
     pub fn next(self) -> Option<Self> {
         Some(AnyChunk {
             header: self.header().next.get()?,
-            header_size: self.header_size,
             marker: PhantomData,
         })
     }
@@ -333,7 +326,7 @@ impl<'a> AnyChunk<'a> {
     }
 
     fn after_header(self) -> NonNull<u8> {
-        unsafe { self.header.byte_add(self.header_size).cast() }
+        unsafe { self.header.add(1).cast() }
     }
 }
 
@@ -344,11 +337,11 @@ pub struct AnyChunkPrevIter<'a> {
     pub chunk: Option<AnyChunk<'a>>,
 }
 
-impl<A, S> From<ChunkPrevIter<'_, A, S>> for AnyChunkPrevIter<'_>
+impl<S> From<ChunkPrevIter<'_, S>> for AnyChunkPrevIter<'_>
 where
-    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+    S: BumpAllocatorSettings,
 {
-    fn from(value: ChunkPrevIter<'_, A, S>) -> Self {
+    fn from(value: ChunkPrevIter<'_, S>) -> Self {
         Self {
             chunk: value.chunk.map(Into::into),
         }
@@ -381,11 +374,11 @@ pub struct AnyChunkNextIter<'a> {
     pub chunk: Option<AnyChunk<'a>>,
 }
 
-impl<A, S> From<ChunkNextIter<'_, A, S>> for AnyChunkNextIter<'_>
+impl<S> From<ChunkNextIter<'_, S>> for AnyChunkNextIter<'_>
 where
-    S: BumpAllocatorSettings<GuaranteedAllocated = True>,
+    S: BumpAllocatorSettings,
 {
-    fn from(value: ChunkNextIter<'_, A, S>) -> Self {
+    fn from(value: ChunkNextIter<'_, S>) -> Self {
         Self {
             chunk: value.chunk.map(Into::into),
         }
@@ -415,7 +408,7 @@ impl fmt::Debug for AnyChunkNextIter<'_> {
 fn check_from_impls() {
     #![expect(dead_code, clippy::elidable_lifetime_names)]
 
-    use crate::{BaseAllocator, BumpScope};
+    use crate::{BumpScope, alloc::Allocator};
 
     fn accepting_any_stats(_: AnyStats) {}
     fn accepting_any_chunk(_: AnyChunk) {}
@@ -424,7 +417,7 @@ fn check_from_impls() {
 
     fn generic_bump<'a, A, S>(bump: &BumpScope<'a, A, S>)
     where
-        A: BaseAllocator<S::GuaranteedAllocated>,
+        A: Allocator,
         S: BumpAllocatorSettings,
     {
         let stats = bump.stats();
