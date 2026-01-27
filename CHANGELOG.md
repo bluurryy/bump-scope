@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add new `BumpAllocator(Scope)` trait that allows you to be generic over `Bump` and `BumpScope`
 - Add `SHRINKS` generic parameter, to toggle shrinking for the allocation api, `DEALLOCATES` no longer affects shrinking
 - Made `scope_guard`, `scoped(_aligned)` available for non-guaranteed-allocated allocators
+- Add `(try_)by_value` to turn a `&mut BumpScope` into a `BumpScope`
 - Improve documentation
 
 ### Fixed
@@ -31,15 +32,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `(Mut)BumpAllocatorTypedScopeExt` -> `traits::(Mut)BumpAllocatorTyped`
   - `(Mut)BumpAllocatorScopeExt` -> `traits::(Mut)BumpAllocatorTypedScope`
 - **Breaking:** Implement `bytemuck` and `zerocopy` allocator extension traits for all `T: BumpAllocatorTypedScope` and name them `BumpAllocatorTypedScopeExt`
-- **Breaking:** `aligned` now takes a closure with a `&mut BumpScope` instead of a `BumpScope`
-- **Breaking:** `scope_guard`, `scoped(_aligned)` is now only available with "panic-on-alloc" feature, `try_` variants are available
-- For non-guaranteed-allocated `Stats`, `current_chunk` has been renamed to `get_current_chunk`
-- For non-guaranteed-allocated `BumpScope`, `allocator` has been renamed to `get_allocator`
+- **Breaking:** `scoped`, `scoped_aligned` and `aligned` now take a closure with a `&mut BumpScope` instead of a `BumpScope` (you can get the bump scope by value using `by_value`)
+- `Bump::new(_in)` won't allocate a chunk anymore
 - Remove branch when allocating on a non-guaranteed-allocated `Bump(Scope)`, checking for a layout of `0`
 - Depend on `serde_core` instead of `serde`
 
 ### Removed
 
+- **Breaking:** Remove `unallocated`, becomes `new` or `new_in`
+- **Breaking:** Remove `BaseAllocator`
 - **Breaking:** Remove `alloc_layout` (`allocate_layout` provides the same functionality)
 - **Breaking:** Remove deprecated api
 
