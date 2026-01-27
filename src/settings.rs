@@ -127,6 +127,9 @@ pub trait BumpAllocatorSettings: Sealed {
     /// Whether the allocator tries to shrink allocations.
     const SHRINKS: bool = Self::Shrinks::VALUE;
 
+    /// The minimum size for bump allocation chunk.
+    const MINIMUM_CHUNK_SIZE: usize;
+
     /// The minimum alignment.
     type MinimumAlignment: SupportedMinimumAlignment;
 
@@ -206,6 +209,16 @@ pub trait BumpAllocatorSettings: Sealed {
             Deallocates = Self::Deallocates,
             Shrinks = Bool<VALUE>,
         >;
+
+    /// Changes the minimum chunk size.
+    type WithMinimumChunkSize<const VALUE: usize>: BumpAllocatorSettings<
+            MinimumAlignment = Self::MinimumAlignment,
+            Up = Self::Up,
+            GuaranteedAllocated = Self::GuaranteedAllocated,
+            Claimable = Self::Claimable,
+            Deallocates = Self::Deallocates,
+            Shrinks = Self::Shrinks,
+        >;
 }
 
 /// Implementor of [`BumpAllocatorSettings`].
@@ -218,6 +231,7 @@ pub struct BumpSettings<
     const CLAIMABLE: bool = true,
     const DEALLOCATES: bool = true,
     const SHRINKS: bool = true,
+    const MINIMUM_CHUNK_SIZE: usize = 512,
 >;
 
 impl<
@@ -227,7 +241,8 @@ impl<
     const CLAIMABLE: bool,
     const DEALLOCATES: bool,
     const SHRINKS: bool,
-> Sealed for BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, CLAIMABLE, DEALLOCATES, SHRINKS>
+    const MINIMUM_CHUNK_SIZE: usize,
+> Sealed for BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, CLAIMABLE, DEALLOCATES, SHRINKS, MINIMUM_CHUNK_SIZE>
 {
 }
 
@@ -238,10 +253,14 @@ impl<
     const CLAIMABLE: bool,
     const DEALLOCATES: bool,
     const SHRINKS: bool,
-> BumpAllocatorSettings for BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, CLAIMABLE, DEALLOCATES, SHRINKS>
+    const MINIMUM_CHUNK_SIZE: usize,
+> BumpAllocatorSettings
+    for BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, CLAIMABLE, DEALLOCATES, SHRINKS, MINIMUM_CHUNK_SIZE>
 where
     MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
 {
+    const MINIMUM_CHUNK_SIZE: usize = MINIMUM_CHUNK_SIZE;
+
     type MinimumAlignment = MinimumAlignment<MIN_ALIGN>;
     type Up = Bool<UP>;
     type GuaranteedAllocated = Bool<GUARANTEED_ALLOCATED>;
@@ -250,14 +269,21 @@ where
     type Shrinks = Bool<SHRINKS>;
 
     type WithMinimumAlignment<const VALUE: usize>
-        = BumpSettings<VALUE, UP, GUARANTEED_ALLOCATED, CLAIMABLE, DEALLOCATES, SHRINKS>
+        = BumpSettings<VALUE, UP, GUARANTEED_ALLOCATED, CLAIMABLE, DEALLOCATES, SHRINKS, MINIMUM_CHUNK_SIZE>
     where
         MinimumAlignment<VALUE>: SupportedMinimumAlignment;
-    type WithUp<const VALUE: bool> = BumpSettings<MIN_ALIGN, VALUE, GUARANTEED_ALLOCATED, CLAIMABLE, DEALLOCATES, SHRINKS>;
-    type WithGuaranteedAllocated<const VALUE: bool> = BumpSettings<MIN_ALIGN, UP, VALUE, CLAIMABLE, DEALLOCATES, SHRINKS>;
-    type WithClaimable<const VALUE: bool> = BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, VALUE, DEALLOCATES, SHRINKS>;
-    type WithDeallocates<const VALUE: bool> = BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, CLAIMABLE, VALUE, SHRINKS>;
-    type WithShrinks<const VALUE: bool> = BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, CLAIMABLE, DEALLOCATES, VALUE>;
+    type WithUp<const VALUE: bool> =
+        BumpSettings<MIN_ALIGN, VALUE, GUARANTEED_ALLOCATED, CLAIMABLE, DEALLOCATES, SHRINKS, MINIMUM_CHUNK_SIZE>;
+    type WithGuaranteedAllocated<const VALUE: bool> =
+        BumpSettings<MIN_ALIGN, UP, VALUE, CLAIMABLE, DEALLOCATES, SHRINKS, MINIMUM_CHUNK_SIZE>;
+    type WithClaimable<const VALUE: bool> =
+        BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, VALUE, DEALLOCATES, SHRINKS, MINIMUM_CHUNK_SIZE>;
+    type WithDeallocates<const VALUE: bool> =
+        BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, CLAIMABLE, VALUE, SHRINKS, MINIMUM_CHUNK_SIZE>;
+    type WithShrinks<const VALUE: bool> =
+        BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, CLAIMABLE, DEALLOCATES, VALUE, MINIMUM_CHUNK_SIZE>;
+    type WithMinimumChunkSize<const VALUE: usize> =
+        BumpSettings<MIN_ALIGN, UP, GUARANTEED_ALLOCATED, CLAIMABLE, DEALLOCATES, SHRINKS, VALUE>;
 }
 
 /// Either [`True`] or [`False`].

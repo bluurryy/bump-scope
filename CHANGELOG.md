@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `SHRINKS` generic parameter, to toggle shrinking for the allocation api, `DEALLOCATES` no longer affects shrinking
 - Made `scope_guard`, `scoped(_aligned)` available for non-guaranteed-allocated allocators
 - Add `(try_)by_value` to turn a `&mut BumpScope` into a `BumpScope`
+- Add `MINIMUM_CHUNK_SIZE` setting
 - Improve documentation
 
 ### Fixed

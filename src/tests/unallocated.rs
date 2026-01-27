@@ -2,6 +2,7 @@ use core::{alloc::Layout, ptr::NonNull};
 
 use crate::{
     alloc::{Allocator, Global},
+    chunk::AssumedMallocOverhead,
     settings::{BumpAllocatorSettings, BumpSettings},
     tests::either_way,
     traits::{BumpAllocatorCore, BumpAllocatorTyped},
@@ -20,6 +21,8 @@ either_way! {
     allocate_zero_layout
     reset
     potential_data_race
+    default_chunk_size
+    custom_chunk_size
 }
 
 type Bump<const UP: bool, A = Global> = crate::Bump<A, BumpSettings<1, UP, false, true>>;
@@ -157,4 +160,26 @@ fn potential_data_race<const UP: bool>() {
 
     std::thread::spawn(create_bump_and_alloc::<UP>);
     std::thread::spawn(create_bump_and_alloc::<UP>);
+}
+
+fn default_chunk_size<const UP: bool>() {
+    let bump: crate::Bump<Global, BumpSettings<1, UP>> = crate::Bump::new();
+    assert_eq!(bump.stats().count(), 0);
+    bump.alloc("a");
+    assert_eq!(bump.stats().count(), 1);
+    assert_eq!(
+        bump.stats().get_current_chunk().unwrap().size(),
+        512 - size_of::<AssumedMallocOverhead>()
+    );
+}
+
+fn custom_chunk_size<const UP: bool>() {
+    let bump: crate::Bump<Global, BumpSettings<1, UP, false, true, true, true, 4096>> = crate::Bump::new();
+    assert_eq!(bump.stats().count(), 0);
+    bump.alloc("a");
+    assert_eq!(bump.stats().count(), 1);
+    assert_eq!(
+        bump.stats().get_current_chunk().unwrap().size(),
+        4096 - size_of::<AssumedMallocOverhead>()
+    );
 }

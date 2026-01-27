@@ -878,7 +878,14 @@ where
     where
         E: ErrorBehavior,
     {
-        let layout = chunk_size.layout().ok_or_else(E::capacity_overflow)?;
+        let min_size = const {
+            match ChunkSize::<S::Up>::from_hint(S::MINIMUM_CHUNK_SIZE) {
+                Some(some) => some,
+                None => panic!("failed to calculate minimum chunk size"),
+            }
+        };
+
+        let layout = chunk_size.max(min_size).layout().ok_or_else(E::capacity_overflow)?;
 
         let allocation = match allocator.allocate(layout) {
             Ok(ok) => ok,

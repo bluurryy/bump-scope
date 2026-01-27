@@ -69,6 +69,10 @@ where
             Err(_) => None,
         }
     }
+
+    pub const fn max(self, other: Self) -> Self {
+        if self.size.get() > other.size.get() { self } else { other }
+    }
 }
 pub struct ChunkSizeHint<Up>(usize, PhantomData<fn() -> Up>);
 

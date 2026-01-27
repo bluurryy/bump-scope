@@ -79,6 +79,10 @@ use crate::{
 
 pub(crate) use test_wrap::TestWrap;
 
+type SettingNoMinSize<const UP: bool> = BumpSettings<1, UP, false, true, true, true, 0>;
+type BumpNoMinSize<const UP: bool, A = Global> = crate::Bump<A, SettingNoMinSize<UP>>;
+type BumpScopeNoMinSize<'a, const UP: bool, A = Global> = crate::BumpScope<'a, A, SettingNoMinSize<UP>>;
+
 #[expect(dead_code)]
 fn assert_covariant() {
     fn bump_box<'a, 'other>(x: BumpBox<'static, &'static str>) -> BumpBox<'a, &'other str> {
@@ -221,7 +225,7 @@ fn mut_bump_vec<const UP: bool>() {
     const TIMES: usize = 5;
 
     for (size, count) in [(0, 2), (512, 1)] {
-        let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(size);
+        let mut bump = BumpNoMinSize::<UP>::with_size(size);
         let mut vec = MutBumpVec::new_in(&mut bump);
         assert_eq!(vec.allocator_stats().count(), 1);
         vec.extend(iter::repeat_n(3, TIMES));
@@ -320,7 +324,7 @@ fn mut_bump_vec_drop<const UP: bool>() {
     const SIZE: usize = 32;
     assert_eq!(mem::size_of::<ChunkHeader>(), SIZE);
 
-    let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
+    let mut bump = BumpNoMinSize::<UP>::with_size(64);
     assert_eq!(bump.stats().get_current_chunk().unwrap().size(), 64 - MALLOC_OVERHEAD);
     assert_eq!(bump.stats().capacity(), 64 - OVERHEAD);
     assert_eq!(bump.stats().remaining(), 64 - OVERHEAD);
@@ -374,7 +378,7 @@ fn alloc_iter<const UP: bool>() {
 }
 
 fn reset_single_chunk<const UP: bool>() {
-    let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
+    let mut bump = BumpNoMinSize::<UP>::with_size(64);
     assert_chunk_sizes!(bump, [], 64, []);
     bump.reset();
     assert_chunk_sizes!(bump, [], 64, []);
@@ -401,20 +405,20 @@ fn macro_syntax<const UP: bool>() {
     check(mut_bump_vec![in &mut bump; 5; 3], &[5, 5, 5]);
 }
 
-fn debug_sizes<const UP: bool>(bump: &Bump<Global, BumpSettings<1, UP>>) {
-    let iter = bump.stats().small_to_big();
+fn debug_sizes(bump: &impl BumpAllocator) {
+    let iter = bump.as_scope().stats().small_to_big();
     let vec = iter.map(Chunk::size).collect::<Vec<_>>();
     eprintln!("sizes: {vec:?}");
 }
 
-fn force_alloc_new_chunk<const UP: bool>(bump: &BumpScope<Global, BumpSettings<1, UP>>) {
+fn force_alloc_new_chunk<const UP: bool>(bump: &BumpScopeNoMinSize<UP>) {
     let size = bump.stats().get_current_chunk().unwrap().remaining() + 1;
     let layout = Layout::from_size_align(size, 1).unwrap();
     bump.allocate_layout(layout);
 }
 
 fn reset_first_chunk<const UP: bool>() {
-    let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
+    let mut bump = BumpNoMinSize::<UP>::with_size(64);
 
     bump.scoped(|scope| {
         force_alloc_new_chunk(scope);
@@ -427,7 +431,7 @@ fn reset_first_chunk<const UP: bool>() {
 }
 
 fn reset_middle_chunk<const UP: bool>() {
-    let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
+    let mut bump = BumpNoMinSize::<UP>::with_size(64);
     force_alloc_new_chunk(bump.as_scope());
 
     bump.scoped(|scope| {
@@ -440,7 +444,7 @@ fn reset_middle_chunk<const UP: bool>() {
 }
 
 fn reset_last_chunk<const UP: bool>() {
-    let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
+    let mut bump = BumpNoMinSize::<UP>::with_size(64);
     force_alloc_new_chunk(bump.as_scope());
     force_alloc_new_chunk(bump.as_scope());
     assert_chunk_sizes!(bump, [128, 64], 256, []);
@@ -1213,15 +1217,12 @@ fn panic_payload_string(payload: Box<dyn Any + Send>) -> Result<String, Box<dyn 
 }
 
 fn chunk_size_0<const UP: bool>() {
-    assert_eq!(
-        Bump::<Global, BumpSettings<1, UP>>::with_size(0).stats().size(),
-        64 - size_of::<[usize; 2]>()
-    );
+    assert_eq!(BumpNoMinSize::<UP>::with_size(0).stats().size(), 64 - size_of::<[usize; 2]>());
 }
 
 fn chunk_size_512<const UP: bool>() {
     assert_eq!(
-        Bump::<Global, BumpSettings<1, UP>>::with_size(512).stats().size(),
+        BumpNoMinSize::<UP>::with_size(512).stats().size(),
         512 - size_of::<[usize; 2]>()
     );
 }
