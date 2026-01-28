@@ -40,7 +40,7 @@ macro_rules! make_type {
     ($($allocator_parameter:tt)*) => {
         /// A bump allocation scope.
         ///
-        /// A `BumpScope`'s allocations are live for `'a`, which is the lifetime of its associated `BumpScopeGuard(Root)` or `scoped` closure.
+        /// A `BumpScope`'s allocations are live for `'a`, which is the lifetime of its associated `BumpScopeGuard` or `scoped` closure.
         ///
         /// `BumpScope` has mostly same api as [`Bump`].
         ///

@@ -368,8 +368,7 @@ where
     #[cold]
     #[inline(never)]
     pub(crate) fn alloc_in_another_chunk<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
-        // A zero-sized allocation on a dummy chunk
-        // An allocation of size 0 will fail if we currently use the "unallodated" dummy chunk.
+        // A zero-sized allocation on a dummy chunk will fail if we currently use the "unallodated" dummy chunk.
         // In this case we don't want to allocate a chunk, just return a dangling pointer.
         if (S::CLAIMABLE || !S::GUARANTEED_ALLOCATED) && layout.size() == 0 {
             return Ok(polyfill::layout::dangling(layout));
