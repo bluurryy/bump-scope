@@ -6,6 +6,7 @@
 
 pub(crate) mod hint;
 pub(crate) mod iter;
+#[cfg(feature = "alloc")]
 pub(crate) mod layout;
 pub(crate) mod non_null;
 pub(crate) mod pointer;

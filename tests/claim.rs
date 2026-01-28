@@ -56,42 +56,8 @@ fn api_fails_on_claimed_bump<const UP: bool>() {
     trait Whatever {}
     impl<T: ?Sized> Whatever for T {}
 
-    trait IsDangling {
-        fn is_dangling(&self) -> bool;
-    }
-
-    impl<T> IsDangling for NonNull<T> {
-        fn is_dangling(&self) -> bool {
-            *self == NonNull::dangling()
-        }
-    }
-
-    impl<T> IsDangling for NonNull<[T]> {
-        fn is_dangling(&self) -> bool {
-            self.cast::<u8>().is_dangling()
-        }
-    }
-
-    impl<T> IsDangling for BumpBox<'_, T>
-    where
-        T: ?Sized,
-        NonNull<T>: IsDangling,
-    {
-        fn is_dangling(&self) -> bool {
-            BumpBox::as_raw(self).is_dangling()
-        }
-    }
-
     fn expect_err(result: Result<impl Whatever, AllocError>) {
         assert!(result.is_err());
-    }
-
-    fn expect_dangling(ptr: impl IsDangling) {
-        assert!(ptr.is_dangling());
-    }
-
-    fn expect_dangling_ok(result: Result<impl IsDangling, AllocError>) {
-        expect_dangling(result.unwrap());
     }
 
     fn expect_panic<R>(f: impl FnMut() -> R) {
@@ -117,11 +83,11 @@ fn api_fails_on_claimed_bump<const UP: bool>() {
     // Allocator
     {
         // allocate
-        expect_dangling_ok(bump.allocate(Layout::new::<()>()));
+        expect_err(bump.allocate(Layout::new::<()>()));
         expect_err(bump.allocate(Layout::new::<u8>()));
 
         // allocate_zeroed
-        expect_dangling_ok(bump.allocate_zeroed(Layout::new::<()>()));
+        expect_err(bump.allocate_zeroed(Layout::new::<()>()));
         expect_err(bump.allocate_zeroed(Layout::new::<u8>()));
 
         // grow
@@ -157,30 +123,30 @@ fn api_fails_on_claimed_bump<const UP: bool>() {
     // BumpAllocatorTyped
     {
         // allocate_layout
-        expect_dangling(bump.allocate_layout(Layout::new::<()>()));
-        expect_dangling_ok(bump.try_allocate_layout(Layout::new::<()>()));
+        expect_panic(|| bump.allocate_layout(Layout::new::<()>()));
+        expect_err(bump.try_allocate_layout(Layout::new::<()>()));
         expect_panic(|| bump.allocate_layout(Layout::new::<u8>()));
         expect_err(bump.try_allocate_layout(Layout::new::<u8>()));
 
         // allocate_sized
-        expect_dangling(bump.allocate_sized::<()>());
-        expect_dangling_ok(bump.try_allocate_sized::<()>());
+        expect_panic(|| bump.allocate_sized::<()>());
+        expect_err(bump.try_allocate_sized::<()>());
         expect_panic(|| bump.allocate_sized::<u8>());
         expect_err(bump.try_allocate_sized::<u8>());
 
         // allocate_slice
-        expect_dangling(bump.allocate_slice::<()>(123));
-        expect_dangling_ok(bump.try_allocate_slice::<()>(123));
-        expect_dangling(bump.allocate_slice::<u8>(0));
-        expect_dangling_ok(bump.try_allocate_slice::<u8>(0));
+        expect_panic(|| bump.allocate_slice::<()>(123));
+        expect_err(bump.try_allocate_slice::<()>(123));
+        expect_panic(|| bump.allocate_slice::<u8>(0));
+        expect_err(bump.try_allocate_slice::<u8>(0));
         expect_panic(|| bump.allocate_slice::<u8>(1));
         expect_err(bump.try_allocate_slice::<u8>(1));
 
         // allocate_slice_for
-        expect_dangling(bump.allocate_slice_for::<()>(&[(), (), ()]));
-        expect_dangling_ok(bump.try_allocate_slice_for::<()>(&[(), (), ()]));
-        expect_dangling(bump.allocate_slice_for::<u8>(&[]));
-        expect_dangling_ok(bump.try_allocate_slice_for::<u8>(&[]));
+        expect_panic(|| bump.allocate_slice_for::<()>(&[(), (), ()]));
+        expect_err(bump.try_allocate_slice_for::<()>(&[(), (), ()]));
+        expect_panic(|| bump.allocate_slice_for::<u8>(&[]));
+        expect_err(bump.try_allocate_slice_for::<u8>(&[]));
         expect_panic(|| bump.allocate_slice_for::<u8>(&[1]));
         expect_err(bump.try_allocate_slice_for::<u8>(&[1]));
 

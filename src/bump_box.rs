@@ -253,6 +253,16 @@ impl<T> BumpBox<'_, T> {
             marker: PhantomData,
         }
     }
+
+    #[must_use]
+    #[inline(always)]
+    pub(crate) fn zst_uninit() -> BumpBox<'static, MaybeUninit<T>> {
+        assert!(T::IS_ZST);
+        BumpBox {
+            ptr: NonNull::dangling(),
+            marker: PhantomData,
+        }
+    }
 }
 
 impl<'a, T: ?Sized + NoDrop> BumpBox<'a, T> {

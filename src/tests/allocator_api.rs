@@ -75,14 +75,15 @@ fn grow_last_out_of_place<const UP: bool>() {
 }
 
 fn allocate_zst_returns_dangling<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
     let dangling_addr = NonNull::<()>::dangling().addr();
 
-    // make sure there is no capacity left on its chunk
+    // create a bump allocator with a chunk with no capacity
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
     assert_eq!(bump.stats().count(), 1);
     bump.allocate(Layout::array::<u8>(bump.stats().remaining()).unwrap()).unwrap();
     assert_eq!(bump.stats().remaining(), 0);
     assert_eq!(bump.stats().count(), 1);
+    let start_allocated = bump.stats().allocated();
 
     macro_rules! must_dangle {
         ($($expr:expr,)*) => {
@@ -96,14 +97,22 @@ fn allocate_zst_returns_dangling<const UP: bool>() {
         };
     }
 
-    // typed allocation functions should return dangling pointers for zsts
-    // and not go through the allocation machinery
+    // the alloc api must return dangling pointers
     must_dangle! {
         bump.alloc::<()>(()).into_raw(),
         bump.try_alloc::<()>(()).unwrap().into_raw(),
 
         bump.alloc_uninit::<()>().into_raw(),
         bump.try_alloc_uninit::<()>().unwrap().into_raw(),
+    }
+
+    // the allocate api must not return dangling pointers
+    mustnt_dangle! {
+        bump.allocate(Layout::new::<()>()).unwrap(),
+        bump.allocate_zeroed(Layout::new::<()>()).unwrap(),
+
+        bump.allocate_layout(Layout::new::<()>()),
+        bump.try_allocate_layout(Layout::new::<()>()).unwrap(),
 
         bump.allocate_sized::<()>(),
         bump.try_allocate_sized::<()>().unwrap(),
@@ -122,20 +131,11 @@ fn allocate_zst_returns_dangling<const UP: bool>() {
 
         (&bump as &dyn BumpAllocatorCore).allocate_slice_for::<()>(&[]),
         (&bump as &dyn BumpAllocatorCore).try_allocate_slice_for::<()>(&[]).unwrap(),
-
-    }
-
-    // it'd be fine for those to return dangling pointers, they currently don't though
-    mustnt_dangle! {
-        bump.allocate_layout(Layout::new::<()>()),
-        bump.try_allocate_layout(Layout::new::<()>()).unwrap(),
-
-        bump.allocate(Layout::new::<()>()).unwrap(),
-        bump.allocate_zeroed(Layout::new::<()>()).unwrap(),
     }
 
     // this mustn't have allocated another chunk
     assert_eq!(bump.stats().count(), 1);
+    assert_eq!(bump.stats().allocated(), start_allocated);
 }
 
 fn allocate_zst_returns_dangling_unallocated<const UP: bool>() {
@@ -143,17 +143,33 @@ fn allocate_zst_returns_dangling_unallocated<const UP: bool>() {
     let dangling_addr = NonNull::<()>::dangling().addr();
 
     macro_rules! must_dangle {
-            ($($expr:expr,)*) => {
-                $(assert_eq!(dangling_addr, $expr.addr(), stringify!($expr));)*
-            };
-        }
+        ($($expr:expr,)*) => {
+            $(assert_eq!(dangling_addr, $expr.addr(), stringify!($expr));)*
+        };
+    }
 
+    macro_rules! mustnt_dangle {
+        ($($expr:expr,)*) => {
+            $(assert_ne!(dangling_addr, $expr.addr(), stringify!($expr));)*
+        };
+    }
+
+    // the alloc api must return dangling pointers
     must_dangle! {
         bump.alloc::<()>(()).into_raw(),
         bump.try_alloc::<()>(()).unwrap().into_raw(),
 
         bump.alloc_uninit::<()>().into_raw(),
         bump.try_alloc_uninit::<()>().unwrap().into_raw(),
+    }
+
+    // this mustn't have allocated a chunk
+    assert_eq!(bump.stats().count(), 0);
+
+    // the allocate api must not return dangling pointers
+    mustnt_dangle! {
+        bump.allocate(Layout::new::<()>()).unwrap(),
+        bump.allocate_zeroed(Layout::new::<()>()).unwrap(),
 
         bump.allocate_layout(Layout::new::<()>()),
         bump.try_allocate_layout(Layout::new::<()>()).unwrap(),
@@ -175,11 +191,9 @@ fn allocate_zst_returns_dangling_unallocated<const UP: bool>() {
 
         (&bump as &dyn BumpAllocatorCore).allocate_slice_for::<()>(&[]),
         (&bump as &dyn BumpAllocatorCore).try_allocate_slice_for::<()>(&[]).unwrap(),
-
-        bump.allocate(Layout::new::<()>()).unwrap(),
-        bump.allocate_zeroed(Layout::new::<()>()).unwrap(),
     }
 
-    // this mustn't have allocated a chunk
-    assert_eq!(bump.stats().count(), 0);
+    // this must have allocate a chunk (but takes up no capacity)
+    assert_eq!(bump.stats().count(), 1);
+    assert_eq!(bump.stats().allocated(), 0);
 }

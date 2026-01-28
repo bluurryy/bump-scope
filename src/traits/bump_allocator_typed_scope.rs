@@ -316,6 +316,10 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_uninit<T>(&self) -> BumpBox<'a, MaybeUninit<T>> {
+        if T::IS_ZST {
+            return BumpBox::zst_uninit();
+        }
+
         let ptr = self.allocate_sized();
         unsafe { BumpBox::from_raw(ptr) }
     }
@@ -356,6 +360,10 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// ```
     #[inline(always)]
     fn try_alloc_uninit<T>(&self) -> Result<BumpBox<'a, MaybeUninit<T>>, AllocError> {
+        if T::IS_ZST {
+            return Ok(BumpBox::zst_uninit());
+        }
+
         let ptr = self.try_allocate_sized()?;
         unsafe { Ok(BumpBox::from_raw(ptr)) }
     }

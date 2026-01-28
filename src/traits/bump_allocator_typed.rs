@@ -503,10 +503,6 @@ mod for_trait_object {
     #[inline]
     #[cfg(feature = "panic-on-alloc")]
     pub(super) fn allocate_sized<T>(bump: impl BumpAllocatorCore) -> NonNull<T> {
-        if T::IS_ZST {
-            return NonNull::dangling();
-        }
-
         let layout = Layout::new::<T>();
 
         match bump.allocate(layout) {
@@ -517,10 +513,6 @@ mod for_trait_object {
 
     #[inline]
     pub(super) fn try_allocate_sized<T>(bump: impl BumpAllocatorCore) -> Result<NonNull<T>, AllocError> {
-        if T::IS_ZST {
-            return Ok(NonNull::dangling());
-        }
-
         match bump.allocate(Layout::new::<T>()) {
             Ok(ptr) => Ok(ptr.cast()),
             Err(err) => Err(err),
@@ -530,10 +522,6 @@ mod for_trait_object {
     #[inline]
     #[cfg(feature = "panic-on-alloc")]
     pub(super) fn allocate_slice<T>(bump: impl BumpAllocatorCore, len: usize) -> NonNull<T> {
-        if T::IS_ZST {
-            return NonNull::dangling();
-        }
-
         let Ok(layout) = Layout::array::<T>(len) else {
             invalid_slice_layout()
         };
@@ -546,10 +534,6 @@ mod for_trait_object {
 
     #[inline]
     pub(super) fn try_allocate_slice<T>(bump: impl BumpAllocatorCore, len: usize) -> Result<NonNull<T>, AllocError> {
-        if T::IS_ZST {
-            return Ok(NonNull::dangling());
-        }
-
         let Ok(layout) = Layout::array::<T>(len) else {
             return Err(AllocError);
         };
@@ -563,10 +547,6 @@ mod for_trait_object {
     #[inline]
     #[cfg(feature = "panic-on-alloc")]
     pub(super) fn allocate_slice_for<T>(bump: impl BumpAllocatorCore, slice: &[T]) -> NonNull<T> {
-        if T::IS_ZST {
-            return NonNull::dangling();
-        }
-
         let layout = Layout::for_value(slice);
 
         match bump.allocate(layout) {
@@ -577,10 +557,6 @@ mod for_trait_object {
 
     #[inline]
     pub(super) fn try_allocate_slice_for<T>(bump: impl BumpAllocatorCore, slice: &[T]) -> Result<NonNull<T>, AllocError> {
-        if T::IS_ZST {
-            return Ok(NonNull::dangling());
-        }
-
         let layout = Layout::for_value(slice);
 
         match bump.allocate(layout) {

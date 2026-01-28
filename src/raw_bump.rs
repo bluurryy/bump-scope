@@ -15,7 +15,7 @@ use crate::{
     chunk::{ChunkHeader, ChunkSize, ChunkSizeHint},
     error_behavior::{self, ErrorBehavior},
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
-    polyfill::{self, non_null},
+    polyfill::non_null,
     settings::{BumpAllocatorSettings, False, MinimumAlignment, SupportedMinimumAlignment, True},
     stats::Stats,
 };
@@ -271,10 +271,6 @@ where
 
     #[inline(always)]
     pub(crate) fn alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
-        if T::IS_ZST {
-            return Ok(NonNull::dangling());
-        }
-
         match self.chunk.get().alloc(SizedLayout::new::<T>()) {
             Some(ptr) => Ok(ptr.cast()),
             None => match self.alloc_sized_in_another_chunk::<E, T>() {
@@ -286,10 +282,6 @@ where
 
     #[inline(always)]
     pub(crate) fn alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
-        if T::IS_ZST {
-            return Ok(NonNull::dangling());
-        }
-
         let Ok(layout) = ArrayLayout::array::<T>(len) else {
             return Err(E::capacity_overflow());
         };
@@ -305,10 +297,6 @@ where
 
     #[inline(always)]
     pub(crate) fn alloc_slice_for<E: ErrorBehavior, T>(&self, value: &[T]) -> Result<NonNull<T>, E> {
-        if T::IS_ZST {
-            return Ok(NonNull::dangling());
-        }
-
         let layout = ArrayLayout::for_value(value);
 
         match self.chunk.get().alloc(layout) {
@@ -368,12 +356,6 @@ where
     #[cold]
     #[inline(never)]
     pub(crate) fn alloc_in_another_chunk<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
-        // A zero-sized allocation on a dummy chunk will fail if we currently use the "unallodated" dummy chunk.
-        // In this case we don't want to allocate a chunk, just return a dangling pointer.
-        if (S::CLAIMABLE || !S::GUARANTEED_ALLOCATED) && layout.size() == 0 {
-            return Ok(polyfill::layout::dangling(layout));
-        }
-
         unsafe { self.in_another_chunk(CustomLayout(layout), RawChunk::alloc) }
     }
 

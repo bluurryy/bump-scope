@@ -16,9 +16,6 @@ either_way! {
     unallocated_reserve_bytes
     checkpoint
     checkpoint_multiple_chunks
-    allocate_zero_sized
-    allocate_zero_slice
-    allocate_zero_layout
     reset
     potential_data_race
     default_chunk_size
@@ -113,36 +110,17 @@ fn checkpoint_multiple_chunks<const UP: bool>() {
 
 fn allocate_another_chunk<const UP: bool>(bump: &Bump<UP>, dummy_size: usize) {
     let start_chunks = bump.any_stats().count();
+
+    // fill the existing chunk if there is one
     let remaining = bump.any_stats().remaining();
-    bump.allocate_layout(Layout::from_size_align(remaining, 1).unwrap());
+    if remaining != 0 {
+        bump.allocate_layout(Layout::from_size_align(remaining, 1).unwrap());
+    }
     assert_eq!(bump.any_stats().count(), start_chunks);
+
     bump.allocate_layout(Layout::from_size_align(dummy_size, 1).unwrap());
     assert_eq!(bump.any_stats().count(), start_chunks + 1);
     assert_eq!(bump.any_stats().current_chunk().unwrap().allocated(), dummy_size);
-}
-
-fn allocate_zero_sized<const UP: bool>() {
-    let bump = <Bump<UP>>::new();
-    assert_eq!(bump.alloc(()).into_raw(), NonNull::<()>::dangling());
-    assert_eq!(bump.stats().count(), 0);
-}
-
-fn allocate_zero_slice<const UP: bool>() {
-    let bump = <Bump<UP>>::new();
-    assert_eq!(
-        bump.alloc_uninit_slice::<i32>(0).into_raw().cast(),
-        NonNull::<i32>::dangling()
-    );
-    assert_eq!(bump.stats().count(), 0);
-}
-
-fn allocate_zero_layout<const UP: bool>() {
-    let bump = <Bump<UP>>::new();
-    assert_eq!(
-        bump.allocate_layout(Layout::new::<[i32; 0]>()),
-        NonNull::<[i32; 0]>::dangling().cast()
-    );
-    assert_eq!(bump.stats().count(), 0);
 }
 
 fn reset<const UP: bool>() {

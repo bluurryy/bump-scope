@@ -1,8 +1,7 @@
-use core::{
-    num::NonZeroUsize,
-    ops::Range,
-    ptr::{self, NonNull},
-};
+use core::{ops::Range, ptr::NonNull};
+
+#[cfg(feature = "alloc")]
+use core::{num::NonZeroUsize, ptr};
 
 use crate::polyfill::pointer;
 
@@ -39,8 +38,9 @@ pub(crate) const fn from_ref<T>(r: &T) -> NonNull<T> {
 }
 
 /// See [`std::ptr::NonNull::without_provenance`].
-#[must_use]
 #[inline]
+#[must_use]
+#[cfg(feature = "alloc")]
 pub(crate) const fn without_provenance<T>(addr: NonZeroUsize) -> NonNull<T> {
     let pointer = ptr::without_provenance_mut(addr.get());
     // SAFETY: we know `addr` is non-zero.
