@@ -129,12 +129,17 @@ where
     /// This method exists so you can have `BumpScope<'a>` function parameters and
     /// struct fields instead of `&'b mut BumpScope<'a>` so you don't have to deal with `'b`.
     ///
+    /// It also enables more settings conversions since [`with_settings`] can do more than
+    /// [`borrow_mut_with_settings`].
+    ///
     /// # Panics
     /// Panics if the bump allocator is currently [claimed].
     ///
     /// Panics if the allocation fails.
     ///
     /// [claimed]: crate::traits::BumpAllocatorScope::claim
+    /// [`with_settings`]: BumpScope::with_settings
+    /// [`borrow_mut_with_settings`]: BumpScope::borrow_mut_with_settings
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -154,12 +159,17 @@ where
     /// This method exists so you can have `BumpScope<'a>` function parameters and
     /// struct fields instead of `&'b mut BumpScope<'a>` so you don't have to deal with `'b`.
     ///
+    /// It also enables more settings conversions since [`with_settings`] can do more than
+    /// [`borrow_mut_with_settings`].
+    ///
     /// # Errors
     /// Errors if the bump allocator is currently [claimed].
     ///
     /// Errors if the allocation fails.
     ///
     /// [claimed]: crate::traits::BumpAllocatorScope::claim
+    /// [`with_settings`]: BumpScope::with_settings
+    /// [`borrow_mut_with_settings`]: BumpScope::borrow_mut_with_settings
     #[inline(always)]
     pub fn try_by_value(&mut self) -> Result<BumpScope<'_, A, S>, AllocError> {
         self.raw.make_allocated::<AllocError>()?;
