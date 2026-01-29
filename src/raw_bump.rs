@@ -645,11 +645,6 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn is_dummy(self) -> bool {
-        self.is_claimed() || self.is_unallocated()
-    }
-
-    #[inline(always)]
     pub(crate) fn classify(self) -> ChunkClass<S> {
         if self.is_claimed() {
             return ChunkClass::Claimed;
@@ -759,7 +754,7 @@ where
         let end = if S::UP { end } else { pos };
 
         #[cfg(debug_assertions)]
-        if self.is_unallocated() {
+        if !matches!(self.classify(), ChunkClass::NonDummy(_)) {
             assert!(start > end);
         }
 
@@ -781,7 +776,7 @@ where
 
     #[inline(always)]
     pub(crate) unsafe fn as_non_dummy_unchecked(self) -> NonDummyChunk<S> {
-        debug_assert!(!self.is_dummy());
+        debug_assert!(matches!(self.classify(), ChunkClass::NonDummy(_)));
         NonDummyChunk(self)
     }
 

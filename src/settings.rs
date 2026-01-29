@@ -1,12 +1,44 @@
 //! Contains types to configure a bump allocation.
 //!
 //! You can configure various settings of the bump allocator:
-//! - **`MIN_ALIGN`** — see [What is minimum alignment?](#what-is-minimum-alignment)
-//! - **`UP`** — see [Bumping upwards or downwards?](#bumping-upwards-or-downwards)
-//! - **`GUARANTEED_ALLOCATED`** — see [When is a bump allocator *guaranteed allocated*?](#when-is-a-bump-allocator-guaranteed-allocated)
-//! - **`CLAIMABLE`** — see [`Bump::claim`](crate::Bump::claim)
-//! - **`DEALLOCATES`** — toggles deallocation
-//! - **`SHRINKS`** — toggles shrinking, including for temporary collections used in [`alloc_iter`](crate::Bump::alloc_iter), [`alloc_fmt`](crate::Bump::alloc_fmt), etc.
+//! - **`MIN_ALIGN`** *default: 1* —
+//!   The alignment the bump pointer maintains when doing allocations.
+//!
+//!   When allocating a type in a bump allocator with a sufficient minimum alignment,
+//!   the bump pointer will not have to be aligned for the allocation but the allocation size
+//!   will need to be rounded up to the next multiple of the minimum alignment.
+//!
+//!   For the performance impact see [crates/callgrind-benches][benches].
+//! - **`UP`** *default: true* —
+//!   Controls the bump direction.
+//!
+//!   Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
+//!   This benefits collections as well as <code>[alloc_iter](crate::Bump::alloc_iter)([_mut](crate::Bump::alloc_iter_mut))</code> and <code>[alloc_fmt](crate::Bump::alloc_fmt)([_mut](crate::Bump::alloc_fmt_mut))</code>
+//!   with the exception of [`MutBumpVecRev`] and [`alloc_iter_mut_rev`](crate::Bump::alloc_iter_mut_rev) which
+//!   can be grown and shrunk in place if and only if bumping downwards.
+//!
+//!   Bumping downwards can be done in less instructions.
+//!
+//!   For the performance impact see [crates/callgrind-benches][benches].
+//! - **`GUARANTEED_ALLOCATED`** *default: false* —
+//!   A *guaranteed allocated* bump allocator will own at least one chunk that it has allocated
+//!   from its base allocator.
+//!
+//!   The constructors <code>[new]\([_in][new_in])</code> and <code>[default]</code> will create a bump allocator without allocating a chunk.
+//!   They will only compile when `GUARANTEED_ALLOCATED` is `false`.
+//!
+//!   The constructors <code>[with_size]\([_in][with_size_in])</code> and <code>[with_capacity]\([_in][with_capacity_in])</code>
+//!   will allocate a chunk and are always available.
+//!
+//!   Setting `GUARANTEED_ALLOCATED` to `true` removes a check when exiting scopes.
+//! - **`CLAIMABLE`** *default: true* — Enables the [`claim`](crate::traits::BumpAllocatorScope::claim) api.
+//! - **`DEALLOCATES`** *default: false* — Toggles deallocation.
+//! - **`SHRINKS`** *default: true* — Toggles shrinking.
+//!   
+//!   This also affects the temporary collections used in [`alloc_iter`](crate::Bump::alloc_iter), [`alloc_fmt`](crate::Bump::alloc_fmt), etc.
+//! - **`MINIMUM_CHUNK_SIZE`** *default: true* — Configures the minimum chunk size hint.
+//!
+//!   The actual chunk size is calculated like in [`with_size`] and can be slightly smaller than requested
 //!
 //! # Example
 //!
@@ -21,58 +53,25 @@
 //!     /* CLAIMABLE */ false,
 //!     /* DEALLOCATES */ false,
 //!     /* SHRINKS */ false,
+//!     /* MINIMUM_CHUNK_SIZE */ 4096,
 //! >;
 //!
 //! type MyBump = Bump<Global, MyBumpSettings>;
 //!
-//! let bump = MyBump::with_size(1024);
+//! let bump = MyBump::with_size(0);
+//! assert_eq!(bump.stats().size(), 4096 - size_of::<[usize; 2]>());
 //!
 //! # let str =
 //! bump.alloc_str("Hello, world!");
 //! # assert_eq!(str, "Hello, world!");
 //! ```
 //!
-//! # What is minimum alignment?
-//! Minimum alignment is the alignment the bump pointer maintains when doing allocations.
-//!
-//! When allocating a type in a bump allocator with a sufficient minimum alignment,
-//! the bump pointer will not have to be aligned for the allocation but the allocation size
-//! will need to be rounded up to the next multiple of the minimum alignment.
-//!
-//! The minimum alignment is controlled by the generic parameter `const MIN_ALIGN: usize`. By default, `MIN_ALIGN` is `1`.
-//!
-//! For the performance impact see [crates/callgrind-benches][benches].
-//!
-//! # Bumping upwards or downwards?
-//! Bump direction is controlled by the generic parameter `const UP: bool`. By default, `UP` is `true`, so the allocator bumps upwards.
-//!
-//! Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
-//! This benefits collections as well as <code>[alloc_iter](crate::Bump::alloc_iter)([_mut](crate::Bump::alloc_iter_mut))</code> and <code>[alloc_fmt](crate::Bump::alloc_fmt)([_mut](crate::Bump::alloc_fmt_mut))</code>
-//! with the exception of [`MutBumpVecRev`] and [`alloc_iter_mut_rev`](crate::Bump::alloc_iter_mut_rev) which
-//! can be grown and shrunk in place if and only if bumping downwards.
-//!
-//! Bumping downwards can be done in less instructions.
-//!
-//! For the performance impact see [crates/callgrind-benches][benches].
-//!
-//! # When is a bump allocator *guaranteed allocated*?
-//!
-//! A *guaranteed allocated* bump allocator will own at least one chunk that it has allocated
-//! from its base allocator.
-//!
-//! The constructors <code>[new]\([_in][new_in])</code> and <code>[default]</code> will create a bump allocator without allocating a chunk.
-//! They will only be available when `GUARANTEED_ALLOCATED` is `false`.
-//!
-//! The constructors <code>[with_size]\([_in][with_size_in])</code> and <code>[with_capacity]\([_in][with_capacity_in])</code>
-//! will allocate a chunk and are always available.
-//!
-//! Setting `GUARANTEED_ALLOCATED` to `true` removes a check when exiting scopes.
-//!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
 //! [new]: crate::Bump::new
 //! [new_in]: crate::Bump::new_in
 //! [default]: crate::Bump::default
 //! [with_size]: crate::Bump::with_size
+//! [`with_size`]: crate::Bump::with_size
 //! [with_size_in]: crate::Bump::with_size_in
 //! [with_capacity]: crate::Bump::with_capacity
 //! [with_capacity_in]: crate::Bump::with_capacity_in
