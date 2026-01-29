@@ -525,7 +525,7 @@ fn scope_by_closures<const UP: bool>() {
 fn reserve<const UP: bool>() {
     let bump = Bump::<Global, BumpSettings<1, UP>>::default();
     dbg!(&bump);
-    bump.reserve_bytes(256);
+    bump.reserve(256);
     assert!(bump.stats().remaining() > 256);
 }
 
@@ -1269,7 +1269,7 @@ fn test_drop_allocator() {
     assert_eq!(drop_count.get(), 1);
 
     let bump = Bump::<_>::new_in(allocator);
-    bump.reserve_bytes(1024);
+    bump.reserve(1024);
     drop(bump);
     assert_eq!(drop_count.get(), 2);
 }

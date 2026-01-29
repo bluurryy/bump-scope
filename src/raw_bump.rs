@@ -214,7 +214,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn reserve_bytes<E: ErrorBehavior>(&self, additional: usize) -> Result<(), E> {
+    pub(crate) fn reserve<E: ErrorBehavior>(&self, additional: usize) -> Result<(), E> {
         let chunk = self.chunk.get();
 
         let Ok(layout) = Layout::from_size_align(additional, 1) else {

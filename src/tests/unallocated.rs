@@ -46,7 +46,7 @@ fn unallocated_alloc<const UP: bool>() {
 fn allocated_reserve_bytes<const UP: bool>() {
     let bump = <Bump<UP>>::with_size(512);
     assert_eq!(bump.stats().count(), 1);
-    bump.reserve_bytes(1024);
+    bump.reserve(1024);
     assert_eq!(bump.stats().count(), 2);
     assert!(bump.stats().capacity() >= 1024);
     drop(bump);
@@ -55,7 +55,7 @@ fn allocated_reserve_bytes<const UP: bool>() {
 fn unallocated_reserve_bytes<const UP: bool>() {
     let bump = <Bump<UP>>::new();
     assert_eq!(bump.stats().count(), 0);
-    bump.reserve_bytes(1024);
+    bump.reserve(1024);
     assert_eq!(bump.stats().count(), 1);
     assert!(bump.stats().capacity() >= 1024);
     drop(bump);

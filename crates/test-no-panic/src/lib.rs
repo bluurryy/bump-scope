@@ -245,7 +245,7 @@ up_and_down! {
     }
 
     pub fn Bump_try_reserve_bytes(bump: &Bump, additional: usize) -> Result {
-        bump.try_reserve_bytes(additional)
+        bump.try_reserve(additional)
     }
 
     pub fn MutBumpVec_try_append(vec: &mut MutBumpVec<u32>, array: [u32; 24]) -> Result {

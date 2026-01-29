@@ -395,17 +395,17 @@ macro_rules! forward_methods {
             BumpAllocatorTyped::dealloc($access, boxed);
         }
 
-        /// Forwards to [`BumpAllocatorTyped::reserve_bytes`].
+        /// Forwards to [`BumpAllocatorTyped::reserve`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
-        pub fn reserve_bytes(&$self, additional: usize) {
-            BumpAllocatorTyped::reserve_bytes($access, additional);
+        pub fn reserve(&$self, additional: usize) {
+            BumpAllocatorTyped::reserve($access, additional);
         }
 
-        /// Forwards to [`BumpAllocatorTyped::try_reserve_bytes`].
+        /// Forwards to [`BumpAllocatorTyped::try_reserve`].
         #[inline(always)]
-        pub fn try_reserve_bytes(&$self, additional: usize) -> Result<(), AllocError> {
-            BumpAllocatorTyped::try_reserve_bytes($access, additional)
+        pub fn try_reserve(&$self, additional: usize) -> Result<(), AllocError> {
+            BumpAllocatorTyped::try_reserve($access, additional)
         }
     };
 }

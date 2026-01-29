@@ -163,9 +163,9 @@ fn api_fails_on_claimed_bump<const UP: bool>() {
         bump.dealloc(boxed);
         assert_eq!(guard.stats().allocated(), original_allocated);
 
-        // reserve_bytes
-        expect_panic(|| bump.reserve_bytes(123));
-        expect_err(bump.try_reserve_bytes(123));
+        // reserve
+        expect_panic(|| bump.reserve(123));
+        expect_err(bump.try_reserve(123));
     }
 
     // BumpAllocatorTypedScope
