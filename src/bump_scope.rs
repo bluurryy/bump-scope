@@ -14,7 +14,7 @@ use core::ptr::NonNull;
 use core::clone::CloneToUninit;
 
 use crate::{
-    Bump, BumpBox, BumpClaimGuard, BumpScopeGuard, Checkpoint, ErrorBehavior, NoDrop, SizedTypeProperties,
+    BumpBox, BumpClaimGuard, BumpScopeGuard, Checkpoint, ErrorBehavior, NoDrop, SizedTypeProperties,
     alloc::{AllocError, Allocator},
     down_align_usize, maybe_default_allocator,
     owned_slice::OwnedSlice,
@@ -96,31 +96,6 @@ where
     A: Allocator,
     S: BumpAllocatorSettings,
 {
-    /// Returns this `&BumpScope` as a `&Bump`.
-    ///
-    /// This method exists so you can have `&Bump` function parameters and
-    /// struct fields instead of `&BumpScope<'a>` that can still accept `BumpScope`'s.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::Bump;
-    /// fn my_fn(bump: &Bump) {
-    ///    // ...
-    ///    # _ = bump;
-    /// }
-    ///
-    /// let mut bump: Bump = Bump::new();
-    ///
-    /// bump.scoped(|bump_scope| {
-    ///     my_fn(bump_scope.as_bump());
-    /// });
-    /// ```
-    #[must_use]
-    #[inline(always)]
-    pub fn as_bump(&self) -> &Bump<A, S> {
-        unsafe { transmute_ref(self) }
-    }
-
     /// Returns this `&mut BumpScope` as a `BumpScope`.
     ///
     /// This requires allocating a chunk if none has been allocated yet.
