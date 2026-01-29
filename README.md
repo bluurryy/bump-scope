@@ -139,13 +139,13 @@ unsafe { bump.reset_to(checkpoint); }
 assert_eq!(bump.stats().allocated(), 0);
 ```
 When using a `Bump(Scope)` as an allocator for collections you will find that you can no longer
-call `scoped` or `scope_guard` because those functions require `&mut self` which means no outstanding
-references to the allocator can exist.
+call `scoped` or `scope_guard` because those functions require `&mut self` which does not allow
+any outstanding references to the allocator.
 
 As a workaround you can use [`claim`] to essentially turn a `&Bump(Scope)` into a `&mut BumpScope`.
 The `claim` method works by temporarily replacing the allocator of the original `&Bump(Scope)` with
 a dummy allocator that will fail allocation requests, panics on `scoped` and will report an empty
-bump allocator from the `stats` api. The returned [`BumpClaimGuard`] will then have exclusive access to
+bump allocator from the `stats` api. The returned [`BumpClaimGuard`] has exclusive access to
 bump allocation and can mutably deref to `&mut BumpScope`:
 ```rust
 let bump: Bump = Bump::new();
