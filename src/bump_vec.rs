@@ -7,7 +7,6 @@ use core::{
     marker::PhantomData,
     mem::{ManuallyDrop, MaybeUninit},
     ops::{Deref, DerefMut, Index, IndexMut, RangeBounds},
-    panic::{RefUnwindSafe, UnwindSafe},
     ptr::{self, NonNull},
     slice::SliceIndex,
 };
@@ -209,9 +208,6 @@ pub struct BumpVec<T, A: BumpAllocatorTyped> {
     fixed: RawFixedBumpVec<T>,
     allocator: A,
 }
-
-impl<T: UnwindSafe, A: BumpAllocatorTyped + UnwindSafe> UnwindSafe for BumpVec<T, A> {}
-impl<T: RefUnwindSafe, A: BumpAllocatorTyped + RefUnwindSafe> RefUnwindSafe for BumpVec<T, A> {}
 
 impl<T, A: BumpAllocatorTyped> Deref for BumpVec<T, A> {
     type Target = [T];

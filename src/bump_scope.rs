@@ -70,14 +70,14 @@ maybe_default_allocator!(make_type);
 
 impl<A, S> UnwindSafe for BumpScope<'_, A, S>
 where
-    A: UnwindSafe,
+    A: RefUnwindSafe,
     S: BumpAllocatorSettings,
 {
 }
 
 impl<A, S> RefUnwindSafe for BumpScope<'_, A, S>
 where
-    A: UnwindSafe,
+    A: RefUnwindSafe,
     S: BumpAllocatorSettings,
 {
 }

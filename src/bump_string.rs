@@ -5,7 +5,6 @@ use core::{
     fmt::{self, Debug, Display},
     hash::Hash,
     ops::{Deref, DerefMut, Index, IndexMut, Range, RangeBounds},
-    panic::{RefUnwindSafe, UnwindSafe},
     ptr::{self, NonNull},
     slice::SliceIndex,
     str,
@@ -153,9 +152,6 @@ pub struct BumpString<A: BumpAllocatorTyped> {
     fixed: RawFixedBumpString,
     allocator: A,
 }
-
-impl<A: BumpAllocatorTyped + UnwindSafe> UnwindSafe for BumpString<A> {}
-impl<A: BumpAllocatorTyped + RefUnwindSafe> RefUnwindSafe for BumpString<A> {}
 
 impl<A: BumpAllocatorTyped> BumpString<A> {
     /// Constructs a new empty `BumpString`.

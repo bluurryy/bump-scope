@@ -4,7 +4,6 @@ use core::{
     fmt::{self, Debug, Display},
     hash::Hash,
     ops::{Deref, DerefMut, Index, IndexMut, Range, RangeBounds},
-    panic::{RefUnwindSafe, UnwindSafe},
     ptr::{self, NonNull},
     slice::SliceIndex,
     str,
@@ -153,9 +152,6 @@ pub struct MutBumpString<A> {
     fixed: RawFixedBumpString,
     allocator: A,
 }
-
-impl<A: UnwindSafe> UnwindSafe for MutBumpString<A> {}
-impl<A: RefUnwindSafe> RefUnwindSafe for MutBumpString<A> {}
 
 impl<A> MutBumpString<A> {
     /// Constructs a new empty `MutBumpString`.

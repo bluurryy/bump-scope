@@ -243,7 +243,7 @@ where
 
 impl<A, S> RefUnwindSafe for Bump<A, S>
 where
-    A: Allocator + UnwindSafe,
+    A: Allocator + RefUnwindSafe,
     S: BumpAllocatorSettings,
 {
 }

@@ -6,7 +6,6 @@ use core::{
     marker::PhantomData,
     mem::{ManuallyDrop, MaybeUninit},
     ops::{Deref, DerefMut, Index, IndexMut, RangeBounds},
-    panic::{RefUnwindSafe, UnwindSafe},
     ptr::{self, NonNull},
     slice::{self, SliceIndex},
 };
@@ -198,9 +197,6 @@ pub struct MutBumpVecRev<T, A> {
     /// Marks ownership over T. (<https://doc.rust-lang.org/nomicon/phantom-data.html#generic-parameters-and-drop-checking>)
     marker: PhantomData<T>,
 }
-
-impl<T: UnwindSafe, A: UnwindSafe> UnwindSafe for MutBumpVecRev<T, A> {}
-impl<T: RefUnwindSafe, A: RefUnwindSafe> RefUnwindSafe for MutBumpVecRev<T, A> {}
 
 impl<T, A> MutBumpVecRev<T, A> {
     /// Constructs a new empty `MutBumpVecRev<T>`.

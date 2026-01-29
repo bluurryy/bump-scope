@@ -5,7 +5,6 @@ use core::{
     iter,
     mem::{ManuallyDrop, MaybeUninit},
     ops::{Deref, DerefMut, Index, IndexMut, RangeBounds},
-    panic::{RefUnwindSafe, UnwindSafe},
     ptr::{self, NonNull},
     slice::SliceIndex,
 };
@@ -180,9 +179,6 @@ pub struct MutBumpVec<T, A> {
     fixed: RawFixedBumpVec<T>,
     allocator: A,
 }
-
-impl<T: UnwindSafe, A: UnwindSafe> UnwindSafe for MutBumpVec<T, A> {}
-impl<T: RefUnwindSafe, A: RefUnwindSafe> RefUnwindSafe for MutBumpVec<T, A> {}
 
 impl<T, A> Deref for MutBumpVec<T, A> {
     type Target = [T];
