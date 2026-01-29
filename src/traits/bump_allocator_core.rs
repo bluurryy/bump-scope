@@ -63,6 +63,7 @@ where
 /// [`BumpString`]: crate::BumpString
 pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
+    #[must_use]
     fn any_stats(&self) -> AnyStats<'_>;
 
     /// Creates a checkpoint of the current bump position.
@@ -70,6 +71,7 @@ pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     /// The bump position can be reset to this checkpoint with [`reset_to`].
     ///
     /// [`reset_to`]: BumpAllocatorCore::reset_to
+    #[must_use]
     fn checkpoint(&self) -> Checkpoint;
 
     /// Resets the bump position to a previously created checkpoint.
@@ -107,6 +109,7 @@ pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     /// Returns true if the bump allocator is currently [claimed].
     ///
     /// [claimed]: crate::traits::BumpAllocatorScope::claim
+    #[must_use]
     fn is_claimed(&self) -> bool;
 
     /// Returns a pointer range of free space in the bump allocator with a size of at least `layout.size()`.

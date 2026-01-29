@@ -55,7 +55,7 @@ pub trait BumpAllocator: MutBumpAllocatorTyped + Sized {
     /// ```
     ///
     /// [claimed]: crate::traits::BumpAllocatorScope::claim
-    #[must_use]
+    #[inline(always)]
     fn scope_guard(&mut self) -> BumpScopeGuard<'_, Self::Allocator, Self::Settings> {
         BumpScopeGuard::new(&mut self.as_mut_scope().raw)
     }

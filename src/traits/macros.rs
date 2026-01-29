@@ -19,13 +19,13 @@ macro_rules! forward_methods {
         }
 
         /// Forwards to [`BumpAllocatorCore::is_claimed`].
+        #[must_use]
         #[inline(always)]
         pub fn is_claimed(&self) -> bool {
             BumpAllocatorCore::is_claimed(self)
         }
 
         /// Forwards to [`BumpAllocator::scope_guard`].
-        #[must_use]
         #[inline(always)]
         pub fn scope_guard(&mut $self) -> BumpScopeGuard<'_, A, S> {
             BumpAllocator::scope_guard($access_mut)

@@ -14,6 +14,7 @@ use crate::{
 use crate::traits::*;
 
 /// Returned from [`BumpAllocatorScope::claim`].
+#[must_use]
 pub struct BumpClaimGuard<'b, 'a, A, S = BumpSettings>
 where
     A: Allocator,

@@ -38,6 +38,7 @@ impl Checkpoint {
 /// Returned from [`BumpAllocator::scope_guard`].
 ///
 /// [`BumpAllocator::scope_guard`]: crate::traits::BumpAllocator::scope_guard
+#[must_use]
 pub struct BumpScopeGuard<'a, A, S = BumpSettings>
 where
     A: Allocator,
