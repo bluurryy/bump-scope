@@ -279,9 +279,9 @@ fn double_drop<const UP: bool>() {
         let mut drop_count = 0;
         let bump = f(CountDrops(&mut drop_count));
 
-        bump.claim();
-        bump.claim();
-        bump.claim();
+        _ = bump.claim();
+        _ = bump.claim();
+        _ = bump.claim();
 
         assert_eq!(*bump.allocator().0, 0);
 

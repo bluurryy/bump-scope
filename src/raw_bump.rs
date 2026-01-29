@@ -13,12 +13,15 @@ use crate::{
     alloc::{AllocError, Allocator},
     bumping::{BumpProps, BumpUp, MIN_CHUNK_ALIGN, bump_down, bump_prepare_down, bump_prepare_up, bump_up},
     chunk::{ChunkHeader, ChunkSize, ChunkSizeHint},
-    error_behavior::{self, ErrorBehavior},
+    error_behavior::ErrorBehavior,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::non_null,
     settings::{BumpAllocatorSettings, False, MinimumAlignment, SupportedMinimumAlignment, True},
     stats::Stats,
 };
+
+#[cfg(debug_assertions)]
+use crate::error_behavior;
 
 #[cfg(feature = "alloc")]
 use crate::alloc::Global;
