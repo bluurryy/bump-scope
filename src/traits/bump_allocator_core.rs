@@ -398,16 +398,19 @@ where
         debug_assert_eq!(layout.size() % layout.align(), 0);
 
         unsafe {
+            // a successful `prepare_allocation` guarantees a non-dummy-chunk
+            let chunk = self.raw.chunk.get().as_non_dummy_unchecked();
+
             if S::UP {
                 let end = range.start.add(layout.size());
-                self.set_pos(end.addr());
+                chunk.set_pos_addr_and_align(end.addr().get());
                 range.start
             } else {
                 let src = range.start;
                 let dst_end = range.end;
                 let dst = dst_end.sub(layout.size());
                 src.copy_to(dst, layout.size());
-                self.set_pos(dst.addr());
+                chunk.set_pos_addr_and_align(dst.addr().get());
                 dst
             }
         }
@@ -420,6 +423,9 @@ where
         debug_assert_eq!(layout.size() % layout.align(), 0);
 
         unsafe {
+            // a successful `prepare_allocation` guarantees a non-dummy-chunk
+            let chunk = self.raw.chunk.get().as_non_dummy_unchecked();
+
             if S::UP {
                 let dst = range.start;
                 let dst_end = dst.add(layout.size());
@@ -429,13 +435,13 @@ where
 
                 src.copy_to(dst, layout.size());
 
-                self.set_pos(dst_end.addr());
+                chunk.set_pos_addr_and_align(dst_end.addr().get());
 
                 dst
             } else {
                 let dst_end = range.end;
                 let dst = dst_end.sub(layout.size());
-                self.set_pos(dst.addr());
+                chunk.set_pos_addr_and_align(dst.addr().get());
                 dst
             }
         }

@@ -3,7 +3,6 @@ use core::{
     fmt::{self, Debug},
     marker::PhantomData,
     mem::MaybeUninit,
-    num::NonZeroUsize,
     panic::{RefUnwindSafe, UnwindSafe},
     ptr,
 };
@@ -285,26 +284,6 @@ where
     {
         self.must_align_more::<NEW_MIN_ALIGN>();
         unsafe { self.cast() }
-    }
-
-    /// Sets the bump position and aligns it to the required `MIN_ALIGN`.
-    ///
-    /// This does nothing if the current chunk is the UNALLOCATED one.
-    #[inline(always)]
-    pub(crate) unsafe fn set_pos(&self, pos: NonZeroUsize) {
-        unsafe { self.raw.set_pos(pos) }
-    }
-
-    /// A version of [`set_pos`](Self::set_pos) that only aligns the pointer
-    /// if it the `pos_align` is smaller than the `MIN_ALIGN`.
-    ///
-    /// This should only be called when the `pos_align` is statically known so
-    /// the branch gets optimized out.
-    ///
-    /// This does nothing if the current chunk is the UNALLOCATED one.
-    #[inline(always)]
-    pub(crate) unsafe fn set_aligned_pos(&self, pos: NonZeroUsize, pos_align: usize) {
-        unsafe { self.raw.set_aligned_pos(pos, pos_align) };
     }
 
     /// Converts this `BumpScope` into a `BumpScope` with new settings.

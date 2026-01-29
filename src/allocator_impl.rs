@@ -126,14 +126,13 @@ where
     }
 
     unsafe {
-        debug_assert!(is_last(bump, ptr, layout));
-
+        let chunk = bump.chunk.get().as_non_dummy_unchecked();
         if S::UP {
-            bump.set_pos(ptr.addr());
+            chunk.set_pos_addr_and_align(ptr.addr().get());
         } else {
             let mut addr = ptr.addr().get();
             addr += layout.size();
-            bump.set_pos(NonZeroUsize::new_unchecked(addr));
+            chunk.set_pos_addr_and_align(addr);
         }
     }
 }

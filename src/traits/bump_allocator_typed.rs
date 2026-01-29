@@ -1132,16 +1132,19 @@ where
     #[inline(always)]
     unsafe fn allocate_prepared_slice<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe {
+            // a successful `prepare_allocation` guarantees a non-dummy-chunk
+            let chunk = self.raw.chunk.get().as_non_dummy_unchecked();
+
             let end = start.add(len);
 
             if S::UP {
-                self.set_aligned_pos(end.addr(), T::ALIGN);
+                chunk.set_pos_addr_and_align_from(end.addr().get(), T::ALIGN);
                 NonNull::slice_from_raw_parts(start, len)
             } else {
                 let dst_end = start.add(cap);
                 let dst = dst_end.sub(len);
                 start.copy_to(dst, len);
-                self.set_aligned_pos(dst.addr(), T::ALIGN);
+                chunk.set_pos_addr_and_align_from(dst.addr().get(), T::ALIGN);
                 NonNull::slice_from_raw_parts(dst, len)
             }
         }
@@ -1150,6 +1153,9 @@ where
     #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, end: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe {
+            // a successful `prepare_allocation` guarantees a non-dummy-chunk
+            let chunk = self.raw.chunk.get().as_non_dummy_unchecked();
+
             if S::UP {
                 let dst = end.sub(cap);
                 let dst_end = dst.add(len);
@@ -1158,11 +1164,11 @@ where
 
                 src.copy_to(dst, len);
 
-                self.set_aligned_pos(dst_end.addr(), T::ALIGN);
+                chunk.set_pos_addr_and_align_from(dst_end.addr().get(), T::ALIGN);
                 NonNull::slice_from_raw_parts(dst, len)
             } else {
                 let dst = end.sub(len);
-                self.set_aligned_pos(dst.addr(), T::ALIGN);
+                chunk.set_pos_addr_and_align_from(dst.addr().get(), T::ALIGN);
                 NonNull::slice_from_raw_parts(dst, len)
             }
         }

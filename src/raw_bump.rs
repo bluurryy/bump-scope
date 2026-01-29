@@ -480,47 +480,10 @@ where
         if MinimumAlignment::VALUE > S::MIN_ALIGN {
             // a dummy chunk is always aligned
             if let Some(chunk) = self.chunk.get().as_non_dummy() {
-                let pos = chunk.pos().addr();
+                let pos = chunk.pos().addr().get();
                 let addr = align_pos(S::UP, MinimumAlignment::VALUE, pos);
                 unsafe { chunk.set_pos_addr(addr) };
             }
-        }
-    }
-
-    // TODO: shouldn't this be on `NonDummyChunk`?
-    /// Sets the bump position and aligns it to the required `MIN_ALIGN`.
-    ///
-    /// This does nothing if the current chunk is the UNALLOCATED one.
-    #[inline(always)]
-    pub(crate) unsafe fn set_pos(&self, pos: NonZeroUsize) {
-        unsafe {
-            let addr = align_pos(S::UP, S::MIN_ALIGN, pos);
-
-            if let Some(chunk) = self.chunk.get().as_non_dummy() {
-                chunk.set_pos_addr(addr);
-            }
-        }
-    }
-
-    /// A version of [`set_pos`](Self::set_pos) that only aligns the pointer
-    /// if it the `pos_align` is smaller than the `MIN_ALIGN`.
-    ///
-    /// This should only be called when the `pos_align` is statically known so
-    /// the branch gets optimized out.
-    ///
-    /// This does nothing if the current chunk is the UNALLOCATED one.
-    #[inline(always)]
-    pub(crate) unsafe fn set_aligned_pos(&self, pos: NonZeroUsize, pos_align: usize) {
-        debug_assert_eq!(pos.get() % pos_align, 0);
-
-        let addr = if pos_align < S::MIN_ALIGN {
-            align_pos(S::UP, S::MIN_ALIGN, pos)
-        } else {
-            pos.get()
-        };
-
-        if let Some(chunk) = self.chunk.get().as_non_dummy() {
-            unsafe { chunk.set_pos_addr(addr) };
         }
     }
 
@@ -1049,6 +1012,31 @@ where
     #[inline(always)]
     pub(crate) unsafe fn set_pos_addr(self, addr: usize) {
         unsafe { self.header.as_ref().pos.set(self.content_ptr_from_addr(addr)) };
+    }
+
+    /// Sets the bump position and aligns it to the required `MIN_ALIGN`.
+    #[inline(always)]
+    pub(crate) unsafe fn set_pos_addr_and_align(self, pos: usize) {
+        unsafe {
+            let addr = align_pos(S::UP, S::MIN_ALIGN, pos);
+            self.set_pos_addr(addr);
+        }
+    }
+
+    /// A version of [`set_pos_addr_and_align`](Self::set_pos_addr_and_align) that only aligns the pointer
+    /// if it the `pos_align` is smaller than the `MIN_ALIGN`.
+    ///
+    /// This should only be called when the `pos_align` is statically known so
+    /// the branch gets optimized out.
+    #[inline(always)]
+    pub(crate) unsafe fn set_pos_addr_and_align_from(self, mut pos: usize, pos_align: usize) {
+        debug_assert_eq!(pos % pos_align, 0);
+
+        if pos_align < S::MIN_ALIGN {
+            pos = align_pos(S::UP, S::MIN_ALIGN, pos);
+        }
+
+        unsafe { self.set_pos_addr(pos) };
     }
 
     /// # Safety

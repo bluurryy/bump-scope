@@ -538,16 +538,16 @@ const fn min_non_zero_cap(size: usize) -> usize {
 /// This is a noop when `min_align` is `0`.
 #[must_use]
 #[inline(always)]
-fn align_pos(up: bool, min_align: usize, pos: NonZeroUsize) -> usize {
+fn align_pos(up: bool, min_align: usize, pos: usize) -> usize {
     if up {
         // Aligning an address that is `<= range.end` with an alignment
         // that is `<= MIN_CHUNK_ALIGN` cannot exceed `range.end` and
         // cannot overflow as `range.end` is always aligned to `MIN_CHUNK_ALIGN`.
-        up_align_usize_unchecked(pos.get(), min_align)
+        up_align_usize_unchecked(pos, min_align)
     } else {
         // The chunk start is non-null and is aligned to `MIN_CHUNK_ALIGN`
         // `MIN_ALIGN <= MIN_CHUNK_ALIGN` will never pass the chunk start
         // and stay non-zero.
-        down_align_usize(pos.get(), min_align)
+        down_align_usize(pos, min_align)
     }
 }
