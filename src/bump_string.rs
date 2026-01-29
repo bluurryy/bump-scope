@@ -2107,6 +2107,8 @@ impl<A: BumpAllocatorTyped> Drop for BumpString<A> {
         // of the minimum chunk alignment of 16 the smallest address the chunk
         // may be at is 16. The bump allocator handles deallocate requests
         // from pointers outside its bound just fine by ignoring them.
+        //
+        // This is documented as an invariant in the `BumpAllocatorCore` docs.
         unsafe {
             let ptr = self.fixed.as_non_null().cast();
             let layout = Layout::from_size_align_unchecked(self.fixed.capacity(), 1);

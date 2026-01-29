@@ -298,10 +298,15 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
         let layout = Layout::for_value::<T>(&boxed);
         let ptr = boxed.into_raw();
 
-        unsafe {
-            ptr.drop_in_place();
-            self.deallocate(ptr.cast(), layout);
+        unsafe { ptr.drop_in_place() };
+
+        // zst and empty slices did not actually allocate
+        // and thus mustn't deallocate
+        if layout.size() == 0 {
+            return;
         }
+
+        unsafe { self.deallocate(ptr.cast(), layout) };
     }
 
     /// Reserves capacity for at least `additional` more bytes to be bump allocated.
@@ -1066,19 +1071,21 @@ where
 
         // Adapted from `Allocator::shrink`.
         unsafe {
-            // TODO: is the check for allocated still necessary?
-            // seems like a leftover from when dummy chunks were using dangling pointers
-            let is_last_and_allocated = !self.raw.chunk.get().is_dummy()
-                && if S::UP {
-                    old_ptr.as_ptr().add(old_size) == self.raw.chunk.get().pos().as_ptr()
-                } else {
-                    old_ptr == self.raw.chunk.get().pos()
-                };
+            let chunk = self.raw.chunk.get();
+
+            let is_last = if S::UP {
+                old_ptr.as_ptr().add(old_size) == chunk.pos().as_ptr()
+            } else {
+                old_ptr == chunk.pos()
+            };
 
             // if that's not the last allocation, there is nothing we can do
-            if !is_last_and_allocated {
+            if !is_last {
                 return None;
             }
+
+            // `is_last` is true, which guarantees a non-dummy, see `allocator_impl::is_last`
+            let chunk = chunk.as_non_dummy_unchecked();
 
             if S::UP {
                 let end = old_ptr.addr().get() + new_size;
@@ -1086,8 +1093,7 @@ where
                 // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
                 let new_pos = up_align_usize_unchecked(end, S::MIN_ALIGN);
 
-                // SAFETY: We checked `is_dummy` above
-                self.raw.chunk.get().as_non_dummy_unchecked().set_pos_addr(new_pos);
+                chunk.set_pos_addr(new_pos);
                 Some(old_ptr.cast())
             } else {
                 let old_addr = old_ptr.addr();
@@ -1106,8 +1112,7 @@ where
                     old_ptr.copy_to_nonoverlapping(new_ptr, new_size);
                 }
 
-                // SAFETY: We checked `is_dummy` above
-                self.raw.chunk.get().as_non_dummy_unchecked().set_pos(new_ptr);
+                chunk.set_pos(new_ptr);
                 Some(new_ptr.cast())
             }
         }

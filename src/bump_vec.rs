@@ -238,13 +238,13 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
 
         impl<T, A: BumpAllocatorTyped> Drop for DropGuard<'_, T, A> {
             fn drop(&mut self) {
-                // SAFETY:
-                // Calling `deallocate` with a dangling pointer is fine because
-                // - `layout.size()` will be `0` which will make it have no effect in the allocator
-                // - calling deallocate with a pointer not owned by this allocator is explicitly allowed; see `BumpAllocatorCore`
+                if T::IS_ZST || self.0.capacity() == 0 {
+                    return;
+                }
+
                 unsafe {
-                    let ptr = self.0.fixed.as_non_null().cast();
-                    let layout = Layout::from_size_align_unchecked(self.0.fixed.capacity() * T::SIZE, T::ALIGN);
+                    let ptr = self.0.as_non_null().cast();
+                    let layout = Layout::from_size_align_unchecked(self.0.capacity() * T::SIZE, T::ALIGN);
                     self.0.allocator.deallocate(ptr, layout);
                 }
             }
@@ -2195,7 +2195,10 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
                         let drop_len = pointer::offset_from_unsigned(self.dst, drop_ptr);
                         ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
 
-                        // deallocate memory block (for additional safety notes see `Self::drop::DropGuard::drop`)
+                        if T::IS_ZST || self.cap == 0 {
+                            return;
+                        }
+
                         let layout = Layout::from_size_align_unchecked(self.cap * T::SIZE, T::ALIGN);
                         self.allocator.deallocate(self.ptr.cast(), layout);
                     }
@@ -2308,6 +2311,10 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
         impl<T, A: BumpAllocatorTyped> Drop for DropGuard<T, A> {
             fn drop(&mut self) {
                 unsafe {
+                    if T::IS_ZST || self.cap == 0 {
+                        return;
+                    }
+
                     let layout = Layout::from_size_align_unchecked(self.cap * T::SIZE, T::ALIGN);
                     self.allocator.deallocate(self.ptr.cast(), layout);
                 }
@@ -2591,13 +2598,17 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
         let Self { fixed, allocator } = self;
 
         let old_ptr = fixed.as_non_null();
-        let old_len = fixed.capacity();
-        let new_len = fixed.len();
+        let old_cap = fixed.capacity();
+        let new_cap = fixed.len();
+
+        if T::IS_ZST || old_cap == 0 {
+            return;
+        }
 
         unsafe {
-            if let Some(new_ptr) = allocator.shrink_slice(old_ptr, old_len, new_len) {
+            if let Some(new_ptr) = allocator.shrink_slice(old_ptr, old_cap, new_cap) {
                 fixed.set_ptr(new_ptr);
-                fixed.set_cap(new_len);
+                fixed.set_cap(new_cap);
             }
         }
     }

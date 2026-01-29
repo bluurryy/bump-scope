@@ -78,11 +78,6 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn is_unallocated(&self) -> bool {
-        self.chunk.get().is_unallocated()
-    }
-
-    #[inline(always)]
     pub(crate) fn claim(&self) -> RawBump<A, S> {
         const {
             assert!(S::CLAIMABLE, "`claim` is only available with the setting `CLAIMABLE = true`");

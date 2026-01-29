@@ -36,19 +36,19 @@ where
 /// This trait provides additional methods and guarantees on top of an [`Allocator`].
 ///
 /// A `BumpAllocatorCore` has laxer safety conditions when using `Allocator` methods:
-/// - You can call `grow*`, `shrink` and `deallocate` with pointers that did not come from this allocator. In this case:
+/// - You can call `grow*`, `shrink` and `deallocate` with pointers that came from a different `BumpAllocatorCore`. In this case:
 ///   - `grow*` will always allocate a new memory block.
 ///   - `deallocate` will do nothing
 ///   - `shrink` will either do nothing or allocate iff the alignment increases
 /// - Memory blocks can be split.
-/// - `deallocate` can be called with any pointer or alignment when the size is `0`.
 /// - `shrink` never errors unless the new alignment is greater
+/// - `deallocate` may always be called when the pointer address is less than 16 and the size is 0
 ///
 /// Those invariants are used here:
 /// - Handling of foreign pointers is necessary for implementing [`BumpVec::from_parts`], [`BumpBox::into_box`] and [`Bump(Scope)::dealloc`][Bump::dealloc].
 /// - Memory block splitting is necessary for [`split_off`] and [`split_at`].
-/// - Deallocate with a size of `0` is used in the drop implementation of [`BumpVec`].
 /// - The non-erroring behavior of `shrink` is necessary for [`BumpAllocatorTyped::shrink_slice`]
+/// - `deallocate` with a dangling pointer is used in the drop implementation of [`BumpString`]
 ///
 /// # Safety
 ///
@@ -60,6 +60,7 @@ where
 /// [`split_at`]: crate::BumpBox::split_at
 /// [`BumpVec`]: crate::BumpVec
 /// [`BumpAllocatorTyped::shrink_slice`]: crate::traits::BumpAllocatorTyped::shrink_slice
+/// [`BumpString`]: crate::BumpString
 pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     fn any_stats(&self) -> AnyStats<'_>;

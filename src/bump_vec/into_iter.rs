@@ -187,6 +187,10 @@ impl<T, A: BumpAllocatorTyped> Drop for IntoIter<T, A> {
 
         impl<T, A: BumpAllocatorTyped> Drop for DropGuard<'_, T, A> {
             fn drop(&mut self) {
+                if T::IS_ZST || self.0.cap == 0 {
+                    return;
+                }
+
                 unsafe {
                     let ptr = self.0.buf.cast();
                     let layout = Layout::from_size_align_unchecked(self.0.cap * T::SIZE, T::ALIGN);
@@ -200,6 +204,6 @@ impl<T, A: BumpAllocatorTyped> Drop for IntoIter<T, A> {
         unsafe {
             ptr::drop_in_place(guard.0.as_raw_mut_slice());
         }
-        // now `guard` will be dropped and do the rest
+        // now `guard` will be dropped and deallocate
     }
 }

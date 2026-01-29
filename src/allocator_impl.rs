@@ -109,7 +109,7 @@ where
 
     unsafe {
         // free allocated space if this is the last allocation
-        if is_last_and_allocated(bump, ptr, layout) {
+        if is_last(bump, ptr, layout) {
             deallocate_assume_last(bump, ptr, layout);
         }
     }
@@ -126,7 +126,7 @@ where
     }
 
     unsafe {
-        debug_assert!(is_last_and_allocated(bump, ptr, layout));
+        debug_assert!(is_last(bump, ptr, layout));
 
         if S::UP {
             bump.set_pos(ptr.addr());
@@ -138,22 +138,26 @@ where
     }
 }
 
+/// Checks if the memory block is the last one in the bump allocator.
+///
+/// The given memory block must have been allocated by some bump allocator,
+/// not necessarily the given one (but if it isn't then it will always return false).
+///
+/// This condition must be true to be able to do grow, shrink or deallocate in place.
+///
+/// If this function returns true then the bump is guaranteed to have a non-dummy
+/// chunk since a memory block is only returned from a bump allocator with a non-dummy
+/// chunk.
 #[inline(always)]
-unsafe fn is_last_and_allocated<A, S>(bump: &RawBump<A, S>, ptr: NonNull<u8>, layout: Layout) -> bool
+unsafe fn is_last<A, S>(bump: &RawBump<A, S>, ptr: NonNull<u8>, layout: Layout) -> bool
 where
     A: Allocator,
     S: BumpAllocatorSettings,
 {
-    if bump.is_unallocated() {
-        return false;
-    }
-
-    unsafe {
-        if S::UP {
-            ptr.add(layout.size()) == bump.chunk.get().pos()
-        } else {
-            ptr == bump.chunk.get().pos()
-        }
+    if S::UP {
+        (unsafe { ptr.add(layout.size()) }) == bump.chunk.get().pos()
+    } else {
+        ptr == bump.chunk.get().pos()
     }
 }
 
@@ -175,9 +179,10 @@ where
 
     unsafe {
         if S::UP {
-            if is_last_and_allocated(bump, old_ptr, old_layout) & align_fits(old_ptr, old_layout, new_layout) {
+            if is_last(bump, old_ptr, old_layout) & align_fits(old_ptr, old_layout, new_layout) {
                 // We may be able to grow in place! Just need to check if there is enough space.
 
+                // `is_last` returned true, which guarantees a non-dummy
                 let chunk = bump.chunk.get().as_non_dummy_unchecked();
                 let chunk_end = chunk.content_end();
                 let remaining = chunk_end.addr().get() - old_ptr.addr().get();
@@ -190,7 +195,6 @@ where
                     // Up-aligning a pointer inside a chunks content by `MIN_ALIGN` never overflows.
                     let new_pos = up_align_usize_unchecked(old_addr.get() + new_layout.size(), S::MIN_ALIGN);
 
-                    // `is_last_and_allocated` returned true
                     chunk.set_pos_addr(new_pos);
 
                     Ok(NonNull::slice_from_raw_parts(old_ptr, new_layout.size()))
@@ -207,14 +211,16 @@ where
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
         } else {
-            if is_last_and_allocated(bump, old_ptr, old_layout) {
+            if is_last(bump, old_ptr, old_layout) {
+                // `is_last` returned true, which guarantees a non-dummy
+                let chunk = bump.chunk.get().as_non_dummy_unchecked();
+
                 // We may be able to reuse the currently allocated space. Just need to check if the current chunk has enough space for that.
                 let additional_size = new_layout.size() - old_layout.size();
 
                 let old_addr = old_ptr.addr();
                 let new_addr = bump_down(old_addr, additional_size, new_layout.align().max(S::MIN_ALIGN));
 
-                let chunk = bump.chunk.get().as_non_dummy_unchecked();
                 let very_start = chunk.content_start().addr();
 
                 if new_addr >= very_start.get() {
@@ -302,7 +308,7 @@ where
         S: BumpAllocatorSettings,
     {
         unsafe {
-            if S::SHRINKS && is_last_and_allocated(bump, old_ptr, old_layout) {
+            if S::SHRINKS && is_last(bump, old_ptr, old_layout) {
                 let old_pos = bump.chunk.get().pos();
                 deallocate_assume_last(bump, old_ptr, old_layout);
 
@@ -324,7 +330,7 @@ where
                         Err(error) => {
                             // Need to reset the bump pointer to the old position.
 
-                            // `is_last_and_allocated` returned true
+                            // `is_last` returned true, which guarantees a non-dummy
                             bump.chunk.get().as_non_dummy_unchecked().set_pos(old_pos);
                             return Err(error);
                         }
@@ -358,7 +364,7 @@ where
         }
 
         // if that's not the last allocation, there is nothing we can do
-        if !S::SHRINKS || !is_last_and_allocated(bump, old_ptr, old_layout) {
+        if !S::SHRINKS || !is_last(bump, old_ptr, old_layout) {
             // we return the size of the old layout
             return Ok(NonNull::slice_from_raw_parts(old_ptr, old_layout.size()));
         }
@@ -369,7 +375,7 @@ where
             // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
             let new_pos = up_align_usize_unchecked(end, S::MIN_ALIGN);
 
-            // `is_last_and_allocated` returned true
+            // `is_last` returned true, which guarantees a non-dummy
             bump.chunk.get().as_non_dummy_unchecked().set_pos_addr(new_pos);
 
             Ok(NonNull::slice_from_raw_parts(old_ptr, new_layout.size()))
@@ -391,7 +397,7 @@ where
                 old_ptr.copy_to_nonoverlapping(new_ptr, new_layout.size());
             }
 
-            // `is_last_and_allocated` returned true
+            // `is_last` returned true, which guarantees a non-dummy
             bump.chunk.get().as_non_dummy_unchecked().set_pos(new_ptr);
 
             Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))

@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `(Mut)BumpAllocatorScopeExt` -> `traits::(Mut)BumpAllocatorTypedScope`
 - **Breaking:** Implement `bytemuck` and `zerocopy` allocator extension traits for all `T: BumpAllocatorTypedScope` and name them `BumpAllocatorTypedScopeExt`
 - **Breaking:** `scoped`, `scoped_aligned` and `aligned` now take a closure with a `&mut BumpScope` instead of a `BumpScope` (you can get the bump scope by value using `by_value`)
+- **Breaking:** Change `BumpAllocatorCore` trait safety invariants
 - `Bump::new(_in)` won't allocate a chunk anymore
 - Remove branch when allocating on a non-guaranteed-allocated `Bump(Scope)`, checking for a layout of `0`
 - Depend on `serde_core` instead of `serde`
