@@ -118,10 +118,10 @@ macro_rules! __mut_bump_vec_rev_panic_on_alloc {
 #[cfg(not(feature = "panic-on-alloc"))]
 macro_rules! __mut_bump_vec_rev_panic_on_alloc {
     [in $bump:expr; $($values:expr),* $(,)?] => {
-        compile_error!(
-            concat!("the potentially panicking api of `mut_bump_vec_rev!` is not available\n\
-            help: enable `bump-scope`'s \"panic-on-alloc\" feature or use `try`:\n\
-            `mut_bump_vec_rev![try in ",
+        compile_error!(concat!(
+            "the potentially panicking api of `mut_bump_vec_rev!` is not available\n",
+            "help: enable `bump-scope`'s \"panic-on-alloc\" feature or use `try`:\n",
+            "      `mut_bump_vec_rev![try in ",
             stringify!($bump),
             "; ",
             stringify!($($values),*),
@@ -129,10 +129,10 @@ macro_rules! __mut_bump_vec_rev_panic_on_alloc {
         ))
     };
     [in $bump:expr; $value:expr; $count:expr] => {
-        compile_error!(
-            concat!("the potentially panicking api of `mut_bump_vec_rev!` is not available\n\
-            help: enable `bump-scope`'s \"panic-on-alloc\" feature or use `try`:\n\
-            `mut_bump_vec_rev![try in ", // TODO: add 4 spaces
+        compile_error!(concat!(
+            "the potentially panicking api of `mut_bump_vec_rev!` is not available\n",
+            "help: enable `bump-scope`'s \"panic-on-alloc\" feature or use `try`:\n",
+            "      `mut_bump_vec_rev![try in ",
             stringify!($bump),
             "; ",
             stringify!($value),

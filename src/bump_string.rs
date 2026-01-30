@@ -83,10 +83,10 @@ macro_rules! __bump_format_panic_on_alloc {
 #[cfg(not(feature = "panic-on-alloc"))]
 macro_rules! __bump_format_panic_on_alloc {
     (in $bump:expr, $($arg:tt)*) => {{
-        compile_error!(
-            concat!("the potentially panicking api of `bump_format!` is not available\n\
-            help: enable `bump-scope`'s \"panic-on-alloc\" feature or use `try`:\n\
-            `bump_format!(try in ",
+        compile_error!(concat!(
+            "the potentially panicking api of `bump_format!` is not available\n",
+            "help: enable `bump-scope`'s \"panic-on-alloc\" feature or use `try`:\n",
+            "      `bump_format!(try in ",
             stringify!($bump),
             ", ",
             stringify!($($arg)*),

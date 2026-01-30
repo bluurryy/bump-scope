@@ -1,6 +1,6 @@
 error: the potentially panicking api of `mut_bump_vec!` is not available
        help: enable `bump-scope`'s "panic-on-alloc" feature or use `try`:
-       `mut_bump_vec![try in bump; 1, two, 3]`
+             `mut_bump_vec![try in bump; 1, two, 3]`
  --> tests/trybuild_unavailable_panicking_macros/mut_bump_vec_list.rs:4:5
   |
 4 |     mut_bump_vec![in bump; 1, two, 3]
