@@ -16,7 +16,7 @@ use crate::{
     error_behavior::ErrorBehavior,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::non_null,
-    settings::{BumpAllocatorSettings, False, MinimumAlignment, SupportedMinimumAlignment, True},
+    settings::{BumpAllocatorSettings, MinimumAlignment, SupportedMinimumAlignment},
     stats::Stats,
 };
 
@@ -822,16 +822,6 @@ where
             header: self.header,
             marker: PhantomData,
         }
-    }
-}
-
-impl<S> RawChunk<S>
-where
-    S: BumpAllocatorSettings<GuaranteedAllocated = True, Claimable = False>,
-{
-    #[inline(always)]
-    pub(crate) fn non_dummy(self) -> NonDummyChunk<S> {
-        NonDummyChunk(self)
     }
 }
 

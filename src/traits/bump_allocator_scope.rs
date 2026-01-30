@@ -62,7 +62,7 @@ pub trait BumpAllocatorScope<'a>: BumpAllocator + MutBumpAllocatorCoreScope<'a> 
     /// let bar = bump.aligned::<8, _>(|bump| {
     ///     // in here the bump position has been aligned to `8`
     ///     assert_eq!(bump.stats().allocated(), 8);
-    ///     assert!(bump.stats().get_current_chunk().unwrap().bump_position().is_aligned_to(8));
+    ///     assert!(bump.stats().current_chunk().unwrap().bump_position().is_aligned_to(8));
     ///
     ///     // make some allocations that benefit from the higher `MIN_ALIGN` of `8`
     ///     let bar = bump.alloc(0u64);
@@ -109,7 +109,7 @@ pub trait BumpAllocatorScope<'a>: BumpAllocator + MutBumpAllocatorCoreScope<'a> 
     ///
     /// // after `aligned()`, the bump position will be aligned to `8` again
     /// // to satisfy our `MIN_ALIGN`
-    /// assert!(bump.stats().get_current_chunk().unwrap().bump_position().is_aligned_to(8));
+    /// assert!(bump.stats().current_chunk().unwrap().bump_position().is_aligned_to(8));
     /// assert_eq!(bump.stats().allocated(), 16);
     ///
     /// // continue making allocations that benefit from the `MIN_ALIGN` of `8`

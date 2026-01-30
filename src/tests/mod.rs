@@ -197,7 +197,7 @@ either_way! {
 macro_rules! assert_chunk_sizes {
     ($bump:expr, $prev:expr, $curr:expr, $next:expr) => {
         let bump = &$bump;
-        let curr = bump.stats().get_current_chunk().unwrap();
+        let curr = bump.stats().current_chunk().unwrap();
         debug_sizes(bump);
         assert_eq!(curr.size(), $curr - MALLOC_OVERHEAD, "wrong curr");
         assert!(
@@ -233,7 +233,7 @@ fn mut_bump_vec<const UP: bool>() {
         let _ = vec.into_boxed_slice();
         dbg!(bump.stats());
         assert_eq!(
-            bump.stats().get_current_chunk().unwrap().allocated(),
+            bump.stats().current_chunk().unwrap().allocated(),
             TIMES * core::mem::size_of::<i32>()
         );
         bump.reset();
@@ -325,19 +325,16 @@ fn mut_bump_vec_drop<const UP: bool>() {
     assert_eq!(mem::size_of::<ChunkHeader>(), SIZE);
 
     let mut bump = BumpNoMinSize::<UP>::with_size(64);
-    assert_eq!(bump.stats().get_current_chunk().unwrap().size(), 64 - MALLOC_OVERHEAD);
+    assert_eq!(bump.stats().current_chunk().unwrap().size(), 64 - MALLOC_OVERHEAD);
     assert_eq!(bump.stats().capacity(), 64 - OVERHEAD);
     assert_eq!(bump.stats().remaining(), 64 - OVERHEAD);
 
     let mut vec: MutBumpVec<u8, _> = mut_bump_vec![in &mut bump];
     vec.reserve(33);
 
+    assert_eq!(vec.allocator_stats().current_chunk().unwrap().size(), 128 - MALLOC_OVERHEAD);
     assert_eq!(
-        vec.allocator_stats().get_current_chunk().unwrap().size(),
-        128 - MALLOC_OVERHEAD
-    );
-    assert_eq!(
-        vec.allocator_stats().get_current_chunk().unwrap().prev().unwrap().size(),
+        vec.allocator_stats().current_chunk().unwrap().prev().unwrap().size(),
         64 - MALLOC_OVERHEAD
     );
     assert_eq!(vec.allocator_stats().size(), 64 + 128 - MALLOC_OVERHEAD * 2);
@@ -345,7 +342,7 @@ fn mut_bump_vec_drop<const UP: bool>() {
 
     drop(vec);
 
-    assert_eq!(bump.stats().get_current_chunk().unwrap().size(), 128 - MALLOC_OVERHEAD);
+    assert_eq!(bump.stats().current_chunk().unwrap().size(), 128 - MALLOC_OVERHEAD);
     assert_eq!(bump.stats().size(), 64 + 128 - MALLOC_OVERHEAD * 2);
     assert_eq!(bump.stats().count(), 2);
 }
@@ -412,7 +409,7 @@ fn debug_sizes(bump: &impl BumpAllocator) {
 }
 
 fn force_alloc_new_chunk<const UP: bool>(bump: &BumpScopeNoMinSize<UP>) {
-    let size = bump.stats().get_current_chunk().unwrap().remaining() + 1;
+    let size = bump.stats().current_chunk().unwrap().remaining() + 1;
     let layout = Layout::from_size_align(size, 1).unwrap();
     bump.allocate_layout(layout);
 }
@@ -773,7 +770,7 @@ fn realign<const UP: bool>() {
         assert!(
             !bump
                 .stats()
-                .get_current_chunk()
+                .current_chunk()
                 .unwrap()
                 .bump_position()
                 .cast::<AlignT>()
@@ -782,7 +779,7 @@ fn realign<const UP: bool>() {
         let bump = bump.with_settings::<BumpSettings<ALIGN, UP>>();
         assert!(
             bump.stats()
-                .get_current_chunk()
+                .current_chunk()
                 .unwrap()
                 .bump_position()
                 .cast::<AlignT>()
@@ -797,7 +794,7 @@ fn realign<const UP: bool>() {
         assert!(
             !bump
                 .stats()
-                .get_current_chunk()
+                .current_chunk()
                 .unwrap()
                 .bump_position()
                 .cast::<AlignT>()
@@ -806,7 +803,7 @@ fn realign<const UP: bool>() {
         let bump = bump.borrow_mut_with_settings::<BumpSettings<ALIGN, UP>>();
         assert!(
             bump.typed_stats()
-                .get_current_chunk()
+                .current_chunk()
                 .unwrap()
                 .bump_position()
                 .cast::<AlignT>()
@@ -821,7 +818,7 @@ fn realign<const UP: bool>() {
         assert!(
             !bump
                 .stats()
-                .get_current_chunk()
+                .current_chunk()
                 .unwrap()
                 .bump_position()
                 .cast::<AlignT>()
@@ -830,7 +827,7 @@ fn realign<const UP: bool>() {
         bump.aligned::<ALIGN, ()>(|bump| {
             assert!(
                 bump.stats()
-                    .get_current_chunk()
+                    .current_chunk()
                     .unwrap()
                     .bump_position()
                     .cast::<AlignT>()
@@ -846,7 +843,7 @@ fn realign<const UP: bool>() {
         assert!(
             !bump
                 .stats()
-                .get_current_chunk()
+                .current_chunk()
                 .unwrap()
                 .bump_position()
                 .cast::<AlignT>()
@@ -855,7 +852,7 @@ fn realign<const UP: bool>() {
         bump.scoped_aligned::<ALIGN, ()>(|bump| {
             assert!(
                 bump.stats()
-                    .get_current_chunk()
+                    .current_chunk()
                     .unwrap()
                     .bump_position()
                     .cast::<AlignT>()

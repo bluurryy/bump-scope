@@ -18,7 +18,7 @@ where
 {
     fn from(value: Stats<'_, S>) -> Self {
         Self {
-            chunk: value.get_current_chunk().map(Into::into),
+            chunk: value.current_chunk().map(Into::into),
         }
     }
 }
@@ -422,7 +422,7 @@ fn check_from_impls() {
     {
         let stats = bump.stats();
         accepting_any_stats(stats.into());
-        accepting_any_chunk(stats.get_current_chunk().unwrap().into());
+        accepting_any_chunk(stats.current_chunk().unwrap().into());
         accepting_any_chunk_next_iter(stats.small_to_big().into());
         accepting_any_chunk_prev_iter(stats.big_to_small().into());
     }

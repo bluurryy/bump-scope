@@ -26,7 +26,7 @@ fn test_reserve() {
     let checkpoint = bump.checkpoint();
 
     // fill the first chunk
-    bump.allocate_layout(Layout::array::<u8>(bump.stats().get_current_chunk().unwrap().remaining()).unwrap());
+    bump.allocate_layout(Layout::array::<u8>(bump.stats().current_chunk().unwrap().remaining()).unwrap());
     assert_eq!(bump.stats().count(), 1);
     assert_eq!(bump.stats().remaining(), 0);
 

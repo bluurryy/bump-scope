@@ -16,7 +16,7 @@ use core::{
 
 use crate::{
     raw_bump::{NonDummyChunk, RawChunk},
-    settings::{BumpAllocatorSettings, BumpSettings, False, True},
+    settings::{BumpAllocatorSettings, BumpSettings, False},
 };
 
 #[cfg(debug_assertions)]
@@ -83,7 +83,7 @@ where
     /// Returns the number of chunks.
     #[must_use]
     pub fn count(self) -> usize {
-        let Some(current) = self.get_current_chunk() else { return 0 };
+        let Some(current) = self.current_chunk() else { return 0 };
 
         let mut sum = 1;
         current.iter_prev().for_each(|_| sum += 1);
@@ -94,7 +94,7 @@ where
     /// Returns the total size of all chunks.
     #[must_use]
     pub fn size(self) -> usize {
-        let Some(current) = self.get_current_chunk() else { return 0 };
+        let Some(current) = self.current_chunk() else { return 0 };
 
         let mut sum = current.size();
         current.iter_prev().for_each(|chunk| sum += chunk.size());
@@ -105,7 +105,7 @@ where
     /// Returns the total capacity of all chunks.
     #[must_use]
     pub fn capacity(self) -> usize {
-        let Some(current) = self.get_current_chunk() else { return 0 };
+        let Some(current) = self.current_chunk() else { return 0 };
 
         let mut sum = current.capacity();
         current.iter_prev().for_each(|chunk| sum += chunk.capacity());
@@ -120,7 +120,7 @@ where
     /// plus the `capacity` of all previous chunks.
     #[must_use]
     pub fn allocated(self) -> usize {
-        let Some(current) = self.get_current_chunk() else { return 0 };
+        let Some(current) = self.current_chunk() else { return 0 };
 
         let mut sum = current.allocated();
         current.iter_prev().for_each(|chunk| sum += chunk.capacity());
@@ -133,7 +133,7 @@ where
     /// plus the `capacity` of all following chunks.
     #[must_use]
     pub fn remaining(self) -> usize {
-        let Some(current) = self.get_current_chunk() else { return 0 };
+        let Some(current) = self.current_chunk() else { return 0 };
 
         let mut sum = current.remaining();
         current.iter_next().for_each(|chunk| sum += chunk.capacity());
@@ -143,7 +143,7 @@ where
     /// Returns an iterator from smallest to biggest chunk.
     #[must_use]
     pub fn small_to_big(self) -> ChunkNextIter<'a, S> {
-        let Some(mut start) = self.get_current_chunk() else {
+        let Some(mut start) = self.current_chunk() else {
             return ChunkNextIter { chunk: None };
         };
 
@@ -157,7 +157,7 @@ where
     /// Returns an iterator from biggest to smallest chunk.
     #[must_use]
     pub fn big_to_small(self) -> ChunkPrevIter<'a, S> {
-        let Some(mut start) = self.get_current_chunk() else {
+        let Some(mut start) = self.current_chunk() else {
             return ChunkPrevIter { chunk: None };
         };
 
@@ -170,25 +170,11 @@ where
 
     /// This is the chunk we are currently allocating on.
     #[must_use]
-    pub fn get_current_chunk(self) -> Option<Chunk<'a, S>> {
+    pub fn current_chunk(self) -> Option<Chunk<'a, S>> {
         Some(Chunk {
             chunk: self.chunk.as_non_dummy()?,
             marker: self.marker,
         })
-    }
-}
-
-impl<'a, S> Stats<'a, S>
-where
-    S: BumpAllocatorSettings<GuaranteedAllocated = True, Claimable = False>,
-{
-    /// This is the chunk we are currently allocating on.
-    #[must_use]
-    pub fn current_chunk(self) -> Chunk<'a, S> {
-        Chunk {
-            chunk: self.chunk.non_dummy(),
-            marker: self.marker,
-        }
     }
 }
 

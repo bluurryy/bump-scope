@@ -99,11 +99,11 @@ fn checkpoint_multiple_chunks<const UP: bool>() {
     allocate_another_chunk(&bump, 3);
     allocate_another_chunk(&bump, 4);
 
-    assert_eq!(bump.stats().get_current_chunk().unwrap().iter_prev().count(), 3);
+    assert_eq!(bump.stats().current_chunk().unwrap().iter_prev().count(), 3);
     unsafe { bump.reset_to(c2) };
-    assert_eq!(bump.stats().get_current_chunk().unwrap().iter_prev().count(), 1);
+    assert_eq!(bump.stats().current_chunk().unwrap().iter_prev().count(), 1);
     unsafe { bump.reset_to(c0) };
-    assert_eq!(bump.stats().get_current_chunk().unwrap().iter_prev().count(), 0);
+    assert_eq!(bump.stats().current_chunk().unwrap().iter_prev().count(), 0);
     assert_eq!(bump.stats().count(), 4);
     std::dbg!(bump.stats());
 }
@@ -146,7 +146,7 @@ fn default_chunk_size<const UP: bool>() {
     bump.alloc("a");
     assert_eq!(bump.stats().count(), 1);
     assert_eq!(
-        bump.stats().get_current_chunk().unwrap().size(),
+        bump.stats().current_chunk().unwrap().size(),
         512 - size_of::<AssumedMallocOverhead>()
     );
 }
@@ -157,7 +157,7 @@ fn custom_chunk_size<const UP: bool>() {
     bump.alloc("a");
     assert_eq!(bump.stats().count(), 1);
     assert_eq!(
-        bump.stats().get_current_chunk().unwrap().size(),
+        bump.stats().current_chunk().unwrap().size(),
         4096 - size_of::<AssumedMallocOverhead>()
     );
 }
