@@ -628,7 +628,6 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
         Ok(self.try_alloc_uninit_slice(len)?.init_fill_with(f))
     }
 
-    // TODO: rename to slice_uninit
     /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with

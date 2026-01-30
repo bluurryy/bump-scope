@@ -344,8 +344,6 @@ where
     /// So `end.offset_from_unsigned(start)` may not be used!
     #[inline(always)]
     fn prepare_allocation_range<B: ErrorBehavior, T>(&self, cap: usize) -> Result<Range<NonNull<T>>, B> {
-        // TODO: ZST to return dangling ptrs?
-
         let Ok(layout) = ArrayLayout::array::<T>(cap) else {
             return Err(B::capacity_overflow());
         };
