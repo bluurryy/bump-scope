@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Breaking:** Fix `no_std` builds with "serde" feature by depending on serde without default features
+- Fix remaining capacity calculation in `Bump(Scope)::reserve_bytes`
 
 ### Changed
 

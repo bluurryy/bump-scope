@@ -220,13 +220,13 @@ where
     pub(crate) fn reserve<E: ErrorBehavior>(&self, additional: usize) -> Result<(), E> {
         let chunk = self.chunk.get();
 
-        let Ok(layout) = Layout::from_size_align(additional, 1) else {
-            return Err(E::capacity_overflow());
-        };
-
         match chunk.classify() {
             ChunkClass::Claimed => Err(E::claimed()),
             ChunkClass::Unallocated => {
+                let Ok(layout) = Layout::from_size_align(additional, 1) else {
+                    return Err(E::capacity_overflow());
+                };
+
                 let new_chunk = NonDummyChunk::new(
                     ChunkSize::<S::Up>::from_capacity(layout).ok_or_else(E::capacity_overflow)?,
                     None,
@@ -239,20 +239,29 @@ where
             ChunkClass::NonDummy(mut chunk) => {
                 let mut additional = additional;
 
-                loop {
-                    // TODO: isn't this wrong?, check the `stats::Chunk::remaining` docs
-                    if let Some(rest) = additional.checked_sub(chunk.remaining()) {
+                if let Some(rest) = additional.checked_sub(chunk.remaining()) {
+                    additional = rest;
+                } else {
+                    return Ok(());
+                }
+
+                while let Some(next) = chunk.next() {
+                    chunk = next;
+
+                    if let Some(rest) = additional.checked_sub(chunk.capacity()) {
                         additional = rest;
                     } else {
                         return Ok(());
                     }
-
-                    if let Some(next) = chunk.next() {
-                        chunk = next;
-                    } else {
-                        break;
-                    }
                 }
+
+                if additional == 0 {
+                    return Ok(());
+                }
+
+                let Ok(layout) = Layout::from_size_align(additional, 1) else {
+                    return Err(E::capacity_overflow());
+                };
 
                 chunk.append_for(layout, &*self.allocator).map(drop)
             }
