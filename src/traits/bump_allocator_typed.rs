@@ -16,7 +16,7 @@ use crate::{
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{handle_alloc_error, panic_on_error, private::capacity_overflow};
+use crate::panic_on_error;
 
 /// An extension trait for [`BumpAllocatorCore`]s.
 ///
@@ -426,45 +426,45 @@ macro_rules! impl_for_trait_object {
                 #[inline(always)]
                 #[cfg(feature = "panic-on-alloc")]
                 fn allocate_layout(&self, layout: Layout) -> NonNull<u8> {
-                    for_trait_object::allocate_layout(self, layout)
+                    panic_on_error(for_trait_object::allocate_layout(self, layout))
                 }
 
                 #[inline(always)]
                 fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
-                    for_trait_object::try_allocate_layout(self, layout)
+                    for_trait_object::allocate_layout(self, layout)
                 }
 
                 #[inline(always)]
                 #[cfg(feature = "panic-on-alloc")]
                 fn allocate_sized<T>(&self) -> NonNull<T> {
-                    for_trait_object::allocate_sized(self)
+                    panic_on_error(for_trait_object::allocate_sized(self))
                 }
 
                 #[inline(always)]
                 fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError> {
-                    for_trait_object::try_allocate_sized(self)
+                    for_trait_object::allocate_sized(self)
                 }
 
                 #[inline(always)]
                 #[cfg(feature = "panic-on-alloc")]
                 fn allocate_slice<T>(&self, len: usize) -> NonNull<T> {
-                    for_trait_object::allocate_slice(self, len)
+                    panic_on_error(for_trait_object::allocate_slice(self, len))
                 }
 
                 #[inline(always)]
                 fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError> {
-                    for_trait_object::try_allocate_slice(self, len)
+                    for_trait_object::allocate_slice(self, len)
                 }
 
                 #[inline(always)]
                 #[cfg(feature = "panic-on-alloc")]
                 fn allocate_slice_for<T>(&self, slice: &[T]) -> NonNull<T> {
-                    for_trait_object::allocate_slice_for(self, slice)
+                    panic_on_error(for_trait_object::allocate_slice_for(self, slice))
                 }
 
                 #[inline(always)]
                 fn try_allocate_slice_for<T>(&self, slice: &[T]) -> Result<NonNull<T>, AllocError> {
-                    for_trait_object::try_allocate_slice_for(self, slice)
+                    for_trait_object::allocate_slice_for(self, slice)
                 }
 
                 #[inline(always)]
@@ -475,12 +475,12 @@ macro_rules! impl_for_trait_object {
                 #[inline(always)]
                 #[cfg(feature = "panic-on-alloc")]
                 fn prepare_slice_allocation<T>(&self, len: usize) -> NonNull<[T]> {
-                    for_trait_object::prepare_slice_allocation(self, len)
+                    panic_on_error(for_trait_object::prepare_slice_allocation(self, len))
                 }
 
                 #[inline(always)]
                 fn try_prepare_slice_allocation<T>(&self, len: usize) -> Result<NonNull<[T]>, AllocError> {
-                    for_trait_object::try_prepare_slice_allocation(self, len)
+                    for_trait_object::prepare_slice_allocation(self, len)
                 }
 
                 #[inline(always)]
@@ -507,12 +507,12 @@ macro_rules! impl_for_trait_object {
                 #[inline(always)]
                 #[cfg(feature = "panic-on-alloc")]
                 fn reserve(&self, additional: usize) {
-                    for_trait_object::reserve(self, additional);
+                    panic_on_error(for_trait_object::reserve(self, additional));
                 }
 
                 #[inline(always)]
                 fn try_reserve(&self, additional: usize) -> Result<(), AllocError> {
-                    for_trait_object::try_reserve(self, additional)
+                    for_trait_object::reserve(self, additional)
                 }
             }
         )*
@@ -525,84 +525,43 @@ mod for_trait_object {
     use super::*;
 
     #[inline]
-    #[cfg(feature = "panic-on-alloc")]
-    pub(super) fn allocate_layout(bump: impl BumpAllocatorCore, layout: Layout) -> NonNull<u8> {
-        match bump.allocate(layout) {
-            Ok(ptr) => ptr.cast(),
-            Err(AllocError) => handle_alloc_error(layout),
-        }
-    }
-
-    #[inline]
-    pub(super) fn try_allocate_layout(bump: impl BumpAllocatorCore, layout: Layout) -> Result<NonNull<u8>, AllocError> {
+    pub(super) fn allocate_layout<E: ErrorBehavior>(bump: impl BumpAllocatorCore, layout: Layout) -> Result<NonNull<u8>, E> {
         match bump.allocate(layout) {
             Ok(ptr) => Ok(ptr.cast()),
-            Err(err) => Err(err),
+            Err(AllocError) => Err(E::allocation(layout)),
         }
     }
 
     #[inline]
-    #[cfg(feature = "panic-on-alloc")]
-    pub(super) fn allocate_sized<T>(bump: impl BumpAllocatorCore) -> NonNull<T> {
-        let layout = Layout::new::<T>();
-
-        match bump.allocate(layout) {
-            Ok(ptr) => ptr.cast(),
-            Err(AllocError) => handle_alloc_error(Layout::new::<T>()),
-        }
-    }
-
-    #[inline]
-    pub(super) fn try_allocate_sized<T>(bump: impl BumpAllocatorCore) -> Result<NonNull<T>, AllocError> {
+    pub(super) fn allocate_sized<E: ErrorBehavior, T>(bump: impl BumpAllocatorCore) -> Result<NonNull<T>, E> {
         match bump.allocate(Layout::new::<T>()) {
             Ok(ptr) => Ok(ptr.cast()),
-            Err(err) => Err(err),
+            Err(AllocError) => Err(E::allocation(Layout::new::<T>())),
         }
     }
 
     #[inline]
-    #[cfg(feature = "panic-on-alloc")]
-    pub(super) fn allocate_slice<T>(bump: impl BumpAllocatorCore, len: usize) -> NonNull<T> {
+    pub(super) fn allocate_slice<E: ErrorBehavior, T>(bump: impl BumpAllocatorCore, len: usize) -> Result<NonNull<T>, E> {
         let Ok(layout) = Layout::array::<T>(len) else {
-            invalid_slice_layout()
-        };
-
-        match bump.allocate(layout) {
-            Ok(ptr) => ptr.cast(),
-            Err(AllocError) => handle_alloc_error(layout),
-        }
-    }
-
-    #[inline]
-    pub(super) fn try_allocate_slice<T>(bump: impl BumpAllocatorCore, len: usize) -> Result<NonNull<T>, AllocError> {
-        let Ok(layout) = Layout::array::<T>(len) else {
-            return Err(AllocError);
+            return Err(E::invalid_slice_layout());
         };
 
         match bump.allocate(layout) {
             Ok(ptr) => Ok(ptr.cast()),
-            Err(err) => Err(err),
+            Err(AllocError) => Err(E::allocation(layout)),
         }
     }
 
     #[inline]
-    #[cfg(feature = "panic-on-alloc")]
-    pub(super) fn allocate_slice_for<T>(bump: impl BumpAllocatorCore, slice: &[T]) -> NonNull<T> {
-        let layout = Layout::for_value(slice);
-
-        match bump.allocate(layout) {
-            Ok(ptr) => ptr.cast(),
-            Err(AllocError) => handle_alloc_error(layout),
-        }
-    }
-
-    #[inline]
-    pub(super) fn try_allocate_slice_for<T>(bump: impl BumpAllocatorCore, slice: &[T]) -> Result<NonNull<T>, AllocError> {
+    pub(super) fn allocate_slice_for<E: ErrorBehavior, T>(
+        bump: impl BumpAllocatorCore,
+        slice: &[T],
+    ) -> Result<NonNull<T>, E> {
         let layout = Layout::for_value(slice);
 
         match bump.allocate(layout) {
             Ok(ptr) => Ok(ptr.cast()),
-            Err(err) => Err(err),
+            Err(AllocError) => Err(E::allocation(layout)),
         }
     }
 
@@ -634,54 +593,29 @@ mod for_trait_object {
         end > header
     }
 
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    pub(super) fn prepare_slice_allocation<T>(bump: impl BumpAllocatorCore, min_cap: usize) -> NonNull<[T]> {
-        let Ok(layout) = Layout::array::<T>(min_cap) else {
-            capacity_overflow()
-        };
-
-        match bump.prepare_allocation(layout) {
-            Ok(range) => {
-                // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-                let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
-
-                let ptr = if is_upwards_allocating(&bump) {
-                    range.start.cast::<T>()
-                } else {
-                    unsafe { range.end.cast::<T>().sub(cap) }
-                };
-
-                NonNull::slice_from_raw_parts(ptr.cast(), cap)
-            }
-            Err(AllocError) => handle_alloc_error(layout),
-        }
-    }
-
-    #[inline(always)]
-    pub(super) fn try_prepare_slice_allocation<T>(
+    #[inline]
+    pub(super) fn prepare_slice_allocation<E: ErrorBehavior, T>(
         bump: impl BumpAllocatorCore,
         len: usize,
-    ) -> Result<NonNull<[T]>, AllocError> {
+    ) -> Result<NonNull<[T]>, E> {
         let Ok(layout) = Layout::array::<T>(len) else {
-            return Err(AllocError);
+            return Err(E::capacity_overflow());
         };
 
-        match bump.prepare_allocation(layout) {
-            Ok(range) => {
-                // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-                let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
+        let Ok(range) = bump.prepare_allocation(layout) else {
+            return Err(E::allocation(layout));
+        };
 
-                let ptr = if is_upwards_allocating(&bump) {
-                    range.start.cast::<T>()
-                } else {
-                    unsafe { range.end.cast::<T>().sub(cap) }
-                };
+        // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
+        let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
 
-                Ok(NonNull::slice_from_raw_parts(ptr.cast(), cap))
-            }
-            Err(err) => Err(err),
-        }
+        let ptr = if is_upwards_allocating(&bump) {
+            range.start.cast::<T>()
+        } else {
+            unsafe { range.end.cast::<T>().sub(cap) }
+        };
+
+        Ok(NonNull::slice_from_raw_parts(ptr.cast(), cap))
     }
 
     #[inline(always)]
@@ -742,25 +676,15 @@ mod for_trait_object {
         }
     }
 
-    #[cfg(feature = "panic-on-alloc")]
-    pub(super) fn reserve(bump: impl BumpAllocatorCore, additional: usize) {
+    #[inline]
+    pub(super) fn reserve<E: ErrorBehavior>(bump: impl BumpAllocatorCore, additional: usize) -> Result<(), E> {
         let Ok(layout) = Layout::array::<u8>(additional) else {
-            invalid_slice_layout();
-        };
-
-        if let Err(AllocError) = bump.prepare_allocation(layout) {
-            handle_alloc_error(layout);
-        }
-    }
-
-    pub(super) fn try_reserve(bump: impl BumpAllocatorCore, additional: usize) -> Result<(), AllocError> {
-        let Ok(layout) = Layout::array::<u8>(additional) else {
-            return Err(AllocError);
+            return Err(E::invalid_slice_layout());
         };
 
         match bump.prepare_allocation(layout) {
             Ok(_) => Ok(()),
-            Err(err) => Err(err),
+            Err(AllocError) => Err(E::allocation(layout)),
         }
     }
 }
@@ -1400,11 +1324,4 @@ where
     fn try_reserve(&self, additional: usize) -> Result<(), AllocError> {
         self.as_scope().try_reserve(additional)
     }
-}
-
-#[cold]
-#[inline(never)]
-#[cfg(feature = "panic-on-alloc")]
-pub(crate) const fn invalid_slice_layout() -> ! {
-    panic!("invalid slice layout");
 }

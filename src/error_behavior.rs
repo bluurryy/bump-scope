@@ -18,6 +18,7 @@ pub(crate) trait ErrorBehavior: Sized {
     fn claimed() -> Self;
     fn fixed_size_vector_is_full() -> Self;
     fn fixed_size_vector_no_space(amount: usize) -> Self;
+    fn invalid_slice_layout() -> Self;
     fn format_trait_error() -> Self;
     #[expect(dead_code)]
     fn allocate_layout(allocator: &impl BumpAllocatorTyped, layout: Layout) -> Result<NonNull<u8>, Self>;
@@ -62,6 +63,11 @@ impl ErrorBehavior for Infallible {
     #[inline(always)]
     fn fixed_size_vector_no_space(amount: usize) -> Self {
         panic::fixed_size_vector_no_space(amount)
+    }
+
+    #[inline(always)]
+    fn invalid_slice_layout() -> Self {
+        panic::invalid_slice_layout()
     }
 
     #[inline(always)]
@@ -132,6 +138,11 @@ impl ErrorBehavior for AllocError {
     }
 
     #[inline(always)]
+    fn invalid_slice_layout() -> Self {
+        Self
+    }
+
+    #[inline(always)]
     fn format_trait_error() -> Self {
         Self
     }
@@ -187,5 +198,12 @@ pub(crate) mod panic {
     #[cfg(feature = "panic-on-alloc")]
     pub(crate) fn fixed_size_vector_no_space(amount: usize) -> ! {
         panic!("fixed size vector does not have space for {amount} more elements");
+    }
+
+    #[cold]
+    #[inline(never)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub(crate) const fn invalid_slice_layout() -> ! {
+        panic!("invalid slice layout");
     }
 }
