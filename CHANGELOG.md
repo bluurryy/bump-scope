@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `Bump::new(_in)` won't allocate a chunk anymore
 - **Breaking:** The generic const parameters have been consolidated into a single `Settings` parameter.
 - **Breaking:** Replaced allocator settings configuration methods with new `(borrow(_mut))_with_settings` methods
 - **Breaking:** Bump allocator traits have been moved and renamed:
@@ -37,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** `scoped`, `scoped_aligned` and `aligned` now take a closure with a `&mut BumpScope` instead of a `BumpScope` (you can get the bump scope by value using `by_value`)
 - **Breaking:** Rename `reserve_bytes` to `reserve`
 - **Breaking:** Change `BumpAllocatorCore` trait safety invariants
-- `Bump::new(_in)` won't allocate a chunk anymore
+- **Breaking:** Add `prepare_allocation_rev` and require it for `allocate_prepared_rev`, safety invariants for the prepare allocation api changed
 - Remove branch when allocating on a non-guaranteed-allocated `Bump(Scope)`, checking for a layout of `0`
 - Depend on `serde_core` instead of `serde`
 

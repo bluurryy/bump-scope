@@ -28,6 +28,10 @@ pub(crate) trait ErrorBehavior: Sized {
         allocator: &mut impl MutBumpAllocatorTyped,
         len: usize,
     ) -> Result<NonNull<[T]>, Self>;
+    unsafe fn prepare_slice_allocation_rev<T>(
+        allocator: &mut impl MutBumpAllocatorTyped,
+        len: usize,
+    ) -> Result<(NonNull<T>, usize), Self>;
 }
 
 #[cfg(feature = "panic-on-alloc")]
@@ -87,6 +91,14 @@ impl ErrorBehavior for Infallible {
     ) -> Result<NonNull<[T]>, Self> {
         Ok(allocator.prepare_slice_allocation::<T>(len))
     }
+
+    #[inline(always)]
+    unsafe fn prepare_slice_allocation_rev<T>(
+        allocator: &mut impl MutBumpAllocatorTyped,
+        len: usize,
+    ) -> Result<(NonNull<T>, usize), Self> {
+        Ok(allocator.prepare_slice_allocation_rev::<T>(len))
+    }
 }
 
 impl ErrorBehavior for AllocError {
@@ -145,6 +157,14 @@ impl ErrorBehavior for AllocError {
         len: usize,
     ) -> Result<NonNull<[T]>, Self> {
         allocator.try_prepare_slice_allocation::<T>(len)
+    }
+
+    #[inline(always)]
+    unsafe fn prepare_slice_allocation_rev<T>(
+        allocator: &mut impl MutBumpAllocatorTyped,
+        len: usize,
+    ) -> Result<(NonNull<T>, usize), Self> {
+        allocator.try_prepare_slice_allocation_rev::<T>(len)
     }
 }
 

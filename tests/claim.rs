@@ -159,6 +159,12 @@ fn api_fails_on_claimed_bump<const UP: bool>() {
         expect_panic(|| bump.prepare_slice_allocation::<u8>(123));
         expect_err(bump.try_prepare_slice_allocation::<u8>(123));
 
+        // prepare_slice_allocation_rev
+        expect_panic(|| bump.prepare_slice_allocation_rev::<()>(123));
+        expect_err(bump.try_prepare_slice_allocation_rev::<()>(123));
+        expect_panic(|| bump.prepare_slice_allocation_rev::<u8>(123));
+        expect_err(bump.try_prepare_slice_allocation_rev::<u8>(123));
+
         // dealloc
         bump.dealloc(boxed);
         assert_eq!(guard.stats().allocated(), original_allocated);

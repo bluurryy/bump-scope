@@ -114,7 +114,7 @@ pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
 
     /// Returns a pointer range of free space in the bump allocator with a size of at least `layout.size()`.
     ///
-    /// Both the start and the end of the range is aligned to `layout.align()`.
+    /// The start of the range is aligned to `layout.align()`.
     ///
     /// The pointer range takes up as much of the free space of the chunk as possible while satisfying the other conditions.
     ///
@@ -136,18 +136,27 @@ pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     /// [unclaimed]: crate::traits::BumpAllocatorScope::claim
     unsafe fn allocate_prepared(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8>;
 
-    /// Allocate part of the free space returned from a [`prepare_allocation`] call starting at the end.
+    /// Returns a pointer range of free space in the bump allocator with a size of at least `layout.size()`.
+    ///
+    /// The end of the range is aligned to `layout.align()`.
+    ///
+    /// The pointer range takes up as much of the free space of the chunk as possible while satisfying the other conditions.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    fn prepare_allocation_rev(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError>;
+
+    /// Allocate part of the free space returned from a [`prepare_allocation_rev`] call starting at the end.
     ///
     /// # Safety
-    /// - `range` must have been returned from a call to [`prepare_allocation`]
+    /// - `range` must have been returned from a call to [`prepare_allocation_rev`]
     /// - no allocation, grow, shrink or deallocate must have taken place since then
     /// - no resets must have taken place since then
     /// - `layout` must be less than or equal to the `layout` used when calling
-    ///   [`prepare_allocation`], both in size and alignment
-    /// - the bump allocator must be [unclaimed] at the time [`prepare_allocation`] was called and when calling this function
+    ///   [`prepare_allocation_rev`], both in size and alignment
+    /// - the bump allocator must be [unclaimed] at the time [`prepare_allocation_rev`] was called and when calling this function
     ///
-    /// [`prepare_allocation`]: BumpAllocatorCore::prepare_allocation
-    /// [`allocate_prepared`]: BumpAllocatorCore::allocate_prepared
+    /// [`prepare_allocation_rev`]: BumpAllocatorCore::prepare_allocation_rev
     /// [unclaimed]: crate::traits::BumpAllocatorScope::claim
     unsafe fn allocate_prepared_rev(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8>;
 }
@@ -217,6 +226,11 @@ macro_rules! impl_for_ref {
                 }
 
                 #[inline(always)]
+                fn prepare_allocation_rev(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
+                    B::prepare_allocation_rev(self, layout)
+                }
+
+                #[inline(always)]
                 unsafe fn allocate_prepared_rev(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8> {
                     unsafe { B::allocate_prepared_rev(self, layout, range) }
                 }
@@ -262,6 +276,11 @@ unsafe impl<B: BumpAllocatorCore> BumpAllocatorCore for WithoutDealloc<B> {
     }
 
     #[inline(always)]
+    fn prepare_allocation_rev(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
+        B::prepare_allocation_rev(&self.0, layout)
+    }
+
+    #[inline(always)]
     unsafe fn allocate_prepared_rev(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8> {
         unsafe { B::allocate_prepared_rev(&self.0, layout, range) }
     }
@@ -296,6 +315,11 @@ unsafe impl<B: BumpAllocatorCore> BumpAllocatorCore for WithoutShrink<B> {
     #[inline(always)]
     unsafe fn allocate_prepared(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8> {
         unsafe { B::allocate_prepared(&self.0, layout, range) }
+    }
+
+    #[inline(always)]
+    fn prepare_allocation_rev(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
+        B::prepare_allocation_rev(&self.0, layout)
     }
 
     #[inline(always)]
@@ -337,6 +361,11 @@ where
     #[inline(always)]
     unsafe fn allocate_prepared(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8> {
         unsafe { self.as_scope().allocate_prepared(layout, range) }
+    }
+
+    #[inline(always)]
+    fn prepare_allocation_rev(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
+        self.as_scope().prepare_allocation_rev(layout)
     }
 
     #[inline(always)]
@@ -417,6 +446,12 @@ where
                 dst
             }
         }
+    }
+
+    #[inline(always)]
+    fn prepare_allocation_rev(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
+        // for now the implementation for both methods is the same
+        self.prepare_allocation(layout)
     }
 
     #[inline(always)]

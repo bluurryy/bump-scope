@@ -264,15 +264,38 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// [`allocate_prepared`]: BumpAllocatorCore::allocate_prepared
     unsafe fn allocate_prepared_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
 
+    /// A specialized version of [`prepare_allocation_rev`].
+    ///
+    /// Returns an end pointer and length of free space in the bump allocator.
+    ///
+    /// [`prepare_allocation_rev`]: crate::traits::BumpAllocatorCore::prepare_allocation_rev
+    ///
+    /// # Panics
+    ///
+    /// Panics if the allocation fails.
+    #[cfg(feature = "panic-on-alloc")]
+    fn prepare_slice_allocation_rev<T>(&self, cap: usize) -> (NonNull<T>, usize);
+
+    /// A specialized version of [`prepare_allocation_rev`].
+    ///
+    /// Returns an end pointer and length of free space in the bump allocator.
+    ///
+    /// [`prepare_allocation_rev`]: crate::traits::BumpAllocatorCore::prepare_allocation_rev
+    ///
+    /// # Errors
+    ///
+    /// Errors if the allocation fails.
+    fn try_prepare_slice_allocation_rev<T>(&self, cap: usize) -> Result<(NonNull<T>, usize), AllocError>;
+
     /// A specialized version of [`allocate_prepared_rev`].
     ///
     /// Allocates part of the free space returned from a
-    /// <code>([try_](BumpAllocatorTyped::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorTyped::prepare_slice_allocation)</code>
+    /// <code>([try_](BumpAllocatorTyped::try_prepare_slice_allocation))[prepare_slice_allocation_rev](BumpAllocatorTyped::prepare_slice_allocation_rev)</code>
     /// call.
     ///
     /// # Safety
     /// - `ptr - cap..ptr` must be the pointer range returned from
-    ///   <code>([try_](BumpAllocatorTyped::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorTyped::prepare_slice_allocation)</code>.
+    ///   <code>([try_](BumpAllocatorTyped::try_prepare_slice_allocation))[prepare_slice_allocation_rev](BumpAllocatorTyped::prepare_slice_allocation_rev)</code>.
     /// - no allocation, grow, shrink or deallocate must have taken place since then
     /// - no resets must have taken place since then
     /// - `len` must be less than or equal to `cap`
@@ -466,6 +489,17 @@ macro_rules! impl_for_trait_object {
                 }
 
                 #[inline(always)]
+                #[cfg(feature = "panic-on-alloc")]
+                fn prepare_slice_allocation_rev<T>(&self, len: usize) -> (NonNull<T>, usize) {
+                    panic_on_error(for_trait_object::prepare_slice_allocation_rev(self, len))
+                }
+
+                #[inline(always)]
+                fn try_prepare_slice_allocation_rev<T>(&self, len: usize) -> Result<(NonNull<T>, usize), AllocError> {
+                    for_trait_object::prepare_slice_allocation_rev(self, len)
+                }
+
+                #[inline(always)]
                 unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
                     unsafe { for_trait_object::allocate_prepared_slice_rev(self, ptr, len, cap) }
                 }
@@ -486,6 +520,8 @@ macro_rules! impl_for_trait_object {
 }
 
 mod for_trait_object {
+    use crate::error_behavior::ErrorBehavior;
+
     use super::*;
 
     #[inline]
@@ -664,6 +700,34 @@ mod for_trait_object {
     }
 
     #[inline(always)]
+    pub(super) fn prepare_slice_allocation_rev<E, T>(
+        bump: impl BumpAllocatorCore,
+        len: usize,
+    ) -> Result<(NonNull<T>, usize), E>
+    where
+        E: ErrorBehavior,
+    {
+        let Ok(layout) = Layout::array::<T>(len) else {
+            return Err(E::capacity_overflow());
+        };
+
+        let Ok(range) = bump.prepare_allocation_rev(layout) else {
+            return Err(E::allocation(layout));
+        };
+
+        // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
+        let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
+
+        let ptr = if is_upwards_allocating(&bump) {
+            unsafe { range.start.cast::<T>().add(cap) }
+        } else {
+            range.end.cast::<T>()
+        };
+
+        Ok((ptr, cap))
+    }
+
+    #[inline(always)]
     pub(super) unsafe fn allocate_prepared_slice_rev<T>(
         bump: impl BumpAllocatorCore,
         ptr: NonNull<T>,
@@ -788,6 +852,17 @@ macro_rules! impl_for_ref {
                 }
 
                 #[inline(always)]
+                #[cfg(feature = "panic-on-alloc")]
+                fn prepare_slice_allocation_rev<T>(&self, len: usize) -> (NonNull<T>, usize) {
+                    B::prepare_slice_allocation_rev(self, len)
+                }
+
+                #[inline(always)]
+                fn try_prepare_slice_allocation_rev<T>(&self, len: usize) -> Result<(NonNull<T>, usize), AllocError> {
+                    B::try_prepare_slice_allocation_rev(self, len)
+                }
+
+                #[inline(always)]
                 unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
                     unsafe { B::allocate_prepared_slice_rev(self, ptr, len, cap) }
                 }
@@ -889,6 +964,17 @@ unsafe impl<B: BumpAllocatorTyped> BumpAllocatorTyped for WithoutDealloc<B> {
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn prepare_slice_allocation_rev<T>(&self, len: usize) -> (NonNull<T>, usize) {
+        B::prepare_slice_allocation_rev(&self.0, len)
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation_rev<T>(&self, len: usize) -> Result<(NonNull<T>, usize), AllocError> {
+        B::try_prepare_slice_allocation_rev(&self.0, len)
+    }
+
+    #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { B::allocate_prepared_slice_rev(&self.0, ptr, len, cap) }
     }
@@ -981,6 +1067,17 @@ unsafe impl<B: BumpAllocatorTyped> BumpAllocatorTyped for WithoutShrink<B> {
     #[inline(always)]
     unsafe fn allocate_prepared_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { B::allocate_prepared_slice(&self.0, ptr, len, cap) }
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn prepare_slice_allocation_rev<T>(&self, len: usize) -> (NonNull<T>, usize) {
+        B::prepare_slice_allocation_rev(&self.0, len)
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation_rev<T>(&self, len: usize) -> Result<(NonNull<T>, usize), AllocError> {
+        B::try_prepare_slice_allocation_rev(&self.0, len)
     }
 
     #[inline(always)]
@@ -1151,6 +1248,17 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn prepare_slice_allocation_rev<T>(&self, len: usize) -> (NonNull<T>, usize) {
+        panic_on_error(self.raw.prepare_slice_allocation_rev(len))
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation_rev<T>(&self, len: usize) -> Result<(NonNull<T>, usize), AllocError> {
+        self.raw.prepare_slice_allocation_rev(len)
+    }
+
+    #[inline(always)]
     unsafe fn allocate_prepared_slice_rev<T>(&self, end: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe {
             // a successful `prepare_allocation` guarantees a non-dummy-chunk
@@ -1264,6 +1372,17 @@ where
     #[inline(always)]
     unsafe fn allocate_prepared_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { self.as_scope().allocate_prepared_slice(ptr, len, cap) }
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn prepare_slice_allocation_rev<T>(&self, len: usize) -> (NonNull<T>, usize) {
+        self.as_scope().prepare_slice_allocation_rev(len)
+    }
+
+    #[inline(always)]
+    fn try_prepare_slice_allocation_rev<T>(&self, len: usize) -> Result<(NonNull<T>, usize), AllocError> {
+        self.as_scope().try_prepare_slice_allocation_rev(len)
     }
 
     #[inline(always)]
