@@ -324,16 +324,10 @@ where
                         new_ptr_end > old_ptr
                     }
                 } else {
-                    new_ptr = match bump.alloc_in_another_chunk(new_layout) {
-                        Ok(new_ptr) => new_ptr,
-                        Err(error) => {
-                            // Need to reset the bump pointer to the old position.
+                    // `is_last` returned true, which guarantees a non-dummy chunk
+                    bump.chunk.get().as_non_dummy_unchecked().set_pos(old_pos);
 
-                            // `is_last` returned true, which guarantees a non-dummy
-                            bump.chunk.get().as_non_dummy_unchecked().set_pos(old_pos);
-                            return Err(error);
-                        }
-                    };
+                    new_ptr = bump.alloc_in_another_chunk::<AllocError>(new_layout)?;
                     overlaps = false;
                 }
 

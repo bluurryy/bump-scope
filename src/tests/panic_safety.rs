@@ -1,3 +1,4 @@
+use core::{alloc::Layout, ptr::NonNull};
 use std::{
     cell::Cell,
     hint::black_box,
@@ -8,7 +9,12 @@ use std::{
     thread_local,
 };
 
-use crate::{BumpVec, MutBumpVec, MutBumpVecRev, bump_vec, mut_bump_vec, mut_bump_vec_rev, tests::Bump};
+use crate::{
+    BumpVec, MutBumpVec, MutBumpVecRev,
+    alloc::{AllocError, Allocator, Global},
+    bump_vec, mut_bump_vec, mut_bump_vec_rev,
+    tests::Bump,
+};
 
 macro_rules! zst_or_not {
     (
@@ -136,6 +142,99 @@ fn mut_bump_vec_rev_extend_from_slice<T: Testable>() {
 
     assert_eq!(vec.len(), 3);
     assert_initialized(vec);
+}
+
+macro_rules! either_way {
+    ($($(#[$attr:meta])* $ident:ident)*) => {
+        $(
+            mod $ident {
+                #[test]
+                $(#[$attr])*
+                fn up() {
+                    std::eprintln!("`UP` is `true`");
+                    super::$ident::<true>();
+                }
+
+                #[test]
+                $(#[$attr])*
+                fn down() {
+                    std::eprintln!("`UP` is `false`");
+                    super::$ident::<false>();
+                }
+            }
+        )*
+    };
+}
+
+either_way! {
+    test_shrink_unfit_in_another_chunk
+}
+
+fn test_shrink_unfit_in_another_chunk<const UP: bool>() {
+    // Here we make sure to create a first chunk that is only aligned to the required chunk
+    // alignment and no more, so when a shrink is done with a high alignment it can't
+    // fit in the first chunk.
+
+    #[derive(Default)]
+    struct A {
+        allocation_count: Cell<usize>,
+    }
+
+    impl RefUnwindSafe for A {}
+
+    const LAYOUT: Layout = unsafe { Layout::from_size_align_unchecked(1024, 1024) };
+
+    unsafe impl Allocator for A {
+        fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+            let count = self.allocation_count.get();
+            self.allocation_count.set(count + 1);
+
+            if count == 0 {
+                assert!(layout.align() < LAYOUT.align());
+                assert!(layout.size() < (LAYOUT.size() - layout.align()));
+
+                let slice = Global.allocate(LAYOUT)?;
+
+                unsafe {
+                    let len = slice.len() - layout.align();
+                    let ptr = slice.cast::<u8>().add(layout.align());
+                    Ok(NonNull::slice_from_raw_parts(ptr, len))
+                }
+            } else {
+                panic!("intentional panic when shrinking")
+            }
+        }
+
+        unsafe fn deallocate(&self, ptr: NonNull<u8>, _: Layout) {
+            unsafe {
+                let ptr = ptr.as_ptr();
+                let ptr = ptr.with_addr(down_align(ptr.addr(), LAYOUT.align()));
+                let ptr = NonNull::new_unchecked(ptr);
+                Global.deallocate(ptr, LAYOUT);
+            }
+        }
+    }
+
+    let bump: Bump<A> = Bump::with_size(0);
+    bump.allocate(Layout::new::<u8>()).unwrap();
+
+    assert_eq!(bump.stats().allocated(), 1);
+
+    // allocate something and then shrink it with a greater alignment
+    let old_layout = Layout::from_size_align(3, 1).unwrap();
+    let new_layout = Layout::from_size_align(2, 2048).unwrap();
+
+    let old_ptr = bump.allocate(old_layout).unwrap().cast::<u8>();
+    assert_eq!(bump.stats().allocated(), 4);
+
+    catch_unwind(|| unsafe { bump.shrink(old_ptr, old_layout, new_layout) }).unwrap_err();
+    assert_eq!(bump.stats().allocated(), 4);
+}
+
+fn down_align(addr: usize, align: usize) -> usize {
+    debug_assert!(align.is_power_of_two());
+    let mask = align - 1;
+    addr & !mask
 }
 
 use helper::{Testable, assert_initialized, expected_drops};
