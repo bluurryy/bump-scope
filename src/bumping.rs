@@ -183,13 +183,10 @@ pub(crate) fn bump_up(props: BumpProps) -> Option<BumpUp> {
 
     let mut new_pos;
 
-    // Doing the `layout.size() < MIN_CHUNK_ALIGN` trick here (as seen in !UP)
-    // results in worse codegen, so we don't.
-
     if align_is_const && layout.align() <= MIN_CHUNK_ALIGN {
         // Constant, small alignment fast path!
 
-        if align_is_const && layout.align() <= min_align {
+        if layout.align() <= min_align {
             // Alignment is already sufficient.
         } else {
             // REGULAR_CHUNK: Aligning an address that is `<= range.end` with an alignment `<= MIN_CHUNK_ALIGN`
@@ -199,18 +196,29 @@ pub(crate) fn bump_up(props: BumpProps) -> Option<BumpUp> {
             start = up_align_unchecked(start, layout.align());
         }
 
-        // REGULAR_CHUNK: `start` and `end` must be part of the same allocated object.
-        // Allocated objects can't have a size greater than `isize::MAX`, so this doesn't overflow.
-        //
-        // DUMMY_CHUNK: `end - start` will always return `-16`
-        let remaining = end.wrapping_sub(start) as isize;
+        if size_is_const && layout.size() < MIN_CHUNK_ALIGN {
+            // When `size < MIN_CHUNK_ALIGN` adding it to `start` can't overflow,
+            // as the highest value for `start` would be `end` which is aligned to `MIN_CHUNK_ALIGN`,
+            // making it `< (usize::MAX - (MIN_CHUNK_ALIGN - 1))`.
+            new_pos = start + layout.size();
 
-        if unlikely(layout.size() as isize > remaining) {
-            return None;
+            if unlikely(end < new_pos) {
+                return None;
+            }
+        } else {
+            // REGULAR_CHUNK: `start` and `end` must be part of the same allocated object.
+            // Allocated objects can't have a size greater than `isize::MAX`, so this doesn't overflow.
+            //
+            // DUMMY_CHUNK: `end - start` will always return `-16`
+            let remaining = end.wrapping_sub(start) as isize;
+
+            if unlikely(layout.size() as isize > remaining) {
+                return None;
+            }
+
+            // Doesn't exceed `end` because of the check above.
+            new_pos = start + layout.size();
         }
-
-        // Doesn't exceed `end` because of the check above.
-        new_pos = start + layout.size();
     } else {
         // Alignment is `> MIN_CHUNK_ALIGN` or not const.
 
