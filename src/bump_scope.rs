@@ -264,6 +264,7 @@ where
     /// Converts this `BumpScope` into a `BumpScope` with new settings.
     ///
     /// Not all settings can be converted to. This function will fail to compile if:
+    /// - `NewS::MIN_ALIGN < S::MIN_ALIGN`
     /// - `NewS::UP != S::UP`
     /// - `NewS::GUARANTEED_ALLOCATED > S::GUARANTEED_ALLOCATED`
     /// - `NewS::CLAIMABLE < S::CLAIMABLE`
@@ -272,7 +273,7 @@ where
     where
         NewS: BumpAllocatorSettings,
     {
-        self.raw.ensure_satisfies_settings::<NewS>();
+        self.raw.ensure_scope_satisfies_settings::<NewS>();
         unsafe { transmute_value(self) }
     }
 

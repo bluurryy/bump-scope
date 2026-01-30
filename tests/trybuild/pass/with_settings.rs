@@ -23,7 +23,7 @@ macro_rules! check_with_settings {
             }
 
             fn check() {
-                print!("with_settings: {} => {}\n    ",
+                print!("with_settings: {} => {} ",
                     short_type_name::<In>(),
                     short_type_name::<Out>(),
                 );
@@ -38,9 +38,45 @@ macro_rules! check_with_settings {
     };
 }
 
-macro_rules! checks_borrow {
+macro_rules! check_scope_with_settings {
     ($($input:ty => $output:ty)*) => {
-        const CHECKS_BORROW_WITH_SETTINGS: &[fn()] = &[$({
+        const CHECK_SCOPE_WITH_SETTINGS: &[fn()] = &[$({
+            type In = $input;
+            type Out = $output;
+
+            fn check_bump_scope() {
+                fn convert<'a>(bump: BumpScope<'a, Global, In>) -> BumpScope<'a, Global, Out> {
+                    bump.with_settings()
+                }
+
+                let mut input = Bump::<Global, In>::with_size(512);
+
+                input.scoped(|input| {
+                    let output = convert(input.by_value());
+                    let test = output.alloc_str("ok");
+                    print!(" {test}");
+                });
+            }
+
+            fn check() {
+                print!("scope_with_settings: {} => {} ",
+                    short_type_name::<In>(),
+                    short_type_name::<Out>(),
+                );
+
+                check_bump_scope();
+
+                println!();
+            }
+
+            check
+        }),*];
+    };
+}
+
+macro_rules! check_borrow {
+    ($($input:ty => $output:ty)*) => {
+        const CHECK_BORROW_WITH_SETTINGS: &[fn()] = &[$({
             type In = $input;
             type Out = $output;
 
@@ -67,7 +103,7 @@ macro_rules! checks_borrow {
             }
 
             fn check() {
-                print!("borrow_with_settings: {} => {}\n    ",
+                print!("borrow_with_settings: {} => {} ",
                     short_type_name::<In>(),
                     short_type_name::<Out>(),
                 );
@@ -83,9 +119,9 @@ macro_rules! checks_borrow {
     };
 }
 
-macro_rules! checks_borrow_mut {
+macro_rules! check_borrow_mut {
     ($($input:ty => $output:ty)*) => {
-        const CHECKS_BORROW_MUT: &[fn()] = &[$({
+        const CHECK_BORROW_MUT: &[fn()] = &[$({
             type In = $input;
             type Out = $output;
 
@@ -112,7 +148,7 @@ macro_rules! checks_borrow_mut {
             }
 
             fn check() {
-                print!("borrow_mut_with_settings: {} => {}\n    ",
+                print!("borrow_mut_with_settings: {} => {} ",
                     short_type_name::<In>(),
                     short_type_name::<Out>(),
                 );
@@ -140,7 +176,18 @@ check_with_settings! {
     BumpSettings<2> => BumpSettings<1>
 }
 
-checks_borrow! {
+check_scope_with_settings! {
+    // identity
+    BumpSettings => BumpSettings
+
+    // guaranteed-allocated decrease
+    BumpSettings<1, true, true> => BumpSettings<1, true, false>
+
+    // increase minimum alignment
+    BumpSettings<1> => BumpSettings<2>
+}
+
+check_borrow! {
     // identity
     BumpSettings => BumpSettings
 
@@ -148,7 +195,7 @@ checks_borrow! {
     BumpSettings<1, true, true> => BumpSettings<1, true, false>
 }
 
-checks_borrow_mut! {
+check_borrow_mut! {
     // identity
     BumpSettings => BumpSettings
 
@@ -157,7 +204,12 @@ checks_borrow_mut! {
 }
 
 fn main() {
-    for checks in [CHECK_WITH_SETTINGS, CHECKS_BORROW_WITH_SETTINGS, CHECKS_BORROW_MUT] {
+    for checks in [
+        CHECK_WITH_SETTINGS,
+        CHECK_SCOPE_WITH_SETTINGS,
+        CHECK_BORROW_WITH_SETTINGS,
+        CHECK_BORROW_MUT,
+    ] {
         for check in checks {
             check();
         }

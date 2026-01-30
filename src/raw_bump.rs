@@ -511,6 +511,32 @@ where
         self.align_to::<NewS::MinimumAlignment>();
     }
 
+    pub(crate) fn ensure_scope_satisfies_settings<NewS>(&self)
+    where
+        NewS: BumpAllocatorSettings,
+    {
+        const {
+            assert!(NewS::UP == S::UP, "can't change `UP` setting");
+
+            assert!(
+                NewS::GUARANTEED_ALLOCATED <= S::GUARANTEED_ALLOCATED,
+                "can't turn a non-guaranteed-allocated bump allocator into a guaranteed-allocated one"
+            );
+
+            assert!(
+                NewS::MIN_ALIGN >= S::MIN_ALIGN,
+                "can't decrease minimum alignment when mutably borrowing with new settings"
+            );
+
+            assert!(
+                NewS::CLAIMABLE >= S::CLAIMABLE,
+                "can't turn a claimable bump allocator into a non-claimable one"
+            );
+        }
+
+        self.align_to::<NewS::MinimumAlignment>();
+    }
+
     #[expect(clippy::unused_self)]
     pub(crate) fn ensure_satisfies_settings_for_borrow<NewS>(&self)
     where
