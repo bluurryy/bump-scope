@@ -1,4 +1,4 @@
-#![cfg(feature = "alloc")]
+#![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 
 use std::alloc::Layout;
 
