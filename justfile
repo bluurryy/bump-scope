@@ -161,6 +161,12 @@ fuzz seconds:
 fuzz-target seconds target:
   cargo +nightly fuzz run {{target}} -- -max_total_time={{seconds}}
 
+# Update benchmark results.
+[group('bench')]
+update-bench-results:
+  cd crates/callgrind-benches && cargo +stable bench --bench bench -- --save-summary=json
+  cd crates/callgrind-benches && cargo +stable run
+
 # Sync documentation using `cargo insert-docs` and run `doc-rustdoc`.
 [group('doc')] 
 doc *args:
