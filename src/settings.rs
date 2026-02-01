@@ -1,7 +1,7 @@
 //! Contains types to configure bump allocation.
 //!
 //! You can configure various settings of the bump allocator:
-//! - **`MIN_ALIGN`** *default: 512* —
+//! - **`MIN_ALIGN`** *default: 1* —
 //!   The alignment the bump pointer maintains when doing allocations.
 //!
 //!   When allocating a type in a bump allocator with a sufficient minimum alignment,
@@ -41,7 +41,7 @@
 //!   When this is `false`, [`Allocator::shrink`] and [`BumpAllocatorTyped::shrink_slice`] do nothing[^1].
 //!   
 //!   This also affects the temporary collections used in [`alloc_iter`][alloc_iter], [`alloc_fmt`][alloc_fmt], etc.
-//! - **`MINIMUM_CHUNK_SIZE`** *default: true* — Configures the minimum chunk size.
+//! - **`MINIMUM_CHUNK_SIZE`** *default: 512* — Configures the minimum chunk size.
 //!
 //!   The actual chunk size is calculated like in [`with_size`], thus can be slightly smaller than requested.
 //!
