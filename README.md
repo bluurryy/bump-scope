@@ -144,9 +144,9 @@ any outstanding references to the allocator.
 
 As a workaround you can use [`claim`] to essentially turn a `&Bump(Scope)` into a `&mut BumpScope`.
 The `claim` method works by temporarily replacing the allocator of the original `&Bump(Scope)` with
-a dummy allocator that will fail allocation requests, panics on `scoped` and will report an empty
+a dummy allocator that will fail allocation requests, panics on `scoped` and reports an empty
 bump allocator from the `stats` api. The returned [`BumpClaimGuard`] has exclusive access to
-bump allocation and can mutably deref to `&mut BumpScope`:
+bump allocation and can mutably deref to `BumpScope` so you can write code like this:
 ```rust
 let bump: Bump = Bump::new();
 let mut vec: Vec<u8, &Bump> = Vec::new_in(&bump);
@@ -197,7 +197,7 @@ Shrinking or deallocating allocations other than the most recent one does nothin
 
 A bump allocator does not require `deallocate` or `shrink` to free memory.
 After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
-You can set the `DEALLOCATES` and `SHRINKS` parameters to false or use the [`WithoutDealloc`] and [`WithoutShrink`] wrappers
+You can set [the `DEALLOCATES` and `SHRINKS` parameters](https://docs.rs/bump-scope/2.0.0-dev/bump_scope/settings/index.html) to false or use the [`WithoutDealloc`] and [`WithoutShrink`] wrappers
 to make deallocating and shrinking a no-op.
 
 ## Feature Flags

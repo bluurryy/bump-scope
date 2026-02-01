@@ -1,4 +1,4 @@
-//! Contains types to configure a bump allocation.
+//! Contains types to configure bump allocation.
 //!
 //! You can configure various settings of the bump allocator:
 //! - **`MIN_ALIGN`** *default: 1* —
@@ -13,16 +13,15 @@
 //!   Controls the bump direction.
 //!
 //!   Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
-//!   This benefits collections as well as <code>[alloc_iter](crate::Bump::alloc_iter)([_mut](crate::Bump::alloc_iter_mut))</code> and <code>[alloc_fmt](crate::Bump::alloc_fmt)([_mut](crate::Bump::alloc_fmt_mut))</code>
-//!   with the exception of [`MutBumpVecRev`] and [`alloc_iter_mut_rev`](crate::Bump::alloc_iter_mut_rev) which
+//!   This benefits collections as well as <code>[alloc_iter][]([_mut][alloc_iter_mut])</code> and <code>[alloc_fmt][]([_mut][alloc_fmt_mut])</code>
+//!   with the exception of [`MutBumpVecRev`] and [`alloc_iter_mut_rev`] which
 //!   can be grown and shrunk in place if and only if bumping downwards.
 //!
 //!   Bumping downwards can be done in less instructions.
 //!
 //!   For the performance impact see [crates/callgrind-benches][benches].
 //! - **`GUARANTEED_ALLOCATED`** *default: false* —
-//!   A *guaranteed allocated* bump allocator will own at least one chunk that it has allocated
-//!   from its base allocator.
+//!   Whether at least one chunk has been allocated.
 //!
 //!   The constructors <code>[new]\([_in][new_in])</code> and <code>[default]</code> will create a bump allocator without allocating a chunk.
 //!   They will only compile when `GUARANTEED_ALLOCATED` is `false`.
@@ -30,15 +29,21 @@
 //!   The constructors <code>[with_size]\([_in][with_size_in])</code> and <code>[with_capacity]\([_in][with_capacity_in])</code>
 //!   will allocate a chunk and are always available.
 //!
-//!   Setting `GUARANTEED_ALLOCATED` to `true` removes a check when exiting scopes.
-//! - **`CLAIMABLE`** *default: true* — Enables the [`claim`](crate::traits::BumpAllocatorScope::claim) api.
-//! - **`DEALLOCATES`** *default: false* — Toggles deallocation.
-//! - **`SHRINKS`** *default: true* — Toggles shrinking.
-//!   
-//!   This also affects the temporary collections used in [`alloc_iter`](crate::Bump::alloc_iter), [`alloc_fmt`](crate::Bump::alloc_fmt), etc.
-//! - **`MINIMUM_CHUNK_SIZE`** *default: true* — Configures the minimum chunk size hint.
+//!   Setting `GUARANTEED_ALLOCATED` to `true` avoids a check and removes the code for specially handling the no-chunk-allocated state when calling [`reset_to`] or exiting scopes.
+//! - **`CLAIMABLE`** *default: true* — Enables the [`claim`] api.
 //!
-//!   The actual chunk size is calculated like in [`with_size`] and can be slightly smaller than requested
+//!   When this is `false`, `claim` will fail to compile.
+//! - **`DEALLOCATES`** *default: false* — Toggles deallocation.
+//!
+//!   When this is `false`, [`Allocator::deallocate`] does nothing.
+//! - **`SHRINKS`** *default: true* — Toggles shrinking.
+//!
+//!   When this is `false`, [`Allocator::shrink`] and [`BumpAllocatorTyped::shrink_slice`] do nothing[^1].
+//!   
+//!   This also affects the temporary collections used in [`alloc_iter`][alloc_iter], [`alloc_fmt`][alloc_fmt], etc.
+//! - **`MINIMUM_CHUNK_SIZE`** *default: true* — Configures the minimum chunk size.
+//!
+//!   The actual chunk size is calculated like in [`with_size`], thus can be slightly smaller than requested.
 //!
 //! # Example
 //!
@@ -66,6 +71,8 @@
 //! # assert_eq!(str, "Hello, world!");
 //! ```
 //!
+//! [^1]: Calling `shrink` where the new layout is greater does still shift bytes around or do an allocation.
+//!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
 //! [new]: crate::Bump::new
 //! [new_in]: crate::Bump::new_in
@@ -81,6 +88,17 @@
 //! [`scope_guard`]: crate::Bump::scope_guard
 //! [`BumpSettings`]: crate::settings::BumpSettings
 //! [`MutBumpVecRev`]: crate::MutBumpVecRev
+//! [`reset_to`]: crate::traits::BumpAllocatorCore::reset_to
+//! [`claim`]: crate::traits::BumpAllocatorScope::claim
+//! [alloc_iter]: crate::traits::BumpAllocatorTypedScope::alloc_iter
+//! [alloc_iter_mut]: crate::traits::MutBumpAllocatorTypedScope::alloc_iter_mut
+//! [alloc_fmt]: crate::traits::BumpAllocatorTypedScope::alloc_fmt
+//! [alloc_fmt_mut]: crate::traits::MutBumpAllocatorTypedScope::alloc_fmt_mut
+//! [`alloc_iter_mut_rev`]: crate::traits::MutBumpAllocatorTypedScope::alloc_iter_mut_rev
+//! [`Allocator::allocate`]: crate::alloc::Allocator::allocate
+//! [`Allocator::deallocate`]: crate::alloc::Allocator::deallocate
+//! [`Allocator::shrink`]: crate::alloc::Allocator::shrink
+//! [`BumpAllocatorTyped::shrink_slice`]: crate::traits::BumpAllocatorTyped::shrink_slice
 
 use crate::ArrayLayout;
 
@@ -90,13 +108,13 @@ trait Sealed {}
 ///
 /// The setting values are provided as associated constants.
 ///
-/// Additionally they are provided as types, solely so they can be used in equality bounds like:
+/// Additionally they are provided as types so they can be used in equality bounds like this:
 /// ```ignore
 /// S: BumpAllocatorSettings<GuaranteedAllocated = True>
 /// ```
-/// doing the same with associated constants is (yet) possible
+/// Doing the same with associated constants is not (yet) possible:
 /// ```ignore,warn
-/// // not possible right now
+/// // won't compile on stable
 /// S: BumpAllocatorSettings<GUARANTEED_ALLOCATED = true>
 /// ```
 ///

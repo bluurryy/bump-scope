@@ -178,9 +178,9 @@
 //!
 //! As a workaround you can use [`claim`] to essentially turn a `&Bump(Scope)` into a `&mut BumpScope`.
 //! The `claim` method works by temporarily replacing the allocator of the original `&Bump(Scope)` with
-//! a dummy allocator that will fail allocation requests, panics on `scoped` and will report an empty
+//! a dummy allocator that will fail allocation requests, panics on `scoped` and reports an empty
 //! bump allocator from the `stats` api. The returned [`BumpClaimGuard`] has exclusive access to
-//! bump allocation and can mutably deref to `&mut BumpScope`:
+//! bump allocation and can mutably deref to `BumpScope` so you can write code like this:
 //! ```
 //! # use bump_scope::{ Bump, BumpVec as Vec };
 //! let bump: Bump = Bump::new();
@@ -232,7 +232,7 @@
 //!
 //! A bump allocator does not require `deallocate` or `shrink` to free memory.
 //! After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
-//! You can set the `DEALLOCATES` and `SHRINKS` parameters to false or use the [`WithoutDealloc`] and [`WithoutShrink`] wrappers
+//! You can set [the `DEALLOCATES` and `SHRINKS` parameters](crate::settings) to false or use the [`WithoutDealloc`] and [`WithoutShrink`] wrappers
 //! to make deallocating and shrinking a no-op.
 //!
 //! # Feature Flags
