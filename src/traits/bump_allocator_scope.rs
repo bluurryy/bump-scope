@@ -15,9 +15,9 @@ pub trait BumpAllocatorScope<'a>: BumpAllocator + MutBumpAllocatorCoreScope<'a> 
     /// This makes it possible to enter scopes while a there are still outstanding
     /// references to that bump allocator.
     ///
-    /// The current reference to the bump allocator will be marked as claimed which
-    /// makes any allocation api fail, causes the scope api to panic and makes `stats`
-    /// return an object that reports that no chunks are allocated.
+    /// A `bump.claim()` call replaces the `bump` allocator with a dummy allocator while the returned `BumpClaimGuard`
+    /// is live. This dummy allocator errors on `allocate` / `grow`, does nothing on `deallocate` / `shrink`, panics
+    /// on `scoped` / `scope_guard` and reports an empty bump allocator from the `stats` api.
     ///
     /// # Panics
     /// Panics if the bump allocator is already claimed.

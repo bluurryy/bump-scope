@@ -32,7 +32,7 @@
 //!   Setting `GUARANTEED_ALLOCATED` to `true` removes the check and code for specially handling the no-chunk-allocated state when calling [`reset_to`], exiting scopes or calling [`by_value`].
 //! - **`CLAIMABLE`** *default: true* — Enables the [`claim`] api.
 //!
-//!   When this is `false`, `claim` will fail to compile.
+//!   When this is `false`, calling `claim` will fail to compile.
 //! - **`DEALLOCATES`** *default: true* — Toggles deallocation.
 //!
 //!   When this is `false`, [`Allocator::deallocate`] does nothing.

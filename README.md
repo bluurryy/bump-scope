@@ -139,11 +139,15 @@ When using a `Bump(Scope)` as an allocator for collections you will find that yo
 call `scoped` or `scope_guard` because those functions require `&mut self` which does not allow
 any outstanding references to the allocator.
 
-As a workaround you can use [`claim`] to turn a `&Bump(Scope)` into an `impl DerefMut<BumpScope>`.
-The `claim` method works by temporarily replacing the allocator of the original `&Bump(Scope)` with
-a dummy allocator that will fail allocation requests, panics on `scoped` and reports an empty
-bump allocator from the `stats` api. The returned [`BumpClaimGuard`] has exclusive access to
-bump allocation and can mutably deref to `BumpScope` so you can write code like this:
+As a workaround you can use the [`claim`] method on a `&Bump(Scope)` to return a `BumpClaimGuard` which
+mutably dereferences to a `BumpScope`, allowing you to call `.scoped()` / `.scope_guard()`.
+
+A `bump.claim()` call replaces the `bump` allocator with a dummy allocator while the returned `BumpClaimGuard`
+is live. This dummy allocator errors on `allocate` / `grow`, does nothing on `deallocate` / `shrink`, panics
+on `scoped` / `scope_guard` and reports an empty bump allocator from the `stats` api.
+
+This makes it possible to enter scopes while a there are still outstanding
+references to that bump allocator:
 ```rust
 let bump: Bump = Bump::new();
 let mut vec: Vec<u8, &Bump> = Vec::new_in(&bump);
@@ -259,7 +263,6 @@ Breaking changes to these features might be introduced in minor releases to keep
 [`BumpVec`]: https://docs.rs/bump-scope/2.0.0-rc.1/bump_scope/struct.BumpVec.html
 [`BumpString`]: https://docs.rs/bump-scope/2.0.0-rc.1/bump_scope/struct.BumpString.html
 [`BumpPool`]: https://docs.rs/bump-scope/2.0.0-rc.1/bump_scope/struct.BumpPool.html
-[`BumpClaimGuard`]: https://docs.rs/bump-scope/2.0.0-rc.1/bump_scope/struct.BumpClaimGuard.html
 [CHANGELOG]: https://docs.rs/bump-scope/2.0.0-rc.1/bump_scope/CHANGELOG/index.html
 [`claim`]: https://docs.rs/bump-scope/2.0.0-rc.1/bump_scope/traits/trait.BumpAllocatorScope.html#tymethod.claim
 [`scope_guard`]: https://docs.rs/bump-scope/2.0.0-rc.1/bump_scope/traits/trait.BumpAllocator.html#tymethod.scope_guard
