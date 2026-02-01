@@ -8,7 +8,7 @@ use crate::{
 const _: () = assert!(MIN_CHUNK_ALIGN == crate::bumping::MIN_CHUNK_ALIGN);
 
 /// We leave some space per allocation for the base allocator.
-pub(crate) type AssumedMallocOverhead = [*const u8; 2];
+pub(crate) type AssumedMallocOverhead = [usize; 2];
 
 pub const fn config<Up>() -> ChunkSizeConfig
 where
