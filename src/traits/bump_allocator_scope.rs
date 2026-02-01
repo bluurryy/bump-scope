@@ -16,8 +16,8 @@ pub trait BumpAllocatorScope<'a>: BumpAllocator + MutBumpAllocatorCoreScope<'a> 
     /// references to that bump allocator.
     ///
     /// A `bump.claim()` call replaces the `bump` allocator with a dummy allocator while the returned `BumpClaimGuard`
-    /// is live. This dummy allocator errors on `allocate` / `grow`, does nothing on `deallocate` / `shrink`, panics
-    /// on `scoped` / `scope_guard` and reports an empty bump allocator from the `stats` api.
+    /// is live. This dummy allocator errors on `allocate` / `grow`, does nothing on `deallocate` / `shrink` and
+    /// reports an empty bump allocator from the `stats` api.
     ///
     /// # Panics
     /// Panics if the bump allocator is already claimed.
