@@ -8,10 +8,7 @@ There are also criterion benchmarks at [../criterion-benches](../criterion-bench
 
 The benchmarks results in the tables below are shown in the format "instructions executed / branches executed".
 
-These are the results of a benchmark run with 
-<!-- spellchecker:off because the commit hash may get flagged -->
-<!-- version start -->`rustc 1.92.0 (ded5c06cf 2025-12-08)` on `x86_64-unknown-linux-gnu` using `LLVM version 21.1.3`<!-- version end -->
-<!-- spellchecker:on -->.
+These are the results of a benchmark run with <!-- spellchecker:off because the commit hash may get flagged --><!-- version start -->`rustc 1.92.0 (ded5c06cf 2025-12-08)` on `x86_64-unknown-linux-gnu` using `LLVM version 21.1.3`<!-- version end --><!-- spellchecker:on -->.
 
 ### Allocation
 
@@ -98,8 +95,8 @@ If the layout is not statically known then the compiler can not do as many optim
 |-------------------------------------|-----------------|-------------------|---------|-------------|
 | black_box_allocate                  | 15 / 1          | 12 / 1            | 27 / 4  | 19 / 3      |
 | black_box_grow_same_align           | 25 / 2          | 51 / 7            | 99 / 9  | 31 / 6      |
-| black_box_grow_smaller_align        | 25 / 2          | 51 / 7            | —       | 31 / 6      |
-| black_box_grow_larger_align         | 25 / 2          | 51 / 7            | 74 / 9  | 54 / 8      |
+| black_box_grow_smaller_align        | 25 / 2          | 51 / 7            | 99 / 9  | 31 / 6      |
+| black_box_grow_larger_align         | 25 / 2          | 51 / 7            | 73 / 9  | 54 / 8      |
 | black_box_shrink_same_align [^2]    | 13 / 2          | 47 / 7            | 45 / 7  | 23 / 3      |
 | black_box_shrink_smaller_align [^2] | 13 / 2          | —                 | 48 / 9  | 23 / 3      |
 | black_box_shrink_larger_align [^2]  | 13 / 2          | —                 | 15 / 2  | 54 / 8      |
