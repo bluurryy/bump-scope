@@ -17,11 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Made `scope_guard`, `scoped(_aligned)` available for non-guaranteed-allocated allocators
 - Add `(try_)by_value` to turn a `&mut BumpScope` into a `BumpScope`
 
-### Fixed
-
-- **Breaking:** Fix `no_std` builds with "serde" feature by depending on serde without default features
-- Fix remaining capacity calculation in `Bump(Scope)::reserve_bytes`
-
 ### Changed
 
 - `Bump::new(_in)` won't allocate a chunk anymore
@@ -47,6 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Remove `BaseAllocator`
 - **Breaking:** Remove `alloc_layout` (`allocate_layout` provides the same functionality)
 - **Breaking:** Remove deprecated api
+
+### Fixed
+
+- **Breaking:** Fix `no_std` builds with "serde" feature by depending on serde without default features
+- Fix remaining capacity calculation in `Bump(Scope)::reserve_bytes`
 
 ## [1.5.1] - 2025-12-21
 
