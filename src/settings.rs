@@ -1,7 +1,7 @@
 //! Contains types to configure bump allocation.
 //!
 //! You can configure various settings of the bump allocator:
-//! - **`MIN_ALIGN`** *default: 1* —
+//! - **`MIN_ALIGN`** *default: 512* —
 //!   The alignment the bump pointer maintains when doing allocations.
 //!
 //!   When allocating a type in a bump allocator with a sufficient minimum alignment,
@@ -33,7 +33,7 @@
 //! - **`CLAIMABLE`** *default: true* — Enables the [`claim`] api.
 //!
 //!   When this is `false`, `claim` will fail to compile.
-//! - **`DEALLOCATES`** *default: false* — Toggles deallocation.
+//! - **`DEALLOCATES`** *default: true* — Toggles deallocation.
 //!
 //!   When this is `false`, [`Allocator::deallocate`] does nothing.
 //! - **`SHRINKS`** *default: true* — Toggles shrinking.
