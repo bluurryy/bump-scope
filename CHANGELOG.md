@@ -16,7 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `MINIMUM_CHUNK_SIZE` setting
 - Made `scope_guard`, `scoped(_aligned)` available for non-guaranteed-allocated allocators
 - Add `(try_)by_value` to turn a `&mut BumpScope` into a `BumpScope`
-- Improve documentation
 
 ### Fixed
 
@@ -40,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Add `prepare_allocation_rev` and require it for `allocate_prepared_rev`, safety invariants for the prepare allocation api changed
 - Remove branch when allocating on a non-guaranteed-allocated `Bump(Scope)`, checking for a layout of `0`
 - Depend on `serde_core` instead of `serde`
+- Improve documentation
 
 ### Removed
 
@@ -50,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.5.1] - 2025-12-21
 
-### Added
+### Changed
 
 - Improve documentation
 
@@ -72,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.1] - 2025-11-22
 
-### Added
+### Changed
 
 - Improve documentation
 - Refactor some internals
@@ -83,11 +83,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `init_move` to `BumpBox<[MaybeUninit<T>]>` to initialize slices with an `OwnedSlice`
 - Add `split_off_first` and `split_off_last` to `BumpBox<[T]>`
+
+### Changed
+
 - Improve documentation
 
 ## [1.3.1] - 2025-09-14
 
-### Added
+### Changed
 
 - Improve documentation
 
@@ -108,7 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.2.1] - 2025-08-20
 
-### Added
+### Changed
 
 - Improve `BumpAllocatorTypedScopeExt` methods documentation
 
@@ -153,9 +156,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Make `BumpScopeGuardRoot::stats()` return `Stats<'a, ...>` instead of `Stats<'_, ...>`
 - Relax base allocator trait bounds on `Bump(Scope)` struct and methods
 - `alloc_try_with(_mut)` now works for non-GUARANTEED_ALLOCATED `Bump(Scope)`s
-- **Breaking:** `guaranteed_allocated` conversion methods now take a closure parameter so you can initialize unallocated `Bump`s with a custom size or capacity
-- Improve `Fixed*` collection documentation.
-- Improve crate documentation.
 
 ### Changed
 
@@ -166,6 +166,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Rename `guaranteed_allocated_mut` to `as_mut_guaranteed_allocated`
 - **Breaking:** Rename `not_guaranteed_allocated` to `into_not_guaranteed_allocated`
 - **Breaking:** Rename `not_guaranteed_allocated_ref` to `as_not_guaranteed_allocated`
+- **Breaking:** `guaranteed_allocated` conversion methods now take a closure parameter so you can initialize unallocated `Bump`s with a custom size or capacity
+- Improve `Fixed*` collection documentation.
+- Improve crate documentation.
 - Switch to rust edition 2024
 
 ### Fixed
@@ -192,6 +195,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement `Index(Mut)` for string types ([#78]).
 - Implement `Index(Mut)` for `BumpBox<T>` where `T: Index(Mut)` ([#79]).
+
+### Changed
+
 - Improve documentation.
 
 ### Fixed
@@ -200,7 +206,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.17.2] - 2025-06-16
 
-### Added
+### Changed
 
 - Improve documentation regarding allocator api, hashbrown, benchmarks and `BumpAllocator(Scope)`.
 
@@ -209,6 +215,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add "nightly-dropck-eyepatch" feature to allow box and vectors to store types that don't outlive it. ([#70])
+
+### Changed
+
 - Improve performance of `extend_from_slice_clone`. ([#69])
 - Improve documentation.
 
@@ -288,20 +297,20 @@ _If you are upgrading: please see [`UPGRADING.md#0.17.0`](UPGRADING.md#0.17.0)._
 
 ## [0.16.2] - 2025-02-21
 
-### Added
-
-- Improve documentation.
-
 ### Changed
 
 - Simpler and shorter `Debug` output for `Bump(Scope(Guard(Root)))` and `Chunk(NextIter, PrevIter)`.
 - Remove `rust-patterns` from `package.categories`, added `no-std::no-alloc`.
+- Improve documentation.
 
 ## [0.16.1] - 2025-01-22
 
 ### Added
 
 - Add `(try_)replace_range` and `as_(mut_)ptr` to strings.
+
+### Changed
+
 - Improve docs somewhat.
 
 ### Fixed
@@ -313,11 +322,11 @@ _If you are upgrading: please see [`UPGRADING.md#0.17.0`](UPGRADING.md#0.17.0)._
 ### Added
 
 - Add `unsize_bump_box` to unsize `BumpBox`es on stable.
-- Improve docs for `split_off`.
 
 ### Changed
 
 - **Breaking:** Replace `OwnedSlice`'s `owned_slice_ptr` method with `owned_slice_ref` which returns a reference instead of a pointer.
+- Improve docs for `split_off`.
 
 ### Fixed
 
@@ -328,17 +337,23 @@ _If you are upgrading: please see [`UPGRADING.md#0.17.0`](UPGRADING.md#0.17.0)._
 ### Added
 
 - Implement `Default` for `Stats`, `ChunkPrevIter`, `ChunkNextIter`, `WithoutShrink` and `WithoutDealloc`.
-- Improve documentation with more examples.
 
 ### Fixed
 
 - Fix `append` implementation of `MutBumpVecRev` to now account for `take_owned_slice` panicking.
+ 
+### Changed
+
+- Improve documentation with more examples.
 
 ## [0.15.1] - 2025-01-04
 
 ### Added
 
 - Implement `TakeOwnedSlice` for `vec::IntoIter` and `vec::Drain`.
+
+### Changed
+
 - Improve speed and time complexity of `split_off`.
 - Improve crate docs, docs for owned slice and `split_off`.
 
@@ -368,11 +383,14 @@ _If you are upgrading: please see [`UPGRADING.md#0.17.0`](UPGRADING.md#0.17.0)._
 
 - **Breaking:** Fix `scoped_aligned`'s closure to take a `BumpScope` with `NEW_MIN_ALIGN` instead of `MIN_ALIGN`.
 - **Breaking:** `aligned`'s closure now takes a `BumpScope` with lifetime `'a` instead of `'_`.
+
+### Changed
+
 - Improve documentation.
 
 ## [0.13.1] - 2024-11-30
 
-### Added
+### Changed
 
 - Improve documentation of `Bump` and `BumpScope` and in some other places.
 
