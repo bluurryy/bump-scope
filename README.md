@@ -20,9 +20,6 @@ A fast bump allocator that supports allocation scopes / checkpoints. Aka an aren
 - [Parallel Allocation](#parallel-allocation)
 - [Allocator API](#allocator-api)
 - [Feature Flags](#feature-flags)
-- [Bumping upwards or downwards?](#bumping-upwards-or-downwards)
-- [What is minimum alignment?](#what-is-minimum-alignment)
-- [What does *guaranteed allocated* mean?](#what-does-guaranteed-allocated-mean)
 - [Motivation and History](#motivation-and-history)
 
 <!-- crate documentation rest start -->
@@ -275,13 +272,13 @@ Breaking changes to these features might be introduced in minor releases to keep
 
 ## Motivation and History
 
-I was using bumpalo when I wanted to do some temporary allocation with the same bump allocator that I was also using to allocate longer lived objects. I did not find any crate that was basically just "bumpalo but with checkpoints" so I've decided to give it a shot myself.
+I did not find any crate that was basically just "bumpalo but with scopes /checkpoints" so I've decided to give it a shot myself.
 
-It surprised me to learn that bumpalo bumps downwards. I wasn't sure about bumping downwards because it loses the realloc fast path ([Always Bump Downwards](https://fitzgeraldnick.com/2019/11/01/always-bump-downwards.html)). I was also curious about the impact of minimum alignment so I made `UP` and `MIN_ALIGN` generic parameters.
+I wasn't sure about bumping downwards because it loses the realloc fast path ([Always Bump Downwards](https://fitzgeraldnick.com/2019/11/01/always-bump-downwards.html)). I was also curious about the impact of minimum alignment so I made `UP` and `MIN_ALIGN` generic parameters.
 
 To be able to allocate slices from arbitrary iterators or `fmt::Arguments` I had to implement my own `Vec` and `String`. (The `Vec` from `allocator_api2` would have worked, but the generated code wasn't great.) Comparing `alloc_iter` for an upwards and downwards bumping allocator is not really fair because of the different realloc behavior. So I implemented `alloc_iter_rev` and a `VecRev` that would push elements to the start instead of the end. A `VecRev` can be grown and shrunk in place when downwards bumping just as a `Vec` can be grown and shrunk in place when upwards allocating.
 
-The conclusion I've come to by writing this library is that bumping downwards and having a minimum alignment makes very little difference. If you make any use of `alloc_iter`, `alloc_fmt` or growable collections then the more favorable realloc behavior of upwards bumping will likely save you more than the few instructions from bumping downwards.
+I've found that bumping downwards and having a minimum alignment makes little difference in terms of performance. If you make use of `alloc_iter`, `alloc_fmt` or growable collections then the more favorable realloc behavior for upwards bumping will likely be more important than the few instructions you save from bumping downwards.
 
 ## License
 

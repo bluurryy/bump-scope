@@ -10,13 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `claim` api that allows you to enter scopes with a shared reference
-- `alloc*` methods are now available for the `(Mut)BumpAllocatorTypedScope` traits
-- `reserve_bytes` method is now available for the `BumpAllocatorTyped` trait
-- Add new `BumpAllocator(Scope)` trait that allows you to be generic over `Bump` and `BumpScope`
-- Add `SHRINKS` generic parameter, to toggle shrinking for the allocation api, `DEALLOCATES` no longer affects shrinking
+- The base allocator now only needs to implement `Allocator`
+- Most of the api for `Bump(Scope)` is now also available from traits in the new `traits` module
+- Add `SHRINKS` setting, to toggle shrinking for the allocation api, `DEALLOCATES` no longer affects shrinking
+- Add `MINIMUM_CHUNK_SIZE` setting
 - Made `scope_guard`, `scoped(_aligned)` available for non-guaranteed-allocated allocators
 - Add `(try_)by_value` to turn a `&mut BumpScope` into a `BumpScope`
-- Add `MINIMUM_CHUNK_SIZE` setting
 - Improve documentation
 
 ### Fixed

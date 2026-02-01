@@ -71,7 +71,7 @@
 //! # assert_eq!(str, "Hello, world!");
 //! ```
 //!
-//! [^1]: Calling `shrink` where the new layout is greater does still shift bytes around or do an allocation.
+//! [^1]: Calling `shrink` with a new layout of a greater alignment does still shift bytes around or cause an allocation.
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
 //! [new]: crate::Bump::new
