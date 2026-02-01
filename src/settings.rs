@@ -29,7 +29,7 @@
 //!   The constructors <code>[with_size]\([_in][with_size_in])</code> and <code>[with_capacity]\([_in][with_capacity_in])</code>
 //!   will allocate a chunk and are always available.
 //!
-//!   Setting `GUARANTEED_ALLOCATED` to `true` avoids a check and removes the code for specially handling the no-chunk-allocated state when calling [`reset_to`] or exiting scopes.
+//!   Setting `GUARANTEED_ALLOCATED` to `true` removes the check and code for specially handling the no-chunk-allocated state when calling [`reset_to`], exiting scopes or calling [`by_value`].
 //! - **`CLAIMABLE`** *default: true* — Enables the [`claim`] api.
 //!
 //!   When this is `false`, `claim` will fail to compile.
@@ -99,6 +99,7 @@
 //! [`Allocator::deallocate`]: crate::alloc::Allocator::deallocate
 //! [`Allocator::shrink`]: crate::alloc::Allocator::shrink
 //! [`BumpAllocatorTyped::shrink_slice`]: crate::traits::BumpAllocatorTyped::shrink_slice
+//! [`by_value`]: crate::BumpScope::by_value
 
 use crate::ArrayLayout;
 

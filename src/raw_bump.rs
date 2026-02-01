@@ -464,12 +464,7 @@ where
         match self.chunk.get().classify() {
             ChunkClass::Claimed => Err(E::claimed()),
             ChunkClass::Unallocated => {
-                let new_chunk = NonDummyChunk::new(
-                    ChunkSize::from_hint(512).ok_or_else(E::capacity_overflow)?,
-                    None,
-                    &*self.allocator,
-                )?;
-
+                let new_chunk = NonDummyChunk::new(ChunkSize::ZERO, None, &*self.allocator)?;
                 self.chunk.set(new_chunk.0);
                 Ok(())
             }

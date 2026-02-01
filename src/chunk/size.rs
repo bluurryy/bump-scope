@@ -47,6 +47,11 @@ impl<Up> ChunkSize<Up>
 where
     Up: Boolean,
 {
+    pub const ZERO: Self = match Self::from_hint(0) {
+        Some(some) => some,
+        None => panic!("failed to calculate zero chunk size"),
+    };
+
     pub const fn from_hint(size_hint: usize) -> Option<Self> {
         ChunkSizeHint::new(size_hint).calc_size()
     }
