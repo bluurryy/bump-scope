@@ -1117,7 +1117,13 @@ mod doc_layout_claim {
 }
 
 fn chunk_size_0<const UP: bool>() {
-    assert_eq!(BumpNoMinSize::<UP>::with_size(0).stats().size(), 64 - size_of::<[usize; 2]>());
+    let chunk_header = size_of::<[usize; 4]>();
+    let malloc_overhead = size_of::<[usize; 2]>();
+
+    assert_eq!(
+        BumpNoMinSize::<UP>::with_size(0).stats().size(),
+        (chunk_header + malloc_overhead).next_power_of_two() - malloc_overhead
+    );
 }
 
 fn chunk_size_512<const UP: bool>() {
