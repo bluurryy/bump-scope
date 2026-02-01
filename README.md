@@ -139,7 +139,7 @@ When using a `Bump(Scope)` as an allocator for collections you will find that yo
 call `scoped` or `scope_guard` because those functions require `&mut self` which does not allow
 any outstanding references to the allocator.
 
-As a workaround you can use [`claim`] to essentially turn a `&Bump(Scope)` into a `&mut BumpScope`.
+As a workaround you can use [`claim`] to turn a `&Bump(Scope)` into an `impl DerefMut<BumpScope>`.
 The `claim` method works by temporarily replacing the allocator of the original `&Bump(Scope)` with
 a dummy allocator that will fail allocation requests, panics on `scoped` and reports an empty
 bump allocator from the `stats` api. The returned [`BumpClaimGuard`] has exclusive access to
@@ -148,13 +148,16 @@ bump allocation and can mutably deref to `BumpScope` so you can write code like 
 let bump: Bump = Bump::new();
 let mut vec: Vec<u8, &Bump> = Vec::new_in(&bump);
 
-bump.claim().scoped(|bump| {
-    // allocating on the original bump will
-    // fail while the bump allocator is claimed
+bump.claim().scoped(|bump_scope| {
+    // you can allocate in the scope as usual
+    let mut vec2: Vec<u8, &BumpScope> = Vec::new_in(bump_scope);
+    vec2.reserve(456);
+
+    // allocating on the `bump` outside the scope will fail
     assert!(vec.try_reserve(123).is_err());
 });
 
-// now allocation on the original bump succeeds again
+// now allocating on `bump` is possible again
 vec.reserve(123);
 ```
 
