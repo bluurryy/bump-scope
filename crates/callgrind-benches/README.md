@@ -10,7 +10,7 @@ The benchmarks results in the tables below are shown in the format "instructions
 
 <!-- spellchecker:off because the commit hash may get flagged -->
 
-These are the results of a benchmark run with <!-- version start -->`rustc 1.92.0 (ded5c06cf 2025-12-08)` on `x86_64-unknown-linux-gnu` using `LLVM version 21.1.3`<!-- version end -->.
+These are the results of a benchmark run with <!-- version start -->`rustc 1.93.0 (254b59607 2026-01-19)` on `x86_64-unknown-linux-gnu` using `LLVM version 21.1.8`<!-- version end -->.
 
 <!-- spellchecker:on -->
 
@@ -35,7 +35,7 @@ The `*_overaligned` cases use a bump allocator with a minimum alignment greater 
 | alloc_big_struct_aligned     | 19 / 1          | 19 / 1            | 19 / 1  | — [^1]      |
 | alloc_big_struct_overaligned | 20 / 1          | 20 / 1            | 19 / 1  | — [^1]      |
 | alloc_u8_slice               | 32 / 3          | 32 / 3            | 31 / 3  | 34 / 5      |
-| alloc_u8_slice_overaligned   | 34 / 3          | 33 / 3            | 35 / 4  | — [^1]      |
+| alloc_u8_slice_overaligned   | 34 / 3          | 33 / 3            | 33 / 3  | — [^1]      |
 | alloc_u32_slice              | 45 / 6          | 44 / 6            | 45 / 7  | 52 / 8      |
 | alloc_u32_slice_aligned      | 43 / 6          | 43 / 6            | 43 / 6  | — [^1]      |
 | alloc_u32_slice_overaligned  | 45 / 6          | 44 / 6            | 45 / 6  | — [^1]      |
@@ -60,7 +60,7 @@ The benchmark cases above use the infallible api, panicking if allocating a new 
 | try_alloc_big_struct_aligned     | 19 / 1          | 19 / 1            | 19 / 1  | — [^1]      |
 | try_alloc_big_struct_overaligned | 20 / 1          | 20 / 1            | 19 / 1  | — [^1]      |
 | try_alloc_u8_slice               | 32 / 3          | 32 / 3            | 32 / 3  | 34 / 5      |
-| try_alloc_u8_slice_overaligned   | 34 / 3          | 33 / 3            | 36 / 4  | — [^1]      |
+| try_alloc_u8_slice_overaligned   | 34 / 3          | 33 / 3            | 34 / 3  | — [^1]      |
 | try_alloc_u32_slice              | 45 / 6          | 44 / 6            | 45 / 7  | 48 / 8      |
 | try_alloc_u32_slice_aligned      | 43 / 6          | 43 / 6            | 43 / 6  | — [^1]      |
 | try_alloc_u32_slice_overaligned  | 45 / 6          | 44 / 6            | 45 / 6  | — [^1]      |
@@ -99,8 +99,8 @@ If the layout is not statically known then the compiler can not do as many optim
 |-------------------------------------|-----------------|-------------------|---------|-------------|
 | black_box_allocate                  | 15 / 1          | 12 / 1            | 27 / 4  | 19 / 3      |
 | black_box_grow_same_align           | 25 / 2          | 51 / 7            | 99 / 9  | 31 / 6      |
-| black_box_grow_smaller_align        | 25 / 2          | 51 / 7            | 99 / 9  | 31 / 6      |
-| black_box_grow_larger_align         | 25 / 2          | 51 / 7            | 73 / 9  | 54 / 8      |
+| black_box_grow_smaller_align        | 25 / 2          | 51 / 7            | —       | 31 / 6      |
+| black_box_grow_larger_align         | 25 / 2          | 51 / 7            | 74 / 9  | 54 / 8      |
 | black_box_shrink_same_align [^2]    | 13 / 2          | 47 / 7            | 45 / 7  | 23 / 3      |
 | black_box_shrink_smaller_align [^2] | 13 / 2          | —                 | 48 / 9  | 23 / 3      |
 | black_box_shrink_larger_align [^2]  | 13 / 2          | —                 | 15 / 2  | 54 / 8      |
