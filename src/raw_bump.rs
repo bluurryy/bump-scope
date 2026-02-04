@@ -194,14 +194,10 @@ where
     }
 
     pub(crate) unsafe fn manually_drop(&mut self) {
-        #[cold]
-        #[inline(never)]
-        fn panic_claimed() -> ! {
-            panic!("tried to drop a `Bump` while it was still claimed")
-        }
-
         match self.chunk.get().classify() {
-            ChunkClass::Claimed => panic_claimed(),
+            ChunkClass::Claimed => {
+                // The user must have somehow leaked a `BumpClaimGuard`.
+            }
             ChunkClass::Unallocated => (),
             ChunkClass::NonDummy(chunk) => unsafe {
                 chunk.for_each_prev(|chunk| chunk.deallocate(&*self.allocator));

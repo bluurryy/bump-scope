@@ -18,8 +18,15 @@ fn test_panic_with_settings_unallocated() {
     let _: Bump<A, NewS> = bump.with_settings();
 }
 
-// Can't check panic behavior of a claimed `Bump`, since it would
-// additionally panic in its drop implementation, aborting the program.
+#[test]
+#[should_panic = "bump allocator is claimed"]
+fn test_panic_with_settings_claimed() {
+    type S = BumpSettings;
+    type NewS = <S as BumpAllocatorSettings>::WithClaimable<false>;
+    let bump: Bump<A, S> = Bump::new();
+    mem::forget(bump.claim());
+    let _: Bump<A, NewS> = bump.with_settings();
+}
 
 #[test]
 #[should_panic = "bump allocator is claimed"]
