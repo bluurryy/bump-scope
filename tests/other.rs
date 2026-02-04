@@ -666,7 +666,7 @@ fn realign<const UP: bool>() {
     type AlignT = u64;
     const ALIGN: usize = 8;
 
-    // into_aligned
+    // with_settings
     {
         let bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
         bump.alloc(0u8);
@@ -690,7 +690,7 @@ fn realign<const UP: bool>() {
         );
     }
 
-    // as_mut_aligned
+    // borrow_mut_with_settings
     {
         let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
         bump.alloc(0u8);

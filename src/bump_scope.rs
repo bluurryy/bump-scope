@@ -4,7 +4,6 @@ use core::{
     marker::PhantomData,
     mem::MaybeUninit,
     panic::{RefUnwindSafe, UnwindSafe},
-    ptr,
 };
 
 #[cfg(feature = "alloc")]
@@ -172,93 +171,6 @@ where
         MinimumAlignment<ALIGN>: SupportedMinimumAlignment,
     {
         self.raw.align::<ALIGN>();
-    }
-
-    #[inline(always)]
-    pub(crate) unsafe fn cast<S2>(self) -> BumpScope<'a, A, S2>
-    where
-        S2: BumpAllocatorSettings,
-    {
-        unsafe { transmute_value(self) }
-    }
-
-    #[inline(always)]
-    pub(crate) unsafe fn cast_mut<S2>(&mut self) -> &mut BumpScope<'a, A, S2>
-    where
-        S2: BumpAllocatorSettings,
-    {
-        unsafe { &mut *ptr::from_mut(self).cast::<BumpScope<'a, A, S2>>() }
-    }
-
-    /// Will error at compile time if `NEW_MIN_ALIGN < MIN_ALIGN`.
-    #[inline(always)]
-    pub(crate) fn must_align_more<const NEW_MIN_ALIGN: usize>(&self)
-    where
-        MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
-    {
-        const {
-            assert!(
-                NEW_MIN_ALIGN >= S::MIN_ALIGN,
-                "`into_aligned` or `as_mut_aligned` can't decrease the minimum alignment"
-            );
-        }
-
-        self.align::<NEW_MIN_ALIGN>();
-    }
-
-    /// Mutably borrows `BumpScope` with a new minimum alignment.
-    ///
-    /// **This cannot decrease the alignment.** Trying to decrease alignment will result in a compile error.
-    /// You can use [`aligned`](Self::aligned) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment.
-    ///
-    /// When decreasing the alignment we need to make sure that the bump position is realigned to the original alignment.
-    /// That can only be ensured by having a function that takes a closure, like the methods mentioned above do.
-    #[inline(always)]
-    pub fn as_mut_aligned<const NEW_MIN_ALIGN: usize>(
-        &mut self,
-    ) -> &mut BumpScope<'a, A, S::WithMinimumAlignment<NEW_MIN_ALIGN>>
-    where
-        MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
-    {
-        self.must_align_more::<NEW_MIN_ALIGN>();
-        unsafe { self.cast_mut() }
-    }
-
-    /// Converts this `BumpScope` into a `BumpScope` with a new minimum alignment.
-    ///
-    /// **This cannot decrease the alignment.** Trying to decrease alignment will result in a compile error.
-    /// You can use [`aligned`](Self::aligned) or [`scoped_aligned`](Self::scoped_aligned) to decrease the alignment.
-    ///
-    /// When decreasing the alignment we need to make sure that the bump position is realigned to the original alignment.
-    /// That can only be ensured by having a function that takes a closure, like the methods mentioned above do.
-    ///
-    /// If this was allowed to decrease the alignment it would break minimum alignment:
-    ///
-    /// ```ignore
-    /// # // We can't `compile_fail,E0080` this doc test because it does not do the compile step
-    /// # // that triggers the error.
-    /// # use bump_scope::{Bump, alloc::Global};
-    /// let mut bump: Bump<Global, 8, true> = Bump::new();
-    /// let mut guard = bump.scope_guard();
-    ///
-    /// {
-    ///     let scope = guard.scope().into_aligned::<1>();
-    ///     scope.alloc(0u8);
-    /// }
-    ///
-    /// {
-    ///     let scope = guard.scope();
-    ///     // scope is not aligned to `MIN_ALIGN`!!
-    /// }
-    ///
-    /// ```
-    #[inline(always)]
-    pub fn into_aligned<const NEW_MIN_ALIGN: usize>(self) -> BumpScope<'a, A, S::WithMinimumAlignment<NEW_MIN_ALIGN>>
-    where
-        MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
-    {
-        self.must_align_more::<NEW_MIN_ALIGN>();
-        unsafe { self.cast() }
     }
 
     /// Converts this `BumpScope` into a `BumpScope` with new settings.
