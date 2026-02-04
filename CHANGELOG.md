@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `(Mut)BumpAllocatorScopeExt` -> `traits::(Mut)BumpAllocatorTypedScope`
 - **Breaking:** Change `BumpAllocatorCore` trait safety invariants
 - **Breaking:** Add `prepare_allocation_rev` and require it for `allocate_prepared_rev`, safety invariants for the prepare allocation api changed
+- Change default implementation of `!GUARANTEED_ALLOCATED` `Bump(Scope)`s to not allocate
 - Remove branch when allocating on a non-guaranteed-allocated `Bump(Scope)`, checking for a layout of `0`
 - Depend on `serde_core` instead of `serde`
 - Improve documentation

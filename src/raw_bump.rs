@@ -50,8 +50,6 @@ where
     where
         S: BumpAllocatorSettings<GuaranteedAllocated = False>,
     {
-        const { assert!(!S::GUARANTEED_ALLOCATED) };
-
         Self {
             chunk: Cell::new(RawChunk::UNALLOCATED),
         }

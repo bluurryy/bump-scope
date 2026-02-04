@@ -306,6 +306,10 @@ up_and_down! {
         Bump::unallocated()
     }
 
+    pub fn Bump_default() -> Bump<1, true, false> {
+        Bump::default()
+    }
+
     pub fn Bump_try_new() -> Result<Bump> {
         Bump::try_new()
     }

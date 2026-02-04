@@ -15,6 +15,7 @@ use common::{AssumedMallocOverhead, either_way};
 either_way! {
     allocated
     unallocated
+    default
     unallocated_alloc
     allocated_reserve_bytes
     unallocated_reserve_bytes
@@ -36,6 +37,12 @@ fn allocated<const UP: bool>() {
 
 fn unallocated<const UP: bool>() {
     let bump = <Bump<UP>>::unallocated();
+    assert_eq!(bump.stats().count(), 0);
+    drop(bump);
+}
+
+fn default<const UP: bool>() {
+    let bump = <Bump<UP>>::default();
     assert_eq!(bump.stats().count(), 0);
     drop(bump);
 }

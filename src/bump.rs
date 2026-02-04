@@ -271,9 +271,44 @@ where
     A: Allocator + Default,
     S: BumpAllocatorSettings,
 {
+    /// With [`GUARANTEED_ALLOCATED`] this does the same as [`new`], otherwise it does the same as [`unallocated`].
+    ///
+    /// [`GUARANTEED_ALLOCATED`]: crate::settings
+    /// [`new`]: Bump::new
+    /// [`unallocated`]: Bump::unallocated
     #[inline(always)]
     fn default() -> Self {
-        Self::new_in(Default::default())
+        if S::GUARANTEED_ALLOCATED {
+            Self::new_in(Default::default())
+        } else {
+            use core::{cell::Cell, marker::PhantomData};
+
+            use crate::{chunk::ChunkHeader, raw_bump::RawChunk};
+
+            Self {
+                raw: RawBump {
+                    chunk: Cell::new(RawChunk {
+                        header: ChunkHeader::unallocated::<S>().cast(),
+                        marker: PhantomData,
+                    }),
+                },
+            }
+        }
+    }
+}
+
+#[cfg(not(feature = "panic-on-alloc"))]
+impl<A, S> Default for Bump<A, S>
+where
+    A: Allocator + Default,
+    S: BumpAllocatorSettings<GuaranteedAllocated = False>,
+{
+    /// Does the same as [`unallocated`].
+    ///
+    /// [`unallocated`]: Bump::unallocated
+    #[inline(always)]
+    fn default() -> Self {
+        Self::unallocated()
     }
 }
 

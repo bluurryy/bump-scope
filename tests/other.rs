@@ -85,6 +85,8 @@ either_way! {
     chunk_size_0
 
     chunk_size_512
+
+    default
 }
 
 macro_rules! assert_chunk_sizes {
@@ -1205,4 +1207,13 @@ fn generic_bump_scope() {
     bump.scoped(|bump| {
         foo(bump);
     });
+}
+
+fn default<const UP: bool>() {
+    let bump_ref = Bump::<Global, BumpSettings<1, UP>>::new();
+    let bump = Bump::<Global, BumpSettings<1, UP>>::default();
+    assert_eq!(bump.stats().count(), 1);
+    assert_eq!(bump.stats().count(), bump_ref.stats().count());
+    assert_eq!(bump.stats().size(), bump_ref.stats().size());
+    drop(bump);
 }
