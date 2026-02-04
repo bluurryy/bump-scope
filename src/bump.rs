@@ -1,7 +1,9 @@
 use core::{
     alloc::Layout,
+    cell::Cell,
     ffi::CStr,
     fmt::{self, Debug},
+    marker::PhantomData,
     mem::MaybeUninit,
     panic::{RefUnwindSafe, UnwindSafe},
 };
@@ -19,7 +21,7 @@ use crate::{
     maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{transmute_mut, transmute_ref, transmute_value},
-    raw_bump::RawBump,
+    raw_bump::{RawBump, RawChunk},
     settings::{BumpAllocatorSettings, BumpSettings, False, MinimumAlignment, SupportedMinimumAlignment},
     stats::{AnyStats, Stats},
     traits::{
@@ -674,6 +676,50 @@ where
         self.raw.ensure_satisfies_settings_for_borrow_mut::<NewS>();
         unsafe { transmute_mut(self) }
     }
+
+    /// Converts this `Bump` into a raw pointer and allocator.
+    ///
+    /// ```
+    /// # use bump_scope::{Bump, alloc::Global};
+    /// # type MyAllocator = Global;
+    /// # let my_allocator = Global;
+    /// let bump: Bump<MyAllocator> = Bump::new_in(my_allocator);
+    /// bump.alloc_str("Hello, ");
+    ///
+    /// let (ptr, alloc) = bump.into_raw_with_allocator();
+    /// let bump: Bump = unsafe { Bump::from_raw_with_allocator(ptr, alloc) };
+    ///
+    /// bump.alloc_str("World!");
+    /// # assert_eq!(bump.stats().allocated(), 13);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn into_raw_with_allocator(self) -> (NonNull<()>, A) {
+        let RawBump { chunk, allocator } = ManuallyDrop::new(self).raw.clone();
+        (chunk.get().header().cast(), ManuallyDrop::into_inner(allocator))
+    }
+
+    /// Converts the raw pointer and allocator that was created with [`into_raw_with_allocator`] back into a `Bump`.
+    ///
+    /// # Safety
+    /// - `ptr` and `allocator` must come from a call to `Self::into_raw_with_allocator`.
+    /// - This function must only be called once with this `ptr` and `allocator`.
+    /// - The settings must match the original ones.
+    ///
+    /// [`into_raw_with_allocator`]: Bump::into_raw_with_allocator
+    #[inline]
+    #[must_use]
+    pub unsafe fn from_raw_with_allocator(ptr: NonNull<()>, allocator: A) -> Self {
+        Self {
+            raw: RawBump {
+                chunk: Cell::new(RawChunk {
+                    header: ptr.cast(),
+                    marker: PhantomData,
+                }),
+                allocator: ManuallyDrop::new(allocator),
+            },
+        }
+    }
 }
 
 #[cfg(feature = "alloc")]
@@ -684,33 +730,33 @@ where
     /// Converts this `Bump` into a raw pointer.
     ///
     /// ```
-    /// use bump_scope::Bump;
-    ///
+    /// # use bump_scope::Bump;
+    /// #
     /// let bump: Bump = Bump::new();
+    /// bump.alloc_str("Hello, ");
+    ///
     /// let ptr = bump.into_raw();
     /// let bump: Bump = unsafe { Bump::from_raw(ptr) };
     ///
-    /// bump.alloc_str("Why did i do this?");
+    /// bump.alloc_str("World!");
+    /// # assert_eq!(bump.stats().allocated(), 13);
     /// ```
     #[inline]
     #[must_use]
     pub fn into_raw(self) -> NonNull<()> {
-        let this = ManuallyDrop::new(self);
-        unsafe { (&raw const this.raw).read().into_raw() }
+        self.into_raw_with_allocator().0
     }
 
     /// Converts the raw pointer that was created with [`into_raw`](Bump::into_raw) back into a `Bump`.
     ///
     /// # Safety
-    /// - `ptr` must have been created with `Self::into_raw`.
+    /// - `ptr` must come from a call to `Self::into_raw`.
     /// - This function must only be called once with this `ptr`.
     /// - The settings must match the original ones.
     #[inline]
     #[must_use]
     pub unsafe fn from_raw(ptr: NonNull<()>) -> Self {
-        Self {
-            raw: unsafe { RawBump::from_raw(ptr) },
-        }
+        unsafe { Self::from_raw_with_allocator(ptr, Global) }
     }
 }
 
