@@ -9,3 +9,6 @@ bump-scope = { path = "../..", default-features = false, features = [
     "alloc",
     "zerocopy-08",
 ] }
+
+[features]
+nightly = ["bump-scope/nightly"]
