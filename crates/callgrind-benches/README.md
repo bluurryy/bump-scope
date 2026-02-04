@@ -85,7 +85,7 @@ The following cases benchmark the `Allocator` trait implementations.
 | shrink_smaller_align [^2] | 11 / 2          | 17 / 2            | 12 / 1  | 5 / 1       |
 | shrink_larger_align [^2]  | 11 / 2          | 17 / 2            | 5 / 1   | 18 / 3      |
 | deallocate                | 6 / 1           | 6 / 1             | 7 / 1   | 6 / 2       |
-| deallocate_non_last       | 5 / 1           | 4 / 1             | 5 / 1   | 6 / 2       |
+| deallocate_non_last       | 5 / 1           | 4 / 1             | 5 / 1   | —           |
 
 <!-- allocator_api table end -->
 
@@ -99,8 +99,8 @@ If the layout is not statically known then the compiler can not do as many optim
 |-------------------------------------|-----------------|-------------------|---------|-------------|
 | black_box_allocate                  | 15 / 1          | 12 / 1            | 27 / 4  | 19 / 3      |
 | black_box_grow_same_align           | 25 / 2          | 51 / 7            | 99 / 9  | 31 / 6      |
-| black_box_grow_smaller_align        | 25 / 2          | 51 / 7            | —       | 31 / 6      |
-| black_box_grow_larger_align         | 25 / 2          | 51 / 7            | 74 / 9  | 54 / 8      |
+| black_box_grow_smaller_align        | 25 / 2          | 51 / 7            | 99 / 9  | 31 / 6      |
+| black_box_grow_larger_align         | 25 / 2          | 51 / 7            | 73 / 9  | 54 / 8      |
 | black_box_shrink_same_align [^2]    | 13 / 2          | 47 / 7            | 45 / 7  | 23 / 3      |
 | black_box_shrink_smaller_align [^2] | 13 / 2          | —                 | 48 / 9  | 23 / 3      |
 | black_box_shrink_larger_align [^2]  | 13 / 2          | —                 | 15 / 2  | 54 / 8      |
@@ -118,8 +118,8 @@ If the layout is not statically known then the compiler can not do as many optim
 
 | name    | bump-scope (up) | bump-scope (down) | bumpalo  | blink-alloc |
 |---------|-----------------|-------------------|----------|-------------|
-| warm_up | 302 / 38        | 307 / 41          | 355 / 44 | 282 / 38    |
-| reset   | 32 / 3          | 31 / 3            | 23 / 2   | 26 / 3      |
+| warm_up | 224 / 31        | 230 / 32          | 355 / 44 | 282 / 38    |
+| reset   | 28 / 3          | 27 / 3            | 23 / 2   | 26 / 3      |
 
 <!-- misc table end -->
 
