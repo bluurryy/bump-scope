@@ -69,7 +69,7 @@ either_way! {
 const OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
 
 // Bump with no minimum chunk size.
-type Bump<const UP: bool, A = Global> = bump_scope::Bump<A, BumpSettings<1, UP, false, true, true, true, 0>>;
+type Bump<const UP: bool, A = Global> = bump_scope::Bump<A, BumpSettings<1, UP, true, true, true, true, 0>>;
 
 fn zst<const UP: bool>() {
     // four pointers, + overhead, next power of two, minus overhead

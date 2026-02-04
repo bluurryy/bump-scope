@@ -4,10 +4,8 @@ use allocator_api2_03::alloc::{AllocError, Allocator};
 use allocator_api2_03::{alloc::Global, boxed::Box};
 
 use crate::{
-    Bump, BumpScope, WithoutDealloc, WithoutShrink,
-    alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator},
-    settings::BumpAllocatorSettings,
-    traits::BumpAllocatorCore,
+    BaseAllocator, Bump, BumpScope, WithoutDealloc, WithoutShrink, alloc::AllocError as CrateAllocError,
+    settings::BumpAllocatorSettings, traits::BumpAllocatorCore,
 };
 
 #[cfg(feature = "alloc")]
@@ -27,7 +25,10 @@ allocator_compat_wrapper! {
     /// # use allocator_api2::alloc::{AllocError, Global};
     /// use allocator_api2::alloc::Allocator;
     ///
-    /// use bump_scope::{Bump, alloc::compat::AllocatorApi2V03Compat};
+    /// use bump_scope::{
+    ///     alloc::compat::AllocatorApi2V03Compat,
+    ///     Bump,
+    /// };
     ///
     /// #[derive(Clone)]
     /// struct MyAllocatorApi2Allocator;
@@ -59,25 +60,25 @@ impl_allocator_via_allocator! {
 
     use {self} for allocator_api2_03 as crate impl[A, S] Bump<A, S>
     where [
-        A: CrateAllocator,
+        A: BaseAllocator<S::GuaranteedAllocated>,
         S: BumpAllocatorSettings,
     ]
 
     use {self} for allocator_api2_03 as crate impl[A, S] BumpScope<'_, A, S>
     where [
-        A: CrateAllocator,
+        A: BaseAllocator<S::GuaranteedAllocated>,
         S: BumpAllocatorSettings,
     ]
 
     use {self} for allocator_api2_03 as crate impl[A, S] &mut Bump<A, S>
     where [
-        A: CrateAllocator,
+        A: BaseAllocator<S::GuaranteedAllocated>,
         S: BumpAllocatorSettings,
     ]
 
     use {self} for allocator_api2_03 as crate impl[A, S] &mut BumpScope<'_, A, S>
     where [
-        A: CrateAllocator,
+        A: BaseAllocator<S::GuaranteedAllocated>,
         S: BumpAllocatorSettings,
     ]
 

@@ -160,7 +160,7 @@ fn allocate_zst_returns_dangling<const UP: bool>() {
 }
 
 fn allocate_zst_returns_dangling_unallocated<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP, false>> = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, UP, false>> = Bump::unallocated();
     let dangling_addr = NonNull::<()>::dangling().addr();
 
     macro_rules! must_dangle {

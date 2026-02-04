@@ -3,8 +3,8 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    Bump, BumpBox, BumpScope, SizedTypeProperties, WithoutDealloc, WithoutShrink,
-    alloc::{AllocError, Allocator},
+    BaseAllocator, Bump, BumpBox, BumpScope, SizedTypeProperties, WithoutDealloc, WithoutShrink,
+    alloc::AllocError,
     bump_down,
     polyfill::non_null,
     settings::BumpAllocatorSettings,
@@ -1023,11 +1023,11 @@ unsafe impl<B: BumpAllocatorTyped> BumpAllocatorTyped for WithoutShrink<B> {
 
 unsafe impl<A, S> BumpAllocatorTyped for BumpScope<'_, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     type TypedStats<'b>
-        = Stats<'b, S>
+        = Stats<'b, A, S>
     where
         Self: 'b;
 
@@ -1220,11 +1220,11 @@ where
 
 unsafe impl<A, S> BumpAllocatorTyped for Bump<A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     type TypedStats<'b>
-        = Stats<'b, S>
+        = Stats<'b, A, S>
     where
         Self: 'b;
 

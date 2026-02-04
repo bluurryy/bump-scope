@@ -13,8 +13,8 @@ use core::ptr::NonNull;
 use core::clone::CloneToUninit;
 
 use crate::{
-    BumpBox, BumpClaimGuard, BumpScopeGuard, Checkpoint, ErrorBehavior, NoDrop, SizedTypeProperties,
-    alloc::{AllocError, Allocator},
+    BaseAllocator, BumpBox, BumpClaimGuard, BumpScopeGuard, Checkpoint, ErrorBehavior, NoDrop, SizedTypeProperties,
+    alloc::AllocError,
     down_align_usize, maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{non_null, transmute_mut, transmute_ref, transmute_value},
@@ -92,7 +92,7 @@ where
 
 impl<A, S> BumpScope<'_, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     /// Returns this `&mut BumpScope` as a `BumpScope`.
@@ -161,8 +161,15 @@ where
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'a, S> {
+    pub fn stats(&self) -> Stats<'a, A, S> {
         self.raw.stats()
+    }
+
+    /// Returns a reference to the base allocator.
+    #[must_use]
+    #[inline(always)]
+    pub fn allocator(&self) -> Option<&'a A> {
+        self.raw.allocator()
     }
 
     #[inline(always)]
@@ -263,7 +270,7 @@ impl<A, S> NoDrop for BumpScope<'_, A, S> where S: BumpAllocatorSettings {}
 #[allow(clippy::missing_errors_doc, clippy::missing_safety_doc)]
 impl<'a, A, S> BumpScope<'a, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     traits::forward_methods! {
@@ -277,7 +284,7 @@ where
 /// Additional `alloc` methods that are not available in traits.
 impl<'a, A, S> BumpScope<'a, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.

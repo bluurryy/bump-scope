@@ -30,17 +30,18 @@ type Bump<const UP: bool, A = Global> = bump_scope::Bump<A, BumpSettings<1, UP, 
 
 fn allocated<const UP: bool>() {
     let bump = <Bump<UP>>::new();
+    assert_eq!(bump.stats().count(), 1);
     drop(bump);
 }
 
 fn unallocated<const UP: bool>() {
-    let bump = <Bump<UP>>::new();
+    let bump = <Bump<UP>>::unallocated();
     assert_eq!(bump.stats().count(), 0);
     drop(bump);
 }
 
 fn unallocated_alloc<const UP: bool>() {
-    let bump = <Bump<UP>>::new();
+    let bump = <Bump<UP>>::unallocated();
     assert_eq!(bump.stats().count(), 0);
     bump.alloc_str("Hello, World!");
     assert_eq!(bump.stats().count(), 1);
@@ -57,7 +58,7 @@ fn allocated_reserve_bytes<const UP: bool>() {
 }
 
 fn unallocated_reserve_bytes<const UP: bool>() {
-    let bump = <Bump<UP>>::new();
+    let bump = <Bump<UP>>::unallocated();
     assert_eq!(bump.stats().count(), 0);
     bump.reserve(1024);
     assert_eq!(bump.stats().count(), 1);
@@ -66,7 +67,7 @@ fn unallocated_reserve_bytes<const UP: bool>() {
 }
 
 fn checkpoint<const UP: bool>() {
-    let bump = <Bump<UP>>::new();
+    let bump = <Bump<UP>>::unallocated();
 
     let checkpoint_unallocated = bump.checkpoint();
     assert_eq!(bump.stats().count(), 0);
@@ -91,7 +92,7 @@ fn checkpoint<const UP: bool>() {
 }
 
 fn checkpoint_multiple_chunks<const UP: bool>() {
-    let bump = <Bump<UP>>::new();
+    let bump = <Bump<UP>>::unallocated();
 
     assert_eq!(bump.stats().count(), 0);
     let c0 = bump.checkpoint();
@@ -128,7 +129,7 @@ fn allocate_another_chunk<const UP: bool>(bump: &Bump<UP>, dummy_size: usize) {
 }
 
 fn reset<const UP: bool>() {
-    let mut bump = <Bump<UP>>::new();
+    let mut bump = <Bump<UP>>::unallocated();
     bump.reset();
 }
 
@@ -145,7 +146,7 @@ fn potential_data_race<const UP: bool>() {
 }
 
 fn default_chunk_size<const UP: bool>() {
-    let bump: bump_scope::Bump<Global, BumpSettings<1, UP>> = bump_scope::Bump::new();
+    let bump: Bump<UP> = Bump::unallocated();
     assert_eq!(bump.stats().count(), 0);
     bump.alloc("a");
     assert_eq!(bump.stats().count(), 1);
@@ -156,7 +157,7 @@ fn default_chunk_size<const UP: bool>() {
 }
 
 fn custom_chunk_size<const UP: bool>() {
-    let bump: bump_scope::Bump<Global, BumpSettings<1, UP, false, true, true, true, 4096>> = bump_scope::Bump::new();
+    let bump: bump_scope::Bump<Global, BumpSettings<1, UP, false, true, true, true, 4096>> = bump_scope::Bump::unallocated();
     assert_eq!(bump.stats().count(), 0);
     bump.alloc("a");
     assert_eq!(bump.stats().count(), 1);

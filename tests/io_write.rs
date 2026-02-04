@@ -14,7 +14,7 @@ use common::Limited;
 
 #[test]
 fn io_write_vec() {
-    let bump: Bump<Limited<Global>> = Bump::new_in(Limited::new_in(512, Global));
+    let bump: Bump<Limited<Global>> = Bump::with_size_in(512, Limited::new_in(512, Global));
     let mut vec = BumpVec::new_in(&bump);
     assert!(matches!(vec.write(&[1, 2, 3]), Ok(3)));
     assert!(matches!(
@@ -38,7 +38,7 @@ fn io_write_vec() {
 
 #[test]
 fn io_write_mut_vec() {
-    let mut bump: Bump<Limited<Global>> = Bump::new_in(Limited::new_in(512, Global));
+    let mut bump: Bump<Limited<Global>> = Bump::with_size_in(512, Limited::new_in(512, Global));
     let mut vec = MutBumpVec::new_in(&mut bump);
     assert!(matches!(vec.write(&[1, 2, 3]), Ok(3)));
     assert!(matches!(

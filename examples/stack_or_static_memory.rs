@@ -11,6 +11,7 @@ use std::sync::{Mutex, PoisonError};
 
 use bump_scope::{
     alloc::{AllocError, Allocator},
+    settings::{BumpAllocatorSettings, BumpSettings},
     traits::BumpAllocatorTyped,
 };
 
@@ -105,12 +106,12 @@ unsafe impl<const SIZE: usize> Allocator for &StaticAllocator<SIZE> {
     }
 }
 
-type Bump<A> = bump_scope::Bump<A>;
+type Bump<A> = bump_scope::Bump<A, <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<true>>;
 
 fn on_stack() {
     let memory = StaticAllocator::<1024>::new();
 
-    let bump = Bump::new_in(&memory);
+    let bump = Bump::with_size_in(0, &memory);
 
     let str = bump.alloc_str("It works!");
     println!("{str}");
@@ -126,7 +127,7 @@ fn on_static() {
     let guard = MEMORY.lock().unwrap_or_else(PoisonError::into_inner);
     let memory = &*guard;
 
-    let bump = Bump::new_in(memory);
+    let bump = Bump::with_size_in(0, memory);
 
     let str = bump.alloc_str("It works!");
     println!("{str}");

@@ -4,8 +4,7 @@ use core::{
 };
 
 use crate::{
-    BumpScope,
-    alloc::Allocator,
+    BaseAllocator, BumpScope,
     settings::{BumpAllocatorSettings, BumpSettings},
 };
 
@@ -17,7 +16,7 @@ use crate::traits::*;
 #[must_use]
 pub struct BumpClaimGuard<'b, 'a, A, S = BumpSettings>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     pub(crate) original: &'b BumpScope<'a, A, S>,
@@ -26,7 +25,7 @@ where
 
 impl<'b, 'a, A, S> BumpClaimGuard<'b, 'a, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
@@ -44,7 +43,7 @@ where
 
 impl<'a, A, S> Deref for BumpClaimGuard<'_, 'a, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     type Target = BumpScope<'a, A, S>;
@@ -57,7 +56,7 @@ where
 
 impl<A, S> DerefMut for BumpClaimGuard<'_, '_, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
@@ -68,7 +67,7 @@ where
 
 impl<A, S> Drop for BumpClaimGuard<'_, '_, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]

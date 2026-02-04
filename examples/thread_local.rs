@@ -9,7 +9,7 @@ use bump_scope::{
 type Bump = bump_scope::Bump<Global, <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<false>>;
 
 thread_local! {
-    static BUMP: Bump = const { Bump::new_in(Global) };
+    static BUMP: Bump = const { Bump::unallocated() };
 }
 
 fn main() {

@@ -3,7 +3,10 @@
 
 use std::{alloc::Layout, cell::Cell, ptr::NonNull};
 
-use bump_scope::alloc::{AllocError, Allocator, Global};
+use bump_scope::{
+    alloc::{AllocError, Allocator, Global},
+    settings::{BumpAllocatorSettings, BumpSettings},
+};
 
 struct Limited<A> {
     current: Cell<usize>,
@@ -95,7 +98,7 @@ where
     }
 }
 
-type Bump<A> = bump_scope::Bump<A>;
+type Bump<A> = bump_scope::Bump<A, <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<true>>;
 
 fn main() {
     let allocator = Limited::new_in(1024, Global);

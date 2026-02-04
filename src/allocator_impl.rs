@@ -3,7 +3,7 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    Bump, BumpScope,
+    BaseAllocator, Bump, BumpScope,
     alloc::{AllocError, Allocator},
     bump_down,
     layout::CustomLayout,
@@ -15,7 +15,7 @@ use crate::{
 
 unsafe impl<A, S> Allocator for Bump<A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
@@ -51,7 +51,7 @@ where
 
 unsafe impl<A, S> Allocator for BumpScope<'_, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
@@ -88,7 +88,7 @@ where
 #[inline(always)]
 fn allocate<A, S>(bump: &RawBump<A, S>, layout: Layout) -> Result<NonNull<[u8]>, AllocError>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     Ok(NonNull::slice_from_raw_parts(
@@ -100,7 +100,7 @@ where
 #[inline(always)]
 unsafe fn deallocate<A, S>(bump: &RawBump<A, S>, ptr: NonNull<u8>, layout: Layout)
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     if !S::DEALLOCATES {
@@ -118,7 +118,7 @@ where
 #[inline(always)]
 unsafe fn deallocate_assume_last<A, S>(bump: &RawBump<A, S>, ptr: NonNull<u8>, layout: Layout)
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     if !S::DEALLOCATES {
@@ -150,7 +150,7 @@ where
 #[inline(always)]
 unsafe fn is_last<A, S>(bump: &RawBump<A, S>, ptr: NonNull<u8>, layout: Layout) -> bool
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     if S::UP {
@@ -168,7 +168,7 @@ unsafe fn grow<A, S>(
     new_layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     debug_assert!(
@@ -265,7 +265,7 @@ unsafe fn grow_zeroed<A, S>(
     new_layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     unsafe {
@@ -290,7 +290,7 @@ unsafe fn shrink<A, S>(
     new_layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     /// Called when `new_layout` doesn't fit alignment.
@@ -303,7 +303,7 @@ where
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError>
     where
-        A: Allocator,
+        A: BaseAllocator<S::GuaranteedAllocated>,
         S: BumpAllocatorSettings,
     {
         unsafe {

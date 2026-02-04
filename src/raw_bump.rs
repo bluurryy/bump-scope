@@ -2,49 +2,71 @@ use core::{
     alloc::Layout,
     cell::Cell,
     marker::PhantomData,
-    mem::ManuallyDrop,
     num::NonZeroUsize,
     ops::{Deref, Range},
     ptr::{self, NonNull},
 };
 
 use crate::{
-    Checkpoint, SizedTypeProperties, align_pos,
+    BaseAllocator, Checkpoint, SizedTypeProperties, align_pos,
     alloc::{AllocError, Allocator},
     bumping::{BumpProps, BumpUp, MIN_CHUNK_ALIGN, bump_down, bump_prepare_down, bump_prepare_up, bump_up},
     chunk::{ChunkHeader, ChunkSize, ChunkSizeHint},
     error_behavior::{self, ErrorBehavior},
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::non_null,
-    settings::{BumpAllocatorSettings, MinimumAlignment, SupportedMinimumAlignment},
+    settings::{BumpAllocatorSettings, False, MinimumAlignment, SupportedMinimumAlignment},
     stats::Stats,
 };
-
-#[cfg(feature = "alloc")]
-use crate::alloc::Global;
 
 /// The internal type used by `Bump` and `Bump(Scope)`.
 ///
 /// All the api that can fail due to allocation failure take a `E: ErrorBehavior`
 /// instead of having a `try_` and non-`try_` version.
 ///
-/// It does not concern itself with freeing chunks or the base allocator.
+/// It does not concern itself with deallocating chunks or the base allocator.
 /// A clone of this type is just a bitwise copy, `manually_drop` must only be called
 /// once for this bump allocator.
 pub(crate) struct RawBump<A, S> {
     /// Either a chunk allocated from the `allocator`, or either a `CLAIMED`
     /// or `UNALLOCATED` dummy chunk.
-    pub(crate) chunk: Cell<RawChunk<S>>,
-
-    /// The base allocator.
-    pub(crate) allocator: ManuallyDrop<A>,
+    pub(crate) chunk: Cell<RawChunk<A, S>>,
 }
 
 impl<A, S> Clone for RawBump<A, S> {
     fn clone(&self) -> Self {
         Self {
             chunk: self.chunk.clone(),
-            allocator: unsafe { ptr::read(&raw const self.allocator) },
+        }
+    }
+}
+
+impl<A, S> RawBump<A, S>
+where
+    S: BumpAllocatorSettings,
+{
+    #[inline(always)]
+    pub(crate) const fn new() -> Self
+    where
+        S: BumpAllocatorSettings<GuaranteedAllocated = False>,
+    {
+        const { assert!(!S::GUARANTEED_ALLOCATED) };
+
+        Self {
+            chunk: Cell::new(RawChunk::UNALLOCATED),
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn is_claimed(&self) -> bool {
+        self.chunk.get().is_claimed()
+    }
+
+    #[inline(always)]
+    pub(crate) fn allocator<'a>(&self) -> Option<&'a A> {
+        match self.chunk.get().classify() {
+            ChunkClass::Claimed | ChunkClass::Unallocated => None,
+            ChunkClass::NonDummy(chunk) => Some(chunk.allocator()),
         }
     }
 }
@@ -55,28 +77,55 @@ where
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
-    pub(crate) const fn new(allocator: A) -> Self {
-        const { assert!(!S::GUARANTEED_ALLOCATED) };
-
-        Self {
-            chunk: Cell::new(RawChunk::UNALLOCATED),
-            allocator: ManuallyDrop::new(allocator),
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn with_size<E: ErrorBehavior>(size: ChunkSize<S::Up>, allocator: A) -> Result<Self, E> {
+    pub(crate) fn with_size<E: ErrorBehavior>(size: ChunkSize<A, S::Up>, allocator: A) -> Result<Self, E> {
         Ok(Self {
-            chunk: Cell::new(NonDummyChunk::new::<E>(size, None, &allocator)?.0),
-            allocator: ManuallyDrop::new(allocator),
+            chunk: Cell::new(NonDummyChunk::new::<E>(size, None, allocator)?.0),
         })
     }
 
     #[inline(always)]
-    pub(crate) fn is_claimed(&self) -> bool {
-        self.chunk.get().is_claimed()
+    pub(crate) fn reset(&self) {
+        let Some(mut chunk) = self.chunk.get().as_non_dummy() else {
+            return;
+        };
+
+        unsafe {
+            chunk.for_each_prev(|chunk| chunk.deallocate());
+
+            while let Some(next) = chunk.next() {
+                chunk.deallocate();
+                chunk = next;
+            }
+
+            chunk.header.as_ref().prev.set(None);
+        }
+
+        chunk.reset();
+
+        // SAFETY: casting from guaranteed-allocated to non-guaranteed-allocated is safe
+        self.chunk.set(unsafe { chunk.cast() });
     }
 
+    pub(crate) unsafe fn manually_drop(&mut self) {
+        match self.chunk.get().classify() {
+            ChunkClass::Claimed => {
+                // The user must have somehow leaked a `BumpClaimGuard`.
+            }
+            ChunkClass::Unallocated => (),
+            ChunkClass::NonDummy(chunk) => unsafe {
+                chunk.for_each_prev(|chunk| chunk.deallocate());
+                chunk.for_each_next(|chunk| chunk.deallocate());
+                chunk.deallocate();
+            },
+        }
+    }
+}
+
+impl<A, S> RawBump<A, S>
+where
+    A: BaseAllocator<S::GuaranteedAllocated>,
+    S: BumpAllocatorSettings,
+{
     #[inline(always)]
     pub(crate) fn claim(&self) -> RawBump<A, S> {
         const {
@@ -93,10 +142,9 @@ where
             already_claimed();
         }
 
-        let chunk = Cell::new(self.chunk.replace(RawChunk::<S>::CLAIMED));
-        let allocator = unsafe { ptr::read(&raw const self.allocator) };
-
-        RawBump { chunk, allocator }
+        RawBump {
+            chunk: Cell::new(self.chunk.replace(RawChunk::<A, S>::CLAIMED)),
+        }
     }
 
     #[inline(always)]
@@ -171,46 +219,10 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn reset(&self) {
-        let Some(mut chunk) = self.chunk.get().as_non_dummy() else {
-            return;
-        };
-
-        unsafe {
-            chunk.for_each_prev(|chunk| chunk.deallocate(&*self.allocator));
-
-            while let Some(next) = chunk.next() {
-                chunk.deallocate(&*self.allocator);
-                chunk = next;
-            }
-
-            chunk.header.as_ref().prev.set(None);
-        }
-
-        chunk.reset();
-
-        // SAFETY: casting from guaranteed-allocated to non-guaranteed-allocated is safe
-        self.chunk.set(unsafe { chunk.cast() });
-    }
-
-    pub(crate) unsafe fn manually_drop(&mut self) {
-        match self.chunk.get().classify() {
-            ChunkClass::Claimed => {
-                // The user must have somehow leaked a `BumpClaimGuard`.
-            }
-            ChunkClass::Unallocated => (),
-            ChunkClass::NonDummy(chunk) => unsafe {
-                chunk.for_each_prev(|chunk| chunk.deallocate(&*self.allocator));
-                chunk.for_each_next(|chunk| chunk.deallocate(&*self.allocator));
-                chunk.deallocate(&*self.allocator);
-            },
-        }
-
-        unsafe { ManuallyDrop::drop(&mut self.allocator) };
-    }
-
-    #[inline(always)]
-    pub(crate) fn reserve<E: ErrorBehavior>(&self, additional: usize) -> Result<(), E> {
+    pub(crate) fn reserve<E: ErrorBehavior>(&self, additional: usize) -> Result<(), E>
+    where
+        A: BaseAllocator<S::GuaranteedAllocated>,
+    {
         let chunk = self.chunk.get();
 
         match chunk.classify() {
@@ -220,10 +232,12 @@ where
                     return Err(E::capacity_overflow());
                 };
 
-                let new_chunk = NonDummyChunk::new(
-                    ChunkSize::<S::Up>::from_capacity(layout).ok_or_else(E::capacity_overflow)?,
+                let new_chunk = NonDummyChunk::<A, S>::new(
+                    ChunkSize::<A, S::Up>::from_capacity(layout).ok_or_else(E::capacity_overflow)?,
                     None,
-                    &*self.allocator,
+                    // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
+                    // `default_or_panic` will not panic.
+                    A::default_or_panic(),
                 )?;
 
                 self.chunk.set(new_chunk.0);
@@ -256,7 +270,7 @@ where
                     return Err(E::capacity_overflow());
                 };
 
-                chunk.append_for(layout, &*self.allocator).map(drop)
+                chunk.append_for(layout).map(drop)
             }
         }
     }
@@ -412,14 +426,16 @@ where
     pub(crate) unsafe fn in_another_chunk<E: ErrorBehavior, R, L: LayoutProps>(
         &self,
         layout: L,
-        mut f: impl FnMut(RawChunk<S>, L) -> Option<R>,
+        mut f: impl FnMut(RawChunk<A, S>, L) -> Option<R>,
     ) -> Result<R, E> {
-        let new_chunk: NonDummyChunk<S> = match self.chunk.get().classify() {
+        let new_chunk: NonDummyChunk<A, S> = match self.chunk.get().classify() {
             ChunkClass::Claimed => Err(E::claimed()),
             ChunkClass::Unallocated => NonDummyChunk::new(
                 ChunkSize::from_capacity(*layout).ok_or_else(E::capacity_overflow)?,
                 None,
-                &*self.allocator,
+                // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
+                // `default_or_panic` will not panic.
+                A::default_or_panic(),
             ),
             ChunkClass::NonDummy(mut chunk) => {
                 while let Some(next_chunk) = chunk.next() {
@@ -436,7 +452,7 @@ where
                 }
 
                 // there is no chunk that fits, we need a new chunk
-                chunk.append_for(*layout, &*self.allocator)
+                chunk.append_for(*layout)
             }
         }?;
 
@@ -457,7 +473,9 @@ where
         match self.chunk.get().classify() {
             ChunkClass::Claimed => Err(E::claimed()),
             ChunkClass::Unallocated => {
-                let new_chunk = NonDummyChunk::new(ChunkSize::ZERO, None, &*self.allocator)?;
+                // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
+                // `default_or_panic` will not panic.
+                let new_chunk = NonDummyChunk::new(ChunkSize::ZERO, None, A::default_or_panic())?;
                 self.chunk.set(new_chunk.0);
                 Ok(())
             }
@@ -473,7 +491,7 @@ where
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats<'a>(&self) -> Stats<'a, S> {
+    pub fn stats<'a>(&self) -> Stats<'a, A, S> {
         Stats::from_raw_chunk(self.chunk.get())
     }
 
@@ -592,13 +610,7 @@ where
 
         self.align_to::<NewS::MinimumAlignment>();
     }
-}
 
-#[cfg(feature = "alloc")]
-impl<S> RawBump<Global, S>
-where
-    S: BumpAllocatorSettings,
-{
     #[inline]
     pub(crate) fn into_raw(self) -> NonNull<()> {
         self.chunk.get().header.cast()
@@ -611,43 +623,42 @@ where
                 header: ptr.cast(),
                 marker: PhantomData,
             }),
-            allocator: ManuallyDrop::new(Global),
         }
     }
 }
 
-pub(crate) struct RawChunk<S> {
-    pub(crate) header: NonNull<ChunkHeader>,
-    pub(crate) marker: PhantomData<fn() -> S>,
+pub(crate) struct RawChunk<A, S> {
+    pub(crate) header: NonNull<ChunkHeader<A>>,
+    pub(crate) marker: PhantomData<fn() -> (A, S)>,
 }
 
-impl<S> Clone for RawChunk<S> {
+impl<A, S> Clone for RawChunk<A, S> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<S> Copy for RawChunk<S> {}
+impl<A, S> Copy for RawChunk<A, S> {}
 
-pub(crate) struct NonDummyChunk<S>(RawChunk<S>);
+pub(crate) struct NonDummyChunk<A, S>(RawChunk<A, S>);
 
-impl<S> Copy for NonDummyChunk<S> {}
+impl<A, S> Copy for NonDummyChunk<A, S> {}
 
-impl<S> Clone for NonDummyChunk<S> {
+impl<A, S> Clone for NonDummyChunk<A, S> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<S> Deref for NonDummyChunk<S> {
-    type Target = RawChunk<S>;
+impl<A, S> Deref for NonDummyChunk<A, S> {
+    type Target = RawChunk<A, S>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<S> RawChunk<S>
+impl<A, S> RawChunk<A, S>
 where
     S: BumpAllocatorSettings,
 {
@@ -655,7 +666,7 @@ where
         assert!(!S::GUARANTEED_ALLOCATED);
 
         Self {
-            header: ChunkHeader::unallocated::<S>(),
+            header: ChunkHeader::unallocated::<S>().cast(),
             marker: PhantomData,
         }
     };
@@ -664,28 +675,28 @@ where
         assert!(S::CLAIMABLE);
 
         Self {
-            header: ChunkHeader::claimed::<S>(),
+            header: ChunkHeader::claimed::<S>().cast(),
             marker: PhantomData,
         }
     };
 
     #[inline(always)]
-    pub(crate) fn header(self) -> NonNull<ChunkHeader> {
+    pub(crate) fn header(self) -> NonNull<ChunkHeader<A>> {
         self.header
     }
 
     #[inline(always)]
     fn is_claimed(self) -> bool {
-        S::CLAIMABLE && self.header == ChunkHeader::claimed::<S>()
+        S::CLAIMABLE && self.header.cast() == ChunkHeader::claimed::<S>()
     }
 
     #[inline(always)]
     pub(crate) fn is_unallocated(self) -> bool {
-        !S::GUARANTEED_ALLOCATED && self.header == ChunkHeader::unallocated::<S>()
+        !S::GUARANTEED_ALLOCATED && self.header.cast() == ChunkHeader::unallocated::<S>()
     }
 
     #[inline(always)]
-    pub(crate) fn classify(self) -> ChunkClass<S> {
+    pub(crate) fn classify(self) -> ChunkClass<A, S> {
         if self.is_claimed() {
             return ChunkClass::Claimed;
         }
@@ -698,7 +709,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn as_non_dummy(self) -> Option<NonDummyChunk<S>> {
+    pub(crate) fn as_non_dummy(self) -> Option<NonDummyChunk<A, S>> {
         match self.classify() {
             ChunkClass::Claimed | ChunkClass::Unallocated => None,
             ChunkClass::NonDummy(chunk) => Some(chunk),
@@ -815,13 +826,13 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn as_non_dummy_unchecked(self) -> NonDummyChunk<S> {
+    pub(crate) unsafe fn as_non_dummy_unchecked(self) -> NonDummyChunk<A, S> {
         debug_assert!(matches!(self.classify(), ChunkClass::NonDummy(_)));
         NonDummyChunk(self)
     }
 
     /// Cast the settings.
-    pub(crate) unsafe fn cast<S2>(self) -> RawChunk<S2> {
+    pub(crate) unsafe fn cast<S2>(self) -> RawChunk<A, S2> {
         RawChunk {
             header: self.header,
             marker: PhantomData,
@@ -830,20 +841,21 @@ where
 }
 
 // Methods only available for a non-dummy chunk.
-impl<S> NonDummyChunk<S>
+impl<A, S> NonDummyChunk<A, S>
 where
     S: BumpAllocatorSettings,
 {
     pub(crate) fn new<E>(
-        chunk_size: ChunkSize<S::Up>,
-        prev: Option<NonDummyChunk<S>>,
-        allocator: &impl Allocator,
-    ) -> Result<NonDummyChunk<S>, E>
+        chunk_size: ChunkSize<A, S::Up>,
+        prev: Option<NonDummyChunk<A, S>>,
+        allocator: A,
+    ) -> Result<NonDummyChunk<A, S>, E>
     where
+        A: Allocator,
         E: ErrorBehavior,
     {
         let min_size = const {
-            match ChunkSize::<S::Up>::from_hint(S::MINIMUM_CHUNK_SIZE) {
+            match ChunkSize::<A, S::Up>::from_hint(S::MINIMUM_CHUNK_SIZE) {
                 Some(some) => some,
                 None => panic!("failed to calculate minimum chunk size"),
             }
@@ -880,24 +892,26 @@ where
 
         let header = unsafe {
             if S::UP {
-                let header = ptr.cast::<ChunkHeader>();
+                let header = ptr.cast::<ChunkHeader<A>>();
 
                 header.write(ChunkHeader {
                     pos: Cell::new(header.add(1).cast()),
                     end: ptr.add(size),
                     prev,
                     next,
+                    allocator,
                 });
 
                 header
             } else {
-                let header = ptr.add(size).cast::<ChunkHeader>().sub(1);
+                let header = ptr.add(size).cast::<ChunkHeader<A>>().sub(1);
 
                 header.write(ChunkHeader {
                     pos: Cell::new(header.cast()),
                     end: ptr,
                     prev,
                     next,
+                    allocator,
                 });
 
                 header
@@ -913,13 +927,16 @@ where
     /// # Panic
     ///
     /// [`self.next`](RawChunk::next) must return `None`
-    pub(crate) fn append_for<B: ErrorBehavior>(self, layout: Layout, allocator: &impl Allocator) -> Result<Self, B> {
+    pub(crate) fn append_for<B: ErrorBehavior>(self, layout: Layout) -> Result<Self, B>
+    where
+        A: Allocator + Clone,
+    {
         debug_assert!(self.next().is_none());
 
         let required_size = ChunkSizeHint::for_capacity(layout).ok_or_else(B::capacity_overflow)?;
         let grown_size = self.grow_size()?;
         let size = required_size.max(grown_size).calc_size().ok_or_else(B::capacity_overflow)?;
-
+        let allocator = unsafe { self.header.as_ref().allocator.clone() };
         let new_chunk = Self::new::<B>(size, Some(self), allocator)?;
 
         unsafe {
@@ -930,7 +947,7 @@ where
     }
 
     #[inline(always)]
-    fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSizeHint<S::Up>, B> {
+    fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSizeHint<A, S::Up>, B> {
         let Some(size) = self.size().get().checked_mul(2) else {
             return Err(B::capacity_overflow());
         };
@@ -939,7 +956,12 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn prev(self) -> Option<NonDummyChunk<S>> {
+    pub(crate) fn allocator<'a>(self) -> &'a A {
+        unsafe { &self.header.as_ref().allocator }
+    }
+
+    #[inline(always)]
+    pub(crate) fn prev(self) -> Option<NonDummyChunk<A, S>> {
         unsafe {
             Some(NonDummyChunk(RawChunk {
                 header: self.header.as_ref().prev.get()?,
@@ -949,7 +971,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn next(self) -> Option<NonDummyChunk<S>> {
+    pub(crate) fn next(self) -> Option<NonDummyChunk<A, S>> {
         unsafe {
             Some(NonDummyChunk(RawChunk {
                 header: self.header.as_ref().next.get()?,
@@ -1121,7 +1143,7 @@ where
     }
 
     /// This resolves the next chunk before calling `f`. So calling [`deallocate`](NonDummyChunk::deallocate) on the chunk parameter of `f` is fine.
-    fn for_each_prev(self, mut f: impl FnMut(NonDummyChunk<S>)) {
+    fn for_each_prev(self, mut f: impl FnMut(NonDummyChunk<A, S>)) {
         let mut iter = self.prev();
 
         while let Some(chunk) = iter {
@@ -1131,7 +1153,7 @@ where
     }
 
     /// This resolves the next chunk before calling `f`. So calling [`deallocate`](NonDummyChunk::deallocate) on the chunk parameter of `f` is fine.
-    fn for_each_next(self, mut f: impl FnMut(NonDummyChunk<S>)) {
+    fn for_each_next(self, mut f: impl FnMut(NonDummyChunk<A, S>)) {
         let mut iter = self.next();
 
         while let Some(chunk) = iter {
@@ -1142,7 +1164,12 @@ where
 
     /// # Safety
     /// - self must not be used after calling this.
-    unsafe fn deallocate(self, allocator: &impl Allocator) {
+    unsafe fn deallocate(self)
+    where
+        A: Allocator,
+    {
+        let allocator = unsafe { ptr::read(&raw const self.header.as_ref().allocator) };
+
         let ptr = self.chunk_start();
         let layout = self.layout();
 
@@ -1154,12 +1181,12 @@ where
     #[inline(always)]
     pub(crate) fn layout(self) -> Layout {
         // SAFETY: this layout fits the one we allocated, which means it must be valid
-        unsafe { Layout::from_size_align_unchecked(self.size().get(), align_of::<ChunkHeader>()) }
+        unsafe { Layout::from_size_align_unchecked(self.size().get(), align_of::<ChunkHeader<A>>()) }
     }
 }
 
-pub(crate) enum ChunkClass<S: BumpAllocatorSettings> {
+pub(crate) enum ChunkClass<A, S: BumpAllocatorSettings> {
     Claimed,
     Unallocated,
-    NonDummy(NonDummyChunk<S>),
+    NonDummy(NonDummyChunk<A, S>),
 }

@@ -1,27 +1,23 @@
 use core::{
     alloc::Layout,
-    cell::Cell,
     ffi::CStr,
     fmt::{self, Debug},
-    marker::PhantomData,
-    mem::MaybeUninit,
+    mem::{ManuallyDrop, MaybeUninit},
     panic::{RefUnwindSafe, UnwindSafe},
+    ptr::NonNull,
 };
-
-#[cfg(feature = "alloc")]
-use core::{mem::ManuallyDrop, ptr::NonNull};
 
 #[cfg(feature = "nightly-clone-to-uninit")]
 use core::clone::CloneToUninit;
 
 use crate::{
-    BumpBox, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, ErrorBehavior,
+    BaseAllocator, BumpBox, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, ErrorBehavior,
     alloc::{AllocError, Allocator},
     chunk::ChunkSize,
     maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{transmute_mut, transmute_ref, transmute_value},
-    raw_bump::{RawBump, RawChunk},
+    raw_bump::RawBump,
     settings::{BumpAllocatorSettings, BumpSettings, False, MinimumAlignment, SupportedMinimumAlignment},
     stats::{AnyStats, Stats},
     traits::{
@@ -32,9 +28,6 @@ use crate::{
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
-
-#[cfg(feature = "alloc")]
-use crate::alloc::Global;
 
 macro_rules! make_type {
     ($($allocator_parameter:tt)*) => {
@@ -49,9 +42,10 @@ macro_rules! make_type {
         /// For every such panicking method, there is a corresponding `try_`-prefixed version that returns a `Result` instead.
         ///
         /// #### Create a `Bump` ...
-        /// - without allocating a chunk: <code>[new]\([_in][new_in])</code> / <code>[default]</code>
+        /// - with a default size hint: <code>[new]\([_in][new_in])</code> / <code>[default]</code>
         /// - provide a size hint: <code>[with_size]\([_in][with_size_in])</code>
         /// - provide a minimum capacity: <code>[with_capacity]\([_in][with_capacity_in])</code>
+        /// - const, without allocating a chunk: <code>[unallocated]</code>
         ///
         /// [new]: Bump::new
         /// [new_in]: Bump::new_in
@@ -60,6 +54,7 @@ macro_rules! make_type {
         /// [with_size_in]: Bump::with_size_in
         /// [with_capacity]: Bump::with_capacity
         /// [with_capacity_in]: Bump::with_capacity_in
+        /// [unallocated]: Bump::unallocated
         ///
         /// #### Allocate ...
         /// - sized values: [`alloc`], [`alloc_with`], [`alloc_default`], [`alloc_zeroed`]
@@ -270,14 +265,46 @@ where
     }
 }
 
+#[cfg(feature = "panic-on-alloc")]
 impl<A, S> Default for Bump<A, S>
 where
     A: Allocator + Default,
-    S: BumpAllocatorSettings<GuaranteedAllocated = False>,
+    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn default() -> Self {
-        Self::new()
+        Self::new_in(Default::default())
+    }
+}
+
+impl<A, S> Bump<A, S>
+where
+    A: Allocator,
+    S: BumpAllocatorSettings<GuaranteedAllocated = False>,
+{
+    /// Constructs a new `Bump` without allocating a chunk.
+    ///
+    /// This requires the `GUARANTEED_ALLOCATED` setting to be `false`, see [`settings`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bump_scope::{
+    ///     alloc::Global,
+    ///     Bump,
+    ///     settings::{BumpSettings, BumpAllocatorSettings}
+    /// };
+    ///
+    /// type Settings = <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<false>;
+    ///
+    /// let bump: Bump<Global, Settings> = Bump::unallocated();
+    /// # _ = bump;
+    /// ```
+    ///
+    /// [`settings`]: crate::settings
+    #[must_use]
+    pub const fn unallocated() -> Self {
+        Self { raw: RawBump::new() }
     }
 }
 
@@ -287,7 +314,12 @@ where
     A: Allocator + Default,
     S: BumpAllocatorSettings,
 {
-    /// Constructs a new `Bump` without allocating.
+    /// Constructs a new `Bump` with a default size hint for the first chunk.
+    ///
+    /// This is equivalent to <code>[with_size](Bump::with_size)(512)</code>.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
     ///
     /// # Examples
     /// ```
@@ -298,8 +330,29 @@ where
     /// ```
     #[must_use]
     #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
     pub fn new() -> Self {
-        Self::new_in(Default::default())
+        Self::with_size(512)
+    }
+
+    /// Constructs a new `Bump` with a default size hint for the first chunk.
+    ///
+    /// This is equivalent to <code>[try_with_size](Bump::try_with_size)(512)</code>.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::Bump;
+    ///
+    /// let bump: Bump = Bump::try_new()?;
+    /// # _ = bump;
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_new() -> Result<Self, AllocError> {
+        Self::try_with_size(512)
     }
 
     /// Constructs a new `Bump` with a size hint for the first chunk.
@@ -425,7 +478,12 @@ where
     A: Allocator,
     S: BumpAllocatorSettings,
 {
-    /// Constructs a new `Bump` without allocating.
+    /// Constructs a new `Bump` with a default size hint for the first chunk.
+    ///
+    /// This is equivalent to <code>[with_size_in](Bump::with_size_in)(512, allocator)</code>.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
     ///
     /// # Examples
     /// ```
@@ -437,10 +495,30 @@ where
     /// ```
     #[must_use]
     #[inline(always)]
-    pub const fn new_in(allocator: A) -> Self {
-        Self {
-            raw: RawBump::new(allocator),
-        }
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn new_in(allocator: A) -> Self {
+        Self::with_size_in(512, allocator)
+    }
+
+    /// Constructs a new `Bump` with a default size hint for the first chunk.
+    ///
+    /// This is equivalent to <code>[try_with_size_in](Bump::try_with_size_in)(512, allocator)</code>.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::Bump;
+    /// use bump_scope::alloc::Global;
+    ///
+    /// let bump: Bump = Bump::try_new_in(Global)?;
+    /// # _ = bump;
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    pub fn try_new_in(allocator: A) -> Result<Self, AllocError> {
+        Self::try_with_size_in(512, allocator)
     }
 
     /// Constructs a new `Bump` with a size hint for the first chunk.
@@ -510,7 +588,7 @@ where
     pub(crate) fn generic_with_size_in<E: ErrorBehavior>(size: usize, allocator: A) -> Result<Self, E> {
         Ok(Self {
             raw: RawBump::with_size(
-                ChunkSize::<S::Up>::from_hint(size).ok_or_else(E::capacity_overflow)?,
+                ChunkSize::<A, S::Up>::from_hint(size).ok_or_else(E::capacity_overflow)?,
                 allocator,
             )?,
         })
@@ -568,10 +646,17 @@ where
     pub(crate) fn generic_with_capacity_in<E: ErrorBehavior>(layout: Layout, allocator: A) -> Result<Self, E> {
         Ok(Self {
             raw: RawBump::with_size(
-                ChunkSize::<S::Up>::from_capacity(layout).ok_or_else(E::capacity_overflow)?,
+                ChunkSize::<A, S::Up>::from_capacity(layout).ok_or_else(E::capacity_overflow)?,
                 allocator,
             )?,
         })
+    }
+
+    /// Returns a reference to the base allocator.
+    #[must_use]
+    #[inline(always)]
+    pub fn allocator(&self) -> Option<&A> {
+        self.raw.allocator()
     }
 
     // This needs `&mut self` to make sure that no allocations are alive.
@@ -607,7 +692,7 @@ where
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'_, S> {
+    pub fn stats(&self) -> Stats<'_, A, S> {
         self.as_scope().stats()
     }
 
@@ -639,6 +724,7 @@ where
     #[inline]
     pub fn with_settings<NewS>(self) -> Bump<A, NewS>
     where
+        A: BaseAllocator<NewS::GuaranteedAllocated>,
         NewS: BumpAllocatorSettings,
     {
         self.raw.ensure_satisfies_settings::<NewS>();
@@ -655,6 +741,7 @@ where
     #[inline]
     pub fn borrow_with_settings<NewS>(&self) -> &Bump<A, NewS>
     where
+        A: BaseAllocator<NewS::GuaranteedAllocated>,
         NewS: BumpAllocatorSettings,
     {
         self.raw.ensure_satisfies_settings_for_borrow::<NewS>();
@@ -671,62 +758,13 @@ where
     #[inline]
     pub fn borrow_mut_with_settings<NewS>(&mut self) -> &mut Bump<A, NewS>
     where
+        A: BaseAllocator<NewS::GuaranteedAllocated>,
         NewS: BumpAllocatorSettings,
     {
         self.raw.ensure_satisfies_settings_for_borrow_mut::<NewS>();
         unsafe { transmute_mut(self) }
     }
 
-    /// Converts this `Bump` into a raw pointer and allocator.
-    ///
-    /// ```
-    /// # use bump_scope::{Bump, alloc::Global};
-    /// # type MyAllocator = Global;
-    /// # let my_allocator = Global;
-    /// let bump: Bump<MyAllocator> = Bump::new_in(my_allocator);
-    /// bump.alloc_str("Hello, ");
-    ///
-    /// let (ptr, alloc) = bump.into_raw_with_allocator();
-    /// let bump: Bump = unsafe { Bump::from_raw_with_allocator(ptr, alloc) };
-    ///
-    /// bump.alloc_str("World!");
-    /// # assert_eq!(bump.stats().allocated(), 13);
-    /// ```
-    #[inline]
-    #[must_use]
-    pub fn into_raw_with_allocator(self) -> (NonNull<()>, A) {
-        let RawBump { chunk, allocator } = ManuallyDrop::new(self).raw.clone();
-        (chunk.get().header().cast(), ManuallyDrop::into_inner(allocator))
-    }
-
-    /// Converts the raw pointer and allocator that was created with [`into_raw_with_allocator`] back into a `Bump`.
-    ///
-    /// # Safety
-    /// - `ptr` and `allocator` must come from a call to `Self::into_raw_with_allocator`.
-    /// - This function must only be called once with this `ptr` and `allocator`.
-    /// - The settings must match the original ones.
-    ///
-    /// [`into_raw_with_allocator`]: Bump::into_raw_with_allocator
-    #[inline]
-    #[must_use]
-    pub unsafe fn from_raw_with_allocator(ptr: NonNull<()>, allocator: A) -> Self {
-        Self {
-            raw: RawBump {
-                chunk: Cell::new(RawChunk {
-                    header: ptr.cast(),
-                    marker: PhantomData,
-                }),
-                allocator: ManuallyDrop::new(allocator),
-            },
-        }
-    }
-}
-
-#[cfg(feature = "alloc")]
-impl<S> Bump<Global, S>
-where
-    S: BumpAllocatorSettings,
-{
     /// Converts this `Bump` into a raw pointer.
     ///
     /// ```
@@ -744,7 +782,7 @@ where
     #[inline]
     #[must_use]
     pub fn into_raw(self) -> NonNull<()> {
-        self.into_raw_with_allocator().0
+        ManuallyDrop::new(self).raw.clone().into_raw()
     }
 
     /// Converts the raw pointer that was created with [`into_raw`](Bump::into_raw) back into a `Bump`.
@@ -756,13 +794,15 @@ where
     #[inline]
     #[must_use]
     pub unsafe fn from_raw(ptr: NonNull<()>) -> Self {
-        unsafe { Self::from_raw_with_allocator(ptr, Global) }
+        Self {
+            raw: unsafe { RawBump::from_raw(ptr) },
+        }
     }
 }
 
 impl<'b, A, S> From<&'b Bump<A, S>> for &'b BumpScope<'b, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
@@ -773,7 +813,7 @@ where
 
 impl<'b, A, S> From<&'b mut Bump<A, S>> for &'b mut BumpScope<'b, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
@@ -787,7 +827,7 @@ where
 #[allow(clippy::missing_errors_doc, clippy::missing_safety_doc)]
 impl<A, S> Bump<A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     traits::forward_methods! {
@@ -801,7 +841,7 @@ where
 /// Additional `alloc` methods that are not available in traits.
 impl<A, S> Bump<A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.

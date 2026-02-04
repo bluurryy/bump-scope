@@ -18,8 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Change `Bump::new(_in)` to not allocate anymore
-- Change `A` allocator parameter to only require it to implement `Allocator`
 - **Breaking:** Replace generic const parameters with a single `Settings` parameter
 - **Breaking:** Change `scoped`, `scoped_aligned` and `aligned` to take a closure with `&mut BumpScope` instead of `BumpScope` (you can get the bump scope by value using `by_value`)
 - **Breaking:** Replace allocator settings configuration methods with new `(borrow_(mut_)with_settings` methods
@@ -38,7 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- **Breaking:** Remove `unallocated`, becomes `new` or `new_in`
 - **Breaking:** Remove `into_aligned`, use `with_settings`
 - **Breaking:** Remove `as_mut_aligned`, use `borrow_mut_with_settings`
 - **Breaking:** Remove `alloc_layout` (`allocate_layout` provides the same functionality)

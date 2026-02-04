@@ -2,9 +2,7 @@
 
 use std::{
     alloc::Layout,
-    panic,
     panic::{AssertUnwindSafe, UnwindSafe},
-    ptr::NonNull,
     string::String,
 };
 
@@ -46,8 +44,6 @@ either_way! {
     scope_guard
 
     alloc_mut
-
-    double_drop
 }
 
 type Bump<const UP: bool, A = Global> = bump_scope::Bump<A, BumpSettings<1, UP>>;
@@ -260,42 +256,4 @@ fn alloc_mut<const UP: bool>() {
 
     let uno_dos_tres = bump.claim().alloc_iter_mut([1, 2, 3]);
     assert_eq!(uno_dos_tres, [1, 2, 3]);
-}
-
-fn double_drop<const UP: bool>() {
-    struct CountDrops<'a>(&'a mut usize);
-
-    impl Drop for CountDrops<'_> {
-        fn drop(&mut self) {
-            *self.0 += 1;
-        }
-    }
-
-    unsafe impl Allocator for CountDrops<'_> {
-        fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-            Global.allocate(layout)
-        }
-
-        unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-            unsafe { Global.deallocate(ptr, layout) };
-        }
-    }
-
-    fn check<const UP: bool>(f: fn(CountDrops) -> Bump<UP, CountDrops>) {
-        let mut drop_count = 0;
-        let bump = f(CountDrops(&mut drop_count));
-
-        _ = bump.claim();
-        _ = bump.claim();
-        _ = bump.claim();
-
-        assert_eq!(*bump.allocator().0, 0);
-
-        drop(bump);
-
-        assert_eq!(drop_count, 1);
-    }
-
-    check::<UP>(|a| Bump::new_in(a));
-    check::<UP>(|a| Bump::with_size_in(512, a));
 }

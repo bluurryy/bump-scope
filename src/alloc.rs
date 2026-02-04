@@ -458,7 +458,7 @@ where
 
 // Used for static assertions.
 #[cfg(test)]
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub(crate) struct NoopAllocator;
 
 #[cfg(test)]

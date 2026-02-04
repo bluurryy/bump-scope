@@ -5,7 +5,7 @@ error[E0080]: evaluation panicked: can't change guaranteed-allocated property us
   | |                 NewS::GUARANTEED_ALLOCATED == S::GUARANTEED_ALLOCATED,
   | |                 "can't change guaranteed-allocated property using `Bump(Scope)::borrow_mut_with_settings`"
   | |             );
-  | |_____________^ evaluation of `bump_scope::raw_bump::RawBump::<bump_scope::alloc::Global, bump_scope::settings::BumpSettings>::ensure_satisfies_settings_for_borrow_mut::<bump_scope::settings::BumpSettings<1, true, true>>::{constant#0}` failed here
+  | |_____________^ evaluation of `bump_scope::raw_bump::RawBump::<bump_scope::alloc::Global, bump_scope::settings::BumpSettings<1, true, false>>::ensure_satisfies_settings_for_borrow_mut::<bump_scope::settings::BumpSettings>::{constant#0}` failed here
 
 note: erroneous constant encountered
  --> src/raw_bump.rs
@@ -19,7 +19,7 @@ note: erroneous constant encountered
   | |         }
   | |_________^
 
-note: the above error was encountered while instantiating `fn bump_scope::raw_bump::RawBump::<bump_scope::alloc::Global, BumpSettings>::ensure_satisfies_settings_for_borrow_mut::<BumpSettings<1, true, true>>`
+note: the above error was encountered while instantiating `fn bump_scope::raw_bump::RawBump::<bump_scope::alloc::Global, BumpSettings<1, true, false>>::ensure_satisfies_settings_for_borrow_mut::<BumpSettings>`
  --> src/bump.rs
   |
   |         self.raw.ensure_satisfies_settings_for_borrow_mut::<NewS>();
