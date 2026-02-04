@@ -523,6 +523,11 @@ macro_rules! maybe_default_allocator {
 
 pub(crate) use maybe_default_allocator;
 
+use crate::{
+    alloc::Allocator,
+    settings::{Boolean, False, True},
+};
+
 // (copied from rust standard library)
 //
 // Tiny Vecs are dumb. Skip to:
@@ -558,3 +563,42 @@ fn align_pos(up: bool, min_align: usize, pos: usize) -> usize {
         down_align_usize(pos, min_align)
     }
 }
+
+mod supported_base_allocator {
+    use crate::settings::{Boolean, False, True};
+
+    pub trait Sealed<GuaranteedAllocated: Boolean> {
+        #[doc(hidden)]
+        fn default_or_panic() -> Self;
+    }
+
+    impl<A> Sealed<False> for A
+    where
+        A: Default,
+    {
+        fn default_or_panic() -> Self {
+            A::default()
+        }
+    }
+
+    impl<A> Sealed<True> for A {
+        fn default_or_panic() -> Self {
+            unreachable!("default should not be required for `GUARANTEED_ALLOCATED` bump allocators");
+        }
+    }
+}
+
+/// Trait that the base allocator of a `Bump` is required to implement to make allocations.
+///
+/// Every [`Allocator`] that implements [`Clone`] automatically implements `BaseAllocator` when `GuaranteedAllocated`.
+/// When not guaranteed allocated, allocators are additionally required to implement [`Default`].
+///
+/// This trait is *sealed*: the list of implementors below is total.
+pub trait BaseAllocator<GuaranteedAllocated: Boolean>:
+    Allocator + Clone + supported_base_allocator::Sealed<GuaranteedAllocated>
+{
+}
+
+impl<A> BaseAllocator<False> for A where A: Allocator + Clone + Default {}
+
+impl<A> BaseAllocator<True> for A where A: Allocator + Clone {}

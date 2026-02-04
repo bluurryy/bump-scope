@@ -1,6 +1,5 @@
 use crate::{
-    Bump, BumpScope, WithoutDealloc, WithoutShrink,
-    alloc::Allocator,
+    BaseAllocator, Bump, BumpScope, WithoutDealloc, WithoutShrink,
     settings::BumpAllocatorSettings,
     traits::{BumpAllocatorCore, assert_implements},
 };
@@ -32,14 +31,14 @@ unsafe impl<A: MutBumpAllocatorCore> MutBumpAllocatorCore for WithoutShrink<A> {
 
 unsafe impl<A, S> MutBumpAllocatorCore for Bump<A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
 }
 
 unsafe impl<A, S> MutBumpAllocatorCore for BumpScope<'_, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
 }

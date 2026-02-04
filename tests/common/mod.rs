@@ -1,6 +1,7 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 #![allow(unused)]
 
+mod instrumented_allocator;
 mod limited_allocator;
 mod test_wrap;
 
@@ -33,6 +34,7 @@ use bump_scope::{
     traits::{BumpAllocator, BumpAllocatorTyped as _},
 };
 
+pub(crate) use instrumented_allocator::InstrumentedAllocator;
 pub(crate) use limited_allocator::Limited;
 pub(crate) use test_wrap::TestWrap;
 

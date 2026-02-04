@@ -63,7 +63,7 @@ impl Fuzz {
                 Operation::Allocate { layout, zero, fails } => unsafe {
                     let layout = layout.0;
 
-                    bump.allocator().fails.set(fails);
+                    bump.allocator().unwrap().fails.set(fails);
 
                     let ptr = if zero {
                         bump.allocate_zeroed(layout)
@@ -128,7 +128,7 @@ impl Fuzz {
                         continue;
                     }
 
-                    bump.allocator().fails.set(fails);
+                    bump.allocator().unwrap().fails.set(fails);
 
                     let i = index % allocations.len();
                     debug_dbg!(i);

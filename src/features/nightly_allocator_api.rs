@@ -4,8 +4,8 @@ use core::alloc::{AllocError, Allocator};
 use alloc_crate::{alloc::Global, boxed::Box};
 
 use crate::{
-    Bump, BumpScope, WithoutDealloc, WithoutShrink,
-    alloc::{AllocError as CrateAllocError, Allocator as CrateAllocator, BoxLike, box_like},
+    BaseAllocator, Bump, BumpScope, WithoutDealloc, WithoutShrink,
+    alloc::{AllocError as CrateAllocError, BoxLike, box_like},
     settings::BumpAllocatorSettings,
     traits::BumpAllocatorCore,
 };
@@ -24,7 +24,10 @@ allocator_compat_wrapper! {
     /// # use alloc::alloc::{AllocError, Global};
     /// use alloc::alloc::Allocator;
     ///
-    /// use bump_scope::{Bump, alloc::compat::AllocatorNightlyCompat};
+    /// use bump_scope::{
+    ///     alloc::compat::AllocatorNightlyCompat,
+    ///     Bump,
+    /// };
     ///
     /// #[derive(Clone)]
     /// struct MyNightlyAllocator;
@@ -56,13 +59,13 @@ impl_allocator_via_allocator! {
 
     use {self} for core as crate impl[A, S] Bump<A, S>
     where [
-        A: CrateAllocator,
+        A: BaseAllocator<S::GuaranteedAllocated>,
         S: BumpAllocatorSettings,
     ]
 
     use {self} for core as crate impl[A, S] BumpScope<'_, A, S>
     where [
-        A: CrateAllocator,
+        A: BaseAllocator<S::GuaranteedAllocated>,
         S: BumpAllocatorSettings,
     ]
 

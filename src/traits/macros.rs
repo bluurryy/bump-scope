@@ -73,13 +73,6 @@ macro_rules! forward_methods {
             unsafe { BumpAllocatorCore::reset_to($access, checkpoint) }
         }
 
-        /// Forwards to [`BumpAllocatorScope::allocator`].
-        #[must_use]
-        #[inline(always)]
-        pub fn allocator(&$self) -> &A {
-            BumpAllocatorScope::allocator($access)
-        }
-
         /// Forwards to [`BumpAllocatorTypedScope::alloc`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]

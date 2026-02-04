@@ -2,7 +2,7 @@
 
 use std::alloc::Layout;
 
-use bump_scope::{Bump, traits::BumpAllocatorTyped as _};
+use bump_scope::{Bump, alloc::Global, settings::BumpSettings, traits::BumpAllocatorTyped as _};
 
 #[test]
 fn test_reserve() {
@@ -14,7 +14,7 @@ fn test_reserve() {
     // This `remaining` property is meaningless for non-current chunks and the second chunk's
     // whole capacity must be subtracted from the amount of bytes to reserve.
 
-    let bump: Bump = Bump::new();
+    let bump: Bump<Global, BumpSettings<1, true, false>> = Bump::unallocated();
     assert_eq!(bump.stats().count(), 0);
 
     // allocate the first chunk and fill it

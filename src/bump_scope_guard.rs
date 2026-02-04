@@ -1,8 +1,7 @@
 use core::{fmt::Debug, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    BumpScope,
-    alloc::Allocator,
+    BaseAllocator, BumpScope,
     chunk::ChunkHeader,
     polyfill::transmute_mut,
     raw_bump::{RawBump, RawChunk},
@@ -21,7 +20,7 @@ pub struct Checkpoint {
 }
 
 impl Checkpoint {
-    pub(crate) fn new<S: BumpAllocatorSettings>(chunk: RawChunk<S>) -> Self {
+    pub(crate) fn new<A, S: BumpAllocatorSettings>(chunk: RawChunk<A, S>) -> Self {
         let address = chunk.pos().addr();
         let chunk = chunk.header.cast();
         Checkpoint { chunk, address }
@@ -41,7 +40,7 @@ impl Checkpoint {
 #[must_use]
 pub struct BumpScopeGuard<'a, A, S = BumpSettings>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     bump: &'a mut RawBump<A, S>,
@@ -50,7 +49,7 @@ where
 
 impl<A, S> Debug for BumpScopeGuard<'_, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -60,7 +59,7 @@ where
 
 impl<A, S> Drop for BumpScopeGuard<'_, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
@@ -71,7 +70,7 @@ where
 
 impl<'a, A, S> BumpScopeGuard<'a, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]

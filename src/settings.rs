@@ -20,16 +20,16 @@
 //!   Bumping downwards can be done in less instructions.
 //!
 //!   For the performance impact see [crates/callgrind-benches][benches].
-//! - **`GUARANTEED_ALLOCATED`** *default: false* —
+//! - **`GUARANTEED_ALLOCATED`** *default: true* —
 //!   Whether at least one chunk has been allocated.
 //!
-//!   The constructors <code>[new]\([_in][new_in])</code> and <code>[default]</code> will create a bump allocator without allocating a chunk.
-//!   They will only compile when `GUARANTEED_ALLOCATED` is `false`.
+//!   The <code>[unallocated]</code> constructor will create a bump allocator without allocating a chunk.
+//!   It will only compile when `GUARANTEED_ALLOCATED` is `false`.
 //!
-//!   The constructors <code>[with_size]\([_in][with_size_in])</code> and <code>[with_capacity]\([_in][with_capacity_in])</code>
+//!   The constructors <code>[new]\([_in][new_in])</code>, <code>[default]</code>, <code>[with_size]\([_in][with_size_in])</code> and <code>[with_capacity]\([_in][with_capacity_in])</code>
 //!   will allocate a chunk and are always available.
 //!
-//!   Setting `GUARANTEED_ALLOCATED` to `true` removes the check and code for specially handling the no-chunk-allocated state when calling [`reset_to`], exiting scopes or calling [`by_value`].
+//!   Setting `GUARANTEED_ALLOCATED` to `false` adds additional checks and code paths for handling the no-chunk-allocated state when calling [`reset_to`], exiting scopes or calling [`by_value`].
 //! - **`CLAIMABLE`** *default: true* — Enables the [`claim`] api.
 //!
 //!   When this is `false`, calling `claim` will fail to compile.
@@ -74,6 +74,7 @@
 //! [^1]: Calling `shrink` with a new layout of a greater alignment does still shift bytes around or cause an allocation.
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
+//! [unallocated]: crate::Bump::unallocated
 //! [new]: crate::Bump::new
 //! [new_in]: crate::Bump::new_in
 //! [default]: crate::Bump::default
@@ -245,7 +246,7 @@ pub trait BumpAllocatorSettings: Sealed {
 pub struct BumpSettings<
     const MIN_ALIGN: usize = 1,
     const UP: bool = true,
-    const GUARANTEED_ALLOCATED: bool = false,
+    const GUARANTEED_ALLOCATED: bool = true,
     const CLAIMABLE: bool = true,
     const DEALLOCATES: bool = true,
     const SHRINKS: bool = true,

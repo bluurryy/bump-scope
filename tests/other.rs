@@ -1170,14 +1170,14 @@ fn test_drop_allocator() {
     let drop_count = DropCounterMutex::default();
 
     let allocator = ReferenceCountedAllocator(drop_count.clone());
-    let bump = Bump::<_>::new_in(allocator.clone());
+    let bump: Bump<_> = Bump::with_size_in(512, allocator.clone());
     drop(bump);
     assert_eq!(drop_count.get(), 1);
 
-    let bump = Bump::<_>::new_in(allocator);
+    let bump: Bump<_> = Bump::with_size_in(512, allocator);
     bump.reserve(1024);
     drop(bump);
-    assert_eq!(drop_count.get(), 2);
+    assert_eq!(drop_count.get(), 3);
 }
 
 #[test]

@@ -1,6 +1,5 @@
 use crate::{
-    BumpClaimGuard, BumpScope,
-    alloc::Allocator,
+    BaseAllocator, BumpClaimGuard, BumpScope,
     bump_align_guard::BumpAlignGuard,
     polyfill::transmute_mut,
     settings::{BumpAllocatorSettings, MinimumAlignment, SupportedMinimumAlignment},
@@ -41,7 +40,7 @@ pub trait BumpAllocatorScope<'a>: BumpAllocator + MutBumpAllocatorCoreScope<'a> 
     fn claim(&self) -> BumpClaimGuard<'_, 'a, Self::Allocator, Self::Settings>;
 
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
-    fn stats(&self) -> Stats<'a, Self::Settings>;
+    fn stats(&self) -> Stats<'a, Self::Allocator, Self::Settings>;
 
     /// Calls `f` with this scope but with a new minimum alignment.
     ///
@@ -132,7 +131,7 @@ pub trait BumpAllocatorScope<'a>: BumpAllocator + MutBumpAllocatorCoreScope<'a> 
 
     /// Returns a reference to the base allocator.
     #[must_use]
-    fn allocator(&self) -> &Self::Allocator;
+    fn allocator(&self) -> Option<&Self::Allocator>;
 }
 
 impl<'a, B> BumpAllocatorScope<'a> for &mut B
@@ -145,7 +144,7 @@ where
     }
 
     #[inline(always)]
-    fn stats(&self) -> Stats<'a, Self::Settings> {
+    fn stats(&self) -> Stats<'a, Self::Allocator, Self::Settings> {
         B::stats(self)
     }
 
@@ -167,14 +166,14 @@ where
     }
 
     #[inline(always)]
-    fn allocator(&self) -> &Self::Allocator {
+    fn allocator(&self) -> Option<&Self::Allocator> {
         B::allocator(self)
     }
 }
 
 impl<'a, A, S> BumpAllocatorScope<'a> for BumpScope<'a, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     #[inline]
@@ -183,7 +182,7 @@ where
     }
 
     #[inline]
-    fn stats(&self) -> Stats<'a, Self::Settings> {
+    fn stats(&self) -> Stats<'a, Self::Allocator, Self::Settings> {
         BumpScope::stats(self)
     }
 
@@ -220,7 +219,7 @@ where
     }
 
     #[inline(always)]
-    fn allocator(&self) -> &Self::Allocator {
-        &self.raw.allocator
+    fn allocator(&self) -> Option<&Self::Allocator> {
+        self.raw.allocator()
     }
 }

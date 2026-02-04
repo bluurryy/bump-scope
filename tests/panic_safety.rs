@@ -12,6 +12,7 @@ use bump_scope::{
     Bump, BumpVec, MutBumpVec, MutBumpVecRev,
     alloc::{AllocError, Allocator, Global},
     bump_vec, mut_bump_vec, mut_bump_vec_rev,
+    settings::BumpSettings,
 };
 
 macro_rules! zst_or_not {
@@ -213,7 +214,8 @@ fn test_shrink_unfit_in_another_chunk<const UP: bool>() {
         }
     }
 
-    let bump: Bump<A> = Bump::with_size(0);
+    let base = A::default();
+    let bump: Bump<&A, BumpSettings<1, UP, true>> = Bump::with_size_in(512, &base);
     bump.allocate(Layout::new::<u8>()).unwrap();
 
     assert_eq!(bump.stats().allocated(), 1);

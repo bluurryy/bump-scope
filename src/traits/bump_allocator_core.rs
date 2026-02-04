@@ -1,7 +1,7 @@
 use core::{alloc::Layout, ops::Range, ptr::NonNull};
 
 use crate::{
-    Bump, BumpScope, Checkpoint, WithoutDealloc, WithoutShrink,
+    BaseAllocator, Bump, BumpScope, Checkpoint, WithoutDealloc, WithoutShrink,
     alloc::{AllocError, Allocator},
     layout::CustomLayout,
     raw_bump::RawChunk,
@@ -19,14 +19,14 @@ impl<B: Sealed> Sealed for WithoutShrink<B> {}
 
 impl<A, S> Sealed for Bump<A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
 }
 
 impl<A, S> Sealed for BumpScope<'_, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
 }
@@ -330,7 +330,7 @@ unsafe impl<B: BumpAllocatorCore> BumpAllocatorCore for WithoutShrink<B> {
 
 unsafe impl<A, S> BumpAllocatorCore for Bump<A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
@@ -376,7 +376,7 @@ where
 
 unsafe impl<A, S> BumpAllocatorCore for BumpScope<'_, A, S>
 where
-    A: Allocator,
+    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
@@ -408,7 +408,7 @@ where
             layout: Layout,
         ) -> Result<Range<NonNull<u8>>, AllocError>
         where
-            A: Allocator,
+            A: BaseAllocator<S::GuaranteedAllocated>,
             S: BumpAllocatorSettings,
         {
             unsafe {

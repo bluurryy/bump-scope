@@ -8,12 +8,14 @@ use crate::{polyfill::non_null, settings::BumpAllocatorSettings};
 ///
 /// All non-`Cell` fields are immutable.
 #[repr(C, align(16))]
-pub(crate) struct ChunkHeader {
+pub(crate) struct ChunkHeader<A = ()> {
     pub(crate) pos: Cell<NonNull<u8>>,
     pub(crate) end: NonNull<u8>,
 
     pub(crate) prev: Cell<Option<NonNull<Self>>>,
     pub(crate) next: Cell<Option<NonNull<Self>>>,
+
+    pub(crate) allocator: A,
 }
 
 /// Wraps a [`ChunkHeader`], making it Sync so it can be used as a static.
@@ -41,6 +43,7 @@ macro_rules! dummy_chunk {
                 end: UP_CHUNK_PTR.cast(),
                 prev: Cell::new(None),
                 next: Cell::new(None),
+                allocator: (),
             });
 
             static DOWN_CHUNK: DummyChunkHeader = DummyChunkHeader(ChunkHeader {
@@ -50,6 +53,7 @@ macro_rules! dummy_chunk {
                 end: unsafe { DOWN_CHUNK_PTR.cast().byte_add(16) },
                 prev: Cell::new(None),
                 next: Cell::new(None),
+                allocator: (),
             });
 
             const UP_CHUNK_PTR: NonNull<ChunkHeader> = non_null::from_ref(&UP_CHUNK.0);

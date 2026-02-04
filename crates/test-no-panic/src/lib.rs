@@ -302,8 +302,24 @@ up_and_down! {
         bump.try_alloc_try_with_mut(f)
     }
 
-    pub fn Bump_new_in() -> Bump {
-        Bump::new_in(Global)
+    pub fn Bump_unallocated() -> Bump<1, true, false> {
+        Bump::unallocated()
+    }
+
+    pub fn Bump_try_new() -> Result<Bump> {
+        Bump::try_new()
+    }
+
+    pub fn Bump_try_with_size(size: usize) -> Result<Bump> {
+        Bump::try_with_size(size)
+    }
+
+    pub fn Bump_try_with_capacity(layout: Layout) -> Result<Bump> {
+        Bump::try_with_capacity(layout)
+    }
+
+    pub fn Bump_try_new_in() -> Result<Bump> {
+        Bump::try_new_in(Global)
     }
 
     pub fn Bump_try_with_size_in(size: usize) -> Result<Bump> {

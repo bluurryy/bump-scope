@@ -12,11 +12,11 @@ pub struct AnyStats<'a> {
     chunk: Option<AnyChunk<'a>>,
 }
 
-impl<S> From<Stats<'_, S>> for AnyStats<'_>
+impl<A, S> From<Stats<'_, A, S>> for AnyStats<'_>
 where
     S: BumpAllocatorSettings,
 {
-    fn from(value: Stats<'_, S>) -> Self {
+    fn from(value: Stats<'_, A, S>) -> Self {
         Self {
             chunk: value.current_chunk().map(Into::into),
         }
@@ -147,11 +147,11 @@ pub struct AnyChunk<'a> {
     marker: PhantomData<&'a ()>,
 }
 
-impl<S> From<Chunk<'_, S>> for AnyChunk<'_>
+impl<A, S> From<Chunk<'_, A, S>> for AnyChunk<'_>
 where
     S: BumpAllocatorSettings,
 {
-    fn from(value: Chunk<'_, S>) -> Self {
+    fn from(value: Chunk<'_, A, S>) -> Self {
         Self {
             header: value.chunk.header().cast(),
             marker: PhantomData,
@@ -337,11 +337,11 @@ pub struct AnyChunkPrevIter<'a> {
     pub chunk: Option<AnyChunk<'a>>,
 }
 
-impl<S> From<ChunkPrevIter<'_, S>> for AnyChunkPrevIter<'_>
+impl<A, S> From<ChunkPrevIter<'_, A, S>> for AnyChunkPrevIter<'_>
 where
     S: BumpAllocatorSettings,
 {
-    fn from(value: ChunkPrevIter<'_, S>) -> Self {
+    fn from(value: ChunkPrevIter<'_, A, S>) -> Self {
         Self {
             chunk: value.chunk.map(Into::into),
         }
@@ -374,11 +374,11 @@ pub struct AnyChunkNextIter<'a> {
     pub chunk: Option<AnyChunk<'a>>,
 }
 
-impl<S> From<ChunkNextIter<'_, S>> for AnyChunkNextIter<'_>
+impl<A, S> From<ChunkNextIter<'_, A, S>> for AnyChunkNextIter<'_>
 where
     S: BumpAllocatorSettings,
 {
-    fn from(value: ChunkNextIter<'_, S>) -> Self {
+    fn from(value: ChunkNextIter<'_, A, S>) -> Self {
         Self {
             chunk: value.chunk.map(Into::into),
         }
@@ -408,7 +408,7 @@ impl fmt::Debug for AnyChunkNextIter<'_> {
 fn check_from_impls() {
     #![expect(dead_code, clippy::elidable_lifetime_names)]
 
-    use crate::{BumpScope, alloc::Allocator};
+    use crate::{BaseAllocator, BumpScope};
 
     fn accepting_any_stats(_: AnyStats) {}
     fn accepting_any_chunk(_: AnyChunk) {}
@@ -417,7 +417,7 @@ fn check_from_impls() {
 
     fn generic_bump<'a, A, S>(bump: &BumpScope<'a, A, S>)
     where
-        A: Allocator,
+        A: BaseAllocator<S::GuaranteedAllocated>,
         S: BumpAllocatorSettings,
     {
         let stats = bump.stats();
