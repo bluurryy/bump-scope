@@ -10,26 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `claim` api that allows you to enter scopes with a shared reference
-- The base allocator now only needs to implement `Allocator`
-- Most of the api for `Bump(Scope)` is now also available from traits in the new `traits` module
 - Add `SHRINKS` setting, to toggle shrinking for the allocation api, `DEALLOCATES` no longer affects shrinking
 - Add `MINIMUM_CHUNK_SIZE` setting
-- Made `scope_guard`, `scoped(_aligned)` available for non-guaranteed-allocated allocators
 - Add `(try_)by_value` to turn a `&mut BumpScope` into a `BumpScope`
+- Made `scope_guard`, `scoped(_aligned)` available for non-guaranteed-allocated allocators
+- Made most of the api of `Bump(Scope)` now also available via traits in the new `traits` module
 
 ### Changed
 
-- `Bump::new(_in)` won't allocate a chunk anymore
-- **Breaking:** The generic const parameters have been consolidated into a single `Settings` parameter.
-- **Breaking:** Replaced allocator settings configuration methods with new `(borrow(_mut))_with_settings` methods
-- **Breaking:** Bump allocator traits have been moved and renamed:
+- Change `Bump::new(_in)` to not allocate anymore
+- Change `A` allocator parameter to only require it to implement `Allocator`
+- **Breaking:** Replace generic const parameters with a single `Settings` parameter
+- **Breaking:** Change `scoped`, `scoped_aligned` and `aligned` to take a closure with `&mut BumpScope` instead of `BumpScope` (you can get the bump scope by value using `by_value`)
+- **Breaking:** Replace allocator settings configuration methods with new `(borrow_(mut_)with_settings` methods
+- **Breaking:** Implement `bytemuck` and `zerocopy` allocator extension traits for all `T: BumpAllocatorTypedScope` and name them `BumpAllocatorTypedScopeExt`
+- **Breaking:** Rename `reserve_bytes` to `reserve`
+- **Breaking:** Move and rename bump allocator traits:
   - `(Mut)BumpAllocator` -> `traits::(Mut)BumpAllocatorCore`
   - `(Mut)BumpAllocatorScope` -> `traits::(Mut)BumpAllocatorCoreScope`
   - `(Mut)BumpAllocatorTypedScopeExt` -> `traits::(Mut)BumpAllocatorTyped`
   - `(Mut)BumpAllocatorScopeExt` -> `traits::(Mut)BumpAllocatorTypedScope`
-- **Breaking:** Implement `bytemuck` and `zerocopy` allocator extension traits for all `T: BumpAllocatorTypedScope` and name them `BumpAllocatorTypedScopeExt`
-- **Breaking:** `scoped`, `scoped_aligned` and `aligned` now take a closure with a `&mut BumpScope` instead of a `BumpScope` (you can get the bump scope by value using `by_value`)
-- **Breaking:** Rename `reserve_bytes` to `reserve`
 - **Breaking:** Change `BumpAllocatorCore` trait safety invariants
 - **Breaking:** Add `prepare_allocation_rev` and require it for `allocate_prepared_rev`, safety invariants for the prepare allocation api changed
 - Remove branch when allocating on a non-guaranteed-allocated `Bump(Scope)`, checking for a layout of `0`
@@ -39,8 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - **Breaking:** Remove `unallocated`, becomes `new` or `new_in`
-- **Breaking:** Remove `BaseAllocator`
 - **Breaking:** Remove `alloc_layout` (`allocate_layout` provides the same functionality)
+- **Breaking:** Remove `BaseAllocator`
 - **Breaking:** Remove deprecated api
 
 ### Fixed
