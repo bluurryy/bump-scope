@@ -1,9 +1,9 @@
-error[E0080]: evaluation panicked: can't decrease minimum alignment when mutably borrowing with new settings
+error[E0080]: evaluation panicked: can't decrease minimum alignment using `BumpScope::with_settings`
  --> src/raw_bump.rs
   |
   | /             assert!(
   | |                 NewS::MIN_ALIGN >= S::MIN_ALIGN,
-  | |                 "can't decrease minimum alignment when mutably borrowing with new settings"
+  | |                 "can't decrease minimum alignment using `BumpScope::with_settings`"
   | |             );
   | |_____________^ evaluation of `bump_scope::raw_bump::RawBump::<bump_scope::alloc::Global, bump_scope::settings::BumpSettings<2>>::ensure_scope_satisfies_settings::<bump_scope::settings::BumpSettings>::{constant#0}` failed here
 
@@ -11,7 +11,7 @@ note: erroneous constant encountered
  --> src/raw_bump.rs
   |
   | /         const {
-  | |             assert!(NewS::UP == S::UP, "can't change `UP` setting");
+  | |             assert!(NewS::UP == S::UP, "can't change `UP` setting of `Bump(Scope)`");
   | |
   | |             assert!(
 ... |

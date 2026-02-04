@@ -188,6 +188,12 @@ pub(crate) mod panic {
 
     #[cold]
     #[inline(never)]
+    pub(crate) fn unallocated() -> ! {
+        panic!("bump allocator is unallocated");
+    }
+
+    #[cold]
+    #[inline(never)]
     #[cfg(feature = "panic-on-alloc")]
     pub(crate) fn fixed_size_vector_is_full() -> ! {
         panic!("fixed size vector is full");

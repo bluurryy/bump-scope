@@ -3,6 +3,8 @@ name = "test-no-panic"
 edition = "2021"
 
 [dependencies]
+anstream = { version = "0.6.21", default-features = false }
+anstyle = { version = "1.0.13", default-features = false }
 bump-scope = { path = "../..", default-features = false, features = [
     "alloc",
     "zerocopy-08",

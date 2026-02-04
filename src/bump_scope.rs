@@ -263,11 +263,14 @@ where
 
     /// Converts this `BumpScope` into a `BumpScope` with new settings.
     ///
-    /// Not all settings can be converted to. This function will fail to compile if:
+    /// This function will fail to compile if:
     /// - `NewS::MIN_ALIGN < S::MIN_ALIGN`
     /// - `NewS::UP != S::UP`
-    /// - `NewS::GUARANTEED_ALLOCATED > S::GUARANTEED_ALLOCATED`
-    /// - `NewS::CLAIMABLE < S::CLAIMABLE`
+    ///
+    /// # Panics
+    /// Panics if `!NewS::CLAIMABLE` and the bump allocator is currently [claimed].
+    ///
+    /// [claimed]: crate::traits::BumpAllocatorScope::claim
     #[inline]
     pub fn with_settings<NewS>(self) -> BumpScope<'a, A, NewS>
     where
@@ -279,11 +282,11 @@ where
 
     /// Borrows this `BumpScope` with new settings.
     ///
-    /// Not all settings can be converted to. This function will fail to compile if:
+    /// This function will fail to compile if:
     /// - `NewS::MIN_ALIGN != S::MIN_ALIGN`
     /// - `NewS::UP != S::UP`
-    /// - `NewS::GUARANTEED_ALLOCATED > S::GUARANTEED_ALLOCATED`
     /// - `NewS::CLAIMABLE != S::CLAIMABLE`
+    /// - `NewS::GUARANTEED_ALLOCATED > S::GUARANTEED_ALLOCATED`
     #[inline]
     pub fn borrow_with_settings<NewS>(&self) -> &BumpScope<'a, A, NewS>
     where
@@ -295,7 +298,7 @@ where
 
     /// Borrows this `BumpScope` mutably with new settings.
     ///
-    /// Not all settings can be converted to. This function will fail to compile if:
+    /// This function will fail to compile if:
     /// - `NewS::MIN_ALIGN < S::MIN_ALIGN`
     /// - `NewS::UP != S::UP`
     /// - `NewS::GUARANTEED_ALLOCATED != S::GUARANTEED_ALLOCATED`

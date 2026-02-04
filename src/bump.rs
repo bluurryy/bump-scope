@@ -625,10 +625,15 @@ where
 
     /// Converts this `Bump` into a `Bump` with new settings.
     ///
-    /// Not every setting can be converted to. This function will fail to compile if:
+    /// This function will fail to compile if:
     /// - `NewS::UP != S::UP`
-    /// - `NewS::GUARANTEED_ALLOCATED > S::GUARANTEED_ALLOCATED`
-    /// - `NewS::CLAIMABLE < S::CLAIMABLE`
+    ///
+    /// # Panics
+    /// Panics if `!NewS::CLAIMABLE` and the bump allocator is currently [claimed].
+    ///
+    /// Panics if `NewS::GUARANTEED_ALLOCATED` and no chunk has been allocated.
+    ///
+    /// [claimed]: crate::traits::BumpAllocatorScope::claim
     #[inline]
     pub fn with_settings<NewS>(self) -> Bump<A, NewS>
     where
@@ -640,11 +645,11 @@ where
 
     /// Borrows this `Bump` with new settings.
     ///
-    /// Not every settings can be converted to. This function will fail to compile if:
+    /// This function will fail to compile if:
     /// - `NewS::MIN_ALIGN != S::MIN_ALIGN`
     /// - `NewS::UP != S::UP`
-    /// - `NewS::GUARANTEED_ALLOCATED > S::GUARANTEED_ALLOCATED`
     /// - `NewS::CLAIMABLE != S::CLAIMABLE`
+    /// - `NewS::GUARANTEED_ALLOCATED > S::GUARANTEED_ALLOCATED`
     #[inline]
     pub fn borrow_with_settings<NewS>(&self) -> &Bump<A, NewS>
     where

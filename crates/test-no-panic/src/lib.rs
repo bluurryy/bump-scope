@@ -18,15 +18,29 @@ type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 
 macro_rules! type_definitions {
     ($up:literal) => {
-        type Settings<const MIN_ALIGN: usize> = BumpSettings<
+        const DEFAULT_CLAIMABLE: bool = false;
+        const DEFAULT_GUARANTEED_ALLOCATED: bool = false;
+
+        type Settings<const MIN_ALIGN: usize, const CLAIMABLE: bool, const GUARANTEED_ALLOCATED: bool> = BumpSettings<
             /* MIN_ALIGN */ MIN_ALIGN,
-            /* UP */ true,
-            /* GUARANTEED_ALLOCATED */ false,
-            /* CLAIMABLE */ false,
+            /* UP */ $up,
+            /* GUARANTEED_ALLOCATED */ GUARANTEED_ALLOCATED,
+            /* CLAIMABLE */ CLAIMABLE,
         >;
-        type Bump<const MIN_ALIGN: usize = 1> = bump_scope::Bump<Global, Settings<MIN_ALIGN>>;
-        type BumpScope<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScope<'a, Global, Settings<MIN_ALIGN>>;
-        type BumpScopeGuard<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpScopeGuard<'a, Global, Settings<MIN_ALIGN>>;
+        type Bump<const MIN_ALIGN: usize = 1, const CLAIMABLE: bool = false, const GUARANTEED_ALLOCATED: bool = false> =
+            bump_scope::Bump<Global, Settings<MIN_ALIGN, CLAIMABLE, GUARANTEED_ALLOCATED>>;
+        type BumpScope<
+            'a,
+            const MIN_ALIGN: usize = 1,
+            const CLAIMABLE: bool = DEFAULT_CLAIMABLE,
+            const GUARANTEED_ALLOCATED: bool = DEFAULT_GUARANTEED_ALLOCATED,
+        > = bump_scope::BumpScope<'a, Global, Settings<MIN_ALIGN, CLAIMABLE, GUARANTEED_ALLOCATED>>;
+        type BumpScopeGuard<
+            'a,
+            const MIN_ALIGN: usize = 1,
+            const CLAIMABLE: bool = DEFAULT_CLAIMABLE,
+            const GUARANTEED_ALLOCATED: bool = DEFAULT_GUARANTEED_ALLOCATED,
+        > = bump_scope::BumpScopeGuard<'a, Global, Settings<MIN_ALIGN, CLAIMABLE, GUARANTEED_ALLOCATED>>;
         type BumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<T, &'a Bump>;
         type BumpString<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<&'a Bump>;
         type MutBumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<T, &'a mut Bump<MIN_ALIGN>>;
@@ -72,6 +86,62 @@ macro_rules! up_and_down {
 }
 
 up_and_down! {
+    pub fn Bump_with_settings_identity(bump: Bump) -> Bump {
+        bump.with_settings()
+    }
+
+    pub fn Bump_with_settings_increase_alignment(bump: Bump) -> Bump<4> {
+        bump.with_settings()
+    }
+
+    pub fn Bump_with_settings_decrease_alignment(bump: Bump<4>) -> Bump {
+        bump.with_settings()
+    }
+
+    pub fn Bump_with_settings_increase_claimable(bump: Bump<1, false>) -> Bump<1, true> {
+        bump.with_settings()
+    }
+
+    pub fn Bump_with_settings_decrease_guaranteed_allocated(bump: Bump<1, false, true>) -> Bump<1, false, false> {
+        bump.with_settings()
+    }
+
+    pub fn Bump_borrow_with_settings_decrease_guaranteed_allocated(bump: &Bump<1, false, true>) -> &Bump<1, false, false> {
+        bump.borrow_with_settings()
+    }
+
+    pub fn Bump_borrow_mut_with_settings_increase_alignment(bump: &mut Bump) -> &mut Bump<4> {
+        bump.borrow_mut_with_settings()
+    }
+
+    pub fn BumpScope_with_settings_identity(bump: BumpScope) -> BumpScope {
+        bump.with_settings()
+    }
+
+    pub fn BumpScope_with_settings_increase_alignment(bump: BumpScope) -> BumpScope<4> {
+        bump.with_settings()
+    }
+
+    pub fn BumpScope_with_settings_increase_claimable(bump: BumpScope<1, false>) -> BumpScope<1, true> {
+        bump.with_settings()
+    }
+
+    pub fn BumpScope_with_settings_increase_guaranteed_allocated(bump: BumpScope<1, false, false>) -> BumpScope<1, false, true> {
+        bump.with_settings()
+    }
+
+    pub fn BumpScope_with_settings_decrease_guaranteed_allocated(bump: BumpScope<1, false, true>) -> BumpScope<1, false, false> {
+        bump.with_settings()
+    }
+
+    pub fn BumpScope_borrow_with_settings_decrease_guaranteed_allocated<'b, 'a>(bump: &'b BumpScope<'a, 1, false, true>) -> &'b BumpScope<'a, 1, false, false> {
+        bump.borrow_with_settings()
+    }
+
+    pub fn BumpScope_borrow_mut_with_settings_increase_alignment<'b, 'a>(bump: &'b mut BumpScope<'a>) -> &'b mut BumpScope<'a, 4> {
+        bump.borrow_mut_with_settings()
+    }
+
     pub fn Bump_drop(bump: Bump) {
         drop(bump)
     }

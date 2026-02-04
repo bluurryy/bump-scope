@@ -168,8 +168,13 @@ check_with_settings! {
     // identity
     BumpSettings => BumpSettings
 
-    // guaranteed-allocated decrease
+    // guaranteed-allocated increase and decrease
+    BumpSettings<1, true, false> => BumpSettings<1, true, true>
     BumpSettings<1, true, true> => BumpSettings<1, true, false>
+
+    // claimable increase and decrease
+    BumpSettings<1, true, true, false> => BumpSettings<1, true, true, true>
+    BumpSettings<1, true, true, true> => BumpSettings<1, true, true, false>
 
     // increase and decrease minimum alignment
     BumpSettings<1> => BumpSettings<2>
@@ -180,7 +185,8 @@ check_scope_with_settings! {
     // identity
     BumpSettings => BumpSettings
 
-    // guaranteed-allocated decrease
+    // guaranteed-allocated increase and decrease
+    BumpSettings<1, true, false> => BumpSettings<1, true, true>
     BumpSettings<1, true, true> => BumpSettings<1, true, false>
 
     // increase minimum alignment

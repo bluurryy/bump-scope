@@ -13,15 +13,12 @@ use crate::{
     alloc::{AllocError, Allocator},
     bumping::{BumpProps, BumpUp, MIN_CHUNK_ALIGN, bump_down, bump_prepare_down, bump_prepare_up, bump_up},
     chunk::{ChunkHeader, ChunkSize, ChunkSizeHint},
-    error_behavior::ErrorBehavior,
+    error_behavior::{self, ErrorBehavior},
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::non_null,
     settings::{BumpAllocatorSettings, MinimumAlignment, SupportedMinimumAlignment},
     stats::Stats,
 };
-
-#[cfg(debug_assertions)]
-use crate::error_behavior;
 
 #[cfg(feature = "alloc")]
 use crate::alloc::Global;
@@ -512,17 +509,15 @@ where
         NewS: BumpAllocatorSettings,
     {
         const {
-            assert!(NewS::UP == S::UP, "can't change `UP` setting");
+            assert!(NewS::UP == S::UP, "can't change `UP` setting of `Bump(Scope)`");
+        }
 
-            assert!(
-                NewS::GUARANTEED_ALLOCATED <= S::GUARANTEED_ALLOCATED,
-                "can't turn a non-guaranteed-allocated bump allocator into a guaranteed-allocated one"
-            );
+        if !NewS::CLAIMABLE && self.chunk.get().is_claimed() {
+            error_behavior::panic::claimed();
+        }
 
-            assert!(
-                NewS::CLAIMABLE >= S::CLAIMABLE,
-                "can't turn a claimable bump allocator into a non-claimable one"
-            );
+        if NewS::GUARANTEED_ALLOCATED && self.chunk.get().is_unallocated() {
+            error_behavior::panic::unallocated();
         }
 
         self.align_to::<NewS::MinimumAlignment>();
@@ -533,23 +528,19 @@ where
         NewS: BumpAllocatorSettings,
     {
         const {
-            assert!(NewS::UP == S::UP, "can't change `UP` setting");
-
-            assert!(
-                NewS::GUARANTEED_ALLOCATED <= S::GUARANTEED_ALLOCATED,
-                "can't turn a non-guaranteed-allocated bump allocator into a guaranteed-allocated one"
-            );
+            assert!(NewS::UP == S::UP, "can't change `UP` setting of `Bump(Scope)`");
 
             assert!(
                 NewS::MIN_ALIGN >= S::MIN_ALIGN,
-                "can't decrease minimum alignment when mutably borrowing with new settings"
-            );
-
-            assert!(
-                NewS::CLAIMABLE >= S::CLAIMABLE,
-                "can't turn a claimable bump allocator into a non-claimable one"
+                "can't decrease minimum alignment using `BumpScope::with_settings`"
             );
         }
+
+        if !NewS::CLAIMABLE && self.chunk.get().is_claimed() {
+            error_behavior::panic::claimed();
+        }
+
+        // A scope by value is always allocated, created by `(try_)by_value`.
 
         self.align_to::<NewS::MinimumAlignment>();
     }
@@ -560,19 +551,23 @@ where
         NewS: BumpAllocatorSettings,
     {
         const {
-            assert!(NewS::UP == S::UP, "can't change `UP` setting");
-
-            assert!(
-                NewS::GUARANTEED_ALLOCATED <= S::GUARANTEED_ALLOCATED,
-                "can't turn a non-guaranteed-allocated bump allocator into a guaranteed-allocated one"
-            );
+            assert!(NewS::UP == S::UP, "can't change `UP` setting of `Bump(Scope)`");
 
             assert!(
                 NewS::MIN_ALIGN == S::MIN_ALIGN,
-                "can't change minimum alignment when borrowing with new settings"
+                "can't change minimum alignment using `Bump(Scope)::borrow_with_settings`"
             );
 
-            assert!(NewS::CLAIMABLE == S::CLAIMABLE, "can't change claimability");
+            assert!(
+                NewS::CLAIMABLE == S::CLAIMABLE,
+                "can't change claimable property using `Bump(Scope)::borrow_with_settings`"
+            );
+
+            // A reference to a guaranteed-allocated `Bump(Scope)` can never become unallocated.
+            assert!(
+                NewS::GUARANTEED_ALLOCATED <= S::GUARANTEED_ALLOCATED,
+                "can't increase guaranteed-allocated property using `Bump(Scope)::borrow_with_settings`"
+            );
         }
     }
 
@@ -581,19 +576,22 @@ where
         NewS: BumpAllocatorSettings,
     {
         const {
-            assert!(NewS::UP == S::UP, "can't change `UP` setting");
-
-            assert!(
-                NewS::GUARANTEED_ALLOCATED == S::GUARANTEED_ALLOCATED,
-                "can't change guaranteed-allocated property when mutably borrowing with new settings"
-            );
+            assert!(NewS::UP == S::UP, "can't change `UP` setting of `Bump(Scope)`");
 
             assert!(
                 NewS::MIN_ALIGN >= S::MIN_ALIGN,
-                "can't decrease minimum alignment when mutably borrowing with new settings"
+                "can't decrease minimum alignment using `Bump(Scope)::borrow_mut_with_settings`"
             );
 
-            assert!(NewS::CLAIMABLE == S::CLAIMABLE, "can't change claimability");
+            assert!(
+                NewS::CLAIMABLE == S::CLAIMABLE,
+                "can't change claimable property using `Bump(Scope)::borrow_mut_with_settings`"
+            );
+
+            assert!(
+                NewS::GUARANTEED_ALLOCATED == S::GUARANTEED_ALLOCATED,
+                "can't change guaranteed-allocated property using `Bump(Scope)::borrow_mut_with_settings`"
+            );
         }
 
         self.align_to::<NewS::MinimumAlignment>();

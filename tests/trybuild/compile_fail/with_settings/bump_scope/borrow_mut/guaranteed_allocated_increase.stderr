@@ -1,9 +1,9 @@
-error[E0080]: evaluation panicked: can't change guaranteed-allocated property when mutably borrowing with new settings
+error[E0080]: evaluation panicked: can't change guaranteed-allocated property using `Bump(Scope)::borrow_mut_with_settings`
  --> src/raw_bump.rs
   |
   | /             assert!(
   | |                 NewS::GUARANTEED_ALLOCATED == S::GUARANTEED_ALLOCATED,
-  | |                 "can't change guaranteed-allocated property when mutably borrowing with new settings"
+  | |                 "can't change guaranteed-allocated property using `Bump(Scope)::borrow_mut_with_settings`"
   | |             );
   | |_____________^ evaluation of `bump_scope::raw_bump::RawBump::<bump_scope::alloc::Global, bump_scope::settings::BumpSettings>::ensure_satisfies_settings_for_borrow_mut::<bump_scope::settings::BumpSettings<1, true, true>>::{constant#0}` failed here
 
@@ -11,11 +11,11 @@ note: erroneous constant encountered
  --> src/raw_bump.rs
   |
   | /         const {
-  | |             assert!(NewS::UP == S::UP, "can't change `UP` setting");
+  | |             assert!(NewS::UP == S::UP, "can't change `UP` setting of `Bump(Scope)`");
   | |
   | |             assert!(
 ... |
-  | |             assert!(NewS::CLAIMABLE == S::CLAIMABLE, "can't change claimability");
+  | |             );
   | |         }
   | |_________^
 
