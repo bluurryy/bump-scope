@@ -32,66 +32,132 @@ macro_rules! either_way {
 }
 
 either_way! {
+  allocate
+
   grow
-
-  grow_last_in_place
-
-  grow_last_out_of_place
 
   allocate_zst_returns_dangling
 
   allocate_zst_returns_dangling_unallocated
 }
 
-fn layout(size: usize) -> Layout {
-    Layout::from_size_align(size, 4).unwrap()
-}
-
-fn assert_aligned_to(ptr: NonNull<[u8]>) {
-    assert!(ptr.cast::<u8>().addr().get() % 4 == 0);
-}
-
-fn grow<const UP: bool>() {
+fn allocate<const UP: bool>() {
     let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
-    let ptr = bump.allocate(layout(1)).unwrap();
-    assert_aligned_to(ptr);
+    let layout = Layout::from_size_align(1, 4).unwrap();
+    let ptr = bump.allocate(layout).unwrap();
+    assert_eq!(ptr.cast::<u8>().addr().get() % 4, 0);
 
-    assert_ne!(ptr, bump.allocate(layout(1)).unwrap());
+    assert_ne!(ptr, bump.allocate(Layout::from_size_align(1, 1).unwrap()).unwrap());
 
-    let new = bump.allocate(layout(2048)).unwrap();
-    assert_aligned_to(new);
+    let layout = Layout::from_size_align(2048, 4).unwrap();
+    let new = bump.allocate(layout).unwrap();
+    assert_eq!(ptr.cast::<u8>().addr().get() % 4, 0);
 
     assert_ne!(ptr.cast::<u8>(), new.cast::<u8>());
 }
 
-fn grow_last_in_place<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
-
-    unsafe {
-        let ptr = bump.allocate(layout(1)).unwrap();
-        assert_aligned_to(ptr);
-
-        let new = bump.grow(ptr.cast(), layout(1), layout(2)).unwrap();
-        assert_aligned_to(new);
-
-        if UP {
-            assert_eq!(ptr.cast::<u8>(), new.cast::<u8>());
-        }
+fn grow<const UP: bool>() {
+    macro_rules! assert_eq_ne {
+        ($which:expr, $lhs:expr, $rhs:expr) => {
+            if $which {
+                assert_eq!($lhs, $rhs);
+            } else {
+                assert_ne!($lhs, $rhs);
+            }
+        };
     }
-}
 
-fn grow_last_out_of_place<const UP: bool>() {
     let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
     unsafe {
-        let ptr = bump.allocate(layout(1)).unwrap();
-        assert_aligned_to(ptr);
+        let new_layout = Layout::from_size_align(1, 4).unwrap();
+        let new_ptr = bump.allocate(new_layout).unwrap();
+        assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
+        assert_eq!(bump.stats().allocated(), if UP { 1 } else { 4 });
+        let old_layout = new_layout;
+        let old_ptr = new_ptr;
 
-        let new = bump.grow(ptr.cast(), layout(1), layout(2048)).unwrap();
-        assert_aligned_to(new);
+        // grow in place with same align (same size)
+        let new_layout = Layout::from_size_align(1, 4).unwrap();
+        let new_ptr = bump.grow(old_ptr.cast(), old_layout, new_layout).unwrap();
+        assert_eq!(bump.stats().allocated(), if UP { 1 } else { 4 });
+        assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
+        assert_eq!(old_ptr.addr(), new_ptr.addr());
+        let old_layout = new_layout;
+        let old_ptr = new_ptr;
 
-        assert_ne!(ptr.cast::<u8>(), new.cast::<u8>());
+        // grow in place with same align
+        let new_layout = Layout::from_size_align(2, 4).unwrap();
+        let new_ptr = bump.grow(old_ptr.cast(), old_layout, new_layout).unwrap();
+        assert_eq!(bump.stats().allocated(), if UP { 2 } else { 8 });
+        assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
+        assert_eq_ne!(UP, old_ptr.addr(), new_ptr.addr());
+        let old_layout = new_layout;
+        let old_ptr = new_ptr;
+
+        // grow in place with greater align (same size)
+        let new_layout = Layout::from_size_align(2, 8).unwrap();
+        let new_ptr = bump.grow(old_ptr.cast(), old_layout, new_layout).unwrap();
+        assert_eq!(bump.stats().allocated(), if UP { 2 } else { 8 });
+        assert_eq!(new_ptr.cast::<u8>().addr().get() % 8, 0);
+        assert_eq!(old_ptr.addr(), new_ptr.addr());
+        let old_layout = new_layout;
+        let old_ptr = new_ptr;
+
+        // grow in place with greater align
+        let new_layout = Layout::from_size_align(3, 16).unwrap();
+        let new_ptr = bump.grow(old_ptr.cast(), old_layout, new_layout).unwrap();
+        assert_eq!(bump.stats().allocated(), if UP { 3 } else { 16 });
+        assert_eq!(new_ptr.cast::<u8>().addr().get() % 8, 0);
+        assert_eq_ne!(UP, old_ptr.addr(), new_ptr.addr());
+        let old_layout = new_layout;
+        let old_ptr = new_ptr;
+
+        // grow in place with smaller align (same size)
+        let new_layout = Layout::from_size_align(3, 8).unwrap();
+        let new_ptr = bump.grow(old_ptr.cast(), old_layout, new_layout).unwrap();
+        assert_eq!(bump.stats().allocated(), if UP { 3 } else { 16 });
+        assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
+        assert_eq!(old_ptr.addr(), new_ptr.addr());
+        let old_layout = new_layout;
+        let old_ptr = new_ptr;
+
+        // grow in place with smaller align
+        let new_layout = Layout::from_size_align(4, 4).unwrap();
+        let new_ptr = bump.grow(old_ptr.cast(), old_layout, new_layout).unwrap();
+        assert_eq!(bump.stats().allocated(), if UP { 4 } else { 20 });
+        assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
+        assert_eq_ne!(UP, old_ptr.addr(), new_ptr.addr());
+        let old_layout = new_layout;
+        let old_ptr = new_ptr;
+
+        // allocate so the next grow will be out of place
+        bump.allocate(Layout::new::<u8>()).unwrap();
+        assert_eq!(bump.stats().allocated(), if UP { 5 } else { 21 });
+
+        // grow out of place with same align
+        let new_layout = Layout::from_size_align(4, 4).unwrap();
+        let new_ptr = bump.grow(old_ptr.cast(), old_layout, new_layout).unwrap();
+        assert_eq!(bump.stats().allocated(), if UP { 12 } else { 28 });
+        assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
+        assert_ne!(old_ptr.addr(), new_ptr.addr());
+        let old_layout = new_layout;
+        let old_ptr = new_ptr;
+
+        assert_eq!(bump.stats().count(), 1);
+
+        // grow in new chunk
+        let new_layout = Layout::from_size_align(1024, 4).unwrap();
+        let new_ptr = bump.grow(old_ptr.cast(), old_layout, new_layout).unwrap();
+        assert_eq!(
+            bump.stats().allocated(),
+            bump.stats().small_to_big().next().unwrap().capacity() + 1024
+        );
+        assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
+        assert_ne!(old_ptr.addr(), new_ptr.addr());
+
+        assert_eq!(bump.stats().count(), 2);
     }
 }
 
