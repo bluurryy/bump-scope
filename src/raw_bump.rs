@@ -100,8 +100,7 @@ where
 
         chunk.reset();
 
-        // SAFETY: casting from guaranteed-allocated to non-guaranteed-allocated is safe
-        self.chunk.set(unsafe { chunk.cast() });
+        self.chunk.set(chunk.raw);
     }
 
     pub(crate) unsafe fn manually_drop(&mut self) {
@@ -179,8 +178,7 @@ where
 
                 chunk.reset();
 
-                // SAFETY: casting from guaranteed-allocated to non-guaranteed-allocated is safe
-                self.chunk.set(unsafe { chunk.cast() });
+                self.chunk.set(chunk.raw);
             }
 
             return;
@@ -829,14 +827,6 @@ where
     pub(crate) unsafe fn as_non_dummy_unchecked(self) -> NonDummyChunk<A, S> {
         debug_assert!(matches!(self.classify(), ChunkClass::NonDummy(_)));
         NonDummyChunk { raw: self }
-    }
-
-    /// Cast the settings.
-    pub(crate) unsafe fn cast<S2>(self) -> RawChunk<A, S2> {
-        RawChunk {
-            header: self.header,
-            marker: PhantomData,
-        }
     }
 }
 
