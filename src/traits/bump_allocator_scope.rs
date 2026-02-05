@@ -131,7 +131,7 @@ pub trait BumpAllocatorScope<'a>: BumpAllocator + MutBumpAllocatorCoreScope<'a> 
 
     /// Returns a reference to the base allocator.
     #[must_use]
-    fn allocator(&self) -> Option<&Self::Allocator>;
+    fn allocator(&self) -> Option<&'a Self::Allocator>;
 }
 
 impl<'a, B> BumpAllocatorScope<'a> for &mut B
@@ -166,7 +166,7 @@ where
     }
 
     #[inline(always)]
-    fn allocator(&self) -> Option<&Self::Allocator> {
+    fn allocator(&self) -> Option<&'a Self::Allocator> {
         B::allocator(self)
     }
 }
@@ -219,7 +219,7 @@ where
     }
 
     #[inline(always)]
-    fn allocator(&self) -> Option<&Self::Allocator> {
+    fn allocator(&self) -> Option<&'a Self::Allocator> {
         self.raw.allocator()
     }
 }

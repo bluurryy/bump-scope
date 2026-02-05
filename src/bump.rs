@@ -687,13 +687,6 @@ where
         })
     }
 
-    /// Returns a reference to the base allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn allocator(&self) -> Option<&A> {
-        self.raw.allocator()
-    }
-
     // This needs `&mut self` to make sure that no allocations are alive.
     /// Deallocates every chunk but the newest, which is also the biggest.
     ///

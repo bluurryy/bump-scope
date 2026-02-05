@@ -12,6 +12,13 @@ macro_rules! forward_methods {
         access_mut: {$access_mut:expr}
         lifetime: $lifetime:lifetime
     ) => {
+        /// Forwards to [`BumpAllocatorScope::allocator`].
+        #[must_use]
+        #[inline(always)]
+        pub fn allocator(&$self) -> Option<&$lifetime A> {
+            BumpAllocatorScope::allocator($access)
+        }
+
         /// Forwards to [`BumpAllocatorScope::claim`].
         #[inline(always)]
         pub fn claim(&$self) -> BumpClaimGuard<'_, $lifetime, A, S> {

@@ -165,13 +165,6 @@ where
         self.raw.stats()
     }
 
-    /// Returns a reference to the base allocator.
-    #[must_use]
-    #[inline(always)]
-    pub fn allocator(&self) -> Option<&'a A> {
-        self.raw.allocator()
-    }
-
     #[inline(always)]
     pub(crate) fn align<const ALIGN: usize>(&self)
     where
