@@ -34,9 +34,6 @@ pub trait BumpAllocator: MutBumpAllocatorTyped + Sized {
     ///
     /// This allows for creation of child scopes.
     ///
-    /// # Panics
-    /// Panics if the bump allocator is currently [claimed].
-    ///
     /// # Examples
     ///
     /// ```
@@ -61,9 +58,6 @@ pub trait BumpAllocator: MutBumpAllocatorTyped + Sized {
 
     /// Calls `f` with a new child scope.
     ///
-    /// # Panics
-    /// Panics if the bump allocator is currently [claimed].
-    ///
     /// # Examples
     /// ```
     /// # use bump_scope::Bump;
@@ -85,9 +79,6 @@ pub trait BumpAllocator: MutBumpAllocatorTyped + Sized {
     }
 
     /// Calls `f` with a new child scope of a new minimum alignment.
-    ///
-    /// # Panics
-    /// Panics if the bump allocator is currently [claimed].
     ///
     /// # Examples
     ///
