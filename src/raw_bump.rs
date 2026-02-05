@@ -863,7 +863,9 @@ where
             }
         };
 
-        let layout = chunk_size.max(min_size).layout().ok_or_else(E::capacity_overflow)?;
+        let chunk_size = chunk_size.max(min_size);
+
+        let layout = chunk_size.layout().ok_or_else(E::capacity_overflow)?;
 
         let allocation = match allocator.allocate(layout) {
             Ok(ok) => ok,
@@ -884,7 +886,7 @@ where
         // so we need to align it first.
         //
         // Follow this method for details.
-        let size = chunk_size.align_allocation_size(size);
+        let size = ChunkSize::<A, S::Up>::align_allocation_size(size);
 
         debug_assert!(size >= layout.size());
         debug_assert!(size % MIN_CHUNK_ALIGN == 0);

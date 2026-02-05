@@ -61,8 +61,7 @@ where
     }
 
     /// See [`chunk_size_config::ChunkSizeConfig::align_size`].
-    pub const fn align_allocation_size(self, size: usize) -> usize {
-        _ = self;
+    pub const fn align_allocation_size(size: usize) -> usize {
         config::<A, Up>().align_size(size)
     }
 
