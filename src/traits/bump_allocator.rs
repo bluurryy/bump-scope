@@ -86,7 +86,7 @@ pub trait BumpAllocator: MutBumpAllocatorTyped + Sized {
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # #![feature(pointer_is_aligned_to)]
     /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::with_size(512);
+    /// let mut bump: Bump = Bump::new();
     ///
     /// // bump starts off by being aligned to 16
     /// assert!(bump.stats().current_chunk().unwrap().bump_position().is_aligned_to(16));

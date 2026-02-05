@@ -99,7 +99,7 @@ fn allocate_zst_returns_dangling<const UP: bool>() {
     let dangling_addr = NonNull::<()>::dangling().addr();
 
     // create a bump allocator with a chunk with no capacity
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     assert_eq!(bump.stats().count(), 1);
     bump.allocate(Layout::array::<u8>(bump.stats().remaining()).unwrap()).unwrap();
     assert_eq!(bump.stats().remaining(), 0);

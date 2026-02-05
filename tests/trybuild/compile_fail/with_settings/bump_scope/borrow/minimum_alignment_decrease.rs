@@ -12,7 +12,7 @@ fn convert<'a, 'b>(bump: &'b BumpScope<'a, Global, In>) -> &'b BumpScope<'a, Glo
 }
 
 fn main() {
-    let input = Bump::<Global, In>::with_size(512);
+    let input = Bump::<Global, In>::new();
     let output = convert(input.as_scope());
     let test = output.alloc_str("test");
     println!("{test}");

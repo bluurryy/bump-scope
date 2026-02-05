@@ -16,7 +16,7 @@ macro_rules! check_with_settings {
                     bump.with_settings()
                 }
 
-                let input = Bump::<Global, In>::with_size(512);
+                let input = Bump::<Global, In>::new();
                 let output = convert(input);
                 let test = output.alloc_str("ok");
                 print!(" {test}");
@@ -49,7 +49,7 @@ macro_rules! check_scope_with_settings {
                     bump.with_settings()
                 }
 
-                let mut input = Bump::<Global, In>::with_size(512);
+                let mut input = Bump::<Global, In>::new();
 
                 input.scoped(|input| {
                     let output = convert(input.by_value());
@@ -85,7 +85,7 @@ macro_rules! check_borrow {
                     bump.borrow_with_settings()
                 }
 
-                let input = Bump::<Global, In>::with_size(512);
+                let input = Bump::<Global, In>::new();
                 let output = convert(&input);
                 let test = output.alloc_str("ok");
                 print!(" {test}");
@@ -96,7 +96,7 @@ macro_rules! check_borrow {
                     bump.borrow_with_settings()
                 }
 
-                let input = Bump::<Global, In>::with_size(512);
+                let input = Bump::<Global, In>::new();
                 let output = convert(input.as_scope());
                 let test = output.alloc_str("ok");
                 print!(" {test}");
@@ -130,7 +130,7 @@ macro_rules! check_borrow_mut {
                     bump.borrow_mut_with_settings()
                 }
 
-                let mut input = Bump::<Global, In>::with_size(512);
+                let mut input = Bump::<Global, In>::new();
                 let output = convert(&mut input);
                 let test = output.alloc_str("ok");
                 print!(" {test}");
@@ -141,7 +141,7 @@ macro_rules! check_borrow_mut {
                     bump.borrow_mut_with_settings()
                 }
 
-                let mut input = Bump::<Global, In>::with_size(512);
+                let mut input = Bump::<Global, In>::new();
                 let output = convert(input.as_mut_scope());
                 let test = output.alloc_str("ok");
                 print!(" {test}");

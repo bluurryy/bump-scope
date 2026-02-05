@@ -12,7 +12,7 @@ fn convert(bump: BumpScope<Global, In>) -> BumpScope<Global, Out> {
 }
 
 fn main() {
-    let mut input = Bump::<Global, In>::with_size(512);
+    let mut input = Bump::<Global, In>::new();
     let mut guard = input.scope_guard();
     let output = convert(guard.scope().by_value());
     let test = output.alloc_str("test");

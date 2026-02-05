@@ -31,7 +31,7 @@ macro_rules! either_way {
 }
 
 fn vec<const UP: bool>() {
-    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     assert_eq!(bump.stats().size(), 512 - size_of::<[usize; 2]>());
 
     for size in [0, 100, 200, 300, 400] {
@@ -46,7 +46,7 @@ fn vec<const UP: bool>() {
 }
 
 fn vec_rev<const UP: bool>() {
-    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     assert_eq!(bump.stats().size(), 512 - size_of::<[usize; 2]>());
 
     for size in [0, 100, 200, 300, 400] {

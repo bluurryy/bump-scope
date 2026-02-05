@@ -32,7 +32,7 @@ either_way! {
 }
 
 fn shrinks<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
+    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
     let mut string = BumpString::from_str_in("1234", &bump);
     assert_eq!(bump.stats().allocated(), 4);
     string.pop();

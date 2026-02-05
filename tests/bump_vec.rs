@@ -63,7 +63,7 @@ either_way! {
 }
 
 fn shrinks<const UP: bool>() {
-    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
+    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
     // should shrink
     let mut vec = bump_vec![in &bump; 1, 2, 3, 4];
@@ -234,7 +234,7 @@ fn map_smaller_layout<const UP: bool>() {
 
 fn map_bigger_layout<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -271,7 +271,7 @@ fn map_bigger_layout<const UP: bool>() {
 
 fn map_to_zst<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -302,7 +302,7 @@ fn map_to_zst<const UP: bool>() {
 
 fn map_from_zst<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -334,7 +334,7 @@ fn map_from_zst<const UP: bool>() {
 
 fn map_from_zst_to_zst<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -365,7 +365,7 @@ fn map_from_zst_to_zst<const UP: bool>() {
 
 fn map_in_place_same_layout<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -398,7 +398,7 @@ fn map_in_place_same_layout<const UP: bool>() {
 
 fn map_in_place_smaller_layout<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
@@ -489,7 +489,7 @@ fn map_in_place_to_zst<const UP: bool>() {
 
 fn map_in_place_from_zst_to_zst<const UP: bool>() {
     for panic_on in 0..4 {
-        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::with_size(512);
+        let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
 
         let result = std::panic::catch_unwind(|| {
             let mut i = 1;
