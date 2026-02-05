@@ -156,11 +156,6 @@ where
 
     #[inline]
     pub(crate) unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        #[cfg(debug_assertions)]
-        if checkpoint.chunk == ChunkHeader::claimed::<S>() || self.chunk.get().is_claimed() {
-            error_behavior::panic::claimed();
-        }
-
         // If the checkpoint was created when the bump allocator had no allocated chunk
         // then the chunk pointer will point to the unallocated chunk header.
         //
@@ -169,34 +164,37 @@ where
         // We don't check if the chunk pointer points to the unallocated chunk header
         // if the bump allocator is `GUARANTEED_ALLOCATED`. We are allowed to not do this check
         // because of this safety condition of `reset_to`:
-        // > the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
+        // > the checkpoint must not have been created by an `!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
         if !S::GUARANTEED_ALLOCATED && checkpoint.chunk == ChunkHeader::unallocated::<S>() {
-            if let Some(mut chunk) = self.chunk.get().as_non_dummy() {
-                while let Some(prev) = chunk.prev() {
-                    chunk = prev;
-                }
-
-                chunk.reset();
-
-                self.chunk.set(chunk.raw);
-            }
-
+            self.reset_to_start();
             return;
         }
 
-        debug_assert_ne!(
-            checkpoint.chunk,
-            ChunkHeader::unallocated::<S>(),
-            "the safety conditions state that \"the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`\""
-        );
-
         #[cfg(debug_assertions)]
         {
+            assert_ne!(
+                checkpoint.chunk,
+                ChunkHeader::claimed::<S>(),
+                "the checkpoint must not have been created by a claimed bump allocator"
+            );
+
+            assert_ne!(
+                self.chunk.get().header.cast(),
+                ChunkHeader::claimed::<S>(),
+                "this function must not be called on a claimed bump allocator"
+            );
+
+            assert_ne!(
+                checkpoint.chunk,
+                ChunkHeader::unallocated::<S>(),
+                "the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`"
+            );
+
             let chunk = self
                 .stats()
                 .small_to_big()
                 .find(|chunk| chunk.header() == checkpoint.chunk.cast())
-                .expect("this checkpoint does not refer to any chunk of this bump allocator");
+                .expect("this checkpoint does not refer to any chunk in this bump allocator");
 
             assert!(
                 chunk.chunk.contains_addr_or_end(checkpoint.address.get()),
@@ -211,6 +209,20 @@ where
                 header: checkpoint.chunk.cast(),
                 marker: PhantomData,
             });
+        }
+    }
+
+    /// Reset's the bump pointer to the very start.
+    #[inline]
+    pub(crate) fn reset_to_start(&self) {
+        if let Some(mut chunk) = self.chunk.get().as_non_dummy() {
+            while let Some(prev) = chunk.prev() {
+                chunk = prev;
+            }
+
+            chunk.reset();
+
+            self.chunk.set(chunk.raw);
         }
     }
 

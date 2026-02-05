@@ -351,7 +351,7 @@ where
 {
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
-    /// This is equivalent to <code>[with_size](Bump::with_size)(512)</code>.
+    /// This is equivalent to <code>[with_size][]([MINIMUM_CHUNK_SIZE])</code>.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -363,16 +363,19 @@ where
     /// let bump: Bump = Bump::new();
     /// # _ = bump;
     /// ```
+    ///
+    /// [with_size]: Bump::with_size
+    /// [MINIMUM_CHUNK_SIZE]: crate::settings
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn new() -> Self {
-        Self::with_size(512)
+        Self::with_size(S::MINIMUM_CHUNK_SIZE)
     }
 
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
-    /// This is equivalent to <code>[try_with_size](Bump::try_with_size)(512)</code>.
+    /// This is equivalent to <code>[try_with_size][]([MINIMUM_CHUNK_SIZE])</code>.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -385,9 +388,12 @@ where
     /// # _ = bump;
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
+    ///
+    /// [try_with_size]: Bump::try_with_size
+    /// [MINIMUM_CHUNK_SIZE]: crate::settings
     #[inline(always)]
     pub fn try_new() -> Result<Self, AllocError> {
-        Self::try_with_size(512)
+        Self::try_with_size(S::MINIMUM_CHUNK_SIZE)
     }
 
     /// Constructs a new `Bump` with a size hint for the first chunk.
@@ -515,7 +521,7 @@ where
 {
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
-    /// This is equivalent to <code>[with_size_in](Bump::with_size_in)(512, allocator)</code>.
+    /// This is equivalent to <code>[with_size_in][]([MINIMUM_CHUNK_SIZE], allocator)</code>.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -528,16 +534,19 @@ where
     /// let bump: Bump = Bump::new_in(Global);
     /// # _ = bump;
     /// ```
+    ///
+    /// [with_size_in]: Bump::with_size_in
+    /// [MINIMUM_CHUNK_SIZE]: crate::settings
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn new_in(allocator: A) -> Self {
-        Self::with_size_in(512, allocator)
+        Self::with_size_in(S::MINIMUM_CHUNK_SIZE, allocator)
     }
 
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
-    /// This is equivalent to <code>[try_with_size_in](Bump::try_with_size_in)(512, allocator)</code>.
+    /// This is equivalent to <code>[try_with_size_in][]([MINIMUM_CHUNK_SIZE], allocator)</code>.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -551,9 +560,12 @@ where
     /// # _ = bump;
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
+    ///
+    /// [try_with_size_in]: Bump::try_with_size_in
+    /// [MINIMUM_CHUNK_SIZE]: crate::settings
     #[inline(always)]
     pub fn try_new_in(allocator: A) -> Result<Self, AllocError> {
-        Self::try_with_size_in(512, allocator)
+        Self::try_with_size_in(S::MINIMUM_CHUNK_SIZE, allocator)
     }
 
     /// Constructs a new `Bump` with a size hint for the first chunk.
