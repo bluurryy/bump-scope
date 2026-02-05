@@ -1,5 +1,7 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 
+mod common;
+
 use std::{
     alloc::Layout,
     cell::Cell,
@@ -176,12 +178,11 @@ fn test_shrink_unfit_in_another_chunk<const UP: bool>() {
 
     #[derive(Default)]
     struct A {
+        allocator: DisaligningAllocator<Global>,
         allocation_count: Cell<usize>,
     }
 
     impl RefUnwindSafe for A {}
-
-    const LAYOUT: Layout = unsafe { Layout::from_size_align_unchecked(1024, 1024) };
 
     unsafe impl Allocator for A {
         fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
@@ -189,28 +190,14 @@ fn test_shrink_unfit_in_another_chunk<const UP: bool>() {
             self.allocation_count.set(count + 1);
 
             if count == 0 {
-                assert!(layout.align() < LAYOUT.align());
-                assert!(layout.size() < (LAYOUT.size() - layout.align()));
-
-                let slice = Global.allocate(LAYOUT)?;
-
-                unsafe {
-                    let len = slice.len() - layout.align();
-                    let ptr = slice.cast::<u8>().add(layout.align());
-                    Ok(NonNull::slice_from_raw_parts(ptr, len))
-                }
+                self.allocator.allocate(layout)
             } else {
                 panic!("intentional panic when shrinking")
             }
         }
 
-        unsafe fn deallocate(&self, ptr: NonNull<u8>, _: Layout) {
-            unsafe {
-                let ptr = ptr.as_ptr();
-                let ptr = ptr.with_addr(down_align(ptr.addr(), LAYOUT.align()));
-                let ptr = NonNull::new_unchecked(ptr);
-                Global.deallocate(ptr, LAYOUT);
-            }
+        unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+            unsafe { self.allocator.deallocate(ptr, layout) };
         }
     }
 
@@ -231,13 +218,9 @@ fn test_shrink_unfit_in_another_chunk<const UP: bool>() {
     assert_eq!(bump.stats().allocated(), 4);
 }
 
-fn down_align(addr: usize, align: usize) -> usize {
-    debug_assert!(align.is_power_of_two());
-    let mask = align - 1;
-    addr & !mask
-}
-
 use helper::{Testable, assert_initialized, expected_drops};
+
+use crate::common::DisaligningAllocator;
 
 mod helper {
     use std::{
