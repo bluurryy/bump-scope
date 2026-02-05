@@ -456,7 +456,7 @@ where
         Self::generic_with_size_in(size, Default::default())
     }
 
-    /// Constructs a new `Bump` with at least enough space for `layout`.
+    /// Constructs a new `Bump` with a chunk that has at least enough space for `layout`.
     ///
     /// To construct a `Bump` with a size hint use <code>[with_size](Bump::with_size)</code> instead.
     ///
@@ -479,7 +479,7 @@ where
         panic_on_error(Self::generic_with_capacity(layout))
     }
 
-    /// Constructs a new `Bump` with at least enough space for `layout`.
+    /// Constructs a new `Bump` with a chunk that has at least enough space for `layout`.
     ///
     /// To construct a `Bump` with a size hint use <code>[try_with_size](Bump::try_with_size)</code> instead.
     ///
@@ -778,7 +778,7 @@ where
 
     /// Borrows this `Bump` mutably with new settings.
     ///
-    /// Not every settings can be converted to. This function will fail to compile if:
+    /// This function will fail to compile if:
     /// - `NewS::MIN_ALIGN < S::MIN_ALIGN`
     /// - `NewS::UP != S::UP`
     /// - `NewS::GUARANTEED_ALLOCATED != S::GUARANTEED_ALLOCATED`

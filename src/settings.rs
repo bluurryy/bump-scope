@@ -71,7 +71,8 @@
 //! # assert_eq!(str, "Hello, world!");
 //! ```
 //!
-//! [^1]: Calling `shrink` with a new layout of a greater alignment does still shift bytes around or cause an allocation.
+//! [^1]: Calling `shrink` with a new layout of a greater alignment does still shift bytes around
+//!       and may cause an allocation.
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
 //! [unallocated]: crate::Bump::unallocated
@@ -108,6 +109,8 @@ trait Sealed {}
 
 /// The trait powering bump allocator configuration.
 ///
+/// Read the [module documentation] to learn about the settings.
+///
 /// The setting values are provided as associated constants.
 ///
 /// Additionally they are provided as types so they can be used in equality bounds like this:
@@ -126,6 +129,7 @@ trait Sealed {}
 ///
 /// [`generic_const_exprs`]: https://github.com/rust-lang/rust/issues/76560
 /// [`associated_const_equality`]: https://github.com/rust-lang/rust/issues/92827
+/// [module documentation]: crate::settings
 #[expect(private_bounds)]
 pub trait BumpAllocatorSettings: Sealed {
     /// The minimum alignment.

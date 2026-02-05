@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add `claim` api that allows you to enter scopes with a shared reference
+- Add `claim` api that allows you to enter scopes from a shared reference
 - Add `SHRINKS` setting, to toggle shrinking for the allocation api, `DEALLOCATES` no longer affects shrinking
 - Add `MINIMUM_CHUNK_SIZE` setting
 - Add `(try_)by_value` to turn a `&mut BumpScope` into a `BumpScope`
@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `(Mut)BumpAllocatorScopeExt` -> `traits::(Mut)BumpAllocatorTypedScope`
 - **Breaking:** Change `BumpAllocatorCore` trait safety invariants
 - **Breaking:** Add `prepare_allocation_rev` and require it for `allocate_prepared_rev`, safety invariants for the prepare allocation api changed
-- Change default implementation of `!GUARANTEED_ALLOCATED` `Bump(Scope)`s to not allocate
+- Change `Default` implementation of `Bump(Scope)`s which are `!GUARANTEED_ALLOCATED` to not allocate
 - Remove branch when allocating on a non-guaranteed-allocated `Bump(Scope)`, checking for a layout of `0`
 - Depend on `serde_core` instead of `serde`
 - Improve documentation
@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Breaking:** Remove `into_aligned`, use `with_settings`
 - **Breaking:** Remove `as_mut_aligned`, use `borrow_mut_with_settings`
+- **Breaking:** Remove `{as, as_mut, into}_guaranteed_allocated`, use `reserve` + `*with_settings`
 - **Breaking:** Remove `alloc_layout` (`allocate_layout` provides the same functionality)
 - **Breaking:** Remove `BaseAllocator`
 - **Breaking:** Remove deprecated api

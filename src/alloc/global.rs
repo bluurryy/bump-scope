@@ -12,7 +12,7 @@ use super::{AllocError, Allocator};
 ///
 /// This type implements the [`Allocator`] trait by forwarding calls
 /// to the allocator registered with the `#[global_allocator]` attribute
-/// if there is one, or the `std` crate’s default.
+/// if there is one, or the `alloc` crate’s default.
 #[derive(Copy, Clone, Default, Debug)]
 // the compiler needs to know when a Box uses the global allocator vs a custom one
 pub struct Global;
