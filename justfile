@@ -114,7 +114,7 @@ test:
   just test-nightly
   just test-nightly --miri
 
-# Runs tests on the stable toolchain.
+# Runs tests for the stable toolchain.
 [group('test')]
 test-stable:
   cargo +stable test --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
@@ -124,7 +124,7 @@ test-stable:
   cargo +stable test --test trybuild -- --ignored
   cargo +stable test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
 
-# Runs tests on the nightly toolchain, optionally with miri.
+# Runs tests for the nightly toolchain, optionally with miri.
 [group('test'), arg("miri", long="miri", value="miri")]
 test-nightly miri="": 
   cargo +nightly {{miri}} test --all-features
