@@ -635,7 +635,7 @@ where
     pub(crate) fn generic_with_size_in<E: ErrorBehavior>(size: usize, allocator: A) -> Result<Self, E> {
         Ok(Self {
             raw: RawBump::with_size(
-                ChunkSize::<A, S::Up>::from_hint(size).ok_or_else(E::capacity_overflow)?,
+                ChunkSize::<A, S>::from_hint(size).ok_or_else(E::capacity_overflow)?,
                 allocator,
             )?,
         })
@@ -693,7 +693,7 @@ where
     pub(crate) fn generic_with_capacity_in<E: ErrorBehavior>(layout: Layout, allocator: A) -> Result<Self, E> {
         Ok(Self {
             raw: RawBump::with_size(
-                ChunkSize::<A, S::Up>::from_capacity(layout).ok_or_else(E::capacity_overflow)?,
+                ChunkSize::<A, S>::from_capacity(layout).ok_or_else(E::capacity_overflow)?,
                 allocator,
             )?,
         })

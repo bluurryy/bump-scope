@@ -75,7 +75,7 @@ where
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
-    pub(crate) fn with_size<E: ErrorBehavior>(size: ChunkSize<A, S::Up>, allocator: A) -> Result<Self, E> {
+    pub(crate) fn with_size<E: ErrorBehavior>(size: ChunkSize<A, S>, allocator: A) -> Result<Self, E> {
         Ok(Self {
             chunk: Cell::new(NonDummyChunk::new::<E>(size, None, allocator)?.raw),
         })
@@ -241,7 +241,7 @@ where
                 };
 
                 let new_chunk = NonDummyChunk::<A, S>::new(
-                    ChunkSize::<A, S::Up>::from_capacity(layout).ok_or_else(E::capacity_overflow)?,
+                    ChunkSize::<A, S>::from_capacity(layout).ok_or_else(E::capacity_overflow)?,
                     None,
                     // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
                     // `default_or_panic` will not panic.
@@ -483,7 +483,7 @@ where
             ChunkClass::Unallocated => {
                 // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
                 // `default_or_panic` will not panic.
-                let new_chunk = NonDummyChunk::new(ChunkSize::ZERO, None, A::default_or_panic())?;
+                let new_chunk = NonDummyChunk::new(ChunkSize::MINIMUM, None, A::default_or_panic())?;
                 self.chunk.set(new_chunk.raw);
                 Ok(())
             }
@@ -848,7 +848,7 @@ where
     S: BumpAllocatorSettings,
 {
     pub(crate) fn new<E>(
-        chunk_size: ChunkSize<A, S::Up>,
+        chunk_size: ChunkSize<A, S>,
         prev: Option<NonDummyChunk<A, S>>,
         allocator: A,
     ) -> Result<NonDummyChunk<A, S>, E>
@@ -856,15 +856,6 @@ where
         A: Allocator,
         E: ErrorBehavior,
     {
-        let min_size = const {
-            match ChunkSize::<A, S::Up>::from_hint(S::MINIMUM_CHUNK_SIZE) {
-                Some(some) => some,
-                None => panic!("failed to calculate minimum chunk size"),
-            }
-        };
-
-        let chunk_size = chunk_size.max(min_size);
-
         let layout = chunk_size.layout().ok_or_else(E::capacity_overflow)?;
 
         let allocation = match allocator.allocate(layout) {
@@ -886,7 +877,7 @@ where
         // so we need to align it first.
         //
         // Follow this method for details.
-        let size = ChunkSize::<A, S::Up>::align_allocation_size(size);
+        let size = ChunkSize::<A, S>::align_allocation_size(size);
 
         debug_assert!(size >= layout.size());
         debug_assert!(size % MIN_CHUNK_ALIGN == 0);
@@ -953,7 +944,7 @@ where
     }
 
     #[inline(always)]
-    fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSizeHint<A, S::Up>, B> {
+    fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSizeHint<A, S>, B> {
         let Some(size) = self.size().get().checked_mul(2) else {
             return Err(B::capacity_overflow());
         };
