@@ -77,7 +77,7 @@ where
     #[inline(always)]
     pub(crate) fn with_size<E: ErrorBehavior>(size: ChunkSize<A, S::Up>, allocator: A) -> Result<Self, E> {
         Ok(Self {
-            chunk: Cell::new(NonDummyChunk::new::<E>(size, None, allocator)?.0),
+            chunk: Cell::new(NonDummyChunk::new::<E>(size, None, allocator)?.raw),
         })
     }
 
@@ -238,7 +238,7 @@ where
                     A::default_or_panic(),
                 )?;
 
-                self.chunk.set(new_chunk.0);
+                self.chunk.set(new_chunk.raw);
                 Ok(())
             }
             ChunkClass::NonDummy(mut chunk) => {
@@ -442,9 +442,9 @@ where
                     // We don't reset the chunk position when we leave a scope, so we need to do it here.
                     chunk.reset();
 
-                    self.chunk.set(chunk.0);
+                    self.chunk.set(chunk.raw);
 
-                    if let Some(ptr) = f(chunk.0, layout) {
+                    if let Some(ptr) = f(chunk.raw, layout) {
                         return Ok(ptr);
                     }
                 }
@@ -454,9 +454,9 @@ where
             }
         }?;
 
-        self.chunk.set(new_chunk.0);
+        self.chunk.set(new_chunk.raw);
 
-        match f(new_chunk.0, layout) {
+        match f(new_chunk.raw, layout) {
             Some(ptr) => Ok(ptr),
             _ => {
                 // SAFETY: We just appended a chunk for that specific layout, it must have enough space.
@@ -474,7 +474,7 @@ where
                 // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
                 // `default_or_panic` will not panic.
                 let new_chunk = NonDummyChunk::new(ChunkSize::ZERO, None, A::default_or_panic())?;
-                self.chunk.set(new_chunk.0);
+                self.chunk.set(new_chunk.raw);
                 Ok(())
             }
             ChunkClass::NonDummy(_) => Ok(()),
@@ -638,7 +638,9 @@ impl<A, S> Clone for RawChunk<A, S> {
 
 impl<A, S> Copy for RawChunk<A, S> {}
 
-pub(crate) struct NonDummyChunk<A, S>(RawChunk<A, S>);
+pub(crate) struct NonDummyChunk<A, S> {
+    raw: RawChunk<A, S>,
+}
 
 impl<A, S> Copy for NonDummyChunk<A, S> {}
 
@@ -652,7 +654,7 @@ impl<A, S> Deref for NonDummyChunk<A, S> {
     type Target = RawChunk<A, S>;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.raw
     }
 }
 
@@ -703,7 +705,7 @@ where
             return ChunkClass::Unallocated;
         }
 
-        ChunkClass::NonDummy(NonDummyChunk(self))
+        ChunkClass::NonDummy(NonDummyChunk { raw: self })
     }
 
     #[inline(always)]
@@ -826,7 +828,7 @@ where
     #[inline(always)]
     pub(crate) unsafe fn as_non_dummy_unchecked(self) -> NonDummyChunk<A, S> {
         debug_assert!(matches!(self.classify(), ChunkClass::NonDummy(_)));
-        NonDummyChunk(self)
+        NonDummyChunk { raw: self }
     }
 
     /// Cast the settings.
@@ -916,10 +918,12 @@ where
             }
         };
 
-        Ok(NonDummyChunk(RawChunk {
-            header,
-            marker: PhantomData,
-        }))
+        Ok(NonDummyChunk {
+            raw: RawChunk {
+                header,
+                marker: PhantomData,
+            },
+        })
     }
 
     /// # Panic
@@ -961,20 +965,24 @@ where
     #[inline(always)]
     pub(crate) fn prev(self) -> Option<NonDummyChunk<A, S>> {
         unsafe {
-            Some(NonDummyChunk(RawChunk {
-                header: self.header.as_ref().prev.get()?,
-                marker: PhantomData,
-            }))
+            Some(NonDummyChunk {
+                raw: RawChunk {
+                    header: self.header.as_ref().prev.get()?,
+                    marker: PhantomData,
+                },
+            })
         }
     }
 
     #[inline(always)]
     pub(crate) fn next(self) -> Option<NonDummyChunk<A, S>> {
         unsafe {
-            Some(NonDummyChunk(RawChunk {
-                header: self.header.as_ref().next.get()?,
-                marker: PhantomData,
-            }))
+            Some(NonDummyChunk {
+                raw: RawChunk {
+                    header: self.header.as_ref().next.get()?,
+                    marker: PhantomData,
+                },
+            })
         }
     }
 
