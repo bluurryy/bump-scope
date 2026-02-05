@@ -369,8 +369,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// # Errors
     /// Errors if the allocation fails.
     ///
-    /// # Panics
-    /// Panics if the bump allocator is currently [claimed].
+    /// Errors if the bump allocator is currently [claimed].
     ///
     /// # Examples
     /// ```
