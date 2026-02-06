@@ -85,7 +85,7 @@ The following cases benchmark the `Allocator` trait implementations.
 | shrink_smaller_align [^2] | 11 / 2          | 17 / 2            | 12 / 1  | 5 / 1       |
 | shrink_larger_align [^2]  | 11 / 2          | 17 / 2            | 5 / 1   | 18 / 3      |
 | deallocate                | 6 / 1           | 6 / 1             | 7 / 1   | 6 / 2       |
-| deallocate_non_last       | 5 / 1           | 4 / 1             | 5 / 1   | —           |
+| deallocate_non_last       | 5 / 1           | 4 / 1             | 5 / 1   | 6 / 2       |
 
 <!-- allocator_api table end -->
 
