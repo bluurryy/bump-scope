@@ -1,5 +1,7 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 
+mod common;
+
 use std::{alloc::Layout, ptr::NonNull};
 
 use bump_scope::{
@@ -8,6 +10,8 @@ use bump_scope::{
     settings::BumpSettings,
     traits::{BumpAllocatorCore, BumpAllocatorTyped},
 };
+
+use crate::common::{ChunkHeader, DisaligningAllocator};
 
 macro_rules! either_way {
     ($($(#[$attr:meta])* $ident:ident)*) => {
@@ -39,6 +43,8 @@ either_way! {
   allocate_zst_returns_dangling_unallocated
 
   grow
+
+  shrink
 }
 
 macro_rules! assert_eq_ne {
@@ -282,5 +288,96 @@ fn grow<const UP: bool>() {
         assert_ne!(old_ptr.addr(), new_ptr.addr());
 
         assert_eq!(bump.stats().count(), 2);
+    }
+}
+
+fn shrink<const UP: bool>() {
+    let base = DisaligningAllocator::new(4096, Global);
+    let bump: Bump<_, BumpSettings<1, UP>> = Bump::new_in(&base);
+
+    unsafe {
+        let new_layout = Layout::from_size_align(15, 4).unwrap();
+        let new_ptr = bump.allocate(new_layout).unwrap();
+        assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
+        assert_eq!(bump.stats().allocated(), if UP { 15 } else { 16 });
+        let old_layout = new_layout;
+        let old_ptr = new_ptr;
+
+        // shrink in place with same align (same size)
+        let new_layout = Layout::from_size_align(15, 4).unwrap();
+        let new_ptr = bump.shrink(old_ptr.cast(), old_layout, new_layout).unwrap();
+        assert_eq!(bump.stats().allocated(), if UP { 15 } else { 16 });
+        assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
+        assert_eq!(old_ptr.addr(), new_ptr.addr());
+        let old_layout = new_layout;
+        let old_ptr = new_ptr;
+
+        // shrink in place with same align
+        let new_layout = Layout::from_size_align(11, 4).unwrap();
+        let new_ptr = bump.shrink(old_ptr.cast(), old_layout, new_layout).unwrap();
+        assert_eq!(bump.stats().allocated(), if UP { 11 } else { 12 });
+        assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
+        assert_eq_ne!(UP, old_ptr.addr(), new_ptr.addr());
+        let old_layout = new_layout;
+        let old_ptr = new_ptr;
+
+        // shrink in place with smaller align (same size)
+        let new_layout = Layout::from_size_align(11, 2).unwrap();
+        let new_ptr = bump.shrink(old_ptr.cast(), old_layout, new_layout).unwrap();
+        assert_eq!(bump.stats().allocated(), if UP { 11 } else { 12 });
+        assert_eq!(new_ptr.cast::<u8>().addr().get() % 2, 0);
+        assert_eq!(old_ptr.addr(), new_ptr.addr());
+        let old_layout = new_layout;
+        let old_ptr = new_ptr;
+
+        // shrink in place with smaller align
+        let new_layout = Layout::from_size_align(10, 1).unwrap();
+        let new_ptr = bump.shrink(old_ptr.cast(), old_layout, new_layout).unwrap();
+        assert_eq!(bump.stats().allocated(), if UP { 10 } else { 11 });
+        assert_eq_ne!(UP, old_ptr.addr(), new_ptr.addr());
+        let old_layout = new_layout;
+        let old_ptr = new_ptr;
+
+        // shrink in place with greater align (same size)
+        let new_layout = Layout::from_size_align(10, 8).unwrap();
+        let new_ptr = bump.shrink(old_ptr.cast(), old_layout, new_layout).unwrap();
+        assert_eq!(bump.stats().allocated(), if UP { 10 } else { 16 });
+        assert_eq!(new_ptr.cast::<u8>().addr().get() % 8, 0);
+        assert_eq_ne!(UP, old_ptr.addr(), new_ptr.addr());
+        let old_layout = new_layout;
+        let old_ptr = new_ptr;
+
+        // shrink in place with greater align
+        let new_layout = Layout::from_size_align(9, 16).unwrap();
+        let new_ptr = bump.shrink(old_ptr.cast(), old_layout, new_layout).unwrap();
+        assert_eq!(bump.stats().allocated(), if UP { 9 } else { 16 });
+        assert_eq!(new_ptr.cast::<u8>().addr().get() % 16, 0);
+        assert_eq!(old_ptr.addr(), new_ptr.addr());
+        let old_layout = new_layout;
+        let old_ptr = new_ptr;
+
+        assert_eq!(bump.stats().count(), 1);
+
+        // shrink out of place (same size)
+        let new_layout = Layout::from_size_align(9, 1024).unwrap();
+        let new_ptr = bump.shrink(old_ptr.cast(), old_layout, new_layout).unwrap();
+        assert_eq!(bump.stats().count(), 2);
+        dbg!(&bump);
+        dbg!(&bump.stats().small_to_big().collect::<Vec<_>>());
+        assert_eq!(bump.stats().allocated(), {
+            let disalignment_offset = 16;
+            let header_size = size_of::<ChunkHeader<&DisaligningAllocator<Global>>>();
+            let chunks = bump.stats().small_to_big().collect::<Vec<_>>();
+
+            chunks[0].capacity()
+                + if UP {
+                    let padding_until_aligned = 1024 - disalignment_offset - header_size;
+                    padding_until_aligned + 9
+                } else {
+                    chunks[1].capacity() - (1024 - disalignment_offset)
+                }
+        });
+        assert_eq!(new_ptr.cast::<u8>().addr().get() % 1024, 0);
+        assert_ne!(old_ptr.addr(), new_ptr.addr());
     }
 }

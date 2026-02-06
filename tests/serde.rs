@@ -1,4 +1,4 @@
-#![cfg(all(feature = "std", feature = "panic-on-alloc"))]
+#![cfg(all(feature = "std", feature = "panic-on-alloc", feature = "serde"))]
 
 use std::{fmt::Debug, vec};
 

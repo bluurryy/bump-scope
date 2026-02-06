@@ -55,9 +55,8 @@ unsafe impl<A: Allocator> Allocator for DisaligningAllocator<A> {
         let slice = self.allocator.allocate(self.chunk_layout())?;
 
         unsafe {
-            let len = slice.len() - layout.align();
             let ptr = slice.cast::<u8>().add(layout.align());
-            Ok(NonNull::slice_from_raw_parts(ptr, len))
+            Ok(NonNull::slice_from_raw_parts(ptr, layout.size()))
         }
     }
 

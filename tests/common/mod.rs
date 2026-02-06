@@ -44,12 +44,14 @@ pub(crate) type AssumedMallocOverhead = [usize; 2];
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 
 #[repr(C, align(16))]
-pub(crate) struct ChunkHeader {
+pub(crate) struct ChunkHeader<A = ()> {
     pub(crate) pos: Cell<NonNull<u8>>,
     pub(crate) end: NonNull<u8>,
 
     pub(crate) prev: Cell<Option<NonNull<Self>>>,
     pub(crate) next: Cell<Option<NonNull<Self>>>,
+
+    pub(crate) allocator: A,
 }
 
 pub(crate) const MALLOC_OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
