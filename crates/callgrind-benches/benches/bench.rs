@@ -14,7 +14,7 @@ macro_rules! benches_library {
                     #[::gungraun::library_benchmark(
                         config = ::gungraun::LibraryBenchmarkConfig::default()
                             .tool(::gungraun::Callgrind::default()
-                                .entry_point(::gungraun::EntryPoint::Custom(concat!("entry_bench_", stringify!($name), "_", stringify!($library)).to_owned()))
+                                .entry_point(::gungraun::EntryPoint::Custom("entry_bench_*".to_owned()))
                                 .args(["branch-sim=yes"])
                             )
 
