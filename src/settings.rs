@@ -43,7 +43,8 @@
 //!   This also affects the temporary collections used in [`alloc_iter`][alloc_iter], [`alloc_fmt`][alloc_fmt], etc.
 //! - **`MINIMUM_CHUNK_SIZE`** *default: 512* — Configures the minimum chunk size.
 //!
-//!   The actual chunk size is calculated like in [`with_size`], thus can be slightly smaller than requested.
+//!   The final chunk size is calculated like described in [`with_size`],
+//!   thus it can be slightly smaller than requested.
 //!
 //! # Example
 //!
