@@ -200,7 +200,7 @@ fn rows() -> Vec<Vec<String>> {
             let mut cell = if (instructions == 0 && branches == 0) || globs_match(INVALID, &group_and_library) {
                 "—".to_string()
             } else {
-                format!("{instructions} / {branches}")
+                format!("{instructions} \\| {branches}")
             };
 
             for (glob, i) in FOOTNOTES_FOR_LIBRARY {
