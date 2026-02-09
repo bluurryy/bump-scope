@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-02-09
 
 ### Added
 
@@ -892,7 +892,8 @@ _If you are upgrading: please see [`UPGRADING.md#0.17.0`](UPGRADING.md#0.17.0)._
 [#3]: https://github.com/bluurryy/bump-scope/issues/3
 
 <!-- next-url -->
-[Unreleased]: https://github.com/bluurryy/bump-scope/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/bluurryy/bump-scope/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/bluurryy/bump-scope/releases/tag/v2.0.0
 [1.5.1]: https://github.com/bluurryy/bump-scope/releases/tag/v1.5.1
 [1.5.0]: https://github.com/bluurryy/bump-scope/releases/tag/v1.5.0
 [1.4.2]: https://github.com/bluurryy/bump-scope/releases/tag/v1.4.2
