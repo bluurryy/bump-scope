@@ -41,7 +41,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Remove `as_mut_aligned`, use `borrow_mut_with_settings`
 - **Breaking:** Remove `{as, as_mut, into}_guaranteed_allocated`, use `reserve` + `*with_settings`
 - **Breaking:** Remove `alloc_layout` (`allocate_layout` provides the same functionality)
-- **Breaking:** Remove `BaseAllocator`
 - **Breaking:** Remove deprecated api
 
 ### Fixed
