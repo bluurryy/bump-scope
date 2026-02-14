@@ -213,12 +213,12 @@ to make deallocating and shrinking a no-op.
   `try_`-prefixed allocation methods will be available.
 - **`serde`** — Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 - **`bytemuck`** — Adds `bytemuck::*` extension traits for
-  <code>[alloc_zeroed](https://docs.rs/bump-scope/2.0.0/bump_scope/bytemuck/trait.BumpAllocatorTypedScopeExt.html#tymethod.alloc_zeroed)([_slice](https://docs.rs/bump-scope/2.0.0/bump_scope/bytemuck/trait.BumpAllocatorTypedScopeExt.html#tymethod.alloc_zeroed_slice))</code>,
+  <code>[alloc_zeroed](https://docs.rs/bump-scope/2.0.0/bump_scope/bytemuck/trait.BumpAllocatorTypedScopeExt.html#method.alloc_zeroed)([_slice](https://docs.rs/bump-scope/2.0.0/bump_scope/bytemuck/trait.BumpAllocatorTypedScopeExt.html#method.alloc_zeroed_slice))</code>,
   [`init_zeroed`](https://docs.rs/bump-scope/2.0.0/bump_scope/bytemuck/trait.InitZeroed.html#tymethod.init_zeroed),
   [`extend_zeroed`](https://docs.rs/bump-scope/2.0.0/bump_scope/bytemuck/trait.VecExt.html#tymethod.extend_zeroed) and
   [`resize_zeroed`](https://docs.rs/bump-scope/2.0.0/bump_scope/bytemuck/trait.VecExt.html#tymethod.resize_zeroed).
 - **`zerocopy-08`** — Adds `zerocopy_08::*` extension traits for
-  <code>[alloc_zeroed](https://docs.rs/bump-scope/2.0.0/bump_scope/zerocopy_08/trait.BumpAllocatorTypedScopeExt.html#tymethod.alloc_zeroed)([_slice](https://docs.rs/bump-scope/2.0.0/bump_scope/zerocopy_08/trait.BumpAllocatorTypedScopeExt.html#tymethod.alloc_zeroed_slice))</code>,
+  <code>[alloc_zeroed](https://docs.rs/bump-scope/2.0.0/bump_scope/zerocopy_08/trait.BumpAllocatorTypedScopeExt.html#method.alloc_zeroed)([_slice](https://docs.rs/bump-scope/2.0.0/bump_scope/zerocopy_08/trait.BumpAllocatorTypedScopeExt.html#method.alloc_zeroed_slice))</code>,
   [`init_zeroed`](https://docs.rs/bump-scope/2.0.0/bump_scope/zerocopy_08/trait.InitZeroed.html#tymethod.init_zeroed),
   [`extend_zeroed`](https://docs.rs/bump-scope/2.0.0/bump_scope/zerocopy_08/trait.VecExt.html#tymethod.extend_zeroed) and
   [`resize_zeroed`](https://docs.rs/bump-scope/2.0.0/bump_scope/zerocopy_08/trait.VecExt.html#tymethod.resize_zeroed).
@@ -252,7 +252,7 @@ Breaking changes to these features might be introduced in minor releases to keep
 - **`nightly-dropck-eyepatch`** — Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
   This makes it so references don't have to strictly outlive the container.
   (Just like with std's `Box` and `Vec`.)
-- **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](https://docs.rs/bump-scope/2.0.0/bump_scope/traits/trait.BumpAllocatorTypedScope.html#tymethod.alloc_clone) method.
+- **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](https://docs.rs/bump-scope/2.0.0/bump_scope/traits/trait.BumpAllocatorTypedScope.html#method.alloc_clone) method.
 <!-- feature documentation end -->
 
 
@@ -265,10 +265,10 @@ Breaking changes to these features might be introduced in minor releases to keep
 [`BumpPool`]: https://docs.rs/bump-scope/2.0.0/bump_scope/struct.BumpPool.html
 [CHANGELOG]: https://docs.rs/bump-scope/2.0.0/bump_scope/CHANGELOG/index.html
 [`claim`]: https://docs.rs/bump-scope/2.0.0/bump_scope/traits/trait.BumpAllocatorScope.html#tymethod.claim
-[`scope_guard`]: https://docs.rs/bump-scope/2.0.0/bump_scope/traits/trait.BumpAllocator.html#tymethod.scope_guard
+[`scope_guard`]: https://docs.rs/bump-scope/2.0.0/bump_scope/traits/trait.BumpAllocator.html#method.scope_guard
 [`aligned`]: https://docs.rs/bump-scope/2.0.0/bump_scope/traits/trait.BumpAllocatorScope.html#tymethod.aligned
-[`scoped_aligned`]: https://docs.rs/bump-scope/2.0.0/bump_scope/traits/trait.BumpAllocator.html#tymethod.scoped_aligned
-[`scoped`]: https://docs.rs/bump-scope/2.0.0/bump_scope/traits/trait.BumpAllocator.html#tymethod.scoped
+[`scoped_aligned`]: https://docs.rs/bump-scope/2.0.0/bump_scope/traits/trait.BumpAllocator.html#method.scoped_aligned
+[`scoped`]: https://docs.rs/bump-scope/2.0.0/bump_scope/traits/trait.BumpAllocator.html#method.scoped
 [`with_capacity`]: https://docs.rs/bump-scope/2.0.0/bump_scope/struct.Bump.html#method.with_capacity
 [`with_size`]: https://docs.rs/bump-scope/2.0.0/bump_scope/struct.Bump.html#method.with_size
 [`Allocator`]: https://docs.rs/bump-scope/2.0.0/bump_scope/alloc/trait.Allocator.html

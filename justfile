@@ -18,7 +18,7 @@ pre-release:
 [group('release')]
 setup:
   cargo binstall --locked typos-cli@1.42.0
-  cargo binstall --locked cargo-insert-docs@1.3.0
+  cargo binstall --locked cargo-insert-docs@1.4.0
   cargo binstall --locked cargo-semver-checks@0.46.0
   cargo binstall --locked cargo-hack@0.6.41
   cargo binstall --locked cargo-minimal-versions@0.1.35
