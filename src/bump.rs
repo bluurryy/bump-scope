@@ -699,8 +699,14 @@ where
         })
     }
 
-    // This needs `&mut self` to make sure that no allocations are alive.
-    /// Deallocates every chunk but the newest, which is also the biggest.
+    /// Resets this bump allocator and deallocates all but the largest chunk.
+    ///
+    /// This deallocates all allocations at once by resetting
+    /// the bump pointer to the start of the retained chunk.
+    ///
+    /// For a version of this function that doesn't deallocate chunks, see [`reset_to_start`].
+    ///
+    /// [`reset_to_start`]: Self::reset_to_start
     ///
     /// ```
     /// use bump_scope::Bump;
@@ -727,6 +733,35 @@ where
     #[inline(always)]
     pub fn reset(&mut self) {
         self.raw.reset();
+    }
+
+    /// Resets this bump allocator.
+    ///
+    /// This deallocates all allocations at once by resetting
+    /// the bump pointer to the start of the first chunk.
+    ///
+    /// For a version of this function that also deallocates chunks, see [`reset`].
+    ///
+    /// [`reset`]: Self::reset
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// let mut bump: Bump = Bump::new();
+    ///
+    /// {
+    ///     let hello = bump.alloc_str("hello");
+    ///     assert_eq!(bump.stats().allocated(), 5);
+    ///     # _ = hello;
+    /// }
+    ///
+    /// unsafe { bump.reset_to_start(); }
+    /// assert_eq!(bump.stats().allocated(), 0);
+    /// ```
+    #[inline(always)]
+    pub fn reset_to_start(&mut self) {
+        self.raw.reset_to_start();
     }
 
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
