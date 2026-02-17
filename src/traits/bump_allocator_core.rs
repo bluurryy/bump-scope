@@ -75,6 +75,7 @@ pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     fn checkpoint(&self) -> Checkpoint;
 
     /// Resets the bump position to a previously created checkpoint.
+    ///
     /// The memory that has been allocated since then will be reused by future allocations.
     ///
     /// # Safety

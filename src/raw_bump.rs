@@ -103,6 +103,20 @@ where
         self.chunk.set(chunk.raw);
     }
 
+    /// Reset's the bump pointer to the very start.
+    #[inline]
+    pub(crate) fn reset_to_start(&self) {
+        if let Some(mut chunk) = self.chunk.get().as_non_dummy() {
+            while let Some(prev) = chunk.prev() {
+                chunk = prev;
+            }
+
+            chunk.reset();
+
+            self.chunk.set(chunk.raw);
+        }
+    }
+
     pub(crate) unsafe fn manually_drop(&mut self) {
         match self.chunk.get().classify() {
             ChunkClass::Claimed => {
@@ -209,20 +223,6 @@ where
                 header: checkpoint.chunk.cast(),
                 marker: PhantomData,
             });
-        }
-    }
-
-    /// Reset's the bump pointer to the very start.
-    #[inline]
-    pub(crate) fn reset_to_start(&self) {
-        if let Some(mut chunk) = self.chunk.get().as_non_dummy() {
-            while let Some(prev) = chunk.prev() {
-                chunk = prev;
-            }
-
-            chunk.reset();
-
-            self.chunk.set(chunk.raw);
         }
     }
 
