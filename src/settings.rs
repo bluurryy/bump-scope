@@ -55,7 +55,7 @@
 //! type MyBumpSettings = BumpSettings<
 //!     /* MIN_ALIGN */ 8,
 //!     /* UP */ false,
-//!     /* GUARANTEED_ALLOCATED */ true,
+//!     /* GUARANTEED_ALLOCATED */ false,
 //!     /* CLAIMABLE */ false,
 //!     /* DEALLOCATES */ false,
 //!     /* SHRINKS */ false,
@@ -64,12 +64,13 @@
 //!
 //! type MyBump = Bump<Global, MyBumpSettings>;
 //!
-//! let bump = MyBump::with_size(0);
-//! assert_eq!(bump.stats().size(), 4096 - size_of::<[usize; 2]>());
+//! let bump = MyBump::unallocated();
+//! assert_eq!(bump.stats().size(), 0);
 //!
 //! # let str =
 //! bump.alloc_str("Hello, world!");
 //! # assert_eq!(str, "Hello, world!");
+//! assert_eq!(bump.stats().size(), 4096 - size_of::<[usize; 2]>());
 //! ```
 //!
 //! [^1]: Calling `shrink` with a new layout of a greater alignment does still shift bytes around
