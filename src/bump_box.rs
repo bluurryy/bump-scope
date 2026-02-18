@@ -46,7 +46,7 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///
 /// A `BumpBox` can be deallocated using [`Bump(Scope)::dealloc`](crate::Bump::dealloc).
 ///
-/// ## `BumpBox` has a lot of methods
+/// ## Additional methods
 /// - `BumpBox<[T]>` provides methods from `Vec<T>` like
 ///   [`pop`](Self::pop),
 ///   [`clear`](Self::clear),
@@ -57,14 +57,14 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///   [`drain`](Self::drain),
 ///   [`extract_if`](Self::extract_if),
 ///   [`dedup`](Self::dedup),
+///   [`split_off`](Self::split_off),
 ///   slice methods but with owned semantics like
 ///   [`split_at`](Self::split_at),
 ///   <code>split_{[first](Self::split_first), [last](Self::split_last)}</code>
 ///   <code>split_off_{[first](Self::split_off_first), [last](Self::split_off_last)}</code>
 ///   and additional methods like
-///   [`split_off`](Self::split_off),
 ///   [`partition`](Self::partition) and [`map_in_place`](Self::map_in_place).
-/// - `BumpBox<str>` provide methods from `String` like
+/// - `BumpBox<str>` provides methods from `String` like
 ///   <code>[from_utf8](Self::from_utf8)([_unchecked](Self::from_utf8_unchecked))</code>,
 ///   [`into_boxed_bytes`](Self::into_boxed_bytes),
 ///   [`as_mut_bytes`](Self::as_mut_bytes),
@@ -75,10 +75,11 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 ///   [`retain`](Self::retain),
 ///   [`drain`](Self::drain) and
 ///   [`split_off`](Self::split_off).
-/// - `BumpBox<MaybeUninit<T>>` and `BumpBox<[MaybeUninit<T>]>` provide methods like
-///   [`init`](Self::init),
-///   [`assume_init`](Self::assume_init),
-///   <code>init_{[fill](Self::init_fill), [fill_with](Self::init_fill_with), [fill_iter](Self::init_fill_iter), [copy](Self::init_copy), [clone](Self::init_clone), [move](Self::init_move), [zeroed](crate::zerocopy_08::InitZeroed::init_zeroed)}</code>.
+/// - `BumpBox<MaybeUninit<T>>` provides [`init`](Self::init) and [`assume_init`](Self::assume_init)
+/// - `BumpBox<[MaybeUninit<T>]>` provides <code>init_{[fill](Self::init_fill), [fill_with](Self::init_fill_with), [fill_iter](Self::init_fill_iter), [copy](Self::init_copy), [clone](Self::init_clone), [move](Self::init_move)}</code>
+/// - `BumpBox<MaybeUninit<T>>` and `BumpBox<[MaybeUninit<T>]>` provide `init_zeroed` via an extension trait, either
+///   [`zerocopy_08::InitZeroed`](crate::zerocopy_08::InitZeroed::init_zeroed) or
+///   [`bytemuck::InitZeroed`](crate::bytemuck::InitZeroed::init_zeroed).
 ///
 /// ## Api differences
 ///
