@@ -138,7 +138,7 @@ pub trait BumpAllocatorSettings: Sealed {
     /// The bump direction.
     const UP: bool = Self::Up::VALUE;
 
-    /// Whether the allocator is guaranteed to have a chunk allocated and thus is allowed to create scopes.
+    /// Whether the allocator is guaranteed to have a chunk allocated.
     const GUARANTEED_ALLOCATED: bool = Self::GuaranteedAllocated::VALUE;
 
     /// Whether the allocator can be [claimed](crate::Bump::claim).
@@ -159,7 +159,7 @@ pub trait BumpAllocatorSettings: Sealed {
     /// The bump direction.
     type Up: Boolean;
 
-    /// Whether the allocator is guaranteed to have a chunk allocated and thus is allowed to create scopes.
+    /// Whether the allocator is guaranteed to have a chunk allocated.
     type GuaranteedAllocated: Boolean;
 
     /// Whether the allocator can be [claimed](crate::Bump::claim).
@@ -193,7 +193,7 @@ pub trait BumpAllocatorSettings: Sealed {
             Shrinks = Self::Shrinks,
         >;
 
-    /// Changes whether the allocator is guaranteed to have a chunk allocated and thus is allowed to create scopes.
+    /// Changes whether the allocator is guaranteed to have a chunk allocated.
     type WithGuaranteedAllocated<const VALUE: bool>: BumpAllocatorSettings<
             MinimumAlignment = Self::MinimumAlignment,
             Up = Self::Up,
