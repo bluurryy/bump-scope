@@ -38,7 +38,8 @@
 //!   When this is `false`, [`Allocator::deallocate`] does nothing.
 //! - **`SHRINKS`** *default: true* — Toggles shrinking.
 //!
-//!   When this is `false`, [`Allocator::shrink`] and [`BumpAllocatorTyped::shrink_slice`] do nothing[^1].
+//!   When this is `false`, [`Allocator::shrink`] and [`BumpAllocatorTyped::shrink_slice`] do nothing.
+//!   Calling `shrink` with a new layout of a greater alignment may still reallocate.
 //!   
 //!   This also affects the temporary collections used in [`alloc_iter`][alloc_iter], [`alloc_fmt`][alloc_fmt], etc.
 //! - **`MINIMUM_CHUNK_SIZE`** *default: 512* — Configures the minimum chunk size.
@@ -72,9 +73,6 @@
 //! # assert_eq!(str, "Hello, world!");
 //! assert_eq!(bump.stats().size(), 4096 - size_of::<[usize; 2]>());
 //! ```
-//!
-//! [^1]: Calling `shrink` with a new layout of a greater alignment does still shift bytes around
-//!       and may cause an allocation.
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
 //! [unallocated]: crate::Bump::unallocated
