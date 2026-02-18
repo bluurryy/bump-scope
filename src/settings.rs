@@ -141,7 +141,9 @@ pub trait BumpAllocatorSettings: Sealed {
     /// Whether the allocator is guaranteed to have a chunk allocated.
     const GUARANTEED_ALLOCATED: bool = Self::GuaranteedAllocated::VALUE;
 
-    /// Whether the allocator can be [claimed](crate::Bump::claim).
+    /// Whether the allocator can be [claimed].
+    ///
+    /// [claimed]: crate::traits::BumpAllocatorScope::claim
     const CLAIMABLE: bool = Self::Claimable::VALUE;
 
     /// Whether the allocator tries to free allocations.
@@ -162,7 +164,9 @@ pub trait BumpAllocatorSettings: Sealed {
     /// Whether the allocator is guaranteed to have a chunk allocated.
     type GuaranteedAllocated: Boolean;
 
-    /// Whether the allocator can be [claimed](crate::Bump::claim).
+    /// Whether the allocator can be [claimed].
+    ///
+    /// [claimed]: crate::traits::BumpAllocatorScope::claim
     type Claimable: Boolean;
 
     /// Whether the allocator tries to free allocations.
@@ -203,7 +207,9 @@ pub trait BumpAllocatorSettings: Sealed {
             Shrinks = Self::Shrinks,
         >;
 
-    /// Changes whether the allocator can be [claimed](crate::Bump::claim).
+    /// Changes whether the allocator can be [claimed].
+    ///
+    /// [claimed]: crate::traits::BumpAllocatorScope::claim
     type WithClaimable<const VALUE: bool>: BumpAllocatorSettings<
             MinimumAlignment = Self::MinimumAlignment,
             Up = Self::Up,

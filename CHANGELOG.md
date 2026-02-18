@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `Bump::reset_to_start` to reset the bump allocator without deallocating chunks
 
+### Changed
+
+- Improve documentation
+
 ## [2.0.0] - 2026-02-09
 
 ### Added
