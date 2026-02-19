@@ -21,7 +21,7 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::{PanicsOnAlloc, panic_on_error};
 
-/// This is like [`format!`](alloc_crate::format) but allocates inside a *mutable* bump allocator, returning a [`MutBumpString`].
+/// Like [`format!`](alloc_crate::format) but allocates inside a *mutable* bump allocator, returning a [`MutBumpString`].
 ///
 /// If you don't need to push to the string after creation you can also use [`Bump::alloc_fmt_mut`](crate::Bump::alloc_fmt_mut).
 ///

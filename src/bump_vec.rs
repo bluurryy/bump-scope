@@ -37,7 +37,7 @@ pub(crate) use drain::Drain;
 #[cfg(feature = "panic-on-alloc")]
 pub use splice::Splice;
 
-/// This is like [`vec!`](alloc_crate::vec!) but allocates inside a bump allocator, returning a [`BumpVec`].
+/// Like [`vec!`](alloc_crate::vec!) but allocates inside a bump allocator, returning a [`BumpVec`].
 ///
 /// `$bump` can be any type that implements [`BumpAllocatorTyped`].
 ///

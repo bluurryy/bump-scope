@@ -23,7 +23,7 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::{PanicsOnAlloc, panic_on_error, polyfill::non_null};
 
-/// This is like [`format!`](alloc_crate::format) but allocates inside a bump allocator, returning a [`BumpString`].
+/// Like [`format!`](alloc_crate::format) but allocates inside a bump allocator, returning a [`BumpString`].
 ///
 /// If you don't need to push to the string after creation you can also use [`Bump::alloc_fmt`](crate::Bump::alloc_fmt).
 ///
