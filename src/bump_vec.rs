@@ -1086,9 +1086,45 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     ///
     /// # Safety
     /// Vector must not be full.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, BumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = BumpVec::with_capacity_in(3, &bump);
+    /// vec.append([1, 2]);
+    /// unsafe { vec.push_unchecked(3) };
+    /// assert_eq!(vec, [1, 2, 3]);
+    /// ```
     #[inline(always)]
     pub unsafe fn push_unchecked(&mut self, value: T) {
-        unsafe { self.fixed.cook_mut().push_unchecked(value) };
+        _ = unsafe { self.push_mut_unchecked(value) };
+    }
+
+    /// Appends an element to the back of the collection, returning a reference to it.
+    ///
+    /// # Safety
+    /// Vector must not be full.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, BumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = BumpVec::with_capacity_in(4, &bump);
+    /// vec.append([1, 2]);
+    ///
+    /// let last = unsafe { vec.push_mut_unchecked(3) };
+    /// assert_eq!(*last, 3);
+    /// assert_eq!(vec, [1, 2, 3]);
+    ///
+    /// let last = unsafe { vec.push_mut_unchecked(3) };
+    /// *last += 1;
+    /// assert_eq!(vec, [1, 2, 3, 4]);
+    /// ```
+    #[inline(always)]
+    #[must_use = "if you don't need a reference to the value, use `push_unchecked` instead"]
+    pub unsafe fn push_mut_unchecked(&mut self, value: T) -> &mut T {
+        unsafe { self.fixed.cook_mut().push_mut_unchecked(value) }
     }
 
     /// Appends an element to the back of the collection.
@@ -1220,9 +1256,124 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
 
     #[inline]
     pub(crate) fn generic_push_with<E: ErrorBehavior>(&mut self, f: impl FnOnce() -> T) -> Result<(), E> {
+        self.generic_push_mut_with(f).map(drop)
+    }
+
+    /// Appends an element to the back of a collection.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, bump_vec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = bump_vec![in &bump; 1, 2];
+    ///
+    /// let last = vec.push_mut(3);
+    /// assert_eq!(*last, 3);
+    /// assert_eq!(vec, [1, 2, 3]);
+    ///
+    /// let last = vec.push_mut(3);
+    /// *last += 1;
+    /// assert_eq!(vec, [1, 2, 3, 4]);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    #[must_use = "if you don't need a reference to the value, use `push` instead"]
+    pub fn push_mut(&mut self, value: T) -> &mut T {
+        panic_on_error(self.generic_push_mut(value))
+    }
+
+    /// Appends an element to the back of a collection.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2]?;
+    ///
+    /// let last = vec.try_push_mut(3)?;
+    /// assert_eq!(*last, 3);
+    /// assert_eq!(vec, [1, 2, 3]);
+    ///
+    /// let last = vec.try_push_mut(3)?;
+    /// *last += 1;
+    /// assert_eq!(vec, [1, 2, 3, 4]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    #[must_use = "if you don't need a reference to the value, use `push` instead"]
+    pub fn try_push_mut(&mut self, value: T) -> Result<&mut T, AllocError> {
+        self.generic_push_mut(value)
+    }
+
+    #[inline]
+    pub(crate) fn generic_push_mut<E: ErrorBehavior>(&mut self, value: T) -> Result<&mut T, E> {
+        self.generic_push_mut_with(|| value)
+    }
+
+    /// Reserves space for one more element, then calls `f`
+    /// to produce the value that is appended.
+    ///
+    /// In some cases this could be more performant than `push(f())` because it
+    /// permits the compiler to directly place `T` in the vector instead of
+    /// constructing it on the stack and copying it over.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, BumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = BumpVec::new_in(&bump);
+    /// let item = vec.push_mut_with(i32::default);
+    /// *item += 1;
+    /// *item += 2;
+    /// assert_eq!(*item, 3);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    #[must_use = "if you don't need a reference to the value, use `push` instead"]
+    pub fn push_mut_with(&mut self, f: impl FnOnce() -> T) -> &mut T {
+        panic_on_error(self.generic_push_mut_with(f))
+    }
+
+    /// Reserves space for one more element, then calls `f`
+    /// to produce the value that is appended.
+    ///
+    /// In some cases this could be more performant than `push(f())` because it
+    /// permits the compiler to directly place `T` in the vector instead of
+    /// constructing it on the stack and copying it over.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, BumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = BumpVec::new_in(&bump);
+    /// let item = vec.try_push_mut_with(i32::default)?;
+    /// *item += 1;
+    /// *item += 2;
+    /// assert_eq!(*item, 3);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    #[must_use = "if you don't need a reference to the value, use `push` instead"]
+    pub fn try_push_mut_with(&mut self, f: impl FnOnce() -> T) -> Result<&mut T, AllocError> {
+        self.generic_push_mut_with(f)
+    }
+
+    #[inline]
+    pub(crate) fn generic_push_mut_with<E: ErrorBehavior>(&mut self, f: impl FnOnce() -> T) -> Result<&mut T, E> {
         self.generic_reserve_one()?;
-        unsafe { self.push_unchecked(f()) };
-        Ok(())
+        Ok(unsafe { self.push_mut_unchecked(f()) })
     }
 
     /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `Bump::reset_to_start` to reset the bump allocator without deallocating chunks
+- Add `(try_)push_mut(_with)` method to vector types
 
 ### Changed
 

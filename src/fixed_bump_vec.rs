@@ -899,7 +899,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
     /// let mut vec = FixedBumpVec::with_capacity_in(3, &bump);
-    /// vec.extend_from_slice_copy(&[1, 2]);
+    /// vec.append([1, 2]);
     /// vec.push(3);
     /// assert_eq!(vec, [1, 2, 3]);
     /// ```
@@ -919,7 +919,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
     /// let mut vec = FixedBumpVec::try_with_capacity_in(3, &bump)?;
-    /// vec.try_extend_from_slice_copy(&[1, 2])?;
+    /// vec.try_append([1, 2])?;
     /// vec.try_push(3)?;
     /// assert_eq!(vec, [1, 2, 3]);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
@@ -929,7 +929,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
         self.generic_push(value)
     }
 
-    #[inline]
+    #[inline(always)]
     pub(crate) fn generic_push<E: ErrorBehavior>(&mut self, value: T) -> Result<(), E> {
         self.generic_push_with(|| value)
     }
@@ -987,11 +987,126 @@ impl<'a, T> FixedBumpVec<'a, T> {
         self.generic_push_with(f)
     }
 
-    #[inline]
+    /// Appends an element to the back of a collection, returning a reference to it.
+    ///
+    /// # Panics
+    /// Panics if the vector does not have enough capacity.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::with_capacity_in(4, &bump);
+    /// vec.extend_from_slice_copy(&[1, 2]);
+    ///
+    /// let last = vec.push_mut(3);
+    /// assert_eq!(*last, 3);
+    /// assert_eq!(vec, [1, 2, 3]);
+    ///
+    /// let last = vec.push_mut(3);
+    /// *last += 1;
+    /// assert_eq!(vec, [1, 2, 3, 4]);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    #[must_use = "if you don't need a reference to the value, use `push` instead"]
+    pub fn push_mut(&mut self, value: T) -> &mut T {
+        panic_on_error(self.generic_push_mut(value))
+    }
+
+    /// Appends an element to the back of a collection, returning a reference to it.
+    ///
+    /// # Errors
+    /// Errors if the vector does not have enough capacity.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::with_capacity_in(4, &bump);
+    /// vec.extend_from_slice_copy(&[1, 2]);
+    ///
+    /// let last = vec.try_push_mut(3)?;
+    /// assert_eq!(*last, 3);
+    /// assert_eq!(vec, [1, 2, 3]);
+    ///
+    /// let last = vec.try_push_mut(3)?;
+    /// *last += 1;
+    /// assert_eq!(vec, [1, 2, 3, 4]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    #[must_use = "if you don't need a reference to the value, use `try_push` instead"]
+    pub fn try_push_mut(&mut self, value: T) -> Result<&mut T, AllocError> {
+        self.generic_push_mut(value)
+    }
+
+    #[inline(always)]
+    pub(crate) fn generic_push_mut<E: ErrorBehavior>(&mut self, value: T) -> Result<&mut T, E> {
+        self.generic_push_mut_with(|| value)
+    }
+
+    /// Reserves space for one more element, then calls `f`
+    /// to produce the value that is appended.
+    ///
+    /// In some cases this could be more performant than `push_mut(f())` because it
+    /// permits the compiler to directly place `T` in the vector instead of
+    /// constructing it on the stack and copying it over.
+    ///
+    /// # Panics
+    /// Panics if the vector does not have enough capacity.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::with_capacity_in(1, &bump);
+    /// let item = vec.push_mut_with(i32::default);
+    /// *item += 1;
+    /// assert_eq!(*item, 1);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    #[must_use = "if you don't need a reference to the value, use `push` instead"]
+    pub fn push_mut_with(&mut self, f: impl FnOnce() -> T) -> &mut T {
+        panic_on_error(self.generic_push_mut_with(f))
+    }
+
+    /// Reserves space for one more element, then calls `f`
+    /// to produce the value that is appended.
+    ///
+    /// In some cases this could be more performant than `push(f())` because it
+    /// permits the compiler to directly place `T` in the vector instead of
+    /// constructing it on the stack and copying it over.
+    ///
+    /// # Errors
+    /// Errors if the vector does not have enough capacity.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::with_capacity_in(1, &bump);
+    /// let item = vec.try_push_mut_with(i32::default)?;
+    /// *item += 1;
+    /// assert_eq!(*item, 1);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    #[must_use = "if you don't need a reference to the value, use `push` instead"]
+    pub fn try_push_mut_with(&mut self, f: impl FnOnce() -> T) -> Result<&mut T, AllocError> {
+        self.generic_push_mut_with(f)
+    }
+
+    #[inline(always)]
     pub(crate) fn generic_push_with<E: ErrorBehavior>(&mut self, f: impl FnOnce() -> T) -> Result<(), E> {
+        self.generic_push_mut_with(f).map(drop)
+    }
+
+    #[inline(always)]
+    pub(crate) fn generic_push_mut_with<E: ErrorBehavior>(&mut self, f: impl FnOnce() -> T) -> Result<&mut T, E> {
         self.generic_reserve_one()?;
-        unsafe { self.push_unchecked(f()) };
-        Ok(())
+        Ok(unsafe { self.push_mut_unchecked(f()) })
     }
 
     /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.
@@ -1800,14 +1915,51 @@ impl<'a, T> FixedBumpVec<'a, T> {
     ///
     /// # Safety
     /// Vector must not be full.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::with_capacity_in(3, &bump);
+    /// vec.append([1, 2]);
+    /// unsafe { vec.push_unchecked(3) };
+    /// assert_eq!(vec, [1, 2, 3]);
+    /// ```
     #[inline(always)]
     pub unsafe fn push_unchecked(&mut self, value: T) {
+        _ = unsafe { self.push_mut_unchecked(value) };
+    }
+
+    /// Appends an element to the back of the collection, returning a reference to it.
+    ///
+    /// # Safety
+    /// Vector must not be full.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::with_capacity_in(4, &bump);
+    /// vec.append([1, 2]);
+    ///
+    /// let last = unsafe { vec.push_mut_unchecked(3) };
+    /// assert_eq!(*last, 3);
+    /// assert_eq!(vec, [1, 2, 3]);
+    ///
+    /// let last = unsafe { vec.push_mut_unchecked(3) };
+    /// *last += 1;
+    /// assert_eq!(vec, [1, 2, 3, 4]);
+    /// ```
+    #[inline(always)]
+    #[must_use = "if you don't need a reference to the value, use `push_unchecked` instead"]
+    pub unsafe fn push_mut_unchecked(&mut self, value: T) -> &mut T {
         debug_assert!(!self.is_full());
 
         unsafe {
             let ptr = self.as_mut_ptr().add(self.len());
-            ptr::write(ptr, value);
+            ptr.write(value);
             self.inc_len(1);
+            &mut *ptr
         }
     }
 
