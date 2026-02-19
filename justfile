@@ -1,6 +1,9 @@
 export RUST_BACKTRACE := "1"
 export MIRIFLAGS := "-Zmiri-strict-provenance -Zmiri-symbolic-alignment-check"
 
+host := `rustc --print host-tuple`
+pwd := `pwd`
+
 [private]
 @default:
   just --list
@@ -161,6 +164,38 @@ fuzz seconds:
 [group('fuzz')] 
 fuzz-target seconds target:
   cargo +nightly fuzz run {{target}} -- -max_total_time={{seconds}}
+
+# Visualize allocator api coverage as a html page.
+[group('fuzz')]
+coverage-allocator-api cmd="show-html":
+  just cov-{{cmd}} allocator_api "{{pwd}}/src/allocator_impl.rs"
+
+# Visualize bumping coverage as a html page.
+[group('fuzz')]
+coverage-bumping target:
+  cargo +nightly fuzz coverage {{target}}
+  just cov-show-html {{target}} "{{pwd}}/crates/fuzzing-support/src/from_bump_scope/bumping.rs"
+
+# Visualize code coverage as a html page. 
+[group('fuzz')]
+cov-show-html target args:
+  just cov-show {{target}} "{{args}} --format=html" > fuzz/coverage/{{target}}/index.html
+  open fuzz/coverage/{{target}}/index.html
+
+# Visualize code coverage.
+[group('fuzz')]
+cov-show target args:
+  llvm-cov show target/{{host}}/coverage/{{host}}/release/{{target}} --instr-profile=fuzz/coverage/{{target}}/coverage.profdata --Xdemangler=rustfilt --ignore-filename-regex=cargo/registry {{args}} --show-instantiations=false
+
+# Summarize code coverage.
+[group('fuzz')]
+cov-report target *args:
+  llvm-cov report target/{{host}}/coverage/{{host}}/release/{{target}} --instr-profile=fuzz/coverage/{{target}}/coverage.profdata --Xdemangler=rustfilt --ignore-filename-regex=cargo/registry {{args}}
+
+# Generate code coverage information.
+[group('fuzz')]
+cov-gen target:
+  cargo +nightly fuzz coverage {{target}}
 
 # Update benchmark results.
 [group('bench')]

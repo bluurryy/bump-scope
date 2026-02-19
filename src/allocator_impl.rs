@@ -1,5 +1,3 @@
-// FIXME: Figure out a way to make coverage report not suck because of `if UP { ... } else { ... }`.
-
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
