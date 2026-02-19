@@ -2,29 +2,30 @@ use std::{alloc::Layout, ops::Range, ptr::NonNull, rc::Rc};
 
 use arbitrary::{Arbitrary, Unstructured};
 use bump_scope::{
+    Bump,
     alloc::{Allocator, Global},
-    settings::{MinimumAlignment, SupportedMinimumAlignment},
+    settings::{BumpSettings, MinimumAlignment, SupportedMinimumAlignment},
 };
 use core::fmt::Debug;
 use log::debug;
 use rangemap::RangeSet;
 
-use crate::{Bump, MaybeFailingAllocator, MinAlign, RcAllocator, debug_dbg};
+use crate::{MaybeFailingAllocator, MinAlign, RcAllocator, debug_dbg};
 
 #[derive(Debug, Arbitrary)]
 pub struct Fuzz {
     up: bool,
     min_align: MinAlign,
+    deallocates: bool,
 
     operations: Vec<Operation>,
 }
 
 impl Fuzz {
     pub fn run(self) {
-        if self.up {
-            self.run_dir::<true>();
-        } else {
-            self.run_dir::<false>();
+        match self.up {
+            true => self.run_dir::<true>(),
+            false => self.run_dir::<false>(),
         }
     }
 
@@ -42,12 +43,33 @@ impl Fuzz {
     where
         MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
     {
+        match self.deallocates {
+            true => self.run_dir_align_deallocates::<UP, MIN_ALIGN, true>(),
+            false => self.run_dir_align_deallocates::<UP, MIN_ALIGN, false>(),
+        }
+    }
+
+    fn run_dir_align_deallocates<const UP: bool, const MIN_ALIGN: usize, const DEALLOCATES: bool>(self)
+    where
+        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+    {
         debug_dbg!(UP);
         debug_dbg!(MIN_ALIGN);
 
         // We use rc to also check that allocator cloning works.
         let allocator = RcAllocator::new(Rc::new(MaybeFailingAllocator::new(Global)));
-        let bump: Bump<_, MIN_ALIGN, UP> = Bump::with_capacity_in(Layout::new::<[u8; 32]>(), allocator);
+
+        let bump: Bump<
+            RcAllocator<MaybeFailingAllocator<Global>>,
+            BumpSettings<
+                /* MIN_ALIGN */ MIN_ALIGN,
+                /* UP */ UP,
+                /* GUARANTEED_ALLOCATED */ true,
+                /* CLAIMABLE */ true,
+                /* DEALLOCATES */ DEALLOCATES,
+                /* SHRINKS */ true,
+            >,
+        > = Bump::with_capacity_in(Layout::new::<[u8; 32]>(), allocator);
 
         let mut allocations = vec![];
         let mut used_ranges = UsedRanges::default();
