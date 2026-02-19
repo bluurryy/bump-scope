@@ -17,7 +17,7 @@ use crate::{
     min_non_zero_cap,
     mut_bump_vec::IntoIter,
     owned_slice::{OwnedSlice, TakeOwnedSlice},
-    polyfill::{self, hint::likely, non_null, pointer},
+    polyfill::{self, hint::likely, pointer},
     traits::{MutBumpAllocatorTyped, MutBumpAllocatorTypedScope},
 };
 
@@ -279,7 +279,15 @@ impl<T, A> MutBumpVecRev<T, A> {
     /// Vector must not be full.
     #[inline(always)]
     pub unsafe fn push_unchecked(&mut self, value: T) {
-        unsafe { self.push_with_unchecked(|| value) };
+        debug_assert!(self.len < self.cap);
+
+        unsafe {
+            let ptr = self.end.sub(self.len + 1);
+            ptr.write(value);
+        }
+
+        // We set the len here so when `f` panics, `self.len` doesn't change.
+        self.len += 1;
     }
 
     /// Appends an element to the back of the collection.
@@ -287,16 +295,9 @@ impl<T, A> MutBumpVecRev<T, A> {
     /// # Safety
     /// Vector must not be full.
     #[inline(always)]
+    #[deprecated = "use `push_unchecked(f())` instead"]
     pub unsafe fn push_with_unchecked(&mut self, f: impl FnOnce() -> T) {
-        debug_assert!(self.len < self.cap);
-
-        unsafe {
-            let ptr = self.end.sub(self.len + 1);
-            non_null::write_with(ptr, f);
-        }
-
-        // We set the len here so when `f` panics, `self.len` doesn't change.
-        self.len += 1;
+        unsafe { self.push_unchecked(f()) };
     }
 
     /// Removes the first element from a vector and returns it, or [`None`] if it
@@ -850,10 +851,10 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
         unsafe {
             if count != 0 {
                 for _ in 0..(count - 1) {
-                    vec.push_with_unchecked(|| value.clone());
+                    vec.push_unchecked(value.clone());
                 }
 
-                vec.push_with_unchecked(|| value);
+                vec.push_unchecked(value);
             }
         }
 
@@ -1175,9 +1176,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     #[inline]
     pub(crate) fn generic_push_with<E: ErrorBehavior>(&mut self, f: impl FnOnce() -> T) -> Result<(), E> {
         self.generic_reserve_one()?;
-        unsafe {
-            self.push_with_unchecked(f);
-        }
+        unsafe { self.push_unchecked(f()) };
         Ok(())
     }
 
