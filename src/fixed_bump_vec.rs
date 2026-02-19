@@ -1121,11 +1121,13 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
     /// let mut vec = FixedBumpVec::with_capacity_in(5, &bump);
-    /// vec.append([1, 2, 3]);
-    /// vec.insert(1, 4);
-    /// assert_eq!(vec, [1, 4, 2, 3]);
-    /// vec.insert(4, 5);
-    /// assert_eq!(vec, [1, 4, 2, 3, 5]);
+    /// vec.append(['b', 'd']);
+    /// vec.insert(1, 'c');
+    /// assert_eq!(vec, ['b', 'c', 'd']);
+    /// vec.insert(0, 'a');
+    /// assert_eq!(vec, ['a', 'b', 'c', 'd']);
+    /// vec.insert(4, 'e');
+    /// assert_eq!(vec, ['a', 'b', 'c', 'd', 'e']);
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -1146,11 +1148,13 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
     /// let mut vec = FixedBumpVec::try_with_capacity_in(5, &bump)?;
-    /// vec.try_append([1, 2, 3])?;
-    /// vec.try_insert(1, 4)?;
-    /// assert_eq!(vec, [1, 4, 2, 3]);
-    /// vec.try_insert(4, 5)?;
-    /// assert_eq!(vec, [1, 4, 2, 3, 5]);
+    /// vec.try_append(['b', 'd'])?;
+    /// vec.try_insert(1, 'c')?;
+    /// assert_eq!(vec, ['b', 'c', 'd']);
+    /// vec.try_insert(0, 'a')?;
+    /// assert_eq!(vec, ['a', 'b', 'c', 'd']);
+    /// vec.try_insert(4, 'e')?;
+    /// assert_eq!(vec, ['a', 'b', 'c', 'd', 'e']);
     /// # Ok::<(), bump_scope::alloc::AllocError>(())
     /// ```
     #[inline(always)]
