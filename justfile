@@ -12,7 +12,8 @@ pre-release:
   just doc
   just check
   just test
-  cargo +stable semver-checks
+  # temporarily commented out because of false positives about sealed-ness of `BumpAllocatorTypedScopeExt`
+  # cargo +stable semver-checks
 
 # Installs all tools required for `pre-release`.
 [group('release')]
