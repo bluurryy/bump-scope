@@ -1,9 +1,10 @@
 macro_rules! bytemuck_or_zerocopy {
     (
+        crate $name:literal
         mod $mod:ident
         trait $trait:ident
     ) => {
-        /// Contains extension traits.
+        #[doc = concat!("Extension traits for zero-initializable types using [`", $name, "::", stringify!($trait), "`](::", stringify!($mod), "::", stringify!($trait), ").")]
         pub mod $mod {
             use core::mem::MaybeUninit;
 

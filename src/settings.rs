@@ -1,4 +1,4 @@
-//! Contains types to configure bump allocation.
+//! Types to configure bump allocation.
 //!
 //! You can configure various settings of the bump allocator:
 //! - **`MIN_ALIGN`** *default: 1* —

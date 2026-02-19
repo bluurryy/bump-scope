@@ -1,4 +1,4 @@
-//! Contains types for inspecting memory usage in bump allocators.
+//! Types for inspecting memory usage in bump allocators.
 //!
 //! This module defines both generic types like [`Stats`] and type-erased counterparts prefixed
 //! with `Any*`. The generic types are slightly more efficient to use.

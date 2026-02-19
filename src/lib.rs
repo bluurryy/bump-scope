@@ -315,16 +315,16 @@ pub mod alloc;
 mod allocator_impl;
 mod bump;
 mod bump_align_guard;
-/// Contains [`BumpBox`] and associated types.
+/// [`BumpBox`] and associated types.
 mod bump_box;
 mod bump_claim_guard;
 #[cfg(feature = "std")]
 mod bump_pool;
 mod bump_scope;
 mod bump_scope_guard;
-/// Contains [`BumpString`] and associated types.
+/// [`BumpString`] and associated types.
 mod bump_string;
-/// Contains [`BumpVec`] and associated types.
+/// [`BumpVec`] and associated types.
 pub mod bump_vec;
 mod bumping;
 mod chunk;
@@ -337,14 +337,14 @@ mod from_utf16_error;
 mod from_utf8_error;
 mod layout;
 mod mut_bump_string;
-/// Contains [`MutBumpVec`] and associated types.
+/// [`MutBumpVec`] and associated types.
 pub mod mut_bump_vec;
-/// Contains [`MutBumpVecRev`] and associated types.
+/// [`MutBumpVecRev`] and associated types.
 mod mut_bump_vec_rev;
 mod no_drop;
-/// Contains types associated with owned slices.
+/// Types and traits associated with owned slices.
 pub mod owned_slice;
-/// Contains types associated with owned strings.
+/// Types associated with owned strings.
 pub mod owned_str;
 mod partial_eq;
 mod polyfill;
@@ -386,18 +386,22 @@ use private::{PanicsOnAlloc, capacity_overflow, format_trait_error};
 use set_len_on_drop::SetLenOnDrop;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
+/// Changelog.
+///
 #[doc = include_str!("../CHANGELOG.md")]
 #[expect(non_snake_case)]
 pub mod CHANGELOG {}
 
 #[cfg(feature = "bytemuck")]
 features::bytemuck_or_zerocopy! {
+    crate "bytemuck"
     mod bytemuck
     trait Zeroable
 }
 
 #[cfg(feature = "zerocopy-08")]
 features::bytemuck_or_zerocopy! {
+    crate "zerocopy"
     mod zerocopy_08
     trait FromZeros
 }
