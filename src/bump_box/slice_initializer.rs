@@ -1,13 +1,10 @@
 use core::{
     marker::PhantomData,
     mem::{self, ManuallyDrop, MaybeUninit},
-    ptr::NonNull,
+    ptr::{self, NonNull},
 };
 
-use crate::{
-    BumpBox, SizedTypeProperties,
-    polyfill::{non_null, pointer},
-};
+use crate::{BumpBox, SizedTypeProperties, polyfill::non_null};
 
 /// Allows for initializing a `BumpBox<[MaybeUninit<T>]>` by pushing values.
 /// On drop, this will drop the values that have been pushed so far.
@@ -94,24 +91,19 @@ impl<'a, T> BumpBoxSliceInitializer<'a, T> {
     #[inline(always)]
     pub(crate) fn push_with(&mut self, f: impl FnOnce() -> T) {
         assert!(!self.is_full());
-        unsafe { self.push_with_unchecked(f) }
+        unsafe { self.push_unchecked(f()) }
     }
 
     #[inline(always)]
     pub(crate) unsafe fn push_unchecked(&mut self, value: T) {
-        unsafe { self.push_with_unchecked(|| value) };
-    }
-
-    #[inline(always)]
-    pub(crate) unsafe fn push_with_unchecked(&mut self, f: impl FnOnce() -> T) {
         debug_assert!(!self.is_full());
 
         unsafe {
             if T::IS_ZST {
-                mem::forget(f());
+                mem::forget(value);
                 self.pos = non_null::wrapping_byte_add(self.pos, 1);
             } else {
-                pointer::write_with(self.pos.as_ptr(), f);
+                ptr::write(self.pos.as_ptr(), value);
                 self.pos = self.pos.add(1);
             }
         }

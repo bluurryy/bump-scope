@@ -1200,7 +1200,7 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
                 let mut initializer = self.initializer();
 
                 for _ in 0..(len - 1) {
-                    initializer.push_with_unchecked(|| value.clone());
+                    initializer.push_unchecked(value.clone());
                 }
 
                 initializer.push_unchecked(value);

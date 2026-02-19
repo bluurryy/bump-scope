@@ -547,8 +547,9 @@ impl<T, A> MutBumpVec<T, A> {
     /// # Safety
     /// Vector must not be full.
     #[inline(always)]
+    #[deprecated = "use `push_unchecked(f())` instead"]
     pub unsafe fn push_with_unchecked(&mut self, f: impl FnOnce() -> T) {
-        unsafe { self.fixed.cook_mut().push_with_unchecked(f) };
+        unsafe { self.push_unchecked(f()) }
     }
 
     /// Forces the length of the vector to `new_len`.
@@ -754,10 +755,10 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVec<T, A> {
         unsafe {
             if count != 0 {
                 for _ in 0..(count - 1) {
-                    vec.push_with_unchecked(|| value.clone());
+                    vec.push_unchecked(value.clone());
                 }
 
-                vec.push_with_unchecked(|| value);
+                vec.push_unchecked(value);
             }
         }
 
@@ -1077,9 +1078,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVec<T, A> {
     #[inline]
     pub(crate) fn generic_push_with<E: ErrorBehavior>(&mut self, f: impl FnOnce() -> T) -> Result<(), E> {
         self.generic_reserve_one()?;
-        unsafe {
-            self.push_with_unchecked(f);
-        }
+        unsafe { self.push_unchecked(f()) };
         Ok(())
     }
 
