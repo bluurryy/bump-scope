@@ -1121,7 +1121,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
     /// let mut vec = FixedBumpVec::with_capacity_in(5, &bump);
-    /// vec.extend_from_slice_copy(&[1, 2, 3]);
+    /// vec.append([1, 2, 3]);
     /// vec.insert(1, 4);
     /// assert_eq!(vec, [1, 4, 2, 3]);
     /// vec.insert(4, 5);
@@ -1130,7 +1130,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn insert(&mut self, index: usize, element: T) {
-        panic_on_error(self.generic_insert(index, element));
+        panic_on_error(self.generic_insert_mut(index, element));
     }
 
     /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.
@@ -1146,7 +1146,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
     /// let mut vec = FixedBumpVec::try_with_capacity_in(5, &bump)?;
-    /// vec.try_extend_from_slice_copy(&[1, 2, 3])?;
+    /// vec.try_append([1, 2, 3])?;
     /// vec.try_insert(1, 4)?;
     /// assert_eq!(vec, [1, 4, 2, 3]);
     /// vec.try_insert(4, 5)?;
@@ -1155,11 +1155,60 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// ```
     #[inline(always)]
     pub fn try_insert(&mut self, index: usize, element: T) -> Result<(), AllocError> {
-        self.generic_insert(index, element)
+        self.generic_insert_mut(index, element).map(drop)
+    }
+
+    /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.
+    ///
+    /// # Panics
+    /// Panics if the vector does not have enough capacity.
+    ///
+    /// Panics if `index > len`.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::with_capacity_in(5, &bump);
+    /// vec.append([1, 3, 5, 9]);
+    /// let x = vec.insert_mut(3, 6);
+    /// *x += 1;
+    /// assert_eq!(vec, [1, 3, 5, 7, 9]);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    #[must_use = "if you don't need a reference to the value, use `insert` instead"]
+    pub fn insert_mut(&mut self, index: usize, element: T) -> &mut T {
+        panic_on_error(self.generic_insert_mut(index, element))
+    }
+
+    /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.
+    ///
+    /// # Panics
+    /// Panics if `index > len`.
+    ///
+    /// # Errors
+    /// Errors if the vector does not have enough capacity.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, FixedBumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = FixedBumpVec::with_capacity_in(5, &bump);
+    /// vec.try_append([1, 3, 5, 9]);
+    /// let x = vec.try_insert_mut(3, 6)?;
+    /// *x += 1;
+    /// assert_eq!(vec, [1, 3, 5, 7, 9]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    #[must_use = "if you don't need a reference to the value, use `try_insert` instead"]
+    pub fn try_insert_mut(&mut self, index: usize, element: T) -> Result<&mut T, AllocError> {
+        self.generic_insert_mut(index, element)
     }
 
     #[inline]
-    pub(crate) fn generic_insert<E: ErrorBehavior>(&mut self, index: usize, element: T) -> Result<(), E> {
+    pub(crate) fn generic_insert_mut<E: ErrorBehavior>(&mut self, index: usize, element: T) -> Result<&mut T, E> {
         #[cold]
         #[track_caller]
         #[inline(never)]
@@ -1183,9 +1232,8 @@ impl<'a, T> FixedBumpVec<'a, T> {
 
             pos.write(element);
             self.inc_len(1);
+            Ok(&mut *pos)
         }
-
-        Ok(())
     }
 
     /// Copies and appends all elements in a slice to the `FixedBumpVec`.

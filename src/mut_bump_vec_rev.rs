@@ -1351,7 +1351,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn insert(&mut self, index: usize, element: T) {
-        panic_on_error(self.generic_insert(index, element));
+        panic_on_error(self.generic_insert_mut(index, element));
     }
 
     /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.
@@ -1375,11 +1375,58 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// ```
     #[inline(always)]
     pub fn try_insert(&mut self, index: usize, element: T) -> Result<(), AllocError> {
-        self.generic_insert(index, element)
+        self.generic_insert_mut(index, element).map(drop)
+    }
+
+    /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.
+    ///
+    /// # Panics
+    /// Panics if the vector does not have enough capacity.
+    ///
+    /// Panics if `index > len`.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec![in &mut bump; 1, 3, 5, 9];
+    /// let x = vec.insert_mut(3, 6);
+    /// *x += 1;
+    /// assert_eq!(vec, [1, 3, 5, 7, 9]);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    #[must_use = "if you don't need a reference to the value, use `insert` instead"]
+    pub fn insert_mut(&mut self, index: usize, element: T) -> &mut T {
+        panic_on_error(self.generic_insert_mut(index, element))
+    }
+
+    /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.
+    ///
+    /// # Panics
+    /// Panics if `index > len`.
+    ///
+    /// # Errors
+    /// Errors if the vector does not have enough capacity.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::{Bump, mut_bump_vec};
+    /// # let mut bump: Bump = Bump::new();
+    /// let mut vec = mut_bump_vec![try in &mut bump; 1, 3, 5, 9]?;
+    /// let x = vec.try_insert_mut(3, 6)?;
+    /// *x += 1;
+    /// assert_eq!(vec, [1, 3, 5, 7, 9]);
+    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    #[must_use = "if you don't need a reference to the value, use `try_insert` instead"]
+    pub fn try_insert_mut(&mut self, index: usize, element: T) -> Result<&mut T, AllocError> {
+        self.generic_insert_mut(index, element)
     }
 
     #[inline]
-    pub(crate) fn generic_insert<E: ErrorBehavior>(&mut self, index: usize, element: T) -> Result<(), E> {
+    pub(crate) fn generic_insert_mut<E: ErrorBehavior>(&mut self, index: usize, element: T) -> Result<&mut T, E> {
         #[cold]
         #[track_caller]
         #[inline(never)]
@@ -1394,19 +1441,20 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
         self.generic_reserve_one()?;
 
         unsafe {
-            if index == 0 {
+            let ptr = if index == 0 {
                 self.len += 1;
-                self.as_mut_ptr().write(element);
+                self.as_mut_ptr()
             } else {
                 let start = self.as_mut_ptr();
                 let start_sub = start.sub(1);
                 ptr::copy(start, start_sub, index);
                 self.len += 1;
-                start_sub.add(index).write(element);
-            }
-        }
+                start_sub.add(index)
+            };
 
-        Ok(())
+            ptr.write(element);
+            Ok(&mut *ptr)
+        }
     }
 
     /// Copies and appends all elements in a slice to the `MutBumpVecRev`.
