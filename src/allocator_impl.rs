@@ -3,90 +3,12 @@
 use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
 
 use crate::{
-    BaseAllocator, Bump, BumpScope,
-    alloc::{AllocError, Allocator},
-    bump_down,
-    layout::CustomLayout,
-    polyfill::non_null,
-    raw_bump::RawBump,
-    settings::BumpAllocatorSettings,
-    up_align_usize_unchecked,
+    BaseAllocator, alloc::AllocError, bump_down, layout::CustomLayout, polyfill::non_null, raw_bump::RawBump,
+    settings::BumpAllocatorSettings, up_align_usize_unchecked,
 };
 
-unsafe impl<A, S> Allocator for Bump<A, S>
-where
-    A: BaseAllocator<S::GuaranteedAllocated>,
-    S: BumpAllocatorSettings,
-{
-    #[inline(always)]
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        allocate(&self.raw, layout)
-    }
-
-    #[inline(always)]
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        unsafe { deallocate(&self.raw, ptr, layout) };
-    }
-
-    #[inline(always)]
-    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { grow(&self.raw, ptr, old_layout, new_layout) }
-    }
-
-    #[inline(always)]
-    unsafe fn grow_zeroed(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: Layout,
-        new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { grow_zeroed(&self.raw, ptr, old_layout, new_layout) }
-    }
-
-    #[inline(always)]
-    unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { shrink(&self.raw, ptr, old_layout, new_layout) }
-    }
-}
-
-unsafe impl<A, S> Allocator for BumpScope<'_, A, S>
-where
-    A: BaseAllocator<S::GuaranteedAllocated>,
-    S: BumpAllocatorSettings,
-{
-    #[inline(always)]
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        allocate(&self.raw, layout)
-    }
-
-    #[inline(always)]
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        unsafe { deallocate(&self.raw, ptr, layout) };
-    }
-
-    #[inline(always)]
-    unsafe fn grow(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { grow(&self.raw, ptr, old_layout, new_layout) }
-    }
-
-    #[inline(always)]
-    unsafe fn grow_zeroed(
-        &self,
-        ptr: NonNull<u8>,
-        old_layout: Layout,
-        new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { grow_zeroed(&self.raw, ptr, old_layout, new_layout) }
-    }
-
-    #[inline(always)]
-    unsafe fn shrink(&self, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { shrink(&self.raw, ptr, old_layout, new_layout) }
-    }
-}
-
 #[inline(always)]
-fn allocate<A, S>(bump: &RawBump<A, S>, layout: Layout) -> Result<NonNull<[u8]>, AllocError>
+pub fn allocate<A, S>(bump: &RawBump<A, S>, layout: Layout) -> Result<NonNull<[u8]>, AllocError>
 where
     A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
@@ -98,7 +20,7 @@ where
 }
 
 #[inline(always)]
-unsafe fn deallocate<A, S>(bump: &RawBump<A, S>, ptr: NonNull<u8>, layout: Layout)
+pub unsafe fn deallocate<A, S>(bump: &RawBump<A, S>, ptr: NonNull<u8>, layout: Layout)
 where
     A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
@@ -161,7 +83,7 @@ where
 }
 
 #[inline(always)]
-unsafe fn grow<A, S>(
+pub unsafe fn grow<A, S>(
     bump: &RawBump<A, S>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
@@ -258,7 +180,7 @@ where
 }
 
 #[inline(always)]
-unsafe fn grow_zeroed<A, S>(
+pub unsafe fn grow_zeroed<A, S>(
     bump: &RawBump<A, S>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
@@ -283,7 +205,7 @@ where
 /// That's different to bumpalo's shrink implementation, which only shrinks if it can do so with `copy_nonoverlapping`
 /// and doesn't attempt to recover memory if the alignment doesn't fit.
 #[inline(always)]
-unsafe fn shrink<A, S>(
+pub unsafe fn shrink<A, S>(
     bump: &RawBump<A, S>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
