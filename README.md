@@ -256,24 +256,24 @@ Breaking changes to these features might be introduced in minor releases to keep
 <!-- feature documentation end -->
 
 
-[`unsize_bump_box`]: https://docs.rs/bump-scope/2.1.0/bump_scope/macro.unsize_bump_box.html
-[`WithoutShrink`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.WithoutShrink.html
-[`WithoutDealloc`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.WithoutDealloc.html
-[`Bump`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.Bump.html
-[`BumpVec`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.BumpVec.html
-[`BumpString`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.BumpString.html
-[`BumpPool`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.BumpPool.html
-[CHANGELOG]: https://docs.rs/bump-scope/2.1.0/bump_scope/CHANGELOG/index.html
-[`claim`]: https://docs.rs/bump-scope/2.1.0/bump_scope/traits/trait.BumpAllocatorScope.html#tymethod.claim
-[`scope_guard`]: https://docs.rs/bump-scope/2.1.0/bump_scope/traits/trait.BumpAllocator.html#method.scope_guard
-[`aligned`]: https://docs.rs/bump-scope/2.1.0/bump_scope/traits/trait.BumpAllocatorScope.html#tymethod.aligned
-[`scoped_aligned`]: https://docs.rs/bump-scope/2.1.0/bump_scope/traits/trait.BumpAllocator.html#method.scoped_aligned
-[`scoped`]: https://docs.rs/bump-scope/2.1.0/bump_scope/traits/trait.BumpAllocator.html#method.scoped
-[`with_capacity`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.Bump.html#method.with_capacity
-[`with_size`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.Bump.html#method.with_size
-[`Allocator`]: https://docs.rs/bump-scope/2.1.0/bump_scope/alloc/trait.Allocator.html
-[`new`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.Bump.html#method.new
 [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
+[`new`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.Bump.html#method.new
+[`Allocator`]: https://docs.rs/bump-scope/2.1.0/bump_scope/alloc/trait.Allocator.html
+[`with_size`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.Bump.html#method.with_size
+[`with_capacity`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.Bump.html#method.with_capacity
+[`scoped`]: https://docs.rs/bump-scope/2.1.0/bump_scope/traits/trait.BumpAllocator.html#method.scoped
+[`scoped_aligned`]: https://docs.rs/bump-scope/2.1.0/bump_scope/traits/trait.BumpAllocator.html#method.scoped_aligned
+[`aligned`]: https://docs.rs/bump-scope/2.1.0/bump_scope/traits/trait.BumpAllocatorScope.html#tymethod.aligned
+[`scope_guard`]: https://docs.rs/bump-scope/2.1.0/bump_scope/traits/trait.BumpAllocator.html#method.scope_guard
+[`claim`]: https://docs.rs/bump-scope/2.1.0/bump_scope/traits/trait.BumpAllocatorScope.html#tymethod.claim
+[CHANGELOG]: https://docs.rs/bump-scope/2.1.0/bump_scope/CHANGELOG/index.html
+[`BumpPool`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.BumpPool.html
+[`BumpString`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.BumpString.html
+[`BumpVec`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.BumpVec.html
+[`Bump`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.Bump.html
+[`WithoutDealloc`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.WithoutDealloc.html
+[`WithoutShrink`]: https://docs.rs/bump-scope/2.1.0/bump_scope/struct.WithoutShrink.html
+[`unsize_bump_box`]: https://docs.rs/bump-scope/2.1.0/bump_scope/macro.unsize_bump_box.html
 <!-- crate documentation rest end -->
 
 ## Motivation and History
