@@ -73,7 +73,7 @@ macro_rules! make_type {
         /// #### Free memory using ...
         /// - scopes: [`scoped`], [`scoped_aligned`], [`scope_guard`]
         /// - checkpoints: [`checkpoint`], [`reset_to`]
-        /// - reset: [`reset`]
+        /// - reset: [`reset`], [`reset_to_start`]
         /// - dealloc: [`dealloc`]
         ///
         /// #### Configure allocator settings ...
@@ -167,6 +167,7 @@ macro_rules! make_type {
         /// [`reset_to`]: BumpAllocatorCore::reset_to
         ///
         /// [`reset`]: Bump::reset
+        /// [`reset_to_start`]: Bump::reset_to_start
         /// [`dealloc`]: BumpAllocatorTyped::dealloc
         ///
         /// [`aligned`]: BumpAllocatorScope::aligned
@@ -709,12 +710,34 @@ where
     ///
     /// [`reset_to_start`]: Self::reset_to_start
     ///
-    /// ```
-    /// use bump_scope::Bump;
+    /// # Examples
     ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// let mut scratch_allocator: Bump = Bump::new();
+    /// let items = [1, 2, 3];
+    ///
+    /// for item in items {
+    ///     // the scratch allocator is empty
+    ///     assert_eq!(scratch_allocator.stats().allocated(), 0);
+    ///
+    ///     // allocate on scratch allocator...
+    ///     let _ = scratch_allocator.alloc_fmt(format_args!("hello {item}"));
+    ///
+    ///     // reset the scratch allocator for the next iteration
+    ///     scratch_allocator.reset();
+    /// }
+    /// ```
+    ///
+    /// Detailed behavior:
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
     /// let mut bump: Bump = Bump::with_size(512);
     ///
-    /// // won't fit in the first chunk
+    /// // won't fit in the first chunk, will be allocated in another chunk
     /// bump.alloc_uninit_slice::<u8>(600);
     ///
     /// let chunks = bump.stats().small_to_big().collect::<Vec<_>>();
@@ -747,18 +770,50 @@ where
     ///
     /// # Examples
     ///
+    /// Basic usage:
+    ///
     /// ```
     /// # use bump_scope::Bump;
-    /// let mut bump: Bump = Bump::new();
+    /// let mut scratch_allocator: Bump = Bump::new();
+    /// let items = [1, 2, 3];
     ///
-    /// {
-    ///     let hello = bump.alloc_str("hello");
-    ///     assert_eq!(bump.stats().allocated(), 5);
-    ///     # _ = hello;
+    /// for item in items {
+    ///     // the scratch allocator is empty
+    ///     assert_eq!(scratch_allocator.stats().allocated(), 0);
+    ///
+    ///     // allocate on scratch allocator...
+    ///     let _ = scratch_allocator.alloc_fmt(format_args!("hello {item}"));
+    ///
+    ///     // reset the scratch allocator for the next iteration
+    ///     scratch_allocator.reset_to_start();
     /// }
+    /// ```
     ///
-    /// unsafe { bump.reset_to_start(); }
+    /// Detailed behavior:
+    ///
+    /// ```
+    /// # use bump_scope::Bump;
+    /// let mut bump: Bump = Bump::with_size(512);
+    ///
+    /// // won't fit in the first chunk, will be allocated in another chunk
+    /// bump.alloc_uninit_slice::<u8>(600);
+    ///
+    /// let chunks = bump.stats().small_to_big().collect::<Vec<_>>();
+    /// assert_eq!(chunks.len(), 2);
+    /// assert!(chunks[0].size() < chunks[1].size());
+    /// assert_eq!(chunks[0].allocated(), 0);
+    /// assert_eq!(chunks[1].allocated(), 600);
+    ///
+    /// bump.reset_to_start();
+    ///
+    /// // we still have two chunks...
+    /// assert_eq!(bump.stats().count(), 2);
+    ///
+    /// // ... but everything is deallocated
     /// assert_eq!(bump.stats().allocated(), 0);
+    ///
+    /// // we are back at the first chunk
+    /// assert!(bump.stats().current_chunk().unwrap().prev().is_none());
     /// ```
     #[inline(always)]
     pub fn reset_to_start(&mut self) {
