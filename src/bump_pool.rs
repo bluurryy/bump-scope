@@ -126,10 +126,17 @@ where
         }
     }
 
-    /// [Resets](Bump::reset) all `Bump`s in this pool.
+    /// [`reset`](Bump::reset) all `Bump`s in this pool.
     pub fn reset(&mut self) {
         for bump in self.bumps() {
             bump.reset();
+        }
+    }
+
+    /// [`reset_to_start`](Bump::reset_to_start) all `Bump`s in this pool.
+    pub fn reset_to_start(&mut self) {
+        for bump in self.bumps() {
+            bump.reset_to_start();
         }
     }
 
