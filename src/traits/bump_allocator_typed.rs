@@ -337,8 +337,8 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// After calling `reserve`, <code>self.[stats][]().[remaining][]()</code> will be greater than or equal to
     /// `additional`. Does nothing if the capacity is already sufficient.
     ///
-    /// Note that these additional bytes are not necessarily in one contiguous region but
-    /// might be spread out among many chunks.
+    /// Note that these bytes are not necessarily in one contiguous region but
+    /// might be spread across multiple chunks.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -365,6 +365,9 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// The bump allocator may reserve more space to avoid frequent reallocations.
     /// After calling `reserve`, <code>self.[stats][]().[remaining][]()</code> will be greater than or equal to
     /// `additional`. Does nothing if the capacity is already sufficient.
+    ///
+    /// Note that these bytes are not necessarily in one contiguous region but
+    /// might be spread across multiple chunks.
     ///
     /// # Errors
     /// Errors if the allocation fails.
