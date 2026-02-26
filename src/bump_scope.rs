@@ -94,15 +94,12 @@ where
     A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
-    /// Returns this `&mut BumpScope` as a `BumpScope`.
+    /// Converts this `&mut BumpScope` into an owned `BumpScope`.
     ///
-    /// This requires allocating a chunk if none has been allocated yet.
+    /// Allocates a chunk if none has been allocated yet.
     ///
-    /// This method exists so you can have `BumpScope<'a>` function parameters and
-    /// struct fields instead of `&'b mut BumpScope<'a>` so you don't have to deal with `'b`.
-    ///
-    /// It also enables more settings conversions since [`with_settings`] can do more than
-    /// [`borrow_mut_with_settings`].
+    /// This can be used to remove an indirection, simplify type signatures and allow
+    /// for more settings conversions via [`with_settings`].
     ///
     /// # Panics
     /// Panics if the bump allocator is currently [claimed].
@@ -124,15 +121,12 @@ where
         }
     }
 
-    /// Returns this `&mut BumpScope` as a `BumpScope`.
+    /// Converts this `&mut BumpScope` into an owned `BumpScope`.
     ///
-    /// This requires allocating a chunk if none has been allocated yet.
+    /// Allocates a chunk if none has been allocated yet.
     ///
-    /// This method exists so you can have `BumpScope<'a>` function parameters and
-    /// struct fields instead of `&'b mut BumpScope<'a>` so you don't have to deal with `'b`.
-    ///
-    /// It also enables more settings conversions since [`with_settings`] can do more than
-    /// [`borrow_mut_with_settings`].
+    /// This can be used to remove an indirection, simplify type signatures and allow
+    /// for more settings conversions via [`with_settings`].
     ///
     /// # Errors
     /// Errors if the bump allocator is currently [claimed].
