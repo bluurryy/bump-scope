@@ -27,6 +27,7 @@ setup:
   cargo binstall --locked cargo-hack@0.6.41
   cargo binstall --locked cargo-minimal-versions@0.1.35
   cargo binstall --locked cargo-show-asm@0.2.55
+  rustup target add thumbv7em-none-eabihf
 
 # Runs `cargo fmt` on everything.
 [group('fmt')]
