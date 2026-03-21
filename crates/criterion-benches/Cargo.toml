@@ -3,12 +3,12 @@ name = "criterion-benches"
 edition = "2024"
 
 [[bench]]
-name = "bench"
 harness = false
+name = "bench"
 
 [dev-dependencies]
 allocator-api2 = "0.2.21"
 bump-scope = { path = "../..", features = ["allocator-api2-02"] }
 bumpalo = { version = "3.19.0", features = ["allocator-api2"] }
-paste = "1.0.15"
 criterion = { version = "0.6.0", features = ["html_reports"] }
+paste = "1.0.15"

@@ -5,6 +5,6 @@ edition = "2024"
 
 [dependencies]
 bump-scope = { path = "../..", features = [
-    "nightly-allocator-api",
-    "nightly-coerce-unsized",
+  "nightly-allocator-api",
+  "nightly-coerce-unsized",
 ] }

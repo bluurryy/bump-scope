@@ -2,52 +2,92 @@
 name = "bump-scope"
 version = "2.2.0"
 edition = "2024"
-license = "MIT OR Apache-2.0"
-description = "A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types."
-categories = ["memory-management", "no-std", "no-std::no-alloc"]
-keywords = ["allocator", "arena", "no-std", "bump", "allocation"]
-documentation = "https://docs.rs/bump-scope"
-repository = "https://github.com/bluurryy/bump-scope"
 rust-version = "1.85.1"
+description = "A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types."
+documentation = "https://docs.rs/bump-scope"
 readme = "README.md"
-include = ["src/**/*", "/LICENSE-*", "/README.md", "/CHANGELOG.md", "/UPGRADING.md", "!**/tests/**/*"]
+repository = "https://github.com/bluurryy/bump-scope"
+license = "MIT OR Apache-2.0"
+keywords = ["allocation", "allocator", "arena", "bump", "no-std"]
+categories = ["memory-management", "no-std", "no-std::no-alloc"]
+include = [
+  "!**/tests/**/*",
+  "/CHANGELOG.md",
+  "/LICENSE-*",
+  "/README.md",
+  "/UPGRADING.md",
+  "src/**/*"
+]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--generate-link-to-definition"]
+
+[package.metadata.release]
+allow-branch = ["main"]
+pre-release-hook = ["just", "pre-release"]
+pre-release-commit-message = "release: version {{version}}"
+pre-release-replacements = [
+  { file = "CHANGELOG.md", search = "## \\[Unreleased\\]", replace = "## [{{version}}] - {{date}}", exactly = 1 },
+  { file = "CHANGELOG.md", search = "\\[Unreleased\\]: .*", replace = "[{{version}}]: https://github.com/bluurryy/bump-scope/releases/tag/v{{version}}" },
+  { file = "CHANGELOG.md", search = "#Unreleased", replace = "#{{version}}", min = 0 },
+  { file = "CHANGELOG.md", search = "<!-- next-url -->", replace = "<!-- next-url -->\n[Unreleased]: https://github.com/bluurryy/bump-scope/compare/{{tag_name}}...HEAD", exactly = 1 },
+  { file = "UPGRADING.md", search = "## \\[Unreleased\\]", replace = "## [{{version}}] - {{date}}", min = 0 },
+  { file = "UPGRADING.md", search = "\\[Unreleased\\]: .*", replace = "[{{version}}]: CHANGELOG.md#{{version}}", min = 0 },
+  { file = "UPGRADING.md", search = "#Unreleased", replace = "#{{version}}", min = 0 },
+]
 
 [dependencies]
 allocator-api2-02 = { package = "allocator-api2", version = "0.2.21", default-features = false, optional = true }
 allocator-api2-03 = { package = "allocator-api2", version = "0.3.0", default-features = false, optional = true }
 allocator-api2-04 = { package = "allocator-api2", version = "0.4.0", default-features = false, optional = true }
 bytemuck = { version = "1.23.0", default-features = false, optional = true }
-zerocopy-08 = { package = "zerocopy", version = "0.8.14", default-features = false, optional = true }
 serde = { package = "serde_core", version = "1.0.228", default-features = false, optional = true }
+zerocopy-08 = { package = "zerocopy", version = "0.8.14", default-features = false, optional = true }
+
+[dev-dependencies]
+expect-test = "1.5.1"
+rayon = "1.11.0"
+serde_json = "1.0.145"
+trybuild = "1.0.114"
 
 [features]
-default = ["std", "alloc", "panic-on-alloc"]
+default = ["alloc", "panic-on-alloc", "std"]
 
 ## Adds `BumpPool` and implementations of `std::io` traits.
-std = ["alloc", "allocator-api2-02?/std", "allocator-api2-03?/std", "allocator-api2-04?/std"]
+std = [
+  "alloc",
+  "allocator-api2-02?/std",
+  "allocator-api2-03?/std",
+  "allocator-api2-04?/std"
+]
 
 ## Adds `Global` as the default base allocator and some interactions with `alloc` collections.
-alloc = ["allocator-api2-02?/alloc", "allocator-api2-03?/alloc", "allocator-api2-04?/alloc"]
+alloc = [
+  "allocator-api2-02?/alloc",
+  "allocator-api2-03?/alloc",
+  "allocator-api2-04?/alloc"
+]
 
-## Adds functions and traits that will panic when allocations fail. 
-## Without this feature, allocation failures cannot cause panics, and only 
+## Adds functions and traits that will panic when allocations fail.
+## Without this feature, allocation failures cannot cause panics, and only
 ## `try_`-prefixed allocation methods will be available.
 panic-on-alloc = []
 
-## Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors. 
+## Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 serde = ["dep:serde"]
 
-## Adds `bytemuck::*` extension traits for 
-## <code>[alloc_zeroed](bytemuck::BumpAllocatorTypedScopeExt::alloc_zeroed)([_slice](bytemuck::BumpAllocatorTypedScopeExt::alloc_zeroed_slice))</code>, 
+## Adds `bytemuck::*` extension traits for
+## <code>[alloc_zeroed](bytemuck::BumpAllocatorTypedScopeExt::alloc_zeroed)([_slice](bytemuck::BumpAllocatorTypedScopeExt::alloc_zeroed_slice))</code>,
 ## [`init_zeroed`](bytemuck::InitZeroed::init_zeroed),
-## [`extend_zeroed`](bytemuck::VecExt::extend_zeroed) and 
+## [`extend_zeroed`](bytemuck::VecExt::extend_zeroed) and
 ## [`resize_zeroed`](bytemuck::VecExt::resize_zeroed).
 bytemuck = ["dep:bytemuck"]
 
 ## Adds `zerocopy_08::*` extension traits for
-## <code>[alloc_zeroed](zerocopy_08::BumpAllocatorTypedScopeExt::alloc_zeroed)([_slice](zerocopy_08::BumpAllocatorTypedScopeExt::alloc_zeroed_slice))</code>, 
+## <code>[alloc_zeroed](zerocopy_08::BumpAllocatorTypedScopeExt::alloc_zeroed)([_slice](zerocopy_08::BumpAllocatorTypedScopeExt::alloc_zeroed_slice))</code>,
 ## [`init_zeroed`](zerocopy_08::InitZeroed::init_zeroed),
-## [`extend_zeroed`](zerocopy_08::VecExt::extend_zeroed) and 
+## [`extend_zeroed`](zerocopy_08::VecExt::extend_zeroed) and
 ## [`resize_zeroed`](zerocopy_08::VecExt::resize_zeroed).
 zerocopy-08 = ["dep:zerocopy-08"]
 
@@ -67,19 +107,19 @@ allocator-api2-03 = ["dep:allocator-api2-03"]
 allocator-api2-04 = ["dep:allocator-api2-04"]
 
 #! ### Nightly features
-#! These nightly features are not subject to the same semver guarantees as the rest of the library. 
+#! These nightly features are not subject to the same semver guarantees as the rest of the library.
 #! Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
 
 ## Enables all other nightly feature flags.
 nightly = [
-    "nightly-allocator-api",
-    "nightly-coerce-unsized",
-    "nightly-exact-size-is-empty",
-    "nightly-trusted-len",
-    "nightly-fn-traits",
-    "nightly-tests",
-    "nightly-dropck-eyepatch",
-    "nightly-clone-to-uninit",
+  "nightly-allocator-api",
+  "nightly-clone-to-uninit",
+  "nightly-coerce-unsized",
+  "nightly-dropck-eyepatch",
+  "nightly-exact-size-is-empty",
+  "nightly-fn-traits",
+  "nightly-tests",
+  "nightly-trusted-len",
 ]
 
 ## Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
@@ -113,27 +153,3 @@ nightly-dropck-eyepatch = []
 
 ## Adds [`alloc_clone`](crate::traits::BumpAllocatorTypedScope::alloc_clone) method.
 nightly-clone-to-uninit = []
-
-[dev-dependencies]
-trybuild = "1.0.114"
-expect-test = "1.5.1"
-rayon = "1.11.0"
-serde_json = "1.0.145"
-
-[package.metadata.docs.rs]
-all-features = true
-rustdoc-args = ["--generate-link-to-definition"]
-
-[package.metadata.release]
-allow-branch = ["main"]
-pre-release-hook = ["just", "pre-release"]
-pre-release-commit-message = "release: version {{version}}"
-pre-release-replacements = [
-    { file = "CHANGELOG.md", search = "## \\[Unreleased\\]", replace = "## [{{version}}] - {{date}}", exactly = 1 },
-    { file = "CHANGELOG.md", search = "\\[Unreleased\\]: .*", replace = "[{{version}}]: https://github.com/bluurryy/bump-scope/releases/tag/v{{version}}" },
-    { file = "CHANGELOG.md", search = "#Unreleased", replace = "#{{version}}", min = 0 },
-    { file = "CHANGELOG.md", search = "<!-- next-url -->", replace = "<!-- next-url -->\n[Unreleased]: https://github.com/bluurryy/bump-scope/compare/{{tag_name}}...HEAD", exactly = 1 },
-    { file = "UPGRADING.md", search = "## \\[Unreleased\\]", replace = "## [{{version}}] - {{date}}", min = 0 },
-    { file = "UPGRADING.md", search = "\\[Unreleased\\]: .*", replace = "[{{version}}]: CHANGELOG.md#{{version}}", min = 0 },
-    { file = "UPGRADING.md", search = "#Unreleased", replace = "#{{version}}", min = 0 },
-]
