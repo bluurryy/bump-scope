@@ -1,6 +1,6 @@
 //! These test cases were taken from the rust standard library.
 #![cfg(test)]
-#![feature(allocator_api, slice_partition_dedup, iter_next_chunk, iter_advance_by)]
+#![feature(slice_partition_dedup, iter_next_chunk, iter_advance_by)]
 #![expect(
     clippy::assign_op_pattern,
     clippy::byte_char_slices,

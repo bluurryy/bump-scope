@@ -13,7 +13,7 @@
 #![cfg_attr(feature = "nightly-exact-size-is-empty", feature(exact_size_is_empty))]
 #![cfg_attr(feature = "nightly-trusted-len", feature(trusted_len))]
 #![cfg_attr(feature = "nightly-fn-traits", feature(fn_traits, tuple_trait, unboxed_closures))]
-#![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
+#![cfg_attr(all(feature = "nightly-tests", test, doc), feature(offset_of_enum))]
 #![cfg_attr(feature = "nightly-dropck-eyepatch", feature(dropck_eyepatch))]
 #![cfg_attr(feature = "nightly-clone-to-uninit", feature(clone_to_uninit, ptr_metadata))]
 #![cfg_attr(docsrs,

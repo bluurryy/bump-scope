@@ -1,6 +1,6 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 #![cfg(feature = "nightly-clone-to-uninit")]
-#![feature(clone_to_uninit, ptr_metadata)]
+#![feature(clone_to_uninit)]
 
 use std::{
     clone::CloneToUninit,
