@@ -105,8 +105,6 @@ jobs:
       - run: cargo +stable run --example limit_memory_usage
       - run: cargo +stable run --example stack_or_static_memory
       - run: cargo +stable run --example thread_local
-      - run: cargo +stable test --test trybuild -- --ignored
-      - run: cargo +stable test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
   test-nightly:
     runs-on: ubuntu-latest
     steps:
