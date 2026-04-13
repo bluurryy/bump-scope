@@ -324,6 +324,18 @@ where
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
+        // SAFETY: We return allocations for the lifetime of the pool reference
+        // instead of `bump`s own lifetime. This is fine because `BumpPool` and
+        // `BumpPoolGuard` don't expose any api to invalidate an allocation for
+        // lifetime `'a`.
+        //
+        // - `BumpPool::reset` requires a mutable reference, and since allocations
+        //   immutably borrow the pool, the compiler doesn't allow you to `reset`
+        //   before all allocations are gone.
+        //
+        // - `mem::forget(bump_pool_guard)` will not return the `Bump` to its pool,
+        //   however the `Bump` won't be dropped either, so its allocations will
+        //   live for `'static` which is compatible with `'a`.
         unsafe { transmute_lifetime(self.bump.as_scope()) }
     }
 }

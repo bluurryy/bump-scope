@@ -276,9 +276,9 @@ where
             return shrink_unfit(bump, old_ptr, old_layout, new_layout);
         }
 
-        // if that's not the last allocation, there is nothing we can do
+        // If this is not the last allocation, then there's nothing we can do
         if !S::SHRINKS || !is_last(bump, old_ptr, old_layout) {
-            // we return the size of the old layout
+            // We can't shrink this allocation, so we return it as-is.
             return Ok(NonNull::slice_from_raw_parts(old_ptr, old_layout.size()));
         }
 
@@ -296,6 +296,9 @@ where
             let old_addr = old_ptr.addr();
             let old_end_addr = NonZeroUsize::new_unchecked(old_addr.get() + old_layout.size());
 
+            // The resulting `new_addr` will always be between `old_addr` and `old_end_addr` because:
+            // - `new_layout`'s size must be less than `old_layout`'s size per `shrink`'s safety invariant
+            // - downwards aligning can't create an address lower than `old_addr` since we checked in `align_fits` that `old_addr` is aligned to `new_layout`
             let new_addr = bump_down(old_end_addr, new_layout.size(), new_layout.align().max(S::MIN_ALIGN));
             let new_addr = NonZeroUsize::new_unchecked(new_addr);
             let new_ptr = old_ptr.with_addr(new_addr);
