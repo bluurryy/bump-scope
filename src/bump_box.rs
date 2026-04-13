@@ -2275,13 +2275,14 @@ impl<'a, T> BumpBox<'a, [T]> {
         F: FnMut(&mut T) -> bool,
     {
         let original_len = self.len();
-        // Avoid double drop if the drop guard is not executed,
-        // since we may make some holes during the process.
-        unsafe { self.set_len(0) };
+
+        if original_len == 0 {
+            // Empty case: explicit return allows better optimization, vs letting compiler infer it
+            return;
+        }
 
         // Vec: [Kept, Kept, Hole, Hole, Hole, Hole, Unchecked, Unchecked]
-        //      |<-              processed len   ->| ^- next to check
-        //                  |<-  deleted cnt     ->|
+        //      |            ^- write                ^- read             |
         //      |<-              original_len                          ->|
         // Kept: Elements which predicate returns true on.
         // Hole: Moved or dropped element slot.
@@ -2289,80 +2290,79 @@ impl<'a, T> BumpBox<'a, [T]> {
         //
         // This drop guard will be invoked when predicate or `drop` of element panicked.
         // It shifts unchecked elements to cover holes and `set_len` to the correct length.
-        // In cases when predicate and `drop` never panic, it will be optimized out.
-        struct BackshiftOnDrop<'b, 'a, T> {
+        // In cases when predicate and `drop` never panick, it will be optimized out.
+        struct PanicGuard<'b, 'a, T> {
             v: &'b mut BumpBox<'a, [T]>,
-            processed_len: usize,
-            deleted_cnt: usize,
+            read: usize,
+            write: usize,
             original_len: usize,
         }
 
-        impl<T> Drop for BackshiftOnDrop<'_, '_, T> {
+        impl<T> Drop for PanicGuard<'_, '_, T> {
+            #[cold]
             fn drop(&mut self) {
-                if self.deleted_cnt > 0 {
-                    // SAFETY: Trailing unchecked items must be valid since we never touch them.
-                    unsafe {
-                        ptr::copy(
-                            self.v.as_ptr().add(self.processed_len),
-                            self.v.as_mut_ptr().add(self.processed_len - self.deleted_cnt),
-                            self.original_len - self.processed_len,
-                        );
-                    }
+                let remaining = self.original_len - self.read;
+                // SAFETY: Trailing unchecked items must be valid since we never touch them.
+                unsafe {
+                    ptr::copy(self.v.as_ptr().add(self.read), self.v.as_mut_ptr().add(self.write), remaining);
                 }
                 // SAFETY: After filling holes, all items are in contiguous memory.
                 unsafe {
-                    self.v.set_len(self.original_len - self.deleted_cnt);
+                    self.v.set_len(self.write + remaining);
                 }
             }
         }
 
-        let mut g = BackshiftOnDrop {
+        let mut read = 0;
+        loop {
+            // SAFETY: read < original_len
+            let cur = unsafe { self.get_unchecked_mut(read) };
+            if polyfill::hint::unlikely(!f(cur)) {
+                break;
+            }
+            read += 1;
+            if read == original_len {
+                // All elements are kept, return early.
+                return;
+            }
+        }
+
+        // Critical section starts here and at least one element is going to be removed.
+        // Advance `g.read` early to avoid double drop if `drop_in_place` panicked.
+        let mut g = PanicGuard {
             v: self,
-            processed_len: 0,
-            deleted_cnt: 0,
+            read: read + 1,
+            write: read,
             original_len,
         };
+        // SAFETY: previous `read` is always less than original_len.
+        unsafe { ptr::drop_in_place(&mut *g.v.as_mut_ptr().add(read)) };
 
-        fn process_loop<F, T, const DELETED: bool>(original_len: usize, f: &mut F, g: &mut BackshiftOnDrop<'_, '_, T>)
-        where
-            F: FnMut(&mut T) -> bool,
-        {
-            while g.processed_len != original_len {
-                // SAFETY: Unchecked element must be valid.
-                let cur = unsafe { &mut *g.v.ptr.as_ptr().cast::<T>().add(g.processed_len) };
-                if !f(cur) {
-                    // Advance early to avoid double drop if `drop_in_place` panicked.
-                    g.processed_len += 1;
-                    g.deleted_cnt += 1;
-                    // SAFETY: We never touch this element again after dropped.
-                    unsafe { ptr::drop_in_place(cur) };
-                    // We already advanced the counter.
-                    if DELETED {
-                        continue;
-                    } else {
-                        break;
-                    }
+        while g.read < g.original_len {
+            // SAFETY: `read` is always less than original_len.
+            let cur = unsafe { &mut *g.v.as_mut_ptr().add(g.read) };
+            if !f(cur) {
+                // Advance `read` early to avoid double drop if `drop_in_place` panicked.
+                g.read += 1;
+                // SAFETY: We never touch this element again after dropped.
+                unsafe { ptr::drop_in_place(cur) };
+            } else {
+                // SAFETY: `read` > `write`, so the slots don't overlap.
+                // We use copy for move, and never touch the source element again.
+                unsafe {
+                    let hole = g.v.as_mut_ptr().add(g.write);
+                    ptr::copy_nonoverlapping(cur, hole, 1);
                 }
-                if DELETED {
-                    // SAFETY: `deleted_cnt` > 0, so the hole slot must not overlap with current element.
-                    // We use copy for move, and never touch this element again.
-                    unsafe {
-                        let hole_slot = g.v.ptr.as_ptr().cast::<T>().add(g.processed_len - g.deleted_cnt);
-                        ptr::copy_nonoverlapping(cur, hole_slot, 1);
-                    }
-                }
-                g.processed_len += 1;
+                g.write += 1;
+                g.read += 1;
             }
         }
 
-        // Stage 1: Nothing was deleted.
-        process_loop::<F, T, false>(original_len, &mut f, &mut g);
-
-        // Stage 2: Some elements were deleted.
-        process_loop::<F, T, true>(original_len, &mut f, &mut g);
-
-        // All item are processed. This can be optimized to `set_len` by LLVM.
-        drop(g);
+        // We are leaving the critical section and no panic happened,
+        // Commit the length change and forget the guard.
+        // SAFETY: `write` is always less than or equal to original_len.
+        unsafe { g.v.set_len(g.write) };
+        mem::forget(g);
     }
 
     /// Removes the specified range from the slice in bulk, returning all
