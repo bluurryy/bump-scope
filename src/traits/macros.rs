@@ -121,6 +121,7 @@ macro_rules! forward_methods {
 
         /// Forwards to [`BumpAllocatorTypedScope::alloc_clone`].
         #[inline(always)]
+        #[cfg(feature = "panic-on-alloc")]
         #[cfg(feature = "nightly-clone-to-uninit")]
         pub fn alloc_clone<T: CloneToUninit + ?Sized>(&$self, value: &T) -> BumpBox<$lifetime, T> {
             BumpAllocatorTypedScope::alloc_clone($access, value)

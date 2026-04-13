@@ -195,6 +195,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     ///
     /// assert_eq!(object_clone(), "Hello, world!");
     /// ```
+    #[cfg(feature = "panic-on-alloc")]
     #[cfg(feature = "nightly-clone-to-uninit")]
     fn alloc_clone<T: CloneToUninit + ?Sized>(&self, value: &T) -> BumpBox<'a, T> {
         let data = self.allocate_layout(Layout::for_value(value));

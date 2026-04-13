@@ -104,7 +104,8 @@ check-minimal-versions:
 # Runs `cargo check` on a target that has no `std` library.
 [group('check')]
 check-no-std:
-    cargo check --target thumbv7em-none-eabihf --no-default-features -F allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,alloc,serde
+    cargo +stable check --target thumbv7em-none-eabihf --no-default-features -F allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,alloc,serde
+    cargo +nightly check --target thumbv7em-none-eabihf --no-default-features -F allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,alloc,serde,nightly
 
 # Asserts that api that shouldn't panic, doesn't.
 [group('check')]
