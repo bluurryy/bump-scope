@@ -116,10 +116,10 @@ If the layout is not statically known then the compiler can not do as many optim
 
 <!-- misc table start -->
 
-| name    | bump-scope (up) | bump-scope (down) | bumpalo     | blink-alloc |
-|---------|-----------------|-------------------|-------------|-------------|
-| warm_up | 805 \| 106      | 811 \| 107        | 957 \| 120  | 877 \| 114  |
-| reset   | 28 \| 3         | 27 \| 3           | 23 \| 2     | 26 \| 3     |
+| name    | bump-scope (up) | bump-scope (down) | bumpalo    | blink-alloc |
+|---------|-----------------|-------------------|------------|-------------|
+| warm_up | 529 \| 60       | 535 \| 61         | 681 \| 74  | 601 \| 68   |
+| reset   | 28 \| 3         | 27 \| 3           | 23 \| 2    | 26 \| 3     |
 
 <!-- misc table end -->
 
