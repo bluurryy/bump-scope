@@ -131,13 +131,10 @@ If the layout is not statically known then the compiler can not do as many optim
 
 Install [Valgrind] and [gungraun-runner].
 
-Then run the benchmark with
+Then run the benchmark and update the tables with
 ```sh
-cargo bench --bench bench -- --save-summary=json
-```
-and update the tables above with
-```sh
-cargo run
+cargo +stable bench --bench bench -- --save-summary=json --parallel
+cargo +stable run
 ```
 
 [Valgrind]: https://gungraun.github.io/gungraun/latest/html/installation/prerequisites.html
