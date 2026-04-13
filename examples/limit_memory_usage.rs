@@ -1,4 +1,3 @@
-#![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
 #![cfg(feature = "alloc")]
 
 use std::{alloc::Layout, cell::Cell, ptr::NonNull};
