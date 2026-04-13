@@ -20,6 +20,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
       - uses: Swatinem/rust-cache@v2
       - run: cargo +stable fmt --all --check
       - run: cd crates/callgrind-benches && cargo +stable fmt --all --check
@@ -46,6 +48,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: clippy
+          targets: x86_64-unknown-linux-musl
       - uses: Swatinem/rust-cache@v2
       - run: cargo +nightly clippy --tests --no-default-features -- -Dwarnings
       - run: cargo +nightly clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde -- -Dwarnings
