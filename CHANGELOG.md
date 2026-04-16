@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Improve performance of `retain` (using std's new implementation)
 - Improve performance of `alloc_iter*`, `alloc_fmt*` and `shrink_to_fit` (by making `shrink_to_fit` exit early when capacity and length are the same)
+- Improve documentation
 
 ### Fixed
 

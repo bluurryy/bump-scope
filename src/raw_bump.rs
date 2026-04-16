@@ -60,6 +60,7 @@ where
         self.chunk.get().is_claimed()
     }
 
+    /// The caller must ensure the returned reference is dead before calling [`manually_drop`](Self::manually_drop).
     #[inline(always)]
     pub(crate) fn allocator<'a>(&self) -> Option<&'a A> {
         match self.chunk.get().classify() {
@@ -117,10 +118,13 @@ where
         }
     }
 
+    /// # Safety
+    /// - self must not be used after calling this.
     pub(crate) unsafe fn manually_drop(&mut self) {
         match self.chunk.get().classify() {
             ChunkClass::Claimed => {
                 // The user must have somehow leaked a `BumpClaimGuard`.
+                // Thus the bump allocator has been leaked, there is nothing to do here.
             }
             ChunkClass::Unallocated => (),
             ChunkClass::NonDummy(chunk) => unsafe {
@@ -201,7 +205,7 @@ where
             assert_ne!(
                 checkpoint.chunk,
                 ChunkHeader::unallocated::<S>(),
-                "the checkpoint must not have been created by an`!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`"
+                "the checkpoint must not have been created by a `!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`"
             );
 
             let chunk = self
@@ -952,6 +956,7 @@ where
         Ok(ChunkSizeHint::new(size))
     }
 
+    /// The caller must ensure the returned reference is dead before calling [`deallocate`](Self::deallocate).
     #[inline(always)]
     pub(crate) fn allocator<'a>(self) -> &'a A {
         unsafe { &self.header.as_ref().allocator }

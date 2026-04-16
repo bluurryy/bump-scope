@@ -37,7 +37,7 @@
     clippy::partialeq_ne_impl,
     clippy::items_after_statements,
     clippy::missing_transmute_annotations,
-    clippy::multiple_crate_versions, // we have allocator-api2 version 0.2 and 0.3
+    clippy::multiple_crate_versions, // we have allocator-api2 version 0.2, 0.3 and 0.4
 )]
 #![allow(
     clippy::wildcard_imports, // `expect` is broken for this lint
@@ -386,7 +386,7 @@ use private::{PanicsOnAlloc, capacity_overflow, format_trait_error};
 use set_len_on_drop::SetLenOnDrop;
 pub use without_dealloc::{WithoutDealloc, WithoutShrink};
 
-/// Changelog.
+/// The changelog.
 ///
 #[doc = include_str!("../CHANGELOG.md")]
 #[expect(non_snake_case)]

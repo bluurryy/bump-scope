@@ -96,19 +96,17 @@ pub(crate) struct BumpProps {
 
     /// Whether the allocation layout's alignment is known at compile time.
     ///
-    /// This is an optimization hint. `false` is always valid.
+    /// This is an optimization hint.
     pub(crate) align_is_const: bool,
 
     /// Whether the allocation layout's size is known at compile time.
     ///
-    /// This is an optimization hint. `false` is always valid.
+    /// This is an optimization hint.
     pub(crate) size_is_const: bool,
 
     /// Whether the allocation layout's size is a multiple of its alignment and that is known at compile time.
     ///
-    /// This is an optimization hint. `false` is always valid.
-    ///
-    /// This must only be true if `layout.size() % layout.align()` is also true.
+    /// This is an optimization hint. It must only be true if `layout.size() % layout.align() == 0`.
     pub(crate) size_is_multiple_of_align: bool,
 }
 
