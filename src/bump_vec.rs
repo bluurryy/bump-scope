@@ -2793,18 +2793,22 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     pub fn shrink_to_fit(&mut self) {
         let Self { fixed, allocator } = self;
 
-        let old_ptr = fixed.as_non_null();
-        let old_cap = fixed.capacity();
-        let new_cap = fixed.len();
+        let ptr = fixed.as_non_null();
+        let cap = fixed.capacity();
+        let len = fixed.len();
 
-        if T::IS_ZST || old_cap == 0 {
+        // The capacity is never less than the length and there is nothing to do when
+        // they are equal. This also checks that the capacity is not zero. If the
+        // capacity is zero then no allocation has been made and the call to shrink
+        // would be unsound.
+        if T::IS_ZST || cap <= len {
             return;
         }
 
         unsafe {
-            if let Some(new_ptr) = allocator.shrink_slice(old_ptr, old_cap, new_cap) {
+            if let Some(new_ptr) = allocator.shrink_slice(ptr, cap, len) {
                 fixed.set_ptr(new_ptr);
-                fixed.set_cap(new_cap);
+                fixed.set_cap(len);
             }
         }
     }
