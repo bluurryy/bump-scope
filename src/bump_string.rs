@@ -1857,6 +1857,34 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
         vec.shrink_to_fit();
     }
 
+    /// Shrinks the capacity of this string with a lower bound.
+    ///
+    /// The capacity will remain at least as large as both the length
+    /// and the supplied value.
+    ///
+    /// If the current capacity is less than the lower limit, this is a no-op.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{Bump, BumpString};
+    /// # let bump: Bump = Bump::new();
+    /// let mut s = BumpString::from_str_in("foo", &bump);
+    ///
+    /// s.reserve(100);
+    /// assert!(s.capacity() >= 100);
+    ///
+    /// s.shrink_to(10);
+    /// assert!(s.capacity() >= 10);
+    /// s.shrink_to(0);
+    /// assert!(s.capacity() >= 3);
+    /// ```
+    #[inline]
+    pub fn shrink_to(&mut self, min_capacity: usize) {
+        let vec = unsafe { self.as_mut_vec() };
+        vec.shrink_to(min_capacity);
+    }
+
     /// Returns a reference to the allocator.
     #[must_use]
     #[inline(always)]

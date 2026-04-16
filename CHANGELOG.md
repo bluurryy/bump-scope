@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `{BumpVec, BumpString}::shrink_to`
+
 ### Changed
 
 - Improve performance of `retain` (using std's new implementation)

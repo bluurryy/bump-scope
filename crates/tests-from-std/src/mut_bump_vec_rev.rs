@@ -856,7 +856,7 @@ fn overaligned_allocations() {
         v.reserve_exact(i);
         assert!(v[0].0 == 273);
         assert!(v.as_ptr() as usize & 0xff == 0);
-        // `MutBumpVec can't shrink`
+        // `MutBumpVecRev can't shrink`
         // v.shrink_to_fit();
         // assert!(v[0].0 == 273);
         // assert!(v.as_ptr() as usize & 0xff == 0);
@@ -1448,7 +1448,8 @@ fn test_pop_if_mutates() {
 fn max_dont_panic() {
     let mut v = vec![0];
     let _ = v.get(usize::MAX);
-    // v.shrink_to(usize::MAX); TODO: implement shrink_to
+    // `MutBumpVecRev can't shrink`
+    // v.shrink_to(usize::MAX);
     v.truncate(usize::MAX);
 }
 

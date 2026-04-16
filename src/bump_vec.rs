@@ -2813,6 +2813,49 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
         }
     }
 
+    /// Shrinks the capacity of the vector with a lower bound.
+    ///
+    /// The capacity will remain at least as large as both the length
+    /// and the supplied value.
+    ///
+    /// If the current capacity is less than the lower limit, this is a no-op.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use bump_scope::{Bump, BumpVec};
+    /// # let bump: Bump = Bump::new();
+    /// let mut vec = BumpVec::with_capacity_in(10, &bump);
+    /// vec.extend([1, 2, 3]);
+    /// assert!(vec.capacity() >= 10);
+    /// vec.shrink_to(4);
+    /// assert!(vec.capacity() >= 4);
+    /// vec.shrink_to(0);
+    /// assert!(vec.capacity() >= 3);
+    /// ```
+    pub fn shrink_to(&mut self, min_capacity: usize) {
+        let Self { fixed, allocator } = self;
+
+        let old_ptr = fixed.as_non_null();
+        let old_cap = fixed.capacity();
+        let new_cap = fixed.len().max(min_capacity);
+
+        // When the new capacity is not smaller than the old capacity then there
+        // is nothing to do. This also checks that the capacity is not zero. If the
+        // capacity is zero then no allocation has been made and the call to shrink
+        // would be unsound.
+        if T::IS_ZST || old_cap <= new_cap {
+            return;
+        }
+
+        unsafe {
+            if let Some(new_ptr) = allocator.shrink_slice(old_ptr, old_cap, new_cap) {
+                fixed.set_ptr(new_ptr);
+                fixed.set_cap(new_cap);
+            }
+        }
+    }
+
     /// # Safety
     ///
     /// `iterator` must satisfy the invariants of nightly's `TrustedLen`.
