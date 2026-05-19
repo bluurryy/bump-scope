@@ -284,7 +284,9 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
 
     /// Allocate an uninitialized object.
     ///
-    /// You can safely initialize the object with [`init`](BumpBox::init) or unsafely with [`assume_init`](BumpBox::assume_init).
+    /// You can safely initialize the object with [`init`](BumpBox::init),
+    /// `init_zeroed` <sup>[\[1\]](crate::zerocopy_08::InitZeroed::init_zeroed) [\[2\]](crate::bytemuck::InitZeroed::init_zeroed)</sup>
+    /// or unsafely with [`assume_init`](BumpBox::assume_init).
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -327,7 +329,9 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
 
     /// Allocate an uninitialized object.
     ///
-    /// You can safely initialize the object with [`init`](BumpBox::init) or unsafely with [`assume_init`](BumpBox::assume_init).
+    /// You can safely initialize the object with [`init`](BumpBox::init),
+    /// `init_zeroed` <sup>[\[1\]](crate::zerocopy_08::InitZeroed::init_zeroed) [\[2\]](crate::bytemuck::InitZeroed::init_zeroed)</sup>
+    /// or unsafely with [`assume_init`](BumpBox::assume_init).
     ///
     /// # Errors
     /// Errors if the allocation fails.
