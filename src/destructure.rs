@@ -8,6 +8,7 @@ macro_rules! destructure {
         let value: $ty = $value;
 
         // errors if there are duplicates
+        #[allow(clippy::unneeded_wildcard_pattern)]
         let $ty { $($field: _,)* .. } = &value;
 
         let value = ::core::mem::ManuallyDrop::new(value);

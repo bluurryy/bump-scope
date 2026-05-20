@@ -884,7 +884,7 @@ where
         let size = ChunkSize::<A, S>::align_allocation_size(size);
 
         debug_assert!(size >= layout.size());
-        debug_assert!(size % MIN_CHUNK_ALIGN == 0);
+        debug_assert_eq!(size % MIN_CHUNK_ALIGN, 0);
 
         let prev = Cell::new(prev.map(|c| c.header));
         let next = Cell::new(None);
