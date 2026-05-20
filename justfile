@@ -14,15 +14,14 @@ pre-release:
     just doc
     just check
     just test
-    # temporarily commented out because of false positives about sealed-ness of `BumpAllocatorTypedScopeExt`
-    # cargo +stable semver-checks
+    cargo +stable semver-checks
 
 # Installs all tools required for `pre-release`.
 [group('release')]
 setup:
     cargo binstall --locked typos-cli@1.42.0
     cargo binstall --locked cargo-insert-docs@1.5.0
-    cargo binstall --locked cargo-semver-checks@0.46.0
+    cargo binstall --locked cargo-semver-checks@0.47.0
     cargo binstall --locked cargo-hack@0.6.41
     cargo binstall --locked cargo-minimal-versions@0.1.35
     cargo binstall --locked cargo-show-asm@0.2.55
