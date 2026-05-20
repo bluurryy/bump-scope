@@ -791,7 +791,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     /// ```
     /// # use bump_scope::{Bump, BumpVec};
     /// # let bump: Bump = Bump::new();
-    /// let mut vec = BumpVec::with_capacity_in(10, &bump);
+    /// let mut vec = BumpVec::new_in(&bump);
     /// vec.append([1, 2, 3, 4, 5, 6, 7, 8]);
     ///
     /// let front = vec.split_off(..2);
