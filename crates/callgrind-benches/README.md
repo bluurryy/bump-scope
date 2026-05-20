@@ -10,7 +10,7 @@ The benchmarks results in the tables below are shown in the format "instructions
 
 <!-- spellchecker:off because the commit hash may get flagged -->
 
-These are the results of a benchmark run with <!-- version start -->`rustc 1.94.1 (e408947bf 2026-03-25)` on `x86_64-unknown-linux-gnu` using `LLVM version 21.1.8`<!-- version end -->.
+These are the results of a benchmark run with <!-- version start -->`rustc 1.95.0 (59807616e 2026-04-14)` on `x86_64-unknown-linux-gnu` using `LLVM version 22.1.2`<!-- version end -->.
 
 <!-- spellchecker:on -->
 
@@ -98,8 +98,8 @@ If the layout is not statically known then the compiler can not do as many optim
 | name                                | bump-scope (up) | bump-scope (down) | bumpalo   | blink-alloc |
 |-------------------------------------|-----------------|-------------------|-----------|-------------|
 | black_box_allocate                  | 15 \| 1         | 12 \| 1           | 27 \| 4   | 19 \| 3     |
-| black_box_grow_same_align           | 25 \| 2         | 61 \| 11          | 90 \| 13  | 31 \| 6     |
-| black_box_grow_smaller_align        | 25 \| 2         | 61 \| 11          | 90 \| 13  | 31 \| 6     |
+| black_box_grow_same_align           | 25 \| 2         | 61 \| 11          | 91 \| 13  | 31 \| 6     |
+| black_box_grow_smaller_align        | 25 \| 2         | 61 \| 11          | 91 \| 13  | 31 \| 6     |
 | black_box_grow_larger_align         | 25 \| 2         | 61 \| 11          | 71 \| 12  | 60 \| 11    |
 | black_box_shrink_same_align [^2]    | 13 \| 2         | 53 \| 10          | 51 \| 10  | 23 \| 3     |
 | black_box_shrink_smaller_align [^2] | 13 \| 2         | 47 \| 8           | 45 \| 8   | 23 \| 3     |
@@ -118,7 +118,7 @@ If the layout is not statically known then the compiler can not do as many optim
 
 | name    | bump-scope (up) | bump-scope (down) | bumpalo    | blink-alloc |
 |---------|-----------------|-------------------|------------|-------------|
-| warm_up | 529 \| 60       | 535 \| 61         | 681 \| 74  | 601 \| 68   |
+| warm_up | 529 \| 60       | 535 \| 61         | 678 \| 74  | 601 \| 68   |
 | reset   | 28 \| 3         | 27 \| 3           | 23 \| 2    | 26 \| 3     |
 
 <!-- misc table end -->
