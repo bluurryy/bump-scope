@@ -726,7 +726,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
     /// The excess capacity may end up in either vector.
     /// This behavior is different from <code>Vec::[split_off](alloc_crate::vec::Vec::split_off)</code> which allocates a new vector for the split-off elements
     /// so the original vector keeps its capacity.
-    /// If you rather want that behavior then you can write this instead:
+    /// To allocate a new vector from the split-off bytes you can write:
     /// ```
     /// # use bump_scope::{Bump, FixedBumpVec};
     /// # let bump: Bump = Bump::new();
