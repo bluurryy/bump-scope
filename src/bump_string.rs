@@ -389,7 +389,7 @@ impl<A: BumpAllocatorTyped> BumpString<A> {
     /// ```
     /// # use bump_scope::{Bump, BumpString};
     /// # let bump: Bump = Bump::new();
-    /// let mut string = BumpString::with_capacity_in(10, &bump);
+    /// let mut string = BumpString::new_in(&bump);
     /// string.push_str("foobarbazqux");
     ///
     /// let foo = string.split_off(..3);
