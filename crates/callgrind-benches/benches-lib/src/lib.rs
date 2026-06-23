@@ -248,7 +248,7 @@ macro_rules! benches_library {
             }
         }
     ) => {
-        paste::paste! {
+        pastey::paste! {
             mod [<$name _ $library _impl>] {
                 use crate::wrapper::$library::Bump;
 
@@ -285,7 +285,7 @@ macro_rules! benches_library {
 
 macro_rules! benches {
     ($($name:ident { $($content:tt)* })*) => {
-        paste::paste! {
+        pastey::paste! {
             $(
                 const _: () = {
                     // just for language server coloring

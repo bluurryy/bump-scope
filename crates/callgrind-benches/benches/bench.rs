@@ -8,7 +8,7 @@
 
 macro_rules! benches_library {
     ($name:ident for $($library:ident)*) => {
-        paste::paste! {
+        pastey::paste! {
             pub mod [<bench_ $name>] {
                 $(
                     #[::gungraun::library_benchmark(
@@ -36,7 +36,7 @@ macro_rules! benches_library {
 
 macro_rules! benches {
     ($($name:ident)*) => {
-        paste::paste! {
+        pastey::paste! {
             $(
                 benches_library! {
                     $name for
