@@ -15,6 +15,7 @@ include = [
   "/CHANGELOG.md",
   "/LICENSE-*",
   "/README.md",
+  "/SECURITY.md",
   "/UPGRADING.md",
   "src/**/*"
 ]
