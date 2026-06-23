@@ -1,7 +1,10 @@
 //! Generated using [cargo-typify](https://github.com/oxidecomputer/typify/tree/main/cargo-typify)
-//! from [summary.v6.schema.json](https://github.com/gungraun/gungraun/blob/893dd78dedca5301dba1defc59b7a26198bd63d8/gungraun-runner/schemas/summary.v6.schema.json).
-#![expect(dead_code)]
-#![expect(clippy::clone_on_copy)]
+//! from [summary.v6.schema.json](https://github.com/gungraun/gungraun/blob/main/gungraun-runner/schemas/summary.v6.schema.json).
+#![allow(dead_code)]
+#![allow(clippy::redundant_closure_call)]
+#![allow(clippy::needless_lifetimes)]
+#![allow(clippy::match_single_binding)]
+#![allow(clippy::clone_on_copy)]
 
 #[doc = r" Error types."]
 pub mod error {
@@ -57,11 +60,6 @@ pub enum BenchmarkKind {
     LibraryBenchmark,
     #[doc = "A binary benchmark"]
     BinaryBenchmark,
-}
-impl ::std::convert::From<&Self> for BenchmarkKind {
-    fn from(value: &BenchmarkKind) -> Self {
-        value.clone()
-    }
 }
 impl ::std::fmt::Display for BenchmarkKind {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -248,11 +246,6 @@ pub struct BenchmarkSummary {
     pub summary_output: ::std::option::Option<SummaryOutput>,
     #[doc = "The version of this format. Only backwards incompatible changes cause an increase of the\nversion"]
     pub version: ::std::string::String,
-}
-impl ::std::convert::From<&BenchmarkSummary> for BenchmarkSummary {
-    fn from(value: &BenchmarkSummary) -> Self {
-        value.clone()
-    }
 }
 impl BenchmarkSummary {
     pub fn builder() -> builder::BenchmarkSummary {
@@ -459,11 +452,6 @@ pub enum CachegrindMetric {
     #[doc = "Indirect branches mispredicted (--branch-sim=yes)"]
     Bim,
 }
-impl ::std::convert::From<&Self> for CachegrindMetric {
-    fn from(value: &CachegrindMetric) -> Self {
-        value.clone()
-    }
-}
 impl ::std::fmt::Display for CachegrindMetric {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         match *self {
@@ -654,11 +642,6 @@ pub enum DhatMetric {
     #[doc = "The maximum amount of heap blocks"]
     MaximumBlocks,
 }
-impl ::std::convert::From<&Self> for DhatMetric {
-    fn from(value: &DhatMetric) -> Self {
-        value.clone()
-    }
-}
 impl ::std::fmt::Display for DhatMetric {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         match *self {
@@ -749,11 +732,6 @@ pub struct Diffs {
     #[doc = "The factor of the difference between two `Metrics` serialized as string to preserve\ninfinity values and void `null` in json"]
     pub factor: ::std::string::String,
 }
-impl ::std::convert::From<&Diffs> for Diffs {
-    fn from(value: &Diffs) -> Self {
-        value.clone()
-    }
-}
 impl Diffs {
     pub fn builder() -> builder::Diffs {
         Default::default()
@@ -767,6 +745,19 @@ impl Diffs {
 #[doc = "{"]
 #[doc = "  \"description\": \"Represent values that have either a `Left` or `Right` value or `Both` values\","]
 #[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"description\": \"Represents a value from the left side\","]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"Left\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"Left\": {"]
+#[doc = "          \"$ref\": \"#/definitions/ProfileInfo\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
 #[doc = "    {"]
 #[doc = "      \"description\": \"Represents a value from both sides\","]
 #[doc = "      \"type\": \"object\","]
@@ -786,19 +777,6 @@ impl Diffs {
 #[doc = "          ],"]
 #[doc = "          \"maxItems\": 2,"]
 #[doc = "          \"minItems\": 2"]
-#[doc = "        }"]
-#[doc = "      },"]
-#[doc = "      \"additionalProperties\": false"]
-#[doc = "    },"]
-#[doc = "    {"]
-#[doc = "      \"description\": \"Represents a value from the left side\","]
-#[doc = "      \"type\": \"object\","]
-#[doc = "      \"required\": ["]
-#[doc = "        \"Left\""]
-#[doc = "      ],"]
-#[doc = "      \"properties\": {"]
-#[doc = "        \"Left\": {"]
-#[doc = "          \"$ref\": \"#/definitions/ProfileInfo\""]
 #[doc = "        }"]
 #[doc = "      },"]
 #[doc = "      \"additionalProperties\": false"]
@@ -822,17 +800,12 @@ impl Diffs {
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 pub enum EitherOrBoth {
-    #[doc = "Represents a value from both sides"]
-    Both(ProfileInfo, ProfileInfo),
     #[doc = "Represents a value from the left side"]
     Left(ProfileInfo),
+    #[doc = "Represents a value from both sides"]
+    Both(ProfileInfo, ProfileInfo),
     #[doc = "Represents a value from the right side"]
     Right(ProfileInfo),
-}
-impl ::std::convert::From<&Self> for EitherOrBoth {
-    fn from(value: &EitherOrBoth) -> Self {
-        value.clone()
-    }
 }
 impl ::std::convert::From<(ProfileInfo, ProfileInfo)> for EitherOrBoth {
     fn from(value: (ProfileInfo, ProfileInfo)) -> Self {
@@ -847,6 +820,19 @@ impl ::std::convert::From<(ProfileInfo, ProfileInfo)> for EitherOrBoth {
 #[doc = "{"]
 #[doc = "  \"description\": \"Represent values that have either a `Left` or `Right` value or `Both` values\","]
 #[doc = "  \"oneOf\": ["]
+#[doc = "    {"]
+#[doc = "      \"description\": \"Represents a value from the left side\","]
+#[doc = "      \"type\": \"object\","]
+#[doc = "      \"required\": ["]
+#[doc = "        \"Left\""]
+#[doc = "      ],"]
+#[doc = "      \"properties\": {"]
+#[doc = "        \"Left\": {"]
+#[doc = "          \"$ref\": \"#/definitions/Metric\""]
+#[doc = "        }"]
+#[doc = "      },"]
+#[doc = "      \"additionalProperties\": false"]
+#[doc = "    },"]
 #[doc = "    {"]
 #[doc = "      \"description\": \"Represents a value from both sides\","]
 #[doc = "      \"type\": \"object\","]
@@ -871,19 +857,6 @@ impl ::std::convert::From<(ProfileInfo, ProfileInfo)> for EitherOrBoth {
 #[doc = "      \"additionalProperties\": false"]
 #[doc = "    },"]
 #[doc = "    {"]
-#[doc = "      \"description\": \"Represents a value from the left side\","]
-#[doc = "      \"type\": \"object\","]
-#[doc = "      \"required\": ["]
-#[doc = "        \"Left\""]
-#[doc = "      ],"]
-#[doc = "      \"properties\": {"]
-#[doc = "        \"Left\": {"]
-#[doc = "          \"$ref\": \"#/definitions/Metric\""]
-#[doc = "        }"]
-#[doc = "      },"]
-#[doc = "      \"additionalProperties\": false"]
-#[doc = "    },"]
-#[doc = "    {"]
 #[doc = "      \"description\": \"Represents a value from the right side\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
@@ -902,17 +875,12 @@ impl ::std::convert::From<(ProfileInfo, ProfileInfo)> for EitherOrBoth {
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 pub enum EitherOrBoth2 {
-    #[doc = "Represents a value from both sides"]
-    Both(Metric, Metric),
     #[doc = "Represents a value from the left side"]
     Left(Metric),
+    #[doc = "Represents a value from both sides"]
+    Both(Metric, Metric),
     #[doc = "Represents a value from the right side"]
     Right(Metric),
-}
-impl ::std::convert::From<&Self> for EitherOrBoth2 {
-    fn from(value: &EitherOrBoth2) -> Self {
-        value.clone()
-    }
 }
 impl ::std::convert::From<(Metric, Metric)> for EitherOrBoth2 {
     fn from(value: (Metric, Metric)) -> Self {
@@ -961,11 +929,6 @@ pub enum ErrorMetric {
     SuppressedErrors,
     #[doc = "The amount of suppressed error contexts"]
     SuppressedContexts,
-}
-impl ::std::convert::From<&Self> for ErrorMetric {
-    fn from(value: &ErrorMetric) -> Self {
-        value.clone()
-    }
 }
 impl ::std::fmt::Display for ErrorMetric {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -1284,11 +1247,6 @@ pub enum EventKind {
     #[doc = "Counter showing bad spatial locality for LL caches (--cachuse=yes)"]
     SpLoss2,
 }
-impl ::std::convert::From<&Self> for EventKind {
-    fn from(value: &EventKind) -> Self {
-        value.clone()
-    }
-}
 impl ::std::fmt::Display for EventKind {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         match *self {
@@ -1454,11 +1412,6 @@ pub struct FlamegraphSummary {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub regular_path: ::std::option::Option<::std::string::String>,
 }
-impl ::std::convert::From<&FlamegraphSummary> for FlamegraphSummary {
-    fn from(value: &FlamegraphSummary) -> Self {
-        value.clone()
-    }
-}
 impl FlamegraphSummary {
     pub fn builder() -> builder::FlamegraphSummary {
         Default::default()
@@ -1511,11 +1464,6 @@ pub enum Metric {
     Int(u64),
     #[doc = "A float `Metric`"]
     Float(f64),
-}
-impl ::std::convert::From<&Self> for Metric {
-    fn from(value: &Metric) -> Self {
-        value.clone()
-    }
 }
 impl ::std::convert::From<u64> for Metric {
     fn from(value: u64) -> Self {
@@ -1640,11 +1588,6 @@ pub enum MetricKind {
     #[serde(rename = "DRD")]
     Drd(ErrorMetric),
 }
-impl ::std::convert::From<&Self> for MetricKind {
-    fn from(value: &MetricKind) -> Self {
-        value.clone()
-    }
-}
 impl ::std::convert::From<EventKind> for MetricKind {
     fn from(value: EventKind) -> Self {
         Self::Callgrind(value)
@@ -1703,11 +1646,6 @@ pub struct MetricsDiff {
     #[doc = "Either the `new`, `old` or both metrics"]
     pub metrics: EitherOrBoth2,
 }
-impl ::std::convert::From<&MetricsDiff> for MetricsDiff {
-    fn from(value: &MetricsDiff) -> Self {
-        value.clone()
-    }
-}
 impl MetricsDiff {
     pub fn builder() -> builder::MetricsDiff {
         Default::default()
@@ -1739,11 +1677,6 @@ impl ::std::ops::Deref for MetricsSummary {
 impl ::std::convert::From<MetricsSummary> for ::std::collections::HashMap<::std::string::String, MetricsDiff> {
     fn from(value: MetricsSummary) -> Self {
         value.0
-    }
-}
-impl ::std::convert::From<&MetricsSummary> for MetricsSummary {
-    fn from(value: &MetricsSummary) -> Self {
-        value.clone()
     }
 }
 impl ::std::convert::From<::std::collections::HashMap<::std::string::String, MetricsDiff>> for MetricsSummary {
@@ -1779,11 +1712,6 @@ impl ::std::convert::From<MetricsSummary2> for ::std::collections::HashMap<::std
         value.0
     }
 }
-impl ::std::convert::From<&MetricsSummary2> for MetricsSummary2 {
-    fn from(value: &MetricsSummary2) -> Self {
-        value.clone()
-    }
-}
 impl ::std::convert::From<::std::collections::HashMap<::std::string::String, MetricsDiff>> for MetricsSummary2 {
     fn from(value: ::std::collections::HashMap<::std::string::String, MetricsDiff>) -> Self {
         Self(value)
@@ -1817,11 +1745,6 @@ impl ::std::convert::From<MetricsSummary3> for ::std::collections::HashMap<::std
         value.0
     }
 }
-impl ::std::convert::From<&MetricsSummary3> for MetricsSummary3 {
-    fn from(value: &MetricsSummary3) -> Self {
-        value.clone()
-    }
-}
 impl ::std::convert::From<::std::collections::HashMap<::std::string::String, MetricsDiff>> for MetricsSummary3 {
     fn from(value: ::std::collections::HashMap<::std::string::String, MetricsDiff>) -> Self {
         Self(value)
@@ -1853,11 +1776,6 @@ impl ::std::ops::Deref for MetricsSummary4 {
 impl ::std::convert::From<MetricsSummary4> for ::std::collections::HashMap<::std::string::String, MetricsDiff> {
     fn from(value: MetricsSummary4) -> Self {
         value.0
-    }
-}
-impl ::std::convert::From<&MetricsSummary4> for MetricsSummary4 {
-    fn from(value: &MetricsSummary4) -> Self {
-        value.clone()
     }
 }
 impl ::std::convert::From<::std::collections::HashMap<::std::string::String, MetricsDiff>> for MetricsSummary4 {
@@ -1935,11 +1853,6 @@ pub struct Profile {
     #[doc = "The Valgrind tool like `DHAT`, `Memcheck` etc."]
     pub tool: ValgrindTool,
 }
-impl ::std::convert::From<&Profile> for Profile {
-    fn from(value: &Profile) -> Self {
-        value.clone()
-    }
-}
 impl Profile {
     pub fn builder() -> builder::Profile {
         Default::default()
@@ -1983,11 +1896,6 @@ pub struct ProfileData {
     pub parts: ::std::vec::Vec<ProfilePart>,
     #[doc = "The total over the [`ProfilePart`]s"]
     pub total: ProfileTotal,
-}
-impl ::std::convert::From<&ProfileData> for ProfileData {
-    fn from(value: &ProfileData) -> Self {
-        value.clone()
-    }
 }
 impl ProfileData {
     pub fn builder() -> builder::ProfileData {
@@ -2079,11 +1987,6 @@ pub struct ProfileInfo {
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub thread: ::std::option::Option<u32>,
 }
-impl ::std::convert::From<&ProfileInfo> for ProfileInfo {
-    fn from(value: &ProfileInfo) -> Self {
-        value.clone()
-    }
-}
 impl ProfileInfo {
     pub fn builder() -> builder::ProfileInfo {
         Default::default()
@@ -2129,11 +2032,6 @@ pub struct ProfilePart {
     #[doc = "The [`ToolMetricSummary`]"]
     pub metrics_summary: ToolMetricSummary,
 }
-impl ::std::convert::From<&ProfilePart> for ProfilePart {
-    fn from(value: &ProfilePart) -> Self {
-        value.clone()
-    }
-}
 impl ProfilePart {
     pub fn builder() -> builder::ProfilePart {
         Default::default()
@@ -2178,11 +2076,6 @@ pub struct ProfileTotal {
     #[doc = "The summary of metrics of the tool"]
     pub summary: ToolMetricSummary,
 }
-impl ::std::convert::From<&ProfileTotal> for ProfileTotal {
-    fn from(value: &ProfileTotal) -> Self {
-        value.clone()
-    }
-}
 impl ProfileTotal {
     pub fn builder() -> builder::ProfileTotal {
         Default::default()
@@ -2214,11 +2107,6 @@ impl ::std::ops::Deref for Profiles {
 impl ::std::convert::From<Profiles> for ::std::vec::Vec<Profile> {
     fn from(value: Profiles) -> Self {
         value.0
-    }
-}
-impl ::std::convert::From<&Profiles> for Profiles {
-    fn from(value: &Profiles) -> Self {
-        value.clone()
     }
 }
 impl ::std::convert::From<::std::vec::Vec<Profile>> for Profiles {
@@ -2254,11 +2142,6 @@ pub enum SummaryFormat {
     Json,
     #[doc = "The format in pretty printed json"]
     PrettyJson,
-}
-impl ::std::convert::From<&Self> for SummaryFormat {
-    fn from(value: &SummaryFormat) -> Self {
-        value.clone()
-    }
 }
 impl ::std::fmt::Display for SummaryFormat {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -2332,11 +2215,6 @@ pub struct SummaryOutput {
     #[doc = "The path to the destination file of this summary"]
     pub path: ::std::string::String,
 }
-impl ::std::convert::From<&SummaryOutput> for SummaryOutput {
-    fn from(value: &SummaryOutput) -> Self {
-        value.clone()
-    }
-}
 impl SummaryOutput {
     pub fn builder() -> builder::SummaryOutput {
         Default::default()
@@ -2351,12 +2229,12 @@ impl SummaryOutput {
 #[doc = "  \"description\": \"The `ToolMetricSummary` contains the `MetricsSummary` distinguished by tool and metric kinds\","]
 #[doc = "  \"oneOf\": ["]
 #[doc = "    {"]
-#[doc = "      \"description\": \"If there are no metrics extracted (currently massif, bbv)\","]
+#[doc = "      \"description\": \"If there are no metrics extracted (currently Massif, BBV)\","]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"const\": \"None\""]
 #[doc = "    },"]
 #[doc = "    {"]
-#[doc = "      \"description\": \"The error summary of tools which reports errors (memcheck, helgrind, drd)\","]
+#[doc = "      \"description\": \"The error summary of tools which reports errors (Memcheck, Helgrind, DRD)\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
 #[doc = "        \"ErrorTool\""]
@@ -2382,7 +2260,7 @@ impl SummaryOutput {
 #[doc = "      \"additionalProperties\": false"]
 #[doc = "    },"]
 #[doc = "    {"]
-#[doc = "      \"description\": \"The callgrind summary\","]
+#[doc = "      \"description\": \"The Callgrind summary\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
 #[doc = "        \"Callgrind\""]
@@ -2395,7 +2273,7 @@ impl SummaryOutput {
 #[doc = "      \"additionalProperties\": false"]
 #[doc = "    },"]
 #[doc = "    {"]
-#[doc = "      \"description\": \"The cachegrind summary\","]
+#[doc = "      \"description\": \"The Cachegrind summary\","]
 #[doc = "      \"type\": \"object\","]
 #[doc = "      \"required\": ["]
 #[doc = "        \"Cachegrind\""]
@@ -2413,21 +2291,16 @@ impl SummaryOutput {
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 pub enum ToolMetricSummary {
-    #[doc = "If there are no metrics extracted (currently massif, bbv)"]
+    #[doc = "If there are no metrics extracted (currently Massif, BBV)"]
     None,
-    #[doc = "The error summary of tools which reports errors (memcheck, helgrind, drd)"]
+    #[doc = "The error summary of tools which reports errors (Memcheck, Helgrind, DRD)"]
     ErrorTool(MetricsSummary),
     #[doc = "The dhat summary"]
     Dhat(MetricsSummary2),
-    #[doc = "The callgrind summary"]
+    #[doc = "The Callgrind summary"]
     Callgrind(MetricsSummary3),
-    #[doc = "The cachegrind summary"]
+    #[doc = "The Cachegrind summary"]
     Cachegrind(MetricsSummary4),
-}
-impl ::std::convert::From<&Self> for ToolMetricSummary {
-    fn from(value: &ToolMetricSummary) -> Self {
-        value.clone()
-    }
 }
 impl ::std::convert::From<MetricsSummary> for ToolMetricSummary {
     fn from(value: MetricsSummary) -> Self {
@@ -2595,11 +2468,6 @@ pub enum ToolRegression {
         new: Metric,
     },
 }
-impl ::std::convert::From<&Self> for ToolRegression {
-    fn from(value: &ToolRegression) -> Self {
-        value.clone()
-    }
-}
 #[doc = "The valgrind tools which can be run\n\nNote the default changes from `Callgrind` to `Cachegrind` if the `cachegrind` feature is\nselected."]
 #[doc = r""]
 #[doc = r" <details><summary>JSON schema</summary>"]
@@ -2609,42 +2477,42 @@ impl ::std::convert::From<&Self> for ToolRegression {
 #[doc = "  \"description\": \"The valgrind tools which can be run\\n\\nNote the default changes from `Callgrind` to `Cachegrind` if the `cachegrind` feature is\\nselected.\","]
 #[doc = "  \"oneOf\": ["]
 #[doc = "    {"]
-#[doc = "      \"description\": \"[Callgrind: a call-graph generating cache and branch prediction profiler](https://valgrind.org/docs/manual/cl-manual.html)\","]
+#[doc = "      \"description\": \"Callgrind: a call-graph generating cache and branch prediction profiler\\n<https://valgrind.org/docs/manual/cl-manual.html>\","]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"const\": \"Callgrind\""]
 #[doc = "    },"]
 #[doc = "    {"]
-#[doc = "      \"description\": \"[Cachegrind: a high-precision tracing profiler](https://valgrind.org/docs/manual/cg-manual.html)\","]
+#[doc = "      \"description\": \"Cachegrind: a high-precision tracing profiler\\n<https://valgrind.org/docs/manual/cg-manual.html>\","]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"const\": \"Cachegrind\""]
 #[doc = "    },"]
 #[doc = "    {"]
-#[doc = "      \"description\": \"[DHAT: a dynamic heap analysis tool](https://valgrind.org/docs/manual/dh-manual.html)\","]
+#[doc = "      \"description\": \"DHAT: a dynamic heap analysis tool\\n<https://valgrind.org/docs/manual/dh-manual.html>\","]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"const\": \"DHAT\""]
 #[doc = "    },"]
 #[doc = "    {"]
-#[doc = "      \"description\": \"[Memcheck: a memory error detector](https://valgrind.org/docs/manual/mc-manual.html)\","]
+#[doc = "      \"description\": \"Memcheck: a memory error detector\\n<https://valgrind.org/docs/manual/mc-manual.html>\","]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"const\": \"Memcheck\""]
 #[doc = "    },"]
 #[doc = "    {"]
-#[doc = "      \"description\": \"[Helgrind: a thread error detector](https://valgrind.org/docs/manual/hg-manual.html)\","]
+#[doc = "      \"description\": \"Helgrind: a thread error detector\\n<https://valgrind.org/docs/manual/hg-manual.html>\","]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"const\": \"Helgrind\""]
 #[doc = "    },"]
 #[doc = "    {"]
-#[doc = "      \"description\": \"[DRD: a thread error detector](https://valgrind.org/docs/manual/drd-manual.html)\","]
+#[doc = "      \"description\": \"DRD: a thread error detector\\n<https://valgrind.org/docs/manual/drd-manual.html>\","]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"const\": \"DRD\""]
 #[doc = "    },"]
 #[doc = "    {"]
-#[doc = "      \"description\": \"[Massif: a heap profiler](https://valgrind.org/docs/manual/ms-manual.html)\","]
+#[doc = "      \"description\": \"Massif: a heap profiler\\n<https://valgrind.org/docs/manual/ms-manual.html>\","]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"const\": \"Massif\""]
 #[doc = "    },"]
 #[doc = "    {"]
-#[doc = "      \"description\": \"[BBV: an experimental basic block vector generation tool](https://valgrind.org/docs/manual/bbv-manual.html)\","]
+#[doc = "      \"description\": \"BBV: an experimental basic block vector generation tool\\n<https://valgrind.org/docs/manual/bbv-manual.html>\","]
 #[doc = "      \"type\": \"string\","]
 #[doc = "      \"const\": \"BBV\""]
 #[doc = "    }"]
@@ -2654,30 +2522,25 @@ impl ::std::convert::From<&Self> for ToolRegression {
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum ValgrindTool {
-    #[doc = "[Callgrind: a call-graph generating cache and branch prediction profiler](https://valgrind.org/docs/manual/cl-manual.html)"]
+    #[doc = "Callgrind: a call-graph generating cache and branch prediction profiler\n<https://valgrind.org/docs/manual/cl-manual.html>"]
     Callgrind,
-    #[doc = "[Cachegrind: a high-precision tracing profiler](https://valgrind.org/docs/manual/cg-manual.html)"]
+    #[doc = "Cachegrind: a high-precision tracing profiler\n<https://valgrind.org/docs/manual/cg-manual.html>"]
     Cachegrind,
-    #[doc = "[DHAT: a dynamic heap analysis tool](https://valgrind.org/docs/manual/dh-manual.html)"]
+    #[doc = "DHAT: a dynamic heap analysis tool\n<https://valgrind.org/docs/manual/dh-manual.html>"]
     #[serde(rename = "DHAT")]
     Dhat,
-    #[doc = "[Memcheck: a memory error detector](https://valgrind.org/docs/manual/mc-manual.html)"]
+    #[doc = "Memcheck: a memory error detector\n<https://valgrind.org/docs/manual/mc-manual.html>"]
     Memcheck,
-    #[doc = "[Helgrind: a thread error detector](https://valgrind.org/docs/manual/hg-manual.html)"]
+    #[doc = "Helgrind: a thread error detector\n<https://valgrind.org/docs/manual/hg-manual.html>"]
     Helgrind,
-    #[doc = "[DRD: a thread error detector](https://valgrind.org/docs/manual/drd-manual.html)"]
+    #[doc = "DRD: a thread error detector\n<https://valgrind.org/docs/manual/drd-manual.html>"]
     #[serde(rename = "DRD")]
     Drd,
-    #[doc = "[Massif: a heap profiler](https://valgrind.org/docs/manual/ms-manual.html)"]
+    #[doc = "Massif: a heap profiler\n<https://valgrind.org/docs/manual/ms-manual.html>"]
     Massif,
-    #[doc = "[BBV: an experimental basic block vector generation tool](https://valgrind.org/docs/manual/bbv-manual.html)"]
+    #[doc = "BBV: an experimental basic block vector generation tool\n<https://valgrind.org/docs/manual/bbv-manual.html>"]
     #[serde(rename = "BBV")]
     Bbv,
-}
-impl ::std::convert::From<&Self> for ValgrindTool {
-    fn from(value: &ValgrindTool) -> Self {
-        value.clone()
-    }
 }
 impl ::std::fmt::Display for ValgrindTool {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -2781,7 +2644,7 @@ pub mod builder {
         {
             self.baselines = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for baselines: {}", e));
+                .map_err(|e| format!("error converting supplied value for baselines: {e}"));
             self
         }
         pub fn benchmark_exe<T>(mut self, value: T) -> Self
@@ -2791,7 +2654,7 @@ pub mod builder {
         {
             self.benchmark_exe = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for benchmark_exe: {}", e));
+                .map_err(|e| format!("error converting supplied value for benchmark_exe: {e}"));
             self
         }
         pub fn benchmark_file<T>(mut self, value: T) -> Self
@@ -2801,7 +2664,7 @@ pub mod builder {
         {
             self.benchmark_file = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for benchmark_file: {}", e));
+                .map_err(|e| format!("error converting supplied value for benchmark_file: {e}"));
             self
         }
         pub fn details<T>(mut self, value: T) -> Self
@@ -2811,7 +2674,7 @@ pub mod builder {
         {
             self.details = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for details: {}", e));
+                .map_err(|e| format!("error converting supplied value for details: {e}"));
             self
         }
         pub fn function_name<T>(mut self, value: T) -> Self
@@ -2821,7 +2684,7 @@ pub mod builder {
         {
             self.function_name = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for function_name: {}", e));
+                .map_err(|e| format!("error converting supplied value for function_name: {e}"));
             self
         }
         pub fn id<T>(mut self, value: T) -> Self
@@ -2831,7 +2694,7 @@ pub mod builder {
         {
             self.id = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for id: {}", e));
+                .map_err(|e| format!("error converting supplied value for id: {e}"));
             self
         }
         pub fn kind<T>(mut self, value: T) -> Self
@@ -2841,7 +2704,7 @@ pub mod builder {
         {
             self.kind = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for kind: {}", e));
+                .map_err(|e| format!("error converting supplied value for kind: {e}"));
             self
         }
         pub fn module_path<T>(mut self, value: T) -> Self
@@ -2851,7 +2714,7 @@ pub mod builder {
         {
             self.module_path = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for module_path: {}", e));
+                .map_err(|e| format!("error converting supplied value for module_path: {e}"));
             self
         }
         pub fn package_dir<T>(mut self, value: T) -> Self
@@ -2861,7 +2724,7 @@ pub mod builder {
         {
             self.package_dir = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for package_dir: {}", e));
+                .map_err(|e| format!("error converting supplied value for package_dir: {e}"));
             self
         }
         pub fn profiles<T>(mut self, value: T) -> Self
@@ -2871,7 +2734,7 @@ pub mod builder {
         {
             self.profiles = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for profiles: {}", e));
+                .map_err(|e| format!("error converting supplied value for profiles: {e}"));
             self
         }
         pub fn project_root<T>(mut self, value: T) -> Self
@@ -2881,7 +2744,7 @@ pub mod builder {
         {
             self.project_root = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for project_root: {}", e));
+                .map_err(|e| format!("error converting supplied value for project_root: {e}"));
             self
         }
         pub fn summary_output<T>(mut self, value: T) -> Self
@@ -2891,7 +2754,7 @@ pub mod builder {
         {
             self.summary_output = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for summary_output: {}", e));
+                .map_err(|e| format!("error converting supplied value for summary_output: {e}"));
             self
         }
         pub fn version<T>(mut self, value: T) -> Self
@@ -2901,7 +2764,7 @@ pub mod builder {
         {
             self.version = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for version: {}", e));
+                .map_err(|e| format!("error converting supplied value for version: {e}"));
             self
         }
     }
@@ -2965,7 +2828,7 @@ pub mod builder {
         {
             self.diff_pct = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for diff_pct: {}", e));
+                .map_err(|e| format!("error converting supplied value for diff_pct: {e}"));
             self
         }
         pub fn factor<T>(mut self, value: T) -> Self
@@ -2975,7 +2838,7 @@ pub mod builder {
         {
             self.factor = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for factor: {}", e));
+                .map_err(|e| format!("error converting supplied value for factor: {e}"));
             self
         }
     }
@@ -3021,7 +2884,7 @@ pub mod builder {
         {
             self.base_path = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for base_path: {}", e));
+                .map_err(|e| format!("error converting supplied value for base_path: {e}"));
             self
         }
         pub fn diff_path<T>(mut self, value: T) -> Self
@@ -3031,7 +2894,7 @@ pub mod builder {
         {
             self.diff_path = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for diff_path: {}", e));
+                .map_err(|e| format!("error converting supplied value for diff_path: {e}"));
             self
         }
         pub fn event_kind<T>(mut self, value: T) -> Self
@@ -3041,7 +2904,7 @@ pub mod builder {
         {
             self.event_kind = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for event_kind: {}", e));
+                .map_err(|e| format!("error converting supplied value for event_kind: {e}"));
             self
         }
         pub fn regular_path<T>(mut self, value: T) -> Self
@@ -3051,7 +2914,7 @@ pub mod builder {
         {
             self.regular_path = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for regular_path: {}", e));
+                .map_err(|e| format!("error converting supplied value for regular_path: {e}"));
             self
         }
     }
@@ -3097,7 +2960,7 @@ pub mod builder {
         {
             self.diffs = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for diffs: {}", e));
+                .map_err(|e| format!("error converting supplied value for diffs: {e}"));
             self
         }
         pub fn metrics<T>(mut self, value: T) -> Self
@@ -3107,7 +2970,7 @@ pub mod builder {
         {
             self.metrics = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for metrics: {}", e));
+                .map_err(|e| format!("error converting supplied value for metrics: {e}"));
             self
         }
     }
@@ -3155,7 +3018,7 @@ pub mod builder {
         {
             self.flamegraphs = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for flamegraphs: {}", e));
+                .map_err(|e| format!("error converting supplied value for flamegraphs: {e}"));
             self
         }
         pub fn log_paths<T>(mut self, value: T) -> Self
@@ -3165,7 +3028,7 @@ pub mod builder {
         {
             self.log_paths = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for log_paths: {}", e));
+                .map_err(|e| format!("error converting supplied value for log_paths: {e}"));
             self
         }
         pub fn out_paths<T>(mut self, value: T) -> Self
@@ -3175,7 +3038,7 @@ pub mod builder {
         {
             self.out_paths = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for out_paths: {}", e));
+                .map_err(|e| format!("error converting supplied value for out_paths: {e}"));
             self
         }
         pub fn summaries<T>(mut self, value: T) -> Self
@@ -3185,7 +3048,7 @@ pub mod builder {
         {
             self.summaries = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for summaries: {}", e));
+                .map_err(|e| format!("error converting supplied value for summaries: {e}"));
             self
         }
         pub fn tool<T>(mut self, value: T) -> Self
@@ -3195,7 +3058,7 @@ pub mod builder {
         {
             self.tool = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for tool: {}", e));
+                .map_err(|e| format!("error converting supplied value for tool: {e}"));
             self
         }
     }
@@ -3243,7 +3106,7 @@ pub mod builder {
         {
             self.parts = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for parts: {}", e));
+                .map_err(|e| format!("error converting supplied value for parts: {e}"));
             self
         }
         pub fn total<T>(mut self, value: T) -> Self
@@ -3253,7 +3116,7 @@ pub mod builder {
         {
             self.total = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for total: {}", e));
+                .map_err(|e| format!("error converting supplied value for total: {e}"));
             self
         }
     }
@@ -3305,7 +3168,7 @@ pub mod builder {
         {
             self.command = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for command: {}", e));
+                .map_err(|e| format!("error converting supplied value for command: {e}"));
             self
         }
         pub fn details<T>(mut self, value: T) -> Self
@@ -3315,7 +3178,7 @@ pub mod builder {
         {
             self.details = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for details: {}", e));
+                .map_err(|e| format!("error converting supplied value for details: {e}"));
             self
         }
         pub fn parent_pid<T>(mut self, value: T) -> Self
@@ -3325,7 +3188,7 @@ pub mod builder {
         {
             self.parent_pid = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for parent_pid: {}", e));
+                .map_err(|e| format!("error converting supplied value for parent_pid: {e}"));
             self
         }
         pub fn part<T>(mut self, value: T) -> Self
@@ -3335,7 +3198,7 @@ pub mod builder {
         {
             self.part = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for part: {}", e));
+                .map_err(|e| format!("error converting supplied value for part: {e}"));
             self
         }
         pub fn path<T>(mut self, value: T) -> Self
@@ -3345,7 +3208,7 @@ pub mod builder {
         {
             self.path = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for path: {}", e));
+                .map_err(|e| format!("error converting supplied value for path: {e}"));
             self
         }
         pub fn pid<T>(mut self, value: T) -> Self
@@ -3355,7 +3218,7 @@ pub mod builder {
         {
             self.pid = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for pid: {}", e));
+                .map_err(|e| format!("error converting supplied value for pid: {e}"));
             self
         }
         pub fn thread<T>(mut self, value: T) -> Self
@@ -3365,7 +3228,7 @@ pub mod builder {
         {
             self.thread = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for thread: {}", e));
+                .map_err(|e| format!("error converting supplied value for thread: {e}"));
             self
         }
     }
@@ -3417,7 +3280,7 @@ pub mod builder {
         {
             self.details = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for details: {}", e));
+                .map_err(|e| format!("error converting supplied value for details: {e}"));
             self
         }
         pub fn metrics_summary<T>(mut self, value: T) -> Self
@@ -3427,7 +3290,7 @@ pub mod builder {
         {
             self.metrics_summary = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for metrics_summary: {}", e));
+                .map_err(|e| format!("error converting supplied value for metrics_summary: {e}"));
             self
         }
     }
@@ -3469,7 +3332,7 @@ pub mod builder {
         {
             self.regressions = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for regressions: {}", e));
+                .map_err(|e| format!("error converting supplied value for regressions: {e}"));
             self
         }
         pub fn summary<T>(mut self, value: T) -> Self
@@ -3479,7 +3342,7 @@ pub mod builder {
         {
             self.summary = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for summary: {}", e));
+                .map_err(|e| format!("error converting supplied value for summary: {e}"));
             self
         }
     }
@@ -3521,7 +3384,7 @@ pub mod builder {
         {
             self.format = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for format: {}", e));
+                .map_err(|e| format!("error converting supplied value for format: {e}"));
             self
         }
         pub fn path<T>(mut self, value: T) -> Self
@@ -3531,7 +3394,7 @@ pub mod builder {
         {
             self.path = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for path: {}", e));
+                .map_err(|e| format!("error converting supplied value for path: {e}"));
             self
         }
     }
