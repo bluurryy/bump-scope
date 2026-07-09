@@ -36,10 +36,7 @@ where
 /// This trait provides additional methods and guarantees on top of an [`Allocator`].
 ///
 /// A `BumpAllocatorCore` has laxer safety conditions when using `Allocator` methods:
-/// - You can call `grow*`, `shrink` and `deallocate` with pointers that came from a different `BumpAllocatorCore`. In this case:
-///   - `grow*` will always allocate a new memory block.
-///   - `deallocate` will do nothing
-///   - `shrink` will either do nothing or allocate iff the alignment increases
+/// - You can call `grow*`, `shrink` and `deallocate` with pointers that came from a different `BumpAllocatorCore`.
 /// - Memory blocks can be split.
 /// - `shrink` never errors unless the new alignment is greater
 /// - `deallocate` may always be called when the pointer address is less than 16 and the size is 0
