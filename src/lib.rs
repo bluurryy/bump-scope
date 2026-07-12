@@ -18,7 +18,7 @@
 #![cfg_attr(feature = "nightly-clone-to-uninit", feature(clone_to_uninit, ptr_metadata))]
 #![cfg_attr(docsrs,
     feature(doc_cfg),
-    doc(auto_cfg(hide(feature = "panic-on-alloc"))) // too noisy
+    doc(auto_cfg(hide(feature, values("panic-on-alloc")))) // too noisy
 )]
 #![warn(
     clippy::pedantic,
