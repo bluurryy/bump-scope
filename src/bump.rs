@@ -228,7 +228,7 @@ maybe_default_allocator!(make_type);
 // When something is allocated Bump is borrowed and sending is not possible.
 unsafe impl<A, S> Send for Bump<A, S>
 where
-    A: Allocator,
+    A: Send + Allocator,
     S: BumpAllocatorSettings,
 {
 }
