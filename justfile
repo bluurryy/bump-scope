@@ -32,7 +32,6 @@ setup:
 fmt:
     cargo +nightly fmt
     cd crates/callgrind-benches && cargo +nightly fmt
-    cd crates/criterion-benches && cargo +nightly fmt
     cd crates/fuzzing-support && cargo +nightly fmt
     cd crates/test-hashbrown && cargo +nightly fmt
     cd crates/test-no-panic && cargo +nightly fmt
@@ -53,7 +52,6 @@ check:
 check-fmt:
     cargo +stable fmt --all --check
     cd crates/callgrind-benches && cargo +stable fmt --all --check
-    cd crates/criterion-benches && cargo +stable fmt --all --check
     cd crates/fuzzing-support && cargo +stable fmt --all --check
     cd crates/test-hashbrown && cargo +stable fmt --all --check
     cd crates/test-no-panic && cargo +stable fmt --all --check
@@ -79,7 +77,6 @@ check-clippy-nightly:
     cargo +nightly clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde -- -Dwarnings
     cargo +nightly clippy --tests --all-features -- -Dwarnings
     cd crates/callgrind-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
-    cd crates/criterion-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
     cd crates/fuzzing-support && cargo +nightly clippy --tests -- -Dwarnings
     cd crates/test-hashbrown && cargo +nightly clippy --tests -- -Dwarnings
     cd crates/test-hashbrown && cargo +nightly clippy --tests --all-features -- -Dwarnings

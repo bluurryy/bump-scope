@@ -24,7 +24,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo +stable fmt --all --check
       - run: cd crates/callgrind-benches && cargo +stable fmt --all --check
-      - run: cd crates/criterion-benches && cargo +stable fmt --all --check
       - run: cd crates/fuzzing-support && cargo +stable fmt --all --check
       - run: cd crates/test-hashbrown && cargo +stable fmt --all --check
       - run: cd crates/test-no-panic && cargo +stable fmt --all --check
@@ -53,7 +52,6 @@ jobs:
       - run: cargo +nightly clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde -- -Dwarnings
       - run: cargo +nightly clippy --tests --all-features -- -Dwarnings
       - run: cd crates/callgrind-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
-      - run: cd crates/criterion-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
       - run: cd crates/fuzzing-support && cargo +nightly clippy --tests -- -Dwarnings
       - run: cd crates/test-hashbrown && cargo +nightly clippy --tests -- -Dwarnings
       - run: cd crates/test-no-panic && cargo +nightly clippy --tests -- -Dwarnings
