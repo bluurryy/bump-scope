@@ -143,8 +143,7 @@ As a workaround you can use the [`claim`] method on a `&Bump(Scope)` to return a
 mutably dereferences to a `BumpScope`, allowing you to call `.scoped()` and `.scope_guard()`.
 
 A `bump.claim()` call replaces the allocator referred to by `bump` with a dummy allocator while the returned `BumpClaimGuard`
-is live. This dummy allocator errors on `allocate` / `grow`, does nothing on `deallocate` / `shrink` and
-reports an empty bump allocator from the `stats` api.
+is live. This dummy allocator errors when trying to allocate or grow memory and reports an empty bump allocator from the `stats` api.
 
 This makes it possible to enter scopes while a there are still outstanding
 references to that bump allocator:

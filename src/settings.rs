@@ -35,10 +35,10 @@
 //!   When this is `false`, calling `claim` will fail to compile.
 //! - **`DEALLOCATES`** *default: true* — Toggles deallocation.
 //!
-//!   When this is `false`, [`Allocator::deallocate`] does nothing.
+//!   When this is `false`, [`Allocator::deallocate`] does not free memory.
 //! - **`SHRINKS`** *default: true* — Toggles shrinking.
 //!
-//!   When this is `false`, [`Allocator::shrink`] and [`BumpAllocatorTyped::shrink_slice`] do nothing.
+//!   When this is `false`, [`Allocator::shrink`] and [`BumpAllocatorTyped::shrink_slice`] does not free memory.
 //!   Calling `shrink` with a new layout of a greater alignment may still reallocate.
 //!   
 //!   This also affects the temporary collections used in [`alloc_iter`][alloc_iter], [`alloc_fmt`][alloc_fmt], etc.

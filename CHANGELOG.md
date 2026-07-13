@@ -181,7 +181,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Don't shrink `BumpVec` / `BumpString` with a `WithoutShrink` allocator (fixed `BumpAllocator::shrink_slice` to do nothing)
+- Don't shrink `BumpVec` / `BumpString` with a `WithoutShrink` allocator (via not shrinking in `BumpAllocator::shrink_slice`)
 
 ## [1.2.0] - 2025-08-14
 
