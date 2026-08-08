@@ -173,7 +173,7 @@ They are also available in the following variants:
 ##### API changes
 The collections are designed to have the same api as their std counterparts with these exceptions:
 - [`split_off`](https://docs.rs/bump-scope/2.3.3/bump_scope/struct.BumpVec.html#method.split_off) —  splits the collection in place without allocation; the parameter is a range instead of a single index
-- [`retain`](https://docs.rs/bump-scope/2.3.3/bump_scope/struct.BumpVec.html#method.retain) —  takes a closure with a `&mut T` parameter like `Vec::retain_mut`
+- [`retain`](https://docs.rs/bump-scope/2.3.3/bump_scope/struct.BumpVec.html#method.retain) —  takes a closure with a `&mut T` parameter like [`Vec::retain_mut`](https://doc.rust-lang.org/alloc/macro.vec.htmlstruct.Vec.html#method.retain_mut)
 
 ##### New features
 - [`append`](https://docs.rs/bump-scope/2.3.3/bump_scope/struct.BumpVec.html#method.append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `vec::Drain<T>` etc.
