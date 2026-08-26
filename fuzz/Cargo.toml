@@ -78,6 +78,6 @@ path = "fuzz_targets/vec_split_off.rs"
 test = false
 
 [dependencies]
-env_logger = { version = "0.11.8", default-features = false }
+env_logger = { version = "0.11.11", default-features = false }
 fuzzing-support = { path = "../crates/fuzzing-support" }
-libfuzzer-sys = "0.4.10"
+libfuzzer-sys = "0.4.13"

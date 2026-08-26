@@ -10,14 +10,14 @@ harness = false
 name = "bench"
 
 [dependencies]
-fast-glob = "1.0.1"
+fast-glob = "1.1.0"
 markdown-tables = "0.1.0"
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
 
 [dev-dependencies]
 benches-lib = { path = "benches-lib" }
-gungraun = "0.19.2"
+gungraun = "0.19.4"
 pastey = "0.2.3"
 
 [profile.bench]
