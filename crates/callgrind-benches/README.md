@@ -10,7 +10,7 @@ The benchmarks results in the tables below are shown in the format "instructions
 
 <!-- spellchecker:off because the commit hash may get flagged -->
 
-These are the results of a benchmark run with <!-- version start -->`rustc 1.97.1 (8bab26f4f 2026-07-14)` on `x86_64-unknown-linux-gnu` using `LLVM version 22.1.6`<!-- version end -->.
+These are the results of a benchmark run with <!-- version start -->`rustc 1.98.0 (88d9e12ae 2026-08-18)` on `x86_64-unknown-linux-gnu` using `LLVM version 22.1.8`<!-- version end -->.
 
 <!-- spellchecker:on -->
 
@@ -118,7 +118,7 @@ If the layout is not statically known then the compiler can not do as many optim
 
 | name    | bump-scope (up) | bump-scope (down) | bumpalo    | blink-alloc |
 |---------|-----------------|-------------------|------------|-------------|
-| warm_up | 529 \| 60       | 535 \| 61         | 678 \| 74  | 602 \| 68   |
+| warm_up | 529 \| 60       | 535 \| 61         | 678 \| 74  | 601 \| 68   |
 | reset   | 28 \| 3         | 27 \| 3           | 23 \| 2    | 26 \| 3     |
 
 <!-- misc table end -->
