@@ -661,7 +661,7 @@ impl<'a> BumpBox<'a, str> {
     pub(crate) fn assert_char_boundary(&self, index: usize) {
         #[cold]
         #[track_caller]
-        #[inline(never)]
+        #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
         fn assert_failed() {
             panic!("index is not on a char boundary")
         }
@@ -1258,7 +1258,7 @@ impl<'a, T: Sized> BumpBox<'a, [MaybeUninit<T>]> {
     #[inline]
     pub fn init_fill_iter(self, mut iter: impl Iterator<Item = T>) -> BumpBox<'a, [T]> {
         #[cold]
-        #[inline(never)]
+        #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
         #[track_caller]
         fn iter_ran_out() -> ! {
             panic!("iterator ran out of items to fill the slice with");
@@ -1698,11 +1698,6 @@ impl<'a, T> BumpBox<'a, [T]> {
         unsafe { self.set_len(self.len() + amount) };
     }
 
-    #[inline]
-    pub(crate) unsafe fn dec_len(&mut self, amount: usize) {
-        unsafe { self.set_len(self.len() - amount) };
-    }
-
     #[inline(always)]
     pub(crate) unsafe fn set_len_on_drop(&mut self) -> SetLenOnDropByPtr<'_, T> {
         SetLenOnDropByPtr::new(&mut self.ptr)
@@ -1732,32 +1727,32 @@ impl<'a, T> BumpBox<'a, [T]> {
     #[track_caller]
     pub fn remove(&mut self, index: usize) -> T {
         #[cold]
-        #[inline(never)]
+        #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
         #[track_caller]
         fn assert_failed(index: usize, len: usize) -> ! {
             panic!("removal index (is {index}) should be < len (is {len})");
         }
 
-        if index >= self.len() {
-            assert_failed(index, self.len());
+        let len = self.len();
+        if index >= len {
+            assert_failed(index, len);
         }
 
         unsafe {
-            let start = self.as_mut_ptr();
-            let value_ptr = start.add(index);
+            // infallible
+            let ret;
+            {
+                // the place we are taking from.
+                let ptr = self.as_mut_ptr().add(index);
+                // copy it out, unsafely having a copy of the value on
+                // the stack and in the vector at the same time.
+                ret = ptr::read(ptr);
 
-            // copy it out, unsafely having a copy of the value on
-            // the stack and in the vector at the same time
-            let value = value_ptr.read();
-
-            // shift everything to fill in that spot
-            if index != self.len() {
-                let len = self.len() - index - 1;
-                value_ptr.add(1).copy_to(value_ptr, len);
+                // Shift everything down to fill in that spot.
+                ptr::copy(ptr.add(1), ptr, len - index - 1);
             }
-
-            self.dec_len(1);
-            value
+            self.set_len(len - 1);
+            ret
         }
     }
 
@@ -1789,27 +1784,24 @@ impl<'a, T> BumpBox<'a, [T]> {
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> T {
         #[cold]
-        #[inline(never)]
-        #[track_caller]
+        #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
         fn assert_failed(index: usize, len: usize) -> ! {
             panic!("swap_remove index (is {index}) should be < len (is {len})");
         }
 
-        if index >= self.len() {
-            assert_failed(index, self.len());
+        let len = self.len();
+        if index >= len {
+            assert_failed(index, len);
         }
 
         unsafe {
             // We replace self[index] with the last element. Note that if the
             // bounds check above succeeds there must be a last element (which
             // can be self[index] itself).
-
-            let start = self.as_mut_ptr();
-            let value_ptr = start.add(index);
-            let value = value_ptr.read();
-            self.dec_len(1);
-
-            start.add(self.len()).copy_to(value_ptr, 1);
+            let value = ptr::read(self.as_ptr().add(index));
+            let base_ptr = self.as_mut_ptr();
+            ptr::copy(base_ptr.add(len - 1), base_ptr.add(index), 1);
+            self.set_len(len - 1);
             value
         }
     }
@@ -2017,7 +2009,7 @@ impl<'a, T> BumpBox<'a, [T]> {
     #[must_use]
     pub fn split_at(self, at: usize) -> (Self, Self) {
         #[cold]
-        #[inline(never)]
+        #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
         #[track_caller]
         fn assert_failed(at: usize, len: usize) -> ! {
             panic!("`at` split index (is {at}) should be <= len (is {len})");
@@ -2203,14 +2195,14 @@ impl<'a, T> BumpBox<'a, [T]> {
     #[must_use]
     pub fn merge(self, other: Self) -> Self {
         #[cold]
-        #[inline(never)]
+        #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
         #[track_caller]
         fn assert_failed_zst() -> ! {
             panic!("adding the lengths overflowed");
         }
 
         #[cold]
-        #[inline(never)]
+        #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
         #[track_caller]
         fn assert_failed() -> ! {
             panic!("the two slices are not contiguous");
@@ -2544,7 +2536,32 @@ impl<'a, T> BumpBox<'a, [T]> {
             return;
         }
 
-        /* INVARIANT: vec.len() > read >= write > write-1 >= 0 */
+        // Check if we ever want to remove anything.
+        // This allows to use copy_non_overlapping in next cycle.
+        // And avoids any memory writes if we don't need to remove anything.
+        let mut first_duplicate_idx: usize = 1;
+        let start = self.as_mut_ptr();
+        while first_duplicate_idx != len {
+            let found_duplicate = unsafe {
+                // SAFETY: first_duplicate always in range [1..len)
+                // Note that we start iteration from 1 so we never overflow.
+                let prev = start.add(first_duplicate_idx.wrapping_sub(1));
+                let current = start.add(first_duplicate_idx);
+                // We explicitly say in docs that references are reversed.
+                same_bucket(&mut *current, &mut *prev)
+            };
+            if found_duplicate {
+                break;
+            }
+            first_duplicate_idx += 1;
+        }
+        // Don't need to remove anything.
+        // We cannot get bigger than len.
+        if first_duplicate_idx == len {
+            return;
+        }
+
+        /* INVARIANT: vec.len() > read > write > write-1 >= 0 */
         struct FillGapOnDrop<'b, 'a, T> {
             /* Offset of the element we want to check if it is duplicate */
             read: usize,
@@ -2554,7 +2571,7 @@ impl<'a, T> BumpBox<'a, [T]> {
             write: usize,
 
             /* The Vec that would need correction if `same_bucket` panicked */
-            boxed: &'b mut BumpBox<'a, [T]>,
+            vec: &'b mut BumpBox<'a, [T]>,
         }
 
         impl<T> Drop for FillGapOnDrop<'_, '_, T> {
@@ -2565,8 +2582,8 @@ impl<'a, T> BumpBox<'a, [T]> {
                  * and `len - read` never overflow and that the copy is always
                  * in-bounds. */
                 unsafe {
-                    let ptr = self.boxed.as_mut_ptr();
-                    let len = self.boxed.len();
+                    let ptr = self.vec.as_mut_ptr();
+                    let len = self.vec.len();
 
                     /* How many items were left when `same_bucket` panicked.
                      * Basically vec[read..].len() */
@@ -2585,40 +2602,47 @@ impl<'a, T> BumpBox<'a, [T]> {
                      * Basically vec[read..write].len() */
                     let dropped = self.read.wrapping_sub(self.write);
 
-                    self.boxed.set_len(len - dropped);
+                    self.vec.set_len(len - dropped);
                 }
             }
         }
 
-        let mut gap = FillGapOnDrop {
-            read: 1,
-            write: 1,
-            boxed: self,
-        };
-        let ptr = gap.boxed.as_mut_ptr();
-
         /* Drop items while going through Vec, it should be more efficient than
          * doing slice partition_dedup + truncate */
+
+        // Construct gap first and then drop item to avoid memory corruption if `T::drop` panics.
+        let mut gap = FillGapOnDrop {
+            read: first_duplicate_idx + 1,
+            write: first_duplicate_idx,
+            vec: self,
+        };
+        unsafe {
+            // SAFETY: we checked that first_duplicate_idx in bounds before.
+            // If drop panics, `gap` would remove this item without drop.
+            ptr::drop_in_place(start.add(first_duplicate_idx));
+        }
 
         /* SAFETY: Because of the invariant, read_ptr, prev_ptr and write_ptr
          * are always in-bounds and read_ptr never aliases prev_ptr */
         unsafe {
             while gap.read < len {
-                let read_ptr = ptr.add(gap.read);
-                let prev_ptr = ptr.add(gap.write.wrapping_sub(1));
+                let read_ptr = start.add(gap.read);
+                let prev_ptr = start.add(gap.write.wrapping_sub(1));
 
-                if same_bucket(&mut *read_ptr, &mut *prev_ptr) {
+                // We explicitly say in docs that references are reversed.
+                let found_duplicate = same_bucket(&mut *read_ptr, &mut *prev_ptr);
+                if found_duplicate {
                     // Increase `gap.read` now since the drop may panic.
                     gap.read += 1;
                     /* We have found duplicate, drop it in-place */
                     ptr::drop_in_place(read_ptr);
                 } else {
-                    let write_ptr = ptr.add(gap.write);
+                    let write_ptr = start.add(gap.write);
 
-                    /* Because `read_ptr` can be equal to `write_ptr`, we either
-                     * have to use `copy` or conditional `copy_nonoverlapping`.
-                     * Looks like the first option is faster. */
-                    ptr::copy(read_ptr, write_ptr, 1);
+                    /* read_ptr cannot be equal to write_ptr because at this point
+                     * we guaranteed to skip at least one element (before loop starts).
+                     */
+                    ptr::copy_nonoverlapping(read_ptr, write_ptr, 1);
 
                     /* We have filled that place, so go further */
                     gap.write += 1;
@@ -2627,9 +2651,9 @@ impl<'a, T> BumpBox<'a, [T]> {
             }
 
             /* Technically we could let `gap` clean up with its Drop, but
-             * when `same_bucket` is [guaranteed allocated]o not panic, this bloats a little
+             * when `same_bucket` is guaranteed to not panic, this bloats a little
              * the codegen, so we just do it manually */
-            gap.boxed.set_len(gap.write);
+            gap.vec.set_len(gap.write);
             mem::forget(gap);
         }
     }
