@@ -264,7 +264,7 @@ impl<'a> FixedBumpString<'a> {
     /// [`&str`]: prim@str "&str"
     /// [`into_bytes`]: Self::into_bytes
     pub fn from_utf8(vec: FixedBumpVec<'a, u8>) -> Result<Self, FromUtf8Error<FixedBumpVec<'a, u8>>> {
-        match core::str::from_utf8(vec.as_slice()) {
+        match str::from_utf8(vec.as_slice()) {
             // SAFETY: `FixedBumpVec<u8>` and `FixedBumpString` have the same representation;
             // only the invariant that the bytes are utf8 is different.
             Ok(_) => Ok(unsafe { mem::transmute(vec) }),
