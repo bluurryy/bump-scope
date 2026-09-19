@@ -13,7 +13,7 @@ use crate::{
     BumpBox, BumpVec, ErrorBehavior, NoDrop, SizedTypeProperties,
     alloc::AllocError,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
-    polyfill::{self, hint::likely, non_null, pointer, slice},
+    polyfill::{self, hint::likely, non_null, slice},
     traits::BumpAllocatorTypedScope,
 };
 
@@ -52,7 +52,7 @@ pub(crate) use raw::RawFixedBumpVec;
 /// assert_eq!(slice, [1, 2, 3]);
 /// ```
 ///
-/// Growing it via `BumpVec`:
+/// Growing via `BumpVec`:
 ///
 /// ```
 /// # use bump_scope::{Bump, BumpScope, BumpVec, FixedBumpVec};
@@ -1215,28 +1215,34 @@ impl<'a, T> FixedBumpVec<'a, T> {
     pub(crate) fn generic_insert_mut<E: ErrorBehavior>(&mut self, index: usize, element: T) -> Result<&mut T, E> {
         #[cold]
         #[track_caller]
-        #[inline(never)]
+        #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
         fn assert_failed(index: usize, len: usize) -> ! {
             panic!("insertion index (is {index}) should be <= len (is {len})");
         }
 
-        if index > self.len() {
-            assert_failed(index, self.len());
+        let len = self.len();
+        if index > len {
+            assert_failed(index, len);
         }
-
+        // space for the new element
         self.generic_reserve_one()?;
 
         unsafe {
-            let pos = self.as_mut_ptr().add(index);
-
-            if index != self.len() {
-                let len = self.len() - index;
-                ptr::copy(pos, pos.add(1), len);
+            // infallible
+            // The spot to put the new value
+            let p = self.as_mut_ptr().add(index);
+            {
+                if index < len {
+                    // Shift everything over to make space. (Duplicating the
+                    // `index`th element into two consecutive places.)
+                    ptr::copy(p, p.add(1), len - index);
+                }
+                // Write it in, overwriting the first copy of the `index`th
+                // element.
+                ptr::write(p, element);
             }
-
-            pos.write(element);
-            self.inc_len(1);
-            Ok(&mut *pos)
+            self.set_len(len + 1);
+            Ok(&mut *p)
         }
     }
 
@@ -2055,9 +2061,8 @@ impl<'a, T> FixedBumpVec<'a, T> {
 
             // Write all elements except the last one
             for _ in 1..n {
-                pointer::write_with(ptr, || value.clone());
+                ptr.write(value.clone());
                 ptr = ptr.add(1);
-
                 // Increment the length in every step in case clone() panics
                 local_len.increment_len(1);
             }
@@ -2349,9 +2354,7 @@ impl<'a, T> FixedBumpVec<'a, T> {
                 let mut local_len = self.initialized.set_len_on_drop();
 
                 iterator.for_each(move |element| {
-                    let dst = ptr.add(local_len.current_len());
-
-                    ptr::write(dst, element);
+                    ptr.add(local_len.current_len()).write(element);
                     // Since the loop executes user code which can panic we have to update
                     // the length every step to correctly drop what we've written.
                     // NB can't overflow since we would have had to alloc the address space
@@ -2411,7 +2414,10 @@ impl<'a, T, const N: usize> FixedBumpVec<'a, [T; N]> {
         let len = ptr.len();
 
         let (new_len, new_cap) = if T::IS_ZST {
-            (len.checked_mul(N).expect("vec len overflow"), usize::MAX)
+            (
+                len.checked_mul(N).expect("the product of vec len and N shouldn't overflow"),
+                usize::MAX,
+            )
         } else {
             // SAFETY:
             // - `cap * N` cannot overflow because the allocation is already in
@@ -2484,12 +2490,26 @@ impl<T, I: SliceIndex<[T]>> IndexMut<I> for FixedBumpVec<'_, T> {
 impl<T> Extend<T> for FixedBumpVec<'_, T> {
     #[inline]
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
-        let iter = iter.into_iter();
+        let mut iter = iter.into_iter();
 
-        self.reserve(iter.size_hint().0);
-
-        for value in iter {
-            self.push(value);
+        // This function should be the moral equivalent of:
+        //
+        //      for item in iterator {
+        //          self.push(item);
+        //      }
+        while let Some(element) = iter.next() {
+            let len = self.len();
+            if len == self.capacity() {
+                let (lower, _) = iter.size_hint();
+                self.reserve(lower.saturating_add(1));
+            }
+            unsafe {
+                self.as_mut_ptr().add(len).write(element);
+                // Since next() executes user code which can panic we have to bump the length
+                // after each step.
+                // NB can't overflow since we would have had to alloc the address space
+                self.set_len(len + 1);
+            }
         }
     }
 }
@@ -2501,13 +2521,7 @@ where
 {
     #[inline]
     fn extend<I: IntoIterator<Item = &'t T>>(&mut self, iter: I) {
-        let iter = iter.into_iter();
-
-        self.reserve(iter.size_hint().0);
-
-        for value in iter {
-            self.push(value.clone());
-        }
+        self.extend(iter.into_iter().cloned());
     }
 }
 

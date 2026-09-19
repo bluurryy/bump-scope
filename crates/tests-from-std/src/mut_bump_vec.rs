@@ -2083,7 +2083,7 @@ fn test_extend_from_within_panicking_clone() {
 }
 
 #[test]
-#[should_panic = "vec len overflow"]
+#[should_panic = "the product of vec len and N shouldn't overflow"]
 fn test_into_flattened_size_overflow() {
     let v = vec![[(); usize::MAX]; 2];
     let _ = v.into_flattened();
