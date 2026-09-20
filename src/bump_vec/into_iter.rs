@@ -3,18 +3,19 @@ use core::{
     fmt::Debug,
     iter::FusedIterator,
     marker::PhantomData,
-    mem,
     ptr::{self, NonNull},
     slice,
 };
 
-#[cfg(feature = "panic-on-alloc")]
-use core::mem::MaybeUninit;
-
 use crate::{SizedTypeProperties, polyfill::non_null, traits::BumpAllocatorTyped};
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{BumpBox, BumpVec, FixedBumpVec, fixed_bump_vec::RawFixedBumpVec};
+use crate::bump_vec::slice_to_bump_vec_in;
+
+macro_rules! non_null {
+    (mut $place:expr, $t:ident) => {{ unsafe { &mut *((&raw mut $place).cast::<NonNull<$t>>()) } }};
+    ($place:expr, $t:ident) => {{ unsafe { *((&raw const $place).cast::<NonNull<$t>>()) } }};
+}
 
 /// An iterator that moves out of a vector.
 ///
@@ -26,12 +27,14 @@ pub struct IntoIter<T, A: BumpAllocatorTyped> {
     pub(super) buf: NonNull<T>,
     pub(super) cap: usize,
 
+    pub(super) alloc: A,
     pub(super) ptr: NonNull<T>,
 
-    /// If T is a ZST this is ptr + len.
-    pub(super) end: NonNull<T>,
-
-    pub(super) allocator: A,
+    /// If T is a ZST, this is actually ptr+len. This encoding is picked so that
+    /// ptr == end is a quick test for the Iterator being empty, that works
+    /// for both ZST and non-ZST.
+    /// For non-ZSTs the pointer is treated as `NonNull<T>`
+    pub(super) end: *const T,
 
     /// Marks ownership over T. (<https://doc.rust-lang.org/nomicon/phantom-data.html#generic-parameters-and-drop-checking>)
     pub(super) marker: PhantomData<T>,
@@ -51,13 +54,11 @@ impl<T, A: BumpAllocatorTyped> IntoIter<T, A> {
     /// ```
     /// # use bump_scope::{Bump, bump_vec};
     /// # let bump: Bump = Bump::new();
-    /// let vec = bump_vec![in &bump; 1, 2, 3];
+    /// let vec = bump_vec![in &bump; 'a', 'b', 'c'];
     /// let mut into_iter = vec.into_iter();
-    /// assert_eq!(into_iter.as_slice(), &[1, 2, 3]);
-    /// assert_eq!(into_iter.next(), Some(1));
-    /// assert_eq!(into_iter.as_slice(), &[2, 3]);
-    /// assert_eq!(into_iter.next_back(), Some(3));
-    /// assert_eq!(into_iter.as_slice(), &[2]);
+    /// assert_eq!(into_iter.as_slice(), &['a', 'b', 'c']);
+    /// let _ = into_iter.next().unwrap();
+    /// assert_eq!(into_iter.as_slice(), &['b', 'c']);
     /// ```
     #[must_use]
     pub fn as_slice(&self) -> &[T] {
@@ -88,7 +89,7 @@ impl<T, A: BumpAllocatorTyped> IntoIter<T, A> {
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> &A {
-        &self.allocator
+        &self.alloc
     }
 
     fn as_raw_mut_slice(&mut self) -> *mut [T] {
@@ -108,29 +109,34 @@ impl<T, A: BumpAllocatorTyped> Iterator for IntoIter<T, A> {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.ptr == self.end {
-            None
-        } else if T::IS_ZST {
+        let ptr = if T::IS_ZST {
+            if ptr::eq(self.ptr.as_ptr(), self.end) {
+                return None;
+            }
             // `ptr` has to stay where it is to remain aligned, so we reduce the length by 1 by
             // reducing the `end`.
-            self.end = unsafe { non_null::wrapping_byte_sub(self.end, 1) };
-
-            // Make up a value of this ZST.
-            Some(unsafe { mem::zeroed() })
+            self.end = self.end.wrapping_byte_sub(1);
+            self.ptr
         } else {
+            if self.ptr == non_null!(self.end, T) {
+                return None;
+            }
             let old = self.ptr;
-            self.ptr = unsafe { self.ptr.add(1) };
-
-            Some(unsafe { old.read() })
-        }
+            self.ptr = unsafe { old.add(1) };
+            old
+        };
+        Some(unsafe { ptr.read() })
     }
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         let exact = if T::IS_ZST {
-            self.end.addr().get().wrapping_sub(self.ptr.addr().get())
+            self.end.addr().wrapping_sub(self.ptr.addr().get())
         } else {
-            unsafe { non_null::offset_from_unsigned(self.end, self.ptr) }
+            #[allow(unused_unsafe)] // for the macro
+            unsafe {
+                non_null::offset_from_unsigned(non_null!(self.end, T), self.ptr)
+            }
         };
         (exact, Some(exact))
     }
@@ -144,23 +150,40 @@ impl<T, A: BumpAllocatorTyped> Iterator for IntoIter<T, A> {
 impl<T, A: BumpAllocatorTyped> DoubleEndedIterator for IntoIter<T, A> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
-        if self.end == self.ptr {
-            None
-        } else if T::IS_ZST {
+        if T::IS_ZST {
+            if ptr::eq(self.ptr.as_ptr(), self.end) {
+                return None;
+            }
             // See above for why 'ptr.offset' isn't used
-            self.end = unsafe { non_null::wrapping_byte_sub(self.end, 1) };
-
-            // Make up a value of this ZST.
-            Some(unsafe { mem::zeroed() })
+            self.end = self.end.wrapping_byte_sub(1);
+            // Note that even though this is next_back() we're reading from `self.ptr`, not
+            // `self.end`. We track our length using the byte offset from `self.ptr` to `self.end`,
+            // so the end pointer may not be suitably aligned for T.
+            Some(unsafe { ptr::read(self.ptr.as_ptr()) })
         } else {
-            self.end = unsafe { self.end.sub(1) };
-
-            Some(unsafe { self.end.read() })
+            if self.ptr == non_null!(self.end, T) {
+                return None;
+            }
+            unsafe {
+                self.end = self.end.sub(1);
+                Some(ptr::read(self.end))
+            }
         }
     }
 }
 
-impl<T, A: BumpAllocatorTyped> ExactSizeIterator for IntoIter<T, A> {}
+impl<T, A: BumpAllocatorTyped> ExactSizeIterator for IntoIter<T, A> {
+    #[cfg(feature = "nightly-exact-size-is-empty")]
+    #[inline]
+    fn is_empty(&self) -> bool {
+        if T::IS_ZST {
+            ptr::eq(self.ptr.as_ptr(), self.end)
+        } else {
+            self.ptr == non_null!(self.end, T)
+        }
+    }
+}
+
 impl<T, A: BumpAllocatorTyped> FusedIterator for IntoIter<T, A> {}
 
 #[cfg(feature = "nightly-trusted-len")]
@@ -169,15 +192,7 @@ unsafe impl<T, A: BumpAllocatorTyped> core::iter::TrustedLen for IntoIter<T, A> 
 #[cfg(feature = "panic-on-alloc")]
 impl<T: Clone, A: BumpAllocatorTyped + Clone> Clone for IntoIter<T, A> {
     fn clone(&self) -> Self {
-        let allocator = self.allocator.clone();
-        let ptr = self.allocator.allocate_slice::<MaybeUninit<T>>(self.len());
-        let slice = NonNull::slice_from_raw_parts(ptr, self.len());
-        let boxed = unsafe { BumpBox::from_raw(slice) };
-        let boxed = boxed.init_clone(self.as_slice());
-        let fixed = FixedBumpVec::from_init(boxed);
-        let fixed = unsafe { RawFixedBumpVec::from_cooked(fixed) };
-        let vec = BumpVec { fixed, allocator };
-        vec.into_iter()
+        slice_to_bump_vec_in(self.as_slice(), self.alloc.clone()).into_iter()
     }
 }
 
@@ -194,7 +209,7 @@ impl<T, A: BumpAllocatorTyped> Drop for IntoIter<T, A> {
                 unsafe {
                     let ptr = self.0.buf.cast();
                     let layout = Layout::from_size_align_unchecked(self.0.cap * T::SIZE, T::ALIGN);
-                    self.0.allocator.deallocate(ptr, layout);
+                    self.0.alloc.deallocate(ptr, layout);
                 }
             }
         }
