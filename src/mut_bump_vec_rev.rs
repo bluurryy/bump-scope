@@ -2704,7 +2704,10 @@ impl<T, A, const N: usize> MutBumpVecRev<[T; N], A> {
         let (end, len, cap, allocator) = self.into_raw_parts();
 
         let (new_len, new_cap) = if T::IS_ZST {
-            (len.checked_mul(N).expect("vec len overflow"), usize::MAX)
+            (
+                len.checked_mul(N).expect("the product of vec len and N shouldn't overflow"),
+                usize::MAX,
+            )
         } else {
             // SAFETY:
             // - `cap * N` cannot overflow because the allocation is already in

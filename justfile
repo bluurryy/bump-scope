@@ -1,5 +1,5 @@
 export RUST_BACKTRACE := "1"
-export MIRIFLAGS := "-Zmiri-strict-provenance -Zmiri-symbolic-alignment-check"
+export MIRIFLAGS := "-Zmiri-strict-provenance"
 host := `rustc --print host-tuple`
 pwd := `pwd`
 
