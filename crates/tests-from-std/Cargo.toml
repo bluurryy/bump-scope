@@ -2,8 +2,9 @@
 name = "tests-from-std"
 edition = "2024"
 
-[dependencies]
+[dev-dependencies]
 bump-scope = { path = "../..", features = [
   "nightly-allocator-api",
   "nightly-coerce-unsized",
+  "nightly-dropck-eyepatch",
 ] }

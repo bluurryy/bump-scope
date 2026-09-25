@@ -116,6 +116,7 @@ pub(crate) unsafe fn result<T, E>(mut ptr: NonNull<Result<T, E>>) -> Result<NonN
     }
 }
 
+/// Not part of std.
 #[inline(always)]
 pub(crate) unsafe fn cast_range<T, U>(ptr: Range<NonNull<T>>) -> Range<NonNull<U>> {
     ptr.start.cast()..ptr.end.cast()
