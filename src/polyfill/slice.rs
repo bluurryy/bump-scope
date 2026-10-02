@@ -3,28 +3,28 @@ use core::ops;
 pub(crate) use core::slice::*;
 
 #[cold]
-#[inline(never)]
+#[cfg_attr(not(panic = "immediate-abort"), inline(never))]
 #[track_caller]
 pub(crate) const fn slice_start_index_overflow_fail() -> ! {
     panic!("attempted to index slice from after maximum usize");
 }
 
 #[cold]
-#[inline(never)]
+#[cfg_attr(not(panic = "immediate-abort"), inline(never))]
 #[track_caller]
 pub(crate) const fn slice_end_index_overflow_fail() -> ! {
     panic!("attempted to index slice up to maximum usize");
 }
 
 #[cold]
-#[inline(never)]
+#[cfg_attr(not(panic = "immediate-abort"), inline(never))]
 #[track_caller]
 fn slice_index_order_fail(index: usize, end: usize) -> ! {
     panic!("slice index starts at {index} but ends at {end}");
 }
 
 #[cold]
-#[inline(never)]
+#[cfg_attr(not(panic = "immediate-abort"), inline(never))]
 #[track_caller]
 fn slice_end_index_len_fail(index: usize, len: usize) -> ! {
     panic!("range end index {index} out of range for slice of length {len}")
