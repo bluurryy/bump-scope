@@ -908,16 +908,16 @@ impl<A: MutBumpAllocatorTyped> MutBumpString<A> {
     pub(crate) fn generic_from_utf8_lossy_in<E: ErrorBehavior>(v: &[u8], allocator: A) -> Result<Self, E> {
         let mut iter = v.utf8_chunks();
 
-        let first_valid = if let Some(chunk) = iter.next() {
-            let valid = chunk.valid();
-            if chunk.invalid().is_empty() {
-                debug_assert_eq!(valid.len(), v.len());
-                return Self::generic_from_str_in(valid, allocator);
-            }
-            valid
-        } else {
+        let Some(chunk) = iter.next() else {
             return Ok(Self::new_in(allocator));
         };
+
+        let first_valid = chunk.valid();
+
+        if chunk.invalid().is_empty() {
+            debug_assert_eq!(first_valid.len(), v.len());
+            return Self::generic_from_str_in(first_valid, allocator);
+        }
 
         const REPLACEMENT: &str = "\u{FFFD}";
 
@@ -1001,11 +1001,11 @@ impl<A: MutBumpAllocatorTyped> MutBumpString<A> {
         let mut ret = Self::generic_with_capacity_in(v.len(), allocator)?;
 
         for c in char::decode_utf16(v.iter().copied()) {
-            if let Ok(c) = c {
-                ret.generic_push(c)?;
-            } else {
+            let Ok(c) = c else {
                 return Ok(Err(FromUtf16Error(())));
-            }
+            };
+
+            ret.generic_push(c)?;
         }
 
         Ok(Ok(ret))
