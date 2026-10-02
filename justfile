@@ -14,7 +14,7 @@ pre-release:
     just doc
     just check
     just test
-    cargo +stable semver-checks
+    cargo +nightly semver-checks
 
 # Installs all tools required for `pre-release`.
 [group('release')]

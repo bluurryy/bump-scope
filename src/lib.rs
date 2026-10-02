@@ -5,10 +5,6 @@
 // Especially `BumpBox` methods, vectors, strings, `polyfill` and `tests/from_std` are based on code from the standard library.
 
 #![no_std]
-#![cfg_attr(
-    any(feature = "nightly-allocator-api", feature = "nightly-fn-traits"),
-    feature(allocator_api)
-)]
 #![cfg_attr(feature = "nightly-coerce-unsized", feature(coerce_unsized, unsize))]
 #![cfg_attr(feature = "nightly-exact-size-is-empty", feature(exact_size_is_empty))]
 #![cfg_attr(feature = "nightly-trusted-len", feature(trusted_len))]

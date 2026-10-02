@@ -1,6 +1,5 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 #![cfg(feature = "allocator-api2-02")]
-#![cfg_attr(feature = "nightly-allocator-api", feature(allocator_api))]
 
 mod common;
 
