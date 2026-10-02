@@ -540,8 +540,8 @@ fn test_dyn_allocator<const UP: bool>() {
         let mut vec = BumpVec::from_iter_in(numbers(1..4), &bump);
         assert_eq!(vec, ["1", "2", "3"]);
         assert_eq!(vec.len(), 3);
-        assert_eq!(vec.capacity(), 3);
-        assert_eq!(bump.any_stats().allocated(), 3 * ITEM_SIZE);
+        assert_eq!(vec.capacity(), 4); // because of minimum capacity
+        assert_eq!(bump.any_stats().allocated(), 4 * ITEM_SIZE);
         vec.reserve_exact(4);
         assert_eq!(vec, ["1", "2", "3"]);
         assert_eq!(vec.len(), 3);

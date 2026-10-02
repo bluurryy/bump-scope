@@ -1,6 +1,6 @@
 #![cfg(feature = "panic-on-alloc")]
 
-use core::{ptr, slice};
+use core::ptr;
 
 use crate::{BumpVec, destructure::destructure, traits::BumpAllocatorTyped};
 
@@ -60,7 +60,7 @@ impl<I: Iterator, A: BumpAllocatorTyped> Drop for Splice<'_, I, A> {
         // and moving things into the final place.
         // Which means we can replace the slice::Iter with pointers that won't point to deallocated
         // memory, so that Drain::drop is still allowed to call iter.len(), otherwise it would break
-        // the ptr.sub_ptr contract.
+        // the ptr.offset_from_unsigned contract.
         self.drain.iter = <[I::Item]>::iter(&[]);
 
         unsafe {
@@ -113,25 +113,19 @@ impl<T, A: BumpAllocatorTyped> Drain<'_, T, A> {
     /// Fill that range as much as possible with new elements from the `replace_with` iterator.
     /// Returns `true` if we filled the entire range. (`replace_with.next()` didn’t return `None`.)
     unsafe fn fill<I: Iterator<Item = T>>(&mut self, replace_with: &mut I) -> bool {
-        unsafe {
-            let vec = self.vec.as_mut();
-            let range_start = vec.len();
-            let range_end = self.tail_start;
-            let range_slice = slice::from_raw_parts_mut(vec.as_mut_ptr().add(range_start), range_end - range_start);
+        let vec = unsafe { self.vec.as_mut() };
+        let range_start = vec.len();
+        let range_end = self.tail_start;
+        // The elements in this range are not initialized so we avoid creating a slice.
 
-            for place in range_slice {
-                match replace_with.next() {
-                    Some(new_item) => {
-                        ptr::write(place, new_item);
-                        vec.inc_len(1);
-                    }
-                    _ => {
-                        return false;
-                    }
-                }
-            }
-            true
+        for idx in range_start..range_end {
+            let Some(new_item) = replace_with.next() else {
+                return false;
+            };
+            unsafe { vec.as_mut_ptr().add(idx).write(new_item) };
+            unsafe { vec.set_len(vec.len() + 1) };
         }
+        true
     }
 
     /// Makes room for inserting more elements before the tail.
