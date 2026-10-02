@@ -1,17 +1,81 @@
-//! Adapted from rust's `library/alloctests/tests/vec.rs` commit fb04372dc56129d69e39af80cac6e81694bd285f
+//! Adapted from rust's `library/alloctests/tests/string.rs` commit 787af2b8c80638c51a4fc8e44f84e6891f243ec7
 
 use std::cell::Cell;
 use std::ops::Bound::*;
 use std::ops::{Bound, RangeBounds};
-use std::string::String as StdString;
 use std::{panic, str};
 
 use bump_scope::alloc::Global;
-use bump_scope::{bump_format, bump_vec};
+use bump_scope::bump_format;
+use bump_scope::traits::BumpAllocatorTyped;
 
-type Bump<A = Global> = bump_scope::Bump<A>;
+type Bump = bump_scope::Bump<Global>;
 type Vec<T, A = Bump> = bump_scope::BumpVec<T, A>;
 type String<A> = bump_scope::BumpString<A>;
+
+trait VecNew: Sized {
+    fn new() -> Self;
+}
+
+impl<T> VecNew for Vec<T> {
+    fn new() -> Self {
+        Vec::new_in(Default::default())
+    }
+}
+
+trait ToMyVec<T> {
+    fn to_my_vec(&self) -> Vec<T>;
+    fn to_my_vec_in<A: BumpAllocatorTyped>(&self, alloc: A) -> Vec<T, A>;
+}
+
+impl<T: Clone> ToMyVec<T> for [T] {
+    fn to_my_vec(&self) -> Vec<T> {
+        let mut vec = Vec::new();
+        vec.extend_from_slice_clone(self);
+        vec
+    }
+
+    fn to_my_vec_in<A: BumpAllocatorTyped>(&self, alloc: A) -> Vec<T, A> {
+        let mut vec = Vec::new_in(alloc);
+        vec.extend_from_slice_clone(self);
+        vec
+    }
+}
+
+impl<T: Clone, const N: usize> ToMyVec<T> for &[T; N] {
+    fn to_my_vec(&self) -> Vec<T> {
+        self[..].to_my_vec()
+    }
+
+    fn to_my_vec_in<A: BumpAllocatorTyped>(&self, alloc: A) -> Vec<T, A> {
+        self[..].to_my_vec_in(alloc)
+    }
+}
+
+trait ToMyString {
+    fn to_my_string(&self) -> String<Bump>;
+}
+
+impl ToMyString for str {
+    fn to_my_string(&self) -> String<Bump> {
+        String::from_str_in(self, Bump::new())
+    }
+}
+
+trait MyCollect {
+    fn my_collect(self) -> String<Bump>;
+}
+
+impl<T> MyCollect for T
+where
+    T: Iterator<Item = char>,
+{
+    fn my_collect(self) -> String<Bump> {
+        let mut s = String::new_in(Bump::new());
+        s.extend(self);
+        s
+    }
+}
 
 macro_rules! vec {
     (in $($tt:tt)*) => {
@@ -22,158 +86,138 @@ macro_rules! vec {
     };
 }
 
-#[cfg(any())] // not applicable
-fn test_from_str() {}
-
-#[cfg(any())] // not applicable
-fn test_from_cow_str() {}
-
-#[cfg(any())] // not applicable
-fn test_unsized_to_string() {}
-
 #[test]
 fn test_from_utf8() {
-    let bump: Bump = Bump::new();
+    let xs = b"hello".to_my_vec();
+    assert_eq!(String::from_utf8(xs).unwrap(), String::from_str_in("hello", Bump::new()));
 
-    let xs = Vec::from_owned_slice_in(*b"hello", &bump);
-    assert_eq!(String::from_utf8(xs).unwrap(), String::from_str_in("hello", &bump));
+    let xs = "ศไทย中华Việt Nam".as_bytes().to_my_vec();
+    assert_eq!(
+        String::from_utf8(xs).unwrap(),
+        String::from_str_in("ศไทย中华Việt Nam", Bump::new())
+    );
 
-    let mut xs = Vec::new_in(&bump);
-    xs.extend_from_slice_copy("ศไทย中华Việt Nam".as_bytes());
-
-    assert_eq!(String::from_utf8(xs).unwrap(), String::from_str_in("ศไทย中华Việt Nam", &bump));
-
-    let xs = Vec::from_owned_slice_in(*b"hello\xFF", &bump);
+    let bump = Bump::new();
+    let xs = b"hello\xFF".to_my_vec_in(&bump);
     let err = String::from_utf8(xs).unwrap_err();
     assert_eq!(err.as_bytes(), b"hello\xff");
-    assert_eq!(err.utf8_error().valid_up_to(), 5);
-    assert_eq!(err.into_bytes(), Vec::from_owned_slice_in(*b"hello\xff", &bump));
+    let err_clone = err.clone();
+    assert_eq!(err, err_clone);
+    assert_eq!(err.into_bytes(), b"hello\xff".to_my_vec());
+    assert_eq!(err_clone.utf8_error().valid_up_to(), 5);
 }
 
 #[test]
 fn test_from_utf8_lossy() {
-    let bump: Bump = Bump::new();
-
     let xs = b"hello";
     let ys = "hello";
-    assert_eq!(String::from_utf8_lossy_in(xs, &bump), ys);
+    assert_eq!(String::from_utf8_lossy_in(xs, Bump::new()), ys);
 
     let xs = "ศไทย中华Việt Nam".as_bytes();
     let ys = "ศไทย中华Việt Nam";
-    assert_eq!(String::from_utf8_lossy_in(xs, &bump), ys);
+    assert_eq!(String::from_utf8_lossy_in(xs, Bump::new()), ys);
 
     let xs = b"Hello\xC2 There\xFF Goodbye";
-    assert_eq!(
-        String::from_utf8_lossy_in(xs, &bump),
-        String::from_str_in("Hello\u{FFFD} There\u{FFFD} Goodbye", &bump)
-    );
+    assert_eq!(String::from_utf8_lossy_in(xs, Bump::new()), "Hello\u{FFFD} There\u{FFFD} Goodbye");
 
     let xs = b"Hello\xC0\x80 There\xE6\x83 Goodbye";
     assert_eq!(
-        String::from_utf8_lossy_in(xs, &bump),
-        String::from_str_in("Hello\u{FFFD}\u{FFFD} There\u{FFFD} Goodbye", &bump)
+        String::from_utf8_lossy_in(xs, Bump::new()),
+        "Hello\u{FFFD}\u{FFFD} There\u{FFFD} Goodbye"
     );
 
     let xs = b"\xF5foo\xF5\x80bar";
-    assert_eq!(
-        String::from_utf8_lossy_in(xs, &bump),
-        String::from_str_in("\u{FFFD}foo\u{FFFD}\u{FFFD}bar", &bump)
-    );
+    assert_eq!(String::from_utf8_lossy_in(xs, Bump::new()), "\u{FFFD}foo\u{FFFD}\u{FFFD}bar");
 
     let xs = b"\xF1foo\xF1\x80bar\xF1\x80\x80baz";
-    assert_eq!(
-        String::from_utf8_lossy_in(xs, &bump),
-        String::from_str_in("\u{FFFD}foo\u{FFFD}bar\u{FFFD}baz", &bump)
-    );
+    assert_eq!(String::from_utf8_lossy_in(xs, Bump::new()), "\u{FFFD}foo\u{FFFD}bar\u{FFFD}baz");
 
     let xs = b"\xF4foo\xF4\x80bar\xF4\xBFbaz";
     assert_eq!(
-        String::from_utf8_lossy_in(xs, &bump),
-        String::from_str_in("\u{FFFD}foo\u{FFFD}bar\u{FFFD}\u{FFFD}baz", &bump)
+        String::from_utf8_lossy_in(xs, Bump::new()),
+        "\u{FFFD}foo\u{FFFD}bar\u{FFFD}\u{FFFD}baz"
     );
 
     let xs = b"\xF0\x80\x80\x80foo\xF0\x90\x80\x80bar";
     assert_eq!(
-        String::from_utf8_lossy_in(xs, &bump),
-        String::from_str_in("\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}foo\u{10000}bar", &bump)
+        String::from_utf8_lossy_in(xs, Bump::new()),
+        "\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}foo\u{10000}bar"
     );
 
     // surrogates
     let xs = b"\xED\xA0\x80foo\xED\xBF\xBFbar";
     assert_eq!(
-        String::from_utf8_lossy_in(xs, &bump),
-        String::from_str_in("\u{FFFD}\u{FFFD}\u{FFFD}foo\u{FFFD}\u{FFFD}\u{FFFD}bar", &bump)
+        String::from_utf8_lossy_in(xs, Bump::new()),
+        "\u{FFFD}\u{FFFD}\u{FFFD}foo\u{FFFD}\u{FFFD}\u{FFFD}bar"
     );
 }
 
-#[cfg(any())] // TODO: implement
 #[test]
 fn test_fromutf8error_into_lossy() {
-    fn func(input: &[u8]) -> String {
-        String::from_utf8(input.to_owned()).unwrap_or_else(|e| e.into_utf8_lossy())
+    fn func(input: &[u8]) -> String<Bump> {
+        String::from_utf8(input.to_my_vec())
+            .unwrap_or_else(|e| String::from_utf8_lossy_in(e.as_bytes(), Bump::new()))
     }
 
     let xs = b"hello";
-    let ys = "hello".to_owned();
+    let ys = "hello";
     assert_eq!(func(xs), ys);
 
     let xs = "ศไทย中华Việt Nam".as_bytes();
-    let ys = "ศไทย中华Việt Nam".to_owned();
+    let ys = "ศไทย中华Việt Nam";
     assert_eq!(func(xs), ys);
 
     let xs = b"Hello\xC2 There\xFF Goodbye";
-    assert_eq!(func(xs), "Hello\u{FFFD} There\u{FFFD} Goodbye".to_owned());
+    assert_eq!(func(xs), "Hello\u{FFFD} There\u{FFFD} Goodbye");
 
     let xs = b"Hello\xC0\x80 There\xE6\x83 Goodbye";
-    assert_eq!(func(xs), "Hello\u{FFFD}\u{FFFD} There\u{FFFD} Goodbye".to_owned());
+    assert_eq!(func(xs), "Hello\u{FFFD}\u{FFFD} There\u{FFFD} Goodbye");
 
     let xs = b"\xF5foo\xF5\x80bar";
-    assert_eq!(func(xs), "\u{FFFD}foo\u{FFFD}\u{FFFD}bar".to_owned());
+    assert_eq!(func(xs), "\u{FFFD}foo\u{FFFD}\u{FFFD}bar");
 
     let xs = b"\xF1foo\xF1\x80bar\xF1\x80\x80baz";
-    assert_eq!(func(xs), "\u{FFFD}foo\u{FFFD}bar\u{FFFD}baz".to_owned());
+    assert_eq!(func(xs), "\u{FFFD}foo\u{FFFD}bar\u{FFFD}baz");
 
     let xs = b"\xF4foo\xF4\x80bar\xF4\xBFbaz";
-    assert_eq!(func(xs), "\u{FFFD}foo\u{FFFD}bar\u{FFFD}\u{FFFD}baz".to_owned());
+    assert_eq!(func(xs), "\u{FFFD}foo\u{FFFD}bar\u{FFFD}\u{FFFD}baz");
 
     let xs = b"\xF0\x80\x80\x80foo\xF0\x90\x80\x80bar";
-    assert_eq!(func(xs), "\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}foo\u{10000}bar".to_owned());
+    assert_eq!(func(xs), "\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}foo\u{10000}bar");
 
     // surrogates
     let xs = b"\xED\xA0\x80foo\xED\xBF\xBFbar";
-    assert_eq!(func(xs), "\u{FFFD}\u{FFFD}\u{FFFD}foo\u{FFFD}\u{FFFD}\u{FFFD}bar".to_owned());
+    assert_eq!(func(xs), "\u{FFFD}\u{FFFD}\u{FFFD}foo\u{FFFD}\u{FFFD}\u{FFFD}bar");
 }
 
 #[test]
 fn test_from_utf16() {
-    let bump: Bump = Bump::new();
-
     let pairs = [
         (
-            String::from_str_in("𐍅𐌿𐌻𐍆𐌹𐌻𐌰\n", &bump),
-            vec![in &bump;
+            String::from_str_in("𐍅𐌿𐌻𐍆𐌹𐌻𐌰\n", Bump::new()),
+            vec![
                 0xd800, 0xdf45, 0xd800, 0xdf3f, 0xd800, 0xdf3b, 0xd800, 0xdf46, 0xd800, 0xdf39,
                 0xd800, 0xdf3b, 0xd800, 0xdf30, 0x000a,
             ],
         ),
         (
-            String::from_str_in("𐐒𐑉𐐮𐑀𐐲𐑋 𐐏𐐲𐑍\n", &bump),
-            vec![in &bump;
+            String::from_str_in("𐐒𐑉𐐮𐑀𐐲𐑋 𐐏𐐲𐑍\n", Bump::new()),
+            vec![
                 0xd801, 0xdc12, 0xd801, 0xdc49, 0xd801, 0xdc2e, 0xd801, 0xdc40, 0xd801, 0xdc32,
                 0xd801, 0xdc4b, 0x0020, 0xd801, 0xdc0f, 0xd801, 0xdc32, 0xd801, 0xdc4d, 0x000a,
             ],
         ),
         (
-            String::from_str_in("𐌀𐌖𐌋𐌄𐌑𐌉·𐌌𐌄𐌕𐌄𐌋𐌉𐌑\n", &bump),
-            vec![in &bump;
+            String::from_str_in("𐌀𐌖𐌋𐌄𐌑𐌉·𐌌𐌄𐌕𐌄𐌋𐌉𐌑\n", Bump::new()),
+            vec![
                 0xd800, 0xdf00, 0xd800, 0xdf16, 0xd800, 0xdf0b, 0xd800, 0xdf04, 0xd800, 0xdf11,
                 0xd800, 0xdf09, 0x00b7, 0xd800, 0xdf0c, 0xd800, 0xdf04, 0xd800, 0xdf15, 0xd800,
                 0xdf04, 0xd800, 0xdf0b, 0xd800, 0xdf09, 0xd800, 0xdf11, 0x000a,
             ],
         ),
         (
-            String::from_str_in("𐒋𐒘𐒈𐒑𐒛𐒒 𐒕𐒓 𐒈𐒚𐒍 𐒏𐒜𐒒𐒖𐒆 𐒕𐒆\n", &bump),
-            vec![in &bump;
+            String::from_str_in("𐒋𐒘𐒈𐒑𐒛𐒒 𐒕𐒓 𐒈𐒚𐒍 𐒏𐒜𐒒𐒖𐒆 𐒕𐒆\n", Bump::new()),
+            vec![
                 0xd801, 0xdc8b, 0xd801, 0xdc98, 0xd801, 0xdc88, 0xd801, 0xdc91, 0xd801, 0xdc9b,
                 0xd801, 0xdc92, 0x0020, 0xd801, 0xdc95, 0xd801, 0xdc93, 0x0020, 0xd801, 0xdc88,
                 0xd801, 0xdc9a, 0xd801, 0xdc8d, 0x0020, 0xd801, 0xdc8f, 0xd801, 0xdc9c, 0xd801,
@@ -182,75 +226,60 @@ fn test_from_utf16() {
             ],
         ),
         // Issue #12318, even-numbered non-BMP planes
-        (String::from_str_in("\u{20000}", &bump), vec![in &bump; 0xD840, 0xDC00]),
+        (String::from_str_in("\u{20000}", Bump::new()), vec![0xD840, 0xDC00]),
     ];
 
-    for p in &pairs {
-        let (s, u) = (*p).clone();
-        let s_as_utf16 = s.encode_utf16().collect::<Vec<_>>();
-        let u_as_string = String::from_utf16_in(&u, &bump).unwrap();
+    for (s, u) in &pairs {
+        let s_as_utf16 = s.encode_utf16().collect::<Vec<u16>>();
+        let u_as_string = String::from_utf16_in(u, Bump::new()).unwrap();
 
         assert!(core::char::decode_utf16(u.iter().cloned()).all(|r| r.is_ok()));
-        assert_eq!(s_as_utf16, u);
+        assert_eq!(&s_as_utf16, u);
 
-        assert_eq!(u_as_string, s);
-        assert_eq!(String::from_utf16_lossy_in(&u, &bump), s);
+        assert_eq!(&u_as_string, s);
+        assert_eq!(&String::from_utf16_lossy_in(u, Bump::new()), s);
 
-        assert_eq!(String::from_utf16_in(&s_as_utf16, &bump).unwrap(), s);
-        assert_eq!(u_as_string.encode_utf16().collect::<Vec<u16>>(), u);
+        assert_eq!(&String::from_utf16_in(&s_as_utf16, Bump::new()).unwrap(), s);
+        assert_eq!(&Vec::<u16>::from_iter_in(u_as_string.encode_utf16(), Bump::new()), u);
     }
 }
 
 #[test]
 fn test_utf16_invalid() {
-    let bump: Bump = Bump::new();
-
     // completely positive cases tested above.
     // lead + eof
-    assert!(String::from_utf16_in(&[0xD800], &bump).is_err());
+    assert!(String::from_utf16_in(&[0xD800], Bump::new()).is_err());
     // lead + lead
-    assert!(String::from_utf16_in(&[0xD800, 0xD800], &bump).is_err());
+    assert!(String::from_utf16_in(&[0xD800, 0xD800], Bump::new()).is_err());
 
     // isolated trail
-    assert!(String::from_utf16_in(&[0x0061, 0xDC00], &bump).is_err());
+    assert!(String::from_utf16_in(&[0x0061, 0xDC00], Bump::new()).is_err());
 
     // general
-    assert!(String::from_utf16_in(&[0xD800, 0xd801, 0xdc8b, 0xD800], &bump).is_err());
+    assert!(String::from_utf16_in(&[0xD800, 0xd801, 0xdc8b, 0xD800], Bump::new()).is_err());
 }
 
 #[test]
 fn test_from_utf16_lossy() {
-    let bump: Bump = Bump::new();
-
     // completely positive cases tested above.
     // lead + eof
-    assert_eq!(
-        String::from_utf16_lossy_in(&[0xD800], &bump),
-        String::from_str_in("\u{FFFD}", &bump)
-    );
+    assert_eq!(String::from_utf16_lossy_in(&[0xD800], Bump::new()), "\u{FFFD}");
     // lead + lead
-    assert_eq!(
-        String::from_utf16_lossy_in(&[0xD800, 0xD800], &bump),
-        String::from_str_in("\u{FFFD}\u{FFFD}", &bump)
-    );
+    assert_eq!(String::from_utf16_lossy_in(&[0xD800, 0xD800], Bump::new()), "\u{FFFD}\u{FFFD}");
 
     // isolated trail
-    assert_eq!(
-        String::from_utf16_lossy_in(&[0x0061, 0xDC00], &bump),
-        String::from_str_in("a\u{FFFD}", &bump)
-    );
+    assert_eq!(String::from_utf16_lossy_in(&[0x0061, 0xDC00], Bump::new()), "a\u{FFFD}");
 
     // general
     assert_eq!(
-        String::from_utf16_lossy_in(&[0xD800, 0xd801, 0xdc8b, 0xD800], &bump),
-        String::from_str_in("\u{FFFD}𐒋\u{FFFD}", &bump)
+        String::from_utf16_lossy_in(&[0xD800, 0xd801, 0xdc8b, 0xD800], Bump::new()),
+        "\u{FFFD}𐒋\u{FFFD}"
     );
 }
 
 #[test]
 fn test_push_bytes() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("ABC", &bump);
+    let mut s = String::from_str_in("ABC", Bump::new());
     unsafe {
         let mv = s.as_mut_vec();
         mv.extend_from_slice_copy(&[b'D']);
@@ -260,8 +289,7 @@ fn test_push_bytes() {
 
 #[test]
 fn test_push_str() {
-    let bump: Bump = Bump::new();
-    let mut s = String::new_in(&bump);
+    let mut s = String::new_in(Bump::new());
     s.push_str("");
     assert_eq!(&s[0..], "");
     s.push_str("abc");
@@ -272,8 +300,7 @@ fn test_push_str() {
 
 #[test]
 fn test_add_assign() {
-    let bump: Bump = Bump::new();
-    let mut s = String::new_in(&bump);
+    let mut s = String::new_in(Bump::new());
     s += "";
     assert_eq!(s.as_str(), "");
     s += "abc";
@@ -284,8 +311,7 @@ fn test_add_assign() {
 
 #[test]
 fn test_push() {
-    let bump: Bump = Bump::new();
-    let mut data = String::from_str_in("ประเทศไทย中", &bump);
+    let mut data = String::from_str_in("ประเทศไทย中", Bump::new());
     data.push('华');
     data.push('b'); // 1 byte
     data.push('¢'); // 2 byte
@@ -296,8 +322,7 @@ fn test_push() {
 
 #[test]
 fn test_pop() {
-    let bump: Bump = Bump::new();
-    let mut data = String::from_str_in("ประเทศไทย中华b¢€𤭢", &bump);
+    let mut data = String::from_str_in("ประเทศไทย中华b¢€𤭢", Bump::new());
     assert_eq!(data.pop().unwrap(), '𤭢'); // 4 bytes
     assert_eq!(data.pop().unwrap(), '€'); // 3 bytes
     assert_eq!(data.pop().unwrap(), '¢'); // 2 bytes
@@ -308,7 +333,7 @@ fn test_pop() {
 
 #[test]
 fn test_split_off_empty() {
-    let bump: Bump = Bump::new();
+    let bump = Bump::new();
     let orig = "Hello, world!";
     let mut split = String::from_str_in(orig, &bump);
     let empty: String<_> = split.split_off(orig.len()..);
@@ -318,51 +343,41 @@ fn test_split_off_empty() {
 #[test]
 #[should_panic]
 fn test_split_off_past_end() {
-    let bump: Bump = Bump::new();
+    let bump = Bump::new();
     let orig = "Hello, world!";
     let mut split = String::from_str_in(orig, &bump);
-    let _ = split.split_off(orig.len() + 1..);
+    let _ = split.split_off((orig.len() + 1)..);
 }
 
 #[test]
 #[should_panic]
 fn test_split_off_mid_char() {
-    let bump: Bump = Bump::new();
+    let bump = Bump::new();
     let mut shan = String::from_str_in("山", &bump);
     let _broken_mountain = shan.split_off(1..);
 }
 
 #[test]
 fn test_split_off_ascii() {
-    let bump: Bump = Bump::new();
+    let bump = Bump::new();
     let mut ab = String::from_str_in("ABCD", &bump);
-    let orig_capacity = ab.capacity();
     let cd = ab.split_off(2..);
     assert_eq!(ab, "AB");
     assert_eq!(cd, "CD");
-    assert_eq!(ab.capacity(), ab.len());
-    assert_eq!(cd.capacity(), orig_capacity - ab.len());
 }
 
 #[test]
 fn test_split_off_unicode() {
-    let bump: Bump = Bump::new();
+    let bump = Bump::new();
     let mut nihon = String::from_str_in("日本語", &bump);
-    let orig_capacity = nihon.capacity();
     let go = nihon.split_off("日本".len()..);
     assert_eq!(nihon, "日本");
     assert_eq!(go, "語");
-
-    // It's not guaranteed that these assertions succeed
-    // but they will in the current implementation.
-    assert_eq!(nihon.capacity(), nihon.len());
-    assert_eq!(go.capacity(), orig_capacity - nihon.len());
 }
 
 #[test]
 fn test_str_truncate() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("12345", &bump);
+    let mut s = String::from_str_in("12345", Bump::new());
     s.truncate(5);
     assert_eq!(s, "12345");
     s.truncate(3);
@@ -370,7 +385,7 @@ fn test_str_truncate() {
     s.truncate(0);
     assert_eq!(s, "");
 
-    let mut s = String::from_str_in("12345", &bump);
+    let mut s = String::from_str_in("12345", Bump::new());
     let p = s.as_ptr();
     s.truncate(3);
     s.push_str("6");
@@ -380,8 +395,7 @@ fn test_str_truncate() {
 
 #[test]
 fn test_str_truncate_invalid_len() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("12345", &bump);
+    let mut s = String::from_str_in("12345", Bump::new());
     s.truncate(6);
     assert_eq!(s, "12345");
 }
@@ -389,15 +403,13 @@ fn test_str_truncate_invalid_len() {
 #[test]
 #[should_panic]
 fn test_str_truncate_split_codepoint() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("\u{FC}", &bump); // ü
+    let mut s = String::from_str_in("\u{FC}", Bump::new()); // ü
     s.truncate(1);
 }
 
 #[test]
 fn test_str_clear() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("12345", &bump);
+    let mut s = String::from_str_in("12345", Bump::new());
     s.clear();
     assert_eq!(s.len(), 0);
     assert_eq!(s, "");
@@ -405,8 +417,7 @@ fn test_str_clear() {
 
 #[test]
 fn test_str_add() {
-    let bump: Bump = Bump::new();
-    let a = String::from_str_in("12345", &bump);
+    let a = String::from_str_in("12345", Bump::new());
     let b = a + "2";
     let b = b + "2";
     assert_eq!(b.len(), 7);
@@ -415,8 +426,7 @@ fn test_str_add() {
 
 #[test]
 fn remove() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("ศไทย中华Việt Nam; foobar", &bump);
+    let mut s = "ศไทย中华Việt Nam; foobar".to_my_string();
     assert_eq!(s.remove(0), 'ศ');
     assert_eq!(s.len(), 33);
     assert_eq!(s, "ไทย中华Việt Nam; foobar");
@@ -427,87 +437,13 @@ fn remove() {
 #[test]
 #[should_panic]
 fn remove_bad() {
-    let bump: Bump = Bump::new();
-    String::from_str_in("ศ", &bump).remove(1);
-}
-
-#[cfg(any())] // TODO: implement `remove_matches`
-#[test]
-fn test_remove_matches() {
-    // test_single_pattern_occurrence
-    let mut s = "abc".to_string();
-    s.remove_matches('b');
-    assert_eq!(s, "ac");
-    // repeat_test_single_pattern_occurrence
-    s.remove_matches('b');
-    assert_eq!(s, "ac");
-
-    // test_single_character_pattern
-    let mut s = "abcb".to_string();
-    s.remove_matches('b');
-    assert_eq!(s, "ac");
-
-    // test_pattern_with_special_characters
-    let mut s = "ศไทย中华Việt Nam; foobarศ".to_string();
-    s.remove_matches('ศ');
-    assert_eq!(s, "ไทย中华Việt Nam; foobar");
-
-    // test_pattern_empty_text_and_pattern
-    let mut s = "".to_string();
-    s.remove_matches("");
-    assert_eq!(s, "");
-
-    // test_pattern_empty_text
-    let mut s = "".to_string();
-    s.remove_matches("something");
-    assert_eq!(s, "");
-
-    // test_empty_pattern
-    let mut s = "Testing with empty pattern.".to_string();
-    s.remove_matches("");
-    assert_eq!(s, "Testing with empty pattern.");
-
-    // test_multiple_consecutive_patterns_1
-    let mut s = "aaaaa".to_string();
-    s.remove_matches('a');
-    assert_eq!(s, "");
-
-    // test_multiple_consecutive_patterns_2
-    let mut s = "Hello **world****today!**".to_string();
-    s.remove_matches("**");
-    assert_eq!(s, "Hello worldtoday!");
-
-    // test_case_insensitive_pattern
-    let mut s = "CASE ** SeNsItIvE ** PaTtErN.".to_string();
-    s.remove_matches("sEnSiTiVe");
-    assert_eq!(s, "CASE ** SeNsItIvE ** PaTtErN.");
-
-    // test_pattern_with_digits
-    let mut s = "123 ** 456 ** 789".to_string();
-    s.remove_matches("**");
-    assert_eq!(s, "123  456  789");
-
-    // test_pattern_occurs_after_empty_string
-    let mut s = "abc X defXghi".to_string();
-    s.remove_matches("X");
-    assert_eq!(s, "abc  defghi");
-
-    // test_large_pattern
-    let mut s = "aaaXbbbXcccXdddXeee".to_string();
-    s.remove_matches("X");
-    assert_eq!(s, "aaabbbcccdddeee");
-
-    // test_pattern_at_multiple_positions
-    let mut s = "Pattern ** found ** multiple ** times ** in ** text.".to_string();
-    s.remove_matches("**");
-    assert_eq!(s, "Pattern  found  multiple  times  in  text.");
+    "ศ".to_my_string().remove(1);
 }
 
 #[test]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn test_retain() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("α_β_γ", &bump);
+    let mut s = String::from_str_in("α_β_γ", Bump::new());
 
     s.retain(|_| true);
     assert_eq!(s, "α_β_γ");
@@ -524,7 +460,7 @@ fn test_retain() {
     s.retain(|_| false);
     assert_eq!(s, "");
 
-    let mut s = String::from_str_in("0è0", &bump);
+    let mut s = String::from_str_in("0è0", Bump::new());
     let _ = panic::catch_unwind(panic::AssertUnwindSafe(|| {
         let mut count = 0;
         s.retain(|_| {
@@ -541,8 +477,7 @@ fn test_retain() {
 
 #[test]
 fn insert() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("foobar", &bump);
+    let mut s = "foobar".to_my_string();
     s.insert(0, 'ệ');
     assert_eq!(s, "ệfoobar");
     s.insert(6, 'ย');
@@ -552,20 +487,17 @@ fn insert() {
 #[test]
 #[should_panic]
 fn insert_bad1() {
-    let bump: Bump = Bump::new();
-    String::from_str_in("", &bump).insert(1, 't');
+    "".to_my_string().insert(1, 't');
 }
 #[test]
 #[should_panic]
 fn insert_bad2() {
-    let bump: Bump = Bump::new();
-    String::from_str_in("ệ", &bump).insert(1, 't');
+    "ệ".to_my_string().insert(1, 't');
 }
 
 #[test]
 fn test_slicing() {
-    let bump: Bump = Bump::new();
-    let s = String::from_str_in("foobar", &bump);
+    let s = "foobar".to_my_string();
     assert_eq!("foobar", &s[..]);
     assert_eq!("foo", &s[..3]);
     assert_eq!("bar", &s[3..]);
@@ -573,61 +505,30 @@ fn test_slicing() {
 }
 
 #[test]
-fn test_simple_types() {
-    let bump: Bump = Bump::new();
-    assert_eq!(bump_format!(in &bump, "{}", 1), "1");
-    assert_eq!(bump_format!(in &bump, "{}", -1), "-1");
-    assert_eq!(bump_format!(in &bump, "{}", 200), "200");
-    assert_eq!(bump_format!(in &bump, "{}", 2), "2");
-    assert_eq!(bump_format!(in &bump, "{}", true), "true");
-    assert_eq!(bump_format!(in &bump, "{}", false), "false");
-    assert_eq!(bump_format!(in &bump, "{}", String::from_str_in("hi", &bump)), "hi");
-}
-
-#[test]
-fn test_vectors() {
-    let bump: Bump = Bump::new();
-    let x: Vec<i32, _> = bump_vec![in &bump];
-    assert_eq!(bump_format!(in &bump, "{x:?}"), "[]");
-    assert_eq!(bump_format!(in &bump, "{:?}", bump_vec![in &bump; 1]), "[1]");
-    assert_eq!(bump_format!(in &bump, "{:?}", bump_vec![in &bump; 1, 2, 3]), "[1, 2, 3]");
-    assert!(
-        bump_format!(in &bump, "{:?}", bump_vec![in &bump; bump_vec![in &bump], bump_vec![in &bump; 1], bump_vec![in &bump; 1, 1]])
-            == "[[], [1], [1, 1]]"
-    );
-}
-
-#[cfg(any())] // TODO: implement
-#[test]
 fn test_from_iterator() {
-    let bump: Bump = Bump::new();
-    let s = String::from_str_in("ศไทย中华Việt Nam", &bump);
+    let s = "ศไทย中华Việt Nam".to_my_string();
     let t = "ศไทย中华";
     let u = "Việt Nam";
 
-    let a: String = s.chars().collect();
+    let a = s.chars().my_collect();
     assert_eq!(s, a);
 
-    let mut b = String::from_str_in(t, &bump);
+    let mut b = t.to_my_string();
     b.extend(u.chars());
     assert_eq!(s, b);
 
-    let c: String = [t, u].into_iter().collect();
-    assert_eq!(s, c);
-
-    let mut d = String::from_str_in(t, &bump);
+    let mut d = t.to_my_string();
     d.extend(vec![u]);
     assert_eq!(s, d);
 }
 
 #[test]
 fn test_drain() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("αβγ", &bump);
-    assert_eq!(s.drain(2..4).collect::<StdString>(), "β");
+    let mut s = String::from_str_in("αβγ", Bump::new());
+    assert_eq!(s.drain(2..4).my_collect(), "β");
     assert_eq!(s, "αγ");
 
-    let mut t = String::from_str_in("abcd", &bump);
+    let mut t = String::from_str_in("abcd", Bump::new());
     t.drain(..0);
     assert_eq!(t, "abcd");
     t.drain(..1);
@@ -641,39 +542,41 @@ fn test_drain() {
 #[test]
 #[should_panic]
 fn test_drain_start_overflow() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("abc", &bump);
+    let mut s = String::from_str_in("abc", Bump::new());
     s.drain((Excluded(usize::MAX), Included(0)));
 }
 
 #[test]
 #[should_panic]
 fn test_drain_end_overflow() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("abc", &bump);
+    let mut s = String::from_str_in("abc", Bump::new());
     s.drain((Included(0), Included(usize::MAX)));
 }
 
 #[test]
 fn test_replace_range() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("Hello, world!", &bump);
+    let mut s = "Hello, world!".to_owned();
     s.replace_range(7..12, "世界");
     assert_eq!(s, "Hello, 世界!");
 }
 
 #[test]
-#[should_panic]
-fn test_replace_range_char_boundary() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("Hello, 世界!", &bump);
+#[should_panic = "start of range should be a character boundary"]
+fn test_replace_range_start_char_boundary() {
+    let mut s = "Hello, 世界!".to_owned();
+    s.replace_range(8.., "");
+}
+
+#[test]
+#[should_panic = "end of range should be a character boundary"]
+fn test_replace_range_end_char_boundary() {
+    let mut s = "Hello, 世界!".to_owned();
     s.replace_range(..8, "");
 }
 
 #[test]
 fn test_replace_range_inclusive_range() {
-    let bump: Bump = Bump::new();
-    let mut v = String::from_str_in("12345", &bump);
+    let mut v = String::from_str_in("12345", Bump::new());
     v.replace_range(2..=3, "789");
     assert_eq!(v, "127895");
     v.replace_range(1..=2, "A");
@@ -681,49 +584,47 @@ fn test_replace_range_inclusive_range() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic = "range end index 6 out of range for slice of length 5"]
 fn test_replace_range_out_of_bounds() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("12345", &bump);
+    let mut s = String::from_str_in("12345", Bump::new());
     s.replace_range(5..6, "789");
 }
 
 #[test]
-#[should_panic]
+#[should_panic = "range end index 5 out of range for slice of length 5"]
 fn test_replace_range_inclusive_out_of_bounds() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("12345", &bump);
+    let mut s = String::from_str_in("12345", Bump::new());
     s.replace_range(5..=5, "789");
 }
 
+// The overflowed index value is target-dependent,
+// so we don't check for its exact value in the panic message
 #[test]
-#[should_panic]
+#[should_panic = "out of range for slice of length 3"]
 fn test_replace_range_start_overflow() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("123", &bump);
+    let mut s = String::from_str_in("123", Bump::new());
     s.replace_range((Excluded(usize::MAX), Included(0)), "");
 }
 
+// The overflowed index value is target-dependent,
+// so we don't check for its exact value in the panic message
 #[test]
-#[should_panic]
+#[should_panic = "out of range for slice of length 3"]
 fn test_replace_range_end_overflow() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("456", &bump);
+    let mut s = String::from_str_in("456", Bump::new());
     s.replace_range((Included(0), Included(usize::MAX)), "");
 }
 
 #[test]
 fn test_replace_range_empty() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("12345", &bump);
+    let mut s = String::from_str_in("12345", Bump::new());
     s.replace_range(1..2, "");
     assert_eq!(s, "1345");
 }
 
 #[test]
 fn test_replace_range_unbounded() {
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("12345", &bump);
+    let mut s = String::from_str_in("12345", Bump::new());
     s.replace_range(.., "");
     assert_eq!(s, "");
 }
@@ -746,8 +647,7 @@ fn test_replace_range_evil_start_bound() {
         }
     }
 
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("🦀", &bump);
+    let mut s = String::from_str_in("🦀", Bump::new());
     s.replace_range(EvilRange(Cell::new(false)), "");
     assert_eq!(Ok(""), str::from_utf8(s.as_bytes()));
 }
@@ -770,16 +670,14 @@ fn test_replace_range_evil_end_bound() {
         }
     }
 
-    let bump: Bump = Bump::new();
-    let mut s = String::from_str_in("🦀", &bump);
+    let mut s = String::from_str_in("🦀", Bump::new());
     s.replace_range(EvilRange(Cell::new(false)), "");
     assert_eq!(Ok(""), str::from_utf8(s.as_bytes()));
 }
 
 #[test]
 fn test_extend_ref() {
-    let bump: Bump = Bump::new();
-    let mut a = String::from_str_in("foo", &bump);
+    let mut a = "foo".to_my_string();
     a.extend(&['b', 'a', 'r']);
 
     assert_eq!(&a, "foobar");
@@ -787,7 +685,7 @@ fn test_extend_ref() {
 
 #[test]
 fn test_into_boxed_str() {
-    let bump: Bump = Bump::new();
+    let bump = Bump::new();
     let xs = String::from_str_in("hello my name is bob", &bump);
     let ys = xs.into_boxed_str();
     assert_eq!(&*ys, "hello my name is bob");
@@ -795,8 +693,9 @@ fn test_into_boxed_str() {
 
 #[test]
 fn test_reserve_exact() {
-    let bump: Bump = Bump::new();
-    let mut s = String::new_in(&bump);
+    // This is all the same as test_reserve
+
+    let mut s = String::new_in(Bump::new());
     assert_eq!(s.capacity(), 0);
 
     s.reserve_exact(2);
@@ -819,37 +718,17 @@ fn test_reserve_exact() {
 #[test]
 #[cfg_attr(miri, ignore)] // Miri does not support signalling OOM
 fn test_try_with_capacity() {
-    let bump: Bump = Bump::new();
-
-    let string = String::try_with_capacity_in(1000, &bump).unwrap();
+    let string = String::try_with_capacity_in(1000, Bump::new()).unwrap();
     assert_eq!(0, string.len());
     assert!(string.capacity() >= 1000 && string.capacity() <= isize::MAX as usize);
 
-    assert!(String::try_with_capacity_in(usize::MAX, &bump).is_err());
-}
-
-#[cfg(any())] // we don't have try reserve error variants
-fn test_try_reserve() {}
-
-#[cfg(any())] // we don't have try reserve error variants
-fn test_try_reserve_exact() {}
-
-#[test]
-fn test_from_char() {
-    let bump: Bump = Bump::new();
-    let mut s = String::new_in(&bump);
-    s.push('a');
-    assert_eq!(s, "a");
-    let mut s = String::new_in(&bump);
-    s.push('x');
-    assert_eq!(s, "x");
+    assert!(String::try_with_capacity_in(usize::MAX, Bump::new()).is_err());
 }
 
 #[test]
 fn test_str_concat() {
-    let bump: Bump = Bump::new();
-    let a = String::from_str_in("hello", &bump);
-    let b = String::from_str_in("world", &bump);
-    let s = bump_format!(in &bump, "{a}{b}");
+    let a = "hello".to_my_string();
+    let b = "world".to_my_string();
+    let s = bump_format!(in Bump::new(), "{a}{b}");
     assert_eq!(s.as_bytes()[9], 'd' as u8);
 }
