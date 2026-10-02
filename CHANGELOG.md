@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Document `reset_to` memory block invalidation as the nightly `Allocator` trait calls for
 - Update nightly features (don't activate `allocator_api` feature)
 
 ## [2.3.3] - 2026-07-12

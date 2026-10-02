@@ -77,11 +77,11 @@ pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     ///
     /// # Safety
     ///
-    /// - the checkpoint must have been created by this bump allocator
-    /// - the bump allocator must not have been [`reset`] since creation of this checkpoint
-    /// - there must be no references to allocations made since creation of this checkpoint
-    /// - the checkpoint must not have been created by a `!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
-    /// - the bump allocator must be [unclaimed] at the time the checkpoint is created and when this function is called
+    /// - This method invalidates all memory blocks allocated since creation of this checkpoint.
+    /// - The provided checkpoint must have been created by this bump allocator.
+    /// - The bump allocator must not have been [`reset`] since creation of this checkpoint.
+    /// - The checkpoint must not have been created by a `!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`.
+    /// - The bump allocator must be [unclaimed] at the time the checkpoint is created and when this function is called.
     ///
     /// [`reset`]: crate::Bump::reset
     /// [unclaimed]: crate::traits::BumpAllocatorScope::claim
