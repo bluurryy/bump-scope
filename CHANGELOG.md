@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `nightly-miri-promise-symbolic-alignment` feature to promise symbolic alignment for allocations
+
 ### Changed
 
 - Document `reset_to` memory block invalidation as the nightly `Allocator` trait calls for

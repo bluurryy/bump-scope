@@ -17,7 +17,7 @@ include = [
   "/README.md",
   "/SECURITY.md",
   "/UPGRADING.md",
-  "src/**/*"
+  "src/**/*",
 ]
 
 [package.metadata.docs.rs]
@@ -60,14 +60,14 @@ std = [
   "alloc",
   "allocator-api2-02?/std",
   "allocator-api2-03?/std",
-  "allocator-api2-04?/std"
+  "allocator-api2-04?/std",
 ]
 
 ## Adds `Global` as the default base allocator and some interactions with `alloc` collections.
 alloc = [
   "allocator-api2-02?/alloc",
   "allocator-api2-03?/alloc",
-  "allocator-api2-04?/alloc"
+  "allocator-api2-04?/alloc",
 ]
 
 ## Adds functions and traits that will panic when allocations fail.
@@ -121,6 +121,7 @@ nightly = [
   "nightly-fn-traits",
   "nightly-tests",
   "nightly-trusted-len",
+  "nightly-miri-promise-symbolic-alignment",
 ]
 
 ## Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
@@ -154,3 +155,6 @@ nightly-dropck-eyepatch = []
 
 ## Adds [`alloc_clone`](crate::traits::BumpAllocatorTypedScope::alloc_clone) method.
 nightly-clone-to-uninit = []
+
+## Promises to miri that allocated pointers are symbolically aligned.
+nightly-miri-promise-symbolic-alignment = []

@@ -286,6 +286,7 @@
 //!   This makes it so references don't have to strictly outlive the container.
 //!   (Just like with std's `Box` and `Vec`.)
 //! - **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](crate::traits::BumpAllocatorTypedScope::alloc_clone) method.
+//! - **`nightly-miri-promise-symbolic-alignment`** — Promises to miri that allocated pointers are symbolically aligned.
 //! <!-- feature documentation end -->
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches

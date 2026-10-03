@@ -252,6 +252,7 @@ Breaking changes to these features might be introduced in minor releases to keep
   This makes it so references don't have to strictly outlive the container.
   (Just like with std's `Box` and `Vec`.)
 - **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](https://docs.rs/bump-scope/2.3.3/bump_scope/traits/trait.BumpAllocatorTypedScope.html#method.alloc_clone) method.
+- **`nightly-miri-promise-symbolic-alignment`** — Promises to miri that allocated pointers are symbolically aligned.
 <!-- feature documentation end -->
 
 
