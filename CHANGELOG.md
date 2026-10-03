@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `nightly-miri-promise-symbolic-alignment` feature to promise symbolic alignment for allocations
+
 ### Changed
 
+- Update vector and string api implementations to rust commit 787af2b8c80638c51a4fc8e44f84e6891f243ec7 (2026-08-25).
 - Document `reset_to` memory block invalidation as the nightly `Allocator` trait calls for
 - Update nightly features (don't activate `allocator_api` feature)
 

@@ -1,9 +1,10 @@
-//! Adapted from rust's `library/alloctests/tests/vec.rs` commit fb04372dc56129d69e39af80cac6e81694bd285f
+//! Adapted from rust's `library/alloctests/tests/vec.rs` commit 787af2b8c80638c51a4fc8e44f84e6891f243ec7
 
 use core::alloc::Layout;
 use core::num::NonZero;
 use core::ptr::NonNull;
 use core::{assert_eq, assert_ne};
+use std::alloc::System;
 use std::cell::Cell;
 use std::fmt::Debug;
 use std::hint;
@@ -12,6 +13,8 @@ use std::panic::catch_unwind;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use bump_scope::alloc::{AllocError, Allocator, Global};
+
+use crate::struct_with_counted_drop;
 
 type Bump<A = Global> = bump_scope::Bump<A>;
 type Vec<T, A = Bump> = bump_scope::MutBumpVecRev<T, A>;
@@ -33,6 +36,36 @@ impl<T> VecNew for Vec<T> {
 
     fn try_with_capacity(n: usize) -> Result<Self, AllocError> {
         Vec::try_with_capacity_in(n, Default::default())
+    }
+}
+
+trait VecClone {
+    fn clone(&self) -> Self;
+}
+
+impl<T: Clone> VecClone for Vec<T> {
+    fn clone(&self) -> Self {
+        let mut vec = Vec::new_in(Default::default());
+        vec.extend_from_slice_clone(self);
+        vec
+    }
+}
+
+trait ToMyVec<T> {
+    fn to_my_vec(&self) -> Vec<T>;
+}
+
+impl<T: Clone> ToMyVec<T> for [T] {
+    fn to_my_vec(&self) -> Vec<T> {
+        let mut vec = Vec::new();
+        vec.extend_from_slice_clone(self);
+        vec
+    }
+}
+
+impl<T: Clone, const N: usize> ToMyVec<T> for &[T; N] {
+    fn to_my_vec(&self) -> Vec<T> {
+        self[..].to_my_vec()
     }
 }
 
@@ -161,13 +194,10 @@ fn test_push() {
 
 #[test]
 fn test_extend() {
-    let mut bump_v: Bump = Bump::new();
-    let mut bump_w: Bump = Bump::new();
+    let mut v = Vec::new();
+    let mut w = Vec::new();
 
-    let mut v = Vec::new_in(&mut bump_v);
-    let mut w = Vec::new_in(&mut bump_w);
-
-    v.extend(w.iter().copied());
+    v.extend(w.clone());
     assert_eq!(v, &[]);
 
     v.extend(0..3);
@@ -184,7 +214,7 @@ fn test_extend() {
 
     assert_eq!(v, w);
 
-    v.extend(w.iter().copied()); // specializes to `append` (no it doesn't)
+    v.extend(w.clone());
     assert!(v.iter().eq(w.iter().rev().chain(w.iter())));
 
     // Zero sized types
@@ -295,44 +325,18 @@ fn test_split_at_mut() {
     assert_eq!(values, [2, 3, 5, 6, 7]);
 }
 
-#[cfg(any())] // not applicable
 #[test]
-fn test_clone() {}
+fn test_clone() {
+    let v: Vec<i32> = vec![];
+    let w = vec![1, 2, 3];
 
-#[cfg(any())] // not applicable
-#[test]
-fn test_clone_from() {}
+    assert_eq!(v, v.clone());
 
-#[cfg(any())] // not yet implemented
-#[test]
-fn test_retain() {}
-
-#[cfg(any())] // not yet implemented
-fn test_retain_predicate_order() {}
-
-#[cfg(any())] // not yet implemented
-fn test_retain_pred_panic_with_hole() {}
-
-#[cfg(any())] // not yet implemented
-fn test_retain_pred_panic_no_hole() {}
-
-#[cfg(any())] // not yet implemented
-fn test_retain_drop_panic() {}
-
-#[cfg(any())] // not yet implemented
-fn test_retain_maybeuninits() {}
-
-#[cfg(any())] // not yet implemented
-fn test_dedup() {}
-
-#[cfg(any())] // not yet implemented
-fn test_dedup_by_key() {}
-
-#[cfg(any())] // not yet implemented
-fn test_dedup_by() {}
-
-#[cfg(any())] // not yet implemented
-fn test_dedup_unique() {}
+    let z = w.clone();
+    assert_eq!(w, z);
+    // they should be disjoint in memory.
+    assert!(w.as_ptr() != z.as_ptr())
+}
 
 #[test]
 fn zero_sized_values() {
@@ -411,32 +415,25 @@ fn test_cmp() {
 
 #[test]
 fn test_vec_truncate_drop() {
-    static mut DROPS: u32 = 0;
-    struct Elem(#[expect(dead_code)] i32);
-    impl Drop for Elem {
-        fn drop(&mut self) {
-            unsafe {
-                DROPS += 1;
-            }
-        }
-    }
+    struct_with_counted_drop!(Elem(i32), DROPS);
 
     let mut v = vec![Elem(1), Elem(2), Elem(3), Elem(4), Elem(5)];
-    assert_eq!(unsafe { DROPS }, 0);
+
+    assert_eq!(DROPS.get(), 0);
     v.truncate(3);
-    assert_eq!(unsafe { DROPS }, 2);
+    assert_eq!(DROPS.get(), 2);
     v.truncate(0);
-    assert_eq!(unsafe { DROPS }, 5);
+    assert_eq!(DROPS.get(), 5);
 }
 
 #[test]
 #[should_panic]
 fn test_vec_truncate_fail() {
     struct BadElem(i32);
+
     impl Drop for BadElem {
         fn drop(&mut self) {
-            let BadElem(ref mut x) = *self;
-            if *x == 0xbadbeef {
+            if let BadElem(0xbadbeef) = self {
                 panic!("BadElem panic: 0xbadbeef")
             }
         }
@@ -531,78 +528,9 @@ fn test_move_items_zero_sized() {
     assert_eq!(vec2, [(), (), ()]);
 }
 
-#[cfg(any())] // not yet implemented
-fn test_drain_empty_vec() {}
-
-#[cfg(any())] // not yet implemented
-fn test_drain_items() {}
-
-#[cfg(any())] // not yet implemented
-fn test_drain_items_reverse() {}
-
-#[cfg(any())] // not yet implemented
-fn test_drain_items_zero_sized() {}
-
-#[cfg(any())] // not yet implemented
-fn test_drain_out_of_bounds() {}
-
-#[cfg(any())] // not yet implemented
-fn test_drain_range() {}
-
-#[cfg(any())] // not yet implemented
-fn test_drain_inclusive_range() {}
-
-#[cfg(any())] // not yet implemented
-fn test_drain_max_vec_size() {}
-
-#[cfg(any())] // not yet implemented
-fn test_drain_index_overflow() {}
-
-#[cfg(any())] // not yet implemented
-fn test_drain_inclusive_out_of_bounds() {}
-
-#[cfg(any())] // not yet implemented
-fn test_drain_start_overflow() {}
-
-#[cfg(any())] // not yet implemented
-fn test_drain_end_overflow() {}
-
-#[cfg(any())] // not yet implemented
-fn test_drain_leak() {}
-
-#[cfg(any())] // not yet implemented
-fn test_drain_keep_rest() {}
-
-#[cfg(any())] // not yet implemented
-fn test_drain_keep_rest_all() {}
-
-#[cfg(any())] // not yet implemented
-fn test_drain_keep_rest_none() {}
-
-#[cfg(any())] // not applicable
-fn test_splice() {}
-
-#[cfg(any())] // not applicable
-fn test_splice_inclusive_range() {}
-
-#[cfg(any())] // not applicable
-fn test_splice_out_of_bounds() {}
-
-#[cfg(any())] // not applicable
-fn test_splice_inclusive_out_of_bounds() {}
-
-#[cfg(any())] // not applicable
-fn test_splice_items_zero_sized() {}
-
-#[cfg(any())] // not applicable
-fn test_splice_unbounded() {}
-
-#[cfg(any())] // not applicable
-fn test_splice_forget() {}
-
 #[test]
 fn test_into_boxed_slice() {
-    let mut bump: Bump = Bump::new();
+    let mut bump = <Bump>::new();
     let xs = vec![in &mut bump; 1, 2, 3];
     let ys = xs.into_boxed_slice();
     assert_eq!(&*ys, [1, 2, 3]);
@@ -616,14 +544,6 @@ fn test_append() {
     assert_eq!(vec, [4, 5, 6, 1, 2, 3]);
     assert_eq!(vec2, []);
 }
-
-#[cfg(any())] // not applicable
-#[test]
-fn test_split_off() {}
-
-#[cfg(any())] // not applicable
-#[test]
-fn test_split_off_take_all() {}
 
 #[test]
 fn test_into_iter_as_slice() {
@@ -663,11 +583,20 @@ fn test_into_iter_count() {
 
 #[test]
 fn test_into_iter_next_chunk() {
-    let mut iter = b"lorem".to_vec().into_iter();
+    let mut iter = b"lorem".to_my_vec().into_iter();
 
     assert_eq!(iter.next_chunk().unwrap(), [b'l', b'o']); // N is inferred as 2
     assert_eq!(iter.next_chunk().unwrap(), [b'r', b'e', b'm']); // N is inferred as 3
     assert_eq!(iter.next_chunk::<4>().unwrap_err().as_slice(), &[]); // N is explicitly 4
+}
+
+#[test]
+fn test_into_iter_next_chunk_back() {
+    let mut iter = b"lorem".to_my_vec().into_iter();
+
+    assert_eq!(iter.next_chunk_back().unwrap(), [b'e', b'm']); // N is inferred as 2
+    assert_eq!(iter.next_chunk_back().unwrap(), [b'l', b'o', b'r']); // N is inferred as 3
+    assert_eq!(iter.next_chunk_back::<4>().unwrap_err().as_slice(), &[]); // N is explicitly 4
 }
 
 #[test]
@@ -692,27 +621,13 @@ fn test_into_iter_clone() {
 #[test]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn test_into_iter_leak() {
-    static mut DROPS: i32 = 0;
-
-    struct D(bool);
-
-    impl Drop for D {
-        fn drop(&mut self) {
-            unsafe {
-                DROPS += 1;
-            }
-
-            if self.0 {
-                panic!("panic in `drop`");
-            }
-        }
-    }
+    struct_with_counted_drop!(D(bool), DROPS => |this: &D| if this.0 { panic!("panic in `drop`"); });
 
     let v = vec![D(false), D(true), D(false)];
 
     catch_unwind(move || drop(v.into_iter())).ok();
 
-    assert_eq!(unsafe { DROPS }, 3);
+    assert_eq!(DROPS.get(), 3);
 }
 
 #[test]
@@ -739,29 +654,27 @@ fn test_into_iter_advance_by() {
 #[test]
 fn test_into_iter_drop_allocator() {
     #[derive(Clone)]
-    pub struct ReferenceCountedAllocator<'a> {
-        #[expect(dead_code)]
-        counter: DropCounterCell<'a>,
-    }
+    struct ReferenceCountedAllocator<'a>(#[allow(dead_code)] DropCounterCell<'a>);
 
     unsafe impl Allocator for ReferenceCountedAllocator<'_> {
         fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-            Global.allocate(layout)
+            System.allocate(layout)
         }
 
         unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
             // Safety: Invariants passed to caller.
-            unsafe { Global.deallocate(ptr, layout) }
+            unsafe { System.deallocate(ptr, layout) }
         }
     }
 
     let drop_count = Cell::new(0);
-    let allocator = ReferenceCountedAllocator { counter: DropCounterCell { count: &drop_count } };
-    let _ = Vec::<u32, _>::new_in(Bump::<_>::new_in(allocator));
+
+    let allocator = ReferenceCountedAllocator(DropCounterCell { count: &drop_count });
+    let _ = Vec::<u32, _>::new_in(Bump::new_in(allocator));
     assert_eq!(drop_count.get(), 1);
 
-    let allocator = ReferenceCountedAllocator { counter: DropCounterCell { count: &drop_count } };
-    let _ = Vec::<u32, _>::new_in(Bump::<_>::new_in(allocator)).into_iter();
+    let allocator = ReferenceCountedAllocator(DropCounterCell { count: &drop_count });
+    let _ = Vec::<u32, _>::new_in(Bump::new_in(allocator)).into_iter();
     assert_eq!(drop_count.get(), 2);
 }
 
@@ -771,7 +684,7 @@ fn test_into_iter_zst() {
     struct AlignedZstWithDrop([u64; 0]);
     impl Drop for AlignedZstWithDrop {
         fn drop(&mut self) {
-            let addr = self as *mut _ as usize;
+            let addr = (self as *mut Self).addr();
             assert!(hint::black_box(addr) % align_of::<u64>() == 0);
         }
     }
@@ -792,62 +705,17 @@ fn test_into_iter_zst() {
     let mut it = vec![C, C].into_iter();
     it.next_chunk::<4>().unwrap_err();
     drop(it);
+
+    let mut it = vec![C, C].into_iter();
+    it.next_chunk_back::<1>().unwrap();
+    drop(it);
+
+    let mut it = vec![C, C].into_iter();
+    it.next_chunk_back::<4>().unwrap_err();
+    drop(it);
 }
 
-#[cfg(any())] // not applicable
-fn test_from_iter_specialization() {}
-
-#[cfg(any())] // not applicable
-fn test_from_iter_partially_drained_in_place_specialization() {}
-
-#[cfg(any())] // not applicable
-fn test_from_iter_specialization_with_iterator_adapters() {}
-
-#[cfg(any())] // not applicable
-fn test_in_place_specialization_step_up_down() {}
-
-#[cfg(any())] // not applicable
-fn test_from_iter_specialization_head_tail_drop() {}
-
-#[cfg(any())] // not applicable
-fn test_from_iter_specialization_panic_during_iteration_drops() {}
-
-#[cfg(any())] // not applicable
-fn test_from_iter_specialization_panic_during_drop_doesnt_leak() {}
-
-#[cfg(any())] // not applicable
 #[test]
-fn test_collect_after_iterator_clone() {}
-
-#[cfg(any())] // not applicable
-#[test]
-fn test_flatten_clone() {}
-
-#[cfg(any())] // not applicable
-#[test]
-fn test_cow_from() {}
-
-#[cfg(any())] // not applicable
-#[test]
-fn test_from_cow() {}
-
-#[cfg(any())] // TODO: fix this
-#[expect(dead_code)]
-fn assert_covariance() {
-    fn drain<'new>(d: Drain<'static, &'static str>) -> Drain<'new, &'new str> {
-        d
-    }
-    fn into_iter<'new>(i: IntoIter<'static, &'static str>) -> IntoIter<'new, &'new str> {
-        i
-    }
-}
-
-#[cfg(any())] // not applicable (no `FromIterator` impl nor specialization)
-#[test]
-fn from_into_inner() {}
-
-#[test]
-#[cfg(not(miri))] // too slow
 fn overaligned_allocations() {
     #[repr(align(256))]
     struct Foo(usize);
@@ -855,43 +723,9 @@ fn overaligned_allocations() {
     for i in 0..0x1000 {
         v.reserve_exact(i);
         assert!(v[0].0 == 273);
-        assert!(v.as_ptr() as usize & 0xff == 0);
-        // `MutBumpVecRev can't shrink`
-        // v.shrink_to_fit();
-        // assert!(v[0].0 == 273);
-        // assert!(v.as_ptr() as usize & 0xff == 0);
+        assert!(v.as_ptr().addr() & 0xff == 0);
     }
 }
-
-#[cfg(any())] // not yet implemented
-fn extract_if_empty() {}
-
-#[cfg(any())] // not yet implemented
-fn extract_if_zst() {}
-
-#[cfg(any())] // not yet implemented
-fn extract_if_false() {}
-
-#[cfg(any())] // not yet implemented
-fn extract_if_true() {}
-
-#[cfg(any())] // not yet implemented
-fn extract_if_ranges() {}
-
-#[cfg(any())] // not yet implemented
-fn extract_if_out_of_bounds() {}
-
-#[cfg(any())] // not yet implemented
-fn extract_if_complex() {}
-
-#[cfg(any())] // not yet implemented
-fn extract_if_consumed_panic() {}
-
-#[cfg(any())] // not yet implemented
-fn extract_if_unconsumed_panic() {}
-
-#[cfg(any())] // not yet implemented
-fn extract_if_unconsumed() {}
 
 #[test]
 fn test_reserve_exact() {
@@ -928,23 +762,8 @@ fn test_try_with_capacity() {
     assert!(Vec::<u16>::try_with_capacity(isize::MAX as usize + 1).is_err());
 }
 
-#[cfg(any())] // we don't have try reserve error variants
-fn test_try_reserve() {}
-
-#[cfg(any())] // we don't have try reserve error variants
-fn test_try_reserve_exact() {}
-
-// TODO: implement `MutBumpVec::splice`
-#[cfg(any())]
 #[test]
 fn test_stable_pointers() {
-    /// Pull an element from the iterator, then drop it.
-    /// Useful to cover both the `next` and `drop` paths of an iterator.
-    fn next_then_drop<I: Iterator>(mut i: I) {
-        i.next().unwrap();
-        drop(i);
-    }
-
     // Test that, if we reserved enough space, adding and removing elements does not
     // invalidate references into the vector (such as `v0`). This test also
     // runs in Miri, which would detect such problems.
@@ -970,7 +789,7 @@ fn test_stable_pointers() {
     v.push(1);
     v.swap_remove(1);
     assert_eq!(v.len(), 2);
-    v.swap_remove(1); // swap_remove the last element
+    v.swap_remove(0); // swap_remove the first element
     assert_eq!(*v0, 13);
 
     // Appending
@@ -1002,20 +821,6 @@ fn test_stable_pointers() {
     v.reserve_exact(32);
     assert_eq!(*v0, 13);
 
-    // Partial draining
-    v.resize_with(10, || 42);
-    next_then_drop(v.drain(5..));
-    assert_eq!(*v0, 13);
-
-    // Splicing
-    v.resize_with(10, || 42);
-    next_then_drop(v.splice(5.., vec![1, 2, 3, 4, 5])); // empty tail after range
-    assert_eq!(*v0, 13);
-    next_then_drop(v.splice(5..8, vec![1])); // replacement is smaller than original range
-    assert_eq!(*v0, 13);
-    next_then_drop(v.splice(5..6, [1; 10].into_iter().filter(|_| true))); // lower bound not exact
-    assert_eq!(*v0, 13);
-
     // spare_capacity_mut
     v.spare_capacity_mut();
     assert_eq!(*v0, 13);
@@ -1023,7 +828,7 @@ fn test_stable_pointers() {
     // Smoke test that would fire even outside Miri if an actual relocation happened.
     // Also ensures the pointer is still writeable after all this.
     *v0 -= 13;
-    assert_eq!(v[0], 0);
+    assert_eq!(*v.last().unwrap(), 0);
 }
 
 // https://github.com/rust-lang/rust/pull/49496 introduced specialization based on:
@@ -1066,11 +871,6 @@ fn vec_macro_repeating_null_raw_fat_pointer() {
         vtable: *mut (),
     }
 }
-
-// TODO: test `MutBumpVec` growth
-#[cfg(any())]
-#[test]
-fn test_push_growth_strategy() {}
 
 macro_rules! generate_assert_eq_vec_and_prim {
     ($name:ident<$B:ident>($type:ty)) => {
@@ -1126,7 +926,6 @@ fn partialeq_vec_full() {
     assert_partial_eq_valid!(vec2,vec3; arrayref2[..],arrayref3[..]);
 }
 
-#[cfg(any())] // TODO: `#[may_dangle]`?
 #[test]
 fn test_vec_cycle() {
     #[derive(Debug)]
@@ -1165,7 +964,6 @@ fn test_vec_cycle() {
     c3.v[1].set(Some(&c2));
 }
 
-#[cfg(any())] // TODO: `#[may_dangle]`?
 #[test]
 fn test_vec_cycle_wrapped() {
     struct Refs<'a> {
@@ -1259,20 +1057,6 @@ fn test_vec_swap() {
 }
 
 #[test]
-fn test_extend_from_within_spec() {
-    #[derive(Copy)]
-    struct CopyOnly;
-
-    impl Clone for CopyOnly {
-        fn clone(&self) -> Self {
-            panic!("extend_from_within must use specialization on copy");
-        }
-    }
-
-    vec![CopyOnly, CopyOnly].extend_from_within_copy(..);
-}
-
-#[test]
 fn test_extend_from_within_clone() {
     let mut v = vec![String::from("sssss"), String::from("12334567890"), String::from("c")];
     v.extend_from_within_clone(1..);
@@ -1328,27 +1112,6 @@ fn test_extend_from_within() {
     assert_eq!(v, ["b", "c", "b", "c", "a", "b", "c"]);
 }
 
-#[cfg(any())] // not yet implemented
-fn test_vec_dedup_by() {}
-
-#[cfg(any())] // not yet implemented
-fn test_vec_dedup_empty() {}
-
-#[cfg(any())] // not yet implemented
-fn test_vec_dedup_one() {}
-
-#[cfg(any())] // not yet implemented
-fn test_vec_dedup_multiple_ident() {}
-
-#[cfg(any())] // not yet implemented
-fn test_vec_dedup_partialeq() {}
-
-#[cfg(any())] // not yet implemented
-fn test_vec_dedup() {}
-
-#[cfg(any())] // not yet implemented
-fn test_vec_dedup_panicking() {}
-
 // Regression test for issue #82533
 #[test]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
@@ -1392,22 +1155,11 @@ fn test_extend_from_within_panicking_clone() {
 }
 
 #[test]
-#[should_panic = "vec len overflow"]
+#[should_panic = "the product of vec len and N shouldn't overflow"]
 fn test_into_flattened_size_overflow() {
     let v = vec![[(); usize::MAX]; 2];
     let _ = v.into_flattened();
 }
-
-#[cfg(any())] // not applicable, `BumpAllocatorCore` has special behavior that must accept any zero sized deallocations
-fn test_box_zero_allocator() {}
-
-#[cfg(any())] // not applicable
-#[test]
-fn test_vec_from_array_ref() {}
-
-#[cfg(any())] // not applicable
-#[test]
-fn test_vec_from_array_mut_ref() {}
 
 #[test]
 fn test_pop_if() {
@@ -1448,8 +1200,6 @@ fn test_pop_if_mutates() {
 fn max_dont_panic() {
     let mut v = vec![0];
     let _ = v.get(usize::MAX);
-    // `MutBumpVecRev can't shrink`
-    // v.shrink_to(usize::MAX);
     v.truncate(usize::MAX);
 }
 
@@ -1467,14 +1217,6 @@ fn max_remove() {
     v.remove(usize::MAX);
 }
 
-#[cfg(any())] // TODO: implement `MutBumpVec::splice`
-#[test]
-#[should_panic]
-fn max_splice() {
-    let mut v = vec![0];
-    v.splice(usize::MAX.., core::iter::once(1));
-}
-
 #[test]
 #[should_panic]
 fn max_swap_remove() {
@@ -1490,4 +1232,13 @@ fn vec_null_ptr_roundtrip() {
     let roundtripped = vec![zero; 1].pop().unwrap();
     let new = roundtripped.with_addr(ptr.addr());
     unsafe { new.read() };
+}
+
+#[test]
+fn zst_collections_iter_nth_back_regression() {
+    #[repr(align(8))]
+    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
+    struct Thing;
+    let v = vec![Thing, Thing];
+    let _ = v.into_iter().nth_back(1);
 }

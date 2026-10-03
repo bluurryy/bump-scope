@@ -1,9 +1,10 @@
-//! Adapted from rust's `library/alloctests/tests/vec.rs` commit fb04372dc56129d69e39af80cac6e81694bd285f
+//! Adapted from rust's `library/alloctests/tests/vec.rs` commit 787af2b8c80638c51a4fc8e44f84e6891f243ec7
 
 use core::alloc::Layout;
 use core::num::NonZero;
 use core::ptr::NonNull;
 use core::{assert_eq, assert_ne};
+use std::alloc::System;
 use std::cell::Cell;
 use std::fmt::Debug;
 use std::hint;
@@ -14,6 +15,9 @@ use std::rc::Rc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use bump_scope::alloc::{AllocError, Allocator, Global};
+use bump_scope::owned_slice::IntoIter;
+
+use crate::struct_with_counted_drop;
 
 type Bump<A = Global> = bump_scope::Bump<A>;
 type Vec<T, A = Bump> = bump_scope::MutBumpVec<T, A>;
@@ -47,6 +51,24 @@ impl<T: Clone> VecClone for Vec<T> {
         let mut vec = Vec::new_in(Default::default());
         vec.extend_from_slice_clone(self);
         vec
+    }
+}
+
+trait ToMyVec<T> {
+    fn to_my_vec(&self) -> Vec<T>;
+}
+
+impl<T: Clone> ToMyVec<T> for [T] {
+    fn to_my_vec(&self) -> Vec<T> {
+        let mut vec = Vec::new();
+        vec.extend_from_slice_clone(self);
+        vec
+    }
+}
+
+impl<T: Clone, const N: usize> ToMyVec<T> for &[T; N] {
+    fn to_my_vec(&self) -> Vec<T> {
+        self[..].to_my_vec()
     }
 }
 
@@ -175,13 +197,10 @@ fn test_push() {
 
 #[test]
 fn test_extend() {
-    let mut bump_v: Bump = Bump::new();
-    let mut bump_w: Bump = Bump::new();
+    let mut v = Vec::new();
+    let mut w = Vec::new();
 
-    let mut v = Vec::new_in(&mut bump_v);
-    let mut w = Vec::new_in(&mut bump_w);
-
-    v.extend(w.iter().copied());
+    v.extend(w.clone());
     assert_eq!(v, &[]);
 
     v.extend(0..3);
@@ -198,7 +217,7 @@ fn test_extend() {
 
     assert_eq!(v, w);
 
-    v.extend(w.iter().copied()); // specializes to `append` (no it doesn't)
+    v.extend(w.clone());
     assert!(v.iter().eq(w.iter().chain(w.iter())));
 
     // Zero sized types
@@ -309,13 +328,18 @@ fn test_split_at_mut() {
     assert_eq!(values, [2, 3, 5, 6, 7]);
 }
 
-#[cfg(any())] // not applicable
 #[test]
-fn test_clone() {}
+fn test_clone() {
+    let v: Vec<i32> = vec![];
+    let w = vec![1, 2, 3];
 
-#[cfg(any())] // not applicable
-#[test]
-fn test_clone_from() {}
+    assert_eq!(v, v.clone());
+
+    let z = w.clone();
+    assert_eq!(w, z);
+    // they should be disjoint in memory.
+    assert!(w.as_ptr() != z.as_ptr())
+}
 
 #[test]
 fn test_retain() {
@@ -343,9 +367,9 @@ fn test_retain_predicate_order() {
 #[test]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn test_retain_pred_panic_with_hole() {
-    let v = Vec::from_iter_in((0..5).map(Rc::new), <Bump>::new());
+    let v = (0..5).map(Rc::new).collect::<Vec<_>>();
     catch_unwind(AssertUnwindSafe(|| {
-        let mut v = Vec::from_iter_in(v.iter().cloned(), <Bump>::new());
+        let mut v = v.clone();
         v.retain(|r| match **r {
             0 => true,
             1 => false,
@@ -361,9 +385,9 @@ fn test_retain_pred_panic_with_hole() {
 #[test]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn test_retain_pred_panic_no_hole() {
-    let v = Vec::from_iter_in((0..5).map(Rc::new), <Bump>::new());
+    let v = (0..5).map(Rc::new).collect::<Vec<_>>();
     catch_unwind(AssertUnwindSafe(|| {
-        let mut v = Vec::from_iter_in(v.iter().cloned(), <Bump>::new());
+        let mut v = v.clone();
         v.retain(|r| match **r {
             0 | 1 | 2 => true,
             _ => panic!(),
@@ -387,9 +411,9 @@ fn test_retain_drop_panic() {
         }
     }
 
-    let v = Vec::from_iter_in((0..5).map(Rc::new), <Bump>::new());
+    let v = (0..5).map(|x| Rc::new(x)).collect::<Vec<_>>();
     catch_unwind(AssertUnwindSafe(|| {
-        let mut v = Vec::from_iter_in(v.iter().map(|r| Wrap(r.clone())), <Bump>::new());
+        let mut v = v.iter().map(|r| Wrap(r.clone())).collect::<Vec<_>>();
         v.retain(|w| match *w.0 {
             0 => true,
             1 => false,
@@ -408,8 +432,9 @@ fn test_retain_drop_panic() {
 fn test_retain_maybeuninits() {
     // This test aimed to be run under miri.
     use core::mem::MaybeUninit;
-    let mut vec: Vec<_> =
-        Vec::from_owned_slice_in([1i32, 2, 3, 4].map(|v| MaybeUninit::new(vec![v])), Bump::new());
+    let mut bump = <Bump>::new();
+    let mut vec: Vec<_, _> =
+        Vec::from_iter_in([1i32, 2, 3, 4].map(|v| MaybeUninit::new(vec![v])), &mut bump);
     vec.retain(|x| {
         // SAFETY: Retain must visit every element of Vec in original order and exactly once.
         // Our values is initialized at creation of Vec.
@@ -423,14 +448,14 @@ fn test_retain_maybeuninits() {
         drop(unsafe { x.assume_init_read() });
         false
     });
-    let vec: Vec<i32> = Vec::from_iter_in(
-        vec.into_iter().map(|x| unsafe {
+    let vec: Vec<i32> = vec
+        .into_iter()
+        .map(|x| unsafe {
             // SAFETY: All values dropped in retain predicate must be removed by `Vec::retain`.
             // Remaining values are initialized.
             x.assume_init()[0]
-        }),
-        Bump::new(),
-    );
+        })
+        .collect();
     assert_eq!(vec, [2, 4]);
 }
 
@@ -575,32 +600,25 @@ fn test_cmp() {
 
 #[test]
 fn test_vec_truncate_drop() {
-    static mut DROPS: u32 = 0;
-    struct Elem(#[expect(dead_code)] i32);
-    impl Drop for Elem {
-        fn drop(&mut self) {
-            unsafe {
-                DROPS += 1;
-            }
-        }
-    }
+    struct_with_counted_drop!(Elem(i32), DROPS);
 
     let mut v = vec![Elem(1), Elem(2), Elem(3), Elem(4), Elem(5)];
-    assert_eq!(unsafe { DROPS }, 0);
+
+    assert_eq!(DROPS.get(), 0);
     v.truncate(3);
-    assert_eq!(unsafe { DROPS }, 2);
+    assert_eq!(DROPS.get(), 2);
     v.truncate(0);
-    assert_eq!(unsafe { DROPS }, 5);
+    assert_eq!(DROPS.get(), 5);
 }
 
 #[test]
 #[should_panic]
 fn test_vec_truncate_fail() {
     struct BadElem(i32);
+
     impl Drop for BadElem {
         fn drop(&mut self) {
-            let BadElem(ref mut x) = *self;
-            if *x == 0xbadbeef {
+            if let BadElem(0xbadbeef) = self {
                 panic!("BadElem panic: 0xbadbeef")
             }
         }
@@ -839,22 +857,7 @@ fn test_drain_end_overflow() {
 #[test]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn test_drain_leak() {
-    static mut DROPS: i32 = 0;
-
-    #[derive(Debug, PartialEq)]
-    struct D(u32, bool);
-
-    impl Drop for D {
-        fn drop(&mut self) {
-            unsafe {
-                DROPS += 1;
-            }
-
-            if self.1 {
-                panic!("panic in `drop`");
-            }
-        }
-    }
+    struct_with_counted_drop!(D(u32, bool), DROPS => |this: &D| if this.1 { panic!("panic in `drop`"); });
 
     let mut v = vec![
         D(0, false),
@@ -871,7 +874,7 @@ fn test_drain_leak() {
     }))
     .ok();
 
-    assert_eq!(unsafe { DROPS }, 4);
+    assert_eq!(DROPS.get(), 4);
     assert_eq!(v, vec![D(0, false), D(1, false), D(6, false),]);
 }
 
@@ -905,30 +908,9 @@ fn test_drain_keep_rest_none() {
     assert_eq!(v, &[0, 6]);
 }
 
-#[cfg(any())] // not applicable
-fn test_splice() {}
-
-#[cfg(any())] // not applicable
-fn test_splice_inclusive_range() {}
-
-#[cfg(any())] // not applicable
-fn test_splice_out_of_bounds() {}
-
-#[cfg(any())] // not applicable
-fn test_splice_inclusive_out_of_bounds() {}
-
-#[cfg(any())] // not applicable
-fn test_splice_items_zero_sized() {}
-
-#[cfg(any())] // not applicable
-fn test_splice_unbounded() {}
-
-#[cfg(any())] // not applicable
-fn test_splice_forget() {}
-
 #[test]
 fn test_into_boxed_slice() {
-    let mut bump: Bump = Bump::new();
+    let mut bump = <Bump>::new();
     let xs = vec![in &mut bump; 1, 2, 3];
     let ys = xs.into_boxed_slice();
     assert_eq!(&*ys, [1, 2, 3]);
@@ -942,14 +924,6 @@ fn test_append() {
     assert_eq!(vec, [1, 2, 3, 4, 5, 6]);
     assert_eq!(vec2, []);
 }
-
-#[cfg(any())] // not applicable
-#[test]
-fn test_split_off() {}
-
-#[cfg(any())] // not applicable
-#[test]
-fn test_split_off_take_all() {}
 
 #[test]
 fn test_into_iter_as_slice() {
@@ -989,11 +963,20 @@ fn test_into_iter_count() {
 
 #[test]
 fn test_into_iter_next_chunk() {
-    let mut iter = b"lorem".to_vec().into_iter();
+    let mut iter = b"lorem".to_my_vec().into_iter();
 
     assert_eq!(iter.next_chunk().unwrap(), [b'l', b'o']); // N is inferred as 2
     assert_eq!(iter.next_chunk().unwrap(), [b'r', b'e', b'm']); // N is inferred as 3
     assert_eq!(iter.next_chunk::<4>().unwrap_err().as_slice(), &[]); // N is explicitly 4
+}
+
+#[test]
+fn test_into_iter_next_chunk_back() {
+    let mut iter = b"lorem".to_my_vec().into_iter();
+
+    assert_eq!(iter.next_chunk_back().unwrap(), [b'e', b'm']); // N is inferred as 2
+    assert_eq!(iter.next_chunk_back().unwrap(), [b'l', b'o', b'r']); // N is inferred as 3
+    assert_eq!(iter.next_chunk_back::<4>().unwrap_err().as_slice(), &[]); // N is explicitly 4
 }
 
 #[test]
@@ -1017,27 +1000,13 @@ fn test_into_iter_clone() {
 #[test]
 #[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
 fn test_into_iter_leak() {
-    static mut DROPS: i32 = 0;
-
-    struct D(bool);
-
-    impl Drop for D {
-        fn drop(&mut self) {
-            unsafe {
-                DROPS += 1;
-            }
-
-            if self.0 {
-                panic!("panic in `drop`");
-            }
-        }
-    }
+    struct_with_counted_drop!(D(bool), DROPS => |this: &D| if this.0 { panic!("panic in `drop`"); });
 
     let v = vec![D(false), D(true), D(false)];
 
     catch_unwind(move || drop(v.into_iter())).ok();
 
-    assert_eq!(unsafe { DROPS }, 3);
+    assert_eq!(DROPS.get(), 3);
 }
 
 #[test]
@@ -1064,29 +1033,27 @@ fn test_into_iter_advance_by() {
 #[test]
 fn test_into_iter_drop_allocator() {
     #[derive(Clone)]
-    pub struct ReferenceCountedAllocator<'a> {
-        #[expect(dead_code)]
-        counter: DropCounterCell<'a>,
-    }
+    struct ReferenceCountedAllocator<'a>(#[allow(dead_code)] DropCounterCell<'a>);
 
     unsafe impl Allocator for ReferenceCountedAllocator<'_> {
         fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-            Global.allocate(layout)
+            System.allocate(layout)
         }
 
         unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
             // Safety: Invariants passed to caller.
-            unsafe { Global.deallocate(ptr, layout) }
+            unsafe { System.deallocate(ptr, layout) }
         }
     }
 
     let drop_count = Cell::new(0);
-    let allocator = ReferenceCountedAllocator { counter: DropCounterCell { count: &drop_count } };
-    let _ = Vec::<u32, _>::new_in(Bump::<_>::new_in(allocator));
+
+    let allocator = ReferenceCountedAllocator(DropCounterCell { count: &drop_count });
+    let _ = Vec::<u32, _>::new_in(Bump::new_in(allocator));
     assert_eq!(drop_count.get(), 1);
 
-    let allocator = ReferenceCountedAllocator { counter: DropCounterCell { count: &drop_count } };
-    let _ = Vec::<u32, _>::new_in(Bump::<_>::new_in(allocator)).into_iter();
+    let allocator = ReferenceCountedAllocator(DropCounterCell { count: &drop_count });
+    let _ = Vec::<u32, _>::new_in(Bump::new_in(allocator)).into_iter();
     assert_eq!(drop_count.get(), 2);
 }
 
@@ -1096,7 +1063,7 @@ fn test_into_iter_zst() {
     struct AlignedZstWithDrop([u64; 0]);
     impl Drop for AlignedZstWithDrop {
         fn drop(&mut self) {
-            let addr = self as *mut _ as usize;
+            let addr = (self as *mut Self).addr();
             assert!(hint::black_box(addr) % align_of::<u64>() == 0);
         }
     }
@@ -1117,62 +1084,24 @@ fn test_into_iter_zst() {
     let mut it = vec![C, C].into_iter();
     it.next_chunk::<4>().unwrap_err();
     drop(it);
+
+    let mut it = vec![C, C].into_iter();
+    it.next_chunk_back::<1>().unwrap();
+    drop(it);
+
+    let mut it = vec![C, C].into_iter();
+    it.next_chunk_back::<4>().unwrap_err();
+    drop(it);
 }
 
-#[cfg(any())] // not applicable
-fn test_from_iter_specialization() {}
-
-#[cfg(any())] // not applicable
-fn test_from_iter_partially_drained_in_place_specialization() {}
-
-#[cfg(any())] // not applicable
-fn test_from_iter_specialization_with_iterator_adapters() {}
-
-#[cfg(any())] // not applicable
-fn test_in_place_specialization_step_up_down() {}
-
-#[cfg(any())] // not applicable
-fn test_from_iter_specialization_head_tail_drop() {}
-
-#[cfg(any())] // not applicable
-fn test_from_iter_specialization_panic_during_iteration_drops() {}
-
-#[cfg(any())] // not applicable
-fn test_from_iter_specialization_panic_during_drop_doesnt_leak() {}
-
-#[cfg(any())] // not applicable
-#[test]
-fn test_collect_after_iterator_clone() {}
-
-#[cfg(any())] // not applicable
-#[test]
-fn test_flatten_clone() {}
-
-#[cfg(any())] // not applicable
-#[test]
-fn test_cow_from() {}
-
-#[cfg(any())] // not applicable
-#[test]
-fn test_from_cow() {}
-
-#[cfg(any())] // TODO: fix this
-#[expect(dead_code)]
+#[allow(dead_code)]
 fn assert_covariance() {
-    fn drain<'new>(d: Drain<'static, &'static str>) -> Drain<'new, &'new str> {
-        d
-    }
-    fn into_iter<'new>(i: IntoIter<'static, &'static str>) -> IntoIter<'new, &'new str> {
+    fn into_iter<'new, 'a>(i: IntoIter<'a, &'static str>) -> IntoIter<'a, &'new str> {
         i
     }
 }
 
-#[cfg(any())] // not applicable (no `FromIterator` impl nor specialization)
 #[test]
-fn from_into_inner() {}
-
-#[test]
-#[cfg(not(miri))] // too slow
 fn overaligned_allocations() {
     #[repr(align(256))]
     struct Foo(usize);
@@ -1180,300 +1109,8 @@ fn overaligned_allocations() {
     for i in 0..0x1000 {
         v.reserve_exact(i);
         assert!(v[0].0 == 273);
-        assert!(v.as_ptr() as usize & 0xff == 0);
-        // `MutBumpVec can't shrink`
-        // v.shrink_to_fit();
-        // assert!(v[0].0 == 273);
-        // assert!(v.as_ptr() as usize & 0xff == 0);
+        assert!(v.as_ptr().addr() & 0xff == 0);
     }
-}
-
-#[test]
-fn extract_if_empty() {
-    let mut vec: Vec<i32> = vec![];
-
-    {
-        let mut iter = vec.extract_if(|_| true);
-        assert_eq!(iter.size_hint(), (0, Some(0)));
-        assert_eq!(iter.next(), None);
-        assert_eq!(iter.size_hint(), (0, Some(0)));
-        assert_eq!(iter.next(), None);
-        assert_eq!(iter.size_hint(), (0, Some(0)));
-    }
-    assert_eq!(vec.len(), 0);
-    assert_eq!(vec, vec![]);
-}
-
-#[test]
-fn extract_if_zst() {
-    let mut vec = vec![(), (), (), (), ()];
-    let initial_len = vec.len();
-    let mut count = 0;
-    {
-        let mut iter = vec.extract_if(|_| true);
-        assert_eq!(iter.size_hint(), (0, Some(initial_len)));
-        while let Some(_) = iter.next() {
-            count += 1;
-            assert_eq!(iter.size_hint(), (0, Some(initial_len - count)));
-        }
-        assert_eq!(iter.size_hint(), (0, Some(0)));
-        assert_eq!(iter.next(), None);
-        assert_eq!(iter.size_hint(), (0, Some(0)));
-    }
-
-    assert_eq!(count, initial_len);
-    assert_eq!(vec.len(), 0);
-    assert_eq!(vec, vec![]);
-}
-
-#[test]
-fn extract_if_false() {
-    let mut vec = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-    let initial_len = vec.len();
-    let mut count = 0;
-    {
-        let mut iter = vec.extract_if(|_| false);
-        assert_eq!(iter.size_hint(), (0, Some(initial_len)));
-        for _ in iter.by_ref() {
-            count += 1;
-        }
-        assert_eq!(iter.size_hint(), (0, Some(0)));
-        assert_eq!(iter.next(), None);
-        assert_eq!(iter.size_hint(), (0, Some(0)));
-    }
-
-    assert_eq!(count, 0);
-    assert_eq!(vec.len(), initial_len);
-    assert_eq!(vec, vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-}
-
-#[test]
-fn extract_if_true() {
-    let mut vec = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-    let initial_len = vec.len();
-    let mut count = 0;
-    {
-        let mut iter = vec.extract_if(|_| true);
-        assert_eq!(iter.size_hint(), (0, Some(initial_len)));
-        while let Some(_) = iter.next() {
-            count += 1;
-            assert_eq!(iter.size_hint(), (0, Some(initial_len - count)));
-        }
-        assert_eq!(iter.size_hint(), (0, Some(0)));
-        assert_eq!(iter.next(), None);
-        assert_eq!(iter.size_hint(), (0, Some(0)));
-    }
-
-    assert_eq!(count, initial_len);
-    assert_eq!(vec.len(), 0);
-    assert_eq!(vec, vec![]);
-}
-
-#[cfg(any())] // TODO: implement extract_if with range
-#[test]
-fn extract_if_ranges() {
-    let mut vec = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-    let mut count = 0;
-    let it = vec.extract_if(1..=3, |_| {
-        count += 1;
-        true
-    });
-    assert_eq!(it.collect::<Vec<_>>(), vec![1, 2, 3]);
-    assert_eq!(vec, vec![0, 4, 5, 6, 7, 8, 9, 10]);
-    assert_eq!(count, 3);
-
-    let it = vec.extract_if(1..=3, |_| false);
-    assert_eq!(it.collect::<Vec<_>>(), vec![]);
-    assert_eq!(vec, vec![0, 4, 5, 6, 7, 8, 9, 10]);
-}
-
-#[cfg(any())] // TODO: implement extract_if with range
-#[test]
-#[should_panic]
-fn extract_if_out_of_bounds() {
-    let mut vec = vec![0, 1];
-    let _ = vec.extract_if(5.., |_| true).for_each(drop);
-}
-
-#[test]
-fn extract_if_complex() {
-    {
-        //                [+xxx++++++xxxxx++++x+x++]
-        let mut vec = vec![
-            1i32, 2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36,
-            37, 39,
-        ];
-
-        let removed = vec.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
-        assert_eq!(removed.len(), 10);
-        assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
-
-        assert_eq!(vec.len(), 14);
-        assert_eq!(vec, vec![1, 7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]);
-    }
-
-    {
-        //                [xxx++++++xxxxx++++x+x++]
-        let mut vec = vec![
-            2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36, 37, 39,
-        ];
-
-        let removed = vec.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
-        assert_eq!(removed.len(), 10);
-        assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
-
-        assert_eq!(vec.len(), 13);
-        assert_eq!(vec, vec![7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]);
-    }
-
-    {
-        //                [xxx++++++xxxxx++++x+x]
-        let mut vec =
-            vec![2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36];
-
-        let removed = vec.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
-        assert_eq!(removed.len(), 10);
-        assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
-
-        assert_eq!(vec.len(), 11);
-        assert_eq!(vec, vec![7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35]);
-    }
-
-    {
-        //                [xxxxxxxxxx+++++++++++]
-        let mut vec = vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
-
-        let removed = vec.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
-        assert_eq!(removed.len(), 10);
-        assert_eq!(removed, vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20]);
-
-        assert_eq!(vec.len(), 10);
-        assert_eq!(vec, vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
-    }
-
-    {
-        //                [+++++++++++xxxxxxxxxx]
-        let mut vec = vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
-
-        let removed = vec.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
-        assert_eq!(removed.len(), 10);
-        assert_eq!(removed, vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20]);
-
-        assert_eq!(vec.len(), 10);
-        assert_eq!(vec, vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
-    }
-}
-
-#[test]
-#[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
-fn extract_if_consumed_panic() {
-    use std::rc::Rc;
-    use std::sync::Mutex;
-
-    struct Check {
-        index: usize,
-        drop_counts: Rc<Mutex<Vec<usize>>>,
-    }
-
-    impl Drop for Check {
-        fn drop(&mut self) {
-            self.drop_counts.lock().unwrap()[self.index] += 1;
-            println!("drop: {}", self.index);
-        }
-    }
-
-    let check_count = 10;
-    let drop_counts = Rc::new(Mutex::new(vec![0_usize; check_count]));
-    let mut data: Vec<Check> = (0..check_count)
-        .map(|index| Check { index, drop_counts: Rc::clone(&drop_counts) })
-        .collect();
-
-    let _ = std::panic::catch_unwind(move || {
-        let filter = |c: &mut Check| {
-            if c.index == 2 {
-                panic!("panic at index: {}", c.index);
-            }
-            // Verify that if the filter could panic again on another element
-            // that it would not cause a double panic and all elements of the
-            // vec would still be dropped exactly once.
-            if c.index == 4 {
-                panic!("panic at index: {}", c.index);
-            }
-            c.index < 6
-        };
-        let drain = data.extract_if(filter);
-
-        // NOTE: The ExtractIf is explicitly consumed
-        drain.for_each(drop);
-    });
-
-    let drop_counts = drop_counts.lock().unwrap();
-    assert_eq!(check_count, drop_counts.len());
-
-    for (index, count) in drop_counts.iter().cloned().enumerate() {
-        assert_eq!(1, count, "unexpected drop count at index: {} (count: {})", index, count);
-    }
-}
-
-#[test]
-#[cfg_attr(not(panic = "unwind"), ignore = "test requires unwinding support")]
-fn extract_if_unconsumed_panic() {
-    use std::rc::Rc;
-    use std::sync::Mutex;
-
-    struct Check {
-        index: usize,
-        drop_counts: Rc<Mutex<Vec<usize>>>,
-    }
-
-    impl Drop for Check {
-        fn drop(&mut self) {
-            self.drop_counts.lock().unwrap()[self.index] += 1;
-            println!("drop: {}", self.index);
-        }
-    }
-
-    let check_count = 10;
-    let drop_counts = Rc::new(Mutex::new(vec![0_usize; check_count]));
-    let mut data: Vec<Check> = (0..check_count)
-        .map(|index| Check { index, drop_counts: Rc::clone(&drop_counts) })
-        .collect();
-
-    let _ = std::panic::catch_unwind(move || {
-        let filter = |c: &mut Check| {
-            if c.index == 2 {
-                panic!("panic at index: {}", c.index);
-            }
-            // Verify that if the filter could panic again on another element
-            // that it would not cause a double panic and all elements of the
-            // vec would still be dropped exactly once.
-            if c.index == 4 {
-                panic!("panic at index: {}", c.index);
-            }
-            c.index < 6
-        };
-        let _drain = data.extract_if(filter);
-
-        // NOTE: The ExtractIf is dropped without being consumed
-    });
-
-    let drop_counts = drop_counts.lock().unwrap();
-    assert_eq!(check_count, drop_counts.len());
-
-    for (index, count) in drop_counts.iter().cloned().enumerate() {
-        assert_eq!(1, count, "unexpected drop count at index: {} (count: {})", index, count);
-    }
-}
-
-#[test]
-fn extract_if_unconsumed() {
-    let mut vec = vec![1, 2, 3, 4];
-    let drain = vec.extract_if(|&mut x| x % 2 != 0);
-    drop(drain);
-    assert_eq!(vec, [1, 2, 3, 4]);
 }
 
 #[test]
@@ -1511,14 +1148,6 @@ fn test_try_with_capacity() {
     assert!(Vec::<u16>::try_with_capacity(isize::MAX as usize + 1).is_err());
 }
 
-#[cfg(any())] // we don't have try reserve error variants
-fn test_try_reserve() {}
-
-#[cfg(any())] // we don't have try reserve error variants
-fn test_try_reserve_exact() {}
-
-// TODO: implement `MutBumpVec::splice`
-#[cfg(any())]
 #[test]
 fn test_stable_pointers() {
     /// Pull an element from the iterator, then drop it.
@@ -1590,15 +1219,6 @@ fn test_stable_pointers() {
     next_then_drop(v.drain(5..));
     assert_eq!(*v0, 13);
 
-    // Splicing
-    v.resize_with(10, || 42);
-    next_then_drop(v.splice(5.., vec![1, 2, 3, 4, 5])); // empty tail after range
-    assert_eq!(*v0, 13);
-    next_then_drop(v.splice(5..8, vec![1])); // replacement is smaller than original range
-    assert_eq!(*v0, 13);
-    next_then_drop(v.splice(5..6, [1; 10].into_iter().filter(|_| true))); // lower bound not exact
-    assert_eq!(*v0, 13);
-
     // spare_capacity_mut
     v.spare_capacity_mut();
     assert_eq!(*v0, 13);
@@ -1649,11 +1269,6 @@ fn vec_macro_repeating_null_raw_fat_pointer() {
         vtable: *mut (),
     }
 }
-
-// TODO: test `MutBumpVec` growth
-#[cfg(any())]
-#[test]
-fn test_push_growth_strategy() {}
 
 macro_rules! generate_assert_eq_vec_and_prim {
     ($name:ident<$B:ident>($type:ty)) => {
@@ -1709,7 +1324,6 @@ fn partialeq_vec_full() {
     assert_partial_eq_valid!(vec2,vec3; arrayref2[..],arrayref3[..]);
 }
 
-#[cfg(any())] // TODO: `#[may_dangle]`?
 #[test]
 fn test_vec_cycle() {
     #[derive(Debug)]
@@ -1748,7 +1362,6 @@ fn test_vec_cycle() {
     c3.v[1].set(Some(&c2));
 }
 
-#[cfg(any())] // TODO: `#[may_dangle]`?
 #[test]
 fn test_vec_cycle_wrapped() {
     struct Refs<'a> {
@@ -1839,20 +1452,6 @@ fn test_vec_swap() {
     swap(&mut n, &mut a[0]);
     assert_eq!(a[0], 42);
     assert_eq!(n, 0);
-}
-
-#[test]
-fn test_extend_from_within_spec() {
-    #[derive(Copy)]
-    struct CopyOnly;
-
-    impl Clone for CopyOnly {
-        fn clone(&self) -> Self {
-            panic!("extend_from_within must use specialization on copy");
-        }
-    }
-
-    vec![CopyOnly, CopyOnly].extend_from_within_copy(..);
 }
 
 #[test]
@@ -1950,7 +1549,7 @@ fn test_vec_dedup_multiple_ident() {
 #[test]
 fn test_vec_dedup_partialeq() {
     #[derive(Debug)]
-    struct Foo(i32, #[expect(dead_code)] i32);
+    struct Foo(i32, #[allow(dead_code)] i32);
 
     impl PartialEq for Foo {
         fn eq(&self, other: &Foo) -> bool {
@@ -2083,22 +1682,11 @@ fn test_extend_from_within_panicking_clone() {
 }
 
 #[test]
-#[should_panic = "vec len overflow"]
+#[should_panic = "the product of vec len and N shouldn't overflow"]
 fn test_into_flattened_size_overflow() {
     let v = vec![[(); usize::MAX]; 2];
     let _ = v.into_flattened();
 }
-
-#[cfg(any())] // not applicable, `BumpAllocatorCore` has special behavior that must accept any zero sized deallocations
-fn test_box_zero_allocator() {}
-
-#[cfg(any())] // not applicable
-#[test]
-fn test_vec_from_array_ref() {}
-
-#[cfg(any())] // not applicable
-#[test]
-fn test_vec_from_array_mut_ref() {}
 
 #[test]
 fn test_pop_if() {
@@ -2139,8 +1727,6 @@ fn test_pop_if_mutates() {
 fn max_dont_panic() {
     let mut v = vec![0];
     let _ = v.get(usize::MAX);
-    // `MutBumpVecRev can't shrink`
-    // v.shrink_to(usize::MAX);
     v.truncate(usize::MAX);
 }
 
@@ -2158,14 +1744,6 @@ fn max_remove() {
     v.remove(usize::MAX);
 }
 
-#[cfg(any())] // TODO: implement `MutBumpVec::splice`
-#[test]
-#[should_panic]
-fn max_splice() {
-    let mut v = vec![0];
-    v.splice(usize::MAX.., core::iter::once(1));
-}
-
 #[test]
 #[should_panic]
 fn max_swap_remove() {
@@ -2181,4 +1759,13 @@ fn vec_null_ptr_roundtrip() {
     let roundtripped = vec![zero; 1].pop().unwrap();
     let new = roundtripped.with_addr(ptr.addr());
     unsafe { new.read() };
+}
+
+#[test]
+fn zst_collections_iter_nth_back_regression() {
+    #[repr(align(8))]
+    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
+    struct Thing;
+    let v = vec![Thing, Thing];
+    let _ = v.into_iter().nth_back(1);
 }

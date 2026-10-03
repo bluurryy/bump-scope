@@ -181,6 +181,8 @@ The collections are designed to have the same api as their std counterparts with
 - [`map_in_place`](https://docs.rs/bump-scope/2.3.3/bump_scope/struct.BumpVec.html#method.map_in_place) —  maps the elements without allocation, failing to compile if not possible
 - conversions between the regular collections, their `Fixed*` variants and `BumpBox<[T]>` / `BumpBox<str>`
 
+The collection's API implementations are based on rust commit 787af2b8c80638c51a4fc8e44f84e6891f243ec7 (2026-08-25).
+
 ## Parallel Allocation
 [`Bump`] is `!Sync` which means it can't be shared between threads.
 
@@ -252,6 +254,7 @@ Breaking changes to these features might be introduced in minor releases to keep
   This makes it so references don't have to strictly outlive the container.
   (Just like with std's `Box` and `Vec`.)
 - **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](https://docs.rs/bump-scope/2.3.3/bump_scope/traits/trait.BumpAllocatorTypedScope.html#method.alloc_clone) method.
+- **`nightly-miri-promise-symbolic-alignment`** — Promises to miri that allocated pointers are symbolically aligned.
 <!-- feature documentation end -->
 
 

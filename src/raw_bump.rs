@@ -737,14 +737,14 @@ where
     pub(crate) fn alloc(self, layout: impl LayoutProps) -> Option<NonNull<u8>> {
         let props = self.bump_props(layout);
 
-        if S::UP {
+        let ptr = if S::UP {
             let BumpUp { new_pos, ptr } = bump_up(props)?;
 
             // SAFETY: allocations never succeed for a dummy chunk
             unsafe {
                 let chunk = self.as_non_dummy_unchecked();
                 chunk.set_pos_addr(new_pos);
-                Some(chunk.content_ptr_from_addr(ptr))
+                chunk.content_ptr_from_addr(ptr)
             }
         } else {
             let ptr = bump_down(props)?;
@@ -753,9 +753,13 @@ where
             unsafe {
                 let chunk = self.as_non_dummy_unchecked();
                 chunk.set_pos_addr(ptr);
-                Some(chunk.content_ptr_from_addr(ptr))
+                chunk.content_ptr_from_addr(ptr)
             }
-        }
+        };
+
+        miri_promise_symbolic_alignment(ptr.as_ptr().cast(), layout.align());
+
+        Some(ptr)
     }
 
     /// Prepares allocation for a block of memory.
@@ -770,10 +774,14 @@ where
         let ptr = if S::UP { bump_up(props)?.ptr } else { bump_down(props)? };
 
         // SAFETY: allocations never succeed for a dummy chunk
-        unsafe {
+        let ptr = unsafe {
             let chunk = self.as_non_dummy_unchecked();
-            Some(chunk.content_ptr_from_addr(ptr))
-        }
+            chunk.content_ptr_from_addr(ptr)
+        };
+
+        miri_promise_symbolic_alignment(ptr.as_ptr().cast(), layout.align());
+
+        Some(ptr)
     }
 
     /// Returns the rest of the capacity of the chunk.
@@ -801,10 +809,15 @@ where
         }?;
 
         // SAFETY: allocations never succeed for a dummy chunk
-        unsafe {
+        let ptrs = unsafe {
             let chunk = self.as_non_dummy_unchecked();
-            Some(chunk.content_ptr_from_addr_range(range))
-        }
+            chunk.content_ptr_from_addr_range(range)
+        };
+
+        miri_promise_symbolic_alignment(ptrs.start.as_ptr().cast(), layout.align());
+        miri_promise_symbolic_alignment(ptrs.end.as_ptr().cast(), layout.align());
+
+        Some(ptrs)
     }
 
     #[inline(always)]
@@ -1195,4 +1208,26 @@ pub(crate) enum ChunkClass<A, S: BumpAllocatorSettings> {
     Claimed,
     Unallocated,
     NonDummy(NonDummyChunk<A, S>),
+}
+
+/// Miri doesn't understand how our bit twiddling aligns the pointer but we can promise it with this.
+/// See <https://github.com/rust-lang/rust/pull/117840>
+fn miri_promise_symbolic_alignment(ptr: *const (), align: usize) {
+    #[cfg(all(feature = "nightly-miri-promise-symbolic-alignment", miri))]
+    unsafe extern "Rust" {
+        /// Miri-provided extern function to promise that a given pointer is properly aligned for
+        /// "symbolic" alignment checks. Will fail if the pointer is not actually aligned or `align` is
+        /// not a power of two. Has no effect when alignment checks are concrete (which is the default).
+        unsafe fn miri_promise_symbolic_alignment(ptr: *const (), align: usize);
+    }
+
+    #[cfg(all(feature = "nightly-miri-promise-symbolic-alignment", miri))]
+    unsafe {
+        miri_promise_symbolic_alignment(ptr, align);
+    }
+
+    #[cfg(not(all(feature = "nightly-miri-promise-symbolic-alignment", miri)))]
+    {
+        _ = (ptr, align);
+    }
 }

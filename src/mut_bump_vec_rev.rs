@@ -1,5 +1,6 @@
 use core::{
     borrow::{Borrow, BorrowMut},
+    cmp,
     fmt::Debug,
     hash::Hash,
     iter,
@@ -1033,16 +1034,30 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     where
         I: IntoIterator<Item = T>,
     {
-        let iter = iter.into_iter();
-        let capacity = iter.size_hint().0;
+        let mut iterator = iter.into_iter();
 
-        let mut vec = Self::generic_with_capacity_in(capacity, allocator)?;
+        // Unroll the first iteration, as the vector is going to be
+        // expanded on this iteration in every case when the iterable is not
+        // empty, but the loop in extend_desugared() is not going to see the
+        // vector being full in the few subsequent loop iterations.
+        // So we get better branch prediction.
+        let mut vector = match iterator.next() {
+            None => return Ok(MutBumpVecRev::new_in(allocator)),
+            Some(element) => {
+                let (lower, _) = iterator.size_hint();
+                let initial_capacity = cmp::max(const { min_non_zero_cap(T::SIZE) }, lower.saturating_add(1));
+                let mut vector = MutBumpVecRev::generic_with_capacity_in(initial_capacity, allocator)?;
+                unsafe {
+                    // SAFETY: We requested capacity at least 1
+                    vector.end.sub(1).write(element);
+                    vector.set_len(1);
+                }
+                vector
+            }
+        };
 
-        for value in iter {
-            vec.generic_push(value)?;
-        }
-
-        Ok(vec)
+        vector.generic_extend(iterator)?;
+        Ok(vector)
     }
 
     /// Create a new [`MutBumpVecRev`] whose elements are taken from an iterator and allocated in the given `bump`.
@@ -1327,8 +1342,20 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
 
     #[inline]
     pub(crate) fn generic_push_mut_with<E: ErrorBehavior>(&mut self, f: impl FnOnce() -> T) -> Result<&mut T, E> {
-        self.generic_reserve_one()?;
-        Ok(unsafe { self.push_mut_unchecked(f()) })
+        // Inform codegen that the length does not change across grow_one().
+        let len = self.len();
+        // This will panic or abort if we would allocate > isize::MAX bytes
+        // or if the length increment would overflow for zero-sized types.
+        if len == self.capacity() {
+            self.generic_grow_amortized::<E>(1)?;
+        }
+        unsafe {
+            let end = self.end.as_ptr().sub(len + 1);
+            ptr::write(end, f());
+            self.set_len(len + 1);
+            // SAFETY: We just wrote a value to the pointer that will live the lifetime of the reference.
+            Ok(&mut *end)
+        }
     }
 
     /// Inserts an element at position `index` within the vector, shifting all elements after it to the right.
@@ -1438,11 +1465,15 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
             panic!("insertion index (is {index}) should be <= len (is {len})");
         }
 
-        if index > self.len {
-            assert_failed(index, self.len);
+        let len = self.len();
+        if index > len {
+            assert_failed(index, len);
         }
 
-        self.generic_reserve_one()?;
+        // space for the new element
+        if len == self.capacity() {
+            self.generic_grow_amortized::<E>(1)?;
+        }
 
         unsafe {
             let ptr = if index == 0 {
@@ -1459,6 +1490,33 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
             ptr.write(element);
             Ok(&mut *ptr)
         }
+    }
+
+    /// Extend the vector by `n` clones of value.
+    fn generic_extend<I: Iterator<Item = T>, B: ErrorBehavior>(&mut self, mut iterator: I) -> Result<(), B> {
+        // This is the case for a general iterator.
+        //
+        // This function should be the moral equivalent of:
+        //
+        //      for item in iterator {
+        //          self.push(item);
+        //      }
+        while let Some(element) = iterator.next() {
+            let len = self.len();
+            if len == self.capacity() {
+                let (lower, _) = iterator.size_hint();
+                self.generic_reserve(lower.saturating_add(1))?;
+            }
+            unsafe {
+                ptr::write(self.end.as_ptr().sub(len + 1), element);
+                // Since next() executes user code which can panic we have to bump the length
+                // after each step.
+                // NB can't overflow since we would have had to alloc the address space
+                self.set_len(len + 1);
+            }
+        }
+
+        Ok(())
     }
 
     /// Copies and appends all elements in a slice to the `MutBumpVecRev`.
@@ -2031,7 +2089,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
         let len = self.len();
 
         if new_len > len {
-            self.extend_with(new_len - len, value)
+            self.generic_extend_with(new_len - len, value)
         } else {
             self.truncate(new_len);
             Ok(())
@@ -2211,7 +2269,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     }
 
     /// Extend the vector by `n` clones of value.
-    fn extend_with<B: ErrorBehavior>(&mut self, n: usize, value: T) -> Result<(), B>
+    fn generic_extend_with<B: ErrorBehavior>(&mut self, n: usize, value: T) -> Result<(), B>
     where
         T: Clone,
     {
@@ -2248,46 +2306,41 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     #[inline(always)]
     unsafe fn extend_by_copy_nonoverlapping<E: ErrorBehavior>(&mut self, other: *const [T]) -> Result<(), E> {
         unsafe {
-            let len = other.len();
-            self.generic_reserve(len)?;
+            let count = other.len();
+            let len = self.len();
+            self.generic_reserve(count)?;
 
-            let src = other.cast::<T>();
-            self.len += len;
-            let dst = self.as_mut_ptr();
+            if count > 0 {
+                ptr::copy_nonoverlapping(other.cast::<T>(), self.end.as_ptr().sub(len + count), count);
+            }
 
-            ptr::copy_nonoverlapping(src, dst, len);
-
+            self.set_len(len + count);
             Ok(())
         }
-    }
-
-    #[inline]
-    fn generic_reserve_one<E: ErrorBehavior>(&mut self) -> Result<(), E> {
-        if self.cap == self.len {
-            self.generic_grow_amortized::<E>(1)?;
-        }
-
-        Ok(())
     }
 
     #[cold]
     #[inline(never)]
     fn generic_grow_amortized<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
         if T::IS_ZST {
-            // This function is only called after we checked that the current capacity is not
-            // sufficient. When `T::IS_ZST` the capacity is `usize::MAX`, so it can't grow.
+            // Since we return a capacity of `usize::MAX` when `T::IS_ZST`,
+            // getting to here necessarily means the `BumpVec` is overfull.
             return Err(E::capacity_overflow());
         }
 
+        // Nothing we can really do about these checks, sadly.
         let Some(required_cap) = self.len().checked_add(additional) else {
             return Err(E::capacity_overflow())?;
         };
 
         // This guarantees exponential growth. The doubling cannot overflow
-        // because `capacity <= isize::MAX` and the type of `capacity` is usize;
-        let new_cap = (self.capacity() * 2).max(required_cap).max(min_non_zero_cap(T::SIZE));
+        // because `cap <= isize::MAX` and the type of `cap` is `usize`.
+        let cap = cmp::max(self.capacity() * 2, required_cap);
+        let cap = cmp::max(min_non_zero_cap(T::SIZE), cap);
 
-        unsafe { self.generic_grow_to(new_cap) }
+        // SAFETY:
+        // - cap >= len + additional
+        unsafe { self.generic_grow_to(cap) }
     }
 
     #[cold]
@@ -2651,7 +2704,10 @@ impl<T, A, const N: usize> MutBumpVecRev<[T; N], A> {
         let (end, len, cap, allocator) = self.into_raw_parts();
 
         let (new_len, new_cap) = if T::IS_ZST {
-            (len.checked_mul(N).expect("vec len overflow"), usize::MAX)
+            (
+                len.checked_mul(N).expect("the product of vec len and N shouldn't overflow"),
+                usize::MAX,
+            )
         } else {
             // SAFETY:
             // - `cap * N` cannot overflow because the allocation is already in
@@ -2713,13 +2769,7 @@ impl<T, A, I: SliceIndex<[T]>> IndexMut<I> for MutBumpVecRev<T, A> {
 impl<U, A: MutBumpAllocatorTyped> Extend<U> for MutBumpVecRev<U, A> {
     #[inline]
     fn extend<T: IntoIterator<Item = U>>(&mut self, iter: T) {
-        let iter = iter.into_iter();
-
-        self.reserve(iter.size_hint().0);
-
-        for value in iter {
-            self.push(value);
-        }
+        panic_on_error(self.generic_extend(iter.into_iter()));
     }
 }
 
@@ -2765,13 +2815,7 @@ impl<T, A> Drop for MutBumpVecRev<T, A> {
 impl<'t, T: Clone + 't, A: MutBumpAllocatorTyped> Extend<&'t T> for MutBumpVecRev<T, A> {
     #[inline]
     fn extend<I: IntoIterator<Item = &'t T>>(&mut self, iter: I) {
-        let iter = iter.into_iter();
-
-        self.reserve(iter.size_hint().0);
-
-        for value in iter {
-            self.push(value.clone());
-        }
+        panic_on_error(self.generic_extend(iter.into_iter().cloned()));
     }
 }
 
