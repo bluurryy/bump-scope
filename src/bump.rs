@@ -285,11 +285,11 @@ where
         } else {
             use core::{cell::Cell, marker::PhantomData};
 
-            use crate::{chunk::ChunkHeader, raw_bump::RawChunk};
+            use crate::{chunk::ChunkHeader, raw_bump::Chunk};
 
             Self {
                 raw: RawBump {
-                    chunk: Cell::new(RawChunk {
+                    chunk: Cell::new(Chunk {
                         header: ChunkHeader::unallocated::<S>().cast(),
                         marker: PhantomData,
                     }),

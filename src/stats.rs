@@ -15,7 +15,7 @@ use core::{
 };
 
 use crate::{
-    raw_bump::{AllocatedChunk, RawChunk},
+    raw_bump::{AllocatedChunk, Chunk as RawChunk},
     settings::{BumpAllocatorSettings, BumpSettings, False},
 };
 

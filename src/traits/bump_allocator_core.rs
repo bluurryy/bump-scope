@@ -4,7 +4,7 @@ use crate::{
     BaseAllocator, Bump, BumpScope, Checkpoint, WithoutDealloc, WithoutShrink,
     alloc::{AllocError, Allocator},
     layout::CustomLayout,
-    raw_bump::RawChunk,
+    raw_bump::Chunk,
     settings::BumpAllocatorSettings,
     stats::AnyStats,
     traits::{assert_dyn_compatible, assert_implements},
@@ -411,7 +411,7 @@ where
         {
             unsafe {
                 this.raw
-                    .in_another_chunk(CustomLayout(layout), RawChunk::prepare_allocation_range)
+                    .in_another_chunk(CustomLayout(layout), Chunk::prepare_allocation_range)
             }
         }
 

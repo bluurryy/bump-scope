@@ -4,7 +4,7 @@ use crate::{
     BaseAllocator, BumpScope,
     chunk::ChunkHeader,
     polyfill::transmute_mut,
-    raw_bump::{RawBump, RawChunk},
+    raw_bump::{Chunk, RawBump},
     settings::{BumpAllocatorSettings, BumpSettings},
     stats::AnyStats,
 };
@@ -20,7 +20,7 @@ pub struct Checkpoint {
 }
 
 impl Checkpoint {
-    pub(crate) fn new<A, S: BumpAllocatorSettings>(chunk: RawChunk<A, S>) -> Self {
+    pub(crate) fn new<A, S: BumpAllocatorSettings>(chunk: Chunk<A, S>) -> Self {
         let address = chunk.pos().addr();
         let chunk = chunk.header.cast();
         Checkpoint { chunk, address }

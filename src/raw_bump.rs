@@ -30,7 +30,7 @@ use crate::{
 pub(crate) struct RawBump<A, S> {
     /// Either a chunk allocated from the `allocator`, or either a `CLAIMED`
     /// or `UNALLOCATED` dummy chunk.
-    pub(crate) chunk: Cell<RawChunk<A, S>>,
+    pub(crate) chunk: Cell<Chunk<A, S>>,
 }
 
 impl<A, S> Clone for RawBump<A, S> {
@@ -51,7 +51,7 @@ where
         S: BumpAllocatorSettings<GuaranteedAllocated = False>,
     {
         Self {
-            chunk: Cell::new(RawChunk::UNALLOCATED),
+            chunk: Cell::new(Chunk::UNALLOCATED),
         }
     }
 
@@ -158,7 +158,7 @@ where
         }
 
         RawBump {
-            chunk: Cell::new(self.chunk.replace(RawChunk::<A, S>::CLAIMED)),
+            chunk: Cell::new(self.chunk.replace(Chunk::<A, S>::CLAIMED)),
         }
     }
 
@@ -223,7 +223,7 @@ where
         unsafe {
             checkpoint.reset_within_chunk();
 
-            self.chunk.set(RawChunk {
+            self.chunk.set(Chunk {
                 header: checkpoint.chunk.cast(),
                 marker: PhantomData,
             });
@@ -395,7 +395,7 @@ where
     #[cold]
     #[inline(never)]
     pub(crate) fn alloc_in_another_chunk<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
-        unsafe { self.in_another_chunk(CustomLayout(layout), RawChunk::alloc) }
+        unsafe { self.in_another_chunk(CustomLayout(layout), Chunk::alloc) }
     }
 
     #[cold]
@@ -419,7 +419,7 @@ where
     pub(crate) fn prepare_allocation_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E> {
         let layout = CustomLayout(Layout::new::<T>());
 
-        unsafe { self.in_another_chunk(layout, RawChunk::prepare_allocation) }
+        unsafe { self.in_another_chunk(layout, Chunk::prepare_allocation) }
     }
 
     #[cold]
@@ -428,7 +428,7 @@ where
         &self,
         layout: ArrayLayout,
     ) -> Result<Range<NonNull<u8>>, E> {
-        unsafe { self.in_another_chunk(layout, RawChunk::prepare_allocation_range) }
+        unsafe { self.in_another_chunk(layout, Chunk::prepare_allocation_range) }
     }
 
     /// # Safety
@@ -438,7 +438,7 @@ where
     pub(crate) unsafe fn in_another_chunk<E: ErrorBehavior, R, L: LayoutProps>(
         &self,
         layout: L,
-        mut f: impl FnMut(RawChunk<A, S>, L) -> Option<R>,
+        mut f: impl FnMut(Chunk<A, S>, L) -> Option<R>,
     ) -> Result<R, E> {
         let new_chunk: AllocatedChunk<A, S> = match self.chunk.get().classify() {
             ChunkClass::Claimed => Err(E::claimed()),
@@ -631,7 +631,7 @@ where
     #[inline]
     pub(crate) unsafe fn from_raw(ptr: NonNull<()>) -> Self {
         Self {
-            chunk: Cell::new(RawChunk {
+            chunk: Cell::new(Chunk {
                 header: ptr.cast(),
                 marker: PhantomData,
             }),
@@ -639,18 +639,18 @@ where
     }
 }
 
-pub(crate) struct RawChunk<A, S> {
+pub(crate) struct Chunk<A, S> {
     pub(crate) header: NonNull<ChunkHeader>,
     pub(crate) marker: PhantomData<fn() -> (A, S)>,
 }
 
-impl<A, S> Clone for RawChunk<A, S> {
+impl<A, S> Clone for Chunk<A, S> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, S> Copy for RawChunk<A, S> {}
+impl<A, S> Copy for Chunk<A, S> {}
 
 pub(crate) struct AllocatedChunk<A, S> {
     pub(crate) header: NonNull<AllocatedChunkHeader<A>>,
@@ -665,7 +665,7 @@ impl<A, S> Clone for AllocatedChunk<A, S> {
     }
 }
 
-impl<A, S> RawChunk<A, S>
+impl<A, S> Chunk<A, S>
 where
     S: BumpAllocatorSettings,
 {
@@ -977,8 +977,8 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn as_raw(self) -> RawChunk<A, S> {
-        RawChunk {
+    pub(crate) fn as_raw(self) -> Chunk<A, S> {
+        Chunk {
             header: self.header.cast(),
             marker: self.marker,
         }
