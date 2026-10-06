@@ -1,4 +1,4 @@
-use core::{fmt, iter::FusedIterator, marker::PhantomData, ptr::NonNull};
+use core::{fmt, iter::FusedIterator, marker::PhantomData, mem, ptr::NonNull};
 
 use crate::{chunk::ChunkHeader, settings::BumpAllocatorSettings};
 
@@ -144,6 +144,7 @@ impl<'a> From<AnyChunk<'a>> for AnyStats<'a> {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct AnyChunk<'a> {
     header: NonNull<ChunkHeader>,
+    header_size: usize,
     marker: PhantomData<&'a ()>,
 }
 
@@ -154,6 +155,7 @@ where
     fn from(value: Chunk<'_, A, S>) -> Self {
         Self {
             header: value.chunk.header().cast(),
+            header_size: mem::size_of::<ChunkHeader<A>>(),
             marker: PhantomData,
         }
     }
@@ -186,6 +188,7 @@ impl<'a> AnyChunk<'a> {
     pub fn prev(self) -> Option<Self> {
         Some(AnyChunk {
             header: self.header().prev.get()?,
+            header_size: self.header_size,
             marker: PhantomData,
         })
     }
@@ -196,6 +199,7 @@ impl<'a> AnyChunk<'a> {
     pub fn next(self) -> Option<Self> {
         Some(AnyChunk {
             header: self.header().next.get()?,
+            header_size: self.header_size,
             marker: PhantomData,
         })
     }
@@ -326,7 +330,7 @@ impl<'a> AnyChunk<'a> {
     }
 
     fn after_header(self) -> NonNull<u8> {
-        unsafe { self.header.add(1).cast() }
+        unsafe { self.header.byte_add(self.header_size).cast() }
     }
 }
 
