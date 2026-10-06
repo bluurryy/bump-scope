@@ -43,6 +43,21 @@
     attr(deny(dead_code, unused_imports, deprecated)),
     attr(cfg_attr(feature = "nightly-allocator-api", feature(allocator_api, btreemap_alloc))),
 ))]
+#![cfg_attr(
+    any(
+        feature = "nightly",
+        feature = "nightly-allocator-api",
+        feature = "nightly-clone-to-uninit",
+        feature = "nightly-coerce-unsized",
+        feature = "nightly-dropck-eyepatch",
+        feature = "nightly-exact-size-is-empty",
+        feature = "nightly-fn-traits",
+        feature = "nightly-tests",
+        feature = "nightly-trusted-len",
+        feature = "nightly-miri-promise-symbolic-alignment",
+    ),
+    allow(clippy::incompatible_msrv)
+)]
 //! <!-- crate documentation intro start -->
 //! A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
 //! <!-- crate documentation intro end -->
