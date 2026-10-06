@@ -1,14 +1,17 @@
+//! A chunk header lives at
+//! - the start of the chunk when upwards bumping
+//! - the end of the chunk when downwards bumping
+//!
+//! All non-`Cell` fields of a chunk header are immutable.
+
 use core::{cell::Cell, ptr::NonNull};
 
 use crate::{polyfill::non_null, settings::BumpAllocatorSettings};
 
-/// The chunk header that lives at
-/// - the start of the allocation when upwards bumping
-/// - the end of the allocation when downwards bumping
-///
-/// All non-`Cell` fields are immutable.
+/// The chunk header existing in every allocated chunk, extending `ChunkHeader` with
+/// intrusive doubly linked list fields and its allocator.
 #[repr(C, align(16))]
-pub(crate) struct ChunkHeader<A = ()> {
+pub(crate) struct AllocatedChunkHeader<A> {
     pub(crate) pos: Cell<NonNull<u8>>,
     pub(crate) end: NonNull<u8>,
 
@@ -18,13 +21,30 @@ pub(crate) struct ChunkHeader<A = ()> {
     pub(crate) allocator: A,
 }
 
+/// Like [`AllocatedChunkHeader`], just without the `allocator` field.
+#[repr(C, align(16))]
+pub(crate) struct ErasedAllocatedChunkHeader {
+    pub(crate) pos: Cell<NonNull<u8>>,
+    pub(crate) end: NonNull<u8>,
+
+    pub(crate) prev: Cell<Option<NonNull<Self>>>,
+    pub(crate) next: Cell<Option<NonNull<Self>>>,
+}
+
+/// The chunk header existing in every chunk, describing the remaining region of memory that you can bump allocate in.
+#[repr(C, align(16))]
+pub(crate) struct ChunkHeader {
+    pub(crate) pos: Cell<NonNull<u8>>,
+    pub(crate) end: NonNull<u8>,
+}
+
 /// Wraps a [`ChunkHeader`], making it Sync so it can be used as a static.
 /// The dummy chunk is never mutated, so this is fine.
 struct DummyChunkHeader(ChunkHeader);
 
 unsafe impl Sync for DummyChunkHeader {}
 
-/// We create a dummy chunks with a negative capacity, so all allocations will fail.
+/// We create a dummy chunks with a negative capacity, so all allocations will fail, even ones that ask for 0 bytes.
 ///
 /// The pointers used for `pos` and `end` are chosen to be pointers into the same static dummy chunk.
 ///
@@ -41,9 +61,6 @@ macro_rules! dummy_chunk {
                 // We could also use `.add(1)` here, but we currently guarantee a capacity of -16
                 pos: Cell::new(unsafe { UP_CHUNK_PTR.cast().byte_add(16) }),
                 end: UP_CHUNK_PTR.cast(),
-                prev: Cell::new(None),
-                next: Cell::new(None),
-                allocator: (),
             });
 
             static DOWN_CHUNK: DummyChunkHeader = DummyChunkHeader(ChunkHeader {
@@ -51,9 +68,6 @@ macro_rules! dummy_chunk {
                 // SAFETY: Due to `align(16)`, `ChunkHeader`'s size is `>= 16`, so a `byte_add` of 16 is in bounds.
                 // We could also use `.add(1)` here, but we currently guarantee a capacity of -16
                 end: unsafe { DOWN_CHUNK_PTR.cast().byte_add(16) },
-                prev: Cell::new(None),
-                next: Cell::new(None),
-                allocator: (),
             });
 
             const UP_CHUNK_PTR: NonNull<ChunkHeader> = non_null::from_ref(&UP_CHUNK.0);

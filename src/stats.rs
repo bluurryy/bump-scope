@@ -20,7 +20,7 @@ use crate::{
 };
 
 #[cfg(debug_assertions)]
-use crate::chunk::ChunkHeader;
+use crate::chunk::AllocatedChunkHeader;
 
 mod any;
 
@@ -200,7 +200,7 @@ where
 {
     fn from(chunk: Chunk<'a, A, S>) -> Self {
         Stats {
-            chunk: *chunk.chunk,
+            chunk: chunk.chunk.as_raw(),
             marker: PhantomData,
         }
     }
@@ -269,7 +269,7 @@ where
     S: BumpAllocatorSettings,
 {
     #[cfg(debug_assertions)]
-    pub(crate) fn header(self) -> NonNull<ChunkHeader<A>> {
+    pub(crate) fn header(self) -> NonNull<AllocatedChunkHeader<A>> {
         self.chunk.header()
     }
 

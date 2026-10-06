@@ -3,7 +3,7 @@ use core::{
     cell::Cell,
     marker::PhantomData,
     num::NonZeroUsize,
-    ops::{Deref, Range},
+    ops::Range,
     ptr::{self, NonNull},
 };
 
@@ -11,7 +11,7 @@ use crate::{
     BaseAllocator, Checkpoint, SizedTypeProperties, align_pos,
     alloc::{AllocError, Allocator},
     bumping::{BumpProps, BumpUp, MIN_CHUNK_ALIGN, bump_down, bump_prepare_down, bump_prepare_up, bump_up},
-    chunk::{ChunkHeader, ChunkSize, ChunkSizeHint},
+    chunk::{AllocatedChunkHeader, ChunkHeader, ChunkSize, ChunkSizeHint},
     error_behavior::{self, ErrorBehavior},
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     polyfill::non_null,
@@ -78,7 +78,7 @@ where
     #[inline(always)]
     pub(crate) fn with_size<E: ErrorBehavior>(size: ChunkSize<A, S>, allocator: A) -> Result<Self, E> {
         Ok(Self {
-            chunk: Cell::new(NonDummyChunk::new::<E>(size, None, allocator)?.raw),
+            chunk: Cell::new(NonDummyChunk::new::<E>(size, None, allocator)?.as_raw()),
         })
     }
 
@@ -101,7 +101,7 @@ where
 
         chunk.reset();
 
-        self.chunk.set(chunk.raw);
+        self.chunk.set(chunk.as_raw());
     }
 
     /// Reset's the bump pointer to the very start.
@@ -114,7 +114,7 @@ where
 
             chunk.reset();
 
-            self.chunk.set(chunk.raw);
+            self.chunk.set(chunk.as_raw());
         }
     }
 
@@ -252,7 +252,7 @@ where
                     A::default_or_panic(),
                 )?;
 
-                self.chunk.set(new_chunk.raw);
+                self.chunk.set(new_chunk.as_raw());
                 Ok(())
             }
             ChunkClass::NonDummy(mut chunk) => {
@@ -456,9 +456,9 @@ where
                     // We don't reset the chunk position when we leave a scope, so we need to do it here.
                     chunk.reset();
 
-                    self.chunk.set(chunk.raw);
+                    self.chunk.set(chunk.as_raw());
 
-                    if let Some(ptr) = f(chunk.raw, layout) {
+                    if let Some(ptr) = f(chunk.as_raw(), layout) {
                         return Ok(ptr);
                     }
                 }
@@ -468,9 +468,9 @@ where
             }
         }?;
 
-        self.chunk.set(new_chunk.raw);
+        self.chunk.set(new_chunk.as_raw());
 
-        match f(new_chunk.raw, layout) {
+        match f(new_chunk.as_raw(), layout) {
             Some(ptr) => Ok(ptr),
             _ => {
                 // SAFETY: We just appended a chunk for that specific layout, it must have enough space.
@@ -488,7 +488,7 @@ where
                 // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
                 // `default_or_panic` will not panic.
                 let new_chunk = NonDummyChunk::new(ChunkSize::MINIMUM, None, A::default_or_panic())?;
-                self.chunk.set(new_chunk.raw);
+                self.chunk.set(new_chunk.as_raw());
                 Ok(())
             }
             ChunkClass::NonDummy(_) => Ok(()),
@@ -640,7 +640,7 @@ where
 }
 
 pub(crate) struct RawChunk<A, S> {
-    pub(crate) header: NonNull<ChunkHeader<A>>,
+    pub(crate) header: NonNull<ChunkHeader>,
     pub(crate) marker: PhantomData<fn() -> (A, S)>,
 }
 
@@ -653,7 +653,8 @@ impl<A, S> Clone for RawChunk<A, S> {
 impl<A, S> Copy for RawChunk<A, S> {}
 
 pub(crate) struct NonDummyChunk<A, S> {
-    raw: RawChunk<A, S>,
+    pub(crate) header: NonNull<AllocatedChunkHeader<A>>,
+    pub(crate) marker: PhantomData<fn() -> (A, S)>,
 }
 
 impl<A, S> Copy for NonDummyChunk<A, S> {}
@@ -661,14 +662,6 @@ impl<A, S> Copy for NonDummyChunk<A, S> {}
 impl<A, S> Clone for NonDummyChunk<A, S> {
     fn clone(&self) -> Self {
         *self
-    }
-}
-
-impl<A, S> Deref for NonDummyChunk<A, S> {
-    type Target = RawChunk<A, S>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.raw
     }
 }
 
@@ -695,7 +688,7 @@ where
     };
 
     #[inline(always)]
-    pub(crate) fn header(self) -> NonNull<ChunkHeader<A>> {
+    pub(crate) fn header(self) -> NonNull<ChunkHeader> {
         self.header
     }
 
@@ -719,7 +712,10 @@ where
             return ChunkClass::Unallocated;
         }
 
-        ChunkClass::NonDummy(NonDummyChunk { raw: self })
+        ChunkClass::NonDummy(NonDummyChunk {
+            header: self.header.cast(),
+            marker: self.marker,
+        })
     }
 
     #[inline(always)]
@@ -855,7 +851,10 @@ where
     #[inline(always)]
     pub(crate) unsafe fn as_non_dummy_unchecked(self) -> NonDummyChunk<A, S> {
         debug_assert!(matches!(self.classify(), ChunkClass::NonDummy(_)));
-        NonDummyChunk { raw: self }
+        NonDummyChunk {
+            header: self.header.cast(),
+            marker: self.marker,
+        }
     }
 }
 
@@ -904,9 +903,9 @@ where
 
         let header = unsafe {
             if S::UP {
-                let header = ptr.cast::<ChunkHeader<A>>();
+                let header = ptr.cast::<AllocatedChunkHeader<A>>();
 
-                header.write(ChunkHeader {
+                header.write(AllocatedChunkHeader {
                     pos: Cell::new(header.add(1).cast()),
                     end: ptr.add(size),
                     prev,
@@ -916,9 +915,9 @@ where
 
                 header
             } else {
-                let header = ptr.add(size).cast::<ChunkHeader<A>>().sub(1);
+                let header = ptr.add(size).cast::<AllocatedChunkHeader<A>>().sub(1);
 
-                header.write(ChunkHeader {
+                header.write(AllocatedChunkHeader {
                     pos: Cell::new(header.cast()),
                     end: ptr,
                     prev,
@@ -931,10 +930,8 @@ where
         };
 
         Ok(NonDummyChunk {
-            raw: RawChunk {
-                header,
-                marker: PhantomData,
-            },
+            header,
+            marker: PhantomData,
         })
     }
 
@@ -969,6 +966,24 @@ where
         Ok(ChunkSizeHint::new(size))
     }
 
+    #[inline(always)]
+    pub(crate) fn pos(self) -> NonNull<u8> {
+        unsafe { self.header.as_ref().pos.get() }
+    }
+
+    #[inline(always)]
+    pub(crate) fn header(self) -> NonNull<AllocatedChunkHeader<A>> {
+        self.header
+    }
+
+    #[inline(always)]
+    pub(crate) fn as_raw(self) -> RawChunk<A, S> {
+        RawChunk {
+            header: self.header.cast(),
+            marker: self.marker,
+        }
+    }
+
     /// The caller must ensure the returned reference is dead before calling [`deallocate`](Self::deallocate).
     #[inline(always)]
     pub(crate) fn allocator<'a>(self) -> &'a A {
@@ -979,10 +994,8 @@ where
     pub(crate) fn prev(self) -> Option<NonDummyChunk<A, S>> {
         unsafe {
             Some(NonDummyChunk {
-                raw: RawChunk {
-                    header: self.header.as_ref().prev.get()?,
-                    marker: PhantomData,
-                },
+                header: self.header.as_ref().prev.get()?,
+                marker: PhantomData,
             })
         }
     }
@@ -991,10 +1004,8 @@ where
     pub(crate) fn next(self) -> Option<NonDummyChunk<A, S>> {
         unsafe {
             Some(NonDummyChunk {
-                raw: RawChunk {
-                    header: self.header.as_ref().next.get()?,
-                    marker: PhantomData,
-                },
+                header: self.header.as_ref().next.get()?,
+                marker: PhantomData,
             })
         }
     }
@@ -1200,7 +1211,7 @@ where
     #[inline(always)]
     pub(crate) fn layout(self) -> Layout {
         // SAFETY: this layout fits the one we allocated, which means it must be valid
-        unsafe { Layout::from_size_align_unchecked(self.size().get(), align_of::<ChunkHeader<A>>()) }
+        unsafe { Layout::from_size_align_unchecked(self.size().get(), align_of::<AllocatedChunkHeader<A>>()) }
     }
 }
 

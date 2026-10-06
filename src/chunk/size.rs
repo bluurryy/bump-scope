@@ -1,7 +1,7 @@
 use core::{alloc::Layout, marker::PhantomData, num::NonZeroUsize};
 
 use crate::{
-    chunk::{ChunkHeader, ChunkSizeConfig, MIN_CHUNK_ALIGN},
+    chunk::{AllocatedChunkHeader, ChunkSizeConfig, MIN_CHUNK_ALIGN},
     settings::BumpAllocatorSettings,
 };
 
@@ -17,7 +17,7 @@ where
     ChunkSizeConfig {
         up: S::UP,
         assumed_malloc_overhead_layout: Layout::new::<AssumedMallocOverhead>(),
-        chunk_header_layout: Layout::new::<ChunkHeader<A>>(),
+        chunk_header_layout: Layout::new::<AllocatedChunkHeader<A>>(),
     }
 }
 
@@ -67,7 +67,7 @@ where
 
     pub const fn layout(self) -> Option<Layout> {
         let size = self.size.get();
-        let align = core::mem::align_of::<ChunkHeader<A>>();
+        let align = core::mem::align_of::<AllocatedChunkHeader<A>>();
         match Layout::from_size_align(size, align) {
             Ok(ok) => Some(ok),
             Err(_) => None,
