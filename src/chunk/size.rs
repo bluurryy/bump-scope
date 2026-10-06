@@ -1,4 +1,4 @@
-use core::{alloc::Layout, marker::PhantomData, num::NonZeroUsize};
+use core::{alloc::Layout, marker::PhantomData};
 
 use crate::{
     chunk::{AllocatedChunkHeader, ChunkSizeConfig, MIN_CHUNK_ALIGN},
@@ -10,15 +10,12 @@ const _: () = assert!(MIN_CHUNK_ALIGN == crate::bumping::MIN_CHUNK_ALIGN);
 /// We leave some space per allocation for the base allocator.
 pub(crate) type AssumedMallocOverhead = [usize; 2];
 
-pub const fn config<A, S>() -> ChunkSizeConfig
+/// See [`ChunkSizeConfig::align_size`].
+pub const fn align_allocation_size<A, S>(size: usize) -> usize
 where
     S: BumpAllocatorSettings,
 {
-    ChunkSizeConfig {
-        up: S::UP,
-        assumed_malloc_overhead_layout: Layout::new::<AssumedMallocOverhead>(),
-        chunk_header_layout: Layout::new::<AllocatedChunkHeader<A>>(),
-    }
+    Constants::<A, S>::CONFIG.align_size(size)
 }
 
 macro_rules! attempt {
@@ -30,84 +27,110 @@ macro_rules! attempt {
     };
 }
 
-pub struct ChunkSize<A, S> {
-    size: NonZeroUsize,
-    marker: PhantomData<fn() -> (A, S)>,
+pub trait ChunkSize: Copy {
+    fn layout<A, S>(self) -> Option<Layout>
+    where
+        S: BumpAllocatorSettings;
 }
 
-impl<A, S> Clone for ChunkSize<A, S> {
-    fn clone(&self) -> Self {
-        *self
+#[derive(Clone, Copy)]
+pub struct ChunkSizeMinimum;
+
+impl ChunkSize for ChunkSizeMinimum {
+    fn layout<A, S>(self) -> Option<Layout>
+    where
+        S: BumpAllocatorSettings,
+    {
+        Some(Constants::<A, S>::MINIMUM_LAYOUT)
     }
 }
 
-impl<A, S> Copy for ChunkSize<A, S> {}
+#[derive(Clone, Copy)]
+pub struct ChunkSizeHint(pub usize);
 
-impl<A, S> ChunkSize<A, S>
-where
-    S: BumpAllocatorSettings,
-{
-    pub const MINIMUM: Self = match Self::from_hint(S::MINIMUM_CHUNK_SIZE) {
-        Some(some) => some,
-        None => panic!("failed to calculate minimum chunk size"),
-    };
-
-    pub const fn from_hint(size_hint: usize) -> Option<Self> {
-        ChunkSizeHint::new(size_hint).calc_size()
-    }
-
-    pub const fn from_capacity(layout: Layout) -> Option<Self> {
-        attempt!(ChunkSizeHint::for_capacity(layout)).calc_size()
-    }
-
-    /// See [`ChunkSizeConfig::align_size`].
-    pub const fn align_allocation_size(size: usize) -> usize {
-        config::<A, S>().align_size(size)
-    }
-
-    pub const fn layout(self) -> Option<Layout> {
-        let size = self.size.get();
+impl ChunkSizeHint {
+    pub const fn layout<A, S>(self) -> Option<Layout>
+    where
+        S: BumpAllocatorSettings,
+    {
+        let hint = max(self.0, S::MINIMUM_CHUNK_SIZE);
+        let size = attempt!(Constants::<A, S>::CONFIG.calc_size_from_hint(hint)).get();
         let align = core::mem::align_of::<AllocatedChunkHeader<A>>();
         match Layout::from_size_align(size, align) {
             Ok(ok) => Some(ok),
             Err(_) => None,
         }
     }
-}
-pub struct ChunkSizeHint<A, S>(usize, PhantomData<fn() -> (A, S)>);
-
-impl<A, S> Clone for ChunkSizeHint<A, S> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<A, S> Copy for ChunkSizeHint<A, S> {}
-
-impl<A, S> ChunkSizeHint<A, S>
-where
-    S: BumpAllocatorSettings,
-{
-    pub const fn new(size_hint: usize) -> Self {
-        Self(size_hint, PhantomData)
-    }
-
-    pub const fn for_capacity(layout: Layout) -> Option<Self> {
-        Some(Self(attempt!(config::<A, S>().calc_hint_from_capacity(layout)), PhantomData))
-    }
-
-    pub const fn calc_size(self) -> Option<ChunkSize<A, S>> {
-        let size_hint = max(self.0, S::MINIMUM_CHUNK_SIZE);
-
-        Some(ChunkSize {
-            size: attempt!(config::<A, S>().calc_size_from_hint(size_hint)),
-            marker: PhantomData,
-        })
-    }
 
     pub const fn max(self, other: Self) -> Self {
         if self.0 > other.0 { self } else { other }
     }
+}
+
+impl ChunkSize for ChunkSizeHint {
+    fn layout<A, S>(self) -> Option<Layout>
+    where
+        S: BumpAllocatorSettings,
+    {
+        self.layout::<A, S>()
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct ChunkSizeCapacity(pub Layout);
+
+impl ChunkSizeCapacity {
+    pub const fn to_hint<A, S>(self) -> Option<ChunkSizeHint>
+    where
+        S: BumpAllocatorSettings,
+    {
+        Some(ChunkSizeHint(attempt!(
+            Constants::<A, S>::CONFIG.calc_hint_from_capacity(self.0)
+        )))
+    }
+
+    pub const fn layout<A, S>(self) -> Option<Layout>
+    where
+        S: BumpAllocatorSettings,
+    {
+        attempt!(self.to_hint::<A, S>()).layout::<A, S>()
+    }
+}
+
+impl ChunkSize for ChunkSizeCapacity {
+    fn layout<A, S>(self) -> Option<Layout>
+    where
+        S: BumpAllocatorSettings,
+    {
+        self.layout::<A, S>()
+    }
+}
+
+struct Constants<A, S>(PhantomData<fn() -> (A, S)>);
+
+impl<A, S> Constants<A, S>
+where
+    S: BumpAllocatorSettings,
+{
+    const CONFIG: ChunkSizeConfig = ChunkSizeConfig {
+        up: S::UP,
+        assumed_malloc_overhead_layout: Layout::new::<AssumedMallocOverhead>(),
+        chunk_header_layout: Layout::new::<AllocatedChunkHeader<A>>(),
+    };
+
+    const MINIMUM_LAYOUT: Layout = {
+        let size = match Self::CONFIG.calc_size_from_hint(S::MINIMUM_CHUNK_SIZE) {
+            Some(some) => some.get(),
+            None => panic!("failed to calculate minimum chunk size"),
+        };
+
+        let align = core::mem::align_of::<AllocatedChunkHeader<A>>();
+
+        match Layout::from_size_align(size, align) {
+            Ok(ok) => ok,
+            Err(_) => panic!("failed to calculate minimum chunk layout"),
+        }
+    };
 }
 
 const fn max(a: usize, b: usize) -> usize {

@@ -14,7 +14,7 @@ use crate::{
     BaseAllocator, BumpBox, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, ErrorBehavior,
     alloc::{AllocError, Allocator},
     allocator_impl,
-    chunk::ChunkSize,
+    chunk::{ChunkSizeCapacity, ChunkSizeHint},
     maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{transmute_mut, transmute_ref, transmute_value},
@@ -636,10 +636,7 @@ where
     #[inline]
     pub(crate) fn generic_with_size_in<E: ErrorBehavior>(size: usize, allocator: A) -> Result<Self, E> {
         Ok(Self {
-            raw: RawBump::with_size(
-                ChunkSize::<A, S>::from_hint(size).ok_or_else(E::capacity_overflow)?,
-                allocator,
-            )?,
+            raw: RawBump::with_size(ChunkSizeHint(size), allocator)?,
         })
     }
 
@@ -694,10 +691,7 @@ where
     #[inline]
     pub(crate) fn generic_with_capacity_in<E: ErrorBehavior>(layout: Layout, allocator: A) -> Result<Self, E> {
         Ok(Self {
-            raw: RawBump::with_size(
-                ChunkSize::<A, S>::from_capacity(layout).ok_or_else(E::capacity_overflow)?,
-                allocator,
-            )?,
+            raw: RawBump::with_size(ChunkSizeCapacity(layout), allocator)?,
         })
     }
 
