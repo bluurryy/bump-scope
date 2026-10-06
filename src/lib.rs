@@ -16,6 +16,20 @@
     feature(doc_cfg),
     doc(auto_cfg(hide(feature, values("panic-on-alloc")))) // too noisy
 )]
+#![cfg_attr(
+    any(
+        feature = "nightly-allocator-api",
+        feature = "nightly-clone-to-uninit",
+        feature = "nightly-coerce-unsized",
+        feature = "nightly-dropck-eyepatch",
+        feature = "nightly-exact-size-is-empty",
+        feature = "nightly-fn-traits",
+        feature = "nightly-tests",
+        feature = "nightly-trusted-len",
+        feature = "nightly-miri-promise-symbolic-alignment",
+    ),
+    allow(clippy::incompatible_msrv)
+)]
 #![warn(
     clippy::pedantic,
     clippy::cargo,
