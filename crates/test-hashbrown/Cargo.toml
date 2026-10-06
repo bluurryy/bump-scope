@@ -3,7 +3,7 @@ name = "test-hashbrown"
 version = "0.1.0"
 edition = "2024"
 
-[dependencies]
+[dev-dependencies]
 bump-scope = { path = "../..", features = ["allocator-api2-02"] }
 hashbrown = "0.17.1"
 
