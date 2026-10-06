@@ -78,7 +78,7 @@ where
     #[inline(always)]
     pub(crate) fn with_size<E: ErrorBehavior>(size: ChunkSize<A, S>, allocator: A) -> Result<Self, E> {
         Ok(Self {
-            chunk: Cell::new(NonDummyChunk::new::<E>(size, None, allocator)?.as_raw()),
+            chunk: Cell::new(AllocatedChunk::new::<E>(size, None, allocator)?.as_raw()),
         })
     }
 
@@ -244,7 +244,7 @@ where
                     return Err(E::capacity_overflow());
                 };
 
-                let new_chunk = NonDummyChunk::<A, S>::new(
+                let new_chunk = AllocatedChunk::<A, S>::new(
                     ChunkSize::<A, S>::from_capacity(layout).ok_or_else(E::capacity_overflow)?,
                     None,
                     // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
@@ -440,9 +440,9 @@ where
         layout: L,
         mut f: impl FnMut(RawChunk<A, S>, L) -> Option<R>,
     ) -> Result<R, E> {
-        let new_chunk: NonDummyChunk<A, S> = match self.chunk.get().classify() {
+        let new_chunk: AllocatedChunk<A, S> = match self.chunk.get().classify() {
             ChunkClass::Claimed => Err(E::claimed()),
-            ChunkClass::Unallocated => NonDummyChunk::new(
+            ChunkClass::Unallocated => AllocatedChunk::new(
                 ChunkSize::from_capacity(*layout).ok_or_else(E::capacity_overflow)?,
                 None,
                 // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
@@ -487,7 +487,7 @@ where
             ChunkClass::Unallocated => {
                 // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
                 // `default_or_panic` will not panic.
-                let new_chunk = NonDummyChunk::new(ChunkSize::MINIMUM, None, A::default_or_panic())?;
+                let new_chunk = AllocatedChunk::new(ChunkSize::MINIMUM, None, A::default_or_panic())?;
                 self.chunk.set(new_chunk.as_raw());
                 Ok(())
             }
@@ -652,14 +652,14 @@ impl<A, S> Clone for RawChunk<A, S> {
 
 impl<A, S> Copy for RawChunk<A, S> {}
 
-pub(crate) struct NonDummyChunk<A, S> {
+pub(crate) struct AllocatedChunk<A, S> {
     pub(crate) header: NonNull<AllocatedChunkHeader<A>>,
     pub(crate) marker: PhantomData<fn() -> (A, S)>,
 }
 
-impl<A, S> Copy for NonDummyChunk<A, S> {}
+impl<A, S> Copy for AllocatedChunk<A, S> {}
 
-impl<A, S> Clone for NonDummyChunk<A, S> {
+impl<A, S> Clone for AllocatedChunk<A, S> {
     fn clone(&self) -> Self {
         *self
     }
@@ -712,14 +712,14 @@ where
             return ChunkClass::Unallocated;
         }
 
-        ChunkClass::NonDummy(NonDummyChunk {
+        ChunkClass::NonDummy(AllocatedChunk {
             header: self.header.cast(),
             marker: self.marker,
         })
     }
 
     #[inline(always)]
-    pub(crate) fn as_non_dummy(self) -> Option<NonDummyChunk<A, S>> {
+    pub(crate) fn as_non_dummy(self) -> Option<AllocatedChunk<A, S>> {
         match self.classify() {
             ChunkClass::Claimed | ChunkClass::Unallocated => None,
             ChunkClass::NonDummy(chunk) => Some(chunk),
@@ -849,9 +849,9 @@ where
     }
 
     #[inline(always)]
-    pub(crate) unsafe fn as_non_dummy_unchecked(self) -> NonDummyChunk<A, S> {
+    pub(crate) unsafe fn as_non_dummy_unchecked(self) -> AllocatedChunk<A, S> {
         debug_assert!(matches!(self.classify(), ChunkClass::NonDummy(_)));
-        NonDummyChunk {
+        AllocatedChunk {
             header: self.header.cast(),
             marker: self.marker,
         }
@@ -859,15 +859,15 @@ where
 }
 
 // Methods only available for a non-dummy chunk.
-impl<A, S> NonDummyChunk<A, S>
+impl<A, S> AllocatedChunk<A, S>
 where
     S: BumpAllocatorSettings,
 {
     pub(crate) fn new<E>(
         chunk_size: ChunkSize<A, S>,
-        prev: Option<NonDummyChunk<A, S>>,
+        prev: Option<AllocatedChunk<A, S>>,
         allocator: A,
-    ) -> Result<NonDummyChunk<A, S>, E>
+    ) -> Result<AllocatedChunk<A, S>, E>
     where
         A: Allocator,
         E: ErrorBehavior,
@@ -929,7 +929,7 @@ where
             }
         };
 
-        Ok(NonDummyChunk {
+        Ok(AllocatedChunk {
             header,
             marker: PhantomData,
         })
@@ -991,9 +991,9 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn prev(self) -> Option<NonDummyChunk<A, S>> {
+    pub(crate) fn prev(self) -> Option<AllocatedChunk<A, S>> {
         unsafe {
-            Some(NonDummyChunk {
+            Some(AllocatedChunk {
                 header: self.header.as_ref().prev.get()?,
                 marker: PhantomData,
             })
@@ -1001,9 +1001,9 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn next(self) -> Option<NonDummyChunk<A, S>> {
+    pub(crate) fn next(self) -> Option<AllocatedChunk<A, S>> {
         unsafe {
-            Some(NonDummyChunk {
+            Some(AllocatedChunk {
                 header: self.header.as_ref().next.get()?,
                 marker: PhantomData,
             })
@@ -1173,7 +1173,7 @@ where
     }
 
     /// This resolves the next chunk before calling `f`. So calling [`deallocate`](NonDummyChunk::deallocate) on the chunk parameter of `f` is fine.
-    fn for_each_prev(self, mut f: impl FnMut(NonDummyChunk<A, S>)) {
+    fn for_each_prev(self, mut f: impl FnMut(AllocatedChunk<A, S>)) {
         let mut iter = self.prev();
 
         while let Some(chunk) = iter {
@@ -1183,7 +1183,7 @@ where
     }
 
     /// This resolves the next chunk before calling `f`. So calling [`deallocate`](NonDummyChunk::deallocate) on the chunk parameter of `f` is fine.
-    fn for_each_next(self, mut f: impl FnMut(NonDummyChunk<A, S>)) {
+    fn for_each_next(self, mut f: impl FnMut(AllocatedChunk<A, S>)) {
         let mut iter = self.next();
 
         while let Some(chunk) = iter {
@@ -1218,7 +1218,7 @@ where
 pub(crate) enum ChunkClass<A, S: BumpAllocatorSettings> {
     Claimed,
     Unallocated,
-    NonDummy(NonDummyChunk<A, S>),
+    NonDummy(AllocatedChunk<A, S>),
 }
 
 /// Miri doesn't understand how our bit twiddling aligns the pointer but we can promise it with this.

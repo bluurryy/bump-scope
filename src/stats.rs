@@ -15,7 +15,7 @@ use core::{
 };
 
 use crate::{
-    raw_bump::{NonDummyChunk, RawChunk},
+    raw_bump::{AllocatedChunk, RawChunk},
     settings::{BumpAllocatorSettings, BumpSettings, False},
 };
 
@@ -226,7 +226,7 @@ pub struct Chunk<'a, A, S>
 where
     S: BumpAllocatorSettings,
 {
-    pub(crate) chunk: NonDummyChunk<A, S>,
+    pub(crate) chunk: AllocatedChunk<A, S>,
     marker: PhantomData<&'a ()>,
 }
 
