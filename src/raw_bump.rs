@@ -639,6 +639,10 @@ where
     }
 }
 
+/// Represents a chunk of the bump allocator.
+///
+/// This type behaves somewhat like a `ManuallyDrop<T>` in the sense that it has safe to
+/// use methods that assume the chunk is still live.
 pub(crate) struct Chunk<A, S> {
     pub(crate) header: NonNull<ChunkHeader>,
     pub(crate) marker: PhantomData<fn() -> (A, S)>,
@@ -651,19 +655,6 @@ impl<A, S> Clone for Chunk<A, S> {
 }
 
 impl<A, S> Copy for Chunk<A, S> {}
-
-pub(crate) struct AllocatedChunk<A, S> {
-    pub(crate) header: NonNull<AllocatedChunkHeader<A>>,
-    pub(crate) marker: PhantomData<fn() -> (A, S)>,
-}
-
-impl<A, S> Copy for AllocatedChunk<A, S> {}
-
-impl<A, S> Clone for AllocatedChunk<A, S> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
 
 impl<A, S> Chunk<A, S>
 where
@@ -855,6 +846,26 @@ where
             header: self.header.cast(),
             marker: self.marker,
         }
+    }
+}
+
+/// Represents **an allocated** chunk of the bump allocator.
+///
+/// This type behaves somewhat like a `ManuallyDrop<T>` in the sense that it has safe to
+/// use methods that assume the chunk has not been deallocated.
+///
+/// So just the `deallocate` method is unsafe. You have to make sure the chunk is not used
+/// after calling that.
+pub(crate) struct AllocatedChunk<A, S> {
+    pub(crate) header: NonNull<AllocatedChunkHeader<A>>,
+    pub(crate) marker: PhantomData<fn() -> (A, S)>,
+}
+
+impl<A, S> Copy for AllocatedChunk<A, S> {}
+
+impl<A, S> Clone for AllocatedChunk<A, S> {
+    fn clone(&self) -> Self {
+        *self
     }
 }
 
