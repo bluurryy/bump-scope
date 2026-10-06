@@ -124,6 +124,15 @@ impl<'a> AnyStats<'a> {
         self.chunk
     }
 
+    /// Returns the bump pointer. It lies within the current chunk's content range.
+    ///
+    /// This is equivalent to `.current_chunk().map(|c| c.bump_position())`.
+    #[inline]
+    #[must_use]
+    pub fn bump_position(self) -> Option<NonNull<u8>> {
+        self.current_chunk().map(AnyChunk::bump_position)
+    }
+
     pub(crate) fn debug_format(self, name: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(name)
             .field("allocated", &self.allocated())

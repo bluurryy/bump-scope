@@ -672,72 +672,27 @@ fn realign<const UP: bool>() {
     {
         let bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
         bump.alloc(0u8);
-        assert!(
-            !bump
-                .stats()
-                .current_chunk()
-                .unwrap()
-                .bump_position()
-                .cast::<AlignT>()
-                .is_aligned()
-        );
+        assert!(!bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
         let bump = bump.with_settings::<BumpSettings<ALIGN, UP>>();
-        assert!(
-            bump.stats()
-                .current_chunk()
-                .unwrap()
-                .bump_position()
-                .cast::<AlignT>()
-                .is_aligned()
-        );
+        assert!(bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
     }
 
     // borrow_mut_with_settings
     {
         let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
         bump.alloc(0u8);
-        assert!(
-            !bump
-                .stats()
-                .current_chunk()
-                .unwrap()
-                .bump_position()
-                .cast::<AlignT>()
-                .is_aligned()
-        );
+        assert!(!bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
         let bump = bump.borrow_mut_with_settings::<BumpSettings<ALIGN, UP>>();
-        assert!(
-            bump.typed_stats()
-                .current_chunk()
-                .unwrap()
-                .bump_position()
-                .cast::<AlignT>()
-                .is_aligned()
-        );
+        assert!(bump.typed_stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
     }
 
     // aligned
     {
         let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
         bump.alloc(0u8);
-        assert!(
-            !bump
-                .stats()
-                .current_chunk()
-                .unwrap()
-                .bump_position()
-                .cast::<AlignT>()
-                .is_aligned()
-        );
+        assert!(!bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
         bump.aligned::<ALIGN, ()>(|bump| {
-            assert!(
-                bump.stats()
-                    .current_chunk()
-                    .unwrap()
-                    .bump_position()
-                    .cast::<AlignT>()
-                    .is_aligned()
-            );
+            assert!(bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
         });
     }
 
@@ -745,24 +700,9 @@ fn realign<const UP: bool>() {
     {
         let mut bump = Bump::<Global, BumpSettings<1, UP>>::with_size(64);
         bump.alloc(0u8);
-        assert!(
-            !bump
-                .stats()
-                .current_chunk()
-                .unwrap()
-                .bump_position()
-                .cast::<AlignT>()
-                .is_aligned()
-        );
+        assert!(!bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
         bump.scoped_aligned::<ALIGN, ()>(|bump| {
-            assert!(
-                bump.stats()
-                    .current_chunk()
-                    .unwrap()
-                    .bump_position()
-                    .cast::<AlignT>()
-                    .is_aligned()
-            );
+            assert!(bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
         });
     }
 }

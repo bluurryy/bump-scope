@@ -177,6 +177,15 @@ where
         })
     }
 
+    /// Returns the bump pointer. It lies within the current chunk's content range.
+    ///
+    /// This is equivalent to `.current_chunk().map(|c| c.bump_position())`.
+    #[inline]
+    #[must_use]
+    pub fn bump_position(self) -> Option<NonNull<u8>> {
+        self.current_chunk().map(Chunk::bump_position)
+    }
+
     /// Returns a reference to the base allocator.
     #[inline]
     #[must_use]

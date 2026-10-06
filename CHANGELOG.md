@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `nightly-miri-promise-symbolic-alignment` feature to promise symbolic alignment for allocations
+- Add `(Any)Stats::bump_position` as a shorthand for `current_chunk().map(|c| c.bump_position())`
 
 ### Changed
 
