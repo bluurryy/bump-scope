@@ -49,7 +49,7 @@ unsafe impl Sync for DummyChunkHeader {}
 /// The pointers used for `pos` and `end` are chosen to be pointers into the same static dummy chunk.
 ///
 /// It's irrelevant where the pointers point to, they just need to:
-/// - be aligned to [`MIN_CHUNK_ALIGN`]
+/// - be aligned to [`MIN_CHUNK_ALIGN`](crate::bumping::MIN_CHUNK_ALIGN)
 /// - denote a negative capacity (currently guaranteed to be -16)
 /// - point to some existing object, not a dangling pointer since a dangling pointer could
 ///   theoretically be a valid pointer to some other chunk

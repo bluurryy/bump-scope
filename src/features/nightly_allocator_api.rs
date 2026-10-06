@@ -13,7 +13,7 @@ use crate::{
 use super::allocator_util::{allocator_compat_wrapper, impl_allocator_via_allocator};
 
 allocator_compat_wrapper! {
-    /// Wraps an <code>alloc::alloc::[Allocator](core::alloc::Allocator)</code> to implement
+    /// Wraps an <code>alloc::alloc::[Allocator]</code> to implement
     /// <code>bump_scope::alloc::[Allocator](crate::alloc::Allocator)</code> and vice versa.
     ///
     /// # Example

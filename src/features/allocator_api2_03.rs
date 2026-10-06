@@ -14,7 +14,7 @@ use crate::alloc::{BoxLike, box_like};
 use super::allocator_util::{allocator_compat_wrapper, impl_allocator_via_allocator};
 
 allocator_compat_wrapper! {
-    /// Wraps an <code>allocator_api2::alloc::[Allocator](allocator_api2_03::alloc::Allocator)</code> to implement
+    /// Wraps an <code>allocator_api2::alloc::[Allocator]</code> to implement
     /// <code>bump_scope::alloc::[Allocator](crate::alloc::Allocator)</code> and vice versa.
     ///
     /// # Example

@@ -60,7 +60,7 @@ where
         attempt!(ChunkSizeHint::for_capacity(layout)).calc_size()
     }
 
-    /// See [`chunk_size_config::ChunkSizeConfig::align_size`].
+    /// See [`ChunkSizeConfig::align_size`].
     pub const fn align_allocation_size(size: usize) -> usize {
         config::<A, S>().align_size(size)
     }

@@ -948,7 +948,7 @@ where
 
     /// # Panic
     ///
-    /// [`self.next`](RawChunk::next) must return `None`
+    /// [`self.next()`](AllocatedChunk::next) must return `None`
     pub(crate) fn append_for<B: ErrorBehavior>(self, layout: Layout) -> Result<Self, B>
     where
         A: Allocator + Clone,
@@ -1089,14 +1089,14 @@ where
     }
 
     /// # Safety
-    /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
+    /// [`contains_addr_or_end`](AllocatedChunk::contains_addr_or_end) must return true
     #[inline(always)]
     pub(crate) unsafe fn set_pos(self, ptr: NonNull<u8>) {
         unsafe { self.set_pos_addr(ptr.addr().get()) };
     }
 
     /// # Safety
-    /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
+    /// [`contains_addr_or_end`](AllocatedChunk::contains_addr_or_end) must return true
     #[inline(always)]
     pub(crate) unsafe fn set_pos_addr(self, addr: usize) {
         unsafe { self.header.as_ref().pos.set(self.content_ptr_from_addr(addr)) };
@@ -1128,7 +1128,7 @@ where
     }
 
     /// # Safety
-    /// [`contains_addr_or_end`](RawChunk::contains_addr_or_end) must return true
+    /// [`contains_addr_or_end`](AllocatedChunk::contains_addr_or_end) must return true
     #[inline(always)]
     unsafe fn content_ptr_from_addr(self, addr: usize) -> NonNull<u8> {
         unsafe {
@@ -1183,7 +1183,7 @@ where
         unsafe { self.header.add(1).cast() }
     }
 
-    /// This resolves the next chunk before calling `f`. So calling [`deallocate`](NonDummyChunk::deallocate) on the chunk parameter of `f` is fine.
+    /// This resolves the next chunk before calling `f`. So calling [`deallocate`](AllocatedChunk::deallocate) on the chunk parameter of `f` is fine.
     fn for_each_prev(self, mut f: impl FnMut(AllocatedChunk<A, S>)) {
         let mut iter = self.prev();
 
@@ -1193,7 +1193,7 @@ where
         }
     }
 
-    /// This resolves the next chunk before calling `f`. So calling [`deallocate`](NonDummyChunk::deallocate) on the chunk parameter of `f` is fine.
+    /// This resolves the next chunk before calling `f`. So calling [`deallocate`](AllocatedChunk::deallocate) on the chunk parameter of `f` is fine.
     fn for_each_next(self, mut f: impl FnMut(AllocatedChunk<A, S>)) {
         let mut iter = self.next();
 
