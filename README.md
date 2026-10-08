@@ -21,6 +21,7 @@ A fast bump allocator that supports allocation scopes / checkpoints. Aka an aren
 - [Allocator API](#allocator-api)
 - [Feature Flags](#feature-flags)
 - [Motivation and History](#motivation-and-history)
+- [Contributing](#contributing)
 
 <!-- crate documentation rest start -->
 ## What is bump allocation?
@@ -287,6 +288,10 @@ I wasn't sure about bumping downwards because it loses the realloc fast path ([A
 To be able to allocate slices from arbitrary iterators or `fmt::Arguments` I had to implement my own `Vec` and `String`. (The `Vec` from `allocator_api2` would have worked, but the generated code wasn't great.) Comparing `alloc_iter` for an upwards and downwards bumping allocator is not really fair because of the different realloc behavior. So I implemented `alloc_iter_rev` and a `VecRev` that would push elements to the start instead of the end. A `VecRev` can be grown and shrunk in place when downwards bumping just as a `Vec` can be grown and shrunk in place when upwards allocating.
 
 I've found that bumping downwards and having a minimum alignment makes little difference in terms of performance. If you make use of `alloc_iter`, `alloc_fmt` or growable collections then the more favorable realloc behavior for upwards bumping will likely be more important than the few instructions you save from bumping downwards.
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 
