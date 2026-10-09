@@ -67,8 +67,9 @@ check-clippy:
 # Runs clippy on the stable toolchain.
 [group('check')]
 check-clippy-stable:
-    cargo +stable clippy --tests --no-default-features -- -Dwarnings
-    cargo +stable clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde -- -Dwarnings
+    # FIXME: uncomment once 1.100 has released
+    # cargo +stable clippy --tests --no-default-features -- -Dwarnings
+    # cargo +stable clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde -- -Dwarnings
 
 # Runs clippy on the nightly toolchain.
 [group('check')]
@@ -88,19 +89,22 @@ check-clippy-nightly:
 [group('check')]
 check-msrv:
     # msrv might print warnings that stable doesnt, we dont care
-    cargo +1.85.1 check --no-default-features
-    cargo +1.85.1 check --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
+    # FIXME: uncomment once 1.100 has released
+    # cargo +1.100.0 check --no-default-features
+    # cargo +1.100.0 check --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
 
 # Runs `cargo check` with mininmal dependency versions.
 [group('check')]
 check-minimal-versions:
-    cargo +stable minimal-versions check --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
+    # FIXME: uncomment once 1.100 has released
+    # cargo +stable minimal-versions check --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
     cargo +nightly minimal-versions check --all-features
 
 # Runs `cargo check` on a target that has no `std` library.
 [group('check')]
 check-no-std:
-    cargo +stable check --target thumbv7em-none-eabihf --no-default-features -F allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,alloc,serde
+    # FIXME: uncomment once 1.100 has released
+    # cargo +stable check --target thumbv7em-none-eabihf --no-default-features -F allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,alloc,serde
     cargo +nightly check --target thumbv7em-none-eabihf --no-default-features -F allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,alloc,serde,nightly
 
 # Asserts that api that shouldn't panic, doesn't.
@@ -118,12 +122,13 @@ test:
 # Runs tests for the stable toolchain.
 [group('test')]
 test-stable:
-    cargo +stable test --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
-    cargo +stable run --example limit_memory_usage
-    cargo +stable run --example stack_or_static_memory
-    cargo +stable run --example thread_local
-    cargo +stable test --test trybuild -- --ignored
-    cargo +stable test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
+    # FIXME: uncomment once 1.100 has released
+    # cargo +stable test --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
+    # cargo +stable run --example limit_memory_usage
+    # cargo +stable run --example stack_or_static_memory
+    # cargo +stable run --example thread_local
+    # cargo +stable test --test trybuild -- --ignored
+    # cargo +stable test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
 
 # Runs tests for the nightly toolchain, optionally with miri.
 [arg("miri", long="miri", value="miri")]
@@ -141,6 +146,7 @@ test-nightly miri="":
 # Update the expected compile errors of `trybuild` tests.
 [group('test')]
 trybuild-overwrite:
+    # FIXME: replace +nightly with +stable once 1.100 has released
     TRYBUILD=overwrite cargo +stable test --test trybuild -- --ignored
     TRYBUILD=overwrite cargo +stable test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
 

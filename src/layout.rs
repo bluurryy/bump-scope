@@ -56,7 +56,7 @@ impl ArrayLayout {
 
     #[inline(always)]
     pub(crate) const fn from_layout(layout: Layout) -> Result<Self, ArrayLayoutError> {
-        if layout.size() % layout.align() == 0 {
+        if layout.size().is_multiple_of(layout.align()) {
             Ok(ArrayLayout(layout))
         } else {
             Err(ArrayLayoutError)

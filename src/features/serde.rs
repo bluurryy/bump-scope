@@ -137,10 +137,10 @@ impl<'de, T: Deserialize<'de>> Visitor<'de> for &'_ mut FixedBumpVec<'_, T> {
     {
         let remaining = self.capacity() - self.len();
 
-        if let Some(size_hint) = seq.size_hint() {
-            if size_hint > remaining {
-                return Err(too_many_elements(size_hint, remaining));
-            }
+        if let Some(size_hint) = seq.size_hint()
+            && size_hint > remaining
+        {
+            return Err(too_many_elements(size_hint, remaining));
         }
 
         while let Some(elem) = seq.next_element()? {
