@@ -58,13 +58,13 @@ check:
 # Checks formatting.
 [group('check')]
 check-fmt:
-    cargo +stable fmt --all --check
-    cd crates/callgrind-benches && cargo +stable fmt --all --check
-    cd crates/fuzzing-support && cargo +stable fmt --all --check
-    cd crates/test-hashbrown && cargo +stable fmt --all --check
-    cd crates/test-no-panic && cargo +stable fmt --all --check
-    cd crates/tests-from-std && cargo +stable fmt --all --check
-    cd fuzz && cargo +stable fmt --all --check
+    cargo +stable fmt --all --check 2>/dev/null
+    cd crates/callgrind-benches && cargo +stable fmt --all --check 2>/dev/null
+    cd crates/fuzzing-support && cargo +stable fmt --all --check 2>/dev/null
+    cd crates/test-hashbrown && cargo +stable fmt --all --check 2>/dev/null
+    cd crates/test-no-panic && cargo +stable fmt --all --check 2>/dev/null
+    cd crates/tests-from-std && cargo +stable fmt --all --check 2>/dev/null
+    cd fuzz && cargo +stable fmt --all --check 2>/dev/null
 
 # Runs all `check-clippy-*`.
 [group('check')]
