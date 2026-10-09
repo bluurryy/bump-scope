@@ -28,7 +28,7 @@ smoke:
 [group('release')]
 setup:
     cargo binstall --no-confirm --locked typos-cli@1
-    cargo binstall --no-confirm --locked cargo-insert-docs@1.10.0
+    cargo binstall --no-confirm --locked cargo-insert-docs@1.14.0
     cargo binstall --no-confirm --locked cargo-semver-checks
     cargo binstall --no-confirm --locked cargo-hack@0.6
     cargo binstall --no-confirm --locked cargo-minimal-versions@0.1
@@ -219,7 +219,7 @@ update-bench-results:
 [group('doc')]
 doc *args:
     cargo +nightly fmt
-    cargo insert-docs --all-features --allow-dirty
+    cargo insert-docs --all-features --allow-dirty --skip-doc-links bump_scope
     @ just doc-rustdoc {{ args }}
 
 # Run `rustdoc` like on `docs.rs`.
