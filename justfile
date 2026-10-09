@@ -16,6 +16,14 @@ pre-release:
     just test
     cargo +nightly semver-checks
 
+# A faster, incomplete `pre-release`, to catch slip ups between commits. Excludes insert-docs,test-stable,test-miri,semver-checks.
+[group('release')]
+smoke: 
+    typos
+    just doc-rustdoc
+    just check
+    just test-nightly
+
 # Installs all tools required for `pre-release`.
 [group('release')]
 setup:
