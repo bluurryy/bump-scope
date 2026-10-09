@@ -609,7 +609,7 @@ mod for_trait_object {
         };
 
         // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-        let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
+        let cap = unsafe { range.end.byte_offset_from_unsigned(range.start) } / T::SIZE;
 
         let ptr = if is_upwards_allocating(&bump) {
             range.start.cast::<T>()
@@ -652,7 +652,7 @@ mod for_trait_object {
         };
 
         // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-        let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
+        let cap = unsafe { range.end.byte_offset_from_unsigned(range.start) } / T::SIZE;
 
         let ptr = if is_upwards_allocating(&bump) {
             unsafe { range.start.cast::<T>().add(cap) }

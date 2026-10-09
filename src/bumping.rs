@@ -3,7 +3,7 @@
 //! This file intentionally doesn't import anything other than `core`
 //! to make it easy to fuzz and debug.
 
-use core::{alloc::Layout, num::NonZeroUsize, ops::Range};
+use core::{alloc::Layout, hint::cold_path, num::NonZeroUsize, ops::Range};
 
 #[cold]
 #[inline(always)]
@@ -12,7 +12,7 @@ pub(crate) fn cold() {}
 #[inline(always)]
 pub(crate) fn unlikely(condition: bool) -> bool {
     if condition {
-        cold();
+        cold_path();
     } else {
         // ...
     }

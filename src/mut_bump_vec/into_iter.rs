@@ -69,7 +69,7 @@ impl<T, A> IntoIter<T, A> {
         if T::IS_ZST {
             self.end.addr().get().wrapping_sub(self.ptr.addr().get())
         } else {
-            unsafe { non_null::offset_from_unsigned(self.end, self.ptr) }
+            unsafe { self.end.offset_from_unsigned(self.ptr) }
         }
     }
 

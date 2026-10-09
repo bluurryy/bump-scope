@@ -1,18 +1,4 @@
-use core::{hint, mem, ptr};
-
-/// See `<*const T>::offset_from_unsigned`.
-#[inline]
-#[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
-#[expect(clippy::cast_sign_loss)]
-#[expect(clippy::checked_conversions)]
-pub(crate) unsafe fn offset_from_unsigned<T>(this: *const T, origin: *const T) -> usize {
-    unsafe {
-        hint::assert_unchecked(this >= origin);
-        let pointee_size = mem::size_of::<T>();
-        assert!(0 < pointee_size && pointee_size <= isize::MAX as usize);
-        this.offset_from(origin) as usize
-    }
-}
+use core::ptr;
 
 /// Not part of std.
 ///

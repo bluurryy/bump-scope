@@ -353,7 +353,7 @@ where
         let range = self.prepare_allocation_range::<B, T>(min_cap)?;
 
         // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-        let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
+        let cap = unsafe { range.end.byte_offset_from_unsigned(range.start) } / T::SIZE;
 
         let ptr = if S::UP { range.start } else { unsafe { range.end.sub(cap) } };
 
@@ -368,7 +368,7 @@ where
         let range = self.prepare_allocation_range::<B, T>(min_cap)?;
 
         // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-        let cap = unsafe { non_null::byte_offset_from_unsigned(range.end, range.start) } / T::SIZE;
+        let cap = unsafe { range.end.byte_offset_from_unsigned(range.start) } / T::SIZE;
 
         let end = if S::UP { unsafe { range.start.add(cap) } } else { range.end };
 

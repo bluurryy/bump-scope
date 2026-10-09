@@ -1,24 +1,5 @@
 use core::{ops::Range, ptr::NonNull};
 
-#[cfg(feature = "alloc")]
-use core::{num::NonZeroUsize, ptr};
-
-use crate::polyfill::pointer;
-
-/// See [`std::ptr::NonNull::offset_from_unsigned`].
-#[must_use]
-#[inline(always)]
-pub(crate) unsafe fn offset_from_unsigned<T>(this: NonNull<T>, origin: NonNull<T>) -> usize {
-    unsafe { pointer::offset_from_unsigned(this.as_ptr(), origin.as_ptr()) }
-}
-
-/// See [`std::ptr::NonNull::byte_offset_from_unsigned`].
-#[must_use]
-#[inline(always)]
-pub(crate) unsafe fn byte_offset_from_unsigned<T>(this: NonNull<T>, origin: NonNull<T>) -> usize {
-    unsafe { offset_from_unsigned::<u8>(this.cast(), origin.cast()) }
-}
-
 /// See [`std::ptr::NonNull::is_aligned_to`].
 #[inline(always)]
 pub(crate) fn is_aligned_to(ptr: NonNull<u8>, align: usize) -> bool {
@@ -30,21 +11,6 @@ pub(crate) fn is_aligned_to(ptr: NonNull<u8>, align: usize) -> bool {
 #[inline(always)]
 pub(crate) const fn as_non_null_ptr<T>(ptr: NonNull<[T]>) -> NonNull<T> {
     ptr.cast()
-}
-
-/// See [`std::ptr::NonNull::from_ref`].
-pub(crate) const fn from_ref<T>(r: &T) -> NonNull<T> {
-    unsafe { NonNull::new_unchecked(r as *const T as *mut T) }
-}
-
-/// See [`std::ptr::NonNull::without_provenance`].
-#[inline]
-#[must_use]
-#[cfg(feature = "alloc")]
-pub(crate) const fn without_provenance<T>(addr: NonZeroUsize) -> NonNull<T> {
-    let pointer = ptr::without_provenance_mut(addr.get());
-    // SAFETY: we know `addr` is non-zero.
-    unsafe { NonNull::new_unchecked(pointer) }
 }
 
 /// Not part of std, but for context see [`std::vec::Vec::truncate`].

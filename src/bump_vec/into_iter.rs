@@ -7,7 +7,7 @@ use core::{
     slice,
 };
 
-use crate::{SizedTypeProperties, polyfill::non_null, traits::BumpAllocatorTyped};
+use crate::{SizedTypeProperties, traits::BumpAllocatorTyped};
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::bump_vec::slice_to_bump_vec_in;
@@ -135,7 +135,7 @@ impl<T, A: BumpAllocatorTyped> Iterator for IntoIter<T, A> {
         } else {
             #[allow(unused_unsafe)] // for the macro
             unsafe {
-                non_null::offset_from_unsigned(non_null!(self.end, T), self.ptr)
+                non_null!(self.end, T).offset_from_unsigned(self.ptr)
             }
         };
         (exact, Some(exact))

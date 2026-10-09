@@ -6,7 +6,7 @@
 
 use core::{cell::Cell, ptr::NonNull};
 
-use crate::{polyfill::non_null, settings::BumpAllocatorSettings};
+use crate::settings::BumpAllocatorSettings;
 
 /// The chunk header existing in every allocated chunk, extending `ChunkHeader` with
 /// intrusive doubly linked list fields and its allocator.
@@ -70,8 +70,8 @@ macro_rules! dummy_chunk {
                 end: unsafe { DOWN_CHUNK_PTR.cast().byte_add(16) },
             });
 
-            const UP_CHUNK_PTR: NonNull<ChunkHeader> = non_null::from_ref(&UP_CHUNK.0);
-            const DOWN_CHUNK_PTR: NonNull<ChunkHeader> = non_null::from_ref(&DOWN_CHUNK.0);
+            const UP_CHUNK_PTR: NonNull<ChunkHeader> = NonNull::from_ref(&UP_CHUNK.0);
+            const DOWN_CHUNK_PTR: NonNull<ChunkHeader> = NonNull::from_ref(&DOWN_CHUNK.0);
 
             if S::UP { UP_CHUNK_PTR } else { DOWN_CHUNK_PTR }
         }

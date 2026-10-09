@@ -19,7 +19,7 @@ use crate::{
     fixed_bump_vec::RawFixedBumpVec,
     min_non_zero_cap,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
-    polyfill::{hint::likely, pointer, slice},
+    polyfill::{hint::likely, slice},
     traits::{BumpAllocatorTyped, BumpAllocatorTypedScope},
 };
 
@@ -2404,12 +2404,12 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
                     unsafe {
                         // drop `T`s
                         let drop_ptr = self.src.add(1);
-                        let drop_len = pointer::offset_from_unsigned(self.end, drop_ptr);
+                        let drop_len = self.end.offset_from_unsigned(drop_ptr);
                         ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
 
                         // drop `U`s
                         let drop_ptr = self.ptr.as_ptr().cast::<U>();
-                        let drop_len = pointer::offset_from_unsigned(self.dst, drop_ptr);
+                        let drop_len = self.dst.offset_from_unsigned(drop_ptr);
                         ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
 
                         if T::IS_ZST || self.cap == 0 {

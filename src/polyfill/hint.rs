@@ -1,7 +1,4 @@
-/// See [`std::hint::cold_path`].
-#[cold]
-#[inline(always)]
-pub(crate) fn cold() {}
+use core::hint::cold_path;
 
 /// See [`std::hint::likely`].
 #[inline(always)]
@@ -9,7 +6,7 @@ pub(crate) fn likely(condition: bool) -> bool {
     if condition {
         // ...
     } else {
-        cold();
+        cold_path();
     }
 
     condition
@@ -19,7 +16,7 @@ pub(crate) fn likely(condition: bool) -> bool {
 #[inline(always)]
 pub(crate) fn unlikely(condition: bool) -> bool {
     if condition {
-        cold();
+        cold_path();
     } else {
         // ...
     }

@@ -5,8 +5,6 @@ use core::{
 };
 use std::alloc::System;
 
-use crate::polyfill;
-
 use super::{AllocError, Allocator};
 
 // The Allocator impl checks the layout size to be non-zero and forwards to the GlobalAlloc impl,
@@ -59,7 +57,7 @@ unsafe impl Allocator for System {
             // SAFETY: conditions must be upheld by the caller
             0 => unsafe {
                 Allocator::deallocate(self, ptr, old_layout);
-                Ok(NonNull::slice_from_raw_parts(polyfill::layout::dangling_ptr(new_layout), 0))
+                Ok(NonNull::slice_from_raw_parts(new_layout.dangling_ptr(), 0))
             },
 
             // SAFETY: `new_size` is non-zero. Other conditions must be upheld by the caller
@@ -90,7 +88,7 @@ unsafe impl Allocator for System {
 #[inline]
 fn alloc_impl(layout: Layout, zeroed: bool) -> Result<NonNull<[u8]>, AllocError> {
     match layout.size() {
-        0 => Ok(NonNull::slice_from_raw_parts(polyfill::layout::dangling_ptr(layout), 0)),
+        0 => Ok(NonNull::slice_from_raw_parts(layout.dangling_ptr(), 0)),
         // SAFETY: `layout` is non-zero in size,
         size => unsafe {
             let raw_ptr = if zeroed {
