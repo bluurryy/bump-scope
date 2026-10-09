@@ -8,9 +8,8 @@
 [![Build Status](https://github.com/bluurryy/bump-scope/workflows/CI/badge.svg)](https://github.com/bluurryy/bump-scope/actions/workflows/ci.yml)
 
 > [!WARNING]  
-> This README is for the **in-development version 3.0.0**, which contains
-> breaking changes and is not yet released. For the latest release see
-> [the `v2` branch](https://github.com/bluurryy/bump-scope/tree/v2).
+> This is the **in-development version 3.0.0**, which contains breaking changes and is not yet released. 
+> For the latest release see [the `v2` branch](https://github.com/bluurryy/bump-scope/tree/v2).
 
 <!-- crate documentation intro start -->
 A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
