@@ -29,16 +29,17 @@ jobs:
       - run: cd crates/test-no-panic && cargo +stable fmt --all --check
       - run: cd crates/tests-from-std && cargo +stable fmt --all --check
       - run: cd fuzz && cargo +stable fmt --all --check
-  clippy-stable:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo +stable clippy --tests --no-default-features -- -Dwarnings
-      - run: cargo +stable clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde -- -Dwarnings
+  # FIXME: uncomment once 1.100 has released
+  # clippy-stable:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         components: clippy
+  #     - uses: Swatinem/rust-cache@v2
+  #     - run: cargo +stable clippy --tests --no-default-features -- -Dwarnings
+  #     - run: cargo +stable clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde -- -Dwarnings
   clippy-nightly:
     runs-on: ubuntu-latest
     steps:
@@ -85,17 +86,19 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@cargo-hack
       - uses: taiki-e/install-action@cargo-minimal-versions
-      - run: cargo +stable minimal-versions check --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
+      # FIXME: uncomment once 1.100 has released
+      # - run: cargo +stable minimal-versions check --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
       - run: cargo +nightly minimal-versions check --all-features
-  no-std-stable:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: thumbv7em-none-eabihf
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo check --target thumbv7em-none-eabihf --no-default-features -F allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,alloc,serde
+  # FIXME: uncomment once 1.100 has released
+  # no-std-stable:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         targets: thumbv7em-none-eabihf
+  #     - uses: Swatinem/rust-cache@v2
+  #     - run: cargo check --target thumbv7em-none-eabihf --no-default-features -F allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,alloc,serde
   no-std-nightly:
     runs-on: ubuntu-latest
     steps:
@@ -105,16 +108,17 @@ jobs:
           targets: thumbv7em-none-eabihf
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --target thumbv7em-none-eabihf --no-default-features -F allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,alloc,serde,nightly
-  test-stable:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo +stable test --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
-      - run: cargo +stable run --example limit_memory_usage
-      - run: cargo +stable run --example stack_or_static_memory
-      - run: cargo +stable run --example thread_local
+  # FIXME: uncomment once 1.100 has released
+  # test-stable:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: dtolnay/rust-toolchain@stable
+  #     - uses: Swatinem/rust-cache@v2
+  #     - run: cargo +stable test --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
+  #     - run: cargo +stable run --example limit_memory_usage
+  #     - run: cargo +stable run --example stack_or_static_memory
+  #     - run: cargo +stable run --example thread_local
   test-nightly:
     runs-on: ubuntu-latest
     steps:
