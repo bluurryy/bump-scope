@@ -32,8 +32,7 @@
     clippy::copy_iterator,
     clippy::partialeq_ne_impl,
     clippy::items_after_statements,
-    clippy::missing_transmute_annotations,
-    clippy::multiple_crate_versions, // we have allocator-api2 version 0.2, 0.3 and 0.4
+    clippy::missing_transmute_annotations
 )]
 #![allow(
     clippy::wildcard_imports, // `expect` is broken for this lint
@@ -41,12 +40,11 @@
 )]
 #![doc(test(
     attr(deny(dead_code, unused_imports, deprecated)),
-    attr(cfg_attr(feature = "nightly-allocator-api", feature(allocator_api, btreemap_alloc))),
+    attr(cfg_attr(feature = "nightly-tests", feature(allocator_ext))),
 ))]
 #![cfg_attr(
     any(
         feature = "nightly",
-        feature = "nightly-allocator-api",
         feature = "nightly-clone-to-uninit",
         feature = "nightly-coerce-unsized",
         feature = "nightly-dropck-eyepatch",
@@ -222,7 +220,7 @@
 //! #### API changes
 //! The collections are designed to have the same api as their std counterparts with these exceptions:
 //! - [`split_off`](BumpVec::split_off) —  splits the collection in place without allocation; the parameter is a range instead of a single index
-//! - [`retain`](BumpVec::retain) —  takes a closure with a `&mut T` parameter like [`Vec::retain_mut`](alloc_crate::vec::Vec::retain_mut)
+//! - [`retain`](BumpVec::retain) —  takes a closure with a `&mut T` parameter like [`Vec::retain_mut`](alloc::vec::Vec::retain_mut)
 //!
 //! #### New features
 //! - [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `vec::Drain<T>` etc.
@@ -272,26 +270,12 @@
 //!   [`init_zeroed`](zerocopy_08::InitZeroed::init_zeroed),
 //!   [`extend_zeroed`](zerocopy_08::VecExt::extend_zeroed) and
 //!   [`resize_zeroed`](zerocopy_08::VecExt::resize_zeroed).
-//! - **`allocator-api2-02`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and
-//!   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-//!   [`AllocatorApi2V02Compat`](crate::alloc::compat::AllocatorApi2V02Compat).
-//! - **`allocator-api2-03`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.3`'s `Allocator` and
-//!   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-//!   [`AllocatorApi2V03Compat`](crate::alloc::compat::AllocatorApi2V03Compat).
-//! - **`allocator-api2-04`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.4`'s `Allocator` and
-//!   makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-//!   [`AllocatorApi2V04Compat`](crate::alloc::compat::AllocatorApi2V04Compat).
 //!
 //! ### Nightly features
 //! These nightly features are not subject to the same semver guarantees as the rest of the library.
 //! Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
 //!
 //! - **`nightly`** — Enables all other nightly feature flags.
-//! - **`nightly-allocator-api`** — Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
-//!   allows using an `core::alloc::Allocator` as a base allocator via
-//!   [`AllocatorNightlyCompat`](crate::alloc::compat::AllocatorNightlyCompat).
-//!
-//!   This will also enable `allocator-api2` version `0.2`'s `nightly` feature.
 //! - **`nightly-coerce-unsized`** — Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
 //!   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
 //!   You can unsize a `BumpBox` in stable without this feature using [`unsize_bump_box`].
@@ -308,7 +292,7 @@
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
 //! [`new`]: Bump::new
-//! [`Allocator`]: crate::alloc::Allocator
+//! [`Allocator`]: core::alloc::Allocator
 //! [`with_size`]: Bump::with_size
 //! [`with_capacity`]: Bump::with_capacity
 //! [`scoped`]: crate::traits::BumpAllocator::scoped
@@ -322,9 +306,8 @@
 extern crate std;
 
 #[cfg(any(feature = "alloc", feature = "nightly-fn-traits"))]
-extern crate alloc as alloc_crate;
+extern crate alloc;
 
-pub mod alloc;
 mod allocator_impl;
 mod bump;
 mod bump_align_guard;
@@ -380,9 +363,11 @@ pub use bump_scope_guard::{BumpScopeGuard, Checkpoint};
 pub use bump_string::BumpString;
 #[doc(inline)]
 pub use bump_vec::BumpVec;
+#[cfg(test)]
+use core::alloc::{AllocError, Layout};
 #[cfg(feature = "panic-on-alloc")]
 use core::convert::Infallible;
-use core::{mem, num::NonZeroUsize, ptr::NonNull};
+use core::{alloc::Allocator, mem, num::NonZeroUsize, ptr::NonNull};
 use error_behavior::ErrorBehavior;
 pub use fixed_bump_string::FixedBumpString;
 pub use fixed_bump_vec::FixedBumpVec;
@@ -493,7 +478,7 @@ pub mod private {
 }
 
 #[cfg(all(feature = "alloc", feature = "panic-on-alloc"))]
-use alloc_crate::alloc::handle_alloc_error;
+use alloc::alloc::handle_alloc_error;
 
 #[cold]
 #[inline(never)]
@@ -531,7 +516,7 @@ impl<T> SizedTypeProperties for T {}
 macro_rules! maybe_default_allocator {
     ($macro:ident) => {
         #[cfg(feature = "alloc")]
-        $macro!(A = $crate::alloc::Global);
+        $macro!(A = alloc::alloc::Global);
 
         #[cfg(not(feature = "alloc"))]
         $macro!(A);
@@ -540,10 +525,7 @@ macro_rules! maybe_default_allocator {
 
 pub(crate) use maybe_default_allocator;
 
-use crate::{
-    alloc::Allocator,
-    settings::{Boolean, False, True},
-};
+use crate::settings::{Boolean, False, True};
 
 // (copied from rust standard library)
 //
@@ -579,6 +561,20 @@ fn align_pos(up: bool, min_align: usize, pos: usize) -> usize {
         // and stay non-zero.
         down_align_usize(pos, min_align)
     }
+}
+
+// Used for static assertions.
+#[cfg(test)]
+#[derive(Default, Clone)]
+pub(crate) struct NoopAllocator;
+
+#[cfg(test)]
+unsafe impl Allocator for NoopAllocator {
+    fn allocate(&self, _layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        Err(AllocError)
+    }
+
+    unsafe fn deallocate(&self, _ptr: NonNull<u8>, _layout: Layout) {}
 }
 
 mod supported_base_allocator {

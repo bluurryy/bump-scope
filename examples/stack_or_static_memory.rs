@@ -1,15 +1,15 @@
+#![cfg(feature = "std")]
 #![cfg(feature = "panic-on-alloc")]
 
-use core::{
-    alloc::Layout,
+use std::{
+    alloc::{AllocError, Allocator, Layout},
     cell::Cell,
     mem::{self, MaybeUninit},
     ptr::{self, NonNull},
+    sync::{Mutex, PoisonError},
 };
-use std::sync::{Mutex, PoisonError};
 
 use bump_scope::{
-    alloc::{AllocError, Allocator},
     settings::{BumpAllocatorSettings, BumpSettings},
     traits::BumpAllocatorTyped,
 };

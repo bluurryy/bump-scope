@@ -4,7 +4,6 @@ edition = "2024"
 
 [dev-dependencies]
 bump-scope = { path = "../..", features = [
-  "nightly-allocator-api",
   "nightly-coerce-unsized",
   "nightly-dropck-eyepatch",
   "nightly-miri-promise-symbolic-alignment",

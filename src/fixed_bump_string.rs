@@ -1,4 +1,5 @@
 use core::{
+    alloc::AllocError,
     borrow::{Borrow, BorrowMut},
     fmt::{self, Debug, Display},
     hash::Hash,
@@ -9,9 +10,7 @@ use core::{
 };
 
 use crate::{
-    BumpBox, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop,
-    alloc::AllocError,
-    owned_str,
+    BumpBox, BumpString, ErrorBehavior, FixedBumpVec, FromUtf8Error, NoDrop, owned_str,
     polyfill::{self, non_null, transmute_mut},
     traits::BumpAllocatorTypedScope,
 };
@@ -172,7 +171,7 @@ impl<'a> FixedBumpString<'a> {
     ///
     /// // ...but another byte will not fit
     /// assert!(s.try_push('a').is_err());
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_with_capacity_in(capacity: usize, allocator: impl BumpAllocatorTypedScope<'a>) -> Result<Self, AllocError> {
@@ -384,7 +383,7 @@ impl<'a> FixedBumpString<'a> {
     /// This method does not allocate and does not change the order of the elements.
     ///
     /// The excess capacity may end up in either string.
-    /// This behavior is different from <code>String::[split_off](alloc_crate::string::String::split_off)</code> which allocates a new string for the split-off bytes
+    /// This behavior is different from <code>String::[split_off](alloc::string::String::split_off)</code> which allocates a new string for the split-off bytes
     /// so the original string keeps its capacity.
     /// To allocate a new string from the split-off bytes you can write:
     /// ```
@@ -908,7 +907,7 @@ impl FixedBumpString<'_> {
     /// s.try_push('c')?;
     ///
     /// assert_eq!(s, "abc");
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_push(&mut self, ch: char) -> Result<(), AllocError> {
@@ -962,7 +961,7 @@ impl FixedBumpString<'_> {
     /// s.try_push_str("bar")?;
     ///
     /// assert_eq!(s, "foobar");
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_push_str(&mut self, string: &str) -> Result<(), AllocError> {
@@ -1027,7 +1026,7 @@ impl FixedBumpString<'_> {
     /// s.try_insert(2, 'o')?;
     ///
     /// assert_eq!("foo", s);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_insert(&mut self, idx: usize, ch: char) -> Result<(), AllocError> {
@@ -1093,7 +1092,7 @@ impl FixedBumpString<'_> {
     /// s.try_insert_str(0, "foo")?;
     ///
     /// assert_eq!("foobar", s);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_insert_str(&mut self, idx: usize, string: &str) -> Result<(), AllocError> {
@@ -1163,7 +1162,7 @@ impl FixedBumpString<'_> {
     ///
     /// string.try_extend_from_within(4..8)?;
     /// assert_eq!(string, "abcdecdeabecde");
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_extend_from_within<R>(&mut self, src: R) -> Result<(), AllocError>
@@ -1217,7 +1216,7 @@ impl FixedBumpString<'_> {
     /// string.try_push_str("What?")?;
     /// string.try_extend_zeroed(3)?;
     /// assert_eq!(string, "What?\0\0\0");
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_extend_zeroed(&mut self, additional: usize) -> Result<(), AllocError> {
@@ -1299,7 +1298,7 @@ impl FixedBumpString<'_> {
     /// let mut s = FixedBumpString::try_with_capacity_in(5, &bump)?;
     /// s.push_str("hello");
     /// assert!(s.try_replace_range(4..=4, " n").is_err());
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_replace_range<R>(&mut self, range: R, replace_with: &str) -> Result<(), AllocError>
@@ -1537,10 +1536,10 @@ impl_partial_eq! {
     &str,
 
     #[cfg(feature = "alloc")]
-    alloc_crate::string::String,
+    alloc::string::String,
 
     #[cfg(feature = "alloc")]
-    alloc_crate::borrow::Cow<'_, str>,
+    alloc::borrow::Cow<'_, str>,
 }
 
 impl Eq for FixedBumpString<'_> {}
@@ -1613,7 +1612,7 @@ impl<'s> Extend<&'s char> for FixedBumpString<'_> {
 }
 
 #[cfg(feature = "alloc")]
-impl<'a> From<FixedBumpString<'a>> for alloc_crate::string::String {
+impl<'a> From<FixedBumpString<'a>> for alloc::string::String {
     #[inline]
     fn from(value: FixedBumpString<'a>) -> Self {
         value.as_str().into()

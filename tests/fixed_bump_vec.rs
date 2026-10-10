@@ -4,12 +4,13 @@
 mod common;
 
 use std::{
+    alloc::Global,
     boxed::Box,
     dbg, format,
     string::{String, ToString},
 };
 
-use bump_scope::{Bump, FixedBumpVec, alloc::Global, settings::BumpSettings};
+use bump_scope::{Bump, FixedBumpVec, settings::BumpSettings};
 
 use common::{either_way, expect_no_panic};
 

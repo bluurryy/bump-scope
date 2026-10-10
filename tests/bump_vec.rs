@@ -4,6 +4,7 @@
 mod common;
 
 use std::{
+    alloc::Global,
     boxed::Box,
     dbg, format,
     ops::Range,
@@ -11,9 +12,7 @@ use std::{
 };
 
 use bump_scope::{
-    Bump, BumpScope, BumpVec, WithoutDealloc, WithoutShrink,
-    alloc::Global,
-    bump_vec,
+    Bump, BumpScope, BumpVec, WithoutDealloc, WithoutShrink, bump_vec,
     settings::{BumpAllocatorSettings, BumpSettings},
     traits::{
         BumpAllocatorCore, BumpAllocatorCoreScope, BumpAllocatorTyped, MutBumpAllocatorCore, MutBumpAllocatorCoreScope,

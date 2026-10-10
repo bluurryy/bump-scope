@@ -1,8 +1,8 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 
-use std::alloc::Layout;
+use std::alloc::{Global, Layout};
 
-use bump_scope::{Bump, alloc::Global, settings::BumpSettings, traits::BumpAllocatorTyped as _};
+use bump_scope::{Bump, settings::BumpSettings, traits::BumpAllocatorTyped as _};
 
 #[test]
 fn test_reserve() {

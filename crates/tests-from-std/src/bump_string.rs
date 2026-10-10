@@ -1,11 +1,11 @@
 //! Adapted from rust's `library/alloctests/tests/string.rs` commit 787af2b8c80638c51a4fc8e44f84e6891f243ec7
 
+use std::alloc::Global;
 use std::cell::Cell;
 use std::ops::Bound::*;
 use std::ops::{Bound, RangeBounds};
 use std::{panic, str};
 
-use bump_scope::alloc::Global;
 use bump_scope::bump_format;
 use bump_scope::traits::BumpAllocatorTyped;
 

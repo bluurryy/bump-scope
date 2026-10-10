@@ -1,9 +1,11 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 // copied from examples/limit_memory_usage.rs
 
-use std::{alloc::Layout, cell::Cell, ptr::NonNull};
-
-use bump_scope::alloc::{AllocError, Allocator};
+use std::{
+    alloc::{AllocError, Allocator, Layout},
+    cell::Cell,
+    ptr::NonNull,
+};
 
 #[derive(Clone)]
 pub(crate) struct Limited<A> {

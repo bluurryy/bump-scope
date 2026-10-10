@@ -6,13 +6,15 @@ macro_rules! bytemuck_or_zerocopy {
     ) => {
         #[doc = concat!("Extension traits for zero-initializable types using [`", $name, "::", stringify!($trait), "`](::", stringify!($mod), "::", stringify!($trait), ").")]
         pub mod $mod {
-            use core::mem::MaybeUninit;
+            use core::{
+                alloc::AllocError,
+                mem::MaybeUninit,
+            };
 
             use ::$mod::$trait;
 
             use crate::{
                 BumpBox, BumpVec, ErrorBehavior, FixedBumpVec, MutBumpVec, MutBumpVecRev,
-                alloc::AllocError,
                 traits::{BumpAllocatorTyped, BumpAllocatorTypedScope, MutBumpAllocatorTyped},
             };
 
@@ -117,7 +119,7 @@ macro_rules! bytemuck_or_zerocopy {
                 ///
                 /// let zero = bump.as_scope().try_alloc_zeroed::<i32>()?;
                 /// assert_eq!(*zero, 0);
-                /// # Ok::<(), bump_scope::alloc::AllocError>(())
+                /// # Ok::<(), ::core::alloc::AllocError>(())
                 /// ```
                 #[inline(always)]
                 fn try_alloc_zeroed<T>(&self) -> Result<BumpBox<'a, T>, AllocError>
@@ -160,7 +162,7 @@ macro_rules! bytemuck_or_zerocopy {
                 ///
                 /// let zeroes = bump.as_scope().try_alloc_zeroed_slice::<i32>(3)?;
                 /// assert_eq!(*zeroes, [0; 3]);
-                /// # Ok::<(), bump_scope::alloc::AllocError>(())
+                /// # Ok::<(), ::core::alloc::AllocError>(())
                 /// ```
                 fn try_alloc_zeroed_slice<T>(&self, len: usize) -> Result<BumpBox<'a, [T]>, AllocError>
                 where
@@ -224,7 +226,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
                 /// vec.try_extend_zeroed(2)?;
                 /// assert_eq!(vec, [1, 2, 3, 0, 0]);
-                /// # Ok::<(), bump_scope::alloc::AllocError>(())
+                /// # Ok::<(), ::core::alloc::AllocError>(())
                 /// ```
                 fn try_extend_zeroed(&mut self, additional: usize) -> Result<(), AllocError>
                 where
@@ -280,7 +282,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
                 /// vec.try_resize_zeroed(2)?;
                 /// assert_eq!(vec, [1, 2]);
-                /// # Ok::<(), bump_scope::alloc::AllocError>(())
+                /// # Ok::<(), ::core::alloc::AllocError>(())
                 /// ```
                 fn try_resize_zeroed(&mut self, new_len: usize) -> Result<(), AllocError>
                 where
@@ -332,7 +334,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// vec.try_extend_from_slice_copy(&[1, 2, 3])?;
                 /// vec.try_extend_zeroed(2)?;
                 /// assert_eq!(vec, [1, 2, 3, 0, 0]);
-                /// # Ok::<(), bump_scope::alloc::AllocError>(())
+                /// # Ok::<(), ::core::alloc::AllocError>(())
                 /// ```
                 #[inline(always)]
                 fn try_extend_zeroed(&mut self, additional: usize) -> Result<(), AllocError>
@@ -400,7 +402,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// vec.try_extend_from_slice_copy(&[1, 2, 3])?;
                 /// vec.try_resize_zeroed(2)?;
                 /// assert_eq!(vec, [1, 2]);
-                /// # Ok::<(), bump_scope::alloc::AllocError>(())
+                /// # Ok::<(), ::core::alloc::AllocError>(())
                 /// ```
                 #[inline(always)]
                 fn try_resize_zeroed(&mut self, new_len: usize) -> Result<(), AllocError>
@@ -454,7 +456,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
                 /// vec.try_extend_zeroed(2)?;
                 /// assert_eq!(vec, [1, 2, 3, 0, 0]);
-                /// # Ok::<(), bump_scope::alloc::AllocError>(())
+                /// # Ok::<(), ::core::alloc::AllocError>(())
                 /// ```
                 #[inline(always)]
                 fn try_extend_zeroed(&mut self, additional: usize) -> Result<(), AllocError>
@@ -518,7 +520,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// let mut vec = bump_vec![try in &bump; 1, 2, 3]?;
                 /// vec.try_resize_zeroed(2)?;
                 /// assert_eq!(vec, [1, 2]);
-                /// # Ok::<(), bump_scope::alloc::AllocError>(())
+                /// # Ok::<(), ::core::alloc::AllocError>(())
                 /// ```
                 #[inline(always)]
                 fn try_resize_zeroed(&mut self, new_len: usize) -> Result<(), AllocError>
@@ -572,7 +574,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// let mut vec = mut_bump_vec![try in &mut bump; 1, 2, 3]?;
                 /// vec.try_extend_zeroed(2)?;
                 /// assert_eq!(vec, [1, 2, 3, 0, 0]);
-                /// # Ok::<(), bump_scope::alloc::AllocError>(())
+                /// # Ok::<(), ::core::alloc::AllocError>(())
                 /// ```
                 #[inline(always)]
                 fn try_extend_zeroed(&mut self, additional: usize) -> Result<(), AllocError>
@@ -644,7 +646,7 @@ macro_rules! bytemuck_or_zerocopy {
                 ///    vec.try_resize_zeroed(2)?;
                 ///    assert_eq!(vec, [1, 2]);
                 /// }
-                /// # Ok::<(), bump_scope::alloc::AllocError>(())
+                /// # Ok::<(), ::core::alloc::AllocError>(())
                 /// ```
                 #[inline(always)]
                 fn try_resize_zeroed(&mut self, new_len: usize) -> Result<(), AllocError>
@@ -698,7 +700,7 @@ macro_rules! bytemuck_or_zerocopy {
                 /// let mut vec = mut_bump_vec_rev![try in &mut bump; 1, 2, 3]?;
                 /// vec.try_extend_zeroed(2)?;
                 /// assert_eq!(vec, [0, 0, 1, 2, 3]);
-                /// # Ok::<(), bump_scope::alloc::AllocError>(())
+                /// # Ok::<(), ::core::alloc::AllocError>(())
                 /// ```
                 #[inline(always)]
                 fn try_extend_zeroed(&mut self, additional: usize) -> Result<(), AllocError>
@@ -770,7 +772,7 @@ macro_rules! bytemuck_or_zerocopy {
                 ///     vec.try_resize_zeroed(2)?;
                 ///     assert_eq!(vec, [2, 3]);
                 /// }
-                /// # Ok::<(), bump_scope::alloc::AllocError>(())
+                /// # Ok::<(), ::core::alloc::AllocError>(())
                 /// ```
                 #[inline(always)]
                 fn try_resize_zeroed(&mut self, new_len: usize) -> Result<(), AllocError>

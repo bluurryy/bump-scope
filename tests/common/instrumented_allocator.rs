@@ -1,12 +1,10 @@
 use std::{
-    alloc::Layout,
+    alloc::{AllocError, Allocator, Layout},
     cell::{Ref, RefCell},
     collections::HashMap,
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::NonNull,
 };
-
-use bump_scope::alloc::{AllocError, Allocator};
 
 #[derive(Default)]
 pub(crate) struct InstrumentedAllocator<A: Allocator> {

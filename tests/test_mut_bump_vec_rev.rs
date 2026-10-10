@@ -3,6 +3,7 @@
 mod common;
 
 use std::{
+    alloc::Global,
     dbg,
     ops::Range,
     string::{String, ToString},
@@ -10,7 +11,6 @@ use std::{
 
 use bump_scope::{
     Bump, BumpScope, MutBumpVecRev,
-    alloc::Global,
     settings::BumpSettings,
     traits::{MutBumpAllocatorCoreScope, MutBumpAllocatorTypedScope},
 };

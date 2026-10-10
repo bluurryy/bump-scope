@@ -1,5 +1,5 @@
 use core::{
-    alloc::Layout,
+    alloc::{AllocError, Allocator, Layout},
     ffi::CStr,
     fmt::{self, Debug},
     mem::{ManuallyDrop, MaybeUninit},
@@ -11,9 +11,7 @@ use core::{
 use core::clone::CloneToUninit;
 
 use crate::{
-    BaseAllocator, BumpBox, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, ErrorBehavior,
-    alloc::{AllocError, Allocator},
-    allocator_impl,
+    BaseAllocator, BumpBox, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, ErrorBehavior, allocator_impl,
     chunk::{ChunkSizeCapacity, ChunkSizeHint},
     maybe_default_allocator,
     owned_slice::OwnedSlice,
@@ -92,10 +90,8 @@ macro_rules! make_type {
         ///
         /// ... and collections from crates that use `allocator_api2`'s `Allocator` like [hashbrown](https://docs.rs/hashbrown)'s [`HashMap`](https://docs.rs/hashbrown/latest/hashbrown/struct.HashMap.html):
         ///
-        /// *This requires the `allocator-api2-02` feature OR the `nightly-allocator-api` feature along with hashbrown's `nightly` feature.*
+        /// *At the time of writing (2026-10-10) this requires hashbrown's `nightly` feature.*
         // NOTE: This code is tested in `crates/test-hashbrown/lib.rs`.
-        // It's not tested here because using hashbrown requires us to either have both the crate features for a nightly allocator api in bump-scope and hashbrown or neither.
-        // This could be solved by making bump-scope's "nightly-allocator-api" depend on "hashbrown/nightly" but that currently breaks tools like cargo-hack and cargo-minimal-versions.
         /// ```
         /// # /*
         /// use bump_scope::Bump;
@@ -108,29 +104,41 @@ macro_rules! make_type {
         /// # ()
         /// ```
         ///
-        /// On nightly and with the feature `nightly-allocator-api` you can also allocate collections from `std` that have an allocator parameter:
-        #[cfg_attr(feature = "nightly-allocator-api", doc = "```")]
-        #[cfg_attr(not(feature = "nightly-allocator-api"), doc = "```no_run")]
+        /// On stable you can allocate collections like `Box` and `Vec`.
+        /// ```
+        /// use bump_scope::Bump;
+        ///
+        /// let bump: Bump = Bump::new();
+        /// let boxed = Box::new_in(123, &bump);
+        /// let vec = Vec::new_in(&bump);
+        /// # let _: Box<i32, _> = boxed;
+        /// # let _: Vec<i32, _> = vec;
+        /// ```
+        ///
+        /// With the nightly feature `allocator_ext` you can allocate more collections from `std`:
+        /// ```
         /// # /*
         /// # those features are already been enabled by a `doc(test(attr`
         /// # but we still want it here for demonstration
-        /// #![feature(allocator_api, btreemap_alloc)]
+        /// #![feature(allocator_ext)]
         /// # */
-        /// # #[cfg(feature = "nightly-allocator-api")] fn main() {
+        /// # #[cfg(feature = "nightly-tests")]
+        /// # fn main() {
         /// use bump_scope::Bump;
-        /// use std::collections::{VecDeque, BTreeMap, LinkedList};
+        /// # // use std::collections::{VecDeque, BTreeMap, LinkedList};
+        /// use std::collections::{VecDeque, LinkedList};
         ///
         /// let bump: Bump = Bump::new();
-        /// let vec = Vec::new_in(&bump);
         /// let queue = VecDeque::new_in(&bump);
+        /// # /* FIXME: uncomment once BTreeMap uses allocator_ext instead of btreemap_alloc feature
         /// let map = BTreeMap::new_in(&bump);
+        /// # */
         /// let list = LinkedList::new_in(&bump);
-        /// # let _: Vec<i32, _> = vec;
         /// # let _: VecDeque<i32, _> = queue;
-        /// # let _: BTreeMap<i32, i32, _> = map;
+        /// # // let _: BTreeMap<i32, i32, _> = map;
         /// # let _: LinkedList<i32, _> = list;
         /// # }
-        /// # #[cfg(not(feature = "nightly-allocator-api"))] fn main() {}
+        /// # #[cfg(not(feature = "nightly-tests"))] fn main() {}
         /// ```
         ///
         /// [`alloc`]: BumpAllocatorTypedScope::alloc
@@ -326,8 +334,9 @@ where
     /// # Examples
     ///
     /// ```
+    /// use std::alloc::Global;
+    ///
     /// use bump_scope::{
-    ///     alloc::Global,
     ///     Bump,
     ///     settings::{BumpSettings, BumpAllocatorSettings}
     /// };
@@ -388,7 +397,7 @@ where
     ///
     /// let bump: Bump = Bump::try_new()?;
     /// # _ = bump;
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
     /// [try_with_size]: Bump::try_with_size
@@ -452,7 +461,7 @@ where
     /// // `Bump` with a roughly 1 Mebibyte sized chunk
     /// let bump_1mib: Bump = Bump::try_with_size(1024 * 1024)?;
     /// # _ = bump_1mib;
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_with_size(size: usize) -> Result<Self, AllocError> {
@@ -502,7 +511,7 @@ where
     /// let layout = Layout::array::<u8>(1234).unwrap();
     /// let bump: Bump = Bump::try_with_capacity(layout)?;
     /// assert!(bump.stats().capacity() >= layout.size());
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_with_capacity(layout: Layout) -> Result<Self, AllocError> {
@@ -530,8 +539,8 @@ where
     ///
     /// # Examples
     /// ```
+    /// use std::alloc::Global;
     /// use bump_scope::Bump;
-    /// use bump_scope::alloc::Global;
     ///
     /// let bump: Bump = Bump::new_in(Global);
     /// # _ = bump;
@@ -555,12 +564,12 @@ where
     ///
     /// # Examples
     /// ```
+    /// use std::alloc::Global;
     /// use bump_scope::Bump;
-    /// use bump_scope::alloc::Global;
     ///
     /// let bump: Bump = Bump::try_new_in(Global)?;
     /// # _ = bump;
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
     /// [try_with_size_in]: Bump::try_with_size_in
@@ -588,8 +597,8 @@ where
     ///
     /// # Examples
     /// ```
+    /// use std::alloc::Global;
     /// use bump_scope::Bump;
-    /// use bump_scope::alloc::Global;
     ///
     /// // `Bump` with a roughly 1 Mebibyte sized chunk
     /// let bump_1mib: Bump = Bump::with_size_in(1024 * 1024, Global);
@@ -620,13 +629,13 @@ where
     ///
     /// # Examples
     /// ```
+    /// use std::alloc::Global;
     /// use bump_scope::Bump;
-    /// use bump_scope::alloc::Global;
     ///
     /// // `Bump` with a roughly 1 Mebibyte sized chunk
     /// let bump_1mib: Bump = Bump::try_with_size_in(1024 * 1024, Global)?;
     /// # _ = bump_1mib;
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_with_size_in(size: usize, allocator: A) -> Result<Self, AllocError> {
@@ -649,14 +658,13 @@ where
     ///
     /// # Examples
     /// ```
+    /// use std::alloc::{Global, Layout};
     /// use bump_scope::Bump;
-    /// use bump_scope::alloc::Global;
-    /// use core::alloc::Layout;
     ///
     /// let layout = Layout::array::<u8>(1234).unwrap();
     /// let bump: Bump = Bump::with_capacity_in(layout, Global);
     /// assert!(bump.stats().capacity() >= layout.size());
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[must_use]
     #[inline(always)]
@@ -674,14 +682,14 @@ where
     ///
     /// # Examples
     /// ```
+    /// use std::alloc::{Global, Layout};
+    ///
     /// use bump_scope::Bump;
-    /// use bump_scope::alloc::Global;
-    /// use core::alloc::Layout;
     ///
     /// let layout = Layout::array::<u8>(1234).unwrap();
     /// let bump: Bump = Bump::try_with_capacity_in(layout, Global)?;
     /// assert!(bump.stats().capacity() >= layout.size());
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_with_capacity_in(layout: Layout, allocator: A) -> Result<Self, AllocError> {
@@ -1023,7 +1031,7 @@ where
     /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Ok(123) })?;
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[cfg_attr(feature = "nightly-tests", doc = "```")]
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
@@ -1032,7 +1040,7 @@ where
     /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Err(123) })?;
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_alloc_try_with<T, E>(
@@ -1096,7 +1104,7 @@ where
     /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) })?;
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[cfg_attr(feature = "nightly-tests", doc = "```")]
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
@@ -1105,7 +1113,7 @@ where
     /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) })?;
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_alloc_try_with_mut<T, E>(

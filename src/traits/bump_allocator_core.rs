@@ -1,8 +1,11 @@
-use core::{alloc::Layout, ops::Range, ptr::NonNull};
+use core::{
+    alloc::{AllocError, Allocator, Layout},
+    ops::Range,
+    ptr::NonNull,
+};
 
 use crate::{
     BaseAllocator, Bump, BumpScope, Checkpoint, WithoutDealloc, WithoutShrink,
-    alloc::{AllocError, Allocator},
     layout::CustomLayout,
     raw_bump::Chunk,
     settings::BumpAllocatorSettings,

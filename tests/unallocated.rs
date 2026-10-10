@@ -2,10 +2,9 @@
 
 mod common;
 
-use std::alloc::Layout;
+use std::alloc::{Allocator, Global, Layout};
 
 use bump_scope::{
-    alloc::{Allocator, Global},
     settings::BumpSettings,
     traits::{BumpAllocatorCore, BumpAllocatorTyped},
 };

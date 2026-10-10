@@ -1,8 +1,11 @@
-use std::{alloc::Layout, fmt::Debug, mem};
+use std::{
+    alloc::{Global, Layout},
+    fmt::Debug,
+    mem,
+};
 
 use arbitrary::Arbitrary;
 use bump_scope::{
-    alloc::Global,
     settings::{MinimumAlignment, SupportedMinimumAlignment},
     traits::BumpAllocatorTyped,
 };

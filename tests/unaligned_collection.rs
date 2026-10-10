@@ -2,9 +2,9 @@
 
 mod common;
 
-use std::dbg;
+use std::{alloc::Global, dbg};
 
-use bump_scope::{Bump, BumpVec, MutBumpVec, MutBumpVecRev, alloc::Global, settings::BumpSettings};
+use bump_scope::{Bump, BumpVec, MutBumpVec, MutBumpVecRev, settings::BumpSettings};
 
 use common::either_way;
 

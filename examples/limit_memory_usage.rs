@@ -1,11 +1,12 @@
-#![cfg(feature = "alloc")]
+#![cfg(feature = "std")]
 
-use std::{alloc::Layout, cell::Cell, ptr::NonNull};
-
-use bump_scope::{
-    alloc::{AllocError, Allocator, Global},
-    settings::{BumpAllocatorSettings, BumpSettings},
+use std::{
+    alloc::{AllocError, Allocator, Global, Layout},
+    cell::Cell,
+    ptr::NonNull,
 };
+
+use bump_scope::settings::{BumpAllocatorSettings, BumpSettings};
 
 struct Limited<A> {
     current: Cell<usize>,

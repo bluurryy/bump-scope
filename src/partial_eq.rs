@@ -96,7 +96,7 @@ impl_str_eq! { [A] &mut str, MutBumpString<A> }
 mod alloc_impl {
     use super::*;
 
-    use alloc_crate::{borrow::Cow, string::String};
+    use alloc::{borrow::Cow, string::String};
 
     impl_str_eq! { [A: BumpAllocatorTyped] BumpString<A>, String }
     impl_str_eq! { [A: BumpAllocatorTyped] String, BumpString<A> }

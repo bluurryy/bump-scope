@@ -3,16 +3,12 @@ name = "test-no-panic"
 edition = "2021"
 
 [dependencies]
+bump-scope = { path = "../..", default-features = false, features = [
+  "alloc",
+  "zerocopy-08",
+] }
 anstream = { version = "1.0.0", default-features = false }
 anstyle = { version = "1.0.14", default-features = false }
-bump-scope = {
-  path = "../..",
-  default-features = false,
-  features = [
-    "alloc",
-    "zerocopy-08",
-  ]
-}
 
 [features]
 nightly = ["bump-scope/nightly"]

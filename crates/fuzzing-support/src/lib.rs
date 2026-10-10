@@ -1,13 +1,16 @@
 #![feature(pointer_is_aligned_to)]
 #![expect(clippy::cargo_common_metadata)]
 
-use std::{alloc::Layout, cell::Cell, ops::Deref, ptr::NonNull, rc::Rc};
+use std::{
+    alloc::{AllocError, Allocator, Global, Layout},
+    cell::Cell,
+    ops::Deref,
+    ptr::NonNull,
+    rc::Rc,
+};
 
 use arbitrary::{Arbitrary, Unstructured};
-use bump_scope::{
-    alloc::{AllocError, Allocator, Global},
-    settings::BumpSettings,
-};
+use bump_scope::settings::BumpSettings;
 
 pub use arbitrary;
 pub use bump_scope;

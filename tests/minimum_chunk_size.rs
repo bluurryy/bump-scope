@@ -2,7 +2,9 @@
 
 mod common;
 
-use bump_scope::{Bump, alloc::Global, settings::BumpSettings};
+use std::alloc::Global;
+
+use bump_scope::{Bump, settings::BumpSettings};
 use common::either_way;
 
 either_way! {

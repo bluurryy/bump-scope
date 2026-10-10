@@ -4,11 +4,12 @@
 mod common;
 
 use std::{
+    alloc::Global,
     io::{ErrorKind, IoSlice, Write},
     vec::Vec,
 };
 
-use bump_scope::{Bump, BumpVec, FixedBumpVec, MutBumpVec, alloc::Global};
+use bump_scope::{Bump, BumpVec, FixedBumpVec, MutBumpVec};
 
 use common::Limited;
 

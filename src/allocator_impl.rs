@@ -1,8 +1,12 @@
-use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
+use core::{
+    alloc::{AllocError, Layout},
+    num::NonZeroUsize,
+    ptr::NonNull,
+};
 
 use crate::{
-    BaseAllocator, alloc::AllocError, bump_down, layout::CustomLayout, polyfill::non_null, raw_bump::RawBump,
-    settings::BumpAllocatorSettings, up_align_usize_unchecked,
+    BaseAllocator, bump_down, layout::CustomLayout, polyfill::non_null, raw_bump::RawBump, settings::BumpAllocatorSettings,
+    up_align_usize_unchecked,
 };
 
 #[inline(always)]

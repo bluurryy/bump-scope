@@ -3,7 +3,7 @@
 mod common;
 
 use std::{
-    alloc::Layout,
+    alloc::{AllocError, Allocator, Global, Layout},
     cell::Cell,
     mem::ManuallyDrop,
     panic::{RefUnwindSafe, catch_unwind},
@@ -11,10 +11,7 @@ use std::{
 };
 
 use bump_scope::{
-    Bump, BumpVec, MutBumpVec, MutBumpVecRev,
-    alloc::{AllocError, Allocator, Global},
-    bump_vec, mut_bump_vec, mut_bump_vec_rev,
-    settings::BumpSettings,
+    Bump, BumpVec, MutBumpVec, MutBumpVecRev, bump_vec, mut_bump_vec, mut_bump_vec_rev, settings::BumpSettings,
 };
 
 macro_rules! zst_or_not {

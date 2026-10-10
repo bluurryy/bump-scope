@@ -51,7 +51,9 @@
 //!
 //! You can configure the allocator settings using [`BumpSettings`]:
 //! ```
-//! use bump_scope::{ Bump, alloc::Global, settings::BumpSettings };
+//! use std::alloc::Global;
+//!
+//! use bump_scope::{ Bump, settings::BumpSettings };
 //!
 //! type MyBumpSettings = BumpSettings<
 //!     /* MIN_ALIGN */ 8,
@@ -97,9 +99,9 @@
 //! [alloc_fmt]: crate::traits::BumpAllocatorTypedScope::alloc_fmt
 //! [alloc_fmt_mut]: crate::traits::MutBumpAllocatorTypedScope::alloc_fmt_mut
 //! [`alloc_iter_mut_rev`]: crate::traits::MutBumpAllocatorTypedScope::alloc_iter_mut_rev
-//! [`Allocator::allocate`]: crate::alloc::Allocator::allocate
-//! [`Allocator::deallocate`]: crate::alloc::Allocator::deallocate
-//! [`Allocator::shrink`]: crate::alloc::Allocator::shrink
+//! [`Allocator::allocate`]: core::alloc::Allocator::allocate
+//! [`Allocator::deallocate`]: core::alloc::Allocator::deallocate
+//! [`Allocator::shrink`]: core::alloc::Allocator::shrink
 //! [`BumpAllocatorTyped::shrink_slice`]: crate::traits::BumpAllocatorTyped::shrink_slice
 //! [`by_value`]: crate::BumpScope::by_value
 

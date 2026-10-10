@@ -1,5 +1,5 @@
 use core::{
-    alloc::Layout,
+    alloc::{AllocError, Allocator, Layout},
     ffi::CStr,
     fmt::{self, Debug},
     marker::PhantomData,
@@ -13,7 +13,6 @@ use core::clone::CloneToUninit;
 
 use crate::{
     BaseAllocator, BumpBox, BumpClaimGuard, BumpScopeGuard, Checkpoint, ErrorBehavior, NoDrop, SizedTypeProperties,
-    alloc::{AllocError, Allocator},
     allocator_impl, down_align_usize, maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{non_null, transmute_mut, transmute_ref, transmute_value},
@@ -28,7 +27,7 @@ use crate::{
 };
 
 #[cfg(feature = "alloc")]
-use crate::alloc::Global;
+use alloc::alloc::Global;
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
@@ -327,7 +326,7 @@ where
     /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Ok(123) })?;
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[cfg_attr(feature = "nightly-tests", doc = "```")]
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
@@ -336,7 +335,7 @@ where
     /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Err(123) })?;
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_alloc_try_with<T, E>(
@@ -457,7 +456,7 @@ where
     /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) })?;
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[cfg_attr(feature = "nightly-tests", doc = "```")]
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
@@ -466,7 +465,7 @@ where
     /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) })?;
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_alloc_try_with_mut<T, E>(

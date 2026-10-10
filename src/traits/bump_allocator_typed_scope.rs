@@ -1,11 +1,10 @@
-use core::{ffi::CStr, fmt, mem::MaybeUninit, ptr::NonNull};
+use core::{alloc::AllocError, ffi::CStr, fmt, mem::MaybeUninit, ptr::NonNull};
 
 #[cfg(feature = "nightly-clone-to-uninit")]
 use core::{alloc::Layout, clone::CloneToUninit, ptr};
 
 use crate::{
     BumpBox, BumpString, BumpVec, SizedTypeProperties,
-    alloc::AllocError,
     owned_slice::OwnedSlice,
     traits::{BumpAllocatorCoreScope, BumpAllocatorTyped, assert_implements},
 };
@@ -44,7 +43,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc(123)?;
     /// assert_eq!(allocated, 123);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc<T>(&self, value: T) -> Result<BumpBox<'a, T>, AllocError> {
@@ -90,7 +89,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_with(|| 123)?;
     /// assert_eq!(allocated, 123);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc_with<T>(&self, f: impl FnOnce() -> T) -> Result<BumpBox<'a, T>, AllocError> {
@@ -130,7 +129,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_default()?;
     /// assert_eq!(allocated, 0);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc_default<T: Default>(&self) -> Result<BumpBox<'a, T>, AllocError> {
@@ -238,7 +237,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     ///
     /// let cloned = bump.try_alloc_clone(Path::new("foo"))?;
     /// assert_eq!(cloned, Path::new("foo"));
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
     /// Allocate a trait object:
@@ -267,7 +266,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// let object_clone = bump.try_alloc_clone(object)?;
     ///
     /// assert_eq!(object_clone(), "Hello, world!");
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[cfg(feature = "nightly-clone-to-uninit")]
     fn try_alloc_clone<T: CloneToUninit + ?Sized>(&self, value: &T) -> Result<BumpBox<'a, T>, AllocError> {
@@ -346,7 +345,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// let five = uninit.init(5);
     ///
     /// assert_eq!(*five, 5);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
     /// Unsafely:
@@ -361,7 +360,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// };
     ///
     /// assert_eq!(*five, 5);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc_uninit<T>(&self) -> Result<BumpBox<'a, MaybeUninit<T>>, AllocError> {
@@ -426,7 +425,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// assert_eq!(b, [3, 4]);
     /// assert_eq!(c, [5, 6]);
     /// assert_eq!(d, [7, 8]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc_slice_move<T>(&self, slice: impl OwnedSlice<Item = T>) -> Result<BumpBox<'a, [T]>, AllocError> {
@@ -473,7 +472,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_slice_copy(&[1, 2, 3])?;
     /// assert_eq!(allocated, [1, 2, 3]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc_slice_copy<T: Copy>(&self, slice: &[T]) -> Result<BumpBox<'a, [T]>, AllocError> {
@@ -524,7 +523,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_slice_clone(&[String::from("a"), String::from("b")])?;
     /// assert_eq!(allocated, [String::from("a"), String::from("b")]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc_slice_clone<T: Clone>(&self, slice: &[T]) -> Result<BumpBox<'a, [T]>, AllocError> {
@@ -568,7 +567,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_slice_fill(3, "ho")?;
     /// assert_eq!(allocated, ["ho", "ho", "ho"]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc_slice_fill<T: Clone>(&self, len: usize, value: T) -> Result<BumpBox<'a, [T]>, AllocError> {
@@ -622,7 +621,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_slice_fill_with::<i32>(3, Default::default)?;
     /// assert_eq!(allocated, [0, 0, 0]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc_slice_fill_with<T>(&self, len: usize, f: impl FnMut() -> T) -> Result<BumpBox<'a, [T]>, AllocError> {
@@ -708,7 +707,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// let values = uninit.init_copy(&[1, 2, 3]);
     ///
     /// assert_eq!(values, [1, 2, 3]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
     /// Unsafely:
@@ -726,7 +725,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// };
     ///
     /// assert_eq!(values, [1, 2, 3]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc_uninit_slice<T>(&self, len: usize) -> Result<BumpBox<'a, [MaybeUninit<T>]>, AllocError> {
@@ -796,7 +795,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// let slice = &[1, 2, 3];
     /// let uninit_slice = bump.try_alloc_uninit_slice_for(slice)?;
     /// assert_eq!(uninit_slice.len(), 3);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc_uninit_slice_for<T>(&self, slice: &[T]) -> Result<BumpBox<'a, [MaybeUninit<T>]>, AllocError> {
@@ -840,7 +839,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_str("Hello, world!")?;
     /// assert_eq!(allocated, "Hello, world!");
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc_str(&self, src: &str) -> Result<BumpBox<'a, str>, AllocError> {
@@ -905,7 +904,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// let string = bump.try_alloc_fmt(format_args!("{one} + {two} = {}", one + two))?;
     ///
     /// assert_eq!(string, "1 + 2 = 3");
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc_fmt(&self, args: fmt::Arguments) -> Result<BumpBox<'a, str>, AllocError> {
@@ -950,7 +949,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # let bump: Bump = Bump::new();
     /// let allocated = bump.try_alloc_cstr(c"Hello, world!")?;
     /// assert_eq!(allocated, c"Hello, world!");
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc_cstr(&self, src: &CStr) -> Result<&'a CStr, AllocError> {
@@ -1016,7 +1015,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     ///
     /// let allocated = bump.try_alloc_cstr_from_str("abc\0def")?;
     /// assert_eq!(allocated, c"abc");
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc_cstr_from_str(&self, src: &str) -> Result<&'a CStr, AllocError> {
@@ -1103,7 +1102,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     ///
     /// let one = bump.try_alloc_cstr_fmt(format_args!("{one}\0{two}"))?;
     /// assert_eq!(one, c"1");
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc_cstr_fmt(&self, args: fmt::Arguments) -> Result<&'a CStr, AllocError> {
@@ -1165,7 +1164,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # let bump: Bump = Bump::new();
     /// let slice = bump.try_alloc_iter([1, 2, 3])?;
     /// assert_eq!(slice, [1, 2, 3]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
     /// [`try_alloc_iter_exact`]: crate::traits::BumpAllocatorTypedScope::try_alloc_iter_exact
@@ -1229,7 +1228,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # let bump: Bump = Bump::new();
     /// let slice = bump.try_alloc_iter_exact([1, 2, 3])?;
     /// assert_eq!(slice, [1, 2, 3]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     fn try_alloc_iter_exact<T, I>(

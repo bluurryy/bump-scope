@@ -4,15 +4,13 @@ use core::alloc::Layout;
 use core::num::NonZero;
 use core::ptr::NonNull;
 use core::{assert_eq, assert_ne};
-use std::alloc::System;
+use std::alloc::{AllocError, Allocator, Global, System};
 use std::cell::Cell;
 use std::fmt::Debug;
 use std::hint;
 use std::mem::swap;
 use std::panic::catch_unwind;
 use std::sync::atomic::{AtomicU32, Ordering};
-
-use bump_scope::alloc::{AllocError, Allocator, Global};
 
 use crate::struct_with_counted_drop;
 

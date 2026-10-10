@@ -2,10 +2,12 @@
 #![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
 #![allow(clippy::result_large_err)]
 
+use std::alloc::Global;
+
 #[cfg(feature = "nightly-tests")]
 use std::mem::offset_of;
 
-use bump_scope::{Bump, alloc::Global, settings::BumpSettings};
+use bump_scope::{Bump, settings::BumpSettings};
 
 macro_rules! either_way {
     ($($(#[$attr:meta])* $ident:ident)*) => {

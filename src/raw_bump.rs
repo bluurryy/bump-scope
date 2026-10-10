@@ -1,5 +1,5 @@
 use core::{
-    alloc::Layout,
+    alloc::{AllocError, Allocator, Layout},
     cell::Cell,
     marker::PhantomData,
     num::NonZeroUsize,
@@ -9,7 +9,6 @@ use core::{
 
 use crate::{
     BaseAllocator, Checkpoint, SizedTypeProperties, align_pos,
-    alloc::{AllocError, Allocator},
     bumping::{BumpProps, BumpUp, MIN_CHUNK_ALIGN, bump_down, bump_prepare_down, bump_prepare_up, bump_up},
     chunk::{
         AllocatedChunkHeader, ChunkHeader, ChunkSize, ChunkSizeCapacity, ChunkSizeHint, ChunkSizeMinimum,

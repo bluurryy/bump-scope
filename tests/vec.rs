@@ -1,11 +1,10 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
-#![cfg(feature = "allocator-api2-02")]
 
 mod common;
 
-use allocator_api2_02::{boxed::Box, vec::Vec};
+use std::{alloc::Global, boxed::Box, vec::Vec};
 
-use bump_scope::{Bump, alloc::Global, settings::BumpSettings};
+use bump_scope::{Bump, settings::BumpSettings};
 
 use common::either_way;
 

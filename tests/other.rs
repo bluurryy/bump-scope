@@ -3,7 +3,7 @@
 mod common;
 
 use std::{
-    alloc::{Layout, System},
+    alloc::{AllocError, Allocator, Global, Layout, System},
     cell::Cell,
     fmt::Debug,
     io::IoSlice,
@@ -13,9 +13,8 @@ use std::{
 };
 
 use bump_scope::{
-    Bump, BumpBox, BumpScope, BumpString, BumpVec, MutBumpString, MutBumpVec, MutBumpVecRev,
-    alloc::{AllocError, Allocator, Global},
-    mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice,
+    Bump, BumpBox, BumpScope, BumpString, BumpVec, MutBumpString, MutBumpVec, MutBumpVecRev, mut_bump_format, mut_bump_vec,
+    mut_bump_vec_rev, owned_slice,
     settings::BumpSettings,
     stats::Chunk,
     traits::{BumpAllocator, BumpAllocatorTyped as _},
@@ -1043,9 +1042,8 @@ mod doc_layout_claim {
 
     impl<T> SizedTypeProperties for T {}
 
-    use bump_scope::alloc::Global;
     use core::{cell::Cell, ptr::NonNull};
-    use std::mem;
+    use std::{alloc::Global, mem};
     type Bump = bump_scope::Bump<Global>;
     type BumpScope = bump_scope::BumpScope<'static, Global>;
     type Comparand = Cell<NonNull<()>>;

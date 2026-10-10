@@ -87,7 +87,8 @@ pub trait BumpAllocatorScope<'a>: BumpAllocator + MutBumpAllocatorCoreScope<'a> 
     #[cfg_attr(feature = "nightly-tests", doc = "```")]
     #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
     /// # #![feature(pointer_is_aligned_to)]
-    /// # use bump_scope::{Bump, alloc::Global, settings::{BumpSettings, BumpAllocatorSettings}};
+    /// # use std::alloc::Global;
+    /// # use bump_scope::{Bump, settings::{BumpSettings, BumpAllocatorSettings}};
     /// type Settings = <BumpSettings as BumpAllocatorSettings>::WithMinimumAlignment<8>;
     ///
     /// let mut bump: Bump<Global, Settings> = Bump::new();

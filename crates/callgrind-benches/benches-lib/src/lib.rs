@@ -6,11 +6,59 @@ use allocator_api2::alloc::{AllocError, Allocator};
 // to make it easier to work with the const generic `MIN_ALIGN`.
 mod wrapper {
     pub(crate) mod bump_scope_up {
-        use ::allocator_api2::alloc::Allocator;
+        use ::allocator_api2::alloc::{AllocError, Allocator};
         use ::bump_scope::settings::{BumpSettings, MinimumAlignment, SupportedMinimumAlignment};
+        use ::std::{
+            alloc::{Allocator as _, Global, Layout},
+            ptr::NonNull,
+        };
+
+        unsafe impl<const MIN_ALIGN: usize> Allocator for Bump<MIN_ALIGN>
+        where
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        {
+            fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+                self.0.allocate(layout).map_err(|_| AllocError)
+            }
+
+            unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+                unsafe { self.0.deallocate(ptr, layout) };
+            }
+
+            fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+                self.0.allocate_zeroed(layout).map_err(|_| AllocError)
+            }
+
+            unsafe fn grow(
+                &self,
+                ptr: NonNull<u8>,
+                old_layout: Layout,
+                new_layout: Layout,
+            ) -> Result<NonNull<[u8]>, AllocError> {
+                unsafe { self.0.grow(ptr, old_layout, new_layout).map_err(|_| AllocError) }
+            }
+
+            unsafe fn grow_zeroed(
+                &self,
+                ptr: NonNull<u8>,
+                old_layout: Layout,
+                new_layout: Layout,
+            ) -> Result<NonNull<[u8]>, AllocError> {
+                unsafe { self.0.grow_zeroed(ptr, old_layout, new_layout).map_err(|_| AllocError) }
+            }
+
+            unsafe fn shrink(
+                &self,
+                ptr: NonNull<u8>,
+                old_layout: Layout,
+                new_layout: Layout,
+            ) -> Result<NonNull<[u8]>, AllocError> {
+                unsafe { self.0.shrink(ptr, old_layout, new_layout).map_err(|_| AllocError) }
+            }
+        }
 
         #[repr(transparent)]
-        pub struct Bump<const MIN_ALIGN: usize = 1>(bump_scope::Bump<bump_scope::alloc::Global, BumpSettings<MIN_ALIGN>>)
+        pub struct Bump<const MIN_ALIGN: usize = 1>(bump_scope::Bump<Global, BumpSettings<MIN_ALIGN>>)
         where
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment;
 
@@ -56,7 +104,7 @@ mod wrapper {
 
             #[inline(always)]
             pub(crate) fn as_allocator(&self) -> impl Allocator {
-                &self.0
+                self
             }
 
             #[inline(always)]
@@ -67,13 +115,59 @@ mod wrapper {
     }
 
     pub(crate) mod bump_scope_down {
-        use ::allocator_api2::alloc::Allocator;
+        use ::allocator_api2::alloc::{AllocError, Allocator};
         use ::bump_scope::settings::{BumpSettings, MinimumAlignment, SupportedMinimumAlignment};
+        use ::std::{
+            alloc::{Allocator as _, Global, Layout},
+            ptr::NonNull,
+        };
+
+        unsafe impl<const MIN_ALIGN: usize> Allocator for Bump<MIN_ALIGN>
+        where
+            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
+        {
+            fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+                self.0.allocate(layout).map_err(|_| AllocError)
+            }
+
+            unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+                unsafe { self.0.deallocate(ptr, layout) };
+            }
+
+            fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+                self.0.allocate_zeroed(layout).map_err(|_| AllocError)
+            }
+
+            unsafe fn grow(
+                &self,
+                ptr: NonNull<u8>,
+                old_layout: Layout,
+                new_layout: Layout,
+            ) -> Result<NonNull<[u8]>, AllocError> {
+                unsafe { self.0.grow(ptr, old_layout, new_layout).map_err(|_| AllocError) }
+            }
+
+            unsafe fn grow_zeroed(
+                &self,
+                ptr: NonNull<u8>,
+                old_layout: Layout,
+                new_layout: Layout,
+            ) -> Result<NonNull<[u8]>, AllocError> {
+                unsafe { self.0.grow_zeroed(ptr, old_layout, new_layout).map_err(|_| AllocError) }
+            }
+
+            unsafe fn shrink(
+                &self,
+                ptr: NonNull<u8>,
+                old_layout: Layout,
+                new_layout: Layout,
+            ) -> Result<NonNull<[u8]>, AllocError> {
+                unsafe { self.0.shrink(ptr, old_layout, new_layout).map_err(|_| AllocError) }
+            }
+        }
 
         #[repr(transparent)]
-        pub struct Bump<const MIN_ALIGN: usize = 1>(
-            bump_scope::Bump<bump_scope::alloc::Global, BumpSettings<MIN_ALIGN, false>>,
-        )
+        pub struct Bump<const MIN_ALIGN: usize = 1>(bump_scope::Bump<Global, BumpSettings<MIN_ALIGN, false>>)
         where
             MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment;
 
@@ -119,7 +213,7 @@ mod wrapper {
 
             #[inline(always)]
             pub(crate) fn as_allocator(&self) -> impl Allocator {
-                &self.0
+                self
             }
 
             #[inline(always)]

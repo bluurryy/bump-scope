@@ -7,7 +7,7 @@ mod limited_allocator;
 mod test_wrap;
 
 use std::{
-    alloc::{Layout, System},
+    alloc::{AllocError, Allocator, Global, Layout, System},
     any::Any,
     boxed::Box,
     cell::Cell,
@@ -27,9 +27,8 @@ use std::{
 };
 
 use bump_scope::{
-    Bump, BumpBox, BumpScope, BumpString, BumpVec, MutBumpString, MutBumpVec, MutBumpVecRev,
-    alloc::{AllocError, Allocator, Global},
-    mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice,
+    Bump, BumpBox, BumpScope, BumpString, BumpVec, MutBumpString, MutBumpVec, MutBumpVecRev, mut_bump_format, mut_bump_vec,
+    mut_bump_vec_rev, owned_slice,
     settings::BumpSettings,
     stats::Chunk,
     traits::{BumpAllocator, BumpAllocatorTyped as _},

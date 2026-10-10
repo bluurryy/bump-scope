@@ -1,10 +1,10 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 
-use std::vec::Vec;
+use std::{alloc::Global, vec::Vec};
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use bump_scope::{BumpPool, alloc::Global};
+use bump_scope::BumpPool;
 
 macro_rules! either_way {
     ($($(#[$attr:meta])* $ident:ident)*) => {

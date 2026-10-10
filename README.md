@@ -228,26 +228,12 @@ to make deallocating and shrinking a no-op.
   `init_zeroed`,
   `extend_zeroed` and
   `resize_zeroed`.
-- **`allocator-api2-02`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and
-  makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-  `AllocatorApi2V02Compat`.
-- **`allocator-api2-03`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.3`'s `Allocator` and
-  makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-  `AllocatorApi2V03Compat`.
-- **`allocator-api2-04`** — Makes `Bump(Scope)` implement `allocator_api2` version `0.4`'s `Allocator` and
-  makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-  `AllocatorApi2V04Compat`.
 
 #### Nightly features
 These nightly features are not subject to the same semver guarantees as the rest of the library.
 Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
 
 - **`nightly`** — Enables all other nightly feature flags.
-- **`nightly-allocator-api`** — Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
-  allows using an `core::alloc::Allocator` as a base allocator via
-  `AllocatorNightlyCompat`.
-
-  This will also enable `allocator-api2` version `0.2`'s `nightly` feature.
 - **`nightly-coerce-unsized`** — Makes `BumpBox<T>` implement [`CoerceUnsized`](https://doc.rust-lang.org/core/ops/unsize/trait.CoerceUnsized.html).
   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
   You can unsize a `BumpBox` in stable without this feature using `unsize_bump_box`.
@@ -264,6 +250,7 @@ Breaking changes to these features might be introduced in minor releases to keep
 
 
 [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
+[`Allocator`]: https://doc.rust-lang.org/core/alloc/trait.Allocator.html
 <!-- crate documentation rest end -->
 
 ## Motivation and History

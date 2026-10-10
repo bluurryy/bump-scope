@@ -1,7 +1,8 @@
+use std::alloc::Global;
+
 use arbitrary::Arbitrary;
 use bump_scope::{
     BumpVec,
-    alloc::Global,
     settings::{MinimumAlignment, SupportedMinimumAlignment},
     traits::BumpAllocatorTyped,
 };

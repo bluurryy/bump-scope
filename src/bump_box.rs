@@ -15,21 +15,21 @@ use core::{
 use core::{alloc::Layout, marker::Tuple};
 
 #[cfg(feature = "std")]
-use alloc_crate::{string::String, vec::Vec};
+use alloc::vec::Vec;
 
 #[cfg(feature = "alloc")]
-#[expect(unused_imports)]
-use alloc_crate::boxed::Box;
+use alloc::{boxed::Box, string::String};
 
 use crate::{
     FromUtf8Error, NoDrop, SizedTypeProperties,
-    alloc::BoxLike,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     owned_str,
     polyfill::{self, non_null, transmute_mut},
     set_len_on_drop_by_ptr::SetLenOnDropByPtr,
-    traits::BumpAllocatorTypedScope,
 };
+
+#[cfg(feature = "alloc")]
+use crate::traits::BumpAllocatorTypedScope;
 
 mod raw;
 mod slice_initializer;
@@ -181,7 +181,7 @@ pub(crate) use slice_initializer::BumpBoxSliceInitializer;
 /// [`into_mut`]: BumpBox::into_mut
 /// [`into_box`]: BumpBox::into_box
 /// [`leak`]: BumpBox::leak
-/// [`Box`]: alloc_crate::boxed::Box
+/// [`Box`]: alloc::boxed::Box
 /// [*drop guarantee*]: https://doc.rust-lang.org/std/pin/index.html#subtle-details-and-the-drop-guarantee
 #[repr(transparent)]
 pub struct BumpBox<'a, T: ?Sized> {
@@ -305,10 +305,9 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// the allocator this box was allocated in.
     ///
     /// Unlike `BumpBox`, `Box` implements `Clone` and frees space iff it is the last allocation:
-    #[cfg_attr(feature = "allocator-api2-04", doc = "```")]
-    #[cfg_attr(not(feature = "allocator-api2-04"), doc = "```ignore")]
+    /// ```
+    /// # use std::boxed::Box;
     /// # use bump_scope::Bump;
-    /// # use allocator_api2_04::boxed::Box;
     /// # let bump: Bump = Bump::new();
     /// let a: Box<_, _> = bump.alloc(3i32).into_box(&bump);
     /// let b = a.clone();
@@ -319,17 +318,17 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// ```
     #[must_use]
     #[inline(always)]
-    pub fn into_box<A, B>(self, allocator: A) -> B
+    #[cfg(feature = "alloc")]
+    pub fn into_box<A>(self, allocator: A) -> Box<T, A>
     where
         A: BumpAllocatorTypedScope<'a>,
-        B: BoxLike<T = T, A = A>,
     {
         let ptr = BumpBox::into_raw(self).as_ptr();
 
         // SAFETY: bump might not be the allocator self was allocated with;
         // that's fine though because a `BumpAllocatorCore` allows deallocate calls
         // from allocations that don't belong to it
-        unsafe { B::from_raw_in(ptr, allocator) }
+        unsafe { Box::from_raw_in(ptr, allocator) }
     }
 
     /// Turns this `BumpBox<T>` into `&mut T` that is live for this bump scope.
@@ -437,8 +436,9 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// Recreate a `BumpBox` which was previously converted to a raw pointer
     /// using [`BumpBox::into_raw`]:
     /// ```
-    /// use bump_scope::{Bump, BumpBox};
     /// use core::ptr::NonNull;
+    ///
+    /// use bump_scope::{Bump, BumpBox};
     ///
     /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, _bump: &'a Bump) -> BumpBox<'a, T> {
     ///     BumpBox::from_raw(ptr)
@@ -453,9 +453,9 @@ impl<'a, T: ?Sized> BumpBox<'a, T> {
     /// ```
     /// Manually create a `BumpBox` from scratch by using the bump allocator:
     /// ```
-    /// use bump_scope::{Bump, BumpBox, alloc::Allocator};
-    /// use core::alloc::Layout;
-    /// use core::ptr::NonNull;
+    /// use core::{alloc::{Layout, Allocator}, ptr::NonNull};
+    ///
+    /// use bump_scope::{Bump, BumpBox};
     ///
     /// unsafe fn from_raw_in<'a, T>(ptr: NonNull<T>, _bump: &'a Bump) -> BumpBox<'a, T> {
     ///     unsafe { BumpBox::from_raw(ptr) }
@@ -3229,7 +3229,7 @@ impl<T: ?Sized + Hasher> Hasher for BumpBox<'_, T> {
 }
 
 #[cfg(feature = "alloc")]
-impl<'a> Extend<BumpBox<'a, str>> for alloc_crate::string::String {
+impl<'a> Extend<BumpBox<'a, str>> for String {
     #[inline(always)]
     fn extend<T: IntoIterator<Item = BumpBox<'a, str>>>(&mut self, iter: T) {
         iter.into_iter().for_each(move |s| self.push_str(&s));
@@ -3365,12 +3365,12 @@ impl<T: ?Sized + std::io::BufRead> std::io::BufRead for BumpBox<'_, T> {
     }
 
     #[inline(always)]
-    fn read_until(&mut self, byte: u8, buf: &mut std::vec::Vec<u8>) -> std::io::Result<usize> {
+    fn read_until(&mut self, byte: u8, buf: &mut Vec<u8>) -> std::io::Result<usize> {
         T::read_until(self, byte, buf)
     }
 
     #[inline(always)]
-    fn read_line(&mut self, buf: &mut std::string::String) -> std::io::Result<usize> {
+    fn read_line(&mut self, buf: &mut String) -> std::io::Result<usize> {
         T::read_line(self, buf)
     }
 }
@@ -3380,7 +3380,7 @@ impl<Args: Tuple, F: FnOnce<Args> + ?Sized> FnOnce<Args> for BumpBox<'_, F> {
     type Output = <F as FnOnce<Args>>::Output;
 
     extern "rust-call" fn call_once(self, args: Args) -> Self::Output {
-        use alloc_crate::{
+        use alloc::{
             alloc::{AllocError, Allocator},
             boxed::Box,
         };

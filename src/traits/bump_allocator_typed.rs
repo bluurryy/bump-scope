@@ -1,11 +1,13 @@
 #![expect(clippy::missing_safety_doc)]
 
-use core::{alloc::Layout, num::NonZeroUsize, ptr::NonNull};
+use core::{
+    alloc::{AllocError, Layout},
+    num::NonZeroUsize,
+    ptr::NonNull,
+};
 
 use crate::{
-    BaseAllocator, Bump, BumpBox, BumpScope, SizedTypeProperties, WithoutDealloc, WithoutShrink,
-    alloc::AllocError,
-    bump_down,
+    BaseAllocator, Bump, BumpBox, BumpScope, SizedTypeProperties, WithoutDealloc, WithoutShrink, bump_down,
     polyfill::non_null,
     settings::BumpAllocatorSettings,
     stats::{AnyStats, Stats},
@@ -39,7 +41,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     fn typed_stats(&self) -> Self::TypedStats<'_>;
 
-    /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
+    /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///
     /// Behaves like the following code:
     /// ```
@@ -58,12 +60,11 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     #[cfg(feature = "panic-on-alloc")]
     fn allocate_layout(&self, layout: Layout) -> NonNull<u8>;
 
-    /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
+    /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///
     /// Behaves like the following code:
     /// ```
-    /// # use core::{alloc::Layout, ptr::NonNull};
-    /// # use bump_scope::alloc::AllocError;
+    /// # use std::{alloc::{Layout, AllocError}, ptr::NonNull};
     /// # #[expect(dead_code)]
     /// # trait MyExt: bump_scope::traits::BumpAllocatorCore {
     /// #     unsafe fn my_ext_fn(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
@@ -77,7 +78,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// Errors if the allocation fails.
     fn try_allocate_layout(&self, layout: Layout) -> Result<NonNull<u8>, AllocError>;
 
-    /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
+    /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///
     /// Behaves like the following code:
     /// ```
@@ -97,12 +98,11 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     #[cfg(feature = "panic-on-alloc")]
     fn allocate_sized<T>(&self) -> NonNull<T>;
 
-    /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
+    /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///
     /// Behaves like the following code:
     /// ```
-    /// # use core::{alloc::Layout, ptr::NonNull};
-    /// # use bump_scope::alloc::AllocError;
+    /// # use core::{alloc::Layout, alloc::AllocError, ptr::NonNull};
     /// # type T = i32;
     /// # #[expect(dead_code)]
     /// # trait MyExt: bump_scope::traits::BumpAllocatorCore {
@@ -117,7 +117,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// Errors if the allocation fails.
     fn try_allocate_sized<T>(&self) -> Result<NonNull<T>, AllocError>;
 
-    /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
+    /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///
     /// Behaves like the following code:
     /// ```
@@ -137,12 +137,11 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice<T>(&self, len: usize) -> NonNull<T>;
 
-    /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
+    /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///
     /// Behaves like the following code:
     /// ```
-    /// # use core::{alloc::Layout, ptr::NonNull};
-    /// # use bump_scope::alloc::AllocError;
+    /// # use core::{alloc::Layout, alloc::AllocError, ptr::NonNull};
     /// # type T = i32;
     /// # #[expect(dead_code)]
     /// # trait MyExt: bump_scope::traits::BumpAllocatorCore {
@@ -157,7 +156,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// Errors if the allocation fails.
     fn try_allocate_slice<T>(&self, len: usize) -> Result<NonNull<T>, AllocError>;
 
-    /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
+    /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///
     /// Behaves like the following code:
     /// ```
@@ -177,12 +176,11 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     #[cfg(feature = "panic-on-alloc")]
     fn allocate_slice_for<T>(&self, slice: &[T]) -> NonNull<T>;
 
-    /// A specialized version of [`allocate`](crate::alloc::Allocator::allocate).
+    /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///
     /// Behaves like the following code:
     /// ```
-    /// # use core::{alloc::Layout, ptr::NonNull};
-    /// # use bump_scope::alloc::AllocError;
+    /// # use core::{alloc::Layout, alloc::AllocError, ptr::NonNull};
     /// # type T = i32;
     /// # #[expect(dead_code)]
     /// # trait MyExt: bump_scope::traits::BumpAllocatorCore {
@@ -197,7 +195,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// Errors if the allocation fails.
     fn try_allocate_slice_for<T>(&self, slice: &[T]) -> Result<NonNull<T>, AllocError>;
 
-    /// A specialized version of [`shrink`](crate::alloc::Allocator::shrink).
+    /// A specialized version of [`shrink`](core::alloc::Allocator::shrink).
     ///
     /// Behaves like the following code except that it returns `None`
     /// when the allocation remains unchanged and the pointer stays valid.
@@ -221,7 +219,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     ///
     /// Same safety conditions as for the code above apply.
     ///
-    /// [shrink]: crate::alloc::Allocator::shrink
+    /// [shrink]: core::alloc::Allocator::shrink
     /// [array]: Layout::array
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>;
 
@@ -382,7 +380,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     ///
     /// bump.try_reserve(4096)?;
     /// assert!(bump.stats().capacity() >= 4096);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
     /// [stats]: crate::traits::BumpAllocatorScope::stats

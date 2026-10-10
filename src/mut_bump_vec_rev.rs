@@ -1,4 +1,5 @@
 use core::{
+    alloc::AllocError,
     borrow::{Borrow, BorrowMut},
     cmp,
     fmt::Debug,
@@ -13,7 +14,6 @@ use core::{
 
 use crate::{
     BumpBox, ErrorBehavior, NoDrop, SetLenOnDrop, SizedTypeProperties,
-    alloc::AllocError,
     destructure::destructure,
     min_non_zero_cap,
     mut_bump_vec::IntoIter,
@@ -25,7 +25,7 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
-/// Like [`vec!`](alloc_crate::vec!) but allocates inside a bump allocator, returning a [`MutBumpVecRev`].
+/// Like [`vec!`](alloc::vec!) but allocates inside a bump allocator, returning a [`MutBumpVecRev`].
 ///
 /// `$bump` can be any type that implements [`MutBumpAllocatorTyped`].
 ///
@@ -92,7 +92,7 @@ macro_rules! mut_bump_vec_rev {
         $crate::__mut_bump_vec_rev_panic_on_alloc![in $bump; $value; $count]
     };
     [try in $bump:expr] => {
-        Ok::<_, $crate::alloc::AllocError>($crate::MutBumpVecRev::new_in($bump))
+        Ok::<_, $crate::private::core::alloc::AllocError>($crate::MutBumpVecRev::new_in($bump))
     };
     [try in $bump:expr; $($values:expr),* $(,)?] => {
         $crate::MutBumpVecRev::try_from_owned_slice_in([$($values),*], $bump)
@@ -705,7 +705,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// When `T` is a zero-sized type, there will be no allocation
     /// and the capacity will always be `usize::MAX`.
     ///
-    /// [Capacity and reallocation]: alloc_crate::vec::Vec#capacity-and-reallocation
+    /// [Capacity and reallocation]: alloc::vec::Vec#capacity-and-reallocation
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -760,7 +760,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// When `T` is a zero-sized type, there will be no allocation
     /// and the capacity will always be `usize::MAX`.
     ///
-    /// [Capacity and reallocation]: alloc_crate::vec::Vec#capacity-and-reallocation
+    /// [Capacity and reallocation]: alloc::vec::Vec#capacity-and-reallocation
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -793,7 +793,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// // allocation is necessary
     /// let vec_units = MutBumpVecRev::<(), _>::try_with_capacity_in(10, &mut bump)?;
     /// assert_eq!(vec_units.capacity(), usize::MAX);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_with_capacity_in(capacity: usize, allocator: A) -> Result<Self, AllocError> {
@@ -868,7 +868,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// # let mut bump: Bump = Bump::new();
     /// let vec = MutBumpVecRev::try_from_elem_in("ho", 3, &mut bump)?;
     /// assert_eq!(vec, ["ho", "ho", "ho"]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_from_elem_in(value: T, count: usize, allocator: A) -> Result<Self, AllocError>
@@ -960,7 +960,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// assert_eq!(b, [3, 4]);
     /// assert_eq!(c, [5, 6]);
     /// assert_eq!(d, [7, 8]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_from_owned_slice_in(owned_slice: impl OwnedSlice<Item = T>, allocator: A) -> Result<Self, AllocError> {
@@ -1019,7 +1019,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// # let mut bump: Bump = Bump::new();
     /// let vec = MutBumpVecRev::try_from_iter_in([1, 2, 3], &mut bump)?;
     /// assert_eq!(vec, [3, 2, 1]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_from_iter_in<I>(iter: I, allocator: A) -> Result<Self, AllocError>
@@ -1098,7 +1098,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// # let mut bump: Bump = Bump::new();
     /// let vec = MutBumpVecRev::try_from_iter_exact_in([1, 2, 3], &mut bump)?;
     /// assert_eq!(vec, [3, 2, 1]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_from_iter_exact_in<I>(iter: I, allocator: A) -> Result<Self, AllocError>
@@ -1164,7 +1164,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// vec.try_push(3)?;
     /// assert_eq!(vec, [3, 2, 1]);
     /// # let _ = vec;
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_push(&mut self, value: T) -> Result<(), AllocError> {
@@ -1217,7 +1217,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// let mut vec = mut_bump_vec_rev![in &mut bump; 2, 3];
     /// vec.try_push_with(|| 1)?;
     /// assert_eq!(vec, [1, 2, 3]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_push_with(&mut self, f: impl FnOnce() -> T) -> Result<(), AllocError> {
@@ -1273,7 +1273,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// let last = vec.try_push_mut(3)?;
     /// *last += 1;
     /// assert_eq!(vec, [4, 3, 2, 1]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     #[must_use = "if you don't need a reference to the value, use `push` instead"]
@@ -1332,7 +1332,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// *item += 1;
     /// *item += 2;
     /// assert_eq!(*item, 3);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     #[must_use = "if you don't need a reference to the value, use `push` instead"]
@@ -1402,7 +1402,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// assert_eq!(vec, ['a', 'b', 'c', 'd']);
     /// vec.try_insert(4, 'e')?;
     /// assert_eq!(vec, ['a', 'b', 'c', 'd', 'e']);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_insert(&mut self, index: usize, element: T) -> Result<(), AllocError> {
@@ -1448,7 +1448,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// let x = vec.try_insert_mut(3, 6)?;
     /// *x += 1;
     /// assert_eq!(vec, [1, 3, 5, 7, 9]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     #[must_use = "if you don't need a reference to the value, use `try_insert` instead"]
@@ -1569,7 +1569,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// let mut vec = mut_bump_vec_rev![try in &mut bump; 4]?;
     /// vec.try_extend_from_slice_copy(&[1, 2, 3])?;
     /// assert_eq!(vec, [1, 2, 3, 4]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_extend_from_slice_copy(&mut self, slice: &[T]) -> Result<(), AllocError>
@@ -1639,7 +1639,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// let mut vec = mut_bump_vec_rev![try in &mut bump; String::from("c")]?;
     /// vec.try_extend_from_slice_clone(&[String::from("a"), String::from("b")])?;
     /// assert_eq!(vec, ["a", "b", "c"]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_extend_from_slice_clone(&mut self, slice: &[T]) -> Result<(), AllocError>
@@ -1726,7 +1726,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     ///
     /// vec.try_extend_from_within_copy(4..8)?;
     /// assert_eq!(vec, [4, 0, 1, 2, 2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_extend_from_within_copy<R>(&mut self, src: R) -> Result<(), AllocError>
@@ -1818,7 +1818,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     ///
     /// vec.try_extend_from_within_clone(4..8)?;
     /// assert_eq!(vec, [4, 0, 1, 2, 2, 3, 2, 3, 4, 0, 1, 2, 3, 4]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_extend_from_within_clone<R>(&mut self, src: R) -> Result<(), AllocError>
@@ -1916,7 +1916,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// let mut vec = mut_bump_vec_rev![try in &mut bump; 1]?;
     /// vec.try_reserve(10)?;
     /// assert!(vec.capacity() >= 11);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_reserve(&mut self, additional: usize) -> Result<(), AllocError> {
@@ -1985,7 +1985,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// let mut vec = mut_bump_vec_rev![try in &mut bump; 1]?;
     /// vec.try_reserve_exact(10)?;
     /// assert!(vec.capacity() >= 11);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), AllocError> {
@@ -2071,7 +2071,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// let mut vec = mut_bump_vec_rev![try in &mut bump; 1, 2, 3, 4]?;
     /// vec.try_resize(2, 0)?;
     /// assert_eq!(vec, [3, 4]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_resize(&mut self, new_len: usize, value: T) -> Result<(), AllocError>
@@ -2166,7 +2166,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     /// let mut p = 1;
     /// vec.try_resize_with(4, || { p *= 2; p })?;
     /// assert_eq!(vec, [16, 8, 4, 2]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_resize_with<F>(&mut self, new_len: usize, f: F) -> Result<(), AllocError>
@@ -2243,7 +2243,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVecRev<T, A> {
     ///
     /// assert_eq!(other, []);
     /// assert_eq!(vec, [7, 8, 5, 6, 3, 4, 1, 2]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
     pub fn try_append(&mut self, other: impl OwnedSlice<Item = T>) -> Result<(), AllocError> {

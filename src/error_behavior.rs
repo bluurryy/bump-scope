@@ -1,8 +1,7 @@
-use core::alloc::Layout;
+use core::alloc::{AllocError, Layout};
 
 use crate::{
     NonNull,
-    alloc::AllocError,
     traits::{BumpAllocatorTyped, MutBumpAllocatorTyped},
 };
 

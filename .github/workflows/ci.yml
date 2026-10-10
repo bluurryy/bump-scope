@@ -39,7 +39,7 @@ jobs:
   #         components: clippy
   #     - uses: Swatinem/rust-cache@v2
   #     - run: cargo +stable clippy --tests --no-default-features -- -Dwarnings
-  #     - run: cargo +stable clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde -- -Dwarnings
+  #     - run: cargo +stable clippy --tests --features bytemuck,zerocopy-08,serde -- -Dwarnings
   clippy-nightly:
     runs-on: ubuntu-latest
     steps:
@@ -50,13 +50,12 @@ jobs:
           targets: x86_64-unknown-linux-musl
       - uses: Swatinem/rust-cache@v2
       - run: cargo +nightly clippy --tests --no-default-features -- -Dwarnings
-      - run: cargo +nightly clippy --tests --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde -- -Dwarnings
+      - run: cargo +nightly clippy --tests --features bytemuck,zerocopy-08,serde -- -Dwarnings
       - run: cargo +nightly clippy --tests --all-features -- -Dwarnings
       - run: cd crates/callgrind-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
       - run: cd crates/fuzzing-support && cargo +nightly clippy --tests -- -Dwarnings
       - run: cd crates/test-hashbrown && cargo +nightly clippy --tests -- -Dwarnings
-      - run: cd crates/test-no-panic && cargo +nightly clippy --tests -- -Dwarnings
-      - run: cd crates/test-hashbrown && cargo +nightly clippy --tests --all-features -- -Dwarnings
+      - run: cd crates/test-no-panic && cargo +nightly clippy --tests --all-features -- -Dwarnings
       - run: cd crates/tests-from-std && cargo +nightly clippy --tests -- -Dwarnings
       - run: cd fuzz && cargo +nightly clippy -- -Dwarnings
   no-panic:
@@ -68,7 +67,7 @@ jobs:
         with:
           tool: cargo-show-asm@0.2
       - uses: Swatinem/rust-cache@v2
-      - run: cd crates/test-no-panic && cargo +nightly run
+      - run: cd crates/test-no-panic && cargo +nightly run --all-features
   # FIXME: uncomment once 1.100 has released
   # msrv:
   #   runs-on: ubuntu-latest
@@ -77,7 +76,7 @@ jobs:
   #     - uses: dtolnay/rust-toolchain@1.100.0
   #     - uses: Swatinem/rust-cache@v2
   #     - run: cargo +1.100.0 check --no-default-features
-  #     - run: cargo +1.100.0 check --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
+  #     - run: cargo +1.100.0 check --features bytemuck,zerocopy-08,serde
   minimal-versions:
     runs-on: ubuntu-latest
     steps:
@@ -87,7 +86,7 @@ jobs:
       - uses: taiki-e/install-action@cargo-hack
       - uses: taiki-e/install-action@cargo-minimal-versions
       # FIXME: uncomment once 1.100 has released
-      # - run: cargo +stable minimal-versions check --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
+      # - run: cargo +stable minimal-versions check --features bytemuck,zerocopy-08,serde
       - run: cargo +nightly minimal-versions check --all-features
   # FIXME: uncomment once 1.100 has released
   # no-std-stable:
@@ -98,7 +97,7 @@ jobs:
   #       with:
   #         targets: thumbv7em-none-eabihf
   #     - uses: Swatinem/rust-cache@v2
-  #     - run: cargo check --target thumbv7em-none-eabihf --no-default-features -F allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,alloc,serde
+  #     - run: cargo check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08,alloc,serde
   no-std-nightly:
     runs-on: ubuntu-latest
     steps:
@@ -107,7 +106,7 @@ jobs:
         with:
           targets: thumbv7em-none-eabihf
       - uses: Swatinem/rust-cache@v2
-      - run: cargo check --target thumbv7em-none-eabihf --no-default-features -F allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,alloc,serde,nightly
+      - run: cargo check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08,alloc,serde,nightly
   # FIXME: uncomment once 1.100 has released
   # test-stable:
   #   runs-on: ubuntu-latest
@@ -115,7 +114,7 @@ jobs:
   #     - uses: actions/checkout@v4
   #     - uses: dtolnay/rust-toolchain@stable
   #     - uses: Swatinem/rust-cache@v2
-  #     - run: cargo +stable test --features allocator-api2-02,allocator-api2-03,allocator-api2-04,bytemuck,zerocopy-08,serde
+  #     - run: cargo +stable test --features bytemuck,zerocopy-08,serde
   #     - run: cargo +stable run --example limit_memory_usage
   #     - run: cargo +stable run --example stack_or_static_memory
   #     - run: cargo +stable run --example thread_local
@@ -131,7 +130,6 @@ jobs:
       - run: cargo +nightly run --example thread_local
       - run: cd crates/tests-from-std && cargo +nightly test
       - run: cd crates/test-hashbrown && cargo +nightly test
-      - run: cd crates/test-hashbrown && cargo +nightly test --all-features
       - run: cd crates/fuzzing-support && cargo +nightly test
   test-miri:
     runs-on: ubuntu-latest
@@ -149,7 +147,6 @@ jobs:
       - run: cargo +nightly miri run --example thread_local
       - run: cd crates/tests-from-std && cargo +nightly miri test
       - run: cd crates/test-hashbrown && cargo +nightly miri test
-      - run: cd crates/test-hashbrown && cargo +nightly miri test --all-features
       - run: cd crates/fuzzing-support && cargo +nightly miri test
   doc:
     runs-on: ubuntu-latest

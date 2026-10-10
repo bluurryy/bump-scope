@@ -1,8 +1,7 @@
-use core::{ffi::CStr, fmt};
+use core::{alloc::AllocError, ffi::CStr, fmt};
 
 use crate::{
     BumpBox, MutBumpString, MutBumpVec, MutBumpVecRev,
-    alloc::AllocError,
     traits::{BumpAllocatorTypedScope, MutBumpAllocatorCoreScope, MutBumpAllocatorTyped},
 };
 
@@ -64,7 +63,7 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     /// # let mut bump: Bump = Bump::new();
     /// let slice = bump.try_alloc_iter_mut([1, 2, 3])?;
     /// assert_eq!(slice, [1, 2, 3]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
     /// [`try_alloc_iter`]: crate::traits::BumpAllocatorTypedScope::alloc_iter
@@ -137,7 +136,7 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     /// # let mut bump: Bump = Bump::new();
     /// let slice = bump.try_alloc_iter_mut_rev([1, 2, 3])?;
     /// assert_eq!(slice, [3, 2, 1]);
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
     /// [`try_alloc_iter_mut`]: crate::traits::MutBumpAllocatorTypedScope::try_alloc_iter_mut
@@ -214,7 +213,7 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     /// let string = bump.try_alloc_fmt_mut(format_args!("{one} + {two} = {}", one + two))?;
     ///
     /// assert_eq!(string, "1 + 2 = 3");
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
     /// [`try_alloc_fmt`]: crate::traits::BumpAllocatorTypedScope::try_alloc_fmt
@@ -296,7 +295,7 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     ///
     /// let one = bump.try_alloc_cstr_fmt_mut(format_args!("{one}\0{two}"))?;
     /// assert_eq!(one, c"1");
-    /// # Ok::<(), bump_scope::alloc::AllocError>(())
+    /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
     /// [`try_alloc_cstr_fmt`]: crate::traits::BumpAllocatorTypedScope::try_alloc_cstr_fmt

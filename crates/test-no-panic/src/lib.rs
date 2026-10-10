@@ -2,11 +2,13 @@
 #![expect(non_snake_case, mismatched_lifetime_syntaxes, clippy::missing_safety_doc)]
 extern crate alloc;
 
-use alloc::boxed::Box;
+use alloc::{
+    alloc::{AllocError, Allocator, Global},
+    boxed::Box,
+};
 use core::{alloc::Layout, ffi::CStr, fmt, mem::MaybeUninit, num::NonZero, ops::Range, ptr::NonNull};
 
 use bump_scope::{
-    alloc::{AllocError, Allocator, Global},
     settings::BumpSettings,
     zerocopy_08::{BumpAllocatorTypedScopeExt, VecExt},
     BumpBox, FixedBumpString, FixedBumpVec, FromUtf16Error,

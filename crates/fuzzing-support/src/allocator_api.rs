@@ -1,9 +1,13 @@
-use std::{alloc::Layout, ops::Range, ptr::NonNull, rc::Rc};
+use std::{
+    alloc::{Allocator, Global, Layout},
+    ops::Range,
+    ptr::NonNull,
+    rc::Rc,
+};
 
 use arbitrary::{Arbitrary, Unstructured};
 use bump_scope::{
     Bump,
-    alloc::{Allocator, Global},
     settings::{BumpSettings, MinimumAlignment, SupportedMinimumAlignment},
 };
 use core::fmt::Debug;

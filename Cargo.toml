@@ -39,9 +39,6 @@ pre-release-replacements = [
 ]
 
 [dependencies]
-allocator-api2-02 = { package = "allocator-api2", version = "0.2.21", default-features = false, optional = true }
-allocator-api2-03 = { package = "allocator-api2", version = "0.3.0", default-features = false, optional = true }
-allocator-api2-04 = { package = "allocator-api2", version = "0.4.0", default-features = false, optional = true }
 bytemuck = { version = "1.23.0", default-features = false, optional = true }
 serde = { package = "serde_core", version = "1.0.228", default-features = false, optional = true }
 zerocopy-08 = { package = "zerocopy", version = "0.8.14", default-features = false, optional = true }
@@ -56,19 +53,10 @@ trybuild = "1.0.114"
 default = ["alloc", "panic-on-alloc", "std"]
 
 ## Adds `BumpPool` and implementations of `std::io` traits.
-std = [
-  "alloc",
-  "allocator-api2-02?/std",
-  "allocator-api2-03?/std",
-  "allocator-api2-04?/std",
-]
+std = ["alloc"]
 
 ## Adds `Global` as the default base allocator and some interactions with `alloc` collections.
-alloc = [
-  "allocator-api2-02?/alloc",
-  "allocator-api2-03?/alloc",
-  "allocator-api2-04?/alloc",
-]
+alloc = []
 
 ## Adds functions and traits that will panic when allocations fail.
 ## Without this feature, allocation failures cannot cause panics, and only
@@ -92,28 +80,12 @@ bytemuck = ["dep:bytemuck"]
 ## [`resize_zeroed`](zerocopy_08::VecExt::resize_zeroed).
 zerocopy-08 = ["dep:zerocopy-08"]
 
-## Makes `Bump(Scope)` implement `allocator_api2` version `0.2`'s `Allocator` and
-## makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-## [`AllocatorApi2V02Compat`](crate::alloc::compat::AllocatorApi2V02Compat).
-allocator-api2-02 = ["dep:allocator-api2-02"]
-
-## Makes `Bump(Scope)` implement `allocator_api2` version `0.3`'s `Allocator` and
-## makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-## [`AllocatorApi2V03Compat`](crate::alloc::compat::AllocatorApi2V03Compat).
-allocator-api2-03 = ["dep:allocator-api2-03"]
-
-## Makes `Bump(Scope)` implement `allocator_api2` version `0.4`'s `Allocator` and
-## makes it possible to use an `allocator_api2::alloc::Allocator` as a base allocator via
-## [`AllocatorApi2V04Compat`](crate::alloc::compat::AllocatorApi2V04Compat).
-allocator-api2-04 = ["dep:allocator-api2-04"]
-
 #! ### Nightly features
 #! These nightly features are not subject to the same semver guarantees as the rest of the library.
 #! Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
 
 ## Enables all other nightly feature flags.
 nightly = [
-  "nightly-allocator-api",
   "nightly-clone-to-uninit",
   "nightly-coerce-unsized",
   "nightly-dropck-eyepatch",
@@ -123,13 +95,6 @@ nightly = [
   "nightly-trusted-len",
   "nightly-miri-promise-symbolic-alignment",
 ]
-
-## Makes `Bump(Scope)` implement `alloc`'s `Allocator` and
-## allows using an `core::alloc::Allocator` as a base allocator via
-## [`AllocatorNightlyCompat`](crate::alloc::compat::AllocatorNightlyCompat).
-##
-## This will also enable `allocator-api2` version `0.2`'s `nightly` feature.
-nightly-allocator-api = ["allocator-api2-02/nightly"]
 
 ## Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
 ## With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.

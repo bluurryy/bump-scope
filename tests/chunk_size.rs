@@ -2,13 +2,12 @@
 //! Some sanity checks for chunk size calculation.
 //! Chunk size also has a fuzz target called `chunk_size`.
 
-use core::{alloc::Layout, ptr::NonNull};
-
-use bump_scope::{
-    Bump,
-    alloc::{AllocError, Allocator, Global},
-    settings::BumpSettings,
+use std::{
+    alloc::{AllocError, Allocator, Global, Layout},
+    ptr::NonNull,
 };
+
+use bump_scope::{Bump, settings::BumpSettings};
 
 type AssumedMallocOverhead = [usize; 2];
 

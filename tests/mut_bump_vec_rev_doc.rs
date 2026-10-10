@@ -1,7 +1,9 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 //! doc tests but for up and down
 
-use bump_scope::{Bump, MutBumpVecRev, alloc::Global, mut_bump_vec_rev, settings::BumpSettings};
+use std::alloc::Global;
+
+use bump_scope::{Bump, MutBumpVecRev, mut_bump_vec_rev, settings::BumpSettings};
 
 macro_rules! either_way {
     ($($(#[$attr:meta])* $ident:ident)*) => {

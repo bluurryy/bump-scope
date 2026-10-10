@@ -1,10 +1,9 @@
-use core::{alloc::Layout, ptr::NonNull};
-
-use crate::{
-    alloc::{AllocError, Allocator},
-    polyfill::non_null,
-    traits::BumpAllocatorCore,
+use core::{
+    alloc::{AllocError, Allocator, Layout},
+    ptr::NonNull,
 };
+
+use crate::{polyfill::non_null, traits::BumpAllocatorCore};
 
 /// Wraps a bump allocator and does nothing on [`deallocate`](Allocator::deallocate).
 ///
@@ -13,10 +12,7 @@ use crate::{
 /// # Examples
 ///
 /// ```
-/// # #[cfg(feature = "allocator-api2-04")]
-/// # {
 /// use bump_scope::{Bump, WithoutDealloc};
-/// use allocator_api2_04::boxed::Box;
 ///
 /// let bump: Bump = Bump::new();
 ///
@@ -29,7 +25,6 @@ use crate::{
 /// assert_eq!(bump.stats().allocated(), 4);
 /// drop(boxed);
 /// assert_eq!(bump.stats().allocated(), 4);
-/// # }
 /// ```
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct WithoutDealloc<A>(pub A);

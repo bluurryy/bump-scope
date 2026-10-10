@@ -37,18 +37,18 @@ macro_rules! assert_implements {
     ([$($what:tt)*] $($ty:ty)*) => {
         #[cfg(test)]
         const _: () = {
-            #[expect(unused_imports)]
-            use crate::{
-                alloc::Allocator,
-                traits::{
-                    BumpAllocatorCoreScope,
-                    MutBumpAllocatorCore,
-                    MutBumpAllocatorCoreScope,
-                }
+            #[allow(unused_imports)]
+            use core::alloc::Allocator;
+
+            #[allow(unused_imports)]
+            use crate::traits::{
+                BumpAllocatorCoreScope,
+                MutBumpAllocatorCore,
+                MutBumpAllocatorCoreScope,
             };
 
             #[allow(dead_code)]
-            type A = crate::alloc::NoopAllocator;
+            type A = crate::NoopAllocator;
             #[allow(dead_code)]
             type Bump = crate::Bump<A>;
             #[allow(dead_code)]

@@ -2,11 +2,10 @@
 
 mod common;
 
-use std::mem;
+use std::{alloc::Global as A, mem};
 
 use bump_scope::{
     Bump, BumpScope,
-    alloc::Global as A,
     settings::{BumpAllocatorSettings, BumpSettings},
 };
 

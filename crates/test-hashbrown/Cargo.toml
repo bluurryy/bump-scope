@@ -4,8 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dev-dependencies]
-bump-scope = { path = "../..", features = ["allocator-api2-02"] }
-hashbrown = "0.17.1"
-
-[features]
-nightly = ["bump-scope/nightly-allocator-api", "hashbrown/nightly"]
+bump-scope = { path = "../.." }
+hashbrown = { version = "0.17.1", features = ["nightly"] }

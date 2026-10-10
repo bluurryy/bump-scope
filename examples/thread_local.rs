@@ -1,9 +1,8 @@
-#![cfg(feature = "alloc")]
+#![cfg(feature = "std")]
 
-use bump_scope::{
-    alloc::Global,
-    settings::{BumpAllocatorSettings, BumpSettings},
-};
+use std::alloc::Global;
+
+use bump_scope::settings::{BumpAllocatorSettings, BumpSettings};
 
 type Bump = bump_scope::Bump<Global, <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<false>>;
 

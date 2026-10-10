@@ -1,12 +1,10 @@
 pub(crate) use std::{
-    alloc::Layout,
+    alloc::{AllocError, Allocator, Layout},
     cell::{Ref, RefCell},
     collections::HashMap,
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::NonNull,
 };
-
-use bump_scope::alloc::{AllocError, Allocator};
 
 /// An allocator wrapper that makes sure any allocation will be aligned *just*
 /// as much as it is required and not more.

@@ -1,15 +1,13 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 
 use std::{
-    alloc::Layout,
+    alloc::{AllocError, Allocator, Global, Layout},
     panic::{AssertUnwindSafe, UnwindSafe},
     string::String,
 };
 
 use bump_scope::{
-    BumpBox, BumpVec,
-    alloc::{AllocError, Allocator, Global},
-    bump_vec,
+    BumpBox, BumpVec, bump_vec,
     settings::BumpSettings,
     traits::{BumpAllocatorCore, BumpAllocatorTyped},
 };

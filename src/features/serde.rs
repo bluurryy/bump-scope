@@ -1,4 +1,7 @@
-use core::fmt::{self, Display};
+use core::{
+    alloc::AllocError,
+    fmt::{self, Display},
+};
 
 use serde::{
     Deserialize, Serialize,
@@ -7,7 +10,6 @@ use serde::{
 
 use crate::{
     BumpBox, BumpString, BumpVec, FixedBumpString, FixedBumpVec, MutBumpString, MutBumpVec, MutBumpVecRev,
-    alloc::AllocError,
     traits::{BumpAllocatorTyped, MutBumpAllocatorTyped},
 };
 

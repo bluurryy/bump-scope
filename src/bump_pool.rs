@@ -1,5 +1,5 @@
 use std::{
-    alloc::Layout,
+    alloc::{AllocError, Allocator, Layout},
     mem::{self, ManuallyDrop},
     ops::{Deref, DerefMut},
     sync::{Mutex, MutexGuard, PoisonError},
@@ -7,9 +7,7 @@ use std::{
 };
 
 use crate::{
-    Bump, BumpScope, ErrorBehavior,
-    alloc::{AllocError, Allocator},
-    maybe_default_allocator,
+    Bump, BumpScope, ErrorBehavior, maybe_default_allocator,
     settings::{BumpAllocatorSettings, BumpSettings},
 };
 

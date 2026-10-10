@@ -1,6 +1,8 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 
-use bump_scope::{Bump, BumpString, alloc::Global, settings::BumpSettings};
+use std::alloc::Global;
+
+use bump_scope::{Bump, BumpString, settings::BumpSettings};
 
 macro_rules! either_way {
     ($($(#[$attr:meta])* $ident:ident)*) => {
