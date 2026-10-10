@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Use the now stable `core` allocator api
+
 ### Removed
 
-- **Breaking:** Remove custom alloc api, allocator-api2 integration and compat wrappers, use the new stable core allocator instead
+- **Breaking:** Remove allocator api polyfill at `bump_scope::alloc`
+- **Breaking:** Remove `allocator-api2-02`, `*-03` and `*-04` features and the corresponding compatibility
+- **Breaking:** Remove `nightly-allocator-api` feature, since it is now stable
 
 ## [2.4.0] - 2026-10-06
 
