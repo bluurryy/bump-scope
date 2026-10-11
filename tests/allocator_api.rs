@@ -13,7 +13,7 @@ use bump_scope::{
     traits::{BumpAllocatorCore, BumpAllocatorTyped},
 };
 
-use crate::common::{ChunkHeader, DisaligningAllocator};
+use crate::common::DisaligningAllocator;
 
 macro_rules! either_way {
     ($($(#[$attr:meta])* $ident:ident)*) => {
@@ -46,6 +46,7 @@ either_way! {
 
   grow
 
+  #[cfg(target_pointer_width = "64")]
   shrink
 }
 
@@ -293,6 +294,7 @@ fn grow<const UP: bool>() {
     }
 }
 
+#[cfg(target_pointer_width = "64")]
 fn shrink<const UP: bool>() {
     let base = DisaligningAllocator::new(4096, Global);
     let bump: Bump<_, BumpSettings<1, UP>> = Bump::new_in(&base);
@@ -368,7 +370,7 @@ fn shrink<const UP: bool>() {
         dbg!(&bump.stats().small_to_big().collect::<Vec<_>>());
         assert_eq!(bump.stats().allocated(), {
             let disalignment_offset = 16;
-            let header_size = size_of::<ChunkHeader<&DisaligningAllocator<Global>>>();
+            let header_size = 8 * 6;
             let chunks = bump.stats().small_to_big().collect::<Vec<_>>();
 
             chunks[0].capacity()
