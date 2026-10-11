@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Use the now stable `core` allocator api
+- Any `Allocator` can now be used as `BaseAllocator`
 
 ### Removed
 
