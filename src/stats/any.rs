@@ -157,7 +157,8 @@ impl<'a> From<AnyChunk<'a>> for AnyStats<'a> {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct AnyChunk<'a> {
     header: NonNull<AllocatedChunkHeader>,
-    header_size: usize,
+    header_size_non_first: usize,
+    header_size_first: usize,
     marker: PhantomData<&'a ()>,
 }
 
@@ -168,10 +169,13 @@ where
     fn from(value: Chunk<'_, A, S>) -> Self {
         Self {
             header: value.chunk.header().cast(),
-            header_size: if A::IS_ZST {
+            header_size_first: if A::IS_ZST {
                 mem::size_of::<AllocatedChunkHeader>()
-            } else if value.chunk.prev().is_none() {
+            } else {
                 mem::size_of::<NonZstFirstAllocatedChunkHeader<A>>()
+            },
+            header_size_non_first: if A::IS_ZST {
+                mem::size_of::<AllocatedChunkHeader>()
             } else {
                 mem::size_of::<NonZstAllocatedChunkHeader<A>>()
             },
@@ -207,8 +211,7 @@ impl<'a> AnyChunk<'a> {
     pub fn prev(self) -> Option<Self> {
         Some(AnyChunk {
             header: self.header().prev.get()?,
-            header_size: self.header_size,
-            marker: PhantomData,
+            ..self
         })
     }
 
@@ -218,8 +221,7 @@ impl<'a> AnyChunk<'a> {
     pub fn next(self) -> Option<Self> {
         Some(AnyChunk {
             header: self.header().next.get()?,
-            header_size: self.header_size,
-            marker: PhantomData,
+            ..self
         })
     }
 
@@ -349,7 +351,13 @@ impl<'a> AnyChunk<'a> {
     }
 
     fn after_header(self) -> NonNull<u8> {
-        unsafe { self.header.byte_add(self.header_size).cast() }
+        let header_size = if self.prev().is_none() {
+            self.header_size_first
+        } else {
+            self.header_size_non_first
+        };
+
+        unsafe { self.header.byte_add(header_size).cast() }
     }
 }
 
