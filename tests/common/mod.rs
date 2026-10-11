@@ -42,31 +42,7 @@ pub(crate) use test_wrap::TestWrap;
 pub(crate) type AssumedMallocOverhead = [usize; 2];
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 
-#[repr(C, align(16))]
-pub(crate) struct NonZstFirstAllocatedChunkHeader<A> {
-    pub(crate) pos: Cell<NonNull<u8>>,
-    pub(crate) end: NonNull<u8>,
-
-    pub(crate) prev: Cell<Option<NonNull<Self>>>,
-    pub(crate) next: Cell<Option<NonNull<Self>>>,
-
-    pub(crate) allocator_ptr: NonNull<A>,
-    pub(crate) allocator: A,
-}
-
-#[repr(C, align(16))]
-pub(crate) struct ChunkHeader<A = ()> {
-    pub(crate) pos: Cell<NonNull<u8>>,
-    pub(crate) end: NonNull<u8>,
-
-    pub(crate) prev: Cell<Option<NonNull<Self>>>,
-    pub(crate) next: Cell<Option<NonNull<Self>>>,
-
-    pub(crate) allocator: A,
-}
-
 pub(crate) const MALLOC_OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
-pub(crate) const OVERHEAD: usize = MALLOC_OVERHEAD + size_of::<ChunkHeader>();
 
 pub(crate) type SettingNoMinSize<const UP: bool> = BumpSettings<1, UP, false, true, true, true, 0>;
 pub(crate) type BumpNoMinSize<const UP: bool, A = Global> = bump_scope::Bump<A, SettingNoMinSize<UP>>;

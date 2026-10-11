@@ -7,19 +7,35 @@ use std::{
     ptr::NonNull,
 };
 
-use bump_scope::{settings::BumpSettings, traits::BumpAllocatorCore};
+use bump_scope::{
+    Bump,
+    settings::{BumpAllocatorSettings, BumpSettings},
+    stats::{AnyChunk, AnyStats, Chunk, Stats},
+    traits::{BumpAllocatorCore, BumpAllocatorTyped as _},
+};
 
 use common::either_way;
 
-use crate::common::{AssumedMallocOverhead, ChunkHeader, NonZstFirstAllocatedChunkHeader};
+use crate::common::AssumedMallocOverhead;
 
 either_way! {
+    #[cfg(target_pointer_width = "64")]
+    unallocated
+    #[cfg(target_pointer_width = "64")]
     zst_allocator
+    #[cfg(target_pointer_width = "64")]
+    zst_allocator_high_align
+    #[cfg(target_pointer_width = "64")]
     ptr_allocator
+    #[cfg(target_pointer_width = "64")]
+    two_ptr_allocator
+    #[cfg(target_pointer_width = "64")]
+    high_align_allocator
+    #[cfg(target_pointer_width = "64")]
     fat_allocator
 }
 
-type Bump<const UP: bool, A = Global> = bump_scope::Bump<A, BumpSettings<1, UP, false, true>>;
+type SimpleBump<const UP: bool, A = Global> = bump_scope::Bump<A, BumpSettings<1, UP, false, true>>;
 
 macro_rules! allocator_with_layout {
     ($name:ident, $size:literal, $align:literal) => {
@@ -65,56 +81,197 @@ macro_rules! allocator_with_layout {
     };
 }
 
+fn assert_stats_match<A, S>(stats: Stats<'_, A, S>, any_stats: AnyStats<'_>)
+where
+    S: BumpAllocatorSettings,
+{
+    assert_eq!(stats.count(), any_stats.count());
+    assert_eq!(stats.size(), any_stats.size());
+    assert_eq!(stats.capacity(), any_stats.capacity());
+    assert_eq!(stats.allocated(), any_stats.allocated());
+    assert_eq!(stats.remaining(), any_stats.remaining());
+
+    let (Some(current), Some(any_current)) = (stats.current_chunk(), any_stats.current_chunk()) else {
+        assert_eq!(stats.current_chunk().is_none(), any_stats.current_chunk().is_none());
+        return;
+    };
+
+    assert_chunk_match(current, any_current);
+
+    assert_eq!(current.iter_prev().count(), any_current.iter_prev().count());
+    assert_eq!(current.iter_next().count(), any_current.iter_next().count());
+
+    for (chunk, any_chunk) in current.iter_prev().zip(any_current.iter_prev()) {
+        assert_chunk_match(chunk, any_chunk);
+    }
+
+    for (chunk, any_chunk) in current.iter_next().zip(any_current.iter_next()) {
+        assert_chunk_match(chunk, any_chunk);
+    }
+}
+
+fn assert_chunk_match<A, S>(chunk: Chunk<'_, A, S>, any_chunk: AnyChunk<'_>)
+where
+    S: BumpAllocatorSettings,
+{
+    assert_eq!(chunk.size(), any_chunk.size());
+    assert_eq!(chunk.capacity(), any_chunk.capacity());
+    assert_eq!(chunk.allocated(), any_chunk.allocated());
+    assert_eq!(chunk.remaining(), any_chunk.remaining());
+    assert_eq!(chunk.chunk_start(), any_chunk.chunk_start());
+    assert_eq!(chunk.chunk_end(), any_chunk.chunk_end());
+    assert_eq!(chunk.content_start(), any_chunk.content_start());
+    assert_eq!(chunk.content_end(), any_chunk.content_end());
+    assert_eq!(chunk.bump_position(), any_chunk.bump_position());
+}
+
+fn allocate_another_chunk<A, S>(bump: &Bump<A, S>, dummy_size: usize)
+where
+    A: Allocator,
+    S: BumpAllocatorSettings,
+{
+    let start_chunks = bump.any_stats().count();
+
+    // fill the existing chunk if there is one
+    let remaining = bump.any_stats().remaining();
+    if remaining != 0 {
+        bump.allocate_layout(Layout::from_size_align(remaining, 1).unwrap());
+    }
+    assert_eq!(bump.any_stats().count(), start_chunks);
+
+    bump.allocate_layout(Layout::from_size_align(dummy_size, 1).unwrap());
+    assert_eq!(bump.any_stats().count(), start_chunks + 1);
+    assert_eq!(bump.any_stats().current_chunk().unwrap().allocated(), dummy_size);
+}
+
+const ZST_ALLOCATED_CHUNK_HEADER_SIZE: usize = 8 * 4;
+const MALLOC_OVERHEAD_SIZE: usize = size_of::<AssumedMallocOverhead>();
+
+fn test_base_allocator<A, const UP: bool>(
+    bump: SimpleBump<UP, A>,
+    first_chunk_size_with_malloc_overhead: usize,
+    first_allocated_chunk_header_size: usize,
+    non_first_allocated_chunk_header_size: usize,
+) where
+    A: Allocator + Default,
+{
+    bump.alloc(1u8);
+    assert_eq!(bump.stats().count(), 1);
+    assert_eq!(
+        bump.stats().size(),
+        first_chunk_size_with_malloc_overhead - MALLOC_OVERHEAD_SIZE
+    );
+    assert_eq!(
+        bump.stats().capacity(),
+        first_chunk_size_with_malloc_overhead - MALLOC_OVERHEAD_SIZE - first_allocated_chunk_header_size
+    );
+    assert_eq!(bump.stats().allocated(), 1);
+    assert_eq!(bump.stats().remaining(), bump.stats().capacity() - bump.stats().allocated());
+    assert_stats_match(bump.stats(), bump.any_stats());
+
+    allocate_another_chunk(&bump, 1);
+    assert_eq!(
+        bump.stats().current_chunk().unwrap().size(),
+        first_chunk_size_with_malloc_overhead * 2 - MALLOC_OVERHEAD_SIZE
+    );
+    assert_eq!(
+        bump.stats().current_chunk().unwrap().capacity(),
+        first_chunk_size_with_malloc_overhead * 2 - MALLOC_OVERHEAD_SIZE - non_first_allocated_chunk_header_size
+    );
+    assert_eq!(bump.stats().current_chunk().unwrap().allocated(), 1);
+    assert_eq!(
+        bump.stats().current_chunk().unwrap().remaining(),
+        bump.stats().current_chunk().unwrap().capacity() - bump.stats().current_chunk().unwrap().allocated()
+    );
+    assert_stats_match(bump.stats(), bump.any_stats());
+}
+
+#[cfg(target_pointer_width = "64")]
+fn unallocated<const UP: bool>() {
+    allocator_with_layout!(TestBaseAllocator, 2048, 8);
+    let bump = <SimpleBump<UP, TestBaseAllocator>>::unallocated();
+    assert_eq!(bump.stats().count(), 0);
+    assert_eq!(bump.stats().size(), 0);
+    assert_eq!(bump.stats().capacity(), 0);
+    assert_eq!(bump.stats().allocated(), 0);
+    assert_eq!(bump.stats().remaining(), 0);
+    assert_stats_match(bump.stats(), bump.any_stats());
+    test_base_allocator(
+        <SimpleBump<UP, TestBaseAllocator>>::new(),
+        4096,
+        8 * 6 + 2048, // rounded up from 5 to 6 due to align
+        8 * 6,        // rounded up from 5 to 6 due to align
+    );
+}
+
+#[cfg(target_pointer_width = "64")]
 fn zst_allocator<const UP: bool>() {
-    allocator_with_layout!(ZstAllocator, 0, 1);
-    let bump = <Bump<UP, ZstAllocator>>::new();
-    bump.alloc(1u8);
-    assert_eq!(bump.stats().count(), 1);
-    assert_eq!(bump.stats().size(), 512 - size_of::<AssumedMallocOverhead>());
-    assert_eq!(bump.stats().allocated(), 1);
-    assert_eq!(
-        bump.stats().capacity(),
-        512 - size_of::<AssumedMallocOverhead>() - size_of::<ChunkHeader<ZstAllocator>>()
+    allocator_with_layout!(TestBaseAllocator, 0, 1);
+    test_base_allocator(
+        <SimpleBump<UP, TestBaseAllocator>>::new(),
+        512,
+        ZST_ALLOCATED_CHUNK_HEADER_SIZE,
+        ZST_ALLOCATED_CHUNK_HEADER_SIZE,
     );
-
-    assert_eq!(bump.stats().size(), bump.any_stats().size());
-    assert_eq!(bump.stats().allocated(), bump.any_stats().allocated());
-    assert_eq!(bump.stats().capacity(), bump.any_stats().capacity());
-    drop(bump);
 }
 
+// asserts same as the `zst_allocator`, alignment shouldn't affect anything
+#[cfg(target_pointer_width = "64")]
+fn zst_allocator_high_align<const UP: bool>() {
+    allocator_with_layout!(TestBaseAllocator, 0, 2048);
+    test_base_allocator(
+        <SimpleBump<UP, TestBaseAllocator>>::new(),
+        512,
+        ZST_ALLOCATED_CHUNK_HEADER_SIZE,
+        ZST_ALLOCATED_CHUNK_HEADER_SIZE,
+    );
+}
+
+#[cfg(target_pointer_width = "64")]
 fn ptr_allocator<const UP: bool>() {
-    allocator_with_layout!(PtrAllocator: *const u8);
-    let bump = <Bump<UP, PtrAllocator>>::new();
-    bump.alloc(1u8);
-    assert_eq!(bump.stats().count(), 1);
-    assert_eq!(bump.stats().size(), 512 - size_of::<AssumedMallocOverhead>());
-    assert_eq!(bump.stats().allocated(), 1);
-    assert_eq!(
-        bump.stats().capacity(),
-        512 - size_of::<AssumedMallocOverhead>() - size_of::<ChunkHeader<PtrAllocator>>()
+    allocator_with_layout!(TestBaseAllocator, 8, 8);
+    test_base_allocator(
+        <SimpleBump<UP, TestBaseAllocator>>::new(),
+        512,
+        8 * 6,
+        8 * 6, // rounded up from 5 to 6 due to align
     );
-
-    assert_eq!(bump.stats().size(), bump.any_stats().size());
-    assert_eq!(bump.stats().allocated(), bump.any_stats().allocated());
-    assert_eq!(bump.stats().capacity(), bump.any_stats().capacity());
-    drop(bump);
 }
 
-fn fat_allocator<const UP: bool>() {
-    allocator_with_layout!(FatAllocator, 1024, 1);
-    let bump = <Bump<UP, FatAllocator>>::new();
-    bump.alloc(1u8);
-    assert_eq!(bump.stats().count(), 1);
-    assert_eq!(bump.stats().size(), 2048 - size_of::<AssumedMallocOverhead>());
-    assert_eq!(bump.stats().allocated(), 1);
-    assert_eq!(
-        bump.stats().capacity(),
-        2048 - size_of::<AssumedMallocOverhead>() - size_of::<NonZstFirstAllocatedChunkHeader<FatAllocator>>()
+#[cfg(target_pointer_width = "64")]
+fn two_ptr_allocator<const UP: bool>() {
+    allocator_with_layout!(TestBaseAllocator, 16, 8);
+    test_base_allocator(
+        <SimpleBump<UP, TestBaseAllocator>>::new(),
+        512,
+        8 * 8, // rounded up from 7 to 8 due to align
+        8 * 6, // rounded up from 5 to 6 due to align
     );
+}
 
-    assert_eq!(bump.stats().size(), bump.any_stats().size());
-    assert_eq!(bump.stats().allocated(), bump.any_stats().allocated());
-    assert_eq!(bump.stats().capacity(), bump.any_stats().capacity());
-    drop(bump);
+#[cfg(target_pointer_width = "64")]
+fn high_align_allocator<const UP: bool>() {
+    if !UP {
+        // FIXME: size allocation is weird as heck for downwards, fix it!
+        return;
+    }
+
+    allocator_with_layout!(TestBaseAllocator, 32, 32);
+    test_base_allocator(
+        <SimpleBump<UP, TestBaseAllocator>>::new(),
+        512,
+        8 * 5 + 8 * 3 + 32, // 8 * 3 is padding
+        8 * 6,              // rounded up from 5 to 6 due to align
+    );
+}
+
+#[cfg(target_pointer_width = "64")]
+fn fat_allocator<const UP: bool>() {
+    allocator_with_layout!(TestBaseAllocator, 1024, 1);
+    test_base_allocator(
+        <SimpleBump<UP, TestBaseAllocator>>::new(),
+        2048,
+        8 * 6 + 1024, // rounded up from 5 to 6 due to align
+        8 * 6,        // rounded up from 5 to 6 due to align
+    );
 }

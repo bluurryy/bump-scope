@@ -219,10 +219,10 @@ fn mut_bump_vec_extend<const UP: bool>() {
 fn mut_bump_vec_drop<const UP: bool>() {
     use bump_scope::MutBumpVec;
 
-    use crate::common::{BumpNoMinSize, ChunkHeader, MALLOC_OVERHEAD, OVERHEAD};
+    use crate::common::{BumpNoMinSize, MALLOC_OVERHEAD};
 
-    const SIZE: usize = 32;
-    assert_eq!(size_of::<ChunkHeader>(), SIZE);
+    const CHUNK_HEADER_SIZE: usize = 8 * 4;
+    const OVERHEAD: usize = MALLOC_OVERHEAD + CHUNK_HEADER_SIZE;
 
     let mut bump = BumpNoMinSize::<UP>::with_size(64);
     assert_eq!(bump.stats().current_chunk().unwrap().size(), 64 - MALLOC_OVERHEAD);
