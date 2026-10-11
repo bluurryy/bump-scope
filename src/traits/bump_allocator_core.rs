@@ -5,9 +5,9 @@ use core::{
 };
 
 use crate::{
-    BaseAllocator, Bump, BumpScope, Checkpoint, WithoutDealloc, WithoutShrink,
+    Bump, BumpScope, Checkpoint, WithoutDealloc, WithoutShrink,
+    chunk::Chunk,
     layout::CustomLayout,
-    raw_bump::Chunk,
     settings::BumpAllocatorSettings,
     stats::AnyStats,
     traits::{assert_dyn_compatible, assert_implements},
@@ -22,14 +22,14 @@ impl<B: Sealed> Sealed for WithoutShrink<B> {}
 
 impl<A, S> Sealed for Bump<A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
 }
 
 impl<A, S> Sealed for BumpScope<'_, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
 }
@@ -331,7 +331,7 @@ unsafe impl<B: BumpAllocatorCore> BumpAllocatorCore for WithoutShrink<B> {
 
 unsafe impl<A, S> BumpAllocatorCore for Bump<A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
@@ -377,7 +377,7 @@ where
 
 unsafe impl<A, S> BumpAllocatorCore for BumpScope<'_, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
@@ -409,7 +409,7 @@ where
             layout: Layout,
         ) -> Result<Range<NonNull<u8>>, AllocError>
         where
-            A: BaseAllocator<S::GuaranteedAllocated>,
+            A: Allocator,
             S: BumpAllocatorSettings,
         {
             unsafe {
@@ -432,7 +432,7 @@ where
 
         unsafe {
             // a successful `prepare_allocation` guarantees a non-dummy-chunk
-            let chunk = self.raw.chunk.get().as_non_dummy_unchecked();
+            let chunk = self.raw.chunk.get().as_allocated_unchecked();
 
             if S::UP {
                 let end = range.start.add(layout.size());
@@ -463,7 +463,7 @@ where
 
         unsafe {
             // a successful `prepare_allocation` guarantees a non-dummy-chunk
-            let chunk = self.raw.chunk.get().as_non_dummy_unchecked();
+            let chunk = self.raw.chunk.get().as_allocated_unchecked();
 
             if S::UP {
                 let dst = range.start;

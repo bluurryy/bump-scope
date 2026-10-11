@@ -11,7 +11,7 @@ use core::{
 use core::clone::CloneToUninit;
 
 use crate::{
-    BaseAllocator, BumpBox, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, ErrorBehavior, allocator_impl,
+    BumpBox, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, ErrorBehavior, allocator_impl,
     chunk::{ChunkSizeCapacity, ChunkSizeHint},
     maybe_default_allocator,
     owned_slice::OwnedSlice,
@@ -278,7 +278,7 @@ where
 #[cfg(feature = "panic-on-alloc")]
 impl<A, S> Default for Bump<A, S>
 where
-    A: Allocator + Default,
+    A: Allocator + Default + 'static,
     S: BumpAllocatorSettings,
 {
     /// With [`GUARANTEED_ALLOCATED`] this does the same as [`new`], otherwise it does the same as [`unallocated`].
@@ -291,17 +291,9 @@ where
         if S::GUARANTEED_ALLOCATED {
             Self::new_in(Default::default())
         } else {
-            use core::{cell::Cell, marker::PhantomData};
-
-            use crate::{chunk::ChunkHeader, raw_bump::Chunk};
-
             Self {
-                raw: RawBump {
-                    chunk: Cell::new(Chunk {
-                        header: ChunkHeader::unallocated::<S>().cast(),
-                        marker: PhantomData,
-                    }),
-                },
+                // SAFETY: `S::GUARANTEED_ALLOCATED` is `false`
+                raw: unsafe { RawBump::new_unchecked() },
             }
         }
     }
@@ -310,7 +302,7 @@ where
 #[cfg(not(feature = "panic-on-alloc"))]
 impl<A, S> Default for Bump<A, S>
 where
-    A: Allocator + Default,
+    A: Allocator + Default + 'static,
     S: BumpAllocatorSettings<GuaranteedAllocated = False>,
 {
     /// Does the same as [`unallocated`].
@@ -324,7 +316,7 @@ where
 
 impl<A, S> Bump<A, S>
 where
-    A: Allocator,
+    A: Allocator + Default + 'static,
     S: BumpAllocatorSettings<GuaranteedAllocated = False>,
 {
     /// Constructs a new `Bump` without allocating a chunk.
@@ -857,7 +849,6 @@ where
     #[inline]
     pub fn with_settings<NewS>(self) -> Bump<A, NewS>
     where
-        A: BaseAllocator<NewS::GuaranteedAllocated>,
         NewS: BumpAllocatorSettings,
     {
         self.raw.ensure_satisfies_settings::<NewS>();
@@ -874,7 +865,6 @@ where
     #[inline]
     pub fn borrow_with_settings<NewS>(&self) -> &Bump<A, NewS>
     where
-        A: BaseAllocator<NewS::GuaranteedAllocated>,
         NewS: BumpAllocatorSettings,
     {
         self.raw.ensure_satisfies_settings_for_borrow::<NewS>();
@@ -891,7 +881,6 @@ where
     #[inline]
     pub fn borrow_mut_with_settings<NewS>(&mut self) -> &mut Bump<A, NewS>
     where
-        A: BaseAllocator<NewS::GuaranteedAllocated>,
         NewS: BumpAllocatorSettings,
     {
         self.raw.ensure_satisfies_settings_for_borrow_mut::<NewS>();
@@ -935,7 +924,7 @@ where
 
 impl<'b, A, S> From<&'b Bump<A, S>> for &'b BumpScope<'b, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
@@ -946,7 +935,7 @@ where
 
 impl<'b, A, S> From<&'b mut Bump<A, S>> for &'b mut BumpScope<'b, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
@@ -960,7 +949,7 @@ where
 #[allow(clippy::missing_errors_doc, clippy::missing_safety_doc)]
 impl<A, S> Bump<A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     traits::forward_methods! {
@@ -974,7 +963,7 @@ where
 /// Additional `alloc` methods that are not available in traits.
 impl<A, S> Bump<A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
@@ -1126,7 +1115,7 @@ where
 
 unsafe impl<A, S> Allocator for Bump<A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]

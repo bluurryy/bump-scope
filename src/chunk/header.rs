@@ -6,24 +6,36 @@
 
 use core::{cell::Cell, ptr::NonNull};
 
-use crate::settings::BumpAllocatorSettings;
-
-/// The chunk header existing in every allocated chunk, extending `ChunkHeader` with
-/// intrusive doubly linked list fields and its allocator.
+/// The special chunk header that's only in the first allocated chunk.
+/// It extends [`AllocatedChunkHeader`] with a field storing the allocator itself.
 #[repr(C, align(16))]
-pub(crate) struct AllocatedChunkHeader<A> {
+pub(crate) struct NonZstFirstAllocatedChunkHeader<A> {
     pub(crate) pos: Cell<NonNull<u8>>,
     pub(crate) end: NonNull<u8>,
 
     pub(crate) prev: Cell<Option<NonNull<Self>>>,
     pub(crate) next: Cell<Option<NonNull<Self>>>,
 
+    pub(crate) allocator_ptr: NonNull<A>,
     pub(crate) allocator: A,
+}
+
+/// The chunk header existing in every allocated chunk, extending `ChunkHeader` with
+/// intrusive doubly linked list fields and its allocator.
+#[repr(C, align(16))]
+pub(crate) struct NonZstAllocatedChunkHeader<A> {
+    pub(crate) pos: Cell<NonNull<u8>>,
+    pub(crate) end: NonNull<u8>,
+
+    pub(crate) prev: Cell<Option<NonNull<Self>>>,
+    pub(crate) next: Cell<Option<NonNull<Self>>>,
+
+    pub(crate) allocator_ptr: NonNull<A>,
 }
 
 /// Like [`AllocatedChunkHeader`], just without the `allocator` field.
 #[repr(C, align(16))]
-pub(crate) struct ErasedAllocatedChunkHeader {
+pub(crate) struct AllocatedChunkHeader {
     pub(crate) pos: Cell<NonNull<u8>>,
     pub(crate) end: NonNull<u8>,
 
@@ -38,47 +50,99 @@ pub(crate) struct ChunkHeader {
     pub(crate) end: NonNull<u8>,
 }
 
-/// Wraps a [`ChunkHeader`], making it Sync so it can be used as a static.
-/// The dummy chunk is never mutated, so this is fine.
-struct DummyChunkHeader(ChunkHeader);
+/// The chunk header for dummy chunks, note how `pos` is not a cell. Dummy chunks, being statics must not be written to anyhow
+/// (even if the value stays the same, it's still a data race) so removing the `Cell` makes it so we can catch accidental
+/// writes earlier via miri. // TODO: it's a presumption; make sure miri actually catches that
+#[repr(C, align(16))]
+pub(crate) struct DummyChunkHeader {
+    pub(crate) pos: NonNull<u8>,
+    pub(crate) end: NonNull<u8>,
+}
+
+/// The chunk header for the "unallocated" dummy chunk, extending the [`DummyChunkHeader`] with a default constructor for the base allocator.
+#[repr(C, align(16))]
+pub(crate) struct UnallocatedChunkHeader<T> {
+    pub(crate) pos: NonNull<u8>,
+    pub(crate) end: NonNull<u8>,
+    pub(crate) default: fn() -> T,
+}
 
 unsafe impl Sync for DummyChunkHeader {}
 
-/// We create a dummy chunks with a negative capacity, so all allocations will fail, even ones that ask for 0 bytes.
-///
-/// The pointers used for `pos` and `end` are chosen to be pointers into the same static dummy chunk.
-///
-/// It's irrelevant where the pointers point to, they just need to:
-/// - be aligned to [`MIN_CHUNK_ALIGN`](crate::bumping::MIN_CHUNK_ALIGN)
-/// - denote a negative capacity (currently guaranteed to be -16)
-/// - point to some existing object, not a dangling pointer since a dangling pointer could
-///   theoretically be a valid pointer to some other chunk
-macro_rules! dummy_chunk {
-    ($name:ident) => {
-        pub(crate) const fn $name<S: BumpAllocatorSettings>() -> NonNull<ChunkHeader> {
-            static UP_CHUNK: DummyChunkHeader = DummyChunkHeader(ChunkHeader {
-                // SAFETY: Due to `align(16)`, `ChunkHeader`'s size is `>= 16`, so a `byte_add` of 16 is in bounds.
-                // We could also use `.add(1)` here, but we currently guarantee a capacity of -16
-                pos: Cell::new(unsafe { UP_CHUNK_PTR.cast().byte_add(16) }),
-                end: UP_CHUNK_PTR.cast(),
-            });
+#[repr(C, align(16))]
+struct DummyMemoryRegionSlot([u8; 16]);
 
-            static DOWN_CHUNK: DummyChunkHeader = DummyChunkHeader(ChunkHeader {
-                pos: Cell::new(DOWN_CHUNK_PTR.cast()),
-                // SAFETY: Due to `align(16)`, `ChunkHeader`'s size is `>= 16`, so a `byte_add` of 16 is in bounds.
-                // We could also use `.add(1)` here, but we currently guarantee a capacity of -16
-                end: unsafe { DOWN_CHUNK_PTR.cast().byte_add(16) },
-            });
+impl DummyMemoryRegionSlot {
+    const fn new() -> Self {
+        Self([0; _])
+    }
+}
 
-            const UP_CHUNK_PTR: NonNull<ChunkHeader> = NonNull::from_ref(&UP_CHUNK.0);
-            const DOWN_CHUNK_PTR: NonNull<ChunkHeader> = NonNull::from_ref(&DOWN_CHUNK.0);
+#[repr(C, align(16))]
+struct DummyMemoryRegion {
+    start_padding: DummyMemoryRegionSlot,
+    unallocated_pos: DummyMemoryRegionSlot,
+    claimed_pos: DummyMemoryRegionSlot,
+    end_padding: DummyMemoryRegionSlot,
+}
 
-            if S::UP { UP_CHUNK_PTR } else { DOWN_CHUNK_PTR }
-        }
+static DUMMY_MEMORY_REGION: DummyMemoryRegion = DummyMemoryRegion {
+    start_padding: DummyMemoryRegionSlot::new(),
+    unallocated_pos: DummyMemoryRegionSlot::new(),
+    claimed_pos: DummyMemoryRegionSlot::new(),
+    end_padding: DummyMemoryRegionSlot::new(),
+};
+
+macro_rules! slot {
+    ($slot:ident) => {
+        unsafe { NonNull::new_unchecked((&raw const DUMMY_MEMORY_REGION.$slot).cast_mut().cast::<u8>()) }
+    };
+    ($slot:ident + 16) => {
+        unsafe { NonNull::new_unchecked((&raw const DUMMY_MEMORY_REGION.$slot).cast_mut().cast::<u8>()).byte_add(16) }
+    };
+    ($slot:ident - 16) => {
+        unsafe { NonNull::new_unchecked((&raw const DUMMY_MEMORY_REGION.$slot).cast_mut().cast::<u8>()).byte_sub(16) }
     };
 }
 
 impl ChunkHeader {
-    dummy_chunk!(unallocated);
-    dummy_chunk!(claimed);
+    pub(crate) fn is_unallocated(&self) -> bool {
+        self.pos.get() == slot!(unallocated_pos)
+    }
+
+    pub(crate) fn is_claimed(&self) -> bool {
+        self.pos.get() == slot!(claimed_pos)
+    }
+}
+
+impl<T: Default + 'static> UnallocatedChunkHeader<T> {
+    const UP_STATIC: &'static UnallocatedChunkHeader<T> = &UnallocatedChunkHeader {
+        pos: slot!(unallocated_pos),
+        end: slot!(unallocated_pos - 16),
+        default: T::default,
+    };
+
+    const DOWN_STATIC: &'static UnallocatedChunkHeader<T> = &UnallocatedChunkHeader {
+        pos: slot!(unallocated_pos),
+        end: slot!(unallocated_pos + 16),
+        default: T::default,
+    };
+
+    pub const UP: NonNull<UnallocatedChunkHeader<T>> = NonNull::from_ref(Self::UP_STATIC);
+    pub const DOWN: NonNull<UnallocatedChunkHeader<T>> = NonNull::from_ref(Self::DOWN_STATIC);
+}
+
+impl DummyChunkHeader {
+    const CLAIMED_UP_STATIC: &'static DummyChunkHeader = &DummyChunkHeader {
+        pos: slot!(claimed_pos),
+        end: slot!(claimed_pos - 16),
+    };
+
+    const CLAIMED_DOWN_STATIC: &'static DummyChunkHeader = &DummyChunkHeader {
+        pos: slot!(claimed_pos),
+        end: slot!(claimed_pos + 16),
+    };
+
+    pub const CLAIMED_UP: NonNull<DummyChunkHeader> = NonNull::from_ref(Self::CLAIMED_UP_STATIC);
+    pub const CLAIMED_DOWN: NonNull<DummyChunkHeader> = NonNull::from_ref(Self::CLAIMED_DOWN_STATIC);
 }

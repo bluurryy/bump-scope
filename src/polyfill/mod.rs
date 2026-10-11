@@ -7,6 +7,7 @@
 pub(crate) mod hint;
 pub(crate) mod iter;
 pub(crate) mod non_null;
+pub(crate) mod panic;
 pub(crate) mod pointer;
 pub(crate) mod slice;
 

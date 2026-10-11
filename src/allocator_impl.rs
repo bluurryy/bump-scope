@@ -1,18 +1,18 @@
 use core::{
-    alloc::{AllocError, Layout},
+    alloc::{AllocError, Allocator, Layout},
     num::NonZeroUsize,
     ptr::NonNull,
 };
 
 use crate::{
-    BaseAllocator, bump_down, layout::CustomLayout, polyfill::non_null, raw_bump::RawBump, settings::BumpAllocatorSettings,
+    bump_down, layout::CustomLayout, polyfill::non_null, raw_bump::RawBump, settings::BumpAllocatorSettings,
     up_align_usize_unchecked,
 };
 
 #[inline(always)]
 pub fn allocate<A, S>(bump: &RawBump<A, S>, layout: Layout) -> Result<NonNull<[u8]>, AllocError>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     Ok(NonNull::slice_from_raw_parts(
@@ -24,7 +24,7 @@ where
 #[inline(always)]
 pub unsafe fn deallocate<A, S>(bump: &RawBump<A, S>, ptr: NonNull<u8>, layout: Layout)
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     if !S::DEALLOCATES {
@@ -42,7 +42,7 @@ where
 #[inline(always)]
 unsafe fn deallocate_assume_last<A, S>(bump: &RawBump<A, S>, ptr: NonNull<u8>, layout: Layout)
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     if !S::DEALLOCATES {
@@ -50,7 +50,7 @@ where
     }
 
     unsafe {
-        let chunk = bump.chunk.get().as_non_dummy_unchecked();
+        let chunk = bump.chunk.get().as_allocated_unchecked();
         if S::UP {
             chunk.set_pos_addr_and_align(ptr.addr().get());
         } else {
@@ -74,7 +74,7 @@ where
 #[inline(always)]
 unsafe fn is_last<A, S>(bump: &RawBump<A, S>, ptr: NonNull<u8>, layout: Layout) -> bool
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     if S::UP {
@@ -92,7 +92,7 @@ pub unsafe fn grow<A, S>(
     new_layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     debug_assert!(
@@ -106,7 +106,7 @@ where
                 // We may be able to grow in place! Just need to check if there is enough space.
 
                 // `is_last` returned true, which guarantees a non-dummy
-                let chunk = bump.chunk.get().as_non_dummy_unchecked();
+                let chunk = bump.chunk.get().as_allocated_unchecked();
                 let chunk_end = chunk.content_end();
                 let remaining = chunk_end.addr().get() - old_ptr.addr().get();
 
@@ -136,7 +136,7 @@ where
         } else {
             if is_last(bump, old_ptr, old_layout) {
                 // `is_last` returned true, which guarantees a non-dummy
-                let chunk = bump.chunk.get().as_non_dummy_unchecked();
+                let chunk = bump.chunk.get().as_allocated_unchecked();
 
                 // We may be able to reuse the currently allocated space. Just need to check if the current chunk has enough space for that.
                 let additional_size = new_layout.size() - old_layout.size();
@@ -189,7 +189,7 @@ pub unsafe fn grow_zeroed<A, S>(
     new_layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     unsafe {
@@ -214,7 +214,7 @@ pub unsafe fn shrink<A, S>(
     new_layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     /// Called when `new_layout` doesn't fit alignment.
@@ -227,7 +227,7 @@ where
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError>
     where
-        A: BaseAllocator<S::GuaranteedAllocated>,
+        A: Allocator,
         S: BumpAllocatorSettings,
     {
         unsafe {
@@ -249,7 +249,7 @@ where
                     }
                 } else {
                     // `is_last` returned true, which guarantees a non-dummy chunk
-                    bump.chunk.get().as_non_dummy_unchecked().set_pos(old_pos);
+                    bump.chunk.get().as_allocated_unchecked().set_pos(old_pos);
 
                     new_ptr = bump.alloc_in_another_chunk::<AllocError>(new_layout)?;
                     overlaps = false;
@@ -293,7 +293,7 @@ where
             let new_pos = up_align_usize_unchecked(end, S::MIN_ALIGN);
 
             // `is_last` returned true, which guarantees a non-dummy
-            bump.chunk.get().as_non_dummy_unchecked().set_pos_addr(new_pos);
+            bump.chunk.get().as_allocated_unchecked().set_pos_addr(new_pos);
 
             Ok(NonNull::slice_from_raw_parts(old_ptr, new_layout.size()))
         } else {
@@ -318,7 +318,7 @@ where
             }
 
             // `is_last` returned true, which guarantees a non-dummy
-            bump.chunk.get().as_non_dummy_unchecked().set_pos(new_ptr);
+            bump.chunk.get().as_allocated_unchecked().set_pos(new_ptr);
 
             Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
         }

@@ -11,7 +11,7 @@ use bump_scope::{settings::BumpSettings, traits::BumpAllocatorCore};
 
 use common::either_way;
 
-use crate::common::{AssumedMallocOverhead, ChunkHeader};
+use crate::common::{AssumedMallocOverhead, ChunkHeader, NonZstFirstAllocatedChunkHeader};
 
 either_way! {
     zst_allocator
@@ -110,7 +110,7 @@ fn fat_allocator<const UP: bool>() {
     assert_eq!(bump.stats().allocated(), 1);
     assert_eq!(
         bump.stats().capacity(),
-        2048 - size_of::<AssumedMallocOverhead>() - size_of::<ChunkHeader<FatAllocator>>()
+        2048 - size_of::<AssumedMallocOverhead>() - size_of::<NonZstFirstAllocatedChunkHeader<FatAllocator>>()
     );
 
     assert_eq!(bump.stats().size(), bump.any_stats().size());

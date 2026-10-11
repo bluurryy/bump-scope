@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Remove allocator api polyfill at `bump_scope::alloc`
 - **Breaking:** Remove `allocator-api2-02`, `*-03` and `*-04` features and the corresponding compatibility
 - **Breaking:** Remove `nightly-allocator-api` feature, since it is now stable
+- **Breaking:** Remove `BaseAllocator` trait, any `Allocator` can be used now
 
 ## [2.4.0] - 2026-10-06
 

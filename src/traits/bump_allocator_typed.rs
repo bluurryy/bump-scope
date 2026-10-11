@@ -1,13 +1,13 @@
 #![expect(clippy::missing_safety_doc)]
 
 use core::{
-    alloc::{AllocError, Layout},
+    alloc::{AllocError, Allocator, Layout},
     num::NonZeroUsize,
     ptr::NonNull,
 };
 
 use crate::{
-    BaseAllocator, Bump, BumpBox, BumpScope, SizedTypeProperties, WithoutDealloc, WithoutShrink, bump_down,
+    Bump, BumpBox, BumpScope, SizedTypeProperties, WithoutDealloc, WithoutShrink, bump_down,
     polyfill::non_null,
     settings::BumpAllocatorSettings,
     stats::{AnyStats, Stats},
@@ -587,9 +587,9 @@ mod for_trait_object {
     }
 
     fn is_upwards_allocating(bump: &impl BumpAllocatorCore) -> bool {
-        let chunk = bump.checkpoint().chunk;
-        let header = chunk.addr();
-        let end = unsafe { chunk.as_ref() }.end.addr();
+        let chunk = bump.checkpoint().chunk();
+        let header = chunk.header().addr();
+        let end = chunk.end().addr();
         end > header
     }
 
@@ -1023,7 +1023,7 @@ unsafe impl<B: BumpAllocatorTyped> BumpAllocatorTyped for WithoutShrink<B> {
 
 unsafe impl<A, S> BumpAllocatorTyped for BumpScope<'_, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     type TypedStats<'b>
@@ -1106,7 +1106,7 @@ where
             }
 
             // `is_last` is true, which guarantees a non-dummy, see `allocator_impl::is_last`
-            let chunk = chunk.as_non_dummy_unchecked();
+            let chunk = chunk.as_allocated_unchecked();
 
             if S::UP {
                 let end = old_ptr.addr().get() + new_size;
@@ -1154,7 +1154,7 @@ where
     unsafe fn allocate_prepared_slice<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe {
             // a successful `prepare_allocation` guarantees a non-dummy-chunk
-            let chunk = self.raw.chunk.get().as_non_dummy_unchecked();
+            let chunk = self.raw.chunk.get().as_allocated_unchecked();
 
             let end = start.add(len);
 
@@ -1186,7 +1186,7 @@ where
     unsafe fn allocate_prepared_slice_rev<T>(&self, end: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe {
             // a successful `prepare_allocation` guarantees a non-dummy-chunk
-            let chunk = self.raw.chunk.get().as_non_dummy_unchecked();
+            let chunk = self.raw.chunk.get().as_allocated_unchecked();
 
             if S::UP {
                 let dst = end.sub(cap);
@@ -1220,7 +1220,7 @@ where
 
 unsafe impl<A, S> BumpAllocatorTyped for Bump<A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     type TypedStats<'b>

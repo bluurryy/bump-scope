@@ -116,7 +116,6 @@ fn checkpoint_multiple_chunks<const UP: bool>() {
     unsafe { bump.reset_to(c0) };
     assert_eq!(bump.stats().current_chunk().unwrap().iter_prev().count(), 0);
     assert_eq!(bump.stats().count(), 4);
-    std::dbg!(bump.stats());
 }
 
 fn allocate_another_chunk<const UP: bool>(bump: &Bump<UP>, dummy_size: usize) {

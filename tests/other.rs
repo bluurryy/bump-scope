@@ -53,6 +53,8 @@ either_way! {
 
     macro_syntax
 
+    reset_solo_chunk
+
     reset_first_chunk
 
     reset_middle_chunk
@@ -310,6 +312,14 @@ fn force_alloc_new_chunk<const UP: bool>(bump: &BumpScopeNoMinSize<UP>) {
     let size = bump.stats().current_chunk().unwrap().remaining() + 1;
     let layout = Layout::from_size_align(size, 1).unwrap();
     bump.allocate_layout(layout);
+}
+
+fn reset_solo_chunk<const UP: bool>() {
+    let mut bump = BumpNoMinSize::<UP>::with_size(64);
+
+    assert_chunk_sizes!(bump, [], 64, []);
+    bump.reset();
+    assert_chunk_sizes!(bump, [], 64, []);
 }
 
 fn reset_first_chunk<const UP: bool>() {
@@ -1115,9 +1125,9 @@ fn test_drop_allocator() {
     assert_eq!(drop_count.get(), 1);
 
     let bump: Bump<_> = Bump::with_size_in(512, allocator);
-    bump.reserve(1024);
+    bump.reserve(1024); // allocate another chunk
     drop(bump);
-    assert_eq!(drop_count.get(), 3);
+    assert_eq!(drop_count.get(), 2);
 }
 
 #[test]

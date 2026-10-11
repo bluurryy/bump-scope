@@ -1,22 +1,16 @@
 use core::{
-    alloc::{AllocError, Allocator, Layout},
+    alloc::{Allocator, Layout},
     cell::Cell,
-    marker::PhantomData,
-    num::NonZeroUsize,
     ops::Range,
-    ptr::{self, NonNull},
+    panic,
+    ptr::NonNull,
 };
 
 use crate::{
-    BaseAllocator, Checkpoint, SizedTypeProperties, align_pos,
-    bumping::{BumpProps, BumpUp, MIN_CHUNK_ALIGN, bump_down, bump_prepare_down, bump_prepare_up, bump_up},
-    chunk::{
-        AllocatedChunkHeader, ChunkHeader, ChunkSize, ChunkSizeCapacity, ChunkSizeHint, ChunkSizeMinimum,
-        align_allocation_size,
-    },
+    Checkpoint, SizedTypeProperties, align_pos,
+    chunk::{AllocatedChunk, Chunk, ChunkClass, ChunkSize, ChunkSizeCapacity, ChunkSizeMinimum, FirstAllocatedChunk},
     error_behavior::{self, ErrorBehavior},
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
-    polyfill::non_null,
     settings::{BumpAllocatorSettings, False, MinimumAlignment, SupportedMinimumAlignment},
     stats::Stats,
 };
@@ -50,11 +44,34 @@ where
     #[inline(always)]
     pub(crate) const fn new() -> Self
     where
+        A: Default + 'static,
         S: BumpAllocatorSettings<GuaranteedAllocated = False>,
     {
         Self {
             chunk: Cell::new(Chunk::UNALLOCATED),
         }
+    }
+
+    /// # Safety
+    ///
+    /// `S::GUARANTEEED_ALLOCATED` must be `false`.
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub(crate) const unsafe fn new_unchecked() -> Self
+    where
+        A: Default + 'static,
+    {
+        Self {
+            chunk: Cell::new(Chunk::UNALLOCATED_UNCHECKED),
+        }
+    }
+
+    /// # Safety
+    ///
+    /// - This method invalidates all memory blocks of this bump allocator
+    #[expect(clippy::needless_pass_by_value)]
+    pub unsafe fn replace(&self, new: Self) {
+        self.chunk.set(new.chunk.get());
     }
 
     #[inline(always)]
@@ -66,8 +83,8 @@ where
     #[inline(always)]
     pub(crate) fn allocator<'a>(&self) -> Option<&'a A> {
         match self.chunk.get().classify() {
-            ChunkClass::Claimed | ChunkClass::Unallocated => None,
-            ChunkClass::NonDummy(chunk) => Some(chunk.allocator()),
+            ChunkClass::Claimed | ChunkClass::Unallocated(_) => None,
+            ChunkClass::Allocated(chunk) => Some(chunk.allocator()),
         }
     }
 }
@@ -80,69 +97,89 @@ where
     #[inline(always)]
     pub(crate) fn with_size<E: ErrorBehavior>(size: impl ChunkSize, allocator: A) -> Result<Self, E> {
         Ok(Self {
-            chunk: Cell::new(AllocatedChunk::new::<E>(size, None, allocator)?.as_raw()),
+            chunk: Cell::new(**FirstAllocatedChunk::new::<E>(size, allocator)?),
         })
     }
 
     #[inline(always)]
     pub(crate) fn reset(&self) {
-        let Some(mut chunk) = self.chunk.get().as_non_dummy() else {
+        let Some(first) = self.first_chunk() else {
             return;
         };
 
-        unsafe {
-            chunk.for_each_prev(|chunk| chunk.deallocate());
-
-            while let Some(next) = chunk.next() {
-                chunk.deallocate();
-                chunk = next;
-            }
-
-            chunk.header.as_ref().prev.set(None);
+        // if it's just this chunk, then no deallocation takes place
+        if first.next().is_none() {
+            first.reset();
+            return;
         }
 
-        chunk.reset();
+        // extract the allocator
+        let allocator = first.read_allocator();
+        let mut chunk = *first;
 
-        self.chunk.set(chunk.as_raw());
-    }
-
-    /// Reset's the bump pointer to the very start.
-    #[inline]
-    pub(crate) fn reset_to_start(&self) {
-        if let Some(mut chunk) = self.chunk.get().as_non_dummy() {
-            while let Some(prev) = chunk.prev() {
-                chunk = prev;
-            }
-
-            chunk.reset();
-
-            self.chunk.set(chunk.as_raw());
+        // deallocate all chunks except the last
+        while let Some(next) = chunk.next() {
+            let ptr = chunk.chunk_start();
+            let layout = chunk.layout();
+            unsafe { allocator.deallocate(ptr, layout) };
+            chunk = next;
         }
+
+        // setup the last chunk as the new "first allocated chunk"
+        let new_first = unsafe {
+            let ptr = chunk.chunk_start();
+            let size = chunk.size().get();
+            FirstAllocatedChunk::<A, S>::init(ptr, size, allocator)
+        };
+
+        self.chunk.set(**new_first);
     }
 
     /// # Safety
     /// - self must not be used after calling this.
     pub(crate) unsafe fn manually_drop(&mut self) {
-        match self.chunk.get().classify() {
-            ChunkClass::Claimed => {
-                // The user must have somehow leaked a `BumpClaimGuard`.
-                // Thus the bump allocator has been leaked, there is nothing to do here.
+        let Some(first) = self.first_chunk() else {
+            return;
+        };
+
+        // extract the allocator
+        let allocator = first.read_allocator();
+        let mut chunk = *first;
+
+        // deallocate all chunks
+        loop {
+            let next = chunk.next();
+
+            let ptr = chunk.chunk_start();
+            let layout = chunk.layout();
+            unsafe { allocator.deallocate(ptr, layout) };
+
+            if let Some(next) = next {
+                chunk = next;
+            } else {
+                break;
             }
-            ChunkClass::Unallocated => (),
-            ChunkClass::NonDummy(chunk) => unsafe {
-                chunk.for_each_prev(|chunk| chunk.deallocate());
-                chunk.for_each_next(|chunk| chunk.deallocate());
-                chunk.deallocate();
-            },
         }
     }
 }
 
 impl<A, S> RawBump<A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
     S: BumpAllocatorSettings,
 {
+    #[inline(always)]
+    fn first_chunk(&self) -> Option<FirstAllocatedChunk<A, S>> {
+        let mut chunk = self.chunk.get().as_non_dummy()?;
+
+        while let Some(prev) = chunk.prev() {
+            chunk = prev;
+        }
+
+        // SAFETY: it's the first, duh
+        let first = unsafe { FirstAllocatedChunk::from_unchecked(chunk) };
+        Some(first)
+    }
+
     #[inline(always)]
     pub(crate) fn claim(&self) -> RawBump<A, S> {
         const {
@@ -185,79 +222,88 @@ where
         // if the bump allocator is `GUARANTEED_ALLOCATED`. We are allowed to not do this check
         // because of this safety condition of `reset_to`:
         // > the checkpoint must not have been created by an `!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
-        if !S::GUARANTEED_ALLOCATED && checkpoint.chunk == ChunkHeader::unallocated::<S>() {
+        if !S::GUARANTEED_ALLOCATED && checkpoint.chunk.is_unallocated() {
             self.reset_to_start();
             return;
         }
 
         #[cfg(debug_assertions)]
         {
-            assert_ne!(
-                checkpoint.chunk,
-                ChunkHeader::claimed::<S>(),
+            assert!(
+                !checkpoint.chunk.is_claimed(),
                 "the checkpoint must not have been created by a claimed bump allocator"
             );
 
-            assert_ne!(
-                self.chunk.get().header.cast(),
-                ChunkHeader::claimed::<S>(),
+            assert!(
+                !self.chunk.get().is_claimed(),
                 "this function must not be called on a claimed bump allocator"
             );
 
-            assert_ne!(
-                checkpoint.chunk,
-                ChunkHeader::unallocated::<S>(),
+            assert!(
+                !checkpoint.chunk.is_unallocated(),
                 "the checkpoint must not have been created by a `!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`"
             );
 
             let chunk = self
                 .stats()
                 .small_to_big()
-                .find(|chunk| chunk.header() == checkpoint.chunk.cast())
+                .find(|chunk| chunk.header().addr() == checkpoint.chunk().header().addr())
                 .expect("this checkpoint does not refer to any chunk in this bump allocator");
 
+            let start = chunk.content_start().addr().get();
+            let end = chunk.content_end().addr().get();
+            let addr = checkpoint.address.get();
+
             assert!(
-                chunk.chunk.contains_addr_or_end(checkpoint.address.get()),
-                "checkpoint address does not point within its chunk"
+                addr >= start && addr <= end,
+                "checkpoint address is not in the chunk's content range"
             );
         }
 
         unsafe {
             checkpoint.reset_within_chunk();
 
-            self.chunk.set(Chunk {
-                header: checkpoint.chunk.cast(),
-                marker: PhantomData,
-            });
+            self.chunk.set(Chunk::from_raw(checkpoint.chunk().header().cast()));
         }
     }
 
+    /// Reset's the bump pointer to the very start.
+    #[inline]
+    pub(crate) fn reset_to_start(&self) {
+        let Some(first) = self.first_chunk() else {
+            return;
+        };
+
+        first.reset();
+
+        self.chunk.set(**first);
+    }
+}
+
+impl<A, S> RawBump<A, S>
+where
+    A: Allocator,
+    S: BumpAllocatorSettings,
+{
     #[inline(always)]
     pub(crate) fn reserve<E: ErrorBehavior>(&self, additional: usize) -> Result<(), E>
-    where
-        A: BaseAllocator<S::GuaranteedAllocated>,
-    {
+where {
         let chunk = self.chunk.get();
 
         match chunk.classify() {
             ChunkClass::Claimed => Err(E::claimed()),
-            ChunkClass::Unallocated => {
+            ChunkClass::Unallocated(chunk) => {
                 let Ok(layout) = Layout::from_size_align(additional, 1) else {
                     return Err(E::capacity_overflow());
                 };
 
-                let new_chunk = AllocatedChunk::<A, S>::new(
-                    ChunkSizeCapacity(layout),
-                    None,
-                    // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
-                    // `default_or_panic` will not panic.
-                    A::default_or_panic(),
-                )?;
-
-                self.chunk.set(new_chunk.as_raw());
+                let allocator = chunk.construct_base_allocator()?;
+                let replacer = RawBump::with_size(ChunkSizeCapacity(layout), allocator)?;
+                // SAFETY: the bump has no chunks, ergo no allocations to invalidate
+                unsafe { self.replace(replacer) };
                 Ok(())
             }
-            ChunkClass::NonDummy(mut chunk) => {
+            ChunkClass::Allocated(mut chunk) => {
                 let mut additional = additional;
 
                 if let Some(rest) = additional.checked_sub(chunk.remaining()) {
@@ -284,7 +330,7 @@ where
                     return Err(E::capacity_overflow());
                 };
 
-                chunk.append_for(layout).map(drop)
+                AllocatedChunk::new(layout, chunk).map(drop)
             }
         }
     }
@@ -443,36 +489,37 @@ where
         mut f: impl FnMut(Chunk<A, S>, L) -> Option<R>,
     ) -> Result<R, E> {
         let new_chunk: AllocatedChunk<A, S> = match self.chunk.get().classify() {
-            ChunkClass::Claimed => Err(E::claimed()),
-            ChunkClass::Unallocated => AllocatedChunk::new(
-                ChunkSizeCapacity(*layout),
-                None,
-                // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
-                // `default_or_panic` will not panic.
-                A::default_or_panic(),
-            ),
-            ChunkClass::NonDummy(mut chunk) => {
+            ChunkClass::Claimed => return Err(E::claimed()),
+            ChunkClass::Unallocated(chunk) => {
+                let allocator = chunk.construct_base_allocator()?;
+                let replacer = RawBump::with_size(ChunkSizeCapacity(*layout), allocator)?;
+                // SAFETY: the bump has no chunks, ergo no allocations to invalidate
+                unsafe { self.replace(replacer) };
+                // SAFETY: the `with_size` constructor is guaranteed to preduce an allocated chunk
+                unsafe { self.chunk.get().as_allocated_unchecked() }
+            }
+            ChunkClass::Allocated(mut chunk) => {
                 while let Some(next_chunk) = chunk.next() {
                     chunk = next_chunk;
 
                     // We don't reset the chunk position when we leave a scope, so we need to do it here.
                     chunk.reset();
 
-                    self.chunk.set(chunk.as_raw());
+                    self.chunk.set(*chunk);
 
-                    if let Some(ptr) = f(chunk.as_raw(), layout) {
+                    if let Some(ptr) = f(*chunk, layout) {
                         return Ok(ptr);
                     }
                 }
 
                 // there is no chunk that fits, we need a new chunk
-                chunk.append_for(*layout)
+                AllocatedChunk::new(*layout, chunk)?
             }
-        }?;
+        };
 
-        self.chunk.set(new_chunk.as_raw());
+        self.chunk.set(*new_chunk);
 
-        match f(new_chunk.as_raw(), layout) {
+        match f(*new_chunk, layout) {
             Some(ptr) => Ok(ptr),
             _ => {
                 // SAFETY: We just appended a chunk for that specific layout, it must have enough space.
@@ -486,14 +533,14 @@ where
     pub(crate) fn make_allocated<E: ErrorBehavior>(&self) -> Result<(), E> {
         match self.chunk.get().classify() {
             ChunkClass::Claimed => Err(E::claimed()),
-            ChunkClass::Unallocated => {
-                // When this bump allocator is unallocated, `A` is guaranteed to implement `Default`,
-                // `default_or_panic` will not panic.
-                let new_chunk = AllocatedChunk::new(ChunkSizeMinimum, None, A::default_or_panic())?;
-                self.chunk.set(new_chunk.as_raw());
+            ChunkClass::Unallocated(chunk) => {
+                let allocator = chunk.construct_base_allocator()?;
+                let replacer = RawBump::with_size(ChunkSizeMinimum, allocator)?;
+                // SAFETY: the bump has no chunks, ergo no allocations to invalidate
+                unsafe { self.replace(replacer) };
                 Ok(())
             }
-            ChunkClass::NonDummy(_) => Ok(()),
+            ChunkClass::Allocated(_) => Ok(()),
         }
     }
 }
@@ -627,631 +674,13 @@ where
 
     #[inline]
     pub(crate) fn into_raw(self) -> NonNull<()> {
-        self.chunk.get().header.cast()
+        self.chunk.get().header().cast()
     }
 
     #[inline]
     pub(crate) unsafe fn from_raw(ptr: NonNull<()>) -> Self {
         Self {
-            chunk: Cell::new(Chunk {
-                header: ptr.cast(),
-                marker: PhantomData,
-            }),
+            chunk: Cell::new(unsafe { Chunk::from_raw(ptr.cast()) }),
         }
-    }
-}
-
-/// Represents a chunk of the bump allocator.
-///
-/// This type behaves somewhat like a `ManuallyDrop<T>` in the sense that it has safe to
-/// use methods that assume the chunk is still live.
-pub(crate) struct Chunk<A, S> {
-    pub(crate) header: NonNull<ChunkHeader>,
-    pub(crate) marker: PhantomData<fn() -> (A, S)>,
-}
-
-impl<A, S> Clone for Chunk<A, S> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<A, S> Copy for Chunk<A, S> {}
-
-impl<A, S> Chunk<A, S>
-where
-    S: BumpAllocatorSettings,
-{
-    pub(crate) const UNALLOCATED: Self = {
-        assert!(!S::GUARANTEED_ALLOCATED);
-
-        Self {
-            header: ChunkHeader::unallocated::<S>().cast(),
-            marker: PhantomData,
-        }
-    };
-
-    const CLAIMED: Self = {
-        assert!(S::CLAIMABLE);
-
-        Self {
-            header: ChunkHeader::claimed::<S>().cast(),
-            marker: PhantomData,
-        }
-    };
-
-    #[inline(always)]
-    pub(crate) fn header(self) -> NonNull<ChunkHeader> {
-        self.header
-    }
-
-    #[inline(always)]
-    fn is_claimed(self) -> bool {
-        S::CLAIMABLE && self.header.cast() == ChunkHeader::claimed::<S>()
-    }
-
-    #[inline(always)]
-    pub(crate) fn is_unallocated(self) -> bool {
-        !S::GUARANTEED_ALLOCATED && self.header.cast() == ChunkHeader::unallocated::<S>()
-    }
-
-    #[inline(always)]
-    pub(crate) fn classify(self) -> ChunkClass<A, S> {
-        if self.is_claimed() {
-            return ChunkClass::Claimed;
-        }
-
-        if self.is_unallocated() {
-            return ChunkClass::Unallocated;
-        }
-
-        ChunkClass::NonDummy(AllocatedChunk {
-            header: self.header.cast(),
-            marker: self.marker,
-        })
-    }
-
-    #[inline(always)]
-    pub(crate) fn as_non_dummy(self) -> Option<AllocatedChunk<A, S>> {
-        match self.classify() {
-            ChunkClass::Claimed | ChunkClass::Unallocated => None,
-            ChunkClass::NonDummy(chunk) => Some(chunk),
-        }
-    }
-
-    /// Attempts to allocate a block of memory.
-    ///
-    /// On success, returns a [`NonNull<u8>`] meeting the size and alignment guarantees of `layout`.
-    #[inline(always)]
-    pub(crate) fn alloc(self, layout: impl LayoutProps) -> Option<NonNull<u8>> {
-        let props = self.bump_props(layout);
-
-        let ptr = if S::UP {
-            let BumpUp { new_pos, ptr } = bump_up(props)?;
-
-            // SAFETY: allocations never succeed for a dummy chunk
-            unsafe {
-                let chunk = self.as_non_dummy_unchecked();
-                chunk.set_pos_addr(new_pos);
-                chunk.content_ptr_from_addr(ptr)
-            }
-        } else {
-            let ptr = bump_down(props)?;
-
-            // SAFETY: allocations never succeed for a dummy chunk
-            unsafe {
-                let chunk = self.as_non_dummy_unchecked();
-                chunk.set_pos_addr(ptr);
-                chunk.content_ptr_from_addr(ptr)
-            }
-        };
-
-        miri_promise_symbolic_alignment(ptr.as_ptr().cast(), layout.align());
-
-        Some(ptr)
-    }
-
-    /// Prepares allocation for a block of memory.
-    ///
-    /// On success, returns a [`NonNull<u8>`] meeting the size and alignment guarantees of `layout`.
-    ///
-    /// This is like [`alloc`](Self::alloc), except that it won't change the bump pointer.
-    #[inline(always)]
-    pub(crate) fn prepare_allocation(self, layout: impl LayoutProps) -> Option<NonNull<u8>> {
-        let props = self.bump_props(layout);
-
-        let ptr = if S::UP { bump_up(props)?.ptr } else { bump_down(props)? };
-
-        // SAFETY: allocations never succeed for a dummy chunk
-        let ptr = unsafe {
-            let chunk = self.as_non_dummy_unchecked();
-            chunk.content_ptr_from_addr(ptr)
-        };
-
-        miri_promise_symbolic_alignment(ptr.as_ptr().cast(), layout.align());
-
-        Some(ptr)
-    }
-
-    /// Returns the rest of the capacity of the chunk.
-    /// This does not change the position within the chunk.
-    ///
-    /// This is used in [`MutBumpVec`] where we mutably burrow bump access.
-    /// In this case we do not want to update the bump pointer. This way
-    /// neither reallocations (a new chunk) nor dropping needs to move the bump pointer.
-    /// The bump pointer is only updated when we call [`into_slice`].
-    ///
-    /// - `range.start` and `range.end` are aligned.
-    /// - `layout.size` must not be zero
-    /// - `layout.size` must be a multiple of `layout.align`
-    ///
-    /// [`MutBumpVec`]: crate::MutBumpVec
-    /// [`into_slice`]: crate::MutBumpVec::into_slice
-    #[inline(always)]
-    pub(crate) fn prepare_allocation_range(self, layout: impl LayoutProps) -> Option<Range<NonNull<u8>>> {
-        let props = self.bump_props(layout);
-
-        let range = if S::UP {
-            bump_prepare_up(props)
-        } else {
-            bump_prepare_down(props)
-        }?;
-
-        // SAFETY: allocations never succeed for a dummy chunk
-        let ptrs = unsafe {
-            let chunk = self.as_non_dummy_unchecked();
-            chunk.content_ptr_from_addr_range(range)
-        };
-
-        miri_promise_symbolic_alignment(ptrs.start.as_ptr().cast(), layout.align());
-        miri_promise_symbolic_alignment(ptrs.end.as_ptr().cast(), layout.align());
-
-        Some(ptrs)
-    }
-
-    #[inline(always)]
-    fn bump_props<L>(self, layout: L) -> BumpProps
-    where
-        L: LayoutProps,
-    {
-        let pos = self.pos().addr().get();
-        let end = unsafe { self.header.as_ref() }.end.addr().get();
-
-        let start = if S::UP { pos } else { end };
-        let end = if S::UP { end } else { pos };
-
-        #[cfg(debug_assertions)]
-        if !matches!(self.classify(), ChunkClass::NonDummy(_)) {
-            assert!(start > end);
-        }
-
-        BumpProps {
-            start,
-            end,
-            layout: *layout,
-            min_align: S::MIN_ALIGN,
-            align_is_const: L::ALIGN_IS_CONST,
-            size_is_const: L::SIZE_IS_CONST,
-            size_is_multiple_of_align: L::SIZE_IS_MULTIPLE_OF_ALIGN,
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn pos(self) -> NonNull<u8> {
-        unsafe { self.header.as_ref().pos.get() }
-    }
-
-    #[inline(always)]
-    pub(crate) unsafe fn as_non_dummy_unchecked(self) -> AllocatedChunk<A, S> {
-        debug_assert!(matches!(self.classify(), ChunkClass::NonDummy(_)));
-        AllocatedChunk {
-            header: self.header.cast(),
-            marker: self.marker,
-        }
-    }
-}
-
-/// Represents **an allocated** chunk of the bump allocator.
-///
-/// This type behaves somewhat like a `ManuallyDrop<T>` in the sense that it has safe to
-/// use methods that assume the chunk has not been deallocated.
-///
-/// So just the `deallocate` method is unsafe. You have to make sure the chunk is not used
-/// after calling that.
-pub(crate) struct AllocatedChunk<A, S> {
-    pub(crate) header: NonNull<AllocatedChunkHeader<A>>,
-    pub(crate) marker: PhantomData<fn() -> (A, S)>,
-}
-
-impl<A, S> Copy for AllocatedChunk<A, S> {}
-
-impl<A, S> Clone for AllocatedChunk<A, S> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-// Methods only available for a non-dummy chunk.
-impl<A, S> AllocatedChunk<A, S>
-where
-    S: BumpAllocatorSettings,
-{
-    pub(crate) fn new<E>(
-        chunk_size: impl ChunkSize,
-        prev: Option<AllocatedChunk<A, S>>,
-        allocator: A,
-    ) -> Result<AllocatedChunk<A, S>, E>
-    where
-        A: Allocator,
-        E: ErrorBehavior,
-    {
-        let layout = chunk_size.layout::<A, S>().ok_or_else(E::capacity_overflow)?;
-
-        let allocation = match allocator.allocate(layout) {
-            Ok(ok) => ok,
-            Err(AllocError) => return Err(E::allocation(layout)),
-        };
-
-        let ptr = non_null::as_non_null_ptr(allocation);
-        let size = allocation.len();
-
-        // Note that the allocation's size may be larger than
-        // the requested layout's size.
-        //
-        // We could be ignoring the allocation's size and just use
-        // our layout's size, but then we would be wasting
-        // the extra space the allocator might have given us.
-        //
-        // This returned size does not satisfy our invariants though
-        // so we need to align it first.
-        //
-        // Follow this method for details.
-        let size = align_allocation_size::<A, S>(size);
-
-        debug_assert!(size >= layout.size());
-        debug_assert_eq!(size % MIN_CHUNK_ALIGN, 0);
-
-        let prev = Cell::new(prev.map(|c| c.header));
-        let next = Cell::new(None);
-
-        let header = unsafe {
-            if S::UP {
-                let header = ptr.cast::<AllocatedChunkHeader<A>>();
-
-                header.write(AllocatedChunkHeader {
-                    pos: Cell::new(header.add(1).cast()),
-                    end: ptr.add(size),
-                    prev,
-                    next,
-                    allocator,
-                });
-
-                header
-            } else {
-                let header = ptr.add(size).cast::<AllocatedChunkHeader<A>>().sub(1);
-
-                header.write(AllocatedChunkHeader {
-                    pos: Cell::new(header.cast()),
-                    end: ptr,
-                    prev,
-                    next,
-                    allocator,
-                });
-
-                header
-            }
-        };
-
-        Ok(AllocatedChunk {
-            header,
-            marker: PhantomData,
-        })
-    }
-
-    /// # Panic
-    ///
-    /// [`self.next()`](AllocatedChunk::next) must return `None`
-    pub(crate) fn append_for<B: ErrorBehavior>(self, layout: Layout) -> Result<Self, B>
-    where
-        A: Allocator + Clone,
-    {
-        debug_assert!(self.next().is_none());
-
-        let required_size = ChunkSizeCapacity(layout).to_hint::<A, S>().ok_or_else(B::capacity_overflow)?;
-        let grown_size = self.grow_size()?;
-        let size = required_size.max(grown_size);
-        let allocator = unsafe { self.header.as_ref().allocator.clone() };
-        let new_chunk = Self::new::<B>(size, Some(self), allocator)?;
-
-        unsafe {
-            self.header.as_ref().next.set(Some(new_chunk.header));
-        }
-
-        Ok(new_chunk)
-    }
-
-    #[inline(always)]
-    fn grow_size<B: ErrorBehavior>(self) -> Result<ChunkSizeHint, B> {
-        let Some(size) = self.size().get().checked_mul(2) else {
-            return Err(B::capacity_overflow());
-        };
-
-        Ok(ChunkSizeHint(size))
-    }
-
-    #[inline(always)]
-    pub(crate) fn pos(self) -> NonNull<u8> {
-        unsafe { self.header.as_ref().pos.get() }
-    }
-
-    #[inline(always)]
-    pub(crate) fn header(self) -> NonNull<AllocatedChunkHeader<A>> {
-        self.header
-    }
-
-    #[inline(always)]
-    pub(crate) fn as_raw(self) -> Chunk<A, S> {
-        Chunk {
-            header: self.header.cast(),
-            marker: self.marker,
-        }
-    }
-
-    /// The caller must ensure the returned reference is dead before calling [`deallocate`](Self::deallocate).
-    #[inline(always)]
-    pub(crate) fn allocator<'a>(self) -> &'a A {
-        unsafe { &self.header.as_ref().allocator }
-    }
-
-    #[inline(always)]
-    pub(crate) fn prev(self) -> Option<AllocatedChunk<A, S>> {
-        unsafe {
-            Some(AllocatedChunk {
-                header: self.header.as_ref().prev.get()?,
-                marker: PhantomData,
-            })
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn next(self) -> Option<AllocatedChunk<A, S>> {
-        unsafe {
-            Some(AllocatedChunk {
-                header: self.header.as_ref().next.get()?,
-                marker: PhantomData,
-            })
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn size(self) -> NonZeroUsize {
-        let start = self.chunk_start().addr().get();
-        let end = self.chunk_end().addr().get();
-        unsafe { NonZeroUsize::new_unchecked(end - start) }
-    }
-
-    #[inline(always)]
-    pub(crate) fn capacity(self) -> usize {
-        let start = self.content_start().addr().get();
-        let end = self.content_end().addr().get();
-        end - start
-    }
-
-    #[inline(always)]
-    pub(crate) fn allocated(self) -> usize {
-        let range = self.allocated_range();
-        let start = range.start.addr().get();
-        let end = range.end.addr().get();
-        end - start
-    }
-
-    #[inline(always)]
-    pub(crate) fn remaining(self) -> usize {
-        let range = self.remaining_range();
-        let start = range.start.addr().get();
-        let end = range.end.addr().get();
-        end - start
-    }
-
-    #[inline(always)]
-    fn reset(self) {
-        unsafe {
-            if S::UP {
-                self.set_pos(self.content_start());
-            } else {
-                self.set_pos(self.content_end());
-            }
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn chunk_start(self) -> NonNull<u8> {
-        unsafe { if S::UP { self.header.cast() } else { self.header.as_ref().end } }
-    }
-
-    #[inline(always)]
-    pub(crate) fn chunk_end(self) -> NonNull<u8> {
-        unsafe {
-            if S::UP {
-                self.header.as_ref().end
-            } else {
-                self.after_header()
-            }
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn content_start(self) -> NonNull<u8> {
-        if S::UP { self.after_header() } else { self.chunk_start() }
-    }
-
-    #[inline(always)]
-    pub(crate) fn content_end(self) -> NonNull<u8> {
-        if S::UP { self.chunk_end() } else { self.header.cast() }
-    }
-
-    /// # Safety
-    /// [`contains_addr_or_end`](AllocatedChunk::contains_addr_or_end) must return true
-    #[inline(always)]
-    pub(crate) unsafe fn set_pos(self, ptr: NonNull<u8>) {
-        unsafe { self.set_pos_addr(ptr.addr().get()) };
-    }
-
-    /// # Safety
-    /// [`contains_addr_or_end`](AllocatedChunk::contains_addr_or_end) must return true
-    #[inline(always)]
-    pub(crate) unsafe fn set_pos_addr(self, addr: usize) {
-        unsafe { self.header.as_ref().pos.set(self.content_ptr_from_addr(addr)) };
-    }
-
-    /// Sets the bump position and aligns it to the required `MIN_ALIGN`.
-    #[inline(always)]
-    pub(crate) unsafe fn set_pos_addr_and_align(self, pos: usize) {
-        unsafe {
-            let addr = align_pos(S::UP, S::MIN_ALIGN, pos);
-            self.set_pos_addr(addr);
-        }
-    }
-
-    /// A version of [`set_pos_addr_and_align`](Self::set_pos_addr_and_align) that only aligns the pointer
-    /// if it the `pos_align` is smaller than the `MIN_ALIGN`.
-    ///
-    /// This should only be called when the `pos_align` is statically known so
-    /// the branch gets optimized out.
-    #[inline(always)]
-    pub(crate) unsafe fn set_pos_addr_and_align_from(self, mut pos: usize, pos_align: usize) {
-        debug_assert_eq!(pos % pos_align, 0);
-
-        if pos_align < S::MIN_ALIGN {
-            pos = align_pos(S::UP, S::MIN_ALIGN, pos);
-        }
-
-        unsafe { self.set_pos_addr(pos) };
-    }
-
-    /// # Safety
-    /// [`contains_addr_or_end`](AllocatedChunk::contains_addr_or_end) must return true
-    #[inline(always)]
-    unsafe fn content_ptr_from_addr(self, addr: usize) -> NonNull<u8> {
-        unsafe {
-            debug_assert!(self.contains_addr_or_end(addr));
-            let ptr = self.header.cast();
-            let addr = NonZeroUsize::new_unchecked(addr);
-            ptr.with_addr(addr)
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) unsafe fn content_ptr_from_addr_range(self, range: Range<usize>) -> Range<NonNull<u8>> {
-        unsafe {
-            debug_assert!(range.start <= range.end);
-            let start = self.content_ptr_from_addr(range.start);
-            let end = self.content_ptr_from_addr(range.end);
-            start..end
-        }
-    }
-
-    #[inline(always)]
-    fn contains_addr_or_end(self, addr: usize) -> bool {
-        let start = self.content_start().addr().get();
-        let end = self.content_end().addr().get();
-        addr >= start && addr <= end
-    }
-
-    #[inline(always)]
-    fn allocated_range(self) -> Range<NonNull<u8>> {
-        if S::UP {
-            self.content_start()..self.pos()
-        } else {
-            self.pos()..self.content_end()
-        }
-    }
-
-    #[inline(always)]
-    fn remaining_range(self) -> Range<NonNull<u8>> {
-        if S::UP {
-            let start = self.pos();
-            let end = self.content_end();
-            start..end
-        } else {
-            let start = self.content_start();
-            let end = self.pos();
-            start..end
-        }
-    }
-
-    #[inline(always)]
-    fn after_header(self) -> NonNull<u8> {
-        unsafe { self.header.add(1).cast() }
-    }
-
-    /// This resolves the next chunk before calling `f`. So calling [`deallocate`](AllocatedChunk::deallocate) on the chunk parameter of `f` is fine.
-    fn for_each_prev(self, mut f: impl FnMut(AllocatedChunk<A, S>)) {
-        let mut iter = self.prev();
-
-        while let Some(chunk) = iter {
-            iter = chunk.prev();
-            f(chunk);
-        }
-    }
-
-    /// This resolves the next chunk before calling `f`. So calling [`deallocate`](AllocatedChunk::deallocate) on the chunk parameter of `f` is fine.
-    fn for_each_next(self, mut f: impl FnMut(AllocatedChunk<A, S>)) {
-        let mut iter = self.next();
-
-        while let Some(chunk) = iter {
-            iter = chunk.next();
-            f(chunk);
-        }
-    }
-
-    /// # Safety
-    /// - self must not be used after calling this.
-    unsafe fn deallocate(self)
-    where
-        A: Allocator,
-    {
-        let allocator = unsafe { ptr::read(&raw const self.header.as_ref().allocator) };
-
-        let ptr = self.chunk_start();
-        let layout = self.layout();
-
-        unsafe {
-            allocator.deallocate(ptr, layout);
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn layout(self) -> Layout {
-        // SAFETY: this layout fits the one we allocated, which means it must be valid
-        unsafe { Layout::from_size_align_unchecked(self.size().get(), align_of::<AllocatedChunkHeader<A>>()) }
-    }
-}
-
-pub(crate) enum ChunkClass<A, S: BumpAllocatorSettings> {
-    Claimed,
-    Unallocated,
-    NonDummy(AllocatedChunk<A, S>),
-}
-
-/// Miri doesn't understand how our bit twiddling aligns the pointer but we can promise it with this.
-/// See <https://github.com/rust-lang/rust/pull/117840>
-fn miri_promise_symbolic_alignment(ptr: *const (), align: usize) {
-    #[cfg(all(feature = "nightly-miri-promise-symbolic-alignment", miri))]
-    unsafe extern "Rust" {
-        /// Miri-provided extern function to promise that a given pointer is properly aligned for
-        /// "symbolic" alignment checks. Will fail if the pointer is not actually aligned or `align` is
-        /// not a power of two. Has no effect when alignment checks are concrete (which is the default).
-        unsafe fn miri_promise_symbolic_alignment(ptr: *const (), align: usize);
-    }
-
-    #[cfg(all(feature = "nightly-miri-promise-symbolic-alignment", miri))]
-    unsafe {
-        miri_promise_symbolic_alignment(ptr, align);
-    }
-
-    #[cfg(not(all(feature = "nightly-miri-promise-symbolic-alignment", miri)))]
-    {
-        _ = (ptr, align);
     }
 }

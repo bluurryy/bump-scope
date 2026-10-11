@@ -1,10 +1,10 @@
-use core::{fmt::Debug, num::NonZeroUsize, ptr::NonNull};
+use core::{alloc::Allocator, fmt::Debug, num::NonZeroUsize};
 
 use crate::{
-    BaseAllocator, BumpScope,
-    chunk::ChunkHeader,
+    BumpScope,
+    chunk::{Chunk, ErasedChunk},
     polyfill::transmute_mut,
-    raw_bump::{Chunk, RawBump},
+    raw_bump::RawBump,
     settings::{BumpAllocatorSettings, BumpSettings},
     stats::AnyStats,
 };
@@ -15,21 +15,25 @@ use crate::{
 /// [`reset_to`]: crate::traits::BumpAllocatorCore::reset_to
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Checkpoint {
-    pub(crate) chunk: NonNull<ChunkHeader>,
+    pub(crate) chunk: ErasedChunk,
     pub(crate) address: NonZeroUsize,
 }
 
 impl Checkpoint {
     pub(crate) fn new<A, S: BumpAllocatorSettings>(chunk: Chunk<A, S>) -> Self {
         let address = chunk.pos().addr();
-        let chunk = chunk.header.cast();
+        let chunk = chunk.erase();
         Checkpoint { chunk, address }
+    }
+
+    pub(crate) fn chunk(self) -> ErasedChunk {
+        self.chunk
     }
 
     pub(crate) unsafe fn reset_within_chunk(self) {
         unsafe {
-            let ptr = self.chunk.cast::<u8>().with_addr(self.address);
-            self.chunk.as_ref().pos.set(ptr);
+            let ptr = self.chunk.header().cast::<u8>().with_addr(self.address);
+            self.chunk.header().as_ref().pos.set(ptr);
         }
     }
 }
@@ -40,7 +44,7 @@ impl Checkpoint {
 #[must_use]
 pub struct BumpScopeGuard<'a, A, S = BumpSettings>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     bump: &'a mut RawBump<A, S>,
@@ -49,7 +53,7 @@ where
 
 impl<A, S> Debug for BumpScopeGuard<'_, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -59,7 +63,7 @@ where
 
 impl<A, S> Drop for BumpScopeGuard<'_, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]
@@ -70,7 +74,7 @@ where
 
 impl<'a, A, S> BumpScopeGuard<'a, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]

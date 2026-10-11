@@ -1,5 +1,7 @@
+use core::alloc::Allocator;
+
 use crate::{
-    BaseAllocator, BumpClaimGuard, BumpScope,
+    BumpClaimGuard, BumpScope,
     bump_align_guard::BumpAlignGuard,
     polyfill::transmute_mut,
     settings::{BumpAllocatorSettings, MinimumAlignment, SupportedMinimumAlignment},
@@ -174,7 +176,7 @@ where
 
 impl<'a, A, S> BumpAllocatorScope<'a> for BumpScope<'a, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     #[inline]

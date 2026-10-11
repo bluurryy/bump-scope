@@ -19,6 +19,8 @@ pub(crate) trait ErrorBehavior: Sized {
     fn fixed_size_vector_no_space(amount: usize) -> Self;
     fn invalid_slice_layout() -> Self;
     fn format_trait_error() -> Self;
+    #[cfg(feature = "std")]
+    fn base_allocator_default_constructor_panicked() -> Self;
     #[expect(dead_code)]
     fn allocate_layout(allocator: &impl BumpAllocatorTyped, layout: Layout) -> Result<NonNull<u8>, Self>;
     #[expect(dead_code)]
@@ -72,6 +74,12 @@ impl ErrorBehavior for Infallible {
     #[inline(always)]
     fn format_trait_error() -> Self {
         format_trait_error()
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "std")]
+    fn base_allocator_default_constructor_panicked() -> Self {
+        panic::base_allocator_default_constructor_panicked()
     }
 
     #[inline(always)]
@@ -147,6 +155,12 @@ impl ErrorBehavior for AllocError {
     }
 
     #[inline(always)]
+    #[cfg(feature = "std")]
+    fn base_allocator_default_constructor_panicked() -> Self {
+        Self
+    }
+
+    #[inline(always)]
     fn allocate_layout(allocator: &impl BumpAllocatorTyped, layout: Layout) -> Result<NonNull<u8>, Self> {
         allocator.try_allocate_layout(layout)
     }
@@ -210,5 +224,12 @@ pub(crate) mod panic {
     #[cfg(feature = "panic-on-alloc")]
     pub(crate) const fn invalid_slice_layout() -> ! {
         panic!("invalid slice layout");
+    }
+
+    #[cold]
+    #[inline(never)]
+    #[cfg(feature = "std")]
+    pub(crate) fn base_allocator_default_constructor_panicked() -> ! {
+        panic!("base allocator default constructor panicked")
     }
 }

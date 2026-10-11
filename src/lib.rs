@@ -323,7 +323,7 @@ mod bump_string;
 /// [`BumpVec`] and associated types.
 pub mod bump_vec;
 mod bumping;
-mod chunk;
+pub(crate) mod chunk;
 mod destructure;
 mod error_behavior;
 mod features;
@@ -364,10 +364,10 @@ pub use bump_string::BumpString;
 #[doc(inline)]
 pub use bump_vec::BumpVec;
 #[cfg(test)]
-use core::alloc::{AllocError, Layout};
+use core::alloc::{AllocError, Allocator, Layout};
 #[cfg(feature = "panic-on-alloc")]
 use core::convert::Infallible;
-use core::{alloc::Allocator, mem, num::NonZeroUsize, ptr::NonNull};
+use core::{mem, num::NonZeroUsize, ptr::NonNull};
 use error_behavior::ErrorBehavior;
 pub use fixed_bump_string::FixedBumpString;
 pub use fixed_bump_vec::FixedBumpVec;
@@ -525,8 +525,6 @@ macro_rules! maybe_default_allocator {
 
 pub(crate) use maybe_default_allocator;
 
-use crate::settings::{Boolean, False, True};
-
 // (copied from rust standard library)
 //
 // Tiny Vecs are dumb. Skip to:
@@ -576,42 +574,3 @@ unsafe impl Allocator for NoopAllocator {
 
     unsafe fn deallocate(&self, _ptr: NonNull<u8>, _layout: Layout) {}
 }
-
-mod supported_base_allocator {
-    use crate::settings::{Boolean, False, True};
-
-    pub trait Sealed<GuaranteedAllocated: Boolean> {
-        #[doc(hidden)]
-        fn default_or_panic() -> Self;
-    }
-
-    impl<A> Sealed<False> for A
-    where
-        A: Default,
-    {
-        fn default_or_panic() -> Self {
-            A::default()
-        }
-    }
-
-    impl<A> Sealed<True> for A {
-        fn default_or_panic() -> Self {
-            unreachable!("default should not be required for `GUARANTEED_ALLOCATED` bump allocators");
-        }
-    }
-}
-
-/// Trait that the base allocator of a `Bump` is required to implement to make allocations.
-///
-/// Every [`Allocator`] that implements [`Clone`] automatically implements `BaseAllocator` when `GuaranteedAllocated`.
-/// When not guaranteed allocated, allocators are additionally required to implement [`Default`].
-///
-/// This trait is *sealed*: the list of implementors below is total.
-pub trait BaseAllocator<GuaranteedAllocated: Boolean>:
-    Allocator + Clone + supported_base_allocator::Sealed<GuaranteedAllocated>
-{
-}
-
-impl<A> BaseAllocator<False> for A where A: Allocator + Clone + Default {}
-
-impl<A> BaseAllocator<True> for A where A: Allocator + Clone {}

@@ -1,7 +1,8 @@
 use core::{fmt, iter::FusedIterator, marker::PhantomData, mem, ptr::NonNull};
 
 use crate::{
-    chunk::{AllocatedChunkHeader, ErasedAllocatedChunkHeader},
+    SizedTypeProperties,
+    chunk::{AllocatedChunkHeader, NonZstAllocatedChunkHeader, NonZstFirstAllocatedChunkHeader},
     settings::BumpAllocatorSettings,
 };
 
@@ -155,7 +156,7 @@ impl<'a> From<AnyChunk<'a>> for AnyStats<'a> {
 /// See [`AnyStats`].
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct AnyChunk<'a> {
-    header: NonNull<ErasedAllocatedChunkHeader>,
+    header: NonNull<AllocatedChunkHeader>,
     header_size: usize,
     marker: PhantomData<&'a ()>,
 }
@@ -167,7 +168,13 @@ where
     fn from(value: Chunk<'_, A, S>) -> Self {
         Self {
             header: value.chunk.header().cast(),
-            header_size: mem::size_of::<AllocatedChunkHeader<A>>(),
+            header_size: if A::IS_ZST {
+                mem::size_of::<AllocatedChunkHeader>()
+            } else if value.chunk.prev().is_none() {
+                mem::size_of::<NonZstFirstAllocatedChunkHeader<A>>()
+            } else {
+                mem::size_of::<NonZstAllocatedChunkHeader<A>>()
+            },
             marker: PhantomData,
         }
     }
@@ -183,7 +190,7 @@ impl fmt::Debug for AnyChunk<'_> {
 }
 
 impl<'a> AnyChunk<'a> {
-    fn header(&self) -> &ErasedAllocatedChunkHeader {
+    fn header(&self) -> &AllocatedChunkHeader {
         unsafe { self.header.as_ref() }
     }
 
@@ -424,7 +431,7 @@ impl fmt::Debug for AnyChunkNextIter<'_> {
 fn check_from_impls() {
     #![expect(dead_code, clippy::elidable_lifetime_names)]
 
-    use crate::{BaseAllocator, BumpScope};
+    use crate::BumpScope;
 
     fn accepting_any_stats(_: AnyStats) {}
     fn accepting_any_chunk(_: AnyChunk) {}
@@ -433,7 +440,6 @@ fn check_from_impls() {
 
     fn generic_bump<'a, A, S>(bump: &BumpScope<'a, A, S>)
     where
-        A: BaseAllocator<S::GuaranteedAllocated>,
         S: BumpAllocatorSettings,
     {
         let stats = bump.stats();

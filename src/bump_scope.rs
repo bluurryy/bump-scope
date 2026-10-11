@@ -12,8 +12,8 @@ use core::{
 use core::clone::CloneToUninit;
 
 use crate::{
-    BaseAllocator, BumpBox, BumpClaimGuard, BumpScopeGuard, Checkpoint, ErrorBehavior, NoDrop, SizedTypeProperties,
-    allocator_impl, down_align_usize, maybe_default_allocator,
+    BumpBox, BumpClaimGuard, BumpScopeGuard, Checkpoint, ErrorBehavior, NoDrop, SizedTypeProperties, allocator_impl,
+    down_align_usize, maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{non_null, transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
@@ -90,7 +90,7 @@ where
 
 impl<A, S> BumpScope<'_, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     /// Converts this `&mut BumpScope` into an owned `BumpScope`.
@@ -255,7 +255,7 @@ impl<A, S> NoDrop for BumpScope<'_, A, S> where S: BumpAllocatorSettings {}
 #[allow(clippy::missing_errors_doc, clippy::missing_safety_doc)]
 impl<'a, A, S> BumpScope<'a, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     traits::forward_methods! {
@@ -269,7 +269,7 @@ where
 /// Additional `alloc` methods that are not available in traits.
 impl<'a, A, S> BumpScope<'a, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
@@ -383,7 +383,7 @@ where
                         };
 
                         // The allocation of was successful, so our chunk must be allocated.
-                        let chunk = self.raw.chunk.get().as_non_dummy_unchecked();
+                        let chunk = self.raw.chunk.get().as_allocated_unchecked();
                         chunk.set_pos_addr(new_pos);
                     }
 
@@ -506,7 +506,7 @@ where
                     };
 
                     // The allocation was successful, so our chunk must be allocated.
-                    let chunk = self.raw.chunk.get().as_non_dummy_unchecked();
+                    let chunk = self.raw.chunk.get().as_allocated_unchecked();
                     chunk.set_pos_addr(new_pos);
 
                     BumpBox::from_raw(value)
@@ -533,7 +533,7 @@ where
 
 unsafe impl<A, S> Allocator for BumpScope<'_, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     #[inline(always)]

@@ -7,7 +7,7 @@ use core::{alloc::Layout, num::NonZeroUsize};
 pub const ASSUMED_PAGE_SIZE: usize = 0x1000;
 pub const MIN_CHUNK_ALIGN: usize = 16;
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct ChunkSizeConfig {
     pub up: bool,
     pub assumed_malloc_overhead_layout: Layout,

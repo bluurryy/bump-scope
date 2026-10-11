@@ -15,7 +15,7 @@ use core::{
 };
 
 use crate::{
-    raw_bump::{AllocatedChunk, Chunk as RawChunk},
+    chunk::{AllocatedChunk, Chunk as RawChunk},
     settings::{BumpAllocatorSettings, BumpSettings, False},
 };
 
@@ -33,8 +33,7 @@ pub struct Stats<'a, A, S = BumpSettings>
 where
     S: BumpAllocatorSettings,
 {
-    chunk: RawChunk<A, S>,
-    marker: PhantomData<&'a ()>,
+    chunk: Option<Chunk<'a, A, S>>,
 }
 
 impl<A, S> Clone for Stats<'_, A, S>
@@ -53,7 +52,7 @@ where
     S: BumpAllocatorSettings,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.chunk.header() == other.chunk.header()
+        self.chunk == other.chunk
     }
 }
 
@@ -75,8 +74,10 @@ where
     #[inline]
     pub(crate) fn from_raw_chunk(chunk: RawChunk<A, S>) -> Self {
         Self {
-            chunk,
-            marker: PhantomData,
+            chunk: chunk.as_non_dummy().map(|chunk| Chunk {
+                chunk,
+                marker: PhantomData,
+            }),
         }
     }
 
@@ -171,10 +172,7 @@ where
     /// This is the chunk we are currently allocating on.
     #[must_use]
     pub fn current_chunk(self) -> Option<Chunk<'a, A, S>> {
-        Some(Chunk {
-            chunk: self.chunk.as_non_dummy()?,
-            marker: self.marker,
-        })
+        self.chunk
     }
 
     /// Returns the bump pointer. It lies within the current chunk's content range.
@@ -199,10 +197,7 @@ where
     S: BumpAllocatorSettings,
 {
     fn from(chunk: Chunk<'a, A, S>) -> Self {
-        Stats {
-            chunk: chunk.chunk.as_raw(),
-            marker: PhantomData,
-        }
+        Stats { chunk: Some(chunk) }
     }
 }
 
@@ -211,10 +206,7 @@ where
     S: BumpAllocatorSettings<GuaranteedAllocated = False>,
 {
     fn default() -> Self {
-        Self {
-            chunk: RawChunk::UNALLOCATED,
-            marker: PhantomData,
-        }
+        Self { chunk: None }
     }
 }
 
@@ -269,7 +261,7 @@ where
     S: BumpAllocatorSettings,
 {
     #[cfg(debug_assertions)]
-    pub(crate) fn header(self) -> NonNull<AllocatedChunkHeader<A>> {
+    pub(crate) fn header(self) -> NonNull<AllocatedChunkHeader> {
         self.chunk.header()
     }
 

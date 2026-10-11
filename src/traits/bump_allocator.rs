@@ -1,7 +1,7 @@
-use core::ptr;
+use core::{alloc::Allocator, ptr};
 
 use crate::{
-    BaseAllocator, Bump, BumpScope, BumpScopeGuard,
+    Bump, BumpScope, BumpScopeGuard,
     polyfill::transmute_mut,
     settings::{BumpAllocatorSettings, MinimumAlignment, SupportedMinimumAlignment},
     traits::MutBumpAllocatorTyped,
@@ -17,7 +17,7 @@ use crate::{
 /// [`as_mut_scope`]: BumpAllocator::as_mut_scope
 pub trait BumpAllocator: MutBumpAllocatorTyped + Sized {
     /// The base allocator.
-    type Allocator: BaseAllocator<<Self::Settings as BumpAllocatorSettings>::GuaranteedAllocated>;
+    type Allocator: Allocator;
 
     /// The bump allocator settings.
     type Settings: BumpAllocatorSettings;
@@ -141,7 +141,7 @@ pub trait BumpAllocator: MutBumpAllocatorTyped + Sized {
 
 impl<A, S> BumpAllocator for Bump<A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     type Allocator = A;
@@ -163,7 +163,7 @@ where
 
 impl<A, S> BumpAllocator for BumpScope<'_, A, S>
 where
-    A: BaseAllocator<S::GuaranteedAllocated>,
+    A: Allocator,
     S: BumpAllocatorSettings,
 {
     type Allocator = A;
