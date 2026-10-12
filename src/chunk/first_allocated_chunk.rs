@@ -34,6 +34,7 @@ impl<A, S> FirstAllocatedChunk<A, S>
 where
     S: BumpAllocatorSettings,
 {
+    #[inline(always)]
     pub(crate) unsafe fn from_unchecked(chunk: AllocatedChunk<A, S>) -> Self {
         debug_assert!(chunk.prev().is_none());
         Self {
@@ -51,6 +52,7 @@ where
         unsafe { Ok(FirstAllocatedChunk::init(ptr, size, allocator)) }
     }
 
+    #[inline(always)]
     pub(crate) unsafe fn init(ptr: NonNull<u8>, size: usize, allocator: A) -> FirstAllocatedChunk<A, S> {
         unsafe {
             if A::IS_ZST {
@@ -110,6 +112,7 @@ where
         }
     }
 
+    #[inline(always)]
     pub(crate) fn read_allocator(self) -> A {
         if A::IS_ZST {
             // SAFETY: a zst does not have an invalid value; we logically "stored"

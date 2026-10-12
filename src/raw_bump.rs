@@ -211,7 +211,7 @@ where
         Checkpoint::new(self.chunk.get())
     }
 
-    #[inline]
+    #[cfg_attr(not(debug_assertions), inline(always))]
     pub(crate) unsafe fn reset_to(&self, checkpoint: Checkpoint) {
         // If the checkpoint was created when the bump allocator had no allocated chunk
         // then the chunk pointer will point to the unallocated chunk header.

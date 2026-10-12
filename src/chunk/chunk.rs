@@ -81,6 +81,7 @@ where
         }
     };
 
+    #[inline(always)]
     pub(crate) unsafe fn from_raw(header: NonNull<ChunkHeader>) -> Self {
         Self {
             header,
@@ -264,6 +265,7 @@ where
 
 /// Miri doesn't understand how our bit twiddling aligns the pointer but we can promise it with this.
 /// See <https://github.com/rust-lang/rust/pull/117840>
+#[inline(always)]
 fn miri_promise_symbolic_alignment(ptr: *const (), align: usize) {
     #[cfg(all(feature = "nightly-miri-promise-symbolic-alignment", miri))]
     unsafe extern "Rust" {

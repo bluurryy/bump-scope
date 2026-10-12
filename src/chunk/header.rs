@@ -106,10 +106,12 @@ macro_rules! slot {
 }
 
 impl ChunkHeader {
+    #[inline(always)]
     pub(crate) fn is_unallocated(&self) -> bool {
         self.pos.get() == slot!(unallocated_pos)
     }
 
+    #[inline(always)]
     pub(crate) fn is_claimed(&self) -> bool {
         self.pos.get() == slot!(claimed_pos)
     }

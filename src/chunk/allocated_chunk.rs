@@ -35,6 +35,7 @@ pub(crate) struct AllocatedChunk<A, S> {
 impl<A, S> Copy for AllocatedChunk<A, S> {}
 
 impl<A, S> Clone for AllocatedChunk<A, S> {
+    #[inline(always)]
     fn clone(&self) -> Self {
         *self
     }
@@ -43,6 +44,7 @@ impl<A, S> Clone for AllocatedChunk<A, S> {
 impl<A, S> Deref for AllocatedChunk<A, S> {
     type Target = Chunk<A, S>;
 
+    #[inline(always)]
     fn deref(&self) -> &Self::Target {
         unsafe { transmute_ref(self) }
     }
@@ -52,6 +54,7 @@ impl<A, S> AllocatedChunk<A, S>
 where
     S: BumpAllocatorSettings,
 {
+    #[inline(always)]
     pub(crate) unsafe fn from_raw(header: NonNull<AllocatedChunkHeader>) -> Self {
         Self {
             header,
@@ -193,6 +196,7 @@ where
         unsafe { self.allocator_ptr().as_ref() }
     }
 
+    #[inline(always)]
     pub(crate) fn allocator_ptr(self) -> NonNull<A> {
         if A::IS_ZST {
             NonNull::dangling()
