@@ -366,8 +366,6 @@ pub use bump_string::BumpString;
 pub use bump_vec::BumpVec;
 #[cfg(test)]
 use core::alloc::{AllocError, Allocator, Layout};
-#[cfg(feature = "panic-on-alloc")]
-use core::convert::Infallible;
 use core::{mem, num::NonZeroUsize, ptr::NonNull};
 use error_behavior::ErrorBehavior;
 pub use fixed_bump_string::FixedBumpString;
@@ -491,7 +489,7 @@ fn handle_alloc_error(_layout: Layout) -> ! {
 // This is just `Result::into_ok` but with a name to match our use case.
 #[inline(always)]
 #[cfg(feature = "panic-on-alloc")]
-fn panic_on_error<T>(result: Result<T, Infallible>) -> T {
+fn panic_on_error<T>(result: Result<T, !>) -> T {
     match result {
         Ok(value) => value,
     }

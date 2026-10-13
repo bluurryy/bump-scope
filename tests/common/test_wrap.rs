@@ -1,5 +1,5 @@
 use core::ptr;
-use std::{cell::Cell, convert::Infallible, fmt, thread_local};
+use std::{cell::Cell, fmt, thread_local};
 
 thread_local! {
     static DROPS: Cell<usize> = const { Cell::new(0) };
@@ -48,7 +48,7 @@ impl<T> TestWrap<T> {
     }
 }
 
-impl TestWrap<Infallible> {
+impl TestWrap<!> {
     pub(crate) fn expect() -> TestZstExpect {
         TestZstExpect::default()
     }

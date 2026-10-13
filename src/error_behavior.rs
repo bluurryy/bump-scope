@@ -6,7 +6,7 @@ use crate::{
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{Infallible, capacity_overflow, format_trait_error, handle_alloc_error};
+use crate::{capacity_overflow, format_trait_error, handle_alloc_error};
 
 pub(crate) trait ErrorBehavior: Sized {
     #[cfg(feature = "panic-on-alloc")]
@@ -37,7 +37,7 @@ pub(crate) trait ErrorBehavior: Sized {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl ErrorBehavior for Infallible {
+impl ErrorBehavior for ! {
     #[cfg(feature = "panic-on-alloc")]
     const PANICS_ON_ALLOC: bool = true;
 
