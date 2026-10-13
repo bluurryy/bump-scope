@@ -8,7 +8,7 @@ use core::{
 
 use crate::{
     SizedTypeProperties,
-    chunk::ChunkSize,
+    chunk_size::ChunkSize,
     chunk_types::{
         r#abstract::AllocatedChunk,
         concrete::{NonZstFirstAllocatedChunk, ZstFirstAllocatedChunk},

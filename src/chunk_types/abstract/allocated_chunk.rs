@@ -11,7 +11,7 @@ use core::{
 use crate::{
     SizedTypeProperties, align_pos,
     bumping::MIN_CHUNK_ALIGN,
-    chunk::{ChunkSize, ChunkSizeCapacity, ChunkSizeHint, align_allocation_size},
+    chunk_size::{ChunkSize, ChunkSizeCapacity, ChunkSizeHint, align_allocation_size},
     chunk_types::{
         r#abstract::{FirstAllocatedChunk, NonZstAllocatedChunk},
         concrete::{NonZstFirstAllocatedChunk, NonZstNonFirstAllocatedChunk, ZstAllocatedChunk},

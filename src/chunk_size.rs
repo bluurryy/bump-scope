@@ -1,7 +1,7 @@
 use core::{alloc::Layout, fmt, marker::PhantomData};
 
 use crate::{
-    chunk::size_config::ChunkSizeConfig, chunk_types::r#abstract::FirstAllocatedChunk, settings::BumpAllocatorSettings,
+    chunk_size_config::ChunkSizeConfig, chunk_types::r#abstract::FirstAllocatedChunk, settings::BumpAllocatorSettings,
 };
 
 /// We leave some space per allocation for the base allocator.

@@ -12,7 +12,7 @@ use core::clone::CloneToUninit;
 
 use crate::{
     BumpBox, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, ErrorBehavior, allocator_impl,
-    chunk::{ChunkSizeCapacity, ChunkSizeHint},
+    chunk_size::{ChunkSizeCapacity, ChunkSizeHint},
     maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{transmute_mut, transmute_ref, transmute_value},

@@ -8,7 +8,7 @@ use core::{
 
 use crate::{
     Checkpoint, SizedTypeProperties, align_pos,
-    chunk::{ChunkSize, ChunkSizeCapacity, ChunkSizeMinimum},
+    chunk_size::{ChunkSize, ChunkSizeCapacity, ChunkSizeMinimum},
     chunk_types::{
         r#abstract::{AllocatedChunk, Chunk, ChunkKind, FirstAllocatedChunk},
         concrete::{ClaimedChunk, UnallocatedChunk},

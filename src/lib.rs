@@ -323,7 +323,8 @@ mod bump_string;
 /// [`BumpVec`] and associated types.
 pub mod bump_vec;
 mod bumping;
-pub(crate) mod chunk;
+pub(crate) mod chunk_size;
+pub(crate) mod chunk_size_config;
 pub(crate) mod chunk_types;
 mod destructure;
 mod error_behavior;
