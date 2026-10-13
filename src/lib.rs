@@ -324,6 +324,7 @@ mod bump_string;
 pub mod bump_vec;
 mod bumping;
 pub(crate) mod chunk;
+pub(crate) mod chunk_types;
 mod destructure;
 mod error_behavior;
 mod features;

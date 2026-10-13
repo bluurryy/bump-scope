@@ -6,7 +6,7 @@ use core::{
 
 use crate::{
     Bump, BumpScope, Checkpoint, WithoutDealloc, WithoutShrink,
-    chunk::Chunk,
+    chunk_types::r#abstract::Chunk,
     layout::CustomLayout,
     settings::BumpAllocatorSettings,
     stats::AnyStats,

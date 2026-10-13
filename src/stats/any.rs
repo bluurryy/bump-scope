@@ -1,8 +1,11 @@
-use core::{fmt, iter::FusedIterator, marker::PhantomData, mem, ptr::NonNull};
+use core::{fmt, iter::FusedIterator, marker::PhantomData, ptr::NonNull};
 
 use crate::{
     SizedTypeProperties,
-    chunk::{AllocatedChunkHeader, NonZstAllocatedChunkHeader, NonZstFirstAllocatedChunkHeader},
+    chunk_types::{
+        r#abstract::ErasedAllocatedChunk,
+        concrete::{NonZstFirstAllocatedChunk, NonZstNonFirstAllocatedChunk, ZstAllocatedChunk},
+    },
     settings::BumpAllocatorSettings,
 };
 
@@ -156,7 +159,7 @@ impl<'a> From<AnyChunk<'a>> for AnyStats<'a> {
 /// See [`AnyStats`].
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct AnyChunk<'a> {
-    header: NonNull<AllocatedChunkHeader>,
+    chunk: ErasedAllocatedChunk,
     header_size_non_first: usize,
     header_size_first: usize,
     marker: PhantomData<&'a ()>,
@@ -168,16 +171,16 @@ where
 {
     fn from(value: Chunk<'_, A, S>) -> Self {
         Self {
-            header: value.chunk.header().cast(),
+            chunk: ErasedAllocatedChunk::erase(value.chunk),
             header_size_first: if A::IS_ZST {
-                mem::size_of::<AllocatedChunkHeader>()
+                ZstAllocatedChunk::<A, S>::HEADER_LAYOUT.size()
             } else {
-                mem::size_of::<NonZstFirstAllocatedChunkHeader<A>>()
+                NonZstFirstAllocatedChunk::<A, S>::HEADER_LAYOUT.size()
             },
             header_size_non_first: if A::IS_ZST {
-                mem::size_of::<AllocatedChunkHeader>()
+                ZstAllocatedChunk::<A, S>::HEADER_LAYOUT.size()
             } else {
-                mem::size_of::<NonZstAllocatedChunkHeader<A>>()
+                NonZstNonFirstAllocatedChunk::<A, S>::HEADER_LAYOUT.size()
             },
             marker: PhantomData,
         }
@@ -194,14 +197,10 @@ impl fmt::Debug for AnyChunk<'_> {
 }
 
 impl<'a> AnyChunk<'a> {
-    fn header(&self) -> &AllocatedChunkHeader {
-        unsafe { self.header.as_ref() }
-    }
-
     #[inline]
     pub(crate) fn is_upwards_allocating(self) -> bool {
-        let header = self.header.addr();
-        let end = self.header().end.addr();
+        let header = self.chunk.as_ptr().addr();
+        let end = self.chunk.end().addr();
         end > header
     }
 
@@ -210,7 +209,7 @@ impl<'a> AnyChunk<'a> {
     #[inline(always)]
     pub fn prev(self) -> Option<Self> {
         Some(AnyChunk {
-            header: self.header().prev.get()?,
+            chunk: self.chunk.prev()?,
             ..self
         })
     }
@@ -220,7 +219,7 @@ impl<'a> AnyChunk<'a> {
     #[inline(always)]
     pub fn next(self) -> Option<Self> {
         Some(AnyChunk {
-            header: self.header().next.get()?,
+            chunk: self.chunk.next()?,
             ..self
         })
     }
@@ -301,9 +300,9 @@ impl<'a> AnyChunk<'a> {
     #[inline]
     pub fn chunk_start(self) -> NonNull<u8> {
         if self.is_upwards_allocating() {
-            self.header.cast()
+            self.chunk.as_ptr().cast()
         } else {
-            self.header().end
+            self.chunk.end()
         }
     }
 
@@ -312,7 +311,7 @@ impl<'a> AnyChunk<'a> {
     #[inline]
     pub fn chunk_end(self) -> NonNull<u8> {
         if self.is_upwards_allocating() {
-            self.header().end
+            self.chunk.end()
         } else {
             self.after_header()
         }
@@ -336,7 +335,7 @@ impl<'a> AnyChunk<'a> {
         if self.is_upwards_allocating() {
             self.chunk_end()
         } else {
-            self.header.cast()
+            self.chunk.as_ptr().cast()
         }
     }
 
@@ -347,7 +346,7 @@ impl<'a> AnyChunk<'a> {
     #[must_use]
     #[inline]
     pub fn bump_position(self) -> NonNull<u8> {
-        self.header().pos.get()
+        self.chunk.pos()
     }
 
     fn after_header(self) -> NonNull<u8> {
@@ -357,7 +356,7 @@ impl<'a> AnyChunk<'a> {
             self.header_size_non_first
         };
 
-        unsafe { self.header.byte_add(header_size).cast() }
+        unsafe { self.chunk.as_ptr().byte_add(header_size).cast() }
     }
 }
 

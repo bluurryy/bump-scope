@@ -18,7 +18,7 @@ where
 {
     #[inline(always)]
     fn drop(&mut self) {
-        if let Some(chunk) = self.scope.raw.chunk.get().as_non_dummy() {
+        if let Some(chunk) = self.scope.raw.chunk.get().as_allocated() {
             let pos = chunk.pos().addr().get();
             let addr = align_pos(S::UP, S::MIN_ALIGN, pos);
             unsafe { chunk.set_pos_addr(addr) };

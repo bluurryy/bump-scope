@@ -4,14 +4,14 @@
 
 use core::{alloc::Layout, num::NonZeroUsize};
 
-pub const ASSUMED_PAGE_SIZE: usize = 0x1000;
-pub const MIN_CHUNK_ALIGN: usize = 16;
+pub(crate) const ASSUMED_PAGE_SIZE: usize = 0x1000;
+pub(crate) const MIN_CHUNK_ALIGN: usize = 16;
 
 #[derive(Debug, Clone, Copy)]
-pub struct ChunkSizeConfig {
-    pub up: bool,
-    pub assumed_malloc_overhead_layout: Layout,
-    pub chunk_header_layout: Layout,
+pub(crate) struct ChunkSizeConfig {
+    pub(crate) up: bool,
+    pub(crate) assumed_malloc_overhead_layout: Layout,
+    pub(crate) chunk_header_layout: Layout,
 }
 
 /// Alternative to using the `?` operator that works in const functions.
@@ -45,7 +45,7 @@ impl ChunkSizeConfig {
     ///
     /// [fits]: https://doc.rust-lang.org/std/alloc/trait.Allocator.html#memory-fitting
     #[inline(always)]
-    pub const fn align_size(self, size: usize) -> usize {
+    pub(crate) const fn align_size(self, size: usize) -> usize {
         let Self {
             up, chunk_header_layout, ..
         } = self;
@@ -61,7 +61,7 @@ impl ChunkSizeConfig {
     }
 
     #[inline(always)]
-    pub const fn calc_size_from_hint(self, size_hint: usize) -> Option<NonZeroUsize> {
+    pub(crate) const fn calc_size_from_hint(self, size_hint: usize) -> Option<NonZeroUsize> {
         let Self {
             assumed_malloc_overhead_layout,
             chunk_header_layout,
@@ -109,7 +109,7 @@ impl ChunkSizeConfig {
     }
 
     #[inline(always)]
-    pub const fn calc_hint_from_capacity(self, layout: Layout) -> Option<usize> {
+    pub(crate) const fn calc_hint_from_capacity(self, layout: Layout) -> Option<usize> {
         let Self { chunk_header_layout, .. } = self;
 
         let maximum_required_padding = layout.align().saturating_sub(chunk_header_layout.align());
@@ -118,7 +118,7 @@ impl ChunkSizeConfig {
     }
 
     #[inline(always)]
-    pub const fn calc_hint_from_capacity_bytes(self, bytes: usize) -> Option<usize> {
+    pub(crate) const fn calc_hint_from_capacity_bytes(self, bytes: usize) -> Option<usize> {
         let Self {
             up,
             assumed_malloc_overhead_layout,

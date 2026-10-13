@@ -8,7 +8,11 @@ use core::{
 
 use crate::{
     Checkpoint, SizedTypeProperties, align_pos,
-    chunk::{AllocatedChunk, Chunk, ChunkClass, ChunkSize, ChunkSizeCapacity, ChunkSizeMinimum, FirstAllocatedChunk},
+    chunk::{ChunkSize, ChunkSizeCapacity, ChunkSizeMinimum},
+    chunk_types::{
+        r#abstract::{AllocatedChunk, Chunk, ChunkKind, FirstAllocatedChunk},
+        concrete::{ClaimedChunk, UnallocatedChunk},
+    },
     error_behavior::{self, ErrorBehavior},
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     settings::{BumpAllocatorSettings, False, MinimumAlignment, SupportedMinimumAlignment},
@@ -47,8 +51,10 @@ where
         A: Default + 'static,
         S: BumpAllocatorSettings<GuaranteedAllocated = False>,
     {
+        const { assert!(!S::GUARANTEED_ALLOCATED) }
+
         Self {
-            chunk: Cell::new(Chunk::UNALLOCATED),
+            chunk: Cell::new(Chunk::from_unallocated(UnallocatedChunk::VALUE)),
         }
     }
 
@@ -62,7 +68,7 @@ where
         A: Default + 'static,
     {
         Self {
-            chunk: Cell::new(Chunk::UNALLOCATED_UNCHECKED),
+            chunk: Cell::new(Chunk::from_unallocated(UnallocatedChunk::VALUE)),
         }
     }
 
@@ -82,9 +88,9 @@ where
     /// The caller must ensure the returned reference is dead before calling [`manually_drop`](Self::manually_drop).
     #[inline(always)]
     pub(crate) fn allocator<'a>(&self) -> Option<&'a A> {
-        match self.chunk.get().classify() {
-            ChunkClass::Claimed | ChunkClass::Unallocated(_) => None,
-            ChunkClass::Allocated(chunk) => Some(chunk.allocator()),
+        match self.chunk.get().kind() {
+            ChunkKind::Claimed(_) | ChunkKind::Unallocated(_) => None,
+            ChunkKind::Allocated(chunk) => Some(unsafe { chunk.allocator_ptr().as_ref() }),
         }
     }
 }
@@ -97,7 +103,7 @@ where
     #[inline(always)]
     pub(crate) fn with_size<E: ErrorBehavior>(size: impl ChunkSize, allocator: A) -> Result<Self, E> {
         Ok(Self {
-            chunk: Cell::new(**FirstAllocatedChunk::new::<E>(size, allocator)?),
+            chunk: Cell::new(Chunk::from_first(FirstAllocatedChunk::new::<E>(size, allocator)?)),
         })
     }
 
@@ -115,7 +121,7 @@ where
 
         // extract the allocator
         let allocator = first.read_allocator();
-        let mut chunk = *first;
+        let mut chunk = AllocatedChunk::from_first(first);
 
         // deallocate all chunks except the last
         while let Some(next) = chunk.next() {
@@ -132,7 +138,7 @@ where
             FirstAllocatedChunk::<A, S>::init(ptr, size, allocator)
         };
 
-        self.chunk.set(**new_first);
+        self.chunk.set(Chunk::from_first(new_first));
     }
 
     /// # Safety
@@ -144,7 +150,7 @@ where
 
         // extract the allocator
         let allocator = first.read_allocator();
-        let mut chunk = *first;
+        let mut chunk = AllocatedChunk::from_first(first);
 
         // deallocate all chunks
         loop {
@@ -169,14 +175,14 @@ where
 {
     #[inline(always)]
     fn first_chunk(&self) -> Option<FirstAllocatedChunk<A, S>> {
-        let mut chunk = self.chunk.get().as_non_dummy()?;
+        let mut chunk = self.chunk.get().as_allocated()?;
 
         while let Some(prev) = chunk.prev() {
             chunk = prev;
         }
 
         // SAFETY: it's the first, duh
-        let first = unsafe { FirstAllocatedChunk::from_unchecked(chunk) };
+        let first = unsafe { FirstAllocatedChunk::assume_first(chunk) };
         Some(first)
     }
 
@@ -197,7 +203,7 @@ where
         }
 
         RawBump {
-            chunk: Cell::new(self.chunk.replace(Chunk::<A, S>::CLAIMED)),
+            chunk: Cell::new(self.chunk.replace(Chunk::<A, S>::from_claimed(ClaimedChunk::<A, S>::VALUE))),
         }
     }
 
@@ -247,7 +253,7 @@ where
             let chunk = self
                 .stats()
                 .small_to_big()
-                .find(|chunk| chunk.header().addr() == checkpoint.chunk().header().addr())
+                .find(|chunk| chunk.header().addr() == checkpoint.chunk.as_ptr().addr())
                 .expect("this checkpoint does not refer to any chunk in this bump allocator");
 
             let start = chunk.content_start().addr().get();
@@ -260,10 +266,14 @@ where
             );
         }
 
+        // We handled the unallocated case above.
+        // It can't be a claimed chunk because that would not be allowed due to the safety invariants.
         unsafe {
-            checkpoint.reset_within_chunk();
+            // Reset the chunk position of the checkpoint chunk.
+            let ptr = checkpoint.chunk.as_ptr().with_addr(checkpoint.address).cast();
+            AllocatedChunk::<A, S>::from_ptr(checkpoint.chunk.as_ptr()).set_pos(ptr);
 
-            self.chunk.set(Chunk::from_raw(checkpoint.chunk().header().cast()));
+            self.chunk.set(Chunk::from_ptr(checkpoint.chunk.as_ptr()));
         }
     }
 
@@ -276,7 +286,7 @@ where
 
         first.reset();
 
-        self.chunk.set(**first);
+        self.chunk.set(Chunk::from_first(first));
     }
 }
 
@@ -290,9 +300,9 @@ where
 where {
         let chunk = self.chunk.get();
 
-        match chunk.classify() {
-            ChunkClass::Claimed => Err(E::claimed()),
-            ChunkClass::Unallocated(chunk) => {
+        match chunk.kind() {
+            ChunkKind::Claimed(_) => Err(E::claimed()),
+            ChunkKind::Unallocated(chunk) => {
                 let Ok(layout) = Layout::from_size_align(additional, 1) else {
                     return Err(E::capacity_overflow());
                 };
@@ -303,7 +313,7 @@ where {
                 unsafe { self.replace(replacer) };
                 Ok(())
             }
-            ChunkClass::Allocated(mut chunk) => {
+            ChunkKind::Allocated(mut chunk) => {
                 let mut additional = additional;
 
                 if let Some(rest) = additional.checked_sub(chunk.remaining()) {
@@ -488,9 +498,9 @@ where {
         layout: L,
         mut f: impl FnMut(Chunk<A, S>, L) -> Option<R>,
     ) -> Result<R, E> {
-        let new_chunk: AllocatedChunk<A, S> = match self.chunk.get().classify() {
-            ChunkClass::Claimed => return Err(E::claimed()),
-            ChunkClass::Unallocated(chunk) => {
+        let new_chunk: AllocatedChunk<A, S> = match self.chunk.get().kind() {
+            ChunkKind::Claimed(_) => return Err(E::claimed()),
+            ChunkKind::Unallocated(chunk) => {
                 let allocator = chunk.construct_base_allocator()?;
                 let replacer = RawBump::with_size(ChunkSizeCapacity(*layout), allocator)?;
                 // SAFETY: the bump has no chunks, ergo no allocations to invalidate
@@ -498,16 +508,16 @@ where {
                 // SAFETY: the `with_size` constructor is guaranteed to preduce an allocated chunk
                 unsafe { self.chunk.get().as_allocated_unchecked() }
             }
-            ChunkClass::Allocated(mut chunk) => {
+            ChunkKind::Allocated(mut chunk) => {
                 while let Some(next_chunk) = chunk.next() {
                     chunk = next_chunk;
 
                     // We don't reset the chunk position when we leave a scope, so we need to do it here.
                     chunk.reset();
 
-                    self.chunk.set(*chunk);
+                    self.chunk.set(Chunk::from_allocated(chunk));
 
-                    if let Some(ptr) = f(*chunk, layout) {
+                    if let Some(ptr) = f(Chunk::from_allocated(chunk), layout) {
                         return Ok(ptr);
                     }
                 }
@@ -517,9 +527,9 @@ where {
             }
         };
 
-        self.chunk.set(*new_chunk);
+        self.chunk.set(Chunk::from_allocated(new_chunk));
 
-        match f(*new_chunk, layout) {
+        match f(Chunk::from_allocated(new_chunk), layout) {
             Some(ptr) => Ok(ptr),
             _ => {
                 // SAFETY: We just appended a chunk for that specific layout, it must have enough space.
@@ -531,16 +541,16 @@ where {
     }
 
     pub(crate) fn make_allocated<E: ErrorBehavior>(&self) -> Result<(), E> {
-        match self.chunk.get().classify() {
-            ChunkClass::Claimed => Err(E::claimed()),
-            ChunkClass::Unallocated(chunk) => {
+        match self.chunk.get().kind() {
+            ChunkKind::Claimed(_) => Err(E::claimed()),
+            ChunkKind::Unallocated(chunk) => {
                 let allocator = chunk.construct_base_allocator()?;
                 let replacer = RawBump::with_size(ChunkSizeMinimum, allocator)?;
                 // SAFETY: the bump has no chunks, ergo no allocations to invalidate
                 unsafe { self.replace(replacer) };
                 Ok(())
             }
-            ChunkClass::Allocated(_) => Ok(()),
+            ChunkKind::Allocated(_) => Ok(()),
         }
     }
 }
@@ -571,7 +581,7 @@ where
     {
         if MinimumAlignment::VALUE > S::MIN_ALIGN {
             // a dummy chunk is always aligned
-            if let Some(chunk) = self.chunk.get().as_non_dummy() {
+            if let Some(chunk) = self.chunk.get().as_allocated() {
                 let pos = chunk.pos().addr().get();
                 let addr = align_pos(S::UP, MinimumAlignment::VALUE, pos);
                 unsafe { chunk.set_pos_addr(addr) };
@@ -674,13 +684,13 @@ where
 
     #[inline]
     pub(crate) fn into_raw(self) -> NonNull<()> {
-        self.chunk.get().header().cast()
+        self.chunk.get().as_ptr()
     }
 
     #[inline]
     pub(crate) unsafe fn from_raw(ptr: NonNull<()>) -> Self {
         Self {
-            chunk: Cell::new(unsafe { Chunk::from_raw(ptr.cast()) }),
+            chunk: Cell::new(unsafe { Chunk::from_ptr(ptr.cast()) }),
         }
     }
 }

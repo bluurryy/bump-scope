@@ -2,7 +2,7 @@ use core::{alloc::Allocator, fmt::Debug, num::NonZeroUsize};
 
 use crate::{
     BumpScope,
-    chunk::{Chunk, ErasedChunk},
+    chunk_types::r#abstract::{Chunk, ErasedChunk},
     polyfill::transmute_mut,
     raw_bump::RawBump,
     settings::{BumpAllocatorSettings, BumpSettings},
@@ -22,19 +22,8 @@ pub struct Checkpoint {
 impl Checkpoint {
     pub(crate) fn new<A, S: BumpAllocatorSettings>(chunk: Chunk<A, S>) -> Self {
         let address = chunk.pos().addr();
-        let chunk = chunk.erase();
+        let chunk = ErasedChunk::erase(chunk);
         Checkpoint { chunk, address }
-    }
-
-    pub(crate) fn chunk(self) -> ErasedChunk {
-        self.chunk
-    }
-
-    pub(crate) unsafe fn reset_within_chunk(self) {
-        unsafe {
-            let ptr = self.chunk.header().cast::<u8>().with_addr(self.address);
-            self.chunk.header().as_ref().pos.set(ptr);
-        }
     }
 }
 

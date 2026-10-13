@@ -587,8 +587,8 @@ mod for_trait_object {
     }
 
     fn is_upwards_allocating(bump: &impl BumpAllocatorCore) -> bool {
-        let chunk = bump.checkpoint().chunk();
-        let header = chunk.header().addr();
+        let chunk = bump.checkpoint().chunk;
+        let header = chunk.as_ptr().addr();
         let end = chunk.end().addr();
         end > header
     }

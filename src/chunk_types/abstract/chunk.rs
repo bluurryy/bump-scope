@@ -1,23 +1,27 @@
-use core::{marker::PhantomData, ops::Range, ptr::NonNull};
+use core::{cell::Cell, marker::PhantomData, mem::transmute, ops::Range, ptr::NonNull};
 
 use crate::{
     bumping::{BumpProps, BumpUp, bump_down, bump_prepare_down, bump_prepare_up, bump_up},
-    chunk::{
-        AllocatedChunk, ChunkClass, ChunkHeader, DummyChunkHeader, UnallocatedChunk, UnallocatedChunkHeader,
-        erased_chunk::ErasedChunk,
+    chunk_types::{
+        r#abstract::{FirstAllocatedChunk, allocated_chunk::AllocatedChunk},
+        concrete::{ClaimedChunk, UnallocatedChunk},
+        dummy_memory_region,
     },
     layout::LayoutProps,
     settings::BumpAllocatorSettings,
 };
 
-/// Represents a chunk of the bump allocator.
-///
-/// This type behaves somewhat like a `ManuallyDrop<T>` in the sense that it has safe to
-/// use methods that assume the chunk is still live.
+#[repr(C, align(16))]
+struct Header {
+    pos: Cell<NonNull<u8>>,
+    end: NonNull<u8>,
+}
+
 #[repr(transparent)]
 pub(crate) struct Chunk<A, S> {
-    header: NonNull<ChunkHeader>,
-    marker: PhantomData<fn() -> (A, S)>,
+    header: NonNull<Header>,
+    #[expect(clippy::type_complexity)]
+    marker: PhantomData<(*const A, fn() -> S)>,
 }
 
 impl<A, S> Clone for Chunk<A, S> {
@@ -28,110 +32,73 @@ impl<A, S> Clone for Chunk<A, S> {
 
 impl<A, S> Copy for Chunk<A, S> {}
 
-impl<A, S> Chunk<A, S>
-where
-    A: Default + 'static,
-    S: BumpAllocatorSettings,
-{
-    #[cfg(feature = "panic-on-alloc")]
-    pub(crate) const UNALLOCATED_UNCHECKED: Self = {
+impl<A, S> Chunk<A, S> {
+    pub(crate) fn as_ptr(self) -> NonNull<()> {
+        self.header.cast()
+    }
+
+    pub(crate) fn pos(self) -> NonNull<u8> {
+        unsafe { self.header.as_ref() }.pos.get()
+    }
+
+    pub(crate) unsafe fn from_ptr(header: NonNull<()>) -> Self {
         Self {
-            header: if S::UP {
-                UnallocatedChunkHeader::<A>::UP
-            } else {
-                UnallocatedChunkHeader::<A>::DOWN
-            }
-            .cast(),
+            header: header.cast(),
             marker: PhantomData,
         }
-    };
+    }
 
-    /// This is only valid when `!S::GUARANTEED_ALLOCATED`.
-    pub(crate) const UNALLOCATED: Self = {
-        assert!(!S::GUARANTEED_ALLOCATED);
+    pub const fn from_unallocated(chunk: UnallocatedChunk<A, S>) -> Self {
+        unsafe { transmute(chunk) }
+    }
 
-        Self {
-            header: if S::UP {
-                UnallocatedChunkHeader::<A>::UP
-            } else {
-                UnallocatedChunkHeader::<A>::DOWN
-            }
-            .cast(),
-            marker: PhantomData,
-        }
-    };
+    pub const fn from_allocated(chunk: AllocatedChunk<A, S>) -> Self {
+        unsafe { transmute(chunk) }
+    }
+
+    pub const fn from_claimed(chunk: ClaimedChunk<A, S>) -> Self {
+        unsafe { transmute(chunk) }
+    }
+
+    pub(crate) fn from_first(zst: FirstAllocatedChunk<A, S>) -> Self {
+        unsafe { transmute(zst) }
+    }
 }
 
 impl<A, S> Chunk<A, S>
 where
     S: BumpAllocatorSettings,
 {
-    pub(crate) const CLAIMED: Self = {
-        assert!(S::CLAIMABLE);
-
-        Self {
-            header: if S::UP {
-                DummyChunkHeader::CLAIMED_UP
-            } else {
-                DummyChunkHeader::CLAIMED_DOWN
-            }
-            .cast(),
-
-            marker: PhantomData,
-        }
-    };
-
-    #[inline(always)]
-    pub(crate) unsafe fn from_raw(header: NonNull<ChunkHeader>) -> Self {
-        Self {
-            header,
-            marker: PhantomData,
-        }
-    }
-
-    #[inline(always)]
-    pub(crate) fn erase(self) -> ErasedChunk {
-        unsafe { ErasedChunk::from_raw(self.header.cast()) }
-    }
-
-    #[inline(always)]
-    pub(crate) fn header(self) -> NonNull<ChunkHeader> {
-        self.header
-    }
-
-    #[inline(always)]
-    pub(crate) fn is_claimed(self) -> bool {
-        S::CLAIMABLE && unsafe { self.header.as_ref().is_claimed() }
-    }
-
-    #[inline(always)]
     pub(crate) fn is_unallocated(self) -> bool {
-        !S::GUARANTEED_ALLOCATED && unsafe { self.header.as_ref().is_unallocated() }
+        !S::GUARANTEED_ALLOCATED && self.pos() == dummy_memory_region::UNALLOCATED_POS
     }
 
-    #[inline(always)]
-    pub(crate) fn classify(self) -> ChunkClass<A, S> {
-        if self.is_claimed() {
-            return ChunkClass::Claimed;
-        }
-
-        if self.is_unallocated() {
-            return ChunkClass::Unallocated(UnallocatedChunk {
-                header: self.header.cast(),
-                marker: self.marker,
-            });
-        }
-
-        // SAFETY: we checked that the chunk is not a dummy chunk; now it can only be an allocated chunk
-        ChunkClass::Allocated(unsafe { AllocatedChunk::from_raw(self.header.cast()) })
+    pub(crate) fn is_claimed(self) -> bool {
+        S::CLAIMABLE && self.pos() == dummy_memory_region::CLAIMED_POS
     }
 
-    #[inline(always)]
-    pub(crate) fn as_non_dummy(self) -> Option<AllocatedChunk<A, S>> {
-        match self.classify() {
-            ChunkClass::Claimed | ChunkClass::Unallocated(_) => None,
-            ChunkClass::Allocated(chunk) => Some(chunk),
+    pub(crate) fn kind(self) -> ChunkKind<A, S> {
+        unsafe {
+            if !S::GUARANTEED_ALLOCATED && self.is_unallocated() {
+                ChunkKind::Unallocated(transmute(self))
+            } else if S::CLAIMABLE && self.is_claimed() {
+                ChunkKind::Claimed(transmute(self))
+            } else {
+                ChunkKind::Allocated(transmute(self))
+            }
         }
+    }
+
+    pub(crate) fn as_allocated(self) -> Option<AllocatedChunk<A, S>> {
+        match self.kind() {
+            ChunkKind::Claimed(_) | ChunkKind::Unallocated(_) => None,
+            ChunkKind::Allocated(chunk) => Some(chunk),
+        }
+    }
+
+    pub(crate) unsafe fn as_allocated_unchecked(self) -> AllocatedChunk<A, S> {
+        debug_assert!(matches!(self.kind(), ChunkKind::Allocated(_)));
+        unsafe { transmute(self) }
     }
 
     /// Attempts to allocate a block of memory.
@@ -236,7 +203,7 @@ where
         let end = if S::UP { end } else { pos };
 
         #[cfg(debug_assertions)]
-        if !matches!(self.classify(), ChunkClass::Allocated(_)) {
+        if !matches!(self.kind(), ChunkKind::Allocated(_)) {
             assert!(start > end);
         }
 
@@ -250,17 +217,12 @@ where
             size_is_multiple_of_align: L::SIZE_IS_MULTIPLE_OF_ALIGN,
         }
     }
+}
 
-    #[inline(always)]
-    pub(crate) fn pos(self) -> NonNull<u8> {
-        unsafe { self.header.as_ref().pos.get() }
-    }
-
-    #[inline(always)]
-    pub(crate) unsafe fn as_allocated_unchecked(self) -> AllocatedChunk<A, S> {
-        debug_assert!(matches!(self.classify(), ChunkClass::Allocated(_)));
-        unsafe { AllocatedChunk::from_raw(self.header.cast()) }
-    }
+pub(crate) enum ChunkKind<A, S> {
+    Claimed(#[expect(dead_code)] ClaimedChunk<A, S>),
+    Unallocated(UnallocatedChunk<A, S>),
+    Allocated(AllocatedChunk<A, S>),
 }
 
 /// Miri doesn't understand how our bit twiddling aligns the pointer but we can promise it with this.

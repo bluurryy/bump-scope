@@ -15,12 +15,9 @@ use core::{
 };
 
 use crate::{
-    chunk::{AllocatedChunk, Chunk as RawChunk},
+    chunk_types::r#abstract::{AllocatedChunk, Chunk as RawChunk},
     settings::{BumpAllocatorSettings, BumpSettings, False},
 };
-
-#[cfg(debug_assertions)]
-use crate::chunk::AllocatedChunkHeader;
 
 mod any;
 
@@ -74,7 +71,7 @@ where
     #[inline]
     pub(crate) fn from_raw_chunk(chunk: RawChunk<A, S>) -> Self {
         Self {
-            chunk: chunk.as_non_dummy().map(|chunk| Chunk {
+            chunk: chunk.as_allocated().map(|chunk| Chunk {
                 chunk,
                 marker: PhantomData,
             }),
@@ -238,7 +235,7 @@ where
     S: BumpAllocatorSettings,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.chunk.header() == other.chunk.header()
+        self.chunk.as_ptr() == other.chunk.as_ptr()
     }
 }
 
@@ -261,8 +258,8 @@ where
     S: BumpAllocatorSettings,
 {
     #[cfg(debug_assertions)]
-    pub(crate) fn header(self) -> NonNull<AllocatedChunkHeader> {
-        self.chunk.header()
+    pub(crate) fn header(self) -> NonNull<()> {
+        self.chunk.as_ptr()
     }
 
     /// Returns the previous (smaller) chunk.
@@ -378,7 +375,7 @@ where
     #[inline]
     #[must_use]
     pub fn allocator(self) -> &'a A {
-        self.chunk.allocator()
+        unsafe { self.chunk.allocator_ptr().as_ref() }
     }
 }
 
