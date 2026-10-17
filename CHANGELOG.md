@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Remove `nightly-allocator-api` feature, since it is now stable
 - **Breaking:** Remove `BaseAllocator` trait, any `Allocator` can be used now
 - **Breaking:** Remove `BumpAllocator(Scope)` trait
+- **Breaking:** Remove deprecated api
 
 ## [2.4.0] - 2026-10-06
 

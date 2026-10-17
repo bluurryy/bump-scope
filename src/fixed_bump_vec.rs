@@ -2021,16 +2021,6 @@ impl<'a, T> FixedBumpVec<'a, T> {
         }
     }
 
-    /// Appends an element to the back of the collection.
-    ///
-    /// # Safety
-    /// Vector must not be full.
-    #[inline(always)]
-    #[deprecated = "use `push_unchecked(f())` instead"]
-    pub unsafe fn push_with_unchecked(&mut self, f: impl FnOnce() -> T) {
-        unsafe { self.push_unchecked(f()) };
-    }
-
     /// Extend the vector by `n` clones of value.
     fn extend_with<B: ErrorBehavior>(&mut self, n: usize, value: T) -> Result<(), B>
     where
