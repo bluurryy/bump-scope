@@ -71,7 +71,7 @@ macro_rules! make_type {
         /// - reset: [`reset`], [`reset_to_start`]
         /// - dealloc: [`dealloc`]
         ///
-        /// #### Configure allocator settings ...
+        /// #### Configure allocator config ...
         /// - [`with_config`], [`change_config`], [`borrow_change_config`], [`borrow_mut_change_config`]
         ///
         /// ## Collections
@@ -810,46 +810,60 @@ where
         unsafe { transmute_mut(self) }
     }
 
-    /// Converts this `Bump` into a `Bump` with new settings.
+    /// Converts this `Bump` into a `Bump` with a new config.
     ///
-    /// This function will fail to compile if:
-    /// - `config::read::guaranteed_allocated(NEW_C) != config!(upwards)`
+    /// # Fails
+    /// - fails to compile if [`upwards`] changes
     ///
     /// # Panics
-    /// Panics if `!config::read::claimable(NEW_C)` and the bump allocator is currently [claimed].
     ///
-    /// Panics if `config::read::guaranteed_allocated(NEW_C)` and no chunk has been allocated.
+    /// - panics if [`claimable`] becomes false and [`self.is_claimed()`]
+    /// - panics if [`guaranteed_allocated`] becomes true and `self` has no chunks
     ///
-    /// [claimed]: crate::BumpScope::claim
+    /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
+    /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
+    /// [`self.is_claimed()`]: Self::is_claimed
+    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
+    ///
     #[inline]
     pub fn change_config<const NEW_C: BumpConfig>(self) -> Bump<A, NEW_C> {
-        self.raw.ensure_satisfies_settings::<NEW_C>();
+        self.raw.ensure_satisfies_config::<NEW_C>();
         unsafe { transmute_value(self) }
     }
 
-    /// Borrows this `Bump` with new settings.
+    /// Borrows this `Bump` with a new config.
     ///
-    /// This function will fail to compile if:
-    /// - `config::read::min_align(NEW_C) != config!(min_align)`
-    /// - `config::read::guaranteed_allocated(NEW_C) != config!(upwards)`
-    /// - `config::read::claimable(NEW_C) != config!(claimable)`
-    /// - `config::read::guaranteed_allocated(NEW_C) > config!(guaranteed_allocated)`
+    /// # Fails
+    /// - fails to compile if [`upwards`] changes
+    /// - fails to compile if [`claimable`] changes
+    /// - fails to compile if [`guaranteed_allocated`] becomes true
+    /// - fails to compile if [`min_align`] changes
+    ///
+    /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
+    /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
+    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
+    /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
     pub fn borrow_change_config<const NEW_C: BumpConfig>(&self) -> &Bump<A, NEW_C> {
-        self.raw.ensure_satisfies_settings_for_borrow::<NEW_C>();
+        self.raw.ensure_satisfies_config_for_borrow::<NEW_C>();
         unsafe { transmute_ref(self) }
     }
 
-    /// Borrows this `Bump` mutably with new settings.
+    /// Borrows this `Bump` mutably with a new config.
     ///
-    /// This function will fail to compile if:
-    /// - `config::read::min_align(NEW_C) < config!(min_align)`
-    /// - `config::read::guaranteed_allocated(NEW_C) != config!(upwards)`
-    /// - `config::read::guaranteed_allocated(NEW_C) != config!(guaranteed_allocated)`
-    /// - `config::read::claimable(NEW_C) != config!(claimable)`
+    /// # Fails
+    /// - fails to compile if [`upwards`] changes
+    /// - fails to compile if [`claimable`] changes
+    /// - fails to compile if [`guaranteed_allocated`] changes
+    /// - fails to compile if [`min_align`] decreases
+    ///
+    /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
+    /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
+    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
+    /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
     pub fn borrow_mut_change_config<const NEW_C: BumpConfig>(&mut self) -> &mut Bump<A, NEW_C> {
-        self.raw.ensure_satisfies_settings_for_borrow_mut::<NEW_C>();
+        self.raw.ensure_satisfies_config_for_borrow_mut::<NEW_C>();
         unsafe { transmute_mut(self) }
     }
 
@@ -878,7 +892,7 @@ where
     /// # Safety
     /// - `ptr` must come from a call to `Self::into_raw`.
     /// - This function must only be called once with this `ptr`.
-    /// - The settings must match the original ones.
+    /// - The config must match the original one.
     #[inline]
     #[must_use]
     pub unsafe fn from_raw(ptr: NonNull<()>) -> Self {

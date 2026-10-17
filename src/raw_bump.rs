@@ -600,7 +600,7 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         }) || self.stats().current_chunk().is_some()
     }
 
-    pub(crate) fn ensure_satisfies_settings<const NEW_C: BumpConfig>(&self) {
+    pub(crate) fn ensure_satisfies_config<const NEW_C: BumpConfig>(&self) {
         Self::const_assert_upwards_matches::<NEW_C>();
 
         if !self.can_convert_claimable::<NEW_C>() {
@@ -614,7 +614,7 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         self.align_to(config!(NEW_C, min_align));
     }
 
-    pub(crate) fn ensure_scope_satisfies_settings<const NEW_C: BumpConfig>(&self) {
+    pub(crate) fn ensure_scope_satisfies_config<const NEW_C: BumpConfig>(&self) {
         Self::const_assert_upwards_matches::<NEW_C>();
 
         if !self.can_convert_claimable::<NEW_C>() {
@@ -635,7 +635,7 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
     }
 
     #[expect(clippy::unused_self)]
-    pub(crate) fn ensure_satisfies_settings_for_borrow<const NEW_C: BumpConfig>(&self) {
+    pub(crate) fn ensure_satisfies_config_for_borrow<const NEW_C: BumpConfig>(&self) {
         Self::const_assert_upwards_matches::<NEW_C>();
 
         const {
@@ -657,7 +657,7 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         }
     }
 
-    pub(crate) fn ensure_satisfies_settings_for_borrow_mut<const NEW_C: BumpConfig>(&self) {
+    pub(crate) fn ensure_satisfies_config_for_borrow_mut<const NEW_C: BumpConfig>(&self) {
         Self::const_assert_upwards_matches::<NEW_C>();
 
         const {

@@ -82,7 +82,7 @@ where
     /// Allocates a chunk if none has been allocated yet.
     ///
     /// This can be used to remove an indirection, simplify type signatures and allow
-    /// for more settings conversions via [`change_config`].
+    /// for more config conversions via [`change_config`].
     ///
     /// # Panics
     /// Panics if the bump allocator is currently [claimed].
@@ -109,7 +109,7 @@ where
     /// Allocates a chunk if none has been allocated yet.
     ///
     /// This can be used to remove an indirection, simplify type signatures and allow
-    /// for more settings conversions via [`change_config`].
+    /// for more config conversions via [`change_config`].
     ///
     /// # Errors
     /// Errors if the bump allocator is currently [claimed].
@@ -140,43 +140,54 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
 
     /// Converts this `BumpScope` into a `BumpScope` with a new config.
     ///
-    /// This function will fail to compile if:
-    /// - `config::read::min_align(NEW_C) < config!(min_align)`
-    /// - `config::read::guaranteed_allocated(NEW_C) != config!(upwards)`
+    /// # Fails
+    /// - fails to compile if [`upwards`] changes
     ///
     /// # Panics
-    /// Panics if `!config::read::claimable(NEW_C)` and the bump allocator is currently [claimed].
+    /// - panics if [`claimable`] becomes false and [`self.is_claimed()`]
     ///
-    /// [claimed]: crate::BumpScope::claim
+    /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
+    /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
+    /// [`self.is_claimed()`]: Self::is_claimed
     #[inline]
     pub fn change_config<const NEW_C: BumpConfig>(self) -> BumpScope<'a, A, NEW_C> {
-        self.raw.ensure_scope_satisfies_settings::<NEW_C>();
+        self.raw.ensure_scope_satisfies_config::<NEW_C>();
         unsafe { transmute_value(self) }
     }
 
-    /// Borrows this `BumpScope` with new settings.
+    /// Borrows this `BumpScope` with a new config.
     ///
-    /// This function will fail to compile if:
-    /// - `config::read::min_align(NEW_C) != config!(min_align)`
-    /// - `config::read::guaranteed_allocated(NEW_C) != config!(upwards)`
-    /// - `config::read::claimable(NEW_C) != config!(claimable)`
-    /// - `config::read::guaranteed_allocated(NEW_C) > config!(guaranteed_allocated)`
+    /// # Fails
+    /// - fails to compile if [`upwards`] changes
+    /// - fails to compile if [`claimable`] changes
+    /// - fails to compile if [`guaranteed_allocated`] becomes true
+    /// - fails to compile if [`min_align`] changes
+    ///
+    /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
+    /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
+    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
+    /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
     pub fn borrow_change_config<const NEW_C: BumpConfig>(&self) -> &BumpScope<'a, A, NEW_C> {
-        self.raw.ensure_satisfies_settings_for_borrow::<NEW_C>();
+        self.raw.ensure_satisfies_config_for_borrow::<NEW_C>();
         unsafe { transmute_ref(self) }
     }
 
-    /// Borrows this `BumpScope` mutably with new settings.
+    /// Borrows this `BumpScope` mutably with a new config.
     ///
-    /// This function will fail to compile if:
-    /// - `config::read::min_align(NEW_C) < config!(min_align)`
-    /// - `config::read::guaranteed_allocated(NEW_C) != config!(upwards)`
-    /// - `config::read::guaranteed_allocated(NEW_C) != config!(guaranteed_allocated)`
-    /// - `config::read::claimable(NEW_C) != config!(claimable)`
+    /// # Fails
+    /// - fails to compile if [`upwards`] changes
+    /// - fails to compile if [`claimable`] changes
+    /// - fails to compile if [`guaranteed_allocated`] changes
+    /// - fails to compile if [`min_align`] decreases
+    ///
+    /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
+    /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
+    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
+    /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
     pub fn borrow_mut_change_config<const NEW_C: BumpConfig>(&mut self) -> &mut BumpScope<'a, A, NEW_C> {
-        self.raw.ensure_satisfies_settings_for_borrow_mut::<NEW_C>();
+        self.raw.ensure_satisfies_config_for_borrow_mut::<NEW_C>();
         unsafe { transmute_mut(self) }
     }
 }
@@ -198,7 +209,7 @@ impl<const C: BumpConfig> BumpScope<'_, Global, C> {
     /// - This function must only be called once with this `ptr`.
     /// - Nothing must have been allocated since then.
     /// - The lifetime must match the original one.
-    /// - The settings must match the original ones.
+    /// - The config must match the original one.
     #[inline]
     #[must_use]
     pub unsafe fn from_raw(ptr: NonNull<()>) -> Self {
@@ -294,16 +305,18 @@ where
 
     /// Calls `f` on a child scope with a new config.
     ///
+    /// # Fails
+    /// - fails to compile if [`upwards`] changes
+    ///
     /// # Panics
     ///
-    /// - panics if [`upwards`] changes
-    /// - panics if [`claimable`] becomes true, but [`self.is_claimed()`]
-    /// - panics if [`guaranteed_allocated`] becomes true, but `self` has no chunks
+    /// - panics if [`claimable`] becomes false and [`self.is_claimed()`]
+    /// - panics if [`guaranteed_allocated`] becomes true and `self` has no chunks
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
     /// [`self.is_claimed()`]: Self::is_claimed
-    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::claimable
+    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
     ///
     /// # Examples
     ///
@@ -356,7 +369,7 @@ where
         let mut guard = self.scope_guard();
         let scope = guard.scope();
 
-        scope.raw.ensure_satisfies_settings::<NEW_C>();
+        scope.raw.ensure_satisfies_config::<NEW_C>();
 
         f(unsafe { transmute_mut(scope) })
     }
@@ -366,13 +379,13 @@ where
     /// # Panics
     ///
     /// - panics if [`upwards`] changes
-    /// - panics if [`claimable`] becomes true, but [`self.is_claimed()`]
-    /// - panics if [`guaranteed_allocated`] becomes true, but `self` has no chunks
+    /// - panics if [`claimable`] becomes false and [`self.is_claimed()`]
+    /// - panics if [`guaranteed_allocated`] becomes true and `self` has no chunks
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
     /// [`self.is_claimed()`]: Self::is_claimed
-    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::claimable
+    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
     ///
     /// # Examples
     ///
