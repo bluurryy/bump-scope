@@ -8,7 +8,7 @@ type In = <BumpSettings as BumpAllocatorSettings>::WithUp<true>;
 type Out = <BumpSettings as BumpAllocatorSettings>::WithUp<false>;
 
 fn convert<'a, 'b>(bump: &'b BumpScope<'a, Global, In>) -> &'b BumpScope<'a, Global, Out> {
-    bump.borrow_with_settings()
+    bump.borrow_change_config()
 }
 
 fn main() {

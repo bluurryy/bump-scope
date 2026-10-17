@@ -12,12 +12,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use the now stable `core` allocator api
 - Any `Allocator` can now be used as `BaseAllocator`
 
+### Changed
+
+- **Breaking:** Replace `BumpSettings` type with `BumpConfig` const generic
+- **Breaking:** Replace `.scoped_aligned()`, use `scoped_with_config` instead
+- **Breaking:** Replace `.aligned()`, use `with_config` instead
+- **Breaking:** Rename `*with_settings` to `*change_config`
+
 ### Removed
 
 - **Breaking:** Remove allocator api polyfill at `bump_scope::alloc`
 - **Breaking:** Remove `allocator-api2-02`, `*-03` and `*-04` features and the corresponding compatibility
 - **Breaking:** Remove `nightly-allocator-api` feature, since it is now stable
 - **Breaking:** Remove `BaseAllocator` trait, any `Allocator` can be used now
+- **Breaking:** Remove `BumpAllocator(Scope)` trait
 
 ## [2.4.0] - 2026-10-06
 

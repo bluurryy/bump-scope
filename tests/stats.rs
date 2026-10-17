@@ -1,4 +1,4 @@
-#![cfg(all(feature = "std", feature = "panic-on-alloc"))]
+#![cfg(all(feature = "std", feature = "panic-on-alloc",))]
 
 mod common;
 
@@ -9,33 +9,14 @@ use std::{
 
 use bump_scope::{
     Bump,
-    settings::{BumpAllocatorSettings, BumpSettings},
+    config::BumpConfig,
     stats::{AnyChunk, AnyStats, Chunk, Stats},
     traits::{BumpAllocatorCore, BumpAllocatorTyped as _},
 };
 
-use common::either_way;
+use common::up_and_down;
 
 use crate::common::AssumedMallocOverhead;
-
-either_way! {
-    #[cfg(target_pointer_width = "64")]
-    unallocated
-    #[cfg(target_pointer_width = "64")]
-    zst_allocator
-    #[cfg(target_pointer_width = "64")]
-    zst_allocator_high_align
-    #[cfg(target_pointer_width = "64")]
-    ptr_allocator
-    #[cfg(target_pointer_width = "64")]
-    two_ptr_allocator
-    #[cfg(target_pointer_width = "64")]
-    high_align_allocator
-    #[cfg(target_pointer_width = "64")]
-    fat_allocator
-}
-
-type SimpleBump<const UP: bool, A = Global> = bump_scope::Bump<A, BumpSettings<1, UP, false, true>>;
 
 macro_rules! allocator_with_layout {
     ($name:ident, $size:literal, $align:literal) => {
@@ -81,10 +62,108 @@ macro_rules! allocator_with_layout {
     };
 }
 
-fn assert_stats_match<A, S>(stats: Stats<'_, A, S>, any_stats: AnyStats<'_>)
-where
-    S: BumpAllocatorSettings,
-{
+up_and_down! {
+    const C: BumpConfig = BumpConfigBuilder(DEFAULT_C).guaranteed_allocated(false).build();
+
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn unallocated() {
+        allocator_with_layout!(TestBaseAllocator, 2048, 8);
+        let bump = Bump::<TestBaseAllocator, C>::unallocated();
+        assert_eq!(bump.stats().count(), 0);
+        assert_eq!(bump.stats().size(), 0);
+        assert_eq!(bump.stats().capacity(), 0);
+        assert_eq!(bump.stats().allocated(), 0);
+        assert_eq!(bump.stats().remaining(), 0);
+        assert_stats_match(bump.stats(), bump.any_stats());
+        test_base_allocator(
+            Bump::<TestBaseAllocator, C>::new(),
+            4096,
+            8 * 6 + 2048, // rounded up from 5 to 6 due to align
+            8 * 6,        // rounded up from 5 to 6 due to align
+        );
+    }
+
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn zst_allocator() {
+        allocator_with_layout!(TestBaseAllocator, 0, 1);
+        test_base_allocator(
+            Bump::<TestBaseAllocator, C>::new(),
+            512,
+            ZST_ALLOCATED_CHUNK_HEADER_SIZE,
+            ZST_ALLOCATED_CHUNK_HEADER_SIZE,
+        );
+    }
+
+    // asserts same as the `zst_allocator`, alignment shouldn't affect anything
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn zst_allocator_high_align() {
+        allocator_with_layout!(TestBaseAllocator, 0, 2048);
+        test_base_allocator(
+            Bump::<TestBaseAllocator, C>::new(),
+            512,
+            ZST_ALLOCATED_CHUNK_HEADER_SIZE,
+            ZST_ALLOCATED_CHUNK_HEADER_SIZE,
+        );
+    }
+
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn ptr_allocator() {
+        allocator_with_layout!(TestBaseAllocator, 8, 8);
+        test_base_allocator(
+            Bump::<TestBaseAllocator, C>::new(),
+            512,
+            8 * 6,
+            8 * 6, // rounded up from 5 to 6 due to align
+        );
+    }
+
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn two_ptr_allocator() {
+        allocator_with_layout!(TestBaseAllocator, 16, 8);
+        test_base_allocator(
+            Bump::<TestBaseAllocator, C>::new(),
+            512,
+            8 * 8, // rounded up from 7 to 8 due to align
+            8 * 6, // rounded up from 5 to 6 due to align
+        );
+    }
+
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn high_align_allocator() {
+        if !bump_scope::config::read::upwards(C) {
+            // FIXME: size allocation is weird as heck for downwards, fix it!
+            return;
+        }
+
+        allocator_with_layout!(TestBaseAllocator, 32, 32);
+        test_base_allocator(
+            Bump::<TestBaseAllocator, C>::new(),
+            512,
+            8 * 5 + 8 * 3 + 32, // 8 * 3 is padding
+            8 * 6,              // rounded up from 5 to 6 due to align
+        );
+    }
+
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn fat_allocator() {
+        allocator_with_layout!(TestBaseAllocator, 1024, 1);
+        test_base_allocator(
+            Bump::<TestBaseAllocator, C>::new(),
+            2048,
+            8 * 6 + 1024, // rounded up from 5 to 6 due to align
+            8 * 6,        // rounded up from 5 to 6 due to align
+        );
+    }
+}
+
+fn assert_stats_match<A, const C: BumpConfig>(stats: Stats<'_, A, C>, any_stats: AnyStats<'_>) {
     assert_eq!(stats.count(), any_stats.count());
     assert_eq!(stats.size(), any_stats.size());
     assert_eq!(stats.capacity(), any_stats.capacity());
@@ -110,10 +189,7 @@ where
     }
 }
 
-fn assert_chunk_match<A, S>(chunk: Chunk<'_, A, S>, any_chunk: AnyChunk<'_>)
-where
-    S: BumpAllocatorSettings,
-{
+fn assert_chunk_match<A, const C: BumpConfig>(chunk: Chunk<'_, A, C>, any_chunk: AnyChunk<'_>) {
     assert_eq!(chunk.size(), any_chunk.size());
     assert_eq!(chunk.capacity(), any_chunk.capacity());
     assert_eq!(chunk.allocated(), any_chunk.allocated());
@@ -125,10 +201,9 @@ where
     assert_eq!(chunk.bump_position(), any_chunk.bump_position());
 }
 
-fn allocate_another_chunk<A, S>(bump: &Bump<A, S>, dummy_size: usize)
+fn allocate_another_chunk<A, const C: BumpConfig>(bump: &Bump<A, C>, dummy_size: usize)
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     let start_chunks = bump.any_stats().count();
 
@@ -147,8 +222,8 @@ where
 const ZST_ALLOCATED_CHUNK_HEADER_SIZE: usize = 8 * 4;
 const MALLOC_OVERHEAD_SIZE: usize = size_of::<AssumedMallocOverhead>();
 
-fn test_base_allocator<A, const UP: bool>(
-    bump: SimpleBump<UP, A>,
+fn test_base_allocator<A, const C: BumpConfig>(
+    bump: Bump<A, C>,
     first_chunk_size_with_malloc_overhead: usize,
     first_allocated_chunk_header_size: usize,
     non_first_allocated_chunk_header_size: usize,
@@ -184,94 +259,4 @@ fn test_base_allocator<A, const UP: bool>(
         bump.stats().current_chunk().unwrap().capacity() - bump.stats().current_chunk().unwrap().allocated()
     );
     assert_stats_match(bump.stats(), bump.any_stats());
-}
-
-#[cfg(target_pointer_width = "64")]
-fn unallocated<const UP: bool>() {
-    allocator_with_layout!(TestBaseAllocator, 2048, 8);
-    let bump = <SimpleBump<UP, TestBaseAllocator>>::unallocated();
-    assert_eq!(bump.stats().count(), 0);
-    assert_eq!(bump.stats().size(), 0);
-    assert_eq!(bump.stats().capacity(), 0);
-    assert_eq!(bump.stats().allocated(), 0);
-    assert_eq!(bump.stats().remaining(), 0);
-    assert_stats_match(bump.stats(), bump.any_stats());
-    test_base_allocator(
-        <SimpleBump<UP, TestBaseAllocator>>::new(),
-        4096,
-        8 * 6 + 2048, // rounded up from 5 to 6 due to align
-        8 * 6,        // rounded up from 5 to 6 due to align
-    );
-}
-
-#[cfg(target_pointer_width = "64")]
-fn zst_allocator<const UP: bool>() {
-    allocator_with_layout!(TestBaseAllocator, 0, 1);
-    test_base_allocator(
-        <SimpleBump<UP, TestBaseAllocator>>::new(),
-        512,
-        ZST_ALLOCATED_CHUNK_HEADER_SIZE,
-        ZST_ALLOCATED_CHUNK_HEADER_SIZE,
-    );
-}
-
-// asserts same as the `zst_allocator`, alignment shouldn't affect anything
-#[cfg(target_pointer_width = "64")]
-fn zst_allocator_high_align<const UP: bool>() {
-    allocator_with_layout!(TestBaseAllocator, 0, 2048);
-    test_base_allocator(
-        <SimpleBump<UP, TestBaseAllocator>>::new(),
-        512,
-        ZST_ALLOCATED_CHUNK_HEADER_SIZE,
-        ZST_ALLOCATED_CHUNK_HEADER_SIZE,
-    );
-}
-
-#[cfg(target_pointer_width = "64")]
-fn ptr_allocator<const UP: bool>() {
-    allocator_with_layout!(TestBaseAllocator, 8, 8);
-    test_base_allocator(
-        <SimpleBump<UP, TestBaseAllocator>>::new(),
-        512,
-        8 * 6,
-        8 * 6, // rounded up from 5 to 6 due to align
-    );
-}
-
-#[cfg(target_pointer_width = "64")]
-fn two_ptr_allocator<const UP: bool>() {
-    allocator_with_layout!(TestBaseAllocator, 16, 8);
-    test_base_allocator(
-        <SimpleBump<UP, TestBaseAllocator>>::new(),
-        512,
-        8 * 8, // rounded up from 7 to 8 due to align
-        8 * 6, // rounded up from 5 to 6 due to align
-    );
-}
-
-#[cfg(target_pointer_width = "64")]
-fn high_align_allocator<const UP: bool>() {
-    if !UP {
-        // FIXME: size allocation is weird as heck for downwards, fix it!
-        return;
-    }
-
-    allocator_with_layout!(TestBaseAllocator, 32, 32);
-    test_base_allocator(
-        <SimpleBump<UP, TestBaseAllocator>>::new(),
-        512,
-        8 * 5 + 8 * 3 + 32, // 8 * 3 is padding
-        8 * 6,              // rounded up from 5 to 6 due to align
-    );
-}
-
-#[cfg(target_pointer_width = "64")]
-fn fat_allocator<const UP: bool>() {
-    allocator_with_layout!(TestBaseAllocator, 1024, 1);
-    test_base_allocator(
-        <SimpleBump<UP, TestBaseAllocator>>::new(),
-        2048,
-        8 * 6 + 1024, // rounded up from 5 to 6 due to align
-        8 * 6,        // rounded up from 5 to 6 due to align
-    );
 }

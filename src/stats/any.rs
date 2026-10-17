@@ -6,7 +6,7 @@ use crate::{
         r#abstract::ErasedAllocatedChunk,
         concrete::{NonZstFirstAllocatedChunk, NonZstNonFirstAllocatedChunk, ZstAllocatedChunk},
     },
-    settings::BumpAllocatorSettings,
+    config::BumpConfig,
 };
 
 use super::{Chunk, ChunkNextIter, ChunkPrevIter, Stats};
@@ -19,11 +19,8 @@ pub struct AnyStats<'a> {
     chunk: Option<AnyChunk<'a>>,
 }
 
-impl<A, S> From<Stats<'_, A, S>> for AnyStats<'_>
-where
-    S: BumpAllocatorSettings,
-{
-    fn from(value: Stats<'_, A, S>) -> Self {
+impl<A, const C: BumpConfig> From<Stats<'_, A, C>> for AnyStats<'_> {
+    fn from(value: Stats<'_, A, C>) -> Self {
         Self {
             chunk: value.current_chunk().map(Into::into),
         }
@@ -165,22 +162,19 @@ pub struct AnyChunk<'a> {
     marker: PhantomData<&'a ()>,
 }
 
-impl<A, S> From<Chunk<'_, A, S>> for AnyChunk<'_>
-where
-    S: BumpAllocatorSettings,
-{
-    fn from(value: Chunk<'_, A, S>) -> Self {
+impl<A, const C: BumpConfig> From<Chunk<'_, A, C>> for AnyChunk<'_> {
+    fn from(value: Chunk<'_, A, C>) -> Self {
         Self {
             chunk: ErasedAllocatedChunk::erase(value.chunk),
             header_size_first: if A::IS_ZST {
-                ZstAllocatedChunk::<A, S>::HEADER_LAYOUT.size()
+                ZstAllocatedChunk::<A, C>::HEADER_LAYOUT.size()
             } else {
-                NonZstFirstAllocatedChunk::<A, S>::HEADER_LAYOUT.size()
+                NonZstFirstAllocatedChunk::<A, C>::HEADER_LAYOUT.size()
             },
             header_size_non_first: if A::IS_ZST {
-                ZstAllocatedChunk::<A, S>::HEADER_LAYOUT.size()
+                ZstAllocatedChunk::<A, C>::HEADER_LAYOUT.size()
             } else {
-                NonZstNonFirstAllocatedChunk::<A, S>::HEADER_LAYOUT.size()
+                NonZstNonFirstAllocatedChunk::<A, C>::HEADER_LAYOUT.size()
             },
             marker: PhantomData,
         }
@@ -367,11 +361,8 @@ pub struct AnyChunkPrevIter<'a> {
     pub chunk: Option<AnyChunk<'a>>,
 }
 
-impl<A, S> From<ChunkPrevIter<'_, A, S>> for AnyChunkPrevIter<'_>
-where
-    S: BumpAllocatorSettings,
-{
-    fn from(value: ChunkPrevIter<'_, A, S>) -> Self {
+impl<A, const C: BumpConfig> From<ChunkPrevIter<'_, A, C>> for AnyChunkPrevIter<'_> {
+    fn from(value: ChunkPrevIter<'_, A, C>) -> Self {
         Self {
             chunk: value.chunk.map(Into::into),
         }
@@ -404,11 +395,8 @@ pub struct AnyChunkNextIter<'a> {
     pub chunk: Option<AnyChunk<'a>>,
 }
 
-impl<A, S> From<ChunkNextIter<'_, A, S>> for AnyChunkNextIter<'_>
-where
-    S: BumpAllocatorSettings,
-{
-    fn from(value: ChunkNextIter<'_, A, S>) -> Self {
+impl<A, const C: BumpConfig> From<ChunkNextIter<'_, A, C>> for AnyChunkNextIter<'_> {
+    fn from(value: ChunkNextIter<'_, A, C>) -> Self {
         Self {
             chunk: value.chunk.map(Into::into),
         }
@@ -445,10 +433,7 @@ fn check_from_impls() {
     fn accepting_any_chunk_prev_iter(_: AnyChunkPrevIter) {}
     fn accepting_any_chunk_next_iter(_: AnyChunkNextIter) {}
 
-    fn generic_bump<'a, A, S>(bump: &BumpScope<'a, A, S>)
-    where
-        S: BumpAllocatorSettings,
-    {
+    fn generic_bump<'a, A, const C: BumpConfig>(bump: &BumpScope<'a, A, C>) {
         let stats = bump.stats();
         accepting_any_stats(stats.into());
         accepting_any_chunk(stats.current_chunk().unwrap().into());

@@ -6,11 +6,12 @@ use std::{
 
 use arbitrary::Arbitrary;
 use bump_scope::{
-    settings::{MinimumAlignment, SupportedMinimumAlignment},
+    Bump,
+    config::{BumpConfig, BumpConfigBuilder},
     traits::BumpAllocatorTyped,
 };
 
-use crate::{Bump, MinAlign, UpTo};
+use crate::{MinAlign, UpTo};
 
 #[derive(Debug, Arbitrary)]
 pub struct Fuzz {
@@ -21,34 +22,26 @@ pub struct Fuzz {
     allocations: Vec<AllocationDescription>,
 }
 
-impl Fuzz {
-    pub fn run(self) {
-        if self.up {
-            self.run_dir::<true>();
-        } else {
-            self.run_dir::<false>();
+macro_rules! run_dir {
+    ($self:ident, $upwards:literal) => {
+        match $self.min_align {
+            MinAlign::Shl0 => run_dir_align!($self, $upwards, 1),
+            MinAlign::Shl1 => run_dir_align!($self, $upwards, 2),
+            MinAlign::Shl2 => run_dir_align!($self, $upwards, 4),
+            MinAlign::Shl3 => run_dir_align!($self, $upwards, 8),
+            MinAlign::Shl4 => run_dir_align!($self, $upwards, 16),
         }
-    }
+    };
+}
 
-    fn run_dir<const UP: bool>(self) {
-        match self.min_align {
-            MinAlign::Shl0 => self.run_dir_align::<UP, 1>(),
-            MinAlign::Shl1 => self.run_dir_align::<UP, 2>(),
-            MinAlign::Shl2 => self.run_dir_align::<UP, 4>(),
-            MinAlign::Shl3 => self.run_dir_align::<UP, 8>(),
-            MinAlign::Shl4 => self.run_dir_align::<UP, 16>(),
-        }
-    }
+macro_rules! run_dir_align {
+    ($self:ident, $upwards:literal, $min_align:literal) => {{
+        const C: BumpConfig = BumpConfigBuilder::new().upwards($upwards).min_align($min_align).build();
+        let bump = Bump::<Global, C>::with_capacity(Layout::new::<[u8; 32]>());
 
-    fn run_dir_align<const UP: bool, const MIN_ALIGN: usize>(self)
-    where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    {
-        let bump: Bump<Global, MIN_ALIGN, UP> = Bump::with_capacity(Layout::new::<[u8; 32]>());
+        let mut prev = Range::new_slice(bump.alloc_uninit_slice::<u8>($self.offset.0).into_ref());
 
-        let mut prev = Range::new_slice(bump.alloc_uninit_slice::<u8>(self.offset.0).into_ref());
-
-        for allocation in &self.allocations {
+        for allocation in &$self.allocations {
             let curr = allocation.allocate(&bump);
 
             let align = allocation.align() as usize;
@@ -56,6 +49,16 @@ impl Fuzz {
 
             prev.assert_no_overlap(curr);
             prev = curr;
+        }
+    }};
+}
+
+impl Fuzz {
+    pub fn run(self) {
+        if self.up {
+            run_dir!(self, true);
+        } else {
+            run_dir!(self, false);
         }
     }
 }
@@ -155,10 +158,7 @@ trait AnyBump {
     fn alloc_static_slice<T: Default>(&self, len: usize) -> Range;
 }
 
-impl<const UP: bool, const MIN_ALIGN: usize> AnyBump for &Bump<Global, MIN_ALIGN, UP>
-where
-    MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-{
+impl<const C: BumpConfig> AnyBump for &Bump<Global, C> {
     fn alloc_dynamic(&self, layout: Layout) -> Range {
         let start = self.allocate_layout(layout).addr().get();
         Range {

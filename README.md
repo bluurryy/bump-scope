@@ -207,7 +207,7 @@ Shrinking or deallocating allocations other than the most recent one does nothin
 
 A bump allocator does not require `deallocate` or `shrink` to free memory.
 After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
-You can set the `DEALLOCATES` and `SHRINKS` parameters to false or use the `WithoutDealloc` and `WithoutShrink` wrappers
+You can set the `deallocates` and `shrinks` config parameters to false or use the `WithoutDealloc` and `WithoutShrink` wrappers
 to make deallocating and shrinking a no-op.
 
 ## Feature Flags

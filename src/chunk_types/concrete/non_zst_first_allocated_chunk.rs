@@ -6,15 +6,15 @@ use core::{
     ptr::{self, NonNull},
 };
 
-use crate::settings::BumpAllocatorSettings;
+use crate::config::{BumpConfig, config};
 
 #[repr(C, align(16))]
-struct Header<A, S> {
+struct Header<A, const C: BumpConfig> {
     pos: Cell<NonNull<u8>>,
     end: NonNull<u8>,
 
-    prev: Option<NonZstFirstAllocatedChunk<A, S>>,
-    next: Cell<Option<NonZstFirstAllocatedChunk<A, S>>>,
+    prev: Option<NonZstFirstAllocatedChunk<A, C>>,
+    next: Cell<Option<NonZstFirstAllocatedChunk<A, C>>>,
 
     allocator_ptr: NonNull<A>,
     allocator: A,
@@ -22,25 +22,21 @@ struct Header<A, S> {
 
 // Abstract chunk, either
 #[repr(transparent)]
-pub(crate) struct NonZstFirstAllocatedChunk<A, S> {
-    header: NonNull<Header<A, S>>,
-    #[expect(clippy::type_complexity)]
-    marker: PhantomData<(*const A, fn() -> S)>,
+pub(crate) struct NonZstFirstAllocatedChunk<A, const C: BumpConfig> {
+    header: NonNull<Header<A, C>>,
+    marker: PhantomData<*const A>,
 }
 
-impl<A, S> Clone for NonZstFirstAllocatedChunk<A, S> {
+impl<A, const C: BumpConfig> Clone for NonZstFirstAllocatedChunk<A, C> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, S> Copy for NonZstFirstAllocatedChunk<A, S> {}
+impl<A, const C: BumpConfig> Copy for NonZstFirstAllocatedChunk<A, C> {}
 
-impl<A, S> NonZstFirstAllocatedChunk<A, S>
-where
-    S: BumpAllocatorSettings,
-{
-    pub(crate) const HEADER_LAYOUT: Layout = Layout::new::<Header<A, S>>();
+impl<A, const C: BumpConfig> NonZstFirstAllocatedChunk<A, C> {
+    pub(crate) const HEADER_LAYOUT: Layout = Layout::new::<Header<A, C>>();
 
     #[expect(dead_code)]
     pub(crate) fn as_ptr(self) -> NonNull<()> {
@@ -88,17 +84,21 @@ where
 
     pub(crate) unsafe fn init(ptr: NonNull<u8>, size: usize, allocator: A) -> Self {
         unsafe {
-            let header = if S::UP {
-                ptr.cast::<Header<A, S>>()
+            let header = if config!(upwards) {
+                ptr.cast::<Header<A, C>>()
             } else {
-                ptr.add(size).cast::<Header<A, S>>().sub(1)
+                ptr.add(size).cast::<Header<A, C>>().sub(1)
             };
 
-            let allocator_ptr = header.byte_add(offset_of!(Header<A, S>, allocator)).cast();
-            let pos = Cell::new(if S::UP { header.add(1).cast() } else { header.cast() });
-            let end = if S::UP { ptr.add(size) } else { ptr };
+            let allocator_ptr = header.byte_add(offset_of!(Header<A, C>, allocator)).cast();
+            let pos = Cell::new(if config!(upwards) {
+                header.add(1).cast()
+            } else {
+                header.cast()
+            });
+            let end = if config!(upwards) { ptr.add(size) } else { ptr };
 
-            header.cast::<Header<A, S>>().write(Header {
+            header.cast::<Header<A, C>>().write(Header {
                 pos,
                 end,
                 prev: None,

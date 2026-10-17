@@ -16,7 +16,7 @@ use core::{
 
 use crate::{
     chunk_types::r#abstract::{AllocatedChunk, Chunk as RawChunk},
-    settings::{BumpAllocatorSettings, BumpSettings, False},
+    config::{BumpConfig, DEFAULT_BUMP_CONFIG},
 };
 
 mod any;
@@ -26,50 +26,35 @@ pub use any::{AnyChunk, AnyChunkNextIter, AnyChunkPrevIter, AnyStats};
 /// Provides statistics about the memory usage of the bump allocator.
 ///
 /// This is returned from [`Bump(Scope)::stats`](crate::Bump::stats).
-pub struct Stats<'a, A, S = BumpSettings>
-where
-    S: BumpAllocatorSettings,
-{
-    chunk: Option<Chunk<'a, A, S>>,
+pub struct Stats<'a, A, const C: BumpConfig = DEFAULT_BUMP_CONFIG> {
+    chunk: Option<Chunk<'a, A, C>>,
 }
 
-impl<A, S> Clone for Stats<'_, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> Clone for Stats<'_, A, C> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, S> Copy for Stats<'_, A, S> where S: BumpAllocatorSettings {}
+impl<A, const C: BumpConfig> Copy for Stats<'_, A, C> {}
 
-impl<A, S> PartialEq for Stats<'_, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> PartialEq for Stats<'_, A, C> {
     fn eq(&self, other: &Self) -> bool {
         self.chunk == other.chunk
     }
 }
 
-impl<A, S> Eq for Stats<'_, A, S> where S: BumpAllocatorSettings {}
+impl<A, const C: BumpConfig> Eq for Stats<'_, A, C> {}
 
-impl<A, S> Debug for Stats<'_, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> Debug for Stats<'_, A, C> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         AnyStats::from(*self).debug_format("Stats", f)
     }
 }
 
-impl<'a, A, S> Stats<'a, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<'a, A, const C: BumpConfig> Stats<'a, A, C> {
     #[inline]
-    pub(crate) fn from_raw_chunk(chunk: RawChunk<A, S>) -> Self {
+    pub(crate) fn from_raw_chunk(chunk: RawChunk<A, C>) -> Self {
         Self {
             chunk: chunk.as_allocated().map(|chunk| Chunk {
                 chunk,
@@ -140,7 +125,7 @@ where
 
     /// Returns an iterator from smallest to biggest chunk.
     #[must_use]
-    pub fn small_to_big(self) -> ChunkNextIter<'a, A, S> {
+    pub fn small_to_big(self) -> ChunkNextIter<'a, A, C> {
         let Some(mut start) = self.current_chunk() else {
             return ChunkNextIter { chunk: None };
         };
@@ -154,7 +139,7 @@ where
 
     /// Returns an iterator from biggest to smallest chunk.
     #[must_use]
-    pub fn big_to_small(self) -> ChunkPrevIter<'a, A, S> {
+    pub fn big_to_small(self) -> ChunkPrevIter<'a, A, C> {
         let Some(mut start) = self.current_chunk() else {
             return ChunkPrevIter { chunk: None };
         };
@@ -168,7 +153,7 @@ where
 
     /// This is the chunk we are currently allocating on.
     #[must_use]
-    pub fn current_chunk(self) -> Option<Chunk<'a, A, S>> {
+    pub fn current_chunk(self) -> Option<Chunk<'a, A, C>> {
         self.chunk
     }
 
@@ -189,19 +174,13 @@ where
     }
 }
 
-impl<'a, A, S> From<Chunk<'a, A, S>> for Stats<'a, A, S>
-where
-    S: BumpAllocatorSettings,
-{
-    fn from(chunk: Chunk<'a, A, S>) -> Self {
+impl<'a, A, const C: BumpConfig> From<Chunk<'a, A, C>> for Stats<'a, A, C> {
+    fn from(chunk: Chunk<'a, A, C>) -> Self {
         Stats { chunk: Some(chunk) }
     }
 }
 
-impl<A, S> Default for Stats<'_, A, S>
-where
-    S: BumpAllocatorSettings<GuaranteedAllocated = False>,
-{
+impl<A, const C: BumpConfig> Default for Stats<'_, A, C> {
     fn default() -> Self {
         Self { chunk: None }
     }
@@ -211,40 +190,28 @@ where
 ///
 /// See [`Stats`].
 #[repr(transparent)]
-pub struct Chunk<'a, A, S>
-where
-    S: BumpAllocatorSettings,
-{
-    pub(crate) chunk: AllocatedChunk<A, S>,
+pub struct Chunk<'a, A, const C: BumpConfig = DEFAULT_BUMP_CONFIG> {
+    pub(crate) chunk: AllocatedChunk<A, C>,
     marker: PhantomData<&'a ()>,
 }
 
-impl<A, S> Clone for Chunk<'_, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> Clone for Chunk<'_, A, C> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, S> Copy for Chunk<'_, A, S> where S: BumpAllocatorSettings {}
+impl<A, const C: BumpConfig> Copy for Chunk<'_, A, C> {}
 
-impl<A, S> PartialEq for Chunk<'_, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> PartialEq for Chunk<'_, A, C> {
     fn eq(&self, other: &Self) -> bool {
         self.chunk.as_ptr() == other.chunk.as_ptr()
     }
 }
 
-impl<A, S> Eq for Chunk<'_, A, S> where S: BumpAllocatorSettings {}
+impl<A, const C: BumpConfig> Eq for Chunk<'_, A, C> {}
 
-impl<A, S> Debug for Chunk<'_, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> Debug for Chunk<'_, A, C> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Chunk")
             .field("allocated", &self.allocated())
@@ -253,10 +220,7 @@ where
     }
 }
 
-impl<'a, A, S> Chunk<'a, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<'a, A, const C: BumpConfig> Chunk<'a, A, C> {
     #[cfg(debug_assertions)]
     pub(crate) fn header(self) -> NonNull<()> {
         self.chunk.as_ptr()
@@ -285,14 +249,14 @@ where
     /// Returns an iterator over all previous (smaller) chunks.
     #[must_use]
     #[inline(always)]
-    pub fn iter_prev(self) -> ChunkPrevIter<'a, A, S> {
+    pub fn iter_prev(self) -> ChunkPrevIter<'a, A, C> {
         ChunkPrevIter { chunk: self.prev() }
     }
 
     /// Returns an iterator over all next (bigger) chunks.
     #[must_use]
     #[inline(always)]
-    pub fn iter_next(self) -> ChunkNextIter<'a, A, S> {
+    pub fn iter_next(self) -> ChunkNextIter<'a, A, C> {
         ChunkNextIter { chunk: self.next() }
     }
 
@@ -380,50 +344,35 @@ where
 }
 
 /// Iterator that iterates over previous chunks by continuously calling [`Chunk::prev`].
-pub struct ChunkPrevIter<'a, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+pub struct ChunkPrevIter<'a, A, const C: BumpConfig> {
     #[expect(missing_docs)]
-    pub chunk: Option<Chunk<'a, A, S>>,
+    pub chunk: Option<Chunk<'a, A, C>>,
 }
 
-impl<A, S> Clone for ChunkPrevIter<'_, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> Clone for ChunkPrevIter<'_, A, C> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, S> Copy for ChunkPrevIter<'_, A, S> where S: BumpAllocatorSettings {}
+impl<A, const C: BumpConfig> Copy for ChunkPrevIter<'_, A, C> {}
 
-impl<A, S> PartialEq for ChunkPrevIter<'_, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> PartialEq for ChunkPrevIter<'_, A, C> {
     fn eq(&self, other: &Self) -> bool {
         self.chunk == other.chunk
     }
 }
 
-impl<A, S> Eq for ChunkPrevIter<'_, A, S> where S: BumpAllocatorSettings {}
+impl<A, const C: BumpConfig> Eq for ChunkPrevIter<'_, A, C> {}
 
-impl<A, S> Default for ChunkPrevIter<'_, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> Default for ChunkPrevIter<'_, A, C> {
     fn default() -> Self {
         Self { chunk: None }
     }
 }
 
-impl<'a, A, S> Iterator for ChunkPrevIter<'a, A, S>
-where
-    S: BumpAllocatorSettings,
-{
-    type Item = Chunk<'a, A, S>;
+impl<'a, A, const C: BumpConfig> Iterator for ChunkPrevIter<'a, A, C> {
+    type Item = Chunk<'a, A, C>;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -433,62 +382,44 @@ where
     }
 }
 
-impl<A, S> FusedIterator for ChunkPrevIter<'_, A, S> where S: BumpAllocatorSettings {}
+impl<A, const C: BumpConfig> FusedIterator for ChunkPrevIter<'_, A, C> {}
 
-impl<A, S> Debug for ChunkPrevIter<'_, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> Debug for ChunkPrevIter<'_, A, C> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_list().entries(*self).finish()
     }
 }
 
 /// Iterator that iterates over next chunks by continuously calling [`Chunk::next`].
-pub struct ChunkNextIter<'a, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+pub struct ChunkNextIter<'a, A, const C: BumpConfig> {
     #[expect(missing_docs)]
-    pub chunk: Option<Chunk<'a, A, S>>,
+    pub chunk: Option<Chunk<'a, A, C>>,
 }
 
-impl<A, S> Clone for ChunkNextIter<'_, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> Clone for ChunkNextIter<'_, A, C> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, S> Copy for ChunkNextIter<'_, A, S> where S: BumpAllocatorSettings {}
+impl<A, const C: BumpConfig> Copy for ChunkNextIter<'_, A, C> {}
 
-impl<A, S> PartialEq for ChunkNextIter<'_, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> PartialEq for ChunkNextIter<'_, A, C> {
     fn eq(&self, other: &Self) -> bool {
         self.chunk == other.chunk
     }
 }
 
-impl<A, S> Eq for ChunkNextIter<'_, A, S> where S: BumpAllocatorSettings {}
+impl<A, const C: BumpConfig> Eq for ChunkNextIter<'_, A, C> {}
 
-impl<A, S> Default for ChunkNextIter<'_, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> Default for ChunkNextIter<'_, A, C> {
     fn default() -> Self {
         Self { chunk: None }
     }
 }
 
-impl<'a, A, S> Iterator for ChunkNextIter<'a, A, S>
-where
-    S: BumpAllocatorSettings,
-{
-    type Item = Chunk<'a, A, S>;
+impl<'a, A, const C: BumpConfig> Iterator for ChunkNextIter<'a, A, C> {
+    type Item = Chunk<'a, A, C>;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -498,12 +429,9 @@ where
     }
 }
 
-impl<A, S> FusedIterator for ChunkNextIter<'_, A, S> where S: BumpAllocatorSettings {}
+impl<A, const C: BumpConfig> FusedIterator for ChunkNextIter<'_, A, C> {}
 
-impl<A, S> Debug for ChunkNextIter<'_, A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> Debug for ChunkNextIter<'_, A, C> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_list().entries(self.map(Chunk::size)).finish()
     }

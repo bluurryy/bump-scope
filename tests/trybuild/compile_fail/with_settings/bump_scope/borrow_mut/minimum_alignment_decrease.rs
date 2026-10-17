@@ -8,7 +8,7 @@ type In = <BumpSettings as BumpAllocatorSettings>::WithMinimumAlignment<2>;
 type Out = <BumpSettings as BumpAllocatorSettings>::WithMinimumAlignment<1>;
 
 fn convert<'a, 'b>(bump: &'b mut BumpScope<'a, Global, In>) -> &'b mut BumpScope<'a, Global, Out> {
-    bump.borrow_mut_with_settings()
+    bump.borrow_mut_change_config()
 }
 
 fn main() {

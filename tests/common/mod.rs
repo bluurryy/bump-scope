@@ -27,11 +27,11 @@ use std::{
 };
 
 use bump_scope::{
-    Bump, BumpBox, BumpScope, BumpString, BumpVec, MutBumpString, MutBumpVec, MutBumpVecRev, mut_bump_format, mut_bump_vec,
-    mut_bump_vec_rev, owned_slice,
-    settings::BumpSettings,
+    Bump, BumpBox, BumpScope, BumpString, BumpVec, MutBumpString, MutBumpVec, MutBumpVecRev,
+    config::{BumpConfig, BumpConfigBuilder},
+    mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice,
     stats::Chunk,
-    traits::{BumpAllocator, BumpAllocatorTyped as _},
+    traits::BumpAllocatorTyped as _,
 };
 
 pub(crate) use disaligning_allocator::DisaligningAllocator;
@@ -44,37 +44,35 @@ type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 
 pub(crate) const MALLOC_OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
 
-pub(crate) type SettingNoMinSize<const UP: bool> = BumpSettings<1, UP, false, true, true, true, 0>;
-pub(crate) type BumpNoMinSize<const UP: bool, A = Global> = bump_scope::Bump<A, SettingNoMinSize<UP>>;
-pub(crate) type BumpScopeNoMinSize<'a, const UP: bool, A = Global> = bump_scope::BumpScope<'a, A, SettingNoMinSize<UP>>;
+macro_rules! up_and_down {
+    ($($tt:tt)*) => {
+        mod upwards {
+            #[allow(unused_imports)]
+            use super::*;
+            use bump_scope::config::{BumpConfig, BumpConfigBuilder};
 
-macro_rules! either_way {
-    ($($(#[$attr:meta])* $ident:ident)*) => {
-        mod up {
-            $(
-                #[test]
-                $(#[$attr])*
-                fn $ident() {
-                    std::eprintln!("`UP` is `true`");
-                    super::$ident::<true>();
-                }
-            )*
+            const DEFAULT_C: BumpConfig = BumpConfigBuilder::new()
+                .upwards(true)
+                .build();
+
+            $($tt)*
         }
 
-        mod down {
-            $(
-                #[test]
-                $(#[$attr])*
-                fn $ident() {
-                    std::eprintln!("`UP` is `false`");
-                    super::$ident::<false>();
-                }
-            )*
+        mod downwards {
+            #[allow(unused_imports)]
+            use super::*;
+            use bump_scope::config::{BumpConfig, BumpConfigBuilder};
+
+            const DEFAULT_C: BumpConfig = BumpConfigBuilder::new()
+                .upwards(false)
+                .build();
+
+            $($tt)*
         }
     };
 }
 
-pub(crate) use either_way;
+pub(crate) use up_and_down;
 
 pub(crate) fn expect_no_panic<T>(result: Result<T, Box<dyn Any + Send>>) -> T {
     match result {

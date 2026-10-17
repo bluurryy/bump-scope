@@ -1,83 +1,60 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 
+mod common;
+
 use std::{alloc::Global, vec::Vec};
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use bump_scope::BumpPool;
+use common::up_and_down;
 
-macro_rules! either_way {
-    ($($(#[$attr:meta])* $ident:ident)*) => {
-        mod up {
-            $(
-                #[test]
-                $(#[$attr])*
-                fn $ident() {
-                    std::eprintln!("`UP` is `true`");
-                    super::$ident::<true>();
-                }
-            )*
+up_and_down! {
+    const C: BumpConfig = DEFAULT_C;
+
+    #[test]
+    fn rayon() {
+        if cfg!(miri) {
+            // rayon violates strict-provenance :(
+            return;
         }
 
-        mod down {
-            $(
-                #[test]
-                $(#[$attr])*
-                fn $ident() {
-                    std::eprintln!("`UP` is `false`");
-                    super::$ident::<false>();
-                }
-            )*
-        }
-    };
-}
+        let mut pool = BumpPool::<Global, C>::new();
 
-either_way! {
-    rayon
+        let ints: Vec<&mut usize> = (0..1000usize)
+            .into_par_iter()
+            .map_init(
+                || pool.get(),
+                |bump, i| {
+                    // do some expensive work
+                    bump.alloc(i).into_mut()
+                },
+            )
+            .collect();
 
-    scope
-}
+        assert!((0..1000usize).eq(ints.iter().map(|i| **i)));
 
-fn rayon<const UP: bool>() {
-    if cfg!(miri) {
-        // rayon violates strict-provenance :(
-        return;
+        pool.reset();
     }
 
-    let mut pool = BumpPool::<Global>::new();
+    #[test]
+    fn scope() {
+        let pool = BumpPool::<Global>::new();
+        let (sender, receiver) = std::sync::mpsc::sync_channel(10);
 
-    let ints: Vec<&mut usize> = (0..1000usize)
-        .into_par_iter()
-        .map_init(
-            || pool.get(),
-            |bump, i| {
-                // do some expensive work
-                bump.alloc(i).into_mut()
-            },
-        )
-        .collect();
+        std::thread::scope(|s| {
+            s.spawn(|| {
+                let bump = pool.get();
+                let string = bump.alloc_str("Hello").into_ref();
+                sender.send(string).unwrap();
+                drop(sender);
+            });
 
-    assert!((0..1000usize).eq(ints.iter().map(|i| **i)));
-
-    pool.reset();
-}
-
-fn scope<const UP: bool>() {
-    let pool = BumpPool::<Global>::new();
-    let (sender, receiver) = std::sync::mpsc::sync_channel(10);
-
-    std::thread::scope(|s| {
-        s.spawn(|| {
-            let bump = pool.get();
-            let string = bump.alloc_str("Hello").into_ref();
-            sender.send(string).unwrap();
-            drop(sender);
+            s.spawn(|| {
+                for string in receiver {
+                    assert_eq!(string, "Hello");
+                }
+            });
         });
-
-        s.spawn(|| {
-            for string in receiver {
-                assert_eq!(string, "Hello");
-            }
-        });
-    });
+    }
 }

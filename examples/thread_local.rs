@@ -2,9 +2,11 @@
 
 use std::alloc::Global;
 
-use bump_scope::settings::{BumpAllocatorSettings, BumpSettings};
+use bump_scope::config::{BumpConfig, BumpConfigBuilder};
 
-type Bump = bump_scope::Bump<Global, <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<false>>;
+const BUMP_CONFIG: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(false).build();
+
+type Bump = bump_scope::Bump<Global, BUMP_CONFIG>;
 
 thread_local! {
     static BUMP: Bump = const { Bump::unallocated() };

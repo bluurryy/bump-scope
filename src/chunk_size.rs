@@ -1,18 +1,17 @@
 use core::{alloc::Layout, fmt, marker::PhantomData};
 
 use crate::{
-    chunk_size_config::ChunkSizeConfig, chunk_types::r#abstract::FirstAllocatedChunk, settings::BumpAllocatorSettings,
+    chunk_size_config::ChunkSizeConfig,
+    chunk_types::r#abstract::FirstAllocatedChunk,
+    config::{BumpConfig, config},
 };
 
 /// We leave some space per allocation for the base allocator.
 pub(crate) type AssumedMallocOverhead = [usize; 2];
 
 /// See [`ChunkSizeConfig::align_size`].
-pub(crate) const fn align_allocation_size<A, S>(size: usize) -> usize
-where
-    S: BumpAllocatorSettings,
-{
-    Constants::<A, S>::CONFIG.align_size(size)
+pub(crate) const fn align_allocation_size<A, const C: BumpConfig>(size: usize) -> usize {
+    Constants::<A, C>::CONFIG.align_size(size)
 }
 
 macro_rules! attempt {
@@ -25,20 +24,15 @@ macro_rules! attempt {
 }
 
 pub(crate) trait ChunkSize: Copy + fmt::Debug {
-    fn layout<A, S>(self) -> Option<Layout>
-    where
-        S: BumpAllocatorSettings;
+    fn layout<A, const C: BumpConfig>(self) -> Option<Layout>;
 }
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct ChunkSizeMinimum;
 
 impl ChunkSize for ChunkSizeMinimum {
-    fn layout<A, S>(self) -> Option<Layout>
-    where
-        S: BumpAllocatorSettings,
-    {
-        Some(Constants::<A, S>::MINIMUM_LAYOUT)
+    fn layout<A, const C: BumpConfig>(self) -> Option<Layout> {
+        Some(Constants::<A, C>::MINIMUM_LAYOUT)
     }
 }
 
@@ -52,14 +46,11 @@ impl ChunkSizeHint {
 }
 
 impl ChunkSize for ChunkSizeHint {
-    fn layout<A, S>(self) -> Option<Layout>
-    where
-        S: BumpAllocatorSettings,
-    {
-        let config = Constants::<A, S>::CONFIG;
-        let hint = max(self.0, S::MINIMUM_CHUNK_SIZE);
+    fn layout<A, const C: BumpConfig>(self) -> Option<Layout> {
+        let config = Constants::<A, C>::CONFIG;
+        let hint = max(self.0, config!(min_chunk_size));
         let size = attempt!(config.calc_size_from_hint(hint)).get();
-        let align = FirstAllocatedChunk::<A, S>::HEADER_LAYOUT.align();
+        let align = FirstAllocatedChunk::<A, C>::HEADER_LAYOUT.align();
         Layout::from_size_align(size, align).ok()
     }
 }
@@ -68,44 +59,35 @@ impl ChunkSize for ChunkSizeHint {
 pub(crate) struct ChunkSizeCapacity(pub(crate) Layout);
 
 impl ChunkSizeCapacity {
-    pub(crate) const fn to_hint<A, S>(self) -> Option<ChunkSizeHint>
-    where
-        S: BumpAllocatorSettings,
-    {
+    pub(crate) const fn to_hint<A, const C: BumpConfig>(self) -> Option<ChunkSizeHint> {
         Some(ChunkSizeHint(attempt!(
-            Constants::<A, S>::CONFIG.calc_hint_from_capacity(self.0)
+            Constants::<A, C>::CONFIG.calc_hint_from_capacity(self.0)
         )))
     }
 }
 
 impl ChunkSize for ChunkSizeCapacity {
-    fn layout<A, S>(self) -> Option<Layout>
-    where
-        S: BumpAllocatorSettings,
-    {
-        self.to_hint::<A, S>()?.layout::<A, S>()
+    fn layout<A, const C: BumpConfig>(self) -> Option<Layout> {
+        self.to_hint::<A, C>()?.layout::<A, C>()
     }
 }
 
-struct Constants<A, S>(PhantomData<fn() -> (A, S)>);
+struct Constants<A, const C: BumpConfig>(PhantomData<fn() -> A>);
 
-impl<A, S> Constants<A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> Constants<A, C> {
     const CONFIG: ChunkSizeConfig = ChunkSizeConfig {
-        up: S::UP,
+        up: config!(upwards),
         assumed_malloc_overhead_layout: Layout::new::<AssumedMallocOverhead>(),
-        chunk_header_layout: FirstAllocatedChunk::<A, S>::HEADER_LAYOUT,
+        chunk_header_layout: FirstAllocatedChunk::<A, C>::HEADER_LAYOUT,
     };
 
     const MINIMUM_LAYOUT: Layout = {
-        let size = match Self::CONFIG.calc_size_from_hint(S::MINIMUM_CHUNK_SIZE) {
+        let size = match Self::CONFIG.calc_size_from_hint(config!(min_chunk_size)) {
             Some(some) => some.get(),
             None => panic!("failed to calculate minimum chunk size"),
         };
 
-        match Layout::from_size_align(size, FirstAllocatedChunk::<A, S>::HEADER_LAYOUT.align()) {
+        match Layout::from_size_align(size, FirstAllocatedChunk::<A, C>::HEADER_LAYOUT.align()) {
             Ok(ok) => ok,
             Err(_) => panic!("failed to calculate minimum chunk layout"),
         }

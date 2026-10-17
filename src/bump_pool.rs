@@ -7,8 +7,9 @@ use std::{
 };
 
 use crate::{
-    Bump, BumpScope, ErrorBehavior, maybe_default_allocator,
-    settings::{BumpAllocatorSettings, BumpSettings},
+    Bump, BumpScope, ErrorBehavior,
+    config::{BumpConfig, DEFAULT_BUMP_CONFIG},
+    maybe_default_allocator,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -70,12 +71,12 @@ macro_rules! make_pool {
         ///
         #[doc(alias = "Herd")]
         #[derive(Debug)]
-        pub struct BumpPool<$($allocator_parameter)*, S = BumpSettings>
+        pub struct BumpPool<$($allocator_parameter)*, const C: BumpConfig = DEFAULT_BUMP_CONFIG>
         where
             A: Allocator,
-            S: BumpAllocatorSettings,
+
         {
-            bumps: Mutex<Vec<Bump<A, S>>>,
+            bumps: Mutex<Vec<Bump<A, C>>>,
             allocator: A,
         }
     };
@@ -83,10 +84,9 @@ macro_rules! make_pool {
 
 maybe_default_allocator!(make_pool);
 
-impl<A, S> Default for BumpPool<A, S>
+impl<A, const C: BumpConfig> Default for BumpPool<A, C>
 where
     A: Allocator + Default,
-    S: BumpAllocatorSettings,
 {
     fn default() -> Self {
         Self {
@@ -96,10 +96,9 @@ where
     }
 }
 
-impl<A, S> BumpPool<A, S>
+impl<A, const C: BumpConfig> BumpPool<A, C>
 where
     A: Allocator + Default,
-    S: BumpAllocatorSettings,
 {
     /// Constructs a new `BumpPool`.
     #[inline]
@@ -109,10 +108,9 @@ where
     }
 }
 
-impl<A, S> BumpPool<A, S>
+impl<A, const C: BumpConfig> BumpPool<A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     /// Constructs a new `BumpPool` with the provided allocator.
     #[inline]
@@ -139,19 +137,18 @@ where
     }
 
     /// Returns the vector of `Bump`s.
-    pub fn bumps(&mut self) -> &mut Vec<Bump<A, S>> {
+    pub fn bumps(&mut self) -> &mut Vec<Bump<A, C>> {
         self.bumps.get_mut().unwrap_or_else(PoisonError::into_inner)
     }
 
-    fn lock(&self) -> MutexGuard<'_, Vec<Bump<A, S>>> {
+    fn lock(&self) -> MutexGuard<'_, Vec<Bump<A, C>>> {
         self.bumps.lock().unwrap_or_else(PoisonError::into_inner)
     }
 }
 
-impl<A, S> BumpPool<A, S>
+impl<A, const C: BumpConfig> BumpPool<A, C>
 where
     A: Allocator + Clone,
-    S: BumpAllocatorSettings,
 {
     /// Borrows a bump allocator from the pool.
     /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
@@ -165,7 +162,7 @@ where
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn get(&self) -> BumpPoolGuard<'_, A, S> {
+    pub fn get(&self) -> BumpPoolGuard<'_, A, C> {
         let bump = match self.lock().pop() {
             Some(bump) => bump,
             None => Bump::new_in(self.allocator.clone()),
@@ -187,7 +184,7 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     #[inline(always)]
-    pub fn try_get(&self) -> Result<BumpPoolGuard<'_, A, S>, AllocError> {
+    pub fn try_get(&self) -> Result<BumpPoolGuard<'_, A, C>, AllocError> {
         let bump = match self.lock().pop() {
             Some(bump) => bump,
             None => Bump::try_new_in(self.allocator.clone())?,
@@ -211,7 +208,7 @@ where
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn get_with_size(&self, size: usize) -> BumpPoolGuard<'_, A, S> {
+    pub fn get_with_size(&self, size: usize) -> BumpPoolGuard<'_, A, C> {
         panic_on_error(self.generic_get_with_size(size))
     }
 
@@ -225,11 +222,11 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     #[inline(always)]
-    pub fn try_get_with_size(&self, size: usize) -> Result<BumpPoolGuard<'_, A, S>, AllocError> {
+    pub fn try_get_with_size(&self, size: usize) -> Result<BumpPoolGuard<'_, A, C>, AllocError> {
         self.generic_get_with_size(size)
     }
 
-    pub(crate) fn generic_get_with_size<E: ErrorBehavior>(&self, size: usize) -> Result<BumpPoolGuard<'_, A, S>, E> {
+    pub(crate) fn generic_get_with_size<E: ErrorBehavior>(&self, size: usize) -> Result<BumpPoolGuard<'_, A, C>, E> {
         let bump = match self.lock().pop() {
             Some(bump) => bump,
             None => Bump::generic_with_size_in(size, self.allocator.clone())?,
@@ -253,7 +250,7 @@ where
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn get_with_capacity(&self, layout: Layout) -> BumpPoolGuard<'_, A, S> {
+    pub fn get_with_capacity(&self, layout: Layout) -> BumpPoolGuard<'_, A, C> {
         panic_on_error(self.generic_get_with_capacity(layout))
     }
 
@@ -267,11 +264,11 @@ where
     /// # Errors
     /// Errors if the allocation fails.
     #[inline(always)]
-    pub fn try_get_with_capacity(&self, layout: Layout) -> Result<BumpPoolGuard<'_, A, S>, AllocError> {
+    pub fn try_get_with_capacity(&self, layout: Layout) -> Result<BumpPoolGuard<'_, A, C>, AllocError> {
         self.generic_get_with_capacity(layout)
     }
 
-    pub(crate) fn generic_get_with_capacity<E: ErrorBehavior>(&self, layout: Layout) -> Result<BumpPoolGuard<'_, A, S>, E> {
+    pub(crate) fn generic_get_with_capacity<E: ErrorBehavior>(&self, layout: Layout) -> Result<BumpPoolGuard<'_, A, C>, E> {
         let bump = match self.lock().pop() {
             Some(bump) => bump,
             None => Bump::generic_with_capacity_in(layout, self.allocator.clone())?,
@@ -289,36 +286,34 @@ macro_rules! make_pool_guard {
 
         /// This is a wrapper around [`Bump`] that mutably derefs to a [`BumpScope`] and returns its [`Bump`] back to the [`BumpPool`] on drop.
         #[derive(Debug)]
-        pub struct BumpPoolGuard<'a, $($allocator_parameter)*, S = BumpSettings>
+        pub struct BumpPoolGuard<'a, $($allocator_parameter)*, const C: BumpConfig = DEFAULT_BUMP_CONFIG>
         where
             A: Allocator,
-            S: BumpAllocatorSettings,
+
         {
-            bump: ManuallyDrop<Bump<A, S>>,
-            pool: &'a BumpPool<A, S>,
+            bump: ManuallyDrop<Bump<A, C>>,
+            pool: &'a BumpPool<A, C>,
         }
     };
 }
 
 maybe_default_allocator!(make_pool_guard);
 
-impl<'a, A, S> BumpPoolGuard<'a, A, S>
+impl<'a, A, const C: BumpConfig> BumpPoolGuard<'a, A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     /// The [`BumpPool`], this [`BumpPoolGuard`] was created from.
-    pub fn pool(&self) -> &'a BumpPool<A, S> {
+    pub fn pool(&self) -> &'a BumpPool<A, C> {
         self.pool
     }
 }
 
-impl<'a, A, S> Deref for BumpPoolGuard<'a, A, S>
+impl<'a, A, const C: BumpConfig> Deref for BumpPoolGuard<'a, A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
-    type Target = BumpScope<'a, A, S>;
+    type Target = BumpScope<'a, A, C>;
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
@@ -338,10 +333,9 @@ where
     }
 }
 
-impl<A, S> DerefMut for BumpPoolGuard<'_, A, S>
+impl<A, const C: BumpConfig> DerefMut for BumpPoolGuard<'_, A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
@@ -349,10 +343,9 @@ where
     }
 }
 
-impl<A, S> Drop for BumpPoolGuard<'_, A, S>
+impl<A, const C: BumpConfig> Drop for BumpPoolGuard<'_, A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     fn drop(&mut self) {
         let bump = unsafe { ManuallyDrop::take(&mut self.bump) };
@@ -362,18 +355,20 @@ where
 
 // This exists as a "safer" transmute that only transmutes the `'a` lifetime parameter.
 #[expect(clippy::elidable_lifetime_names)]
-unsafe fn transmute_lifetime<'from, 'to, 'b, A, S>(scope: &'b BumpScope<'from, A, S>) -> &'b BumpScope<'to, A, S>
+unsafe fn transmute_lifetime<'from, 'to, 'b, A, const C: BumpConfig>(
+    scope: &'b BumpScope<'from, A, C>,
+) -> &'b BumpScope<'to, A, C>
 where
-    S: BumpAllocatorSettings,
 {
     unsafe { mem::transmute(scope) }
 }
 
 // This exists as a "safer" transmute that only transmutes the `'a` lifetime parameter.
 #[expect(clippy::elidable_lifetime_names)]
-unsafe fn transmute_lifetime_mut<'from, 'to, 'b, A, S>(scope: &'b mut BumpScope<'from, A, S>) -> &'b mut BumpScope<'to, A, S>
+unsafe fn transmute_lifetime_mut<'from, 'to, 'b, A, const C: BumpConfig>(
+    scope: &'b mut BumpScope<'from, A, C>,
+) -> &'b mut BumpScope<'to, A, C>
 where
-    S: BumpAllocatorSettings,
 {
     unsafe { mem::transmute(scope) }
 }

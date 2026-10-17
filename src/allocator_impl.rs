@@ -5,15 +5,18 @@ use core::{
 };
 
 use crate::{
-    bump_down, layout::CustomLayout, polyfill::non_null, raw_bump::RawBump, settings::BumpAllocatorSettings,
+    bump_down,
+    config::{BumpConfig, config},
+    layout::CustomLayout,
+    polyfill::non_null,
+    raw_bump::RawBump,
     up_align_usize_unchecked,
 };
 
 #[inline(always)]
-pub fn allocate<A, S>(bump: &RawBump<A, S>, layout: Layout) -> Result<NonNull<[u8]>, AllocError>
+pub fn allocate<A, const C: BumpConfig>(bump: &RawBump<A, C>, layout: Layout) -> Result<NonNull<[u8]>, AllocError>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     Ok(NonNull::slice_from_raw_parts(
         bump.alloc::<AllocError>(layout)?,
@@ -22,12 +25,11 @@ where
 }
 
 #[inline(always)]
-pub unsafe fn deallocate<A, S>(bump: &RawBump<A, S>, ptr: NonNull<u8>, layout: Layout)
+pub unsafe fn deallocate<A, const C: BumpConfig>(bump: &RawBump<A, C>, ptr: NonNull<u8>, layout: Layout)
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
-    if !S::DEALLOCATES {
+    if const { !config!(deallocates) } {
         return;
     }
 
@@ -40,18 +42,17 @@ where
 }
 
 #[inline(always)]
-unsafe fn deallocate_assume_last<A, S>(bump: &RawBump<A, S>, ptr: NonNull<u8>, layout: Layout)
+unsafe fn deallocate_assume_last<A, const C: BumpConfig>(bump: &RawBump<A, C>, ptr: NonNull<u8>, layout: Layout)
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
-    if !S::DEALLOCATES {
+    if const { !config!(deallocates) } {
         return;
     }
 
     unsafe {
         let chunk = bump.chunk.get().as_allocated_unchecked();
-        if S::UP {
+        if config!(upwards) {
             chunk.set_pos_addr_and_align(ptr.addr().get());
         } else {
             let mut addr = ptr.addr().get();
@@ -72,12 +73,11 @@ where
 /// chunk since a memory block is only returned from a bump allocator with a non-dummy
 /// chunk.
 #[inline(always)]
-unsafe fn is_last<A, S>(bump: &RawBump<A, S>, ptr: NonNull<u8>, layout: Layout) -> bool
+unsafe fn is_last<A, const C: BumpConfig>(bump: &RawBump<A, C>, ptr: NonNull<u8>, layout: Layout) -> bool
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
-    if S::UP {
+    if const { config!(upwards) } {
         (unsafe { ptr.add(layout.size()) }) == bump.chunk.get().pos()
     } else {
         ptr == bump.chunk.get().pos()
@@ -85,15 +85,14 @@ where
 }
 
 #[inline(always)]
-pub unsafe fn grow<A, S>(
-    bump: &RawBump<A, S>,
+pub unsafe fn grow<A, const C: BumpConfig>(
+    bump: &RawBump<A, C>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     debug_assert!(
         new_layout.size() >= old_layout.size(),
@@ -101,7 +100,7 @@ where
     );
 
     unsafe {
-        if S::UP {
+        if const { config!(upwards) } {
             if is_last(bump, old_ptr, old_layout) & align_fits(old_ptr, old_layout, new_layout) {
                 // We may be able to grow in place! Just need to check if there is enough space.
 
@@ -116,7 +115,7 @@ where
                     let old_addr = old_ptr.addr();
 
                     // Up-aligning a pointer inside a chunks content by `MIN_ALIGN` never overflows.
-                    let new_pos = up_align_usize_unchecked(old_addr.get() + new_layout.size(), S::MIN_ALIGN);
+                    let new_pos = up_align_usize_unchecked(old_addr.get() + new_layout.size(), config!(min_align));
 
                     chunk.set_pos_addr(new_pos);
 
@@ -142,7 +141,7 @@ where
                 let additional_size = new_layout.size() - old_layout.size();
 
                 let old_addr = old_ptr.addr();
-                let new_addr = bump_down(old_addr, additional_size, new_layout.align().max(S::MIN_ALIGN));
+                let new_addr = bump_down(old_addr, additional_size, new_layout.align().max(config!(min_align)));
 
                 let very_start = chunk.content_start().addr();
 
@@ -182,15 +181,14 @@ where
 }
 
 #[inline(always)]
-pub unsafe fn grow_zeroed<A, S>(
-    bump: &RawBump<A, S>,
+pub unsafe fn grow_zeroed<A, const C: BumpConfig>(
+    bump: &RawBump<A, C>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     unsafe {
         let new_ptr = grow(bump, old_ptr, old_layout, new_layout)?;
@@ -207,31 +205,29 @@ where
 /// That's different to bumpalo's shrink implementation, which only shrinks if it can do so with `copy_nonoverlapping`
 /// and doesn't attempt to recover memory if the alignment doesn't fit.
 #[inline(always)]
-pub unsafe fn shrink<A, S>(
-    bump: &RawBump<A, S>,
+pub unsafe fn shrink<A, const C: BumpConfig>(
+    bump: &RawBump<A, C>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     /// Called when `new_layout` doesn't fit alignment.
     #[cold]
     #[inline(never)]
-    unsafe fn shrink_unfit<A, S>(
-        bump: &RawBump<A, S>,
+    unsafe fn shrink_unfit<A, const C: BumpConfig>(
+        bump: &RawBump<A, C>,
         old_ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError>
     where
         A: Allocator,
-        S: BumpAllocatorSettings,
     {
         unsafe {
-            if S::SHRINKS && is_last(bump, old_ptr, old_layout) {
+            if config!(shrinks) && is_last(bump, old_ptr, old_layout) {
                 let old_pos = bump.chunk.get().pos();
                 deallocate_assume_last(bump, old_ptr, old_layout);
 
@@ -240,7 +236,7 @@ where
 
                 if let Some(in_chunk) = bump.chunk.get().alloc(CustomLayout(new_layout)) {
                     new_ptr = in_chunk;
-                    overlaps = if S::UP {
+                    overlaps = if config!(upwards) {
                         let old_ptr_end = old_ptr.add(new_layout.size());
                         old_ptr_end > new_ptr
                     } else {
@@ -281,16 +277,16 @@ where
         }
 
         // If this is not the last allocation, then there's nothing we can do
-        if !S::SHRINKS || !is_last(bump, old_ptr, old_layout) {
+        if const { !config!(shrinks) } || !is_last(bump, old_ptr, old_layout) {
             // We can't shrink this allocation, so we return it as-is.
             return Ok(NonNull::slice_from_raw_parts(old_ptr, old_layout.size()));
         }
 
-        if S::UP {
+        if const { config!(upwards) } {
             let end = old_ptr.addr().get() + new_layout.size();
 
             // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
-            let new_pos = up_align_usize_unchecked(end, S::MIN_ALIGN);
+            let new_pos = up_align_usize_unchecked(end, config!(min_align));
 
             // `is_last` returned true, which guarantees a non-dummy
             bump.chunk.get().as_allocated_unchecked().set_pos_addr(new_pos);
@@ -303,7 +299,7 @@ where
             // The resulting `new_addr` will always be between `old_addr` and `old_end_addr` because:
             // - `new_layout`'s size must be less than `old_layout`'s size per `shrink`'s safety invariant
             // - downwards aligning can't create an address lower than `old_addr` since we checked in `align_fits` that `old_addr` is aligned to `new_layout`
-            let new_addr = bump_down(old_end_addr, new_layout.size(), new_layout.align().max(S::MIN_ALIGN));
+            let new_addr = bump_down(old_end_addr, new_layout.size(), new_layout.align().max(config!(min_align)));
             let new_addr = NonZeroUsize::new_unchecked(new_addr);
             let new_ptr = old_ptr.with_addr(new_addr);
 

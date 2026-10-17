@@ -1,7 +1,9 @@
 use core::{marker::PhantomData, ptr::NonNull};
 
 use crate::{
-    chunk_types::dummy_memory_region::UNALLOCATED_POS as POS, error_behavior::ErrorBehavior, settings::BumpAllocatorSettings,
+    chunk_types::dummy_memory_region::UNALLOCATED_POS as POS,
+    config::{BumpConfig, config},
+    error_behavior::ErrorBehavior,
 };
 
 #[repr(C, align(16))]
@@ -12,30 +14,28 @@ struct Header<A> {
 }
 
 #[repr(transparent)]
-pub(crate) struct UnallocatedChunk<A, S> {
+pub(crate) struct UnallocatedChunk<A, const C: BumpConfig> {
     header: NonNull<Header<A>>,
-    #[expect(clippy::type_complexity)]
-    marker: PhantomData<(*const A, fn() -> S)>,
+    marker: PhantomData<*const A>,
 }
 
-impl<A, S> Clone for UnallocatedChunk<A, S> {
+impl<A, const C: BumpConfig> Clone for UnallocatedChunk<A, C> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, S> Copy for UnallocatedChunk<A, S> {}
+impl<A, const C: BumpConfig> Copy for UnallocatedChunk<A, C> {}
 
-impl<A, S> UnallocatedChunk<A, S>
+impl<A, const C: BumpConfig> UnallocatedChunk<A, C>
 where
-    S: BumpAllocatorSettings,
     A: Default + 'static,
 {
     pub(crate) const VALUE: Self = {
         let static_header: &'static Header<A> = const {
             &Header {
                 pos: POS,
-                end: unsafe { POS.byte_offset(if S::UP { -16 } else { 16 }) },
+                end: unsafe { POS.byte_offset(if config!(upwards) { -16 } else { 16 }) },
                 default: A::default,
             }
         };
@@ -47,7 +47,7 @@ where
     };
 }
 
-impl<A, S> UnallocatedChunk<A, S> {
+impl<A, const C: BumpConfig> UnallocatedChunk<A, C> {
     #[expect(dead_code)]
     pub(crate) fn as_ptr(self) -> NonNull<()> {
         self.header.cast()

@@ -1,19 +1,19 @@
-use bump_scope::{Bump, BumpScope, alloc::Global, settings::BumpSettings};
+use bump_scope::{Bump, BumpScope, alloc::Global};
 
 fn short_type_name<T: ?Sized>() -> &'static str {
     let name = std::any::type_name::<T>();
     name.rsplit_once(':').map(|(_, rhs)| rhs).unwrap_or(name)
 }
 
-macro_rules! check_with_settings {
+macro_rules! check_change_config {
     ($($input:ty => $output:ty)*) => {
-        const CHECK_WITH_SETTINGS: &[fn()] = &[$({
+        const CHECK_CHANGE_CONFIG: &[fn()] = &[$({
             type In = $input;
             type Out = $output;
 
             fn check_bump() {
                 fn convert(bump: Bump<Global, In>) -> Bump<Global, Out> {
-                    bump.with_settings()
+                    bump.change_config()
                 }
 
                 let input = Bump::<Global, In>::new();
@@ -23,7 +23,7 @@ macro_rules! check_with_settings {
             }
 
             fn check() {
-                print!("with_settings: {} => {} ",
+                print!("change_config: {} => {} ",
                     short_type_name::<In>(),
                     short_type_name::<Out>(),
                 );
@@ -38,15 +38,15 @@ macro_rules! check_with_settings {
     };
 }
 
-macro_rules! check_scope_with_settings {
+macro_rules! check_scope_change_config {
     ($($input:ty => $output:ty)*) => {
-        const CHECK_SCOPE_WITH_SETTINGS: &[fn()] = &[$({
+        const CHECK_SCOPE_CHANGE_CONFIG: &[fn()] = &[$({
             type In = $input;
             type Out = $output;
 
             fn check_bump_scope() {
                 fn convert<'a>(bump: BumpScope<'a, Global, In>) -> BumpScope<'a, Global, Out> {
-                    bump.with_settings()
+                    bump.change_config()
                 }
 
                 let mut input = Bump::<Global, In>::new();
@@ -59,7 +59,7 @@ macro_rules! check_scope_with_settings {
             }
 
             fn check() {
-                print!("scope_with_settings: {} => {} ",
+                print!("scope_change_config: {} => {} ",
                     short_type_name::<In>(),
                     short_type_name::<Out>(),
                 );
@@ -76,13 +76,13 @@ macro_rules! check_scope_with_settings {
 
 macro_rules! check_borrow {
     ($($input:ty => $output:ty)*) => {
-        const CHECK_BORROW_WITH_SETTINGS: &[fn()] = &[$({
+        const CHECK_BORROW_CHANGE_CONFIG: &[fn()] = &[$({
             type In = $input;
             type Out = $output;
 
             fn check_bump() {
                 fn convert(bump: &Bump<Global, In>) -> &Bump<Global, Out> {
-                    bump.borrow_with_settings()
+                    bump.borrow_change_config()
                 }
 
                 let input = Bump::<Global, In>::new();
@@ -93,7 +93,7 @@ macro_rules! check_borrow {
 
             fn check_bump_scope() {
                 fn convert<'a, 'b>(bump: &'b BumpScope<'a, Global, In>) -> &'b BumpScope<'a, Global, Out> {
-                    bump.borrow_with_settings()
+                    bump.borrow_change_config()
                 }
 
                 let input = Bump::<Global, In>::new();
@@ -103,7 +103,7 @@ macro_rules! check_borrow {
             }
 
             fn check() {
-                print!("borrow_with_settings: {} => {} ",
+                print!("borrow_change_config: {} => {} ",
                     short_type_name::<In>(),
                     short_type_name::<Out>(),
                 );
@@ -127,7 +127,7 @@ macro_rules! check_borrow_mut {
 
             fn check_bump() {
                 fn convert(bump: &mut Bump<Global, In>) -> &mut Bump<Global, Out> {
-                    bump.borrow_mut_with_settings()
+                    bump.borrow_mut_change_config()
                 }
 
                 let mut input = Bump::<Global, In>::new();
@@ -138,7 +138,7 @@ macro_rules! check_borrow_mut {
 
             fn check_bump_scope() {
                 fn convert<'a, 'b>(bump: &'b mut BumpScope<'a, Global, In>) -> &'b mut BumpScope<'a, Global, Out> {
-                    bump.borrow_mut_with_settings()
+                    bump.borrow_mut_change_config()
                 }
 
                 let mut input = Bump::<Global, In>::new();
@@ -148,7 +148,7 @@ macro_rules! check_borrow_mut {
             }
 
             fn check() {
-                print!("borrow_mut_with_settings: {} => {} ",
+                print!("borrow_mut_change_config: {} => {} ",
                     short_type_name::<In>(),
                     short_type_name::<Out>(),
                 );
@@ -164,7 +164,7 @@ macro_rules! check_borrow_mut {
     };
 }
 
-check_with_settings! {
+check_change_config! {
     // identity
     BumpSettings => BumpSettings
 
@@ -181,7 +181,7 @@ check_with_settings! {
     BumpSettings<2> => BumpSettings<1>
 }
 
-check_scope_with_settings! {
+check_scope_change_config! {
     // identity
     BumpSettings => BumpSettings
 
@@ -211,9 +211,9 @@ check_borrow_mut! {
 
 fn main() {
     for checks in [
-        CHECK_WITH_SETTINGS,
-        CHECK_SCOPE_WITH_SETTINGS,
-        CHECK_BORROW_WITH_SETTINGS,
+        CHECK_CHANGE_CONFIG,
+        CHECK_SCOPE_CHANGE_CONFIG,
+        CHECK_BORROW_CHANGE_CONFIG,
         CHECK_BORROW_MUT,
     ] {
         for check in checks {

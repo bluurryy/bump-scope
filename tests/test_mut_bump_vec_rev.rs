@@ -11,34 +11,34 @@ use std::{
 
 use bump_scope::{
     Bump, BumpScope, MutBumpVecRev,
-    settings::BumpSettings,
     traits::{MutBumpAllocatorCoreScope, MutBumpAllocatorTypedScope},
 };
 
-use common::either_way;
+use common::up_and_down;
 
-either_way! {
-    test_dyn_allocator
-}
+up_and_down! {
+    const C: BumpConfig = DEFAULT_C;
 
-fn test_dyn_allocator<const UP: bool>() {
-    fn numbers(range: Range<i32>) -> impl ExactSizeIterator<Item = String> {
-        range.map(|i| i.to_string())
+    #[test]
+    fn test_dyn_allocator() {
+        fn numbers(range: Range<i32>) -> impl ExactSizeIterator<Item = String> {
+            range.map(|i| i.to_string())
+        }
+
+        fn test<'a, B: MutBumpAllocatorTypedScope<'a>>(mut bump: B) {
+            const ITEM_SIZE: usize = size_of::<String>();
+            assert_eq!(bump.any_stats().allocated(), 0);
+            let vec = MutBumpVecRev::from_iter_in(numbers(1..4), &mut bump);
+            assert_eq!(vec, ["3", "2", "1"]);
+            assert_eq!(vec.len(), 3);
+            assert!(dbg!(vec.capacity()) >= 3);
+            assert_eq!(vec.allocator_stats().into().allocated(), 0); // mut collections are special like that
+            let slice = vec.into_boxed_slice();
+            assert_eq!(&*slice, ["3", "2", "1"]);
+            assert_eq!(bump.any_stats().allocated(), 3 * ITEM_SIZE);
+        }
+
+        Bump::<Global, C>::new().scoped(|bump| test::<&mut BumpScope<Global, C>>(bump));
+        Bump::<Global, C>::new().scoped(|bump| test::<&mut dyn MutBumpAllocatorCoreScope>(bump));
     }
-
-    fn test<'a, const UP: bool, B: MutBumpAllocatorTypedScope<'a>>(mut bump: B) {
-        const ITEM_SIZE: usize = size_of::<String>();
-        assert_eq!(bump.any_stats().allocated(), 0);
-        let vec = MutBumpVecRev::from_iter_in(numbers(1..4), &mut bump);
-        assert_eq!(vec, ["3", "2", "1"]);
-        assert_eq!(vec.len(), 3);
-        assert!(dbg!(vec.capacity()) >= 3);
-        assert_eq!(vec.allocator_stats().into().allocated(), 0); // mut collections are special like that
-        let slice = vec.into_boxed_slice();
-        assert_eq!(&*slice, ["3", "2", "1"]);
-        assert_eq!(bump.any_stats().allocated(), 3 * ITEM_SIZE);
-    }
-
-    <Bump<Global, BumpSettings<1, UP>>>::new().scoped(|bump| test::<UP, &mut BumpScope<Global, BumpSettings<1, UP>>>(bump));
-    <Bump<Global, BumpSettings<1, UP>>>::new().scoped(|bump| test::<UP, &mut dyn MutBumpAllocatorCoreScope>(bump));
 }

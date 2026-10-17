@@ -2,7 +2,7 @@ use core::alloc::Allocator;
 
 use crate::{
     Bump, BumpScope, WithoutDealloc, WithoutShrink,
-    settings::BumpAllocatorSettings,
+    config::BumpConfig,
     traits::{BumpAllocatorCore, assert_implements},
 };
 
@@ -31,16 +31,6 @@ unsafe impl<A: MutBumpAllocatorCore + ?Sized> MutBumpAllocatorCore for &mut A {}
 unsafe impl<A: MutBumpAllocatorCore> MutBumpAllocatorCore for WithoutDealloc<A> {}
 unsafe impl<A: MutBumpAllocatorCore> MutBumpAllocatorCore for WithoutShrink<A> {}
 
-unsafe impl<A, S> MutBumpAllocatorCore for Bump<A, S>
-where
-    A: Allocator,
-    S: BumpAllocatorSettings,
-{
-}
+unsafe impl<A, const C: BumpConfig> MutBumpAllocatorCore for Bump<A, C> where A: Allocator {}
 
-unsafe impl<A, S> MutBumpAllocatorCore for BumpScope<'_, A, S>
-where
-    A: Allocator,
-    S: BumpAllocatorSettings,
-{
-}
+unsafe impl<A, const C: BumpConfig> MutBumpAllocatorCore for BumpScope<'_, A, C> where A: Allocator {}

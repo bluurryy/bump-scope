@@ -6,8 +6,6 @@ use std::{
     ptr::NonNull,
 };
 
-use bump_scope::settings::{BumpAllocatorSettings, BumpSettings};
-
 struct Limited<A> {
     current: Cell<usize>,
     limit: usize,
@@ -98,7 +96,7 @@ where
     }
 }
 
-type Bump<A> = bump_scope::Bump<A, <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<true>>;
+type Bump<A> = bump_scope::Bump<A>;
 
 fn main() {
     let allocator = Limited::new_in(1024, Global);

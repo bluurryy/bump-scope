@@ -4,48 +4,49 @@ mod common;
 
 use std::{alloc::Global, dbg};
 
-use bump_scope::{Bump, BumpVec, MutBumpVec, MutBumpVecRev, settings::BumpSettings};
+use bump_scope::{Bump, BumpVec, MutBumpVec, MutBumpVecRev};
 
-use common::either_way;
+use common::up_and_down;
 
-either_way! {
-    bump_vec
-    mut_bump_vec
-    mut_bump_vec_rev
-}
+up_and_down! {
+    const C: BumpConfig = DEFAULT_C;
 
-fn bump_vec<const UP: bool>() {
-    let bump = Bump::<Global, BumpSettings<1, UP>>::new();
+    #[test]
+    fn bump_vec() {
+        let bump = Bump::<Global, C>::new();
 
-    bump.alloc(8u8);
+        bump.alloc(8u8);
 
-    let mut vec = BumpVec::new_in(&bump);
-    vec.push(32u32);
+        let mut vec = BumpVec::new_in(&bump);
+        vec.push(32u32);
 
-    let slice = vec.into_slice();
-    dbg!(slice);
-}
+        let slice = vec.into_slice();
+        dbg!(slice);
+    }
 
-fn mut_bump_vec<const UP: bool>() {
-    let mut bump = Bump::<Global, BumpSettings<1, UP>>::new();
+    #[test]
+    fn mut_bump_vec() {
+        let mut bump = Bump::<Global, C>::new();
 
-    bump.alloc(8u8);
+        bump.alloc(8u8);
 
-    let mut vec = MutBumpVec::new_in(&mut bump);
-    vec.push(32u32);
+        let mut vec = MutBumpVec::new_in(&mut bump);
+        vec.push(32u32);
 
-    let slice = vec.into_slice();
-    dbg!(slice);
-}
+        let slice = vec.into_slice();
+        dbg!(slice);
+    }
 
-fn mut_bump_vec_rev<const UP: bool>() {
-    let mut bump = Bump::<Global, BumpSettings<1, UP>>::new();
+    #[test]
+    fn mut_bump_vec_rev() {
+        let mut bump = Bump::<Global, C>::new();
 
-    bump.alloc(8u8);
+        bump.alloc(8u8);
 
-    let mut vec = MutBumpVecRev::new_in(&mut bump);
-    vec.push(32u32);
+        let mut vec = MutBumpVecRev::new_in(&mut bump);
+        vec.push(32u32);
 
-    let slice = vec.into_slice();
-    dbg!(slice);
+        let slice = vec.into_slice();
+        dbg!(slice);
+    }
 }

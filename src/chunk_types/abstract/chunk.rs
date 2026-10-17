@@ -7,8 +7,8 @@ use crate::{
         concrete::{ClaimedChunk, UnallocatedChunk},
         dummy_memory_region,
     },
+    config::{BumpConfig, config},
     layout::LayoutProps,
-    settings::BumpAllocatorSettings,
 };
 
 #[repr(C, align(16))]
@@ -18,21 +18,20 @@ struct Header {
 }
 
 #[repr(transparent)]
-pub(crate) struct Chunk<A, S> {
+pub(crate) struct Chunk<A, const C: BumpConfig> {
     header: NonNull<Header>,
-    #[expect(clippy::type_complexity)]
-    marker: PhantomData<(*const A, fn() -> S)>,
+    marker: PhantomData<*const A>,
 }
 
-impl<A, S> Clone for Chunk<A, S> {
+impl<A, const C: BumpConfig> Clone for Chunk<A, C> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, S> Copy for Chunk<A, S> {}
+impl<A, const C: BumpConfig> Copy for Chunk<A, C> {}
 
-impl<A, S> Chunk<A, S> {
+impl<A, const C: BumpConfig> Chunk<A, C> {
     pub(crate) fn as_ptr(self) -> NonNull<()> {
         self.header.cast()
     }
@@ -48,40 +47,37 @@ impl<A, S> Chunk<A, S> {
         }
     }
 
-    pub const fn from_unallocated(chunk: UnallocatedChunk<A, S>) -> Self {
+    pub const fn from_unallocated(chunk: UnallocatedChunk<A, C>) -> Self {
         unsafe { transmute(chunk) }
     }
 
-    pub const fn from_allocated(chunk: AllocatedChunk<A, S>) -> Self {
+    pub const fn from_allocated(chunk: AllocatedChunk<A, C>) -> Self {
         unsafe { transmute(chunk) }
     }
 
-    pub const fn from_claimed(chunk: ClaimedChunk<A, S>) -> Self {
+    pub const fn from_claimed(chunk: ClaimedChunk<A, C>) -> Self {
         unsafe { transmute(chunk) }
     }
 
-    pub(crate) fn from_first(zst: FirstAllocatedChunk<A, S>) -> Self {
+    pub(crate) fn from_first(zst: FirstAllocatedChunk<A, C>) -> Self {
         unsafe { transmute(zst) }
     }
 }
 
-impl<A, S> Chunk<A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> Chunk<A, C> {
     pub(crate) fn is_unallocated(self) -> bool {
-        !S::GUARANTEED_ALLOCATED && self.pos() == dummy_memory_region::UNALLOCATED_POS
+        !config!(guaranteed_allocated) && self.pos() == dummy_memory_region::UNALLOCATED_POS
     }
 
     pub(crate) fn is_claimed(self) -> bool {
-        S::CLAIMABLE && self.pos() == dummy_memory_region::CLAIMED_POS
+        config!(claimable) && self.pos() == dummy_memory_region::CLAIMED_POS
     }
 
-    pub(crate) fn kind(self) -> ChunkKind<A, S> {
+    pub(crate) fn kind(self) -> ChunkKind<A, C> {
         unsafe {
-            if !S::GUARANTEED_ALLOCATED && self.is_unallocated() {
+            if !config!(guaranteed_allocated) && self.is_unallocated() {
                 ChunkKind::Unallocated(transmute(self))
-            } else if S::CLAIMABLE && self.is_claimed() {
+            } else if config!(claimable) && self.is_claimed() {
                 ChunkKind::Claimed(transmute(self))
             } else {
                 ChunkKind::Allocated(transmute(self))
@@ -89,14 +85,14 @@ where
         }
     }
 
-    pub(crate) fn as_allocated(self) -> Option<AllocatedChunk<A, S>> {
+    pub(crate) fn as_allocated(self) -> Option<AllocatedChunk<A, C>> {
         match self.kind() {
             ChunkKind::Claimed(_) | ChunkKind::Unallocated(_) => None,
             ChunkKind::Allocated(chunk) => Some(chunk),
         }
     }
 
-    pub(crate) unsafe fn as_allocated_unchecked(self) -> AllocatedChunk<A, S> {
+    pub(crate) unsafe fn as_allocated_unchecked(self) -> AllocatedChunk<A, C> {
         debug_assert!(matches!(self.kind(), ChunkKind::Allocated(_)));
         unsafe { transmute(self) }
     }
@@ -108,7 +104,7 @@ where
     pub(crate) fn alloc(self, layout: impl LayoutProps) -> Option<NonNull<u8>> {
         let props = self.bump_props(layout);
 
-        let ptr = if S::UP {
+        let ptr = if config!(upwards) {
             let BumpUp { new_pos, ptr } = bump_up(props)?;
 
             // SAFETY: allocations never succeed for a dummy chunk
@@ -142,7 +138,11 @@ where
     pub(crate) fn prepare_allocation(self, layout: impl LayoutProps) -> Option<NonNull<u8>> {
         let props = self.bump_props(layout);
 
-        let ptr = if S::UP { bump_up(props)?.ptr } else { bump_down(props)? };
+        let ptr = if config!(upwards) {
+            bump_up(props)?.ptr
+        } else {
+            bump_down(props)?
+        };
 
         // SAFETY: allocations never succeed for a dummy chunk
         let ptr = unsafe {
@@ -173,7 +173,7 @@ where
     pub(crate) fn prepare_allocation_range(self, layout: impl LayoutProps) -> Option<Range<NonNull<u8>>> {
         let props = self.bump_props(layout);
 
-        let range = if S::UP {
+        let range = if config!(upwards) {
             bump_prepare_up(props)
         } else {
             bump_prepare_down(props)
@@ -199,8 +199,8 @@ where
         let pos = self.pos().addr().get();
         let end = unsafe { self.header.as_ref() }.end.addr().get();
 
-        let start = if S::UP { pos } else { end };
-        let end = if S::UP { end } else { pos };
+        let start = if config!(upwards) { pos } else { end };
+        let end = if config!(upwards) { end } else { pos };
 
         #[cfg(debug_assertions)]
         if !matches!(self.kind(), ChunkKind::Allocated(_)) {
@@ -211,7 +211,7 @@ where
             start,
             end,
             layout: *layout,
-            min_align: S::MIN_ALIGN,
+            min_align: config!(min_align),
             align_is_const: L::ALIGN_IS_CONST,
             size_is_const: L::SIZE_IS_CONST,
             size_is_multiple_of_align: L::SIZE_IS_MULTIPLE_OF_ALIGN,
@@ -219,10 +219,10 @@ where
     }
 }
 
-pub(crate) enum ChunkKind<A, S> {
-    Claimed(#[expect(dead_code)] ClaimedChunk<A, S>),
-    Unallocated(UnallocatedChunk<A, S>),
-    Allocated(AllocatedChunk<A, S>),
+pub(crate) enum ChunkKind<A, const C: BumpConfig> {
+    Claimed(#[expect(dead_code)] ClaimedChunk<A, C>),
+    Unallocated(UnallocatedChunk<A, C>),
+    Allocated(AllocatedChunk<A, C>),
 }
 
 /// Miri doesn't understand how our bit twiddling aligns the pointer but we can promise it with this.

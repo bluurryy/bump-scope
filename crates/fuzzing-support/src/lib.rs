@@ -2,7 +2,7 @@
 #![expect(clippy::cargo_common_metadata)]
 
 use std::{
-    alloc::{AllocError, Allocator, Global, Layout},
+    alloc::{AllocError, Allocator, Layout},
     cell::Cell,
     ops::Deref,
     ptr::NonNull,
@@ -10,7 +10,6 @@ use std::{
 };
 
 use arbitrary::{Arbitrary, Unstructured};
-use bump_scope::settings::BumpSettings;
 
 pub use arbitrary;
 pub use bump_scope;
@@ -23,9 +22,6 @@ pub mod bump_up;
 pub mod bump_vec;
 pub mod chunk_size;
 mod from_bump_scope;
-
-pub type Bump<A = Global, const MIN_ALIGN: usize = 1, const UP: bool = true> =
-    bump_scope::Bump<A, BumpSettings<MIN_ALIGN, UP, true>>;
 
 #[derive(Debug, Clone)]
 struct RcAllocator<A> {

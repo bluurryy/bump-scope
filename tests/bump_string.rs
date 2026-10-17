@@ -1,74 +1,57 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 
+mod common;
+
 use std::alloc::Global;
 
-use bump_scope::{Bump, BumpString, settings::BumpSettings};
+use bump_scope::{Bump, BumpString};
 
-macro_rules! either_way {
-    ($($(#[$attr:meta])* $ident:ident)*) => {
-        $(
-            mod $ident {
-                #[test]
-                $(#[$attr])*
-                fn up() {
-                    std::eprintln!("`UP` is `true`");
-                    super::$ident::<true>();
-                }
+use crate::common::up_and_down;
 
-                #[test]
-                $(#[$attr])*
-                fn down() {
-                    std::eprintln!("`UP` is `false`");
-                    super::$ident::<false>();
-                }
-            }
-        )*
-    };
-}
+up_and_down! {
+    const C: BumpConfig = DEFAULT_C;
 
-either_way! {
-    shrinks
-    deallocates
-    into_str
-    into_str_without_shrink
-}
+    #[test]
+    fn shrinks() {
+        let bump: Bump<Global, C> = Bump::new();
+        let mut string = BumpString::from_str_in("1234", &bump);
+        assert_eq!(bump.stats().allocated(), 4);
+        string.pop();
+        string.shrink_to_fit();
+        assert_eq!(bump.stats().allocated(), 3);
+        string.clear();
+        string.shrink_to_fit();
+        assert_eq!(bump.stats().allocated(), 0);
+    }
 
-fn shrinks<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
-    let mut string = BumpString::from_str_in("1234", &bump);
-    assert_eq!(bump.stats().allocated(), 4);
-    string.pop();
-    string.shrink_to_fit();
-    assert_eq!(bump.stats().allocated(), 3);
-    string.clear();
-    string.shrink_to_fit();
-    assert_eq!(bump.stats().allocated(), 0);
-}
+    #[test]
+    fn deallocates() {
+        let bump: Bump<Global, C> = Bump::new();
+        let string = BumpString::from_str_in("123", &bump);
+        assert_eq!(bump.stats().allocated(), 3);
+        drop(string);
+        assert_eq!(bump.stats().allocated(), 0);
+    }
 
-fn deallocates<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
-    let string = BumpString::from_str_in("123", &bump);
-    assert_eq!(bump.stats().allocated(), 3);
-    drop(string);
-    assert_eq!(bump.stats().allocated(), 0);
-}
+    #[test]
+    fn into_str() {
+        let bump: Bump<Global, C> = Bump::new();
+        let mut string = BumpString::from_str_in("12345", &bump);
+        assert_eq!(bump.stats().allocated(), 5);
+        string.truncate(3);
+        let slice = string.into_str();
+        assert_eq!(bump.stats().allocated(), 3);
+        _ = slice;
+    }
 
-fn into_str<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
-    let mut string = BumpString::from_str_in("12345", &bump);
-    assert_eq!(bump.stats().allocated(), 5);
-    string.truncate(3);
-    let slice = string.into_str();
-    assert_eq!(bump.stats().allocated(), 3);
-    _ = slice;
-}
-
-fn into_str_without_shrink<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
-    let mut string = BumpString::from_str_in("12345", &bump);
-    assert_eq!(bump.stats().allocated(), 5);
-    string.truncate(3);
-    let slice = string.into_fixed_string().into_str();
-    assert_eq!(bump.stats().allocated(), 5);
-    _ = slice;
+    #[test]
+    fn into_str_without_shrink() {
+        let bump: Bump<Global, C> = Bump::new();
+        let mut string = BumpString::from_str_in("12345", &bump);
+        assert_eq!(bump.stats().allocated(), 5);
+        string.truncate(3);
+        let slice = string.into_fixed_string().into_str();
+        assert_eq!(bump.stats().allocated(), 5);
+        _ = slice;
+    }
 }

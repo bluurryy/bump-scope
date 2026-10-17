@@ -1,7 +1,5 @@
-mod bump_allocator;
 mod bump_allocator_core;
 mod bump_allocator_core_scope;
-mod bump_allocator_scope;
 pub(crate) mod bump_allocator_typed;
 pub(crate) mod bump_allocator_typed_scope;
 mod macros;
@@ -10,10 +8,8 @@ mod mut_bump_allocator_core_scope;
 pub(crate) mod mut_bump_allocator_typed;
 pub(crate) mod mut_bump_allocator_typed_scope;
 
-pub use bump_allocator::BumpAllocator;
 pub use bump_allocator_core::BumpAllocatorCore;
 pub use bump_allocator_core_scope::BumpAllocatorCoreScope;
-pub use bump_allocator_scope::BumpAllocatorScope;
 pub use bump_allocator_typed::BumpAllocatorTyped;
 pub use bump_allocator_typed_scope::BumpAllocatorTypedScope;
 pub(crate) use macros::forward_methods;

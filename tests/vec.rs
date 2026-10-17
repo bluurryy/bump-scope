@@ -4,80 +4,79 @@ mod common;
 
 use std::{alloc::Global, boxed::Box, vec::Vec};
 
-use bump_scope::{Bump, settings::BumpSettings};
+use bump_scope::Bump;
 
-use common::either_way;
+use common::up_and_down;
 
-either_way! {
-    grow
+up_and_down! {
+    const C: BumpConfig = DEFAULT_C;
 
-    shrink
+    #[test]
+    fn grow() {
+        let mut bump: Bump<Global, C> = Bump::new();
 
-    shrinknt
-}
+        let mut vec = Vec::<i32, _>::new_in(&bump);
+        assert_eq!(bump.stats().allocated(), 0);
 
-fn grow<const UP: bool>() {
-    let mut bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
+        vec.reserve_exact(1);
+        assert_eq!(bump.stats().allocated(), 4);
 
-    let mut vec = Vec::<i32, _>::new_in(&bump);
-    assert_eq!(bump.stats().allocated(), 0);
+        vec.reserve_exact(2);
+        assert_eq!(bump.stats().allocated(), 8);
 
-    vec.reserve_exact(1);
-    assert_eq!(bump.stats().allocated(), 4);
+        bump.alloc_uninit::<u8>();
+        assert_eq!(bump.stats().allocated(), 9);
 
-    vec.reserve_exact(2);
-    assert_eq!(bump.stats().allocated(), 8);
+        vec.reserve_exact(3);
+        assert_eq!(bump.stats().allocated(), 12 + 3 * 4);
 
-    bump.alloc_uninit::<u8>();
-    assert_eq!(bump.stats().allocated(), 9);
+        drop(vec);
+        assert_eq!(bump.stats().allocated(), 12);
 
-    vec.reserve_exact(3);
-    assert_eq!(bump.stats().allocated(), 12 + 3 * 4);
+        bump.reset();
+        assert_eq!(bump.stats().allocated(), 0);
+    }
 
-    drop(vec);
-    assert_eq!(bump.stats().allocated(), 12);
+    #[test]
+    fn shrink() {
+        let bump: Bump<Global, C> = Bump::new();
 
-    bump.reset();
-    assert_eq!(bump.stats().allocated(), 0);
-}
+        let mut vec = Vec::<i32, _>::new_in(&bump);
+        assert_eq!(bump.stats().allocated(), 0);
 
-fn shrink<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
+        vec.reserve_exact(2);
+        assert_eq!(bump.stats().allocated(), 8);
 
-    let mut vec = Vec::<i32, _>::new_in(&bump);
-    assert_eq!(bump.stats().allocated(), 0);
+        vec.shrink_to(1);
+        assert_eq!(bump.stats().allocated(), 4);
 
-    vec.reserve_exact(2);
-    assert_eq!(bump.stats().allocated(), 8);
+        let boxed: Box<_, _> = bump.alloc_uninit::<u8>().into_box(&bump);
+        assert_eq!(bump.stats().allocated(), 5);
 
-    vec.shrink_to(1);
-    assert_eq!(bump.stats().allocated(), 4);
+        drop(boxed);
+        assert_eq!(bump.stats().allocated(), 4);
 
-    let boxed: Box<_, _> = bump.alloc_uninit::<u8>().into_box(&bump);
-    assert_eq!(bump.stats().allocated(), 5);
+        vec.shrink_to_fit();
+        assert_eq!(bump.stats().allocated(), 0);
+    }
 
-    drop(boxed);
-    assert_eq!(bump.stats().allocated(), 4);
+    #[test]
+    fn shrinknt() {
+        let bump: Bump<Global, C> = Bump::new();
 
-    vec.shrink_to_fit();
-    assert_eq!(bump.stats().allocated(), 0);
-}
+        let mut vec = Vec::<i32, _>::new_in(&bump);
+        assert_eq!(bump.stats().allocated(), 0);
 
-fn shrinknt<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
+        vec.reserve_exact(2);
+        assert_eq!(bump.stats().allocated(), 8);
 
-    let mut vec = Vec::<i32, _>::new_in(&bump);
-    assert_eq!(bump.stats().allocated(), 0);
+        bump.alloc_uninit::<u8>();
+        assert_eq!(bump.stats().allocated(), 9);
 
-    vec.reserve_exact(2);
-    assert_eq!(bump.stats().allocated(), 8);
+        vec.shrink_to(1);
+        assert_eq!(bump.stats().allocated(), 9);
 
-    bump.alloc_uninit::<u8>();
-    assert_eq!(bump.stats().allocated(), 9);
-
-    vec.shrink_to(1);
-    assert_eq!(bump.stats().allocated(), 9);
-
-    drop(vec);
-    assert_eq!(bump.stats().allocated(), 9);
+        drop(vec);
+        assert_eq!(bump.stats().allocated(), 9);
+    }
 }

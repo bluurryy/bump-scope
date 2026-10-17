@@ -13,16 +13,13 @@ use core::clone::CloneToUninit;
 use crate::{
     BumpBox, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, ErrorBehavior, allocator_impl,
     chunk_size::{ChunkSizeCapacity, ChunkSizeHint},
+    config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
     maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
-    settings::{BumpAllocatorSettings, BumpSettings, False, MinimumAlignment, SupportedMinimumAlignment},
     stats::{AnyStats, Stats},
-    traits::{
-        self, BumpAllocator, BumpAllocatorCore, BumpAllocatorScope, BumpAllocatorTyped, BumpAllocatorTypedScope,
-        MutBumpAllocatorTypedScope,
-    },
+    traits::{self, BumpAllocatorCore, BumpAllocatorTyped, BumpAllocatorTypedScope, MutBumpAllocatorTypedScope},
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -34,7 +31,7 @@ macro_rules! make_type {
         ///
         /// # Generic parameters
         /// - **`A`** — the base allocator, defaults to `Global` when the `alloc` feature is enabled
-        /// - **`S`** — the bump allocator settings, see [`settings`](crate::settings)
+        /// - **`C`** — the bump allocator config, see [`config`](crate::config)
         ///
         /// # Overview
         /// All of the mentioned methods that do allocations panic if the base allocator returned an error.
@@ -69,13 +66,13 @@ macro_rules! make_type {
         /// - via clone *(nightly only)*: [`alloc_clone`]
         ///
         /// #### Free memory using ...
-        /// - scopes: [`scoped`], [`scoped_aligned`], [`scope_guard`]
+        /// - scopes: [`scoped`], [`scope_guard`], [`scoped_with_config`]
         /// - checkpoints: [`checkpoint`], [`reset_to`]
         /// - reset: [`reset`], [`reset_to_start`]
         /// - dealloc: [`dealloc`]
         ///
         /// #### Configure allocator settings ...
-        /// - [`with_settings`], [`borrow_with_settings`], [`borrow_mut_with_settings`]
+        /// - [`with_config`], [`change_config`], [`borrow_change_config`], [`borrow_mut_change_config`]
         ///
         /// ## Collections
         /// A `Bump` (and [`BumpScope`]) can be used to allocate collections of this crate...
@@ -167,9 +164,9 @@ macro_rules! make_type {
         ///
         /// [`alloc_clone`]: BumpAllocatorTypedScope::alloc_clone
         ///
-        /// [`scoped`]: crate::traits::BumpAllocator::scoped
-        /// [`scoped_aligned`]: crate::traits::BumpAllocator::scoped_aligned
-        /// [`scope_guard`]: crate::traits::BumpAllocator::scope_guard
+        /// [`scoped`]: crate::BumpScope::scoped
+        /// [`scoped_with_config`]: crate::BumpScope::scoped_with_config
+        /// [`scope_guard`]: crate::BumpScope::scope_guard
         ///
         /// [`checkpoint`]: BumpAllocatorCore::checkpoint
         /// [`reset_to`]: BumpAllocatorCore::reset_to
@@ -178,11 +175,10 @@ macro_rules! make_type {
         /// [`reset_to_start`]: Bump::reset_to_start
         /// [`dealloc`]: BumpAllocatorTyped::dealloc
         ///
-        /// [`aligned`]: BumpAllocatorScope::aligned
-        ///
-        /// [`with_settings`]: Bump::with_settings
-        /// [`borrow_with_settings`]: Bump::borrow_with_settings
-        /// [`borrow_mut_with_settings`]: Bump::borrow_with_settings
+        /// [`with_config`]: Bump::with_config
+        /// [`change_config`]: Bump::change_config
+        /// [`borrow_change_config`]: Bump::borrow_change_config
+        /// [`borrow_mut_change_config`]: Bump::borrow_change_config
         ///
         /// # Gotcha
         ///
@@ -220,12 +216,12 @@ macro_rules! make_type {
         ///
         /// [`as_mut_scope`]: Bump::as_mut_scope
         #[repr(transparent)]
-        pub struct Bump<$($allocator_parameter)*, S = BumpSettings>
+        pub struct Bump<$($allocator_parameter)*, const C: BumpConfig = DEFAULT_BUMP_CONFIG>
         where
             A: Allocator,
-            S: BumpAllocatorSettings,
+
         {
-            pub(crate) raw: RawBump<A, S>,
+            pub(crate) raw: RawBump<A, C>,
         }
     };
 }
@@ -234,41 +230,24 @@ maybe_default_allocator!(make_type);
 
 // Sending Bumps when nothing is allocated is fine.
 // When something is allocated Bump is borrowed and sending is not possible.
-unsafe impl<A, S> Send for Bump<A, S>
-where
-    A: Send + Allocator,
-    S: BumpAllocatorSettings,
-{
-}
+unsafe impl<A, const C: BumpConfig> Send for Bump<A, C> where A: Send + Allocator {}
 
-impl<A, S> UnwindSafe for Bump<A, S>
-where
-    A: Allocator + UnwindSafe,
-    S: BumpAllocatorSettings,
-{
-}
+impl<A, const C: BumpConfig> UnwindSafe for Bump<A, C> where A: Allocator + UnwindSafe {}
 
-impl<A, S> RefUnwindSafe for Bump<A, S>
-where
-    A: Allocator + RefUnwindSafe,
-    S: BumpAllocatorSettings,
-{
-}
+impl<A, const C: BumpConfig> RefUnwindSafe for Bump<A, C> where A: Allocator + RefUnwindSafe {}
 
-impl<A, S> Drop for Bump<A, S>
+impl<A, const C: BumpConfig> Drop for Bump<A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     fn drop(&mut self) {
         unsafe { self.raw.manually_drop() }
     }
 }
 
-impl<A, S> Debug for Bump<A, S>
+impl<A, const C: BumpConfig> Debug for Bump<A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         AnyStats::from(self.stats()).debug_format("Bump", f)
@@ -276,23 +255,22 @@ where
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<A, S> Default for Bump<A, S>
+impl<A, const C: BumpConfig> Default for Bump<A, C>
 where
     A: Allocator + Default + 'static,
-    S: BumpAllocatorSettings,
 {
-    /// With [`GUARANTEED_ALLOCATED`] this does the same as [`new`], otherwise it does the same as [`unallocated`].
+    /// With [`guaranteed_allocated`] this does the same as [`new`], otherwise it does the same as [`unallocated`].
     ///
-    /// [`GUARANTEED_ALLOCATED`]: crate::settings
+    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
     /// [`new`]: Bump::new
     /// [`unallocated`]: Bump::unallocated
     #[inline(always)]
     fn default() -> Self {
-        if S::GUARANTEED_ALLOCATED {
+        if config!(guaranteed_allocated) {
             Self::new_in(Default::default())
         } else {
             Self {
-                // SAFETY: `S::GUARANTEED_ALLOCATED` is `false`
+                // SAFETY: `guaranteed_allocated` is `false`
                 raw: unsafe { RawBump::new_unchecked() },
             }
         }
@@ -300,61 +278,59 @@ where
 }
 
 #[cfg(not(feature = "panic-on-alloc"))]
-impl<A, S> Default for Bump<A, S>
+impl<A, const C: BumpConfig> Default for Bump<A, C>
 where
     A: Allocator + Default + 'static,
-    S: BumpAllocatorSettings<GuaranteedAllocated = False>,
 {
     /// Does the same as [`unallocated`].
     ///
     /// [`unallocated`]: Bump::unallocated
     #[inline(always)]
     fn default() -> Self {
+        assert!(!config!(guaranteed_allocated));
         Self::unallocated()
     }
 }
 
-impl<A, S> Bump<A, S>
+impl<A, const C: BumpConfig> Bump<A, C>
 where
     A: Allocator + Default + 'static,
-    S: BumpAllocatorSettings<GuaranteedAllocated = False>,
 {
     /// Constructs a new `Bump` without allocating a chunk.
     ///
-    /// This requires the `GUARANTEED_ALLOCATED` setting to be `false`, see [`settings`].
+    /// # Panics
+    ///
+    /// Panics when not [`guaranteed_allocated`].
     ///
     /// # Examples
     ///
     /// ```
     /// use std::alloc::Global;
     ///
-    /// use bump_scope::{
-    ///     Bump,
-    ///     settings::{BumpSettings, BumpAllocatorSettings}
-    /// };
+    /// use bump_scope::{Bump, config::{BumpConfig, BumpConfigBuilder}};
     ///
-    /// type Settings = <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<false>;
+    /// const CONFIG: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(false).build();
     ///
-    /// let bump: Bump<Global, Settings> = Bump::unallocated();
+    /// let bump: Bump<Global, CONFIG> = Bump::unallocated();
     /// # _ = bump;
     /// ```
     ///
-    /// [`settings`]: crate::settings
+    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
     #[must_use]
     pub const fn unallocated() -> Self {
+        assert!(!config!(guaranteed_allocated));
         Self { raw: RawBump::new() }
     }
 }
 
 /// Methods for a `Bump` with a default base allocator.
-impl<A, S> Bump<A, S>
+impl<A, const C: BumpConfig> Bump<A, C>
 where
     A: Allocator + Default,
-    S: BumpAllocatorSettings,
 {
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
-    /// This is equivalent to <code>[with_size][]([MINIMUM_CHUNK_SIZE])</code>.
+    /// This is equivalent to <code>[with_size][]([min_chunk_size])</code>.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -368,17 +344,17 @@ where
     /// ```
     ///
     /// [with_size]: Bump::with_size
-    /// [MINIMUM_CHUNK_SIZE]: crate::settings
+    /// [min_chunk_size]: crate::config::BumpConfigBuilder::min_chunk_size
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn new() -> Self {
-        Self::with_size(S::MINIMUM_CHUNK_SIZE)
+        Self::with_size(config!(min_chunk_size))
     }
 
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
-    /// This is equivalent to <code>[try_with_size][]([MINIMUM_CHUNK_SIZE])</code>.
+    /// This is equivalent to <code>[try_with_size][]([min_chunk_size])</code>.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -393,10 +369,10 @@ where
     /// ```
     ///
     /// [try_with_size]: Bump::try_with_size
-    /// [MINIMUM_CHUNK_SIZE]: crate::settings
+    /// [min_chunk_size]: crate::config::BumpConfigBuilder::min_chunk_size
     #[inline(always)]
     pub fn try_new() -> Result<Self, AllocError> {
-        Self::try_with_size(S::MINIMUM_CHUNK_SIZE)
+        Self::try_with_size(config!(min_chunk_size))
     }
 
     /// Constructs a new `Bump` with a size hint for the first chunk.
@@ -517,14 +493,13 @@ where
 }
 
 /// Methods that are always available.
-impl<A, S> Bump<A, S>
+impl<A, const C: BumpConfig> Bump<A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
-    /// This is equivalent to <code>[with_size_in][]([MINIMUM_CHUNK_SIZE], allocator)</code>.
+    /// This is equivalent to <code>[with_size_in][]([min_chunk_size], allocator)</code>.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -539,17 +514,17 @@ where
     /// ```
     ///
     /// [with_size_in]: Bump::with_size_in
-    /// [MINIMUM_CHUNK_SIZE]: crate::settings
+    /// [min_chunk_size]: crate::config::BumpConfigBuilder::min_chunk_size
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn new_in(allocator: A) -> Self {
-        Self::with_size_in(S::MINIMUM_CHUNK_SIZE, allocator)
+        Self::with_size_in(config!(min_chunk_size), allocator)
     }
 
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
-    /// This is equivalent to <code>[try_with_size_in][]([MINIMUM_CHUNK_SIZE], allocator)</code>.
+    /// This is equivalent to <code>[try_with_size_in][]([min_chunk_size], allocator)</code>.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -565,10 +540,10 @@ where
     /// ```
     ///
     /// [try_with_size_in]: Bump::try_with_size_in
-    /// [MINIMUM_CHUNK_SIZE]: crate::settings
+    /// [min_chunk_size]: crate::config::BumpConfigBuilder::min_chunk_size
     #[inline(always)]
     pub fn try_new_in(allocator: A) -> Result<Self, AllocError> {
-        Self::try_with_size_in(S::MINIMUM_CHUNK_SIZE, allocator)
+        Self::try_with_size_in(config!(min_chunk_size), allocator)
     }
 
     /// Constructs a new `Bump` with a size hint for the first chunk.
@@ -817,73 +792,64 @@ where
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'_, A, S> {
+    pub fn stats(&self) -> Stats<'_, A, C> {
         self.as_scope().stats()
     }
 
     /// Returns this `&Bump` as a `&BumpScope`.
     #[must_use]
     #[inline(always)]
-    pub fn as_scope(&self) -> &BumpScope<'_, A, S> {
+    pub fn as_scope(&self) -> &BumpScope<'_, A, C> {
         unsafe { transmute_ref(self) }
     }
 
     /// Returns this `&mut Bump` as a `&mut BumpScope`.
     #[must_use]
     #[inline(always)]
-    pub fn as_mut_scope(&mut self) -> &mut BumpScope<'_, A, S> {
+    pub fn as_mut_scope(&mut self) -> &mut BumpScope<'_, A, C> {
         unsafe { transmute_mut(self) }
     }
 
     /// Converts this `Bump` into a `Bump` with new settings.
     ///
     /// This function will fail to compile if:
-    /// - `NewS::UP != S::UP`
+    /// - `config::read::guaranteed_allocated(NEW_C) != config!(upwards)`
     ///
     /// # Panics
-    /// Panics if `!NewS::CLAIMABLE` and the bump allocator is currently [claimed].
+    /// Panics if `!config::read::claimable(NEW_C)` and the bump allocator is currently [claimed].
     ///
-    /// Panics if `NewS::GUARANTEED_ALLOCATED` and no chunk has been allocated.
+    /// Panics if `config::read::guaranteed_allocated(NEW_C)` and no chunk has been allocated.
     ///
-    /// [claimed]: crate::traits::BumpAllocatorScope::claim
+    /// [claimed]: crate::BumpScope::claim
     #[inline]
-    pub fn with_settings<NewS>(self) -> Bump<A, NewS>
-    where
-        NewS: BumpAllocatorSettings,
-    {
-        self.raw.ensure_satisfies_settings::<NewS>();
+    pub fn change_config<const NEW_C: BumpConfig>(self) -> Bump<A, NEW_C> {
+        self.raw.ensure_satisfies_settings::<NEW_C>();
         unsafe { transmute_value(self) }
     }
 
     /// Borrows this `Bump` with new settings.
     ///
     /// This function will fail to compile if:
-    /// - `NewS::MIN_ALIGN != S::MIN_ALIGN`
-    /// - `NewS::UP != S::UP`
-    /// - `NewS::CLAIMABLE != S::CLAIMABLE`
-    /// - `NewS::GUARANTEED_ALLOCATED > S::GUARANTEED_ALLOCATED`
+    /// - `config::read::min_align(NEW_C) != config!(min_align)`
+    /// - `config::read::guaranteed_allocated(NEW_C) != config!(upwards)`
+    /// - `config::read::claimable(NEW_C) != config!(claimable)`
+    /// - `config::read::guaranteed_allocated(NEW_C) > config!(guaranteed_allocated)`
     #[inline]
-    pub fn borrow_with_settings<NewS>(&self) -> &Bump<A, NewS>
-    where
-        NewS: BumpAllocatorSettings,
-    {
-        self.raw.ensure_satisfies_settings_for_borrow::<NewS>();
+    pub fn borrow_change_config<const NEW_C: BumpConfig>(&self) -> &Bump<A, NEW_C> {
+        self.raw.ensure_satisfies_settings_for_borrow::<NEW_C>();
         unsafe { transmute_ref(self) }
     }
 
     /// Borrows this `Bump` mutably with new settings.
     ///
     /// This function will fail to compile if:
-    /// - `NewS::MIN_ALIGN < S::MIN_ALIGN`
-    /// - `NewS::UP != S::UP`
-    /// - `NewS::GUARANTEED_ALLOCATED != S::GUARANTEED_ALLOCATED`
-    /// - `NewS::CLAIMABLE != S::CLAIMABLE`
+    /// - `config::read::min_align(NEW_C) < config!(min_align)`
+    /// - `config::read::guaranteed_allocated(NEW_C) != config!(upwards)`
+    /// - `config::read::guaranteed_allocated(NEW_C) != config!(guaranteed_allocated)`
+    /// - `config::read::claimable(NEW_C) != config!(claimable)`
     #[inline]
-    pub fn borrow_mut_with_settings<NewS>(&mut self) -> &mut Bump<A, NewS>
-    where
-        NewS: BumpAllocatorSettings,
-    {
-        self.raw.ensure_satisfies_settings_for_borrow_mut::<NewS>();
+    pub fn borrow_mut_change_config<const NEW_C: BumpConfig>(&mut self) -> &mut Bump<A, NEW_C> {
+        self.raw.ensure_satisfies_settings_for_borrow_mut::<NEW_C>();
         unsafe { transmute_mut(self) }
     }
 
@@ -922,24 +888,22 @@ where
     }
 }
 
-impl<'b, A, S> From<&'b Bump<A, S>> for &'b BumpScope<'b, A, S>
+impl<'b, A, const C: BumpConfig> From<&'b Bump<A, C>> for &'b BumpScope<'b, A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     #[inline(always)]
-    fn from(value: &'b Bump<A, S>) -> Self {
+    fn from(value: &'b Bump<A, C>) -> Self {
         value.as_scope()
     }
 }
 
-impl<'b, A, S> From<&'b mut Bump<A, S>> for &'b mut BumpScope<'b, A, S>
+impl<'b, A, const C: BumpConfig> From<&'b mut Bump<A, C>> for &'b mut BumpScope<'b, A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     #[inline(always)]
-    fn from(value: &'b mut Bump<A, S>) -> Self {
+    fn from(value: &'b mut Bump<A, C>) -> Self {
         value.as_mut_scope()
     }
 }
@@ -947,10 +911,9 @@ where
 /// Methods that forward to traits.
 // Documentation is in the forwarded to methods.
 #[allow(clippy::missing_errors_doc, clippy::missing_safety_doc)]
-impl<A, S> Bump<A, S>
+impl<A, const C: BumpConfig> Bump<A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     traits::forward_methods! {
         self: self
@@ -961,11 +924,47 @@ where
 }
 
 /// Additional `alloc` methods that are not available in traits.
-impl<A, S> Bump<A, S>
+impl<A, const C: BumpConfig> Bump<A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
+    /// Forwards to [`BumpScope::allocator`].
+    #[must_use]
+    #[inline(always)]
+    pub fn allocator(&self) -> Option<&A> {
+        self.as_scope().allocator()
+    }
+
+    /// Forwards to [`BumpScope::claim`].
+    #[inline(always)]
+    pub fn claim(&self) -> BumpClaimGuard<'_, '_, A, C> {
+        self.as_scope().claim()
+    }
+
+    /// Forwards to [`BumpScope::scope_guard`].
+    #[inline(always)]
+    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, A, C> {
+        self.as_mut_scope().scope_guard()
+    }
+
+    /// Forwards to [`BumpScope::scoped`].
+    #[inline(always)]
+    pub fn scoped<R>(&mut self, f: impl FnOnce(&mut BumpScope<A, C>) -> R) -> R {
+        self.as_mut_scope().scoped(f)
+    }
+
+    /// Forwards to [`BumpScope::scoped_with_config`].
+    #[inline(always)]
+    pub fn scoped_with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<A, NEW_C>) -> R) -> R {
+        self.as_mut_scope().scoped_with_config::<NEW_C, R>(f)
+    }
+
+    /// Forwards to [`BumpScope::with_config`].
+    #[inline(always)]
+    pub fn with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<'_, A, NEW_C>) -> R) -> R {
+        self.as_mut_scope().with_config(f)
+    }
+
     /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
     ///
     /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
@@ -1113,10 +1112,9 @@ where
     }
 }
 
-unsafe impl<A, S> Allocator for Bump<A, S>
+unsafe impl<A, const C: BumpConfig> Allocator for Bump<A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {

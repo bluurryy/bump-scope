@@ -6,37 +6,33 @@ use core::{
     ptr::NonNull,
 };
 
-use crate::settings::BumpAllocatorSettings;
+use crate::config::{BumpConfig, config};
 
 #[repr(C, align(16))]
-struct Header<A, S> {
+struct Header<A, const C: BumpConfig> {
     pos: Cell<NonNull<u8>>,
     end: NonNull<u8>,
 
-    prev: Option<ZstFirstAllocatedChunk<A, S>>,
-    next: Cell<Option<ZstFirstAllocatedChunk<A, S>>>,
+    prev: Option<ZstFirstAllocatedChunk<A, C>>,
+    next: Cell<Option<ZstFirstAllocatedChunk<A, C>>>,
 }
 
 #[repr(transparent)]
-pub(crate) struct ZstFirstAllocatedChunk<A, S> {
-    header: NonNull<Header<A, S>>,
-    #[expect(clippy::type_complexity)]
-    marker: PhantomData<(*const A, fn() -> S)>,
+pub(crate) struct ZstFirstAllocatedChunk<A, const C: BumpConfig> {
+    header: NonNull<Header<A, C>>,
+    marker: PhantomData<*const A>,
 }
 
-impl<A, S> Clone for ZstFirstAllocatedChunk<A, S> {
+impl<A, const C: BumpConfig> Clone for ZstFirstAllocatedChunk<A, C> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, S> Copy for ZstFirstAllocatedChunk<A, S> {}
+impl<A, const C: BumpConfig> Copy for ZstFirstAllocatedChunk<A, C> {}
 
-impl<A, S> ZstFirstAllocatedChunk<A, S>
-where
-    S: BumpAllocatorSettings,
-{
-    pub(crate) const HEADER_LAYOUT: Layout = Layout::new::<Header<A, S>>();
+impl<A, const C: BumpConfig> ZstFirstAllocatedChunk<A, C> {
+    pub(crate) const HEADER_LAYOUT: Layout = Layout::new::<Header<A, C>>();
 
     #[expect(dead_code)]
     pub(crate) fn as_ptr(self) -> NonNull<()> {
@@ -90,14 +86,18 @@ where
 
     pub(crate) unsafe fn init(ptr: NonNull<u8>, size: usize, allocator: A) -> Self {
         unsafe {
-            let header = if S::UP {
-                ptr.cast::<Header<A, S>>()
+            let header = if config!(upwards) {
+                ptr.cast::<Header<A, C>>()
             } else {
-                ptr.add(size).cast::<Header<A, S>>().sub(1)
+                ptr.add(size).cast::<Header<A, C>>().sub(1)
             };
 
-            let pos = Cell::new(if S::UP { header.add(1).cast() } else { header.cast() });
-            let end = if S::UP { ptr.add(size) } else { ptr };
+            let pos = Cell::new(if config!(upwards) {
+                header.add(1).cast()
+            } else {
+                header.cast()
+            });
+            let end = if config!(upwards) { ptr.add(size) } else { ptr };
 
             header.write(Header {
                 pos,

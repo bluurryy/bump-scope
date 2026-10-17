@@ -2,331 +2,256 @@ use std::{alloc::Layout, ptr::NonNull};
 
 use allocator_api2::alloc::{AllocError, Allocator};
 
-// We use duck typing instead of a trait for being generic over bump allocators
-// to make it easier to work with the const generic `MIN_ALIGN`.
-mod wrapper {
-    pub(crate) mod bump_scope_up {
-        use ::allocator_api2::alloc::{AllocError, Allocator};
-        use ::bump_scope::settings::{BumpSettings, MinimumAlignment, SupportedMinimumAlignment};
-        use ::std::{
-            alloc::{Allocator as _, Global, Layout},
-            ptr::NonNull,
+#[expect(clippy::mut_from_ref)]
+trait BumpAllocator {
+    fn new() -> Self;
+    fn with_capacity(capacity: usize) -> Self;
+    fn alloc<T>(&self, value: T) -> &mut T;
+    fn try_alloc<T>(&self, value: T) -> Option<&mut T>;
+    fn alloc_slice_copy<T: Copy>(&self, value: &[T]) -> &mut [T];
+    fn try_alloc_slice_copy<T: Copy>(&self, value: &[T]) -> Option<&mut [T]>;
+    fn as_allocator(&self) -> impl Allocator;
+    fn reset(&mut self);
+}
+
+mod create_bump_by_library {
+    macro_rules! bump_scope {
+        ($min_align:literal, $upwards:literal) => {
+            use ::allocator_api2::alloc::{AllocError, Allocator};
+            use ::bump_scope::config::{BumpConfig, BumpConfigBuilder};
+            use ::std::{
+                alloc::{Allocator as _, Global, Layout},
+                ptr::NonNull,
+            };
+
+            const C: BumpConfig = BumpConfigBuilder::new()
+                .upwards($upwards)
+                .min_align($min_align)
+                .build();
+
+            #[repr(transparent)]
+            pub struct Bump(bump_scope::Bump<Global, C>);
+
+            unsafe impl Allocator for Bump {
+                fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+                    self.0.allocate(layout).map_err(|_| AllocError)
+                }
+
+                unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+                    unsafe { self.0.deallocate(ptr, layout) };
+                }
+
+                fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+                    self.0.allocate_zeroed(layout).map_err(|_| AllocError)
+                }
+
+                unsafe fn grow(
+                    &self,
+                    ptr: NonNull<u8>,
+                    old_layout: Layout,
+                    new_layout: Layout,
+                ) -> Result<NonNull<[u8]>, AllocError> {
+                    unsafe { self.0.grow(ptr, old_layout, new_layout).map_err(|_| AllocError) }
+                }
+
+                unsafe fn grow_zeroed(
+                    &self,
+                    ptr: NonNull<u8>,
+                    old_layout: Layout,
+                    new_layout: Layout,
+                ) -> Result<NonNull<[u8]>, AllocError> {
+                    unsafe {
+                        self.0
+                            .grow_zeroed(ptr, old_layout, new_layout)
+                            .map_err(|_| AllocError)
+                    }
+                }
+
+                unsafe fn shrink(
+                    &self,
+                    ptr: NonNull<u8>,
+                    old_layout: Layout,
+                    new_layout: Layout,
+                ) -> Result<NonNull<[u8]>, AllocError> {
+                    unsafe { self.0.shrink(ptr, old_layout, new_layout).map_err(|_| AllocError) }
+                }
+            }
+
+            impl crate::BumpAllocator for Bump {
+                #[inline(always)]
+                fn new() -> Self {
+                    Self(::bump_scope::Bump::new())
+                }
+
+                #[inline(always)]
+                fn with_capacity(capacity: usize) -> Self {
+                    Self(::bump_scope::Bump::with_size(capacity))
+                }
+
+                #[inline(always)]
+                fn alloc<T>(&self, value: T) -> &mut T {
+                    ::bump_scope::BumpBox::leak(self.0.alloc(value))
+                }
+
+                #[inline(always)]
+                fn try_alloc<T>(&self, value: T) -> Option<&mut T> {
+                    match self.0.try_alloc(value) {
+                        Ok(value) => Some(bump_scope::BumpBox::leak(value)),
+                        Err(_) => None,
+                    }
+                }
+
+                #[inline(always)]
+                fn alloc_slice_copy<T: Copy>(&self, value: &[T]) -> &mut [T] {
+                    self.0.alloc_slice_copy(value).into_mut()
+                }
+
+                #[inline(always)]
+                fn try_alloc_slice_copy<T: Copy>(&self, value: &[T]) -> Option<&mut [T]> {
+                    match self.0.try_alloc_slice_copy(value) {
+                        Ok(value) => Some(value.into_mut()),
+                        Err(_) => None,
+                    }
+                }
+
+                #[inline(always)]
+                fn as_allocator(&self) -> impl Allocator {
+                    self
+                }
+
+                #[inline(always)]
+                fn reset(&mut self) {
+                    self.0.reset();
+                }
+            }
         };
-
-        unsafe impl<const MIN_ALIGN: usize> Allocator for Bump<MIN_ALIGN>
-        where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        {
-            fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-                self.0.allocate(layout).map_err(|_| AllocError)
-            }
-
-            unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-                unsafe { self.0.deallocate(ptr, layout) };
-            }
-
-            fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-                self.0.allocate_zeroed(layout).map_err(|_| AllocError)
-            }
-
-            unsafe fn grow(
-                &self,
-                ptr: NonNull<u8>,
-                old_layout: Layout,
-                new_layout: Layout,
-            ) -> Result<NonNull<[u8]>, AllocError> {
-                unsafe { self.0.grow(ptr, old_layout, new_layout).map_err(|_| AllocError) }
-            }
-
-            unsafe fn grow_zeroed(
-                &self,
-                ptr: NonNull<u8>,
-                old_layout: Layout,
-                new_layout: Layout,
-            ) -> Result<NonNull<[u8]>, AllocError> {
-                unsafe { self.0.grow_zeroed(ptr, old_layout, new_layout).map_err(|_| AllocError) }
-            }
-
-            unsafe fn shrink(
-                &self,
-                ptr: NonNull<u8>,
-                old_layout: Layout,
-                new_layout: Layout,
-            ) -> Result<NonNull<[u8]>, AllocError> {
-                unsafe { self.0.shrink(ptr, old_layout, new_layout).map_err(|_| AllocError) }
-            }
-        }
-
-        #[repr(transparent)]
-        pub struct Bump<const MIN_ALIGN: usize = 1>(bump_scope::Bump<Global, BumpSettings<MIN_ALIGN>>)
-        where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment;
-
-        impl<const MIN_ALIGN: usize> Bump<MIN_ALIGN>
-        where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        {
-            #[inline(always)]
-            pub(crate) fn new() -> Self {
-                Self(::bump_scope::Bump::new())
-            }
-
-            #[inline(always)]
-            pub(crate) fn with_capacity(capacity: usize) -> Self {
-                Self(::bump_scope::Bump::with_size(capacity))
-            }
-
-            #[inline(always)]
-            pub(crate) fn alloc<T>(&self, value: T) -> &mut T {
-                ::bump_scope::BumpBox::leak(self.0.alloc(value))
-            }
-
-            #[inline(always)]
-            pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&mut T> {
-                match self.0.try_alloc(value) {
-                    Ok(value) => Some(bump_scope::BumpBox::leak(value)),
-                    Err(_) => None,
-                }
-            }
-
-            #[inline(always)]
-            pub(crate) fn alloc_slice_copy<T: Copy>(&self, value: &[T]) -> &mut [T] {
-                self.0.alloc_slice_copy(value).into_mut()
-            }
-
-            #[inline(always)]
-            pub(crate) fn try_alloc_slice_copy<T: Copy>(&self, value: &[T]) -> Option<&mut [T]> {
-                match self.0.try_alloc_slice_copy(value) {
-                    Ok(value) => Some(value.into_mut()),
-                    Err(_) => None,
-                }
-            }
-
-            #[inline(always)]
-            pub(crate) fn as_allocator(&self) -> impl Allocator {
-                self
-            }
-
-            #[inline(always)]
-            pub(crate) fn reset(&mut self) {
-                self.0.reset();
-            }
-        }
     }
 
-    pub(crate) mod bump_scope_down {
-        use ::allocator_api2::alloc::{AllocError, Allocator};
-        use ::bump_scope::settings::{BumpSettings, MinimumAlignment, SupportedMinimumAlignment};
-        use ::std::{
-            alloc::{Allocator as _, Global, Layout},
-            ptr::NonNull,
+    macro_rules! bump_scope_up {
+        ($min_align:literal) => {
+            $crate::create_bump_by_library::bump_scope!($min_align, true);
         };
+    }
 
-        unsafe impl<const MIN_ALIGN: usize> Allocator for Bump<MIN_ALIGN>
-        where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        {
-            fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-                self.0.allocate(layout).map_err(|_| AllocError)
-            }
+    macro_rules! bump_scope_down {
+        ($min_align:literal) => {
+            $crate::create_bump_by_library::bump_scope!($min_align, false);
+        };
+    }
 
-            unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-                unsafe { self.0.deallocate(ptr, layout) };
-            }
+    macro_rules! bumpalo {
+        ($min_align:literal) => {
+            use ::allocator_api2::alloc::Allocator;
 
-            fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-                self.0.allocate_zeroed(layout).map_err(|_| AllocError)
-            }
+            #[repr(transparent)]
+            pub struct Bump(bumpalo::Bump<$min_align>);
 
-            unsafe fn grow(
-                &self,
-                ptr: NonNull<u8>,
-                old_layout: Layout,
-                new_layout: Layout,
-            ) -> Result<NonNull<[u8]>, AllocError> {
-                unsafe { self.0.grow(ptr, old_layout, new_layout).map_err(|_| AllocError) }
-            }
+            impl crate::BumpAllocator for Bump {
+                #[inline(always)]
+                fn new() -> Self {
+                    // NOTE: `with_min_align` is faster than `new`
+                    Self(::bumpalo::Bump::with_min_align())
+                }
 
-            unsafe fn grow_zeroed(
-                &self,
-                ptr: NonNull<u8>,
-                old_layout: Layout,
-                new_layout: Layout,
-            ) -> Result<NonNull<[u8]>, AllocError> {
-                unsafe { self.0.grow_zeroed(ptr, old_layout, new_layout).map_err(|_| AllocError) }
-            }
+                #[inline(always)]
+                fn with_capacity(capacity: usize) -> Self {
+                    Self(::bumpalo::Bump::with_min_align_and_capacity(capacity))
+                }
 
-            unsafe fn shrink(
-                &self,
-                ptr: NonNull<u8>,
-                old_layout: Layout,
-                new_layout: Layout,
-            ) -> Result<NonNull<[u8]>, AllocError> {
-                unsafe { self.0.shrink(ptr, old_layout, new_layout).map_err(|_| AllocError) }
-            }
-        }
+                #[inline(always)]
+                fn alloc<T>(&self, value: T) -> &mut T {
+                    self.0.alloc(value)
+                }
 
-        #[repr(transparent)]
-        pub struct Bump<const MIN_ALIGN: usize = 1>(bump_scope::Bump<Global, BumpSettings<MIN_ALIGN, false>>)
-        where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment;
+                #[inline(always)]
+                fn try_alloc<T>(&self, value: T) -> Option<&mut T> {
+                    self.0.try_alloc(value).ok()
+                }
 
-        impl<const MIN_ALIGN: usize> Bump<MIN_ALIGN>
-        where
-            MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-        {
-            #[inline(always)]
-            pub(crate) fn new() -> Self {
-                Self(::bump_scope::Bump::new())
-            }
+                #[inline(always)]
+                fn alloc_slice_copy<T: Copy>(&self, value: &[T]) -> &mut [T] {
+                    self.0.alloc_slice_copy(value)
+                }
 
-            #[inline(always)]
-            pub(crate) fn with_capacity(capacity: usize) -> Self {
-                Self(::bump_scope::Bump::with_size(capacity))
-            }
+                #[inline(always)]
+                fn try_alloc_slice_copy<T: Copy>(&self, value: &[T]) -> Option<&mut [T]> {
+                    self.0.try_alloc_slice_copy(value).ok()
+                }
 
-            #[inline(always)]
-            pub(crate) fn alloc<T>(&self, value: T) -> &mut T {
-                ::bump_scope::BumpBox::leak(self.0.alloc(value))
-            }
+                #[inline(always)]
+                fn as_allocator(&self) -> impl Allocator {
+                    &self.0
+                }
 
-            #[inline(always)]
-            pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&mut T> {
-                match self.0.try_alloc(value) {
-                    Ok(value) => Some(bump_scope::BumpBox::leak(value)),
-                    Err(_) => None,
+                #[inline(always)]
+                fn reset(&mut self) {
+                    self.0.reset();
                 }
             }
+        };
+    }
 
-            #[inline(always)]
-            pub(crate) fn alloc_slice_copy<T: Copy>(&self, value: &[T]) -> &mut [T] {
-                self.0.alloc_slice_copy(value).into_mut()
-            }
+    macro_rules! blink_alloc {
+        ($min_align:literal) => {
+            use ::allocator_api2::alloc::Allocator;
+            use ::core::alloc::Layout;
 
-            #[inline(always)]
-            pub(crate) fn try_alloc_slice_copy<T: Copy>(&self, value: &[T]) -> Option<&mut [T]> {
-                match self.0.try_alloc_slice_copy(value) {
-                    Ok(value) => Some(value.into_mut()),
-                    Err(_) => None,
+            #[repr(transparent)]
+            pub struct Bump(blink_alloc::Blink);
+
+            impl crate::BumpAllocator for Bump {
+                #[inline(always)]
+                fn new() -> Self {
+                    Self(::blink_alloc::Blink::new())
+                }
+
+                #[inline(always)]
+                fn with_capacity(capacity: usize) -> Self {
+                    let this = blink_alloc::Blink::with_chunk_size(capacity);
+                    // Blink does not allocate a chunk on creation.
+                    // We allocate here to make sure a chunk is allocated to make it fair.
+                    _ = this.allocator().allocate(Layout::new::<[u64; 2]>()).ok();
+                    Self(this)
+                }
+
+                #[inline(always)]
+                fn alloc<T>(&self, value: T) -> &mut T {
+                    self.0.put_no_drop(value)
+                }
+
+                #[inline(always)]
+                fn try_alloc<T>(&self, value: T) -> Option<&mut T> {
+                    self.0.emplace_no_drop().try_value(value).ok()
+                }
+
+                #[inline(always)]
+                fn alloc_slice_copy<T: Copy>(&self, value: &[T]) -> &mut [T] {
+                    self.0.copy_slice(value)
+                }
+
+                #[inline(always)]
+                fn try_alloc_slice_copy<T: Copy>(&self, value: &[T]) -> Option<&mut [T]> {
+                    self.0.try_copy_slice(value)
+                }
+
+                #[inline(always)]
+                fn as_allocator(&self) -> impl Allocator {
+                    self.0.allocator()
+                }
+
+                #[inline(always)]
+                fn reset(&mut self) {
+                    self.0.reset();
                 }
             }
-
-            #[inline(always)]
-            pub(crate) fn as_allocator(&self) -> impl Allocator {
-                self
-            }
-
-            #[inline(always)]
-            pub(crate) fn reset(&mut self) {
-                self.0.reset();
-            }
-        }
+        };
     }
 
-    pub(crate) mod bumpalo {
-        use ::allocator_api2::alloc::Allocator;
-
-        #[repr(transparent)]
-        pub struct Bump<const MIN_ALIGN: usize = 1>(bumpalo::Bump<MIN_ALIGN>);
-
-        impl<const MIN_ALIGN: usize> Bump<MIN_ALIGN> {
-            #[inline(always)]
-            pub(crate) fn new() -> Self {
-                // NOTE: `with_min_align` is faster than `new`
-                Self(::bumpalo::Bump::with_min_align())
-            }
-
-            #[inline(always)]
-            pub(crate) fn with_capacity(capacity: usize) -> Self {
-                Self(::bumpalo::Bump::with_min_align_and_capacity(capacity))
-            }
-
-            #[inline(always)]
-            pub(crate) fn alloc<T>(&self, value: T) -> &mut T {
-                self.0.alloc(value)
-            }
-
-            #[inline(always)]
-            pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&mut T> {
-                self.0.try_alloc(value).ok()
-            }
-
-            #[inline(always)]
-            pub(crate) fn alloc_slice_copy<T: Copy>(&self, value: &[T]) -> &mut [T] {
-                self.0.alloc_slice_copy(value)
-            }
-
-            #[inline(always)]
-            pub(crate) fn try_alloc_slice_copy<T: Copy>(&self, value: &[T]) -> Option<&mut [T]> {
-                self.0.try_alloc_slice_copy(value).ok()
-            }
-
-            #[inline(always)]
-            pub(crate) fn as_allocator(&self) -> impl Allocator {
-                &self.0
-            }
-
-            #[inline(always)]
-            pub(crate) fn reset(&mut self) {
-                self.0.reset();
-            }
-        }
-    }
-
-    pub(crate) mod blink_alloc {
-        use core::alloc::Layout;
-
-        use ::allocator_api2::alloc::Allocator;
-
-        #[repr(transparent)]
-        pub struct Bump<const MIN_ALIGN: usize = 1>(blink_alloc::Blink);
-
-        impl<const MIN_ALIGN: usize> Bump<MIN_ALIGN> {
-            #[inline(always)]
-            pub(crate) fn new() -> Self {
-                Self(::blink_alloc::Blink::new())
-            }
-
-            #[inline(always)]
-            pub(crate) fn with_capacity(capacity: usize) -> Self {
-                let this = blink_alloc::Blink::with_chunk_size(capacity);
-                // Blink does not allocate a chunk on creation.
-                // We allocate here to make sure a chunk is allocated to make it fair.
-                _ = this.allocator().allocate(Layout::new::<[u64; 2]>()).ok();
-                Self(this)
-            }
-
-            #[inline(always)]
-            pub(crate) fn alloc<T>(&self, value: T) -> &mut T {
-                self.0.put_no_drop(value)
-            }
-
-            #[inline(always)]
-            pub(crate) fn try_alloc<T>(&self, value: T) -> Option<&mut T> {
-                self.0.emplace_no_drop().try_value(value).ok()
-            }
-
-            #[inline(always)]
-            pub(crate) fn alloc_slice_copy<T: Copy>(&self, value: &[T]) -> &mut [T] {
-                self.0.copy_slice(value)
-            }
-
-            #[inline(always)]
-            pub(crate) fn try_alloc_slice_copy<T: Copy>(&self, value: &[T]) -> Option<&mut [T]> {
-                self.0.try_copy_slice(value)
-            }
-
-            #[inline(always)]
-            pub(crate) fn as_allocator(&self) -> impl Allocator {
-                self.0.allocator()
-            }
-
-            #[inline(always)]
-            pub(crate) fn reset(&mut self) {
-                self.0.reset();
-            }
-        }
-    }
+    pub(crate) use blink_alloc;
+    pub(crate) use bump_scope;
+    pub(crate) use bump_scope_down;
+    pub(crate) use bump_scope_up;
+    pub(crate) use bumpalo;
 }
 
 macro_rules! benches_library {
@@ -334,6 +259,7 @@ macro_rules! benches_library {
         $library:ident
 
         $name:ident {
+            min_align($min_align:literal)
             wrap($run_f:ident) {
                 $($wrap:tt)*
             }
@@ -344,7 +270,7 @@ macro_rules! benches_library {
     ) => {
         pastey::paste! {
             mod [<$name _ $library _impl>] {
-                use crate::wrapper::$library::Bump;
+                crate::create_bump_by_library::$library!($min_align);
 
                 #[allow(unused_imports)]
                 use crate::*;
@@ -419,6 +345,7 @@ impl BigStruct {
 
 benches! {
     alloc_u8 {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump, 42);
@@ -429,16 +356,18 @@ benches! {
     }
 
     alloc_u8_overaligned {
+        min_align(8)
         wrap(run) {
-            let bump = Bump::<8>::with_capacity(1024);
+            let bump = Bump::with_capacity(1024);
             run(&bump, 42);
         }
-        run(bump: &Bump<8>, value: u8) -> &u8 {
+        run(bump: &Bump, value: u8) -> &u8 {
             bump.alloc(value)
         }
     }
 
     try_alloc_u8 {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump, 42);
@@ -449,16 +378,18 @@ benches! {
     }
 
     try_alloc_u8_overaligned {
+        min_align(8)
         wrap(run) {
-            let bump = Bump::<8>::with_capacity(1024);
+            let bump = Bump::with_capacity(1024);
             run(&bump, 42);
         }
-        run(bump: &Bump<8>, value: u8) -> Option<&mut u8> {
+        run(bump: &Bump, value: u8) -> Option<&mut u8> {
             bump.try_alloc(value)
         }
     }
 
     alloc_u32 {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump, 42);
@@ -469,26 +400,29 @@ benches! {
     }
 
     alloc_u32_aligned {
+        min_align(4)
         wrap(run) {
-            let bump = Bump::<4>::with_capacity(1024);
+            let bump = Bump::with_capacity(1024);
             run(&bump, 42);
         }
-        run(bump: &Bump::<4>, value: u32) -> &mut u32 {
+        run(bump: &Bump, value: u32) -> &mut u32 {
             bump.alloc(value)
         }
     }
 
     alloc_u32_overaligned {
+        min_align(8)
         wrap(run) {
-            let bump = Bump::<8>::with_capacity(1024);
+            let bump = Bump::with_capacity(1024);
             run(&bump, 42);
         }
-        run(bump: &Bump::<8>, value: u32) -> &mut u32 {
+        run(bump: &Bump, value: u32) -> &mut u32 {
             bump.alloc(value)
         }
     }
 
     try_alloc_u32 {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump, 42);
@@ -499,26 +433,29 @@ benches! {
     }
 
     try_alloc_u32_aligned {
+        min_align(4)
         wrap(run) {
-            let bump = Bump::<4>::with_capacity(1024);
+            let bump = Bump::with_capacity(1024);
             run(&bump, 42);
         }
-        run(bump: &Bump::<4>, value: u32) -> Option<&mut u32> {
+        run(bump: &Bump, value: u32) -> Option<&mut u32> {
             bump.try_alloc(value)
         }
     }
 
     try_alloc_u32_overaligned {
+        min_align(8)
         wrap(run) {
-            let bump = Bump::<8>::with_capacity(1024);
+            let bump = Bump::with_capacity(1024);
             run(&bump, 42);
         }
-        run(bump: &Bump::<8>, value: u32) -> Option<&mut u32> {
+        run(bump: &Bump, value: u32) -> Option<&mut u32> {
             bump.try_alloc(value)
         }
     }
 
     alloc_big_struct {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump, BigStruct::new());
@@ -529,26 +466,29 @@ benches! {
     }
 
     alloc_big_struct_aligned {
+        min_align(8)
         wrap(run) {
-            let bump = Bump::<8>::with_capacity(1024);
+            let bump = Bump::with_capacity(1024);
             run(&bump, BigStruct::new());
         }
-        run(bump: &Bump::<8>, value: BigStruct) -> &mut BigStruct {
+        run(bump: &Bump, value: BigStruct) -> &mut BigStruct {
             bump.alloc(value)
         }
     }
 
     alloc_big_struct_overaligned {
+        min_align(16)
         wrap(run) {
-            let bump = Bump::<16>::with_capacity(1024);
+            let bump = Bump::with_capacity(1024);
             run(&bump, BigStruct::new());
         }
-        run(bump: &Bump::<16>, value: BigStruct) -> &mut BigStruct {
+        run(bump: &Bump, value: BigStruct) -> &mut BigStruct {
             bump.alloc(value)
         }
     }
 
     try_alloc_big_struct {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump, BigStruct::new());
@@ -559,26 +499,29 @@ benches! {
     }
 
     try_alloc_big_struct_aligned {
+        min_align(8)
         wrap(run) {
-            let bump = Bump::<8>::with_capacity(1024);
+            let bump = Bump::with_capacity(1024);
             run(&bump, BigStruct::new());
         }
-        run(bump: &Bump::<8>, value: BigStruct) -> Option<&mut BigStruct> {
+        run(bump: &Bump, value: BigStruct) -> Option<&mut BigStruct> {
             bump.try_alloc(value)
         }
     }
 
     try_alloc_big_struct_overaligned {
+        min_align(16)
         wrap(run) {
-            let bump = Bump::<16>::with_capacity(1024);
+            let bump = Bump::with_capacity(1024);
             run(&bump, BigStruct::new());
         }
-        run(bump: &Bump::<16>, value: BigStruct) -> Option<&mut BigStruct> {
+        run(bump: &Bump, value: BigStruct) -> Option<&mut BigStruct> {
             bump.try_alloc(value)
         }
     }
 
     alloc_u32_slice {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump, U32_SLICE);
@@ -589,26 +532,29 @@ benches! {
     }
 
     alloc_u32_slice_aligned {
+        min_align(4)
         wrap(run) {
-            let bump = Bump::<4>::with_capacity(1024);
+            let bump = Bump::with_capacity(1024);
             run(&bump, U32_SLICE);
         }
-        run {'a} (bump: &'a Bump::<4>, value: &[u32]) -> &'a mut [u32] {
+        run {'a} (bump: &'a Bump, value: &[u32]) -> &'a mut [u32] {
             bump.alloc_slice_copy(value)
         }
     }
 
     alloc_u32_slice_overaligned {
+        min_align(8)
         wrap(run) {
-            let bump = Bump::<8>::with_capacity(1024);
+            let bump = Bump::with_capacity(1024);
             run(&bump, U32_SLICE);
         }
-        run {'a} (bump: &'a Bump::<8>, value: &[u32]) -> &'a mut [u32] {
+        run {'a} (bump: &'a Bump, value: &[u32]) -> &'a mut [u32] {
             bump.alloc_slice_copy(value)
         }
     }
 
     try_alloc_u32_slice {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump, U32_SLICE);
@@ -619,26 +565,29 @@ benches! {
     }
 
     try_alloc_u32_slice_aligned {
+        min_align(4)
         wrap(run) {
-            let bump = Bump::<4>::with_capacity(1024);
+            let bump = Bump::with_capacity(1024);
             run(&bump, U32_SLICE);
         }
-        run {'a} (bump: &'a Bump::<4>, value: &[u32]) -> Option<&'a mut [u32]> {
+        run {'a} (bump: &'a Bump, value: &[u32]) -> Option<&'a mut [u32]> {
             bump.try_alloc_slice_copy(value)
         }
     }
 
     try_alloc_u32_slice_overaligned {
+        min_align(8)
         wrap(run) {
-            let bump = Bump::<8>::with_capacity(1024);
+            let bump = Bump::with_capacity(1024);
             run(&bump, U32_SLICE);
         }
-        run {'a} (bump: &'a Bump::<8>, value: &[u32]) -> Option<&'a mut [u32]> {
+        run {'a} (bump: &'a Bump, value: &[u32]) -> Option<&'a mut [u32]> {
             bump.try_alloc_slice_copy(value)
         }
     }
 
     alloc_u8_slice {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump, U8_SLICE);
@@ -649,16 +598,18 @@ benches! {
     }
 
     alloc_u8_slice_overaligned {
+        min_align(8)
         wrap(run) {
-            let bump = Bump::<8>::with_capacity(1024);
+            let bump = Bump::with_capacity(1024);
             run(&bump, U8_SLICE);
         }
-        run {'a} (bump: &'a Bump::<8>, value: &[u8]) -> &'a mut [u8] {
+        run {'a} (bump: &'a Bump, value: &[u8]) -> &'a mut [u8] {
             bump.alloc_slice_copy(value)
         }
     }
 
     try_alloc_u8_slice {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump, U8_SLICE);
@@ -669,16 +620,18 @@ benches! {
     }
 
     try_alloc_u8_slice_overaligned {
+        min_align(8)
         wrap(run) {
-            let bump = Bump::<8>::with_capacity(1024);
+            let bump = Bump::with_capacity(1024);
             run(&bump, U8_SLICE);
         }
-        run {'a} (bump: &'a Bump::<8>, value: &[u8]) -> Option<&'a mut [u8]> {
+        run {'a} (bump: &'a Bump, value: &[u8]) -> Option<&'a mut [u8]> {
             bump.try_alloc_slice_copy(value)
         }
     }
 
     allocate {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump);
@@ -689,6 +642,7 @@ benches! {
     }
 
     grow_same_align {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
@@ -700,6 +654,7 @@ benches! {
     }
 
     grow_smaller_align {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
@@ -711,6 +666,7 @@ benches! {
     }
 
     grow_larger_align {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
@@ -722,6 +678,7 @@ benches! {
     }
 
     shrink_same_align {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<[u32; 2]>()).unwrap().cast::<u8>();
@@ -733,6 +690,7 @@ benches! {
     }
 
     shrink_smaller_align {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
@@ -744,6 +702,7 @@ benches! {
     }
 
     shrink_larger_align {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<[u16; 4]>()).unwrap().cast::<u8>();
@@ -755,6 +714,7 @@ benches! {
     }
 
     deallocate {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
@@ -766,6 +726,7 @@ benches! {
     }
 
     deallocate_non_last {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
@@ -778,6 +739,7 @@ benches! {
     }
 
     black_box_allocate {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             run(&bump, Layout::new::<u32>());
@@ -788,6 +750,7 @@ benches! {
     }
 
     black_box_grow_same_align {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
@@ -799,6 +762,7 @@ benches! {
     }
 
     black_box_grow_smaller_align {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
@@ -810,6 +774,7 @@ benches! {
     }
 
     black_box_grow_larger_align {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
@@ -821,6 +786,7 @@ benches! {
     }
 
     black_box_shrink_same_align {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<[u32; 2]>()).unwrap().cast::<u8>();
@@ -832,6 +798,7 @@ benches! {
     }
 
     black_box_shrink_smaller_align {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
@@ -843,6 +810,7 @@ benches! {
     }
 
     black_box_shrink_larger_align {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<[u16; 4]>()).unwrap().cast::<u8>();
@@ -854,6 +822,7 @@ benches! {
     }
 
     black_box_deallocate {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
@@ -865,6 +834,7 @@ benches! {
     }
 
     black_box_deallocate_non_last {
+        min_align(1)
         wrap(run) {
             let bump = Bump::with_capacity(1024);
             let ptr = bump.as_allocator().allocate(Layout::new::<u32>()).unwrap().cast::<u8>();
@@ -877,6 +847,7 @@ benches! {
     }
 
     warm_up {
+        min_align(1)
         wrap(run) {
             run();
         }
@@ -888,6 +859,7 @@ benches! {
     }
 
     reset {
+        min_align(1)
         wrap(run) {
             let mut bump = Bump::with_capacity(1024);
             bump.as_allocator().allocate(Layout::new::<u32>()).unwrap();

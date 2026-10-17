@@ -2,52 +2,44 @@ use std::alloc::Global;
 
 use arbitrary::Arbitrary;
 use bump_scope::{
-    BumpVec,
-    settings::{MinimumAlignment, SupportedMinimumAlignment},
+    Bump, BumpVec,
+    config::{BumpConfig, BumpConfigBuilder},
     traits::BumpAllocatorTyped,
 };
 use zerocopy::{FromBytes, Immutable, IntoBytes};
 
-use crate::{Bump, MinAlign};
+use crate::MinAlign;
 
-impl Fuzz {
-    pub fn run(self) {
-        if self.up {
-            self.run_dir::<true>();
-        } else {
-            self.run_dir::<false>();
+macro_rules! run_dir {
+    ($self:ident, $upwards:literal) => {
+        match $self.min_align {
+            MinAlign::Shl0 => run_dir_align!($self, $upwards, 1),
+            MinAlign::Shl1 => run_dir_align!($self, $upwards, 2),
+            MinAlign::Shl2 => run_dir_align!($self, $upwards, 4),
+            MinAlign::Shl3 => run_dir_align!($self, $upwards, 8),
+            MinAlign::Shl4 => run_dir_align!($self, $upwards, 16),
         }
-    }
+    };
+}
 
-    fn run_dir<const UP: bool>(self) {
-        match self.min_align {
-            MinAlign::Shl0 => self.run_dir_align::<UP, 1>(),
-            MinAlign::Shl1 => self.run_dir_align::<UP, 2>(),
-            MinAlign::Shl2 => self.run_dir_align::<UP, 4>(),
-            MinAlign::Shl3 => self.run_dir_align::<UP, 8>(),
-            MinAlign::Shl4 => self.run_dir_align::<UP, 16>(),
-        }
-    }
+macro_rules! run_dir_align {
+    ($self:ident, $upwards:literal, $min_align:literal) => {{
+        const C: BumpConfig = BumpConfigBuilder::new().upwards($upwards).min_align($min_align).build();
+        let bump = Bump::<Global, C>::new();
 
-    fn run_dir_align<const UP: bool, const MIN_ALIGN: usize>(self)
-    where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    {
-        let bump: Bump<Global, MIN_ALIGN, UP> = Bump::new();
-
-        let mut vecs = self
+        let mut vecs = $self
             .vecs
             .iter()
             .enumerate()
             .map(|(i, kind)| {
                 let pattern = (i % 255) as u8;
                 match kind {
-                    VecKind::T1 => VecObj::new::<T1, MIN_ALIGN, UP>(&bump, pattern),
-                    VecKind::T2 => VecObj::new::<T2, MIN_ALIGN, UP>(&bump, pattern),
-                    VecKind::T3 => VecObj::new::<T3, MIN_ALIGN, UP>(&bump, pattern),
-                    VecKind::T4 => VecObj::new::<T4, MIN_ALIGN, UP>(&bump, pattern),
-                    VecKind::T5 => VecObj::new::<T5, MIN_ALIGN, UP>(&bump, pattern),
-                    VecKind::T6 => VecObj::new::<T6, MIN_ALIGN, UP>(&bump, pattern),
+                    VecKind::T1 => VecObj::new::<T1, C>(&bump, pattern),
+                    VecKind::T2 => VecObj::new::<T2, C>(&bump, pattern),
+                    VecKind::T3 => VecObj::new::<T3, C>(&bump, pattern),
+                    VecKind::T4 => VecObj::new::<T4, C>(&bump, pattern),
+                    VecKind::T5 => VecObj::new::<T5, C>(&bump, pattern),
+                    VecKind::T6 => VecObj::new::<T6, C>(&bump, pattern),
                 }
             })
             .collect::<Vec<_>>();
@@ -58,7 +50,7 @@ impl Fuzz {
             return;
         }
 
-        for operation in self.operations {
+        for operation in $self.operations {
             match operation {
                 Operation::Push(i) => {
                     let vec = &mut vecs[i % vecs_len];
@@ -70,6 +62,16 @@ impl Fuzz {
             for vec in &vecs {
                 vec.assert_valid();
             }
+        }
+    }};
+}
+
+impl Fuzz {
+    pub fn run(self) {
+        if self.up {
+            run_dir!(self, true);
+        } else {
+            run_dir!(self, false);
         }
     }
 }
@@ -111,9 +113,8 @@ struct VecObj<'a> {
 }
 
 impl<'a> VecObj<'a> {
-    fn new<T, const MIN_ALIGN: usize, const UP: bool>(bump: &'a Bump<Global, MIN_ALIGN, UP>, bit_pattern: u8) -> Self
+    fn new<T, const C: BumpConfig>(bump: &'a Bump<Global, C>, bit_pattern: u8) -> Self
     where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
         T: Default + FromBytes + IntoBytes + Immutable + 'static,
     {
         Self {

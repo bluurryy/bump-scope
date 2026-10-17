@@ -55,6 +55,7 @@ impl ArrayLayout {
     }
 
     #[inline(always)]
+    #[expect(dead_code)]
     pub(crate) const fn from_layout(layout: Layout) -> Result<Self, ArrayLayoutError> {
         if layout.size().is_multiple_of(layout.align()) {
             Ok(ArrayLayout(layout))
@@ -64,6 +65,7 @@ impl ArrayLayout {
     }
 
     #[inline(always)]
+    #[expect(dead_code)]
     pub(crate) const fn from_size_align(size: usize, align: usize) -> Result<Self, ArrayLayoutError> {
         match Layout::from_size_align(size, align) {
             Ok(layout) => Self::from_layout(layout),
@@ -102,6 +104,7 @@ impl Deref for CustomLayout {
     }
 }
 
+#[expect(dead_code)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct ArrayLayoutError;
 
