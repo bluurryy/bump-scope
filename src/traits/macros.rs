@@ -12,60 +12,11 @@ macro_rules! forward_methods {
         access_mut: {$access_mut:expr}
         lifetime: $lifetime:lifetime
     ) => {
-        /// Forwards to [`BumpAllocatorScope::allocator`].
-        #[must_use]
-        #[inline(always)]
-        pub fn allocator(&$self) -> Option<&$lifetime A> {
-            BumpAllocatorScope::allocator($access)
-        }
-
-        /// Forwards to [`BumpAllocatorScope::claim`].
-        #[inline(always)]
-        pub fn claim(&$self) -> BumpClaimGuard<'_, $lifetime, A, S> {
-            BumpAllocatorScope::claim($access)
-        }
-
         /// Forwards to [`BumpAllocatorCore::is_claimed`].
         #[must_use]
         #[inline(always)]
         pub fn is_claimed(&self) -> bool {
             BumpAllocatorCore::is_claimed(self)
-        }
-
-        /// Forwards to [`BumpAllocator::scope_guard`].
-        #[inline(always)]
-        pub fn scope_guard(&mut $self) -> BumpScopeGuard<'_, A, S> {
-            BumpAllocator::scope_guard($access_mut)
-        }
-
-        /// Forwards to [`BumpAllocator::scoped`].
-        #[inline(always)]
-        pub fn scoped<R>(&mut $self, f: impl FnOnce(&mut BumpScope<A, S>) -> R) -> R {
-            BumpAllocator::scoped($access_mut, f)
-        }
-
-        /// Forwards to [`BumpAllocator::scoped_aligned`].
-        #[inline(always)]
-        pub fn scoped_aligned<const NEW_MIN_ALIGN: usize, R>(
-            &mut $self,
-            f: impl FnOnce(&mut BumpScope<A, S::WithMinimumAlignment<NEW_MIN_ALIGN>>) -> R,
-        ) -> R
-        where
-            MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
-        {
-            BumpAllocator::scoped_aligned($access_mut, f)
-        }
-
-        /// Forwards to [`BumpAllocatorScope::aligned`].
-        #[inline(always)]
-        pub fn aligned<const NEW_MIN_ALIGN: usize, R>(
-            &mut $self,
-            f: impl FnOnce(&mut BumpScope<$lifetime, A, S::WithMinimumAlignment<NEW_MIN_ALIGN>>) -> R,
-        ) -> R
-        where
-            MinimumAlignment<NEW_MIN_ALIGN>: SupportedMinimumAlignment,
-        {
-            BumpAllocatorScope::aligned($access_mut, f)
         }
 
         /// Forwards to [`BumpAllocatorCore::checkpoint`].

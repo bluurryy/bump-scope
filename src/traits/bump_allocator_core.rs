@@ -7,8 +7,8 @@ use core::{
 use crate::{
     Bump, BumpScope, Checkpoint, WithoutDealloc, WithoutShrink,
     chunk_types::r#abstract::Chunk,
+    config::{BumpConfig, config},
     layout::CustomLayout,
-    settings::BumpAllocatorSettings,
     stats::AnyStats,
     traits::{assert_dyn_compatible, assert_implements},
 };
@@ -20,19 +20,9 @@ impl<B: Sealed + ?Sized> Sealed for &mut B {}
 impl<B: Sealed> Sealed for WithoutDealloc<B> {}
 impl<B: Sealed> Sealed for WithoutShrink<B> {}
 
-impl<A, S> Sealed for Bump<A, S>
-where
-    A: Allocator,
-    S: BumpAllocatorSettings,
-{
-}
+impl<A, const C: BumpConfig> Sealed for Bump<A, C> where A: Allocator {}
 
-impl<A, S> Sealed for BumpScope<'_, A, S>
-where
-    A: Allocator,
-    S: BumpAllocatorSettings,
-{
-}
+impl<A, const C: BumpConfig> Sealed for BumpScope<'_, A, C> where A: Allocator {}
 
 /// A bump allocator.
 ///
@@ -83,11 +73,12 @@ pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     /// - This method invalidates all memory blocks allocated since creation of this checkpoint.
     /// - The provided checkpoint must have been created by this bump allocator.
     /// - The bump allocator must not have been [`reset`] since creation of this checkpoint.
-    /// - The checkpoint must not have been created by a `!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`.
+    /// - The checkpoint must not have been created by a not-`guaranteed_allocated` when self is [`guaranteed_allocated`].
     /// - The bump allocator must be [unclaimed] at the time the checkpoint is created and when this function is called.
     ///
     /// [`reset`]: crate::Bump::reset
-    /// [unclaimed]: crate::traits::BumpAllocatorScope::claim
+    /// [unclaimed]: crate::BumpScope::claim
+    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
     ///
     /// # Examples
     ///
@@ -109,7 +100,7 @@ pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
 
     /// Returns true if the bump allocator is currently [claimed].
     ///
-    /// [claimed]: crate::traits::BumpAllocatorScope::claim
+    /// [claimed]: crate::BumpScope::claim
     #[must_use]
     fn is_claimed(&self) -> bool;
 
@@ -134,7 +125,7 @@ pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     /// - the bump allocator must be [unclaimed] at the time [`prepare_allocation`] was called and when calling this function
     ///
     /// [`prepare_allocation`]: BumpAllocatorCore::prepare_allocation
-    /// [unclaimed]: crate::traits::BumpAllocatorScope::claim
+    /// [unclaimed]: crate::BumpScope::claim
     unsafe fn allocate_prepared(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8>;
 
     /// Returns a pointer range of free space in the bump allocator with a size of at least `layout.size()`.
@@ -158,7 +149,7 @@ pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     /// - the bump allocator must be [unclaimed] at the time [`prepare_allocation_rev`] was called and when calling this function
     ///
     /// [`prepare_allocation_rev`]: BumpAllocatorCore::prepare_allocation_rev
-    /// [unclaimed]: crate::traits::BumpAllocatorScope::claim
+    /// [unclaimed]: crate::BumpScope::claim
     unsafe fn allocate_prepared_rev(&self, layout: Layout, range: Range<NonNull<u8>>) -> NonNull<u8>;
 }
 
@@ -329,10 +320,9 @@ unsafe impl<B: BumpAllocatorCore> BumpAllocatorCore for WithoutShrink<B> {
     }
 }
 
-unsafe impl<A, S> BumpAllocatorCore for Bump<A, S>
+unsafe impl<A, const C: BumpConfig> BumpAllocatorCore for Bump<A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn any_stats(&self) -> AnyStats<'_> {
@@ -375,10 +365,9 @@ where
     }
 }
 
-unsafe impl<A, S> BumpAllocatorCore for BumpScope<'_, A, S>
+unsafe impl<A, const C: BumpConfig> BumpAllocatorCore for BumpScope<'_, A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn any_stats(&self) -> AnyStats<'_> {
@@ -404,13 +393,12 @@ where
     fn prepare_allocation(&self, layout: Layout) -> Result<Range<NonNull<u8>>, AllocError> {
         #[cold]
         #[inline(never)]
-        unsafe fn prepare_allocation_in_another_chunk<A, S>(
-            this: &BumpScope<'_, A, S>,
+        unsafe fn prepare_allocation_in_another_chunk<A, const C: BumpConfig>(
+            this: &BumpScope<'_, A, C>,
             layout: Layout,
         ) -> Result<Range<NonNull<u8>>, AllocError>
         where
             A: Allocator,
-            S: BumpAllocatorSettings,
         {
             unsafe {
                 this.raw
@@ -434,7 +422,7 @@ where
             // a successful `prepare_allocation` guarantees a non-dummy-chunk
             let chunk = self.raw.chunk.get().as_allocated_unchecked();
 
-            if S::UP {
+            if config!(upwards) {
                 let end = range.start.add(layout.size());
                 chunk.set_pos_addr_and_align(end.addr().get());
                 range.start
@@ -465,7 +453,7 @@ where
             // a successful `prepare_allocation` guarantees a non-dummy-chunk
             let chunk = self.raw.chunk.get().as_allocated_unchecked();
 
-            if S::UP {
+            if config!(upwards) {
                 let dst = range.start;
                 let dst_end = dst.add(layout.size());
 

@@ -2,7 +2,7 @@ use core::alloc::Allocator;
 
 use crate::{
     Bump, BumpScope, WithoutDealloc, WithoutShrink,
-    settings::BumpAllocatorSettings,
+    config::BumpConfig,
     traits::{BumpAllocatorCore, assert_dyn_compatible, assert_implements},
 };
 
@@ -57,23 +57,8 @@ unsafe impl<'a, B: BumpAllocatorCoreScope<'a> + ?Sized> BumpAllocatorCoreScope<'
 unsafe impl<'a, B: BumpAllocatorCoreScope<'a>> BumpAllocatorCoreScope<'a> for WithoutDealloc<B> {}
 unsafe impl<'a, B: BumpAllocatorCoreScope<'a>> BumpAllocatorCoreScope<'a> for WithoutShrink<B> {}
 
-unsafe impl<'a, A, S> BumpAllocatorCoreScope<'a> for BumpScope<'a, A, S>
-where
-    A: Allocator,
-    S: BumpAllocatorSettings,
-{
-}
+unsafe impl<'a, A, const C: BumpConfig> BumpAllocatorCoreScope<'a> for BumpScope<'a, A, C> where A: Allocator {}
 
-unsafe impl<'a, A, S> BumpAllocatorCoreScope<'a> for &'a Bump<A, S>
-where
-    A: Allocator,
-    S: BumpAllocatorSettings,
-{
-}
+unsafe impl<'a, A, const C: BumpConfig> BumpAllocatorCoreScope<'a> for &'a Bump<A, C> where A: Allocator {}
 
-unsafe impl<'a, A, S> BumpAllocatorCoreScope<'a> for &'a mut Bump<A, S>
-where
-    A: Allocator,
-    S: BumpAllocatorSettings,
-{
-}
+unsafe impl<'a, A, const C: BumpConfig> BumpAllocatorCoreScope<'a> for &'a mut Bump<A, C> where A: Allocator {}

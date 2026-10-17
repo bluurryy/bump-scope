@@ -1,6 +1,9 @@
 use core::{marker::PhantomData, ptr::NonNull};
 
-use crate::{chunk_types::dummy_memory_region::CLAIMED_POS as POS, settings::BumpAllocatorSettings};
+use crate::{
+    chunk_types::dummy_memory_region::CLAIMED_POS as POS,
+    config::{BumpConfig, config},
+};
 
 #[repr(C, align(16))]
 struct Header {
@@ -9,29 +12,25 @@ struct Header {
 }
 
 #[repr(transparent)]
-pub(crate) struct ClaimedChunk<A, S> {
+pub(crate) struct ClaimedChunk<A, const C: BumpConfig> {
     header: NonNull<Header>,
-    #[expect(clippy::type_complexity)]
-    marker: PhantomData<(*const A, fn() -> S)>,
+    marker: PhantomData<*const A>,
 }
 
-impl<A, S> Clone for ClaimedChunk<A, S> {
+impl<A, const C: BumpConfig> Clone for ClaimedChunk<A, C> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, S> Copy for ClaimedChunk<A, S> {}
+impl<A, const C: BumpConfig> Copy for ClaimedChunk<A, C> {}
 
-impl<A, S> ClaimedChunk<A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> ClaimedChunk<A, C> {
     pub(crate) const VALUE: Self = {
         let static_header: &'static Header = const {
             &Header {
                 pos: POS,
-                end: unsafe { POS.byte_offset(if S::UP { -16 } else { 16 }) },
+                end: unsafe { POS.byte_offset(if config!(upwards) { -16 } else { 16 }) },
             }
         };
 

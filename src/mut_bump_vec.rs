@@ -579,16 +579,6 @@ impl<T, A> MutBumpVec<T, A> {
         unsafe { self.fixed.cook_mut().push_mut_unchecked(value) }
     }
 
-    /// Appends an element to the back of the collection.
-    ///
-    /// # Safety
-    /// Vector must not be full.
-    #[inline(always)]
-    #[deprecated = "use `push_unchecked(f())` instead"]
-    pub unsafe fn push_with_unchecked(&mut self, f: impl FnOnce() -> T) {
-        unsafe { self.push_unchecked(f()) }
-    }
-
     /// Forces the length of the vector to `new_len`.
     ///
     /// This is a low-level operation that maintains none of the normal

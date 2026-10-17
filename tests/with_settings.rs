@@ -6,31 +6,31 @@ use std::{alloc::Global as A, mem};
 
 use bump_scope::{
     Bump, BumpScope,
-    settings::{BumpAllocatorSettings, BumpSettings},
+    config::{BumpConfig, BumpConfigBuilder},
 };
 
 use crate::common::InstrumentedAllocator;
 
 #[test]
 #[should_panic = "bump allocator is unallocated"]
-fn test_panic_with_settings_unallocated() {
-    type S = BumpSettings<1, true, false>;
-    type NewS = <S as BumpAllocatorSettings>::WithGuaranteedAllocated<true>;
-    let bump: Bump<A, S> = Bump::unallocated();
-    let _: Bump<A, NewS> = bump.with_settings();
+fn test_panic_change_config_unallocated() {
+    const OLD_C: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(false).build();
+    const NEW_C: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(true).build();
+    let bump: Bump<A, OLD_C> = Bump::unallocated();
+    let _: Bump<A, NEW_C> = bump.change_config();
 }
 
 #[test]
 #[should_panic = "bump allocator is claimed"]
-fn test_panic_with_settings_claimed() {
-    type S = BumpSettings;
-    type NewS = <S as BumpAllocatorSettings>::WithClaimable<false>;
+fn test_panic_change_config_claimed() {
+    const OLD_C: BumpConfig = BumpConfigBuilder::new().claimable(true).build();
+    const NEW_C: BumpConfig = BumpConfigBuilder::new().claimable(false).build();
     let allocator = InstrumentedAllocator::new(A);
 
     let payload = std::panic::catch_unwind(|| {
-        let bump: Bump<&InstrumentedAllocator<A>, S> = Bump::new_in(&allocator);
+        let bump: Bump<&InstrumentedAllocator<A>, OLD_C> = Bump::new_in(&allocator);
         mem::forget(bump.claim());
-        let _: Bump<&InstrumentedAllocator<A>, NewS> = bump.with_settings();
+        let _: Bump<&InstrumentedAllocator<A>, NEW_C> = bump.change_config();
     })
     .unwrap_err();
 
@@ -40,15 +40,15 @@ fn test_panic_with_settings_claimed() {
 }
 
 #[test]
-#[should_panic = "bump allocator is claimed"]
-fn test_panic_scope_with_settings_claimed() {
-    type S = BumpSettings;
-    type NewS = <S as BumpAllocatorSettings>::WithClaimable<false>;
-    let bump: Bump<A, S> = Bump::new();
+#[should_panic = "`claim` is only available when `claimable` is enabled"]
+fn test_panic_scope_change_config_claimed() {
+    const OLD_C: BumpConfig = BumpConfigBuilder::new().claimable(false).build();
+    const NEW_C: BumpConfig = BumpConfigBuilder::new().claimable(true).build();
+    let bump: Bump<A, OLD_C> = Bump::new();
 
     bump.claim().scoped(|bump| {
-        let bump: BumpScope<A, S> = bump.by_value();
+        let bump: BumpScope<A, OLD_C> = bump.by_value();
         mem::forget(bump.claim());
-        let _: BumpScope<A, NewS> = bump.with_settings();
+        let _: BumpScope<A, NEW_C> = bump.change_config();
     });
 }

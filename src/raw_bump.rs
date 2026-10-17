@@ -13,9 +13,9 @@ use crate::{
         r#abstract::{AllocatedChunk, Chunk, ChunkKind, FirstAllocatedChunk},
         concrete::{ClaimedChunk, UnallocatedChunk},
     },
+    config::{BumpConfig, config},
     error_behavior::{self, ErrorBehavior},
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
-    settings::{BumpAllocatorSettings, False, MinimumAlignment, SupportedMinimumAlignment},
     stats::Stats,
 };
 
@@ -27,13 +27,13 @@ use crate::{
 /// It does not concern itself with deallocating chunks or the base allocator.
 /// A clone of this type is just a bitwise copy, `manually_drop` must only be called
 /// once for this bump allocator.
-pub(crate) struct RawBump<A, S> {
+pub(crate) struct RawBump<A, const C: BumpConfig> {
     /// Either a chunk allocated from the `allocator`, or either a `CLAIMED`
     /// or `UNALLOCATED` dummy chunk.
-    pub(crate) chunk: Cell<Chunk<A, S>>,
+    pub(crate) chunk: Cell<Chunk<A, C>>,
 }
 
-impl<A, S> Clone for RawBump<A, S> {
+impl<A, const C: BumpConfig> Clone for RawBump<A, C> {
     fn clone(&self) -> Self {
         Self {
             chunk: self.chunk.clone(),
@@ -41,17 +41,13 @@ impl<A, S> Clone for RawBump<A, S> {
     }
 }
 
-impl<A, S> RawBump<A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> RawBump<A, C> {
     #[inline(always)]
     pub(crate) const fn new() -> Self
     where
         A: Default + 'static,
-        S: BumpAllocatorSettings<GuaranteedAllocated = False>,
     {
-        const { assert!(!S::GUARANTEED_ALLOCATED) }
+        assert!(!config!(guaranteed_allocated));
 
         Self {
             chunk: Cell::new(Chunk::from_unallocated(UnallocatedChunk::VALUE)),
@@ -95,10 +91,9 @@ where
     }
 }
 
-impl<A, S> RawBump<A, S>
+impl<A, const C: BumpConfig> RawBump<A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     pub(crate) fn with_size<E: ErrorBehavior>(size: impl ChunkSize, allocator: A) -> Result<Self, E> {
@@ -135,7 +130,7 @@ where
         let new_first = unsafe {
             let ptr = chunk.chunk_start();
             let size = chunk.size().get();
-            FirstAllocatedChunk::<A, S>::init(ptr, size, allocator)
+            FirstAllocatedChunk::<A, C>::init(ptr, size, allocator)
         };
 
         self.chunk.set(Chunk::from_first(new_first));
@@ -169,12 +164,9 @@ where
     }
 }
 
-impl<A, S> RawBump<A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> RawBump<A, C> {
     #[inline(always)]
-    fn first_chunk(&self) -> Option<FirstAllocatedChunk<A, S>> {
+    fn first_chunk(&self) -> Option<FirstAllocatedChunk<A, C>> {
         let mut chunk = self.chunk.get().as_allocated()?;
 
         while let Some(prev) = chunk.prev() {
@@ -187,10 +179,8 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn claim(&self) -> RawBump<A, S> {
-        const {
-            assert!(S::CLAIMABLE, "`claim` is only available with the setting `CLAIMABLE = true`");
-        }
+    pub(crate) fn claim(&self) -> RawBump<A, C> {
+        assert!(config!(claimable), "`claim` is only available when `claimable` is enabled");
 
         #[cold]
         #[inline(never)]
@@ -203,12 +193,12 @@ where
         }
 
         RawBump {
-            chunk: Cell::new(self.chunk.replace(Chunk::<A, S>::from_claimed(ClaimedChunk::<A, S>::VALUE))),
+            chunk: Cell::new(self.chunk.replace(Chunk::<A, C>::from_claimed(ClaimedChunk::<A, C>::VALUE))),
         }
     }
 
     #[inline(always)]
-    pub(crate) fn reclaim(&self, claimant: &RawBump<A, S>) {
+    pub(crate) fn reclaim(&self, claimant: &RawBump<A, C>) {
         self.chunk.set(claimant.chunk.get());
     }
 
@@ -225,10 +215,10 @@ where
         // In such cases we reset the bump pointer to the very start of the very first chunk.
         //
         // We don't check if the chunk pointer points to the unallocated chunk header
-        // if the bump allocator is `GUARANTEED_ALLOCATED`. We are allowed to not do this check
+        // if the bump allocator is `guaranteed_allocated`. We are allowed to not do this check
         // because of this safety condition of `reset_to`:
-        // > the checkpoint must not have been created by an `!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`
-        if !S::GUARANTEED_ALLOCATED && checkpoint.chunk.is_unallocated() {
+        // > the checkpoint must not have been created by a not-`guaranteed_allocated` when self is `guaranteed_allocated`
+        if !config!(guaranteed_allocated) && checkpoint.chunk.is_unallocated() {
             self.reset_to_start();
             return;
         }
@@ -247,7 +237,7 @@ where
 
             assert!(
                 !checkpoint.chunk.is_unallocated(),
-                "the checkpoint must not have been created by a `!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`"
+                "the checkpoint must not have been created by a not-`guaranteed_allocated` when self is `guaranteed_allocated`"
             );
 
             let chunk = self
@@ -271,7 +261,7 @@ where
         unsafe {
             // Reset the chunk position of the checkpoint chunk.
             let ptr = checkpoint.chunk.as_ptr().with_addr(checkpoint.address).cast();
-            AllocatedChunk::<A, S>::from_ptr(checkpoint.chunk.as_ptr()).set_pos(ptr);
+            AllocatedChunk::<A, C>::from_ptr(checkpoint.chunk.as_ptr()).set_pos(ptr);
 
             self.chunk.set(Chunk::from_ptr(checkpoint.chunk.as_ptr()));
         }
@@ -290,10 +280,9 @@ where
     }
 }
 
-impl<A, S> RawBump<A, S>
+impl<A, const C: BumpConfig> RawBump<A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     pub(crate) fn reserve<E: ErrorBehavior>(&self, additional: usize) -> Result<(), E>
@@ -410,7 +399,11 @@ where {
         // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
         let cap = unsafe { range.end.byte_offset_from_unsigned(range.start) } / T::SIZE;
 
-        let ptr = if S::UP { range.start } else { unsafe { range.end.sub(cap) } };
+        let ptr = if config!(upwards) {
+            range.start
+        } else {
+            unsafe { range.end.sub(cap) }
+        };
 
         Ok(NonNull::slice_from_raw_parts(ptr, cap))
     }
@@ -425,7 +418,11 @@ where {
         // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
         let cap = unsafe { range.end.byte_offset_from_unsigned(range.start) } / T::SIZE;
 
-        let end = if S::UP { unsafe { range.start.add(cap) } } else { range.end };
+        let end = if config!(upwards) {
+            unsafe { range.start.add(cap) }
+        } else {
+            range.end
+        };
 
         Ok((end, cap))
     }
@@ -496,9 +493,9 @@ where {
     pub(crate) unsafe fn in_another_chunk<E: ErrorBehavior, R, L: LayoutProps>(
         &self,
         layout: L,
-        mut f: impl FnMut(Chunk<A, S>, L) -> Option<R>,
+        mut f: impl FnMut(Chunk<A, C>, L) -> Option<R>,
     ) -> Result<R, E> {
-        let new_chunk: AllocatedChunk<A, S> = match self.chunk.get().kind() {
+        let new_chunk: AllocatedChunk<A, C> = match self.chunk.get().kind() {
             ChunkKind::Claimed(_) => return Err(E::claimed()),
             ChunkKind::Unallocated(chunk) => {
                 let allocator = chunk.construct_base_allocator()?;
@@ -555,131 +552,132 @@ where {
     }
 }
 
-impl<A, S> RawBump<A, S>
-where
-    S: BumpAllocatorSettings,
-{
+impl<A, const C: BumpConfig> RawBump<A, C> {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats<'a>(&self) -> Stats<'a, A, S> {
+    pub fn stats<'a>(&self) -> Stats<'a, A, C> {
         Stats::from_raw_chunk(self.chunk.get())
     }
 
     #[inline(always)]
-    pub(crate) fn align<const ALIGN: usize>(&self)
-    where
-        MinimumAlignment<ALIGN>: SupportedMinimumAlignment,
-    {
-        self.align_to::<MinimumAlignment<ALIGN>>();
-    }
+    pub(crate) fn align_to(&self, align: usize) {
+        assert!(align.is_power_of_two() && align <= 16);
 
-    #[inline(always)]
-    pub(crate) fn align_to<MinimumAlignment>(&self)
-    where
-        MinimumAlignment: SupportedMinimumAlignment,
-    {
-        if MinimumAlignment::VALUE > S::MIN_ALIGN {
+        if align > config!(min_align) {
             // a dummy chunk is always aligned
             if let Some(chunk) = self.chunk.get().as_allocated() {
                 let pos = chunk.pos().addr().get();
-                let addr = align_pos(S::UP, MinimumAlignment::VALUE, pos);
+                let addr = align_pos(config!(upwards), align, pos);
                 unsafe { chunk.set_pos_addr(addr) };
             }
         }
     }
 
-    pub(crate) fn ensure_satisfies_settings<NewS>(&self)
-    where
-        NewS: BumpAllocatorSettings,
-    {
+    pub(crate) const fn const_assert_upwards_matches<const NEW_C: BumpConfig>() {
         const {
-            assert!(NewS::UP == S::UP, "can't change `UP` setting of `Bump(Scope)`");
+            let old = config!(upwards);
+            let new = config!(NEW_C, upwards);
+            assert!(old == new, "can't change bump direction");
         }
+    }
 
-        if !NewS::CLAIMABLE && self.chunk.get().is_claimed() {
+    pub(crate) fn can_convert_claimable<const NEW_C: BumpConfig>(&self) -> bool {
+        // either nothing changed, the new config is claimable, the old one isn't, or the bump is currently not claimed
+        (const {
+            let old = config!(claimable);
+            let new = config!(NEW_C, claimable);
+            old == new || new || !old
+        }) || !self.is_claimed()
+    }
+
+    pub(crate) fn can_convert_guaranteed_allocated<const NEW_C: BumpConfig>(&self) -> bool {
+        // either nothing changed, the new config is not guaranteed allocated, the old one is, or the bump is currently allocated
+        (const {
+            let old = config!(guaranteed_allocated);
+            let new = config!(NEW_C, guaranteed_allocated);
+            old == new || !new || old
+        }) || self.stats().current_chunk().is_some()
+    }
+
+    pub(crate) fn ensure_satisfies_config<const NEW_C: BumpConfig>(&self) {
+        Self::const_assert_upwards_matches::<NEW_C>();
+
+        if !self.can_convert_claimable::<NEW_C>() {
             error_behavior::panic::claimed();
         }
 
-        if NewS::GUARANTEED_ALLOCATED && self.chunk.get().is_unallocated() {
+        if !self.can_convert_guaranteed_allocated::<NEW_C>() {
             error_behavior::panic::unallocated();
         }
 
-        self.align_to::<NewS::MinimumAlignment>();
+        self.align_to(config!(NEW_C, min_align));
     }
 
-    pub(crate) fn ensure_scope_satisfies_settings<NewS>(&self)
-    where
-        NewS: BumpAllocatorSettings,
-    {
-        const {
-            assert!(NewS::UP == S::UP, "can't change `UP` setting of `Bump(Scope)`");
+    pub(crate) fn ensure_scope_satisfies_config<const NEW_C: BumpConfig>(&self) {
+        Self::const_assert_upwards_matches::<NEW_C>();
 
-            assert!(
-                NewS::MIN_ALIGN >= S::MIN_ALIGN,
-                "can't decrease minimum alignment using `BumpScope::with_settings`"
-            );
-        }
-
-        if !NewS::CLAIMABLE && self.chunk.get().is_claimed() {
+        if !self.can_convert_claimable::<NEW_C>() {
             error_behavior::panic::claimed();
         }
 
-        // A scope by value is always allocated, created by `(try_)by_value`.
+        // no need to check guaranteed_allocated, a scope by value is always allocated,
+        // created by `(try_)by_value`
 
-        self.align_to::<NewS::MinimumAlignment>();
+        const {
+            assert!(
+                config!(NEW_C, min_align) >= config!(min_align),
+                "can't decrease minimum alignment using `BumpScope::change_config`"
+            );
+        }
+
+        self.align_to(config!(NEW_C, min_align));
     }
 
     #[expect(clippy::unused_self)]
-    pub(crate) fn ensure_satisfies_settings_for_borrow<NewS>(&self)
-    where
-        NewS: BumpAllocatorSettings,
-    {
-        const {
-            assert!(NewS::UP == S::UP, "can't change `UP` setting of `Bump(Scope)`");
+    pub(crate) fn ensure_satisfies_config_for_borrow<const NEW_C: BumpConfig>(&self) {
+        Self::const_assert_upwards_matches::<NEW_C>();
 
+        const {
             assert!(
-                NewS::MIN_ALIGN == S::MIN_ALIGN,
-                "can't change minimum alignment using `Bump(Scope)::borrow_with_settings`"
+                config!(NEW_C, min_align) == config!(min_align),
+                "can't change minimum alignment using `Bump(Scope)::borrow_change_config`"
             );
 
             assert!(
-                NewS::CLAIMABLE == S::CLAIMABLE,
-                "can't change claimable property using `Bump(Scope)::borrow_with_settings`"
+                config!(NEW_C, claimable) == config!(claimable),
+                "can't change claimable property using `Bump(Scope)::borrow_change_config`"
             );
 
             // A reference to a guaranteed-allocated `Bump(Scope)` can never become unallocated.
             assert!(
-                NewS::GUARANTEED_ALLOCATED <= S::GUARANTEED_ALLOCATED,
-                "can't increase guaranteed-allocated property using `Bump(Scope)::borrow_with_settings`"
+                config!(NEW_C, guaranteed_allocated) <= config!(guaranteed_allocated),
+                "can't increase guaranteed-allocated property using `Bump(Scope)::borrow_change_config`"
             );
         }
     }
 
-    pub(crate) fn ensure_satisfies_settings_for_borrow_mut<NewS>(&self)
-    where
-        NewS: BumpAllocatorSettings,
-    {
+    pub(crate) fn ensure_satisfies_config_for_borrow_mut<const NEW_C: BumpConfig>(&self) {
+        Self::const_assert_upwards_matches::<NEW_C>();
+
         const {
-            assert!(NewS::UP == S::UP, "can't change `UP` setting of `Bump(Scope)`");
-
             assert!(
-                NewS::MIN_ALIGN >= S::MIN_ALIGN,
-                "can't decrease minimum alignment using `Bump(Scope)::borrow_mut_with_settings`"
+                config!(NEW_C, min_align) >= config!(min_align),
+                "can't decrease minimum alignment using `Bump(Scope)::borrow_mut_change_config`"
             );
 
             assert!(
-                NewS::CLAIMABLE == S::CLAIMABLE,
-                "can't change claimable property using `Bump(Scope)::borrow_mut_with_settings`"
+                config!(NEW_C, claimable) == config!(claimable),
+                "can't change claimable property using `Bump(Scope)::borrow_mut_change_config`"
             );
 
             assert!(
-                NewS::GUARANTEED_ALLOCATED == S::GUARANTEED_ALLOCATED,
-                "can't change guaranteed-allocated property using `Bump(Scope)::borrow_mut_with_settings`"
+                config!(NEW_C, guaranteed_allocated) == config!(guaranteed_allocated),
+                "can't change guaranteed-allocated property using `Bump(Scope)::borrow_mut_change_config`"
             );
         }
 
-        self.align_to::<NewS::MinimumAlignment>();
+        self.align_to(config!(NEW_C, min_align));
     }
 
     #[inline]

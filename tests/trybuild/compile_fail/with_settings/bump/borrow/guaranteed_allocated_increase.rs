@@ -8,7 +8,7 @@ type In = <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<false
 type Out = <BumpSettings as BumpAllocatorSettings>::WithGuaranteedAllocated<true>;
 
 fn convert(bump: &Bump<Global, In>) -> &Bump<Global, Out> {
-    bump.borrow_with_settings()
+    bump.borrow_change_config()
 }
 
 fn main() {

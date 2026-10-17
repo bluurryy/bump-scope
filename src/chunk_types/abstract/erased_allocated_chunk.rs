@@ -1,6 +1,6 @@
 use core::{cell::Cell, fmt, mem::transmute, ptr::NonNull};
 
-use crate::chunk_types::r#abstract::AllocatedChunk;
+use crate::{chunk_types::r#abstract::AllocatedChunk, config::BumpConfig};
 
 #[repr(C, align(16))]
 struct Header {
@@ -39,7 +39,7 @@ impl ErasedAllocatedChunk {
     }
 
     #[inline(always)]
-    pub(crate) fn erase<A, S>(chunk: AllocatedChunk<A, S>) -> Self {
+    pub(crate) fn erase<A, const C: BumpConfig>(chunk: AllocatedChunk<A, C>) -> Self {
         unsafe { transmute(chunk) }
     }
 }

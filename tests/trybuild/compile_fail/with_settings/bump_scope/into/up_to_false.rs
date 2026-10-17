@@ -8,7 +8,7 @@ type In = <BumpSettings as BumpAllocatorSettings>::WithUp<true>;
 type Out = <BumpSettings as BumpAllocatorSettings>::WithUp<false>;
 
 fn convert(bump: BumpScope<Global, In>) -> BumpScope<Global, Out> {
-    bump.with_settings()
+    bump.change_config()
 }
 
 fn main() {

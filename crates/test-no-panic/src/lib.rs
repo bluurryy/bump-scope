@@ -9,7 +9,7 @@ use alloc::{
 use core::{alloc::Layout, ffi::CStr, fmt, mem::MaybeUninit, num::NonZero, ops::Range, ptr::NonNull};
 
 use bump_scope::{
-    settings::BumpSettings,
+    config::{BumpConfig, BumpConfigBuilder},
     zerocopy_08::{BumpAllocatorTypedScopeExt, VecExt},
     BumpBox, FixedBumpString, FixedBumpVec, FromUtf16Error,
 };
@@ -17,66 +17,41 @@ use bump_scope::{
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
 
 macro_rules! type_definitions {
-    ($up:literal) => {
+    ($upwards:literal) => {
         #[allow(unused)]
         const DEFAULT_CLAIMABLE: bool = true;
         #[allow(unused)]
         const DEFAULT_GUARANTEED_ALLOCATED: bool = true;
 
         #[allow(unused)]
-        type Settings<const MIN_ALIGN: usize, const CLAIMABLE: bool, const GUARANTEED_ALLOCATED: bool> = BumpSettings<
-            /* MIN_ALIGN */ MIN_ALIGN,
-            /* UP */ $up,
-            /* GUARANTEED_ALLOCATED */ GUARANTEED_ALLOCATED,
-            /* CLAIMABLE */ CLAIMABLE,
-        >;
+        const DEFAULT_C: BumpConfig = BumpConfigBuilder::new().upwards($upwards).build();
 
         #[allow(unused)]
-        type Bump<
-            const MIN_ALIGN: usize = 1,
-            const CLAIMABLE: bool = DEFAULT_CLAIMABLE,
-            const GUARANTEED_ALLOCATED: bool = DEFAULT_GUARANTEED_ALLOCATED,
-        > = bump_scope::Bump<Global, Settings<MIN_ALIGN, CLAIMABLE, GUARANTEED_ALLOCATED>>;
+        type Bump<const C: BumpConfig = DEFAULT_C> = bump_scope::Bump<Global, C>;
 
         #[allow(unused)]
-        type BumpScope<
-            'a,
-            const MIN_ALIGN: usize = 1,
-            const CLAIMABLE: bool = DEFAULT_CLAIMABLE,
-            const GUARANTEED_ALLOCATED: bool = DEFAULT_GUARANTEED_ALLOCATED,
-        > = bump_scope::BumpScope<'a, Global, Settings<MIN_ALIGN, CLAIMABLE, GUARANTEED_ALLOCATED>>;
+        type BumpScope<'a, const C: BumpConfig = DEFAULT_C> = bump_scope::BumpScope<'a, Global, C>;
 
         #[allow(unused)]
-        type BumpScopeGuard<
-            'a,
-            const MIN_ALIGN: usize = 1,
-            const CLAIMABLE: bool = DEFAULT_CLAIMABLE,
-            const GUARANTEED_ALLOCATED: bool = DEFAULT_GUARANTEED_ALLOCATED,
-        > = bump_scope::BumpScopeGuard<'a, Global, Settings<MIN_ALIGN, CLAIMABLE, GUARANTEED_ALLOCATED>>;
+        type BumpScopeGuard<'a, const C: BumpConfig = DEFAULT_C> = bump_scope::BumpScopeGuard<'a, Global, C>;
 
         #[allow(unused)]
-        type BumpClaimGuard<
-            'b,
-            'a,
-            const MIN_ALIGN: usize = 1,
-            const CLAIMABLE: bool = DEFAULT_CLAIMABLE,
-            const GUARANTEED_ALLOCATED: bool = DEFAULT_GUARANTEED_ALLOCATED,
-        > = bump_scope::BumpClaimGuard<'b, 'a, Global, Settings<MIN_ALIGN, CLAIMABLE, GUARANTEED_ALLOCATED>>;
+        type BumpClaimGuard<'b, 'a, const C: BumpConfig = DEFAULT_C> = bump_scope::BumpClaimGuard<'b, 'a, Global, C>;
 
         #[allow(unused)]
-        type BumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::BumpVec<T, &'a Bump>;
+        type BumpVec<'a, T, const C: BumpConfig = DEFAULT_C> = bump_scope::BumpVec<T, &'a Bump<C>>;
 
         #[allow(unused)]
-        type BumpString<'a, const MIN_ALIGN: usize = 1> = bump_scope::BumpString<&'a Bump>;
+        type BumpString<'a, const C: BumpConfig = DEFAULT_C> = bump_scope::BumpString<&'a Bump<C>>;
 
         #[allow(unused)]
-        type MutBumpVec<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVec<T, &'a mut Bump<MIN_ALIGN>>;
+        type MutBumpVec<'a, T, const C: BumpConfig = DEFAULT_C> = bump_scope::MutBumpVec<T, &'a mut Bump<C>>;
 
         #[allow(unused)]
-        type MutBumpString<'a, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpString<&'a mut Bump<MIN_ALIGN>>;
+        type MutBumpString<'a, const C: BumpConfig = DEFAULT_C> = bump_scope::MutBumpString<&'a mut Bump<C>>;
 
         #[allow(unused)]
-        type MutBumpVecRev<'a, T, const MIN_ALIGN: usize = 1> = bump_scope::MutBumpVecRev<T, &'a mut Bump<MIN_ALIGN>>;
+        type MutBumpVecRev<'a, T, const C: BumpConfig = DEFAULT_C> = bump_scope::MutBumpVecRev<T, &'a mut Bump<C>>;
     };
 }
 
@@ -120,11 +95,13 @@ pub mod test_constructors {
     use super::*;
 
     up_and_down! {
-        pub fn Bump_unallocated() -> Bump<1, true, false> {
+        const NOT_GUARANTEED: BumpConfig = BumpConfigBuilder(DEFAULT_C).guaranteed_allocated(false).build();
+
+        pub fn Bump_unallocated() -> Bump<NOT_GUARANTEED> {
             Bump::unallocated()
         }
 
-        pub fn Bump_default() -> Bump<1, true, false> {
+        pub fn Bump_default() -> Bump<NOT_GUARANTEED> {
             Bump::default()
         }
 
@@ -154,64 +131,68 @@ pub mod test_constructors {
     }
 }
 
-pub mod test_with_settings {
+pub mod test_change_config {
     use super::*;
 
     up_and_down! {
-        pub fn Bump_with_settings_identity(bump: Bump) -> Bump {
-            bump.with_settings()
+        const UNCLAIMABLE: BumpConfig = BumpConfigBuilder(DEFAULT_C).claimable(false).build();
+        const NOT_GUARANTEED: BumpConfig = BumpConfigBuilder(DEFAULT_C).guaranteed_allocated(false).build();
+        const MIN_ALIGN_4: BumpConfig = BumpConfigBuilder(DEFAULT_C).min_align(4).build();
+
+        pub fn Bump_change_config_identity(bump: Bump) -> Bump {
+            bump.change_config()
         }
 
-        pub fn Bump_with_settings_increase_alignment(bump: Bump) -> Bump<4> {
-            bump.with_settings()
+        pub fn Bump_change_config_increase_alignment(bump: Bump) -> Bump<MIN_ALIGN_4> {
+            bump.change_config()
         }
 
-        pub fn Bump_with_settings_decrease_alignment(bump: Bump<4>) -> Bump {
-            bump.with_settings()
+        pub fn Bump_change_config_decrease_alignment(bump: Bump<MIN_ALIGN_4>) -> Bump {
+            bump.change_config()
         }
 
-        pub fn Bump_with_settings_increase_claimable(bump: Bump<1, false>) -> Bump<1, true> {
-            bump.with_settings()
+        pub fn Bump_change_config_increase_claimable(bump: Bump<UNCLAIMABLE>) -> Bump {
+            bump.change_config()
         }
 
-        pub fn Bump_with_settings_decrease_guaranteed_allocated(bump: Bump<1, false, true>) -> Bump<1, false, false> {
-            bump.with_settings()
+        pub fn Bump_change_config_decrease_guaranteed_allocated(bump: Bump) -> Bump<NOT_GUARANTEED> {
+            bump.change_config()
         }
 
-        pub fn Bump_borrow_with_settings_decrease_guaranteed_allocated(bump: &Bump<1, false, true>) -> &Bump<1, false, false> {
-            bump.borrow_with_settings()
+        pub fn Bump_borrow_change_config_decrease_guaranteed_allocated(bump: &Bump) -> &Bump<NOT_GUARANTEED> {
+            bump.borrow_change_config()
         }
 
-        pub fn Bump_borrow_mut_with_settings_increase_alignment(bump: &mut Bump) -> &mut Bump<4> {
-            bump.borrow_mut_with_settings()
+        pub fn Bump_borrow_mut_change_config_increase_alignment(bump: &mut Bump) -> &mut Bump<MIN_ALIGN_4> {
+            bump.borrow_mut_change_config()
         }
 
-        pub fn BumpScope_with_settings_identity(bump: BumpScope) -> BumpScope {
-            bump.with_settings()
+        pub fn BumpScope_change_config_identity(bump: BumpScope) -> BumpScope {
+            bump.change_config()
         }
 
-        pub fn BumpScope_with_settings_increase_alignment(bump: BumpScope) -> BumpScope<4> {
-            bump.with_settings()
+        pub fn BumpScope_change_config_increase_alignment(bump: BumpScope) -> BumpScope<MIN_ALIGN_4> {
+            bump.change_config()
         }
 
-        pub fn BumpScope_with_settings_increase_claimable(bump: BumpScope<1, false>) -> BumpScope<1, true> {
-            bump.with_settings()
+        pub fn BumpScope_change_config_increase_claimable(bump: BumpScope<UNCLAIMABLE>) -> BumpScope {
+            bump.change_config()
         }
 
-        pub fn BumpScope_with_settings_increase_guaranteed_allocated(bump: BumpScope<1, false, false>) -> BumpScope<1, false, true> {
-            bump.with_settings()
+        pub fn BumpScope_change_config_increase_guaranteed_allocated(bump: BumpScope<NOT_GUARANTEED>) -> BumpScope {
+            bump.change_config()
         }
 
-        pub fn BumpScope_with_settings_decrease_guaranteed_allocated(bump: BumpScope<1, false, true>) -> BumpScope<1, false, false> {
-            bump.with_settings()
+        pub fn BumpScope_change_config_decrease_guaranteed_allocated(bump: BumpScope) -> BumpScope<NOT_GUARANTEED> {
+            bump.change_config()
         }
 
-        pub fn BumpScope_borrow_with_settings_decrease_guaranteed_allocated<'b, 'a>(bump: &'b BumpScope<'a, 1, false, true>) -> &'b BumpScope<'a, 1, false, false> {
-            bump.borrow_with_settings()
+        pub fn BumpScope_borrow_change_config_decrease_guaranteed_allocated<'b, 'a>(bump: &'b BumpScope<'a>) -> &'b BumpScope<'a, NOT_GUARANTEED> {
+            bump.borrow_change_config()
         }
 
-        pub fn BumpScope_borrow_mut_with_settings_increase_alignment<'b, 'a>(bump: &'b mut BumpScope<'a>) -> &'b mut BumpScope<'a, 4> {
-            bump.borrow_mut_with_settings()
+        pub fn BumpScope_borrow_mut_change_config_increase_alignment<'b, 'a>(bump: &'b mut BumpScope<'a>) -> &'b mut BumpScope<'a, MIN_ALIGN_4> {
+            bump.borrow_mut_change_config()
         }
     }
 }
@@ -234,6 +215,8 @@ pub mod test_forwarded_methods {
     use super::*;
 
     up_and_down! {
+        const MIN_ALIGN_4: BumpConfig = BumpConfigBuilder(DEFAULT_C).min_align(4).build();
+
         pub fn Bump_claim(bump: &Bump) -> BumpClaimGuard<'_, '_> {
             bump.claim()
         }
@@ -254,16 +237,16 @@ pub mod test_forwarded_methods {
             bump.scoped(f)
         }
 
-        pub fn Bump_scoped_aligned(bump: &mut Bump, f: Box<dyn FnOnce(&mut BumpScope<4>)>) {
-            bump.scoped_aligned(f)
+        pub fn Bump_scoped_with_config(bump: &mut Bump, f: Box<dyn FnOnce(&mut BumpScope<MIN_ALIGN_4>)>) {
+            bump.scoped_with_config(f)
         }
 
-        pub fn Bump_aligned_inc(bump: &mut Bump, f: Box<dyn FnOnce(&mut BumpScope<8>)>) {
-            bump.aligned(f)
+        pub fn Bump_with_config_min_align_inc(bump: &mut Bump, f: Box<dyn FnOnce(&mut BumpScope<MIN_ALIGN_4>)>) {
+            bump.with_config(f)
         }
 
-        pub fn Bump_aligned_dec(bump: &mut Bump<8>, f: Box<dyn FnOnce(&mut BumpScope)>) {
-            bump.aligned(f)
+        pub fn Bump_with_config_min_align_dec(bump: &mut Bump<MIN_ALIGN_4>, f: Box<dyn FnOnce(&mut BumpScope)>) {
+            bump.with_config(f)
         }
 
         pub fn Bump_try_alloc(bump: &Bump, value: u32) -> Result<BumpBox<u32>> {

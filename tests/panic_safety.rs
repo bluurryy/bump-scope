@@ -10,9 +10,7 @@ use std::{
     ptr::NonNull,
 };
 
-use bump_scope::{
-    Bump, BumpVec, MutBumpVec, MutBumpVecRev, bump_vec, mut_bump_vec, mut_bump_vec_rev, settings::BumpSettings,
-};
+use bump_scope::{Bump, BumpVec, MutBumpVec, MutBumpVecRev, bump_vec, mut_bump_vec, mut_bump_vec_rev};
 
 macro_rules! zst_or_not {
     (
@@ -142,82 +140,61 @@ fn mut_bump_vec_rev_extend_from_slice<T: Testable>() {
     assert_initialized(vec);
 }
 
-macro_rules! either_way {
-    ($($(#[$attr:meta])* $ident:ident)*) => {
-        $(
-            mod $ident {
-                #[test]
-                $(#[$attr])*
-                fn up() {
-                    std::eprintln!("`UP` is `true`");
-                    super::$ident::<true>();
-                }
+up_and_down! {
+    const C: BumpConfig = DEFAULT_C;
 
-                #[test]
-                $(#[$attr])*
-                fn down() {
-                    std::eprintln!("`UP` is `false`");
-                    super::$ident::<false>();
+    #[test]
+    fn test_shrink_unfit_in_another_chunk() {
+        // Here we make sure to create a first chunk that is only aligned to the required chunk
+        // alignment and no more, so when a shrink is done with a high alignment it can't
+        // fit in the first chunk.
+
+        #[derive(Default)]
+        struct A {
+            allocator: DisaligningAllocator<Global>,
+            allocation_count: Cell<usize>,
+        }
+
+        impl RefUnwindSafe for A {}
+
+        unsafe impl Allocator for A {
+            fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+                let count = self.allocation_count.get();
+                self.allocation_count.set(count + 1);
+
+                if count == 0 {
+                    self.allocator.allocate(layout)
+                } else {
+                    panic!("intentional panic when shrinking")
                 }
             }
-        )*
-    };
-}
 
-either_way! {
-    test_shrink_unfit_in_another_chunk
-}
-
-fn test_shrink_unfit_in_another_chunk<const UP: bool>() {
-    // Here we make sure to create a first chunk that is only aligned to the required chunk
-    // alignment and no more, so when a shrink is done with a high alignment it can't
-    // fit in the first chunk.
-
-    #[derive(Default)]
-    struct A {
-        allocator: DisaligningAllocator<Global>,
-        allocation_count: Cell<usize>,
-    }
-
-    impl RefUnwindSafe for A {}
-
-    unsafe impl Allocator for A {
-        fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-            let count = self.allocation_count.get();
-            self.allocation_count.set(count + 1);
-
-            if count == 0 {
-                self.allocator.allocate(layout)
-            } else {
-                panic!("intentional panic when shrinking")
+            unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+                unsafe { self.allocator.deallocate(ptr, layout) };
             }
         }
 
-        unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-            unsafe { self.allocator.deallocate(ptr, layout) };
-        }
+        let base = A::default();
+        let bump: Bump<&A, C> = Bump::with_size_in(512, &base);
+        bump.allocate(Layout::new::<u8>()).unwrap();
+
+        assert_eq!(bump.stats().allocated(), 1);
+
+        // allocate something and then shrink it with a greater alignment
+        let old_layout = Layout::from_size_align(3, 1).unwrap();
+        let new_layout = Layout::from_size_align(2, 2048).unwrap();
+
+        let old_ptr = bump.allocate(old_layout).unwrap().cast::<u8>();
+        assert_eq!(bump.stats().allocated(), 4);
+
+        catch_unwind(|| unsafe { bump.shrink(old_ptr, old_layout, new_layout) }).unwrap_err();
+        assert_eq!(bump.stats().allocated(), 4);
     }
-
-    let base = A::default();
-    let bump: Bump<&A, BumpSettings<1, UP, true>> = Bump::with_size_in(512, &base);
-    bump.allocate(Layout::new::<u8>()).unwrap();
-
-    assert_eq!(bump.stats().allocated(), 1);
-
-    // allocate something and then shrink it with a greater alignment
-    let old_layout = Layout::from_size_align(3, 1).unwrap();
-    let new_layout = Layout::from_size_align(2, 2048).unwrap();
-
-    let old_ptr = bump.allocate(old_layout).unwrap().cast::<u8>();
-    assert_eq!(bump.stats().allocated(), 4);
-
-    catch_unwind(|| unsafe { bump.shrink(old_ptr, old_layout, new_layout) }).unwrap_err();
-    assert_eq!(bump.stats().allocated(), 4);
 }
 
 use helper::{Testable, assert_initialized, expected_drops};
 
-use crate::common::DisaligningAllocator;
+use crate::common::{DisaligningAllocator, up_and_down};
 
 mod helper {
     use std::{

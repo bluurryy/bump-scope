@@ -3,9 +3,9 @@ use core::{alloc::Allocator, fmt::Debug, num::NonZeroUsize};
 use crate::{
     BumpScope,
     chunk_types::r#abstract::{Chunk, ErasedChunk},
+    config::{BumpConfig, DEFAULT_BUMP_CONFIG},
     polyfill::transmute_mut,
     raw_bump::RawBump,
-    settings::{BumpAllocatorSettings, BumpSettings},
     stats::AnyStats,
 };
 
@@ -20,40 +20,37 @@ pub struct Checkpoint {
 }
 
 impl Checkpoint {
-    pub(crate) fn new<A, S: BumpAllocatorSettings>(chunk: Chunk<A, S>) -> Self {
+    pub(crate) fn new<A, const C: BumpConfig>(chunk: Chunk<A, C>) -> Self {
         let address = chunk.pos().addr();
         let chunk = ErasedChunk::erase(chunk);
         Checkpoint { chunk, address }
     }
 }
 
-/// Returned from [`BumpAllocator::scope_guard`].
+/// Returned from [`BumpScope::scope_guard`].
 ///
-/// [`BumpAllocator::scope_guard`]: crate::traits::BumpAllocator::scope_guard
+/// [`BumpScope::scope_guard`]: crate::BumpScope::scope_guard
 #[must_use]
-pub struct BumpScopeGuard<'a, A, S = BumpSettings>
+pub struct BumpScopeGuard<'a, A, const C: BumpConfig = DEFAULT_BUMP_CONFIG>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
-    bump: &'a mut RawBump<A, S>,
+    bump: &'a mut RawBump<A, C>,
     checkpoint: Checkpoint,
 }
 
-impl<A, S> Debug for BumpScopeGuard<'_, A, S>
+impl<A, const C: BumpConfig> Debug for BumpScopeGuard<'_, A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         AnyStats::from(self.bump.stats()).debug_format("BumpScopeGuard", f)
     }
 }
 
-impl<A, S> Drop for BumpScopeGuard<'_, A, S>
+impl<A, const C: BumpConfig> Drop for BumpScopeGuard<'_, A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     #[inline(always)]
     fn drop(&mut self) {
@@ -61,20 +58,19 @@ where
     }
 }
 
-impl<'a, A, S> BumpScopeGuard<'a, A, S>
+impl<'a, A, const C: BumpConfig> BumpScopeGuard<'a, A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     #[inline(always)]
-    pub(crate) fn new(bump: &'a mut RawBump<A, S>) -> Self {
+    pub(crate) fn new(bump: &'a mut RawBump<A, C>) -> Self {
         let checkpoint = bump.checkpoint();
         Self { bump, checkpoint }
     }
 
     /// Returns a new `BumpScope`.
     #[inline(always)]
-    pub fn scope(&mut self) -> &mut BumpScope<'_, A, S> {
+    pub fn scope(&mut self) -> &mut BumpScope<'_, A, C> {
         unsafe { transmute_mut(self.bump) }
     }
 

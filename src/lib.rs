@@ -105,7 +105,7 @@
 //! - Won't try to allocate a smaller chunk if allocation failed.
 //! - No built-in allocation limit. You can provide an allocator that enforces an allocation limit (see `examples/limit_memory_usage.rs`).
 //! - Allocations are a tiny bit more optimized. See [./crates/callgrind-benches][benches].
-//! - [You can choose the bump direction.](crate::settings#bumping-upwards-or-downwards) Bumps upwards by default.
+//! - [You can choose the bump direction.](crate::config) Bumps upwards by default.
 //!
 //! # Allocator Methods
 //!
@@ -249,7 +249,7 @@
 //!
 //! A bump allocator does not require `deallocate` or `shrink` to free memory.
 //! After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
-//! You can set [the `DEALLOCATES` and `SHRINKS` parameters](crate::settings) to false or use the [`WithoutDealloc`] and [`WithoutShrink`] wrappers
+//! You can set [the `deallocates` and `shrinks` config parameters](crate::config) to false or use the [`WithoutDealloc`] and [`WithoutShrink`] wrappers
 //! to make deallocating and shrinking a no-op.
 //!
 //! # Feature Flags
@@ -295,11 +295,9 @@
 //! [`Allocator`]: core::alloc::Allocator
 //! [`with_size`]: Bump::with_size
 //! [`with_capacity`]: Bump::with_capacity
-//! [`scoped`]: crate::traits::BumpAllocator::scoped
-//! [`scoped_aligned`]: crate::traits::BumpAllocator::scoped_aligned
-//! [`aligned`]: crate::traits::BumpAllocatorScope::aligned
-//! [`scope_guard`]: crate::traits::BumpAllocator::scope_guard
-//! [`claim`]: crate::traits::BumpAllocatorScope::claim
+//! [`scoped`]: crate::BumpScope::scoped
+//! [`scope_guard`]: crate::BumpScope::scope_guard
+//! [`claim`]: crate::BumpScope::claim
 //! <!-- crate documentation rest end -->
 
 #[cfg(any(feature = "std", test))]
@@ -326,6 +324,7 @@ mod bumping;
 pub(crate) mod chunk_size;
 pub(crate) mod chunk_size_config;
 pub(crate) mod chunk_types;
+pub mod config;
 mod destructure;
 mod error_behavior;
 mod features;
@@ -349,7 +348,6 @@ mod polyfill;
 mod raw_bump;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
-pub mod settings;
 pub mod stats;
 /// Traits that provide ways to be generic over `Bump(Scope)`s.
 pub mod traits;
@@ -373,7 +371,6 @@ pub use fixed_bump_string::FixedBumpString;
 pub use fixed_bump_vec::FixedBumpVec;
 pub use from_utf8_error::FromUtf8Error;
 pub use from_utf16_error::FromUtf16Error;
-use layout::ArrayLayout;
 pub use mut_bump_string::MutBumpString;
 #[doc(inline)]
 pub use mut_bump_vec::MutBumpVec;

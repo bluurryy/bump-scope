@@ -8,8 +8,8 @@ use core::{
 
 use crate::{
     Bump, BumpBox, BumpScope, SizedTypeProperties, WithoutDealloc, WithoutShrink, bump_down,
+    config::{BumpConfig, config},
     polyfill::non_null,
-    settings::BumpAllocatorSettings,
     stats::{AnyStats, Stats},
     traits::{
         BumpAllocatorCore, BumpAllocatorCoreScope, MutBumpAllocatorCore, MutBumpAllocatorCoreScope, assert_implements,
@@ -353,9 +353,9 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// assert!(bump.stats().capacity() >= 4096);
     /// ```
     ///
-    /// [stats]: crate::traits::BumpAllocatorScope::stats
+    /// [stats]: crate::BumpScope::stats
     /// [remaining]: Stats::remaining
-    /// [claimed]: crate::traits::BumpAllocatorScope::claim
+    /// [claimed]: crate::BumpScope::claim
     #[cfg(feature = "panic-on-alloc")]
     fn reserve(&self, additional: usize);
 
@@ -383,9 +383,9 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
-    /// [stats]: crate::traits::BumpAllocatorScope::stats
+    /// [stats]: crate::BumpScope::stats
     /// [remaining]: Stats::remaining
-    /// [claimed]: crate::traits::BumpAllocatorScope::claim
+    /// [claimed]: crate::BumpScope::claim
     fn try_reserve(&self, additional: usize) -> Result<(), AllocError>;
 }
 
@@ -1021,13 +1021,12 @@ unsafe impl<B: BumpAllocatorTyped> BumpAllocatorTyped for WithoutShrink<B> {
     }
 }
 
-unsafe impl<A, S> BumpAllocatorTyped for BumpScope<'_, A, S>
+unsafe impl<A, const C: BumpConfig> BumpAllocatorTyped for BumpScope<'_, A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     type TypedStats<'b>
-        = Stats<'b, A, S>
+        = Stats<'b, A, C>
     where
         Self: 'b;
 
@@ -1082,7 +1081,7 @@ where
 
     #[inline]
     unsafe fn shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
-        if !S::SHRINKS {
+        if !config!(shrinks) {
             return None;
         }
 
@@ -1094,7 +1093,7 @@ where
         unsafe {
             let chunk = self.raw.chunk.get();
 
-            let is_last = if S::UP {
+            let is_last = if config!(upwards) {
                 old_ptr.as_ptr().add(old_size) == chunk.pos().as_ptr()
             } else {
                 old_ptr == chunk.pos()
@@ -1108,11 +1107,11 @@ where
             // `is_last` is true, which guarantees a non-dummy, see `allocator_impl::is_last`
             let chunk = chunk.as_allocated_unchecked();
 
-            if S::UP {
+            if config!(upwards) {
                 let end = old_ptr.addr().get() + new_size;
 
                 // Up-aligning a pointer inside a chunk by `MIN_ALIGN` never overflows.
-                let new_pos = up_align_usize_unchecked(end, S::MIN_ALIGN);
+                let new_pos = up_align_usize_unchecked(end, config!(min_align));
 
                 chunk.set_pos_addr(new_pos);
                 Some(old_ptr.cast())
@@ -1120,7 +1119,7 @@ where
                 let old_addr = old_ptr.addr();
                 let old_addr_old_end = NonZeroUsize::new_unchecked(old_addr.get() + old_size);
 
-                let new_addr = bump_down(old_addr_old_end, new_size, T::ALIGN.max(S::MIN_ALIGN));
+                let new_addr = bump_down(old_addr_old_end, new_size, T::ALIGN.max(config!(min_align)));
                 let new_addr = NonZeroUsize::new_unchecked(new_addr);
                 let old_addr_new_end = NonZeroUsize::new_unchecked(old_addr.get() + new_size);
 
@@ -1158,7 +1157,7 @@ where
 
             let end = start.add(len);
 
-            if S::UP {
+            if config!(upwards) {
                 chunk.set_pos_addr_and_align_from(end.addr().get(), T::ALIGN);
                 NonNull::slice_from_raw_parts(start, len)
             } else {
@@ -1188,7 +1187,7 @@ where
             // a successful `prepare_allocation` guarantees a non-dummy-chunk
             let chunk = self.raw.chunk.get().as_allocated_unchecked();
 
-            if S::UP {
+            if config!(upwards) {
                 let dst = end.sub(cap);
                 let dst_end = dst.add(len);
 
@@ -1218,13 +1217,12 @@ where
     }
 }
 
-unsafe impl<A, S> BumpAllocatorTyped for Bump<A, S>
+unsafe impl<A, const C: BumpConfig> BumpAllocatorTyped for Bump<A, C>
 where
     A: Allocator,
-    S: BumpAllocatorSettings,
 {
     type TypedStats<'b>
-        = Stats<'b, A, S>
+        = Stats<'b, A, C>
     where
         Self: 'b;
 

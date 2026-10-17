@@ -1,176 +1,149 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 //! doc tests but for up and down
 
+mod common;
+
 use std::alloc::Global;
 
-use bump_scope::{Bump, BumpVec, bump_vec, settings::BumpSettings};
+use bump_scope::{Bump, BumpVec, bump_vec};
 
-macro_rules! either_way {
-    ($($(#[$attr:meta])* $ident:ident)*) => {
-        $(
-            mod $ident {
-                #[test]
-                $(#[$attr])*
-                fn up() {
-                    std::eprintln!("`UP` is `true`");
-                    super::$ident::<true>();
-                }
+use crate::common::up_and_down;
 
-                #[test]
-                $(#[$attr])*
-                fn down() {
-                    std::eprintln!("`UP` is `false`");
-                    super::$ident::<false>();
-                }
-            }
-        )*
-    };
-}
+up_and_down! {
+    const C: BumpConfig = DEFAULT_C;
 
-either_way! {
-  new
+    #[test]
+    fn new() {
+        let bump: Bump<Global, C> = Bump::new();
+        let vec: BumpVec<i32, _> = bump_vec![in &bump];
+        assert!(vec.is_empty());
+    }
 
-  from_array
+    #[test]
+    fn from_array() {
+        let bump: Bump<Global, C> = Bump::new();
+        let vec = bump_vec![in &bump; 1, 2, 3];
+        assert_eq!(vec[0], 1);
+        assert_eq!(vec[1], 2);
+        assert_eq!(vec[2], 3);
+    }
 
-  from_elem
+    #[test]
+    fn from_elem() {
+        let bump: Bump<Global, C> = Bump::new();
+        let vec = bump_vec![in &bump; 1; 3];
+        assert_eq!(vec, [1, 1, 1]);
+    }
 
-  extend_from_within_copy
+    #[test]
+    fn extend_from_within_copy() {
+        let bump: Bump<Global, C> = Bump::new();
 
-  resize
+        let mut vec = bump_vec![in &bump; 0, 1, 2, 3, 4];
 
-  resize_with
+        vec.extend_from_within_copy(2..);
+        assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
 
-  capacity
+        vec.extend_from_within_copy(..2);
+        assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1]);
 
-  insert
+        vec.extend_from_within_copy(4..8);
+        assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
+    }
 
-  remove
+    #[test]
+    fn resize() {
+        let bump: Bump<Global, C> = Bump::new();
 
-  swap_remove
+        let mut vec = bump_vec![in &bump; "hello"];
+        vec.resize(3, "world");
+        assert_eq!(vec, ["hello", "world", "world"]);
+        drop(vec);
 
-  truncate
-}
-
-fn new<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
-    let vec: BumpVec<i32, _> = bump_vec![in &bump];
-    assert!(vec.is_empty());
-}
-
-fn from_array<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
-    let vec = bump_vec![in &bump; 1, 2, 3];
-    assert_eq!(vec[0], 1);
-    assert_eq!(vec[1], 2);
-    assert_eq!(vec[2], 3);
-}
-
-fn from_elem<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
-    let vec = bump_vec![in &bump; 1; 3];
-    assert_eq!(vec, [1, 1, 1]);
-}
-
-fn extend_from_within_copy<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
-
-    let mut vec = bump_vec![in &bump; 0, 1, 2, 3, 4];
-
-    vec.extend_from_within_copy(2..);
-    assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4]);
-
-    vec.extend_from_within_copy(..2);
-    assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1]);
-
-    vec.extend_from_within_copy(4..8);
-    assert_eq!(vec, [0, 1, 2, 3, 4, 2, 3, 4, 0, 1, 4, 2, 3, 4]);
-}
-
-fn resize<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
-
-    let mut vec = bump_vec![in &bump; "hello"];
-    vec.resize(3, "world");
-    assert_eq!(vec, ["hello", "world", "world"]);
-    drop(vec);
-
-    let mut vec = bump_vec![in &bump; 1, 2, 3, 4];
-    vec.resize(2, 0);
-    assert_eq!(vec, [1, 2]);
-}
-
-fn resize_with<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
-
-    let mut vec = bump_vec![in &bump; 1, 2, 3];
-    vec.resize_with(5, Default::default);
-    assert_eq!(vec, [1, 2, 3, 0, 0]);
-    drop(vec);
-
-    let mut vec = bump_vec![in &bump];
-    let mut p = 1;
-    vec.resize_with(4, || {
-        p *= 2;
-        p
-    });
-    assert_eq!(vec, [2, 4, 8, 16]);
-}
-
-fn capacity<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
-
-    let vec: BumpVec<i32, _> = BumpVec::with_capacity_in(2048, &bump);
-    assert!(vec.capacity() >= 2048);
-}
-
-fn insert<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
-
-    let mut vec = bump_vec![in &bump; 1, 2, 3];
-    vec.insert(1, 4);
-    assert_eq!(vec, [1, 4, 2, 3]);
-    vec.insert(4, 5);
-    assert_eq!(vec, [1, 4, 2, 3, 5]);
-}
-
-fn remove<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
-
-    let mut v = bump_vec![in &bump; 1, 2, 3];
-    assert_eq!(v.remove(1), 2);
-    assert_eq!(v, [1, 3]);
-}
-
-fn swap_remove<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
-
-    let mut v = bump_vec![in &bump; "foo", "bar", "baz", "qux"];
-
-    assert_eq!(v.swap_remove(1), "bar");
-    assert_eq!(v, ["foo", "qux", "baz"]);
-
-    assert_eq!(v.swap_remove(0), "foo");
-    assert_eq!(v, ["baz", "qux"]);
-}
-
-fn truncate<const UP: bool>() {
-    let bump: Bump<Global, BumpSettings<1, UP>> = Bump::new();
-
-    {
-        let mut vec = bump_vec![in &bump; 1, 2, 3, 4, 5];
-        vec.truncate(2);
+        let mut vec = bump_vec![in &bump; 1, 2, 3, 4];
+        vec.resize(2, 0);
         assert_eq!(vec, [1, 2]);
     }
 
-    {
+    #[test]
+    fn resize_with() {
+        let bump: Bump<Global, C> = Bump::new();
+
         let mut vec = bump_vec![in &bump; 1, 2, 3];
-        vec.truncate(8);
-        assert_eq!(vec, [1, 2, 3]);
+        vec.resize_with(5, Default::default);
+        assert_eq!(vec, [1, 2, 3, 0, 0]);
+        drop(vec);
+
+        let mut vec = bump_vec![in &bump];
+        let mut p = 1;
+        vec.resize_with(4, || {
+            p *= 2;
+            p
+        });
+        assert_eq!(vec, [2, 4, 8, 16]);
     }
 
-    {
+    #[test]
+    fn capacity() {
+        let bump: Bump<Global, C> = Bump::new();
+
+        let vec: BumpVec<i32, _> = BumpVec::with_capacity_in(2048, &bump);
+        assert!(vec.capacity() >= 2048);
+    }
+
+    #[test]
+    fn insert() {
+        let bump: Bump<Global, C> = Bump::new();
+
         let mut vec = bump_vec![in &bump; 1, 2, 3];
-        vec.truncate(0);
-        assert!(vec.is_empty());
+        vec.insert(1, 4);
+        assert_eq!(vec, [1, 4, 2, 3]);
+        vec.insert(4, 5);
+        assert_eq!(vec, [1, 4, 2, 3, 5]);
+    }
+
+    #[test]
+    fn remove() {
+        let bump: Bump<Global, C> = Bump::new();
+
+        let mut v = bump_vec![in &bump; 1, 2, 3];
+        assert_eq!(v.remove(1), 2);
+        assert_eq!(v, [1, 3]);
+    }
+
+    #[test]
+    fn swap_remove() {
+        let bump: Bump<Global, C> = Bump::new();
+
+        let mut v = bump_vec![in &bump; "foo", "bar", "baz", "qux"];
+
+        assert_eq!(v.swap_remove(1), "bar");
+        assert_eq!(v, ["foo", "qux", "baz"]);
+
+        assert_eq!(v.swap_remove(0), "foo");
+        assert_eq!(v, ["baz", "qux"]);
+    }
+
+    #[test]
+    fn truncate() {
+        let bump: Bump<Global, C> = Bump::new();
+
+        {
+            let mut vec = bump_vec![in &bump; 1, 2, 3, 4, 5];
+            vec.truncate(2);
+            assert_eq!(vec, [1, 2]);
+        }
+
+        {
+            let mut vec = bump_vec![in &bump; 1, 2, 3];
+            vec.truncate(8);
+            assert_eq!(vec, [1, 2, 3]);
+        }
+
+        {
+            let mut vec = bump_vec![in &bump; 1, 2, 3];
+            vec.truncate(0);
+            assert!(vec.is_empty());
+        }
     }
 }

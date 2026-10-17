@@ -327,16 +327,6 @@ impl<T, A> MutBumpVecRev<T, A> {
         }
     }
 
-    /// Appends an element to the back of the collection.
-    ///
-    /// # Safety
-    /// Vector must not be full.
-    #[inline(always)]
-    #[deprecated = "use `push_unchecked(f())` instead"]
-    pub unsafe fn push_with_unchecked(&mut self, f: impl FnOnce() -> T) {
-        unsafe { self.push_unchecked(f()) };
-    }
-
     /// Removes the first element from a vector and returns it, or [`None`] if it
     /// is empty.
     ///

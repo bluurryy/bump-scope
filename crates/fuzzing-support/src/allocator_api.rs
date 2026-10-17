@@ -8,7 +8,7 @@ use std::{
 use arbitrary::{Arbitrary, Unstructured};
 use bump_scope::{
     Bump,
-    settings::{BumpSettings, MinimumAlignment, SupportedMinimumAlignment},
+    config::{BumpConfig, BumpConfigBuilder},
 };
 use core::fmt::Debug;
 use log::debug;
@@ -25,60 +25,48 @@ pub struct Fuzz {
     operations: Vec<Operation>,
 }
 
-impl Fuzz {
-    pub fn run(self) {
-        match self.up {
-            true => self.run_dir::<true>(),
-            false => self.run_dir::<false>(),
+macro_rules! run_dir {
+    ($self:ident, $upwards:literal) => {
+        match $self.min_align {
+            MinAlign::Shl0 => run_dir_align!($self, $upwards, 1),
+            MinAlign::Shl1 => run_dir_align!($self, $upwards, 2),
+            MinAlign::Shl2 => run_dir_align!($self, $upwards, 4),
+            MinAlign::Shl3 => run_dir_align!($self, $upwards, 8),
+            MinAlign::Shl4 => run_dir_align!($self, $upwards, 16),
         }
-    }
+    };
+}
 
-    fn run_dir<const UP: bool>(self) {
-        match self.min_align {
-            MinAlign::Shl0 => self.run_dir_align::<UP, 1>(),
-            MinAlign::Shl1 => self.run_dir_align::<UP, 2>(),
-            MinAlign::Shl2 => self.run_dir_align::<UP, 4>(),
-            MinAlign::Shl3 => self.run_dir_align::<UP, 8>(),
-            MinAlign::Shl4 => self.run_dir_align::<UP, 16>(),
+macro_rules! run_dir_align {
+    ($self:ident, $upwards:literal, $min_align:literal) => {{
+        match $self.deallocates {
+            true => run_dir_align_deallocates!($self, $upwards, $min_align, true),
+            false => run_dir_align_deallocates!($self, $upwards, $min_align, false),
         }
-    }
+    }};
+}
 
-    fn run_dir_align<const UP: bool, const MIN_ALIGN: usize>(self)
-    where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    {
-        match self.deallocates {
-            true => self.run_dir_align_deallocates::<UP, MIN_ALIGN, true>(),
-            false => self.run_dir_align_deallocates::<UP, MIN_ALIGN, false>(),
-        }
-    }
+macro_rules! run_dir_align_deallocates {
+    ($self:ident, $upwards:literal, $min_align:literal, $deallocates:literal) => {{
+        const C: BumpConfig = BumpConfigBuilder::new()
+            .upwards($upwards)
+            .min_align($min_align)
+            .deallocates($deallocates)
+            .build();
 
-    fn run_dir_align_deallocates<const UP: bool, const MIN_ALIGN: usize, const DEALLOCATES: bool>(self)
-    where
-        MinimumAlignment<MIN_ALIGN>: SupportedMinimumAlignment,
-    {
-        debug_dbg!(UP);
-        debug_dbg!(MIN_ALIGN);
+        debug_dbg!($upwards);
+        debug_dbg!($min_align);
 
         // We use rc to also check that allocator cloning works.
         let allocator = RcAllocator::new(Rc::new(MaybeFailingAllocator::new(Global)));
 
-        let bump: Bump<
-            RcAllocator<MaybeFailingAllocator<Global>>,
-            BumpSettings<
-                /* MIN_ALIGN */ MIN_ALIGN,
-                /* UP */ UP,
-                /* GUARANTEED_ALLOCATED */ true,
-                /* CLAIMABLE */ true,
-                /* DEALLOCATES */ DEALLOCATES,
-                /* SHRINKS */ true,
-            >,
-        > = Bump::with_capacity_in(Layout::new::<[u8; 32]>(), allocator);
+        let bump =
+            Bump::<RcAllocator<MaybeFailingAllocator<Global>>, C>::with_capacity_in(Layout::new::<[u8; 32]>(), allocator);
 
         let mut allocations = vec![];
         let mut used_ranges = UsedRanges::default();
 
-        for (_operation_i, &operation) in self.operations.iter().enumerate() {
+        for (_operation_i, &operation) in $self.operations.iter().enumerate() {
             debug!("======================================");
             debug!("OPERATION {_operation_i}");
             debug_dbg!(&allocations);
@@ -233,6 +221,16 @@ impl Fuzz {
                 deinitialize(ptr);
                 bump.deallocate(ptr.cast(), layout);
             }
+        }
+    }};
+}
+
+impl Fuzz {
+    pub fn run(self) {
+        if self.up {
+            run_dir!(self, true);
+        } else {
+            run_dir!(self, false);
         }
     }
 }
