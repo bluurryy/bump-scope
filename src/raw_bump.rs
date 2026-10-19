@@ -11,7 +11,7 @@ use crate::{
     chunk_size::{ChunkSize, ChunkSizeCapacity, ChunkSizeMin},
     chunk_types::{
         r#abstract::{AllocatedChunk, Chunk, ChunkKind, FirstAllocatedChunk},
-        concrete::{ClaimedChunk, UnallocatedChunk},
+        concrete::{ClaimedChunk, ConstConstructorChunk},
     },
     config::{BumpConfig, config},
     error_behavior::{self, ErrorBehavior},
@@ -55,7 +55,7 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         assert!(config!(const_constructible));
 
         Self {
-            chunk: Cell::new(Chunk::from_unallocated(UnallocatedChunk::VALUE)),
+            chunk: Cell::new(Chunk::from_const_constructor(ConstConstructorChunk::VALUE)),
         }
     }
 
@@ -76,7 +76,7 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
     #[inline(always)]
     pub(crate) fn allocator<'a>(&self) -> Option<&'a A> {
         match self.chunk.get().kind() {
-            ChunkKind::Claimed(_) | ChunkKind::Unallocated(_) => None,
+            ChunkKind::Claimed(_) | ChunkKind::ConstConstructor(_) => None,
             ChunkKind::Allocated(chunk) => Some(unsafe { chunk.allocator_ptr().as_ref() }),
         }
     }
@@ -207,14 +207,14 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         }
 
         // If the checkpoint was created when the bump allocator had no allocated chunk
-        // then the chunk pointer will point to the unallocated chunk header.
+        // then the chunk pointer will point to the const constructor chunk.
         //
         // In such cases we reset the bump pointer to the very start of the very first chunk.
         //
-        // We don't check if the chunk pointer points to the unallocated chunk header if the bump allocator is **not** `const_constructible`.
+        // We don't check if the chunk pointer points to the const constructor chunk if the bump allocator is **not** `const_constructible`.
         // We are allowed to not do this check because of this safety condition of `reset_to`:
         // > the checkpoint must not have been created by a `const_constructible` when self is **not** `const_constructible`
-        if config!(const_constructible) && checkpoint.chunk.is_unallocated() {
+        if config!(const_constructible) && checkpoint.chunk.is_const_constructor() {
             self.reset_to_start();
             return;
         }
@@ -222,7 +222,7 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         #[cfg(debug_assertions)]
         {
             assert!(
-                !checkpoint.chunk.is_unallocated(),
+                !checkpoint.chunk.is_const_constructor(),
                 "the checkpoint must not have been created by a `const_constructible` when self is not `const_constructible`"
             );
 
@@ -244,7 +244,7 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
             }
         }
 
-        // We handled the unallocated case above.
+        // We handled the const constructor case above.
         // It can't be a claimed chunk because that would not be allowed due to the safety invariants.
         unsafe {
             // Reset the chunk position of the checkpoint chunk.
@@ -279,7 +279,7 @@ where {
 
         match chunk.kind() {
             ChunkKind::Claimed(_) => Err(E::claimed()),
-            ChunkKind::Unallocated(chunk) => {
+            ChunkKind::ConstConstructor(chunk) => {
                 let Ok(layout) = Layout::from_size_align(additional, 1) else {
                     return Err(E::capacity_overflow());
                 };
@@ -485,7 +485,7 @@ where {
     ) -> Result<R, E> {
         let new_chunk: AllocatedChunk<A, C> = match self.chunk.get().kind() {
             ChunkKind::Claimed(_) => return Err(E::claimed()),
-            ChunkKind::Unallocated(chunk) => {
+            ChunkKind::ConstConstructor(chunk) => {
                 let allocator = chunk.construct_base_allocator()?;
                 let replacer = RawBump::with_size(ChunkSizeCapacity(*layout), allocator)?;
                 // SAFETY: the bump has no chunks, ergo no allocations to invalidate
@@ -528,7 +528,7 @@ where {
     pub(crate) fn make_allocated<E: ErrorBehavior>(&self) -> Result<(), E> {
         match self.chunk.get().kind() {
             ChunkKind::Claimed(_) => Err(E::claimed()),
-            ChunkKind::Unallocated(chunk) => {
+            ChunkKind::ConstConstructor(chunk) => {
                 let allocator = chunk.construct_base_allocator()?;
                 let replacer = RawBump::with_size(ChunkSizeMin, allocator)?;
                 // SAFETY: the bump has no chunks, ergo no allocations to invalidate
@@ -607,8 +607,8 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
             );
         }
 
-        // You can't make a bump allocator unallocated from a shared reference
-        // so this is ok.
+        // Can't make this bump allocator's chunk be the const constructor chunk
+        // from a shared reference so this is ok.
         if !self.can_convert_const_constructible::<NEW_C>() {
             error_behavior::panic::unallocated();
         }

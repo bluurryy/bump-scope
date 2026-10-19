@@ -1,7 +1,7 @@
 use core::{marker::PhantomData, ptr::NonNull};
 
 use crate::{
-    chunk_types::dummy_memory_region::UNALLOCATED_POS as POS,
+    chunk_types::dummy_memory_region::CONST_CONSTRUCTOR_POS as POS,
     config::{BumpConfig, config},
     error_behavior::ErrorBehavior,
 };
@@ -14,20 +14,20 @@ struct Header<A> {
 }
 
 #[repr(transparent)]
-pub(crate) struct UnallocatedChunk<A, const C: BumpConfig> {
+pub(crate) struct ConstConstructorChunk<A, const C: BumpConfig> {
     header: NonNull<Header<A>>,
     marker: PhantomData<*const A>,
 }
 
-impl<A, const C: BumpConfig> Clone for UnallocatedChunk<A, C> {
+impl<A, const C: BumpConfig> Clone for ConstConstructorChunk<A, C> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, const C: BumpConfig> Copy for UnallocatedChunk<A, C> {}
+impl<A, const C: BumpConfig> Copy for ConstConstructorChunk<A, C> {}
 
-impl<A, const C: BumpConfig> UnallocatedChunk<A, C>
+impl<A, const C: BumpConfig> ConstConstructorChunk<A, C>
 where
     A: Default + 'static,
 {
@@ -47,7 +47,7 @@ where
     };
 }
 
-impl<A, const C: BumpConfig> UnallocatedChunk<A, C> {
+impl<A, const C: BumpConfig> ConstConstructorChunk<A, C> {
     #[expect(dead_code)]
     pub(crate) fn as_ptr(self) -> NonNull<()> {
         self.header.cast()

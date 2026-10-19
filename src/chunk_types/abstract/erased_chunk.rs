@@ -30,8 +30,8 @@ impl ErasedChunk {
         unsafe { self.header.as_ref() }.end
     }
 
-    pub(crate) fn is_unallocated(self) -> bool {
-        self.pos() == dummy_memory_region::UNALLOCATED_POS
+    pub(crate) fn is_const_constructor(self) -> bool {
+        self.pos() == dummy_memory_region::CONST_CONSTRUCTOR_POS
     }
 
     pub(crate) fn is_claimed(self) -> bool {
