@@ -151,15 +151,15 @@ pub mod test_change_config {
             bump.change_config()
         }
 
-        pub fn Bump_change_config_increase_claimable(bump: Bump<UNCLAIMABLE>) -> Bump {
+        pub fn Bump_change_config_enable_claimable(bump: Bump<UNCLAIMABLE>) -> Bump {
             bump.change_config()
         }
 
-        pub fn Bump_change_config_increase_const_constructible(bump: Bump) -> Bump<CONST_CONSTRUCTIBLE> {
+        pub fn Bump_change_config_enable_const_constructible(bump: Bump) -> Bump<CONST_CONSTRUCTIBLE> {
             bump.change_config()
         }
 
-        pub fn Bump_borrow_change_config_increase_const_constructible(bump: &Bump) -> &Bump<CONST_CONSTRUCTIBLE> {
+        pub fn Bump_borrow_change_config_enable_const_constructible(bump: &Bump) -> &Bump<CONST_CONSTRUCTIBLE> {
             bump.borrow_change_config()
         }
 
@@ -175,19 +175,19 @@ pub mod test_change_config {
             bump.change_config()
         }
 
-        pub fn BumpScope_change_config_increase_claimable(bump: BumpScope<UNCLAIMABLE>) -> BumpScope {
+        pub fn BumpScope_change_config_enable_claimable(bump: BumpScope<UNCLAIMABLE>) -> BumpScope {
             bump.change_config()
         }
 
-        pub fn BumpScope_change_config_decrease_const_constructible(bump: BumpScope<CONST_CONSTRUCTIBLE>) -> BumpScope {
+        pub fn BumpScope_change_config_disable_const_constructible(bump: BumpScope<CONST_CONSTRUCTIBLE>) -> BumpScope {
             bump.change_config()
         }
 
-        pub fn BumpScope_change_config_increase_const_constructible(bump: BumpScope) -> BumpScope<CONST_CONSTRUCTIBLE> {
+        pub fn BumpScope_change_config_enable_const_constructible(bump: BumpScope) -> BumpScope<CONST_CONSTRUCTIBLE> {
             bump.change_config()
         }
 
-        pub fn BumpScope_borrow_change_config_increase_const_constructible<'b, 'a>(bump: &'b BumpScope<'a>) -> &'b BumpScope<'a, CONST_CONSTRUCTIBLE> {
+        pub fn BumpScope_borrow_change_config_enable_const_constructible<'b, 'a>(bump: &'b BumpScope<'a>) -> &'b BumpScope<'a, CONST_CONSTRUCTIBLE> {
             bump.borrow_change_config()
         }
 

@@ -16,7 +16,7 @@ mod test_bump {
 
     #[test]
     #[should_panic = "bump allocator is unallocated"]
-    fn decrease_const_constructible() {
+    fn disable_const_constructible() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
         let input: Bump<Global, IN> = Bump::const_new();
@@ -25,7 +25,7 @@ mod test_bump {
 
     #[test]
     #[should_panic = "bump allocator is unallocated"]
-    fn decrease_const_constructible_while_claimed() {
+    fn disable_const_constructible_while_claimed() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
         let input: Bump<Global, IN> = Bump::const_new();
@@ -36,7 +36,7 @@ mod test_bump {
 
     #[test]
     #[should_panic = "bump allocator is claimed"]
-    fn decrease_claimable() {
+    fn disable_claimable() {
         const IN: BumpConfig = BumpConfigBuilder::new().claimable(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().claimable(false).build();
         let base = ExpectLeaks::<Global>::new(1);
@@ -51,7 +51,7 @@ mod test_bump_scope {
 
     #[test]
     #[should_panic = "bump allocator is claimed"]
-    fn decrease_claimable() {
+    fn disable_claimable() {
         const IN: BumpConfig = BumpConfigBuilder::new().claimable(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().claimable(false).build();
         let mut input_bump: Bump<Global, IN> = Bump::new();
@@ -66,7 +66,7 @@ mod test_borrow {
 
     #[test]
     #[should_panic = "bump allocator is unallocated"]
-    fn decrease_const_constructible() {
+    fn disable_const_constructible() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
         let input: Bump<Global, IN> = Bump::const_new();
@@ -75,7 +75,7 @@ mod test_borrow {
 
     #[test]
     #[should_panic = "bump allocator is unallocated"]
-    fn decrease_const_constructible_while_claimed() {
+    fn disable_const_constructible_while_claimed() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
         let input: Bump<Global, IN> = Bump::const_new();
@@ -92,7 +92,7 @@ mod test_scoped_with_config {
 
     #[test]
     #[should_panic = "bump allocator is unallocated"]
-    fn decrease_const_constructible() {
+    fn disable_const_constructible() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
         let mut input: Bump<Global, IN> = Bump::const_new();
@@ -101,7 +101,7 @@ mod test_scoped_with_config {
 
     #[test]
     #[should_panic = "bump allocator is unallocated"]
-    fn decrease_const_constructible_while_claimed() {
+    fn disable_const_constructible_while_claimed() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
         let mut input: Bump<Global, IN> = Bump::const_new();
@@ -112,7 +112,7 @@ mod test_scoped_with_config {
 
     #[test]
     #[should_panic = "bump allocator is claimed"]
-    fn decrease_claimable() {
+    fn disable_claimable() {
         const IN: BumpConfig = BumpConfigBuilder::new().claimable(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().claimable(false).build();
         let base = ExpectLeaks::<Global>::new(1);
