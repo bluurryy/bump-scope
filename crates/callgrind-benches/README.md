@@ -10,7 +10,7 @@ The benchmarks results in the tables below are shown in the format "instructions
 
 <!-- spellchecker:off because the commit hash may get flagged -->
 
-These are the results of a benchmark run with <!-- version start -->`rustc 1.101.0-nightly (32dba69d6 2026-10-09)` on `x86_64-unknown-linux-gnu` using `LLVM version 23.1.3`<!-- version end -->.
+These are the results of a benchmark run with <!-- version start -->`rustc 1.101.0-nightly (32dba69d6 2026-10-09)` on `x86_64-unknown-linux-musl` using `LLVM version 23.1.3`<!-- version end -->.
 
 We compare the following bump allocator crates:
 - **bump-scope** <!-- bump-scope-version start -->3.0.0-dev<!-- bump-scope-version end -->

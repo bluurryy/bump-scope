@@ -289,11 +289,11 @@ fn main() {
     {
         let version = rustc_version();
         let rustc = &version["short"];
-        let host = &version["host"];
+        let platform = env!("TARGET");
         let llvm = version.get("LLVM version");
 
         let mut s = String::new();
-        write!(s, "`{rustc}` on `{host}`").unwrap();
+        write!(s, "`{rustc}` on `{platform}`").unwrap();
 
         if let Some(llvm) = llvm {
             write!(s, " using `LLVM version {llvm}`").unwrap();
