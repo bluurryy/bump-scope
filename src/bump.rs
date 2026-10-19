@@ -14,7 +14,7 @@ use crate::{
     BumpBox, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, ErrorBehavior, allocator_impl,
     chunk_size::{ChunkSizeCapacity, ChunkSizeHint},
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
-    maybe_default_allocator,
+    error_behavior, maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
@@ -812,13 +812,12 @@ where
 
     /// Converts this `Bump` into a `Bump` with a new config.
     ///
-    /// # Fails
-    /// - fails to compile if [`upwards`] changes
-    ///
     /// # Panics
+    /// - Panics if [`claimable`] becomes false and [`self.is_claimed()`]
+    /// - Panics if [`guaranteed_allocated`] becomes true and `self` has no chunks
     ///
-    /// - panics if [`claimable`] becomes false and [`self.is_claimed()`]
-    /// - panics if [`guaranteed_allocated`] becomes true and `self` has no chunks
+    /// # Fails
+    /// - Fails to compile if [`upwards`] changes
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
@@ -827,17 +826,30 @@ where
     ///
     #[inline]
     pub fn change_config<const NEW_C: BumpConfig>(self) -> Bump<A, NEW_C> {
-        self.raw.ensure_satisfies_config::<NEW_C>();
+        RawBump::<A, C>::const_assert_upwards_matches::<NEW_C>();
+
+        if !self.raw.can_convert_claimable::<NEW_C>() {
+            error_behavior::panic::claimed();
+        }
+
+        if !self.raw.can_convert_guaranteed_allocated::<NEW_C>() {
+            error_behavior::panic::unallocated();
+        }
+
+        self.raw.align_to(config!(NEW_C, min_align));
+
         unsafe { transmute_value(self) }
     }
 
     /// Borrows this `Bump` with a new config.
     ///
+    /// # Panics
+    /// - Panics if [`guaranteed_allocated`] becomes true and `self` has no chunks
+    ///
     /// # Fails
-    /// - fails to compile if [`upwards`] changes
-    /// - fails to compile if [`claimable`] changes
-    /// - fails to compile if [`guaranteed_allocated`] becomes true
-    /// - fails to compile if [`min_align`] changes
+    /// - Fails to compile if [`upwards`] changes
+    /// - Fails to compile if [`claimable`] changes
+    /// - Fails to compile if [`min_align`] changes
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
@@ -852,10 +864,10 @@ where
     /// Borrows this `Bump` mutably with a new config.
     ///
     /// # Fails
-    /// - fails to compile if [`upwards`] changes
-    /// - fails to compile if [`claimable`] changes
-    /// - fails to compile if [`guaranteed_allocated`] changes
-    /// - fails to compile if [`min_align`] decreases
+    /// - Fails to compile if [`upwards`] changes
+    /// - Fails to compile if [`claimable`] changes
+    /// - Fails to compile if [`guaranteed_allocated`] changes
+    /// - Fails to compile if [`min_align`] decreases
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable

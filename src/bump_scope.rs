@@ -140,28 +140,41 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
 
     /// Converts this `BumpScope` into a `BumpScope` with a new config.
     ///
-    /// # Fails
-    /// - fails to compile if [`upwards`] changes
-    ///
     /// # Panics
-    /// - panics if [`claimable`] becomes false and [`self.is_claimed()`]
+    /// - Panics if [`claimable`] becomes false and [`self.is_claimed()`]
+    ///
+    /// # Fails
+    /// - Fails to compile if [`upwards`] changes
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
     /// [`self.is_claimed()`]: Self::is_claimed
     #[inline]
     pub fn change_config<const NEW_C: BumpConfig>(self) -> BumpScope<'a, A, NEW_C> {
-        self.raw.ensure_scope_satisfies_config::<NEW_C>();
+        RawBump::<A, C>::const_assert_upwards_matches::<NEW_C>();
+
+        if !self.raw.can_convert_claimable::<NEW_C>() {
+            // Since `self` is by value, this can only happen if a claim guard was forgotten.
+            error_behavior::panic::claimed();
+        }
+
+        // No need to check guaranteed_allocated, a scope by value is always allocated,
+        // created by `(try_)by_value`.
+
+        self.raw.align_to(config!(NEW_C, min_align));
+
         unsafe { transmute_value(self) }
     }
 
     /// Borrows this `BumpScope` with a new config.
     ///
+    /// # Panics
+    /// - Panics if [`guaranteed_allocated`] becomes true and `self` has no chunks
+    ///
     /// # Fails
-    /// - fails to compile if [`upwards`] changes
-    /// - fails to compile if [`claimable`] changes
-    /// - fails to compile if [`guaranteed_allocated`] becomes true
-    /// - fails to compile if [`min_align`] changes
+    /// - Fails to compile if [`upwards`] changes
+    /// - Fails to compile if [`claimable`] changes
+    /// - Fails to compile if [`min_align`] changes
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
@@ -176,10 +189,10 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
     /// Borrows this `BumpScope` mutably with a new config.
     ///
     /// # Fails
-    /// - fails to compile if [`upwards`] changes
-    /// - fails to compile if [`claimable`] changes
-    /// - fails to compile if [`guaranteed_allocated`] changes
-    /// - fails to compile if [`min_align`] decreases
+    /// - Fails to compile if [`upwards`] changes
+    /// - Fails to compile if [`claimable`] changes
+    /// - Fails to compile if [`guaranteed_allocated`] changes
+    /// - Fails to compile if [`min_align`] decreases
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
@@ -306,12 +319,12 @@ where
     /// Calls `f` on a child scope with a new config.
     ///
     /// # Fails
-    /// - fails to compile if [`upwards`] changes
+    /// - Fails to compile if [`upwards`] changes
     ///
     /// # Panics
     ///
-    /// - panics if [`claimable`] becomes false and [`self.is_claimed()`]
-    /// - panics if [`guaranteed_allocated`] becomes true and `self` has no chunks
+    /// - Panics if [`claimable`] becomes false and [`self.is_claimed()`]
+    /// - Panics if [`guaranteed_allocated`] becomes true and `self` has no chunks
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
@@ -365,12 +378,21 @@ where
     /// [claimed]: crate::BumpScope::claim
     #[inline(always)]
     pub fn scoped_with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<A, NEW_C>) -> R) -> R {
-        // the scope guard will reset the bump pointer to the current position, which is aligned to the current `min_align`.
+        RawBump::<A, C>::const_assert_upwards_matches::<NEW_C>();
+
+        if !self.raw.can_convert_claimable::<NEW_C>() {
+            error_behavior::panic::claimed();
+        }
+
+        if !self.raw.can_convert_guaranteed_allocated::<NEW_C>() {
+            error_behavior::panic::unallocated();
+        }
+
+        // The scope guard will reset the bump pointer to the current position,
+        // which is aligned to the current `min_align`.
         let mut guard = self.scope_guard();
         let scope = guard.scope();
-
-        scope.raw.ensure_satisfies_config::<NEW_C>();
-
+        scope.raw.align_to(config!(NEW_C, min_align));
         f(unsafe { transmute_mut(scope) })
     }
 

@@ -592,7 +592,8 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
     }
 
     pub(crate) fn can_convert_guaranteed_allocated<const NEW_C: BumpConfig>(&self) -> bool {
-        // either nothing changed, the new config is not guaranteed allocated, the old one is, or the bump is currently allocated
+        // Either nothing changed, the new config is not guaranteed allocated, the old one is, or the bump is currently allocated.
+        // NB: The runtime condition must return `false` on a `claimed` bump allocator, since the claimant could be unallocated.
         (const {
             let old = config!(guaranteed_allocated);
             let new = config!(NEW_C, guaranteed_allocated);
@@ -600,60 +601,25 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         }) || self.stats().current_chunk().is_some()
     }
 
-    pub(crate) fn ensure_satisfies_config<const NEW_C: BumpConfig>(&self) {
-        Self::const_assert_upwards_matches::<NEW_C>();
-
-        if !self.can_convert_claimable::<NEW_C>() {
-            error_behavior::panic::claimed();
-        }
-
-        if !self.can_convert_guaranteed_allocated::<NEW_C>() {
-            error_behavior::panic::unallocated();
-        }
-
-        self.align_to(config!(NEW_C, min_align));
-    }
-
-    pub(crate) fn ensure_scope_satisfies_config<const NEW_C: BumpConfig>(&self) {
-        Self::const_assert_upwards_matches::<NEW_C>();
-
-        if !self.can_convert_claimable::<NEW_C>() {
-            error_behavior::panic::claimed();
-        }
-
-        // no need to check guaranteed_allocated, a scope by value is always allocated,
-        // created by `(try_)by_value`
-
-        const {
-            assert!(
-                config!(NEW_C, min_align) >= config!(min_align),
-                "can't decrease minimum alignment using `BumpScope::change_config`"
-            );
-        }
-
-        self.align_to(config!(NEW_C, min_align));
-    }
-
-    #[expect(clippy::unused_self)]
     pub(crate) fn ensure_satisfies_config_for_borrow<const NEW_C: BumpConfig>(&self) {
         Self::const_assert_upwards_matches::<NEW_C>();
 
         const {
             assert!(
-                config!(NEW_C, min_align) == config!(min_align),
-                "can't change minimum alignment using `Bump(Scope)::borrow_change_config`"
-            );
-
-            assert!(
                 config!(NEW_C, claimable) == config!(claimable),
                 "can't change claimable property using `Bump(Scope)::borrow_change_config`"
             );
 
-            // A reference to a guaranteed-allocated `Bump(Scope)` can never become unallocated.
             assert!(
-                config!(NEW_C, guaranteed_allocated) <= config!(guaranteed_allocated),
-                "can't increase guaranteed-allocated property using `Bump(Scope)::borrow_change_config`"
+                config!(NEW_C, min_align) == config!(min_align),
+                "can't change minimum alignment using `Bump(Scope)::borrow_change_config`"
             );
+        }
+
+        // You can't make a bump allocator unallocated from a shared reference
+        // so this is ok.
+        if !self.can_convert_guaranteed_allocated::<NEW_C>() {
+            error_behavior::panic::unallocated();
         }
     }
 
