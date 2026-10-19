@@ -41,7 +41,7 @@ macro_rules! make_type {
         /// - with a default size hint: <code>[new]\([_in][new_in])</code> / <code>[default]</code>
         /// - provide a size hint: <code>[with_size]\([_in][with_size_in])</code>
         /// - provide a minimum capacity: <code>[with_capacity]\([_in][with_capacity_in])</code>
-        /// - const, without allocating a chunk: <code>[unallocated]</code>
+        /// - const, without allocating a chunk: <code>[const_new]</code>
         ///
         /// [new]: Bump::new
         /// [new_in]: Bump::new_in
@@ -50,7 +50,7 @@ macro_rules! make_type {
         /// [with_size_in]: Bump::with_size_in
         /// [with_capacity]: Bump::with_capacity
         /// [with_capacity_in]: Bump::with_capacity_in
-        /// [unallocated]: Bump::unallocated
+        /// [const_new]: Bump::const_new
         ///
         /// #### Allocate ...
         /// - sized values: [`alloc`], [`alloc_with`], [`alloc_default`], [`alloc_zeroed`]
@@ -258,14 +258,14 @@ impl<A, const C: BumpConfig> Default for Bump<A, C>
 where
     A: Allocator + Default + 'static,
 {
-    /// With [`const_constructible`] this does the same as [`unallocated`], otherwise it does the same as [`new`].
+    /// With [`const_constructible`] this does the same as [`const_new`], otherwise it does the same as [`new`].
     ///
     /// # Panics
     /// Panics if this `Bump` is **not** [`const_constructible`] and the "panic-on-alloc" feature is disabled.
     ///
     /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     /// [`new`]: Bump::new
-    /// [`unallocated`]: Bump::unallocated
+    /// [`const_new`]: Bump::const_new
     #[inline(always)]
     fn default() -> Self {
         if config!(const_constructible) {
@@ -285,9 +285,9 @@ where
 {
     /// Constructs a new `Bump` without allocating a chunk.
     ///
-    /// # Panics
+    /// # Fails
     ///
-    /// Panics when not [`const_constructible`].
+    /// Fails to compile when not [`const_constructible`].
     ///
     /// # Examples
     ///
@@ -298,13 +298,13 @@ where
     ///
     /// const CONFIG: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
     ///
-    /// let bump: Bump<Global, CONFIG> = Bump::unallocated();
+    /// let bump: Bump<Global, CONFIG> = Bump::const_new();
     /// # _ = bump;
     /// ```
     ///
     /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     #[must_use]
-    pub const fn unallocated() -> Self {
+    pub const fn const_new() -> Self {
         const { assert!(config!(const_constructible)) };
         Self { raw: RawBump::new() }
     }

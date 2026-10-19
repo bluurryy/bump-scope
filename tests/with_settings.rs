@@ -16,7 +16,7 @@ use crate::common::InstrumentedAllocator;
 fn test_panic_change_config_unallocated() {
     const OLD_C: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
     const NEW_C: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
-    let bump: Bump<A, OLD_C> = Bump::unallocated();
+    let bump: Bump<A, OLD_C> = Bump::const_new();
     let _: Bump<A, NEW_C> = bump.change_config();
 }
 

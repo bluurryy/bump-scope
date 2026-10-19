@@ -69,7 +69,7 @@ up_and_down! {
     #[cfg(target_pointer_width = "64")]
     fn unallocated() {
         allocator_with_layout!(TestBaseAllocator, 2048, 8);
-        let bump = Bump::<TestBaseAllocator, C>::unallocated();
+        let bump = Bump::<TestBaseAllocator, C>::const_new();
         assert_eq!(bump.stats().count(), 0);
         assert_eq!(bump.stats().size(), 0);
         assert_eq!(bump.stats().capacity(), 0);

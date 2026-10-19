@@ -97,8 +97,8 @@ pub mod test_constructors {
     up_and_down! {
         const CONST_CONSTRUCTIBLE: BumpConfig = BumpConfigBuilder(DEFAULT_C).const_constructible(true).build();
 
-        pub fn Bump_unallocated() -> Bump<CONST_CONSTRUCTIBLE> {
-            Bump::unallocated()
+        pub fn Bump_const_new() -> Bump<CONST_CONSTRUCTIBLE> {
+            Bump::const_new()
         }
 
         pub fn Bump_default() -> Bump<CONST_CONSTRUCTIBLE> {

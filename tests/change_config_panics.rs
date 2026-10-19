@@ -19,7 +19,7 @@ mod test_bump {
     fn decrease_const_constructible() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
-        let input: Bump<Global, IN> = Bump::unallocated();
+        let input: Bump<Global, IN> = Bump::const_new();
         let _: Bump<Global, OUT> = input.change_config();
     }
 
@@ -28,7 +28,7 @@ mod test_bump {
     fn decrease_const_constructible_while_claimed() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
-        let input: Bump<Global, IN> = Bump::unallocated();
+        let input: Bump<Global, IN> = Bump::const_new();
         forget(input.claim());
         // here, we're not able to tell whether the bump allocator is "unallocated", so we need to panic
         let _: Bump<Global, OUT> = input.change_config();
@@ -69,7 +69,7 @@ mod test_borrow {
     fn decrease_const_constructible() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
-        let input: Bump<Global, IN> = Bump::unallocated();
+        let input: Bump<Global, IN> = Bump::const_new();
         let _: &Bump<Global, OUT> = input.borrow_change_config();
     }
 
@@ -78,7 +78,7 @@ mod test_borrow {
     fn decrease_const_constructible_while_claimed() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
-        let input: Bump<Global, IN> = Bump::unallocated();
+        let input: Bump<Global, IN> = Bump::const_new();
         forget(input.claim());
         // here, we're not able to tell whether the bump allocator is "unallocated", so we need to panic
         let _: &Bump<Global, OUT> = input.borrow_change_config();
@@ -95,7 +95,7 @@ mod test_scoped_with_config {
     fn decrease_const_constructible() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
-        let mut input: Bump<Global, IN> = Bump::unallocated();
+        let mut input: Bump<Global, IN> = Bump::const_new();
         input.scoped_with_config::<OUT, _>(|_| ());
     }
 
@@ -104,7 +104,7 @@ mod test_scoped_with_config {
     fn decrease_const_constructible_while_claimed() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
-        let mut input: Bump<Global, IN> = Bump::unallocated();
+        let mut input: Bump<Global, IN> = Bump::const_new();
         forget(input.claim());
         // here, we're not able to tell whether the bump allocator is "unallocated", so we need to panic
         input.scoped_with_config::<OUT, _>(|_| ());

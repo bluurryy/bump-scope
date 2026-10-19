@@ -19,7 +19,7 @@ fn test_reserve() {
     // whole capacity must be subtracted from the amount of bytes to reserve.
     const C: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
 
-    let bump = Bump::<Global, C>::unallocated();
+    let bump = Bump::<Global, C>::const_new();
     assert_eq!(bump.stats().count(), 0);
 
     // allocate the first chunk and fill it

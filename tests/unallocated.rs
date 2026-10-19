@@ -24,7 +24,7 @@ up_and_down! {
 
     #[test]
     fn unallocated() {
-        let bump = Bump::<Global, C>::unallocated();
+        let bump = Bump::<Global, C>::const_new();
         assert_eq!(bump.stats().count(), 0);
         drop(bump);
     }
@@ -38,7 +38,7 @@ up_and_down! {
 
     #[test]
     fn unallocated_alloc() {
-        let bump = Bump::<Global, C>::unallocated();
+        let bump = Bump::<Global, C>::const_new();
         assert_eq!(bump.stats().count(), 0);
         bump.alloc_str("Hello, World!");
         assert_eq!(bump.stats().count(), 1);
@@ -57,7 +57,7 @@ up_and_down! {
 
     #[test]
     fn unallocated_reserve_bytes() {
-        let bump = Bump::<Global, C>::unallocated();
+        let bump = Bump::<Global, C>::const_new();
         assert_eq!(bump.stats().count(), 0);
         bump.reserve(1024);
         assert_eq!(bump.stats().count(), 1);
@@ -67,7 +67,7 @@ up_and_down! {
 
     #[test]
     fn checkpoint() {
-        let bump = Bump::<Global, C>::unallocated();
+        let bump = Bump::<Global, C>::const_new();
 
         let checkpoint_unallocated = bump.checkpoint();
         assert_eq!(bump.stats().count(), 0);
@@ -93,7 +93,7 @@ up_and_down! {
 
     #[test]
     fn checkpoint_multiple_chunks() {
-        let bump = Bump::<Global, C>::unallocated();
+        let bump = Bump::<Global, C>::const_new();
 
         assert_eq!(bump.stats().count(), 0);
         let c0 = bump.checkpoint();
@@ -115,7 +115,7 @@ up_and_down! {
 
     #[test]
     fn reset() {
-        let mut bump = Bump::<Global, C>::unallocated();
+        let mut bump = Bump::<Global, C>::const_new();
         bump.reset();
     }
 
@@ -134,7 +134,7 @@ up_and_down! {
 
     #[test]
     fn default_chunk_size() {
-        let bump = Bump::<Global, C>::unallocated();
+        let bump = Bump::<Global, C>::const_new();
         assert_eq!(bump.stats().count(), 0);
         bump.alloc("a");
         assert_eq!(bump.stats().count(), 1);
@@ -147,7 +147,7 @@ up_and_down! {
     #[test]
     fn custom_chunk_size() {
         const MIN_SIZE_4096: BumpConfig = BumpConfigBuilder(C).min_chunk_size(4096).build();
-        let bump = Bump::<Global, MIN_SIZE_4096>::unallocated();
+        let bump = Bump::<Global, MIN_SIZE_4096>::const_new();
         assert_eq!(bump.stats().count(), 0);
         bump.alloc("a");
         assert_eq!(bump.stats().count(), 1);

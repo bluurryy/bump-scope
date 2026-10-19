@@ -19,7 +19,7 @@
 //!
 //! type MyBump = Bump<Global, MY_CONFIG>;
 //!
-//! let bump = MyBump::unallocated();
+//! let bump = MyBump::const_new();
 //! assert_eq!(bump.stats().size(), 0);
 //!
 //! # let str =
@@ -43,8 +43,8 @@ pub type BumpConfig = u128;
 
 /// A type for creating [`BumpConfig`]s.
 ///
-/// You can either start with the default config [`BumpConfigBuilder::new()`],
-/// or use an existing config as the base `BumpConfigBuilder(SOME_CONFIG)`.
+/// You can either start with the default config with `BumpConfigBuilder::new()`,
+/// or use an existing config as the base with `BumpConfigBuilder(SOME_CONFIG)`.
 pub struct BumpConfigBuilder(pub BumpConfig);
 
 impl BumpConfigBuilder {
@@ -301,7 +301,7 @@ bit_fields! {
     /// [`min_chunk_size`]: BumpConfigBuilder::min_chunk_size
     pub const DEFAULT_BUMP_CONFIG;
 
-    /// The alignment the bump pointer maintains when doing allocations.
+    /// Sets the alignment the bump pointer maintains when doing allocations.
     ///
     /// When allocating a type in a bump allocator with a sufficient minimum alignment,
     /// the bump pointer will not have to be aligned for the allocation but the allocation size
@@ -321,7 +321,7 @@ bit_fields! {
         },
     }
 
-    /// Controls the bump direction.
+    /// Sets the bump direction.
     ///
     /// Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
     /// This benefits growable collections as well as <code>[alloc_iter][]([_mut][alloc_iter_mut])</code> and <code>[alloc_fmt][]([_mut][alloc_fmt_mut])</code>
@@ -346,17 +346,12 @@ bit_fields! {
         decode: |v| v != 0,
     }
 
-    /// Controls whether at least one chunk has been allocated.
+    /// Enables the [`const_new`] constructor.
     ///
-    /// The <code>[unallocated]</code> constructor will create a bump allocator without allocating a chunk.
-    /// It will only compile when `const_constructible` is `true`.
+    /// Setting `const_constructible` to `true` adds additional checks and code paths for handling
+    /// the no-chunk-allocated state when exiting scopes, calling [`reset_to`] or calling [`by_value`].
     ///
-    /// The constructors <code>[new]\([_in][new_in])</code>, <code>[default]</code>, <code>[with_size]\([_in][with_size_in])</code> and <code>[with_capacity]\([_in][with_capacity_in])</code>
-    /// will allocate a chunk and are always available.
-    ///
-    /// Setting `const_constructible` to `true` adds additional checks and code paths for handling the no-chunk-allocated state when exiting scopes, calling [`reset_to`] or calling [`by_value`].
-    ///
-    /// [unallocated]: crate::Bump::unallocated
+    /// [`const_new`]: crate::Bump::const_new
     /// [new]: crate::Bump::new
     /// [new_in]: crate::Bump::new_in
     /// [default]: crate::Bump::default
@@ -386,7 +381,7 @@ bit_fields! {
         decode: |v| v != 0,
     }
 
-    /// Toggles deallocation.
+    /// Enables deallocation.
     ///
     /// When this is `false`, [`Allocator::deallocate`] does not free memory.
     deallocates: bool {
@@ -396,7 +391,7 @@ bit_fields! {
         decode: |v| v != 0,
     }
 
-    /// Toggles shrinking.
+    /// Enables shrinking.
     ///
     /// When this is `false`, [`Allocator::shrink`] and [`BumpAllocator::shrink_slice`] does not free memory.
     /// Calling `shrink` with a new layout of a greater alignment may still reallocate.
@@ -413,7 +408,7 @@ bit_fields! {
         decode: |v| v != 0,
     }
 
-    /// Configures the minimum chunk size.
+    /// Sets the minimum chunk size.
     ///
     /// The final chunk size is calculated like described in [`with_size`],
     /// thus it can be slightly smaller than this value.

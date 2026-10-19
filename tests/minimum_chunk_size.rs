@@ -18,7 +18,7 @@ up_and_down! {
         const MY_C: BumpConfig = BumpConfigBuilder(C).const_constructible(true).min_chunk_size(4096).build();
         type MyBump = Bump<Global, MY_C>;
 
-        assert_eq!(0, MyBump::unallocated().stats().size());
+        assert_eq!(0, MyBump::const_new().stats().size());
         assert_eq!(expected_size, MyBump::with_size(0).stats().size());
         assert_eq!(expected_size, MyBump::with_size(1).stats().size());
         assert_eq!(expected_size, MyBump::with_size(4096).stats().size());

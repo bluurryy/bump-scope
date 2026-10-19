@@ -9,7 +9,7 @@ const BUMP_CONFIG: BumpConfig = BumpConfigBuilder::new().const_constructible(tru
 type Bump = bump_scope::Bump<Global, BUMP_CONFIG>;
 
 thread_local! {
-    static BUMP: Bump = const { Bump::unallocated() };
+    static BUMP: Bump = const { Bump::const_new() };
 }
 
 fn main() {
