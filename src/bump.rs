@@ -254,41 +254,29 @@ where
     }
 }
 
-#[cfg(feature = "panic-on-alloc")]
 impl<A, const C: BumpConfig> Default for Bump<A, C>
 where
     A: Allocator + Default + 'static,
 {
     /// With [`guaranteed_allocated`] this does the same as [`new`], otherwise it does the same as [`unallocated`].
     ///
+    /// # Panics
+    /// Panics if this `Bump` is [`guaranteed_allocated`] and the "panic-on-alloc" feature is disabled.
+    ///
     /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
     /// [`new`]: Bump::new
     /// [`unallocated`]: Bump::unallocated
     #[inline(always)]
+    #[cfg_attr(not(feature = "panic-on-alloc"), expect(clippy::redundant_else))] // clippy doesn't understand cfg_select
     fn default() -> Self {
         if config!(guaranteed_allocated) {
-            Self::new_in(Default::default())
-        } else {
-            Self {
-                // SAFETY: `guaranteed_allocated` is `false`
-                raw: unsafe { RawBump::new_unchecked() },
+            cfg_select! {
+                feature = "panic-on-alloc" => Self::new(),
+                _ => panic!("can't default construct a `Bump` with `guaranteed_allocated` and no \"panic-on-alloc\" feature"),
             }
+        } else {
+            Self { raw: RawBump::new() }
         }
-    }
-}
-
-#[cfg(not(feature = "panic-on-alloc"))]
-impl<A, const C: BumpConfig> Default for Bump<A, C>
-where
-    A: Allocator + Default + 'static,
-{
-    /// Does the same as [`unallocated`].
-    ///
-    /// [`unallocated`]: Bump::unallocated
-    #[inline(always)]
-    fn default() -> Self {
-        assert!(!config!(guaranteed_allocated));
-        Self::unallocated()
     }
 }
 
@@ -318,7 +306,7 @@ where
     /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
     #[must_use]
     pub const fn unallocated() -> Self {
-        assert!(!config!(guaranteed_allocated));
+        const { assert!(!config!(guaranteed_allocated)) };
         Self { raw: RawBump::new() }
     }
 }

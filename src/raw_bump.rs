@@ -42,6 +42,11 @@ impl<A, const C: BumpConfig> Clone for RawBump<A, C> {
 }
 
 impl<A, const C: BumpConfig> RawBump<A, C> {
+    /// # Panics
+    ///
+    /// Panics if `self` is [`guaranteed_allocated`].
+    ///
+    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
     #[inline(always)]
     pub(crate) const fn new() -> Self
     where
@@ -49,20 +54,6 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
     {
         assert!(!config!(guaranteed_allocated));
 
-        Self {
-            chunk: Cell::new(Chunk::from_unallocated(UnallocatedChunk::VALUE)),
-        }
-    }
-
-    /// # Safety
-    ///
-    /// `S::GUARANTEEED_ALLOCATED` must be `false`.
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    pub(crate) const unsafe fn new_unchecked() -> Self
-    where
-        A: Default + 'static,
-    {
         Self {
             chunk: Cell::new(Chunk::from_unallocated(UnallocatedChunk::VALUE)),
         }
