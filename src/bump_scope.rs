@@ -15,7 +15,7 @@ use crate::{
     BumpBox, BumpClaimGuard, BumpScopeGuard, Checkpoint, ErrorBehavior, NoDrop, SizedTypeProperties, allocator_impl,
     bump_align_guard::BumpAlignGuard,
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
-    down_align_usize, error_behavior, maybe_default_allocator,
+    down_align_usize, maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{non_null, transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
@@ -153,10 +153,8 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
     pub fn change_config<const NEW_C: BumpConfig>(self) -> BumpScope<'a, A, NEW_C> {
         RawBump::<A, C>::const_assert_upwards_matches::<NEW_C>();
 
-        if !self.raw.can_convert_claimable::<NEW_C>() {
-            // Since `self` is by value, this can only happen if a claim guard was forgotten.
-            error_behavior::panic::claimed();
-        }
+        // Since `self` is by value, this can only happen if a claim guard was forgotten.
+        self.raw.assert_convertible_claimable::<NEW_C>();
 
         // No need to check const_constructible, a scope by value must have been created
         // by `(try_)by_value` which always makes it allocated.
@@ -378,13 +376,8 @@ where
     pub fn scoped_with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<A, NEW_C>) -> R) -> R {
         RawBump::<A, C>::const_assert_upwards_matches::<NEW_C>();
 
-        if !self.raw.can_convert_claimable::<NEW_C>() {
-            error_behavior::panic::claimed();
-        }
-
-        if !self.raw.can_convert_const_constructible::<NEW_C>() {
-            error_behavior::panic::unallocated();
-        }
+        self.raw.assert_convertible_claimable::<NEW_C>();
+        self.raw.assert_convertible_const_constructible::<NEW_C>();
 
         // The scope guard will reset the bump pointer to the current position,
         // which is aligned to the current `min_align`.

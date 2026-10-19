@@ -15,7 +15,7 @@ mod test_bump {
     use super::*;
 
     #[test]
-    #[should_panic = "bump allocator is unallocated"]
+    #[should_panic = "can't change config: `const_constructible` becomes false and `self` has no chunks"]
     fn disable_const_constructible() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
@@ -24,7 +24,7 @@ mod test_bump {
     }
 
     #[test]
-    #[should_panic = "bump allocator is unallocated"]
+    #[should_panic = "can't change config: `const_constructible` becomes false and `self` has no chunks"]
     fn disable_const_constructible_while_claimed() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
@@ -35,7 +35,7 @@ mod test_bump {
     }
 
     #[test]
-    #[should_panic = "bump allocator is claimed"]
+    #[should_panic = "can't change config: `claimable` becomes false and `self.is_claimed()`"]
     fn disable_claimable() {
         const IN: BumpConfig = BumpConfigBuilder::new().claimable(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().claimable(false).build();
@@ -50,7 +50,7 @@ mod test_bump_scope {
     use super::*;
 
     #[test]
-    #[should_panic = "bump allocator is claimed"]
+    #[should_panic = "can't change config: `claimable` becomes false and `self.is_claimed()`"]
     fn disable_claimable() {
         const IN: BumpConfig = BumpConfigBuilder::new().claimable(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().claimable(false).build();
@@ -65,7 +65,7 @@ mod test_borrow {
     use super::*;
 
     #[test]
-    #[should_panic = "bump allocator is unallocated"]
+    #[should_panic = "can't change config: `const_constructible` becomes false and `self` has no chunks"]
     fn disable_const_constructible() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
@@ -74,7 +74,7 @@ mod test_borrow {
     }
 
     #[test]
-    #[should_panic = "bump allocator is unallocated"]
+    #[should_panic = "can't change config: `const_constructible` becomes false and `self` has no chunks"]
     fn disable_const_constructible_while_claimed() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
@@ -91,7 +91,7 @@ mod test_scoped_with_config {
     use super::*;
 
     #[test]
-    #[should_panic = "bump allocator is unallocated"]
+    #[should_panic = "can't change config: `const_constructible` becomes false and `self` has no chunks"]
     fn disable_const_constructible() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
@@ -100,7 +100,7 @@ mod test_scoped_with_config {
     }
 
     #[test]
-    #[should_panic = "bump allocator is unallocated"]
+    #[should_panic = "can't change config: `const_constructible` becomes false and `self` has no chunks"]
     fn disable_const_constructible_while_claimed() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
@@ -111,7 +111,7 @@ mod test_scoped_with_config {
     }
 
     #[test]
-    #[should_panic = "bump allocator is claimed"]
+    #[should_panic = "can't change config: `claimable` becomes false and `self.is_claimed()`"]
     fn disable_claimable() {
         const IN: BumpConfig = BumpConfigBuilder::new().claimable(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().claimable(false).build();

@@ -7,14 +7,15 @@ use core::{
 };
 
 use crate::{
-    Checkpoint, SizedTypeProperties, align_pos,
+    Checkpoint, SizedTypeProperties, align_pos, cant_change_config_due_to_claimable,
+    cant_change_config_due_to_const_constructible,
     chunk_size::{ChunkSize, ChunkSizeCapacity, ChunkSizeMin},
     chunk_types::{
         r#abstract::{AllocatedChunk, Chunk, ChunkKind, FirstAllocatedChunk},
         concrete::{ClaimedChunk, ConstConstructorChunk},
     },
     config::{BumpConfig, config},
-    error_behavior::{self, ErrorBehavior},
+    error_behavior::ErrorBehavior,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     stats::Stats,
 };
@@ -570,7 +571,7 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         }
     }
 
-    pub(crate) fn can_convert_claimable<const NEW_C: BumpConfig>(&self) -> bool {
+    fn can_convert_claimable<const NEW_C: BumpConfig>(&self) -> bool {
         // either nothing changed, the new config is claimable, the old one isn't, or the bump is currently not claimed
         (const {
             let old = config!(claimable);
@@ -579,7 +580,13 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         }) || !self.is_claimed()
     }
 
-    pub(crate) fn can_convert_const_constructible<const NEW_C: BumpConfig>(&self) -> bool {
+    pub(crate) fn assert_convertible_claimable<const NEW_C: BumpConfig>(&self) {
+        if !self.can_convert_claimable::<NEW_C>() {
+            cant_change_config_due_to_claimable();
+        }
+    }
+
+    fn can_convert_const_constructible<const NEW_C: BumpConfig>(&self) -> bool {
         // To be able to convert const_constructible, either:
         // - nothing changed
         // - the new config is const_constructible
@@ -590,6 +597,12 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
             let new = config!(NEW_C, const_constructible);
             old == new || new || !old
         }) || self.stats().current_chunk().is_some()
+    }
+
+    pub(crate) fn assert_convertible_const_constructible<const NEW_C: BumpConfig>(&self) {
+        if !self.can_convert_const_constructible::<NEW_C>() {
+            cant_change_config_due_to_const_constructible();
+        }
     }
 
     pub(crate) fn ensure_satisfies_config_for_borrow<const NEW_C: BumpConfig>(&self) {
@@ -608,10 +621,8 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         }
 
         // Can't make this bump allocator's chunk be the const constructor chunk
-        // from a shared reference so this is ok.
-        if !self.can_convert_const_constructible::<NEW_C>() {
-            error_behavior::panic::unallocated();
-        }
+        // from a shared reference so this is enough.
+        self.assert_convertible_const_constructible::<NEW_C>();
     }
 
     pub(crate) fn ensure_satisfies_config_for_borrow_mut<const NEW_C: BumpConfig>(&self) {

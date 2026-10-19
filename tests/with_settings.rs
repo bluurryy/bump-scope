@@ -12,7 +12,7 @@ use bump_scope::{
 use crate::common::InstrumentedAllocator;
 
 #[test]
-#[should_panic = "bump allocator is unallocated"]
+#[should_panic = "can't change config: `const_constructible` becomes false and `self` has no chunks"]
 fn test_panic_change_config_unallocated() {
     const OLD_C: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
     const NEW_C: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
@@ -21,7 +21,7 @@ fn test_panic_change_config_unallocated() {
 }
 
 #[test]
-#[should_panic = "bump allocator is claimed"]
+#[should_panic = "can't change config: `claimable` becomes false and `self.is_claimed()`"]
 fn test_panic_change_config_claimed() {
     const OLD_C: BumpConfig = BumpConfigBuilder::new().claimable(true).build();
     const NEW_C: BumpConfig = BumpConfigBuilder::new().claimable(false).build();

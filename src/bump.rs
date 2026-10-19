@@ -14,7 +14,7 @@ use crate::{
     BumpBox, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, allocator_impl,
     chunk_size::{ChunkSizeCapacity, ChunkSizeHint, ChunkSizeMin},
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
-    error_behavior, maybe_default_allocator,
+    maybe_default_allocator,
     owned_slice::OwnedSlice,
     polyfill::{transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
@@ -803,14 +803,8 @@ where
     pub fn change_config<const NEW_C: BumpConfig>(self) -> Bump<A, NEW_C> {
         RawBump::<A, C>::const_assert_upwards_matches::<NEW_C>();
 
-        if !self.raw.can_convert_claimable::<NEW_C>() {
-            error_behavior::panic::claimed();
-        }
-
-        if !self.raw.can_convert_const_constructible::<NEW_C>() {
-            error_behavior::panic::unallocated();
-        }
-
+        self.raw.assert_convertible_claimable::<NEW_C>();
+        self.raw.assert_convertible_const_constructible::<NEW_C>();
         self.raw.align_to(config!(NEW_C, min_align));
 
         unsafe { transmute_value(self) }
