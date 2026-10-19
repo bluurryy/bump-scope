@@ -2,6 +2,7 @@
 #![allow(unused)]
 
 mod disaligning_allocator;
+mod expect_leaks;
 mod instrumented_allocator;
 mod limited_allocator;
 mod test_wrap;
@@ -35,6 +36,7 @@ use bump_scope::{
 };
 
 pub(crate) use disaligning_allocator::DisaligningAllocator;
+pub(crate) use expect_leaks::ExpectLeaks;
 pub(crate) use instrumented_allocator::InstrumentedAllocator;
 pub(crate) use limited_allocator::Limited;
 pub(crate) use test_wrap::TestWrap;

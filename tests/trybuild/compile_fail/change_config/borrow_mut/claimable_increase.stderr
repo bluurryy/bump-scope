@@ -1,0 +1,31 @@
+error[E0080]: evaluation panicked: can't change claimable property using `Bump(Scope)::borrow_mut_change_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::raw_bump::RawBump::<std::alloc::Global, 36076078573099982363029888495421227008>::ensure_satisfies_config_for_borrow_mut::<41392990556239645854645116736542605312>::{constant#0}` failed here
+  |
+ ::: src/raw_bump.rs
+  |
+  | /             assert!(
+  | |                 config!(NEW_C, claimable) == config!(claimable),
+  | |                 "can't change claimable property using `Bump(Scope)::borrow_mut_change_config`"
+  | |             );
+  | |_____________- in this macro invocation
+
+note: erroneous constant encountered
+ --> src/raw_bump.rs
+  |
+  | /         const {
+  | |             assert!(
+  | |                 config!(NEW_C, min_align) >= config!(min_align),
+  | |                 "can't decrease minimum alignment using `Bump(Scope)::borrow_mut_change_config`"
+... |
+  | |             );
+  | |         }
+  | |_________^
+
+note: the above error was encountered while instantiating `fn bump_scope::raw_bump::RawBump::<std::alloc::Global, 36076078573099982363029888495421227008>::ensure_satisfies_config_for_borrow_mut::<41392990556239645854645116736542605312>`
+ --> src/bump.rs
+  |
+  |         self.raw.ensure_satisfies_config_for_borrow_mut::<NEW_C>();
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

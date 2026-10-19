@@ -1,0 +1,31 @@
+error[E0080]: evaluation panicked: can't change claimable property using `Bump(Scope)::with_config`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::BumpScope::<'_, std::alloc::Global, 41392990556239645854645116736542605312>::with_config::<36076078573099982363029888495421227008, (), {closure@$DIR/tests/trybuild/compile_fail/change_config/with_config/claimable_decrease.rs:13:34: 13:37}>::{constant#0}` failed here
+  |
+ ::: src/bump_scope.rs
+  |
+  | /             assert!(
+  | |                 config!(NEW_C, claimable) == config!(claimable),
+  | |                 "can't change claimable property using `Bump(Scope)::with_config`"
+  | |             );
+  | |_____________- in this macro invocation
+
+note: erroneous constant encountered
+ --> src/bump_scope.rs
+  |
+  | /         const {
+  | |             assert!(
+  | |                 config!(NEW_C, claimable) == config!(claimable),
+  | |                 "can't change claimable property using `Bump(Scope)::with_config`"
+... |
+  | |             );
+  | |         }
+  | |_________^
+
+note: the above error was encountered while instantiating `fn BumpScope::<'_, std::alloc::Global, 41392990556239645854645116736542605312>::with_config::<36076078573099982363029888495421227008, (), {closure@$DIR/tests/trybuild/compile_fail/change_config/with_config/claimable_decrease.rs:13:34: 13:37}>`
+ --> src/bump.rs
+  |
+  |         self.as_mut_scope().with_config(f)
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

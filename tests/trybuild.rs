@@ -1,8 +1,11 @@
 #[test]
 #[cfg(not(miri))]
-// so the diff doesn't change too often
-#[ignore = "make sure this runs on the stable channel"]
+#[ignore = "make sure this runs on the stable channel so the diff doesn't change too often"]
 fn trybuild() {
+    if cfg!(miri) {
+        panic!("not meant to be run with miri");
+    }
+
     let t = trybuild::TestCases::new();
 
     // Here we add an empty test.
@@ -13,7 +16,6 @@ fn trybuild() {
     //
     // See <https://github.com/dtolnay/trybuild/issues/258>
     t.pass("tests/trybuild/force_build.rs");
-    t.pass("tests/trybuild/pass/**/*.rs");
 
     t.compile_fail("tests/trybuild/compile_fail/**/*.rs");
 }

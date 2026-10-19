@@ -1,9 +1,11 @@
-use std::{alloc::Layout, ops::Deref, ptr::NonNull, rc::Rc};
-
-use bump_scope::{
-    Bump,
-    alloc::{AllocError, Allocator, Global},
+use std::{
+    alloc::{AllocError, Allocator, Global, Layout},
+    ops::Deref,
+    ptr::NonNull,
+    rc::Rc,
 };
+
+use bump_scope::Bump;
 
 #[allow(dead_code)]
 fn base_allocator_unsend() {

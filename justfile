@@ -153,8 +153,8 @@ test-nightly miri="":
 [group('test')]
 trybuild-overwrite:
     # FIXME: replace +nightly with +stable once 1.100 has released
-    TRYBUILD=overwrite cargo +stable test --test trybuild -- --ignored
-    TRYBUILD=overwrite cargo +stable test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
+    TRYBUILD=overwrite cargo +nightly test --test trybuild -- --ignored
+    TRYBUILD=overwrite cargo +nightly test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
 
 # Fuzz for `seconds`.
 [group('fuzz')]
