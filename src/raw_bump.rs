@@ -8,7 +8,7 @@ use core::{
 
 use crate::{
     Checkpoint, SizedTypeProperties, align_pos,
-    chunk_size::{ChunkSize, ChunkSizeCapacity, ChunkSizeMinimum},
+    chunk_size::{ChunkSize, ChunkSizeCapacity, ChunkSizeMin},
     chunk_types::{
         r#abstract::{AllocatedChunk, Chunk, ChunkKind, FirstAllocatedChunk},
         concrete::{ClaimedChunk, UnallocatedChunk},
@@ -540,7 +540,7 @@ where {
             ChunkKind::Claimed(_) => Err(E::claimed()),
             ChunkKind::Unallocated(chunk) => {
                 let allocator = chunk.construct_base_allocator()?;
-                let replacer = RawBump::with_size(ChunkSizeMinimum, allocator)?;
+                let replacer = RawBump::with_size(ChunkSizeMin, allocator)?;
                 // SAFETY: the bump has no chunks, ergo no allocations to invalidate
                 unsafe { self.replace(replacer) };
                 Ok(())

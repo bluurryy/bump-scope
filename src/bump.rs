@@ -12,7 +12,7 @@ use core::clone::CloneToUninit;
 
 use crate::{
     BumpBox, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, allocator_impl,
-    chunk_size::{ChunkSizeCapacity, ChunkSizeHint, ChunkSizeMinimum},
+    chunk_size::{ChunkSizeCapacity, ChunkSizeHint, ChunkSizeMin},
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
     error_behavior, maybe_default_allocator,
     owned_slice::OwnedSlice,
@@ -510,7 +510,7 @@ where
     #[cfg(feature = "panic-on-alloc")]
     pub fn new_in(allocator: A) -> Self {
         Self {
-            raw: panic_on_error(RawBump::with_size(ChunkSizeMinimum, allocator)),
+            raw: panic_on_error(RawBump::with_size(ChunkSizeMin, allocator)),
         }
     }
 
@@ -536,7 +536,7 @@ where
     #[inline(always)]
     pub fn try_new_in(allocator: A) -> Result<Self, AllocError> {
         Ok(Self {
-            raw: RawBump::with_size(ChunkSizeMinimum, allocator)?,
+            raw: RawBump::with_size(ChunkSizeMin, allocator)?,
         })
     }
 

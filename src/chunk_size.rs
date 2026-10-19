@@ -28,9 +28,9 @@ pub(crate) trait ChunkSize: Copy + fmt::Debug {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct ChunkSizeMinimum;
+pub(crate) struct ChunkSizeMin;
 
-impl ChunkSize for ChunkSizeMinimum {
+impl ChunkSize for ChunkSizeMin {
     fn layout<A, const C: BumpConfig>(self) -> Option<Layout> {
         Some(Constants::<A, C>::MINIMUM_LAYOUT)
     }
