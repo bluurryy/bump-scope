@@ -333,9 +333,7 @@ where
     ///
     /// # Examples
     ///
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// # #![feature(pointer_is_aligned_to)]
+    /// ```
     /// # use bump_scope::{Bump, config::{BumpConfig, BumpConfigBuilder}};
     /// const CONFIG_MIN_ALIGN_8: BumpConfig = BumpConfigBuilder::new()
     ///     .min_align(8)
@@ -344,7 +342,7 @@ where
     /// let mut bump: Bump = Bump::new();
     ///
     /// // bump starts off by being aligned to 16
-    /// assert!(bump.stats().bump_position().unwrap().is_aligned_to(16));
+    /// assert!(bump.stats().bump_position().unwrap().addr().get() % 16 == 0);
     ///
     /// // allocate one byte
     /// bump.alloc(1u8);
@@ -356,19 +354,19 @@ where
     ///
     /// bump.scoped_with_config::<CONFIG_MIN_ALIGN_8, ()>(|bump| {
     ///    // in here, the bump will have the specified minimum alignment of 8
-    ///    assert!(bump.stats().bump_position().unwrap().is_aligned_to(8));
+    ///    assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
     ///    assert_eq!(bump.stats().allocated(), 8);
     ///
     ///    // allocating a value with its size being a multiple of 8 will no longer have
     ///    // to align the bump pointer before allocation
     ///    bump.alloc(1u64);
-    ///    assert!(bump.stats().bump_position().unwrap().is_aligned_to(8));
+    ///    assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
     ///    assert_eq!(bump.stats().allocated(), 16);
     ///    
     ///    // allocating a value smaller than the minimum alignment must align the bump pointer
     ///    // after the allocation, resulting in some wasted space
     ///    bump.alloc(1u8);
-    ///    assert!(bump.stats().bump_position().unwrap().is_aligned_to(8));
+    ///    assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
     ///    assert_eq!(bump.stats().allocated(), 24);
     /// });
     ///
@@ -410,9 +408,7 @@ where
     /// # Examples
     ///
     /// Increase the minimum alignment:
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// # #![feature(pointer_is_aligned_to)]
+    /// ```
     /// # use bump_scope::{Bump, config::{BumpConfig, BumpConfigBuilder}};
     /// const MIN_ALIGN_8: BumpConfig = BumpConfigBuilder::new().min_align(8).build();
     ///
@@ -426,7 +422,7 @@ where
     /// let bar = bump.with_config::<MIN_ALIGN_8, _>(|bump| {
     ///     // in here the bump position has been aligned to `8`
     ///     assert_eq!(bump.stats().allocated(), 8);
-    ///     assert!(bump.stats().bump_position().unwrap().is_aligned_to(8));
+    ///     assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
     ///
     ///     // make some allocations that benefit from the higher `MIN_ALIGN` of `8`
     ///     let bar = bump.alloc(0u64);
@@ -449,9 +445,7 @@ where
     /// ```
     ///
     /// Decrease the minimum alignment:
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// # #![feature(pointer_is_aligned_to)]
+    /// ```
     /// # use std::alloc::Global;
     /// # use bump_scope::{Bump, config::{BumpConfig, BumpConfigBuilder}};
     /// const MIN_ALIGN_8: BumpConfig = BumpConfigBuilder::new().min_align(8).build();
@@ -475,7 +469,7 @@ where
     ///
     /// // after `with_config()`, the bump position will be aligned to `8` again
     /// // to satisfy our `MIN_ALIGN`
-    /// assert!(bump.stats().bump_position().unwrap().is_aligned_to(8));
+    /// assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
     /// assert_eq!(bump.stats().allocated(), 16);
     ///
     /// // continue making allocations that benefit from the `MIN_ALIGN` of `8`
