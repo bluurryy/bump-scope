@@ -1,5 +1,6 @@
 use std::{collections::HashMap, env, ffi::OsString, fmt::Write, path::Path, process::Command};
 
+use cargo_metadata::{Metadata, MetadataCommand};
 use fast_glob::glob_match;
 use gungraun_summary::{
     either_or_both::EitherOrBoth,
@@ -256,6 +257,16 @@ fn rustc_version() -> HashMap<String, String> {
     map
 }
 
+fn package_version(metadata: &Metadata, name: &str) -> String {
+    metadata
+        .packages
+        .iter()
+        .find(|p| p.name.as_str() == name)
+        .unwrap_or_else(|| panic!("can't find package with name '{name}'"))
+        .version
+        .to_string()
+}
+
 fn main() {
     let mut readme = std::fs::read_to_string("README.md").unwrap();
 
@@ -289,6 +300,18 @@ fn main() {
         }
 
         readme = replace_section(&readme, "version", &s);
+    }
+
+    // update library info
+    {
+        let metadata = MetadataCommand::new().exec().expect("failed to execute `cargo metadata`");
+        let bump_scope_version = package_version(&metadata, "bump-scope");
+        let bumpalo_version = package_version(&metadata, "bumpalo");
+        let blink_alloc_version = package_version(&metadata, "blink-alloc");
+
+        readme = replace_section(&readme, "bump-scope-version", &bump_scope_version);
+        readme = replace_section(&readme, "bumpalo-version", &bumpalo_version);
+        readme = replace_section(&readme, "blink-alloc-version", &blink_alloc_version);
     }
 
     std::fs::write("README.md", readme).unwrap();
