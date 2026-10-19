@@ -11,8 +11,8 @@ use core::{
 use core::clone::CloneToUninit;
 
 use crate::{
-    BumpBox, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, ErrorBehavior, allocator_impl,
-    chunk_size::{ChunkSizeCapacity, ChunkSizeHint},
+    BumpBox, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, allocator_impl,
+    chunk_size::{ChunkSizeCapacity, ChunkSizeHint, ChunkSizeMinimum},
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
     error_behavior, maybe_default_allocator,
     owned_slice::OwnedSlice,
@@ -349,7 +349,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn new() -> Self {
-        Self::with_size(config!(min_chunk_size))
+        Self::new_in(A::default())
     }
 
     /// Constructs a new `Bump` with a default size hint for the first chunk.
@@ -372,7 +372,7 @@ where
     /// [min_chunk_size]: crate::config::BumpConfigBuilder::min_chunk_size
     #[inline(always)]
     pub fn try_new() -> Result<Self, AllocError> {
-        Self::try_with_size(config!(min_chunk_size))
+        Self::try_new_in(A::default())
     }
 
     /// Constructs a new `Bump` with a size hint for the first chunk.
@@ -403,7 +403,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn with_size(size: usize) -> Self {
-        panic_on_error(Self::generic_with_size(size))
+        Self::with_size_in(size, A::default())
     }
 
     /// Constructs a new `Bump` with a size hint for the first chunk.
@@ -433,12 +433,7 @@ where
     /// ```
     #[inline(always)]
     pub fn try_with_size(size: usize) -> Result<Self, AllocError> {
-        Self::generic_with_size(size)
-    }
-
-    #[inline]
-    pub(crate) fn generic_with_size<E: ErrorBehavior>(size: usize) -> Result<Self, E> {
-        Self::generic_with_size_in(size, Default::default())
+        Self::try_with_size_in(size, A::default())
     }
 
     /// Constructs a new `Bump` with a chunk that has at least enough space for `layout`.
@@ -461,7 +456,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn with_capacity(layout: Layout) -> Self {
-        panic_on_error(Self::generic_with_capacity(layout))
+        Self::with_capacity_in(layout, A::default())
     }
 
     /// Constructs a new `Bump` with a chunk that has at least enough space for `layout`.
@@ -483,12 +478,7 @@ where
     /// ```
     #[inline(always)]
     pub fn try_with_capacity(layout: Layout) -> Result<Self, AllocError> {
-        Self::generic_with_capacity(layout)
-    }
-
-    #[inline]
-    pub(crate) fn generic_with_capacity<E: ErrorBehavior>(layout: Layout) -> Result<Self, E> {
-        Self::generic_with_capacity_in(layout, Default::default())
+        Self::try_with_capacity_in(layout, A::default())
     }
 }
 
@@ -519,7 +509,9 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn new_in(allocator: A) -> Self {
-        Self::with_size_in(config!(min_chunk_size), allocator)
+        Self {
+            raw: panic_on_error(RawBump::with_size(ChunkSizeMinimum, allocator)),
+        }
     }
 
     /// Constructs a new `Bump` with a default size hint for the first chunk.
@@ -543,7 +535,9 @@ where
     /// [min_chunk_size]: crate::config::BumpConfigBuilder::min_chunk_size
     #[inline(always)]
     pub fn try_new_in(allocator: A) -> Result<Self, AllocError> {
-        Self::try_with_size_in(config!(min_chunk_size), allocator)
+        Ok(Self {
+            raw: RawBump::with_size(ChunkSizeMinimum, allocator)?,
+        })
     }
 
     /// Constructs a new `Bump` with a size hint for the first chunk.
@@ -575,7 +569,9 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn with_size_in(size: usize, allocator: A) -> Self {
-        panic_on_error(Self::generic_with_size_in(size, allocator))
+        Self {
+            raw: panic_on_error(RawBump::with_size(ChunkSizeHint(size), allocator)),
+        }
     }
 
     /// Constructs a new `Bump` with a size hint for the first chunk.
@@ -606,11 +602,6 @@ where
     /// ```
     #[inline(always)]
     pub fn try_with_size_in(size: usize, allocator: A) -> Result<Self, AllocError> {
-        Self::generic_with_size_in(size, allocator)
-    }
-
-    #[inline]
-    pub(crate) fn generic_with_size_in<E: ErrorBehavior>(size: usize, allocator: A) -> Result<Self, E> {
         Ok(Self {
             raw: RawBump::with_size(ChunkSizeHint(size), allocator)?,
         })
@@ -637,7 +628,9 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn with_capacity_in(layout: Layout, allocator: A) -> Self {
-        panic_on_error(Self::generic_with_capacity_in(layout, allocator))
+        Self {
+            raw: panic_on_error(RawBump::with_size(ChunkSizeCapacity(layout), allocator)),
+        }
     }
 
     /// Constructs a new `Bump` with at least enough space for `layout`.
@@ -660,11 +653,6 @@ where
     /// ```
     #[inline(always)]
     pub fn try_with_capacity_in(layout: Layout, allocator: A) -> Result<Self, AllocError> {
-        Self::generic_with_capacity_in(layout, allocator)
-    }
-
-    #[inline]
-    pub(crate) fn generic_with_capacity_in<E: ErrorBehavior>(layout: Layout, allocator: A) -> Result<Self, E> {
         Ok(Self {
             raw: RawBump::with_size(ChunkSizeCapacity(layout), allocator)?,
         })

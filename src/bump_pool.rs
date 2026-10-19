@@ -7,13 +7,10 @@ use std::{
 };
 
 use crate::{
-    Bump, BumpScope, ErrorBehavior,
+    Bump, BumpScope,
     config::{BumpConfig, DEFAULT_BUMP_CONFIG},
     maybe_default_allocator,
 };
-
-#[cfg(feature = "panic-on-alloc")]
-use crate::panic_on_error;
 
 macro_rules! make_pool {
     ($($allocator_parameter:tt)*) => {
@@ -209,7 +206,15 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn get_with_size(&self, size: usize) -> BumpPoolGuard<'_, A, C> {
-        panic_on_error(self.generic_get_with_size(size))
+        let bump = match self.lock().pop() {
+            Some(bump) => bump,
+            None => Bump::with_size_in(size, self.allocator.clone()),
+        };
+
+        BumpPoolGuard {
+            pool: self,
+            bump: ManuallyDrop::new(bump),
+        }
     }
 
     /// Borrows a bump allocator from the pool.
@@ -223,13 +228,9 @@ where
     /// Errors if the allocation fails.
     #[inline(always)]
     pub fn try_get_with_size(&self, size: usize) -> Result<BumpPoolGuard<'_, A, C>, AllocError> {
-        self.generic_get_with_size(size)
-    }
-
-    pub(crate) fn generic_get_with_size<E: ErrorBehavior>(&self, size: usize) -> Result<BumpPoolGuard<'_, A, C>, E> {
         let bump = match self.lock().pop() {
             Some(bump) => bump,
-            None => Bump::generic_with_size_in(size, self.allocator.clone())?,
+            None => Bump::try_with_size_in(size, self.allocator.clone())?,
         };
 
         Ok(BumpPoolGuard {
@@ -251,7 +252,15 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn get_with_capacity(&self, layout: Layout) -> BumpPoolGuard<'_, A, C> {
-        panic_on_error(self.generic_get_with_capacity(layout))
+        let bump = match self.lock().pop() {
+            Some(bump) => bump,
+            None => Bump::with_capacity_in(layout, self.allocator.clone()),
+        };
+
+        BumpPoolGuard {
+            pool: self,
+            bump: ManuallyDrop::new(bump),
+        }
     }
 
     /// Borrows a bump allocator from the pool.
@@ -265,13 +274,9 @@ where
     /// Errors if the allocation fails.
     #[inline(always)]
     pub fn try_get_with_capacity(&self, layout: Layout) -> Result<BumpPoolGuard<'_, A, C>, AllocError> {
-        self.generic_get_with_capacity(layout)
-    }
-
-    pub(crate) fn generic_get_with_capacity<E: ErrorBehavior>(&self, layout: Layout) -> Result<BumpPoolGuard<'_, A, C>, E> {
         let bump = match self.lock().pop() {
             Some(bump) => bump,
-            None => Bump::generic_with_capacity_in(layout, self.allocator.clone())?,
+            None => Bump::try_with_capacity_in(layout, self.allocator.clone())?,
         };
 
         Ok(BumpPoolGuard {
