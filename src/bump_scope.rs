@@ -398,15 +398,13 @@ where
 
     /// Calls `f` with this scope but with a new config.
     ///
-    /// # Panics
-    ///
-    /// - panics if [`upwards`] changes
-    /// - panics if [`claimable`] becomes false and [`self.is_claimed()`]
-    /// - panics if [`guaranteed_allocated`] becomes true and `self` has no chunks
+    /// # Fails
+    /// - Fails to compile if [`upwards`] changes
+    /// - Fails to compile if [`claimable`] changes
+    /// - Fails to compile if [`guaranteed_allocated`] changes
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
-    /// [`self.is_claimed()`]: Self::is_claimed
     /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
     ///
     /// # Examples
@@ -489,12 +487,16 @@ where
     pub fn with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<'a, A, NEW_C>) -> R) -> R {
         RawBump::<A, C>::const_assert_upwards_matches::<NEW_C>();
 
-        if !self.raw.can_convert_claimable::<NEW_C>() {
-            error_behavior::panic::claimed();
-        }
+        const {
+            assert!(
+                config!(NEW_C, claimable) == config!(claimable),
+                "can't change claimable property using `Bump(Scope)::with_config`"
+            );
 
-        if !self.raw.can_convert_guaranteed_allocated::<NEW_C>() {
-            error_behavior::panic::unallocated();
+            assert!(
+                config!(NEW_C, guaranteed_allocated) == config!(guaranteed_allocated),
+                "can't change guaranteed-allocated property using `Bump(Scope)::with_config`"
+            );
         }
 
         if config!(NEW_C, min_align) < config!(min_align) {
