@@ -488,9 +488,7 @@ fn handle_alloc_error(_layout: Layout) -> ! {
 #[inline(always)]
 #[cfg(feature = "panic-on-alloc")]
 fn panic_on_error<T>(result: Result<T, !>) -> T {
-    match result {
-        Ok(value) => value,
-    }
+    result.into_ok()
 }
 
 trait SizedTypeProperties: Sized {
