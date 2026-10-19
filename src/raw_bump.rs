@@ -209,6 +209,12 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
 
     #[cfg_attr(not(debug_assertions), inline(always))]
     pub(crate) unsafe fn reset_to(&self, checkpoint: Checkpoint) {
+        if config!(claimable) && checkpoint.chunk.is_claimed() {
+            // We do nothing if the checkpoint is claimed.
+            // This state is reachable in safe code when a `BumpClaimGuard` is forgotten.
+            return;
+        }
+
         // If the checkpoint was created when the bump allocator had no allocated chunk
         // then the chunk pointer will point to the unallocated chunk header.
         //
@@ -226,34 +232,26 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         #[cfg(debug_assertions)]
         {
             assert!(
-                !checkpoint.chunk.is_claimed(),
-                "the checkpoint must not have been created by a claimed bump allocator"
-            );
-
-            assert!(
-                !self.chunk.get().is_claimed(),
-                "this function must not be called on a claimed bump allocator"
-            );
-
-            assert!(
                 !checkpoint.chunk.is_unallocated(),
                 "the checkpoint must not have been created by a not-`guaranteed_allocated` when self is `guaranteed_allocated`"
             );
 
-            let chunk = self
-                .stats()
-                .small_to_big()
-                .find(|chunk| chunk.header().addr() == checkpoint.chunk.as_ptr().addr())
-                .expect("this checkpoint does not refer to any chunk in this bump allocator");
+            if !self.is_claimed() {
+                let chunk = self
+                    .stats()
+                    .small_to_big()
+                    .find(|chunk| chunk.header().addr() == checkpoint.chunk.as_ptr().addr())
+                    .expect("this checkpoint does not refer to any chunk in this bump allocator");
 
-            let start = chunk.content_start().addr().get();
-            let end = chunk.content_end().addr().get();
-            let addr = checkpoint.address.get();
+                let start = chunk.content_start().addr().get();
+                let end = chunk.content_end().addr().get();
+                let addr = checkpoint.address.get();
 
-            assert!(
-                addr >= start && addr <= end,
-                "checkpoint address is not in the chunk's content range"
-            );
+                assert!(
+                    addr >= start && addr <= end,
+                    "checkpoint address is not in the chunk's content range"
+                );
+            }
         }
 
         // We handled the unallocated case above.

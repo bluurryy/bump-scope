@@ -4,6 +4,7 @@ mod common;
 
 use std::{
     alloc::{AllocError, Allocator, Global, Layout},
+    mem::forget,
     panic::{AssertUnwindSafe, UnwindSafe},
     string::String,
 };
@@ -209,6 +210,45 @@ up_and_down! {
 
         let uno_dos_tres = bump.claim().alloc_iter_mut([1, 2, 3]);
         assert_eq!(uno_dos_tres, [1, 2, 3]);
+    }
+
+    #[test]
+    fn enter_scope_on_claimed() {
+        fn inner() {
+            let mut bump = Bump::<Global, C>::new();
+            let mut guard = bump.scope_guard();
+            let mut scope = guard.scope().by_value();
+            forget(scope.claim());
+
+            {
+                let _guard = scope.scope_guard();
+                // this will call `reset_to` with a checkpoint from the claimed dummy chunk
+                // this mustn't try to actually reset within the claimed chunk as that would trigger a data race here
+            }
+        }
+
+        std::thread::spawn(inner);
+        std::thread::spawn(inner);
+    }
+
+    #[test]
+    fn exit_scope_on_claimed() {
+        fn inner() {
+            let mut bump = Bump::<Global, C>::new();
+
+            {
+                let mut guard = bump.scope_guard();
+                let scope = guard.scope();
+                forget(scope.claim());
+                // this will call `reset_to` on a claimed bump allocator
+                // that should be fine, the bump allocator is thereby reclaimed
+            }
+
+            assert!(!bump.is_claimed());
+        }
+
+        std::thread::spawn(inner);
+        std::thread::spawn(inner);
     }
 }
 
