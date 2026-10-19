@@ -477,12 +477,12 @@ where
         const {
             assert!(
                 config!(NEW_C, claimable) == config!(claimable),
-                "can't change claimable property using `Bump(Scope)::with_config`"
+                "can't change `claimable` using `Bump(Scope)::with_config`"
             );
 
             assert!(
                 config!(NEW_C, const_constructible) == config!(const_constructible),
-                "can't change const_constructible property using `Bump(Scope)::with_config`"
+                "can't change `const_constructible` using `Bump(Scope)::with_config`"
             );
         }
 

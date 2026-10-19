@@ -1,4 +1,4 @@
-error[E0080]: evaluation panicked: can't change claimable property using `Bump(Scope)::with_config`
+error[E0080]: evaluation panicked: can't change `claimable` using `Bump(Scope)::with_config`
  --> $RUST/core/src/panic.rs
   |
   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
@@ -8,7 +8,7 @@ error[E0080]: evaluation panicked: can't change claimable property using `Bump(S
   |
   | /             assert!(
   | |                 config!(NEW_C, claimable) == config!(claimable),
-  | |                 "can't change claimable property using `Bump(Scope)::with_config`"
+  | |                 "can't change `claimable` using `Bump(Scope)::with_config`"
   | |             );
   | |_____________- in this macro invocation
 
@@ -18,7 +18,7 @@ note: erroneous constant encountered
   | /         const {
   | |             assert!(
   | |                 config!(NEW_C, claimable) == config!(claimable),
-  | |                 "can't change claimable property using `Bump(Scope)::with_config`"
+  | |                 "can't change `claimable` using `Bump(Scope)::with_config`"
 ... |
   | |             );
   | |         }
