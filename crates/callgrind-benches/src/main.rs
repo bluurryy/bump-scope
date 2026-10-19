@@ -57,7 +57,7 @@ fn get_metric_int(metrics: &IndexMap<EventKind, MetricResult>, event_kind: Event
 
     match new_metric {
         Metric::Int(int) => Some(*int),
-        Metric::Float(_) => return None,
+        Metric::Float(_) => None,
     }
 }
 
