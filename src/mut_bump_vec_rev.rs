@@ -332,7 +332,7 @@ impl<T, A> MutBumpVecRev<T, A> {
     /// # Safety
     /// Vector must not be full.
     #[inline(always)]
-    #[deprecated = "use `push_unchecked(f())` instead"]
+    #[deprecated(note = "use `push_unchecked(f())` instead", since = "2.1.0")]
     pub unsafe fn push_with_unchecked(&mut self, f: impl FnOnce() -> T) {
         unsafe { self.push_unchecked(f()) };
     }
