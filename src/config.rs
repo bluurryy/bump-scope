@@ -10,7 +10,7 @@
 //! const MY_CONFIG: BumpConfig = BumpConfigBuilder::new()
 //!     .min_align(8)
 //!     .upwards(false)
-//!     .guaranteed_allocated(false)
+//!     .const_constructible(true)
 //!     .claimable(false)
 //!     .deallocates(false)
 //!     .shrinks(false)
@@ -286,7 +286,7 @@ bit_fields! {
     /// The configuration values are:
     /// - [`min_align`]\: 1
     /// - [`upwards`]\: true
-    /// - [`guaranteed_allocated`]\: true
+    /// - [`const_constructible`]\: false
     /// - [`claimable`]\: true
     /// - [`deallocates`]\: true
     /// - [`shrinks`]\: true
@@ -294,7 +294,7 @@ bit_fields! {
     ///
     /// [`min_align`]: BumpConfigBuilder::min_align
     /// [`upwards`]: BumpConfigBuilder::upwards
-    /// [`guaranteed_allocated`]: BumpConfigBuilder::guaranteed_allocated
+    /// [`const_constructible`]: BumpConfigBuilder::const_constructible
     /// [`claimable`]: BumpConfigBuilder::claimable
     /// [`deallocates`]: BumpConfigBuilder::deallocates
     /// [`shrinks`]: BumpConfigBuilder::shrinks
@@ -349,12 +349,12 @@ bit_fields! {
     /// Controls whether at least one chunk has been allocated.
     ///
     /// The <code>[unallocated]</code> constructor will create a bump allocator without allocating a chunk.
-    /// It will only compile when `guaranteed_allocated` is `false`.
+    /// It will only compile when `const_constructible` is `true`.
     ///
     /// The constructors <code>[new]\([_in][new_in])</code>, <code>[default]</code>, <code>[with_size]\([_in][with_size_in])</code> and <code>[with_capacity]\([_in][with_capacity_in])</code>
     /// will allocate a chunk and are always available.
     ///
-    /// Setting `guaranteed_allocated` to `false` adds additional checks and code paths for handling the no-chunk-allocated state when calling [`reset_to`], exiting scopes or calling [`by_value`].
+    /// Setting `const_constructible` to `true` adds additional checks and code paths for handling the no-chunk-allocated state when exiting scopes, calling [`reset_to`] or calling [`by_value`].
     ///
     /// [unallocated]: crate::Bump::unallocated
     /// [new]: crate::Bump::new
@@ -367,8 +367,8 @@ bit_fields! {
     /// [with_capacity_in]: crate::Bump::with_capacity_in
     /// [`reset_to`]: crate::traits::BumpAllocatorCore::reset_to
     /// [`by_value`]: crate::BumpScope::by_value
-    guaranteed_allocated: bool {
-        default: true,
+    const_constructible: bool {
+        default: false,
         bits: 1,
         encode: |v| if v { 1 } else { 0 },
         decode: |v| v != 0,
@@ -435,7 +435,7 @@ bit_fields! {
 fn test_roundtrip() {
     for min_align in [1, 2, 4, 8, 16] {
     for upwards in [false, true] {
-    for guaranteed_allocated in [false, true] {
+    for const_constructible in [false, true] {
     for claimable in [false, true] {
     for deallocates in [false, true] {
     for shrinks in [false, true] {
@@ -444,7 +444,7 @@ fn test_roundtrip() {
         let config = BumpConfigBuilder::new()
             .min_align(min_align)
             .upwards(upwards)
-            .guaranteed_allocated(guaranteed_allocated)
+            .const_constructible(const_constructible)
             .claimable(claimable)
             .deallocates(deallocates)
             .shrinks(shrinks)
@@ -456,7 +456,7 @@ fn test_roundtrip() {
 
         assert_eq!(min_align, read::min_align(config));
         assert_eq!(upwards, read::upwards(config));
-        assert_eq!(guaranteed_allocated, read::guaranteed_allocated(config));
+        assert_eq!(const_constructible, read::const_constructible(config));
         assert_eq!(claimable, read::claimable(config));
         assert_eq!(deallocates, read::deallocates(config));
         assert_eq!(shrinks, read::shrinks(config));

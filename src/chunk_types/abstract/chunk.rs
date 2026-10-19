@@ -66,7 +66,7 @@ impl<A, const C: BumpConfig> Chunk<A, C> {
 
 impl<A, const C: BumpConfig> Chunk<A, C> {
     pub(crate) fn is_unallocated(self) -> bool {
-        !config!(guaranteed_allocated) && self.pos() == dummy_memory_region::UNALLOCATED_POS
+        config!(const_constructible) && self.pos() == dummy_memory_region::UNALLOCATED_POS
     }
 
     pub(crate) fn is_claimed(self) -> bool {
@@ -75,9 +75,9 @@ impl<A, const C: BumpConfig> Chunk<A, C> {
 
     pub(crate) fn kind(self) -> ChunkKind<A, C> {
         unsafe {
-            if !config!(guaranteed_allocated) && self.is_unallocated() {
+            if self.is_unallocated() {
                 ChunkKind::Unallocated(transmute(self))
-            } else if config!(claimable) && self.is_claimed() {
+            } else if self.is_claimed() {
                 ChunkKind::Claimed(transmute(self))
             } else {
                 ChunkKind::Allocated(transmute(self))

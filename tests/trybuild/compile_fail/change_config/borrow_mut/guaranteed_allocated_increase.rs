@@ -5,8 +5,8 @@ use bump_scope::{
     config::{BumpConfig, BumpConfigBuilder},
 };
 
-const IN: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(false).build();
-const OUT: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(true).build();
+const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
+const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
 
 fn convert(bump: &mut Bump<Global, IN>) -> &mut Bump<Global, OUT> {
     bump.borrow_mut_change_config()

@@ -4,7 +4,7 @@ use std::alloc::Global;
 
 use bump_scope::config::{BumpConfig, BumpConfigBuilder};
 
-const BUMP_CONFIG: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(false).build();
+const BUMP_CONFIG: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
 
 type Bump = bump_scope::Bump<Global, BUMP_CONFIG>;
 

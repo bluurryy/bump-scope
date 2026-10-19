@@ -158,8 +158,8 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
             error_behavior::panic::claimed();
         }
 
-        // No need to check guaranteed_allocated, a scope by value is always allocated,
-        // created by `(try_)by_value`.
+        // No need to check const_constructible, a scope by value must have been created
+        // by `(try_)by_value` which always makes it allocated.
 
         self.raw.align_to(config!(NEW_C, min_align));
 
@@ -169,7 +169,7 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
     /// Borrows this `BumpScope` with a new config.
     ///
     /// # Panics
-    /// - Panics if [`guaranteed_allocated`] becomes true and `self` has no chunks
+    /// - Panics if [`const_constructible`] becomes false and `self` has no chunks
     ///
     /// # Fails
     /// - Fails to compile if [`upwards`] changes
@@ -178,7 +178,7 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
-    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
+    /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
     pub fn borrow_change_config<const NEW_C: BumpConfig>(&self) -> &BumpScope<'a, A, NEW_C> {
@@ -191,12 +191,12 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
     /// # Fails
     /// - Fails to compile if [`upwards`] changes
     /// - Fails to compile if [`claimable`] changes
-    /// - Fails to compile if [`guaranteed_allocated`] changes
+    /// - Fails to compile if [`const_constructible`] changes
     /// - Fails to compile if [`min_align`] decreases
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
-    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
+    /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
     pub fn borrow_mut_change_config<const NEW_C: BumpConfig>(&mut self) -> &mut BumpScope<'a, A, NEW_C> {
@@ -324,12 +324,12 @@ where
     /// # Panics
     ///
     /// - Panics if [`claimable`] becomes false and [`self.is_claimed()`]
-    /// - Panics if [`guaranteed_allocated`] becomes true and `self` has no chunks
+    /// - Panics if [`const_constructible`] becomes false and `self` has no chunks
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
     /// [`self.is_claimed()`]: Self::is_claimed
-    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
+    /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     ///
     /// # Examples
     ///
@@ -382,7 +382,7 @@ where
             error_behavior::panic::claimed();
         }
 
-        if !self.raw.can_convert_guaranteed_allocated::<NEW_C>() {
+        if !self.raw.can_convert_const_constructible::<NEW_C>() {
             error_behavior::panic::unallocated();
         }
 
@@ -399,11 +399,11 @@ where
     /// # Fails
     /// - Fails to compile if [`upwards`] changes
     /// - Fails to compile if [`claimable`] changes
-    /// - Fails to compile if [`guaranteed_allocated`] changes
+    /// - Fails to compile if [`const_constructible`] changes
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
-    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
+    /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     ///
     /// # Examples
     ///
@@ -488,8 +488,8 @@ where
             );
 
             assert!(
-                config!(NEW_C, guaranteed_allocated) == config!(guaranteed_allocated),
-                "can't change guaranteed-allocated property using `Bump(Scope)::with_config`"
+                config!(NEW_C, const_constructible) == config!(const_constructible),
+                "can't change const_constructible property using `Bump(Scope)::with_config`"
             );
         }
 

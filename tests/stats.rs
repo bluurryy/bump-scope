@@ -63,7 +63,7 @@ macro_rules! allocator_with_layout {
 }
 
 up_and_down! {
-    const C: BumpConfig = BumpConfigBuilder(DEFAULT_C).guaranteed_allocated(false).build();
+    const C: BumpConfig = BumpConfigBuilder(DEFAULT_C).const_constructible(true).build();
 
     #[test]
     #[cfg(target_pointer_width = "64")]

@@ -13,7 +13,7 @@ use bump_scope::{
 use common::{AssumedMallocOverhead, up_and_down};
 
 up_and_down! {
-    const C: BumpConfig = BumpConfigBuilder(DEFAULT_C).guaranteed_allocated(false).build();
+    const C: BumpConfig = BumpConfigBuilder(DEFAULT_C).const_constructible(true).build();
 
     #[test]
     fn allocated() {

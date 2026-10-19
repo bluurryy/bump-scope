@@ -25,7 +25,7 @@ macro_rules! assert_eq_ne {
 }
 
 up_and_down! {
-    const C: BumpConfig = BumpConfigBuilder(DEFAULT_C).guaranteed_allocated(false).build();
+    const C: BumpConfig = BumpConfigBuilder(DEFAULT_C).const_constructible(true).build();
 
     #[test]
     fn allocate() {

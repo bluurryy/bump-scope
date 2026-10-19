@@ -5,8 +5,8 @@ use bump_scope::{
     config::{BumpConfig, BumpConfigBuilder},
 };
 
-const IN: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(true).build();
-const OUT: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(false).build();
+const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
+const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
 
 fn main() {
     let mut input = Bump::<Global, IN>::new();

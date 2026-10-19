@@ -258,24 +258,23 @@ impl<A, const C: BumpConfig> Default for Bump<A, C>
 where
     A: Allocator + Default + 'static,
 {
-    /// With [`guaranteed_allocated`] this does the same as [`new`], otherwise it does the same as [`unallocated`].
+    /// With [`const_constructible`] this does the same as [`unallocated`], otherwise it does the same as [`new`].
     ///
     /// # Panics
-    /// Panics if this `Bump` is [`guaranteed_allocated`] and the "panic-on-alloc" feature is disabled.
+    /// Panics if this `Bump` is **not** [`const_constructible`] and the "panic-on-alloc" feature is disabled.
     ///
-    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
+    /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     /// [`new`]: Bump::new
     /// [`unallocated`]: Bump::unallocated
     #[inline(always)]
-    #[cfg_attr(not(feature = "panic-on-alloc"), expect(clippy::redundant_else))] // clippy doesn't understand cfg_select
     fn default() -> Self {
-        if config!(guaranteed_allocated) {
+        if config!(const_constructible) {
+            Self { raw: RawBump::new() }
+        } else {
             cfg_select! {
                 feature = "panic-on-alloc" => Self::new(),
-                _ => panic!("can't default construct a `Bump` with `guaranteed_allocated` and no \"panic-on-alloc\" feature"),
+                _ => panic!("can't default construct a `Bump` without `const_constructible` and no \"panic-on-alloc\" feature"),
             }
-        } else {
-            Self { raw: RawBump::new() }
         }
     }
 }
@@ -288,7 +287,7 @@ where
     ///
     /// # Panics
     ///
-    /// Panics when not [`guaranteed_allocated`].
+    /// Panics when not [`const_constructible`].
     ///
     /// # Examples
     ///
@@ -297,16 +296,16 @@ where
     ///
     /// use bump_scope::{Bump, config::{BumpConfig, BumpConfigBuilder}};
     ///
-    /// const CONFIG: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(false).build();
+    /// const CONFIG: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
     ///
     /// let bump: Bump<Global, CONFIG> = Bump::unallocated();
     /// # _ = bump;
     /// ```
     ///
-    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
+    /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     #[must_use]
     pub const fn unallocated() -> Self {
-        const { assert!(!config!(guaranteed_allocated)) };
+        const { assert!(config!(const_constructible)) };
         Self { raw: RawBump::new() }
     }
 }
@@ -790,7 +789,7 @@ where
     ///
     /// # Panics
     /// - Panics if [`claimable`] becomes false and [`self.is_claimed()`]
-    /// - Panics if [`guaranteed_allocated`] becomes true and `self` has no chunks
+    /// - Panics if [`const_constructible`] becomes false and `self` has no chunks
     ///
     /// # Fails
     /// - Fails to compile if [`upwards`] changes
@@ -798,7 +797,7 @@ where
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
     /// [`self.is_claimed()`]: Self::is_claimed
-    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
+    /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     ///
     #[inline]
     pub fn change_config<const NEW_C: BumpConfig>(self) -> Bump<A, NEW_C> {
@@ -808,7 +807,7 @@ where
             error_behavior::panic::claimed();
         }
 
-        if !self.raw.can_convert_guaranteed_allocated::<NEW_C>() {
+        if !self.raw.can_convert_const_constructible::<NEW_C>() {
             error_behavior::panic::unallocated();
         }
 
@@ -820,7 +819,7 @@ where
     /// Borrows this `Bump` with a new config.
     ///
     /// # Panics
-    /// - Panics if [`guaranteed_allocated`] becomes true and `self` has no chunks
+    /// - Panics if [`const_constructible`] becomes false and `self` has no chunks
     ///
     /// # Fails
     /// - Fails to compile if [`upwards`] changes
@@ -829,7 +828,7 @@ where
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
-    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
+    /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
     pub fn borrow_change_config<const NEW_C: BumpConfig>(&self) -> &Bump<A, NEW_C> {
@@ -842,12 +841,12 @@ where
     /// # Fails
     /// - Fails to compile if [`upwards`] changes
     /// - Fails to compile if [`claimable`] changes
-    /// - Fails to compile if [`guaranteed_allocated`] changes
+    /// - Fails to compile if [`const_constructible`] changes
     /// - Fails to compile if [`min_align`] decreases
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
-    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
+    /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
     pub fn borrow_mut_change_config<const NEW_C: BumpConfig>(&mut self) -> &mut Bump<A, NEW_C> {

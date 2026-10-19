@@ -52,7 +52,7 @@ macro_rules! assert_eq_ident {
 up_and_down! {
     const C: BumpConfig = DEFAULT_C;
     const MIN_ALIGN_8: BumpConfig = BumpConfigBuilder(C).min_align(8).build();
-    const NO_MIN_SIZE: BumpConfig = BumpConfigBuilder(C).guaranteed_allocated(false).min_chunk_size(1).build();
+    const NO_MIN_SIZE: BumpConfig = BumpConfigBuilder(C).const_constructible(true).min_chunk_size(1).build();
 
     #[test]
     fn assert_send() {

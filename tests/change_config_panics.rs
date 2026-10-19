@@ -16,18 +16,18 @@ mod test_bump {
 
     #[test]
     #[should_panic = "bump allocator is unallocated"]
-    fn increase_guaranteed_allocated() {
-        const IN: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(false).build();
-        const OUT: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(true).build();
+    fn decrease_const_constructible() {
+        const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
+        const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
         let input: Bump<Global, IN> = Bump::unallocated();
         let _: Bump<Global, OUT> = input.change_config();
     }
 
     #[test]
     #[should_panic = "bump allocator is unallocated"]
-    fn increase_guaranteed_allocated_while_claimed() {
-        const IN: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(false).build();
-        const OUT: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(true).build();
+    fn decrease_const_constructible_while_claimed() {
+        const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
+        const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
         let input: Bump<Global, IN> = Bump::unallocated();
         forget(input.claim());
         // here, we're not able to tell whether the bump allocator is "unallocated", so we need to panic
@@ -66,18 +66,18 @@ mod test_borrow {
 
     #[test]
     #[should_panic = "bump allocator is unallocated"]
-    fn increase_guaranteed_allocated() {
-        const IN: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(false).build();
-        const OUT: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(true).build();
+    fn decrease_const_constructible() {
+        const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
+        const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
         let input: Bump<Global, IN> = Bump::unallocated();
         let _: &Bump<Global, OUT> = input.borrow_change_config();
     }
 
     #[test]
     #[should_panic = "bump allocator is unallocated"]
-    fn increase_guaranteed_allocated_while_claimed() {
-        const IN: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(false).build();
-        const OUT: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(true).build();
+    fn decrease_const_constructible_while_claimed() {
+        const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
+        const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
         let input: Bump<Global, IN> = Bump::unallocated();
         forget(input.claim());
         // here, we're not able to tell whether the bump allocator is "unallocated", so we need to panic
@@ -92,18 +92,18 @@ mod test_scoped_with_config {
 
     #[test]
     #[should_panic = "bump allocator is unallocated"]
-    fn increase_guaranteed_allocated() {
-        const IN: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(false).build();
-        const OUT: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(true).build();
+    fn decrease_const_constructible() {
+        const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
+        const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
         let mut input: Bump<Global, IN> = Bump::unallocated();
         input.scoped_with_config::<OUT, _>(|_| ());
     }
 
     #[test]
     #[should_panic = "bump allocator is unallocated"]
-    fn increase_guaranteed_allocated_while_claimed() {
-        const IN: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(false).build();
-        const OUT: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(true).build();
+    fn decrease_const_constructible_while_claimed() {
+        const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
+        const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
         let mut input: Bump<Global, IN> = Bump::unallocated();
         forget(input.claim());
         // here, we're not able to tell whether the bump allocator is "unallocated", so we need to panic

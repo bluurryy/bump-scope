@@ -15,7 +15,7 @@ up_and_down! {
         let malloc_overhead = size_of::<[usize; 2]>();
         let expected_size = 4096 - malloc_overhead;
 
-        const MY_C: BumpConfig = BumpConfigBuilder(C).guaranteed_allocated(false).min_chunk_size(4096).build();
+        const MY_C: BumpConfig = BumpConfigBuilder(C).const_constructible(true).min_chunk_size(4096).build();
         type MyBump = Bump<Global, MY_C>;
 
         assert_eq!(0, MyBump::unallocated().stats().size());

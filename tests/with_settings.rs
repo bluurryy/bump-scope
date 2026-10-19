@@ -14,8 +14,8 @@ use crate::common::InstrumentedAllocator;
 #[test]
 #[should_panic = "bump allocator is unallocated"]
 fn test_panic_change_config_unallocated() {
-    const OLD_C: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(false).build();
-    const NEW_C: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(true).build();
+    const OLD_C: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
+    const NEW_C: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
     let bump: Bump<A, OLD_C> = Bump::unallocated();
     let _: Bump<A, NEW_C> = bump.change_config();
 }

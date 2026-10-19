@@ -17,7 +17,7 @@ fn test_reserve() {
     // The second chunk has its bump pointer at its end, making it return `0` from `remaining`.
     // This `remaining` property is meaningless for non-current chunks and the second chunk's
     // whole capacity must be subtracted from the amount of bytes to reserve.
-    const C: BumpConfig = BumpConfigBuilder::new().guaranteed_allocated(false).build();
+    const C: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
 
     let bump = Bump::<Global, C>::unallocated();
     assert_eq!(bump.stats().count(), 0);

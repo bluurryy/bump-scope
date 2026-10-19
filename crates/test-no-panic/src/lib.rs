@@ -95,13 +95,13 @@ pub mod test_constructors {
     use super::*;
 
     up_and_down! {
-        const NOT_GUARANTEED: BumpConfig = BumpConfigBuilder(DEFAULT_C).guaranteed_allocated(false).build();
+        const CONST_CONSTRUCTIBLE: BumpConfig = BumpConfigBuilder(DEFAULT_C).const_constructible(true).build();
 
-        pub fn Bump_unallocated() -> Bump<NOT_GUARANTEED> {
+        pub fn Bump_unallocated() -> Bump<CONST_CONSTRUCTIBLE> {
             Bump::unallocated()
         }
 
-        pub fn Bump_default() -> Bump<NOT_GUARANTEED> {
+        pub fn Bump_default() -> Bump<CONST_CONSTRUCTIBLE> {
             Bump::default()
         }
 
@@ -136,7 +136,7 @@ pub mod test_change_config {
 
     up_and_down! {
         const UNCLAIMABLE: BumpConfig = BumpConfigBuilder(DEFAULT_C).claimable(false).build();
-        const NOT_GUARANTEED: BumpConfig = BumpConfigBuilder(DEFAULT_C).guaranteed_allocated(false).build();
+        const CONST_CONSTRUCTIBLE: BumpConfig = BumpConfigBuilder(DEFAULT_C).const_constructible(true).build();
         const MIN_ALIGN_4: BumpConfig = BumpConfigBuilder(DEFAULT_C).min_align(4).build();
 
         pub fn Bump_change_config_identity(bump: Bump) -> Bump {
@@ -155,11 +155,11 @@ pub mod test_change_config {
             bump.change_config()
         }
 
-        pub fn Bump_change_config_decrease_guaranteed_allocated(bump: Bump) -> Bump<NOT_GUARANTEED> {
+        pub fn Bump_change_config_increase_const_constructible(bump: Bump) -> Bump<CONST_CONSTRUCTIBLE> {
             bump.change_config()
         }
 
-        pub fn Bump_borrow_change_config_decrease_guaranteed_allocated(bump: &Bump) -> &Bump<NOT_GUARANTEED> {
+        pub fn Bump_borrow_change_config_increase_const_constructible(bump: &Bump) -> &Bump<CONST_CONSTRUCTIBLE> {
             bump.borrow_change_config()
         }
 
@@ -179,15 +179,15 @@ pub mod test_change_config {
             bump.change_config()
         }
 
-        pub fn BumpScope_change_config_increase_guaranteed_allocated(bump: BumpScope<NOT_GUARANTEED>) -> BumpScope {
+        pub fn BumpScope_change_config_decrease_const_constructible(bump: BumpScope<CONST_CONSTRUCTIBLE>) -> BumpScope {
             bump.change_config()
         }
 
-        pub fn BumpScope_change_config_decrease_guaranteed_allocated(bump: BumpScope) -> BumpScope<NOT_GUARANTEED> {
+        pub fn BumpScope_change_config_increase_const_constructible(bump: BumpScope) -> BumpScope<CONST_CONSTRUCTIBLE> {
             bump.change_config()
         }
 
-        pub fn BumpScope_borrow_change_config_decrease_guaranteed_allocated<'b, 'a>(bump: &'b BumpScope<'a>) -> &'b BumpScope<'a, NOT_GUARANTEED> {
+        pub fn BumpScope_borrow_change_config_increase_const_constructible<'b, 'a>(bump: &'b BumpScope<'a>) -> &'b BumpScope<'a, CONST_CONSTRUCTIBLE> {
             bump.borrow_change_config()
         }
 

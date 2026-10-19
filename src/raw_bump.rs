@@ -44,15 +44,15 @@ impl<A, const C: BumpConfig> Clone for RawBump<A, C> {
 impl<A, const C: BumpConfig> RawBump<A, C> {
     /// # Panics
     ///
-    /// Panics if `self` is [`guaranteed_allocated`].
+    /// Panics if `self` is **not** [`const_constructible`].
     ///
-    /// [`guaranteed_allocated`]: crate::config::BumpConfigBuilder::guaranteed_allocated
+    /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     #[inline(always)]
     pub(crate) const fn new() -> Self
     where
         A: Default + 'static,
     {
-        assert!(!config!(guaranteed_allocated));
+        assert!(config!(const_constructible));
 
         Self {
             chunk: Cell::new(Chunk::from_unallocated(UnallocatedChunk::VALUE)),
@@ -211,11 +211,10 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         //
         // In such cases we reset the bump pointer to the very start of the very first chunk.
         //
-        // We don't check if the chunk pointer points to the unallocated chunk header
-        // if the bump allocator is `guaranteed_allocated`. We are allowed to not do this check
-        // because of this safety condition of `reset_to`:
-        // > the checkpoint must not have been created by a not-`guaranteed_allocated` when self is `guaranteed_allocated`
-        if !config!(guaranteed_allocated) && checkpoint.chunk.is_unallocated() {
+        // We don't check if the chunk pointer points to the unallocated chunk header if the bump allocator is **not** `const_constructible`.
+        // We are allowed to not do this check because of this safety condition of `reset_to`:
+        // > the checkpoint must not have been created by a `const_constructible` when self is **not** `const_constructible`
+        if config!(const_constructible) && checkpoint.chunk.is_unallocated() {
             self.reset_to_start();
             return;
         }
@@ -224,7 +223,7 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         {
             assert!(
                 !checkpoint.chunk.is_unallocated(),
-                "the checkpoint must not have been created by a not-`guaranteed_allocated` when self is `guaranteed_allocated`"
+                "the checkpoint must not have been created by a `const_constructible` when self is not `const_constructible`"
             );
 
             if !self.is_claimed() {
@@ -580,13 +579,16 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         }) || !self.is_claimed()
     }
 
-    pub(crate) fn can_convert_guaranteed_allocated<const NEW_C: BumpConfig>(&self) -> bool {
-        // Either nothing changed, the new config is not guaranteed allocated, the old one is, or the bump is currently allocated.
-        // NB: The runtime condition must return `false` on a `claimed` bump allocator, since the claimant could be unallocated.
+    pub(crate) fn can_convert_const_constructible<const NEW_C: BumpConfig>(&self) -> bool {
+        // To be able to convert const_constructible, either:
+        // - nothing changed
+        // - the new config is const_constructible
+        // - the old config isn't const_constructible
+        // - the bump currently has an allocated chunk
         (const {
-            let old = config!(guaranteed_allocated);
-            let new = config!(NEW_C, guaranteed_allocated);
-            old == new || !new || old
+            let old = config!(const_constructible);
+            let new = config!(NEW_C, const_constructible);
+            old == new || new || !old
         }) || self.stats().current_chunk().is_some()
     }
 
@@ -607,7 +609,7 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
 
         // You can't make a bump allocator unallocated from a shared reference
         // so this is ok.
-        if !self.can_convert_guaranteed_allocated::<NEW_C>() {
+        if !self.can_convert_const_constructible::<NEW_C>() {
             error_behavior::panic::unallocated();
         }
     }
@@ -627,8 +629,8 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
             );
 
             assert!(
-                config!(NEW_C, guaranteed_allocated) == config!(guaranteed_allocated),
-                "can't change guaranteed-allocated property using `Bump(Scope)::borrow_mut_change_config`"
+                config!(NEW_C, const_constructible) == config!(const_constructible),
+                "can't change const_constructible property using `Bump(Scope)::borrow_mut_change_config`"
             );
         }
 
