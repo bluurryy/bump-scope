@@ -10,7 +10,7 @@ The benchmarks results in the tables below are shown in the format "instructions
 
 <!-- spellchecker:off because the commit hash may get flagged -->
 
-These are the results of a benchmark run with <!-- version start -->`rustc 1.101.0-nightly (080cc2714 2026-10-11)` on `x86_64-unknown-linux-gnu` using `LLVM version 23.1.3`<!-- version end -->.
+These are the results of a benchmark run with <!-- version start -->`rustc 1.101.0-nightly (32dba69d6 2026-10-09)` on `x86_64-unknown-linux-gnu` using `LLVM version 23.1.3`<!-- version end -->.
 
 <!-- spellchecker:on -->
 
