@@ -2,6 +2,7 @@
 
 use std::{
     alloc::Layout,
+    mem::forget,
     panic::{AssertUnwindSafe, UnwindSafe},
     string::String,
 };
@@ -44,6 +45,10 @@ either_way! {
     scope_guard
 
     alloc_mut
+
+    enter_scope_on_claimed
+
+    exit_scope_on_claimed
 }
 
 type Bump<const UP: bool, A = Global> = bump_scope::Bump<A, BumpSettings<1, UP>>;
@@ -256,4 +261,41 @@ fn alloc_mut<const UP: bool>() {
 
     let uno_dos_tres = bump.claim().alloc_iter_mut([1, 2, 3]);
     assert_eq!(uno_dos_tres, [1, 2, 3]);
+}
+
+fn enter_scope_on_claimed<const UP: bool>() {
+    fn inner<const UP: bool>() {
+        let mut bump = <Bump<UP>>::new();
+        let mut guard = bump.scope_guard();
+        let mut scope = guard.scope().by_value();
+        forget(scope.claim());
+
+        {
+            let _guard = scope.scope_guard();
+            // this will call `reset_to` with a checkpoint from the claimed dummy chunk
+            // this mustn't try to actually reset within the claimed chunk as that would trigger a data race here
+        }
+    }
+
+    std::thread::spawn(inner::<UP>);
+    std::thread::spawn(inner::<UP>);
+}
+
+fn exit_scope_on_claimed<const UP: bool>() {
+    fn inner<const UP: bool>() {
+        let mut bump = <Bump<UP>>::new();
+
+        {
+            let mut guard = bump.scope_guard();
+            let scope = guard.scope();
+            forget(scope.claim());
+            // this will call `reset_to` on a claimed bump allocator
+            // that should be fine, the bump allocator is thereby reclaimed
+        }
+
+        assert!(!bump.is_claimed());
+    }
+
+    std::thread::spawn(inner::<UP>);
+    std::thread::spawn(inner::<UP>);
 }

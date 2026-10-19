@@ -174,6 +174,12 @@ where
 
     #[inline]
     pub(crate) unsafe fn reset_to(&self, checkpoint: Checkpoint) {
+        if S::CLAIMABLE && checkpoint.chunk == ChunkHeader::claimed::<S>() {
+            // We do nothing if the checkpoint is claimed.
+            // This state is reachable in safe code when a `BumpClaimGuard` is forgotten.
+            return;
+        }
+
         // If the checkpoint was created when the bump allocator had no allocated chunk
         // then the chunk pointer will point to the unallocated chunk header.
         //
@@ -192,32 +198,22 @@ where
         {
             assert_ne!(
                 checkpoint.chunk,
-                ChunkHeader::claimed::<S>(),
-                "the checkpoint must not have been created by a claimed bump allocator"
-            );
-
-            assert_ne!(
-                self.chunk.get().header.cast(),
-                ChunkHeader::claimed::<S>(),
-                "this function must not be called on a claimed bump allocator"
-            );
-
-            assert_ne!(
-                checkpoint.chunk,
                 ChunkHeader::unallocated::<S>(),
                 "the checkpoint must not have been created by a `!GUARANTEED_ALLOCATED` when self is `GUARANTEED_ALLOCATED`"
             );
 
-            let chunk = self
-                .stats()
-                .small_to_big()
-                .find(|chunk| chunk.header() == checkpoint.chunk.cast())
-                .expect("this checkpoint does not refer to any chunk in this bump allocator");
+            if !self.is_claimed() {
+                let chunk = self
+                    .stats()
+                    .small_to_big()
+                    .find(|chunk| chunk.header() == checkpoint.chunk.cast())
+                    .expect("this checkpoint does not refer to any chunk in this bump allocator");
 
-            assert!(
-                chunk.chunk.contains_addr_or_end(checkpoint.address.get()),
-                "checkpoint address does not point within its chunk"
-            );
+                assert!(
+                    chunk.chunk.contains_addr_or_end(checkpoint.address.get()),
+                    "checkpoint address does not point within its chunk"
+                );
+            }
         }
 
         unsafe {
