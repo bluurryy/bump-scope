@@ -210,8 +210,7 @@ cov-gen target:
 # Update benchmark results.
 [group('bench')]
 update-bench-results:
-    cd crates/callgrind-benches && cargo +stable bench --bench bench -- --save-summary=json
-    cd crates/callgrind-benches && cargo +stable run
+    just crates/callgrind-benches/update
 
 # Sync documentation using `cargo insert-docs` and run `doc-rustdoc`.
 [group('doc')]

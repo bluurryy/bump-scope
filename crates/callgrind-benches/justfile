@@ -1,0 +1,4 @@
+update:
+    # FIXME: replace +nightly with +stable once 1.100 has released
+    cargo +nightly-2026-10-10 bench --bench bench -- --save-summary=json
+    cargo +nightly-2026-10-10 run
