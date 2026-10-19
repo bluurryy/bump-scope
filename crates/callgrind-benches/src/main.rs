@@ -1,29 +1,15 @@
 use std::{collections::HashMap, env, ffi::OsString, fmt::Write, path::Path, process::Command};
 
 use fast_glob::glob_match;
+use gungraun_summary::{
+    either_or_both::EitherOrBoth,
+    indexmap::IndexMap,
+    v7::{EventKind, Metric, MetricResult, Tool, ToolMetricResults},
+};
 use markdown_tables::MarkdownTableRow;
-
-use crate::schema::{BenchmarkSummary, EitherOrBoth2, Metric, ToolMetricSummary, ValgrindTool};
-
-mod schema;
 
 const BENCH_NAME: &str = "bench";
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
-
-fn left(metric: &EitherOrBoth2) -> Option<&Metric> {
-    match metric {
-        EitherOrBoth2::Left(left) => Some(left),
-        EitherOrBoth2::Both(left, _) => Some(left),
-        EitherOrBoth2::Right(_) => None,
-    }
-}
-
-fn unwrap_int(metric: &Metric) -> u64 {
-    match *metric {
-        Metric::Int(i) => i,
-        Metric::Float(_) => unreachable!(),
-    }
-}
 
 #[derive(Debug)]
 struct Report {
@@ -32,41 +18,45 @@ struct Report {
 }
 
 fn read_summary(path: &Path) -> Report {
-    let summary = std::fs::read_to_string(path).expect("missing summary.json");
-    let summary = serde_json::from_str::<BenchmarkSummary>(&summary).expect("failed to parse summary.json");
-    let summary = summary
+    let summary = gungraun_summary::v7::parse(path).expect("can't parse gungraun summary");
+
+    let metrics = summary
         .profiles
         .0
         .into_iter()
-        .find(|p| p.tool == ValgrindTool::Callgrind)
+        .find(|p| p.tool == Tool::Callgrind)
         .expect("callgrind summary missing")
-        .summaries
+        .data
         .total
-        .summary;
+        .metrics;
 
-    let summary = match summary {
-        ToolMetricSummary::Callgrind(summary) => summary.0,
-        _ => unreachable!("callgrind summary has no callgrind summary"),
+    let metrics = match metrics {
+        ToolMetricResults::Callgrind(metrics) => metrics.0,
+        _ => panic!("callgrind summary has no callgrind metrics"),
     };
 
-    let mut ir = None;
-    let mut bc = None;
-
-    for (kind, diff) in summary {
-        match kind.as_str() {
-            "Ir" => {
-                ir = left(&diff.metrics).map(unwrap_int);
-            }
-            "Bc" => {
-                bc = left(&diff.metrics).map(unwrap_int);
-            }
-            _ => (),
-        }
-    }
-
     Report {
-        instructions: ir.unwrap_or(u64::MAX),
-        branches: bc.unwrap_or(u64::MAX),
+        instructions: get_metric_int_or_max(&metrics, EventKind::Ir),
+        branches: get_metric_int_or_max(&metrics, EventKind::Bc),
+    }
+}
+
+fn get_metric_int_or_max(metrics: &IndexMap<EventKind, MetricResult>, event_kind: EventKind) -> u64 {
+    get_metric_int(metrics, event_kind).unwrap_or(u64::MAX)
+}
+
+fn get_metric_int(metrics: &IndexMap<EventKind, MetricResult>, event_kind: EventKind) -> Option<u64> {
+    let metric = metrics.get(&event_kind)?;
+
+    let new_metric = match &metric.values {
+        EitherOrBoth::Left(left) => left,
+        EitherOrBoth::Both(left, _) => left,
+        EitherOrBoth::Right(_) => return None,
+    };
+
+    match new_metric {
+        Metric::Int(int) => Some(*int),
+        Metric::Float(_) => return None,
     }
 }
 

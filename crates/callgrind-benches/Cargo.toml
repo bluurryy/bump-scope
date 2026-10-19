@@ -14,10 +14,11 @@ fast-glob = "1.1.2"
 markdown-tables = "0.1.0"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
+gungraun-summary = "7.0.0"
 
 [dev-dependencies]
 benches-lib = { path = "benches-lib" }
-gungraun = "0.19.4"
+gungraun = "0.20.0"
 pastey = "0.2.3"
 
 [profile.bench]
