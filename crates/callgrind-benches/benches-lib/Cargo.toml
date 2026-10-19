@@ -3,8 +3,7 @@ name = "benches-lib"
 edition = "2024"
 
 [dependencies]
-allocator-api2 = "0.2.21"
-blink-alloc = "0.3.1"
+blink-alloc = { version = "0.4.0", features = ["nightly"] }
 bump-scope = { path = "../../.." }
-bumpalo = { version = "3.20.3", features = ["allocator-api2"] }
+bumpalo = { version = "3.20.3", features = ["allocator_api"] }
 pastey = "0.2.3"

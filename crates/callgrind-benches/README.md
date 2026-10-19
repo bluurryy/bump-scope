@@ -15,7 +15,7 @@ These are the results of a benchmark run with <!-- version start -->`rustc 1.101
 We compare the following bump allocator crates:
 - **bump-scope** <!-- bump-scope-version start -->3.0.0-dev<!-- bump-scope-version end -->
 - **bumpalo** <!-- bumpalo-version start -->3.20.3<!-- bumpalo-version end -->
-- **blink-alloc** <!-- blink-alloc-version start -->0.3.1<!-- blink-alloc-version end -->
+- **blink-alloc** <!-- blink-alloc-version start -->0.4.0<!-- blink-alloc-version end -->
 
 <!-- spellchecker:on -->
 

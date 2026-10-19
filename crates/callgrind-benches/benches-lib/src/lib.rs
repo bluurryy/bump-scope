@@ -1,6 +1,7 @@
-use std::{alloc::Layout, ptr::NonNull};
-
-use allocator_api2::alloc::{AllocError, Allocator};
+use std::{
+    alloc::{AllocError, Allocator, Layout},
+    ptr::NonNull,
+};
 
 #[expect(clippy::mut_from_ref)]
 trait BumpAllocator {
@@ -17,12 +18,12 @@ trait BumpAllocator {
 mod create_bump_by_library {
     macro_rules! bump_scope {
         ($min_align:literal, $upwards:literal) => {
-            use ::allocator_api2::alloc::{AllocError, Allocator};
-            use ::bump_scope::config::{BumpConfig, BumpConfigBuilder};
             use ::std::{
-                alloc::{Allocator as _, Global, Layout},
+                alloc::{Global, Layout},
                 ptr::NonNull,
             };
+
+            use ::bump_scope::config::{BumpConfig, BumpConfigBuilder};
 
             const C: BumpConfig = BumpConfigBuilder::new()
                 .upwards($upwards)
@@ -141,7 +142,7 @@ mod create_bump_by_library {
 
     macro_rules! bumpalo {
         ($min_align:literal) => {
-            use ::allocator_api2::alloc::Allocator;
+            use ::std::alloc::Allocator;
 
             #[repr(transparent)]
             pub struct Bump(bumpalo::Bump<$min_align>);
@@ -193,8 +194,7 @@ mod create_bump_by_library {
 
     macro_rules! blink_alloc {
         ($min_align:literal) => {
-            use ::allocator_api2::alloc::Allocator;
-            use ::core::alloc::Layout;
+            use ::std::alloc::{Allocator, Layout};
 
             #[repr(transparent)]
             pub struct Bump(blink_alloc::Blink);
