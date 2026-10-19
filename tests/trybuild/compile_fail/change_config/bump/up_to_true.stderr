@@ -2,7 +2,7 @@ error[E0080]: evaluation panicked: can't change bump direction
  --> $RUST/core/src/panic.rs
   |
   |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::raw_bump::RawBump::<std::alloc::Global, 20125342623680991888184203772057092096>::const_assert_upwards_matches::<41392990556239645854645116736542605312>::{constant#0}` failed here
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::raw_bump::RawBump::<std::alloc::Global, 9491518657401664904953747289814335488>::const_assert_upwards_matches::<30759166589960318871414660254299848704>::{constant#0}` failed here
   |
  ::: src/raw_bump.rs
   |
@@ -19,7 +19,7 @@ note: erroneous constant encountered
   | |         }
   | |_________^
 
-note: the above error was encountered while instantiating `fn bump_scope::raw_bump::RawBump::<std::alloc::Global, 20125342623680991888184203772057092096>::const_assert_upwards_matches::<41392990556239645854645116736542605312>`
+note: the above error was encountered while instantiating `fn bump_scope::raw_bump::RawBump::<std::alloc::Global, 9491518657401664904953747289814335488>::const_assert_upwards_matches::<30759166589960318871414660254299848704>`
  --> src/bump.rs
   |
   |         RawBump::<A, C>::const_assert_upwards_matches::<NEW_C>();

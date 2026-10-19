@@ -2,7 +2,7 @@ error[E0080]: evaluation panicked: can't change minimum alignment using `Bump(Sc
  --> $RUST/core/src/panic.rs
   |
   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
-  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::raw_bump::RawBump::<std::alloc::Global, 83928286421356953787566942665513631744>::ensure_satisfies_config_for_borrow::<41392990556239645854645116736542605312>::{constant#0}` failed here
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::raw_bump::RawBump::<std::alloc::Global, 73294462455077626804336486183270875136>::ensure_satisfies_config_for_borrow::<30759166589960318871414660254299848704>::{constant#0}` failed here
   |
  ::: src/raw_bump.rs
   |
@@ -24,7 +24,7 @@ note: erroneous constant encountered
   | |         }
   | |_________^
 
-note: the above error was encountered while instantiating `fn bump_scope::raw_bump::RawBump::<std::alloc::Global, 83928286421356953787566942665513631744>::ensure_satisfies_config_for_borrow::<41392990556239645854645116736542605312>`
+note: the above error was encountered while instantiating `fn bump_scope::raw_bump::RawBump::<std::alloc::Global, 73294462455077626804336486183270875136>::ensure_satisfies_config_for_borrow::<30759166589960318871414660254299848704>`
  --> src/bump.rs
   |
   |         self.raw.ensure_satisfies_config_for_borrow::<NEW_C>();

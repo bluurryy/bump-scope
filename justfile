@@ -148,6 +148,9 @@ test-nightly miri="":
     cd crates/tests-from-std && cargo +nightly {{ miri }} test
     cd crates/test-hashbrown && cargo +nightly {{ miri }} test
     cd crates/fuzzing-support && cargo +nightly {{ miri }} test
+    # FIXME: remove once 1.100 has released
+    cargo +nightly test --test trybuild -- --ignored
+    cargo +nightly test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
 
 # Update the expected compile errors of `trybuild` tests.
 [group('test')]

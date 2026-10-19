@@ -1,17 +1,17 @@
-error[E0080]: evaluation panicked: assertion failed: !config!(guaranteed_allocated)
+error[E0080]: evaluation panicked: assertion failed: config!(const_constructible)
  --> src/bump.rs
   |
-  |         const { assert!(!config!(guaranteed_allocated)) };
-  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::Bump::<std::alloc::Global, 41392990556239645854645116736542605312>::unallocated::{constant#0}` failed here
+  |         const { assert!(config!(const_constructible)) };
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::Bump::<std::alloc::Global, 30759166589960318871414660254299848704>::const_new::{constant#0}` failed here
 
 note: erroneous constant encountered
  --> src/bump.rs
   |
-  |         const { assert!(!config!(guaranteed_allocated)) };
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |         const { assert!(config!(const_constructible)) };
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-note: the above error was encountered while instantiating `fn Bump::<std::alloc::Global, 41392990556239645854645116736542605312>::unallocated`
+note: the above error was encountered while instantiating `fn Bump::<std::alloc::Global, 30759166589960318871414660254299848704>::const_new`
  --> tests/trybuild/compile_fail/const_construction.rs:6:9
   |
-6 |     _ = Bump::<Global>::unallocated();
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6 |     _ = Bump::<Global>::const_new();
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^

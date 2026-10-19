@@ -1,14 +1,14 @@
-error[E0080]: evaluation panicked: can't change guaranteed-allocated property using `Bump(Scope)::borrow_mut_change_config`
+error[E0080]: evaluation panicked: can't change const_constructible property using `Bump(Scope)::borrow_mut_change_config`
  --> $RUST/core/src/panic.rs
   |
   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
-  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::raw_bump::RawBump::<std::alloc::Global, 30759166589960318871414660254299848704>::ensure_satisfies_config_for_borrow_mut::<41392990556239645854645116736542605312>::{constant#0}` failed here
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::raw_bump::RawBump::<std::alloc::Global, 41392990556239645854645116736542605312>::ensure_satisfies_config_for_borrow_mut::<30759166589960318871414660254299848704>::{constant#0}` failed here
   |
  ::: src/raw_bump.rs
   |
   | /             assert!(
-  | |                 config!(NEW_C, guaranteed_allocated) == config!(guaranteed_allocated),
-  | |                 "can't change guaranteed-allocated property using `Bump(Scope)::borrow_mut_change_config`"
+  | |                 config!(NEW_C, const_constructible) == config!(const_constructible),
+  | |                 "can't change const_constructible property using `Bump(Scope)::borrow_mut_change_config`"
   | |             );
   | |_____________- in this macro invocation
 
@@ -24,7 +24,7 @@ note: erroneous constant encountered
   | |         }
   | |_________^
 
-note: the above error was encountered while instantiating `fn bump_scope::raw_bump::RawBump::<std::alloc::Global, 30759166589960318871414660254299848704>::ensure_satisfies_config_for_borrow_mut::<41392990556239645854645116736542605312>`
+note: the above error was encountered while instantiating `fn bump_scope::raw_bump::RawBump::<std::alloc::Global, 41392990556239645854645116736542605312>::ensure_satisfies_config_for_borrow_mut::<30759166589960318871414660254299848704>`
  --> src/bump.rs
   |
   |         self.raw.ensure_satisfies_config_for_borrow_mut::<NEW_C>();
