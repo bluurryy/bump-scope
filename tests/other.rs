@@ -17,7 +17,7 @@ use bump_scope::{
     config::BumpConfig,
     mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice,
     stats::{AnyChunk, Chunk},
-    traits::BumpAllocatorTyped,
+    traits::BumpAllocator,
 };
 
 use common::{MALLOC_OVERHEAD, up_and_down};
@@ -966,7 +966,7 @@ up_and_down! {
     }
 }
 
-fn debug_sizes(bump: &impl BumpAllocatorTyped) {
+fn debug_sizes(bump: &impl BumpAllocator) {
     let iter = bump.any_stats().small_to_big();
     let vec = iter.map(AnyChunk::size).collect::<Vec<_>>();
     eprintln!("sizes: {vec:?}");

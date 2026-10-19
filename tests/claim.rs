@@ -11,7 +11,7 @@ use std::{
 
 use bump_scope::{
     Bump, BumpBox, BumpVec, bump_vec,
-    traits::{BumpAllocatorCore, BumpAllocatorTyped},
+    traits::{BumpAllocator, BumpAllocatorCore},
 };
 
 use crate::common::up_and_down;
@@ -88,7 +88,7 @@ up_and_down! {
             // doesn't add any new api
         }
 
-        // BumpAllocatorTyped
+        // BumpAllocator
         {
             // allocate_layout
             expect_panic(|| bump.allocate_layout(Layout::new::<()>()));
@@ -142,9 +142,9 @@ up_and_down! {
             expect_err(bump.try_reserve(123));
         }
 
-        // BumpAllocatorTypedScope
+        // BumpAllocatorScope
         {
-            // api is entirely implemented on top of BumpAllocatorTyped
+            // api is entirely implemented on top of BumpAllocator
             // so no need to test it here
         }
 

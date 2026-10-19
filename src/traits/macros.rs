@@ -31,240 +31,240 @@ macro_rules! forward_methods {
             unsafe { BumpAllocatorCore::reset_to($access, checkpoint) }
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc`].
+        /// Forwards to [`BumpAllocatorScope::alloc`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc<T>(&$self, value: T) -> BumpBox<$lifetime, T> {
-            BumpAllocatorTypedScope::alloc($access, value)
+            BumpAllocatorScope::alloc($access, value)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc`].
         #[inline(always)]
         pub fn try_alloc<T>(&$self, value: T) -> Result<BumpBox<$lifetime, T>, AllocError> {
-            BumpAllocatorTypedScope::try_alloc($access, value)
+            BumpAllocatorScope::try_alloc($access, value)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_with`].
+        /// Forwards to [`BumpAllocatorScope::alloc_with`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_with<T>(&$self, f: impl FnOnce() -> T) -> BumpBox<$lifetime, T> {
-            BumpAllocatorTypedScope::alloc_with($access, f)
+            BumpAllocatorScope::alloc_with($access, f)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_with`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_with`].
         #[inline(always)]
         pub fn try_alloc_with<T>(&$self, f: impl FnOnce() -> T) -> Result<BumpBox<$lifetime, T>, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_with($access, f)
+            BumpAllocatorScope::try_alloc_with($access, f)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_default`].
+        /// Forwards to [`BumpAllocatorScope::alloc_default`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_default<T: Default>(&$self) -> BumpBox<$lifetime, T> {
-            BumpAllocatorTypedScope::alloc_default($access)
+            BumpAllocatorScope::alloc_default($access)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_default`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_default`].
         #[inline(always)]
         pub fn try_alloc_default<T: Default>(&$self) -> Result<BumpBox<$lifetime, T>, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_default($access)
+            BumpAllocatorScope::try_alloc_default($access)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_clone`].
+        /// Forwards to [`BumpAllocatorScope::alloc_clone`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         #[cfg(feature = "nightly-clone-to-uninit")]
         pub fn alloc_clone<T: CloneToUninit + ?Sized>(&$self, value: &T) -> BumpBox<$lifetime, T> {
-            BumpAllocatorTypedScope::alloc_clone($access, value)
+            BumpAllocatorScope::alloc_clone($access, value)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_clone`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_clone`].
         #[inline(always)]
         #[cfg(feature = "nightly-clone-to-uninit")]
         pub fn try_alloc_clone<T: CloneToUninit + ?Sized>(&$self, value: &T) -> Result<BumpBox<$lifetime, T>, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_clone($access, value)
+            BumpAllocatorScope::try_alloc_clone($access, value)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_slice_move`].
+        /// Forwards to [`BumpAllocatorScope::alloc_slice_move`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_slice_move<T>(&$self, slice: impl OwnedSlice<Item = T>) -> BumpBox<$lifetime, [T]> {
-            BumpAllocatorTypedScope::alloc_slice_move($access, slice)
+            BumpAllocatorScope::alloc_slice_move($access, slice)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_slice_move`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_slice_move`].
         #[inline(always)]
         pub fn try_alloc_slice_move<T>(&$self, slice: impl OwnedSlice<Item = T>) -> Result<BumpBox<$lifetime, [T]>, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_slice_move($access, slice)
+            BumpAllocatorScope::try_alloc_slice_move($access, slice)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_slice_copy`].
+        /// Forwards to [`BumpAllocatorScope::alloc_slice_copy`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_slice_copy<T: Copy>(&$self, slice: &[T]) -> BumpBox<$lifetime, [T]> {
-            BumpAllocatorTypedScope::alloc_slice_copy($access, slice)
+            BumpAllocatorScope::alloc_slice_copy($access, slice)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_slice_copy`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_slice_copy`].
         #[inline(always)]
         pub fn try_alloc_slice_copy<T: Copy>(&$self, slice: &[T]) -> Result<BumpBox<$lifetime, [T]>, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_slice_copy($access, slice)
+            BumpAllocatorScope::try_alloc_slice_copy($access, slice)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_slice_clone`].
+        /// Forwards to [`BumpAllocatorScope::alloc_slice_clone`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_slice_clone<T: Clone>(&$self, slice: &[T]) -> BumpBox<$lifetime, [T]> {
-            BumpAllocatorTypedScope::alloc_slice_clone($access, slice)
+            BumpAllocatorScope::alloc_slice_clone($access, slice)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_slice_clone`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_slice_clone`].
         #[inline(always)]
         pub fn try_alloc_slice_clone<T: Clone>(&$self, slice: &[T]) -> Result<BumpBox<$lifetime, [T]>, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_slice_clone($access, slice)
+            BumpAllocatorScope::try_alloc_slice_clone($access, slice)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_slice_fill`].
+        /// Forwards to [`BumpAllocatorScope::alloc_slice_fill`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_slice_fill<T: Clone>(&$self, len: usize, value: T) -> BumpBox<$lifetime, [T]> {
-            BumpAllocatorTypedScope::alloc_slice_fill($access, len, value)
+            BumpAllocatorScope::alloc_slice_fill($access, len, value)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_slice_fill`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_slice_fill`].
         #[inline(always)]
         pub fn try_alloc_slice_fill<T: Clone>(&$self, len: usize, value: T) -> Result<BumpBox<$lifetime, [T]>, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_slice_fill($access, len, value)
+            BumpAllocatorScope::try_alloc_slice_fill($access, len, value)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_slice_fill_with`].
+        /// Forwards to [`BumpAllocatorScope::alloc_slice_fill_with`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_slice_fill_with<T>(&$self, len: usize, f: impl FnMut() -> T) -> BumpBox<$lifetime, [T]> {
-            BumpAllocatorTypedScope::alloc_slice_fill_with($access, len, f)
+            BumpAllocatorScope::alloc_slice_fill_with($access, len, f)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_slice_fill_with`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_slice_fill_with`].
         #[inline(always)]
         pub fn try_alloc_slice_fill_with<T>(&$self, len: usize, f: impl FnMut() -> T) -> Result<BumpBox<$lifetime, [T]>, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_slice_fill_with($access, len, f)
+            BumpAllocatorScope::try_alloc_slice_fill_with($access, len, f)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_str`].
+        /// Forwards to [`BumpAllocatorScope::alloc_str`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_str(&$self, src: &str) -> BumpBox<$lifetime, str> {
-            BumpAllocatorTypedScope::alloc_str($access, src)
+            BumpAllocatorScope::alloc_str($access, src)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_str`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_str`].
         #[inline(always)]
         pub fn try_alloc_str(&$self, src: &str) -> Result<BumpBox<$lifetime, str>, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_str($access, src)
+            BumpAllocatorScope::try_alloc_str($access, src)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_fmt`].
+        /// Forwards to [`BumpAllocatorScope::alloc_fmt`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_fmt(&$self, args: fmt::Arguments) -> BumpBox<$lifetime, str> {
-            BumpAllocatorTypedScope::alloc_fmt($access, args)
+            BumpAllocatorScope::alloc_fmt($access, args)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_fmt`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_fmt`].
         #[inline(always)]
         pub fn try_alloc_fmt(&$self, args: fmt::Arguments) -> Result<BumpBox<$lifetime, str>, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_fmt($access, args)
+            BumpAllocatorScope::try_alloc_fmt($access, args)
         }
 
-        /// Forwards to [`MutBumpAllocatorTypedScope::alloc_fmt_mut`].
+        /// Forwards to [`MutBumpAllocatorScope::alloc_fmt_mut`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_fmt_mut(&mut $self, args: fmt::Arguments) -> BumpBox<$lifetime, str> {
-            MutBumpAllocatorTypedScope::alloc_fmt_mut($access_mut, args)
+            MutBumpAllocatorScope::alloc_fmt_mut($access_mut, args)
         }
 
-        /// Forwards to [`MutBumpAllocatorTypedScope::try_alloc_fmt_mut`].
+        /// Forwards to [`MutBumpAllocatorScope::try_alloc_fmt_mut`].
         #[inline(always)]
         pub fn try_alloc_fmt_mut(&mut $self, args: fmt::Arguments) -> Result<BumpBox<$lifetime, str>, AllocError> {
-            MutBumpAllocatorTypedScope::try_alloc_fmt_mut($access_mut, args)
+            MutBumpAllocatorScope::try_alloc_fmt_mut($access_mut, args)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_cstr`].
+        /// Forwards to [`BumpAllocatorScope::alloc_cstr`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_cstr(&$self, src: &CStr) -> &$lifetime CStr {
-            BumpAllocatorTypedScope::alloc_cstr($access, src)
+            BumpAllocatorScope::alloc_cstr($access, src)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_cstr`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_cstr`].
         #[inline(always)]
         pub fn try_alloc_cstr(&$self, src: &CStr) -> Result<&$lifetime CStr, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_cstr($access, src)
+            BumpAllocatorScope::try_alloc_cstr($access, src)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_cstr_from_str`].
+        /// Forwards to [`BumpAllocatorScope::alloc_cstr_from_str`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_cstr_from_str(&$self, src: &str) -> &$lifetime CStr {
-            BumpAllocatorTypedScope::alloc_cstr_from_str($access, src)
+            BumpAllocatorScope::alloc_cstr_from_str($access, src)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_cstr_from_str`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_cstr_from_str`].
         #[inline(always)]
         pub fn try_alloc_cstr_from_str(&$self, src: &str) -> Result<&$lifetime CStr, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_cstr_from_str($access, src)
+            BumpAllocatorScope::try_alloc_cstr_from_str($access, src)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_cstr_fmt`].
+        /// Forwards to [`BumpAllocatorScope::alloc_cstr_fmt`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_cstr_fmt(&$self, args: fmt::Arguments) -> &$lifetime CStr {
-            BumpAllocatorTypedScope::alloc_cstr_fmt($access, args)
+            BumpAllocatorScope::alloc_cstr_fmt($access, args)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_cstr_fmt`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_cstr_fmt`].
         #[inline(always)]
         pub fn try_alloc_cstr_fmt(&$self, args: fmt::Arguments) -> Result<&$lifetime CStr, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_cstr_fmt($access, args)
+            BumpAllocatorScope::try_alloc_cstr_fmt($access, args)
         }
 
-        /// Forwards to [`MutBumpAllocatorTypedScope::alloc_cstr_fmt_mut`].
+        /// Forwards to [`MutBumpAllocatorScope::alloc_cstr_fmt_mut`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_cstr_fmt_mut(&mut $self, args: fmt::Arguments) -> &$lifetime CStr {
-            MutBumpAllocatorTypedScope::alloc_cstr_fmt_mut($access_mut, args)
+            MutBumpAllocatorScope::alloc_cstr_fmt_mut($access_mut, args)
         }
 
-        /// Forwards to [`MutBumpAllocatorTypedScope::try_alloc_cstr_fmt_mut`].
+        /// Forwards to [`MutBumpAllocatorScope::try_alloc_cstr_fmt_mut`].
         #[inline(always)]
         pub fn try_alloc_cstr_fmt_mut(&mut $self, args: fmt::Arguments) -> Result<&$lifetime CStr, AllocError> {
-            MutBumpAllocatorTypedScope::try_alloc_cstr_fmt_mut($access_mut, args)
+            MutBumpAllocatorScope::try_alloc_cstr_fmt_mut($access_mut, args)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_iter`].
+        /// Forwards to [`BumpAllocatorScope::alloc_iter`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_iter<T>(&$self, iter: impl IntoIterator<Item = T>) -> BumpBox<$lifetime, [T]> {
-            BumpAllocatorTypedScope::alloc_iter($access, iter)
+            BumpAllocatorScope::alloc_iter($access, iter)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_iter`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_iter`].
         #[inline(always)]
         pub fn try_alloc_iter<T>(&$self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<$lifetime, [T]>, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_iter($access, iter)
+            BumpAllocatorScope::try_alloc_iter($access, iter)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_iter_exact`].
+        /// Forwards to [`BumpAllocatorScope::alloc_iter_exact`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_iter_exact<T, I>(&$self, iter: impl IntoIterator<Item = T, IntoIter = I>) -> BumpBox<$lifetime, [T]>
         where
             I: ExactSizeIterator<Item = T>,
         {
-            BumpAllocatorTypedScope::alloc_iter_exact($access, iter)
+            BumpAllocatorScope::alloc_iter_exact($access, iter)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_iter_exact`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_iter_exact`].
         #[inline(always)]
         pub fn try_alloc_iter_exact<T, I>(
             &$self,
@@ -273,91 +273,91 @@ macro_rules! forward_methods {
         where
             I: ExactSizeIterator<Item = T>,
         {
-            BumpAllocatorTypedScope::try_alloc_iter_exact($access, iter)
+            BumpAllocatorScope::try_alloc_iter_exact($access, iter)
         }
 
-        /// Forwards to [`MutBumpAllocatorTypedScope::alloc_iter_mut`].
+        /// Forwards to [`MutBumpAllocatorScope::alloc_iter_mut`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_iter_mut<T>(&mut $self, iter: impl IntoIterator<Item = T>) -> BumpBox<$lifetime, [T]> {
-            MutBumpAllocatorTypedScope::alloc_iter_mut($access_mut, iter)
+            MutBumpAllocatorScope::alloc_iter_mut($access_mut, iter)
         }
 
-        /// Forwards to [`MutBumpAllocatorTypedScope::try_alloc_iter_mut`].
+        /// Forwards to [`MutBumpAllocatorScope::try_alloc_iter_mut`].
         #[inline(always)]
         pub fn try_alloc_iter_mut<T>(&mut $self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<$lifetime, [T]>, AllocError> {
-            MutBumpAllocatorTypedScope::try_alloc_iter_mut($access_mut, iter)
+            MutBumpAllocatorScope::try_alloc_iter_mut($access_mut, iter)
         }
 
-        /// Forwards to [`MutBumpAllocatorTypedScope::alloc_iter_mut_rev`].
+        /// Forwards to [`MutBumpAllocatorScope::alloc_iter_mut_rev`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_iter_mut_rev<T>(&mut $self, iter: impl IntoIterator<Item = T>) -> BumpBox<$lifetime, [T]> {
-            MutBumpAllocatorTypedScope::alloc_iter_mut_rev($access_mut, iter)
+            MutBumpAllocatorScope::alloc_iter_mut_rev($access_mut, iter)
         }
 
-        /// Forwards to [`MutBumpAllocatorTypedScope::try_alloc_iter_mut_rev`].
+        /// Forwards to [`MutBumpAllocatorScope::try_alloc_iter_mut_rev`].
         #[inline(always)]
         pub fn try_alloc_iter_mut_rev<T>(&mut $self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<$lifetime, [T]>, AllocError> {
-            MutBumpAllocatorTypedScope::try_alloc_iter_mut_rev($access_mut, iter)
+            MutBumpAllocatorScope::try_alloc_iter_mut_rev($access_mut, iter)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_uninit`].
+        /// Forwards to [`BumpAllocatorScope::alloc_uninit`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_uninit<T>(&$self) -> BumpBox<$lifetime, MaybeUninit<T>> {
-            BumpAllocatorTypedScope::alloc_uninit($access)
+            BumpAllocatorScope::alloc_uninit($access)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_uninit`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_uninit`].
         #[inline(always)]
         pub fn try_alloc_uninit<T>(&$self) -> Result<BumpBox<$lifetime, MaybeUninit<T>>, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_uninit($access)
+            BumpAllocatorScope::try_alloc_uninit($access)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_uninit_slice`].
+        /// Forwards to [`BumpAllocatorScope::alloc_uninit_slice`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_uninit_slice<T>(&$self, len: usize) -> BumpBox<$lifetime, [MaybeUninit<T>]> {
-            BumpAllocatorTypedScope::alloc_uninit_slice($access, len)
+            BumpAllocatorScope::alloc_uninit_slice($access, len)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_uninit_slice`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_uninit_slice`].
         #[inline(always)]
         pub fn try_alloc_uninit_slice<T>(&$self, len: usize) -> Result<BumpBox<$lifetime, [MaybeUninit<T>]>, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_uninit_slice($access, len)
+            BumpAllocatorScope::try_alloc_uninit_slice($access, len)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::alloc_uninit_slice_for`].
+        /// Forwards to [`BumpAllocatorScope::alloc_uninit_slice_for`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn alloc_uninit_slice_for<T>(&$self, slice: &[T]) -> BumpBox<$lifetime, [MaybeUninit<T>]> {
-            BumpAllocatorTypedScope::alloc_uninit_slice_for($access, slice)
+            BumpAllocatorScope::alloc_uninit_slice_for($access, slice)
         }
 
-        /// Forwards to [`BumpAllocatorTypedScope::try_alloc_uninit_slice_for`].
+        /// Forwards to [`BumpAllocatorScope::try_alloc_uninit_slice_for`].
         #[inline(always)]
         pub fn try_alloc_uninit_slice_for<T>(&$self, slice: &[T]) -> Result<BumpBox<$lifetime, [MaybeUninit<T>]>, AllocError> {
-            BumpAllocatorTypedScope::try_alloc_uninit_slice_for($access, slice)
+            BumpAllocatorScope::try_alloc_uninit_slice_for($access, slice)
         }
 
-        /// Forwards to [`BumpAllocatorTyped::dealloc`].
+        /// Forwards to [`BumpAllocator::dealloc`].
         #[inline(always)]
         pub fn dealloc<T: ?Sized>(&$self, boxed: BumpBox<T>) {
-            BumpAllocatorTyped::dealloc($access, boxed);
+            BumpAllocator::dealloc($access, boxed);
         }
 
-        /// Forwards to [`BumpAllocatorTyped::reserve`].
+        /// Forwards to [`BumpAllocator::reserve`].
         #[inline(always)]
         #[cfg(feature = "panic-on-alloc")]
         pub fn reserve(&$self, additional: usize) {
-            BumpAllocatorTyped::reserve($access, additional);
+            BumpAllocator::reserve($access, additional);
         }
 
-        /// Forwards to [`BumpAllocatorTyped::try_reserve`].
+        /// Forwards to [`BumpAllocator::try_reserve`].
         #[inline(always)]
         pub fn try_reserve(&$self, additional: usize) -> Result<(), AllocError> {
-            BumpAllocatorTyped::try_reserve($access, additional)
+            BumpAllocator::try_reserve($access, additional)
         }
     };
 }

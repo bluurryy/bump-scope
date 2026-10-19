@@ -2,7 +2,7 @@
 
 use core::ptr;
 
-use crate::{BumpVec, destructure::destructure, traits::BumpAllocatorTyped};
+use crate::{BumpVec, destructure::destructure, traits::BumpAllocator};
 
 use super::Drain;
 
@@ -25,12 +25,12 @@ use super::Drain;
 ///
 /// [`BumpVec::splice()`]: crate::BumpVec::splice
 #[derive(Debug)]
-pub struct Splice<'a, I: Iterator + 'a, A: BumpAllocatorTyped> {
+pub struct Splice<'a, I: Iterator + 'a, A: BumpAllocator> {
     pub(super) drain: Drain<'a, I::Item, A>,
     pub(super) replace_with: I,
 }
 
-impl<I: Iterator, A: BumpAllocatorTyped> Iterator for Splice<'_, I, A> {
+impl<I: Iterator, A: BumpAllocator> Iterator for Splice<'_, I, A> {
     type Item = I::Item;
 
     #[inline]
@@ -44,16 +44,16 @@ impl<I: Iterator, A: BumpAllocatorTyped> Iterator for Splice<'_, I, A> {
     }
 }
 
-impl<I: Iterator, A: BumpAllocatorTyped> DoubleEndedIterator for Splice<'_, I, A> {
+impl<I: Iterator, A: BumpAllocator> DoubleEndedIterator for Splice<'_, I, A> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.drain.next_back()
     }
 }
 
-impl<I: Iterator, A: BumpAllocatorTyped> ExactSizeIterator for Splice<'_, I, A> {}
+impl<I: Iterator, A: BumpAllocator> ExactSizeIterator for Splice<'_, I, A> {}
 
-impl<I: Iterator, A: BumpAllocatorTyped> Drop for Splice<'_, I, A> {
+impl<I: Iterator, A: BumpAllocator> Drop for Splice<'_, I, A> {
     fn drop(&mut self) {
         self.drain.by_ref().for_each(drop);
         // At this point draining is done and the only remaining tasks are splicing
@@ -107,7 +107,7 @@ impl<I: Iterator, A: BumpAllocatorTyped> Drop for Splice<'_, I, A> {
 }
 
 /// Private helper methods for `Splice::drop`
-impl<T, A: BumpAllocatorTyped> Drain<'_, T, A> {
+impl<T, A: BumpAllocator> Drain<'_, T, A> {
     /// The range from `self.vec.len` to `self.tail_start` contains elements
     /// that have been moved out.
     /// Fill that range as much as possible with new elements from the `replace_with` iterator.

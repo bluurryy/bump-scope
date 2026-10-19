@@ -8,7 +8,7 @@ use arbitrary::Arbitrary;
 use bump_scope::{
     Bump,
     config::{BumpConfig, BumpConfigBuilder},
-    traits::BumpAllocatorTyped,
+    traits::BumpAllocator,
 };
 
 use crate::{MinAlign, UpTo};

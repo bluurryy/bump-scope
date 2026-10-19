@@ -12,7 +12,7 @@ use std::{
 use bump_scope::{
     Bump, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
-    traits::{BumpAllocatorTyped, MutBumpAllocatorTyped},
+    traits::{BumpAllocator, MutBumpAllocator},
     unsize_bump_box,
 };
 
@@ -26,19 +26,19 @@ impl<T> Append<T> for FixedBumpVec<'_, T> {
     }
 }
 
-impl<T, A: BumpAllocatorTyped> Append<T> for BumpVec<T, A> {
+impl<T, A: BumpAllocator> Append<T> for BumpVec<T, A> {
     fn append(&mut self, other: impl OwnedSlice<Item = T>) {
         BumpVec::append(self, other);
     }
 }
 
-impl<T, A: MutBumpAllocatorTyped> Append<T> for MutBumpVec<T, A> {
+impl<T, A: MutBumpAllocator> Append<T> for MutBumpVec<T, A> {
     fn append(&mut self, other: impl OwnedSlice<Item = T>) {
         MutBumpVec::append(self, other);
     }
 }
 
-impl<T, A: MutBumpAllocatorTyped> Append<T> for MutBumpVecRev<T, A> {
+impl<T, A: MutBumpAllocator> Append<T> for MutBumpVecRev<T, A> {
     fn append(&mut self, other: impl OwnedSlice<Item = T>) {
         MutBumpVecRev::append(self, other);
     }

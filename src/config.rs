@@ -332,12 +332,12 @@ bit_fields! {
     ///
     /// For the performance impact see [crates/callgrind-benches][benches].
     ///
-    /// [alloc_iter]: crate::traits::BumpAllocatorTypedScope::alloc_iter
-    /// [alloc_iter_mut]: crate::traits::MutBumpAllocatorTypedScope::alloc_iter_mut
-    /// [alloc_fmt]: crate::traits::BumpAllocatorTypedScope::alloc_fmt
-    /// [alloc_fmt_mut]: crate::traits::MutBumpAllocatorTypedScope::alloc_fmt_mut
+    /// [alloc_iter]: crate::traits::BumpAllocatorScope::alloc_iter
+    /// [alloc_iter_mut]: crate::traits::MutBumpAllocatorScope::alloc_iter_mut
+    /// [alloc_fmt]: crate::traits::BumpAllocatorScope::alloc_fmt
+    /// [alloc_fmt_mut]: crate::traits::MutBumpAllocatorScope::alloc_fmt_mut
     /// [`MutBumpVecRev`]: crate::MutBumpVecRev
-    /// [`alloc_iter_mut_rev`]: crate::traits::MutBumpAllocatorTypedScope::alloc_iter_mut_rev
+    /// [`alloc_iter_mut_rev`]: crate::traits::MutBumpAllocatorScope::alloc_iter_mut_rev
     /// [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
     upwards: bool {
         default: true,
@@ -398,14 +398,14 @@ bit_fields! {
 
     /// Toggles shrinking.
     ///
-    /// When this is `false`, [`Allocator::shrink`] and [`BumpAllocatorTyped::shrink_slice`] does not free memory.
+    /// When this is `false`, [`Allocator::shrink`] and [`BumpAllocator::shrink_slice`] does not free memory.
     /// Calling `shrink` with a new layout of a greater alignment may still reallocate.
     ///
     /// This also affects the temporary collections used in [`alloc_iter`], [`alloc_fmt`], etc.
     ///
-    /// [`BumpAllocatorTyped::shrink_slice`]: crate::traits::BumpAllocatorTyped::shrink_slice
-    /// [`alloc_iter`]: crate::traits::BumpAllocatorTypedScope::alloc_iter
-    /// [`alloc_fmt`]: crate::traits::BumpAllocatorTypedScope::alloc_fmt
+    /// [`BumpAllocator::shrink_slice`]: crate::traits::BumpAllocator::shrink_slice
+    /// [`alloc_iter`]: crate::traits::BumpAllocatorScope::alloc_iter
+    /// [`alloc_fmt`]: crate::traits::BumpAllocatorScope::alloc_fmt
     shrinks: bool {
         default: true,
         bits: 1,

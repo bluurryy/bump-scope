@@ -32,7 +32,7 @@ use bump_scope::{
     config::{BumpConfig, BumpConfigBuilder},
     mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice,
     stats::Chunk,
-    traits::BumpAllocatorTyped as _,
+    traits::BumpAllocator as _,
 };
 
 pub(crate) use disaligning_allocator::DisaligningAllocator;

@@ -17,7 +17,7 @@ use crate::{
     min_non_zero_cap,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     polyfill::{hint::likely, slice},
-    traits::{MutBumpAllocatorTyped, MutBumpAllocatorTypedScope},
+    traits::{MutBumpAllocator, MutBumpAllocatorScope},
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -29,7 +29,7 @@ pub use into_iter::IntoIter;
 
 /// Like [`vec!`](alloc::vec!) but allocates inside a bump allocator, returning a [`MutBumpVec`].
 ///
-/// `$bump` can be any type that implements [`MutBumpAllocatorTyped`].
+/// `$bump` can be any type that implements [`MutBumpAllocator`].
 ///
 /// # Panics
 /// If used without `try`, panics on allocation failure.
@@ -606,7 +606,7 @@ impl<T, A> MutBumpVec<T, A> {
     }
 }
 
-impl<T, A: MutBumpAllocatorTyped> MutBumpVec<T, A> {
+impl<T, A: MutBumpAllocator> MutBumpVec<T, A> {
     /// Constructs a new empty vector with at least the specified capacity
     /// in the provided bump allocator.
     ///
@@ -2658,7 +2658,7 @@ impl<T, A: MutBumpAllocatorTyped> MutBumpVec<T, A> {
     }
 }
 
-impl<'a, T, A: MutBumpAllocatorTypedScope<'a>> MutBumpVec<T, A> {
+impl<'a, T, A: MutBumpAllocatorScope<'a>> MutBumpVec<T, A> {
     /// Turns this `MutBumpVec<T>` into a `BumpBox<[T]>`.
     ///
     /// Unused capacity does not take up space.<br/>
@@ -2724,7 +2724,7 @@ impl<T: Debug, A> Debug for MutBumpVec<T, A> {
     }
 }
 
-impl<T, A: MutBumpAllocatorTyped, I: SliceIndex<[T]>> Index<I> for MutBumpVec<T, A> {
+impl<T, A: MutBumpAllocator, I: SliceIndex<[T]>> Index<I> for MutBumpVec<T, A> {
     type Output = I::Output;
 
     #[inline(always)]
@@ -2733,7 +2733,7 @@ impl<T, A: MutBumpAllocatorTyped, I: SliceIndex<[T]>> Index<I> for MutBumpVec<T,
     }
 }
 
-impl<T, A: MutBumpAllocatorTyped, I: SliceIndex<[T]>> IndexMut<I> for MutBumpVec<T, A> {
+impl<T, A: MutBumpAllocator, I: SliceIndex<[T]>> IndexMut<I> for MutBumpVec<T, A> {
     #[inline(always)]
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
         IndexMut::index_mut(self.as_mut_slice(), index)
@@ -2741,7 +2741,7 @@ impl<T, A: MutBumpAllocatorTyped, I: SliceIndex<[T]>> IndexMut<I> for MutBumpVec
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<T, A: MutBumpAllocatorTyped> Extend<T> for MutBumpVec<T, A> {
+impl<T, A: MutBumpAllocator> Extend<T> for MutBumpVec<T, A> {
     #[inline]
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         panic_on_error(self.generic_extend(iter.into_iter()));
@@ -2749,7 +2749,7 @@ impl<T, A: MutBumpAllocatorTyped> Extend<T> for MutBumpVec<T, A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<'t, T: Clone + 't, A: MutBumpAllocatorTyped> Extend<&'t T> for MutBumpVec<T, A> {
+impl<'t, T: Clone + 't, A: MutBumpAllocator> Extend<&'t T> for MutBumpVec<T, A> {
     #[inline]
     fn extend<I: IntoIterator<Item = &'t T>>(&mut self, iter: I) {
         panic_on_error(self.generic_extend(iter.into_iter().cloned()));
@@ -2829,7 +2829,7 @@ impl<T: Hash, A> Hash for MutBumpVec<T, A> {
 
 /// Returns [`ErrorKind::OutOfMemory`](std::io::ErrorKind::OutOfMemory) when allocations fail.
 #[cfg(feature = "std")]
-impl<A: MutBumpAllocatorTyped> std::io::Write for MutBumpVec<u8, A> {
+impl<A: MutBumpAllocator> std::io::Write for MutBumpVec<u8, A> {
     #[inline(always)]
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         <Self as std::io::Write>::write_all(self, buf)?;
@@ -2863,7 +2863,7 @@ impl<A: MutBumpAllocatorTyped> std::io::Write for MutBumpVec<u8, A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<T, A: MutBumpAllocatorTyped + Default> FromIterator<T> for MutBumpVec<T, A> {
+impl<T, A: MutBumpAllocator + Default> FromIterator<T> for MutBumpVec<T, A> {
     #[inline]
     #[track_caller]
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {

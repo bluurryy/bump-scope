@@ -15,7 +15,7 @@ use crate::{
     fixed_bump_string::RawFixedBumpString,
     owned_str,
     polyfill::{self, transmute_mut, transmute_value},
-    traits::{MutBumpAllocatorTyped, MutBumpAllocatorTypedScope},
+    traits::{MutBumpAllocator, MutBumpAllocatorScope},
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -657,7 +657,7 @@ impl<A> MutBumpString<A> {
     }
 }
 
-impl<A: MutBumpAllocatorTyped> MutBumpString<A> {
+impl<A: MutBumpAllocator> MutBumpString<A> {
     /// Constructs a new empty `MutBumpString` with at least the specified capacity
     /// in the provided bump allocator.
     ///
@@ -1813,7 +1813,7 @@ impl<A: MutBumpAllocatorTyped> MutBumpString<A> {
     }
 }
 
-impl<'a, A: MutBumpAllocatorTypedScope<'a>> MutBumpString<A> {
+impl<'a, A: MutBumpAllocatorScope<'a>> MutBumpString<A> {
     /// Converts this `MutBumpString` into `&str` that is live for this bump scope.
     ///
     /// Unused capacity does not take up space.<br/>
@@ -1894,7 +1894,7 @@ impl<'a, A: MutBumpAllocatorTypedScope<'a>> MutBumpString<A> {
     }
 }
 
-impl<A: MutBumpAllocatorTyped> fmt::Write for MutBumpString<A> {
+impl<A: MutBumpAllocator> fmt::Write for MutBumpString<A> {
     #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.try_push_str(s).map_err(|_| fmt::Error)
@@ -1907,7 +1907,7 @@ impl<A: MutBumpAllocatorTyped> fmt::Write for MutBumpString<A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<A: MutBumpAllocatorTyped> fmt::Write for PanicsOnAlloc<MutBumpString<A>> {
+impl<A: MutBumpAllocator> fmt::Write for PanicsOnAlloc<MutBumpString<A>> {
     #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.0.push_str(s);
@@ -1970,7 +1970,7 @@ impl<A: Default> Default for MutBumpString<A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<A: MutBumpAllocatorTyped> core::ops::AddAssign<&str> for MutBumpString<A> {
+impl<A: MutBumpAllocator> core::ops::AddAssign<&str> for MutBumpString<A> {
     #[inline]
     fn add_assign(&mut self, rhs: &str) {
         self.push_str(rhs);
@@ -2048,7 +2048,7 @@ impl<A> Hash for MutBumpString<A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<'s, A: MutBumpAllocatorTyped> Extend<&'s str> for MutBumpString<A> {
+impl<'s, A: MutBumpAllocator> Extend<&'s str> for MutBumpString<A> {
     #[inline]
     fn extend<T: IntoIterator<Item = &'s str>>(&mut self, iter: T) {
         for str in iter {
@@ -2058,7 +2058,7 @@ impl<'s, A: MutBumpAllocatorTyped> Extend<&'s str> for MutBumpString<A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<A: MutBumpAllocatorTyped> Extend<char> for MutBumpString<A> {
+impl<A: MutBumpAllocator> Extend<char> for MutBumpString<A> {
     fn extend<I: IntoIterator<Item = char>>(&mut self, iter: I) {
         let iterator = iter.into_iter();
         let (lower_bound, _) = iterator.size_hint();
@@ -2068,7 +2068,7 @@ impl<A: MutBumpAllocatorTyped> Extend<char> for MutBumpString<A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<'s, A: MutBumpAllocatorTyped> Extend<&'s char> for MutBumpString<A> {
+impl<'s, A: MutBumpAllocator> Extend<&'s char> for MutBumpString<A> {
     fn extend<I: IntoIterator<Item = &'s char>>(&mut self, iter: I) {
         self.extend(iter.into_iter().copied());
     }

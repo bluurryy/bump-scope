@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Replace `.scoped_aligned()`, use `scoped_with_config` instead
 - **Breaking:** Replace `.aligned()`, use `with_config` instead
 - **Breaking:** Rename `*with_settings` to `*change_config`
+- **Breaking:** Rename traits `*BumpAllocatorTyped*` to `*BumpAllocator*`
 
 ### Removed
 

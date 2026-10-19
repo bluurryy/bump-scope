@@ -4,7 +4,7 @@ use std::string::{String, ToString};
 
 use bump_scope::{
     Bump, BumpVec, MutBumpVec,
-    traits::{BumpAllocatorTyped, MutBumpAllocatorTyped},
+    traits::{BumpAllocator, MutBumpAllocator},
 };
 
 fn number_strings(numbers: impl IntoIterator<Item = i32>) -> impl Iterator<Item = String> {
@@ -13,12 +13,12 @@ fn number_strings(numbers: impl IntoIterator<Item = i32>) -> impl Iterator<Item 
 
 #[test]
 fn smoke_test() {
-    fn test<A: BumpAllocatorTyped>(a: A) {
+    fn test<A: BumpAllocator>(a: A) {
         let mut vec = BumpVec::from_iter_in(number_strings(1..=5), a);
         vec.extend(number_strings(6..=9));
     }
 
-    fn mut_test<A: MutBumpAllocatorTyped>(a: A) {
+    fn mut_test<A: MutBumpAllocator>(a: A) {
         let mut vec = MutBumpVec::from_iter_in(number_strings(1..=5), a);
         vec.extend(number_strings(6..=9));
     }

@@ -1,6 +1,6 @@
-use crate::traits::{BumpAllocatorTyped, MutBumpAllocatorCore};
+use crate::traits::{BumpAllocator, MutBumpAllocatorCore};
 
-/// A shorthand for <code>[MutBumpAllocatorCore] + [BumpAllocatorTyped]</code>
-pub trait MutBumpAllocatorTyped: MutBumpAllocatorCore + BumpAllocatorTyped {}
+/// A shorthand for <code>[MutBumpAllocatorCore] + [BumpAllocator]</code>
+pub trait MutBumpAllocator: MutBumpAllocatorCore + BumpAllocator {}
 
-impl<A: MutBumpAllocatorCore + BumpAllocatorTyped + ?Sized> MutBumpAllocatorTyped for A {}
+impl<A: MutBumpAllocatorCore + BumpAllocator + ?Sized> MutBumpAllocator for A {}

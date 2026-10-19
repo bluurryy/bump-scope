@@ -20,7 +20,7 @@ use crate::{
     polyfill::{non_null, transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
     stats::{AnyStats, Stats},
-    traits::{self, BumpAllocatorCore, BumpAllocatorTyped, BumpAllocatorTypedScope, MutBumpAllocatorTypedScope},
+    traits::{self, BumpAllocator, BumpAllocatorCore, BumpAllocatorScope, MutBumpAllocatorScope},
     up_align_usize_unchecked,
 };
 

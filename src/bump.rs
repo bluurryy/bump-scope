@@ -19,7 +19,7 @@ use crate::{
     polyfill::{transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
     stats::{AnyStats, Stats},
-    traits::{self, BumpAllocatorCore, BumpAllocatorTyped, BumpAllocatorTypedScope, MutBumpAllocatorTypedScope},
+    traits::{self, BumpAllocator, BumpAllocatorCore, BumpAllocatorScope, MutBumpAllocatorScope},
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -54,9 +54,9 @@ macro_rules! make_type {
         ///
         /// #### Allocate ...
         /// - sized values: [`alloc`], [`alloc_with`], [`alloc_default`], [`alloc_zeroed`]
-        /// - strings: [`alloc_str`], <code>[alloc_fmt](BumpAllocatorTypedScope::alloc_fmt)([_mut](MutBumpAllocatorTypedScope::alloc_fmt_mut))</code>
-        /// - c strings: [`alloc_cstr`], [`alloc_cstr_from_str`], <code>[alloc_cstr_fmt](BumpAllocatorTypedScope::alloc_cstr_fmt)([_mut](MutBumpAllocatorTypedScope::alloc_cstr_fmt_mut))</code>
-        /// - slices: <code>alloc_slice_{[copy](BumpAllocatorTypedScope::alloc_slice_copy), [clone](BumpAllocatorTypedScope::alloc_slice_clone), [move](BumpAllocatorTypedScope::alloc_slice_move), [fill](BumpAllocatorTypedScope::alloc_slice_fill), [fill_with](BumpAllocatorTypedScope::alloc_slice_fill_with)}</code>,
+        /// - strings: [`alloc_str`], <code>[alloc_fmt](BumpAllocatorScope::alloc_fmt)([_mut](MutBumpAllocatorScope::alloc_fmt_mut))</code>
+        /// - c strings: [`alloc_cstr`], [`alloc_cstr_from_str`], <code>[alloc_cstr_fmt](BumpAllocatorScope::alloc_cstr_fmt)([_mut](MutBumpAllocatorScope::alloc_cstr_fmt_mut))</code>
+        /// - slices: <code>alloc_slice_{[copy](BumpAllocatorScope::alloc_slice_copy), [clone](BumpAllocatorScope::alloc_slice_clone), [move](BumpAllocatorScope::alloc_slice_move), [fill](BumpAllocatorScope::alloc_slice_fill), [fill_with](BumpAllocatorScope::alloc_slice_fill_with)}</code>,
         ///   [`alloc_zeroed_slice`]
         /// - slices from an iterator: [`alloc_iter`], [`alloc_iter_exact`], [`alloc_iter_mut`], [`alloc_iter_mut_rev`]
         /// - uninitialized values: [`alloc_uninit`], [`alloc_uninit_slice`], [`alloc_uninit_slice_for`]
@@ -138,31 +138,31 @@ macro_rules! make_type {
         /// # #[cfg(not(feature = "nightly-tests"))] fn main() {}
         /// ```
         ///
-        /// [`alloc`]: BumpAllocatorTypedScope::alloc
-        /// [`alloc_with`]: BumpAllocatorTypedScope::alloc_with
-        /// [`alloc_default`]: BumpAllocatorTypedScope::alloc_default
-        /// [`alloc_zeroed`]: crate::zerocopy_08::BumpAllocatorTypedScopeExt::alloc_zeroed
+        /// [`alloc`]: BumpAllocatorScope::alloc
+        /// [`alloc_with`]: BumpAllocatorScope::alloc_with
+        /// [`alloc_default`]: BumpAllocatorScope::alloc_default
+        /// [`alloc_zeroed`]: crate::zerocopy_08::BumpAllocatorScopeExt::alloc_zeroed
         ///
-        /// [`alloc_str`]: BumpAllocatorTypedScope::alloc_str
+        /// [`alloc_str`]: BumpAllocatorScope::alloc_str
         ///
-        /// [`alloc_cstr`]: BumpAllocatorTypedScope::alloc_cstr
-        /// [`alloc_cstr_from_str`]: BumpAllocatorTypedScope::alloc_cstr_from_str
+        /// [`alloc_cstr`]: BumpAllocatorScope::alloc_cstr
+        /// [`alloc_cstr_from_str`]: BumpAllocatorScope::alloc_cstr_from_str
         ///
-        /// [`alloc_zeroed_slice`]: crate::zerocopy_08::BumpAllocatorTypedScopeExt::alloc_zeroed_slice
+        /// [`alloc_zeroed_slice`]: crate::zerocopy_08::BumpAllocatorScopeExt::alloc_zeroed_slice
         ///
-        /// [`alloc_iter`]: BumpAllocatorTypedScope::alloc_iter
-        /// [`alloc_iter_exact`]: BumpAllocatorTypedScope::alloc_iter_exact
-        /// [`alloc_iter_mut`]: MutBumpAllocatorTypedScope::alloc_iter_mut
-        /// [`alloc_iter_mut_rev`]: MutBumpAllocatorTypedScope::alloc_iter_mut_rev
+        /// [`alloc_iter`]: BumpAllocatorScope::alloc_iter
+        /// [`alloc_iter_exact`]: BumpAllocatorScope::alloc_iter_exact
+        /// [`alloc_iter_mut`]: MutBumpAllocatorScope::alloc_iter_mut
+        /// [`alloc_iter_mut_rev`]: MutBumpAllocatorScope::alloc_iter_mut_rev
         ///
-        /// [`alloc_uninit`]: BumpAllocatorTypedScope::alloc_uninit
-        /// [`alloc_uninit_slice`]: BumpAllocatorTypedScope::alloc_uninit_slice
-        /// [`alloc_uninit_slice_for`]: BumpAllocatorTypedScope::alloc_uninit_slice_for
+        /// [`alloc_uninit`]: BumpAllocatorScope::alloc_uninit
+        /// [`alloc_uninit_slice`]: BumpAllocatorScope::alloc_uninit_slice
+        /// [`alloc_uninit_slice_for`]: BumpAllocatorScope::alloc_uninit_slice_for
         ///
         /// [`alloc_try_with`]: Bump::alloc_try_with
         /// [`alloc_try_with_mut`]: Bump::alloc_try_with_mut
         ///
-        /// [`alloc_clone`]: BumpAllocatorTypedScope::alloc_clone
+        /// [`alloc_clone`]: BumpAllocatorScope::alloc_clone
         ///
         /// [`scoped`]: crate::BumpScope::scoped
         /// [`scoped_with_config`]: crate::BumpScope::scoped_with_config
@@ -173,7 +173,7 @@ macro_rules! make_type {
         ///
         /// [`reset`]: Bump::reset
         /// [`reset_to_start`]: Bump::reset_to_start
-        /// [`dealloc`]: BumpAllocatorTyped::dealloc
+        /// [`dealloc`]: BumpAllocator::dealloc
         ///
         /// [`with_config`]: Bump::with_config
         /// [`change_config`]: Bump::change_config

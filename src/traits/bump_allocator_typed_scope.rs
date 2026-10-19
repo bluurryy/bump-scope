@@ -6,14 +6,14 @@ use core::{alloc::Layout, clone::CloneToUninit, ptr};
 use crate::{
     BumpBox, BumpString, BumpVec, SizedTypeProperties,
     owned_slice::OwnedSlice,
-    traits::{BumpAllocatorCoreScope, BumpAllocatorTyped, assert_implements},
+    traits::{BumpAllocator, BumpAllocatorCoreScope, assert_implements},
 };
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
 /// A bump allocator scope with convenient `alloc*` methods.
-pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocatorTyped {
+pub trait BumpAllocatorScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocator {
     /// Allocate an object.
     ///
     /// # Panics
@@ -98,7 +98,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
 
     /// Allocate an object with its default value.
     ///
-    /// This is equivalent to <code>[alloc_with](crate::traits::BumpAllocatorTypedScope::alloc_with)(T::default)</code>.
+    /// This is equivalent to <code>[alloc_with](crate::traits::BumpAllocatorScope::alloc_with)(T::default)</code>.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -118,7 +118,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
 
     /// Allocate an object with its default value.
     ///
-    /// This is equivalent to <code>[try_alloc_with](crate::traits::BumpAllocatorTypedScope::try_alloc_with)(T::default)</code>.
+    /// This is equivalent to <code>[try_alloc_with](crate::traits::BumpAllocatorScope::try_alloc_with)(T::default)</code>.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -581,7 +581,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// Allocates a slice by fill it with elements returned by calling a closure repeatedly.
     ///
     /// This method uses a closure to create new values. If you'd rather
-    /// [`Clone`] a given value, use [`alloc_slice_fill`](crate::traits::BumpAllocatorTypedScope::alloc_slice_fill). If you want to use the [`Default`]
+    /// [`Clone`] a given value, use [`alloc_slice_fill`](crate::traits::BumpAllocatorScope::alloc_slice_fill). If you want to use the [`Default`]
     /// trait to generate values, you can pass [`Default::default`] as the
     /// argument.
     ///
@@ -608,7 +608,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// Allocates a slice by fill it with elements returned by calling a closure repeatedly.
     ///
     /// This method uses a closure to create new values. If you'd rather
-    /// [`Clone`] a given value, use [`try_alloc_slice_fill`](crate::traits::BumpAllocatorTypedScope::try_alloc_slice_fill). If you want to use the [`Default`]
+    /// [`Clone`] a given value, use [`try_alloc_slice_fill`](crate::traits::BumpAllocatorScope::try_alloc_slice_fill). If you want to use the [`Default`]
     /// trait to generate values, you can pass [`Default::default`] as the
     /// argument.
     ///
@@ -747,7 +747,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// [`init_zeroed`](crate::zerocopy_08::InitZeroed::init_zeroed) or unsafely with
     /// [`assume_init`](BumpBox::assume_init).
     ///
-    /// This is just like [`alloc_uninit_slice`](crate::traits::BumpAllocatorTypedScope::alloc_uninit_slice) but uses a `slice` to provide the `len`.
+    /// This is just like [`alloc_uninit_slice`](crate::traits::BumpAllocatorScope::alloc_uninit_slice) but uses a `slice` to provide the `len`.
     /// This avoids a check for a valid layout. The elements of `slice` are irrelevant.
     ///
     /// # Panics
@@ -782,7 +782,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// [`init_zeroed`](crate::zerocopy_08::InitZeroed::init_zeroed) or unsafely with
     /// [`assume_init`](BumpBox::assume_init).
     ///
-    /// This is just like [`try_alloc_uninit_slice`](crate::traits::BumpAllocatorTypedScope::try_alloc_uninit_slice) but uses a `slice` to provide the `len`.
+    /// This is just like [`try_alloc_uninit_slice`](crate::traits::BumpAllocatorScope::try_alloc_uninit_slice) but uses a `slice` to provide the `len`.
     /// This avoids a check for a valid layout. The elements of `slice` are irrelevant.
     ///
     /// # Errors
@@ -851,7 +851,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
 
     /// Allocate a `str` from format arguments.
     ///
-    /// If you have a `&mut self` you can use [`alloc_fmt_mut`](crate::traits::MutBumpAllocatorTypedScope::alloc_fmt_mut)
+    /// If you have a `&mut self` you can use [`alloc_fmt_mut`](crate::traits::MutBumpAllocatorScope::alloc_fmt_mut)
     /// instead for better performance.
     ///
     /// # Panics
@@ -885,7 +885,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
 
     /// Allocate a `str` from format arguments.
     ///
-    /// If you have a `&mut self` you can use [`try_alloc_fmt_mut`](crate::traits::MutBumpAllocatorTypedScope::try_alloc_fmt_mut)
+    /// If you have a `&mut self` you can use [`try_alloc_fmt_mut`](crate::traits::MutBumpAllocatorScope::try_alloc_fmt_mut)
     /// instead for better performance.
     ///
     /// # Errors
@@ -1043,7 +1043,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     ///
     /// If the string contains a `'\0'` then the `CStr` will stop at the first `'\0'`.
     ///
-    /// If you have a `&mut self` you can use [`alloc_cstr_fmt_mut`](crate::traits::MutBumpAllocatorTypedScope::alloc_cstr_fmt_mut)
+    /// If you have a `&mut self` you can use [`alloc_cstr_fmt_mut`](crate::traits::MutBumpAllocatorScope::alloc_cstr_fmt_mut)
     /// instead for better performance.
     ///
     /// # Panics
@@ -1081,7 +1081,7 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     ///
     /// If the string contains a `'\0'` then the `CStr` will stop at the first `'\0'`.
     ///
-    /// If you have a `&mut self` you can use [`try_alloc_cstr_fmt_mut`](crate::traits::MutBumpAllocatorTypedScope::try_alloc_cstr_fmt_mut)
+    /// If you have a `&mut self` you can use [`try_alloc_cstr_fmt_mut`](crate::traits::MutBumpAllocatorScope::try_alloc_cstr_fmt_mut)
     /// instead for better performance.
     ///
     /// # Errors
@@ -1132,8 +1132,8 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
     ///
-    /// [`alloc_iter_exact`]: crate::traits::BumpAllocatorTypedScope::alloc_iter_exact
-    /// [`alloc_iter_mut`]: crate::traits::MutBumpAllocatorTypedScope::alloc_iter_mut
+    /// [`alloc_iter_exact`]: crate::traits::BumpAllocatorScope::alloc_iter_exact
+    /// [`alloc_iter_mut`]: crate::traits::MutBumpAllocatorScope::alloc_iter_mut
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> BumpBox<'a, [T]> {
@@ -1167,8 +1167,8 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
-    /// [`try_alloc_iter_exact`]: crate::traits::BumpAllocatorTypedScope::try_alloc_iter_exact
-    /// [`try_alloc_iter_mut`]: crate::traits::MutBumpAllocatorTypedScope::try_alloc_iter_mut
+    /// [`try_alloc_iter_exact`]: crate::traits::BumpAllocatorScope::try_alloc_iter_exact
+    /// [`try_alloc_iter_mut`]: crate::traits::MutBumpAllocatorScope::try_alloc_iter_mut
     #[inline(always)]
     fn try_alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<'a, [T]>, AllocError> {
         let iter = iter.into_iter();
@@ -1255,10 +1255,10 @@ pub trait BumpAllocatorTypedScope<'a>: BumpAllocatorCoreScope<'a> + BumpAllocato
     }
 }
 
-impl<'a, B> BumpAllocatorTypedScope<'a> for B where B: ?Sized + BumpAllocatorCoreScope<'a> + BumpAllocatorTyped {}
+impl<'a, B> BumpAllocatorScope<'a> for B where B: ?Sized + BumpAllocatorCoreScope<'a> + BumpAllocator {}
 
 assert_implements! {
-    [BumpAllocatorTypedScope<'a> + ?Sized]
+    [BumpAllocatorScope<'a> + ?Sized]
 
     &Bump
     &BumpScope

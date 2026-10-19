@@ -10,13 +10,13 @@ pub(crate) mod mut_bump_allocator_typed_scope;
 
 pub use bump_allocator_core::BumpAllocatorCore;
 pub use bump_allocator_core_scope::BumpAllocatorCoreScope;
-pub use bump_allocator_typed::BumpAllocatorTyped;
-pub use bump_allocator_typed_scope::BumpAllocatorTypedScope;
+pub use bump_allocator_typed::BumpAllocator;
+pub use bump_allocator_typed_scope::BumpAllocatorScope;
 pub(crate) use macros::forward_methods;
 pub use mut_bump_allocator_core::MutBumpAllocatorCore;
 pub use mut_bump_allocator_core_scope::MutBumpAllocatorCoreScope;
-pub use mut_bump_allocator_typed::MutBumpAllocatorTyped;
-pub use mut_bump_allocator_typed_scope::MutBumpAllocatorTypedScope;
+pub use mut_bump_allocator_typed::MutBumpAllocator;
+pub use mut_bump_allocator_typed_scope::MutBumpAllocatorScope;
 
 macro_rules! assert_dyn_compatible {
     ($($tt:tt)*) => {

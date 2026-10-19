@@ -9,7 +9,7 @@ use std::{
 
 use bump_scope::{
     Bump, config,
-    traits::{BumpAllocatorCore, BumpAllocatorTyped},
+    traits::{BumpAllocator, BumpAllocatorCore},
 };
 
 use crate::common::{DisaligningAllocator, up_and_down};

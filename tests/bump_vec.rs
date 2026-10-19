@@ -13,9 +13,7 @@ use std::{
 
 use bump_scope::{
     Bump, BumpScope, BumpVec, WithoutDealloc, WithoutShrink, bump_vec, config,
-    traits::{
-        BumpAllocatorCore, BumpAllocatorCoreScope, BumpAllocatorTyped, MutBumpAllocatorCore, MutBumpAllocatorCoreScope,
-    },
+    traits::{BumpAllocator, BumpAllocatorCore, BumpAllocatorCoreScope, MutBumpAllocatorCore, MutBumpAllocatorCoreScope},
 };
 
 use common::{expect_no_panic, up_and_down};
@@ -512,7 +510,7 @@ up_and_down! {
             range.map(|i| i.to_string())
         }
 
-        fn test<B: BumpAllocatorTyped>(bump: B) {
+        fn test<B: BumpAllocator>(bump: B) {
             const ITEM_SIZE: usize = size_of::<String>();
             assert_eq!(bump.any_stats().allocated(), 0);
             let mut vec = BumpVec::from_iter_in(numbers(1..4), &bump);

@@ -37,7 +37,7 @@ impl<A, const C: BumpConfig> Sealed for BumpScope<'_, A, C> where A: Allocator {
 /// Those invariants are used here:
 /// - Handling of foreign pointers is necessary for implementing [`BumpVec::from_parts`], [`BumpBox::into_box`] and [`Bump(Scope)::dealloc`][Bump::dealloc].
 /// - Memory block splitting is necessary for [`split_off`] and [`split_at`].
-/// - The non-erroring behavior of `shrink` is necessary for [`BumpAllocatorTyped::shrink_slice`]
+/// - The non-erroring behavior of `shrink` is necessary for [`BumpAllocator::shrink_slice`]
 /// - `deallocate` with a dangling pointer is used in the drop implementation of [`BumpString`]
 ///
 /// # Safety
@@ -49,7 +49,7 @@ impl<A, const C: BumpConfig> Sealed for BumpScope<'_, A, C> where A: Allocator {
 /// [`split_off`]: crate::BumpVec::split_off
 /// [`split_at`]: crate::BumpBox::split_at
 /// [`BumpVec`]: crate::BumpVec
-/// [`BumpAllocatorTyped::shrink_slice`]: crate::traits::BumpAllocatorTyped::shrink_slice
+/// [`BumpAllocator::shrink_slice`]: crate::traits::BumpAllocator::shrink_slice
 /// [`BumpString`]: crate::BumpString
 pub unsafe trait BumpAllocatorCore: Allocator + Sealed {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.

@@ -7,7 +7,7 @@ use std::ops::{Bound, RangeBounds};
 use std::{panic, str};
 
 use bump_scope::bump_format;
-use bump_scope::traits::BumpAllocatorTyped;
+use bump_scope::traits::BumpAllocator;
 
 type Bump = bump_scope::Bump<Global>;
 type Vec<T, A = Bump> = bump_scope::BumpVec<T, A>;
@@ -25,7 +25,7 @@ impl<T> VecNew for Vec<T> {
 
 trait ToMyVec<T> {
     fn to_my_vec(&self) -> Vec<T>;
-    fn to_my_vec_in<A: BumpAllocatorTyped>(&self, alloc: A) -> Vec<T, A>;
+    fn to_my_vec_in<A: BumpAllocator>(&self, alloc: A) -> Vec<T, A>;
 }
 
 impl<T: Clone> ToMyVec<T> for [T] {
@@ -35,7 +35,7 @@ impl<T: Clone> ToMyVec<T> for [T] {
         vec
     }
 
-    fn to_my_vec_in<A: BumpAllocatorTyped>(&self, alloc: A) -> Vec<T, A> {
+    fn to_my_vec_in<A: BumpAllocator>(&self, alloc: A) -> Vec<T, A> {
         let mut vec = Vec::new_in(alloc);
         vec.extend_from_slice_clone(self);
         vec
@@ -47,7 +47,7 @@ impl<T: Clone, const N: usize> ToMyVec<T> for &[T; N] {
         self[..].to_my_vec()
     }
 
-    fn to_my_vec_in<A: BumpAllocatorTyped>(&self, alloc: A) -> Vec<T, A> {
+    fn to_my_vec_in<A: BumpAllocator>(&self, alloc: A) -> Vec<T, A> {
         self[..].to_my_vec_in(alloc)
     }
 }

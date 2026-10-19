@@ -67,14 +67,14 @@ panic-on-alloc = []
 serde = ["dep:serde"]
 
 ## Adds `bytemuck::*` extension traits for
-## <code>[alloc_zeroed](bytemuck::BumpAllocatorTypedScopeExt::alloc_zeroed)([_slice](bytemuck::BumpAllocatorTypedScopeExt::alloc_zeroed_slice))</code>,
+## <code>[alloc_zeroed](bytemuck::BumpAllocatorScopeExt::alloc_zeroed)([_slice](bytemuck::BumpAllocatorScopeExt::alloc_zeroed_slice))</code>,
 ## [`init_zeroed`](bytemuck::InitZeroed::init_zeroed),
 ## [`extend_zeroed`](bytemuck::VecExt::extend_zeroed) and
 ## [`resize_zeroed`](bytemuck::VecExt::resize_zeroed).
 bytemuck = ["dep:bytemuck"]
 
 ## Adds `zerocopy_08::*` extension traits for
-## <code>[alloc_zeroed](zerocopy_08::BumpAllocatorTypedScopeExt::alloc_zeroed)([_slice](zerocopy_08::BumpAllocatorTypedScopeExt::alloc_zeroed_slice))</code>,
+## <code>[alloc_zeroed](zerocopy_08::BumpAllocatorScopeExt::alloc_zeroed)([_slice](zerocopy_08::BumpAllocatorScopeExt::alloc_zeroed_slice))</code>,
 ## [`init_zeroed`](zerocopy_08::InitZeroed::init_zeroed),
 ## [`extend_zeroed`](zerocopy_08::VecExt::extend_zeroed) and
 ## [`resize_zeroed`](zerocopy_08::VecExt::resize_zeroed).
@@ -118,7 +118,7 @@ nightly-tests = []
 ## (Just like with std's `Box` and `Vec`.)
 nightly-dropck-eyepatch = []
 
-## Adds [`alloc_clone`](crate::traits::BumpAllocatorTypedScope::alloc_clone) method.
+## Adds [`alloc_clone`](crate::traits::BumpAllocatorScope::alloc_clone) method.
 nightly-clone-to-uninit = []
 
 ## Promises to miri that allocated pointers are symbolically aligned.

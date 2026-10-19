@@ -19,7 +19,7 @@ use crate::{
     min_non_zero_cap,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     polyfill::{hint::likely, slice},
-    traits::{BumpAllocatorTyped, BumpAllocatorTypedScope},
+    traits::{BumpAllocator, BumpAllocatorScope},
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -39,7 +39,7 @@ pub use splice::Splice;
 
 /// Like [`vec!`](alloc::vec!) but allocates inside a bump allocator, returning a [`BumpVec`].
 ///
-/// `$bump` can be any type that implements [`BumpAllocatorTyped`].
+/// `$bump` can be any type that implements [`BumpAllocator`].
 ///
 /// # Panics
 /// If used without `try`, panics on allocation failure.
@@ -204,12 +204,12 @@ macro_rules! __bump_vec_panic_on_alloc {
 /// ```
 // `BumpString` and `BumpVec<u8>` have the same repr.
 #[repr(C)]
-pub struct BumpVec<T, A: BumpAllocatorTyped> {
+pub struct BumpVec<T, A: BumpAllocator> {
     fixed: RawFixedBumpVec<T>,
     allocator: A,
 }
 
-impl<T, A: BumpAllocatorTyped> Deref for BumpVec<T, A> {
+impl<T, A: BumpAllocator> Deref for BumpVec<T, A> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -217,22 +217,22 @@ impl<T, A: BumpAllocatorTyped> Deref for BumpVec<T, A> {
     }
 }
 
-impl<T, A: BumpAllocatorTyped> DerefMut for BumpVec<T, A> {
+impl<T, A: BumpAllocator> DerefMut for BumpVec<T, A> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { self.fixed.cook_mut() }
     }
 }
 
-impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
+impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// # Safety
     ///
     /// Must only be called from the drop implementation and a call to this function
     /// must be the only thing in that drop implementation.
     #[inline]
     unsafe fn drop_inner(&mut self) {
-        struct DropGuard<'a, T, A: BumpAllocatorTyped>(&'a mut BumpVec<T, A>);
+        struct DropGuard<'a, T, A: BumpAllocator>(&'a mut BumpVec<T, A>);
 
-        impl<T, A: BumpAllocatorTyped> Drop for DropGuard<'_, T, A> {
+        impl<T, A: BumpAllocator> Drop for DropGuard<'_, T, A> {
             fn drop(&mut self) {
                 if T::IS_ZST || self.0.capacity() == 0 {
                     return;
@@ -257,7 +257,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
 }
 
 #[cfg(feature = "nightly-dropck-eyepatch")]
-unsafe impl<#[may_dangle] T, A: BumpAllocatorTyped> Drop for BumpVec<T, A> {
+unsafe impl<#[may_dangle] T, A: BumpAllocator> Drop for BumpVec<T, A> {
     #[inline]
     fn drop(&mut self) {
         unsafe { self.drop_inner() }
@@ -265,28 +265,28 @@ unsafe impl<#[may_dangle] T, A: BumpAllocatorTyped> Drop for BumpVec<T, A> {
 }
 
 #[cfg(not(feature = "nightly-dropck-eyepatch"))]
-impl<T, A: BumpAllocatorTyped> Drop for BumpVec<T, A> {
+impl<T, A: BumpAllocator> Drop for BumpVec<T, A> {
     #[inline]
     fn drop(&mut self) {
         unsafe { self.drop_inner() }
     }
 }
 
-impl<T, A: BumpAllocatorTyped + Default> Default for BumpVec<T, A> {
+impl<T, A: BumpAllocator + Default> Default for BumpVec<T, A> {
     fn default() -> Self {
         Self::new_in(A::default())
     }
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<T: Clone, A: BumpAllocatorTyped + Clone> Clone for BumpVec<T, A> {
+impl<T: Clone, A: BumpAllocator + Clone> Clone for BumpVec<T, A> {
     fn clone(&self) -> Self {
         let alloc = self.allocator.clone();
         slice_to_bump_vec_in(self, alloc)
     }
 }
 
-impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
+impl<T, A: BumpAllocator> BumpVec<T, A> {
     /// Constructs a new empty `BumpVec<T>`.
     ///
     /// The vector will not allocate until elements are pushed onto it.
@@ -2372,7 +2372,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
         A: Clone,
     {
         if !T::IS_ZST && !U::IS_ZST && T::ALIGN >= U::ALIGN && T::SIZE >= U::SIZE {
-            struct DropGuard<T, U, A: BumpAllocatorTyped> {
+            struct DropGuard<T, U, A: BumpAllocator> {
                 ptr: NonNull<T>,
                 cap: usize,
                 end: *mut T,
@@ -2381,14 +2381,14 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
                 allocator: A,
             }
 
-            impl<T, U, A: BumpAllocatorTyped> DropGuard<T, U, A> {
+            impl<T, U, A: BumpAllocator> DropGuard<T, U, A> {
                 fn into_allocator(self) -> A {
                     destructure!(let Self { allocator } = self);
                     allocator
                 }
             }
 
-            impl<T, U, A: BumpAllocatorTyped> Drop for DropGuard<T, U, A> {
+            impl<T, U, A: BumpAllocator> Drop for DropGuard<T, U, A> {
                 fn drop(&mut self) {
                     unsafe {
                         // drop `T`s
@@ -2501,20 +2501,20 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
         // `FixedBumpVec::map_in_place` handles dropping `T`s and `U`s on panic.
         // What is left to do is deallocating the memory.
 
-        struct DropGuard<T, A: BumpAllocatorTyped> {
+        struct DropGuard<T, A: BumpAllocator> {
             ptr: NonNull<T>,
             cap: usize,
             allocator: A,
         }
 
-        impl<T, A: BumpAllocatorTyped> DropGuard<T, A> {
+        impl<T, A: BumpAllocator> DropGuard<T, A> {
             fn into_allocator(self) -> A {
                 destructure!(let Self { allocator } = self);
                 allocator
             }
         }
 
-        impl<T, A: BumpAllocatorTyped> Drop for DropGuard<T, A> {
+        impl<T, A: BumpAllocator> Drop for DropGuard<T, A> {
             fn drop(&mut self) {
                 unsafe {
                     if T::IS_ZST || self.cap == 0 {
@@ -3246,7 +3246,7 @@ impl<T, A: BumpAllocatorTyped> BumpVec<T, A> {
     }
 }
 
-impl<'a, T, A: BumpAllocatorTypedScope<'a>> BumpVec<T, A> {
+impl<'a, T, A: BumpAllocatorScope<'a>> BumpVec<T, A> {
     /// Turns this `BumpVec<T>` into a `FixedBumpVec<T>`.
     ///
     /// This retains the unused capacity unlike <code>[into_](Self::into_slice)([boxed_](Self::into_boxed_slice))[slice](Self::into_slice)</code>.
@@ -3322,7 +3322,7 @@ impl<'a, T, A: BumpAllocatorTypedScope<'a>> BumpVec<T, A> {
     }
 }
 
-impl<T, const N: usize, A: BumpAllocatorTyped> BumpVec<[T; N], A> {
+impl<T, const N: usize, A: BumpAllocator> BumpVec<[T; N], A> {
     /// Takes a `BumpVec<[T; N]>` and flattens it into a `BumpVec<T>`.
     ///
     /// # Panics
@@ -3353,13 +3353,13 @@ impl<T, const N: usize, A: BumpAllocatorTyped> BumpVec<[T; N], A> {
     }
 }
 
-impl<T: Debug, A: BumpAllocatorTyped> Debug for BumpVec<T, A> {
+impl<T: Debug, A: BumpAllocator> Debug for BumpVec<T, A> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Debug::fmt(self.as_slice(), f)
     }
 }
 
-impl<T, A: BumpAllocatorTyped, I: SliceIndex<[T]>> Index<I> for BumpVec<T, A> {
+impl<T, A: BumpAllocator, I: SliceIndex<[T]>> Index<I> for BumpVec<T, A> {
     type Output = I::Output;
 
     #[inline(always)]
@@ -3368,7 +3368,7 @@ impl<T, A: BumpAllocatorTyped, I: SliceIndex<[T]>> Index<I> for BumpVec<T, A> {
     }
 }
 
-impl<T, A: BumpAllocatorTyped, I: SliceIndex<[T]>> IndexMut<I> for BumpVec<T, A> {
+impl<T, A: BumpAllocator, I: SliceIndex<[T]>> IndexMut<I> for BumpVec<T, A> {
     #[inline(always)]
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
         IndexMut::index_mut(self.as_mut_slice(), index)
@@ -3376,7 +3376,7 @@ impl<T, A: BumpAllocatorTyped, I: SliceIndex<[T]>> IndexMut<I> for BumpVec<T, A>
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<T, A: BumpAllocatorTyped> Extend<T> for BumpVec<T, A> {
+impl<T, A: BumpAllocator> Extend<T> for BumpVec<T, A> {
     #[inline]
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         panic_on_error(self.generic_extend(iter.into_iter()));
@@ -3384,14 +3384,14 @@ impl<T, A: BumpAllocatorTyped> Extend<T> for BumpVec<T, A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<'t, T: Clone + 't, A: BumpAllocatorTyped> Extend<&'t T> for BumpVec<T, A> {
+impl<'t, T: Clone + 't, A: BumpAllocator> Extend<&'t T> for BumpVec<T, A> {
     #[inline]
     fn extend<I: IntoIterator<Item = &'t T>>(&mut self, iter: I) {
         panic_on_error(self.generic_extend(iter.into_iter().cloned()));
     }
 }
 
-impl<T, A: BumpAllocatorTyped> IntoIterator for BumpVec<T, A> {
+impl<T, A: BumpAllocator> IntoIterator for BumpVec<T, A> {
     type Item = T;
     type IntoIter = IntoIter<T, A>;
 
@@ -3424,7 +3424,7 @@ impl<T, A: BumpAllocatorTyped> IntoIterator for BumpVec<T, A> {
     }
 }
 
-impl<'c, T, A: BumpAllocatorTyped> IntoIterator for &'c BumpVec<T, A> {
+impl<'c, T, A: BumpAllocator> IntoIterator for &'c BumpVec<T, A> {
     type Item = &'c T;
     type IntoIter = slice::Iter<'c, T>;
 
@@ -3434,7 +3434,7 @@ impl<'c, T, A: BumpAllocatorTyped> IntoIterator for &'c BumpVec<T, A> {
     }
 }
 
-impl<'c, T, A: BumpAllocatorTyped> IntoIterator for &'c mut BumpVec<T, A> {
+impl<'c, T, A: BumpAllocator> IntoIterator for &'c mut BumpVec<T, A> {
     type Item = &'c mut T;
     type IntoIter = slice::IterMut<'c, T>;
 
@@ -3444,35 +3444,35 @@ impl<'c, T, A: BumpAllocatorTyped> IntoIterator for &'c mut BumpVec<T, A> {
     }
 }
 
-impl<T, A: BumpAllocatorTyped> AsRef<[T]> for BumpVec<T, A> {
+impl<T, A: BumpAllocator> AsRef<[T]> for BumpVec<T, A> {
     #[inline(always)]
     fn as_ref(&self) -> &[T] {
         self
     }
 }
 
-impl<T, A: BumpAllocatorTyped> AsMut<[T]> for BumpVec<T, A> {
+impl<T, A: BumpAllocator> AsMut<[T]> for BumpVec<T, A> {
     #[inline(always)]
     fn as_mut(&mut self) -> &mut [T] {
         self
     }
 }
 
-impl<T, A: BumpAllocatorTyped> Borrow<[T]> for BumpVec<T, A> {
+impl<T, A: BumpAllocator> Borrow<[T]> for BumpVec<T, A> {
     #[inline(always)]
     fn borrow(&self) -> &[T] {
         self
     }
 }
 
-impl<T, A: BumpAllocatorTyped> BorrowMut<[T]> for BumpVec<T, A> {
+impl<T, A: BumpAllocator> BorrowMut<[T]> for BumpVec<T, A> {
     #[inline(always)]
     fn borrow_mut(&mut self) -> &mut [T] {
         self
     }
 }
 
-impl<T: Hash, A: BumpAllocatorTyped> Hash for BumpVec<T, A> {
+impl<T: Hash, A: BumpAllocator> Hash for BumpVec<T, A> {
     #[inline(always)]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.as_slice().hash(state);
@@ -3481,7 +3481,7 @@ impl<T: Hash, A: BumpAllocatorTyped> Hash for BumpVec<T, A> {
 
 /// Returns [`ErrorKind::OutOfMemory`](std::io::ErrorKind::OutOfMemory) when allocations fail.
 #[cfg(feature = "std")]
-impl<A: BumpAllocatorTyped> std::io::Write for BumpVec<u8, A> {
+impl<A: BumpAllocator> std::io::Write for BumpVec<u8, A> {
     #[inline(always)]
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         <Self as std::io::Write>::write_all(self, buf)?;
@@ -3515,7 +3515,7 @@ impl<A: BumpAllocatorTyped> std::io::Write for BumpVec<u8, A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl<T, A: BumpAllocatorTyped + Default> FromIterator<T> for BumpVec<T, A> {
+impl<T, A: BumpAllocator + Default> FromIterator<T> for BumpVec<T, A> {
     #[inline]
     #[track_caller]
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
@@ -3524,7 +3524,7 @@ impl<T, A: BumpAllocatorTyped + Default> FromIterator<T> for BumpVec<T, A> {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-pub(crate) fn slice_to_bump_vec_in<T: Clone, A: BumpAllocatorTyped>(slice: &[T], allocator: A) -> BumpVec<T, A> {
+pub(crate) fn slice_to_bump_vec_in<T: Clone, A: BumpAllocator>(slice: &[T], allocator: A) -> BumpVec<T, A> {
     // The same thing as `alloc_uninit_slice`, except for the lifetime.
     let ptr = allocator.allocate_slice::<MaybeUninit<T>>(slice.len());
     let ptr_slice = NonNull::slice_from_raw_parts(ptr, slice.len());

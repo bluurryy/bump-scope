@@ -261,12 +261,12 @@
 //!   `try_`-prefixed allocation methods will be available.
 //! - **`serde`** — Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 //! - **`bytemuck`** — Adds `bytemuck::*` extension traits for
-//!   <code>[alloc_zeroed](bytemuck::BumpAllocatorTypedScopeExt::alloc_zeroed)([_slice](bytemuck::BumpAllocatorTypedScopeExt::alloc_zeroed_slice))</code>,
+//!   <code>[alloc_zeroed](bytemuck::BumpAllocatorScopeExt::alloc_zeroed)([_slice](bytemuck::BumpAllocatorScopeExt::alloc_zeroed_slice))</code>,
 //!   [`init_zeroed`](bytemuck::InitZeroed::init_zeroed),
 //!   [`extend_zeroed`](bytemuck::VecExt::extend_zeroed) and
 //!   [`resize_zeroed`](bytemuck::VecExt::resize_zeroed).
 //! - **`zerocopy-08`** — Adds `zerocopy_08::*` extension traits for
-//!   <code>[alloc_zeroed](zerocopy_08::BumpAllocatorTypedScopeExt::alloc_zeroed)([_slice](zerocopy_08::BumpAllocatorTypedScopeExt::alloc_zeroed_slice))</code>,
+//!   <code>[alloc_zeroed](zerocopy_08::BumpAllocatorScopeExt::alloc_zeroed)([_slice](zerocopy_08::BumpAllocatorScopeExt::alloc_zeroed_slice))</code>,
 //!   [`init_zeroed`](zerocopy_08::InitZeroed::init_zeroed),
 //!   [`extend_zeroed`](zerocopy_08::VecExt::extend_zeroed) and
 //!   [`resize_zeroed`](zerocopy_08::VecExt::resize_zeroed).
@@ -286,7 +286,7 @@
 //! - **`nightly-dropck-eyepatch`** — Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
 //!   This makes it so references don't have to strictly outlive the container.
 //!   (Just like with std's `Box` and `Vec`.)
-//! - **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](crate::traits::BumpAllocatorTypedScope::alloc_clone) method.
+//! - **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](crate::traits::BumpAllocatorScope::alloc_clone) method.
 //! - **`nightly-miri-promise-symbolic-alignment`** — Promises to miri that allocated pointers are symbolically aligned.
 //! <!-- feature documentation end -->
 //!

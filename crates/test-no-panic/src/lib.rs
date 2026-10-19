@@ -10,7 +10,7 @@ use core::{alloc::Layout, ffi::CStr, fmt, mem::MaybeUninit, num::NonZero, ops::R
 
 use bump_scope::{
     config::{BumpConfig, BumpConfigBuilder},
-    zerocopy_08::{BumpAllocatorTypedScopeExt, VecExt},
+    zerocopy_08::{BumpAllocatorScopeExt, VecExt},
     BumpBox, FixedBumpString, FixedBumpVec, FromUtf16Error,
 };
 

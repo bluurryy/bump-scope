@@ -4,7 +4,7 @@ use arbitrary::Arbitrary;
 use bump_scope::{
     Bump, BumpVec,
     config::{BumpConfig, BumpConfigBuilder},
-    traits::BumpAllocatorTyped,
+    traits::BumpAllocator,
 };
 use zerocopy::{FromBytes, Immutable, IntoBytes};
 
@@ -136,7 +136,7 @@ impl<'a> VecObj<'a> {
 
 impl<T, A> VecTrait for BumpVec<T, A>
 where
-    A: BumpAllocatorTyped,
+    A: BumpAllocator,
     T: Default + FromBytes + IntoBytes + Immutable,
 {
     fn push(&mut self, bit_pattern: u8) {

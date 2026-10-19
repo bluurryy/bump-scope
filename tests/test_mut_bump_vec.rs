@@ -11,7 +11,7 @@ use std::{
 
 use bump_scope::{
     Bump, BumpScope, MutBumpVec,
-    traits::{MutBumpAllocatorCoreScope, MutBumpAllocatorTypedScope},
+    traits::{MutBumpAllocatorCoreScope, MutBumpAllocatorScope},
 };
 
 use common::up_and_down;
@@ -25,7 +25,7 @@ up_and_down! {
             range.map(|i| i.to_string())
         }
 
-        fn test<'a, B: MutBumpAllocatorTypedScope<'a>>(mut bump: B) {
+        fn test<'a, B: MutBumpAllocatorScope<'a>>(mut bump: B) {
             const ITEM_SIZE: usize = size_of::<String>();
             assert_eq!(bump.any_stats().allocated(), 0);
             let vec = MutBumpVec::from_iter_in(numbers(1..4), &mut bump);

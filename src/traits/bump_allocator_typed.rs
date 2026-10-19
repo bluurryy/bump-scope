@@ -31,9 +31,9 @@ use crate::panic_on_error;
 /// A blanket implementation for all `BumpAllocatorCore`s would defeat that purpose, at least
 /// until some form of specialization is stabilized.
 ///
-/// [`typed_stats`]: BumpAllocatorTyped::typed_stats
-pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
-    /// The type returned by the [stats](BumpAllocatorTyped::typed_stats) method.
+/// [`typed_stats`]: BumpAllocator::typed_stats
+pub unsafe trait BumpAllocator: BumpAllocatorCore {
+    /// The type returned by the [stats](BumpAllocator::typed_stats) method.
     type TypedStats<'b>: Into<AnyStats<'b>>
     where
         Self: 'b;
@@ -249,12 +249,12 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// A specialized version of [`allocate_prepared`].
     ///
     /// Allocates part of the free space returned from a
-    /// <code>([try_](BumpAllocatorTyped::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorTyped::prepare_slice_allocation)</code>
+    /// <code>([try_](BumpAllocator::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocator::prepare_slice_allocation)</code>
     /// call.
     ///
     /// # Safety
     /// - `ptr..ptr + cap` must be the pointer range returned from
-    ///   <code>([try_](BumpAllocatorTyped::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocatorTyped::prepare_slice_allocation)</code>.
+    ///   <code>([try_](BumpAllocator::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocator::prepare_slice_allocation)</code>.
     /// - no allocation, grow, shrink or deallocate must have taken place since then
     /// - no resets must have taken place since then
     /// - `len` must be less than or equal to `cap`
@@ -288,12 +288,12 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
     /// A specialized version of [`allocate_prepared_rev`].
     ///
     /// Allocates part of the free space returned from a
-    /// <code>([try_](BumpAllocatorTyped::try_prepare_slice_allocation))[prepare_slice_allocation_rev](BumpAllocatorTyped::prepare_slice_allocation_rev)</code>
+    /// <code>([try_](BumpAllocator::try_prepare_slice_allocation))[prepare_slice_allocation_rev](BumpAllocator::prepare_slice_allocation_rev)</code>
     /// call.
     ///
     /// # Safety
     /// - `ptr - cap..ptr` must be the pointer range returned from
-    ///   <code>([try_](BumpAllocatorTyped::try_prepare_slice_allocation))[prepare_slice_allocation_rev](BumpAllocatorTyped::prepare_slice_allocation_rev)</code>.
+    ///   <code>([try_](BumpAllocator::try_prepare_slice_allocation))[prepare_slice_allocation_rev](BumpAllocator::prepare_slice_allocation_rev)</code>.
     /// - no allocation, grow, shrink or deallocate must have taken place since then
     /// - no resets must have taken place since then
     /// - `len` must be less than or equal to `cap`
@@ -390,7 +390,7 @@ pub unsafe trait BumpAllocatorTyped: BumpAllocatorCore {
 }
 
 assert_implements! {
-    [BumpAllocatorTyped + ?Sized]
+    [BumpAllocator + ?Sized]
 
     dyn BumpAllocatorCore
     &dyn BumpAllocatorCore
@@ -412,7 +412,7 @@ assert_implements! {
 macro_rules! impl_for_trait_object {
     ($($ty:ty)*) => {
         $(
-            unsafe impl BumpAllocatorTyped for $ty {
+            unsafe impl BumpAllocator for $ty {
                 type TypedStats<'b>
                     = AnyStats<'b>
                 where
@@ -699,7 +699,7 @@ impl_for_trait_object! {
 macro_rules! impl_for_ref {
     ($($ty:ty)*) => {
         $(
-            unsafe impl<B: BumpAllocatorTyped + ?Sized> BumpAllocatorTyped for $ty {
+            unsafe impl<B: BumpAllocator + ?Sized> BumpAllocator for $ty {
                 type TypedStats<'b>
                     = B::TypedStats<'b>
                 where
@@ -811,7 +811,7 @@ impl_for_ref! {
     &mut B
 }
 
-unsafe impl<B: BumpAllocatorTyped> BumpAllocatorTyped for WithoutDealloc<B> {
+unsafe impl<B: BumpAllocator> BumpAllocator for WithoutDealloc<B> {
     type TypedStats<'b>
         = B::TypedStats<'b>
     where
@@ -915,7 +915,7 @@ unsafe impl<B: BumpAllocatorTyped> BumpAllocatorTyped for WithoutDealloc<B> {
     }
 }
 
-unsafe impl<B: BumpAllocatorTyped> BumpAllocatorTyped for WithoutShrink<B> {
+unsafe impl<B: BumpAllocator> BumpAllocator for WithoutShrink<B> {
     type TypedStats<'b>
         = B::TypedStats<'b>
     where
@@ -1021,7 +1021,7 @@ unsafe impl<B: BumpAllocatorTyped> BumpAllocatorTyped for WithoutShrink<B> {
     }
 }
 
-unsafe impl<A, const C: BumpConfig> BumpAllocatorTyped for BumpScope<'_, A, C>
+unsafe impl<A, const C: BumpConfig> BumpAllocator for BumpScope<'_, A, C>
 where
     A: Allocator,
 {
@@ -1217,7 +1217,7 @@ where
     }
 }
 
-unsafe impl<A, const C: BumpConfig> BumpAllocatorTyped for Bump<A, C>
+unsafe impl<A, const C: BumpConfig> BumpAllocator for Bump<A, C>
 where
     A: Allocator,
 {

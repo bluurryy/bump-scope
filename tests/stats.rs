@@ -11,7 +11,7 @@ use bump_scope::{
     Bump,
     config::BumpConfig,
     stats::{AnyChunk, AnyStats, Chunk, Stats},
-    traits::{BumpAllocatorCore, BumpAllocatorTyped as _},
+    traits::{BumpAllocator as _, BumpAllocatorCore},
 };
 
 use common::up_and_down;

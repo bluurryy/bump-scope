@@ -15,7 +15,7 @@ macro_rules! bytemuck_or_zerocopy {
 
             use crate::{
                 BumpBox, BumpVec, ErrorBehavior, FixedBumpVec, MutBumpVec, MutBumpVecRev,
-                traits::{BumpAllocatorTyped, BumpAllocatorTypedScope, MutBumpAllocatorTyped},
+                traits::{BumpAllocator, BumpAllocatorScope, MutBumpAllocator},
             };
 
             #[cfg(feature = "panic-on-alloc")]
@@ -83,8 +83,8 @@ macro_rules! bytemuck_or_zerocopy {
                 }
             }
 
-            /// Extension trait for [`BumpAllocatorTypedScope`] that adds the `(try_)alloc_zeroed(_slice)` methods.
-            pub trait BumpAllocatorTypedScopeExt<'a>: BumpAllocatorTypedScope<'a> {
+            /// Extension trait for [`BumpAllocatorScope`] that adds the `(try_)alloc_zeroed(_slice)` methods.
+            pub trait BumpAllocatorScopeExt<'a>: BumpAllocatorScope<'a> {
                 /// Allocate a zeroed object.
                 ///
                 /// # Panics
@@ -92,7 +92,7 @@ macro_rules! bytemuck_or_zerocopy {
                 ///
                 /// # Examples
                 /// ```
-                #[doc = concat!("use bump_scope::{Bump, ", stringify!($mod), "::BumpAllocatorTypedScopeExt};")]
+                #[doc = concat!("use bump_scope::{Bump, ", stringify!($mod), "::BumpAllocatorScopeExt};")]
                 /// let bump: Bump = Bump::new();
                 ///
                 /// let zero = bump.as_scope().alloc_zeroed::<i32>();
@@ -114,7 +114,7 @@ macro_rules! bytemuck_or_zerocopy {
                 ///
                 /// # Examples
                 /// ```
-                #[doc = concat!("use bump_scope::{Bump, ", stringify!($mod), "::BumpAllocatorTypedScopeExt};")]
+                #[doc = concat!("use bump_scope::{Bump, ", stringify!($mod), "::BumpAllocatorScopeExt};")]
                 /// let bump: Bump = Bump::new();
                 ///
                 /// let zero = bump.as_scope().try_alloc_zeroed::<i32>()?;
@@ -136,7 +136,7 @@ macro_rules! bytemuck_or_zerocopy {
                 ///
                 /// # Examples
                 /// ```
-                #[doc = concat!("use bump_scope::{Bump, ", stringify!($mod), "::BumpAllocatorTypedScopeExt};")]
+                #[doc = concat!("use bump_scope::{Bump, ", stringify!($mod), "::BumpAllocatorScopeExt};")]
                 /// let bump: Bump = Bump::new();
                 ///
                 /// let zeroes = bump.as_scope().alloc_zeroed_slice::<i32>(3);
@@ -157,7 +157,7 @@ macro_rules! bytemuck_or_zerocopy {
                 ///
                 /// # Examples
                 /// ```
-                #[doc = concat!("use bump_scope::{Bump, ", stringify!($mod), "::BumpAllocatorTypedScopeExt};")]
+                #[doc = concat!("use bump_scope::{Bump, ", stringify!($mod), "::BumpAllocatorScopeExt};")]
                 /// let bump: Bump = Bump::new();
                 ///
                 /// let zeroes = bump.as_scope().try_alloc_zeroed_slice::<i32>(3)?;
@@ -172,7 +172,7 @@ macro_rules! bytemuck_or_zerocopy {
                 }
             }
 
-            impl<'a, T> BumpAllocatorTypedScopeExt<'a> for T where T: BumpAllocatorTypedScope<'a> {}
+            impl<'a, T> BumpAllocatorScopeExt<'a> for T where T: BumpAllocatorScope<'a> {}
 
             mod vec_ext {
                 use super::*;
@@ -180,9 +180,9 @@ macro_rules! bytemuck_or_zerocopy {
                 pub trait Sealed {}
 
                 impl<T> Sealed for FixedBumpVec<'_, T> {}
-                impl<T, A: BumpAllocatorTyped> Sealed for BumpVec<T, A> {}
-                impl<T, A: MutBumpAllocatorTyped> Sealed for MutBumpVec<T, A> {}
-                impl<T, A: MutBumpAllocatorTyped> Sealed for MutBumpVecRev<T, A> {}
+                impl<T, A: BumpAllocator> Sealed for BumpVec<T, A> {}
+                impl<T, A: MutBumpAllocator> Sealed for MutBumpVec<T, A> {}
+                impl<T, A: MutBumpAllocator> Sealed for MutBumpVecRev<T, A> {}
             }
 
             /// Extension trait for this crate's vector types.
@@ -413,7 +413,7 @@ macro_rules! bytemuck_or_zerocopy {
                 }
             }
 
-            impl<T, A: BumpAllocatorTyped> VecExt for BumpVec<T, A> {
+            impl<T, A: BumpAllocator> VecExt for BumpVec<T, A> {
                 type T = T;
 
                 /// Extends this vector by pushing `additional` new items onto the end.
@@ -531,7 +531,7 @@ macro_rules! bytemuck_or_zerocopy {
                 }
             }
 
-            impl<T, A: MutBumpAllocatorTyped> VecExt for MutBumpVec<T, A> {
+            impl<T, A: MutBumpAllocator> VecExt for MutBumpVec<T, A> {
                 type T = T;
 
                 /// Extends this vector by pushing `additional` new items onto the end.
@@ -657,7 +657,7 @@ macro_rules! bytemuck_or_zerocopy {
                 }
             }
 
-            impl<T, A: MutBumpAllocatorTyped> VecExt for MutBumpVecRev<T, A> {
+            impl<T, A: MutBumpAllocator> VecExt for MutBumpVecRev<T, A> {
                 type T = T;
 
                 /// Extends this vector by pushing `additional` new items onto the end.
@@ -817,7 +817,7 @@ macro_rules! bytemuck_or_zerocopy {
                 }
             }
 
-            impl<T: $trait, A: BumpAllocatorTyped> PrivateVecExt for BumpVec<T, A> {
+            impl<T: $trait, A: BumpAllocator> PrivateVecExt for BumpVec<T, A> {
                 #[inline]
                 fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
                     self.generic_reserve(additional)?;
@@ -846,7 +846,7 @@ macro_rules! bytemuck_or_zerocopy {
                 }
             }
 
-            impl<T: $trait, A: MutBumpAllocatorTyped> PrivateVecExt for MutBumpVec<T, A> {
+            impl<T: $trait, A: MutBumpAllocator> PrivateVecExt for MutBumpVec<T, A> {
                 #[inline]
                 fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E>
                 where
@@ -881,7 +881,7 @@ macro_rules! bytemuck_or_zerocopy {
                 }
             }
 
-            impl<T: $trait, A: MutBumpAllocatorTyped> PrivateVecExt for MutBumpVecRev<T, A> {
+            impl<T: $trait, A: MutBumpAllocator> PrivateVecExt for MutBumpVecRev<T, A> {
                 #[inline]
                 fn generic_extend_zeroed<E: ErrorBehavior>(&mut self, additional: usize) -> Result<(), E> {
                     self.generic_reserve(additional)?;

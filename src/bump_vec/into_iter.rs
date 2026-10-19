@@ -7,7 +7,7 @@ use core::{
     slice,
 };
 
-use crate::{SizedTypeProperties, traits::BumpAllocatorTyped};
+use crate::{SizedTypeProperties, traits::BumpAllocator};
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::bump_vec::slice_to_bump_vec_in;
@@ -23,7 +23,7 @@ macro_rules! non_null {
 /// [`BumpVec`](crate::BumpVec::into_iter),
 /// (provided by the [`IntoIterator`] trait).
 // This is modelled after rust's `alloc/src/vec/into_iter.rs`
-pub struct IntoIter<T, A: BumpAllocatorTyped> {
+pub struct IntoIter<T, A: BumpAllocator> {
     pub(super) buf: NonNull<T>,
     pub(super) cap: usize,
 
@@ -40,13 +40,13 @@ pub struct IntoIter<T, A: BumpAllocatorTyped> {
     pub(super) marker: PhantomData<T>,
 }
 
-impl<T: Debug, A: BumpAllocatorTyped> Debug for IntoIter<T, A> {
+impl<T: Debug, A: BumpAllocator> Debug for IntoIter<T, A> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_tuple("IntoIter").field(&self.as_slice()).finish()
     }
 }
 
-impl<T, A: BumpAllocatorTyped> IntoIter<T, A> {
+impl<T, A: BumpAllocator> IntoIter<T, A> {
     /// Returns the remaining items of this iterator as a slice.
     ///
     /// # Examples
@@ -97,14 +97,14 @@ impl<T, A: BumpAllocatorTyped> IntoIter<T, A> {
     }
 }
 
-impl<T, A: BumpAllocatorTyped> AsRef<[T]> for IntoIter<T, A> {
+impl<T, A: BumpAllocator> AsRef<[T]> for IntoIter<T, A> {
     #[inline]
     fn as_ref(&self) -> &[T] {
         self.as_slice()
     }
 }
 
-impl<T, A: BumpAllocatorTyped> Iterator for IntoIter<T, A> {
+impl<T, A: BumpAllocator> Iterator for IntoIter<T, A> {
     type Item = T;
 
     #[inline]
@@ -147,7 +147,7 @@ impl<T, A: BumpAllocatorTyped> Iterator for IntoIter<T, A> {
     }
 }
 
-impl<T, A: BumpAllocatorTyped> DoubleEndedIterator for IntoIter<T, A> {
+impl<T, A: BumpAllocator> DoubleEndedIterator for IntoIter<T, A> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         if T::IS_ZST {
@@ -172,7 +172,7 @@ impl<T, A: BumpAllocatorTyped> DoubleEndedIterator for IntoIter<T, A> {
     }
 }
 
-impl<T, A: BumpAllocatorTyped> ExactSizeIterator for IntoIter<T, A> {
+impl<T, A: BumpAllocator> ExactSizeIterator for IntoIter<T, A> {
     #[cfg(feature = "nightly-exact-size-is-empty")]
     #[inline]
     fn is_empty(&self) -> bool {
@@ -184,23 +184,23 @@ impl<T, A: BumpAllocatorTyped> ExactSizeIterator for IntoIter<T, A> {
     }
 }
 
-impl<T, A: BumpAllocatorTyped> FusedIterator for IntoIter<T, A> {}
+impl<T, A: BumpAllocator> FusedIterator for IntoIter<T, A> {}
 
 #[cfg(feature = "nightly-trusted-len")]
-unsafe impl<T, A: BumpAllocatorTyped> core::iter::TrustedLen for IntoIter<T, A> {}
+unsafe impl<T, A: BumpAllocator> core::iter::TrustedLen for IntoIter<T, A> {}
 
 #[cfg(feature = "panic-on-alloc")]
-impl<T: Clone, A: BumpAllocatorTyped + Clone> Clone for IntoIter<T, A> {
+impl<T: Clone, A: BumpAllocator + Clone> Clone for IntoIter<T, A> {
     fn clone(&self) -> Self {
         slice_to_bump_vec_in(self.as_slice(), self.alloc.clone()).into_iter()
     }
 }
 
-impl<T, A: BumpAllocatorTyped> Drop for IntoIter<T, A> {
+impl<T, A: BumpAllocator> Drop for IntoIter<T, A> {
     fn drop(&mut self) {
-        struct DropGuard<'a, T, A: BumpAllocatorTyped>(&'a mut IntoIter<T, A>);
+        struct DropGuard<'a, T, A: BumpAllocator>(&'a mut IntoIter<T, A>);
 
-        impl<T, A: BumpAllocatorTyped> Drop for DropGuard<'_, T, A> {
+        impl<T, A: BumpAllocator> Drop for DropGuard<'_, T, A> {
             fn drop(&mut self) {
                 if T::IS_ZST || self.0.cap == 0 {
                     return;

@@ -7,7 +7,7 @@ use std::alloc::{Allocator, Global, Layout};
 use bump_scope::{
     Bump,
     config::BumpConfig,
-    traits::{BumpAllocatorCore, BumpAllocatorTyped},
+    traits::{BumpAllocator, BumpAllocatorCore},
 };
 
 use common::{AssumedMallocOverhead, up_and_down};

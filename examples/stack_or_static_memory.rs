@@ -9,7 +9,7 @@ use std::{
     sync::{Mutex, PoisonError},
 };
 
-use bump_scope::traits::BumpAllocatorTyped;
+use bump_scope::traits::BumpAllocator;
 
 #[repr(C, align(16))]
 struct StaticAllocator<const SIZE: usize> {

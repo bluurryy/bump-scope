@@ -5,7 +5,7 @@ use std::alloc::{Global, Layout};
 use bump_scope::{
     Bump,
     config::{BumpConfig, BumpConfigBuilder},
-    traits::BumpAllocatorTyped as _,
+    traits::BumpAllocator as _,
 };
 
 #[test]

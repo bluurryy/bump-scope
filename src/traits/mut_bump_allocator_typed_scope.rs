@@ -2,14 +2,14 @@ use core::{alloc::AllocError, ffi::CStr, fmt};
 
 use crate::{
     BumpBox, MutBumpString, MutBumpVec, MutBumpVecRev,
-    traits::{BumpAllocatorTypedScope, MutBumpAllocatorCoreScope, MutBumpAllocatorTyped},
+    traits::{BumpAllocatorScope, MutBumpAllocator, MutBumpAllocatorCoreScope},
 };
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
 /// A mutable bump allocator scope with convenient `alloc*` methods.
-pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBumpAllocatorTyped {
+pub trait MutBumpAllocatorScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBumpAllocator {
     /// Allocate elements of an iterator into a slice.
     ///
     /// This function is designed as a performance improvement over [`alloc_iter`].
@@ -29,8 +29,8 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
     ///
-    /// [`alloc_iter`]: crate::traits::BumpAllocatorTypedScope::alloc_iter
-    /// [`alloc_iter_mut_rev`]: crate::traits::MutBumpAllocatorTypedScope::alloc_iter_mut_rev
+    /// [`alloc_iter`]: crate::traits::BumpAllocatorScope::alloc_iter
+    /// [`alloc_iter_mut_rev`]: crate::traits::MutBumpAllocatorScope::alloc_iter_mut_rev
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_iter_mut<T>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<'a, [T]> {
@@ -66,8 +66,8 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
-    /// [`try_alloc_iter`]: crate::traits::BumpAllocatorTypedScope::alloc_iter
-    /// [`try_alloc_iter_mut_rev`]: crate::traits::MutBumpAllocatorTypedScope::alloc_iter_mut_rev
+    /// [`try_alloc_iter`]: crate::traits::BumpAllocatorScope::alloc_iter
+    /// [`try_alloc_iter_mut_rev`]: crate::traits::MutBumpAllocatorScope::alloc_iter_mut_rev
     #[inline(always)]
     fn try_alloc_iter_mut<T>(&mut self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<'a, [T]>, AllocError> {
         let iter = iter.into_iter();
@@ -102,7 +102,7 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     /// assert_eq!(slice, [3, 2, 1]);
     /// ```
     ///
-    /// [`alloc_iter_mut`]: crate::traits::MutBumpAllocatorTypedScope::alloc_iter_mut
+    /// [`alloc_iter_mut`]: crate::traits::MutBumpAllocatorScope::alloc_iter_mut
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_iter_mut_rev<T>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpBox<'a, [T]> {
@@ -139,7 +139,7 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
-    /// [`try_alloc_iter_mut`]: crate::traits::MutBumpAllocatorTypedScope::try_alloc_iter_mut
+    /// [`try_alloc_iter_mut`]: crate::traits::MutBumpAllocatorScope::try_alloc_iter_mut
     #[inline(always)]
     fn try_alloc_iter_mut_rev<T>(&mut self, iter: impl IntoIterator<Item = T>) -> Result<BumpBox<'a, [T]>, AllocError> {
         let iter = iter.into_iter();
@@ -178,7 +178,7 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     /// assert_eq!(string, "1 + 2 = 3");
     /// ```
     ///
-    /// [`alloc_fmt`]: crate::traits::BumpAllocatorTypedScope::alloc_fmt
+    /// [`alloc_fmt`]: crate::traits::BumpAllocatorScope::alloc_fmt
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_fmt_mut(&mut self, args: fmt::Arguments) -> BumpBox<'a, str> {
@@ -216,7 +216,7 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
-    /// [`try_alloc_fmt`]: crate::traits::BumpAllocatorTypedScope::try_alloc_fmt
+    /// [`try_alloc_fmt`]: crate::traits::BumpAllocatorScope::try_alloc_fmt
     #[inline(always)]
     fn try_alloc_fmt_mut(&mut self, args: fmt::Arguments) -> Result<BumpBox<'a, str>, AllocError> {
         if let Some(string) = args.as_str() {
@@ -256,7 +256,7 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     /// assert_eq!(one, c"1");
     /// ```
     ///
-    /// [`alloc_cstr_fmt`]: crate::traits::BumpAllocatorTypedScope::alloc_cstr_fmt
+    /// [`alloc_cstr_fmt`]: crate::traits::BumpAllocatorScope::alloc_cstr_fmt
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_cstr_fmt_mut(&mut self, args: fmt::Arguments) -> &'a CStr {
@@ -298,7 +298,7 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
-    /// [`try_alloc_cstr_fmt`]: crate::traits::BumpAllocatorTypedScope::try_alloc_cstr_fmt
+    /// [`try_alloc_cstr_fmt`]: crate::traits::BumpAllocatorScope::try_alloc_cstr_fmt
     #[inline(always)]
     fn try_alloc_cstr_fmt_mut(&mut self, args: fmt::Arguments) -> Result<&'a CStr, AllocError> {
         if let Some(string) = args.as_str() {
@@ -311,4 +311,4 @@ pub trait MutBumpAllocatorTypedScope<'a>: MutBumpAllocatorCoreScope<'a> + MutBum
     }
 }
 
-impl<'a, A: MutBumpAllocatorCoreScope<'a> + MutBumpAllocatorTyped + ?Sized> MutBumpAllocatorTypedScope<'a> for A {}
+impl<'a, A: MutBumpAllocatorCoreScope<'a> + MutBumpAllocator + ?Sized> MutBumpAllocatorScope<'a> for A {}
