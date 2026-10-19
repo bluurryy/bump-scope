@@ -25,7 +25,7 @@ all-features = true
 rustdoc-args = ["--generate-link-to-definition"]
 
 [package.metadata.release]
-allow-branch = ["main"]
+allow-branch = ["main", "v2"]
 pre-release-hook = ["just", "pre-release"]
 pre-release-commit-message = "release: version {{version}}"
 pre-release-replacements = [
