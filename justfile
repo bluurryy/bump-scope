@@ -135,7 +135,7 @@ test-stable:
     # cargo +stable run --example stack_or_static_memory
     # cargo +stable run --example thread_local
     # cargo +stable test --test trybuild -- --ignored
-    # cargo +stable test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
+    # cargo +stable test --no-default-features --test trybuild_unavailable_panicking_macros -F std -- --ignored
 
 # Runs tests for the nightly toolchain, optionally with miri.
 [arg("miri", long="miri", value="miri")]
@@ -150,14 +150,14 @@ test-nightly miri="":
     cd crates/fuzzing-support && cargo +nightly {{ miri }} test
     # FIXME: remove once 1.100 has released
     cargo +nightly test --test trybuild -- --ignored
-    cargo +nightly test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
+    cargo +nightly test --no-default-features --test trybuild_unavailable_panicking_macros -F std -- --ignored
 
 # Update the expected compile errors of `trybuild` tests.
 [group('test')]
 trybuild-overwrite:
     # FIXME: replace +nightly with +stable once 1.100 has released
     TRYBUILD=overwrite cargo +nightly test --test trybuild -- --ignored
-    TRYBUILD=overwrite cargo +nightly test --no-default-features --test trybuild_unavailable_panicking_macros -F alloc
+    TRYBUILD=overwrite cargo +nightly test --no-default-features --test trybuild_unavailable_panicking_macros -F std -- --ignored
 
 # Fuzz for `seconds`.
 [group('fuzz')]
