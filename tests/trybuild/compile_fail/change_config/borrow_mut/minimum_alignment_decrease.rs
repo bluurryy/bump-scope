@@ -9,7 +9,7 @@ const IN: BumpConfig = BumpConfigBuilder::new().min_align(2).build();
 const OUT: BumpConfig = BumpConfigBuilder::new().min_align(1).build();
 
 fn convert(bump: &mut Bump<Global, IN>) -> &mut Bump<Global, OUT> {
-    bump.borrow_mut_change_config()
+    bump.mut_change_config()
 }
 
 fn main() {

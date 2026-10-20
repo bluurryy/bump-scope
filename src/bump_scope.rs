@@ -91,7 +91,7 @@ where
     ///
     /// [claimed]: crate::BumpScope::claim
     /// [`change_config`]: BumpScope::change_config
-    /// [`borrow_mut_change_config`]: BumpScope::borrow_mut_change_config
+    /// [`mut_change_config`]: BumpScope::mut_change_config
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -118,7 +118,7 @@ where
     ///
     /// [claimed]: crate::BumpScope::claim
     /// [`change_config`]: BumpScope::change_config
-    /// [`borrow_mut_change_config`]: BumpScope::borrow_mut_change_config
+    /// [`mut_change_config`]: BumpScope::mut_change_config
     #[inline(always)]
     pub fn try_by_value(&mut self) -> Result<BumpScope<'_, A, C>, AllocError> {
         self.raw.make_allocated::<AllocError>()?;
@@ -179,7 +179,7 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
     /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
-    pub fn borrow_change_config<const NEW_C: BumpConfig>(&self) -> &BumpScope<'a, A, NEW_C> {
+    pub fn ref_change_config<const NEW_C: BumpConfig>(&self) -> &BumpScope<'a, A, NEW_C> {
         self.raw.ensure_satisfies_config_for_borrow::<NEW_C>();
         unsafe { transmute_ref(self) }
     }
@@ -197,7 +197,7 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
     /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
-    pub fn borrow_mut_change_config<const NEW_C: BumpConfig>(&mut self) -> &mut BumpScope<'a, A, NEW_C> {
+    pub fn mut_change_config<const NEW_C: BumpConfig>(&mut self) -> &mut BumpScope<'a, A, NEW_C> {
         self.raw.ensure_satisfies_config_for_borrow_mut::<NEW_C>();
         unsafe { transmute_mut(self) }
     }

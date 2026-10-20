@@ -159,12 +159,12 @@ pub mod test_change_config {
             bump.change_config()
         }
 
-        pub fn Bump_borrow_change_config_enable_const_constructible(bump: &Bump) -> &Bump<CONST_CONSTRUCTIBLE> {
-            bump.borrow_change_config()
+        pub fn Bump_ref_change_config_enable_const_constructible(bump: &Bump) -> &Bump<CONST_CONSTRUCTIBLE> {
+            bump.ref_change_config()
         }
 
-        pub fn Bump_borrow_mut_change_config_increase_alignment(bump: &mut Bump) -> &mut Bump<MIN_ALIGN_4> {
-            bump.borrow_mut_change_config()
+        pub fn Bump_mut_change_config_increase_alignment(bump: &mut Bump) -> &mut Bump<MIN_ALIGN_4> {
+            bump.mut_change_config()
         }
 
         pub fn BumpScope_change_config_identity(bump: BumpScope) -> BumpScope {
@@ -187,12 +187,12 @@ pub mod test_change_config {
             bump.change_config()
         }
 
-        pub fn BumpScope_borrow_change_config_enable_const_constructible<'b, 'a>(bump: &'b BumpScope<'a>) -> &'b BumpScope<'a, CONST_CONSTRUCTIBLE> {
-            bump.borrow_change_config()
+        pub fn BumpScope_ref_change_config_enable_const_constructible<'b, 'a>(bump: &'b BumpScope<'a>) -> &'b BumpScope<'a, CONST_CONSTRUCTIBLE> {
+            bump.ref_change_config()
         }
 
-        pub fn BumpScope_borrow_mut_change_config_increase_alignment<'b, 'a>(bump: &'b mut BumpScope<'a>) -> &'b mut BumpScope<'a, MIN_ALIGN_4> {
-            bump.borrow_mut_change_config()
+        pub fn BumpScope_mut_change_config_increase_alignment<'b, 'a>(bump: &'b mut BumpScope<'a>) -> &'b mut BumpScope<'a, MIN_ALIGN_4> {
+            bump.mut_change_config()
         }
     }
 }

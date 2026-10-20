@@ -611,12 +611,12 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         const {
             assert!(
                 config!(NEW_C, claimable) == config!(claimable),
-                "can't change `claimable` using `Bump(Scope)::borrow_change_config`"
+                "can't change `claimable` using `Bump(Scope)::ref_change_config`"
             );
 
             assert!(
                 config!(NEW_C, min_align) == config!(min_align),
-                "can't change `min_align` using `Bump(Scope)::borrow_change_config`"
+                "can't change `min_align` using `Bump(Scope)::ref_change_config`"
             );
         }
 
@@ -631,17 +631,17 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         const {
             assert!(
                 config!(NEW_C, min_align) >= config!(min_align),
-                "can't decrease `min_align` using `Bump(Scope)::borrow_mut_change_config`"
+                "can't decrease `min_align` using `Bump(Scope)::mut_change_config`"
             );
 
             assert!(
                 config!(NEW_C, claimable) == config!(claimable),
-                "can't change `claimable` using `Bump(Scope)::borrow_mut_change_config`"
+                "can't change `claimable` using `Bump(Scope)::mut_change_config`"
             );
 
             assert!(
                 config!(NEW_C, const_constructible) == config!(const_constructible),
-                "can't change `const_constructible` using `Bump(Scope)::borrow_mut_change_config`"
+                "can't change `const_constructible` using `Bump(Scope)::mut_change_config`"
             );
         }
 

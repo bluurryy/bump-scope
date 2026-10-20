@@ -56,7 +56,7 @@ up_and_down! {
         bump.reset();
 
         // shouldn't shrink either
-        let mut vec = bump_vec![in bump.borrow_change_config::<C_NO_SHRINK>(); 1, 2, 3, 4];
+        let mut vec = bump_vec![in bump.ref_change_config::<C_NO_SHRINK>(); 1, 2, 3, 4];
         assert_eq!(bump.stats().allocated(), 4 * 4);
         vec.shrink_to_fit();
         assert_eq!(bump.stats().allocated(), 4 * 4);
@@ -87,7 +87,7 @@ up_and_down! {
         bump.reset();
 
         // shouldn't deallocate either
-        let vec = bump_vec![in bump.borrow_change_config::<C_NO_DEALLOC>(); 1, 2, 3];
+        let vec = bump_vec![in bump.ref_change_config::<C_NO_DEALLOC>(); 1, 2, 3];
         assert_eq!(bump.stats().allocated(), 3 * 4);
         drop(vec);
         assert_eq!(bump.stats().allocated(), 3 * 4);

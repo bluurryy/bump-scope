@@ -1,4 +1,4 @@
-error[E0080]: evaluation panicked: can't change `claimable` using `Bump(Scope)::borrow_mut_change_config`
+error[E0080]: evaluation panicked: can't change `claimable` using `Bump(Scope)::mut_change_config`
  --> $RUST/core/src/panic.rs
   |
   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
@@ -8,7 +8,7 @@ error[E0080]: evaluation panicked: can't change `claimable` using `Bump(Scope)::
   |
   | /             assert!(
   | |                 config!(NEW_C, claimable) == config!(claimable),
-  | |                 "can't change `claimable` using `Bump(Scope)::borrow_mut_change_config`"
+  | |                 "can't change `claimable` using `Bump(Scope)::mut_change_config`"
   | |             );
   | |_____________- in this macro invocation
 
@@ -18,7 +18,7 @@ note: erroneous constant encountered
   | /         const {
   | |             assert!(
   | |                 config!(NEW_C, min_align) >= config!(min_align),
-  | |                 "can't decrease `min_align` using `Bump(Scope)::borrow_mut_change_config`"
+  | |                 "can't decrease `min_align` using `Bump(Scope)::mut_change_config`"
 ... |
   | |             );
   | |         }

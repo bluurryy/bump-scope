@@ -72,7 +72,7 @@ macro_rules! make_type {
         /// - dealloc: [`dealloc`]
         ///
         /// #### Configure allocator config ...
-        /// - [`with_config`], [`change_config`], [`borrow_change_config`], [`borrow_mut_change_config`]
+        /// - [`with_config`], [`change_config`], [`ref_change_config`], [`mut_change_config`]
         ///
         /// ## Collections
         /// A `Bump` (and [`BumpScope`]) can be used to allocate collections of this crate...
@@ -177,8 +177,8 @@ macro_rules! make_type {
         ///
         /// [`with_config`]: Bump::with_config
         /// [`change_config`]: Bump::change_config
-        /// [`borrow_change_config`]: Bump::borrow_change_config
-        /// [`borrow_mut_change_config`]: Bump::borrow_change_config
+        /// [`ref_change_config`]: Bump::ref_change_config
+        /// [`mut_change_config`]: Bump::ref_change_config
         ///
         /// # Gotcha
         ///
@@ -825,7 +825,7 @@ where
     /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
-    pub fn borrow_change_config<const NEW_C: BumpConfig>(&self) -> &Bump<A, NEW_C> {
+    pub fn ref_change_config<const NEW_C: BumpConfig>(&self) -> &Bump<A, NEW_C> {
         self.raw.ensure_satisfies_config_for_borrow::<NEW_C>();
         unsafe { transmute_ref(self) }
     }
@@ -843,7 +843,7 @@ where
     /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
-    pub fn borrow_mut_change_config<const NEW_C: BumpConfig>(&mut self) -> &mut Bump<A, NEW_C> {
+    pub fn mut_change_config<const NEW_C: BumpConfig>(&mut self) -> &mut Bump<A, NEW_C> {
         self.raw.ensure_satisfies_config_for_borrow_mut::<NEW_C>();
         unsafe { transmute_mut(self) }
     }

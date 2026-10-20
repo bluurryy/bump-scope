@@ -9,7 +9,7 @@ const IN: BumpConfig = BumpConfigBuilder::new().min_align(1).build();
 const OUT: BumpConfig = BumpConfigBuilder::new().min_align(2).build();
 
 fn convert(bump: &Bump<Global, IN>) -> &Bump<Global, OUT> {
-    bump.borrow_change_config()
+    bump.ref_change_config()
 }
 
 fn main() {

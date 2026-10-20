@@ -400,13 +400,13 @@ up_and_down! {
         let mut bump: Bump<Global, C> = Bump::new();
 
         {
-            let bump = bump.borrow_mut_change_config::<MIN_ALIGN_8>();
+            let bump = bump.mut_change_config::<MIN_ALIGN_8>();
             assert_eq!(bump.typed_stats().allocated(), 0);
         }
 
         {
             bump.alloc(1u8);
-            let bump = bump.borrow_mut_change_config::<MIN_ALIGN_8>();
+            let bump = bump.mut_change_config::<MIN_ALIGN_8>();
             assert_eq!(bump.typed_stats().allocated(), 8);
             bump.alloc(2u16);
             assert_eq!(bump.typed_stats().allocated(), 16);
@@ -423,13 +423,13 @@ up_and_down! {
         let mut bump: Bump<Global, C> = Bump::new();
 
         bump.scoped(|bump| {
-            let bump = bump.borrow_mut_change_config::<MIN_ALIGN_8>();
+            let bump = bump.mut_change_config::<MIN_ALIGN_8>();
             assert_eq!(bump.typed_stats().allocated(), 0);
         });
 
         bump.scoped(|bump| {
             bump.alloc(1u8);
-            let bump = bump.borrow_mut_change_config::<MIN_ALIGN_8>();
+            let bump = bump.mut_change_config::<MIN_ALIGN_8>();
             assert_eq!(bump.typed_stats().allocated(), 8);
             bump.alloc(2u16);
             assert_eq!(bump.typed_stats().allocated(), 16);
@@ -523,12 +523,12 @@ up_and_down! {
             assert!(bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
         }
 
-        // borrow_mut_change_config
+        // mut_change_config
         {
             let mut bump = Bump::<Global, C>::with_size(64);
             bump.alloc(0u8);
             assert!(!bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
-            let bump = bump.borrow_mut_change_config::<MIN_ALIGN_8>();
+            let bump = bump.mut_change_config::<MIN_ALIGN_8>();
             assert!(bump.typed_stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
         }
 

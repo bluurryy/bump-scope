@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Replace `BumpSettings` type with `BumpConfig` const generic
 - **Breaking:** Replace `.scoped_aligned()`, use `scoped_with_config` instead
 - **Breaking:** Replace `.aligned()`, use `with_config` instead
-- **Breaking:** Rename `*with_settings` to `*change_config`
+- **Breaking:** Rename `*with_settings` to `*change_config`, `borrow_*` to `ref_*` and `borrow_mut_*` to `mut_*`
 - **Breaking:** Rename traits `*BumpAllocatorTyped*` to `*BumpAllocator*`
 - **Breaking:** Replace `guaranteed_allocated` setting with not-`const_constructible` config
 - **Breaking:** Rename `Bump::unallocated()` constructor to `Bump::const_new()`

@@ -70,7 +70,7 @@ mod test_borrow {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
         let input: Bump<Global, IN> = Bump::const_new();
-        let _: &Bump<Global, OUT> = input.borrow_change_config();
+        let _: &Bump<Global, OUT> = input.ref_change_config();
     }
 
     #[test]
@@ -81,7 +81,7 @@ mod test_borrow {
         let input: Bump<Global, IN> = Bump::const_new();
         forget(input.claim());
         // here, we're not able to tell whether the bump allocator is "unallocated", so we need to panic
-        let _: &Bump<Global, OUT> = input.borrow_change_config();
+        let _: &Bump<Global, OUT> = input.ref_change_config();
     }
 }
 
