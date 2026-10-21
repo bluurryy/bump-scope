@@ -50,14 +50,7 @@ up_and_down! {
     fn basic_ok() {
         let bump: Bump<Global, C> = Bump::with_size(SIZE);
         _ = bump.alloc_try_with(|| -> TestResult { Ok(zeroes()) });
-
-        if config::read::upwards(C) {
-            let expected = 32 * 4 + offset_of!(TestResult, Ok.0);
-            assert_allocated!(bump, expected);
-        } else {
-            let expected = size_of::<TestResult>() - offset_of!(TestResult, Ok.0);
-            assert_allocated!(bump, expected);
-        }
+        assert_allocated!(bump, size_of::<TestResult>());
     }
 
     #[test]
@@ -65,6 +58,7 @@ up_and_down! {
     fn basic_ok_mut() {
         let mut bump: Bump<Global, C> = Bump::with_size(SIZE);
         _ = bump.alloc_try_with_mut(|| -> TestResult { Ok(zeroes()) });
+
 
         if config::read::upwards(C) {
             let expected = 32 * 4 + offset_of!(TestResult, Ok.0);
@@ -78,14 +72,14 @@ up_and_down! {
     #[test]
     fn basic_err() {
         let bump: Bump<Global, C> = Bump::with_size(SIZE);
-        _ = bump.alloc_try_with(|| -> Result<[u32; 32], [u32; 128]> { Err(zeroes()) });
+        _ = bump.alloc_try_with(|| -> TestResult { Err(zeroes()) });
         assert_eq!(bump.stats().allocated(), 0);
     }
 
     #[test]
     fn basic_err_mut() {
         let mut bump: Bump<Global, C> = Bump::with_size(SIZE);
-        _ = bump.alloc_try_with_mut(|| -> Result<[u32; 32], [u32; 128]> { Err(zeroes()) });
+        _ = bump.alloc_try_with_mut(|| -> TestResult { Err(zeroes()) });
         assert_eq!(bump.stats().allocated(), 0);
     }
 
@@ -93,7 +87,7 @@ up_and_down! {
     fn alloc_in_closure_ok() {
         let bump: Bump<Global, C> = Bump::with_size(SIZE);
 
-        _ = bump.alloc_try_with(|| -> Result<[u32; 32], [u32; 128]> {
+        _ = bump.alloc_try_with(|| -> TestResult {
             bump.alloc(0u8);
             Ok(zeroes())
         });
@@ -106,7 +100,7 @@ up_and_down! {
     fn alloc_in_closure_err() {
         let bump: Bump<Global, C> = Bump::with_size(SIZE);
 
-        _ = bump.alloc_try_with(|| -> Result<[u32; 32], [u32; 128]> {
+        _ = bump.alloc_try_with(|| -> TestResult {
             bump.alloc(0u8);
             Err(zeroes())
         });

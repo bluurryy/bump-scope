@@ -642,29 +642,13 @@ where
         Ok(unsafe {
             ptr.write(f());
 
-            // If `f` made allocations on this bump allocator we can't shrink the allocation.
-            let can_shrink = pos == self.raw.chunk.get().pos();
-
             match non_null::result(ptr) {
-                Ok(value) => Ok({
-                    if can_shrink {
-                        let new_pos = if config!(upwards) {
-                            let pos = value.add(1).addr().get();
-                            up_align_usize_unchecked(pos, config!(min_align))
-                        } else {
-                            let pos = value.addr().get();
-                            down_align_usize(pos, config!(min_align))
-                        };
-
-                        // The allocation of was successful, so our chunk must be allocated.
-                        let chunk = self.raw.chunk.get().as_allocated_unchecked();
-                        chunk.set_pos_addr(new_pos);
-                    }
-
-                    BumpBox::from_raw(value)
-                }),
+                Ok(value) => Ok(BumpBox::from_raw(value)),
                 Err(error) => Err({
                     let error = error.read();
+
+                    // If `f` made allocations on this bump allocator we can't shrink the allocation.
+                    let can_shrink = pos == self.raw.chunk.get().pos();
 
                     if can_shrink {
                         self.reset_to(checkpoint_before_alloc);
@@ -761,7 +745,6 @@ where
             };
         }
 
-        let checkpoint = self.checkpoint();
         let ptr = self.raw.prepare_sized_allocation::<B, Result<T, E>>()?;
 
         Ok(unsafe {
@@ -785,11 +768,7 @@ where
 
                     BumpBox::from_raw(value)
                 }),
-                Err(error) => Err({
-                    let error = error.read();
-                    self.reset_to(checkpoint);
-                    error
-                }),
+                Err(error) => Err(error.read()),
             }
         })
     }

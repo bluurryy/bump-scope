@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix data race or panic when creating a scope from a claimed bump allocator; make `reset_to` safety laxer wrt claimed
 
+### Performance
+
+- Improve performance of `alloc_try_with`, though it no longer tries to free memory for the `Err` variant in the `Ok` branch
+- Improve performance of `alloc_try_with_mut`, removes unnecessary checkpoint and `reset_to`
+
 ## [2.4.0] - 2026-10-06
 
 ### Added
