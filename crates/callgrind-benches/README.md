@@ -32,13 +32,13 @@ The `*_overaligned` cases use a bump allocator with a minimum alignment greater 
 | name                         | bump-scope (up) | bump-scope (down) | bumpalo   | blink-alloc |
 |------------------------------|-----------------|-------------------|-----------|-------------|
 | alloc_u8                     | 10 \| 1         | 10 \| 1           | 10 \| 1   | 14 \| 3     |
-| alloc_u8_overaligned         | 13 \| 1         | 11 \| 1           | 12 \| 1   | — [^1]      |
+| alloc_u8_overaligned         | 10 \| 1         | 10 \| 1           | 12 \| 1   | — [^1]      |
 | alloc_u32                    | 12 \| 1         | 11 \| 1           | 14 \| 2   | 16 \| 3     |
 | alloc_u32_aligned            | 10 \| 1         | 10 \| 1           | 12 \| 1   | — [^1]      |
-| alloc_u32_overaligned        | 12 \| 1         | 11 \| 1           | 12 \| 1   | — [^1]      |
+| alloc_u32_overaligned        | 10 \| 1         | 10 \| 1           | 12 \| 1   | — [^1]      |
 | alloc_big_struct             | 21 \| 1         | 20 \| 1           | 21 \| 2   | 23 \| 3     |
 | alloc_big_struct_aligned     | 19 \| 1         | 19 \| 1           | 19 \| 1   | — [^1]      |
-| alloc_big_struct_overaligned | 20 \| 1         | 20 \| 1           | 19 \| 1   | — [^1]      |
+| alloc_big_struct_overaligned | 19 \| 1         | 19 \| 1           | 19 \| 1   | — [^1]      |
 | alloc_u8_slice               | 37 \| 8         | 38 \| 8           | 37 \| 8   | 39 \| 10    |
 | alloc_u8_slice_overaligned   | 39 \| 8         | 38 \| 8           | 38 \| 8   | — [^1]      |
 | alloc_u32_slice              | 54 \| 17        | 57 \| 17          | 58 \| 18  | 60 \| 19    |
@@ -57,13 +57,13 @@ The benchmark cases above use the infallible api, panicking if allocating a new 
 | name                             | bump-scope (up) | bump-scope (down) | bumpalo   | blink-alloc |
 |----------------------------------|-----------------|-------------------|-----------|-------------|
 | try_alloc_u8                     | 10 \| 1         | 10 \| 1           | 10 \| 1   | 14 \| 3     |
-| try_alloc_u8_overaligned         | 13 \| 1         | 11 \| 1           | 12 \| 1   | — [^1]      |
+| try_alloc_u8_overaligned         | 10 \| 1         | 10 \| 1           | 12 \| 1   | — [^1]      |
 | try_alloc_u32                    | 12 \| 1         | 11 \| 1           | 14 \| 2   | 16 \| 3     |
 | try_alloc_u32_aligned            | 10 \| 1         | 10 \| 1           | 12 \| 1   | — [^1]      |
-| try_alloc_u32_overaligned        | 12 \| 1         | 11 \| 1           | 12 \| 1   | — [^1]      |
+| try_alloc_u32_overaligned        | 10 \| 1         | 10 \| 1           | 12 \| 1   | — [^1]      |
 | try_alloc_big_struct             | 21 \| 1         | 20 \| 1           | 21 \| 2   | 23 \| 3     |
 | try_alloc_big_struct_aligned     | 19 \| 1         | 19 \| 1           | 19 \| 1   | — [^1]      |
-| try_alloc_big_struct_overaligned | 20 \| 1         | 20 \| 1           | 19 \| 1   | — [^1]      |
+| try_alloc_big_struct_overaligned | 19 \| 1         | 19 \| 1           | 19 \| 1   | — [^1]      |
 | try_alloc_u8_slice               | 37 \| 8         | 38 \| 8           | 38 \| 8   | 39 \| 10    |
 | try_alloc_u8_slice_overaligned   | 39 \| 8         | 38 \| 8           | 39 \| 8   | — [^1]      |
 | try_alloc_u32_slice              | 54 \| 17        | 57 \| 17          | 58 \| 18  | 56 \| 19    |

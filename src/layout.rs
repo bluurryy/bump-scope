@@ -24,6 +24,14 @@ impl SizedLayout {
     pub(crate) const fn new<T>() -> Self {
         Self(Layout::new::<T>())
     }
+
+    #[inline(always)]
+    pub(crate) const fn increase_align(self, align: usize) -> Result<Self, LayoutError> {
+        match self.0.align_to(align) {
+            Ok(ok) => Ok(Self(ok.pad_to_align())),
+            Err(err) => Err(err),
+        }
+    }
 }
 
 impl Deref for SizedLayout {

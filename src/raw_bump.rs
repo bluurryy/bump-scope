@@ -333,7 +333,14 @@ where {
 
     #[inline(always)]
     pub(crate) fn alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
-        match self.chunk.get().alloc(SizedLayout::new::<T>()) {
+        let layout = const {
+            match SizedLayout::new::<T>().increase_align(config!(min_align)) {
+                Ok(ok) => ok,
+                Err(_) => panic!("failed to construct sized layout with min_align"),
+            }
+        };
+
+        match self.chunk.get().alloc(layout) {
             Some(ptr) => Ok(ptr.cast()),
             None => match self.alloc_sized_in_another_chunk::<E, T>() {
                 Ok(ptr) => Ok(ptr.cast()),

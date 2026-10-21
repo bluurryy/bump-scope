@@ -303,9 +303,10 @@ bit_fields! {
 
     /// Sets the alignment the bump pointer maintains when doing allocations.
     ///
-    /// When allocating a type in a bump allocator with a sufficient minimum alignment,
-    /// the bump pointer will not have to be aligned for the allocation but the allocation size
-    /// will need to be rounded up to the next multiple of the minimum alignment.
+    /// Allocations are slightly faster when `align <= min_align`.
+    ///
+    /// Allocation sizes are rounded up to the next multiple of `min_align`,
+    /// so allocations can take up more space with a higher `min_align`.
     ///
     /// For the performance impact see [crates/callgrind-benches][benches].
     ///

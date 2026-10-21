@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Performance
 
+- Improve performance of sized allocations where `align < min_align`
 - Improve performance of `alloc_try_with`, though it no longer tries to free memory for the `Err` variant in the `Ok` branch
 - Improve performance of `alloc_try_with_mut`, removes unnecessary checkpoint and `reset_to`
 
