@@ -640,7 +640,7 @@ where
         };
 
         Ok(unsafe {
-            non_null::write_with(ptr, f);
+            ptr.write(f());
 
             // If `f` made allocations on this bump allocator we can't shrink the allocation.
             let can_shrink = pos == self.raw.chunk.get().pos();
@@ -765,7 +765,7 @@ where
         let ptr = self.raw.prepare_sized_allocation::<B, Result<T, E>>()?;
 
         Ok(unsafe {
-            non_null::write_with(ptr, f);
+            ptr.write(f());
 
             // There is no need for `can_shrink` checks, because we have a mutable reference
             // so there's no way anyone else has allocated in `f`.

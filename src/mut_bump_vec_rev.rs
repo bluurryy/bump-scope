@@ -18,7 +18,7 @@ use crate::{
     min_non_zero_cap,
     mut_bump_vec::IntoIter,
     owned_slice::{OwnedSlice, TakeOwnedSlice},
-    polyfill::{self, hint::likely, pointer},
+    polyfill::{self, hint::likely},
     traits::{MutBumpAllocator, MutBumpAllocatorScope},
 };
 
@@ -2275,7 +2275,7 @@ impl<T, A: MutBumpAllocator> MutBumpVecRev<T, A> {
 
             // Write all elements except the last one
             for _ in 1..n {
-                pointer::write_with(ptr, || value.clone());
+                ptr.write(value.clone());
                 ptr = ptr.sub(1);
 
                 // Increment the length in every step in case clone() panics

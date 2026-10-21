@@ -108,12 +108,3 @@ pub(crate) const fn str_bytes(str: NonNull<str>) -> NonNull<[u8]> {
 pub(crate) const fn str_len(str: NonNull<str>) -> usize {
     str_bytes(str).len()
 }
-
-/// Not part of std.
-///
-/// Putting the expression in a function helps llvm to realize that it can initialize the value
-/// at this pointer instead of allocating it on the stack and then copying it over.
-#[inline(always)]
-pub(crate) unsafe fn write_with<T>(ptr: NonNull<T>, f: impl FnOnce() -> T) {
-    unsafe { ptr.write(f()) };
-}
