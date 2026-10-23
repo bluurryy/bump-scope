@@ -2,7 +2,7 @@ use core::{alloc::Allocator, ptr::NonNull};
 
 use alloc::boxed::Box;
 
-use crate::{Unmanaged, extra::box_replace_allocator, traits::BumpAllocatorScope};
+use crate::{BoxU, Unmanaged, extra::box_replace_allocator, traits::BumpAllocatorScope};
 
 /// TODO
 #[repr(transparent)]
@@ -11,6 +11,12 @@ pub struct BumpAllocation<T: ?Sized, A: Allocator> {
 }
 
 impl<'a, T: ?Sized, A: BumpAllocatorScope<'a>> BumpAllocation<T, A> {
+    pub(crate) fn wrap(alloc: A, boxu: BoxU<'a, T>) -> Self {
+        Self {
+            boxed: box_replace_allocator(boxu, alloc).0,
+        }
+    }
+
     pub(crate) fn new(boxed: Box<T, A>) -> Self {
         Self { boxed }
     }

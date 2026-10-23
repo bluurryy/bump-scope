@@ -18,7 +18,7 @@ fn main() {
         assert_eq!(bump.stats().allocated(), 5);
 
         bump.claim().scoped(|bump| {
-            let world = bump.alloc_str("world");
+            let world = bump.alloc_str("world").into_ref();
             assert_eq!(bump.stats().allocated(), 10);
             println!("{hello} {world}");
         });
