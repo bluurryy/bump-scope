@@ -141,6 +141,14 @@ fn dangling_mut_slice<T>(len: usize) -> *mut [T] {
     ptr::slice_from_raw_parts_mut(ptr::dangling_mut(), len)
 }
 
+pub(crate) fn boxu<'a, T, A>(boxed: Box<T, A>) -> BoxU<'a, T>
+where
+    T: ?Sized,
+    A: BumpAllocatorScope<'a>,
+{
+    box_replace_allocator(boxed, &Unmanaged).0
+}
+
 pub(crate) unsafe fn boxu_from_raw<'a, T: ?Sized>(ptr: *mut T) -> BoxU<'a, T> {
     unsafe { BoxU::from_raw_in(ptr, &Unmanaged) }
 }
@@ -153,6 +161,17 @@ pub(crate) fn boxu_uninit_zst<'a, T>() -> BoxU<'a, MaybeUninit<T>> {
 pub(crate) fn boxu_uninit_zst_slice<'a, T>(len: usize) -> BoxU<'a, [MaybeUninit<T>]> {
     assert!(T::IS_ZST);
     unsafe { boxu_from_raw(dangling_mut_slice(len)) }
+}
+
+pub(crate) unsafe fn box_from_utf8_unchecked<A: Allocator>(boxed: Box<[u8], A>) -> Box<str, A> {
+    let (ptr, alloc) = Box::into_raw_with_allocator(boxed);
+    unsafe { Box::from_raw_in(ptr as *mut str, alloc) }
+}
+
+pub fn box_leak<'a, T: ?Sized, A: BumpAllocatorScope<'a>>(boxed: Box<T, A>) -> &'a mut T {
+    // We can't use `Box::leak` here, since that requires a 'static Allocator.
+    // SAFETY: The `BumpAllocatorScope<'a>` trait guarantees that allocations live for `'a`.
+    unsafe { &mut *Box::into_raw_with_allocator(boxed).0 }
 }
 
 /// TODO

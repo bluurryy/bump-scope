@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Remove `BumpAllocator(Scope)` trait
 - **Breaking:** Remove `WithoutDealloc` and `WithoutShrink`
 - **Breaking:** Remove `push_unchecked` apis
+- **Breaking:** Remove `alloc_iter_exact`, use `alloc_iter` instead
 - **Breaking:** Remove deprecated api
 
 ### Fixed

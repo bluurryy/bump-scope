@@ -2,7 +2,11 @@ use core::{alloc::Allocator, ptr::NonNull};
 
 use alloc::{boxed::Box, fmt};
 
-use crate::{BoxU, Unmanaged, extra::box_replace_allocator, traits::BumpAllocatorScope};
+use crate::{
+    BoxU, Unmanaged,
+    extra::{box_leak, box_replace_allocator},
+    traits::BumpAllocatorScope,
+};
 
 /// TODO
 #[repr(transparent)]
@@ -55,8 +59,6 @@ impl<'a, T: ?Sized, A: BumpAllocatorScope<'a>> BumpAllocation<T, A> {
 
     /// TODO
     pub fn leak(self) -> &'a mut T {
-        // We can't use `Box::leak` here, since that requires a 'static Allocator.
-        // SAFETY: The `BumpAllocatorScope<'a>` trait guarantees that allocations live for `'a`.
-        unsafe { &mut *Box::into_raw_with_allocator(self.boxed).0 }
+        box_leak(self.boxed)
     }
 }

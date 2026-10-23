@@ -17,18 +17,23 @@ use crate::{
     bump_align_guard::BumpAlignGuard,
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
     down_align_usize,
-    extra::{box_init, box_init_clone, box_init_fill, box_init_fill_with, boxu_uninit_zst_slice},
+    extra::{
+        box_from_utf8_unchecked, box_init, box_init_clone, box_init_fill, box_init_fill_with, boxu, boxu_uninit_zst,
+        boxu_uninit_zst_slice,
+    },
     maybe_default_allocator,
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
     polyfill::{transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
     stats::{AnyStats, Stats},
+    string::String,
     traits::{BumpAllocator, Sealed},
     up_align_usize_unchecked, util,
 };
 
 #[cfg(feature = "alloc")]
 use alloc::alloc::Global;
+use alloc::vec::Vec;
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
@@ -1268,53 +1273,6 @@ where
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
-    /// Allocate elements of an `ExactSizeIterator` into a slice.
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let slice = bump.alloc_iter_exact([1, 2, 3]);
-    /// assert_eq!(slice, [1, 2, 3]);
-    /// ```
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_iter_exact<T, I>(&self, iter: impl IntoIterator<Item = T, IntoIter = I>) -> BumpAllocation<[T], &Self>
-    where
-        I: ExactSizeIterator<Item = T>,
-    {
-        let boxu = panic_on_error(self.imp_alloc_iter_exact(iter));
-        BumpAllocation::wrap(boxu, self)
-    }
-
-    /// Allocate elements of an `ExactSizeIterator` into a slice.
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    ///
-    /// # Examples
-    /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let slice = bump.try_alloc_iter_exact([1, 2, 3])?;
-    /// assert_eq!(slice, [1, 2, 3]);
-    /// # Ok::<(), ::core::alloc::AllocError>(())
-    /// ```
-    #[inline(always)]
-    pub fn try_alloc_iter_exact<T, I>(
-        &self,
-        iter: impl IntoIterator<Item = T, IntoIter = I>,
-    ) -> Result<BumpAllocation<[T], &Self>, AllocError>
-    where
-        I: ExactSizeIterator<Item = T>,
-    {
-        let boxu = self.imp_alloc_iter_exact(iter)?;
-        Ok(BumpAllocation::wrap(boxu, self))
-    }
-
     /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
     ///
     /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
@@ -1827,10 +1785,10 @@ where
     where
         E: ErrorBehavior,
     {
-        let (slice, _) = BoxU::into_raw_with_allocator(self.imp_alloc_slice_copy(src.as_bytes())?);
+        let bytes = self.imp_alloc_slice_copy(src.as_bytes())?;
 
-        // SAFETY: input is utf8 so this is too
-        Ok(unsafe { BoxU::from_raw_in(slice as *mut str, &Unmanaged) })
+        // SAFETY: src is utf8 so this is too
+        Ok(unsafe { box_from_utf8_unchecked(bytes) })
     }
 
     #[inline(always)]
@@ -1842,11 +1800,9 @@ where
             return self.imp_alloc_str(string);
         }
 
-        todo!()
-
-        // let mut string = BumpString::new_in(self);
-        // string.generic_write_fmt::<AllocError>(args)?;
-        // Ok(string.into_boxed_str())
+        let mut string = String::<_, E>::new(self);
+        string.write_fmt(args)?;
+        Ok(string.into_str())
     }
 
     #[inline(always)]
@@ -1858,10 +1814,10 @@ where
             return self.imp_alloc_str(string);
         }
 
-        todo!()
-        // let mut string = MutBumpString::new_in(self);
-        // string.generic_write_fmt::<AllocError>(args)?;
-        // Ok(string.into_boxed_str())
+        let vec = self.imp_alloc_vec_greedy::<E, u8>(0)?;
+        let mut string = String::<_, E>::new_from_vec(vec);
+        string.write_fmt(args)?;
+        Ok(string.into_str())
     }
 
     #[inline(always)]
@@ -1906,10 +1862,9 @@ where
             return self.imp_alloc_cstr_from_str(string);
         }
 
-        todo!()
-        // let mut string = BumpString::new_in(self);
-        // string.generic_write_fmt::<AllocError>(args)?;
-        // string.generic_into_cstr()
+        let mut string = String::<_, E>::new(self);
+        string.write_fmt(args)?;
+        string.into_cstr()
     }
 
     #[inline(always)]
@@ -1921,10 +1876,10 @@ where
             return self.imp_alloc_cstr_from_str(string);
         }
 
-        todo!()
-        // let mut string = BumpString::new_in(self);
-        // string.generic_write_fmt::<AllocError>(args)?;
-        // string.generic_into_cstr()
+        let vec = self.imp_alloc_vec_greedy(0)?;
+        let mut string = String::new_from_vec(vec);
+        string.write_fmt(args)?;
+        string.into_cstr()
     }
 
     #[inline(always)]
@@ -1932,44 +1887,27 @@ where
     where
         E: ErrorBehavior,
     {
-        let iter = iter.into_iter();
-        let capacity = iter.size_hint().0;
+        if E::FALLIBLE {
+            todo!()
+        }
 
-        todo!()
-
-        // let mut vec = BumpVec::<T, &Self>::try_with_capacity_in(capacity, self)?;
-
-        // for value in iter {
-        //     vec.try_push(value)?;
-        // }
-
-        // Ok(vec.into_boxed_slice())
+        let mut vec = Vec::new_in(self);
+        vec.extend(iter);
+        Ok(boxu(vec.into_boxed_slice()))
     }
 
     #[inline(always)]
-    pub(crate) fn imp_alloc_iter_exact<E, T, I>(
-        &self,
-        iter: impl IntoIterator<Item = T, IntoIter = I>,
-    ) -> Result<BoxU<'a, [T]>, E>
+    pub(crate) fn imp_alloc_iter_mut<E, T>(&mut self, iter: impl IntoIterator<Item = T>) -> Result<BoxU<'a, [T]>, E>
     where
         E: ErrorBehavior,
-        I: ExactSizeIterator<Item = T>,
     {
-        let mut iter = iter.into_iter();
-        let len = iter.len();
+        if E::FALLIBLE {
+            todo!()
+        }
 
-        todo!()
-        // let mut vec = BumpVec::<T, &Self>::try_with_capacity_in(len, self)?;
-
-        // while vec.len() != vec.capacity() {
-        //     match iter.next() {
-        //         // SAFETY: we checked above that `len != capacity`, so there is space
-        //         Some(value) => unsafe { vec.push_unchecked(value) },
-        //         None => break,
-        //     }
-        // }
-
-        // Ok(vec.into_fixed_vec().into_boxed_slice())
+        let mut vec = self.imp_alloc_vec_greedy::<E, T>(0)?;
+        vec.extend(iter);
+        Ok(boxu(vec.into_boxed_slice()))
     }
 
     #[inline(always)]
@@ -1978,11 +1916,10 @@ where
         f: impl FnOnce() -> Result<T, E>,
     ) -> Result<Result<BoxU<'a, T>, E>, B> {
         if T::IS_ZST {
-            todo!()
-            // return match f() {
-            //     Ok(value) => Ok(Ok(BoxU::zst(value))),
-            //     Err(error) => Ok(Err(error)),
-            // };
+            return match f() {
+                Ok(value) => Ok(Ok(box_init(boxu_uninit_zst(), value))),
+                Err(error) => Ok(Err(error)),
+            };
         }
 
         let checkpoint_before_alloc = self.checkpoint();
@@ -2019,24 +1956,6 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn imp_alloc_iter_mut<E, T>(&mut self, iter: impl IntoIterator<Item = T>) -> Result<BoxU<'a, [T]>, E>
-    where
-        E: ErrorBehavior,
-    {
-        let iter = iter.into_iter();
-        let capacity = iter.size_hint().0;
-
-        todo!()
-        // let mut vec = MutBumpVec::<T, &mut Self>::try_with_capacity_in(capacity, self)?;
-
-        // for value in iter {
-        //     vec.try_push(value)?;
-        // }
-
-        // Ok(vec.into_boxed_slice())
-    }
-
-    #[inline(always)]
     pub(crate) fn imp_alloc_try_with_mut<B, T, E>(
         &mut self,
         f: impl FnOnce() -> Result<T, E>,
@@ -2045,11 +1964,10 @@ where
         B: ErrorBehavior,
     {
         if T::IS_ZST {
-            todo!()
-            // return match f() {
-            //     Ok(value) => Ok(Ok(BoxU::zst(value))),
-            //     Err(error) => Ok(Err(error)),
-            // };
+            return match f() {
+                Ok(value) => Ok(Ok(box_init(boxu_uninit_zst(), value))),
+                Err(error) => Ok(Err(error)),
+            };
         }
 
         let ptr = self.raw.prepare_sized_allocation::<B, Result<T, E>>()?.as_ptr();

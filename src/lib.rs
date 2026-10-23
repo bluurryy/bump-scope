@@ -333,6 +333,7 @@ mod raw_bump;
 mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
 pub mod stats;
+mod string;
 /// TODO:
 pub mod traits;
 mod unmanaged;
@@ -360,7 +361,7 @@ pub use traits::{BumpAllocator, BumpAllocatorScope, MutBumpAllocator, MutBumpAll
 pub use unmanaged::Unmanaged;
 
 /// TODO
-pub type BoxU<'a, T> = Box<T, &'a Unmanaged>;
+pub type BoxU<'a, T: ?Sized> = Box<T, &'a Unmanaged>;
 
 /// TODO
 pub type VecU<'a, T> = Vec<T, &'a Unmanaged>;

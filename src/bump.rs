@@ -1227,30 +1227,6 @@ where
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
-    /// See [`BumpScope::alloc_iter_exact`].
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    pub fn alloc_iter_exact<T, I>(&self, iter: impl IntoIterator<Item = T, IntoIter = I>) -> BumpAllocation<[T], &Self>
-    where
-        I: ExactSizeIterator<Item = T>,
-    {
-        let boxu = panic_on_error(self.as_bump_scope().imp_alloc_iter_exact(iter));
-        BumpAllocation::wrap(boxu, self)
-    }
-
-    /// See [`BumpScope::try_alloc_iter_exact`].
-    #[inline(always)]
-    pub fn try_alloc_iter_exact<T, I>(
-        &self,
-        iter: impl IntoIterator<Item = T, IntoIter = I>,
-    ) -> Result<BumpAllocation<[T], &Self>, AllocError>
-    where
-        I: ExactSizeIterator<Item = T>,
-    {
-        let boxu = self.as_bump_scope().imp_alloc_iter_exact(iter)?;
-        Ok(BumpAllocation::wrap(boxu, self))
-    }
-
     /// See [`BumpScope::try_alloc_try_with`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]

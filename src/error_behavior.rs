@@ -1,19 +1,26 @@
-use core::alloc::{AllocError, Layout};
+use core::alloc::{AllocError, Allocator, Layout};
+
+use alloc::vec::Vec;
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::{capacity_overflow, handle_alloc_error};
 
 pub(crate) trait ErrorBehavior: Sized {
+    const FALLIBLE: bool;
     fn allocation(layout: Layout) -> Self;
     fn capacity_overflow() -> Self;
     fn claimed() -> Self;
     #[cfg(feature = "std")]
     fn base_allocator_default_constructor_panicked() -> Self;
     fn unmanaged() -> Self;
+    fn format_trait_error() -> Self;
+    fn vec_reserve_if_fallible<T, A: Allocator>(vec: &mut Vec<T, A>, additional: usize) -> Result<(), Self>;
 }
 
 #[cfg(feature = "panic-on-alloc")]
 impl ErrorBehavior for ! {
+    const FALLIBLE: bool = false;
+
     #[inline(always)]
     fn allocation(layout: Layout) -> Self {
         handle_alloc_error(layout)
@@ -39,9 +46,22 @@ impl ErrorBehavior for ! {
     fn unmanaged() -> Self {
         panic::unmanaged();
     }
+
+    #[inline(always)]
+    fn format_trait_error() -> Self {
+        panic::format_trait_error()
+    }
+
+    #[inline(always)]
+    fn vec_reserve_if_fallible<T, A: Allocator>(vec: &mut Vec<T, A>, additional: usize) -> Result<(), Self> {
+        _ = (vec, additional);
+        Ok(())
+    }
 }
 
 impl ErrorBehavior for AllocError {
+    const FALLIBLE: bool = true;
+
     #[inline(always)]
     fn allocation(_: Layout) -> Self {
         Self
@@ -67,6 +87,16 @@ impl ErrorBehavior for AllocError {
     fn unmanaged() -> Self {
         Self
     }
+
+    #[inline(always)]
+    fn format_trait_error() -> Self {
+        Self
+    }
+
+    #[inline(always)]
+    fn vec_reserve_if_fallible<T, A: Allocator>(vec: &mut Vec<T, A>, additional: usize) -> Result<(), Self> {
+        vec.try_reserve(additional).ok().ok_or(AllocError)
+    }
 }
 
 pub(crate) mod panic {
@@ -88,5 +118,12 @@ pub(crate) mod panic {
     #[inline(never)]
     pub(crate) fn unmanaged() -> ! {
         panic!("can't allocate on an `Unmanaged` allocator")
+    }
+
+    #[cold]
+    #[inline(never)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub const fn format_trait_error() -> ! {
+        panic!("formatting trait implementation returned an error");
     }
 }
