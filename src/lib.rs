@@ -325,6 +325,7 @@ mod error_behavior;
 /// TODO
 pub mod extra;
 mod layout;
+mod macros;
 mod no_drop;
 mod owned_slice;
 mod polyfill;
@@ -396,7 +397,8 @@ fn bump_down(addr: NonZeroUsize, size: usize, align: usize) -> usize {
 /// Any changes to this module are semver-exempt!
 #[doc(hidden)]
 pub mod private {
-    pub use core;
+    pub extern crate alloc;
+    pub extern crate core;
 
     #[cfg(feature = "panic-on-alloc")]
     /// Wrapper type, used for ad hoc overwriting of trait implementations, like for `Write` in `alloc_fmt`.

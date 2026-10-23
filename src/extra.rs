@@ -274,6 +274,14 @@ where
 }
 
 /// TODO
+pub fn vec_try_from_owned_slice_in<T, A>(slice: impl OwnedSlice<Item = T>, alloc: A) -> Vec<T, A>
+where
+    A: BumpAllocator,
+{
+    try_box_from_owned_slice_in(slice, alloc).into()
+}
+
+/// TODO
 pub fn vec_append_owned_slice<T, A>(vec: &mut Vec<T, A>, slice: impl OwnedSlice)
 where
     A: Allocator,
