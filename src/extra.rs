@@ -1,14 +1,15 @@
 use core::{
     alloc::{AllocError, Allocator, Layout},
     marker::PhantomData,
-    mem::{self, MaybeUninit},
+    mem::{MaybeUninit, forget},
     ptr::{self, NonNull},
 };
 
 use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
-    SizedTypeProperties,
+    BoxU, SizedTypeProperties, Unmanaged,
+    boxed_slice_initializer::BoxedSliceInitializer,
     error_behavior::ErrorBehavior,
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
     panic_on_error,
@@ -79,11 +80,11 @@ where
 
     if U::IS_ZST {
         return unsafe {
-            todo!()
-            // let boxed = box_replace_allocator(boxed, &Unmanaged);
-            // let uninit: Box<[MaybeUninit<U>], &Unmanaged> =
-            //     Box::from_raw_in(ptr::slice_from_raw_parts_mut(ptr::dangling_mut(), boxed.len()), &Unmanaged);
-            // box_init_fill_iter(uninit, boxed.into_iter().map(f))
+            let len = boxed.len();
+            let (_, alloc) = Box::into_raw_with_allocator(boxed);
+            let src: Box<[T], &Unmanaged> = Box::from_raw_in(dangling_mut_slice(len), &Unmanaged);
+            let dst: Box<[MaybeUninit<U>], A> = Box::from_raw_in(dangling_mut_slice(len), alloc);
+            box_init_fill_iter(dst, src.into_iter().map(f))
         };
     }
 
@@ -130,15 +131,55 @@ where
             guard.dst = guard.dst.add(1);
         }
 
-        mem::forget(guard);
+        forget(guard);
 
         Box::from_raw_in(ptr::slice_from_raw_parts_mut(ptr.cast(), len), alloc)
     }
 }
 
+fn dangling_mut_slice<T>(len: usize) -> *mut [T] {
+    ptr::slice_from_raw_parts_mut(ptr::dangling_mut(), len)
+}
+
+pub(crate) unsafe fn boxu_from_raw<'a, T: ?Sized>(ptr: *mut T) -> BoxU<'a, T> {
+    unsafe { BoxU::from_raw_in(ptr, &Unmanaged) }
+}
+
+pub(crate) fn boxu_uninit_zst<'a, T>() -> BoxU<'a, MaybeUninit<T>> {
+    assert!(T::IS_ZST);
+    unsafe { boxu_from_raw(ptr::dangling_mut()) }
+}
+
+pub(crate) fn boxu_uninit_zst_slice<'a, T>(len: usize) -> BoxU<'a, [MaybeUninit<T>]> {
+    assert!(T::IS_ZST);
+    unsafe { boxu_from_raw(dangling_mut_slice(len)) }
+}
+
 /// TODO
 pub fn box_init<T, A: Allocator>(boxed: Box<MaybeUninit<T>, A>, value: T) -> Box<T, A> {
     Box::<MaybeUninit<T>, A>::write(boxed, value)
+}
+
+/// TODO
+pub fn box_init_move<T, A>(mut boxed: Box<[MaybeUninit<T>], A>, owned_slice: impl OwnedSlice<Item = T>) -> Box<[T], A>
+where
+    T: Clone,
+    A: Allocator,
+{
+    let mut owned_slice = owned_slice.into_take_owned_slice();
+    let slice = NonNull::from(owned_slice.owned_slice_ref());
+
+    assert_eq!(boxed.len(), slice.len());
+
+    // SAFETY: we asserted that the lengths are the same
+    unsafe {
+        let src = slice.cast::<T>().as_ptr();
+        let dst = boxed.as_mut_ptr().cast::<T>();
+        ptr::copy_nonoverlapping(src, dst, slice.len());
+
+        owned_slice.take_owned_slice();
+        Box::<[MaybeUninit<T>], A>::assume_init(boxed)
+    }
 }
 
 /// TODO
@@ -149,16 +190,15 @@ where
 {
     assert_eq!(boxed.len(), slice.len());
 
-    let len = slice.len();
-    let (ptr, alloc) = Box::into_raw_with_allocator(boxed);
-    let ptr = ptr.cast::<T>();
+    let mut initializer = BoxedSliceInitializer::new(boxed);
 
+    // SAFETY: we asserted that the lengths are the same
     unsafe {
-        for i in 0..len {
-            ptr.add(i).write(slice[i].clone());
+        for value in slice {
+            initializer.push_unchecked(value.clone());
         }
 
-        Box::from_raw_in(ptr::slice_from_raw_parts_mut(ptr, len), alloc)
+        initializer.into_init_unchecked()
     }
 }
 
@@ -168,30 +208,22 @@ where
     T: Clone,
     A: Allocator,
 {
-    let (ptr, alloc) = Box::into_raw_with_allocator(boxed);
-    let len = ptr.len();
-    let ptr = ptr.cast::<T>();
+    let len = boxed.len();
 
     if len == 0 {
-        return unsafe { Box::from_raw_in(ptr::slice_from_raw_parts_mut(ptr, 0), alloc) };
+        return unsafe { Box::<[MaybeUninit<T>], A>::assume_init(boxed) };
     }
 
     unsafe {
-        for i in 0..(len - 1) {
-            ptr.add(i).write(value.clone());
+        let mut initializer = BoxedSliceInitializer::new(boxed);
+
+        for _ in 0..(len - 1) {
+            initializer.push_unchecked(value.clone());
         }
 
-        ptr.add(len - 1).write(value);
-        Box::from_raw_in(ptr::slice_from_raw_parts_mut(ptr, len), alloc)
+        initializer.push_unchecked(value);
+        initializer.into_init_unchecked()
     }
-}
-
-/// TODO
-pub fn box_init_fill_iter<T, A>(boxed: Box<[MaybeUninit<T>], A>, iter: impl IntoIterator<Item = T>) -> Box<[T], A>
-where
-    A: Allocator,
-{
-    todo!()
 }
 
 /// TODO
@@ -199,7 +231,40 @@ pub fn box_init_fill_with<T, A>(boxed: Box<[MaybeUninit<T>], A>, mut f: impl FnM
 where
     A: Allocator,
 {
-    todo!()
+    let mut initializer = BoxedSliceInitializer::new(boxed);
+
+    while !initializer.is_full() {
+        initializer.push_with(&mut f);
+    }
+
+    initializer.into_init()
+}
+
+/// TODO
+pub fn box_init_fill_iter<T, A>(boxed: Box<[MaybeUninit<T>], A>, iter: impl IntoIterator<Item = T>) -> Box<[T], A>
+where
+    A: Allocator,
+{
+    #[cold]
+    #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
+    #[track_caller]
+    fn iter_ran_out() -> ! {
+        panic!("iterator ran out of items to fill the slice with");
+    }
+
+    let mut iter = iter.into_iter();
+    let mut initializer = BoxedSliceInitializer::new(boxed);
+
+    while !initializer.is_full() {
+        match iter.next() {
+            Some(item) => {
+                initializer.push(item);
+            }
+            None => iter_ran_out(),
+        }
+    }
+
+    initializer.into_init()
 }
 
 /// TODO

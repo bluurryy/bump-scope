@@ -17,9 +17,9 @@ use crate::{
     bump_align_guard::BumpAlignGuard,
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
     down_align_usize,
-    extra::{box_init, box_init_clone, box_init_fill},
+    extra::{box_init, box_init_clone, box_init_fill, box_init_fill_with, boxu_uninit_zst_slice},
     maybe_default_allocator,
-    owned_slice::OwnedSlice,
+    owned_slice::{OwnedSlice, TakeOwnedSlice as _},
     polyfill::{transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
     stats::{AnyStats, Stats},
@@ -1723,8 +1723,7 @@ where
         E: ErrorBehavior,
     {
         if T::IS_ZST {
-            todo!()
-            // return Ok(BoxU::zst_uninit());
+            return unsafe { Ok(BoxU::from_raw_in(ptr::dangling_mut(), &Unmanaged)) };
         }
 
         let ptr = self.raw.allocate_sized()?.as_ptr();
@@ -1736,8 +1735,18 @@ where
     where
         E: ErrorBehavior,
     {
-        todo!()
-        // Ok(BumpVec::generic_from_owned_slice_in(slice, self)?.into_boxed_slice())
+        unsafe {
+            let mut owned_slice = slice.into_take_owned_slice();
+            let owned_slice_ref = owned_slice.owned_slice_ref();
+
+            let len = owned_slice_ref.len();
+            let src = owned_slice_ref.as_ptr();
+            let dst = self.spec_alloc(Layout::for_value(owned_slice_ref))?.as_ptr().cast();
+            ptr::copy_nonoverlapping(src, dst, len);
+
+            owned_slice.take_owned_slice();
+            Ok(BoxU::from_raw_in(ptr::slice_from_raw_parts_mut(dst, len), &Unmanaged))
+        }
     }
 
     #[inline(always)]
@@ -1746,8 +1755,7 @@ where
         E: ErrorBehavior,
     {
         if T::IS_ZST {
-            todo!()
-            // return Ok(BoxU::zst_slice_clone(slice));
+            return Ok(box_init_clone(boxu_uninit_zst_slice(slice.len()), slice));
         }
 
         let len = slice.len();
@@ -1765,11 +1773,6 @@ where
     where
         E: ErrorBehavior,
     {
-        if T::IS_ZST {
-            todo!()
-            // return Ok(BoxU::zst_slice_clone(slice));
-        }
-
         Ok(box_init_clone(self.imp_alloc_uninit_slice_for(slice)?, slice))
     }
 
@@ -1778,11 +1781,6 @@ where
     where
         E: ErrorBehavior,
     {
-        if T::IS_ZST {
-            todo!()
-            // return Ok(BoxU::zst_slice_fill(len, value));
-        }
-
         Ok(box_init_fill(self.imp_alloc_uninit_slice(len)?, value))
     }
 
@@ -1791,13 +1789,7 @@ where
     where
         E: ErrorBehavior,
     {
-        if T::IS_ZST {
-            todo!()
-            // return Ok(BoxU::zst_slice_fill_with(len, f));
-        }
-
-        todo!()
-        // Ok(self.imp_alloc_uninit_slice(len)?.init_fill_with(f))
+        Ok(box_init_fill_with(self.imp_alloc_uninit_slice(len)?, f))
     }
 
     #[inline(always)]
@@ -1805,6 +1797,10 @@ where
     where
         E: ErrorBehavior,
     {
+        if T::IS_ZST {
+            return Ok(boxu_uninit_zst_slice(len));
+        }
+
         let ptr = self.raw.allocate_slice::<E, MaybeUninit<T>>(len)?.as_ptr();
 
         unsafe {
