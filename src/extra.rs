@@ -5,14 +5,13 @@ use core::{
     ptr::{self, NonNull},
 };
 
-use alloc::{boxed::Box, collections::TryReserveError, vec::Vec};
+use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
-    SizedTypeProperties, Unmanaged,
+    SizedTypeProperties,
     error_behavior::ErrorBehavior,
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
     panic_on_error,
-    polyfill::non_null,
     traits::{BumpAllocator, BumpAllocatorScope},
 };
 
@@ -21,12 +20,6 @@ macro_rules! assert_in_place_mappable {
         let _assert = AssertInPlaceMappable::<$src, $dst>::ASSERT;
     };
 }
-
-// False positive; i need `pub(self)` to forward declare it.
-// Useless attribute is needed for msrv clippy.
-#[expect(clippy::useless_attribute)]
-#[expect(clippy::needless_pub_self)]
-pub(self) use assert_in_place_mappable;
 
 struct AssertInPlaceMappable<Src, Dst>(PhantomData<(Src, Dst)>);
 
@@ -246,7 +239,8 @@ where
     gen_box_from_owned_slice_in(slice, alloc)
 }
 
-pub fn gen_box_from_owned_slice_in<E, T, A>(slice: impl OwnedSlice<Item = T>, alloc: A) -> Result<Box<[T], A>, E>
+/// TODO
+pub(crate) fn gen_box_from_owned_slice_in<E, T, A>(slice: impl OwnedSlice<Item = T>, alloc: A) -> Result<Box<[T], A>, E>
 where
     E: ErrorBehavior,
     A: BumpAllocator,
@@ -301,7 +295,7 @@ where
     }
 }
 
-// TODO
+/// TODO
 pub fn vec_to_box<T, A>(vec: Vec<T, A>) -> Box<[T], A>
 where
     A: BumpAllocator,
@@ -320,6 +314,7 @@ pub mod bytemuck {
 
     use alloc::boxed::Box;
 
+    /// TODO
     pub fn box_init_zeroed<T, A: Allocator>(boxed: Box<MaybeUninit<T>, A>) -> Box<T, A> {
         let (ptr, alloc) = Box::into_raw_with_allocator(boxed);
         let ptr = ptr.cast::<T>();
@@ -330,6 +325,7 @@ pub mod bytemuck {
         }
     }
 
+    /// TODO
     pub fn box_init_slice_zeroed<T, A: Allocator>(boxed: Box<[MaybeUninit<T>], A>) -> Box<[T], A> {
         let len = boxed.len();
         let (ptr, alloc) = Box::into_raw_with_allocator(boxed);
