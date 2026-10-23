@@ -11,7 +11,7 @@ pub struct BumpAllocation<T: ?Sized, A: Allocator> {
 }
 
 impl<'a, T: ?Sized, A: BumpAllocatorScope<'a>> BumpAllocation<T, A> {
-    pub(crate) fn wrap(alloc: A, boxu: BoxU<'a, T>) -> Self {
+    pub(crate) fn wrap(boxu: BoxU<'a, T>, alloc: A) -> Self {
         Self {
             boxed: box_replace_allocator(boxu, alloc).0,
         }
