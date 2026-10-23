@@ -10,7 +10,7 @@ use alloc::vec::Vec;
 use crate::{
     BoxU, BumpAllocator, BumpAllocatorScope,
     error_behavior::ErrorBehavior,
-    extra::{box_from_utf8_unchecked, box_leak, boxu},
+    extra::{box_from_utf8_unchecked, box_leak, box_remove_allocator},
 };
 
 #[repr(transparent)]
@@ -59,7 +59,7 @@ impl<'a, A: BumpAllocatorScope<'a>, E: ErrorBehavior> String<A, E> {
     }
 
     pub(crate) fn into_bytes(self) -> BoxU<'a, [u8]> {
-        boxu(self.vec.into_boxed_slice())
+        box_remove_allocator(self.vec.into_boxed_slice()).0
     }
 
     pub(crate) fn into_str(self) -> BoxU<'a, str> {

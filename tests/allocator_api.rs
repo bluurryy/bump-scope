@@ -78,27 +78,6 @@ up_and_down! {
         mustnt_dangle! {
             bump.allocate(Layout::new::<()>()).unwrap(),
             bump.allocate_zeroed(Layout::new::<()>()).unwrap(),
-
-            bump.allocate_layout(Layout::new::<()>()),
-            bump.try_allocate_layout(Layout::new::<()>()).unwrap(),
-
-            bump.allocate_sized::<()>(),
-            bump.try_allocate_sized::<()>().unwrap(),
-
-            bump.allocate_slice::<()>(123),
-            bump.try_allocate_slice::<()>(123).unwrap(),
-
-            bump.allocate_slice_for::<()>(&[]),
-            bump.try_allocate_slice_for::<()>(&[]).unwrap(),
-
-            (&bump as &dyn BumpAllocatorCore).allocate_sized::<()>(),
-            (&bump as &dyn BumpAllocatorCore).try_allocate_sized::<()>().unwrap(),
-
-            (&bump as &dyn BumpAllocatorCore).allocate_slice::<()>(123),
-            (&bump as &dyn BumpAllocatorCore).try_allocate_slice::<()>(123).unwrap(),
-
-            (&bump as &dyn BumpAllocatorCore).allocate_slice_for::<()>(&[]),
-            (&bump as &dyn BumpAllocatorCore).try_allocate_slice_for::<()>(&[]).unwrap(),
         }
 
         // this mustn't have allocated another chunk
@@ -139,27 +118,6 @@ up_and_down! {
         mustnt_dangle! {
             bump.allocate(Layout::new::<()>()).unwrap(),
             bump.allocate_zeroed(Layout::new::<()>()).unwrap(),
-
-            bump.allocate_layout(Layout::new::<()>()),
-            bump.try_allocate_layout(Layout::new::<()>()).unwrap(),
-
-            bump.allocate_sized::<()>(),
-            bump.try_allocate_sized::<()>().unwrap(),
-
-            bump.allocate_slice::<()>(123),
-            bump.try_allocate_slice::<()>(123).unwrap(),
-
-            bump.allocate_slice_for::<()>(&[]),
-            bump.try_allocate_slice_for::<()>(&[]).unwrap(),
-
-            (&bump as &dyn BumpAllocatorCore).allocate_sized::<()>(),
-            (&bump as &dyn BumpAllocatorCore).try_allocate_sized::<()>().unwrap(),
-
-            (&bump as &dyn BumpAllocatorCore).allocate_slice::<()>(123),
-            (&bump as &dyn BumpAllocatorCore).try_allocate_slice::<()>(123).unwrap(),
-
-            (&bump as &dyn BumpAllocatorCore).allocate_slice_for::<()>(&[]),
-            (&bump as &dyn BumpAllocatorCore).try_allocate_slice_for::<()>(&[]).unwrap(),
         }
 
         // this must have allocate a chunk (but takes up no capacity)

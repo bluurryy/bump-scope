@@ -18,8 +18,8 @@ use crate::{
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
     down_align_usize,
     extra::{
-        box_from_utf8_unchecked, box_init, box_init_clone, box_init_fill, box_init_fill_with, boxu, boxu_uninit_zst,
-        boxu_uninit_zst_slice,
+        box_from_utf8_unchecked, box_init, box_init_clone, box_init_fill, box_init_fill_with, box_remove_allocator,
+        boxu_uninit_zst, boxu_uninit_zst_slice,
     },
     maybe_default_allocator,
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
@@ -1621,12 +1621,12 @@ where
     }
 
     /// TODO
-    pub fn alloc_vec_greedy<E, T>(&self, len: usize) -> VecU<'a, T> {
+    pub fn alloc_vec_greedy<T>(&self, len: usize) -> VecU<'a, T> {
         panic_on_error(self.imp_alloc_vec_greedy(len))
     }
 
     /// TODO
-    pub fn try_alloc_vec_greedy<E, T>(&self, len: usize) -> Result<VecU<'a, T>, AllocError> {
+    pub fn try_alloc_vec_greedy<T>(&self, len: usize) -> Result<VecU<'a, T>, AllocError> {
         self.imp_alloc_vec_greedy(len)
     }
 }
@@ -1893,7 +1893,7 @@ where
 
         let mut vec = Vec::new_in(self);
         vec.extend(iter);
-        Ok(boxu(vec.into_boxed_slice()))
+        Ok(box_remove_allocator(vec.into_boxed_slice()).0)
     }
 
     #[inline(always)]
@@ -1907,7 +1907,7 @@ where
 
         let mut vec = self.imp_alloc_vec_greedy::<E, T>(0)?;
         vec.extend(iter);
-        Ok(boxu(vec.into_boxed_slice()))
+        Ok(box_remove_allocator(vec.into_boxed_slice()).0)
     }
 
     #[inline(always)]

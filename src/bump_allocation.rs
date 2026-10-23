@@ -3,7 +3,7 @@ use core::{alloc::Allocator, ptr::NonNull};
 use alloc::{boxed::Box, fmt};
 
 use crate::{
-    BoxU, Unmanaged,
+    BoxU, NoDrop, Unmanaged,
     extra::{box_leak, box_replace_allocator},
     traits::BumpAllocatorScope,
 };
@@ -32,12 +32,18 @@ impl<'a, T: ?Sized, A: BumpAllocatorScope<'a>> BumpAllocation<T, A> {
     }
 
     /// TODO
-    pub fn into_ref(self) -> &'a T {
+    pub fn into_ref(self) -> &'a T
+    where
+        T: NoDrop,
+    {
         self.leak()
     }
 
     /// TODO
-    pub fn into_mut(self) -> &'a mut T {
+    pub fn into_mut(self) -> &'a mut T
+    where
+        T: NoDrop,
+    {
         self.leak()
     }
 

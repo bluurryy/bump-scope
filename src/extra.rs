@@ -1,152 +1,218 @@
 use core::{
     alloc::{AllocError, Allocator, Layout},
-    marker::PhantomData,
-    mem::{MaybeUninit, forget},
+    mem::MaybeUninit,
     ptr::{self, NonNull},
 };
 
 use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
-    BoxU, SizedTypeProperties, Unmanaged,
+    BoxU, NoDrop, SizedTypeProperties, Unmanaged, VecU,
     boxed_slice_initializer::BoxedSliceInitializer,
+    destructure::destructure,
     error_behavior::ErrorBehavior,
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
     panic_on_error,
     traits::{BumpAllocator, BumpAllocatorScope},
 };
 
-macro_rules! assert_in_place_mappable {
-    ($src:ty, $dst:ty) => {
-        let _assert = AssertInPlaceMappable::<$src, $dst>::ASSERT;
-    };
-}
-
-struct AssertInPlaceMappable<Src, Dst>(PhantomData<(Src, Dst)>);
-
-impl<Src, Dst> AssertInPlaceMappable<Src, Dst> {
-    const ASSERT: () = assert!(
-        Dst::IS_ZST || (Src::ALIGN >= Dst::ALIGN && Src::SIZE >= Dst::SIZE),
-        "`map_in_place` only compiles when `U`s size and alignment is less or equal to `T`'s or if `U` has a size of 0"
-    );
-}
-
-/// Returns a boxed slice of the same length as `self`, with function `f` applied to each element in order.
+/// Maps the elements of a vector, reusing the allocation if possible.
 ///
-/// This function only compiles when `U`s size and alignment is less or equal to `T`'s or if `U` has a size of 0.
+/// # Panics
+/// Panics if the allocation fails. An allocation only occurs when the alignment or size of `U` is greater than that of `T`.
+///
+/// # Examples
+/// Mapping to a type with an equal alignment and size (no allocation):
+/// ```
+/// use core::num::NonZero;
+/// use bump_scope::{Bump, extra};
+///
+/// let bump: Bump = Bump::new();
+///
+/// let a = extra::vec_from_iter_in([0, 1, 2], &bump);
+/// assert_eq!(bump.stats().allocated(), 12);
+///
+/// let b = a.map(NonZero::new);
+/// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2)]");
+/// assert_eq!(bump.stats().allocated(), 12); // allocation was reused!
+/// ```
+///
+/// Mapping to a type with a smaller alignment and size (no allocation, capacity may grow):
+/// ```
+/// use bump_scope::{Bump, extra};
+///
+/// let bump: Bump = Bump::new();
+///
+/// let vec_a: Vec<u32, _> = extra::vec_from_iter_in([1, 2, 3, 4], &bump);
+/// assert_eq!(vec_a.capacity(), 4);
+/// assert_eq!(bump.stats().allocated(), 4 * 4);
+///
+/// let vec_b: Vec<u16, _> = extra::vec_map(vec_a, |i| i as u16);
+/// assert_eq!(vec_b.capacity(), 8);
+/// assert_eq!(bump.stats().allocated(), 4 * 4);
+/// ```
+///
+/// Mapping to a type with a higher alignment or size will allocate:
+/// ```
+/// use bump_scope::{Bump, extra};
+///
+/// let bump: Bump = Bump::new();
+///
+/// let vec_a: Vec<u16, _> = extra::vec_from_iter_in([1, 2, 3, 4], &bump);
+/// assert_eq!(vec_a.capacity(), 4);
+/// assert_eq!(bump.stats().allocated(), 4 * 2);
+///
+/// let vec_b: Vec<u32, _> = extra::vec_map(vec_a; |i| i as u32);
+/// assert_eq!(vec_b.capacity(), 4);
+/// assert_eq!(bump.stats().allocated(), 4 * 2 + 4 * 4);
+/// ```
+#[inline]
+pub fn vec_map<'a, T, U, A>(vec: Vec<T, A>, mut f: impl FnMut(T) -> U) -> Vec<U, A>
+where
+    A: BumpAllocator,
+{
+    if !T::IS_ZST && !U::IS_ZST && T::ALIGN >= U::ALIGN && T::SIZE >= U::SIZE {
+        struct DropGuard<T, U, A: Allocator> {
+            ptr: *mut T,
+            cap: usize,
+            end: *mut T,
+            src: *mut T,
+            dst: *mut U,
+            alloc: A,
+        }
+
+        impl<T, U, A: Allocator> DropGuard<T, U, A> {
+            fn into_allocator(self) -> A {
+                destructure!(let Self { alloc } = self);
+                alloc
+            }
+        }
+
+        impl<T, U, A: Allocator> Drop for DropGuard<T, U, A> {
+            fn drop(&mut self) {
+                unsafe {
+                    // drop `T`s
+                    let drop_ptr = self.src.add(1);
+                    let drop_len = self.end.offset_from_unsigned(drop_ptr);
+                    ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
+
+                    // drop `U`s
+                    let drop_ptr = self.ptr.cast::<U>();
+                    let drop_len = self.dst.offset_from_unsigned(drop_ptr);
+                    ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
+
+                    if T::IS_ZST || self.cap == 0 {
+                        return;
+                    }
+
+                    let layout = Layout::from_size_align_unchecked(self.cap * T::SIZE, T::ALIGN);
+                    self.alloc.deallocate(NonNull::new_unchecked(self.ptr.cast()), layout);
+                }
+            }
+        }
+
+        let (ptr, len, cap, alloc) = Vec::into_raw_parts_with_allocator(vec);
+
+        unsafe {
+            let mut guard = DropGuard::<T, U, A> {
+                ptr,
+                cap,
+                end: ptr.add(len),
+                src: ptr,
+                dst: ptr.cast(),
+                alloc,
+            };
+
+            while guard.src < guard.end {
+                let src_value = guard.src.read();
+                let dst_value = f(src_value);
+                guard.dst.write(dst_value);
+                guard.src = guard.src.add(1);
+                guard.dst = guard.dst.add(1);
+            }
+
+            let alloc = guard.into_allocator();
+            let new_cap = (cap * T::SIZE) / U::SIZE;
+
+            Vec::from_raw_parts_in(ptr.cast(), len, new_cap, alloc)
+        }
+    } else {
+        // fallback
+        let (old, alloc) = unsafe { vec_remove_allocator_unchecked(vec) };
+        let mut new = Vec::new_in(alloc);
+        new.extend(old.into_iter().map(f));
+        new
+    }
+}
+
+/// Maps the elements of a boxed slice, reusing the allocation if possible.
 ///
 /// # Examples
 /// Mapping to a type with an equal alignment and size:
 /// ```
-/// # use bump_scope::{Bump};
-/// # use core::num::NonZero;
-/// # let bump: Bump = Bump::new();
+/// use core::num::NonZero;
+/// use bump_scope::{Bump, extra};
+///
+/// let bump: Bump = Bump::new();
+///
 /// let a = bump.alloc_slice_copy(&[0, 1, 2]).into_boxu();
-/// let b = a.map_in_place(NonZero::new);
+/// assert_eq!(bump.stats().allocated(), 12);
+///
+/// let b = extra::box_slice_map(a, NonZero::new);
 /// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2)]");
+/// assert_eq!(bump.stats().allocated(), 12); // allocation was reused!
 /// ```
 ///
 /// Mapping to a type with a smaller alignment and size:
 /// ```
-/// # use bump_scope::{Bump, BoxU};
-/// # let bump: Bump = Bump::new();
+/// use bump_scope::{Bump, BoxU, extra};
+///
+/// let bump: Bump = Bump::new();
+///
 /// let a: BoxU<[u32]> = bump.alloc_slice_copy(&[0, 1, 2]).into_boxu();
-/// let b: BoxU<[u16]> = a.map_in_place(|i| i as u16);
+/// assert_eq!(bump.stats().allocated(), 12);   
+///
+/// let b: BoxU<[u16]> = extra::box_slice_map(a, |i| i as u16);
 /// assert_eq!(b, [0, 1, 2]);
+/// assert_eq!(bump.stats().allocated(), 6); // allocation was reused and shrunk!
 /// ```
 ///
-/// Mapping to a type with a greater alignment won't compile:
-/// ```compile_fail,E0080
-/// # use bump_scope::{Bump, BoxU};
-/// # let bump: Bump = Bump::new();
+/// Mapping to a type with a greater alignment will allocate:
+/// ```
+/// use bump_scope::{Bump, BoxU, extra};
+///
+/// let bump: Bump = Bump::new();
+///
 /// let a: BoxU<[[u8; 4]]> = bump.alloc_slice_copy(&[[0, 1, 2, 3]]);
-/// let b: BoxU<[u32]> = a.map_in_place(u32::from_le_bytes);
-/// # _ = b;
+/// assert_eq!(bump.stats().allocated(), 4);
+///
+/// let b: BoxU<[u32]> = extra::box_slice_map(a, u32::from_le_bytes);
+/// assert_eq!(b, 123);
+/// assert_eq!(bump.stats().allocated(), 8); // new allocation
 /// ```
 ///
-/// Mapping to a type with a greater size won't compile:
-/// ```compile_fail,E0080
-/// # use bump_scope::{Bump, BoxU};
-/// # let bump: Bump = Bump::new();
-/// let a: BoxU<[u32]> = bump.alloc_slice_copy(&[42]);
-/// let b: BoxU<[[u32; 2]]> = a.map_in_place(|i| [i; 2]);
-/// # _ = b;
+/// Mapping to a type with a greater size will allocate:
 /// ```
-pub fn box_map_in_place<T, U, A>(boxed: Box<[T], A>, mut f: impl FnMut(T) -> U) -> Box<[U], A>
+/// use bump_scope::{Bump, BoxU};
+///
+/// let bump: Bump = Bump::new();
+///
+/// let a: BoxU<[u32]> = bump.alloc_slice_copy(&[42]);
+/// assert_eq!(bump.stats().allocated(), 4);
+///
+/// let b: BoxU<[[u32; 2]]> = a.map_in_place(|i| [i; 2]);
+/// assert_eq!(b, [[42, 42]]);
+/// assert_eq!(bump.stats().allocated(), 12); // new allocation
+/// ```
+pub fn box_slice_map<T, U, A>(boxed: Box<[T], A>, f: impl FnMut(T) -> U) -> Box<[U], A>
 where
-    A: Allocator,
+    A: BumpAllocator,
 {
-    assert_in_place_mappable!(T, U);
-
-    if U::IS_ZST {
-        return unsafe {
-            let len = boxed.len();
-            let (_, alloc) = Box::into_raw_with_allocator(boxed);
-            let src: Box<[T], &Unmanaged> = Box::from_raw_in(dangling_mut_slice(len), &Unmanaged);
-            let dst: Box<[MaybeUninit<U>], A> = Box::from_raw_in(dangling_mut_slice(len), alloc);
-            box_init_fill_iter(dst, src.into_iter().map(f))
-        };
-    }
-
-    struct DropGuard<T, U> {
-        ptr: *mut T,
-        end: *mut T,
-        src: *mut T,
-        dst: *mut U,
-    }
-
-    impl<T, U> Drop for DropGuard<T, U> {
-        fn drop(&mut self) {
-            unsafe {
-                // drop `T`s
-                let drop_ptr = self.src.add(1);
-                let drop_len = self.end.offset_from_unsigned(drop_ptr);
-                ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
-
-                // drop `U`s
-                let drop_ptr = self.ptr.cast::<U>();
-                let drop_len = self.dst.offset_from_unsigned(drop_ptr);
-                ptr::slice_from_raw_parts_mut(drop_ptr, drop_len).drop_in_place();
-            }
-        }
-    }
-
-    let (slice, alloc) = Box::into_raw_with_allocator(boxed);
-    let ptr = slice.cast::<T>();
-    let len = slice.len();
-
-    unsafe {
-        let mut guard = DropGuard::<T, U> {
-            ptr,
-            end: ptr.add(len),
-            src: ptr,
-            dst: ptr.cast::<U>(),
-        };
-
-        while guard.src < guard.end {
-            let src_value = guard.src.read();
-            let dst_value = f(src_value);
-            guard.dst.write(dst_value);
-            guard.src = guard.src.add(1);
-            guard.dst = guard.dst.add(1);
-        }
-
-        forget(guard);
-
-        Box::from_raw_in(ptr::slice_from_raw_parts_mut(ptr.cast(), len), alloc)
-    }
+    vec_map(boxed.into_vec(), f).into_boxed_slice()
 }
 
 fn dangling_mut_slice<T>(len: usize) -> *mut [T] {
     ptr::slice_from_raw_parts_mut(ptr::dangling_mut(), len)
-}
-
-pub(crate) fn boxu<'a, T, A>(boxed: Box<T, A>) -> BoxU<'a, T>
-where
-    T: ?Sized,
-    A: BumpAllocatorScope<'a>,
-{
-    box_replace_allocator(boxed, &Unmanaged).0
 }
 
 pub(crate) unsafe fn boxu_from_raw<'a, T: ?Sized>(ptr: *mut T) -> BoxU<'a, T> {
@@ -168,6 +234,7 @@ pub(crate) unsafe fn box_from_utf8_unchecked<A: Allocator>(boxed: Box<[u8], A>) 
     unsafe { Box::from_raw_in(ptr as *mut str, alloc) }
 }
 
+/// TODO
 pub fn box_leak<'a, T: ?Sized, A: BumpAllocatorScope<'a>>(boxed: Box<T, A>) -> &'a mut T {
     // We can't use `Box::leak` here, since that requires a 'static Allocator.
     // SAFETY: The `BumpAllocatorScope<'a>` trait guarantees that allocations live for `'a`.
@@ -298,13 +365,57 @@ where
 }
 
 /// TODO
-pub fn vec_replace_allocator<'a, T, A, NewA>(boxed: Vec<T, A>, new_alloc: NewA) -> Vec<T, NewA>
+pub fn box_remove_allocator<'a, T, A>(boxed: Box<T, A>) -> (BoxU<'a, T>, A)
+where
+    T: ?Sized,
+    A: BumpAllocatorScope<'a>,
+{
+    box_replace_allocator(boxed, &Unmanaged)
+}
+
+/// TODO
+pub fn vec_from_iter_in<T, A>(iter: impl IntoIterator<Item = T>, alloc: A) -> Vec<T, A>
+where
+    A: Allocator,
+{
+    let mut vec = Vec::new_in(alloc);
+    vec.extend(iter);
+    vec
+}
+
+/// TODO
+pub fn vec_replace_allocator<'a, T, Old, New>(boxed: Vec<T, Old>, new_alloc: New) -> (Vec<T, New>, Old)
+where
+    Old: BumpAllocatorScope<'a>,
+    New: BumpAllocatorScope<'a>,
+{
+    unsafe { vec_replace_allocator_unchecked(boxed, new_alloc) }
+}
+
+/// TODO
+pub unsafe fn vec_replace_allocator_unchecked<'a, T, Old, New>(boxed: Vec<T, Old>, new_alloc: New) -> (Vec<T, New>, Old)
+where
+    Old: BumpAllocator,
+    New: BumpAllocator,
+{
+    let (ptr, len, cap, old) = Vec::into_raw_parts_with_allocator(boxed);
+    (unsafe { Vec::from_raw_parts_in(ptr, len, cap, new_alloc) }, old)
+}
+
+/// TODO
+pub fn vec_remove_allocator<'a, T, A>(vec: Vec<T, A>) -> (VecU<'a, T>, A)
 where
     A: BumpAllocatorScope<'a>,
-    NewA: BumpAllocatorScope<'a>,
 {
-    let (ptr, len, cap, _) = Vec::into_raw_parts_with_allocator(boxed);
-    unsafe { Vec::from_raw_parts_in(ptr, len, cap, new_alloc) }
+    vec_replace_allocator(vec, &Unmanaged)
+}
+
+/// TODO
+pub unsafe fn vec_remove_allocator_unchecked<'a, T, A>(vec: Vec<T, A>) -> (VecU<'a, T>, A)
+where
+    A: BumpAllocator,
+{
+    unsafe { vec_replace_allocator_unchecked(vec, &Unmanaged) }
 }
 
 /// TODO
@@ -360,7 +471,33 @@ where
 }
 
 /// TODO
-pub fn vec_append_owned_slice<T, A>(vec: &mut Vec<T, A>, slice: impl OwnedSlice)
+pub fn box_into_mut<'a, T, A>(boxed: Box<T, A>) -> &'a mut T
+where
+    T: NoDrop + ?Sized,
+    A: BumpAllocatorScope<'a>,
+{
+    box_leak(boxed)
+}
+
+/// TODO
+pub fn vec_into_slice<'a, T, A>(vec: Vec<T, A>) -> &'a mut [T]
+where
+    T: NoDrop,
+    A: BumpAllocatorScope<'a>,
+{
+    box_into_mut(vec.into_boxed_slice())
+}
+
+/// TODO
+pub fn vec_leak<'a, T, A>(vec: Vec<T, A>) -> &'a mut [T]
+where
+    A: BumpAllocatorScope<'a>,
+{
+    box_leak(vec.into_boxed_slice())
+}
+
+/// TODO
+pub fn vec_append<T, A>(vec: &mut Vec<T, A>, slice: impl OwnedSlice)
 where
     A: Allocator,
 {

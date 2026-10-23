@@ -63,7 +63,7 @@ macro_rules! vec {
     [try in $bump:expr; $value:expr; $count:expr] => {
         $crate::BumpVec::try_from_elem_in($value, $count, $bump)
     };
-    [$($tt:tt)*] => {
-        $crate::private::alloc::vec![$($tt)*]
-    };
+    // [$($tt:tt)*] => {
+    //     $crate::private::alloc::vec![$($tt)*]
+    // };
 }

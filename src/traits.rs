@@ -10,6 +10,7 @@ use crate::{
     config::{BumpConfig, config},
     error_behavior::ErrorBehavior,
     polyfill::{transmute_mut, transmute_ref},
+    stats::AnyStats,
     up_align_usize_unchecked,
 };
 
@@ -500,6 +501,9 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// assert_eq!(bump.stats().allocated(), 0);
     /// ```
     unsafe fn reset_to(&self, checkpoint: Checkpoint);
+
+    /// TODO
+    fn any_stats(&self) -> AnyStats<'_>;
 }
 unsafe impl<T: BumpAllocator> BumpAllocator for &T {
     #[inline(always)]
@@ -511,6 +515,11 @@ unsafe impl<T: BumpAllocator> BumpAllocator for &T {
     unsafe fn reset_to(&self, checkpoint: Checkpoint) {
         unsafe { T::reset_to(self, checkpoint) };
     }
+
+    #[inline(always)]
+    fn any_stats(&self) -> AnyStats<'_> {
+        T::any_stats(self)
+    }
 }
 unsafe impl<T: BumpAllocator> BumpAllocator for &mut T {
     #[inline(always)]
@@ -521,6 +530,11 @@ unsafe impl<T: BumpAllocator> BumpAllocator for &mut T {
     #[inline(always)]
     unsafe fn reset_to(&self, checkpoint: Checkpoint) {
         unsafe { T::reset_to(self, checkpoint) };
+    }
+
+    #[inline(always)]
+    fn any_stats(&self) -> AnyStats<'_> {
+        T::any_stats(self)
     }
 }
 unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for Bump<A, C> {
@@ -535,6 +549,11 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for Bump<A, C> {
             self.raw.reset_to(checkpoint);
         };
     }
+
+    #[inline(always)]
+    fn any_stats(&self) -> AnyStats<'_> {
+        self.stats().into()
+    }
 }
 unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for BumpScope<'_, A, C> {
     #[inline(always)]
@@ -548,6 +567,11 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for BumpScope<'_, A
             self.raw.reset_to(checkpoint);
         };
     }
+
+    #[inline(always)]
+    fn any_stats(&self) -> AnyStats<'_> {
+        self.stats().into()
+    }
 }
 unsafe impl BumpAllocator for &Unmanaged {
     #[inline(always)]
@@ -558,6 +582,11 @@ unsafe impl BumpAllocator for &Unmanaged {
     #[inline(always)]
     unsafe fn reset_to(&self, checkpoint: Checkpoint) {
         _ = checkpoint;
+    }
+
+    #[inline(always)]
+    fn any_stats(&self) -> AnyStats<'_> {
+        AnyStats::default()
     }
 }
 

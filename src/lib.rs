@@ -327,7 +327,8 @@ pub mod extra;
 mod layout;
 mod macros;
 mod no_drop;
-mod owned_slice;
+/// TODO
+pub mod owned_slice;
 mod polyfill;
 mod raw_bump;
 mod set_len_on_drop;

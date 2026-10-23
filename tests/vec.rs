@@ -50,7 +50,7 @@ up_and_down! {
         vec.shrink_to(1);
         assert_eq!(bump.stats().allocated(), 4);
 
-        let boxed: Box<_, _> = bump.alloc_uninit::<u8>().into_box(&bump);
+        let boxed: Box<_, _> = bump.alloc_uninit::<u8>().into_box();
         assert_eq!(bump.stats().allocated(), 5);
 
         drop(boxed);

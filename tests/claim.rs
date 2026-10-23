@@ -6,13 +6,11 @@ use std::{
     alloc::{AllocError, Allocator, Global, Layout},
     mem::forget,
     panic::{AssertUnwindSafe, UnwindSafe},
+    ptr::NonNull,
     string::String,
 };
 
-use bump_scope::{
-    Bump, BoxU, BumpVec, bump_vec,
-    traits::{BumpAllocator, BumpAllocatorCore},
-};
+use bump_scope::{BoxU, Bump, traits::BumpAllocator};
 
 use crate::common::up_and_down;
 
@@ -40,8 +38,8 @@ up_and_down! {
         }
 
         let bump = Bump::<Global, C>::new();
-        let boxed = bump.alloc::<[u8; 2]>([1, 2]);
-        let ptr = BoxU::as_raw(&boxed).cast::<u8>();
+        let mut boxed = bump.alloc::<[u8; 2]>([1, 2]).into_boxu();
+        let ptr = NonNull::new(boxed.as_mut_ptr()).unwrap().cast::<u8>();
 
         let original_allocated = 2;
         assert_eq!(bump.stats().allocated(), original_allocated);
@@ -77,32 +75,15 @@ up_and_down! {
             assert_eq!(guard.stats().allocated(), original_allocated);
         }
 
-        // BumpAllocatorCore
+        // traits::Sealed
         {
-            // prepare_allocation
-            expect_err(bump.prepare_allocation(Layout::new::<()>()));
-        }
-
-        // BumpAllocatorCoreScope
-        {
-            // doesn't add any new api
-        }
-
-        // BumpAllocator
-        {
-            // allocate_layout
-            expect_panic(|| bump.allocate_layout(Layout::new::<()>()));
-            expect_err(bump.try_allocate_layout(Layout::new::<()>()));
-            expect_panic(|| bump.allocate_layout(Layout::new::<u8>()));
-            expect_err(bump.try_allocate_layout(Layout::new::<u8>()));
-
-            // allocate_sized
-            expect_panic(|| bump.allocate_sized::<()>());
+            // allocate sized
+            expect_panic(|| bump.alloc_uninit::<()>());
             expect_err(bump.try_allocate_sized::<()>());
             expect_panic(|| bump.allocate_sized::<u8>());
             expect_err(bump.try_allocate_sized::<u8>());
 
-            // allocate_slice
+            // allocate slice
             expect_panic(|| bump.allocate_slice::<()>(123));
             expect_err(bump.try_allocate_slice::<()>(123));
             expect_panic(|| bump.allocate_slice::<u8>(0));
