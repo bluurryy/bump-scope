@@ -337,7 +337,7 @@ pub mod traits;
 mod unmanaged;
 mod util;
 
-use alloc::boxed::Box;
+use alloc::{boxed::Box, vec::Vec};
 pub use bump::Bump;
 pub use bump_allocation::BumpAllocation;
 pub use bump_claim_guard::BumpClaimGuard;
@@ -360,6 +360,9 @@ pub use unmanaged::Unmanaged;
 
 /// TODO
 pub type BoxU<'a, T> = Box<T, &'a Unmanaged>;
+
+/// TODO
+pub type VecU<'a, T> = Vec<T, &'a Unmanaged>;
 
 /// The changelog.
 ///

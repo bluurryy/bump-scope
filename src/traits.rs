@@ -1,5 +1,6 @@
 use core::{
     alloc::{Allocator, Layout},
+    error::Error,
     num::NonZeroUsize,
     ptr::NonNull,
 };
@@ -35,6 +36,11 @@ pub(crate) unsafe trait Sealed {
 
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     fn spec_alloc_slice_for<E: ErrorBehavior, T>(&self, slice: &[T]) -> Result<NonNull<T>, E>;
+
+    /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
+    ///
+    /// The allocation takes up as much of the free space of the chunk as possible.
+    fn spec_alloc_slice_greedy<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E>;
 
     /// A specialized version of [`shrink`](core::alloc::Allocator::shrink).
     ///
@@ -135,6 +141,10 @@ unsafe impl<A: Sealed> Sealed for &A {
         A::spec_alloc_slice_for(self, slice)
     }
 
+    fn spec_alloc_slice_greedy<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
+        A::spec_alloc_slice_greedy(self, len)
+    }
+
     unsafe fn spec_shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
         unsafe { A::spec_shrink_slice(self, ptr, old_len, new_len) }
     }
@@ -170,6 +180,10 @@ unsafe impl<A: Sealed> Sealed for &mut A {
 
     fn spec_alloc_slice_for<E: ErrorBehavior, T>(&self, slice: &[T]) -> Result<NonNull<T>, E> {
         A::spec_alloc_slice_for(self, slice)
+    }
+
+    fn spec_alloc_slice_greedy<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
+        A::spec_alloc_slice_greedy(self, len)
     }
 
     unsafe fn spec_shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
@@ -209,6 +223,10 @@ unsafe impl<A: Allocator, const C: BumpConfig> Sealed for Bump<A, C> {
         self.as_bump_scope().spec_alloc_slice_for(slice)
     }
 
+    fn spec_alloc_slice_greedy<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
+        self.as_bump_scope().spec_alloc_slice_greedy(len)
+    }
+
     unsafe fn spec_shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
         unsafe { self.as_bump_scope().spec_shrink_slice(ptr, old_len, new_len) }
     }
@@ -244,6 +262,26 @@ unsafe impl<A: Allocator, const C: BumpConfig> Sealed for BumpScope<'_, A, C> {
 
     fn spec_alloc_slice_for<E: ErrorBehavior, T>(&self, slice: &[T]) -> Result<NonNull<T>, E> {
         self.raw.allocate_slice_for(slice)
+    }
+
+    fn spec_alloc_slice_greedy<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
+        // FIXME: simplify `prepare` api / replace it with greedy slice alloc
+        let slice = self.raw.prepare_slice_allocation(len)?;
+        let len = slice.len();
+        let ptr = slice.cast::<T>().as_ptr();
+
+        unsafe {
+            // a successful `prepare_allocation` guarantees a non-dummy-chunk
+            let chunk = self.raw.chunk.get().as_allocated_unchecked();
+
+            if config!(upwards) {
+                chunk.set_pos_addr_and_align_from(ptr.add(len).addr(), T::ALIGN);
+            } else {
+                chunk.set_pos_addr_and_align_from(ptr.addr(), T::ALIGN);
+            }
+        }
+
+        Ok(slice)
     }
 
     unsafe fn spec_shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
@@ -321,7 +359,7 @@ unsafe impl<A: Allocator, const C: BumpConfig> Sealed for BumpScope<'_, A, C> {
             } else {
                 let dst_end = start.add(cap);
                 let dst = dst_end.sub(len);
-                start.copy_to(dst, len);
+                start.copy_to(dst, len); // FIXME: conditional copy_nonoverlapping?
                 chunk.set_pos_addr_and_align_from(dst.addr().get(), T::ALIGN);
                 NonNull::slice_from_raw_parts(dst, len)
             }
@@ -380,6 +418,12 @@ unsafe impl Sealed for &Unmanaged {
     }
 
     #[inline(always)]
+    fn spec_alloc_slice_greedy<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
+        _ = len;
+        Err(E::unmanaged())
+    }
+
+    #[inline(always)]
     unsafe fn spec_shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
         _ = (ptr, old_len, new_len);
         None
@@ -410,6 +454,9 @@ unsafe impl Sealed for &Unmanaged {
     }
 }
 
+/// TODO
+/// TODO
+#[expect(private_bounds)]
 pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// Creates a checkpoint of the current bump position.
     ///
@@ -515,6 +562,7 @@ unsafe impl BumpAllocator for &Unmanaged {
 }
 
 /// TODO
+#[expect(private_bounds)]
 pub unsafe trait BumpAllocatorScope<'a>: BumpAllocator + Sealed {}
 unsafe impl<'a, T: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for &T {}
 unsafe impl<'a, T: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for &mut T {}
@@ -524,12 +572,14 @@ unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for Bu
 unsafe impl<'a> BumpAllocatorScope<'a> for &'a Unmanaged {}
 
 /// TODO
+#[expect(private_bounds)]
 pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {}
 unsafe impl<T: MutBumpAllocator> MutBumpAllocator for &mut T {}
 unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for Bump<A, C> {}
 unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for BumpScope<'_, A, C> {}
 
 /// TODO
+#[expect(private_bounds)]
 pub unsafe trait MutBumpAllocatorScope<'a>: MutBumpAllocator + BumpAllocatorScope<'a> + Sealed {}
 unsafe impl<'a, T: MutBumpAllocator + BumpAllocatorScope<'a>> MutBumpAllocatorScope<'a> for T {}
 
@@ -551,7 +601,9 @@ impl<'a, A: Allocator, const C: BumpConfig> AsBumpScope<'a, A, C> for BumpScope<
     }
 }
 
+/// TODO
 pub trait AsMutBumpScope<'a, A, const C: BumpConfig> {
+    /// TODO
     fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'a, A, C>;
 }
 

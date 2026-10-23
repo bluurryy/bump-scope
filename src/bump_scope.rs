@@ -12,17 +12,17 @@ use core::{
 use core::clone::CloneToUninit;
 
 use crate::{
-    BoxU, BumpClaimGuard, BumpScopeGuard, Checkpoint, ErrorBehavior, NoDrop, SizedTypeProperties, Unmanaged, allocator_impl,
+    BoxU, BumpClaimGuard, BumpScopeGuard, ErrorBehavior, NoDrop, SizedTypeProperties, Unmanaged, VecU, allocator_impl,
     bump_align_guard::BumpAlignGuard,
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
     down_align_usize,
     extra::{box_init, box_init_clone, box_init_fill},
     maybe_default_allocator,
     owned_slice::OwnedSlice,
-    polyfill::{non_null, transmute_mut, transmute_ref, transmute_value},
+    polyfill::{transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
     stats::{AnyStats, Stats},
-    traits::{self, BumpAllocator, BumpAllocatorScope, MutBumpAllocatorScope},
+    traits::{BumpAllocator, Sealed},
     up_align_usize_unchecked, util,
 };
 
@@ -1601,6 +1601,16 @@ where
     ) -> Result<Result<BoxU<'a, T>, E>, AllocError> {
         self.generic_alloc_try_with_mut(f)
     }
+
+    /// TODO
+    pub fn alloc_vec_greedy<E, T>(&self, len: usize) -> VecU<'a, T> {
+        panic_on_error(self.generic_alloc_vec_greedy(len))
+    }
+
+    /// TODO
+    pub fn try_alloc_vec_greedy<E, T>(&self, len: usize) -> Result<VecU<'a, T>, AllocError> {
+        self.generic_alloc_vec_greedy(len)
+    }
 }
 
 /// Generic `alloc` methods.
@@ -2012,6 +2022,18 @@ where
                 Err(error) => Err(error.read()),
             }
         })
+    }
+
+    /// TODO
+    // FIXME: non-greedy variant for a more regular api / easy switching?
+    pub(crate) fn generic_alloc_vec_greedy<E, T>(&self, len: usize) -> Result<VecU<'a, T>, E>
+    where
+        E: ErrorBehavior,
+    {
+        let slice = self.spec_alloc_slice_greedy::<E, T>(len)?;
+        let cap = slice.len();
+        let ptr = slice.cast::<T>().as_ptr();
+        unsafe { Ok(VecU::from_raw_parts_in(ptr, 0, cap, &Unmanaged)) }
     }
 }
 
