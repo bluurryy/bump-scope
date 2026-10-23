@@ -257,7 +257,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc<T>(&self, value: T) -> BumpAllocation<T, &Self> {
-        let boxu = panic_on_error(self.generic_alloc(value));
+        let boxu = panic_on_error(self.imp_alloc(value));
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -276,7 +276,7 @@ where
     /// ```
     #[inline(always)]
     pub fn try_alloc<T>(&self, value: T) -> Result<BumpAllocation<T, &Self>, AllocError> {
-        let boxu = self.generic_alloc(value)?;
+        let boxu = self.imp_alloc(value)?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -300,7 +300,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_with<T>(&self, f: impl FnOnce() -> T) -> BumpAllocation<T, &Self> {
-        let boxu = panic_on_error(self.generic_alloc_with(f));
+        let boxu = panic_on_error(self.imp_alloc_with(f));
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -324,7 +324,7 @@ where
     /// ```
     #[inline(always)]
     pub fn try_alloc_with<T>(&self, f: impl FnOnce() -> T) -> Result<BumpAllocation<T, &Self>, AllocError> {
-        let boxu = self.generic_alloc_with(f)?;
+        let boxu = self.imp_alloc_with(f)?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -345,7 +345,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_default<T: Default>(&self) -> BumpAllocation<T, &Self> {
-        let boxu = panic_on_error(self.generic_alloc_default());
+        let boxu = panic_on_error(self.imp_alloc_default());
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -366,7 +366,7 @@ where
     /// ```
     #[inline(always)]
     pub fn try_alloc_default<T: Default>(&self) -> Result<BumpAllocation<T, &Self>, AllocError> {
-        let boxu = self.generic_alloc_default()?;
+        let boxu = self.imp_alloc_default()?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -431,7 +431,7 @@ where
     #[cfg(feature = "panic-on-alloc")]
     #[cfg(feature = "nightly-clone-to-uninit")]
     pub fn alloc_clone<T: CloneToUninit + ?Sized>(&self, value: &T) -> BumpAllocation<T, &Self> {
-        let boxu = panic_on_error(self.generic_alloc_clone(value));
+        let boxu = panic_on_error(self.imp_alloc_clone(value));
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -497,7 +497,7 @@ where
     /// ```
     #[cfg(feature = "nightly-clone-to-uninit")]
     pub fn try_alloc_clone<T: CloneToUninit + ?Sized>(&self, value: &T) -> Result<BumpAllocation<T, &Self>, AllocError> {
-        let boxu = self.generic_alloc_clone(value)?;
+        let boxu = self.imp_alloc_clone(value)?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -538,7 +538,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_uninit<T>(&self) -> BumpAllocation<MaybeUninit<T>, &Self> {
-        let boxu = panic_on_error(self.generic_alloc_uninit());
+        let boxu = panic_on_error(self.imp_alloc_uninit());
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -580,7 +580,7 @@ where
     /// ```
     #[inline(always)]
     pub fn try_alloc_uninit<T>(&self) -> Result<BumpAllocation<MaybeUninit<T>, &Self>, AllocError> {
-        let boxu = self.generic_alloc_uninit()?;
+        let boxu = self.imp_alloc_uninit()?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -611,7 +611,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_slice_move<T>(&self, slice: impl OwnedSlice<Item = T>) -> BumpAllocation<[T], &Self> {
-        let boxu = panic_on_error(self.generic_alloc_slice_move(slice));
+        let boxu = panic_on_error(self.imp_alloc_slice_move(slice));
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -645,7 +645,7 @@ where
         &self,
         slice: impl OwnedSlice<Item = T>,
     ) -> Result<BumpAllocation<[T], &Self>, AllocError> {
-        let boxu = self.generic_alloc_slice_move(slice)?;
+        let boxu = self.imp_alloc_slice_move(slice)?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -664,7 +664,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_slice_copy<T: Copy>(&self, slice: &[T]) -> BumpAllocation<[T], &Self> {
-        let boxu = panic_on_error(self.generic_alloc_slice_copy(slice));
+        let boxu = panic_on_error(self.imp_alloc_slice_copy(slice));
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -683,7 +683,7 @@ where
     /// ```
     #[inline(always)]
     pub fn try_alloc_slice_copy<T: Copy>(&self, slice: &[T]) -> Result<BumpAllocation<[T], &Self>, AllocError> {
-        let boxu = self.generic_alloc_slice_copy(slice)?;
+        let boxu = self.imp_alloc_slice_copy(slice)?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -702,7 +702,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_slice_clone<T: Clone>(&self, slice: &[T]) -> BumpAllocation<[T], &Self> {
-        let boxu = panic_on_error(self.generic_alloc_slice_clone(slice));
+        let boxu = panic_on_error(self.imp_alloc_slice_clone(slice));
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -721,7 +721,7 @@ where
     /// ```
     #[inline(always)]
     pub fn try_alloc_slice_clone<T: Clone>(&self, slice: &[T]) -> Result<BumpAllocation<[T], &Self>, AllocError> {
-        let boxu = self.generic_alloc_slice_clone(slice)?;
+        let boxu = self.imp_alloc_slice_clone(slice)?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -740,7 +740,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_slice_fill<T: Clone>(&self, len: usize, value: T) -> BumpAllocation<[T], &Self> {
-        let boxu = panic_on_error(self.generic_alloc_slice_fill(len, value));
+        let boxu = panic_on_error(self.imp_alloc_slice_fill(len, value));
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -759,7 +759,7 @@ where
     /// ```
     #[inline(always)]
     pub fn try_alloc_slice_fill<T: Clone>(&self, len: usize, value: T) -> Result<BumpAllocation<[T], &Self>, AllocError> {
-        let boxu = self.generic_alloc_slice_fill(len, value)?;
+        let boxu = self.imp_alloc_slice_fill(len, value)?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -783,7 +783,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_slice_fill_with<T>(&self, len: usize, f: impl FnMut() -> T) -> BumpAllocation<[T], &Self> {
-        let boxu = panic_on_error(self.generic_alloc_slice_fill_with(len, f));
+        let boxu = panic_on_error(self.imp_alloc_slice_fill_with(len, f));
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -811,7 +811,7 @@ where
         len: usize,
         f: impl FnMut() -> T,
     ) -> Result<BumpAllocation<[T], &Self>, AllocError> {
-        let boxu = self.generic_alloc_slice_fill_with(len, f)?;
+        let boxu = self.imp_alloc_slice_fill_with(len, f)?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -859,7 +859,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_uninit_slice<T>(&self, len: usize) -> BumpAllocation<[MaybeUninit<T>], &Self> {
-        let boxu = panic_on_error(self.generic_alloc_uninit_slice(len));
+        let boxu = panic_on_error(self.imp_alloc_uninit_slice(len));
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -908,7 +908,7 @@ where
     /// ```
     #[inline(always)]
     pub fn try_alloc_uninit_slice<T>(&self, len: usize) -> Result<BumpAllocation<[MaybeUninit<T>], &Self>, AllocError> {
-        let boxu = self.generic_alloc_uninit_slice(len)?;
+        let boxu = self.imp_alloc_uninit_slice(len)?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -939,7 +939,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_uninit_slice_for<T>(&self, slice: &[T]) -> BumpAllocation<[MaybeUninit<T>], &Self> {
-        let boxu = panic_on_error(self.generic_alloc_uninit_slice_for(slice));
+        let boxu = panic_on_error(self.imp_alloc_uninit_slice_for(slice));
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -970,7 +970,7 @@ where
     /// ```
     #[inline(always)]
     pub fn try_alloc_uninit_slice_for<T>(&self, slice: &[T]) -> Result<BumpAllocation<[MaybeUninit<T>], &Self>, AllocError> {
-        let boxu = self.generic_alloc_uninit_slice_for(slice)?;
+        let boxu = self.imp_alloc_uninit_slice_for(slice)?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -989,7 +989,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_str(&self, src: &str) -> BumpAllocation<str, &Self> {
-        let boxu = panic_on_error(self.generic_alloc_str(src));
+        let boxu = panic_on_error(self.imp_alloc_str(src));
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -1008,7 +1008,7 @@ where
     /// ```
     #[inline(always)]
     pub fn try_alloc_str(&self, src: &str) -> Result<BumpAllocation<str, &Self>, AllocError> {
-        let boxu = self.generic_alloc_str(src)?;
+        let boxu = self.imp_alloc_str(src)?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -1037,7 +1037,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_fmt(&self, args: fmt::Arguments) -> BumpAllocation<str, &Self> {
-        let boxu = panic_on_error(self.generic_alloc_fmt(args));
+        let boxu = panic_on_error(self.imp_alloc_fmt(args));
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -1066,7 +1066,7 @@ where
     /// ```
     #[inline(always)]
     pub fn try_alloc_fmt(&self, args: fmt::Arguments) -> Result<BumpAllocation<str, &Self>, AllocError> {
-        let boxu = self.generic_alloc_fmt(args)?;
+        let boxu = self.imp_alloc_fmt(args)?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -1085,7 +1085,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_cstr(&self, src: &CStr) -> &'a CStr {
-        panic_on_error(self.generic_alloc_cstr(src))
+        panic_on_error(self.imp_alloc_cstr(src))
     }
 
     /// Allocate a `CStr`.
@@ -1103,7 +1103,7 @@ where
     /// ```
     #[inline(always)]
     pub fn try_alloc_cstr(&self, src: &CStr) -> Result<&'a CStr, AllocError> {
-        self.generic_alloc_cstr(src)
+        self.imp_alloc_cstr(src)
     }
 
     /// Allocate a `CStr` from a `str`.
@@ -1126,7 +1126,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_cstr_from_str(&self, src: &str) -> &'a CStr {
-        panic_on_error(self.generic_alloc_cstr_from_str(src))
+        panic_on_error(self.imp_alloc_cstr_from_str(src))
     }
 
     /// Allocate a `CStr` from a `str`.
@@ -1149,7 +1149,7 @@ where
     /// ```
     #[inline(always)]
     pub fn try_alloc_cstr_from_str(&self, src: &str) -> Result<&'a CStr, AllocError> {
-        self.generic_alloc_cstr_from_str(src)
+        self.imp_alloc_cstr_from_str(src)
     }
 
     /// Allocate a `CStr` from format arguments.
@@ -1181,7 +1181,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_cstr_fmt(&self, args: fmt::Arguments) -> &'a CStr {
-        panic_on_error(self.generic_alloc_cstr_fmt(args))
+        panic_on_error(self.imp_alloc_cstr_fmt(args))
     }
 
     /// Allocate a `CStr` from format arguments.
@@ -1213,7 +1213,7 @@ where
     /// ```
     #[inline(always)]
     pub fn try_alloc_cstr_fmt(&self, args: fmt::Arguments) -> Result<&'a CStr, AllocError> {
-        self.generic_alloc_cstr_fmt(args)
+        self.imp_alloc_cstr_fmt(args)
     }
 
     /// Allocate elements of an iterator into a slice.
@@ -1238,7 +1238,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> BumpAllocation<[T], &Self> {
-        let boxu = panic_on_error(self.generic_alloc_iter(iter));
+        let boxu = panic_on_error(self.imp_alloc_iter(iter));
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -1264,7 +1264,7 @@ where
     /// [`try_alloc_iter_mut`]: crate::traits::MutBumpAllocatorScope::try_alloc_iter_mut
     #[inline(always)]
     pub fn try_alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> Result<BumpAllocation<[T], &Self>, AllocError> {
-        let boxu = self.generic_alloc_iter(iter)?;
+        let boxu = self.imp_alloc_iter(iter)?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -1286,7 +1286,7 @@ where
     where
         I: ExactSizeIterator<Item = T>,
     {
-        let boxu = panic_on_error(self.generic_alloc_iter_exact(iter));
+        let boxu = panic_on_error(self.imp_alloc_iter_exact(iter));
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -1311,7 +1311,7 @@ where
     where
         I: ExactSizeIterator<Item = T>,
     {
-        let boxu = self.generic_alloc_iter_exact(iter)?;
+        let boxu = self.imp_alloc_iter_exact(iter)?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -1347,7 +1347,7 @@ where
     #[cfg(feature = "panic-on-alloc")]
     #[expect(clippy::missing_errors_doc)]
     pub fn alloc_try_with<T, E>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpAllocation<T, &Self>, E> {
-        match panic_on_error(self.generic_alloc_try_with(f)) {
+        match panic_on_error(self.imp_alloc_try_with(f)) {
             Ok(boxu) => Ok(BumpAllocation::wrap(boxu, self)),
             Err(err) => Err(err),
         }
@@ -1388,7 +1388,7 @@ where
         &self,
         f: impl FnOnce() -> Result<T, E>,
     ) -> Result<Result<BumpAllocation<T, &Self>, E>, AllocError> {
-        Ok(match self.generic_alloc_try_with(f)? {
+        Ok(match self.imp_alloc_try_with(f)? {
             Ok(boxu) => Ok(BumpAllocation::wrap(boxu, self)),
             Err(err) => Err(err),
         })
@@ -1416,7 +1416,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_iter_mut<T>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpAllocation<[T], &Self> {
-        let boxu = panic_on_error(self.generic_alloc_iter_mut(iter));
+        let boxu = panic_on_error(self.imp_alloc_iter_mut(iter));
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -1447,7 +1447,7 @@ where
         &mut self,
         iter: impl IntoIterator<Item = T>,
     ) -> Result<BumpAllocation<[T], &Self>, AllocError> {
-        let boxu = self.generic_alloc_iter_mut(iter)?;
+        let boxu = self.imp_alloc_iter_mut(iter)?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -1479,7 +1479,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_fmt_mut(&mut self, args: fmt::Arguments) -> BumpAllocation<str, &Self> {
-        let boxu = panic_on_error(self.generic_alloc_fmt_mut(args));
+        let boxu = panic_on_error(self.imp_alloc_fmt_mut(args));
         BumpAllocation::wrap(boxu, self)
     }
 
@@ -1511,7 +1511,7 @@ where
     /// [`try_alloc_fmt`]: crate::traits::BumpAllocatorScope::try_alloc_fmt
     #[inline(always)]
     pub fn try_alloc_fmt_mut(&mut self, args: fmt::Arguments) -> Result<BumpAllocation<str, &Self>, AllocError> {
-        let boxu = self.generic_alloc_fmt_mut(args)?;
+        let boxu = self.imp_alloc_fmt_mut(args)?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -1547,7 +1547,7 @@ where
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     pub fn alloc_cstr_fmt_mut(&mut self, args: fmt::Arguments) -> &'a CStr {
-        panic_on_error(self.generic_alloc_cstr_fmt_mut(args))
+        panic_on_error(self.imp_alloc_cstr_fmt_mut(args))
     }
 
     /// Allocate a `CStr` from format arguments.
@@ -1582,7 +1582,7 @@ where
     /// [`try_alloc_cstr_fmt`]: crate::traits::BumpAllocatorScope::try_alloc_cstr_fmt
     #[inline(always)]
     pub fn try_alloc_cstr_fmt_mut(&mut self, args: fmt::Arguments) -> Result<&'a CStr, AllocError> {
-        self.generic_alloc_cstr_fmt_mut(args)
+        self.imp_alloc_cstr_fmt_mut(args)
     }
 
     /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
@@ -1617,7 +1617,7 @@ where
     #[cfg(feature = "panic-on-alloc")]
     #[expect(clippy::missing_errors_doc)]
     pub fn alloc_try_with_mut<T, E>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpAllocation<T, &Self>, E> {
-        let boxu = panic_on_error(self.generic_alloc_try_with_mut(f))?;
+        let boxu = panic_on_error(self.imp_alloc_try_with_mut(f))?;
         Ok(BumpAllocation::wrap(boxu, self))
     }
 
@@ -1656,7 +1656,7 @@ where
         &mut self,
         f: impl FnOnce() -> Result<T, E>,
     ) -> Result<Result<BumpAllocation<T, &Self>, E>, AllocError> {
-        Ok(match self.generic_alloc_try_with(f)? {
+        Ok(match self.imp_alloc_try_with(f)? {
             Ok(boxu) => Ok(BumpAllocation::wrap(boxu, self)),
             Err(err) => Err(err),
         })
@@ -1664,12 +1664,12 @@ where
 
     /// TODO
     pub fn alloc_vec_greedy<E, T>(&self, len: usize) -> VecU<'a, T> {
-        panic_on_error(self.generic_alloc_vec_greedy(len))
+        panic_on_error(self.imp_alloc_vec_greedy(len))
     }
 
     /// TODO
     pub fn try_alloc_vec_greedy<E, T>(&self, len: usize) -> Result<VecU<'a, T>, AllocError> {
-        self.generic_alloc_vec_greedy(len)
+        self.imp_alloc_vec_greedy(len)
     }
 }
 
@@ -1679,31 +1679,31 @@ where
     A: Allocator,
 {
     #[inline(always)]
-    pub(crate) fn generic_alloc<E, T>(&self, value: T) -> Result<BoxU<'a, T>, E>
+    pub(crate) fn imp_alloc<E, T>(&self, value: T) -> Result<BoxU<'a, T>, E>
     where
         E: ErrorBehavior,
     {
-        Ok(box_init(self.generic_alloc_uninit()?, value))
+        Ok(box_init(self.imp_alloc_uninit()?, value))
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_with<E, T>(&self, f: impl FnOnce() -> T) -> Result<BoxU<'a, T>, E>
+    pub(crate) fn imp_alloc_with<E, T>(&self, f: impl FnOnce() -> T) -> Result<BoxU<'a, T>, E>
     where
         E: ErrorBehavior,
     {
-        Ok(box_init(self.generic_alloc_uninit()?, f()))
+        Ok(box_init(self.imp_alloc_uninit()?, f()))
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_default<E, T: Default>(&self) -> Result<BoxU<'a, T>, E>
+    pub(crate) fn imp_alloc_default<E, T: Default>(&self) -> Result<BoxU<'a, T>, E>
     where
         E: ErrorBehavior,
     {
-        self.generic_alloc_with(T::default)
+        self.imp_alloc_with(T::default)
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_clone<E, T: CloneToUninit + ?Sized>(&self, value: &T) -> Result<BoxU<'a, T>, E>
+    pub(crate) fn imp_alloc_clone<E, T: CloneToUninit + ?Sized>(&self, value: &T) -> Result<BoxU<'a, T>, E>
     where
         E: ErrorBehavior,
     {
@@ -1718,7 +1718,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_uninit<E: ErrorBehavior, T>(&self) -> Result<BoxU<'a, MaybeUninit<T>>, E>
+    pub(crate) fn imp_alloc_uninit<E: ErrorBehavior, T>(&self) -> Result<BoxU<'a, MaybeUninit<T>>, E>
     where
         E: ErrorBehavior,
     {
@@ -1732,7 +1732,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_slice_move<E, T>(&self, slice: impl OwnedSlice<Item = T>) -> Result<BoxU<'a, [T]>, E>
+    pub(crate) fn imp_alloc_slice_move<E, T>(&self, slice: impl OwnedSlice<Item = T>) -> Result<BoxU<'a, [T]>, E>
     where
         E: ErrorBehavior,
     {
@@ -1741,7 +1741,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_slice_copy<E, T: Copy>(&self, slice: &[T]) -> Result<BoxU<'a, [T]>, E>
+    pub(crate) fn imp_alloc_slice_copy<E, T: Copy>(&self, slice: &[T]) -> Result<BoxU<'a, [T]>, E>
     where
         E: ErrorBehavior,
     {
@@ -1761,7 +1761,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_slice_clone<E: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<BoxU<'a, [T]>, E>
+    pub(crate) fn imp_alloc_slice_clone<E: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<BoxU<'a, [T]>, E>
     where
         E: ErrorBehavior,
     {
@@ -1770,11 +1770,11 @@ where
             // return Ok(BoxU::zst_slice_clone(slice));
         }
 
-        Ok(box_init_clone(self.generic_alloc_uninit_slice_for(slice)?, slice))
+        Ok(box_init_clone(self.imp_alloc_uninit_slice_for(slice)?, slice))
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_slice_fill<E, T: Clone>(&self, len: usize, value: T) -> Result<BoxU<'a, [T]>, E>
+    pub(crate) fn imp_alloc_slice_fill<E, T: Clone>(&self, len: usize, value: T) -> Result<BoxU<'a, [T]>, E>
     where
         E: ErrorBehavior,
     {
@@ -1783,11 +1783,11 @@ where
             // return Ok(BoxU::zst_slice_fill(len, value));
         }
 
-        Ok(box_init_fill(self.generic_alloc_uninit_slice(len)?, value))
+        Ok(box_init_fill(self.imp_alloc_uninit_slice(len)?, value))
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_slice_fill_with<E, T>(&self, len: usize, f: impl FnMut() -> T) -> Result<BoxU<'a, [T]>, E>
+    pub(crate) fn imp_alloc_slice_fill_with<E, T>(&self, len: usize, f: impl FnMut() -> T) -> Result<BoxU<'a, [T]>, E>
     where
         E: ErrorBehavior,
     {
@@ -1797,11 +1797,11 @@ where
         }
 
         todo!()
-        // Ok(self.generic_alloc_uninit_slice(len)?.init_fill_with(f))
+        // Ok(self.imp_alloc_uninit_slice(len)?.init_fill_with(f))
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_uninit_slice<E, T>(&self, len: usize) -> Result<BoxU<'a, [MaybeUninit<T>]>, E>
+    pub(crate) fn imp_alloc_uninit_slice<E, T>(&self, len: usize) -> Result<BoxU<'a, [MaybeUninit<T>]>, E>
     where
         E: ErrorBehavior,
     {
@@ -1814,7 +1814,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_uninit_slice_for<E, T>(&self, slice: &[T]) -> Result<BoxU<'a, [MaybeUninit<T>]>, E>
+    pub(crate) fn imp_alloc_uninit_slice_for<E, T>(&self, slice: &[T]) -> Result<BoxU<'a, [MaybeUninit<T>]>, E>
     where
         E: ErrorBehavior,
     {
@@ -1827,23 +1827,23 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_str<E>(&self, src: &str) -> Result<BoxU<'a, str>, E>
+    pub(crate) fn imp_alloc_str<E>(&self, src: &str) -> Result<BoxU<'a, str>, E>
     where
         E: ErrorBehavior,
     {
-        let (slice, _) = BoxU::into_raw_with_allocator(self.generic_alloc_slice_copy(src.as_bytes())?);
+        let (slice, _) = BoxU::into_raw_with_allocator(self.imp_alloc_slice_copy(src.as_bytes())?);
 
         // SAFETY: input is utf8 so this is too
         Ok(unsafe { BoxU::from_raw_in(slice as *mut str, &Unmanaged) })
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_fmt<E>(&self, args: fmt::Arguments) -> Result<BoxU<'a, str>, E>
+    pub(crate) fn imp_alloc_fmt<E>(&self, args: fmt::Arguments) -> Result<BoxU<'a, str>, E>
     where
         E: ErrorBehavior,
     {
         if let Some(string) = args.as_str() {
-            return self.generic_alloc_str(string);
+            return self.imp_alloc_str(string);
         }
 
         todo!()
@@ -1854,12 +1854,12 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_fmt_mut<E>(&mut self, args: fmt::Arguments) -> Result<BoxU<'a, str>, E>
+    pub(crate) fn imp_alloc_fmt_mut<E>(&mut self, args: fmt::Arguments) -> Result<BoxU<'a, str>, E>
     where
         E: ErrorBehavior,
     {
         if let Some(string) = args.as_str() {
-            return self.generic_alloc_str(string);
+            return self.imp_alloc_str(string);
         }
 
         todo!()
@@ -1869,24 +1869,24 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_cstr<E>(&self, src: &CStr) -> Result<&'a CStr, E>
+    pub(crate) fn imp_alloc_cstr<E>(&self, src: &CStr) -> Result<&'a CStr, E>
     where
         E: ErrorBehavior,
     {
-        let (slice, _) = BoxU::into_raw_with_allocator(self.generic_alloc_slice_copy(src.to_bytes_with_nul())?);
+        let (slice, _) = BoxU::into_raw_with_allocator(self.imp_alloc_slice_copy(src.to_bytes_with_nul())?);
 
         // SAFETY: input is `CStr` so this is too
         Ok(unsafe { CStr::from_bytes_with_nul_unchecked(&*slice) })
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_cstr_from_str<E: ErrorBehavior>(&self, src: &str) -> Result<&'a CStr, E> {
+    pub(crate) fn imp_alloc_cstr_from_str<E: ErrorBehavior>(&self, src: &str) -> Result<&'a CStr, E> {
         let src = src.as_bytes();
 
         if let Some(nul) = src.iter().position(|&c| c == b'\0') {
             let bytes_with_nul = unsafe { src.get_unchecked(..nul + 1) };
             let cstr = unsafe { CStr::from_bytes_with_nul_unchecked(bytes_with_nul) };
-            self.generic_alloc_cstr(cstr)
+            self.imp_alloc_cstr(cstr)
         } else {
             // `src` contains no null
             let dst = self.raw.allocate_slice::<E, u8>(src.len() + 1)?;
@@ -1902,12 +1902,12 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_cstr_fmt<E>(&self, args: fmt::Arguments) -> Result<&'a CStr, E>
+    pub(crate) fn imp_alloc_cstr_fmt<E>(&self, args: fmt::Arguments) -> Result<&'a CStr, E>
     where
         E: ErrorBehavior,
     {
         if let Some(string) = args.as_str() {
-            return self.generic_alloc_cstr_from_str(string);
+            return self.imp_alloc_cstr_from_str(string);
         }
 
         todo!()
@@ -1917,12 +1917,12 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_cstr_fmt_mut<E>(&mut self, args: fmt::Arguments) -> Result<&'a CStr, E>
+    pub(crate) fn imp_alloc_cstr_fmt_mut<E>(&mut self, args: fmt::Arguments) -> Result<&'a CStr, E>
     where
         E: ErrorBehavior,
     {
         if let Some(string) = args.as_str() {
-            return self.generic_alloc_cstr_from_str(string);
+            return self.imp_alloc_cstr_from_str(string);
         }
 
         todo!()
@@ -1932,7 +1932,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_iter<E, T>(&self, iter: impl IntoIterator<Item = T>) -> Result<BoxU<'a, [T]>, E>
+    pub(crate) fn imp_alloc_iter<E, T>(&self, iter: impl IntoIterator<Item = T>) -> Result<BoxU<'a, [T]>, E>
     where
         E: ErrorBehavior,
     {
@@ -1951,7 +1951,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_iter_exact<E, T, I>(
+    pub(crate) fn imp_alloc_iter_exact<E, T, I>(
         &self,
         iter: impl IntoIterator<Item = T, IntoIter = I>,
     ) -> Result<BoxU<'a, [T]>, E>
@@ -1977,7 +1977,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_try_with<B: ErrorBehavior, T, E>(
+    pub(crate) fn imp_alloc_try_with<B: ErrorBehavior, T, E>(
         &self,
         f: impl FnOnce() -> Result<T, E>,
     ) -> Result<Result<BoxU<'a, T>, E>, B> {
@@ -1990,7 +1990,7 @@ where
         }
 
         let checkpoint_before_alloc = self.checkpoint();
-        let uninit = self.generic_alloc_uninit::<B, Result<T, E>>()?;
+        let uninit = self.imp_alloc_uninit::<B, Result<T, E>>()?;
         let ptr = BoxU::into_raw_with_allocator(uninit).0.cast::<Result<T, E>>();
 
         // When bumping downwards the chunk's position is the same as `ptr`.
@@ -2023,7 +2023,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_iter_mut<E, T>(&mut self, iter: impl IntoIterator<Item = T>) -> Result<BoxU<'a, [T]>, E>
+    pub(crate) fn imp_alloc_iter_mut<E, T>(&mut self, iter: impl IntoIterator<Item = T>) -> Result<BoxU<'a, [T]>, E>
     where
         E: ErrorBehavior,
     {
@@ -2041,7 +2041,7 @@ where
     }
 
     #[inline(always)]
-    pub(crate) fn generic_alloc_try_with_mut<B, T, E>(
+    pub(crate) fn imp_alloc_try_with_mut<B, T, E>(
         &mut self,
         f: impl FnOnce() -> Result<T, E>,
     ) -> Result<Result<BoxU<'a, T>, E>, B>
@@ -2086,7 +2086,7 @@ where
 
     /// TODO
     // FIXME: non-greedy variant for a more regular api / easy switching?
-    pub(crate) fn generic_alloc_vec_greedy<E, T>(&self, len: usize) -> Result<VecU<'a, T>, E>
+    pub(crate) fn imp_alloc_vec_greedy<E, T>(&self, len: usize) -> Result<VecU<'a, T>, E>
     where
         E: ErrorBehavior,
     {
