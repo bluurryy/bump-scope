@@ -97,33 +97,6 @@ pub(crate) unsafe trait Sealed {
     ///
     /// [`allocate_prepared`]: BumpAllocatorCore::allocate_prepared
     unsafe fn spec_alloc_prepared_slice<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
-
-    /// A specialized version of [`prepare_allocation_rev`].
-    ///
-    /// Returns an end pointer and length of free space in the bump allocator.
-    ///
-    /// [`prepare_allocation_rev`]: crate::traits::BumpAllocatorCore::prepare_allocation_rev
-    ///
-    /// # Errors
-    ///
-    /// Errors if the allocation fails.
-    fn spec_prepare_slice_allocation_rev<E: ErrorBehavior, T>(&self, cap: usize) -> Result<(NonNull<T>, usize), E>;
-
-    /// A specialized version of [`allocate_prepared_rev`].
-    ///
-    /// Allocates part of the free space returned from a
-    /// <code>([try_](BumpAllocator::try_prepare_slice_allocation))[prepare_slice_allocation_rev](BumpAllocator::prepare_slice_allocation_rev)</code>
-    /// call.
-    ///
-    /// # Safety
-    /// - `ptr - cap..ptr` must be the pointer range returned from
-    ///   <code>([try_](BumpAllocator::try_prepare_slice_allocation))[prepare_slice_allocation_rev](BumpAllocator::prepare_slice_allocation_rev)</code>.
-    /// - no allocation, grow, shrink or deallocate must have taken place since then
-    /// - no resets must have taken place since then
-    /// - `len` must be less than or equal to `cap`
-    ///
-    /// [`allocate_prepared_rev`]: crate::traits::BumpAllocatorCore::allocate_prepared_rev
-    unsafe fn spec_alloc_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
 }
 unsafe impl<A: Sealed> Sealed for &A {
     fn spec_alloc<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
@@ -156,14 +129,6 @@ unsafe impl<A: Sealed> Sealed for &A {
 
     unsafe fn spec_alloc_prepared_slice<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { A::spec_alloc_prepared_slice(self, start, len, cap) }
-    }
-
-    fn spec_prepare_slice_allocation_rev<E: ErrorBehavior, T>(&self, cap: usize) -> Result<(NonNull<T>, usize), E> {
-        A::spec_prepare_slice_allocation_rev(self, cap)
-    }
-
-    unsafe fn spec_alloc_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        unsafe { A::spec_alloc_prepared_slice_rev(self, ptr, len, cap) }
     }
 }
 unsafe impl<A: Sealed> Sealed for &mut A {
@@ -198,14 +163,6 @@ unsafe impl<A: Sealed> Sealed for &mut A {
     unsafe fn spec_alloc_prepared_slice<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { A::spec_alloc_prepared_slice(self, start, len, cap) }
     }
-
-    fn spec_prepare_slice_allocation_rev<E: ErrorBehavior, T>(&self, cap: usize) -> Result<(NonNull<T>, usize), E> {
-        A::spec_prepare_slice_allocation_rev(self, cap)
-    }
-
-    unsafe fn spec_alloc_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        unsafe { A::spec_alloc_prepared_slice_rev(self, ptr, len, cap) }
-    }
 }
 unsafe impl<A: Allocator, const C: BumpConfig> Sealed for Bump<A, C> {
     fn spec_alloc<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
@@ -238,14 +195,6 @@ unsafe impl<A: Allocator, const C: BumpConfig> Sealed for Bump<A, C> {
 
     unsafe fn spec_alloc_prepared_slice<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { self.as_bump_scope().spec_alloc_prepared_slice(start, len, cap) }
-    }
-
-    fn spec_prepare_slice_allocation_rev<E: ErrorBehavior, T>(&self, cap: usize) -> Result<(NonNull<T>, usize), E> {
-        self.as_bump_scope().spec_prepare_slice_allocation_rev(cap)
-    }
-
-    unsafe fn spec_alloc_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        unsafe { self.as_bump_scope().spec_alloc_prepared_slice_rev(ptr, len, cap) }
     }
 }
 unsafe impl<A: Allocator, const C: BumpConfig> Sealed for BumpScope<'_, A, C> {
@@ -366,33 +315,6 @@ unsafe impl<A: Allocator, const C: BumpConfig> Sealed for BumpScope<'_, A, C> {
             }
         }
     }
-
-    fn spec_prepare_slice_allocation_rev<E: ErrorBehavior, T>(&self, cap: usize) -> Result<(NonNull<T>, usize), E> {
-        self.raw.prepare_slice_allocation_rev(cap)
-    }
-
-    unsafe fn spec_alloc_prepared_slice_rev<T>(&self, end: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        unsafe {
-            // a successful `prepare_allocation` guarantees a non-dummy-chunk
-            let chunk = self.raw.chunk.get().as_allocated_unchecked();
-
-            if config!(upwards) {
-                let dst = end.sub(cap);
-                let dst_end = dst.add(len);
-
-                let src = end.sub(len);
-
-                src.copy_to(dst, len);
-
-                chunk.set_pos_addr_and_align_from(dst_end.addr().get(), T::ALIGN);
-                NonNull::slice_from_raw_parts(dst, len)
-            } else {
-                let dst = end.sub(len);
-                chunk.set_pos_addr_and_align_from(dst.addr().get(), T::ALIGN);
-                NonNull::slice_from_raw_parts(dst, len)
-            }
-        }
-    }
 }
 unsafe impl Sealed for &Unmanaged {
     #[inline(always)]
@@ -439,18 +361,6 @@ unsafe impl Sealed for &Unmanaged {
     #[inline(always)]
     unsafe fn spec_alloc_prepared_slice<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         _ = (start, len, cap);
-        NonNull::slice_from_raw_parts(NonNull::dangling(), 0)
-    }
-
-    #[inline(always)]
-    fn spec_prepare_slice_allocation_rev<E: ErrorBehavior, T>(&self, cap: usize) -> Result<(NonNull<T>, usize), E> {
-        _ = cap;
-        Err(E::unmanaged())
-    }
-
-    #[inline(always)]
-    unsafe fn spec_alloc_prepared_slice_rev<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        _ = (ptr, len, cap);
         NonNull::slice_from_raw_parts(NonNull::dangling(), 0)
     }
 }

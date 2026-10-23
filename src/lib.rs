@@ -335,6 +335,8 @@ mod set_len_on_drop;
 mod set_len_on_drop_by_ptr;
 pub mod stats;
 mod string;
+#[cfg(test)]
+mod tests;
 /// TODO:
 pub mod traits;
 mod unmanaged;
