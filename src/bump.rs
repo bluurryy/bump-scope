@@ -1223,8 +1223,8 @@ where
         mut self: &mut Self,
         iter: impl IntoIterator<Item = T>,
     ) -> Result<BumpAllocation<[T], &Self>, AllocError> {
-        let boxed = self.as_mut_bump_scope().generic_alloc_iter_mut(iter)?;
-        Ok(BumpAllocation::wrap(self, boxed))
+        let boxu = self.as_mut_bump_scope().generic_alloc_iter_mut(iter)?;
+        Ok(BumpAllocation::wrap(boxu, self))
     }
 
     /// See [`BumpScope::alloc_iter_exact`].
@@ -1247,8 +1247,8 @@ where
     where
         I: ExactSizeIterator<Item = T>,
     {
-        let boxed = self.as_bump_scope().generic_alloc_iter_exact(iter)?;
-        Ok(BumpAllocation::wrap(self, boxed))
+        let boxu = self.as_bump_scope().generic_alloc_iter_exact(iter)?;
+        Ok(BumpAllocation::wrap(boxu, self))
     }
 
     /// See [`BumpScope::try_alloc_try_with`].

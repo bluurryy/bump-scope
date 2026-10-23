@@ -14,7 +14,7 @@ thread_local! {
 
 fn main() {
     BUMP.with(|bump| {
-        let hello = bump.alloc_str("hello");
+        let hello = bump.alloc_str("hello").into_ref();
         assert_eq!(bump.stats().allocated(), 5);
 
         bump.claim().scoped(|bump| {

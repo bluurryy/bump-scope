@@ -32,16 +32,16 @@ up_and_down! {
     #[test]
     fn nothing_extra() {
         let bump: Bump<Global, C> = Bump::new();
-        let string = bump.alloc_fmt(format_args!("ext{Nothing}ra"));
-        assert_eq!(&*string, "extra");
+        let string = bump.alloc_fmt(format_args!("ext{Nothing}ra")).into_ref();
+        assert_eq!(string, "extra");
         assert_eq!(bump.stats().allocated(), 5);
     }
 
     #[test]
     fn nothing_extra_mut() {
         let mut bump: Bump<Global, C> = Bump::new();
-        let string = bump.alloc_fmt_mut(format_args!("ext{Nothing}ra"));
-        assert_eq!(&*string, "extra");
+        let string = bump.alloc_fmt_mut(format_args!("ext{Nothing}ra")).into_ref();
+        assert_eq!(string, "extra");
         drop(string);
         assert_eq!(bump.stats().allocated(), 5);
     }

@@ -1,6 +1,6 @@
 use core::{alloc::Allocator, ptr::NonNull};
 
-use alloc::boxed::Box;
+use alloc::{boxed::Box, fmt};
 
 use crate::{BoxU, Unmanaged, extra::box_replace_allocator, traits::BumpAllocatorScope};
 
@@ -8,6 +8,12 @@ use crate::{BoxU, Unmanaged, extra::box_replace_allocator, traits::BumpAllocator
 #[repr(transparent)]
 pub struct BumpAllocation<T: ?Sized, A: Allocator> {
     boxed: Box<T, A>,
+}
+
+impl<T: fmt::Debug + ?Sized, A: Allocator> fmt::Debug for BumpAllocation<T, A> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fmt::Debug::fmt(&*self.boxed, f)
+    }
 }
 
 impl<'a, T: ?Sized, A: BumpAllocatorScope<'a>> BumpAllocation<T, A> {

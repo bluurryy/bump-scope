@@ -107,7 +107,7 @@ fn on_stack() {
 
     let bump = Bump::with_size_in(0, &memory);
 
-    let str = bump.alloc_str("It works!");
+    let str = bump.alloc_str("It works!").into_ref();
     println!("{str}");
 
     // The bump allocator will use the entire memory block returned by `allocate`.
@@ -123,7 +123,7 @@ fn on_static() {
 
     let bump = Bump::with_size_in(0, memory);
 
-    let str = bump.alloc_str("It works!");
+    let str = bump.alloc_str("It works!").into_ref();
     println!("{str}");
 
     // The bump allocator will use the entire memory block returned by `allocate`.
