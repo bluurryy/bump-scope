@@ -28,7 +28,7 @@ use std::{
 };
 
 use bump_scope::{
-    Bump, BumpBox, BumpScope, BumpString, BumpVec, MutBumpString, MutBumpVec, MutBumpVecRev,
+    Bump, BoxU, BumpScope, BumpString, BumpVec, MutBumpString, MutBumpVec, MutBumpVecRev,
     config::{BumpConfig, BumpConfigBuilder},
     mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice,
     stats::Chunk,

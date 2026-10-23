@@ -10,7 +10,7 @@ use std::{
 };
 
 use bump_scope::{
-    Bump, BumpBox, BumpVec, bump_vec,
+    Bump, BoxU, BumpVec, bump_vec,
     traits::{BumpAllocator, BumpAllocatorCore},
 };
 
@@ -41,7 +41,7 @@ up_and_down! {
 
         let bump = Bump::<Global, C>::new();
         let boxed = bump.alloc::<[u8; 2]>([1, 2]);
-        let ptr = BumpBox::as_raw(&boxed).cast::<u8>();
+        let ptr = BoxU::as_raw(&boxed).cast::<u8>();
 
         let original_allocated = 2;
         assert_eq!(bump.stats().allocated(), original_allocated);

@@ -9,8 +9,6 @@ use std::{
     sync::{Mutex, PoisonError},
 };
 
-use bump_scope::traits::BumpAllocator;
-
 #[repr(C, align(16))]
 struct StaticAllocator<const SIZE: usize> {
     memory: Cell<[MaybeUninit<u8>; SIZE]>,
@@ -115,7 +113,7 @@ fn on_stack() {
     // The bump allocator will use the entire memory block returned by `allocate`.
     assert_eq!(bump.stats().size(), 1024);
 
-    bump.try_allocate_layout(Layout::new::<[u8; 2048]>()).unwrap_err();
+    bump.try_alloc_uninit::<[u8; 2048]>().unwrap_err();
 }
 
 fn on_static() {
@@ -131,7 +129,7 @@ fn on_static() {
     // The bump allocator will use the entire memory block returned by `allocate`.
     assert_eq!(bump.stats().size(), 1024);
 
-    bump.try_allocate_layout(Layout::new::<[u8; 2048]>()).unwrap_err();
+    bump.try_alloc_uninit::<[u8; 2048]>().unwrap_err();
 }
 
 fn main() {

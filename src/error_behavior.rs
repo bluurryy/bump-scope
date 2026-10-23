@@ -1,10 +1,5 @@
 use core::alloc::{AllocError, Layout};
 
-use crate::{
-    NonNull,
-    traits::{BumpAllocator, MutBumpAllocator},
-};
-
 #[cfg(feature = "panic-on-alloc")]
 use crate::{capacity_overflow, format_trait_error, handle_alloc_error};
 
@@ -21,16 +16,7 @@ pub(crate) trait ErrorBehavior: Sized {
     fn format_trait_error() -> Self;
     #[cfg(feature = "std")]
     fn base_allocator_default_constructor_panicked() -> Self;
-    #[expect(dead_code)]
-    fn allocate_layout(allocator: &impl BumpAllocator, layout: Layout) -> Result<NonNull<u8>, Self>;
-    #[expect(dead_code)]
-    fn allocate_sized<T>(allocator: &impl BumpAllocator) -> Result<NonNull<T>, Self>;
-    fn allocate_slice<T>(allocator: &impl BumpAllocator, len: usize) -> Result<NonNull<T>, Self>;
-    unsafe fn prepare_slice_allocation<T>(allocator: &mut impl MutBumpAllocator, len: usize) -> Result<NonNull<[T]>, Self>;
-    unsafe fn prepare_slice_allocation_rev<T>(
-        allocator: &mut impl MutBumpAllocator,
-        len: usize,
-    ) -> Result<(NonNull<T>, usize), Self>;
+    fn unmanaged() -> Self;
 }
 
 #[cfg(feature = "panic-on-alloc")]
@@ -80,31 +66,8 @@ impl ErrorBehavior for ! {
     }
 
     #[inline(always)]
-    fn allocate_layout(allocator: &impl BumpAllocator, layout: Layout) -> Result<NonNull<u8>, Self> {
-        Ok(allocator.allocate_layout(layout))
-    }
-
-    #[inline(always)]
-    fn allocate_sized<T>(allocator: &impl BumpAllocator) -> Result<NonNull<T>, Self> {
-        Ok(allocator.allocate_sized::<T>())
-    }
-
-    #[inline(always)]
-    fn allocate_slice<T>(allocator: &impl BumpAllocator, len: usize) -> Result<NonNull<T>, Self> {
-        Ok(allocator.allocate_slice::<T>(len))
-    }
-
-    #[inline(always)]
-    unsafe fn prepare_slice_allocation<T>(allocator: &mut impl MutBumpAllocator, len: usize) -> Result<NonNull<[T]>, Self> {
-        Ok(allocator.prepare_slice_allocation::<T>(len))
-    }
-
-    #[inline(always)]
-    unsafe fn prepare_slice_allocation_rev<T>(
-        allocator: &mut impl MutBumpAllocator,
-        len: usize,
-    ) -> Result<(NonNull<T>, usize), Self> {
-        Ok(allocator.prepare_slice_allocation_rev::<T>(len))
+    fn unmanaged() -> Self {
+        panic::unmanaged();
     }
 }
 
@@ -155,31 +118,8 @@ impl ErrorBehavior for AllocError {
     }
 
     #[inline(always)]
-    fn allocate_layout(allocator: &impl BumpAllocator, layout: Layout) -> Result<NonNull<u8>, Self> {
-        allocator.try_allocate_layout(layout)
-    }
-
-    #[inline(always)]
-    fn allocate_sized<T>(allocator: &impl BumpAllocator) -> Result<NonNull<T>, Self> {
-        allocator.try_allocate_sized::<T>()
-    }
-
-    #[inline(always)]
-    fn allocate_slice<T>(allocator: &impl BumpAllocator, len: usize) -> Result<NonNull<T>, Self> {
-        allocator.try_allocate_slice::<T>(len)
-    }
-
-    #[inline(always)]
-    unsafe fn prepare_slice_allocation<T>(allocator: &mut impl MutBumpAllocator, len: usize) -> Result<NonNull<[T]>, Self> {
-        allocator.try_prepare_slice_allocation::<T>(len)
-    }
-
-    #[inline(always)]
-    unsafe fn prepare_slice_allocation_rev<T>(
-        allocator: &mut impl MutBumpAllocator,
-        len: usize,
-    ) -> Result<(NonNull<T>, usize), Self> {
-        allocator.try_prepare_slice_allocation_rev::<T>(len)
+    fn unmanaged() -> Self {
+        Self
     }
 }
 
@@ -217,5 +157,11 @@ pub(crate) mod panic {
     #[cfg(feature = "std")]
     pub(crate) fn base_allocator_default_constructor_panicked() -> ! {
         panic!("base allocator default constructor panicked")
+    }
+
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn unmanaged() -> ! {
+        panic!("can't allocate on an `Unmanaged` allocator")
     }
 }

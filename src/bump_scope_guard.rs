@@ -20,6 +20,13 @@ pub struct Checkpoint {
 }
 
 impl Checkpoint {
+    pub(crate) const INVALID: Self = {
+        Self {
+            chunk: ErasedChunk::INVALID,
+            address: NonZeroUsize::MAX,
+        }
+    };
+
     pub(crate) fn new<A, const C: BumpConfig>(chunk: Chunk<A, C>) -> Self {
         let address = chunk.pos().addr();
         let chunk = ErasedChunk::erase(chunk);

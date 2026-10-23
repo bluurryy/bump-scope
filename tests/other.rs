@@ -13,7 +13,7 @@ use std::{
 };
 
 use bump_scope::{
-    Bump, BumpBox, BumpScope, BumpString, BumpVec, MutBumpString, MutBumpVec, MutBumpVecRev, config,
+    Bump, BoxU, BumpScope, BumpString, BumpVec, MutBumpString, MutBumpVec, MutBumpVecRev, config,
     config::BumpConfig,
     mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice,
     stats::{AnyChunk, Chunk},
@@ -994,7 +994,7 @@ fn api_that_accepts_bump_or_bump_scope() {
 
 #[expect(dead_code)]
 fn assert_covariant() {
-    fn bump_box<'a, 'other>(x: BumpBox<'static, &'static str>) -> BumpBox<'a, &'other str> {
+    fn bump_box<'a, 'other>(x: BoxU<'static, &'static str>) -> BoxU<'a, &'other str> {
         x
     }
 

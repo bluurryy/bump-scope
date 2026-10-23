@@ -63,7 +63,7 @@ alloc = []
 ## `try_`-prefixed allocation methods will be available.
 panic-on-alloc = []
 
-## Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
+## Adds `Serialize` implementations for `BoxU`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 serde = ["dep:serde"]
 
 ## Adds `bytemuck::*` extension traits for
@@ -96,9 +96,9 @@ nightly = [
   "nightly-miri-promise-symbolic-alignment",
 ]
 
-## Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
-## With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
-## You can unsize a `BumpBox` in stable without this feature using [`unsize_bump_box`].
+## Makes `BoxU<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
+## With this `BoxU<[i32;3]>` coerces to `BoxU<[i32]>`, `BoxU<dyn Debug>` and so on.
+## You can unsize a `BoxU` in stable without this feature using [`unsize_bump_box`].
 nightly-coerce-unsized = []
 
 ## Implements `is_empty` manually for some iterators.
@@ -107,7 +107,7 @@ nightly-exact-size-is-empty = []
 ## Implements `TrustedLen` for some iterators.
 nightly-trusted-len = []
 
-## Implements `Fn*` traits for `BumpBox<T>`. Makes `BumpBox<T: FnOnce + ?Sized>` callable. Requires alloc crate.
+## Implements `Fn*` traits for `BoxU<T>`. Makes `BoxU<T: FnOnce + ?Sized>` callable. Requires alloc crate.
 nightly-fn-traits = []
 
 ## Enables some tests that require a nightly compiler.

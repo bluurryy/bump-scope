@@ -10,7 +10,7 @@ use std::{
 };
 
 use bump_scope::{
-    Bump, BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev,
+    Bump, BoxU, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev,
     owned_slice::{self, OwnedSlice, TakeOwnedSlice},
     traits::{BumpAllocator, MutBumpAllocator},
     unsize_bump_box,
@@ -57,7 +57,7 @@ fn test_append(mut vec: impl Append<String>, other: impl OwnedSlice<Item = Strin
     assert_eq!(&*vec, ["1", "2", "3"]);
 }
 
-fn unsize_bump_box<T, const N: usize>(boxed: BumpBox<[T; N]>) -> BumpBox<[T]> {
+fn unsize_bump_box<T, const N: usize>(boxed: BoxU<[T; N]>) -> BoxU<[T]> {
     unsize_bump_box!(boxed)
 }
 
@@ -99,13 +99,13 @@ fn append_fixed_vec() {
 
     {
         let vec = FixedBumpVec::with_capacity_in(10, &bump);
-        let other: BumpBox<[String; 3]> = other_bump.alloc(test_strings());
+        let other: BoxU<[String; 3]> = other_bump.alloc(test_strings());
         test_append(vec, other);
     }
 
     {
         let vec = FixedBumpVec::with_capacity_in(10, &bump);
-        let other: BumpBox<[String]> = unsize_bump_box(other_bump.alloc(test_strings()));
+        let other: BoxU<[String]> = unsize_bump_box(other_bump.alloc(test_strings()));
         test_append(vec, other);
     }
 
@@ -141,7 +141,7 @@ fn append_fixed_vec() {
 
     {
         let vec = FixedBumpVec::with_capacity_in(10, &bump);
-        let mut other: BumpBox<[String]> = unsize_bump_box(other_bump.alloc(test_strings_5()));
+        let mut other: BoxU<[String]> = unsize_bump_box(other_bump.alloc(test_strings_5()));
         let other: owned_slice::Drain<String> = other.drain(1..4);
         test_append(vec, other);
     }
@@ -198,13 +198,13 @@ fn append_vec() {
 
     {
         let vec = BumpVec::new_in(&bump);
-        let other: BumpBox<[String; 3]> = other_bump.alloc(test_strings());
+        let other: BoxU<[String; 3]> = other_bump.alloc(test_strings());
         test_append(vec, other);
     }
 
     {
         let vec = BumpVec::new_in(&bump);
-        let other: BumpBox<[String]> = unsize_bump_box(other_bump.alloc(test_strings()));
+        let other: BoxU<[String]> = unsize_bump_box(other_bump.alloc(test_strings()));
         test_append(vec, other);
     }
 
@@ -240,7 +240,7 @@ fn append_vec() {
 
     {
         let vec = BumpVec::new_in(&bump);
-        let mut other: BumpBox<[String]> = unsize_bump_box(other_bump.alloc(test_strings_5()));
+        let mut other: BoxU<[String]> = unsize_bump_box(other_bump.alloc(test_strings_5()));
         let other: owned_slice::Drain<String> = other.drain(1..4);
         test_append(vec, other);
     }
@@ -297,13 +297,13 @@ fn append_mut_vec() {
 
     {
         let vec = MutBumpVec::new_in(&mut bump);
-        let other: BumpBox<[String; 3]> = other_bump.alloc(test_strings());
+        let other: BoxU<[String; 3]> = other_bump.alloc(test_strings());
         test_append(vec, other);
     }
 
     {
         let vec = MutBumpVec::new_in(&mut bump);
-        let other: BumpBox<[String]> = unsize_bump_box(other_bump.alloc(test_strings()));
+        let other: BoxU<[String]> = unsize_bump_box(other_bump.alloc(test_strings()));
         test_append(vec, other);
     }
 
@@ -339,7 +339,7 @@ fn append_mut_vec() {
 
     {
         let vec = MutBumpVec::new_in(&mut bump);
-        let mut other: BumpBox<[String]> = unsize_bump_box(other_bump.alloc(test_strings_5()));
+        let mut other: BoxU<[String]> = unsize_bump_box(other_bump.alloc(test_strings_5()));
         let other: owned_slice::Drain<String> = other.drain(1..4);
         test_append(vec, other);
     }
@@ -396,13 +396,13 @@ fn append_mut_vec_rev() {
 
     {
         let vec = MutBumpVecRev::new_in(&mut bump);
-        let other: BumpBox<[String; 3]> = other_bump.alloc(test_strings());
+        let other: BoxU<[String; 3]> = other_bump.alloc(test_strings());
         test_append(vec, other);
     }
 
     {
         let vec = MutBumpVecRev::new_in(&mut bump);
-        let other: BumpBox<[String]> = unsize_bump_box(other_bump.alloc(test_strings()));
+        let other: BoxU<[String]> = unsize_bump_box(other_bump.alloc(test_strings()));
         test_append(vec, other);
     }
 
@@ -438,7 +438,7 @@ fn append_mut_vec_rev() {
 
     {
         let vec = MutBumpVecRev::new_in(&mut bump);
-        let mut other: BumpBox<[String]> = unsize_bump_box(other_bump.alloc(test_strings_5()));
+        let mut other: BoxU<[String]> = unsize_bump_box(other_bump.alloc(test_strings_5()));
         let other: owned_slice::Drain<String> = other.drain(1..4);
         test_append(vec, other);
     }

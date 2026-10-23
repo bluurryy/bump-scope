@@ -12,7 +12,7 @@ use std::{
 };
 
 use bump_scope::{
-    Bump, BumpScope, BumpVec, WithoutDealloc, WithoutShrink, bump_vec, config,
+    Bump, BumpScope, BumpVec, bump_vec, config,
     traits::{BumpAllocator, BumpAllocatorCore, BumpAllocatorCoreScope, MutBumpAllocatorCore, MutBumpAllocatorCoreScope},
 };
 
@@ -25,7 +25,7 @@ up_and_down! {
 
     #[test]
     fn shrinks() {
-        let mut bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<Global, C> = Bump::new();
 
         // should shrink
         let mut vec = bump_vec![in &bump; 1, 2, 3, 4];
@@ -41,21 +41,6 @@ up_and_down! {
         drop(vec);
 
         // shouldn't shrink
-        let mut vec = bump_vec![in WithoutShrink(&bump); 1, 2, 3, 4];
-        assert_eq!(bump.stats().allocated(), 4 * 4);
-        vec.shrink_to_fit();
-        assert_eq!(bump.stats().allocated(), 4 * 4);
-        vec.pop();
-        vec.shrink_to_fit();
-        assert_eq!(bump.stats().allocated(), 4 * 4);
-        vec.clear();
-        vec.shrink_to_fit();
-        assert_eq!(bump.stats().allocated(), 4 * 4);
-        drop(vec);
-
-        bump.reset();
-
-        // shouldn't shrink either
         let mut vec = bump_vec![in bump.ref_change_config::<C_NO_SHRINK>(); 1, 2, 3, 4];
         assert_eq!(bump.stats().allocated(), 4 * 4);
         vec.shrink_to_fit();
@@ -70,7 +55,7 @@ up_and_down! {
 
     #[test]
     fn deallocates() {
-        let mut bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<Global, C> = Bump::new();
 
         // should deallocate
         let vec = bump_vec![in &bump; 1, 2, 3];
@@ -79,14 +64,6 @@ up_and_down! {
         assert_eq!(bump.stats().allocated(), 0);
 
         // shouldn't deallocate
-        let vec = bump_vec![in WithoutDealloc(&bump); 1, 2, 3];
-        assert_eq!(bump.stats().allocated(), 3 * 4);
-        drop(vec);
-        assert_eq!(bump.stats().allocated(), 3 * 4);
-
-        bump.reset();
-
-        // shouldn't deallocate either
         let vec = bump_vec![in bump.ref_change_config::<C_NO_DEALLOC>(); 1, 2, 3];
         assert_eq!(bump.stats().allocated(), 3 * 4);
         drop(vec);
