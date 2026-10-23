@@ -1092,6 +1092,19 @@ where
         self.as_bump_scope().try_alloc_fmt(args)
     }
 
+    /// See [`BumpScope::alloc_fmt`].
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn alloc_fmt_mut(mut self: &mut Self, args: fmt::Arguments) -> BoxU<'_, str> {
+        self.as_mut_bump_scope().alloc_fmt_mut(args)
+    }
+
+    /// See [`BumpScope::try_alloc_fmt_mut`].
+    #[inline(always)]
+    pub fn try_alloc_fmt_mut(mut self: &mut Self, args: fmt::Arguments) -> Result<BoxU<'_, str>, AllocError> {
+        self.as_mut_bump_scope().try_alloc_fmt_mut(args)
+    }
+
     /// See [`BumpScope::alloc_cstr`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -1131,6 +1144,19 @@ where
         self.as_bump_scope().try_alloc_cstr_fmt(args)
     }
 
+    /// See [`BumpScope::alloc_cstr_fmt_mut`].
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn alloc_cstr_fmt_mut(mut self: &mut Self, args: fmt::Arguments) -> &CStr {
+        self.as_mut_bump_scope().alloc_cstr_fmt_mut(args)
+    }
+
+    /// See [`BumpScope::try_alloc_cstr_fmt`].
+    #[inline(always)]
+    pub fn try_alloc_cstr_fmt_mut(mut self: &mut Self, args: fmt::Arguments) -> Result<&CStr, AllocError> {
+        self.as_mut_bump_scope().try_alloc_cstr_fmt_mut(args)
+    }
+
     /// See [`BumpScope::alloc_iter`].
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -1142,6 +1168,22 @@ where
     #[inline(always)]
     pub fn try_alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> Result<BoxU<'_, [T]>, AllocError> {
         self.as_bump_scope().try_alloc_iter(iter)
+    }
+
+    /// See [`BumpScope::alloc_iter_mut`].
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    pub fn alloc_iter_mut<T>(mut self: &mut Self, iter: impl IntoIterator<Item = T>) -> BoxU<'_, [T]> {
+        self.as_mut_bump_scope().alloc_iter_mut(iter)
+    }
+
+    /// See [`BumpScope::try_alloc_iter_mut`].
+    #[inline(always)]
+    pub fn try_alloc_iter_mut<T>(
+        mut self: &mut Self,
+        iter: impl IntoIterator<Item = T>,
+    ) -> Result<BoxU<'_, [T]>, AllocError> {
+        self.as_mut_bump_scope().try_alloc_iter_mut(iter)
     }
 
     /// See [`BumpScope::alloc_iter_exact`].

@@ -28,9 +28,8 @@ use std::{
 };
 
 use bump_scope::{
-    BoxU, Bump, BumpScope, BumpString, BumpVec, MutBumpString, MutBumpVec, MutBumpVecRev,
+    BoxU, Bump, BumpScope,
     config::{BumpConfig, BumpConfigBuilder},
-    mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice,
     stats::Chunk,
     traits::BumpAllocator as _,
 };

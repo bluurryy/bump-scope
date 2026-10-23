@@ -7,10 +7,7 @@ use std::{
     ptr::NonNull,
 };
 
-use bump_scope::{
-    Bump, config,
-    traits::{BumpAllocator, BumpAllocatorCore},
-};
+use bump_scope::{Bump, config};
 
 use crate::common::{DisaligningAllocator, up_and_down};
 

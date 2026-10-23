@@ -274,11 +274,11 @@ where
 }
 
 /// TODO
-pub fn vec_try_from_owned_slice_in<T, A>(slice: impl OwnedSlice<Item = T>, alloc: A) -> Vec<T, A>
+pub fn vec_try_from_owned_slice_in<T, A>(slice: impl OwnedSlice<Item = T>, alloc: A) -> Result<Vec<T, A>, AllocError>
 where
     A: BumpAllocator,
 {
-    try_box_from_owned_slice_in(slice, alloc).into()
+    Ok(try_box_from_owned_slice_in(slice, alloc)?.into())
 }
 
 /// TODO
