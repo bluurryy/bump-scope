@@ -5,7 +5,7 @@ mod common;
 
 use std::{string::String, vec};
 
-use bump_scope::Bump;
+use bump_scope::{Bump, BumpAllocator as _};
 
 use common::TestWrap;
 

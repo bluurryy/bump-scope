@@ -11,7 +11,7 @@ use std::{
     ptr::NonNull,
 };
 
-use bump_scope::{Bump, extra, vec};
+use bump_scope::{Bump, BumpAllocator as _, extra, vec};
 
 macro_rules! zst_or_not {
     (
@@ -146,6 +146,7 @@ mod helper {
         thread_local,
     };
 
+    #[allow(dead_code)]
     pub fn assert_initialized(iter: impl IntoIterator) {
         // make sure items are initialized
         // miri will catch that
@@ -182,6 +183,7 @@ mod helper {
             self
         }
 
+        #[allow(dead_code)]
         pub(super) fn expected_msg(mut self, msg: &'static str) -> Self {
             self.expected_msg = Some(msg);
             self

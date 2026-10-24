@@ -1,6 +1,6 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 
-use bump_scope::Bump;
+use bump_scope::{Bump, BumpAllocator as _};
 
 /// Checks that a bigger chunk is correctly allocated when the current chunk is not largest one
 #[test]

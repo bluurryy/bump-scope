@@ -21,15 +21,17 @@ impl<T: fmt::Debug + ?Sized, A: Allocator> fmt::Debug for BumpAllocation<T, A> {
     }
 }
 
+impl<'a, T: ?Sized, A: Allocator> BumpAllocation<T, A> {
+    pub(crate) fn new(boxed: Box<T, A>) -> Self {
+        Self { boxed }
+    }
+}
+
 impl<'a, T: ?Sized, A: BumpAllocatorScope<'a>> BumpAllocation<T, A> {
     pub(crate) fn wrap(boxu: BoxU<'a, T>, alloc: A) -> Self {
         Self {
             boxed: box_replace_allocator(boxu, alloc).0,
         }
-    }
-
-    pub(crate) fn new(boxed: Box<T, A>) -> Self {
-        Self { boxed }
     }
 
     /// TODO
@@ -67,5 +69,29 @@ impl<'a, T: ?Sized, A: BumpAllocatorScope<'a>> BumpAllocation<T, A> {
     /// TODO
     pub fn leak(self) -> &'a mut T {
         box_leak(self.boxed)
+    }
+}
+
+pub struct IntoRef<T: ?Sized, A> {
+    ptr: *const T,
+    alloc: A,
+}
+
+impl<T: ?Sized, A> IntoRef<T, A> {
+    pub(crate) unsafe fn new(ptr: *const T, alloc: A) -> Self {
+        Self { ptr, alloc }
+    }
+}
+
+impl<'a, T: ?Sized, A> IntoRef<T, A>
+where
+    A: BumpAllocatorScope<'a>,
+{
+    /// TODO
+    pub fn into_ref(self) -> &'a T
+    where
+        T: NoDrop,
+    {
+        unsafe { &*self.ptr }
     }
 }

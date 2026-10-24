@@ -224,6 +224,22 @@ pub(crate) fn boxu_uninit_zst<'a, T>() -> BoxU<'a, MaybeUninit<T>> {
     unsafe { boxu_from_raw(ptr::dangling_mut()) }
 }
 
+pub(crate) fn box_uninit_zst_in<T, A>(alloc: A) -> Box<MaybeUninit<T>, A>
+where
+    A: Allocator,
+{
+    assert!(T::IS_ZST);
+    unsafe { Box::from_raw_in(ptr::dangling_mut(), alloc) }
+}
+
+pub(crate) fn box_uninit_zst_slice_in<T, A>(len: usize, alloc: A) -> Box<[MaybeUninit<T>], A>
+where
+    A: Allocator,
+{
+    assert!(T::IS_ZST);
+    unsafe { Box::from_raw_in(dangling_mut_slice(len), alloc) }
+}
+
 pub(crate) fn boxu_uninit_zst_slice<'a, T>(len: usize) -> BoxU<'a, [MaybeUninit<T>]> {
     assert!(T::IS_ZST);
     unsafe { boxu_from_raw(dangling_mut_slice(len)) }

@@ -3,23 +3,19 @@
 //!
 //! For now we add a `ErrorBehavior` generic, just because it makes for simpler code.
 
-use core::{ffi::CStr, fmt, marker::PhantomData};
+use core::{alloc::Allocator, ffi::CStr, fmt, marker::PhantomData};
 
-use alloc::vec::Vec;
+use alloc::{boxed::Box, vec::Vec};
 
-use crate::{
-    BoxU, BumpAllocator, BumpAllocatorScope,
-    error_behavior::ErrorBehavior,
-    extra::{box_from_utf8_unchecked, box_leak, box_remove_allocator},
-};
+use crate::{bump_allocation::IntoRef, error_behavior::ErrorBehavior, extra::box_from_utf8_unchecked};
 
 #[repr(transparent)]
-pub(crate) struct String<A: BumpAllocator, E: ErrorBehavior> {
+pub(crate) struct String<A: Allocator, E: ErrorBehavior> {
     vec: Vec<u8, A>,
     marker: PhantomData<fn() -> E>,
 }
 
-impl<'a, A: BumpAllocatorScope<'a>, E: ErrorBehavior> String<A, E> {
+impl<A: Allocator, E: ErrorBehavior> String<A, E> {
     pub(crate) fn new(alloc: A) -> Self {
         Self {
             vec: Vec::new_in(alloc),
@@ -58,16 +54,16 @@ impl<'a, A: BumpAllocatorScope<'a>, E: ErrorBehavior> String<A, E> {
         })
     }
 
-    pub(crate) fn into_bytes(self) -> BoxU<'a, [u8]> {
-        box_remove_allocator(self.vec.into_boxed_slice()).0
+    pub(crate) fn into_bytes(self) -> Box<[u8], A> {
+        self.vec.into_boxed_slice()
     }
 
-    pub(crate) fn into_str(self) -> BoxU<'a, str> {
+    pub(crate) fn into_str(self) -> Box<str, A> {
         let bytes = self.into_bytes();
         unsafe { box_from_utf8_unchecked(bytes) }
     }
 
-    pub(crate) fn into_cstr(mut self) -> Result<&'a CStr, E> {
+    pub(crate) fn into_cstr<'a>(mut self) -> Result<IntoRef<CStr, A>, E> {
         match self.vec.iter().position(|&c| c == b'\0') {
             Some(nul) => self.vec.truncate(nul + 1),
             None => {
@@ -76,12 +72,13 @@ impl<'a, A: BumpAllocatorScope<'a>, E: ErrorBehavior> String<A, E> {
             }
         }
 
-        let bytes_with_nul = box_leak(self.into_bytes());
-        Ok(unsafe { CStr::from_bytes_with_nul_unchecked(bytes_with_nul) })
+        let (bytes_with_nul, alloc) = Box::into_raw_with_allocator(self.into_bytes());
+        let ptr = unsafe { CStr::from_bytes_with_nul_unchecked(&*bytes_with_nul) };
+        Ok(unsafe { IntoRef::new(ptr, alloc) })
     }
 }
 
-impl<'a, A: BumpAllocatorScope<'a>, E: ErrorBehavior> fmt::Write for String<A, E> {
+impl<A: Allocator, E: ErrorBehavior> fmt::Write for String<A, E> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.push_str(s).ok().ok_or(fmt::Error)
     }

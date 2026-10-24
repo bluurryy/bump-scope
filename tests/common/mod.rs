@@ -50,8 +50,12 @@ macro_rules! up_and_down {
         mod upwards {
             #[allow(unused_imports)]
             use super::*;
+
             #[allow(unused_imports)]
-            use bump_scope::{config::{BumpConfig, BumpConfigBuilder}, extra, vec};
+            use bump_scope::{
+                config::{BumpConfig, BumpConfigBuilder},
+                BumpAllocator, BumpAllocatorScope, extra, vec
+            };
 
             const DEFAULT_C: BumpConfig = BumpConfigBuilder::new()
                 .upwards(true)
@@ -63,8 +67,12 @@ macro_rules! up_and_down {
         mod downwards {
             #[allow(unused_imports)]
             use super::*;
+
             #[allow(unused_imports)]
-            use bump_scope::{config::{BumpConfig, BumpConfigBuilder}, extra, vec};
+            use bump_scope::{
+                config::{BumpConfig, BumpConfigBuilder},
+                BumpAllocator, BumpAllocatorScope, extra, vec
+            };
 
             const DEFAULT_C: BumpConfig = BumpConfigBuilder::new()
                 .upwards(false)

@@ -180,6 +180,22 @@ unsafe impl<T, A: Allocator> TakeOwnedSlice for Vec<T, A> {
     }
 }
 
+#[cfg(feature = "nightly")]
+unsafe impl<T, A: Allocator> TakeOwnedSlice for vec::IntoIter<T, A> {
+    type Item = T;
+
+    #[inline]
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        self.as_slice()
+    }
+
+    #[inline]
+    fn take_owned_slice(&mut self) {
+        self.for_each(mem::forget);
+    }
+}
+
+#[cfg(not(feature = "nightly"))]
 unsafe impl<T> TakeOwnedSlice for vec::IntoIter<T> {
     type Item = T;
 
@@ -194,6 +210,22 @@ unsafe impl<T> TakeOwnedSlice for vec::IntoIter<T> {
     }
 }
 
+#[cfg(feature = "nightly")]
+unsafe impl<T, A: Allocator> TakeOwnedSlice for vec::Drain<'_, T, A> {
+    type Item = T;
+
+    #[inline]
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        self.as_slice()
+    }
+
+    #[inline]
+    fn take_owned_slice(&mut self) {
+        self.for_each(mem::forget);
+    }
+}
+
+#[cfg(not(feature = "nightly"))]
 unsafe impl<T> TakeOwnedSlice for vec::Drain<'_, T> {
     type Item = T;
 

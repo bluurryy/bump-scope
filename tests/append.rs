@@ -1,7 +1,6 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 #![expect(unused_allocation)]
 
-use core::fmt;
 use std::{
     alloc::Allocator,
     array,
@@ -11,7 +10,7 @@ use std::{
 };
 
 use bump_scope::{
-    BoxU, Bump, VecU,
+    BoxU, Bump, BumpAllocator as _, VecU,
     extra::{self, vec_from_owned_slice_in, vec_remove_allocator},
     owned_slice::{OwnedSlice, TakeOwnedSlice},
 };

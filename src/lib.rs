@@ -5,7 +5,7 @@
 // Especially `BoxU` methods, vectors, strings, `polyfill` and `tests/from_std` are based on code from the standard library.
 
 #![no_std]
-#![cfg_attr(feature = "nightly", feature(clone_to_uninit, ptr_metadata))]
+#![cfg_attr(feature = "nightly", feature(clone_to_uninit, ptr_metadata, allocator_ext))]
 #![cfg_attr(all(feature = "nightly", test, doc), feature(offset_of_enum))]
 #![cfg_attr(docsrs,
     feature(doc_cfg),

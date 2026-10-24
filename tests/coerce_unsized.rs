@@ -2,7 +2,7 @@
 
 use std::{dbg, fmt::Debug};
 
-use bump_scope::{BoxU, Bump};
+use bump_scope::{BoxU, Bump, BumpAllocator as _};
 
 #[test]
 fn slice() {
