@@ -18,6 +18,10 @@ pub(crate) struct ErasedChunk {
 }
 
 impl ErasedChunk {
+    pub(crate) const INVALID: Self = Self {
+        header: NonNull::dangling(),
+    };
+
     pub(crate) fn as_ptr(self) -> NonNull<()> {
         self.header.cast()
     }

@@ -113,7 +113,7 @@ const fn assert_valid_config(config: BumpConfig) {
 }
 
 macro_rules! config {
-    ($config:ident, $name:ident) => {
+    ($config:path, $name:ident) => {
         const { $crate::config::read::$name($config) }
     };
     ($name:ident) => {

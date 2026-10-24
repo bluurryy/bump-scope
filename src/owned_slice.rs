@@ -1,23 +1,11 @@
 use core::{array, mem};
 
-#[cfg(feature = "alloc")]
-use core::mem::ManuallyDrop;
+use core::alloc::Allocator;
 
-#[cfg(feature = "alloc")]
 use alloc::{
     boxed::Box,
     vec::{self, Vec},
 };
-
-use crate::{BumpBox, BumpVec, FixedBumpVec, MutBumpVec, MutBumpVecRev, traits::BumpAllocator, unsize_bump_box};
-
-mod drain;
-mod extract_if;
-mod into_iter;
-
-pub use drain::Drain;
-pub use extract_if::ExtractIf;
-pub use into_iter::IntoIter;
 
 /// A trait for objects that own a slice of elements.
 ///
@@ -28,7 +16,7 @@ pub use into_iter::IntoIter;
 /// Any implementor of `TakeOwnedSlice` automatically implements this trait.
 ///
 /// [`alloc_slice_move`]: crate::Bump::alloc_slice_move
-/// [`init_move`]: crate::BumpBox::init_move
+/// [`init_move`]: crate::BoxU::init_move
 /// [`append`]: crate::BumpVec::append
 /// [`from_owned_slice_in`]: crate::BumpVec::from_owned_slice_in
 pub trait OwnedSlice {
@@ -45,7 +33,6 @@ pub trait OwnedSlice {
 // every `TakeOwnedSlice` automatically implements `OwnedSlice`
 impl<T: TakeOwnedSlice> OwnedSlice for T {
     type Item = <Self as TakeOwnedSlice>::Item;
-
     type Take = Self;
 
     fn into_take_owned_slice(self) -> Self::Take {
@@ -55,7 +42,6 @@ impl<T: TakeOwnedSlice> OwnedSlice for T {
 
 impl<T, const N: usize> OwnedSlice for [T; N] {
     type Item = T;
-
     type Take = array::IntoIter<T, N>;
 
     fn into_take_owned_slice(self) -> Self::Take {
@@ -63,24 +49,23 @@ impl<T, const N: usize> OwnedSlice for [T; N] {
     }
 }
 
-impl<'a, T, const N: usize> OwnedSlice for BumpBox<'a, [T; N]> {
+impl<T, const N: usize, A: Allocator> OwnedSlice for Box<[T; N], A> {
     type Item = T;
-
-    type Take = BumpBox<'a, [T]>;
+    type Take = Vec<T, A>;
 
     fn into_take_owned_slice(self) -> Self::Take {
-        unsize_bump_box!(self)
+        let slice: Box<[T], _> = self;
+        slice.into_vec()
     }
 }
 
-#[cfg(feature = "alloc")]
-impl<T, const N: usize> OwnedSlice for Box<[T; N]> {
+impl<T, A: Allocator> OwnedSlice for Box<[T], A> {
     type Item = T;
-
-    type Take = Box<[T]>;
+    type Take = Vec<T, A>;
 
     fn into_take_owned_slice(self) -> Self::Take {
-        self
+        let slice: Box<[T], _> = self;
+        slice.into_vec()
     }
 }
 
@@ -181,7 +166,7 @@ unsafe impl<T, const N: usize> TakeOwnedSlice for array::IntoIter<T, N> {
     }
 }
 
-unsafe impl<T> TakeOwnedSlice for BumpBox<'_, [T]> {
+unsafe impl<T, A: Allocator> TakeOwnedSlice for Vec<T, A> {
     type Item = T;
 
     #[inline]
@@ -195,96 +180,22 @@ unsafe impl<T> TakeOwnedSlice for BumpBox<'_, [T]> {
     }
 }
 
-unsafe impl<T> TakeOwnedSlice for FixedBumpVec<'_, T> {
+#[cfg(feature = "nightly")]
+unsafe impl<T, A: Allocator> TakeOwnedSlice for vec::IntoIter<T, A> {
     type Item = T;
 
     #[inline]
     fn owned_slice_ref(&self) -> &[Self::Item] {
-        self
+        self.as_slice()
     }
 
     #[inline]
     fn take_owned_slice(&mut self) {
-        unsafe { self.set_len(0) }
+        self.for_each(mem::forget);
     }
 }
 
-unsafe impl<T, A: BumpAllocator> TakeOwnedSlice for BumpVec<T, A> {
-    type Item = T;
-
-    #[inline]
-    fn owned_slice_ref(&self) -> &[Self::Item] {
-        self
-    }
-
-    #[inline]
-    fn take_owned_slice(&mut self) {
-        unsafe { self.set_len(0) }
-    }
-}
-
-unsafe impl<T, A> TakeOwnedSlice for MutBumpVec<T, A> {
-    type Item = T;
-
-    #[inline]
-    fn owned_slice_ref(&self) -> &[Self::Item] {
-        self
-    }
-
-    #[inline]
-    fn take_owned_slice(&mut self) {
-        unsafe { self.set_len(0) }
-    }
-}
-
-unsafe impl<T, A> TakeOwnedSlice for MutBumpVecRev<T, A> {
-    type Item = T;
-
-    #[inline]
-    fn owned_slice_ref(&self) -> &[Self::Item] {
-        self
-    }
-
-    #[inline]
-    fn take_owned_slice(&mut self) {
-        unsafe { self.set_len(0) }
-    }
-}
-
-#[cfg(feature = "alloc")]
-unsafe impl<T> TakeOwnedSlice for Box<[T]> {
-    type Item = T;
-
-    #[inline]
-    fn owned_slice_ref(&self) -> &[Self::Item] {
-        self
-    }
-
-    #[inline]
-    fn take_owned_slice(&mut self) {
-        // We must not drop the elements but we must deallocate the slice itself.
-        let ptr = Box::into_raw(mem::take(self));
-        let forget_elements_box = unsafe { Box::<[ManuallyDrop<T>]>::from_raw(ptr as *mut [ManuallyDrop<T>]) };
-        drop(forget_elements_box);
-    }
-}
-
-#[cfg(feature = "alloc")]
-unsafe impl<T> TakeOwnedSlice for Vec<T> {
-    type Item = T;
-
-    #[inline]
-    fn owned_slice_ref(&self) -> &[Self::Item] {
-        self
-    }
-
-    #[inline]
-    fn take_owned_slice(&mut self) {
-        unsafe { self.set_len(0) }
-    }
-}
-
-#[cfg(feature = "alloc")]
+#[cfg(not(feature = "nightly"))]
 unsafe impl<T> TakeOwnedSlice for vec::IntoIter<T> {
     type Item = T;
 
@@ -299,7 +210,22 @@ unsafe impl<T> TakeOwnedSlice for vec::IntoIter<T> {
     }
 }
 
-#[cfg(feature = "alloc")]
+#[cfg(feature = "nightly")]
+unsafe impl<T, A: Allocator> TakeOwnedSlice for vec::Drain<'_, T, A> {
+    type Item = T;
+
+    #[inline]
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        self.as_slice()
+    }
+
+    #[inline]
+    fn take_owned_slice(&mut self) {
+        self.for_each(mem::forget);
+    }
+}
+
+#[cfg(not(feature = "nightly"))]
 unsafe impl<T> TakeOwnedSlice for vec::Drain<'_, T> {
     type Item = T;
 
@@ -314,10 +240,8 @@ unsafe impl<T> TakeOwnedSlice for vec::Drain<'_, T> {
     }
 }
 
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(test)]
 mod tests {
-    use crate::Bump;
-
     use super::*;
 
     const _: () = {
@@ -330,6 +254,8 @@ mod tests {
         ($($ty:ty)*) => {
             const _: () = {
                 type T = i32;
+                #[allow(unused)]
+                type A = $crate::Bump;
                 const fn implements<S: OwnedSlice + ?Sized>() {}
                 $(implements::<$ty>();)*
             };
@@ -340,33 +266,13 @@ mod tests {
         &mut dyn TakeOwnedSlice<Item = T>
 
         [T; 3]
-        BumpBox<[T; 3]>
-
-        BumpBox<[T]>
-        &mut BumpBox<[T]>
-        FixedBumpVec<T>
-        &mut FixedBumpVec<T>
-        BumpVec<T, &Bump>
-        &mut BumpVec<T, &Bump>
-        MutBumpVec<T, &mut Bump>
-        &mut MutBumpVec<T, &mut Bump>
-        MutBumpVecRev<T, &mut Bump>
-        &mut MutBumpVecRev<T, &mut Bump>
-        BumpVec<T, Bump>
-        &mut BumpVec<T, Bump>
-        MutBumpVec<T, Bump>
-        &mut MutBumpVec<T, Bump>
-        MutBumpVecRev<T, Bump>
-        &mut MutBumpVecRev<T, Bump>
     }
 
-    #[cfg(feature = "alloc")]
     assert_implements! {
-        Box<[T; 3]>
+        Box<[T; 3], A>
+        Box<[T], A>
 
-        Box<[T]>
-        &mut Box<[T]>
-        Vec<T>
-        &mut Vec<T>
+        Vec<T, A>
+        &mut Vec<T, A>
     }
 }

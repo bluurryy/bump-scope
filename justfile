@@ -43,7 +43,6 @@ fmt:
     cd crates/fuzzing-support && cargo +nightly fmt
     cd crates/test-hashbrown && cargo +nightly fmt
     cd crates/test-no-panic && cargo +nightly fmt
-    cd crates/tests-from-std && cargo +nightly fmt
     cd fuzz && cargo +nightly fmt
 
 # Runs all `check-*`.
@@ -63,7 +62,6 @@ check-fmt:
     cd crates/fuzzing-support && cargo +stable fmt --all --check 2>/dev/null
     cd crates/test-hashbrown && cargo +stable fmt --all --check 2>/dev/null
     cd crates/test-no-panic && cargo +stable fmt --all --check 2>/dev/null
-    cd crates/tests-from-std && cargo +stable fmt --all --check 2>/dev/null
     cd fuzz && cargo +stable fmt --all --check 2>/dev/null
 
 # Runs all `check-clippy-*`.
@@ -89,7 +87,6 @@ check-clippy-nightly:
     cd crates/fuzzing-support && cargo +nightly clippy --tests -- -Dwarnings
     cd crates/test-hashbrown && cargo +nightly clippy --tests -- -Dwarnings
     cd crates/test-no-panic && cargo +nightly clippy --tests --all-features -- -Dwarnings
-    cd crates/tests-from-std && cargo +nightly clippy --tests -- -Dwarnings
     cd fuzz && cargo +nightly clippy -- -Dwarnings
 
 # Runs `cargo check` with the minimum supported rust version.
@@ -145,7 +142,6 @@ test-nightly miri="":
     cargo +nightly {{ miri }} run --example limit_memory_usage
     cargo +nightly {{ miri }} run --example stack_or_static_memory
     cargo +nightly {{ miri }} run --example thread_local
-    cd crates/tests-from-std && cargo +nightly {{ miri }} test
     cd crates/test-hashbrown && cargo +nightly {{ miri }} test
     cd crates/fuzzing-support && cargo +nightly {{ miri }} test
     # FIXME: remove once 1.100 has released

@@ -9,7 +9,7 @@ use std::{
     sync::{Mutex, PoisonError},
 };
 
-use bump_scope::traits::BumpAllocator;
+use bump_scope::BumpAllocator as _;
 
 #[repr(C, align(16))]
 struct StaticAllocator<const SIZE: usize> {
@@ -109,13 +109,13 @@ fn on_stack() {
 
     let bump = Bump::with_size_in(0, &memory);
 
-    let str = bump.alloc_str("It works!");
+    let str = bump.alloc_str("It works!").into_ref();
     println!("{str}");
 
     // The bump allocator will use the entire memory block returned by `allocate`.
     assert_eq!(bump.stats().size(), 1024);
 
-    bump.try_allocate_layout(Layout::new::<[u8; 2048]>()).unwrap_err();
+    bump.try_alloc_uninit::<[u8; 2048]>().unwrap_err();
 }
 
 fn on_static() {
@@ -125,13 +125,13 @@ fn on_static() {
 
     let bump = Bump::with_size_in(0, memory);
 
-    let str = bump.alloc_str("It works!");
+    let str = bump.alloc_str("It works!").into_ref();
     println!("{str}");
 
     // The bump allocator will use the entire memory block returned by `allocate`.
     assert_eq!(bump.stats().size(), 1024);
 
-    bump.try_allocate_layout(Layout::new::<[u8; 2048]>()).unwrap_err();
+    bump.try_alloc_uninit::<[u8; 2048]>().unwrap_err();
 }
 
 fn main() {

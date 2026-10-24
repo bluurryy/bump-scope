@@ -7,11 +7,11 @@ use core::{
     ptr::NonNull,
 };
 
-#[cfg(feature = "nightly-clone-to-uninit")]
+#[cfg(feature = "nightly")]
 use core::clone::CloneToUninit;
 
 use crate::{
-    BumpBox, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, allocator_impl,
+    BumpClaimGuard, BumpScope, BumpScopeGuard, allocator_impl,
     chunk_size::{ChunkSizeCapacity, ChunkSizeHint, ChunkSizeMin},
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
     maybe_default_allocator,
@@ -19,11 +19,11 @@ use crate::{
     polyfill::{transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
     stats::{AnyStats, Stats},
-    traits::{self, BumpAllocator, BumpAllocatorCore, BumpAllocatorScope, MutBumpAllocatorScope},
+    traits::{AsBumpScope, AsMutBumpScope},
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::panic_on_error;
+use crate::{BumpAllocation, panic_on_error};
 
 macro_rules! make_type {
     ($($allocator_parameter:tt)*) => {
@@ -61,7 +61,7 @@ macro_rules! make_type {
         /// - slices from an iterator: [`alloc_iter`], [`alloc_iter_exact`], [`alloc_iter_mut`], [`alloc_iter_mut_rev`]
         /// - uninitialized values: [`alloc_uninit`], [`alloc_uninit_slice`], [`alloc_uninit_slice_for`]
         ///
-        ///   which can then be conveniently initialized by the [`init*` methods of `BumpBox`](crate::BumpBox#bumpbox-has-a-lot-of-methods).
+        ///   which can then be conveniently initialized by the [`init*` methods of `BoxU`](crate::BoxU#bumpbox-has-a-lot-of-methods).
         /// - results: [`alloc_try_with`], [`alloc_try_with_mut`]
         /// - via clone *(nightly only)*: [`alloc_clone`]
         ///
@@ -119,7 +119,7 @@ macro_rules! make_type {
         /// # but we still want it here for demonstration
         /// #![feature(allocator_ext)]
         /// # */
-        /// # #[cfg(feature = "nightly-tests")]
+        /// # #[cfg(feature = "nightly")]
         /// # fn main() {
         /// use bump_scope::Bump;
         /// # // use std::collections::{VecDeque, BTreeMap, LinkedList};
@@ -135,7 +135,7 @@ macro_rules! make_type {
         /// # // let _: BTreeMap<i32, i32, _> = map;
         /// # let _: LinkedList<i32, _> = list;
         /// # }
-        /// # #[cfg(not(feature = "nightly-tests"))] fn main() {}
+        /// # #[cfg(not(feature = "nightly"))] fn main() {}
         /// ```
         ///
         /// [`alloc`]: BumpAllocatorScope::alloc
@@ -903,21 +903,6 @@ where
     }
 }
 
-/// Methods that forward to traits.
-// Documentation is in the forwarded to methods.
-#[allow(clippy::missing_errors_doc, clippy::missing_safety_doc)]
-impl<A, const C: BumpConfig> Bump<A, C>
-where
-    A: Allocator,
-{
-    traits::forward_methods! {
-        self: self
-        access: {self.as_scope()}
-        access_mut: {self.as_mut_scope()}
-        lifetime: '_
-    }
-}
-
 /// Additional `alloc` methods that are not available in traits.
 impl<A, const C: BumpConfig> Bump<A, C>
 where
@@ -958,152 +943,6 @@ where
     #[inline(always)]
     pub fn with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<'_, A, NEW_C>) -> R) -> R {
         self.as_mut_scope().with_config(f)
-    }
-
-    /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
-    ///
-    /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
-    ///
-    /// There is also [`alloc_try_with_mut`](Self::alloc_try_with_mut), optimized for a mutable reference.
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
-    ///
-    /// # Examples
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// # #![feature(offset_of_enum)]
-    /// # use core::mem::offset_of;
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let result = bump.alloc_try_with(|| -> Result<i32, i32> { Ok(123) });
-    /// assert_eq!(result.unwrap(), 123);
-    /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
-    /// ```
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let result = bump.alloc_try_with(|| -> Result<i32, i32> { Err(123) });
-    /// assert_eq!(result.unwrap_err(), 123);
-    /// assert_eq!(bump.stats().allocated(), 0);
-    /// ```
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    #[expect(clippy::missing_errors_doc)]
-    pub fn alloc_try_with<T, E>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<'_, T>, E> {
-        self.as_scope().alloc_try_with(f)
-    }
-
-    /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
-    ///
-    /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
-    ///
-    /// There is also [`try_alloc_try_with_mut`](Self::try_alloc_try_with_mut), optimized for a mutable reference.
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    ///
-    /// # Examples
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// # #![feature(offset_of_enum)]
-    /// # use core::mem::offset_of;
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Ok(123) })?;
-    /// assert_eq!(result.unwrap(), 123);
-    /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
-    /// # Ok::<(), ::core::alloc::AllocError>(())
-    /// ```
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Err(123) })?;
-    /// assert_eq!(result.unwrap_err(), 123);
-    /// assert_eq!(bump.stats().allocated(), 0);
-    /// # Ok::<(), ::core::alloc::AllocError>(())
-    /// ```
-    #[inline(always)]
-    pub fn try_alloc_try_with<T, E>(
-        &self,
-        f: impl FnOnce() -> Result<T, E>,
-    ) -> Result<Result<BumpBox<'_, T>, E>, AllocError> {
-        self.as_scope().try_alloc_try_with(f)
-    }
-
-    /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
-    ///
-    /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
-    ///
-    /// This is just like [`alloc_try_with`](Self::alloc_try_with), but optimized for a mutable reference.
-    ///
-    /// # Panics
-    /// Panics if the allocation fails.
-    ///
-    /// # Examples
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// # #![feature(offset_of_enum)]
-    /// # use core::mem::offset_of;
-    /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
-    /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) });
-    /// assert_eq!(result.unwrap(), 123);
-    /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
-    /// ```
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
-    /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) });
-    /// assert_eq!(result.unwrap_err(), 123);
-    /// assert_eq!(bump.stats().allocated(), 0);
-    /// ```
-    #[inline(always)]
-    #[cfg(feature = "panic-on-alloc")]
-    #[expect(clippy::missing_errors_doc)]
-    pub fn alloc_try_with_mut<T, E>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpBox<'_, T>, E> {
-        self.as_mut_scope().alloc_try_with_mut(f)
-    }
-
-    /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
-    ///
-    /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
-    ///
-    /// This is just like [`try_alloc_try_with`](Self::try_alloc_try_with), but optimized for a mutable reference.
-    ///
-    /// # Errors
-    /// Errors if the allocation fails.
-    ///
-    /// # Examples
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// # #![feature(offset_of_enum)]
-    /// # use core::mem::offset_of;
-    /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
-    /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) })?;
-    /// assert_eq!(result.unwrap(), 123);
-    /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
-    /// # Ok::<(), ::core::alloc::AllocError>(())
-    /// ```
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
-    /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
-    /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) })?;
-    /// assert_eq!(result.unwrap_err(), 123);
-    /// assert_eq!(bump.stats().allocated(), 0);
-    /// # Ok::<(), ::core::alloc::AllocError>(())
-    /// ```
-    #[inline(always)]
-    pub fn try_alloc_try_with_mut<T, E>(
-        &mut self,
-        f: impl FnOnce() -> Result<T, E>,
-    ) -> Result<Result<BumpBox<'_, T>, E>, AllocError> {
-        self.as_mut_scope().try_alloc_try_with_mut(f)
     }
 }
 

@@ -1,4 +1,5 @@
-#![cfg(all(feature = "std", feature = "panic-on-alloc"))]
+#![cfg(all(feature = "std", feature = "panic-on-alloc", feature = "nightly"))]
+#![feature(allocator_ext)]
 
 mod common;
 
@@ -10,7 +11,7 @@ use std::{
     ptr::NonNull,
 };
 
-use bump_scope::{Bump, BumpVec, MutBumpVec, MutBumpVecRev, bump_vec, mut_bump_vec, mut_bump_vec_rev};
+use bump_scope::{Bump, BumpAllocator as _, extra, vec};
 
 macro_rules! zst_or_not {
     (
@@ -43,31 +44,23 @@ zst_or_not! {
 
     init_fill_with
 
-    mut_bump_vec_from_elem_in
-
-    into_iter
-
-    bump_vec_extend_from_slice
-
-    mut_bump_vec_extend_from_slice
-
-    mut_bump_vec_rev_extend_from_slice
+    vec_from_elem_in
 }
 
 fn init_clone<T: Testable>() {
     expected_drops(3).panic_on_clone(3).run(|| {
         let original = ManuallyDrop::new(T::array::<5>());
         let bump: Bump = Bump::new();
-        let uninit = bump.alloc_uninit_slice::<T>(5);
-        let _init = uninit.init_clone(&*original);
+        let uninit = bump.alloc_uninit_slice::<T>(5).into_boxu();
+        let _init = extra::box_init_clone(uninit, &*original);
     });
 }
 
 fn init_fill<T: Testable>() {
     expected_drops(4).panic_on_clone(3).run(|| {
         let bump: Bump = Bump::new();
-        let uninit = bump.alloc_uninit_slice::<T>(5);
-        let _init = uninit.init_fill(T::default());
+        let uninit = bump.alloc_uninit_slice::<T>(5).into_boxu();
+        let _init = extra::box_init_fill(uninit, T::default());
     });
 }
 
@@ -75,69 +68,16 @@ fn init_fill_with<T: Testable>() {
     expected_drops(3).panic_on_clone(3).run(|| {
         let original = ManuallyDrop::new(T::default());
         let bump: Bump = Bump::new();
-        let uninit = bump.alloc_uninit_slice::<T>(5);
-        let _init = uninit.init_fill_with(|| (*original).clone());
+        let uninit = bump.alloc_uninit_slice::<T>(5).into_boxu();
+        let _init = extra::box_init_fill_with(uninit, || (*original).clone());
     });
 }
 
-fn mut_bump_vec_from_elem_in<T: Testable>() {
+fn vec_from_elem_in<T: Testable>() {
     expected_drops(4).panic_on_clone(3).run(|| {
-        let mut bump: Bump = Bump::new();
-        let _vec = MutBumpVec::from_elem_in(T::default(), 5, &mut bump);
+        let bump: Bump = Bump::new();
+        let _vec = vec![in &bump; T::default(); 5];
     });
-}
-
-fn into_iter<T: Testable>() {
-    expected_drops(5).expected_msg("whoops").run(|| {
-        let mut bump: Bump = Bump::new();
-        let vec = mut_bump_vec![in &mut bump; T::default(); 5];
-
-        #[expect(clippy::manual_assert)]
-        for (i, _) in vec.into_iter().enumerate() {
-            if i == 3 {
-                panic!("whoops");
-            }
-        }
-    });
-}
-
-fn bump_vec_extend_from_slice<T: Testable>() {
-    let bump: Bump = Bump::new();
-    let mut vec: BumpVec<T, _> = bump_vec![in &bump];
-    let slice = ManuallyDrop::new(T::array::<5>());
-
-    expected_drops(0).panic_on_clone(3).run(|| {
-        vec.extend_from_slice_clone(&*slice);
-    });
-
-    assert_eq!(vec.len(), 3);
-    assert_initialized(vec);
-}
-
-fn mut_bump_vec_extend_from_slice<T: Testable>() {
-    let mut bump: Bump = Bump::new();
-    let mut vec: MutBumpVec<T, _> = mut_bump_vec![in &mut bump];
-    let slice = ManuallyDrop::new(T::array::<5>());
-
-    expected_drops(0).panic_on_clone(3).run(|| {
-        vec.extend_from_slice_clone(&*slice);
-    });
-
-    assert_eq!(vec.len(), 3);
-    assert_initialized(vec);
-}
-
-fn mut_bump_vec_rev_extend_from_slice<T: Testable>() {
-    let mut bump: Bump = Bump::new();
-    let mut vec: MutBumpVecRev<T, _> = mut_bump_vec_rev![in &mut bump];
-    let slice = ManuallyDrop::new(T::array::<5>());
-
-    expected_drops(0).panic_on_clone(3).run(|| {
-        vec.extend_from_slice_clone(&*slice);
-    });
-
-    assert_eq!(vec.len(), 3);
-    assert_initialized(vec);
 }
 
 up_and_down! {
@@ -192,7 +132,7 @@ up_and_down! {
     }
 }
 
-use helper::{Testable, assert_initialized, expected_drops};
+use helper::{Testable, expected_drops};
 
 use crate::common::{DisaligningAllocator, up_and_down};
 
@@ -206,6 +146,7 @@ mod helper {
         thread_local,
     };
 
+    #[allow(dead_code)]
     pub fn assert_initialized(iter: impl IntoIterator) {
         // make sure items are initialized
         // miri will catch that
@@ -242,6 +183,7 @@ mod helper {
             self
         }
 
+        #[allow(dead_code)]
         pub(super) fn expected_msg(mut self, msg: &'static str) -> Self {
             self.expected_msg = Some(msg);
             self

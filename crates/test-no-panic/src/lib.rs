@@ -11,7 +11,7 @@ use core::{alloc::Layout, ffi::CStr, fmt, mem::MaybeUninit, num::NonZero, ops::R
 use bump_scope::{
     config::{BumpConfig, BumpConfigBuilder},
     zerocopy_08::{BumpAllocatorScopeExt, VecExt},
-    BumpBox, FixedBumpString, FixedBumpVec, FromUtf16Error,
+    BoxU, FixedBumpString, FixedBumpVec, FromUtf16Error,
 };
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
@@ -249,48 +249,48 @@ pub mod test_forwarded_methods {
             bump.with_config(f)
         }
 
-        pub fn Bump_try_alloc(bump: &Bump, value: u32) -> Result<BumpBox<u32>> {
+        pub fn Bump_try_alloc(bump: &Bump, value: u32) -> Result<BoxU<u32>> {
             bump.try_alloc(value)
         }
 
-        pub fn Bump_try_alloc_default(bump: &Bump) -> Result<BumpBox<u32>> {
+        pub fn Bump_try_alloc_default(bump: &Bump) -> Result<BoxU<u32>> {
             bump.try_alloc_default()
         }
 
         #[cfg(feature = "nightly")]
-        pub fn Bump_try_alloc_clone<'a>(bump: &'a Bump, value: &str) -> Result<BumpBox<'a, str>> {
+        pub fn Bump_try_alloc_clone<'a>(bump: &'a Bump, value: &str) -> Result<BoxU<'a, str>> {
             bump.try_alloc_clone(value)
         }
 
-        pub fn Bump_try_alloc_slice_move<'a>(bump: &'a Bump, slice: Box<[u32]>) -> Result<BumpBox<'a, [u32]>> {
+        pub fn Bump_try_alloc_slice_move<'a>(bump: &'a Bump, slice: Box<[u32]>) -> Result<BoxU<'a, [u32]>> {
             bump.try_alloc_slice_move(slice)
         }
 
-        pub fn Bump_try_alloc_slice_copy<'a>(bump: &'a Bump, value: &[u32]) -> Result<BumpBox<'a, [u32]>> {
+        pub fn Bump_try_alloc_slice_copy<'a>(bump: &'a Bump, value: &[u32]) -> Result<BoxU<'a, [u32]>> {
             bump.try_alloc_slice_copy(value)
         }
 
-        pub fn Bump_try_alloc_slice_clone<'a>(bump: &'a Bump, value: &[u32]) -> Result<BumpBox<'a, [u32]>> {
+        pub fn Bump_try_alloc_slice_clone<'a>(bump: &'a Bump, value: &[u32]) -> Result<BoxU<'a, [u32]>> {
             bump.try_alloc_slice_clone(value)
         }
 
-        pub fn Bump_try_alloc_slice_fill(bump: &Bump, len: usize, value: u32) -> Result<BumpBox<[u32]>> {
+        pub fn Bump_try_alloc_slice_fill(bump: &Bump, len: usize, value: u32) -> Result<BoxU<[u32]>> {
             bump.try_alloc_slice_fill(len, value)
         }
 
-        pub fn Bump_try_alloc_slice_fill_with<'a>(bump: &'a Bump, len: usize, f: &mut dyn FnMut() -> u32) -> Result<BumpBox<'a, [u32]>> {
+        pub fn Bump_try_alloc_slice_fill_with<'a>(bump: &'a Bump, len: usize, f: &mut dyn FnMut() -> u32) -> Result<BoxU<'a, [u32]>> {
             bump.try_alloc_slice_fill_with(len, f)
         }
 
-        pub fn Bump_try_alloc_str<'a>(bump: &'a Bump, value: &str) -> Result<BumpBox<'a, str>> {
+        pub fn Bump_try_alloc_str<'a>(bump: &'a Bump, value: &str) -> Result<BoxU<'a, str>> {
             bump.try_alloc_str(value)
         }
 
-        pub fn Bump_try_alloc_fmt<'a>(bump: &'a Bump, args: fmt::Arguments) -> Result<BumpBox<'a, str>> {
+        pub fn Bump_try_alloc_fmt<'a>(bump: &'a Bump, args: fmt::Arguments) -> Result<BoxU<'a, str>> {
             bump.try_alloc_fmt(args)
         }
 
-        pub fn Bump_try_alloc_fmt_mut<'a>(bump: &'a mut Bump, args: fmt::Arguments) -> Result<BumpBox<'a, str>> {
+        pub fn Bump_try_alloc_fmt_mut<'a>(bump: &'a mut Bump, args: fmt::Arguments) -> Result<BoxU<'a, str>> {
             bump.try_alloc_fmt_mut(args)
         }
 
@@ -310,35 +310,35 @@ pub mod test_forwarded_methods {
             bump.try_alloc_cstr_fmt_mut(value)
         }
 
-        pub fn Bump_try_alloc_iter(bump: &Bump, value: core::ops::Range<u32>) -> Result<BumpBox<[u32]>> {
+        pub fn Bump_try_alloc_iter(bump: &Bump, value: core::ops::Range<u32>) -> Result<BoxU<[u32]>> {
             bump.try_alloc_iter(value)
         }
 
-        pub fn Bump_try_alloc_iter_exact(bump: &Bump, value: core::ops::Range<u32>) -> Result<BumpBox<[u32]>> {
+        pub fn Bump_try_alloc_iter_exact(bump: &Bump, value: core::ops::Range<u32>) -> Result<BoxU<[u32]>> {
             bump.try_alloc_iter_exact(value)
         }
 
-        pub fn Bump_try_alloc_iter_mut(bump: &mut Bump, value: core::ops::Range<u32>) -> Result<BumpBox<[u32]>> {
+        pub fn Bump_try_alloc_iter_mut(bump: &mut Bump, value: core::ops::Range<u32>) -> Result<BoxU<[u32]>> {
             bump.try_alloc_iter_mut(value)
         }
 
-        pub fn Bump_try_alloc_iter_mut_rev(bump: &mut Bump, value: core::ops::Range<u32>) -> Result<BumpBox<[u32]>> {
+        pub fn Bump_try_alloc_iter_mut_rev(bump: &mut Bump, value: core::ops::Range<u32>) -> Result<BoxU<[u32]>> {
             bump.try_alloc_iter_mut_rev(value)
         }
 
-        pub fn Bump_try_alloc_uninit(bump: &Bump) -> Result<BumpBox<MaybeUninit<u32>>> {
+        pub fn Bump_try_alloc_uninit(bump: &Bump) -> Result<BoxU<MaybeUninit<u32>>> {
             bump.try_alloc_uninit()
         }
 
-        pub fn Bump_try_alloc_uninit_slice(bump: &Bump, len: usize) -> Result<BumpBox<[MaybeUninit<u32>]>> {
+        pub fn Bump_try_alloc_uninit_slice(bump: &Bump, len: usize) -> Result<BoxU<[MaybeUninit<u32>]>> {
             bump.try_alloc_uninit_slice(len)
         }
 
-        pub fn Bump_try_alloc_uninit_slice_for<'a>(bump: &'a Bump, slice: &[u32]) -> Result<BumpBox<'a, [MaybeUninit<u32>]>> {
+        pub fn Bump_try_alloc_uninit_slice_for<'a>(bump: &'a Bump, slice: &[u32]) -> Result<BoxU<'a, [MaybeUninit<u32>]>> {
             bump.try_alloc_uninit_slice_for(slice)
         }
 
-        pub fn Bump_dealloc(bump: &Bump, boxed: BumpBox<[u32]>)  {
+        pub fn Bump_dealloc(bump: &Bump, boxed: BoxU<[u32]>)  {
             bump.dealloc(boxed)
         }
 
@@ -382,11 +382,11 @@ pub mod test_extension_traits {
     use super::*;
 
     up_and_down! {
-        pub fn Bump_try_alloc_zeroed(bump: &Bump) -> Result<BumpBox<u32>> {
+        pub fn Bump_try_alloc_zeroed(bump: &Bump) -> Result<BoxU<u32>> {
             bump.try_alloc_zeroed()
         }
 
-        pub fn Bump_try_alloc_zeroed_slice(bump: &Bump, len: usize) -> Result<BumpBox<[u32]>> {
+        pub fn Bump_try_alloc_zeroed_slice(bump: &Bump, len: usize) -> Result<BoxU<[u32]>> {
             bump.try_alloc_zeroed_slice(len)
         }
     }
@@ -396,11 +396,11 @@ pub mod test_alloc_try_with {
     use super::*;
 
     up_and_down! {
-        pub fn Bump_try_alloc_try_with(bump: &Bump, f: fn() -> Result<u32, u32>) -> Result<Result<BumpBox<u32>, u32>> {
+        pub fn Bump_try_alloc_try_with(bump: &Bump, f: fn() -> Result<u32, u32>) -> Result<Result<BoxU<u32>, u32>> {
             bump.try_alloc_try_with(f)
         }
 
-        pub fn Bump_try_alloc_try_with_mut(bump: &mut Bump, f: fn() -> Result<u32, u32>) -> Result<Result<BumpBox<u32>, u32>> {
+        pub fn Bump_try_alloc_try_with_mut(bump: &mut Bump, f: fn() -> Result<u32, u32>) -> Result<Result<BoxU<u32>, u32>> {
             bump.try_alloc_try_with_mut(f)
         }
     }

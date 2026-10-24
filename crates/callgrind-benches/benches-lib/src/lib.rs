@@ -91,13 +91,13 @@ mod create_bump_by_library {
 
                 #[inline(always)]
                 fn alloc<T>(&self, value: T) -> &mut T {
-                    ::bump_scope::BumpBox::leak(self.0.alloc(value))
+                    ::bump_scope::BoxU::leak(self.0.alloc(value))
                 }
 
                 #[inline(always)]
                 fn try_alloc<T>(&self, value: T) -> Option<&mut T> {
                     match self.0.try_alloc(value) {
-                        Ok(value) => Some(bump_scope::BumpBox::leak(value)),
+                        Ok(value) => Some(bump_scope::BoxU::leak(value)),
                         Err(_) => None,
                     }
                 }

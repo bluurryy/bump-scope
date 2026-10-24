@@ -1,6 +1,6 @@
-use bump_scope::{unsize_bump_box, BumpBox};
+use bump_scope::{unsize_bump_box, BoxU};
 
-fn evil_unsize(boxed: BumpBox<[i32; 3]>) -> BumpBox<'static, [i32]> {
+fn evil_unsize(boxed: BoxU<[i32; 3]>) -> BoxU<'static, [i32]> {
     unsize_bump_box!(boxed)
 }
 

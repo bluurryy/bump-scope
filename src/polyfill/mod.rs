@@ -8,6 +8,7 @@ pub(crate) mod hint;
 pub(crate) mod iter;
 pub(crate) mod non_null;
 pub(crate) mod panic;
+pub(crate) mod ptr;
 pub(crate) mod slice;
 
 use core::mem::{ManuallyDrop, size_of};

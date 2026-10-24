@@ -4,7 +4,7 @@ mod common;
 
 use std::{alloc::Global, fmt::Display};
 
-use bump_scope::{Bump, bump_format, mut_bump_format};
+use bump_scope::Bump;
 
 use crate::common::up_and_down;
 
@@ -32,7 +32,7 @@ up_and_down! {
     #[test]
     fn nothing_extra() {
         let bump: Bump<Global, C> = Bump::new();
-        let string = bump.alloc_fmt(format_args!("ext{Nothing}ra"));
+        let string = bump.alloc_fmt(format_args!("ext{Nothing}ra")).into_ref();
         assert_eq!(string, "extra");
         assert_eq!(bump.stats().allocated(), 5);
     }
@@ -40,7 +40,7 @@ up_and_down! {
     #[test]
     fn nothing_extra_mut() {
         let mut bump: Bump<Global, C> = Bump::new();
-        let string = bump.alloc_fmt_mut(format_args!("ext{Nothing}ra"));
+        let string = bump.alloc_fmt_mut(format_args!("ext{Nothing}ra")).into_ref();
         assert_eq!(string, "extra");
         drop(string);
         assert_eq!(bump.stats().allocated(), 5);
@@ -72,20 +72,6 @@ up_and_down! {
     fn trait_panic_mut() {
         let mut bump: Bump<Global, C> = Bump::new();
         bump.alloc_fmt_mut(format_args!("{ErrorsOnFmt}"));
-    }
-
-    #[test]
-    #[should_panic = "formatting trait implementation returned an error"]
-    fn format_trait_panic() {
-        let bump: Bump<Global, C> = Bump::new();
-        bump_format!(in &bump, "{ErrorsOnFmt}");
-    }
-
-    #[test]
-    #[should_panic = "formatting trait implementation returned an error"]
-    fn format_trait_panic_mut() {
-        let mut bump: Bump<Global, C> = Bump::new();
-        mut_bump_format!(in &mut bump, "{ErrorsOnFmt}");
     }
 
 }
