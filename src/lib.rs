@@ -343,10 +343,10 @@ pub use traits::{BumpAllocator, BumpAllocatorScope, MutBumpAllocator, MutBumpAll
 pub use unmanaged::Unmanaged;
 
 /// TODO
-pub type BoxU<'a, T> = Box<T, &'a Unmanaged>;
+pub type BoxU<'a, T> = Box<T, Unmanaged<'a>>;
 
 /// TODO
-pub type VecU<'a, T> = Vec<T, &'a Unmanaged>;
+pub type VecU<'a, T> = Vec<T, Unmanaged<'a>>;
 
 /// The changelog.
 ///

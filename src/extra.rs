@@ -216,7 +216,7 @@ fn dangling_mut_slice<T>(len: usize) -> *mut [T] {
 }
 
 pub(crate) unsafe fn boxu_from_raw<'a, T: ?Sized>(ptr: *mut T) -> BoxU<'a, T> {
-    unsafe { BoxU::from_raw_in(ptr, &Unmanaged) }
+    unsafe { BoxU::from_raw_in(ptr, Unmanaged::NEW) }
 }
 
 pub(crate) fn boxu_uninit_zst<'a, T>() -> BoxU<'a, MaybeUninit<T>> {
@@ -533,7 +533,7 @@ where
     T: ?Sized,
     A: BumpAllocatorScope<'a>,
 {
-    box_replace_allocator(boxed, &Unmanaged)
+    box_replace_allocator(boxed, Unmanaged::NEW)
 }
 
 /// TODO
@@ -570,7 +570,7 @@ pub fn vec_remove_allocator<'a, T, A>(vec: Vec<T, A>) -> (VecU<'a, T>, A)
 where
     A: BumpAllocatorScope<'a>,
 {
-    vec_replace_allocator(vec, &Unmanaged)
+    vec_replace_allocator(vec, Unmanaged::NEW)
 }
 
 /// TODO
@@ -578,7 +578,7 @@ pub unsafe fn vec_remove_allocator_unchecked<'a, T, A>(vec: Vec<T, A>) -> (VecU<
 where
     A: BumpAllocator,
 {
-    unsafe { vec_replace_allocator_unchecked(vec, &Unmanaged) }
+    unsafe { vec_replace_allocator_unchecked(vec, Unmanaged::NEW) }
 }
 
 /// TODO

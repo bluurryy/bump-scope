@@ -2,7 +2,10 @@
 
 use std::alloc::Global;
 
-use bump_scope::config::{BumpConfig, BumpConfigBuilder};
+use bump_scope::{
+    BumpAllocator as _,
+    config::{BumpConfig, BumpConfigBuilder},
+};
 
 const BUMP_CONFIG: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
 

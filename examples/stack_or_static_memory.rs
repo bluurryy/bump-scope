@@ -9,6 +9,8 @@ use std::{
     sync::{Mutex, PoisonError},
 };
 
+use bump_scope::BumpAllocator as _;
+
 #[repr(C, align(16))]
 struct StaticAllocator<const SIZE: usize> {
     memory: Cell<[MaybeUninit<u8>; SIZE]>,

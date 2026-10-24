@@ -1,13 +1,19 @@
 use core::{
     alloc::{AllocError, Allocator, Layout},
+    marker::PhantomData,
     ptr::NonNull,
 };
 
 /// TODO
 #[non_exhaustive]
-pub struct Unmanaged;
+#[derive(Debug, Clone, Copy)]
+pub struct Unmanaged<'a>(PhantomData<&'a ()>);
 
-unsafe impl Allocator for &Unmanaged {
+impl Unmanaged<'_> {
+    pub(crate) const NEW: Self = Self(PhantomData);
+}
+
+unsafe impl Allocator for Unmanaged<'_> {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         _ = layout;
         Err(AllocError)

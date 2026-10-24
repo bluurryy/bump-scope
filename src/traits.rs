@@ -39,7 +39,7 @@ impl<A: Allocator, const C: BumpConfig> AllocatorNightly for Bump<A, C> {}
 #[cfg(feature = "nightly")]
 impl<A: Allocator, const C: BumpConfig> AllocatorNightly for BumpScope<'_, A, C> {}
 #[cfg(feature = "nightly")]
-impl AllocatorNightly for &Unmanaged {}
+impl AllocatorNightly for Unmanaged<'_> {}
 
 pub(crate) unsafe trait Sealed: Allocator + Sized {
     const CONFIG: BumpConfig;
@@ -866,7 +866,7 @@ unsafe impl<A: Allocator, const C: BumpConfig> Sealed for BumpScope<'_, A, C> {
         }
     }
 }
-unsafe impl Sealed for &Unmanaged {
+unsafe impl Sealed for Unmanaged<'_> {
     const CONFIG: BumpConfig = DEFAULT_BUMP_CONFIG;
 
     #[inline(always)]
@@ -2529,7 +2529,7 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for BumpScope<'_, A
         self.raw.reserve(additional)
     }
 }
-unsafe impl BumpAllocator for &Unmanaged {
+unsafe impl BumpAllocator for Unmanaged<'_> {
     #[inline(always)]
     fn is_claimed(&self) -> bool {
         false
@@ -2562,7 +2562,7 @@ unsafe impl<'a, T: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for &mut T {}
 unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for &'a Bump<A, C> {}
 unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for &'a mut Bump<A, C> {}
 unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for BumpScope<'a, A, C> {}
-unsafe impl<'a> BumpAllocatorScope<'a> for &'a Unmanaged {}
+unsafe impl<'a> BumpAllocatorScope<'a> for Unmanaged<'a> {}
 
 /// TODO
 #[expect(private_bounds)]
