@@ -517,7 +517,7 @@ where
 }
 
 /// TODO
-unsafe fn box_replace_allocator_unchecked<'a, T, Old, New>(boxed: Box<T, Old>, new: New) -> (Box<T, New>, Old)
+pub(crate) unsafe fn box_replace_allocator_unchecked<'a, T, Old, New>(boxed: Box<T, Old>, new: New) -> (Box<T, New>, Old)
 where
     T: ?Sized,
     Old: BumpAllocator,

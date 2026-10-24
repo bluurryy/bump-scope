@@ -69,7 +69,7 @@ up_and_down! {
 
     #[test]
     fn test_interior_null_fmt_mut() {
-        let bump: Bump<Global, C> = Bump::new();
+        let mut bump: Bump<Global, C> = Bump::new();
         let hello = "hello";
         let world = "world";
         let allocated = bump.alloc_cstr_fmt_mut(assert_multiple(format_args!("{hello}\0{world}"))).into_ref();
