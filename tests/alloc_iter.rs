@@ -15,15 +15,15 @@ up_and_down! {
     fn zst() {
         let mut bump: Bump<Global, C> = Bump::new();
 
-        bump.alloc_iter([[0u8; 0]; 10]);
-        bump.alloc_iter([[0u16; 0]; 10]);
-        bump.alloc_iter([[0u32; 0]; 10]);
-        bump.alloc_iter([[0u64; 0]; 10]);
+        bump.alloc_iter([[0u8; 0]; 10]).into_boxu();
+        bump.alloc_iter([[0u16; 0]; 10]).into_boxu();
+        bump.alloc_iter([[0u32; 0]; 10]).into_boxu();
+        bump.alloc_iter([[0u64; 0]; 10]).into_boxu();
 
-        bump.alloc_iter_mut([[0u8; 0]; 10]);
-        bump.alloc_iter_mut([[0u16; 0]; 10]);
-        bump.alloc_iter_mut([[0u32; 0]; 10]);
-        bump.alloc_iter_mut([[0u64; 0]; 10]);
+        bump.alloc_iter_mut([[0u8; 0]; 10]).into_boxu();
+        bump.alloc_iter_mut([[0u16; 0]; 10]).into_boxu();
+        bump.alloc_iter_mut([[0u32; 0]; 10]).into_boxu();
+        bump.alloc_iter_mut([[0u64; 0]; 10]).into_boxu();
 
         assert_eq!(bump.stats().allocated(), 0);
     }
@@ -32,15 +32,15 @@ up_and_down! {
     fn empty() {
         let mut bump: Bump<Global, C> = Bump::new();
 
-        bump.alloc_iter(core::iter::empty::<u8>());
-        bump.alloc_iter(core::iter::empty::<u16>());
-        bump.alloc_iter(core::iter::empty::<u32>());
-        bump.alloc_iter(core::iter::empty::<u64>());
+        bump.alloc_iter(core::iter::empty::<u8>()).into_boxu();
+        bump.alloc_iter(core::iter::empty::<u16>()).into_boxu();
+        bump.alloc_iter(core::iter::empty::<u32>()).into_boxu();
+        bump.alloc_iter(core::iter::empty::<u64>()).into_boxu();
 
-        bump.alloc_iter_mut(core::iter::empty::<u8>());
-        bump.alloc_iter_mut(core::iter::empty::<u16>());
-        bump.alloc_iter_mut(core::iter::empty::<u32>());
-        bump.alloc_iter_mut(core::iter::empty::<u64>());
+        bump.alloc_iter_mut(core::iter::empty::<u8>()).into_boxu();
+        bump.alloc_iter_mut(core::iter::empty::<u16>()).into_boxu();
+        bump.alloc_iter_mut(core::iter::empty::<u32>()).into_boxu();
+        bump.alloc_iter_mut(core::iter::empty::<u64>()).into_boxu();
 
         assert_eq!(bump.stats().allocated(), 0);
     }
@@ -48,14 +48,14 @@ up_and_down! {
     #[test]
     fn three() {
         let bump: Bump<Global, C> = Bump::new();
-        bump.alloc_iter(SuppressHints([1, 2, 3].into_iter()));
+        bump.alloc_iter(SuppressHints([1, 2, 3].into_iter())).into_boxu();
         assert_eq!(bump.stats().allocated(), 3 * 4);
     }
 
     #[test]
     fn three_mut() {
         let mut bump: Bump<Global, C> = Bump::new();
-        bump.alloc_iter_mut(SuppressHints([1, 2, 3].into_iter()));
+        bump.alloc_iter_mut(SuppressHints([1, 2, 3].into_iter())).into_boxu();
         assert_eq!(bump.stats().allocated(), 3 * 4);
     }
 }

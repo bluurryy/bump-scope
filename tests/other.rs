@@ -5,17 +5,13 @@ mod common;
 use std::{
     alloc::{AllocError, Allocator, Global, Layout, System},
     cell::Cell,
-    fmt::Debug,
-    io::IoSlice,
-    iter,
     ptr::NonNull,
     sync::{Arc, Mutex, PoisonError},
 };
 
 use bump_scope::{
-    BoxU, Bump, BumpScope, config,
+    Bump, BumpScope, config,
     config::BumpConfig,
-    owned_slice,
     stats::{AnyChunk, Chunk},
     traits::BumpAllocator,
 };
@@ -206,12 +202,12 @@ up_and_down! {
         let mut bump: Bump<Global, MIN_ALIGN_8> = Bump::new();
 
         bump.scoped(|bump| {
-            bump.alloc(0xDEAD_BEEF_u64);
+            bump.alloc(0xDEAD_BEEF_u64).into_boxu();
             assert_eq!(bump.stats().allocated(), 8);
             bump.with_config::<C, ()>(|bump| {
-                bump.alloc(1u8);
+                bump.alloc(1u8).into_boxu();
                 assert_eq!(bump.stats().allocated(), 9);
-                bump.alloc(2u8);
+                bump.alloc(2u8).into_boxu();
                 assert_eq!(bump.stats().allocated(), 10);
             });
             assert_eq!(bump.stats().allocated(), 16);
@@ -253,7 +249,7 @@ up_and_down! {
         });
 
         bump.scoped(|bump| {
-            bump.alloc(1u8);
+            bump.alloc(1u8).into_boxu();
             let bump = bump.mut_change_config::<MIN_ALIGN_8>();
             assert_eq!(bump.stats().allocated(), 8);
             bump.alloc(2u16).into_boxu();
@@ -326,7 +322,7 @@ up_and_down! {
         let mut vec = extra::vec_from_owned_slice_in([1, 2, 3], &bump);
         let addr = vec.as_ptr().addr();
         assert_eq!(vec.capacity(), 3);
-        bump.alloc_str("now you can't shrink haha");
+        bump.alloc_str("now you can't shrink haha").into_boxu();
 
         vec.clear();
         vec.shrink_to_fit();
@@ -342,7 +338,7 @@ up_and_down! {
         // change_config
         {
             let bump = Bump::<Global, C>::with_size(64);
-            bump.alloc(0u8);
+            bump.alloc(0u8).into_boxu();
             assert!(!bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
             let bump = bump.change_config::<MIN_ALIGN_8>();
             assert!(bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
@@ -351,7 +347,7 @@ up_and_down! {
         // mut_change_config
         {
             let mut bump = Bump::<Global, C>::with_size(64);
-            bump.alloc(0u8);
+            bump.alloc(0u8).into_boxu();
             assert!(!bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
             let bump = bump.mut_change_config::<MIN_ALIGN_8>();
             assert!(bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
@@ -360,7 +356,7 @@ up_and_down! {
         // with_config
         {
             let mut bump = Bump::<Global, C>::with_size(64);
-            bump.alloc(0u8);
+            bump.alloc(0u8).into_boxu();
             assert!(!bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
             bump.with_config::<MIN_ALIGN_8, ()>(|bump| {
                 assert!(bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
@@ -370,7 +366,7 @@ up_and_down! {
         // scoped_with_config
         {
             let mut bump = Bump::<Global, C>::with_size(64);
-            bump.alloc(0u8);
+            bump.alloc(0u8).into_boxu();
             assert!(!bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
             bump.scoped_with_config::<MIN_ALIGN_8, ()>(|bump| {
                 assert!(bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());

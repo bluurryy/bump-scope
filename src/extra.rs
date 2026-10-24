@@ -2,12 +2,11 @@ mod split_off;
 
 use core::{
     alloc::{AllocError, Allocator, Layout},
-    mem::{self, ManuallyDrop, MaybeUninit},
-    ops::{self, RangeBounds},
+    mem::{self, MaybeUninit},
     ptr::{self, NonNull},
 };
 
-use alloc::{alloc::AllocatorClone, boxed::Box, vec::Vec};
+use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
     BoxU, NoDrop, SizedTypeProperties, Unmanaged, VecU,
@@ -16,7 +15,6 @@ use crate::{
     error_behavior::ErrorBehavior,
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
     panic_on_error,
-    polyfill::{self, non_null},
     traits::{BumpAllocator, BumpAllocatorScope},
 };
 
@@ -542,7 +540,7 @@ fn box_empty_slice_in<T, A>(alloc: A) -> Box<[T], A>
 where
     A: Allocator,
 {
-    let ptr = ptr::from_raw_parts_mut(ptr::dangling_mut::<T>(), 0);
+    let ptr = ptr::slice_from_raw_parts_mut(ptr::dangling_mut::<T>(), 0);
     unsafe { Box::from_raw_in(ptr, alloc) }
 }
 
@@ -587,7 +585,7 @@ where
 {
     unsafe {
         let (old, alloc) = Box::into_raw_with_allocator(ptr::read(boxed));
-        let new = ptr::from_raw_parts_mut(old.cast::<T>(), len);
+        let new = ptr::slice_from_raw_parts_mut(old.cast::<T>(), len);
         let replacement = Box::from_raw_in(new, alloc);
         mem::forget(mem::replace(boxed, replacement))
     }
