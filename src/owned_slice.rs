@@ -1,9 +1,7 @@
 use core::{array, mem};
 
-#[cfg(feature = "alloc")]
 use core::alloc::Allocator;
 
-#[cfg(feature = "alloc")]
 use alloc::{
     boxed::Box,
     vec::{self, Vec},
@@ -168,7 +166,6 @@ unsafe impl<T, const N: usize> TakeOwnedSlice for array::IntoIter<T, N> {
     }
 }
 
-#[cfg(feature = "alloc")]
 unsafe impl<T, A: Allocator> TakeOwnedSlice for Vec<T, A> {
     type Item = T;
 
@@ -183,7 +180,6 @@ unsafe impl<T, A: Allocator> TakeOwnedSlice for Vec<T, A> {
     }
 }
 
-#[cfg(feature = "alloc")]
 unsafe impl<T> TakeOwnedSlice for vec::IntoIter<T> {
     type Item = T;
 
@@ -198,7 +194,6 @@ unsafe impl<T> TakeOwnedSlice for vec::IntoIter<T> {
     }
 }
 
-#[cfg(feature = "alloc")]
 unsafe impl<T> TakeOwnedSlice for vec::Drain<'_, T> {
     type Item = T;
 
@@ -213,7 +208,7 @@ unsafe impl<T> TakeOwnedSlice for vec::Drain<'_, T> {
     }
 }
 
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -227,6 +222,7 @@ mod tests {
         ($($ty:ty)*) => {
             const _: () = {
                 type T = i32;
+                #[allow(unused)]
                 type A = $crate::Bump;
                 const fn implements<S: OwnedSlice + ?Sized>() {}
                 $(implements::<$ty>();)*

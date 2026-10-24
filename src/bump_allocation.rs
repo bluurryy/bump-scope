@@ -9,6 +9,7 @@ use crate::{
 };
 
 /// TODO
+#[must_use = "TODO"]
 #[repr(transparent)]
 pub struct BumpAllocation<T: ?Sized, A: Allocator> {
     boxed: Box<T, A>,

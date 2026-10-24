@@ -13,9 +13,9 @@ use std::{
 };
 
 use bump_scope::{
-    Bump, BoxU, BumpScope, BumpString, BumpVec, MutBumpString, MutBumpVec, MutBumpVecRev, config,
+    BoxU, Bump, BumpScope, config,
     config::BumpConfig,
-    mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice,
+    owned_slice,
     stats::{AnyChunk, Chunk},
     traits::BumpAllocator,
 };
@@ -45,7 +45,7 @@ macro_rules! assert_chunk_sizes {
 
 macro_rules! assert_eq_ident {
     ($ident:ident) => {
-        assert_eq!($ident.as_ref(), stringify!($ident));
+        assert_eq!(&*$ident, stringify!($ident));
     };
 }
 
@@ -62,169 +62,14 @@ up_and_down! {
     }
 
     #[test]
-    fn mut_bump_vec() {
-        const TIMES: usize = 5;
-
-        for (size, count) in [(0, 2), (512, 1)] {
-            let mut bump = Bump::<Global, NO_MIN_SIZE>::with_size(size);
-            let mut vec = MutBumpVec::new_in(&mut bump);
-            assert_eq!(vec.allocator_stats().count(), 1);
-            vec.extend(iter::repeat_n(3, TIMES));
-            assert_eq!(vec.allocator_stats().count(), count);
-            let _ = vec.into_boxed_slice();
-            dbg!(bump.stats());
-            assert_eq!(
-                bump.stats().current_chunk().unwrap().allocated(),
-                TIMES * core::mem::size_of::<i32>()
-            );
-            bump.reset();
-            assert_eq!(bump.stats().allocated(), 0);
-        }
-    }
-
-    #[test]
-    fn mut_bump_vec_push_pop() {
-        let mut bump = Bump::<Global, C>::new();
-        let mut vec = mut_bump_vec![in &mut bump; 1, 2];
-
-        vec.push(3);
-
-        assert_eq!(vec, [1, 2, 3]);
-        assert_eq!(vec.pop(), Some(3));
-        assert_eq!(vec.pop(), Some(2));
-        assert_eq!(vec.pop(), Some(1));
-        assert_eq!(vec.pop(), None);
-
-        vec.push(4);
-        assert_eq!(vec, [4]);
-    }
-
-    #[test]
-    fn mut_bump_vec_insert() {
-        let mut bump = Bump::<Global, C>::new();
-        let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3];
-
-        vec.insert(1, 4);
-        assert_eq!(vec, [1, 4, 2, 3]);
-
-        vec.insert(4, 5);
-        assert_eq!(vec, [1, 4, 2, 3, 5]);
-
-        vec.insert(0, 6);
-        assert_eq!(vec, [6, 1, 4, 2, 3, 5]);
-    }
-
-    #[test]
-    fn mut_bump_vec_remove() {
-        let mut bump = Bump::<Global, C>::new();
-        let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4, 5];
-
-        assert_eq!(vec.remove(1), 2);
-        assert_eq!(vec, [1, 3, 4, 5]);
-
-        assert_eq!(vec.remove(3), 5);
-        assert_eq!(vec, [1, 3, 4]);
-
-        assert_eq!(vec.remove(0), 1);
-        assert_eq!(vec, [3, 4]);
-    }
-
-    #[test]
-    fn mut_bump_vec_swap_remove() {
-        let mut bump = Bump::<Global, C>::new();
-        let mut vec = mut_bump_vec![in &mut bump; 1, 2, 3, 4, 5];
-
-        assert_eq!(vec.swap_remove(1), 2);
-        assert_eq!(vec, [1, 5, 3, 4]);
-
-        assert_eq!(vec.swap_remove(3), 4);
-        assert_eq!(vec, [1, 5, 3]);
-
-        assert_eq!(vec.swap_remove(0), 1);
-        assert_eq!(vec, [3, 5]);
-    }
-
-    #[test]
-    fn mut_bump_vec_extend() {
-        let mut bump = Bump::<Global, C>::new();
-        let mut vec = mut_bump_vec![in &mut bump];
-
-        vec.extend([1, 2, 3]);
-        assert_eq!(vec, [1, 2, 3]);
-
-        vec.clear();
-        assert!(vec.is_empty());
-
-        vec.append([1, 2, 3]);
-        assert_eq!(vec, [1, 2, 3]);
-
-        vec.extend_from_slice_copy(&[4, 5, 6]);
-        assert_eq!(vec, [1, 2, 3, 4, 5, 6]);
-
-        vec.extend_from_slice_clone(&[7, 8, 9]);
-        assert_eq!(vec, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    }
-
-    #[test]
-    #[cfg(target_pointer_width = "64")]
-    fn mut_bump_vec_drop() {
-        use bump_scope::MutBumpVec;
-
-        use crate::common::MALLOC_OVERHEAD;
-
-        const CHUNK_HEADER_SIZE: usize = 8 * 4;
-        const OVERHEAD: usize = MALLOC_OVERHEAD + CHUNK_HEADER_SIZE;
-
-        let mut bump = Bump::<Global, NO_MIN_SIZE>::with_size(64);
-        assert_eq!(bump.stats().current_chunk().unwrap().size(), 64 - MALLOC_OVERHEAD);
-        assert_eq!(bump.stats().capacity(), 64 - OVERHEAD);
-        assert_eq!(bump.stats().remaining(), 64 - OVERHEAD);
-
-        let mut vec: MutBumpVec<u8, _> = mut_bump_vec![in &mut bump];
-        vec.reserve(33);
-
-        assert_eq!(vec.allocator_stats().current_chunk().unwrap().size(), 128 - MALLOC_OVERHEAD);
-        assert_eq!(
-            vec.allocator_stats().current_chunk().unwrap().prev().unwrap().size(),
-            64 - MALLOC_OVERHEAD
-        );
-        assert_eq!(vec.allocator_stats().size(), 64 + 128 - MALLOC_OVERHEAD * 2);
-        assert_eq!(vec.allocator_stats().count(), 2);
-
-        drop(vec);
-
-        assert_eq!(bump.stats().current_chunk().unwrap().size(), 128 - MALLOC_OVERHEAD);
-        assert_eq!(bump.stats().size(), 64 + 128 - MALLOC_OVERHEAD * 2);
-        assert_eq!(bump.stats().count(), 2);
-    }
-
-    #[test]
-    fn mut_bump_vec_write() {
-        use std::io::Write;
-
-        let mut bump = Bump::<Global, C>::new();
-        let mut vec: MutBumpVec<u8, _> = mut_bump_vec![in &mut bump];
-
-        let _ = vec.write(&[0]).unwrap();
-
-        let _ = vec
-            .write_vectored(&[IoSlice::new(&[1, 2, 3]), IoSlice::new(&[4, 5, 6, 7, 8])])
-            .unwrap();
-
-        let _ = vec.write(&[9, 10]).unwrap();
-
-        assert_eq!(vec, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    }
-
-    #[test]
     fn alloc_iter() {
         let bump = Bump::<Global, C>::with_size(64);
 
-        let slice_0 = bump.alloc_iter([1, 2, 3]);
-        let slice_1 = bump.alloc_iter([4, 5, 6]);
+        let slice_0 = bump.alloc_iter([1, 2, 3]).into_ref();
+        let slice_1 = bump.alloc_iter([4, 5, 6]).into_ref();
 
-        assert_eq!(slice_0.as_ref(), [1, 2, 3]);
-        assert_eq!(slice_1.as_ref(), [4, 5, 6]);
+        assert_eq!(slice_0, [1, 2, 3]);
+        assert_eq!(slice_1, [4, 5, 6]);
     }
 
     #[test]
@@ -234,26 +79,6 @@ up_and_down! {
         bump.reset();
         assert_chunk_sizes!(bump, [], 64, []);
     }
-
-    #[test]
-    fn macro_syntax() {
-        #[expect(clippy::needless_pass_by_value)]
-        fn check<T: Debug + PartialEq, const C: BumpConfig>(v: MutBumpVec<T, &mut Bump<Global, C>>, expected: &[T]) {
-            dbg!(&v);
-            assert_eq!(v, expected);
-        }
-
-        let mut bump = Bump::<Global, C>::new();
-
-        check::<i32, C>(mut_bump_vec![in &mut bump], &[]);
-        check(mut_bump_vec![in &mut bump; 1, 2, 3], &[1, 2, 3]);
-        check(mut_bump_vec![in &mut bump; 5; 3], &[5, 5, 5]);
-
-        check::<i32, C>(mut_bump_vec![in &mut bump], &[]);
-        check(mut_bump_vec![in &mut bump; 1, 2, 3], &[1, 2, 3]);
-        check(mut_bump_vec![in &mut bump; 5; 3], &[5, 5, 5]);
-    }
-
 
     #[test]
     fn reset_solo_chunk() {
@@ -310,15 +135,15 @@ up_and_down! {
             let mut child_guard = bump.scope_guard();
             let child_scope = child_guard.scope();
 
-            let child_0 = child_scope.alloc_str("child_0");
-            let child_1 = child_scope.alloc_str("child_1");
+            let child_0 = child_scope.alloc_str("child_0").into_boxu();
+            let child_1 = child_scope.alloc_str("child_1").into_boxu();
 
             {
                 let mut grand_child_guard = child_scope.scope_guard();
                 let grand_child_scope = grand_child_guard.scope();
 
-                let grand_child_0 = grand_child_scope.alloc_str("grand_child_0");
-                let grand_child_1 = grand_child_scope.alloc_str("grand_child_1");
+                let grand_child_0 = grand_child_scope.alloc_str("grand_child_0").into_boxu();
+                let grand_child_1 = grand_child_scope.alloc_str("grand_child_1").into_boxu();
 
                 dbg!(&grand_child_scope);
 
@@ -326,8 +151,8 @@ up_and_down! {
                 assert_eq_ident!(grand_child_1);
             }
 
-            let child_2 = child_scope.alloc_str("child_2");
-            let child_3 = child_scope.alloc_str("child_3");
+            let child_2 = child_scope.alloc_str("child_2").into_boxu();
+            let child_3 = child_scope.alloc_str("child_3").into_boxu();
 
             dbg!(&child_scope);
 
@@ -343,12 +168,12 @@ up_and_down! {
         let mut bump = Bump::<Global, C>::new();
 
         bump.scoped(|child| {
-            let child_0 = child.alloc_str("child_0");
-            let child_1 = child.alloc_str("child_1");
+            let child_0 = child.alloc_str("child_0").into_boxu();
+            let child_1 = child.alloc_str("child_1").into_boxu();
 
             child.scoped(|grand_child| {
-                let grand_child_0 = grand_child.alloc_str("grand_child_0");
-                let grand_child_1 = grand_child.alloc_str("grand_child_1");
+                let grand_child_0 = grand_child.alloc_str("grand_child_0").into_boxu();
+                let grand_child_1 = grand_child.alloc_str("grand_child_1").into_boxu();
 
                 dbg!(&grand_child);
 
@@ -356,8 +181,8 @@ up_and_down! {
                 assert_eq_ident!(grand_child_1);
             });
 
-            let child_2 = child.alloc_str("child_2");
-            let child_3 = child.alloc_str("child_3");
+            let child_2 = child.alloc_str("child_2").into_boxu();
+            let child_3 = child.alloc_str("child_3").into_boxu();
 
             dbg!(&child);
 
@@ -401,19 +226,19 @@ up_and_down! {
 
         {
             let bump = bump.mut_change_config::<MIN_ALIGN_8>();
-            assert_eq!(bump.typed_stats().allocated(), 0);
+            assert_eq!(bump.stats().allocated(), 0);
         }
 
         {
-            bump.alloc(1u8);
+            bump.alloc(1u8).into_boxu();
             let bump = bump.mut_change_config::<MIN_ALIGN_8>();
-            assert_eq!(bump.typed_stats().allocated(), 8);
-            bump.alloc(2u16);
-            assert_eq!(bump.typed_stats().allocated(), 16);
-            bump.alloc(4u32);
-            assert_eq!(bump.typed_stats().allocated(), 24);
-            bump.alloc(8u64);
-            assert_eq!(bump.typed_stats().allocated(), 32);
+            assert_eq!(bump.stats().allocated(), 8);
+            bump.alloc(2u16).into_boxu();
+            assert_eq!(bump.stats().allocated(), 16);
+            bump.alloc(4u32).into_boxu();
+            assert_eq!(bump.stats().allocated(), 24);
+            bump.alloc(8u64).into_boxu();
+            assert_eq!(bump.stats().allocated(), 32);
         }
     }
 
@@ -424,19 +249,19 @@ up_and_down! {
 
         bump.scoped(|bump| {
             let bump = bump.mut_change_config::<MIN_ALIGN_8>();
-            assert_eq!(bump.typed_stats().allocated(), 0);
+            assert_eq!(bump.stats().allocated(), 0);
         });
 
         bump.scoped(|bump| {
             bump.alloc(1u8);
             let bump = bump.mut_change_config::<MIN_ALIGN_8>();
-            assert_eq!(bump.typed_stats().allocated(), 8);
-            bump.alloc(2u16);
-            assert_eq!(bump.typed_stats().allocated(), 16);
-            bump.alloc(4u32);
-            assert_eq!(bump.typed_stats().allocated(), 24);
-            bump.alloc(8u64);
-            assert_eq!(bump.typed_stats().allocated(), 32);
+            assert_eq!(bump.stats().allocated(), 8);
+            bump.alloc(2u16).into_boxu();
+            assert_eq!(bump.stats().allocated(), 16);
+            bump.alloc(4u32).into_boxu();
+            assert_eq!(bump.stats().allocated(), 24);
+            bump.alloc(8u64).into_boxu();
+            assert_eq!(bump.stats().allocated(), 32);
         });
     }
 
@@ -451,22 +276,22 @@ up_and_down! {
         let bump = Bump::<Global, C>::new();
         let one = 1;
         let two = 2;
-        let string = bump.alloc_fmt(format_args!("{one} + {two} = {}", one + two));
+        let string = bump.alloc_fmt(format_args!("{one} + {two} = {}", one + two)).into_boxu();
 
-        assert_eq!(string, "1 + 2 = 3");
+        assert_eq!(&*string, "1 + 2 = 3");
     }
 
     #[test]
     fn vec_of_strings() {
         let bump = Bump::<Global, C>::new();
-        let mut vec = BumpVec::new_in(&bump);
+        let mut vec = Vec::new_in(&bump);
 
         for i in 0..10 {
             let string = bump.alloc_fmt(format_args!("hello {i}")).into_ref();
             vec.push(string);
         }
 
-        let slice: &[&str] = vec.into_slice();
+        let slice: &[&str] = extra::vec_into_slice(vec);
 
         dbg!(&slice);
     }
@@ -475,7 +300,7 @@ up_and_down! {
     fn bump_vec_shrink_can() {
         let bump = Bump::<Global, C>::with_size(64);
 
-        let mut vec = BumpVec::<i32, _>::from_owned_slice_in([1, 2, 3], &bump);
+        let mut vec = extra::vec_from_owned_slice_in([1, 2, 3], &bump);
         let addr = vec.as_ptr().addr();
         assert_eq!(vec.capacity(), 3);
         vec.shrink_to_fit();
@@ -498,7 +323,7 @@ up_and_down! {
     fn bump_vec_shrink_cant() {
         let bump = Bump::<Global, C>::with_size(64);
 
-        let mut vec = BumpVec::<i32, _>::from_owned_slice_in([1, 2, 3], &bump);
+        let mut vec = extra::vec_from_owned_slice_in([1, 2, 3], &bump);
         let addr = vec.as_ptr().addr();
         assert_eq!(vec.capacity(), 3);
         bump.alloc_str("now you can't shrink haha");
@@ -529,7 +354,7 @@ up_and_down! {
             bump.alloc(0u8);
             assert!(!bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
             let bump = bump.mut_change_config::<MIN_ALIGN_8>();
-            assert!(bump.typed_stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
+            assert!(bump.stats().bump_position().unwrap().cast::<AlignT>().is_aligned());
         }
 
         // with_config
@@ -675,7 +500,7 @@ up_and_down! {
 
                     i += 1;
                     DropEmit
-                });
+                }).into_boxu();
             });
 
             assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "AAAAAAA");
@@ -700,23 +525,7 @@ up_and_down! {
 
         {
             reset();
-            let drop_emit = bump.alloc_iter_exact([DropEmit, DropEmit, DropEmit]);
-            assert_eq!(DROPS.get(), 0);
-            drop(drop_emit);
-            assert_eq!(DROPS.get(), 3);
-        }
-
-        {
-            reset();
             let drop_emit = bump.alloc_iter_mut([DropEmit, DropEmit, DropEmit]);
-            assert_eq!(DROPS.get(), 0);
-            drop(drop_emit);
-            assert_eq!(DROPS.get(), 3);
-        }
-
-        {
-            reset();
-            let drop_emit = bump.alloc_iter_mut_rev([DropEmit, DropEmit, DropEmit]);
             assert_eq!(DROPS.get(), 0);
             drop(drop_emit);
             assert_eq!(DROPS.get(), 3);
@@ -731,7 +540,7 @@ up_and_down! {
             let mut calls = 0;
             bump.alloc_with(|| {
                 calls += 1;
-            });
+            }).into_boxu();
             assert_eq!(calls, 1);
         }
 
@@ -739,7 +548,7 @@ up_and_down! {
             let mut calls = 0;
             bump.alloc_slice_fill_with(3, || {
                 calls += 1;
-            });
+            }).into_boxu();
             assert_eq!(calls, 3);
         }
     }
@@ -747,14 +556,14 @@ up_and_down! {
     #[test]
     fn dealloc_ltr() {
         let bump = Bump::<Global, C>::new();
-        let slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]);
-        let (lhs, rhs) = slice.split_at(3);
+        let slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]).into_boxu();
+        let (lhs, rhs) = extra::box_split_at(slice, 3);
 
-        assert_eq!(lhs, [1, 2, 3]);
-        assert_eq!(rhs, [4, 5, 6]);
+        assert_eq!(&*lhs, [1, 2, 3]);
+        assert_eq!(&*rhs, [4, 5, 6]);
         assert_eq!(bump.stats().allocated(), 6 * 4);
 
-        bump.dealloc(lhs);
+        drop(extra::box_replace_allocator(lhs, &bump));
 
         if config::read::upwards(C) {
             assert_eq!(bump.stats().allocated(), 6 * 4);
@@ -762,7 +571,7 @@ up_and_down! {
             assert_eq!(bump.stats().allocated(), 3 * 4);
         }
 
-        bump.dealloc(rhs);
+        drop(extra::box_replace_allocator(rhs, &bump));
 
         if config::read::upwards(C) {
             assert_eq!(bump.stats().allocated(), 3 * 4);
@@ -774,14 +583,14 @@ up_and_down! {
     #[test]
     fn dealloc_rtl() {
         let bump = Bump::<Global, C>::new();
-        let slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]);
-        let (lhs, rhs) = slice.split_at(3);
+        let slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]).into_boxu();
+        let (lhs, rhs) = extra::box_split_at(slice, 3);
 
-        assert_eq!(lhs, [1, 2, 3]);
-        assert_eq!(rhs, [4, 5, 6]);
+        assert_eq!(&*lhs, [1, 2, 3]);
+        assert_eq!(&*rhs, [4, 5, 6]);
         assert_eq!(bump.stats().allocated(), 6 * 4);
 
-        bump.dealloc(rhs);
+        drop(extra::box_replace_allocator(rhs, &bump));
 
         if config::read::upwards(C) {
             assert_eq!(bump.stats().allocated(), 3 * 4);
@@ -789,76 +598,12 @@ up_and_down! {
             assert_eq!(bump.stats().allocated(), 6 * 4);
         }
 
-        bump.dealloc(lhs);
+        drop(extra::box_replace_allocator(lhs, &bump));
 
         if config::read::upwards(C) {
             assert_eq!(bump.stats().allocated(), 0);
         } else {
             assert_eq!(bump.stats().allocated(), 3 * 4);
-        }
-    }
-
-    #[test]
-    fn min_non_zero_cap() {
-        fn bump_with_remaining_capacity(capacity: usize) -> Bump {
-            let bump = Bump::with_capacity(Layout::array::<u8>(capacity).unwrap());
-            let to_be_occupied = bump.stats().capacity() - capacity;
-            bump.alloc_uninit_slice::<u8>(to_be_occupied);
-            bump
-        }
-
-        #[expect(dead_code)]
-        struct Big([u8; 1025]);
-
-        impl Default for Big {
-            fn default() -> Self {
-                Self([0u8; 1025])
-            }
-        }
-
-        fn test_vecs<T: Default>(expected_capacity: usize) {
-            {
-                let bump: Bump = Bump::new();
-                let mut vec: BumpVec<T, _> = BumpVec::new_in(&bump);
-                vec.push_with(Default::default);
-                assert_eq!(vec.capacity(), expected_capacity, "{}", std::any::type_name::<T>());
-            }
-
-            {
-                let mut bump = bump_with_remaining_capacity(size_of::<T>() * expected_capacity);
-                let mut vec: MutBumpVec<T, _> = MutBumpVec::new_in(&mut bump);
-                vec.push_with(Default::default);
-                assert_eq!(vec.capacity(), expected_capacity, "{}", std::any::type_name::<T>());
-                drop(vec);
-            }
-
-            {
-                let mut bump = bump_with_remaining_capacity(size_of::<T>() * expected_capacity);
-                let mut vec: MutBumpVecRev<T, _> = MutBumpVecRev::new_in(&mut bump);
-                vec.push_with(Default::default);
-                assert_eq!(vec.capacity(), expected_capacity, "{}", std::any::type_name::<T>());
-                drop(vec);
-            }
-        }
-
-        test_vecs::<u8>(8);
-        test_vecs::<[u8; 4]>(4);
-        test_vecs::<Big>(1);
-
-        {
-            let bump: Bump = Bump::new();
-            let mut string = BumpString::new_in(&bump);
-            string.push('a');
-            assert_eq!(string.capacity(), 8);
-            drop(string);
-        }
-
-        {
-            let mut bump = bump_with_remaining_capacity(8);
-            let mut string = MutBumpString::new_in(&mut bump);
-            string.push('a');
-            assert_eq!(string.capacity(), 8);
-            drop(string);
         }
     }
 
@@ -932,13 +677,13 @@ up_and_down! {
     fn generic_bump_scope() {
         fn foo<A: Allocator, const C: BumpConfig>(bump: &mut BumpScope<A, C>) {
             assert_eq!(bump.stats().allocated(), 0);
-            bump.alloc_str("good");
+            bump.alloc_str("good").into_boxu();
             assert_eq!(bump.stats().allocated(), 4);
             bump.scoped(|bump| {
-                bump.alloc_str("day");
+                bump.alloc_str("day").into_boxu();
                 assert_eq!(bump.stats().allocated(), 7);
                 bump.scoped(|bump| {
-                    bump.alloc_str("world");
+                    bump.alloc_str("world").into_boxu();
                     assert_eq!(bump.stats().allocated(), 12);
                 });
                 assert_eq!(bump.stats().allocated(), 7);
@@ -972,47 +717,6 @@ fn debug_sizes(bump: &impl BumpAllocator) {
     eprintln!("sizes: {vec:?}");
 }
 
-#[test]
-#[expect(dead_code)]
-fn api_that_accepts_bump_or_bump_scope() {
-    fn vec_from_mut_bump(bump: &mut Bump) -> MutBumpVec<i32, &mut Bump> {
-        MutBumpVec::new_in(bump)
-    }
-
-    fn vec_from_mut_bump_scope<'b, 'a>(bump: &'b mut BumpScope<'a>) -> MutBumpVec<i32, &'b mut BumpScope<'a>> {
-        MutBumpVec::new_in(bump)
-    }
-
-    fn string_from_mut_bump(bump: &mut Bump) -> MutBumpString<&mut Bump> {
-        MutBumpString::new_in(bump)
-    }
-
-    fn string_from_mut_bump_scope<'b, 'a>(bump: &'b mut BumpScope<'a>) -> MutBumpString<&'b mut BumpScope<'a>> {
-        MutBumpString::new_in(bump)
-    }
-}
-
-#[expect(dead_code)]
-fn assert_covariant() {
-    fn bump_box<'a, 'other>(x: BoxU<'static, &'static str>) -> BoxU<'a, &'other str> {
-        x
-    }
-
-    fn bump_slice_iter<'a, 'other>(
-        x: owned_slice::IntoIter<'static, &'static str>,
-    ) -> owned_slice::IntoIter<'a, &'other str> {
-        x
-    }
-
-    // fn mut_bump_vec<'b, 'a, 'other>(x: MutBumpVec<'b, 'static, &'static str>) -> MutBumpVec<'b, 'a, &'other str> {
-    //     x
-    // }
-
-    // fn mut_bump_string<'b, 'a>(x: MutBumpString<'b, 'static>) -> MutBumpString<'b, 'a> {
-    //     x
-    // }
-}
-
 // test claim in crate docs that layout equals `Cell<NonNull<()>>`
 // make sure to also check that niches are the same
 mod doc_layout_claim {
@@ -1040,96 +744,5 @@ mod doc_layout_claim {
 fn force_alloc_new_chunk<A: Allocator, const C: BumpConfig>(bump: &BumpScope<A, C>) {
     let size = bump.stats().current_chunk().unwrap().remaining() + 1;
     let layout = Layout::from_size_align(size, 1).unwrap();
-    bump.allocate_layout(layout);
-}
-
-#[expect(dead_code)]
-fn bump_vec_macro() {
-    type Result<T> = std::result::Result<T, AllocError>;
-
-    fn new_in(bump: &mut Bump) -> MutBumpVec<u32, &mut Bump> {
-        mut_bump_vec![in bump]
-    }
-
-    fn from_array_in(bump: &mut Bump) -> MutBumpVec<u32, &mut Bump> {
-        mut_bump_vec![in bump; 1, 2, 3]
-    }
-
-    fn from_elem_in(bump: &mut Bump) -> MutBumpVec<u32, &mut Bump> {
-        mut_bump_vec![in bump; 3; 5]
-    }
-
-    fn try_new_in(bump: &mut Bump) -> Result<MutBumpVec<u32, &mut Bump>> {
-        mut_bump_vec![try in bump]
-    }
-
-    fn try_from_array_in(bump: &mut Bump) -> Result<MutBumpVec<u32, &mut Bump>> {
-        mut_bump_vec![try in bump; 1, 2, 3]
-    }
-
-    fn try_from_elem_in(bump: &mut Bump) -> Result<MutBumpVec<u32, &mut Bump>> {
-        mut_bump_vec![try in bump; 3; 5]
-    }
-}
-
-#[expect(dead_code)]
-fn bump_vec_rev_macro() {
-    type Result<T> = std::result::Result<T, AllocError>;
-
-    fn new_in(bump: &mut Bump) -> MutBumpVecRev<u32, &mut Bump> {
-        mut_bump_vec_rev![in bump]
-    }
-
-    fn from_array_in(bump: &mut Bump) -> MutBumpVecRev<u32, &mut Bump> {
-        mut_bump_vec_rev![in bump; 1, 2, 3]
-    }
-
-    fn from_elem_in(bump: &mut Bump) -> MutBumpVecRev<u32, &mut Bump> {
-        mut_bump_vec_rev![in bump; 3; 5]
-    }
-
-    fn try_new_in(bump: &mut Bump) -> Result<MutBumpVecRev<u32, &mut Bump>> {
-        mut_bump_vec_rev![try in bump]
-    }
-
-    fn try_from_array_in(bump: &mut Bump) -> Result<MutBumpVecRev<u32, &mut Bump>> {
-        mut_bump_vec_rev![try in bump; 1, 2, 3]
-    }
-
-    fn try_from_elem_in(bump: &mut Bump) -> Result<MutBumpVecRev<u32, &mut Bump>> {
-        mut_bump_vec_rev![try in bump; 3; 5]
-    }
-}
-
-#[expect(dead_code)]
-fn bump_format_macro() {
-    type Result<T> = std::result::Result<T, AllocError>;
-
-    fn infallible_new(bump: &mut Bump) -> MutBumpString<&mut Bump> {
-        mut_bump_format!(in bump)
-    }
-
-    fn fallible_new(bump: &mut Bump) -> Result<MutBumpString<&mut Bump>> {
-        mut_bump_format!(try in bump)
-    }
-
-    fn infallible_raw(bump: &mut Bump) -> MutBumpString<&mut Bump> {
-        mut_bump_format!(in bump, r"hey")
-    }
-
-    fn fallible_raw(bump: &mut Bump) -> Result<MutBumpString<&mut Bump>> {
-        mut_bump_format!(try in bump, r"hey")
-    }
-
-    fn infallible_fmt(bump: &mut Bump) -> MutBumpString<&mut Bump> {
-        let one = 1;
-        let two = 2;
-        mut_bump_format!(in bump, "{one} + {two} = {}", one + two)
-    }
-
-    fn fallible_fmt(bump: &mut Bump) -> Result<MutBumpString<&mut Bump>> {
-        let one = 1;
-        let two = 2;
-        mut_bump_format!(try in bump, "{one} + {two} = {}", one + two)
-    }
+    bump.allocate(layout).unwrap();
 }

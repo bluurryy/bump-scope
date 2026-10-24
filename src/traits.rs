@@ -1,5 +1,5 @@
 use core::{
-    alloc::{Allocator, Layout},
+    alloc::{AllocError, Allocator, Layout},
     error::Error,
     num::NonZeroUsize,
     ptr::NonNull,
@@ -13,6 +13,9 @@ use crate::{
     stats::AnyStats,
     up_align_usize_unchecked,
 };
+
+#[cfg(feature = "panic-on-alloc")]
+use crate::{error_behavior, panic_on_error};
 
 pub(crate) unsafe trait Sealed {
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
@@ -412,8 +415,72 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// ```
     unsafe fn reset_to(&self, checkpoint: Checkpoint);
 
+    /// Returns true if the bump allocator is currently [claimed].
+    ///
+    /// [claimed]: crate::BumpScope::claim
+    #[must_use]
+    fn is_claimed(&self) -> bool;
+
     /// TODO
     fn any_stats(&self) -> AnyStats<'_>;
+
+    /// Reserves capacity for at least `additional` more bytes to be bump allocated.
+    /// The bump allocator may reserve more space to avoid frequent reallocations.
+    /// After calling `reserve`, <code>self.[stats][]().[remaining][]()</code> will be greater than or equal to
+    /// `additional`. Does nothing if the capacity is already sufficient.
+    ///
+    /// Note that these bytes are not necessarily in one contiguous region but
+    /// might be spread across multiple chunks.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// Panics if the bump allocator is currently [claimed].
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// let bump: Bump = Bump::new();
+    /// assert!(bump.stats().capacity() < 4096);
+    ///
+    /// bump.reserve(4096);
+    /// assert!(bump.stats().capacity() >= 4096);
+    /// ```
+    ///
+    /// [stats]: crate::BumpScope::stats
+    /// [remaining]: Stats::remaining
+    /// [claimed]: crate::BumpScope::claim
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve(&self, additional: usize);
+
+    /// Reserves capacity for at least `additional` more bytes to be bump allocated.
+    /// The bump allocator may reserve more space to avoid frequent reallocations.
+    /// After calling `reserve`, <code>self.[stats][]().[remaining][]()</code> will be greater than or equal to
+    /// `additional`. Does nothing if the capacity is already sufficient.
+    ///
+    /// Note that these bytes are not necessarily in one contiguous region but
+    /// might be spread across multiple chunks.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// Errors if the bump allocator is currently [claimed].
+    ///
+    /// # Examples
+    /// ```
+    /// # use bump_scope::Bump;
+    /// let bump: Bump = Bump::new();
+    /// assert!(bump.stats().capacity() < 4096);
+    ///
+    /// bump.try_reserve(4096)?;
+    /// assert!(bump.stats().capacity() >= 4096);
+    /// # Ok::<(), ::core::alloc::AllocError>(())
+    /// ```
+    ///
+    /// [stats]: crate::BumpScope::stats
+    /// [remaining]: Stats::remaining
+    /// [claimed]: crate::BumpScope::claim
+    fn try_reserve(&self, additional: usize) -> Result<(), AllocError>;
 }
 unsafe impl<T: BumpAllocator> BumpAllocator for &T {
     #[inline(always)]
@@ -427,8 +494,24 @@ unsafe impl<T: BumpAllocator> BumpAllocator for &T {
     }
 
     #[inline(always)]
+    fn is_claimed(&self) -> bool {
+        T::is_claimed(self)
+    }
+
+    #[inline(always)]
     fn any_stats(&self) -> AnyStats<'_> {
         T::any_stats(self)
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve(&self, additional: usize) {
+        T::reserve(self, additional);
+    }
+
+    #[inline(always)]
+    fn try_reserve(&self, additional: usize) -> Result<(), AllocError> {
+        T::try_reserve(self, additional)
     }
 }
 unsafe impl<T: BumpAllocator> BumpAllocator for &mut T {
@@ -443,8 +526,24 @@ unsafe impl<T: BumpAllocator> BumpAllocator for &mut T {
     }
 
     #[inline(always)]
+    fn is_claimed(&self) -> bool {
+        T::is_claimed(self)
+    }
+
+    #[inline(always)]
     fn any_stats(&self) -> AnyStats<'_> {
         T::any_stats(self)
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve(&self, additional: usize) {
+        T::reserve(self, additional);
+    }
+
+    #[inline(always)]
+    fn try_reserve(&self, additional: usize) -> Result<(), AllocError> {
+        T::try_reserve(self, additional)
     }
 }
 unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for Bump<A, C> {
@@ -461,8 +560,24 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for Bump<A, C> {
     }
 
     #[inline(always)]
+    fn is_claimed(&self) -> bool {
+        self.raw.is_claimed()
+    }
+
+    #[inline(always)]
     fn any_stats(&self) -> AnyStats<'_> {
         self.stats().into()
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve(&self, additional: usize) {
+        panic_on_error(self.raw.reserve(additional))
+    }
+
+    #[inline(always)]
+    fn try_reserve(&self, additional: usize) -> Result<(), AllocError> {
+        self.raw.reserve(additional)
     }
 }
 unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for BumpScope<'_, A, C> {
@@ -479,8 +594,24 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for BumpScope<'_, A
     }
 
     #[inline(always)]
+    fn is_claimed(&self) -> bool {
+        self.raw.is_claimed()
+    }
+
+    #[inline(always)]
     fn any_stats(&self) -> AnyStats<'_> {
         self.stats().into()
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve(&self, additional: usize) {
+        panic_on_error(self.raw.reserve(additional))
+    }
+
+    #[inline(always)]
+    fn try_reserve(&self, additional: usize) -> Result<(), AllocError> {
+        self.raw.reserve(additional)
     }
 }
 unsafe impl BumpAllocator for &Unmanaged {
@@ -495,8 +626,26 @@ unsafe impl BumpAllocator for &Unmanaged {
     }
 
     #[inline(always)]
+    fn is_claimed(&self) -> bool {
+        false
+    }
+
+    #[inline(always)]
     fn any_stats(&self) -> AnyStats<'_> {
         AnyStats::default()
+    }
+
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn reserve(&self, additional: usize) {
+        _ = additional;
+        error_behavior::panic::unmanaged();
+    }
+
+    #[inline(always)]
+    fn try_reserve(&self, additional: usize) -> Result<(), AllocError> {
+        _ = additional;
+        Err(AllocError)
     }
 }
 

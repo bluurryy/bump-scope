@@ -7,7 +7,7 @@ use core::{
     ptr::NonNull,
 };
 
-#[cfg(feature = "nightly-clone-to-uninit")]
+#[cfg(feature = "nightly")]
 use core::clone::CloneToUninit;
 
 use crate::{
@@ -119,7 +119,7 @@ macro_rules! make_type {
         /// # but we still want it here for demonstration
         /// #![feature(allocator_ext)]
         /// # */
-        /// # #[cfg(feature = "nightly-tests")]
+        /// # #[cfg(feature = "nightly")]
         /// # fn main() {
         /// use bump_scope::Bump;
         /// # // use std::collections::{VecDeque, BTreeMap, LinkedList};
@@ -135,7 +135,7 @@ macro_rules! make_type {
         /// # // let _: BTreeMap<i32, i32, _> = map;
         /// # let _: LinkedList<i32, _> = list;
         /// # }
-        /// # #[cfg(not(feature = "nightly-tests"))] fn main() {}
+        /// # #[cfg(not(feature = "nightly"))] fn main() {}
         /// ```
         ///
         /// [`alloc`]: BumpAllocatorScope::alloc
@@ -957,14 +957,14 @@ where
 
     /// See [`BumpScope::alloc_clone`].
     #[cfg(feature = "panic-on-alloc")]
-    #[cfg(feature = "nightly-clone-to-uninit")]
+    #[cfg(feature = "nightly")]
     pub fn alloc_clone<T: CloneToUninit + ?Sized>(&self, value: &T) -> BumpAllocation<T, &Self> {
         let boxu = panic_on_error(self.as_bump_scope().imp_alloc_clone(value));
         BumpAllocation::wrap(boxu, self)
     }
 
     /// See [`BumpScope::try_alloc_clone`].
-    #[cfg(feature = "nightly-clone-to-uninit")]
+    #[cfg(feature = "nightly")]
     pub fn try_alloc_clone<T: CloneToUninit + ?Sized>(&self, value: &T) -> Result<BumpAllocation<T, &Self>, AllocError> {
         let boxu = self.as_bump_scope().imp_alloc_clone(value)?;
         Ok(BumpAllocation::wrap(boxu, self))

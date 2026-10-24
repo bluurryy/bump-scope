@@ -4,14 +4,15 @@ mod common;
 
 use std::{string::ToString, vec::Vec};
 
-use bump_scope::{Bump, FixedBumpVec};
+use bump_scope::{Bump, extra};
 
 use common::TestWrap;
 
 #[test]
 fn owned_slice() {
     let bump: Bump = Bump::new();
-    let slice = bump.alloc_iter((0..5).map(|v| v.to_string()).map(TestWrap));
+    let slice = bump.alloc_iter((0..5).map(|v| v.to_string()).map(TestWrap)).into_boxu();
+
     assert_eq!(
         slice.iter().map(|v| v.0.clone()).collect::<Vec<_>>(),
         &["0", "1", "2", "3", "4"]
@@ -20,10 +21,10 @@ fn owned_slice() {
     for start in 0..slice.len() {
         for end in start..slice.len() {
             TestWrap::expect().drops(5).clones(5).run(|| {
-                let mut slice_clone = bump.alloc_slice_clone(&slice);
+                let mut slice_clone = bump.alloc_slice_clone(&slice).into_box();
 
-                let mut vec = FixedBumpVec::with_capacity_in(10, &bump);
-                vec.append(slice_clone.drain(start..end));
+                let mut vec = Vec::with_capacity_in(10, &bump);
+                extra::vec_append(&mut vec, slice_clone.into_vec().drain(start..end));
 
                 assert_eq!(vec, slice[start..end]);
 

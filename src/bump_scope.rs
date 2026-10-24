@@ -8,8 +8,10 @@ use core::{
     ptr::{self, NonNull},
 };
 
-#[cfg(feature = "nightly-clone-to-uninit")]
+#[cfg(feature = "nightly")]
 use core::clone::CloneToUninit;
+
+use alloc::vec::Vec;
 
 use crate::{
     BoxU, BumpAllocation, BumpClaimGuard, BumpScopeGuard, ErrorBehavior, NoDrop, SizedTypeProperties, Unmanaged, VecU,
@@ -30,10 +32,6 @@ use crate::{
     traits::{BumpAllocator, Sealed},
     up_align_usize_unchecked, util,
 };
-
-#[cfg(feature = "alloc")]
-use alloc::alloc::Global;
-use alloc::vec::Vec;
 
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
@@ -209,10 +207,7 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
         self.raw.ensure_satisfies_config_for_borrow_mut::<NEW_C>();
         unsafe { transmute_mut(self) }
     }
-}
 
-#[cfg(feature = "alloc")]
-impl<const C: BumpConfig> BumpScope<'_, Global, C> {
     /// Converts this `BumpScope` into a raw pointer.
     #[inline]
     #[must_use]
@@ -385,8 +380,8 @@ where
     /// # Examples
     ///
     /// Allocate a `slice`, `str`, `CStr`, `Path`:
-    #[cfg_attr(feature = "nightly-clone-to-uninit", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-clone-to-uninit"), doc = "```ignore")]
+    #[cfg_attr(feature = "nightly", doc = "```")]
+    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
     /// #![feature(clone_to_uninit)]
     ///
     /// use std::path::Path;
@@ -407,8 +402,8 @@ where
     /// ```
     ///
     /// Allocate a trait object:
-    #[cfg_attr(feature = "nightly-clone-to-uninit", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-clone-to-uninit"), doc = "```ignore")]
+    #[cfg_attr(feature = "nightly", doc = "```")]
+    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
     /// #![feature(clone_to_uninit)]
     ///
     /// use core::clone::CloneToUninit;
@@ -434,7 +429,7 @@ where
     /// assert_eq!(object_clone(), "Hello, world!");
     /// ```
     #[cfg(feature = "panic-on-alloc")]
-    #[cfg(feature = "nightly-clone-to-uninit")]
+    #[cfg(feature = "nightly")]
     pub fn alloc_clone<T: CloneToUninit + ?Sized>(&self, value: &T) -> BumpAllocation<T, &Self> {
         let boxu = panic_on_error(self.imp_alloc_clone(value));
         BumpAllocation::wrap(boxu, self)
@@ -450,8 +445,8 @@ where
     /// # Examples
     ///
     /// Allocate a `slice`, `str`, `CStr`, `Path`:
-    #[cfg_attr(feature = "nightly-clone-to-uninit", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-clone-to-uninit"), doc = "```ignore")]
+    #[cfg_attr(feature = "nightly", doc = "```")]
+    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
     /// #![feature(clone_to_uninit)]
     ///
     /// use std::path::Path;
@@ -473,8 +468,8 @@ where
     /// ```
     ///
     /// Allocate a trait object:
-    #[cfg_attr(feature = "nightly-clone-to-uninit", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-clone-to-uninit"), doc = "```ignore")]
+    #[cfg_attr(feature = "nightly", doc = "```")]
+    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
     /// #![feature(clone_to_uninit)]
     ///
     /// use core::clone::CloneToUninit;
@@ -500,7 +495,7 @@ where
     /// assert_eq!(object_clone(), "Hello, world!");
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
-    #[cfg(feature = "nightly-clone-to-uninit")]
+    #[cfg(feature = "nightly")]
     pub fn try_alloc_clone<T: CloneToUninit + ?Sized>(&self, value: &T) -> Result<BumpAllocation<T, &Self>, AllocError> {
         let boxu = self.imp_alloc_clone(value)?;
         Ok(BumpAllocation::wrap(boxu, self))
@@ -1283,8 +1278,8 @@ where
     /// Panics if the allocation fails.
     ///
     /// # Examples
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
+    #[cfg_attr(feature = "nightly", doc = "```")]
+    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
     /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
     /// # use bump_scope::Bump;
@@ -1293,8 +1288,8 @@ where
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
     /// ```
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
+    #[cfg_attr(feature = "nightly", doc = "```")]
+    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// let result = bump.alloc_try_with(|| -> Result<i32, i32> { Err(123) });
@@ -1321,8 +1316,8 @@ where
     /// Errors if the allocation fails.
     ///
     /// # Examples
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
+    #[cfg_attr(feature = "nightly", doc = "```")]
+    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
     /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
     /// # use bump_scope::Bump;
@@ -1332,8 +1327,8 @@ where
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
+    #[cfg_attr(feature = "nightly", doc = "```")]
+    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
     /// # use bump_scope::Bump;
     /// # let bump: Bump = Bump::new();
     /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Err(123) })?;
@@ -1553,8 +1548,8 @@ where
     /// Panics if the allocation fails.
     ///
     /// # Examples
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
+    #[cfg_attr(feature = "nightly", doc = "```")]
+    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
     /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
     /// # use bump_scope::Bump;
@@ -1563,8 +1558,8 @@ where
     /// assert_eq!(result.unwrap(), 123);
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
     /// ```
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
+    #[cfg_attr(feature = "nightly", doc = "```")]
+    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
     /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) });
@@ -1589,8 +1584,8 @@ where
     /// Errors if the allocation fails.
     ///
     /// # Examples
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
+    #[cfg_attr(feature = "nightly", doc = "```")]
+    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
     /// # #![feature(offset_of_enum)]
     /// # use core::mem::offset_of;
     /// # use bump_scope::Bump;
@@ -1600,8 +1595,8 @@ where
     /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
-    #[cfg_attr(feature = "nightly-tests", doc = "```")]
-    #[cfg_attr(not(feature = "nightly-tests"), doc = "```ignore")]
+    #[cfg_attr(feature = "nightly", doc = "```")]
+    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
     /// # use bump_scope::Bump;
     /// # let mut bump: Bump = Bump::new();
     /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) })?;
@@ -1661,6 +1656,7 @@ where
     }
 
     #[inline(always)]
+    #[cfg(feature = "nightly")]
     pub(crate) fn imp_alloc_clone<E, T: CloneToUninit + ?Sized>(&self, value: &T) -> Result<BoxU<'a, T>, E>
     where
         E: ErrorBehavior,

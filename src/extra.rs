@@ -1,6 +1,6 @@
 use core::{
     alloc::{AllocError, Allocator, Layout},
-    mem::MaybeUninit,
+    mem::{ManuallyDrop, MaybeUninit},
     ptr::{self, NonNull},
 };
 
@@ -353,12 +353,159 @@ where
     initializer.into_init()
 }
 
+/// Divides a boxed slice into two at an index.
+///
+/// The first will contain all indices from `[0, mid)` (excluding
+/// the index `mid` itself) and the second will contain all
+/// indices from `[mid, len)` (excluding the index `len` itself).
+///
+/// # Panics
+///
+/// Panics if `mid > len`.
+///
+/// # Examples
+///
+/// ```
+/// # use bump_scope::Bump;
+/// # let bump: Bump = Bump::new();
+/// #
+/// let v = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]);
+///
+/// {
+///    let (left, right) = v.split_at(0);
+///    assert_eq!(left, []);
+///    assert_eq!(right, [1, 2, 3, 4, 5, 6]);
+/// }
+///
+/// let v = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]);
+///
+/// {
+///     let (left, right) = v.split_at(2);
+///     assert_eq!(left, [1, 2]);
+///     assert_eq!(right, [3, 4, 5, 6]);
+/// }
+///
+/// let v = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]);
+///
+/// {
+///     let (left, right) = v.split_at(6);
+///     assert_eq!(left, [1, 2, 3, 4, 5, 6]);
+///     assert_eq!(right, []);
+/// }
+/// ```
+#[inline]
+#[must_use]
+pub fn box_split_at<T, A>(boxed: Box<[T], A>, at: usize) -> (Box<[T], A>, Box<[T], A>)
+where
+    A: Allocator + Clone,
+{
+    #[cold]
+    #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
+    #[track_caller]
+    fn assert_failed(at: usize, len: usize) -> ! {
+        panic!("`at` split index (is {at}) should be <= len (is {len})");
+    }
+
+    let len = boxed.len();
+
+    if at > len {
+        assert_failed(at, len);
+    }
+
+    // SAFETY: `[ptr; mid]` and `[mid; len]` are inside `self`, which
+    // fulfills the requirements of `split_at_unchecked`.
+    unsafe { box_split_at_unchecked(boxed, at) }
+}
+
+/// Divides one slice into two at an index, without doing bounds checking.
+///
+/// The first will contain all indices from `[0, mid)` (excluding
+/// the index `mid` itself) and the second will contain all
+/// indices from `[mid, len)` (excluding the index `len` itself).
+///
+/// For a safe alternative see [`split_at`].
+///
+/// # Safety
+///
+/// Calling this method with an out-of-bounds index is *[undefined behavior]*
+/// even if the resulting reference is not used. The caller has to ensure that
+/// `0 <= mid <= self.len()`.
+///
+/// [`split_at`]: Self::split_at
+/// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+///
+/// # Examples
+///
+/// ```
+/// # use bump_scope::Bump;
+/// # let bump: Bump = Bump::new();
+/// #
+/// let v = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]);
+///
+/// unsafe {
+///    let (left, right) = v.split_at_unchecked(0);
+///    assert_eq!(left, []);
+///    assert_eq!(right, [1, 2, 3, 4, 5, 6]);
+/// }
+///
+/// let v = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]);
+///
+/// unsafe {
+///     let (left, right) = v.split_at_unchecked(2);
+///     assert_eq!(left, [1, 2]);
+///     assert_eq!(right, [3, 4, 5, 6]);
+/// }
+///
+/// let v = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]);
+///
+/// unsafe {
+///     let (left, right) = v.split_at_unchecked(6);
+///     assert_eq!(left, [1, 2, 3, 4, 5, 6]);
+///     assert_eq!(right, []);
+/// }
+/// ```
+#[inline]
+#[must_use]
+pub unsafe fn box_split_at_unchecked<T, A>(boxed: Box<[T], A>, mid: usize) -> (Box<[T], A>, Box<[T], A>)
+where
+    A: Allocator + Clone,
+{
+    unsafe {
+        let alloc_clone = Box::allocator(&boxed).clone();
+        let (ptr, alloc) = Box::into_raw_with_allocator(boxed);
+
+        let len = ptr.len();
+        let ptr = ptr.cast::<T>();
+
+        debug_assert!(
+            mid <= len,
+            "slice::split_at_unchecked requires the index to be within the slice"
+        );
+
+        (
+            Box::from_raw_in(ptr::slice_from_raw_parts_mut(ptr, mid), alloc),
+            Box::from_raw_in(ptr::slice_from_raw_parts_mut(ptr.add(mid), len - mid), alloc_clone),
+        )
+    }
+}
+
 /// TODO
 pub fn box_replace_allocator<'a, T, Old, New>(boxed: Box<T, Old>, new: New) -> (Box<T, New>, Old)
 where
     T: ?Sized,
     Old: BumpAllocatorScope<'a>,
     New: BumpAllocatorScope<'a>,
+{
+    let (ptr, old) = Box::into_raw_with_allocator(boxed);
+    (unsafe { Box::from_raw_in(ptr, new) }, old)
+}
+
+/// TODO
+unsafe fn box_replace_allocator_unchecked<'a, T, Old, New>(boxed: Box<T, Old>, new: New) -> (Box<T, New>, Old)
+where
+    T: ?Sized,
+    Old: BumpAllocator,
+    New: BumpAllocator,
 {
     let (ptr, old) = Box::into_raw_with_allocator(boxed);
     (unsafe { Box::from_raw_in(ptr, new) }, old)

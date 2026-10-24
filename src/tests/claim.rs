@@ -8,7 +8,11 @@ use std::{
     string::String,
 };
 
-use crate::{BoxU, Bump, tests::up_and_down, traits::Sealed};
+use crate::{
+    BoxU, Bump,
+    tests::up_and_down,
+    traits::{BumpAllocator, Sealed},
+};
 
 up_and_down! {
     const C: BumpConfig = DEFAULT_C;
@@ -111,7 +115,7 @@ up_and_down! {
             expect_err(bump.spec_prepare_slice_allocation::<AllocError, u8>(123));
 
             // dealloc
-            bump.dealloc(boxed);
+            drop(extra::box_replace_allocator(boxed, &bump));
             assert_eq!(guard.stats().allocated(), original_allocated);
 
             // reserve

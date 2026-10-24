@@ -5,13 +5,8 @@
 // Especially `BoxU` methods, vectors, strings, `polyfill` and `tests/from_std` are based on code from the standard library.
 
 #![no_std]
-#![cfg_attr(feature = "nightly-coerce-unsized", feature(coerce_unsized, unsize))]
-#![cfg_attr(feature = "nightly-exact-size-is-empty", feature(exact_size_is_empty))]
-#![cfg_attr(feature = "nightly-trusted-len", feature(trusted_len))]
-#![cfg_attr(feature = "nightly-fn-traits", feature(fn_traits, tuple_trait, unboxed_closures))]
-#![cfg_attr(all(feature = "nightly-tests", test, doc), feature(offset_of_enum))]
-#![cfg_attr(feature = "nightly-dropck-eyepatch", feature(dropck_eyepatch))]
-#![cfg_attr(feature = "nightly-clone-to-uninit", feature(clone_to_uninit, ptr_metadata))]
+#![cfg_attr(feature = "nightly", feature(clone_to_uninit, ptr_metadata))]
+#![cfg_attr(all(feature = "nightly", test, doc), feature(offset_of_enum))]
 #![cfg_attr(docsrs,
     feature(doc_cfg),
     doc(auto_cfg(hide(feature, values("panic-on-alloc")))) // too noisy
@@ -42,20 +37,7 @@
     attr(deny(dead_code, unused_imports, deprecated)),
     attr(cfg_attr(feature = "nightly-tests", feature(allocator_ext))),
 ))]
-#![cfg_attr(
-    any(
-        feature = "nightly",
-        feature = "nightly-clone-to-uninit",
-        feature = "nightly-coerce-unsized",
-        feature = "nightly-dropck-eyepatch",
-        feature = "nightly-exact-size-is-empty",
-        feature = "nightly-fn-traits",
-        feature = "nightly-tests",
-        feature = "nightly-trusted-len",
-        feature = "nightly-miri-promise-symbolic-alignment",
-    ),
-    allow(clippy::incompatible_msrv)
-)]
+#![cfg_attr(feature = "nightly", allow(clippy::incompatible_msrv))]
 //! <!-- crate documentation intro start -->
 //! A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
 //! <!-- crate documentation intro end -->
@@ -302,7 +284,6 @@
 #[cfg(any(feature = "std", test))]
 extern crate std;
 
-#[cfg(any(feature = "alloc", feature = "nightly-fn-traits"))]
 extern crate alloc;
 
 mod allocator_impl;
@@ -331,8 +312,6 @@ mod no_drop;
 pub mod owned_slice;
 mod polyfill;
 mod raw_bump;
-mod set_len_on_drop;
-mod set_len_on_drop_by_ptr;
 pub mod stats;
 mod string;
 #[cfg(test)]
@@ -359,12 +338,12 @@ use core::{mem, num::NonZeroUsize};
 use error_behavior::ErrorBehavior;
 pub use no_drop::NoDrop;
 #[cfg(feature = "panic-on-alloc")]
-use private::{capacity_overflow, format_trait_error};
+use private::capacity_overflow;
 pub use traits::{BumpAllocator, BumpAllocatorScope, MutBumpAllocator, MutBumpAllocatorScope};
 pub use unmanaged::Unmanaged;
 
 /// TODO
-pub type BoxU<'a, T: ?Sized> = Box<T, &'a Unmanaged>;
+pub type BoxU<'a, T> = Box<T, &'a Unmanaged>;
 
 /// TODO
 pub type VecU<'a, T> = Vec<T, &'a Unmanaged>;
@@ -404,18 +383,6 @@ pub mod private {
     pub extern crate alloc;
     pub extern crate core;
 
-    #[cfg(feature = "panic-on-alloc")]
-    /// Wrapper type, used for ad hoc overwriting of trait implementations, like for `Write` in `alloc_fmt`.
-    #[repr(transparent)]
-    pub struct PanicsOnAlloc<T: ?Sized>(pub T);
-
-    #[cfg(feature = "panic-on-alloc")]
-    impl<T: ?Sized> PanicsOnAlloc<T> {
-        pub(crate) fn from_mut(value: &mut T) -> &mut PanicsOnAlloc<T> {
-            unsafe { &mut *(core::ptr::from_mut::<T>(value) as *mut Self) }
-        }
-    }
-
     #[cold]
     #[inline(never)]
     #[cfg(feature = "panic-on-alloc")]
@@ -431,15 +398,8 @@ pub mod private {
     }
 }
 
-#[cfg(all(feature = "alloc", feature = "panic-on-alloc"))]
+#[cfg(feature = "panic-on-alloc")]
 use alloc::alloc::handle_alloc_error;
-
-#[cold]
-#[inline(never)]
-#[cfg(all(not(feature = "alloc"), feature = "panic-on-alloc"))]
-fn handle_alloc_error(_layout: Layout) -> ! {
-    panic!("allocation failed")
-}
 
 // This is just `Result::into_ok` but with a name to match our use case.
 #[inline(always)]
@@ -467,32 +427,11 @@ impl<T> SizedTypeProperties for T {}
 /// because Rust Analyzer thinks those are two parameters and gets confused.
 macro_rules! maybe_default_allocator {
     ($macro:ident) => {
-        #[cfg(feature = "alloc")]
         $macro!(A = alloc::alloc::Global);
-
-        #[cfg(not(feature = "alloc"))]
-        $macro!(A);
     };
 }
 
 pub(crate) use maybe_default_allocator;
-
-// (copied from rust standard library)
-//
-// Tiny Vecs are dumb. Skip to:
-// - 8 if the element size is 1, because any heap allocators is likely
-//   to round up a request of less than 8 bytes to at least 8 bytes.
-// - 4 if elements are moderate-sized (<= 1 KiB).
-// - 1 otherwise, to avoid wasting too much space for very short Vecs.
-const fn min_non_zero_cap(size: usize) -> usize {
-    if size == 1 {
-        8
-    } else if size <= 1024 {
-        4
-    } else {
-        1
-    }
-}
 
 /// Aligns a bump address to the `min_align`.
 ///

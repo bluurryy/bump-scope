@@ -40,31 +40,23 @@ pre-release-replacements = [
 
 [dependencies]
 bytemuck = { version = "1.23.0", default-features = false, optional = true }
-serde = { package = "serde_core", version = "1.0.228", default-features = false, optional = true }
 zerocopy-08 = { package = "zerocopy", version = "0.8.14", default-features = false, optional = true }
 
 [dev-dependencies]
 expect-test = "1.5.1"
 rayon = "1.11.0"
-serde_json = "1.0.145"
 trybuild = "1.0.114"
 
 [features]
-default = ["alloc", "panic-on-alloc", "std"]
+default = ["std", "panic-on-alloc"]
 
 ## Adds `BumpPool` and implementations of `std::io` traits.
-std = ["alloc"]
-
-## Adds `Global` as the default base allocator and some interactions with `alloc` collections.
-alloc = []
+std = []
 
 ## Adds functions and traits that will panic when allocations fail.
 ## Without this feature, allocation failures cannot cause panics, and only
 ## `try_`-prefixed allocation methods will be available.
 panic-on-alloc = []
-
-## Adds `Serialize` implementations for `BoxU`, strings and vectors, and `DeserializeSeed` for strings and vectors.
-serde = ["dep:serde"]
 
 ## Adds `bytemuck::*` extension traits for
 ## <code>[alloc_zeroed](bytemuck::BumpAllocatorScopeExt::alloc_zeroed)([_slice](bytemuck::BumpAllocatorScopeExt::alloc_zeroed_slice))</code>,
@@ -80,46 +72,8 @@ bytemuck = ["dep:bytemuck"]
 ## [`resize_zeroed`](zerocopy_08::VecExt::resize_zeroed).
 zerocopy-08 = ["dep:zerocopy-08"]
 
-#! ### Nightly features
-#! These nightly features are not subject to the same semver guarantees as the rest of the library.
-#! Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
-
-## Enables all other nightly feature flags.
-nightly = [
-  "nightly-clone-to-uninit",
-  "nightly-coerce-unsized",
-  "nightly-dropck-eyepatch",
-  "nightly-exact-size-is-empty",
-  "nightly-fn-traits",
-  "nightly-tests",
-  "nightly-trusted-len",
-  "nightly-miri-promise-symbolic-alignment",
-]
-
-## Makes `BoxU<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
-## With this `BoxU<[i32;3]>` coerces to `BoxU<[i32]>`, `BoxU<dyn Debug>` and so on.
-## You can unsize a `BoxU` in stable without this feature using [`unsize_bump_box`].
-nightly-coerce-unsized = []
-
-## Implements `is_empty` manually for some iterators.
-nightly-exact-size-is-empty = []
-
-## Implements `TrustedLen` for some iterators.
-nightly-trusted-len = []
-
-## Implements `Fn*` traits for `BoxU<T>`. Makes `BoxU<T: FnOnce + ?Sized>` callable. Requires alloc crate.
-nightly-fn-traits = []
-
-## Enables some tests that require a nightly compiler.
-nightly-tests = []
-
-## Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
-## This makes it so references don't have to strictly outlive the container.
-## (Just like with std's `Box` and `Vec`.)
-nightly-dropck-eyepatch = []
-
-## Adds [`alloc_clone`](crate::traits::BumpAllocatorScope::alloc_clone) method.
-nightly-clone-to-uninit = []
-
-## Promises to miri that allocated pointers are symbolically aligned.
-nightly-miri-promise-symbolic-alignment = []
+## Enables nightly features.
+## TODO: enumerate...
+## 
+## Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
+nightly = []
