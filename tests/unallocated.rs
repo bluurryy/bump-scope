@@ -145,7 +145,7 @@ up_and_down! {
         const MIN_SIZE_4096: BumpConfig = BumpConfigBuilder(C).min_chunk_size(4096).build();
         let bump = Bump::<Global, MIN_SIZE_4096>::const_new();
         assert_eq!(bump.stats().count(), 0);
-        bump.alloc("a");
+        bump.alloc("a").into_boxu();
         assert_eq!(bump.stats().count(), 1);
         assert_eq!(
             bump.stats().current_chunk().unwrap().size(),

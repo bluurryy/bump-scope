@@ -514,11 +514,12 @@ where
 }
 
 /// TODO
-pub fn box_replace_allocator<'a, T, Old, New>(boxed: Box<T, Old>, new: New) -> (Box<T, New>, Old)
+pub fn box_replace_allocator<'old, 'new, T, Old, New>(boxed: Box<T, Old>, new: New) -> (Box<T, New>, Old)
 where
     T: ?Sized,
-    Old: BumpAllocatorScope<'a>,
-    New: BumpAllocatorScope<'a>,
+    Old: BumpAllocatorScope<'old>,
+    New: BumpAllocatorScope<'new>,
+    'old: 'new, // 'new must last no longer than 'old
 {
     let (ptr, old) = Box::into_raw_with_allocator(boxed);
     (unsafe { Box::from_raw_in(ptr, new) }, old)

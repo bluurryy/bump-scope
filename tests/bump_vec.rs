@@ -11,7 +11,7 @@ use std::{
     string::{String, ToString},
 };
 
-use bump_scope::{Bump, BumpScope, config, traits::BumpAllocator};
+use bump_scope::{Bump, BumpScope, config};
 
 use common::{expect_no_panic, up_and_down};
 
