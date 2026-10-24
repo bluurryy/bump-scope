@@ -21,7 +21,7 @@ up_and_down! {
         let five = bump.alloc([0u8; 5]).into_boxu();
 
         bump.with_config::<C_MIN_ALIGN_8, ()>(|bump| {
-            drop(extra::box_replace_allocator(five, &bump));
+            drop(extra::replace_allocator(five, &bump));
             // deallocation succeeds and the bump pointer is unaligned
             bump.alloc(0u64).into_boxu();
         });
@@ -50,7 +50,7 @@ up_and_down! {
         let five = bump.alloc([0u8; 5]).into_boxu();
 
         bump.scoped::<()>(|bump| {
-            drop(extra::box_replace_allocator(five, &*bump));
+            drop(extra::replace_allocator(five, &*bump));
             // deallocation succeeds and the bump pointer is unaligned
             bump.alloc(0u64).into_boxu();
         });
@@ -79,7 +79,7 @@ up_and_down! {
         let five = bump.alloc([0u8; 5]).into_boxu();
 
         bump.scoped_with_config::<C_MIN_ALIGN_8, ()>(|bump| {
-            drop(extra::box_replace_allocator(five, &*bump));
+            drop(extra::replace_allocator(five, &*bump));
             // deallocation succeeds and the bump pointer is unaligned
             bump.alloc(0u64).into_boxu();
         });

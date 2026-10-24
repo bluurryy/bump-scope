@@ -1,3 +1,4 @@
+mod replace_allocator;
 mod split_off;
 
 use core::{
@@ -18,6 +19,7 @@ use crate::{
     traits::{BumpAllocator, BumpAllocatorScope},
 };
 
+pub use replace_allocator::replace_allocator;
 pub use split_off::split_off;
 
 /// Maps the elements of a vector, reusing the allocation if possible.
@@ -513,29 +515,6 @@ where
     }
 }
 
-/// TODO
-pub fn box_replace_allocator<'old, 'new, T, Old, New>(boxed: Box<T, Old>, new: New) -> (Box<T, New>, Old)
-where
-    T: ?Sized,
-    Old: BumpAllocatorScope<'old>,
-    New: BumpAllocatorScope<'new>,
-    'old: 'new, // 'new must last no longer than 'old
-{
-    let (ptr, old) = Box::into_raw_with_allocator(boxed);
-    (unsafe { Box::from_raw_in(ptr, new) }, old)
-}
-
-/// TODO
-pub(crate) unsafe fn box_replace_allocator_unchecked<'a, T, Old, New>(boxed: Box<T, Old>, new: New) -> (Box<T, New>, Old)
-where
-    T: ?Sized,
-    Old: BumpAllocator,
-    New: BumpAllocator,
-{
-    let (ptr, old) = Box::into_raw_with_allocator(boxed);
-    (unsafe { Box::from_raw_in(ptr, new) }, old)
-}
-
 #[inline]
 fn box_empty_slice_in<T, A>(alloc: A) -> Box<[T], A>
 where
@@ -612,7 +591,7 @@ where
     T: ?Sized,
     A: BumpAllocatorScope<'a>,
 {
-    box_replace_allocator(boxed, Unmanaged::NEW)
+    replace_allocator(boxed, Unmanaged::NEW)
 }
 
 /// TODO
@@ -626,16 +605,10 @@ where
 }
 
 /// TODO
-pub fn vec_replace_allocator<'a, T, Old, New>(boxed: Vec<T, Old>, new_alloc: New) -> (Vec<T, New>, Old)
-where
-    Old: BumpAllocatorScope<'a>,
-    New: BumpAllocatorScope<'a>,
-{
-    unsafe { vec_replace_allocator_unchecked(boxed, new_alloc) }
-}
-
-/// TODO
-pub unsafe fn vec_replace_allocator_unchecked<'a, T, Old, New>(boxed: Vec<T, Old>, new_alloc: New) -> (Vec<T, New>, Old)
+pub(crate) unsafe fn vec_replace_allocator_unchecked<'a, T, Old, New>(
+    boxed: Vec<T, Old>,
+    new_alloc: New,
+) -> (Vec<T, New>, Old)
 where
     Old: BumpAllocator,
     New: BumpAllocator,
@@ -649,7 +622,7 @@ pub fn vec_remove_allocator<'a, T, A>(vec: Vec<T, A>) -> (VecU<'a, T>, A)
 where
     A: BumpAllocatorScope<'a>,
 {
-    vec_replace_allocator(vec, Unmanaged::NEW)
+    replace_allocator(vec, Unmanaged::NEW)
 }
 
 /// TODO

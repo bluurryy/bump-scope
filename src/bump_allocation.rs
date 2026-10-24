@@ -4,7 +4,7 @@ use alloc::{boxed::Box, fmt};
 
 use crate::{
     BoxU, NoDrop, Unmanaged,
-    extra::{box_leak, box_replace_allocator},
+    extra::{box_leak, replace_allocator},
     traits::BumpAllocatorScope,
 };
 
@@ -30,7 +30,7 @@ impl<'a, T: ?Sized, A: Allocator> BumpAllocation<T, A> {
 impl<'a, T: ?Sized, A: BumpAllocatorScope<'a>> BumpAllocation<T, A> {
     pub(crate) fn wrap(boxu: BoxU<'a, T>, alloc: A) -> Self {
         Self {
-            boxed: box_replace_allocator(boxu, alloc).0,
+            boxed: replace_allocator(boxu, alloc).0,
         }
     }
 
@@ -57,7 +57,7 @@ impl<'a, T: ?Sized, A: BumpAllocatorScope<'a>> BumpAllocation<T, A> {
 
     /// TODO
     pub fn into_boxu(self) -> Box<T, Unmanaged<'a>> {
-        box_replace_allocator(self.boxed, Unmanaged::NEW).0
+        replace_allocator(self.boxed, Unmanaged::NEW).0
     }
 
     /// TODO

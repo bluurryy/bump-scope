@@ -559,7 +559,7 @@ up_and_down! {
         assert_eq!(&*rhs, [4, 5, 6]);
         assert_eq!(bump.stats().allocated(), 6 * 4);
 
-        drop(extra::box_replace_allocator(lhs, &bump));
+        drop(extra::replace_allocator(lhs, &bump));
 
         if config::read::upwards(C) {
             assert_eq!(bump.stats().allocated(), 6 * 4);
@@ -567,7 +567,7 @@ up_and_down! {
             assert_eq!(bump.stats().allocated(), 3 * 4);
         }
 
-        drop(extra::box_replace_allocator(rhs, &bump));
+        drop(extra::replace_allocator(rhs, &bump));
 
         if config::read::upwards(C) {
             assert_eq!(bump.stats().allocated(), 3 * 4);
@@ -586,7 +586,7 @@ up_and_down! {
         assert_eq!(&*rhs, [4, 5, 6]);
         assert_eq!(bump.stats().allocated(), 6 * 4);
 
-        drop(extra::box_replace_allocator(rhs, &bump));
+        drop(extra::replace_allocator(rhs, &bump));
 
         if config::read::upwards(C) {
             assert_eq!(bump.stats().allocated(), 3 * 4);
@@ -594,7 +594,7 @@ up_and_down! {
             assert_eq!(bump.stats().allocated(), 6 * 4);
         }
 
-        drop(extra::box_replace_allocator(lhs, &bump));
+        drop(extra::replace_allocator(lhs, &bump));
 
         if config::read::upwards(C) {
             assert_eq!(bump.stats().allocated(), 0);
