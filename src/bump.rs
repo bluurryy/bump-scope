@@ -1,29 +1,23 @@
 use core::{
     alloc::{AllocError, Allocator, Layout},
-    ffi::CStr,
     fmt::{self, Debug},
-    mem::{ManuallyDrop, MaybeUninit},
+    mem::ManuallyDrop,
     panic::{RefUnwindSafe, UnwindSafe},
     ptr::NonNull,
 };
-
-#[cfg(feature = "nightly")]
-use core::clone::CloneToUninit;
 
 use crate::{
     BumpClaimGuard, BumpScope, BumpScopeGuard, allocator_impl,
     chunk_size::{ChunkSizeCapacity, ChunkSizeHint, ChunkSizeMin},
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
     maybe_default_allocator,
-    owned_slice::OwnedSlice,
     polyfill::{transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
     stats::{AnyStats, Stats},
-    traits::{AsBumpScope, AsMutBumpScope},
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{BumpAllocation, panic_on_error};
+use crate::panic_on_error;
 
 macro_rules! make_type {
     ($($allocator_parameter:tt)*) => {

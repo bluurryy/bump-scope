@@ -74,6 +74,7 @@ impl<'a, T: ?Sized, A: BumpAllocatorScope<'a>> BumpAllocation<T, A> {
 
 pub struct IntoRef<T: ?Sized, A> {
     ptr: *const T,
+    #[expect(unused)]
     alloc: A,
 }
 

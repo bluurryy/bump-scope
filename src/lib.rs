@@ -335,7 +335,6 @@ use core::{
     ptr::NonNull,
 };
 use core::{mem, num::NonZeroUsize};
-use error_behavior::ErrorBehavior;
 pub use no_drop::NoDrop;
 #[cfg(feature = "panic-on-alloc")]
 use private::capacity_overflow;

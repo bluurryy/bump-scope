@@ -1,36 +1,19 @@
 use core::{
     alloc::{AllocError, Allocator, Layout},
-    ffi::CStr,
-    fmt::{self, Debug},
+    fmt,
     marker::PhantomData,
-    mem::MaybeUninit,
     panic::{RefUnwindSafe, UnwindSafe},
-    ptr::{self, NonNull},
+    ptr::NonNull,
 };
 
-#[cfg(feature = "nightly")]
-use core::clone::CloneToUninit;
-
-use alloc::vec::Vec;
-
 use crate::{
-    BoxU, BumpAllocation, BumpClaimGuard, BumpScopeGuard, ErrorBehavior, NoDrop, SizedTypeProperties, Unmanaged, VecU,
-    allocator_impl,
+    BumpClaimGuard, BumpScopeGuard, NoDrop, allocator_impl,
     bump_align_guard::BumpAlignGuard,
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
-    down_align_usize,
-    extra::{
-        box_from_utf8_unchecked, box_init, box_init_clone, box_init_fill, box_init_fill_with, box_remove_allocator,
-        boxu_uninit_zst, boxu_uninit_zst_slice,
-    },
     maybe_default_allocator,
-    owned_slice::{OwnedSlice, TakeOwnedSlice as _},
     polyfill::{transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
     stats::{AnyStats, Stats},
-    string::String,
-    traits::{BumpAllocator, Sealed},
-    up_align_usize_unchecked, util,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -73,7 +56,7 @@ impl<A, const C: BumpConfig> UnwindSafe for BumpScope<'_, A, C> where A: RefUnwi
 
 impl<A, const C: BumpConfig> RefUnwindSafe for BumpScope<'_, A, C> where A: RefUnwindSafe {}
 
-impl<A, const C: BumpConfig> Debug for BumpScope<'_, A, C> {
+impl<A, const C: BumpConfig> fmt::Debug for BumpScope<'_, A, C> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         AnyStats::from(self.stats()).debug_format("BumpScope", f)
     }
