@@ -94,7 +94,7 @@ up_and_down! {
 
         let bump: Bump<MyAllocator, C_MIN_SIZE_1> = Bump::with_size_in(0x2000, MyAllocator::new());
         assert_eq!(bump.stats().allocated(), 0);
-        bump.alloc_str("hey");
+        bump.alloc_str("hey").into_boxu();
         assert_eq!(bump.stats().allocated(), 3);
     }
 

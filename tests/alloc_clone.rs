@@ -1,5 +1,5 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
-#![cfg(feature = "nightly-clone-to-uninit")]
+#![cfg(feature = "nightly")]
 #![feature(clone_to_uninit)]
 
 use std::{
@@ -10,7 +10,7 @@ use std::{
     vec::Vec,
 };
 
-use bump_scope::Bump;
+use bump_scope::{Bump, BumpAllocator as _};
 
 #[test]
 fn test_slice() {

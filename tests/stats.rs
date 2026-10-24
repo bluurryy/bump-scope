@@ -230,7 +230,7 @@ fn test_base_allocator<A, const C: BumpConfig>(
 ) where
     A: Allocator + Default,
 {
-    bump.alloc(1u8);
+    bump.alloc(1u8).into_boxu();
     assert_eq!(bump.stats().count(), 1);
     assert_eq!(
         bump.stats().size(),

@@ -36,7 +36,7 @@ up_and_down! {
     fn unallocated_alloc() {
         let bump = Bump::<Global, C>::const_new();
         assert_eq!(bump.stats().count(), 0);
-        bump.alloc_str("Hello, World!");
+        bump.alloc_str("Hello, World!").into_boxu();
         assert_eq!(bump.stats().count(), 1);
         drop(bump);
     }
@@ -69,12 +69,12 @@ up_and_down! {
         assert_eq!(bump.stats().count(), 0);
         assert_eq!(bump.stats().allocated(), 0);
 
-        bump.alloc_str("hello");
+        bump.alloc_str("hello").into_boxu();
         let checkpoint_hello = bump.checkpoint();
         assert_eq!(bump.stats().count(), 1);
         assert_eq!(bump.stats().allocated(), 5);
 
-        bump.alloc_str("world");
+        bump.alloc_str("world").into_boxu();
         assert_eq!(bump.stats().count(), 1);
         assert_eq!(bump.stats().allocated(), 10);
 
@@ -132,7 +132,7 @@ up_and_down! {
     fn default_chunk_size() {
         let bump = Bump::<Global, C>::const_new();
         assert_eq!(bump.stats().count(), 0);
-        bump.alloc("a");
+        bump.alloc("a").into_boxu();
         assert_eq!(bump.stats().count(), 1);
         assert_eq!(
             bump.stats().current_chunk().unwrap().size(),

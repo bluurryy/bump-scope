@@ -1,16 +1,16 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
-#![cfg_attr(feature = "nightly-tests", feature(offset_of_enum))]
+#![cfg_attr(feature = "nightly", feature(offset_of_enum))]
 #![allow(clippy::result_large_err)]
 
 mod common;
 
 use std::alloc::Global;
 
-#[cfg(feature = "nightly-tests")]
+#[cfg(feature = "nightly")]
 use std::mem::offset_of;
 
 use bump_scope::Bump;
-#[cfg(feature = "nightly-tests")]
+#[cfg(feature = "nightly")]
 use bump_scope::config;
 
 use crate::common::up_and_down;
@@ -46,7 +46,7 @@ up_and_down! {
     const C: BumpConfig = DEFAULT_C;
 
     #[test]
-    #[cfg(feature = "nightly-tests")]
+    #[cfg(feature = "nightly")]
     fn basic_ok() {
         let bump: Bump<Global, C> = Bump::with_size(SIZE);
         _ = bump.alloc_try_with(|| -> TestResult { Ok(zeroes()) });
@@ -54,7 +54,7 @@ up_and_down! {
     }
 
     #[test]
-    #[cfg(feature = "nightly-tests")]
+    #[cfg(feature = "nightly")]
     fn basic_ok_mut() {
         let mut bump: Bump<Global, C> = Bump::with_size(SIZE);
         _ = bump.alloc_try_with_mut(|| -> TestResult { Ok(zeroes()) });
@@ -88,7 +88,7 @@ up_and_down! {
         let bump: Bump<Global, C> = Bump::with_size(SIZE);
 
         _ = bump.alloc_try_with(|| -> TestResult {
-            bump.alloc(0u8);
+            bump.alloc(0u8).into_boxu();
             Ok(zeroes())
         });
 
@@ -101,7 +101,7 @@ up_and_down! {
         let bump: Bump<Global, C> = Bump::with_size(SIZE);
 
         _ = bump.alloc_try_with(|| -> TestResult {
-            bump.alloc(0u8);
+            bump.alloc(0u8).into_boxu();
             Err(zeroes())
         });
 

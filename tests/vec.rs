@@ -24,7 +24,7 @@ up_and_down! {
         vec.reserve_exact(2);
         assert_eq!(bump.stats().allocated(), 8);
 
-        bump.alloc_uninit::<u8>();
+        bump.alloc_uninit::<u8>().into_boxu();
         assert_eq!(bump.stats().allocated(), 9);
 
         vec.reserve_exact(3);
@@ -70,7 +70,7 @@ up_and_down! {
         vec.reserve_exact(2);
         assert_eq!(bump.stats().allocated(), 8);
 
-        bump.alloc_uninit::<u8>();
+        bump.alloc_uninit::<u8>().into_boxu();
         assert_eq!(bump.stats().allocated(), 9);
 
         vec.shrink_to(1);
