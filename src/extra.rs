@@ -1,10 +1,13 @@
+mod split_off;
+
 use core::{
     alloc::{AllocError, Allocator, Layout},
-    mem::{ManuallyDrop, MaybeUninit},
+    mem::{self, ManuallyDrop, MaybeUninit},
+    ops::{self, RangeBounds},
     ptr::{self, NonNull},
 };
 
-use alloc::{boxed::Box, vec::Vec};
+use alloc::{alloc::AllocatorClone, boxed::Box, vec::Vec};
 
 use crate::{
     BoxU, NoDrop, SizedTypeProperties, Unmanaged, VecU,
@@ -13,8 +16,11 @@ use crate::{
     error_behavior::ErrorBehavior,
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
     panic_on_error,
+    polyfill::{self, non_null},
     traits::{BumpAllocator, BumpAllocatorScope},
 };
+
+pub use split_off::split_off;
 
 /// Maps the elements of a vector, reusing the allocation if possible.
 ///
@@ -248,6 +254,10 @@ pub(crate) fn boxu_uninit_zst_slice<'a, T>(len: usize) -> BoxU<'a, [MaybeUninit<
 pub(crate) unsafe fn box_from_utf8_unchecked<A: Allocator>(boxed: Box<[u8], A>) -> Box<str, A> {
     let (ptr, alloc) = Box::into_raw_with_allocator(boxed);
     unsafe { Box::from_raw_in(ptr as *mut str, alloc) }
+}
+
+pub(crate) fn ptr_from_utf8(ptr: *mut [u8]) -> *mut str {
+    ptr as *mut str
 }
 
 /// TODO
@@ -525,6 +535,76 @@ where
 {
     let (ptr, old) = Box::into_raw_with_allocator(boxed);
     (unsafe { Box::from_raw_in(ptr, new) }, old)
+}
+
+#[inline]
+fn box_empty_slice_in<T, A>(alloc: A) -> Box<[T], A>
+where
+    A: Allocator,
+{
+    let ptr = ptr::from_raw_parts_mut(ptr::dangling_mut::<T>(), 0);
+    unsafe { Box::from_raw_in(ptr, alloc) }
+}
+
+#[inline]
+fn box_empty_str_in<A>(alloc: A) -> Box<str, A>
+where
+    A: Allocator,
+{
+    let ptr = ptr_from_utf8(ptr::slice_from_raw_parts_mut(ptr::dangling_mut(), 0));
+    unsafe { Box::from_raw_in(ptr, alloc) }
+}
+
+#[inline(always)]
+unsafe fn vec_replace_buffer<T, A>(vec: &mut Vec<T, A>, ptr: *mut T, len: usize, cap: usize)
+where
+    A: Allocator,
+{
+    unsafe {
+        let (_, _, _, alloc) = ptr::read(vec).into_raw_parts_with_allocator();
+        let replacement = Vec::from_raw_parts_in(ptr, len, cap, alloc);
+        mem::forget(mem::replace(vec, replacement))
+    }
+}
+
+#[inline(always)]
+unsafe fn box_set_ptr<T, A>(boxed: &mut Box<T, A>, ptr: *mut T)
+where
+    T: ?Sized,
+    A: Allocator,
+{
+    unsafe {
+        let (_, alloc) = Box::into_raw_with_allocator(ptr::read(boxed));
+        let replacement = Box::from_raw_in(ptr, alloc);
+        mem::forget(mem::replace(boxed, replacement))
+    }
+}
+
+#[inline(always)]
+unsafe fn box_set_len<T, A>(boxed: &mut Box<[T], A>, len: usize)
+where
+    A: Allocator,
+{
+    unsafe {
+        let (old, alloc) = Box::into_raw_with_allocator(ptr::read(boxed));
+        let new = ptr::from_raw_parts_mut(old.cast::<T>(), len);
+        let replacement = Box::from_raw_in(new, alloc);
+        mem::forget(mem::replace(boxed, replacement))
+    }
+}
+
+#[track_caller]
+pub(crate) fn assert_char_boundary(str: &str, index: usize) {
+    #[cold]
+    #[track_caller]
+    #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
+    fn assert_failed() {
+        panic!("index is not on a char boundary")
+    }
+
+    if !str.is_char_boundary(index) {
+        assert_failed();
+    }
 }
 
 /// TODO
