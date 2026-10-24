@@ -450,7 +450,7 @@ where
 /// the index `mid` itself) and the second will contain all
 /// indices from `[mid, len)` (excluding the index `len` itself).
 ///
-/// For a safe alternative see [`split_at`].
+/// For a safe alternative see [`box_split_at`].
 ///
 /// # Safety
 ///
@@ -458,7 +458,7 @@ where
 /// even if the resulting reference is not used. The caller has to ensure that
 /// `0 <= mid <= self.len()`.
 ///
-/// [`split_at`]: Self::split_at
+/// [`box_split_at`]: box_split_at
 /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
 ///
 /// # Examples
@@ -734,7 +734,11 @@ pub mod bytemuck {
     use alloc::boxed::Box;
 
     /// TODO
-    pub fn box_init_zeroed<T, A: Allocator>(boxed: Box<MaybeUninit<T>, A>) -> Box<T, A> {
+    pub fn box_init_zeroed<T, A>(boxed: Box<MaybeUninit<T>, A>) -> Box<T, A>
+    where
+        T: bytemuck::Zeroable + ?Sized,
+        A: Allocator,
+    {
         let (ptr, alloc) = Box::into_raw_with_allocator(boxed);
         let ptr = ptr.cast::<T>();
 
@@ -745,7 +749,50 @@ pub mod bytemuck {
     }
 
     /// TODO
-    pub fn box_init_slice_zeroed<T, A: Allocator>(boxed: Box<[MaybeUninit<T>], A>) -> Box<[T], A> {
+    pub fn box_init_slice_zeroed<T, A: Allocator>(boxed: Box<[MaybeUninit<T>], A>) -> Box<[T], A>
+    where
+        T: bytemuck::Zeroable,
+        A: Allocator,
+    {
+        let len = boxed.len();
+        let (ptr, alloc) = Box::into_raw_with_allocator(boxed);
+        let ptr = ptr.cast::<T>();
+
+        unsafe {
+            ptr.write_bytes(0, 1);
+            Box::from_raw_in(ptr::from_raw_parts_mut(ptr, len), alloc)
+        }
+    }
+}
+
+/// TODO
+#[cfg(feature = "zerocopy-08")]
+pub mod zerocopy_08 {
+    use core::{alloc::Allocator, mem::MaybeUninit, ptr};
+
+    use alloc::boxed::Box;
+
+    /// TODO
+    pub fn box_init_zeroed<T, A>(boxed: Box<MaybeUninit<T>, A>) -> Box<T, A>
+    where
+        T: zerocopy_08::FromZeros,
+        A: Allocator,
+    {
+        let (ptr, alloc) = Box::into_raw_with_allocator(boxed);
+        let ptr = ptr.cast::<T>();
+
+        unsafe {
+            ptr.write_bytes(0, 1);
+            Box::from_raw_in(ptr, alloc)
+        }
+    }
+
+    /// TODO
+    pub fn box_init_slice_zeroed<T, A: Allocator>(boxed: Box<[MaybeUninit<T>], A>) -> Box<[T], A>
+    where
+        T: zerocopy_08::FromZeros,
+        A: Allocator,
+    {
         let len = boxed.len();
         let (ptr, alloc) = Box::into_raw_with_allocator(boxed);
         let ptr = ptr.cast::<T>();

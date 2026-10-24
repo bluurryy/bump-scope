@@ -1031,7 +1031,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
 
     /// Allocate an object with its default value.
     ///
-    /// This is equivalent to <code>[alloc_with](crate::traits::BumpAllocatorScope::alloc_with)(T::default)</code>.
+    /// This is equivalent to <code>[alloc_with](BumpAllocator::alloc_with)(T::default)</code>.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1052,7 +1052,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
 
     /// Allocate an object with its default value.
     ///
-    /// This is equivalent to <code>[try_alloc_with](crate::traits::BumpAllocatorScope::try_alloc_with)(T::default)</code>.
+    /// This is equivalent to <code>[try_alloc_with](BumpAllocator::try_alloc_with)(T::default)</code>.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1206,9 +1206,9 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
 
     /// Allocate an uninitialized object.
     ///
-    /// You can safely initialize the object with [`init`](BoxU::init),
-    /// `init_zeroed` <sup>[\[1\]](crate::zerocopy_08::InitZeroed::init_zeroed) [\[2\]](crate::bytemuck::InitZeroed::init_zeroed)</sup>
-    /// or unsafely with [`assume_init`](BoxU::assume_init).
+    /// You can safely initialize the object with [`box_init`],
+    /// `init_zeroed` <sup>[\[1\]](crate::extra::zerocopy_08::box_init_zeroed) [\[2\]](crate::extra::bytemuck::box_init_zeroed)</sup>
+    /// or unsafely with [`assume_init`](Box::assume_init).
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1247,9 +1247,9 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
 
     /// Allocate an uninitialized object.
     ///
-    /// You can safely initialize the object with [`init`](BoxU::init),
-    /// `init_zeroed` <sup>[\[1\]](crate::zerocopy_08::InitZeroed::init_zeroed) [\[2\]](crate::bytemuck::InitZeroed::init_zeroed)</sup>
-    /// or unsafely with [`assume_init`](BoxU::assume_init).
+    /// You can safely initialize the object with [`box_init`],
+    /// `box_init_zeroed` <sup>[\[1\]](crate::extra::bytemuck::box_init_zeroed) [\[2\]](crate::extra::zerocopy_08::box_init_zeroed)</sup>
+    /// or unsafely with [`assume_init`](Box::assume_init).
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1466,7 +1466,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// Allocates a slice by fill it with elements returned by calling a closure repeatedly.
     ///
     /// This method uses a closure to create new values. If you'd rather
-    /// [`Clone`] a given value, use [`alloc_slice_fill`](crate::traits::BumpAllocatorScope::alloc_slice_fill). If you want to use the [`Default`]
+    /// [`Clone`] a given value, use [`alloc_slice_fill`](BumpAllocator::alloc_slice_fill). If you want to use the [`Default`]
     /// trait to generate values, you can pass [`Default::default`] as the
     /// argument.
     ///
@@ -1490,7 +1490,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// Allocates a slice by fill it with elements returned by calling a closure repeatedly.
     ///
     /// This method uses a closure to create new values. If you'd rather
-    /// [`Clone`] a given value, use [`try_alloc_slice_fill`](crate::traits::BumpAllocatorScope::try_alloc_slice_fill). If you want to use the [`Default`]
+    /// [`Clone`] a given value, use [`try_alloc_slice_fill`](BumpAllocator::try_alloc_slice_fill). If you want to use the [`Default`]
     /// trait to generate values, you can pass [`Default::default`] as the
     /// argument.
     ///
@@ -1518,12 +1518,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with
-    /// [`init_fill`](BoxU::init_fill),
-    /// [`init_fill_with`](BoxU::init_fill_with),
-    /// [`init_copy`](BoxU::init_copy),
-    /// [`init_clone`](BoxU::init_clone),
-    /// [`init_zeroed`](crate::zerocopy_08::InitZeroed::init_zeroed) or unsafely with
-    /// [`assume_init`](BoxU::assume_init).
+    /// [`box_init_fill`],
+    /// [`box_init_fill_with`],
+    /// [`box_init_clone`],
+    /// [`box_init_zeroed`](crate::extra::bytemuck::box_init_zeroed) or unsafely with
+    /// [`assume_init`](Box::assume_init).
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1566,12 +1565,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with
-    /// [`init_fill`](BoxU::init_fill),
-    /// [`init_fill_with`](BoxU::init_fill_with),
-    /// [`init_copy`](BoxU::init_copy),
-    /// [`init_clone`](BoxU::init_clone),
-    /// [`init_zeroed`](crate::zerocopy_08::InitZeroed::init_zeroed) or unsafely with
-    /// [`assume_init`](BoxU::assume_init).
+    /// [`box_init_fill`],
+    /// [`box_init_fill_with`],
+    /// [`box_init_clone`],
+    /// [`box_init_zeroed`](crate::extra::bytemuck::box_init_zeroed) or unsafely with
+    /// [`assume_init`](Box::assume_init).
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1615,14 +1613,13 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with
-    /// [`init_fill`](BoxU::init_fill),
-    /// [`init_fill_with`](BoxU::init_fill_with),
-    /// [`init_copy`](BoxU::init_copy),
-    /// [`init_clone`](BoxU::init_clone),
-    /// [`init_zeroed`](crate::zerocopy_08::InitZeroed::init_zeroed) or unsafely with
-    /// [`assume_init`](BoxU::assume_init).
+    /// [`box_init_fill`],
+    /// [`box_init_fill_with`],
+    /// [`box_init_clone`],
+    /// [`box_init_zeroed`](crate::extra::bytemuck::box_init_zeroed) or unsafely with
+    /// [`assume_init`](Box::assume_init).
     ///
-    /// This is just like [`alloc_uninit_slice`](crate::traits::BumpAllocatorScope::alloc_uninit_slice) but uses a `slice` to provide the `len`.
+    /// This is just like [`alloc_uninit_slice`](BumpAllocator::alloc_uninit_slice) but uses a `slice` to provide the `len`.
     /// This avoids a check for a valid layout. The elements of `slice` are irrelevant.
     ///
     /// # Panics
@@ -1646,14 +1643,13 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with
-    /// [`init_fill`](BoxU::init_fill),
-    /// [`init_fill_with`](BoxU::init_fill_with),
-    /// [`init_copy`](BoxU::init_copy),
-    /// [`init_clone`](BoxU::init_clone),
-    /// [`init_zeroed`](crate::zerocopy_08::InitZeroed::init_zeroed) or unsafely with
-    /// [`assume_init`](BoxU::assume_init).
+    /// [`box_init_fill`],
+    /// [`box_init_fill_with`],
+    /// [`box_init_clone`],
+    /// [`box_init_zeroed`](crate::extra::bytemuck::box_init_zeroed) or unsafely with
+    /// [`assume_init`](Box::assume_init).
     ///
-    /// This is just like [`try_alloc_uninit_slice`](crate::traits::BumpAllocatorScope::try_alloc_uninit_slice) but uses a `slice` to provide the `len`.
+    /// This is just like [`try_alloc_uninit_slice`](BumpAllocator::try_alloc_uninit_slice) but uses a `slice` to provide the `len`.
     /// This avoids a check for a valid layout. The elements of `slice` are irrelevant.
     ///
     /// # Errors
@@ -1714,7 +1710,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
 
     /// Allocate a `str` from format arguments.
     ///
-    /// If you have a `&mut self` you can use [`alloc_fmt_mut`](crate::traits::MutBumpAllocatorScope::alloc_fmt_mut)
+    /// If you have a `&mut self` you can use [`alloc_fmt_mut`](MutBumpAllocator::alloc_fmt_mut)
     /// instead for better performance.
     ///
     /// # Panics
@@ -1743,7 +1739,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
 
     /// Allocate a `str` from format arguments.
     ///
-    /// If you have a `&mut self` you can use [`try_alloc_fmt_mut`](crate::traits::MutBumpAllocatorScope::try_alloc_fmt_mut)
+    /// If you have a `&mut self` you can use [`try_alloc_fmt_mut`](MutBumpAllocator::try_alloc_fmt_mut)
     /// instead for better performance.
     ///
     /// # Errors
@@ -1856,7 +1852,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// If the string contains a `'\0'` then the `CStr` will stop at the first `'\0'`.
     ///
-    /// If you have a `&mut self` you can use [`alloc_cstr_fmt_mut`](crate::traits::MutBumpAllocatorScope::alloc_cstr_fmt_mut)
+    /// If you have a `&mut self` you can use [`alloc_cstr_fmt_mut`](MutBumpAllocator::alloc_cstr_fmt_mut)
     /// instead for better performance.
     ///
     /// # Panics
@@ -1888,7 +1884,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// If the string contains a `'\0'` then the `CStr` will stop at the first `'\0'`.
     ///
-    /// If you have a `&mut self` you can use [`try_alloc_cstr_fmt_mut`](crate::traits::MutBumpAllocatorScope::try_alloc_cstr_fmt_mut)
+    /// If you have a `&mut self` you can use [`try_alloc_cstr_fmt_mut`](MutBumpAllocator::try_alloc_cstr_fmt_mut)
     /// instead for better performance.
     ///
     /// # Errors
@@ -1918,9 +1914,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
 
     /// Allocate elements of an iterator into a slice.
     ///
-    /// If you have an `impl ExactSizeIterator` then you can use [`alloc_iter_exact`] instead for better performance.
-    ///
-    /// If `iter` is not an `ExactSizeIterator` but you have a `&mut self` you can still get somewhat better performance by using [`alloc_iter_mut`].
+    /// If you have a `&mut self` you can get somewhat better performance by using [`alloc_iter_mut`].
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1933,8 +1927,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
     ///
-    /// [`alloc_iter_exact`]: crate::traits::BumpAllocatorScope::alloc_iter_exact
-    /// [`alloc_iter_mut`]: crate::traits::MutBumpAllocatorScope::alloc_iter_mut
+    /// [`alloc_iter_mut`]: MutBumpAllocator::alloc_iter_mut
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> BumpAllocation<[T], &Self> {
@@ -1944,9 +1937,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
 
     /// Allocate elements of an iterator into a slice.
     ///
-    /// If you have an `impl ExactSizeIterator` then you can use [`try_alloc_iter_exact`] instead for better performance.
-    ///
-    /// If `iter` is not an `ExactSizeIterator` but you have a `&mut self` you can still get somewhat better performance by using [`try_alloc_iter_mut`].
+    /// If you have a `&mut self` you can get somewhat better performance by using [`try_alloc_iter_mut`].
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1960,8 +1951,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
-    /// [`try_alloc_iter_exact`]: crate::traits::BumpAllocatorScope::try_alloc_iter_exact
-    /// [`try_alloc_iter_mut`]: crate::traits::MutBumpAllocatorScope::try_alloc_iter_mut
+    /// [`try_alloc_iter_mut`]: MutBumpAllocator::try_alloc_iter_mut
     #[inline(always)]
     fn try_alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> Result<BumpAllocation<[T], &Self>, AllocError> {
         let boxed = self.imp_alloc_iter(iter)?;
@@ -1972,7 +1962,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
     ///
-    /// There is also [`alloc_try_with_mut`](Self::alloc_try_with_mut), optimized for a mutable reference.
+    /// There is also [`alloc_try_with_mut`], optimized for a mutable reference.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1996,6 +1986,8 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
     /// ```
+    ///
+    /// [`alloc_try_with_mut`]: MutBumpAllocator::alloc_try_with_mut
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     #[expect(clippy::missing_errors_doc)]
@@ -2010,7 +2002,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
     ///
-    /// There is also [`try_alloc_try_with_mut`](Self::try_alloc_try_with_mut), optimized for a mutable reference.
+    /// There is also [`try_alloc_try_with_mut`], optimized for a mutable reference.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -2036,6 +2028,8 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// assert_eq!(bump.stats().allocated(), 0);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
+    ///
+    /// [`try_alloc_try_with_mut`]: MutBumpAllocator::try_alloc_try_with_mut
     #[inline(always)]
     fn try_alloc_try_with<T, E>(
         &self,
@@ -2061,7 +2055,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// The bump position can be reset to this checkpoint with [`reset_to`].
     ///
-    /// [`reset_to`]: BumpAllocatorCore::reset_to
+    /// [`reset_to`]: BumpAllocator::reset_to
     #[must_use]
     #[inline(always)]
     fn checkpoint(&self) -> Checkpoint {
@@ -2139,7 +2133,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// ```
     ///
     /// [stats]: crate::BumpScope::stats
-    /// [remaining]: Stats::remaining
+    /// [remaining]: crate::stats::Stats::remaining
     /// [claimed]: crate::BumpScope::claim
     #[cfg(feature = "panic-on-alloc")]
     fn reserve(&self, additional: usize);
@@ -2169,7 +2163,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// ```
     ///
     /// [stats]: crate::BumpScope::stats
-    /// [remaining]: Stats::remaining
+    /// [remaining]: crate::stats::Stats::remaining
     /// [claimed]: crate::BumpScope::claim
     fn try_reserve(&self, additional: usize) -> Result<(), AllocError>;
 }
@@ -2316,7 +2310,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
     ///
-    /// [`alloc_iter`]: crate::traits::BumpAllocatorScope::alloc_iter
+    /// [`alloc_iter`]: BumpAllocator::alloc_iter
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_iter_mut<T>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpAllocation<[T], &Self> {
@@ -2342,7 +2336,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
-    /// [`try_alloc_iter`]: crate::traits::BumpAllocatorScope::alloc_iter
+    /// [`try_alloc_iter`]: BumpAllocator::alloc_iter
     #[inline(always)]
     fn try_alloc_iter_mut<T>(
         &mut self,
@@ -2376,7 +2370,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     /// assert_eq!(string, "1 + 2 = 3");
     /// ```
     ///
-    /// [`alloc_fmt`]: crate::traits::BumpAllocatorScope::alloc_fmt
+    /// [`alloc_fmt`]: BumpAllocator::alloc_fmt
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_fmt_mut(&mut self, args: fmt::Arguments) -> BumpAllocation<str, &Self> {
@@ -2409,7 +2403,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
-    /// [`try_alloc_fmt`]: crate::traits::BumpAllocatorScope::try_alloc_fmt
+    /// [`try_alloc_fmt`]: BumpAllocator::try_alloc_fmt
     #[inline(always)]
     fn try_alloc_fmt_mut(&mut self, args: fmt::Arguments) -> Result<BumpAllocation<str, &Self>, AllocError> {
         let boxed = self.imp_alloc_fmt_mut(args)?;
@@ -2444,7 +2438,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     /// assert_eq!(one, c"1");
     /// ```
     ///
-    /// [`alloc_cstr_fmt`]: crate::traits::BumpAllocatorScope::alloc_cstr_fmt
+    /// [`alloc_cstr_fmt`]: BumpAllocator::alloc_cstr_fmt
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_cstr_fmt_mut(&mut self, args: fmt::Arguments) -> IntoRef<CStr, &Self> {
@@ -2480,7 +2474,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
-    /// [`try_alloc_cstr_fmt`]: crate::traits::BumpAllocatorScope::try_alloc_cstr_fmt
+    /// [`try_alloc_cstr_fmt`]: BumpAllocator::try_alloc_cstr_fmt
     #[inline(always)]
     fn try_alloc_cstr_fmt_mut(&mut self, args: fmt::Arguments) -> Result<IntoRef<CStr, &Self>, AllocError> {
         self.imp_alloc_cstr_fmt_mut(args)
@@ -2490,7 +2484,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     ///
     /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
     ///
-    /// This is just like [`alloc_try_with`](Self::alloc_try_with), but optimized for a mutable reference.
+    /// This is just like [`alloc_try_with`], but optimized for a mutable reference.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -2514,6 +2508,8 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
     /// ```
+    ///
+    /// [`alloc_try_with`]: BumpAllocator::alloc_try_with
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     #[expect(clippy::missing_errors_doc)]
@@ -2526,7 +2522,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     ///
     /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
     ///
-    /// This is just like [`try_alloc_try_with`](Self::try_alloc_try_with), but optimized for a mutable reference.
+    /// This is just like [`try_alloc_try_with`], but optimized for a mutable reference.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -2552,6 +2548,8 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     /// assert_eq!(bump.stats().allocated(), 0);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
+    ///
+    /// [`try_alloc_try_with`]: BumpAllocator::try_alloc_try_with
     #[inline(always)]
     fn try_alloc_try_with_mut<T, E>(
         &mut self,

@@ -129,7 +129,7 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
-    /// [`self.is_claimed()`]: Self::is_claimed
+    /// [`self.is_claimed()`]: crate::traits::BumpAllocator::is_claimed
     #[inline]
     pub fn change_config<const NEW_C: BumpConfig>(self) -> BumpScope<'a, A, NEW_C> {
         RawBump::<A, C>::const_assert_upwards_matches::<NEW_C>();
@@ -289,7 +289,7 @@ where
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
-    /// [`self.is_claimed()`]: Self::is_claimed
+    /// [`self.is_claimed()`]: crate::traits::BumpAllocator::is_claimed
     /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     ///
     /// # Examples

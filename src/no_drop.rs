@@ -7,11 +7,11 @@
 ///
 /// Every `T where T: Copy` and every `[T] where T: NoDrop` automatically implements `NoDrop`.
 ///
-/// It is used as a bound for [`BoxU`]'s [`into_ref`] and [`into_mut`] so you don't accidentally omit a drop that does matter.
+/// It is used as a bound for [`BumpAllocation`]'s [`into_ref`] and [`into_mut`] so you don't accidentally omit a drop that does matter.
 ///
-/// [`BoxU`]: crate::BoxU
-/// [`into_ref`]: crate::BoxU::into_ref
-/// [`into_mut`]: crate::BoxU::into_mut
+/// [`BumpAllocation`]: crate::BumpAllocation
+/// [`into_ref`]: crate::BumpAllocation::into_ref
+/// [`into_mut`]: crate::BumpAllocation::into_mut
 pub trait NoDrop {}
 
 impl NoDrop for str {}

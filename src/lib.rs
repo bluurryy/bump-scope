@@ -81,7 +81,7 @@
 //! Unlike `bumpalo`, this crate...
 //! - Supports [scopes and checkpoints](#scopes-and-checkpoints).
 //! - Drop is always called for allocated values unless explicitly [leaked](BoxU::leak) or [forgotten](core::mem::forget).
-//!   - `alloc*` methods return a [`BoxU<T>`](BoxU) which owns and drops `T`. Types that don't need dropping can be turned into references with [`into_ref`](BoxU::into_ref) and [`into_mut`](BoxU::into_mut).
+//!   - `alloc*` methods return a [`BumpAllocation`] which owns and drops `T`. Types that don't need dropping can be turned into references with [`into_ref`](BumpAllocation::into_ref) and [`into_mut`](BumpAllocation::into_mut).
 //! - You can allocate a slice from any `Iterator` with [`alloc_iter`](Bump::alloc_iter).
 //! - `Bump`'s base allocator is generic.
 //! - Won't try to allocate a smaller chunk if allocation failed.
@@ -193,25 +193,6 @@
 //! vec.reserve(123);
 //! ```
 //!
-//! # Collections
-//! `bump-scope` provides bump allocated versions of `Vec` and `String` called [`BumpVec`] and [`BumpString`].
-//! They are also available in the following variants:
-//! - [`Fixed*`](FixedBumpVec) for fixed capacity collections
-//! - [`Mut*`](MutBumpVec) for collections optimized for a mutable bump allocator
-//!
-//! #### API changes
-//! The collections are designed to have the same api as their std counterparts with these exceptions:
-//! - [`split_off`](BumpVec::split_off) —  splits the collection in place without allocation; the parameter is a range instead of a single index
-//! - [`retain`](BumpVec::retain) —  takes a closure with a `&mut T` parameter like [`Vec::retain_mut`](alloc::vec::Vec::retain_mut)
-//!
-//! #### New features
-//! - [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `vec::Drain<T>` etc.
-//! - [`map`](BumpVec::map) —  maps the elements, potentially reusing the existing allocation
-//! - [`map_in_place`](BumpVec::map_in_place) —  maps the elements without allocation, failing to compile if not possible
-//! - conversions between the regular collections, their `Fixed*` variants and `BoxU<[T]>` / `BoxU<str>`
-//!
-//! The collection's API implementations are based on rust commit 787af2b8c80638c51a4fc8e44f84e6891f243ec7 (2026-08-25).
-//!
 //! # Parallel Allocation
 //! [`Bump`] is `!Sync` which means it can't be shared between threads.
 //!
@@ -235,40 +216,6 @@
 //!
 //! # Feature Flags
 //! <!-- feature documentation start -->
-//! - **`std`** *(enabled by default)* — Adds `BumpPool` and implementations of `std::io` traits.
-//! - **`alloc`** *(enabled by default)* — Adds `Global` as the default base allocator and some interactions with `alloc` collections.
-//! - **`panic-on-alloc`** *(enabled by default)* — Adds functions and traits that will panic when allocations fail.
-//!   Without this feature, allocation failures cannot cause panics, and only
-//!   `try_`-prefixed allocation methods will be available.
-//! - **`serde`** — Adds `Serialize` implementations for `BoxU`, strings and vectors, and `DeserializeSeed` for strings and vectors.
-//! - **`bytemuck`** — Adds `bytemuck::*` extension traits for
-//!   <code>[alloc_zeroed](bytemuck::BumpAllocatorScopeExt::alloc_zeroed)([_slice](bytemuck::BumpAllocatorScopeExt::alloc_zeroed_slice))</code>,
-//!   [`init_zeroed`](bytemuck::InitZeroed::init_zeroed),
-//!   [`extend_zeroed`](bytemuck::VecExt::extend_zeroed) and
-//!   [`resize_zeroed`](bytemuck::VecExt::resize_zeroed).
-//! - **`zerocopy-08`** — Adds `zerocopy_08::*` extension traits for
-//!   <code>[alloc_zeroed](zerocopy_08::BumpAllocatorScopeExt::alloc_zeroed)([_slice](zerocopy_08::BumpAllocatorScopeExt::alloc_zeroed_slice))</code>,
-//!   [`init_zeroed`](zerocopy_08::InitZeroed::init_zeroed),
-//!   [`extend_zeroed`](zerocopy_08::VecExt::extend_zeroed) and
-//!   [`resize_zeroed`](zerocopy_08::VecExt::resize_zeroed).
-//!
-//! ### Nightly features
-//! These nightly features are not subject to the same semver guarantees as the rest of the library.
-//! Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
-//!
-//! - **`nightly`** — Enables all other nightly feature flags.
-//! - **`nightly-coerce-unsized`** — Makes `BoxU<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
-//!   With this `BoxU<[i32;3]>` coerces to `BoxU<[i32]>`, `BoxU<dyn Debug>` and so on.
-//!   You can unsize a `BoxU` in stable without this feature using [`unsize_bump_box`].
-//! - **`nightly-exact-size-is-empty`** — Implements `is_empty` manually for some iterators.
-//! - **`nightly-trusted-len`** — Implements `TrustedLen` for some iterators.
-//! - **`nightly-fn-traits`** — Implements `Fn*` traits for `BoxU<T>`. Makes `BoxU<T: FnOnce + ?Sized>` callable. Requires alloc crate.
-//! - **`nightly-tests`** — Enables some tests that require a nightly compiler.
-//! - **`nightly-dropck-eyepatch`** — Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
-//!   This makes it so references don't have to strictly outlive the container.
-//!   (Just like with std's `Box` and `Vec`.)
-//! - **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](crate::traits::BumpAllocatorScope::alloc_clone) method.
-//! - **`nightly-miri-promise-symbolic-alignment`** — Promises to miri that allocated pointers are symbolically aligned.
 //! <!-- feature documentation end -->
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches

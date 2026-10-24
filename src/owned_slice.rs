@@ -11,14 +11,14 @@ use alloc::{
 ///
 /// For example `[T; N]`, `Vec<T>`, `Box<[T]>` and `vec::Drain<T>`.
 ///
-/// This trait is used for the parameter of [`alloc_slice_move`], [`init_move`], [`append`] and [`from_owned_slice_in`].
+/// This trait is used for the parameter of [`alloc_slice_move`], [`box_init_move`], [`vec_append`] and [`vec_from_owned_slice_in`].
 ///
 /// Any implementor of `TakeOwnedSlice` automatically implements this trait.
 ///
-/// [`alloc_slice_move`]: crate::Bump::alloc_slice_move
-/// [`init_move`]: crate::BoxU::init_move
-/// [`append`]: crate::BumpVec::append
-/// [`from_owned_slice_in`]: crate::BumpVec::from_owned_slice_in
+/// [`alloc_slice_move`]: crate::traits::BumpAllocator::alloc_slice_move
+/// [`box_init_move`]: crate::extra::box_init_move
+/// [`vec_append`]: crate::extra::vec_append
+/// [`vec_from_owned_slice_in`]: crate::extra::vec_from_owned_slice_in
 pub trait OwnedSlice {
     /// The type of an element of this owned slice.
     type Item;

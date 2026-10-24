@@ -11,8 +11,8 @@ use crate::{
 
 /// This is returned from [`checkpoint`] and used for [`reset_to`].
 ///
-/// [`checkpoint`]: crate::traits::BumpAllocatorCore::checkpoint
-/// [`reset_to`]: crate::traits::BumpAllocatorCore::reset_to
+/// [`checkpoint`]: crate::traits::BumpAllocator::checkpoint
+/// [`reset_to`]: crate::traits::BumpAllocator::reset_to
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Checkpoint {
     pub(crate) chunk: ErasedChunk,

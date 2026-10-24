@@ -47,14 +47,13 @@ use crate::panic_on_error;
 ///
 /// #### Allocate ...
 /// - sized values: [`alloc`], [`alloc_with`], [`alloc_default`], [`alloc_zeroed`]
-/// - strings: [`alloc_str`], <code>[alloc_fmt](BumpAllocatorScope::alloc_fmt)([_mut](MutBumpAllocatorScope::alloc_fmt_mut))</code>
-/// - c strings: [`alloc_cstr`], [`alloc_cstr_from_str`], <code>[alloc_cstr_fmt](BumpAllocatorScope::alloc_cstr_fmt)([_mut](MutBumpAllocatorScope::alloc_cstr_fmt_mut))</code>
-/// - slices: <code>alloc_slice_{[copy](BumpAllocatorScope::alloc_slice_copy), [clone](BumpAllocatorScope::alloc_slice_clone), [move](BumpAllocatorScope::alloc_slice_move), [fill](BumpAllocatorScope::alloc_slice_fill), [fill_with](BumpAllocatorScope::alloc_slice_fill_with)}</code>,
+/// - strings: [`alloc_str`], <code>[alloc_fmt](crate::traits::BumpAllocator::alloc_fmt)([_mut](crate::traits::MutBumpAllocator::alloc_fmt_mut))</code>
+/// - c strings: [`alloc_cstr`], [`alloc_cstr_from_str`], <code>[alloc_cstr_fmt](crate::traits::BumpAllocator::alloc_cstr_fmt)([_mut](crate::traits::MutBumpAllocator::alloc_cstr_fmt_mut))</code>
+/// - slices: <code>alloc_slice_{[copy](crate::traits::BumpAllocator::alloc_slice_copy), [clone](crate::traits::BumpAllocator::alloc_slice_clone), [move](crate::traits::BumpAllocator::alloc_slice_move), [fill](crate::traits::BumpAllocator::alloc_slice_fill), [fill_with](crate::traits::BumpAllocator::alloc_slice_fill_with)}</code>,
 ///   [`alloc_zeroed_slice`]
-/// - slices from an iterator: [`alloc_iter`], [`alloc_iter_exact`], [`alloc_iter_mut`]
+/// - slices from an iterator: [`alloc_iter`], [`alloc_iter_mut`]
 /// - uninitialized values: [`alloc_uninit`], [`alloc_uninit_slice`], [`alloc_uninit_slice_for`]
-///
-///   which can then be conveniently initialized by the [`init*` methods of `BoxU`](crate::BoxU#bumpbox-has-a-lot-of-methods).
+///   which can then be conveniently initialized by the `init*` methods of [`extra`](crate::extra).
 /// - results: [`alloc_try_with`], [`alloc_try_with_mut`]
 /// - via clone *(nightly only)*: [`alloc_clone`]
 ///
@@ -62,7 +61,6 @@ use crate::panic_on_error;
 /// - scopes: [`scoped`], [`scope_guard`], [`scoped_with_config`]
 /// - checkpoints: [`checkpoint`], [`reset_to`]
 /// - reset: [`reset`], [`reset_to_start`]
-/// - dealloc: [`dealloc`]
 ///
 /// #### Configure allocator config ...
 /// - [`with_config`], [`change_config`], [`ref_change_config`], [`mut_change_config`]
@@ -131,41 +129,39 @@ use crate::panic_on_error;
 /// # #[cfg(not(feature = "nightly"))] fn main() {}
 /// ```
 ///
-/// [`alloc`]: BumpAllocatorScope::alloc
-/// [`alloc_with`]: BumpAllocatorScope::alloc_with
-/// [`alloc_default`]: BumpAllocatorScope::alloc_default
+/// [`alloc`]: crate::traits::BumpAllocator::alloc
+/// [`alloc_with`]: crate::traits::BumpAllocator::alloc_with
+/// [`alloc_default`]: crate::traits::BumpAllocator::alloc_default
 /// [`alloc_zeroed`]: crate::zerocopy_08::BumpAllocatorScopeExt::alloc_zeroed
 ///
-/// [`alloc_str`]: BumpAllocatorScope::alloc_str
+/// [`alloc_str`]: crate::traits::BumpAllocator::alloc_str
 ///
-/// [`alloc_cstr`]: BumpAllocatorScope::alloc_cstr
-/// [`alloc_cstr_from_str`]: BumpAllocatorScope::alloc_cstr_from_str
+/// [`alloc_cstr`]: crate::traits::BumpAllocator::alloc_cstr
+/// [`alloc_cstr_from_str`]: crate::traits::BumpAllocator::alloc_cstr_from_str
 ///
 /// [`alloc_zeroed_slice`]: crate::zerocopy_08::BumpAllocatorScopeExt::alloc_zeroed_slice
 ///
-/// [`alloc_iter`]: BumpAllocatorScope::alloc_iter
-/// [`alloc_iter_exact`]: BumpAllocatorScope::alloc_iter_exact
-/// [`alloc_iter_mut`]: MutBumpAllocatorScope::alloc_iter_mut
+/// [`alloc_iter`]: crate::traits::BumpAllocator::alloc_iter
+/// [`alloc_iter_mut`]: crate::traits::MutBumpAllocator::alloc_iter_mut
 ///
-/// [`alloc_uninit`]: BumpAllocatorScope::alloc_uninit
-/// [`alloc_uninit_slice`]: BumpAllocatorScope::alloc_uninit_slice
-/// [`alloc_uninit_slice_for`]: BumpAllocatorScope::alloc_uninit_slice_for
+/// [`alloc_uninit`]: crate::traits::BumpAllocator::alloc_uninit
+/// [`alloc_uninit_slice`]: crate::traits::BumpAllocator::alloc_uninit_slice
+/// [`alloc_uninit_slice_for`]: crate::traits::BumpAllocator::alloc_uninit_slice_for
 ///
-/// [`alloc_try_with`]: Bump::alloc_try_with
-/// [`alloc_try_with_mut`]: Bump::alloc_try_with_mut
+/// [`alloc_try_with`]: crate::traits::BumpAllocator::alloc_try_with
+/// [`alloc_try_with_mut`]: crate::traits::MutBumpAllocator::alloc_try_with_mut
 ///
-/// [`alloc_clone`]: BumpAllocatorScope::alloc_clone
+/// [`alloc_clone`]: crate::traits::BumpAllocator::alloc_clone
 ///
 /// [`scoped`]: crate::BumpScope::scoped
 /// [`scoped_with_config`]: crate::BumpScope::scoped_with_config
 /// [`scope_guard`]: crate::BumpScope::scope_guard
 ///
-/// [`checkpoint`]: BumpAllocatorCore::checkpoint
-/// [`reset_to`]: BumpAllocatorCore::reset_to
+/// [`checkpoint`]: crate::traits::BumpAllocator::checkpoint
+/// [`reset_to`]: crate::traits::BumpAllocator::reset_to
 ///
 /// [`reset`]: Bump::reset
 /// [`reset_to_start`]: Bump::reset_to_start
-/// [`dealloc`]: BumpAllocator::dealloc
 ///
 /// [`with_config`]: Bump::with_config
 /// [`change_config`]: Bump::change_config
@@ -780,7 +776,7 @@ where
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
-    /// [`self.is_claimed()`]: Self::is_claimed
+    /// [`self.is_claimed()`]: crate::traits::BumpAllocator::is_claimed
     /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     ///
     #[inline]

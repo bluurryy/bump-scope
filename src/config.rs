@@ -331,11 +331,10 @@ bit_fields! {
     ///
     /// For the performance impact see [crates/callgrind-benches][benches].
     ///
-    /// [alloc_iter]: crate::traits::BumpAllocatorScope::alloc_iter
-    /// [alloc_iter_mut]: crate::traits::MutBumpAllocatorScope::alloc_iter_mut
-    /// [alloc_fmt]: crate::traits::BumpAllocatorScope::alloc_fmt
-    /// [alloc_fmt_mut]: crate::traits::MutBumpAllocatorScope::alloc_fmt_mut
-    /// [`MutBumpVecRev`]: crate::MutBumpVecRev
+    /// [alloc_iter]: crate::traits::BumpAllocator::alloc_iter
+    /// [alloc_iter_mut]: crate::traits::MutBumpAllocator::alloc_iter_mut
+    /// [alloc_fmt]: crate::traits::BumpAllocator::alloc_fmt
+    /// [alloc_fmt_mut]: crate::traits::MutBumpAllocator::alloc_fmt_mut
     /// [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
     upwards: bool {
         default: true,
@@ -358,7 +357,7 @@ bit_fields! {
     /// [with_size_in]: crate::Bump::with_size_in
     /// [with_capacity]: crate::Bump::with_capacity
     /// [with_capacity_in]: crate::Bump::with_capacity_in
-    /// [`reset_to`]: crate::traits::BumpAllocatorCore::reset_to
+    /// [`reset_to`]: crate::traits::BumpAllocator::reset_to
     /// [`by_value`]: crate::BumpScope::by_value
     const_constructible: bool {
         default: false,
@@ -391,14 +390,13 @@ bit_fields! {
 
     /// Enables shrinking.
     ///
-    /// When this is `false`, [`Allocator::shrink`] and [`BumpAllocator::shrink_slice`] does not free memory.
+    /// When this is `false`, [`Allocator::shrink`] does not free memory.
     /// Calling `shrink` with a new layout of a greater alignment may still reallocate.
     ///
     /// This also affects the temporary collections used in [`alloc_iter`], [`alloc_fmt`], etc.
     ///
-    /// [`BumpAllocator::shrink_slice`]: crate::traits::BumpAllocator::shrink_slice
-    /// [`alloc_iter`]: crate::traits::BumpAllocatorScope::alloc_iter
-    /// [`alloc_fmt`]: crate::traits::BumpAllocatorScope::alloc_fmt
+    /// [`alloc_iter`]: crate::traits::BumpAllocator::alloc_iter
+    /// [`alloc_fmt`]: crate::traits::BumpAllocator::alloc_fmt
     shrinks: bool {
         default: true,
         bits: 1,
