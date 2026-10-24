@@ -10,7 +10,7 @@ use core::{
 pub struct Unmanaged<'a>(PhantomData<&'a ()>);
 
 impl Unmanaged<'_> {
-    pub(crate) const NEW: Self = Self(PhantomData);
+    pub(crate) const VALUE: Self = Self(PhantomData);
 }
 
 unsafe impl Allocator for Unmanaged<'_> {

@@ -84,7 +84,7 @@ up_and_down! {
         let mut vec = vec![in &bump; 1, 2, 3, 4, 5];
         assert_eq!(bump.stats().allocated(), 5 * 4);
         vec.truncate(3);
-        let slice = extra::vec_into_slice(extra::vec_remove_allocator(vec).0);
+        let slice = extra::vec_into_slice(extra::detach_allocator(vec).0);
         assert_eq!(bump.stats().allocated(), 5 * 4);
         _ = slice;
     }

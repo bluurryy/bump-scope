@@ -57,7 +57,7 @@ impl<'a, T: ?Sized, A: BumpAllocatorScope<'a>> BumpAllocation<T, A> {
 
     /// TODO
     pub fn into_boxu(self) -> Box<T, Unmanaged<'a>> {
-        replace_allocator(self.boxed, Unmanaged::NEW).0
+        replace_allocator(self.boxed, Unmanaged::VALUE).0
     }
 
     /// TODO

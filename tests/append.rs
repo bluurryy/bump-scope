@@ -11,7 +11,7 @@ use std::{
 
 use bump_scope::{
     BoxU, Bump, BumpAllocator as _, VecU,
-    extra::{self, vec_from_owned_slice_in, vec_remove_allocator},
+    extra::{self, detach_allocator, vec_from_owned_slice_in},
     owned_slice::{OwnedSlice, TakeOwnedSlice},
 };
 
@@ -78,7 +78,7 @@ fn append_vec() {
 
     {
         let vec = Vec::new_in(&bump);
-        let other: VecU<String> = vec_remove_allocator(vec_from_owned_slice_in(test_strings(), &other_bump)).0;
+        let other: VecU<String> = detach_allocator(vec_from_owned_slice_in(test_strings(), &other_bump)).0;
         test_append(vec, other);
     }
 

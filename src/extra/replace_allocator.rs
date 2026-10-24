@@ -1,6 +1,15 @@
 use alloc::{boxed::Box, vec::Vec};
 
-use crate::BumpAllocatorScope;
+use crate::{BumpAllocatorScope, Unmanaged};
+
+/// TODO
+pub fn detach_allocator<'a, A, BoxOrVec>(box_or_vec: BoxOrVec) -> (BoxOrVec::Output, A)
+where
+    BoxOrVec: ReplaceAllocator<'a, 'a, A, Unmanaged<'a>>,
+    A: BumpAllocatorScope<'a>,
+{
+    ReplaceAllocator::replace_allocator(box_or_vec, Unmanaged::VALUE)
+}
 
 /// TODO
 pub fn replace_allocator<'old, 'new, Old, New, BoxOrVec>(box_or_vec: BoxOrVec, new: New) -> (BoxOrVec::Output, Old)

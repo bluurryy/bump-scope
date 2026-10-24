@@ -1,3 +1,4 @@
+mod detach_allocator;
 mod replace_allocator;
 mod split_off;
 
@@ -19,7 +20,7 @@ use crate::{
     traits::{BumpAllocator, BumpAllocatorScope},
 };
 
-pub use replace_allocator::replace_allocator;
+pub use replace_allocator::{detach_allocator, replace_allocator};
 pub use split_off::split_off;
 
 /// Maps the elements of a vector, reusing the allocation if possible.
@@ -222,7 +223,7 @@ fn dangling_mut_slice<T>(len: usize) -> *mut [T] {
 }
 
 pub(crate) unsafe fn boxu_from_raw<'a, T: ?Sized>(ptr: *mut T) -> BoxU<'a, T> {
-    unsafe { BoxU::from_raw_in(ptr, Unmanaged::NEW) }
+    unsafe { BoxU::from_raw_in(ptr, Unmanaged::VALUE) }
 }
 
 pub(crate) fn boxu_uninit_zst<'a, T>() -> BoxU<'a, MaybeUninit<T>> {
@@ -586,15 +587,6 @@ pub(crate) fn assert_char_boundary(str: &str, index: usize) {
 }
 
 /// TODO
-pub fn box_remove_allocator<'a, T, A>(boxed: Box<T, A>) -> (BoxU<'a, T>, A)
-where
-    T: ?Sized,
-    A: BumpAllocatorScope<'a>,
-{
-    replace_allocator(boxed, Unmanaged::NEW)
-}
-
-/// TODO
 pub fn vec_from_iter_in<T, A>(iter: impl IntoIterator<Item = T>, alloc: A) -> Vec<T, A>
 where
     A: Allocator,
@@ -616,21 +608,12 @@ where
     let (ptr, len, cap, old) = Vec::into_raw_parts_with_allocator(boxed);
     (unsafe { Vec::from_raw_parts_in(ptr, len, cap, new_alloc) }, old)
 }
-
-/// TODO
-pub fn vec_remove_allocator<'a, T, A>(vec: Vec<T, A>) -> (VecU<'a, T>, A)
-where
-    A: BumpAllocatorScope<'a>,
-{
-    replace_allocator(vec, Unmanaged::NEW)
-}
-
 /// TODO
 pub unsafe fn vec_remove_allocator_unchecked<'a, T, A>(vec: Vec<T, A>) -> (VecU<'a, T>, A)
 where
     A: BumpAllocator,
 {
-    unsafe { vec_replace_allocator_unchecked(vec, Unmanaged::NEW) }
+    unsafe { vec_replace_allocator_unchecked(vec, Unmanaged::VALUE) }
 }
 
 /// TODO
