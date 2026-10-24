@@ -4,7 +4,7 @@ mod common;
 
 use std::{alloc::Global, mem::forget};
 
-use bump_scope::{Bump, traits::BumpAllocator};
+use bump_scope::Bump;
 
 use crate::common::up_and_down;
 

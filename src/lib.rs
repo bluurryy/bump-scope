@@ -416,22 +416,6 @@ trait SizedTypeProperties: Sized {
 
 impl<T> SizedTypeProperties for T {}
 
-/// Call this with a macro that accepts tokens of either `A` or `A = $crate::alloc::Global`.
-///
-/// We do it this way instead of having a parameter like
-/// ```ignore
-/// #[cfg(feature = "alloc")] A = $crate::alloc::Global,
-/// #[cfg(not(feature = "alloc"))] A,
-/// ```
-/// because Rust Analyzer thinks those are two parameters and gets confused.
-macro_rules! maybe_default_allocator {
-    ($macro:ident) => {
-        $macro!(A = alloc::alloc::Global);
-    };
-}
-
-pub(crate) use maybe_default_allocator;
-
 /// Aligns a bump address to the `min_align`.
 ///
 /// This is a noop when `min_align` is `0`.

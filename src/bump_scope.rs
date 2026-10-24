@@ -6,11 +6,12 @@ use core::{
     ptr::NonNull,
 };
 
+use alloc::alloc::Global;
+
 use crate::{
     BumpClaimGuard, BumpScopeGuard, NoDrop, allocator_impl,
     bump_align_guard::BumpAlignGuard,
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
-    maybe_default_allocator,
     polyfill::{transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
     stats::{AnyStats, Stats},
@@ -19,38 +20,29 @@ use crate::{
 #[cfg(feature = "panic-on-alloc")]
 use crate::panic_on_error;
 
-macro_rules! make_type {
-    ($($allocator_parameter:tt)*) => {
-        /// A bump allocation scope.
-        ///
-        /// A `BumpScope`'s allocations are live for `'a`, which is the lifetime of its associated `BumpScopeGuard` or `scoped` closure.
-        ///
-        /// `BumpScope` has mostly same api as [`Bump`].
-        ///
-        /// This type is provided as a parameter to the closure of [`scoped`], or created
-        /// by [`BumpScopeGuard::scope`]. A [`Bump`] can also be turned into a `BumpScope` using
-        /// [`as_scope`], [`as_mut_scope`] or `from` / `into`.
-        ///
-        /// [`scoped`]: crate::BumpScope::scoped
-        /// [`BumpScopeGuard::scope`]: crate::BumpScopeGuard::scope
-        /// [`Bump`]: crate::Bump
-        /// [`as_scope`]: crate::Bump::as_scope
-        /// [`as_mut_scope`]: crate::Bump::as_mut_scope
-        /// [`reset`]: crate::Bump::reset
-        #[repr(transparent)]
-        pub struct BumpScope<'a, $($allocator_parameter)*, const C: BumpConfig = DEFAULT_BUMP_CONFIG>
-        where
+/// A bump allocation scope.
+///
+/// A `BumpScope`'s allocations are live for `'a`, which is the lifetime of its associated `BumpScopeGuard` or `scoped` closure.
+///
+/// `BumpScope` has mostly same api as [`Bump`].
+///
+/// This type is provided as a parameter to the closure of [`scoped`], or created
+/// by [`BumpScopeGuard::scope`]. A [`Bump`] can also be turned into a `BumpScope` using
+/// [`as_scope`], [`as_mut_scope`] or `from` / `into`.
+///
+/// [`scoped`]: crate::BumpScope::scoped
+/// [`BumpScopeGuard::scope`]: crate::BumpScopeGuard::scope
+/// [`Bump`]: crate::Bump
+/// [`as_scope`]: crate::Bump::as_scope
+/// [`as_mut_scope`]: crate::Bump::as_mut_scope
+/// [`reset`]: crate::Bump::reset
+#[repr(transparent)]
+pub struct BumpScope<'a, A = Global, const C: BumpConfig = DEFAULT_BUMP_CONFIG> {
+    pub(crate) raw: RawBump<A, C>,
 
-        {
-            pub(crate) raw: RawBump<A, C>,
-
-            /// Marks the lifetime of the mutably borrowed `BumpScopeGuard`.
-            pub(crate) marker: PhantomData<&'a ()>,
-        }
-    };
+    /// Marks the lifetime of the mutably borrowed `BumpScopeGuard`.
+    pub(crate) marker: PhantomData<&'a ()>,
 }
-
-maybe_default_allocator!(make_type);
 
 impl<A, const C: BumpConfig> UnwindSafe for BumpScope<'_, A, C> where A: RefUnwindSafe {}
 

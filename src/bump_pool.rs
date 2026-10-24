@@ -6,80 +6,74 @@ use std::{
     vec::Vec,
 };
 
+use alloc::alloc::Global;
+
 use crate::{
     Bump, BumpScope,
     config::{BumpConfig, DEFAULT_BUMP_CONFIG},
-    maybe_default_allocator,
 };
 
-macro_rules! make_pool {
-    ($($allocator_parameter:tt)*) => {
-        /// A pool of bump allocators.
-        ///
-        /// This type allows bump allocations in parallel, with the allocations' lifetimes tied to the pool.
-        ///
-        /// # Examples
-        ///
-        /// Using `BumpPool` with parallel iterators from [`rayon`](https://docs.rs/rayon):
-        /// ```
-        /// # use bump_scope::BumpPool;
-        /// # use rayon::prelude::{ParallelIterator, IntoParallelIterator};
-        /// # if cfg!(miri) { return } // rayon violates strict-provenance :(
-        /// #
-        /// let mut pool: BumpPool = BumpPool::new();
-        ///
-        /// let strings: Vec<&str> = (0..1000)
-        ///     .into_par_iter()
-        ///     .map_init(|| pool.get(), |bump, i| {
-        ///         // do some expensive work
-        ///         bump.alloc_fmt(format_args!("{i}")).into_ref()
-        ///     })
-        ///     .collect();
-        ///
-        /// dbg!(&strings);
-        ///
-        /// pool.reset();
-        ///
-        /// // memory of the strings is freed, trying to access `strings` will result in a lifetime error
-        /// // dbg!(&strings);
-        /// ```
-        ///
-        /// Using `BumpPool` with [`std::thread::scope`]:
-        /// ```
-        /// # use bump_scope::BumpPool;
-        /// let pool: BumpPool = BumpPool::new();
-        /// let (sender, receiver) = std::sync::mpsc::sync_channel(10);
-        ///
-        /// std::thread::scope(|s| {
-        ///     s.spawn(|| {
-        ///         let bump = pool.get();
-        ///         let string = bump.alloc_str("Hello");
-        ///         sender.send(string).unwrap();
-        ///         drop(sender);
-        ///     });
-        ///
-        ///     s.spawn(|| {
-        ///         for string in receiver {
-        ///             assert_eq!(string, "Hello");
-        ///         }
-        ///     });
-        /// });
-        /// ```
-        ///
-        #[doc(alias = "Herd")]
-        #[derive(Debug)]
-        pub struct BumpPool<$($allocator_parameter)*, const C: BumpConfig = DEFAULT_BUMP_CONFIG>
-        where
-            A: Allocator,
-
-        {
-            bumps: Mutex<Vec<Bump<A, C>>>,
-            allocator: A,
-        }
-    };
+/// A pool of bump allocators.
+///
+/// This type allows bump allocations in parallel, with the allocations' lifetimes tied to the pool.
+///
+/// # Examples
+///
+/// Using `BumpPool` with parallel iterators from [`rayon`](https://docs.rs/rayon):
+/// ```
+/// # use bump_scope::BumpPool;
+/// # use rayon::prelude::{ParallelIterator, IntoParallelIterator};
+/// # if cfg!(miri) { return } // rayon violates strict-provenance :(
+/// #
+/// let mut pool: BumpPool = BumpPool::new();
+///
+/// let strings: Vec<&str> = (0..1000)
+///     .into_par_iter()
+///     .map_init(|| pool.get(), |bump, i| {
+///         // do some expensive work
+///         bump.alloc_fmt(format_args!("{i}")).into_ref()
+///     })
+///     .collect();
+///
+/// dbg!(&strings);
+///
+/// pool.reset();
+///
+/// // memory of the strings is freed, trying to access `strings` will result in a lifetime error
+/// // dbg!(&strings);
+/// ```
+///
+/// Using `BumpPool` with [`std::thread::scope`]:
+/// ```
+/// # use bump_scope::BumpPool;
+/// let pool: BumpPool = BumpPool::new();
+/// let (sender, receiver) = std::sync::mpsc::sync_channel(10);
+///
+/// std::thread::scope(|s| {
+///     s.spawn(|| {
+///         let bump = pool.get();
+///         let string = bump.alloc_str("Hello");
+///         sender.send(string).unwrap();
+///         drop(sender);
+///     });
+///
+///     s.spawn(|| {
+///         for string in receiver {
+///             assert_eq!(string, "Hello");
+///         }
+///     });
+/// });
+/// ```
+///
+#[doc(alias = "Herd")]
+#[derive(Debug)]
+pub struct BumpPool<A = Global, const C: BumpConfig = DEFAULT_BUMP_CONFIG>
+where
+    A: Allocator,
+{
+    bumps: Mutex<Vec<Bump<A, C>>>,
+    allocator: A,
 }
-
-maybe_default_allocator!(make_pool);
 
 impl<A, const C: BumpConfig> Default for BumpPool<A, C>
 where
@@ -286,23 +280,12 @@ where
     }
 }
 
-macro_rules! make_pool_guard {
-    ($($allocator_parameter:tt)*) => {
-
-        /// This is a wrapper around [`Bump`] that mutably derefs to a [`BumpScope`] and returns its [`Bump`] back to the [`BumpPool`] on drop.
-        #[derive(Debug)]
-        pub struct BumpPoolGuard<'a, $($allocator_parameter)*, const C: BumpConfig = DEFAULT_BUMP_CONFIG>
-        where
-            A: Allocator,
-
-        {
-            bump: ManuallyDrop<Bump<A, C>>,
-            pool: &'a BumpPool<A, C>,
-        }
-    };
+/// This is a wrapper around [`Bump`] that mutably derefs to a [`BumpScope`] and returns its [`Bump`] back to the [`BumpPool`] on drop.
+#[derive(Debug)]
+pub struct BumpPoolGuard<'a, A: Allocator = Global, const C: BumpConfig = DEFAULT_BUMP_CONFIG> {
+    bump: ManuallyDrop<Bump<A, C>>,
+    pool: &'a BumpPool<A, C>,
 }
-
-maybe_default_allocator!(make_pool_guard);
 
 impl<'a, A, const C: BumpConfig> BumpPoolGuard<'a, A, C>
 where

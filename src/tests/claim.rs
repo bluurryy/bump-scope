@@ -2,14 +2,13 @@
 
 use std::{
     alloc::{AllocError, Allocator, Global, Layout},
-    mem::forget,
     panic::{AssertUnwindSafe, UnwindSafe},
     ptr::NonNull,
     string::String,
 };
 
 use crate::{
-    BoxU, Bump,
+    Bump,
     tests::up_and_down,
     traits::{BumpAllocator, Sealed},
 };
