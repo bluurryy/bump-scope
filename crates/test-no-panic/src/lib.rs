@@ -9,9 +9,9 @@ use alloc::{
 use core::{alloc::Layout, ffi::CStr, fmt, mem::MaybeUninit, num::NonZero, ops::Range, ptr::NonNull};
 
 use bump_scope::{
+    BoxU, FixedBumpString, FixedBumpVec, FromUtf16Error,
     config::{BumpConfig, BumpConfigBuilder},
     zerocopy_08::{BumpAllocatorScopeExt, VecExt},
-    BoxU, FixedBumpString, FixedBumpVec, FromUtf16Error,
 };
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
@@ -322,10 +322,6 @@ pub mod test_forwarded_methods {
             bump.try_alloc_iter_mut(value)
         }
 
-        pub fn Bump_try_alloc_iter_mut_rev(bump: &mut Bump, value: core::ops::Range<u32>) -> Result<BoxU<[u32]>> {
-            bump.try_alloc_iter_mut_rev(value)
-        }
-
         pub fn Bump_try_alloc_uninit(bump: &Bump) -> Result<BoxU<MaybeUninit<u32>>> {
             bump.try_alloc_uninit()
         }
@@ -623,80 +619,6 @@ pub mod test_mut_bump_vec {
         }
 
         pub fn MutBumpVec_try_resize_zeroed(vec: &mut MutBumpVec<u32>, new_len: usize) -> Result {
-            vec.try_resize_zeroed(new_len)
-        }
-    }
-}
-
-pub mod test_mut_bump_vec_rev {
-    use super::*;
-
-    up_and_down! {
-        pub fn MutBumpVecRev_try_with_capacity_in(capacity: usize, bump: &mut Bump) -> Result<MutBumpVecRev<u32>> {
-            MutBumpVecRev::try_with_capacity_in(capacity, bump)
-        }
-
-        pub fn MutBumpVecRev_try_from_elem_in(value: u32, count: usize, bump: &mut Bump) -> Result<MutBumpVecRev<u32>> {
-            MutBumpVecRev::try_from_elem_in(value, count, bump)
-        }
-
-        pub fn MutBumpVecRev_try_from_owned_slice_in(array: [u32; 24], bump: &mut Bump) -> Result<MutBumpVecRev<u32>> {
-            MutBumpVecRev::try_from_owned_slice_in(array, bump)
-        }
-
-        pub fn MutBumpVecRev_try_from_iter_in<'a>(iter: core::slice::Iter<u32>, bump: &'a mut Bump) -> Result<MutBumpVecRev<'a, u32>> {
-            MutBumpVecRev::try_from_iter_in(iter.copied(), bump)
-        }
-
-        pub fn MutBumpVecRev_try_from_iter_exact_in<'a>(iter: core::slice::Iter<u32>, bump: &'a mut Bump) -> Result<MutBumpVecRev<'a, u32>> {
-            MutBumpVecRev::try_from_iter_exact_in(iter.copied(), bump)
-        }
-
-        pub fn MutBumpVecRev_try_push(vec: &mut MutBumpVecRev<u32>, value: u32) -> Result {
-            vec.try_push(value)
-        }
-
-        pub fn MutBumpVecRev_try_insert(vec: &mut MutBumpVecRev<u32>, index: usize, value: u32) -> Result {
-            if index < vec.len() {
-                vec.try_insert(index, value)
-            } else {
-                Ok(())
-            }
-        }
-
-        pub fn MutBumpVecRev_try_extend_from_slice_copy(vec: &mut MutBumpVecRev<u32>, slice: &[u32]) -> Result {
-            vec.try_extend_from_slice_copy(slice)
-        }
-
-        pub fn MutBumpVecRev_try_extend_from_slice_clone(vec: &mut MutBumpVecRev<u32>, slice: &[u32]) -> Result {
-            vec.try_extend_from_slice_clone(slice)
-        }
-
-        pub fn MutBumpVecRev_try_reserve(vec: &mut MutBumpVecRev<u32>, amount: usize) -> Result {
-            vec.try_reserve(amount)
-        }
-
-        pub fn MutBumpVecRev_try_reserve_exact(vec: &mut MutBumpVecRev<u32>, amount: usize) -> Result {
-            vec.try_reserve_exact(amount)
-        }
-
-        pub fn MutBumpVecRev_try_resize(vec: &mut MutBumpVecRev<u32>, new_len: usize, value: u32) -> Result {
-            vec.try_resize(new_len, value)
-        }
-
-        pub fn MutBumpVecRev_try_resize_with(vec: &mut MutBumpVecRev<u32>, new_len: usize, f: &mut dyn FnMut() -> u32) -> Result {
-            vec.try_resize_with(new_len, f)
-        }
-
-        pub fn MutBumpVecRev_try_append(vec: &mut MutBumpVecRev<u32>, array: [u32; 24]) -> Result {
-            vec.try_append(array)
-        }
-
-        pub fn MutBumpVecRev_try_extend_zeroed(vec: &mut MutBumpVecRev<u32>, additional: usize) -> Result {
-            vec.try_extend_zeroed(additional)
-        }
-
-        pub fn MutBumpVecRev_try_resize_zeroed(vec: &mut MutBumpVecRev<u32>, new_len: usize) -> Result {
             vec.try_resize_zeroed(new_len)
         }
     }

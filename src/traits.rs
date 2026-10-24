@@ -2317,7 +2317,6 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     /// ```
     ///
     /// [`alloc_iter`]: crate::traits::BumpAllocatorScope::alloc_iter
-    /// [`alloc_iter_mut_rev`]: crate::traits::MutBumpAllocatorScope::alloc_iter_mut_rev
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_iter_mut<T>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpAllocation<[T], &Self> {
@@ -2330,8 +2329,6 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     /// This function is designed as a performance improvement over [`try_alloc_iter`].
     /// By taking `self` as `&mut`, it can use the entire remaining chunk space as the capacity
     /// for the temporary vector used for the allocation. As a result, that vector rarely needs to grow.
-    ///
-    /// When bumping downwards, prefer [`try_alloc_iter_mut_rev`] instead.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -2346,7 +2343,6 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     /// ```
     ///
     /// [`try_alloc_iter`]: crate::traits::BumpAllocatorScope::alloc_iter
-    /// [`try_alloc_iter_mut_rev`]: crate::traits::MutBumpAllocatorScope::alloc_iter_mut_rev
     #[inline(always)]
     fn try_alloc_iter_mut<T>(
         &mut self,

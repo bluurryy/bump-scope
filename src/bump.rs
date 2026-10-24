@@ -51,7 +51,7 @@ use crate::panic_on_error;
 /// - c strings: [`alloc_cstr`], [`alloc_cstr_from_str`], <code>[alloc_cstr_fmt](BumpAllocatorScope::alloc_cstr_fmt)([_mut](MutBumpAllocatorScope::alloc_cstr_fmt_mut))</code>
 /// - slices: <code>alloc_slice_{[copy](BumpAllocatorScope::alloc_slice_copy), [clone](BumpAllocatorScope::alloc_slice_clone), [move](BumpAllocatorScope::alloc_slice_move), [fill](BumpAllocatorScope::alloc_slice_fill), [fill_with](BumpAllocatorScope::alloc_slice_fill_with)}</code>,
 ///   [`alloc_zeroed_slice`]
-/// - slices from an iterator: [`alloc_iter`], [`alloc_iter_exact`], [`alloc_iter_mut`], [`alloc_iter_mut_rev`]
+/// - slices from an iterator: [`alloc_iter`], [`alloc_iter_exact`], [`alloc_iter_mut`]
 /// - uninitialized values: [`alloc_uninit`], [`alloc_uninit_slice`], [`alloc_uninit_slice_for`]
 ///
 ///   which can then be conveniently initialized by the [`init*` methods of `BoxU`](crate::BoxU#bumpbox-has-a-lot-of-methods).
@@ -146,7 +146,6 @@ use crate::panic_on_error;
 /// [`alloc_iter`]: BumpAllocatorScope::alloc_iter
 /// [`alloc_iter_exact`]: BumpAllocatorScope::alloc_iter_exact
 /// [`alloc_iter_mut`]: MutBumpAllocatorScope::alloc_iter_mut
-/// [`alloc_iter_mut_rev`]: MutBumpAllocatorScope::alloc_iter_mut_rev
 ///
 /// [`alloc_uninit`]: BumpAllocatorScope::alloc_uninit
 /// [`alloc_uninit_slice`]: BumpAllocatorScope::alloc_uninit_slice
