@@ -1,5 +1,5 @@
 use std::{
-    alloc::{Global, Layout},
+    alloc::{Allocator, Global, Layout},
     fmt::Debug,
     mem,
 };
@@ -160,7 +160,7 @@ trait AnyBump {
 
 impl<const C: BumpConfig> AnyBump for &Bump<Global, C> {
     fn alloc_dynamic(&self, layout: Layout) -> Range {
-        let start = self.allocate_layout(layout).addr().get();
+        let start = self.allocate(layout).unwrap().addr().get();
         Range {
             start,
             end: start + layout.size(),

@@ -75,13 +75,13 @@ check-clippy:
 check-clippy-stable:
     # FIXME: uncomment once 1.100 has released
     # cargo +stable clippy --tests --no-default-features -- -Dwarnings
-    # cargo +stable clippy --tests --features bytemuck,zerocopy-08,serde -- -Dwarnings
+    # cargo +stable clippy --tests --features bytemuck,zerocopy-08 -- -Dwarnings
 
 # Runs clippy on the nightly toolchain.
 [group('check')]
 check-clippy-nightly:
     cargo +nightly clippy --tests --no-default-features -- -Dwarnings
-    cargo +nightly clippy --tests --features bytemuck,zerocopy-08,serde -- -Dwarnings
+    cargo +nightly clippy --tests --features bytemuck,zerocopy-08 -- -Dwarnings
     cargo +nightly clippy --tests --all-features -- -Dwarnings
     cd crates/callgrind-benches && cargo +nightly clippy --tests --benches --workspace -- -Dwarnings
     cd crates/fuzzing-support && cargo +nightly clippy --tests -- -Dwarnings
@@ -95,21 +95,21 @@ check-msrv:
     # msrv might print warnings that stable doesnt, we dont care
     # FIXME: uncomment once 1.100 has released
     # cargo +1.100.0 check --no-default-features
-    # cargo +1.100.0 check --features bytemuck,zerocopy-08,serde
+    # cargo +1.100.0 check --features bytemuck,zerocopy-08
 
 # Runs `cargo check` with mininmal dependency versions.
 [group('check')]
 check-minimal-versions:
     # FIXME: uncomment once 1.100 has released
-    # cargo +stable minimal-versions check --features bytemuck,zerocopy-08,serde
+    # cargo +stable minimal-versions check --features bytemuck,zerocopy-08
     cargo +nightly minimal-versions check --all-features
 
 # Runs `cargo check` on a target that has no `std` library.
 [group('check')]
 check-no-std:
     # FIXME: uncomment once 1.100 has released
-    # cargo +stable check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08,alloc,serde
-    cargo +nightly check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08,alloc,serde,nightly
+    # cargo +stable check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08
+    cargo +nightly check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08,nightly
 
 # Asserts that api that shouldn't panic, doesn't.
 [group('check')]
@@ -127,7 +127,7 @@ test:
 [group('test')]
 test-stable:
     # FIXME: uncomment once 1.100 has released
-    # cargo +stable test --features bytemuck,zerocopy-08,serde
+    # cargo +stable test --features bytemuck,zerocopy-08
     # cargo +stable run --example limit_memory_usage
     # cargo +stable run --example stack_or_static_memory
     # cargo +stable run --example thread_local

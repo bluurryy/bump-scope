@@ -1,3 +1,5 @@
+#![cfg(all(feature = "std", feature = "panic-on-alloc"))]
+
 mod claim;
 
 macro_rules! up_and_down {

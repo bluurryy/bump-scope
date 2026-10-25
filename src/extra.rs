@@ -1,4 +1,3 @@
-mod detach_allocator;
 mod replace_allocator;
 mod split_off;
 
@@ -16,9 +15,11 @@ use crate::{
     destructure::destructure,
     error_behavior::ErrorBehavior,
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
-    panic_on_error,
     traits::{BumpAllocator, BumpAllocatorScope},
 };
+
+#[cfg(feature = "panic-on-alloc")]
+use crate::panic_on_error;
 
 pub use replace_allocator::{detach_allocator, replace_allocator};
 pub use split_off::split_off;
@@ -74,7 +75,7 @@ pub use split_off::split_off;
 /// assert_eq!(bump.stats().allocated(), 4 * 2 + 4 * 4);
 /// ```
 #[inline]
-pub fn vec_map<'a, T, U, A>(vec: Vec<T, A>, mut f: impl FnMut(T) -> U) -> Vec<U, A>
+pub fn vec_map<T, U, A>(vec: Vec<T, A>, mut f: impl FnMut(T) -> U) -> Vec<U, A>
 where
     A: BumpAllocator,
 {
@@ -222,10 +223,12 @@ fn dangling_mut_slice<T>(len: usize) -> *mut [T] {
     ptr::slice_from_raw_parts_mut(ptr::dangling_mut(), len)
 }
 
+#[expect(unused)]
 pub(crate) unsafe fn boxu_from_raw<'a, T: ?Sized>(ptr: *mut T) -> BoxU<'a, T> {
     unsafe { BoxU::from_raw_in(ptr, Unmanaged::VALUE) }
 }
 
+#[expect(unused)]
 pub(crate) fn boxu_uninit_zst<'a, T>() -> BoxU<'a, MaybeUninit<T>> {
     assert!(T::IS_ZST);
     unsafe { boxu_from_raw(ptr::dangling_mut()) }
@@ -247,6 +250,7 @@ where
     unsafe { Box::from_raw_in(dangling_mut_slice(len), alloc) }
 }
 
+#[expect(unused)]
 pub(crate) fn boxu_uninit_zst_slice<'a, T>(len: usize) -> BoxU<'a, [MaybeUninit<T>]> {
     assert!(T::IS_ZST);
     unsafe { boxu_from_raw(dangling_mut_slice(len)) }
@@ -274,6 +278,9 @@ pub fn box_init<T, A: Allocator>(boxed: Box<MaybeUninit<T>, A>, value: T) -> Box
 }
 
 /// TODO
+///
+/// # Panics
+/// TODO
 pub fn box_init_move<T, A>(mut boxed: Box<[MaybeUninit<T>], A>, owned_slice: impl OwnedSlice<Item = T>) -> Box<[T], A>
 where
     T: Clone,
@@ -295,6 +302,9 @@ where
     }
 }
 
+/// TODO
+///
+/// # Panics
 /// TODO
 pub fn box_init_clone<T, A>(boxed: Box<[MaybeUninit<T>], A>, slice: &[T]) -> Box<[T], A>
 where
@@ -542,7 +552,7 @@ where
     unsafe {
         let (_, _, _, alloc) = ptr::read(vec).into_raw_parts_with_allocator();
         let replacement = Vec::from_raw_parts_in(ptr, len, cap, alloc);
-        mem::forget(mem::replace(vec, replacement))
+        mem::forget(mem::replace(vec, replacement));
     }
 }
 
@@ -555,7 +565,7 @@ where
     unsafe {
         let (_, alloc) = Box::into_raw_with_allocator(ptr::read(boxed));
         let replacement = Box::from_raw_in(ptr, alloc);
-        mem::forget(mem::replace(boxed, replacement))
+        mem::forget(mem::replace(boxed, replacement));
     }
 }
 
@@ -568,7 +578,7 @@ where
         let (old, alloc) = Box::into_raw_with_allocator(ptr::read(boxed));
         let new = ptr::slice_from_raw_parts_mut(old.cast::<T>(), len);
         let replacement = Box::from_raw_in(new, alloc);
-        mem::forget(mem::replace(boxed, replacement))
+        mem::forget(mem::replace(boxed, replacement));
     }
 }
 
@@ -597,10 +607,7 @@ where
 }
 
 /// TODO
-pub(crate) unsafe fn vec_replace_allocator_unchecked<'a, T, Old, New>(
-    boxed: Vec<T, Old>,
-    new_alloc: New,
-) -> (Vec<T, New>, Old)
+pub(crate) unsafe fn vec_replace_allocator_unchecked<T, Old, New>(boxed: Vec<T, Old>, new_alloc: New) -> (Vec<T, New>, Old)
 where
     Old: BumpAllocator,
     New: BumpAllocator,
@@ -608,6 +615,9 @@ where
     let (ptr, len, cap, old) = Vec::into_raw_parts_with_allocator(boxed);
     (unsafe { Vec::from_raw_parts_in(ptr, len, cap, new_alloc) }, old)
 }
+/// TODO
+///
+/// # Safety
 /// TODO
 pub unsafe fn vec_remove_allocator_unchecked<'a, T, A>(vec: Vec<T, A>) -> (VecU<'a, T>, A)
 where
@@ -617,6 +627,10 @@ where
 }
 
 /// TODO
+///
+/// # Panics
+/// TODO
+#[cfg(feature = "panic-on-alloc")]
 pub fn box_from_owned_slice_in<T, A>(slice: impl OwnedSlice<Item = T>, alloc: A) -> Box<[T], A>
 where
     A: BumpAllocator,
@@ -624,6 +638,9 @@ where
     panic_on_error(gen_box_from_owned_slice_in(slice, alloc))
 }
 
+/// TODO
+///
+/// # Errors
 /// TODO
 pub fn try_box_from_owned_slice_in<T, A>(slice: impl OwnedSlice<Item = T>, alloc: A) -> Result<Box<[T], A>, AllocError>
 where
@@ -653,6 +670,10 @@ where
 }
 
 /// TODO
+///
+/// # Panics
+/// TODO
+#[cfg(feature = "panic-on-alloc")]
 pub fn vec_from_owned_slice_in<T, A>(slice: impl OwnedSlice<Item = T>, alloc: A) -> Vec<T, A>
 where
     A: BumpAllocator,
@@ -660,6 +681,9 @@ where
     box_from_owned_slice_in(slice, alloc).into()
 }
 
+/// TODO
+///
+/// # Errors
 /// TODO
 pub fn vec_try_from_owned_slice_in<T, A>(slice: impl OwnedSlice<Item = T>, alloc: A) -> Result<Vec<T, A>, AllocError>
 where
@@ -724,82 +748,4 @@ where
 
     // SAFETY: `BumpAllocator` allows you shrink the memory block
     unsafe { Box::from_raw_in(slice, alloc) }
-}
-
-/// TODO
-#[cfg(feature = "bytemuck")]
-pub mod bytemuck {
-    use core::{alloc::Allocator, mem::MaybeUninit, ptr};
-
-    use alloc::boxed::Box;
-
-    /// TODO
-    pub fn box_init_zeroed<T, A>(boxed: Box<MaybeUninit<T>, A>) -> Box<T, A>
-    where
-        T: bytemuck::Zeroable + ?Sized,
-        A: Allocator,
-    {
-        let (ptr, alloc) = Box::into_raw_with_allocator(boxed);
-        let ptr = ptr.cast::<T>();
-
-        unsafe {
-            ptr.write_bytes(0, 1);
-            Box::from_raw_in(ptr, alloc)
-        }
-    }
-
-    /// TODO
-    pub fn box_init_slice_zeroed<T, A: Allocator>(boxed: Box<[MaybeUninit<T>], A>) -> Box<[T], A>
-    where
-        T: bytemuck::Zeroable,
-        A: Allocator,
-    {
-        let len = boxed.len();
-        let (ptr, alloc) = Box::into_raw_with_allocator(boxed);
-        let ptr = ptr.cast::<T>();
-
-        unsafe {
-            ptr.write_bytes(0, 1);
-            Box::from_raw_in(ptr::from_raw_parts_mut(ptr, len), alloc)
-        }
-    }
-}
-
-/// TODO
-#[cfg(feature = "zerocopy-08")]
-pub mod zerocopy_08 {
-    use core::{alloc::Allocator, mem::MaybeUninit, ptr};
-
-    use alloc::boxed::Box;
-
-    /// TODO
-    pub fn box_init_zeroed<T, A>(boxed: Box<MaybeUninit<T>, A>) -> Box<T, A>
-    where
-        T: zerocopy_08::FromZeros,
-        A: Allocator,
-    {
-        let (ptr, alloc) = Box::into_raw_with_allocator(boxed);
-        let ptr = ptr.cast::<T>();
-
-        unsafe {
-            ptr.write_bytes(0, 1);
-            Box::from_raw_in(ptr, alloc)
-        }
-    }
-
-    /// TODO
-    pub fn box_init_slice_zeroed<T, A: Allocator>(boxed: Box<[MaybeUninit<T>], A>) -> Box<[T], A>
-    where
-        T: zerocopy_08::FromZeros,
-        A: Allocator,
-    {
-        let len = boxed.len();
-        let (ptr, alloc) = Box::into_raw_with_allocator(boxed);
-        let ptr = ptr.cast::<T>();
-
-        unsafe {
-            ptr.write_bytes(0, 1);
-            Box::from_raw_in(ptr::from_raw_parts_mut(ptr, len), alloc)
-        }
-    }
 }

@@ -63,13 +63,12 @@ impl<A: Allocator, E: ErrorBehavior> String<A, E> {
         unsafe { box_from_utf8_unchecked(bytes) }
     }
 
-    pub(crate) fn into_cstr<'a>(mut self) -> Result<IntoRef<CStr, A>, E> {
-        match self.vec.iter().position(|&c| c == b'\0') {
-            Some(nul) => self.vec.truncate(nul + 1),
-            None => {
-                self.reserve_if_fallible(1)?;
-                self.vec.push(b'\0');
-            }
+    pub(crate) fn into_cstr(mut self) -> Result<IntoRef<CStr, A>, E> {
+        if let Some(nul) = self.vec.iter().position(|&c| c == b'\0') {
+            self.vec.truncate(nul + 1);
+        } else {
+            self.reserve_if_fallible(1)?;
+            self.vec.push(b'\0');
         }
 
         let (bytes_with_nul, alloc) = Box::into_raw_with_allocator(self.into_bytes());

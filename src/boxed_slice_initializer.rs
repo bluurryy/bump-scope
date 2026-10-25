@@ -60,6 +60,7 @@ impl<T, A: Allocator> BoxedSliceInitializer<T, A> {
     }
 
     #[inline(always)]
+    #[expect(unused)]
     fn len(&self) -> usize {
         if T::IS_ZST {
             self.end.addr().wrapping_sub(self.start().addr())

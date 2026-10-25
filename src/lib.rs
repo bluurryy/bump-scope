@@ -25,7 +25,6 @@
     clippy::inline_always,
     clippy::module_name_repetitions,
     clippy::copy_iterator,
-    clippy::partialeq_ne_impl,
     clippy::items_after_statements,
     clippy::missing_transmute_annotations
 )]
@@ -244,6 +243,8 @@ mod bump_pool;
 mod bump_scope;
 mod bump_scope_guard;
 mod bumping;
+#[cfg(any(feature = "bytemuck", feature = "zerocopy-08"))]
+mod bytemuck_and_zerocopy;
 pub(crate) mod chunk_size;
 pub(crate) mod chunk_size_config;
 pub(crate) mod chunk_types;
@@ -287,6 +288,12 @@ pub use no_drop::NoDrop;
 use private::capacity_overflow;
 pub use traits::{BumpAllocator, BumpAllocatorScope, MutBumpAllocator, MutBumpAllocatorScope};
 pub use unmanaged::Unmanaged;
+
+#[cfg(feature = "bytemuck")]
+pub use bytemuck_and_zerocopy::bytemuck;
+
+#[cfg(feature = "zerocopy-08")]
+pub use bytemuck_and_zerocopy::zerocopy_08;
 
 /// TODO
 pub type BoxU<'a, T> = Box<T, Unmanaged<'a>>;

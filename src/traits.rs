@@ -41,6 +41,11 @@ impl<A: Allocator, const C: BumpConfig> AllocatorNightly for BumpScope<'_, A, C>
 #[cfg(feature = "nightly")]
 impl AllocatorNightly for Unmanaged<'_> {}
 
+/// TODO
+///
+/// # Safety
+/// TODO
+#[allow(unused)]
 pub(crate) unsafe trait Sealed: Allocator + Sized {
     const CONFIG: BumpConfig;
 
@@ -164,18 +169,20 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
     }
 
     #[inline(always)]
-    fn imp_alloc_default<E, T: Default>(&self) -> Result<Box<T, &Self>, E>
+    fn imp_alloc_default<E, T>(&self) -> Result<Box<T, &Self>, E>
     where
         E: ErrorBehavior,
+        T: Default,
     {
         self.imp_alloc_with(T::default)
     }
 
     #[inline(always)]
     #[cfg(feature = "nightly")]
-    fn imp_alloc_clone<E, T: CloneToUninit + ?Sized>(&self, value: &T) -> Result<Box<T, &Self>, E>
+    fn imp_alloc_clone<E, T>(&self, value: &T) -> Result<Box<T, &Self>, E>
     where
         E: ErrorBehavior,
+        T: CloneToUninit + ?Sized,
     {
         let data = self.spec_alloc(Layout::for_value(value))?;
         let metadata = ptr::metadata(value);
@@ -188,7 +195,7 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
     }
 
     #[inline(always)]
-    fn imp_alloc_uninit<E: ErrorBehavior, T>(&self) -> Result<Box<MaybeUninit<T>, &Self>, E>
+    fn imp_alloc_uninit<E, T>(&self) -> Result<Box<MaybeUninit<T>, &Self>, E>
     where
         E: ErrorBehavior,
     {
@@ -220,9 +227,10 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
     }
 
     #[inline(always)]
-    fn imp_alloc_slice_copy<E, T: Copy>(&self, slice: &[T]) -> Result<Box<[T], &Self>, E>
+    fn imp_alloc_slice_copy<E, T>(&self, slice: &[T]) -> Result<Box<[T], &Self>, E>
     where
         E: ErrorBehavior,
+        T: Copy,
     {
         if T::IS_ZST {
             return Ok(box_init_clone(box_uninit_zst_slice_in(slice.len(), self), slice));
@@ -239,17 +247,19 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
     }
 
     #[inline(always)]
-    fn imp_alloc_slice_clone<E: ErrorBehavior, T: Clone>(&self, slice: &[T]) -> Result<Box<[T], &Self>, E>
+    fn imp_alloc_slice_clone<E, T>(&self, slice: &[T]) -> Result<Box<[T], &Self>, E>
     where
         E: ErrorBehavior,
+        T: Clone,
     {
         Ok(box_init_clone(self.imp_alloc_uninit_slice_for(slice)?, slice))
     }
 
     #[inline(always)]
-    fn imp_alloc_slice_fill<E, T: Clone>(&self, len: usize, value: T) -> Result<Box<[T], &Self>, E>
+    fn imp_alloc_slice_fill<E, T>(&self, len: usize, value: T) -> Result<Box<[T], &Self>, E>
     where
         E: ErrorBehavior,
+        T: Clone,
     {
         Ok(box_init_fill(self.imp_alloc_uninit_slice(len)?, value))
     }
@@ -331,7 +341,10 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
     }
 
     #[inline(always)]
-    fn imp_alloc_cstr_from_str<E: ErrorBehavior>(&self, src: &str) -> Result<IntoRef<CStr, &Self>, E> {
+    fn imp_alloc_cstr_from_str<E>(&self, src: &str) -> Result<IntoRef<CStr, &Self>, E>
+    where
+        E: ErrorBehavior,
+    {
         let src = src.as_bytes();
 
         if let Some(nul) = src.iter().position(|&c| c == b'\0') {
@@ -383,10 +396,10 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
     }
 
     #[inline(always)]
-    fn imp_alloc_try_with<B: ErrorBehavior, T, E>(
-        &self,
-        f: impl FnOnce() -> Result<T, E>,
-    ) -> Result<Result<Box<T, &Self>, E>, B> {
+    fn imp_alloc_try_with<B, T, E>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<Result<Box<T, &Self>, E>, B>
+    where
+        B: ErrorBehavior,
+    {
         if T::IS_ZST {
             return match f() {
                 Ok(value) => Ok(Ok(box_init(box_uninit_zst_in(self), value))),
@@ -940,6 +953,8 @@ unsafe impl Sealed for Unmanaged<'_> {
 }
 
 /// TODO
+///
+/// # Safety
 /// TODO
 #[expect(private_bounds)]
 pub unsafe trait BumpAllocator: Allocator + Sealed {
@@ -1207,7 +1222,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// Allocate an uninitialized object.
     ///
     /// You can safely initialize the object with [`box_init`],
-    /// `init_zeroed` <sup>[\[1\]](crate::extra::zerocopy_08::box_init_zeroed) [\[2\]](crate::extra::bytemuck::box_init_zeroed)</sup>
+    /// `box_zero_init` <sup>[\[1\]](crate::zerocopy_08::box_zero_init) [\[2\]](crate::bytemuck::box_zero_init)</sup>
     /// or unsafely with [`assume_init`](Box::assume_init).
     ///
     /// # Panics
@@ -1248,7 +1263,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// Allocate an uninitialized object.
     ///
     /// You can safely initialize the object with [`box_init`],
-    /// `box_init_zeroed` <sup>[\[1\]](crate::extra::bytemuck::box_init_zeroed) [\[2\]](crate::extra::zerocopy_08::box_init_zeroed)</sup>
+    /// `box_zero_init` <sup>[\[1\]](crate::bytemuck::box_zero_init) [\[2\]](crate::zerocopy_08::box_zero_init)</sup>
     /// or unsafely with [`assume_init`](Box::assume_init).
     ///
     /// # Errors
@@ -1521,8 +1536,8 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// [`box_init_fill`],
     /// [`box_init_fill_with`],
     /// [`box_init_clone`],
-    /// [`box_init_zeroed`](crate::extra::bytemuck::box_init_zeroed) or unsafely with
-    /// [`assume_init`](Box::assume_init).
+    /// `box_zero_init_slice` <sup>[\[1\]](crate::zerocopy_08::box_zero_init_slice) [\[2\]](crate::bytemuck::box_zero_init_slice)</sup>
+    /// or unsafely with [`assume_init`](Box::assume_init).
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1568,8 +1583,8 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// [`box_init_fill`],
     /// [`box_init_fill_with`],
     /// [`box_init_clone`],
-    /// [`box_init_zeroed`](crate::extra::bytemuck::box_init_zeroed) or unsafely with
-    /// [`assume_init`](Box::assume_init).
+    /// `box_zero_init_slice` <sup>[\[1\]](crate::zerocopy_08::box_zero_init_slice) [\[2\]](crate::bytemuck::box_zero_init_slice)</sup>
+    /// or unsafely with [`assume_init`](Box::assume_init).
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1616,8 +1631,8 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// [`box_init_fill`],
     /// [`box_init_fill_with`],
     /// [`box_init_clone`],
-    /// [`box_init_zeroed`](crate::extra::bytemuck::box_init_zeroed) or unsafely with
-    /// [`assume_init`](Box::assume_init).
+    /// `box_zero_init_slice` <sup>[\[1\]](crate::zerocopy_08::box_zero_init_slice) [\[2\]](crate::bytemuck::box_zero_init_slice)</sup>
+    /// or unsafely with [`assume_init`](Box::assume_init).
     ///
     /// This is just like [`alloc_uninit_slice`](BumpAllocator::alloc_uninit_slice) but uses a `slice` to provide the `len`.
     /// This avoids a check for a valid layout. The elements of `slice` are irrelevant.
@@ -1646,8 +1661,8 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// [`box_init_fill`],
     /// [`box_init_fill_with`],
     /// [`box_init_clone`],
-    /// [`box_init_zeroed`](crate::extra::bytemuck::box_init_zeroed) or unsafely with
-    /// [`assume_init`](Box::assume_init).
+    /// `box_zero_init_slice` <sup>[\[1\]](crate::zerocopy_08::box_zero_init_slice) [\[2\]](crate::bytemuck::box_zero_init_slice)</sup>
+    /// or unsafely with [`assume_init`](Box::assume_init).
     ///
     /// This is just like [`try_alloc_uninit_slice`](BumpAllocator::try_alloc_uninit_slice) but uses a `slice` to provide the `len`.
     /// This avoids a check for a valid layout. The elements of `slice` are irrelevant.
@@ -2042,10 +2057,17 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     }
 
     /// TODO
+    ///
+    /// # Panics
+    /// TODO
+    #[cfg(feature = "panic-on-alloc")]
     fn alloc_vec_greedy<T>(&self, len: usize) -> Vec<T, &Self> {
         panic_on_error(self.imp_alloc_vec_greedy(len))
     }
 
+    /// TODO
+    ///
+    /// # Errors
     /// TODO
     fn try_alloc_vec_greedy<T>(&self, len: usize) -> Result<Vec<T, &Self>, AllocError> {
         self.imp_alloc_vec_greedy(len)
@@ -2225,7 +2247,7 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for Bump<A, C> {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn reserve(&self, additional: usize) {
-        panic_on_error(self.raw.reserve(additional))
+        panic_on_error(self.raw.reserve(additional));
     }
 
     #[inline(always)]
@@ -2247,7 +2269,7 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for BumpScope<'_, A
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn reserve(&self, additional: usize) {
-        panic_on_error(self.raw.reserve(additional))
+        panic_on_error(self.raw.reserve(additional));
     }
 
     #[inline(always)]
@@ -2281,6 +2303,9 @@ unsafe impl BumpAllocator for Unmanaged<'_> {
 }
 
 /// TODO
+///
+/// # Safety
+/// TODO
 #[expect(private_bounds)]
 pub unsafe trait BumpAllocatorScope<'a>: BumpAllocator + Sealed {}
 unsafe impl<'a, T: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for &T {}
@@ -2290,6 +2315,9 @@ unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for &'
 unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for BumpScope<'a, A, C> {}
 unsafe impl<'a> BumpAllocatorScope<'a> for Unmanaged<'a> {}
 
+/// TODO
+///
+/// # Safety
 /// TODO
 #[expect(private_bounds)]
 pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
@@ -2566,6 +2594,9 @@ unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for Bump<A, C> {
 unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for BumpScope<'_, A, C> {}
 
 /// TODO
+///
+/// # Safety
+/// TODO
 #[expect(private_bounds)]
 pub unsafe trait MutBumpAllocatorScope<'a>: MutBumpAllocator + BumpAllocatorScope<'a> + Sealed {}
 unsafe impl<'a, T: MutBumpAllocator + BumpAllocatorScope<'a>> MutBumpAllocatorScope<'a> for T {}
@@ -2627,7 +2658,7 @@ macro_rules! assert_implements {
 }
 
 assert_implements! {
-    [BumpAllocator + ?Sized]
+    [BumpAllocator]
 
     Bump
     &Bump
@@ -2643,7 +2674,7 @@ assert_implements! {
 }
 
 assert_implements! {
-    [BumpAllocatorScope<'a> + ?Sized]
+    [BumpAllocatorScope<'a>]
 
     &Bump
     &&Bump
@@ -2658,7 +2689,7 @@ assert_implements! {
 }
 
 assert_implements! {
-    [MutBumpAllocator + ?Sized]
+    [MutBumpAllocator]
 
     Bump
     &mut Bump
@@ -2670,7 +2701,7 @@ assert_implements! {
 }
 
 assert_implements! {
-    [MutBumpAllocatorScope<'a> + ?Sized]
+    [MutBumpAllocatorScope<'a>]
 
     &mut Bump
     &mut &mut Bump

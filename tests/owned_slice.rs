@@ -1,5 +1,4 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc", feature = "nightly"))]
-#![feature(allocator_ext)]
 
 mod common;
 
@@ -30,7 +29,7 @@ fn owned_slice() {
                 assert_eq!(vec, slice[start..end]);
 
                 assert_eq!(
-                    TestWrap::peel_slice(&*slice_clone),
+                    TestWrap::peel_slice(&slice_clone),
                     TestWrap::peel_slice(&slice[..start])
                         .iter()
                         .chain(TestWrap::peel_slice(&slice[end..]))

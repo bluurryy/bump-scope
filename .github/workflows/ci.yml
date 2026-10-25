@@ -95,7 +95,7 @@ jobs:
   #       with:
   #         targets: thumbv7em-none-eabihf
   #     - uses: Swatinem/rust-cache@v2
-  #     - run: cargo check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08,alloc,serde
+  #     - run: cargo check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08
   no-std-nightly:
     runs-on: ubuntu-latest
     steps:
@@ -104,7 +104,7 @@ jobs:
         with:
           targets: thumbv7em-none-eabihf
       - uses: Swatinem/rust-cache@v2
-      - run: cargo check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08,alloc,serde,nightly
+      - run: cargo check --target thumbv7em-none-eabihf --no-default-features -F bytemuck,zerocopy-08,nightly
   # FIXME: uncomment once 1.100 has released
   # test-stable:
   #   runs-on: ubuntu-latest

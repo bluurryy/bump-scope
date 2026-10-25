@@ -49,8 +49,7 @@ use crate::panic_on_error;
 /// - sized values: [`alloc`], [`alloc_with`], [`alloc_default`], [`alloc_zeroed`]
 /// - strings: [`alloc_str`], <code>[alloc_fmt](crate::traits::BumpAllocator::alloc_fmt)([_mut](crate::traits::MutBumpAllocator::alloc_fmt_mut))</code>
 /// - c strings: [`alloc_cstr`], [`alloc_cstr_from_str`], <code>[alloc_cstr_fmt](crate::traits::BumpAllocator::alloc_cstr_fmt)([_mut](crate::traits::MutBumpAllocator::alloc_cstr_fmt_mut))</code>
-/// - slices: <code>alloc_slice_{[copy](crate::traits::BumpAllocator::alloc_slice_copy), [clone](crate::traits::BumpAllocator::alloc_slice_clone), [move](crate::traits::BumpAllocator::alloc_slice_move), [fill](crate::traits::BumpAllocator::alloc_slice_fill), [fill_with](crate::traits::BumpAllocator::alloc_slice_fill_with)}</code>,
-///   [`alloc_zeroed_slice`]
+/// - slices: <code>alloc_slice_{[copy](crate::traits::BumpAllocator::alloc_slice_copy), [clone](crate::traits::BumpAllocator::alloc_slice_clone), [move](crate::traits::BumpAllocator::alloc_slice_move), [fill](crate::traits::BumpAllocator::alloc_slice_fill), [fill_with](crate::traits::BumpAllocator::alloc_slice_fill_with)}</code>, [`alloc_zeroed_slice`]
 /// - slices from an iterator: [`alloc_iter`], [`alloc_iter_mut`]
 /// - uninitialized values: [`alloc_uninit`], [`alloc_uninit_slice`], [`alloc_uninit_slice_for`]
 ///   which can then be conveniently initialized by the `init*` methods of [`extra`](crate::extra).
@@ -132,14 +131,14 @@ use crate::panic_on_error;
 /// [`alloc`]: crate::traits::BumpAllocator::alloc
 /// [`alloc_with`]: crate::traits::BumpAllocator::alloc_with
 /// [`alloc_default`]: crate::traits::BumpAllocator::alloc_default
-/// [`alloc_zeroed`]: crate::zerocopy_08::BumpAllocatorScopeExt::alloc_zeroed
+/// [`alloc_zeroed`]: crate::zerocopy_08::BumpAllocatorExt::alloc_zeroed
 ///
 /// [`alloc_str`]: crate::traits::BumpAllocator::alloc_str
 ///
 /// [`alloc_cstr`]: crate::traits::BumpAllocator::alloc_cstr
 /// [`alloc_cstr_from_str`]: crate::traits::BumpAllocator::alloc_cstr_from_str
 ///
-/// [`alloc_zeroed_slice`]: crate::zerocopy_08::BumpAllocatorScopeExt::alloc_zeroed_slice
+/// [`alloc_zeroed_slice`]: crate::zerocopy_08::BumpAllocatorExt::alloc_zeroed_slice
 ///
 /// [`alloc_iter`]: crate::traits::BumpAllocator::alloc_iter
 /// [`alloc_iter_mut`]: crate::traits::MutBumpAllocator::alloc_iter_mut

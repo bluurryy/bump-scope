@@ -30,6 +30,7 @@ impl ErasedChunk {
         unsafe { self.header.as_ref() }.pos.get()
     }
 
+    #[expect(unused)]
     pub(crate) fn end(self) -> NonNull<u8> {
         unsafe { self.header.as_ref() }.end
     }

@@ -122,7 +122,6 @@ where
     A: BumpAllocator + Clone,
 {
     #[inline]
-    #[expect(clippy::return_self_not_must_use)]
     fn split_off(vec: &mut Vec<T, A>, range: impl RangeBounds<usize>) -> Vec<T, A> {
         let len = vec.len();
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
@@ -179,7 +178,7 @@ where
 
             if head_len < tail_len {
                 // move the range of elements to split off to the start
-                vec.as_mut_slice().get_unchecked_mut(..end).rotate_right(range_len);
+                vec.get_unchecked_mut(..end).rotate_right(range_len);
 
                 let lhs = ptr;
                 let rhs = ptr.add(range_len);
@@ -191,10 +190,10 @@ where
                 let rhs_cap = vec.capacity() - lhs_cap;
 
                 vec_replace_buffer(vec, rhs, rhs_len, rhs_cap);
-                return Vec::from_raw_parts_in(lhs, lhs_len, lhs_cap, alloc);
+                Vec::from_raw_parts_in(lhs, lhs_len, lhs_cap, alloc)
             } else {
                 // move the range of elements to split off to the end
-                vec.as_mut_slice().get_unchecked_mut(start..).rotate_left(range_len);
+                vec.get_unchecked_mut(start..).rotate_left(range_len);
 
                 let lhs = ptr;
                 let rhs = ptr.add(remaining_len);
@@ -206,7 +205,7 @@ where
                 let rhs_cap = vec.capacity() - lhs_cap;
 
                 vec_replace_buffer(vec, lhs, lhs_len, lhs_cap);
-                return Vec::from_raw_parts_in(rhs, rhs_len, rhs_cap, alloc);
+                Vec::from_raw_parts_in(rhs, rhs_len, rhs_cap, alloc)
             }
         }
     }
@@ -266,7 +265,7 @@ where
         unsafe {
             if head_len < tail_len {
                 // move the range of elements to split off to the start
-                (&mut **boxed).get_unchecked_mut(..end).rotate_right(range_len);
+                boxed.get_unchecked_mut(..end).rotate_right(range_len);
 
                 let lhs = ptr::slice_from_raw_parts_mut(ptr, range_len);
                 let rhs = ptr::slice_from_raw_parts_mut(ptr.add(range_len), remaining_len);
@@ -275,7 +274,7 @@ where
                 Box::from_raw_in(lhs, alloc)
             } else {
                 // move the range of elements to split off to the end
-                (&mut **boxed).get_unchecked_mut(start..).rotate_left(range_len);
+                boxed.get_unchecked_mut(start..).rotate_left(range_len);
 
                 let lhs = ptr::slice_from_raw_parts_mut(ptr, remaining_len);
                 let rhs = ptr::slice_from_raw_parts_mut(ptr.add(remaining_len), range_len);

@@ -1,5 +1,3 @@
-#![cfg(all(feature = "std", feature = "panic-on-alloc"))]
-
 use std::{
     alloc::{AllocError, Allocator, Global, Layout},
     panic::{AssertUnwindSafe, UnwindSafe},
@@ -21,6 +19,7 @@ up_and_down! {
         trait Whatever {}
         impl<T: ?Sized> Whatever for T {}
 
+        #[expect(clippy::needless_pass_by_value)]
         fn expect_err(result: Result<impl Whatever, AllocError>) {
             assert!(result.is_err());
         }
@@ -29,9 +28,7 @@ up_and_down! {
             match catch(AssertUnwindSafe(f)) {
                 Ok(_) => panic!("expected panic"),
                 Err(err) => {
-                    if err != "bump allocator is claimed" && err != "bump allocator is already claimed" {
-                        panic!("wrong panic message: {err}");
-                    }
+                    assert!(err == "bump allocator is claimed" || err == "bump allocator is already claimed", "wrong panic message: {err}");
                 }
             }
         }

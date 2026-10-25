@@ -116,6 +116,7 @@ pub(crate) mod panic {
 
     #[cold]
     #[inline(never)]
+    #[cfg(feature = "panic-on-alloc")]
     pub(crate) fn unmanaged() -> ! {
         panic!("can't allocate on an `Unmanaged` allocator")
     }
