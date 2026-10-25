@@ -446,6 +446,10 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
     where
         E: ErrorBehavior,
     {
+        if T::IS_ZST {
+            return Ok(Vec::new_in(self));
+        }
+
         let slice = self.spec_alloc_slice_greedy::<E, T>(len)?;
         let cap = slice.len();
         let ptr = slice.cast::<T>().as_ptr();
@@ -457,12 +461,25 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
     where
         E: ErrorBehavior,
     {
-        if E::FALLIBLE {
-            todo!()
+        if T::IS_ZST {
+            let mut vec = Vec::new_in(&*self);
+            vec.extend(iter);
+            return Ok(vec.into_boxed_slice());
         }
 
         let mut vec = (*self).imp_alloc_vec_greedy::<E, T>(0)?;
-        vec.extend(iter);
+
+        if E::FALLIBLE {
+            for item in iter {
+                if vec.len() == vec.capacity() && vec.try_reserve(1).is_err() {
+                    return Err(E::allocation(Layout::new::<()>()));
+                }
+                vec.push(item);
+            }
+        } else {
+            vec.extend(iter);
+        }
+
         Ok(vec.into_boxed_slice())
     }
 

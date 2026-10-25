@@ -114,7 +114,7 @@ check-no-std:
 # Asserts that api that shouldn't panic, doesn't.
 [group('check')]
 check-no-panic:
-    cd crates/test-no-panic && cargo +nightly run --all-features
+    just crates/test-no-panic/test
 
 # Runs all `test-*`.
 [group('test')]

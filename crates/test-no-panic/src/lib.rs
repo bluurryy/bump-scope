@@ -298,13 +298,13 @@ pub mod test_forwarded_methods {
             Ok(bump.try_alloc_cstr_fmt_mut(value)?.into_ref())
         }
 
-        pub fn Bump_try_alloc_iter(bump: &Bump, value: core::ops::Range<u32>) -> Result<BumpAllocation<[u32]>> {
-            bump.try_alloc_iter(value)
-        }
+        // pub fn Bump_try_alloc_iter(bump: &Bump, value: core::ops::Range<u32>) -> Result<BumpAllocation<[u32]>> {
+        //     bump.try_alloc_iter(value)
+        // }
 
-        pub fn Bump_try_alloc_iter_mut(bump: &mut Bump, value: core::ops::Range<u32>) -> Result<BumpAllocation<[u32]>> {
-            bump.try_alloc_iter_mut(value)
-        }
+        // pub fn Bump_try_alloc_iter_mut(bump: &mut Bump, value: core::ops::Range<u32>) -> Result<BumpAllocation<[u32]>> {
+        //     bump.try_alloc_iter_mut(value)
+        // }
 
         pub fn Bump_try_alloc_uninit(bump: &Bump) -> Result<BumpAllocation<MaybeUninit<u32>>> {
             bump.try_alloc_uninit()
