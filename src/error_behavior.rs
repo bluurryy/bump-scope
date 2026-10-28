@@ -112,7 +112,9 @@ impl ErrorBehavior for AllocError {
 
     #[inline(always)]
     fn vec_with_capacity_in<T, A: Allocator>(cap: usize, alloc: A) -> Result<Vec<T, A>, Self> {
-        Vec::<T, _>::try_with_capacity_in(cap, alloc).map_err(|_| AllocError)
+        let mut vec = Vec::new_in(alloc);
+        vec.try_reserve(cap).map_err(|_| AllocError)?;
+        Ok(vec)
     }
 
     #[inline(always)]

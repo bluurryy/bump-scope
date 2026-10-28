@@ -218,6 +218,22 @@
 //!
 //! # Feature Flags
 //! <!-- feature documentation start -->
+//! - **`std`** *(enabled by default)* — Adds `BumpPool` and implementations of `std::io` traits.
+//! - **`panic-on-alloc`** *(enabled by default)* — Adds functions and traits that will panic when allocations fail.
+//!   Without this feature, allocation failures cannot cause panics, and only
+//!   `try_`-prefixed allocation methods will be available.
+//! - **`bytemuck`** — Adds `bytemuck::*` extension traits for
+//!   <code>[alloc_zeroed](bytemuck::BumpAllocatorExt::alloc_zeroed)([_slice](bytemuck::BumpAllocatorExt::alloc_zeroed_slice))</code>,
+//!   [`box_zero_init`](bytemuck::box_zero_init) and
+//!   [`box_zero_init_slice`](bytemuck::box_zero_init_slice).
+//! - **`zerocopy-08`** — Adds `zerocopy_08::*` extension traits for
+//!   <code>[alloc_zeroed](zerocopy_08::BumpAllocatorExt::alloc_zeroed)([_slice](zerocopy_08::BumpAllocatorExt::alloc_zeroed_slice))</code>,
+//!   [`box_zero_init`](zerocopy_08::box_zero_init) and
+//!   [`box_zero_init_slice`](zerocopy_08::box_zero_init_slice).
+//! - **`nightly`** — Enables nightly features.
+//!   TODO: enumerate...
+//!
+//!   Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
 //! <!-- feature documentation end -->
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches

@@ -59,17 +59,15 @@ std = []
 panic-on-alloc = []
 
 ## Adds `bytemuck::*` extension traits for
-## <code>[alloc_zeroed](bytemuck::BumpAllocatorScopeExt::alloc_zeroed)([_slice](bytemuck::BumpAllocatorScopeExt::alloc_zeroed_slice))</code>,
-## [`init_zeroed`](bytemuck::InitZeroed::init_zeroed),
-## [`extend_zeroed`](bytemuck::VecExt::extend_zeroed) and
-## [`resize_zeroed`](bytemuck::VecExt::resize_zeroed).
+## <code>[alloc_zeroed](bytemuck::BumpAllocatorExt::alloc_zeroed)([_slice](bytemuck::BumpAllocatorExt::alloc_zeroed_slice))</code>,
+## [`box_zero_init`](bytemuck::box_zero_init) and
+## [`box_zero_init_slice`](bytemuck::box_zero_init_slice).
 bytemuck = ["dep:bytemuck"]
 
 ## Adds `zerocopy_08::*` extension traits for
-## <code>[alloc_zeroed](zerocopy_08::BumpAllocatorScopeExt::alloc_zeroed)([_slice](zerocopy_08::BumpAllocatorScopeExt::alloc_zeroed_slice))</code>,
-## [`init_zeroed`](zerocopy_08::InitZeroed::init_zeroed),
-## [`extend_zeroed`](zerocopy_08::VecExt::extend_zeroed) and
-## [`resize_zeroed`](zerocopy_08::VecExt::resize_zeroed).
+## <code>[alloc_zeroed](zerocopy_08::BumpAllocatorExt::alloc_zeroed)([_slice](zerocopy_08::BumpAllocatorExt::alloc_zeroed_slice))</code>,
+## [`box_zero_init`](zerocopy_08::box_zero_init) and
+## [`box_zero_init_slice`](zerocopy_08::box_zero_init_slice).
 zerocopy-08 = ["dep:zerocopy-08"]
 
 ## Enables nightly features.

@@ -541,6 +541,7 @@ where
 }
 
 /// TODO
+#[cfg(feature = "panic-on-alloc")]
 pub fn vec_from_iter_exact_in<T, A>(iter: impl IntoIterator<Item = T, IntoIter: ExactSizeIterator>, alloc: A) -> Vec<T, A>
 where
     A: Allocator,
