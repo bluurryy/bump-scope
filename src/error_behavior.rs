@@ -134,6 +134,7 @@ pub(crate) mod panic {
     #[cold]
     #[inline(never)]
     #[cfg(feature = "std")]
+    #[cfg(feature = "panic-on-alloc")]
     pub(crate) fn base_allocator_default_constructor_panicked() -> ! {
         panic!("base allocator default constructor panicked")
     }
