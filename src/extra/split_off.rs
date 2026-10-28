@@ -179,7 +179,6 @@ where
         let len = vec.len();
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
         let alloc = vec.allocator().clone();
-        let ptr = vec.as_mut_ptr();
 
         unsafe {
             if T::IS_ZST {
@@ -192,6 +191,8 @@ where
             }
 
             if end == len {
+                let ptr = vec.as_mut_ptr();
+
                 let lhs = ptr;
                 let rhs = ptr.add(start);
 
@@ -206,6 +207,8 @@ where
             }
 
             if start == 0 {
+                let ptr = vec.as_mut_ptr();
+
                 let lhs = ptr;
                 let rhs = ptr.add(end);
 
@@ -233,6 +236,8 @@ where
                 // move the range of elements to split off to the start
                 vec.get_unchecked_mut(..end).rotate_right(range_len);
 
+                let ptr = vec.as_mut_ptr();
+
                 let lhs = ptr;
                 let rhs = ptr.add(range_len);
 
@@ -247,6 +252,8 @@ where
             } else {
                 // move the range of elements to split off to the end
                 vec.get_unchecked_mut(start..).rotate_left(range_len);
+
+                let ptr = vec.as_mut_ptr();
 
                 let lhs = ptr;
                 let rhs = ptr.add(remaining_len);
@@ -273,7 +280,6 @@ where
         let len = boxed.len();
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
         let alloc = Box::allocator(boxed).clone();
-        let ptr = boxed.as_mut_ptr().cast::<T>();
 
         if T::IS_ZST {
             let range_len = end - start;
@@ -287,6 +293,7 @@ where
 
         if end == len {
             unsafe {
+                let ptr = boxed.as_mut_ptr().cast::<T>();
                 let lhs = ptr::slice_from_raw_parts_mut(ptr, start);
                 let rhs = ptr::slice_from_raw_parts_mut(ptr.add(start), len - start);
 
@@ -297,6 +304,7 @@ where
 
         if start == 0 {
             unsafe {
+                let ptr = boxed.as_mut_ptr().cast::<T>();
                 let lhs = ptr::slice_from_raw_parts_mut(ptr, end);
                 let rhs = ptr::slice_from_raw_parts_mut(ptr.add(end), len - end);
 
@@ -320,6 +328,7 @@ where
                 // move the range of elements to split off to the start
                 boxed.get_unchecked_mut(..end).rotate_right(range_len);
 
+                let ptr = boxed.as_mut_ptr().cast::<T>();
                 let lhs = ptr::slice_from_raw_parts_mut(ptr, range_len);
                 let rhs = ptr::slice_from_raw_parts_mut(ptr.add(range_len), remaining_len);
 
@@ -329,6 +338,7 @@ where
                 // move the range of elements to split off to the end
                 boxed.get_unchecked_mut(start..).rotate_left(range_len);
 
+                let ptr = boxed.as_mut_ptr().cast::<T>();
                 let lhs = ptr::slice_from_raw_parts_mut(ptr, remaining_len);
                 let rhs = ptr::slice_from_raw_parts_mut(ptr.add(remaining_len), range_len);
 
@@ -348,12 +358,12 @@ where
         let len = boxed.len();
         let ops::Range { start, end } = polyfill::slice::range(range, ..len);
         let alloc = Box::allocator(boxed).clone();
-        let ptr = boxed.as_mut_ptr().cast::<u8>();
 
         if end == len {
             assert_char_boundary(boxed, start);
 
             unsafe {
+                let ptr = boxed.as_mut_ptr().cast::<u8>();
                 let lhs = ptr_from_utf8(ptr::slice_from_raw_parts_mut(ptr, start));
                 let rhs = ptr_from_utf8(ptr::slice_from_raw_parts_mut(ptr.add(start), len - start));
 
@@ -366,6 +376,7 @@ where
             assert_char_boundary(boxed, end);
 
             unsafe {
+                let ptr = boxed.as_mut_ptr().cast::<u8>();
                 let lhs = ptr_from_utf8(ptr::slice_from_raw_parts_mut(ptr, end));
                 let rhs = ptr_from_utf8(ptr::slice_from_raw_parts_mut(ptr.add(end), len - end));
 
@@ -392,6 +403,7 @@ where
                 // move the range of elements to split off to the start
                 boxed.as_bytes_mut().get_unchecked_mut(..end).rotate_right(range_len);
 
+                let ptr = boxed.as_mut_ptr().cast::<u8>();
                 let lhs = ptr_from_utf8(ptr::slice_from_raw_parts_mut(ptr, range_len));
                 let rhs = ptr_from_utf8(ptr::slice_from_raw_parts_mut(ptr.add(range_len), remaining_len));
 
@@ -401,6 +413,7 @@ where
                 // move the range of elements to split off to the end
                 boxed.as_bytes_mut().get_unchecked_mut(start..).rotate_left(range_len);
 
+                let ptr = boxed.as_mut_ptr().cast::<u8>();
                 let lhs = ptr_from_utf8(ptr::slice_from_raw_parts_mut(ptr, remaining_len));
                 let rhs = ptr_from_utf8(ptr::slice_from_raw_parts_mut(ptr.add(remaining_len), range_len));
 

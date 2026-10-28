@@ -21,7 +21,7 @@ impl<T, A: Allocator> Drop for BoxedSliceInitializer<T, A> {
     fn drop(&mut self) {
         unsafe {
             let to_drop_len = self.init_len();
-            let to_drop = ptr::slice_from_raw_parts_mut(self.start(), to_drop_len);
+            let to_drop = ptr::slice_from_raw_parts_mut(self.start_mut(), to_drop_len);
             to_drop.drop_in_place();
         }
     }
@@ -46,8 +46,13 @@ impl<T, A: Allocator> BoxedSliceInitializer<T, A> {
     }
 
     #[inline(always)]
-    fn start(&self) -> *mut T {
-        self.boxed.as_ptr().cast_mut().cast()
+    fn start(&self) -> *const T {
+        self.boxed.as_ptr().cast()
+    }
+
+    #[inline(always)]
+    fn start_mut(&mut self) -> *mut T {
+        self.boxed.as_mut_ptr().cast()
     }
 
     #[inline(always)]
@@ -55,7 +60,7 @@ impl<T, A: Allocator> BoxedSliceInitializer<T, A> {
         if T::IS_ZST {
             self.pos.addr().wrapping_sub(self.start().addr())
         } else {
-            unsafe { self.pos.offset_from_unsigned(self.start()) }
+            unsafe { self.pos.cast_const().offset_from_unsigned(self.start()) }
         }
     }
 
