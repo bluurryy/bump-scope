@@ -96,7 +96,7 @@ macro_rules! make {
                 where
                     T: $trait,
                 {
-                    BumpAllocation::new(box_zero_init(self.alloc_uninit::<T>().into_box()))
+                    BumpAllocation(box_zero_init(self.alloc_uninit::<T>().into_box()))
                 }
 
                 /// Allocate a zeroed object.
@@ -118,7 +118,7 @@ macro_rules! make {
                 where
                     T: $trait,
                 {
-                    Ok(BumpAllocation::new(box_zero_init(self.try_alloc_uninit::<T>()?.into_box())))
+                    Ok(BumpAllocation(box_zero_init(self.try_alloc_uninit::<T>()?.into_box())))
                 }
 
                 /// Allocate a zeroed object slice.
@@ -140,7 +140,7 @@ macro_rules! make {
                 where
                     T: $trait,
                 {
-                    BumpAllocation::new(box_zero_init_slice(self.alloc_uninit_slice::<T>(len).into_box()))
+                    BumpAllocation(box_zero_init_slice(self.alloc_uninit_slice::<T>(len).into_box()))
                 }
 
                 /// Allocate a zeroed object slice.
@@ -162,7 +162,7 @@ macro_rules! make {
                 where
                     T: $trait,
                 {
-                    Ok(BumpAllocation::new(box_zero_init_slice(self.try_alloc_uninit_slice::<T>(len)?.into_box())))
+                    Ok(BumpAllocation(box_zero_init_slice(self.try_alloc_uninit_slice::<T>(len)?.into_box())))
                 }
             }
 

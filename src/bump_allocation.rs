@@ -11,33 +11,15 @@ use crate::{
 /// TODO
 #[must_use = "TODO"]
 #[repr(transparent)]
-pub struct BumpAllocation<T: ?Sized, A: Allocator> {
-    boxed: Box<T, A>,
-}
+pub struct BumpAllocation<T: ?Sized, A: Allocator>(pub(crate) Box<T, A>);
 
 impl<T: fmt::Debug + ?Sized, A: Allocator> fmt::Debug for BumpAllocation<T, A> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        fmt::Debug::fmt(&*self.boxed, f)
+        fmt::Debug::fmt(&*self.0, f)
     }
 }
 
 impl<T: ?Sized, A: Allocator> BumpAllocation<T, A> {
-    pub(crate) fn new(boxed: Box<T, A>) -> Self {
-        Self { boxed }
-    }
-}
-
-impl<T: ?Sized, A: Allocator> BumpAllocation<T, A> {
-    #[expect(unused)]
-    pub(crate) fn wrap<'a>(boxu: BoxU<'a, T>, alloc: A) -> Self
-    where
-        A: BumpAllocatorScope<'a>,
-    {
-        Self {
-            boxed: replace_allocator(boxu, alloc).0,
-        }
-    }
-
     /// TODO
     pub fn into_ref<'a>(self) -> &'a T
     where
@@ -58,20 +40,20 @@ impl<T: ?Sized, A: Allocator> BumpAllocation<T, A> {
 
     /// TODO
     pub fn into_box(self) -> Box<T, A> {
-        self.boxed
+        self.0
     }
 
     /// TODO
-    pub fn into_boxu<'a>(self) -> Box<T, Unmanaged<'a>>
+    pub fn into_boxu<'a>(self) -> BoxU<'a, T>
     where
         A: BumpAllocatorScope<'a>,
     {
-        replace_allocator(self.boxed, Unmanaged::VALUE).0
+        replace_allocator(self.0, Unmanaged::VALUE).0
     }
 
     /// TODO
     pub fn into_raw(self) -> NonNull<T> {
-        let ptr = Box::into_raw_with_allocator(self.boxed).0;
+        let ptr = Box::into_raw_with_allocator(self.0).0;
         unsafe { NonNull::new_unchecked(ptr) }
     }
 
@@ -80,7 +62,7 @@ impl<T: ?Sized, A: Allocator> BumpAllocation<T, A> {
     where
         A: BumpAllocatorScope<'a>,
     {
-        box_leak(self.boxed)
+        box_leak(self.0)
     }
 }
 
