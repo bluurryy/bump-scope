@@ -80,7 +80,7 @@
 //!
 //! Unlike `bumpalo`, this crate...
 //! - Supports [scopes and checkpoints](#scopes-and-checkpoints).
-//! - Drop is always called for allocated values unless explicitly [leaked](BoxU::leak) or [forgotten](core::mem::forget).
+//! - Drop is always called for allocated values unless explicitly [leaked](BumpAllocation::leak) or [forgotten](core::mem::forget).
 //!   - `alloc*` methods return a [`BumpAllocation`] which owns and drops `T`. Types that don't need dropping can be turned into references with [`into_ref`](BumpAllocation::into_ref) and [`into_mut`](BumpAllocation::into_mut).
 //! - You can allocate a slice from any `Iterator` with [`alloc_iter`](Bump::alloc_iter).
 //! - `Bump`'s base allocator is generic.
