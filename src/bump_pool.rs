@@ -21,10 +21,10 @@ use crate::{
 ///
 /// Using `BumpPool` with parallel iterators from [`rayon`](https://docs.rs/rayon):
 /// ```
-/// # use bump_scope::BumpPool;
-/// # use rayon::prelude::{ParallelIterator, IntoParallelIterator};
+/// use bump_scope::{BumpPool, BumpAllocator};
+/// use rayon::prelude::{ParallelIterator, IntoParallelIterator};
 /// # if cfg!(miri) { return } // rayon violates strict-provenance :(
-/// #
+///
 /// let mut pool: BumpPool = BumpPool::new();
 ///
 /// let strings: Vec<&str> = (0..1000)
@@ -45,14 +45,15 @@ use crate::{
 ///
 /// Using `BumpPool` with [`std::thread::scope`]:
 /// ```
-/// # use bump_scope::BumpPool;
+/// use bump_scope::{BumpPool, BumpAllocator};
+///
 /// let pool: BumpPool = BumpPool::new();
 /// let (sender, receiver) = std::sync::mpsc::sync_channel(10);
 ///
 /// std::thread::scope(|s| {
 ///     s.spawn(|| {
 ///         let bump = pool.get();
-///         let string = bump.alloc_str("Hello");
+///         let string = bump.alloc_str("Hello").into_ref();
 ///         sender.send(string).unwrap();
 ///         drop(sender);
 ///     });

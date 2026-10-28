@@ -36,74 +36,74 @@ use crate::{
 ///
 /// A Vector:
 /// ```
-/// use bump_scope::{Bump, extra::split_off};
+/// use bump_scope::{Bump, extra::{vec_from_owned_slice_in, split_off}};
 /// let bump: Bump = Bump::new();
-/// let mut vec = FixedBumpVec::with_capacity_in(10, &bump);
-/// vec.append([1, 2, 3, 4, 5, 6, 7, 8]);
 ///
-/// let front = vec.split_off(..2);
-/// assert_eq!(front, [1, 2]);
-/// assert_eq!(vec, [3, 4, 5, 6, 7, 8]);
+/// let mut vec = vec_from_owned_slice_in([1, 2, 3, 4, 5, 6, 7, 8], &bump);
 ///
-/// let back = vec.split_off(4..);
-/// assert_eq!(back, [7, 8]);
-/// assert_eq!(vec, [3, 4, 5, 6]);
+/// let front = split_off(&mut vec, ..2);
+/// assert_eq!(&*front, [1, 2]);
+/// assert_eq!(&*vec, [3, 4, 5, 6, 7, 8]);
 ///
-/// let middle = vec.split_off(1..3);
-/// assert_eq!(middle, [4, 5]);
-/// assert_eq!(vec, [3, 6]);
+/// let back = split_off(&mut vec, 4..);
+/// assert_eq!(&*back, [7, 8]);
+/// assert_eq!(&*vec, [3, 4, 5, 6]);
 ///
-/// let rest = vec.split_off(..);
-/// assert_eq!(rest, [3, 6]);
-/// assert_eq!(vec, []);
+/// let middle = split_off(&mut vec, 1..3);
+/// assert_eq!(&*middle, [4, 5]);
+/// assert_eq!(&*vec, [3, 6]);
+///
+/// let rest = split_off(&mut vec, ..);
+/// assert_eq!(&*rest, [3, 6]);
+/// assert_eq!(&*vec, []);
 /// ```
 ///
 /// A boxed slice:
 /// ```
-/// # use bump_scope::Bump;
-/// # let bump: Bump = Bump::new();
-/// let mut slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6, 7, 8]);
+/// use bump_scope::{Bump, BumpAllocator, extra::split_off};
+/// let bump: Bump = Bump::new();
 ///
-/// let front = slice.split_off(..2);
-/// assert_eq!(front, [1, 2]);
-/// assert_eq!(slice, [3, 4, 5, 6, 7, 8]);
+/// let mut slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6, 7, 8]).into_boxu();
 ///
-/// let back = slice.split_off(4..);
-/// assert_eq!(back, [7, 8]);
-/// assert_eq!(slice, [3, 4, 5, 6]);
+/// let front = split_off(&mut slice, ..2);
+/// assert_eq!(&*front, [1, 2]);
+/// assert_eq!(&*slice, [3, 4, 5, 6, 7, 8]);
 ///
-/// let middle = slice.split_off(1..3);
-/// assert_eq!(middle, [4, 5]);
-/// assert_eq!(slice, [3, 6]);
+/// let back = split_off(&mut slice, 4..);
+/// assert_eq!(&*back, [7, 8]);
+/// assert_eq!(&*slice, [3, 4, 5, 6]);
 ///
-/// let rest = slice.split_off(..);
-/// assert_eq!(rest, [3, 6]);
-/// assert_eq!(slice, []);
+/// let middle = split_off(&mut slice, 1..3);
+/// assert_eq!(&*middle, [4, 5]);
+/// assert_eq!(&*slice, [3, 6]);
+///
+/// let rest = split_off(&mut slice, ..);
+/// assert_eq!(&*rest, [3, 6]);
+/// assert_eq!(&*slice, []);
 /// ```
 ///
 /// A boxed str:
 /// ```
-/// use bump_scope::{Bump, extra::box_str_split_off};
-///
+/// use bump_scope::{Bump, BumpAllocator, extra::split_off};
 /// let bump: Bump = Bump::new();
 ///
-/// let mut string = bump.alloc_str("foobarbazqux");
+/// let mut string = bump.alloc_str("foobarbazqux").into_boxu();
 ///
-/// let foo = box_str_split_off(string, ..3);
-/// assert_eq!(foo, "foo");
-/// assert_eq!(string, "barbazqux");
+/// let foo = split_off(&mut string, ..3);
+/// assert_eq!(&*foo, "foo");
+/// assert_eq!(&*string, "barbazqux");
 ///
-/// let qux = box_str_split_off(string, 6..);
-/// assert_eq!(qux, "qux");
-/// assert_eq!(string, "barbaz");
+/// let qux = split_off(&mut string, 6..);
+/// assert_eq!(&*qux, "qux");
+/// assert_eq!(&*string, "barbaz");
 ///
-/// let rb = box_str_split_off(string, 2..4);
-/// assert_eq!(rb, "rb");
-/// assert_eq!(string, "baaz");
+/// let rb = split_off(&mut string, 2..4);
+/// assert_eq!(&*rb, "rb");
+/// assert_eq!(&*string, "baaz");
 ///
-/// let rest = box_str_split_off(string, ..);
-/// assert_eq!(rest, "baaz");
-/// assert_eq!(string, "");
+/// let rest = split_off(&mut string, ..);
+/// assert_eq!(&*rest, "baaz");
+/// assert_eq!(&*string, "");
 /// ```
 #[expect(private_bounds)]
 pub fn split_off<VecOrBox>(vec_or_box: &mut VecOrBox, range: impl RangeBounds<usize>) -> VecOrBox
@@ -111,6 +111,59 @@ where
     VecOrBox: SplitOff,
 {
     SplitOff::split_off(vec_or_box, range)
+}
+
+/// Divides a boxed slice into two at an index.
+///
+/// The first will contain all indices from `[0, mid)` (excluding
+/// the index `mid` itself) and the second will contain all
+/// indices from `[mid, len)` (excluding the index `len` itself).
+///
+/// # Panics
+///
+/// Panics if `mid > len`.
+///
+/// # Examples
+///
+/// ```
+/// use bump_scope::{Bump, BumpAllocator, extra::split_at};
+/// let bump: Bump = Bump::new();
+///
+/// let v = bump.alloc_slice_copy::<i32>(&[1, 2, 3, 4, 5, 6]).into_boxu();
+///
+/// {
+///    let (left, right) = split_at(v, 0);
+///    assert_eq!(&*left, []);
+///    assert_eq!(&*right, [1, 2, 3, 4, 5, 6]);
+/// }
+///
+/// let v = bump.alloc_slice_copy::<i32>(&[1, 2, 3, 4, 5, 6]).into_boxu();
+///
+/// {
+///     let (left, right) = split_at(v, 2);
+///     assert_eq!(&*left, [1, 2]);
+///     assert_eq!(&*right, [3, 4, 5, 6]);
+/// }
+///
+/// let v = bump.alloc_slice_copy::<i32>(&[1, 2, 3, 4, 5, 6]).into_boxu();
+///
+/// {
+///     let (left, right) = split_at(v, 6);
+///     assert_eq!(&*left, [1, 2, 3, 4, 5, 6]);
+///     assert_eq!(&*right, []);
+/// }
+/// ```
+#[inline]
+#[must_use]
+#[expect(private_bounds)]
+pub fn split_at<VecOrBox>(vec_or_box: VecOrBox, at: usize) -> (VecOrBox, VecOrBox)
+where
+    VecOrBox: SplitOff,
+{
+    // FIXME: does this produce optimal code or should we have a dedicated impl?
+    let mut lhs = vec_or_box;
+    let rhs = split_off(&mut lhs, at..);
+    (lhs, rhs)
 }
 
 trait SplitOff {

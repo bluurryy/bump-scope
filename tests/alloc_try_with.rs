@@ -49,7 +49,7 @@ up_and_down! {
     #[cfg(feature = "nightly")]
     fn basic_ok() {
         let bump: Bump<Global, C> = Bump::with_size(SIZE);
-        _ = bump.alloc_try_with(|| -> TestResult { Ok(zeroes()) });
+        _ = bump.alloc_try_with(|| -> TestResult { Ok(zeroes()) }).unwrap().into_boxu();
         assert_allocated!(bump, size_of::<TestResult>());
     }
 
@@ -57,7 +57,7 @@ up_and_down! {
     #[cfg(feature = "nightly")]
     fn basic_ok_mut() {
         let mut bump: Bump<Global, C> = Bump::with_size(SIZE);
-        _ = bump.alloc_try_with_mut(|| -> TestResult { Ok(zeroes()) });
+        _ = bump.alloc_try_with_mut(|| -> TestResult { Ok(zeroes()) }).unwrap().into_boxu();
 
 
         if config::read::upwards(C) {
@@ -72,14 +72,14 @@ up_and_down! {
     #[test]
     fn basic_err() {
         let bump: Bump<Global, C> = Bump::with_size(SIZE);
-        _ = bump.alloc_try_with(|| -> TestResult { Err(zeroes()) });
+        _ = bump.alloc_try_with(|| -> TestResult { Err(zeroes()) }).unwrap_err();
         assert_eq!(bump.stats().allocated(), 0);
     }
 
     #[test]
     fn basic_err_mut() {
         let mut bump: Bump<Global, C> = Bump::with_size(SIZE);
-        _ = bump.alloc_try_with_mut(|| -> TestResult { Err(zeroes()) });
+        _ = bump.alloc_try_with_mut(|| -> TestResult { Err(zeroes()) }).unwrap_err();
         assert_eq!(bump.stats().allocated(), 0);
     }
 
@@ -90,7 +90,7 @@ up_and_down! {
         _ = bump.alloc_try_with(|| -> TestResult {
             bump.alloc(0u8).into_boxu();
             Ok(zeroes())
-        });
+        }).unwrap().into_boxu();
 
         let expected = size_of::<TestResult>() + 1;
         assert_allocated!(bump, expected);
@@ -103,7 +103,7 @@ up_and_down! {
         _ = bump.alloc_try_with(|| -> TestResult {
             bump.alloc(0u8).into_boxu();
             Err(zeroes())
-        });
+        }).unwrap_err();
 
         let expected = size_of::<TestResult>() + 1;
         assert_allocated!(bump, expected);

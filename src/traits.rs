@@ -21,8 +21,9 @@ use crate::{
     down_align_usize,
     error_behavior::ErrorBehavior,
     extra::{
-        box_from_utf8_unchecked, box_init, box_init_clone, box_init_fill, box_init_fill_with, box_uninit_zst_in,
-        box_uninit_zst_slice_in,
+        self, box_from_utf8_unchecked, box_init, box_init_clone, box_init_fill, box_init_fill_with,
+        box_replace_allocator_unchecked, box_uninit_zst_in, box_uninit_zst_slice_in, vec_extend,
+        vec_remove_allocator_unchecked,
     },
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
     polyfill::{transmute_mut, transmute_ref},
@@ -57,19 +58,54 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
     /// # #[expect(dead_code)]
     /// # trait MyExt: Allocator {
     /// #     unsafe fn my_ext_fn(&self, layout: Layout) -> Result<NonNull<u8>, AllocError> {
-    /// self.allocate(layout)?.cast::<u8>()
+    /// Ok(self.allocate(layout)?.cast::<u8>())
     /// #     }
     /// # }
     /// ```
     fn spec_alloc<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E>;
 
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
+    ///
+    /// Behaves like:
+    /// ```
+    /// # use core::{alloc::Layout, alloc::{Allocator, AllocError}, ptr::NonNull};
+    /// # #[expect(dead_code)]
+    /// # trait MyExt: Allocator {
+    /// #     unsafe fn my_ext_fn<T>(&self) -> Result<NonNull<T>, AllocError> {
+    /// Ok(self.allocate(Layout::new::<T>())?.cast::<T>())
+    /// #     }
+    /// # }
+    /// ```
     fn spec_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E>;
 
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
+    ///    
+    /// Behaves like:
+    /// ```
+    /// # extern crate alloc;
+    /// # use core::{alloc::Layout, alloc::Allocator, ptr::NonNull, error::Error};
+    /// # use alloc::boxed::Box;
+    /// # #[expect(dead_code)]
+    /// # trait MyExt: Allocator {
+    /// #     unsafe fn my_ext_fn<T>(&self, len: usize) -> Result<NonNull<T>, Box<dyn Error>> {
+    /// Ok(self.allocate(Layout::array::<T>(len)?)?.cast::<T>())
+    /// #     }
+    /// # }
+    /// ```
     fn spec_alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E>;
 
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
+    ///
+    /// Behaves like:
+    /// ```
+    /// # use core::{alloc::Layout, alloc::{Allocator, AllocError}, ptr::NonNull};
+    /// # #[expect(dead_code)]
+    /// # trait MyExt: Allocator {
+    /// #     unsafe fn my_ext_fn<T>(&self, slice: &[T]) -> Result<NonNull<T>, AllocError> {
+    /// Ok(self.allocate(Layout::for_value(slice))?.cast::<T>())
+    /// #     }
+    /// # }
+    /// ```
     fn spec_alloc_slice_for<E: ErrorBehavior, T>(&self, slice: &[T]) -> Result<NonNull<T>, E>;
 
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
@@ -82,17 +118,14 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
     /// Behaves like the following code except that it returns `None`
     /// when the allocation remains unchanged and the pointer stays valid.
     /// ```
-    /// # use core::{alloc::Layout, ptr::NonNull};
-    /// # type T = i32;
+    /// # use core::{alloc::Layout, alloc::Allocator, ptr::NonNull};
     /// # #[expect(dead_code)]
-    /// # trait MyExt: bump_scope::traits::BumpAllocatorCore {
-    /// #     unsafe fn my_ext_fn(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> NonNull<T> {
-    /// #         unsafe {
+    /// # trait MyExt: Allocator {
+    /// #     unsafe fn my_ext_fn<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> NonNull<T> {
     /// self.shrink(ptr.cast(),
     ///     Layout::array::<T>(old_len).unwrap_unchecked(),
     ///     Layout::array::<T>(new_len).unwrap_unchecked(),
     /// ).unwrap_unchecked().cast()
-    /// #         }
     /// #     }
     /// # }
     /// ```
@@ -386,13 +419,26 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
     where
         E: ErrorBehavior,
     {
-        if E::FALLIBLE {
-            todo!()
-        }
-
         let mut vec = Vec::new_in(self);
-        vec.extend(iter);
+        vec_extend(&mut vec, iter)?;
         Ok(vec.into_boxed_slice())
+    }
+
+    #[inline(always)]
+    fn imp_alloc_iter_exact<E, T, I>(&self, iter: impl IntoIterator<Item = T, IntoIter = I>) -> Result<Box<[T], &Self>, E>
+    where
+        E: ErrorBehavior,
+        I: ExactSizeIterator<Item = T>,
+    {
+        let vec = extra::imp_vec_from_iter_exact_in(iter, self)?;
+
+        // An exact size iterator if implemented correctly, did not leave anything to shrink
+        // so we avoid the shrink call by removing the allocator.
+        let vec = unsafe { vec_remove_allocator_unchecked(vec).0 };
+        let boxed = vec.into_boxed_slice();
+        let boxed = unsafe { box_replace_allocator_unchecked(boxed, self).0 };
+
+        Ok(boxed)
     }
 
     #[inline(always)]
@@ -982,10 +1028,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.alloc(123);
-    /// assert_eq!(allocated, 123);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.alloc(123).into_boxu();
+    /// assert_eq!(*allocated, 123);
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -1001,10 +1048,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.try_alloc(123)?;
-    /// assert_eq!(allocated, 123);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.try_alloc(123)?.into_boxu();
+    /// assert_eq!(*allocated, 123);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
@@ -1025,10 +1073,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.alloc_with(|| 123);
-    /// assert_eq!(allocated, 123);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.alloc_with(|| 123).into_boxu();
+    /// assert_eq!(*allocated, 123);
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -1049,10 +1098,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.try_alloc_with(|| 123)?;
-    /// assert_eq!(allocated, 123);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.try_alloc_with(|| 123)?.into_boxu();
+    /// assert_eq!(*allocated, 123);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
@@ -1070,10 +1120,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.alloc_default::<i32>();
-    /// assert_eq!(allocated, 0);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.alloc_default::<i32>().into_boxu();
+    /// assert_eq!(*allocated, 0);
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -1091,10 +1142,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.try_alloc_default()?;
-    /// assert_eq!(allocated, 0);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.try_alloc_default::<i32>()?.into_boxu();
+    /// assert_eq!(*allocated, 0);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
@@ -1118,20 +1170,20 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// #![feature(clone_to_uninit)]
     ///
     /// use std::path::Path;
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
     ///
-    /// let cloned = bump.alloc_clone(&[1, 2, 3]);
-    /// assert_eq!(cloned, &[1, 2, 3]);
+    /// let cloned = bump.alloc_clone(&[1, 2, 3]).into_boxu();
+    /// assert_eq!(&*cloned, &[1, 2, 3]);
     ///
-    /// let cloned = bump.alloc_clone("foo");
-    /// assert_eq!(cloned, "foo");
+    /// let cloned = bump.alloc_clone("foo").into_boxu();
+    /// assert_eq!(&*cloned, "foo");
     ///
-    /// let cloned = bump.alloc_clone(c"foo");
-    /// assert_eq!(cloned, c"foo");
+    /// let cloned = bump.alloc_clone(c"foo").into_boxu();
+    /// assert_eq!(&*cloned, c"foo");
     ///
-    /// let cloned = bump.alloc_clone(Path::new("foo"));
-    /// assert_eq!(cloned, Path::new("foo"));
+    /// let cloned = bump.alloc_clone(Path::new("foo")).into_boxu();
+    /// assert_eq!(&*cloned, Path::new("foo"));
     /// ```
     ///
     /// Allocate a trait object:
@@ -1140,7 +1192,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// #![feature(clone_to_uninit)]
     ///
     /// use core::clone::CloneToUninit;
-    /// # use bump_scope::Bump;
+    /// use bump_scope::{Bump, BumpAllocator};
     ///
     /// trait FnClone: Fn() -> String + CloneToUninit {}
     /// impl<T: ?Sized + Fn() -> String + CloneToUninit> FnClone for T {}
@@ -1157,7 +1209,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// assert_eq!(object(), "Hello, world!");
     ///
     /// let bump: Bump = Bump::new();
-    /// let object_clone = bump.alloc_clone(object);
+    /// let object_clone = bump.alloc_clone(object).into_boxu();
     ///
     /// assert_eq!(object_clone(), "Hello, world!");
     /// ```
@@ -1184,20 +1236,20 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// #![feature(clone_to_uninit)]
     ///
     /// use std::path::Path;
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
     ///
-    /// let cloned = bump.try_alloc_clone(&[1, 2, 3])?;
-    /// assert_eq!(cloned, &[1, 2, 3]);
+    /// let cloned = bump.try_alloc_clone(&[1, 2, 3])?.into_boxu();
+    /// assert_eq!(&*cloned, &[1, 2, 3]);
     ///
-    /// let cloned = bump.try_alloc_clone("foo")?;
-    /// assert_eq!(cloned, "foo");
+    /// let cloned = bump.try_alloc_clone("foo")?.into_boxu();
+    /// assert_eq!(&*cloned, "foo");
     ///
-    /// let cloned = bump.try_alloc_clone(c"foo")?;
-    /// assert_eq!(cloned, c"foo");
+    /// let cloned = bump.try_alloc_clone(c"foo")?.into_boxu();
+    /// assert_eq!(&*cloned, c"foo");
     ///
-    /// let cloned = bump.try_alloc_clone(Path::new("foo"))?;
-    /// assert_eq!(cloned, Path::new("foo"));
+    /// let cloned = bump.try_alloc_clone(Path::new("foo"))?.into_boxu();
+    /// assert_eq!(&*cloned, Path::new("foo"));
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
@@ -1207,7 +1259,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// #![feature(clone_to_uninit)]
     ///
     /// use core::clone::CloneToUninit;
-    /// # use bump_scope::Bump;
+    /// use bump_scope::{Bump, BumpAllocator};
     ///
     /// trait FnClone: Fn() -> String + CloneToUninit {}
     /// impl<T: ?Sized + Fn() -> String + CloneToUninit> FnClone for T {}
@@ -1224,7 +1276,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// assert_eq!(object(), "Hello, world!");
     ///
     /// let bump: Bump = Bump::new();
-    /// let object_clone = bump.try_alloc_clone(object)?;
+    /// let object_clone = bump.try_alloc_clone(object)?.into_boxu();
     ///
     /// assert_eq!(object_clone(), "Hello, world!");
     /// # Ok::<(), ::core::alloc::AllocError>(())
@@ -1248,20 +1300,21 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// # Examples
     /// Safely:
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let uninit = bump.alloc_uninit();
+    /// use bump_scope::{Bump, BumpAllocator, extra};
+    /// let bump: Bump = Bump::new();
     ///
-    /// let five = uninit.init(5);
+    /// let uninit = bump.alloc_uninit().into_boxu();
+    /// let five = extra::box_init(uninit, 5);
     ///
     /// assert_eq!(*five, 5)
     /// ```
     ///
     /// Unsafely:
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let mut uninit = bump.alloc_uninit();
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let mut uninit = bump.alloc_uninit().into_boxu();
     ///
     /// let five = unsafe {
     ///     uninit.write(5);
@@ -1289,11 +1342,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// # Examples
     /// Safely:
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let uninit = bump.try_alloc_uninit()?;
+    /// use bump_scope::{Bump, BumpAllocator, extra};
+    /// let bump: Bump = Bump::new();
     ///
-    /// let five = uninit.init(5);
+    /// let uninit = bump.try_alloc_uninit()?.into_boxu();
+    /// let five = extra::box_init(uninit, 5);
     ///
     /// assert_eq!(*five, 5);
     /// # Ok::<(), ::core::alloc::AllocError>(())
@@ -1301,9 +1354,10 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// Unsafely:
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let mut uninit = bump.try_alloc_uninit()?;
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let mut uninit = bump.try_alloc_uninit()?.into_boxu();
     ///
     /// let five = unsafe {
     ///     uninit.write(5);
@@ -1326,22 +1380,23 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
     /// // by value
-    /// let a = bump.alloc_slice_move([1, 2]);
-    /// let b = bump.alloc_slice_move(vec![3, 4]);
-    /// let c = bump.alloc_slice_move(bump.alloc_iter(5..=6));
+    /// let a = bump.alloc_slice_move([1, 2]).into_boxu();
+    /// let b = bump.alloc_slice_move(vec![3, 4]).into_boxu();
+    /// let c = bump.alloc_slice_move(bump.alloc_iter(5..=6).into_boxu()).into_boxu();
     ///
     /// // by mutable reference
     /// let mut other = vec![7, 8];
-    /// let d = bump.alloc_slice_move(&mut other);
+    /// let d = bump.alloc_slice_move(&mut other).into_boxu();
     /// assert!(other.is_empty());
     ///
-    /// assert_eq!(a, [1, 2]);
-    /// assert_eq!(b, [3, 4]);
-    /// assert_eq!(c, [5, 6]);
-    /// assert_eq!(d, [7, 8]);
+    /// assert_eq!(&*a, [1, 2]);
+    /// assert_eq!(&*b, [3, 4]);
+    /// assert_eq!(&*c, [5, 6]);
+    /// assert_eq!(&*d, [7, 8]);
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -1357,22 +1412,23 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
     /// // by value
-    /// let a = bump.try_alloc_slice_move([1, 2])?;
-    /// let b = bump.try_alloc_slice_move(vec![3, 4])?;
-    /// let c = bump.try_alloc_slice_move(bump.alloc_iter(5..=6))?;
+    /// let a = bump.try_alloc_slice_move([1, 2])?.into_boxu();
+    /// let b = bump.try_alloc_slice_move(vec![3, 4])?.into_boxu();
+    /// let c = bump.try_alloc_slice_move(bump.alloc_iter(5..=6).into_boxu())?.into_boxu();
     ///
     /// // by mutable reference
     /// let mut other = vec![7, 8];
-    /// let d = bump.try_alloc_slice_move(&mut other)?;
+    /// let d = bump.try_alloc_slice_move(&mut other)?.into_boxu();
     /// assert!(other.is_empty());
     ///
-    /// assert_eq!(a, [1, 2]);
-    /// assert_eq!(b, [3, 4]);
-    /// assert_eq!(c, [5, 6]);
-    /// assert_eq!(d, [7, 8]);
+    /// assert_eq!(&*a, [1, 2]);
+    /// assert_eq!(&*b, [3, 4]);
+    /// assert_eq!(&*c, [5, 6]);
+    /// assert_eq!(&*d, [7, 8]);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
@@ -1388,10 +1444,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.alloc_slice_copy(&[1, 2, 3]);
-    /// assert_eq!(allocated, [1, 2, 3]);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.alloc_slice_copy(&[1, 2, 3]).into_boxu();
+    /// assert_eq!(&*allocated, [1, 2, 3]);
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -1407,10 +1464,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.try_alloc_slice_copy(&[1, 2, 3])?;
-    /// assert_eq!(allocated, [1, 2, 3]);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.try_alloc_slice_copy(&[1, 2, 3])?.into_boxu();
+    /// assert_eq!(&*allocated, [1, 2, 3]);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
@@ -1426,10 +1484,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.alloc_slice_clone(&[String::from("a"), String::from("b")]);
-    /// assert_eq!(allocated, [String::from("a"), String::from("b")]);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.alloc_slice_clone(&[String::from("a"), String::from("b")]).into_boxu();
+    /// assert_eq!(&*allocated, [String::from("a"), String::from("b")]);
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -1445,10 +1504,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.try_alloc_slice_clone(&[String::from("a"), String::from("b")])?;
-    /// assert_eq!(allocated, [String::from("a"), String::from("b")]);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.try_alloc_slice_clone(&[String::from("a"), String::from("b")])?.into_boxu();
+    /// assert_eq!(&*allocated, [String::from("a"), String::from("b")]);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
@@ -1464,10 +1524,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.alloc_slice_fill(3, "ho");
-    /// assert_eq!(allocated, ["ho", "ho", "ho"]);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.alloc_slice_fill(3, "ho").into_boxu();
+    /// assert_eq!(&*allocated, ["ho", "ho", "ho"]);
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -1483,10 +1544,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.try_alloc_slice_fill(3, "ho")?;
-    /// assert_eq!(allocated, ["ho", "ho", "ho"]);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.try_alloc_slice_fill(3, "ho")?.into_boxu();
+    /// assert_eq!(&*allocated, ["ho", "ho", "ho"]);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
@@ -1507,10 +1569,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.alloc_slice_fill_with::<i32>(3, Default::default);
-    /// assert_eq!(allocated, [0, 0, 0]);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.alloc_slice_fill_with::<i32>(3, Default::default).into_boxu();
+    /// assert_eq!(&*allocated, [0, 0, 0]);
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -1531,10 +1594,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.try_alloc_slice_fill_with::<i32>(3, Default::default)?;
-    /// assert_eq!(allocated, [0, 0, 0]);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.try_alloc_slice_fill_with::<i32>(3, Default::default)?.into_boxu();
+    /// assert_eq!(&*allocated, [0, 0, 0]);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
@@ -1562,20 +1626,21 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// # Examples
     /// Safely:
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let uninit = bump.alloc_uninit_slice(3);
+    /// use bump_scope::{Bump, BumpAllocator, extra::box_init_copy};
+    /// let bump: Bump = Bump::new();
     ///
-    /// let values = uninit.init_copy(&[1, 2, 3]);
+    /// let uninit = bump.alloc_uninit_slice(3).into_boxu();
+    /// let values = box_init_copy(uninit, &[1, 2, 3]);
     ///
-    /// assert_eq!(values, [1, 2, 3])
+    /// assert_eq!(&*values, [1, 2, 3])
     /// ```
     ///
     /// Unsafely:
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let mut uninit = bump.alloc_uninit_slice(3);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let mut uninit = bump.alloc_uninit_slice(3).into_boxu();
     ///
     /// let values = unsafe {
     ///     uninit[0].write(1);
@@ -1585,7 +1650,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///     uninit.assume_init()
     /// };
     ///
-    /// assert_eq!(values, [1, 2, 3]);
+    /// assert_eq!(*values, [1, 2, 3]);
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
@@ -1609,21 +1674,22 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// # Examples
     /// Safely:
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let uninit = bump.try_alloc_uninit_slice(3)?;
+    /// use bump_scope::{Bump, BumpAllocator, extra::box_init_copy};
+    /// let bump: Bump = Bump::new();
     ///
-    /// let values = uninit.init_copy(&[1, 2, 3]);
+    /// let uninit = bump.try_alloc_uninit_slice(3)?.into_boxu();
+    /// let values = box_init_copy(uninit, &[1, 2, 3]);
     ///
-    /// assert_eq!(values, [1, 2, 3]);
+    /// assert_eq!(&*values, [1, 2, 3]);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
     /// Unsafely:
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let mut uninit = bump.try_alloc_uninit_slice(3)?;
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let mut uninit = bump.try_alloc_uninit_slice(3)?.into_boxu();
     ///
     /// let values = unsafe {
     ///     uninit[0].write(1);
@@ -1633,7 +1699,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///     uninit.assume_init()
     /// };
     ///
-    /// assert_eq!(values, [1, 2, 3]);
+    /// assert_eq!(*values, [1, 2, 3]);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
@@ -1659,10 +1725,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
     /// let slice = &[1, 2, 3];
-    /// let uninit_slice = bump.alloc_uninit_slice_for(slice);
+    /// let uninit_slice = bump.alloc_uninit_slice_for(slice).into_boxu();
     /// assert_eq!(uninit_slice.len(), 3);
     /// ```
     #[inline(always)]
@@ -1689,10 +1756,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
     /// let slice = &[1, 2, 3];
-    /// let uninit_slice = bump.try_alloc_uninit_slice_for(slice)?;
+    /// let uninit_slice = bump.try_alloc_uninit_slice_for(slice)?.into_boxu();
     /// assert_eq!(uninit_slice.len(), 3);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
@@ -1709,9 +1777,10 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.alloc_str("Hello, world!");
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.alloc_str("Hello, world!").into_ref();
     /// assert_eq!(allocated, "Hello, world!");
     /// ```
     #[inline(always)]
@@ -1728,9 +1797,10 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.try_alloc_str("Hello, world!")?;
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.try_alloc_str("Hello, world!")?.into_ref();
     /// assert_eq!(allocated, "Hello, world!");
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
@@ -1754,11 +1824,12 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
     /// let one = 1;
     /// let two = 2;
-    /// let string = bump.alloc_fmt(format_args!("{one} + {two} = {}", one + two));
+    /// let string = bump.alloc_fmt(format_args!("{one} + {two} = {}", one + two)).into_ref();
     ///
     /// assert_eq!(string, "1 + 2 = 3");
     /// ```
@@ -1783,11 +1854,12 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
     /// let one = 1;
     /// let two = 2;
-    /// let string = bump.try_alloc_fmt(format_args!("{one} + {two} = {}", one + two))?;
+    /// let string = bump.try_alloc_fmt(format_args!("{one} + {two} = {}", one + two))?.into_ref();
     ///
     /// assert_eq!(string, "1 + 2 = 3");
     /// # Ok::<(), ::core::alloc::AllocError>(())
@@ -1805,9 +1877,10 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.alloc_cstr(c"Hello, world!");
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.alloc_cstr(c"Hello, world!").into_ref();
     /// assert_eq!(allocated, c"Hello, world!");
     /// ```
     #[inline(always)]
@@ -1823,9 +1896,10 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.try_alloc_cstr(c"Hello, world!")?;
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.try_alloc_cstr(c"Hello, world!")?.into_ref();
     /// assert_eq!(allocated, c"Hello, world!");
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
@@ -1843,12 +1917,13 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.alloc_cstr_from_str("Hello, world!");
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.alloc_cstr_from_str("Hello, world!").into_ref();
     /// assert_eq!(allocated, c"Hello, world!");
     ///
-    /// let allocated = bump.alloc_cstr_from_str("abc\0def");
+    /// let allocated = bump.alloc_cstr_from_str("abc\0def").into_ref();
     /// assert_eq!(allocated, c"abc");
     /// ```
     #[inline(always)]
@@ -1866,12 +1941,13 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let allocated = bump.try_alloc_cstr_from_str("Hello, world!")?;
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let allocated = bump.try_alloc_cstr_from_str("Hello, world!")?.into_ref();
     /// assert_eq!(allocated, c"Hello, world!");
     ///
-    /// let allocated = bump.try_alloc_cstr_from_str("abc\0def")?;
+    /// let allocated = bump.try_alloc_cstr_from_str("abc\0def")?.into_ref();
     /// assert_eq!(allocated, c"abc");
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
@@ -1896,14 +1972,15 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
     /// let one = 1;
     /// let two = 2;
-    /// let string = bump.alloc_cstr_fmt(format_args!("{one} + {two} = {}", one + two));
+    /// let string = bump.alloc_cstr_fmt(format_args!("{one} + {two} = {}", one + two)).into_ref();
     /// assert_eq!(string, c"1 + 2 = 3");
     ///
-    /// let one = bump.alloc_cstr_fmt(format_args!("{one}\0{two}"));
+    /// let one = bump.alloc_cstr_fmt(format_args!("{one}\0{two}")).into_ref();
     /// assert_eq!(one, c"1");
     /// ```
     #[inline(always)]
@@ -1928,14 +2005,15 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
     /// let one = 1;
     /// let two = 2;
-    /// let string = bump.try_alloc_cstr_fmt(format_args!("{one} + {two} = {}", one + two))?;
+    /// let string = bump.try_alloc_cstr_fmt(format_args!("{one} + {two} = {}", one + two))?.into_ref();
     /// assert_eq!(string, c"1 + 2 = 3");
     ///
-    /// let one = bump.try_alloc_cstr_fmt(format_args!("{one}\0{two}"))?;
+    /// let one = bump.try_alloc_cstr_fmt(format_args!("{one}\0{two}"))?.into_ref();
     /// assert_eq!(one, c"1");
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
@@ -1953,10 +2031,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let slice = bump.alloc_iter([1, 2, 3]);
-    /// assert_eq!(slice, [1, 2, 3]);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let slice = bump.alloc_iter([1, 2, 3]).into_boxu();
+    /// assert_eq!(&*slice, [1, 2, 3]);
     /// ```
     ///
     /// [`alloc_iter_mut`]: MutBumpAllocator::alloc_iter_mut
@@ -1976,10 +2055,11 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let slice = bump.try_alloc_iter([1, 2, 3])?;
-    /// assert_eq!(slice, [1, 2, 3]);
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let slice = bump.try_alloc_iter([1, 2, 3])?.into_boxu();
+    /// assert_eq!(&*slice, [1, 2, 3]);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
@@ -1987,6 +2067,55 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     #[inline(always)]
     fn try_alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> Result<BumpAllocation<[T], &Self>, AllocError> {
         let boxed = self.imp_alloc_iter(iter)?;
+        Ok(BumpAllocation::new(boxed))
+    }
+
+    /// Allocate elements of an `ExactSizeIterator` into a slice.
+    ///
+    /// # Panics
+    /// Panics if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let slice = bump.alloc_iter_exact([1, 2, 3]).into_boxu();
+    /// assert_eq!(&*slice, [1, 2, 3]);
+    /// ```
+    #[inline(always)]
+    #[cfg(feature = "panic-on-alloc")]
+    fn alloc_iter_exact<T, I>(&self, iter: impl IntoIterator<Item = T, IntoIter = I>) -> BumpAllocation<[T], &Self>
+    where
+        I: ExactSizeIterator<Item = T>,
+    {
+        let boxed = panic_on_error(self.imp_alloc_iter_exact(iter));
+        BumpAllocation::new(boxed)
+    }
+
+    /// Allocate elements of an `ExactSizeIterator` into a slice.
+    ///
+    /// # Errors
+    /// Errors if the allocation fails.
+    ///
+    /// # Examples
+    /// ```
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let slice = bump.try_alloc_iter_exact([1, 2, 3])?.into_boxu();
+    /// assert_eq!(&*slice, [1, 2, 3]);
+    /// # Ok::<(), ::core::alloc::AllocError>(())
+    /// ```
+    #[inline(always)]
+    fn try_alloc_iter_exact<T, I>(
+        &self,
+        iter: impl IntoIterator<Item = T, IntoIter = I>,
+    ) -> Result<BumpAllocation<[T], &Self>, AllocError>
+    where
+        I: ExactSizeIterator<Item = T>,
+    {
+        let boxed = self.imp_alloc_iter_exact(iter)?;
         Ok(BumpAllocation::new(boxed))
     }
 
@@ -2000,23 +2129,21 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// Panics if the allocation fails.
     ///
     /// # Examples
-    #[cfg_attr(feature = "nightly", doc = "```")]
-    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
-    /// # #![feature(offset_of_enum)]
-    /// # use core::mem::offset_of;
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
-    /// let result = bump.alloc_try_with(|| -> Result<i32, i32> { Ok(123) });
-    /// assert_eq!(result.unwrap(), 123);
-    /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
     /// ```
-    #[cfg_attr(feature = "nightly", doc = "```")]
-    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
+    /// let result = bump.alloc_try_with(|| -> Result<i32, i32> { Ok(123) });
+    /// assert_eq!(bump.stats().allocated(), size_of::<Result<i32, i32>>());
+    /// assert_eq!(*result.unwrap().into_boxu(), 123);
+    /// ```
+    /// ```
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
     /// let result = bump.alloc_try_with(|| -> Result<i32, i32> { Err(123) });
-    /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
+    /// assert_eq!(result.unwrap_err(), 123);
     /// ```
     ///
     /// [`alloc_try_with_mut`]: MutBumpAllocator::alloc_try_with_mut
@@ -2040,24 +2167,22 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// Errors if the allocation fails.
     ///
     /// # Examples
-    #[cfg_attr(feature = "nightly", doc = "```")]
-    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
-    /// # #![feature(offset_of_enum)]
-    /// # use core::mem::offset_of;
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
+    /// ```
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
     /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Ok(123) })?;
-    /// assert_eq!(result.unwrap(), 123);
-    /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
+    /// assert_eq!(bump.stats().allocated(), size_of::<Result<i32, i32>>());
+    /// assert_eq!(*result.unwrap().into_boxu(), 123);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
-    #[cfg_attr(feature = "nightly", doc = "```")]
-    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
-    /// # use bump_scope::Bump;
-    /// # let bump: Bump = Bump::new();
+    /// ```
+    /// use bump_scope::{Bump, BumpAllocator};
+    /// let bump: Bump = Bump::new();
+    ///
     /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Err(123) })?;
-    /// assert_eq!(result.unwrap_err(), 123);
     /// assert_eq!(bump.stats().allocated(), 0);
+    /// assert_eq!(result.unwrap_err(), 123);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
@@ -2121,8 +2246,9 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::Bump;
+    /// use bump_scope::{Bump, BumpAllocator};
     /// let bump: Bump = Bump::new();
+    ///
     /// let checkpoint = bump.checkpoint();
     ///
     /// {
@@ -2163,7 +2289,8 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
+    /// use bump_scope::{Bump, BumpAllocator};
+    ///
     /// let bump: Bump = Bump::new();
     /// assert!(bump.stats().capacity() < 4096);
     ///
@@ -2192,7 +2319,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
+    /// use bump_scope::{Bump, BumpAllocator};
     /// let bump: Bump = Bump::new();
     /// assert!(bump.stats().capacity() < 4096);
     ///
@@ -2349,9 +2476,10 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
-    /// let slice = bump.alloc_iter_mut([1, 2, 3]);
+    /// use bump_scope::{Bump, MutBumpAllocator};
+    /// let mut bump: Bump = Bump::new();
+    ///
+    /// let slice = bump.alloc_iter_mut([1, 2, 3]).into_ref();
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
     ///
@@ -2374,9 +2502,10 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
-    /// let slice = bump.try_alloc_iter_mut([1, 2, 3])?;
+    /// use bump_scope::{Bump, MutBumpAllocator};
+    /// let mut bump: Bump = Bump::new();
+    ///
+    /// let slice = bump.try_alloc_iter_mut([1, 2, 3])?.into_ref();
     /// assert_eq!(slice, [1, 2, 3]);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
@@ -2406,11 +2535,12 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, MutBumpAllocator};
+    /// let mut bump: Bump = Bump::new();
+    ///
     /// let one = 1;
     /// let two = 2;
-    /// let string = bump.alloc_fmt_mut(format_args!("{one} + {two} = {}", one + two));
+    /// let string = bump.alloc_fmt_mut(format_args!("{one} + {two} = {}", one + two)).into_ref();
     ///
     /// assert_eq!(string, "1 + 2 = 3");
     /// ```
@@ -2438,11 +2568,12 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, MutBumpAllocator};
+    /// let mut bump: Bump = Bump::new();
+    ///
     /// let one = 1;
     /// let two = 2;
-    /// let string = bump.try_alloc_fmt_mut(format_args!("{one} + {two} = {}", one + two))?;
+    /// let string = bump.try_alloc_fmt_mut(format_args!("{one} + {two} = {}", one + two))?.into_ref();
     ///
     /// assert_eq!(string, "1 + 2 = 3");
     /// # Ok::<(), ::core::alloc::AllocError>(())
@@ -2472,14 +2603,15 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, MutBumpAllocator};
+    /// let mut bump: Bump = Bump::new();
+    ///
     /// let one = 1;
     /// let two = 2;
-    /// let string = bump.alloc_cstr_fmt_mut(format_args!("{one} + {two} = {}", one + two));
+    /// let string = bump.alloc_cstr_fmt_mut(format_args!("{one} + {two} = {}", one + two)).into_ref();
     /// assert_eq!(string, c"1 + 2 = 3");
     ///
-    /// let one = bump.alloc_cstr_fmt_mut(format_args!("{one}\0{two}"));
+    /// let one = bump.alloc_cstr_fmt_mut(format_args!("{one}\0{two}")).into_ref();
     /// assert_eq!(one, c"1");
     /// ```
     ///
@@ -2507,14 +2639,15 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// use bump_scope::{Bump, MutBumpAllocator};
+    /// let mut bump: Bump = Bump::new();
+    ///
     /// let one = 1;
     /// let two = 2;
-    /// let string = bump.try_alloc_cstr_fmt_mut(format_args!("{one} + {two} = {}", one + two))?;
+    /// let string = bump.try_alloc_cstr_fmt_mut(format_args!("{one} + {two} = {}", one + two))?.into_ref();
     /// assert_eq!(string, c"1 + 2 = 3");
     ///
-    /// let one = bump.try_alloc_cstr_fmt_mut(format_args!("{one}\0{two}"))?;
+    /// let one = bump.try_alloc_cstr_fmt_mut(format_args!("{one}\0{two}"))?.into_ref();
     /// assert_eq!(one, c"1");
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
@@ -2537,21 +2670,26 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     /// # Examples
     #[cfg_attr(feature = "nightly", doc = "```")]
     #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
-    /// # #![feature(offset_of_enum)]
-    /// # use core::mem::offset_of;
-    /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// #![feature(offset_of_enum)]
+    /// use core::mem::offset_of;
+    /// use bump_scope::{Bump, MutBumpAllocator};
+    /// let mut bump: Bump = Bump::new();
+    /// let bump = bump.as_mut_scope();
+    /// let stats = bump.stats();
+    ///
     /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) });
-    /// assert_eq!(result.unwrap(), 123);
-    /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
+    /// assert_eq!(stats.allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
+    /// assert_eq!(*result.unwrap().into_box(), 123);
     /// ```
-    #[cfg_attr(feature = "nightly", doc = "```")]
-    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
-    /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// ```
+    /// use bump_scope::{Bump, MutBumpAllocator};
+    /// let mut bump: Bump = Bump::new();
+    /// let bump = bump.as_mut_scope();
+    /// let stats = bump.stats();
+    ///
     /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) });
+    /// assert_eq!(stats.allocated(), 0);
     /// assert_eq!(result.unwrap_err(), 123);
-    /// assert_eq!(bump.stats().allocated(), 0);
     /// ```
     ///
     /// [`alloc_try_with`]: BumpAllocator::alloc_try_with
@@ -2575,22 +2713,27 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
     /// # Examples
     #[cfg_attr(feature = "nightly", doc = "```")]
     #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
-    /// # #![feature(offset_of_enum)]
-    /// # use core::mem::offset_of;
-    /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// #![feature(offset_of_enum)]
+    /// use core::mem::offset_of;
+    /// use bump_scope::{Bump, MutBumpAllocator};
+    /// let mut bump: Bump = Bump::new();
+    /// let bump = bump.as_mut_scope();
+    /// let stats = bump.stats();
+    ///
     /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) })?;
-    /// assert_eq!(result.unwrap(), 123);
-    /// assert_eq!(bump.stats().allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
+    /// assert_eq!(stats.allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
+    /// assert_eq!(*result.unwrap().into_box(), 123);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
-    #[cfg_attr(feature = "nightly", doc = "```")]
-    #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
-    /// # use bump_scope::Bump;
-    /// # let mut bump: Bump = Bump::new();
+    /// ```
+    /// use bump_scope::{Bump, MutBumpAllocator};
+    /// let mut bump: Bump = Bump::new();
+    /// let bump = bump.as_mut_scope();
+    /// let stats = bump.stats();
+    ///
     /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) })?;
+    /// assert_eq!(stats.allocated(), 0);
     /// assert_eq!(result.unwrap_err(), 123);
-    /// assert_eq!(bump.stats().allocated(), 0);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///

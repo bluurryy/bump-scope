@@ -65,33 +65,8 @@ use crate::panic_on_error;
 /// - [`with_config`], [`change_config`], [`ref_change_config`], [`mut_change_config`]
 ///
 /// ## Collections
-/// A `Bump` (and [`BumpScope`]) can be used to allocate collections of this crate...
-/// ```
-/// use bump_scope::{Bump, BumpString};
-/// let bump: Bump = Bump::new();
+/// A `Bump` (and [`BumpScope`]) can be used to allocate collections using the [`Allocator`] api.
 ///
-/// let mut string = BumpString::new_in(&bump);
-/// string.push_str("Hello,");
-/// string.push_str(" world!");
-/// ```
-///
-/// ... and collections from crates that use `allocator_api2`'s `Allocator` like [hashbrown](https://docs.rs/hashbrown)'s [`HashMap`](https://docs.rs/hashbrown/latest/hashbrown/struct.HashMap.html):
-///
-/// *At the time of writing (2026-10-10) this requires hashbrown's `nightly` feature.*
-// NOTE: This code is tested in `crates/test-hashbrown/lib.rs`.
-/// ```
-/// # /*
-/// use bump_scope::Bump;
-/// use hashbrown::HashMap;
-///
-/// let bump: Bump = Bump::new();
-/// let mut map = HashMap::new_in(&bump);
-/// map.insert("tau", 6.283);
-/// # */
-/// # ()
-/// ```
-///
-/// On stable you can allocate collections like `Box` and `Vec`.
 /// ```
 /// use bump_scope::Bump;
 ///
@@ -102,27 +77,24 @@ use crate::panic_on_error;
 /// # let _: Vec<i32, _> = vec;
 /// ```
 ///
-/// With the nightly feature `allocator_ext` you can allocate more collections from `std`:
+/// With the nightly feature `allocator_ext` and `btreemap_alloc` you can allocate more collections from `std`:
 /// ```
 /// # /*
 /// # those features are already been enabled by a `doc(test(attr`
 /// # but we still want it here for demonstration
-/// #![feature(allocator_ext)]
+/// #![feature(allocator_ext, btreemap_alloc)]
 /// # */
 /// # #[cfg(feature = "nightly")]
 /// # fn main() {
 /// use bump_scope::Bump;
-/// # // use std::collections::{VecDeque, BTreeMap, LinkedList};
-/// use std::collections::{VecDeque, LinkedList};
+/// use std::collections::{VecDeque, BTreeMap, LinkedList};
 ///
 /// let bump: Bump = Bump::new();
 /// let queue = VecDeque::new_in(&bump);
-/// # /* FIXME: uncomment once BTreeMap uses allocator_ext instead of btreemap_alloc feature
 /// let map = BTreeMap::new_in(&bump);
-/// # */
 /// let list = LinkedList::new_in(&bump);
 /// # let _: VecDeque<i32, _> = queue;
-/// # // let _: BTreeMap<i32, i32, _> = map;
+/// # let _: BTreeMap<i32, i32, _> = map;
 /// # let _: LinkedList<i32, _> = list;
 /// # }
 /// # #[cfg(not(feature = "nightly"))] fn main() {}
@@ -175,7 +147,7 @@ use crate::panic_on_error;
 ///
 /// So you can't do this:
 /// ```compile_fail,E0502
-/// # use bump_scope::Bump;
+/// use bump_scope::{Bump, BumpAllocator};
 /// let mut bump: Bump = Bump::new();
 ///
 /// let one = bump.alloc(1);
@@ -188,11 +160,11 @@ use crate::panic_on_error;
 /// ```
 /// But you can make the code work by converting the `Bump` it to a [`BumpScope`] first using [`as_mut_scope`]:
 /// ```
-/// # use bump_scope::Bump;
+/// use bump_scope::{Bump, BumpAllocator};
 /// let mut bump: Bump = Bump::new();
 /// let bump = bump.as_mut_scope();
 ///
-/// let one = bump.alloc(1);
+/// let one = bump.alloc(1).into_ref();
 ///
 /// bump.scoped(|bump| {
 ///     // whatever
@@ -252,7 +224,9 @@ where
         } else {
             cfg_select! {
                 feature = "panic-on-alloc" => Self::new(),
-                _ => panic!("can't default construct a `Bump` without `const_constructible` and no \"panic-on-alloc\" feature"),
+                _ => panic!(
+                    "can't default construct a `Bump` without `const_constructible` and no \"panic-on-alloc\" feature"
+                ),
             }
         }
     }
@@ -638,7 +612,8 @@ where
     /// Basic usage:
     ///
     /// ```
-    /// # use bump_scope::Bump;
+    /// use bump_scope::{Bump, BumpAllocator};
+    ///
     /// let mut scratch_allocator: Bump = Bump::new();
     /// let items = [1, 2, 3];
     ///
@@ -657,11 +632,12 @@ where
     /// Detailed behavior:
     ///
     /// ```
-    /// # use bump_scope::Bump;
+    /// use bump_scope::{Bump, BumpAllocator};
+    ///
     /// let mut bump: Bump = Bump::with_size(512);
     ///
     /// // won't fit in the first chunk, will be allocated in another chunk
-    /// bump.alloc_uninit_slice::<u8>(600);
+    /// bump.alloc_uninit_slice::<u8>(600).into_ref();
     ///
     /// let chunks = bump.stats().small_to_big().collect::<Vec<_>>();
     /// assert_eq!(chunks.len(), 2);
@@ -696,7 +672,8 @@ where
     /// Basic usage:
     ///
     /// ```
-    /// # use bump_scope::Bump;
+    /// use bump_scope::{Bump, BumpAllocator};
+    ///
     /// let mut scratch_allocator: Bump = Bump::new();
     /// let items = [1, 2, 3];
     ///
@@ -715,11 +692,12 @@ where
     /// Detailed behavior:
     ///
     /// ```
-    /// # use bump_scope::Bump;
+    /// use bump_scope::{Bump, BumpAllocator};
+    ///
     /// let mut bump: Bump = Bump::with_size(512);
     ///
     /// // won't fit in the first chunk, will be allocated in another chunk
-    /// bump.alloc_uninit_slice::<u8>(600);
+    /// bump.alloc_uninit_slice::<u8>(600).into_ref();
     ///
     /// let chunks = bump.stats().small_to_big().collect::<Vec<_>>();
     /// assert_eq!(chunks.len(), 2);
@@ -830,15 +808,15 @@ where
     /// Converts this `Bump` into a raw pointer.
     ///
     /// ```
-    /// # use bump_scope::Bump;
-    /// #
+    /// use bump_scope::{Bump, BumpAllocator};
     /// let bump: Bump = Bump::new();
-    /// bump.alloc_str("Hello, ");
+    ///
+    /// bump.alloc_str("Hello, ").into_ref();
     ///
     /// let ptr = bump.into_raw();
     /// let bump: Bump = unsafe { Bump::from_raw(ptr) };
     ///
-    /// bump.alloc_str("World!");
+    /// bump.alloc_str("World!").into_ref();
     /// # assert_eq!(bump.stats().allocated(), 13);
     /// ```
     #[inline]

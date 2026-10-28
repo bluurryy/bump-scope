@@ -34,7 +34,8 @@
 )]
 #![doc(test(
     attr(deny(dead_code, unused_imports, deprecated)),
-    attr(cfg_attr(feature = "nightly-tests", feature(allocator_ext))),
+    attr(allow(unused_features)),
+    attr(cfg_attr(feature = "nightly", feature(allocator_ext, btreemap_alloc))),
 ))]
 #![cfg_attr(feature = "nightly", allow(clippy::incompatible_msrv))]
 //! <!-- crate documentation intro start -->
@@ -100,17 +101,17 @@
 //!
 //! You can create a new scope either with a [`scoped`](Bump::scoped) closure or with a [`scope_guard`](Bump::scope_guard):
 //! ```
-//! use bump_scope::Bump;
-//!
+//! use bump_scope::{Bump, BumpAllocator};
+
 //! let mut bump: Bump = Bump::new();
 //!
 //! // you can use a closure
 //! bump.scoped(|mut bump| {
-//!     let hello = bump.alloc_str("hello");
+//!     let hello = bump.alloc_str("hello").into_ref();
 //!     assert_eq!(bump.stats().allocated(), 5);
 //!
 //!     bump.scoped(|bump| {
-//!         let world = bump.alloc_str("world");
+//!         let world = bump.alloc_str("world").into_ref();
 //!
 //!         println!("{hello} and {world} are both live");
 //!         assert_eq!(bump.stats().allocated(), 10);
@@ -127,14 +128,14 @@
 //!     let mut guard = bump.scope_guard();
 //!     let mut bump = guard.scope();
 //!
-//!     let hello = bump.alloc_str("hello");
+//!     let hello = bump.alloc_str("hello").into_ref();
 //!     assert_eq!(bump.stats().allocated(), 5);
 //!
 //!     {
 //!         let mut guard = bump.scope_guard();
 //!         let bump = guard.scope();
 //!
-//!         let world = bump.alloc_str("world");
+//!         let world = bump.alloc_str("world").into_ref();
 //!
 //!         println!("{hello} and {world} are both live");
 //!         assert_eq!(bump.stats().allocated(), 10);
@@ -149,7 +150,8 @@
 //! You can also use the unsafe [`checkpoint`](Bump::checkpoint) api
 //! to reset the bump pointer to a previous position.
 //! ```
-//! # use bump_scope::Bump;
+//! use bump_scope::{Bump, BumpAllocator};
+//!
 //! let bump: Bump = Bump::new();
 //! let checkpoint = bump.checkpoint();
 //!
@@ -175,8 +177,9 @@
 //! This makes it possible to enter scopes while a there are still outstanding
 //! references to that bump allocator:
 //! ```
-//! # use bump_scope::{ Bump, BumpScope, BumpVec as Vec };
+//! use bump_scope::{Bump, BumpScope};
 //! let bump: Bump = Bump::new();
+//!
 //! let mut vec: Vec<u8, &Bump> = Vec::new_in(&bump);
 //!
 //! bump.claim().scoped(|bump_scope| {
@@ -286,7 +289,7 @@ use core::{mem, num::NonZeroUsize};
 pub use no_drop::NoDrop;
 #[cfg(feature = "panic-on-alloc")]
 use private::capacity_overflow;
-pub use traits::{BumpAllocator, BumpAllocatorScope, MutBumpAllocator, MutBumpAllocatorScope};
+pub use traits::{AsBumpScope, AsMutBumpScope, BumpAllocator, BumpAllocatorScope, MutBumpAllocator, MutBumpAllocatorScope};
 pub use unmanaged::Unmanaged;
 
 #[cfg(feature = "bytemuck")]

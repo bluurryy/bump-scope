@@ -293,45 +293,6 @@ up_and_down! {
     }
 
     #[test]
-    fn bump_vec_shrink_can() {
-        let bump = Bump::<Global, C>::with_size(64);
-
-        let mut vec = extra::vec_from_owned_slice_in([1, 2, 3], &bump);
-        let addr = vec.as_ptr().addr();
-        assert_eq!(vec.capacity(), 3);
-        vec.shrink_to_fit();
-        assert_eq!(addr, vec.as_ptr().addr());
-        assert_eq!(vec.capacity(), 3);
-        vec.clear();
-        assert_eq!(addr, vec.as_ptr().addr());
-        vec.shrink_to_fit();
-
-        if config::read::upwards(C) {
-            assert_eq!(addr, vec.as_ptr().addr());
-        } else {
-            assert_ne!(addr, vec.as_ptr().addr());
-        }
-
-        assert_eq!(vec.capacity(), 0);
-    }
-
-    #[test]
-    fn bump_vec_shrink_cant() {
-        let bump = Bump::<Global, C>::with_size(64);
-
-        let mut vec = extra::vec_from_owned_slice_in([1, 2, 3], &bump);
-        let addr = vec.as_ptr().addr();
-        assert_eq!(vec.capacity(), 3);
-        bump.alloc_str("now you can't shrink haha").into_boxu();
-
-        vec.clear();
-        vec.shrink_to_fit();
-
-        assert_eq!(addr, vec.as_ptr().addr());
-        assert_eq!(vec.capacity(), 3);
-    }
-
-    #[test]
     fn realign() {
         type AlignT = u64;
 
@@ -553,7 +514,7 @@ up_and_down! {
     fn dealloc_ltr() {
         let bump = Bump::<Global, C>::new();
         let slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]).into_boxu();
-        let (lhs, rhs) = extra::box_split_at(slice, 3);
+        let (lhs, rhs) = extra::split_at(slice, 3);
 
         assert_eq!(&*lhs, [1, 2, 3]);
         assert_eq!(&*rhs, [4, 5, 6]);
@@ -580,7 +541,7 @@ up_and_down! {
     fn dealloc_rtl() {
         let bump = Bump::<Global, C>::new();
         let slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]).into_boxu();
-        let (lhs, rhs) = extra::box_split_at(slice, 3);
+        let (lhs, rhs) = extra::split_at(slice, 3);
 
         assert_eq!(&*lhs, [1, 2, 3]);
         assert_eq!(&*rhs, [4, 5, 6]);

@@ -5,7 +5,7 @@
 //! You can configure the bump allocator config with a [`BumpConfigBuilder`]:
 //! ```
 //! use std::alloc::Global;
-//! use bump_scope::{Bump, config::{BumpConfig, BumpConfigBuilder}};
+//! use bump_scope::{Bump, BumpAllocator, config::{BumpConfig, BumpConfigBuilder}};
 //!
 //! const MY_CONFIG: BumpConfig = BumpConfigBuilder::new()
 //!     .min_align(8)
@@ -23,7 +23,7 @@
 //! assert_eq!(bump.stats().size(), 0);
 //!
 //! # let str =
-//! bump.alloc_str("Hello, world!");
+//! bump.alloc_str("Hello, world!").into_ref();
 //! # assert_eq!(str, "Hello, world!");
 //! assert_eq!(bump.stats().size(), 4096 - size_of::<[usize; 2]>());
 //! ```

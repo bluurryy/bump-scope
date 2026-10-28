@@ -236,13 +236,13 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::Bump;
+    /// use bump_scope::{Bump, BumpAllocator};
     /// let mut bump: Bump = Bump::new();
     ///
     /// {
     ///     let mut guard = bump.scope_guard();
     ///     let bump = guard.scope();
-    ///     bump.alloc_str("Hello, world!");
+    ///     bump.alloc_str("Hello, world!").into_ref();
     ///     assert_eq!(bump.stats().allocated(), 13);
     /// }
     ///
@@ -259,11 +259,11 @@ where
     ///
     /// # Examples
     /// ```
-    /// # use bump_scope::Bump;
+    /// use bump_scope::{Bump, BumpAllocator};
     /// let mut bump: Bump = Bump::new();
     ///
     /// bump.scoped(|bump| {
-    ///     bump.alloc_str("Hello, world!");
+    ///     bump.alloc_str("Hello, world!").into_ref();
     ///     assert_eq!(bump.stats().allocated(), 13);
     /// });
     ///
@@ -295,7 +295,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use bump_scope::{Bump, config::{BumpConfig, BumpConfigBuilder}};
+    /// use bump_scope::{Bump, BumpAllocator, config::{BumpConfig, BumpConfigBuilder}};
+    ///
     /// const CONFIG_MIN_ALIGN_8: BumpConfig = BumpConfigBuilder::new()
     ///     .min_align(8)
     ///     .build();
@@ -306,7 +307,7 @@ where
     /// assert!(bump.stats().bump_position().unwrap().addr().get() % 16 == 0);
     ///
     /// // allocate one byte
-    /// bump.alloc(1u8);
+    /// bump.alloc(1u8).into_ref();
     ///
     /// // now the bump is only aligned to 1
     /// // (if our `MIN_ALIGN` was higher, it would be that)
@@ -320,13 +321,13 @@ where
     ///
     ///    // allocating a value with its size being a multiple of 8 will no longer have
     ///    // to align the bump pointer before allocation
-    ///    bump.alloc(1u64);
+    ///    bump.alloc(1u64).into_ref();
     ///    assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
     ///    assert_eq!(bump.stats().allocated(), 16);
     ///    
     ///    // allocating a value smaller than the minimum alignment must align the bump pointer
     ///    // after the allocation, resulting in some wasted space
-    ///    bump.alloc(1u8);
+    ///    bump.alloc(1u8).into_ref();
     ///    assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
     ///    assert_eq!(bump.stats().allocated(), 24);
     /// });
@@ -365,14 +366,15 @@ where
     ///
     /// Increase the minimum alignment:
     /// ```
-    /// # use bump_scope::{Bump, config::{BumpConfig, BumpConfigBuilder}};
+    /// use bump_scope::{Bump, BumpAllocator, config::{BumpConfig, BumpConfigBuilder}};
+    ///
     /// const MIN_ALIGN_8: BumpConfig = BumpConfigBuilder::new().min_align(8).build();
     ///
     /// let mut bump: Bump = Bump::new();
     /// let bump = bump.as_mut_scope();
     ///
     /// // here we're allocating with a `MIN_ALIGN` of `1`
-    /// let foo = bump.alloc_str("foo");
+    /// let foo = bump.alloc_str("foo").into_ref();
     /// assert_eq!(bump.stats().allocated(), 3);
     ///
     /// let bar = bump.with_config::<MIN_ALIGN_8, _>(|bump| {
@@ -381,11 +383,11 @@ where
     ///     assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
     ///
     ///     // make some allocations that benefit from the higher `MIN_ALIGN` of `8`
-    ///     let bar = bump.alloc(0u64);
+    ///     let bar = bump.alloc(0u64).into_ref();
     ///     assert_eq!(bump.stats().allocated(), 16);
     ///  
     ///     // the bump position will stay aligned to `8`
-    ///     bump.alloc(0u8);
+    ///     bump.alloc(0u8).into_ref();
     ///     assert_eq!(bump.stats().allocated(), 24);
     ///
     ///     bar
@@ -394,7 +396,7 @@ where
     /// assert_eq!(bump.stats().allocated(), 24);
     ///
     /// // continue making allocations with a `MIN_ALIGN` of `1`
-    /// let baz = bump.alloc_str("baz");
+    /// let baz = bump.alloc_str("baz").into_ref();
     /// assert_eq!(bump.stats().allocated(), 24 + 3);
     ///
     /// dbg!(foo, bar, baz);
@@ -402,8 +404,9 @@ where
     ///
     /// Decrease the minimum alignment:
     /// ```
-    /// # use std::alloc::Global;
-    /// # use bump_scope::{Bump, config::{BumpConfig, BumpConfigBuilder}};
+    /// use std::alloc::Global;
+    /// use bump_scope::{Bump, BumpAllocator, config::{BumpConfig, BumpConfigBuilder}};
+    ///
     /// const MIN_ALIGN_8: BumpConfig = BumpConfigBuilder::new().min_align(8).build();
     /// const MIN_ALIGN_1: BumpConfig = BumpConfigBuilder::new().build();
     ///
@@ -411,11 +414,11 @@ where
     /// let bump = bump.as_mut_scope();
     ///
     /// // make some allocations that benefit from the `MIN_ALIGN` of `8`
-    /// let foo = bump.alloc(0u64);
+    /// let foo = bump.alloc(0u64).into_ref();
     ///
     /// let bar = bump.with_config::<MIN_ALIGN_1, _>(|bump| {
     ///     // make some allocations that benefit from the lower `MIN_ALIGN` of `1`
-    ///     let bar = bump.alloc(0u8);
+    ///     let bar = bump.alloc(0u8).into_ref();
     ///
     ///     // the bump position will not get aligned to `8` in here
     ///     assert_eq!(bump.stats().allocated(), 8 + 1);
@@ -481,11 +484,11 @@ where
     ///
     /// # Examples
     /// ```
-    /// use bump_scope::{Bump, BumpVec, bump_vec};
+    /// use bump_scope::{Bump, vec};
     ///
     /// let bump: Bump = Bump::new();
-    /// let vec1: BumpVec<u8, _> = bump_vec![in &bump; 1, 2, 3];
-    /// let vec2: BumpVec<u8, _> = bump_vec![in &bump; 4, 5, 6];
+    /// let vec1: Vec<u8, _> = vec![in &bump; 1, 2, 3];
+    /// let vec2: Vec<u8, _> = vec![in &bump; 4, 5, 6];
     ///
     /// bump.claim().scoped(|bump| {
     ///     // ...
