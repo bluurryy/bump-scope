@@ -1,4 +1,4 @@
-use bump_scope::Bump;
+use bump_scope::{Bump, BumpAllocator};
 
 #[expect(unused_assignments)]
 fn escape_closure(bump: &mut Bump) {
@@ -8,7 +8,7 @@ fn escape_closure(bump: &mut Bump) {
         let mut guard = bump.scope_guard();
         let scope = guard.scope();
 
-        escapee = Some(scope.alloc("escape?"));
+        escapee = Some(scope.alloc("escape?").into_ref());
     }
 
     dbg!(escapee);

@@ -1,6 +1,6 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
 
-use std::alloc::{Global, Layout};
+use std::alloc::{Allocator, Global, Layout};
 
 use bump_scope::{
     Bump,
@@ -27,11 +27,12 @@ fn test_reserve() {
     assert_eq!(bump.stats().count(), 1);
 
     // allocate 3 bytes
-    bump.allocate_layout(Layout::new::<[u8; 3]>());
+    bump.allocate(Layout::new::<[u8; 3]>()).unwrap();
     let checkpoint = bump.checkpoint();
 
     // fill the first chunk
-    bump.allocate_layout(Layout::array::<u8>(bump.stats().current_chunk().unwrap().remaining()).unwrap());
+    bump.allocate(Layout::array::<u8>(bump.stats().current_chunk().unwrap().remaining()).unwrap())
+        .unwrap();
     assert_eq!(bump.stats().count(), 1);
     assert_eq!(bump.stats().remaining(), 0);
 
@@ -40,7 +41,8 @@ fn test_reserve() {
     assert_eq!(bump.stats().count(), 2);
 
     // fill the second chunk
-    bump.allocate_layout(Layout::array::<u8>(bump.stats().big_to_small().next().unwrap().remaining()).unwrap());
+    bump.allocate(Layout::array::<u8>(bump.stats().big_to_small().next().unwrap().remaining()).unwrap())
+        .unwrap();
     assert_eq!(bump.stats().count(), 2);
     assert_eq!(bump.stats().remaining(), 0);
 

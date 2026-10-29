@@ -1,5 +1,5 @@
 [files]
-extend-exclude = ["crates/tests-from-std"]
+extend-exclude = []
 
 [default]
 extend-ignore-re = [

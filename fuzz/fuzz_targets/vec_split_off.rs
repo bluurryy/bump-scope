@@ -2,7 +2,7 @@
 
 use core::{mem, ops::Range};
 
-use fuzzing_support::bump_scope::{Bump, BumpVec};
+use fuzzing_support::bump_scope::{extra::split_off, Bump};
 use libfuzzer_sys::{
     arbitrary::{Arbitrary, Unstructured},
     fuzz_target,
@@ -33,7 +33,7 @@ impl<'a> Arbitrary<'a> for Fuzz {
 impl Fuzz {
     fn run(self) {
         let bump: Bump = Bump::new();
-        let mut vec = BumpVec::with_capacity_in(200, &bump);
+        let mut vec = Vec::with_capacity_in(200, &bump);
         vec.extend(0..self.len);
 
         let expected_removed = vec[self.range.clone()].to_vec();
@@ -41,7 +41,7 @@ impl Fuzz {
         expected_remaining.extend(vec[self.range.end..].iter().copied());
 
         let original_addr = vec.as_ptr().addr();
-        let removed = vec.split_off(self.range);
+        let removed = split_off(&mut vec, self.range);
 
         assert_eq!(&*expected_removed, &*removed);
         assert_eq!(&*vec, &*expected_remaining);

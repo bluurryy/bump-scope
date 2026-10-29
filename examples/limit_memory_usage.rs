@@ -6,6 +6,8 @@ use std::{
     ptr::NonNull,
 };
 
+use bump_scope::BumpAllocator as _;
+
 struct Limited<A> {
     current: Cell<usize>,
     limit: usize,
@@ -105,7 +107,7 @@ fn main() {
 
     // allocate the entire remaining capacity
     let remaining = bump.stats().remaining();
-    bump.alloc_uninit_slice::<u8>(remaining);
+    bump.alloc_uninit_slice::<u8>(remaining).into_boxu();
 
     // now there is no space remaining
     assert_eq!(bump.stats().remaining(), 0);

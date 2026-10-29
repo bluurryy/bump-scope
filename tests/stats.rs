@@ -11,7 +11,7 @@ use bump_scope::{
     Bump,
     config::BumpConfig,
     stats::{AnyChunk, AnyStats, Chunk, Stats},
-    traits::{BumpAllocator as _, BumpAllocatorCore},
+    traits::BumpAllocator as _,
 };
 
 use common::up_and_down;
@@ -210,11 +210,11 @@ where
     // fill the existing chunk if there is one
     let remaining = bump.any_stats().remaining();
     if remaining != 0 {
-        bump.allocate_layout(Layout::from_size_align(remaining, 1).unwrap());
+        bump.allocate(Layout::from_size_align(remaining, 1).unwrap()).unwrap();
     }
     assert_eq!(bump.any_stats().count(), start_chunks);
 
-    bump.allocate_layout(Layout::from_size_align(dummy_size, 1).unwrap());
+    bump.allocate(Layout::from_size_align(dummy_size, 1).unwrap()).unwrap();
     assert_eq!(bump.any_stats().count(), start_chunks + 1);
     assert_eq!(bump.any_stats().current_chunk().unwrap().allocated(), dummy_size);
 }
@@ -230,7 +230,7 @@ fn test_base_allocator<A, const C: BumpConfig>(
 ) where
     A: Allocator + Default,
 {
-    bump.alloc(1u8);
+    bump.alloc(1u8).into_boxu();
     assert_eq!(bump.stats().count(), 1);
     assert_eq!(
         bump.stats().size(),

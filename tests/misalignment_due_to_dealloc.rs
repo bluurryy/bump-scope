@@ -17,13 +17,13 @@ up_and_down! {
         let mut bump = Bump::<Global, C>::new();
         let bump = bump.as_mut_scope();
 
-        let _three = bump.alloc([0u8; 3]);
-        let five = bump.alloc([0u8; 5]);
+        let _three = bump.alloc([0u8; 3]).into_boxu();
+        let five = bump.alloc([0u8; 5]).into_boxu();
 
         bump.with_config::<C_MIN_ALIGN_8, ()>(|bump| {
-            bump.dealloc(five);
+            drop(extra::replace_allocator(five, &bump));
             // deallocation succeeds and the bump pointer is unaligned
-            bump.alloc(0u64);
+            bump.alloc(0u64).into_boxu();
         });
     }
 
@@ -37,7 +37,7 @@ up_and_down! {
 
         bump.with_config::<C_MIN_ALIGN_8, ()>(|bump| {
             unsafe { bump.deallocate(five.cast(), Layout::new::<[u8; 5]>()) };
-            bump.alloc(0u64);
+            bump.alloc(0u64).into_boxu();
         });
     }
 
@@ -46,13 +46,13 @@ up_and_down! {
         let mut bump = Bump::<Global, C>::new();
         let bump = bump.as_mut_scope();
 
-        let _three = bump.alloc([0u8; 3]);
-        let five = bump.alloc([0u8; 5]);
+        let _three = bump.alloc([0u8; 3]).into_boxu();
+        let five = bump.alloc([0u8; 5]).into_boxu();
 
         bump.scoped::<()>(|bump| {
-            bump.dealloc(five);
+            drop(extra::replace_allocator(five, &*bump));
             // deallocation succeeds and the bump pointer is unaligned
-            bump.alloc(0u64);
+            bump.alloc(0u64).into_boxu();
         });
     }
 
@@ -66,7 +66,7 @@ up_and_down! {
 
         bump.scoped::<()>(|bump| {
             unsafe { bump.deallocate(five.cast(), Layout::new::<[u8; 5]>()) };
-            bump.alloc(0u64);
+            bump.alloc(0u64).into_boxu();
         });
     }
 
@@ -75,13 +75,13 @@ up_and_down! {
         let mut bump = Bump::<Global, C>::new();
         let bump = bump.as_mut_scope();
 
-        let _three = bump.alloc([0u8; 3]);
-        let five = bump.alloc([0u8; 5]);
+        let _three = bump.alloc([0u8; 3]).into_boxu();
+        let five = bump.alloc([0u8; 5]).into_boxu();
 
         bump.scoped_with_config::<C_MIN_ALIGN_8, ()>(|bump| {
-            bump.dealloc(five);
+            drop(extra::replace_allocator(five, &*bump));
             // deallocation succeeds and the bump pointer is unaligned
-            bump.alloc(0u64);
+            bump.alloc(0u64).into_boxu();
         });
     }
 
@@ -95,7 +95,7 @@ up_and_down! {
 
         bump.scoped_with_config::<C_MIN_ALIGN_8, ()>(|bump| {
             unsafe { bump.deallocate(five.cast(), Layout::new::<[u8; 5]>()) };
-            bump.alloc(0u64);
+            bump.alloc(0u64).into_boxu();
         });
     }
 }

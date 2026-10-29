@@ -2,7 +2,10 @@
 
 use std::alloc::Global;
 
-use bump_scope::config::{BumpConfig, BumpConfigBuilder};
+use bump_scope::{
+    BumpAllocator as _,
+    config::{BumpConfig, BumpConfigBuilder},
+};
 
 const BUMP_CONFIG: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
 
@@ -14,11 +17,11 @@ thread_local! {
 
 fn main() {
     BUMP.with(|bump| {
-        let hello = bump.alloc_str("hello");
+        let hello = bump.alloc_str("hello").into_ref();
         assert_eq!(bump.stats().allocated(), 5);
 
         bump.claim().scoped(|bump| {
-            let world = bump.alloc_str("world");
+            let world = bump.alloc_str("world").into_ref();
             assert_eq!(bump.stats().allocated(), 10);
             println!("{hello} {world}");
         });

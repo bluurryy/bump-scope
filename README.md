@@ -60,7 +60,7 @@ This crate was inspired by bumpalo and [Always Bump Downwards](https://fitzgeral
 Unlike `bumpalo`, this crate...
 - Supports [scopes and checkpoints](#scopes-and-checkpoints).
 - Drop is always called for allocated values unless explicitly leaked or [forgotten](https://doc.rust-lang.org/core/mem/fn.forget.html).
-  - `alloc*` methods return a `BumpBox<T>` which owns and drops `T`. Types that don't need dropping can be turned into references with `into_ref` and `into_mut`.
+  - `alloc*` methods return a `BumpAllocation` which owns and drops `T`. Types that don't need dropping can be turned into references with `into_ref` and `into_mut`.
 - You can allocate a slice from any `Iterator` with `alloc_iter`.
 - `Bump`'s base allocator is generic.
 - Won't try to allocate a smaller chunk if allocation failed.
@@ -80,17 +80,16 @@ Entering and exiting scopes is virtually free. Allocating within a scope has no 
 
 You can create a new scope either with a `scoped` closure or with a `scope_guard`:
 ```rust
-use bump_scope::Bump;
-
+use bump_scope::{Bump, BumpAllocator};
 let mut bump: Bump = Bump::new();
 
 // you can use a closure
 bump.scoped(|mut bump| {
-    let hello = bump.alloc_str("hello");
+    let hello = bump.alloc_str("hello").into_ref();
     assert_eq!(bump.stats().allocated(), 5);
 
     bump.scoped(|bump| {
-        let world = bump.alloc_str("world");
+        let world = bump.alloc_str("world").into_ref();
 
         println!("{hello} and {world} are both live");
         assert_eq!(bump.stats().allocated(), 10);
@@ -107,14 +106,14 @@ assert_eq!(bump.stats().allocated(), 0);
     let mut guard = bump.scope_guard();
     let mut bump = guard.scope();
 
-    let hello = bump.alloc_str("hello");
+    let hello = bump.alloc_str("hello").into_ref();
     assert_eq!(bump.stats().allocated(), 5);
 
     {
         let mut guard = bump.scope_guard();
         let bump = guard.scope();
 
-        let world = bump.alloc_str("world");
+        let world = bump.alloc_str("world").into_ref();
 
         println!("{hello} and {world} are both live");
         assert_eq!(bump.stats().allocated(), 10);
@@ -129,6 +128,8 @@ assert_eq!(bump.stats().allocated(), 0);
 You can also use the unsafe `checkpoint` api
 to reset the bump pointer to a previous position.
 ```rust
+use bump_scope::{Bump, BumpAllocator};
+
 let bump: Bump = Bump::new();
 let checkpoint = bump.checkpoint();
 
@@ -153,7 +154,9 @@ is live. This dummy allocator errors when trying to allocate or grow memory and 
 This makes it possible to enter scopes while a there are still outstanding
 references to that bump allocator:
 ```rust
+use bump_scope::{Bump, BumpScope};
 let bump: Bump = Bump::new();
+
 let mut vec: Vec<u8, &Bump> = Vec::new_in(&bump);
 
 bump.claim().scoped(|bump_scope| {
@@ -168,25 +171,6 @@ bump.claim().scoped(|bump_scope| {
 // now allocating on `bump` is possible again
 vec.reserve(123);
 ```
-
-## Collections
-`bump-scope` provides bump allocated versions of `Vec` and `String` called `BumpVec` and `BumpString`.
-They are also available in the following variants:
-- `Fixed*` for fixed capacity collections
-- `Mut*` for collections optimized for a mutable bump allocator
-
-##### API changes
-The collections are designed to have the same api as their std counterparts with these exceptions:
-- `split_off` —  splits the collection in place without allocation; the parameter is a range instead of a single index
-- `retain` —  takes a closure with a `&mut T` parameter like [`Vec::retain_mut`](https://doc.rust-lang.org/alloc/vec/struct.Vec.html#method.retain_mut)
-
-##### New features
-- `append` —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `vec::Drain<T>` etc.
-- `map` —  maps the elements, potentially reusing the existing allocation
-- `map_in_place` —  maps the elements without allocation, failing to compile if not possible
-- conversions between the regular collections, their `Fixed*` variants and `BumpBox<[T]>` / `BumpBox<str>`
-
-The collection's API implementations are based on rust commit 787af2b8c80638c51a4fc8e44f84e6891f243ec7 (2026-08-25).
 
 ## Parallel Allocation
 `Bump` is `!Sync` which means it can't be shared between threads.
@@ -207,45 +191,26 @@ Shrinking or deallocating allocations other than the most recent one does nothin
 
 A bump allocator does not require `deallocate` or `shrink` to free memory.
 After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
-You can set the `deallocates` and `shrinks` config parameters to false or use the `WithoutDealloc` and `WithoutShrink` wrappers
-to make deallocating and shrinking a no-op.
+You can set the `deallocates` and `shrinks` config parameters to false to make deallocating and shrinking a no-op.
 
 ## Feature Flags
 <!-- feature documentation start -->
 - **`std`** *(enabled by default)* — Adds `BumpPool` and implementations of `std::io` traits.
-- **`alloc`** *(enabled by default)* — Adds `Global` as the default base allocator and some interactions with `alloc` collections.
 - **`panic-on-alloc`** *(enabled by default)* — Adds functions and traits that will panic when allocations fail.
   Without this feature, allocation failures cannot cause panics, and only
   `try_`-prefixed allocation methods will be available.
-- **`serde`** — Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 - **`bytemuck`** — Adds `bytemuck::*` extension traits for
   <code>alloc_zeroed(_slice)</code>,
-  `init_zeroed`,
-  `extend_zeroed` and
-  `resize_zeroed`.
+  `box_zero_init` and
+  `box_zero_init_slice`.
 - **`zerocopy-08`** — Adds `zerocopy_08::*` extension traits for
   <code>alloc_zeroed(_slice)</code>,
-  `init_zeroed`,
-  `extend_zeroed` and
-  `resize_zeroed`.
+  `box_zero_init` and
+  `box_zero_init_slice`.
+- **`nightly`** — Enables nightly features.
+  TODO: enumerate...
 
-#### Nightly features
-These nightly features are not subject to the same semver guarantees as the rest of the library.
-Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
-
-- **`nightly`** — Enables all other nightly feature flags.
-- **`nightly-coerce-unsized`** — Makes `BumpBox<T>` implement [`CoerceUnsized`](https://doc.rust-lang.org/core/ops/unsize/trait.CoerceUnsized.html).
-  With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
-  You can unsize a `BumpBox` in stable without this feature using `unsize_bump_box`.
-- **`nightly-exact-size-is-empty`** — Implements `is_empty` manually for some iterators.
-- **`nightly-trusted-len`** — Implements `TrustedLen` for some iterators.
-- **`nightly-fn-traits`** — Implements `Fn*` traits for `BumpBox<T>`. Makes `BumpBox<T: FnOnce + ?Sized>` callable. Requires alloc crate.
-- **`nightly-tests`** — Enables some tests that require a nightly compiler.
-- **`nightly-dropck-eyepatch`** — Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
-  This makes it so references don't have to strictly outlive the container.
-  (Just like with std's `Box` and `Vec`.)
-- **`nightly-clone-to-uninit`** — Adds `alloc_clone` method.
-- **`nightly-miri-promise-symbolic-alignment`** — Promises to miri that allocated pointers are symbolically aligned.
+  Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
 <!-- feature documentation end -->
 
 

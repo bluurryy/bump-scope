@@ -11,10 +11,7 @@ use std::{
     string::{String, ToString},
 };
 
-use bump_scope::{
-    Bump, BumpScope, BumpVec, WithoutDealloc, WithoutShrink, bump_vec, config,
-    traits::{BumpAllocator, BumpAllocatorCore, BumpAllocatorCoreScope, MutBumpAllocatorCore, MutBumpAllocatorCoreScope},
-};
+use bump_scope::{Bump, BumpScope, config};
 
 use common::{expect_no_panic, up_and_down};
 
@@ -25,10 +22,10 @@ up_and_down! {
 
     #[test]
     fn shrinks() {
-        let mut bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<Global, C> = Bump::new();
 
         // should shrink
-        let mut vec = bump_vec![in &bump; 1, 2, 3, 4];
+        let mut vec = vec![in &bump; 1, 2, 3, 4];
         assert_eq!(bump.stats().allocated(), 4 * 4);
         vec.shrink_to_fit();
         assert_eq!(bump.stats().allocated(), 4 * 4);
@@ -41,53 +38,45 @@ up_and_down! {
         drop(vec);
 
         // shouldn't shrink
-        let mut vec = bump_vec![in WithoutShrink(&bump); 1, 2, 3, 4];
+        let mut vec = vec![in bump.ref_change_config::<C_NO_SHRINK>(); 1, 2, 3, 4];
         assert_eq!(bump.stats().allocated(), 4 * 4);
         vec.shrink_to_fit();
         assert_eq!(bump.stats().allocated(), 4 * 4);
         vec.pop();
         vec.shrink_to_fit();
+        assert_eq!(vec.capacity(), 3);
         assert_eq!(bump.stats().allocated(), 4 * 4);
-        vec.clear();
-        vec.shrink_to_fit();
-        assert_eq!(bump.stats().allocated(), 4 * 4);
-        drop(vec);
 
-        bump.reset();
-
-        // shouldn't shrink either
-        let mut vec = bump_vec![in bump.ref_change_config::<C_NO_SHRINK>(); 1, 2, 3, 4];
-        assert_eq!(bump.stats().allocated(), 4 * 4);
-        vec.shrink_to_fit();
-        assert_eq!(bump.stats().allocated(), 4 * 4);
-        vec.pop();
-        vec.shrink_to_fit();
-        assert_eq!(bump.stats().allocated(), 4 * 4);
+        // Setting the capacity to 0 constitutes a deallocate call, which we didn't disable.
+        // However only when downwards bumping can we deallocate the vec because the vec's capacity has been changed to 3.
+        // When upwards bumping we check if `bump_pos == ptr + cap` which now isn't true anymore.
+        // When downwards bumping we just check `bump_pos == ptr` which is still true, however the allocation
+        // is now only 12 bytes, so 4 bytes remain.
+        dbg!(vec.len(), vec.capacity());
         vec.clear();
+        dbg!(vec.len(), vec.capacity());
         vec.shrink_to_fit();
-        assert_eq!(bump.stats().allocated(), 4 * 4);
+        dbg!(vec.len(), vec.capacity());
+        assert_eq!(vec.capacity(), 0);
+        assert_eq!(bump.stats().allocated(), if config::read::upwards(C) {
+            16
+        } else {
+            4
+        });
     }
 
     #[test]
     fn deallocates() {
-        let mut bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<Global, C> = Bump::new();
 
         // should deallocate
-        let vec = bump_vec![in &bump; 1, 2, 3];
+        let vec = vec![in &bump; 1, 2, 3];
         assert_eq!(bump.stats().allocated(), 3 * 4);
         drop(vec);
         assert_eq!(bump.stats().allocated(), 0);
 
         // shouldn't deallocate
-        let vec = bump_vec![in WithoutDealloc(&bump); 1, 2, 3];
-        assert_eq!(bump.stats().allocated(), 3 * 4);
-        drop(vec);
-        assert_eq!(bump.stats().allocated(), 3 * 4);
-
-        bump.reset();
-
-        // shouldn't deallocate either
-        let vec = bump_vec![in bump.ref_change_config::<C_NO_DEALLOC>(); 1, 2, 3];
+        let vec = vec![in bump.ref_change_config::<C_NO_DEALLOC>(); 1, 2, 3];
         assert_eq!(bump.stats().allocated(), 3 * 4);
         drop(vec);
         assert_eq!(bump.stats().allocated(), 3 * 4);
@@ -96,10 +85,10 @@ up_and_down! {
     #[test]
     fn into_slice() {
         let bump: Bump<Global, C> = Bump::new();
-        let mut vec = bump_vec![in &bump; 1, 2, 3, 4, 5];
+        let mut vec = vec![in &bump; 1, 2, 3, 4, 5];
         assert_eq!(bump.stats().allocated(), 5 * 4);
         vec.truncate(3);
-        let slice = vec.into_slice();
+        let slice = extra::vec_into_slice(vec);
         assert_eq!(bump.stats().allocated(), 3 * 4);
         _ = slice;
     }
@@ -107,25 +96,28 @@ up_and_down! {
     #[test]
     fn into_slice_without_shrink() {
         let bump: Bump<Global, C> = Bump::new();
-        let mut vec = bump_vec![in &bump; 1, 2, 3, 4, 5];
+        let mut vec = vec![in &bump; 1, 2, 3, 4, 5];
         assert_eq!(bump.stats().allocated(), 5 * 4);
         vec.truncate(3);
-        let slice = vec.into_fixed_vec().into_slice();
+        let slice = extra::vec_into_slice(extra::detach_allocator(vec).0);
         assert_eq!(bump.stats().allocated(), 5 * 4);
         _ = slice;
     }
 
     #[test]
     fn map_same_layout() {
-        for panic_on in 0..4 {
+        let elements = [0, 1, 2, 3, 4].map(|i| i.to_string());
+
+        for panic_on in 0..elements.len() + 1 {
             let bump: Bump<Global, C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
-                let mut i = 1;
-                let a = BumpVec::<String, _>::from_iter_exact_in([1, 2, 3].map(|i| i.to_string()), &bump);
-                assert_eq!(a.capacity(), 3);
-                assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
-                let b: BumpVec<Option<String>, _> = a.map(|s| {
+                let a = extra::vec_from_iter_in::<String, _>(elements.clone(), &bump);
+                assert_eq!(a.capacity(), elements.len());
+                assert_eq!(bump.stats().allocated(), size_of::<String>() * elements.len());
+
+                let mut i = 0;
+                let b: Vec<Option<String>, _> = extra::vec_map(a, |s| {
                     if i == panic_on {
                         panic!("oh no");
                     }
@@ -134,32 +126,31 @@ up_and_down! {
                     i += 1;
                     Some(value)
                 });
-                assert_eq!(b.capacity(), 3);
-                assert_eq!(bump.stats().allocated(), size_of::<Option<String>>() * 3);
-                dbg!(b);
+                assert_eq!(b.capacity(), elements.len());
+                assert_eq!(bump.stats().allocated(), size_of::<Option<String>>() * elements.len());
             });
 
-            if panic_on == 0 {
+            if panic_on == elements.len() {
                 expect_no_panic(result);
             } else {
                 assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
             }
 
-            assert_eq!(bump.stats().allocated(), 0, "panic_on={panic_on}");
+            assert_eq!(bump.stats().allocated(), 0);
         }
     }
 
     #[test]
     fn map_smaller_layout() {
-        for panic_on in 0..4 {
+        for panic_on in 0..7 {
             let bump: Bump<Global, C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
                 let mut i = 1;
-                let a = BumpVec::<String, _>::from_iter_exact_in([1, 2, 3].map(|i| i.to_string()), &bump);
-                assert_eq!(a.capacity(), 3);
-                assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
-                let b: BumpVec<Box<str>, _> = a.map(|s| {
+                let a = extra::vec_from_iter_in::<String, _>([1, 2, 3, 4, 5, 6].map(|i| i.to_string()), &bump);
+                assert_eq!(a.capacity(), 6);
+                assert_eq!(bump.stats().allocated(), size_of::<String>() * 6);
+                let b: Vec<Box<str>, _> = extra::vec_map(a, |s| {
                     if i == panic_on {
                         panic!("oh no");
                     }
@@ -168,8 +159,8 @@ up_and_down! {
                     i += 1;
                     value.into()
                 });
-                assert_eq!(b.capacity(), 4);
-                assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
+                assert_eq!(b.capacity(), 9); // (6 * 3) / 2
+                assert_eq!(bump.stats().allocated(), size_of::<String>() * 6);
                 dbg!(b);
             });
 
@@ -179,43 +170,26 @@ up_and_down! {
                 assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
             }
 
-            if config::read::upwards(C) {
-                // when upwards allocating we can't deallocate `b`,
-                // because it can no longer be identified as the last allocation
-                assert_eq!(
-                    bump.stats().allocated(),
-                    if panic_on == 0 { size_of::<String>() * 3 } else { 0 },
-                    "panic_on={panic_on}"
-                );
-            } else {
-                // when downwards allocating we can deallocate `b`,
-                // but we only retain the knowledge of its new extent of `size_of::<Box<str>>() * 4`
-                // which is smaller than its old extent of `size_of::<String>() * 3`, so 8 bytes
-                // are left over
-                assert_eq!(
-                    bump.stats().allocated(),
-                    if panic_on == 0 {
-                        size_of::<String>() * 3 - size_of::<Box<str>>() * 4
-                    } else {
-                        0
-                    },
-                    "panic_on={panic_on}"
-                );
-            }
+            // The size of 6 Strings and 9 Box<str> happen to be exactly the same, which makes
+            // deallocation work.
+            assert_eq!(bump.stats().allocated(), 0);
         }
     }
 
     #[test]
     fn map_bigger_layout() {
-        for panic_on in 0..4 {
+        let elements = [0, 1, 2, 3, 4, 5].map(|i| i.to_string().into());
+
+        for panic_on in 0..elements.len() + 1 {
             let bump: Bump<Global, C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
-                let mut i = 1;
-                let a = BumpVec::<Box<str>, _>::from_iter_exact_in([1, 2, 3].map(|i| i.to_string().into()), &bump);
-                assert_eq!(a.capacity(), 3);
-                assert_eq!(bump.stats().allocated(), size_of::<Box<str>>() * 3);
-                let b: BumpVec<String, _> = a.map(|s| {
+                let a = extra::vec_from_iter_in::<Box<str>, _>(elements.clone(), &bump);
+                assert_eq!(a.capacity(), elements.len());
+                assert_eq!(bump.stats().allocated(), size_of::<Box<str>>() * elements.len());
+
+                let mut i = 0;
+                let b: Vec<String, _> = extra::vec_map(a, |s| {
                     if i == panic_on {
                         panic!("oh no");
                     }
@@ -224,12 +198,11 @@ up_and_down! {
                     i += 1;
                     value
                 });
-                assert_eq!(b.capacity(), 3);
-                assert_eq!(bump.stats().allocated(), size_of::<Box<str>>() * 3 + size_of::<String>() * 3);
-                dbg!(b);
+                assert_eq!(b.capacity(), elements.len());
+                assert_eq!(bump.stats().allocated(), size_of::<Box<str>>() * elements.len() + size_of::<String>() * elements.len());
             });
 
-            if panic_on == 0 {
+            if panic_on == elements.len() {
                 expect_no_panic(result);
             } else {
                 assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
@@ -237,7 +210,7 @@ up_and_down! {
 
             assert_eq!(
                 bump.stats().allocated(),
-                if panic_on == 0 { size_of::<Box<str>>() * 3 } else { 0 },
+                if panic_on == elements.len() { size_of::<Box<str>>() * elements.len() } else { 0 },
                 "panic_on={panic_on}"
             );
         }
@@ -245,15 +218,18 @@ up_and_down! {
 
     #[test]
     fn map_to_zst() {
-        for panic_on in 0..4 {
+        let elements = [0, 1, 2, 3, 4].map(|i| i.to_string());
+
+        for panic_on in 0..elements.len() + 1 {
             let bump: Bump<Global, C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
-                let mut i = 1;
-                let a = BumpVec::<String, _>::from_iter_exact_in([1, 2, 3].map(|i| i.to_string()), &bump);
-                assert_eq!(a.capacity(), 3);
-                assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
-                let b: BumpVec<(), _> = a.map(|_| {
+                let a = extra::vec_from_iter_in::<String, _>(elements.clone(), &bump);
+                assert_eq!(a.capacity(), elements.len());
+                assert_eq!(bump.stats().allocated(), size_of::<String>() * elements.len());
+
+                let mut i = 0;
+                let b: Vec<(), _> = extra::vec_map(a, |_| {
                     if i == panic_on {
                         panic!("oh no");
                     }
@@ -262,10 +238,9 @@ up_and_down! {
                 });
                 assert_eq!(b.capacity(), usize::MAX);
                 assert_eq!(bump.stats().allocated(), 0);
-                dbg!(b);
             });
 
-            if panic_on == 0 {
+            if panic_on == elements.len() {
                 expect_no_panic(result);
             } else {
                 assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
@@ -277,15 +252,18 @@ up_and_down! {
 
     #[test]
     fn map_from_zst() {
-        for panic_on in 0..4 {
+        let elements = [(), (), (), (), ()];
+
+        for panic_on in 0..elements.len() + 1 {
             let bump: Bump<Global, C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
-                let mut i = 1;
-                let a = BumpVec::<(), _>::from_iter_exact_in([(), (), ()], &bump);
+                let a = extra::vec_from_iter_in::<(), _>(elements, &bump);
                 assert_eq!(a.capacity(), usize::MAX);
                 assert_eq!(bump.stats().allocated(), 0);
-                let b: BumpVec<String, _> = a.map(|()| {
+
+                let mut i = 0;
+                let b: Vec<String, _> = extra::vec_map(a, |()| {
                     if i == panic_on {
                         panic!("oh no");
                     }
@@ -293,12 +271,11 @@ up_and_down! {
                     i += 1;
                     "hello".into()
                 });
-                assert_eq!(b.capacity(), 3);
-                assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
-                dbg!(b);
+                assert_eq!(b.capacity(), elements.len());
+                assert_eq!(bump.stats().allocated(), size_of::<String>() * elements.len());
             });
 
-            if panic_on == 0 {
+            if panic_on == elements.len() {
                 expect_no_panic(result);
             } else {
                 assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
@@ -310,15 +287,18 @@ up_and_down! {
 
     #[test]
     fn map_from_zst_to_zst() {
-        for panic_on in 0..4 {
+        let elements = [(), (), (), (), ()];
+
+        for panic_on in 0..elements.len() + 1 {
             let bump: Bump<Global, C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
-                let mut i = 1;
-                let a = BumpVec::<(), _>::from_iter_exact_in([(), (), ()], &bump);
+                let a = extra::vec_from_iter_in::<(), _>(elements, &bump);
                 assert_eq!(a.capacity(), usize::MAX);
                 assert_eq!(bump.stats().allocated(), 0);
-                let b: BumpVec<(), _> = a.map(|()| {
+
+                let mut i = 0;
+                let b: Vec<(), _> = extra::vec_map(a, |()| {
                     if i == panic_on {
                         panic!("oh no");
                     }
@@ -327,10 +307,9 @@ up_and_down! {
                 });
                 assert_eq!(b.capacity(), usize::MAX);
                 assert_eq!(bump.stats().allocated(), 0);
-                dbg!(b);
             });
 
-            if panic_on == 0 {
+            if panic_on == elements.len() {
                 expect_no_panic(result);
             } else {
                 assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
@@ -339,170 +318,6 @@ up_and_down! {
             assert_eq!(bump.stats().allocated(), 0, "panic_on={panic_on}");
         }
     }
-
-    #[test]
-    fn map_in_place_same_layout() {
-        for panic_on in 0..4 {
-            let bump: Bump<Global, C> = Bump::new();
-
-            let result = std::panic::catch_unwind(|| {
-                let mut i = 1;
-                let a = BumpVec::<String, _>::from_iter_exact_in([1, 2, 3].map(|i| i.to_string()), &bump);
-                assert_eq!(a.capacity(), 3);
-                assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
-                let b: BumpVec<Option<String>, _> = a.map_in_place(|s| {
-                    if i == panic_on {
-                        panic!("oh no");
-                    }
-
-                    let value = format!("hello: {s}");
-                    i += 1;
-                    Some(value)
-                });
-                assert_eq!(b.capacity(), 3);
-                assert_eq!(bump.stats().allocated(), size_of::<Option<String>>() * 3);
-                dbg!(b);
-            });
-
-            if panic_on == 0 {
-                expect_no_panic(result);
-            } else {
-                assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
-            }
-
-            assert_eq!(bump.stats().allocated(), 0, "panic_on={panic_on}");
-        }
-    }
-
-    #[test]
-    fn map_in_place_smaller_layout() {
-        for panic_on in 0..4 {
-            let bump: Bump<Global, C> = Bump::new();
-
-            let result = std::panic::catch_unwind(|| {
-                let mut i = 1;
-                let a = BumpVec::<String, _>::from_iter_exact_in([1, 2, 3].map(|i| i.to_string()), &bump);
-                assert_eq!(a.capacity(), 3);
-                assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
-                let b: BumpVec<Box<str>, _> = a.map_in_place(|s| {
-                    if i == panic_on {
-                        panic!("oh no");
-                    }
-
-                    let value = format!("hello: {s}");
-                    i += 1;
-                    value.into()
-                });
-                assert_eq!(b.capacity(), 4);
-                assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
-                dbg!(b);
-            });
-
-            if panic_on == 0 {
-                expect_no_panic(result);
-            } else {
-                assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
-            }
-
-            if config::read::upwards(C) {
-                // when upwards allocating we can't deallocate `b`,
-                // because it can no longer be identified as the last allocation
-                assert_eq!(
-                    bump.stats().allocated(),
-                    if panic_on == 0 { size_of::<String>() * 3 } else { 0 },
-                    "panic_on={panic_on}"
-                );
-            } else {
-                // when downwards allocating we can deallocate `b`,
-                // but we only retain the knowledge of its new extent of `size_of::<Box<str>>() * 4`
-                // which is smaller than its old extent of `size_of::<String>() * 3`, so 8 bytes
-                // are left over
-                assert_eq!(
-                    bump.stats().allocated(),
-                    if panic_on == 0 {
-                        size_of::<String>() * 3 - size_of::<Box<str>>() * 4
-                    } else {
-                        0
-                    },
-                    "panic_on={panic_on}"
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn map_in_place_to_zst() {
-        for panic_on in 0..4 {
-            let bump: Bump<Global, C> = Bump::new();
-
-            let result = std::panic::catch_unwind(|| {
-                let mut i = 1;
-                let a = BumpVec::<String, _>::from_iter_exact_in([1, 2, 3].map(|i| i.to_string()), &bump);
-                assert_eq!(a.capacity(), 3);
-                assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
-                let b: BumpVec<AlignedZst, _> = a.map_in_place(|_| {
-                    if i == panic_on {
-                        panic!("oh no");
-                    }
-
-                    i += 1;
-                    AlignedZst
-                });
-                assert_eq!(b.capacity(), usize::MAX);
-                assert_eq!(bump.stats().allocated(), size_of::<String>() * 3);
-                dbg!(b);
-            });
-
-            if panic_on == 0 {
-                expect_no_panic(result);
-            } else {
-                assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
-            }
-
-            if panic_on == 0 {
-                assert_eq!(bump.stats().allocated(), size_of::<String>() * 3, "panic_on={panic_on}");
-            } else {
-                assert_eq!(bump.stats().allocated(), 0, "panic_on={panic_on}");
-            }
-        }
-    }
-
-    #[test]
-    fn map_in_place_from_zst_to_zst() {
-        for panic_on in 0..4 {
-            let bump: Bump<Global, C> = Bump::new();
-
-            let result = std::panic::catch_unwind(|| {
-                let mut i = 1;
-                let a = BumpVec::<(), _>::from_iter_exact_in([(), (), ()], &bump);
-                assert_eq!(a.capacity(), usize::MAX);
-                assert_eq!(bump.stats().allocated(), 0);
-                let b: BumpVec<AlignedZst, _> = a.map_in_place(|()| {
-                    if i == panic_on {
-                        panic!("oh no");
-                    }
-
-                    i += 1;
-                    AlignedZst
-                });
-                assert_eq!(b.capacity(), usize::MAX);
-                assert_eq!(bump.stats().allocated(), 0);
-                dbg!(b);
-            });
-
-            if panic_on == 0 {
-                expect_no_panic(result);
-            } else {
-                assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
-            }
-
-            assert_eq!(bump.stats().allocated(), 0, "panic_on={panic_on}");
-        }
-    }
-
-    #[repr(align(1024))]
-    #[derive(Debug)]
-    struct AlignedZst;
 
     #[test]
     fn test_dyn_allocator() {
@@ -513,7 +328,7 @@ up_and_down! {
         fn test<B: BumpAllocator>(bump: B) {
             const ITEM_SIZE: usize = size_of::<String>();
             assert_eq!(bump.any_stats().allocated(), 0);
-            let mut vec = BumpVec::from_iter_in(numbers(1..4), &bump);
+            let mut vec = extra::vec_from_iter_in(numbers(1..4), &bump);
             assert_eq!(vec, ["1", "2", "3"]);
             assert_eq!(vec.len(), 3);
             assert_eq!(vec.capacity(), 4); // because of minimum capacity
@@ -544,12 +359,14 @@ up_and_down! {
             assert_eq!(vec.capacity(), 0);
             assert_eq!(bump.any_stats().allocated(), 0);
             drop(vec);
-            let vec = BumpVec::from_iter_exact_in(numbers(1..2), &bump);
+
+            let vec = extra::vec_from_iter_exact_in(numbers(1..2), &bump);
             assert_eq!(vec, ["1"]);
             assert_eq!(vec.len(), 1);
             assert_eq!(vec.capacity(), 1);
-            assert_eq!(bump.any_stats().allocated(), ITEM_SIZE);
+            assert_eq!(bump.any_stats().allocated(), ITEM_SIZE );
             drop(vec);
+
             assert_eq!(bump.any_stats().allocated(), 0);
         }
 
@@ -559,14 +376,5 @@ up_and_down! {
 
         Bump::new().scoped(|bump| test::<&BumpScope>(bump));
         Bump::new().scoped(|bump| test::<&mut BumpScope>(bump));
-
-        test::<&dyn BumpAllocatorCore>(&<Bump>::new());
-        test::<&mut dyn BumpAllocatorCore>(&mut <Bump>::new());
-        test::<&dyn MutBumpAllocatorCore>(&<Bump>::new());
-        test::<&mut dyn MutBumpAllocatorCore>(&mut <Bump>::new());
-        test::<&dyn BumpAllocatorCoreScope>(<Bump>::new().as_scope());
-        test::<&mut dyn BumpAllocatorCoreScope>(<Bump>::new().as_mut_scope());
-        test::<&dyn MutBumpAllocatorCoreScope>(<Bump>::new().as_scope());
-        test::<&mut dyn MutBumpAllocatorCoreScope>(<Bump>::new().as_mut_scope());
     }
 }

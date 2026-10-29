@@ -4,11 +4,7 @@ mod common;
 
 use std::alloc::{Allocator, Global, Layout};
 
-use bump_scope::{
-    Bump,
-    config::BumpConfig,
-    traits::{BumpAllocator, BumpAllocatorCore},
-};
+use bump_scope::{Bump, config::BumpConfig, traits::BumpAllocator};
 
 use common::{AssumedMallocOverhead, up_and_down};
 
@@ -40,7 +36,7 @@ up_and_down! {
     fn unallocated_alloc() {
         let bump = Bump::<Global, C>::const_new();
         assert_eq!(bump.stats().count(), 0);
-        bump.alloc_str("Hello, World!");
+        bump.alloc_str("Hello, World!").into_boxu();
         assert_eq!(bump.stats().count(), 1);
         drop(bump);
     }
@@ -73,12 +69,12 @@ up_and_down! {
         assert_eq!(bump.stats().count(), 0);
         assert_eq!(bump.stats().allocated(), 0);
 
-        bump.alloc_str("hello");
+        bump.alloc_str("hello").into_boxu();
         let checkpoint_hello = bump.checkpoint();
         assert_eq!(bump.stats().count(), 1);
         assert_eq!(bump.stats().allocated(), 5);
 
-        bump.alloc_str("world");
+        bump.alloc_str("world").into_boxu();
         assert_eq!(bump.stats().count(), 1);
         assert_eq!(bump.stats().allocated(), 10);
 
@@ -136,7 +132,7 @@ up_and_down! {
     fn default_chunk_size() {
         let bump = Bump::<Global, C>::const_new();
         assert_eq!(bump.stats().count(), 0);
-        bump.alloc("a");
+        bump.alloc("a").into_boxu();
         assert_eq!(bump.stats().count(), 1);
         assert_eq!(
             bump.stats().current_chunk().unwrap().size(),
@@ -149,7 +145,7 @@ up_and_down! {
         const MIN_SIZE_4096: BumpConfig = BumpConfigBuilder(C).min_chunk_size(4096).build();
         let bump = Bump::<Global, MIN_SIZE_4096>::const_new();
         assert_eq!(bump.stats().count(), 0);
-        bump.alloc("a");
+        bump.alloc("a").into_boxu();
         assert_eq!(bump.stats().count(), 1);
         assert_eq!(
             bump.stats().current_chunk().unwrap().size(),
@@ -164,11 +160,11 @@ fn allocate_another_chunk<const C: BumpConfig>(bump: &Bump<Global, C>, dummy_siz
     // fill the existing chunk if there is one
     let remaining = bump.any_stats().remaining();
     if remaining != 0 {
-        bump.allocate_layout(Layout::from_size_align(remaining, 1).unwrap());
+        bump.allocate(Layout::from_size_align(remaining, 1).unwrap()).unwrap();
     }
     assert_eq!(bump.any_stats().count(), start_chunks);
 
-    bump.allocate_layout(Layout::from_size_align(dummy_size, 1).unwrap());
+    bump.allocate(Layout::from_size_align(dummy_size, 1).unwrap()).unwrap();
     assert_eq!(bump.any_stats().count(), start_chunks + 1);
     assert_eq!(bump.any_stats().current_chunk().unwrap().allocated(), dummy_size);
 }

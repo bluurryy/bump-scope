@@ -2,16 +2,11 @@
 // When using closures, functions like `capacity_overflow` can get the name of some closure that invokes it instead, like `bump_scope::mut_bump_vec::MutBumpVec<T,_,_,A>::generic_grow_amortized::{{closure}}`.
 
 // This crate uses modified code from the rust standard library. <https://github.com/rust-lang/rust/tree/master/library>.
-// Especially `BumpBox` methods, vectors, strings, `polyfill` and `tests/from_std` are based on code from the standard library.
+// Especially `BoxU` methods, vectors, strings, `polyfill` and `tests/from_std` are based on code from the standard library.
 
 #![no_std]
-#![cfg_attr(feature = "nightly-coerce-unsized", feature(coerce_unsized, unsize))]
-#![cfg_attr(feature = "nightly-exact-size-is-empty", feature(exact_size_is_empty))]
-#![cfg_attr(feature = "nightly-trusted-len", feature(trusted_len))]
-#![cfg_attr(feature = "nightly-fn-traits", feature(fn_traits, tuple_trait, unboxed_closures))]
-#![cfg_attr(all(feature = "nightly-tests", test, doc), feature(offset_of_enum))]
-#![cfg_attr(feature = "nightly-dropck-eyepatch", feature(dropck_eyepatch))]
-#![cfg_attr(feature = "nightly-clone-to-uninit", feature(clone_to_uninit, ptr_metadata))]
+#![cfg_attr(feature = "nightly", feature(clone_to_uninit, ptr_metadata, allocator_ext))]
+#![cfg_attr(all(feature = "nightly", test, doc), feature(offset_of_enum))]
 #![cfg_attr(docsrs,
     feature(doc_cfg),
     doc(auto_cfg(hide(feature, values("panic-on-alloc")))) // too noisy
@@ -30,7 +25,6 @@
     clippy::inline_always,
     clippy::module_name_repetitions,
     clippy::copy_iterator,
-    clippy::partialeq_ne_impl,
     clippy::items_after_statements,
     clippy::missing_transmute_annotations
 )]
@@ -40,22 +34,10 @@
 )]
 #![doc(test(
     attr(deny(dead_code, unused_imports, deprecated)),
-    attr(cfg_attr(feature = "nightly-tests", feature(allocator_ext))),
+    attr(allow(unused_features)),
+    attr(cfg_attr(feature = "nightly", feature(allocator_ext, btreemap_alloc))),
 ))]
-#![cfg_attr(
-    any(
-        feature = "nightly",
-        feature = "nightly-clone-to-uninit",
-        feature = "nightly-coerce-unsized",
-        feature = "nightly-dropck-eyepatch",
-        feature = "nightly-exact-size-is-empty",
-        feature = "nightly-fn-traits",
-        feature = "nightly-tests",
-        feature = "nightly-trusted-len",
-        feature = "nightly-miri-promise-symbolic-alignment",
-    ),
-    allow(clippy::incompatible_msrv)
-)]
+#![cfg_attr(feature = "nightly", allow(clippy::incompatible_msrv))]
 //! <!-- crate documentation intro start -->
 //! A fast bump allocator that supports allocation scopes / checkpoints. Aka an arena for values of arbitrary types.
 //! <!-- crate documentation intro end -->
@@ -98,8 +80,8 @@
 //!
 //! Unlike `bumpalo`, this crate...
 //! - Supports [scopes and checkpoints](#scopes-and-checkpoints).
-//! - Drop is always called for allocated values unless explicitly [leaked](BumpBox::leak) or [forgotten](core::mem::forget).
-//!   - `alloc*` methods return a [`BumpBox<T>`](BumpBox) which owns and drops `T`. Types that don't need dropping can be turned into references with [`into_ref`](BumpBox::into_ref) and [`into_mut`](BumpBox::into_mut).
+//! - Drop is always called for allocated values unless explicitly [leaked](BumpAllocation::leak) or [forgotten](core::mem::forget).
+//!   - `alloc*` methods return a [`BumpAllocation`] which owns and drops `T`. Types that don't need dropping can be turned into references with [`into_ref`](BumpAllocation::into_ref) and [`into_mut`](BumpAllocation::into_mut).
 //! - You can allocate a slice from any `Iterator` with [`alloc_iter`](Bump::alloc_iter).
 //! - `Bump`'s base allocator is generic.
 //! - Won't try to allocate a smaller chunk if allocation failed.
@@ -119,17 +101,17 @@
 //!
 //! You can create a new scope either with a [`scoped`](Bump::scoped) closure or with a [`scope_guard`](Bump::scope_guard):
 //! ```
-//! use bump_scope::Bump;
-//!
+//! use bump_scope::{Bump, BumpAllocator};
+
 //! let mut bump: Bump = Bump::new();
 //!
 //! // you can use a closure
 //! bump.scoped(|mut bump| {
-//!     let hello = bump.alloc_str("hello");
+//!     let hello = bump.alloc_str("hello").into_ref();
 //!     assert_eq!(bump.stats().allocated(), 5);
 //!
 //!     bump.scoped(|bump| {
-//!         let world = bump.alloc_str("world");
+//!         let world = bump.alloc_str("world").into_ref();
 //!
 //!         println!("{hello} and {world} are both live");
 //!         assert_eq!(bump.stats().allocated(), 10);
@@ -146,14 +128,14 @@
 //!     let mut guard = bump.scope_guard();
 //!     let mut bump = guard.scope();
 //!
-//!     let hello = bump.alloc_str("hello");
+//!     let hello = bump.alloc_str("hello").into_ref();
 //!     assert_eq!(bump.stats().allocated(), 5);
 //!
 //!     {
 //!         let mut guard = bump.scope_guard();
 //!         let bump = guard.scope();
 //!
-//!         let world = bump.alloc_str("world");
+//!         let world = bump.alloc_str("world").into_ref();
 //!
 //!         println!("{hello} and {world} are both live");
 //!         assert_eq!(bump.stats().allocated(), 10);
@@ -168,7 +150,8 @@
 //! You can also use the unsafe [`checkpoint`](Bump::checkpoint) api
 //! to reset the bump pointer to a previous position.
 //! ```
-//! # use bump_scope::Bump;
+//! use bump_scope::{Bump, BumpAllocator};
+//!
 //! let bump: Bump = Bump::new();
 //! let checkpoint = bump.checkpoint();
 //!
@@ -194,8 +177,9 @@
 //! This makes it possible to enter scopes while a there are still outstanding
 //! references to that bump allocator:
 //! ```
-//! # use bump_scope::{ Bump, BumpScope, BumpVec as Vec };
+//! use bump_scope::{Bump, BumpScope};
 //! let bump: Bump = Bump::new();
+//!
 //! let mut vec: Vec<u8, &Bump> = Vec::new_in(&bump);
 //!
 //! bump.claim().scoped(|bump_scope| {
@@ -210,25 +194,6 @@
 //! // now allocating on `bump` is possible again
 //! vec.reserve(123);
 //! ```
-//!
-//! # Collections
-//! `bump-scope` provides bump allocated versions of `Vec` and `String` called [`BumpVec`] and [`BumpString`].
-//! They are also available in the following variants:
-//! - [`Fixed*`](FixedBumpVec) for fixed capacity collections
-//! - [`Mut*`](MutBumpVec) for collections optimized for a mutable bump allocator
-//!
-//! #### API changes
-//! The collections are designed to have the same api as their std counterparts with these exceptions:
-//! - [`split_off`](BumpVec::split_off) —  splits the collection in place without allocation; the parameter is a range instead of a single index
-//! - [`retain`](BumpVec::retain) —  takes a closure with a `&mut T` parameter like [`Vec::retain_mut`](alloc::vec::Vec::retain_mut)
-//!
-//! #### New features
-//! - [`append`](BumpVec::append) —  allows appending all kinds of owned slice types like `[T; N]`, `Box<[T]>`, `Vec<T>`, `vec::Drain<T>` etc.
-//! - [`map`](BumpVec::map) —  maps the elements, potentially reusing the existing allocation
-//! - [`map_in_place`](BumpVec::map_in_place) —  maps the elements without allocation, failing to compile if not possible
-//! - conversions between the regular collections, their `Fixed*` variants and `BumpBox<[T]>` / `BumpBox<str>`
-//!
-//! The collection's API implementations are based on rust commit 787af2b8c80638c51a4fc8e44f84e6891f243ec7 (2026-08-25).
 //!
 //! # Parallel Allocation
 //! [`Bump`] is `!Sync` which means it can't be shared between threads.
@@ -249,45 +214,26 @@
 //!
 //! A bump allocator does not require `deallocate` or `shrink` to free memory.
 //! After all, memory will be reclaimed when exiting a scope, calling `reset` or dropping the `Bump`.
-//! You can set [the `deallocates` and `shrinks` config parameters](crate::config) to false or use the [`WithoutDealloc`] and [`WithoutShrink`] wrappers
-//! to make deallocating and shrinking a no-op.
+//! You can set [the `deallocates` and `shrinks` config parameters](crate::config) to false to make deallocating and shrinking a no-op.
 //!
 //! # Feature Flags
 //! <!-- feature documentation start -->
 //! - **`std`** *(enabled by default)* — Adds `BumpPool` and implementations of `std::io` traits.
-//! - **`alloc`** *(enabled by default)* — Adds `Global` as the default base allocator and some interactions with `alloc` collections.
 //! - **`panic-on-alloc`** *(enabled by default)* — Adds functions and traits that will panic when allocations fail.
 //!   Without this feature, allocation failures cannot cause panics, and only
 //!   `try_`-prefixed allocation methods will be available.
-//! - **`serde`** — Adds `Serialize` implementations for `BumpBox`, strings and vectors, and `DeserializeSeed` for strings and vectors.
 //! - **`bytemuck`** — Adds `bytemuck::*` extension traits for
-//!   <code>[alloc_zeroed](bytemuck::BumpAllocatorScopeExt::alloc_zeroed)([_slice](bytemuck::BumpAllocatorScopeExt::alloc_zeroed_slice))</code>,
-//!   [`init_zeroed`](bytemuck::InitZeroed::init_zeroed),
-//!   [`extend_zeroed`](bytemuck::VecExt::extend_zeroed) and
-//!   [`resize_zeroed`](bytemuck::VecExt::resize_zeroed).
+//!   <code>[alloc_zeroed](bytemuck::BumpAllocatorExt::alloc_zeroed)([_slice](bytemuck::BumpAllocatorExt::alloc_zeroed_slice))</code>,
+//!   [`box_zero_init`](bytemuck::box_zero_init) and
+//!   [`box_zero_init_slice`](bytemuck::box_zero_init_slice).
 //! - **`zerocopy-08`** — Adds `zerocopy_08::*` extension traits for
-//!   <code>[alloc_zeroed](zerocopy_08::BumpAllocatorScopeExt::alloc_zeroed)([_slice](zerocopy_08::BumpAllocatorScopeExt::alloc_zeroed_slice))</code>,
-//!   [`init_zeroed`](zerocopy_08::InitZeroed::init_zeroed),
-//!   [`extend_zeroed`](zerocopy_08::VecExt::extend_zeroed) and
-//!   [`resize_zeroed`](zerocopy_08::VecExt::resize_zeroed).
+//!   <code>[alloc_zeroed](zerocopy_08::BumpAllocatorExt::alloc_zeroed)([_slice](zerocopy_08::BumpAllocatorExt::alloc_zeroed_slice))</code>,
+//!   [`box_zero_init`](zerocopy_08::box_zero_init) and
+//!   [`box_zero_init_slice`](zerocopy_08::box_zero_init_slice).
+//! - **`nightly`** — Enables nightly features.
+//!   TODO: enumerate...
 //!
-//! ### Nightly features
-//! These nightly features are not subject to the same semver guarantees as the rest of the library.
-//! Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
-//!
-//! - **`nightly`** — Enables all other nightly feature flags.
-//! - **`nightly-coerce-unsized`** — Makes `BumpBox<T>` implement [`CoerceUnsized`](core::ops::CoerceUnsized).
-//!   With this `BumpBox<[i32;3]>` coerces to `BumpBox<[i32]>`, `BumpBox<dyn Debug>` and so on.
-//!   You can unsize a `BumpBox` in stable without this feature using [`unsize_bump_box`].
-//! - **`nightly-exact-size-is-empty`** — Implements `is_empty` manually for some iterators.
-//! - **`nightly-trusted-len`** — Implements `TrustedLen` for some iterators.
-//! - **`nightly-fn-traits`** — Implements `Fn*` traits for `BumpBox<T>`. Makes `BumpBox<T: FnOnce + ?Sized>` callable. Requires alloc crate.
-//! - **`nightly-tests`** — Enables some tests that require a nightly compiler.
-//! - **`nightly-dropck-eyepatch`** — Adds `#[may_dangle]` attribute to box and vector types' drop implementation.
-//!   This makes it so references don't have to strictly outlive the container.
-//!   (Just like with std's `Box` and `Vec`.)
-//! - **`nightly-clone-to-uninit`** — Adds [`alloc_clone`](crate::traits::BumpAllocatorScope::alloc_clone) method.
-//! - **`nightly-miri-promise-symbolic-alignment`** — Promises to miri that allocated pointers are symbolically aligned.
+//!   Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
 //! <!-- feature documentation end -->
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
@@ -303,103 +249,84 @@
 #[cfg(any(feature = "std", test))]
 extern crate std;
 
-#[cfg(any(feature = "alloc", feature = "nightly-fn-traits"))]
 extern crate alloc;
 
 mod allocator_impl;
+mod boxed_slice_initializer;
 mod bump;
 mod bump_align_guard;
-/// [`BumpBox`] and associated types.
-mod bump_box;
+mod bump_allocation;
 mod bump_claim_guard;
 #[cfg(feature = "std")]
 mod bump_pool;
 mod bump_scope;
 mod bump_scope_guard;
-/// [`BumpString`] and associated types.
-mod bump_string;
-/// [`BumpVec`] and associated types.
-pub mod bump_vec;
 mod bumping;
+#[cfg(any(feature = "bytemuck", feature = "zerocopy-08"))]
+mod bytemuck_and_zerocopy;
 pub(crate) mod chunk_size;
 pub(crate) mod chunk_size_config;
 pub(crate) mod chunk_types;
 pub mod config;
 mod destructure;
 mod error_behavior;
-mod features;
-mod fixed_bump_string;
-mod fixed_bump_vec;
-mod from_utf16_error;
-mod from_utf8_error;
+/// TODO
+pub mod extra;
 mod layout;
-mod mut_bump_string;
-/// [`MutBumpVec`] and associated types.
-pub mod mut_bump_vec;
-/// [`MutBumpVecRev`] and associated types.
-mod mut_bump_vec_rev;
+mod macros;
+mod mut_string;
+mod mut_vec;
 mod no_drop;
-/// Types and traits associated with owned slices.
+/// TODO
 pub mod owned_slice;
-/// Types associated with owned strings.
-pub mod owned_str;
-mod partial_eq;
 mod polyfill;
 mod raw_bump;
-mod set_len_on_drop;
-mod set_len_on_drop_by_ptr;
 pub mod stats;
-/// Traits that provide ways to be generic over `Bump(Scope)`s.
+mod string;
+#[cfg(test)]
+mod tests;
+/// TODO:
 pub mod traits;
-mod without_dealloc;
+mod unmanaged;
+mod util;
 
+use alloc::{boxed::Box, vec::Vec};
 pub use bump::Bump;
-pub use bump_box::BumpBox;
+pub use bump_allocation::BumpAllocation;
 pub use bump_claim_guard::BumpClaimGuard;
 #[cfg(feature = "std")]
 pub use bump_pool::{BumpPool, BumpPoolGuard};
 pub use bump_scope::BumpScope;
 pub use bump_scope_guard::{BumpScopeGuard, Checkpoint};
-pub use bump_string::BumpString;
-#[doc(inline)]
-pub use bump_vec::BumpVec;
 #[cfg(test)]
-use core::alloc::{AllocError, Allocator, Layout};
-use core::{mem, num::NonZeroUsize, ptr::NonNull};
-use error_behavior::ErrorBehavior;
-pub use fixed_bump_string::FixedBumpString;
-pub use fixed_bump_vec::FixedBumpVec;
-pub use from_utf8_error::FromUtf8Error;
-pub use from_utf16_error::FromUtf16Error;
-pub use mut_bump_string::MutBumpString;
-#[doc(inline)]
-pub use mut_bump_vec::MutBumpVec;
-pub use mut_bump_vec_rev::MutBumpVecRev;
+use core::{
+    alloc::{AllocError, Allocator, Layout},
+    ptr::NonNull,
+};
+use core::{mem, num::NonZeroUsize};
 pub use no_drop::NoDrop;
 #[cfg(feature = "panic-on-alloc")]
-use private::{PanicsOnAlloc, capacity_overflow, format_trait_error};
-use set_len_on_drop::SetLenOnDrop;
-pub use without_dealloc::{WithoutDealloc, WithoutShrink};
+use private::capacity_overflow;
+pub use traits::{AsBumpScope, AsMutBumpScope, BumpAllocator, BumpAllocatorScope, MutBumpAllocator, MutBumpAllocatorScope};
+pub use unmanaged::Unmanaged;
+
+#[cfg(feature = "bytemuck")]
+pub use bytemuck_and_zerocopy::bytemuck;
+
+#[cfg(feature = "zerocopy-08")]
+pub use bytemuck_and_zerocopy::zerocopy_08;
+
+/// TODO
+pub type BoxU<'a, T> = Box<T, Unmanaged<'a>>;
+
+/// TODO
+pub type VecU<'a, T> = Vec<T, Unmanaged<'a>>;
 
 /// The changelog.
 ///
 #[doc = include_str!("../CHANGELOG.md")]
 #[expect(non_snake_case)]
 pub mod CHANGELOG {}
-
-#[cfg(feature = "bytemuck")]
-features::bytemuck_or_zerocopy! {
-    crate "bytemuck"
-    mod bytemuck
-    trait Zeroable
-}
-
-#[cfg(feature = "zerocopy-08")]
-features::bytemuck_or_zerocopy! {
-    crate "zerocopy"
-    mod zerocopy_08
-    trait FromZeros
-}
 
 /// Does not check for overflow.
 #[inline(always)]
@@ -422,30 +349,13 @@ fn bump_down(addr: NonZeroUsize, size: usize, align: usize) -> usize {
     down_align_usize(subtracted, align)
 }
 
-#[cfg(test)]
-mod tests;
-
 /// This is not part of the public api!
 ///
 /// Any changes to this module are semver-exempt!
 #[doc(hidden)]
 pub mod private {
-    pub use core;
-    use core::ptr::NonNull;
-
-    use crate::BumpBox;
-
-    #[cfg(feature = "panic-on-alloc")]
-    /// Wrapper type, used for ad hoc overwriting of trait implementations, like for `Write` in `alloc_fmt`.
-    #[repr(transparent)]
-    pub struct PanicsOnAlloc<T: ?Sized>(pub T);
-
-    #[cfg(feature = "panic-on-alloc")]
-    impl<T: ?Sized> PanicsOnAlloc<T> {
-        pub(crate) fn from_mut(value: &mut T) -> &mut PanicsOnAlloc<T> {
-            unsafe { &mut *(core::ptr::from_mut::<T>(value) as *mut Self) }
-        }
-    }
+    pub extern crate alloc;
+    pub extern crate core;
 
     #[cold]
     #[inline(never)]
@@ -460,29 +370,10 @@ pub mod private {
     pub const fn format_trait_error() -> ! {
         panic!("formatting trait implementation returned an error");
     }
-
-    #[must_use]
-    #[expect(clippy::elidable_lifetime_names)]
-    pub fn bump_box_into_raw_with_lifetime<'a, T: ?Sized>(boxed: BumpBox<'a, T>) -> (NonNull<T>, &'a ()) {
-        (boxed.into_raw(), &())
-    }
-
-    #[must_use]
-    #[expect(clippy::elidable_lifetime_names)]
-    pub unsafe fn bump_box_from_raw_with_lifetime<'a, T: ?Sized>(ptr: NonNull<T>, _lifetime: &'a ()) -> BumpBox<'a, T> {
-        unsafe { BumpBox::from_raw(ptr) }
-    }
 }
 
-#[cfg(all(feature = "alloc", feature = "panic-on-alloc"))]
+#[cfg(feature = "panic-on-alloc")]
 use alloc::alloc::handle_alloc_error;
-
-#[cold]
-#[inline(never)]
-#[cfg(all(not(feature = "alloc"), feature = "panic-on-alloc"))]
-fn handle_alloc_error(_layout: Layout) -> ! {
-    panic!("allocation failed")
-}
 
 // This is just `Result::into_ok` but with a name to match our use case.
 #[inline(always)]
@@ -499,43 +390,6 @@ trait SizedTypeProperties: Sized {
 }
 
 impl<T> SizedTypeProperties for T {}
-
-/// Call this with a macro that accepts tokens of either `A` or `A = $crate::alloc::Global`.
-///
-/// We do it this way instead of having a parameter like
-/// ```ignore
-/// #[cfg(feature = "alloc")] A = $crate::alloc::Global,
-/// #[cfg(not(feature = "alloc"))] A,
-/// ```
-/// because Rust Analyzer thinks those are two parameters and gets confused.
-macro_rules! maybe_default_allocator {
-    ($macro:ident) => {
-        #[cfg(feature = "alloc")]
-        $macro!(A = alloc::alloc::Global);
-
-        #[cfg(not(feature = "alloc"))]
-        $macro!(A);
-    };
-}
-
-pub(crate) use maybe_default_allocator;
-
-// (copied from rust standard library)
-//
-// Tiny Vecs are dumb. Skip to:
-// - 8 if the element size is 1, because any heap allocators is likely
-//   to round up a request of less than 8 bytes to at least 8 bytes.
-// - 4 if elements are moderate-sized (<= 1 KiB).
-// - 1 otherwise, to avoid wasting too much space for very short Vecs.
-const fn min_non_zero_cap(size: usize) -> usize {
-    if size == 1 {
-        8
-    } else if size <= 1024 {
-        4
-    } else {
-        1
-    }
-}
 
 /// Aligns a bump address to the `min_align`.
 ///

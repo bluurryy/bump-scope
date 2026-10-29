@@ -1,7 +1,7 @@
 use std::alloc::Global;
 
 use bump_scope::{
-    Bump, BumpScope,
+    Bump, BumpAllocator, BumpScope,
     config::{BumpConfig, BumpConfigBuilder},
 };
 
@@ -16,6 +16,6 @@ fn main() {
     let mut input = Bump::<Global, IN>::new();
     let mut guard = input.scope_guard();
     let output = convert(guard.scope().by_value());
-    let test = output.alloc_str("test");
+    let test = output.alloc_str("test").into_ref();
     println!("{test}");
 }

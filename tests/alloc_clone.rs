@@ -1,5 +1,5 @@
 #![cfg(all(feature = "std", feature = "panic-on-alloc"))]
-#![cfg(feature = "nightly-clone-to-uninit")]
+#![cfg(feature = "nightly")]
 #![feature(clone_to_uninit)]
 
 use std::{
@@ -10,7 +10,7 @@ use std::{
     vec::Vec,
 };
 
-use bump_scope::Bump;
+use bump_scope::{Bump, BumpAllocator as _};
 
 #[test]
 fn test_slice() {
@@ -18,7 +18,7 @@ fn test_slice() {
     let slice: &[String] = &strings;
 
     let bump: Bump = Bump::new();
-    let allocated = bump.alloc_clone(slice);
+    let allocated = bump.alloc_clone(slice).into_boxu();
     assert_eq!(&*allocated, ["1", "2", "3"]);
 }
 
@@ -31,7 +31,7 @@ fn test_trait_object() {
     let object: &dyn DisplayClone = &string;
 
     let bump: Bump = Bump::new();
-    let allocated = bump.alloc_clone(object);
+    let allocated = bump.alloc_clone(object).into_boxu();
     assert_eq!(allocated.to_string(), "Hello, world!");
 }
 
@@ -49,7 +49,7 @@ fn test_trait_object_fn() {
     assert_eq!(object(), "Hello, world!");
 
     let bump: Bump = Bump::new();
-    let object_clone = bump.alloc_clone(object);
+    let object_clone = bump.alloc_clone(object).into_boxu();
 
     assert_eq!(object_clone(), "Hello, world!");
 }
