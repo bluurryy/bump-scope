@@ -22,7 +22,7 @@ use crate::{
     error_behavior::ErrorBehavior,
     extra::{
         self, box_from_utf8_unchecked, box_init, box_init_clone, box_init_fill, box_init_fill_with,
-        box_replace_allocator_unchecked, box_uninit_zst_in, box_uninit_zst_slice_in, vec_extend,
+        box_replace_allocator_unchecked, box_uninit_zst_in, box_uninit_zst_slice_in, imp_vec_extend,
         vec_remove_allocator_unchecked,
     },
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
@@ -420,7 +420,7 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
         E: ErrorBehavior,
     {
         let mut vec = Vec::new_in(self);
-        vec_extend(&mut vec, iter)?;
+        imp_vec_extend(&mut vec, iter)?;
         Ok(vec.into_boxed_slice())
     }
 

@@ -75,8 +75,79 @@ pub use split_off::{split_at, split_off};
 /// assert_eq!(bump.stats().allocated(), 4 * 2 + 4 * 4);
 /// ```
 #[inline]
-pub fn vec_map<T, U, A>(vec: Vec<T, A>, mut f: impl FnMut(T) -> U) -> Vec<U, A>
+#[cfg(feature = "panic-on-alloc")]
+pub fn vec_map<T, U, A>(vec: Vec<T, A>, f: impl FnMut(T) -> U) -> Vec<U, A>
 where
+    A: BumpAllocator,
+{
+    panic_on_error(imp_vec_map(vec, f))
+}
+
+/// Maps the elements of a vector, reusing the allocation if possible.
+///
+/// # Panics
+/// Panics if the allocation fails. An allocation only occurs when the alignment or size of `U` is greater than that of `T`.
+///
+/// # Examples
+/// Mapping to a type with an equal alignment and size (no allocation):
+/// ```
+/// use core::num::NonZero;
+/// use bump_scope::{Bump, extra};
+///
+/// let bump: Bump = Bump::new();
+///
+/// let a = extra::vec_try_from_iter_in([0, 1, 2, 3], &bump)?;
+/// assert_eq!(bump.stats().allocated(), 4 * 4);
+///
+/// let b = extra::vec_try_map(a, NonZero::new)?;
+/// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2), Some(3)]");
+/// assert_eq!(bump.stats().allocated(), 4 * 4); // allocation was reused!
+/// # Ok::<(), ::core::alloc::AllocError>(())
+/// ```
+///
+/// Mapping to a type with a smaller alignment and size (no allocation, capacity may grow):
+/// ```
+/// use bump_scope::{Bump, extra};
+///
+/// let bump: Bump = Bump::new();
+///
+/// let vec_a: Vec<u32, _> = extra::vec_try_from_iter_in([1, 2, 3, 4], &bump)?;
+/// assert_eq!(vec_a.capacity(), 4);
+/// assert_eq!(bump.stats().allocated(), 4 * 4);
+///
+/// let vec_b: Vec<u16, _> = extra::vec_try_map(vec_a, |i| i as u16)?;
+/// assert_eq!(vec_b.capacity(), 8);
+/// assert_eq!(bump.stats().allocated(), 4 * 4);
+/// # Ok::<(), ::core::alloc::AllocError>(())
+/// ```
+///
+/// Mapping to a type with a higher alignment or size will allocate:
+/// ```
+/// use bump_scope::{Bump, extra};
+///
+/// let bump: Bump = Bump::new();
+///
+/// let vec_a: Vec<u16, _> = extra::vec_try_from_iter_in([1, 2, 3, 4], &bump)?;
+/// assert_eq!(vec_a.capacity(), 4);
+/// assert_eq!(bump.stats().allocated(), 4 * 2);
+///
+/// let vec_b: Vec<u32, _> = extra::vec_try_map(vec_a, |i| i as u32)?;
+/// assert_eq!(vec_b.capacity(), 4);
+/// assert_eq!(bump.stats().allocated(), 4 * 2 + 4 * 4);
+/// # Ok::<(), ::core::alloc::AllocError>(())
+/// ```
+#[inline]
+pub fn vec_try_map<T, U, A>(vec: Vec<T, A>, f: impl FnMut(T) -> U) -> Result<Vec<U, A>, AllocError>
+where
+    A: BumpAllocator,
+{
+    imp_vec_map(vec, f)
+}
+
+#[inline(always)]
+fn imp_vec_map<E, T, U, A>(vec: Vec<T, A>, f: impl FnMut(T) -> U) -> Result<Vec<U, A>, E>
+where
+    E: ErrorBehavior,
     A: BumpAllocator,
 {
     // fallback
@@ -85,6 +156,13 @@ where
         return vec_map_fallback(vec, f);
     }
 
+    Ok(vec_map_no_grow(vec, f))
+}
+
+fn vec_map_no_grow<T, U, A>(vec: Vec<T, A>, mut f: impl FnMut(T) -> U) -> Vec<U, A>
+where
+    A: BumpAllocator,
+{
     struct DropGuard<T, U, A: Allocator> {
         ptr: *mut T,
         cap: usize,
@@ -151,8 +229,9 @@ where
     }
 }
 
-fn vec_map_fallback<T, U, A>(vec: Vec<T, A>, f: impl FnMut(T) -> U) -> Vec<U, A>
+fn vec_map_fallback<E, T, U, A>(vec: Vec<T, A>, f: impl FnMut(T) -> U) -> Result<Vec<U, A>, E>
 where
+    E: ErrorBehavior,
     A: Allocator,
 {
     struct DropGuard<T, U, A: Allocator> {
@@ -205,8 +284,8 @@ where
         old_cap: old.capacity(),
     };
 
-    drop_guard.new.extend(old.into_iter().map(f));
-    drop_guard.finish()
+    imp_vec_extend::<E, U, A, _>(&mut drop_guard.new, old.into_iter().map(f))?;
+    Ok(drop_guard.finish())
 }
 
 /// Maps the elements of a boxed slice, reusing the allocation if possible.
@@ -535,9 +614,26 @@ pub fn vec_from_iter_in<T, A>(iter: impl IntoIterator<Item = T>, alloc: A) -> Ve
 where
     A: Allocator,
 {
+    panic_on_error(imp_vec_from_iter_in(iter, alloc))
+}
+
+/// TODO
+pub fn vec_try_from_iter_in<T, A>(iter: impl IntoIterator<Item = T>, alloc: A) -> Result<Vec<T, A>, AllocError>
+where
+    A: Allocator,
+{
+    imp_vec_from_iter_in(iter, alloc)
+}
+
+#[inline(always)]
+fn imp_vec_from_iter_in<E, T, A>(iter: impl IntoIterator<Item = T>, alloc: A) -> Result<Vec<T, A>, E>
+where
+    E: ErrorBehavior,
+    A: Allocator,
+{
     let mut vec = Vec::new_in(alloc);
-    vec.extend(iter);
-    vec
+    imp_vec_extend(&mut vec, iter)?;
+    Ok(vec)
 }
 
 /// TODO
@@ -759,7 +855,7 @@ where
 }
 
 /// Extend the vector by `n` clones of value.
-pub(crate) fn vec_extend<E, T, A, I>(vec: &mut Vec<T, A>, iterator: I) -> Result<(), E>
+pub(crate) fn imp_vec_extend<E, T, A, I>(vec: &mut Vec<T, A>, iterator: I) -> Result<(), E>
 where
     E: ErrorBehavior,
     A: Allocator,
