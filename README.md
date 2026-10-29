@@ -59,7 +59,7 @@ This crate was inspired by bumpalo and [Always Bump Downwards](https://fitzgeral
 
 Unlike `bumpalo`, this crate...
 - Supports [scopes and checkpoints](#scopes-and-checkpoints).
-- Drop is always called for allocated values unless explicitly [leaked](https://doc.rust-lang.org/alloc/boxed/struct.Box.html#method.leak) or [forgotten](https://doc.rust-lang.org/core/mem/fn.forget.html).
+- Drop is always called for allocated values unless explicitly leaked or [forgotten](https://doc.rust-lang.org/core/mem/fn.forget.html).
   - `alloc*` methods return a `BumpAllocation` which owns and drops `T`. Types that don't need dropping can be turned into references with `into_ref` and `into_mut`.
 - You can allocate a slice from any `Iterator` with `alloc_iter`.
 - `Bump`'s base allocator is generic.

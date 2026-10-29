@@ -23,6 +23,7 @@ impl<A: Allocator, E: ErrorBehavior> String<A, E> {
         }
     }
 
+    #[expect(unused)]
     pub(crate) fn new_from_vec(mut vec: Vec<u8, A>) -> Self {
         // no bytes is valid utf8
         vec.clear();
@@ -67,8 +68,7 @@ impl<A: Allocator, E: ErrorBehavior> String<A, E> {
         if let Some(nul) = self.vec.iter().position(|&c| c == b'\0') {
             self.vec.truncate(nul + 1);
         } else {
-            self.reserve_if_fallible(1)?;
-            self.vec.push(b'\0');
+            self.push_str("\0")?;
         }
 
         let (bytes_with_nul, alloc) = Box::into_raw_with_allocator(self.into_bytes());

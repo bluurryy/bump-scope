@@ -274,6 +274,8 @@ mod error_behavior;
 pub mod extra;
 mod layout;
 mod macros;
+mod mut_string;
+mod mut_vec;
 mod no_drop;
 /// TODO
 pub mod owned_slice;

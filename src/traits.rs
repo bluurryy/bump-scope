@@ -25,6 +25,8 @@ use crate::{
         box_replace_allocator_unchecked, box_uninit_zst_in, box_uninit_zst_slice_in, imp_vec_extend,
         vec_remove_allocator_unchecked,
     },
+    mut_string::MutString,
+    mut_vec::MutVec,
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
     polyfill::{transmute_mut, transmute_ref},
     stats::AnyStats,
@@ -111,7 +113,10 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///
     /// The allocation takes up as much of the free space of the chunk as possible.
-    fn spec_alloc_slice_greedy<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E>;
+    fn spec_prepare_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E>;
+
+    /// TODO
+    unsafe fn spec_commit_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
 
     /// A specialized version of [`shrink`](core::alloc::Allocator::shrink).
     ///
@@ -487,19 +492,15 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
     }
 
     /// TODO
-    // FIXME: non-greedy variant for a more regular api / easy switching?
-    fn imp_alloc_vec_greedy<E, T>(&self, len: usize) -> Result<Vec<T, &Self>, E>
+    ///
+    /// # Safety
+    ///
+    /// TODO: won't "allocate"
+    fn imp_mut_alloc_vec<E, T>(&mut self, min_cap: usize) -> Result<MutVec<'_, T, Self>, E>
     where
         E: ErrorBehavior,
     {
-        if T::IS_ZST {
-            return Ok(Vec::new_in(self));
-        }
-
-        let slice = self.spec_alloc_slice_greedy::<E, T>(len)?;
-        let cap = slice.len();
-        let ptr = slice.cast::<T>().as_ptr();
-        unsafe { Ok(Vec::from_raw_parts_in(ptr, 0, cap, self)) }
+        MutVec::new(min_cap, self)
     }
 
     #[inline(always)]
@@ -509,23 +510,15 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
     {
         if T::IS_ZST {
             let mut vec = Vec::new_in(&*self);
+            // This won't allocate, so it's fine to use this in the fallible api too.
             vec.extend(iter);
             return Ok(vec.into_boxed_slice());
         }
 
-        let mut vec = (*self).imp_alloc_vec_greedy::<E, T>(0)?;
-
-        if E::FALLIBLE {
-            for item in iter {
-                if vec.len() == vec.capacity() && vec.try_reserve(1).is_err() {
-                    return Err(E::allocation(Layout::new::<()>()));
-                }
-                vec.push(item);
-            }
-        } else {
-            vec.extend(iter);
-        }
-
+        let iter = iter.into_iter();
+        let capacity = iter.size_hint().0;
+        let mut vec = self.imp_mut_alloc_vec::<E, T>(capacity)?;
+        vec.extend::<E>(iter)?;
         Ok(vec.into_boxed_slice())
     }
 
@@ -538,8 +531,8 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
             return (*self).imp_alloc_str(string);
         }
 
-        let vec = (*self).imp_alloc_vec_greedy::<E, u8>(0)?;
-        let mut string = String::<_, E>::new_from_vec(vec);
+        let vec = self.imp_mut_alloc_vec::<E, u8>(0)?;
+        let mut string = MutString::<_, E>::new_from_vec(vec);
         string.write_fmt(args)?;
         Ok(string.into_str())
     }
@@ -553,8 +546,8 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
             return (*self).imp_alloc_cstr_from_str(string);
         }
 
-        let vec = (*self).imp_alloc_vec_greedy(0)?;
-        let mut string = String::new_from_vec(vec);
+        let vec = self.imp_mut_alloc_vec(0)?;
+        let mut string = MutString::<_, E>::new_from_vec(vec);
         string.write_fmt(args)?;
         string.into_cstr()
     }
@@ -642,8 +635,13 @@ unsafe impl<A: Sealed> Sealed for &A {
     }
 
     #[inline(always)]
-    fn spec_alloc_slice_greedy<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
-        A::spec_alloc_slice_greedy(self, len)
+    fn spec_prepare_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
+        A::spec_prepare_slice(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn spec_commit_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+        unsafe { A::spec_commit_slice(self, ptr, len, cap) }
     }
 
     #[inline(always)]
@@ -709,8 +707,13 @@ unsafe impl<A: Sealed> Sealed for &mut A {
     }
 
     #[inline(always)]
-    fn spec_alloc_slice_greedy<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
-        A::spec_alloc_slice_greedy(self, len)
+    fn spec_prepare_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
+        A::spec_prepare_slice(self, len)
+    }
+
+    #[inline(always)]
+    unsafe fn spec_commit_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+        unsafe { A::spec_commit_slice(self, ptr, len, cap) }
     }
 
     #[inline(always)]
@@ -756,26 +759,37 @@ unsafe impl<A: Allocator, const C: BumpConfig> Sealed for Bump<A, C> {
         unsafe { self.raw.chunk.get().as_allocated_unchecked().set_pos_addr(addr) };
     }
 
+    #[inline(always)]
     fn spec_alloc<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
         self.as_bump_scope().spec_alloc(layout)
     }
 
+    #[inline(always)]
     fn spec_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
         self.as_bump_scope().spec_alloc_sized()
     }
 
+    #[inline(always)]
     fn spec_alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
         self.as_bump_scope().spec_alloc_slice(len)
     }
 
+    #[inline(always)]
     fn spec_alloc_slice_for<E: ErrorBehavior, T>(&self, slice: &[T]) -> Result<NonNull<T>, E> {
         self.as_bump_scope().spec_alloc_slice_for(slice)
     }
 
-    fn spec_alloc_slice_greedy<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
-        self.as_bump_scope().spec_alloc_slice_greedy(len)
+    #[inline(always)]
+    fn spec_prepare_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
+        self.as_bump_scope().spec_prepare_slice(len)
     }
 
+    #[inline(always)]
+    unsafe fn spec_commit_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+        unsafe { self.as_bump_scope().spec_commit_slice(ptr, len, cap) }
+    }
+
+    #[inline(always)]
     unsafe fn spec_shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
         unsafe { self.as_bump_scope().spec_shrink_slice(ptr, old_len, new_len) }
     }
@@ -785,10 +799,12 @@ unsafe impl<A: Allocator, const C: BumpConfig> Sealed for Bump<A, C> {
         self.as_bump_scope().spec_prepare_sized_allocation()
     }
 
+    #[inline(always)]
     fn spec_prepare_slice_allocation<E: ErrorBehavior, T>(&self, cap: usize) -> Result<NonNull<[T]>, E> {
         self.as_bump_scope().spec_prepare_slice_allocation(cap)
     }
 
+    #[inline(always)]
     unsafe fn spec_alloc_prepared_slice<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe { self.as_bump_scope().spec_alloc_prepared_slice(start, len, cap) }
     }
@@ -832,24 +848,28 @@ unsafe impl<A: Allocator, const C: BumpConfig> Sealed for BumpScope<'_, A, C> {
         self.raw.allocate_slice_for(slice)
     }
 
-    fn spec_alloc_slice_greedy<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
-        // FIXME: simplify `prepare` api / replace it with greedy slice alloc
+    fn spec_prepare_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
         let slice = self.raw.prepare_slice_allocation(len)?;
-        let len = slice.len();
-        let ptr = slice.cast::<T>().as_ptr();
+        Ok(slice)
+    }
 
+    unsafe fn spec_commit_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe {
-            // a successful `prepare_allocation` guarantees a non-dummy-chunk
+            // a successful `prepare_slice_allocation` guarantees a non-dummy-chunk
             let chunk = self.raw.chunk.get().as_allocated_unchecked();
+            let end = ptr.add(len);
 
             if config!(upwards) {
-                chunk.set_pos_addr_and_align_from(ptr.add(len).addr(), T::ALIGN);
+                chunk.set_pos_addr_and_align_from(end.addr().get(), T::ALIGN);
+                NonNull::slice_from_raw_parts(ptr, len)
             } else {
-                chunk.set_pos_addr_and_align_from(ptr.addr(), T::ALIGN);
+                let dst_end = ptr.add(cap);
+                let dst = dst_end.sub(len);
+                ptr.copy_to(dst, len);
+                chunk.set_pos_addr_and_align_from(dst.addr().get(), T::ALIGN);
+                NonNull::slice_from_raw_parts(dst, len)
             }
         }
-
-        Ok(slice)
     }
 
     unsafe fn spec_shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
@@ -986,9 +1006,15 @@ unsafe impl Sealed for Unmanaged<'_> {
     }
 
     #[inline(always)]
-    fn spec_alloc_slice_greedy<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
+    fn spec_prepare_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
         _ = len;
         Err(E::unmanaged())
+    }
+
+    #[inline(always)]
+    unsafe fn spec_commit_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
+        _ = (ptr, len, cap);
+        NonNull::slice_from_raw_parts(NonNull::dangling(), 0)
     }
 
     #[inline(always)]
@@ -2196,23 +2222,6 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
             Ok(boxed) => Ok(BumpAllocation(boxed)),
             Err(err) => Err(err),
         })
-    }
-
-    /// TODO
-    ///
-    /// # Panics
-    /// TODO
-    #[cfg(feature = "panic-on-alloc")]
-    fn alloc_vec_greedy<T>(&self, len: usize) -> Vec<T, &Self> {
-        panic_on_error(self.imp_alloc_vec_greedy(len))
-    }
-
-    /// TODO
-    ///
-    /// # Errors
-    /// TODO
-    fn try_alloc_vec_greedy<T>(&self, len: usize) -> Result<Vec<T, &Self>, AllocError> {
-        self.imp_alloc_vec_greedy(len)
     }
 
     /// Creates a checkpoint of the current bump position.

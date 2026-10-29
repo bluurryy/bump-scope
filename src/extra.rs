@@ -85,8 +85,8 @@ where
 
 /// Maps the elements of a vector, reusing the allocation if possible.
 ///
-/// # Panics
-/// Panics if the allocation fails. An allocation only occurs when the alignment or size of `U` is greater than that of `T`.
+/// # Errors
+/// Errors if the allocation fails. An allocation only occurs when the alignment or size of `U` is greater than that of `T`.
 ///
 /// # Examples
 /// Mapping to a type with an equal alignment and size (no allocation):
@@ -343,6 +343,8 @@ where
 /// assert_eq!(&*b, [[42, 42]]);
 /// assert_eq!(bump.stats().allocated(), 12); // new allocation
 /// ```
+#[inline]
+#[cfg(feature = "panic-on-alloc")]
 pub fn box_slice_map<T, U, A>(boxed: Box<[T], A>, f: impl FnMut(T) -> U) -> Box<[U], A>
 where
     A: BumpAllocator,
@@ -610,6 +612,7 @@ pub(crate) fn assert_char_boundary(str: &str, index: usize) {
 }
 
 /// TODO
+#[cfg(feature = "panic-on-alloc")]
 pub fn vec_from_iter_in<T, A>(iter: impl IntoIterator<Item = T>, alloc: A) -> Vec<T, A>
 where
     A: Allocator,
@@ -617,6 +620,9 @@ where
     panic_on_error(imp_vec_from_iter_in(iter, alloc))
 }
 
+/// TODO
+///
+/// # Errors
 /// TODO
 pub fn vec_try_from_iter_in<T, A>(iter: impl IntoIterator<Item = T>, alloc: A) -> Result<Vec<T, A>, AllocError>
 where
@@ -861,7 +867,8 @@ where
     A: Allocator,
     I: IntoIterator<Item = T>,
 {
-    if !E::FALLIBLE {
+    // If T is a ZST then this won't allocate, so it's fine to use this in the fallible api too.
+    if !E::FALLIBLE || T::IS_ZST {
         vec.extend(iterator);
         return Ok(());
     }
@@ -879,7 +886,7 @@ where
         let len = vec.len();
         if len == vec.capacity() {
             let (lower, _) = iterator.size_hint();
-            vec.try_reserve(lower.saturating_add(1)).map_err(|_| E::vec_reserve())?;
+            E::vec_reserve(vec, lower.saturating_add(1))?;
         }
         unsafe {
             ptr::write(vec.as_mut_ptr().add(len), element);

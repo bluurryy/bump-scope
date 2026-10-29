@@ -8,7 +8,6 @@ use crate::{capacity_overflow, handle_alloc_error};
 pub(crate) trait ErrorBehavior: Sized {
     const FALLIBLE: bool;
     fn allocation(layout: Layout) -> Self;
-    fn vec_reserve() -> Self;
     fn capacity_overflow() -> Self;
     fn claimed() -> Self;
     #[cfg(feature = "std")]
@@ -16,6 +15,7 @@ pub(crate) trait ErrorBehavior: Sized {
     fn unmanaged() -> Self;
     fn format_trait_error() -> Self;
     fn vec_with_capacity_in<T, A: Allocator>(cap: usize, alloc: A) -> Result<Vec<T, A>, Self>;
+    fn vec_reserve<T, A: Allocator>(vec: &mut Vec<T, A>, additional: usize) -> Result<(), Self>;
     fn vec_reserve_if_fallible<T, A: Allocator>(vec: &mut Vec<T, A>, additional: usize) -> Result<(), Self>;
 }
 
@@ -26,11 +26,6 @@ impl ErrorBehavior for ! {
     #[inline(always)]
     fn allocation(layout: Layout) -> Self {
         handle_alloc_error(layout)
-    }
-
-    #[inline(always)]
-    fn vec_reserve() -> Self {
-        panic::vec_reserve();
     }
 
     #[inline(always)]
@@ -65,6 +60,12 @@ impl ErrorBehavior for ! {
     }
 
     #[inline(always)]
+    fn vec_reserve<T, A: Allocator>(vec: &mut Vec<T, A>, additional: usize) -> Result<(), Self> {
+        vec.reserve(additional);
+        Ok(())
+    }
+
+    #[inline(always)]
     fn vec_reserve_if_fallible<T, A: Allocator>(vec: &mut Vec<T, A>, additional: usize) -> Result<(), Self> {
         _ = (vec, additional);
         Ok(())
@@ -76,11 +77,6 @@ impl ErrorBehavior for AllocError {
 
     #[inline(always)]
     fn allocation(_: Layout) -> Self {
-        Self
-    }
-
-    #[inline(always)]
-    fn vec_reserve() -> Self {
         Self
     }
 
@@ -118,6 +114,11 @@ impl ErrorBehavior for AllocError {
     }
 
     #[inline(always)]
+    fn vec_reserve<T, A: Allocator>(vec: &mut Vec<T, A>, additional: usize) -> Result<(), Self> {
+        vec.try_reserve(additional).map_err(|_| AllocError)
+    }
+
+    #[inline(always)]
     fn vec_reserve_if_fallible<T, A: Allocator>(vec: &mut Vec<T, A>, additional: usize) -> Result<(), Self> {
         vec.try_reserve(additional).map_err(|_| AllocError)
     }
@@ -151,12 +152,5 @@ pub(crate) mod panic {
     #[cfg(feature = "panic-on-alloc")]
     pub const fn format_trait_error() -> ! {
         panic!("formatting trait implementation returned an error");
-    }
-
-    #[cold]
-    #[inline(never)]
-    #[cfg(feature = "panic-on-alloc")]
-    pub const fn vec_reserve() -> ! {
-        panic!("memory allocation failed");
     }
 }
