@@ -80,6 +80,7 @@ impl<T, A: Allocator> BoxedSliceInitializer<T, A> {
     }
 
     #[inline(always)]
+    #[expect(unused)]
     pub(crate) fn push(&mut self, value: T) {
         self.push_with(|| value);
     }

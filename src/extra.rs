@@ -15,7 +15,7 @@ use crate::{
     destructure::destructure,
     error_behavior::ErrorBehavior,
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
-    traits::{BumpAllocator, BumpAllocatorScope},
+    traits::{BumpAllocator, BumpAllocatorScope, Sealed},
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -517,28 +517,12 @@ where
 /// TODO
 pub fn box_init_fill_iter<T, A>(boxed: Box<[MaybeUninit<T>], A>, iter: impl IntoIterator<Item = T>) -> Box<[T], A>
 where
-    A: Allocator,
+    A: BumpAllocator,
 {
-    #[cold]
-    #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
-    #[track_caller]
-    fn iter_ran_out() -> ! {
-        panic!("iterator ran out of items to fill the slice with");
-    }
-
-    let mut iter = iter.into_iter();
-    let mut initializer = BoxedSliceInitializer::new(boxed);
-
-    while !initializer.is_full() {
-        match iter.next() {
-            Some(item) => {
-                initializer.push(item);
-            }
-            None => iter_ran_out(),
-        }
-    }
-
-    initializer.into_init()
+    let len = boxed.len();
+    let mut vec = vec_from_uninit_box(boxed);
+    vec.extend(iter.into_iter().take(len));
+    vec_into_box(vec)
 }
 
 #[inline]
@@ -652,6 +636,7 @@ where
 }
 
 /// TODO
+#[allow(unused)]
 pub(crate) fn imp_vec_from_iter_exact_in<E, T, A>(
     iter: impl IntoIterator<Item = T, IntoIter: ExactSizeIterator>,
     alloc: A,
@@ -849,15 +834,34 @@ where
 }
 
 /// TODO
-pub fn vec_to_box<T, A>(vec: Vec<T, A>) -> Box<[T], A>
+pub fn vec_into_box<T, A>(vec: Vec<T, A>) -> Box<[T], A>
 where
     A: BumpAllocator,
+{
+    imp_vec_into_box(vec)
+}
+
+/// TODO
+pub(crate) fn imp_vec_into_box<T, A>(vec: Vec<T, A>) -> Box<[T], A>
+where
+    A: Sealed,
 {
     let (ptr, len, _, alloc) = Vec::into_raw_parts_with_allocator(vec);
     let slice = ptr::slice_from_raw_parts_mut(ptr, len);
 
     // SAFETY: `BumpAllocator` allows you shrink the memory block
     unsafe { Box::from_raw_in(slice, alloc) }
+}
+
+/// TODO
+pub fn vec_from_uninit_box<T, A>(boxed: Box<[MaybeUninit<T>], A>) -> Vec<T, A>
+where
+    A: Allocator,
+{
+    let (slice, alloc) = Box::into_raw_with_allocator(boxed);
+    let len = slice.len();
+    let ptr = slice.cast::<T>();
+    unsafe { Vec::from_raw_parts_in(ptr, 0, len, alloc) }
 }
 
 /// Extend the vector by `n` clones of value.

@@ -22,9 +22,8 @@ use crate::{
     down_align_usize,
     error_behavior::ErrorBehavior,
     extra::{
-        self, box_from_utf8_unchecked, box_init, box_init_clone, box_init_fill, box_init_fill_with,
-        box_replace_allocator_unchecked, box_uninit_zst_in, box_uninit_zst_slice_in, imp_vec_extend,
-        vec_remove_allocator_unchecked,
+        self, box_from_utf8_unchecked, box_init, box_init_clone, box_init_fill, box_init_fill_with, box_uninit_zst_in,
+        box_uninit_zst_slice_in, imp_vec_extend,
     },
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
     polyfill::{transmute_mut, transmute_ref},
@@ -433,15 +432,14 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
         E: ErrorBehavior,
         I: ExactSizeIterator<Item = T>,
     {
-        let vec = extra::imp_vec_from_iter_exact_in(iter, self)?;
-
-        // An exact size iterator if implemented correctly, did not leave anything to shrink
-        // so we avoid the shrink call by removing the allocator.
-        let vec = unsafe { vec_remove_allocator_unchecked(vec).0 };
-        let boxed = vec.into_boxed_slice();
-        let boxed = unsafe { box_replace_allocator_unchecked(boxed, self).0 };
-
-        Ok(boxed)
+        let iter = iter.into_iter();
+        let (len, _) = iter.size_hint();
+        let uninit = self.imp_alloc_uninit_slice(len)?;
+        let mut vec = extra::vec_from_uninit_box(uninit);
+        // This can't fail due to allocation since `.take(len)` ensures the vec doesn't grow.
+        vec.extend(iter.into_iter().take(len));
+        let init = extra::imp_vec_into_box(vec);
+        Ok(init)
     }
 
     #[inline(always)]
