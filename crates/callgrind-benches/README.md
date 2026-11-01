@@ -39,11 +39,11 @@ The `*_overaligned` cases use a bump allocator with a minimum alignment greater 
 | alloc_big_struct             | 21 \| 1         | 20 \| 1           | 21 \| 2   | 23 \| 3     |
 | alloc_big_struct_aligned     | 19 \| 1         | 19 \| 1           | 19 \| 1   | — [^1]      |
 | alloc_big_struct_overaligned | 19 \| 1         | 19 \| 1           | 19 \| 1   | — [^1]      |
-| alloc_u8_slice               | 38 \| 9         | 39 \| 9           | 37 \| 8   | 39 \| 10    |
-| alloc_u8_slice_overaligned   | 40 \| 9         | 39 \| 9           | 38 \| 8   | — [^1]      |
-| alloc_u32_slice              | 57 \| 18        | 60 \| 18          | 58 \| 18  | 60 \| 19    |
-| alloc_u32_slice_aligned      | 55 \| 18        | 59 \| 18          | 56 \| 17  | — [^1]      |
-| alloc_u32_slice_overaligned  | 57 \| 18        | 56 \| 18          | 54 \| 17  | — [^1]      |
+| alloc_u8_slice               | 37 \| 8         | 38 \| 8           | 37 \| 8   | 39 \| 10    |
+| alloc_u8_slice_overaligned   | 39 \| 8         | 38 \| 8           | 38 \| 8   | — [^1]      |
+| alloc_u32_slice              | 54 \| 17        | 57 \| 17          | 58 \| 18  | 60 \| 19    |
+| alloc_u32_slice_aligned      | 52 \| 17        | 56 \| 17          | 56 \| 17  | — [^1]      |
+| alloc_u32_slice_overaligned  | 54 \| 17        | 53 \| 17          | 54 \| 17  | — [^1]      |
 
 <!-- alloc table end -->
 
@@ -64,11 +64,11 @@ The benchmark cases above use the infallible api, panicking if allocating a new 
 | try_alloc_big_struct             | 21 \| 1         | 20 \| 1           | 21 \| 2   | 23 \| 3     |
 | try_alloc_big_struct_aligned     | 19 \| 1         | 19 \| 1           | 19 \| 1   | — [^1]      |
 | try_alloc_big_struct_overaligned | 19 \| 1         | 19 \| 1           | 19 \| 1   | — [^1]      |
-| try_alloc_u8_slice               | 38 \| 9         | 39 \| 9           | 38 \| 8   | 39 \| 10    |
-| try_alloc_u8_slice_overaligned   | 40 \| 9         | 39 \| 9           | 39 \| 8   | — [^1]      |
-| try_alloc_u32_slice              | 57 \| 18        | 60 \| 18          | 58 \| 18  | 56 \| 19    |
-| try_alloc_u32_slice_aligned      | 55 \| 18        | 59 \| 18          | 56 \| 17  | — [^1]      |
-| try_alloc_u32_slice_overaligned  | 57 \| 18        | 56 \| 18          | 54 \| 17  | — [^1]      |
+| try_alloc_u8_slice               | 37 \| 8         | 38 \| 8           | 38 \| 8   | 39 \| 10    |
+| try_alloc_u8_slice_overaligned   | 39 \| 8         | 38 \| 8           | 39 \| 8   | — [^1]      |
+| try_alloc_u32_slice              | 54 \| 17        | 57 \| 17          | 58 \| 18  | 56 \| 19    |
+| try_alloc_u32_slice_aligned      | 52 \| 17        | 56 \| 17          | 56 \| 17  | — [^1]      |
+| try_alloc_u32_slice_overaligned  | 54 \| 17        | 53 \| 17          | 54 \| 17  | — [^1]      |
 
 <!-- try alloc table end -->
 

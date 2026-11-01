@@ -107,12 +107,12 @@ mod create_bump_by_library {
 
                 #[inline(always)]
                 fn alloc_slice_copy<T: Copy>(&self, value: &[T]) -> &mut [T] {
-                    self.0.alloc_slice_clone(value).into_mut()
+                    self.0.alloc_slice_copy(value).into_mut()
                 }
 
                 #[inline(always)]
                 fn try_alloc_slice_copy<T: Copy>(&self, value: &[T]) -> Option<&mut [T]> {
-                    match self.0.try_alloc_slice_clone(value) {
+                    match self.0.try_alloc_slice_copy(value) {
                         Ok(value) => Some(value.into_mut()),
                         Err(_) => None,
                     }
