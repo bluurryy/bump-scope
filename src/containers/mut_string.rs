@@ -8,7 +8,8 @@ use core::{ffi::CStr, fmt, marker::PhantomData};
 use alloc::boxed::Box;
 
 use crate::{
-    bump_allocation::IntoRef, error_behavior::ErrorBehavior, extra::box_from_utf8_unchecked, mut_vec::MutVec, traits::Sealed,
+    bump_allocation::IntoRef, containers::MutVec, error_behavior::ErrorBehavior, extra::box_from_utf8_unchecked,
+    traits::Sealed,
 };
 
 #[repr(transparent)]

@@ -252,7 +252,6 @@ extern crate std;
 extern crate alloc;
 
 mod allocator_impl;
-mod boxed_slice_initializer;
 mod bump;
 mod bump_align_guard;
 mod bump_allocation;
@@ -268,21 +267,19 @@ pub(crate) mod chunk_size;
 pub(crate) mod chunk_size_config;
 pub(crate) mod chunk_types;
 pub mod config;
+mod containers;
 mod destructure;
 mod error_behavior;
 /// TODO
 pub mod extra;
 mod layout;
 mod macros;
-mod mut_string;
-mod mut_vec;
 mod no_drop;
 /// TODO
 pub mod owned_slice;
 mod polyfill;
 mod raw_bump;
 pub mod stats;
-mod string;
 #[cfg(test)]
 mod tests;
 /// TODO:

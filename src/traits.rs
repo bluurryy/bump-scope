@@ -18,6 +18,7 @@ use crate::{
     bump_allocation::IntoRef,
     bump_down,
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
+    containers::{MutString, MutVec, String},
     down_align_usize,
     error_behavior::ErrorBehavior,
     extra::{
@@ -25,12 +26,9 @@ use crate::{
         box_replace_allocator_unchecked, box_uninit_zst_in, box_uninit_zst_slice_in, imp_vec_extend,
         vec_remove_allocator_unchecked,
     },
-    mut_string::MutString,
-    mut_vec::MutVec,
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
     polyfill::{transmute_mut, transmute_ref},
     stats::AnyStats,
-    string::String,
     up_align_usize_unchecked, util,
 };
 

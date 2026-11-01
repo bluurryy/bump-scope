@@ -11,7 +11,7 @@ use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
     BoxU, NoDrop, SizedTypeProperties, Unmanaged, VecU,
-    boxed_slice_initializer::BoxedSliceInitializer,
+    containers::BoxedSliceInitializer,
     destructure::destructure,
     error_behavior::ErrorBehavior,
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
