@@ -8,7 +8,7 @@ use std::{
 use crate::{
     Bump,
     tests::up_and_down,
-    traits::{BumpAllocator, Sealed},
+    traits::{BumpAllocator, BumpAllocatorPrivate},
 };
 
 up_and_down! {

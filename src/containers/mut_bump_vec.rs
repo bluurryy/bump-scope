@@ -7,13 +7,13 @@ use core::{
 
 use alloc::{boxed::Box, vec::Vec};
 
-use crate::{SizedTypeProperties, error_behavior::ErrorBehavior, extra::imp_vec_extend, traits::Sealed};
+use crate::{SizedTypeProperties, error_behavior::ErrorBehavior, extra::imp_vec_extend, traits::BumpAllocatorPrivate};
 
 // The vector is wrapped in a `ManuallyDrop` since we don't want the vector to try to deallocate
 // since we didn't allocate anything in the first place.
-pub(crate) struct MutBumpVec<'a, T, A: Sealed>(ManuallyDrop<Vec<T, AllocatorWrapper<'a, A>>>);
+pub(crate) struct MutBumpVec<'a, T, A: BumpAllocatorPrivate>(ManuallyDrop<Vec<T, AllocatorWrapper<'a, A>>>);
 
-impl<'a, T, A: Sealed> MutBumpVec<'a, T, A> {
+impl<'a, T, A: BumpAllocatorPrivate> MutBumpVec<'a, T, A> {
     pub(crate) fn new<E>(min_cap: usize, alloc: &'a mut A) -> Result<Self, E>
     where
         E: ErrorBehavior,
@@ -100,7 +100,7 @@ impl<'a, T, A: Sealed> MutBumpVec<'a, T, A> {
     }
 }
 
-impl<T, A: Sealed> Drop for MutBumpVec<'_, T, A> {
+impl<T, A: BumpAllocatorPrivate> Drop for MutBumpVec<'_, T, A> {
     fn drop(&mut self) {
         let len = self.0.len();
         let ptr = self.0.as_mut_ptr();
@@ -110,7 +110,7 @@ impl<T, A: Sealed> Drop for MutBumpVec<'_, T, A> {
 
 struct AllocatorWrapper<'a, A>(&'a A);
 
-unsafe impl<A: Sealed> Allocator for AllocatorWrapper<'_, A> {
+unsafe impl<A: BumpAllocatorPrivate> Allocator for AllocatorWrapper<'_, A> {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         self.0.allocate(layout)
     }

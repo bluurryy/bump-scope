@@ -15,7 +15,7 @@ use crate::{
     destructure::destructure,
     error_behavior::ErrorBehavior,
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
-    traits::{BumpAllocator, BumpAllocatorScope, Sealed},
+    traits::{BumpAllocator, BumpAllocatorPrivate, BumpAllocatorScope},
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -844,7 +844,7 @@ where
 /// TODO
 pub(crate) fn imp_vec_into_box<T, A>(vec: Vec<T, A>) -> Box<[T], A>
 where
-    A: Sealed,
+    A: BumpAllocatorPrivate,
 {
     let (ptr, len, _, alloc) = Vec::into_raw_parts_with_allocator(vec);
     let slice = ptr::slice_from_raw_parts_mut(ptr, len);

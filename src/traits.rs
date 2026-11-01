@@ -46,7 +46,7 @@ impl AllocatorNightly for Unmanaged<'_> {}
 /// # Safety
 /// TODO
 #[allow(unused)]
-pub(crate) unsafe trait Sealed: Allocator + Sized {
+pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     const CONFIG: BumpConfig;
 
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
@@ -587,7 +587,7 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
         })
     }
 }
-unsafe impl<A: Sealed> Sealed for &A {
+unsafe impl<A: BumpAllocatorPrivate> BumpAllocatorPrivate for &A {
     const CONFIG: BumpConfig = A::CONFIG;
 
     #[inline(always)]
@@ -659,7 +659,7 @@ unsafe impl<A: Sealed> Sealed for &A {
         unsafe { A::spec_alloc_prepared_slice(self, start, len, cap) }
     }
 }
-unsafe impl<A: Sealed> Sealed for &mut A {
+unsafe impl<A: BumpAllocatorPrivate> BumpAllocatorPrivate for &mut A {
     const CONFIG: BumpConfig = A::CONFIG;
 
     #[inline(always)]
@@ -732,7 +732,7 @@ unsafe impl<A: Sealed> Sealed for &mut A {
         unsafe { A::spec_alloc_prepared_slice(self, start, len, cap) }
     }
 }
-unsafe impl<A: Allocator, const C: BumpConfig> Sealed for Bump<A, C> {
+unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for Bump<A, C> {
     const CONFIG: BumpConfig = C;
 
     #[inline(always)]
@@ -805,7 +805,7 @@ unsafe impl<A: Allocator, const C: BumpConfig> Sealed for Bump<A, C> {
         unsafe { self.as_bump_scope().spec_alloc_prepared_slice(start, len, cap) }
     }
 }
-unsafe impl<A: Allocator, const C: BumpConfig> Sealed for BumpScope<'_, A, C> {
+unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for BumpScope<'_, A, C> {
     const CONFIG: BumpConfig = C;
 
     #[inline(always)]
@@ -955,7 +955,7 @@ unsafe impl<A: Allocator, const C: BumpConfig> Sealed for BumpScope<'_, A, C> {
         }
     }
 }
-unsafe impl Sealed for Unmanaged<'_> {
+unsafe impl BumpAllocatorPrivate for Unmanaged<'_> {
     const CONFIG: BumpConfig = DEFAULT_BUMP_CONFIG;
 
     #[inline(always)]
@@ -1042,7 +1042,7 @@ unsafe impl Sealed for Unmanaged<'_> {
 /// # Safety
 /// TODO
 #[expect(private_bounds)]
-pub unsafe trait BumpAllocator: Allocator + Sealed {
+pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// Allocate an object.
     ///
     /// # Panics
@@ -2228,7 +2228,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     #[must_use]
     #[inline(always)]
     fn checkpoint(&self) -> Checkpoint {
-        Sealed::checkpoint(self)
+        BumpAllocatorPrivate::checkpoint(self)
     }
 
     /// Resets the bump position to a previously created checkpoint.
@@ -2267,7 +2267,7 @@ pub unsafe trait BumpAllocator: Allocator + Sealed {
     /// ```
     #[inline(always)]
     unsafe fn reset_to(&self, checkpoint: Checkpoint) {
-        unsafe { Sealed::reset_to(self, checkpoint) }
+        unsafe { BumpAllocatorPrivate::reset_to(self, checkpoint) }
     }
 
     /// Returns true if the bump allocator is currently [claimed].
@@ -2456,7 +2456,7 @@ unsafe impl BumpAllocator for Unmanaged<'_> {
 /// # Safety
 /// TODO
 #[expect(private_bounds)]
-pub unsafe trait BumpAllocatorScope<'a>: BumpAllocator + Sealed {}
+pub unsafe trait BumpAllocatorScope<'a>: BumpAllocator + BumpAllocatorPrivate {}
 unsafe impl<'a, T: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for &T {}
 unsafe impl<'a, T: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for &mut T {}
 unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for &'a Bump<A, C> {}
@@ -2469,7 +2469,7 @@ unsafe impl<'a> BumpAllocatorScope<'a> for Unmanaged<'a> {}
 /// # Safety
 /// TODO
 #[expect(private_bounds)]
-pub unsafe trait MutBumpAllocator: BumpAllocator + Sealed {
+pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     /// Allocate elements of an iterator into a slice.
     ///
     /// This function is designed as a performance improvement over [`alloc_iter`].
@@ -2763,7 +2763,7 @@ unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for BumpScope<'_
 /// # Safety
 /// TODO
 #[expect(private_bounds)]
-pub unsafe trait MutBumpAllocatorScope<'a>: MutBumpAllocator + BumpAllocatorScope<'a> + Sealed {}
+pub unsafe trait MutBumpAllocatorScope<'a>: MutBumpAllocator + BumpAllocatorScope<'a> + BumpAllocatorPrivate {}
 unsafe impl<'a, T: MutBumpAllocator + BumpAllocatorScope<'a>> MutBumpAllocatorScope<'a> for T {}
 
 /// TODO

@@ -9,16 +9,16 @@ use alloc::boxed::Box;
 
 use crate::{
     bump_allocation::IntoRef, containers::MutBumpVec, error_behavior::ErrorBehavior, extra::box_from_utf8_unchecked,
-    traits::Sealed,
+    traits::BumpAllocatorPrivate,
 };
 
 #[repr(transparent)]
-pub(crate) struct MutBumpString<'a, A: Sealed, E> {
+pub(crate) struct MutBumpString<'a, A: BumpAllocatorPrivate, E> {
     vec: MutBumpVec<'a, u8, A>,
     marker: PhantomData<fn() -> E>,
 }
 
-impl<'a, A: Sealed, E> MutBumpString<'a, A, E>
+impl<'a, A: BumpAllocatorPrivate, E> MutBumpString<'a, A, E>
 where
     E: ErrorBehavior,
 {
@@ -77,7 +77,7 @@ where
     }
 }
 
-impl<A: Sealed, E: ErrorBehavior> fmt::Write for MutBumpString<'_, A, E> {
+impl<A: BumpAllocatorPrivate, E: ErrorBehavior> fmt::Write for MutBumpString<'_, A, E> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.push_str(s).ok().ok_or(fmt::Error)
     }
