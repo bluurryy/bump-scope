@@ -71,7 +71,8 @@ bytemuck = ["dep:bytemuck"]
 zerocopy-08 = ["dep:zerocopy-08"]
 
 ## Enables nightly features.
-## TODO: enumerate...
 ## 
-## Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
+## This feature and the APIs it enables are exempt from semver.
+##
+## TODO: describe what APIs this currently enables
 nightly = []

@@ -231,9 +231,10 @@
 //!   [`box_zero_init`](zerocopy_08::box_zero_init) and
 //!   [`box_zero_init_slice`](zerocopy_08::box_zero_init_slice).
 //! - **`nightly`** — Enables nightly features.
-//!   TODO: enumerate...
 //!
-//!   Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
+//!   This feature and the APIs it enables are exempt from semver.
+//!
+//!   TODO: describe what APIs this currently enables
 //! <!-- feature documentation end -->
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
@@ -278,6 +279,9 @@ mod no_drop;
 /// TODO
 pub mod owned_slice;
 mod polyfill;
+/// This is not part of the public api. This module is semver-exempt!
+#[doc(hidden)]
+pub mod private;
 mod raw_bump;
 pub mod stats;
 #[cfg(test)]
@@ -344,29 +348,6 @@ fn down_align_usize(addr: usize, align: usize) -> usize {
 fn bump_down(addr: NonZeroUsize, size: usize, align: usize) -> usize {
     let subtracted = addr.get().saturating_sub(size);
     down_align_usize(subtracted, align)
-}
-
-/// This is not part of the public api!
-///
-/// Any changes to this module are semver-exempt!
-#[doc(hidden)]
-pub mod private {
-    pub extern crate alloc;
-    pub extern crate core;
-
-    #[cold]
-    #[inline(never)]
-    #[cfg(feature = "panic-on-alloc")]
-    pub const fn capacity_overflow() -> ! {
-        panic!("capacity overflow");
-    }
-
-    #[cold]
-    #[inline(never)]
-    #[cfg(feature = "panic-on-alloc")]
-    pub const fn format_trait_error() -> ! {
-        panic!("formatting trait implementation returned an error");
-    }
 }
 
 #[cfg(feature = "panic-on-alloc")]

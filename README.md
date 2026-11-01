@@ -208,9 +208,10 @@ You can set the `deallocates` and `shrinks` config parameters to false to make d
   `box_zero_init` and
   `box_zero_init_slice`.
 - **`nightly`** — Enables nightly features.
-  TODO: enumerate...
 
-  Breaking changes to these features might be introduced in minor releases to keep up with changes in the nightly channel.
+  This feature and the APIs it enables are exempt from semver.
+
+  TODO: describe what APIs this currently enables
 <!-- feature documentation end -->
 
 

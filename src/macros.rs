@@ -47,19 +47,19 @@ macro_rules! vec {
         $crate::private::alloc::vec::Vec::new_in($bump)
     };
     [in $bump:expr; $($values:expr),* $(,)?] => {
-        $crate::extra::vec_from_owned_slice_in([$($values),*], $bump)
+        <[_]>::into_vec($crate::private::alloc::boxed::Box::new_in([$($values),*], $bump))
     };
     [in $bump:expr; $value:expr; $count:expr] => {
-        $crate::private::alloc::vec::from_elem_in($value, $count, $bump)
+        $crate::private::vec_from_elem_in($value, $count, $bump)
     };
     [try in $bump:expr] => {
         Ok::<_, $crate::private::core::alloc::AllocError>($crate::private::alloc::vec::Vec::new_in($bump))
     };
     [try in $bump:expr; $($values:expr),* $(,)?] => {
-        $crate::extra::vec_from_owned_slice_in([$($values),*], $bump)
+        $crate::private::box_try_new_in([$($values),*], $bump).map(|b| <[_]>::into_vec(b))
     };
     [try in $bump:expr; $value:expr; $count:expr] => {
-        $crate::BumpVec::try_from_elem_in($value, $count, $bump)
+        $crate::private::vec_try_from_elem_in($value, $count, $bump)
     };
     [$($tt:tt)*] => {
         $crate::private::alloc::vec![$($tt)*]
