@@ -3,7 +3,7 @@
 /// The drop implementation will not be called for `$ty` nor for any field that is not bound.
 macro_rules! destructure {
     (let $ty:path {
-        $($field:ident $(: $field_alias:ident)?),* $(,)?
+        $($field:tt $(: $field_alias:ident)?),* $(,)?
     } = $value:expr) => {
         let value: $ty = $value;
 
@@ -23,10 +23,10 @@ macro_rules! destructure {
 pub(crate) use destructure;
 
 macro_rules! or {
-    ($this:ident $that:ident) => {
+    ($this:tt $that:tt) => {
         $this
     };
-    ($that:ident) => {
+    ($that:tt) => {
         $that
     };
 }
