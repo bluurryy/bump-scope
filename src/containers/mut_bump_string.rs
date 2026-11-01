@@ -3,28 +3,34 @@
 //!
 //! For now we add a `ErrorBehavior` generic, just because it makes for simpler code.
 
-use core::{alloc::Allocator, ffi::CStr, fmt, marker::PhantomData};
+use core::{ffi::CStr, fmt, marker::PhantomData};
 
-use alloc::{boxed::Box, vec::Vec};
+use alloc::boxed::Box;
 
-use crate::{bump_allocation::IntoRef, error_behavior::ErrorBehavior, extra::box_from_utf8_unchecked};
+use crate::{
+    bump_allocation::IntoRef, containers::MutBumpVec, error_behavior::ErrorBehavior, extra::box_from_utf8_unchecked,
+    traits::Sealed,
+};
 
 #[repr(transparent)]
-pub(crate) struct String<A: Allocator, E: ErrorBehavior> {
-    vec: Vec<u8, A>,
+pub(crate) struct MutBumpString<'a, A: Sealed, E> {
+    vec: MutBumpVec<'a, u8, A>,
     marker: PhantomData<fn() -> E>,
 }
 
-impl<A: Allocator, E: ErrorBehavior> String<A, E> {
-    pub(crate) fn new(alloc: A) -> Self {
-        Self {
-            vec: Vec::new_in(alloc),
+impl<'a, A: Sealed, E> MutBumpString<'a, A, E>
+where
+    E: ErrorBehavior,
+{
+    #[expect(unused)]
+    pub(crate) fn new(min_cap: usize, alloc: &'a mut A) -> Result<Self, E> {
+        Ok(Self {
+            vec: MutBumpVec::new(min_cap, alloc)?,
             marker: PhantomData,
-        }
+        })
     }
 
-    #[expect(unused)]
-    pub(crate) fn new_from_vec(mut vec: Vec<u8, A>) -> Self {
+    pub(crate) fn new_from_vec(mut vec: MutBumpVec<'a, u8, A>) -> Self {
         // no bytes is valid utf8
         vec.clear();
 
@@ -34,14 +40,8 @@ impl<A: Allocator, E: ErrorBehavior> String<A, E> {
         }
     }
 
-    pub(crate) fn reserve_if_fallible(&mut self, additional: usize) -> Result<(), E> {
-        E::vec_reserve_if_fallible(&mut self.vec, additional)
-    }
-
     pub(crate) fn push_str(&mut self, str: &str) -> Result<(), E> {
-        self.reserve_if_fallible(str.len())?;
-        self.vec.extend_from_slice(str.as_bytes());
-        Ok(())
+        self.vec.extend_from_slice(str.as_bytes())
     }
 
     pub(crate) fn write_fmt(&mut self, args: fmt::Arguments) -> Result<(), E> {
@@ -55,16 +55,16 @@ impl<A: Allocator, E: ErrorBehavior> String<A, E> {
         })
     }
 
-    pub(crate) fn into_bytes(self) -> Box<[u8], A> {
+    pub(crate) fn into_bytes(self) -> Box<[u8], &'a A> {
         self.vec.into_boxed_slice()
     }
 
-    pub(crate) fn into_str(self) -> Box<str, A> {
+    pub(crate) fn into_str(self) -> Box<str, &'a A> {
         let bytes = self.into_bytes();
         unsafe { box_from_utf8_unchecked(bytes) }
     }
 
-    pub(crate) fn into_cstr(mut self) -> Result<IntoRef<CStr, A>, E> {
+    pub(crate) fn into_cstr(mut self) -> Result<IntoRef<CStr, &'a A>, E> {
         if let Some(nul) = self.vec.iter().position(|&c| c == b'\0') {
             self.vec.truncate(nul + 1);
         } else {
@@ -77,7 +77,7 @@ impl<A: Allocator, E: ErrorBehavior> String<A, E> {
     }
 }
 
-impl<A: Allocator, E: ErrorBehavior> fmt::Write for String<A, E> {
+impl<A: Sealed, E: ErrorBehavior> fmt::Write for MutBumpString<'_, A, E> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.push_str(s).ok().ok_or(fmt::Error)
     }

@@ -9,10 +9,11 @@ use alloc::{boxed::Box, vec::Vec};
 
 use crate::{SizedTypeProperties, error_behavior::ErrorBehavior, extra::imp_vec_extend, traits::Sealed};
 
-// We don't want the vector to try to deallocate since we didn't allocate anything in the first place
-pub(crate) struct MutVec<'a, T, A: Sealed>(ManuallyDrop<Vec<T, AllocatorWrapper<'a, A>>>);
+// The vector is wrapped in a `ManuallyDrop` since we don't want the vector to try to deallocate
+// since we didn't allocate anything in the first place.
+pub(crate) struct MutBumpVec<'a, T, A: Sealed>(ManuallyDrop<Vec<T, AllocatorWrapper<'a, A>>>);
 
-impl<'a, T, A: Sealed> MutVec<'a, T, A> {
+impl<'a, T, A: Sealed> MutBumpVec<'a, T, A> {
     pub(crate) fn new<E>(min_cap: usize, alloc: &'a mut A) -> Result<Self, E>
     where
         E: ErrorBehavior,
@@ -99,7 +100,7 @@ impl<'a, T, A: Sealed> MutVec<'a, T, A> {
     }
 }
 
-impl<T, A: Sealed> Drop for MutVec<'_, T, A> {
+impl<T, A: Sealed> Drop for MutBumpVec<'_, T, A> {
     fn drop(&mut self) {
         let len = self.0.len();
         let ptr = self.0.as_mut_ptr();

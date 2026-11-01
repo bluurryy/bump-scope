@@ -18,7 +18,7 @@ use crate::{
     bump_allocation::IntoRef,
     bump_down,
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
-    containers::{MutString, MutVec, String},
+    containers::{BumpString, MutBumpString, MutBumpVec},
     down_align_usize,
     error_behavior::ErrorBehavior,
     extra::{
@@ -358,7 +358,7 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
             return self.imp_alloc_str(string);
         }
 
-        let mut string = String::<_, E>::new(self);
+        let mut string = BumpString::<_, E>::new(self);
         string.write_fmt(args)?;
         Ok(string.into_str())
     }
@@ -412,7 +412,7 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
             return self.imp_alloc_cstr_from_str(string);
         }
 
-        let mut string = String::<_, E>::new(self);
+        let mut string = BumpString::<_, E>::new(self);
         string.write_fmt(args)?;
         string.into_cstr()
     }
@@ -494,11 +494,11 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
     /// # Safety
     ///
     /// TODO: won't "allocate"
-    fn imp_mut_alloc_vec<E, T>(&mut self, min_cap: usize) -> Result<MutVec<'_, T, Self>, E>
+    fn imp_mut_alloc_vec<E, T>(&mut self, min_cap: usize) -> Result<MutBumpVec<'_, T, Self>, E>
     where
         E: ErrorBehavior,
     {
-        MutVec::new(min_cap, self)
+        MutBumpVec::new(min_cap, self)
     }
 
     #[inline(always)]
@@ -530,7 +530,7 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
         }
 
         let vec = self.imp_mut_alloc_vec::<E, u8>(0)?;
-        let mut string = MutString::<_, E>::new_from_vec(vec);
+        let mut string = MutBumpString::<_, E>::new_from_vec(vec);
         string.write_fmt(args)?;
         Ok(string.into_str())
     }
@@ -545,7 +545,7 @@ pub(crate) unsafe trait Sealed: Allocator + Sized {
         }
 
         let vec = self.imp_mut_alloc_vec(0)?;
-        let mut string = MutString::<_, E>::new_from_vec(vec);
+        let mut string = MutBumpString::<_, E>::new_from_vec(vec);
         string.write_fmt(args)?;
         string.into_cstr()
     }
