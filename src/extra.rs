@@ -359,17 +359,6 @@ fn dangling_mut_slice<T>(len: usize) -> *mut [T] {
     ptr::slice_from_raw_parts_mut(ptr::dangling_mut(), len)
 }
 
-#[expect(unused)]
-pub(crate) unsafe fn boxu_from_raw<'a, T: ?Sized>(ptr: *mut T) -> BoxU<'a, T> {
-    unsafe { BoxU::from_raw_in(ptr, Unmanaged::VALUE) }
-}
-
-#[expect(unused)]
-pub(crate) fn boxu_uninit_zst<'a, T>() -> BoxU<'a, MaybeUninit<T>> {
-    assert!(T::IS_ZST);
-    unsafe { boxu_from_raw(ptr::dangling_mut()) }
-}
-
 pub(crate) fn box_uninit_zst_in<T, A>(alloc: A) -> Box<MaybeUninit<T>, A>
 where
     A: Allocator,
@@ -384,12 +373,6 @@ where
 {
     assert!(T::IS_ZST);
     unsafe { Box::from_raw_in(dangling_mut_slice(len), alloc) }
-}
-
-#[expect(unused)]
-pub(crate) fn boxu_uninit_zst_slice<'a, T>(len: usize) -> BoxU<'a, [MaybeUninit<T>]> {
-    assert!(T::IS_ZST);
-    unsafe { boxu_from_raw(dangling_mut_slice(len)) }
 }
 
 pub(crate) unsafe fn box_from_utf8_unchecked<A: Allocator>(boxed: Box<[u8], A>) -> Box<str, A> {

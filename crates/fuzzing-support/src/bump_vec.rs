@@ -2,9 +2,8 @@ use std::alloc::Global;
 
 use arbitrary::Arbitrary;
 use bump_scope::{
-    Bump,
+    Bump, BumpAllocator,
     config::{BumpConfig, BumpConfigBuilder},
-    traits::BumpAllocator,
 };
 use zerocopy::{FromBytes, Immutable, IntoBytes};
 

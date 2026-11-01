@@ -4,7 +4,7 @@ mod common;
 
 use std::{
     alloc::{Allocator, Global, Layout},
-    ptr::NonNull,
+    ptr,
 };
 
 use bump_scope::{Bump, config};
@@ -43,7 +43,7 @@ up_and_down! {
 
     #[test]
     fn allocate_zst_returns_dangling() {
-        let dangling_addr = NonNull::<()>::dangling().addr();
+        let dangling_addr = ptr::dangling::<()>().addr();
 
         // create a bump allocator with a chunk with no capacity
         let bump: Bump<Global, C> = Bump::new();
@@ -61,7 +61,7 @@ up_and_down! {
 
         macro_rules! mustnt_dangle {
             ($($expr:expr,)*) => {
-                $(assert_ne!(dangling_addr, $expr.addr(), stringify!($expr));)*
+                $(assert_ne!(dangling_addr, $expr.addr().get(), stringify!($expr));)*
             };
         }
 
@@ -88,7 +88,7 @@ up_and_down! {
     #[test]
     fn allocate_zst_returns_dangling_unallocated() {
         let bump: Bump<Global, C> = Bump::const_new();
-        let dangling_addr = NonNull::<()>::dangling().addr();
+        let dangling_addr = ptr::dangling::<()>().addr();
 
         macro_rules! must_dangle {
             ($($expr:expr,)*) => {
@@ -98,7 +98,7 @@ up_and_down! {
 
         macro_rules! mustnt_dangle {
             ($($expr:expr,)*) => {
-                $(assert_ne!(dangling_addr, $expr.addr(), stringify!($expr));)*
+                $(assert_ne!(dangling_addr, $expr.addr().get(), stringify!($expr));)*
             };
         }
 

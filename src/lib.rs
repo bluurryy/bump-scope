@@ -317,10 +317,10 @@ pub use bytemuck_and_zerocopy::bytemuck;
 #[cfg(feature = "zerocopy-08")]
 pub use bytemuck_and_zerocopy::zerocopy_08;
 
-/// TODO
+/// A `Box` without an allocator, alias for <code>Box<T, [Unmanaged]<'a>></code>.
 pub type BoxU<'a, T> = Box<T, Unmanaged<'a>>;
 
-/// TODO
+/// A `Vec` without an allocator, alias for <code>Vec<T, [Unmanaged]<'a>></code>.
 pub type VecU<'a, T> = Vec<T, Unmanaged<'a>>;
 
 /// The changelog.
