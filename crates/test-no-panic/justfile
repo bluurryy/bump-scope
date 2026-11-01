@@ -1,2 +1,3 @@
-test:
-    @cargo run -q
+[no-exit-message]
+test *args:
+    @cargo run -q -- {{ args }}

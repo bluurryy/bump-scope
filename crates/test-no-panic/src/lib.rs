@@ -9,8 +9,8 @@ use alloc::{
 use core::{alloc::Layout, ffi::CStr, fmt, mem::MaybeUninit, ptr::NonNull};
 
 use bump_scope::{
-    config::{BumpConfig, BumpConfigBuilder},
     Bump, BumpAllocation, BumpAllocator as _, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, MutBumpAllocator as _,
+    config::{BumpConfig, BumpConfigBuilder},
 };
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
@@ -356,7 +356,7 @@ up_and_down! {
 
     #[inline(never)]
     pub unsafe fn bump_reset_to(bump: &Bump<Global, DEFAULT>, checkpoint: Checkpoint) {
-        bump.reset_to(checkpoint)
+        unsafe { bump.reset_to(checkpoint) }
     }
 
     #[inline(never)]

@@ -1,6 +1,6 @@
 [package]
 name = "test-no-panic"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 bump-scope = { path = "../..", default-features = false, features = [

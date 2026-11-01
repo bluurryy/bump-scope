@@ -1,61 +1,45 @@
 use std::{
     env, fs,
+    io::{self, Write},
     process::{Command, ExitCode},
 };
 
 fn main() -> ExitCode {
+    let filter = env::args().nth(1);
+
     // cd into this package's directory
     env::set_current_dir(env!("CARGO_MANIFEST_DIR")).expect("failed to set current dir");
 
-    let lib = "test_no_panic";
-    let allowlist = [
-        // used for default constructing the base allocator for const constructibles,
-        // only gets called when the default constructor were to panic
-        "panic_cannot_unwind",
-    ];
-    let blocklist = ["panic"];
+    let mut names = function_names();
 
-    for name in function_names() {
+    if let Some(filter) = filter.as_deref() {
+        names.retain(|name| name.contains(filter));
+    }
+
+    let count = names.len();
+    progress_bar(0, count, "");
+
+    for (i, name) in names.into_iter().enumerate() {
         for dir in ["upwards", "downwards"] {
-            let Ok(asm) = compile_asm(&format!("{lib}::{dir}::{name}")) else {
+            if let Err(err) = check(dir, &name) {
+                eprintln!();
+                eprintln!("{err}");
                 return ExitCode::FAILURE;
             };
 
-            let mut lines = vec![];
-            let mut blocked = false;
-
-            for line in asm.lines() {
-                let line = line.replace(lib, "$crate");
-                let stripped_line = anstream::adapter::strip_str(&line).to_string();
-
-                let is_allowed = allowlist.iter().any(|s| stripped_line.contains(s))
-                    || !blocklist.iter().any(|s| stripped_line.contains(s));
-
-                if is_allowed {
-                    lines.push(line);
-                } else {
-                    const STYLE: anstyle::Style = anstyle::Style::new()
-                        .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::BrightRed)))
-                        .bold();
-
-                    lines.push(format!("{STYLE}{stripped_line}{STYLE:#}"));
-                    blocked = true;
-                }
-            }
-
-            if blocked {
-                let output = lines.join("\n");
-                eprintln!("{output}");
-                eprintln!();
-                print_error(&format!("panic in {dir}::{name}"));
-                return ExitCode::FAILURE;
-            }
-
-            eprintln!("{dir}::{name}");
+            progress_bar(i + 1, count, &format!("{dir}::{name}"));
         }
     }
 
+    progress_bar(count, count, "done!");
     ExitCode::SUCCESS
+}
+
+fn progress_bar(done: usize, total: usize, message: &str) {
+    let width = 70;
+    let filled = done * width / total;
+    eprint!("\r\x1b[2K[{}{}] {message}", "█".repeat(filled), " ".repeat(width - filled));
+    io::stderr().flush().unwrap();
 }
 
 fn function_names() -> Vec<String> {
@@ -79,7 +63,52 @@ fn function_names() -> Vec<String> {
     function_names
 }
 
-fn compile_asm(name: &str) -> Result<String, ()> {
+fn check(dir: &str, name: &str) -> Result<(), String> {
+    let lib = "test_no_panic";
+    let allowlist = [
+        // used for default constructing the base allocator for const constructibles,
+        // only gets called when the default constructor were to panic
+        "panic_cannot_unwind",
+    ];
+    let blocklist = ["panic"];
+
+    let asm = compile_asm(&format!("test_no_panic::{dir}::{name}"))?;
+    let mut lines = vec![];
+    let mut blocked = false;
+
+    for line in asm.lines() {
+        let line = line.replace(lib, "$crate");
+        let stripped_line = anstream::adapter::strip_str(&line).to_string();
+
+        let is_allowed =
+            allowlist.iter().any(|s| stripped_line.contains(s)) || !blocklist.iter().any(|s| stripped_line.contains(s));
+
+        if is_allowed {
+            lines.push(line);
+        } else {
+            const STYLE: anstyle::Style = anstyle::Style::new()
+                .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::BrightRed)))
+                .bold();
+
+            lines.push(format!("{STYLE}{stripped_line}{STYLE:#}"));
+            blocked = true;
+        }
+    }
+
+    if blocked {
+        const FUNCTION: anstyle::Style = anstyle::Style::new()
+            .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::BrightGreen)))
+            .bold();
+
+        let output = lines.join("\n");
+        let error = format_error("panic in");
+        Err(format!("{output}\n\n{error} {FUNCTION}{dir}::{name}{FUNCTION:#}"))
+    } else {
+        Ok(())
+    }
+}
+
+fn compile_asm(name: &str) -> Result<String, String> {
     // Output asm using `cargo-show-asm`.
     let output = Command::new("cargo")
         .arg("+nightly")
@@ -95,26 +124,23 @@ fn compile_asm(name: &str) -> Result<String, ()> {
         .expect("can't execute `cargo`");
 
     if !output.status.success() {
-        print_error(&format!("failed to generate asm for {name}"));
-        eprintln!("{}", String::from_utf8_lossy(&output.stderr));
-        return Err(());
+        let error = format_error(&format!("failed to generate asm for {name}"));
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("{error}\n\n{stderr}"));
     }
 
     match String::from_utf8(output.stdout) {
         Ok(string) => Ok(string),
-        Err(err) => {
-            print_error(&format!("asm output is not utf8: {err}"));
-            Err(())
-        }
+        Err(err) => Err(format_error(&format!("asm output is not utf8: {err}"))),
     }
 }
 
-fn print_error(message: &str) {
+fn format_error(message: &str) -> String {
     const LABEL: anstyle::Style = anstyle::Style::new()
         .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::BrightRed)))
         .bold();
 
     const MESSAGE: anstyle::Style = anstyle::Style::new().bold();
 
-    eprintln!("{LABEL}ERROR:{LABEL:#} {MESSAGE}{message}{MESSAGE:#}")
+    format!("{LABEL}ERROR:{LABEL:#} {MESSAGE}{message}{MESSAGE:#}")
 }
