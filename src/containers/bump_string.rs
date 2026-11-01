@@ -16,15 +16,7 @@ pub(crate) struct BumpString<A: Allocator, E: ErrorBehavior> {
 }
 
 impl<A: Allocator, E: ErrorBehavior> BumpString<A, E> {
-    pub(crate) fn new(alloc: A) -> Self {
-        Self {
-            vec: Vec::new_in(alloc),
-            marker: PhantomData,
-        }
-    }
-
-    #[expect(unused)]
-    pub(crate) fn new_from_vec(mut vec: Vec<u8, A>) -> Self {
+    pub(crate) fn from_vec(mut vec: Vec<u8, A>) -> Self {
         // no bytes is valid utf8
         vec.clear();
 

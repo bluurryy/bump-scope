@@ -22,15 +22,7 @@ impl<'a, A: BumpAllocatorPrivate, E> MutBumpString<'a, A, E>
 where
     E: ErrorBehavior,
 {
-    #[expect(unused)]
-    pub(crate) fn new(min_cap: usize, alloc: &'a mut A) -> Result<Self, E> {
-        Ok(Self {
-            vec: MutBumpVec::new(min_cap, alloc)?,
-            marker: PhantomData,
-        })
-    }
-
-    pub(crate) fn new_from_vec(mut vec: MutBumpVec<'a, u8, A>) -> Self {
+    pub(crate) fn from_vec(mut vec: MutBumpVec<'a, u8, A>) -> Self {
         // no bytes is valid utf8
         vec.clear();
 

@@ -357,7 +357,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
             return self.imp_alloc_str(string);
         }
 
-        let mut string = BumpString::<_, E>::new(self);
+        let mut string = BumpString::<_, E>::from_vec(Vec::new_in(self));
         string.write_fmt(args)?;
         Ok(string.into_str())
     }
@@ -411,7 +411,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
             return self.imp_alloc_cstr_from_str(string);
         }
 
-        let mut string = BumpString::<_, E>::new(self);
+        let mut string = BumpString::<_, E>::from_vec(Vec::new_in(self));
         string.write_fmt(args)?;
         string.into_cstr()
     }
@@ -528,7 +528,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
         }
 
         let vec = self.imp_mut_alloc_vec::<E, u8>(0)?;
-        let mut string = MutBumpString::<_, E>::new_from_vec(vec);
+        let mut string = MutBumpString::<_, E>::from_vec(vec);
         string.write_fmt(args)?;
         Ok(string.into_str())
     }
@@ -543,7 +543,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
         }
 
         let vec = self.imp_mut_alloc_vec(0)?;
-        let mut string = MutBumpString::<_, E>::new_from_vec(vec);
+        let mut string = MutBumpString::<_, E>::from_vec(vec);
         string.write_fmt(args)?;
         string.into_cstr()
     }

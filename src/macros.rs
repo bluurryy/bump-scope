@@ -1,5 +1,3 @@
-// TODO: contribute to allocator-api2?
-
 /// A replacement for [`vec!`] that accepts an optional allocator parameter.
 ///
 /// # Panics
