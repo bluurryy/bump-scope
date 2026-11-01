@@ -36,10 +36,11 @@ use crate::{
 ///
 /// A Vector:
 /// ```
-/// use bump_scope::{Bump, extra::{vec_from_owned_slice_in, split_off}};
+/// use bump_scope::{Bump, extra::split_off};
 /// let bump: Bump = Bump::new();
 ///
-/// let mut vec = vec_from_owned_slice_in([1, 2, 3, 4, 5, 6, 7, 8], &bump);
+/// let mut vec = Vec::new_in(&bump);
+/// vec.extend([1, 2, 3, 4, 5, 6, 7, 8]);
 ///
 /// let front = split_off(&mut vec, ..2);
 /// assert_eq!(&*front, [1, 2]);

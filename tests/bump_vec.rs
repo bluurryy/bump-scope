@@ -25,7 +25,7 @@ up_and_down! {
         let bump: Bump<Global, C> = Bump::new();
 
         // should shrink
-        let mut vec = vec![in &bump; 1, 2, 3, 4];
+        let mut vec = extra::vec![in &bump; 1, 2, 3, 4];
         assert_eq!(bump.stats().allocated(), 4 * 4);
         vec.shrink_to_fit();
         assert_eq!(bump.stats().allocated(), 4 * 4);
@@ -38,7 +38,7 @@ up_and_down! {
         drop(vec);
 
         // shouldn't shrink
-        let mut vec = vec![in bump.ref_change_config::<C_NO_SHRINK>(); 1, 2, 3, 4];
+        let mut vec = extra::vec![in bump.ref_change_config::<C_NO_SHRINK>(); 1, 2, 3, 4];
         assert_eq!(bump.stats().allocated(), 4 * 4);
         vec.shrink_to_fit();
         assert_eq!(bump.stats().allocated(), 4 * 4);
@@ -70,13 +70,13 @@ up_and_down! {
         let bump: Bump<Global, C> = Bump::new();
 
         // should deallocate
-        let vec = vec![in &bump; 1, 2, 3];
+        let vec = extra::vec![in &bump; 1, 2, 3];
         assert_eq!(bump.stats().allocated(), 3 * 4);
         drop(vec);
         assert_eq!(bump.stats().allocated(), 0);
 
         // shouldn't deallocate
-        let vec = vec![in bump.ref_change_config::<C_NO_DEALLOC>(); 1, 2, 3];
+        let vec = extra::vec![in bump.ref_change_config::<C_NO_DEALLOC>(); 1, 2, 3];
         assert_eq!(bump.stats().allocated(), 3 * 4);
         drop(vec);
         assert_eq!(bump.stats().allocated(), 3 * 4);
@@ -85,7 +85,7 @@ up_and_down! {
     #[test]
     fn into_slice() {
         let bump: Bump<Global, C> = Bump::new();
-        let mut vec = vec![in &bump; 1, 2, 3, 4, 5];
+        let mut vec = extra::vec![in &bump; 1, 2, 3, 4, 5];
         assert_eq!(bump.stats().allocated(), 5 * 4);
         vec.truncate(3);
         let slice = extra::vec_into_slice(vec);
@@ -96,7 +96,7 @@ up_and_down! {
     #[test]
     fn into_slice_without_shrink() {
         let bump: Bump<Global, C> = Bump::new();
-        let mut vec = vec![in &bump; 1, 2, 3, 4, 5];
+        let mut vec = extra::vec![in &bump; 1, 2, 3, 4, 5];
         assert_eq!(bump.stats().allocated(), 5 * 4);
         vec.truncate(3);
         let slice = extra::vec_into_slice(extra::detach_allocator(vec).0);

@@ -5,8 +5,7 @@ mod common;
 
 use bump_scope::{
     Bump, BumpAllocator as _,
-    extra::{split_off, vec_append},
-    vec,
+    extra::{self, split_off, vec_append},
 };
 
 use common::TestWrap;
@@ -251,8 +250,8 @@ fn boxed_str_split_off_panic_middle_end() {
 fn vec_compare_to_std() {
     let bump: Bump = Bump::new();
 
-    let mut std = vec!['a', 'b', 'c', 'd', 'e'];
-    let mut bmp = vec![in &bump; 'a', 'b', 'c', 'd', 'e'];
+    let mut std = extra::vec!['a', 'b', 'c', 'd', 'e'];
+    let mut bmp = extra::vec![in &bump; 'a', 'b', 'c', 'd', 'e'];
 
     let std_off = std.split_off(2);
     let bmp_off = split_off(&mut bmp, 2..);

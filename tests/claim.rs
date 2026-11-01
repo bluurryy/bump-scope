@@ -15,8 +15,8 @@ up_and_down! {
     fn scoped() {
         let bump = Bump::<Global, C>::new();
 
-        let vec1: Vec<u8, _> = vec![in &bump; 1, 2, 3];
-        let vec2: Vec<u8, _> = vec![in &bump; 4, 5, 6];
+        let vec1: Vec<u8, _> = extra::vec![in &bump; 1, 2, 3];
+        let vec2: Vec<u8, _> = extra::vec![in &bump; 4, 5, 6];
 
         assert_eq!(bump.stats().allocated(), 6);
 
@@ -35,8 +35,8 @@ up_and_down! {
     fn scope_guard() {
         let bump = Bump::<Global, C>::new();
 
-        let vec1: Vec<u8, _> = vec![in &bump; 1, 2, 3];
-        let vec2: Vec<u8, _> = vec![in &bump; 4, 5, 6];
+        let vec1: Vec<u8, _> = extra::vec![in &bump; 1, 2, 3];
+        let vec2: Vec<u8, _> = extra::vec![in &bump; 4, 5, 6];
 
         assert_eq!(bump.stats().allocated(), 6);
 

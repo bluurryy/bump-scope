@@ -9,7 +9,7 @@ use std::{
     vec::Vec,
 };
 
-use bump_scope::{Bump, vec};
+use bump_scope::{Bump, extra};
 
 use common::up_and_down;
 
@@ -93,51 +93,51 @@ up_and_down! {
 }
 
 fn test_vec_macro(alloc: impl Allocator) -> Result<(), AllocError> {
-    let empty: Vec<String, _> = vec![];
+    let empty: Vec<String, _> = extra::vec![];
     assert_eq!(empty.len(), 0);
     assert_eq!(empty.capacity(), 0);
 
-    let one: Vec<String, _> = vec![1.to_string()];
+    let one: Vec<String, _> = extra::vec![1.to_string()];
     assert_eq!(one.len(), 1);
     assert_eq!(one.capacity(), 1);
 
-    let two: Vec<String, _> = vec![1.to_string(), 2.to_string()];
+    let two: Vec<String, _> = extra::vec![1.to_string(), 2.to_string()];
     assert_eq!(two.len(), 2);
     assert_eq!(two.capacity(), 2);
 
-    let three: Vec<String, _> = vec![1.to_string(); 3];
+    let three: Vec<String, _> = extra::vec![1.to_string(); 3];
     assert_eq!(three.len(), 3);
     assert_eq!(three.capacity(), 3);
 
-    let empty: Vec<String, _> = vec![in &alloc];
+    let empty: Vec<String, _> = extra::vec![in &alloc];
     assert_eq!(empty.len(), 0);
     assert_eq!(empty.capacity(), 0);
 
-    let one: Vec<String, _> = vec![in &alloc; 1.to_string()];
+    let one: Vec<String, _> = extra::vec![in &alloc; 1.to_string()];
     assert_eq!(one.len(), 1);
     assert_eq!(one.capacity(), 1);
 
-    let two: Vec<String, _> = vec![in &alloc; 1.to_string(), 2.to_string()];
+    let two: Vec<String, _> = extra::vec![in &alloc; 1.to_string(), 2.to_string()];
     assert_eq!(two.len(), 2);
     assert_eq!(two.capacity(), 2);
 
-    let three: Vec<String, _> = vec![in &alloc; 1.to_string(); 3];
+    let three: Vec<String, _> = extra::vec![in &alloc; 1.to_string(); 3];
     assert_eq!(three.len(), 3);
     assert_eq!(three.capacity(), 3);
 
-    let empty: Vec<String, _> = vec![try in &alloc]?;
+    let empty: Vec<String, _> = extra::vec![try in &alloc]?;
     assert_eq!(empty.len(), 0);
     assert_eq!(empty.capacity(), 0);
 
-    let one: Vec<String, _> = vec![try in &alloc; 1.to_string()]?;
+    let one: Vec<String, _> = extra::vec![try in &alloc; 1.to_string()]?;
     assert_eq!(one.len(), 1);
     assert_eq!(one.capacity(), 1);
 
-    let two: Vec<String, _> = vec![try in &alloc; 1.to_string(), 2.to_string()]?;
+    let two: Vec<String, _> = extra::vec![try in &alloc; 1.to_string(), 2.to_string()]?;
     assert_eq!(two.len(), 2);
     assert_eq!(two.capacity(), 2);
 
-    let three: Vec<String, _> = vec![try in &alloc; 1.to_string(); 3]?;
+    let three: Vec<String, _> = extra::vec![try in &alloc; 1.to_string(); 3]?;
     assert_eq!(three.len(), 3);
     assert_eq!(three.capacity(), 3);
 

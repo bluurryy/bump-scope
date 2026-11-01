@@ -11,7 +11,7 @@ use std::{
     ptr::NonNull,
 };
 
-use bump_scope::{Bump, BumpAllocator as _, extra, vec};
+use bump_scope::{Bump, BumpAllocator as _, extra};
 
 macro_rules! zst_or_not {
     (
@@ -76,7 +76,7 @@ fn init_fill_with<T: Testable>() {
 fn vec_from_elem_in<T: Testable>() {
     expected_drops(4).panic_on_clone(3).run(|| {
         let bump: Bump = Bump::new();
-        let _vec = vec![in &bump; T::default(); 5];
+        let _vec = extra::vec![in &bump; T::default(); 5];
     });
 }
 

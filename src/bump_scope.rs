@@ -484,11 +484,11 @@ where
     ///
     /// # Examples
     /// ```
-    /// use bump_scope::{Bump, vec};
+    /// use bump_scope::{Bump, extra};
     ///
     /// let bump: Bump = Bump::new();
-    /// let vec1: Vec<u8, _> = vec![in &bump; 1, 2, 3];
-    /// let vec2: Vec<u8, _> = vec![in &bump; 4, 5, 6];
+    /// let vec1: Vec<u8, _> = extra::vec![in &bump; 1, 2, 3];
+    /// let vec2: Vec<u8, _> = extra::vec![in &bump; 4, 5, 6];
     ///
     /// bump.claim().scoped(|bump| {
     ///     // ...

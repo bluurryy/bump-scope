@@ -8,7 +8,7 @@ macro_rules! up_and_down {
             #[allow(unused_imports)]
             use super::*;
             #[allow(unused_imports)]
-            use $crate::{config::{BumpConfig, BumpConfigBuilder}, extra, vec};
+            use $crate::{config::{BumpConfig, BumpConfigBuilder}, extra};
 
             const DEFAULT_C: BumpConfig = BumpConfigBuilder::new()
                 .upwards(true)
@@ -21,7 +21,7 @@ macro_rules! up_and_down {
             #[allow(unused_imports)]
             use super::*;
             #[allow(unused_imports)]
-            use $crate::{config::{BumpConfig, BumpConfigBuilder}, extra, vec};
+            use $crate::{config::{BumpConfig, BumpConfigBuilder}, extra};
 
             const DEFAULT_C: BumpConfig = BumpConfigBuilder::new()
                 .upwards(false)

@@ -24,6 +24,9 @@ use crate::panic_on_error;
 pub use replace_allocator::{detach_allocator, replace_allocator};
 pub use split_off::{split_at, split_off};
 
+#[doc(inline)]
+pub use crate::__vec as vec;
+
 /// Maps the elements of a vector, reusing the allocation if possible.
 ///
 /// # Panics

@@ -44,24 +44,27 @@ where
     }
 }
 
+#[cfg(feature = "panic-on-alloc")]
 #[cfg(feature = "nightly")]
 pub use alloc::vec::from_elem_in as vec_from_elem_in;
 
+#[cfg(feature = "panic-on-alloc")]
 #[cfg(not(feature = "nightly"))]
-pub fn vec_from_elem_in<T, A>(value: T, count: usize, alloc: A) -> Result<Vec<T, A>, AllocError>
+pub fn vec_from_elem_in<T, A>(value: T, count: usize, alloc: A) -> Vec<T, A>
 where
     T: Clone,
     A: Allocator,
 {
-    let layout = Layout::array::<T>(count).map_err(|_| AllocError)?;
-    let slice = match alloc.allocate(layout) {
-        Ok(ok) => ok,
-        Err(_) => alloc::alloc::handle_alloc_error(layout),
+    let Ok(layout) = Layout::array::<T>(count) else {
+        capacity_overflow()
+    };
+    let Ok(slice) = alloc.allocate(layout) else {
+        alloc::alloc::handle_alloc_error(layout)
     };
     let ptr = slice.cast::<T>().as_ptr();
     let mut vec = unsafe { Vec::from_raw_parts_in(ptr, 0, count, alloc) };
     vec.extend(core::iter::repeat_n(value, count));
-    Ok(vec)
+    vec
 }
 
 pub fn vec_try_from_elem_in<T, A>(value: T, count: usize, alloc: A) -> Result<Vec<T, A>, AllocError>
