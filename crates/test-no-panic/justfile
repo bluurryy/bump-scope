@@ -1,2 +1,2 @@
 test:
-    cargo +nightly run --all-features
+    @cargo run -q

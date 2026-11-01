@@ -1,5 +1,5 @@
 #![no_std]
-#![expect(non_snake_case, mismatched_lifetime_syntaxes, clippy::missing_safety_doc)]
+#![expect(clippy::missing_safety_doc, clippy::type_complexity)]
 extern crate alloc;
 
 use alloc::{
@@ -10,38 +10,10 @@ use core::{alloc::Layout, ffi::CStr, fmt, mem::MaybeUninit, ptr::NonNull};
 
 use bump_scope::{
     config::{BumpConfig, BumpConfigBuilder},
-    zerocopy_08::BumpAllocatorExt,
-    BumpAllocator as _, MutBumpAllocator as _,
+    Bump, BumpAllocation, BumpAllocator as _, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, MutBumpAllocator as _,
 };
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
-
-macro_rules! type_definitions {
-    ($upwards:literal) => {
-        #[allow(unused)]
-        const DEFAULT_CLAIMABLE: bool = true;
-        #[allow(unused)]
-        const DEFAULT_GUARANTEED_ALLOCATED: bool = true;
-
-        #[allow(unused)]
-        const DEFAULT_C: BumpConfig = BumpConfigBuilder::new().upwards($upwards).build();
-
-        #[allow(unused)]
-        type Bump<const C: BumpConfig = DEFAULT_C> = bump_scope::Bump<Global, C>;
-
-        #[allow(unused)]
-        type BumpScope<'a, const C: BumpConfig = DEFAULT_C> = bump_scope::BumpScope<'a, Global, C>;
-
-        #[allow(unused)]
-        type BumpScopeGuard<'a, const C: BumpConfig = DEFAULT_C> = bump_scope::BumpScopeGuard<'a, Global, C>;
-
-        #[allow(unused)]
-        type BumpClaimGuard<'b, 'a, const C: BumpConfig = DEFAULT_C> = bump_scope::BumpClaimGuard<'b, 'a, Global, C>;
-
-        #[allow(unused)]
-        type BumpAllocation<'a, T, const C: BumpConfig = DEFAULT_C> = bump_scope::BumpAllocation<T, &'a Bump<C>>;
-    };
-}
 
 // Comment the line below to test that panic detection works.
 #[cfg(false)]
@@ -61,323 +33,389 @@ pub mod checking_that_panik_detection_works {
     }
 }
 
+const DEFAULT: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
+
 macro_rules! up_and_down {
-    (
-        $($tt:tt)*
-    ) => {
-        pub mod up {
+    ($($tt:tt)*) => {
+        pub mod upwards {
+            #[allow(unused_imports)]
             use super::*;
-            type_definitions!(true);
+
+            const DEFAULT: BumpConfig = BumpConfigBuilder(super::DEFAULT)
+                .upwards(true)
+                .build();
+
             $($tt)*
         }
 
-        pub mod down {
+        pub mod downwards {
+            #[allow(unused_imports)]
             use super::*;
-            type_definitions!(false);
+
+            const DEFAULT: BumpConfig = BumpConfigBuilder(super::DEFAULT)
+                .upwards(false)
+                .build();
+
             $($tt)*
         }
     };
 }
 
-pub mod test_constructors {
-    use super::*;
+up_and_down! {
+    const MIN_ALIGN_4: BumpConfig = BumpConfigBuilder(DEFAULT).min_align(4).build();
+    const NO_DUMMIES: BumpConfig = BumpConfigBuilder(DEFAULT).const_constructible(false).claimable(false).build();
+    const CONST_CONSTRUCTIBLE: BumpConfig = BumpConfigBuilder(NO_DUMMIES).const_constructible(true).build();
+    const CLAIMABLE: BumpConfig = BumpConfigBuilder(NO_DUMMIES).claimable(true).build();
 
-    up_and_down! {
-        const CONST_CONSTRUCTIBLE: BumpConfig = BumpConfigBuilder(DEFAULT_C).const_constructible(true).build();
+    // CONSTRUCTORS
 
-        pub fn Bump_const_new() -> Bump<CONST_CONSTRUCTIBLE> {
-            Bump::const_new()
-        }
-
-        pub fn Bump_default() -> Bump<CONST_CONSTRUCTIBLE> {
-            Bump::default()
-        }
-
-        pub fn Bump_try_new() -> Result<Bump> {
-            Bump::try_new()
-        }
-
-        pub fn Bump_try_with_size(size: usize) -> Result<Bump> {
-            Bump::try_with_size(size)
-        }
-
-        pub fn Bump_try_with_capacity(layout: Layout) -> Result<Bump> {
-            Bump::try_with_capacity(layout)
-        }
-
-        pub fn Bump_try_new_in() -> Result<Bump> {
-            Bump::try_new_in(Global)
-        }
-
-        pub fn Bump_try_with_size_in(size: usize) -> Result<Bump> {
-            Bump::try_with_size_in(size, Global)
-        }
-
-        pub fn Bump_try_with_capacity_in(layout: Layout) -> Result<Bump> {
-            Bump::try_with_capacity_in(layout, Global)
-        }
+    #[inline(never)]
+    pub fn bump_const_new() -> Bump<Global, DEFAULT> {
+        Bump::const_new()
     }
-}
 
-pub mod test_change_config {
-    use super::*;
-
-    up_and_down! {
-        const UNCLAIMABLE: BumpConfig = BumpConfigBuilder(DEFAULT_C).claimable(false).build();
-        const CONST_CONSTRUCTIBLE: BumpConfig = BumpConfigBuilder(DEFAULT_C).const_constructible(true).build();
-        const MIN_ALIGN_4: BumpConfig = BumpConfigBuilder(DEFAULT_C).min_align(4).build();
-
-        pub fn Bump_change_config_identity(bump: Bump) -> Bump {
-            bump.change_config()
-        }
-
-        pub fn Bump_change_config_increase_alignment(bump: Bump) -> Bump<MIN_ALIGN_4> {
-            bump.change_config()
-        }
-
-        pub fn Bump_change_config_decrease_alignment(bump: Bump<MIN_ALIGN_4>) -> Bump {
-            bump.change_config()
-        }
-
-        pub fn Bump_change_config_enable_claimable(bump: Bump<UNCLAIMABLE>) -> Bump {
-            bump.change_config()
-        }
-
-        pub fn Bump_change_config_enable_const_constructible(bump: Bump) -> Bump<CONST_CONSTRUCTIBLE> {
-            bump.change_config()
-        }
-
-        pub fn Bump_ref_change_config_enable_const_constructible(bump: &Bump) -> &Bump<CONST_CONSTRUCTIBLE> {
-            bump.ref_change_config()
-        }
-
-        pub fn Bump_mut_change_config_increase_alignment(bump: &mut Bump) -> &mut Bump<MIN_ALIGN_4> {
-            bump.mut_change_config()
-        }
-
-        pub fn BumpScope_change_config_identity(bump: BumpScope) -> BumpScope {
-            bump.change_config()
-        }
-
-        pub fn BumpScope_change_config_increase_alignment(bump: BumpScope) -> BumpScope<MIN_ALIGN_4> {
-            bump.change_config()
-        }
-
-        pub fn BumpScope_change_config_enable_claimable(bump: BumpScope<UNCLAIMABLE>) -> BumpScope {
-            bump.change_config()
-        }
-
-        pub fn BumpScope_change_config_disable_const_constructible(bump: BumpScope<CONST_CONSTRUCTIBLE>) -> BumpScope {
-            bump.change_config()
-        }
-
-        pub fn BumpScope_change_config_enable_const_constructible(bump: BumpScope) -> BumpScope<CONST_CONSTRUCTIBLE> {
-            bump.change_config()
-        }
-
-        pub fn BumpScope_ref_change_config_enable_const_constructible<'b, 'a>(bump: &'b BumpScope<'a>) -> &'b BumpScope<'a, CONST_CONSTRUCTIBLE> {
-            bump.ref_change_config()
-        }
-
-        pub fn BumpScope_mut_change_config_increase_alignment<'b, 'a>(bump: &'b mut BumpScope<'a>) -> &'b mut BumpScope<'a, MIN_ALIGN_4> {
-            bump.mut_change_config()
-        }
+    #[inline(never)]
+    pub fn bump_default() -> Bump<Global, DEFAULT> {
+        Bump::default()
     }
-}
 
-pub mod test_other {
-    use super::*;
-
-    up_and_down! {
-        pub fn Bump_drop(bump: Bump) {
-            drop(bump)
-        }
-
-        pub fn Bump_reset(bump: &mut Bump) {
-            bump.reset()
-        }
+    #[inline(never)]
+    pub fn bump_try_new() -> Result<Bump<Global, DEFAULT>> {
+        Bump::try_new()
     }
-}
 
-pub mod test_forwarded_methods {
-    use super::*;
-
-    up_and_down! {
-        const MIN_ALIGN_4: BumpConfig = BumpConfigBuilder(DEFAULT_C).min_align(4).build();
-
-        pub fn Bump_claim(bump: &Bump) -> BumpClaimGuard<'_, '_> {
-            bump.claim()
-        }
-
-        pub fn BumpScope_claim<'b, 'a>(bump: &'b BumpScope<'a>) -> BumpClaimGuard<'b, 'a> {
-            bump.claim()
-        }
-
-        pub fn Bump_is_claimed(bump: &Bump) -> bool {
-            bump.is_claimed()
-        }
-
-        pub fn Bump_scope_guard(bump: &mut Bump) -> BumpScopeGuard {
-            bump.scope_guard()
-        }
-
-        pub fn Bump_scoped(bump: &mut Bump, f: Box<dyn FnOnce(&mut BumpScope)>) {
-            bump.scoped(f)
-        }
-
-        pub fn Bump_scoped_with_config(bump: &mut Bump, f: Box<dyn FnOnce(&mut BumpScope<MIN_ALIGN_4>)>) {
-            bump.scoped_with_config(f)
-        }
-
-        pub fn Bump_with_config_min_align_inc(bump: &mut Bump, f: Box<dyn FnOnce(&mut BumpScope<MIN_ALIGN_4>)>) {
-            bump.with_config(f)
-        }
-
-        pub fn Bump_with_config_min_align_dec(bump: &mut Bump<MIN_ALIGN_4>, f: Box<dyn FnOnce(&mut BumpScope)>) {
-            bump.with_config(f)
-        }
-
-        pub fn Bump_try_alloc(bump: &Bump, value: u32) -> Result<BumpAllocation<u32>> {
-            bump.try_alloc(value)
-        }
-
-        pub fn Bump_try_alloc_default(bump: &Bump) -> Result<BumpAllocation<u32>> {
-            bump.try_alloc_default()
-        }
-
-        #[cfg(feature = "nightly")]
-        pub fn Bump_try_alloc_clone<'a>(bump: &'a Bump, value: &str) -> Result<BumpAllocation<'a, str>> {
-            bump.try_alloc_clone(value)
-        }
-
-        pub fn Bump_try_alloc_slice_move<'a>(bump: &'a Bump, slice: Box<[u32]>) -> Result<BumpAllocation<'a, [u32]>> {
-            bump.try_alloc_slice_move(slice)
-        }
-
-        pub fn Bump_try_alloc_slice_copy<'a>(bump: &'a Bump, value: &[u32]) -> Result<BumpAllocation<'a, [u32]>> {
-            bump.try_alloc_slice_copy(value)
-        }
-
-        pub fn Bump_try_alloc_slice_clone<'a>(bump: &'a Bump, value: &[u32]) -> Result<BumpAllocation<'a, [u32]>> {
-            bump.try_alloc_slice_clone(value)
-        }
-
-        pub fn Bump_try_alloc_slice_fill(bump: &Bump, len: usize, value: u32) -> Result<BumpAllocation<[u32]>> {
-            bump.try_alloc_slice_fill(len, value)
-        }
-
-        pub fn Bump_try_alloc_slice_fill_with<'a>(bump: &'a Bump, len: usize, f: &mut dyn FnMut() -> u32) -> Result<BumpAllocation<'a, [u32]>> {
-            bump.try_alloc_slice_fill_with(len, f)
-        }
-
-        pub fn Bump_try_alloc_str<'a>(bump: &'a Bump, value: &str) -> Result<BumpAllocation<'a, str>> {
-            bump.try_alloc_str(value)
-        }
-
-        pub fn Bump_try_alloc_fmt<'a>(bump: &'a Bump, args: fmt::Arguments) -> Result<BumpAllocation<'a, str>> {
-            bump.try_alloc_fmt(args)
-        }
-
-        pub fn Bump_try_alloc_fmt_mut<'a>(bump: &'a mut Bump, args: fmt::Arguments) -> Result<BumpAllocation<'a, str>> {
-            bump.try_alloc_fmt_mut(args)
-        }
-
-        pub fn Bump_try_alloc_cstr<'a>(bump: &'a Bump, value: &CStr) -> Result<&'a CStr> {
-            Ok(bump.try_alloc_cstr(value)?.into_ref())
-        }
-
-        pub fn Bump_try_alloc_cstr_from_str<'a>(bump: &'a Bump, value: &str) -> Result<&'a CStr> {
-            Ok(bump.try_alloc_cstr_from_str(value)?.into_ref())
-        }
-
-        pub fn Bump_try_alloc_cstr_fmt<'a>(bump: &'a Bump, value: fmt::Arguments) -> Result<&'a CStr> {
-            Ok(bump.try_alloc_cstr_fmt(value)?.into_ref())
-        }
-
-        pub fn Bump_try_alloc_cstr_fmt_mut<'a>(bump: &'a mut Bump, value: fmt::Arguments) -> Result<&'a CStr> {
-            Ok(bump.try_alloc_cstr_fmt_mut(value)?.into_ref())
-        }
-
-        // pub fn Bump_try_alloc_iter(bump: &Bump, value: core::ops::Range<u32>) -> Result<BumpAllocation<[u32]>> {
-        //     bump.try_alloc_iter(value)
-        // }
-
-        // pub fn Bump_try_alloc_iter_mut(bump: &mut Bump, value: core::ops::Range<u32>) -> Result<BumpAllocation<[u32]>> {
-        //     bump.try_alloc_iter_mut(value)
-        // }
-
-        pub fn Bump_try_alloc_uninit(bump: &Bump) -> Result<BumpAllocation<MaybeUninit<u32>>> {
-            bump.try_alloc_uninit()
-        }
-
-        pub fn Bump_try_alloc_uninit_slice(bump: &Bump, len: usize) -> Result<BumpAllocation<[MaybeUninit<u32>]>> {
-            bump.try_alloc_uninit_slice(len)
-        }
-
-        pub fn Bump_try_alloc_uninit_slice_for<'a>(bump: &'a Bump, slice: &[u32]) -> Result<BumpAllocation<'a, [MaybeUninit<u32>]>> {
-            bump.try_alloc_uninit_slice_for(slice)
-        }
-
-        pub fn Bump_try_reserve(bump: &Bump, additional: usize) -> Result {
-            bump.try_reserve(additional)
-        }
+    #[inline(never)]
+    pub fn bump_try_with_size(size: usize) -> Result<Bump<Global, DEFAULT>> {
+        Bump::try_with_size(size)
     }
-}
 
-pub mod test_allocator_trait {
-    use super::*;
-
-    up_and_down! {
-        pub fn Bump_allocate(bump: &Bump, layout: Layout) -> Result<NonNull<[u8]>> {
-            bump.allocate(layout)
-        }
-
-        pub unsafe fn Bump_deallocate(bump: &Bump, ptr: NonNull<u8>, layout: Layout) {
-            bump.deallocate(ptr, layout)
-        }
-
-        pub fn Bump_allocate_zeroed(bump: &Bump, layout: Layout) -> Result<NonNull<[u8]>> {
-            bump.allocate_zeroed(layout)
-        }
-
-        pub unsafe fn Bump_grow(bump: &Bump, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>> {
-            bump.grow(ptr, old_layout, new_layout)
-        }
-
-        pub unsafe fn Bump_grow_zeroed(bump: &Bump, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>> {
-            bump.grow_zeroed(ptr, old_layout, new_layout)
-        }
-
-        pub unsafe fn Bump_shrink(bump: &Bump, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>> {
-            bump.shrink(ptr, old_layout, new_layout)
-        }
+    #[inline(never)]
+    pub fn bump_try_capacity(layout: Layout) -> Result<Bump<Global, DEFAULT>> {
+        Bump::try_with_capacity(layout)
     }
-}
 
-pub mod test_extension_traits {
-    use super::*;
+    // ALLOCATOR
 
-    up_and_down! {
-        pub fn Bump_try_alloc_zeroed(bump: &Bump) -> Result<BumpAllocation<u32>> {
-            bump.try_alloc_zeroed()
-        }
-
-        pub fn Bump_try_alloc_zeroed_slice(bump: &Bump, len: usize) -> Result<BumpAllocation<[u32]>> {
-            bump.try_alloc_zeroed_slice(len)
-        }
+    #[inline(never)]
+    pub fn bump_allocate(bump: &Bump<Global, DEFAULT>, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        bump.allocate(layout)
     }
-}
 
-pub mod test_alloc_try_with {
-    use super::*;
+    #[inline(never)]
+    pub fn bump_allocate_zeroed(bump: &Bump<Global, DEFAULT>, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        bump.allocate_zeroed(layout)
+    }
 
-    up_and_down! {
-        pub fn Bump_try_alloc_try_with(bump: &Bump, f: fn() -> Result<u32, u32>) -> Result<Result<BumpAllocation<u32>, u32>> {
-            bump.try_alloc_try_with(f)
-        }
+    #[inline(never)]
+    pub unsafe fn bump_deallocate(bump: &Bump<Global, DEFAULT>, ptr: NonNull<u8>, layout: Layout) {
+        unsafe { bump.deallocate(ptr, layout) }
+    }
 
-        pub fn Bump_try_alloc_try_with_mut(bump: &mut Bump, f: fn() -> Result<u32, u32>) -> Result<Result<BumpAllocation<u32>, u32>> {
-            bump.try_alloc_try_with_mut(f)
-        }
+    #[inline(never)]
+    pub unsafe fn bump_grow(bump: &Bump<Global, DEFAULT>, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        unsafe { bump.grow(ptr, old_layout, new_layout) }
+    }
+
+    #[inline(never)]
+    pub unsafe fn bump_grow_zeroed(bump: &Bump<Global, DEFAULT>, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        unsafe { bump.grow_zeroed(ptr, old_layout, new_layout) }
+    }
+
+    #[inline(never)]
+    pub unsafe fn bump_shrink(bump: &Bump<Global, DEFAULT>, ptr: NonNull<u8>, old_layout: Layout, new_layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        unsafe { bump.shrink(ptr, old_layout, new_layout) }
+    }
+
+    // CHANGE CONFIG
+
+    #[inline(never)]
+    pub fn bump_change_config_identity(bump: Bump<Global, DEFAULT>) -> Bump<Global, DEFAULT> {
+        bump.change_config()
+    }
+
+    #[inline(never)]
+    pub fn bump_change_config_increase_align(bump: Bump<Global, DEFAULT>) -> Bump<Global, MIN_ALIGN_4> {
+        bump.change_config()
+    }
+
+    #[inline(never)]
+    pub fn bump_change_config_decrease_align(bump: Bump<Global, MIN_ALIGN_4>) -> Bump<Global, DEFAULT> {
+        bump.change_config()
+    }
+
+    #[inline(never)]
+    pub fn bump_change_config_enable_dummies(bump: Bump<Global, NO_DUMMIES>) -> Bump<Global, DEFAULT> {
+        bump.change_config()
+    }
+
+    // REF CHANGE CONFIG
+
+    #[inline(never)]
+    pub fn bump_ref_change_config_identity(bump: &Bump<Global, DEFAULT>) -> &Bump<Global, DEFAULT> {
+        bump.ref_change_config()
+    }
+
+    #[inline(never)]
+    pub fn bump_ref_change_config_enable_const_constructible(bump: &Bump<Global, NO_DUMMIES>) -> &Bump<Global, CONST_CONSTRUCTIBLE> {
+        bump.ref_change_config()
+    }
+
+    // MUT CHANGE CONFIG
+
+    #[inline(never)]
+    pub fn bump_mut_change_config_identity(bump: &mut Bump<Global, DEFAULT>) -> &mut Bump<Global, DEFAULT> {
+        bump.mut_change_config()
+    }
+
+    #[inline(never)]
+    pub fn bump_mut_change_config_increase_align(bump: &mut Bump<Global, DEFAULT>) -> &mut Bump<Global, MIN_ALIGN_4> {
+        bump.mut_change_config()
+    }
+
+    // SCOPE CHANGE CONFIG
+
+    #[inline(never)]
+    pub fn bump_scope_change_config_identity(bump: BumpScope<Global, DEFAULT>) -> BumpScope<Global, DEFAULT> {
+        bump.change_config()
+    }
+
+    #[inline(never)]
+    pub fn bump_scope_change_config_increase_align(bump: BumpScope<Global, DEFAULT>) -> BumpScope<Global, MIN_ALIGN_4> {
+        bump.change_config()
+    }
+
+    #[inline(never)]
+    pub fn bump_scope_change_config_enable_claimable(bump: BumpScope<Global, NO_DUMMIES>) -> BumpScope<Global, CLAIMABLE> {
+        bump.change_config()
+    }
+
+    #[inline(never)]
+    pub fn bump_scope_change_config_disable_const_constructible(bump: BumpScope<Global, CONST_CONSTRUCTIBLE>) -> BumpScope<Global, NO_DUMMIES> {
+        bump.change_config()
+    }
+
+    #[inline(never)]
+    pub fn bump_scope_change_config_enable_const_constructible(bump: BumpScope<Global, NO_DUMMIES>) -> BumpScope<Global, CONST_CONSTRUCTIBLE> {
+        bump.change_config()
+    }
+
+    // SCOPE REF CHANGE CONFIG
+
+    #[inline(never)]
+    pub fn bump_scope_ref_change_config_enable_const_constructible<'b, 'a>(bump: &'b BumpScope<'a, Global, NO_DUMMIES>) -> &'b BumpScope<'a, Global, CONST_CONSTRUCTIBLE> {
+        bump.ref_change_config()
+    }
+
+    // SCOPE MUT CHANGE CONFIG
+
+    #[inline(never)]
+    pub fn bump_scope_mut_change_config_increase_align<'b, 'a>(bump: &'b mut BumpScope<'a, Global, DEFAULT>) -> &'b BumpScope<'a, Global, MIN_ALIGN_4> {
+        bump.mut_change_config()
+    }
+
+    // DROP
+
+    #[inline(never)]
+    pub fn bump_drop(bump: Bump<Global, DEFAULT>) {
+        drop(bump)
+    }
+
+    // OTHER API
+
+    #[inline(never)]
+    pub fn bump_reset(bump: &mut Bump<Global, DEFAULT>) {
+        bump.reset()
+    }
+
+    #[inline(never)]
+    pub fn bump_claim(bump: &mut Bump<Global, CLAIMABLE>) -> BumpClaimGuard<'_, '_, Global, CLAIMABLE> {
+        bump.claim()
+    }
+
+    #[inline(never)]
+    pub fn bump_scope_guard(bump: &mut Bump<Global, DEFAULT>) -> BumpScopeGuard<'_, Global, DEFAULT> {
+        bump.scope_guard()
+    }
+
+    #[inline(never)]
+    pub fn bump_scoped(bump: &mut Bump<Global, DEFAULT>, f: Box<dyn FnOnce(&mut BumpScope<Global, DEFAULT>)>) {
+        bump.scoped(f)
+    }
+
+    #[inline(never)]
+    pub fn bump_scoped_with_config_increase_align(bump: &mut Bump<Global, DEFAULT>, f: Box<dyn FnOnce(&mut BumpScope<Global, MIN_ALIGN_4>)>) {
+        bump.scoped_with_config(f)
+    }
+
+    #[inline(never)]
+    pub fn bump_scoped_with_config_decrease_align(bump: &mut Bump<Global, MIN_ALIGN_4>, f: Box<dyn FnOnce(&mut BumpScope<Global, DEFAULT>)>) {
+        bump.scoped_with_config(f)
+    }
+
+    // BUMP ALLOCATOR
+
+    #[inline(never)]
+    pub fn bump_try_alloc(bump: &Bump<Global, DEFAULT>, value: u32) -> Result<BumpAllocation<u32, &Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc(value)
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_default(bump: &Bump<Global, DEFAULT>) -> Result<BumpAllocation<u32, &Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc_default()
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_clone<'a>(bump: &'a Bump<Global, DEFAULT>, str: &str) -> Result<BumpAllocation<str, &'a Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc_clone(str)
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_uninit(bump: &Bump<Global, DEFAULT>) -> Result<BumpAllocation<MaybeUninit<u32>, &Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc_uninit()
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_slice_move(bump: &Bump<Global, DEFAULT>, slice: Box<[u32]>) -> Result<BumpAllocation<[u32], &Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc_slice_move(slice)
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_slice_copy<'a>(bump: &'a Bump<Global, DEFAULT>, slice: &[u32]) -> Result<BumpAllocation<[u32], &'a Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc_slice_copy(slice)
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_slice_clone<'a>(bump: &'a Bump<Global, DEFAULT>, slice: &[u32]) -> Result<BumpAllocation<[u32], &'a Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc_slice_clone(slice)
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_slice_fill(bump: &Bump<Global, DEFAULT>, len: usize, value: u32) -> Result<BumpAllocation<[u32], &Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc_slice_fill(len, value)
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_slice_fill_with<'a>(bump: &'a Bump<Global, DEFAULT>, len: usize, f: &mut dyn FnMut() -> u32) -> Result<BumpAllocation<[u32], &'a Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc_slice_fill_with(len, f)
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_uninit_slice(bump: &Bump<Global, DEFAULT>, len: usize) -> Result<BumpAllocation<[MaybeUninit<u32>], &Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc_uninit_slice(len)
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_uninit_slice_for<'a>(bump: &'a Bump<Global, DEFAULT>, slice: &[u32]) -> Result<BumpAllocation<[MaybeUninit<u32>], &'a Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc_uninit_slice_for(slice)
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_str<'a>(bump: &'a Bump<Global, DEFAULT>, str: &str) -> Result<BumpAllocation<str, &'a Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc_str(str)
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_fmt<'a>(bump: &'a Bump<Global, DEFAULT>, args: fmt::Arguments) -> Result<BumpAllocation<str, &'a Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc_fmt(args)
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_cstr<'a>(bump: &'a Bump<Global, DEFAULT>, str: &CStr) -> Result<&'a CStr, AllocError> {
+        Ok(bump.try_alloc_cstr(str)?.into_ref())
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_cstr_from_str<'a>(bump: &'a Bump<Global, DEFAULT>, str: &str) -> Result<&'a CStr, AllocError> {
+        Ok(bump.try_alloc_cstr_from_str(str)?.into_ref())
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_cstr_fmt<'a>(bump: &'a Bump<Global, DEFAULT>, args: fmt::Arguments) -> Result<&'a CStr, AllocError> {
+        Ok(bump.try_alloc_cstr_fmt(args)?.into_ref())
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_iter<'a>(bump: &'a Bump<Global, DEFAULT>, iter: &mut dyn Iterator<Item = u32>) -> Result<BumpAllocation<[u32], &'a Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc_iter(iter)
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_iter_exact<'a>(bump: &'a Bump<Global, DEFAULT>, iter: &mut dyn ExactSizeIterator<Item = u32>) -> Result<BumpAllocation<[u32], &'a Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc_iter_exact(iter)
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_try_with<'a>(bump: &'a Bump<Global, DEFAULT>, f: &dyn Fn() -> Result<u32, i32>) -> Result<Result<BumpAllocation<u32, &'a Bump<Global, DEFAULT>>, i32>, AllocError> {
+        bump.try_alloc_try_with(f)
+    }
+
+    #[inline(never)]
+    pub fn bump_checkpoint(bump: &Bump<Global, DEFAULT>) -> Checkpoint {
+        bump.checkpoint()
+    }
+
+    #[inline(never)]
+    pub unsafe fn bump_reset_to(bump: &Bump<Global, DEFAULT>, checkpoint: Checkpoint) {
+        bump.reset_to(checkpoint)
+    }
+
+    #[inline(never)]
+    pub fn bump_is_claimed(bump: &Bump<Global, DEFAULT>) -> bool {
+        bump.is_claimed()
+    }
+
+    #[inline(never)]
+    pub fn bump_try_reserve(bump: &Bump<Global, DEFAULT>, additional: usize) -> Result<(), AllocError> {
+        bump.try_reserve(additional)
+    }
+
+    // MUT BUMP ALLOCATOR
+
+    #[inline(never)]
+    pub fn bump_try_alloc_iter_mut<'a>(bump: &'a mut Bump<Global, DEFAULT>, iter: &mut dyn Iterator<Item = u32>) -> Result<BumpAllocation<[u32], &'a Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc_iter_mut(iter)
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_fmt_mut<'a>(bump: &'a mut Bump<Global, DEFAULT>, args: fmt::Arguments) -> Result<BumpAllocation<str, &'a Bump<Global, DEFAULT>>, AllocError> {
+        bump.try_alloc_fmt_mut(args)
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_cstr_fmt_mut<'a>(bump: &'a mut Bump<Global, DEFAULT>, args: fmt::Arguments) -> Result<&'a CStr, AllocError> {
+        Ok(bump.try_alloc_cstr_fmt_mut(args)?.into_ref())
+    }
+
+    #[inline(never)]
+    pub fn bump_try_alloc_try_with_mut<'a>(bump: &'a mut Bump<Global, DEFAULT>, f: &dyn Fn() -> Result<u32, i32>) -> Result<Result<BumpAllocation<u32, &'a Bump<Global, DEFAULT>>, i32>, AllocError> {
+        bump.try_alloc_try_with_mut(f)
+    }
+
+    // ZEROCOPY
+
+    #[inline(never)]
+    pub fn zerocopy_08_bump_try_alloc_zeroed(bump: &Bump<Global, DEFAULT>) -> Result<BumpAllocation<u32, &Bump<Global, DEFAULT>>, AllocError> {
+        use bump_scope::zerocopy_08::BumpAllocatorExt;
+        bump.try_alloc_zeroed()
+    }
+
+    #[inline(never)]
+    pub fn zerocopy_08_bump_try_alloc_zeroed_slice(bump: &Bump<Global, DEFAULT>, len: usize) -> Result<BumpAllocation<[u32], &Bump<Global, DEFAULT>>, AllocError> {
+        use bump_scope::zerocopy_08::BumpAllocatorExt;
+        bump.try_alloc_zeroed_slice(len)
+    }
+
+    // BYTEMUCK
+
+    #[inline(never)]
+    pub fn bytemuck_bump_try_alloc_zeroed(bump: &Bump<Global, DEFAULT>) -> Result<BumpAllocation<u32, &Bump<Global, DEFAULT>>, AllocError> {
+        use bump_scope::bytemuck::BumpAllocatorExt;
+        bump.try_alloc_zeroed()
+    }
+
+    #[inline(never)]
+    pub fn bytemuck_bump_try_alloc_zeroed_slice(bump: &Bump<Global, DEFAULT>, len: usize) -> Result<BumpAllocation<[u32], &Bump<Global, DEFAULT>>, AllocError> {
+        use bump_scope::bytemuck::BumpAllocatorExt;
+        bump.try_alloc_zeroed_slice(len)
     }
 }

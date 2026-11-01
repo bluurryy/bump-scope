@@ -7,72 +7,114 @@ fn main() -> ExitCode {
     // cd into this package's directory
     env::set_current_dir(env!("CARGO_MANIFEST_DIR")).expect("failed to set current dir");
 
-    // Output asm using `cargo-show-asm`.
-    let output = Command::new("cargo")
-        .arg("asm")
-        .arg("--lib")
-        .arg("--everything")
-        .arg("--simplify")
-        .arg("--color")
-        .output()
-        .expect("failed to run `cargo asm`");
+    let lib = "test_no_panic";
+    let allowlist = [
+        // used for default constructing the base allocator for const constructibles,
+        // only gets called when the default constructor were to panic
+        "panic_cannot_unwind",
+    ];
+    let blocklist = ["panic"];
 
-    if !output.status.success() {
-        eprintln!("{}", String::from_utf8_lossy(&output.stderr));
-        return ExitCode::FAILURE;
-    }
+    for name in function_names() {
+        for dir in ["upwards", "downwards"] {
+            let Ok(asm) = compile_asm(&format!("{lib}::{dir}::{name}")) else {
+                return ExitCode::FAILURE;
+            };
 
-    let asm = String::from_utf8(output.stdout).expect("asm is not utf8");
+            let mut lines = vec![];
+            let mut blocked = false;
 
-    // We're gonna be looking for the string "panic" and since our crate name
-    // contains this string we remove the crate name from the asm.
-    let asm = asm.replace("test_no_panic", "$crate");
+            for line in asm.lines() {
+                let line = line.replace(lib, "$crate");
+                let stripped_line = anstream::adapter::strip_str(&line).to_string();
 
-    // Makes aligning error markers easier.
-    let asm = asm.replace('\t', "    ");
+                let is_allowed = allowlist.iter().any(|s| stripped_line.contains(s))
+                    || !blocklist.iter().any(|s| stripped_line.contains(s));
 
-    let sus_words = ["panic"];
-    let mut sus = vec![];
+                if is_allowed {
+                    lines.push(line);
+                } else {
+                    const STYLE: anstyle::Style = anstyle::Style::new()
+                        .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::BrightRed)))
+                        .bold();
 
-    for (line, row) in asm.lines().zip(1..) {
-        for sus_word in sus_words {
-            let stripped_line = anstream::adapter::strip_str(line).to_string();
-
-            if let Some(col) = stripped_line.find(sus_word) {
-                sus.push((row, [col, col + sus_word.len()], line))
+                    lines.push(format!("{STYLE}{stripped_line}{STYLE:#}"));
+                    blocked = true;
+                }
             }
+
+            if blocked {
+                let output = lines.join("\n");
+                eprintln!("{output}");
+                eprintln!();
+                print_error(&format!("panic in {dir}::{name}"));
+                return ExitCode::FAILURE;
+            }
+
+            eprintln!("{dir}::{name}");
         }
     }
 
-    if sus.is_empty() {
-        return ExitCode::SUCCESS;
+    ExitCode::SUCCESS
+}
+
+fn function_names() -> Vec<String> {
+    let source = fs::read_to_string("src/lib.rs").unwrap();
+    let start = source.find("up_and_down! {").unwrap();
+    let region = &source[start..];
+    let mut function_names = Vec::new();
+
+    for line in region.lines() {
+        if let Some(i) = line.find("fn ") {
+            let start = i + 3;
+            let end = line[start..]
+                .char_indices()
+                .find_map(|(i, c)| matches!(c, '(' | '<').then_some(i))
+                .unwrap();
+            let name = &line[start..start + end];
+            function_names.push(name.to_string());
+        }
     }
 
-    let file = "out/everything.asm";
+    function_names
+}
 
-    for &(row, [start, end], line) in &sus {
-        let col = start + 1;
-        let start_pad = " ".repeat(start);
-        let underline = "^".repeat(end - start);
-        let style = anstyle::Style::new()
-            .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::BrightRed)))
-            .bold();
+fn compile_asm(name: &str) -> Result<String, ()> {
+    // Output asm using `cargo-show-asm`.
+    let output = Command::new("cargo")
+        .arg("+nightly")
+        .arg("asm")
+        .arg("--quiet")
+        .arg("--lib")
+        .arg("--simplify")
+        .arg("--color")
+        .arg("--context=1000")
+        .arg(name)
+        .arg("0")
+        .output()
+        .expect("can't execute `cargo`");
 
-        eprintln!(
-            "\
- --> {file}:{row}:{col}
-   |
-   | {line}
-   | {start_pad}{style}{underline}{style:#}
-   |
-"
-        );
+    if !output.status.success() {
+        print_error(&format!("failed to generate asm for {name}"));
+        eprintln!("{}", String::from_utf8_lossy(&output.stderr));
+        return Err(());
     }
 
-    eprintln!("Found {} suspicious locations.", sus.len());
+    match String::from_utf8(output.stdout) {
+        Ok(string) => Ok(string),
+        Err(err) => {
+            print_error(&format!("asm output is not utf8: {err}"));
+            Err(())
+        }
+    }
+}
 
-    let stripped_asm = anstream::adapter::strip_str(&asm).to_string();
-    fs::write(file, stripped_asm).expect("failed to write asm to file");
+fn print_error(message: &str) {
+    const LABEL: anstyle::Style = anstyle::Style::new()
+        .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::BrightRed)))
+        .bold();
 
-    ExitCode::FAILURE
+    const MESSAGE: anstyle::Style = anstyle::Style::new().bold();
+
+    eprintln!("{LABEL}ERROR:{LABEL:#} {MESSAGE}{message}{MESSAGE:#}")
 }

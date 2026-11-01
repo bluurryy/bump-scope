@@ -5,9 +5,8 @@ edition = "2021"
 [dependencies]
 bump-scope = { path = "../..", default-features = false, features = [
   "zerocopy-08",
+  "bytemuck",
+  "nightly",
 ] }
 anstream = { version = "1.0.0", default-features = false }
 anstyle = { version = "1.0.14", default-features = false }
-
-[features]
-nightly = ["bump-scope/nightly"]
