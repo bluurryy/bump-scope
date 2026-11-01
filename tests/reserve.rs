@@ -3,9 +3,8 @@
 use std::alloc::{Allocator, Global, Layout};
 
 use bump_scope::{
-    Bump,
+    Bump, BumpAllocator as _,
     config::{BumpConfig, BumpConfigBuilder},
-    traits::BumpAllocator as _,
 };
 
 #[test]

@@ -287,7 +287,7 @@ pub mod stats;
 #[cfg(test)]
 mod tests;
 /// TODO:
-pub mod traits;
+mod traits;
 mod unmanaged;
 mod util;
 

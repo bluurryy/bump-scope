@@ -28,10 +28,9 @@ use std::{
 };
 
 use bump_scope::{
-    BoxU, Bump, BumpScope,
+    BoxU, Bump, BumpAllocator as _, BumpScope,
     config::{BumpConfig, BumpConfigBuilder},
     stats::Chunk,
-    traits::BumpAllocator as _,
 };
 
 pub(crate) use disaligning_allocator::DisaligningAllocator;

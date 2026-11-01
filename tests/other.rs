@@ -10,10 +10,9 @@ use std::{
 };
 
 use bump_scope::{
-    Bump, BumpScope, config,
+    Bump, BumpAllocator, BumpScope, config,
     config::BumpConfig,
     stats::{AnyChunk, Chunk},
-    traits::BumpAllocator,
 };
 
 use common::{MALLOC_OVERHEAD, up_and_down};

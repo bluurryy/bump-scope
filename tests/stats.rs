@@ -8,10 +8,9 @@ use std::{
 };
 
 use bump_scope::{
-    Bump,
+    Bump, BumpAllocator as _,
     config::BumpConfig,
     stats::{AnyChunk, AnyStats, Chunk, Stats},
-    traits::BumpAllocator as _,
 };
 
 use common::up_and_down;

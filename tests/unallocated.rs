@@ -4,7 +4,7 @@ mod common;
 
 use std::alloc::{Allocator, Global, Layout};
 
-use bump_scope::{Bump, config::BumpConfig, traits::BumpAllocator};
+use bump_scope::{Bump, BumpAllocator, config::BumpConfig};
 
 use common::{AssumedMallocOverhead, up_and_down};
 
