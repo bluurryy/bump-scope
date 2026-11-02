@@ -262,7 +262,6 @@ mod bump_pool;
 mod bump_scope;
 mod bump_scope_guard;
 mod bumping;
-#[cfg(any(feature = "bytemuck", feature = "zerocopy-08"))]
 mod bytemuck_and_zerocopy;
 pub(crate) mod chunk_size;
 pub(crate) mod chunk_size_config;
