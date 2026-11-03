@@ -1,3 +1,4 @@
+#[cfg(any(feature = "bytemuck", feature = "zerocopy-08"))]
 macro_rules! make {
     (
         crate $name:literal
