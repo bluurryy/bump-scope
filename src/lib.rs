@@ -270,12 +270,11 @@ pub mod config;
 mod containers;
 mod destructure;
 mod error_behavior;
-/// TODO
+/// Auxiliary functions.
 pub mod extra;
 mod layout;
 mod macros;
 mod no_drop;
-/// TODO
 pub mod owned_slice;
 mod polyfill;
 /// This is not part of the public api. This module is semver-exempt!
@@ -285,7 +284,6 @@ mod raw_bump;
 pub mod stats;
 #[cfg(test)]
 mod tests;
-/// TODO:
 mod traits;
 mod unmanaged;
 mod util;

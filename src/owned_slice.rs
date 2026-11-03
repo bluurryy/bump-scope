@@ -1,3 +1,5 @@
+//! Traits associated with owned slices.
+
 use core::{array, mem};
 
 use core::alloc::Allocator;
