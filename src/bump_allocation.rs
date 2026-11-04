@@ -40,7 +40,7 @@ impl<T: ?Sized, A: Allocator> BumpAllocation<T, A> {
     /// Returns this bump allocation as a `&T`.
     /// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
     ///
-    /// `!NoDrop` types can still be turned into references via [`leak`](BumpAllocation::leak).
+    /// `!NoDrop` types can still be turned into references with [`leak`](BumpAllocation::leak).
     #[must_use]
     pub fn into_ref<'a>(self) -> &'a T
     where
@@ -53,7 +53,7 @@ impl<T: ?Sized, A: Allocator> BumpAllocation<T, A> {
     /// Returns this bump allocation as a `&mut T`.
     /// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
     ///
-    /// `!NoDrop` types can still be turned into references via [`leak`](BumpAllocation::leak).
+    /// `!NoDrop` types can still be turned into references with [`leak`](BumpAllocation::leak).
     #[must_use]
     pub fn into_mut<'a>(self) -> &'a mut T
     where
