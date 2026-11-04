@@ -416,7 +416,22 @@ where
     unsafe { box_replace_allocator_unchecked(vec, Unmanaged::VALUE) }
 }
 
-/// TODO
+/// Returns this box as a `&T`.
+/// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
+///
+/// `!NoDrop` types can still be turned into references via [`box_leak`].
+pub fn box_into_ref<'a, T, A>(boxed: Box<T, A>) -> &'a T
+where
+    T: NoDrop + ?Sized,
+    A: BumpAllocatorScope<'a>,
+{
+    box_leak(boxed)
+}
+
+/// Returns this box as a `&mut T`.
+/// This is only available for [`NoDrop`] types so you don't omit dropping a value for which it matters.
+///
+/// `!NoDrop` types can still be turned into references via [`box_leak`].
 pub fn box_into_mut<'a, T, A>(boxed: Box<T, A>) -> &'a mut T
 where
     T: NoDrop + ?Sized,
