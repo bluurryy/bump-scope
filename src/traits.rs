@@ -2712,11 +2712,11 @@ unsafe impl<'a, T: MutBumpAllocator + BumpAllocatorScope<'a>> MutBumpAllocatorSc
 /// ```
 /// use bump_scope::AsBumpScope;
 ///
-/// struct FunctionBuilder<B> {
+/// struct SomethingBuilder<B> {
 ///     bump: B,
 /// }
 ///
-/// impl<B> FunctionBuilder<B>
+/// impl<B> SomethingBuilder<B>
 /// where
 ///     B: AsBumpScope
 /// {
@@ -2752,11 +2752,11 @@ impl<A: Allocator, const C: BumpConfig> AsBumpScope<A, C> for BumpScope<'_, A, C
 /// ```
 /// use bump_scope::AsMutBumpScope;
 ///
-/// struct FunctionBuilder<B> {
+/// struct SomethingBuilder<B> {
 ///     bump: B,
 /// }
 ///
-/// impl<B> FunctionBuilder<B>
+/// impl<B> SomethingBuilder<B>
 /// where
 ///     B: AsMutBumpScope
 /// {
