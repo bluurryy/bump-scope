@@ -18,12 +18,12 @@ use crate::{
     traits::{BumpAllocator, BumpAllocatorPrivate, BumpAllocatorScope},
 };
 
-pub use map::{box_try_slice_map, vec_try_map};
+pub use map::{box_try_map_slice, vec_try_map};
 pub use replace_allocator::{detach_allocator, replace_allocator};
 pub use vec_or_boxed_slice::{VecOrBoxedSlice, split_at, split_off};
 
 #[cfg(feature = "panic-on-alloc")]
-pub use map::{box_slice_map, vec_map};
+pub use map::{box_map_slice, vec_map};
 
 #[doc(inline)]
 pub use crate::__vec as vec;
