@@ -1,14 +1,12 @@
 [package]
 name = "test-no-panic"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 bump-scope = { path = "../..", default-features = false, features = [
-  "alloc",
   "zerocopy-08",
+  "bytemuck",
+  "nightly",
 ] }
 anstream = { version = "1.0.0", default-features = false }
 anstyle = { version = "1.0.14", default-features = false }
-
-[features]
-nightly = ["bump-scope/nightly"]

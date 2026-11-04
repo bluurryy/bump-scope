@@ -1,14 +1,13 @@
 use std::{
-    alloc::{Global, Layout},
+    alloc::{Allocator, Global, Layout},
     fmt::Debug,
     mem,
 };
 
 use arbitrary::Arbitrary;
 use bump_scope::{
-    Bump,
+    Bump, BumpAllocator,
     config::{BumpConfig, BumpConfigBuilder},
-    traits::BumpAllocator,
 };
 
 use crate::{MinAlign, UpTo};
@@ -160,7 +159,7 @@ trait AnyBump {
 
 impl<const C: BumpConfig> AnyBump for &Bump<Global, C> {
     fn alloc_dynamic(&self, layout: Layout) -> Range {
-        let start = self.allocate_layout(layout).addr().get();
+        let start = self.allocate(layout).unwrap().addr().get();
         Range {
             start,
             end: start + layout.size(),
@@ -168,12 +167,12 @@ impl<const C: BumpConfig> AnyBump for &Bump<Global, C> {
     }
 
     fn alloc_static<T: Default>(&self) -> Range {
-        let ptr = self.alloc_with(T::default).into_raw().as_ptr();
+        let ptr = self.alloc_with(T::default).into_raw();
         Range::new(ptr)
     }
 
     fn alloc_static_slice<T: Default>(&self, len: usize) -> Range {
-        let ptr = self.alloc_slice_fill_with(len, T::default).into_raw().as_ptr();
+        let ptr = self.alloc_slice_fill_with(len, T::default).into_raw();
         Range::new_slice(ptr)
     }
 }

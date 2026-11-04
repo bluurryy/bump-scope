@@ -2,9 +2,8 @@ use std::alloc::Global;
 
 use arbitrary::Arbitrary;
 use bump_scope::{
-    Bump, BumpVec,
+    Bump, BumpAllocator,
     config::{BumpConfig, BumpConfigBuilder},
-    traits::BumpAllocator,
 };
 use zerocopy::{FromBytes, Immutable, IntoBytes};
 
@@ -118,7 +117,7 @@ impl<'a> VecObj<'a> {
         T: Default + FromBytes + IntoBytes + Immutable + 'static,
     {
         Self {
-            vec: Box::new(BumpVec::<T, _>::new_in(bump)),
+            vec: Box::new(Vec::<T, _>::new_in(bump)),
             bit_pattern,
         }
     }
@@ -134,7 +133,7 @@ impl<'a> VecObj<'a> {
     }
 }
 
-impl<T, A> VecTrait for BumpVec<T, A>
+impl<T, A> VecTrait for Vec<T, A>
 where
     A: BumpAllocator,
     T: Default + FromBytes + IntoBytes + Immutable,

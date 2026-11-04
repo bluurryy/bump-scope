@@ -19,7 +19,7 @@ where
     A: Allocator,
 {
     Ok(NonNull::slice_from_raw_parts(
-        bump.alloc::<AllocError>(layout)?,
+        bump.allocate::<AllocError>(layout)?,
         layout.size(),
     ))
 }
@@ -122,13 +122,13 @@ where
                     Ok(NonNull::slice_from_raw_parts(old_ptr, new_layout.size()))
                 } else {
                     // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
-                    let new_ptr = bump.alloc_in_another_chunk::<AllocError>(new_layout)?;
+                    let new_ptr = bump.allocate_in_another_chunk::<AllocError>(new_layout)?;
                     old_ptr.copy_to_nonoverlapping(new_ptr, old_layout.size());
                     Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
                 }
             } else {
                 // We can't grow in place. We have to make a new allocation.
-                let new_ptr = bump.alloc::<AllocError>(new_layout)?;
+                let new_ptr = bump.allocate::<AllocError>(new_layout)?;
                 old_ptr.copy_to_nonoverlapping(new_ptr, old_layout.size());
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
@@ -166,13 +166,13 @@ where
                     Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
                 } else {
                     // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
-                    let new_ptr = bump.alloc_in_another_chunk::<AllocError>(new_layout)?;
+                    let new_ptr = bump.allocate_in_another_chunk::<AllocError>(new_layout)?;
                     old_ptr.copy_to_nonoverlapping(new_ptr, old_layout.size());
                     Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
                 }
             } else {
                 // We can't reuse the allocated space. We have to make a new allocation.
-                let new_ptr = bump.alloc::<AllocError>(new_layout)?;
+                let new_ptr = bump.allocate::<AllocError>(new_layout)?;
                 old_ptr.copy_to_nonoverlapping(new_ptr, old_layout.size());
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
@@ -247,7 +247,7 @@ where
                     // `is_last` returned true, which guarantees a non-dummy chunk
                     bump.chunk.get().as_allocated_unchecked().set_pos(old_pos);
 
-                    new_ptr = bump.alloc_in_another_chunk::<AllocError>(new_layout)?;
+                    new_ptr = bump.allocate_in_another_chunk::<AllocError>(new_layout)?;
                     overlaps = false;
                 }
 
@@ -259,7 +259,7 @@ where
 
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             } else {
-                let new_ptr = bump.alloc::<AllocError>(new_layout)?;
+                let new_ptr = bump.allocate::<AllocError>(new_layout)?;
                 old_ptr.copy_to_nonoverlapping(new_ptr, new_layout.size());
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }

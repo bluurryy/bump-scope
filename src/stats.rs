@@ -4,7 +4,7 @@
 //! with `Any*`. The generic types are slightly more efficient to use.
 //! You can turn the generic types into their `Any*` variants using `from` and `into`.
 //!
-//! The `Any*` types are returned by the [`BumpAllocatorCore::any_stats`](crate::traits::BumpAllocatorCore::any_stats) trait
+//! The `Any*` types are returned by the [`BumpAllocator::any_stats`](crate::traits::BumpAllocator::any_stats) trait
 //! whereas `Stats` is returned from [`Bump(Scope)::stats`](crate::Bump::stats).
 
 use core::{

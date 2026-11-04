@@ -34,8 +34,15 @@ dependencies = [
 name = "bump-scope"
 version = "3.0.0-dev"
 dependencies = [
+ "bytemuck",
  "zerocopy",
 ]
+
+[[package]]
+name = "bytemuck"
+version = "1.25.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95832e849adfb21180ccb6826a99da14e5d266ae5c2e668e1602cf234f153797"
 
 [[package]]
 name = "colorchoice"

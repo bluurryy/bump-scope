@@ -20,10 +20,10 @@ up_and_down! {
 
         let bump: Bump<Global, C> = Bump::new();
 
-        bump.alloc_slice_copy(&[ZST; 10]);
-        bump.alloc_slice_clone(&[ZST; 10]);
-        bump.alloc_slice_fill(10, ZST);
-        bump.alloc_slice_fill_with(10, || ZST);
+        bump.alloc_slice_copy(&[ZST; 10]).into_boxu();
+        bump.alloc_slice_clone(&[ZST; 10]).into_boxu();
+        bump.alloc_slice_fill(10, ZST).into_boxu();
+        bump.alloc_slice_fill_with(10, || ZST).into_boxu();
 
         assert_eq!(bump.stats().allocated(), 0);
     }
@@ -32,12 +32,12 @@ up_and_down! {
     fn empty() {
         let bump: Bump<Global, C> = Bump::new();
 
-        bump.alloc_slice_copy::<u64>(&[]);
-        bump.alloc_slice_clone::<String>(&[]);
-        bump.alloc_slice_fill_with(0, || -> String { panic!("should not happen") });
-        bump.alloc_slice_fill(0, 42u64);
-        bump.alloc_slice_fill(0, &"hello".to_string());
-        bump.alloc_slice_fill_with(0, String::default);
+        bump.alloc_slice_copy::<u64>(&[]).into_boxu();
+        bump.alloc_slice_clone::<String>(&[]).into_boxu();
+        bump.alloc_slice_fill_with(0, || -> String { panic!("should not happen") }).into_boxu();
+        bump.alloc_slice_fill(0, 42u64).into_boxu();
+        bump.alloc_slice_fill(0, &"hello".to_string()).into_boxu();
+        bump.alloc_slice_fill_with(0, String::default).into_boxu();
 
         assert_eq!(bump.stats().allocated(), 0);
     }
@@ -46,6 +46,6 @@ up_and_down! {
     #[should_panic(expected = "capacity overflow")]
     fn overflow() {
         let bump: Bump<Global, C> = Bump::new();
-        bump.alloc_slice_fill_with(usize::MAX, u64::default);
+        bump.alloc_slice_fill_with(usize::MAX, u64::default).into_boxu();
     }
 }

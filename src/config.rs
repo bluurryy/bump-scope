@@ -5,7 +5,7 @@
 //! You can configure the bump allocator config with a [`BumpConfigBuilder`]:
 //! ```
 //! use std::alloc::Global;
-//! use bump_scope::{Bump, config::{BumpConfig, BumpConfigBuilder}};
+//! use bump_scope::{Bump, BumpAllocator, config::{BumpConfig, BumpConfigBuilder}};
 //!
 //! const MY_CONFIG: BumpConfig = BumpConfigBuilder::new()
 //!     .min_align(8)
@@ -23,7 +23,7 @@
 //! assert_eq!(bump.stats().size(), 0);
 //!
 //! # let str =
-//! bump.alloc_str("Hello, world!");
+//! bump.alloc_str("Hello, world!").into_ref();
 //! # assert_eq!(str, "Hello, world!");
 //! assert_eq!(bump.stats().size(), 4096 - size_of::<[usize; 2]>());
 //! ```
@@ -113,7 +113,7 @@ const fn assert_valid_config(config: BumpConfig) {
 }
 
 macro_rules! config {
-    ($config:ident, $name:ident) => {
+    ($config:path, $name:ident) => {
         const { $crate::config::read::$name($config) }
     };
     ($name:ident) => {
@@ -325,20 +325,16 @@ bit_fields! {
     /// Sets the bump direction.
     ///
     /// Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
-    /// This benefits growable collections as well as <code>[alloc_iter][]([_mut][alloc_iter_mut])</code> and <code>[alloc_fmt][]([_mut][alloc_fmt_mut])</code>
-    /// with the exception of [`MutBumpVecRev`] and [`alloc_iter_mut_rev`] which
-    /// can be grown and shrunk in place if and only if bumping downwards.
+    /// This benefits growable collections as well as <code>[alloc_iter][]([_mut][alloc_iter_mut])</code> and <code>[alloc_fmt][]([_mut][alloc_fmt_mut])</code>.
     ///
     /// Bumping downwards can be done in less instructions.
     ///
     /// For the performance impact see [crates/callgrind-benches][benches].
     ///
-    /// [alloc_iter]: crate::traits::BumpAllocatorScope::alloc_iter
-    /// [alloc_iter_mut]: crate::traits::MutBumpAllocatorScope::alloc_iter_mut
-    /// [alloc_fmt]: crate::traits::BumpAllocatorScope::alloc_fmt
-    /// [alloc_fmt_mut]: crate::traits::MutBumpAllocatorScope::alloc_fmt_mut
-    /// [`MutBumpVecRev`]: crate::MutBumpVecRev
-    /// [`alloc_iter_mut_rev`]: crate::traits::MutBumpAllocatorScope::alloc_iter_mut_rev
+    /// [alloc_iter]: crate::traits::BumpAllocator::alloc_iter
+    /// [alloc_iter_mut]: crate::traits::MutBumpAllocator::alloc_iter_mut
+    /// [alloc_fmt]: crate::traits::BumpAllocator::alloc_fmt
+    /// [alloc_fmt_mut]: crate::traits::MutBumpAllocator::alloc_fmt_mut
     /// [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
     upwards: bool {
         default: true,
@@ -361,7 +357,7 @@ bit_fields! {
     /// [with_size_in]: crate::Bump::with_size_in
     /// [with_capacity]: crate::Bump::with_capacity
     /// [with_capacity_in]: crate::Bump::with_capacity_in
-    /// [`reset_to`]: crate::traits::BumpAllocatorCore::reset_to
+    /// [`reset_to`]: crate::traits::BumpAllocator::reset_to
     /// [`by_value`]: crate::BumpScope::by_value
     const_constructible: bool {
         default: false,
@@ -394,14 +390,13 @@ bit_fields! {
 
     /// Enables shrinking.
     ///
-    /// When this is `false`, [`Allocator::shrink`] and [`BumpAllocator::shrink_slice`] does not free memory.
+    /// When this is `false`, [`Allocator::shrink`] does not free memory.
     /// Calling `shrink` with a new layout of a greater alignment may still reallocate.
     ///
     /// This also affects the temporary collections used in [`alloc_iter`], [`alloc_fmt`], etc.
     ///
-    /// [`BumpAllocator::shrink_slice`]: crate::traits::BumpAllocator::shrink_slice
-    /// [`alloc_iter`]: crate::traits::BumpAllocatorScope::alloc_iter
-    /// [`alloc_fmt`]: crate::traits::BumpAllocatorScope::alloc_fmt
+    /// [`alloc_iter`]: crate::traits::BumpAllocator::alloc_iter
+    /// [`alloc_fmt`]: crate::traits::BumpAllocator::alloc_fmt
     shrinks: bool {
         default: true,
         bits: 1,

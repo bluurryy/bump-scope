@@ -1,7 +1,5 @@
 use core::ops;
 
-pub(crate) use core::slice::*;
-
 /// See [`std::slice::range`].
 #[track_caller]
 #[must_use]

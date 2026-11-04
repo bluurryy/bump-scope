@@ -4,13 +4,10 @@ mod common;
 
 use std::{
     alloc::{Allocator, Global, Layout},
-    ptr::NonNull,
+    ptr,
 };
 
-use bump_scope::{
-    Bump, config,
-    traits::{BumpAllocator, BumpAllocatorCore},
-};
+use bump_scope::{Bump, config};
 
 use crate::common::{DisaligningAllocator, up_and_down};
 
@@ -46,7 +43,7 @@ up_and_down! {
 
     #[test]
     fn allocate_zst_returns_dangling() {
-        let dangling_addr = NonNull::<()>::dangling().addr();
+        let dangling_addr = ptr::dangling::<()>().addr();
 
         // create a bump allocator with a chunk with no capacity
         let bump: Bump<Global, C> = Bump::new();
@@ -64,7 +61,7 @@ up_and_down! {
 
         macro_rules! mustnt_dangle {
             ($($expr:expr,)*) => {
-                $(assert_ne!(dangling_addr, $expr.addr(), stringify!($expr));)*
+                $(assert_ne!(dangling_addr, $expr.addr().get(), stringify!($expr));)*
             };
         }
 
@@ -81,27 +78,6 @@ up_and_down! {
         mustnt_dangle! {
             bump.allocate(Layout::new::<()>()).unwrap(),
             bump.allocate_zeroed(Layout::new::<()>()).unwrap(),
-
-            bump.allocate_layout(Layout::new::<()>()),
-            bump.try_allocate_layout(Layout::new::<()>()).unwrap(),
-
-            bump.allocate_sized::<()>(),
-            bump.try_allocate_sized::<()>().unwrap(),
-
-            bump.allocate_slice::<()>(123),
-            bump.try_allocate_slice::<()>(123).unwrap(),
-
-            bump.allocate_slice_for::<()>(&[]),
-            bump.try_allocate_slice_for::<()>(&[]).unwrap(),
-
-            (&bump as &dyn BumpAllocatorCore).allocate_sized::<()>(),
-            (&bump as &dyn BumpAllocatorCore).try_allocate_sized::<()>().unwrap(),
-
-            (&bump as &dyn BumpAllocatorCore).allocate_slice::<()>(123),
-            (&bump as &dyn BumpAllocatorCore).try_allocate_slice::<()>(123).unwrap(),
-
-            (&bump as &dyn BumpAllocatorCore).allocate_slice_for::<()>(&[]),
-            (&bump as &dyn BumpAllocatorCore).try_allocate_slice_for::<()>(&[]).unwrap(),
         }
 
         // this mustn't have allocated another chunk
@@ -112,7 +88,7 @@ up_and_down! {
     #[test]
     fn allocate_zst_returns_dangling_unallocated() {
         let bump: Bump<Global, C> = Bump::const_new();
-        let dangling_addr = NonNull::<()>::dangling().addr();
+        let dangling_addr = ptr::dangling::<()>().addr();
 
         macro_rules! must_dangle {
             ($($expr:expr,)*) => {
@@ -122,7 +98,7 @@ up_and_down! {
 
         macro_rules! mustnt_dangle {
             ($($expr:expr,)*) => {
-                $(assert_ne!(dangling_addr, $expr.addr(), stringify!($expr));)*
+                $(assert_ne!(dangling_addr, $expr.addr().get(), stringify!($expr));)*
             };
         }
 
@@ -142,27 +118,6 @@ up_and_down! {
         mustnt_dangle! {
             bump.allocate(Layout::new::<()>()).unwrap(),
             bump.allocate_zeroed(Layout::new::<()>()).unwrap(),
-
-            bump.allocate_layout(Layout::new::<()>()),
-            bump.try_allocate_layout(Layout::new::<()>()).unwrap(),
-
-            bump.allocate_sized::<()>(),
-            bump.try_allocate_sized::<()>().unwrap(),
-
-            bump.allocate_slice::<()>(123),
-            bump.try_allocate_slice::<()>(123).unwrap(),
-
-            bump.allocate_slice_for::<()>(&[]),
-            bump.try_allocate_slice_for::<()>(&[]).unwrap(),
-
-            (&bump as &dyn BumpAllocatorCore).allocate_sized::<()>(),
-            (&bump as &dyn BumpAllocatorCore).try_allocate_sized::<()>().unwrap(),
-
-            (&bump as &dyn BumpAllocatorCore).allocate_slice::<()>(123),
-            (&bump as &dyn BumpAllocatorCore).try_allocate_slice::<()>(123).unwrap(),
-
-            (&bump as &dyn BumpAllocatorCore).allocate_slice_for::<()>(&[]),
-            (&bump as &dyn BumpAllocatorCore).try_allocate_slice_for::<()>(&[]).unwrap(),
         }
 
         // this must have allocate a chunk (but takes up no capacity)

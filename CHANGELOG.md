@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Use the now stable `core` allocator api
-- Any `Allocator` can now be used as `BaseAllocator`
+- Any `Allocator` can now be used as the base allocator
 
 ### Changed
 
@@ -29,7 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Remove `nightly-allocator-api` feature, since it is now stable
 - **Breaking:** Remove `BaseAllocator` trait, any `Allocator` can be used now
 - **Breaking:** Remove `BumpAllocator(Scope)` trait
+- **Breaking:** Remove `WithoutDealloc` and `WithoutShrink`
+- **Breaking:** Remove `push_unchecked` apis
+- **Breaking:** Remove `alloc_iter_exact`, use `alloc_iter` instead
 - **Breaking:** Remove deprecated api
+- **Breaking:** Remove `BumpAllocatorCore` trait guarantee about allowing dealloc with a dangling pointer
 
 ### Fixed
 

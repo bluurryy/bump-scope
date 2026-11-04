@@ -229,7 +229,7 @@ pub(crate) enum ChunkKind<A, const C: BumpConfig> {
 /// See <https://github.com/rust-lang/rust/pull/117840>
 #[inline(always)]
 fn miri_promise_symbolic_alignment(ptr: *const (), align: usize) {
-    #[cfg(all(feature = "nightly-miri-promise-symbolic-alignment", miri))]
+    #[cfg(all(feature = "nightly", miri))]
     unsafe extern "Rust" {
         /// Miri-provided extern function to promise that a given pointer is properly aligned for
         /// "symbolic" alignment checks. Will fail if the pointer is not actually aligned or `align` is
@@ -237,12 +237,12 @@ fn miri_promise_symbolic_alignment(ptr: *const (), align: usize) {
         unsafe fn miri_promise_symbolic_alignment(ptr: *const (), align: usize);
     }
 
-    #[cfg(all(feature = "nightly-miri-promise-symbolic-alignment", miri))]
+    #[cfg(all(feature = "nightly", miri))]
     unsafe {
         miri_promise_symbolic_alignment(ptr, align);
     }
 
-    #[cfg(not(all(feature = "nightly-miri-promise-symbolic-alignment", miri)))]
+    #[cfg(not(all(feature = "nightly", miri)))]
     {
         _ = (ptr, align);
     }

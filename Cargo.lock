@@ -9,8 +9,6 @@ dependencies = [
  "bytemuck",
  "expect-test",
  "rayon",
- "serde_core",
- "serde_json",
  "trybuild",
  "zerocopy",
 ]

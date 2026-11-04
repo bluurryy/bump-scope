@@ -23,7 +23,10 @@ mod create_bump_by_library {
                 ptr::NonNull,
             };
 
-            use ::bump_scope::config::{BumpConfig, BumpConfigBuilder};
+            use ::bump_scope::{
+                BumpAllocator as _,
+                config::{BumpConfig, BumpConfigBuilder},
+            };
 
             const C: BumpConfig = BumpConfigBuilder::new()
                 .upwards($upwards)
@@ -91,13 +94,13 @@ mod create_bump_by_library {
 
                 #[inline(always)]
                 fn alloc<T>(&self, value: T) -> &mut T {
-                    ::bump_scope::BumpBox::leak(self.0.alloc(value))
+                    self.0.alloc(value).leak()
                 }
 
                 #[inline(always)]
                 fn try_alloc<T>(&self, value: T) -> Option<&mut T> {
                     match self.0.try_alloc(value) {
-                        Ok(value) => Some(bump_scope::BumpBox::leak(value)),
+                        Ok(value) => Some(value.leak()),
                         Err(_) => None,
                     }
                 }

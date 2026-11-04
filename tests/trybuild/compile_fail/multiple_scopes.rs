@@ -1,4 +1,4 @@
-use bump_scope::{Bump, BumpScope};
+use bump_scope::{Bump, BumpAllocator, BumpScope};
 
 #[expect(unused_assignments)]
 fn multiple_scopes(bump: &mut Bump) {

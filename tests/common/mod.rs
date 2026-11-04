@@ -28,11 +28,9 @@ use std::{
 };
 
 use bump_scope::{
-    Bump, BumpBox, BumpScope, BumpString, BumpVec, MutBumpString, MutBumpVec, MutBumpVecRev,
+    BoxU, Bump, BumpAllocator as _, BumpScope,
     config::{BumpConfig, BumpConfigBuilder},
-    mut_bump_format, mut_bump_vec, mut_bump_vec_rev, owned_slice,
     stats::Chunk,
-    traits::BumpAllocator as _,
 };
 
 pub(crate) use disaligning_allocator::DisaligningAllocator;
@@ -51,7 +49,12 @@ macro_rules! up_and_down {
         mod upwards {
             #[allow(unused_imports)]
             use super::*;
-            use bump_scope::config::{BumpConfig, BumpConfigBuilder};
+
+            #[allow(unused_imports)]
+            use bump_scope::{
+                config::{BumpConfig, BumpConfigBuilder},
+                BumpAllocator, MutBumpAllocator, BumpAllocatorScope, extra
+            };
 
             const DEFAULT_C: BumpConfig = BumpConfigBuilder::new()
                 .upwards(true)
@@ -63,7 +66,12 @@ macro_rules! up_and_down {
         mod downwards {
             #[allow(unused_imports)]
             use super::*;
-            use bump_scope::config::{BumpConfig, BumpConfigBuilder};
+
+            #[allow(unused_imports)]
+            use bump_scope::{
+                config::{BumpConfig, BumpConfigBuilder},
+                BumpAllocator, MutBumpAllocator, BumpAllocatorScope, extra
+            };
 
             const DEFAULT_C: BumpConfig = BumpConfigBuilder::new()
                 .upwards(false)

@@ -324,15 +324,15 @@ where {
     }
 
     #[inline(always)]
-    pub(crate) fn alloc<B: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, B> {
+    pub(crate) fn allocate<B: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, B> {
         match self.chunk.get().alloc(CustomLayout(layout)) {
             Some(ptr) => Ok(ptr),
-            None => self.alloc_in_another_chunk(layout),
+            None => self.allocate_in_another_chunk(layout),
         }
     }
 
     #[inline(always)]
-    pub(crate) fn alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
+    pub(crate) fn allocate_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
         let layout = const {
             match SizedLayout::new::<T>().increase_align(config!(min_align)) {
                 Ok(ok) => ok,
@@ -342,7 +342,7 @@ where {
 
         match self.chunk.get().alloc(layout) {
             Some(ptr) => Ok(ptr.cast()),
-            None => match self.alloc_sized_in_another_chunk::<E, T>() {
+            None => match self.allocate_sized_in_another_chunk::<E, T>() {
                 Ok(ptr) => Ok(ptr.cast()),
                 Err(err) => Err(err),
             },
@@ -350,14 +350,14 @@ where {
     }
 
     #[inline(always)]
-    pub(crate) fn alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
+    pub(crate) fn allocate_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
         let Ok(layout) = ArrayLayout::array::<T>(len) else {
             return Err(E::capacity_overflow());
         };
 
         match self.chunk.get().alloc(layout) {
             Some(ptr) => Ok(ptr.cast()),
-            None => match self.alloc_slice_in_another_chunk::<E, T>(len) {
+            None => match self.allocate_slice_in_another_chunk::<E, T>(len) {
                 Ok(ptr) => Ok(ptr.cast()),
                 Err(err) => Err(err),
             },
@@ -365,12 +365,12 @@ where {
     }
 
     #[inline(always)]
-    pub(crate) fn alloc_slice_for<E: ErrorBehavior, T>(&self, value: &[T]) -> Result<NonNull<T>, E> {
+    pub(crate) fn allocate_slice_for<E: ErrorBehavior, T>(&self, value: &[T]) -> Result<NonNull<T>, E> {
         let layout = ArrayLayout::for_value(value);
 
         match self.chunk.get().alloc(layout) {
             Some(ptr) => Ok(ptr.cast()),
-            None => match self.alloc_slice_in_another_chunk::<E, T>(value.len()) {
+            None => match self.allocate_slice_in_another_chunk::<E, T>(value.len()) {
                 Ok(ptr) => Ok(ptr.cast()),
                 Err(err) => Err(err),
             },
@@ -404,25 +404,6 @@ where {
         Ok(NonNull::slice_from_raw_parts(ptr, cap))
     }
 
-    #[inline(always)]
-    pub(crate) fn prepare_slice_allocation_rev<B: ErrorBehavior, T>(
-        &self,
-        min_cap: usize,
-    ) -> Result<(NonNull<T>, usize), B> {
-        let range = self.prepare_allocation_range::<B, T>(min_cap)?;
-
-        // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
-        let cap = unsafe { range.end.byte_offset_from_unsigned(range.start) } / T::SIZE;
-
-        let end = if config!(upwards) {
-            unsafe { range.start.add(cap) }
-        } else {
-            range.end
-        };
-
-        Ok((end, cap))
-    }
-
     /// Returns a pointer range.
     /// The start and end pointers are aligned.
     /// But `end - start` is *not* a multiple of `size_of::<T>()`.
@@ -445,24 +426,24 @@ where {
     /// The active chunk must *not* have space for `layout`.
     #[cold]
     #[inline(never)]
-    pub(crate) fn alloc_in_another_chunk<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
+    pub(crate) fn allocate_in_another_chunk<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
         unsafe { self.in_another_chunk(CustomLayout(layout), Chunk::alloc) }
     }
 
     #[cold]
     #[inline(never)]
-    fn alloc_sized_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E> {
-        self.alloc_in_another_chunk(Layout::new::<T>())
+    fn allocate_sized_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E> {
+        self.allocate_in_another_chunk(Layout::new::<T>())
     }
 
     #[cold]
     #[inline(never)]
-    fn alloc_slice_in_another_chunk<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<u8>, E> {
+    fn allocate_slice_in_another_chunk<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<u8>, E> {
         let Ok(layout) = Layout::array::<T>(len) else {
             return Err(E::capacity_overflow());
         };
 
-        self.alloc_in_another_chunk(layout)
+        self.allocate_in_another_chunk(layout)
     }
 
     #[cold]
