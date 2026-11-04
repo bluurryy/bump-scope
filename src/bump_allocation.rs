@@ -71,11 +71,11 @@ impl<T: ?Sized, A: Allocator> BumpAllocation<T, A> {
 
     /// Returns this bump allocation as a <code>[BoxU]\<T\></code>.
     ///
-    /// The returned `Box` has a dummy allocator which doesn't support
+    /// The returned `Box` has a zero-sized dummy allocator which doesn't support
     /// allocations. As such `Box` apis that allocate or grow, like
     /// `.clone()` and `.map(...)` will fail.
     ///
-    /// The advantage is that this dummy allocator does not take up space.
+    /// The advantage is that this dummy allocator does not take up space in the `Box`.
     pub fn into_boxu<'a>(self) -> BoxU<'a, T>
     where
         A: BumpAllocatorScope<'a>,
