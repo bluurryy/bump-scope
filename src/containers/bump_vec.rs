@@ -11,7 +11,7 @@ use core::{
 
 use alloc::{boxed::Box, vec::Vec};
 
-use crate::error_behavior::ErrorBehavior;
+use crate::{error_behavior::ErrorBehavior, extra::imp_vec_extend};
 
 #[repr(transparent)]
 pub(crate) struct BumpVec<T, A, E>
@@ -41,6 +41,7 @@ where
         E::vec_reserve_if_fallible(&mut self.vec, additional)
     }
 
+    #[inline]
     pub(crate) fn extend_from_slice(&mut self, slice: &[T]) -> Result<(), E>
     where
         T: Clone,
@@ -50,6 +51,12 @@ where
         Ok(())
     }
 
+    #[inline]
+    pub(crate) fn extend(&mut self, iter: impl IntoIterator<Item = T>) -> Result<(), E> {
+        imp_vec_extend(self, iter)
+    }
+
+    #[inline]
     pub(crate) fn into_boxed_slice(self) -> Box<[T], A> {
         self.vec.into_boxed_slice()
     }

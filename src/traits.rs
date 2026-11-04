@@ -405,7 +405,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
         E: ErrorBehavior,
     {
         let mut vec = BumpVec::<T, _, E>::from_vec(Vec::new_in(self));
-        imp_vec_extend(&mut vec, iter)?;
+        vec.extend(iter)?;
         Ok(vec.into_boxed_slice())
     }
 
