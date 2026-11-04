@@ -1,6 +1,6 @@
 mod map;
 mod replace_allocator;
-mod vec_or_boxed_slice;
+mod split;
 
 use core::{
     alloc::Allocator,
@@ -20,7 +20,7 @@ use crate::{
 
 pub use map::{box_try_map_slice, vec_try_map};
 pub use replace_allocator::{detach_allocator, replace_allocator};
-pub use vec_or_boxed_slice::{VecOrBoxedSlice, split_at, split_off};
+pub use split::{VecOrBoxedSlice, split_at, split_off};
 
 #[cfg(feature = "panic-on-alloc")]
 pub use map::{box_map_slice, vec_map};
