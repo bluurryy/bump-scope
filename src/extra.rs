@@ -59,8 +59,7 @@ pub(crate) fn ptr_from_utf8(ptr: *mut [u8]) -> *mut str {
 
 /// Consumes and leaks the `Box`, returning a mutable reference, `&'a mut T`.
 ///
-/// Unlike [`Box::leak`] this function returns a mutable reference with the lifetime
-/// `'a` of the `BumpAllocatorScope<'a>` the bump allocator scope.
+/// Unlike [`Box::leak`] this function returns a mutable reference with the lifetime of the bump allocator scope.
 pub fn box_leak<'a, T: ?Sized, A: BumpAllocatorScope<'a>>(boxed: Box<T, A>) -> &'a mut T {
     // We can't use `Box::leak` here, since that requires a 'static Allocator.
     // SAFETY: The `BumpAllocatorScope<'a>` trait guarantees that allocations live for `'a`.
