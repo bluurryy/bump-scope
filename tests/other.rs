@@ -513,7 +513,9 @@ up_and_down! {
     fn dealloc_ltr() {
         let bump = Bump::<Global, C>::new();
         let slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]).into_boxu();
-        let (lhs, rhs) = extra::split_at(slice, 3);
+
+        let mut lhs = slice;
+        let rhs = extra::boxed_slice_split_off(&mut lhs, 3..);
 
         assert_eq!(&*lhs, [1, 2, 3]);
         assert_eq!(&*rhs, [4, 5, 6]);
@@ -540,7 +542,9 @@ up_and_down! {
     fn dealloc_rtl() {
         let bump = Bump::<Global, C>::new();
         let slice = bump.alloc_slice_copy(&[1, 2, 3, 4, 5, 6]).into_boxu();
-        let (lhs, rhs) = extra::split_at(slice, 3);
+
+        let mut lhs = slice;
+        let rhs = extra::boxed_slice_split_off(&mut lhs, 3..);
 
         assert_eq!(&*lhs, [1, 2, 3]);
         assert_eq!(&*rhs, [4, 5, 6]);

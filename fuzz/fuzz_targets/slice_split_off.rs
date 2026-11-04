@@ -2,7 +2,7 @@
 
 use core::{mem, ops::Range};
 
-use fuzzing_support::bump_scope::{extra::split_off, Bump, BumpAllocator};
+use fuzzing_support::bump_scope::{extra::boxed_slice_split_off, Bump, BumpAllocator};
 use libfuzzer_sys::{
     arbitrary::{Arbitrary, Unstructured},
     fuzz_target,
@@ -39,7 +39,7 @@ impl Fuzz {
         let mut expected_remaining = (&*slice)[..self.range.start].to_vec();
         expected_remaining.extend((&*slice)[self.range.end..].iter().copied());
 
-        let removed = split_off(&mut slice, self.range);
+        let removed = boxed_slice_split_off(&mut slice, self.range);
 
         assert_eq!(&*expected_removed, &*removed);
         assert_eq!(&*slice, &*expected_remaining);

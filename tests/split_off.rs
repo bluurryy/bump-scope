@@ -5,13 +5,13 @@ mod common;
 
 use bump_scope::{
     Bump, BumpAllocator as _,
-    extra::{self, split_off, vec_append},
+    extra::{self, boxed_slice_split_off, boxed_str_split_off, vec_append, vec_split_off},
 };
 
 use common::TestWrap;
 
 #[test]
-fn boxed_slice_split_off_zst() {
+fn test_boxed_slice_split_off_zst() {
     let bump: Bump = Bump::new();
 
     fn defaults() -> impl Iterator<Item = TestWrap<()>> {
@@ -20,35 +20,35 @@ fn boxed_slice_split_off_zst() {
 
     TestWrap::expect().defaults(5).drops(5).run(|| {
         let mut vec = bump.alloc_iter(defaults().take(5)).into_boxu();
-        let rem = split_off(&mut vec, 3..);
+        let rem = boxed_slice_split_off(&mut vec, 3..);
         assert_eq!(vec.len(), 3);
         assert_eq!(rem.len(), 2);
     });
 
     TestWrap::expect().defaults(5).drops(5).run(|| {
         let mut vec = bump.alloc_iter(defaults().take(5)).into_boxu();
-        let rem = split_off(&mut vec, ..3);
+        let rem = boxed_slice_split_off(&mut vec, ..3);
         assert_eq!(vec.len(), 2);
         assert_eq!(rem.len(), 3);
     });
 
     TestWrap::expect().defaults(5).drops(5).run(|| {
         let mut vec = bump.alloc_iter(defaults().take(5)).into_boxu();
-        let rem = split_off(&mut vec, 1..4);
+        let rem = boxed_slice_split_off(&mut vec, 1..4);
         assert_eq!(vec.len(), 2);
         assert_eq!(rem.len(), 3);
     });
 
     TestWrap::expect().defaults(5).drops(5).run(|| {
         let mut vec = bump.alloc_iter(defaults().take(5)).into_boxu();
-        let rem = split_off(&mut vec, ..);
+        let rem = boxed_slice_split_off(&mut vec, ..);
         assert_eq!(vec.len(), 0);
         assert_eq!(rem.len(), 5);
     });
 }
 
 #[test]
-fn vec_split_off_zst() {
+fn test_vec_split_off_zst() {
     let bump: Bump = Bump::new();
 
     fn defaults() -> impl Iterator<Item = TestWrap<()>> {
@@ -59,7 +59,7 @@ fn vec_split_off_zst() {
         let mut vec = Vec::with_capacity_in(10, &bump);
         vec.extend(defaults().take(5));
         assert_eq!(vec.capacity(), usize::MAX);
-        let rem = split_off(&mut vec, 3..);
+        let rem = vec_split_off(&mut vec, 3..);
         assert_eq!(vec.len(), 3);
         assert_eq!(rem.len(), 2);
         assert_eq!(vec.capacity(), usize::MAX);
@@ -70,7 +70,7 @@ fn vec_split_off_zst() {
         let mut vec = Vec::with_capacity_in(10, &bump);
         vec.extend(defaults().take(5));
         assert_eq!(vec.capacity(), usize::MAX);
-        let rem = split_off(&mut vec, ..3);
+        let rem = vec_split_off(&mut vec, ..3);
         assert_eq!(vec.len(), 2);
         assert_eq!(rem.len(), 3);
         assert_eq!(vec.capacity(), usize::MAX);
@@ -81,7 +81,7 @@ fn vec_split_off_zst() {
         let mut vec = Vec::with_capacity_in(10, &bump);
         vec.extend(defaults().take(5));
         assert_eq!(vec.capacity(), usize::MAX);
-        let rem = split_off(&mut vec, 1..4);
+        let rem = vec_split_off(&mut vec, 1..4);
         assert_eq!(vec.len(), 2);
         assert_eq!(rem.len(), 3);
         assert_eq!(vec.capacity(), usize::MAX);
@@ -92,7 +92,7 @@ fn vec_split_off_zst() {
         let mut vec = Vec::with_capacity_in(10, &bump);
         vec.extend(defaults().take(5));
         assert_eq!(vec.capacity(), usize::MAX);
-        let rem = split_off(&mut vec, ..);
+        let rem = vec_split_off(&mut vec, ..);
         assert_eq!(vec.len(), 0);
         assert_eq!(rem.len(), 5);
         assert_eq!(vec.capacity(), usize::MAX);
@@ -101,46 +101,46 @@ fn vec_split_off_zst() {
 }
 
 #[test]
-fn boxed_slice_split_off() {
+fn test_boxed_slice_split_off() {
     let bump: Bump = Bump::new();
 
     {
         let mut vec = bump.alloc_slice_copy(&['a', 'b', 'c', 'd', 'e']).into_boxu();
-        let rem = split_off(&mut vec, 3..);
+        let rem = boxed_slice_split_off(&mut vec, 3..);
         assert_eq!(&*vec, ['a', 'b', 'c']);
         assert_eq!(&*rem, ['d', 'e']);
     }
 
     {
         let mut vec = bump.alloc_slice_copy(&['a', 'b', 'c', 'd', 'e']).into_boxu();
-        let rem = split_off(&mut vec, ..3);
+        let rem = boxed_slice_split_off(&mut vec, ..3);
         assert_eq!(&*vec, ['d', 'e']);
         assert_eq!(&*rem, ['a', 'b', 'c']);
     }
 
     {
         let mut vec = bump.alloc_slice_copy(&['a', 'b', 'c', 'd', 'e']).into_boxu();
-        let rem = split_off(&mut vec, 1..4);
+        let rem = boxed_slice_split_off(&mut vec, 1..4);
         assert_eq!(&*vec, ['a', 'e']);
         assert_eq!(&*rem, ['b', 'c', 'd']);
     }
 
     {
         let mut vec = bump.alloc_slice_copy(&['a', 'b', 'c', 'd', 'e']).into_boxu();
-        let rem = split_off(&mut vec, ..);
+        let rem = boxed_slice_split_off(&mut vec, ..);
         assert_eq!(&*vec, []);
         assert_eq!(&*rem, ['a', 'b', 'c', 'd', 'e']);
     }
 }
 
 #[test]
-fn vec_split_off() {
+fn test_vec_split_off() {
     let bump: Bump = Bump::new();
 
     {
         let mut vec = Vec::<char, _>::with_capacity_in(10, &bump);
         vec_append(&mut vec, ['a', 'b', 'c', 'd', 'e']);
-        let rem = split_off(&mut vec, 3..);
+        let rem = vec_split_off(&mut vec, 3..);
         assert_eq!(vec, ['a', 'b', 'c']);
         assert_eq!(rem, ['d', 'e']);
         assert_eq!(vec.capacity(), 3);
@@ -150,7 +150,7 @@ fn vec_split_off() {
     {
         let mut vec = Vec::<char, _>::with_capacity_in(10, &bump);
         vec_append(&mut vec, ['a', 'b', 'c', 'd', 'e']);
-        let rem = split_off(&mut vec, ..3);
+        let rem = vec_split_off(&mut vec, ..3);
         assert_eq!(vec, ['d', 'e']);
         assert_eq!(rem, ['a', 'b', 'c']);
         assert_eq!(vec.capacity(), 7);
@@ -160,7 +160,7 @@ fn vec_split_off() {
     {
         let mut vec = Vec::<char, _>::with_capacity_in(10, &bump);
         vec_append(&mut vec, ['a', 'b', 'c', 'd', 'e']);
-        let rem = split_off(&mut vec, 1..4);
+        let rem = vec_split_off(&mut vec, 1..4);
         assert_eq!(vec, ['a', 'e']);
         assert_eq!(rem, ['b', 'c', 'd']);
         assert_eq!(vec.capacity(), 2);
@@ -170,7 +170,7 @@ fn vec_split_off() {
     {
         let mut vec = Vec::<char, _>::with_capacity_in(10, &bump);
         vec_append(&mut vec, ['a', 'b', 'c', 'd', 'e']);
-        let rem = split_off(&mut vec, ..);
+        let rem = vec_split_off(&mut vec, ..);
         assert_eq!(vec, []);
         assert_eq!(rem, ['a', 'b', 'c', 'd', 'e']);
         assert_eq!(vec.capacity(), 0);
@@ -179,33 +179,33 @@ fn vec_split_off() {
 }
 
 #[test]
-fn boxed_str_split_off() {
+fn test_boxed_str_split_off() {
     let bump: Bump = Bump::new();
 
     {
         let mut vec = bump.alloc_str("abcde").into_boxu();
-        let rem = split_off(&mut vec, 3..);
+        let rem = boxed_str_split_off(&mut vec, 3..);
         assert_eq!(&*vec, "abc");
         assert_eq!(&*rem, "de");
     }
 
     {
         let mut vec = bump.alloc_str("abcde").into_boxu();
-        let rem = split_off(&mut vec, ..3);
+        let rem = boxed_str_split_off(&mut vec, ..3);
         assert_eq!(&*vec, "de");
         assert_eq!(&*rem, "abc");
     }
 
     {
         let mut vec = bump.alloc_str("abcde").into_boxu();
-        let rem = split_off(&mut vec, 1..4);
+        let rem = boxed_str_split_off(&mut vec, 1..4);
         assert_eq!(&*vec, "ae");
         assert_eq!(&*rem, "bcd");
     }
 
     {
         let mut vec = bump.alloc_str("abcde").into_boxu();
-        let rem = split_off(&mut vec, ..);
+        let rem = boxed_str_split_off(&mut vec, ..);
         assert_eq!(&*vec, "");
         assert_eq!(&*rem, "abcde");
     }
@@ -213,48 +213,48 @@ fn boxed_str_split_off() {
 
 #[test]
 #[should_panic = "index is not on a char boundary"]
-fn boxed_str_split_off_panic_front() {
+fn test_boxed_str_split_off_panic_front() {
     let bump: Bump = Bump::new();
     let mut string = bump.alloc_str("❤️❤️❤️").into_boxu();
-    split_off(&mut string, 1..);
+    boxed_str_split_off(&mut string, 1..);
 }
 
 #[test]
 #[should_panic = "index is not on a char boundary"]
-fn boxed_str_split_off_panic_back() {
+fn test_boxed_str_split_off_panic_back() {
     let bump: Bump = Bump::new();
     let mut string = bump.alloc_str("❤️❤️❤️").into_boxu();
     let len = string.len();
-    split_off(&mut string, ..len - 1);
+    boxed_str_split_off(&mut string, ..len - 1);
 }
 
 #[test]
 #[should_panic = "index is not on a char boundary"]
-fn boxed_str_split_off_panic_middle_start() {
+fn test_boxed_str_split_off_panic_middle_start() {
     let bump: Bump = Bump::new();
     let mut string = bump.alloc_str("❤️❤️❤️").into_boxu();
     let len = string.len();
-    split_off(&mut string, (len / 3) + 1..(len / 3) * 2);
+    boxed_str_split_off(&mut string, (len / 3) + 1..(len / 3) * 2);
 }
 
 #[test]
 #[should_panic = "index is not on a char boundary"]
-fn boxed_str_split_off_panic_middle_end() {
+fn test_boxed_str_split_off_panic_middle_end() {
     let bump: Bump = Bump::new();
     let mut string = bump.alloc_str("❤️❤️❤️").into_boxu();
     let len = string.len();
-    split_off(&mut string, (len / 3)..(len / 3) * 2 - 1);
+    boxed_str_split_off(&mut string, (len / 3)..(len / 3) * 2 - 1);
 }
 
 #[test]
-fn vec_compare_to_std() {
+fn test_vec_compare_to_std() {
     let bump: Bump = Bump::new();
 
     let mut std = extra::vec!['a', 'b', 'c', 'd', 'e'];
     let mut bmp = extra::vec![in &bump; 'a', 'b', 'c', 'd', 'e'];
 
     let std_off = std.split_off(2);
-    let bmp_off = split_off(&mut bmp, 2..);
+    let bmp_off = vec_split_off(&mut bmp, 2..);
 
     assert_eq!(&*std, &*bmp);
     assert_eq!(&*std_off, &*bmp_off);
@@ -263,14 +263,14 @@ fn vec_compare_to_std() {
 }
 
 #[test]
-fn boxed_str_compare_to_std() {
+fn test_boxed_str_compare_to_std() {
     let bump: Bump = Bump::new();
 
     let mut std = String::from("abcde");
     let mut bmp = bump.alloc_str("abcde").into_boxu();
 
     let std_off = std.split_off(2);
-    let bmp_off = split_off(&mut bmp, 2..);
+    let bmp_off = boxed_str_split_off(&mut bmp, 2..);
 
     assert_eq!(&*std, &*bmp);
     assert_eq!(&*std_off, &*bmp_off);

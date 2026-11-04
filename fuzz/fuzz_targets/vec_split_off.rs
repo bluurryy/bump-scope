@@ -2,7 +2,7 @@
 
 use core::{mem, ops::Range};
 
-use fuzzing_support::bump_scope::{extra::split_off, Bump};
+use fuzzing_support::bump_scope::{extra::vec_split_off, Bump};
 use libfuzzer_sys::{
     arbitrary::{Arbitrary, Unstructured},
     fuzz_target,
@@ -41,7 +41,7 @@ impl Fuzz {
         expected_remaining.extend(vec[self.range.end..].iter().copied());
 
         let original_addr = vec.as_ptr().addr();
-        let removed = split_off(&mut vec, self.range);
+        let removed = vec_split_off(&mut vec, self.range);
 
         assert_eq!(&*expected_removed, &*removed);
         assert_eq!(&*vec, &*expected_remaining);
