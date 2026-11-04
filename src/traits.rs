@@ -2701,7 +2701,7 @@ unsafe impl<T: MutBumpAllocator> MutBumpAllocator for &mut T {}
 unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for Bump<A, C> {}
 unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for BumpScope<'_, A, C> {}
 
-/// A shorthand for <code>[MutBumpAllocator] + [BumpAllocatorScope]<'a></code>
+/// A shorthand for <code>[MutBumpAllocator] + [BumpAllocatorScope]<'a></code>.
 #[expect(private_bounds, clippy::missing_safety_doc)]
 pub unsafe trait MutBumpAllocatorScope<'a>: MutBumpAllocator + BumpAllocatorScope<'a> + BumpAllocatorPrivate {}
 unsafe impl<'a, T: MutBumpAllocator + BumpAllocatorScope<'a>> MutBumpAllocatorScope<'a> for T {}
