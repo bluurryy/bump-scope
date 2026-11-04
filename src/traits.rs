@@ -41,7 +41,8 @@ impl<A: Allocator, const C: BumpConfig> AllocatorNightly for BumpScope<'_, A, C>
 #[cfg(feature = "nightly")]
 impl AllocatorNightly for Unmanaged<'_> {}
 
-#[allow(unused)]
+/// # Safety
+/// All sorts of things.
 pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     const CONFIG: BumpConfig;
 
@@ -134,37 +135,11 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     ///
     /// [shrink]: core::alloc::Allocator::shrink
     /// [array]: Layout::array
+    #[allow(unused)] // FIXME: make use of it
     unsafe fn spec_shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>;
 
     /// TODO
     fn spec_prepare_sized_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B>;
-
-    /// A specialized version of [`prepare_allocation`].
-    ///
-    /// Returns a `[T]` of free space in the bump allocator.
-    ///
-    /// [`prepare_allocation`]: crate::traits::BumpAllocatorCore::prepare_allocation
-    ///
-    /// # Panics
-    ///
-    /// Panics if the allocation fails.
-    fn spec_prepare_slice_allocation<E: ErrorBehavior, T>(&self, cap: usize) -> Result<NonNull<[T]>, E>;
-
-    /// A specialized version of [`allocate_prepared`].
-    ///
-    /// Allocates part of the free space returned from a
-    /// <code>([try_](BumpAllocator::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocator::prepare_slice_allocation)</code>
-    /// call.
-    ///
-    /// # Safety
-    /// - `ptr..ptr + cap` must be the pointer range returned from
-    ///   <code>([try_](BumpAllocator::try_prepare_slice_allocation))[prepare_slice_allocation](BumpAllocator::prepare_slice_allocation)</code>.
-    /// - no allocation, grow, shrink or deallocate must have taken place since then
-    /// - no resets must have taken place since then
-    /// - `len` must be less than or equal to `cap`
-    ///
-    /// [`allocate_prepared`]: BumpAllocatorCore::allocate_prepared
-    unsafe fn spec_alloc_prepared_slice<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
 
     /// See [`BumpAllocator::checkpoint`].
     #[must_use]
@@ -645,15 +620,6 @@ unsafe impl<A: BumpAllocatorPrivate> BumpAllocatorPrivate for &A {
     fn spec_prepare_sized_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
         A::spec_prepare_sized_allocation(self)
     }
-
-    #[inline(always)]
-    fn spec_prepare_slice_allocation<E: ErrorBehavior, T>(&self, cap: usize) -> Result<NonNull<[T]>, E> {
-        A::spec_prepare_slice_allocation(self, cap)
-    }
-
-    unsafe fn spec_alloc_prepared_slice<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        unsafe { A::spec_alloc_prepared_slice(self, start, len, cap) }
-    }
 }
 unsafe impl<A: BumpAllocatorPrivate> BumpAllocatorPrivate for &mut A {
     const CONFIG: BumpConfig = A::CONFIG;
@@ -717,16 +683,6 @@ unsafe impl<A: BumpAllocatorPrivate> BumpAllocatorPrivate for &mut A {
     fn spec_prepare_sized_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
         A::spec_prepare_sized_allocation(self)
     }
-
-    #[inline(always)]
-    fn spec_prepare_slice_allocation<E: ErrorBehavior, T>(&self, cap: usize) -> Result<NonNull<[T]>, E> {
-        A::spec_prepare_slice_allocation(self, cap)
-    }
-
-    #[inline(always)]
-    unsafe fn spec_alloc_prepared_slice<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        unsafe { A::spec_alloc_prepared_slice(self, start, len, cap) }
-    }
 }
 unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for Bump<A, C> {
     const CONFIG: BumpConfig = C;
@@ -789,16 +745,6 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for Bump<A, 
     #[inline(always)]
     fn spec_prepare_sized_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
         self.as_bump_scope().spec_prepare_sized_allocation()
-    }
-
-    #[inline(always)]
-    fn spec_prepare_slice_allocation<E: ErrorBehavior, T>(&self, cap: usize) -> Result<NonNull<[T]>, E> {
-        self.as_bump_scope().spec_prepare_slice_allocation(cap)
-    }
-
-    #[inline(always)]
-    unsafe fn spec_alloc_prepared_slice<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        unsafe { self.as_bump_scope().spec_alloc_prepared_slice(start, len, cap) }
     }
 }
 unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for BumpScope<'_, A, C> {
@@ -926,30 +872,6 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for BumpScop
     fn spec_prepare_sized_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
         self.raw.prepare_sized_allocation()
     }
-
-    fn spec_prepare_slice_allocation<E: ErrorBehavior, T>(&self, cap: usize) -> Result<NonNull<[T]>, E> {
-        self.raw.prepare_slice_allocation(cap)
-    }
-
-    unsafe fn spec_alloc_prepared_slice<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        unsafe {
-            // a successful `prepare_allocation` guarantees a non-dummy-chunk
-            let chunk = self.raw.chunk.get().as_allocated_unchecked();
-
-            let end = start.add(len);
-
-            if config!(Self::CONFIG, upwards) {
-                chunk.set_pos_addr_and_align_from(end.addr().get(), T::ALIGN);
-                NonNull::slice_from_raw_parts(start, len)
-            } else {
-                let dst_end = start.add(cap);
-                let dst = dst_end.sub(len);
-                start.copy_to(dst, len); // FIXME: conditional copy_nonoverlapping?
-                chunk.set_pos_addr_and_align_from(dst.addr().get(), T::ALIGN);
-                NonNull::slice_from_raw_parts(dst, len)
-            }
-        }
-    }
 }
 unsafe impl BumpAllocatorPrivate for Unmanaged<'_> {
     const CONFIG: BumpConfig = DEFAULT_BUMP_CONFIG;
@@ -1018,18 +940,6 @@ unsafe impl BumpAllocatorPrivate for Unmanaged<'_> {
     #[inline(always)]
     fn spec_prepare_sized_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
         Err(B::unmanaged())
-    }
-
-    #[inline(always)]
-    fn spec_prepare_slice_allocation<E: ErrorBehavior, T>(&self, cap: usize) -> Result<NonNull<[T]>, E> {
-        _ = cap;
-        Err(E::unmanaged())
-    }
-
-    #[inline(always)]
-    unsafe fn spec_alloc_prepared_slice<T>(&self, start: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
-        _ = (start, len, cap);
-        NonNull::slice_from_raw_parts(NonNull::dangling(), 0)
     }
 }
 

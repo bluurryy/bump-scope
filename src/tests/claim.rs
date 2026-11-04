@@ -105,10 +105,10 @@ up_and_down! {
             assert!(unsafe { bump.spec_shrink_slice(ptr, 2, 1) }.is_none());
 
             // prepare slice allocation
-            expect_panic(|| bump.spec_prepare_slice_allocation::<!, ()>(123));
-            expect_panic(|| bump.spec_prepare_slice_allocation::<!, u8>(123));
-            expect_err(bump.spec_prepare_slice_allocation::<AllocError, ()>(123));
-            expect_err(bump.spec_prepare_slice_allocation::<AllocError, u8>(123));
+            expect_panic(|| bump.spec_prepare_slice::<!, ()>(123));
+            expect_panic(|| bump.spec_prepare_slice::<!, u8>(123));
+            expect_err(bump.spec_prepare_slice::<AllocError, ()>(123));
+            expect_err(bump.spec_prepare_slice::<AllocError, u8>(123));
 
             // dealloc
             drop(extra::replace_allocator(boxed, &bump));

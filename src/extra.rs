@@ -415,16 +415,16 @@ where
 ///
 /// # Examples
 /// ```
-/// use bump_scope::{Bump, extra::vec_append};
+/// use bump_scope::{Bump, BumpAllocator, extra::vec_append};
 ///
 /// let bump: Bump = Bump::new();
 ///
-/// let mut vec = Vec::new_in(&bump);
+/// let mut vec = Vec::<i32, _>::new_in(&bump);
 ///
 /// // append by value
 /// vec_append(&mut vec, [1, 2]);
 /// vec_append(&mut vec, vec![3, 4]);
-/// vec_append(&mut vec, bump.alloc_iter(5..=6));
+/// vec_append(&mut vec, bump.alloc_iter(5..=6).into_boxu());
 ///
 /// // append by mutable reference
 /// let mut other = vec![7, 8];
@@ -465,7 +465,7 @@ where
 ///
 /// let bump: Bump = Bump::new();
 ///
-/// let mut vec = Vec::new_in(&bump);
+/// let mut vec = Vec::<i32, _>::new_in(&bump);
 ///
 /// // append by value
 /// vec_try_append(&mut vec, [1, 2]);
