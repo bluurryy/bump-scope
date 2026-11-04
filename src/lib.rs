@@ -169,7 +169,7 @@
 //! any outstanding references to the allocator.
 //!
 //! As a workaround you can use the [`claim`] method on a `&Bump(Scope)` to return a `BumpClaimGuard` which
-//! mutably dereferences to a `BumpScope`, allowing you to call `.scoped()` and `.scope_guard()`.
+//! mutably dereferences to a `BumpScope`, enabling you to call `.scoped()` and `.scope_guard()`.
 //!
 //! A `bump.claim()` call replaces the allocator referred to by `bump` with a dummy allocator while the returned `BumpClaimGuard`
 //! is live. This dummy allocator errors when trying to allocate or grow memory and reports an empty bump allocator from the `stats` api.
