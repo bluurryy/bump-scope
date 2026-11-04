@@ -2770,7 +2770,7 @@ impl<A: Allocator, const C: BumpConfig> AsBumpScope<A, C> for BumpScope<'_, A, C
 /// }
 /// ```
 pub trait AsMutBumpScope<A = Global, const C: BumpConfig = DEFAULT_BUMP_CONFIG> {
-    /// TODO
+    /// Returns the bump allocator scope.
     fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'_, A, C>;
 }
 
