@@ -36,11 +36,11 @@ pub use crate::__vec as vec;
 /// Mapping to a type with an equal alignment and size (no allocation):
 /// ```
 /// use core::num::NonZero;
-/// use bump_scope::{Bump, extra};
+/// use bump_scope::{Bump, BumpAllocator, extra};
 ///
 /// let bump: Bump = Bump::new();
 ///
-/// let a = extra::vec_from_iter_in([0, 1, 2, 3], &bump);
+/// let a = bump.alloc_iter_exact([0, 1, 2, 3]).into_box().into_vec();
 /// assert_eq!(bump.stats().allocated(), 4 * 4);
 ///
 /// let b = extra::vec_map(a, NonZero::new);
@@ -50,11 +50,11 @@ pub use crate::__vec as vec;
 ///
 /// Mapping to a type with a smaller alignment and size (no allocation, capacity may grow):
 /// ```
-/// use bump_scope::{Bump, extra};
+/// use bump_scope::{Bump, BumpAllocator, extra};
 ///
 /// let bump: Bump = Bump::new();
 ///
-/// let vec_a: Vec<u32, _> = extra::vec_from_iter_in([1, 2, 3, 4], &bump);
+/// let vec_a: Vec<u32, _> = bump.alloc_iter_exact([1, 2, 3, 4]).into_box().into_vec();
 /// assert_eq!(vec_a.capacity(), 4);
 /// assert_eq!(bump.stats().allocated(), 4 * 4);
 ///
@@ -65,11 +65,11 @@ pub use crate::__vec as vec;
 ///
 /// Mapping to a type with a higher alignment or size will allocate:
 /// ```
-/// use bump_scope::{Bump, extra};
+/// use bump_scope::{Bump, BumpAllocator, extra};
 ///
 /// let bump: Bump = Bump::new();
 ///
-/// let vec_a: Vec<u16, _> = extra::vec_from_iter_in([1, 2, 3, 4], &bump);
+/// let vec_a: Vec<u16, _> = bump.alloc_iter_exact([1, 2, 3, 4]).into_box().into_vec();
 /// assert_eq!(vec_a.capacity(), 4);
 /// assert_eq!(bump.stats().allocated(), 4 * 2);
 ///
@@ -95,11 +95,11 @@ where
 /// Mapping to a type with an equal alignment and size (no allocation):
 /// ```
 /// use core::num::NonZero;
-/// use bump_scope::{Bump, extra};
+/// use bump_scope::{Bump, BumpAllocator, extra};
 ///
 /// let bump: Bump = Bump::new();
 ///
-/// let a = extra::vec_try_from_iter_in([0, 1, 2, 3], &bump)?;
+/// let a = bump.try_alloc_iter_exact([0, 1, 2, 3])?.into_box().into_vec();
 /// assert_eq!(bump.stats().allocated(), 4 * 4);
 ///
 /// let b = extra::vec_try_map(a, NonZero::new)?;
@@ -110,11 +110,11 @@ where
 ///
 /// Mapping to a type with a smaller alignment and size (no allocation, capacity may grow):
 /// ```
-/// use bump_scope::{Bump, extra};
+/// use bump_scope::{Bump, BumpAllocator, extra};
 ///
 /// let bump: Bump = Bump::new();
 ///
-/// let vec_a: Vec<u32, _> = extra::vec_try_from_iter_in([1, 2, 3, 4], &bump)?;
+/// let vec_a: Vec<u32, _> = bump.try_alloc_iter_exact([1, 2, 3, 4])?.into_box().into_vec();
 /// assert_eq!(vec_a.capacity(), 4);
 /// assert_eq!(bump.stats().allocated(), 4 * 4);
 ///
@@ -126,11 +126,11 @@ where
 ///
 /// Mapping to a type with a higher alignment or size will allocate:
 /// ```
-/// use bump_scope::{Bump, extra};
+/// use bump_scope::{Bump, BumpAllocator, extra};
 ///
 /// let bump: Bump = Bump::new();
 ///
-/// let vec_a: Vec<u16, _> = extra::vec_try_from_iter_in([1, 2, 3, 4], &bump)?;
+/// let vec_a: Vec<u16, _> = bump.try_alloc_iter_exact([1, 2, 3, 4])?.into_box().into_vec();
 /// assert_eq!(vec_a.capacity(), 4);
 /// assert_eq!(bump.stats().allocated(), 4 * 2);
 ///
@@ -411,7 +411,7 @@ pub fn box_init<T, A: Allocator>(boxed: Box<MaybeUninit<T>, A>, value: T) -> Box
 /// use bump_scope::{Bump, BumpAllocator, extra::box_init_move};
 /// let bump: Bump = Bump::new();
 ///
-/// let uninit = bump.alloc_uninit_slice(3);
+/// let uninit = bump.try_alloc_uninit_slice(3)?.into_box();
 ///
 /// let vec = vec![
 ///     String::from("foo"),
@@ -422,6 +422,7 @@ pub fn box_init<T, A: Allocator>(boxed: Box<MaybeUninit<T>, A>, value: T) -> Box
 /// let init = box_init_move(uninit, vec);
 ///
 /// assert_eq!(&*init, &["foo", "bar", "baz"]);
+/// # Ok::<(), core::alloc::AllocError>(())
 /// ```
 #[must_use]
 pub fn box_init_move<T, A>(mut boxed: Box<[MaybeUninit<T>], A>, owned_slice: impl OwnedSlice<Item = T>) -> Box<[T], A>
@@ -457,7 +458,7 @@ where
 /// use bump_scope::{Bump, BumpAllocator, extra::box_init_clone};;
 /// let bump: Bump = Bump::new();
 ///
-/// let uninit = bump.alloc_uninit_slice(3);
+/// let uninit = bump.try_alloc_uninit_slice(3)?.into_box();
 ///
 /// let slice = &[
 ///     String::from("foo"),
@@ -468,6 +469,7 @@ where
 /// let init = box_init_clone(uninit, slice);
 ///
 /// assert_eq!(&*init, &["foo", "bar", "baz"]);
+/// # Ok::<(), core::alloc::AllocError>(())
 /// ```
 #[must_use]
 pub fn box_init_clone<T, A>(boxed: Box<[MaybeUninit<T>], A>, slice: &[T]) -> Box<[T], A>
@@ -502,7 +504,7 @@ where
 /// use bump_scope::{Bump, BumpAllocator, extra::box_init_copy};
 /// let bump: Bump = Bump::new();
 ///
-/// let uninit = bump.alloc_uninit_slice(3);
+/// let uninit = bump.try_alloc_uninit_slice(3)?.into_box();
 ///
 /// let slice = &[
 ///     "foo",
@@ -513,6 +515,7 @@ where
 /// let init = box_init_copy(uninit, slice);
 ///
 /// assert_eq!(&*init, &["foo", "bar", "baz"]);
+/// # Ok::<(), core::alloc::AllocError>(())
 /// ```
 #[must_use]
 pub fn box_init_copy<T, A>(mut boxed: Box<[MaybeUninit<T>], A>, slice: &[T]) -> Box<[T], A>
@@ -531,9 +534,10 @@ where
 /// use bump_scope::{Bump, BumpAllocator, extra::box_init_fill};
 /// let bump: Bump = Bump::new();
 ///
-/// let uninit = bump.alloc_uninit_slice(10);
+/// let uninit = bump.try_alloc_uninit_slice::<i32>(10)?.into_box();
 /// let init = box_init_fill(uninit, 1);
-/// assert_eq!(init, [1; 10]);
+/// assert_eq!(&*init, &[1; 10]);
+/// # Ok::<(), core::alloc::AllocError>(())
 /// ```
 #[must_use]
 pub fn box_init_fill<T, A>(boxed: Box<[MaybeUninit<T>], A>, value: T) -> Box<[T], A>
@@ -571,9 +575,10 @@ where
 /// use bump_scope::{Bump, BumpAllocator, extra::box_init_fill_with};
 /// let bump: Bump = Bump::new();
 ///
-/// let uninit = bump.alloc_uninit_slice(10);
+/// let uninit = bump.try_alloc_uninit_slice::<i32>(10)?.into_box();
 /// let init = box_init_fill_with(uninit, Default::default);
-/// assert_eq!(init, [0; 10]);
+/// assert_eq!(&*init, &[0i32; 10]);
+/// # Ok::<(), core::alloc::AllocError>(())
 /// ```
 #[must_use]
 pub fn box_init_fill_with<T, A>(boxed: Box<[MaybeUninit<T>], A>, mut f: impl FnMut() -> T) -> Box<[T], A>
@@ -596,12 +601,13 @@ where
 ///
 /// # Examples
 /// ```
-/// use bump_scope::{Bump, BumpAllocation, extra::box_init_fill_iter};
+/// use bump_scope::{Bump, BumpAllocator, extra::box_init_fill_iter};
 /// let bump: Bump = Bump::new();
 ///
-/// let uninit = bump.alloc_uninit_slice(5);
+/// let uninit = bump.try_alloc_uninit_slice::<char>(5)?.into_box();
 /// let init = box_init_fill_iter(uninit, ['a', 'b'].iter().copied().cycle());
-/// assert_eq!(init, ['a', 'b', 'a', 'b', 'a']);
+/// assert_eq!(&*init, &['a', 'b', 'a', 'b', 'a']);
+/// # Ok::<(), core::alloc::AllocError>(())
 /// ```
 #[must_use]
 pub fn box_init_fill_iter<T, A>(boxed: Box<[MaybeUninit<T>], A>, iter: impl IntoIterator<Item = T>) -> Box<[T], A>
@@ -686,99 +692,6 @@ pub(crate) fn assert_char_boundary(str: &str, index: usize) {
 
     if !str.is_char_boundary(index) {
         assert_failed();
-    }
-}
-
-/// Create a new [`Vec`] whose elements are taken from an iterator and allocated in the given allocator.
-///
-/// If you have an `impl ExactSizeIterator` then you can use [`from_iter_exact_in`](Self::from_iter_exact_in) instead for better performance.
-///
-/// # Panics
-/// Panics if the allocation fails.
-///
-/// # Examples
-/// ```
-/// # use bump_scope::{Bump, BumpVec};
-/// # let bump: Bump = Bump::new();
-/// let vec = BumpVec::from_iter_in([1, 2, 3], &bump);
-/// assert_eq!(vec, [1, 2, 3]);
-/// ```
-#[inline]
-#[cfg(feature = "panic-on-alloc")]
-pub fn vec_from_iter_in<T, A>(iter: impl IntoIterator<Item = T>, alloc: A) -> Vec<T, A>
-where
-    A: Allocator,
-{
-    panic_on_error(imp_vec_from_iter_in(iter, alloc))
-}
-
-/// TODO
-///
-/// # Errors
-/// TODO
-#[inline]
-pub fn vec_try_from_iter_in<T, A>(iter: impl IntoIterator<Item = T>, alloc: A) -> Result<Vec<T, A>, AllocError>
-where
-    A: Allocator,
-{
-    imp_vec_from_iter_in(iter, alloc)
-}
-
-#[inline(always)]
-fn imp_vec_from_iter_in<E, T, A>(iter: impl IntoIterator<Item = T>, alloc: A) -> Result<Vec<T, A>, E>
-where
-    E: ErrorBehavior,
-    A: Allocator,
-{
-    let mut vec = Vec::new_in(alloc);
-    imp_vec_extend(&mut vec, iter)?;
-    Ok(vec)
-}
-
-/// TODO
-#[cfg(feature = "panic-on-alloc")]
-pub fn vec_from_iter_exact_in<T, A>(iter: impl IntoIterator<Item = T, IntoIter: ExactSizeIterator>, alloc: A) -> Vec<T, A>
-where
-    A: Allocator,
-{
-    panic_on_error(imp_vec_from_iter_exact_in(iter, alloc))
-}
-
-/// TODO
-#[allow(unused)]
-pub(crate) fn imp_vec_from_iter_exact_in<E, T, A>(
-    iter: impl IntoIterator<Item = T, IntoIter: ExactSizeIterator>,
-    alloc: A,
-) -> Result<Vec<T, A>, E>
-where
-    E: ErrorBehavior,
-    A: Allocator,
-{
-    let mut iter = iter.into_iter();
-    let len = iter.len();
-
-    let mut vec = E::vec_with_capacity_in::<T, A>(len, alloc)?;
-
-    while vec.len() < vec.capacity() {
-        match iter.next() {
-            // SAFETY: we checked above that `len < capacity`, so there is space
-            Some(val) => unsafe { vec_push_unchecked(&mut vec, val) },
-            None => break,
-        }
-    }
-
-    Ok(vec)
-}
-
-unsafe fn vec_push_unchecked<T, A>(vec: &mut Vec<T, A>, val: T)
-where
-    A: Allocator,
-{
-    let len = vec.len();
-
-    unsafe {
-        vec.as_mut_ptr().add(len).write(val);
-        vec.set_len(len + 1);
     }
 }
 

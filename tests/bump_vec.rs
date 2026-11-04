@@ -112,7 +112,8 @@ up_and_down! {
             let bump: Bump<Global, C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
-                let a = extra::vec_from_iter_in::<String, _>(elements.clone(), &bump);
+                let mut a = Vec::<String, _>::new_in(&bump);
+                a.extend(elements.clone());
                 assert_eq!(a.capacity(), elements.len());
                 assert_eq!(bump.stats().allocated(), size_of::<String>() * elements.len());
 
@@ -147,7 +148,8 @@ up_and_down! {
 
             let result = std::panic::catch_unwind(|| {
                 let mut i = 1;
-                let a = extra::vec_from_iter_in::<String, _>([1, 2, 3, 4, 5, 6].map(|i| i.to_string()), &bump);
+                let mut a = Vec::<String, _>::new_in(&bump);
+                a.extend([1, 2, 3, 4, 5, 6].map(|i| i.to_string()));
                 assert_eq!(a.capacity(), 6);
                 assert_eq!(bump.stats().allocated(), size_of::<String>() * 6);
                 let b: Vec<Box<str>, _> = extra::vec_map(a, |s| {
@@ -184,7 +186,8 @@ up_and_down! {
             let bump: Bump<Global, C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
-                let a = extra::vec_from_iter_in::<Box<str>, _>(elements.clone(), &bump);
+                let mut a = Vec::<Box<str>, _>::new_in(&bump);
+                a.extend(elements.clone());
                 assert_eq!(a.capacity(), elements.len());
                 assert_eq!(bump.stats().allocated(), size_of::<Box<str>>() * elements.len());
 
@@ -224,7 +227,8 @@ up_and_down! {
             let bump: Bump<Global, C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
-                let a = extra::vec_from_iter_in::<String, _>(elements.clone(), &bump);
+                let mut a = Vec::<String, _>::new_in(&bump);
+                a.extend(elements.clone());
                 assert_eq!(a.capacity(), elements.len());
                 assert_eq!(bump.stats().allocated(), size_of::<String>() * elements.len());
 
@@ -258,7 +262,8 @@ up_and_down! {
             let bump: Bump<Global, C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
-                let a = extra::vec_from_iter_in::<(), _>(elements, &bump);
+                let mut a = Vec::<(), _>::new_in(&bump);
+                a.extend(elements);
                 assert_eq!(a.capacity(), usize::MAX);
                 assert_eq!(bump.stats().allocated(), 0);
 
@@ -293,7 +298,8 @@ up_and_down! {
             let bump: Bump<Global, C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
-                let a = extra::vec_from_iter_in::<(), _>(elements, &bump);
+                let mut a = Vec::<(), _>::new_in(&bump);
+                a.extend(elements);
                 assert_eq!(a.capacity(), usize::MAX);
                 assert_eq!(bump.stats().allocated(), 0);
 
@@ -328,7 +334,8 @@ up_and_down! {
         fn test<B: BumpAllocator>(bump: B) {
             const ITEM_SIZE: usize = size_of::<String>();
             assert_eq!(bump.any_stats().allocated(), 0);
-            let mut vec = extra::vec_from_iter_in(numbers(1..4), &bump);
+            let mut vec = Vec::new_in(&bump);
+            vec.extend(numbers(1..4));
             assert_eq!(vec, ["1", "2", "3"]);
             assert_eq!(vec.len(), 3);
             assert_eq!(vec.capacity(), 4); // because of minimum capacity
@@ -360,7 +367,7 @@ up_and_down! {
             assert_eq!(bump.any_stats().allocated(), 0);
             drop(vec);
 
-            let vec = extra::vec_from_iter_exact_in(numbers(1..2), &bump);
+            let vec = bump.alloc_iter_exact(numbers(1..2)).into_box().into_vec();
             assert_eq!(vec, ["1"]);
             assert_eq!(vec.len(), 1);
             assert_eq!(vec.capacity(), 1);

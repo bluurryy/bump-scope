@@ -14,7 +14,6 @@ pub(crate) trait ErrorBehavior: Sized {
     fn base_allocator_default_constructor_panicked() -> Self;
     fn unmanaged() -> Self;
     fn format_trait_error() -> Self;
-    fn vec_with_capacity_in<T, A: Allocator>(cap: usize, alloc: A) -> Result<Vec<T, A>, Self>;
     fn vec_reserve<T, A: Allocator>(vec: &mut Vec<T, A>, additional: usize) -> Result<(), Self>;
     fn vec_reserve_if_fallible<T, A: Allocator>(vec: &mut Vec<T, A>, additional: usize) -> Result<(), Self>;
 }
@@ -52,11 +51,6 @@ impl ErrorBehavior for ! {
     #[inline(always)]
     fn format_trait_error() -> Self {
         panic::format_trait_error()
-    }
-
-    #[inline(always)]
-    fn vec_with_capacity_in<T, A: Allocator>(cap: usize, alloc: A) -> Result<Vec<T, A>, Self> {
-        Ok(Vec::<T, _>::with_capacity_in(cap, alloc))
     }
 
     #[inline(always)]
@@ -104,13 +98,6 @@ impl ErrorBehavior for AllocError {
     #[inline(always)]
     fn format_trait_error() -> Self {
         Self
-    }
-
-    #[inline(always)]
-    fn vec_with_capacity_in<T, A: Allocator>(cap: usize, alloc: A) -> Result<Vec<T, A>, Self> {
-        let mut vec = Vec::new_in(alloc);
-        vec.try_reserve(cap).map_err(|_| AllocError)?;
-        Ok(vec)
     }
 
     #[inline(always)]
