@@ -109,9 +109,9 @@ use crate::{
 #[expect(private_bounds)]
 pub fn split_off<VecOrBox>(vec_or_box: &mut VecOrBox, range: impl RangeBounds<usize>) -> VecOrBox
 where
-    VecOrBox: SplitOff,
+    VecOrBox: VecOrBoxedSlice,
 {
-    SplitOff::split_off(vec_or_box, range)
+    VecOrBoxedSlice::split_off(vec_or_box, range)
 }
 
 /// Divides a boxed slice into two at an index.
@@ -159,7 +159,7 @@ where
 #[expect(private_bounds)]
 pub fn split_at<VecOrBox>(vec_or_box: VecOrBox, at: usize) -> (VecOrBox, VecOrBox)
 where
-    VecOrBox: SplitOff,
+    VecOrBox: VecOrBoxedSlice,
 {
     // FIXME: does this produce optimal code or should we have a dedicated impl?
     let mut lhs = vec_or_box;
@@ -167,11 +167,11 @@ where
     (lhs, rhs)
 }
 
-trait SplitOff {
+trait VecOrBoxedSlice {
     fn split_off(this: &mut Self, range: impl RangeBounds<usize>) -> Self;
 }
 
-impl<T, A> SplitOff for Vec<T, A>
+impl<T, A> VecOrBoxedSlice for Vec<T, A>
 where
     A: BumpAllocator + Clone,
 {
@@ -272,7 +272,7 @@ where
     }
 }
 
-impl<T, A> SplitOff for Box<[T], A>
+impl<T, A> VecOrBoxedSlice for Box<[T], A>
 where
     A: BumpAllocator + Clone,
 {
@@ -350,7 +350,7 @@ where
     }
 }
 
-impl<A> SplitOff for Box<str, A>
+impl<A> VecOrBoxedSlice for Box<str, A>
 where
     A: BumpAllocator + Clone,
 {
