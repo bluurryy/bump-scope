@@ -1,4 +1,5 @@
 use core::{
+    alloc::Allocator,
     ops::{self, RangeBounds},
     ptr,
 };
@@ -106,7 +107,7 @@ use crate::{
 /// assert_eq!(&*rest, "baaz");
 /// assert_eq!(&*string, "");
 /// ```
-#[expect(private_bounds)]
+#[inline]
 pub fn split_off<VecOrBox>(vec_or_box: &mut VecOrBox, range: impl RangeBounds<usize>) -> VecOrBox
 where
     VecOrBox: VecOrBoxedSlice,
@@ -156,7 +157,6 @@ where
 /// ```
 #[inline]
 #[must_use]
-#[expect(private_bounds)]
 pub fn split_at<VecOrBox>(vec_or_box: VecOrBox, at: usize) -> (VecOrBox, VecOrBox)
 where
     VecOrBox: VecOrBoxedSlice,
@@ -167,7 +167,15 @@ where
     (lhs, rhs)
 }
 
-trait VecOrBoxedSlice {
+trait Sealed {}
+impl<T, A: Allocator> Sealed for Vec<T, A> {}
+impl<T, A: Allocator> Sealed for Box<[T], A> {}
+impl<A: Allocator> Sealed for Box<str, A> {}
+
+/// Trait bound for [`split_off`] and [`split_at`].
+#[expect(private_bounds)]
+pub trait VecOrBoxedSlice: Sealed {
+    #[doc(hidden)]
     fn split_off(this: &mut Self, range: impl RangeBounds<usize>) -> Self;
 }
 

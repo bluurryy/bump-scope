@@ -22,7 +22,7 @@ use crate::{
 use crate::panic_on_error;
 
 pub use replace_allocator::{detach_allocator, replace_allocator};
-pub use vec_or_boxed_slice::{split_at, split_off};
+pub use vec_or_boxed_slice::{VecOrBoxedSlice, split_at, split_off};
 
 #[doc(inline)]
 pub use crate::__vec as vec;
