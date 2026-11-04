@@ -35,7 +35,7 @@ use crate::{
 ///
 /// # Examples
 ///
-/// A Vector:
+/// A vector:
 /// ```
 /// use bump_scope::{Bump, extra::split_off};
 /// let bump: Bump = Bump::new();
@@ -108,10 +108,7 @@ use crate::{
 /// assert_eq!(&*string, "");
 /// ```
 #[inline]
-pub fn split_off<VecOrBox>(vec_or_box: &mut VecOrBox, range: impl RangeBounds<usize>) -> VecOrBox
-where
-    VecOrBox: VecOrBoxedSlice,
-{
+pub fn split_off<T: VecOrBoxedSlice>(vec_or_box: &mut T, range: impl RangeBounds<usize>) -> T {
     VecOrBoxedSlice::split_off(vec_or_box, range)
 }
 
@@ -157,10 +154,7 @@ where
 /// ```
 #[inline]
 #[must_use]
-pub fn split_at<VecOrBox>(vec_or_box: VecOrBox, at: usize) -> (VecOrBox, VecOrBox)
-where
-    VecOrBox: VecOrBoxedSlice,
-{
+pub fn split_at<T: VecOrBoxedSlice>(vec_or_box: T, at: usize) -> (T, T) {
     // FIXME: does this produce optimal code or should we have a dedicated impl?
     let mut lhs = vec_or_box;
     let rhs = split_off(&mut lhs, at..);
