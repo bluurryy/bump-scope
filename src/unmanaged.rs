@@ -4,7 +4,12 @@ use core::{
     ptr::NonNull,
 };
 
-/// TODO
+/// A zero sized dummy allocator.
+///
+/// It carries only the lifetime for the bump allocation.
+///
+/// Allocating, growing and shrinking with a higher alignment will fail,
+/// deallocating or shrinking with a smaller or equal alignment will succeed.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy)]
 pub struct Unmanaged<'a>(PhantomData<&'a ()>);
