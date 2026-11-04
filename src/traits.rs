@@ -11,7 +11,7 @@ use core::{
 
 #[cfg(feature = "nightly")]
 use alloc::alloc::AllocatorNightly;
-use alloc::{boxed::Box, vec::Vec};
+use alloc::{alloc::Global, boxed::Box, vec::Vec};
 
 use crate::{
     Bump, BumpAllocation, BumpScope, Checkpoint, SizedTypeProperties, Unmanaged,
@@ -26,7 +26,7 @@ use crate::{
         box_uninit_zst_in, box_uninit_zst_slice_in, imp_vec_extend,
     },
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
-    polyfill::{transmute_mut, transmute_ref},
+    polyfill::transmute_mut,
     stats::AnyStats,
     up_align_usize_unchecked, util,
 };
@@ -2701,44 +2701,88 @@ unsafe impl<T: MutBumpAllocator> MutBumpAllocator for &mut T {}
 unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for Bump<A, C> {}
 unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for BumpScope<'_, A, C> {}
 
-/// A shorthand for <code>[MutBumpAllocatorCore] + [BumpAllocatorCoreScope]<'a></code>
+/// A shorthand for <code>[MutBumpAllocator] + [BumpAllocatorScope]<'a></code>
 #[expect(private_bounds, clippy::missing_safety_doc)]
 pub unsafe trait MutBumpAllocatorScope<'a>: MutBumpAllocator + BumpAllocatorScope<'a> + BumpAllocatorPrivate {}
 unsafe impl<'a, T: MutBumpAllocator + BumpAllocatorScope<'a>> MutBumpAllocatorScope<'a> for T {}
 
 /// A trait allowing you to be generic over `Bump(Scope)<A, C>`.
-pub trait AsBumpScope<'a, A, const C: BumpConfig> {
+///
+/// # Examples
+/// ```
+/// use bump_scope::AsBumpScope;
+///
+/// struct FunctionBuilder<B> {
+///     bump: B,
+/// }
+///
+/// impl<B> FunctionBuilder<B>
+/// where
+///     B: AsBumpScope
+/// {
+///     # #[expect(unused)]
+///     fn something(&mut self) {
+///         self.bump.as_bump_scope().claim().scoped(|bump| {
+///             # _ = bump;
+///             // ...
+///         });
+///     }
+/// }
+/// ```
+pub trait AsBumpScope<A = Global, const C: BumpConfig = DEFAULT_BUMP_CONFIG> {
     /// Returns the bump allocation scope.
-    fn as_bump_scope(&self) -> &BumpScope<'a, A, C>;
+    fn as_bump_scope(&self) -> &BumpScope<'_, A, C>;
 }
 
-impl<'a, A: Allocator, const C: BumpConfig> AsBumpScope<'a, A, C> for &'a Bump<A, C> {
-    fn as_bump_scope(&self) -> &BumpScope<'a, A, C> {
-        unsafe { transmute_ref::<Bump<A, C>, BumpScope<'a, A, C>>(*self) }
+impl<A: Allocator, const C: BumpConfig> AsBumpScope<A, C> for Bump<A, C> {
+    fn as_bump_scope(&self) -> &BumpScope<'_, A, C> {
+        self.as_scope()
     }
 }
 
-impl<'a, A: Allocator, const C: BumpConfig> AsBumpScope<'a, A, C> for BumpScope<'a, A, C> {
-    fn as_bump_scope(&self) -> &BumpScope<'a, A, C> {
+impl<A: Allocator, const C: BumpConfig> AsBumpScope<A, C> for BumpScope<'_, A, C> {
+    fn as_bump_scope(&self) -> &BumpScope<'_, A, C> {
         self
     }
 }
 
 /// A trait allowing you to be generic over `Bump(Scope)<A, C>`.
-pub trait AsMutBumpScope<'a, A, const C: BumpConfig> {
+///
+/// # Examples
+/// ```
+/// use bump_scope::AsMutBumpScope;
+///
+/// struct FunctionBuilder<B> {
+///     bump: B,
+/// }
+///
+/// impl<B> FunctionBuilder<B>
+/// where
+///     B: AsMutBumpScope
+/// {
+///     # #[expect(unused)]
+///     fn something(&mut self) {
+///         self.bump.as_mut_bump_scope().scoped(|bump| {
+///             # _ = bump;
+///             // ...
+///         });
+///     }
+/// }
+/// ```
+pub trait AsMutBumpScope<A = Global, const C: BumpConfig = DEFAULT_BUMP_CONFIG> {
     /// TODO
-    fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'a, A, C>;
+    fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'_, A, C>;
 }
 
-impl<'a, A: Allocator, const C: BumpConfig> AsMutBumpScope<'a, A, C> for &'a mut Bump<A, C> {
-    fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'a, A, C> {
-        unsafe { transmute_mut::<Bump<A, C>, BumpScope<'a, A, C>>(*self) }
+impl<A: Allocator, const C: BumpConfig> AsMutBumpScope<A, C> for &mut Bump<A, C> {
+    fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'_, A, C> {
+        self.as_mut_scope()
     }
 }
 
-impl<'a, A: Allocator, const C: BumpConfig> AsMutBumpScope<'a, A, C> for BumpScope<'a, A, C> {
-    fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'a, A, C> {
-        self
+impl<A: Allocator, const C: BumpConfig> AsMutBumpScope<A, C> for BumpScope<'_, A, C> {
+    fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'_, A, C> {
+        unsafe { transmute_mut(self) }
     }
 }
 
