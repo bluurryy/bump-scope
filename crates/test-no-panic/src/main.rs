@@ -31,7 +31,7 @@ fn main() -> ExitCode {
         }
     }
 
-    progress_bar(count, count, "done!");
+    progress_bar(count, count, "done!\n");
     ExitCode::SUCCESS
 }
 
