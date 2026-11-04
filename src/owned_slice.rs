@@ -81,7 +81,7 @@ impl<T, A: Allocator> OwnedSlice for Box<[T], A> {
 /// # extern crate alloc;
 /// # use core::ptr::NonNull;
 /// # use alloc::vec::Vec;
-/// # use bump_scope::owned_slice::TakeOwnedSlice;
+/// # use bump_scope::extra::TakeOwnedSlice;
 /// fn append<T>(vec: &mut Vec<T>, mut to_append: impl TakeOwnedSlice<Item = T>) {
 ///     let slice = NonNull::from(to_append.owned_slice_ref());
 ///     vec.reserve(slice.len());
