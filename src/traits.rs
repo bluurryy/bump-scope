@@ -109,7 +109,17 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     /// The allocation takes up as much of the free space of the chunk as possible.
     fn spec_prepare_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E>;
 
-    /// TODO
+    /// Allocate part of the slice returned from a [`spec_prepare_slice`] call.
+    ///
+    /// # Safety
+    /// - `ptr` and `cap` must form the slice that has been returned from [`spec_prepare_slice`]
+    /// - no allocation, grow, shrink or deallocate must have taken place since then
+    /// - no resets must have taken place since then
+    /// - `len` must be less than or equal to `cap`
+    /// - the bump allocator must be [unclaimed] at the time [`spec_prepare_slice`] was called and when calling this function
+    ///
+    /// [`spec_prepare_slice`]: BumpAllocatorPrivate::spec_prepare_slice
+    /// [unclaimed]: crate::BumpScope::claim
     unsafe fn spec_commit_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]>;
 
     /// A specialized version of [`shrink`](core::alloc::Allocator::shrink).
@@ -130,7 +140,6 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     /// ```
     ///
     /// # Safety
-    ///
     /// Same safety conditions as for the code above apply.
     ///
     /// [shrink]: core::alloc::Allocator::shrink
@@ -138,7 +147,11 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[allow(unused)] // FIXME: make use of it
     unsafe fn spec_shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>;
 
-    /// TODO
+    /// Prepares allocation for an instance of `T` memory.
+    ///
+    /// This is like [`spec_alloc_sized`], except that it doesn't change the bump pointer.
+    ///
+    /// [`spec_alloc_sized`]: BumpAllocatorPrivate::spec_alloc_sized
     fn spec_prepare_sized_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B>;
 
     /// See [`BumpAllocator::checkpoint`].
@@ -148,13 +161,12 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     /// See [`BumpAllocator::reset_to`].
     unsafe fn reset_to(&self, checkpoint: Checkpoint);
 
-    /// TODO
+    /// Returns the bump pointer.
     fn pos(&self) -> *mut u8;
 
-    /// TODO
+    /// Sets the bump pointer.
     ///
     /// # Safety
-    ///
     /// Chunk must be allocated.
     unsafe fn set_pos(&self, addr: usize);
 
@@ -458,11 +470,11 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
         })
     }
 
-    /// TODO
+    /// Allocates a vector that uses the entire remaining chunk space for its capacity and
+    /// only needs to update the bump pointer when calling [`into_boxed_slice`](MutBumpVec::into_boxed_slice).
     ///
     /// # Safety
-    ///
-    /// TODO: won't "allocate"
+    /// Nothing must be done that changes the bump pointer while this vector is live.
     fn imp_mut_alloc_vec<E, T>(&mut self, min_cap: usize) -> Result<MutBumpVec<'_, T, Self>, E>
     where
         E: ErrorBehavior,
@@ -943,10 +955,24 @@ unsafe impl BumpAllocatorPrivate for Unmanaged<'_> {
     }
 }
 
-/// TODO
+/// A bump allocator.
+///
+/// Provides methods for [`Bump`] and [`BumpScope`].
+///
+/// # Guarantees
+/// This trait provides additional methods and guarantees on top of an [`Allocator`].
+///
+/// A `BumpAllocatorCore` has laxer safety conditions when using `Allocator` methods:
+/// - You can call `grow*`, `shrink` and `deallocate` with pointers that came from a different `BumpAllocator`.
+/// - Memory blocks can be split.
+/// - `shrink` never errors unless the new alignment is greater
+///
+/// Those invariants are used here:
+/// - Handling of foreign pointers is used for [`extra::replace_allocator`].
+/// - Memory block splitting is used for [`extra::vec_split_off`].
 ///
 /// # Safety
-/// TODO
+/// An implementor supports the guarantees above.
 #[expect(private_bounds)]
 pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// Allocate an object.
@@ -2182,7 +2208,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     #[must_use]
     fn is_claimed(&self) -> bool;
 
-    /// TODO
+    /// FIXME
     fn any_stats(&self) -> AnyStats<'_>;
 
     /// Reserves capacity for at least `additional` more bytes to be bump allocated.
@@ -2357,11 +2383,25 @@ unsafe impl BumpAllocator for Unmanaged<'_> {
     }
 }
 
-/// TODO
+/// A bump allocator scope.
 ///
-/// # Safety
-/// TODO
-#[expect(private_bounds)]
+/// This is a [`BumpAllocator`] which can make allocations that live for the lifetime
+/// of `'a` instead of (just) the lifetime of itself.
+///
+/// # Examples
+/// This function is sound:
+/// ```
+/// # #![expect(dead_code)]
+/// use bump_scope::BumpAllocatorScope;
+/// use core::alloc::Layout;
+///
+/// fn allocate_zeroed_bytes<'a>(allocator: impl BumpAllocatorScope<'a>, len: usize) -> &'a [u8] {
+///     let layout = Layout::array::<u8>(len).unwrap();
+///     let ptr = allocator.allocate_zeroed(layout).unwrap();
+///     unsafe { ptr.as_ref() }
+/// }
+/// ```
+#[expect(private_bounds, clippy::missing_safety_doc)]
 pub unsafe trait BumpAllocatorScope<'a>: BumpAllocator + BumpAllocatorPrivate {}
 unsafe impl<'a, T: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for &T {}
 unsafe impl<'a, T: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for &mut T {}
@@ -2370,11 +2410,8 @@ unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for &'
 unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for BumpScope<'a, A, C> {}
 unsafe impl<'a> BumpAllocatorScope<'a> for Unmanaged<'a> {}
 
-/// TODO
-///
-/// # Safety
-/// TODO
-#[expect(private_bounds)]
+/// Exclusive access to a bump allocator.
+#[expect(private_bounds, clippy::missing_safety_doc)]
 pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     /// Allocate elements of an iterator into a slice.
     ///
@@ -2664,17 +2701,14 @@ unsafe impl<T: MutBumpAllocator> MutBumpAllocator for &mut T {}
 unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for Bump<A, C> {}
 unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for BumpScope<'_, A, C> {}
 
-/// TODO
-///
-/// # Safety
-/// TODO
-#[expect(private_bounds)]
+/// A shorthand for <code>[MutBumpAllocatorCore] + [BumpAllocatorCoreScope]<'a></code>
+#[expect(private_bounds, clippy::missing_safety_doc)]
 pub unsafe trait MutBumpAllocatorScope<'a>: MutBumpAllocator + BumpAllocatorScope<'a> + BumpAllocatorPrivate {}
 unsafe impl<'a, T: MutBumpAllocator + BumpAllocatorScope<'a>> MutBumpAllocatorScope<'a> for T {}
 
-/// TODO
+/// A trait allowing you to be generic over `Bump(Scope)<A, C>`.
 pub trait AsBumpScope<'a, A, const C: BumpConfig> {
-    /// TODO
+    /// Returns the bump allocation scope.
     fn as_bump_scope(&self) -> &BumpScope<'a, A, C>;
 }
 
@@ -2690,7 +2724,7 @@ impl<'a, A: Allocator, const C: BumpConfig> AsBumpScope<'a, A, C> for BumpScope<
     }
 }
 
-/// TODO
+/// A trait allowing you to be generic over `Bump(Scope)<A, C>`.
 pub trait AsMutBumpScope<'a, A, const C: BumpConfig> {
     /// TODO
     fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'a, A, C>;

@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Remove `push_unchecked` apis
 - **Breaking:** Remove `alloc_iter_exact`, use `alloc_iter` instead
 - **Breaking:** Remove deprecated api
+- **Breaking:** Remove `BumpAllocatorCore` trait guarantee about allowing dealloc with a dangling pointer
 
 ### Fixed
 
