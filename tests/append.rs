@@ -10,8 +10,8 @@ use std::{
 };
 
 use bump_scope::{
-    BoxU, Bump, BumpAllocator as _, VecU, extra,
-    owned_slice::{OwnedSlice, TakeOwnedSlice},
+    BoxU, Bump, BumpAllocator as _, VecU,
+    extra::{OwnedSlice, TakeOwnedSlice, vec_append},
 };
 
 fn test_strings() -> [String; 3] {
@@ -23,7 +23,7 @@ fn test_strings_5() -> [String; 5] {
 }
 
 fn test_append<A: Allocator>(mut vec: Vec<String, A>, other: impl OwnedSlice<Item = String>) {
-    extra::vec_append(&mut vec, other);
+    vec_append(&mut vec, other);
     assert_eq!(&*vec, ["1", "2", "3"]);
 }
 

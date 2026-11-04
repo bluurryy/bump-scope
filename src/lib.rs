@@ -274,7 +274,7 @@ pub mod extra;
 mod layout;
 mod macros;
 mod no_drop;
-pub mod owned_slice;
+mod owned_slice;
 mod polyfill;
 /// This is not part of the public api. This module is semver-exempt!
 #[doc(hidden)]

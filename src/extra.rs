@@ -44,10 +44,10 @@ use crate::{
     NoDrop, SizedTypeProperties, Unmanaged, VecU,
     containers::BoxedSliceInitializer,
     error_behavior::ErrorBehavior,
-    owned_slice::{OwnedSlice, TakeOwnedSlice as _},
     traits::{BumpAllocator, BumpAllocatorPrivate, BumpAllocatorScope},
 };
 
+pub use crate::owned_slice::{OwnedSlice, TakeOwnedSlice};
 pub use map::{boxed_slice_try_map, vec_try_map};
 pub use replace_allocator::{box_replace_allocator, vec_replace_allocator};
 pub use split::{boxed_slice_split_off, boxed_str_split_off, vec_split_off};
