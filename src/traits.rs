@@ -23,7 +23,7 @@ use crate::{
     error_behavior::ErrorBehavior,
     extra::{
         self, box_from_utf8_unchecked, box_init, box_uninit_zst_in, box_uninit_zst_slice_in, boxed_slice_init_clone,
-        boxed_slice_init_fill, boxed_slice_init_fill_with, imp_vec_extend,
+        boxed_slice_init_fill, boxed_slice_init_fill_with,
     },
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
     polyfill::transmute_mut,
@@ -144,7 +144,6 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     ///
     /// [shrink]: core::alloc::Allocator::shrink
     /// [array]: Layout::array
-    #[allow(unused)] // FIXME: make use of it
     unsafe fn spec_shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>>;
 
     /// Prepares allocation for an instance of `T` memory.
@@ -782,27 +781,33 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for BumpScop
         unsafe { self.raw.chunk.get().as_allocated_unchecked().set_pos_addr(addr) };
     }
 
+    #[inline(always)]
     fn spec_alloc<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
         self.raw.allocate(layout)
     }
 
+    #[inline(always)]
     fn spec_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
         self.raw.allocate_sized()
     }
 
+    #[inline(always)]
     fn spec_alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
         self.raw.allocate_slice(len)
     }
 
+    #[inline(always)]
     fn spec_alloc_slice_for<E: ErrorBehavior, T>(&self, slice: &[T]) -> Result<NonNull<T>, E> {
         self.raw.allocate_slice_for(slice)
     }
 
+    #[inline(always)]
     fn spec_prepare_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
         let slice = self.raw.prepare_slice_allocation(len)?;
         Ok(slice)
     }
 
+    #[inline(always)]
     unsafe fn spec_commit_slice<T>(&self, ptr: NonNull<T>, len: usize, cap: usize) -> NonNull<[T]> {
         unsafe {
             // a successful `prepare_slice_allocation` guarantees a non-dummy-chunk
@@ -822,6 +827,7 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for BumpScop
         }
     }
 
+    #[inline]
     unsafe fn spec_shrink_slice<T>(&self, ptr: NonNull<T>, old_len: usize, new_len: usize) -> Option<NonNull<T>> {
         if !config!(shrinks) {
             return None;

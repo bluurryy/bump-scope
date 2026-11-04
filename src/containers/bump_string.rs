@@ -3,18 +3,29 @@
 //!
 //! For now we add a `ErrorBehavior` generic, just because it makes for simpler code.
 
-use core::{alloc::Allocator, ffi::CStr, fmt};
+use core::{ffi::CStr, fmt};
 
 use alloc::{boxed::Box, vec::Vec};
 
-use crate::{bump_allocation::IntoRef, containers::BumpVec, error_behavior::ErrorBehavior, extra::box_from_utf8_unchecked};
+use crate::{
+    bump_allocation::IntoRef, containers::BumpVec, error_behavior::ErrorBehavior, extra::box_from_utf8_unchecked,
+    traits::BumpAllocatorPrivate,
+};
 
 #[repr(transparent)]
-pub(crate) struct BumpString<A: Allocator, E: ErrorBehavior> {
+pub(crate) struct BumpString<A, E>
+where
+    A: BumpAllocatorPrivate,
+    E: ErrorBehavior,
+{
     vec: BumpVec<u8, A, E>,
 }
 
-impl<A: Allocator, E: ErrorBehavior> BumpString<A, E> {
+impl<A, E> BumpString<A, E>
+where
+    A: BumpAllocatorPrivate,
+    E: ErrorBehavior,
+{
     #[inline]
     pub(crate) fn from_vec(mut vec: Vec<u8, A>) -> Self {
         // no bytes is valid utf8
@@ -64,7 +75,11 @@ impl<A: Allocator, E: ErrorBehavior> BumpString<A, E> {
     }
 }
 
-impl<A: Allocator, E: ErrorBehavior> fmt::Write for BumpString<A, E> {
+impl<A, E> fmt::Write for BumpString<A, E>
+where
+    A: BumpAllocatorPrivate,
+    E: ErrorBehavior,
+{
     #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.push_str(s).ok().ok_or(fmt::Error)
