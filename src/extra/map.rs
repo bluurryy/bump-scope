@@ -4,9 +4,7 @@ use core::{
     ptr::{self, NonNull},
 };
 
-#[cfg(feature = "panic-on-alloc")]
-use alloc::boxed::Box;
-use alloc::vec::Vec;
+use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
     BumpAllocator, SizedTypeProperties,
@@ -140,6 +138,9 @@ where
 
 /// Maps the elements of a boxed slice, reusing the allocation if possible.
 ///
+/// # Panics
+/// Panics if the allocation fails. An allocation only occurs when the alignment or size of `U` is greater than that of `T`.
+///
 /// # Examples
 /// Mapping to a type with an equal alignment and size:
 /// ```
@@ -200,6 +201,76 @@ where
     A: BumpAllocator,
 {
     vec_map(boxed.into_vec(), f).into_boxed_slice()
+}
+
+/// Maps the elements of a boxed slice, reusing the allocation if possible.
+///
+/// # Errors
+/// Errors if the allocation fails. An allocation only occurs when the alignment or size of `U` is greater than that of `T`.
+///
+/// # Examples
+/// Mapping to a type with an equal alignment and size:
+/// ```
+/// use core::num::NonZero;
+/// use bump_scope::{Bump, BumpAllocator, extra};
+/// let bump: Bump = Bump::new();
+///
+/// let a = bump.alloc_slice_copy(&[0, 1, 2]).into_box();
+/// assert_eq!(bump.stats().allocated(), 12);
+///
+/// let b = extra::box_try_slice_map(a, NonZero::new)?;
+/// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2)]");
+/// assert_eq!(bump.stats().allocated(), 12); // allocation was reused!
+/// Ok::<(), core::alloc::AllocError>(())
+/// ```
+///
+/// Mapping to a type with a smaller alignment and size:
+/// ```
+/// use bump_scope::{Bump, BumpAllocator, extra};
+/// let bump: Bump = Bump::new();
+///
+/// let a: Box<[u32], _> = bump.try_alloc_slice_copy(&[0, 1, 2])?.into_box();
+/// assert_eq!(bump.stats().allocated(), 12);   
+///
+/// let b: Box<[u16], _> = extra::box_try_slice_map(a, |i| i as u16)?;
+/// assert_eq!(&*b, [0, 1, 2]);
+/// assert_eq!(bump.stats().allocated(), 6); // allocation was reused and shrunk!
+/// Ok::<(), core::alloc::AllocError>(())
+/// ```
+///
+/// Mapping to a type with a greater alignment will allocate:
+/// ```
+/// use bump_scope::{Bump, BumpAllocator, extra};
+/// let bump: Bump = Bump::new();
+///
+/// let a: Box<[[u8; 4]], _> = bump.try_alloc_slice_copy(&[[0, 1, 2, 3]])?.into_box();
+/// assert_eq!(bump.stats().allocated(), 4);
+///
+/// let b: Box<[u32], _> = extra::box_try_slice_map(a, u32::from_le_bytes)?;
+/// assert_eq!(b[0], 50462976);
+/// assert_eq!(bump.stats().allocated(), 8); // new allocation
+/// Ok::<(), core::alloc::AllocError>(())
+/// ```
+///
+/// Mapping to a type with a greater size will allocate:
+/// ```
+/// use bump_scope::{Bump, BumpAllocator, extra};
+/// let bump: Bump = Bump::new();
+///
+/// let a: Box<[u32], _> = bump.try_alloc_slice_copy(&[42])?.into_box();
+/// assert_eq!(bump.stats().allocated(), 4);
+///
+/// let b: Box<[[u32; 2]], _> = extra::box_try_slice_map(a, |i| [i; 2])?;
+/// assert_eq!(&*b, [[42, 42]]);
+/// assert_eq!(bump.stats().allocated(), 12); // new allocation
+/// Ok::<(), core::alloc::AllocError>(())
+/// ```
+#[inline]
+pub fn box_try_slice_map<T, U, A>(boxed: Box<[T], A>, f: impl FnMut(T) -> U) -> Result<Box<[U], A>, AllocError>
+where
+    A: BumpAllocator,
+{
+    Ok(vec_try_map(boxed.into_vec(), f)?.into_boxed_slice())
 }
 
 #[inline(always)]

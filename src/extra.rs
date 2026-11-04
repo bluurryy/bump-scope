@@ -18,7 +18,7 @@ use crate::{
     traits::{BumpAllocator, BumpAllocatorPrivate, BumpAllocatorScope},
 };
 
-pub use map::vec_try_map;
+pub use map::{box_try_slice_map, vec_try_map};
 pub use replace_allocator::{detach_allocator, replace_allocator};
 pub use vec_or_boxed_slice::{VecOrBoxedSlice, split_at, split_off};
 
