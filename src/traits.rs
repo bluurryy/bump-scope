@@ -2706,7 +2706,7 @@ unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for BumpScope<'_
 pub unsafe trait MutBumpAllocatorScope<'a>: MutBumpAllocator + BumpAllocatorScope<'a> + BumpAllocatorPrivate {}
 unsafe impl<'a, T: MutBumpAllocator + BumpAllocatorScope<'a>> MutBumpAllocatorScope<'a> for T {}
 
-/// A trait allowing you to be generic over `Bump(Scope)<A, C>`.
+/// A trait allowing you to be generic over `Bump` and `BumpScope`.
 ///
 /// # Examples
 /// ```
@@ -2746,7 +2746,7 @@ impl<A: Allocator, const C: BumpConfig> AsBumpScope<A, C> for BumpScope<'_, A, C
     }
 }
 
-/// A trait allowing you to be generic over `Bump(Scope)<A, C>`.
+/// A trait allowing you to be generic over `Bump` and `BumpScope`.
 ///
 /// # Examples
 /// ```
