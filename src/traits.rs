@@ -2774,7 +2774,7 @@ pub trait AsMutBumpScope<A = Global, const C: BumpConfig = DEFAULT_BUMP_CONFIG> 
     fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'_, A, C>;
 }
 
-impl<A: Allocator, const C: BumpConfig> AsMutBumpScope<A, C> for &mut Bump<A, C> {
+impl<A: Allocator, const C: BumpConfig> AsMutBumpScope<A, C> for Bump<A, C> {
     fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'_, A, C> {
         self.as_mut_scope()
     }
