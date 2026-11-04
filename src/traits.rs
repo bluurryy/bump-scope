@@ -41,10 +41,6 @@ impl<A: Allocator, const C: BumpConfig> AllocatorNightly for BumpScope<'_, A, C>
 #[cfg(feature = "nightly")]
 impl AllocatorNightly for Unmanaged<'_> {}
 
-/// TODO
-///
-/// # Safety
-/// TODO
 #[allow(unused)]
 pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     const CONFIG: BumpConfig;
@@ -435,10 +431,10 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
         let iter = iter.into_iter();
         let (len, _) = iter.size_hint();
         let uninit = self.imp_alloc_uninit_slice(len)?;
-        let mut vec = extra::vec_from_uninit_box(uninit);
+        let mut vec = extra::vec_from_uninit_boxed_slice(uninit);
         // This can't fail due to allocation since `.take(len)` ensures the vec doesn't grow.
         vec.extend(iter.into_iter().take(len));
-        let init = extra::imp_vec_into_box(vec);
+        let init = extra::imp_vec_into_boxed_slice_without_shrink(vec);
         Ok(init)
     }
 

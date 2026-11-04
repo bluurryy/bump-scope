@@ -20,7 +20,7 @@ up_and_down! {
         let mut vec = Vec::new_in(&bump);
         vec.push(32u32);
 
-        let slice = extra::vec_into_slice(vec);
+        let slice = extra::box_into_mut(vec.into_boxed_slice());
         dbg!(slice);
     }
 }

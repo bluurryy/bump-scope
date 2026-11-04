@@ -88,7 +88,7 @@ up_and_down! {
         let mut vec = extra::vec![in &bump; 1, 2, 3, 4, 5];
         assert_eq!(bump.stats().allocated(), 5 * 4);
         vec.truncate(3);
-        let slice = extra::vec_into_slice(vec);
+        let slice = extra::box_into_mut(vec.into_boxed_slice());
         assert_eq!(bump.stats().allocated(), 3 * 4);
         _ = slice;
     }
@@ -99,7 +99,7 @@ up_and_down! {
         let mut vec = extra::vec![in &bump; 1, 2, 3, 4, 5];
         assert_eq!(bump.stats().allocated(), 5 * 4);
         vec.truncate(3);
-        let slice = extra::vec_into_slice(extra::detach_allocator(vec).0);
+        let slice = extra::box_into_mut(extra::detach_allocator(vec).0.into_boxed_slice());
         assert_eq!(bump.stats().allocated(), 5 * 4);
         _ = slice;
     }

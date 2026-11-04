@@ -286,7 +286,7 @@ up_and_down! {
             vec.push(string);
         }
 
-        let slice: &[&str] = extra::vec_into_slice(vec);
+        let slice: &[&str] = extra::box_into_mut(vec.into_boxed_slice());
 
         dbg!(&slice);
     }

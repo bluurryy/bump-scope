@@ -3,7 +3,7 @@ mod replace_allocator;
 mod split;
 
 use core::{
-    alloc::Allocator,
+    alloc::{AllocError, Allocator},
     mem::{self, MaybeUninit},
     ptr::{self, NonNull},
 };
@@ -11,7 +11,7 @@ use core::{
 use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
-    BoxU, NoDrop, SizedTypeProperties, Unmanaged, VecU,
+    NoDrop, SizedTypeProperties, Unmanaged, VecU,
     containers::BoxedSliceInitializer,
     error_behavior::ErrorBehavior,
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
@@ -288,9 +288,9 @@ where
     A: BumpAllocator,
 {
     let len = boxed.len();
-    let mut vec = vec_from_uninit_box(boxed);
+    let mut vec = vec_from_uninit_boxed_slice(boxed);
     vec.extend(iter.into_iter().take(len));
-    vec_into_box(vec)
+    vec_into_boxed_slice_without_shrink(vec)
 }
 
 #[inline(always)]
@@ -368,10 +368,6 @@ pub(crate) fn assert_char_boundary(str: &str, index: usize) {
     }
 }
 
-/// TODO
-///
-/// # Safety
-/// TODO
 pub(crate) unsafe fn vec_replace_allocator_unchecked<T, Old, New>(boxed: Vec<T, Old>, new_alloc: New) -> (Vec<T, New>, Old)
 where
     Old: Allocator,
@@ -380,40 +376,12 @@ where
     let (ptr, len, cap, old) = Vec::into_raw_parts_with_allocator(boxed);
     (unsafe { Vec::from_raw_parts_in(ptr, len, cap, new_alloc) }, old)
 }
-/// TODO
-///
-/// # Safety
-/// TODO
-pub unsafe fn vec_remove_allocator_unchecked<'a, T, A>(vec: Vec<T, A>) -> (VecU<'a, T>, A)
+
+pub(crate) unsafe fn vec_remove_allocator_unchecked<'a, T, A>(vec: Vec<T, A>) -> (VecU<'a, T>, A)
 where
     A: Allocator,
 {
     unsafe { vec_replace_allocator_unchecked(vec, Unmanaged::VALUE) }
-}
-
-/// TODO
-///
-/// # Safety
-/// TODO
-pub(crate) unsafe fn box_replace_allocator_unchecked<T, Old, New>(boxed: Box<T, Old>, new_alloc: New) -> (Box<T, New>, Old)
-where
-    T: ?Sized,
-    Old: Allocator,
-    New: Allocator,
-{
-    let (ptr, old) = Box::into_raw_with_allocator(boxed);
-    (unsafe { Box::from_raw_in(ptr, new_alloc) }, old)
-}
-/// TODO
-///
-/// # Safety
-/// TODO
-pub unsafe fn box_remove_allocator_unchecked<'a, T, A>(vec: Box<T, A>) -> (BoxU<'a, T>, A)
-where
-    T: ?Sized,
-    A: Allocator,
-{
-    unsafe { box_replace_allocator_unchecked(vec, Unmanaged::VALUE) }
 }
 
 /// Returns this box as a `&T`.
@@ -440,24 +408,33 @@ where
     box_leak(boxed)
 }
 
-/// TODO
-pub fn vec_into_slice<'a, T, A>(vec: Vec<T, A>) -> &'a mut [T]
-where
-    T: NoDrop,
-    A: BumpAllocatorScope<'a>,
-{
-    box_into_mut(vec.into_boxed_slice())
-}
-
-/// TODO
-pub fn vec_leak<'a, T, A>(vec: Vec<T, A>) -> &'a mut [T]
-where
-    A: BumpAllocatorScope<'a>,
-{
-    box_leak(vec.into_boxed_slice())
-}
-
-/// TODO
+/// Moves all the elements of `other` into `self`, leaving `other` empty.
+///
+/// # Panics
+/// Panics if the allocation fails.
+///
+/// # Examples
+/// ```
+/// use bump_scope::{Bump, extra::vec_append};
+///
+/// let bump: Bump = Bump::new();
+///
+/// let mut vec = Vec::new_in(&bump);
+///
+/// // append by value
+/// vec_append(&mut vec, [1, 2]);
+/// vec_append(&mut vec, vec![3, 4]);
+/// vec_append(&mut vec, bump.alloc_iter(5..=6));
+///
+/// // append by mutable reference
+/// let mut other = vec![7, 8];
+/// vec_append(&mut vec, &mut other);
+///
+/// assert_eq!(other, []);
+/// assert_eq!(vec, [1, 2, 3, 4, 5, 6, 7, 8]);
+/// ```
+#[inline]
+#[cfg(feature = "panic-on-alloc")]
 pub fn vec_append<T, A>(vec: &mut Vec<T, A>, slice: impl OwnedSlice)
 where
     A: Allocator,
@@ -477,28 +454,74 @@ where
     }
 }
 
-/// TODO
-pub fn vec_into_box<T, A>(vec: Vec<T, A>) -> Box<[T], A>
+/// Moves all the elements of `other` into `self`, leaving `other` empty.
+///
+/// # Errors
+/// Errors if the allocation fails.
+///
+/// # Examples
+/// ```
+/// use bump_scope::{Bump, BumpAllocator, extra::vec_try_append};
+///
+/// let bump: Bump = Bump::new();
+///
+/// let mut vec = Vec::new_in(&bump);
+///
+/// // append by value
+/// vec_try_append(&mut vec, [1, 2]);
+/// vec_try_append(&mut vec, vec![3, 4]);
+/// vec_try_append(&mut vec, bump.try_alloc_iter(5..=6)?.into_boxu());
+///
+/// // append by mutable reference
+/// let mut other = vec![7, 8];
+/// vec_try_append(&mut vec, &mut other);
+///
+/// assert_eq!(other, []);
+/// assert_eq!(vec, [1, 2, 3, 4, 5, 6, 7, 8]);
+/// # Ok::<(), core::alloc::AllocError>(())
+/// ```
+#[inline]
+pub fn vec_try_append<T, A>(vec: &mut Vec<T, A>, slice: impl OwnedSlice) -> Result<(), AllocError>
+where
+    A: Allocator,
+{
+    unsafe {
+        let mut owned_slice = slice.into_take_owned_slice();
+
+        let slice = NonNull::from(owned_slice.owned_slice_ref());
+        vec.try_reserve(slice.len()).map_err(|_| AllocError)?;
+
+        let src = slice.cast::<T>().as_ptr();
+        let dst = vec.as_mut_ptr().add(vec.len());
+        ptr::copy_nonoverlapping(src, dst, slice.len());
+
+        owned_slice.take_owned_slice();
+        vec.set_len(vec.len() + slice.len());
+        Ok(())
+    }
+}
+
+/// Turns a vector into a boxed slice without attempting to shrink the allocation.
+pub fn vec_into_boxed_slice_without_shrink<T, A>(vec: Vec<T, A>) -> Box<[T], A>
 where
     A: BumpAllocator,
 {
-    imp_vec_into_box(vec)
+    imp_vec_into_boxed_slice_without_shrink(vec)
 }
 
-/// TODO
-pub(crate) fn imp_vec_into_box<T, A>(vec: Vec<T, A>) -> Box<[T], A>
+pub(crate) fn imp_vec_into_boxed_slice_without_shrink<T, A>(vec: Vec<T, A>) -> Box<[T], A>
 where
     A: BumpAllocatorPrivate,
 {
     let (ptr, len, _, alloc) = Vec::into_raw_parts_with_allocator(vec);
     let slice = ptr::slice_from_raw_parts_mut(ptr, len);
 
-    // SAFETY: `BumpAllocator` allows you shrink the memory block
+    // SAFETY: `BumpAllocator` allows you shrink a memory block
     unsafe { Box::from_raw_in(slice, alloc) }
 }
 
-/// TODO
-pub fn vec_from_uninit_box<T, A>(boxed: Box<[MaybeUninit<T>], A>) -> Vec<T, A>
+/// Turns an uninitialized boxed slice into an empty vector.
+pub fn vec_from_uninit_boxed_slice<T, A>(boxed: Box<[MaybeUninit<T>], A>) -> Vec<T, A>
 where
     A: Allocator,
 {
