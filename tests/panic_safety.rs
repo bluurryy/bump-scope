@@ -52,7 +52,7 @@ fn init_clone<T: Testable>() {
         let original = ManuallyDrop::new(T::array::<5>());
         let bump: Bump = Bump::new();
         let uninit = bump.alloc_uninit_slice::<T>(5).into_boxu();
-        let _init = extra::box_init_slice_clone(uninit, &*original);
+        let _init = extra::boxed_slice_init_clone(uninit, &*original);
     });
 }
 
@@ -60,7 +60,7 @@ fn init_fill<T: Testable>() {
     expected_drops(4).panic_on_clone(3).run(|| {
         let bump: Bump = Bump::new();
         let uninit = bump.alloc_uninit_slice::<T>(5).into_boxu();
-        let _init = extra::box_init_slice_fill(uninit, T::default());
+        let _init = extra::boxed_slice_init_fill(uninit, T::default());
     });
 }
 
@@ -69,7 +69,7 @@ fn init_fill_with<T: Testable>() {
         let original = ManuallyDrop::new(T::default());
         let bump: Bump = Bump::new();
         let uninit = bump.alloc_uninit_slice::<T>(5).into_boxu();
-        let _init = extra::box_init_slice_fill_with(uninit, || (*original).clone());
+        let _init = extra::boxed_slice_init_fill_with(uninit, || (*original).clone());
     });
 }
 

@@ -22,8 +22,8 @@ use crate::{
     down_align_usize,
     error_behavior::ErrorBehavior,
     extra::{
-        self, box_from_utf8_unchecked, box_init, box_init_slice_clone, box_init_slice_fill, box_init_slice_fill_with,
-        box_uninit_zst_in, box_uninit_zst_slice_in, imp_vec_extend,
+        self, box_from_utf8_unchecked, box_init, box_uninit_zst_in, box_uninit_zst_slice_in, boxed_slice_init_clone,
+        boxed_slice_init_fill, boxed_slice_init_fill_with, imp_vec_extend,
     },
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
     polyfill::transmute_mut,
@@ -251,7 +251,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
         T: Copy,
     {
         if T::IS_ZST {
-            return Ok(box_init_slice_clone(box_uninit_zst_slice_in(slice.len(), self), slice));
+            return Ok(boxed_slice_init_clone(box_uninit_zst_slice_in(slice.len(), self), slice));
         }
 
         let len = slice.len();
@@ -270,7 +270,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
         E: ErrorBehavior,
         T: Clone,
     {
-        Ok(box_init_slice_clone(self.imp_alloc_uninit_slice_for(slice)?, slice))
+        Ok(boxed_slice_init_clone(self.imp_alloc_uninit_slice_for(slice)?, slice))
     }
 
     #[inline(always)]
@@ -279,7 +279,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
         E: ErrorBehavior,
         T: Clone,
     {
-        Ok(box_init_slice_fill(self.imp_alloc_uninit_slice(len)?, value))
+        Ok(boxed_slice_init_fill(self.imp_alloc_uninit_slice(len)?, value))
     }
 
     #[inline(always)]
@@ -287,7 +287,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     where
         E: ErrorBehavior,
     {
-        Ok(box_init_slice_fill_with(self.imp_alloc_uninit_slice(len)?, f))
+        Ok(boxed_slice_init_fill_with(self.imp_alloc_uninit_slice(len)?, f))
     }
 
     #[inline(always)]
@@ -1568,9 +1568,9 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with
-    /// [`box_init_slice_fill`],
-    /// [`box_init_slice_fill_with`],
-    /// [`box_init_slice_clone`],
+    /// [`boxed_slice_init_fill`],
+    /// [`boxed_slice_init_fill_with`],
+    /// [`boxed_slice_init_clone`],
     /// `box_zero_init_slice` <sup>[\[1\]](crate::zerocopy_08::box_zero_init_slice) [\[2\]](crate::bytemuck::box_zero_init_slice)</sup>
     /// or unsafely with [`assume_init`](Box::assume_init).
     ///
@@ -1580,11 +1580,11 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// # Examples
     /// Safely:
     /// ```
-    /// use bump_scope::{Bump, BumpAllocator, extra::box_init_slice_copy};
+    /// use bump_scope::{Bump, BumpAllocator, extra::boxed_slice_init_copy};
     /// let bump: Bump = Bump::new();
     ///
     /// let uninit = bump.alloc_uninit_slice(3).into_boxu();
-    /// let values = box_init_slice_copy(uninit, &[1, 2, 3]);
+    /// let values = boxed_slice_init_copy(uninit, &[1, 2, 3]);
     ///
     /// assert_eq!(&*values, [1, 2, 3])
     /// ```
@@ -1616,9 +1616,9 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with
-    /// [`box_init_slice_fill`],
-    /// [`box_init_slice_fill_with`],
-    /// [`box_init_slice_clone`],
+    /// [`boxed_slice_init_fill`],
+    /// [`boxed_slice_init_fill_with`],
+    /// [`boxed_slice_init_clone`],
     /// `box_zero_init_slice` <sup>[\[1\]](crate::zerocopy_08::box_zero_init_slice) [\[2\]](crate::bytemuck::box_zero_init_slice)</sup>
     /// or unsafely with [`assume_init`](Box::assume_init).
     ///
@@ -1628,11 +1628,11 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// # Examples
     /// Safely:
     /// ```
-    /// use bump_scope::{Bump, BumpAllocator, extra::box_init_slice_copy};
+    /// use bump_scope::{Bump, BumpAllocator, extra::boxed_slice_init_copy};
     /// let bump: Bump = Bump::new();
     ///
     /// let uninit = bump.try_alloc_uninit_slice(3)?.into_boxu();
-    /// let values = box_init_slice_copy(uninit, &[1, 2, 3]);
+    /// let values = boxed_slice_init_copy(uninit, &[1, 2, 3]);
     ///
     /// assert_eq!(&*values, [1, 2, 3]);
     /// # Ok::<(), ::core::alloc::AllocError>(())
@@ -1665,9 +1665,9 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with
-    /// [`box_init_slice_fill`],
-    /// [`box_init_slice_fill_with`],
-    /// [`box_init_slice_clone`],
+    /// [`boxed_slice_init_fill`],
+    /// [`boxed_slice_init_fill_with`],
+    /// [`boxed_slice_init_clone`],
     /// `box_zero_init_slice` <sup>[\[1\]](crate::zerocopy_08::box_zero_init_slice) [\[2\]](crate::bytemuck::box_zero_init_slice)</sup>
     /// or unsafely with [`assume_init`](Box::assume_init).
     ///
@@ -1696,9 +1696,9 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// Allocate an uninitialized object slice.
     ///
     /// You can safely initialize the object with
-    /// [`box_init_slice_fill`],
-    /// [`box_init_slice_fill_with`],
-    /// [`box_init_slice_clone`],
+    /// [`boxed_slice_init_fill`],
+    /// [`boxed_slice_init_fill_with`],
+    /// [`boxed_slice_init_clone`],
     /// `box_zero_init_slice` <sup>[\[1\]](crate::zerocopy_08::box_zero_init_slice) [\[2\]](crate::bytemuck::box_zero_init_slice)</sup>
     /// or unsafely with [`assume_init`](Box::assume_init).
     ///

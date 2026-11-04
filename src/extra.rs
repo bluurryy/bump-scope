@@ -18,12 +18,12 @@ use crate::{
     traits::{BumpAllocator, BumpAllocatorPrivate, BumpAllocatorScope},
 };
 
-pub use map::{box_try_map_slice, vec_try_map};
+pub use map::{boxed_slice_try_map, vec_try_map};
 pub use replace_allocator::{detach_allocator, replace_allocator};
 pub use split::{boxed_slice_split_off, boxed_str_split_off, vec_split_off};
 
 #[cfg(feature = "panic-on-alloc")]
-pub use map::{box_map_slice, vec_map};
+pub use map::{boxed_slice_map, vec_map};
 
 #[doc(inline)]
 pub use crate::__vec as vec;
@@ -81,7 +81,7 @@ pub fn box_init<T, A: Allocator>(boxed: Box<MaybeUninit<T>, A>, value: T) -> Box
 ///
 /// # Examples
 /// ```
-/// use bump_scope::{Bump, BumpAllocator, extra::box_init_slice_move};
+/// use bump_scope::{Bump, BumpAllocator, extra::boxed_slice_init_move};
 /// let bump: Bump = Bump::new();
 ///
 /// let uninit = bump.try_alloc_uninit_slice(3)?.into_box();
@@ -92,13 +92,16 @@ pub fn box_init<T, A: Allocator>(boxed: Box<MaybeUninit<T>, A>, value: T) -> Box
 ///     String::from("baz"),
 /// ];
 ///
-/// let init = box_init_slice_move(uninit, vec);
+/// let init = boxed_slice_init_move(uninit, vec);
 ///
 /// assert_eq!(&*init, &["foo", "bar", "baz"]);
 /// # Ok::<(), core::alloc::AllocError>(())
 /// ```
 #[must_use]
-pub fn box_init_slice_move<T, A>(mut boxed: Box<[MaybeUninit<T>], A>, owned_slice: impl OwnedSlice<Item = T>) -> Box<[T], A>
+pub fn boxed_slice_init_move<T, A>(
+    mut boxed: Box<[MaybeUninit<T>], A>,
+    owned_slice: impl OwnedSlice<Item = T>,
+) -> Box<[T], A>
 where
     T: Clone,
     A: Allocator,
@@ -128,7 +131,7 @@ where
 ///
 /// # Examples
 /// ```
-/// use bump_scope::{Bump, BumpAllocator, extra::box_init_slice_clone};;
+/// use bump_scope::{Bump, BumpAllocator, extra::boxed_slice_init_clone};;
 /// let bump: Bump = Bump::new();
 ///
 /// let uninit = bump.try_alloc_uninit_slice(3)?.into_box();
@@ -139,13 +142,13 @@ where
 ///     String::from("baz"),
 /// ];
 ///
-/// let init = box_init_slice_clone(uninit, slice);
+/// let init = boxed_slice_init_clone(uninit, slice);
 ///
 /// assert_eq!(&*init, &["foo", "bar", "baz"]);
 /// # Ok::<(), core::alloc::AllocError>(())
 /// ```
 #[must_use]
-pub fn box_init_slice_clone<T, A>(boxed: Box<[MaybeUninit<T>], A>, slice: &[T]) -> Box<[T], A>
+pub fn boxed_slice_init_clone<T, A>(boxed: Box<[MaybeUninit<T>], A>, slice: &[T]) -> Box<[T], A>
 where
     T: Clone,
     A: Allocator,
@@ -174,7 +177,7 @@ where
 /// # Examples
 ///
 /// ```
-/// use bump_scope::{Bump, BumpAllocator, extra::box_init_slice_copy};
+/// use bump_scope::{Bump, BumpAllocator, extra::boxed_slice_init_copy};
 /// let bump: Bump = Bump::new();
 ///
 /// let uninit = bump.try_alloc_uninit_slice(3)?.into_box();
@@ -185,13 +188,13 @@ where
 ///     "baz",
 /// ];
 ///
-/// let init = box_init_slice_copy(uninit, slice);
+/// let init = boxed_slice_init_copy(uninit, slice);
 ///
 /// assert_eq!(&*init, &["foo", "bar", "baz"]);
 /// # Ok::<(), core::alloc::AllocError>(())
 /// ```
 #[must_use]
-pub fn box_init_slice_copy<T, A>(mut boxed: Box<[MaybeUninit<T>], A>, slice: &[T]) -> Box<[T], A>
+pub fn boxed_slice_init_copy<T, A>(mut boxed: Box<[MaybeUninit<T>], A>, slice: &[T]) -> Box<[T], A>
 where
     T: Copy,
     A: Allocator,
@@ -204,16 +207,16 @@ where
 ///
 /// # Examples
 /// ```
-/// use bump_scope::{Bump, BumpAllocator, extra::box_init_slice_fill};
+/// use bump_scope::{Bump, BumpAllocator, extra::boxed_slice_init_fill};
 /// let bump: Bump = Bump::new();
 ///
 /// let uninit = bump.try_alloc_uninit_slice::<i32>(10)?.into_box();
-/// let init = box_init_slice_fill(uninit, 1);
+/// let init = boxed_slice_init_fill(uninit, 1);
 /// assert_eq!(&*init, &[1; 10]);
 /// # Ok::<(), core::alloc::AllocError>(())
 /// ```
 #[must_use]
-pub fn box_init_slice_fill<T, A>(boxed: Box<[MaybeUninit<T>], A>, value: T) -> Box<[T], A>
+pub fn boxed_slice_init_fill<T, A>(boxed: Box<[MaybeUninit<T>], A>, value: T) -> Box<[T], A>
 where
     T: Clone,
     A: Allocator,
@@ -239,22 +242,22 @@ where
 /// Initializes a boxed slice by filling it with elements returned from a closure.
 ///
 /// This method uses a closure to create new values. If you'd rather
-/// [`Clone`] a given value, use [`box_init_slice_fill`]. If you want to use the [`Default`]
+/// [`Clone`] a given value, use [`boxed_slice_init_fill`]. If you want to use the [`Default`]
 /// trait to generate values, you can pass [`Default::default`] as the
 /// argument.
 ///
 /// # Examples
 /// ```
-/// use bump_scope::{Bump, BumpAllocator, extra::box_init_slice_fill_with};
+/// use bump_scope::{Bump, BumpAllocator, extra::boxed_slice_init_fill_with};
 /// let bump: Bump = Bump::new();
 ///
 /// let uninit = bump.try_alloc_uninit_slice::<i32>(10)?.into_box();
-/// let init = box_init_slice_fill_with(uninit, Default::default);
+/// let init = boxed_slice_init_fill_with(uninit, Default::default);
 /// assert_eq!(&*init, &[0i32; 10]);
 /// # Ok::<(), core::alloc::AllocError>(())
 /// ```
 #[must_use]
-pub fn box_init_slice_fill_with<T, A>(boxed: Box<[MaybeUninit<T>], A>, mut f: impl FnMut() -> T) -> Box<[T], A>
+pub fn boxed_slice_init_fill_with<T, A>(boxed: Box<[MaybeUninit<T>], A>, mut f: impl FnMut() -> T) -> Box<[T], A>
 where
     A: Allocator,
 {
@@ -274,16 +277,16 @@ where
 ///
 /// # Examples
 /// ```
-/// use bump_scope::{Bump, BumpAllocator, extra::box_init_slice_fill_iter};
+/// use bump_scope::{Bump, BumpAllocator, extra::boxed_slice_init_fill_iter};
 /// let bump: Bump = Bump::new();
 ///
 /// let uninit = bump.try_alloc_uninit_slice::<char>(5)?.into_box();
-/// let init = box_init_slice_fill_iter(uninit, ['a', 'b'].iter().copied().cycle());
+/// let init = boxed_slice_init_fill_iter(uninit, ['a', 'b'].iter().copied().cycle());
 /// assert_eq!(&*init, &['a', 'b', 'a', 'b', 'a']);
 /// # Ok::<(), core::alloc::AllocError>(())
 /// ```
 #[must_use]
-pub fn box_init_slice_fill_iter<T, A>(boxed: Box<[MaybeUninit<T>], A>, iter: impl IntoIterator<Item = T>) -> Box<[T], A>
+pub fn boxed_slice_init_fill_iter<T, A>(boxed: Box<[MaybeUninit<T>], A>, iter: impl IntoIterator<Item = T>) -> Box<[T], A>
 where
     A: BumpAllocator,
 {

@@ -151,7 +151,7 @@ where
 /// let a = bump.alloc_slice_copy(&[0, 1, 2]).into_box();
 /// assert_eq!(bump.stats().allocated(), 12);
 ///
-/// let b = extra::box_map_slice(a, NonZero::new);
+/// let b = extra::boxed_slice_map(a, NonZero::new);
 /// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2)]");
 /// assert_eq!(bump.stats().allocated(), 12); // allocation was reused!
 /// ```
@@ -164,7 +164,7 @@ where
 /// let a: Box<[u32], _> = bump.alloc_slice_copy(&[0, 1, 2]).into_box();
 /// assert_eq!(bump.stats().allocated(), 12);   
 ///
-/// let b: Box<[u16], _> = extra::box_map_slice(a, |i| i as u16);
+/// let b: Box<[u16], _> = extra::boxed_slice_map(a, |i| i as u16);
 /// assert_eq!(&*b, [0, 1, 2]);
 /// assert_eq!(bump.stats().allocated(), 6); // allocation was reused and shrunk!
 /// ```
@@ -177,7 +177,7 @@ where
 /// let a: Box<[[u8; 4]], _> = bump.alloc_slice_copy(&[[0, 1, 2, 3]]).into_box();
 /// assert_eq!(bump.stats().allocated(), 4);
 ///
-/// let b: Box<[u32], _> = extra::box_map_slice(a, u32::from_le_bytes);
+/// let b: Box<[u32], _> = extra::boxed_slice_map(a, u32::from_le_bytes);
 /// assert_eq!(b[0], 50462976);
 /// assert_eq!(bump.stats().allocated(), 8); // new allocation
 /// ```
@@ -190,13 +190,13 @@ where
 /// let a: Box<[u32], _> = bump.alloc_slice_copy(&[42]).into_box();
 /// assert_eq!(bump.stats().allocated(), 4);
 ///
-/// let b: Box<[[u32; 2]], _> = extra::box_map_slice(a, |i| [i; 2]);
+/// let b: Box<[[u32; 2]], _> = extra::boxed_slice_map(a, |i| [i; 2]);
 /// assert_eq!(&*b, [[42, 42]]);
 /// assert_eq!(bump.stats().allocated(), 12); // new allocation
 /// ```
 #[inline]
 #[cfg(feature = "panic-on-alloc")]
-pub fn box_map_slice<T, U, A>(boxed: Box<[T], A>, f: impl FnMut(T) -> U) -> Box<[U], A>
+pub fn boxed_slice_map<T, U, A>(boxed: Box<[T], A>, f: impl FnMut(T) -> U) -> Box<[U], A>
 where
     A: BumpAllocator,
 {
@@ -218,7 +218,7 @@ where
 /// let a = bump.alloc_slice_copy(&[0, 1, 2]).into_box();
 /// assert_eq!(bump.stats().allocated(), 12);
 ///
-/// let b = extra::box_try_map_slice(a, NonZero::new)?;
+/// let b = extra::boxed_slice_try_map(a, NonZero::new)?;
 /// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2)]");
 /// assert_eq!(bump.stats().allocated(), 12); // allocation was reused!
 /// Ok::<(), core::alloc::AllocError>(())
@@ -232,7 +232,7 @@ where
 /// let a: Box<[u32], _> = bump.try_alloc_slice_copy(&[0, 1, 2])?.into_box();
 /// assert_eq!(bump.stats().allocated(), 12);   
 ///
-/// let b: Box<[u16], _> = extra::box_try_map_slice(a, |i| i as u16)?;
+/// let b: Box<[u16], _> = extra::boxed_slice_try_map(a, |i| i as u16)?;
 /// assert_eq!(&*b, [0, 1, 2]);
 /// assert_eq!(bump.stats().allocated(), 6); // allocation was reused and shrunk!
 /// Ok::<(), core::alloc::AllocError>(())
@@ -246,7 +246,7 @@ where
 /// let a: Box<[[u8; 4]], _> = bump.try_alloc_slice_copy(&[[0, 1, 2, 3]])?.into_box();
 /// assert_eq!(bump.stats().allocated(), 4);
 ///
-/// let b: Box<[u32], _> = extra::box_try_map_slice(a, u32::from_le_bytes)?;
+/// let b: Box<[u32], _> = extra::boxed_slice_try_map(a, u32::from_le_bytes)?;
 /// assert_eq!(b[0], 50462976);
 /// assert_eq!(bump.stats().allocated(), 8); // new allocation
 /// Ok::<(), core::alloc::AllocError>(())
@@ -260,13 +260,13 @@ where
 /// let a: Box<[u32], _> = bump.try_alloc_slice_copy(&[42])?.into_box();
 /// assert_eq!(bump.stats().allocated(), 4);
 ///
-/// let b: Box<[[u32; 2]], _> = extra::box_try_map_slice(a, |i| [i; 2])?;
+/// let b: Box<[[u32; 2]], _> = extra::boxed_slice_try_map(a, |i| [i; 2])?;
 /// assert_eq!(&*b, [[42, 42]]);
 /// assert_eq!(bump.stats().allocated(), 12); // new allocation
 /// Ok::<(), core::alloc::AllocError>(())
 /// ```
 #[inline]
-pub fn box_try_map_slice<T, U, A>(boxed: Box<[T], A>, f: impl FnMut(T) -> U) -> Result<Box<[U], A>, AllocError>
+pub fn boxed_slice_try_map<T, U, A>(boxed: Box<[T], A>, f: impl FnMut(T) -> U) -> Result<Box<[U], A>, AllocError>
 where
     A: BumpAllocator,
 {
