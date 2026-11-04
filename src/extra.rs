@@ -1,3 +1,33 @@
+//! Auxiliary functions.
+//!
+//! This module contains functions to:
+//!
+//! - Replace the bump allocator of vectors or boxes:
+//!   - [`box_replace_allocator`]
+//!   - [`vec_replace_allocator`]
+//! - Split a vector or boxed slice in two without allocation:
+//!   - [`vec_split_off`]
+//!   - [`boxed_slice_split_off`]
+//!   - [`boxed_str_split_off`]
+//! - Initialize boxes:
+//!   - [`box_init`]
+//!   - [`boxed_slice_init_move`]
+//!   - [`boxed_slice_init_copy`]
+//!   - [`boxed_slice_init_clone`]
+//!   - [`boxed_slice_init_fill`]
+//!   - [`boxed_slice_init_fill_with`]
+//! - Turn boxes into references:
+//!   - [`box_into_ref`]
+//!   - [`box_into_mut`]
+//!   - [`box_leak`]
+//! - Map a vector or boxed slice, potentially reusing the allocation:
+//!   - [`vec_map`]
+//!   - [`vec_try_map`]
+//!   - [`boxed_slice_map`]
+//!   - [`boxed_slice_try_map`]
+//! - Append owned slices to vectors:
+//!   - [`vec_append`]
+//!   - [`vec_try_append`]
 mod map;
 mod replace_allocator;
 mod split;

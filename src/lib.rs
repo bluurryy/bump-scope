@@ -270,7 +270,6 @@ pub mod config;
 mod containers;
 mod destructure;
 mod error_behavior;
-/// Auxiliary functions.
 pub mod extra;
 mod layout;
 mod macros;
