@@ -3,39 +3,34 @@
 //!
 //! For now we add a `ErrorBehavior` generic, just because it makes for simpler code.
 
-use core::{alloc::Allocator, ffi::CStr, fmt, marker::PhantomData};
+use core::{alloc::Allocator, ffi::CStr, fmt};
 
 use alloc::{boxed::Box, vec::Vec};
 
-use crate::{bump_allocation::IntoRef, error_behavior::ErrorBehavior, extra::box_from_utf8_unchecked};
+use crate::{bump_allocation::IntoRef, containers::BumpVec, error_behavior::ErrorBehavior, extra::box_from_utf8_unchecked};
 
 #[repr(transparent)]
 pub(crate) struct BumpString<A: Allocator, E: ErrorBehavior> {
-    vec: Vec<u8, A>,
-    marker: PhantomData<fn() -> E>,
+    vec: BumpVec<u8, A, E>,
 }
 
 impl<A: Allocator, E: ErrorBehavior> BumpString<A, E> {
+    #[inline]
     pub(crate) fn from_vec(mut vec: Vec<u8, A>) -> Self {
         // no bytes is valid utf8
         vec.clear();
 
         Self {
-            vec,
-            marker: PhantomData,
+            vec: BumpVec::from_vec(vec),
         }
     }
 
-    pub(crate) fn reserve_if_fallible(&mut self, additional: usize) -> Result<(), E> {
-        E::vec_reserve_if_fallible(&mut self.vec, additional)
-    }
-
+    #[inline]
     pub(crate) fn push_str(&mut self, str: &str) -> Result<(), E> {
-        self.reserve_if_fallible(str.len())?;
-        self.vec.extend_from_slice(str.as_bytes());
-        Ok(())
+        self.vec.extend_from_slice(str.as_bytes())
     }
 
+    #[inline(always)]
     pub(crate) fn write_fmt(&mut self, args: fmt::Arguments) -> Result<(), E> {
         fmt::Write::write_fmt(self, args).map_err(|_| {
             // Either an allocation failed or the `fmt()` implementor returned an error,
@@ -70,6 +65,7 @@ impl<A: Allocator, E: ErrorBehavior> BumpString<A, E> {
 }
 
 impl<A: Allocator, E: ErrorBehavior> fmt::Write for BumpString<A, E> {
+    #[inline(always)]
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.push_str(s).ok().ok_or(fmt::Error)
     }

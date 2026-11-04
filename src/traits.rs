@@ -18,7 +18,7 @@ use crate::{
     bump_allocation::IntoRef,
     bump_down,
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
-    containers::{BumpString, MutBumpString, MutBumpVec},
+    containers::{BumpString, BumpVec, MutBumpString, MutBumpVec},
     down_align_usize,
     error_behavior::ErrorBehavior,
     extra::{
@@ -404,7 +404,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     where
         E: ErrorBehavior,
     {
-        let mut vec = Vec::new_in(self);
+        let mut vec = BumpVec::<T, _, E>::from_vec(Vec::new_in(self));
         imp_vec_extend(&mut vec, iter)?;
         Ok(vec.into_boxed_slice())
     }
