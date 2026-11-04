@@ -111,7 +111,7 @@ up_and_down! {
             expect_err(bump.spec_prepare_slice::<AllocError, u8>(123));
 
             // dealloc
-            drop(extra::replace_allocator(boxed, &bump));
+            drop(extra::box_replace_allocator(boxed, &bump));
             assert_eq!(guard.stats().allocated(), original_allocated);
 
             // reserve

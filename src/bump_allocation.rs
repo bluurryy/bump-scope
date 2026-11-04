@@ -4,7 +4,7 @@ use alloc::{boxed::Box, fmt};
 
 use crate::{
     BoxU, NoDrop, Unmanaged,
-    extra::{box_leak, replace_allocator},
+    extra::{box_leak, box_replace_allocator},
     traits::BumpAllocatorScope,
 };
 
@@ -80,7 +80,7 @@ impl<T: ?Sized, A: Allocator> BumpAllocation<T, A> {
     where
         A: BumpAllocatorScope<'a>,
     {
-        replace_allocator(self.0, Unmanaged::VALUE).0
+        box_replace_allocator(self.0, Unmanaged::VALUE).0
     }
 
     /// Returns this bump allocation as a raw pointer.

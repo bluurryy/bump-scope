@@ -19,7 +19,7 @@ use crate::{
 };
 
 pub use map::{boxed_slice_try_map, vec_try_map};
-pub use replace_allocator::{detach_allocator, replace_allocator};
+pub use replace_allocator::{box_replace_allocator, vec_replace_allocator};
 pub use split::{boxed_slice_split_off, boxed_str_split_off, vec_split_off};
 
 #[cfg(feature = "panic-on-alloc")]

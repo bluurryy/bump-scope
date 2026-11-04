@@ -968,8 +968,8 @@ unsafe impl BumpAllocatorPrivate for Unmanaged<'_> {
 /// - `shrink` never errors unless the new alignment is greater
 ///
 /// Those invariants are used here:
-/// - Handling of foreign pointers is used for [`extra::replace_allocator`].
-/// - Memory block splitting is used for [`extra::vec_split_off`].
+/// - Handling of foreign pointers is used for [`extra::box_replace_allocator`] and [`extra::vec_replace_allocator`]
+/// - Memory block splitting is used for [`extra::vec_split_off`]
 ///
 /// # Safety
 /// An implementor supports the guarantees above.

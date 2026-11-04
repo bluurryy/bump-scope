@@ -10,8 +10,7 @@ use std::{
 };
 
 use bump_scope::{
-    BoxU, Bump, BumpAllocator as _, VecU,
-    extra::{self, detach_allocator},
+    BoxU, Bump, BumpAllocator as _, VecU, extra,
     owned_slice::{OwnedSlice, TakeOwnedSlice},
 };
 
@@ -78,7 +77,7 @@ fn append_vec() {
 
     {
         let vec = Vec::new_in(&bump);
-        let other: VecU<String> = detach_allocator(other_bump.alloc_slice_move(test_strings()).into_box().into_vec()).0;
+        let other: VecU<String> = other_bump.alloc_slice_move(test_strings()).into_boxu().into_vec();
         test_append(vec, other);
     }
 

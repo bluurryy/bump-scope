@@ -15,7 +15,8 @@ use core::{
 pub struct Unmanaged<'a>(PhantomData<&'a ()>);
 
 impl Unmanaged<'_> {
-    pub(crate) const VALUE: Self = Self(PhantomData);
+    /// The only way to create an instance of [`Unmanaged`].
+    pub const VALUE: Self = Self(PhantomData);
 }
 
 unsafe impl Allocator for Unmanaged<'_> {

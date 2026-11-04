@@ -11,7 +11,7 @@ use std::{
     string::{String, ToString},
 };
 
-use bump_scope::{Bump, BumpScope, config};
+use bump_scope::{Bump, BumpScope, Unmanaged, config};
 
 use common::{expect_no_panic, up_and_down};
 
@@ -99,7 +99,7 @@ up_and_down! {
         let mut vec = extra::vec![in &bump; 1, 2, 3, 4, 5];
         assert_eq!(bump.stats().allocated(), 5 * 4);
         vec.truncate(3);
-        let slice = extra::box_into_mut(extra::detach_allocator(vec).0.into_boxed_slice());
+        let slice = extra::box_into_mut(extra::vec_replace_allocator(vec, Unmanaged::VALUE).0.into_boxed_slice());
         assert_eq!(bump.stats().allocated(), 5 * 4);
         _ = slice;
     }
