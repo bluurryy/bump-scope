@@ -270,7 +270,7 @@ pub(crate) mod chunk_types;
 pub mod config;
 mod containers;
 mod destructure;
-mod error_behavior;
+mod error_mode;
 pub mod extra;
 mod layout;
 mod macros;

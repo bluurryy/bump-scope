@@ -14,7 +14,7 @@ use crate::{
         concrete::{NonZstFirstAllocatedChunk, ZstFirstAllocatedChunk},
     },
     config::BumpConfig,
-    error_behavior::ErrorBehavior,
+    error_mode::ErrorMode,
 };
 
 #[repr(C, align(16))]
@@ -126,7 +126,7 @@ impl<const C: BumpConfig, A> FirstAllocatedChunk<C, A> {
     pub(crate) fn new<E>(chunk_size: impl ChunkSize, allocator: A) -> Result<Self, E>
     where
         A: Allocator,
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         let (ptr, size) = AllocatedChunk::<C, A>::allocate(chunk_size, &allocator)?;
         unsafe { Ok(FirstAllocatedChunk::init(ptr, size, allocator)) }

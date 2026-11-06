@@ -5,7 +5,7 @@ use alloc::vec::Vec;
 #[cfg(feature = "panic-on-alloc")]
 use crate::{capacity_overflow, handle_alloc_error};
 
-pub(crate) trait ErrorBehavior: Sized {
+pub(crate) trait ErrorMode: Sized {
     const FALLIBLE: bool;
     fn allocation(layout: Layout) -> Self;
     fn capacity_overflow() -> Self;
@@ -19,7 +19,7 @@ pub(crate) trait ErrorBehavior: Sized {
 }
 
 #[cfg(feature = "panic-on-alloc")]
-impl ErrorBehavior for ! {
+impl ErrorMode for ! {
     const FALLIBLE: bool = false;
 
     #[inline(always)]
@@ -66,7 +66,7 @@ impl ErrorBehavior for ! {
     }
 }
 
-impl ErrorBehavior for AllocError {
+impl ErrorMode for AllocError {
     const FALLIBLE: bool = true;
 
     #[inline(always)]

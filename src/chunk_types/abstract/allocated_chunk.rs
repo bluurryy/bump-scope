@@ -17,7 +17,7 @@ use crate::{
         concrete::{NonZstFirstAllocatedChunk, NonZstNonFirstAllocatedChunk, ZstAllocatedChunk},
     },
     config::{BumpConfig, config},
-    error_behavior::ErrorBehavior,
+    error_mode::ErrorMode,
     polyfill::non_null,
 };
 
@@ -240,7 +240,7 @@ impl<const C: BumpConfig, A> AllocatedChunk<C, A> {
         unsafe { NonZeroUsize::new_unchecked(end - start) }
     }
 
-    pub(crate) fn new<B: ErrorBehavior>(layout: Layout, prev: AllocatedChunk<C, A>) -> Result<Self, B>
+    pub(crate) fn new<B: ErrorMode>(layout: Layout, prev: AllocatedChunk<C, A>) -> Result<Self, B>
     where
         A: Allocator,
     {
@@ -282,7 +282,7 @@ impl<const C: BumpConfig, A> AllocatedChunk<C, A> {
     pub(crate) fn allocate<E>(chunk_size: impl ChunkSize, allocator: &A) -> Result<(NonNull<u8>, usize), E>
     where
         A: Allocator,
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         let layout = chunk_size.layout::<C, A>().ok_or_else(E::capacity_overflow)?;
 

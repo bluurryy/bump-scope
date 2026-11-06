@@ -43,7 +43,7 @@ use alloc::{boxed::Box, vec::Vec};
 use crate::{
     NoDrop, SizedTypeProperties, Unmanaged, VecU,
     containers::BoxedSliceInitializer,
-    error_behavior::ErrorBehavior,
+    error_mode::ErrorMode,
     traits::{BumpAllocator, BumpAllocatorPrivate, BumpAllocatorScope},
 };
 
@@ -566,7 +566,7 @@ where
 /// Extend the vector by `n` clones of value.
 pub(crate) fn imp_vec_extend<E, T, A, I>(vec: &mut Vec<T, A>, iterator: I) -> Result<(), E>
 where
-    E: ErrorBehavior,
+    E: ErrorMode,
     A: Allocator,
     I: IntoIterator<Item = T>,
 {

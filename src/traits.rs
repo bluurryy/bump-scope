@@ -20,7 +20,7 @@ use crate::{
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
     containers::{BumpString, BumpVec, MutBumpString, MutBumpVec},
     down_align_usize,
-    error_behavior::ErrorBehavior,
+    error_mode::ErrorMode,
     extra::{
         self, box_from_utf8_unchecked, box_init, box_uninit_zst_in, box_uninit_zst_slice_in, boxed_slice_init_clone,
         boxed_slice_init_fill, boxed_slice_init_fill_with,
@@ -31,7 +31,7 @@ use crate::{
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{error_behavior, panic_on_error};
+use crate::{error_mode, panic_on_error};
 
 #[cfg(feature = "nightly")]
 impl<A: Allocator, const C: BumpConfig> AllocatorNightly for Bump<C, A> {}
@@ -57,7 +57,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     /// #     }
     /// # }
     /// ```
-    fn spec_alloc<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E>;
+    fn spec_alloc<E: ErrorMode>(&self, layout: Layout) -> Result<NonNull<u8>, E>;
 
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///
@@ -71,7 +71,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     /// #     }
     /// # }
     /// ```
-    fn spec_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E>;
+    fn spec_alloc_sized<E: ErrorMode, T>(&self) -> Result<NonNull<T>, E>;
 
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///    
@@ -87,7 +87,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     /// #     }
     /// # }
     /// ```
-    fn spec_alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E>;
+    fn spec_alloc_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<T>, E>;
 
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///
@@ -101,12 +101,12 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     /// #     }
     /// # }
     /// ```
-    fn spec_alloc_slice_for<E: ErrorBehavior, T>(&self, slice: &[T]) -> Result<NonNull<T>, E>;
+    fn spec_alloc_slice_for<E: ErrorMode, T>(&self, slice: &[T]) -> Result<NonNull<T>, E>;
 
     /// A specialized version of [`allocate`](core::alloc::Allocator::allocate).
     ///
     /// The allocation takes up as much of the free space of the chunk as possible.
-    fn spec_prepare_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E>;
+    fn spec_prepare_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<[T]>, E>;
 
     /// Allocate part of the slice returned from a [`spec_prepare_slice`] call.
     ///
@@ -150,7 +150,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     /// This is like [`spec_alloc_sized`], except that it doesn't change the bump pointer.
     ///
     /// [`spec_alloc_sized`]: BumpAllocatorPrivate::spec_alloc_sized
-    fn spec_prepare_sized_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B>;
+    fn spec_prepare_sized_allocation<B: ErrorMode, T>(&self) -> Result<NonNull<T>, B>;
 
     /// See [`BumpAllocator::checkpoint`].
     #[must_use]
@@ -171,7 +171,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc<E, T>(&self, value: T) -> Result<Box<T, &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         Ok(box_init(self.imp_alloc_uninit()?, value))
     }
@@ -179,7 +179,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_with<E, T>(&self, f: impl FnOnce() -> T) -> Result<Box<T, &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         Ok(box_init(self.imp_alloc_uninit()?, f()))
     }
@@ -187,7 +187,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_default<E, T>(&self) -> Result<Box<T, &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
         T: Default,
     {
         self.imp_alloc_with(T::default)
@@ -197,7 +197,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[cfg(feature = "nightly")]
     fn imp_alloc_clone<E, T>(&self, value: &T) -> Result<Box<T, &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
         T: CloneToUninit + ?Sized,
     {
         let data = self.spec_alloc(Layout::for_value(value))?;
@@ -213,7 +213,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_uninit<E, T>(&self) -> Result<Box<MaybeUninit<T>, &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         if T::IS_ZST {
             return unsafe { Ok(Box::from_raw_in(ptr::dangling_mut(), self)) };
@@ -226,7 +226,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_slice_move<E, T>(&self, slice: impl OwnedSlice<Item = T>) -> Result<Box<[T], &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         unsafe {
             let mut owned_slice = slice.into_take_owned_slice();
@@ -245,7 +245,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_slice_copy<E, T>(&self, slice: &[T]) -> Result<Box<[T], &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
         T: Copy,
     {
         if T::IS_ZST {
@@ -265,7 +265,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_slice_clone<E, T>(&self, slice: &[T]) -> Result<Box<[T], &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
         T: Clone,
     {
         Ok(boxed_slice_init_clone(self.imp_alloc_uninit_slice_for(slice)?, slice))
@@ -274,7 +274,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_slice_fill<E, T>(&self, len: usize, value: T) -> Result<Box<[T], &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
         T: Clone,
     {
         Ok(boxed_slice_init_fill(self.imp_alloc_uninit_slice(len)?, value))
@@ -283,7 +283,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_slice_fill_with<E, T>(&self, len: usize, f: impl FnMut() -> T) -> Result<Box<[T], &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         Ok(boxed_slice_init_fill_with(self.imp_alloc_uninit_slice(len)?, f))
     }
@@ -291,7 +291,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_uninit_slice<E, T>(&self, len: usize) -> Result<Box<[MaybeUninit<T>], &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         if T::IS_ZST {
             return Ok(box_uninit_zst_slice_in(len, self));
@@ -308,7 +308,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_uninit_slice_for<E, T>(&self, slice: &[T]) -> Result<Box<[MaybeUninit<T>], &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         let ptr = self.spec_alloc_slice_for(slice)?.cast::<MaybeUninit<T>>().as_ptr();
 
@@ -321,7 +321,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_str<E>(&self, src: &str) -> Result<Box<str, &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         let bytes = self.imp_alloc_slice_copy(src.as_bytes())?;
 
@@ -332,7 +332,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_fmt<E>(&self, args: fmt::Arguments) -> Result<Box<str, &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         if let Some(string) = args.as_str() {
             return self.imp_alloc_str(string);
@@ -346,7 +346,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_cstr<E>(&self, src: &CStr) -> Result<IntoRef<CStr, &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         let (slice, _) = Box::into_raw_with_allocator(self.imp_alloc_slice_copy(src.to_bytes_with_nul())?);
 
@@ -359,7 +359,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_cstr_from_str<E>(&self, src: &str) -> Result<IntoRef<CStr, &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         let src = src.as_bytes();
 
@@ -386,7 +386,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_cstr_fmt<E>(&self, args: fmt::Arguments) -> Result<IntoRef<CStr, &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         if let Some(string) = args.as_str() {
             return self.imp_alloc_cstr_from_str(string);
@@ -400,7 +400,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_iter<E, T>(&self, iter: impl IntoIterator<Item = T>) -> Result<Box<[T], &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         let mut vec = BumpVec::<T, _, E>::from_vec(Vec::new_in(self));
         vec.extend(iter)?;
@@ -410,7 +410,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_iter_exact<E, T, I>(&self, iter: impl IntoIterator<Item = T, IntoIter = I>) -> Result<Box<[T], &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
         I: ExactSizeIterator<Item = T>,
     {
         let iter = iter.into_iter();
@@ -426,7 +426,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_try_with<B, T, E>(&self, f: impl FnOnce() -> Result<T, E>) -> Result<Result<Box<T, &Self>, E>, B>
     where
-        B: ErrorBehavior,
+        B: ErrorMode,
     {
         if T::IS_ZST {
             return match f() {
@@ -475,7 +475,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     /// Nothing must be done that changes the bump pointer while this vector is live.
     fn imp_mut_alloc_vec<E, T>(&mut self, min_cap: usize) -> Result<MutBumpVec<'_, T, Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         MutBumpVec::new(min_cap, self)
     }
@@ -483,7 +483,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_iter_mut<E, T>(&mut self, iter: impl IntoIterator<Item = T>) -> Result<Box<[T], &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         if T::IS_ZST {
             let mut vec = Vec::new_in(&*self);
@@ -502,7 +502,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_fmt_mut<E>(&mut self, args: fmt::Arguments) -> Result<Box<str, &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         if let Some(string) = args.as_str() {
             return (*self).imp_alloc_str(string);
@@ -517,7 +517,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_cstr_fmt_mut<E>(&mut self, args: fmt::Arguments) -> Result<IntoRef<CStr, &Self>, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         if let Some(string) = args.as_str() {
             return (*self).imp_alloc_cstr_from_str(string);
@@ -532,7 +532,7 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     #[inline(always)]
     fn imp_alloc_try_with_mut<B, T, E>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<Result<Box<T, &Self>, E>, B>
     where
-        B: ErrorBehavior,
+        B: ErrorMode,
     {
         if T::IS_ZST {
             return match f() {
@@ -592,27 +592,27 @@ unsafe impl<A: BumpAllocatorPrivate> BumpAllocatorPrivate for &A {
     }
 
     #[inline(always)]
-    fn spec_alloc<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
+    fn spec_alloc<E: ErrorMode>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
         A::spec_alloc(self, layout)
     }
 
     #[inline(always)]
-    fn spec_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
+    fn spec_alloc_sized<E: ErrorMode, T>(&self) -> Result<NonNull<T>, E> {
         A::spec_alloc_sized(self)
     }
 
     #[inline(always)]
-    fn spec_alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
+    fn spec_alloc_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<T>, E> {
         A::spec_alloc_slice(self, len)
     }
 
     #[inline(always)]
-    fn spec_alloc_slice_for<E: ErrorBehavior, T>(&self, slice: &[T]) -> Result<NonNull<T>, E> {
+    fn spec_alloc_slice_for<E: ErrorMode, T>(&self, slice: &[T]) -> Result<NonNull<T>, E> {
         A::spec_alloc_slice_for(self, slice)
     }
 
     #[inline(always)]
-    fn spec_prepare_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
+    fn spec_prepare_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
         A::spec_prepare_slice(self, len)
     }
 
@@ -627,7 +627,7 @@ unsafe impl<A: BumpAllocatorPrivate> BumpAllocatorPrivate for &A {
     }
 
     #[inline(always)]
-    fn spec_prepare_sized_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
+    fn spec_prepare_sized_allocation<B: ErrorMode, T>(&self) -> Result<NonNull<T>, B> {
         A::spec_prepare_sized_allocation(self)
     }
 }
@@ -655,27 +655,27 @@ unsafe impl<A: BumpAllocatorPrivate> BumpAllocatorPrivate for &mut A {
     }
 
     #[inline(always)]
-    fn spec_alloc<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
+    fn spec_alloc<E: ErrorMode>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
         A::spec_alloc(self, layout)
     }
 
     #[inline(always)]
-    fn spec_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
+    fn spec_alloc_sized<E: ErrorMode, T>(&self) -> Result<NonNull<T>, E> {
         A::spec_alloc_sized(self)
     }
 
     #[inline(always)]
-    fn spec_alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
+    fn spec_alloc_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<T>, E> {
         A::spec_alloc_slice(self, len)
     }
 
     #[inline(always)]
-    fn spec_alloc_slice_for<E: ErrorBehavior, T>(&self, slice: &[T]) -> Result<NonNull<T>, E> {
+    fn spec_alloc_slice_for<E: ErrorMode, T>(&self, slice: &[T]) -> Result<NonNull<T>, E> {
         A::spec_alloc_slice_for(self, slice)
     }
 
     #[inline(always)]
-    fn spec_prepare_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
+    fn spec_prepare_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
         A::spec_prepare_slice(self, len)
     }
 
@@ -690,7 +690,7 @@ unsafe impl<A: BumpAllocatorPrivate> BumpAllocatorPrivate for &mut A {
     }
 
     #[inline(always)]
-    fn spec_prepare_sized_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
+    fn spec_prepare_sized_allocation<B: ErrorMode, T>(&self) -> Result<NonNull<T>, B> {
         A::spec_prepare_sized_allocation(self)
     }
 }
@@ -718,27 +718,27 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for Bump<C, 
     }
 
     #[inline(always)]
-    fn spec_alloc<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
+    fn spec_alloc<E: ErrorMode>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
         self.as_bump_scope().spec_alloc(layout)
     }
 
     #[inline(always)]
-    fn spec_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
+    fn spec_alloc_sized<E: ErrorMode, T>(&self) -> Result<NonNull<T>, E> {
         self.as_bump_scope().spec_alloc_sized()
     }
 
     #[inline(always)]
-    fn spec_alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
+    fn spec_alloc_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<T>, E> {
         self.as_bump_scope().spec_alloc_slice(len)
     }
 
     #[inline(always)]
-    fn spec_alloc_slice_for<E: ErrorBehavior, T>(&self, slice: &[T]) -> Result<NonNull<T>, E> {
+    fn spec_alloc_slice_for<E: ErrorMode, T>(&self, slice: &[T]) -> Result<NonNull<T>, E> {
         self.as_bump_scope().spec_alloc_slice_for(slice)
     }
 
     #[inline(always)]
-    fn spec_prepare_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
+    fn spec_prepare_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
         self.as_bump_scope().spec_prepare_slice(len)
     }
 
@@ -753,7 +753,7 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for Bump<C, 
     }
 
     #[inline(always)]
-    fn spec_prepare_sized_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
+    fn spec_prepare_sized_allocation<B: ErrorMode, T>(&self) -> Result<NonNull<T>, B> {
         self.as_bump_scope().spec_prepare_sized_allocation()
     }
 }
@@ -781,27 +781,27 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for BumpScop
     }
 
     #[inline(always)]
-    fn spec_alloc<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
+    fn spec_alloc<E: ErrorMode>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
         self.raw.allocate(layout)
     }
 
     #[inline(always)]
-    fn spec_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
+    fn spec_alloc_sized<E: ErrorMode, T>(&self) -> Result<NonNull<T>, E> {
         self.raw.allocate_sized()
     }
 
     #[inline(always)]
-    fn spec_alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
+    fn spec_alloc_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<T>, E> {
         self.raw.allocate_slice(len)
     }
 
     #[inline(always)]
-    fn spec_alloc_slice_for<E: ErrorBehavior, T>(&self, slice: &[T]) -> Result<NonNull<T>, E> {
+    fn spec_alloc_slice_for<E: ErrorMode, T>(&self, slice: &[T]) -> Result<NonNull<T>, E> {
         self.raw.allocate_slice_for(slice)
     }
 
     #[inline(always)]
-    fn spec_prepare_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
+    fn spec_prepare_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
         let slice = self.raw.prepare_slice_allocation(len)?;
         Ok(slice)
     }
@@ -886,7 +886,7 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for BumpScop
     }
 
     #[inline(always)]
-    fn spec_prepare_sized_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
+    fn spec_prepare_sized_allocation<B: ErrorMode, T>(&self) -> Result<NonNull<T>, B> {
         self.raw.prepare_sized_allocation()
     }
 }
@@ -914,30 +914,30 @@ unsafe impl BumpAllocatorPrivate for Unmanaged<'_> {
     }
 
     #[inline(always)]
-    fn spec_alloc<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
+    fn spec_alloc<E: ErrorMode>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
         _ = layout;
         Err(E::unmanaged())
     }
 
     #[inline(always)]
-    fn spec_alloc_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
+    fn spec_alloc_sized<E: ErrorMode, T>(&self) -> Result<NonNull<T>, E> {
         Err(E::unmanaged())
     }
 
     #[inline(always)]
-    fn spec_alloc_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
+    fn spec_alloc_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<T>, E> {
         _ = len;
         Err(E::unmanaged())
     }
 
     #[inline(always)]
-    fn spec_alloc_slice_for<E: ErrorBehavior, T>(&self, slice: &[T]) -> Result<NonNull<T>, E> {
+    fn spec_alloc_slice_for<E: ErrorMode, T>(&self, slice: &[T]) -> Result<NonNull<T>, E> {
         _ = slice;
         Err(E::unmanaged())
     }
 
     #[inline(always)]
-    fn spec_prepare_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
+    fn spec_prepare_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<[T]>, E> {
         _ = len;
         Err(E::unmanaged())
     }
@@ -955,7 +955,7 @@ unsafe impl BumpAllocatorPrivate for Unmanaged<'_> {
     }
 
     #[inline(always)]
-    fn spec_prepare_sized_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
+    fn spec_prepare_sized_allocation<B: ErrorMode, T>(&self) -> Result<NonNull<T>, B> {
         Err(B::unmanaged())
     }
 }
@@ -2379,7 +2379,7 @@ unsafe impl BumpAllocator for Unmanaged<'_> {
     #[cfg(feature = "panic-on-alloc")]
     fn reserve(&self, additional: usize) {
         _ = additional;
-        error_behavior::panic::unmanaged();
+        error_mode::panic::unmanaged();
     }
 
     #[inline(always)]

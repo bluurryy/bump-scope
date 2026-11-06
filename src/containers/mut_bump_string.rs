@@ -1,14 +1,14 @@
 //! Minimal string implementation for internal usage.
 //! Would be replaced by `alloc::String` if that becomes generic over its allocator.
 //!
-//! For now we add a `ErrorBehavior` generic, just because it makes for simpler code.
+//! For now we add a `ErrorMode` generic, just because it makes for simpler code.
 
 use core::{ffi::CStr, fmt, marker::PhantomData};
 
 use alloc::boxed::Box;
 
 use crate::{
-    bump_allocation::IntoRef, containers::MutBumpVec, error_behavior::ErrorBehavior, extra::box_from_utf8_unchecked,
+    bump_allocation::IntoRef, containers::MutBumpVec, error_mode::ErrorMode, extra::box_from_utf8_unchecked,
     traits::BumpAllocatorPrivate,
 };
 
@@ -20,7 +20,7 @@ pub(crate) struct MutBumpString<'a, A: BumpAllocatorPrivate, E> {
 
 impl<'a, A: BumpAllocatorPrivate, E> MutBumpString<'a, A, E>
 where
-    E: ErrorBehavior,
+    E: ErrorMode,
 {
     pub(crate) fn from_vec(mut vec: MutBumpVec<'a, u8, A>) -> Self {
         // no bytes is valid utf8
@@ -69,7 +69,7 @@ where
     }
 }
 
-impl<A: BumpAllocatorPrivate, E: ErrorBehavior> fmt::Write for MutBumpString<'_, A, E> {
+impl<A: BumpAllocatorPrivate, E: ErrorMode> fmt::Write for MutBumpString<'_, A, E> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.push_str(s).ok().ok_or(fmt::Error)
     }

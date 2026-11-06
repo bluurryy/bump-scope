@@ -9,7 +9,7 @@ use alloc::{boxed::Box, vec::Vec};
 use crate::{
     BumpAllocator, SizedTypeProperties,
     destructure::destructure,
-    error_behavior::ErrorBehavior,
+    error_mode::ErrorMode,
     extra::{imp_vec_extend, vec_remove_allocator_unchecked},
 };
 
@@ -276,7 +276,7 @@ where
 #[inline(always)]
 fn imp_vec_map<E, T, U, A>(vec: Vec<T, A>, f: impl FnMut(T) -> U) -> Result<Vec<U, A>, E>
 where
-    E: ErrorBehavior,
+    E: ErrorMode,
     A: BumpAllocator,
 {
     // fallback
@@ -360,7 +360,7 @@ where
 
 fn vec_map_fallback<E, T, U, A>(vec: Vec<T, A>, f: impl FnMut(T) -> U) -> Result<Vec<U, A>, E>
 where
-    E: ErrorBehavior,
+    E: ErrorMode,
     A: Allocator,
 {
     struct DropGuard<T, U, A: Allocator> {

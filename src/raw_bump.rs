@@ -15,14 +15,14 @@ use crate::{
         concrete::{ClaimedChunk, ConstConstructorChunk},
     },
     config::{BumpConfig, config},
-    error_behavior::ErrorBehavior,
+    error_mode::ErrorMode,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     stats::Stats,
 };
 
 /// The internal type used by `Bump` and `Bump(Scope)`.
 ///
-/// All the api that can fail due to allocation failure take a `E: ErrorBehavior`
+/// All the api that can fail due to allocation failure take a `E: ErrorMode`
 /// instead of having a `try_` and non-`try_` version.
 ///
 /// It does not concern itself with deallocating chunks or the base allocator.
@@ -85,7 +85,7 @@ impl<const C: BumpConfig, A> RawBump<C, A> {
 
 impl<const C: BumpConfig, A: Allocator> RawBump<C, A> {
     #[inline(always)]
-    pub(crate) fn with_size<E: ErrorBehavior>(size: impl ChunkSize, allocator: A) -> Result<Self, E> {
+    pub(crate) fn with_size<E: ErrorMode>(size: impl ChunkSize, allocator: A) -> Result<Self, E> {
         Ok(Self {
             chunk: Cell::new(Chunk::from_first(FirstAllocatedChunk::new::<E>(size, allocator)?)),
         })
@@ -268,7 +268,7 @@ impl<const C: BumpConfig, A> RawBump<C, A> {
 
 impl<const C: BumpConfig, A: Allocator> RawBump<C, A> {
     #[inline(always)]
-    pub(crate) fn reserve<E: ErrorBehavior>(&self, additional: usize) -> Result<(), E>
+    pub(crate) fn reserve<E: ErrorMode>(&self, additional: usize) -> Result<(), E>
 where {
         let chunk = self.chunk.get();
 
@@ -318,7 +318,7 @@ where {
     }
 
     #[inline(always)]
-    pub(crate) fn allocate<B: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, B> {
+    pub(crate) fn allocate<B: ErrorMode>(&self, layout: Layout) -> Result<NonNull<u8>, B> {
         match self.chunk.get().alloc(CustomLayout(layout)) {
             Some(ptr) => Ok(ptr),
             None => self.allocate_in_another_chunk(layout),
@@ -326,7 +326,7 @@ where {
     }
 
     #[inline(always)]
-    pub(crate) fn allocate_sized<E: ErrorBehavior, T>(&self) -> Result<NonNull<T>, E> {
+    pub(crate) fn allocate_sized<E: ErrorMode, T>(&self) -> Result<NonNull<T>, E> {
         let layout = const {
             match SizedLayout::new::<T>().increase_align(config!(min_align)) {
                 Ok(ok) => ok,
@@ -344,7 +344,7 @@ where {
     }
 
     #[inline(always)]
-    pub(crate) fn allocate_slice<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<T>, E> {
+    pub(crate) fn allocate_slice<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<T>, E> {
         let Ok(layout) = ArrayLayout::array::<T>(len) else {
             return Err(E::capacity_overflow());
         };
@@ -359,7 +359,7 @@ where {
     }
 
     #[inline(always)]
-    pub(crate) fn allocate_slice_for<E: ErrorBehavior, T>(&self, value: &[T]) -> Result<NonNull<T>, E> {
+    pub(crate) fn allocate_slice_for<E: ErrorMode, T>(&self, value: &[T]) -> Result<NonNull<T>, E> {
         let layout = ArrayLayout::for_value(value);
 
         match self.chunk.get().alloc(layout) {
@@ -372,7 +372,7 @@ where {
     }
 
     #[inline(always)]
-    pub(crate) fn prepare_sized_allocation<B: ErrorBehavior, T>(&self) -> Result<NonNull<T>, B> {
+    pub(crate) fn prepare_sized_allocation<B: ErrorMode, T>(&self) -> Result<NonNull<T>, B> {
         match self.chunk.get().prepare_allocation(SizedLayout::new::<T>()) {
             Some(ptr) => Ok(ptr.cast()),
             None => match self.prepare_allocation_in_another_chunk::<B, T>() {
@@ -383,7 +383,7 @@ where {
     }
 
     #[inline(always)]
-    pub(crate) fn prepare_slice_allocation<B: ErrorBehavior, T>(&self, min_cap: usize) -> Result<NonNull<[T]>, B> {
+    pub(crate) fn prepare_slice_allocation<B: ErrorMode, T>(&self, min_cap: usize) -> Result<NonNull<[T]>, B> {
         let range = self.prepare_allocation_range::<B, T>(min_cap)?;
 
         // NB: We can't use `offset_from_unsigned`, because the size is not a multiple of `T`'s.
@@ -403,7 +403,7 @@ where {
     /// But `end - start` is *not* a multiple of `size_of::<T>()`.
     /// So `end.offset_from_unsigned(start)` may not be used!
     #[inline(always)]
-    fn prepare_allocation_range<B: ErrorBehavior, T>(&self, cap: usize) -> Result<Range<NonNull<T>>, B> {
+    fn prepare_allocation_range<B: ErrorMode, T>(&self, cap: usize) -> Result<Range<NonNull<T>>, B> {
         let Ok(layout) = ArrayLayout::array::<T>(cap) else {
             return Err(B::capacity_overflow());
         };
@@ -420,19 +420,19 @@ where {
     /// The active chunk must *not* have space for `layout`.
     #[cold]
     #[inline(never)]
-    pub(crate) fn allocate_in_another_chunk<E: ErrorBehavior>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
+    pub(crate) fn allocate_in_another_chunk<E: ErrorMode>(&self, layout: Layout) -> Result<NonNull<u8>, E> {
         unsafe { self.in_another_chunk(CustomLayout(layout), Chunk::alloc) }
     }
 
     #[cold]
     #[inline(never)]
-    fn allocate_sized_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E> {
+    fn allocate_sized_in_another_chunk<E: ErrorMode, T>(&self) -> Result<NonNull<u8>, E> {
         self.allocate_in_another_chunk(Layout::new::<T>())
     }
 
     #[cold]
     #[inline(never)]
-    fn allocate_slice_in_another_chunk<E: ErrorBehavior, T>(&self, len: usize) -> Result<NonNull<u8>, E> {
+    fn allocate_slice_in_another_chunk<E: ErrorMode, T>(&self, len: usize) -> Result<NonNull<u8>, E> {
         let Ok(layout) = Layout::array::<T>(len) else {
             return Err(E::capacity_overflow());
         };
@@ -442,7 +442,7 @@ where {
 
     #[cold]
     #[inline(never)]
-    pub(crate) fn prepare_allocation_in_another_chunk<E: ErrorBehavior, T>(&self) -> Result<NonNull<u8>, E> {
+    pub(crate) fn prepare_allocation_in_another_chunk<E: ErrorMode, T>(&self) -> Result<NonNull<u8>, E> {
         let layout = CustomLayout(Layout::new::<T>());
 
         unsafe { self.in_another_chunk(layout, Chunk::prepare_allocation) }
@@ -450,10 +450,7 @@ where {
 
     #[cold]
     #[inline(never)]
-    fn prepare_allocation_range_in_another_chunk<E: ErrorBehavior>(
-        &self,
-        layout: ArrayLayout,
-    ) -> Result<Range<NonNull<u8>>, E> {
+    fn prepare_allocation_range_in_another_chunk<E: ErrorMode>(&self, layout: ArrayLayout) -> Result<Range<NonNull<u8>>, E> {
         unsafe { self.in_another_chunk(layout, Chunk::prepare_allocation_range) }
     }
 
@@ -461,7 +458,7 @@ where {
     ///
     /// `f` on the new chunk created by `RawChunk::append_for` with the layout `layout` must return `Some`.
     #[inline(always)]
-    pub(crate) unsafe fn in_another_chunk<E: ErrorBehavior, R, L: LayoutProps>(
+    pub(crate) unsafe fn in_another_chunk<E: ErrorMode, R, L: LayoutProps>(
         &self,
         layout: L,
         mut f: impl FnMut(Chunk<C, A>, L) -> Option<R>,
@@ -508,7 +505,7 @@ where {
         }
     }
 
-    pub(crate) fn make_allocated<E: ErrorBehavior>(&self) -> Result<(), E> {
+    pub(crate) fn make_allocated<E: ErrorMode>(&self) -> Result<(), E> {
         match self.chunk.get().kind() {
             ChunkKind::Claimed(_) => Err(E::claimed()),
             ChunkKind::ConstConstructor(chunk) => {

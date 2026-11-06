@@ -7,7 +7,7 @@ use core::{
 
 use alloc::{boxed::Box, vec::Vec};
 
-use crate::{SizedTypeProperties, error_behavior::ErrorBehavior, extra::imp_vec_extend, traits::BumpAllocatorPrivate};
+use crate::{SizedTypeProperties, error_mode::ErrorMode, extra::imp_vec_extend, traits::BumpAllocatorPrivate};
 
 // The vector is wrapped in a `ManuallyDrop` since we don't want the vector to try to deallocate
 // since we didn't allocate anything in the first place.
@@ -16,7 +16,7 @@ pub(crate) struct MutBumpVec<'a, T, A: BumpAllocatorPrivate>(ManuallyDrop<Vec<T,
 impl<'a, T, A: BumpAllocatorPrivate> MutBumpVec<'a, T, A> {
     pub(crate) fn new<E>(min_cap: usize, alloc: &'a mut A) -> Result<Self, E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         let alloc = AllocatorWrapper(alloc);
 
@@ -34,7 +34,7 @@ impl<'a, T, A: BumpAllocatorPrivate> MutBumpVec<'a, T, A> {
     #[expect(dead_code)]
     pub(crate) fn push<E>(&mut self, value: T) -> Result<(), E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         self.reserve(1)?;
         let len = self.0.len();
@@ -48,7 +48,7 @@ impl<'a, T, A: BumpAllocatorPrivate> MutBumpVec<'a, T, A> {
 
     pub(crate) fn extend<E>(&mut self, iter: impl IntoIterator<Item = T>) -> Result<(), E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         imp_vec_extend(&mut self.0, iter)
     }
@@ -65,21 +65,21 @@ impl<'a, T, A: BumpAllocatorPrivate> MutBumpVec<'a, T, A> {
     #[expect(dead_code)]
     pub(crate) fn reserve<E>(&mut self, additional: usize) -> Result<(), E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         E::vec_reserve(&mut self.0, additional)
     }
 
     pub(crate) fn reserve_if_fallible<E>(&mut self, additional: usize) -> Result<(), E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
     {
         E::vec_reserve_if_fallible(&mut self.0, additional)
     }
 
     pub(crate) fn extend_from_slice<E>(&mut self, slice: &[T]) -> Result<(), E>
     where
-        E: ErrorBehavior,
+        E: ErrorMode,
         T: Clone,
     {
         self.reserve_if_fallible(slice.len())?;

@@ -1,7 +1,7 @@
 //! Minimal string implementation for internal usage.
 //! Would be replaced by `alloc::String` if that becomes generic over its allocator.
 //!
-//! For now we add a `ErrorBehavior` generic, just because it makes for simpler code.
+//! For now we add a `ErrorMode` generic, just because it makes for simpler code.
 
 use core::{
     marker::PhantomData,
@@ -14,7 +14,7 @@ use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
     SizedTypeProperties,
-    error_behavior::ErrorBehavior,
+    error_mode::ErrorMode,
     extra::{imp_vec_extend, imp_vec_into_boxed_slice_without_shrink},
     traits::BumpAllocatorPrivate,
 };
@@ -23,7 +23,7 @@ use crate::{
 pub(crate) struct BumpVec<T, A, E>
 where
     A: BumpAllocatorPrivate,
-    E: ErrorBehavior,
+    E: ErrorMode,
 {
     vec: Vec<T, A>,
     marker: PhantomData<fn() -> E>,
@@ -32,7 +32,7 @@ where
 impl<T, A, E> BumpVec<T, A, E>
 where
     A: BumpAllocatorPrivate,
-    E: ErrorBehavior,
+    E: ErrorMode,
 {
     #[inline]
     pub(crate) fn from_vec(vec: Vec<T, A>) -> Self {
@@ -92,7 +92,7 @@ where
 impl<T, A, E> Deref for BumpVec<T, A, E>
 where
     A: BumpAllocatorPrivate,
-    E: ErrorBehavior,
+    E: ErrorMode,
 {
     type Target = Vec<T, A>;
 
@@ -104,7 +104,7 @@ where
 impl<T, A, E> DerefMut for BumpVec<T, A, E>
 where
     A: BumpAllocatorPrivate,
-    E: ErrorBehavior,
+    E: ErrorMode,
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.vec

@@ -3,7 +3,7 @@ use core::{marker::PhantomData, ptr::NonNull};
 use crate::{
     chunk_types::dummy_memory_region::CONST_CONSTRUCTOR_POS as POS,
     config::{BumpConfig, config},
-    error_behavior::ErrorBehavior,
+    error_mode::ErrorMode,
 };
 
 #[repr(C, align(16))]
@@ -68,7 +68,7 @@ impl<const C: BumpConfig, A> ConstConstructorChunk<C, A> {
     }
 
     #[cfg_attr(not(feature = "std"), expect(clippy::unnecessary_wraps))]
-    pub(crate) fn construct_base_allocator<E: ErrorBehavior>(self) -> Result<A, E> {
+    pub(crate) fn construct_base_allocator<E: ErrorMode>(self) -> Result<A, E> {
         // We must handle unwinding when calling `default`, because this function
         // is called in allocator api routines, which don't allow unwinding.
         let default = self.default();
