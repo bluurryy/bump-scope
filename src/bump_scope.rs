@@ -28,7 +28,7 @@ use crate::panic_on_error;
 ///
 /// This type is provided as a parameter to the closure of [`scoped`], or created
 /// by [`BumpScopeGuard::scope`]. A [`Bump`] can also be turned into a `BumpScope` using
-/// [`as_bump_scope`], [`as_mut_bump_scope`] or `from` / `into`.
+/// [`as_bump_scope`] and [`as_mut_bump_scope`].
 ///
 /// [`scoped`]: crate::BumpScope::scoped
 /// [`BumpScopeGuard::scope`]: crate::BumpScopeGuard::scope
