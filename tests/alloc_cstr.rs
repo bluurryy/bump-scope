@@ -17,7 +17,7 @@ up_and_down! {
         let input = c"123456789";
         let allocated = bump.alloc_cstr(input).into_ref();
         assert_eq!(allocated, input);
-        assert_eq!(bump.stats().allocated(), 10);
+        assert_eq!(bump.allocated(), 10);
     }
 
     #[test]
@@ -27,7 +27,7 @@ up_and_down! {
         let expected = c"123456789";
         let allocated = bump.alloc_cstr_from_str(input).into_ref();
         assert_eq!(allocated, expected);
-        assert_eq!(bump.stats().allocated(), 10);
+        assert_eq!(bump.allocated(), 10);
     }
 
     #[test]
@@ -36,7 +36,7 @@ up_and_down! {
         let input = c"";
         let allocated = bump.alloc_cstr(input).into_ref();
         assert_eq!(allocated, input);
-        assert_eq!(bump.stats().allocated(), 1);
+        assert_eq!(bump.allocated(), 1);
     }
 
     #[test]
@@ -44,7 +44,7 @@ up_and_down! {
         let bump: Bump<Global, C> = Bump::new();
         let allocated = bump.alloc_cstr_fmt(format_args!("1 + 2 = {}", 1 + 2)).into_ref();
         assert_eq!(allocated, c"1 + 2 = 3");
-        assert_eq!(bump.stats().allocated(), 10);
+        assert_eq!(bump.allocated(), 10);
     }
 
     #[test]
@@ -53,7 +53,7 @@ up_and_down! {
         let input = "hello\0world";
         let allocated = bump.alloc_cstr_from_str(input).into_ref();
         assert_eq!(allocated, c"hello");
-        assert_eq!(bump.stats().allocated(), 6);
+        assert_eq!(bump.allocated(), 6);
     }
 
     #[test]
@@ -64,7 +64,7 @@ up_and_down! {
         let allocated = bump.alloc_cstr_fmt(assert_multiple(format_args!("{hello}\0{world}"))).into_ref();
         assert_eq!(allocated, c"hello");
         assert_eq!(allocated.to_bytes(), b"hello");
-        assert_eq!(bump.stats().allocated(), 6);
+        assert_eq!(bump.allocated(), 6);
     }
 
     #[test]
@@ -75,7 +75,7 @@ up_and_down! {
         let allocated = bump.alloc_cstr_fmt_mut(assert_multiple(format_args!("{hello}\0{world}"))).into_ref();
         assert_eq!(allocated, c"hello");
         assert_eq!(allocated.to_bytes(), b"hello");
-        assert_eq!(bump.stats().allocated(), 6);
+        assert_eq!(bump.allocated(), 6);
     }
 }
 

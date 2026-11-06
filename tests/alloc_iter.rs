@@ -25,7 +25,7 @@ up_and_down! {
         bump.alloc_iter_mut([[0u32; 0]; 10]).into_boxu();
         bump.alloc_iter_mut([[0u64; 0]; 10]).into_boxu();
 
-        assert_eq!(bump.stats().allocated(), 0);
+        assert_eq!(bump.allocated(), 0);
     }
 
     #[test]
@@ -42,21 +42,21 @@ up_and_down! {
         bump.alloc_iter_mut(core::iter::empty::<u32>()).into_boxu();
         bump.alloc_iter_mut(core::iter::empty::<u64>()).into_boxu();
 
-        assert_eq!(bump.stats().allocated(), 0);
+        assert_eq!(bump.allocated(), 0);
     }
 
     #[test]
     fn three() {
         let bump: Bump<Global, C> = Bump::new();
         bump.alloc_iter(SuppressHints([1, 2, 3].into_iter())).into_boxu();
-        assert_eq!(bump.stats().allocated(), 3 * 4);
+        assert_eq!(bump.allocated(), 3 * 4);
     }
 
     #[test]
     fn three_mut() {
         let mut bump: Bump<Global, C> = Bump::new();
         bump.alloc_iter_mut(SuppressHints([1, 2, 3].into_iter())).into_boxu();
-        assert_eq!(bump.stats().allocated(), 3 * 4);
+        assert_eq!(bump.allocated(), 3 * 4);
     }
 }
 

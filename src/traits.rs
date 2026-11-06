@@ -2089,7 +2089,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// let bump: Bump = Bump::new();
     ///
     /// let result = bump.alloc_try_with(|| -> Result<i32, i32> { Ok(123) });
-    /// assert_eq!(bump.stats().allocated(), size_of::<Result<i32, i32>>());
+    /// assert_eq!(bump.allocated(), size_of::<Result<i32, i32>>());
     /// assert_eq!(*result.unwrap().into_boxu(), 123);
     /// ```
     /// ```
@@ -2097,7 +2097,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// let bump: Bump = Bump::new();
     ///
     /// let result = bump.alloc_try_with(|| -> Result<i32, i32> { Err(123) });
-    /// assert_eq!(bump.stats().allocated(), 0);
+    /// assert_eq!(bump.allocated(), 0);
     /// assert_eq!(result.unwrap_err(), 123);
     /// ```
     ///
@@ -2127,7 +2127,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// let bump: Bump = Bump::new();
     ///
     /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Ok(123) })?;
-    /// assert_eq!(bump.stats().allocated(), size_of::<Result<i32, i32>>());
+    /// assert_eq!(bump.allocated(), size_of::<Result<i32, i32>>());
     /// assert_eq!(*result.unwrap().into_boxu(), 123);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
@@ -2136,7 +2136,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// let bump: Bump = Bump::new();
     ///
     /// let result = bump.try_alloc_try_with(|| -> Result<i32, i32> { Err(123) })?;
-    /// assert_eq!(bump.stats().allocated(), 0);
+    /// assert_eq!(bump.allocated(), 0);
     /// assert_eq!(result.unwrap_err(), 123);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
@@ -2191,12 +2191,12 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     ///
     /// {
     ///     let hello = bump.alloc_str("hello");
-    ///     assert_eq!(bump.stats().allocated(), 5);
+    ///     assert_eq!(bump.allocated(), 5);
     ///     # _ = hello;
     /// }
     ///
     /// unsafe { bump.reset_to(checkpoint); }
-    /// assert_eq!(bump.stats().allocated(), 0);
+    /// assert_eq!(bump.allocated(), 0);
     /// ```
     #[inline(always)]
     unsafe fn reset_to(&self, checkpoint: Checkpoint) {

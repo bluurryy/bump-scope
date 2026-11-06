@@ -19,7 +19,7 @@ macro_rules! assert_allocated {
     ($bump:ident, $expected:expr) => {
         let expected = $expected;
         let count = $bump.stats().count();
-        let allocated = $bump.stats().allocated();
+        let allocated = $bump.allocated();
         assert_eq!(
             count, 1,
             "there are multiple chunks allocated ({count}), \
@@ -73,14 +73,14 @@ up_and_down! {
     fn basic_err() {
         let bump: Bump<Global, C> = Bump::with_size(SIZE);
         _ = bump.alloc_try_with(|| -> TestResult { Err(zeroes()) }).unwrap_err();
-        assert_eq!(bump.stats().allocated(), 0);
+        assert_eq!(bump.allocated(), 0);
     }
 
     #[test]
     fn basic_err_mut() {
         let mut bump: Bump<Global, C> = Bump::with_size(SIZE);
         _ = bump.alloc_try_with_mut(|| -> TestResult { Err(zeroes()) }).unwrap_err();
-        assert_eq!(bump.stats().allocated(), 0);
+        assert_eq!(bump.allocated(), 0);
     }
 
     #[test]

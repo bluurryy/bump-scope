@@ -618,7 +618,7 @@ where
     ///
     /// for item in items {
     ///     // the scratch allocator is empty
-    ///     assert_eq!(scratch_allocator.stats().allocated(), 0);
+    ///     assert_eq!(scratch_allocator.allocated(), 0);
     ///
     ///     // allocate on scratch allocator...
     ///     let _ = scratch_allocator.alloc_fmt(format_args!("hello {item}"));
@@ -678,7 +678,7 @@ where
     ///
     /// for item in items {
     ///     // the scratch allocator is empty
-    ///     assert_eq!(scratch_allocator.stats().allocated(), 0);
+    ///     assert_eq!(scratch_allocator.allocated(), 0);
     ///
     ///     // allocate on scratch allocator...
     ///     let _ = scratch_allocator.alloc_fmt(format_args!("hello {item}"));
@@ -710,7 +710,7 @@ where
     /// assert_eq!(bump.stats().count(), 2);
     ///
     /// // ... but everything is deallocated
-    /// assert_eq!(bump.stats().allocated(), 0);
+    /// assert_eq!(bump.allocated(), 0);
     ///
     /// // we are back at the first chunk
     /// assert!(bump.stats().current_chunk().unwrap().prev().is_none());
@@ -802,7 +802,7 @@ where
     /// let bump: Bump = unsafe { Bump::from_raw(ptr) };
     ///
     /// bump.alloc_str("World!").into_ref();
-    /// # assert_eq!(bump.stats().allocated(), 13);
+    /// # assert_eq!(bump.allocated(), 13);
     /// ```
     #[inline]
     #[must_use]

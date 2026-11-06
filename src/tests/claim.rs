@@ -38,7 +38,7 @@ up_and_down! {
         let ptr = NonNull::new(boxed.as_mut_ptr()).unwrap().cast::<u8>();
 
         let original_allocated = 2;
-        assert_eq!(bump.stats().allocated(), original_allocated);
+        assert_eq!(bump.allocated(), original_allocated);
 
         let guard = bump.claim();
 
@@ -63,12 +63,12 @@ up_and_down! {
             let new_ptr = unsafe { bump.shrink(ptr, Layout::new::<[u8; 2]>(), Layout::new::<[u8; 1]>()).unwrap() };
             assert_eq!(new_ptr.len(), 2);
             assert_eq!(ptr, new_ptr.cast());
-            assert_eq!(guard.stats().allocated(), original_allocated);
+            assert_eq!(guard.allocated(), original_allocated);
 
             // deallocate
             // doesn't do anything
             unsafe { bump.deallocate(ptr, Layout::new::<[u8; 2]>()) };
-            assert_eq!(guard.stats().allocated(), original_allocated);
+            assert_eq!(guard.allocated(), original_allocated);
         }
 
         // traits::Sealed
@@ -112,7 +112,7 @@ up_and_down! {
 
             // dealloc
             drop(extra::box_replace_allocator(boxed, &bump));
-            assert_eq!(guard.stats().allocated(), original_allocated);
+            assert_eq!(guard.allocated(), original_allocated);
 
             // reserve
             expect_panic(|| bump.reserve(123));

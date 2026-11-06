@@ -230,10 +230,10 @@ where
     ///     let mut guard = bump.scope_guard();
     ///     let bump = guard.scope();
     ///     bump.alloc_str("Hello, world!").into_ref();
-    ///     assert_eq!(bump.stats().allocated(), 13);
+    ///     assert_eq!(bump.allocated(), 13);
     /// }
     ///
-    /// assert_eq!(bump.stats().allocated(), 0);
+    /// assert_eq!(bump.allocated(), 0);
     /// ```
     ///
     /// [claimed]: crate::BumpScope::claim
@@ -251,10 +251,10 @@ where
     ///
     /// bump.scoped(|bump| {
     ///     bump.alloc_str("Hello, world!").into_ref();
-    ///     assert_eq!(bump.stats().allocated(), 13);
+    ///     assert_eq!(bump.allocated(), 13);
     /// });
     ///
-    /// assert_eq!(bump.stats().allocated(), 0);
+    /// assert_eq!(bump.allocated(), 0);
     /// ```
     ///
     /// [claimed]: crate::BumpScope::claim
@@ -299,27 +299,27 @@ where
     /// // now the bump is only aligned to 1
     /// // (if our `MIN_ALIGN` was higher, it would be that)
     /// assert!(bump.stats().bump_position().unwrap().addr().get() % 2 == 1);
-    /// assert_eq!(bump.stats().allocated(), 1);
+    /// assert_eq!(bump.allocated(), 1);
     ///
     /// bump.scoped_with_config::<CONFIG_MIN_ALIGN_8, ()>(|bump| {
     ///    // in here, the bump will have the specified minimum alignment of 8
     ///    assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
-    ///    assert_eq!(bump.stats().allocated(), 8);
+    ///    assert_eq!(bump.allocated(), 8);
     ///
     ///    // allocating a value with its size being a multiple of 8 will no longer have
     ///    // to align the bump pointer before allocation
     ///    bump.alloc(1u64).into_ref();
     ///    assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
-    ///    assert_eq!(bump.stats().allocated(), 16);
+    ///    assert_eq!(bump.allocated(), 16);
     ///    
     ///    // allocating a value smaller than the minimum alignment must align the bump pointer
     ///    // after the allocation, resulting in some wasted space
     ///    bump.alloc(1u8).into_ref();
     ///    assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
-    ///    assert_eq!(bump.stats().allocated(), 24);
+    ///    assert_eq!(bump.allocated(), 24);
     /// });
     ///
-    /// assert_eq!(bump.stats().allocated(), 1);
+    /// assert_eq!(bump.allocated(), 1);
     /// ```
     ///
     /// [claimed]: crate::BumpScope::claim
@@ -362,29 +362,29 @@ where
     ///
     /// // here we're allocating with a `MIN_ALIGN` of `1`
     /// let foo = bump.alloc_str("foo").into_ref();
-    /// assert_eq!(bump.stats().allocated(), 3);
+    /// assert_eq!(bump.allocated(), 3);
     ///
     /// let bar = bump.with_config::<MIN_ALIGN_8, _>(|bump| {
     ///     // in here the bump position has been aligned to `8`
-    ///     assert_eq!(bump.stats().allocated(), 8);
+    ///     assert_eq!(bump.allocated(), 8);
     ///     assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
     ///
     ///     // make some allocations that benefit from the higher `MIN_ALIGN` of `8`
     ///     let bar = bump.alloc(0u64).into_ref();
-    ///     assert_eq!(bump.stats().allocated(), 16);
+    ///     assert_eq!(bump.allocated(), 16);
     ///  
     ///     // the bump position will stay aligned to `8`
     ///     bump.alloc(0u8).into_ref();
-    ///     assert_eq!(bump.stats().allocated(), 24);
+    ///     assert_eq!(bump.allocated(), 24);
     ///
     ///     bar
     /// });
     ///
-    /// assert_eq!(bump.stats().allocated(), 24);
+    /// assert_eq!(bump.allocated(), 24);
     ///
     /// // continue making allocations with a `MIN_ALIGN` of `1`
     /// let baz = bump.alloc_str("baz").into_ref();
-    /// assert_eq!(bump.stats().allocated(), 24 + 3);
+    /// assert_eq!(bump.allocated(), 24 + 3);
     ///
     /// dbg!(foo, bar, baz);
     /// ```
@@ -408,7 +408,7 @@ where
     ///     let bar = bump.alloc(0u8).into_ref();
     ///
     ///     // the bump position will not get aligned to `8` in here
-    ///     assert_eq!(bump.stats().allocated(), 8 + 1);
+    ///     assert_eq!(bump.allocated(), 8 + 1);
     ///
     ///     bar
     /// });
@@ -416,7 +416,7 @@ where
     /// // after `with_config()`, the bump position will be aligned to `8` again
     /// // to satisfy our `MIN_ALIGN`
     /// assert!(bump.stats().bump_position().unwrap().addr().get() % 8 == 0);
-    /// assert_eq!(bump.stats().allocated(), 16);
+    /// assert_eq!(bump.allocated(), 16);
     ///
     /// // continue making allocations that benefit from the `MIN_ALIGN` of `8`
     /// let baz = bump.alloc(0u64);

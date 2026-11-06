@@ -26,7 +26,7 @@ up_and_down! {
         bump.alloc_fmt(format_args!("{Nothing}")).into_boxu();
         bump.alloc_fmt_mut(format_args!("{Nothing}")).into_boxu();
 
-        assert_eq!(bump.stats().allocated(), 0);
+        assert_eq!(bump.allocated(), 0);
     }
 
     #[test]
@@ -34,7 +34,7 @@ up_and_down! {
         let bump: Bump<Global, C> = Bump::new();
         let string = bump.alloc_fmt(format_args!("ext{Nothing}ra")).into_boxu();
         assert_eq!(&*string, "extra");
-        assert_eq!(bump.stats().allocated(), 5);
+        assert_eq!(bump.allocated(), 5);
     }
 
     #[test]
@@ -43,21 +43,21 @@ up_and_down! {
         let bump = bump.as_mut_bump_scope();
         let string = bump.alloc_fmt_mut(format_args!("ext{Nothing}ra")).into_boxu();
         assert_eq!(&*string, "extra");
-        assert_eq!(bump.stats().allocated(), 5);
+        assert_eq!(bump.allocated(), 5);
     }
 
     #[test]
     fn three() {
         let bump: Bump<Global, C> = Bump::new();
         bump.alloc_fmt(format_args!("{}", 3.1)).into_boxu();
-        assert_eq!(bump.stats().allocated(), 3);
+        assert_eq!(bump.allocated(), 3);
     }
 
     #[test]
     fn three_mut() {
         let mut bump: Bump<Global, C> = Bump::new();
         bump.alloc_fmt_mut(format_args!("{}", 3.1)).into_boxu();
-        assert_eq!(bump.stats().allocated(), 3);
+        assert_eq!(bump.allocated(), 3);
     }
 
     #[test]

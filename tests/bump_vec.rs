@@ -26,26 +26,26 @@ up_and_down! {
 
         // should shrink
         let mut vec = extra::vec![in &bump; 1, 2, 3, 4];
-        assert_eq!(bump.stats().allocated(), 4 * 4);
+        assert_eq!(bump.allocated(), 4 * 4);
         vec.shrink_to_fit();
-        assert_eq!(bump.stats().allocated(), 4 * 4);
+        assert_eq!(bump.allocated(), 4 * 4);
         vec.pop();
         vec.shrink_to_fit();
-        assert_eq!(bump.stats().allocated(), 3 * 4);
+        assert_eq!(bump.allocated(), 3 * 4);
         vec.clear();
         vec.shrink_to_fit();
-        assert_eq!(bump.stats().allocated(), 0);
+        assert_eq!(bump.allocated(), 0);
         drop(vec);
 
         // shouldn't shrink
         let mut vec = extra::vec![in bump.ref_change_config::<C_NO_SHRINK>(); 1, 2, 3, 4];
-        assert_eq!(bump.stats().allocated(), 4 * 4);
+        assert_eq!(bump.allocated(), 4 * 4);
         vec.shrink_to_fit();
-        assert_eq!(bump.stats().allocated(), 4 * 4);
+        assert_eq!(bump.allocated(), 4 * 4);
         vec.pop();
         vec.shrink_to_fit();
         assert_eq!(vec.capacity(), 3);
-        assert_eq!(bump.stats().allocated(), 4 * 4);
+        assert_eq!(bump.allocated(), 4 * 4);
 
         // Setting the capacity to 0 constitutes a deallocate call, which we didn't disable.
         // However only when downwards bumping can we deallocate the vec because the vec's capacity has been changed to 3.
@@ -58,7 +58,7 @@ up_and_down! {
         vec.shrink_to_fit();
         dbg!(vec.len(), vec.capacity());
         assert_eq!(vec.capacity(), 0);
-        assert_eq!(bump.stats().allocated(), if config::read::upwards(C) {
+        assert_eq!(bump.allocated(), if config::read::upwards(C) {
             16
         } else {
             4
@@ -71,25 +71,25 @@ up_and_down! {
 
         // should deallocate
         let vec = extra::vec![in &bump; 1, 2, 3];
-        assert_eq!(bump.stats().allocated(), 3 * 4);
+        assert_eq!(bump.allocated(), 3 * 4);
         drop(vec);
-        assert_eq!(bump.stats().allocated(), 0);
+        assert_eq!(bump.allocated(), 0);
 
         // shouldn't deallocate
         let vec = extra::vec![in bump.ref_change_config::<C_NO_DEALLOC>(); 1, 2, 3];
-        assert_eq!(bump.stats().allocated(), 3 * 4);
+        assert_eq!(bump.allocated(), 3 * 4);
         drop(vec);
-        assert_eq!(bump.stats().allocated(), 3 * 4);
+        assert_eq!(bump.allocated(), 3 * 4);
     }
 
     #[test]
     fn into_slice() {
         let bump: Bump<Global, C> = Bump::new();
         let mut vec = extra::vec![in &bump; 1, 2, 3, 4, 5];
-        assert_eq!(bump.stats().allocated(), 5 * 4);
+        assert_eq!(bump.allocated(), 5 * 4);
         vec.truncate(3);
         let slice = extra::box_into_mut(vec.into_boxed_slice());
-        assert_eq!(bump.stats().allocated(), 3 * 4);
+        assert_eq!(bump.allocated(), 3 * 4);
         _ = slice;
     }
 
@@ -97,10 +97,10 @@ up_and_down! {
     fn into_slice_without_shrink() {
         let bump: Bump<Global, C> = Bump::new();
         let mut vec = extra::vec![in &bump; 1, 2, 3, 4, 5];
-        assert_eq!(bump.stats().allocated(), 5 * 4);
+        assert_eq!(bump.allocated(), 5 * 4);
         vec.truncate(3);
         let slice = extra::box_into_mut(extra::vec_replace_allocator(vec, Unmanaged::VALUE).0.into_boxed_slice());
-        assert_eq!(bump.stats().allocated(), 5 * 4);
+        assert_eq!(bump.allocated(), 5 * 4);
         _ = slice;
     }
 
@@ -115,7 +115,7 @@ up_and_down! {
                 let mut a = Vec::<String, _>::new_in(&bump);
                 a.extend(elements.clone());
                 assert_eq!(a.capacity(), elements.len());
-                assert_eq!(bump.stats().allocated(), size_of::<String>() * elements.len());
+                assert_eq!(bump.allocated(), size_of::<String>() * elements.len());
 
                 let mut i = 0;
                 let b: Vec<Option<String>, _> = extra::vec_map(a, |s| {
@@ -128,7 +128,7 @@ up_and_down! {
                     Some(value)
                 });
                 assert_eq!(b.capacity(), elements.len());
-                assert_eq!(bump.stats().allocated(), size_of::<Option<String>>() * elements.len());
+                assert_eq!(bump.allocated(), size_of::<Option<String>>() * elements.len());
             });
 
             if panic_on == elements.len() {
@@ -137,7 +137,7 @@ up_and_down! {
                 assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
             }
 
-            assert_eq!(bump.stats().allocated(), 0);
+            assert_eq!(bump.allocated(), 0);
         }
     }
 
@@ -151,7 +151,7 @@ up_and_down! {
                 let mut a = Vec::<String, _>::new_in(&bump);
                 a.extend([1, 2, 3, 4, 5, 6].map(|i| i.to_string()));
                 assert_eq!(a.capacity(), 6);
-                assert_eq!(bump.stats().allocated(), size_of::<String>() * 6);
+                assert_eq!(bump.allocated(), size_of::<String>() * 6);
                 let b: Vec<Box<str>, _> = extra::vec_map(a, |s| {
                     if i == panic_on {
                         panic!("oh no");
@@ -162,7 +162,7 @@ up_and_down! {
                     value.into()
                 });
                 assert_eq!(b.capacity(), 9); // (6 * 3) / 2
-                assert_eq!(bump.stats().allocated(), size_of::<String>() * 6);
+                assert_eq!(bump.allocated(), size_of::<String>() * 6);
                 dbg!(b);
             });
 
@@ -174,7 +174,7 @@ up_and_down! {
 
             // The size of 6 Strings and 9 Box<str> happen to be exactly the same, which makes
             // deallocation work.
-            assert_eq!(bump.stats().allocated(), 0);
+            assert_eq!(bump.allocated(), 0);
         }
     }
 
@@ -189,7 +189,7 @@ up_and_down! {
                 let mut a = Vec::<Box<str>, _>::new_in(&bump);
                 a.extend(elements.clone());
                 assert_eq!(a.capacity(), elements.len());
-                assert_eq!(bump.stats().allocated(), size_of::<Box<str>>() * elements.len());
+                assert_eq!(bump.allocated(), size_of::<Box<str>>() * elements.len());
 
                 let mut i = 0;
                 let b: Vec<String, _> = extra::vec_map(a, |s| {
@@ -202,7 +202,7 @@ up_and_down! {
                     value
                 });
                 assert_eq!(b.capacity(), elements.len());
-                assert_eq!(bump.stats().allocated(), size_of::<Box<str>>() * elements.len() + size_of::<String>() * elements.len());
+                assert_eq!(bump.allocated(), size_of::<Box<str>>() * elements.len() + size_of::<String>() * elements.len());
             });
 
             if panic_on == elements.len() {
@@ -212,7 +212,7 @@ up_and_down! {
             }
 
             assert_eq!(
-                bump.stats().allocated(),
+                bump.allocated(),
                 if panic_on == elements.len() { size_of::<Box<str>>() * elements.len() } else { 0 },
                 "panic_on={panic_on}"
             );
@@ -230,7 +230,7 @@ up_and_down! {
                 let mut a = Vec::<String, _>::new_in(&bump);
                 a.extend(elements.clone());
                 assert_eq!(a.capacity(), elements.len());
-                assert_eq!(bump.stats().allocated(), size_of::<String>() * elements.len());
+                assert_eq!(bump.allocated(), size_of::<String>() * elements.len());
 
                 let mut i = 0;
                 let b: Vec<(), _> = extra::vec_map(a, |_| {
@@ -241,7 +241,7 @@ up_and_down! {
                     i += 1;
                 });
                 assert_eq!(b.capacity(), usize::MAX);
-                assert_eq!(bump.stats().allocated(), 0);
+                assert_eq!(bump.allocated(), 0);
             });
 
             if panic_on == elements.len() {
@@ -250,7 +250,7 @@ up_and_down! {
                 assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
             }
 
-            assert_eq!(bump.stats().allocated(), 0, "panic_on={panic_on}");
+            assert_eq!(bump.allocated(), 0, "panic_on={panic_on}");
         }
     }
 
@@ -265,7 +265,7 @@ up_and_down! {
                 let mut a = Vec::<(), _>::new_in(&bump);
                 a.extend(elements);
                 assert_eq!(a.capacity(), usize::MAX);
-                assert_eq!(bump.stats().allocated(), 0);
+                assert_eq!(bump.allocated(), 0);
 
                 let mut i = 0;
                 let b: Vec<String, _> = extra::vec_map(a, |()| {
@@ -277,7 +277,7 @@ up_and_down! {
                     "hello".into()
                 });
                 assert_eq!(b.capacity(), elements.len());
-                assert_eq!(bump.stats().allocated(), size_of::<String>() * elements.len());
+                assert_eq!(bump.allocated(), size_of::<String>() * elements.len());
             });
 
             if panic_on == elements.len() {
@@ -286,7 +286,7 @@ up_and_down! {
                 assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
             }
 
-            assert_eq!(bump.stats().allocated(), 0, "panic_on={panic_on}");
+            assert_eq!(bump.allocated(), 0, "panic_on={panic_on}");
         }
     }
 
@@ -301,7 +301,7 @@ up_and_down! {
                 let mut a = Vec::<(), _>::new_in(&bump);
                 a.extend(elements);
                 assert_eq!(a.capacity(), usize::MAX);
-                assert_eq!(bump.stats().allocated(), 0);
+                assert_eq!(bump.allocated(), 0);
 
                 let mut i = 0;
                 let b: Vec<(), _> = extra::vec_map(a, |()| {
@@ -312,7 +312,7 @@ up_and_down! {
                     i += 1;
                 });
                 assert_eq!(b.capacity(), usize::MAX);
-                assert_eq!(bump.stats().allocated(), 0);
+                assert_eq!(bump.allocated(), 0);
             });
 
             if panic_on == elements.len() {
@@ -321,7 +321,7 @@ up_and_down! {
                 assert_eq!(*result.unwrap_err().downcast::<&'static str>().unwrap(), "oh no");
             }
 
-            assert_eq!(bump.stats().allocated(), 0, "panic_on={panic_on}");
+            assert_eq!(bump.allocated(), 0, "panic_on={panic_on}");
         }
     }
 

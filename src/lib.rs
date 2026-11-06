@@ -108,20 +108,20 @@
 //! // you can use a closure
 //! bump.scoped(|mut bump| {
 //!     let hello = bump.alloc_str("hello").into_ref();
-//!     assert_eq!(bump.stats().allocated(), 5);
+//!     assert_eq!(bump.allocated(), 5);
 //!
 //!     bump.scoped(|bump| {
 //!         let world = bump.alloc_str("world").into_ref();
 //!
 //!         println!("{hello} and {world} are both live");
-//!         assert_eq!(bump.stats().allocated(), 10);
+//!         assert_eq!(bump.allocated(), 10);
 //!     });
 //!
 //!     println!("{hello} is still live");
-//!     assert_eq!(bump.stats().allocated(), 5);
+//!     assert_eq!(bump.allocated(), 5);
 //! });
 //!
-//! assert_eq!(bump.stats().allocated(), 0);
+//! assert_eq!(bump.allocated(), 0);
 //!
 //! // or you can use scope guards
 //! {
@@ -129,7 +129,7 @@
 //!     let mut bump = guard.scope();
 //!
 //!     let hello = bump.alloc_str("hello").into_ref();
-//!     assert_eq!(bump.stats().allocated(), 5);
+//!     assert_eq!(bump.allocated(), 5);
 //!
 //!     {
 //!         let mut guard = bump.scope_guard();
@@ -138,14 +138,14 @@
 //!         let world = bump.alloc_str("world").into_ref();
 //!
 //!         println!("{hello} and {world} are both live");
-//!         assert_eq!(bump.stats().allocated(), 10);
+//!         assert_eq!(bump.allocated(), 10);
 //!     }
 //!
 //!     println!("{hello} is still live");
-//!     assert_eq!(bump.stats().allocated(), 5);
+//!     assert_eq!(bump.allocated(), 5);
 //! }
 //!
-//! assert_eq!(bump.stats().allocated(), 0);
+//! assert_eq!(bump.allocated(), 0);
 //! ```
 //! You can also use the unsafe [`checkpoint`](Bump::checkpoint) api
 //! to reset the bump pointer to a previous position.
@@ -157,12 +157,12 @@
 //!
 //! {
 //!     let hello = bump.alloc_str("hello");
-//!     assert_eq!(bump.stats().allocated(), 5);
+//!     assert_eq!(bump.allocated(), 5);
 //!     # _ = hello;
 //! }
 //!
 //! unsafe { bump.reset_to(checkpoint); }
-//! assert_eq!(bump.stats().allocated(), 0);
+//! assert_eq!(bump.allocated(), 0);
 //! ```
 //! When using a `Bump(Scope)` as an allocator for collections you will find that you can no longer
 //! call `scoped` or `scope_guard` because those functions require `&mut self` which does not allow

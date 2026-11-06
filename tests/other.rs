@@ -202,17 +202,17 @@ up_and_down! {
 
         bump.scoped(|bump| {
             bump.alloc(0xDEAD_BEEF_u64).into_boxu();
-            assert_eq!(bump.stats().allocated(), 8);
+            assert_eq!(bump.allocated(), 8);
             bump.with_config::<C, ()>(|bump| {
                 bump.alloc(1u8).into_boxu();
-                assert_eq!(bump.stats().allocated(), 9);
+                assert_eq!(bump.allocated(), 9);
                 bump.alloc(2u8).into_boxu();
-                assert_eq!(bump.stats().allocated(), 10);
+                assert_eq!(bump.allocated(), 10);
             });
-            assert_eq!(bump.stats().allocated(), 16);
+            assert_eq!(bump.allocated(), 16);
         });
 
-        assert_eq!(bump.stats().allocated(), 0);
+        assert_eq!(bump.allocated(), 0);
     }
 
     #[test]
@@ -221,19 +221,19 @@ up_and_down! {
 
         {
             let bump = bump.mut_change_config::<MIN_ALIGN_8>();
-            assert_eq!(bump.stats().allocated(), 0);
+            assert_eq!(bump.allocated(), 0);
         }
 
         {
             bump.alloc(1u8).into_boxu();
             let bump = bump.mut_change_config::<MIN_ALIGN_8>();
-            assert_eq!(bump.stats().allocated(), 8);
+            assert_eq!(bump.allocated(), 8);
             bump.alloc(2u16).into_boxu();
-            assert_eq!(bump.stats().allocated(), 16);
+            assert_eq!(bump.allocated(), 16);
             bump.alloc(4u32).into_boxu();
-            assert_eq!(bump.stats().allocated(), 24);
+            assert_eq!(bump.allocated(), 24);
             bump.alloc(8u64).into_boxu();
-            assert_eq!(bump.stats().allocated(), 32);
+            assert_eq!(bump.allocated(), 32);
         }
     }
 
@@ -244,19 +244,19 @@ up_and_down! {
 
         bump.scoped(|bump| {
             let bump = bump.mut_change_config::<MIN_ALIGN_8>();
-            assert_eq!(bump.stats().allocated(), 0);
+            assert_eq!(bump.allocated(), 0);
         });
 
         bump.scoped(|bump| {
             bump.alloc(1u8).into_boxu();
             let bump = bump.mut_change_config::<MIN_ALIGN_8>();
-            assert_eq!(bump.stats().allocated(), 8);
+            assert_eq!(bump.allocated(), 8);
             bump.alloc(2u16).into_boxu();
-            assert_eq!(bump.stats().allocated(), 16);
+            assert_eq!(bump.allocated(), 16);
             bump.alloc(4u32).into_boxu();
-            assert_eq!(bump.stats().allocated(), 24);
+            assert_eq!(bump.allocated(), 24);
             bump.alloc(8u64).into_boxu();
-            assert_eq!(bump.stats().allocated(), 32);
+            assert_eq!(bump.allocated(), 32);
         });
     }
 
@@ -519,22 +519,22 @@ up_and_down! {
 
         assert_eq!(&*lhs, [1, 2, 3]);
         assert_eq!(&*rhs, [4, 5, 6]);
-        assert_eq!(bump.stats().allocated(), 6 * 4);
+        assert_eq!(bump.allocated(), 6 * 4);
 
         drop(extra::box_replace_allocator(lhs, &bump));
 
         if config::read::upwards(C) {
-            assert_eq!(bump.stats().allocated(), 6 * 4);
+            assert_eq!(bump.allocated(), 6 * 4);
         } else {
-            assert_eq!(bump.stats().allocated(), 3 * 4);
+            assert_eq!(bump.allocated(), 3 * 4);
         }
 
         drop(extra::box_replace_allocator(rhs, &bump));
 
         if config::read::upwards(C) {
-            assert_eq!(bump.stats().allocated(), 3 * 4);
+            assert_eq!(bump.allocated(), 3 * 4);
         } else {
-            assert_eq!(bump.stats().allocated(), 0);
+            assert_eq!(bump.allocated(), 0);
         }
     }
 
@@ -548,22 +548,22 @@ up_and_down! {
 
         assert_eq!(&*lhs, [1, 2, 3]);
         assert_eq!(&*rhs, [4, 5, 6]);
-        assert_eq!(bump.stats().allocated(), 6 * 4);
+        assert_eq!(bump.allocated(), 6 * 4);
 
         drop(extra::box_replace_allocator(rhs, &bump));
 
         if config::read::upwards(C) {
-            assert_eq!(bump.stats().allocated(), 3 * 4);
+            assert_eq!(bump.allocated(), 3 * 4);
         } else {
-            assert_eq!(bump.stats().allocated(), 6 * 4);
+            assert_eq!(bump.allocated(), 6 * 4);
         }
 
         drop(extra::box_replace_allocator(lhs, &bump));
 
         if config::read::upwards(C) {
-            assert_eq!(bump.stats().allocated(), 0);
+            assert_eq!(bump.allocated(), 0);
         } else {
-            assert_eq!(bump.stats().allocated(), 3 * 4);
+            assert_eq!(bump.allocated(), 3 * 4);
         }
     }
 
@@ -636,19 +636,19 @@ up_and_down! {
     #[test]
     fn generic_bump_scope() {
         fn foo<A: Allocator, const C: BumpConfig>(bump: &mut BumpScope<A, C>) {
-            assert_eq!(bump.stats().allocated(), 0);
+            assert_eq!(bump.allocated(), 0);
             bump.alloc_str("good").into_boxu();
-            assert_eq!(bump.stats().allocated(), 4);
+            assert_eq!(bump.allocated(), 4);
             bump.scoped(|bump| {
                 bump.alloc_str("day").into_boxu();
-                assert_eq!(bump.stats().allocated(), 7);
+                assert_eq!(bump.allocated(), 7);
                 bump.scoped(|bump| {
                     bump.alloc_str("world").into_boxu();
-                    assert_eq!(bump.stats().allocated(), 12);
+                    assert_eq!(bump.allocated(), 12);
                 });
-                assert_eq!(bump.stats().allocated(), 7);
+                assert_eq!(bump.allocated(), 7);
             });
-            assert_eq!(bump.stats().allocated(), 4);
+            assert_eq!(bump.allocated(), 4);
         }
 
         let mut bump: Bump = Bump::new();

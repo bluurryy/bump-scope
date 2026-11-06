@@ -67,24 +67,24 @@ up_and_down! {
 
         let checkpoint_unallocated = bump.checkpoint();
         assert_eq!(bump.stats().count(), 0);
-        assert_eq!(bump.stats().allocated(), 0);
+        assert_eq!(bump.allocated(), 0);
 
         bump.alloc_str("hello").into_boxu();
         let checkpoint_hello = bump.checkpoint();
         assert_eq!(bump.stats().count(), 1);
-        assert_eq!(bump.stats().allocated(), 5);
+        assert_eq!(bump.allocated(), 5);
 
         bump.alloc_str("world").into_boxu();
         assert_eq!(bump.stats().count(), 1);
-        assert_eq!(bump.stats().allocated(), 10);
+        assert_eq!(bump.allocated(), 10);
 
         unsafe { bump.reset_to(checkpoint_hello) };
         assert_eq!(bump.stats().count(), 1);
-        assert_eq!(bump.stats().allocated(), 5);
+        assert_eq!(bump.allocated(), 5);
 
         unsafe { bump.reset_to(checkpoint_unallocated) };
         assert_eq!(bump.stats().count(), 1);
-        assert_eq!(bump.stats().allocated(), 0);
+        assert_eq!(bump.allocated(), 0);
     }
 
     #[test]

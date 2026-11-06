@@ -18,17 +18,17 @@ up_and_down! {
         let vec1: Vec<u8, _> = extra::vec![in &bump; 1, 2, 3];
         let vec2: Vec<u8, _> = extra::vec![in &bump; 4, 5, 6];
 
-        assert_eq!(bump.stats().allocated(), 6);
+        assert_eq!(bump.allocated(), 6);
 
         bump.claim().scoped(|bump| {
             let mut both = Vec::new_in(&bump);
             both.extend(vec1.iter().copied());
             both.extend(vec2.iter().copied());
             assert_eq!(both, [1, 2, 3, 4, 5, 6]);
-            assert_eq!(bump.stats().allocated(), 6 + both.capacity());
+            assert_eq!(bump.allocated(), 6 + both.capacity());
         });
 
-        assert_eq!(bump.stats().allocated(), 6);
+        assert_eq!(bump.allocated(), 6);
     }
 
     #[test]
@@ -38,7 +38,7 @@ up_and_down! {
         let vec1: Vec<u8, _> = extra::vec![in &bump; 1, 2, 3];
         let vec2: Vec<u8, _> = extra::vec![in &bump; 4, 5, 6];
 
-        assert_eq!(bump.stats().allocated(), 6);
+        assert_eq!(bump.allocated(), 6);
 
         {
             let mut guard = bump.claim();
@@ -49,10 +49,10 @@ up_and_down! {
             both.extend(vec1.iter().copied());
             both.extend(vec2.iter().copied());
             assert_eq!(both, [1, 2, 3, 4, 5, 6]);
-            assert_eq!(bump.stats().allocated(), 6 + both.capacity());
+            assert_eq!(bump.allocated(), 6 + both.capacity());
         }
 
-        assert_eq!(bump.stats().allocated(), 6);
+        assert_eq!(bump.allocated(), 6);
     }
 
     #[test]

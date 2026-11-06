@@ -25,7 +25,7 @@ up_and_down! {
         bump.alloc_slice_fill(10, ZST).into_boxu();
         bump.alloc_slice_fill_with(10, || ZST).into_boxu();
 
-        assert_eq!(bump.stats().allocated(), 0);
+        assert_eq!(bump.allocated(), 0);
     }
 
     #[test]
@@ -39,7 +39,7 @@ up_and_down! {
         bump.alloc_slice_fill(0, &"hello".to_string()).into_boxu();
         bump.alloc_slice_fill_with(0, String::default).into_boxu();
 
-        assert_eq!(bump.stats().allocated(), 0);
+        assert_eq!(bump.allocated(), 0);
     }
 
     #[test]

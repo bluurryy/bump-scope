@@ -118,17 +118,17 @@ up_and_down! {
         let bump: Bump<&A, C> = Bump::with_size_in(512, &base);
         bump.allocate(Layout::new::<u8>()).unwrap();
 
-        assert_eq!(bump.stats().allocated(), 1);
+        assert_eq!(bump.allocated(), 1);
 
         // allocate something and then shrink it with a greater alignment
         let old_layout = Layout::from_size_align(3, 1).unwrap();
         let new_layout = Layout::from_size_align(2, 2048).unwrap();
 
         let old_ptr = bump.allocate(old_layout).unwrap().cast::<u8>();
-        assert_eq!(bump.stats().allocated(), 4);
+        assert_eq!(bump.allocated(), 4);
 
         catch_unwind(|| unsafe { bump.shrink(old_ptr, old_layout, new_layout) }).unwrap_err();
-        assert_eq!(bump.stats().allocated(), 4);
+        assert_eq!(bump.allocated(), 4);
     }
 }
 

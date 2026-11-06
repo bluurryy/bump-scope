@@ -51,7 +51,7 @@ up_and_down! {
         bump.allocate(Layout::array::<u8>(bump.stats().remaining()).unwrap()).unwrap();
         assert_eq!(bump.stats().remaining(), 0);
         assert_eq!(bump.stats().count(), 1);
-        let start_allocated = bump.stats().allocated();
+        let start_allocated = bump.allocated();
 
         macro_rules! must_dangle {
             ($($expr:expr,)*) => {
@@ -82,7 +82,7 @@ up_and_down! {
 
         // this mustn't have allocated another chunk
         assert_eq!(bump.stats().count(), 1);
-        assert_eq!(bump.stats().allocated(), start_allocated);
+        assert_eq!(bump.allocated(), start_allocated);
     }
 
     #[test]
@@ -122,7 +122,7 @@ up_and_down! {
 
         // this must have allocate a chunk (but takes up no capacity)
         assert_eq!(bump.stats().count(), 1);
-        assert_eq!(bump.stats().allocated(), 0);
+        assert_eq!(bump.allocated(), 0);
     }
 
     #[test]
@@ -133,14 +133,14 @@ up_and_down! {
             let new_layout = Layout::from_size_align(1, 4).unwrap();
             let new_ptr = bump.allocate(new_layout).unwrap();
             assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
-            assert_eq!(bump.stats().allocated(), if config::read::upwards(C) { 1 } else { 4 });
+            assert_eq!(bump.allocated(), if config::read::upwards(C) { 1 } else { 4 });
             let old_layout = new_layout;
             let old_ptr = new_ptr;
 
             // grow in place with same align (same size)
             let new_layout = Layout::from_size_align(1, 4).unwrap();
             let new_ptr = bump.grow(old_ptr.cast(), old_layout, new_layout).unwrap();
-            assert_eq!(bump.stats().allocated(), if config::read::upwards(C) { 1 } else { 4 });
+            assert_eq!(bump.allocated(), if config::read::upwards(C) { 1 } else { 4 });
             assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
             assert_eq!(old_ptr.addr(), new_ptr.addr());
             let old_layout = new_layout;
@@ -149,7 +149,7 @@ up_and_down! {
             // grow in place with same align
             let new_layout = Layout::from_size_align(2, 4).unwrap();
             let new_ptr = bump.grow(old_ptr.cast(), old_layout, new_layout).unwrap();
-            assert_eq!(bump.stats().allocated(), if config::read::upwards(C) { 2 } else { 8 });
+            assert_eq!(bump.allocated(), if config::read::upwards(C) { 2 } else { 8 });
             assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
             assert_eq_ne!(config::read::upwards(C), old_ptr.addr(), new_ptr.addr());
             let old_layout = new_layout;
@@ -158,7 +158,7 @@ up_and_down! {
             // grow in place with greater align (same size)
             let new_layout = Layout::from_size_align(2, 8).unwrap();
             let new_ptr = bump.grow(old_ptr.cast(), old_layout, new_layout).unwrap();
-            assert_eq!(bump.stats().allocated(), if config::read::upwards(C) { 2 } else { 8 });
+            assert_eq!(bump.allocated(), if config::read::upwards(C) { 2 } else { 8 });
             assert_eq!(new_ptr.cast::<u8>().addr().get() % 8, 0);
             assert_eq!(old_ptr.addr(), new_ptr.addr());
             let old_layout = new_layout;
@@ -167,7 +167,7 @@ up_and_down! {
             // grow in place with greater align
             let new_layout = Layout::from_size_align(3, 16).unwrap();
             let new_ptr = bump.grow(old_ptr.cast(), old_layout, new_layout).unwrap();
-            assert_eq!(bump.stats().allocated(), if config::read::upwards(C) { 3 } else { 16 });
+            assert_eq!(bump.allocated(), if config::read::upwards(C) { 3 } else { 16 });
             assert_eq!(new_ptr.cast::<u8>().addr().get() % 8, 0);
             assert_eq_ne!(config::read::upwards(C), old_ptr.addr(), new_ptr.addr());
             let old_layout = new_layout;
@@ -176,7 +176,7 @@ up_and_down! {
             // grow in place with smaller align (same size)
             let new_layout = Layout::from_size_align(3, 8).unwrap();
             let new_ptr = bump.grow(old_ptr.cast(), old_layout, new_layout).unwrap();
-            assert_eq!(bump.stats().allocated(), if config::read::upwards(C) { 3 } else { 16 });
+            assert_eq!(bump.allocated(), if config::read::upwards(C) { 3 } else { 16 });
             assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
             assert_eq!(old_ptr.addr(), new_ptr.addr());
             let old_layout = new_layout;
@@ -185,7 +185,7 @@ up_and_down! {
             // grow in place with smaller align
             let new_layout = Layout::from_size_align(4, 4).unwrap();
             let new_ptr = bump.grow(old_ptr.cast(), old_layout, new_layout).unwrap();
-            assert_eq!(bump.stats().allocated(), if config::read::upwards(C) { 4 } else { 20 });
+            assert_eq!(bump.allocated(), if config::read::upwards(C) { 4 } else { 20 });
             assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
             assert_eq_ne!(config::read::upwards(C), old_ptr.addr(), new_ptr.addr());
             let old_layout = new_layout;
@@ -193,12 +193,12 @@ up_and_down! {
 
             // allocate so the next grow will be out of place
             bump.allocate(Layout::new::<u8>()).unwrap();
-            assert_eq!(bump.stats().allocated(), if config::read::upwards(C) { 5 } else { 21 });
+            assert_eq!(bump.allocated(), if config::read::upwards(C) { 5 } else { 21 });
 
             // grow out of place with same align
             let new_layout = Layout::from_size_align(4, 4).unwrap();
             let new_ptr = bump.grow(old_ptr.cast(), old_layout, new_layout).unwrap();
-            assert_eq!(bump.stats().allocated(), if config::read::upwards(C) { 12 } else { 28 });
+            assert_eq!(bump.allocated(), if config::read::upwards(C) { 12 } else { 28 });
             assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
             assert_ne!(old_ptr.addr(), new_ptr.addr());
             let old_layout = new_layout;
@@ -210,7 +210,7 @@ up_and_down! {
             let new_layout = Layout::from_size_align(1024, 4).unwrap();
             let new_ptr = bump.grow(old_ptr.cast(), old_layout, new_layout).unwrap();
             assert_eq!(
-                bump.stats().allocated(),
+                bump.allocated(),
                 bump.stats().small_to_big().next().unwrap().capacity() + 1024
             );
             assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
@@ -230,14 +230,14 @@ up_and_down! {
             let new_layout = Layout::from_size_align(15, 4).unwrap();
             let new_ptr = bump.allocate(new_layout).unwrap();
             assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
-            assert_eq!(bump.stats().allocated(), if config::read::upwards(C) { 15 } else { 16 });
+            assert_eq!(bump.allocated(), if config::read::upwards(C) { 15 } else { 16 });
             let old_layout = new_layout;
             let old_ptr = new_ptr;
 
             // shrink in place with same align (same size)
             let new_layout = Layout::from_size_align(15, 4).unwrap();
             let new_ptr = bump.shrink(old_ptr.cast(), old_layout, new_layout).unwrap();
-            assert_eq!(bump.stats().allocated(), if config::read::upwards(C) { 15 } else { 16 });
+            assert_eq!(bump.allocated(), if config::read::upwards(C) { 15 } else { 16 });
             assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
             assert_eq!(old_ptr.addr(), new_ptr.addr());
             let old_layout = new_layout;
@@ -246,7 +246,7 @@ up_and_down! {
             // shrink in place with same align
             let new_layout = Layout::from_size_align(11, 4).unwrap();
             let new_ptr = bump.shrink(old_ptr.cast(), old_layout, new_layout).unwrap();
-            assert_eq!(bump.stats().allocated(), if config::read::upwards(C) { 11 } else { 12 });
+            assert_eq!(bump.allocated(), if config::read::upwards(C) { 11 } else { 12 });
             assert_eq!(new_ptr.cast::<u8>().addr().get() % 4, 0);
             assert_eq_ne!(config::read::upwards(C), old_ptr.addr(), new_ptr.addr());
             let old_layout = new_layout;
@@ -255,7 +255,7 @@ up_and_down! {
             // shrink in place with smaller align (same size)
             let new_layout = Layout::from_size_align(11, 2).unwrap();
             let new_ptr = bump.shrink(old_ptr.cast(), old_layout, new_layout).unwrap();
-            assert_eq!(bump.stats().allocated(), if config::read::upwards(C) { 11 } else { 12 });
+            assert_eq!(bump.allocated(), if config::read::upwards(C) { 11 } else { 12 });
             assert_eq!(new_ptr.cast::<u8>().addr().get() % 2, 0);
             assert_eq!(old_ptr.addr(), new_ptr.addr());
             let old_layout = new_layout;
@@ -264,7 +264,7 @@ up_and_down! {
             // shrink in place with smaller align
             let new_layout = Layout::from_size_align(10, 1).unwrap();
             let new_ptr = bump.shrink(old_ptr.cast(), old_layout, new_layout).unwrap();
-            assert_eq!(bump.stats().allocated(), if config::read::upwards(C) { 10 } else { 11 });
+            assert_eq!(bump.allocated(), if config::read::upwards(C) { 10 } else { 11 });
             assert_eq_ne!(config::read::upwards(C), old_ptr.addr(), new_ptr.addr());
             let old_layout = new_layout;
             let old_ptr = new_ptr;
@@ -272,7 +272,7 @@ up_and_down! {
             // shrink in place with greater align (same size)
             let new_layout = Layout::from_size_align(10, 8).unwrap();
             let new_ptr = bump.shrink(old_ptr.cast(), old_layout, new_layout).unwrap();
-            assert_eq!(bump.stats().allocated(), if config::read::upwards(C) { 10 } else { 16 });
+            assert_eq!(bump.allocated(), if config::read::upwards(C) { 10 } else { 16 });
             assert_eq!(new_ptr.cast::<u8>().addr().get() % 8, 0);
             assert_eq_ne!(config::read::upwards(C), old_ptr.addr(), new_ptr.addr());
             let old_layout = new_layout;
@@ -281,7 +281,7 @@ up_and_down! {
             // shrink in place with greater align
             let new_layout = Layout::from_size_align(9, 16).unwrap();
             let new_ptr = bump.shrink(old_ptr.cast(), old_layout, new_layout).unwrap();
-            assert_eq!(bump.stats().allocated(), if config::read::upwards(C) { 9 } else { 16 });
+            assert_eq!(bump.allocated(), if config::read::upwards(C) { 9 } else { 16 });
             assert_eq!(new_ptr.cast::<u8>().addr().get() % 16, 0);
             assert_eq!(old_ptr.addr(), new_ptr.addr());
             let old_layout = new_layout;
@@ -295,7 +295,7 @@ up_and_down! {
             assert_eq!(bump.stats().count(), 2);
             dbg!(&bump);
             dbg!(&bump.stats().small_to_big().collect::<Vec<_>>());
-            assert_eq!(bump.stats().allocated(), {
+            assert_eq!(bump.allocated(), {
                 let disalignment_offset = 16;
                 let header_size = 8 * 6;
                 let chunks = bump.stats().small_to_big().collect::<Vec<_>>();

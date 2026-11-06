@@ -30,11 +30,11 @@ use crate::panic_on_error;
 /// let bump: Bump = Bump::new();
 ///
 /// let a = bump.alloc_iter_exact([0, 1, 2, 3]).into_box().into_vec();
-/// assert_eq!(bump.stats().allocated(), 4 * 4);
+/// assert_eq!(bump.allocated(), 4 * 4);
 ///
 /// let b = extra::vec_map(a, NonZero::new);
 /// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2), Some(3)]");
-/// assert_eq!(bump.stats().allocated(), 4 * 4); // allocation was reused!
+/// assert_eq!(bump.allocated(), 4 * 4); // allocation was reused!
 /// ```
 ///
 /// Mapping to a type with a smaller alignment and size (no allocation, capacity may grow):
@@ -45,11 +45,11 @@ use crate::panic_on_error;
 ///
 /// let vec_a: Vec<u32, _> = bump.alloc_iter_exact([1, 2, 3, 4]).into_box().into_vec();
 /// assert_eq!(vec_a.capacity(), 4);
-/// assert_eq!(bump.stats().allocated(), 4 * 4);
+/// assert_eq!(bump.allocated(), 4 * 4);
 ///
 /// let vec_b: Vec<u16, _> = extra::vec_map(vec_a, |i| i as u16);
 /// assert_eq!(vec_b.capacity(), 8);
-/// assert_eq!(bump.stats().allocated(), 4 * 4);
+/// assert_eq!(bump.allocated(), 4 * 4);
 /// ```
 ///
 /// Mapping to a type with a higher alignment or size will allocate:
@@ -60,11 +60,11 @@ use crate::panic_on_error;
 ///
 /// let vec_a: Vec<u16, _> = bump.alloc_iter_exact([1, 2, 3, 4]).into_box().into_vec();
 /// assert_eq!(vec_a.capacity(), 4);
-/// assert_eq!(bump.stats().allocated(), 4 * 2);
+/// assert_eq!(bump.allocated(), 4 * 2);
 ///
 /// let vec_b: Vec<u32, _> = extra::vec_map(vec_a, |i| i as u32);
 /// assert_eq!(vec_b.capacity(), 4);
-/// assert_eq!(bump.stats().allocated(), 4 * 2 + 4 * 4);
+/// assert_eq!(bump.allocated(), 4 * 2 + 4 * 4);
 /// ```
 #[inline]
 #[cfg(feature = "panic-on-alloc")]
@@ -89,11 +89,11 @@ where
 /// let bump: Bump = Bump::new();
 ///
 /// let a = bump.try_alloc_iter_exact([0, 1, 2, 3])?.into_box().into_vec();
-/// assert_eq!(bump.stats().allocated(), 4 * 4);
+/// assert_eq!(bump.allocated(), 4 * 4);
 ///
 /// let b = extra::vec_try_map(a, NonZero::new)?;
 /// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2), Some(3)]");
-/// assert_eq!(bump.stats().allocated(), 4 * 4); // allocation was reused!
+/// assert_eq!(bump.allocated(), 4 * 4); // allocation was reused!
 /// # Ok::<(), ::core::alloc::AllocError>(())
 /// ```
 ///
@@ -105,11 +105,11 @@ where
 ///
 /// let vec_a: Vec<u32, _> = bump.try_alloc_iter_exact([1, 2, 3, 4])?.into_box().into_vec();
 /// assert_eq!(vec_a.capacity(), 4);
-/// assert_eq!(bump.stats().allocated(), 4 * 4);
+/// assert_eq!(bump.allocated(), 4 * 4);
 ///
 /// let vec_b: Vec<u16, _> = extra::vec_try_map(vec_a, |i| i as u16)?;
 /// assert_eq!(vec_b.capacity(), 8);
-/// assert_eq!(bump.stats().allocated(), 4 * 4);
+/// assert_eq!(bump.allocated(), 4 * 4);
 /// # Ok::<(), ::core::alloc::AllocError>(())
 /// ```
 ///
@@ -121,11 +121,11 @@ where
 ///
 /// let vec_a: Vec<u16, _> = bump.try_alloc_iter_exact([1, 2, 3, 4])?.into_box().into_vec();
 /// assert_eq!(vec_a.capacity(), 4);
-/// assert_eq!(bump.stats().allocated(), 4 * 2);
+/// assert_eq!(bump.allocated(), 4 * 2);
 ///
 /// let vec_b: Vec<u32, _> = extra::vec_try_map(vec_a, |i| i as u32)?;
 /// assert_eq!(vec_b.capacity(), 4);
-/// assert_eq!(bump.stats().allocated(), 4 * 2 + 4 * 4);
+/// assert_eq!(bump.allocated(), 4 * 2 + 4 * 4);
 /// # Ok::<(), ::core::alloc::AllocError>(())
 /// ```
 #[inline]
@@ -149,11 +149,11 @@ where
 /// let bump: Bump = Bump::new();
 ///
 /// let a = bump.alloc_slice_copy(&[0, 1, 2]).into_box();
-/// assert_eq!(bump.stats().allocated(), 12);
+/// assert_eq!(bump.allocated(), 12);
 ///
 /// let b = extra::boxed_slice_map(a, NonZero::new);
 /// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2)]");
-/// assert_eq!(bump.stats().allocated(), 12); // allocation was reused!
+/// assert_eq!(bump.allocated(), 12); // allocation was reused!
 /// ```
 ///
 /// Mapping to a type with a smaller alignment and size:
@@ -162,11 +162,11 @@ where
 /// let bump: Bump = Bump::new();
 ///
 /// let a: Box<[u32], _> = bump.alloc_slice_copy(&[0, 1, 2]).into_box();
-/// assert_eq!(bump.stats().allocated(), 12);   
+/// assert_eq!(bump.allocated(), 12);   
 ///
 /// let b: Box<[u16], _> = extra::boxed_slice_map(a, |i| i as u16);
 /// assert_eq!(&*b, [0, 1, 2]);
-/// assert_eq!(bump.stats().allocated(), 6); // allocation was reused and shrunk!
+/// assert_eq!(bump.allocated(), 6); // allocation was reused and shrunk!
 /// ```
 ///
 /// Mapping to a type with a greater alignment will allocate:
@@ -175,11 +175,11 @@ where
 /// let bump: Bump = Bump::new();
 ///
 /// let a: Box<[[u8; 4]], _> = bump.alloc_slice_copy(&[[0, 1, 2, 3]]).into_box();
-/// assert_eq!(bump.stats().allocated(), 4);
+/// assert_eq!(bump.allocated(), 4);
 ///
 /// let b: Box<[u32], _> = extra::boxed_slice_map(a, u32::from_le_bytes);
 /// assert_eq!(b[0], 50462976);
-/// assert_eq!(bump.stats().allocated(), 8); // new allocation
+/// assert_eq!(bump.allocated(), 8); // new allocation
 /// ```
 ///
 /// Mapping to a type with a greater size will allocate:
@@ -188,11 +188,11 @@ where
 /// let bump: Bump = Bump::new();
 ///
 /// let a: Box<[u32], _> = bump.alloc_slice_copy(&[42]).into_box();
-/// assert_eq!(bump.stats().allocated(), 4);
+/// assert_eq!(bump.allocated(), 4);
 ///
 /// let b: Box<[[u32; 2]], _> = extra::boxed_slice_map(a, |i| [i; 2]);
 /// assert_eq!(&*b, [[42, 42]]);
-/// assert_eq!(bump.stats().allocated(), 12); // new allocation
+/// assert_eq!(bump.allocated(), 12); // new allocation
 /// ```
 #[inline]
 #[cfg(feature = "panic-on-alloc")]
@@ -216,11 +216,11 @@ where
 /// let bump: Bump = Bump::new();
 ///
 /// let a = bump.alloc_slice_copy(&[0, 1, 2]).into_box();
-/// assert_eq!(bump.stats().allocated(), 12);
+/// assert_eq!(bump.allocated(), 12);
 ///
 /// let b = extra::boxed_slice_try_map(a, NonZero::new)?;
 /// assert_eq!(format!("{b:?}"), "[None, Some(1), Some(2)]");
-/// assert_eq!(bump.stats().allocated(), 12); // allocation was reused!
+/// assert_eq!(bump.allocated(), 12); // allocation was reused!
 /// Ok::<(), core::alloc::AllocError>(())
 /// ```
 ///
@@ -230,11 +230,11 @@ where
 /// let bump: Bump = Bump::new();
 ///
 /// let a: Box<[u32], _> = bump.try_alloc_slice_copy(&[0, 1, 2])?.into_box();
-/// assert_eq!(bump.stats().allocated(), 12);   
+/// assert_eq!(bump.allocated(), 12);   
 ///
 /// let b: Box<[u16], _> = extra::boxed_slice_try_map(a, |i| i as u16)?;
 /// assert_eq!(&*b, [0, 1, 2]);
-/// assert_eq!(bump.stats().allocated(), 6); // allocation was reused and shrunk!
+/// assert_eq!(bump.allocated(), 6); // allocation was reused and shrunk!
 /// Ok::<(), core::alloc::AllocError>(())
 /// ```
 ///
@@ -244,11 +244,11 @@ where
 /// let bump: Bump = Bump::new();
 ///
 /// let a: Box<[[u8; 4]], _> = bump.try_alloc_slice_copy(&[[0, 1, 2, 3]])?.into_box();
-/// assert_eq!(bump.stats().allocated(), 4);
+/// assert_eq!(bump.allocated(), 4);
 ///
 /// let b: Box<[u32], _> = extra::boxed_slice_try_map(a, u32::from_le_bytes)?;
 /// assert_eq!(b[0], 50462976);
-/// assert_eq!(bump.stats().allocated(), 8); // new allocation
+/// assert_eq!(bump.allocated(), 8); // new allocation
 /// Ok::<(), core::alloc::AllocError>(())
 /// ```
 ///
@@ -258,11 +258,11 @@ where
 /// let bump: Bump = Bump::new();
 ///
 /// let a: Box<[u32], _> = bump.try_alloc_slice_copy(&[42])?.into_box();
-/// assert_eq!(bump.stats().allocated(), 4);
+/// assert_eq!(bump.allocated(), 4);
 ///
 /// let b: Box<[[u32; 2]], _> = extra::boxed_slice_try_map(a, |i| [i; 2])?;
 /// assert_eq!(&*b, [[42, 42]]);
-/// assert_eq!(bump.stats().allocated(), 12); // new allocation
+/// assert_eq!(bump.allocated(), 12); // new allocation
 /// Ok::<(), core::alloc::AllocError>(())
 /// ```
 #[inline]

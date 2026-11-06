@@ -72,7 +72,7 @@ up_and_down! {
         assert_eq!(bump.stats().count(), 0);
         assert_eq!(bump.stats().size(), 0);
         assert_eq!(bump.stats().capacity(), 0);
-        assert_eq!(bump.stats().allocated(), 0);
+        assert_eq!(bump.allocated(), 0);
         assert_eq!(bump.stats().remaining(), 0);
         assert_stats_match(bump.stats(), bump.any_stats());
         test_base_allocator(
@@ -239,8 +239,8 @@ fn test_base_allocator<A, const C: BumpConfig>(
         bump.stats().capacity(),
         first_chunk_size_with_malloc_overhead - MALLOC_OVERHEAD_SIZE - first_allocated_chunk_header_size
     );
-    assert_eq!(bump.stats().allocated(), 1);
-    assert_eq!(bump.stats().remaining(), bump.stats().capacity() - bump.stats().allocated());
+    assert_eq!(bump.allocated(), 1);
+    assert_eq!(bump.stats().remaining(), bump.stats().capacity() - bump.allocated());
     assert_stats_match(bump.stats(), bump.any_stats());
 
     allocate_another_chunk(&bump, 1);
