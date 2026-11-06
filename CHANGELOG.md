@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Use the now stable `core` allocator api
 - Any `Allocator` can now be used as the base allocator
+- Add `.allocated()` to `BumpAllocator` as a shorthand for `.stats().allocated()`
 
 ### Changed
 

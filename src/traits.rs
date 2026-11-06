@@ -2209,6 +2209,15 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     #[must_use]
     fn is_claimed(&self) -> bool;
 
+    /// Returns the amount of allocated bytes.
+    /// This includes padding and wasted space due to reallocations.
+    ///
+    /// Equivalent to `.[stats]\().[allocated]\()`.
+    ///
+    /// [stats]: Bump::stats
+    /// [allocated]: crate::stats::Stats::allocated
+    fn allocated(&self) -> usize;
+
     /// FIXME
     fn any_stats(&self) -> AnyStats<'_>;
 
@@ -2278,6 +2287,11 @@ unsafe impl<T: BumpAllocator> BumpAllocator for &T {
     }
 
     #[inline(always)]
+    fn allocated(&self) -> usize {
+        T::allocated(self)
+    }
+
+    #[inline(always)]
     fn any_stats(&self) -> AnyStats<'_> {
         T::any_stats(self)
     }
@@ -2297,6 +2311,11 @@ unsafe impl<T: BumpAllocator> BumpAllocator for &mut T {
     #[inline(always)]
     fn is_claimed(&self) -> bool {
         T::is_claimed(self)
+    }
+
+    #[inline(always)]
+    fn allocated(&self) -> usize {
+        T::allocated(self)
     }
 
     #[inline(always)]
@@ -2322,6 +2341,11 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for Bump<A, C> {
     }
 
     #[inline(always)]
+    fn allocated(&self) -> usize {
+        self.stats().allocated()
+    }
+
+    #[inline(always)]
     fn any_stats(&self) -> AnyStats<'_> {
         self.stats().into()
     }
@@ -2344,6 +2368,11 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for BumpScope<'_, A
     }
 
     #[inline(always)]
+    fn allocated(&self) -> usize {
+        self.stats().allocated()
+    }
+
+    #[inline(always)]
     fn any_stats(&self) -> AnyStats<'_> {
         self.stats().into()
     }
@@ -2363,6 +2392,11 @@ unsafe impl BumpAllocator for Unmanaged<'_> {
     #[inline(always)]
     fn is_claimed(&self) -> bool {
         false
+    }
+
+    #[inline(always)]
+    fn allocated(&self) -> usize {
+        0
     }
 
     #[inline(always)]
