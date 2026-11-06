@@ -965,20 +965,15 @@ unsafe impl BumpAllocatorPrivate for Unmanaged<'_> {
 ///
 /// Provides methods for [`Bump`] and [`BumpScope`].
 ///
-/// # Guarantees
-/// This trait provides additional methods and guarantees on top of an [`Allocator`].
-///
-/// A `BumpAllocatorCore` has laxer safety conditions when using `Allocator` methods:
-/// - You can call `grow*`, `shrink` and `deallocate` with pointers that came from a different `BumpAllocator`.
+/// # Safety
+/// This trait provides additional guarantees on top of [`Allocator`] and laxer safety conditions for its methods:
+/// - You can call `grow*`, `shrink` and `deallocate` with pointers from a non-[equivalent] `BumpAllocator`.
+///   - used for [`extra::box_replace_allocator`] and [`extra::vec_replace_allocator`]
 /// - Memory blocks can be split.
+///   - used for [`extra::vec_split_off`], [`extra::boxed_slice_split_off`], [`extra::boxed_str_split_off`]
 /// - `shrink` never errors unless the new alignment is greater
 ///
-/// Those invariants are used here:
-/// - Handling of foreign pointers is used for [`extra::box_replace_allocator`] and [`extra::vec_replace_allocator`]
-/// - Memory block splitting is used for [`extra::vec_split_off`]
-///
-/// # Safety
-/// An implementor supports the guarantees above.
+/// [equivalent]: https://doc.rust-lang.org/nightly/std/alloc/trait.Allocator.html#equivalent-allocators
 #[expect(private_bounds)]
 pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// Allocate an object.
@@ -2712,7 +2707,7 @@ unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for BumpScope<'_
 pub unsafe trait MutBumpAllocatorScope<'a>: MutBumpAllocator + BumpAllocatorScope<'a> + BumpAllocatorPrivate {}
 unsafe impl<'a, T: MutBumpAllocator + BumpAllocatorScope<'a>> MutBumpAllocatorScope<'a> for T {}
 
-/// A trait enabling you to be generic over `Bump` and `BumpScope`.
+/// Provides `as_bump_scope` to be generic over `Bump` and `BumpScope`.
 ///
 /// # Examples
 /// ```
@@ -2752,7 +2747,7 @@ impl<A: Allocator, const C: BumpConfig> AsBumpScope<A, C> for BumpScope<'_, A, C
     }
 }
 
-/// A trait enabling you to be generic over `Bump` and `BumpScope`.
+/// Provides `as_mut_bump_scope` to be generic over `Bump` and `BumpScope`.
 ///
 /// # Examples
 /// ```
