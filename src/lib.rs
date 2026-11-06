@@ -400,13 +400,13 @@ unsafe impl Allocator for NoopAllocator {
 }
 
 #[cold]
-#[inline(never)]
+#[cfg_attr(not(panic = "immediate-abort"), inline(never))]
 fn cant_change_config_due_to_const_constructible() -> ! {
     panic!("can't change config: `const_constructible` becomes false and `self` has no chunks");
 }
 
 #[cold]
-#[inline(never)]
+#[cfg_attr(not(panic = "immediate-abort"), inline(never))]
 fn cant_change_config_due_to_claimable() -> ! {
     panic!("can't change config: `claimable` becomes false and `self.is_claimed()`");
 }

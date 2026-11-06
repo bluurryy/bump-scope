@@ -172,7 +172,7 @@ impl<const C: BumpConfig, A> RawBump<C, A> {
         assert!(config!(claimable), "`claim` is only available when `claimable` is enabled");
 
         #[cold]
-        #[inline(never)]
+        #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
         fn already_claimed() {
             panic!("bump allocator is already claimed");
         }

@@ -1168,8 +1168,8 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// assert_eq!(object_clone(), "Hello, world!");
     /// ```
     #[inline(never)]
-    #[cfg(feature = "panic-on-alloc")]
     #[cfg(feature = "nightly")]
+    #[cfg(feature = "panic-on-alloc")]
     fn alloc_clone<T: CloneToUninit + ?Sized>(&self, value: &T) -> BumpAllocation<T, &Self> {
         let boxed = panic_on_error(self.imp_alloc_clone(value));
         BumpAllocation(boxed)

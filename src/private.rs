@@ -17,15 +17,15 @@ pub extern crate core;
 use crate::panic_on_error;
 
 #[cold]
-#[inline(never)]
 #[cfg(feature = "panic-on-alloc")]
+#[cfg_attr(not(panic = "immediate-abort"), inline(never))]
 pub const fn capacity_overflow() -> ! {
     panic!("capacity overflow");
 }
 
 #[cold]
-#[inline(never)]
 #[cfg(feature = "panic-on-alloc")]
+#[cfg_attr(not(panic = "immediate-abort"), inline(never))]
 pub const fn format_trait_error() -> ! {
     panic!("formatting trait implementation returned an error");
 }

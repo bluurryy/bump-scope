@@ -113,30 +113,30 @@ impl ErrorBehavior for AllocError {
 
 pub(crate) mod panic {
     #[cold]
-    #[inline(never)]
     #[cfg(feature = "panic-on-alloc")]
+    #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
     pub(crate) fn claimed() -> ! {
         panic!("bump allocator is claimed");
     }
 
     #[cold]
-    #[inline(never)]
     #[cfg(feature = "std")]
     #[cfg(feature = "panic-on-alloc")]
+    #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
     pub(crate) fn base_allocator_default_constructor_panicked() -> ! {
         panic!("base allocator default constructor panicked")
     }
 
     #[cold]
-    #[inline(never)]
     #[cfg(feature = "panic-on-alloc")]
+    #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
     pub(crate) fn unmanaged() -> ! {
         panic!("can't allocate on an `Unmanaged` allocator")
     }
 
     #[cold]
-    #[inline(never)]
     #[cfg(feature = "panic-on-alloc")]
+    #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
     pub const fn format_trait_error() -> ! {
         panic!("formatting trait implementation returned an error");
     }
