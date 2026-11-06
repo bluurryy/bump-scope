@@ -83,10 +83,7 @@ impl<const C: BumpConfig, A> RawBump<C, A> {
     }
 }
 
-impl<const C: BumpConfig, A> RawBump<C, A>
-where
-    A: Allocator,
-{
+impl<const C: BumpConfig, A: Allocator> RawBump<C, A> {
     #[inline(always)]
     pub(crate) fn with_size<E: ErrorBehavior>(size: impl ChunkSize, allocator: A) -> Result<Self, E> {
         Ok(Self {
@@ -269,10 +266,7 @@ impl<const C: BumpConfig, A> RawBump<C, A> {
     }
 }
 
-impl<const C: BumpConfig, A> RawBump<C, A>
-where
-    A: Allocator,
-{
+impl<const C: BumpConfig, A: Allocator> RawBump<C, A> {
     #[inline(always)]
     pub(crate) fn reserve<E: ErrorBehavior>(&self, additional: usize) -> Result<(), E>
 where {

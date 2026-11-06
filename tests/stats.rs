@@ -157,10 +157,7 @@ up_and_down! {
     }
 }
 
-fn allocate_another_chunk<const C: BumpConfig, A>(bump: &Bump<C, A>, dummy_size: usize)
-where
-    A: Allocator,
-{
+fn allocate_another_chunk<const C: BumpConfig, A: Allocator>(bump: &Bump<C, A>, dummy_size: usize) {
     let start_chunks = bump.stats().count();
 
     // fill the existing chunk if there is one
@@ -178,14 +175,12 @@ where
 const ZST_ALLOCATED_CHUNK_HEADER_SIZE: usize = 8 * 4;
 const MALLOC_OVERHEAD_SIZE: usize = size_of::<AssumedMallocOverhead>();
 
-fn test_base_allocator<const C: BumpConfig, A>(
+fn test_base_allocator<const C: BumpConfig, A: Allocator + Default>(
     bump: Bump<C, A>,
     first_chunk_size_with_malloc_overhead: usize,
     first_allocated_chunk_header_size: usize,
     non_first_allocated_chunk_header_size: usize,
-) where
-    A: Allocator + Default,
-{
+) {
     bump.alloc(1u8).into_boxu();
     assert_eq!(bump.stats().count(), 1);
     assert_eq!(

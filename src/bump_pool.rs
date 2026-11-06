@@ -68,18 +68,12 @@ use crate::{
 ///
 #[doc(alias = "Herd")]
 #[derive(Debug)]
-pub struct BumpPool<const C: BumpConfig = DEFAULT_BUMP_CONFIG, A = Global>
-where
-    A: Allocator,
-{
+pub struct BumpPool<const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = Global> {
     bumps: Mutex<Vec<Bump<C, A>>>,
     allocator: A,
 }
 
-impl<const C: BumpConfig, A> Default for BumpPool<C, A>
-where
-    A: Allocator + Default,
-{
+impl<const C: BumpConfig, A: Allocator + Default> Default for BumpPool<C, A> {
     fn default() -> Self {
         Self {
             bumps: Mutex::default(),
@@ -88,10 +82,7 @@ where
     }
 }
 
-impl<const C: BumpConfig, A> BumpPool<C, A>
-where
-    A: Allocator + Default,
-{
+impl<const C: BumpConfig, A: Allocator + Default> BumpPool<C, A> {
     /// Constructs a new `BumpPool`.
     #[inline]
     #[must_use]
@@ -100,10 +91,7 @@ where
     }
 }
 
-impl<const C: BumpConfig, A> BumpPool<C, A>
-where
-    A: Allocator,
-{
+impl<const C: BumpConfig, A: Allocator> BumpPool<C, A> {
     /// Constructs a new `BumpPool` with the provided allocator.
     #[inline]
     #[must_use]
@@ -138,10 +126,7 @@ where
     }
 }
 
-impl<const C: BumpConfig, A> BumpPool<C, A>
-where
-    A: Allocator + Clone,
-{
+impl<const C: BumpConfig, A: Allocator + Clone> BumpPool<C, A> {
     /// Borrows a bump allocator from the pool.
     /// With this `BumpPoolGuard` you can make allocations that live for as long as the pool lives.
     ///
@@ -288,20 +273,14 @@ pub struct BumpPoolGuard<'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Alloc
     pool: &'a BumpPool<C, A>,
 }
 
-impl<'a, const C: BumpConfig, A> BumpPoolGuard<'a, C, A>
-where
-    A: Allocator,
-{
+impl<'a, const C: BumpConfig, A: Allocator> BumpPoolGuard<'a, C, A> {
     /// The [`BumpPool`], this [`BumpPoolGuard`] was created from.
     pub fn pool(&self) -> &'a BumpPool<C, A> {
         self.pool
     }
 }
 
-impl<'a, const C: BumpConfig, A> Deref for BumpPoolGuard<'a, C, A>
-where
-    A: Allocator,
-{
+impl<'a, const C: BumpConfig, A: Allocator> Deref for BumpPoolGuard<'a, C, A> {
     type Target = BumpScope<'a, C, A>;
 
     #[inline(always)]
@@ -322,20 +301,14 @@ where
     }
 }
 
-impl<const C: BumpConfig, A> DerefMut for BumpPoolGuard<'_, C, A>
-where
-    A: Allocator,
-{
+impl<const C: BumpConfig, A: Allocator> DerefMut for BumpPoolGuard<'_, C, A> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { transmute_lifetime_mut(self.bump.as_mut_bump_scope()) }
     }
 }
 
-impl<const C: BumpConfig, A> Drop for BumpPoolGuard<'_, C, A>
-where
-    A: Allocator,
-{
+impl<const C: BumpConfig, A: Allocator> Drop for BumpPoolGuard<'_, C, A> {
     fn drop(&mut self) {
         let bump = unsafe { ManuallyDrop::take(&mut self.bump) };
         self.pool.lock().push(bump);
@@ -346,9 +319,7 @@ where
 #[expect(clippy::elidable_lifetime_names)]
 unsafe fn transmute_lifetime<'from, 'to, 'b, const C: BumpConfig, A>(
     scope: &'b BumpScope<'from, C, A>,
-) -> &'b BumpScope<'to, C, A>
-where
-{
+) -> &'b BumpScope<'to, C, A> {
     unsafe { mem::transmute(scope) }
 }
 
@@ -356,8 +327,6 @@ where
 #[expect(clippy::elidable_lifetime_names)]
 unsafe fn transmute_lifetime_mut<'from, 'to, 'b, const C: BumpConfig, A>(
     scope: &'b mut BumpScope<'from, C, A>,
-) -> &'b mut BumpScope<'to, C, A>
-where
-{
+) -> &'b mut BumpScope<'to, C, A> {
     unsafe { mem::transmute(scope) }
 }

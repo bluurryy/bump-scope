@@ -183,32 +183,22 @@ pub struct Bump<const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = Global
 // When something is allocated Bump is borrowed and sending is not possible.
 unsafe impl<const C: BumpConfig, A> Send for Bump<C, A> where A: Send + Allocator {}
 
-impl<const C: BumpConfig, A> UnwindSafe for Bump<C, A> where A: Allocator + UnwindSafe {}
+impl<const C: BumpConfig, A: Allocator + UnwindSafe> UnwindSafe for Bump<C, A> {}
+impl<const C: BumpConfig, A: Allocator + RefUnwindSafe> RefUnwindSafe for Bump<C, A> {}
 
-impl<const C: BumpConfig, A> RefUnwindSafe for Bump<C, A> where A: Allocator + RefUnwindSafe {}
-
-impl<const C: BumpConfig, A> Drop for Bump<C, A>
-where
-    A: Allocator,
-{
+impl<const C: BumpConfig, A: Allocator> Drop for Bump<C, A> {
     fn drop(&mut self) {
         unsafe { self.raw.manually_drop() }
     }
 }
 
-impl<const C: BumpConfig, A> Debug for Bump<C, A>
-where
-    A: Allocator,
-{
+impl<const C: BumpConfig, A: Allocator> Debug for Bump<C, A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.stats().debug_format("Bump", f)
     }
 }
 
-impl<const C: BumpConfig, A> Default for Bump<C, A>
-where
-    A: Allocator + Default + 'static,
-{
+impl<const C: BumpConfig, A: Allocator + Default + 'static> Default for Bump<C, A> {
     /// With [`const_constructible`] this does the same as [`const_new`], otherwise it does the same as [`new`].
     ///
     /// # Panics
@@ -232,10 +222,7 @@ where
     }
 }
 
-impl<const C: BumpConfig, A> Bump<C, A>
-where
-    A: Allocator + Default + 'static,
-{
+impl<const C: BumpConfig, A: Allocator + Default + 'static> Bump<C, A> {
     /// Constructs a new `Bump` without allocating a chunk.
     ///
     /// # Compile-Time Assertions
@@ -261,10 +248,7 @@ where
 }
 
 /// Methods for a `Bump` with a default base allocator.
-impl<const C: BumpConfig, A> Bump<C, A>
-where
-    A: Allocator + Default,
-{
+impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
     /// This is equivalent to <code>[with_size][]([min_chunk_size])</code>.
@@ -420,10 +404,7 @@ where
 }
 
 /// Methods that are always available.
-impl<const C: BumpConfig, A> Bump<C, A>
-where
-    A: Allocator,
-{
+impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     /// Constructs a new `Bump` with a default size hint for the first chunk.
     ///
     /// This is equivalent to <code>[with_size_in][]([min_chunk_size], allocator)</code>.
@@ -824,10 +805,7 @@ where
 }
 
 /// Additional `alloc` methods that are not available in traits.
-impl<const C: BumpConfig, A> Bump<C, A>
-where
-    A: Allocator,
-{
+impl<const C: BumpConfig, A: Allocator> Bump<C, A> {
     /// Forwards to [`BumpScope::allocator`].
     #[must_use]
     #[inline(always)]
@@ -866,10 +844,7 @@ where
     }
 }
 
-unsafe impl<const C: BumpConfig, A> Allocator for Bump<C, A>
-where
-    A: Allocator,
-{
+unsafe impl<const C: BumpConfig, A: Allocator> Allocator for Bump<C, A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         allocator_impl::allocate(&self.raw, layout)

@@ -44,9 +44,8 @@ pub struct BumpScope<'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A = Global> 
     pub(crate) marker: PhantomData<&'a ()>,
 }
 
-impl<const C: BumpConfig, A> UnwindSafe for BumpScope<'_, C, A> where A: RefUnwindSafe {}
-
-impl<const C: BumpConfig, A> RefUnwindSafe for BumpScope<'_, C, A> where A: RefUnwindSafe {}
+impl<const C: BumpConfig, A: RefUnwindSafe> UnwindSafe for BumpScope<'_, C, A> where A: RefUnwindSafe {}
+impl<const C: BumpConfig, A: RefUnwindSafe> RefUnwindSafe for BumpScope<'_, C, A> where A: RefUnwindSafe {}
 
 impl<const C: BumpConfig, A> fmt::Debug for BumpScope<'_, C, A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -54,10 +53,7 @@ impl<const C: BumpConfig, A> fmt::Debug for BumpScope<'_, C, A> {
     }
 }
 
-impl<const C: BumpConfig, A> BumpScope<'_, C, A>
-where
-    A: Allocator,
-{
+impl<const C: BumpConfig, A: Allocator> BumpScope<'_, C, A> {
     /// Converts this `&mut BumpScope` into an owned `BumpScope`.
     ///
     /// Allocates a chunk if none has been allocated yet.
@@ -212,10 +208,7 @@ impl<'a, const C: BumpConfig, A> BumpScope<'a, C, A> {
 impl<const C: BumpConfig, A> NoDrop for BumpScope<'_, C, A> {}
 
 /// Additional `alloc` methods that are not available in traits.
-impl<'a, const C: BumpConfig, A> BumpScope<'a, C, A>
-where
-    A: Allocator,
-{
+impl<'a, const C: BumpConfig, A: Allocator> BumpScope<'a, C, A> {
     /// Creates a new [`BumpScopeGuard`].
     ///
     /// This allows for creation of child scopes.
@@ -495,10 +488,7 @@ where
     }
 }
 
-unsafe impl<const C: BumpConfig, A> Allocator for BumpScope<'_, C, A>
-where
-    A: Allocator,
-{
+unsafe impl<const C: BumpConfig, A: Allocator> Allocator for BumpScope<'_, C, A> {
     #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         allocator_impl::allocate(&self.raw, layout)

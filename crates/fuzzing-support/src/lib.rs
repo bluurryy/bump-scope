@@ -42,10 +42,7 @@ impl<A> Deref for RcAllocator<A> {
     }
 }
 
-unsafe impl<A> Allocator for RcAllocator<A>
-where
-    A: Allocator,
-{
+unsafe impl<A: Allocator> Allocator for RcAllocator<A> {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         self.inner.allocate(layout)
     }
@@ -91,10 +88,7 @@ impl<A> MaybeFailingAllocator<A> {
     }
 }
 
-unsafe impl<A> Allocator for MaybeFailingAllocator<A>
-where
-    A: Allocator,
-{
+unsafe impl<A: Allocator> Allocator for MaybeFailingAllocator<A> {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         if self.fails.get() {
             return Err(AllocError);

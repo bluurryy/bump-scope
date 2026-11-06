@@ -39,37 +39,25 @@ impl Checkpoint {
 ///
 /// [`BumpScope::scope_guard`]: crate::BumpScope::scope_guard
 #[must_use]
-pub struct BumpScopeGuard<'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A = Global>
-where
-    A: Allocator,
-{
+pub struct BumpScopeGuard<'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = Global> {
     bump: &'a mut RawBump<C, A>,
     checkpoint: Checkpoint,
 }
 
-impl<const C: BumpConfig, A> Debug for BumpScopeGuard<'_, C, A>
-where
-    A: Allocator,
-{
+impl<const C: BumpConfig, A: Allocator> Debug for BumpScopeGuard<'_, C, A> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.bump.stats().debug_format("BumpScopeGuard", f)
     }
 }
 
-impl<const C: BumpConfig, A> Drop for BumpScopeGuard<'_, C, A>
-where
-    A: Allocator,
-{
+impl<const C: BumpConfig, A: Allocator> Drop for BumpScopeGuard<'_, C, A> {
     #[inline(always)]
     fn drop(&mut self) {
         self.reset();
     }
 }
 
-impl<'a, const C: BumpConfig, A> BumpScopeGuard<'a, C, A>
-where
-    A: Allocator,
-{
+impl<'a, const C: BumpConfig, A: Allocator> BumpScopeGuard<'a, C, A> {
     #[inline(always)]
     pub(crate) fn new(bump: &'a mut RawBump<C, A>) -> Self {
         let checkpoint = bump.checkpoint();

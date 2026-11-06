@@ -17,18 +17,12 @@ use crate::traits::*;
 
 /// Returned from [`BumpScope::claim`].
 #[must_use]
-pub struct BumpClaimGuard<'b, 'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A = Global>
-where
-    A: Allocator,
-{
+pub struct BumpClaimGuard<'b, 'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = Global> {
     pub(crate) original: &'b BumpScope<'a, C, A>,
     pub(crate) claimant: BumpScope<'a, C, A>,
 }
 
-impl<'b, 'a, const C: BumpConfig, A> BumpClaimGuard<'b, 'a, C, A>
-where
-    A: Allocator,
-{
+impl<'b, 'a, const C: BumpConfig, A: Allocator> BumpClaimGuard<'b, 'a, C, A> {
     #[inline(always)]
     pub(crate) fn new(original: &'b BumpScope<'a, C, A>) -> Self {
         let claimed = original.raw.claim();
@@ -42,10 +36,7 @@ where
     }
 }
 
-impl<'a, const C: BumpConfig, A> Deref for BumpClaimGuard<'_, 'a, C, A>
-where
-    A: Allocator,
-{
+impl<'a, const C: BumpConfig, A: Allocator> Deref for BumpClaimGuard<'_, 'a, C, A> {
     type Target = BumpScope<'a, C, A>;
 
     #[inline(always)]
@@ -54,20 +45,14 @@ where
     }
 }
 
-impl<const C: BumpConfig, A> DerefMut for BumpClaimGuard<'_, '_, C, A>
-where
-    A: Allocator,
-{
+impl<const C: BumpConfig, A: Allocator> DerefMut for BumpClaimGuard<'_, '_, C, A> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.claimant
     }
 }
 
-impl<const C: BumpConfig, A> Drop for BumpClaimGuard<'_, '_, C, A>
-where
-    A: Allocator,
-{
+impl<const C: BumpConfig, A: Allocator> Drop for BumpClaimGuard<'_, '_, C, A> {
     #[inline(always)]
     fn drop(&mut self) {
         self.original.raw.reclaim(&self.claimant.raw);

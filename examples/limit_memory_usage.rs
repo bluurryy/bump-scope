@@ -41,10 +41,7 @@ impl<A> Limited<A> {
     }
 }
 
-unsafe impl<A> Allocator for Limited<A>
-where
-    A: Allocator,
-{
+unsafe impl<A: Allocator> Allocator for Limited<A> {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         let new = self.add(layout.size())?;
         let ptr = self.allocator.allocate(layout)?;
