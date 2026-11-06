@@ -124,7 +124,7 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
     /// # Panics
     /// - Panics if [`claimable`] becomes false and [`self.is_claimed()`]
     ///
-    /// # Fails
+    /// # Compile-Time Assertions
     /// - Fails to compile if [`upwards`] changes
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
@@ -150,7 +150,7 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
     /// # Panics
     /// - Panics if [`const_constructible`] becomes false and `self` has no chunks
     ///
-    /// # Fails
+    /// # Compile-Time Assertions
     /// - Fails to compile if [`upwards`] changes
     /// - Fails to compile if [`claimable`] changes
     /// - Fails to compile if [`min_align`] changes
@@ -167,7 +167,7 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
 
     /// Borrows this `BumpScope` mutably with a new config.
     ///
-    /// # Fails
+    /// # Compile-Time Assertions
     /// - Fails to compile if [`upwards`] changes
     /// - Fails to compile if [`claimable`] changes
     /// - Fails to compile if [`const_constructible`] changes
@@ -279,7 +279,7 @@ where
 
     /// Calls `f` on a child scope with a new config.
     ///
-    /// # Fails
+    /// # Compile-Time Assertions
     /// - Fails to compile if [`upwards`] changes
     ///
     /// # Panics
@@ -353,7 +353,7 @@ where
 
     /// Calls `f` with this scope but with a new config.
     ///
-    /// # Fails
+    /// # Compile-Time Assertions
     /// - Fails to compile if [`upwards`] changes
     /// - Fails to compile if [`claimable`] changes
     /// - Fails to compile if [`const_constructible`] changes

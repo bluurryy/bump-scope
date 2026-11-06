@@ -238,8 +238,7 @@ where
 {
     /// Constructs a new `Bump` without allocating a chunk.
     ///
-    /// # Fails
-    ///
+    /// # Compile-Time Assertions
     /// Fails to compile when not [`const_constructible`].
     ///
     /// # Examples
@@ -748,7 +747,7 @@ where
     /// - Panics if [`claimable`] becomes false and [`self.is_claimed()`]
     /// - Panics if [`const_constructible`] becomes false and `self` has no chunks
     ///
-    /// # Fails
+    /// # Compile-Time Assertions
     /// - Fails to compile if [`upwards`] changes
     ///
     /// [`upwards`]: crate::config::BumpConfigBuilder::upwards
@@ -772,7 +771,7 @@ where
     /// # Panics
     /// - Panics if [`const_constructible`] becomes false and `self` has no chunks
     ///
-    /// # Fails
+    /// # Compile-Time Assertions
     /// - Fails to compile if [`upwards`] changes
     /// - Fails to compile if [`claimable`] changes
     /// - Fails to compile if [`min_align`] changes
@@ -789,7 +788,7 @@ where
 
     /// Borrows this `Bump` mutably with a new config.
     ///
-    /// # Fails
+    /// # Compile-Time Assertions
     /// - Fails to compile if [`upwards`] changes
     /// - Fails to compile if [`claimable`] changes
     /// - Fails to compile if [`const_constructible`] changes
