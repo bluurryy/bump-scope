@@ -18,10 +18,12 @@ pre-release:
 
 # A faster, incomplete `pre-release`, to catch slip ups between commits. Excludes insert-docs,test-stable,test-miri,semver-checks.
 [group('release')]
-smoke: 
+smoke:
     typos
     just doc-rustdoc
-    just check
+    just check-fmt
+    just check-clippy
+    just check-msrv
     just test-nightly
 
 # Installs all tools required for `pre-release`.
