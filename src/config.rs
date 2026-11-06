@@ -4,7 +4,6 @@
 //!
 //! You can configure the bump allocator config with a [`BumpConfigBuilder`]:
 //! ```
-//! use std::alloc::Global;
 //! use bump_scope::{Bump, BumpAllocator, config::{BumpConfig, BumpConfigBuilder}};
 //!
 //! const MY_CONFIG: BumpConfig = BumpConfigBuilder::new()
@@ -17,7 +16,7 @@
 //!     .min_chunk_size(4096)
 //!     .build();
 //!
-//! type MyBump = Bump<Global, MY_CONFIG>;
+//! type MyBump = Bump<MY_CONFIG>;
 //!
 //! let bump = MyBump::const_new();
 //! assert_eq!(bump.stats().size(), 0);

@@ -115,7 +115,7 @@ up_and_down! {
         }
 
         let base = A::default();
-        let bump: Bump<&A, C> = Bump::with_size_in(512, &base);
+        let bump: Bump<C, &A> = Bump::with_size_in(512, &base);
         bump.allocate(Layout::new::<u8>()).unwrap();
 
         assert_eq!(bump.allocated(), 1);

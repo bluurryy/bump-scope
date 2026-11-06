@@ -2,10 +2,7 @@
 
 mod common;
 
-use std::{
-    alloc::Global,
-    string::{String, ToString},
-};
+use std::string::{String, ToString};
 
 use bump_scope::Bump;
 
@@ -18,7 +15,7 @@ up_and_down! {
     fn zst() {
         const ZST: [u64; 0] = [0u64; 0];
 
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
 
         bump.alloc_slice_copy(&[ZST; 10]).into_boxu();
         bump.alloc_slice_clone(&[ZST; 10]).into_boxu();
@@ -30,7 +27,7 @@ up_and_down! {
 
     #[test]
     fn empty() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
 
         bump.alloc_slice_copy::<u64>(&[]).into_boxu();
         bump.alloc_slice_clone::<String>(&[]).into_boxu();
@@ -45,7 +42,7 @@ up_and_down! {
     #[test]
     #[should_panic(expected = "capacity overflow")]
     fn overflow() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
         bump.alloc_slice_fill_with(usize::MAX, u64::default).into_boxu();
     }
 }

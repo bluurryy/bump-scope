@@ -2,7 +2,7 @@
 
 mod common;
 
-use std::{alloc::Global, fmt};
+use std::fmt;
 
 use bump_scope::Bump;
 
@@ -13,7 +13,7 @@ up_and_down! {
 
     #[test]
     fn test_simple() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
         let input = c"123456789";
         let allocated = bump.alloc_cstr(input).into_ref();
         assert_eq!(allocated, input);
@@ -22,7 +22,7 @@ up_and_down! {
 
     #[test]
     fn test_from_str() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
         let input = "123456789";
         let expected = c"123456789";
         let allocated = bump.alloc_cstr_from_str(input).into_ref();
@@ -32,7 +32,7 @@ up_and_down! {
 
     #[test]
     fn test_empty() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
         let input = c"";
         let allocated = bump.alloc_cstr(input).into_ref();
         assert_eq!(allocated, input);
@@ -41,7 +41,7 @@ up_and_down! {
 
     #[test]
     fn test_fmt() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
         let allocated = bump.alloc_cstr_fmt(format_args!("1 + 2 = {}", 1 + 2)).into_ref();
         assert_eq!(allocated, c"1 + 2 = 3");
         assert_eq!(bump.allocated(), 10);
@@ -49,7 +49,7 @@ up_and_down! {
 
     #[test]
     fn test_interior_null_from_str() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
         let input = "hello\0world";
         let allocated = bump.alloc_cstr_from_str(input).into_ref();
         assert_eq!(allocated, c"hello");
@@ -58,7 +58,7 @@ up_and_down! {
 
     #[test]
     fn test_interior_null_fmt() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
         let hello = "hello";
         let world = "world";
         let allocated = bump.alloc_cstr_fmt(assert_multiple(format_args!("{hello}\0{world}"))).into_ref();
@@ -69,7 +69,7 @@ up_and_down! {
 
     #[test]
     fn test_interior_null_fmt_mut() {
-        let mut bump: Bump<Global, C> = Bump::new();
+        let mut bump: Bump<C> = Bump::new();
         let hello = "hello";
         let world = "world";
         let allocated = bump.alloc_cstr_fmt_mut(assert_multiple(format_args!("{hello}\0{world}"))).into_ref();

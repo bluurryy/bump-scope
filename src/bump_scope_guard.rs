@@ -1,5 +1,7 @@
 use core::{alloc::Allocator, fmt::Debug, num::NonZeroUsize};
 
+use alloc::alloc::Global;
+
 use crate::{
     BumpScope,
     chunk_types::r#abstract::{Chunk, ErasedChunk},
@@ -26,7 +28,7 @@ impl Checkpoint {
         }
     };
 
-    pub(crate) fn new<A, const C: BumpConfig>(chunk: Chunk<A, C>) -> Self {
+    pub(crate) fn new<const C: BumpConfig, A>(chunk: Chunk<C, A>) -> Self {
         let address = chunk.pos().addr();
         let chunk = ErasedChunk::erase(chunk);
         Checkpoint { chunk, address }
@@ -37,15 +39,15 @@ impl Checkpoint {
 ///
 /// [`BumpScope::scope_guard`]: crate::BumpScope::scope_guard
 #[must_use]
-pub struct BumpScopeGuard<'a, A, const C: BumpConfig = DEFAULT_BUMP_CONFIG>
+pub struct BumpScopeGuard<'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A = Global>
 where
     A: Allocator,
 {
-    bump: &'a mut RawBump<A, C>,
+    bump: &'a mut RawBump<C, A>,
     checkpoint: Checkpoint,
 }
 
-impl<A, const C: BumpConfig> Debug for BumpScopeGuard<'_, A, C>
+impl<const C: BumpConfig, A> Debug for BumpScopeGuard<'_, C, A>
 where
     A: Allocator,
 {
@@ -54,7 +56,7 @@ where
     }
 }
 
-impl<A, const C: BumpConfig> Drop for BumpScopeGuard<'_, A, C>
+impl<const C: BumpConfig, A> Drop for BumpScopeGuard<'_, C, A>
 where
     A: Allocator,
 {
@@ -64,19 +66,19 @@ where
     }
 }
 
-impl<'a, A, const C: BumpConfig> BumpScopeGuard<'a, A, C>
+impl<'a, const C: BumpConfig, A> BumpScopeGuard<'a, C, A>
 where
     A: Allocator,
 {
     #[inline(always)]
-    pub(crate) fn new(bump: &'a mut RawBump<A, C>) -> Self {
+    pub(crate) fn new(bump: &'a mut RawBump<C, A>) -> Self {
         let checkpoint = bump.checkpoint();
         Self { bump, checkpoint }
     }
 
     /// Returns a new `BumpScope`.
     #[inline(always)]
-    pub fn scope(&mut self) -> &mut BumpScope<'_, A, C> {
+    pub fn scope(&mut self) -> &mut BumpScope<'_, C, A> {
         unsafe { transmute_mut(self.bump) }
     }
 

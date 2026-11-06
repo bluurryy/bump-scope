@@ -1,5 +1,5 @@
 use std::{
-    alloc::{AllocError, Allocator, Global, Layout},
+    alloc::{AllocError, Allocator, Layout},
     panic::{AssertUnwindSafe, UnwindSafe},
     ptr::NonNull,
     string::String,
@@ -33,7 +33,7 @@ up_and_down! {
             }
         }
 
-        let bump = Bump::<Global, C>::new();
+        let bump = Bump::<C>::new();
         let mut boxed = bump.alloc::<[u8; 2]>([1, 2]).into_boxu();
         let ptr = NonNull::new(boxed.as_mut_ptr()).unwrap().cast::<u8>();
 

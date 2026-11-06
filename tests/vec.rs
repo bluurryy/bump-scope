@@ -18,7 +18,7 @@ up_and_down! {
 
     #[test]
     fn grow() {
-        let mut bump: Bump<Global, C> = Bump::new();
+        let mut bump: Bump<C> = Bump::new();
 
         let mut vec = Vec::<i32, _>::new_in(&bump);
         assert_eq!(bump.allocated(), 0);
@@ -44,7 +44,7 @@ up_and_down! {
 
     #[test]
     fn shrink() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
 
         let mut vec = Vec::<i32, _>::new_in(&bump);
         assert_eq!(bump.allocated(), 0);
@@ -67,7 +67,7 @@ up_and_down! {
 
     #[test]
     fn shrinknt() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
 
         let mut vec = Vec::<i32, _>::new_in(&bump);
         assert_eq!(bump.allocated(), 0);
@@ -88,7 +88,7 @@ up_and_down! {
     #[test]
     fn vec_macro() {
         test_vec_macro(Global).unwrap();
-        test_vec_macro(Bump::<Global, C>::new()).unwrap();
+        test_vec_macro(Bump::<C>::new()).unwrap();
     }
 }
 

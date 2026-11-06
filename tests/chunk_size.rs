@@ -51,29 +51,29 @@ up_and_down! {
     #[test]
     fn zst() {
         // four pointers, + overhead, next power of two, minus overhead
-        let bump = Bump::<Global, C_MIN_SIZE_1>::with_size(0);
+        let bump = Bump::<C_MIN_SIZE_1>::with_size(0);
         assert_eq!(bump.stats().size(), size_of::<[usize; 8]>() - OVERHEAD);
 
-        let bump = Bump::<Global, C_MIN_SIZE_1>::with_size(512 - 1);
+        let bump = Bump::<C_MIN_SIZE_1>::with_size(512 - 1);
         assert_eq!(bump.stats().size(), 512 - OVERHEAD);
 
-        let bump = Bump::<Global, C_MIN_SIZE_1>::with_size(512);
+        let bump = Bump::<C_MIN_SIZE_1>::with_size(512);
         assert_eq!(bump.stats().size(), 512 - OVERHEAD);
 
-        let bump = Bump::<Global, C_MIN_SIZE_1>::with_size(0x1000 - 1);
+        let bump = Bump::<C_MIN_SIZE_1>::with_size(0x1000 - 1);
         assert_eq!(bump.stats().size(), 0x1000 - OVERHEAD);
 
-        let bump = Bump::<Global, C_MIN_SIZE_1>::with_size(0x1000);
+        let bump = Bump::<C_MIN_SIZE_1>::with_size(0x1000);
         assert_eq!(bump.stats().size(), 0x1000 - OVERHEAD);
 
-        let bump = Bump::<Global, C_MIN_SIZE_1>::with_size(0x2000 - 1);
+        let bump = Bump::<C_MIN_SIZE_1>::with_size(0x2000 - 1);
         assert_eq!(bump.stats().size(), 0x2000 - OVERHEAD);
 
-        let bump = Bump::<Global, C_MIN_SIZE_1>::with_size(0x2000);
+        let bump = Bump::<C_MIN_SIZE_1>::with_size(0x2000);
         assert_eq!(bump.stats().size(), 0x2000 - OVERHEAD);
 
         // same as `with_size(0)`
-        let bump = Bump::<Global, C_MIN_SIZE_1>::with_capacity(Layout::array::<u8>(0).unwrap());
+        let bump = Bump::<C_MIN_SIZE_1>::with_capacity(Layout::array::<u8>(0).unwrap());
         assert_eq!(bump.stats().size(), size_of::<[usize; 8]>() - OVERHEAD);
     }
 
@@ -83,7 +83,7 @@ up_and_down! {
             BigAllocator 32
         }
 
-        let _: Bump<BigAllocator, C_MIN_SIZE_1> = Bump::with_size_in(0x2000, BigAllocator::new());
+        let _: Bump<C_MIN_SIZE_1, BigAllocator> = Bump::with_size_in(0x2000, BigAllocator::new());
     }
 
     #[test]
@@ -92,7 +92,7 @@ up_and_down! {
             MyAllocator 4096
         }
 
-        let bump: Bump<MyAllocator, C_MIN_SIZE_1> = Bump::with_size_in(0x2000, MyAllocator::new());
+        let bump: Bump<C_MIN_SIZE_1, MyAllocator> = Bump::with_size_in(0x2000, MyAllocator::new());
         assert_eq!(bump.allocated(), 0);
         bump.alloc_str("hey").into_boxu();
         assert_eq!(bump.allocated(), 3);
@@ -100,19 +100,19 @@ up_and_down! {
 
     #[test]
     fn minimum_size() {
-        let bump = Bump::<Global, C_MIN_SIZE_1024>::new();
+        let bump = Bump::<C_MIN_SIZE_1024>::new();
         assert_eq!(bump.stats().size(), 1024 - size_of::<[usize; 2]>());
     }
 
     #[test]
     fn minimum_size_smaller_hint() {
-        let bump = Bump::<Global, C_MIN_SIZE_1024>::with_size(0);
+        let bump = Bump::<C_MIN_SIZE_1024>::with_size(0);
         assert_eq!(bump.stats().size(), 1024 - size_of::<[usize; 2]>());
     }
 
     #[test]
     fn minimum_size_bigger_hint() {
-        let bump = Bump::<Global, C_MIN_SIZE_1024>::with_size(2048);
+        let bump = Bump::<C_MIN_SIZE_1024>::with_size(2048);
         assert_eq!(bump.stats().size(), 2048 - size_of::<[usize; 2]>());
     }
 }

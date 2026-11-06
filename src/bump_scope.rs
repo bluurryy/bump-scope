@@ -37,24 +37,24 @@ use crate::panic_on_error;
 /// [`as_mut_bump_scope`]: crate::AsMutBumpScope::as_mut_bump_scope
 /// [`reset`]: crate::Bump::reset
 #[repr(transparent)]
-pub struct BumpScope<'a, A = Global, const C: BumpConfig = DEFAULT_BUMP_CONFIG> {
-    pub(crate) raw: RawBump<A, C>,
+pub struct BumpScope<'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A = Global> {
+    pub(crate) raw: RawBump<C, A>,
 
     /// Marks the lifetime of the mutably borrowed `BumpScopeGuard`.
     pub(crate) marker: PhantomData<&'a ()>,
 }
 
-impl<A, const C: BumpConfig> UnwindSafe for BumpScope<'_, A, C> where A: RefUnwindSafe {}
+impl<const C: BumpConfig, A> UnwindSafe for BumpScope<'_, C, A> where A: RefUnwindSafe {}
 
-impl<A, const C: BumpConfig> RefUnwindSafe for BumpScope<'_, A, C> where A: RefUnwindSafe {}
+impl<const C: BumpConfig, A> RefUnwindSafe for BumpScope<'_, C, A> where A: RefUnwindSafe {}
 
-impl<A, const C: BumpConfig> fmt::Debug for BumpScope<'_, A, C> {
+impl<const C: BumpConfig, A> fmt::Debug for BumpScope<'_, C, A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.stats().debug_format("BumpScope", f)
     }
 }
 
-impl<A, const C: BumpConfig> BumpScope<'_, A, C>
+impl<const C: BumpConfig, A> BumpScope<'_, C, A>
 where
     A: Allocator,
 {
@@ -76,7 +76,7 @@ where
     #[must_use]
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    pub fn by_value(&mut self) -> BumpScope<'_, A, C> {
+    pub fn by_value(&mut self) -> BumpScope<'_, C, A> {
         panic_on_error(self.raw.make_allocated());
 
         BumpScope {
@@ -101,7 +101,7 @@ where
     /// [`change_config`]: BumpScope::change_config
     /// [`mut_change_config`]: BumpScope::mut_change_config
     #[inline(always)]
-    pub fn try_by_value(&mut self) -> Result<BumpScope<'_, A, C>, AllocError> {
+    pub fn try_by_value(&mut self) -> Result<BumpScope<'_, C, A>, AllocError> {
         self.raw.make_allocated::<AllocError>()?;
 
         Ok(BumpScope {
@@ -111,11 +111,11 @@ where
     }
 }
 
-impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
+impl<'a, const C: BumpConfig, A> BumpScope<'a, C, A> {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'a, A, C> {
+    pub fn stats(&self) -> Stats<'a, C, A> {
         self.raw.stats()
     }
 
@@ -131,8 +131,8 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
     /// [`claimable`]: crate::config::BumpConfigBuilder::claimable
     /// [`self.is_claimed()`]: crate::traits::BumpAllocator::is_claimed
     #[inline]
-    pub fn change_config<const NEW_C: BumpConfig>(self) -> BumpScope<'a, A, NEW_C> {
-        RawBump::<A, C>::const_assert_upwards_matches::<NEW_C>();
+    pub fn change_config<const NEW_C: BumpConfig>(self) -> BumpScope<'a, NEW_C, A> {
+        RawBump::<C, A>::const_assert_upwards_matches::<NEW_C>();
 
         // Since `self` is by value, this can only happen if a claim guard was forgotten.
         self.raw.assert_convertible_claimable::<NEW_C>();
@@ -160,7 +160,7 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
     /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
-    pub fn ref_change_config<const NEW_C: BumpConfig>(&self) -> &BumpScope<'a, A, NEW_C> {
+    pub fn ref_change_config<const NEW_C: BumpConfig>(&self) -> &BumpScope<'a, NEW_C, A> {
         self.raw.ensure_satisfies_config_for_borrow::<NEW_C>();
         unsafe { transmute_ref(self) }
     }
@@ -178,7 +178,7 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
     /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
-    pub fn mut_change_config<const NEW_C: BumpConfig>(&mut self) -> &mut BumpScope<'a, A, NEW_C> {
+    pub fn mut_change_config<const NEW_C: BumpConfig>(&mut self) -> &mut BumpScope<'a, NEW_C, A> {
         self.raw.ensure_satisfies_config_for_borrow_mut::<NEW_C>();
         unsafe { transmute_mut(self) }
     }
@@ -209,10 +209,10 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C> {
     }
 }
 
-impl<A, const C: BumpConfig> NoDrop for BumpScope<'_, A, C> {}
+impl<const C: BumpConfig, A> NoDrop for BumpScope<'_, C, A> {}
 
 /// Additional `alloc` methods that are not available in traits.
-impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C>
+impl<'a, const C: BumpConfig, A> BumpScope<'a, C, A>
 where
     A: Allocator,
 {
@@ -238,7 +238,7 @@ where
     ///
     /// [claimed]: crate::BumpScope::claim
     #[inline(always)]
-    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, A, C> {
+    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, C, A> {
         BumpScopeGuard::new(&mut self.raw)
     }
 
@@ -259,7 +259,7 @@ where
     ///
     /// [claimed]: crate::BumpScope::claim
     #[inline(always)]
-    pub fn scoped<R>(&mut self, f: impl FnOnce(&mut BumpScope<'_, A, C>) -> R) -> R {
+    pub fn scoped<R>(&mut self, f: impl FnOnce(&mut BumpScope<'_, C, A>) -> R) -> R {
         let mut guard = self.scope_guard();
         f(guard.scope())
     }
@@ -324,8 +324,8 @@ where
     ///
     /// [claimed]: crate::BumpScope::claim
     #[inline(always)]
-    pub fn scoped_with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<A, NEW_C>) -> R) -> R {
-        RawBump::<A, C>::const_assert_upwards_matches::<NEW_C>();
+    pub fn scoped_with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<NEW_C, A>) -> R) -> R {
+        RawBump::<C, A>::const_assert_upwards_matches::<NEW_C>();
 
         self.raw.assert_convertible_claimable::<NEW_C>();
         self.raw.assert_convertible_const_constructible::<NEW_C>();
@@ -391,13 +391,12 @@ where
     ///
     /// Decrease the minimum alignment:
     /// ```
-    /// use std::alloc::Global;
     /// use bump_scope::{Bump, BumpAllocator, AsMutBumpScope, config::{BumpConfig, BumpConfigBuilder}};
     ///
     /// const MIN_ALIGN_8: BumpConfig = BumpConfigBuilder::new().min_align(8).build();
     /// const MIN_ALIGN_1: BumpConfig = BumpConfigBuilder::new().build();
     ///
-    /// let mut bump: Bump<Global, MIN_ALIGN_8> = Bump::new();
+    /// let mut bump: Bump<MIN_ALIGN_8> = Bump::new();
     /// let bump = bump.as_mut_bump_scope();
     ///
     /// // make some allocations that benefit from the `MIN_ALIGN` of `8`
@@ -424,8 +423,8 @@ where
     /// dbg!(foo, bar, baz);
     /// ```
     #[inline(always)]
-    pub fn with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<'a, A, NEW_C>) -> R) -> R {
-        RawBump::<A, C>::const_assert_upwards_matches::<NEW_C>();
+    pub fn with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<'a, NEW_C, A>) -> R) -> R {
+        RawBump::<C, A>::const_assert_upwards_matches::<NEW_C>();
 
         const {
             assert!(
@@ -485,7 +484,7 @@ where
     /// assert_eq!(vec1, [1, 2, 3]);
     /// assert_eq!(vec2, [4, 5, 6]);
     /// ```
-    pub fn claim(&self) -> BumpClaimGuard<'_, 'a, A, C> {
+    pub fn claim(&self) -> BumpClaimGuard<'_, 'a, C, A> {
         BumpClaimGuard::new(self)
     }
 
@@ -496,7 +495,7 @@ where
     }
 }
 
-unsafe impl<A, const C: BumpConfig> Allocator for BumpScope<'_, A, C>
+unsafe impl<const C: BumpConfig, A> Allocator for BumpScope<'_, C, A>
 where
     A: Allocator,
 {

@@ -4,8 +4,6 @@
 
 mod common;
 
-use std::alloc::Global;
-
 #[cfg(feature = "nightly")]
 use std::mem::offset_of;
 
@@ -48,7 +46,7 @@ up_and_down! {
     #[test]
     #[cfg(feature = "nightly")]
     fn basic_ok() {
-        let bump: Bump<Global, C> = Bump::with_size(SIZE);
+        let bump: Bump<C> = Bump::with_size(SIZE);
         _ = bump.alloc_try_with(|| -> TestResult { Ok(zeroes()) }).unwrap().into_boxu();
         assert_allocated!(bump, size_of::<TestResult>());
     }
@@ -56,7 +54,7 @@ up_and_down! {
     #[test]
     #[cfg(feature = "nightly")]
     fn basic_ok_mut() {
-        let mut bump: Bump<Global, C> = Bump::with_size(SIZE);
+        let mut bump: Bump<C> = Bump::with_size(SIZE);
         _ = bump.alloc_try_with_mut(|| -> TestResult { Ok(zeroes()) }).unwrap().into_boxu();
 
 
@@ -71,21 +69,21 @@ up_and_down! {
 
     #[test]
     fn basic_err() {
-        let bump: Bump<Global, C> = Bump::with_size(SIZE);
+        let bump: Bump<C> = Bump::with_size(SIZE);
         _ = bump.alloc_try_with(|| -> TestResult { Err(zeroes()) }).unwrap_err();
         assert_eq!(bump.allocated(), 0);
     }
 
     #[test]
     fn basic_err_mut() {
-        let mut bump: Bump<Global, C> = Bump::with_size(SIZE);
+        let mut bump: Bump<C> = Bump::with_size(SIZE);
         _ = bump.alloc_try_with_mut(|| -> TestResult { Err(zeroes()) }).unwrap_err();
         assert_eq!(bump.allocated(), 0);
     }
 
     #[test]
     fn alloc_in_closure_ok() {
-        let bump: Bump<Global, C> = Bump::with_size(SIZE);
+        let bump: Bump<C> = Bump::with_size(SIZE);
 
         _ = bump.alloc_try_with(|| -> TestResult {
             bump.alloc(0u8).into_boxu();
@@ -98,7 +96,7 @@ up_and_down! {
 
     #[test]
     fn alloc_in_closure_err() {
-        let bump: Bump<Global, C> = Bump::with_size(SIZE);
+        let bump: Bump<C> = Bump::with_size(SIZE);
 
         _ = bump.alloc_try_with(|| -> TestResult {
             bump.alloc(0u8).into_boxu();

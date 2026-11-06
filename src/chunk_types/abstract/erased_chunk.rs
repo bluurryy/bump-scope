@@ -44,7 +44,7 @@ impl ErasedChunk {
     }
 
     #[inline(always)]
-    pub(crate) fn erase<A, const C: BumpConfig>(chunk: Chunk<A, C>) -> Self {
+    pub(crate) fn erase<const C: BumpConfig, A>(chunk: Chunk<C, A>) -> Self {
         unsafe { transmute(chunk) }
     }
 }

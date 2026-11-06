@@ -19,8 +19,8 @@ mod test_bump {
     fn disable_const_constructible() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
-        let input: Bump<Global, IN> = Bump::const_new();
-        let _: Bump<Global, OUT> = input.change_config();
+        let input: Bump<IN> = Bump::const_new();
+        let _: Bump<OUT> = input.change_config();
     }
 
     #[test]
@@ -28,10 +28,10 @@ mod test_bump {
     fn disable_const_constructible_while_claimed() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
-        let input: Bump<Global, IN> = Bump::const_new();
+        let input: Bump<IN> = Bump::const_new();
         forget(input.claim());
         // here, we're not able to tell whether the bump allocator is "unallocated", so we need to panic
-        let _: Bump<Global, OUT> = input.change_config();
+        let _: Bump<OUT> = input.change_config();
     }
 
     #[test]
@@ -40,9 +40,9 @@ mod test_bump {
         const IN: BumpConfig = BumpConfigBuilder::new().claimable(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().claimable(false).build();
         let base = ExpectLeaks::<Global>::new(1);
-        let input: Bump<_, IN> = Bump::new_in(&base);
+        let input: Bump<IN, _> = Bump::new_in(&base);
         forget(input.claim());
-        let _: Bump<_, OUT> = input.change_config();
+        let _: Bump<OUT, _> = input.change_config();
     }
 }
 
@@ -54,10 +54,10 @@ mod test_bump_scope {
     fn disable_claimable() {
         const IN: BumpConfig = BumpConfigBuilder::new().claimable(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().claimable(false).build();
-        let mut input_bump: Bump<Global, IN> = Bump::new();
-        let input: BumpScope<_, IN> = input_bump.as_mut_bump_scope().by_value();
+        let mut input_bump: Bump<IN> = Bump::new();
+        let input: BumpScope<IN> = input_bump.as_mut_bump_scope().by_value();
         forget(input.claim());
-        let _: BumpScope<_, OUT> = input.change_config();
+        let _: BumpScope<OUT> = input.change_config();
     }
 }
 
@@ -69,8 +69,8 @@ mod test_borrow {
     fn disable_const_constructible() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
-        let input: Bump<Global, IN> = Bump::const_new();
-        let _: &Bump<Global, OUT> = input.ref_change_config();
+        let input: Bump<IN> = Bump::const_new();
+        let _: &Bump<OUT> = input.ref_change_config();
     }
 
     #[test]
@@ -78,10 +78,10 @@ mod test_borrow {
     fn disable_const_constructible_while_claimed() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
-        let input: Bump<Global, IN> = Bump::const_new();
+        let input: Bump<IN> = Bump::const_new();
         forget(input.claim());
         // here, we're not able to tell whether the bump allocator is "unallocated", so we need to panic
-        let _: &Bump<Global, OUT> = input.ref_change_config();
+        let _: &Bump<OUT> = input.ref_change_config();
     }
 }
 
@@ -95,7 +95,7 @@ mod test_scoped_with_config {
     fn disable_const_constructible() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
-        let mut input: Bump<Global, IN> = Bump::const_new();
+        let mut input: Bump<IN> = Bump::const_new();
         input.scoped_with_config::<OUT, _>(|_| ());
     }
 
@@ -104,7 +104,7 @@ mod test_scoped_with_config {
     fn disable_const_constructible_while_claimed() {
         const IN: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().const_constructible(false).build();
-        let mut input: Bump<Global, IN> = Bump::const_new();
+        let mut input: Bump<IN> = Bump::const_new();
         forget(input.claim());
         // here, we're not able to tell whether the bump allocator is "unallocated", so we need to panic
         input.scoped_with_config::<OUT, _>(|_| ());
@@ -116,7 +116,7 @@ mod test_scoped_with_config {
         const IN: BumpConfig = BumpConfigBuilder::new().claimable(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().claimable(false).build();
         let base = ExpectLeaks::<Global>::new(1);
-        let mut input: Bump<_, IN> = Bump::new_in(&base);
+        let mut input: Bump<IN, _> = Bump::new_in(&base);
         forget(input.claim());
         input.scoped_with_config::<OUT, _>(|_| ());
     }

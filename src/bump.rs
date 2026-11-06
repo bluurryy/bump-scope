@@ -175,19 +175,19 @@ use crate::panic_on_error;
 ///
 /// [`as_mut_bump_scope`]: Bump::as_mut_bump_scope
 #[repr(transparent)]
-pub struct Bump<A: Allocator = Global, const C: BumpConfig = DEFAULT_BUMP_CONFIG> {
-    pub(crate) raw: RawBump<A, C>,
+pub struct Bump<const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = Global> {
+    pub(crate) raw: RawBump<C, A>,
 }
 
 // Sending Bumps when nothing is allocated is fine.
 // When something is allocated Bump is borrowed and sending is not possible.
-unsafe impl<A, const C: BumpConfig> Send for Bump<A, C> where A: Send + Allocator {}
+unsafe impl<const C: BumpConfig, A> Send for Bump<C, A> where A: Send + Allocator {}
 
-impl<A, const C: BumpConfig> UnwindSafe for Bump<A, C> where A: Allocator + UnwindSafe {}
+impl<const C: BumpConfig, A> UnwindSafe for Bump<C, A> where A: Allocator + UnwindSafe {}
 
-impl<A, const C: BumpConfig> RefUnwindSafe for Bump<A, C> where A: Allocator + RefUnwindSafe {}
+impl<const C: BumpConfig, A> RefUnwindSafe for Bump<C, A> where A: Allocator + RefUnwindSafe {}
 
-impl<A, const C: BumpConfig> Drop for Bump<A, C>
+impl<const C: BumpConfig, A> Drop for Bump<C, A>
 where
     A: Allocator,
 {
@@ -196,7 +196,7 @@ where
     }
 }
 
-impl<A, const C: BumpConfig> Debug for Bump<A, C>
+impl<const C: BumpConfig, A> Debug for Bump<C, A>
 where
     A: Allocator,
 {
@@ -205,7 +205,7 @@ where
     }
 }
 
-impl<A, const C: BumpConfig> Default for Bump<A, C>
+impl<const C: BumpConfig, A> Default for Bump<C, A>
 where
     A: Allocator + Default + 'static,
 {
@@ -232,7 +232,7 @@ where
     }
 }
 
-impl<A, const C: BumpConfig> Bump<A, C>
+impl<const C: BumpConfig, A> Bump<C, A>
 where
     A: Allocator + Default + 'static,
 {
@@ -244,13 +244,11 @@ where
     /// # Examples
     ///
     /// ```
-    /// use std::alloc::Global;
-    ///
     /// use bump_scope::{Bump, config::{BumpConfig, BumpConfigBuilder}};
     ///
     /// const CONFIG: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
     ///
-    /// let bump: Bump<Global, CONFIG> = Bump::const_new();
+    /// let bump: Bump<CONFIG> = Bump::const_new();
     /// # _ = bump;
     /// ```
     ///
@@ -263,7 +261,7 @@ where
 }
 
 /// Methods for a `Bump` with a default base allocator.
-impl<A, const C: BumpConfig> Bump<A, C>
+impl<const C: BumpConfig, A> Bump<C, A>
 where
     A: Allocator + Default,
 {
@@ -422,7 +420,7 @@ where
 }
 
 /// Methods that are always available.
-impl<A, const C: BumpConfig> Bump<A, C>
+impl<const C: BumpConfig, A> Bump<C, A>
 where
     A: Allocator,
 {
@@ -723,7 +721,7 @@ where
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats(&self) -> Stats<'_, A, C> {
+    pub fn stats(&self) -> Stats<'_, C, A> {
         self.as_bump_scope().stats()
     }
 
@@ -742,8 +740,8 @@ where
     /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     ///
     #[inline]
-    pub fn change_config<const NEW_C: BumpConfig>(self) -> Bump<A, NEW_C> {
-        RawBump::<A, C>::const_assert_upwards_matches::<NEW_C>();
+    pub fn change_config<const NEW_C: BumpConfig>(self) -> Bump<NEW_C, A> {
+        RawBump::<C, A>::const_assert_upwards_matches::<NEW_C>();
 
         self.raw.assert_convertible_claimable::<NEW_C>();
         self.raw.assert_convertible_const_constructible::<NEW_C>();
@@ -767,7 +765,7 @@ where
     /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
-    pub fn ref_change_config<const NEW_C: BumpConfig>(&self) -> &Bump<A, NEW_C> {
+    pub fn ref_change_config<const NEW_C: BumpConfig>(&self) -> &Bump<NEW_C, A> {
         self.raw.ensure_satisfies_config_for_borrow::<NEW_C>();
         unsafe { transmute_ref(self) }
     }
@@ -785,7 +783,7 @@ where
     /// [`const_constructible`]: crate::config::BumpConfigBuilder::const_constructible
     /// [`min_align`]: crate::config::BumpConfigBuilder::min_align
     #[inline]
-    pub fn mut_change_config<const NEW_C: BumpConfig>(&mut self) -> &mut Bump<A, NEW_C> {
+    pub fn mut_change_config<const NEW_C: BumpConfig>(&mut self) -> &mut Bump<NEW_C, A> {
         self.raw.ensure_satisfies_config_for_borrow_mut::<NEW_C>();
         unsafe { transmute_mut(self) }
     }
@@ -826,7 +824,7 @@ where
 }
 
 /// Additional `alloc` methods that are not available in traits.
-impl<A, const C: BumpConfig> Bump<A, C>
+impl<const C: BumpConfig, A> Bump<C, A>
 where
     A: Allocator,
 {
@@ -839,36 +837,36 @@ where
 
     /// Forwards to [`BumpScope::claim`].
     #[inline(always)]
-    pub fn claim(&self) -> BumpClaimGuard<'_, '_, A, C> {
+    pub fn claim(&self) -> BumpClaimGuard<'_, '_, C, A> {
         self.as_bump_scope().claim()
     }
 
     /// Forwards to [`BumpScope::scope_guard`].
     #[inline(always)]
-    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, A, C> {
+    pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, C, A> {
         self.as_mut_bump_scope().scope_guard()
     }
 
     /// Forwards to [`BumpScope::scoped`].
     #[inline(always)]
-    pub fn scoped<R>(&mut self, f: impl FnOnce(&mut BumpScope<A, C>) -> R) -> R {
+    pub fn scoped<R>(&mut self, f: impl FnOnce(&mut BumpScope<C, A>) -> R) -> R {
         self.as_mut_bump_scope().scoped(f)
     }
 
     /// Forwards to [`BumpScope::scoped_with_config`].
     #[inline(always)]
-    pub fn scoped_with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<A, NEW_C>) -> R) -> R {
+    pub fn scoped_with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<NEW_C, A>) -> R) -> R {
         self.as_mut_bump_scope().scoped_with_config::<NEW_C, R>(f)
     }
 
     /// Forwards to [`BumpScope::with_config`].
     #[inline(always)]
-    pub fn with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<'_, A, NEW_C>) -> R) -> R {
+    pub fn with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<'_, NEW_C, A>) -> R) -> R {
         self.as_mut_bump_scope().with_config(f)
     }
 }
 
-unsafe impl<A, const C: BumpConfig> Allocator for Bump<A, C>
+unsafe impl<const C: BumpConfig, A> Allocator for Bump<C, A>
 where
     A: Allocator,
 {

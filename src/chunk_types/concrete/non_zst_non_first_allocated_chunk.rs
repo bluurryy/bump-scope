@@ -3,32 +3,32 @@ use core::{alloc::Layout, cell::Cell, marker::PhantomData, ptr::NonNull};
 use crate::config::BumpConfig;
 
 #[repr(C, align(16))]
-struct Header<A, const C: BumpConfig> {
+struct Header<const C: BumpConfig, A> {
     pos: Cell<NonNull<u8>>,
     end: NonNull<u8>,
 
-    prev: Option<NonZstNonFirstAllocatedChunk<A, C>>,
-    next: Cell<Option<NonZstNonFirstAllocatedChunk<A, C>>>,
+    prev: Option<NonZstNonFirstAllocatedChunk<C, A>>,
+    next: Cell<Option<NonZstNonFirstAllocatedChunk<C, A>>>,
 
     allocator_ptr: NonNull<A>,
 }
 
 #[repr(transparent)]
-pub(crate) struct NonZstNonFirstAllocatedChunk<A, const C: BumpConfig> {
-    header: NonNull<Header<A, C>>,
+pub(crate) struct NonZstNonFirstAllocatedChunk<const C: BumpConfig, A> {
+    header: NonNull<Header<C, A>>,
     marker: PhantomData<*const A>,
 }
 
-impl<A, const C: BumpConfig> Clone for NonZstNonFirstAllocatedChunk<A, C> {
+impl<const C: BumpConfig, A> Clone for NonZstNonFirstAllocatedChunk<C, A> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, const C: BumpConfig> Copy for NonZstNonFirstAllocatedChunk<A, C> {}
+impl<const C: BumpConfig, A> Copy for NonZstNonFirstAllocatedChunk<C, A> {}
 
-impl<A, const C: BumpConfig> NonZstNonFirstAllocatedChunk<A, C> {
-    pub(crate) const HEADER_LAYOUT: Layout = Layout::new::<Header<A, C>>();
+impl<const C: BumpConfig, A> NonZstNonFirstAllocatedChunk<C, A> {
+    pub(crate) const HEADER_LAYOUT: Layout = Layout::new::<Header<C, A>>();
 
     #[expect(dead_code)]
     pub(crate) fn as_ptr(self) -> NonNull<()> {

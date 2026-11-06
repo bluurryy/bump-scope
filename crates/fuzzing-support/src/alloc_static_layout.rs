@@ -1,5 +1,5 @@
 use std::{
-    alloc::{Allocator, Global, Layout},
+    alloc::{Allocator, Layout},
     fmt::Debug,
     mem,
 };
@@ -36,7 +36,7 @@ macro_rules! run_dir {
 macro_rules! run_dir_align {
     ($self:ident, $upwards:literal, $min_align:literal) => {{
         const C: BumpConfig = BumpConfigBuilder::new().upwards($upwards).min_align($min_align).build();
-        let bump = Bump::<Global, C>::with_capacity(Layout::new::<[u8; 32]>());
+        let bump = Bump::<C>::with_capacity(Layout::new::<[u8; 32]>());
 
         let mut prev = Range::new_slice(bump.alloc_uninit_slice::<u8>($self.offset.0).into_ref());
 
@@ -157,7 +157,7 @@ trait AnyBump {
     fn alloc_static_slice<T: Default>(&self, len: usize) -> Range;
 }
 
-impl<const C: BumpConfig> AnyBump for &Bump<Global, C> {
+impl<const C: BumpConfig> AnyBump for &Bump<C> {
     fn alloc_dynamic(&self, layout: Layout) -> Range {
         let start = self.allocate(layout).unwrap().addr().get();
         Range {

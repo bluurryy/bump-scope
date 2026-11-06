@@ -9,7 +9,7 @@ use std::{
     sync::{Mutex, PoisonError},
 };
 
-use bump_scope::BumpAllocator as _;
+use bump_scope::{BumpAllocator as _, config::DEFAULT_BUMP_CONFIG};
 
 #[repr(C, align(16))]
 struct StaticAllocator<const SIZE: usize> {
@@ -102,7 +102,7 @@ unsafe impl<const SIZE: usize> Allocator for &StaticAllocator<SIZE> {
     }
 }
 
-type Bump<A> = bump_scope::Bump<A>;
+type Bump<A> = bump_scope::Bump<DEFAULT_BUMP_CONFIG, A>;
 
 fn on_stack() {
     let memory = StaticAllocator::<1024>::new();

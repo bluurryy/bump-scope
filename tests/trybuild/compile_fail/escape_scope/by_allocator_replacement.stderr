@@ -9,6 +9,6 @@ error[E0597]: `guard` does not live long enough
 14 |     }
    |     - `guard` dropped here while still borrowed
 15 | }
-   | - borrow might be used here, when `unshackled` is dropped and runs the destructor for type `(Box<i32, Unmanaged<'_>>, &&mut BumpScope<'_, std::alloc::Global, 30759166589960318871414660254299848704>)`
+   | - borrow might be used here, when `unshackled` is dropped and runs the destructor for type `(Box<i32, Unmanaged<'_>>, &&mut BumpScope<'_, 30759166589960318871414660254299848704>)`
    |
    = note: values in a scope are dropped in the opposite order they are defined

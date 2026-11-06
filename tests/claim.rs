@@ -2,7 +2,7 @@
 
 mod common;
 
-use std::{alloc::Global, mem::forget};
+use std::mem::forget;
 
 use bump_scope::Bump;
 
@@ -13,7 +13,7 @@ up_and_down! {
 
     #[test]
     fn scoped() {
-        let bump = Bump::<Global, C>::new();
+        let bump = Bump::<C>::new();
 
         let vec1: Vec<u8, _> = extra::vec![in &bump; 1, 2, 3];
         let vec2: Vec<u8, _> = extra::vec![in &bump; 4, 5, 6];
@@ -33,7 +33,7 @@ up_and_down! {
 
     #[test]
     fn scope_guard() {
-        let bump = Bump::<Global, C>::new();
+        let bump = Bump::<C>::new();
 
         let vec1: Vec<u8, _> = extra::vec![in &bump; 1, 2, 3];
         let vec2: Vec<u8, _> = extra::vec![in &bump; 4, 5, 6];
@@ -57,7 +57,7 @@ up_and_down! {
 
     #[test]
     fn alloc_mut() {
-        let bump = Bump::<Global, C>::new();
+        let bump = Bump::<C>::new();
 
         let uno_dos_tres = bump.claim().alloc_iter_mut([1, 2, 3]).into_ref();
         assert_eq!(uno_dos_tres, [1, 2, 3]);
@@ -66,7 +66,7 @@ up_and_down! {
     #[test]
     fn enter_scope_on_claimed() {
         fn inner() {
-            let mut bump = Bump::<Global, C>::new();
+            let mut bump = Bump::<C>::new();
             let mut guard = bump.scope_guard();
             let mut scope = guard.scope().by_value();
             forget(scope.claim());
@@ -85,7 +85,7 @@ up_and_down! {
     #[test]
     fn exit_scope_on_claimed() {
         fn inner() {
-            let mut bump = Bump::<Global, C>::new();
+            let mut bump = Bump::<C>::new();
 
             {
                 let mut guard = bump.scope_guard();

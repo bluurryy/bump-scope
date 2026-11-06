@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Redesigned bump allocator traits, no more `Core` and `Typed` variants
 - **Breaking:** Rename `guaranteed_allocated` setting to  not-`const_constructible`
 - **Breaking:** Rename `Bump::unallocated()` to `Bump::const_new()`
+- **Breaking:** Swap base allocator and bump config generic parameters
 
 ### Removed
 

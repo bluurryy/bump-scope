@@ -2,7 +2,7 @@
 
 mod common;
 
-use std::{alloc::Global, dbg};
+use std::dbg;
 
 use bump_scope::Bump;
 
@@ -13,7 +13,7 @@ up_and_down! {
 
     #[test]
     fn bump_vec() {
-        let bump = Bump::<Global, C>::new();
+        let bump = Bump::<C>::new();
 
         bump.alloc(8u8).into_boxu();
 

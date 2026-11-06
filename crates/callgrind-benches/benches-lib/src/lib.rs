@@ -18,10 +18,7 @@ trait BumpAllocator {
 mod create_bump_by_library {
     macro_rules! bump_scope {
         ($min_align:literal, $upwards:literal) => {
-            use ::std::{
-                alloc::{Global, Layout},
-                ptr::NonNull,
-            };
+            use ::std::{alloc::Layout, ptr::NonNull};
 
             use ::bump_scope::{
                 BumpAllocator as _,
@@ -34,7 +31,7 @@ mod create_bump_by_library {
                 .build();
 
             #[repr(transparent)]
-            pub struct Bump(bump_scope::Bump<Global, C>);
+            pub struct Bump(bump_scope::Bump<C>);
 
             unsafe impl Allocator for Bump {
                 fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {

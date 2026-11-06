@@ -6,31 +6,31 @@ use crate::{
 };
 
 #[repr(C, align(16))]
-struct Header<A, const C: BumpConfig> {
+struct Header<const C: BumpConfig, A> {
     pos: Cell<NonNull<u8>>,
     end: NonNull<u8>,
 
-    prev: Option<NonZstAllocatedChunk<A, C>>,
-    next: Cell<Option<NonZstAllocatedChunk<A, C>>>,
+    prev: Option<NonZstAllocatedChunk<C, A>>,
+    next: Cell<Option<NonZstAllocatedChunk<C, A>>>,
 
     allocator_ptr: NonNull<A>,
 }
 
 #[repr(transparent)]
-pub(crate) struct NonZstAllocatedChunk<A, const C: BumpConfig> {
-    header: NonNull<Header<A, C>>,
+pub(crate) struct NonZstAllocatedChunk<const C: BumpConfig, A> {
+    header: NonNull<Header<C, A>>,
     marker: PhantomData<*const A>,
 }
 
-impl<A, const C: BumpConfig> Clone for NonZstAllocatedChunk<A, C> {
+impl<const C: BumpConfig, A> Clone for NonZstAllocatedChunk<C, A> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, const C: BumpConfig> Copy for NonZstAllocatedChunk<A, C> {}
+impl<const C: BumpConfig, A> Copy for NonZstAllocatedChunk<C, A> {}
 
-impl<A, const C: BumpConfig> NonZstAllocatedChunk<A, C> {
+impl<const C: BumpConfig, A> NonZstAllocatedChunk<C, A> {
     #[expect(dead_code)]
     pub(crate) fn as_ptr(self) -> NonNull<()> {
         self.header.cast()
@@ -69,7 +69,7 @@ impl<A, const C: BumpConfig> NonZstAllocatedChunk<A, C> {
         unsafe { self.header.as_ref() }.allocator_ptr
     }
 
-    pub(crate) fn kind(self) -> NonZstAllocatedChunkKind<A, C> {
+    pub(crate) fn kind(self) -> NonZstAllocatedChunkKind<C, A> {
         unsafe {
             if self.prev().is_some() {
                 NonZstAllocatedChunkKind::NonFirst(transmute(self))
@@ -82,9 +82,9 @@ impl<A, const C: BumpConfig> NonZstAllocatedChunk<A, C> {
     pub(crate) unsafe fn init(ptr: NonNull<u8>, size: usize, prev: Self) -> Self {
         unsafe {
             let header = if config!(upwards) {
-                ptr.cast::<Header<A, C>>()
+                ptr.cast::<Header<C, A>>()
             } else {
-                ptr.add(size).cast::<Header<A, C>>().sub(1)
+                ptr.add(size).cast::<Header<C, A>>().sub(1)
             };
 
             let pos = Cell::new(if config!(upwards) {
@@ -110,7 +110,7 @@ impl<A, const C: BumpConfig> NonZstAllocatedChunk<A, C> {
     }
 }
 
-pub(crate) enum NonZstAllocatedChunkKind<A, const C: BumpConfig> {
-    First(#[expect(dead_code)] NonZstFirstAllocatedChunk<A, C>),
-    NonFirst(#[expect(dead_code)] NonZstNonFirstAllocatedChunk<A, C>),
+pub(crate) enum NonZstAllocatedChunkKind<const C: BumpConfig, A> {
+    First(#[expect(dead_code)] NonZstFirstAllocatedChunk<C, A>),
+    NonFirst(#[expect(dead_code)] NonZstNonFirstAllocatedChunk<C, A>),
 }

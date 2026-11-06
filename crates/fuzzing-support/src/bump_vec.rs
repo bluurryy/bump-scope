@@ -1,5 +1,3 @@
-use std::alloc::Global;
-
 use arbitrary::Arbitrary;
 use bump_scope::{
     Bump, BumpAllocator,
@@ -24,7 +22,7 @@ macro_rules! run_dir {
 macro_rules! run_dir_align {
     ($self:ident, $upwards:literal, $min_align:literal) => {{
         const C: BumpConfig = BumpConfigBuilder::new().upwards($upwards).min_align($min_align).build();
-        let bump = Bump::<Global, C>::new();
+        let bump = Bump::<C>::new();
 
         let mut vecs = $self
             .vecs
@@ -112,7 +110,7 @@ struct VecObj<'a> {
 }
 
 impl<'a> VecObj<'a> {
-    fn new<T, const C: BumpConfig>(bump: &'a Bump<Global, C>, bit_pattern: u8) -> Self
+    fn new<T, const C: BumpConfig>(bump: &'a Bump<C>, bit_pattern: u8) -> Self
     where
         T: Default + FromBytes + IntoBytes + Immutable + 'static,
     {

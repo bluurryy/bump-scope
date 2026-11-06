@@ -2,7 +2,7 @@
 
 mod common;
 
-use std::{alloc::Global, vec::Vec};
+use std::vec::Vec;
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
@@ -19,7 +19,7 @@ up_and_down! {
             return;
         }
 
-        let mut pool = BumpPool::<Global, C>::new();
+        let mut pool = BumpPool::<C>::new();
 
         let ints: Vec<&mut usize> = (0..1000usize)
             .into_par_iter()
@@ -39,7 +39,7 @@ up_and_down! {
 
     #[test]
     fn scope() {
-        let pool = BumpPool::<Global>::new();
+        let pool = <BumpPool>::new();
         let (sender, receiver) = std::sync::mpsc::sync_channel(10);
 
         std::thread::scope(|s| {

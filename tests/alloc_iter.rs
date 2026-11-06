@@ -2,8 +2,6 @@
 
 mod common;
 
-use std::alloc::Global;
-
 use bump_scope::Bump;
 
 use crate::common::up_and_down;
@@ -13,7 +11,7 @@ up_and_down! {
 
     #[test]
     fn zst() {
-        let mut bump: Bump<Global, C> = Bump::new();
+        let mut bump: Bump<C> = Bump::new();
 
         bump.alloc_iter([[0u8; 0]; 10]).into_boxu();
         bump.alloc_iter([[0u16; 0]; 10]).into_boxu();
@@ -30,7 +28,7 @@ up_and_down! {
 
     #[test]
     fn empty() {
-        let mut bump: Bump<Global, C> = Bump::new();
+        let mut bump: Bump<C> = Bump::new();
 
         bump.alloc_iter(core::iter::empty::<u8>()).into_boxu();
         bump.alloc_iter(core::iter::empty::<u16>()).into_boxu();
@@ -47,14 +45,14 @@ up_and_down! {
 
     #[test]
     fn three() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
         bump.alloc_iter(SuppressHints([1, 2, 3].into_iter())).into_boxu();
         assert_eq!(bump.allocated(), 3 * 4);
     }
 
     #[test]
     fn three_mut() {
-        let mut bump: Bump<Global, C> = Bump::new();
+        let mut bump: Bump<C> = Bump::new();
         bump.alloc_iter_mut(SuppressHints([1, 2, 3].into_iter())).into_boxu();
         assert_eq!(bump.allocated(), 3 * 4);
     }

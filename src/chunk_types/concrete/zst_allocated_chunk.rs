@@ -3,30 +3,30 @@ use core::{alloc::Layout, cell::Cell, marker::PhantomData, ptr::NonNull};
 use crate::config::{BumpConfig, config};
 
 #[repr(C, align(16))]
-struct Header<A, const C: BumpConfig> {
+struct Header<const C: BumpConfig, A> {
     pos: Cell<NonNull<u8>>,
     end: NonNull<u8>,
 
-    prev: Option<ZstAllocatedChunk<A, C>>,
-    next: Cell<Option<ZstAllocatedChunk<A, C>>>,
+    prev: Option<ZstAllocatedChunk<C, A>>,
+    next: Cell<Option<ZstAllocatedChunk<C, A>>>,
 }
 
 #[repr(transparent)]
-pub(crate) struct ZstAllocatedChunk<A, const C: BumpConfig> {
-    header: NonNull<Header<A, C>>,
+pub(crate) struct ZstAllocatedChunk<const C: BumpConfig, A> {
+    header: NonNull<Header<C, A>>,
     marker: PhantomData<*const A>,
 }
 
-impl<A, const C: BumpConfig> Clone for ZstAllocatedChunk<A, C> {
+impl<const C: BumpConfig, A> Clone for ZstAllocatedChunk<C, A> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, const C: BumpConfig> Copy for ZstAllocatedChunk<A, C> {}
+impl<const C: BumpConfig, A> Copy for ZstAllocatedChunk<C, A> {}
 
-impl<A, const C: BumpConfig> ZstAllocatedChunk<A, C> {
-    pub(crate) const HEADER_LAYOUT: Layout = Layout::new::<Header<A, C>>();
+impl<const C: BumpConfig, A> ZstAllocatedChunk<C, A> {
+    pub(crate) const HEADER_LAYOUT: Layout = Layout::new::<Header<C, A>>();
 
     #[expect(dead_code)]
     pub(crate) fn as_ptr(self) -> NonNull<()> {
@@ -71,9 +71,9 @@ impl<A, const C: BumpConfig> ZstAllocatedChunk<A, C> {
     pub(crate) unsafe fn init(ptr: NonNull<u8>, size: usize, prev: Self) -> Self {
         unsafe {
             let header = if config!(upwards) {
-                ptr.cast::<Header<A, C>>()
+                ptr.cast::<Header<C, A>>()
             } else {
-                ptr.add(size).cast::<Header<A, C>>().sub(1)
+                ptr.add(size).cast::<Header<C, A>>().sub(1)
             };
 
             let pos = Cell::new(if config!(upwards) {

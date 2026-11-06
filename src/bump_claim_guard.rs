@@ -4,6 +4,8 @@ use core::{
     ops::{Deref, DerefMut},
 };
 
+use alloc::alloc::Global;
+
 use crate::{
     BumpScope,
     config::{BumpConfig, DEFAULT_BUMP_CONFIG},
@@ -15,20 +17,20 @@ use crate::traits::*;
 
 /// Returned from [`BumpScope::claim`].
 #[must_use]
-pub struct BumpClaimGuard<'b, 'a, A, const C: BumpConfig = DEFAULT_BUMP_CONFIG>
+pub struct BumpClaimGuard<'b, 'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A = Global>
 where
     A: Allocator,
 {
-    pub(crate) original: &'b BumpScope<'a, A, C>,
-    pub(crate) claimant: BumpScope<'a, A, C>,
+    pub(crate) original: &'b BumpScope<'a, C, A>,
+    pub(crate) claimant: BumpScope<'a, C, A>,
 }
 
-impl<'b, 'a, A, const C: BumpConfig> BumpClaimGuard<'b, 'a, A, C>
+impl<'b, 'a, const C: BumpConfig, A> BumpClaimGuard<'b, 'a, C, A>
 where
     A: Allocator,
 {
     #[inline(always)]
-    pub(crate) fn new(original: &'b BumpScope<'a, A, C>) -> Self {
+    pub(crate) fn new(original: &'b BumpScope<'a, C, A>) -> Self {
         let claimed = original.raw.claim();
 
         let claimant = BumpScope {
@@ -40,11 +42,11 @@ where
     }
 }
 
-impl<'a, A, const C: BumpConfig> Deref for BumpClaimGuard<'_, 'a, A, C>
+impl<'a, const C: BumpConfig, A> Deref for BumpClaimGuard<'_, 'a, C, A>
 where
     A: Allocator,
 {
-    type Target = BumpScope<'a, A, C>;
+    type Target = BumpScope<'a, C, A>;
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
@@ -52,7 +54,7 @@ where
     }
 }
 
-impl<A, const C: BumpConfig> DerefMut for BumpClaimGuard<'_, '_, A, C>
+impl<const C: BumpConfig, A> DerefMut for BumpClaimGuard<'_, '_, C, A>
 where
     A: Allocator,
 {
@@ -62,7 +64,7 @@ where
     }
 }
 
-impl<A, const C: BumpConfig> Drop for BumpClaimGuard<'_, '_, A, C>
+impl<const C: BumpConfig, A> Drop for BumpClaimGuard<'_, '_, C, A>
 where
     A: Allocator,
 {

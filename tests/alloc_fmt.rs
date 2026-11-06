@@ -2,7 +2,7 @@
 
 mod common;
 
-use std::{alloc::Global, fmt::Display};
+use std::fmt::Display;
 
 use bump_scope::Bump;
 
@@ -21,7 +21,7 @@ up_and_down! {
             }
         }
 
-        let mut bump: Bump<Global, C> = Bump::new();
+        let mut bump: Bump<C> = Bump::new();
 
         bump.alloc_fmt(format_args!("{Nothing}")).into_boxu();
         bump.alloc_fmt_mut(format_args!("{Nothing}")).into_boxu();
@@ -31,7 +31,7 @@ up_and_down! {
 
     #[test]
     fn nothing_extra() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
         let string = bump.alloc_fmt(format_args!("ext{Nothing}ra")).into_boxu();
         assert_eq!(&*string, "extra");
         assert_eq!(bump.allocated(), 5);
@@ -39,7 +39,7 @@ up_and_down! {
 
     #[test]
     fn nothing_extra_mut() {
-        let mut bump: Bump<Global, C> = Bump::new();
+        let mut bump: Bump<C> = Bump::new();
         let bump = bump.as_mut_bump_scope();
         let string = bump.alloc_fmt_mut(format_args!("ext{Nothing}ra")).into_boxu();
         assert_eq!(&*string, "extra");
@@ -48,14 +48,14 @@ up_and_down! {
 
     #[test]
     fn three() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
         bump.alloc_fmt(format_args!("{}", 3.1)).into_boxu();
         assert_eq!(bump.allocated(), 3);
     }
 
     #[test]
     fn three_mut() {
-        let mut bump: Bump<Global, C> = Bump::new();
+        let mut bump: Bump<C> = Bump::new();
         bump.alloc_fmt_mut(format_args!("{}", 3.1)).into_boxu();
         assert_eq!(bump.allocated(), 3);
     }
@@ -63,14 +63,14 @@ up_and_down! {
     #[test]
     #[should_panic = "formatting trait implementation returned an error"]
     fn trait_panic() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
         bump.alloc_fmt(format_args!("{ErrorsOnFmt}")).into_boxu();
     }
 
     #[test]
     #[should_panic = "formatting trait implementation returned an error"]
     fn trait_panic_mut() {
-        let mut bump: Bump<Global, C> = Bump::new();
+        let mut bump: Bump<C> = Bump::new();
         bump.alloc_fmt_mut(format_args!("{ErrorsOnFmt}")).into_boxu();
     }
 

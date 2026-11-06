@@ -12,20 +12,20 @@ struct Header {
 }
 
 #[repr(transparent)]
-pub(crate) struct ClaimedChunk<A, const C: BumpConfig> {
+pub(crate) struct ClaimedChunk<const C: BumpConfig, A> {
     header: NonNull<Header>,
     marker: PhantomData<*const A>,
 }
 
-impl<A, const C: BumpConfig> Clone for ClaimedChunk<A, C> {
+impl<const C: BumpConfig, A> Clone for ClaimedChunk<C, A> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, const C: BumpConfig> Copy for ClaimedChunk<A, C> {}
+impl<const C: BumpConfig, A> Copy for ClaimedChunk<C, A> {}
 
-impl<A, const C: BumpConfig> ClaimedChunk<A, C> {
+impl<const C: BumpConfig, A> ClaimedChunk<C, A> {
     pub(crate) const VALUE: Self = {
         let static_header: &'static Header = const {
             &Header {

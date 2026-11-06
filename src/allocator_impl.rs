@@ -14,7 +14,7 @@ use crate::{
 };
 
 #[inline(always)]
-pub fn allocate<A, const C: BumpConfig>(bump: &RawBump<A, C>, layout: Layout) -> Result<NonNull<[u8]>, AllocError>
+pub fn allocate<const C: BumpConfig, A>(bump: &RawBump<C, A>, layout: Layout) -> Result<NonNull<[u8]>, AllocError>
 where
     A: Allocator,
 {
@@ -25,7 +25,7 @@ where
 }
 
 #[inline(always)]
-pub unsafe fn deallocate<A, const C: BumpConfig>(bump: &RawBump<A, C>, ptr: NonNull<u8>, layout: Layout)
+pub unsafe fn deallocate<const C: BumpConfig, A>(bump: &RawBump<C, A>, ptr: NonNull<u8>, layout: Layout)
 where
     A: Allocator,
 {
@@ -42,7 +42,7 @@ where
 }
 
 #[inline(always)]
-unsafe fn deallocate_assume_last<A, const C: BumpConfig>(bump: &RawBump<A, C>, ptr: NonNull<u8>, layout: Layout)
+unsafe fn deallocate_assume_last<const C: BumpConfig, A>(bump: &RawBump<C, A>, ptr: NonNull<u8>, layout: Layout)
 where
     A: Allocator,
 {
@@ -73,7 +73,7 @@ where
 /// chunk since a memory block is only returned from a bump allocator with a non-dummy
 /// chunk.
 #[inline(always)]
-unsafe fn is_last<A, const C: BumpConfig>(bump: &RawBump<A, C>, ptr: NonNull<u8>, layout: Layout) -> bool
+unsafe fn is_last<const C: BumpConfig, A>(bump: &RawBump<C, A>, ptr: NonNull<u8>, layout: Layout) -> bool
 where
     A: Allocator,
 {
@@ -85,8 +85,8 @@ where
 }
 
 #[inline(always)]
-pub unsafe fn grow<A, const C: BumpConfig>(
-    bump: &RawBump<A, C>,
+pub unsafe fn grow<const C: BumpConfig, A>(
+    bump: &RawBump<C, A>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -181,8 +181,8 @@ where
 }
 
 #[inline(always)]
-pub unsafe fn grow_zeroed<A, const C: BumpConfig>(
-    bump: &RawBump<A, C>,
+pub unsafe fn grow_zeroed<const C: BumpConfig, A>(
+    bump: &RawBump<C, A>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -205,8 +205,8 @@ where
 /// That's different to bumpalo's shrink implementation, which only shrinks if it can do so with `copy_nonoverlapping`
 /// and doesn't attempt to recover memory if the alignment doesn't fit.
 #[inline(always)]
-pub unsafe fn shrink<A, const C: BumpConfig>(
-    bump: &RawBump<A, C>,
+pub unsafe fn shrink<const C: BumpConfig, A>(
+    bump: &RawBump<C, A>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -217,8 +217,8 @@ where
     /// Called when `new_layout` doesn't fit alignment.
     #[cold]
     #[inline(never)]
-    unsafe fn shrink_unfit<A, const C: BumpConfig>(
-        bump: &RawBump<A, C>,
+    unsafe fn shrink_unfit<const C: BumpConfig, A>(
+        bump: &RawBump<C, A>,
         old_ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,

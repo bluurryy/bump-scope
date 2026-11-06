@@ -2,8 +2,6 @@
 
 mod common;
 
-use std::alloc::Global;
-
 use bump_scope::Bump;
 use common::up_and_down;
 
@@ -16,7 +14,7 @@ up_and_down! {
         let expected_size = 4096 - malloc_overhead;
 
         const MY_C: BumpConfig = BumpConfigBuilder(C).const_constructible(true).min_chunk_size(4096).build();
-        type MyBump = Bump<Global, MY_C>;
+        type MyBump = Bump<MY_C>;
 
         assert_eq!(0, MyBump::const_new().stats().size());
         assert_eq!(expected_size, MyBump::with_size(0).stats().size());

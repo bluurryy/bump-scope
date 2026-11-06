@@ -18,20 +18,20 @@ struct Header {
 }
 
 #[repr(transparent)]
-pub(crate) struct Chunk<A, const C: BumpConfig> {
+pub(crate) struct Chunk<const C: BumpConfig, A> {
     header: NonNull<Header>,
     marker: PhantomData<*const A>,
 }
 
-impl<A, const C: BumpConfig> Clone for Chunk<A, C> {
+impl<const C: BumpConfig, A> Clone for Chunk<C, A> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, const C: BumpConfig> Copy for Chunk<A, C> {}
+impl<const C: BumpConfig, A> Copy for Chunk<C, A> {}
 
-impl<A, const C: BumpConfig> Chunk<A, C> {
+impl<const C: BumpConfig, A> Chunk<C, A> {
     pub(crate) fn as_ptr(self) -> NonNull<()> {
         self.header.cast()
     }
@@ -47,24 +47,24 @@ impl<A, const C: BumpConfig> Chunk<A, C> {
         }
     }
 
-    pub const fn from_const_constructor(chunk: ConstConstructorChunk<A, C>) -> Self {
+    pub const fn from_const_constructor(chunk: ConstConstructorChunk<C, A>) -> Self {
         unsafe { transmute(chunk) }
     }
 
-    pub const fn from_allocated(chunk: AllocatedChunk<A, C>) -> Self {
+    pub const fn from_allocated(chunk: AllocatedChunk<C, A>) -> Self {
         unsafe { transmute(chunk) }
     }
 
-    pub const fn from_claimed(chunk: ClaimedChunk<A, C>) -> Self {
+    pub const fn from_claimed(chunk: ClaimedChunk<C, A>) -> Self {
         unsafe { transmute(chunk) }
     }
 
-    pub(crate) fn from_first(zst: FirstAllocatedChunk<A, C>) -> Self {
+    pub(crate) fn from_first(zst: FirstAllocatedChunk<C, A>) -> Self {
         unsafe { transmute(zst) }
     }
 }
 
-impl<A, const C: BumpConfig> Chunk<A, C> {
+impl<const C: BumpConfig, A> Chunk<C, A> {
     pub(crate) fn is_unallocated(self) -> bool {
         config!(const_constructible) && self.pos() == dummy_memory_region::CONST_CONSTRUCTOR_POS
     }
@@ -73,7 +73,7 @@ impl<A, const C: BumpConfig> Chunk<A, C> {
         config!(claimable) && self.pos() == dummy_memory_region::CLAIMED_POS
     }
 
-    pub(crate) fn kind(self) -> ChunkKind<A, C> {
+    pub(crate) fn kind(self) -> ChunkKind<C, A> {
         unsafe {
             if self.is_unallocated() {
                 ChunkKind::ConstConstructor(transmute(self))
@@ -85,14 +85,14 @@ impl<A, const C: BumpConfig> Chunk<A, C> {
         }
     }
 
-    pub(crate) fn as_allocated(self) -> Option<AllocatedChunk<A, C>> {
+    pub(crate) fn as_allocated(self) -> Option<AllocatedChunk<C, A>> {
         match self.kind() {
             ChunkKind::Claimed(_) | ChunkKind::ConstConstructor(_) => None,
             ChunkKind::Allocated(chunk) => Some(chunk),
         }
     }
 
-    pub(crate) unsafe fn as_allocated_unchecked(self) -> AllocatedChunk<A, C> {
+    pub(crate) unsafe fn as_allocated_unchecked(self) -> AllocatedChunk<C, A> {
         debug_assert!(matches!(self.kind(), ChunkKind::Allocated(_)));
         unsafe { transmute(self) }
     }
@@ -219,10 +219,10 @@ impl<A, const C: BumpConfig> Chunk<A, C> {
     }
 }
 
-pub(crate) enum ChunkKind<A, const C: BumpConfig> {
-    Claimed(#[expect(dead_code)] ClaimedChunk<A, C>),
-    ConstConstructor(ConstConstructorChunk<A, C>),
-    Allocated(AllocatedChunk<A, C>),
+pub(crate) enum ChunkKind<const C: BumpConfig, A> {
+    Claimed(#[expect(dead_code)] ClaimedChunk<C, A>),
+    ConstConstructor(ConstConstructorChunk<C, A>),
+    Allocated(AllocatedChunk<C, A>),
 }
 
 /// Miri doesn't understand how our bit twiddling aligns the pointer but we can promise it with this.

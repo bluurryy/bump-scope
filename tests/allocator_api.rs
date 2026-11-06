@@ -26,7 +26,7 @@ up_and_down! {
 
     #[test]
     fn allocate() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
 
         let layout = Layout::from_size_align(1, 4).unwrap();
         let ptr = bump.allocate(layout).unwrap();
@@ -46,7 +46,7 @@ up_and_down! {
         let dangling_addr = ptr::dangling::<()>().addr();
 
         // create a bump allocator with a chunk with no capacity
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
         assert_eq!(bump.stats().count(), 1);
         bump.allocate(Layout::array::<u8>(bump.stats().remaining()).unwrap()).unwrap();
         assert_eq!(bump.stats().remaining(), 0);
@@ -87,7 +87,7 @@ up_and_down! {
 
     #[test]
     fn allocate_zst_returns_dangling_unallocated() {
-        let bump: Bump<Global, C> = Bump::const_new();
+        let bump: Bump<C> = Bump::const_new();
         let dangling_addr = ptr::dangling::<()>().addr();
 
         macro_rules! must_dangle {
@@ -127,7 +127,7 @@ up_and_down! {
 
     #[test]
     fn grow() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
 
         unsafe {
             let new_layout = Layout::from_size_align(1, 4).unwrap();
@@ -224,7 +224,7 @@ up_and_down! {
     #[cfg(target_pointer_width = "64")]
     fn shrink() {
         let base = DisaligningAllocator::new(4096, Global);
-        let bump: Bump<_, C> = Bump::new_in(&base);
+        let bump: Bump<C, _> = Bump::new_in(&base);
 
         unsafe {
             let new_layout = Layout::from_size_align(15, 4).unwrap();

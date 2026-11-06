@@ -61,7 +61,7 @@ macro_rules! run_dir_align_deallocates {
         let allocator = RcAllocator::new(Rc::new(MaybeFailingAllocator::new(Global)));
 
         let bump =
-            Bump::<RcAllocator<MaybeFailingAllocator<Global>>, C>::with_capacity_in(Layout::new::<[u8; 32]>(), allocator);
+            Bump::<C, RcAllocator<MaybeFailingAllocator<Global>>>::with_capacity_in(Layout::new::<[u8; 32]>(), allocator);
 
         let mut allocations = vec![];
         let mut used_ranges = UsedRanges::default();

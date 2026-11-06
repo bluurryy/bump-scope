@@ -28,13 +28,13 @@ use crate::{
 /// It does not concern itself with deallocating chunks or the base allocator.
 /// A clone of this type is just a bitwise copy, `manually_drop` must only be called
 /// once for this bump allocator.
-pub(crate) struct RawBump<A, const C: BumpConfig> {
+pub(crate) struct RawBump<const C: BumpConfig, A> {
     /// Either a chunk allocated from the `allocator`, or either a `CLAIMED`
     /// or `UNALLOCATED` dummy chunk.
-    pub(crate) chunk: Cell<Chunk<A, C>>,
+    pub(crate) chunk: Cell<Chunk<C, A>>,
 }
 
-impl<A, const C: BumpConfig> Clone for RawBump<A, C> {
+impl<const C: BumpConfig, A> Clone for RawBump<C, A> {
     fn clone(&self) -> Self {
         Self {
             chunk: self.chunk.clone(),
@@ -42,7 +42,7 @@ impl<A, const C: BumpConfig> Clone for RawBump<A, C> {
     }
 }
 
-impl<A, const C: BumpConfig> RawBump<A, C> {
+impl<const C: BumpConfig, A> RawBump<C, A> {
     /// # Panics
     ///
     /// Panics if `self` is **not** [`const_constructible`].
@@ -83,7 +83,7 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
     }
 }
 
-impl<A, const C: BumpConfig> RawBump<A, C>
+impl<const C: BumpConfig, A> RawBump<C, A>
 where
     A: Allocator,
 {
@@ -122,7 +122,7 @@ where
         let new_first = unsafe {
             let ptr = chunk.chunk_start();
             let size = chunk.size().get();
-            FirstAllocatedChunk::<A, C>::init(ptr, size, allocator)
+            FirstAllocatedChunk::<C, A>::init(ptr, size, allocator)
         };
 
         self.chunk.set(Chunk::from_first(new_first));
@@ -156,9 +156,9 @@ where
     }
 }
 
-impl<A, const C: BumpConfig> RawBump<A, C> {
+impl<const C: BumpConfig, A> RawBump<C, A> {
     #[inline(always)]
-    fn first_chunk(&self) -> Option<FirstAllocatedChunk<A, C>> {
+    fn first_chunk(&self) -> Option<FirstAllocatedChunk<C, A>> {
         let mut chunk = self.chunk.get().as_allocated()?;
 
         while let Some(prev) = chunk.prev() {
@@ -171,7 +171,7 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
     }
 
     #[inline(always)]
-    pub(crate) fn claim(&self) -> RawBump<A, C> {
+    pub(crate) fn claim(&self) -> RawBump<C, A> {
         assert!(config!(claimable), "`claim` is only available when `claimable` is enabled");
 
         #[cold]
@@ -185,12 +185,12 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         }
 
         RawBump {
-            chunk: Cell::new(self.chunk.replace(Chunk::<A, C>::from_claimed(ClaimedChunk::<A, C>::VALUE))),
+            chunk: Cell::new(self.chunk.replace(Chunk::<C, A>::from_claimed(ClaimedChunk::<C, A>::VALUE))),
         }
     }
 
     #[inline(always)]
-    pub(crate) fn reclaim(&self, claimant: &RawBump<A, C>) {
+    pub(crate) fn reclaim(&self, claimant: &RawBump<C, A>) {
         self.chunk.set(claimant.chunk.get());
     }
 
@@ -250,7 +250,7 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
         unsafe {
             // Reset the chunk position of the checkpoint chunk.
             let ptr = checkpoint.chunk.as_ptr().with_addr(checkpoint.address).cast();
-            AllocatedChunk::<A, C>::from_ptr(checkpoint.chunk.as_ptr()).set_pos(ptr);
+            AllocatedChunk::<C, A>::from_ptr(checkpoint.chunk.as_ptr()).set_pos(ptr);
 
             self.chunk.set(Chunk::from_ptr(checkpoint.chunk.as_ptr()));
         }
@@ -269,7 +269,7 @@ impl<A, const C: BumpConfig> RawBump<A, C> {
     }
 }
 
-impl<A, const C: BumpConfig> RawBump<A, C>
+impl<const C: BumpConfig, A> RawBump<C, A>
 where
     A: Allocator,
 {
@@ -470,9 +470,9 @@ where {
     pub(crate) unsafe fn in_another_chunk<E: ErrorBehavior, R, L: LayoutProps>(
         &self,
         layout: L,
-        mut f: impl FnMut(Chunk<A, C>, L) -> Option<R>,
+        mut f: impl FnMut(Chunk<C, A>, L) -> Option<R>,
     ) -> Result<R, E> {
-        let new_chunk: AllocatedChunk<A, C> = match self.chunk.get().kind() {
+        let new_chunk: AllocatedChunk<C, A> = match self.chunk.get().kind() {
             ChunkKind::Claimed(_) => return Err(E::claimed()),
             ChunkKind::ConstConstructor(chunk) => {
                 let allocator = chunk.construct_base_allocator()?;
@@ -529,11 +529,11 @@ where {
     }
 }
 
-impl<A, const C: BumpConfig> RawBump<A, C> {
+impl<const C: BumpConfig, A> RawBump<C, A> {
     /// Returns a type which provides statistics about the memory usage of the bump allocator.
     #[must_use]
     #[inline(always)]
-    pub fn stats<'a>(&self) -> Stats<'a, A, C> {
+    pub fn stats<'a>(&self) -> Stats<'a, C, A> {
         Stats::from_raw_chunk(self.chunk.get())
     }
 

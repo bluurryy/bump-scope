@@ -1,5 +1,3 @@
-use std::alloc::Global;
-
 use bump_scope::{
     Bump, BumpAllocator,
     config::{BumpConfig, BumpConfigBuilder},
@@ -8,12 +6,12 @@ use bump_scope::{
 const IN: BumpConfig = BumpConfigBuilder::new().upwards(true).build();
 const OUT: BumpConfig = BumpConfigBuilder::new().upwards(false).build();
 
-fn convert(bump: Bump<Global, IN>) -> Bump<Global, OUT> {
+fn convert(bump: Bump<IN>) -> Bump<OUT> {
     bump.change_config()
 }
 
 fn main() {
-    let input = Bump::<Global, IN>::new();
+    let input = Bump::<IN>::new();
     let output = convert(input);
     let test = output.alloc_str("test").into_ref();
     println!("{test}");

@@ -5,11 +5,11 @@ use std::{
     rc::Rc,
 };
 
-use bump_scope::Bump;
+use bump_scope::{Bump, config::DEFAULT_BUMP_CONFIG};
 
 #[allow(dead_code)]
 fn base_allocator_unsend() {
-    let bump: Bump<RcAllocator<Global>> = Bump::new();
+    let bump: Bump<DEFAULT_BUMP_CONFIG, RcAllocator<Global>> = Bump::new();
 
     std::thread::spawn(move || {
         drop(bump);

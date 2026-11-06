@@ -1,7 +1,5 @@
 #![cfg(feature = "std")]
 
-use std::alloc::Global;
-
 use bump_scope::{
     BumpAllocator as _,
     config::{BumpConfig, BumpConfigBuilder},
@@ -9,7 +7,7 @@ use bump_scope::{
 
 const BUMP_CONFIG: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
 
-type Bump = bump_scope::Bump<Global, BUMP_CONFIG>;
+type Bump = bump_scope::Bump<BUMP_CONFIG>;
 
 thread_local! {
     static BUMP: Bump = const { Bump::const_new() };

@@ -4,7 +4,6 @@
 mod common;
 
 use std::{
-    alloc::Global,
     boxed::Box,
     dbg, format,
     ops::Range,
@@ -22,7 +21,7 @@ up_and_down! {
 
     #[test]
     fn shrinks() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
 
         // should shrink
         let mut vec = extra::vec![in &bump; 1, 2, 3, 4];
@@ -67,7 +66,7 @@ up_and_down! {
 
     #[test]
     fn deallocates() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
 
         // should deallocate
         let vec = extra::vec![in &bump; 1, 2, 3];
@@ -84,7 +83,7 @@ up_and_down! {
 
     #[test]
     fn into_slice() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
         let mut vec = extra::vec![in &bump; 1, 2, 3, 4, 5];
         assert_eq!(bump.allocated(), 5 * 4);
         vec.truncate(3);
@@ -95,7 +94,7 @@ up_and_down! {
 
     #[test]
     fn into_slice_without_shrink() {
-        let bump: Bump<Global, C> = Bump::new();
+        let bump: Bump<C> = Bump::new();
         let mut vec = extra::vec![in &bump; 1, 2, 3, 4, 5];
         assert_eq!(bump.allocated(), 5 * 4);
         vec.truncate(3);
@@ -109,7 +108,7 @@ up_and_down! {
         let elements = [0, 1, 2, 3, 4].map(|i| i.to_string());
 
         for panic_on in 0..elements.len() + 1 {
-            let bump: Bump<Global, C> = Bump::new();
+            let bump: Bump<C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
                 let mut a = Vec::<String, _>::new_in(&bump);
@@ -144,7 +143,7 @@ up_and_down! {
     #[test]
     fn map_smaller_layout() {
         for panic_on in 0..7 {
-            let bump: Bump<Global, C> = Bump::new();
+            let bump: Bump<C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
                 let mut i = 1;
@@ -183,7 +182,7 @@ up_and_down! {
         let elements = [0, 1, 2, 3, 4, 5].map(|i| i.to_string().into());
 
         for panic_on in 0..elements.len() + 1 {
-            let bump: Bump<Global, C> = Bump::new();
+            let bump: Bump<C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
                 let mut a = Vec::<Box<str>, _>::new_in(&bump);
@@ -224,7 +223,7 @@ up_and_down! {
         let elements = [0, 1, 2, 3, 4].map(|i| i.to_string());
 
         for panic_on in 0..elements.len() + 1 {
-            let bump: Bump<Global, C> = Bump::new();
+            let bump: Bump<C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
                 let mut a = Vec::<String, _>::new_in(&bump);
@@ -259,7 +258,7 @@ up_and_down! {
         let elements = [(), (), (), (), ()];
 
         for panic_on in 0..elements.len() + 1 {
-            let bump: Bump<Global, C> = Bump::new();
+            let bump: Bump<C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
                 let mut a = Vec::<(), _>::new_in(&bump);
@@ -295,7 +294,7 @@ up_and_down! {
         let elements = [(), (), (), (), ()];
 
         for panic_on in 0..elements.len() + 1 {
-            let bump: Bump<Global, C> = Bump::new();
+            let bump: Bump<C> = Bump::new();
 
             let result = std::panic::catch_unwind(|| {
                 let mut a = Vec::<(), _>::new_in(&bump);

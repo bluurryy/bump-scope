@@ -2,7 +2,7 @@
 
 mod common;
 
-use std::alloc::{Allocator, Global, Layout};
+use std::alloc::{Allocator, Layout};
 
 use bump_scope::{Bump, config::BumpConfig};
 
@@ -13,28 +13,28 @@ up_and_down! {
 
     #[test]
     fn allocated() {
-        let bump = Bump::<Global, C>::new();
+        let bump = Bump::<C>::new();
         assert_eq!(bump.stats().count(), 1);
         drop(bump);
     }
 
     #[test]
     fn unallocated() {
-        let bump = Bump::<Global, C>::const_new();
+        let bump = Bump::<C>::const_new();
         assert_eq!(bump.stats().count(), 0);
         drop(bump);
     }
 
     #[test]
     fn default() {
-        let bump = Bump::<Global, C>::default();
+        let bump = Bump::<C>::default();
         assert_eq!(bump.stats().count(), 0);
         drop(bump);
     }
 
     #[test]
     fn unallocated_alloc() {
-        let bump = Bump::<Global, C>::const_new();
+        let bump = Bump::<C>::const_new();
         assert_eq!(bump.stats().count(), 0);
         bump.alloc_str("Hello, World!").into_boxu();
         assert_eq!(bump.stats().count(), 1);
@@ -43,7 +43,7 @@ up_and_down! {
 
     #[test]
     fn allocated_reserve_bytes() {
-        let bump = Bump::<Global, C>::new();
+        let bump = Bump::<C>::new();
         assert_eq!(bump.stats().count(), 1);
         bump.reserve(1024);
         assert_eq!(bump.stats().count(), 2);
@@ -53,7 +53,7 @@ up_and_down! {
 
     #[test]
     fn unallocated_reserve_bytes() {
-        let bump = Bump::<Global, C>::const_new();
+        let bump = Bump::<C>::const_new();
         assert_eq!(bump.stats().count(), 0);
         bump.reserve(1024);
         assert_eq!(bump.stats().count(), 1);
@@ -63,7 +63,7 @@ up_and_down! {
 
     #[test]
     fn checkpoint() {
-        let bump = Bump::<Global, C>::const_new();
+        let bump = Bump::<C>::const_new();
 
         let checkpoint_unallocated = bump.checkpoint();
         assert_eq!(bump.stats().count(), 0);
@@ -89,7 +89,7 @@ up_and_down! {
 
     #[test]
     fn checkpoint_multiple_chunks() {
-        let bump = Bump::<Global, C>::const_new();
+        let bump = Bump::<C>::const_new();
 
         assert_eq!(bump.stats().count(), 0);
         let c0 = bump.checkpoint();
@@ -111,7 +111,7 @@ up_and_down! {
 
     #[test]
     fn reset() {
-        let mut bump = Bump::<Global, C>::const_new();
+        let mut bump = Bump::<C>::const_new();
         bump.reset();
     }
 
@@ -120,7 +120,7 @@ up_and_down! {
     #[test]
     fn potential_data_race() {
         fn create_bump_and_alloc() {
-            let bump = Bump::<Global, C>::new();
+            let bump = Bump::<C>::new();
             bump.allocate(Layout::new::<()>()).unwrap();
         }
 
@@ -130,7 +130,7 @@ up_and_down! {
 
     #[test]
     fn default_chunk_size() {
-        let bump = Bump::<Global, C>::const_new();
+        let bump = Bump::<C>::const_new();
         assert_eq!(bump.stats().count(), 0);
         bump.alloc("a").into_boxu();
         assert_eq!(bump.stats().count(), 1);
@@ -143,7 +143,7 @@ up_and_down! {
     #[test]
     fn custom_chunk_size() {
         const MIN_SIZE_4096: BumpConfig = BumpConfigBuilder(C).min_chunk_size(4096).build();
-        let bump = Bump::<Global, MIN_SIZE_4096>::const_new();
+        let bump = Bump::<MIN_SIZE_4096>::const_new();
         assert_eq!(bump.stats().count(), 0);
         bump.alloc("a").into_boxu();
         assert_eq!(bump.stats().count(), 1);
@@ -154,7 +154,7 @@ up_and_down! {
     }
 }
 
-fn allocate_another_chunk<const C: BumpConfig>(bump: &Bump<Global, C>, dummy_size: usize) {
+fn allocate_another_chunk<const C: BumpConfig>(bump: &Bump<C>, dummy_size: usize) {
     let start_chunks = bump.stats().count();
 
     // fill the existing chunk if there is one

@@ -34,9 +34,9 @@ use crate::{
 use crate::{error_behavior, panic_on_error};
 
 #[cfg(feature = "nightly")]
-impl<A: Allocator, const C: BumpConfig> AllocatorNightly for Bump<A, C> {}
+impl<A: Allocator, const C: BumpConfig> AllocatorNightly for Bump<C, A> {}
 #[cfg(feature = "nightly")]
-impl<A: Allocator, const C: BumpConfig> AllocatorNightly for BumpScope<'_, A, C> {}
+impl<A: Allocator, const C: BumpConfig> AllocatorNightly for BumpScope<'_, C, A> {}
 #[cfg(feature = "nightly")]
 impl AllocatorNightly for Unmanaged<'_> {}
 
@@ -694,7 +694,7 @@ unsafe impl<A: BumpAllocatorPrivate> BumpAllocatorPrivate for &mut A {
         A::spec_prepare_sized_allocation(self)
     }
 }
-unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for Bump<A, C> {
+unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for Bump<C, A> {
     const CONFIG: BumpConfig = C;
 
     #[inline(always)]
@@ -757,7 +757,7 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for Bump<A, 
         self.as_bump_scope().spec_prepare_sized_allocation()
     }
 }
-unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for BumpScope<'_, A, C> {
+unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocatorPrivate for BumpScope<'_, C, A> {
     const CONFIG: BumpConfig = C;
 
     #[inline(always)]
@@ -2320,7 +2320,7 @@ unsafe impl<T: BumpAllocator> BumpAllocator for &mut T {
         T::try_reserve(self, additional)
     }
 }
-unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for Bump<A, C> {
+unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for Bump<C, A> {
     #[inline(always)]
     fn is_claimed(&self) -> bool {
         self.raw.is_claimed()
@@ -2342,7 +2342,7 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for Bump<A, C> {
         self.raw.reserve(additional)
     }
 }
-unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for BumpScope<'_, A, C> {
+unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for BumpScope<'_, C, A> {
     #[inline(always)]
     fn is_claimed(&self) -> bool {
         self.raw.is_claimed()
@@ -2411,9 +2411,9 @@ unsafe impl BumpAllocator for Unmanaged<'_> {
 pub unsafe trait BumpAllocatorScope<'a>: BumpAllocator + BumpAllocatorPrivate {}
 unsafe impl<'a, T: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for &T {}
 unsafe impl<'a, T: BumpAllocatorScope<'a>> BumpAllocatorScope<'a> for &mut T {}
-unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for &'a Bump<A, C> {}
-unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for &'a mut Bump<A, C> {}
-unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for BumpScope<'a, A, C> {}
+unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for &'a Bump<C, A> {}
+unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for &'a mut Bump<C, A> {}
+unsafe impl<'a, A: Allocator, const C: BumpConfig> BumpAllocatorScope<'a> for BumpScope<'a, C, A> {}
 unsafe impl<'a> BumpAllocatorScope<'a> for Unmanaged<'a> {}
 
 /// Exclusive access to a bump allocator.
@@ -2704,8 +2704,8 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     }
 }
 unsafe impl<T: MutBumpAllocator> MutBumpAllocator for &mut T {}
-unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for Bump<A, C> {}
-unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for BumpScope<'_, A, C> {}
+unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for Bump<C, A> {}
+unsafe impl<A: Allocator, const C: BumpConfig> MutBumpAllocator for BumpScope<'_, C, A> {}
 
 /// A shorthand for <code>[MutBumpAllocator] + [BumpAllocatorScope]<'a></code>.
 #[expect(private_bounds, clippy::missing_safety_doc)]
@@ -2735,19 +2735,19 @@ unsafe impl<'a, T: MutBumpAllocator + BumpAllocatorScope<'a>> MutBumpAllocatorSc
 ///     }
 /// }
 /// ```
-pub trait AsBumpScope<A = Global, const C: BumpConfig = DEFAULT_BUMP_CONFIG> {
+pub trait AsBumpScope<const C: BumpConfig = DEFAULT_BUMP_CONFIG, A = Global> {
     /// Returns the bump allocation scope.
-    fn as_bump_scope(&self) -> &BumpScope<'_, A, C>;
+    fn as_bump_scope(&self) -> &BumpScope<'_, C, A>;
 }
 
-impl<A: Allocator, const C: BumpConfig> AsBumpScope<A, C> for Bump<A, C> {
-    fn as_bump_scope(&self) -> &BumpScope<'_, A, C> {
+impl<A: Allocator, const C: BumpConfig> AsBumpScope<C, A> for Bump<C, A> {
+    fn as_bump_scope(&self) -> &BumpScope<'_, C, A> {
         unsafe { transmute_ref(self) }
     }
 }
 
-impl<A: Allocator, const C: BumpConfig> AsBumpScope<A, C> for BumpScope<'_, A, C> {
-    fn as_bump_scope(&self) -> &BumpScope<'_, A, C> {
+impl<A: Allocator, const C: BumpConfig> AsBumpScope<C, A> for BumpScope<'_, C, A> {
+    fn as_bump_scope(&self) -> &BumpScope<'_, C, A> {
         self
     }
 }
@@ -2775,19 +2775,19 @@ impl<A: Allocator, const C: BumpConfig> AsBumpScope<A, C> for BumpScope<'_, A, C
 ///     }
 /// }
 /// ```
-pub trait AsMutBumpScope<A = Global, const C: BumpConfig = DEFAULT_BUMP_CONFIG> {
+pub trait AsMutBumpScope<const C: BumpConfig = DEFAULT_BUMP_CONFIG, A = Global> {
     /// Returns the bump allocator scope.
-    fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'_, A, C>;
+    fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'_, C, A>;
 }
 
-impl<A: Allocator, const C: BumpConfig> AsMutBumpScope<A, C> for Bump<A, C> {
-    fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'_, A, C> {
+impl<A: Allocator, const C: BumpConfig> AsMutBumpScope<C, A> for Bump<C, A> {
+    fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'_, C, A> {
         unsafe { transmute_mut(self) }
     }
 }
 
-impl<A: Allocator, const C: BumpConfig> AsMutBumpScope<A, C> for BumpScope<'_, A, C> {
-    fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'_, A, C> {
+impl<A: Allocator, const C: BumpConfig> AsMutBumpScope<C, A> for BumpScope<'_, C, A> {
+    fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'_, C, A> {
         unsafe { transmute_mut(self) }
     }
 }
@@ -2799,9 +2799,9 @@ macro_rules! assert_implements {
             #[allow(dead_code)]
             type A = crate::NoopAllocator;
             #[allow(dead_code)]
-            type Bump = crate::Bump<A>;
+            type Bump = crate::Bump<DEFAULT_BUMP_CONFIG, A>;
             #[allow(dead_code)]
-            type BumpScope<'a> = crate::BumpScope<'a, A>;
+            type BumpScope<'a> = crate::BumpScope<'a, DEFAULT_BUMP_CONFIG, A>;
             #[allow(clippy::extra_unused_lifetimes)]
             const fn implements<'a, What: $($what)*>() {}
             $(

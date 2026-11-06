@@ -14,20 +14,20 @@ struct Header<A> {
 }
 
 #[repr(transparent)]
-pub(crate) struct ConstConstructorChunk<A, const C: BumpConfig> {
+pub(crate) struct ConstConstructorChunk<const C: BumpConfig, A> {
     header: NonNull<Header<A>>,
     marker: PhantomData<*const A>,
 }
 
-impl<A, const C: BumpConfig> Clone for ConstConstructorChunk<A, C> {
+impl<const C: BumpConfig, A> Clone for ConstConstructorChunk<C, A> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<A, const C: BumpConfig> Copy for ConstConstructorChunk<A, C> {}
+impl<const C: BumpConfig, A> Copy for ConstConstructorChunk<C, A> {}
 
-impl<A, const C: BumpConfig> ConstConstructorChunk<A, C>
+impl<const C: BumpConfig, A> ConstConstructorChunk<C, A>
 where
     A: Default + 'static,
 {
@@ -47,7 +47,7 @@ where
     };
 }
 
-impl<A, const C: BumpConfig> ConstConstructorChunk<A, C> {
+impl<const C: BumpConfig, A> ConstConstructorChunk<C, A> {
     #[expect(dead_code)]
     pub(crate) fn as_ptr(self) -> NonNull<()> {
         self.header.cast()

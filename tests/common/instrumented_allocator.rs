@@ -1,5 +1,5 @@
 use std::{
-    alloc::{AllocError, Allocator, Layout},
+    alloc::{AllocError, Allocator, Global, Layout},
     cell::{Ref, RefCell},
     collections::HashMap,
     panic::{RefUnwindSafe, UnwindSafe},
@@ -7,7 +7,7 @@ use std::{
 };
 
 #[derive(Default)]
-pub(crate) struct InstrumentedAllocator<A: Allocator> {
+pub(crate) struct InstrumentedAllocator<A: Allocator = Global> {
     allocator: A,
     allocations: RefCell<HashMap<NonNull<u8>, Layout>>,
 }
@@ -15,8 +15,14 @@ pub(crate) struct InstrumentedAllocator<A: Allocator> {
 impl<A: Allocator> UnwindSafe for InstrumentedAllocator<A> where A: UnwindSafe {}
 impl<A: Allocator> RefUnwindSafe for InstrumentedAllocator<A> where A: RefUnwindSafe {}
 
+impl InstrumentedAllocator {
+    pub(crate) fn new() -> Self {
+        Self::new_in(Global)
+    }
+}
+
 impl<A: Allocator> InstrumentedAllocator<A> {
-    pub(crate) fn new(allocator: A) -> Self {
+    pub(crate) fn new_in(allocator: A) -> Self {
         Self {
             allocator,
             allocations: Default::default(),
