@@ -6,8 +6,8 @@ use crate::{
     BumpScope,
     chunk_types::r#abstract::{Chunk, ErasedChunk},
     config::{BumpConfig, DEFAULT_BUMP_CONFIG},
-    polyfill::transmute_mut,
     raw_bump::RawBump,
+    util::transmute_mut,
 };
 
 /// This is returned from [`checkpoint`] and used for [`reset_to`].

@@ -12,9 +12,9 @@ use crate::{
     AsBumpScope as _, AsMutBumpScope as _, BumpClaimGuard, BumpScope, BumpScopeGuard, allocator_impl,
     chunk_size::{ChunkSizeCapacity, ChunkSizeHint, ChunkSizeMin},
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
-    polyfill::{transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
     stats::Stats,
+    util::{transmute_mut, transmute_ref, transmute_value},
 };
 
 #[cfg(feature = "panic-on-alloc")]

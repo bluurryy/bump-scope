@@ -26,8 +26,8 @@ use crate::{
         boxed_slice_init_fill, boxed_slice_init_fill_with,
     },
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
-    polyfill::{transmute_mut, transmute_ref},
     up_align_usize_unchecked, util,
+    util::{transmute_mut, transmute_ref},
 };
 
 #[cfg(feature = "panic-on-alloc")]
