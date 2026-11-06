@@ -222,14 +222,12 @@
 //! - **`panic-on-alloc`** *(enabled by default)* — Adds functions and traits that will panic when allocations fail.
 //!   Without this feature, allocation failures cannot cause panics, and only
 //!   `try_`-prefixed allocation methods will be available.
-//! - **`bytemuck`** — Adds `bytemuck::*` extension traits for
-//!   <code>[alloc_zeroed](bytemuck::BumpAllocatorExt::alloc_zeroed)([_slice](bytemuck::BumpAllocatorExt::alloc_zeroed_slice))</code>,
-//!   [`box_zero_init`](bytemuck::box_zero_init) and
-//!   [`box_zero_init_slice`](bytemuck::box_zero_init_slice).
-//! - **`zerocopy-08`** — Adds `zerocopy_08::*` extension traits for
-//!   <code>[alloc_zeroed](zerocopy_08::BumpAllocatorExt::alloc_zeroed)([_slice](zerocopy_08::BumpAllocatorExt::alloc_zeroed_slice))</code>,
-//!   [`box_zero_init`](zerocopy_08::box_zero_init) and
-//!   [`box_zero_init_slice`](zerocopy_08::box_zero_init_slice).
+//! - **`bytemuck`** — Adds `bytemuck` module with
+//!   <code>[BumpAllocatorExt](bytemuck::BumpAllocatorExt)::[alloc_zeroed](bytemuck::BumpAllocatorExt::alloc_zeroed)([_slice](bytemuck::BumpAllocatorExt::alloc_zeroed_slice))</code>
+//!   and <code>[box_zero_init](bytemuck::box_zero_init)([_slice](bytemuck::box_zero_init_slice))</code>.
+//! - **`zerocopy-08`** — Adds `zerocopy_08` module with
+//!   <code>[BumpAllocatorExt](zerocopy_08::BumpAllocatorExt)::[alloc_zeroed](zerocopy_08::BumpAllocatorExt::alloc_zeroed)([_slice](zerocopy_08::BumpAllocatorExt::alloc_zeroed_slice))</code>
+//!   and <code>[box_zero_init](zerocopy_08::box_zero_init)([_slice](zerocopy_08::box_zero_init_slice))</code>.
 //! - **`nightly`** — Enables nightly features. ***This feature is exempt from semver.***
 //!   - Adds `Take(OwnedSlice)` implementations for `vec::IntoIter` and `vec::Drain` of any allocator.
 //!   - Uses std's `vec::from_elem_in` instead of our polyfill for the `vec!` macro

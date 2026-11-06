@@ -199,14 +199,12 @@ You can set the `deallocates` and `shrinks` config parameters to false to make d
 - **`panic-on-alloc`** *(enabled by default)* — Adds functions and traits that will panic when allocations fail.
   Without this feature, allocation failures cannot cause panics, and only
   `try_`-prefixed allocation methods will be available.
-- **`bytemuck`** — Adds `bytemuck::*` extension traits for
-  <code>alloc_zeroed(_slice)</code>,
-  `box_zero_init` and
-  `box_zero_init_slice`.
-- **`zerocopy-08`** — Adds `zerocopy_08::*` extension traits for
-  <code>alloc_zeroed(_slice)</code>,
-  `box_zero_init` and
-  `box_zero_init_slice`.
+- **`bytemuck`** — Adds `bytemuck` module with
+  <code>BumpAllocatorExt::alloc_zeroed(_slice)</code>
+  and <code>box_zero_init(_slice)</code>.
+- **`zerocopy-08`** — Adds `zerocopy_08` module with
+  <code>BumpAllocatorExt::alloc_zeroed(_slice)</code>
+  and <code>box_zero_init(_slice)</code>.
 - **`nightly`** — Enables nightly features. ***This feature is exempt from semver.***
   - Adds `Take(OwnedSlice)` implementations for `vec::IntoIter` and `vec::Drain` of any allocator.
   - Uses std's `vec::from_elem_in` instead of our polyfill for the `vec!` macro
