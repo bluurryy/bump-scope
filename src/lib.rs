@@ -230,11 +230,12 @@
 //!   <code>[alloc_zeroed](zerocopy_08::BumpAllocatorExt::alloc_zeroed)([_slice](zerocopy_08::BumpAllocatorExt::alloc_zeroed_slice))</code>,
 //!   [`box_zero_init`](zerocopy_08::box_zero_init) and
 //!   [`box_zero_init_slice`](zerocopy_08::box_zero_init_slice).
-//! - **`nightly`** — Enables nightly features.
-//!
-//!   This feature and the APIs it enables are exempt from semver.
-//!
-//!   TODO: describe what APIs this currently enables
+//! - **`nightly`** — Enables nightly features. ***This feature is exempt from semver.***
+//!   - Adds `Take(OwnedSlice)` implementations for `vec::IntoIter` and `vec::Drain` of any allocator.
+//!   - Uses std's `vec::from_elem_in` instead of our polyfill for the `vec!` macro
+//!   - Implements `AllocatorNightly` for our bump allocators
+//!   - Adds `BumpAllocator::alloc_clone`
+//!   - Promises symbolic alignment to miri for bump allocations
 //! <!-- feature documentation end -->
 //!
 //! [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches

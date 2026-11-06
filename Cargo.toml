@@ -70,9 +70,10 @@ bytemuck = ["dep:bytemuck"]
 ## [`box_zero_init_slice`](zerocopy_08::box_zero_init_slice).
 zerocopy-08 = ["dep:zerocopy-08"]
 
-## Enables nightly features.
-## 
-## This feature and the APIs it enables are exempt from semver.
-##
-## TODO: describe what APIs this currently enables
+## Enables nightly features. ***This feature is exempt from semver.***
+## - Adds `Take(OwnedSlice)` implementations for `vec::IntoIter` and `vec::Drain` of any allocator.
+## - Uses std's `vec::from_elem_in` instead of our polyfill for the `vec!` macro
+## - Implements `AllocatorNightly` for our bump allocators
+## - Adds `BumpAllocator::alloc_clone`
+## - Promises symbolic alignment to miri for bump allocations
 nightly = []
