@@ -7,17 +7,17 @@ use core::{
 };
 
 use crate::{
-    Checkpoint, SizedTypeProperties, align_pos, cant_change_config_due_to_claimable,
-    cant_change_config_due_to_const_constructible,
+    Checkpoint,
     chunk_size::{ChunkSize, ChunkSizeCapacity, ChunkSizeMin},
     chunk_types::{
         r#abstract::{AllocatedChunk, Chunk, ChunkKind, FirstAllocatedChunk},
         concrete::{ClaimedChunk, ConstConstructorChunk},
     },
-    config::{BumpConfig, config},
+    config::{self, BumpConfig, config},
     error_mode::ErrorMode,
     layout::{ArrayLayout, CustomLayout, LayoutProps, SizedLayout},
     stats::Stats,
+    util::{SizedTypeProperties, align_pos},
 };
 
 /// The internal type used by `Bump` and `Bump(Scope)`.
@@ -561,7 +561,7 @@ impl<const C: BumpConfig, A> RawBump<C, A> {
 
     pub(crate) fn assert_convertible_claimable<const NEW_C: BumpConfig>(&self) {
         if !self.can_convert_claimable::<NEW_C>() {
-            cant_change_config_due_to_claimable();
+            config::cant_change_due_to_claimable();
         }
     }
 
@@ -580,7 +580,7 @@ impl<const C: BumpConfig, A> RawBump<C, A> {
 
     pub(crate) fn assert_convertible_const_constructible<const NEW_C: BumpConfig>(&self) {
         if !self.can_convert_const_constructible::<NEW_C>() {
-            cant_change_config_due_to_const_constructible();
+            config::cant_change_due_to_const_constructible();
         }
     }
 

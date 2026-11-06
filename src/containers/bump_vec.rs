@@ -13,10 +13,10 @@ use core::{
 use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
-    SizedTypeProperties,
     error_mode::ErrorMode,
     extra::{imp_vec_extend, imp_vec_into_boxed_slice_without_shrink},
     traits::BumpAllocatorPrivate,
+    util::SizedTypeProperties,
 };
 
 #[repr(transparent)]

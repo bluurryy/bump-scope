@@ -18,7 +18,7 @@ use crate::{
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::panic_on_error;
+use crate::error_mode::panic_on_error;
 
 /// The bump allocator.
 ///

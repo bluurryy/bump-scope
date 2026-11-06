@@ -6,7 +6,7 @@ use core::{
 
 use alloc::boxed::Box;
 
-use crate::{SizedTypeProperties, destructure::destructure};
+use crate::{destructure::destructure, util::SizedTypeProperties};
 
 /// Allows for initializing a `BoxU<[MaybeUninit<T>]>` by pushing values.
 /// On drop, this will drop the values that have been pushed so far.

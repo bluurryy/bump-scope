@@ -7,7 +7,6 @@ use core::{
 };
 
 use crate::{
-    SizedTypeProperties,
     chunk_size::ChunkSize,
     chunk_types::{
         r#abstract::AllocatedChunk,
@@ -15,6 +14,7 @@ use crate::{
     },
     config::BumpConfig,
     error_mode::ErrorMode,
+    util::SizedTypeProperties,
 };
 
 #[repr(C, align(16))]

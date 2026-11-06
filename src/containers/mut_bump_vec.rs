@@ -7,7 +7,7 @@ use core::{
 
 use alloc::{boxed::Box, vec::Vec};
 
-use crate::{SizedTypeProperties, error_mode::ErrorMode, extra::imp_vec_extend, traits::BumpAllocatorPrivate};
+use crate::{error_mode::ErrorMode, extra::imp_vec_extend, traits::BumpAllocatorPrivate, util::SizedTypeProperties};
 
 // The vector is wrapped in a `ManuallyDrop` since we don't want the vector to try to deallocate
 // since we didn't allocate anything in the first place.

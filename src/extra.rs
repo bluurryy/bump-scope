@@ -41,10 +41,11 @@ use core::{
 use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
-    NoDrop, SizedTypeProperties, Unmanaged, VecU,
+    NoDrop, Unmanaged, VecU,
     containers::BoxedSliceInitializer,
     error_mode::ErrorMode,
     traits::{BumpAllocator, BumpAllocatorPrivate, BumpAllocatorScope},
+    util::SizedTypeProperties,
 };
 
 pub use crate::owned_slice::{OwnedSlice, TakeOwnedSlice};

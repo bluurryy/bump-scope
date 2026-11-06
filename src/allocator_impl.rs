@@ -5,12 +5,11 @@ use core::{
 };
 
 use crate::{
-    bump_down,
     config::{BumpConfig, config},
     layout::CustomLayout,
     polyfill::non_null,
     raw_bump::RawBump,
-    up_align_usize_unchecked,
+    util::{bump_down, up_align_usize_unchecked},
 };
 
 #[inline(always)]

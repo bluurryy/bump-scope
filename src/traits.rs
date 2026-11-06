@@ -14,24 +14,22 @@ use alloc::alloc::AllocatorNightly;
 use alloc::{alloc::Global, boxed::Box, vec::Vec};
 
 use crate::{
-    Bump, BumpAllocation, BumpScope, Checkpoint, SizedTypeProperties, Unmanaged,
+    Bump, BumpAllocation, BumpScope, Checkpoint, Unmanaged,
     bump_allocation::IntoRef,
-    bump_down,
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
     containers::{BumpString, BumpVec, MutBumpString, MutBumpVec},
-    down_align_usize,
     error_mode::ErrorMode,
     extra::{
         self, box_from_utf8_unchecked, box_init, box_uninit_zst_in, box_uninit_zst_slice_in, boxed_slice_init_clone,
         boxed_slice_init_fill, boxed_slice_init_fill_with,
     },
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
-    up_align_usize_unchecked, util,
-    util::{transmute_mut, transmute_ref},
+    util,
+    util::{SizedTypeProperties, bump_down, down_align_usize, transmute_mut, transmute_ref, up_align_usize_unchecked},
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{error_mode, panic_on_error};
+use crate::error_mode::{self, panic_on_error};
 
 #[cfg(feature = "nightly")]
 impl<A: Allocator, const C: BumpConfig> AllocatorNightly for Bump<C, A> {}
@@ -2801,7 +2799,7 @@ macro_rules! assert_implements {
         #[cfg(test)]
         const _: () = {
             #[allow(dead_code)]
-            type A = crate::NoopAllocator;
+            type A = crate::util::NoopAllocator;
             #[allow(dead_code)]
             type Bump = crate::Bump<DEFAULT_BUMP_CONFIG, A>;
             #[allow(dead_code)]

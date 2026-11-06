@@ -63,6 +63,18 @@ impl BumpConfigBuilder {
     }
 }
 
+#[cold]
+#[cfg_attr(not(panic = "immediate-abort"), inline(never))]
+pub(crate) fn cant_change_due_to_const_constructible() -> ! {
+    panic!("can't change config: `const_constructible` becomes false and `self` has no chunks");
+}
+
+#[cold]
+#[cfg_attr(not(panic = "immediate-abort"), inline(never))]
+pub(crate) fn cant_change_due_to_claimable() -> ! {
+    panic!("can't change config: `claimable` becomes false and `self.is_claimed()`");
+}
+
 macro_rules! if_exists {
     (
         $whatever:ident {

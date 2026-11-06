@@ -1,6 +1,7 @@
 use crate::{
-    BumpScope, align_pos,
+    BumpScope,
     config::{BumpConfig, config},
+    util::align_pos,
 };
 
 /// Aligns the bump pointer on drop.

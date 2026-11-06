@@ -14,7 +14,7 @@ pub extern crate alloc;
 pub extern crate core;
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::panic_on_error;
+use crate::error_mode::panic_on_error;
 
 #[cold]
 #[cfg(feature = "panic-on-alloc")]

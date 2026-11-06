@@ -7,14 +7,15 @@ use core::{
 use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
-    BumpAllocator, SizedTypeProperties,
+    BumpAllocator,
     destructure::destructure,
     error_mode::ErrorMode,
     extra::{imp_vec_extend, vec_remove_allocator_unchecked},
+    util::SizedTypeProperties,
 };
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::panic_on_error;
+use crate::error_mode::panic_on_error;
 
 /// Maps the elements of a vector, reusing the allocation if possible.
 ///

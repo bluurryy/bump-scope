@@ -1,9 +1,18 @@
 use core::alloc::{AllocError, Allocator, Layout};
 
+#[cfg(feature = "panic-on-alloc")]
+use alloc::alloc::handle_alloc_error;
 use alloc::vec::Vec;
 
 #[cfg(feature = "panic-on-alloc")]
-use crate::{capacity_overflow, handle_alloc_error};
+use crate::capacity_overflow;
+
+// This is just `Result::into_ok` but with a name to match our use case.
+#[inline(always)]
+#[cfg(feature = "panic-on-alloc")]
+pub(crate) fn panic_on_error<T>(result: Result<T, !>) -> T {
+    result.into_ok()
+}
 
 pub(crate) trait ErrorMode: Sized {
     const FALLIBLE: bool;

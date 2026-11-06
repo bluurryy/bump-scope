@@ -6,12 +6,13 @@ use core::{
 use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
-    BumpAllocator, SizedTypeProperties,
+    BumpAllocator,
     extra::{
         assert_char_boundary, box_empty_slice_in, box_empty_str_in, box_set_len, box_set_ptr, ptr_from_utf8,
         vec_replace_buffer,
     },
     polyfill,
+    util::SizedTypeProperties,
 };
 
 /// Splits the vector in two by removing the specified range.

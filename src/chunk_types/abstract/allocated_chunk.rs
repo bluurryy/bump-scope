@@ -9,7 +9,6 @@ use core::{
 };
 
 use crate::{
-    SizedTypeProperties, align_pos,
     bumping::MIN_CHUNK_ALIGN,
     chunk_size::{ChunkSize, ChunkSizeCapacity, ChunkSizeHint, align_allocation_size},
     chunk_types::{
@@ -19,6 +18,7 @@ use crate::{
     config::{BumpConfig, config},
     error_mode::ErrorMode,
     polyfill::non_null,
+    util::{SizedTypeProperties, align_pos},
 };
 
 use super::non_zst_allocated_chunk::NonZstAllocatedChunkKind;
