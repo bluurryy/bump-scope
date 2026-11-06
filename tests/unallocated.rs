@@ -4,7 +4,7 @@ mod common;
 
 use std::alloc::{Allocator, Global, Layout};
 
-use bump_scope::{Bump, BumpAllocator, config::BumpConfig};
+use bump_scope::{Bump, config::BumpConfig};
 
 use common::{AssumedMallocOverhead, up_and_down};
 
@@ -155,16 +155,16 @@ up_and_down! {
 }
 
 fn allocate_another_chunk<const C: BumpConfig>(bump: &Bump<Global, C>, dummy_size: usize) {
-    let start_chunks = bump.any_stats().count();
+    let start_chunks = bump.stats().count();
 
     // fill the existing chunk if there is one
-    let remaining = bump.any_stats().remaining();
+    let remaining = bump.stats().remaining();
     if remaining != 0 {
         bump.allocate(Layout::from_size_align(remaining, 1).unwrap()).unwrap();
     }
-    assert_eq!(bump.any_stats().count(), start_chunks);
+    assert_eq!(bump.stats().count(), start_chunks);
 
     bump.allocate(Layout::from_size_align(dummy_size, 1).unwrap()).unwrap();
-    assert_eq!(bump.any_stats().count(), start_chunks + 1);
-    assert_eq!(bump.any_stats().current_chunk().unwrap().allocated(), dummy_size);
+    assert_eq!(bump.stats().count(), start_chunks + 1);
+    assert_eq!(bump.stats().current_chunk().unwrap().allocated(), dummy_size);
 }

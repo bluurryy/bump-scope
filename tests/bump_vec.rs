@@ -333,48 +333,48 @@ up_and_down! {
 
         fn test<B: BumpAllocator>(bump: B) {
             const ITEM_SIZE: usize = size_of::<String>();
-            assert_eq!(bump.any_stats().allocated(), 0);
+            assert_eq!(bump.allocated(), 0);
             let mut vec = Vec::new_in(&bump);
             vec.extend(numbers(1..4));
             assert_eq!(vec, ["1", "2", "3"]);
             assert_eq!(vec.len(), 3);
             assert_eq!(vec.capacity(), 4); // because of minimum capacity
-            assert_eq!(bump.any_stats().allocated(), 4 * ITEM_SIZE);
+            assert_eq!(bump.allocated(), 4 * ITEM_SIZE);
             vec.reserve_exact(4);
             assert_eq!(vec, ["1", "2", "3"]);
             assert_eq!(vec.len(), 3);
             assert_eq!(vec.capacity(), 7);
-            assert_eq!(bump.any_stats().allocated(), 7 * ITEM_SIZE);
+            assert_eq!(bump.allocated(), 7 * ITEM_SIZE);
             vec.shrink_to_fit();
             assert_eq!(vec, ["1", "2", "3"]);
             assert_eq!(vec.len(), 3);
             assert_eq!(vec.capacity(), 3);
-            assert_eq!(bump.any_stats().allocated(), 3 * ITEM_SIZE);
+            assert_eq!(bump.allocated(), 3 * ITEM_SIZE);
             vec.truncate(2);
             assert_eq!(vec, ["1", "2"]);
             assert_eq!(vec.len(), 2);
             assert_eq!(vec.capacity(), 3);
-            assert_eq!(bump.any_stats().allocated(), 3 * ITEM_SIZE);
+            assert_eq!(bump.allocated(), 3 * ITEM_SIZE);
             vec.shrink_to_fit();
             assert_eq!(vec, ["1", "2"]);
             assert_eq!(vec.len(), 2);
             assert_eq!(vec.capacity(), 2);
-            assert_eq!(bump.any_stats().allocated(), 2 * ITEM_SIZE);
+            assert_eq!(bump.allocated(), 2 * ITEM_SIZE);
             vec.clear();
             vec.shrink_to_fit();
             assert_eq!(vec.len(), 0);
             assert_eq!(vec.capacity(), 0);
-            assert_eq!(bump.any_stats().allocated(), 0);
+            assert_eq!(bump.allocated(), 0);
             drop(vec);
 
             let vec = bump.alloc_iter_exact(numbers(1..2)).into_box().into_vec();
             assert_eq!(vec, ["1"]);
             assert_eq!(vec.len(), 1);
             assert_eq!(vec.capacity(), 1);
-            assert_eq!(bump.any_stats().allocated(), ITEM_SIZE );
+            assert_eq!(bump.allocated(), ITEM_SIZE );
             drop(vec);
 
-            assert_eq!(bump.any_stats().allocated(), 0);
+            assert_eq!(bump.allocated(), 0);
         }
 
         test::<Bump>(Bump::new());

@@ -1,11 +1,4 @@
 //! Types for inspecting memory usage in bump allocators.
-//!
-//! This module defines both generic types like [`Stats`] and type-erased counterparts prefixed
-//! with `Any*`. The generic types are slightly more efficient to use.
-//! You can turn the generic types into their `Any*` variants using `from` and `into`.
-//!
-//! The `Any*` types are returned by the [`BumpAllocator::any_stats`](crate::traits::BumpAllocator::any_stats) trait
-//! whereas `Stats` is returned from [`Bump(Scope)::stats`](crate::Bump::stats).
 
 use core::{
     fmt::{self, Debug},
@@ -18,10 +11,6 @@ use crate::{
     chunk_types::r#abstract::{AllocatedChunk, Chunk as RawChunk},
     config::{BumpConfig, DEFAULT_BUMP_CONFIG},
 };
-
-mod any;
-
-pub use any::{AnyChunk, AnyChunkNextIter, AnyChunkPrevIter, AnyStats};
 
 /// Provides statistics about the memory usage of the bump allocator.
 ///
@@ -48,7 +37,7 @@ impl<A, const C: BumpConfig> Eq for Stats<'_, A, C> {}
 
 impl<A, const C: BumpConfig> Debug for Stats<'_, A, C> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        AnyStats::from(*self).debug_format("Stats", f)
+        self.debug_format("Stats", f)
     }
 }
 
@@ -171,6 +160,13 @@ impl<'a, A, const C: BumpConfig> Stats<'a, A, C> {
     #[must_use]
     pub fn allocator(self) -> Option<&'a A> {
         Some(self.current_chunk()?.allocator())
+    }
+
+    pub(crate) fn debug_format(self, name: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct(name)
+            .field("allocated", &self.allocated())
+            .field("capacity", &self.capacity())
+            .finish()
     }
 }
 

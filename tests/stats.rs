@@ -7,11 +7,7 @@ use std::{
     ptr::NonNull,
 };
 
-use bump_scope::{
-    Bump, BumpAllocator as _,
-    config::BumpConfig,
-    stats::{AnyChunk, AnyStats, Chunk, Stats},
-};
+use bump_scope::{Bump, BumpAllocator as _, config::BumpConfig};
 
 use common::up_and_down;
 
@@ -74,7 +70,6 @@ up_and_down! {
         assert_eq!(bump.stats().capacity(), 0);
         assert_eq!(bump.allocated(), 0);
         assert_eq!(bump.stats().remaining(), 0);
-        assert_stats_match(bump.stats(), bump.any_stats());
         test_base_allocator(
             Bump::<TestBaseAllocator, C>::new(),
             4096,
@@ -162,60 +157,22 @@ up_and_down! {
     }
 }
 
-fn assert_stats_match<A, const C: BumpConfig>(stats: Stats<'_, A, C>, any_stats: AnyStats<'_>) {
-    assert_eq!(stats.count(), any_stats.count());
-    assert_eq!(stats.size(), any_stats.size());
-    assert_eq!(stats.capacity(), any_stats.capacity());
-    assert_eq!(stats.allocated(), any_stats.allocated());
-    assert_eq!(stats.remaining(), any_stats.remaining());
-
-    let (Some(current), Some(any_current)) = (stats.current_chunk(), any_stats.current_chunk()) else {
-        assert_eq!(stats.current_chunk().is_none(), any_stats.current_chunk().is_none());
-        return;
-    };
-
-    assert_chunk_match(current, any_current);
-
-    assert_eq!(current.iter_prev().count(), any_current.iter_prev().count());
-    assert_eq!(current.iter_next().count(), any_current.iter_next().count());
-
-    for (chunk, any_chunk) in current.iter_prev().zip(any_current.iter_prev()) {
-        assert_chunk_match(chunk, any_chunk);
-    }
-
-    for (chunk, any_chunk) in current.iter_next().zip(any_current.iter_next()) {
-        assert_chunk_match(chunk, any_chunk);
-    }
-}
-
-fn assert_chunk_match<A, const C: BumpConfig>(chunk: Chunk<'_, A, C>, any_chunk: AnyChunk<'_>) {
-    assert_eq!(chunk.size(), any_chunk.size());
-    assert_eq!(chunk.capacity(), any_chunk.capacity());
-    assert_eq!(chunk.allocated(), any_chunk.allocated());
-    assert_eq!(chunk.remaining(), any_chunk.remaining());
-    assert_eq!(chunk.chunk_start(), any_chunk.chunk_start());
-    assert_eq!(chunk.chunk_end(), any_chunk.chunk_end());
-    assert_eq!(chunk.content_start(), any_chunk.content_start());
-    assert_eq!(chunk.content_end(), any_chunk.content_end());
-    assert_eq!(chunk.bump_position(), any_chunk.bump_position());
-}
-
 fn allocate_another_chunk<A, const C: BumpConfig>(bump: &Bump<A, C>, dummy_size: usize)
 where
     A: Allocator,
 {
-    let start_chunks = bump.any_stats().count();
+    let start_chunks = bump.stats().count();
 
     // fill the existing chunk if there is one
-    let remaining = bump.any_stats().remaining();
+    let remaining = bump.stats().remaining();
     if remaining != 0 {
         bump.allocate(Layout::from_size_align(remaining, 1).unwrap()).unwrap();
     }
-    assert_eq!(bump.any_stats().count(), start_chunks);
+    assert_eq!(bump.stats().count(), start_chunks);
 
     bump.allocate(Layout::from_size_align(dummy_size, 1).unwrap()).unwrap();
-    assert_eq!(bump.any_stats().count(), start_chunks + 1);
-    assert_eq!(bump.any_stats().current_chunk().unwrap().allocated(), dummy_size);
+    assert_eq!(bump.stats().count(), start_chunks + 1);
+    assert_eq!(bump.stats().current_chunk().unwrap().allocated(), dummy_size);
 }
 
 const ZST_ALLOCATED_CHUNK_HEADER_SIZE: usize = 8 * 4;
@@ -241,7 +198,6 @@ fn test_base_allocator<A, const C: BumpConfig>(
     );
     assert_eq!(bump.allocated(), 1);
     assert_eq!(bump.stats().remaining(), bump.stats().capacity() - bump.allocated());
-    assert_stats_match(bump.stats(), bump.any_stats());
 
     allocate_another_chunk(&bump, 1);
     assert_eq!(
@@ -257,5 +213,4 @@ fn test_base_allocator<A, const C: BumpConfig>(
         bump.stats().current_chunk().unwrap().remaining(),
         bump.stats().current_chunk().unwrap().capacity() - bump.stats().current_chunk().unwrap().allocated()
     );
-    assert_stats_match(bump.stats(), bump.any_stats());
 }

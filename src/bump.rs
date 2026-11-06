@@ -14,7 +14,7 @@ use crate::{
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
     polyfill::{transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
-    stats::{AnyStats, Stats},
+    stats::Stats,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -201,7 +201,7 @@ where
     A: Allocator,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        AnyStats::from(self.stats()).debug_format("Bump", f)
+        self.stats().debug_format("Bump", f)
     }
 }
 

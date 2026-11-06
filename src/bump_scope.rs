@@ -14,7 +14,7 @@ use crate::{
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
     polyfill::{transmute_mut, transmute_ref, transmute_value},
     raw_bump::RawBump,
-    stats::{AnyStats, Stats},
+    stats::Stats,
 };
 
 #[cfg(feature = "panic-on-alloc")]
@@ -50,7 +50,7 @@ impl<A, const C: BumpConfig> RefUnwindSafe for BumpScope<'_, A, C> where A: RefU
 
 impl<A, const C: BumpConfig> fmt::Debug for BumpScope<'_, A, C> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        AnyStats::from(self.stats()).debug_format("BumpScope", f)
+        self.stats().debug_format("BumpScope", f)
     }
 }
 

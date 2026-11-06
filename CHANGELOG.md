@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Remove bump allocator trait guarantee about allowing dealloc with a dangling pointer
 - **Breaking:** Remove `as_(mut_)scope`, use `as_(mut_)bump_scope` instead
 - **Breaking:** Remove `BumpScope`'s `From<&Bump>` and `From<&mut Bump>` implementations
+- **Breaking:** Remove `.any_stats()`, `AnyStats` and associated types
 
 ### Fixed
 

@@ -10,9 +10,9 @@ use std::{
 };
 
 use bump_scope::{
-    Bump, BumpAllocator, BumpScope, config,
-    config::BumpConfig,
-    stats::{AnyChunk, Chunk},
+    AsBumpScope, Bump, BumpScope,
+    config::{self, BumpConfig},
+    stats::Chunk,
 };
 
 use common::{MALLOC_OVERHEAD, up_and_down};
@@ -671,9 +671,9 @@ up_and_down! {
     }
 }
 
-fn debug_sizes(bump: &impl BumpAllocator) {
-    let iter = bump.any_stats().small_to_big();
-    let vec = iter.map(AnyChunk::size).collect::<Vec<_>>();
+fn debug_sizes<A, const C: BumpConfig>(bump: &impl AsBumpScope<A, C>) {
+    let iter = bump.as_bump_scope().stats().small_to_big();
+    let vec = iter.map(Chunk::size).collect::<Vec<_>>();
     eprintln!("sizes: {vec:?}");
 }
 

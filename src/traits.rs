@@ -27,7 +27,6 @@ use crate::{
     },
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
     polyfill::{transmute_mut, transmute_ref},
-    stats::AnyStats,
     up_align_usize_unchecked, util,
 };
 
@@ -2218,9 +2217,6 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// [allocated]: crate::stats::Stats::allocated
     fn allocated(&self) -> usize;
 
-    /// FIXME
-    fn any_stats(&self) -> AnyStats<'_>;
-
     /// Reserves capacity for at least `additional` more bytes to be bump allocated.
     /// The bump allocator may reserve more space to avoid frequent reallocations.
     /// After calling `reserve`, <code>self.[stats][]().[remaining][]()</code> will be greater than or equal to
@@ -2292,11 +2288,6 @@ unsafe impl<T: BumpAllocator> BumpAllocator for &T {
     }
 
     #[inline(always)]
-    fn any_stats(&self) -> AnyStats<'_> {
-        T::any_stats(self)
-    }
-
-    #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn reserve(&self, additional: usize) {
         T::reserve(self, additional);
@@ -2316,11 +2307,6 @@ unsafe impl<T: BumpAllocator> BumpAllocator for &mut T {
     #[inline(always)]
     fn allocated(&self) -> usize {
         T::allocated(self)
-    }
-
-    #[inline(always)]
-    fn any_stats(&self) -> AnyStats<'_> {
-        T::any_stats(self)
     }
 
     #[inline(always)]
@@ -2346,11 +2332,6 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for Bump<A, C> {
     }
 
     #[inline(always)]
-    fn any_stats(&self) -> AnyStats<'_> {
-        self.stats().into()
-    }
-
-    #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn reserve(&self, additional: usize) {
         panic_on_error(self.raw.reserve(additional));
@@ -2373,11 +2354,6 @@ unsafe impl<A: Allocator, const C: BumpConfig> BumpAllocator for BumpScope<'_, A
     }
 
     #[inline(always)]
-    fn any_stats(&self) -> AnyStats<'_> {
-        self.stats().into()
-    }
-
-    #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn reserve(&self, additional: usize) {
         panic_on_error(self.raw.reserve(additional));
@@ -2397,11 +2373,6 @@ unsafe impl BumpAllocator for Unmanaged<'_> {
     #[inline(always)]
     fn allocated(&self) -> usize {
         0
-    }
-
-    #[inline(always)]
-    fn any_stats(&self) -> AnyStats<'_> {
-        AnyStats::default()
     }
 
     #[inline(always)]

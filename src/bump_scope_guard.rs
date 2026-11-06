@@ -6,7 +6,6 @@ use crate::{
     config::{BumpConfig, DEFAULT_BUMP_CONFIG},
     polyfill::transmute_mut,
     raw_bump::RawBump,
-    stats::AnyStats,
 };
 
 /// This is returned from [`checkpoint`] and used for [`reset_to`].
@@ -51,7 +50,7 @@ where
     A: Allocator,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        AnyStats::from(self.bump.stats()).debug_format("BumpScopeGuard", f)
+        self.bump.stats().debug_format("BumpScopeGuard", f)
     }
 }
 
