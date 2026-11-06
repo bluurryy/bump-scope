@@ -15,25 +15,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Breaking:** Replace `BumpSettings` type with `BumpConfig` const generic
-- **Breaking:** Replace `.scoped_aligned()`, use `scoped_with_config` instead
-- **Breaking:** Replace `.aligned()`, use `with_config` instead
-- **Breaking:** Rename `*with_settings` to `*change_config`, `borrow_*` to `ref_*` and `borrow_mut_*` to `mut_*`
-- **Breaking:** Rename traits `*BumpAllocatorTyped*` to `*BumpAllocator*`
-- **Breaking:** Replace `guaranteed_allocated` setting with not-`const_constructible` config
-- **Breaking:** Rename `Bump::unallocated()` constructor to `Bump::const_new()`
+- **Breaking:** Replace `(scoped_)aligned` with `(scoped_)with_config`
+- **Breaking:** Rename `with_settings` to `change_config`, `borrow_with_settings` to `ref_change_config` and `borrow_mut_with_settings` to `mut_change_config`
+- **Breaking:** Redesigned bump allocator traits, no more `Core` and `Typed` variants
+- **Breaking:** Rename `guaranteed_allocated` setting to  not-`const_constructible`
+- **Breaking:** Rename `Bump::unallocated()` to `Bump::const_new()`
 
 ### Removed
 
+- **Breaking:** Remove `BumpBox`, `BumpVec`, `BumpString`, `MutBumpVec`, `MutBumpString`, `MutBumpVecRev` and associated types
+- **Breaking:** Remove `WithoutDealloc` and `WithoutShrink`
 - **Breaking:** Remove allocator api polyfill at `bump_scope::alloc`
 - **Breaking:** Remove `allocator-api2-02`, `*-03` and `*-04` features and the corresponding compatibility
-- **Breaking:** Remove `nightly-allocator-api` feature, since it is now stable
+- **Breaking:** Remove individual `nightly-*` features, there is now only the all-encompassing `nightly` feature
 - **Breaking:** Remove `BaseAllocator` trait, any `Allocator` can be used now
 - **Breaking:** Remove `BumpAllocator(Scope)` trait
-- **Breaking:** Remove `WithoutDealloc` and `WithoutShrink`
-- **Breaking:** Remove `push_unchecked` apis
-- **Breaking:** Remove `alloc_iter_exact`, use `alloc_iter` instead
-- **Breaking:** Remove deprecated api
-- **Breaking:** Remove `BumpAllocatorCore` trait guarantee about allowing dealloc with a dangling pointer
+- **Breaking:** Remove bump allocator trait guarantee about allowing dealloc with a dangling pointer
 
 ### Fixed
 
