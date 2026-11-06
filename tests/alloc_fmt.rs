@@ -40,7 +40,7 @@ up_and_down! {
     #[test]
     fn nothing_extra_mut() {
         let mut bump: Bump<Global, C> = Bump::new();
-        let bump = bump.as_mut_scope();
+        let bump = bump.as_mut_bump_scope();
         let string = bump.alloc_fmt_mut(format_args!("ext{Nothing}ra")).into_boxu();
         assert_eq!(&*string, "extra");
         assert_eq!(bump.stats().allocated(), 5);

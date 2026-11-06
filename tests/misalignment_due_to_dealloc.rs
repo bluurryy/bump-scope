@@ -15,7 +15,7 @@ up_and_down! {
     #[test]
     fn test_aligned_alloc() {
         let mut bump = Bump::<Global, C>::new();
-        let bump = bump.as_mut_scope();
+        let bump = bump.as_mut_bump_scope();
 
         let _three = bump.alloc([0u8; 3]).into_boxu();
         let five = bump.alloc([0u8; 5]).into_boxu();
@@ -30,7 +30,7 @@ up_and_down! {
     #[test]
     fn test_aligned_allocate() {
         let mut bump = Bump::<Global, C>::new();
-        let bump = bump.as_mut_scope();
+        let bump = bump.as_mut_bump_scope();
 
         let _three = bump.allocate(Layout::new::<[u8; 3]>()).unwrap();
         let five = bump.allocate(Layout::new::<[u8; 5]>()).unwrap();
@@ -44,7 +44,7 @@ up_and_down! {
     #[test]
     fn test_scoped_alloc() {
         let mut bump = Bump::<Global, C>::new();
-        let bump = bump.as_mut_scope();
+        let bump = bump.as_mut_bump_scope();
 
         let _three = bump.alloc([0u8; 3]).into_boxu();
         let five = bump.alloc([0u8; 5]).into_boxu();
@@ -59,7 +59,7 @@ up_and_down! {
     #[test]
     fn test_scoped_allocate() {
         let mut bump = Bump::<Global, C>::new();
-        let bump = bump.as_mut_scope();
+        let bump = bump.as_mut_bump_scope();
 
         let _three = bump.allocate(Layout::new::<[u8; 3]>()).unwrap();
         let five = bump.allocate(Layout::new::<[u8; 5]>()).unwrap();
@@ -73,7 +73,7 @@ up_and_down! {
     #[test]
     fn test_scoped_aligned_alloc() {
         let mut bump = Bump::<Global, C>::new();
-        let bump = bump.as_mut_scope();
+        let bump = bump.as_mut_bump_scope();
 
         let _three = bump.alloc([0u8; 3]).into_boxu();
         let five = bump.alloc([0u8; 5]).into_boxu();
@@ -88,7 +88,7 @@ up_and_down! {
     #[test]
     fn test_scoped_aligned_allocate() {
         let mut bump = Bump::<Global, C>::new();
-        let bump = bump.as_mut_scope();
+        let bump = bump.as_mut_bump_scope();
 
         let _three = bump.allocate(Layout::new::<[u8; 3]>()).unwrap();
         let five = bump.allocate(Layout::new::<[u8; 5]>()).unwrap();

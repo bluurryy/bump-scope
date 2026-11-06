@@ -101,7 +101,7 @@ up_and_down! {
     #[test]
     fn reset_middle_chunk() {
         let mut bump = Bump::<Global, NO_MIN_SIZE>::with_size(64);
-        force_alloc_new_chunk(bump.as_scope());
+        force_alloc_new_chunk(bump.as_bump_scope());
 
         bump.scoped(|scope| {
             force_alloc_new_chunk(scope);
@@ -115,8 +115,8 @@ up_and_down! {
     #[test]
     fn reset_last_chunk() {
         let mut bump = Bump::<Global, NO_MIN_SIZE>::with_size(64);
-        force_alloc_new_chunk(bump.as_scope());
-        force_alloc_new_chunk(bump.as_scope());
+        force_alloc_new_chunk(bump.as_bump_scope());
+        force_alloc_new_chunk(bump.as_bump_scope());
         assert_chunk_sizes!(bump, [128, 64], 256, []);
         bump.reset();
         assert_chunk_sizes!(bump, [], 256, []);
@@ -652,7 +652,7 @@ up_and_down! {
         }
 
         let mut bump: Bump = Bump::new();
-        foo(bump.as_mut_scope());
+        foo(bump.as_mut_bump_scope());
 
         let mut bump: Bump = Bump::new();
         bump.scoped(|bump| {

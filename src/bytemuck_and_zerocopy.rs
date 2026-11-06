@@ -88,7 +88,7 @@ macro_rules! make {
                 #[doc = concat!("use bump_scope::{Bump, ", stringify!($mod), "::BumpAllocatorExt};")]
                 /// let bump: Bump = Bump::new();
                 ///
-                /// let zero = bump.as_scope().alloc_zeroed::<i32>().into_boxu();
+                /// let zero = bump.alloc_zeroed::<i32>().into_boxu();
                 /// assert_eq!(*zero, 0);
                 /// ```
                 #[inline(always)]
@@ -110,7 +110,7 @@ macro_rules! make {
                 #[doc = concat!("use bump_scope::{Bump, ", stringify!($mod), "::BumpAllocatorExt};")]
                 /// let bump: Bump = Bump::new();
                 ///
-                /// let zero = bump.as_scope().try_alloc_zeroed::<i32>()?.into_boxu();
+                /// let zero = bump.try_alloc_zeroed::<i32>()?.into_boxu();
                 /// assert_eq!(*zero, 0);
                 /// # Ok::<(), ::core::alloc::AllocError>(())
                 /// ```
@@ -132,7 +132,7 @@ macro_rules! make {
                 #[doc = concat!("use bump_scope::{Bump, ", stringify!($mod), "::BumpAllocatorExt};")]
                 /// let bump: Bump = Bump::new();
                 ///
-                /// let zeroes = bump.as_scope().alloc_zeroed_slice::<i32>(3).into_boxu();
+                /// let zeroes = bump.alloc_zeroed_slice::<i32>(3).into_boxu();
                 /// assert_eq!(*zeroes, [0; 3]);
                 /// ```
                 #[inline(always)]
@@ -154,7 +154,7 @@ macro_rules! make {
                 #[doc = concat!("use bump_scope::{Bump, ", stringify!($mod), "::BumpAllocatorExt};")]
                 /// let bump: Bump = Bump::new();
                 ///
-                /// let zeroes = bump.as_scope().try_alloc_zeroed_slice::<i32>(3)?.into_boxu();
+                /// let zeroes = bump.try_alloc_zeroed_slice::<i32>(3)?.into_boxu();
                 /// assert_eq!(*zeroes, [0; 3]);
                 /// # Ok::<(), ::core::alloc::AllocError>(())
                 /// ```

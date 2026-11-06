@@ -9,7 +9,7 @@ use std::{
 use alloc::alloc::Global;
 
 use crate::{
-    Bump, BumpScope,
+    AsBumpScope as _, AsMutBumpScope as _, Bump, BumpScope,
     config::{BumpConfig, DEFAULT_BUMP_CONFIG},
 };
 
@@ -318,7 +318,7 @@ where
         // - `mem::forget(bump_pool_guard)` will not return the `Bump` to its pool,
         //   however the `Bump` won't be dropped either, so its allocations will
         //   live for `'static` which is compatible with `'a`.
-        unsafe { transmute_lifetime(self.bump.as_scope()) }
+        unsafe { transmute_lifetime(self.bump.as_bump_scope()) }
     }
 }
 
@@ -328,7 +328,7 @@ where
 {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { transmute_lifetime_mut(self.bump.as_mut_scope()) }
+        unsafe { transmute_lifetime_mut(self.bump.as_mut_bump_scope()) }
     }
 }
 

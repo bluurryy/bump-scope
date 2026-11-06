@@ -53,7 +53,9 @@ macro_rules! up_and_down {
             #[allow(unused_imports)]
             use bump_scope::{
                 config::{BumpConfig, BumpConfigBuilder},
-                BumpAllocator, MutBumpAllocator, BumpAllocatorScope, extra
+                BumpAllocator, MutBumpAllocator, BumpAllocatorScope,
+                AsBumpScope, AsMutBumpScope,
+                extra
             };
 
             const DEFAULT_C: BumpConfig = BumpConfigBuilder::new()
@@ -70,7 +72,9 @@ macro_rules! up_and_down {
             #[allow(unused_imports)]
             use bump_scope::{
                 config::{BumpConfig, BumpConfigBuilder},
-                BumpAllocator, MutBumpAllocator, BumpAllocatorScope, extra
+                BumpAllocator, MutBumpAllocator, BumpAllocatorScope,
+                AsBumpScope, AsMutBumpScope,
+                extra
             };
 
             const DEFAULT_C: BumpConfig = BumpConfigBuilder::new()

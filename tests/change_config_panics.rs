@@ -5,7 +5,7 @@ mod common;
 use std::{alloc::Global, mem::forget};
 
 use bump_scope::{
-    Bump, BumpScope,
+    AsMutBumpScope as _, Bump, BumpScope,
     config::{BumpConfig, BumpConfigBuilder},
 };
 
@@ -55,7 +55,7 @@ mod test_bump_scope {
         const IN: BumpConfig = BumpConfigBuilder::new().claimable(true).build();
         const OUT: BumpConfig = BumpConfigBuilder::new().claimable(false).build();
         let mut input_bump: Bump<Global, IN> = Bump::new();
-        let input: BumpScope<_, IN> = input_bump.as_mut_scope().by_value();
+        let input: BumpScope<_, IN> = input_bump.as_mut_bump_scope().by_value();
         forget(input.claim());
         let _: BumpScope<_, OUT> = input.change_config();
     }

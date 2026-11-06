@@ -9,7 +9,7 @@ use core::{
 use alloc::alloc::Global;
 
 use crate::{
-    BumpClaimGuard, BumpScope, BumpScopeGuard, allocator_impl,
+    AsBumpScope as _, AsMutBumpScope as _, BumpClaimGuard, BumpScope, BumpScopeGuard, allocator_impl,
     chunk_size::{ChunkSizeCapacity, ChunkSizeHint, ChunkSizeMin},
     config::{BumpConfig, DEFAULT_BUMP_CONFIG, config},
     polyfill::{transmute_mut, transmute_ref, transmute_value},
@@ -158,11 +158,11 @@ use crate::panic_on_error;
 /// });
 /// # _ = one;
 /// ```
-/// But you can make the code work by converting the `Bump` it to a [`BumpScope`] first using [`as_mut_scope`]:
+/// But you can make the code work by converting the `Bump` it to a [`BumpScope`] first using [`as_mut_bump_scope`]:
 /// ```
-/// use bump_scope::{Bump, BumpAllocator};
+/// use bump_scope::{Bump, BumpAllocator, AsMutBumpScope};
 /// let mut bump: Bump = Bump::new();
-/// let bump = bump.as_mut_scope();
+/// let bump = bump.as_mut_bump_scope();
 ///
 /// let one = bump.alloc(1).into_ref();
 ///
@@ -173,7 +173,7 @@ use crate::panic_on_error;
 /// # _ = one;
 /// ```
 ///
-/// [`as_mut_scope`]: Bump::as_mut_scope
+/// [`as_mut_bump_scope`]: Bump::as_mut_bump_scope
 #[repr(transparent)]
 pub struct Bump<A: Allocator = Global, const C: BumpConfig = DEFAULT_BUMP_CONFIG> {
     pub(crate) raw: RawBump<A, C>,
@@ -724,21 +724,7 @@ where
     #[must_use]
     #[inline(always)]
     pub fn stats(&self) -> Stats<'_, A, C> {
-        self.as_scope().stats()
-    }
-
-    /// Returns this `&Bump` as a `&BumpScope`.
-    #[must_use]
-    #[inline(always)]
-    pub fn as_scope(&self) -> &BumpScope<'_, A, C> {
-        unsafe { transmute_ref(self) }
-    }
-
-    /// Returns this `&mut Bump` as a `&mut BumpScope`.
-    #[must_use]
-    #[inline(always)]
-    pub fn as_mut_scope(&mut self) -> &mut BumpScope<'_, A, C> {
-        unsafe { transmute_mut(self) }
+        self.as_bump_scope().stats()
     }
 
     /// Converts this `Bump` into a `Bump` with a new config.
@@ -845,7 +831,7 @@ where
 {
     #[inline(always)]
     fn from(value: &'b Bump<A, C>) -> Self {
-        value.as_scope()
+        value.as_bump_scope()
     }
 }
 
@@ -855,7 +841,7 @@ where
 {
     #[inline(always)]
     fn from(value: &'b mut Bump<A, C>) -> Self {
-        value.as_mut_scope()
+        value.as_mut_bump_scope()
     }
 }
 
@@ -868,37 +854,37 @@ where
     #[must_use]
     #[inline(always)]
     pub fn allocator(&self) -> Option<&A> {
-        self.as_scope().allocator()
+        self.as_bump_scope().allocator()
     }
 
     /// Forwards to [`BumpScope::claim`].
     #[inline(always)]
     pub fn claim(&self) -> BumpClaimGuard<'_, '_, A, C> {
-        self.as_scope().claim()
+        self.as_bump_scope().claim()
     }
 
     /// Forwards to [`BumpScope::scope_guard`].
     #[inline(always)]
     pub fn scope_guard(&mut self) -> BumpScopeGuard<'_, A, C> {
-        self.as_mut_scope().scope_guard()
+        self.as_mut_bump_scope().scope_guard()
     }
 
     /// Forwards to [`BumpScope::scoped`].
     #[inline(always)]
     pub fn scoped<R>(&mut self, f: impl FnOnce(&mut BumpScope<A, C>) -> R) -> R {
-        self.as_mut_scope().scoped(f)
+        self.as_mut_bump_scope().scoped(f)
     }
 
     /// Forwards to [`BumpScope::scoped_with_config`].
     #[inline(always)]
     pub fn scoped_with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<A, NEW_C>) -> R) -> R {
-        self.as_mut_scope().scoped_with_config::<NEW_C, R>(f)
+        self.as_mut_bump_scope().scoped_with_config::<NEW_C, R>(f)
     }
 
     /// Forwards to [`BumpScope::with_config`].
     #[inline(always)]
     pub fn with_config<const NEW_C: BumpConfig, R>(&mut self, f: impl FnOnce(&mut BumpScope<'_, A, NEW_C>) -> R) -> R {
-        self.as_mut_scope().with_config(f)
+        self.as_mut_bump_scope().with_config(f)
     }
 }
 

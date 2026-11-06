@@ -26,7 +26,7 @@ use crate::{
         boxed_slice_init_fill, boxed_slice_init_fill_with,
     },
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
-    polyfill::transmute_mut,
+    polyfill::{transmute_mut, transmute_ref},
     stats::AnyStats,
     up_align_usize_unchecked, util,
 };
@@ -2621,9 +2621,9 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
     /// #![feature(offset_of_enum)]
     /// use core::mem::offset_of;
-    /// use bump_scope::{Bump, MutBumpAllocator};
+    /// use bump_scope::{Bump, MutBumpAllocator, AsMutBumpScope};
     /// let mut bump: Bump = Bump::new();
-    /// let bump = bump.as_mut_scope();
+    /// let bump = bump.as_mut_bump_scope();
     /// let stats = bump.stats();
     ///
     /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) });
@@ -2631,9 +2631,9 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     /// assert_eq!(*result.unwrap().into_box(), 123);
     /// ```
     /// ```
-    /// use bump_scope::{Bump, MutBumpAllocator};
+    /// use bump_scope::{Bump, MutBumpAllocator, AsMutBumpScope};
     /// let mut bump: Bump = Bump::new();
-    /// let bump = bump.as_mut_scope();
+    /// let bump = bump.as_mut_bump_scope();
     /// let stats = bump.stats();
     ///
     /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) });
@@ -2664,9 +2664,9 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     #[cfg_attr(not(feature = "nightly"), doc = "```ignore")]
     /// #![feature(offset_of_enum)]
     /// use core::mem::offset_of;
-    /// use bump_scope::{Bump, MutBumpAllocator};
+    /// use bump_scope::{Bump, MutBumpAllocator, AsMutBumpScope};
     /// let mut bump: Bump = Bump::new();
-    /// let bump = bump.as_mut_scope();
+    /// let bump = bump.as_mut_bump_scope();
     /// let stats = bump.stats();
     ///
     /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) })?;
@@ -2675,9 +2675,9 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     /// ```
-    /// use bump_scope::{Bump, MutBumpAllocator};
+    /// use bump_scope::{Bump, MutBumpAllocator, AsMutBumpScope};
     /// let mut bump: Bump = Bump::new();
-    /// let bump = bump.as_mut_scope();
+    /// let bump = bump.as_mut_bump_scope();
     /// let stats = bump.stats();
     ///
     /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) })?;
@@ -2737,7 +2737,7 @@ pub trait AsBumpScope<A = Global, const C: BumpConfig = DEFAULT_BUMP_CONFIG> {
 
 impl<A: Allocator, const C: BumpConfig> AsBumpScope<A, C> for Bump<A, C> {
     fn as_bump_scope(&self) -> &BumpScope<'_, A, C> {
-        self.as_scope()
+        unsafe { transmute_ref(self) }
     }
 }
 
@@ -2777,7 +2777,7 @@ pub trait AsMutBumpScope<A = Global, const C: BumpConfig = DEFAULT_BUMP_CONFIG> 
 
 impl<A: Allocator, const C: BumpConfig> AsMutBumpScope<A, C> for Bump<A, C> {
     fn as_mut_bump_scope(&mut self) -> &mut BumpScope<'_, A, C> {
-        self.as_mut_scope()
+        unsafe { transmute_mut(self) }
     }
 }
 

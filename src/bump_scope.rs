@@ -28,13 +28,13 @@ use crate::panic_on_error;
 ///
 /// This type is provided as a parameter to the closure of [`scoped`], or created
 /// by [`BumpScopeGuard::scope`]. A [`Bump`] can also be turned into a `BumpScope` using
-/// [`as_scope`], [`as_mut_scope`] or `from` / `into`.
+/// [`as_bump_scope`], [`as_mut_bump_scope`] or `from` / `into`.
 ///
 /// [`scoped`]: crate::BumpScope::scoped
 /// [`BumpScopeGuard::scope`]: crate::BumpScopeGuard::scope
 /// [`Bump`]: crate::Bump
-/// [`as_scope`]: crate::Bump::as_scope
-/// [`as_mut_scope`]: crate::Bump::as_mut_scope
+/// [`as_bump_scope`]: crate::AsBumpScope::as_bump_scope
+/// [`as_mut_bump_scope`]: crate::AsMutBumpScope::as_mut_bump_scope
 /// [`reset`]: crate::Bump::reset
 #[repr(transparent)]
 pub struct BumpScope<'a, A = Global, const C: BumpConfig = DEFAULT_BUMP_CONFIG> {
@@ -216,19 +216,6 @@ impl<'a, A, const C: BumpConfig> BumpScope<'a, A, C>
 where
     A: Allocator,
 {
-    /// Returns this bump allocator as a `&BumpScope`.
-    #[must_use]
-    pub fn as_scope(&self) -> &BumpScope<'_, A, C> {
-        self
-    }
-
-    /// Returns this bump allocator as a `&mut BumpScope`.
-    #[must_use]
-    pub fn as_mut_scope(&mut self) -> &mut BumpScope<'_, A, C> {
-        // SAFETY: we shorten the lifetime that allocations will have which is sound
-        unsafe { transmute_mut(self) }
-    }
-
     /// Creates a new [`BumpScopeGuard`].
     ///
     /// This allows for creation of child scopes.
@@ -366,12 +353,12 @@ where
     ///
     /// Increase the minimum alignment:
     /// ```
-    /// use bump_scope::{Bump, BumpAllocator, config::{BumpConfig, BumpConfigBuilder}};
+    /// use bump_scope::{Bump, BumpAllocator, AsMutBumpScope, config::{BumpConfig, BumpConfigBuilder}};
     ///
     /// const MIN_ALIGN_8: BumpConfig = BumpConfigBuilder::new().min_align(8).build();
     ///
     /// let mut bump: Bump = Bump::new();
-    /// let bump = bump.as_mut_scope();
+    /// let bump = bump.as_mut_bump_scope();
     ///
     /// // here we're allocating with a `MIN_ALIGN` of `1`
     /// let foo = bump.alloc_str("foo").into_ref();
@@ -405,13 +392,13 @@ where
     /// Decrease the minimum alignment:
     /// ```
     /// use std::alloc::Global;
-    /// use bump_scope::{Bump, BumpAllocator, config::{BumpConfig, BumpConfigBuilder}};
+    /// use bump_scope::{Bump, BumpAllocator, AsMutBumpScope, config::{BumpConfig, BumpConfigBuilder}};
     ///
     /// const MIN_ALIGN_8: BumpConfig = BumpConfigBuilder::new().min_align(8).build();
     /// const MIN_ALIGN_1: BumpConfig = BumpConfigBuilder::new().build();
     ///
     /// let mut bump: Bump<Global, MIN_ALIGN_8> = Bump::new();
-    /// let bump = bump.as_mut_scope();
+    /// let bump = bump.as_mut_bump_scope();
     ///
     /// // make some allocations that benefit from the `MIN_ALIGN` of `8`
     /// let foo = bump.alloc(0u64).into_ref();

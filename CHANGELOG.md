@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Remove `BaseAllocator` trait, any `Allocator` can be used now
 - **Breaking:** Remove `BumpAllocator(Scope)` trait
 - **Breaking:** Remove bump allocator trait guarantee about allowing dealloc with a dangling pointer
+- **Breaking:** Remove `as_(mut_)scope`, use `as_(mut_)bump_scope` instead
 
 ### Fixed
 
