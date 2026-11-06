@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Rename `guaranteed_allocated` setting to  not-`const_constructible`
 - **Breaking:** Rename `Bump::unallocated()` to `Bump::const_new()`
 - **Breaking:** Swap base allocator and bump config generic parameters
+- **Breaking:** The slice provided to `alloc_uninit_slice_for` no longer has to have the same element type as the allocated slice
 
 ### Removed
 

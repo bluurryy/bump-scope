@@ -296,12 +296,12 @@ pub use bump_claim_guard::BumpClaimGuard;
 pub use bump_pool::{BumpPool, BumpPoolGuard};
 pub use bump_scope::BumpScope;
 pub use bump_scope_guard::{BumpScopeGuard, Checkpoint};
+use core::{alloc::Layout, mem, num::NonZeroUsize};
 #[cfg(test)]
 use core::{
-    alloc::{AllocError, Allocator, Layout},
+    alloc::{AllocError, Allocator},
     ptr::NonNull,
 };
-use core::{mem, num::NonZeroUsize};
 pub use no_drop::NoDrop;
 #[cfg(feature = "panic-on-alloc")]
 use private::capacity_overflow;
@@ -360,6 +360,7 @@ fn panic_on_error<T>(result: Result<T, !>) -> T {
 trait SizedTypeProperties: Sized {
     const SIZE: usize = mem::size_of::<Self>();
     const ALIGN: usize = mem::align_of::<Self>();
+    const LAYOUT: Layout = Layout::new::<Self>();
 
     const IS_ZST: bool = mem::size_of::<Self>() == 0;
 }

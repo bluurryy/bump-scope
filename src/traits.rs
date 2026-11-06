@@ -306,10 +306,14 @@ pub(crate) unsafe trait BumpAllocatorPrivate: Allocator + Sized {
     }
 
     #[inline(always)]
-    fn imp_alloc_uninit_slice_for<E, T>(&self, slice: &[T]) -> Result<Box<[MaybeUninit<T>], &Self>, E>
+    fn imp_alloc_uninit_slice_for<E, T, U>(&self, slice: &[U]) -> Result<Box<[MaybeUninit<T>], &Self>, E>
     where
         E: ErrorMode,
     {
+        if U::LAYOUT != T::LAYOUT {
+            return self.imp_alloc_uninit_slice(slice.len());
+        }
+
         let ptr = self.spec_alloc_slice_for(slice)?.cast::<MaybeUninit<T>>().as_ptr();
 
         unsafe {
@@ -1671,8 +1675,8 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// `box_zero_init_slice` <sup>[\[1\]](crate::zerocopy_08::box_zero_init_slice) [\[2\]](crate::bytemuck::box_zero_init_slice)</sup>
     /// or unsafely with [`assume_init`](Box::assume_init).
     ///
-    /// This is just like [`alloc_uninit_slice`](BumpAllocator::alloc_uninit_slice) but uses a `slice` to provide the `len`.
-    /// This avoids a check for a valid layout. The elements of `slice` are irrelevant.
+    /// When the layouts of `T` and `U` are the same, this avoids checking for a valid `Layout` since the given slice can provide a valid one.
+    /// Otherwise it falls back to [`alloc_uninit_slice`](BumpAllocator::alloc_uninit_slice).
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1682,13 +1686,13 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// use bump_scope::{Bump, BumpAllocator};
     /// let bump: Bump = Bump::new();
     ///
-    /// let slice = &[1, 2, 3];
-    /// let uninit_slice = bump.alloc_uninit_slice_for(slice).into_boxu();
+    /// let slice: &[u32] = &[1, 2, 3];
+    /// let uninit_slice = bump.alloc_uninit_slice_for::<char, _>(slice).into_boxu();
     /// assert_eq!(uninit_slice.len(), 3);
     /// ```
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    fn alloc_uninit_slice_for<T>(&self, slice: &[T]) -> BumpAllocation<[MaybeUninit<T>], &Self> {
+    fn alloc_uninit_slice_for<T, U>(&self, slice: &[U]) -> BumpAllocation<[MaybeUninit<T>], &Self> {
         let boxed = panic_on_error(self.imp_alloc_uninit_slice_for(slice));
         BumpAllocation(boxed)
     }
@@ -1702,8 +1706,8 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// `box_zero_init_slice` <sup>[\[1\]](crate::zerocopy_08::box_zero_init_slice) [\[2\]](crate::bytemuck::box_zero_init_slice)</sup>
     /// or unsafely with [`assume_init`](Box::assume_init).
     ///
-    /// This is just like [`try_alloc_uninit_slice`](BumpAllocator::try_alloc_uninit_slice) but uses a `slice` to provide the `len`.
-    /// This avoids a check for a valid layout. The elements of `slice` are irrelevant.
+    /// When the layouts of `T` and `U` are the same, this avoids checking for a valid `Layout` since the given slice can provide a valid one.
+    /// Otherwise it falls back to [`try_alloc_uninit_slice`](BumpAllocator::try_alloc_uninit_slice).
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1713,13 +1717,13 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// use bump_scope::{Bump, BumpAllocator};
     /// let bump: Bump = Bump::new();
     ///
-    /// let slice = &[1, 2, 3];
-    /// let uninit_slice = bump.try_alloc_uninit_slice_for(slice)?.into_boxu();
+    /// let slice: &[u32] = &[1, 2, 3];
+    /// let uninit_slice = bump.try_alloc_uninit_slice_for::<char, _>(slice)?.into_boxu();
     /// assert_eq!(uninit_slice.len(), 3);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
-    fn try_alloc_uninit_slice_for<T>(&self, slice: &[T]) -> Result<BumpAllocation<[MaybeUninit<T>], &Self>, AllocError> {
+    fn try_alloc_uninit_slice_for<T, U>(&self, slice: &[U]) -> Result<BumpAllocation<[MaybeUninit<T>], &Self>, AllocError> {
         let boxed = self.imp_alloc_uninit_slice_for(slice)?;
         Ok(BumpAllocation(boxed))
     }
