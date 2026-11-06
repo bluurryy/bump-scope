@@ -825,26 +825,6 @@ where
     }
 }
 
-impl<'b, A, const C: BumpConfig> From<&'b Bump<A, C>> for &'b BumpScope<'b, A, C>
-where
-    A: Allocator,
-{
-    #[inline(always)]
-    fn from(value: &'b Bump<A, C>) -> Self {
-        value.as_bump_scope()
-    }
-}
-
-impl<'b, A, const C: BumpConfig> From<&'b mut Bump<A, C>> for &'b mut BumpScope<'b, A, C>
-where
-    A: Allocator,
-{
-    #[inline(always)]
-    fn from(value: &'b mut Bump<A, C>) -> Self {
-        value.as_mut_bump_scope()
-    }
-}
-
 /// Additional `alloc` methods that are not available in traits.
 impl<A, const C: BumpConfig> Bump<A, C>
 where
