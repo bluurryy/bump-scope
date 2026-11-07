@@ -256,6 +256,7 @@ mod bump;
 mod bump_align_guard;
 mod bump_allocation;
 mod bump_claim_guard;
+mod bump_imp;
 #[cfg(feature = "std")]
 mod bump_pool;
 mod bump_scope;
@@ -270,6 +271,7 @@ mod containers;
 mod destructure;
 mod error_mode;
 pub mod extra;
+mod global_or_system;
 mod layout;
 mod macros;
 mod no_drop;
@@ -278,7 +280,6 @@ mod polyfill;
 /// This is not part of the public api. This module is semver-exempt!
 #[doc(hidden)]
 pub mod private;
-mod raw_bump;
 pub mod stats;
 #[cfg(test)]
 mod tests;

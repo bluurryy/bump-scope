@@ -5,11 +5,7 @@ use std::{
     string::String,
 };
 
-use crate::{
-    Bump,
-    tests::up_and_down,
-    traits::{BumpAllocator, BumpAllocatorPrivate},
-};
+use crate::{Bump, tests::up_and_down, traits::BumpAllocator};
 
 up_and_down! {
     const C: BumpConfig = DEFAULT_C;
@@ -74,41 +70,41 @@ up_and_down! {
         // traits::Sealed
         {
             // allocate_layout
-            expect_panic(|| bump.spec_alloc::<!>(Layout::new::<()>()));
-            expect_panic(|| bump.spec_alloc::<!>(Layout::new::<u8>()));
-            expect_err(bump.spec_alloc::<AllocError>(Layout::new::<()>()));
-            expect_err(bump.spec_alloc::<AllocError>(Layout::new::<u8>()));
+            expect_panic(|| bump.imp().alloc::<!>(Layout::new::<()>()));
+            expect_panic(|| bump.imp().alloc::<!>(Layout::new::<u8>()));
+            expect_err(bump.imp().alloc::<AllocError>(Layout::new::<()>()));
+            expect_err(bump.imp().alloc::<AllocError>(Layout::new::<u8>()));
 
             // allocate sized
-            expect_panic(|| bump.spec_alloc_sized::<!, ()>());
-            expect_panic(|| bump.spec_alloc_sized::<!, u8>());
-            expect_err(bump.spec_alloc_sized::<AllocError, ()>());
-            expect_err(bump.spec_alloc_sized::<AllocError, u8>());
+            expect_panic(|| bump.imp().alloc_sized::<!, ()>());
+            expect_panic(|| bump.imp().alloc_sized::<!, u8>());
+            expect_err(bump.imp().alloc_sized::<AllocError, ()>());
+            expect_err(bump.imp().alloc_sized::<AllocError, u8>());
 
             // allocate slice
-            expect_panic(|| bump.spec_alloc_slice::<!, ()>(123));
-            expect_panic(|| bump.spec_alloc_slice::<!, u8>(0));
-            expect_panic(|| bump.spec_alloc_slice::<!, u8>(1));
-            expect_err(bump.spec_alloc_slice::<AllocError, ()>(123));
-            expect_err(bump.spec_alloc_slice::<AllocError, u8>(0));
-            expect_err(bump.spec_alloc_slice::<AllocError, u8>(1));
+            expect_panic(|| bump.imp().alloc_slice::<!, ()>(123));
+            expect_panic(|| bump.imp().alloc_slice::<!, u8>(0));
+            expect_panic(|| bump.imp().alloc_slice::<!, u8>(1));
+            expect_err(bump.imp().alloc_slice::<AllocError, ()>(123));
+            expect_err(bump.imp().alloc_slice::<AllocError, u8>(0));
+            expect_err(bump.imp().alloc_slice::<AllocError, u8>(1));
 
             // allocate slice for
-            expect_panic(|| bump.spec_alloc_slice_for::<!, ()>(&[(), (), ()]));
-            expect_panic(|| bump.spec_alloc_slice_for::<!, u8>(&[]));
-            expect_panic(|| bump.spec_alloc_slice_for::<!, u8>(&[1]));
-            expect_err(bump.spec_alloc_slice_for::<AllocError, ()>(&[(), (), ()]));
-            expect_err(bump.spec_alloc_slice_for::<AllocError, u8>(&[]));
-            expect_err(bump.spec_alloc_slice_for::<AllocError, u8>(&[1]));
+            expect_panic(|| bump.imp().alloc_slice_for::<!, ()>(&[(), (), ()]));
+            expect_panic(|| bump.imp().alloc_slice_for::<!, u8>(&[]));
+            expect_panic(|| bump.imp().alloc_slice_for::<!, u8>(&[1]));
+            expect_err(bump.imp().alloc_slice_for::<AllocError, ()>(&[(), (), ()]));
+            expect_err(bump.imp().alloc_slice_for::<AllocError, u8>(&[]));
+            expect_err(bump.imp().alloc_slice_for::<AllocError, u8>(&[1]));
 
             // shrink slice
-            assert!(unsafe { bump.spec_shrink_slice(ptr, 2, 1) }.is_none());
+            assert!(unsafe { bump.imp().shrink_slice(ptr, 2, 1) }.is_none());
 
             // prepare slice allocation
-            expect_panic(|| bump.spec_prepare_slice::<!, ()>(123));
-            expect_panic(|| bump.spec_prepare_slice::<!, u8>(123));
-            expect_err(bump.spec_prepare_slice::<AllocError, ()>(123));
-            expect_err(bump.spec_prepare_slice::<AllocError, u8>(123));
+            expect_panic(|| bump.imp().prepare_slice::<!, ()>(123));
+            expect_panic(|| bump.imp().prepare_slice::<!, u8>(123));
+            expect_err(bump.imp().prepare_slice::<AllocError, ()>(123));
+            expect_err(bump.imp().prepare_slice::<AllocError, u8>(123));
 
             // dealloc
             drop(extra::box_replace_allocator(boxed, &bump));

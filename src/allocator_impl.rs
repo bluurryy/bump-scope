@@ -5,26 +5,30 @@ use core::{
 };
 
 use crate::{
+    bump_imp::{BumpImp, BumpImpTrait as _},
     config::{BumpConfig, config},
     layout::CustomLayout,
     polyfill::non_null,
-    raw_bump::RawBump,
     util::{bump_down, up_align_usize_unchecked},
 };
 
 #[inline(always)]
-pub fn allocate<const C: BumpConfig, A: Allocator>(
-    bump: &RawBump<C, A>,
+pub fn allocate<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
+    bump: BumpImp<C, A, IS_SCOPE>,
     layout: Layout,
 ) -> Result<NonNull<[u8]>, AllocError> {
     Ok(NonNull::slice_from_raw_parts(
-        bump.allocate::<AllocError>(layout)?,
+        bump.alloc::<AllocError>(layout)?,
         layout.size(),
     ))
 }
 
 #[inline(always)]
-pub unsafe fn deallocate<const C: BumpConfig, A: Allocator>(bump: &RawBump<C, A>, ptr: NonNull<u8>, layout: Layout) {
+pub unsafe fn deallocate<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
+    bump: BumpImp<C, A, IS_SCOPE>,
+    ptr: NonNull<u8>,
+    layout: Layout,
+) {
     if const { !config!(deallocates) } {
         return;
     }
@@ -38,13 +42,17 @@ pub unsafe fn deallocate<const C: BumpConfig, A: Allocator>(bump: &RawBump<C, A>
 }
 
 #[inline(always)]
-unsafe fn deallocate_assume_last<const C: BumpConfig, A: Allocator>(bump: &RawBump<C, A>, ptr: NonNull<u8>, layout: Layout) {
+unsafe fn deallocate_assume_last<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
+    bump: BumpImp<C, A, IS_SCOPE>,
+    ptr: NonNull<u8>,
+    layout: Layout,
+) {
     if const { !config!(deallocates) } {
         return;
     }
 
     unsafe {
-        let chunk = bump.chunk.get().as_allocated_unchecked();
+        let chunk = bump.chunk().as_allocated_unchecked();
         if config!(upwards) {
             chunk.set_pos_addr_and_align(ptr.addr().get());
         } else {
@@ -66,17 +74,21 @@ unsafe fn deallocate_assume_last<const C: BumpConfig, A: Allocator>(bump: &RawBu
 /// chunk since a memory block is only returned from a bump allocator with a non-dummy
 /// chunk.
 #[inline(always)]
-unsafe fn is_last<const C: BumpConfig, A: Allocator>(bump: &RawBump<C, A>, ptr: NonNull<u8>, layout: Layout) -> bool {
+unsafe fn is_last<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
+    bump: BumpImp<C, A, IS_SCOPE>,
+    ptr: NonNull<u8>,
+    layout: Layout,
+) -> bool {
     if const { config!(upwards) } {
-        (unsafe { ptr.add(layout.size()) }) == bump.chunk.get().pos()
+        (unsafe { ptr.add(layout.size()) }) == bump.chunk().pos()
     } else {
-        ptr == bump.chunk.get().pos()
+        ptr == bump.chunk().pos()
     }
 }
 
 #[inline(always)]
-pub unsafe fn grow<const C: BumpConfig, A: Allocator>(
-    bump: &RawBump<C, A>,
+pub unsafe fn grow<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
+    bump: BumpImp<C, A, IS_SCOPE>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -92,7 +104,7 @@ pub unsafe fn grow<const C: BumpConfig, A: Allocator>(
                 // We may be able to grow in place! Just need to check if there is enough space.
 
                 // `is_last` returned true, which guarantees a non-dummy
-                let chunk = bump.chunk.get().as_allocated_unchecked();
+                let chunk = bump.chunk().as_allocated_unchecked();
                 let chunk_end = chunk.content_end();
                 let remaining = chunk_end.addr().get() - old_ptr.addr().get();
 
@@ -109,20 +121,20 @@ pub unsafe fn grow<const C: BumpConfig, A: Allocator>(
                     Ok(NonNull::slice_from_raw_parts(old_ptr, new_layout.size()))
                 } else {
                     // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
-                    let new_ptr = bump.allocate_in_another_chunk::<AllocError>(new_layout)?;
+                    let new_ptr = bump.alloc_in_another_chunk::<AllocError>(new_layout)?;
                     old_ptr.copy_to_nonoverlapping(new_ptr, old_layout.size());
                     Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
                 }
             } else {
                 // We can't grow in place. We have to make a new allocation.
-                let new_ptr = bump.allocate::<AllocError>(new_layout)?;
+                let new_ptr = bump.alloc::<AllocError>(new_layout)?;
                 old_ptr.copy_to_nonoverlapping(new_ptr, old_layout.size());
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
         } else {
             if is_last(bump, old_ptr, old_layout) {
                 // `is_last` returned true, which guarantees a non-dummy
-                let chunk = bump.chunk.get().as_allocated_unchecked();
+                let chunk = bump.chunk().as_allocated_unchecked();
 
                 // We may be able to reuse the currently allocated space. Just need to check if the current chunk has enough space for that.
                 let additional_size = new_layout.size() - old_layout.size();
@@ -153,13 +165,13 @@ pub unsafe fn grow<const C: BumpConfig, A: Allocator>(
                     Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
                 } else {
                     // The current chunk doesn't have enough space to allocate this layout. We need to allocate in another chunk.
-                    let new_ptr = bump.allocate_in_another_chunk::<AllocError>(new_layout)?;
+                    let new_ptr = bump.alloc_in_another_chunk::<AllocError>(new_layout)?;
                     old_ptr.copy_to_nonoverlapping(new_ptr, old_layout.size());
                     Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
                 }
             } else {
                 // We can't reuse the allocated space. We have to make a new allocation.
-                let new_ptr = bump.allocate::<AllocError>(new_layout)?;
+                let new_ptr = bump.alloc::<AllocError>(new_layout)?;
                 old_ptr.copy_to_nonoverlapping(new_ptr, old_layout.size());
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
@@ -168,8 +180,8 @@ pub unsafe fn grow<const C: BumpConfig, A: Allocator>(
 }
 
 #[inline(always)]
-pub unsafe fn grow_zeroed<const C: BumpConfig, A: Allocator>(
-    bump: &RawBump<C, A>,
+pub unsafe fn grow_zeroed<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
+    bump: BumpImp<C, A, IS_SCOPE>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -189,8 +201,8 @@ pub unsafe fn grow_zeroed<const C: BumpConfig, A: Allocator>(
 /// That's different to bumpalo's shrink implementation, which only shrinks if it can do so with `copy_nonoverlapping`
 /// and doesn't attempt to recover memory if the alignment doesn't fit.
 #[inline(always)]
-pub unsafe fn shrink<const C: BumpConfig, A: Allocator>(
-    bump: &RawBump<C, A>,
+pub unsafe fn shrink<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
+    bump: BumpImp<C, A, IS_SCOPE>,
     old_ptr: NonNull<u8>,
     old_layout: Layout,
     new_layout: Layout,
@@ -198,21 +210,21 @@ pub unsafe fn shrink<const C: BumpConfig, A: Allocator>(
     /// Called when `new_layout` doesn't fit alignment.
     #[cold]
     #[inline(never)]
-    unsafe fn shrink_unfit<const C: BumpConfig, A: Allocator>(
-        bump: &RawBump<C, A>,
+    unsafe fn shrink_unfit<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
+        bump: BumpImp<C, A, IS_SCOPE>,
         old_ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
         unsafe {
             if config!(shrinks) && is_last(bump, old_ptr, old_layout) {
-                let old_pos = bump.chunk.get().pos();
+                let old_pos = bump.chunk().pos();
                 deallocate_assume_last(bump, old_ptr, old_layout);
 
                 let overlaps;
                 let new_ptr;
 
-                if let Some(in_chunk) = bump.chunk.get().alloc(CustomLayout(new_layout)) {
+                if let Some(in_chunk) = bump.chunk().alloc(CustomLayout(new_layout)) {
                     new_ptr = in_chunk;
                     overlaps = if config!(upwards) {
                         let old_ptr_end = old_ptr.add(new_layout.size());
@@ -223,9 +235,9 @@ pub unsafe fn shrink<const C: BumpConfig, A: Allocator>(
                     }
                 } else {
                     // `is_last` returned true, which guarantees a non-dummy chunk
-                    bump.chunk.get().as_allocated_unchecked().set_pos(old_pos);
+                    bump.chunk().as_allocated_unchecked().set_pos(old_pos);
 
-                    new_ptr = bump.allocate_in_another_chunk::<AllocError>(new_layout)?;
+                    new_ptr = bump.alloc_in_another_chunk::<AllocError>(new_layout)?;
                     overlaps = false;
                 }
 
@@ -237,7 +249,7 @@ pub unsafe fn shrink<const C: BumpConfig, A: Allocator>(
 
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             } else {
-                let new_ptr = bump.allocate::<AllocError>(new_layout)?;
+                let new_ptr = bump.alloc::<AllocError>(new_layout)?;
                 old_ptr.copy_to_nonoverlapping(new_ptr, new_layout.size());
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             }
@@ -267,7 +279,7 @@ pub unsafe fn shrink<const C: BumpConfig, A: Allocator>(
             let new_pos = up_align_usize_unchecked(end, config!(min_align));
 
             // `is_last` returned true, which guarantees a non-dummy
-            bump.chunk.get().as_allocated_unchecked().set_pos_addr(new_pos);
+            bump.chunk().as_allocated_unchecked().set_pos_addr(new_pos);
 
             Ok(NonNull::slice_from_raw_parts(old_ptr, new_layout.size()))
         } else {
@@ -292,7 +304,7 @@ pub unsafe fn shrink<const C: BumpConfig, A: Allocator>(
             }
 
             // `is_last` returned true, which guarantees a non-dummy
-            bump.chunk.get().as_allocated_unchecked().set_pos(new_ptr);
+            bump.chunk().as_allocated_unchecked().set_pos(new_ptr);
 
             Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
         }

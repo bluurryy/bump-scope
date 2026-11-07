@@ -4,9 +4,10 @@ use alloc::alloc::Global;
 
 use crate::{
     BumpScope,
-    chunk_types::r#abstract::{Chunk, ErasedChunk},
+    bump_imp::{AsBumpImp, BumpImpTrait as _},
+    bump_scope::BumpScopeWithoutLifetime,
+    chunk_types::{Chunk, ErasedChunk},
     config::{BumpConfig, DEFAULT_BUMP_CONFIG},
-    raw_bump::RawBump,
     util::transmute_mut,
 };
 
@@ -28,7 +29,7 @@ impl Checkpoint {
         }
     };
 
-    pub(crate) fn new<const C: BumpConfig, A>(chunk: Chunk<C, A>) -> Self {
+    pub(crate) fn new<const C: BumpConfig>(chunk: Chunk<C>) -> Self {
         let address = chunk.pos().addr();
         let chunk = ErasedChunk::erase(chunk);
         Checkpoint { chunk, address }
@@ -40,13 +41,13 @@ impl Checkpoint {
 /// [`BumpScope::scope_guard`]: crate::BumpScope::scope_guard
 #[must_use]
 pub struct BumpScopeGuard<'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = Global> {
-    bump: &'a mut RawBump<C, A>,
+    bump: &'a mut BumpScopeWithoutLifetime<C, A>,
     checkpoint: Checkpoint,
 }
 
 impl<const C: BumpConfig, A: Allocator> Debug for BumpScopeGuard<'_, C, A> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.bump.stats().debug_format("BumpScopeGuard", f)
+        self.bump.imp().stats().debug_format("BumpScopeGuard", f)
     }
 }
 
@@ -59,8 +60,8 @@ impl<const C: BumpConfig, A: Allocator> Drop for BumpScopeGuard<'_, C, A> {
 
 impl<'a, const C: BumpConfig, A: Allocator> BumpScopeGuard<'a, C, A> {
     #[inline(always)]
-    pub(crate) fn new(bump: &'a mut RawBump<C, A>) -> Self {
-        let checkpoint = bump.checkpoint();
+    pub(crate) fn new(bump: &'a mut BumpScopeWithoutLifetime<C, A>) -> Self {
+        let checkpoint = bump.imp().checkpoint();
         Self { bump, checkpoint }
     }
 
@@ -73,6 +74,6 @@ impl<'a, const C: BumpConfig, A: Allocator> BumpScopeGuard<'a, C, A> {
     /// Frees the memory taken up by allocations made since creation of this bump scope guard.
     #[inline(always)]
     pub fn reset(&mut self) {
-        unsafe { self.bump.reset_to(self.checkpoint) }
+        unsafe { self.bump.imp().reset_to(self.checkpoint) }
     }
 }

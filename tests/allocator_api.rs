@@ -297,7 +297,7 @@ up_and_down! {
             dbg!(&bump.stats().small_to_big().collect::<Vec<_>>());
             assert_eq!(bump.allocated(), {
                 let disalignment_offset = 16;
-                let header_size = 8 * 6;
+                let header_size = 8 * 4;
                 let chunks = bump.stats().small_to_big().collect::<Vec<_>>();
 
                 chunks[0].capacity()

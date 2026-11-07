@@ -2,9 +2,9 @@ error[E0080]: evaluation panicked: can't change `claimable` using `Bump(Scope)::
  --> $RUST/core/src/panic.rs
   |
   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
-  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::raw_bump::RawBump::<25442254606820655379799432013178470400, std::alloc::Global>::ensure_satisfies_config_for_borrow_mut::<30759166589960318871414660254299848704>::{constant#0}` failed here
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_imp::BumpImp::<'_, 25442254606820655379799432013178470400, std::alloc::Global, false>::ensure_satisfies_config_for_borrow_mut::<30759166589960318871414660254299848704>::{constant#0}` failed here
   |
- ::: src/raw_bump.rs
+ ::: src/bump_imp.rs
   |
   | /             assert!(
   | |                 config!(NEW_C, claimable) == config!(claimable),
@@ -13,7 +13,7 @@ error[E0080]: evaluation panicked: can't change `claimable` using `Bump(Scope)::
   | |_____________- in this macro invocation
 
 note: erroneous constant encountered
- --> src/raw_bump.rs
+ --> src/bump_imp.rs
   |
   | /         const {
   | |             assert!(
@@ -24,8 +24,8 @@ note: erroneous constant encountered
   | |         }
   | |_________^
 
-note: the above error was encountered while instantiating `fn bump_scope::raw_bump::RawBump::<25442254606820655379799432013178470400, std::alloc::Global>::ensure_satisfies_config_for_borrow_mut::<30759166589960318871414660254299848704>`
+note: the above error was encountered while instantiating `fn bump_scope::bump_imp::BumpImp::<'_, 25442254606820655379799432013178470400, std::alloc::Global, false>::ensure_satisfies_config_for_borrow_mut::<30759166589960318871414660254299848704>`
  --> src/bump.rs
   |
-  |         self.raw.ensure_satisfies_config_for_borrow_mut::<NEW_C>();
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |         self.imp().ensure_satisfies_config_for_borrow_mut::<NEW_C>();
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

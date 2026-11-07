@@ -10,7 +10,7 @@ use core::{
 use alloc::alloc::Global;
 
 use crate::{
-    chunk_types::r#abstract::{AllocatedChunk, Chunk as RawChunk},
+    chunk_types::{AllocatedChunk, Chunk as RawChunk},
     config::{BumpConfig, DEFAULT_BUMP_CONFIG},
 };
 
@@ -45,7 +45,7 @@ impl<const C: BumpConfig, A> Debug for Stats<'_, C, A> {
 
 impl<'a, const C: BumpConfig, A> Stats<'a, C, A> {
     #[inline]
-    pub(crate) fn from_raw_chunk(chunk: RawChunk<C, A>) -> Self {
+    pub(crate) fn from_raw_chunk(chunk: RawChunk<C>) -> Self {
         Self {
             chunk: chunk.as_allocated().map(|chunk| Chunk {
                 chunk,
@@ -157,13 +157,6 @@ impl<'a, const C: BumpConfig, A> Stats<'a, C, A> {
         self.current_chunk().map(Chunk::bump_position)
     }
 
-    /// Returns a reference to the base allocator.
-    #[inline]
-    #[must_use]
-    pub fn allocator(self) -> Option<&'a A> {
-        Some(self.current_chunk()?.allocator())
-    }
-
     pub(crate) fn debug_format(self, name: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(name)
             .field("allocated", &self.allocated())
@@ -189,8 +182,8 @@ impl<const C: BumpConfig, A> Default for Stats<'_, C, A> {
 /// See [`Stats`].
 #[repr(transparent)]
 pub struct Chunk<'a, const C: BumpConfig = DEFAULT_BUMP_CONFIG, A = Global> {
-    pub(crate) chunk: AllocatedChunk<C, A>,
-    marker: PhantomData<&'a ()>,
+    pub(crate) chunk: AllocatedChunk<C>,
+    marker: PhantomData<&'a A>,
 }
 
 impl<const C: BumpConfig, A> Clone for Chunk<'_, C, A> {
@@ -331,13 +324,6 @@ impl<'a, const C: BumpConfig, A> Chunk<'a, C, A> {
     #[must_use]
     pub fn bump_position(self) -> NonNull<u8> {
         self.chunk.pos()
-    }
-
-    /// Returns a reference to the base allocator.
-    #[inline]
-    #[must_use]
-    pub fn allocator(self) -> &'a A {
-        unsafe { self.chunk.allocator_ptr().as_ref() }
     }
 }
 

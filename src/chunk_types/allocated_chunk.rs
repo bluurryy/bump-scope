@@ -1,8 +1,6 @@
 use core::{
     alloc::{AllocError, Allocator, Layout},
     cell::Cell,
-    marker::PhantomData,
-    mem::{MaybeUninit, transmute},
     num::NonZeroUsize,
     ops::Range,
     ptr::NonNull,
@@ -11,42 +9,30 @@ use core::{
 use crate::{
     bumping::MIN_CHUNK_ALIGN,
     chunk_size::{ChunkSize, ChunkSizeCapacity, ChunkSizeHint, align_allocation_size},
-    chunk_types::{
-        r#abstract::{FirstAllocatedChunk, NonZstAllocatedChunk},
-        concrete::{NonZstFirstAllocatedChunk, NonZstNonFirstAllocatedChunk, ZstAllocatedChunk},
-    },
     config::{BumpConfig, config},
     error_mode::ErrorMode,
     polyfill::non_null,
-    util::{SizedTypeProperties, align_pos},
+    util::align_pos,
 };
 
-use super::non_zst_allocated_chunk::NonZstAllocatedChunkKind;
-
 #[repr(C, align(16))]
-struct Header<const C: BumpConfig, A> {
+struct Header<const C: BumpConfig> {
     pos: Cell<NonNull<u8>>,
     end: NonNull<u8>,
 
-    prev: Option<AllocatedChunk<C, A>>,
-    next: Cell<Option<AllocatedChunk<C, A>>>,
+    prev: Option<AllocatedChunk<C>>,
+    next: Cell<Option<AllocatedChunk<C>>>,
 }
 
 #[repr(transparent)]
-pub(crate) struct AllocatedChunk<const C: BumpConfig, A> {
-    header: NonNull<Header<C, A>>,
-    marker: PhantomData<*const A>,
+#[derive(Clone, Copy)]
+pub(crate) struct AllocatedChunk<const C: BumpConfig> {
+    header: NonNull<Header<C>>,
 }
 
-impl<const C: BumpConfig, A> Clone for AllocatedChunk<C, A> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
+impl<const C: BumpConfig> AllocatedChunk<C> {
+    pub(crate) const HEADER_LAYOUT: Layout = Layout::new::<Header<C>>();
 
-impl<const C: BumpConfig, A> Copy for AllocatedChunk<C, A> {}
-
-impl<const C: BumpConfig, A> AllocatedChunk<C, A> {
     pub(crate) fn as_ptr(self) -> NonNull<()> {
         self.header.cast()
     }
@@ -124,43 +110,24 @@ impl<const C: BumpConfig, A> AllocatedChunk<C, A> {
         addr >= start && addr <= end
     }
 
+    pub(crate) fn mut_clear_prev(mut self) {
+        unsafe { self.header.as_mut() }.prev = None;
+    }
+
     pub(crate) fn set_next(self, next: Option<Self>) {
         unsafe { self.header.as_ref() }.next.set(next);
     }
 
-    pub(crate) fn kind(self) -> AllocatedChunkKind<C, A> {
-        unsafe {
-            if A::IS_ZST {
-                AllocatedChunkKind::Zst(transmute(self))
-            } else {
-                AllocatedChunkKind::NonZst(transmute(self))
-            }
-        }
-    }
-
     pub(crate) fn layout(self) -> Layout {
         let size = self.size().get();
-
-        let align = if A::IS_ZST {
-            ZstAllocatedChunk::<C, A>::HEADER_LAYOUT.align()
-        } else {
-            NonZstFirstAllocatedChunk::<C, A>::HEADER_LAYOUT.align()
-        };
+        let align = Self::HEADER_LAYOUT.align();
 
         // SAFETY: this layout fits the one we allocated, which means it must be valid
         unsafe { Layout::from_size_align_unchecked(size, align) }
     }
 
     fn after_header(self) -> NonNull<u8> {
-        unsafe {
-            self.header.cast::<u8>().byte_add(match self.kind() {
-                AllocatedChunkKind::Zst(_) => ZstAllocatedChunk::<C, A>::HEADER_LAYOUT.size(),
-                AllocatedChunkKind::NonZst(chunk) => match chunk.kind() {
-                    NonZstAllocatedChunkKind::First(_) => NonZstFirstAllocatedChunk::<C, A>::HEADER_LAYOUT.size(),
-                    NonZstAllocatedChunkKind::NonFirst(_) => NonZstNonFirstAllocatedChunk::<C, A>::HEADER_LAYOUT.size(),
-                },
-            })
-        }
+        unsafe { self.header.add(1).cast() }
     }
 
     pub(crate) fn content_start(self) -> NonNull<u8> {
@@ -197,31 +164,12 @@ impl<const C: BumpConfig, A> AllocatedChunk<C, A> {
         end.addr().get() - start.addr().get()
     }
 
-    pub(crate) fn allocator_ptr(self) -> NonNull<A> {
-        match self.kind() {
-            AllocatedChunkKind::Zst(chunk) => chunk.allocator_ptr(),
-            AllocatedChunkKind::NonZst(chunk) => chunk.allocator_ptr(),
-        }
-    }
-
     pub(crate) fn reset(self) {
         if config!(upwards) {
             self.set_pos(self.content_start());
         } else {
             self.set_pos(self.content_end());
         }
-    }
-
-    pub(crate) fn from_zst(zst: ZstAllocatedChunk<C, A>) -> Self {
-        unsafe { transmute(zst) }
-    }
-
-    pub(crate) fn from_non_zst(non_zst: NonZstAllocatedChunk<C, A>) -> Self {
-        unsafe { transmute(non_zst) }
-    }
-
-    pub(crate) fn from_first(zst: FirstAllocatedChunk<C, A>) -> Self {
-        unsafe { transmute(zst) }
     }
 
     #[inline(always)]
@@ -240,52 +188,38 @@ impl<const C: BumpConfig, A> AllocatedChunk<C, A> {
         unsafe { NonZeroUsize::new_unchecked(end - start) }
     }
 
-    pub(crate) fn new<B: ErrorMode>(layout: Layout, prev: AllocatedChunk<C, A>) -> Result<Self, B>
-    where
-        A: Allocator,
-    {
+    pub(crate) fn new_first<E: ErrorMode, A: Allocator>(chunk_size: impl ChunkSize, allocator: &A) -> Result<Self, E> {
+        let chunk_layout = chunk_size.layout::<C, A>().ok_or_else(E::capacity_overflow)?;
+        Self::new_chunk_with_layout(chunk_layout, None, allocator)
+    }
+
+    pub(crate) fn new_non_first<E: ErrorMode, A: Allocator>(
+        layout: Layout,
+        prev: AllocatedChunk<C>,
+        allocator: &A,
+    ) -> Result<Self, E> {
         // We only add chunks at the end of the list.
         debug_assert!(prev.next().is_none());
 
-        let size = {
-            let required_size = ChunkSizeCapacity(layout).to_hint::<C, A>().ok_or_else(B::capacity_overflow)?;
-            let grown_size = match prev.size().get().checked_mul(2) {
-                Some(size) => ChunkSizeHint(size),
-                None => return Err(B::capacity_overflow()),
-            };
-            required_size.max(grown_size)
+        let required_size = ChunkSizeCapacity(layout).to_hint::<C, A>().ok_or_else(E::capacity_overflow)?;
+
+        let grown_size = match prev.size().get().checked_mul(2) {
+            Some(size) => ChunkSizeHint(size),
+            None => return Err(E::capacity_overflow()),
         };
 
-        let new_chunk = match prev.kind() {
-            AllocatedChunkKind::Zst(prev) => {
-                let allocator = MaybeUninit::<A>::uninit();
-
-                // SAFETY: a zst does not have an invalid value and we're allowed
-                // access to an instance of it, since we "store" one in the first chunk
-                let allocator = unsafe { allocator.assume_init_ref() };
-
-                let (ptr, size) = Self::allocate(size, allocator)?;
-
-                AllocatedChunk::from_zst(unsafe { ZstAllocatedChunk::init(ptr, size, prev) })
-            }
-            AllocatedChunkKind::NonZst(prev) => {
-                let (ptr, size) = Self::allocate(size, unsafe { prev.allocator_ptr().as_ref() })?;
-
-                AllocatedChunk::from_non_zst(unsafe { NonZstAllocatedChunk::init(ptr, size, prev) })
-            }
-        };
-
+        let chunk_size = required_size.max(grown_size);
+        let chunk_layout = chunk_size.layout::<C, A>().ok_or_else(E::capacity_overflow)?;
+        let new_chunk = Self::new_chunk_with_layout(chunk_layout, Some(prev), allocator)?;
         prev.set_next(Some(new_chunk));
         Ok(new_chunk)
     }
 
-    pub(crate) fn allocate<E>(chunk_size: impl ChunkSize, allocator: &A) -> Result<(NonNull<u8>, usize), E>
-    where
-        A: Allocator,
-        E: ErrorMode,
-    {
-        let layout = chunk_size.layout::<C, A>().ok_or_else(E::capacity_overflow)?;
-
+    fn new_chunk_with_layout<E: ErrorMode, A: Allocator>(
+        layout: Layout,
+        prev: Option<AllocatedChunk<C>>,
+        allocator: &A,
+    ) -> Result<Self, E> {
         let allocation = match allocator.allocate(layout) {
             Ok(ok) => ok,
             Err(AllocError) => return Err(E::allocation(layout)),
@@ -310,18 +244,35 @@ impl<const C: BumpConfig, A> AllocatedChunk<C, A> {
         debug_assert!(size >= layout.size());
         debug_assert_eq!(size % MIN_CHUNK_ALIGN, 0);
 
-        Ok((ptr, size))
+        let new_chunk = unsafe {
+            let header: NonNull<Header<C>>;
+            let pos: NonNull<u8>;
+            let end: NonNull<u8>;
+
+            if config!(upwards) {
+                header = ptr.cast();
+                pos = header.add(1).cast();
+                end = ptr.add(size);
+            } else {
+                header = ptr.add(size).cast::<Header<C>>().sub(1);
+                pos = header.cast();
+                end = ptr;
+            }
+
+            header.write(Header {
+                pos: Cell::new(pos),
+                end,
+                prev,
+                next: Cell::new(None),
+            });
+
+            Self { header }
+        };
+
+        Ok(new_chunk)
     }
 
     pub(crate) unsafe fn from_ptr(header: NonNull<()>) -> Self {
-        Self {
-            header: header.cast(),
-            marker: PhantomData,
-        }
+        Self { header: header.cast() }
     }
-}
-
-pub(crate) enum AllocatedChunkKind<const C: BumpConfig, A> {
-    Zst(ZstAllocatedChunk<C, A>),
-    NonZst(NonZstAllocatedChunk<C, A>),
 }

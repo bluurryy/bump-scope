@@ -77,7 +77,7 @@ macro_rules! run_dir_align_deallocates {
                 Operation::Allocate { layout, zero, fails } => unsafe {
                     let layout = layout.0;
 
-                    bump.allocator().unwrap().fails.set(fails);
+                    bump.allocator().fails.set(fails);
 
                     let ptr = if zero {
                         bump.allocate_zeroed(layout)
@@ -142,7 +142,7 @@ macro_rules! run_dir_align_deallocates {
                         continue;
                     }
 
-                    bump.allocator().unwrap().fails.set(fails);
+                    bump.allocator().fails.set(fails);
 
                     let i = index % allocations.len();
                     debug_dbg!(i);

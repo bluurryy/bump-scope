@@ -7,6 +7,7 @@ use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
     BumpAllocator,
+    bump_imp::BumpImpTrait as _,
     owned_slice::{OwnedSlice, TakeOwnedSlice as _},
 };
 
@@ -92,7 +93,7 @@ where
 
         let len = owned_slice_ref.len();
         let src = owned_slice_ref.as_ptr();
-        let dst = panic_on_error(alloc.spec_alloc(Layout::for_value(owned_slice_ref)))
+        let dst = panic_on_error(alloc.imp().alloc(Layout::for_value(owned_slice_ref)))
             .as_ptr()
             .cast();
         ptr::copy_nonoverlapping(src, dst, len);
@@ -113,7 +114,7 @@ where
 
         let len = owned_slice_ref.len();
         let src = owned_slice_ref.as_ptr();
-        let dst = alloc.spec_alloc(Layout::for_value(owned_slice_ref))?.as_ptr().cast();
+        let dst = alloc.imp().alloc(Layout::for_value(owned_slice_ref))?.as_ptr().cast();
         ptr::copy_nonoverlapping(src, dst, len);
 
         owned_slice.take_owned_slice();

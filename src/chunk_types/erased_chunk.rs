@@ -1,7 +1,7 @@
 use core::{cell::Cell, fmt, mem::transmute, ptr::NonNull};
 
 use crate::{
-    chunk_types::{r#abstract::Chunk, dummy_memory_region},
+    chunk_types::{CLAIMED_POS, CONST_CONSTRUCTOR_POS, Chunk},
     config::BumpConfig,
 };
 
@@ -36,15 +36,15 @@ impl ErasedChunk {
     }
 
     pub(crate) fn is_const_constructor(self) -> bool {
-        self.pos() == dummy_memory_region::CONST_CONSTRUCTOR_POS
+        self.pos() == CONST_CONSTRUCTOR_POS
     }
 
     pub(crate) fn is_claimed(self) -> bool {
-        self.pos() == dummy_memory_region::CLAIMED_POS
+        self.pos() == CLAIMED_POS
     }
 
     #[inline(always)]
-    pub(crate) fn erase<const C: BumpConfig, A>(chunk: Chunk<C, A>) -> Self {
+    pub(crate) fn erase<const C: BumpConfig>(chunk: Chunk<C>) -> Self {
         unsafe { transmute(chunk) }
     }
 }

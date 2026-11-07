@@ -1,12 +1,8 @@
-use core::{cell::Cell, marker::PhantomData, mem::transmute, ops::Range, ptr::NonNull};
+use core::{cell::Cell, mem::transmute, ops::Range, ptr::NonNull};
 
 use crate::{
     bumping::{BumpProps, BumpUp, bump_down, bump_prepare_down, bump_prepare_up, bump_up},
-    chunk_types::{
-        r#abstract::{FirstAllocatedChunk, allocated_chunk::AllocatedChunk},
-        concrete::{ClaimedChunk, ConstConstructorChunk},
-        dummy_memory_region,
-    },
+    chunk_types::{AllocatedChunk, CLAIMED_POS, CONST_CONSTRUCTOR_POS, DummyChunk},
     config::{BumpConfig, config},
     layout::LayoutProps,
 };
@@ -18,20 +14,15 @@ struct Header {
 }
 
 #[repr(transparent)]
-pub(crate) struct Chunk<const C: BumpConfig, A> {
+#[derive(Clone, Copy)]
+pub(crate) struct Chunk<const C: BumpConfig> {
     header: NonNull<Header>,
-    marker: PhantomData<*const A>,
 }
 
-impl<const C: BumpConfig, A> Clone for Chunk<C, A> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
+impl<const C: BumpConfig> Chunk<C> {
+    pub(crate) const CLAIMED: Self = Self::from_dummy(DummyChunk::CLAIMED);
+    pub(crate) const CONST_CONSTRUCTOR: Self = Self::from_dummy(DummyChunk::CONST_CONSTRUCTOR);
 
-impl<const C: BumpConfig, A> Copy for Chunk<C, A> {}
-
-impl<const C: BumpConfig, A> Chunk<C, A> {
     pub(crate) fn as_ptr(self) -> NonNull<()> {
         self.header.cast()
     }
@@ -41,58 +32,45 @@ impl<const C: BumpConfig, A> Chunk<C, A> {
     }
 
     pub(crate) unsafe fn from_ptr(header: NonNull<()>) -> Self {
-        Self {
-            header: header.cast(),
-            marker: PhantomData,
-        }
+        Self { header: header.cast() }
     }
 
-    pub const fn from_const_constructor(chunk: ConstConstructorChunk<C, A>) -> Self {
+    pub const fn from_allocated(chunk: AllocatedChunk<C>) -> Self {
         unsafe { transmute(chunk) }
     }
 
-    pub const fn from_allocated(chunk: AllocatedChunk<C, A>) -> Self {
+    pub const fn from_dummy(chunk: DummyChunk<C>) -> Self {
         unsafe { transmute(chunk) }
     }
 
-    pub const fn from_claimed(chunk: ClaimedChunk<C, A>) -> Self {
-        unsafe { transmute(chunk) }
-    }
-
-    pub(crate) fn from_first(zst: FirstAllocatedChunk<C, A>) -> Self {
-        unsafe { transmute(zst) }
-    }
-}
-
-impl<const C: BumpConfig, A> Chunk<C, A> {
     pub(crate) fn is_unallocated(self) -> bool {
-        config!(const_constructible) && self.pos() == dummy_memory_region::CONST_CONSTRUCTOR_POS
+        config!(const_constructible) && self.pos() == CONST_CONSTRUCTOR_POS
     }
 
     pub(crate) fn is_claimed(self) -> bool {
-        config!(claimable) && self.pos() == dummy_memory_region::CLAIMED_POS
+        config!(claimable) && self.pos() == CLAIMED_POS
     }
 
-    pub(crate) fn kind(self) -> ChunkKind<C, A> {
+    pub(crate) fn kind(self) -> ChunkKind<C> {
         unsafe {
             if self.is_unallocated() {
-                ChunkKind::ConstConstructor(transmute(self))
+                ChunkKind::ConstConstructor
             } else if self.is_claimed() {
-                ChunkKind::Claimed(transmute(self))
+                ChunkKind::Claimed
             } else {
                 ChunkKind::Allocated(transmute(self))
             }
         }
     }
 
-    pub(crate) fn as_allocated(self) -> Option<AllocatedChunk<C, A>> {
+    pub(crate) fn as_allocated(self) -> Option<AllocatedChunk<C>> {
         match self.kind() {
-            ChunkKind::Claimed(_) | ChunkKind::ConstConstructor(_) => None,
+            ChunkKind::Claimed | ChunkKind::ConstConstructor => None,
             ChunkKind::Allocated(chunk) => Some(chunk),
         }
     }
 
-    pub(crate) unsafe fn as_allocated_unchecked(self) -> AllocatedChunk<C, A> {
+    pub(crate) unsafe fn as_allocated_unchecked(self) -> AllocatedChunk<C> {
         debug_assert!(matches!(self.kind(), ChunkKind::Allocated(_)));
         unsafe { transmute(self) }
     }
@@ -219,10 +197,10 @@ impl<const C: BumpConfig, A> Chunk<C, A> {
     }
 }
 
-pub(crate) enum ChunkKind<const C: BumpConfig, A> {
-    Claimed(#[expect(dead_code)] ClaimedChunk<C, A>),
-    ConstConstructor(ConstConstructorChunk<C, A>),
-    Allocated(AllocatedChunk<C, A>),
+pub(crate) enum ChunkKind<const C: BumpConfig> {
+    Claimed,
+    ConstConstructor,
+    Allocated(AllocatedChunk<C>),
 }
 
 /// Miri doesn't understand how our bit twiddling aligns the pointer but we can promise it with this.

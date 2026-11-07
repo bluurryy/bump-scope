@@ -317,7 +317,7 @@ impl<const C: BumpConfig, A: Allocator> Drop for BumpPoolGuard<'_, C, A> {
 
 // This exists as a "safer" transmute that only transmutes the `'a` lifetime parameter.
 #[expect(clippy::elidable_lifetime_names)]
-unsafe fn transmute_lifetime<'from, 'to, 'b, const C: BumpConfig, A>(
+unsafe fn transmute_lifetime<'from, 'to, 'b, const C: BumpConfig, A: Allocator>(
     scope: &'b BumpScope<'from, C, A>,
 ) -> &'b BumpScope<'to, C, A> {
     unsafe { mem::transmute(scope) }
@@ -325,7 +325,7 @@ unsafe fn transmute_lifetime<'from, 'to, 'b, const C: BumpConfig, A>(
 
 // This exists as a "safer" transmute that only transmutes the `'a` lifetime parameter.
 #[expect(clippy::elidable_lifetime_names)]
-unsafe fn transmute_lifetime_mut<'from, 'to, 'b, const C: BumpConfig, A>(
+unsafe fn transmute_lifetime_mut<'from, 'to, 'b, const C: BumpConfig, A: Allocator>(
     scope: &'b mut BumpScope<'from, C, A>,
 ) -> &'b mut BumpScope<'to, C, A> {
     unsafe { mem::transmute(scope) }

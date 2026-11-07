@@ -671,34 +671,10 @@ up_and_down! {
     }
 }
 
-fn debug_sizes<const C: BumpConfig, A>(bump: &impl AsBumpScope<C, A>) {
+fn debug_sizes<const C: BumpConfig, A: Allocator>(bump: &impl AsBumpScope<C, A>) {
     let iter = bump.as_bump_scope().stats().small_to_big();
     let vec = iter.map(Chunk::size).collect::<Vec<_>>();
     eprintln!("sizes: {vec:?}");
-}
-
-// test claim in crate docs that layout equals `Cell<NonNull<()>>`
-// make sure to also check that niches are the same
-mod doc_layout_claim {
-    trait SizedTypeProperties: Sized {
-        const SIZE: usize = mem::size_of::<Self>();
-        const ALIGN: usize = mem::align_of::<Self>();
-    }
-
-    impl<T> SizedTypeProperties for T {}
-
-    use core::{cell::Cell, ptr::NonNull};
-    use std::mem;
-    type Bump = bump_scope::Bump;
-    type BumpScope = bump_scope::BumpScope<'static>;
-    type Comparand = Cell<NonNull<()>>;
-    const _: () = assert!(Bump::SIZE == Comparand::SIZE && Bump::ALIGN == Comparand::ALIGN);
-    const _: () = assert!(BumpScope::SIZE == Comparand::SIZE && BumpScope::ALIGN == Comparand::ALIGN);
-    const _: () =
-        assert!(Option::<Bump>::SIZE == Option::<Comparand>::SIZE && Option::<Bump>::ALIGN == Option::<Comparand>::ALIGN);
-    const _: () = assert!(
-        Option::<BumpScope>::SIZE == Option::<Comparand>::SIZE && Option::<BumpScope>::ALIGN == Option::<Comparand>::ALIGN
-    );
 }
 
 fn force_alloc_new_chunk<A: Allocator, const C: BumpConfig>(bump: &BumpScope<C, A>) {

@@ -2,7 +2,7 @@ use core::{alloc::Layout, fmt, marker::PhantomData};
 
 use crate::{
     chunk_size_config::ChunkSizeConfig,
-    chunk_types::r#abstract::FirstAllocatedChunk,
+    chunk_types::AllocatedChunk,
     config::{BumpConfig, config},
 };
 
@@ -50,7 +50,7 @@ impl ChunkSize for ChunkSizeHint {
         let config = Constants::<C, A>::CONFIG;
         let hint = max(self.0, config!(min_chunk_size));
         let size = attempt!(config.calc_size_from_hint(hint)).get();
-        let align = FirstAllocatedChunk::<C, A>::HEADER_LAYOUT.align();
+        let align = AllocatedChunk::<C>::HEADER_LAYOUT.align();
         Layout::from_size_align(size, align).ok()
     }
 }
@@ -78,7 +78,7 @@ impl<const C: BumpConfig, A> Constants<C, A> {
     const CONFIG: ChunkSizeConfig = ChunkSizeConfig {
         up: config!(upwards),
         assumed_malloc_overhead_layout: Layout::new::<AssumedMallocOverhead>(),
-        chunk_header_layout: FirstAllocatedChunk::<C, A>::HEADER_LAYOUT,
+        chunk_header_layout: AllocatedChunk::<C>::HEADER_LAYOUT,
     };
 
     const MINIMUM_LAYOUT: Layout = {
@@ -87,7 +87,7 @@ impl<const C: BumpConfig, A> Constants<C, A> {
             None => panic!("failed to calculate minimum chunk size"),
         };
 
-        match Layout::from_size_align(size, FirstAllocatedChunk::<C, A>::HEADER_LAYOUT.align()) {
+        match Layout::from_size_align(size, AllocatedChunk::<C>::HEADER_LAYOUT.align()) {
             Ok(ok) => ok,
             Err(_) => panic!("failed to calculate minimum chunk layout"),
         }

@@ -19,8 +19,6 @@ pub(crate) trait ErrorMode: Sized {
     fn allocation(layout: Layout) -> Self;
     fn capacity_overflow() -> Self;
     fn claimed() -> Self;
-    #[cfg(feature = "std")]
-    fn base_allocator_default_constructor_panicked() -> Self;
     fn unmanaged() -> Self;
     fn format_trait_error() -> Self;
     fn vec_reserve<T, A: Allocator>(vec: &mut Vec<T, A>, additional: usize) -> Result<(), Self>;
@@ -44,12 +42,6 @@ impl ErrorMode for ! {
     #[inline(always)]
     fn claimed() -> Self {
         panic::claimed()
-    }
-
-    #[inline(always)]
-    #[cfg(feature = "std")]
-    fn base_allocator_default_constructor_panicked() -> Self {
-        panic::base_allocator_default_constructor_panicked()
     }
 
     #[inline(always)]
@@ -94,12 +86,6 @@ impl ErrorMode for AllocError {
     }
 
     #[inline(always)]
-    #[cfg(feature = "std")]
-    fn base_allocator_default_constructor_panicked() -> Self {
-        Self
-    }
-
-    #[inline(always)]
     fn unmanaged() -> Self {
         Self
     }
@@ -126,14 +112,6 @@ pub(crate) mod panic {
     #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
     pub(crate) fn claimed() -> ! {
         panic!("bump allocator is claimed");
-    }
-
-    #[cold]
-    #[cfg(feature = "std")]
-    #[cfg(feature = "panic-on-alloc")]
-    #[cfg_attr(not(panic = "immediate-abort"), inline(never))]
-    pub(crate) fn base_allocator_default_constructor_panicked() -> ! {
-        panic!("base allocator default constructor panicked")
     }
 
     #[cold]

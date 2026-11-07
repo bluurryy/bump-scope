@@ -4,11 +4,20 @@ mod claim;
 
 macro_rules! up_and_down {
     ($($tt:tt)*) => {
+        mod prelude {
+            #[allow(unused_imports)]
+            pub(crate) use super::*;
+            #[allow(unused_imports)]
+            pub(crate) use $crate::{
+                config::{BumpConfig, BumpConfigBuilder},
+                bump_imp::{BumpImpTrait, AsBumpImp},
+                extra,
+            };
+        }
+
         mod upwards {
             #[allow(unused_imports)]
-            use super::*;
-            #[allow(unused_imports)]
-            use $crate::{config::{BumpConfig, BumpConfigBuilder}, extra};
+            use super::prelude::*;
 
             const DEFAULT_C: BumpConfig = BumpConfigBuilder::new()
                 .upwards(true)
@@ -19,9 +28,7 @@ macro_rules! up_and_down {
 
         mod downwards {
             #[allow(unused_imports)]
-            use super::*;
-            #[allow(unused_imports)]
-            use $crate::{config::{BumpConfig, BumpConfigBuilder}, extra};
+            use super::prelude::*;
 
             const DEFAULT_C: BumpConfig = BumpConfigBuilder::new()
                 .upwards(false)

@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Use the now stable `core` allocator api
-- Any `Allocator` can now be used as the base allocator
+- Any `Allocator` can now be used as the base allocator (and const construction)
+- Add `const_new` and `const_new_in` to const construct `Bump`s
 - Add `.allocated()` to `BumpAllocator` as a shorthand for `.stats().allocated()`
 
 ### Changed
@@ -37,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Remove `as_(mut_)scope`, use `as_(mut_)bump_scope` instead
 - **Breaking:** Remove `BumpScope`'s `From<&Bump>` and `From<&mut Bump>` implementations
 - **Breaking:** Remove `.any_stats()`, `AnyStats` and associated types
+- **Breaking:** Remove `Bump::unallocated()`, use `const_new` or `const_new_in`
 
 ### Fixed
 
