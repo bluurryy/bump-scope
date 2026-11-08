@@ -263,11 +263,9 @@ impl<const C: BumpConfig, A: Allocator + GlobalOrSystem> Bump<C, A> {
     /// # Examples
     ///
     /// ```
-    /// use bump_scope::{Bump, config::{BumpConfig, BumpConfigBuilder}};
+    /// use bump_scope::{Bump, config::DEFAULT_BUMP_CONFIG};
     ///
-    /// const CONFIG: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
-    ///
-    /// let bump: Bump<CONFIG> = Bump::const_new();
+    /// let bump: Bump<DEFAULT_BUMP_CONFIG> = Bump::const_new();
     /// # _ = bump;
     /// ```
     ///
@@ -293,11 +291,9 @@ impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
     ///
     /// ```
     /// # use std::alloc::System as MyAllocator;
-    /// use bump_scope::{Bump, config::{BumpConfig, BumpConfigBuilder}};
+    /// use bump_scope::{Bump, config::DEFAULT_BUMP_CONFIG};
     ///
-    /// const CONFIG: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
-    ///
-    /// let bump: Bump<CONFIG, MyAllocator> = Bump::const_new_in(MyAllocator);
+    /// let bump: Bump<DEFAULT_BUMP_CONFIG, MyAllocator> = Bump::const_new_in(MyAllocator);
     /// # _ = bump;
     /// ```
     ///

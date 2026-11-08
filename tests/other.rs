@@ -37,7 +37,7 @@ macro_rules! assert_eq_ident {
 up_and_down! {
     const C: BumpConfig = DEFAULT_C;
     const MIN_ALIGN_8: BumpConfig = BumpConfigBuilder(C).min_align(8).build();
-    const NO_MIN_SIZE: BumpConfig = BumpConfigBuilder(C).const_constructible(true).min_chunk_size(1).build();
+    const NO_MIN_SIZE: BumpConfig = BumpConfigBuilder(C).min_chunk_size(1).build();
 
     #[test]
     fn assert_send() {
@@ -645,8 +645,9 @@ up_and_down! {
 
     #[test]
     fn default() {
-        let bump_ref = Bump::<C>::new();
-        let bump = Bump::<C>::default();
+        const NON_CONST_CONSTRUCTIBLE: BumpConfig = BumpConfigBuilder(C).const_constructible(false).build();
+        let bump_ref = Bump::<NON_CONST_CONSTRUCTIBLE>::new();
+        let bump = Bump::<NON_CONST_CONSTRUCTIBLE>::default();
         assert_eq!(bump.stats().count(), 1);
         assert_eq!(bump.stats().count(), bump_ref.stats().count());
         assert_eq!(bump.stats().size(), bump_ref.stats().size());

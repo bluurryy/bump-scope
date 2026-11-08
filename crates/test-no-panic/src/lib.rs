@@ -10,7 +10,7 @@ use core::{alloc::Layout, ffi::CStr, fmt, mem::MaybeUninit, ptr::NonNull};
 
 use bump_scope::{
     Bump, BumpAllocation, BumpAllocator as _, BumpClaimGuard, BumpScope, BumpScopeGuard, Checkpoint, MutBumpAllocator as _,
-    config::{BumpConfig, BumpConfigBuilder},
+    config::{BumpConfig, BumpConfigBuilder, DEFAULT_BUMP_CONFIG},
 };
 
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
@@ -33,7 +33,7 @@ pub mod checking_that_panik_detection_works {
     }
 }
 
-const DEFAULT: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
+const DEFAULT: BumpConfig = DEFAULT_BUMP_CONFIG;
 
 macro_rules! up_and_down {
     ($($tt:tt)*) => {

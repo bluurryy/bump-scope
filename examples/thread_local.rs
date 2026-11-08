@@ -1,13 +1,6 @@
 #![cfg(feature = "std")]
 
-use bump_scope::{
-    BumpAllocator as _,
-    config::{BumpConfig, BumpConfigBuilder},
-};
-
-const BUMP_CONFIG: BumpConfig = BumpConfigBuilder::new().const_constructible(true).build();
-
-type Bump = bump_scope::Bump<BUMP_CONFIG>;
+use bump_scope::{Bump, BumpAllocator as _};
 
 thread_local! {
     static BUMP: Bump = const { Bump::const_new() };

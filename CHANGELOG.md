@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Rename `with_settings` to `change_config`, `borrow_with_settings` to `ref_change_config` and `borrow_mut_with_settings` to `mut_change_config`
 - **Breaking:** Redesigned bump allocator traits, no more `Core` and `Typed` variants
 - **Breaking:** Rename `guaranteed_allocated` setting to  not-`const_constructible`
+- **Breaking:** Change default config value of `const_constructible` to `true`
 - **Breaking:** Rename `Bump::unallocated()` to `Bump::const_new()`
 - **Breaking:** Swap base allocator and bump config generic parameters
 - **Breaking:** The slice provided to `alloc_uninit_slice_for` no longer has to have the same element type as the allocated slice

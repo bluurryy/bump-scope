@@ -12,7 +12,7 @@ up_and_down! {
     fn test_minimum_chunk_size_4096() {
         let expected_size = 4096;
 
-        const MY_C: BumpConfig = BumpConfigBuilder(C).const_constructible(true).min_chunk_size(4096).build();
+        const MY_C: BumpConfig = BumpConfigBuilder(C).min_chunk_size(4096).build();
         type MyBump = Bump<MY_C>;
 
         assert_eq!(0, MyBump::const_new().stats().size());

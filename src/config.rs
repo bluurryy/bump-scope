@@ -4,12 +4,12 @@
 //!
 //! You can configure the bump allocator config with a [`BumpConfigBuilder`]:
 //! ```
-//! use bump_scope::{Bump, BumpAllocator, config::{BumpConfig, BumpConfigBuilder}};
+//! use bump_scope::{Bump, config::{BumpConfig, BumpConfigBuilder}};
 //!
 //! const MY_CONFIG: BumpConfig = BumpConfigBuilder::new()
 //!     .min_align(8)
 //!     .upwards(false)
-//!     .const_constructible(true)
+//!     .const_constructible(false)
 //!     .claimable(false)
 //!     .deallocates(false)
 //!     .shrinks(false)
@@ -18,12 +18,7 @@
 //!
 //! type MyBump = Bump<MY_CONFIG>;
 //!
-//! let bump = MyBump::const_new();
-//! assert_eq!(bump.stats().size(), 0);
-//!
-//! # let str =
-//! bump.alloc_str("Hello, world!").into_ref();
-//! # assert_eq!(str, "Hello, world!");
+//! let bump = MyBump::new();
 //! assert_eq!(bump.stats().size(), 4096);
 //! ```
 #![deny(clippy::cast_possible_truncation)]
@@ -300,7 +295,7 @@ bit_fields! {
     /// The configuration values are:
     /// - [`min_align`]\: 1
     /// - [`upwards`]\: true
-    /// - [`const_constructible`]\: false
+    /// - [`const_constructible`]\: true
     /// - [`claimable`]\: true
     /// - [`deallocates`]\: true
     /// - [`shrinks`]\: true
@@ -357,12 +352,13 @@ bit_fields! {
         decode: |v| v != 0,
     }
 
-    /// Enables the [`const_new`] constructor.
+    /// Enables the [`const_new`] and [`const_new_in`] constructors.
     ///
-    /// Setting `const_constructible` to `true` adds additional checks and code paths for handling
+    /// Setting `const_constructible` to `false` removes some checks and code paths for handling
     /// the no-chunk-allocated state when exiting scopes, calling [`reset_to`] or calling [`by_value`].
     ///
     /// [`const_new`]: crate::Bump::const_new
+    /// [`const_new_in`]: crate::Bump::const_new_in
     /// [new]: crate::Bump::new
     /// [new_in]: crate::Bump::new_in
     /// [default]: crate::Bump::default
@@ -374,7 +370,7 @@ bit_fields! {
     /// [`reset_to`]: crate::traits::BumpAllocator::reset_to
     /// [`by_value`]: crate::BumpScope::by_value
     const_constructible: bool {
-        default: false,
+        default: true,
         bits: 1,
         encode: |v| if v { 1 } else { 0 },
         decode: |v| v != 0,

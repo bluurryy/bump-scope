@@ -2,7 +2,7 @@ error[E0080]: evaluation panicked: can't change `min_align` using `Bump(Scope)::
  --> $RUST/core/src/panic.rs
   |
   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
-  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_imp::BumpImp::<'_, 185520766755449391167394633843034030080, std::alloc::Global, false>::ensure_satisfies_config_for_borrow::<206788414688008045133855546807519543296>::{constant#0}` failed here
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `bump_scope::bump_imp::BumpImp::<'_, 190837678738589054659009862084155408384, std::alloc::Global, false>::ensure_satisfies_config_for_borrow::<212105326671147708625470775048640921600>::{constant#0}` failed here
   |
  ::: src/bump_imp.rs
   |
@@ -24,7 +24,7 @@ note: erroneous constant encountered
   | |         }
   | |_________^
 
-note: the above error was encountered while instantiating `fn bump_scope::bump_imp::BumpImp::<'_, 185520766755449391167394633843034030080, std::alloc::Global, false>::ensure_satisfies_config_for_borrow::<206788414688008045133855546807519543296>`
+note: the above error was encountered while instantiating `fn bump_scope::bump_imp::BumpImp::<'_, 190837678738589054659009862084155408384, std::alloc::Global, false>::ensure_satisfies_config_for_borrow::<212105326671147708625470775048640921600>`
  --> src/bump.rs
   |
   |         self.imp().ensure_satisfies_config_for_borrow::<NEW_C>();

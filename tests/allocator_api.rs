@@ -22,7 +22,7 @@ macro_rules! assert_eq_ne {
 }
 
 up_and_down! {
-    const C: BumpConfig = BumpConfigBuilder(DEFAULT_C).const_constructible(true).build();
+    const C: BumpConfig = DEFAULT_C;
 
     #[test]
     fn allocate() {

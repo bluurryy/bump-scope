@@ -7,7 +7,7 @@ use bump_scope::Bump;
 use common::up_and_down;
 
 up_and_down! {
-    const C: BumpConfig = BumpConfigBuilder(DEFAULT_C).const_constructible(true).build();
+    const C: BumpConfig = DEFAULT_C;
 
     #[test]
     fn unallocated() {
