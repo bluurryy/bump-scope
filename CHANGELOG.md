@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Any `Allocator` can now be used as the base allocator (and const construction)
 - Add `const_new` and `const_new_in` to const construct `Bump`s
 - Add `.allocated()` to `BumpAllocator` as a shorthand for `.stats().allocated()`
+- Implement `TakeOwnedSlice` for `BoxedArrayIntoIter`
 
 ### Changed
 
@@ -24,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Rename `Bump::unallocated()` to `Bump::const_new()`
 - **Breaking:** Swap base allocator and bump config generic parameters
 - **Breaking:** The slice provided to `alloc_uninit_slice_for` no longer has to have the same element type as the allocated slice
+- **Breaking:** Change `Box`'s `OwnedSlice` implementation to use `BoxedArrayIntoIter` as its `Take` type
 - <details><summary> Change chunk size calculation so that a `[usize; 2]` is no longer subtracted from the layout size. </summary> This was originally intended for more friendly allocation sizes for glibc's malloc, leaving space for its metadata. However other allocators didn't benefit from that, rather it lead to wasted space.</details>
 
 ### Removed

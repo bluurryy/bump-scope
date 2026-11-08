@@ -5,7 +5,7 @@ use core::{array, mem};
 use core::alloc::Allocator;
 
 use alloc::{
-    boxed::Box,
+    boxed::{Box, BoxedArrayIntoIter},
     vec::{self, Vec},
 };
 
@@ -52,11 +52,10 @@ impl<T, const N: usize> OwnedSlice for [T; N] {
 
 impl<T, const N: usize, A: Allocator> OwnedSlice for Box<[T; N], A> {
     type Item = T;
-    type Take = Vec<T, A>;
+    type Take = BoxedArrayIntoIter<T, N, A>;
 
     fn into_take_owned_slice(self) -> Self::Take {
-        let slice: Box<[T], _> = self;
-        slice.into_vec()
+        self.into_iter()
     }
 }
 
@@ -154,6 +153,20 @@ unsafe impl<T: TakeOwnedSlice + ?Sized> TakeOwnedSlice for &mut T {
 }
 
 unsafe impl<T, const N: usize> TakeOwnedSlice for array::IntoIter<T, N> {
+    type Item = T;
+
+    #[inline]
+    fn owned_slice_ref(&self) -> &[Self::Item] {
+        self.as_slice()
+    }
+
+    #[inline]
+    fn take_owned_slice(&mut self) {
+        self.for_each(mem::forget);
+    }
+}
+
+unsafe impl<T, const N: usize, A: Allocator> TakeOwnedSlice for BoxedArrayIntoIter<T, N, A> {
     type Item = T;
 
     #[inline]
