@@ -603,16 +603,9 @@ impl<'a, const C: BumpConfig, A: Allocator, const IS_SCOPE: bool> BumpImpTrait<'
 
                 let new_addr = bump_down(old_addr_old_end, new_size, T::ALIGN.max(config!(min_align)));
                 let new_addr = NonZeroUsize::new_unchecked(new_addr);
-                let old_addr_new_end = NonZeroUsize::new_unchecked(old_addr.get() + new_size);
-
                 let new_ptr = old_ptr.with_addr(new_addr);
-                let overlaps = old_addr_new_end > new_addr;
 
-                if overlaps {
-                    old_ptr.copy_to(new_ptr, new_size);
-                } else {
-                    old_ptr.copy_to_nonoverlapping(new_ptr, new_size);
-                }
+                old_ptr.copy_to(new_ptr, new_size);
 
                 chunk.set_pos(new_ptr);
                 Some(new_ptr.cast())

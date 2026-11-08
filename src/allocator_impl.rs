@@ -148,16 +148,9 @@ pub unsafe fn grow<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
                     // There is enough space in the current chunk! We will reuse the allocated space.
 
                     let new_addr = NonZeroUsize::new_unchecked(new_addr);
-                    let new_addr_end = new_addr.get() + new_layout.size();
-
                     let new_ptr = old_ptr.with_addr(new_addr);
 
-                    // Check if the regions don't overlap so we may use the faster `copy_nonoverlapping`.
-                    if new_addr_end < old_addr.get() {
-                        old_ptr.copy_to_nonoverlapping(new_ptr, old_layout.size());
-                    } else {
-                        old_ptr.copy_to(new_ptr, old_layout.size());
-                    }
+                    old_ptr.copy_to(new_ptr, old_layout.size());
 
                     // `is_last_and_allocated` returned true
                     chunk.set_pos_addr(new_addr.get());
@@ -221,32 +214,15 @@ pub unsafe fn shrink<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
                 let old_pos = bump.chunk().pos();
                 deallocate_assume_last(bump, old_ptr, old_layout);
 
-                let overlaps;
-                let new_ptr;
-
-                if let Some(in_chunk) = bump.chunk().alloc(CustomLayout(new_layout)) {
-                    new_ptr = in_chunk;
-                    overlaps = if config!(upwards) {
-                        let old_ptr_end = old_ptr.add(new_layout.size());
-                        old_ptr_end > new_ptr
-                    } else {
-                        let new_ptr_end = new_ptr.add(new_layout.size());
-                        new_ptr_end > old_ptr
-                    }
+                let new_ptr = if let Some(in_chunk) = bump.chunk().alloc(CustomLayout(new_layout)) {
+                    in_chunk
                 } else {
                     // `is_last` returned true, which guarantees a non-dummy chunk
                     bump.chunk().as_allocated_unchecked().set_pos(old_pos);
+                    bump.alloc_in_another_chunk::<AllocError>(new_layout)?
+                };
 
-                    new_ptr = bump.alloc_in_another_chunk::<AllocError>(new_layout)?;
-                    overlaps = false;
-                }
-
-                if overlaps {
-                    old_ptr.copy_to(new_ptr, new_layout.size());
-                } else {
-                    old_ptr.copy_to_nonoverlapping(new_ptr, new_layout.size());
-                }
-
+                old_ptr.copy_to(new_ptr, new_layout.size());
                 Ok(NonNull::slice_from_raw_parts(new_ptr, new_layout.size()))
             } else {
                 let new_ptr = bump.alloc::<AllocError>(new_layout)?;
@@ -293,15 +269,7 @@ pub unsafe fn shrink<const C: BumpConfig, A: Allocator, const IS_SCOPE: bool>(
             let new_addr = NonZeroUsize::new_unchecked(new_addr);
             let new_ptr = old_ptr.with_addr(new_addr);
 
-            let copy_src_end = NonZeroUsize::new_unchecked(old_addr.get() + new_layout.size());
-            let copy_dst_start = new_addr;
-            let overlaps = copy_src_end > copy_dst_start;
-
-            if overlaps {
-                old_ptr.copy_to(new_ptr, new_layout.size());
-            } else {
-                old_ptr.copy_to_nonoverlapping(new_ptr, new_layout.size());
-            }
+            old_ptr.copy_to(new_ptr, new_layout.size());
 
             // `is_last` returned true, which guarantees a non-dummy
             bump.chunk().as_allocated_unchecked().set_pos(new_ptr);
