@@ -15,26 +15,16 @@ use bump_scope::{
     stats::Chunk,
 };
 
-use common::{MALLOC_OVERHEAD, up_and_down};
+use common::up_and_down;
 
 macro_rules! assert_chunk_sizes {
     ($bump:expr, $prev:expr, $curr:expr, $next:expr) => {
         let bump = &$bump;
         let curr = bump.stats().current_chunk().unwrap();
         debug_sizes(bump);
-        assert_eq!(curr.size(), $curr - MALLOC_OVERHEAD, "wrong curr");
-        assert!(
-            curr.iter_prev()
-                .map(Chunk::size)
-                .eq($prev.into_iter().map(|s: usize| s - MALLOC_OVERHEAD)),
-            "wrong prev"
-        );
-        assert!(
-            curr.iter_next()
-                .map(Chunk::size)
-                .eq($next.into_iter().map(|s: usize| s - MALLOC_OVERHEAD)),
-            "wrong next"
-        );
+        assert_eq!(curr.size(), $curr, "wrong curr");
+        assert!(curr.iter_prev().map(Chunk::size).eq($prev), "wrong prev");
+        assert!(curr.iter_next().map(Chunk::size).eq($next), "wrong next");
     };
 }
 
@@ -570,20 +560,13 @@ up_and_down! {
     #[test]
     fn chunk_size_0() {
         let chunk_header = size_of::<[usize; 4]>();
-        let malloc_overhead = size_of::<[usize; 2]>();
 
-        assert_eq!(
-            Bump::<NO_MIN_SIZE>::with_size(0).stats().size(),
-            (chunk_header + malloc_overhead).next_power_of_two() - malloc_overhead
-        );
+        assert_eq!(Bump::<NO_MIN_SIZE>::with_size(0).stats().size(), chunk_header.next_power_of_two());
     }
 
     #[test]
     fn chunk_size_512() {
-        assert_eq!(
-            Bump::<NO_MIN_SIZE>::with_size(512).stats().size(),
-            512 - size_of::<[usize; 2]>()
-        );
+        assert_eq!(Bump::<NO_MIN_SIZE>::with_size(512).stats().size(), 512);
     }
 
     #[test]

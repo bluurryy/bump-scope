@@ -39,10 +39,7 @@ pub(crate) use instrumented_allocator::InstrumentedAllocator;
 pub(crate) use limited_allocator::Limited;
 pub(crate) use test_wrap::TestWrap;
 
-pub(crate) type AssumedMallocOverhead = [usize; 2];
 type Result<T = (), E = AllocError> = core::result::Result<T, E>;
-
-pub(crate) const MALLOC_OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
 
 macro_rules! up_and_down {
     ($($tt:tt)*) => {

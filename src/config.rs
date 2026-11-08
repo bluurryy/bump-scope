@@ -24,7 +24,7 @@
 //! # let str =
 //! bump.alloc_str("Hello, world!").into_ref();
 //! # assert_eq!(str, "Hello, world!");
-//! assert_eq!(bump.stats().size(), 4096 - size_of::<[usize; 2]>());
+//! assert_eq!(bump.stats().size(), 4096);
 //! ```
 #![deny(clippy::cast_possible_truncation)]
 
@@ -417,8 +417,7 @@ bit_fields! {
 
     /// Sets the minimum chunk size.
     ///
-    /// The final chunk size is calculated like described in [`with_size`],
-    /// thus it can be slightly smaller than this value.
+    /// The final chunk size is calculated like described in [`with_size`].
     ///
     /// [`with_size`]: crate::Bump::with_size
     min_chunk_size: usize {

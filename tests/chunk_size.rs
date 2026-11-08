@@ -13,8 +13,6 @@ use bump_scope::Bump;
 
 use common::up_and_down;
 
-type AssumedMallocOverhead = [usize; 2];
-
 macro_rules! create_mock_allocator {
     (
         $ident:ident $size_and_align:literal
@@ -41,8 +39,6 @@ macro_rules! create_mock_allocator {
         }
     };
 }
-const OVERHEAD: usize = size_of::<AssumedMallocOverhead>();
-
 up_and_down! {
     const C: BumpConfig = DEFAULT_C;
     const C_MIN_SIZE_1: BumpConfig = BumpConfigBuilder(C).min_chunk_size(1).build();
@@ -50,31 +46,29 @@ up_and_down! {
 
     #[test]
     fn zst() {
-        // four pointers, + overhead, next power of two, minus overhead
         let bump = Bump::<C_MIN_SIZE_1>::with_size(0);
-        assert_eq!(bump.stats().size(), size_of::<[usize; 8]>() - OVERHEAD);
+        assert_eq!(bump.stats().size(), size_of::<[usize; 4]>());
 
         let bump = Bump::<C_MIN_SIZE_1>::with_size(512 - 1);
-        assert_eq!(bump.stats().size(), 512 - OVERHEAD);
+        assert_eq!(bump.stats().size(), 512);
 
         let bump = Bump::<C_MIN_SIZE_1>::with_size(512);
-        assert_eq!(bump.stats().size(), 512 - OVERHEAD);
+        assert_eq!(bump.stats().size(), 512);
 
         let bump = Bump::<C_MIN_SIZE_1>::with_size(0x1000 - 1);
-        assert_eq!(bump.stats().size(), 0x1000 - OVERHEAD);
+        assert_eq!(bump.stats().size(), 0x1000);
 
         let bump = Bump::<C_MIN_SIZE_1>::with_size(0x1000);
-        assert_eq!(bump.stats().size(), 0x1000 - OVERHEAD);
+        assert_eq!(bump.stats().size(), 0x1000);
 
         let bump = Bump::<C_MIN_SIZE_1>::with_size(0x2000 - 1);
-        assert_eq!(bump.stats().size(), 0x2000 - OVERHEAD);
+        assert_eq!(bump.stats().size(), 0x2000);
 
         let bump = Bump::<C_MIN_SIZE_1>::with_size(0x2000);
-        assert_eq!(bump.stats().size(), 0x2000 - OVERHEAD);
+        assert_eq!(bump.stats().size(), 0x2000);
 
-        // same as `with_size(0)`
         let bump = Bump::<C_MIN_SIZE_1>::with_capacity(Layout::array::<u8>(0).unwrap());
-        assert_eq!(bump.stats().size(), size_of::<[usize; 8]>() - OVERHEAD);
+        assert_eq!(bump.stats().size(), size_of::<[usize; 4]>());
     }
 
     #[test]
@@ -101,18 +95,18 @@ up_and_down! {
     #[test]
     fn minimum_size() {
         let bump = Bump::<C_MIN_SIZE_1024>::new();
-        assert_eq!(bump.stats().size(), 1024 - size_of::<[usize; 2]>());
+        assert_eq!(bump.stats().size(), 1024);
     }
 
     #[test]
     fn minimum_size_smaller_hint() {
         let bump = Bump::<C_MIN_SIZE_1024>::with_size(0);
-        assert_eq!(bump.stats().size(), 1024 - size_of::<[usize; 2]>());
+        assert_eq!(bump.stats().size(), 1024);
     }
 
     #[test]
     fn minimum_size_bigger_hint() {
         let bump = Bump::<C_MIN_SIZE_1024>::with_size(2048);
-        assert_eq!(bump.stats().size(), 2048 - size_of::<[usize; 2]>());
+        assert_eq!(bump.stats().size(), 2048);
     }
 }

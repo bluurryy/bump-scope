@@ -58,7 +58,6 @@ impl Fuzz {
 
         let config = ChunkSizeConfig {
             up,
-            assumed_malloc_overhead_layout: assumed_malloc_overhead_layout(pointer_width),
             chunk_header_layout: match chunk_header_layout(pointer_width, base_allocator_layout.get()) {
                 Some(some) => some,
                 None => {
@@ -290,13 +289,6 @@ const fn down_align(addr: usize, align: usize) -> usize {
     debug_assert!(align.is_power_of_two());
     let mask = align - 1;
     addr & !mask
-}
-
-fn assumed_malloc_overhead_layout(pointer_width: PointerWidth) -> Layout {
-    let pointer_width_bytes = pointer_width.in_bytes();
-    let pointer_layout = Layout::from_size_align(pointer_width_bytes, pointer_width_bytes).unwrap();
-
-    pointer_layout.repeat(2).unwrap().0
 }
 
 fn chunk_header_layout(pointer_width: PointerWidth, base_allocator_layout: Layout) -> Option<Layout> {

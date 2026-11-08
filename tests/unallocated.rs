@@ -6,7 +6,7 @@ use std::alloc::{Allocator, Layout};
 
 use bump_scope::{Bump, config::BumpConfig};
 
-use common::{AssumedMallocOverhead, up_and_down};
+use common::up_and_down;
 
 up_and_down! {
     const C: BumpConfig = BumpConfigBuilder(DEFAULT_C).const_constructible(true).build();
@@ -136,7 +136,7 @@ up_and_down! {
         assert_eq!(bump.stats().count(), 1);
         assert_eq!(
             bump.stats().current_chunk().unwrap().size(),
-            512 - size_of::<AssumedMallocOverhead>()
+            512
         );
     }
 
@@ -149,7 +149,7 @@ up_and_down! {
         assert_eq!(bump.stats().count(), 1);
         assert_eq!(
             bump.stats().current_chunk().unwrap().size(),
-            4096 - size_of::<AssumedMallocOverhead>()
+            4096
         );
     }
 }

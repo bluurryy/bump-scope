@@ -6,9 +6,6 @@ use crate::{
     config::{BumpConfig, config},
 };
 
-/// We leave some space per allocation for the base allocator.
-pub(crate) type AssumedMallocOverhead = [usize; 2];
-
 /// See [`ChunkSizeConfig::align_size`].
 pub(crate) const fn align_allocation_size<const C: BumpConfig, A>(size: usize) -> usize {
     Constants::<C, A>::CONFIG.align_size(size)
@@ -77,7 +74,6 @@ struct Constants<const C: BumpConfig, A>(PhantomData<fn() -> A>);
 impl<const C: BumpConfig, A> Constants<C, A> {
     const CONFIG: ChunkSizeConfig = ChunkSizeConfig {
         up: config!(upwards),
-        assumed_malloc_overhead_layout: Layout::new::<AssumedMallocOverhead>(),
         chunk_header_layout: AllocatedChunk::<C>::HEADER_LAYOUT,
     };
 

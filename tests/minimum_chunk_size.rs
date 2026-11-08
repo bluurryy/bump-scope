@@ -10,8 +10,7 @@ up_and_down! {
 
     #[test]
     fn test_minimum_chunk_size_4096() {
-        let malloc_overhead = size_of::<[usize; 2]>();
-        let expected_size = 4096 - malloc_overhead;
+        let expected_size = 4096;
 
         const MY_C: BumpConfig = BumpConfigBuilder(C).const_constructible(true).min_chunk_size(4096).build();
         type MyBump = Bump<MY_C>;

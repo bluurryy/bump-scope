@@ -362,13 +362,12 @@ impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
         Self::try_new_in(A::default())
     }
 
-    /// Constructs a new `Bump` with a size hint for the first chunk.
+    /// Constructs a new `Bump` with a size for the first chunk.
     ///
     /// If you want to ensure a specific capacity, use [`with_capacity`](Self::with_capacity) instead.
     ///
-    /// An effort is made to ensure the size requested from the base allocator is friendly to an allocator that uses size classes and stores metadata alongside allocations.
-    /// To achieve this, the requested size is rounded up to either the next power of two or the next multiple of `0x1000`, whichever is smaller.
-    /// After that, the size of `[usize; 2]` is subtracted.
+    /// The layout size that is finally requested from the base allocator may be larger due to alignment and because
+    /// we currently round it up to either the next power of two or the next multiple of `0x1000`, whichever is smaller.
     ///
     /// If the base allocator returns a memory block that is larger than requested, then the chunk will use the extra space.
     ///
@@ -384,7 +383,7 @@ impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
     ///
     /// // `Bump` with a roughly 1 Mebibyte sized chunk
     /// let bump_1mib: Bump = Bump::with_size(1024 * 1024);
-    /// # _ = bump_1mib;
+    /// assert_eq!(bump_1mib.stats().size(), 1024 * 1024);
     /// ```
     #[must_use]
     #[inline(always)]
@@ -397,9 +396,8 @@ impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
     ///
     /// If you want to ensure a specific capacity, use [`try_with_capacity`](Self::try_with_capacity) instead.
     ///
-    /// An effort is made to ensure the size requested from the base allocator is friendly to an allocator that uses size classes and stores metadata alongside allocations.
-    /// To achieve this, the requested size is rounded up to either the next power of two or the next multiple of `0x1000`, whichever is smaller.
-    /// After that, the size of `[usize; 2]` is subtracted.
+    /// The layout size that is finally requested from the base allocator may be larger due to alignment and because
+    /// we currently round it up to either the next power of two or the next multiple of `0x1000`, whichever is smaller.
     ///
     /// If the base allocator returns a memory block that is larger than requested, then the chunk will use the extra space.
     ///
@@ -413,9 +411,9 @@ impl<const C: BumpConfig, A: Allocator + Default> Bump<C, A> {
     /// ```
     /// use bump_scope::Bump;
     ///
-    /// // `Bump` with a roughly 1 Mebibyte sized chunk
+    /// // `Bump` with a 1 Mebibyte sized chunk
     /// let bump_1mib: Bump = Bump::try_with_size(1024 * 1024)?;
-    /// # _ = bump_1mib;
+    /// assert_eq!(bump_1mib.stats().size(), 1024 * 1024);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     #[inline(always)]
