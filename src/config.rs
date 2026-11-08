@@ -336,16 +336,16 @@ bit_fields! {
     /// Sets the bump direction.
     ///
     /// Bumping upwards has the advantage that the most recent allocation can be grown and shrunk in place.
-    /// This benefits growable collections as well as <code>[alloc_iter][]([_mut][alloc_iter_mut])</code> and <code>[alloc_fmt][]([_mut][alloc_fmt_mut])</code>.
+    /// This benefits growable collections as well as <code>[alloc_iter][]([_mut][mut_alloc_iter])</code> and <code>[alloc_fmt][]([_mut][mut_alloc_fmt])</code>.
     ///
     /// Bumping downwards can be done in less instructions.
     ///
     /// For the performance impact see [crates/callgrind-benches][benches].
     ///
     /// [alloc_iter]: crate::traits::BumpAllocator::alloc_iter
-    /// [alloc_iter_mut]: crate::traits::MutBumpAllocator::alloc_iter_mut
+    /// [mut_alloc_iter]: crate::traits::MutBumpAllocator::mut_alloc_iter
     /// [alloc_fmt]: crate::traits::BumpAllocator::alloc_fmt
-    /// [alloc_fmt_mut]: crate::traits::MutBumpAllocator::alloc_fmt_mut
+    /// [mut_alloc_fmt]: crate::traits::MutBumpAllocator::mut_alloc_fmt
     /// [benches]: https://github.com/bluurryy/bump-scope/tree/main/crates/callgrind-benches
     upwards: bool {
         default: true,

@@ -471,7 +471,7 @@ up_and_down! {
 
         {
             reset();
-            let drop_emit = bump.alloc_iter_mut([DropEmit, DropEmit, DropEmit]);
+            let drop_emit = bump.mut_alloc_iter([DropEmit, DropEmit, DropEmit]);
             assert_eq!(DROPS.get(), 0);
             drop(drop_emit);
             assert_eq!(DROPS.get(), 3);

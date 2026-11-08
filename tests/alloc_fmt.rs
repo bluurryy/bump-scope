@@ -24,7 +24,7 @@ up_and_down! {
         let mut bump: Bump<C> = Bump::new();
 
         bump.alloc_fmt(format_args!("{Nothing}")).into_boxu();
-        bump.alloc_fmt_mut(format_args!("{Nothing}")).into_boxu();
+        bump.mut_alloc_fmt(format_args!("{Nothing}")).into_boxu();
 
         assert_eq!(bump.allocated(), 0);
     }
@@ -41,7 +41,7 @@ up_and_down! {
     fn nothing_extra_mut() {
         let mut bump: Bump<C> = Bump::new();
         let bump = bump.as_mut_bump_scope();
-        let string = bump.alloc_fmt_mut(format_args!("ext{Nothing}ra")).into_boxu();
+        let string = bump.mut_alloc_fmt(format_args!("ext{Nothing}ra")).into_boxu();
         assert_eq!(&*string, "extra");
         assert_eq!(bump.allocated(), 5);
     }
@@ -56,7 +56,7 @@ up_and_down! {
     #[test]
     fn three_mut() {
         let mut bump: Bump<C> = Bump::new();
-        bump.alloc_fmt_mut(format_args!("{}", 3.1)).into_boxu();
+        bump.mut_alloc_fmt(format_args!("{}", 3.1)).into_boxu();
         assert_eq!(bump.allocated(), 3);
     }
 
@@ -71,7 +71,7 @@ up_and_down! {
     #[should_panic = "formatting trait implementation returned an error"]
     fn trait_panic_mut() {
         let mut bump: Bump<C> = Bump::new();
-        bump.alloc_fmt_mut(format_args!("{ErrorsOnFmt}")).into_boxu();
+        bump.mut_alloc_fmt(format_args!("{ErrorsOnFmt}")).into_boxu();
     }
 
 }

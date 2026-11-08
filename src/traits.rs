@@ -357,7 +357,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
     }
 
     #[inline(always)]
-    fn imp_alloc_iter_mut<E, T>(&mut self, iter: impl IntoIterator<Item = T>) -> Result<Box<[T], &Self>, E>
+    fn imp_mut_alloc_iter<E, T>(&mut self, iter: impl IntoIterator<Item = T>) -> Result<Box<[T], &Self>, E>
     where
         E: ErrorMode,
     {
@@ -376,7 +376,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
     }
 
     #[inline(always)]
-    fn imp_alloc_fmt_mut<E>(&mut self, args: fmt::Arguments) -> Result<Box<str, &Self>, E>
+    fn imp_mut_alloc_fmt<E>(&mut self, args: fmt::Arguments) -> Result<Box<str, &Self>, E>
     where
         E: ErrorMode,
     {
@@ -391,7 +391,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
     }
 
     #[inline(always)]
-    fn imp_alloc_cstr_fmt_mut<E>(&mut self, args: fmt::Arguments) -> Result<IntoRef<CStr, &Self>, E>
+    fn imp_mut_alloc_cstr_fmt<E>(&mut self, args: fmt::Arguments) -> Result<IntoRef<CStr, &Self>, E>
     where
         E: ErrorMode,
     {
@@ -406,7 +406,7 @@ pub(crate) trait BumpAllocatorPrivate: AsBumpImp + Allocator + Sized {
     }
 
     #[inline(always)]
-    fn imp_alloc_try_with_mut<B, T, E>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<Result<Box<T, &Self>, E>, B>
+    fn imp_mut_alloc_try_with<B, T, E>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<Result<Box<T, &Self>, E>, B>
     where
         B: ErrorMode,
     {
@@ -1257,7 +1257,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
 
     /// Allocate a `str` from format arguments.
     ///
-    /// If you have a `&mut self` you can use [`alloc_fmt_mut`](MutBumpAllocator::alloc_fmt_mut)
+    /// If you have a `&mut self` you can use [`mut_alloc_fmt`](MutBumpAllocator::mut_alloc_fmt)
     /// instead for better performance.
     ///
     /// # Panics
@@ -1287,7 +1287,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
 
     /// Allocate a `str` from format arguments.
     ///
-    /// If you have a `&mut self` you can use [`try_alloc_fmt_mut`](MutBumpAllocator::try_alloc_fmt_mut)
+    /// If you have a `&mut self` you can use [`try_mut_alloc_fmt`](MutBumpAllocator::try_mut_alloc_fmt)
     /// instead for better performance.
     ///
     /// # Errors
@@ -1405,7 +1405,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     ///
     /// If the string contains a `'\0'` then the `CStr` will stop at the first `'\0'`.
     ///
-    /// If you have a `&mut self` you can use [`alloc_cstr_fmt_mut`](MutBumpAllocator::alloc_cstr_fmt_mut)
+    /// If you have a `&mut self` you can use [`mut_alloc_cstr_fmt`](MutBumpAllocator::mut_alloc_cstr_fmt)
     /// instead for better performance.
     ///
     /// # Panics
@@ -1438,7 +1438,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     ///
     /// If the string contains a `'\0'` then the `CStr` will stop at the first `'\0'`.
     ///
-    /// If you have a `&mut self` you can use [`try_alloc_cstr_fmt_mut`](MutBumpAllocator::try_alloc_cstr_fmt_mut)
+    /// If you have a `&mut self` you can use [`try_mut_alloc_cstr_fmt`](MutBumpAllocator::try_mut_alloc_cstr_fmt)
     /// instead for better performance.
     ///
     /// # Errors
@@ -1469,7 +1469,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
 
     /// Allocate elements of an iterator into a slice.
     ///
-    /// If you have a `&mut self` you can get somewhat better performance by using [`alloc_iter_mut`].
+    /// If you have a `&mut self` you can get somewhat better performance by using [`mut_alloc_iter`].
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1483,7 +1483,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// assert_eq!(&*slice, [1, 2, 3]);
     /// ```
     ///
-    /// [`alloc_iter_mut`]: MutBumpAllocator::alloc_iter_mut
+    /// [`mut_alloc_iter`]: MutBumpAllocator::mut_alloc_iter
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     fn alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> BumpAllocation<[T], &Self> {
@@ -1493,7 +1493,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
 
     /// Allocate elements of an iterator into a slice.
     ///
-    /// If you have a `&mut self` you can get somewhat better performance by using [`try_alloc_iter_mut`].
+    /// If you have a `&mut self` you can get somewhat better performance by using [`try_mut_alloc_iter`].
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1508,7 +1508,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
-    /// [`try_alloc_iter_mut`]: MutBumpAllocator::try_alloc_iter_mut
+    /// [`try_mut_alloc_iter`]: MutBumpAllocator::try_mut_alloc_iter
     #[inline(always)]
     fn try_alloc_iter<T>(&self, iter: impl IntoIterator<Item = T>) -> Result<BumpAllocation<[T], &Self>, AllocError> {
         let boxed = self.imp_alloc_iter(iter)?;
@@ -1568,7 +1568,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     ///
     /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
     ///
-    /// There is also [`alloc_try_with_mut`], optimized for a mutable reference.
+    /// There is also [`mut_alloc_try_with`], optimized for a mutable reference.
     ///
     /// # Panics
     /// Panics if the allocation fails.
@@ -1591,7 +1591,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// assert_eq!(result.unwrap_err(), 123);
     /// ```
     ///
-    /// [`alloc_try_with_mut`]: MutBumpAllocator::alloc_try_with_mut
+    /// [`mut_alloc_try_with`]: MutBumpAllocator::mut_alloc_try_with
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     #[expect(clippy::missing_errors_doc)]
@@ -1606,7 +1606,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     ///
     /// This can be more performant than allocating `T` after the fact, as `Result<T, E>` may be constructed in the bump allocators memory instead of on the stack and then copied over.
     ///
-    /// There is also [`try_alloc_try_with_mut`], optimized for a mutable reference.
+    /// There is also [`try_mut_alloc_try_with`], optimized for a mutable reference.
     ///
     /// # Errors
     /// Errors if the allocation fails.
@@ -1631,7 +1631,7 @@ pub unsafe trait BumpAllocator: Allocator + BumpAllocatorPrivate {
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
-    /// [`try_alloc_try_with_mut`]: MutBumpAllocator::try_alloc_try_with_mut
+    /// [`try_mut_alloc_try_with`]: MutBumpAllocator::try_mut_alloc_try_with
     #[inline(always)]
     fn try_alloc_try_with<T, E>(
         &self,
@@ -1829,15 +1829,15 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     /// use bump_scope::{Bump, MutBumpAllocator};
     /// let mut bump: Bump = Bump::new();
     ///
-    /// let slice = bump.alloc_iter_mut([1, 2, 3]).into_ref();
+    /// let slice = bump.mut_alloc_iter([1, 2, 3]).into_ref();
     /// assert_eq!(slice, [1, 2, 3]);
     /// ```
     ///
     /// [`alloc_iter`]: BumpAllocator::alloc_iter
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    fn alloc_iter_mut<T>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpAllocation<[T], &Self> {
-        let boxed = panic_on_error(self.imp_alloc_iter_mut(iter));
+    fn mut_alloc_iter<T>(&mut self, iter: impl IntoIterator<Item = T>) -> BumpAllocation<[T], &Self> {
+        let boxed = panic_on_error(self.imp_mut_alloc_iter(iter));
         BumpAllocation(boxed)
     }
 
@@ -1855,18 +1855,18 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     /// use bump_scope::{Bump, MutBumpAllocator};
     /// let mut bump: Bump = Bump::new();
     ///
-    /// let slice = bump.try_alloc_iter_mut([1, 2, 3])?.into_ref();
+    /// let slice = bump.try_mut_alloc_iter([1, 2, 3])?.into_ref();
     /// assert_eq!(slice, [1, 2, 3]);
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
     /// [`try_alloc_iter`]: BumpAllocator::alloc_iter
     #[inline(always)]
-    fn try_alloc_iter_mut<T>(
+    fn try_mut_alloc_iter<T>(
         &mut self,
         iter: impl IntoIterator<Item = T>,
     ) -> Result<BumpAllocation<[T], &Self>, AllocError> {
-        let boxed = self.imp_alloc_iter_mut(iter)?;
+        let boxed = self.imp_mut_alloc_iter(iter)?;
         Ok(BumpAllocation(boxed))
     }
 
@@ -1890,7 +1890,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     ///
     /// let one = 1;
     /// let two = 2;
-    /// let string = bump.alloc_fmt_mut(format_args!("{one} + {two} = {}", one + two)).into_ref();
+    /// let string = bump.mut_alloc_fmt(format_args!("{one} + {two} = {}", one + two)).into_ref();
     ///
     /// assert_eq!(string, "1 + 2 = 3");
     /// ```
@@ -1898,8 +1898,8 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     /// [`alloc_fmt`]: BumpAllocator::alloc_fmt
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    fn alloc_fmt_mut(&mut self, args: fmt::Arguments) -> BumpAllocation<str, &Self> {
-        let boxed = panic_on_error(self.imp_alloc_fmt_mut(args));
+    fn mut_alloc_fmt(&mut self, args: fmt::Arguments) -> BumpAllocation<str, &Self> {
+        let boxed = panic_on_error(self.imp_mut_alloc_fmt(args));
         BumpAllocation(boxed)
     }
 
@@ -1923,7 +1923,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     ///
     /// let one = 1;
     /// let two = 2;
-    /// let string = bump.try_alloc_fmt_mut(format_args!("{one} + {two} = {}", one + two))?.into_ref();
+    /// let string = bump.try_mut_alloc_fmt(format_args!("{one} + {two} = {}", one + two))?.into_ref();
     ///
     /// assert_eq!(string, "1 + 2 = 3");
     /// # Ok::<(), ::core::alloc::AllocError>(())
@@ -1931,8 +1931,8 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     ///
     /// [`try_alloc_fmt`]: BumpAllocator::try_alloc_fmt
     #[inline(always)]
-    fn try_alloc_fmt_mut(&mut self, args: fmt::Arguments) -> Result<BumpAllocation<str, &Self>, AllocError> {
-        let boxed = self.imp_alloc_fmt_mut(args)?;
+    fn try_mut_alloc_fmt(&mut self, args: fmt::Arguments) -> Result<BumpAllocation<str, &Self>, AllocError> {
+        let boxed = self.imp_mut_alloc_fmt(args)?;
         Ok(BumpAllocation(boxed))
     }
 
@@ -1958,18 +1958,18 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     ///
     /// let one = 1;
     /// let two = 2;
-    /// let string = bump.alloc_cstr_fmt_mut(format_args!("{one} + {two} = {}", one + two)).into_ref();
+    /// let string = bump.mut_alloc_cstr_fmt(format_args!("{one} + {two} = {}", one + two)).into_ref();
     /// assert_eq!(string, c"1 + 2 = 3");
     ///
-    /// let one = bump.alloc_cstr_fmt_mut(format_args!("{one}\0{two}")).into_ref();
+    /// let one = bump.mut_alloc_cstr_fmt(format_args!("{one}\0{two}")).into_ref();
     /// assert_eq!(one, c"1");
     /// ```
     ///
     /// [`alloc_cstr_fmt`]: BumpAllocator::alloc_cstr_fmt
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
-    fn alloc_cstr_fmt_mut(&mut self, args: fmt::Arguments) -> IntoRef<CStr, &Self> {
-        panic_on_error(self.imp_alloc_cstr_fmt_mut(args))
+    fn mut_alloc_cstr_fmt(&mut self, args: fmt::Arguments) -> IntoRef<CStr, &Self> {
+        panic_on_error(self.imp_mut_alloc_cstr_fmt(args))
     }
 
     /// Allocate a `CStr` from format arguments.
@@ -1994,18 +1994,18 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     ///
     /// let one = 1;
     /// let two = 2;
-    /// let string = bump.try_alloc_cstr_fmt_mut(format_args!("{one} + {two} = {}", one + two))?.into_ref();
+    /// let string = bump.try_mut_alloc_cstr_fmt(format_args!("{one} + {two} = {}", one + two))?.into_ref();
     /// assert_eq!(string, c"1 + 2 = 3");
     ///
-    /// let one = bump.try_alloc_cstr_fmt_mut(format_args!("{one}\0{two}"))?.into_ref();
+    /// let one = bump.try_mut_alloc_cstr_fmt(format_args!("{one}\0{two}"))?.into_ref();
     /// assert_eq!(one, c"1");
     /// # Ok::<(), ::core::alloc::AllocError>(())
     /// ```
     ///
     /// [`try_alloc_cstr_fmt`]: BumpAllocator::try_alloc_cstr_fmt
     #[inline(always)]
-    fn try_alloc_cstr_fmt_mut(&mut self, args: fmt::Arguments) -> Result<IntoRef<CStr, &Self>, AllocError> {
-        self.imp_alloc_cstr_fmt_mut(args)
+    fn try_mut_alloc_cstr_fmt(&mut self, args: fmt::Arguments) -> Result<IntoRef<CStr, &Self>, AllocError> {
+        self.imp_mut_alloc_cstr_fmt(args)
     }
 
     /// Allocates the result of `f` in the bump allocator, then moves `E` out of it and deallocates the space it took up.
@@ -2027,7 +2027,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     /// let bump = bump.as_mut_bump_scope();
     /// let stats = bump.stats();
     ///
-    /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) });
+    /// let result = bump.mut_alloc_try_with(|| -> Result<i32, i32> { Ok(123) });
     /// assert_eq!(stats.allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
     /// assert_eq!(*result.unwrap().into_box(), 123);
     /// ```
@@ -2037,7 +2037,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     /// let bump = bump.as_mut_bump_scope();
     /// let stats = bump.stats();
     ///
-    /// let result = bump.alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) });
+    /// let result = bump.mut_alloc_try_with(|| -> Result<i32, i32> { Err(123) });
     /// assert_eq!(stats.allocated(), 0);
     /// assert_eq!(result.unwrap_err(), 123);
     /// ```
@@ -2046,8 +2046,8 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     #[inline(always)]
     #[cfg(feature = "panic-on-alloc")]
     #[expect(clippy::missing_errors_doc)]
-    fn alloc_try_with_mut<T, E>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpAllocation<T, &Self>, E> {
-        let boxed = panic_on_error(self.imp_alloc_try_with_mut(f))?;
+    fn mut_alloc_try_with<T, E>(&mut self, f: impl FnOnce() -> Result<T, E>) -> Result<BumpAllocation<T, &Self>, E> {
+        let boxed = panic_on_error(self.imp_mut_alloc_try_with(f))?;
         Ok(BumpAllocation(boxed))
     }
 
@@ -2070,7 +2070,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     /// let bump = bump.as_mut_bump_scope();
     /// let stats = bump.stats();
     ///
-    /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Ok(123) })?;
+    /// let result = bump.try_mut_alloc_try_with(|| -> Result<i32, i32> { Ok(123) })?;
     /// assert_eq!(stats.allocated(), offset_of!(Result<i32, i32>, Ok.0) + size_of::<i32>());
     /// assert_eq!(*result.unwrap().into_box(), 123);
     /// # Ok::<(), ::core::alloc::AllocError>(())
@@ -2081,7 +2081,7 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     /// let bump = bump.as_mut_bump_scope();
     /// let stats = bump.stats();
     ///
-    /// let result = bump.try_alloc_try_with_mut(|| -> Result<i32, i32> { Err(123) })?;
+    /// let result = bump.try_mut_alloc_try_with(|| -> Result<i32, i32> { Err(123) })?;
     /// assert_eq!(stats.allocated(), 0);
     /// assert_eq!(result.unwrap_err(), 123);
     /// # Ok::<(), ::core::alloc::AllocError>(())
@@ -2089,11 +2089,11 @@ pub unsafe trait MutBumpAllocator: BumpAllocator + BumpAllocatorPrivate {
     ///
     /// [`try_alloc_try_with`]: BumpAllocator::try_alloc_try_with
     #[inline(always)]
-    fn try_alloc_try_with_mut<T, E>(
+    fn try_mut_alloc_try_with<T, E>(
         &mut self,
         f: impl FnOnce() -> Result<T, E>,
     ) -> Result<Result<BumpAllocation<T, &Self>, E>, AllocError> {
-        Ok(match self.imp_alloc_try_with_mut(f)? {
+        Ok(match self.imp_mut_alloc_try_with(f)? {
             Ok(boxed) => Ok(BumpAllocation(boxed)),
             Err(err) => Err(err),
         })

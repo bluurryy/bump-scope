@@ -55,7 +55,7 @@ up_and_down! {
     #[cfg(feature = "nightly")]
     fn basic_ok_mut() {
         let mut bump: Bump<C> = Bump::with_size(SIZE);
-        _ = bump.alloc_try_with_mut(|| -> TestResult { Ok(zeroes()) }).unwrap().into_boxu();
+        _ = bump.mut_alloc_try_with(|| -> TestResult { Ok(zeroes()) }).unwrap().into_boxu();
 
 
         if config::read::upwards(C) {
@@ -77,7 +77,7 @@ up_and_down! {
     #[test]
     fn basic_err_mut() {
         let mut bump: Bump<C> = Bump::with_size(SIZE);
-        _ = bump.alloc_try_with_mut(|| -> TestResult { Err(zeroes()) }).unwrap_err();
+        _ = bump.mut_alloc_try_with(|| -> TestResult { Err(zeroes()) }).unwrap_err();
         assert_eq!(bump.allocated(), 0);
     }
 

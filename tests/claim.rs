@@ -59,7 +59,7 @@ up_and_down! {
     fn alloc_mut() {
         let bump = Bump::<C>::new();
 
-        let uno_dos_tres = bump.claim().alloc_iter_mut([1, 2, 3]).into_ref();
+        let uno_dos_tres = bump.claim().mut_alloc_iter([1, 2, 3]).into_ref();
         assert_eq!(uno_dos_tres, [1, 2, 3]);
     }
 

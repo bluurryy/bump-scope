@@ -372,23 +372,23 @@ up_and_down! {
     // MUT BUMP ALLOCATOR
 
     #[inline(never)]
-    pub fn bump_try_alloc_iter_mut<'a>(bump: &'a mut Bump<DEFAULT>, iter: &mut dyn Iterator<Item = u32>) -> Result<BumpAllocation<[u32], &'a Bump<DEFAULT>>, AllocError> {
-        bump.try_alloc_iter_mut(iter)
+    pub fn bump_try_mut_alloc_iter<'a>(bump: &'a mut Bump<DEFAULT>, iter: &mut dyn Iterator<Item = u32>) -> Result<BumpAllocation<[u32], &'a Bump<DEFAULT>>, AllocError> {
+        bump.try_mut_alloc_iter(iter)
     }
 
     #[inline(never)]
-    pub fn bump_try_alloc_fmt_mut<'a>(bump: &'a mut Bump<DEFAULT>, args: fmt::Arguments) -> Result<BumpAllocation<str, &'a Bump<DEFAULT>>, AllocError> {
-        bump.try_alloc_fmt_mut(args)
+    pub fn bump_try_mut_alloc_fmt<'a>(bump: &'a mut Bump<DEFAULT>, args: fmt::Arguments) -> Result<BumpAllocation<str, &'a Bump<DEFAULT>>, AllocError> {
+        bump.try_mut_alloc_fmt(args)
     }
 
     #[inline(never)]
-    pub fn bump_try_alloc_cstr_fmt_mut<'a>(bump: &'a mut Bump<DEFAULT>, args: fmt::Arguments) -> Result<&'a CStr, AllocError> {
-        Ok(bump.try_alloc_cstr_fmt_mut(args)?.into_ref())
+    pub fn bump_try_mut_alloc_cstr_fmt<'a>(bump: &'a mut Bump<DEFAULT>, args: fmt::Arguments) -> Result<&'a CStr, AllocError> {
+        Ok(bump.try_mut_alloc_cstr_fmt(args)?.into_ref())
     }
 
     #[inline(never)]
-    pub fn bump_try_alloc_try_with_mut<'a>(bump: &'a mut Bump<DEFAULT>, f: &dyn Fn() -> Result<u32, i32>) -> Result<Result<BumpAllocation<u32, &'a Bump<DEFAULT>>, i32>, AllocError> {
-        bump.try_alloc_try_with_mut(f)
+    pub fn bump_try_mut_alloc_try_with<'a>(bump: &'a mut Bump<DEFAULT>, f: &dyn Fn() -> Result<u32, i32>) -> Result<Result<BumpAllocation<u32, &'a Bump<DEFAULT>>, i32>, AllocError> {
+        bump.try_mut_alloc_try_with(f)
     }
 
     // ZEROCOPY
