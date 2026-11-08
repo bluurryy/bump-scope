@@ -193,7 +193,7 @@ pub struct Bump<const C: BumpConfig = DEFAULT_BUMP_CONFIG, A: Allocator = Global
 // When something is allocated Bump is borrowed and sending is not possible.
 unsafe impl<const C: BumpConfig, A> Send for Bump<C, A> where A: Send + Allocator {}
 
-impl<const C: BumpConfig, A: Allocator + UnwindSafe> UnwindSafe for Bump<C, A> {}
+impl<const C: BumpConfig, A: Allocator + UnwindSafe + RefUnwindSafe> UnwindSafe for Bump<C, A> {}
 impl<const C: BumpConfig, A: Allocator + RefUnwindSafe> RefUnwindSafe for Bump<C, A> {}
 
 impl<const C: BumpConfig, A: Allocator> Drop for Bump<C, A> {
