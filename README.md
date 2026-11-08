@@ -1,11 +1,11 @@
 # bump-scope
 
-[![Crates.io](https://img.shields.io/crates/v/bump-scope.svg)](https://crates.io/crates/bump-scope)
-[![Documentation](https://img.shields.io/docsrs/bump-scope)](https://docs.rs/bump-scope)
-[![Changelog](https://img.shields.io/badge/Changelog-gray)](CHANGELOG.md)
-[![Rust](https://img.shields.io/crates/msrv/bump-scope)](#)
-[![License](https://img.shields.io/crates/l/bump_scope)](#license)
-[![Build Status](https://github.com/bluurryy/bump-scope/workflows/CI/badge.svg)](https://github.com/bluurryy/bump-scope/actions/workflows/ci.yml)
+[![Crates.io](https://img.shields.io/crates/v/bump-scope.svg?style=plastic)](https://crates.io/crates/bump-scope)
+[![Documentation](https://img.shields.io/docsrs/bump-scope?style=plastic)](https://docs.rs/bump-scope)
+[![Changelog](https://img.shields.io/badge/Changelog-gray?style=plastic)](CHANGELOG.md)
+[![Rust](https://img.shields.io/crates/msrv/bump-scope?style=plastic)](#)
+[![License](https://img.shields.io/crates/l/bump_scope?style=plastic)](#license)
+[![Build Status](https://github.com/bluurryy/bump-scope/workflows/CI/badge.svg?style=plastic)](https://github.com/bluurryy/bump-scope/actions/workflows/ci.yml)
 
 > [!WARNING]  
 > This is the **in-development version 3.0.0**, which contains breaking changes and is not yet released. 
