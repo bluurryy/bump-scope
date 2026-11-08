@@ -114,13 +114,12 @@ mod safe_cast {
     safe_cast!(u128_as_usize: u128 -> usize);
 }
 
-/// If the `BumpConfig` contains bits that are not used by any bitfield, then something is probably going wrong.
-/// For instance, when changing an `.aligned::<4>(...)` from v2 to a `with_config` from v3, you may forget
-/// changing the const generic too. Annoyingly `4` is valid for `BumpConfig`, since it's just a u128.
+/// We set the msb to 1 so that you can't accidentally write `Bump<4>` expecting it to perhaps mean minimum alignment.
 ///
-/// To make such an error explicit, we moved all fields to the high bits. If any low bits are set, we error.
+/// Or for instance, when changing an `.aligned::<4>(...)` from v2 to a `with_config` from v3, you may forget
+/// changing the const generic too. Without this `4` would be valid for `BumpConfig`.
 const fn assert_valid_config(config: BumpConfig) {
-    assert!(!fields::unused_bits_are_set(config), "invalid bump config");
+    assert!((config & (1u128 << 127)) != 0, "invalid bump config");
 }
 
 macro_rules! config {
@@ -153,16 +152,20 @@ macro_rules! bit_fields {
     ) => {
         $(#[$mod_fields_attr])*
         $mod_fields_vis mod $mod_fields {
+            #[expect(unused)]
             const USED_BITS: u32 = 0 $(+$bits)*;
+            #[expect(unused)]
             const UNUSED_BITS: u32 = 128 - USED_BITS;
+            #[expect(unused)]
             const UNUSED_MASK: u128 = (1 << UNUSED_BITS) - 1;
 
+            #[expect(unused)]
             pub(crate) const fn unused_bits_are_set(bits: u128) -> bool {
                 bits & UNUSED_MASK != 0
             }
 
             bit_fields!(
-                @iter 0;
+                @iter 1;
 
                 $($name: $ty {
                     default: $default,
@@ -193,7 +196,7 @@ macro_rules! bit_fields {
         }
 
         $(#[$const_default_attr])*
-        $const_default_vis const $const_default: BumpConfig = BumpConfigBuilder(0)
+        $const_default_vis const $const_default: BumpConfig = BumpConfigBuilder(1u128 << 127)
             $(.$name($default))*
             .build();
 

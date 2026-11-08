@@ -16,7 +16,7 @@ note: required because it appears within the type `RcAllocator<std::alloc::Globa
 22 | struct RcAllocator<A> {
 23 |     inner: Rc<A>,
    |     ^^^^^^^^^^^^ required by this field
-   = note: required for `Bump<30759166589960318871414660254299848704, RcAllocator<std::alloc::Global>>` to implement `Send`
+   = note: required for `Bump<185520766755449391167394633843034030080, RcAllocator<std::alloc::Global>>` to implement `Send`
 note: required because `bump` is used within this closure
   --> tests/trybuild/compile_fail/base_allocator_unsend.rs:15:14
    |
